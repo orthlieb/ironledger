@@ -5,14 +5,14 @@
   "type": "module",
   "main": "dist/main.js",
   "scripts": {
-    "dev":           "tsx --env-file=../../.env watch src/main.ts",
+    "dev":           "node --env-file=../../.env --watch --import tsx/esm src/main.ts",
     "build":         "tsc --project tsconfig.json",
     "start":         "node dist/main.js",
     "test":          "vitest run",
     "test:watch":    "vitest",
     "test:coverage": "vitest run --coverage",
     "lint":          "eslint src tests --ext .ts",
-    "migrate":       "tsx --env-file=../../.env src/db/migrate.ts"
+    "migrate":       "node --env-file=../../.env --import tsx/esm src/db/migrate.ts"
   },
   "dependencies": {
     "fastify":              "^5.2.1",
