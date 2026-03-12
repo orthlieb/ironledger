@@ -1,0 +1,47 @@
+# Development services only — PostgreSQL and Redis.
+# The app itself runs natively via `npm run dev`.
+#
+# Usage:
+#   docker compose up -d        # start services
+#   docker compose down         # stop services
+#   docker compose down -v      # stop and wipe data
+#
+# Alternatively, install natively on macOS:
+#   brew install postgresql@17 redis
+#   brew services start postgresql@17
+#   brew services start redis
+#   psql postgres -c "CREATE USER app_admin WITH SUPERUSER PASSWORD 'changeme';"
+#   psql postgres -c "CREATE USER app_user  WITH PASSWORD 'changeme';"
+#   psql postgres -c "CREATE DATABASE ironledger OWNER app_admin;"
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER:     app_admin
+      POSTGRES_PASSWORD: changeme
+      POSTGRES_DB:       ironledger
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Create app_user on first boot
+      - ./docker/postgres-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app_admin -d ironledger"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:

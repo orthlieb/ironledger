@@ -12,7 +12,8 @@
     "test:watch":    "vitest",
     "test:coverage": "vitest run --coverage",
     "lint":          "eslint src tests --ext .ts",
-    "migrate":       "node --env-file=../../.env --import tsx/esm src/db/migrate.ts"
+    "migrate":       "node --env-file=../../.env --import tsx/esm src/db/migrate.ts",
+    "seed":          "node --env-file=../../.env --import tsx/esm src/db/seed.ts"
   },
   "dependencies": {
     "fastify":              "^5.2.1",
