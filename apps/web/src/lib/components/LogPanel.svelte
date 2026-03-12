@@ -3,7 +3,7 @@
 	 * LogPanel — displays the reactive session log for a single character.
 	 * Entries are stored in localStorage and rendered newest-first.
 	 */
-	import { initLog, getLog, clearLog } from '$lib/log.svelte.js';
+	import { logs, initLog, clearLog } from '$lib/log.svelte.js';
 	import trashSvg from '$lib/images/trash-solid.svg?raw';
 
 	let {
@@ -18,7 +18,9 @@
 		initLog(characterId);
 	});
 
-	const entries = $derived(getLog(characterId));
+	// Access logs[characterId] directly so Svelte 5's proxy records a
+	// fine-grained dependency on this character's entries only.
+	const entries = $derived(logs[characterId] ?? []);
 
 	function formatTime(ts: string): string {
 		try {
@@ -94,15 +96,16 @@
 	}
 
 	.log-title {
-		font-family: var(--font-display);
-		font-size: 0.57rem;
-		font-weight: 700;
-		letter-spacing: 0.18em;
+		font-family: var(--font-ui);
+		font-size: 0.68rem;
+		font-weight: 600;
+		letter-spacing: 0.08em;
 		text-transform: uppercase;
 		color: var(--text-dimmer);
 	}
 
 	.log-char-name {
+		/* Character name — keep Cinzel as it's a title element */
 		font-family: var(--font-display);
 		font-size: 0.65rem;
 		font-weight: 700;
@@ -148,9 +151,9 @@
 	}
 
 	.log-empty {
-		font-family: var(--font-display);
-		font-size: 0.6rem;
-		letter-spacing: 0.1em;
+		font-family: var(--font-ui);
+		font-size: 0.68rem;
+		letter-spacing: 0.06em;
 		text-transform: uppercase;
 	}
 
@@ -179,19 +182,19 @@
 	}
 
 	.entry-title {
-		font-family: var(--font-display);
-		font-size: 0.55rem;
-		font-weight: 700;
-		letter-spacing: 0.12em;
+		font-family: var(--font-ui);
+		font-size: 0.68rem;
+		font-weight: 600;
+		letter-spacing: 0.05em;
 		text-transform: uppercase;
 		color: var(--text-accent);
 		white-space: nowrap;
 	}
 
 	.entry-time {
-		font-family: var(--font-display);
-		font-size: 0.5rem;
-		letter-spacing: 0.06em;
+		font-family: var(--font-ui);
+		font-size: 0.65rem;
+		letter-spacing: 0.02em;
 		color: var(--text-dimmer);
 		white-space: nowrap;
 		flex-shrink: 0;

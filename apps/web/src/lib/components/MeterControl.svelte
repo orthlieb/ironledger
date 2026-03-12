@@ -103,10 +103,11 @@
 	}
 
 	.meter-label {
-		font-size: 0.65rem;
-		font-weight: 700;
+		font-family: var(--font-ui);
+		font-size: 0.68rem;
+		font-weight: 600;
 		text-transform: uppercase;
-		letter-spacing: 0.08em;
+		letter-spacing: 0.05em;
 		display: flex;
 		align-items: center;
 		gap: 4px;
@@ -142,6 +143,7 @@
 	}
 
 	.meter-max {
+		font-family: var(--font-ui);
 		font-size: 0.65rem;
 		color: var(--text-dimmer);
 	}

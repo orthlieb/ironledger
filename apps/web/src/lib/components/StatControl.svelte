@@ -1,16 +1,16 @@
 <script lang="ts">
 	/**
-	 * A display-only stat control with coloured label and bordered value box.
+	 * A stat control with coloured label and bordered value box.
 	 * Used for Edge, Heart, Iron, Shadow, Wits.
-	 * Stats rarely change so ± buttons have been intentionally removed.
+	 * Stats rarely change so ± buttons have been intentionally omitted.
+	 * Standard Ironsworn range: 1–3.
 	 */
 	let {
 		label,
 		value = $bindable(1),
 		color = 'var(--text)',
 		min = 1,
-		max = 4,
-		icon = '',
+		max = 3,
 		tooltip = '',
 	}: {
 		label: string;
@@ -18,8 +18,6 @@
 		color?: string;
 		min?: number;
 		max?: number;
-		/** Raw SVG string for the label icon */
-		icon?: string;
 		/** Tooltip text shown on hover */
 		tooltip?: string;
 	} = $props();
@@ -27,7 +25,6 @@
 
 <div class="stat-control" title={tooltip || undefined}>
 	<div class="stat-label" style:color>
-		{#if icon}<span class="stat-icon" aria-hidden="true">{@html icon}</span>{/if}
 		{label}
 	</div>
 	<input
@@ -52,35 +49,21 @@
 	}
 
 	.stat-label {
+		font-family: var(--font-ui);
 		font-size: 0.68rem;
-		font-weight: 700;
+		font-weight: 600;
 		text-transform: uppercase;
-		letter-spacing: 0.09em;
-		display: flex;
-		align-items: center;
-		gap: 4px;
-	}
-
-	.stat-icon {
-		display: flex;
-		align-items: center;
-		flex-shrink: 0;
-	}
-
-	.stat-icon :global(svg) {
-		width: 10px;
-		height: 10px;
-		fill: currentColor;
+		letter-spacing: 0.05em;
 	}
 
 	.stat-value-input {
-		font-size: 1.5rem;
-		font-weight: 800;
-		width: 3rem;
+		font-size: 0.95rem;
+		font-weight: 700;
+		width: 2.5rem;
 		text-align: center;
 		font-variant-numeric: tabular-nums;
-		line-height: 1;
-		padding: 4px 6px;
+		/* Match standard text field height: font-size 0.95rem + padding 5px top/bottom */
+		padding: 5px 4px;
 		border: 2px solid;
 		border-radius: 3px;
 		background: color-mix(in srgb, currentColor 8%, var(--bg-card));

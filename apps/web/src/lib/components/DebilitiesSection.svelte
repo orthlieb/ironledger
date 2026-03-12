@@ -3,6 +3,11 @@
 	 * Three groups of debility toggles: Conditions, Banes, Burdens.
 	 * Receives the full character data object and mutates it directly
 	 * (safe because it's a Svelte 5 deep-reactive $state in the parent).
+	 *
+	 * Layout:
+	 *   Conditions — 2 × 2 grid
+	 *   Banes      — 1 × 2 column
+	 *   Burdens    — 1 × 2 column
 	 */
 	import type { CharacterData } from '$lib/types.js';
 
@@ -36,9 +41,10 @@
 	<div class="section-label">Debilities</div>
 
 	<div class="debility-groups">
+		<!-- Conditions — 2 × 2 -->
 		<div class="debility-group">
 			<div class="group-name">Conditions</div>
-			<div class="toggle-row">
+			<div class="toggle-grid conditions-grid">
 				{#each CONDITIONS as d (d.key)}
 					<button
 						class="toggle"
@@ -53,9 +59,10 @@
 			</div>
 		</div>
 
+		<!-- Banes — 1 × 2 -->
 		<div class="debility-group">
 			<div class="group-name">Banes</div>
-			<div class="toggle-row">
+			<div class="toggle-grid single-col">
 				{#each BANES as d (d.key)}
 					<button
 						class="toggle"
@@ -70,9 +77,10 @@
 			</div>
 		</div>
 
+		<!-- Burdens — 1 × 2 -->
 		<div class="debility-group">
 			<div class="group-name">Burdens</div>
-			<div class="toggle-row">
+			<div class="toggle-grid single-col">
 				{#each BURDENS as d (d.key)}
 					<button
 						class="toggle"
@@ -99,7 +107,8 @@
 	.debility-groups {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 12px;
+		gap: 10px;
+		align-items: flex-start;
 	}
 
 	.debility-group {
@@ -114,23 +123,33 @@
 		font-style: italic;
 	}
 
-	.toggle-row {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 4px;
+	/* Conditions: 2 columns × 2 rows */
+	.toggle-grid {
+		display: grid;
+		gap: 3px;
+	}
+
+	.conditions-grid {
+		grid-template-columns: repeat(2, auto);
+	}
+
+	/* Banes / Burdens: 1 column × 2 rows */
+	.single-col {
+		grid-template-columns: auto;
 	}
 
 	.toggle {
 		display: inline-flex;
 		align-items: center;
 		gap: 5px;
-		padding: 3px 8px;
+		padding: 3px 7px;
 		border-radius: 4px;
 		border: 1px solid var(--border);
 		background: var(--bg-control);
 		color: var(--text-muted);
-		font-size: 0.8rem;
+		font-size: 0.78rem;
 		cursor: pointer;
+		white-space: nowrap;
 		transition:
 			background 0.12s,
 			color 0.12s,

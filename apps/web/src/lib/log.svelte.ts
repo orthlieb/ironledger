@@ -14,7 +14,9 @@ export interface LogEntry {
 const storageKey = (charId: string) => `il-log:${charId}`;
 
 // Module-level reactive state: map of charId → entries (newest first)
-let logs = $state<Record<string, LogEntry[]>>({});
+// Exported directly so components can access logs[charId] inside $derived
+// for explicit Svelte 5 proxy tracking (rather than wrapping in getLog()).
+export let logs = $state<Record<string, LogEntry[]>>({});
 
 /** Load stored entries for a character (idempotent — safe to call multiple times). */
 export function initLog(charId: string): void {

@@ -21,14 +21,8 @@
 	import trashSvg      from '$lib/images/trash-solid.svg?raw';
 	import floppySvg     from '$lib/images/floppy-disk-solid.svg?raw';
 
-	// Stat icons
-	import iconEdge   from '$lib/images/icon-edge.svg?raw';
-	import iconHeart  from '$lib/images/icon-heart.svg?raw';
-	import iconIron   from '$lib/images/icon-iron.svg?raw';
-	import iconShadow from '$lib/images/icon-shadow.svg?raw';
-	import iconWits   from '$lib/images/icon-wits.svg?raw';
-
-	// Resource icons
+	// Resource icons (stat icons removed per user request)
+	import iconHeart    from '$lib/images/icon-heart.svg?raw';
 	import iconMomentum from '$lib/images/icon-momentum.svg?raw';
 	import iconSpirit   from '$lib/images/icon-spirit.svg?raw';
 	import iconSupply   from '$lib/images/icon-supply.svg?raw';
@@ -239,7 +233,7 @@
 	<!-- Header ------------------------------------------------- -->
 	<div class="char-header">
 		<button
-			class="collapse-btn btn btn-icon"
+			class="collapse-btn"
 			onclick={() => (collapsed = !collapsed)}
 			aria-label={collapsed ? 'Expand character' : 'Collapse character'}
 			title={collapsed ? 'Expand' : 'Collapse'}
@@ -348,27 +342,22 @@
 				<div class="stats-row">
 					<StatControl
 						label="Edge" bind:value={data.edge} color="var(--color-edge)"
-						icon={iconEdge}
 						tooltip="Quickness, agility, and prowess in ranged combat"
 					/>
 					<StatControl
 						label="Heart" bind:value={data.heart} color="var(--color-heart)"
-						icon={iconHeart}
 						tooltip="Courage, willpower, empathy, sociability, and loyalty"
 					/>
 					<StatControl
 						label="Iron" bind:value={data.iron} color="var(--color-iron)"
-						icon={iconIron}
 						tooltip="Physical strength, endurance, and prowess in close combat"
 					/>
 					<StatControl
 						label="Shadow" bind:value={data.shadow} color="var(--color-shadow)"
-						icon={iconShadow}
 						tooltip="Sneakiness, deceptiveness, and cunning"
 					/>
 					<StatControl
 						label="Wits" bind:value={data.wits} color="var(--color-wits)"
-						icon={iconWits}
 						tooltip="Expertise, knowledge, and observation"
 					/>
 
@@ -466,16 +455,12 @@
 
 			<div class="section-divider"></div>
 
-			<!-- XP -->
+			<!-- XP + Debilities (side by side) -->
 			<section class="char-section">
-				<XpTrack bind:value={data.xp} onchange={logXp} />
-			</section>
-
-			<div class="section-divider"></div>
-
-			<!-- Debilities -->
-			<section class="char-section">
-				<DebilitiesSection {data} onchange={logDebility} />
+				<div class="xp-debilities-row">
+					<XpTrack bind:value={data.xp} onchange={logXp} />
+					<DebilitiesSection {data} onchange={logDebility} />
+				</div>
 			</section>
 
 			<div class="section-divider"></div>
@@ -549,6 +534,25 @@
 		overflow: hidden;
 		box-shadow: inset 0 1px 0 #ffffff04, 0 2px 12px #00000050;
 		transition: box-shadow 0.2s;
+	}
+
+	/* ---- Collapse button — flat, no border, blends with header bg ---- */
+	.collapse-btn {
+		background: transparent;
+		border: none;
+		color: var(--text-dimmer);
+		padding: 3px 5px;
+		cursor: pointer;
+		font-size: 0.6rem;
+		line-height: 1;
+		flex-shrink: 0;
+		border-radius: 3px;
+		font-family: inherit;
+		transition: color 0.12s;
+	}
+	.collapse-btn:hover {
+		color: var(--text);
+		background: transparent;
 	}
 
 	/* ---- Header ---- */
@@ -647,10 +651,10 @@
 	}
 
 	.delete-confirm-label {
-		font-family: var(--font-display);
-		font-size: 0.58rem;
-		font-weight: 700;
-		letter-spacing: 0.1em;
+		font-family: var(--font-ui);
+		font-size: 0.7rem;
+		font-weight: 600;
+		letter-spacing: 0.05em;
 		text-transform: uppercase;
 		color: var(--color-danger);
 		white-space: nowrap;
@@ -658,14 +662,14 @@
 
 	.btn-sm {
 		padding: 3px 9px;
-		font-size: 0.58rem;
+		font-size: 0.68rem;
 	}
 
 	/* Save indicator */
 	.save-status {
-		font-family: var(--font-display);
-		font-size: 0.55rem;
-		letter-spacing: 0.1em;
+		font-family: var(--font-ui);
+		font-size: 0.68rem;
+		letter-spacing: 0.05em;
 		text-transform: uppercase;
 		color: transparent;
 		transition: color 0.3s;
@@ -769,6 +773,14 @@
 		text-transform: none;
 		letter-spacing: 0;
 		margin-left: 4px;
+	}
+
+	/* XP + Debilities side-by-side */
+	.xp-debilities-row {
+		display: flex;
+		gap: 20px;
+		align-items: flex-start;
+		flex-wrap: wrap;
 	}
 
 	/* Tracks */

@@ -3,6 +3,7 @@
 	 * 30-dot XP track.
 	 * • Click an empty dot  → fill up to and including it.
 	 * • Click a filled dot  → unfill from that dot onward (undo).
+	 * Dot size matches a standard HTML radio button (~14 px).
 	 */
 	let {
 		value = $bindable(0),
@@ -53,14 +54,16 @@
 
 	.xp-grid {
 		display: grid;
-		grid-template-columns: repeat(15, 1fr);
-		gap: 4px;
+		/* 15 columns per row, fixed 14 px per dot to match radio-button size */
+		grid-template-columns: repeat(15, 14px);
+		gap: 3px;
 	}
 
 	.xp-dot {
-		aspect-ratio: 1;
+		width: 14px;
+		height: 14px;
 		border-radius: 50%;
-		border: 2px solid var(--text-dimmer);
+		border: 1.5px solid var(--text-dimmer);
 		background: transparent;
 		cursor: pointer;
 		padding: 0;
