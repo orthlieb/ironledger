@@ -381,55 +381,63 @@
 	.char-card {
 		background: var(--bg-card);
 		border: 1px solid var(--border);
-		border-radius: 8px;
+		border-radius: 5px;
 		overflow: hidden;
+		box-shadow: inset 0 1px 0 #ffffff04, 0 2px 12px #00000050;
+		transition: box-shadow 0.2s;
 	}
 
 	/* ---- Header ---- */
 	.char-header {
 		display: flex;
 		align-items: center;
-		gap: 8px;
-		padding: 10px 12px;
+		gap: 10px;
+		padding: 10px 14px;
 		background: var(--bg-inset);
 		border-bottom: 1px solid var(--border);
-		min-height: 52px;
+		min-height: 54px;
 	}
 
 	.char-title {
 		flex: 1;
+		font-family: var(--font-display);
 		font-weight: 700;
-		font-size: 1rem;
+		font-size: 0.82rem;
+		letter-spacing: 0.08em;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+		color: var(--text);
 	}
 
 	/* Portrait */
 	.portrait-label {
 		cursor: pointer;
 		flex-shrink: 0;
+		transition: opacity 0.12s;
 	}
+	.portrait-label:hover { opacity: 0.85; }
 
 	.portrait-img {
-		width: 36px;
-		height: 36px;
+		width: 38px;
+		height: 38px;
 		border-radius: 50%;
 		object-fit: cover;
-		border: 2px solid var(--border-mid);
+		border: 1px solid var(--border-mid);
 		display: block;
 	}
 
 	.portrait-placeholder {
-		width: 36px;
-		height: 36px;
+		width: 38px;
+		height: 38px;
 		border-radius: 50%;
-		border: 2px dashed var(--border-mid);
+		border: 1px dashed var(--border-mid);
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 1.2rem;
+		font-size: 1.1rem;
 		color: var(--text-dimmer);
+		background: var(--bg-control);
 	}
 
 	.portrait-input {
@@ -440,26 +448,34 @@
 	.delete-confirm {
 		display: flex;
 		align-items: center;
-		gap: 4px;
+		gap: 5px;
 		flex-shrink: 0;
 	}
 
 	.delete-confirm-label {
-		font-size: 0.75rem;
-		color: var(--color-danger, #c0392b);
+		font-family: var(--font-display);
+		font-size: 0.58rem;
+		font-weight: 700;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--color-danger);
 		white-space: nowrap;
 	}
 
 	.btn-sm {
-		padding: 2px 8px;
-		font-size: 0.75rem;
+		padding: 3px 9px;
+		font-size: 0.58rem;
 	}
 
 	/* Save indicator */
 	.save-status {
-		font-size: 0.7rem;
+		font-family: var(--font-display);
+		font-size: 0.55rem;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
 		color: transparent;
-		transition: color 0.2s;
+		transition: color 0.3s;
+		flex-shrink: 0;
 	}
 	.save-status.saving { color: var(--text-dimmer); }
 	.save-status.error  { color: var(--color-danger); }
@@ -470,7 +486,7 @@
 	}
 
 	.char-section {
-		padding: 12px 14px;
+		padding: 12px 16px;
 	}
 
 	.section-divider {
@@ -489,18 +505,22 @@
 	.identity-fields {
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
+		gap: 10px;
 	}
 
 	.name-input {
 		width: 100%;
-		font-size: 1rem;
+		font-family: var(--font-display);
+		font-size: 0.88rem;
 		font-weight: 600;
+		letter-spacing: 0.06em;
 	}
 
 	.background-input {
 		width: 100%;
 		resize: vertical;
+		font-size: 0.9rem;
+		line-height: 1.55;
 	}
 
 	.flex-1 {
@@ -518,18 +538,18 @@
 	.touched-group {
 		display: flex;
 		flex-direction: column;
-		gap: 4px;
+		gap: 5px;
 	}
 
 	.touched-select {
-		font-size: 0.8rem;
-		padding: 3px 6px;
+		font-size: 0.82rem;
+		padding: 4px 7px;
 	}
 
 	.animal-input {
 		width: 100px;
-		font-size: 0.8rem;
-		padding: 3px 6px;
+		font-size: 0.82rem;
+		padding: 4px 7px;
 	}
 
 	/* Meters */
@@ -541,9 +561,11 @@
 	}
 
 	.debility-count {
-		font-size: 0.7rem;
+		font-family: var(--font-body);
+		font-size: 0.75rem;
 		color: var(--color-danger);
 		font-weight: 400;
+		font-style: italic;
 		text-transform: none;
 		letter-spacing: 0;
 		margin-left: 4px;
@@ -574,5 +596,14 @@
 	/* Collapsed state */
 	.char-card.collapsed .char-header {
 		border-bottom: none;
+	}
+
+	/* Accent left-border on hover — forge line */
+	.char-card:not(.collapsed) {
+		border-left: 2px solid var(--border-mid);
+		transition: border-color 0.2s;
+	}
+	.char-card:not(.collapsed):hover {
+		border-left-color: #c98c3850;
 	}
 </style>

@@ -6,13 +6,17 @@
 </script>
 
 <svelte:head>
-	<title>Create account — Iron Ledger</title>
+	<title>Create Account — Iron Ledger</title>
 </svelte:head>
 
 <div class="auth-wrap">
 	<div class="auth-card card">
-		<h1>⚔ Iron Ledger</h1>
-		<h2>Create your account</h2>
+		<div class="auth-brand">
+			<div class="auth-brand-rule"></div>
+			<h1>Iron Ledger</h1>
+			<div class="auth-brand-rule"></div>
+		</div>
+		<h2>Forge your account</h2>
 
 		{#if form?.error}
 			<div class="error-msg">{form.error}</div>
@@ -32,7 +36,7 @@
 
 			<PasswordInput
 				name="password"
-				label="Password (12+ characters)"
+				label="Password — 12 characters or more"
 				autocomplete="new-password"
 				minlength={12}
 			/>
@@ -44,11 +48,30 @@
 				minlength={12}
 			/>
 
-			<button type="submit" class="btn btn-primary">Create account</button>
+			<button type="submit" class="btn btn-primary">Forge Account</button>
 		</form>
 
 		<p class="auth-link">
-			Already have an account? <a href="/login">Sign in</a>
+			Already sworn in? <a href="/login">Sign in</a>
 		</p>
 	</div>
 </div>
+
+<style>
+	.auth-brand {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		margin-bottom: 0.4rem;
+	}
+
+	.auth-brand-rule {
+		flex: 1;
+		height: 1px;
+		background: linear-gradient(to right, transparent, var(--border-mid));
+	}
+
+	.auth-brand-rule:first-child {
+		background: linear-gradient(to left, transparent, var(--border-mid));
+	}
+</style>
