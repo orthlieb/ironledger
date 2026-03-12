@@ -12,42 +12,65 @@
 
 module.exports = {
   apps: [
+    // ── Fastify API ──────────────────────────────────────────────────────────
     {
-      name:         'ironledger',
+      name:         'ironledger-api',
       script:       'apps/api/dist/main.js',
       cwd:          '/home/ironledger/app',
-
-      // Load secrets from the .env file (chmod 600, never committed to git)
       env_file:     '/home/ironledger/.env',
 
-      // Run 2 workers in cluster mode — uses both CPU cores on a 2-vCPU VPS
-      // and allows zero-downtime restarts (PM2 restarts one worker at a time)
+      // 2 cluster workers for zero-downtime reloads on a 2-vCPU VPS
       instances:    2,
       exec_mode:    'cluster',
 
-      // Restart policy
       autorestart:  true,
-      max_restarts: 10,         // give up after 10 crashes in a row
-      min_uptime:   '10s',      // must stay alive 10s to count as successful start
-      restart_delay: 1000,      // wait 1s between restart attempts
-
-      // Graceful shutdown — wait up to 10s for in-flight requests to finish
+      max_restarts: 10,
+      min_uptime:   '10s',
+      restart_delay: 1000,
       kill_timeout:   10000,
-      listen_timeout: 8000,     // wait 8s for the app to signal it's ready
+      listen_timeout: 8000,
 
-      // Log files
-      out_file:     '/home/ironledger/logs/out.log',
-      error_file:   '/home/ironledger/logs/error.log',
-      merge_logs:   true,       // combine logs from all cluster workers
+      out_file:     '/home/ironledger/logs/api-out.log',
+      error_file:   '/home/ironledger/logs/api-error.log',
+      merge_logs:   true,
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
-
-      // Rotate logs when they reach 10MB, keep 7 days
       log_type:     'json',
 
-      // Environment — supplemented by env_file
       env: {
         NODE_ENV: 'production',
         PORT:     '3000',
+      },
+    },
+
+    // ── SvelteKit Web ────────────────────────────────────────────────────────
+    {
+      name:         'ironledger-web',
+      // adapter-node outputs a Node.js server at apps/web/build/index.js
+      script:       'apps/web/build/index.js',
+      cwd:          '/home/ironledger/app',
+      env_file:     '/home/ironledger/.env',
+
+      // Single instance is fine — SvelteKit is mostly SSR + proxying
+      instances:    1,
+      exec_mode:    'fork',
+
+      autorestart:  true,
+      max_restarts: 10,
+      min_uptime:   '10s',
+      restart_delay: 1000,
+      kill_timeout:   10000,
+      listen_timeout: 8000,
+
+      out_file:     '/home/ironledger/logs/web-out.log',
+      error_file:   '/home/ironledger/logs/web-error.log',
+      merge_logs:   true,
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      log_type:     'json',
+
+      env: {
+        NODE_ENV:          'production',
+        PORT:              '3001',   // Nginx proxies 443 → 3001
+        INTERNAL_API_URL:  'http://localhost:3000',
       },
     },
   ],

@@ -8,11 +8,14 @@
     "packages/shared"
   ],
   "scripts": {
-    "dev":     "npm run dev --workspace=apps/api",
-    "build":   "npm run build --workspace=apps/api",
-    "test":    "npm run test --workspace=apps/api",
-    "lint":    "npm run lint --workspace=apps/api",
-    "migrate": "npm run migrate --workspace=apps/api"
+    "dev":        "npm run dev --workspace=apps/api",
+    "dev:web":    "npm run dev --workspace=apps/web",
+    "build":      "npm run build --workspace=apps/api && npm run build --workspace=apps/web",
+    "build:api":  "npm run build --workspace=apps/api",
+    "build:web":  "npm run build --workspace=apps/web",
+    "check:web":  "npm run check --workspace=apps/web",
+    "test":       "npm run test --workspace=apps/api",
+    "migrate":    "npm run migrate --workspace=apps/api"
   },
   "engines": {
     "node": ">=22.0.0",
