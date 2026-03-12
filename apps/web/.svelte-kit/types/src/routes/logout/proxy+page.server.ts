@@ -1,9 +1,10 @@
+// @ts-nocheck
 import { redirect } from '@sveltejs/kit';
 import type { Actions } from './$types';
 import { INTERNAL_API_URL } from '$lib/server/config.js';
 
-export const actions: Actions = {
-	default: async ({ cookies, locals }) => {
+export const actions = {
+	default: async ({ cookies, locals }: import('./$types').RequestEvent) => {
 		// Tell Fastify to revoke the refresh token (best effort)
 		if (locals.accessToken) {
 			try {
@@ -20,3 +21,4 @@ export const actions: Actions = {
 		throw redirect(302, '/login');
 	},
 };
+;null as any as Actions;

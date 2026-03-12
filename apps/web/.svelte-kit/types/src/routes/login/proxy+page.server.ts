@@ -1,15 +1,16 @@
+// @ts-nocheck
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { INTERNAL_API_URL } from '$lib/server/config.js';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load = async ({ locals }: Parameters<PageServerLoad>[0]) => {
 	// Already logged in? Skip login page.
 	if (locals.user) throw redirect(302, '/characters');
 	return {};
 };
 
-export const actions: Actions = {
-	default: async ({ request, cookies }) => {
+export const actions = {
+	default: async ({ request, cookies }: import('./$types').RequestEvent) => {
 		const form = await request.formData();
 		const email    = (form.get('email')    as string | null) ?? '';
 		const password = (form.get('password') as string | null) ?? '';
@@ -58,3 +59,4 @@ export const actions: Actions = {
 		throw redirect(302, '/characters');
 	},
 };
+;null as any as Actions;

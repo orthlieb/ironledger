@@ -15,6 +15,7 @@
 		countDebilities,
 		hydrateCharacter,
 	} from '$lib/character.js';
+	import { untrack } from 'svelte';
 	import { characters } from '$lib/api.js';
 
 	import StatControl      from './StatControl.svelte';
@@ -39,7 +40,10 @@
 	// ---------------------------------------------------------------------------
 	// State
 	// ---------------------------------------------------------------------------
-	let data = $state(hydrateCharacter(character.data));
+	// Read the prop once at mount without subscribing to future changes.
+	// We own this state from here on — changes are persisted via auto-save.
+	// untrack() suppresses the "captured initial value" rune warning correctly.
+	let data = $state(untrack(() => hydrateCharacter(character.data)));
 	let collapsed = $state(false);
 	let saveStatus = $state<'idle' | 'saving' | 'error'>('idle');
 	let saveTimer: ReturnType<typeof setTimeout> | null = null;

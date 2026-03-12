@@ -1,5 +1,5 @@
 import type { RequestHandler } from './$types';
-import { INTERNAL_API_URL } from '$env/static/private';
+import { INTERNAL_API_URL } from '$lib/server/config.js';
 
 /** Called by the client-side auth.logout() helper. */
 export const POST: RequestHandler = async ({ locals, cookies }) => {
