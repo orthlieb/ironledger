@@ -1,0 +1,382 @@
+{
+  "assets": [
+    {
+      "id": "path/yrt-touched-feline",
+      "name": "Touched, Feline",
+      "category": "Touched",
+      "summary": "Feline-touched: night hunter's senses, impossible leaps, and predator stealth.",
+      "preamble": null,
+      "postamble": "Your touched value determines how many abilities you may use: Pure — none; Prime — 1; Second — 2; Third or Feral — all 3.",
+      "preconditions": [
+        { "key": "touched", "min": 1 }
+      ],
+      "touchedFeatures": true,
+      "abilities": [
+        {
+          "enabled": true,
+          "text": "You move with the senses and poise of a night hunter. When you <b>Face Danger</b>, <b>Secure an Advantage</b>, or <b>Gather Information</b> in darkness, dim light, or heavy shadow, add +1. On a strong hit, also take +1 momentum as your night sight and feline awareness reveal more than others can see."
+        },
+        {
+          "enabled": false,
+          "text": "Your leaps and landings defy human limits. When you <b>Face Danger</b> or <b>Undertake a Journey</b> by jumping, climbing, or risking a fall, add +1 and roll +edge (even if another stat would normally apply). On a strong hit, you land sure-footed; take +1 momentum or inflict +1 harm if your leap carries you into the attack."
+        },
+        {
+          "enabled": false,
+          "text": "You vanish into stillness like a hidden hunter. When you remain motionless or stalk slowly in cover and then <b>Secure an Advantage</b> or <b>Face Danger</b> by relying on concealment, add +1. On a hit, you are not detected and take +1 momentum; on a strong hit, you may also improve your position (define a safe escape route, observe unnoticed, or set up an ally’s next move)."
+        }
+      ]
+    },
+    {
+      "id": "ritual/yrt-cantrip",
+      "name": "Conclave Ritual: Cantrip",
+      "category": "Ritual",
+      "summary": "Minor magical tricks: clean, light, warm, lock, and more.",
+      "preamble": null,
+      "description": "You have learned minor magical tricks \u2014 small, reliable effects drawn from mana seeds. Choose 2 cantrips when you acquire this asset.<br><br><b>Limitations:</b> A cantrip cannot affect anything larger than you can hold in two hands, cannot last longer than 10 minutes or until dispelled (see level exceptions below), cannot reach farther than 10 paces (line of sight required), and cannot directly inflict harm in combat. Most cantrips take several seconds to cast, up to a few minutes for larger or more complex work.",
+      "cantrips": [
+        { "key": "tidy-clean",     "name": "Tidy/Clean",     "desc": "Clean or create a minor mess on a surface." },
+        { "key": "mark-unmark",    "name": "Mark/Unmark",    "desc": "Place or remove a small symbol or mark." },
+        { "key": "mute-amplify",   "name": "Mute/Amplify",   "desc": "Mute or amplify a small sound." },
+        { "key": "freshen-spoil",  "name": "Freshen/Spoil",  "desc": "Freshen or spoil a small quantity of food/drink." },
+        { "key": "warm-chill",     "name": "Warm/Chill",     "desc": "Warm or cool a small object or liquid." },
+        { "key": "spark-snuff",    "name": "Spark/Snuff",    "desc": "Light or extinguish a small, non-magical flame." },
+        { "key": "lock-unlock",    "name": "Lock/Unlock",    "desc": "Jam or unjam a simple latch or buckle." },
+        { "key": "tint-clear",     "name": "Tint/Clear",     "desc": "Change the color of a small item or clear a small quantity of liquid." },
+        { "key": "stick-unstick",  "name": "Stick/Unstick",  "desc": "Adhere or separate two small objects." },
+        { "key": "scouts-light",   "name": "Scout's Light",  "desc": "Produce a faint, firefly-like, temporary glow." },
+        { "key": "soften-harden",  "name": "Soften/Harden",  "desc": "Soften (make flexible) or harden (make brittle) a small spot or item." }
+      ],
+      "cantripSlots": [2, 2, 2],
+      "abilities": [
+        {
+          "enabled": true,
+          "text": "When you perform a cantrip, <a class=\"move-link\" data-id=\"move/cast-conclave-ritual\">Cast Conclave Ritual</a> with a base difficulty of 1. Add +1 if cast at range, and +1 if cast under stress (e.g. in combat or while being watched). On a <b class=\"mrd-outcome-strong\">strong hit</b>, the cantrip works as intended; take +1 momentum. On a <b class=\"mrd-outcome-weak\">weak hit</b>, the cantrip works but choose one: it is weaker or shorter than intended, it draws unwanted attention, or you suffer -1 spirit from the strain. On a <b class=\"mrd-outcome-miss\">miss</b>, the cantrip misfires; <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a>."
+        },
+        {
+          "enabled": false,
+          "text": "Choose 2 additional cantrips from the list (4 total). Your cantrips now last up to 1 hour or until you dismiss them."
+        },
+        {
+          "enabled": false,
+          "text": "Choose 2 additional cantrips from the list (6 total). Simple/touching cantrips (1 mana cost) are now free \u2014 they cost 0 mana."
+        }
+      ]
+    },
+    {
+      "id": "ritual/yrt-arcane-inspection",
+      "name": "Conclave Ritual: Arcane Inspection",
+      "category": "Ritual",
+      "summary": "Sense and interpret mana in a person, object, or area.",
+      "preamble": null,
+      "description": "A basic ritual taught early to Neophytes and Disciples of the Conclave, allowing them to sense and interpret mana in a person, object, or area \u2014 \"detect magic,\" grounded in the color-coded manite system. It uses primarily Amber to read patterns, with Luminous to stabilize and Gray as a structural aid when needed.",
+      "inspectionFactors": [
+        {
+          "key": "presence",
+          "name": "Presence & Purity",
+          "levels": [
+            "Simple ping — only learn whether any mana is present (yes/no).",
+            "Presence + rough purity — know if mana is stable, mixed, or corrupted.",
+            "Detailed purity — distinguish refined Conclave-grade, wild blight, or Black/corrupted signatures."
+          ]
+        },
+        {
+          "key": "color",
+          "name": "Color Resolution",
+          "levels": [
+            "No color discrimination — sense only mana present vs. none.",
+            "Broad categories — structural (Gray), vital (Azure/Verdant), energetic (Crimson/Luminous), mental/decay (Amber/Black).",
+            "Exact colors and proportions (e.g., mostly Gray with traces of Luminous and faint Amber residue)."
+          ]
+        },
+        {
+          "key": "intensity",
+          "name": "Intensity & Scale",
+          "levels": [
+            "Crude strength sense — gut impression of weak/moderate/strong.",
+            "Rough magnitude and footprint — estimate radius/volume (localized charm, room-wide ward, residual field).",
+            "Detailed mapping — locate hotspots, weak points, anchor nodes, and strongest direction of effect."
+          ]
+        },
+        {
+          "key": "temporal",
+          "name": "Temporal Insight",
+          "levels": [
+            "No time sense — only perceive the current state.",
+            "Recent vs. old — tell if the effect is fresh, fading, or ancient, and whether it has been changed recently.",
+            "Event echoes — catch impressions of one or two key events: a recent casting, strong emotional imprint, or violent discharge."
+          ]
+        },
+        {
+          "key": "structure",
+          "name": "Structural / Intent Insight",
+          "levels": [
+            "Broad function only — sense whether the effect is protective, harmful, sensory, healing, or corruptive.",
+            "Simple structure — identify seed-based effect, ritual pattern, crude infusion, or natural blight; educated guess at intended use.",
+            "Detailed structure — infer likely seed shapes, probable triggering conditions, and one or two concrete capabilities or limitations."
+          ]
+        },
+        {
+          "key": "penetration",
+          "name": "Penetration & Subtlety",
+          "levels": [
+            "Superficial scan — easily blocked by wards or barriers; casting is unobtrusive (faint prickle at most).",
+            "Moderate penetration — read through basic concealment or light Luminous masking; sensitive targets may feel they are being looked at.",
+            "Deep probe — push through sophisticated wards or read mana in living bodies or sealed containers; obvious to other casters, may trigger alarms or backlash."
+          ]
+        }
+      ],
+      "inspectionExample": {
+        "scenario": "A Disciple wants to quietly check if a street-side shrine has been marked or trapped by magic, without lighting it up like a beacon.",
+        "factors": {
+          "presence": { "score": 1, "reason": "Is there mana, and is it stable or corrupt?" },
+          "color": { "score": 1, "reason": "Broad categories." },
+          "intensity": { "score": 1, "reason": "Localized or extended?" },
+          "temporal": { "score": 0, "reason": "No need for age." },
+          "structure": { "score": 1, "reason": "Protective, harmful, or a signal?" },
+          "penetration": { "score": 1, "reason": "Peek through basic masking, no hard push." }
+        },
+        "total": 5,
+        "resolution": "She commits 3 mana and Casts Conclave Ritual. She rolls 1d6[4] + 3 mana = 7 vs difficulty 5 and 1d10[9]. That is a weak hit \u2014 downgrade 2 factors (9 \u2212 7 = 2). She drops Penetration from 1 to 0 (losing the ability to see through masking) and Color from 1 to 0 (only learning whether mana is present, not its type). She still senses a stable mana presence, gets a rough footprint, and knows the shrine\u2019s effect is protective \u2014 enough to decide it\u2019s safe."
+      },
+      "abilities": [
+        {
+          "enabled": true,
+          "text": "You can perform an Arcane Inspection to sense and interpret mana in a person, object, or area. Record the total difficulty by summing the difficulty factors and <a class=\"move-link\" data-id=\"move/cast-conclave-ritual\">Cast Conclave Ritual</a>."
+        },
+        {
+          "enabled": false,
+          "text": "As above, but the spell difficulty is reduced by 2 (minimum 0) given mastery of the inspection skill."
+        },
+        {
+          "enabled": false,
+          "text": "As above, but the spell difficulty is reduced by 4 instead of 2 (minimum 0)."
+        }
+      ]
+    },
+    {
+      "id": "ritual/yrt-vizion-illusion",
+      "name": "Conclave Ritual: Illusion",
+      "category": "Ritual",
+      "summary": "Create visual, auditory, and physical illusions to deceive.",
+      "preamble": null,
+      "description": "You can cast illusion spells to deceive others. In combat, it is usually a ranged defensive style designed to confuse or distract the enemy. Illusions can also be cast outside of combat to create and hide traps and other items. Illusions can have visual, auditory, and physical components. Examples of illusions might be a small glamor, a veil of invisibility and silence around you while moving, phantom sounds, mirror image, hallucinations, altering or hiding terrain, or a ghostly touch.",
+      "inspectionFactors": [
+        {
+          "key": "components",
+          "name": "Components",
+          "levels": [
+            "One component: visual, auditory, or physical (touchable).",
+            "Two components.",
+            "All three components: visual, auditory, and physical."
+          ]
+        },
+        {
+          "key": "viewing",
+          "name": "Viewing",
+          "levels": [
+            "Limited \u2014 convincing only from straight on.",
+            "Half sphere \u2014 convincing from most angles.",
+            "Full sphere \u2014 convincing from all angles, top and bottom."
+          ]
+        },
+        {
+          "key": "animation",
+          "name": "Animation",
+          "levels": [
+            "Static \u2014 no movement.",
+            "Small animated details \u2014 subtle motion. Requires red mana.",
+            "Full animation \u2014 lifelike movement. Requires red mana."
+          ]
+        },
+        {
+          "key": "persistence",
+          "name": "Persistence",
+          "levels": [
+            "Only while actively casting.",
+            "Less than an hour. Requires red mana.",
+            "Up to two hours. Requires red mana."
+          ]
+        },
+        {
+          "key": "size",
+          "name": "Size",
+          "levels": [
+            "Small \u2014 deck of cards.",
+            "Medium \u2014 chest sized.",
+            "Large \u2014 horse sized."
+          ]
+        },
+        {
+          "key": "detail",
+          "name": "Detail",
+          "levels": [
+            "Rough \u2014 obviously an illusion up close.",
+            "Passes casual inspection.",
+            "Lifelike \u2014 indistinguishable from real."
+          ]
+        }
+      ],
+      "inspectionExample": {
+        "scenario": "You desire to distract a guard by creating a small hopping frog illusion.",
+        "factors": {
+          "components": { "score": 1, "reason": "Visual + auditory." },
+          "viewing": { "score": 1, "reason": "Half sphere \u2014 convincing from most angles." },
+          "animation": { "score": 2, "reason": "Full animation \u2014 lifelike hopping movement." },
+          "persistence": { "score": 0, "reason": "Only while actively casting." },
+          "size": { "score": 0, "reason": "Small \u2014 deck of cards sized frog." },
+          "detail": { "score": 1, "reason": "Passes casual inspection." }
+        },
+        "total": 5,
+        "resolution": "You commit 4 mana and Cast Conclave Ritual. You roll 1d6[3] + 4 mana = 7 vs difficulty 5 and 1d10[8]. That is a weak hit \u2014 downgrade 1 factor (8 \u2212 7 = 1). You drop Detail from 1 to 0 (rough \u2014 obviously an illusion up close), hoping the guard focuses on the movement and sound rather than inspecting the frog closely."
+      },
+      "abilities": [
+        {
+          "enabled": true,
+          "text": "You can cast illusion spells to deceive others. Choose what you want to create, record the total difficulty by summing the difficulty factors, and <a class=\"move-link\" data-id=\"move/cast-conclave-ritual\">Cast Conclave Ritual</a>."
+        },
+        {
+          "enabled": false,
+          "text": "As above, but the spell difficulty is reduced by 2 (minimum 0) given mastery of the illusionist skill."
+        },
+        {
+          "enabled": false,
+          "text": "As above, but the spell difficulty is reduced by 4 instead of 2 (minimum 0)."
+        }
+      ]
+    },
+    {
+      "id": "ritual/yrt-compulsion",
+      "name": "Conclave Ritual: Compulsion",
+      "category": "Ritual",
+      "summary": "Influence thoughts, emotions, and perceptions in a target's mind.",
+      "preamble": null,
+      "description": "This ritual lets a caster influence thoughts, emotions, and perceptions in a target\u2019s mind. It is more dangerous than simple illusions, because it acts inside the mind rather than in the air. Amber mana interfaces tightly with the nervous system and sensory processing. It can project illusions, dampen fear or pain, or induce specific emotional states; extended or forceful use risks addiction, mindbreak, or erosion of identity.<br><br><b>Risks:</b> Repeated use on the same mind within a short period increases Resistance by +1 each time (max 2) and may create fragmented or contradictory memories. If you roll a miss on a compulsion with Depth 2 or Scope 2, mark a debility related to mental strain (sleeplessness, intrusive memories, emotional numbness). Unsanctioned deep control, if discovered by the Conclave, carries severe consequences.",
+      "inspectionFactors": [
+        {
+          "key": "depth",
+          "name": "Depth",
+          "levels": [
+            "Surface nudge \u2014 momentary distraction, fleeting doubt, slight calm.",
+            "Emotional steering \u2014 fear, trust, guilt, confidence for minutes.",
+            "Directive compulsion \u2014 you plant a specific urge or instruction."
+          ]
+        },
+        {
+          "key": "clarity",
+          "name": "Clarity",
+          "levels": [
+            "Vague impression \u2014 a feeling they can second-guess.",
+            "Convincing emotion or thought \u2014 they think it is their own.",
+            "Overriding priority \u2014 it dominates other concerns while it lasts."
+          ]
+        },
+        {
+          "key": "scope",
+          "name": "Scope",
+          "levels": [
+            "Single emotional axis \u2014 fear, calm, curiosity, etc.",
+            "Emotion plus a simple belief (\u201cyou can trust me,\u201d \u201cthey are watching\u201d).",
+            "Emotion plus a specific, framed memory or interpretation."
+          ]
+        },
+        {
+          "key": "duration",
+          "name": "Duration",
+          "levels": [
+            "Seconds \u2014 enough to slip a question past their guard.",
+            "Minutes.",
+            "Up to an hour or until jolted (pain, shock, another caster)."
+          ]
+        },
+        {
+          "key": "resistance",
+          "name": "Resistance",
+          "levels": [
+            "Willing / unsuspecting \u2014 they want to talk, or think you are helping.",
+            "Guarded / anxious \u2014 afraid, suspicious, but not trained.",
+            "Hardened \u2014 Brotherhood-trained, fanatic, or currently terrified."
+          ]
+        },
+        {
+          "key": "subtlety",
+          "name": "Subtlety",
+          "levels": [
+            "Crude push \u2014 they feel pushed, may notice something is off.",
+            "Gentle guidance \u2014 they rationalize it as their own reaction.",
+            "Seamless masking \u2014 memories fill in naturally; they are sure it was all their idea."
+          ]
+        }
+      ],
+      "inspectionExample": {
+        "scenario": "You want to gently coax information from a frightened but untrained witness for a few minutes, nudging their fear away and trust toward you.",
+        "factors": {
+          "depth": { "score": 1, "reason": "Emotional steering \u2014 calm them and build trust." },
+          "clarity": { "score": 1, "reason": "Convincing \u2014 they think it is their own feeling." },
+          "scope": { "score": 1, "reason": "Emotion + simple belief: \u201cyou can trust me.\u201d" },
+          "duration": { "score": 1, "reason": "Minutes \u2014 long enough for a conversation." },
+          "resistance": { "score": 1, "reason": "Guarded / anxious but not trained." },
+          "subtlety": { "score": 1, "reason": "Gentle guidance \u2014 they rationalize it." }
+        },
+        "total": 6,
+        "resolution": "You commit 5 mana and Cast Conclave Ritual. You roll 1d6[3] + 5 mana = 8 vs difficulty 6 and 1d10[9]. That is a weak hit \u2014 downgrade 1 factor (9 \u2212 8 = 1). You drop Subtlety from 1 to 0 (crude push). The witness calms down and talks freely, but afterward feels uneasy \u2014 something about the conversation felt off, and they may later question why they were so open with a stranger."
+      },
+      "abilities": [
+        {
+          "enabled": true,
+          "text": "You can cast compulsion spells to influence thoughts, emotions, and perceptions. Decide the effect you want, record the total difficulty by summing the difficulty factors, and <a class=\"move-link\" data-id=\"move/cast-conclave-ritual\">Cast Conclave Ritual</a>. You must spend at least 1 mana."
+        },
+        {
+          "enabled": false,
+          "text": "As above, but the spell difficulty is reduced by 2 (minimum 0) given mastery of the compulsion skill."
+        },
+        {
+          "enabled": false,
+          "text": "As above, but the spell difficulty is reduced by 4 instead of 2 (minimum 0)."
+        }
+      ]
+    },
+    {
+      "id": "path/yrt-venenigisto",
+      "name": "Venenigisto",
+      "category": "Path",
+      "summary": "Poison crafter: brew contact and ingestion toxins from plant extracts, and detect the venomous work of others.",
+      "preamble": "If you have trained in the lore of plants, poisons, and their antidotes — whether as a herbalist, assassin, or apothecary.",
+      "abilities": [
+        {
+          "enabled": true,
+          "text": "When you craft a poison from foraged plants or gathered extracts, choose a potency and a delivery method.\n\n  * <b>Potency:</b> soporific (induces sleep), debilitating (sickens and weakens), or lethal (kills if untreated).\n  * <b>Delivery:</b> contact (applied to skin or a wound) or ingestion (slipped into food or drink).\n\nSuffer -1 supply and roll +wits. On a <b>strong hit</b>, you create a single dose; take +1 momentum. On a <b>weak hit</b>, you create it but choose one: suffer an additional -1 supply, the potency is weaker than intended, or the poison has a telltale sign (odor, taste, or color)."
+        },
+        {
+          "enabled": false,
+          "text": "When you examine food, drink, a coated weapon, or a victim's symptoms to detect or identify a poison, add +1 when you <b>Gather Information</b> or <b>Secure an Advantage</b> (+wits). On a hit, you identify the poison and its effects. On a <b>strong hit</b>, you can also prepare an antidote if you have at least +1 supply; suffer -1 supply and the victim may <b>Heal</b> with +1 added."
+        },
+        {
+          "enabled": false,
+          "text": "When you craft a poison, add +1 and you may create two doses instead of one. Additionally, your poisons are subtle and hard to detect: when someone examines your poison, they must score a strong hit to identify it."
+        }
+      ]
+    },
+    {
+      "id": "path/yrt-falsinto",
+      "name": "Falsinto",
+      "category": "Path",
+      "summary": "Document forger: mimic handwriting, replicate seals and official papers, and detect the fakes of others.",
+      "preamble": null,
+      "abilities": [
+        {
+          "enabled": true,
+          "text": "You can identify paper types, ink composition, and handwriting characteristics. When you forge a person's handwriting: a letter, note, or simple written message: suffer -1 supply and roll +shadow. On a <b>strong hit</b>, the forgery is convincing and will withstand casual inspection; take +1 momentum. On a <b>weak hit</b>, you create it but choose one: suffer an additional -1 supply for better materials, the handwriting has a subtle inconsistency that someone familiar with the original may notice, or it takes much longer than expected."
+        },
+        {
+          "enabled": false,
+          "text": "When you examine a document for signs of forgery or tampering: inspecting paper, ink, seals, or handwriting: add +1 when you <b>Gather Information</b> or <b>Secure an Advantage</b> (+wits). On a hit, you determine its authenticity. On a <b>strong hit</b>, you also discern the forger's methods and habits; take +1 momentum."
+        },
+        {
+          "enabled": false,
+          "text": "You can now forge official documents, wax seals, stamped credentials, and other bureaucratic or institutional papers. When you do, use the same roll as above but the forgery may also include seals, signatures, and formal formatting. On a <b>strong hit</b>, the document passes even official scrutiny; take +1 momentum."
+        }
+      ]
+    }
+  ],
+  "rarities": []
+}

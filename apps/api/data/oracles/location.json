@@ -1,0 +1,213 @@
+{
+  "key": "location",
+  "title": "Oracle 4: Location",
+  "group": "Core Ironsworn",
+  "selectLabel": "Oracle 4: Location",
+  "description": "Use this oracle when traveling to generate a point-of-interest or to answer a question about a place where someone or something can be found.",
+  "data": [
+    {
+      "topRange": 1,
+      "value": "Hideout"
+    },
+    {
+      "topRange": 2,
+      "value": "Ruin"
+    },
+    {
+      "topRange": 3,
+      "value": "Mine"
+    },
+    {
+      "topRange": 4,
+      "value": "Waste"
+    },
+    {
+      "topRange": 5,
+      "value": "Mystical Site"
+    },
+    {
+      "topRange": 6,
+      "value": "Path"
+    },
+    {
+      "topRange": 7,
+      "value": "Outpost"
+    },
+    {
+      "topRange": 8,
+      "value": "Wall"
+    },
+    {
+      "topRange": 9,
+      "value": "Battlefield"
+    },
+    {
+      "topRange": 10,
+      "value": "Hovel"
+    },
+    {
+      "topRange": 11,
+      "value": "Spring"
+    },
+    {
+      "topRange": 12,
+      "value": "Lair"
+    },
+    {
+      "topRange": 13,
+      "value": "Fort"
+    },
+    {
+      "topRange": 14,
+      "value": "Bridge"
+    },
+    {
+      "topRange": 15,
+      "value": "Camp"
+    },
+    {
+      "topRange": 16,
+      "value": "Cairn/Grave"
+    },
+    {
+      "topRange": 18,
+      "value": "Caravan"
+    },
+    {
+      "topRange": 20,
+      "value": "Waterfall"
+    },
+    {
+      "topRange": 22,
+      "value": "Cave"
+    },
+    {
+      "topRange": 24,
+      "value": "Swamp"
+    },
+    {
+      "topRange": 26,
+      "value": "Fen"
+    },
+    {
+      "topRange": 28,
+      "value": "Ravine"
+    },
+    {
+      "topRange": 30,
+      "value": "Road"
+    },
+    {
+      "topRange": 32,
+      "value": "Tree"
+    },
+    {
+      "topRange": 34,
+      "value": "Pond"
+    },
+    {
+      "topRange": 36,
+      "value": "Fields"
+    },
+    {
+      "topRange": 38,
+      "value": "Marsh"
+    },
+    {
+      "topRange": 40,
+      "value": "Steading"
+    },
+    {
+      "topRange": 42,
+      "value": "Rapids"
+    },
+    {
+      "topRange": 44,
+      "value": "Pass"
+    },
+    {
+      "topRange": 46,
+      "value": "Trail"
+    },
+    {
+      "topRange": 48,
+      "value": "Glade"
+    },
+    {
+      "topRange": 50,
+      "value": "Plain"
+    },
+    {
+      "topRange": 52,
+      "value": "Ridge"
+    },
+    {
+      "topRange": 54,
+      "value": "Cliff"
+    },
+    {
+      "topRange": 56,
+      "value": "Grove"
+    },
+    {
+      "topRange": 58,
+      "value": "Village"
+    },
+    {
+      "topRange": 60,
+      "value": "Moor"
+    },
+    {
+      "topRange": 62,
+      "value": "Thicket"
+    },
+    {
+      "topRange": 64,
+      "value": "River Ford"
+    },
+    {
+      "topRange": 66,
+      "value": "Valley"
+    },
+    {
+      "topRange": 68,
+      "value": "Bay/Fjord"
+    },
+    {
+      "topRange": 70,
+      "value": "Foothills"
+    },
+    {
+      "topRange": 72,
+      "value": "Lake"
+    },
+    {
+      "topRange": 75,
+      "value": "River"
+    },
+    {
+      "topRange": 79,
+      "value": "Forest"
+    },
+    {
+      "topRange": 83,
+      "value": "Coast"
+    },
+    {
+      "topRange": 88,
+      "value": "Hill"
+    },
+    {
+      "topRange": 93,
+      "value": "Mountain"
+    },
+    {
+      "topRange": 99,
+      "value": "Woods"
+    },
+    {
+      "topRange": 100,
+      "value": "Anomaly"
+    }
+  ]
+}

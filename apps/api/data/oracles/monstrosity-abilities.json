@@ -1,0 +1,169 @@
+{
+  "key": "monstrosityAbilities",
+  "title": "Monstrosity: Abilities",
+  "group": "Delve",
+  "selectLabel": "Monstrosity: Abilities",
+  "description": "Determine special abilities or powers of a monstrosity. Roll up to four times and keep up to three results.",
+  "data": [
+    {
+      "topRange": 4,
+      "value": "Keen senses"
+    },
+    {
+      "topRange": 8,
+      "value": "Intimidating vocalization"
+    },
+    {
+      "topRange": 12,
+      "value": "Climber"
+    },
+    {
+      "topRange": 16,
+      "value": "Intelligent"
+    },
+    {
+      "topRange": 20,
+      "value": "Swift"
+    },
+    {
+      "topRange": 24,
+      "value": "Powerful bite"
+    },
+    {
+      "topRange": 28,
+      "value": "Stealthy / ambusher"
+    },
+    {
+      "topRange": 32,
+      "value": "Horrid visage"
+    },
+    {
+      "topRange": 36,
+      "value": "Strong"
+    },
+    {
+      "topRange": 40,
+      "value": "Camouflaged"
+    },
+    {
+      "topRange": 43,
+      "value": "Flier / glider"
+    },
+    {
+      "topRange": 46,
+      "value": "Poisonous"
+    },
+    {
+      "topRange": 49,
+      "value": "Semiaquatic / swimmer"
+    },
+    {
+      "topRange": 52,
+      "value": "Grappler / entangler"
+    },
+    {
+      "topRange": 55,
+      "value": "Leaper"
+    },
+    {
+      "topRange": 58,
+      "value": "Crusher / constrictor"
+    },
+    {
+      "topRange": 61,
+      "value": "Armored"
+    },
+    {
+      "topRange": 64,
+      "value": "Burrower"
+    },
+    {
+      "topRange": 67,
+      "value": "Noxious smell"
+    },
+    {
+      "topRange": 69,
+      "value": "Trap-setter"
+    },
+    {
+      "topRange": 71,
+      "value": "Parasitic"
+    },
+    {
+      "topRange": 73,
+      "value": "Vibration sense"
+    },
+    {
+      "topRange": 75,
+      "value": "Breath weapon / toxic spew"
+    },
+    {
+      "topRange": 77,
+      "value": "Mimicry"
+    },
+    {
+      "topRange": 79,
+      "value": "Shapeshifting"
+    },
+    {
+      "topRange": 81,
+      "value": "Control lesser creatures"
+    },
+    {
+      "topRange": 83,
+      "value": "Echolocation"
+    },
+    {
+      "topRange": 85,
+      "value": "Electric shock"
+    },
+    {
+      "topRange": 87,
+      "value": "Acidic"
+    },
+    {
+      "topRange": 89,
+      "value": "Symbiotic"
+    },
+    {
+      "topRange": 91,
+      "value": "Shoot projectiles"
+    },
+    {
+      "topRange": 92,
+      "value": "Paralyzing"
+    },
+    {
+      "topRange": 93,
+      "value": "Immune to iron"
+    },
+    {
+      "topRange": 94,
+      "value": "Feels no pain"
+    },
+    {
+      "topRange": 95,
+      "value": "Enact rituals"
+    },
+    {
+      "topRange": 96,
+      "value": "Create illusions"
+    },
+    {
+      "topRange": 97,
+      "value": "Mind control / telepathy"
+    },
+    {
+      "topRange": 98,
+      "value": "Move between realities"
+    },
+    {
+      "topRange": 99,
+      "value": "Wield weapons"
+    },
+    {
+      "topRange": 100,
+      "value": "Control elements"
+    }
+  ]
+}

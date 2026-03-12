@@ -1,0 +1,49 @@
+{
+  "key": "combatEvent",
+  "title": "Delve: Combat Event",
+  "group": "Delve",
+  "selectLabel": "Delve: Combat Event",
+  "description": "Trigger a dramatic event or complication during a fight within a Delve site.",
+  "data": [
+    {
+      "topRange": 10,
+      "value": "Enemy changes range / position."
+    },
+    {
+      "topRange": 20,
+      "value": "Enemy reveals a new ability or tactic."
+    },
+    {
+      "topRange": 30,
+      "value": "Reinforcements arrive or an ally joins the fray."
+    },
+    {
+      "topRange": 40,
+      "value": "Environmental hazard intrudes on the fight."
+    },
+    {
+      "topRange": 50,
+      "value": "An opening presents itself—if you act quickly."
+    },
+    {
+      "topRange": 60,
+      "value": "You are driven back or cornered."
+    },
+    {
+      "topRange": 70,
+      "value": "Something important is put in immediate danger."
+    },
+    {
+      "topRange": 80,
+      "value": "The objective of the fight suddenly shifts."
+    },
+    {
+      "topRange": 90,
+      "value": "A combatant attempts to flee or parley."
+    },
+    {
+      "topRange": 100,
+      "value": "A dramatic twist changes the entire battle."
+    }
+  ]
+}

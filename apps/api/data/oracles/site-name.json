@@ -1,0 +1,209 @@
+{
+  "key": "siteName",
+  "title": "Site Name",
+  "group": "Delve",
+  "selectLabel": "Site Name",
+  "description": "Generate a specific name component for a Delve site.",
+  "data": [
+    {
+      "topRange": 2,
+      "value": "Abyssal"
+    },
+    {
+      "topRange": 4,
+      "value": "Accursed"
+    },
+    {
+      "topRange": 6,
+      "value": "Ashen"
+    },
+    {
+      "topRange": 8,
+      "value": "Blighted"
+    },
+    {
+      "topRange": 10,
+      "value": "Bloodied"
+    },
+    {
+      "topRange": 12,
+      "value": "Broken"
+    },
+    {
+      "topRange": 14,
+      "value": "Collapsed"
+    },
+    {
+      "topRange": 16,
+      "value": "Corrupted"
+    },
+    {
+      "topRange": 18,
+      "value": "Cursed"
+    },
+    {
+      "topRange": 20,
+      "value": "Damned"
+    },
+    {
+      "topRange": 22,
+      "value": "Dark"
+    },
+    {
+      "topRange": 24,
+      "value": "Dead"
+    },
+    {
+      "topRange": 26,
+      "value": "Defiled"
+    },
+    {
+      "topRange": 28,
+      "value": "Desolate"
+    },
+    {
+      "topRange": 30,
+      "value": "Doomed"
+    },
+    {
+      "topRange": 32,
+      "value": "Dread"
+    },
+    {
+      "topRange": 34,
+      "value": "Dying"
+    },
+    {
+      "topRange": 36,
+      "value": "Empty"
+    },
+    {
+      "topRange": 38,
+      "value": "Endless"
+    },
+    {
+      "topRange": 40,
+      "value": "Fallen"
+    },
+    {
+      "topRange": 42,
+      "value": "Forsaken"
+    },
+    {
+      "topRange": 44,
+      "value": "Grim"
+    },
+    {
+      "topRange": 46,
+      "value": "Haunted"
+    },
+    {
+      "topRange": 48,
+      "value": "Hidden"
+    },
+    {
+      "topRange": 50,
+      "value": "Hollow"
+    },
+    {
+      "topRange": 52,
+      "value": "Howling"
+    },
+    {
+      "topRange": 54,
+      "value": "Icy"
+    },
+    {
+      "topRange": 56,
+      "value": "Infernal"
+    },
+    {
+      "topRange": 58,
+      "value": "Lost"
+    },
+    {
+      "topRange": 60,
+      "value": "Misty"
+    },
+    {
+      "topRange": 62,
+      "value": "Murky"
+    },
+    {
+      "topRange": 64,
+      "value": "Perilous"
+    },
+    {
+      "topRange": 66,
+      "value": "Ruined"
+    },
+    {
+      "topRange": 68,
+      "value": "Sacred"
+    },
+    {
+      "topRange": 70,
+      "value": "Shattered"
+    },
+    {
+      "topRange": 72,
+      "value": "Shrouded"
+    },
+    {
+      "topRange": 74,
+      "value": "Silent"
+    },
+    {
+      "topRange": 76,
+      "value": "Sunken"
+    },
+    {
+      "topRange": 78,
+      "value": "Sunless"
+    },
+    {
+      "topRange": 80,
+      "value": "Timeworn"
+    },
+    {
+      "topRange": 82,
+      "value": "Towering"
+    },
+    {
+      "topRange": 84,
+      "value": "Twisting"
+    },
+    {
+      "topRange": 86,
+      "value": "Veiled"
+    },
+    {
+      "topRange": 88,
+      "value": "Wasted"
+    },
+    {
+      "topRange": 90,
+      "value": "Watchful"
+    },
+    {
+      "topRange": 92,
+      "value": "Weeping"
+    },
+    {
+      "topRange": 94,
+      "value": "Wicked"
+    },
+    {
+      "topRange": 96,
+      "value": "Wild"
+    },
+    {
+      "topRange": 98,
+      "value": "Withered"
+    },
+    {
+      "topRange": 100,
+      "value": "Wretched"
+    }
+  ]
+}

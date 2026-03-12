@@ -1,0 +1,81 @@
+{
+  "key": "charDisposition",
+  "title": "Character Disposition",
+  "group": "Delve",
+  "selectLabel": "Character Disposition",
+  "description": "Gauge an NPC's initial attitude or reaction when you first interact with them.",
+  "data": [
+    {
+      "topRange": 6,
+      "value": "Helpful"
+    },
+    {
+      "topRange": 11,
+      "value": "Friendly"
+    },
+    {
+      "topRange": 18,
+      "value": "Cooperative"
+    },
+    {
+      "topRange": 24,
+      "value": "Curious"
+    },
+    {
+      "topRange": 31,
+      "value": "Indifferent"
+    },
+    {
+      "topRange": 40,
+      "value": "Suspicious"
+    },
+    {
+      "topRange": 49,
+      "value": "Wanting"
+    },
+    {
+      "topRange": 57,
+      "value": "Fearful"
+    },
+    {
+      "topRange": 64,
+      "value": "Angry"
+    },
+    {
+      "topRange": 70,
+      "value": "Aggressive"
+    },
+    {
+      "topRange": 75,
+      "value": "Stubborn"
+    },
+    {
+      "topRange": 79,
+      "value": "Threatening"
+    },
+    {
+      "topRange": 83,
+      "value": "Hostile"
+    },
+    {
+      "topRange": 87,
+      "value": "Deceptive"
+    },
+    {
+      "topRange": 91,
+      "value": "Manipulative"
+    },
+    {
+      "topRange": 94,
+      "value": "Cowardly"
+    },
+    {
+      "topRange": 97,
+      "value": "Fleeing"
+    },
+    {
+      "topRange": 100,
+      "value": "Surrendering"
+    }
+  ]
+}

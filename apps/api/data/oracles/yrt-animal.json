@@ -1,0 +1,409 @@
+{
+  "key": "yrtAnimal",
+  "title": "YRT – Animal Type",
+  "group": "Yrt",
+  "selectLabel": "YRT – Animal Type",
+  "description": "Determine the type of animal encountered in the Yrt setting.",
+  "data": [
+    {
+      "topRange": 1,
+      "value": "Bear"
+    },
+    {
+      "topRange": 2,
+      "value": "Wolf"
+    },
+    {
+      "topRange": 3,
+      "value": "Fox"
+    },
+    {
+      "topRange": 4,
+      "value": "Deer / Doe"
+    },
+    {
+      "topRange": 5,
+      "value": "Stag (elk)"
+    },
+    {
+      "topRange": 6,
+      "value": "Horse"
+    },
+    {
+      "topRange": 7,
+      "value": "Boar"
+    },
+    {
+      "topRange": 8,
+      "value": "Hare / Rabbit"
+    },
+    {
+      "topRange": 9,
+      "value": "Badger"
+    },
+    {
+      "topRange": 10,
+      "value": "Otter"
+    },
+    {
+      "topRange": 11,
+      "value": "Rat"
+    },
+    {
+      "topRange": 12,
+      "value": "Mouse"
+    },
+    {
+      "topRange": 13,
+      "value": "Bat"
+    },
+    {
+      "topRange": 14,
+      "value": "Mole"
+    },
+    {
+      "topRange": 15,
+      "value": "Hedgehog"
+    },
+    {
+      "topRange": 16,
+      "value": "Weasel / Stoat"
+    },
+    {
+      "topRange": 17,
+      "value": "Ferret"
+    },
+    {
+      "topRange": 18,
+      "value": "Mink"
+    },
+    {
+      "topRange": 19,
+      "value": "Mountain Lion / Puma"
+    },
+    {
+      "topRange": 20,
+      "value": "Lynx"
+    },
+    {
+      "topRange": 21,
+      "value": "Dog (hound)"
+    },
+    {
+      "topRange": 22,
+      "value": "Cat (domestic)"
+    },
+    {
+      "topRange": 23,
+      "value": "Bull / Ox"
+    },
+    {
+      "topRange": 24,
+      "value": "Goat"
+    },
+    {
+      "topRange": 25,
+      "value": "Ram / Sheep"
+    },
+    {
+      "topRange": 26,
+      "value": "Pig / Swine"
+    },
+    {
+      "topRange": 27,
+      "value": "Donkey / Mule"
+    },
+    {
+      "topRange": 28,
+      "value": "Deer (roe)"
+    },
+    {
+      "topRange": 29,
+      "value": "Wolverine"
+    },
+    {
+      "topRange": 30,
+      "value": "Porcupine"
+    },
+    {
+      "topRange": 31,
+      "value": "Owl"
+    },
+    {
+      "topRange": 32,
+      "value": "Hawk / Falcon"
+    },
+    {
+      "topRange": 33,
+      "value": "Eagle"
+    },
+    {
+      "topRange": 34,
+      "value": "Raven / Crow"
+    },
+    {
+      "topRange": 35,
+      "value": "Magpie"
+    },
+    {
+      "topRange": 36,
+      "value": "Heron"
+    },
+    {
+      "topRange": 37,
+      "value": "Crane"
+    },
+    {
+      "topRange": 38,
+      "value": "Woodpecker"
+    },
+    {
+      "topRange": 39,
+      "value": "Sparrow / Finch"
+    },
+    {
+      "topRange": 40,
+      "value": "Vulture"
+    },
+    {
+      "topRange": 41,
+      "value": "Viper / Adder"
+    },
+    {
+      "topRange": 42,
+      "value": "Grass Snake"
+    },
+    {
+      "topRange": 43,
+      "value": "King Snake"
+    },
+    {
+      "topRange": 44,
+      "value": "Boa Constrictor"
+    },
+    {
+      "topRange": 45,
+      "value": "Cobra"
+    },
+    {
+      "topRange": 46,
+      "value": "Lizard (common)"
+    },
+    {
+      "topRange": 47,
+      "value": "Gecko"
+    },
+    {
+      "topRange": 48,
+      "value": "Iguana"
+    },
+    {
+      "topRange": 49,
+      "value": "Monitor Lizard"
+    },
+    {
+      "topRange": 50,
+      "value": "Chameleon"
+    },
+    {
+      "topRange": 51,
+      "value": "Crocodile / Caiman"
+    },
+    {
+      "topRange": 52,
+      "value": "Alligator"
+    },
+    {
+      "topRange": 53,
+      "value": "Tortoise"
+    },
+    {
+      "topRange": 54,
+      "value": "Sea Turtle"
+    },
+    {
+      "topRange": 55,
+      "value": "Snapping Turtle"
+    },
+    {
+      "topRange": 56,
+      "value": "Salamander"
+    },
+    {
+      "topRange": 57,
+      "value": "Frog (tree frog)"
+    },
+    {
+      "topRange": 58,
+      "value": "Frog (bullfrog)"
+    },
+    {
+      "topRange": 59,
+      "value": "Toad"
+    },
+    {
+      "topRange": 60,
+      "value": "Newt"
+    },
+    {
+      "topRange": 61,
+      "value": "Salmon"
+    },
+    {
+      "topRange": 62,
+      "value": "Trout"
+    },
+    {
+      "topRange": 63,
+      "value": "Eel"
+    },
+    {
+      "topRange": 64,
+      "value": "Pike"
+    },
+    {
+      "topRange": 65,
+      "value": "Carp"
+    },
+    {
+      "topRange": 66,
+      "value": "Catfish"
+    },
+    {
+      "topRange": 67,
+      "value": "Perch"
+    },
+    {
+      "topRange": 68,
+      "value": "Bass"
+    },
+    {
+      "topRange": 69,
+      "value": "Shark"
+    },
+    {
+      "topRange": 70,
+      "value": "Ray / Skate"
+    },
+    {
+      "topRange": 71,
+      "value": "Octopus"
+    },
+    {
+      "topRange": 72,
+      "value": "Squid"
+    },
+    {
+      "topRange": 73,
+      "value": "Crab"
+    },
+    {
+      "topRange": 74,
+      "value": "Lobster / Crayfish"
+    },
+    {
+      "topRange": 75,
+      "value": "Shrimp / Prawn"
+    },
+    {
+      "topRange": 76,
+      "value": "Beetle (stag beetle)"
+    },
+    {
+      "topRange": 77,
+      "value": "Beetle (scarab)"
+    },
+    {
+      "topRange": 78,
+      "value": "Praying Mantis"
+    },
+    {
+      "topRange": 79,
+      "value": "Wasp / Hornet"
+    },
+    {
+      "topRange": 80,
+      "value": "Bee (honeybee)"
+    },
+    {
+      "topRange": 81,
+      "value": "Moth"
+    },
+    {
+      "topRange": 82,
+      "value": "Butterfly"
+    },
+    {
+      "topRange": 83,
+      "value": "Ant"
+    },
+    {
+      "topRange": 84,
+      "value": "Termite"
+    },
+    {
+      "topRange": 85,
+      "value": "Dragonfly"
+    },
+    {
+      "topRange": 86,
+      "value": "Grasshopper / Locust"
+    },
+    {
+      "topRange": 87,
+      "value": "Firefly / Glowworm"
+    },
+    {
+      "topRange": 88,
+      "value": "Cockroach"
+    },
+    {
+      "topRange": 89,
+      "value": "Fly (horsefly)"
+    },
+    {
+      "topRange": 90,
+      "value": "Mosquito"
+    },
+    {
+      "topRange": 91,
+      "value": "Spider (wolf spider)"
+    },
+    {
+      "topRange": 92,
+      "value": "Spider (orb-weaver)"
+    },
+    {
+      "topRange": 93,
+      "value": "Scorpion"
+    },
+    {
+      "topRange": 94,
+      "value": "Centipede"
+    },
+    {
+      "topRange": 95,
+      "value": "Millipede"
+    },
+    {
+      "topRange": 96,
+      "value": "Tick / Mite"
+    },
+    {
+      "topRange": 97,
+      "value": "Leech"
+    },
+    {
+      "topRange": 98,
+      "value": "Earthworm"
+    },
+    {
+      "topRange": 99,
+      "value": "Snail / Slug"
+    },
+    {
+      "topRange": 100,
+      "value": "Jellyfish"
+    }
+  ]
+}

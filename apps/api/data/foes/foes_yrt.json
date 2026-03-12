@@ -1,0 +1,88 @@
+{
+  "foes": [
+    {
+      "id": "yrt/blighted-guilder",
+      "name": "Blighted Guilder",
+      "rank": 2,
+      "nature": "Ironlander",
+      "features": [
+        "Skin veined with grey manite",
+        "Eyes that pulse faintly with crimson light",
+        "Conclave guild seal burned into the palm"
+      ],
+      "drives": [
+        "Protect the guild's supply lines at all costs",
+        "Silence those who know too much about the blight zones"
+      ],
+      "tactics": [
+        "Hurl a primed crimson seed",
+        "Use luminous mana to blind and disorient",
+        "Call for Conclave enforcers if cornered"
+      ],
+      "description": "Once a licensed Conclave seed-crafter, the Blighted Guilder spent too long in the blight zones without proper shielding. The uncontrolled manite has seeped into their body, warping their judgment and making them erratic and dangerous. They still operate as a guild agent, but their priorities have shifted from commerce to obsession."
+    },
+    {
+      "id": "yrt/mana-wraith",
+      "name": "Mana Wraith",
+      "rank": 3,
+      "nature": "Horror",
+      "features": [
+        "Translucent form flickering between colours",
+        "Leaves crystallized manite residue wherever it passes",
+        "Emits a low harmonic hum that unsettles the mind"
+      ],
+      "drives": [
+        "Consume refined manite seeds and vials",
+        "Return to the blight zone that spawned it"
+      ],
+      "tactics": [
+        "Drain mana directly from bandoliers and pouches",
+        "Phase through barriers reinforced by luminous mana",
+        "Trigger stored seeds prematurely as it passes"
+      ],
+      "description": "Mana Wraiths are born in deep blight zones where uncontrolled manite has saturated the environment for decades. They are not undead in the traditional sense — they are manite given a kind of hunger without a body. The Conclave classifies them as Anomalies but quietly suppresses that knowledge; a Wraith near a Conclave depot is a catastrophic liability."
+    },
+    {
+      "id": "yrt/verdant-crawler",
+      "name": "Verdant Crawler",
+      "rank": 2,
+      "nature": "Beast",
+      "features": [
+        "Body encased in thick vines and root-matter",
+        "Multiple grasping limbs of tangled growth",
+        "Verdant mana pulses visibly through its core"
+      ],
+      "drives": [
+        "Spread verdant blight across cultivated land",
+        "Defend the overgrown blight zone it inhabits"
+      ],
+      "tactics": [
+        "Entangle with fast-growing root tendrils",
+        "Accelerate plant growth to block escape routes",
+        "Absorb minor injuries by drawing verdant mana from the environment"
+      ],
+      "description": "When verdant mana escapes into a blight zone without Conclave control, it doesn't simply promote growth — it warps it. Verdant Crawlers are the result: fauna that has been so thoroughly saturated with verdant manite that the distinction between creature and plant has dissolved. They are drawn to farmland and cultivated areas, which they methodically overwhelm."
+    },
+    {
+      "id": "yrt/amber-schemer",
+      "name": "Amber Schemer",
+      "rank": 3,
+      "nature": "Ironlander",
+      "features": [
+        "Unnervingly calm and pleasant demeanor",
+        "Amber mana implanted visibly behind one eye",
+        "Never raises their voice, never loses their composure"
+      ],
+      "drives": [
+        "Manipulate those around them for personal gain",
+        "Avoid direct confrontation at all costs"
+      ],
+      "tactics": [
+        "Project false trust and calm through amber compulsion",
+        "Plant a directive compulsion to act against allies",
+        "Flee when the manipulation is exposed, leaving behind a scapegoat"
+      ],
+      "description": "The Amber Schemer is a Vizion-trained operative who has crossed the line from influence into exploitation. Their amber implant has been pushed beyond sanctioned limits, and the Conclave either cannot or will not rein them in. They move through settlements leaving fractured relationships and redirected loyalties in their wake. Those who realize they have been compelled rarely catch the Schemer before they have moved on."
+    }
+  ]
+}

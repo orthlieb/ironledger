@@ -1,0 +1,49 @@
+{
+  "key": "threatMalignantPlague",
+  "title": "Threat: Malignant Plague",
+  "group": "Delve",
+  "selectLabel": "Threat: Malignant Plague",
+  "description": "Generate the next event for a malignant plague threat.",
+  "data": [
+    {
+      "topRange": 10,
+      "value": "Manifest new symptoms or effects"
+    },
+    {
+      "topRange": 20,
+      "value": "Infect someone important"
+    },
+    {
+      "topRange": 30,
+      "value": "Expand to new territory or communities"
+    },
+    {
+      "topRange": 40,
+      "value": "Allow someone to take advantage"
+    },
+    {
+      "topRange": 50,
+      "value": "Allow someone to take the blame"
+    },
+    {
+      "topRange": 60,
+      "value": "Create panic or disorder"
+    },
+    {
+      "topRange": 70,
+      "value": "Force a horrible decision"
+    },
+    {
+      "topRange": 80,
+      "value": "Lure into complacency"
+    },
+    {
+      "topRange": 90,
+      "value": "Reveal the root of the sickness"
+    },
+    {
+      "topRange": 100,
+      "value": "Undermine a potential cure"
+    }
+  ]
+}

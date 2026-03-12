@@ -1,0 +1,49 @@
+{
+  "key": "threatRavagingHorde",
+  "title": "Threat: Ravaging Horde",
+  "group": "Delve",
+  "selectLabel": "Threat: Ravaging Horde",
+  "description": "Generate the next event for a ravaging horde threat.",
+  "data": [
+    {
+      "topRange": 10,
+      "value": "Overrun defenses"
+    },
+    {
+      "topRange": 20,
+      "value": "Gather resources"
+    },
+    {
+      "topRange": 30,
+      "value": "Attack a location"
+    },
+    {
+      "topRange": 40,
+      "value": "Expand forces"
+    },
+    {
+      "topRange": 50,
+      "value": "Appoint or reveal a leader"
+    },
+    {
+      "topRange": 60,
+      "value": "Send forth a champion"
+    },
+    {
+      "topRange": 70,
+      "value": "Create a diversion"
+    },
+    {
+      "topRange": 80,
+      "value": "Undermine an opposing force from within"
+    },
+    {
+      "topRange": 90,
+      "value": "Cut off supplies or reinforcements"
+    },
+    {
+      "topRange": 100,
+      "value": "Employ a new weapon"
+    }
+  ]
+}

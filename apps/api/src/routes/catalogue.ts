@@ -7,9 +7,8 @@
  * aggressively too; the ETag changes only when the data files change
  * (i.e. when a new version is deployed).
  *
- * Data is read from the yrt project's data directory at startup.
- * The path is configurable via CATALOGUE_PATH in the environment,
- * defaulting to the sibling yrt project.
+ * Game data lives in apps/api/data/ and is bundled with this project.
+ * Override the path with CATALOGUE_PATH in .env if needed.
  */
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
@@ -20,11 +19,12 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Default: look for the yrt data directory as a sibling of the repo root.
-// __dirname = apps/api/src/routes/  →  ../../../../.. = parent of repo root
-// Override with CATALOGUE_PATH in .env for non-standard layouts.
+// Default: bundled data directory at apps/api/data/.
+// __dirname = apps/api/src/routes/  →  ../.. = apps/api/
+// Same relative depth from dist/routes/ after build.
+// Override with CATALOGUE_PATH in .env for custom layouts.
 const DATA_ROOT = process.env['CATALOGUE_PATH']
-  ?? path.resolve(__dirname, '../../../../../yrt/data');
+  ?? path.resolve(__dirname, '../../data');
 
 // ---------------------------------------------------------------------------
 // Load data files once at startup

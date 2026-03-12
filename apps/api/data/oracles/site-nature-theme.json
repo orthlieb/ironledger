@@ -1,0 +1,41 @@
+{
+  "key": "siteNatureTheme",
+  "title": "Delve: Site Nature – Theme",
+  "group": "Delve",
+  "selectLabel": "Delve: Site Nature – Theme",
+  "description": "Determine the thematic nature of a Delve site (e.g., ancient, corrupted, haunted).",
+  "data": [
+    {
+      "topRange": 12,
+      "value": "Ancient"
+    },
+    {
+      "topRange": 25,
+      "value": "Corrupted"
+    },
+    {
+      "topRange": 38,
+      "value": "Fortified"
+    },
+    {
+      "topRange": 50,
+      "value": "Hallowed"
+    },
+    {
+      "topRange": 62,
+      "value": "Haunted"
+    },
+    {
+      "topRange": 75,
+      "value": "Infested"
+    },
+    {
+      "topRange": 88,
+      "value": "Ravaged"
+    },
+    {
+      "topRange": 100,
+      "value": "Wild"
+    }
+  ]
+}

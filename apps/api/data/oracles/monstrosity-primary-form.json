@@ -1,0 +1,81 @@
+{
+  "key": "monstrosityPrimaryForm",
+  "title": "Monstrosity: Primary Form",
+  "group": "Delve",
+  "selectLabel": "Monstrosity: Primary Form",
+  "description": "Determine the base physical form of a random monstrosity. Results with two options separated by a slash (/) — pick the one which best fits or take both.",
+  "data": [
+    {
+      "topRange": 15,
+      "value": "Beast / mammal"
+    },
+    {
+      "topRange": 25,
+      "value": "Humanoid"
+    },
+    {
+      "topRange": 31,
+      "value": "Bird"
+    },
+    {
+      "topRange": 37,
+      "value": "Spider"
+    },
+    {
+      "topRange": 43,
+      "value": "Snake"
+    },
+    {
+      "topRange": 49,
+      "value": "Worm / slug"
+    },
+    {
+      "topRange": 55,
+      "value": "Lizard"
+    },
+    {
+      "topRange": 61,
+      "value": "Insect"
+    },
+    {
+      "topRange": 66,
+      "value": "Amorphous"
+    },
+    {
+      "topRange": 69,
+      "value": "Crustacean"
+    },
+    {
+      "topRange": 71,
+      "value": "Fish"
+    },
+    {
+      "topRange": 73,
+      "value": "Octopoid"
+    },
+    {
+      "topRange": 75,
+      "value": "Amphibian"
+    },
+    {
+      "topRange": 77,
+      "value": "Plant"
+    },
+    {
+      "topRange": 78,
+      "value": "Incorporeal"
+    },
+    {
+      "topRange": 79,
+      "value": "Mineral"
+    },
+    {
+      "topRange": 80,
+      "value": "Elemental"
+    },
+    {
+      "topRange": 100,
+      "value": "Hybrid (roll twice)"
+    }
+  ]
+}

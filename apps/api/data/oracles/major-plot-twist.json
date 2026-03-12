@@ -1,0 +1,89 @@
+{
+  "key": "majorPlotTwist",
+  "title": "Oracle 18: Major Plot Twist",
+  "group": "Core Ironsworn",
+  "selectLabel": "Oracle 18: Major Plot Twist",
+  "description": "Use this oracle to introduce a narrative surprise or revelation. Most of these results have a negative implication, and can be used to resolve a match at a crucial moment in your story. In particular, this is an effective tool to leverage when you make a move with matched 10's on the challenge dice.",
+  "data": [
+    {
+      "topRange": 5,
+      "value": "It was all a diversion."
+    },
+    {
+      "topRange": 10,
+      "value": "A dark secret is revealed."
+    },
+    {
+      "topRange": 15,
+      "value": "A trap is sprung."
+    },
+    {
+      "topRange": 20,
+      "value": "An assumption is revealed to be false."
+    },
+    {
+      "topRange": 25,
+      "value": "A secret alliance is revealed."
+    },
+    {
+      "topRange": 30,
+      "value": "Your actions benefit an enemy."
+    },
+    {
+      "topRange": 35,
+      "value": "Someone returns unexpectedly."
+    },
+    {
+      "topRange": 40,
+      "value": "A more dangerous foe is revealed."
+    },
+    {
+      "topRange": 45,
+      "value": "You and an enemy share a common goal."
+    },
+    {
+      "topRange": 50,
+      "value": "A true identity is revealed."
+    },
+    {
+      "topRange": 55,
+      "value": "You are betrayed by someone who was trusted."
+    },
+    {
+      "topRange": 60,
+      "value": "You are too late."
+    },
+    {
+      "topRange": 65,
+      "value": "The true enemy is revealed."
+    },
+    {
+      "topRange": 70,
+      "value": "The enemy gains new allies."
+    },
+    {
+      "topRange": 75,
+      "value": "A new danger appears."
+    },
+    {
+      "topRange": 80,
+      "value": "Someone or something goes missing."
+    },
+    {
+      "topRange": 85,
+      "value": "The truth of a relationship is revealed."
+    },
+    {
+      "topRange": 90,
+      "value": "Two seemingly unrelated situations are shown to be connected."
+    },
+    {
+      "topRange": 95,
+      "value": "Unexpected powers or abilities are revealed."
+    },
+    {
+      "topRange": 100,
+      "value": "Roll twice more on this table. Both results occur. If they are the same result, make it more dramatic."
+    }
+  ]
+}

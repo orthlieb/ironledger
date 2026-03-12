@@ -1,0 +1,49 @@
+{
+  "key": "threatPowerHungryMystic",
+  "title": "Threat: Power-Hungry Mystic",
+  "group": "Delve",
+  "selectLabel": "Threat: Power-Hungry Mystic",
+  "description": "Generate the next event for a power-hungry mystic threat.",
+  "data": [
+    {
+      "topRange": 10,
+      "value": "Gain hidden knowledge"
+    },
+    {
+      "topRange": 20,
+      "value": "Assault an enemy with magic"
+    },
+    {
+      "topRange": 30,
+      "value": "Despoil a place through magic"
+    },
+    {
+      "topRange": 40,
+      "value": "Forge a bond with ancient forces"
+    },
+    {
+      "topRange": 50,
+      "value": "Create magical wards or protections"
+    },
+    {
+      "topRange": 60,
+      "value": "Obtain a powerful artifact"
+    },
+    {
+      "topRange": 70,
+      "value": "Tempt with power or secrets"
+    },
+    {
+      "topRange": 80,
+      "value": "Recruit a follower or ally"
+    },
+    {
+      "topRange": 90,
+      "value": "Sacrifice something in exchange for greater power"
+    },
+    {
+      "topRange": 100,
+      "value": "Use magic to trick or deceive"
+    }
+  ]
+}

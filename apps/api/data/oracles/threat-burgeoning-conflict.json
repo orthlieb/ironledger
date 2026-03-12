@@ -1,0 +1,49 @@
+{
+  "key": "threatBurgeoningConflict",
+  "title": "Threat: Burgeoning Conflict",
+  "group": "Delve",
+  "selectLabel": "Threat: Burgeoning Conflict",
+  "description": "Generate the next event for a burgeoning conflict threat.",
+  "data": [
+    {
+      "topRange": 10,
+      "value": "Allow warmongers to gain influence"
+    },
+    {
+      "topRange": 20,
+      "value": "Break a treaty"
+    },
+    {
+      "topRange": 30,
+      "value": "Force a hasty decision"
+    },
+    {
+      "topRange": 40,
+      "value": "Deepen suspicions"
+    },
+    {
+      "topRange": 50,
+      "value": "Trigger a confrontation"
+    },
+    {
+      "topRange": 60,
+      "value": "Subvert a potential accord"
+    },
+    {
+      "topRange": 70,
+      "value": "Isolate the antagonists"
+    },
+    {
+      "topRange": 80,
+      "value": "Draw new battle lines"
+    },
+    {
+      "topRange": 90,
+      "value": "Reveal an unexpected aspect of the dispute"
+    },
+    {
+      "topRange": 100,
+      "value": "Introduce a new person or faction to complicate the situation"
+    }
+  ]
+}

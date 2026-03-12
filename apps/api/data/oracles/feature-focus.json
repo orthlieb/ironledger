@@ -1,0 +1,49 @@
+{
+  "key": "featureFocus",
+  "title": "Delve: Feature Focus",
+  "group": "Delve",
+  "selectLabel": "Delve: Feature Focus",
+  "description": "Determine the specific focus or subject of a notable feature within a Delve site.",
+  "data": [
+    {
+      "topRange": 10,
+      "value": "Altar / Shrine"
+    },
+    {
+      "topRange": 20,
+      "value": "Bridge / Crossing"
+    },
+    {
+      "topRange": 30,
+      "value": "Cavern / Chamber"
+    },
+    {
+      "topRange": 40,
+      "value": "Door / Gate"
+    },
+    {
+      "topRange": 50,
+      "value": "Fountain / Pool"
+    },
+    {
+      "topRange": 60,
+      "value": "Grave / Tomb"
+    },
+    {
+      "topRange": 70,
+      "value": "Mechanism / Device"
+    },
+    {
+      "topRange": 80,
+      "value": "Passage / Tunnel"
+    },
+    {
+      "topRange": 90,
+      "value": "Statue / Idol"
+    },
+    {
+      "topRange": 100,
+      "value": "Throne / Seat of power"
+    }
+  ]
+}

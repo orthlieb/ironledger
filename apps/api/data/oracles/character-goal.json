@@ -1,0 +1,141 @@
+{
+  "key": "characterGoal",
+  "title": "Oracle 11: Character Goal",
+  "group": "Core Ironsworn",
+  "selectLabel": "Oracle 11: Character Goal",
+  "description": "Use this oracle to define the primary motivation of an NPC or a faction. It can also be used to kick-off a personal quest for your own character.",
+  "data": [
+    {
+      "topRange": 3,
+      "value": "Obtain an object"
+    },
+    {
+      "topRange": 6,
+      "value": "Make an agreement"
+    },
+    {
+      "topRange": 9,
+      "value": "Build a relationship"
+    },
+    {
+      "topRange": 12,
+      "value": "Undermine a relationship"
+    },
+    {
+      "topRange": 15,
+      "value": "Seek a truth"
+    },
+    {
+      "topRange": 18,
+      "value": "Pay a debt"
+    },
+    {
+      "topRange": 21,
+      "value": "Refute a falsehood"
+    },
+    {
+      "topRange": 24,
+      "value": "Harm a rival"
+    },
+    {
+      "topRange": 27,
+      "value": "Cure an ill"
+    },
+    {
+      "topRange": 30,
+      "value": "Find a person"
+    },
+    {
+      "topRange": 33,
+      "value": "Find a home"
+    },
+    {
+      "topRange": 36,
+      "value": "Seize power"
+    },
+    {
+      "topRange": 39,
+      "value": "Restore a relationship"
+    },
+    {
+      "topRange": 42,
+      "value": "Create an item"
+    },
+    {
+      "topRange": 45,
+      "value": "Travel to a place"
+    },
+    {
+      "topRange": 48,
+      "value": "Secure provisions"
+    },
+    {
+      "topRange": 51,
+      "value": "Rebel against power"
+    },
+    {
+      "topRange": 54,
+      "value": "Collect a debt"
+    },
+    {
+      "topRange": 57,
+      "value": "Protect a secret"
+    },
+    {
+      "topRange": 60,
+      "value": "Spread faith"
+    },
+    {
+      "topRange": 63,
+      "value": "Enrich themselves"
+    },
+    {
+      "topRange": 66,
+      "value": "Protect a person"
+    },
+    {
+      "topRange": 69,
+      "value": "Protect the status quo"
+    },
+    {
+      "topRange": 72,
+      "value": "Advance status"
+    },
+    {
+      "topRange": 75,
+      "value": "Defend a place"
+    },
+    {
+      "topRange": 78,
+      "value": "Avenge a wrong"
+    },
+    {
+      "topRange": 81,
+      "value": "Fulfill a duty"
+    },
+    {
+      "topRange": 84,
+      "value": "Gain knowledge"
+    },
+    {
+      "topRange": 87,
+      "value": "Prove worthiness"
+    },
+    {
+      "topRange": 90,
+      "value": "Find redemption"
+    },
+    {
+      "topRange": 92,
+      "value": "Escape from something"
+    },
+    {
+      "topRange": 95,
+      "value": "Resolve a dispute"
+    },
+    {
+      "topRange": 100,
+      "value": "Roll twice"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "key": "featureAspect",
+  "title": "Delve: Feature Aspect",
+  "group": "Delve",
+  "selectLabel": "Delve: Feature Aspect",
+  "description": "Define the sensory or environmental aspect of a notable feature within a Delve site.",
+  "data": [
+    {
+      "topRange": 10,
+      "value": "Ancient"
+    },
+    {
+      "topRange": 20,
+      "value": "Corrupted"
+    },
+    {
+      "topRange": 30,
+      "value": "Collapsed"
+    },
+    {
+      "topRange": 40,
+      "value": "Flooded"
+    },
+    {
+      "topRange": 50,
+      "value": "Guarded"
+    },
+    {
+      "topRange": 60,
+      "value": "Hidden"
+    },
+    {
+      "topRange": 70,
+      "value": "Illuminated"
+    },
+    {
+      "topRange": 80,
+      "value": "Infested"
+    },
+    {
+      "topRange": 90,
+      "value": "Sacred"
+    },
+    {
+      "topRange": 100,
+      "value": "Profane"
+    }
+  ]
+}

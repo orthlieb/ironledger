@@ -1,0 +1,129 @@
+{
+  "key": "characterRole",
+  "title": "Oracle 10: Character Role",
+  "group": "Core Ironsworn",
+  "selectLabel": "Oracle 10: Character Role",
+  "description": "Determine an NPC's occupation or societal role, or use it to generate a random encounter.",
+  "data": [
+    {
+      "topRange": 2,
+      "value": "Criminal"
+    },
+    {
+      "topRange": 4,
+      "value": "Healer"
+    },
+    {
+      "topRange": 6,
+      "value": "Bandit"
+    },
+    {
+      "topRange": 9,
+      "value": "Guide"
+    },
+    {
+      "topRange": 12,
+      "value": "Performer"
+    },
+    {
+      "topRange": 15,
+      "value": "Miner"
+    },
+    {
+      "topRange": 18,
+      "value": "Mercenary"
+    },
+    {
+      "topRange": 21,
+      "value": "Outcast"
+    },
+    {
+      "topRange": 24,
+      "value": "Vagrant"
+    },
+    {
+      "topRange": 27,
+      "value": "Forester"
+    },
+    {
+      "topRange": 30,
+      "value": "Traveler"
+    },
+    {
+      "topRange": 33,
+      "value": "Mystic"
+    },
+    {
+      "topRange": 36,
+      "value": "Priest"
+    },
+    {
+      "topRange": 39,
+      "value": "Sailor"
+    },
+    {
+      "topRange": 42,
+      "value": "Pilgrim"
+    },
+    {
+      "topRange": 45,
+      "value": "Thief"
+    },
+    {
+      "topRange": 48,
+      "value": "Adventurer"
+    },
+    {
+      "topRange": 51,
+      "value": "Forager"
+    },
+    {
+      "topRange": 54,
+      "value": "Leader"
+    },
+    {
+      "topRange": 58,
+      "value": "Guard"
+    },
+    {
+      "topRange": 62,
+      "value": "Artisan"
+    },
+    {
+      "topRange": 66,
+      "value": "Scout"
+    },
+    {
+      "topRange": 70,
+      "value": "Herder"
+    },
+    {
+      "topRange": 74,
+      "value": "Fisher"
+    },
+    {
+      "topRange": 79,
+      "value": "Warrior"
+    },
+    {
+      "topRange": 84,
+      "value": "Hunter"
+    },
+    {
+      "topRange": 89,
+      "value": "Raider"
+    },
+    {
+      "topRange": 94,
+      "value": "Trader"
+    },
+    {
+      "topRange": 99,
+      "value": "Farmer"
+    },
+    {
+      "topRange": 100,
+      "value": "Unusual role"
+    }
+  ]
+}

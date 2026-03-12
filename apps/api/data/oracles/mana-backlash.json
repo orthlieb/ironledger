@@ -1,0 +1,145 @@
+{
+  "key": "manaBacklash",
+  "title": "YRT – Mana Backlash",
+  "group": "Yrt",
+  "selectLabel": "YRT – Mana Backlash",
+  "description": "Suffer a mana-specific backlash cost when magic goes wrong in the Yrt setting.",
+  "data": [
+    {
+      "topRange": 3,
+      "value": "Seed detonates prematurely — Effect triggers at wrong time/place"
+    },
+    {
+      "topRange": 6,
+      "value": "Mana grain contamination — Impurities cause unpredictable effects"
+    },
+    {
+      "topRange": 9,
+      "value": "Reverse polarity — Effect inverts (heat→cold, attraction→repulsion)"
+    },
+    {
+      "topRange": 12,
+      "value": "Cascading failure — Nearby seeds in your bandolier are damaged or triggered"
+    },
+    {
+      "topRange": 15,
+      "value": "Mana burn — Physical scarring from raw mana exposure; mark the location"
+    },
+    {
+      "topRange": 18,
+      "value": "Costly waste — Seed consumes extra reserves; lose additional prepared seeds"
+    },
+    {
+      "topRange": 21,
+      "value": "Targeting error — Effect hits wrong target (friend, object, or self)"
+    },
+    {
+      "topRange": 24,
+      "value": "Containment breach — White/luminous shell fails; mana disperses wildly"
+    },
+    {
+      "topRange": 27,
+      "value": "Grain size failure — Wrong particle size causes sluggish or explosive delivery"
+    },
+    {
+      "topRange": 30,
+      "value": "Sensory overload — Mana feedback temporarily blinds, deafens, or numbs you"
+    },
+    {
+      "topRange": 33,
+      "value": "Uncontrolled dispersion — Effect spreads far beyond intended area"
+    },
+    {
+      "topRange": 36,
+      "value": "Mana poisoning — Endure Harm as raw mana sickens you"
+    },
+    {
+      "topRange": 39,
+      "value": "Resonance feedback — Nearby mana sources react unpredictably"
+    },
+    {
+      "topRange": 42,
+      "value": "Seed matrix fracture — Your casting focus is damaged"
+    },
+    {
+      "topRange": 45,
+      "value": "Environmental reaction — Surroundings respond to mana type"
+    },
+    {
+      "topRange": 48,
+      "value": "Color bleeding — Mana colors mix incorrectly; unexpected combined effect"
+    },
+    {
+      "topRange": 51,
+      "value": "Exhaustion — Casting drains you severely; Endure Stress or collapse"
+    },
+    {
+      "topRange": 54,
+      "value": "Delayed ignition — Effect triggers at worst possible moment later"
+    },
+    {
+      "topRange": 57,
+      "value": "Mana echo — Your location saturated with residual mana; easily tracked"
+    },
+    {
+      "topRange": 60,
+      "value": "Component destruction — Important item damaged by mana exposure"
+    },
+    {
+      "topRange": 63,
+      "value": "Compulsion backlash — Mental magic: confused, suggestible, or see illusions"
+    },
+    {
+      "topRange": 66,
+      "value": "Sympathetic link — Connected to target; share their pain/sensations"
+    },
+    {
+      "topRange": 69,
+      "value": "Mana addiction — Compelled to cast again immediately, despite danger"
+    },
+    {
+      "topRange": 72,
+      "value": "Attracts attention — Mana use draws hostile forces or authorities"
+    },
+    {
+      "topRange": 75,
+      "value": "Forbidden resonance — Black mana traces detected; risk Conclave investigation"
+    },
+    {
+      "topRange": 78,
+      "value": "Prophetic flash — Disturbing vision of consequence; Endure Stress"
+    },
+    {
+      "topRange": 81,
+      "value": "Mana drought — Cannot use this color again until you recharge at source"
+    },
+    {
+      "topRange": 84,
+      "value": "Crystallization — Mana solidifies incorrectly; creates hazard or barrier"
+    },
+    {
+      "topRange": 87,
+      "value": "Sympathetic damage — Someone you care about suffers echo of the effect"
+    },
+    {
+      "topRange": 90,
+      "value": "Lab incident — If near equipment: something valuable breaks or explodes"
+    },
+    {
+      "topRange": 93,
+      "value": "Mana scarring — Permanent mark or condition; describe how mana changed you"
+    },
+    {
+      "topRange": 96,
+      "value": "Threshold breach — Summon/attract entity drawn to mana"
+    },
+    {
+      "topRange": 98,
+      "value": "Catastrophic failure — Roll twice more; both occur. If same, make it worse"
+    },
+    {
+      "topRange": 100,
+      "value": "Forbidden knowledge — Glimpse terrible truth about mana's origin"
+    }
+  ]
+}

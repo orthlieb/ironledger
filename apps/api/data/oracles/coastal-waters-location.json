@@ -1,0 +1,77 @@
+{
+  "key": "coastalWatersLocation",
+  "title": "Oracle 5: Coastal Waters Location",
+  "group": "Core Ironsworn",
+  "selectLabel": "Oracle 5: Coastal Waters Location",
+  "description": "Use this oracle to identify a point-of-interest or destination when you are traveling by ship or boat.",
+  "data": [
+    {
+      "topRange": 1,
+      "value": "Fleet"
+    },
+    {
+      "topRange": 2,
+      "value": "Sargassum"
+    },
+    {
+      "topRange": 3,
+      "value": "Flotsam"
+    },
+    {
+      "topRange": 4,
+      "value": "Mystical Site"
+    },
+    {
+      "topRange": 5,
+      "value": "Lair"
+    },
+    {
+      "topRange": 10,
+      "value": "Wreck"
+    },
+    {
+      "topRange": 15,
+      "value": "Harbor"
+    },
+    {
+      "topRange": 23,
+      "value": "Ship"
+    },
+    {
+      "topRange": 30,
+      "value": "Rocks"
+    },
+    {
+      "topRange": 38,
+      "value": "Fjord"
+    },
+    {
+      "topRange": 46,
+      "value": "Estuary"
+    },
+    {
+      "topRange": 54,
+      "value": "Cove"
+    },
+    {
+      "topRange": 62,
+      "value": "Bay"
+    },
+    {
+      "topRange": 70,
+      "value": "Ice"
+    },
+    {
+      "topRange": 85,
+      "value": "Island"
+    },
+    {
+      "topRange": 99,
+      "value": "Open Water"
+    },
+    {
+      "topRange": 100,
+      "value": "Anomaly"
+    }
+  ]
+}

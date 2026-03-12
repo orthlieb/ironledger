@@ -1,0 +1,49 @@
+{
+  "key": "region",
+  "title": "Oracle 3: Ironsworn Region",
+  "group": "Core Ironsworn",
+  "selectLabel": "Oracle 3: Ironsworn Region",
+  "description": "Determine the broad region or terrain type of a location in the Ironlands.",
+  "data": [
+    {
+      "topRange": 10,
+      "value": "Barrier Islands"
+    },
+    {
+      "topRange": 20,
+      "value": "Ragged Coast"
+    },
+    {
+      "topRange": 30,
+      "value": "The Hinterlands"
+    },
+    {
+      "topRange": 40,
+      "value": "The Shattered Wastes"
+    },
+    {
+      "topRange": 50,
+      "value": "The Veiled Mountains"
+    },
+    {
+      "topRange": 60,
+      "value": "Deep Wilds"
+    },
+    {
+      "topRange": 70,
+      "value": "Flooded Lands"
+    },
+    {
+      "topRange": 80,
+      "value": "Havens"
+    },
+    {
+      "topRange": 90,
+      "value": "Tempest Hills"
+    },
+    {
+      "topRange": 100,
+      "value": "Elsewhere"
+    }
+  ]
+}

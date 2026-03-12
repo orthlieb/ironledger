@@ -1,0 +1,409 @@
+{
+  "key": "namesIronlander2",
+  "title": "Oracle 13b: Ironlander Names 2",
+  "group": "Core Ironsworn",
+  "selectLabel": "Oracle 13b: Ironlander Names 2",
+  "description": "Generate a name for an Ironlander character (second set). Surnames are not used in the Ironlands, and names are often gender-neutral.",
+  "data": [
+    {
+      "topRange": 1,
+      "value": "Segura"
+    },
+    {
+      "topRange": 2,
+      "value": "Gethin"
+    },
+    {
+      "topRange": 3,
+      "value": "Bataar"
+    },
+    {
+      "topRange": 4,
+      "value": "Basira"
+    },
+    {
+      "topRange": 5,
+      "value": "Joa"
+    },
+    {
+      "topRange": 6,
+      "value": "Glynn"
+    },
+    {
+      "topRange": 7,
+      "value": "Toran"
+    },
+    {
+      "topRange": 8,
+      "value": "Arasen"
+    },
+    {
+      "topRange": 9,
+      "value": "Kuron"
+    },
+    {
+      "topRange": 10,
+      "value": "Griff"
+    },
+    {
+      "topRange": 11,
+      "value": "Owena"
+    },
+    {
+      "topRange": 12,
+      "value": "Adda"
+    },
+    {
+      "topRange": 13,
+      "value": "Euros"
+    },
+    {
+      "topRange": 14,
+      "value": "Kova"
+    },
+    {
+      "topRange": 15,
+      "value": "Kara"
+    },
+    {
+      "topRange": 16,
+      "value": "Morgan"
+    },
+    {
+      "topRange": 17,
+      "value": "Nanda"
+    },
+    {
+      "topRange": 18,
+      "value": "Tamara"
+    },
+    {
+      "topRange": 19,
+      "value": "Asha"
+    },
+    {
+      "topRange": 20,
+      "value": "Delos"
+    },
+    {
+      "topRange": 21,
+      "value": "Torgan"
+    },
+    {
+      "topRange": 22,
+      "value": "Makari"
+    },
+    {
+      "topRange": 23,
+      "value": "Selva"
+    },
+    {
+      "topRange": 24,
+      "value": "Kimura"
+    },
+    {
+      "topRange": 25,
+      "value": "Rhian"
+    },
+    {
+      "topRange": 26,
+      "value": "Tristan"
+    },
+    {
+      "topRange": 27,
+      "value": "Siorra"
+    },
+    {
+      "topRange": 28,
+      "value": "Sayer"
+    },
+    {
+      "topRange": 29,
+      "value": "Cortina"
+    },
+    {
+      "topRange": 30,
+      "value": "Vesna"
+    },
+    {
+      "topRange": 31,
+      "value": "Kataka"
+    },
+    {
+      "topRange": 32,
+      "value": "Keyshia"
+    },
+    {
+      "topRange": 33,
+      "value": "Mila"
+    },
+    {
+      "topRange": 34,
+      "value": "Lili"
+    },
+    {
+      "topRange": 35,
+      "value": "Vigo"
+    },
+    {
+      "topRange": 36,
+      "value": "Sadia"
+    },
+    {
+      "topRange": 37,
+      "value": "Malik"
+    },
+    {
+      "topRange": 38,
+      "value": "Dag"
+    },
+    {
+      "topRange": 39,
+      "value": "Kuno"
+    },
+    {
+      "topRange": 40,
+      "value": "Reva"
+    },
+    {
+      "topRange": 41,
+      "value": "Kai"
+    },
+    {
+      "topRange": 42,
+      "value": "Kalina"
+    },
+    {
+      "topRange": 43,
+      "value": "Jihan"
+    },
+    {
+      "topRange": 44,
+      "value": "Hennion"
+    },
+    {
+      "topRange": 45,
+      "value": "Abram"
+    },
+    {
+      "topRange": 46,
+      "value": "Aida"
+    },
+    {
+      "topRange": 47,
+      "value": "Myrtle"
+    },
+    {
+      "topRange": 48,
+      "value": "Nekun"
+    },
+    {
+      "topRange": 49,
+      "value": "Menna"
+    },
+    {
+      "topRange": 50,
+      "value": "Tahir"
+    },
+    {
+      "topRange": 51,
+      "value": "Sarria"
+    },
+    {
+      "topRange": 52,
+      "value": "Nakura"
+    },
+    {
+      "topRange": 53,
+      "value": "Akiya"
+    },
+    {
+      "topRange": 54,
+      "value": "Talan"
+    },
+    {
+      "topRange": 55,
+      "value": "Mattick"
+    },
+    {
+      "topRange": 56,
+      "value": "Okoth"
+    },
+    {
+      "topRange": 57,
+      "value": "Khulan"
+    },
+    {
+      "topRange": 58,
+      "value": "Verena"
+    },
+    {
+      "topRange": 59,
+      "value": "Beltran"
+    },
+    {
+      "topRange": 60,
+      "value": "Del"
+    },
+    {
+      "topRange": 61,
+      "value": "Ranna"
+    },
+    {
+      "topRange": 62,
+      "value": "Alina"
+    },
+    {
+      "topRange": 63,
+      "value": "Muna"
+    },
+    {
+      "topRange": 64,
+      "value": "Mura"
+    },
+    {
+      "topRange": 65,
+      "value": "Torrens"
+    },
+    {
+      "topRange": 66,
+      "value": "Yuda"
+    },
+    {
+      "topRange": 67,
+      "value": "Nazmi"
+    },
+    {
+      "topRange": 68,
+      "value": "Ghalen"
+    },
+    {
+      "topRange": 69,
+      "value": "Sarda"
+    },
+    {
+      "topRange": 70,
+      "value": "Shona"
+    },
+    {
+      "topRange": 71,
+      "value": "Kalidas"
+    },
+    {
+      "topRange": 72,
+      "value": "Wena"
+    },
+    {
+      "topRange": 73,
+      "value": "Sendra"
+    },
+    {
+      "topRange": 74,
+      "value": "Kori"
+    },
+    {
+      "topRange": 75,
+      "value": "Setara"
+    },
+    {
+      "topRange": 76,
+      "value": "Lucia"
+    },
+    {
+      "topRange": 77,
+      "value": "Maya"
+    },
+    {
+      "topRange": 78,
+      "value": "Reema"
+    },
+    {
+      "topRange": 79,
+      "value": "Yorath"
+    },
+    {
+      "topRange": 80,
+      "value": "Rhoddri"
+    },
+    {
+      "topRange": 81,
+      "value": "Shekhar"
+    },
+    {
+      "topRange": 82,
+      "value": "Servan"
+    },
+    {
+      "topRange": 83,
+      "value": "Reese"
+    },
+    {
+      "topRange": 84,
+      "value": "Kenrick"
+    },
+    {
+      "topRange": 85,
+      "value": "Indirra"
+    },
+    {
+      "topRange": 86,
+      "value": "Giliana"
+    },
+    {
+      "topRange": 87,
+      "value": "Jebran"
+    },
+    {
+      "topRange": 88,
+      "value": "Kotama"
+    },
+    {
+      "topRange": 89,
+      "value": "Fara"
+    },
+    {
+      "topRange": 90,
+      "value": "Katrin"
+    },
+    {
+      "topRange": 91,
+      "value": "Namba"
+    },
+    {
+      "topRange": 92,
+      "value": "Lona"
+    },
+    {
+      "topRange": 93,
+      "value": "Taylah"
+    },
+    {
+      "topRange": 94,
+      "value": "Kato"
+    },
+    {
+      "topRange": 95,
+      "value": "Esra"
+    },
+    {
+      "topRange": 96,
+      "value": "Eleri"
+    },
+    {
+      "topRange": 97,
+      "value": "Irsia"
+    },
+    {
+      "topRange": 98,
+      "value": "Kayu"
+    },
+    {
+      "topRange": 99,
+      "value": "Bevan"
+    },
+    {
+      "topRange": 100,
+      "value": "Chandra"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "key": "threatEnvironmentalCalamity",
+  "title": "Threat: Environmental Calamity",
+  "group": "Delve",
+  "selectLabel": "Threat: Environmental Calamity",
+  "description": "Generate the next event for an environmental calamity threat.",
+  "data": [
+    {
+      "topRange": 10,
+      "value": "Devastate a place"
+    },
+    {
+      "topRange": 20,
+      "value": "Block a path"
+    },
+    {
+      "topRange": 30,
+      "value": "Threaten a community with imminent destruction"
+    },
+    {
+      "topRange": 40,
+      "value": "Manifest unexpected effects"
+    },
+    {
+      "topRange": 50,
+      "value": "Expand in scope or intensity"
+    },
+    {
+      "topRange": 60,
+      "value": "Allow someone to take advantage"
+    },
+    {
+      "topRange": 70,
+      "value": "Deprive of resources"
+    },
+    {
+      "topRange": 80,
+      "value": "Isolate an important person or community"
+    },
+    {
+      "topRange": 90,
+      "value": "Force refugees into hostile lands"
+    },
+    {
+      "topRange": 100,
+      "value": "Disrupt natural ecosystems"
+    }
+  ]
+}

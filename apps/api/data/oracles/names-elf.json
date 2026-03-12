@@ -1,0 +1,209 @@
+{
+  "key": "namesElf",
+  "title": "Elf Names",
+  "group": "Core Ironsworn",
+  "selectLabel": "Oracle 14: Elf Names",
+  "description": "Generate a random Elf name.",
+  "data": [
+    {
+      "topRange": 2,
+      "value": "Arsula"
+    },
+    {
+      "topRange": 4,
+      "value": "Naidita"
+    },
+    {
+      "topRange": 6,
+      "value": "Belesunna"
+    },
+    {
+      "topRange": 8,
+      "value": "Vidarna"
+    },
+    {
+      "topRange": 10,
+      "value": "Ninsunu"
+    },
+    {
+      "topRange": 12,
+      "value": "Balathu"
+    },
+    {
+      "topRange": 14,
+      "value": "Dorosi"
+    },
+    {
+      "topRange": 16,
+      "value": "Gezera"
+    },
+    {
+      "topRange": 18,
+      "value": "Zursan"
+    },
+    {
+      "topRange": 20,
+      "value": "Seleeku"
+    },
+    {
+      "topRange": 22,
+      "value": "Utamara"
+    },
+    {
+      "topRange": 24,
+      "value": "Nebakay"
+    },
+    {
+      "topRange": 26,
+      "value": "Dismashk"
+    },
+    {
+      "topRange": 28,
+      "value": "Mitunu"
+    },
+    {
+      "topRange": 30,
+      "value": "Atani"
+    },
+    {
+      "topRange": 32,
+      "value": "Kinzura"
+    },
+    {
+      "topRange": 34,
+      "value": "Sumula"
+    },
+    {
+      "topRange": 36,
+      "value": "Ukames"
+    },
+    {
+      "topRange": 38,
+      "value": "Ahmeshki"
+    },
+    {
+      "topRange": 40,
+      "value": "Ilsit"
+    },
+    {
+      "topRange": 42,
+      "value": "Mayatanay"
+    },
+    {
+      "topRange": 44,
+      "value": "Etana"
+    },
+    {
+      "topRange": 46,
+      "value": "Gamanna"
+    },
+    {
+      "topRange": 48,
+      "value": "Nessana"
+    },
+    {
+      "topRange": 50,
+      "value": "Uralar"
+    },
+    {
+      "topRange": 52,
+      "value": "Tishetu"
+    },
+    {
+      "topRange": 54,
+      "value": "Leucia"
+    },
+    {
+      "topRange": 56,
+      "value": "Sutahe"
+    },
+    {
+      "topRange": 58,
+      "value": "Dotani"
+    },
+    {
+      "topRange": 60,
+      "value": "Uktannu"
+    },
+    {
+      "topRange": 62,
+      "value": "Retenay"
+    },
+    {
+      "topRange": 64,
+      "value": "Kendalanu"
+    },
+    {
+      "topRange": 66,
+      "value": "Tahuta"
+    },
+    {
+      "topRange": 68,
+      "value": "Mattissa"
+    },
+    {
+      "topRange": 70,
+      "value": "Anatu"
+    },
+    {
+      "topRange": 72,
+      "value": "Aralu"
+    },
+    {
+      "topRange": 74,
+      "value": "Arakhi"
+    },
+    {
+      "topRange": 76,
+      "value": "Ibrahem"
+    },
+    {
+      "topRange": 78,
+      "value": "Sinosu"
+    },
+    {
+      "topRange": 80,
+      "value": "Jemshida"
+    },
+    {
+      "topRange": 82,
+      "value": "Visapni"
+    },
+    {
+      "topRange": 84,
+      "value": "Hullata"
+    },
+    {
+      "topRange": 86,
+      "value": "Sidura"
+    },
+    {
+      "topRange": 88,
+      "value": "Kerihu"
+    },
+    {
+      "topRange": 90,
+      "value": "Ereshki"
+    },
+    {
+      "topRange": 92,
+      "value": "Cybela"
+    },
+    {
+      "topRange": 94,
+      "value": "Anunna"
+    },
+    {
+      "topRange": 96,
+      "value": "Otani"
+    },
+    {
+      "topRange": 98,
+      "value": "Ditani"
+    },
+    {
+      "topRange": 100,
+      "value": "Faraza"
+    }
+  ]
+}

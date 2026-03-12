@@ -1,0 +1,193 @@
+{
+  "key": "settlementTrouble",
+  "title": "Oracle 9: Settlement Trouble",
+  "group": "Core Ironsworn",
+  "selectLabel": "Oracle 9: Settlement Trouble",
+  "description": "Use this table to generate a narrative hook for a problem faced by a community. This oracle can help inspire a vow for your character or serve as a prompt for a trouble you encounter when you interact with a settlement.",
+  "data": [
+    {
+      "topRange": 2,
+      "value": "Outsiders rejected"
+    },
+    {
+      "topRange": 4,
+      "value": "Dangerous discovery"
+    },
+    {
+      "topRange": 6,
+      "value": "Dreadful omens"
+    },
+    {
+      "topRange": 8,
+      "value": "Natural disaster"
+    },
+    {
+      "topRange": 10,
+      "value": "Old wounds reopened"
+    },
+    {
+      "topRange": 12,
+      "value": "Important object is lost"
+    },
+    {
+      "topRange": 14,
+      "value": "Someone is captured"
+    },
+    {
+      "topRange": 16,
+      "value": "Mysterious phenomenon"
+    },
+    {
+      "topRange": 18,
+      "value": "Revolt against a leader"
+    },
+    {
+      "topRange": 20,
+      "value": "Vengeful outcast"
+    },
+    {
+      "topRange": 22,
+      "value": "Rival settlement"
+    },
+    {
+      "topRange": 24,
+      "value": "Nature strikes back"
+    },
+    {
+      "topRange": 26,
+      "value": "Someone is missing"
+    },
+    {
+      "topRange": 28,
+      "value": "Production halts"
+    },
+    {
+      "topRange": 30,
+      "value": "Mysterious murders"
+    },
+    {
+      "topRange": 32,
+      "value": "Debt comes due"
+    },
+    {
+      "topRange": 34,
+      "value": "Unjust leadership"
+    },
+    {
+      "topRange": 36,
+      "value": "Disastrous accident"
+    },
+    {
+      "topRange": 38,
+      "value": "In league with the enemy"
+    },
+    {
+      "topRange": 40,
+      "value": "Raiders prey on the weak"
+    },
+    {
+      "topRange": 42,
+      "value": "Cursed past"
+    },
+    {
+      "topRange": 44,
+      "value": "An innocent is accused"
+    },
+    {
+      "topRange": 46,
+      "value": "Corrupted by dark magic"
+    },
+    {
+      "topRange": 48,
+      "value": "Isolated by brutal weather"
+    },
+    {
+      "topRange": 50,
+      "value": "Provisions are scarce"
+    },
+    {
+      "topRange": 52,
+      "value": "Sickness run amok"
+    },
+    {
+      "topRange": 54,
+      "value": "Allies become enemies"
+    },
+    {
+      "topRange": 56,
+      "value": "Attack is imminent"
+    },
+    {
+      "topRange": 58,
+      "value": "Lost caravan"
+    },
+    {
+      "topRange": 60,
+      "value": "Dark secret revealed"
+    },
+    {
+      "topRange": 62,
+      "value": "Urgent expedition"
+    },
+    {
+      "topRange": 64,
+      "value": "A leader falls"
+    },
+    {
+      "topRange": 66,
+      "value": "Families in conflict"
+    },
+    {
+      "topRange": 68,
+      "value": "Incompetent leadership"
+    },
+    {
+      "topRange": 70,
+      "value": "Reckless warmongering"
+    },
+    {
+      "topRange": 72,
+      "value": "Beast on the hunt"
+    },
+    {
+      "topRange": 74,
+      "value": "Betrayed from within"
+    },
+    {
+      "topRange": 76,
+      "value": "Broken truce"
+    },
+    {
+      "topRange": 78,
+      "value": "Wrathful haunt"
+    },
+    {
+      "topRange": 80,
+      "value": "Conflict with firstborn"
+    },
+    {
+      "topRange": 82,
+      "value": "Trade route blocked"
+    },
+    {
+      "topRange": 84,
+      "value": "In the crossfire"
+    },
+    {
+      "topRange": 86,
+      "value": "Stranger causes discord"
+    },
+    {
+      "topRange": 88,
+      "value": "Important event threatened"
+    },
+    {
+      "topRange": 90,
+      "value": "Dangerous tradition"
+    },
+    {
+      "topRange": 100,
+      "value": "Roll twice"
+    }
+  ]
+}

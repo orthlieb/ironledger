@@ -1,0 +1,58 @@
+{
+  "Ancient": [
+    { "topRange":  4, "value": "Evidence of lost knowledge" },
+    { "topRange":  8, "value": "Inscrutable relics" },
+    { "topRange": 12, "value": "Ancient artistry or craft" },
+    { "topRange": 16, "value": "Preserved corpses or fossils" },
+    { "topRange": 20, "value": "Visions of this place in another time" }
+  ],
+  "Corrupted": [
+    { "topRange":  4, "value": "Mystic focus or conduit" },
+    { "topRange":  8, "value": "Strange environmental disturbances" },
+    { "topRange": 12, "value": "Mystic runes or markings" },
+    { "topRange": 16, "value": "Blight or decay" },
+    { "topRange": 20, "value": "Evidence of a foul ritual" }
+  ],
+  "Fortified": [
+    { "topRange":  4, "value": "Camp or quarters" },
+    { "topRange":  8, "value": "Guarded location" },
+    { "topRange": 12, "value": "Storage or repository" },
+    { "topRange": 16, "value": "Work or training area" },
+    { "topRange": 20, "value": "Command center or leadership" }
+  ],
+  "Hallowed": [
+    { "topRange":  4, "value": "Temple or altar" },
+    { "topRange":  8, "value": "Offerings or atonements" },
+    { "topRange": 12, "value": "Religious relic or idol" },
+    { "topRange": 16, "value": "Consecrated ground" },
+    { "topRange": 20, "value": "Dwellings or gathering place" }
+  ],
+  "Haunted": [
+    { "topRange":  4, "value": "Tomb or burial site" },
+    { "topRange":  8, "value": "Blood was spilled here" },
+    { "topRange": 12, "value": "Unnatural mists or darkness" },
+    { "topRange": 16, "value": "Messages from beyond the grave" },
+    { "topRange": 20, "value": "Apparitions of a person or event" }
+  ],
+  "Infested": [
+    { "topRange":  4, "value": "Inhabited nest" },
+    { "topRange":  8, "value": "Abandoned nest" },
+    { "topRange": 12, "value": "Ravaged terrain or architecture" },
+    { "topRange": 16, "value": "Remains or carrion" },
+    { "topRange": 20, "value": "Hoarded food" }
+  ],
+  "Ravaged": [
+    { "topRange":  4, "value": "Path of destruction" },
+    { "topRange":  8, "value": "Abandoned or ruined dwelling" },
+    { "topRange": 12, "value": "Untouched or preserved area" },
+    { "topRange": 16, "value": "Traces of what was lost" },
+    { "topRange": 20, "value": "Ill-fated victims" }
+  ],
+  "Wild": [
+    { "topRange":  4, "value": "Denizen's lair" },
+    { "topRange":  8, "value": "Territorial markings" },
+    { "topRange": 12, "value": "Impressive flora or fauna" },
+    { "topRange": 16, "value": "Hunting ground or watering hole" },
+    { "topRange": 20, "value": "Remains or carrion" }
+  ]
+}

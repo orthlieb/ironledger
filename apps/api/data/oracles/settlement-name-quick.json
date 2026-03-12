@@ -1,0 +1,184 @@
+{
+  "key": "settlementNameQuick",
+  "title": "Oracle 8: Quick Settlement Name",
+  "group": "Core Ironsworn",
+  "selectLabel": "Oracle 8: Quick Settlement Name",
+  "description": "Use this oracle as a simpler alternative for settlement names. Roll once for the prefix, and once for the suffix. If the combination doesn't quite work, look at adjacent rows or reverse the digits.",
+  "data": [
+    {
+      "topRange": 4,
+      "value": {
+        "prefix": "Bleak",
+        "suffix": "moor"
+      }
+    },
+    {
+      "topRange": 8,
+      "value": {
+        "prefix": "Green",
+        "suffix": "ford"
+      }
+    },
+    {
+      "topRange": 12,
+      "value": {
+        "prefix": "Wolf",
+        "suffix": "crag"
+      }
+    },
+    {
+      "topRange": 16,
+      "value": {
+        "prefix": "Raven",
+        "suffix": "watch"
+      }
+    },
+    {
+      "topRange": 20,
+      "value": {
+        "prefix": "Gray",
+        "suffix": "hope"
+      }
+    },
+    {
+      "topRange": 24,
+      "value": {
+        "prefix": "Red",
+        "suffix": "wood"
+      }
+    },
+    {
+      "topRange": 28,
+      "value": {
+        "prefix": "Axe",
+        "suffix": "ridge"
+      }
+    },
+    {
+      "topRange": 32,
+      "value": {
+        "prefix": "Great",
+        "suffix": "stone"
+      }
+    },
+    {
+      "topRange": 36,
+      "value": {
+        "prefix": "Wood",
+        "suffix": "haven"
+      }
+    },
+    {
+      "topRange": 40,
+      "value": {
+        "prefix": "Low",
+        "suffix": "falls"
+      }
+    },
+    {
+      "topRange": 44,
+      "value": {
+        "prefix": "White",
+        "suffix": "river"
+      }
+    },
+    {
+      "topRange": 48,
+      "value": {
+        "prefix": "Storm",
+        "suffix": "field"
+      }
+    },
+    {
+      "topRange": 52,
+      "value": {
+        "prefix": "Black",
+        "suffix": "hill"
+      }
+    },
+    {
+      "topRange": 56,
+      "value": {
+        "prefix": "Mourn",
+        "suffix": "bridge"
+      }
+    },
+    {
+      "topRange": 60,
+      "value": {
+        "prefix": "New",
+        "suffix": "mark"
+      }
+    },
+    {
+      "topRange": 64,
+      "value": {
+        "prefix": "Stone",
+        "suffix": "cairn"
+      }
+    },
+    {
+      "topRange": 68,
+      "value": {
+        "prefix": "Grim",
+        "suffix": "land"
+      }
+    },
+    {
+      "topRange": 72,
+      "value": {
+        "prefix": "Lost",
+        "suffix": "hall"
+      }
+    },
+    {
+      "topRange": 76,
+      "value": {
+        "prefix": "High",
+        "suffix": "mount"
+      }
+    },
+    {
+      "topRange": 80,
+      "value": {
+        "prefix": "Rock",
+        "suffix": "rock"
+      }
+    },
+    {
+      "topRange": 84,
+      "value": {
+        "prefix": "Shield",
+        "suffix": "brook"
+      }
+    },
+    {
+      "topRange": 88,
+      "value": {
+        "prefix": "Sword",
+        "suffix": "barrow"
+      }
+    },
+    {
+      "topRange": 92,
+      "value": {
+        "prefix": "Frost",
+        "suffix": "stead"
+      }
+    },
+    {
+      "topRange": 96,
+      "value": {
+        "prefix": "Thorn",
+        "suffix": "home"
+      }
+    },
+    {
+      "topRange": 100,
+      "value": {
+        "prefix": "Long",
+        "suffix": "wick"
+      }
+    }
+  ]
+}

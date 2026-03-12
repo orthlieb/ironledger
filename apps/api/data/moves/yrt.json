@@ -1,0 +1,20 @@
+{
+  "category": "Yrt",
+  "moves": [
+    {
+      "id": "move/cast-conclave-ritual",
+      "name": "Cast Conclave Ritual",
+      "category": "Yrt",
+      "spellRoll": true,
+      "triggerShort": "When you attempt to cast a Conclave ritual.",
+      "trigger": "When you <strong>attempt to cast a Conclave ritual:</strong><ol><li><strong>Define the difficulty</strong> \u2014 Examine the ritual to identify difficulty factors and sum them up.</li><li><strong>Commit mana</strong> \u2014 Decide how much mana you draw from your pool. Each mana spent is added to your action roll.</li><li><strong>Roll to cast</strong> \u2014 Treat the spell difficulty as one <strong>challenge die</strong>. Roll the second challenge die (1d10) normally. Roll your <strong>action die</strong> (1d6) adding any mana spent and any other bonuses.</li><li><strong>Resolve the outcome.</strong></li></ol>",
+      "strong": "The ritual works as intended, <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">+1 momentum</a>.",
+      "weak": "The ritual succeeds, but the outcome is degraded. Downgrade factors of the spell equal to the difference between the highest challenge die and your action score. If you cannot downgrade any further, the spell dissipates without effect. The mana is wasted.",
+      "miss": "The casting fails. <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a>. Choose something appropriate or roll on the <a class=\"oracle-link\" data-oracle=\"manaBacklash\">Mana Backlash Oracle</a>.",
+      "preconditions": [
+        { "key": "hasCharacter", "eq": 1 },
+        { "key": "mana", "min": 1 }
+      ]
+    }
+  ]
+}

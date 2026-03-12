@@ -1,0 +1,49 @@
+{
+  "key": "threatSchemingLeader",
+  "title": "Threat: Scheming Leader",
+  "group": "Delve",
+  "selectLabel": "Threat: Scheming Leader",
+  "description": "Generate the next event for a scheming leader threat.",
+  "data": [
+    {
+      "topRange": 10,
+      "value": "Defeat an enemy"
+    },
+    {
+      "topRange": 20,
+      "value": "Form a new alliance"
+    },
+    {
+      "topRange": 30,
+      "value": "Usurp or undermine another leader"
+    },
+    {
+      "topRange": 40,
+      "value": "Force the loyalty of a community or important person"
+    },
+    {
+      "topRange": 50,
+      "value": "Enact a new law or tradition"
+    },
+    {
+      "topRange": 60,
+      "value": "Rescind an old law or tradition"
+    },
+    {
+      "topRange": 70,
+      "value": "Reveal a true intention"
+    },
+    {
+      "topRange": 80,
+      "value": "Unravel an existing alliance"
+    },
+    {
+      "topRange": 90,
+      "value": "Incite conflict"
+    },
+    {
+      "topRange": 100,
+      "value": "Use an unexpected capability or asset"
+    }
+  ]
+}

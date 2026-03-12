@@ -1,0 +1,49 @@
+{
+  "key": "threatZealousCult",
+  "title": "Threat: Zealous Cult",
+  "group": "Delve",
+  "selectLabel": "Threat: Zealous Cult",
+  "description": "Generate the next event for a zealous cult threat.",
+  "data": [
+    {
+      "topRange": 10,
+      "value": "Overtake a faction or community"
+    },
+    {
+      "topRange": 20,
+      "value": "Unlock secrets to greater power"
+    },
+    {
+      "topRange": 30,
+      "value": "Establish false credibility"
+    },
+    {
+      "topRange": 40,
+      "value": "Appoint or reveal a leader"
+    },
+    {
+      "topRange": 50,
+      "value": "Lure new members or establish alliances"
+    },
+    {
+      "topRange": 60,
+      "value": "Subvert opposition through devious schemes"
+    },
+    {
+      "topRange": 70,
+      "value": "Attack opposition directly"
+    },
+    {
+      "topRange": 80,
+      "value": "Spread the word of its doctrine"
+    },
+    {
+      "topRange": 90,
+      "value": "Reveal a dire prophecy"
+    },
+    {
+      "topRange": 100,
+      "value": "Reveal its true nature or goal"
+    }
+  ]
+}

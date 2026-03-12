@@ -1,0 +1,49 @@
+{
+  "key": "threatCategory",
+  "title": "Threat: Category",
+  "group": "Delve",
+  "selectLabel": "Threat: Category",
+  "description": "Determine the broad category of a looming threat in the Ironlands.",
+  "data": [
+    {
+      "topRange": 10,
+      "value": "Burgeoning Conflict"
+    },
+    {
+      "topRange": 20,
+      "value": "Cursed Site"
+    },
+    {
+      "topRange": 30,
+      "value": "Environmental Calamity"
+    },
+    {
+      "topRange": 40,
+      "value": "Malignant Plague"
+    },
+    {
+      "topRange": 50,
+      "value": "Rampaging Creature"
+    },
+    {
+      "topRange": 60,
+      "value": "Ravaging Horde"
+    },
+    {
+      "topRange": 70,
+      "value": "Scheming Leader"
+    },
+    {
+      "topRange": 80,
+      "value": "Power-Hungry Mystic"
+    },
+    {
+      "topRange": 90,
+      "value": "Zealous Cult"
+    },
+    {
+      "topRange": 100,
+      "value": "Roll Twice"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "key": "siteNameFormat",
+  "title": "Delve: Site Name – Format",
+  "group": "Delve",
+  "selectLabel": "Delve: Site Name – Format",
+  "description": "Determine the naming structure for a Delve site (e.g., The + description + place).",
+  "data": [
+    {
+      "topRange": 20,
+      "value": "The [Detail] [Place]"
+    },
+    {
+      "topRange": 40,
+      "value": "[Namesake]’s [Place]"
+    },
+    {
+      "topRange": 60,
+      "value": "[Place] of [Description]"
+    },
+    {
+      "topRange": 80,
+      "value": "[Description] [Place]"
+    },
+    {
+      "topRange": 100,
+      "value": "[Place] of the [Detail]"
+    }
+  ]
+}

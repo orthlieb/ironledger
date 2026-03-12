@@ -1,0 +1,100 @@
+{
+  "key": "touchedFeatures",
+  "title": "YRT – Touched Features",
+  "group": "Yrt",
+  "description": "Generate a specific supernatural feature for a Touched character.",
+  "data": [
+    {
+      "topRange": 5,
+      "value": "Eyes: animal pupils (slitted, horizontal, or multi-faceted)."
+    },
+    {
+      "topRange": 10,
+      "value": "Eyes: reflective like a predator's; glow faintly in low light."
+    },
+    {
+      "topRange": 15,
+      "value": "Ears: elongated, furred, or reshaped to reflect the animal aspect."
+    },
+    {
+      "topRange": 20,
+      "value": "Jaw / teeth: altered dentition suited to the animal's diet (fangs, flat grinders, or beak-like ridges)."
+    },
+    {
+      "topRange": 25,
+      "value": "Nose / face: reshaped muzzle, snout, or sensory organ reflecting the animal aspect."
+    },
+    {
+      "topRange": 30,
+      "value": "Hands: nails thickened into claws, talons, or chitinous tips."
+    },
+    {
+      "topRange": 35,
+      "value": "Feet: altered stance or structure suited to the animal's mode of movement."
+    },
+    {
+      "topRange": 40,
+      "value": "Arms: subtly elongated or reshaped to match the animal's forelimbs."
+    },
+    {
+      "topRange": 45,
+      "value": "Legs: sinewy and springy; built for leaping, sprinting, or the animal's favored motion."
+    },
+    {
+      "topRange": 50,
+      "value": "Skin / hide: patches of fur, scales, chitin, or coarse bristles in key areas."
+    },
+    {
+      "topRange": 55,
+      "value": "Tail: vestigial or functional appendage reflecting the animal's tail or stinger."
+    },
+    {
+      "topRange": 60,
+      "value": "Back / spine: visible ridges, spines, plates, or a raised line of fur or quills."
+    },
+    {
+      "topRange": 65,
+      "value": "Extremities: hands, feet, or digits partially altered — webbed, fused, padded, or clawed — reflecting the animal's limb structure."
+    },
+    {
+      "topRange": 70,
+      "value": "Smell: strong animal musk, venom-tang, or an odor characteristic of the animal aspect."
+    },
+    {
+      "topRange": 75,
+      "value": "Voice: rasping growl, chirp, hiss, buzz, or other animal vocalization bleeds into speech."
+    },
+    {
+      "topRange": 80,
+      "value": "Hearing: reacts to sounds beyond human range; ears twitch, tilt, or orient toward sounds."
+    },
+    {
+      "topRange": 85,
+      "value": "Vision: well-suited to the animal's conditions (dark, ultraviolet, motion-sensitive) but poorly adapted to others."
+    },
+    {
+      "topRange": 88,
+      "value": "Gait: loping, prowling, skittering, or undulating movement; rarely fully upright or still."
+    },
+    {
+      "topRange": 91,
+      "value": "Posture: head cocks, shoulders hunch, or limbs splay in a way that echoes the animal's resting stance."
+    },
+    {
+      "topRange": 94,
+      "value": "Reflexes: sudden, animal-quick flinches, pounces, or threat displays."
+    },
+    {
+      "topRange": 97,
+      "value": "Aura: others feel subtly watched, warned away, or drawn — as one might feel near the animal itself."
+    },
+    {
+      "topRange": 99,
+      "value": "Mind: instincts tug toward behaviors of the animal aspect — pack, herd, solitary, territorial, or migratory."
+    },
+    {
+      "topRange": 100,
+      "value": "Hybrid: two lesser traits bleed together (roll twice and blend)."
+    }
+  ]
+}

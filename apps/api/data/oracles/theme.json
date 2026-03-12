@@ -1,0 +1,409 @@
+{
+  "key": "theme",
+  "title": "Theme",
+  "group": "Core Ironsworn",
+  "selectLabel": "Oracle 2: Theme",
+  "description": "As with the Action oracle, this is an interpretative table which you can use to answer questions or generate new situations. Combined, the Action and Theme tables provide creative prompts suitable for most situations and questions. In fact, with some creative interpretations, it's entirely possible to play with only these two tables.",
+  "data": [
+    {
+      "topRange": 1,
+      "value": "Risk"
+    },
+    {
+      "topRange": 2,
+      "value": "Ability"
+    },
+    {
+      "topRange": 3,
+      "value": "Price"
+    },
+    {
+      "topRange": 4,
+      "value": "Ally"
+    },
+    {
+      "topRange": 5,
+      "value": "Battle"
+    },
+    {
+      "topRange": 6,
+      "value": "Safety"
+    },
+    {
+      "topRange": 7,
+      "value": "Survival"
+    },
+    {
+      "topRange": 8,
+      "value": "Weapon"
+    },
+    {
+      "topRange": 9,
+      "value": "Wound"
+    },
+    {
+      "topRange": 10,
+      "value": "Shelter"
+    },
+    {
+      "topRange": 11,
+      "value": "Leader"
+    },
+    {
+      "topRange": 12,
+      "value": "Fear"
+    },
+    {
+      "topRange": 13,
+      "value": "Time"
+    },
+    {
+      "topRange": 14,
+      "value": "Duty"
+    },
+    {
+      "topRange": 15,
+      "value": "Secret"
+    },
+    {
+      "topRange": 16,
+      "value": "Innocence"
+    },
+    {
+      "topRange": 17,
+      "value": "Renown"
+    },
+    {
+      "topRange": 18,
+      "value": "Direction"
+    },
+    {
+      "topRange": 19,
+      "value": "Death"
+    },
+    {
+      "topRange": 20,
+      "value": "Honor"
+    },
+    {
+      "topRange": 21,
+      "value": "Labor"
+    },
+    {
+      "topRange": 22,
+      "value": "Solution"
+    },
+    {
+      "topRange": 23,
+      "value": "Tool"
+    },
+    {
+      "topRange": 24,
+      "value": "Balance"
+    },
+    {
+      "topRange": 25,
+      "value": "Love"
+    },
+    {
+      "topRange": 26,
+      "value": "Barrier"
+    },
+    {
+      "topRange": 27,
+      "value": "Creation"
+    },
+    {
+      "topRange": 28,
+      "value": "Decay"
+    },
+    {
+      "topRange": 29,
+      "value": "Trade"
+    },
+    {
+      "topRange": 30,
+      "value": "Bond"
+    },
+    {
+      "topRange": 31,
+      "value": "Hope"
+    },
+    {
+      "topRange": 32,
+      "value": "Superstition"
+    },
+    {
+      "topRange": 33,
+      "value": "Peace"
+    },
+    {
+      "topRange": 34,
+      "value": "Deception"
+    },
+    {
+      "topRange": 35,
+      "value": "History"
+    },
+    {
+      "topRange": 36,
+      "value": "World"
+    },
+    {
+      "topRange": 37,
+      "value": "Vow"
+    },
+    {
+      "topRange": 38,
+      "value": "Protection"
+    },
+    {
+      "topRange": 39,
+      "value": "Nature"
+    },
+    {
+      "topRange": 40,
+      "value": "Opinion"
+    },
+    {
+      "topRange": 41,
+      "value": "Burden"
+    },
+    {
+      "topRange": 42,
+      "value": "Vengeance"
+    },
+    {
+      "topRange": 43,
+      "value": "Opportunity"
+    },
+    {
+      "topRange": 44,
+      "value": "Faction"
+    },
+    {
+      "topRange": 45,
+      "value": "Danger"
+    },
+    {
+      "topRange": 46,
+      "value": "Corruption"
+    },
+    {
+      "topRange": 47,
+      "value": "Freedom"
+    },
+    {
+      "topRange": 48,
+      "value": "Debt"
+    },
+    {
+      "topRange": 49,
+      "value": "Hate"
+    },
+    {
+      "topRange": 50,
+      "value": "Possession"
+    },
+    {
+      "topRange": 51,
+      "value": "Stranger"
+    },
+    {
+      "topRange": 52,
+      "value": "Passage"
+    },
+    {
+      "topRange": 53,
+      "value": "Land"
+    },
+    {
+      "topRange": 54,
+      "value": "Creature"
+    },
+    {
+      "topRange": 55,
+      "value": "Disease"
+    },
+    {
+      "topRange": 56,
+      "value": "Advantage"
+    },
+    {
+      "topRange": 57,
+      "value": "Blood"
+    },
+    {
+      "topRange": 58,
+      "value": "Language"
+    },
+    {
+      "topRange": 59,
+      "value": "Rumor"
+    },
+    {
+      "topRange": 60,
+      "value": "Weakness"
+    },
+    {
+      "topRange": 61,
+      "value": "Greed"
+    },
+    {
+      "topRange": 62,
+      "value": "Family"
+    },
+    {
+      "topRange": 63,
+      "value": "Resource"
+    },
+    {
+      "topRange": 64,
+      "value": "Structure"
+    },
+    {
+      "topRange": 65,
+      "value": "Dream"
+    },
+    {
+      "topRange": 66,
+      "value": "Community"
+    },
+    {
+      "topRange": 67,
+      "value": "War"
+    },
+    {
+      "topRange": 68,
+      "value": "Portent"
+    },
+    {
+      "topRange": 69,
+      "value": "Prize"
+    },
+    {
+      "topRange": 70,
+      "value": "Destiny"
+    },
+    {
+      "topRange": 71,
+      "value": "Momentum"
+    },
+    {
+      "topRange": 72,
+      "value": "Power"
+    },
+    {
+      "topRange": 73,
+      "value": "Memory"
+    },
+    {
+      "topRange": 74,
+      "value": "Ruin"
+    },
+    {
+      "topRange": 75,
+      "value": "Mysticism"
+    },
+    {
+      "topRange": 76,
+      "value": "Rival"
+    },
+    {
+      "topRange": 77,
+      "value": "Problem"
+    },
+    {
+      "topRange": 78,
+      "value": "Idea"
+    },
+    {
+      "topRange": 79,
+      "value": "Revenge"
+    },
+    {
+      "topRange": 80,
+      "value": "Health"
+    },
+    {
+      "topRange": 81,
+      "value": "Fellowship"
+    },
+    {
+      "topRange": 82,
+      "value": "Enemy"
+    },
+    {
+      "topRange": 83,
+      "value": "Religion"
+    },
+    {
+      "topRange": 84,
+      "value": "Spirit"
+    },
+    {
+      "topRange": 85,
+      "value": "Fame"
+    },
+    {
+      "topRange": 86,
+      "value": "Desolation"
+    },
+    {
+      "topRange": 87,
+      "value": "Strength"
+    },
+    {
+      "topRange": 88,
+      "value": "Knowledge"
+    },
+    {
+      "topRange": 89,
+      "value": "Truth"
+    },
+    {
+      "topRange": 90,
+      "value": "Quest"
+    },
+    {
+      "topRange": 91,
+      "value": "Pride"
+    },
+    {
+      "topRange": 92,
+      "value": "Loss"
+    },
+    {
+      "topRange": 93,
+      "value": "Law"
+    },
+    {
+      "topRange": 94,
+      "value": "Path"
+    },
+    {
+      "topRange": 95,
+      "value": "Warning"
+    },
+    {
+      "topRange": 96,
+      "value": "Relationship"
+    },
+    {
+      "topRange": 97,
+      "value": "Wealth"
+    },
+    {
+      "topRange": 98,
+      "value": "Home"
+    },
+    {
+      "topRange": 99,
+      "value": "Strategy"
+    },
+    {
+      "topRange": 100,
+      "value": "Supply"
+    }
+  ]
+}

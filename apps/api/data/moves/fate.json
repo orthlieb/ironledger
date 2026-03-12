@@ -1,0 +1,131 @@
+{
+  "category": "Fate",
+  "moves": [
+    {
+      "id": "move/ask-the-oracle",
+      "name": "Ask the Oracle",
+      "category": "Fate",
+      "triggerShort": "When you seek to resolve uncertainty or determine what happens next.",
+      "trigger": "When you <strong>seek to resolve uncertainty, introduce something new, or determine what happens next</strong> while playing solo or co-op, you may…<ul><li>Envision the answer based on the situation and your intuition.</li><li>Roll on an oracle table (Action + Theme, Pay the Price, or a thematic table) to generate an answer.</li><li>Ask a yes/no question and consult the following table.</li></ul>",
+      "strong": "",
+      "weak": "",
+      "miss": "",
+      "notes": "Your most important solo and co-op tool. Interpret results through the lens of the current situation. When the answer is obvious from context, don't roll — just narrate. Embrace surprising results as gifts; they push the story in unexpected directions.",
+      "tableType": "askOracle",
+      "table": [
+        {
+          "topRange": 10,
+          "value": {
+            "odds": "Almost Certain",
+            "threshold": 11
+          }
+        },
+        {
+          "topRange": 25,
+          "value": {
+            "odds": "Likely",
+            "threshold": 26
+          }
+        },
+        {
+          "topRange": 50,
+          "value": {
+            "odds": "50/50",
+            "threshold": 51
+          }
+        },
+        {
+          "topRange": 75,
+          "value": {
+            "odds": "Unlikely",
+            "threshold": 76
+          }
+        },
+        {
+          "topRange": 100,
+          "value": {
+            "odds": "Small Chance",
+            "threshold": 91
+          }
+        }
+      ]
+    },
+    {
+      "id": "move/pay-the-price",
+      "name": "Pay the Price",
+      "category": "Fate",
+      "triggerShort": "When you suffer the outcome of a move.",
+      "trigger": "When you <strong>suffer the outcome of a move</strong>, choose one.<ul><li>Make the most obvious negative outcome happen. E.g. <a class=\"move-link\" data-id=\"move/endure-harm\">Endure Harm</a>, <a class=\"move-link\" data-id=\"move/endure-stress\">Endure Stress</a>.</li><li>Envision two negative outcomes. Rate one as 'likely', and <a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> using the yes/no table. On a 'yes', make that outcome happen. Otherwise, make it the other.</li><li>Roll on the following table. If you have difficulty interpreting the result to fit the current situation, roll again.</li></ul>",
+      "strong": "",
+      "weak": "",
+      "miss": "",
+      "notes": "The universal consequence move. When another move tells you to Pay the Price, choose how to determine the outcome: pick the obvious result, use the oracle to decide between two options, or roll on the table below.",
+      "table": [
+        {
+          "topRange": 2,
+          "value": "Roll again and apply that result but make it worse. If you roll this result yet again, think of something dreadful that changes the course of your quest (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure) and make it happen."
+        },
+        {
+          "topRange": 5,
+          "value": "A person or community you trusted loses faith in you, or acts against you."
+        },
+        {
+          "topRange": 9,
+          "value": "A person or community you care about is exposed to danger."
+        },
+        {
+          "topRange": 16,
+          "value": "You are separated from something or someone."
+        },
+        {
+          "topRange": 23,
+          "value": "Your action has an unintended effect."
+        },
+        {
+          "topRange": 32,
+          "value": "Something of value is lost or destroyed."
+        },
+        {
+          "topRange": 41,
+          "value": "The current situation worsens."
+        },
+        {
+          "topRange": 50,
+          "value": "A new danger or foe is revealed."
+        },
+        {
+          "topRange": 59,
+          "value": "It causes a delay or puts you at a disadvantage."
+        },
+        {
+          "topRange": 68,
+          "value": "It is harmful. <a class=\"move-link\" data-id=\"move/endure-harm\">Endure Harm</a>."
+        },
+        {
+          "topRange": 77,
+          "value": "It is stressful. <a class=\"move-link\" data-id=\"move/endure-stress\">Endure Stress</a>."
+        },
+        {
+          "topRange": 85,
+          "value": "A surprising development complicates your quest."
+        },
+        {
+          "topRange": 90,
+          "value": "It wastes resources."
+        },
+        {
+          "topRange": 94,
+          "value": "It forces you to act against your best intentions."
+        },
+        {
+          "topRange": 98,
+          "value": "A friend, companion, or ally is put in harm's way (or you are, if alone)."
+        },
+        {
+          "topRange": 100,
+          "value": "Roll twice more on this table. Both results occur. If they are the same result, make it worse."
+        }
+      ]
+    }
+  ]
+}

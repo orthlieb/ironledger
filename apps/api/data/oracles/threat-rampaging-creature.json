@@ -1,0 +1,49 @@
+{
+  "key": "threatRampagingCreature",
+  "title": "Threat: Rampaging Creature",
+  "group": "Delve",
+  "selectLabel": "Threat: Rampaging Creature",
+  "description": "Generate the next event for a rampaging creature threat.",
+  "data": [
+    {
+      "topRange": 10,
+      "value": "Reveal a new aspect of its nature or abilities"
+    },
+    {
+      "topRange": 20,
+      "value": "Expand its territory"
+    },
+    {
+      "topRange": 30,
+      "value": "Make a sudden and brutal attack"
+    },
+    {
+      "topRange": 40,
+      "value": "Control or influence lesser creatures"
+    },
+    {
+      "topRange": 50,
+      "value": "Create confusion or strife"
+    },
+    {
+      "topRange": 60,
+      "value": "Leave foreboding signs"
+    },
+    {
+      "topRange": 70,
+      "value": "Lure the unwary"
+    },
+    {
+      "topRange": 80,
+      "value": "Imperil an event"
+    },
+    {
+      "topRange": 90,
+      "value": "Assert control over a location"
+    },
+    {
+      "topRange": 100,
+      "value": "Threaten resources"
+    }
+  ]
+}

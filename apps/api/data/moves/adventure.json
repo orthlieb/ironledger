@@ -1,0 +1,226 @@
+{
+  "category": "Adventure",
+  "moves": [
+    {
+      "id": "move/face-danger",
+      "name": "Face Danger",
+      "category": "Adventure",
+      "triggerShort": "When you attempt something risky or react to an imminent threat.",
+      "trigger": "When you <strong>attempt something risky or react to an imminent threat</strong>, envision your action and roll. If you act…<ul><li>With speed, agility, or precision: Roll <strong>+edge</strong>.</li><li>With charm, loyalty, or courage: Roll <strong>+heart</strong>.</li><li>With aggressive action, forceful defense, strength, or endurance: Roll <strong>+iron</strong>.</li><li>With deception, stealth, or trickery: Roll <strong>+shadow</strong>.</li><li>With expertise, insight, or observation: Roll <strong>+wits</strong>.</li></ul>",
+      "triggerPreamble": "When you <strong>attempt something risky or react to an imminent threat</strong>, envision your action and roll. If you act…",
+      "stats": [
+        {
+          "stat": "edge",
+          "desc": "With speed, agility, or precision"
+        },
+        {
+          "stat": "heart",
+          "desc": "With charm, loyalty, or courage"
+        },
+        {
+          "stat": "iron",
+          "desc": "With aggressive action, forceful defense, strength, or endurance"
+        },
+        {
+          "stat": "shadow",
+          "desc": "With deception, stealth, or trickery"
+        },
+        {
+          "stat": "wits",
+          "desc": "With expertise, insight, or observation"
+        }
+      ],
+      "strong": "You are successful. Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">+1 momentum</a>.",
+      "weak": "You succeed, but face a troublesome cost. Choose one:<ul><li>You are delayed, lose advantage, or face a new danger: Suffer <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"-1\">−1 momentum</a>.</li><li>You are tired or hurt: <a class=\"move-link\" data-id=\"move/endure-harm\" data-harm=\"1\">Endure Harm</a> (1 harm).</li><li>You are dispirited or afraid: <a class=\"move-link\" data-id=\"move/endure-stress\" data-harm=\"1\">Endure Stress</a> (1 stress).</li><li>You sacrifice resources: Suffer <a class=\"resource-link\" data-resource=\"supply\" data-value=\"-1\">−1 supply</a>.</li></ul>",
+      "miss": "You fail, or your progress is undermined by a dramatic and costly turn of events. <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a>.",
+      "notes": "The default move for most uncertain actions. If it's dangerous and the outcome isn't certain, it's probably Face Danger. Don't confuse with Clash (fighting back against an attack) or Secure an Advantage (setting yourself up before acting).",
+      "preconditions": [
+        {
+          "key": "hasCharacter",
+          "eq": 1
+        }
+      ]
+    },
+    {
+      "id": "move/secure-an-advantage",
+      "name": "Secure an Advantage",
+      "category": "Adventure",
+      "triggerShort": "When you assess a situation, make preparations, or attempt to gain leverage.",
+      "trigger": "When you <strong>assess a situation, make preparations, or attempt to gain leverage</strong>, envision your action and roll. If you act…<ul><li>With speed, agility, or precision: Roll <strong>+edge</strong>.</li><li>With charm, loyalty, or courage: Roll <strong>+heart</strong>.</li><li>With aggressive action, forceful defense, strength, or endurance: Roll <strong>+iron</strong>.</li><li>With deception, stealth, or trickery: Roll <strong>+shadow</strong>.</li><li>With expertise, insight, or observation: Roll <strong>+wits</strong>.</li></ul>",
+      "triggerPreamble": "When you <strong>assess a situation, make preparations, or attempt to gain leverage</strong>, envision your action and roll. If you act…",
+      "stats": [
+        {
+          "stat": "edge",
+          "desc": "With speed, agility, or precision"
+        },
+        {
+          "stat": "heart",
+          "desc": "With charm, loyalty, or courage"
+        },
+        {
+          "stat": "iron",
+          "desc": "With aggressive action, forceful defense, strength, or endurance"
+        },
+        {
+          "stat": "shadow",
+          "desc": "With deception, stealth, or trickery"
+        },
+        {
+          "stat": "wits",
+          "desc": "With expertise, insight, or observation"
+        }
+      ],
+      "strong": "You gain advantage. Choose one:<ul><li>Take control: Make another move now (not a progress move); when you do, add <strong>+1</strong>.</li><li>Prepare to act: Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+2\">+2 momentum</a>.</li></ul>",
+      "weak": "Your advantage is short-lived. Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">+1 momentum</a>.",
+      "miss": "You fail or your assumptions betray you. <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a>.",
+      "notes": "Use this when you're actively improving your position before acting — scouting ahead, setting a trap, treating a wound before a fight. Not for actions under immediate threat (that's Face Danger).",
+      "preconditions": [
+        {
+          "key": "hasCharacter",
+          "eq": 1
+        }
+      ]
+    },
+    {
+      "id": "move/gather-information",
+      "name": "Gather Information",
+      "category": "Adventure",
+      "triggerShort": "When you search an area, ask questions, conduct an investigation, or follow a track.",
+      "trigger": "When you <strong>search an area, ask questions, conduct an investigation, or follow a track</strong>, roll <strong>+wits</strong>. If you act within a community or ask questions of a person with whom you share a bond, add +1.",
+      "stats": [
+        {
+          "stat": "wits",
+          "desc": "Searching, investigating, or following a track (add +1 if bonded community/person)"
+        }
+      ],
+      "strong": "You discover something helpful and specific. The path you must follow or action you must take to make progress is made clear. Envision what you learn (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure), and take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+2\">+2 momentum</a>.",
+      "weak": "The information complicates your quest or introduces a new danger. Envision what you discover (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure), and take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">+1 momentum</a>.",
+      "miss": "Your investigation unearths a dire threat or reveals an unwelcome truth that undermines your quest. <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a>.",
+      "notes": "The bond bonus (+1) applies when you act within a bonded community or ask questions of a bonded person. Use the modifier control to add it when applicable.",
+      "preconditions": [
+        {
+          "key": "hasCharacter",
+          "eq": 1
+        }
+      ]
+    },
+    {
+      "id": "move/heal",
+      "name": "Heal",
+      "category": "Adventure",
+      "triggerShort": "When you tend to physical wounds or ailments.",
+      "trigger": "When you <strong>treat an injury or ailment</strong>, roll <strong>+wits</strong>. If you are mending your own wounds, roll <strong>+wits</strong> or <strong>+iron</strong>, whichever is lower.",
+      "stats": [
+        {
+          "stat": "wits",
+          "desc": "Treating an ally"
+        },
+        {
+          "stat": "iron",
+          "desc": "Mending your own wounds (roll lower of wits/iron)"
+        }
+      ],
+      "strong": "Your care is helpful. If you (or the ally under your care) have the <a class=\"debility-link\" data-debility=\"wounded\" data-value=\"0\">wounded</a> condition, you may clear it. Then, take or give up to <a class=\"resource-link\" data-resource=\"health\" data-value=\"+2\">+2 health</a>.",
+      "weak": "<span class=\"log-only\">Your care is helpful. If you (or the ally under your care) have the <a class=\"debility-link\" data-debility=\"wounded\" data-value=\"0\">wounded</a> condition, you may clear it. Then, take or give up to <a class=\"resource-link\" data-resource=\"health\" data-value=\"+2\">+2 health</a>. </span><span class=\"dialog-only\">As above, but you</span><span class=\"log-only\">You</span> must suffer <a class=\"resource-link\" data-resource=\"supply\" data-value=\"-1\">−1 supply</a> or <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"-1\">−1 momentum</a> (your choice).",
+      "miss": "Your aid is ineffective. <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a>.",
+      "notes": "Requires time and supplies (or a willing healer). You cannot Heal in the middle of a fight without first creating space (Face Danger to disengage). If you have no supplies, that affects whether the roll applies at all.",
+      "preconditions": [
+        {
+          "key": "hasCharacter",
+          "eq": 1
+        }
+      ]
+    },
+    {
+      "id": "move/resupply",
+      "name": "Resupply",
+      "category": "Adventure",
+      "triggerShort": "When you hunt, forage, or scavenge.",
+      "trigger": "When you <strong>hunt, forage, or scavenge</strong>, roll <strong>+wits</strong>.",
+      "stats": [
+        {
+          "stat": "wits",
+          "desc": "Hunt, forage, or scavenge"
+        }
+      ],
+      "strong": "You bolster your resources. Take <a class=\"resource-link\" data-resource=\"supply\" data-value=\"+2\">+2 supply</a>.",
+      "weak": "Take up to <a class=\"resource-link\" data-resource=\"supply\" data-value=\"+2\">+2 supply</a>, but suffer <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"-1\">−1 momentum</a> for each.",
+      "miss": "You find nothing helpful. <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a>.",
+      "notes": "Foraging, looting, or scrounging in the wild. Not for buying goods in a settlement (typically just a narrative beat). On a weak hit, you choose how much supply to take (1 or 2) and pay the momentum cost for each.",
+      "preconditions": [
+        {
+          "key": "hasCharacter",
+          "eq": 1
+        }
+      ]
+    },
+    {
+      "id": "move/make-camp",
+      "name": "Make Camp",
+      "category": "Adventure",
+      "triggerShort": "When you rest and recover for several hours in the wild.",
+      "trigger": "When you <strong>rest and recover for several hours in the wild</strong>, roll <strong>+supply</strong>.",
+      "stats": [
+        {
+          "stat": "supply",
+          "desc": "Resting and recovering in the wild"
+        }
+      ],
+      "strong": "You and your allies may each choose <strong>two</strong>:<ul><li>Recuperate: Take <a class=\"resource-link\" data-resource=\"health\" data-value=\"+1\">+1 health</a> for you and any companions.</li><li>Partake: Suffer <a class=\"resource-link\" data-resource=\"supply\" data-value=\"-1\">−1 supply</a> and take <a class=\"resource-link\" data-resource=\"health\" data-value=\"+1\">+1 health</a> for you and any companions.</li><li>Relax: Take <a class=\"resource-link\" data-resource=\"spirit\" data-value=\"+1\">+1 spirit</a>.</li><li>Focus: Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">+1 momentum</a>.</li><li>Prepare: When you break camp, add <strong>+1</strong> if you <a class=\"move-link\" data-id=\"move/undertake-a-journey\">Undertake a Journey</a>.</li></ul>",
+      "weak": "<span class=\"dialog-only\">Choose <strong>one</strong> from the list above.</span><span class=\"log-only\">Choose <strong>one</strong>:<ul><li>Recuperate: Take <a class=\"resource-link\" data-resource=\"health\" data-value=\"+1\">+1 health</a> for you and any companions.</li><li>Partake: Suffer <a class=\"resource-link\" data-resource=\"supply\" data-value=\"-1\">−1 supply</a> and take <a class=\"resource-link\" data-resource=\"health\" data-value=\"+1\">+1 health</a> for you and any companions.</li><li>Relax: Take <a class=\"resource-link\" data-resource=\"spirit\" data-value=\"+1\">+1 spirit</a>.</li><li>Focus: Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">+1 momentum</a>.</li><li>Prepare: When you break camp, add <strong>+1</strong> if you <a class=\"move-link\" data-id=\"move/undertake-a-journey\">Undertake a Journey</a>.</li></ul></span>",
+      "miss": "You take no comfort. <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a>.",
+      "notes": "Requires a relatively safe place and reasonable supplies. Recuperate heals you without cost; Partake trades supply for health. If conditions are hostile, you may need to Face Danger first to secure a campsite.",
+      "preconditions": [
+        {
+          "key": "hasCharacter",
+          "eq": 1
+        }
+      ]
+    },
+    {
+      "id": "move/undertake-a-journey",
+      "name": "Undertake a Journey",
+      "category": "Adventure",
+      "triggerShort": "When you travel across hazardous or unfamiliar lands.",
+      "trigger": "When you <strong>travel across hazardous or unfamiliar lands</strong>, first set the rank of your journey: Troublesome (3 progress per waypoint), Dangerous (2 progress), Formidable (1 progress), Extreme (2 ticks), or Epic (1 tick). Then, for each segment of your journey, roll <strong>+wits</strong>. If you are setting off from a community with which you share a bond, add +1 to your initial roll.",
+      "stats": [
+        {
+          "stat": "wits",
+          "desc": "Traveling across hazardous or unfamiliar lands"
+        }
+      ],
+      "strong": "You reach a waypoint. If the waypoint is unknown to you, envision it (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure). Then, choose one:<ul><li>You make good use of your resources: <a class=\"progress-link\" data-value=\"1\" data-track=\"journey\">Mark progress</a>.</li><li>You move at speed: <a class=\"progress-link\" data-value=\"1\" data-track=\"journey\">Mark progress</a> and <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">take +1 momentum</a>, but <a class=\"resource-link\" data-resource=\"supply\" data-value=\"-1\">suffer −1 supply</a>.</li></ul>",
+      "weak": "You reach a waypoint and <a class=\"progress-link\" data-value=\"1\" data-track=\"journey\">mark progress</a>, but <a class=\"resource-link\" data-resource=\"supply\" data-value=\"-1\">suffer −1 supply</a>.",
+      "miss": "You are waylaid by a perilous event. <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a>.",
+      "notes": "Roll once per segment of travel, not every step. On a strong hit, the speed option lets you trade supply for momentum — useful when you need to arrive quickly. The bond bonus (+1) only applies to your first roll when setting off from a bonded community.",
+      "preconditions": [
+        {
+          "key": "hasCharacter",
+          "eq": 1
+        },
+        {
+          "key": "hasJourney",
+          "eq": 1
+        }
+      ]
+    },
+    {
+      "id": "move/reach-your-destination",
+      "name": "Reach Your Destination",
+      "category": "Adventure",
+      "triggerShort": "When your journey progress track is full and you arrive at your destination.",
+      "progressTrack": "journey",
+      "trigger": "When your <strong>journey progress track is full and you arrive or near your destination</strong>, roll the <strong>challenge dice</strong> against your <strong>progress track</strong>. This is a <strong>progress roll</strong> — do not add a stat. Momentum is ignored.",
+      "strong": "The situation at your destination favors you. Choose one:<ul><li>Make another move now (not a progress move), and add +1.</li><li><a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">Take +1 momentum</a>.</li></ul>",
+      "weak": "You arrive, but face an unforeseen complication or cost. Envision the situation.",
+      "miss": "You have gone hopelessly astray, your objective is lost to you, or you were misled about your destination. If your journey continues, clear all but one filled progress, and raise the journey's rank by one (if not already epic).",
+      "notes": "Progress roll — roll 2d10 against your journey track score. No action die. Momentum is ignored. Use the progress spinner to enter your journey's current progress score (0–10).",
+      "preconditions": [
+        {
+          "key": "hasJourney",
+          "eq": 1
+        }
+      ]
+    }
+  ]
+}

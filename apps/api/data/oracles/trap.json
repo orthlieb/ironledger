@@ -1,0 +1,109 @@
+{
+  "key": "trap",
+  "title": "Trap",
+  "group": "Delve",
+  "selectLabel": "Trap",
+  "description": "Discover a trap or hazard when exploring a Delve site.",
+  "data": [
+    {
+      "topRange": 4,
+      "value": "Alarm: Triggers a loud noise or signal, alerting nearby foes"
+    },
+    {
+      "topRange": 8,
+      "value": "Pit: Floor gives way; fall and take harm"
+    },
+    {
+      "topRange": 12,
+      "value": "Snare: Rope or wire yanks you off your feet or suspends you"
+    },
+    {
+      "topRange": 16,
+      "value": "Spikes: Hidden spikes spring up or out; take harm"
+    },
+    {
+      "topRange": 20,
+      "value": "Blade: A swinging or thrusting blade; take harm"
+    },
+    {
+      "topRange": 24,
+      "value": "Crushing walls: Walls close in; get clear or take harm"
+    },
+    {
+      "topRange": 28,
+      "value": "Falling block: Heavy stone falls; take harm or be pinned"
+    },
+    {
+      "topRange": 32,
+      "value": "Rolling boulder: Boulder rolls toward you; evade or take harm"
+    },
+    {
+      "topRange": 36,
+      "value": "Flood: Corridor fills with water; escape or begin to drown"
+    },
+    {
+      "topRange": 40,
+      "value": "Fire: Flame jets ignite; take harm and area becomes hazardous"
+    },
+    {
+      "topRange": 44,
+      "value": "Poison gas: Toxic cloud fills the area; Endure Harm or suffer status"
+    },
+    {
+      "topRange": 48,
+      "value": "Sleep gas: Soporific mist; resist or fall unconscious"
+    },
+    {
+      "topRange": 52,
+      "value": "Blinding flash: Bright burst; temporarily blinded"
+    },
+    {
+      "topRange": 56,
+      "value": "Noise-maker: Clanging or crashing racket; lose stealth"
+    },
+    {
+      "topRange": 60,
+      "value": "Illusion: False image or passage leads you astray"
+    },
+    {
+      "topRange": 64,
+      "value": "Summoning glyph: Rune calls a creature or spirit"
+    },
+    {
+      "topRange": 68,
+      "value": "Curse: Magical mark inflicts a lasting condition"
+    },
+    {
+      "topRange": 72,
+      "value": "Net: Weighted net drops from above; restrained until cut free"
+    },
+    {
+      "topRange": 76,
+      "value": "Adhesive: Floor or surface is coated with sticky substance; stuck"
+    },
+    {
+      "topRange": 80,
+      "value": "Portcullis: Iron gate slams down, blocking passage or splitting group"
+    },
+    {
+      "topRange": 84,
+      "value": "Arrow volley: Hidden mechanism fires arrows; take harm"
+    },
+    {
+      "topRange": 88,
+      "value": "Electrical shock: Metal surface delivers a jolt; take harm and drop metal items"
+    },
+    {
+      "topRange": 92,
+      "value": "Collapsing ceiling: Debris rains down; take harm or be buried"
+    },
+    {
+      "topRange": 96,
+      "value": "Teleport: Mystical trap whisks you to a different part of the site"
+    },
+    {
+      "topRange": 100,
+      "value": "Combo: Two traps trigger simultaneously — roll twice and both occur"
+    }
+  ]
+}

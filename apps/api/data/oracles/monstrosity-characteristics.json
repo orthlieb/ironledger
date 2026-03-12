@@ -1,0 +1,121 @@
+{
+  "key": "monstrosityCharacteristics",
+  "title": "Monstrosity: Characteristics",
+  "group": "Delve",
+  "selectLabel": "Monstrosity: Characteristics",
+  "description": "Add a distinctive characteristic or trait to a monstrosity. Roll up to four times and keep up to three results.",
+  "data": [
+    {
+      "topRange": 5,
+      "value": "Extra limbs"
+    },
+    {
+      "topRange": 10,
+      "value": "Fangs / rows of sharp teeth"
+    },
+    {
+      "topRange": 15,
+      "value": "Claws / talons"
+    },
+    {
+      "topRange": 20,
+      "value": "Strange color / markings"
+    },
+    {
+      "topRange": 25,
+      "value": "Horns / tusks"
+    },
+    {
+      "topRange": 30,
+      "value": "Oversized mouth"
+    },
+    {
+      "topRange": 35,
+      "value": "Spikes / spines"
+    },
+    {
+      "topRange": 40,
+      "value": "Tail"
+    },
+    {
+      "topRange": 45,
+      "value": "Multi-segmented body"
+    },
+    {
+      "topRange": 50,
+      "value": "Wings"
+    },
+    {
+      "topRange": 54,
+      "value": "Stinger / barbs"
+    },
+    {
+      "topRange": 58,
+      "value": "Many-eyed"
+    },
+    {
+      "topRange": 62,
+      "value": "Distinctive sound"
+    },
+    {
+      "topRange": 66,
+      "value": "Tentacles / tendrils"
+    },
+    {
+      "topRange": 69,
+      "value": "Mandibles / pincers"
+    },
+    {
+      "topRange": 72,
+      "value": "Luminescent"
+    },
+    {
+      "topRange": 75,
+      "value": "Antennae / sensory organs"
+    },
+    {
+      "topRange": 78,
+      "value": "Proboscis / inner jaw"
+    },
+    {
+      "topRange": 81,
+      "value": "Exoskeleton / shell"
+    },
+    {
+      "topRange": 84,
+      "value": "Bony protuberances"
+    },
+    {
+      "topRange": 87,
+      "value": "Corrupted flesh"
+    },
+    {
+      "topRange": 90,
+      "value": "Semi-transparent"
+    },
+    {
+      "topRange": 93,
+      "value": "Scarred / injured"
+    },
+    {
+      "topRange": 95,
+      "value": "Egg sac / carried offspring"
+    },
+    {
+      "topRange": 97,
+      "value": "Rotting / skeletal"
+    },
+    {
+      "topRange": 98,
+      "value": "Mummified / desiccated"
+    },
+    {
+      "topRange": 99,
+      "value": "Multi-headed"
+    },
+    {
+      "topRange": 100,
+      "value": "Etched with mystic runes"
+    }
+  ]
+}

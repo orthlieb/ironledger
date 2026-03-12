@@ -1,0 +1,49 @@
+{
+  "key": "threatCursedSite",
+  "title": "Threat: Cursed Site",
+  "group": "Delve",
+  "selectLabel": "Threat: Cursed Site",
+  "description": "Generate the next event for a cursed site threat.",
+  "data": [
+    {
+      "topRange": 10,
+      "value": "Unleash a creature or being"
+    },
+    {
+      "topRange": 20,
+      "value": "Lure the unwary into its depths"
+    },
+    {
+      "topRange": 30,
+      "value": "Offer promises of power"
+    },
+    {
+      "topRange": 40,
+      "value": "Reveal a new aspect of its cursed history"
+    },
+    {
+      "topRange": 50,
+      "value": "Expand its malignancy to surrounding lands"
+    },
+    {
+      "topRange": 60,
+      "value": "Leave its mark on an inhabitant or visitor"
+    },
+    {
+      "topRange": 70,
+      "value": "Reveal hidden depths"
+    },
+    {
+      "topRange": 80,
+      "value": "Ensnare an important person or object"
+    },
+    {
+      "topRange": 90,
+      "value": "Corrupt the environment"
+    },
+    {
+      "topRange": 100,
+      "value": "Transform its nature"
+    }
+  ]
+}

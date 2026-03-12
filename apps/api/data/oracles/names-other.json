@@ -1,0 +1,209 @@
+{
+  "key": "namesOther",
+  "title": "Other Names",
+  "group": "Core Ironsworn",
+  "selectLabel": "Oracle 15: Other Names",
+  "description": "Generate a random name for Giants, Varou, or Trolls.",
+  "data": [
+    {
+      "topRange": 4,
+      "value": {
+        "giants": "Chony",
+        "varou": "Vata",
+        "trolls": "Rattle"
+      }
+    },
+    {
+      "topRange": 8,
+      "value": {
+        "giants": "Banda",
+        "varou": "Zora",
+        "trolls": "Scratch"
+      }
+    },
+    {
+      "topRange": 12,
+      "value": {
+        "giants": "Jochu",
+        "varou": "Jasna",
+        "trolls": "Wallow"
+      }
+    },
+    {
+      "topRange": 16,
+      "value": {
+        "giants": "Kira",
+        "varou": "Charna",
+        "trolls": "Groak"
+      }
+    },
+    {
+      "topRange": 20,
+      "value": {
+        "giants": "Khatir",
+        "varou": "Tana",
+        "trolls": "Gimble"
+      }
+    },
+    {
+      "topRange": 24,
+      "value": {
+        "giants": "Chaidu",
+        "varou": "Soveen",
+        "trolls": "Scar"
+      }
+    },
+    {
+      "topRange": 28,
+      "value": {
+        "giants": "Atan",
+        "varou": "Radka",
+        "trolls": "Cratch"
+      }
+    },
+    {
+      "topRange": 32,
+      "value": {
+        "giants": "Buandu",
+        "varou": "Zlata",
+        "trolls": "Creech"
+      }
+    },
+    {
+      "topRange": 36,
+      "value": {
+        "giants": "Javyn",
+        "varou": "Leesla",
+        "trolls": "Shush"
+      }
+    },
+    {
+      "topRange": 40,
+      "value": {
+        "giants": "Khashin",
+        "varou": "Byna",
+        "trolls": "Glush"
+      }
+    },
+    {
+      "topRange": 44,
+      "value": {
+        "giants": "Bayara",
+        "varou": "Meeka",
+        "trolls": "Slar"
+      }
+    },
+    {
+      "topRange": 48,
+      "value": {
+        "giants": "Temura",
+        "varou": "Iskra",
+        "trolls": "Gnash"
+      }
+    },
+    {
+      "topRange": 52,
+      "value": {
+        "giants": "Kidha",
+        "varou": "Jarek",
+        "trolls": "Stoad"
+      }
+    },
+    {
+      "topRange": 56,
+      "value": {
+        "giants": "Kathos",
+        "varou": "Darva",
+        "trolls": "Grig"
+      }
+    },
+    {
+      "topRange": 60,
+      "value": {
+        "giants": "Tanua",
+        "varou": "Neda",
+        "trolls": "Bleat"
+      }
+    },
+    {
+      "topRange": 64,
+      "value": {
+        "giants": "Bashtu",
+        "varou": "Keha",
+        "trolls": "Chortle"
+      }
+    },
+    {
+      "topRange": 68,
+      "value": {
+        "giants": "Jaran",
+        "varou": "Zhivka",
+        "trolls": "Cluck"
+      }
+    },
+    {
+      "topRange": 72,
+      "value": {
+        "giants": "Othos",
+        "varou": "Kvata",
+        "trolls": "Slith"
+      }
+    },
+    {
+      "topRange": 76,
+      "value": {
+        "giants": "Khutan",
+        "varou": "Staysa",
+        "trolls": "Mongo"
+      }
+    },
+    {
+      "topRange": 80,
+      "value": {
+        "giants": "Otaan",
+        "varou": "Evka",
+        "trolls": "Creak"
+      }
+    },
+    {
+      "topRange": 84,
+      "value": {
+        "giants": "Martu",
+        "varou": "Vuksha",
+        "trolls": "Burble"
+      }
+    },
+    {
+      "topRange": 88,
+      "value": {
+        "giants": "Baku",
+        "varou": "Muko",
+        "trolls": "Vrusk"
+      }
+    },
+    {
+      "topRange": 92,
+      "value": {
+        "giants": "Tuban",
+        "varou": "Dreko",
+        "trolls": "Snuffle"
+      }
+    },
+    {
+      "topRange": 96,
+      "value": {
+        "giants": "Qudan",
+        "varou": "Aleko",
+        "trolls": "Leech"
+      }
+    },
+    {
+      "topRange": 100,
+      "value": {
+        "giants": "Denua",
+        "varou": "Vojan",
+        "trolls": "Herk"
+      }
+    }
+  ]
+}

@@ -1,0 +1,409 @@
+{
+  "key": "action",
+  "title": "Oracle 1: Action",
+  "group": "Core Ironsworn",
+  "selectLabel": "Oracle 1: Action",
+  "description": "Use this table to inspire a discovery, event, character goal, or situation. A roll on this table can be combined with a Theme to provide an action and a subject. Then, interpret the result based on the context of the question and your current situation.",
+  "data": [
+    {
+      "topRange": 1,
+      "value": "Scheme"
+    },
+    {
+      "topRange": 2,
+      "value": "Clash"
+    },
+    {
+      "topRange": 3,
+      "value": "Weaken"
+    },
+    {
+      "topRange": 4,
+      "value": "Initiate"
+    },
+    {
+      "topRange": 5,
+      "value": "Create"
+    },
+    {
+      "topRange": 6,
+      "value": "Swear"
+    },
+    {
+      "topRange": 7,
+      "value": "Avenge"
+    },
+    {
+      "topRange": 8,
+      "value": "Guard"
+    },
+    {
+      "topRange": 9,
+      "value": "Defeat"
+    },
+    {
+      "topRange": 10,
+      "value": "Control"
+    },
+    {
+      "topRange": 11,
+      "value": "Break"
+    },
+    {
+      "topRange": 12,
+      "value": "Risk"
+    },
+    {
+      "topRange": 13,
+      "value": "Surrender"
+    },
+    {
+      "topRange": 14,
+      "value": "Inspect"
+    },
+    {
+      "topRange": 15,
+      "value": "Raid"
+    },
+    {
+      "topRange": 16,
+      "value": "Evade"
+    },
+    {
+      "topRange": 17,
+      "value": "Assault"
+    },
+    {
+      "topRange": 18,
+      "value": "Deflect"
+    },
+    {
+      "topRange": 19,
+      "value": "Threaten"
+    },
+    {
+      "topRange": 20,
+      "value": "Attack"
+    },
+    {
+      "topRange": 21,
+      "value": "Leave"
+    },
+    {
+      "topRange": 22,
+      "value": "Preserve"
+    },
+    {
+      "topRange": 23,
+      "value": "Manipulate"
+    },
+    {
+      "topRange": 24,
+      "value": "Remove"
+    },
+    {
+      "topRange": 25,
+      "value": "Eliminate"
+    },
+    {
+      "topRange": 26,
+      "value": "Withdraw"
+    },
+    {
+      "topRange": 27,
+      "value": "Abandon"
+    },
+    {
+      "topRange": 28,
+      "value": "Investigate"
+    },
+    {
+      "topRange": 29,
+      "value": "Hold"
+    },
+    {
+      "topRange": 30,
+      "value": "Focus"
+    },
+    {
+      "topRange": 31,
+      "value": "Uncover"
+    },
+    {
+      "topRange": 32,
+      "value": "Breach"
+    },
+    {
+      "topRange": 33,
+      "value": "Aid"
+    },
+    {
+      "topRange": 34,
+      "value": "Uphold"
+    },
+    {
+      "topRange": 35,
+      "value": "Falter"
+    },
+    {
+      "topRange": 36,
+      "value": "Suppress"
+    },
+    {
+      "topRange": 37,
+      "value": "Hunt"
+    },
+    {
+      "topRange": 38,
+      "value": "Share"
+    },
+    {
+      "topRange": 39,
+      "value": "Destroy"
+    },
+    {
+      "topRange": 40,
+      "value": "Avoid"
+    },
+    {
+      "topRange": 41,
+      "value": "Reject"
+    },
+    {
+      "topRange": 42,
+      "value": "Demand"
+    },
+    {
+      "topRange": 43,
+      "value": "Explore"
+    },
+    {
+      "topRange": 44,
+      "value": "Bolster"
+    },
+    {
+      "topRange": 45,
+      "value": "Seize"
+    },
+    {
+      "topRange": 46,
+      "value": "Mourn"
+    },
+    {
+      "topRange": 47,
+      "value": "Reveal"
+    },
+    {
+      "topRange": 48,
+      "value": "Gather"
+    },
+    {
+      "topRange": 49,
+      "value": "Defy"
+    },
+    {
+      "topRange": 50,
+      "value": "Transform"
+    },
+    {
+      "topRange": 51,
+      "value": "Persevere"
+    },
+    {
+      "topRange": 52,
+      "value": "Serve"
+    },
+    {
+      "topRange": 53,
+      "value": "Begin"
+    },
+    {
+      "topRange": 54,
+      "value": "Move"
+    },
+    {
+      "topRange": 55,
+      "value": "Coordinate"
+    },
+    {
+      "topRange": 56,
+      "value": "Resist"
+    },
+    {
+      "topRange": 57,
+      "value": "Await"
+    },
+    {
+      "topRange": 58,
+      "value": "Impress"
+    },
+    {
+      "topRange": 59,
+      "value": "Take"
+    },
+    {
+      "topRange": 60,
+      "value": "Oppose"
+    },
+    {
+      "topRange": 61,
+      "value": "Capture"
+    },
+    {
+      "topRange": 62,
+      "value": "Overwhelm"
+    },
+    {
+      "topRange": 63,
+      "value": "Challenge"
+    },
+    {
+      "topRange": 64,
+      "value": "Acquire"
+    },
+    {
+      "topRange": 65,
+      "value": "Protect"
+    },
+    {
+      "topRange": 66,
+      "value": "Finish"
+    },
+    {
+      "topRange": 67,
+      "value": "Strengthen"
+    },
+    {
+      "topRange": 68,
+      "value": "Restore"
+    },
+    {
+      "topRange": 69,
+      "value": "Advance"
+    },
+    {
+      "topRange": 70,
+      "value": "Command"
+    },
+    {
+      "topRange": 71,
+      "value": "Refuse"
+    },
+    {
+      "topRange": 72,
+      "value": "Find"
+    },
+    {
+      "topRange": 73,
+      "value": "Deliver"
+    },
+    {
+      "topRange": 74,
+      "value": "Hide"
+    },
+    {
+      "topRange": 75,
+      "value": "Fortify"
+    },
+    {
+      "topRange": 76,
+      "value": "Betray"
+    },
+    {
+      "topRange": 77,
+      "value": "Secure"
+    },
+    {
+      "topRange": 78,
+      "value": "Arrive"
+    },
+    {
+      "topRange": 79,
+      "value": "Affect"
+    },
+    {
+      "topRange": 80,
+      "value": "Change"
+    },
+    {
+      "topRange": 81,
+      "value": "Defend"
+    },
+    {
+      "topRange": 82,
+      "value": "Debate"
+    },
+    {
+      "topRange": 83,
+      "value": "Support"
+    },
+    {
+      "topRange": 84,
+      "value": "Follow"
+    },
+    {
+      "topRange": 85,
+      "value": "Construct"
+    },
+    {
+      "topRange": 86,
+      "value": "Locate"
+    },
+    {
+      "topRange": 87,
+      "value": "Endure"
+    },
+    {
+      "topRange": 88,
+      "value": "Release"
+    },
+    {
+      "topRange": 89,
+      "value": "Lose"
+    },
+    {
+      "topRange": 90,
+      "value": "Reduce"
+    },
+    {
+      "topRange": 91,
+      "value": "Escalate"
+    },
+    {
+      "topRange": 92,
+      "value": "Distract"
+    },
+    {
+      "topRange": 93,
+      "value": "Journey"
+    },
+    {
+      "topRange": 94,
+      "value": "Escort"
+    },
+    {
+      "topRange": 95,
+      "value": "Learn"
+    },
+    {
+      "topRange": 96,
+      "value": "Communicate"
+    },
+    {
+      "topRange": 97,
+      "value": "Depart"
+    },
+    {
+      "topRange": 98,
+      "value": "Search"
+    },
+    {
+      "topRange": 99,
+      "value": "Charge"
+    },
+    {
+      "topRange": 100,
+      "value": "Summon"
+    }
+  ]
+}

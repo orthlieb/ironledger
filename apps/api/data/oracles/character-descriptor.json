@@ -1,0 +1,409 @@
+{
+  "key": "characterDescriptor",
+  "title": "Oracle 12: Character Descriptor",
+  "group": "Core Ironsworn",
+  "selectLabel": "Oracle 12: Character Descriptor",
+  "description": "Generate a pointed personality trait or physical characteristic for an NPC. Roll more than once to add additional detail.",
+  "data": [
+    {
+      "topRange": 1,
+      "value": "Stoic"
+    },
+    {
+      "topRange": 2,
+      "value": "Attractive"
+    },
+    {
+      "topRange": 3,
+      "value": "Passive"
+    },
+    {
+      "topRange": 4,
+      "value": "Aloof"
+    },
+    {
+      "topRange": 5,
+      "value": "Affectionate"
+    },
+    {
+      "topRange": 6,
+      "value": "Generous"
+    },
+    {
+      "topRange": 7,
+      "value": "Smug"
+    },
+    {
+      "topRange": 8,
+      "value": "Armed"
+    },
+    {
+      "topRange": 9,
+      "value": "Clever"
+    },
+    {
+      "topRange": 10,
+      "value": "Brave"
+    },
+    {
+      "topRange": 11,
+      "value": "Ugly"
+    },
+    {
+      "topRange": 12,
+      "value": "Sociable"
+    },
+    {
+      "topRange": 13,
+      "value": "Doomed"
+    },
+    {
+      "topRange": 14,
+      "value": "Connected"
+    },
+    {
+      "topRange": 15,
+      "value": "Bold"
+    },
+    {
+      "topRange": 16,
+      "value": "Jealous"
+    },
+    {
+      "topRange": 17,
+      "value": "Angry"
+    },
+    {
+      "topRange": 18,
+      "value": "Active"
+    },
+    {
+      "topRange": 19,
+      "value": "Suspicious"
+    },
+    {
+      "topRange": 20,
+      "value": "Hostile"
+    },
+    {
+      "topRange": 21,
+      "value": "Hardhearted"
+    },
+    {
+      "topRange": 22,
+      "value": "Successful"
+    },
+    {
+      "topRange": 23,
+      "value": "Talented"
+    },
+    {
+      "topRange": 24,
+      "value": "Experienced"
+    },
+    {
+      "topRange": 25,
+      "value": "Deceitful"
+    },
+    {
+      "topRange": 26,
+      "value": "Ambitious"
+    },
+    {
+      "topRange": 27,
+      "value": "Aggressive"
+    },
+    {
+      "topRange": 28,
+      "value": "Conceited"
+    },
+    {
+      "topRange": 29,
+      "value": "Proud"
+    },
+    {
+      "topRange": 30,
+      "value": "Stern"
+    },
+    {
+      "topRange": 31,
+      "value": "Dependent"
+    },
+    {
+      "topRange": 32,
+      "value": "Wary"
+    },
+    {
+      "topRange": 33,
+      "value": "Strong"
+    },
+    {
+      "topRange": 34,
+      "value": "Insightful"
+    },
+    {
+      "topRange": 35,
+      "value": "Dangerous"
+    },
+    {
+      "topRange": 36,
+      "value": "Quirky"
+    },
+    {
+      "topRange": 37,
+      "value": "Cheery"
+    },
+    {
+      "topRange": 38,
+      "value": "Disfigured"
+    },
+    {
+      "topRange": 39,
+      "value": "Intolerant"
+    },
+    {
+      "topRange": 40,
+      "value": "Skilled"
+    },
+    {
+      "topRange": 41,
+      "value": "Stingy"
+    },
+    {
+      "topRange": 42,
+      "value": "Timid"
+    },
+    {
+      "topRange": 43,
+      "value": "Insensitive"
+    },
+    {
+      "topRange": 44,
+      "value": "Wild"
+    },
+    {
+      "topRange": 45,
+      "value": "Bitter"
+    },
+    {
+      "topRange": 46,
+      "value": "Cunning"
+    },
+    {
+      "topRange": 47,
+      "value": "Remorseful"
+    },
+    {
+      "topRange": 48,
+      "value": "Kind"
+    },
+    {
+      "topRange": 49,
+      "value": "Charming"
+    },
+    {
+      "topRange": 50,
+      "value": "Oblivious"
+    },
+    {
+      "topRange": 51,
+      "value": "Critical"
+    },
+    {
+      "topRange": 52,
+      "value": "Cautious"
+    },
+    {
+      "topRange": 53,
+      "value": "Resourceful"
+    },
+    {
+      "topRange": 54,
+      "value": "Weary"
+    },
+    {
+      "topRange": 55,
+      "value": "Wounded"
+    },
+    {
+      "topRange": 56,
+      "value": "Anxious"
+    },
+    {
+      "topRange": 57,
+      "value": "Powerful"
+    },
+    {
+      "topRange": 58,
+      "value": "Athletic"
+    },
+    {
+      "topRange": 59,
+      "value": "Driven"
+    },
+    {
+      "topRange": 60,
+      "value": "Cruel"
+    },
+    {
+      "topRange": 61,
+      "value": "Quiet"
+    },
+    {
+      "topRange": 62,
+      "value": "Honest"
+    },
+    {
+      "topRange": 63,
+      "value": "Infamous"
+    },
+    {
+      "topRange": 64,
+      "value": "Dying"
+    },
+    {
+      "topRange": 65,
+      "value": "Reclusive"
+    },
+    {
+      "topRange": 66,
+      "value": "Artistic"
+    },
+    {
+      "topRange": 67,
+      "value": "Disabled"
+    },
+    {
+      "topRange": 68,
+      "value": "Confused"
+    },
+    {
+      "topRange": 69,
+      "value": "Manipulative"
+    },
+    {
+      "topRange": 70,
+      "value": "Relaxed"
+    },
+    {
+      "topRange": 71,
+      "value": "Stealthy"
+    },
+    {
+      "topRange": 72,
+      "value": "Confident"
+    },
+    {
+      "topRange": 73,
+      "value": "Weak"
+    },
+    {
+      "topRange": 74,
+      "value": "Friendly"
+    },
+    {
+      "topRange": 75,
+      "value": "Wise"
+    },
+    {
+      "topRange": 76,
+      "value": "Influential"
+    },
+    {
+      "topRange": 77,
+      "value": "Young"
+    },
+    {
+      "topRange": 78,
+      "value": "Adventurous"
+    },
+    {
+      "topRange": 79,
+      "value": "Oppressed"
+    },
+    {
+      "topRange": 80,
+      "value": "Vengeful"
+    },
+    {
+      "topRange": 81,
+      "value": "Cooperative"
+    },
+    {
+      "topRange": 82,
+      "value": "Armored"
+    },
+    {
+      "topRange": 83,
+      "value": "Apathetic"
+    },
+    {
+      "topRange": 84,
+      "value": "Determined"
+    },
+    {
+      "topRange": 85,
+      "value": "Loyal"
+    },
+    {
+      "topRange": 86,
+      "value": "Sick"
+    },
+    {
+      "topRange": 87,
+      "value": "Religious"
+    },
+    {
+      "topRange": 88,
+      "value": "Selfish"
+    },
+    {
+      "topRange": 89,
+      "value": "Old"
+    },
+    {
+      "topRange": 90,
+      "value": "Fervent"
+    },
+    {
+      "topRange": 91,
+      "value": "Violent"
+    },
+    {
+      "topRange": 92,
+      "value": "Agreeable"
+    },
+    {
+      "topRange": 93,
+      "value": "Hot-tempered"
+    },
+    {
+      "topRange": 94,
+      "value": "Stubborn"
+    },
+    {
+      "topRange": 95,
+      "value": "Incompetent"
+    },
+    {
+      "topRange": 96,
+      "value": "Greedy"
+    },
+    {
+      "topRange": 97,
+      "value": "Cowardly"
+    },
+    {
+      "topRange": 98,
+      "value": "Obsessed"
+    },
+    {
+      "topRange": 99,
+      "value": "Careless"
+    },
+    {
+      "topRange": 100,
+      "value": "Ironsworn"
+    }
+  ]
+}

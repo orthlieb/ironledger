@@ -1,0 +1,79 @@
+{
+  "category": "Quest",
+  "moves": [
+    {
+      "id": "move/swear-an-iron-vow",
+      "name": "Swear an Iron Vow",
+      "category": "Quest",
+      "triggerShort": "When you swear to fulfill a quest.",
+      "trigger": "When you <strong>swear to fulfill a quest</strong>, write your vow and give the vow a rank. Then roll <strong>+heart</strong>. If your vow is to a person or community with whom you have a bond, add <strong>+1</strong>.",
+      "stats": [
+        {
+          "stat": "heart",
+          "desc": "Swearing to fulfill a quest"
+        }
+      ],
+      "strong": "You are emboldened and begin your quest with confidence. Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+2\">+2 momentum</a>.",
+      "weak": "You are determined but burdened by the nature of your quest. Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">+1 momentum</a>.",
+      "miss": "You face a significant obstacle before you can begin your quest. Envision what stands in your way (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure), and choose one:<ul><li>You press on: Suffer <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"-2\">−2 momentum</a>, and do what you must to overcome this obstacle.</li><li>You give up: <a class=\"move-link\" data-id=\"move/forsake-your-vow\">Forsake Your Vow</a>.</li></ul>",
+      "notes": "The vow must be meaningful — something you'd risk your life for. The rank (Troublesome through Epic) determines the difficulty of the progress track. The iron is literal in Ironsworn — swear on iron you carry. Vows drive the game."
+    },
+    {
+      "id": "move/reach-a-milestone",
+      "name": "Reach a Milestone",
+      "category": "Quest",
+      "triggerShort": "When you make significant progress toward a vow.",
+      "trigger": "When you <strong>make significant progress toward a vow</strong> by overcoming a critical obstacle, completing a perilous expedition, solving a complex mystery, defeating a powerful threat, or gaining a critical resource, mark <strong>progress</strong> on your vow.",
+      "strong": "",
+      "weak": "",
+      "miss": "",
+      "notes": "No roll — just mark progress when the fiction clearly warrants it. A milestone is a meaningful step: defeating a key obstacle, uncovering a vital secret, completing a significant sub-goal. Don't mark milestones for minor victories.",
+      "preconditions": [
+        { "key": "hasCharacter", "eq": 1 },
+        { "key": "vowCount", "min": 1 }
+      ]
+    },
+    {
+      "id": "move/fulfill-your-vow",
+      "name": "Fulfill Your Vow",
+      "category": "Quest",
+      "triggerShort": "When you believe you have fulfilled your vow.",
+      "progressTrack": "vows",
+      "trigger": "When you believe you have <strong>fulfilled your vow</strong>, roll the <strong>challenge dice</strong> against your <strong>progress track</strong>. This is a <strong>progress roll</strong> — do not add a stat. Momentum is ignored.",
+      "strong": "Your quest is complete. Mark <strong>experience</strong> equal to the vow's rank (Troublesome: 1, Dangerous: 2, Formidable: 3, Extreme: 4, Epic: 5).",
+      "weak": "There is more to be done, or you realize the truth of your quest. Envision what you discover (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure). Mark <strong>experience</strong> at one rank lower (Troublesome: 0, Dangerous: 1, Formidable: 2, Extreme: 3, Epic: 4). You may <a class=\"move-link\" data-id=\"move/swear-an-iron-vow\">Swear an Iron Vow</a> to set things right. If you do, add +1.",
+      "miss": "Your quest is undone. Envision what happens (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure), and choose one:<ul><li>You recommit: Clear all but one filled progress, and raise the quest's rank by one (if not already epic).</li><li>You give up: <a class=\"move-link\" data-id=\"move/forsake-your-vow\">Forsake Your Vow</a>.</li></ul>",
+      "notes": "Progress roll against the vow's track. No action die. Momentum is ignored. Use the progress spinner to enter your vow's current progress score (0–10).",
+      "preconditions": [
+        { "key": "hasCharacter", "eq": 1 },
+        { "key": "vowCount", "min": 1 }
+      ]
+    },
+    {
+      "id": "move/forsake-your-vow",
+      "name": "Forsake Your Vow",
+      "category": "Quest",
+      "triggerShort": "When you renounce your quest or are unable to continue.",
+      "trigger": "When you <strong>renounce your quest or are unable to continue</strong>, clear the vow and <a class=\"move-link\" data-id=\"move/endure-stress\">Endure Stress</a> equal to the vow's rank (Troublesome: 1, Dangerous: 2, Formidable: 3, Extreme: 4, Epic: 5).",
+      "strong": "",
+      "weak": "",
+      "miss": "",
+      "notes": "No roll — just the consequence. Use it when a vow becomes impossible or when the character deliberately walks away from their oath. Breaking an iron vow is a serious act that costs spirit proportional to the gravity of the abandoned quest.",
+      "preconditions": [
+        { "key": "hasCharacter", "eq": 1 },
+        { "key": "vowCount", "min": 1 }
+      ]
+    },
+    {
+      "id": "move/advance",
+      "name": "Advance",
+      "category": "Quest",
+      "triggerShort": "When you spend experience to gain or upgrade an asset.",
+      "trigger": "When you <strong>focus on your skills, receive training, find inspiration, or earn recognition</strong>, and you have experience to spend, you may spend <strong>3 experience</strong> to add a new asset, or <strong>2 experience</strong> to upgrade an existing asset.",
+      "strong": "",
+      "weak": "",
+      "miss": "",
+      "notes": "No roll. Spend experience earned from Fulfill Your Vow. Assets are permanent abilities that define your character's specialties. Choose assets that fit your concept — interesting is better than optimal."
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "category": "Rarity",
+  "moves": [
+    {
+      "id": "move/wield-a-rarity",
+      "name": "Wield a Rarity",
+      "category": "Rarity",
+      "triggerShort": "When you make a move aided by an augmented asset.",
+      "trigger": "When you <strong>make a move aided by an augmented asset</strong>, roll your rarity die in place of your action die.<ul><li>On <strong>any result</strong> with <strong>6</strong> showing on the rarity die: The power of the rarity manifests in a dramatic and obvious way. You score an automatic <strong>strong hit</strong> and take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">+1 momentum</a>.</li><li>On a <strong>hit</strong> with <strong>5</strong> showing on the rarity die: The power of the rarity manifests in a subtle way. Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">+1 momentum</a>.</li><li>On a <strong>miss</strong> with <strong>1</strong> showing on the rarity die: The rarity's power fails or works against you.</li></ul>",
+      "strong": "",
+      "weak": "",
+      "miss": "",
+      "rarityRoll": true,
+      "notes": "Replaces your action die (d6) with a rarity die (also d6) when invoking an augmented asset. Results depend on the face showing: 6 = automatic strong hit + momentum, 5 on a hit = momentum, 1 on a miss = power fails or backfires. Other results resolve normally.",
+      "preconditions": [
+        { "key": "hasCharacter", "eq": 1 },
+        { "key": "rarityCount", "min": 1 }
+      ]
+    }
+  ]
+}

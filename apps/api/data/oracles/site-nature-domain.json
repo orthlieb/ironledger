@@ -1,0 +1,57 @@
+{
+  "key": "siteNatureDomain",
+  "title": "Delve: Site Nature – Domain",
+  "group": "Delve",
+  "selectLabel": "Delve: Site Nature – Domain",
+  "description": "Determine the physical domain type of a Delve site (e.g., cavern, ruin, sea cave).",
+  "data": [
+    {
+      "topRange": 8,
+      "value": "Barrow"
+    },
+    {
+      "topRange": 16,
+      "value": "Cavern"
+    },
+    {
+      "topRange": 24,
+      "value": "Frozen Cavern"
+    },
+    {
+      "topRange": 32,
+      "value": "Icereach"
+    },
+    {
+      "topRange": 40,
+      "value": "Mine"
+    },
+    {
+      "topRange": 48,
+      "value": "Pass"
+    },
+    {
+      "topRange": 56,
+      "value": "Ruin"
+    },
+    {
+      "topRange": 64,
+      "value": "Sea Cave"
+    },
+    {
+      "topRange": 72,
+      "value": "Shadowfen"
+    },
+    {
+      "topRange": 80,
+      "value": "Stronghold"
+    },
+    {
+      "topRange": 88,
+      "value": "Tanglewood"
+    },
+    {
+      "topRange": 100,
+      "value": "Underkeep"
+    }
+  ]
+}

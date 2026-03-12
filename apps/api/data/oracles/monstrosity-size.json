@@ -1,0 +1,33 @@
+{
+  "key": "monstrositySize",
+  "title": "Monstrosity: Size",
+  "group": "Delve",
+  "selectLabel": "Monstrosity: Size",
+  "description": "Determine the size category of a monstrosity.",
+  "data": [
+    {
+      "topRange": 5,
+      "value": "Tiny (rodent-sized)"
+    },
+    {
+      "topRange": 30,
+      "value": "Small (hound-sized)"
+    },
+    {
+      "topRange": 65,
+      "value": "Medium (person-sized)"
+    },
+    {
+      "topRange": 94,
+      "value": "Large (giant-sized)"
+    },
+    {
+      "topRange": 99,
+      "value": "Huge (whale-sized)"
+    },
+    {
+      "topRange": 100,
+      "value": "Titanic (incomprehensible)"
+    }
+  ]
+}

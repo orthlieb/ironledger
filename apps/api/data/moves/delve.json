@@ -1,0 +1,354 @@
+{
+  "category": "Delve",
+  "moves": [
+    {
+      "id": "move/discover-a-site",
+      "name": "Discover a Site",
+      "category": "Delve",
+      "triggerShort": "When you resolve to enter a perilous site in pursuit of an objective.",
+      "trigger": "When you <strong>resolve to enter a perilous site in pursuit of an objective</strong>, choose the theme and domain which best represent its nature (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure), and give it a rank.<ul><li><strong>Troublesome site:</strong> 3 progress per area.</li><li><strong>Dangerous site:</strong> 2 progress per area.</li><li><strong>Formidable site:</strong> 1 progress per area.</li><li><strong>Extreme site:</strong> 2 ticks per area.</li><li><strong>Epic site:</strong> 1 tick per area.</li></ul>If you are returning to a previously explored site, roll both challenge dice, take the lowest value, and clear that number of progress boxes.<br>Then, <a class=\"move-link\" data-id=\"move/delve-the-depths\">Delve the Depths</a> to explore this place.",
+      "strong": "",
+      "weak": "",
+      "miss": "",
+      "notes": "No roll — this is the setup move for entering a delve site. Choose theme and domain, set the rank, then immediately Delve the Depths. Returning to a site: roll 2d10, take the lower, clear that many progress boxes.",
+      "preconditions": [
+        { "key": "hasSite", "eq": 1 }
+      ],
+      "references": [
+        "expedition"
+      ]
+    },
+    {
+      "id": "move/delve-the-depths",
+      "name": "Delve the Depths",
+      "category": "Delve",
+      "triggerShort": "When you traverse an area within a perilous site.",
+      "trigger": "When you <strong>traverse an area within a perilous site</strong>, envision your surroundings (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure). Then, consider your approach. If you navigate this area…<ul><li>With haste: Roll <strong>+edge</strong>.</li><li>With stealth or trickery: Roll <strong>+shadow</strong>.</li><li>With observation, intuition, or expertise: Roll <strong>+wits</strong>.</li></ul>",
+      "triggerPreamble": "When you <strong>traverse an area within a perilous site</strong>, envision your surroundings (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure). Then, consider your approach. If you navigate this area…",
+      "stats": [
+        {
+          "stat": "edge",
+          "desc": "With haste"
+        },
+        {
+          "stat": "shadow",
+          "desc": "With stealth or trickery"
+        },
+        {
+          "stat": "wits",
+          "desc": "With observation, intuition, or expertise"
+        }
+      ],
+      "strong": "You delve deeper. <a class=\"progress-link\" data-value=\"1\" data-track=\"delve\">Mark progress</a> and <a class=\"move-link\" data-id=\"move/find-an-opportunity\">Find an Opportunity</a>.",
+      "weak": "Roll on the following table according to your stat.",
+      "miss": "<a class=\"move-link\" data-id=\"move/reveal-a-danger\">Reveal a Danger</a>.",
+      "notes": "The core Delve move. On a strong hit, mark progress and Find an Opportunity. On a weak hit, roll on the table below using whichever stat you rolled. On a miss, Reveal a Danger.",
+      "tableType": "delveDepths",
+      "table": [
+        {
+          "edge": 45,
+          "shadow": 30,
+          "wits": 40,
+          "value": "<a class=\"progress-link\" data-value=\"1\" data-track=\"delve\">Mark progress</a> and Reveal a Danger."
+        },
+        {
+          "edge": 65,
+          "shadow": 65,
+          "wits": 55,
+          "value": "<a class=\"progress-link\" data-value=\"1\" data-track=\"delve\">Mark progress</a>."
+        },
+        {
+          "edge": 75,
+          "shadow": 90,
+          "wits": 80,
+          "value": "Choose one: <a class=\"progress-link\" data-value=\"1\" data-track=\"delve\">Mark progress</a> or Find an Opportunity."
+        },
+        {
+          "edge": 80,
+          "shadow": 99,
+          "wits": 99,
+          "value": "Take both: <a class=\"progress-link\" data-value=\"1\" data-track=\"delve\">Mark progress</a> and Find an Opportunity."
+        },
+        {
+          "edge": 100,
+          "shadow": 100,
+          "wits": 100,
+          "value": "<a class=\"progress-link\" data-value=\"2\" data-track=\"delve\">Mark progress twice</a> and Reveal a Danger."
+        }
+      ],
+      "preconditions": [
+        {
+          "key": "hasCharacter",
+          "eq": 1
+        },
+        {
+          "key": "hasSite",
+          "eq": 1
+        }
+      ]
+    },
+    {
+      "id": "move/find-an-opportunity",
+      "name": "Find an Opportunity",
+      "category": "Delve",
+      "triggerShort": "When you encounter a helpful situation or feature within a site.",
+      "trigger": "When you <strong>encounter a helpful situation or feature within a site</strong>, roll on the table below. If you are making this move as a result of a strong hit on <a class=\"move-link\" data-id=\"move/delve-the-depths\">Delve the Depths</a>, you may pick or envision an opportunity instead of rolling.<br>Then, choose one:<ul><li><strong>Gain insight or prepare:</strong> Take +1 momentum.</li><li><strong>Take action now:</strong> You and any allies may make a move (not a progress move) which directly leverages the opportunity. When you do, add +1 and take +1 momentum on a hit.</li></ul>",
+      "strong": "",
+      "weak": "",
+      "miss": "",
+      "notes": "Triggered by a strong hit on Delve the Depths (or encountered directly). On a strong hit from Delve the Depths, you may skip the roll and simply choose or envision the opportunity.",
+      "preconditions": [
+        { "key": "hasSite", "eq": 1 }
+      ],
+      "table": [
+        {
+          "topRange": 25,
+          "value": "The terrain favors you, or you find a hidden path."
+        },
+        {
+          "topRange": 45,
+          "value": "An aspect of the history or nature of this place is revealed."
+        },
+        {
+          "topRange": 57,
+          "value": "You locate a secure area."
+        },
+        {
+          "topRange": 68,
+          "value": "A clue offers insight or direction."
+        },
+        {
+          "topRange": 78,
+          "value": "You get the drop on a denizen."
+        },
+        {
+          "topRange": 86,
+          "value": "This area provides an opportunity to scavenge, forage, or hunt."
+        },
+        {
+          "topRange": 90,
+          "value": "You locate an interesting or helpful object."
+        },
+        {
+          "topRange": 94,
+          "value": "You are alerted to a potential threat."
+        },
+        {
+          "topRange": 98,
+          "value": "You encounter a denizen who might support you."
+        },
+        {
+          "topRange": 100,
+          "value": "You encounter a denizen in need of help."
+        }
+      ],
+      "references": [
+        "expedition"
+      ]
+    },
+    {
+      "id": "move/reveal-a-danger",
+      "name": "Reveal a Danger",
+      "category": "Delve",
+      "triggerShort": "When you encounter a risky situation within a site.",
+      "trigger": "When you <strong>encounter a risky situation within a site</strong>, envision the danger or roll on the following table.",
+      "strong": "",
+      "weak": "",
+      "miss": "",
+      "notes": "Not a player-rolled move — triggered by miss results on Delve the Depths or Find an Opportunity. Dangers can be traps, monsters, environmental hazards, or complications. After revealing it, respond with other moves (Face Danger, Strike, etc.).",
+      "preconditions": [
+        { "key": "hasSite", "eq": 1 }
+      ],
+      "table": [
+        {
+          "topRange": 30,
+          "value": "Check the theme card."
+        },
+        {
+          "topRange": 45,
+          "value": "Check the domain card."
+        },
+        {
+          "topRange": 57,
+          "value": "You encounter a hostile denizen."
+        },
+        {
+          "topRange": 68,
+          "value": "You face an environmental or architectural hazard."
+        },
+        {
+          "topRange": 76,
+          "value": "A discovery undermines or complicates your quest."
+        },
+        {
+          "topRange": 79,
+          "value": "You confront a harrowing situation or sensation."
+        },
+        {
+          "topRange": 82,
+          "value": "You face the consequences of an earlier choice or approach."
+        },
+        {
+          "topRange": 85,
+          "value": "Your way is blocked or trapped."
+        },
+        {
+          "topRange": 88,
+          "value": "A resource is diminished, broken, or lost."
+        },
+        {
+          "topRange": 91,
+          "value": "You face a perplexing mystery or tough choice."
+        },
+        {
+          "topRange": 94,
+          "value": "You lose your way or are delayed."
+        },
+        {
+          "topRange": 100,
+          "value": "Roll twice more on this table. Both results occur. If they are the same result, make it worse."
+        }
+      ],
+      "references": [
+        "expedition"
+      ]
+    },
+    {
+      "id": "move/check-your-gear",
+      "name": "Check Your Gear",
+      "category": "Delve",
+      "triggerShort": "When you check to see if you have a specific helpful item.",
+      "trigger": "When you <strong>check to see if you have a specific helpful item</strong>, and you have at least <strong>+1 supply</strong>, roll <strong>+supply</strong>.",
+      "stats": [
+        {
+          "stat": "supply",
+          "desc": "Checking if you have a specific helpful item"
+        }
+      ],
+      "strong": "You have it. Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">+1 momentum</a>.",
+      "weak": "You have it, but your resources are diminished. Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">+1 momentum</a> and suffer <a class=\"resource-link\" data-resource=\"supply\" data-value=\"-1\">−1 supply</a>.",
+      "miss": "You don't have it and the situation grows more perilous. <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a>.",
+      "notes": "Use this when a specific item or resource is the deciding factor. If it makes narrative sense you'd have it, consider just narrating success instead of rolling.",
+      "preconditions": [
+        {
+          "key": "hasCharacter",
+          "eq": 1
+        },
+        {
+          "key": "hasSite",
+          "eq": 1
+        }
+      ]
+    },
+    {
+      "id": "move/locate-your-objective",
+      "name": "Locate Your Objective",
+      "category": "Delve",
+      "triggerShort": "When your exploration of a site comes to an end.",
+      "progressTrack": "delve",
+      "trigger": "When your <strong>exploration of a site comes to an end</strong>, roll the challenge dice and compare to your progress. <strong>Momentum is ignored on this roll.</strong>",
+      "strong": "You locate your objective and the situation favors you. Choose one:<ul><li>Make another move now (not a progress move), and add +1.</li><li>Take +1 momentum.</li></ul>",
+      "weak": "You locate your objective but face an unforeseen hazard or complication. Envision what you find (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure).",
+      "miss": "Your objective falls out of reach, you have been misled about the nature of your objective, or you discover that this site holds unexpected depths. If you continue your exploration, clear all but one filled progress and raise the site's rank by one (if not already epic).",
+      "notes": "Progress move — roll the challenge dice against your Delve progress track. Do not add a stat. Momentum is ignored.",
+      "preconditions": [
+        {
+          "key": "hasSite",
+          "eq": 1
+        }
+      ]
+    },
+    {
+      "id": "move/advance-a-threat",
+      "name": "Advance a Threat",
+      "category": "Delve",
+      "triggerShort": "When you give ground to a threat through inaction, failure, or delay.",
+      "trigger": "When you <strong>give ground to a threat through inaction, failure, or delay</strong>, roll on the table below and envision how the change manifests in your world (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure).",
+      "strong": "",
+      "weak": "",
+      "miss": "",
+      "tableRoll": true,
+      "notes": "<em>On a match, this development also exposes a surprising aspect of the threat's plan or nature.</em><br><br>If you mark the last box on the threat's menace track, the threat achieves its goal, or the final dire outcome occurs. You must <a class=\"move-link\" data-id=\"move/forsake-your-vow\">Forsake Your Vow</a>.",
+      "table": [
+        {
+          "topRange": 30,
+          "value": "The threat readies its next step, or a new danger looms. If you are in a position to prevent this development, you may attempt to do so. If you succeed, <a class=\"move-link\" data-id=\"move/reach-a-milestone\">Reach a Milestone</a>. Otherwise, <a class=\"menace-link\" data-value=\"1\">mark menace</a>."
+        },
+        {
+          "topRange": 70,
+          "value": "The threat works subtly to advance toward its goal, or the danger escalates. <a class=\"menace-link\" data-value=\"1\">Mark menace</a>."
+        },
+        {
+          "topRange": 100,
+          "value": "The threat makes a dramatic and immediate move, or a major event reveals new complications. <a class=\"menace-link\" data-value=\"2\">Mark menace twice</a>."
+        }
+      ],
+      "references": [
+        "expedition"
+      ],
+      "preconditions": [
+        { "key": "hasCharacter", "eq": 1 },
+        { "key": "vowCount", "min": 1 }
+      ]
+    },
+    {
+      "id": "move/take-a-hiatus",
+      "name": "Take a Hiatus",
+      "category": "Delve",
+      "triggerShort": "When you spend an extended time recovering in a safe place while a threat is active.",
+      "trigger": "When you <strong>spend an extended time recovering in a safe place while a threat is active</strong>, do any of the following.<ul><li>Clear any marked conditions.</li><li>Set your health, spirit, supply, and companion health to their maximum values.</li><li>Set your momentum to its reset value.</li></ul>Then, for each active threat, <a class=\"move-link\" data-id=\"move/advance-a-threat\">Advance a Threat</a>.",
+      "strong": "",
+      "weak": "",
+      "miss": "",
+      "notes": "This move has no roll. Take the recovery benefits freely, but each active threat advances — the world does not stand still while you rest.",
+      "preconditions": [
+        { "key": "hasCharacter", "eq": 1 },
+        { "key": "vowCount", "min": 1 }
+      ]
+    },
+    {
+      "id": "move/escape-the-depths",
+      "name": "Escape the Depths",
+      "category": "Delve",
+      "triggerShort": "When you flee or retreat from a site.",
+      "trigger": "When you <strong>flee or retreat from a site</strong>, consider your approach and roll. If you…<ul><li>Find the fastest way out: Roll <strong>+edge</strong>.</li><li>Steel yourself against the horrors of this place: Roll <strong>+heart</strong>.</li><li>Fight your way out: Roll <strong>+iron</strong>.</li><li>Keep out of sight: Roll <strong>+shadow</strong>.</li><li>Retrace your steps or find an alternate path: Roll <strong>+wits</strong>.</li></ul>",
+      "triggerPreamble": "When you <strong>flee or retreat from a site</strong>, consider your approach and roll. If you…",
+      "stats": [
+        {
+          "stat": "edge",
+          "desc": "Find the fastest way out"
+        },
+        {
+          "stat": "heart",
+          "desc": "Steel yourself against the horrors of this place"
+        },
+        {
+          "stat": "iron",
+          "desc": "Fight your way out"
+        },
+        {
+          "stat": "shadow",
+          "desc": "Keep out of sight"
+        },
+        {
+          "stat": "wits",
+          "desc": "Retrace your steps or find an alternate path"
+        }
+      ],
+      "strong": "You make your way safely out of the site. Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">+1 momentum</a>.",
+      "weak": "You find your way out, but this place exacts its price. Choose one:<ul><li>You are weary or wounded: <a class=\"move-link\" data-id=\"move/endure-harm\">Endure Harm</a>.</li><li>You are disheartened or frightened: <a class=\"move-link\" data-id=\"move/endure-stress\">Endure Stress</a>.</li><li>You are delayed, and face a new complication.</li><li>You leave behind something important.</li><li>You face a new complication as you emerge.</li><li>A denizen plots its revenge.</li></ul>",
+      "miss": "A dire threat or imposing obstacle stands in your way. <a class=\"move-link\" data-id=\"move/reveal-a-danger\">Reveal a Danger</a>. If you survive, you may make your escape.",
+      "notes": "Use this when a deliberate retreat is the goal. On a miss, you don't automatically escape — you must face the revealed danger first. If you survive that, you may then attempt to escape again.",
+      "preconditions": [
+        {
+          "key": "hasCharacter",
+          "eq": 1
+        },
+        {
+          "key": "hasSite",
+          "eq": 1
+        }
+      ]
+    }
+  ]
+}

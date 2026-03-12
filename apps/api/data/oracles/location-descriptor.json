@@ -1,0 +1,209 @@
+{
+  "key": "locationDescriptor",
+  "title": "Oracle 6: Location Descriptor",
+  "group": "Core Ironsworn",
+  "selectLabel": "Oracle 6: Location Descriptor",
+  "description": "Use this oracle to add detail to the Location or Coastal Waters Location oracles, or by itself to generate a description of a location. Roll more than once for extra detail.",
+  "data": [
+    {
+      "topRange": 2,
+      "value": "High"
+    },
+    {
+      "topRange": 4,
+      "value": "Remote"
+    },
+    {
+      "topRange": 6,
+      "value": "Exposed"
+    },
+    {
+      "topRange": 8,
+      "value": "Small"
+    },
+    {
+      "topRange": 10,
+      "value": "Broken"
+    },
+    {
+      "topRange": 12,
+      "value": "Diverse"
+    },
+    {
+      "topRange": 14,
+      "value": "Rough"
+    },
+    {
+      "topRange": 16,
+      "value": "Dark"
+    },
+    {
+      "topRange": 18,
+      "value": "Shadowy"
+    },
+    {
+      "topRange": 20,
+      "value": "Contested"
+    },
+    {
+      "topRange": 22,
+      "value": "Grim"
+    },
+    {
+      "topRange": 24,
+      "value": "Wild"
+    },
+    {
+      "topRange": 26,
+      "value": "Fertile"
+    },
+    {
+      "topRange": 28,
+      "value": "Blocked"
+    },
+    {
+      "topRange": 30,
+      "value": "Ancient"
+    },
+    {
+      "topRange": 32,
+      "value": "Perilous"
+    },
+    {
+      "topRange": 34,
+      "value": "Hidden"
+    },
+    {
+      "topRange": 36,
+      "value": "Occupied"
+    },
+    {
+      "topRange": 38,
+      "value": "Rich"
+    },
+    {
+      "topRange": 40,
+      "value": "Big"
+    },
+    {
+      "topRange": 42,
+      "value": "Savage"
+    },
+    {
+      "topRange": 44,
+      "value": "Defended"
+    },
+    {
+      "topRange": 46,
+      "value": "Withered"
+    },
+    {
+      "topRange": 48,
+      "value": "Mystical"
+    },
+    {
+      "topRange": 50,
+      "value": "Inaccessible"
+    },
+    {
+      "topRange": 52,
+      "value": "Protected"
+    },
+    {
+      "topRange": 54,
+      "value": "Abandoned"
+    },
+    {
+      "topRange": 56,
+      "value": "Wide"
+    },
+    {
+      "topRange": 58,
+      "value": "Foul"
+    },
+    {
+      "topRange": 60,
+      "value": "Dead"
+    },
+    {
+      "topRange": 62,
+      "value": "Ruined"
+    },
+    {
+      "topRange": 64,
+      "value": "Barren"
+    },
+    {
+      "topRange": 66,
+      "value": "Cold"
+    },
+    {
+      "topRange": 68,
+      "value": "Blighted"
+    },
+    {
+      "topRange": 70,
+      "value": "Low"
+    },
+    {
+      "topRange": 72,
+      "value": "Beautiful"
+    },
+    {
+      "topRange": 74,
+      "value": "Abundant"
+    },
+    {
+      "topRange": 76,
+      "value": "Lush"
+    },
+    {
+      "topRange": 78,
+      "value": "Flooded"
+    },
+    {
+      "topRange": 80,
+      "value": "Empty"
+    },
+    {
+      "topRange": 82,
+      "value": "Strange"
+    },
+    {
+      "topRange": 84,
+      "value": "Corrupted"
+    },
+    {
+      "topRange": 86,
+      "value": "Peaceful"
+    },
+    {
+      "topRange": 88,
+      "value": "Forgotten"
+    },
+    {
+      "topRange": 90,
+      "value": "Expansive"
+    },
+    {
+      "topRange": 92,
+      "value": "Settled"
+    },
+    {
+      "topRange": 94,
+      "value": "Dense"
+    },
+    {
+      "topRange": 96,
+      "value": "Civilized"
+    },
+    {
+      "topRange": 98,
+      "value": "Desolate"
+    },
+    {
+      "topRange": 100,
+      "value": "Isolated"
+    }
+  ]
+}

@@ -1,0 +1,117 @@
+{
+  "key": "freeportDenizen",
+  "title": "YRT – Freeport Denizen",
+  "group": "Yrt",
+  "selectLabel": "YRT – Freeport Denizen",
+  "description": "Generate a random NPC denizen encountered in the Freeport district of Yrt.",
+  "data": [
+    {
+      "topRange": 11,
+      "value": {
+        "type": "Merchants, traders, brokers",
+        "notes": "Shops, stalls, warehouses, dockside deals; Freeport’s commercial lifeblood.",
+        "salary": "80–120 gents",
+        "count": 2000
+      }
+    },
+    {
+      "topRange": 34,
+      "value": {
+        "type": "Sailors, dockworkers, shipwrights",
+        "notes": "Natives and itinerant maritime labor; loading, sailing, repair.",
+        "salary": "20–30 (sailors/docks), 30–60 (shipwrights)",
+        "count": 4000
+      }
+    },
+    {
+      "topRange": 51,
+      "value": {
+        "type": "Craftsmen and artisans",
+        "notes": "Tanners, blacksmiths, coopers, weavers, bakers, other skilled trades.",
+        "salary": "30–80 gents",
+        "count": 3000
+      }
+    },
+    {
+      "topRange": 62,
+      "value": {
+        "type": "Farmers, fishers, food vendors",
+        "notes": "City and peri-urban food production, plus vendors coming in from outside.",
+        "salary": "20–40 gents",
+        "count": 2000
+      }
+    },
+    {
+      "topRange": 64,
+      "value": {
+        "type": "Guards, soldiers, watchmen, runners",
+        "notes": "City defense and order. Runners ~50, guards ~150.",
+        "salary": "30–40 gents",
+        "count": 200
+      }
+    },
+    {
+      "topRange": 65,
+      "value": {
+        "type": "Mages, healers",
+        "notes": "Mana-users working with costly materials; rare and prized.",
+        "salary": "200–300 gents",
+        "count": 100
+      }
+    },
+    {
+      "topRange": 68,
+      "value": {
+        "type": "Religious figures, healers, scribes, scholars, bankers",
+        "notes": "Temple staff, priests, monks, scribes, scholars, and financial clerks.",
+        "salary": "20–40 gents",
+        "count": 400
+      }
+    },
+    {
+      "topRange": 79,
+      "value": {
+        "type": "The poor, beggars, slum dwellers",
+        "notes": "Underclass, including orphans and those ‘touched’ or marginalized.",
+        "salary": "1–10 gents",
+        "count": 2000
+      }
+    },
+    {
+      "topRange": 87,
+      "value": {
+        "type": "Entertainment, service, hospitality workers",
+        "notes": "Innkeepers, tavern staff, courtesans, musicians, actors, general service.",
+        "salary": "20–50 gents",
+        "count": 1400
+      }
+    },
+    {
+      "topRange": 89,
+      "value": {
+        "type": "Criminal underworld",
+        "notes": "Brotherhood, smugglers, pickpockets; dens and hidden networks.",
+        "salary": "10–100 gents (varies wildly)",
+        "count": 300
+      }
+    },
+    {
+      "topRange": 90,
+      "value": {
+        "type": "Nobility / wealthy elites",
+        "notes": "Guildmasters, office-holders, old money families; very influential.",
+        "salary": "300+ gents",
+        "count": 100
+      }
+    },
+    {
+      "topRange": 100,
+      "value": {
+        "type": "Foreigners, transients, outcasts",
+        "notes": "Outsiders, mercenaries, exiles, temporary labor drawn by Freeport’s trade.",
+        "salary": "varies (10–80 gents typical)",
+        "count": 2000
+      }
+    }
+  ]
+}

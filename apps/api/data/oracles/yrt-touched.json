@@ -1,0 +1,49 @@
+{
+  "key": "yrtTouched",
+  "title": "YRT – Touched",
+  "group": "Yrt",
+  "selectLabel": "YRT – Touched (class + features)",
+  "description": "Generate a Touched character — their social class and supernatural features in the Yrt setting.",
+  "data": [
+    {
+      "topRange": 5,
+      "value": {
+        "socialRank": 1,
+        "className": "Pure",
+        "description": "Pure with no detectable characteristics."
+      }
+    },
+    {
+      "topRange": 65,
+      "value": {
+        "socialRank": 2,
+        "className": "Prime",
+        "description": "Small animal manifestations that are concealable or correctable through surgery or magic."
+      }
+    },
+    {
+      "topRange": 85,
+      "value": {
+        "socialRank": 3,
+        "className": "Second",
+        "description": "Noticeable deviations with 1–3 major manifestations, diminished but not correctable through surgery or magic."
+      }
+    },
+    {
+      "topRange": 95,
+      "value": {
+        "socialRank": 4,
+        "className": "Third",
+        "description": "Gross, uncorrectable or non-symmetric manifestations affecting 4–6 body parts."
+      }
+    },
+    {
+      "topRange": 100,
+      "value": {
+        "socialRank": 5,
+        "className": "Feral",
+        "description": "More beast than man, including those affected in their mind only."
+      }
+    }
+  ]
+}

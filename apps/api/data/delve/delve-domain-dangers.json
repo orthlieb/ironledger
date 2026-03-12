@@ -1,0 +1,86 @@
+{
+  "Barrow": [
+    { "topRange": 33, "value": "Denizen guards this area" },
+    { "topRange": 36, "value": "Trap" },
+    { "topRange": 39, "value": "Death makes its presence known" },
+    { "topRange": 42, "value": "Crumbling architecture" },
+    { "topRange": 45, "value": "Grave goods with hidden dangers" }
+  ],
+  "Cavern": [
+    { "topRange": 33, "value": "Denizen lairs here" },
+    { "topRange": 36, "value": "Cave-in" },
+    { "topRange": 39, "value": "Flooding" },
+    { "topRange": 42, "value": "Perilous climb or descent" },
+    { "topRange": 45, "value": "Fissure or sinkhole" }
+  ],
+  "Frozen Cavern": [
+    { "topRange": 33, "value": "Denizen lairs here" },
+    { "topRange": 36, "value": "Fracturing ice" },
+    { "topRange": 39, "value": "Crumbling chasm" },
+    { "topRange": 42, "value": "Bitter chill" },
+    { "topRange": 45, "value": "Disorienting reflections" }
+  ],
+  "Icereach": [
+    { "topRange": 33, "value": "Denizen hunts" },
+    { "topRange": 36, "value": "Fragile ice above watery depths" },
+    { "topRange": 39, "value": "Perilous climb or descent" },
+    { "topRange": 42, "value": "Avalanche or icefall" },
+    { "topRange": 45, "value": "Foul weather" }
+  ],
+  "Mine": [
+    { "topRange": 33, "value": "Cave-in" },
+    { "topRange": 36, "value": "Flooding" },
+    { "topRange": 39, "value": "Unstable platforms or architecture" },
+    { "topRange": 42, "value": "Hazardous gas pocket" },
+    { "topRange": 45, "value": "Weakened terrain" }
+  ],
+  "Pass": [
+    { "topRange": 33, "value": "Denizen lairs here" },
+    { "topRange": 36, "value": "Denizen hunts" },
+    { "topRange": 39, "value": "Perilous climb or descent" },
+    { "topRange": 42, "value": "Avalanche or rockslide" },
+    { "topRange": 45, "value": "Foul weather" }
+  ],
+  "Ruin": [
+    { "topRange": 33, "value": "Ancient mechanism or trap" },
+    { "topRange": 36, "value": "Collapsing wall or ceiling" },
+    { "topRange": 39, "value": "Blocked or broken passage" },
+    { "topRange": 42, "value": "Unstable floor above a new danger" },
+    { "topRange": 45, "value": "Ancient secrets best left buried" }
+  ],
+  "Sea Cave": [
+    { "topRange": 33, "value": "Denizen strikes without warning" },
+    { "topRange": 36, "value": "Denizen lurks below" },
+    { "topRange": 39, "value": "Flooding" },
+    { "topRange": 42, "value": "Rushing current" },
+    { "topRange": 45, "value": "Claustrophobic squeeze" }
+  ],
+  "Shadowfen": [
+    { "topRange": 33, "value": "Denizen hunts" },
+    { "topRange": 36, "value": "Deep water blocks the path" },
+    { "topRange": 39, "value": "Toxic environment" },
+    { "topRange": 42, "value": "Concealing or disorienting mist" },
+    { "topRange": 45, "value": "Hidden quagmire" }
+  ],
+  "Stronghold": [
+    { "topRange": 33, "value": "Blocked or guarded path" },
+    { "topRange": 36, "value": "Caught in the open" },
+    { "topRange": 39, "value": "Chokepoint" },
+    { "topRange": 42, "value": "Trap" },
+    { "topRange": 45, "value": "Alarm trigger" }
+  ],
+  "Tanglewood": [
+    { "topRange": 33, "value": "Denizen hunts" },
+    { "topRange": 36, "value": "Denizen lairs here" },
+    { "topRange": 39, "value": "Trap or snare" },
+    { "topRange": 42, "value": "Path leads you astray" },
+    { "topRange": 45, "value": "Entangling plant life" }
+  ],
+  "Underkeep": [
+    { "topRange": 33, "value": "Ancient mechanism or trap" },
+    { "topRange": 36, "value": "Crumbling architecture" },
+    { "topRange": 39, "value": "Blocked or broken passage" },
+    { "topRange": 42, "value": "Artifact with a hidden danger" },
+    { "topRange": 45, "value": "Denizen lurks in darkness" }
+  ]
+}
