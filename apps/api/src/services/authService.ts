@@ -82,10 +82,14 @@ export interface AuthResult {
 export async function register(input: RegisterInput): Promise<void> {
   const email = input.email.toLowerCase().trim();
 
+  if (!adminDb) throw new AuthError('Admin DB not configured', 'CONFIG_ERROR', 500);
+
   // Check for existing account — but don't reveal whether it exists.
+  // Use adminDb: this is a pre-auth lookup, no user context exists yet,
+  // so the RLS-protected db would return no rows.
   // We always hash the password (even if we're going to reject) to keep
   // timing consistent (prevents user enumeration via response time).
-  const [existing] = await db
+  const [existing] = await adminDb
     .select({ id: users.id })
     .from(users)
     .where(eq(users.email, email))
@@ -107,8 +111,9 @@ export async function register(input: RegisterInput): Promise<void> {
   // Hash the real password
   const passwordHash = await argon2.hash(input.password, ARGON2_OPTIONS);
 
-  // Create the user
-  const [newUser] = await db
+  // Create the user — use adminDb because there is no user context yet
+  // (we're creating the user, so we can't set app.user_id before the INSERT).
+  const [newUser] = await adminDb
     .insert(users)
     .values({ email, passwordHash })
     .returning({ id: users.id, email: users.email });
@@ -212,8 +217,12 @@ export interface LoginInput {
 export async function login(input: LoginInput): Promise<AuthResult> {
   const email = input.email.toLowerCase().trim();
 
-  // Always fetch user + hash, even for unknown emails, to keep timing consistent
-  const [user] = await db
+  if (!adminDb) throw new AuthError('Admin DB not configured', 'CONFIG_ERROR', 500);
+
+  // Always fetch user + hash, even for unknown emails, to keep timing consistent.
+  // Use adminDb: this is a pre-auth lookup — no user context exists yet, so the
+  // RLS-protected db would return no rows (app.user_id is not set before login).
+  const [user] = await adminDb
     .select()
     .from(users)
     .where(eq(users.email, email))
@@ -374,8 +383,11 @@ export async function logout(rawToken: string, userId: string): Promise<void> {
 export async function forgotPassword(email: string): Promise<void> {
   const normalised = email.toLowerCase().trim();
 
-  // Look up the user — always return success to prevent email enumeration
-  const [user] = await db
+  if (!adminDb) return;  // silently fail if admin DB not configured
+
+  // Look up the user — always return success to prevent email enumeration.
+  // Use adminDb: pre-auth lookup, no user context set.
+  const [user] = await adminDb
     .select({ id: users.id, emailVerifiedAt: users.emailVerifiedAt })
     .from(users)
     .where(eq(users.email, normalised))
