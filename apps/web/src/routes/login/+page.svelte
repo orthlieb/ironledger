@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ActionData } from './$types';
+	import PasswordInput from '$lib/components/PasswordInput.svelte';
 
 	let { form }: { form: ActionData } = $props();
 </script>
@@ -29,15 +30,11 @@
 				/>
 			</label>
 
-			<label class="field-group">
-				<span>Password</span>
-				<input
-					type="password"
-					name="password"
-					required
-					autocomplete="current-password"
-				/>
-			</label>
+			<PasswordInput
+				name="password"
+				label="Password"
+				autocomplete="current-password"
+			/>
 
 			<button type="submit" class="btn btn-primary">Sign in</button>
 		</form>
