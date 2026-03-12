@@ -1,8 +1,7 @@
 import { redirect, error } from '@sveltejs/kit';
-import { fail } from '@sveltejs/kit';
-import type { Actions, PageServerLoad } from './$types';
+import type { PageServerLoad } from './$types';
 import { INTERNAL_API_URL } from '$lib/server/config.js';
-import type { CharacterSummary } from '$lib/api.js';
+import type { CharacterFull } from '$lib/api.js';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) throw redirect(302, '/login');
@@ -13,29 +12,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 	if (!res.ok) throw error(res.status, 'Failed to load characters.');
 
-	const chars = (await res.json()) as CharacterSummary[];
+	const chars = (await res.json()) as CharacterFull[];
 	return { characters: chars };
 };
 
-export const actions: Actions = {
-	create: async ({ locals, request }) => {
-		if (!locals.user) throw redirect(302, '/login');
-
-		const form = await request.formData();
-		const name = ((form.get('name') as string | null) ?? '').trim() || 'New Character';
-
-		const res = await fetch(`${INTERNAL_API_URL}/api/v1/characters`, {
-			method: 'POST',
-			headers: {
-				Authorization: `Bearer ${locals.accessToken}`,
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify({ name, data: {} }),
-		});
-
-		if (!res.ok) return fail(res.status, { error: 'Could not create character.' });
-
-		const char = (await res.json()) as { id: string };
-		throw redirect(302, `/characters/${char.id}`);
-	},
-};
+// Create and delete are handled client-side via the BFF API (/api/characters).

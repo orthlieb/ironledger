@@ -45,21 +45,24 @@ export interface CharacterFull extends CharacterSummary {
 }
 
 // ---------------------------------------------------------------------------
-// list — all characters for the authenticated user (summaries, no data blob)
+// list — all characters for the authenticated user (full data included)
 // ---------------------------------------------------------------------------
 
-export async function list(userId: string): Promise<CharacterSummary[]> {
-  return withUserContext(userId, async (tx) => {
+export async function list(userId: string): Promise<CharacterFull[]> {
+  const rows = await withUserContext(userId, async (tx) => {
     return tx
-      .select({
-        id:        characters.id,
-        name:      characters.name,
-        createdAt: characters.createdAt,
-        updatedAt: characters.updatedAt,
-      })
+      .select()
       .from(characters)
       .orderBy(characters.updatedAt);
   });
+
+  return rows.map((c) => ({
+    id:        c.id,
+    name:      c.name,
+    data:      c.data as CharacterData,
+    createdAt: c.createdAt,
+    updatedAt: c.updatedAt,
+  }));
 }
 
 // ---------------------------------------------------------------------------
@@ -76,7 +79,7 @@ export async function get(
       .from(characters)
       .where(
         and(
-          eq(characters.id, userId),          // RLS also enforces this
+          eq(characters.userId, userId),      // RLS also enforces this
           eq(characters.id, characterId),
         ),
       )

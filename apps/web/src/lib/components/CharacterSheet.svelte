@@ -45,6 +45,7 @@
 	// untrack() suppresses the "captured initial value" rune warning correctly.
 	let data = $state(untrack(() => hydrateCharacter(character.data)));
 	let collapsed = $state(false);
+	let confirmingDelete = $state(false);
 	let saveStatus = $state<'idle' | 'saving' | 'error'>('idle');
 	let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -188,12 +189,20 @@
 		</span>
 
 		{#if onDelete}
-			<button
-				class="btn btn-danger btn-icon"
-				onclick={onDelete}
-				title="Delete character"
-				aria-label="Delete character"
-			>🗑</button>
+			{#if confirmingDelete}
+				<span class="delete-confirm">
+					<span class="delete-confirm-label">Delete?</span>
+					<button class="btn btn-danger btn-sm" onclick={() => onDelete!()}>Yes</button>
+					<button class="btn btn-sm" onclick={() => (confirmingDelete = false)}>No</button>
+				</span>
+			{:else}
+				<button
+					class="btn btn-danger btn-icon"
+					onclick={() => (confirmingDelete = true)}
+					title="Delete character"
+					aria-label="Delete character"
+				>🗑</button>
+			{/if}
 		{/if}
 	</div>
 
@@ -425,6 +434,25 @@
 
 	.portrait-input {
 		display: none;
+	}
+
+	/* Delete confirmation */
+	.delete-confirm {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		flex-shrink: 0;
+	}
+
+	.delete-confirm-label {
+		font-size: 0.75rem;
+		color: var(--color-danger, #c0392b);
+		white-space: nowrap;
+	}
+
+	.btn-sm {
+		padding: 2px 8px;
+		font-size: 0.75rem;
 	}
 
 	/* Save indicator */

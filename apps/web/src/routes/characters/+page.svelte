@@ -1,15 +1,43 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import type { CharacterSummary } from '$lib/api.js';
+	import type { CharacterFull } from '$lib/api.js';
+	import { characters as api } from '$lib/api.js';
+	import CharacterSheet from '$lib/components/CharacterSheet.svelte';
+	import { untrack } from 'svelte';
 
 	let { data }: { data: PageData } = $props();
 
-	function formatDate(iso: string) {
-		return new Date(iso).toLocaleDateString(undefined, {
-			month: 'short',
-			day: 'numeric',
-			year: 'numeric',
-		});
+	// Deep-reactive list — initialised from SSR data on first load.
+	// untrack() prevents the rune from re-running when data.characters changes;
+	// we own this list from here on and mutate it directly.
+	let chars = $state<CharacterFull[]>(untrack(() => data.characters));
+
+	let creating = $state(false);
+	let createError = $state('');
+
+	async function addCharacter() {
+		if (creating) return;
+		creating = true;
+		createError = '';
+		try {
+			const newChar = await api.create('New Character');
+			// Prepend so the new card appears at the top
+			chars = [newChar, ...chars];
+		} catch (err) {
+			createError = 'Could not create character. Is the server running?';
+			console.error(err);
+		} finally {
+			creating = false;
+		}
+	}
+
+	async function deleteCharacter(id: string) {
+		try {
+			await api.remove(id);
+			chars = chars.filter((c) => c.id !== id);
+		} catch (err) {
+			console.error('Failed to delete character:', err);
+		}
 	}
 </script>
 
@@ -19,12 +47,20 @@
 
 <div class="page-header">
 	<h1>Characters</h1>
-	<form method="POST" action="?/create">
-		<button type="submit" class="btn btn-primary">+ New Character</button>
-	</form>
+	<button
+		class="btn btn-primary"
+		onclick={addCharacter}
+		disabled={creating}
+	>
+		{creating ? 'Creating…' : '+ New Character'}
+	</button>
 </div>
 
-{#if data.characters.length === 0}
+{#if createError}
+	<div class="error-msg">{createError}</div>
+{/if}
+
+{#if chars.length === 0}
 	<div class="empty-state">
 		<p>No characters yet.</p>
 		<p style="margin-top: 0.5rem; font-size: 0.85rem;">
@@ -33,11 +69,19 @@
 	</div>
 {:else}
 	<div class="char-list">
-		{#each data.characters as char (char.id)}
-			<a href="/characters/{char.id}" class="char-list-item">
-				<span class="char-list-name">{char.name}</span>
-				<span class="char-list-meta">Updated {formatDate(char.updatedAt)}</span>
-			</a>
+		{#each chars as char (char.id)}
+			<CharacterSheet
+				character={char}
+				onDelete={() => deleteCharacter(char.id)}
+			/>
 		{/each}
 	</div>
 {/if}
+
+<style>
+	.char-list {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+</style>
