@@ -20,9 +20,11 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Default: look for the yrt data directory as a sibling of this project
+// Default: look for the yrt data directory as a sibling of the repo root.
+// __dirname = apps/api/src/routes/  →  ../../../../.. = parent of repo root
+// Override with CATALOGUE_PATH in .env for non-standard layouts.
 const DATA_ROOT = process.env['CATALOGUE_PATH']
-  ?? path.resolve(__dirname, '../../../../yrt/data');
+  ?? path.resolve(__dirname, '../../../../../yrt/data');
 
 // ---------------------------------------------------------------------------
 // Load data files once at startup
