@@ -30,9 +30,17 @@
 		{#if icon}<span class="stat-icon" aria-hidden="true">{@html icon}</span>{/if}
 		{label}
 	</div>
-	<div class="stat-value-box" style:border-color={color} style:color>
-		{value}
-	</div>
+	<input
+		type="number"
+		class="stat-value-input"
+		style:border-color={color}
+		style:color
+		bind:value
+		{min}
+		{max}
+		onblur={() => { value = Math.min(max, Math.max(min, value || min)); }}
+		aria-label="{label} stat value"
+	/>
 </div>
 
 <style>
@@ -41,7 +49,6 @@
 		flex-direction: column;
 		align-items: center;
 		gap: 5px;
-		cursor: default;
 	}
 
 	.stat-label {
@@ -66,10 +73,10 @@
 		fill: currentColor;
 	}
 
-	.stat-value-box {
+	.stat-value-input {
 		font-size: 1.5rem;
 		font-weight: 800;
-		min-width: 2.2rem;
+		width: 3rem;
 		text-align: center;
 		font-variant-numeric: tabular-nums;
 		line-height: 1;
@@ -77,5 +84,21 @@
 		border: 2px solid;
 		border-radius: 3px;
 		background: color-mix(in srgb, currentColor 8%, var(--bg-card));
+		font-family: var(--font-body);
+		/* Hide browser number input spinners */
+		-moz-appearance: textfield;
+		appearance: textfield;
+	}
+
+	.stat-value-input::-webkit-outer-spin-button,
+	.stat-value-input::-webkit-inner-spin-button {
+		-webkit-appearance: none;
+		margin: 0;
+	}
+
+	/* Focus ring uses the stat color instead of global amber */
+	.stat-value-input:focus {
+		outline: none;
+		box-shadow: 0 0 0 2px color-mix(in srgb, currentColor 30%, transparent);
 	}
 </style>
