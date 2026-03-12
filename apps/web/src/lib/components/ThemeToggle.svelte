@@ -20,7 +20,8 @@
 	];
 
 	function getInitialTheme(): Theme {
-		if (typeof localStorage === 'undefined') return 'auto';
+		// Guard against SSR — window/localStorage don't exist on the server
+		if (typeof window === 'undefined') return 'auto';
 		const saved = localStorage.getItem('theme');
 		if (saved === 'dark' || saved === 'light') return saved;
 		return 'auto';
