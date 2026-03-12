@@ -1,0 +1,21 @@
+{
+  "name": "ironledger",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/api",
+    "apps/web",
+    "packages/shared"
+  ],
+  "scripts": {
+    "dev":     "npm run dev --workspace=apps/api",
+    "build":   "npm run build --workspace=apps/api",
+    "test":    "npm run test --workspace=apps/api",
+    "lint":    "npm run lint --workspace=apps/api",
+    "migrate": "npm run migrate --workspace=apps/api"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "npm":  ">=10.0.0"
+  }
+}

@@ -1,0 +1,92 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  # Allow manual trigger from the GitHub UI
+  workflow_dispatch:
+
+# Prevent concurrent deploys — if a deploy is already running, queue the next
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false   # don't cancel a running deploy; queue instead
+
+jobs:
+  deploy:
+    name: Deploy to IONOS VPS
+    runs-on: ubuntu-latest
+    # Only deploy if CI passed first
+    needs: []   # (CI runs in the same push event; add needs: [test] if using separate workflows)
+    environment: production   # requires approval if configured in repo settings
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Run a quick smoke test before touching the server
+      - name: TypeScript type check
+        run: npx tsc --noEmit --project apps/api/tsconfig.json
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host:     ${{ secrets.IONOS_HOST }}
+          username: ironledger
+          key:      ${{ secrets.IONOS_DEPLOY_KEY }}
+          timeout:  120s
+          script: |
+            set -euo pipefail
+
+            cd ~/app
+
+            echo "▶ Pulling latest code..."
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo "▶ Installing dependencies..."
+            source ~/.nvm/nvm.sh
+            npm ci --omit=dev --workspace=apps/api
+
+            echo "▶ Building..."
+            npm run build --workspace=apps/api
+
+            echo "▶ Running migrations..."
+            npm run migrate --workspace=apps/api
+
+            echo "▶ Reloading PM2..."
+            pm2 reload ironledger --update-env
+
+            echo "✅ Deploy steps complete."
+
+      - name: Health check
+        run: |
+          APP_URL="https://${{ secrets.IONOS_DOMAIN }}"
+          echo "Checking $APP_URL/health..."
+
+          for i in $(seq 1 10); do
+            CODE=$(curl -sf -o /dev/null -w "%{http_code}" "$APP_URL/health" || echo "000")
+            if [ "$CODE" = "200" ]; then
+              echo "✅ Health check passed on attempt $i"
+              exit 0
+            fi
+            echo "  Attempt $i: HTTP $CODE — waiting 5s..."
+            sleep 5
+          done
+
+          echo "❌ Health check failed after 10 attempts"
+          exit 1
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::error::Deploy failed. Check the server with: pm2 logs ironledger"
+          # Add Slack/email notification here if desired

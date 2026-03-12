@@ -1,0 +1,10 @@
+{
+  "name": "@ironledger/web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Iron Ledger frontend — the compiled ironledger.html SPA",
+  "scripts": {
+    "build": "node build.js",
+    "dev":   "node build.js --watch"
+  }
+}

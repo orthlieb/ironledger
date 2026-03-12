@@ -1,0 +1,132 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test & Build
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB:       ironledger_test
+          POSTGRES_USER:     postgres
+          POSTGRES_PASSWORD: testpassword
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: valkey/valkey:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit --project apps/api/tsconfig.json
+
+      - name: Setup test database roles
+        env:
+          PGPASSWORD: testpassword
+        run: |
+          psql -h localhost -U postgres -d ironledger_test <<-SQL
+            CREATE ROLE app_admin WITH LOGIN PASSWORD 'testpassword' CREATEDB;
+            CREATE ROLE app_user  WITH LOGIN PASSWORD 'testpassword';
+            GRANT ALL PRIVILEGES ON DATABASE ironledger_test TO app_admin;
+            GRANT CONNECT ON DATABASE ironledger_test TO app_user;
+            \connect ironledger_test
+            GRANT ALL   ON SCHEMA public TO app_admin;
+            GRANT USAGE ON SCHEMA public TO app_user;
+          SQL
+
+      - name: Generate test JWT keys
+        run: |
+          openssl genrsa -out /tmp/jwt_private.pem 2048
+          openssl rsa -in /tmp/jwt_private.pem -pubout -out /tmp/jwt_public.pem
+
+      - name: Run unit tests
+        env:
+          NODE_ENV:          test
+          APP_URL:           http://localhost:3000
+          DATABASE_URL:      postgres://app_user:testpassword@localhost:5432/ironledger_test
+          DATABASE_ADMIN_URL: postgres://app_admin:testpassword@localhost:5432/ironledger_test
+          REDIS_URL:         redis://localhost:6379
+          EMAIL_FROM:        test@example.com
+          EMAIL_PROVIDER:    resend
+          RESEND_API_KEY:    re_test
+          HCAPTCHA_SECRET:   "0x0000000000000000000000000000000000000000"
+          JWT_PRIVATE_KEY:   ${{ secrets.CI_JWT_PRIVATE_KEY }}
+          JWT_PUBLIC_KEY:    ${{ secrets.CI_JWT_PUBLIC_KEY }}
+          JWT_EXPIRES_IN:    "900"
+          REFRESH_TOKEN_TTL_DAYS: "30"
+        run: npx vitest run --project unit
+
+      - name: Run integration tests
+        env:
+          NODE_ENV:          test
+          APP_URL:           http://localhost:3000
+          DATABASE_URL:      postgres://app_user:testpassword@localhost:5432/ironledger_test
+          DATABASE_ADMIN_URL: postgres://app_admin:testpassword@localhost:5432/ironledger_test
+          REDIS_URL:         redis://localhost:6379
+          EMAIL_FROM:        test@example.com
+          EMAIL_PROVIDER:    resend
+          RESEND_API_KEY:    re_test
+          HCAPTCHA_SECRET:   "0x0000000000000000000000000000000000000000"
+          JWT_PRIVATE_KEY:   ${{ secrets.CI_JWT_PRIVATE_KEY }}
+          JWT_PUBLIC_KEY:    ${{ secrets.CI_JWT_PUBLIC_KEY }}
+          JWT_EXPIRES_IN:    "900"
+          REFRESH_TOKEN_TTL_DAYS: "30"
+        run: npx vitest run --project integration
+        working-directory: apps/api
+
+      - name: Run e2e tests
+        env:
+          NODE_ENV:          test
+          APP_URL:           http://localhost:3000
+          DATABASE_URL:      postgres://app_user:testpassword@localhost:5432/ironledger_test
+          DATABASE_ADMIN_URL: postgres://app_admin:testpassword@localhost:5432/ironledger_test
+          REDIS_URL:         redis://localhost:6379
+          EMAIL_FROM:        test@example.com
+          EMAIL_PROVIDER:    resend
+          RESEND_API_KEY:    re_test
+          HCAPTCHA_SECRET:   "0x0000000000000000000000000000000000000000"
+          JWT_PRIVATE_KEY:   ${{ secrets.CI_JWT_PRIVATE_KEY }}
+          JWT_PUBLIC_KEY:    ${{ secrets.CI_JWT_PUBLIC_KEY }}
+          JWT_EXPIRES_IN:    "900"
+          REFRESH_TOKEN_TTL_DAYS: "30"
+        run: npx vitest run --project e2e
+        working-directory: apps/api
+
+      - name: Build
+        run: npm run build --workspace=apps/api
+
+      - name: Check for known vulnerabilities
+        run: npm audit --audit-level=high
+        continue-on-error: true   # report but don't fail — review manually

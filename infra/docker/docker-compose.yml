@@ -1,0 +1,51 @@
+# Local development environment only.
+# Production runs PostgreSQL and Redis natively on the IONOS VPS.
+#
+# Usage:
+#   docker compose -f infra/docker/docker-compose.yml up -d
+#   docker compose -f infra/docker/docker-compose.yml down
+#
+# Or from the repo root via the convenience script:
+#   ./infra/scripts/dev-db.sh up
+#   ./infra/scripts/dev-db.sh down
+
+services:
+
+  # ── PostgreSQL 16 ───────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: ironledger-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ironledger
+      POSTGRES_USER:     postgres        # superuser — only used to bootstrap
+      POSTGRES_PASSWORD: devpassword
+    ports:
+      - "5432:5432"                      # only accessible from localhost
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d  # runs on first start only
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ironledger"]
+      interval: 5s
+      timeout:  5s
+      retries:  5
+
+  # ── Redis (Valkey) ───────────────────────────────────────────────────────────
+  redis:
+    image: valkey/valkey:8-alpine
+    container_name: ironledger-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout:  3s
+      retries:  5
+
+volumes:
+  pgdata:
+  redisdata:

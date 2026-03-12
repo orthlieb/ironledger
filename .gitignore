@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+.npm
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Environment — NEVER commit real secrets
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Test output
+coverage/
+.nyc_output/
+
+# Database
+*.sql.gz
+pgdata/
+
+# PM2
+.pm2/
+ecosystem.config.local.js
