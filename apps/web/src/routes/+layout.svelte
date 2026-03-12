@@ -1,6 +1,8 @@
 <script lang="ts">
 	import '../app.css';
 	import type { LayoutData } from './$types';
+	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+	import swordSvg from '$lib/images/sword.svg?raw';
 
 	let { data, children }: { data: LayoutData; children: import('svelte').Snippet } = $props();
 </script>
@@ -8,13 +10,13 @@
 {#if data.user}
 	<nav class="app-nav">
 		<a href="/characters" class="nav-brand">
-			<svg class="nav-brand-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-				<path d="M14.5 2.5L19 7l-1.5 1.5L16 7l-6 6 2 2-1.5 1.5L9 15l-5.5 5.5L2 19l5.5-5.5-1.5-1.5L7.5 10.5l2 2 6-6-1.5-1.5L15.5 4z"/>
-			</svg>
+			<span class="nav-brand-icon" aria-hidden="true">{@html swordSvg}</span>
 			Iron Ledger
 		</a>
 		<div class="nav-links">
 			<a href="/characters">Characters</a>
+			<span class="nav-sep" aria-hidden="true">◆</span>
+			<ThemeToggle />
 			<span class="nav-sep" aria-hidden="true">◆</span>
 			<form method="POST" action="/logout">
 				<button type="submit" class="btn btn-icon">Sign Out</button>
@@ -28,10 +30,18 @@
 </main>
 
 <style>
+	/* Span wrapper + SVG sizing for the sword brand icon */
 	.nav-brand-icon {
+		display: flex;
+		align-items: center;
+		flex-shrink: 0;
+		color: var(--color-mana);
+	}
+
+	.nav-brand-icon :global(svg) {
 		width: 16px;
 		height: 16px;
-		opacity: 0.85;
+		fill: currentColor;
 	}
 
 	.nav-sep {

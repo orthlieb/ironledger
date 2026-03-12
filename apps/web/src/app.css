@@ -1,6 +1,12 @@
 /* =============================================================================
    Iron Ledger — "The Ironsworn Codex" Design System
    Cinzel (engraved stone) + Crimson Pro (manuscript) · Forge-amber on obsidian
+
+   Theme strategy
+   ─────────────
+   No data-theme attr  → follows OS (auto)
+   data-theme="dark"   → forced dark
+   data-theme="light"  → forced light
    ============================================================================= */
 
 *,
@@ -12,10 +18,10 @@
 }
 
 /* --------------------------------------------------------------------------
-   Design tokens — warm obsidian palette
+   Dark tokens (default + explicit dark)
    -------------------------------------------------------------------------- */
-:root {
-	/* Backgrounds — charred forge-stone, darkening inward */
+:root,
+html[data-theme='dark'] {
 	--bg-page:    #0b0906;
 	--bg-card:    #131008;
 	--bg-inset:   #0d0b07;
@@ -24,39 +30,122 @@
 	--border:     #2c261a;
 	--border-mid: #3d3524;
 
-	/* Text — aged parchment fading to ash */
 	--text:        #d8c9a5;
 	--text-muted:  #7a7058;
 	--text-dimmer: #4a4130;
-	--text-accent: #c98c38;
-	--focus-ring:  #c98c38;
 
-	/* Stat colours — jewel tones against the dark */
-	--color-edge:   #4a9fd4;   /* ice-steel blue  */
-	--color-heart:  #c84040;   /* deep blood red  */
-	--color-iron:   #8a9ba8;   /* iron grey       */
-	--color-shadow: #9b5bb6;   /* deep violet     */
-	--color-wits:   #c9a030;   /* amber-gold      */
+	/* Brighter forge-amber — clearly visible on dark bg */
+	--text-accent: #e8a030;
+	--focus-ring:  #e8a030;
+	--accent-glow: #e8a03020;
+	--accent-dim:  #e8a03012;
+
+	/* Stat colours — jewel tones */
+	--color-edge:   #4a9fd4;
+	--color-heart:  #c84040;
+	--color-iron:   #8a9ba8;
+	--color-shadow: #9b5bb6;
+	--color-wits:   #d4aa30;
 
 	/* Resource colours */
 	--color-momentum: #5b9fd4;
 	--color-health:   #c84040;
 	--color-spirit:   #9b5bb6;
 	--color-supply:   #2eaa6a;
-	--color-mana:     #c9a030;
+	--color-mana:     #d4aa30;
 
 	/* Semantic */
 	--color-danger:  #c84040;
 	--color-success: #2eaa6a;
-	--color-warning: #c9a030;
+	--color-warning: #d4aa30;
 
-	/* Typography */
-	--font-display: 'Cinzel', 'Palatino Linotype', Georgia, serif;
-	--font-body:    'Crimson Pro', 'Palatino Linotype', Georgia, serif;
+	color-scheme: dark;
 }
 
-html {
-	color-scheme: dark;
+/* --------------------------------------------------------------------------
+   Light tokens (parchment / aged paper)
+   -------------------------------------------------------------------------- */
+@media (prefers-color-scheme: light) {
+	:root:not([data-theme='dark']) {
+		--bg-page:    #f4ede0;
+		--bg-card:    #ede6d6;
+		--bg-inset:   #f9f4ea;
+		--bg-control: #f0e9d8;
+		--bg-hover:   #e8dfcc;
+		--border:     #c8b89a;
+		--border-mid: #b0a080;
+
+		--text:        #1c1710;
+		--text-muted:  #5a4e38;
+		--text-dimmer: #8a7860;
+
+		/* Dark amber — legible on parchment */
+		--text-accent: #8a4e08;
+		--focus-ring:  #8a4e08;
+		--accent-glow: #8a4e0820;
+		--accent-dim:  #8a4e0812;
+
+		--color-edge:   #1a6fa0;
+		--color-heart:  #a02020;
+		--color-iron:   #607080;
+		--color-shadow: #6a2a90;
+		--color-wits:   #8a5c00;
+
+		--color-momentum: #1a6fa0;
+		--color-health:   #a02020;
+		--color-spirit:   #6a2a90;
+		--color-supply:   #0e7a40;
+		--color-mana:     #8a5c00;
+
+		--color-danger:  #a02020;
+		--color-success: #0e7a40;
+		--color-warning: #8a5c00;
+
+		color-scheme: light;
+	}
+}
+
+html[data-theme='light'] {
+	--bg-page:    #f4ede0;
+	--bg-card:    #ede6d6;
+	--bg-inset:   #f9f4ea;
+	--bg-control: #f0e9d8;
+	--bg-hover:   #e8dfcc;
+	--border:     #c8b89a;
+	--border-mid: #b0a080;
+
+	--text:        #1c1710;
+	--text-muted:  #5a4e38;
+	--text-dimmer: #8a7860;
+
+	--text-accent: #8a4e08;
+	--focus-ring:  #8a4e08;
+	--accent-glow: #8a4e0820;
+	--accent-dim:  #8a4e0812;
+
+	--color-edge:   #1a6fa0;
+	--color-heart:  #a02020;
+	--color-iron:   #607080;
+	--color-shadow: #6a2a90;
+	--color-wits:   #8a5c00;
+
+	--color-momentum: #1a6fa0;
+	--color-health:   #a02020;
+	--color-spirit:   #6a2a90;
+	--color-supply:   #0e7a40;
+	--color-mana:     #8a5c00;
+
+	--color-danger:  #a02020;
+	--color-success: #0e7a40;
+	--color-warning: #8a5c00;
+
+	color-scheme: light;
+}
+
+/* Typography tokens (theme-independent) */
+:root {
+	--font-display: 'Cinzel', 'Palatino Linotype', Georgia, serif;
+	--font-body:    'Crimson Pro', 'Palatino Linotype', Georgia, serif;
 }
 
 /* --------------------------------------------------------------------------
@@ -69,10 +158,9 @@ body {
 	background: var(--bg-page);
 	color: var(--text);
 	min-height: 100dvh;
-	/* Subtle forge-glow bleeding in at the edges */
 	background-image:
-		radial-gradient(ellipse 80% 40% at 15% 0%,   #c98c3809 0%, transparent 60%),
-		radial-gradient(ellipse 60% 30% at 85% 100%,  #3a1a0808 0%, transparent 60%);
+		radial-gradient(ellipse 80% 40% at 15% 0%,   var(--accent-dim) 0%, transparent 60%),
+		radial-gradient(ellipse 60% 30% at 85% 100%,  var(--accent-dim) 0%, transparent 60%);
 }
 
 a {
@@ -81,7 +169,7 @@ a {
 	transition: color 0.12s;
 }
 a:hover {
-	color: #d4a040;
+	filter: brightness(1.2);
 	text-decoration: underline;
 }
 
@@ -109,7 +197,7 @@ textarea:focus,
 select:focus {
 	outline: none;
 	border-color: var(--focus-ring);
-	box-shadow: 0 0 0 2px #c98c3820;
+	box-shadow: 0 0 0 2px var(--accent-glow);
 }
 
 select option {
@@ -152,26 +240,26 @@ select option {
 
 /* Primary — forge amber */
 .btn-primary {
-	background: #6b3e12;
-	border-color: #c98c38;
-	color: #f0d898;
-	box-shadow: inset 0 1px 0 #c98c3828, 0 1px 4px #00000050;
+	background: var(--bg-control);
+	border-color: var(--text-accent);
+	color: var(--text-accent);
+	box-shadow: inset 0 1px 0 var(--accent-dim), 0 1px 4px #00000030;
 }
 .btn-primary:hover:not(:disabled) {
-	background: #7d4a18;
-	border-color: #d4a040;
-	color: #f5e0a0;
+	background: var(--bg-hover);
+	border-color: var(--text-accent);
+	color: var(--text);
+	filter: brightness(1.1);
 }
 
-/* Danger — dark blood */
+/* Danger — blood */
 .btn-danger {
-	background: #4a1414;
-	border-color: #7a2020;
-	color: #f0a0a0;
+	background: var(--bg-control);
+	border-color: var(--color-danger);
+	color: var(--color-danger);
 }
 .btn-danger:hover:not(:disabled) {
-	background: #5e1a1a;
-	border-color: #a02828;
+	background: var(--bg-hover);
 }
 
 /* Icon buttons */
@@ -189,7 +277,7 @@ select option {
 	border: 1px solid var(--border);
 	border-radius: 5px;
 	padding: 1.25rem;
-	box-shadow: inset 0 1px 0 #ffffff05, 0 2px 12px #00000040;
+	box-shadow: 0 2px 12px #00000030;
 }
 
 /* Engraved Cinzel label */
@@ -233,8 +321,7 @@ select option {
 	position: sticky;
 	top: 0;
 	z-index: 50;
-	/* Forge-amber top edge + drop shadow */
-	box-shadow: inset 0 2px 0 #c98c3815, 0 2px 12px #00000060;
+	box-shadow: inset 0 2px 0 var(--accent-dim), 0 2px 12px #00000040;
 }
 
 .nav-brand {
@@ -250,7 +337,7 @@ select option {
 	transition: color 0.12s;
 }
 .nav-brand:hover {
-	color: #d4a040;
+	filter: brightness(1.15);
 	text-decoration: none;
 }
 
@@ -316,10 +403,7 @@ select option {
 	width: 100%;
 	max-width: 400px;
 	border-color: var(--border-mid);
-	box-shadow:
-		0 0 0 1px var(--border),
-		0 24px 64px #00000080,
-		inset 0 1px 0 #ffffff06;
+	box-shadow: 0 24px 64px #00000060;
 }
 
 .auth-card h1 {
@@ -375,14 +459,15 @@ select option {
    Error / status messages
    -------------------------------------------------------------------------- */
 .error-msg {
-	background: #280c0c;
-	color: #eca0a0;
-	border: 1px solid #5c1a1a;
+	background: var(--bg-inset);
+	color: var(--color-danger);
+	border: 1px solid var(--color-danger);
 	border-left: 3px solid var(--color-danger);
 	border-radius: 3px;
 	padding: 9px 12px;
 	font-size: 0.875rem;
 	margin-bottom: 0.75rem;
+	opacity: 0.9;
 }
 
 /* --------------------------------------------------------------------------
@@ -394,7 +479,6 @@ select option {
 	gap: 10px;
 }
 
-/* Legacy list-item style (kept for any compat needs) */
 .char-list-item {
 	display: flex;
 	align-items: center;

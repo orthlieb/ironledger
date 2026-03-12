@@ -18,6 +18,9 @@
 	import { untrack } from 'svelte';
 	import { characters } from '$lib/api.js';
 
+	import trashSvg      from '$lib/images/trash-solid.svg?raw';
+	import floppySvg     from '$lib/images/floppy-disk-solid.svg?raw';
+
 	import StatControl      from './StatControl.svelte';
 	import MeterControl     from './MeterControl.svelte';
 	import XpTrack          from './XpTrack.svelte';
@@ -117,6 +120,23 @@
 	}
 
 	// ---------------------------------------------------------------------------
+	// Export — download character as JSON
+	// ---------------------------------------------------------------------------
+	function exportCharacter() {
+		const snapshot = $state.snapshot(data);
+		const blob = new Blob([JSON.stringify({ name: character.name, data: snapshot }, null, 2)], {
+			type: 'application/json',
+		});
+		const url  = URL.createObjectURL(blob);
+		const link = document.createElement('a');
+		const safeName = (character.name || 'character').replace(/[^a-z0-9_\-]+/gi, '_');
+		link.href     = url;
+		link.download = `${safeName}.json`;
+		link.click();
+		URL.revokeObjectURL(url);
+	}
+
+	// ---------------------------------------------------------------------------
 	// Portrait upload (mirror YRT: resize to 256 px JPEG)
 	// ---------------------------------------------------------------------------
 	function handlePortrait(e: Event) {
@@ -188,6 +208,14 @@
 			{#if saveStatus === 'error'}Save failed!{/if}
 		</span>
 
+		<!-- Export button — always visible -->
+		<button
+			class="btn btn-icon icon-btn"
+			onclick={exportCharacter}
+			title="Export character as JSON"
+			aria-label="Export character as JSON"
+		>{@html floppySvg}</button>
+
 		{#if onDelete}
 			{#if confirmingDelete}
 				<span class="delete-confirm">
@@ -197,11 +225,11 @@
 				</span>
 			{:else}
 				<button
-					class="btn btn-danger btn-icon"
+					class="btn btn-danger btn-icon icon-btn"
 					onclick={() => (confirmingDelete = true)}
 					title="Delete character"
 					aria-label="Delete character"
-				>🗑</button>
+				>{@html trashSvg}</button>
 			{/if}
 		{/if}
 	</div>
@@ -442,6 +470,13 @@
 
 	.portrait-input {
 		display: none;
+	}
+
+	/* FA SVG icon sizing inside btn-icon buttons */
+	.icon-btn :global(svg) {
+		width: 13px;
+		height: 13px;
+		fill: currentColor;
 	}
 
 	/* Delete confirmation */

@@ -1,10 +1,9 @@
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 	<head>
 		<meta charset="utf-8" />
 		<link rel="icon" href="%sveltekit.assets%/favicon.svg" type="image/svg+xml" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<meta name="theme-color" content="#0b0906" />
 		<meta name="description" content="Iron Ledger — Ironsworn character tracker" />
 		<!-- Cinzel (engraved display) + Crimson Pro (manuscript body) -->
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -13,6 +12,18 @@
 			href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,400;0,500;0,600;1,400&display=swap"
 			rel="stylesheet"
 		/>
+		<!--
+			Apply saved theme before first paint to prevent flash.
+			"auto" (or missing key) → no attribute → CSS media query decides.
+		-->
+		<script>
+			(function () {
+				var t = localStorage.getItem('theme');
+				if (t === 'dark' || t === 'light') {
+					document.documentElement.setAttribute('data-theme', t);
+				}
+			})();
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
