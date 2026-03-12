@@ -7,12 +7,15 @@
 	let {
 		value = $bindable(0),
 		max = 30,
+		onchange,
 	}: {
 		value?: number;
 		max?: number;
+		onchange?: (oldVal: number, newVal: number) => void;
 	} = $props();
 
 	function handleClick(i: number) {
+		const old = value;
 		if (i < value) {
 			// Clicking a filled dot removes XP back to that point
 			value = i;
@@ -20,6 +23,7 @@
 			// Clicking the next empty dot adds 1 XP
 			value = i + 1;
 		}
+		if (value !== old) onchange?.(old, value);
 	}
 </script>
 

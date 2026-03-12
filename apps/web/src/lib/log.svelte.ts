@@ -1,0 +1,65 @@
+// =============================================================================
+// Iron Ledger — Session Log Store (Svelte 5 module-level $state)
+// Stores log entries per-character in localStorage, keyed as `il-log:{charId}`.
+// Maximum 500 entries per character (oldest are dropped first).
+// =============================================================================
+
+export interface LogEntry {
+	id: string;
+	title: string;
+	html: string;
+	ts: string;
+}
+
+const storageKey = (charId: string) => `il-log:${charId}`;
+
+// Module-level reactive state: map of charId → entries (newest first)
+let logs = $state<Record<string, LogEntry[]>>({});
+
+/** Load stored entries for a character (idempotent — safe to call multiple times). */
+export function initLog(charId: string): void {
+	if (typeof window === 'undefined') return;
+	if (logs[charId] !== undefined) return; // already loaded
+	try {
+		const raw = localStorage.getItem(storageKey(charId));
+		logs[charId] = raw ? (JSON.parse(raw) as LogEntry[]) : [];
+	} catch {
+		logs[charId] = [];
+	}
+}
+
+/** Reactive getter — call inside $derived or template to get live entries. */
+export function getLog(charId: string): LogEntry[] {
+	return logs[charId] ?? [];
+}
+
+/** Append a new entry and persist to localStorage. */
+export function appendLog(charId: string, title: string, html: string): void {
+	if (typeof window === 'undefined') return;
+	initLog(charId);
+	const entry: LogEntry = {
+		id: crypto.randomUUID(),
+		title,
+		html,
+		ts: new Date().toISOString(),
+	};
+	// Prepend (newest first), cap at 500 entries
+	const updated = [entry, ...(logs[charId] ?? [])].slice(0, 500);
+	logs[charId] = updated;
+	try {
+		localStorage.setItem(storageKey(charId), JSON.stringify(updated));
+	} catch {
+		// Storage quota exceeded — swallow silently
+	}
+}
+
+/** Wipe all entries for a character from state and storage. */
+export function clearLog(charId: string): void {
+	logs[charId] = [];
+	if (typeof window === 'undefined') return;
+	try {
+		localStorage.removeItem(storageKey(charId));
+	} catch {
+		// ignore
+	}
+}

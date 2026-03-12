@@ -21,6 +21,21 @@
 	import trashSvg      from '$lib/images/trash-solid.svg?raw';
 	import floppySvg     from '$lib/images/floppy-disk-solid.svg?raw';
 
+	// Stat icons
+	import iconEdge   from '$lib/images/icon-edge.svg?raw';
+	import iconHeart  from '$lib/images/icon-heart.svg?raw';
+	import iconIron   from '$lib/images/icon-iron.svg?raw';
+	import iconShadow from '$lib/images/icon-shadow.svg?raw';
+	import iconWits   from '$lib/images/icon-wits.svg?raw';
+
+	// Resource icons
+	import iconMomentum from '$lib/images/icon-momentum.svg?raw';
+	import iconSpirit   from '$lib/images/icon-spirit.svg?raw';
+	import iconSupply   from '$lib/images/icon-supply.svg?raw';
+	import iconMana     from '$lib/images/icon-mana.svg?raw';
+
+	import { initLog, appendLog } from '$lib/log.svelte.js';
+
 	import StatControl      from './StatControl.svelte';
 	import MeterControl     from './MeterControl.svelte';
 	import XpTrack          from './XpTrack.svelte';
@@ -51,6 +66,30 @@
 	let confirmingDelete = $state(false);
 	let saveStatus = $state<'idle' | 'saving' | 'error'>('idle');
 	let saveTimer: ReturnType<typeof setTimeout> | null = null;
+	let portraitHovered = $state(false);
+
+	// Initialise log for this character on mount
+	$effect(() => { initLog(character.id); });
+
+	// ---------------------------------------------------------------------------
+	// Log helpers (use character.id directly to avoid stale capture warning)
+	// ---------------------------------------------------------------------------
+	function logMeter(name: string, oldVal: number, newVal: number) {
+		appendLog(character.id, name, `<div>${name}: ${oldVal} → <strong>${newVal}</strong></div>`);
+	}
+
+	function logDebility(label: string, active: boolean) {
+		appendLog(character.id, 'Debilities',
+			`<div>${label}: <strong>${active ? 'Activated' : 'Cleared'}</strong></div>`);
+	}
+
+	function logXp(oldVal: number, newVal: number) {
+		appendLog(character.id, 'Experience', `<div>XP: ${oldVal} → <strong>${newVal}</strong></div>`);
+	}
+
+	function logTrack(name: string, oldVal: number, newVal: number) {
+		appendLog(character.id, name, `<div>${name}: ${oldVal} ticks → <strong>${newVal} ticks</strong></div>`);
+	}
 
 	// ---------------------------------------------------------------------------
 	// Derived game-logic values (reactive to debility changes)
@@ -120,6 +159,33 @@
 	}
 
 	// ---------------------------------------------------------------------------
+	// Bond / Failure helpers (one full box = 4 ticks)
+	// ---------------------------------------------------------------------------
+	const bondsMax    = 40; // 10 boxes × 4 ticks
+	const failuresMax = 40;
+
+	function addBond() {
+		const old = data.bonds;
+		const next = Math.min(bondsMax, data.bonds + 4);
+		if (next !== old) { logTrack('Bonds', old, next); data.bonds = next; }
+	}
+	function removeBond() {
+		const old = data.bonds;
+		const next = Math.max(0, data.bonds - 4);
+		if (next !== old) { logTrack('Bonds', old, next); data.bonds = next; }
+	}
+	function addFailure() {
+		const old = data.failures;
+		const next = Math.min(failuresMax, data.failures + 4);
+		if (next !== old) { logTrack('Failures', old, next); data.failures = next; }
+	}
+	function removeFailure() {
+		const old = data.failures;
+		const next = Math.max(0, data.failures - 4);
+		if (next !== old) { logTrack('Failures', old, next); data.failures = next; }
+	}
+
+	// ---------------------------------------------------------------------------
 	// Export — download character as JSON
 	// ---------------------------------------------------------------------------
 	function exportCharacter() {
@@ -182,7 +248,12 @@
 		</button>
 
 		<!-- Portrait -->
-		<label class="portrait-label" title="Click to change portrait">
+		<label
+			class="portrait-label"
+			title="Click to change portrait"
+			onmouseenter={() => (portraitHovered = true)}
+			onmouseleave={() => (portraitHovered = false)}
+		>
 			{#if data.portrait}
 				<img src={data.portrait} alt="Portrait of {data.name}" class="portrait-img" />
 			{:else}
@@ -196,6 +267,13 @@
 				aria-label="Upload portrait"
 			/>
 		</label>
+
+		<!-- Portrait lightbox on hover -->
+		{#if portraitHovered && data.portrait}
+			<div class="portrait-lightbox" aria-hidden="true">
+				<img src={data.portrait} alt="Portrait of {data.name}" />
+			</div>
+		{/if}
 
 		<span class="char-title">{data.name || 'Unnamed'}</span>
 
@@ -268,28 +346,51 @@
 			<section class="char-section">
 				<div class="section-label">Stats</div>
 				<div class="stats-row">
-					<StatControl label="Edge"   bind:value={data.edge}   color="var(--color-edge)" />
-					<StatControl label="Heart"  bind:value={data.heart}  color="var(--color-heart)" />
-					<StatControl label="Iron"   bind:value={data.iron}   color="var(--color-iron)" />
-					<StatControl label="Shadow" bind:value={data.shadow} color="var(--color-shadow)" />
-					<StatControl label="Wits"   bind:value={data.wits}   color="var(--color-wits)" />
+					<StatControl
+						label="Edge" bind:value={data.edge} color="var(--color-edge)"
+						icon={iconEdge}
+						tooltip="Quickness, agility, and prowess in ranged combat"
+					/>
+					<StatControl
+						label="Heart" bind:value={data.heart} color="var(--color-heart)"
+						icon={iconHeart}
+						tooltip="Courage, willpower, empathy, sociability, and loyalty"
+					/>
+					<StatControl
+						label="Iron" bind:value={data.iron} color="var(--color-iron)"
+						icon={iconIron}
+						tooltip="Physical strength, endurance, and prowess in close combat"
+					/>
+					<StatControl
+						label="Shadow" bind:value={data.shadow} color="var(--color-shadow)"
+						icon={iconShadow}
+						tooltip="Sneakiness, deceptiveness, and cunning"
+					/>
+					<StatControl
+						label="Wits" bind:value={data.wits} color="var(--color-wits)"
+						icon={iconWits}
+						tooltip="Expertise, knowledge, and observation"
+					/>
 
 					<div class="touched-group">
-						<div class="section-label">Touched</div>
-						<select bind:value={data.touched} class="touched-select">
-							<option value="pure">Pure</option>
-							<option value="prime">Prime</option>
-							<option value="second">Second</option>
-							<option value="third">Third</option>
-							<option value="feral">Feral</option>
-						</select>
-						<input
-							type="text"
-							bind:value={data.touchedAnimal}
-							placeholder="Animal…"
-							class="animal-input"
-							aria-label="Touched animal"
-						/>
+						<div class="section-label" style:color="var(--color-touched)">Touched</div>
+						<div class="touched-row">
+							<select bind:value={data.touched} class="touched-select" style:border-color="var(--color-touched)">
+								<option value="pure">Pure</option>
+								<option value="prime">Prime</option>
+								<option value="second">Second</option>
+								<option value="third">Third</option>
+								<option value="feral">Feral</option>
+							</select>
+							<input
+								type="text"
+								bind:value={data.touchedAnimal}
+								placeholder="Animal…"
+								class="animal-input"
+								style:border-color="var(--color-touched)"
+								aria-label="Touched animal"
+							/>
+						</div>
 					</div>
 				</div>
 			</section>
@@ -314,6 +415,9 @@
 						showReset
 						resetValue={momentumRstV}
 						showMax
+						icon={iconMomentum}
+						tooltip="Building progress and narrative advantage"
+						onchange={(o, n) => logMeter('Momentum', o, n)}
 					/>
 					<MeterControl
 						label="Health"
@@ -322,6 +426,9 @@
 						min={0}
 						max={5}
 						incDisabled={healthIncBlocked}
+						icon={iconHeart}
+						tooltip="Physical condition and readiness"
+						onchange={(o, n) => logMeter('Health', o, n)}
 					/>
 					<MeterControl
 						label="Spirit"
@@ -330,6 +437,9 @@
 						min={0}
 						max={5}
 						incDisabled={spiritIncBlocked}
+						icon={iconSpirit}
+						tooltip="Mental fortitude and morale"
+						onchange={(o, n) => logMeter('Spirit', o, n)}
 					/>
 					<MeterControl
 						label="Supply"
@@ -337,6 +447,9 @@
 						color="var(--color-supply)"
 						min={0}
 						max={5}
+						icon={iconSupply}
+						tooltip="Available provisions and resources"
+						onchange={(o, n) => logMeter('Supply', o, n)}
 					/>
 					<MeterControl
 						label="Mana"
@@ -344,6 +457,9 @@
 						color="var(--color-mana)"
 						min={0}
 						max={10}
+						icon={iconMana}
+						tooltip="Mana seeds — the foundation of Conclave spellcraft"
+						onchange={(o, n) => logMeter('Mana', o, n)}
 					/>
 				</div>
 			</section>
@@ -352,22 +468,42 @@
 
 			<!-- XP -->
 			<section class="char-section">
-				<XpTrack bind:value={data.xp} />
+				<XpTrack bind:value={data.xp} onchange={logXp} />
 			</section>
 
 			<div class="section-divider"></div>
 
 			<!-- Debilities -->
 			<section class="char-section">
-				<DebilitiesSection {data} />
+				<DebilitiesSection {data} onchange={logDebility} />
 			</section>
 
 			<div class="section-divider"></div>
 
 			<!-- Bonds & Failures -->
 			<section class="char-section tracks-row">
-				<ProgressTrack label="Bonds"    bind:value={data.bonds} />
-				<ProgressTrack label="Failures" bind:value={data.failures} />
+				<div class="track-group">
+					<ProgressTrack
+						label="Bonds"
+						bind:value={data.bonds}
+						onchange={(o, n) => logTrack('Bonds', o, n)}
+					/>
+					<div class="track-actions">
+						<button class="btn" onclick={addBond} disabled={data.bonds >= bondsMax}>+ Bond</button>
+						<button class="btn" onclick={removeBond} disabled={data.bonds <= 0}>− Bond</button>
+					</div>
+				</div>
+				<div class="track-group">
+					<ProgressTrack
+						label="Failures"
+						bind:value={data.failures}
+						onchange={(o, n) => logTrack('Failures', o, n)}
+					/>
+					<div class="track-actions">
+						<button class="btn" onclick={addFailure} disabled={data.failures >= failuresMax}>+ Failure</button>
+						<button class="btn" onclick={removeFailure} disabled={data.failures <= 0}>− Failure</button>
+					</div>
+				</div>
 			</section>
 
 			<div class="section-divider"></div>
@@ -424,6 +560,7 @@
 		background: var(--bg-inset);
 		border-bottom: 1px solid var(--border);
 		min-height: 54px;
+		position: relative;
 	}
 
 	.char-title {
@@ -470,6 +607,28 @@
 
 	.portrait-input {
 		display: none;
+	}
+
+	/* Portrait lightbox on hover */
+	.portrait-lightbox {
+		position: absolute;
+		left: 10px;
+		top: calc(100% + 6px);
+		z-index: 200;
+		background: var(--bg-card);
+		border: 2px solid var(--border-mid);
+		border-radius: 8px;
+		padding: 4px;
+		box-shadow: 0 8px 32px #00000080;
+		pointer-events: none;
+	}
+
+	.portrait-lightbox img {
+		width: 200px;
+		height: 200px;
+		object-fit: cover;
+		border-radius: 5px;
+		display: block;
 	}
 
 	/* FA SVG icon sizing inside btn-icon buttons */
@@ -576,6 +735,12 @@
 		gap: 5px;
 	}
 
+	.touched-row {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+
 	.touched-select {
 		font-size: 0.82rem;
 		padding: 4px 7px;
@@ -610,6 +775,18 @@
 	.tracks-row {
 		display: flex;
 		gap: 2rem;
+		flex-wrap: wrap;
+	}
+
+	.track-group {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.track-actions {
+		display: flex;
+		gap: 6px;
 		flex-wrap: wrap;
 	}
 

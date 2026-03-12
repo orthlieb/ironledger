@@ -8,8 +8,10 @@
 
 	let {
 		data,
+		onchange,
 	}: {
 		data: CharacterData;
+		onchange?: (label: string, active: boolean) => void;
 	} = $props();
 
 	const CONDITIONS = [
@@ -41,7 +43,7 @@
 					<button
 						class="toggle"
 						class:active={data[d.key]}
-						onclick={() => (data[d.key] = !data[d.key])}
+						onclick={() => { const v = !data[d.key]; data[d.key] = v; onchange?.(d.label, v); }}
 						aria-pressed={data[d.key]}
 					>
 						<span class="dot">{data[d.key] ? '●' : '○'}</span>
@@ -58,7 +60,7 @@
 					<button
 						class="toggle"
 						class:active={data[d.key]}
-						onclick={() => (data[d.key] = !data[d.key])}
+						onclick={() => { const v = !data[d.key]; data[d.key] = v; onchange?.(d.label, v); }}
 						aria-pressed={data[d.key]}
 					>
 						<span class="dot">{data[d.key] ? '●' : '○'}</span>
@@ -75,7 +77,7 @@
 					<button
 						class="toggle"
 						class:active={data[d.key]}
-						onclick={() => (data[d.key] = !data[d.key])}
+						onclick={() => { const v = !data[d.key]; data[d.key] = v; onchange?.(d.label, v); }}
 						aria-pressed={data[d.key]}
 					>
 						<span class="dot">{data[d.key] ? '●' : '○'}</span>

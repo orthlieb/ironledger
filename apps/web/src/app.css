@@ -40,24 +40,25 @@ html[data-theme='dark'] {
 	--accent-glow: #e8a03020;
 	--accent-dim:  #e8a03012;
 
-	/* Stat colours — jewel tones */
-	--color-edge:   #4a9fd4;
-	--color-heart:  #c84040;
-	--color-iron:   #8a9ba8;
-	--color-shadow: #9b5bb6;
-	--color-wits:   #d4aa30;
+	/* Stat colours — user-specified */
+	--color-edge:    #4E80ED;
+	--color-heart:   #DD514C;
+	--color-iron:    #9EA2AD;
+	--color-shadow:  #9E5BEE;
+	--color-wits:    #E8A13B;
+	--color-touched: #78DB88;
 
-	/* Resource colours */
-	--color-momentum: #5b9fd4;
-	--color-health:   #c84040;
-	--color-spirit:   #9b5bb6;
-	--color-supply:   #2eaa6a;
-	--color-mana:     #d4aa30;
+	/* Resource colours — user-specified */
+	--color-momentum: #73A4F4;
+	--color-health:   #E77974;
+	--color-spirit:   #A28BF3;
+	--color-supply:   #6ACF9D;
+	--color-mana:     #E8A13B;
 
 	/* Semantic */
-	--color-danger:  #c84040;
-	--color-success: #2eaa6a;
-	--color-warning: #d4aa30;
+	--color-danger:  #DD514C;
+	--color-success: #6ACF9D;
+	--color-warning: #E8A13B;
 
 	color-scheme: dark;
 }
@@ -85,21 +86,22 @@ html[data-theme='dark'] {
 		--accent-glow: #8a4e0820;
 		--accent-dim:  #8a4e0812;
 
-		--color-edge:   #1a6fa0;
-		--color-heart:  #a02020;
-		--color-iron:   #607080;
-		--color-shadow: #6a2a90;
-		--color-wits:   #8a5c00;
+		--color-edge:    #1a5fa0;
+		--color-heart:   #b02828;
+		--color-iron:    #5a6878;
+		--color-shadow:  #6a2aaa;
+		--color-wits:    #805800;
+		--color-touched: #2a8840;
 
-		--color-momentum: #1a6fa0;
-		--color-health:   #a02020;
-		--color-spirit:   #6a2a90;
+		--color-momentum: #1a5fa0;
+		--color-health:   #b02828;
+		--color-spirit:   #6a2aaa;
 		--color-supply:   #0e7a40;
-		--color-mana:     #8a5c00;
+		--color-mana:     #805800;
 
-		--color-danger:  #a02020;
+		--color-danger:  #b02828;
 		--color-success: #0e7a40;
-		--color-warning: #8a5c00;
+		--color-warning: #805800;
 
 		color-scheme: light;
 	}
@@ -123,21 +125,22 @@ html[data-theme='light'] {
 	--accent-glow: #8a4e0820;
 	--accent-dim:  #8a4e0812;
 
-	--color-edge:   #1a6fa0;
-	--color-heart:  #a02020;
-	--color-iron:   #607080;
-	--color-shadow: #6a2a90;
-	--color-wits:   #8a5c00;
+	--color-edge:    #1a5fa0;
+	--color-heart:   #b02828;
+	--color-iron:    #5a6878;
+	--color-shadow:  #6a2aaa;
+	--color-wits:    #805800;
+	--color-touched: #2a8840;
 
-	--color-momentum: #1a6fa0;
-	--color-health:   #a02020;
-	--color-spirit:   #6a2a90;
+	--color-momentum: #1a5fa0;
+	--color-health:   #b02828;
+	--color-spirit:   #6a2aaa;
 	--color-supply:   #0e7a40;
-	--color-mana:     #8a5c00;
+	--color-mana:     #805800;
 
-	--color-danger:  #a02020;
+	--color-danger:  #b02828;
 	--color-success: #0e7a40;
-	--color-warning: #8a5c00;
+	--color-warning: #805800;
 
 	color-scheme: light;
 }
@@ -365,9 +368,39 @@ select option {
    Main layout
    -------------------------------------------------------------------------- */
 .app-main {
-	max-width: 900px;
+	max-width: 1600px;
 	margin: 0 auto;
 	padding: 1.75rem 1.25rem 4rem;
+}
+
+/* --------------------------------------------------------------------------
+   Split layout — 50/50 character sheet + log panel
+   Breaks out of app-main padding so the split fills the sidebar cleanly.
+   -------------------------------------------------------------------------- */
+.split-layout {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	align-items: start;
+	gap: 0;
+	/* Escape the app-main horizontal padding */
+	margin-left: -1.25rem;
+	margin-right: -1.25rem;
+	margin-bottom: -4rem;
+}
+
+.split-left {
+	padding: 0 1.25rem 4rem;
+	min-width: 0;
+}
+
+.split-right {
+	position: sticky;
+	top: 52px; /* nav height */
+	height: calc(100dvh - 52px);
+	align-self: start;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
 }
 
 .page-header {

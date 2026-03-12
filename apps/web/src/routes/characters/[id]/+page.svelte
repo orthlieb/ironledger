@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import CharacterSheet from '$lib/components/CharacterSheet.svelte';
+	import LogPanel from '$lib/components/LogPanel.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -23,7 +24,17 @@
 	style="display: none"
 ></form>
 
-<CharacterSheet
-	character={data.character}
-	onDelete={() => deleteForm.requestSubmit()}
-/>
+<div class="split-layout">
+	<div class="split-left">
+		<CharacterSheet
+			character={data.character}
+			onDelete={() => deleteForm.requestSubmit()}
+		/>
+	</div>
+	<div class="split-right">
+		<LogPanel
+			characterId={data.character.id}
+			characterName={data.character.name}
+		/>
+	</div>
+</div>

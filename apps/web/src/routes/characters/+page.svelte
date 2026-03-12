@@ -3,6 +3,7 @@
 	import type { CharacterFull } from '$lib/api.js';
 	import { characters as api } from '$lib/api.js';
 	import CharacterSheet from '$lib/components/CharacterSheet.svelte';
+	import LogPanel from '$lib/components/LogPanel.svelte';
 	import { untrack } from 'svelte';
 	import importSvg from '$lib/images/file-arrow-up-solid.svg?raw';
 
@@ -16,6 +17,21 @@
 	let creating  = $state(false);
 	let importing = $state(false);
 	let createError = $state('');
+
+	// Track which character is currently "active" for the log panel.
+	// Defaults to the first character; updates when the user interacts with any card.
+	let activeCharId = $state<string>(untrack(() => data.characters[0]?.id ?? ''));
+
+	function setActiveChar(id: string) {
+		activeCharId = id;
+	}
+
+	// Keep activeCharId valid when chars list changes (e.g. after new char is created)
+	$effect(() => {
+		if (chars.length > 0 && !chars.find((c) => c.id === activeCharId)) {
+			activeCharId = chars[0].id;
+		}
+	});
 
 	// Hidden file input reference for JSON import
 	let importInput: HTMLInputElement;
@@ -105,23 +121,46 @@
 	<div class="error-msg">{createError}</div>
 {/if}
 
-{#if chars.length === 0}
-	<div class="empty-state">
-		<p>No characters yet.</p>
-		<p style="margin-top: 0.5rem; font-size: 0.85rem;">
-			Click <strong>+ New Character</strong> to begin your first journey.
-		</p>
+<div class="split-layout">
+	<!-- Left: Character list -->
+	<div class="split-left">
+		{#if chars.length === 0}
+			<div class="empty-state">
+				<p>No characters yet.</p>
+				<p style="margin-top: 0.5rem; font-size: 0.85rem;">
+					Click <strong>+ New Character</strong> to begin your first journey.
+				</p>
+			</div>
+		{:else}
+			<div class="char-list">
+				{#each chars as char (char.id)}
+					<!-- svelte-ignore a11y_no_static_element_interactions -->
+					<!-- svelte-ignore a11y_click_events_have_key_events -->
+					<div
+						class="char-wrapper"
+						onfocusin={() => setActiveChar(char.id)}
+						onclick={() => setActiveChar(char.id)}
+					>
+						<CharacterSheet
+							character={char}
+							onDelete={() => deleteCharacter(char.id)}
+						/>
+					</div>
+				{/each}
+			</div>
+		{/if}
 	</div>
-{:else}
-	<div class="char-list">
-		{#each chars as char (char.id)}
-			<CharacterSheet
-				character={char}
-				onDelete={() => deleteCharacter(char.id)}
+
+	<!-- Right: Log panel -->
+	<div class="split-right">
+		{#if activeCharId}
+			<LogPanel
+				characterId={activeCharId}
+				characterName={chars.find((c) => c.id === activeCharId)?.name}
 			/>
-		{/each}
+		{/if}
 	</div>
-{/if}
+</div>
 
 <style>
 	.header-actions {
@@ -147,5 +186,9 @@
 		display: flex;
 		flex-direction: column;
 		gap: 12px;
+	}
+
+	.char-wrapper {
+		cursor: default;
 	}
 </style>
