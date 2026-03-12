@@ -7,6 +7,9 @@ dist/
 build/
 *.tsbuildinfo
 
+# SvelteKit generated files
+.svelte-kit/
+
 # Environment — NEVER commit real secrets
 .env
 .env.local
