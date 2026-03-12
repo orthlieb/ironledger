@@ -106,7 +106,7 @@
 				difficulty: 'formidable',
 				ticks: 0,
 				threat: '',
-				menace: '',
+				menace: 0,
 			} satisfies Vow,
 		];
 	}

@@ -18,7 +18,7 @@ export interface Vow {
 	difficulty: VowDifficulty;
 	ticks: number; // 0–40 (10 boxes × 4 ticks)
 	threat: string;
-	menace: string;
+	menace: number; // 0–10 menace track
 }
 
 export interface CharacterAsset {

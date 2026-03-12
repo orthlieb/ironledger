@@ -77,10 +77,23 @@
 			<span>Threat</span>
 			<input bind:value={vow.threat} placeholder="—" aria-label="Threat" />
 		</label>
-		<label class="vow-extra">
+		<div class="vow-extra menace-control">
 			<span>Menace</span>
-			<input bind:value={vow.menace} placeholder="—" aria-label="Menace" />
-		</label>
+			<button
+				class="adj-btn"
+				onclick={() => (vow.menace = Math.max(0, vow.menace - 1))}
+				disabled={vow.menace <= 0}
+				aria-label="Decrease menace"
+			>−</button>
+			<span class="menace-val" class:menace-high={vow.menace >= 7}>{vow.menace}</span>
+			<button
+				class="adj-btn"
+				onclick={() => (vow.menace = Math.min(10, vow.menace + 1))}
+				disabled={vow.menace >= 10}
+				aria-label="Increase menace"
+			>+</button>
+			<span class="menace-max">/10</span>
+		</div>
 	</div>
 
 	<ProgressTrack bind:value={vow.ticks} label="" boxes={10} />
@@ -152,6 +165,54 @@
 		width: 140px;
 		font-size: 0.8rem;
 		padding: 2px 6px;
+	}
+
+	.menace-control {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+	}
+
+	.adj-btn {
+		width: 22px;
+		height: 22px;
+		padding: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--bg);
+		border: 1px solid var(--border);
+		border-radius: 3px;
+		cursor: pointer;
+		font-size: 0.85rem;
+		color: var(--text);
+		line-height: 1;
+	}
+
+	.adj-btn:disabled {
+		opacity: 0.35;
+		cursor: not-allowed;
+	}
+
+	.adj-btn:not(:disabled):hover {
+		background: var(--bg-hover, var(--bg-inset));
+		border-color: var(--border-strong, var(--text-muted));
+	}
+
+	.menace-val {
+		min-width: 18px;
+		text-align: center;
+		font-size: 0.85rem;
+		font-weight: 600;
+	}
+
+	.menace-val.menace-high {
+		color: var(--danger, #c0392b);
+	}
+
+	.menace-max {
+		color: var(--text-muted);
+		font-size: 0.75rem;
 	}
 
 	.vow-actions {
