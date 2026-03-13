@@ -67,7 +67,7 @@
 		border: 2px solid;
 		border-radius: 3px;
 		background: color-mix(in srgb, currentColor 8%, var(--bg-card));
-		font-family: var(--font-body);
+		font-family: var(--font-ui);
 		/* Hide browser number input spinners */
 		-moz-appearance: textfield;
 		appearance: textfield;

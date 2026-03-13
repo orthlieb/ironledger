@@ -133,6 +133,7 @@
 	}
 
 	.meter-value {
+		font-family: var(--font-ui);
 		font-size: 1.3rem;
 		font-weight: 700;
 		min-width: 2rem;

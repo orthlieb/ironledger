@@ -27,12 +27,12 @@ html[data-theme='dark'] {
 	--bg-inset:   #0d0b07;
 	--bg-control: #1a1610;
 	--bg-hover:   #221d14;
-	--border:     #2c261a;
-	--border-mid: #3d3524;
+	--border:     #3d3425;   /* was #2c261a — much more visible */
+	--border-mid: #574a32;   /* was #3d3524 — clearly distinct */
 
-	--text:        #d8c9a5;
-	--text-muted:  #7a7058;
-	--text-dimmer: #4a4130;
+	--text:        #ddd0aa;  /* was #d8c9a5 — slightly brighter */
+	--text-muted:  #9a886a;  /* was #7a7058 — legible on dark bg */
+	--text-dimmer: #6e5e42;  /* was #4a4130 — was nearly invisible */
 
 	/* Brighter forge-amber — clearly visible on dark bg */
 	--text-accent: #e8a030;

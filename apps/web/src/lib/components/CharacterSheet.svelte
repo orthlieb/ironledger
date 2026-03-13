@@ -135,17 +135,17 @@
 	// Vow helpers
 	// ---------------------------------------------------------------------------
 	function addVow() {
-		data.vows = [
-			...data.vows,
-			{
-				id: crypto.randomUUID(),
-				name: '',
-				difficulty: 'formidable',
-				ticks: 0,
-				threat: '',
-				menace: 0,
-			} satisfies Vow,
-		];
+		const newVow: Vow = {
+			id: crypto.randomUUID(),
+			name: '',
+			difficulty: 'formidable',
+			ticks: 0,
+			threat: '',
+			menace: 0,
+		};
+		data.vows = [...data.vows, newVow];
+		appendLog(character.id, 'Vow',
+			`<div>Swore a new iron vow — <strong>Formidable</strong></div>`);
 	}
 
 	function removeVow(id: string) {
@@ -468,25 +468,31 @@
 			<!-- Bonds & Failures -->
 			<section class="char-section tracks-row">
 				<div class="track-group">
-					<ProgressTrack
-						label="Bonds"
-						bind:value={data.bonds}
-						onchange={(o, n) => logTrack('Bonds', o, n)}
-					/>
-					<div class="track-actions">
-						<button class="btn" onclick={addBond} disabled={data.bonds >= bondsMax}>+ Bond</button>
-						<button class="btn" onclick={removeBond} disabled={data.bonds <= 0}>− Bond</button>
+					<div class="section-label">Bonds</div>
+					<div class="track-row">
+						<ProgressTrack
+							label=""
+							bind:value={data.bonds}
+							onchange={(o, n) => logTrack('Bonds', o, n)}
+						/>
+						<div class="track-actions">
+							<button class="btn btn-track" onclick={addBond} disabled={data.bonds >= bondsMax}>+ Bond</button>
+							<button class="btn btn-track" onclick={removeBond} disabled={data.bonds <= 0}>−</button>
+						</div>
 					</div>
 				</div>
 				<div class="track-group">
-					<ProgressTrack
-						label="Failures"
-						bind:value={data.failures}
-						onchange={(o, n) => logTrack('Failures', o, n)}
-					/>
-					<div class="track-actions">
-						<button class="btn" onclick={addFailure} disabled={data.failures >= failuresMax}>+ Failure</button>
-						<button class="btn" onclick={removeFailure} disabled={data.failures <= 0}>− Failure</button>
+					<div class="section-label">Failures</div>
+					<div class="track-row">
+						<ProgressTrack
+							label=""
+							bind:value={data.failures}
+							onchange={(o, n) => logTrack('Failures', o, n)}
+						/>
+						<div class="track-actions">
+							<button class="btn btn-track" onclick={addFailure} disabled={data.failures >= failuresMax}>+ Failure</button>
+							<button class="btn btn-track" onclick={removeFailure} disabled={data.failures <= 0}>−</button>
+						</div>
 					</div>
 				</div>
 			</section>
@@ -793,13 +799,29 @@
 	.track-group {
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
+		gap: 6px;
+	}
+
+	/* Progress track boxes + action buttons in a single row */
+	.track-row {
+		display: flex;
+		align-items: center;
+		gap: 6px;
 	}
 
 	.track-actions {
 		display: flex;
-		gap: 6px;
-		flex-wrap: wrap;
+		gap: 4px;
+		flex-shrink: 0;
+	}
+
+	/* Compact button sized to match progress box height (22px) */
+	:global(.btn-track) {
+		height: 22px;
+		padding: 0 7px;
+		font-size: 0.68rem;
+		line-height: 1;
+		min-width: unset;
 	}
 
 	/* Vows */

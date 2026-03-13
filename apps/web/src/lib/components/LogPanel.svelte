@@ -201,6 +201,7 @@
 	}
 
 	.entry-body {
+		font-family: var(--font-ui);
 		font-size: 0.82rem;
 		color: var(--text-muted);
 		line-height: 1.4;

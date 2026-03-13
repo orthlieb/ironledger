@@ -2,6 +2,7 @@
 	import type { Vow, VowDifficulty } from '$lib/types.js';
 	import { VOW_MARK_TICKS } from '$lib/types.js';
 	import ProgressTrack from './ProgressTrack.svelte';
+	import trashSvg from '$lib/images/trash-solid.svg?raw';
 
 	let {
 		vow = $bindable(),
@@ -19,7 +20,22 @@
 		{ value: 'epic',        label: 'Epic' },
 	];
 
-	let confirmDelete = $state(false);
+	/** Endure Stress cost when forsaking each rank of vow. */
+	const FORSAKE_STRESS: Record<VowDifficulty, number> = {
+		troublesome: 1,
+		dangerous:   2,
+		formidable:  3,
+		extreme:     4,
+		epic:        5,
+	};
+
+	let collapsed        = $state(false);
+	let confirmingForsake = $state(false);
+
+	const diffLabel = $derived(
+		DIFFICULTIES.find((d) => d.value === vow.difficulty)?.label ?? vow.difficulty
+	);
+	const stressCost = $derived(FORSAKE_STRESS[vow.difficulty]);
 
 	function markProgress() {
 		const ticks = VOW_MARK_TICKS[vow.difficulty];
@@ -31,17 +47,32 @@
 		vow.ticks = Math.max(0, vow.ticks - ticks);
 	}
 
-	function handleDelete() {
-		if (confirmDelete) {
-			onDelete();
-		} else {
-			confirmDelete = true;
-		}
+	function beginForsake() {
+		confirmingForsake = true;
+	}
+
+	function cancelForsake() {
+		confirmingForsake = false;
+	}
+
+	function confirmForsake() {
+		onDelete();
 	}
 </script>
 
-<div class="vow-card">
+<div class="vow-card" class:menace-active={vow.menace > 0}>
+
+	<!-- Header: collapse toggle, name, difficulty, forsake button -->
 	<div class="vow-header">
+		<button
+			class="collapse-btn"
+			onclick={() => (collapsed = !collapsed)}
+			aria-label={collapsed ? 'Expand vow' : 'Collapse vow'}
+			title={collapsed ? 'Expand' : 'Collapse'}
+		>
+			{collapsed ? '▶' : '▼'}
+		</button>
+
 		<input
 			class="vow-name"
 			bind:value={vow.name}
@@ -59,60 +90,86 @@
 			{/each}
 		</select>
 
-		{#if confirmDelete}
-			<button class="btn btn-danger" onclick={handleDelete}>Confirm delete</button>
-			<button class="btn" onclick={() => (confirmDelete = false)}>Cancel</button>
-		{:else}
-			<button
-				class="btn btn-icon btn-danger"
-				onclick={handleDelete}
-				title="Delete vow"
-				aria-label="Delete vow"
-			>✕</button>
-		{/if}
+		<button
+			class="btn btn-icon icon-btn btn-forsake"
+			onclick={beginForsake}
+			title="Forsake vow"
+			aria-label="Forsake vow"
+		>{@html trashSvg}</button>
 	</div>
 
-	<div class="vow-extras">
-		<label class="vow-extra">
-			<span>Threat</span>
-			<input bind:value={vow.threat} placeholder="—" aria-label="Threat" />
-		</label>
-		<div class="vow-extra menace-control">
-			<span>Menace</span>
-			<button
-				class="adj-btn"
-				onclick={() => (vow.menace = Math.max(0, vow.menace - 1))}
-				disabled={vow.menace <= 0}
-				aria-label="Decrease menace"
-			>−</button>
-			<span class="menace-val" class:menace-high={vow.menace >= 7}>{vow.menace}</span>
-			<button
-				class="adj-btn"
-				onclick={() => (vow.menace = Math.min(10, vow.menace + 1))}
-				disabled={vow.menace >= 10}
-				aria-label="Increase menace"
-			>+</button>
-			<span class="menace-max">/10</span>
+	<!-- Forsake confirmation dialog -->
+	{#if confirmingForsake}
+		<div class="forsake-dialog">
+			<div class="forsake-title">Forsake Your Vow</div>
+			<div class="forsake-vow-name">"{vow.name || 'Unnamed Vow'}" ({diffLabel})</div>
+			<p class="forsake-rule">
+				When you renounce your quest or are unable to continue, clear the vow
+				and Endure Stress.
+			</p>
+			<p class="forsake-cost">
+				An iron vow is a sacred promise. Forsaking it means accepting failure
+				and the weight of a broken oath. You must
+				<strong>Endure Stress (−{stressCost})</strong> for a
+				{diffLabel.toLowerCase()} vow.
+			</p>
+			<div class="forsake-actions">
+				<button class="btn" onclick={cancelForsake}>Keep Vow</button>
+				<button class="btn btn-danger" onclick={confirmForsake}>Forsake Vow</button>
+			</div>
 		</div>
-	</div>
+	{/if}
 
-	<ProgressTrack bind:value={vow.ticks} label="" boxes={10} />
+	<!-- Expandable body -->
+	{#if !collapsed}
+		<div class="vow-body">
+			<!-- Threat + Menace row -->
+			<div class="vow-extras">
+				<label class="vow-extra">
+					<span>Threat</span>
+					<input bind:value={vow.threat} placeholder="—" aria-label="Threat" />
+				</label>
+				<div class="vow-extra menace-control">
+					<span>Menace</span>
+					<button
+						class="adj-btn"
+						onclick={() => (vow.menace = Math.max(0, vow.menace - 1))}
+						disabled={vow.menace <= 0}
+						aria-label="Decrease menace"
+					>−</button>
+					<span class="menace-val" class:menace-high={vow.menace >= 7}>{vow.menace}</span>
+					<button
+						class="adj-btn"
+						onclick={() => (vow.menace = Math.min(10, vow.menace + 1))}
+						disabled={vow.menace >= 10}
+						aria-label="Increase menace"
+					>+</button>
+					<span class="menace-max">/10</span>
+				</div>
+			</div>
 
-	<div class="vow-actions">
-		<button
-			class="btn"
-			onclick={markProgress}
-			disabled={vow.ticks >= 40}
-		>
-			Mark Progress
-			<span class="ticks-hint">+{VOW_MARK_TICKS[vow.difficulty]}</span>
-		</button>
-		<button
-			class="btn"
-			onclick={unmarkProgress}
-			disabled={vow.ticks <= 0}
-		>Unmark</button>
-	</div>
+			<!-- Progress track + Mark/Unmark buttons (right-aligned, same height as boxes) -->
+			<div class="vow-progress-row">
+				<div class="progress-wrap" class:track-menace={vow.menace > 0}>
+					<ProgressTrack bind:value={vow.ticks} label="" boxes={10} />
+				</div>
+				<div class="vow-actions">
+					<button
+						class="btn btn-progress"
+						onclick={markProgress}
+						disabled={vow.ticks >= 40}
+						title="Mark progress (+{VOW_MARK_TICKS[vow.difficulty]} ticks)"
+					>+{VOW_MARK_TICKS[vow.difficulty]}</button>
+					<button
+						class="btn btn-progress"
+						onclick={unmarkProgress}
+						disabled={vow.ticks <= 0}
+						title="Unmark progress (−{VOW_MARK_TICKS[vow.difficulty]} ticks)"
+					>−{VOW_MARK_TICKS[vow.difficulty]}</button>
+				</div>
+			</div>
+		</div>
+	{/if}
 </div>
 
 <style>
@@ -120,40 +177,149 @@
 		background: var(--bg-inset);
 		border: 1px solid var(--border);
 		border-radius: 6px;
-		padding: 10px 12px;
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
+		overflow: hidden;
+		transition: border-color 0.2s;
 	}
 
+	/* Menace-active state: amber border (card level) */
+	.vow-card.menace-active {
+		border-color: #E77974;
+	}
+
+	/* ---- Header ---- */
 	.vow-header {
 		display: flex;
 		align-items: center;
 		gap: 6px;
-		flex-wrap: wrap;
+		padding: 7px 10px;
+		background: var(--bg-control);
 	}
+
+	.collapse-btn {
+		background: transparent;
+		border: none;
+		color: var(--text-dimmer);
+		padding: 2px 4px;
+		cursor: pointer;
+		font-size: 0.55rem;
+		line-height: 1;
+		flex-shrink: 0;
+		border-radius: 2px;
+		font-family: inherit;
+		transition: color 0.12s;
+	}
+	.collapse-btn:hover { color: var(--text); }
 
 	.vow-name {
 		flex: 1;
-		min-width: 120px;
+		min-width: 100px;
 		font-weight: 600;
+		font-size: 0.88rem;
+		padding: 3px 7px;
 	}
 
 	.vow-difficulty {
 		flex-shrink: 0;
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		padding: 3px 6px;
+	}
+
+	/* Forsake button (trash icon) — danger color */
+	.btn-forsake {
+		color: var(--color-danger);
+		border-color: transparent;
+		background: transparent;
+		opacity: 0.55;
+		transition: opacity 0.12s, border-color 0.12s;
+	}
+	.btn-forsake:hover:not(:disabled) {
+		opacity: 1;
+		border-color: var(--color-danger);
+		background: transparent;
+	}
+	.icon-btn :global(svg) {
+		width: 11px;
+		height: 11px;
+		fill: currentColor;
+	}
+
+	/* ---- Forsake confirmation dialog ---- */
+	.forsake-dialog {
+		background: color-mix(in srgb, var(--color-danger) 8%, var(--bg-card));
+		border-top: 1px solid color-mix(in srgb, var(--color-danger) 40%, transparent);
+		border-bottom: 1px solid color-mix(in srgb, var(--color-danger) 40%, transparent);
+		padding: 12px 14px;
+		display: flex;
+		flex-direction: column;
+		gap: 7px;
+	}
+
+	.forsake-title {
+		font-family: var(--font-display);
+		font-size: 0.78rem;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--color-danger);
+	}
+
+	.forsake-vow-name {
+		font-family: var(--font-body);
+		font-size: 0.88rem;
+		font-style: italic;
+		color: var(--text);
+		font-weight: 500;
+	}
+
+	.forsake-rule {
+		font-family: var(--font-body);
+		font-size: 0.8rem;
+		font-style: italic;
+		color: var(--text-muted);
+		line-height: 1.4;
+	}
+
+	.forsake-cost {
+		font-family: var(--font-body);
+		font-size: 0.82rem;
+		color: var(--text-muted);
+		line-height: 1.4;
+	}
+
+	.forsake-cost :global(strong) {
+		color: var(--color-danger);
+	}
+
+	.forsake-actions {
+		display: flex;
+		gap: 6px;
+		margin-top: 2px;
+	}
+
+	/* ---- Expandable body ---- */
+	.vow-body {
+		padding: 8px 10px;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
 	}
 
 	.vow-extras {
 		display: flex;
 		gap: 10px;
 		flex-wrap: wrap;
+		align-items: center;
 	}
 
 	.vow-extra {
 		display: flex;
 		align-items: center;
 		gap: 5px;
-		font-size: 0.8rem;
+		font-family: var(--font-ui);
+		font-size: 0.78rem;
 	}
 
 	.vow-extra span {
@@ -162,7 +328,7 @@
 	}
 
 	.vow-extra input {
-		width: 140px;
+		width: 130px;
 		font-size: 0.8rem;
 		padding: 2px 6px;
 	}
@@ -174,8 +340,8 @@
 	}
 
 	.adj-btn {
-		width: 22px;
-		height: 22px;
+		width: 20px;
+		height: 20px;
 		padding: 0;
 		display: flex;
 		align-items: center;
@@ -185,45 +351,83 @@
 		border-radius: 3px;
 		cursor: pointer;
 		font-size: 0.85rem;
+		font-family: var(--font-ui);
 		color: var(--text);
 		line-height: 1;
 	}
 
-	.adj-btn:disabled {
-		opacity: 0.35;
-		cursor: not-allowed;
-	}
-
+	.adj-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 	.adj-btn:not(:disabled):hover {
-		background: var(--bg-hover, var(--bg-inset));
-		border-color: var(--border-strong, var(--text-muted));
+		background: var(--bg-hover);
+		border-color: var(--border-mid);
 	}
 
 	.menace-val {
-		min-width: 18px;
+		min-width: 16px;
 		text-align: center;
-		font-size: 0.85rem;
+		font-family: var(--font-ui);
+		font-size: 0.82rem;
 		font-weight: 600;
+		font-variant-numeric: tabular-nums;
 	}
-
-	.menace-val.menace-high {
-		color: var(--danger, #c0392b);
-	}
+	.menace-val.menace-high { color: var(--color-danger); }
 
 	.menace-max {
 		color: var(--text-muted);
-		font-size: 0.75rem;
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
 	}
 
+	/* ---- Progress track row ---- */
+	.vow-progress-row {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	/* Menace highlight: adaptive background/border for light + dark */
+	.progress-wrap {
+		flex: 1;
+		min-width: 0;
+		border-radius: 4px;
+		padding: 2px 3px;
+		border: 1px solid transparent;
+		transition: background 0.2s, border-color 0.2s;
+	}
+
+	.progress-wrap.track-menace {
+		background: color-mix(in srgb, #E77974 18%, var(--bg-inset));
+		border-color: #E77974;
+	}
+
+	/* Action buttons: right of progress, same height as progress boxes (22px) */
 	.vow-actions {
 		display: flex;
-		gap: 6px;
-		flex-wrap: wrap;
+		gap: 4px;
+		flex-shrink: 0;
 	}
 
-	.ticks-hint {
-		font-size: 0.7rem;
-		color: var(--text-dimmer);
-		margin-left: 2px;
+	.btn-progress {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		height: 22px;
+		padding: 0 7px;
+		border-radius: 3px;
+		border: 1px solid var(--border-mid);
+		background: var(--bg-control);
+		color: var(--text-muted);
+		font-family: var(--font-ui);
+		font-size: 0.68rem;
+		font-weight: 600;
+		letter-spacing: 0.02em;
+		cursor: pointer;
+		white-space: nowrap;
+		transition: background 0.12s, color 0.12s;
 	}
+	.btn-progress:hover:not(:disabled) {
+		background: var(--bg-hover);
+		color: var(--text);
+	}
+	.btn-progress:disabled { opacity: 0.35; cursor: not-allowed; }
 </style>

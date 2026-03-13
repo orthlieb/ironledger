@@ -8,6 +8,8 @@
 	 *   Conditions — 2 × 2 grid
 	 *   Banes      — 1 × 2 column
 	 *   Burdens    — 1 × 2 column
+	 *
+	 * Toggles are styled as radio buttons (no border / background).
 	 */
 	import type { CharacterData } from '$lib/types.js';
 
@@ -46,15 +48,15 @@
 			<div class="group-name">Conditions</div>
 			<div class="toggle-grid conditions-grid">
 				{#each CONDITIONS as d (d.key)}
-					<button
-						class="toggle"
-						class:active={data[d.key]}
-						onclick={() => { const v = !data[d.key]; data[d.key] = v; onchange?.(d.label, v); }}
-						aria-pressed={data[d.key]}
-					>
-						<span class="dot">{data[d.key] ? '●' : '○'}</span>
+					<label class="toggle" class:active={data[d.key]}>
+						<input
+							type="checkbox"
+							class="toggle-radio"
+							checked={data[d.key]}
+							onchange={() => { const v = !data[d.key]; data[d.key] = v; onchange?.(d.label, v); }}
+						/>
 						{d.label}
-					</button>
+					</label>
 				{/each}
 			</div>
 		</div>
@@ -64,15 +66,15 @@
 			<div class="group-name">Banes</div>
 			<div class="toggle-grid single-col">
 				{#each BANES as d (d.key)}
-					<button
-						class="toggle"
-						class:active={data[d.key]}
-						onclick={() => { const v = !data[d.key]; data[d.key] = v; onchange?.(d.label, v); }}
-						aria-pressed={data[d.key]}
-					>
-						<span class="dot">{data[d.key] ? '●' : '○'}</span>
+					<label class="toggle" class:active={data[d.key]}>
+						<input
+							type="checkbox"
+							class="toggle-radio"
+							checked={data[d.key]}
+							onchange={() => { const v = !data[d.key]; data[d.key] = v; onchange?.(d.label, v); }}
+						/>
 						{d.label}
-					</button>
+					</label>
 				{/each}
 			</div>
 		</div>
@@ -82,15 +84,15 @@
 			<div class="group-name">Burdens</div>
 			<div class="toggle-grid single-col">
 				{#each BURDENS as d (d.key)}
-					<button
-						class="toggle"
-						class:active={data[d.key]}
-						onclick={() => { const v = !data[d.key]; data[d.key] = v; onchange?.(d.label, v); }}
-						aria-pressed={data[d.key]}
-					>
-						<span class="dot">{data[d.key] ? '●' : '○'}</span>
+					<label class="toggle" class:active={data[d.key]}>
+						<input
+							type="checkbox"
+							class="toggle-radio"
+							checked={data[d.key]}
+							onchange={() => { const v = !data[d.key]; data[d.key] = v; onchange?.(d.label, v); }}
+						/>
 						{d.label}
-					</button>
+					</label>
 				{/each}
 			</div>
 		</div>
@@ -118,6 +120,7 @@
 	}
 
 	.group-name {
+		font-family: var(--font-ui);
 		font-size: 0.68rem;
 		color: var(--text-dimmer);
 		font-style: italic;
@@ -126,7 +129,7 @@
 	/* Conditions: 2 columns × 2 rows */
 	.toggle-grid {
 		display: grid;
-		gap: 3px;
+		gap: 2px;
 	}
 
 	.conditions-grid {
@@ -138,37 +141,53 @@
 		grid-template-columns: auto;
 	}
 
+	/* Label wrapper — no border, no background, looks like a checkbox label */
 	.toggle {
 		display: inline-flex;
 		align-items: center;
 		gap: 5px;
-		padding: 3px 7px;
-		border-radius: 4px;
-		border: 1px solid var(--border);
-		background: var(--bg-control);
-		color: var(--text-muted);
-		font-size: 0.78rem;
+		padding: 2px 3px;
 		cursor: pointer;
+		font-family: var(--font-ui);
+		font-size: 0.78rem;
+		color: var(--text-muted);
 		white-space: nowrap;
-		transition:
-			background 0.12s,
-			color 0.12s,
-			border-color 0.12s;
+		user-select: none;
+		border-radius: 3px;
+		transition: color 0.12s;
 	}
 
 	.toggle:hover {
-		background: var(--bg-hover);
 		color: var(--text);
 	}
 
 	.toggle.active {
-		background: color-mix(in srgb, var(--color-danger) 20%, var(--bg-card));
-		border-color: var(--color-danger);
-		color: var(--color-health);
+		color: var(--color-danger);
 	}
 
-	.dot {
-		font-size: 0.65rem;
-		line-height: 1;
+	/* Radio-style checkbox — circular, no native appearance */
+	.toggle-radio {
+		appearance: none;
+		-webkit-appearance: none;
+		width: 13px;
+		height: 13px;
+		border-radius: 50%;
+		border: 1.5px solid var(--text-dimmer);
+		background: transparent;
+		cursor: pointer;
+		flex-shrink: 0;
+		transition: border-color 0.12s, background 0.12s;
+		margin: 0;
+	}
+
+	.toggle:hover .toggle-radio {
+		border-color: var(--color-danger);
+	}
+
+	.toggle.active .toggle-radio {
+		border-color: var(--color-danger);
+		background: var(--color-danger);
+		/* Inner white dot via box-shadow */
+		box-shadow: inset 0 0 0 2.5px var(--bg-card);
 	}
 </style>
