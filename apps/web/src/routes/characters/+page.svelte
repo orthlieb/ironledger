@@ -2,90 +2,110 @@
 	import type { PageData } from './$types';
 	import type { CharacterFull } from '$lib/api.js';
 	import { characters as api } from '$lib/api.js';
-	import CharacterSheet from '$lib/components/CharacterSheet.svelte';
-	import LogPanel from '$lib/components/LogPanel.svelte';
-	import { untrack } from 'svelte';
-	import importSvg from '$lib/images/file-arrow-up-solid.svg?raw';
+	import CharacterSheet    from '$lib/components/CharacterSheet.svelte';
+	import LogPanel          from '$lib/components/LogPanel.svelte';
+	import GlobalContextBar  from '$lib/components/GlobalContextBar.svelte';
+	import { onMount } from 'svelte';
+	import fileImportSvg from '$icons/file-import-solid-full.svg?raw';
+	import skullSvg      from '$icons/skull-crossbones-solid-full.svg?raw';
+	import locationSvg   from '$icons/location-dot-solid-full.svg?raw';
 
 	let { data }: { data: PageData } = $props();
 
-	// Deep-reactive list — initialised from SSR data on first load.
-	// untrack() prevents the rune from re-running when data.characters changes;
-	// we own this list from here on and mutate it directly.
-	let chars = $state<CharacterFull[]>(untrack(() => data.characters));
+	// ── Character list ─────────────────────────────────────────────────────────
+	// Starts empty; populated after mount so the app shell renders immediately.
+	let chars       = $state<CharacterFull[]>([]);
+	let loadingChars = $state(true);
 
-	let creating  = $state(false);
-	let importing = $state(false);
-	let createError = $state('');
+	let creating    = $state(false);
+	let importing   = $state(false);
+	let charError   = $state('');
 
-	// Track which character is currently "active" for the log panel.
-	// Defaults to the first character; updates when the user interacts with any card.
-	let activeCharId = $state<string>(untrack(() => data.characters[0]?.id ?? ''));
+	// ── Active character ───────────────────────────────────────────────────────
+	let activeCharId = $state<string>('');
+	const activeChar  = $derived(chars.find((c) => c.id === activeCharId));
 
-	function setActiveChar(id: string) {
-		activeCharId = id;
-	}
-
-	// Keep activeCharId valid when chars list changes (e.g. after new char is created)
+	// Keep activeCharId valid after mutations (create / delete)
 	$effect(() => {
 		if (chars.length > 0 && !chars.find((c) => c.id === activeCharId)) {
 			activeCharId = chars[0].id;
 		}
+		if (chars.length === 0) activeCharId = '';
 	});
 
-	// Hidden file input reference for JSON import
+	function setActiveChar(id: string) { activeCharId = id; }
+
+	// ── Initial load ───────────────────────────────────────────────────────────
+	onMount(async () => {
+		try {
+			chars = await api.list();
+		} catch {
+			charError = 'Failed to load characters. Is the server running?';
+		} finally {
+			loadingChars = false;
+		}
+	});
+
+	// ── Tabs ───────────────────────────────────────────────────────────────────
+	type Tab = 'characters' | 'foes' | 'expeditions' | 'log';
+	let activeTab = $state<Tab>('characters');
+
+	// ── File input ref for import ──────────────────────────────────────────────
 	let importInput: HTMLInputElement;
 
+	// ── CRUD ───────────────────────────────────────────────────────────────────
 	async function addCharacter() {
 		if (creating) return;
 		creating = true;
-		createError = '';
+		charError = '';
 		try {
 			const newChar = await api.create('New Character');
-			// Prepend so the new card appears at the top
 			chars = [newChar, ...chars];
-		} catch (err) {
-			createError = 'Could not create character. Is the server running?';
-			console.error(err);
+			activeCharId = newChar.id;
+			activeTab = 'characters';
+		} catch {
+			charError = 'Could not create character. Is the server running?';
 		} finally {
 			creating = false;
 		}
+	}
+
+	function handleSave(updated: CharacterFull) {
+		chars = chars.map((c) => c.id === updated.id ? updated : c);
 	}
 
 	async function deleteCharacter(id: string) {
 		try {
 			await api.remove(id);
 			chars = chars.filter((c) => c.id !== id);
-		} catch (err) {
-			console.error('Failed to delete character:', err);
+		} catch {
+			charError = 'Could not delete character.';
 		}
 	}
 
 	async function importCharacter(e: Event) {
 		const file = (e.target as HTMLInputElement).files?.[0];
 		if (!file) return;
-
 		importing = true;
-		createError = '';
+		charError = '';
 		try {
-			const text = await file.text();
+			const text   = await file.text();
 			const parsed = JSON.parse(text) as { name?: string; data?: Record<string, unknown> };
-			const name = parsed.name ?? 'Imported Character';
-			const data = parsed.data ?? {};
-			const newChar = await api.create(name, data);
+			const newChar = await api.create(parsed.name ?? 'Imported Character', parsed.data ?? {});
 			chars = [newChar, ...chars];
+			activeCharId = newChar.id;
+			activeTab = 'characters';
 		} catch {
-			createError = 'Could not import character. Make sure the file is a valid Iron Ledger JSON export.';
+			charError = 'Could not import character. Make sure the file is a valid Iron Ledger JSON export.';
 		} finally {
 			importing = false;
-			// Reset input so the same file can be reimported if needed
 			importInput.value = '';
 		}
 	}
 </script>
 
 <svelte:head>
-	<title>Characters — Iron Ledger</title>
+	<title>{activeChar ? `${activeChar.name} — Iron Ledger` : 'Characters — Iron Ledger'}</title>
 </svelte:head>
 
 <!-- Hidden file input for JSON import -->
@@ -97,76 +117,167 @@
 	onchange={importCharacter}
 />
 
-<div class="page-header">
-	<h1>Characters</h1>
-	<div class="header-actions">
-		<button
-			class="btn icon-btn"
-			onclick={() => importInput.click()}
-			disabled={importing}
-			title="Import character from JSON"
-			aria-label="Import character from JSON"
-		>{@html importSvg}{importing ? ' Importing…' : ' Import'}</button>
-		<button
-			class="btn btn-primary"
-			onclick={addCharacter}
-			disabled={creating}
-		>
-			{creating ? 'Creating…' : '+ New Character'}
-		</button>
-	</div>
+<!-- ===== Full-width GlobalContextBar ===== -->
+<div class="gc-wrapper">
+	<GlobalContextBar {chars} {activeCharId} onSelect={setActiveChar} />
 </div>
 
-{#if createError}
-	<div class="error-msg">{createError}</div>
-{/if}
+<!-- ===== Two-column layout: content + log ===== -->
+<div class="page-layout" class:log-active={activeTab === 'log'}>
 
-<div class="split-layout">
-	<!-- Left: Character list -->
-	<div class="split-left">
-		{#if chars.length === 0}
-			<div class="empty-state">
-				<p>No characters yet.</p>
-				<p style="margin-top: 0.5rem; font-size: 0.85rem;">
-					Click <strong>+ New Character</strong> to begin your first journey.
-				</p>
+	<!-- ── Left / Content pane ── -->
+	<div class="content-pane">
+
+		<!-- Sticky tab bar -->
+		<nav class="tab-bar" aria-label="Section tabs">
+			<div class="tab-group" role="tablist">
+				<button
+					class="tab-btn"
+					class:active={activeTab === 'characters'}
+					role="tab"
+					aria-selected={activeTab === 'characters'}
+					onclick={() => (activeTab = 'characters')}
+				>Characters</button>
+
+				<button
+					class="tab-btn"
+					class:active={activeTab === 'foes'}
+					role="tab"
+					aria-selected={activeTab === 'foes'}
+					onclick={() => (activeTab = 'foes')}
+				>Foes</button>
+
+				<button
+					class="tab-btn"
+					class:active={activeTab === 'expeditions'}
+					role="tab"
+					aria-selected={activeTab === 'expeditions'}
+					onclick={() => (activeTab = 'expeditions')}
+				>Expeditions</button>
+
+				<!-- Log tab: only on mobile (desktop has the sidebar) -->
+				<button
+					class="tab-btn tab-log"
+					class:active={activeTab === 'log'}
+					role="tab"
+					aria-selected={activeTab === 'log'}
+					onclick={() => (activeTab = 'log')}
+				>Log</button>
 			</div>
-		{:else}
-			<div class="char-list">
-				{#each chars as char (char.id)}
-					<!-- svelte-ignore a11y_no_static_element_interactions -->
-					<!-- svelte-ignore a11y_click_events_have_key_events -->
-					<div
-						class="char-wrapper"
-						onfocusin={() => setActiveChar(char.id)}
-						onclick={() => setActiveChar(char.id)}
-					>
-						<CharacterSheet
-							character={char}
-							onDelete={() => deleteCharacter(char.id)}
-						/>
+		</nav>
+
+		<!-- Tab body -->
+		<div class="tab-body">
+
+			{#if activeTab === 'characters'}
+				<div class="char-toolbar">
+					{#if charError}<span class="char-error">{charError}</span>{/if}
+					<div class="char-toolbar-actions">
+						<button
+							class="btn icon-btn"
+							onclick={() => importInput.click()}
+							disabled={importing}
+							title="Import character from JSON"
+							aria-label="Import character from JSON"
+						>{@html fileImportSvg}{importing ? ' Importing…' : ' Import'}</button>
+						<button
+							class="btn btn-primary"
+							onclick={addCharacter}
+							disabled={creating}
+						>{creating ? 'Creating…' : '+ New Character'}</button>
 					</div>
-				{/each}
-			</div>
+				</div>
+
+				{#if loadingChars}
+					<div class="loading-tab">
+						<span class="loading-dot"></span>
+						<span class="loading-dot"></span>
+						<span class="loading-dot"></span>
+					</div>
+				{:else if chars.length === 0}
+					<div class="empty-tab">
+						<span class="empty-tab-title">No Characters Yet</span>
+						<span class="empty-tab-sub">Click <strong>+ New Character</strong> to begin your first journey.</span>
+					</div>
+				{:else}
+					<div class="char-list">
+						{#each chars as char (char.id)}
+							<!-- svelte-ignore a11y_no_static_element_interactions -->
+							<!-- svelte-ignore a11y_click_events_have_key_events -->
+							<div
+								class="char-card"
+								class:char-card--active={char.id === activeCharId}
+								onfocusin={() => setActiveChar(char.id)}
+								onclick={() => setActiveChar(char.id)}
+							>
+								<CharacterSheet
+									character={char}
+									onDelete={() => deleteCharacter(char.id)}
+									onSave={handleSave}
+								/>
+							</div>
+						{/each}
+					</div>
+				{/if}
+
+			{:else if activeTab === 'foes'}
+				<div class="empty-tab">
+					<span class="empty-tab-icon">{@html skullSvg}</span>
+					<span class="empty-tab-title">No Foes Tracked</span>
+					<span class="empty-tab-sub">Foe encounters and combat tracking will appear here.</span>
+				</div>
+
+			{:else if activeTab === 'expeditions'}
+				<div class="empty-tab">
+					<span class="empty-tab-icon">{@html locationSvg}</span>
+					<span class="empty-tab-title">No Expeditions</span>
+					<span class="empty-tab-sub">Journey and site progress tracking will appear here.</span>
+				</div>
+			{/if}
+
+		</div>
+	</div>
+
+	<!-- ── Right / Log pane ── -->
+	<div class="log-pane">
+		{#if activeChar}
+			<LogPanel characterId={activeChar.id} />
 		{/if}
 	</div>
 
-	<!-- Right: Log panel -->
-	<div class="split-right">
-		{#if activeCharId}
-			<LogPanel
-				characterId={activeCharId}
-				characterName={chars.find((c) => c.id === activeCharId)?.name}
-			/>
-		{/if}
-	</div>
 </div>
 
 <style>
-	.header-actions {
+	/* ============================================================
+	   Full-width header wrapper (Import, New, GlobalContextBar)
+	   ============================================================ */
+	.gc-wrapper {
+		padding: 0.75rem 0 0;
+		flex-shrink: 0;
+	}
+
+	/* Toolbar row inside the Characters tab (Import + New buttons) */
+	.char-toolbar {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 8px;
+		padding-bottom: 0.75rem;
+		border-bottom: 1px solid var(--border);
+		margin-bottom: 0.75rem;
+	}
+
+	.char-toolbar-actions {
 		display: flex;
 		align-items: center;
 		gap: 8px;
+	}
+
+	.char-error {
+		font-family: var(--font-ui);
+		font-size: 0.78rem;
+		color: var(--color-danger, #ef4444);
+		margin-right: auto;
 	}
 
 	.icon-btn {
@@ -182,13 +293,196 @@
 		flex-shrink: 0;
 	}
 
+	/* Loading state */
+	.loading-tab {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		padding: 5rem 2rem;
+	}
+
+	.loading-dot {
+		display: inline-block;
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		background: var(--text-dimmer);
+		opacity: 0.4;
+		animation: loading-pulse 1.2s ease-in-out infinite;
+	}
+	.loading-dot:nth-child(2) { animation-delay: 0.2s; }
+	.loading-dot:nth-child(3) { animation-delay: 0.4s; }
+
+	@keyframes loading-pulse {
+		0%, 80%, 100% { transform: scale(0.8); opacity: 0.3; }
+		40%            { transform: scale(1.2); opacity: 0.9; }
+	}
+
+	/* Character list inside the Characters tab */
 	.char-list {
 		display: flex;
 		flex-direction: column;
 		gap: 12px;
 	}
 
-	.char-wrapper {
+	.char-card {
 		cursor: default;
+		border-radius: 6px;
+		outline: 2px solid transparent;
+		outline-offset: 2px;
+		transition: outline-color 0.12s;
+	}
+
+	.char-card--active {
+		outline-color: var(--text-accent);
+	}
+
+	/* ============================================================
+	   Tab bar — sticky just below the app nav
+	   ============================================================ */
+	.tab-bar {
+		display: flex;
+		align-items: stretch;
+		background: var(--bg-card);
+		border-bottom: 1px solid var(--border);
+		position: sticky;
+		top: 52px; /* must match .app-nav height */
+		z-index: 40;
+		overflow-x: auto;
+		scrollbar-width: none;
+		flex-shrink: 0;
+		padding-left: 4px;
+	}
+	.tab-bar::-webkit-scrollbar { display: none; }
+
+	.tab-group {
+		display: flex;
+		align-items: stretch;
+	}
+
+	.tab-btn {
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--text-dimmer);
+		background: transparent;
+		border: none;
+		border-bottom: 2px solid transparent;
+		padding: 13px 16px 11px;
+		cursor: pointer;
+		white-space: nowrap;
+		flex-shrink: 0;
+		transition: color 0.12s, border-color 0.12s;
+	}
+	.tab-btn:hover  { color: var(--text-muted); }
+	.tab-btn.active {
+		color: var(--text-accent);
+		border-bottom-color: var(--text-accent);
+	}
+
+	/* ============================================================
+	   Empty tab state
+	   ============================================================ */
+	.empty-tab {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 5rem 2rem;
+		text-align: center;
+		gap: 12px;
+	}
+
+	.empty-tab-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		opacity: 0.15;
+	}
+	.empty-tab-icon :global(svg) {
+		width: 40px;
+		height: 40px;
+		fill: var(--text-dimmer);
+	}
+
+	.empty-tab-title {
+		font-family: var(--font-display);
+		font-size: 0.88rem;
+		font-weight: 700;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--text-dimmer);
+	}
+
+	.empty-tab-sub {
+		font-family: var(--font-ui);
+		font-size: 0.78rem;
+		font-style: italic;
+		color: var(--text-dimmer);
+		max-width: 280px;
+		line-height: 1.5;
+	}
+
+	/* ============================================================
+	   Desktop layout ≥ 768 px — two-column, log always visible
+	   ============================================================ */
+	@media (min-width: 768px) {
+		.page-layout {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			align-items: start;
+			gap: 0;
+			margin-left:  -1.25rem;
+			margin-right: -1.25rem;
+			margin-bottom: -4rem;
+		}
+
+		.content-pane {
+			display: flex;
+			flex-direction: column;
+			min-width: 0;
+		}
+
+		.tab-body {
+			padding: 1rem 1.25rem 4rem;
+		}
+
+		.log-pane {
+			position: sticky;
+			top: 52px;
+			height: calc(100dvh - 52px);
+			align-self: start;
+			overflow: hidden;
+			display: flex;
+			flex-direction: column;
+		}
+
+		.tab-log { display: none; }
+	}
+
+	/* ============================================================
+	   Mobile layout < 768 px — single column, Log as a tab
+	   ============================================================ */
+	@media (max-width: 767px) {
+		.content-pane {
+			display: flex;
+			flex-direction: column;
+		}
+
+		.tab-body {
+			padding: 0.75rem 0 3rem;
+		}
+
+		.log-pane {
+			display: none;
+			height: calc(100dvh - 52px - 44px);
+			flex-direction: column;
+		}
+
+		.page-layout.log-active .log-pane { display: flex; }
+		.page-layout.log-active .tab-body  { display: none; }
 	}
 </style>

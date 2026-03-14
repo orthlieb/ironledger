@@ -4,6 +4,7 @@
 	 * Used for Edge, Heart, Iron, Shadow, Wits.
 	 * Stats rarely change so ± buttons have been intentionally omitted.
 	 * Standard Ironsworn range: 1–3.
+	 * Fires onchange(oldVal, newVal) on blur when the value actually changed.
 	 */
 	let {
 		label,
@@ -12,6 +13,7 @@
 		min = 1,
 		max = 3,
 		tooltip = '',
+		onchange,
 	}: {
 		label: string;
 		value?: number;
@@ -20,7 +22,12 @@
 		max?: number;
 		/** Tooltip text shown on hover */
 		tooltip?: string;
+		/** Fired when value is committed (on blur) and differs from the focused value */
+		onchange?: (oldVal: number, newVal: number) => void;
 	} = $props();
+
+	// Capture value at focus time so we know what changed on blur
+	let focusValue = 0;
 </script>
 
 <div class="stat-control" title={tooltip || undefined}>
@@ -35,7 +42,12 @@
 		bind:value
 		{min}
 		{max}
-		onblur={() => { value = Math.min(max, Math.max(min, value || min)); }}
+		onfocus={() => { focusValue = value; }}
+		onblur={() => {
+			const clamped = Math.min(max, Math.max(min, value || min));
+			value = clamped;
+			if (clamped !== focusValue) onchange?.(focusValue, clamped);
+		}}
 		aria-label="{label} stat value"
 	/>
 </div>
@@ -57,13 +69,13 @@
 	}
 
 	.stat-value-input {
-		font-size: 0.95rem;
+		font-size: 0.82rem;
 		font-weight: 700;
 		width: 2.5rem;
+		height: 27px; /* match the measured height of .touched-select */
 		text-align: center;
 		font-variant-numeric: tabular-nums;
-		/* Match standard text field height: font-size 0.95rem + padding 5px top/bottom */
-		padding: 5px 4px;
+		padding: 0 4px; /* vertical centering handled by height */
 		border: 2px solid;
 		border-radius: 3px;
 		background: color-mix(in srgb, currentColor 8%, var(--bg-card));

@@ -29,10 +29,19 @@
 		epic:        5,
 	};
 
-	let collapsed        = $state(false);
-	let confirmingForsake = $state(false);
+	let collapsed  = $state(false);
+	let dialogEl   = $state<HTMLDialogElement | null>(null);
+	let dragX      = $state(0);
+	let dragY      = $state(0);
 
-	const diffLabel = $derived(
+	// Non-reactive drag tracking (plain variables, no $state needed)
+	let _dragging    = false;
+	let _startMouseX = 0;
+	let _startMouseY = 0;
+	let _startDragX  = 0;
+	let _startDragY  = 0;
+
+	const diffLabel  = $derived(
 		DIFFICULTIES.find((d) => d.value === vow.difficulty)?.label ?? vow.difficulty
 	);
 	const stressCost = $derived(FORSAKE_STRESS[vow.difficulty]);
@@ -48,19 +57,45 @@
 	}
 
 	function beginForsake() {
-		confirmingForsake = true;
+		dragX = 0;
+		dragY = 0;
+		dialogEl?.showModal();
 	}
 
 	function cancelForsake() {
-		confirmingForsake = false;
+		dialogEl?.close();
 	}
 
 	function confirmForsake() {
+		dialogEl?.close();
 		onDelete();
+	}
+
+	function startDrag(e: MouseEvent) {
+		_dragging    = true;
+		_startMouseX = e.clientX;
+		_startMouseY = e.clientY;
+		_startDragX  = dragX;
+		_startDragY  = dragY;
+		e.preventDefault(); // prevent text selection while dragging
+		window.addEventListener('mousemove', onDragMove);
+		window.addEventListener('mouseup',   onDragEnd);
+	}
+
+	function onDragMove(e: MouseEvent) {
+		if (!_dragging) return;
+		dragX = _startDragX + (e.clientX - _startMouseX);
+		dragY = _startDragY + (e.clientY - _startMouseY);
+	}
+
+	function onDragEnd() {
+		_dragging = false;
+		window.removeEventListener('mousemove', onDragMove);
+		window.removeEventListener('mouseup',   onDragEnd);
 	}
 </script>
 
-<div class="vow-card" class:menace-active={vow.menace > 0}>
+<div class="vow-card">
 
 	<!-- Header: collapse toggle, name, difficulty, forsake button -->
 	<div class="vow-header">
@@ -98,34 +133,12 @@
 		>{@html trashSvg}</button>
 	</div>
 
-	<!-- Forsake confirmation dialog -->
-	{#if confirmingForsake}
-		<div class="forsake-dialog">
-			<div class="forsake-title">Forsake Your Vow</div>
-			<div class="forsake-vow-name">"{vow.name || 'Unnamed Vow'}" ({diffLabel})</div>
-			<p class="forsake-rule">
-				When you renounce your quest or are unable to continue, clear the vow
-				and Endure Stress.
-			</p>
-			<p class="forsake-cost">
-				An iron vow is a sacred promise. Forsaking it means accepting failure
-				and the weight of a broken oath. You must
-				<strong>Endure Stress (−{stressCost})</strong> for a
-				{diffLabel.toLowerCase()} vow.
-			</p>
-			<div class="forsake-actions">
-				<button class="btn" onclick={cancelForsake}>Keep Vow</button>
-				<button class="btn btn-danger" onclick={confirmForsake}>Forsake Vow</button>
-			</div>
-		</div>
-	{/if}
-
 	<!-- Expandable body -->
 	{#if !collapsed}
 		<div class="vow-body">
 			<!-- Threat + Menace row -->
 			<div class="vow-extras">
-				<label class="vow-extra">
+				<label class="vow-extra vow-threat">
 					<span>Threat</span>
 					<input bind:value={vow.threat} placeholder="—" aria-label="Threat" />
 				</label>
@@ -150,8 +163,8 @@
 
 			<!-- Progress track + Mark/Unmark buttons (right-aligned, same height as boxes) -->
 			<div class="vow-progress-row">
-				<div class="progress-wrap" class:track-menace={vow.menace > 0}>
-					<ProgressTrack bind:value={vow.ticks} label="" boxes={10} />
+				<div class="progress-wrap">
+					<ProgressTrack bind:value={vow.ticks} label="" boxes={10} dangerCount={vow.menace} />
 				</div>
 				<div class="vow-actions">
 					<button
@@ -172,6 +185,41 @@
 	{/if}
 </div>
 
+<!-- Forsake confirmation — native <dialog>, floats above everything, draggable -->
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+<dialog
+	bind:this={dialogEl}
+	class="forsake-modal"
+	style:transform="translate(calc(-50% + {dragX}px), calc(-50% + {dragY}px))"
+	oncancel={cancelForsake}
+>
+	<!-- Drag handle / title bar -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div class="forsake-drag-handle" onmousedown={startDrag}>
+		<span class="forsake-title">Forsake Your Vow</span>
+		<span class="drag-grip" aria-hidden="true">⠿</span>
+	</div>
+
+	<!-- Content -->
+	<div class="forsake-body">
+		<div class="forsake-vow-name">"{vow.name || 'Unnamed Vow'}" ({diffLabel})</div>
+		<p class="forsake-rule">
+			When you renounce your quest or are unable to continue, clear the vow
+			and Endure Stress.
+		</p>
+		<p class="forsake-cost">
+			An iron vow is a sacred promise. Forsaking it means accepting failure
+			and the weight of a broken oath. You must
+			<strong>Endure Stress (−{stressCost})</strong> for a
+			{diffLabel.toLowerCase()} vow.
+		</p>
+		<div class="forsake-actions">
+			<button class="btn" onclick={cancelForsake}>Keep Vow</button>
+			<button class="btn btn-danger" onclick={confirmForsake}>Forsake Vow</button>
+		</div>
+	</div>
+</dialog>
+
 <style>
 	.vow-card {
 		background: var(--bg-inset);
@@ -181,11 +229,6 @@
 		flex-direction: column;
 		overflow: hidden;
 		transition: border-color 0.2s;
-	}
-
-	/* Menace-active state: amber border (card level) */
-	.vow-card.menace-active {
-		border-color: #E77974;
 	}
 
 	/* ---- Header ---- */
@@ -246,59 +289,6 @@
 		fill: currentColor;
 	}
 
-	/* ---- Forsake confirmation dialog ---- */
-	.forsake-dialog {
-		background: color-mix(in srgb, var(--color-danger) 8%, var(--bg-card));
-		border-top: 1px solid color-mix(in srgb, var(--color-danger) 40%, transparent);
-		border-bottom: 1px solid color-mix(in srgb, var(--color-danger) 40%, transparent);
-		padding: 12px 14px;
-		display: flex;
-		flex-direction: column;
-		gap: 7px;
-	}
-
-	.forsake-title {
-		font-family: var(--font-display);
-		font-size: 0.78rem;
-		font-weight: 700;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		color: var(--color-danger);
-	}
-
-	.forsake-vow-name {
-		font-family: var(--font-body);
-		font-size: 0.88rem;
-		font-style: italic;
-		color: var(--text);
-		font-weight: 500;
-	}
-
-	.forsake-rule {
-		font-family: var(--font-body);
-		font-size: 0.8rem;
-		font-style: italic;
-		color: var(--text-muted);
-		line-height: 1.4;
-	}
-
-	.forsake-cost {
-		font-family: var(--font-body);
-		font-size: 0.82rem;
-		color: var(--text-muted);
-		line-height: 1.4;
-	}
-
-	.forsake-cost :global(strong) {
-		color: var(--color-danger);
-	}
-
-	.forsake-actions {
-		display: flex;
-		gap: 6px;
-		margin-top: 2px;
-	}
-
 	/* ---- Expandable body ---- */
 	.vow-body {
 		padding: 8px 10px;
@@ -327,10 +317,22 @@
 		white-space: nowrap;
 	}
 
-	.vow-extra input {
-		width: 130px;
+	/* Threat grows to fill available space */
+	.vow-threat {
+		flex: 1;
+		min-width: 120px;
+	}
+
+	.vow-threat input {
+		flex: 1;
+		min-width: 0;
 		font-size: 0.8rem;
 		padding: 2px 6px;
+	}
+
+	/* Menace pushed to the right */
+	.menace-control {
+		margin-left: auto;
 	}
 
 	.menace-control {
@@ -385,19 +387,9 @@
 		gap: 6px;
 	}
 
-	/* Menace highlight: adaptive background/border for light + dark */
 	.progress-wrap {
 		flex: 1;
 		min-width: 0;
-		border-radius: 4px;
-		padding: 2px 3px;
-		border: 1px solid transparent;
-		transition: background 0.2s, border-color 0.2s;
-	}
-
-	.progress-wrap.track-menace {
-		background: color-mix(in srgb, #E77974 18%, var(--bg-inset));
-		border-color: #E77974;
 	}
 
 	/* Action buttons: right of progress, same height as progress boxes (22px) */
@@ -430,4 +422,107 @@
 		color: var(--text);
 	}
 	.btn-progress:disabled { opacity: 0.35; cursor: not-allowed; }
+
+	/* ================================================================
+	   Forsake modal — native <dialog> floating + draggable
+	   ================================================================ */
+	.forsake-modal {
+		/* Reset UA dialog defaults */
+		border: none;
+		padding: 0;
+		border-radius: 8px;
+		/* Positioning: centered via top/left + transform (drag offsets added inline) */
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		/* Width */
+		width: 340px;
+		max-width: calc(100vw - 2rem);
+		/* Appearance */
+		background: color-mix(in srgb, var(--color-danger) 6%, var(--bg-card));
+		color: var(--text);
+		box-shadow:
+			0 12px 40px #00000060,
+			0 0 0 1px color-mix(in srgb, var(--color-danger) 35%, transparent);
+		outline: none;
+	}
+
+	/* Backdrop — semi-transparent dark veil */
+	.forsake-modal::backdrop {
+		background: #00000050;
+		backdrop-filter: blur(1px);
+	}
+
+	/* ---- Drag handle / title bar ---- */
+	.forsake-drag-handle {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 10px 14px 9px;
+		border-bottom: 1px solid color-mix(in srgb, var(--color-danger) 25%, transparent);
+		cursor: grab;
+		user-select: none;
+		border-radius: 8px 8px 0 0;
+		background: color-mix(in srgb, var(--color-danger) 10%, var(--bg-card));
+	}
+	.forsake-drag-handle:active { cursor: grabbing; }
+
+	.forsake-title {
+		font-family: var(--font-display);
+		font-size: 0.78rem;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--color-danger);
+	}
+
+	.drag-grip {
+		font-size: 1rem;
+		color: var(--text-dimmer);
+		line-height: 1;
+		opacity: 0.6;
+	}
+
+	/* ---- Modal body ---- */
+	.forsake-body {
+		padding: 12px 14px;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.forsake-vow-name {
+		font-family: var(--font-body);
+		font-size: 0.9rem;
+		font-style: italic;
+		color: var(--text);
+		font-weight: 500;
+	}
+
+	.forsake-rule {
+		font-family: var(--font-body);
+		font-size: 0.8rem;
+		font-style: italic;
+		color: var(--text-muted);
+		line-height: 1.45;
+	}
+
+	.forsake-cost {
+		font-family: var(--font-body);
+		font-size: 0.82rem;
+		color: var(--text-muted);
+		line-height: 1.45;
+	}
+
+	.forsake-cost :global(strong) {
+		color: var(--color-danger);
+		font-weight: 700;
+	}
+
+	.forsake-actions {
+		display: flex;
+		gap: 6px;
+		margin-top: 4px;
+		justify-content: flex-end;
+	}
 </style>

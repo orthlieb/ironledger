@@ -14,8 +14,6 @@
 			Iron Ledger
 		</a>
 		<div class="nav-links">
-			<a href="/characters">Characters</a>
-			<span class="nav-sep" aria-hidden="true">◆</span>
 			<ThemeToggle />
 			<span class="nav-sep" aria-hidden="true">◆</span>
 			<form method="POST" action="/logout">

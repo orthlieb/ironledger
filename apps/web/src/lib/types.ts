@@ -27,6 +27,8 @@ export interface CharacterAsset {
 	rarityId?: string;
 	companionName?: string;
 	companionHealth?: number;
+	/** Keys of selected items from a definition's selectable list (e.g. cantrips) */
+	selections?: string[];
 }
 
 export interface CharacterData {
@@ -73,6 +75,39 @@ export interface CharacterData {
 	// Collections
 	vows: Vow[];
 	assets: CharacterAsset[];
+}
+
+// ---------------------------------------------------------------------------
+// Asset catalogue types
+// ---------------------------------------------------------------------------
+
+export type AssetCategory = 'Combat Talent' | 'Companion' | 'Path' | 'Ritual' | 'Touched';
+
+export interface AssetAbility {
+	enabled: boolean;
+	text:    string;
+	name?:   string;
+}
+
+export interface AssetDefinition {
+	id:                  string;
+	name:                string;
+	category:            AssetCategory;
+	summary?:            string;
+	preamble?:           string;
+	postamble?:          string;
+	abilities:           AssetAbility[];
+	companionHealthMax?: number;
+	touchedFeatures?:    boolean;
+	[key: string]:       unknown;
+}
+
+export interface RarityDefinition {
+	id:          string;
+	name:        string;
+	assetId:     string;   // the asset this rarity belongs to (1-to-1)
+	xpCost:      number;   // typically 3, 4, or 5
+	description: string;
 }
 
 // Default values for a freshly created character

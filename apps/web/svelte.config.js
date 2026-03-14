@@ -10,7 +10,8 @@ const config = {
 			precompress: false,
 		}),
 		alias: {
-			$lib: './src/lib',
+			$lib:   './src/lib',
+			$icons: './src/lib/icons',
 		},
 	},
 };

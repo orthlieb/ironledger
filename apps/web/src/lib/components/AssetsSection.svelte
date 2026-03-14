@@ -1,58 +1,113 @@
 <script lang="ts">
 	/**
-	 * Assets section — stub.
-	 * Shows the + Asset button (gated on XP ≥ 3) and lists asset IDs.
-	 * Full asset picker and card rendering to be wired up later.
+	 * AssetsSection — lists a character's owned assets and hosts the asset picker.
+	 *
+	 * Data flow:
+	 *   CharacterSheet → bind:assets → AssetsSection
+	 *   AssetsSection  → bind:asset  → AssetCard (per entry)
+	 *   AssetsSection  → onAdd / onClose → AssetPicker
+	 *
+	 * The catalogue is fetched lazily the first time the picker is opened
+	 * (or when this component mounts, so the first click is instant).
 	 */
-	import type { CharacterAsset } from '$lib/types.js';
+	import type { CharacterAsset, CharacterData } from '$lib/types.js';
+	import { loadAssets, findAsset } from '$lib/assetStore.svelte.js';
+	import { appendLog } from '$lib/log.svelte.js';
+	import AssetCard   from './AssetCard.svelte';
+	import AssetPicker from './AssetPicker.svelte';
 
 	let {
 		assets = $bindable<CharacterAsset[]>([]),
-		xp = 0,
+		characterData,
+		characterId,
 	}: {
-		assets?: CharacterAsset[];
-		xp?: number;
+		assets?:       CharacterAsset[];
+		characterData: CharacterData;
+		characterId:   string;
 	} = $props();
 
-	const canAdd = $derived(xp >= 3);
+	let pickerOpen = $state(false);
+
+	// Pre-load the catalogue in the background as soon as this section mounts
+	$effect(() => { loadAssets(); });
+
+	const ownedIds = $derived(assets.map((a) => a.assetId));
+
+	function openPicker()  { pickerOpen = true;  }
+	function closePicker() { pickerOpen = false; }
+
+	function addAsset(assetId: string) {
+		if (ownedIds.includes(assetId)) return; // guard against double-add
+		const def = findAsset(assetId);
+		if (!def) return;
+		const newEntry: CharacterAsset = {
+			assetId,
+			abilities: def.abilities.map(() => false),
+		};
+		if (def.companionHealthMax !== undefined) {
+			newEntry.companionHealth = def.companionHealthMax;
+		}
+		assets = [...assets, newEntry];
+		appendLog(characterId, 'Assets',
+			`<div>Asset added: <strong>${def.name}</strong> <em>(${def.category})</em> −3 experience</div>`);
+		// Close the picker after successfully adding so the user returns to the sheet
+		closePicker();
+	}
+
+	function removeAsset(assetId: string) {
+		assets = assets.filter((a) => a.assetId !== assetId);
+	}
 </script>
 
 <div class="assets-section">
+
+	<!-- Section header -->
 	<div class="assets-header">
 		<div class="section-label">Assets</div>
 		<button
 			class="btn"
-			disabled={!canAdd}
-			title={canAdd
-				? 'Add an asset'
-				: 'You need at least 3 XP to add an asset'}
-			onclick={() => {
-				/* TODO: open asset picker */
-				alert('Asset picker coming soon!');
-			}}
-		>
-			+ Asset
-		</button>
+			onclick={openPicker}
+			disabled={characterData.xp < 3}
+			title={characterData.xp < 3 ? 'Requires 3 XP to acquire an asset' : undefined}
+		>+ Asset</button>
 	</div>
 
-	{#if !canAdd && assets.length === 0}
-		<p class="assets-hint">Earn 3 XP to unlock assets.</p>
-	{:else if assets.length === 0}
+	<!-- Owned asset cards -->
+	{#if assets.length === 0}
 		<p class="assets-hint">No assets yet — click <strong>+ Asset</strong> to add one.</p>
 	{:else}
 		<div class="asset-list">
-			{#each assets as asset (asset.assetId)}
-				<!-- TODO: replace with full AssetCard component -->
-				<div class="asset-stub">
-					<span class="asset-id">{asset.assetId}</span>
-					<span class="asset-abilities">
-						{asset.abilities.filter(Boolean).length}/{asset.abilities.length} abilities
-					</span>
-				</div>
+			{#each assets as entry, i (entry.assetId)}
+				{@const def = findAsset(entry.assetId)}
+				{#if def}
+					<AssetCard
+						bind:asset={assets[i]}
+						definition={def}
+						{characterId}
+						onRemove={() => removeAsset(entry.assetId)}
+					/>
+				{:else}
+					<!-- Definition not yet loaded or id mismatch — show minimal fallback -->
+					<div class="asset-loading">
+						<span class="asset-loading-id">{entry.assetId}</span>
+						<span class="asset-loading-hint">Loading…</span>
+					</div>
+				{/if}
 			{/each}
 		</div>
 	{/if}
+
 </div>
+
+<!-- Asset picker modal (rendered outside normal flow via native <dialog>) -->
+{#if pickerOpen}
+	<AssetPicker
+		{ownedIds}
+		{characterData}
+		onAdd={addAsset}
+		onClose={closePicker}
+	/>
+{/if}
 
 <style>
 	.assets-section {
@@ -79,24 +134,19 @@
 		gap: 6px;
 	}
 
-	/* Placeholder card — will be replaced by real AssetCard */
-	.asset-stub {
+	/* Fallback row while catalogue is loading */
+	.asset-loading {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: 8px 10px;
+		padding: 7px 10px;
 		background: var(--bg-inset);
 		border: 1px solid var(--border);
-		border-radius: 4px;
-		font-size: 0.8rem;
+		border-radius: 6px;
+		font-family: var(--font-ui);
+		font-size: 0.78rem;
+		opacity: 0.6;
 	}
-
-	.asset-id {
-		font-family: ui-monospace, monospace;
-		color: var(--text-accent);
-	}
-
-	.asset-abilities {
-		color: var(--text-dimmer);
-	}
+	.asset-loading-id   { font-style: italic; color: var(--text-muted); }
+	.asset-loading-hint { color: var(--text-dimmer); }
 </style>

@@ -15,11 +15,14 @@
 		label,
 		value = $bindable(0),
 		boxes = 10,
+		dangerCount = 0,
 		onchange,
 	}: {
 		label: string;
 		value?: number;
 		boxes?: number;
+		/** Number of boxes (from the left) to tint red — 0 disables danger styling */
+		dangerCount?: number;
 		onchange?: (oldVal: number, newVal: number) => void;
 	} = $props();
 
@@ -45,6 +48,7 @@
 			{@const ticks = boxTicks(value, i)}
 			<button
 				class="track-box"
+				class:danger={i < dangerCount}
 				onclick={() => cycleBoxTick(i)}
 				title="{ticks}/4 ticks"
 				aria-label="Progress box {i + 1}: {ticks} of 4 ticks"
@@ -119,5 +123,14 @@
 
 	.track-box:hover {
 		color: var(--text-accent);
+	}
+
+	/* Menace / danger state — only boxes with class:danger (i < dangerCount) */
+	.track-box.danger svg rect {
+		stroke: #E77974;
+		fill: color-mix(in srgb, #E77974 12%, transparent);
+	}
+	.track-box.danger:hover {
+		color: #E77974;
 	}
 </style>

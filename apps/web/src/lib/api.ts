@@ -66,7 +66,7 @@ export interface CharacterFull extends CharacterSummary {
 
 export const characters = {
 	list: () =>
-		request<CharacterSummary[]>('/api/characters'),
+		request<CharacterFull[]>('/api/characters'),
 
 	get: (id: string) =>
 		request<CharacterFull>(`/api/characters/${id}`),

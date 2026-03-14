@@ -18,8 +18,8 @@
 	import { untrack } from 'svelte';
 	import { characters } from '$lib/api.js';
 
-	import trashSvg      from '$lib/images/trash-solid.svg?raw';
-	import floppySvg     from '$lib/images/floppy-disk-solid.svg?raw';
+	import trashSvg      from '$icons/trash-solid-full.svg?raw';
+	import fileExportSvg from '$icons/file-export-solid-full.svg?raw';
 
 	// Resource icons (stat icons removed per user request)
 	import iconHeart    from '$lib/images/icon-heart.svg?raw';
@@ -44,9 +44,11 @@
 	let {
 		character,
 		onDelete,
+		onSave,
 	}: {
 		character: CharacterFull;
 		onDelete?: () => void;
+		onSave?:   (updated: CharacterFull) => void;
 	} = $props();
 
 	// ---------------------------------------------------------------------------
@@ -85,6 +87,29 @@
 		appendLog(character.id, name, `<div>${name}: ${oldVal} ticks → <strong>${newVal} ticks</strong></div>`);
 	}
 
+	function logStat(name: string, oldVal: number, newVal: number) {
+		appendLog(character.id, 'Stats', `<div>${name}: ${oldVal} → <strong>${newVal}</strong></div>`);
+	}
+
+	function decrementMomentum() {
+		const next = Math.max(-6, data.momentum - 1);
+		if (next !== data.momentum) { logMeter('Momentum', data.momentum, next); data.momentum = next; }
+	}
+
+	function incrementMomentum() {
+		const next = Math.min(momentumMax, data.momentum + 1);
+		if (next !== data.momentum) { logMeter('Momentum', data.momentum, next); data.momentum = next; }
+	}
+
+	function doMomentumReset() {
+		const old = data.momentum;
+		if (momentumRstV !== old) {
+			appendLog(character.id, 'Momentum',
+				`<div>Momentum reset: ${old} → <strong>${momentumRstV}</strong></div>`);
+			data.momentum = momentumRstV;
+		}
+	}
+
 	// ---------------------------------------------------------------------------
 	// Derived game-logic values (reactive to debility changes)
 	// ---------------------------------------------------------------------------
@@ -103,6 +128,18 @@
 		// Snapshot serialises the deep-reactive proxy to a plain object
 		const snapshot = $state.snapshot(data) as Record<string, unknown>;
 
+		// Notify parent immediately (no debounce) so GlobalContextBar reflects live
+		// values without waiting for the API round-trip.  untrack() prevents
+		// `character` from becoming a reactive dependency of this effect (which would
+		// cause an infinite loop when handleSave updates chars → character prop).
+		untrack(() => {
+			onSave?.({
+				...character,
+				name: (snapshot.name as string) || character.name,
+				data: snapshot,
+			});
+		});
+
 		// Cancel pending save
 		if (saveTimer) clearTimeout(saveTimer);
 		saveStatus = 'idle';
@@ -120,11 +157,12 @@
 	async function save(snapshot: Record<string, unknown>) {
 		saveStatus = 'saving';
 		try {
-			await characters.update(character.id, {
+			const updated = await characters.update(character.id, {
 				name: (snapshot.name as string) || 'New Character',
 				data: snapshot,
 			});
 			saveStatus = 'idle';
+			onSave?.(updated);
 		} catch (err) {
 			console.error('Auto-save failed:', err);
 			saveStatus = 'error';
@@ -286,7 +324,7 @@
 			onclick={exportCharacter}
 			title="Export character as JSON"
 			aria-label="Export character as JSON"
-		>{@html floppySvg}</button>
+		>{@html fileExportSvg}</button>
 
 		{#if onDelete}
 			{#if confirmingDelete}
@@ -343,28 +381,44 @@
 					<StatControl
 						label="Edge" bind:value={data.edge} color="var(--color-edge)"
 						tooltip="Quickness, agility, and prowess in ranged combat"
+						onchange={(o, n) => logStat('Edge', o, n)}
 					/>
 					<StatControl
 						label="Heart" bind:value={data.heart} color="var(--color-heart)"
 						tooltip="Courage, willpower, empathy, sociability, and loyalty"
+						onchange={(o, n) => logStat('Heart', o, n)}
 					/>
 					<StatControl
 						label="Iron" bind:value={data.iron} color="var(--color-iron)"
 						tooltip="Physical strength, endurance, and prowess in close combat"
+						onchange={(o, n) => logStat('Iron', o, n)}
 					/>
 					<StatControl
 						label="Shadow" bind:value={data.shadow} color="var(--color-shadow)"
 						tooltip="Sneakiness, deceptiveness, and cunning"
+						onchange={(o, n) => logStat('Shadow', o, n)}
 					/>
 					<StatControl
 						label="Wits" bind:value={data.wits} color="var(--color-wits)"
 						tooltip="Expertise, knowledge, and observation"
+						onchange={(o, n) => logStat('Wits', o, n)}
 					/>
 
 					<div class="touched-group">
 						<div class="section-label" style:color="var(--color-touched)">Touched</div>
 						<div class="touched-row">
-							<select bind:value={data.touched} class="touched-select" style:border-color="var(--color-touched)">
+							<select
+								class="touched-select"
+								style:border-color="var(--color-touched)"
+								value={data.touched}
+								onchange={(e) => {
+									const old = data.touched;
+									const next = (e.target as HTMLSelectElement).value as typeof data.touched;
+									data.touched = next;
+									appendLog(character.id, 'Touched',
+										`<div>Touched: <strong>${old}</strong> → <strong>${next}</strong></div>`);
+								}}
+							>
 								<option value="pure">Pure</option>
 								<option value="prime">Prime</option>
 								<option value="second">Second</option>
@@ -378,6 +432,11 @@
 								class="animal-input"
 								style:border-color="var(--color-touched)"
 								aria-label="Touched animal"
+								onblur={(e) => {
+									const val = (e.target as HTMLInputElement).value.trim();
+									if (val) appendLog(character.id, 'Touched',
+										`<div>Touched animal: <strong>${val}</strong></div>`);
+								}}
 							/>
 						</div>
 					</div>
@@ -395,19 +454,46 @@
 					{/if}
 				</div>
 				<div class="meters-row">
-					<MeterControl
-						label="Momentum"
-						bind:value={data.momentum}
-						color="var(--color-momentum)"
-						min={-6}
-						max={momentumMax}
-						showReset
-						resetValue={momentumRstV}
-						showMax
-						icon={iconMomentum}
-						tooltip="Building progress and narrative advantage"
-						onchange={(o, n) => logMeter('Momentum', o, n)}
-					/>
+					<!-- Momentum: two-row grid — labels on one line, controls on the next -->
+					<div class="momentum-group">
+						<!-- Label row -->
+						<span class="mom-label" style:color="var(--color-momentum)">
+							<span class="mom-icon" aria-hidden="true">{@html iconMomentum}</span>
+							Momentum
+						</span>
+						<span class="mom-label" style:color="var(--color-momentum)">Reset</span>
+						<span class="mom-label" style:color="var(--color-momentum)">Max</span>
+						<!-- Control row -->
+						<div class="mom-meter">
+							<button
+								class="btn btn-icon"
+								onclick={decrementMomentum}
+								disabled={data.momentum <= -6}
+								aria-label="Decrease Momentum"
+							>−</button>
+							<span
+								class="mom-val"
+								class:negative={data.momentum < 0}
+								style:color={data.momentum < 0 ? 'var(--color-danger)' : 'var(--color-momentum)'}
+							>{data.momentum}</span>
+							<button
+								class="btn btn-icon"
+								onclick={incrementMomentum}
+								disabled={data.momentum >= momentumMax}
+								aria-label="Increase Momentum"
+							>+</button>
+						</div>
+						<div class="mom-reset">
+							<button
+								class="btn btn-icon momentum-reset-btn"
+								onclick={doMomentumReset}
+								title="Reset momentum to {momentumRstV}"
+								aria-label="Reset momentum"
+							>↺</button>
+							<span class="mom-val">{momentumRstV}</span>
+						</div>
+						<span class="mom-val">{momentumMax}</span>
+					</div>
 					<MeterControl
 						label="Health"
 						bind:value={data.health}
@@ -524,7 +610,7 @@
 
 			<!-- Assets -->
 			<section class="char-section">
-				<AssetsSection bind:assets={data.assets} xp={data.xp} />
+				<AssetsSection bind:assets={data.assets} characterData={data} characterId={character.id} />
 			</section>
 
 		</div>
@@ -714,7 +800,7 @@
 
 	.name-input {
 		width: 100%;
-		font-family: var(--font-display);
+		font-family: var(--font-ui);
 		font-size: 0.88rem;
 		font-weight: 600;
 		letter-spacing: 0.06em;
@@ -745,6 +831,12 @@
 		gap: 5px;
 	}
 
+	/* The global .section-label has margin-bottom: 6px which stacks with the
+	   flex gap and misaligns the Touched select with the stat inputs. Reset it. */
+	.touched-group .section-label {
+		margin-bottom: 0;
+	}
+
 	.touched-row {
 		display: flex;
 		align-items: center;
@@ -768,6 +860,73 @@
 		flex-wrap: wrap;
 		gap: 14px;
 		align-items: flex-start;
+	}
+
+	/* Momentum: 3-column grid, two rows (labels / controls) */
+	.momentum-group {
+		display: grid;
+		grid-template-columns: auto auto auto;
+		grid-template-rows: auto auto;
+		align-items: center;
+		justify-items: center;
+		gap: 3px 10px;
+	}
+
+	.mom-label {
+		font-family: var(--font-ui);
+		font-size: 0.68rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		cursor: default;
+	}
+
+	.mom-icon {
+		display: flex;
+		align-items: center;
+		flex-shrink: 0;
+	}
+	.mom-icon :global(svg) {
+		width: 10px;
+		height: 10px;
+		fill: currentColor;
+	}
+
+	.mom-meter {
+		display: flex;
+		align-items: center;
+		gap: 3px;
+	}
+
+	.mom-reset {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+	}
+
+	.mom-val {
+		font-family: var(--font-ui);
+		font-size: 1.3rem;
+		font-weight: 700;
+		min-width: 1.8rem;
+		text-align: center;
+		font-variant-numeric: tabular-nums;
+		color: var(--color-momentum);
+		line-height: 1;
+	}
+	.mom-val.negative { color: var(--color-danger); }
+
+	.momentum-reset-btn {
+		font-size: 1rem;
+		padding: 2px 5px;
+		color: var(--text-dimmer);
+	}
+	.momentum-reset-btn:hover {
+		color: var(--color-momentum);
+		border-color: var(--color-momentum);
 	}
 
 	.debility-count {

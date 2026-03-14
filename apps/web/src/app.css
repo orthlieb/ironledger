@@ -187,7 +187,7 @@ button {
 input,
 textarea,
 select {
-	font-family: var(--font-body);
+	font-family: var(--font-ui);
 	font-size: 0.95rem;
 	background: var(--bg-inset);
 	color: var(--text);

@@ -103,7 +103,12 @@
 	.debilities {
 		display: flex;
 		flex-direction: column;
-		gap: 6px;
+		gap: 0;
+	}
+
+	/* section-label has a global margin-bottom: 6px — not needed inside a flex gap */
+	.debilities :global(.section-label) {
+		margin-bottom: 0;
 	}
 
 	.debility-groups {
@@ -116,7 +121,7 @@
 	.debility-group {
 		display: flex;
 		flex-direction: column;
-		gap: 4px;
+		gap: 0;
 	}
 
 	.group-name {
@@ -129,7 +134,7 @@
 	/* Conditions: 2 columns × 2 rows */
 	.toggle-grid {
 		display: grid;
-		gap: 2px;
+		gap: 0;
 	}
 
 	.conditions-grid {
