@@ -5,6 +5,8 @@
 	import CharacterSheet    from '$lib/components/CharacterSheet.svelte';
 	import LogPanel          from '$lib/components/LogPanel.svelte';
 	import GlobalContextBar  from '$lib/components/GlobalContextBar.svelte';
+	import DiceRollerDialog  from '$lib/components/DiceRollerDialog.svelte';
+	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
 	import { onMount } from 'svelte';
 	import fileImportSvg from '$icons/file-import-solid-full.svg?raw';
 	import skullSvg      from '$icons/skull-crossbones-solid-full.svg?raw';
@@ -25,15 +27,21 @@
 	let activeCharId = $state<string>('');
 	const activeChar  = $derived(chars.find((c) => c.id === activeCharId));
 
-	// Keep activeCharId valid after mutations (create / delete)
+	// Keep activeCharId valid after mutations (create / delete).
+	// '' is a valid value meaning "no selection".
 	$effect(() => {
-		if (chars.length > 0 && !chars.find((c) => c.id === activeCharId)) {
-			activeCharId = chars[0].id;
-		}
 		if (chars.length === 0) activeCharId = '';
+		// If the currently-selected character was deleted, deselect.
+		else if (activeCharId && !chars.find((c) => c.id === activeCharId)) {
+			activeCharId = '';
+		}
 	});
 
 	function setActiveChar(id: string) { activeCharId = id; }
+
+	// ── Dice roller ────────────────────────────────────────────────────────────
+	let diceRollerRef    = $state<{ open(): void } | null>(null);
+	const activeDiceCtx  = $derived(getActiveDiceCtx());
 
 	// ── Initial load ───────────────────────────────────────────────────────────
 	onMount(async () => {
@@ -117,9 +125,17 @@
 	onchange={importCharacter}
 />
 
+<!-- Dice roller dialog (always mounted; opened by GlobalContextBar Dice button) -->
+<DiceRollerDialog bind:this={diceRollerRef} ctx={activeDiceCtx} />
+
 <!-- ===== Full-width GlobalContextBar ===== -->
 <div class="gc-wrapper">
-	<GlobalContextBar {chars} {activeCharId} onSelect={setActiveChar} />
+	<GlobalContextBar
+		{chars}
+		{activeCharId}
+		onSelect={setActiveChar}
+		onDiceClick={() => diceRollerRef?.open()}
+	/>
 </div>
 
 <!-- ===== Two-column layout: content + log ===== -->
@@ -212,6 +228,7 @@
 							>
 								<CharacterSheet
 									character={char}
+									active={char.id === activeCharId}
 									onDelete={() => deleteCharacter(char.id)}
 									onSave={handleSave}
 								/>
@@ -238,11 +255,9 @@
 		</div>
 	</div>
 
-	<!-- ── Right / Log pane ── -->
+	<!-- ── Right / Log pane (always visible — global session log) ── -->
 	<div class="log-pane">
-		{#if activeChar}
-			<LogPanel characterId={activeChar.id} />
-		{/if}
+		<LogPanel />
 	</div>
 
 </div>

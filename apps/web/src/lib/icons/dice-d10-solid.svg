@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+  <!-- d10 shape: pentagon top, point bottom -->
+  <polygon
+    points="10,1.5 18.5,7.2 15.5,17 4.5,17 1.5,7.2"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.5"
+    stroke-linejoin="round"
+  />
+  <!-- centre dot -->
+  <circle cx="10" cy="9.5" r="1.4" fill="currentColor"/>
+</svg>

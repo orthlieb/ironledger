@@ -12,7 +12,7 @@
 	 */
 	import type { CharacterAsset, CharacterData } from '$lib/types.js';
 	import { loadAssets, findAsset } from '$lib/assetStore.svelte.js';
-	import { appendLog } from '$lib/log.svelte.js';
+	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import AssetCard   from './AssetCard.svelte';
 	import AssetPicker from './AssetPicker.svelte';
 
@@ -50,8 +50,8 @@
 		assets = [...assets, newEntry];
 		// Pre-generate the entry id so we can embed it in the XP cost link
 		const entryId = crypto.randomUUID();
-		const xpLink  = `<a class="xp-cost-link" data-entry-id="${entryId}" data-cost="3" href="#">−3 experience</a>`;
-		appendLog(characterId, `${characterData.name} — Assets`,
+		const xpLink  = `<a class="xp-cost-link" data-entry-id="${entryId}" data-cost="3" data-char-id="${characterId}" href="#">−3 experience</a>`;
+		appendLog(SESSION_LOG_ID, `${characterData.name} — Assets`,
 			`<div>Asset added: <strong>${def.name}</strong> <em>(${def.category})</em> ${xpLink}</div>`,
 			entryId);
 		// Close the picker after successfully adding so the user returns to the sheet

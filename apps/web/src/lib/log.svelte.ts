@@ -12,6 +12,9 @@ export interface LogEntry {
 	note?: string; // user-authored note attached to this entry
 }
 
+/** Fixed key for the single global session log (used by all components). */
+export const SESSION_LOG_ID = '__session__';
+
 const storageKey = (charId: string) => `il-log:${charId}`;
 
 // Module-level reactive state: map of charId → entries (newest first).

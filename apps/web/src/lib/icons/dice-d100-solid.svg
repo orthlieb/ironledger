@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+  <!-- Two overlapping d10 pentagons offset slightly to suggest "percentile" -->
+  <!-- Back die (offset up-left) -->
+  <polygon
+    points="8.5,1 16,6.2 13.5,15 3.5,15 1,6.2"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.2"
+    stroke-linejoin="round"
+    opacity="0.45"
+  />
+  <!-- Front die (offset down-right) -->
+  <polygon
+    points="11.5,5 19,10.2 16.5,19 6.5,19 4,10.2"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="1.4"
+    stroke-linejoin="round"
+  />
+  <!-- centre dot on front die -->
+  <circle cx="11.5" cy="13" r="1.3" fill="currentColor"/>
+</svg>

@@ -22,32 +22,36 @@
 	import fileExportSvg from '$icons/file-export-solid-full.svg?raw';
 
 	// Resource icons (stat icons removed per user request)
-	import iconHeart    from '$lib/images/icon-heart.svg?raw';
-	import iconMomentum from '$lib/images/icon-momentum.svg?raw';
-	import iconSpirit   from '$lib/images/icon-spirit.svg?raw';
+	import iconHeart  from '$lib/images/icon-heart.svg?raw';
+	import iconSpirit from '$lib/images/icon-spirit.svg?raw';
 	import iconSupply   from '$lib/images/icon-supply.svg?raw';
 	import iconMana     from '$lib/images/icon-mana.svg?raw';
 
-	import { initLog, appendLog, getXpSpendNonce, drainXpSpend } from '$lib/log.svelte.js';
+	import { initLog, appendLog, getXpSpendNonce, drainXpSpend, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
 
-	import StatControl      from './StatControl.svelte';
-	import MeterControl     from './MeterControl.svelte';
-	import XpTrack          from './XpTrack.svelte';
-	import ProgressTrack    from './ProgressTrack.svelte';
-	import DebilitiesSection from './DebilitiesSection.svelte';
-	import VowCard          from './VowCard.svelte';
-	import AssetsSection    from './AssetsSection.svelte';
+	import { getActiveDiceCtx, setActiveDiceCtx } from '$lib/diceContext.svelte.js';
+
+	import StatControl       from './StatControl.svelte';
+	import MeterControl      from './MeterControl.svelte';
+	import XpTrack           from './XpTrack.svelte';
+	import ProgressTrack     from './ProgressTrack.svelte';
+	import DebilitiesSection  from './DebilitiesSection.svelte';
+	import VowCard           from './VowCard.svelte';
+	import AssetsSection     from './AssetsSection.svelte';
 
 	// ---------------------------------------------------------------------------
 	// Props
 	// ---------------------------------------------------------------------------
 	let {
 		character,
+		active = false,
 		onDelete,
 		onSave,
 	}: {
 		character: CharacterFull;
+		/** True when this is the currently selected character — publishes dice context. */
+		active?:   boolean;
 		onDelete?: () => void;
 		onSave?:   (updated: CharacterFull) => void;
 	} = $props();
@@ -62,6 +66,15 @@
 	let collapsed = $state(false);
 	let confirmingDelete = $state(false);
 	let saveStatus = $state<'idle' | 'saving' | 'error'>('idle');
+
+	// Publish live data to the global dice context whenever this sheet is active
+	$effect(() => {
+		if (active) {
+			setActiveDiceCtx({ charId: character.id, charName: data.name || 'Unnamed', data });
+		} else if (getActiveDiceCtx()?.charId === character.id) {
+			setActiveDiceCtx(null);
+		}
+	});
 	let saveTimer: ReturnType<typeof setTimeout> | null = null;
 	let portraitHovered = $state(false);
 
@@ -75,7 +88,34 @@
 	});
 
 	// Initialise log for this character on mount
-	$effect(() => { initLog(character.id); });
+	$effect(() => { initLog(SESSION_LOG_ID); });
+
+	// ---------------------------------------------------------------------------
+	// Log helpers — all events go to the global session log.
+	// Character name is prepended to every title for disambiguation.
+	// ---------------------------------------------------------------------------
+	function charTitle(title: string) { return `${data.name || 'Unnamed'} — ${title}`; }
+
+	function logMeter(name: string, oldVal: number, newVal: number) {
+		appendLog(SESSION_LOG_ID, charTitle(name), `<div>${name}: ${oldVal} → <strong>${newVal}</strong></div>`);
+	}
+
+	function logDebility(label: string, active: boolean) {
+		appendLog(SESSION_LOG_ID, charTitle('Debilities'),
+			`<div>${label}: <strong>${active ? 'Activated' : 'Cleared'}</strong></div>`);
+	}
+
+	function logXp(oldVal: number, newVal: number) {
+		appendLog(SESSION_LOG_ID, charTitle('Experience'), `<div>XP: ${oldVal} → <strong>${newVal}</strong></div>`);
+	}
+
+	function logTrack(name: string, oldVal: number, newVal: number) {
+		appendLog(SESSION_LOG_ID, charTitle(name), `<div>${name}: ${oldVal} ticks → <strong>${newVal} ticks</strong></div>`);
+	}
+
+	function logStat(name: string, oldVal: number, newVal: number) {
+		appendLog(SESSION_LOG_ID, charTitle('Stats'), `<div>${name}: ${oldVal} → <strong>${newVal}</strong></div>`);
+	}
 
 	// React to XP cost link clicks in LogPanel.
 	// getXpSpendNonce() creates a reactive dependency — this effect re-runs
@@ -90,35 +130,11 @@
 			const next = Math.max(0, old - amount);
 			if (next !== old) {
 				data.xp = next;
-				appendLog(character.id, 'Experience',
+				appendLog(SESSION_LOG_ID, charTitle('Experience'),
 					`<div>XP spent: <strong>−${amount}</strong> (${old} → <strong>${next}</strong>)</div>`);
 			}
 		}
 	});
-
-	// ---------------------------------------------------------------------------
-	// Log helpers (use character.id directly to avoid stale capture warning)
-	// ---------------------------------------------------------------------------
-	function logMeter(name: string, oldVal: number, newVal: number) {
-		appendLog(character.id, name, `<div>${name}: ${oldVal} → <strong>${newVal}</strong></div>`);
-	}
-
-	function logDebility(label: string, active: boolean) {
-		appendLog(character.id, 'Debilities',
-			`<div>${label}: <strong>${active ? 'Activated' : 'Cleared'}</strong></div>`);
-	}
-
-	function logXp(oldVal: number, newVal: number) {
-		appendLog(character.id, 'Experience', `<div>XP: ${oldVal} → <strong>${newVal}</strong></div>`);
-	}
-
-	function logTrack(name: string, oldVal: number, newVal: number) {
-		appendLog(character.id, name, `<div>${name}: ${oldVal} ticks → <strong>${newVal} ticks</strong></div>`);
-	}
-
-	function logStat(name: string, oldVal: number, newVal: number) {
-		appendLog(character.id, 'Stats', `<div>${name}: ${oldVal} → <strong>${newVal}</strong></div>`);
-	}
 
 	function decrementMomentum() {
 		const next = Math.max(-6, data.momentum - 1);
@@ -133,7 +149,7 @@
 	function doMomentumReset() {
 		const old = data.momentum;
 		if (momentumRstV !== old) {
-			appendLog(character.id, 'Momentum',
+			appendLog(SESSION_LOG_ID, charTitle('Momentum'),
 				`<div>Momentum reset: ${old} → <strong>${momentumRstV}</strong></div>`);
 			data.momentum = momentumRstV;
 		}
@@ -211,7 +227,7 @@
 			menace: 0,
 		};
 		data.vows = [...data.vows, newVow];
-		appendLog(character.id, 'Vow',
+		appendLog(SESSION_LOG_ID, charTitle('Vow'),
 			`<div>Swore a new iron vow — <strong>Formidable</strong></div>`);
 	}
 
@@ -465,7 +481,7 @@
 									const old = data.touched;
 									const next = (e.target as HTMLSelectElement).value as typeof data.touched;
 									data.touched = next;
-									appendLog(character.id, 'Touched',
+									appendLog(SESSION_LOG_ID, charTitle('Touched'),
 										`<div>Touched: <strong>${old}</strong> → <strong>${next}</strong></div>`);
 								}}
 							>
@@ -484,7 +500,7 @@
 								aria-label="Touched animal"
 								onblur={(e) => {
 									const val = (e.target as HTMLInputElement).value.trim();
-									if (val) appendLog(character.id, 'Touched',
+									if (val) appendLog(SESSION_LOG_ID, charTitle('Touched'),
 										`<div>Touched animal: <strong>${val}</strong></div>`);
 								}}
 							/>
@@ -508,7 +524,7 @@
 					<div class="momentum-group">
 						<!-- Label row -->
 						<span class="mom-label" style:color="var(--color-momentum)">
-							<span class="mom-icon" aria-hidden="true">{@html iconMomentum}</span>
+							<span class="mom-icon" aria-hidden="true">↯</span>
 							Momentum
 						</span>
 						<span class="mom-label" style:color="var(--color-momentum)">Reset</span>
@@ -990,14 +1006,11 @@
 	}
 
 	.mom-icon {
-		display: flex;
+		display:     flex;
 		align-items: center;
 		flex-shrink: 0;
-	}
-	.mom-icon :global(svg) {
-		width: 10px;
-		height: 10px;
-		fill: currentColor;
+		font-size:   0.8rem;
+		line-height: 1;
 	}
 
 	.mom-meter {

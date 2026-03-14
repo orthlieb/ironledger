@@ -8,27 +8,41 @@
 	 */
 	import type { CharacterAsset, AssetDefinition } from '$lib/types.js';
 	import { findRarityForAsset } from '$lib/assetStore.svelte.js';
-	import { appendLog } from '$lib/log.svelte.js';
+	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import trashSvg from '$icons/trash-solid-full.svg?raw';
 
 	let {
 		asset      = $bindable(),
 		definition,
 		characterId,
+		characterName,
+		characterXp,
 		onRemove,
 	}: {
-		asset:        CharacterAsset;
-		definition:   AssetDefinition;
-		characterId:  string;
-		onRemove:     () => void;
+		asset:         CharacterAsset;
+		definition:    AssetDefinition;
+		characterId:   string;
+		characterName: string;
+		characterXp:   number;
+		onRemove:      () => void;
 	} = $props();
 
 	// Selectable-list item shape used by cantrips (and any future similar lists)
 	type SelectableItem = { key: string; name: string; desc: string };
 
+	// Difficulty-factor shape used by Conclave Rituals
+	type InspectionFactor  = { key: string; name: string; levels: string[] };
+	type InspectionExample = {
+		scenario: string;
+		factors:  Record<string, { score: number; reason: string }>;
+		total:    number;
+		resolution: string;
+	};
+
 	let collapsed         = $state(true);
 	let removeDialogEl    = $state<HTMLDialogElement | null>(null);
 	let selectionsOpen    = $state(false);
+	let factorsOpen       = $state(false);
 
 	const enabledCount = $derived(asset.abilities.filter(Boolean).length);
 	const total        = $derived(definition.abilities.length);
@@ -54,16 +68,29 @@
 	);
 	const knownKeys  = $derived(asset.selections ?? []);
 
+	// ── Description field (extended narrative for some Yrt rituals) ──────────
+	const assetDescription = $derived(
+		(definition.description as string | null | undefined) ?? null
+	);
+
+	// ── Difficulty-factors support (Conclave Rituals) ─────────────────────────
+	const inspectionFactors = $derived(
+		(definition.inspectionFactors as InspectionFactor[] | undefined) ?? []
+	);
+	const inspectionExample = $derived(
+		(definition.inspectionExample as InspectionExample | null | undefined) ?? null
+	);
+
 	function toggleSelection(key: string) {
 		const cur  = asset.selections ?? [];
 		const item = selectableItems.find((it) => it.key === key);
 		if (cur.includes(key)) {
 			asset.selections = cur.filter((k) => k !== key);
-			appendLog(characterId, 'Assets',
+			appendLog(SESSION_LOG_ID, logTitle,
 				`<div>${selectableLabel} forgotten: <strong>${item?.name ?? key}</strong> (${definition.name})</div>`);
 		} else if (cur.length < totalSlots) {
 			asset.selections = [...cur, key];
-			appendLog(characterId, 'Assets',
+			appendLog(SESSION_LOG_ID, logTitle,
 				`<div>${selectableLabel} learned: <strong>${item?.name ?? key}</strong> (${definition.name})</div>`);
 		}
 	}
@@ -104,13 +131,28 @@
 			.join('');
 	}
 
+	// Shared log title for all asset events on this card
+	const logTitle = $derived(`${characterName} — Assets`);
+
 	function toggleAbility(i: number) {
+		const enabling = !asset.abilities[i];
+		// XP gate: enabling a new ability costs 2 XP
+		if (enabling && characterXp < 2) return;
+
 		const next = [...asset.abilities];
-		const enabling = !next[i];
 		next[i] = enabling;
 		asset.abilities = next;
-		appendLog(characterId, 'Assets',
-			`<div>Ability: <strong>${definition.name}</strong> #${i + 1} — <strong>${enabling ? 'enabled' : 'disabled'}</strong></div>`);
+
+		if (enabling) {
+			const entryId = crypto.randomUUID();
+			const xpLink  = `<a class="xp-cost-link" data-entry-id="${entryId}" data-cost="2" data-char-id="${characterId}" href="#">−2 experience</a>`;
+			appendLog(SESSION_LOG_ID, logTitle,
+				`<div>Ability: <strong>${definition.name}</strong> #${i + 1} — <strong>enabled</strong> ${xpLink}</div>`,
+				entryId);
+		} else {
+			appendLog(SESSION_LOG_ID, logTitle,
+				`<div>Ability: <strong>${definition.name}</strong> #${i + 1} — <strong>disabled</strong></div>`);
+		}
 	}
 
 	function setCompanionHealth(newVal: number) {
@@ -120,7 +162,7 @@
 		const label = asset.companionName
 			? `${asset.companionName} (${definition.name})`
 			: definition.name;
-		appendLog(characterId, 'Assets',
+		appendLog(SESSION_LOG_ID, logTitle,
 			`<div><strong>${label}</strong> Health: ${old} → <strong>${newVal}</strong></div>`);
 	}
 
@@ -130,7 +172,7 @@
 
 	function confirmRemove() {
 		removeDialogEl?.close();
-		appendLog(characterId, 'Assets',
+		appendLog(SESSION_LOG_ID, logTitle,
 			`<div>Asset removed: <strong>${definition.name}</strong> (${definition.category}, ${enabledCount} marked)</div>`);
 		onRemove();
 	}
@@ -152,6 +194,13 @@
 			<span class="asset-cat" style:color={catColor}>{definition.category}</span>
 		</div>
 
+		{#if definition.companionHealthMax !== undefined}
+			<span
+				class="companion-health-badge"
+				title="{asset.companionName || 'Companion'} health: {asset.companionHealth ?? 0} / {definition.companionHealthMax}"
+			>♥ {asset.companionHealth ?? 0}/{definition.companionHealthMax}</span>
+		{/if}
+
 		<span class="ability-tally" title="{enabledCount} of {total} abilities enabled">
 			{enabledCount}/{total}
 		</span>
@@ -171,6 +220,10 @@
 				<p class="asset-preamble">{definition.preamble}</p>
 			{/if}
 
+			{#if assetDescription}
+				<p class="asset-description">{@html assetDescription}</p>
+			{/if}
+
 			<div class="abilities-list">
 				{#each definition.abilities as ab, i}
 					<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -182,6 +235,8 @@
 							type="checkbox"
 							class="ability-check"
 							checked={asset.abilities[i]}
+							disabled={!asset.abilities[i] && characterXp < 2}
+							title={!asset.abilities[i] && characterXp < 2 ? "Requires 2 XP to enable" : undefined}
 							onchange={() => toggleAbility(i)}
 						/>
 						<div class="ability-text">
@@ -224,10 +279,87 @@
 										{disabled}
 										onchange={() => toggleSelection(item.key)}
 									/>
-									<span class="selection-name">{item.name}</span>
-									<span class="selection-desc">{item.desc}</span>
+									<span class="selection-line">
+										<span class="selection-name">{item.name}</span>
+										<span class="selection-sep"> — </span>
+										<span class="selection-desc">{item.desc}</span>
+									</span>
 								</label>
 							{/each}
+						</div>
+					{/if}
+				</div>
+			{/if}
+
+			<!-- Difficulty Factors (Conclave Rituals with inspectionFactors) -->
+			{#if inspectionFactors.length > 0}
+				<div class="factors-section">
+					<button
+						class="factors-toggle"
+						onclick={() => (factorsOpen = !factorsOpen)}
+						aria-expanded={factorsOpen}
+					>
+						<span class="factors-chevron">{factorsOpen ? '▼' : '▶'}</span>
+						<span class="factors-toggle-label">Difficulty Factors</span>
+						<span class="factors-tally">({inspectionFactors.length} factors)</span>
+					</button>
+
+					{#if factorsOpen}
+						<div class="factors-body">
+							<table class="factors-table">
+								<thead>
+									<tr>
+										<th class="factors-th-name">Factor</th>
+										<th class="factors-th-level">0</th>
+										<th class="factors-th-level">1</th>
+										<th class="factors-th-level">2</th>
+									</tr>
+								</thead>
+								<tbody>
+									{#each inspectionFactors as factor}
+										<tr class="factors-row">
+											<td class="factors-td-name">{factor.name}</td>
+											{#each factor.levels as level}
+												<td class="factors-td-level">{level}</td>
+											{/each}
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+
+							{#if inspectionExample}
+								<div class="factors-example">
+									<p class="factors-example-scenario">
+										<span class="factors-example-label">Example:</span>
+										{inspectionExample.scenario}
+									</p>
+									<table class="factors-example-table">
+										<thead>
+											<tr>
+												<th>Factor</th>
+												<th>Lvl</th>
+												<th>Reason</th>
+											</tr>
+										</thead>
+										<tbody>
+											{#each inspectionFactors as factor}
+												{@const ex = inspectionExample.factors?.[factor.key]}
+												{#if ex !== undefined}
+													<tr>
+														<td class="factors-ex-name">{factor.name}</td>
+														<td class="factors-ex-score">{ex.score}</td>
+														<td class="factors-ex-reason">{ex.reason}</td>
+													</tr>
+												{/if}
+											{/each}
+										</tbody>
+									</table>
+									<p class="factors-example-total">
+										Total difficulty: <strong>{inspectionExample.total}</strong>
+									</p>
+									<p class="factors-example-resolution">{inspectionExample.resolution}</p>
+								</div>
+							{/if}
 						</div>
 					{/if}
 				</div>
@@ -275,15 +407,24 @@
 							type="checkbox"
 							class="rarity-check"
 							checked={asset.rarityId === rarity.id}
+							disabled={asset.rarityId !== rarity.id && characterXp < rarity.xpCost}
+							title={asset.rarityId !== rarity.id && characterXp < rarity.xpCost ? `Requires ${rarity.xpCost} XP to unlock` : undefined}
 							onchange={(e) => {
 								const checked = (e.target as HTMLInputElement).checked;
 								asset.rarityId = checked ? rarity.id : undefined;
-								appendLog(characterId, 'Assets', checked
-									? `<div>Rarity acquired: <strong>${rarity.name}</strong> for <strong>${definition.name}</strong> (${rarity.xpCost} XP)</div>`
-									: `<div>Rarity removed: <strong>${rarity.name}</strong> from <strong>${definition.name}</strong></div>`);
+								if (checked) {
+									const entryId = crypto.randomUUID();
+									const xpLink  = `<a class="xp-cost-link" data-entry-id="${entryId}" data-cost="${rarity.xpCost}" data-char-id="${characterId}" href="#">−${rarity.xpCost} experience</a>`;
+									appendLog(SESSION_LOG_ID, logTitle,
+										`<div>Rarity acquired: <strong>RARITY: ${rarity.name}</strong> for <strong>${definition.name}</strong> ${xpLink}</div>`,
+										entryId);
+								} else {
+									appendLog(SESSION_LOG_ID, logTitle,
+										`<div>Rarity removed: <strong>RARITY: ${rarity.name}</strong> from <strong>${definition.name}</strong></div>`);
+								}
 							}}
 						/>
-						<span class="rarity-name">{rarity.name}</span>
+						<span class="rarity-name">RARITY: {rarity.name}</span>
 						<span class="rarity-cost">({rarity.xpCost} XP)</span>
 					</label>
 					{#if asset.rarityId === rarity.id}
@@ -396,6 +537,16 @@
 		white-space: nowrap;
 	}
 
+	.companion-health-badge {
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		font-weight: 700;
+		color: var(--color-heart);
+		flex-shrink: 0;
+		font-variant-numeric: tabular-nums;
+		letter-spacing: 0.02em;
+	}
+
 	.ability-tally {
 		font-family: var(--font-ui);
 		font-size: 0.68rem;
@@ -440,6 +591,18 @@
 		line-height: 1.4;
 		margin: 0;
 	}
+
+	.asset-description {
+		font-family: var(--font-ui);
+		font-size: 0.75rem;
+		color: var(--text-muted);
+		line-height: 1.45;
+		margin: 0;
+	}
+	/* description may contain HTML bold/links */
+	.asset-description :global(b),
+	.asset-description :global(strong) { color: var(--text); }
+	.asset-description :global(br)     { display: block; margin-bottom: 0.4em; content: ''; }
 
 	/* ---- Ability rows ---- */
 	.abilities-list {
@@ -497,6 +660,216 @@
 		font-weight: 700;
 		color: var(--text);
 		margin-right: 2px;
+	}
+
+	/* ---- Difficulty Factors (Conclave Rituals) ---- */
+	.factors-section {
+		display: flex;
+		flex-direction: column;
+		border: 1px solid color-mix(in srgb, var(--color-mana) 25%, transparent);
+		border-radius: 5px;
+		overflow: hidden;
+		background: color-mix(in srgb, var(--color-mana) 4%, var(--bg-inset));
+	}
+
+	.factors-toggle {
+		display: flex;
+		align-items: center;
+		gap: 7px;
+		width: 100%;
+		padding: 6px 10px;
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		text-align: left;
+		font-family: var(--font-ui);
+		transition: background 0.12s;
+	}
+	.factors-toggle:hover {
+		background: color-mix(in srgb, var(--color-mana) 8%, transparent);
+	}
+
+	.factors-chevron {
+		font-size: 0.5rem;
+		color: var(--text-dimmer);
+		flex-shrink: 0;
+	}
+
+	.factors-toggle-label {
+		flex: 1;
+		font-size: 0.72rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		color: var(--color-mana);
+	}
+
+	.factors-tally {
+		font-size: 0.7rem;
+		font-variant-numeric: tabular-nums;
+		color: var(--text-dimmer);
+	}
+
+	.factors-body {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		padding: 6px 10px 10px;
+		border-top: 1px solid color-mix(in srgb, var(--color-mana) 18%, transparent);
+	}
+
+	/* Main factors reference table */
+	.factors-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		table-layout: fixed;
+	}
+
+	.factors-table thead tr {
+		background: color-mix(in srgb, var(--color-mana) 10%, var(--bg-inset));
+	}
+
+	.factors-th-name {
+		text-align: left;
+		padding: 4px 6px;
+		font-weight: 700;
+		color: var(--color-mana);
+		letter-spacing: 0.04em;
+		width: 22%;
+		border-bottom: 1px solid color-mix(in srgb, var(--color-mana) 20%, transparent);
+	}
+
+	.factors-th-level {
+		text-align: center;
+		padding: 4px 4px;
+		font-weight: 700;
+		color: var(--color-mana);
+		letter-spacing: 0.04em;
+		width: 26%;
+		border-bottom: 1px solid color-mix(in srgb, var(--color-mana) 20%, transparent);
+	}
+
+	.factors-row:nth-child(even) {
+		background: color-mix(in srgb, var(--color-mana) 5%, transparent);
+	}
+
+	.factors-td-name {
+		padding: 4px 6px;
+		font-weight: 600;
+		color: var(--text);
+		vertical-align: top;
+		border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+	}
+
+	.factors-td-level {
+		padding: 4px 5px;
+		color: var(--text-muted);
+		vertical-align: top;
+		line-height: 1.4;
+		border-bottom: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+		border-left: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+		font-size: 0.68rem;
+	}
+
+	/* Example subsection */
+	.factors-example {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		padding: 8px 8px;
+		background: color-mix(in srgb, var(--bg-card) 50%, var(--bg-inset));
+		border-radius: 4px;
+		border: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+	}
+
+	.factors-example-label {
+		font-weight: 700;
+		color: var(--text-muted);
+		margin-right: 4px;
+	}
+
+	.factors-example-scenario {
+		font-family: var(--font-ui);
+		font-size: 0.73rem;
+		color: var(--text-muted);
+		line-height: 1.4;
+		margin: 0;
+		font-style: italic;
+	}
+
+	/* Example breakdown table */
+	.factors-example-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-family: var(--font-ui);
+		font-size: 0.68rem;
+		table-layout: fixed;
+	}
+
+	.factors-example-table thead tr {
+		background: color-mix(in srgb, var(--border) 30%, transparent);
+	}
+
+	.factors-example-table th {
+		padding: 3px 5px;
+		text-align: left;
+		font-weight: 600;
+		color: var(--text-dimmer);
+		letter-spacing: 0.03em;
+		border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
+	}
+
+	.factors-example-table th:nth-child(2) { width: 32px; text-align: center; }
+	.factors-example-table th:nth-child(1) { width: 28%; }
+
+	.factors-ex-name {
+		padding: 3px 5px;
+		color: var(--text);
+		font-weight: 600;
+		vertical-align: top;
+		border-bottom: 1px solid color-mix(in srgb, var(--border) 30%, transparent);
+	}
+
+	.factors-ex-score {
+		padding: 3px 5px;
+		text-align: center;
+		font-weight: 700;
+		color: var(--color-mana);
+		font-variant-numeric: tabular-nums;
+		vertical-align: top;
+		border-bottom: 1px solid color-mix(in srgb, var(--border) 30%, transparent);
+	}
+
+	.factors-ex-reason {
+		padding: 3px 5px;
+		color: var(--text-muted);
+		vertical-align: top;
+		line-height: 1.35;
+		border-bottom: 1px solid color-mix(in srgb, var(--border) 30%, transparent);
+	}
+
+	.factors-example-total {
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		color: var(--text-muted);
+		margin: 0;
+	}
+	.factors-example-total :global(strong) {
+		color: var(--color-mana);
+		font-weight: 700;
+	}
+
+	.factors-example-resolution {
+		font-family: var(--font-ui);
+		font-size: 0.71rem;
+		color: var(--text-muted);
+		line-height: 1.45;
+		margin: 0;
+		font-style: italic;
+		border-top: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+		padding-top: 5px;
 	}
 
 	/* ---- Companion fields ---- */
@@ -656,20 +1029,24 @@
 		cursor: not-allowed;
 	}
 
-	.selection-name {
+	.selection-line {
+		flex: 1;
 		font-family: var(--font-ui);
 		font-size: 0.78rem;
+		line-height: 1.4;
+	}
+
+	.selection-name {
 		font-weight: 600;
 		color: var(--text);
-		white-space: nowrap;
-		flex-shrink: 0;
+	}
+
+	.selection-sep {
+		color: var(--text-dimmer);
 	}
 
 	.selection-desc {
-		font-family: var(--font-ui);
-		font-size: 0.75rem;
 		color: var(--text-muted);
-		line-height: 1.4;
 	}
 
 	/* ---- Rarity slot ---- */

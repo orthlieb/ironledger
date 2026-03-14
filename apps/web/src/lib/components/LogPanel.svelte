@@ -7,24 +7,19 @@
 	 * Notes are attached per-entry and persist to localStorage.
 	 * Clearing the log requires confirmation via a native dialog (irreversible).
 	 */
-	import { logs, initLog, clearLog, deleteLogEntry, updateLogEntryNote, updateLogEntryHtml, triggerXpSpend } from '$lib/log.svelte.js';
+	import { logs, initLog, clearLog, deleteLogEntry, updateLogEntryNote, updateLogEntryHtml, triggerXpSpend, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
 	import trashSvg from '$icons/trash-solid-full.svg?raw';
 	import penSvg   from '$icons/pen-to-square-solid-full.svg?raw';
 
-	let {
-		characterId,
-	}: {
-		characterId: string;
-	} = $props();
-
+	// The log is global — no characterId prop needed.
 	$effect(() => {
-		initLog(characterId);
+		initLog(SESSION_LOG_ID);
 	});
 
-	// Access logs[characterId] directly so Svelte 5's proxy records a
-	// fine-grained dependency on this character's entries only.
-	const entries = $derived(logs[characterId] ?? []);
+	// Access logs[SESSION_LOG_ID] directly so Svelte 5's proxy records a
+	// fine-grained dependency on the session log only.
+	const entries = $derived(logs[SESSION_LOG_ID] ?? []);
 
 	// Per-entry editing state (entry id → draft note text)
 	let editingId   = $state<string | null>(null);
@@ -48,7 +43,7 @@
 
 	function saveEdit() {
 		if (editingId) {
-			updateLogEntryNote(characterId, editingId, draftNote);
+			updateLogEntryNote(SESSION_LOG_ID, editingId, draftNote);
 			editingId = null;
 			draftNote = '';
 		}
@@ -61,7 +56,7 @@
 
 	function confirmClear() {
 		clearDialogEl?.close();
-		clearLog(characterId);
+		clearLog(SESSION_LOG_ID);
 	}
 
 	/**
@@ -76,21 +71,22 @@
 
 		const cost    = parseInt(link.dataset['cost']    ?? '0', 10);
 		const entryId = link.dataset['entryId'] ?? '';
-		if (!cost || !entryId) return;
+		const charId  = link.dataset['charId']  ?? '';
+		if (!cost || !entryId || !charId) return;
 
-		// Mark the link as spent in the persisted HTML
-		const entry = (logs[characterId] ?? []).find((ev) => ev.id === entryId);
+		// Mark the link as spent in the global session log
+		const entry = (logs[SESSION_LOG_ID] ?? []).find((ev) => ev.id === entryId);
 		if (entry) {
 			// Replace the first unspent xp-cost-link in this entry's HTML
 			const newHtml = entry.html.replace(
 				/<a\b[^>]*class="xp-cost-link"[^>]*>([^<]*)<\/a>/,
 				'<s class="xp-spent">$1</s>',
 			);
-			updateLogEntryHtml(characterId, entryId, newHtml);
+			updateLogEntryHtml(SESSION_LOG_ID, entryId, newHtml);
 		}
 
-		// Deduct the XP from the character via the registered handler
-		triggerXpSpend(characterId, cost);
+		// Deduct XP from the specific character via the spend bus
+		triggerXpSpend(charId, cost);
 	}
 </script>
 
@@ -139,7 +135,7 @@
 								class="entry-btn entry-delete-btn"
 								onclick={() => {
 									if (editingId === entry.id) cancelEdit();
-									deleteLogEntry(characterId, entry.id);
+									deleteLogEntry(SESSION_LOG_ID, entry.id);
 								}}
 								title="Delete this log entry"
 								aria-label="Delete log entry"
@@ -208,7 +204,8 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: 13px 14px 11px; /* matches tab-bar .tab-btn vertical rhythm */
+		padding: 0 14px; /* same height as .tab-btn: controlled by min-height */
+		min-height: 44px; /* matches tab-bar height */
 		border-bottom: 1px solid var(--border);
 		background: var(--bg-card);
 		flex-shrink: 0;
@@ -377,6 +374,15 @@
 
 	.entry-body :global(div) {
 		margin-bottom: 1px;
+	}
+
+	/* Dice roll lines use monospace font */
+	.entry-body :global(.roll-line),
+	.entry-body :global(.roll-cancel),
+	.entry-body :global(.roll-outcome-strong),
+	.entry-body :global(.roll-outcome-weak),
+	.entry-body :global(.roll-outcome-miss) {
+		font-family: var(--font-mono, 'Roboto Mono', ui-monospace, monospace);
 	}
 
 	/* XP cost links (clickable, strike-through after use) */

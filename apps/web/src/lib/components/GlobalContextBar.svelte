@@ -24,10 +24,12 @@
 		chars,
 		activeCharId,
 		onSelect,
+		onDiceClick,
 	}: {
-		chars:        CharacterFull[];
-		activeCharId: string;
-		onSelect:     (id: string) => void;
+		chars:         CharacterFull[];
+		activeCharId:  string;
+		onSelect:      (id: string) => void;
+		onDiceClick?:  () => void;
 	} = $props();
 
 	// Derive the active character and its typed data
@@ -71,6 +73,7 @@
 					value={activeCharId}
 					onchange={(e) => onSelect((e.target as HTMLSelectElement).value)}
 				>
+					<option value="">(none)</option>
 					{#each chars as c (c.id)}
 						<option value={c.id}>{c.name}</option>
 					{/each}
@@ -98,7 +101,12 @@
 		<div class="gc-actions">
 			<button class="gc-action-btn" disabled title="Moves (coming soon)">Moves</button>
 			<button class="gc-action-btn" disabled title="Oracles (coming soon)">Oracles</button>
-			<button class="gc-action-btn" disabled title="Dice (coming soon)">Dice</button>
+			<button
+				class="gc-action-btn"
+				onclick={onDiceClick}
+				disabled={!onDiceClick}
+				title="Roll dice"
+			>Dice</button>
 			<button class="gc-action-btn" disabled title="Notes (coming soon)">Notes</button>
 		</div>
 
@@ -220,9 +228,18 @@
 		border: 1px solid var(--border);
 		border-radius: 4px;
 		padding: 4px 10px;
+		cursor: pointer;
+		white-space: nowrap;
+		transition: color 0.12s, border-color 0.12s, background 0.12s;
+	}
+	.gc-action-btn:disabled {
 		cursor: not-allowed;
 		opacity: 0.5;
-		white-space: nowrap;
+	}
+	.gc-action-btn:not(:disabled):hover {
+		color: var(--text-accent);
+		border-color: var(--text-accent);
+		background: color-mix(in srgb, var(--text-accent) 8%, transparent);
 	}
 
 	/* Stats row */
