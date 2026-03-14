@@ -7,7 +7,7 @@
       "preamble": "If you wield a bow...",
       "abilities": [
         {
-          "enabled": false,
+          "enabled": true,
           "text": "When you Secure an Advantage by taking a moment to aim, choose your approach and add +1.\n\n  * Trust your instincts: Roll +wits, and take +2 momentum on a strong hit.\n  * Line up your shot: Roll +edge, and take +1 momentum on a hit."
         },
         {
@@ -28,7 +28,7 @@
       "preamble": "If you are clad only in animal pelts...",
       "abilities": [
         {
-          "enabled": false,
+          "enabled": true,
           "text": "When you Secure an Advantage or Compel by embodying your wild nature, add +1 and take +1 momentum on a hit."
         },
         {
@@ -49,7 +49,7 @@
       "preamble": "If you are unarmed or fighting with a non-deadly weapon...",
       "abilities": [
         {
-          "enabled": false,
+          "enabled": true,
           "text": "When you Secure an Advantage +iron by engaging in close-quarters brawling (such as punching, tripping, or grappling), add +1. If you score a hit, you may also inflict 1 harm."
         },
         {
@@ -70,7 +70,7 @@
       "preamble": "If you wield a dagger or knife...",
       "abilities": [
         {
-          "enabled": false,
+          "enabled": true,
           "text": "When you are in position to Strike at an unsuspecting foe, choose one (before rolling).\n\n  * Add +2 and take +1 momentum on a hit.\n  * Inflict +2 harm on a hit."
         },
         {
@@ -91,7 +91,7 @@
       "preamble": "If you wield a bladed weapon in each hand...",
       "abilities": [
         {
-          "enabled": false,
+          "enabled": true,
           "text": "When you Strike or Clash, you may add +2. If you do (decide before rolling), inflict +1 harm on a strong hit and count a weak hit as a miss."
         },
         {
@@ -112,7 +112,7 @@
       "preamble": null,
       "abilities": [
         {
-          "enabled": false,
+          "enabled": true,
           "text": "When you Secure an Advantage by crafting arrows of fine quality, add +1. Then, take +1 supply or +1 momentum on a hit."
         },
         {
@@ -133,7 +133,7 @@
       "preamble": "If you wear armor...",
       "abilities": [
         {
-          "enabled": false,
+          "enabled": true,
           "text": "When you equip or adjust your armor, choose one.\n\n  * Lightly armored: When you Endure Harm in a fight, add +1 and take +1 momentum on a hit.\n  * Geared for war: Mark encumbered. When you Endure Harm in a fight, add +2 and take +1 momentum on a hit."
         },
         {
@@ -154,7 +154,7 @@
       "preamble": "If you wield a staff...",
       "abilities": [
         {
-          "enabled": false,
+          "enabled": true,
           "text": "In your hands, a humble staff is a deadly weapon (2 harm). When you instead use it as a simple weapon (1 harm), you may Strike or Clash +edge (instead of iron). If you do, add +1 and take +1 momentum on a hit."
         },
         {
@@ -175,7 +175,7 @@
       "preamble": "If you wield a shield...",
       "abilities": [
         {
-          "enabled": false,
+          "enabled": true,
           "text": "When you Face Danger using your shield as cover, add +1. When you Clash in close quarters, take +1 momentum on a strong hit."
         },
         {
@@ -196,8 +196,8 @@
       "preamble": "If you wield a spear...",
       "abilities": [
         {
-          "enabled": false,
-          "text": "When you Face Danger by holding a foe at bay using your spear’s reach, roll +iron or +edge. If you score a hit, you may...\n\n  * Iron: Strike (if you have initiative) or Clash now, and add +1.\n  * Edge: Take +1 momentum."
+          "enabled": true,
+          "text": "When you Face Danger by holding a foe at bay using your spear\u2019s reach, roll +iron or +edge. If you score a hit, you may...\n\n  * Iron: Strike (if you have initiative) or Clash now, and add +1.\n  * Edge: Take +1 momentum."
         },
         {
           "enabled": false,
@@ -217,7 +217,7 @@
       "preamble": "If you wield a sling...",
       "abilities": [
         {
-          "enabled": false,
+          "enabled": true,
           "text": "When launched from a sling, a simple stone inflicts deadly harm (2 harm). When you Enter the Fray by barraging your foe with sling-bullets, inflict harm on a strong hit."
         },
         {
@@ -238,7 +238,7 @@
       "preamble": "If you wield an axe...",
       "abilities": [
         {
-          "enabled": false,
+          "enabled": true,
           "text": "When you Strike or Clash in close quarters, you may suffer -1 momentum and inflict +1 harm on a hit (decide before rolling)."
         },
         {
@@ -259,7 +259,7 @@
       "preamble": "If you wield a sword...",
       "abilities": [
         {
-          "enabled": false,
+          "enabled": true,
           "text": "When you Strike or Clash and burn momentum to improve your result, inflict +2 harm. If the fight continues, add +1 on your next move."
         },
         {
@@ -268,7 +268,7 @@
         },
         {
           "enabled": false,
-          "text": "When you Swear an Iron Vow by kneeling and grasping your sword’s blade, add +1 and take +1 momentum on a hit. If you let the edge draw blood from your hands, Endure Harm (1 harm) in exchange for an additional +1 momentum on a hit."
+          "text": "When you Swear an Iron Vow by kneeling and grasping your sword\u2019s blade, add +1 and take +1 momentum on a hit. If you let the edge draw blood from your hands, Endure Harm (1 harm) in exchange for an additional +1 momentum on a hit."
         }
       ],
       "summary": "Sword expert: momentum burns, flowing combos, and sworn oaths."
@@ -280,7 +280,7 @@
       "preamble": "If you wield a mighty hammer...",
       "abilities": [
         {
-          "enabled": false,
+          "enabled": true,
           "text": "When you Face Danger, Secure an Advantage, or Compel by hitting or breaking an inanimate object, add +1 and take +1 momentum on a hit."
         },
         {
@@ -332,7 +332,7 @@
         {
           "enabled": false,
           "name": "Soul-Piercing",
-          "text": "You may Face Danger +shadow by sending your spider to secretly study someone. On a hit, the spider returns to reveal the target’s deepest fears through a reflection in its glassy eyes. Use this to Gather Information and reroll any dice."
+          "text": "You may Face Danger +shadow by sending your spider to secretly study someone. On a hit, the spider returns to reveal the target\u2019s deepest fears through a reflection in its glassy eyes. Use this to Gather Information and reroll any dice."
         },
         {
           "enabled": false,
@@ -375,7 +375,7 @@
         {
           "enabled": false,
           "name": "Swift",
-          "text": "When you Face Danger +edge using your horse’s speed and grace, or when you Undertake a Journey, add +1."
+          "text": "When you Face Danger +edge using your horse\u2019s speed and grace, or when you Undertake a Journey, add +1."
         },
         {
           "enabled": false,
@@ -399,7 +399,7 @@
         {
           "enabled": false,
           "name": "Sharp",
-          "text": "When you Gather Information using your hound’s keen senses to track your quarry or investigate a scene, add +1 and take +1 momentum on a hit."
+          "text": "When you Gather Information using your hound\u2019s keen senses to track your quarry or investigate a scene, add +1 and take +1 momentum on a hit."
         },
         {
           "enabled": false,
@@ -423,7 +423,7 @@
         {
           "enabled": false,
           "name": "Skilled",
-          "text": "When you make a move outside of combat aided by your companion’s expertise, add +1."
+          "text": "When you make a move outside of combat aided by your companion\u2019s expertise, add +1."
         },
         {
           "enabled": false,
@@ -452,7 +452,7 @@
         {
           "enabled": false,
           "name": "Beast of burden",
-          "text": "When you make a move which requires you to roll +supply, you may instead roll +your mammoth’s health."
+          "text": "When you make a move which requires you to roll +supply, you may instead roll +your mammoth\u2019s health."
         },
         {
           "enabled": false,
@@ -476,12 +476,12 @@
         {
           "enabled": false,
           "name": "Sage",
-          "text": "When you leverage your owl’s secret knowledge to perform a ritual, add +1 or take +1 momentum on a hit (decide before rolling)."
+          "text": "When you leverage your owl\u2019s secret knowledge to perform a ritual, add +1 or take +1 momentum on a hit (decide before rolling)."
         },
         {
           "enabled": false,
           "name": "Embodying",
-          "text": "When you Face Death, take your owl’s health as +momentum before you roll."
+          "text": "When you Face Death, take your owl\u2019s health as +momentum before you roll."
         }
       ],
       "summary": "Nocturnal hunter: night raids, secret knowledge, death's guide."
@@ -693,7 +693,7 @@
         },
         {
           "enabled": false,
-          "text": "When you Face Danger +edge in a fight by nimbly avoiding your foe’s attacks, add +1 and take +1 momentum on a hit."
+          "text": "When you Face Danger +edge in a fight by nimbly avoiding your foe\u2019s attacks, add +1 and take +1 momentum on a hit."
         },
         {
           "enabled": false,
@@ -710,15 +710,15 @@
       "abilities": [
         {
           "enabled": true,
-          "text": "When you say your daily prayers, you may Secure an Advantage by asking your god to grant a blessing. If you do, roll +your god’s stat. On a hit, take +2 momentum."
+          "text": "When you say your daily prayers, you may Secure an Advantage by asking your god to grant a blessing. If you do, roll +your god\u2019s stat. On a hit, take +2 momentum."
         },
         {
           "enabled": false,
-          "text": "When you Swear an Iron Vow to serve your god on a divine quest, you may roll +your god’s stat and reroll any dice. When you Fulfill Your Vow and mark experience, take +1 experience."
+          "text": "When you Swear an Iron Vow to serve your god on a divine quest, you may roll +your god\u2019s stat and reroll any dice. When you Fulfill Your Vow and mark experience, take +1 experience."
         },
         {
           "enabled": false,
-          "text": "When you Sojourn by sharing the word of your god, you may roll +your god’s stat. If you do, take +1 momentum on a hit."
+          "text": "When you Sojourn by sharing the word of your god, you may roll +your god\u2019s stat. If you do, take +1 momentum on a hit."
         }
       ],
       "summary": "Devoted to a god: daily prayers, divine quests, and blessings."
@@ -886,7 +886,7 @@
         },
         {
           "enabled": false,
-          "text": "One time only, you may browse the archive’s forbidden depths. If you do, raise your wits by 1 and roll an action die. On 1-3, you must also mark corrupted or Face Desolation (ignoring momentum)."
+          "text": "One time only, you may browse the archive\u2019s forbidden depths. If you do, raise your wits by 1 and roll an action die. On 1-3, you must also mark corrupted or Face Desolation (ignoring momentum)."
         }
       ],
       "summary": "Bearer of a mystical archive: ancient knowledge and forbidden lore."
@@ -920,7 +920,7 @@
       "abilities": [
         {
           "enabled": true,
-          "text": "Choose your mask’s material.\n\n  * Thunderwood: Edge / Health\n  * Bloodwood: Iron / Health\n  * Ghostwood: Shadow / Spirit\n  * Whisperwood: Wits / Spirit\n\nWhen you wear the mask and make a move which uses its stat, add +1. If you roll a 1 on your action die, suffer -1 to the associated track (in addition to any other outcome of the move)."
+          "text": "Choose your mask\u2019s material.\n\n  * Thunderwood: Edge / Health\n  * Bloodwood: Iron / Health\n  * Ghostwood: Shadow / Spirit\n  * Whisperwood: Wits / Spirit\n\nWhen you wear the mask and make a move which uses its stat, add +1. If you roll a 1 on your action die, suffer -1 to the associated track (in addition to any other outcome of the move)."
         },
         {
           "enabled": false,
@@ -1033,7 +1033,7 @@
         },
         {
           "enabled": false,
-          "text": "When you Secure an Advantage +wits by sizing up a perilous situation from the saddle, you are one with your horse’s instincts. Add +1 and take +1 momentum on a hit."
+          "text": "When you Secure an Advantage +wits by sizing up a perilous situation from the saddle, you are one with your horse\u2019s instincts. Add +1 and take +1 momentum on a hit."
         }
       ],
       "summary": "Expert horseman: care, hard rides, and saddle instincts."
@@ -1407,7 +1407,7 @@
         },
         {
           "enabled": false,
-          "text": "As above, and your divination can also reveal information about the subject’s future."
+          "text": "As above, and your divination can also reveal information about the subject\u2019s future."
         },
         {
           "enabled": false,
@@ -1466,7 +1466,7 @@
       "abilities": [
         {
           "enabled": true,
-          "text": "When you mark your hands or weapon with an intricate blood rune, roll +iron. On a strong hit, the rune thirsts for fresh blood. One time only, when you make a move to inflict harm, reroll any dice and inflict +2 harm on a hit. Then, for each point of harm inflicted, take +1 and allocate it as +health or +momentum. On a weak hit, as above, but this asset counts as a debility until the rune’s thirst is quenched."
+          "text": "When you mark your hands or weapon with an intricate blood rune, roll +iron. On a strong hit, the rune thirsts for fresh blood. One time only, when you make a move to inflict harm, reroll any dice and inflict +2 harm on a hit. Then, for each point of harm inflicted, take +1 and allocate it as +health or +momentum. On a weak hit, as above, but this asset counts as a debility until the rune\u2019s thirst is quenched."
         },
         {
           "enabled": false,
@@ -1550,7 +1550,7 @@
       "abilities": [
         {
           "enabled": true,
-          "text": "When you speak a person’s name three times to the wind, roll +wits. On a strong hit, the wind whispers of this person’s need. Envision what you hear (Ask the Oracle if unsure). If you use this information or fulfill this need when you Compel them, you may reroll any dice (one time only). On a weak hit, as above, but this person’s need creates a troubling dilemma or complication; Endure Stress (1 stress)."
+          "text": "When you speak a person\u2019s name three times to the wind, roll +wits. On a strong hit, the wind whispers of this person\u2019s need. Envision what you hear (Ask the Oracle if unsure). If you use this information or fulfill this need when you Compel them, you may reroll any dice (one time only). On a weak hit, as above, but this person\u2019s need creates a troubling dilemma or complication; Endure Stress (1 stress)."
         },
         {
           "enabled": false,
@@ -1617,7 +1617,7 @@
         },
         {
           "enabled": false,
-          "text": "As above, and you may also perceive the world through your companion’s senses while you make moves aided by them (even when you are apart)."
+          "text": "As above, and you may also perceive the world through your companion\u2019s senses while you make moves aided by them (even when you are apart)."
         },
         {
           "enabled": false,
@@ -1655,11 +1655,11 @@
       "abilities": [
         {
           "enabled": true,
-          "text": "When you walk a wide circle, sprinkling the ground with salt, roll +wits. On a strong hit, choose two. On a weak hit, choose one.\n\n  * When a foe first crosses the boundary, take +1 momentum.\n  * When you first inflict harm against a foe within the boundary, inflict +1 harm.\n  * Your ward is ‘likely’ (Ask the Oracle) to trap a foe within the boundary."
+          "text": "When you walk a wide circle, sprinkling the ground with salt, roll +wits. On a strong hit, choose two. On a weak hit, choose one.\n\n  * When a foe first crosses the boundary, take +1 momentum.\n  * When you first inflict harm against a foe within the boundary, inflict +1 harm.\n  * Your ward is \u2018likely\u2019 (Ask the Oracle) to trap a foe within the boundary."
         },
         {
           "enabled": false,
-          "text": "As above, and improve the effect of your ward (+2 momentum, +2 harm, and ‘almost certain’)."
+          "text": "As above, and improve the effect of your ward (+2 momentum, +2 harm, and \u2018almost certain\u2019)."
         },
         {
           "enabled": false,

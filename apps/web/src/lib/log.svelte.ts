@@ -14,9 +14,9 @@ export interface LogEntry {
 
 const storageKey = (charId: string) => `il-log:${charId}`;
 
-// Module-level reactive state: map of charId → entries (newest first)
-// Exported directly so components can access logs[charId] inside $derived
-// for explicit Svelte 5 proxy tracking (rather than wrapping in getLog()).
+// Module-level reactive state: map of charId → entries (newest first).
+// Exported directly so components can read logs[charId] inside $derived
+// for fine-grained Svelte 5 proxy tracking per character.
 export let logs = $state<Record<string, LogEntry[]>>({});
 
 /** Persist the current entries for a character to localStorage. */
@@ -41,23 +41,27 @@ export function initLog(charId: string): void {
 	}
 }
 
-/** Reactive getter — call inside $derived or template to get live entries. */
-export function getLog(charId: string): LogEntry[] {
-	return logs[charId] ?? [];
-}
-
-/** Append a new entry and persist to localStorage. */
-export function appendLog(charId: string, title: string, html: string): void {
+/** Append a new entry and persist to localStorage. Accepts an optional pre-generated id. */
+export function appendLog(charId: string, title: string, html: string, id?: string): void {
 	if (typeof window === 'undefined') return;
 	initLog(charId);
 	const entry: LogEntry = {
-		id:   crypto.randomUUID(),
+		id:   id ?? crypto.randomUUID(),
 		title,
 		html,
 		ts:   new Date().toISOString(),
 	};
 	// Prepend (newest first), cap at 500 entries
 	logs[charId] = [entry, ...(logs[charId] ?? [])].slice(0, 500);
+	persist(charId);
+}
+
+/** Replace the HTML body of an existing log entry (e.g. to mark XP links as spent). */
+export function updateLogEntryHtml(charId: string, entryId: string, html: string): void {
+	if (!logs[charId]) return;
+	logs[charId] = logs[charId].map((e) =>
+		e.id === entryId ? { ...e, html } : e,
+	);
 	persist(charId);
 }
 
@@ -86,4 +90,49 @@ export function clearLog(charId: string): void {
 	} catch {
 		// ignore
 	}
+}
+
+// ---------------------------------------------------------------------------
+// XP Spend Bus
+// ---------------------------------------------------------------------------
+// LogPanel calls triggerXpSpend() when the user clicks an XP cost link.
+// CharacterSheet has a $effect that reads getXpSpendNonce() to subscribe
+// reactively, then calls drainXpSpend() to consume pending amounts.
+//
+// This avoids two failure modes of the previous Map-based approach:
+//   1. Handler lost when CharacterSheet unmounts (tab change) — items remain
+//      in the queue until the component re-mounts and drains them.
+//   2. $state mutation from a plain Map callback (outside Svelte's reactive
+//      context) not propagating through bind:value — here the mutation
+//      happens inside the $effect, which IS Svelte's reactive context.
+
+let _xpSpendNonce = $state(0);
+const _xpSpendQueue: Array<{ charId: string; amount: number }> = [];
+
+/** Read inside $effect to subscribe to XP spend events (reactive signal). */
+export function getXpSpendNonce(): number {
+	return _xpSpendNonce;
+}
+
+/** Queue an XP spend and signal all watching $effects. Called by LogPanel. */
+export function triggerXpSpend(charId: string, amount: number): void {
+	_xpSpendQueue.push({ charId, amount });
+	_xpSpendNonce++;
+}
+
+/**
+ * Drain all queued XP spend amounts for a character and return the total.
+ * Call this inside the $effect that reads getXpSpendNonce().
+ */
+export function drainXpSpend(charId: string): number {
+	let total = 0;
+	let i = _xpSpendQueue.length;
+	while (i--) {
+		const item = _xpSpendQueue[i];
+		if (item.charId === charId) {
+			total += item.amount;
+			_xpSpendQueue.splice(i, 1);
+		}
+	}
+	return total;
 }

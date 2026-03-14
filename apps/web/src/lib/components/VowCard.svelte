@@ -161,7 +161,7 @@
 				</div>
 			</div>
 
-			<!-- Progress track + Mark/Unmark buttons (right-aligned, same height as boxes) -->
+			<!-- Progress track + Mark/Unmark buttons (inline right, same height as boxes) -->
 			<div class="vow-progress-row">
 				<div class="progress-wrap">
 					<ProgressTrack bind:value={vow.ticks} label="" boxes={10} dangerCount={vow.menace} />
@@ -380,7 +380,7 @@
 		font-size: 0.72rem;
 	}
 
-	/* ---- Progress track row ---- */
+	/* ---- Progress track row — mirrors Bonds/Failures layout in CharacterSheet ---- */
 	.vow-progress-row {
 		display: flex;
 		align-items: center;
@@ -388,11 +388,10 @@
 	}
 
 	.progress-wrap {
-		flex: 1;
-		min-width: 0;
+		flex-shrink: 0;
 	}
 
-	/* Action buttons: right of progress, same height as progress boxes (22px) */
+	/* Buttons sit inline to the right of the track, flex-shrink: 0 so they never wrap */
 	.vow-actions {
 		display: flex;
 		gap: 4px;
@@ -407,7 +406,7 @@
 		padding: 0 7px;
 		border-radius: 3px;
 		border: 1px solid var(--border-mid);
-		background: var(--bg-control);
+		background: transparent;
 		color: var(--text-muted);
 		font-family: var(--font-ui);
 		font-size: 0.68rem;

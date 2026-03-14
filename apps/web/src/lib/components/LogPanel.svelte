@@ -7,7 +7,8 @@
 	 * Notes are attached per-entry and persist to localStorage.
 	 * Clearing the log requires confirmation via a native dialog (irreversible).
 	 */
-	import { logs, initLog, clearLog, deleteLogEntry, updateLogEntryNote } from '$lib/log.svelte.js';
+	import { logs, initLog, clearLog, deleteLogEntry, updateLogEntryNote, updateLogEntryHtml, triggerXpSpend } from '$lib/log.svelte.js';
+	import { renderNote } from '$lib/markdown.js';
 	import trashSvg from '$icons/trash-solid-full.svg?raw';
 	import penSvg   from '$icons/pen-to-square-solid-full.svg?raw';
 
@@ -62,6 +63,35 @@
 		clearDialogEl?.close();
 		clearLog(characterId);
 	}
+
+	/**
+	 * Event-delegation handler for XP cost links rendered inside log entry bodies.
+	 * Intercepts clicks on .xp-cost-link elements, marks the link as spent in
+	 * the stored HTML, then calls triggerXpSpend() so CharacterSheet deducts XP.
+	 */
+	function handleEntriesClick(e: MouseEvent) {
+		const link = (e.target as HTMLElement).closest('.xp-cost-link') as HTMLElement | null;
+		if (!link || link.classList.contains('xp-spent')) return;
+		e.preventDefault();
+
+		const cost    = parseInt(link.dataset['cost']    ?? '0', 10);
+		const entryId = link.dataset['entryId'] ?? '';
+		if (!cost || !entryId) return;
+
+		// Mark the link as spent in the persisted HTML
+		const entry = (logs[characterId] ?? []).find((ev) => ev.id === entryId);
+		if (entry) {
+			// Replace the first unspent xp-cost-link in this entry's HTML
+			const newHtml = entry.html.replace(
+				/<a\b[^>]*class="xp-cost-link"[^>]*>([^<]*)<\/a>/,
+				'<s class="xp-spent">$1</s>',
+			);
+			updateLogEntryHtml(characterId, entryId, newHtml);
+		}
+
+		// Deduct the XP from the character via the registered handler
+		triggerXpSpend(characterId, cost);
+	}
 </script>
 
 <div class="log-panel">
@@ -78,7 +108,9 @@
 		>{@html trashSvg}</button>
 	</div>
 
-	<div class="log-entries" role="log" aria-live="polite" aria-label="Session log">
+	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+	<div class="log-entries" role="log" aria-live="polite" aria-label="Session log"
+		onclick={handleEntriesClick}>
 		{#if entries.length === 0}
 			<div class="log-empty">
 				<span class="log-empty-icon">◊</span>
@@ -137,7 +169,7 @@
 							</div>
 						</div>
 					{:else if entry.note}
-						<div class="entry-note">{entry.note}</div>
+						<div class="entry-note">{@html renderNote(entry.note)}</div>
 					{/if}
 				</div>
 			{/each}
@@ -176,7 +208,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: 12px 14px;
+		padding: 13px 14px 11px; /* matches tab-bar .tab-btn vertical rhythm */
 		border-bottom: 1px solid var(--border);
 		background: var(--bg-card);
 		flex-shrink: 0;
@@ -347,6 +379,22 @@
 		margin-bottom: 1px;
 	}
 
+	/* XP cost links (clickable, strike-through after use) */
+	.entry-body :global(.xp-cost-link) {
+		color: var(--text-accent);
+		text-decoration: underline;
+		font-weight: 600;
+		cursor: pointer;
+	}
+	.entry-body :global(.xp-cost-link):hover {
+		opacity: 0.8;
+	}
+	.entry-body :global(.xp-spent) {
+		text-decoration: line-through;
+		color: var(--text-dimmer);
+		font-weight: normal;
+	}
+
 	/* ---- Inline note editor ---- */
 	.entry-edit {
 		margin-top: 5px;
@@ -381,7 +429,7 @@
 	}
 	.btn-primary:hover { opacity: 0.88; }
 
-	/* ---- Saved note display ---- */
+	/* ---- Saved note display (markdown-rendered) ---- */
 	.entry-note {
 		margin-top: 5px;
 		padding: 4px 7px;
@@ -390,8 +438,46 @@
 		font-size: 0.78rem;
 		color: var(--text-muted);
 		line-height: 1.5;
+	}
+
+	/* Markdown elements rendered inside .entry-note */
+	.entry-note :global(p) {
+		margin: 0 0 3px;
 		font-style: italic;
-		white-space: pre-wrap;
+	}
+	.entry-note :global(h3),
+	.entry-note :global(h4),
+	.entry-note :global(h5) {
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		font-weight: 700;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--text-accent);
+		margin: 5px 0 2px;
+		font-style: normal;
+	}
+	.entry-note :global(ul),
+	.entry-note :global(ol) {
+		margin: 2px 0 4px;
+		padding-left: 1.3em;
+		font-style: italic;
+	}
+	.entry-note :global(li) {
+		margin-bottom: 1px;
+	}
+	.entry-note :global(strong) {
+		font-weight: 700;
+		color: var(--text);
+		font-style: normal;
+	}
+	.entry-note :global(em) {
+		font-style: italic;
+	}
+	.entry-note :global(br) {
+		display: block;
+		margin-bottom: 4px;
+		content: '';
 	}
 
 	/* ================================================================

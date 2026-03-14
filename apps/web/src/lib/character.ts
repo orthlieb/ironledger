@@ -41,11 +41,6 @@ export function momentumReset(d: CharacterData): number {
 	return 0;
 }
 
-/** Clamp a number between min and max (inclusive). */
-export function clamp(value: number, min: number, max: number): number {
-	return Math.min(max, Math.max(min, value));
-}
-
 /**
  * Compute how many ticks are in a specific progress box (0-based index).
  * Progress is stored linearly (0–40) across 10 boxes of 4 ticks each.

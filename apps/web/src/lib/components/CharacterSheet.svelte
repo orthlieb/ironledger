@@ -28,7 +28,8 @@
 	import iconSupply   from '$lib/images/icon-supply.svg?raw';
 	import iconMana     from '$lib/images/icon-mana.svg?raw';
 
-	import { initLog, appendLog } from '$lib/log.svelte.js';
+	import { initLog, appendLog, getXpSpendNonce, drainXpSpend } from '$lib/log.svelte.js';
+	import { renderNote } from '$lib/markdown.js';
 
 	import StatControl      from './StatControl.svelte';
 	import MeterControl     from './MeterControl.svelte';
@@ -64,8 +65,36 @@
 	let saveTimer: ReturnType<typeof setTimeout> | null = null;
 	let portraitHovered = $state(false);
 
+	// Background field: toggle between markdown display and textarea editing
+	let editingBackground = $state(false);
+	let backgroundTextareaEl = $state<HTMLTextAreaElement | null>(null);
+	$effect(() => {
+		if (editingBackground && backgroundTextareaEl) {
+			backgroundTextareaEl.focus();
+		}
+	});
+
 	// Initialise log for this character on mount
 	$effect(() => { initLog(character.id); });
+
+	// React to XP cost link clicks in LogPanel.
+	// getXpSpendNonce() creates a reactive dependency — this effect re-runs
+	// every time triggerXpSpend() increments the nonce.  drainXpSpend() then
+	// pulls the queued amount for this character so the mutation happens INSIDE
+	// Svelte's reactive context (fixing the bind:value propagation issue).
+	$effect(() => {
+		getXpSpendNonce(); // subscribe: re-runs whenever any XP link is clicked
+		const amount = drainXpSpend(character.id);
+		if (amount > 0) {
+			const old  = data.xp;
+			const next = Math.max(0, old - amount);
+			if (next !== old) {
+				data.xp = next;
+				appendLog(character.id, 'Experience',
+					`<div>XP spent: <strong>−${amount}</strong> (${old} → <strong>${next}</strong>)</div>`);
+			}
+		}
+	});
 
 	// ---------------------------------------------------------------------------
 	// Log helpers (use character.id directly to avoid stale capture warning)
@@ -198,22 +227,22 @@
 
 	function addBond() {
 		const old = data.bonds;
-		const next = Math.min(bondsMax, data.bonds + 4);
+		const next = Math.min(bondsMax, data.bonds + 1);
 		if (next !== old) { logTrack('Bonds', old, next); data.bonds = next; }
 	}
 	function removeBond() {
 		const old = data.bonds;
-		const next = Math.max(0, data.bonds - 4);
+		const next = Math.max(0, data.bonds - 1);
 		if (next !== old) { logTrack('Bonds', old, next); data.bonds = next; }
 	}
 	function addFailure() {
 		const old = data.failures;
-		const next = Math.min(failuresMax, data.failures + 4);
+		const next = Math.min(failuresMax, data.failures + 1);
 		if (next !== old) { logTrack('Failures', old, next); data.failures = next; }
 	}
 	function removeFailure() {
 		const old = data.failures;
-		const next = Math.max(0, data.failures - 4);
+		const next = Math.max(0, data.failures - 1);
 		if (next !== old) { logTrack('Failures', old, next); data.failures = next; }
 	}
 
@@ -362,12 +391,33 @@
 					</label>
 					<label class="field-group flex-1">
 						<span class="section-label">Background</span>
-						<textarea
-							bind:value={data.background}
-							placeholder="Background, history, or notes…"
-							class="background-input"
-							rows="2"
-						></textarea>
+						{#if editingBackground}
+							<textarea
+								bind:this={backgroundTextareaEl}
+								bind:value={data.background}
+								placeholder="Background, history, or notes…"
+								class="background-input"
+								rows="3"
+								onblur={() => (editingBackground = false)}
+							></textarea>
+						{:else}
+							<!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
+							<div
+								class="background-display"
+								class:bg-empty={!data.background?.trim()}
+								onclick={() => (editingBackground = true)}
+								onkeydown={(e) => { if (e.key === 'Enter') editingBackground = true; }}
+								title="Click to edit"
+								role="button"
+								tabindex="0"
+							>
+								{#if data.background?.trim()}
+									{@html renderNote(data.background)}
+								{:else}
+									<span class="bg-placeholder">Background, history, or notes…</span>
+								{/if}
+							</div>
+						{/if}
 					</label>
 				</div>
 			</section>
@@ -554,7 +604,12 @@
 			<!-- Bonds & Failures -->
 			<section class="char-section tracks-row">
 				<div class="track-group">
-					<div class="section-label">Bonds</div>
+					<div class="track-header">
+						<div class="section-label">Bonds</div>
+						<span class="track-tally">
+							{Math.floor(data.bonds / 4)}/10 boxes, {data.bonds}/40 ticks
+						</span>
+					</div>
 					<div class="track-row">
 						<ProgressTrack
 							label=""
@@ -562,13 +617,18 @@
 							onchange={(o, n) => logTrack('Bonds', o, n)}
 						/>
 						<div class="track-actions">
-							<button class="btn btn-track" onclick={addBond} disabled={data.bonds >= bondsMax}>+ Bond</button>
+							<button class="btn btn-track" onclick={addBond} disabled={data.bonds >= bondsMax}>+</button>
 							<button class="btn btn-track" onclick={removeBond} disabled={data.bonds <= 0}>−</button>
 						</div>
 					</div>
 				</div>
 				<div class="track-group">
-					<div class="section-label">Failures</div>
+					<div class="track-header">
+						<div class="section-label">Failures</div>
+						<span class="track-tally">
+							{Math.floor(data.failures / 4)}/10 boxes, {data.failures}/40 ticks
+						</span>
+					</div>
 					<div class="track-row">
 						<ProgressTrack
 							label=""
@@ -576,7 +636,7 @@
 							onchange={(o, n) => logTrack('Failures', o, n)}
 						/>
 						<div class="track-actions">
-							<button class="btn btn-track" onclick={addFailure} disabled={data.failures >= failuresMax}>+ Failure</button>
+							<button class="btn btn-track" onclick={addFailure} disabled={data.failures >= failuresMax}>+</button>
 							<button class="btn btn-track" onclick={removeFailure} disabled={data.failures <= 0}>−</button>
 						</div>
 					</div>
@@ -813,6 +873,51 @@
 		line-height: 1.55;
 	}
 
+	/* Read-only markdown display for the background field (click to edit) */
+	.background-display {
+		width: 100%;
+		font-size: 0.9rem;
+		line-height: 1.55;
+		min-height: 3.1rem; /* matches rows="3" at 1.55 line-height */
+		padding: 4px 8px;
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		background: var(--bg-control);
+		color: var(--text);
+		box-sizing: border-box;
+		cursor: text;
+		transition: border-color 0.12s;
+	}
+	.background-display:hover,
+	.background-display:focus {
+		border-color: var(--border-mid);
+		outline: none;
+	}
+
+	.bg-placeholder {
+		color: var(--text-dimmer);
+		font-style: italic;
+	}
+
+	/* Markdown elements rendered inside the background field */
+	.background-display :global(p)       { margin: 0 0 3px; }
+	.background-display :global(p:last-child) { margin-bottom: 0; }
+	.background-display :global(h3),
+	.background-display :global(h4),
+	.background-display :global(h5) {
+		font-family: var(--font-ui);
+		font-size: 0.82rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		color: var(--text-accent);
+		margin: 5px 0 2px;
+	}
+	.background-display :global(ul),
+	.background-display :global(ol)  { margin: 2px 0; padding-left: 1.3em; }
+	.background-display :global(li)  { margin-bottom: 1px; }
+	.background-display :global(strong) { font-weight: 700; color: var(--text); }
+	.background-display :global(br)  { display: block; margin-bottom: 3px; content: ''; }
+
 	.flex-1 {
 		flex: 1;
 	}
@@ -959,6 +1064,22 @@
 		display: flex;
 		flex-direction: column;
 		gap: 6px;
+	}
+
+	/* Label row: "Bonds" on left, "3/10 boxes, 12/40 ticks" on right */
+	.track-header {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 8px;
+	}
+
+	.track-tally {
+		font-family: var(--font-ui);
+		font-size: 0.65rem;
+		color: var(--text-dimmer);
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
 	}
 
 	/* Progress track boxes + action buttons in a single row */

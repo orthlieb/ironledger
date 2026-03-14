@@ -42,14 +42,18 @@
 		if (!def) return;
 		const newEntry: CharacterAsset = {
 			assetId,
-			abilities: def.abilities.map(() => false),
+			abilities: def.abilities.map((ab) => ab.enabled), // all categories: ability[0].enabled = true
 		};
 		if (def.companionHealthMax !== undefined) {
 			newEntry.companionHealth = def.companionHealthMax;
 		}
 		assets = [...assets, newEntry];
-		appendLog(characterId, 'Assets',
-			`<div>Asset added: <strong>${def.name}</strong> <em>(${def.category})</em> −3 experience</div>`);
+		// Pre-generate the entry id so we can embed it in the XP cost link
+		const entryId = crypto.randomUUID();
+		const xpLink  = `<a class="xp-cost-link" data-entry-id="${entryId}" data-cost="3" href="#">−3 experience</a>`;
+		appendLog(characterId, `${characterData.name} — Assets`,
+			`<div>Asset added: <strong>${def.name}</strong> <em>(${def.category})</em> ${xpLink}</div>`,
+			entryId);
 		// Close the picker after successfully adding so the user returns to the sheet
 		closePicker();
 	}
@@ -84,6 +88,8 @@
 						bind:asset={assets[i]}
 						definition={def}
 						{characterId}
+						characterName={characterData.name}
+						characterXp={characterData.xp}
 						onRemove={() => removeAsset(entry.assetId)}
 					/>
 				{:else}
