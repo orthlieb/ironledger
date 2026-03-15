@@ -6,6 +6,7 @@
 	import LogPanel          from '$lib/components/LogPanel.svelte';
 	import GlobalContextBar  from '$lib/components/GlobalContextBar.svelte';
 	import DiceRollerDialog  from '$lib/components/DiceRollerDialog.svelte';
+	import OraclesDialog     from '$lib/components/OraclesDialog.svelte';
 	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
 	import { onMount } from 'svelte';
 	import fileImportSvg from '$icons/file-import-solid-full.svg?raw';
@@ -42,6 +43,9 @@
 	// ── Dice roller ────────────────────────────────────────────────────────────
 	let diceRollerRef    = $state<{ open(): void } | null>(null);
 	const activeDiceCtx  = $derived(getActiveDiceCtx());
+
+	// ── Oracles dialog ─────────────────────────────────────────────────────────
+	let oraclesDialogRef = $state<{ open(): void } | null>(null);
 
 	// ── Initial load ───────────────────────────────────────────────────────────
 	onMount(async () => {
@@ -128,6 +132,9 @@
 <!-- Dice roller dialog (always mounted; opened by GlobalContextBar Dice button) -->
 <DiceRollerDialog bind:this={diceRollerRef} ctx={activeDiceCtx} />
 
+<!-- Oracles dialog (always mounted; opened by GlobalContextBar Oracles button) -->
+<OraclesDialog bind:this={oraclesDialogRef} />
+
 <!-- ===== Full-width GlobalContextBar ===== -->
 <div class="gc-wrapper">
 	<GlobalContextBar
@@ -135,6 +142,7 @@
 		{activeCharId}
 		onSelect={setActiveChar}
 		onDiceClick={() => diceRollerRef?.open()}
+		onOraclesClick={() => oraclesDialogRef?.open()}
 	/>
 </div>
 

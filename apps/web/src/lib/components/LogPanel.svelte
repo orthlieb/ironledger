@@ -9,8 +9,9 @@
 	 */
 	import { logs, initLog, clearLog, deleteLogEntry, updateLogEntryNote, updateLogEntryHtml, triggerXpSpend, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
-	import trashSvg from '$icons/trash-solid-full.svg?raw';
-	import penSvg   from '$icons/pen-to-square-solid-full.svg?raw';
+	import trashSvg      from '$icons/trash-solid-full.svg?raw';
+	import penSvg        from '$icons/pen-to-square-solid-full.svg?raw';
+	import fileExportSvg from '$icons/file-export-solid-full.svg?raw';
 
 	// The log is global — no characterId prop needed.
 	$effect(() => {
@@ -59,6 +60,130 @@
 		clearLog(SESSION_LOG_ID);
 	}
 
+	// ---------------------------------------------------------------------------
+	// Markdown export
+	// ---------------------------------------------------------------------------
+
+	/**
+	 * Convert a single log entry's HTML body to plain markdown text.
+	 * Handles <strong>, <em>, <ul>/<li>, <s> and plain text nodes.
+	 */
+	function htmlToMarkdown(html: string): string {
+		if (typeof document === 'undefined') return html;
+		const tmp = document.createElement('div');
+		tmp.innerHTML = html;
+		const lines: string[] = [];
+
+		function walk(node: Node, prefix = '') {
+			if (node.nodeType === Node.TEXT_NODE) {
+				const t = (node.textContent ?? '').replace(/\n/g, ' ');
+				if (t.trim()) lines[lines.length - 1] = (lines[lines.length - 1] ?? '') + t;
+			} else if (node.nodeType === Node.ELEMENT_NODE) {
+				const el  = node as HTMLElement;
+				const tag = el.tagName.toLowerCase();
+
+				if (tag === 'ul' || tag === 'ol') {
+					el.querySelectorAll('li').forEach((li) => {
+						lines.push(`- ${li.textContent?.trim() ?? ''}`);
+					});
+				} else if (tag === 'li') {
+					// handled by parent ul/ol above
+				} else if (tag === 'br') {
+					lines.push('');
+				} else {
+					// For block-level elements start a new line; inline elements inline
+					const block = ['div', 'p', 'h1', 'h2', 'h3', 'h4'].includes(tag);
+					if (block && lines.length > 0) lines.push('');
+
+					// Collect this element's inline markdown
+					let inline = '';
+					el.childNodes.forEach((child) => {
+						if (child.nodeType === Node.TEXT_NODE) {
+							inline += child.textContent ?? '';
+						} else if (child.nodeType === Node.ELEMENT_NODE) {
+							const ct = (child as HTMLElement).tagName.toLowerCase();
+							const inner = (child as HTMLElement).textContent ?? '';
+							if (ct === 'strong' || ct === 'b') inline += `**${inner}**`;
+							else if (ct === 'em' || ct === 'i') inline += `_${inner}_`;
+							else if (ct === 's')               inline += `~~${inner}~~`;
+							else                               inline += inner;
+						}
+					});
+
+					const text = inline.trim();
+					if (text) lines.push(prefix + text);
+				}
+			}
+		}
+
+		lines.push('');            // seed first line
+		tmp.childNodes.forEach((n) => walk(n));
+		return lines.filter((l, i, a) => !(l === '' && a[i - 1] === '')).join('\n').trim();
+	}
+
+	/**
+	 * Serialize all current log entries (oldest-first) to a markdown string.
+	 * Returns null when the log is empty.
+	 */
+	function extractLogMarkdown(): string | null {
+		if (entries.length === 0) return null;
+		const now = new Date();
+		const stamp = now.toLocaleString(undefined, {
+			year: 'numeric', month: 'short', day: 'numeric',
+			hour: '2-digit', minute: '2-digit',
+		});
+
+		const lines: string[] = [
+			'# Session Log',
+			`_Exported ${stamp}_`,
+			'',
+			'---',
+			'',
+		];
+
+		// entries are newest-first; export oldest-first
+		[...entries].reverse().forEach((entry) => {
+			const time = new Date(entry.ts).toLocaleString(undefined, {
+				month: 'short', day: 'numeric',
+				hour: '2-digit', minute: '2-digit',
+			});
+			lines.push(`## ${entry.title}  —  ${time}`);
+			lines.push('');
+			lines.push(htmlToMarkdown(entry.html));
+			if (entry.note?.trim()) {
+				lines.push('');
+				entry.note.split('\n').forEach((l) => lines.push(`> ${l}`));
+			}
+			lines.push('');
+		});
+
+		return lines.join('\n').trimEnd();
+	}
+
+	/** Trigger a browser download of the log as a .md file. */
+	function exportLog() {
+		const md = extractLogMarkdown();
+		if (!md) return;
+
+		const now    = new Date();
+		const stamp  = `${now.getFullYear()}-`
+			+ String(now.getMonth() + 1).padStart(2, '0') + '-'
+			+ String(now.getDate()).padStart(2, '0') + '_'
+			+ String(now.getHours()).padStart(2, '0')
+			+ String(now.getMinutes()).padStart(2, '0');
+		const filename = `session-log-${stamp}.md`;
+
+		const blob = new Blob([md], { type: 'text/markdown' });
+		const url  = URL.createObjectURL(blob);
+		const a    = document.createElement('a');
+		a.href     = url;
+		a.download = filename;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
+	}
+
 	/**
 	 * Event-delegation handler for XP cost links rendered inside log entry bodies.
 	 * Intercepts clicks on .xp-cost-link elements, marks the link as spent in
@@ -95,13 +220,22 @@
 		<div class="log-title-row">
 			<span class="log-title">Session Log</span>
 		</div>
-		<button
-			class="btn btn-icon icon-btn"
-			onclick={() => clearDialogEl?.showModal()}
-			title="Clear log"
-			aria-label="Clear session log"
-			disabled={entries.length === 0}
-		>{@html trashSvg}</button>
+		<div class="log-header-actions">
+			<button
+				class="btn btn-icon icon-btn"
+				onclick={exportLog}
+				title="Export log as Markdown"
+				aria-label="Export session log as Markdown"
+				disabled={entries.length === 0}
+			>{@html fileExportSvg}</button>
+			<button
+				class="btn btn-icon icon-btn"
+				onclick={() => clearDialogEl?.showModal()}
+				title="Clear log"
+				aria-label="Clear session log"
+				disabled={entries.length === 0}
+			>{@html trashSvg}</button>
+		</div>
 	</div>
 
 	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
@@ -204,8 +338,9 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: 0 14px; /* same height as .tab-btn: controlled by min-height */
-		min-height: 44px; /* matches tab-bar height */
+		/* Height matches tab bar (measured 40.5 px) */
+		padding: 0 14px;
+		min-height: 40.5px;
 		border-bottom: 1px solid var(--border);
 		background: var(--bg-card);
 		flex-shrink: 0;
@@ -224,6 +359,12 @@
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
 		color: var(--text-dimmer);
+	}
+
+	.log-header-actions {
+		display:     flex;
+		align-items: center;
+		gap:         3px;
 	}
 
 	.icon-btn :global(svg) {
@@ -373,6 +514,16 @@
 	}
 
 	.entry-body :global(div) {
+		margin-bottom: 1px;
+	}
+
+	/* Feature lists (e.g. yrtTouched) */
+	.entry-body :global(ul),
+	.entry-body :global(ol) {
+		margin: 2px 0 3px;
+		padding-left: 1.3em;
+	}
+	.entry-body :global(li) {
 		margin-bottom: 1px;
 	}
 

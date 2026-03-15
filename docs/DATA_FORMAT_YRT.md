@@ -42,7 +42,11 @@ The Touched are characters physically altered by manite exposure. Touched assets
 |-------|------|-------------|
 | `touchedFeatures` | boolean | When `true`, the UI shows the character's Touched feature list alongside this asset |
 
-Touched assets use `postamble` (not `preamble`) for the "how many abilities can you use" note, because it logically belongs *after* the ability list checkboxes.
+**Preamble / postamble placement for Touched assets:**
+- `preamble` — shown **before** the ability checkboxes (prerequisite or flavour note)
+- `postamble` — shown **after** the ability checkboxes (used for the "how many abilities you may use" note, since it belongs logically after the list)
+
+Touched assets follow the same auto-enable convention as Paths (see [DATA_FORMAT.md — Auto-Enabled Abilities](DATA_FORMAT.md#auto-enabled-abilities)): the first ability starts checked on acquisition; others start unchecked.
 
 Touched assets are defined in `data/assets/assets_yrt.json`.
 
@@ -57,6 +61,7 @@ Some Yrt ritual assets include a cantrip system — minor magical effects that d
   "id": "ritual/yrt-hedge-magic",
   "name": "Hedge Magic",
   "category": "Ritual",
+  "description": "Optional narrative text shown on the asset card between preamble and the ability list.",
   "cantrips": [
     { "key": "tidy-clean",    "name": "Tidy/Clean",    "desc": "clean or create a minor mess on a surface" },
     { "key": "mark-unmark",   "name": "Mark/Unmark",   "desc": "place or remove a small symbol or mark" },
@@ -71,6 +76,7 @@ Some Yrt ritual assets include a cantrip system — minor magical effects that d
 
 | Field | Type | Description |
 |-------|------|-------------|
+| `description` | string (HTML) | Extended narrative text displayed on the card between `preamble` and the ability checkboxes. Used for Conclave Ritual lore and usage guidance. Supports `<strong>`, `<br>`, and other inline HTML. |
 | `cantrips` | array | Pool of available cantrip definitions |
 | `cantrips[].key` | string | Unique cantrip identifier (kebab-case) |
 | `cantrips[].name` | string | Display name |
@@ -78,6 +84,18 @@ Some Yrt ritual assets include a cantrip system — minor magical effects that d
 | `cantripSlots` | array of numbers | Number of cantrip slots unlocked per ability tier (e.g., `[2, 2, 2]` = 2 slots per ability, 6 total when all marked) |
 
 The character selects cantrips from the pool to fill their available slots. Unlocking more abilities opens more slots.
+
+**Preamble / postamble / description placement for Ritual assets:**
+
+The card renders content in this order:
+1. `preamble` — prerequisite or flavour text (e.g., "If you are a Conclave ritualist.")
+2. `description` — extended narrative / usage guidance (Yrt-specific, HTML supported)
+3. Ability checkboxes (3 rows)
+4. Cantrip / selectable-list section (if `cantrips` / `cantripSlots` are present)
+5. Difficulty Factors collapsible (if `inspectionFactors` is present — Conclave Rituals only)
+6. `postamble` — explanatory note that belongs logically after the ability list
+
+Ritual assets follow the same auto-enable convention as Paths: the first ability starts checked on acquisition (see [DATA_FORMAT.md — Auto-Enabled Abilities](DATA_FORMAT.md#auto-enabled-abilities)).
 
 ---
 
@@ -137,6 +155,18 @@ Yrt-specific foes are defined in `data/foes/foes_yrt.json`, using the same forma
   ...
 }
 ```
+
+---
+
+## Rarity Display Convention
+
+All rarity names are displayed with the `RARITY:` prefix in the Iron Ledger UI — both on the asset card's rarity checkbox label and in session log entries. This applies to Ironsworn, Delve, and Yrt rarities alike.
+
+Examples in the log:
+- `Rarity acquired: **RARITY: Hawk's Eye Bow** for **Archer** −3 experience`
+- `Rarity removed: **RARITY: Hawk's Eye Bow** from **Archer**`
+
+This prefix is added by the UI (`AssetCard.svelte`) and does **not** appear in the source JSON `name` field.
 
 ---
 

@@ -25,11 +25,13 @@
 		activeCharId,
 		onSelect,
 		onDiceClick,
+		onOraclesClick,
 	}: {
-		chars:         CharacterFull[];
-		activeCharId:  string;
-		onSelect:      (id: string) => void;
-		onDiceClick?:  () => void;
+		chars:           CharacterFull[];
+		activeCharId:    string;
+		onSelect:        (id: string) => void;
+		onDiceClick?:    () => void;
+		onOraclesClick?: () => void;
 	} = $props();
 
 	// Derive the active character and its typed data
@@ -100,7 +102,11 @@
 		<!-- Action buttons -->
 		<div class="gc-actions">
 			<button class="gc-action-btn" disabled title="Moves (coming soon)">Moves</button>
-			<button class="gc-action-btn" disabled title="Oracles (coming soon)">Oracles</button>
+			<button
+				class="gc-action-btn"
+				onclick={() => onOraclesClick?.()}
+				title="Browse and roll oracles"
+			>Oracles</button>
 			<button
 				class="gc-action-btn"
 				onclick={onDiceClick}
