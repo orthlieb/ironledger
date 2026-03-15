@@ -51,6 +51,7 @@ async function loadCatalogue(): Promise<{
   assets:  CatalogueEntry;
   moves:   CatalogueEntry;
   oracles: CatalogueEntry;
+  foes:    CatalogueEntry;
 }> {
   // Load and merge all asset files
   const [assetsIs, assetsDelve, assetsYrt] = await Promise.all([
@@ -81,10 +82,22 @@ async function loadCatalogue(): Promise<{
   const oracleData = await Promise.all(oraclePaths.map(loadJson));
   const allOracles = { oracles: oracleData };
 
+  // Load and merge all foe files
+  const [foesIs, foesDelve, foesYrt] = await Promise.all([
+    loadJson(path.join(DATA_ROOT, 'foes/foes_ironsworn.json')),
+    loadJson(path.join(DATA_ROOT, 'foes/foes_delve.json')),
+    loadJson(path.join(DATA_ROOT, 'foes/foes_yrt.json')),
+  ]) as Array<{ foes: unknown[] }>;
+
+  const allFoes = {
+    foes: [...foesIs.foes, ...foesDelve.foes, ...foesYrt.foes],
+  };
+
   return {
     assets:  { data: allAssets,  etag: makeEtag(allAssets)  },
     moves:   { data: allMoves,   etag: makeEtag(allMoves)   },
     oracles: { data: allOracles, etag: makeEtag(allOracles) },
+    foes:    { data: allFoes,    etag: makeEtag(allFoes)    },
   };
 }
 
@@ -117,4 +130,5 @@ export async function catalogueRoutes(server: FastifyInstance): Promise<void> {
   server.get('/assets',  (req, reply) => sendCatalogueItem(catalogue.assets,  req, reply));
   server.get('/moves',   (req, reply) => sendCatalogueItem(catalogue.moves,   req, reply));
   server.get('/oracles', (req, reply) => sendCatalogueItem(catalogue.oracles, req, reply));
+  server.get('/foes',    (req, reply) => sendCatalogueItem(catalogue.foes,    req, reply));
 }

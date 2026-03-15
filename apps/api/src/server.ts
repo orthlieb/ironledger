@@ -19,6 +19,7 @@ import { checkDbHealth } from './db/index.js';
 import { authRoutes }       from './routes/auth.js';
 import { characterRoutes }  from './routes/characters.js';
 import { catalogueRoutes }  from './routes/catalogue.js';
+import { userDataRoutes }   from './routes/userData.js';
 import { healthRoutes }     from './routes/health.js';
 
 // ---------------------------------------------------------------------------
@@ -157,6 +158,7 @@ export async function buildServer(): Promise<FastifyInstance> {
   await server.register(authRoutes,      { prefix: '/api/v1/auth' });
   await server.register(characterRoutes, { prefix: '/api/v1/characters' });
   await server.register(catalogueRoutes, { prefix: '/api/v1/catalogue' });
+  await server.register(userDataRoutes,  { prefix: '/api/v1/session' });
 
   return server;
 }

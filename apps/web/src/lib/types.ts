@@ -31,6 +31,35 @@ export interface CharacterAsset {
 	selections?: string[];
 }
 
+// ---------------------------------------------------------------------------
+// Foe catalogue types
+// ---------------------------------------------------------------------------
+
+export type FoeNature = 'Ironlander' | 'Firstborn' | 'Animal' | 'Beast' | 'Horror' | 'Anomaly';
+export type FoeQuantity = 'solo' | 'pack' | 'horde';
+
+export interface FoeDef {
+	id:          string;      // "ironsworn/basilisk"
+	name:        string;      // "Basilisk" — also used as image filename
+	rank:        1 | 2 | 3 | 4 | 5;
+	nature:      FoeNature;
+	features:    string[];
+	drives:      string[];
+	tactics:     string[];
+	description: string;
+}
+
+export interface FoeEncounter {
+	id:            string;       // crypto.randomUUID()
+	foeId:         string;       // references FoeDef.id
+	quantity:      FoeQuantity;
+	effectiveRank: 1 | 2 | 3 | 4 | 5;
+	ticks:         number;       // 0–40 (10 boxes × 4 ticks)
+	notes:         string;
+	customName:    string;       // if '', display foeDef.name
+	vanquished:    boolean;
+}
+
 export interface CharacterData {
 	// Identity
 	name: string;
@@ -73,7 +102,7 @@ export interface CharacterData {
 	tormented: boolean;
 
 	// Collections
-	vows: Vow[];
+	vows:   Vow[];
 	assets: CharacterAsset[];
 }
 
@@ -137,7 +166,7 @@ export const DEFAULT_CHARACTER: CharacterData = {
 	corrupted: false,
 	cursed: false,
 	tormented: false,
-	vows: [],
+	vows:   [],
 	assets: [],
 };
 

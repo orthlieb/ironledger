@@ -885,6 +885,7 @@
 	.background-input {
 		width: 100%;
 		resize: vertical;
+		font-family: var(--font-ui);
 		font-size: 0.9rem;
 		line-height: 1.55;
 	}
@@ -892,6 +893,7 @@
 	/* Read-only markdown display for the background field (click to edit) */
 	.background-display {
 		width: 100%;
+		font-family: var(--font-ui);
 		font-size: 0.9rem;
 		line-height: 1.55;
 		min-height: 3.1rem; /* matches rows="3" at 1.55 line-height */

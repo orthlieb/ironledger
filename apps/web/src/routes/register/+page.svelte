@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { ActionData } from './$types';
 	import PasswordInput from '$lib/components/PasswordInput.svelte';
+	import swordSvg from '$lib/images/sword.svg?raw';
 
 	let { form }: { form: ActionData } = $props();
 </script>
@@ -13,7 +14,7 @@
 	<div class="auth-card card">
 		<div class="auth-brand">
 			<div class="auth-brand-rule"></div>
-			<h1>Iron Ledger</h1>
+			<h1><span class="auth-brand-icon" aria-hidden="true">{@html swordSvg}</span>Iron Ledger</h1>
 			<div class="auth-brand-rule"></div>
 		</div>
 		<h2>Forge your account</h2>
@@ -73,5 +74,22 @@
 
 	.auth-brand-rule:first-child {
 		background: linear-gradient(to left, transparent, var(--border-mid));
+	}
+
+	h1 {
+		display: flex;
+		align-items: center;
+		gap: 7px;
+	}
+
+	.auth-brand-icon {
+		display: flex;
+		align-items: center;
+		line-height: 0;
+	}
+	.auth-brand-icon :global(svg) {
+		width: 18px;
+		height: 18px;
+		fill: var(--color-mana, #f59e0b);
 	}
 </style>

@@ -2,13 +2,16 @@
 	/**
 	 * GlobalContextBar — Sticky context bar above the tab area.
 	 *
-	 * Shows a character selector dropdown (all owned characters), stubbed
-	 * expedition/foe selectors, action buttons (Moves / Oracles / Dice / Notes),
-	 * and a live stats/resources summary for the active character.
+	 * Shows a character selector dropdown (all owned characters), a live foe
+	 * selector (all active encounters), stubbed expedition selector, action
+	 * buttons (Moves / Oracles / Dice / Notes), and a live stats/resources
+	 * summary for the active character.
 	 */
 
 	import type { CharacterFull } from '$lib/api.js';
+	import type { FoeEncounter } from '$lib/types.js';
 	import { hydrateCharacter } from '$lib/character.js';
+	import { findFoe, FOE_RANKS, FOE_NATURE_COLORS, FOE_QUANTITIES } from '$lib/foeStore.svelte.js';
 
 	// Resource icons
 	import iconMomentum from '$lib/images/icon-momentum.svg?raw';
@@ -23,13 +26,19 @@
 	let {
 		chars,
 		activeCharId,
+		encounters  = [],
+		activeFoeId = '',
 		onSelect,
+		onFoeSelect,
 		onDiceClick,
 		onOraclesClick,
 	}: {
 		chars:           CharacterFull[];
 		activeCharId:    string;
+		encounters?:     FoeEncounter[];
+		activeFoeId?:    string;
 		onSelect:        (id: string) => void;
+		onFoeSelect?:    (id: string) => void;
 		onDiceClick?:    () => void;
 		onOraclesClick?: () => void;
 	} = $props();
@@ -37,6 +46,14 @@
 	// Derive the active character and its typed data
 	const character = $derived(chars.find((c) => c.id === activeCharId));
 	const data      = $derived(character ? hydrateCharacter(character.data) : null);
+
+	// Derive active foe stats
+	const activeFoe         = $derived(encounters.find((e) => e.id === activeFoeId));
+	const activeFoeDef      = $derived(activeFoe ? findFoe(activeFoe.foeId) : null);
+	const activeFoeRank     = $derived(activeFoe ? FOE_RANKS[activeFoe.effectiveRank] : null);
+	const activeFoeNature   = $derived(activeFoeDef ? (FOE_NATURE_COLORS[activeFoeDef.nature] ?? '#9ca3af') : '#9ca3af');
+	const activeFoeProgress = $derived(activeFoe ? Math.floor(activeFoe.ticks / 4) : 0);
+	const activeFoeQty      = $derived(activeFoe ? FOE_QUANTITIES.find((q) => q.value === activeFoe.quantity) : null);
 
 	// ---------------------------------------------------------------------------
 	// Stat / resource definitions
@@ -91,12 +108,29 @@
 			</select>
 		</div>
 
-		<!-- Foe selector (stub) -->
+		<!-- Foe selector -->
 		<div class="gc-group">
 			<label class="gc-label" for="gcFoe">Foe</label>
-			<select id="gcFoe" class="gc-select" disabled>
-				<option value="">(none)</option>
-			</select>
+			{#if encounters.length === 0}
+				<span class="gc-name gc-name--empty">(none)</span>
+			{:else}
+				<select
+					id="gcFoe"
+					class="gc-select"
+					class:gc-select--active={activeFoeId !== ''}
+					value={activeFoeId}
+					onchange={(e) => onFoeSelect?.((e.target as HTMLSelectElement).value)}
+				>
+					<option value="">(none)</option>
+					{#each encounters as enc (enc.id)}
+						{@const foeDef = findFoe(enc.foeId)}
+						<option value={enc.id}>
+							{enc.customName || foeDef?.name || enc.foeId}
+							{enc.vanquished ? ' ☠' : ''}
+						</option>
+					{/each}
+				</select>
+			{/if}
 		</div>
 
 		<!-- Action buttons -->
@@ -122,6 +156,16 @@
 	{#if data}
 		<div class="gc-stats-row">
 
+			<!-- Character portrait + name -->
+			{#if data.portrait}
+				<img class="gc-char-portrait" src={data.portrait} alt={character?.name ?? 'Character'} />
+			{:else}
+				<span class="gc-char-portrait gc-char-portrait--placeholder" aria-hidden="true">👤</span>
+			{/if}
+			<span class="gc-entity-name">{character?.name ?? ''}</span>
+
+			<span class="gc-stats-sep" aria-hidden="true"></span>
+
 			<!-- Core stats -->
 			<div class="gc-stats-group">
 				{#each STAT_DEFS as stat}
@@ -143,6 +187,64 @@
 						<span class="gc-stat-value">{(data as unknown as Record<string, number>)[res.key] ?? 0}</span>
 					</span>
 				{/each}
+			</div>
+
+		</div>
+	{/if}
+
+	<!-- ===== Foe summary row (only when a foe is selected) ===== -->
+	{#if activeFoe && activeFoeDef}
+		<div class="gc-foe-row">
+
+			<!-- Portrait + name -->
+			<img
+				class="gc-foe-portrait"
+				src="/foes/{encodeURIComponent(activeFoeDef.name)}.png"
+				alt={activeFoeDef.name}
+				onerror={(e) => ((e.target as HTMLImageElement).style.display = 'none')}
+			/>
+			<span class="gc-entity-name">{activeFoe.customName || activeFoeDef.name}</span>
+
+			<span class="gc-stats-sep" aria-hidden="true"></span>
+
+			<div class="gc-stats-group">
+				<!-- Nature -->
+				<span class="gc-stat-item" title="Nature">
+					<span class="gc-stat-label" style="color: {activeFoeNature}">{activeFoeDef.nature}</span>
+				</span>
+
+				<span class="gc-stats-sep" aria-hidden="true"></span>
+
+				<!-- Rank -->
+				<span class="gc-stat-item" title="Rank">
+					<span class="gc-stat-label">Rank</span>
+					<span class="gc-stat-value gc-stat-value--normal">{activeFoeRank?.label ?? activeFoe.effectiveRank}</span>
+				</span>
+
+				<!-- Harm -->
+				<span class="gc-stat-item" title="Harm per strike">
+					<span class="gc-stat-label" style="color: #f87171">Harm</span>
+					<span class="gc-stat-value">{activeFoeRank?.harm ?? '?'}</span>
+				</span>
+
+				<!-- Progress -->
+				<span class="gc-stat-item" title="Progress">
+					<span class="gc-stat-label">Progress</span>
+					<span class="gc-stat-value">{activeFoeProgress}/10</span>
+				</span>
+
+				<!-- Quantity (if not solo) -->
+				{#if activeFoe.quantity !== 'solo' && activeFoeQty}
+					<span class="gc-stat-item" title="Quantity">
+						<span class="gc-stat-label">Qty</span>
+						<span class="gc-stat-value">{activeFoeQty.label}</span>
+					</span>
+				{/if}
+
+				<!-- Vanquished marker -->
+				{#if activeFoe.vanquished}
+					<span class="gc-foe-vanquished" title="Vanquished">☠ Vanquished</span>
+				{/if}
 			</div>
 
 		</div>
@@ -289,6 +391,7 @@
 		font-size: 0.8rem;
 		color: var(--text);
 	}
+	.gc-stat-value--normal { font-weight: 400; }
 
 	.gc-resource-icon {
 		display: flex;
@@ -308,6 +411,64 @@
 		background: var(--border);
 		flex-shrink: 0;
 		align-self: center;
+	}
+
+	/* Entity name (character or foe) beside portrait */
+	.gc-entity-name {
+		font-family: var(--font-display);
+		font-size: 0.78rem;
+		font-weight: 700;
+		letter-spacing: 0.03em;
+		color: var(--text);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		max-width: 10rem;
+	}
+
+	/* Character portrait in stats row */
+	.gc-char-portrait {
+		width: 28px;
+		height: 28px;
+		border-radius: 50%;
+		object-fit: cover;
+		border: 1px solid var(--border-mid);
+		flex-shrink: 0;
+	}
+	.gc-char-portrait--placeholder {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--bg-input, rgba(0,0,0,0.25));
+		font-size: 0.85rem;
+	}
+
+	/* Foe summary row */
+	.gc-foe-row {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-top: 0.5rem;
+		padding-top: 0.4rem;
+		border-top: 1px solid rgba(245, 158, 11, 0.15);
+	}
+
+	.gc-foe-portrait {
+		width: 28px;
+		height: 28px;
+		border-radius: 50%;
+		object-fit: cover;
+		border: 1px solid var(--border-mid);
+		flex-shrink: 0;
+	}
+
+	.gc-foe-vanquished {
+		font-family: var(--font-ui);
+		font-size: 0.62rem;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		color: var(--color-danger, #ef4444);
+		opacity: 0.8;
 	}
 
 	@media (max-width: 480px) {

@@ -1,12 +1,21 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import type { CharacterFull } from '$lib/api.js';
+	import type { FoeDef, FoeQuantity } from '$lib/types.js';
 	import { characters as api } from '$lib/api.js';
+	import { findFoe, loadFoes, FOE_RANKS } from '$lib/foeStore.svelte.js';
+	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
+	import {
+		loadEncounters, getEncounters,
+		addEncounter, updateEncounter, removeEncounter,
+	} from '$lib/encounterStore.svelte.js';
 	import CharacterSheet    from '$lib/components/CharacterSheet.svelte';
 	import LogPanel          from '$lib/components/LogPanel.svelte';
 	import GlobalContextBar  from '$lib/components/GlobalContextBar.svelte';
 	import DiceRollerDialog  from '$lib/components/DiceRollerDialog.svelte';
 	import OraclesDialog     from '$lib/components/OraclesDialog.svelte';
+	import FoePickerDialog   from '$lib/components/FoePickerDialog.svelte';
+	import FoeCard           from '$lib/components/FoeCard.svelte';
 	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
 	import { onMount } from 'svelte';
 	import fileImportSvg from '$icons/file-import-solid-full.svg?raw';
@@ -47,15 +56,27 @@
 	// ── Oracles dialog ─────────────────────────────────────────────────────────
 	let oraclesDialogRef = $state<{ open(): void } | null>(null);
 
+	// ── Foe picker dialog ──────────────────────────────────────────────────────
+	let foePickerRef = $state<{ open(): void } | null>(null);
+	let activeFoeId  = $state('');
+
+	// Encounters from the global encounter store (not per-character)
+	const encounters = $derived(getEncounters());
+
 	// ── Initial load ───────────────────────────────────────────────────────────
 	onMount(async () => {
-		try {
-			chars = await api.list();
-		} catch {
+		// Load characters, foe catalogue, and global session data in parallel
+		const [charResult] = await Promise.allSettled([
+			api.list(),
+			loadFoes(),
+			loadEncounters(),
+		]);
+		if (charResult.status === 'fulfilled') {
+			chars = charResult.value;
+		} else {
 			charError = 'Failed to load characters. Is the server running?';
-		} finally {
-			loadingChars = false;
 		}
+		loadingChars = false;
 	});
 
 	// ── Tabs ───────────────────────────────────────────────────────────────────
@@ -93,6 +114,38 @@
 		} catch {
 			charError = 'Could not delete character.';
 		}
+	}
+
+	// ── Foe encounter CRUD (via global encounterStore) ─────────────────────────
+
+	/** Called by FoePickerDialog when the user confirms a foe selection. */
+	async function handleFoeSelected(foeDef: FoeDef, quantity: FoeQuantity, effectiveRank: number) {
+		const enc: import('$lib/types.js').FoeEncounter = {
+			id:            crypto.randomUUID(),
+			foeId:         foeDef.id,
+			quantity,
+			effectiveRank: effectiveRank as 1|2|3|4|5,
+			ticks:         0,
+			notes:         '',
+			customName:    '',
+			vanquished:    false,
+		};
+		const rankLabel = FOE_RANKS[effectiveRank]?.label ?? String(effectiveRank);
+		appendLog(SESSION_LOG_ID, `Foe — ${foeDef.name}`,
+			`<div>Added to encounter: <strong>${foeDef.name}</strong> (${quantity}, ${rankLabel})</div>`);
+		activeFoeId = enc.id;
+		await addEncounter(enc);
+	}
+
+	/** Update a single encounter (from FoeCard onChange). */
+	async function handleEncounterChange(enc: import('$lib/types.js').FoeEncounter) {
+		await updateEncounter(enc);
+	}
+
+	/** Remove a single encounter. */
+	async function handleEncounterDelete(id: string) {
+		if (activeFoeId === id) activeFoeId = '';
+		await removeEncounter(id);
 	}
 
 	async function importCharacter(e: Event) {
@@ -135,12 +188,18 @@
 <!-- Oracles dialog (always mounted; opened by GlobalContextBar Oracles button) -->
 <OraclesDialog bind:this={oraclesDialogRef} />
 
+<!-- Foe picker dialog (always mounted; opened by + New Foe button in Foes tab) -->
+<FoePickerDialog bind:this={foePickerRef} onSelect={handleFoeSelected} />
+
 <!-- ===== Full-width GlobalContextBar ===== -->
 <div class="gc-wrapper">
 	<GlobalContextBar
 		{chars}
 		{activeCharId}
+		{encounters}
+		{activeFoeId}
 		onSelect={setActiveChar}
+		onFoeSelect={(id) => (activeFoeId = id)}
 		onDiceClick={() => diceRollerRef?.open()}
 		onOraclesClick={() => oraclesDialogRef?.open()}
 	/>
@@ -246,11 +305,45 @@
 				{/if}
 
 			{:else if activeTab === 'foes'}
-				<div class="empty-tab">
-					<span class="empty-tab-icon">{@html skullSvg}</span>
-					<span class="empty-tab-title">No Foes Tracked</span>
-					<span class="empty-tab-sub">Foe encounters and combat tracking will appear here.</span>
+				<div class="char-toolbar">
+					<div class="char-toolbar-actions">
+						<button
+							class="btn btn-primary"
+							onclick={() => foePickerRef?.open()}
+						>+ New Foe</button>
+					</div>
 				</div>
+
+				{#if encounters.length === 0}
+					<div class="empty-tab">
+						<span class="empty-tab-icon">{@html skullSvg}</span>
+						<span class="empty-tab-title">No Foes Tracked</span>
+						<span class="empty-tab-sub">Use <strong>+ New Foe</strong> to start a fight.</span>
+					</div>
+				{:else}
+					<div class="char-list">
+						{#each encounters as enc (enc.id)}
+							{@const foeDef = findFoe(enc.foeId)}
+							{#if foeDef}
+								<!-- svelte-ignore a11y_no_static_element_interactions -->
+								<!-- svelte-ignore a11y_click_events_have_key_events -->
+								<div
+									class="char-card"
+									class:char-card--active={enc.id === activeFoeId}
+									onclick={() => (activeFoeId = enc.id)}
+									onfocusin={() => (activeFoeId = enc.id)}
+								>
+									<FoeCard
+										{enc}
+										{foeDef}
+										onChange={handleEncounterChange}
+										onDelete={() => handleEncounterDelete(enc.id)}
+									/>
+								</div>
+							{/if}
+						{/each}
+					</div>
+				{/if}
 
 			{:else if activeTab === 'expeditions'}
 				<div class="empty-tab">

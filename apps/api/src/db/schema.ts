@@ -81,6 +81,24 @@ export const characters = pgTable('characters', {
 ]);
 
 // ---------------------------------------------------------------------------
+// user_data
+// One row per user. Stores global (non-character) game state as JSONB:
+//   • encounters — active foe encounters (mirrors localStorage['oracle-combats'])
+//   • expeditions — active journey/site expeditions (future)
+//
+// Upserted on every write; the row is created automatically on first access.
+// ---------------------------------------------------------------------------
+export const userData = pgTable('user_data', {
+  userId:      uuid('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+  encounters:  jsonb('encounters').notNull().default([]),
+  expeditions: jsonb('expeditions').notNull().default([]),
+  updatedAt:   timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type UserData    = typeof userData.$inferSelect;
+export type NewUserData = typeof userData.$inferInsert;
+
+// ---------------------------------------------------------------------------
 // history_entries
 // Append-only log of every game event (rolls, resource changes, etc.).
 // Stored as HTML — the same format the existing app writes to localStorage.
