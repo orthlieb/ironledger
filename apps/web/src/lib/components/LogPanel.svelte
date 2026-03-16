@@ -7,11 +7,28 @@
 	 * Notes are attached per-entry and persist to localStorage.
 	 * Clearing the log requires confirmation via a native dialog (irreversible).
 	 */
-	import { logs, initLog, clearLog, deleteLogEntry, updateLogEntryNote, updateLogEntryHtml, triggerXpSpend, SESSION_LOG_ID } from '$lib/log.svelte.js';
+	import { type LogEntry, logs, initLog, clearLog, deleteLogEntry, updateLogEntryNote, updateLogEntryHtml, triggerXpSpend, triggerAction, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
 	import trashSvg      from '$icons/trash-solid-full.svg?raw';
 	import penSvg        from '$icons/pen-to-square-solid-full.svg?raw';
 	import fileExportSvg from '$icons/file-export-solid-full.svg?raw';
+
+	// ---------------------------------------------------------------------------
+	// Callback props for interactive log links (Phase 2)
+	// ---------------------------------------------------------------------------
+	let {
+		onMoveLink,
+		onOracleLink,
+		onProgressLink,
+		onInitiativeLink,
+		onMenaceLink,
+	}: {
+		onMoveLink?:       (moveId: string) => void;
+		onOracleLink?:     (oracleKey: string) => void;
+		onProgressLink?:   (track: string, value: number) => void;
+		onInitiativeLink?: (value: string) => void;
+		onMenaceLink?:     (value: number) => void;
+	} = $props();
 
 	// The log is global — no characterId prop needed.
 	$effect(() => {
@@ -37,17 +54,30 @@
 		}
 	}
 
-	function startEdit(entryId: string, currentNote: string | undefined) {
-		editingId = entryId;
-		draftNote = currentNote ?? '';
+	function startEdit(entry: LogEntry) {
+		editingId = entry.id;
+		// For Note entries, edit the main content source; for others, edit the sub-note
+		if (entry.title === 'Note' && entry.source != null) {
+			draftNote = entry.source;
+		} else {
+			draftNote = entry.note ?? '';
+		}
 	}
 
 	function saveEdit() {
-		if (editingId) {
+		if (!editingId) return;
+		const entry = entries.find((e) => e.id === editingId);
+		if (entry?.title === 'Note' && entry.source != null) {
+			// Update the main content from markdown source
+			const text = draftNote.trim();
+			if (text) {
+				updateLogEntryHtml(SESSION_LOG_ID, editingId, renderNote(text), text);
+			}
+		} else {
 			updateLogEntryNote(SESSION_LOG_ID, editingId, draftNote);
-			editingId = null;
-			draftNote = '';
 		}
+		editingId = null;
+		draftNote = '';
 	}
 
 	function cancelEdit() {
@@ -184,34 +214,137 @@
 		URL.revokeObjectURL(url);
 	}
 
+	// ---------------------------------------------------------------------------
+	// Strikethrough helper — mark a link as spent by replacing the <a> tag with
+	// <s class="resource-spent"> in the stored log entry HTML.
+	// ---------------------------------------------------------------------------
+	function markLinkSpent(entryId: string, link: HTMLElement): void {
+		const entry = (logs[SESSION_LOG_ID] ?? []).find((e) => e.id === entryId);
+		if (!entry) return;
+		const escaped = link.outerHTML.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+		const newHtml = entry.html.replace(
+			new RegExp(escaped),
+			`<s class="resource-spent">${link.textContent}</s>`,
+		);
+		updateLogEntryHtml(SESSION_LOG_ID, entryId, newHtml);
+	}
+
 	/**
-	 * Event-delegation handler for XP cost links rendered inside log entry bodies.
-	 * Intercepts clicks on .xp-cost-link elements, marks the link as spent in
-	 * the stored HTML, then calls triggerXpSpend() so CharacterSheet deducts XP.
+	 * Event-delegation handler for all interactive links in log entry bodies.
+	 * Handles XP cost links, resource/debility/progress/initiative/menace links,
+	 * and move/oracle reference links.
 	 */
 	function handleEntriesClick(e: MouseEvent) {
-		const link = (e.target as HTMLElement).closest('.xp-cost-link') as HTMLElement | null;
-		if (!link || link.classList.contains('xp-spent')) return;
-		e.preventDefault();
+		const target = e.target as HTMLElement;
 
-		const cost    = parseInt(link.dataset['cost']    ?? '0', 10);
-		const entryId = link.dataset['entryId'] ?? '';
-		const charId  = link.dataset['charId']  ?? '';
-		if (!cost || !entryId || !charId) return;
-
-		// Mark the link as spent in the global session log
-		const entry = (logs[SESSION_LOG_ID] ?? []).find((ev) => ev.id === entryId);
-		if (entry) {
-			// Replace the first unspent xp-cost-link in this entry's HTML
-			const newHtml = entry.html.replace(
-				/<a\b[^>]*class="xp-cost-link"[^>]*>([^<]*)<\/a>/,
-				'<s class="xp-spent">$1</s>',
-			);
-			updateLogEntryHtml(SESSION_LOG_ID, entryId, newHtml);
+		// ---- XP cost links ----
+		const xpLink = target.closest('.xp-cost-link') as HTMLElement | null;
+		if (xpLink && !xpLink.classList.contains('xp-spent')) {
+			e.preventDefault();
+			const cost    = parseInt(xpLink.dataset['cost'] ?? '0', 10);
+			const entryId = xpLink.dataset['entryId'] ?? '';
+			const charId  = xpLink.dataset['charId']  ?? '';
+			if (!cost || !entryId || !charId) return;
+			const entry = (logs[SESSION_LOG_ID] ?? []).find((ev) => ev.id === entryId);
+			if (entry) {
+				const newHtml = entry.html.replace(
+					/<a\b[^>]*class="xp-cost-link"[^>]*>([^<]*)<\/a>/,
+					'<s class="xp-spent">$1</s>',
+				);
+				updateLogEntryHtml(SESSION_LOG_ID, entryId, newHtml);
+			}
+			triggerXpSpend(charId, cost);
+			return;
 		}
 
-		// Deduct XP from the specific character via the spend bus
-		triggerXpSpend(charId, cost);
+		// ---- Resource links ----
+		const resLink = target.closest('.resource-link') as HTMLElement | null;
+		if (resLink && !resLink.closest('.resource-spent')) {
+			e.preventDefault();
+			const resource = resLink.dataset['resource'] ?? '';
+			const value    = parseInt(resLink.dataset['value'] ?? '0', 10);
+			const entryId  = resLink.dataset['entryId'] ?? '';
+			const charId   = resLink.dataset['charId']  ?? '';
+			if (!resource || !value || !entryId || !charId) return;
+			markLinkSpent(entryId, resLink);
+			triggerAction({ charId, type: 'resource', key: resource, value });
+			return;
+		}
+
+		// ---- Debility links ----
+		const debLink = target.closest('.debility-link') as HTMLElement | null;
+		if (debLink && !debLink.closest('.resource-spent')) {
+			e.preventDefault();
+			const debility = debLink.dataset['debility'] ?? '';
+			const value    = parseInt(debLink.dataset['value'] ?? '1', 10);
+			const entryId  = debLink.dataset['entryId'] ?? '';
+			const charId   = debLink.dataset['charId']  ?? '';
+			if (!debility || !entryId || !charId) return;
+			markLinkSpent(entryId, debLink);
+			triggerAction({ charId, type: 'debility', key: debility, value });
+			return;
+		}
+
+		// ---- Move links ----
+		const moveLink = target.closest('.move-link') as HTMLElement | null;
+		if (moveLink) {
+			e.preventDefault();
+			const moveId = moveLink.dataset['id'] ?? '';
+			if (!moveId) return;
+			// Special case: "Ask the Oracle" move opens oracles dialog
+			if (moveId === 'move/ask-the-oracle') {
+				onOracleLink?.('');
+			} else {
+				onMoveLink?.(moveId);
+			}
+			return;
+		}
+
+		// ---- Oracle links ----
+		const oracleLink = target.closest('.oracle-link') as HTMLElement | null;
+		if (oracleLink) {
+			e.preventDefault();
+			const oracleKey = oracleLink.dataset['oracle'] ?? '';
+			onOracleLink?.(oracleKey);
+			return;
+		}
+
+		// ---- Progress links ----
+		const progLink = target.closest('.progress-link') as HTMLElement | null;
+		if (progLink && !progLink.closest('.resource-spent')) {
+			e.preventDefault();
+			const track   = progLink.dataset['track'] ?? '';
+			const value   = parseInt(progLink.dataset['value'] ?? '1', 10);
+			const entryId = progLink.dataset['entryId'] ?? '';
+			if (!track || !value || !entryId) return;
+			markLinkSpent(entryId, progLink);
+			onProgressLink?.(track, value);
+			return;
+		}
+
+		// ---- Initiative links ----
+		const initLink = target.closest('.initiative-link') as HTMLElement | null;
+		if (initLink && !initLink.closest('.resource-spent')) {
+			e.preventDefault();
+			const value   = initLink.dataset['value'] ?? '';
+			const entryId = initLink.dataset['entryId'] ?? '';
+			if (!value || !entryId) return;
+			markLinkSpent(entryId, initLink);
+			onInitiativeLink?.(value);
+			return;
+		}
+
+		// ---- Menace links ----
+		const menaceLink = target.closest('.menace-link') as HTMLElement | null;
+		if (menaceLink && !menaceLink.closest('.resource-spent')) {
+			e.preventDefault();
+			const value   = parseInt(menaceLink.dataset['value'] ?? '1', 10);
+			const entryId = menaceLink.dataset['entryId'] ?? '';
+			if (!value || !entryId) return;
+			markLinkSpent(entryId, menaceLink);
+			onMenaceLink?.(value);
+			return;
+		}
 	}
 </script>
 
@@ -260,9 +393,9 @@
 							<button
 								class="entry-btn entry-edit-btn"
 								class:entry-btn-active={editingId === entry.id}
-								onclick={() => editingId === entry.id ? cancelEdit() : startEdit(entry.id, entry.note)}
-								title={editingId === entry.id ? 'Cancel note' : 'Add/edit note'}
-								aria-label="Edit note for this entry"
+								onclick={() => editingId === entry.id ? cancelEdit() : startEdit(entry)}
+								title={editingId === entry.id ? 'Cancel edit' : entry.title === 'Note' ? 'Edit note' : 'Add/edit note'}
+								aria-label={entry.title === 'Note' ? 'Edit this note' : 'Edit note for this entry'}
 							>{@html penSvg}</button>
 
 							<button
@@ -277,16 +410,18 @@
 						</div>
 					</div>
 
-					<!-- Entry body (HTML from character events) -->
-					<div class="entry-body">{@html entry.html}</div>
+					<!-- Entry body — hidden when editing a Note entry (textarea replaces it) -->
+					{#if !(editingId === entry.id && entry.title === 'Note' && entry.source != null)}
+						<div class="entry-body">{@html entry.html}</div>
+					{/if}
 
-					<!-- Note: shown when note exists, or when this entry is being edited -->
+					<!-- Inline editor: for Note entries edits main content; for others edits sub-note -->
 					{#if editingId === entry.id}
 						<div class="entry-edit">
 							<textarea
 								class="note-input"
-								rows="3"
-								placeholder="Add a note…"
+								rows={entry.title === 'Note' ? 6 : 3}
+								placeholder={entry.title === 'Note' ? 'Edit your note…' : 'Add a note…'}
 								bind:value={draftNote}
 								onkeydown={(e) => {
 									if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) saveEdit();
@@ -534,6 +669,78 @@
 	.entry-body :global(.roll-outcome-weak),
 	.entry-body :global(.roll-outcome-miss) {
 		font-family: var(--font-mono, 'Roboto Mono', ui-monospace, monospace);
+	}
+
+	/* Roll outcome colours */
+	.entry-body :global(.roll-outcome-strong) {
+		color: var(--color-success, #34d399);
+		font-weight: 700;
+	}
+	.entry-body :global(.roll-outcome-weak) {
+		color: var(--color-momentum, #60a5fa);
+		font-weight: 700;
+	}
+	.entry-body :global(.roll-outcome-miss) {
+		color: var(--color-danger, #ef4444);
+		font-weight: 700;
+	}
+	.entry-body :global(.roll-match) {
+		font-weight: 400;
+		font-style: italic;
+	}
+	.entry-body :global(.roll-cancel) {
+		color: var(--color-danger, #ef4444);
+		font-size: 0.75rem;
+	}
+
+	/* Move outcome text (embedded in log entries from moves) */
+	.entry-body :global(.move-outcome) {
+		margin-top: 4px;
+		padding: 4px 8px;
+		border-left: 2px solid var(--border-mid);
+		background: color-mix(in srgb, var(--bg-inset) 60%, transparent);
+		border-radius: 0 3px 3px 0;
+		font-size: 0.78rem;
+		line-height: 1.5;
+		color: var(--text-muted);
+	}
+	.entry-body :global(.move-outcome strong) {
+		color: var(--text);
+		font-weight: 600;
+	}
+	.entry-body :global(.move-outcome ul) {
+		margin: 3px 0;
+		padding-left: 1.3em;
+	}
+	.entry-body :global(.move-outcome li) {
+		margin-bottom: 2px;
+	}
+
+	/* Interactive links in move outcomes */
+	.entry-body :global(.resource-link),
+	.entry-body :global(.move-link),
+	.entry-body :global(.oracle-link),
+	.entry-body :global(.initiative-link),
+	.entry-body :global(.progress-link),
+	.entry-body :global(.debility-link),
+	.entry-body :global(.menace-link) {
+		color: var(--text-accent);
+		text-decoration: underline;
+		cursor: pointer;
+	}
+	.entry-body :global(.resource-link:hover),
+	.entry-body :global(.move-link:hover),
+	.entry-body :global(.oracle-link:hover),
+	.entry-body :global(.initiative-link:hover),
+	.entry-body :global(.progress-link:hover),
+	.entry-body :global(.debility-link:hover),
+	.entry-body :global(.menace-link:hover) {
+		opacity: 0.8;
+	}
+	.entry-body :global(.resource-spent) {
+		text-decoration: line-through;
+		color: var(--text-dimmer);
+		cursor: default;
 	}
 
 	/* XP cost links (clickable, strike-through after use) */

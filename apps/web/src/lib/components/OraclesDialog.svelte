@@ -72,9 +72,14 @@
 	// ---------------------------------------------------------------------------
 	// Public API
 	// ---------------------------------------------------------------------------
-	export function open() {
-		view         = 'picker';
-		selectedKey  = null;
+	export function open(oracleKey?: string) {
+		if (oracleKey) {
+			selectedKey = oracleKey;
+			view        = 'detail';
+		} else {
+			view        = 'picker';
+			selectedKey = null;
+		}
 		search       = '';
 		activeGroups = new Set();
 		loadOracles();            // idempotent — fetches once per session

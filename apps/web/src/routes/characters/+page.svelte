@@ -2,6 +2,7 @@
 	import type { PageData } from './$types';
 	import type { CharacterFull } from '$lib/api.js';
 	import type { FoeDef, FoeQuantity, Expedition, Journey, Site } from '$lib/types.js';
+	import { EXPEDITION_MARK_TICKS } from '$lib/types.js';
 	import { characters as api } from '$lib/api.js';
 	import { findFoe, findFoeByName, loadFoes, FOE_RANKS } from '$lib/foeStore.svelte.js';
 	import { loadDelveData } from '$lib/delveStore.svelte.js';
@@ -20,11 +21,14 @@
 	import DiceRollerDialog  from '$lib/components/DiceRollerDialog.svelte';
 	import OraclesDialog     from '$lib/components/OraclesDialog.svelte';
 	import NotesDialog       from '$lib/components/NotesDialog.svelte';
+	import MovesDialog       from '$lib/components/MovesDialog.svelte';
 	import FoePickerDialog   from '$lib/components/FoePickerDialog.svelte';
 	import FoeCard           from '$lib/components/FoeCard.svelte';
 	import JourneyCard       from '$lib/components/JourneyCard.svelte';
 	import SiteCard          from '$lib/components/SiteCard.svelte';
 	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
+	import { loadMoves } from '$lib/moveStore.svelte.js';
+	import type { PreconditionContext } from '$lib/preconditions.js';
 	import { onMount } from 'svelte';
 	import fileImportSvg from '$icons/file-import-solid-full.svg?raw';
 	import skullSvg      from '$icons/skull-crossbones-solid-full.svg?raw';
@@ -62,7 +66,7 @@
 	const activeDiceCtx  = $derived(getActiveDiceCtx());
 
 	// ── Oracles dialog ─────────────────────────────────────────────────────────
-	let oraclesDialogRef = $state<{ open(): void } | null>(null);
+	let oraclesDialogRef = $state<{ open(oracleKey?: string): void } | null>(null);
 
 	// ── Notes dialog ───────────────────────────────────────────────────────────
 	let notesDialogRef   = $state<{ open(): void } | null>(null);
@@ -74,9 +78,24 @@
 	// Encounters from the global encounter store (not per-character)
 	const encounters = $derived(getEncounters());
 
+	// ── Moves dialog ──────────────────────────────────────────────────────────
+	let movesDialogRef = $state<{ open(moveId?: string): void } | null>(null);
+
 	// ── Expeditions ────────────────────────────────────────────────────────────
 	let activeExpeditionId = $state('');
 	const expeditions = $derived(getExpeditions());
+
+	// ── Initiative state (0=none, 1=character, 2=foe) ─────────────────────
+	let initiative = $state(0);
+
+	// Build precondition context from active selections
+	const preconditionCtx = $derived<PreconditionContext>({
+		hasCharacter: !!activeCharId,
+		hasFoe:       !!activeFoeId,
+		hasJourney:   !!activeExpeditionId && expeditions.find(e => e.id === activeExpeditionId)?.type === 'journey',
+		hasSite:      !!activeExpeditionId && expeditions.find(e => e.id === activeExpeditionId)?.type === 'site',
+		initiative,
+	});
 
 	// ── Initial load ───────────────────────────────────────────────────────────
 	onMount(async () => {
@@ -87,6 +106,7 @@
 			loadEncounters(),
 			loadExpeditions(),
 			loadDelveData(),
+			loadMoves(),
 		]);
 		if (charResult.status === 'fulfilled') {
 			chars = charResult.value;
@@ -223,6 +243,51 @@
 		handleFoeSelected(foeDef, 'solo', foeDef.rank);
 	}
 
+	// ── Phase 2: Interactive log link handlers ─────────────────────────────
+	function handleProgressLink(track: string, value: number) {
+		if (track === 'combat') {
+			// Apply progress to active foe encounter
+			const enc = encounters.find((e) => e.id === activeFoeId);
+			if (!enc) return;
+			const rank = FOE_RANKS[enc.effectiveRank];
+			if (!rank) return;
+			const ticksToAdd = value * rank.progressPerHit;
+			const oldTicks = enc.ticks;
+			const newTicks = Math.min(40, oldTicks + ticksToAdd);
+			enc.ticks = newTicks;
+			updateEncounter(enc);
+			appendLog(SESSION_LOG_ID, `Foe — Progress`,
+				`<div>Combat progress: ${Math.floor(oldTicks / 4)} → <strong>${Math.floor(newTicks / 4)}</strong> (+${ticksToAdd} ticks)</div>`);
+		} else if (track === 'journey' || track === 'delve') {
+			// Apply progress to active expedition
+			const exp = expeditions.find((e) => e.id === activeExpeditionId);
+			if (!exp) return;
+			const ticksPerMark = EXPEDITION_MARK_TICKS[exp.difficulty] ?? 4;
+			const ticksToAdd = value * ticksPerMark;
+			const oldTicks = exp.ticks;
+			const newTicks = Math.min(40, oldTicks + ticksToAdd);
+			exp.ticks = newTicks;
+			updateExpedition(exp);
+			const label = track.charAt(0).toUpperCase() + track.slice(1);
+			appendLog(SESSION_LOG_ID, `${label} — Progress`,
+				`<div>${label} progress: ${Math.floor(oldTicks / 4)} → <strong>${Math.floor(newTicks / 4)}</strong> (+${ticksToAdd} ticks)</div>`);
+		}
+	}
+
+	function handleMenaceLink(value: number) {
+		if (!activeCharId) return;
+		const char = chars.find((c) => c.id === activeCharId);
+		if (!char) return;
+		const data = char.data as { vows?: Array<{ name: string; threat: string; menace: number }> };
+		const vows = data.vows ?? [];
+		const vow = vows.find((v) => v.threat);
+		if (!vow) return;
+		const old = vow.menace ?? 0;
+		vow.menace = Math.min(10, old + value);
+		appendLog(SESSION_LOG_ID, `Menace — ${vow.name}`,
+			`<div>Menace: ${old} → <strong>${vow.menace}</strong> (+${value})</div>`);
+	}
+
 	async function importCharacter(e: Event) {
 		const file = (e.target as HTMLInputElement).files?.[0];
 		if (!file) return;
@@ -266,6 +331,9 @@
 <!-- Notes dialog (always mounted; opened by GlobalContextBar Notes button) -->
 <NotesDialog bind:this={notesDialogRef} />
 
+<!-- Moves dialog (always mounted; opened by GlobalContextBar Moves button) -->
+<MovesDialog bind:this={movesDialogRef} ctx={activeDiceCtx} pctx={preconditionCtx} />
+
 <!-- Foe picker dialog (always mounted; opened by + New Foe button in Foes tab) -->
 <FoePickerDialog bind:this={foePickerRef} onSelect={handleFoeSelected} />
 
@@ -278,11 +346,13 @@
 		{activeFoeId}
 		{expeditions}
 		{activeExpeditionId}
+		{initiative}
 		onSelect={setActiveChar}
 		onFoeSelect={(id) => (activeFoeId = id)}
 		onExpeditionSelect={(id) => (activeExpeditionId = id)}
 		onDiceClick={() => diceRollerRef?.open()}
 		onOraclesClick={() => oraclesDialogRef?.open()}
+		onMovesClick={() => movesDialogRef?.open()}
 		onNotesClick={() => notesDialogRef?.open()}
 	/>
 </div>
@@ -483,7 +553,13 @@
 
 	<!-- ── Right / Log pane (always visible — global session log) ── -->
 	<div class="log-pane">
-		<LogPanel />
+		<LogPanel
+			onMoveLink={(id) => movesDialogRef?.open(id)}
+			onOracleLink={(key) => oraclesDialogRef?.open(key || undefined)}
+			onProgressLink={handleProgressLink}
+			onInitiativeLink={(val) => { initiative = val === 'character' ? 1 : 2; }}
+			onMenaceLink={handleMenaceLink}
+		/>
 	</div>
 
 </div>

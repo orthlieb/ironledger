@@ -30,11 +30,13 @@
 		activeFoeId = '',
 		expeditions = [],
 		activeExpeditionId = '',
+		initiative  = 0,
 		onSelect,
 		onFoeSelect,
 		onExpeditionSelect,
 		onDiceClick,
 		onOraclesClick,
+		onMovesClick,
 		onNotesClick,
 	}: {
 		chars:               CharacterFull[];
@@ -43,11 +45,13 @@
 		activeFoeId?:        string;
 		expeditions?:        Expedition[];
 		activeExpeditionId?: string;
+		initiative?:         number;
 		onSelect:            (id: string) => void;
 		onFoeSelect?:        (id: string) => void;
 		onExpeditionSelect?: (id: string) => void;
 		onDiceClick?:        () => void;
 		onOraclesClick?:     () => void;
+		onMovesClick?:       () => void;
 		onNotesClick?:       () => void;
 	} = $props();
 
@@ -163,7 +167,11 @@
 
 		<!-- Action buttons -->
 		<div class="gc-actions">
-			<button class="gc-action-btn" disabled title="Moves (coming soon)">Moves</button>
+			<button
+				class="gc-action-btn"
+				onclick={() => onMovesClick?.()}
+				title="Browse and roll moves"
+			>Moves</button>
 			<button
 				class="gc-action-btn"
 				onclick={() => onOraclesClick?.()}
@@ -271,6 +279,13 @@
 						<span class="gc-stat-label">Qty</span>
 						<span class="gc-stat-value">{activeFoeQty.label}</span>
 					</span>
+				{/if}
+
+				<!-- Initiative badge -->
+				{#if initiative === 1}
+					<span class="gc-initiative gc-initiative--you" title="You have initiative">You</span>
+				{:else if initiative === 2}
+					<span class="gc-initiative gc-initiative--foe" title="Foe has initiative">Foe</span>
 				{/if}
 
 				<!-- Vanquished marker -->
@@ -541,6 +556,25 @@
 		object-fit: cover;
 		border: 1px solid var(--border-mid);
 		flex-shrink: 0;
+	}
+
+	.gc-initiative {
+		font-family: var(--font-ui);
+		font-size: 0.6rem;
+		font-weight: 700;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		padding: 1px 5px;
+		border-radius: 3px;
+		white-space: nowrap;
+	}
+	.gc-initiative--you {
+		background: rgba(52, 211, 153, 0.15);
+		color: #34d399;
+	}
+	.gc-initiative--foe {
+		background: rgba(239, 68, 68, 0.15);
+		color: #ef4444;
 	}
 
 	.gc-foe-vanquished {

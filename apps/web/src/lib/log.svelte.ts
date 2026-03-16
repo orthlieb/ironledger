@@ -9,7 +9,8 @@ export interface LogEntry {
 	title: string;
 	html:  string;
 	ts:    string;
-	note?: string; // user-authored note attached to this entry
+	note?: string;   // user-authored note attached to this entry
+	source?: string; // original markdown source (for editable entries like Notes)
 }
 
 /** Fixed key for the single global session log (used by all components). */
@@ -44,8 +45,8 @@ export function initLog(charId: string): void {
 	}
 }
 
-/** Append a new entry and persist to localStorage. Accepts an optional pre-generated id. */
-export function appendLog(charId: string, title: string, html: string, id?: string): void {
+/** Append a new entry and persist to localStorage. Accepts an optional pre-generated id and source markdown. */
+export function appendLog(charId: string, title: string, html: string, id?: string, source?: string): void {
 	if (typeof window === 'undefined') return;
 	initLog(charId);
 	const entry: LogEntry = {
@@ -53,17 +54,18 @@ export function appendLog(charId: string, title: string, html: string, id?: stri
 		title,
 		html,
 		ts:   new Date().toISOString(),
+		...(source ? { source } : {}),
 	};
 	// Prepend (newest first), cap at 500 entries
 	logs[charId] = [entry, ...(logs[charId] ?? [])].slice(0, 500);
 	persist(charId);
 }
 
-/** Replace the HTML body of an existing log entry (e.g. to mark XP links as spent). */
-export function updateLogEntryHtml(charId: string, entryId: string, html: string): void {
+/** Replace the HTML body of an existing log entry (e.g. to mark XP links as spent). Optionally update source markdown. */
+export function updateLogEntryHtml(charId: string, entryId: string, html: string, source?: string): void {
 	if (!logs[charId]) return;
 	logs[charId] = logs[charId].map((e) =>
-		e.id === entryId ? { ...e, html } : e,
+		e.id === entryId ? { ...e, html, ...(source !== undefined ? { source } : {}) } : e,
 	);
 	persist(charId);
 }
@@ -138,4 +140,45 @@ export function drainXpSpend(charId: string): number {
 		}
 	}
 	return total;
+}
+
+// ---------------------------------------------------------------------------
+// Generalized Action Bus (resource changes, debility toggles)
+// ---------------------------------------------------------------------------
+// Same pattern as XP Spend Bus. LogPanel calls triggerAction() when the user
+// clicks a resource-link or debility-link. CharacterSheet $effect drains and
+// applies the mutation inside Svelte's reactive context.
+
+export interface LogAction {
+	charId:   string;
+	type:     'resource' | 'debility';
+	key:      string;    // resource name or debility name
+	value:    number;    // delta for resource, 0/1 for debility
+}
+
+let _actionNonce = $state(0);
+const _actionQueue: LogAction[] = [];
+
+/** Read inside $effect to subscribe to action events (reactive signal). */
+export function getActionNonce(): number {
+	return _actionNonce;
+}
+
+/** Queue a character-level action and signal all watching $effects. */
+export function triggerAction(action: LogAction): void {
+	_actionQueue.push(action);
+	_actionNonce++;
+}
+
+/** Drain all queued actions for a character. Call inside $effect reading getActionNonce(). */
+export function drainActions(charId: string): LogAction[] {
+	const result: LogAction[] = [];
+	let i = _actionQueue.length;
+	while (i--) {
+		if (_actionQueue[i].charId === charId) {
+			result.push(_actionQueue[i]);
+			_actionQueue.splice(i, 1);
+		}
+	}
+	return result;
 }

@@ -39,11 +39,9 @@
 	function addNote() {
 		const text = noteText.trim();
 		if (!text) return;
-		appendLog(SESSION_LOG_ID, 'Note', renderNote(text));
+		appendLog(SESSION_LOG_ID, 'Note', renderNote(text), undefined, text);
 		noteText = '';
-		requestAnimationFrame(() => {
-			dialogEl?.querySelector('textarea')?.focus();
-		});
+		dialogEl?.close();
 	}
 
 	function handleKeydown(e: KeyboardEvent) {

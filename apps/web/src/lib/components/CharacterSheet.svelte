@@ -27,7 +27,7 @@
 	import iconSupply   from '$lib/images/icon-supply.svg?raw';
 	import iconMana     from '$lib/images/icon-mana.svg?raw';
 
-	import { initLog, appendLog, getXpSpendNonce, drainXpSpend, SESSION_LOG_ID } from '$lib/log.svelte.js';
+	import { initLog, appendLog, getXpSpendNonce, drainXpSpend, getActionNonce, drainActions, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
 
 	import { getActiveDiceCtx, setActiveDiceCtx } from '$lib/diceContext.svelte.js';
@@ -135,6 +135,55 @@
 			}
 		}
 	});
+
+	// React to resource / debility action links clicked in LogPanel.
+	// Same bus pattern as XP spend above.
+	$effect(() => {
+		getActionNonce();
+		const actions = drainActions(character.id);
+		for (const action of actions) {
+			if (action.type === 'resource') {
+				applyResourceChange(action.key, action.value);
+			} else if (action.type === 'debility') {
+				applyDebilityToggle(action.key, action.value);
+			}
+		}
+	});
+
+	function applyResourceChange(key: string, delta: number) {
+		const rec = data as unknown as Record<string, number>;
+		const old = rec[key] ?? 0;
+		let next: number;
+		switch (key) {
+			case 'momentum': next = Math.max(-6, Math.min(momentumMax, old + delta)); break;
+			case 'health':
+			case 'spirit':
+			case 'supply':
+			case 'mana':     next = Math.max(0, Math.min(5, old + delta)); break;
+			case 'xp':       next = Math.max(0, Math.min(999, old + delta)); break;
+			case 'bonds':
+			case 'failures': next = Math.max(0, Math.min(40, old + delta)); break;
+			default:         return;
+		}
+		if (next !== old) {
+			rec[key] = next;
+			const label = key.charAt(0).toUpperCase() + key.slice(1);
+			appendLog(SESSION_LOG_ID, charTitle(label),
+				`<div>${label}: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : ''}${delta})</div>`);
+		}
+	}
+
+	function applyDebilityToggle(key: string, value: number) {
+		const rec = data as unknown as Record<string, boolean>;
+		if (rec[key] === undefined) return;
+		const active = value === 1;
+		if (rec[key] !== active) {
+			rec[key] = active;
+			const label = key.charAt(0).toUpperCase() + key.slice(1);
+			appendLog(SESSION_LOG_ID, charTitle('Debilities'),
+				`<div>${label}: <strong>${active ? 'Marked' : 'Cleared'}</strong></div>`);
+		}
+	}
 
 	function decrementMomentum() {
 		const next = Math.max(-6, data.momentum - 1);
