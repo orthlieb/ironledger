@@ -85,6 +85,7 @@
 
 	// Background field: toggle between markdown display and textarea editing
 	let editingBackground = $state(false);
+	let backgroundCollapsed = $state(false);
 	let backgroundTextareaEl = $state<HTMLTextAreaElement | null>(null);
 	$effect(() => {
 		if (editingBackground && backgroundTextareaEl) {
@@ -409,9 +410,9 @@
 		<span class="char-title">{data.name || 'Unnamed'}</span>
 
 		{#if initiative === 1}
-			<span class="cs-init-badge cs-init-badge--you" title="You have initiative">{@html swordSvg}</span>
+			<span class="cs-init-badge cs-init-badge--you" title="You have the initiative">{@html swordSvg}</span>
 		{:else if initiative === 2}
-			<span class="cs-init-badge cs-init-badge--foe" title="Foe has initiative">{@html shieldSvg}</span>
+			<span class="cs-init-badge cs-init-badge--foe" title="Foe has the initiative">{@html shieldSvg}</span>
 		{/if}
 
 		<span
@@ -465,36 +466,41 @@
 							class="name-input"
 						/>
 					</label>
-					<label class="field-group flex-1">
-						<span class="section-label">Background</span>
-						{#if editingBackground}
-							<textarea
-								bind:this={backgroundTextareaEl}
-								bind:value={data.background}
-								placeholder="Background, history, or notes…"
-								class="background-input"
-								rows="3"
-								onblur={() => (editingBackground = false)}
-							></textarea>
-						{:else}
-							<!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
-							<div
-								class="background-display"
-								class:bg-empty={!data.background?.trim()}
-								onclick={() => (editingBackground = true)}
-								onkeydown={(e) => { if (e.key === 'Enter') editingBackground = true; }}
-								title="Click to edit"
-								role="button"
-								tabindex="0"
-							>
-								{#if data.background?.trim()}
-									{@html renderNote(data.background)}
-								{:else}
-									<span class="bg-placeholder">Background, history, or notes…</span>
-								{/if}
-							</div>
+					<div class="field-group flex-1">
+						<button class="bg-toggle" onclick={() => (backgroundCollapsed = !backgroundCollapsed)} title={backgroundCollapsed ? 'Expand background' : 'Collapse background'}>
+							<span class="bg-toggle-arrow" class:bg-toggle-arrow--collapsed={backgroundCollapsed}>▾</span>
+							<span class="section-label">Background</span>
+						</button>
+						{#if !backgroundCollapsed}
+							{#if editingBackground}
+								<textarea
+									bind:this={backgroundTextareaEl}
+									bind:value={data.background}
+									placeholder="Background, history, or notes…"
+									class="background-input"
+									rows="3"
+									onblur={() => (editingBackground = false)}
+								></textarea>
+							{:else}
+								<!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
+								<div
+									class="background-display"
+									class:bg-empty={!data.background?.trim()}
+									onclick={() => (editingBackground = true)}
+									onkeydown={(e) => { if (e.key === 'Enter') editingBackground = true; }}
+									title="Click to edit"
+									role="button"
+									tabindex="0"
+								>
+									{#if data.background?.trim()}
+										{@html renderNote(data.background)}
+									{:else}
+										<span class="bg-placeholder">Background, history, or notes…</span>
+									{/if}
+								</div>
+							{/if}
 						{/if}
-					</label>
+					</div>
 				</div>
 			</section>
 
@@ -960,6 +966,30 @@
 		font-size: 0.88rem;
 		font-weight: 600;
 		letter-spacing: 0.06em;
+	}
+
+	/* Collapsible background toggle */
+	.bg-toggle {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		background: none;
+		border: none;
+		padding: 0;
+		cursor: pointer;
+		color: inherit;
+	}
+	.bg-toggle:hover .section-label {
+		color: var(--text-accent);
+	}
+	.bg-toggle-arrow {
+		font-size: 0.7rem;
+		color: var(--text-dimmer);
+		transition: transform 0.15s ease;
+		display: inline-block;
+	}
+	.bg-toggle-arrow--collapsed {
+		transform: rotate(-90deg);
 	}
 
 	.background-input {

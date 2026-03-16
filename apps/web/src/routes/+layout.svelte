@@ -5,6 +5,15 @@
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { maintenance } from '$lib/api';
 	import swordSvg from '$lib/images/sword.svg?raw';
+	import { isDice3dEnabled, setDice3dEnabled } from '$lib/dice';
+	import diceIconSvg from '$icons/dice-d10-light.svg?raw';
+
+	let dice3d = $state(typeof window !== 'undefined' ? isDice3dEnabled() : true);
+
+	function toggleDice3d() {
+		dice3d = !dice3d;
+		setDice3dEnabled(dice3d);
+	}
 
 	let { data, children }: { data: LayoutData; children: import('svelte').Snippet } = $props();
 
@@ -67,6 +76,16 @@
 			Iron Ledger
 		</a>
 		<div class="nav-links">
+			<button
+				class="nav-dice-toggle"
+				class:nav-dice-toggle--off={!dice3d}
+				title={dice3d ? '3D dice: on — click to disable' : '3D dice: off — click to enable'}
+				onclick={toggleDice3d}
+				aria-label="Toggle 3D dice"
+			>
+				<span class="nav-dice-icon">{@html diceIconSvg}</span>
+				<span class="nav-dice-label">{dice3d ? '3D' : 'OFF'}</span>
+			</button>
 			<ThemeToggle />
 			{#if data.user?.role === 'admin'}
 				<span class="nav-sep" aria-hidden="true">◆</span>
@@ -110,6 +129,49 @@
 		width: 16px;
 		height: 16px;
 		fill: currentColor;
+	}
+
+	/* ── 3D dice toggle ── */
+	.nav-dice-toggle {
+		display: inline-flex;
+		align-items: center;
+		gap: 3px;
+		background: none;
+		border: 1px solid transparent;
+		border-radius: 4px;
+		padding: 2px 6px;
+		cursor: pointer;
+		color: var(--text-accent);
+		font-family: var(--font-ui);
+		font-size: 0.65rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		transition: color 0.15s, opacity 0.15s, border-color 0.15s;
+	}
+	.nav-dice-toggle:hover {
+		border-color: var(--border-mid);
+	}
+	.nav-dice-toggle--off {
+		color: var(--text-dimmer);
+		opacity: 0.5;
+	}
+	.nav-dice-toggle--off:hover {
+		opacity: 0.8;
+	}
+	.nav-dice-icon {
+		display: flex;
+		align-items: center;
+		width: 14px;
+		height: 14px;
+	}
+	.nav-dice-icon :global(svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
+	}
+	.nav-dice-label {
+		line-height: 1;
 	}
 
 	.nav-sep {

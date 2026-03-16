@@ -746,6 +746,7 @@
 		line-height: 1.4;
 	}
 
+	.entry-body :global(.dialog-only) { display: none; }
 	.entry-body :global(strong) {
 		color: var(--text);
 		font-weight: 600;

@@ -1,8 +1,8 @@
 {
   "key": "locationDescriptor",
-  "title": "Oracle 6: Location Descriptor",
+  "title": "Location Descriptor",
   "group": "Core Ironsworn",
-  "selectLabel": "Oracle 6: Location Descriptor",
+  "selectLabel": "Location Descriptor",
   "description": "Use this oracle to add detail to the Location or Coastal Waters Location oracles, or by itself to generate a description of a location. Roll more than once for extra detail.",
   "data": [
     {

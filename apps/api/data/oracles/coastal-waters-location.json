@@ -1,8 +1,8 @@
 {
   "key": "coastalWatersLocation",
-  "title": "Oracle 5: Coastal Waters Location",
+  "title": "Coastal Waters Location",
   "group": "Core Ironsworn",
-  "selectLabel": "Oracle 5: Coastal Waters Location",
+  "selectLabel": "Coastal Waters Location",
   "description": "Use this oracle to identify a point-of-interest or destination when you are traveling by ship or boat.",
   "data": [
     {

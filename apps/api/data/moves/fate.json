@@ -6,11 +6,11 @@
       "name": "Ask the Oracle",
       "category": "Fate",
       "triggerShort": "When you seek to resolve uncertainty or determine what happens next.",
-      "trigger": "When you <strong>seek to resolve uncertainty, introduce something new, or determine what happens next</strong> while playing solo or co-op, you may…<ul><li>Envision the answer based on the situation and your intuition.</li><li>Roll on an oracle table (Action + Theme, Pay the Price, or a thematic table) to generate an answer.</li><li>Ask a yes/no question and consult the following table.</li></ul>",
+      "trigger": "When you <strong>seek to resolve uncertainty, introduce something new, or determine what happens next</strong> while playing solo or co-op, you may\u2026<ul><li>Envision the answer based on the situation and your intuition.</li><li>Roll on an oracle table (Action + Theme, Pay the Price, or a thematic table) to generate an answer.</li><li>Ask a yes/no question and consult the following table.</li></ul>",
       "strong": "",
       "weak": "",
       "miss": "",
-      "notes": "Your most important solo and co-op tool. Interpret results through the lens of the current situation. When the answer is obvious from context, don't roll — just narrate. Embrace surprising results as gifts; they push the story in unexpected directions.",
+      "notes": "Your most important solo and co-op tool. Interpret results through the lens of the current situation. When the answer is obvious from context, don't roll \u2014 just narrate. Embrace surprising results as gifts; they push the story in unexpected directions.",
       "tableType": "askOracle",
       "table": [
         {
@@ -124,6 +124,12 @@
         {
           "topRange": 100,
           "value": "Roll twice more on this table. Both results occur. If they are the same result, make it worse."
+        }
+      ],
+      "preconditions": [
+        {
+          "key": "hasCharacter",
+          "eq": 1
         }
       ]
     }

@@ -2,7 +2,7 @@
   "key": "namesElf",
   "title": "Elf Names",
   "group": "Core Ironsworn",
-  "selectLabel": "Oracle 14: Elf Names",
+  "selectLabel": "Elf Names",
   "description": "Generate a random Elf name.",
   "data": [
     {

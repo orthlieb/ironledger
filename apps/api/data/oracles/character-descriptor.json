@@ -1,8 +1,8 @@
 {
   "key": "characterDescriptor",
-  "title": "Oracle 12: Character Descriptor",
+  "title": "Character Descriptor",
   "group": "Core Ironsworn",
-  "selectLabel": "Oracle 12: Character Descriptor",
+  "selectLabel": "Character Descriptor",
   "description": "Generate a pointed personality trait or physical characteristic for an NPC. Roll more than once to add additional detail.",
   "data": [
     {

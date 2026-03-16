@@ -1,8 +1,8 @@
 {
   "key": "settlementNameQuick",
-  "title": "Oracle 8: Quick Settlement Name",
+  "title": "Quick Settlement Name",
   "group": "Core Ironsworn",
-  "selectLabel": "Oracle 8: Quick Settlement Name",
+  "selectLabel": "Quick Settlement Name",
   "description": "Use this oracle as a simpler alternative for settlement names. Roll once for the prefix, and once for the suffix. If the combination doesn't quite work, look at adjacent rows or reverse the digits.",
   "data": [
     {

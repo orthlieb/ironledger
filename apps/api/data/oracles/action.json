@@ -1,8 +1,8 @@
 {
   "key": "action",
-  "title": "Oracle 1: Action",
+  "title": "Action",
   "group": "Core Ironsworn",
-  "selectLabel": "Oracle 1: Action",
+  "selectLabel": "Action",
   "description": "Use this table to inspire a discovery, event, character goal, or situation. A roll on this table can be combined with a Theme to provide an action and a subject. Then, interpret the result based on the context of the question and your current situation.",
   "data": [
     {

@@ -336,7 +336,9 @@
 <NotesDialog bind:this={notesDialogRef} />
 
 <!-- Moves dialog (always mounted; opened by GlobalContextBar Moves button) -->
-<MovesDialog bind:this={movesDialogRef} ctx={activeDiceCtx} pctx={preconditionCtx} />
+<MovesDialog bind:this={movesDialogRef} ctx={activeDiceCtx} pctx={preconditionCtx}
+	onInitiativeChange={(val) => { if (activeCharId) initiativeMap[activeCharId] = val === 'character' ? 1 : 2; }}
+/>
 
 <!-- Foe picker dialog (always mounted; opened by + New Foe button in Foes tab) -->
 <FoePickerDialog bind:this={foePickerRef} onSelect={handleFoeSelected} />

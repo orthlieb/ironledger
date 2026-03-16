@@ -1,8 +1,8 @@
 {
   "key": "region",
-  "title": "Oracle 3: Ironsworn Region",
+  "title": "Ironsworn Region",
   "group": "Core Ironsworn",
-  "selectLabel": "Oracle 3: Ironsworn Region",
+  "selectLabel": "Ironsworn Region",
   "description": "Determine the broad region or terrain type of a location in the Ironlands.",
   "data": [
     {

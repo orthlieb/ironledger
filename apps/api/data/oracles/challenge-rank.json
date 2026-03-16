@@ -2,7 +2,7 @@
   "key": "challengeRank",
   "title": "Challenge Rank",
   "group": "Core Ironsworn",
-  "selectLabel": "Oracle 19: Challenge Rank",
+  "selectLabel": "Challenge Rank",
   "description": "Randomly determine the challenge rank for a quest, journey, or encounter.",
   "data": [
     {

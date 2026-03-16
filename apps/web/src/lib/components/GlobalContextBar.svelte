@@ -23,6 +23,17 @@
 	import swordSvg  from '$icons/sword-solid-full.svg?raw';
 	import shieldSvg from '$icons/shield-halved-solid.svg?raw';
 
+	// Action button icons
+	import iconMoves   from '$icons/person-running-solid.svg?raw';
+	import iconOracles from '$icons/eye-solid.svg?raw';
+	import iconDice    from '$icons/dice-d10-light.svg?raw';
+	import iconNotes   from '$icons/note-sticky-solid.svg?raw';
+
+	// Empty tile placeholder icons
+	import iconNinja   from '$icons/user-ninja-duotone.svg?raw';
+	import iconSkull   from '$icons/skull-duotone.svg?raw';
+	import iconDungeon from '$icons/dungeon-duotone.svg?raw';
+
 	// ---------------------------------------------------------------------------
 	// Props
 	// ---------------------------------------------------------------------------
@@ -78,25 +89,46 @@
 	// Stat / resource definitions
 	// ---------------------------------------------------------------------------
 	const STAT_DEFS = [
-		{ key: 'edge',   label: 'Edge',   color: '#3b82f6' },
-		{ key: 'heart',  label: 'Heart',  color: '#ef4444' },
-		{ key: 'iron',   label: 'Iron',   color: '#9ca3af' },
-		{ key: 'shadow', label: 'Shadow', color: '#a855f7' },
-		{ key: 'wits',   label: 'Wits',   color: '#f59e0b' },
+		{ key: 'edge',   label: 'Edge',   color: 'var(--color-edge)' },
+		{ key: 'heart',  label: 'Heart',  color: 'var(--color-heart)' },
+		{ key: 'iron',   label: 'Iron',   color: 'var(--color-iron)' },
+		{ key: 'shadow', label: 'Shadow', color: 'var(--color-shadow)' },
+		{ key: 'wits',   label: 'Wits',   color: 'var(--color-wits)' },
 	] as const;
 
 	const RESOURCE_DEFS = [
-		{ key: 'momentum', icon: iconMomentum, color: '#60a5fa' },
-		{ key: 'health',   icon: iconHeart,    color: '#f87171' },
-		{ key: 'spirit',   icon: iconSpirit,   color: '#a78bfa' },
-		{ key: 'supply',   icon: iconSupply,   color: '#34d399' },
-		{ key: 'mana',     icon: iconMana,     color: '#f59e0b' },
+		{ key: 'momentum', label: 'Mom',    icon: iconMomentum, color: 'var(--color-momentum)' },
+		{ key: 'health',   label: 'Health', icon: iconHeart,    color: 'var(--color-health)' },
+		{ key: 'spirit',   label: 'Spirit', icon: iconSpirit,   color: 'var(--color-spirit)' },
+		{ key: 'supply',   label: 'Supply', icon: iconSupply,   color: 'var(--color-supply)' },
+		{ key: 'mana',     label: 'Mana',   icon: iconMana,     color: 'var(--color-mana)' },
 	] as const;
 
 	// ---------------------------------------------------------------------------
 	// Popover state
 	// ---------------------------------------------------------------------------
 	let openSelector = $state<'character' | 'foe' | 'expedition' | null>(null);
+
+	// ---------------------------------------------------------------------------
+	// Resource change shake animation
+	// ---------------------------------------------------------------------------
+	let shakingKeys = $state<Set<string>>(new Set());
+	let prevResValues: Record<string, number> = {};
+
+	$effect(() => {
+		if (!data) { prevResValues = {}; return; }
+		for (const res of RESOURCE_DEFS) {
+			const val = (data as unknown as Record<string, number>)[res.key] ?? 0;
+			if (res.key in prevResValues && prevResValues[res.key] !== val) {
+				const key = res.key;
+				shakingKeys = new Set([...shakingKeys, key]);
+				setTimeout(() => {
+					shakingKeys = new Set([...shakingKeys].filter(k => k !== key));
+				}, 500);
+			}
+			prevResValues[res.key] = val;
+		}
+	});
 
 	function toggleSelector(which: 'character' | 'foe' | 'expedition') {
 		openSelector = openSelector === which ? null : which;
@@ -124,11 +156,11 @@
 		<!-- CHARACTER TILE -->
 		<div class="gc-tile" class:gc-tile--active={!!data} class:gc-tile--empty={!data}>
 			{#if data && initiative === 1}
-				<span class="gc-init-badge gc-init-badge--you" title="You have initiative">{@html swordSvg}</span>
+				<span class="gc-init-badge gc-init-badge--you" title="You have the initiative">{@html swordSvg}</span>
 			{:else if data && initiative === 2}
-				<span class="gc-init-badge gc-init-badge--foe" title="Foe has initiative">{@html shieldSvg}</span>
+				<span class="gc-init-badge gc-init-badge--foe" title="Foe has the initiative">{@html shieldSvg}</span>
 			{/if}
-			<button class="gc-tile-btn" onclick={() => toggleSelector('character')} title="Select character">
+			<button class="gc-tile-btn" onclick={() => toggleSelector('character')} title={initiative === 1 ? 'You have the initiative' : initiative === 2 ? 'Foe has the initiative' : 'Select character'}>
 				{#if data}
 					<div class="gc-tile-row">
 						{#if data.portrait}
@@ -138,22 +170,26 @@
 						{/if}
 						<span class="gc-tile-name">{character?.name ?? ''}</span>
 					</div>
-					<div class="gc-tile-stat-grid">
-						{#each STAT_DEFS as stat, i}
-							<div class="gc-tile-stat-col">
-								<span class="gc-tile-stat" style="background: {stat.color}22; color: {stat.color}" title={stat.key}>
-									<span class="gc-tile-stat-label">{stat.label}</span>
-									<span class="gc-tile-stat-value">{(data as unknown as Record<string, number>)[stat.key] ?? 0}</span>
+					<div class="gc-char-chips">
+						<div class="gc-chip-group gc-chip-group--stats">
+							{#each STAT_DEFS as stat}
+								<span class="gc-chip gc-chip--stat" style="--chip-color: {stat.color}" title={stat.key}>
+									<span class="gc-chip-label">{stat.label}</span>
+									<span class="gc-chip-value">{(data as unknown as Record<string, number>)[stat.key] ?? 0}</span>
 								</span>
-								<span class="gc-tile-resource" style="color: {RESOURCE_DEFS[i].color}" title={RESOURCE_DEFS[i].key}>
-									<span class="gc-tile-resource-icon">{@html RESOURCE_DEFS[i].icon}</span>
-									{(data as unknown as Record<string, number>)[RESOURCE_DEFS[i].key] ?? 0}
+							{/each}
+						</div>
+						<div class="gc-chip-group gc-chip-group--resources">
+							{#each RESOURCE_DEFS as res}
+								<span class="gc-chip gc-chip--resource" class:gc-chip--shake={shakingKeys.has(res.key)} style="--chip-color: {res.color}" title={res.key}>
+									<span class="gc-chip-label"><span class="gc-chip-icon">{@html res.icon}</span>{res.label}</span>
+									<span class="gc-chip-value">{(data as unknown as Record<string, number>)[res.key] ?? 0}</span>
 								</span>
-							</div>
-						{/each}
+							{/each}
+						</div>
 					</div>
 				{:else}
-					<span class="gc-tile-placeholder">Select Character</span>
+					<span class="gc-tile-placeholder"><span class="gc-placeholder-icon">{@html iconNinja}</span>Select Character</span>
 				{/if}
 			</button>
 
@@ -195,17 +231,12 @@
 						{#if activeFoe.quantity !== 'solo' && activeFoeQty}
 							<span class="gc-tile-foe-qty">{activeFoeQty.label}</span>
 						{/if}
-						{#if initiative === 1}
-							<span class="gc-initiative gc-initiative--you" title="You have initiative">You</span>
-						{:else if initiative === 2}
-							<span class="gc-initiative gc-initiative--foe" title="Foe has initiative">Foe</span>
-						{/if}
 						{#if activeFoe.vanquished}
 							<span class="gc-tile-vanquished" title="Vanquished">☠</span>
 						{/if}
 					</div>
 				{:else}
-					<span class="gc-tile-placeholder">Select Foe</span>
+					<span class="gc-tile-placeholder"><span class="gc-placeholder-icon">{@html iconSkull}</span>Select Foe</span>
 				{/if}
 			</button>
 
@@ -254,7 +285,7 @@
 						{/if}
 					</div>
 				{:else}
-					<span class="gc-tile-placeholder">Select Expedition</span>
+					<span class="gc-tile-placeholder"><span class="gc-placeholder-icon">{@html iconDungeon}</span>Select Expedition</span>
 				{/if}
 			</button>
 
@@ -278,10 +309,10 @@
 
 	<!-- ===== Action buttons column ===== -->
 	<div class="gc-actions">
-		<button class="btn btn-primary" onclick={() => onMovesClick?.()} title="Browse and roll moves">Moves</button>
-		<button class="btn btn-primary" onclick={() => onOraclesClick?.()} title="Browse and roll oracles">Oracles</button>
-		<button class="btn btn-primary" onclick={onDiceClick} disabled={!onDiceClick} title="Roll dice">Dice</button>
-		<button class="btn btn-primary" onclick={() => onNotesClick?.()} title="Add a session note">Notes</button>
+		<button class="btn btn-primary gc-action-btn" onclick={() => onMovesClick?.()} title="Browse and roll moves"><span class="gc-action-icon">{@html iconMoves}</span>Moves</button>
+		<button class="btn btn-primary gc-action-btn" onclick={() => onOraclesClick?.()} title="Browse and roll oracles"><span class="gc-action-icon">{@html iconOracles}</span>Oracles</button>
+		<button class="btn btn-primary gc-action-btn" onclick={onDiceClick} disabled={!onDiceClick} title="Roll dice"><span class="gc-action-icon">{@html iconDice}</span>Dice</button>
+		<button class="btn btn-primary gc-action-btn" onclick={() => onNotesClick?.()} title="Add a session note"><span class="gc-action-icon">{@html iconNotes}</span>Notes</button>
 	</div>
 
 	</div>
@@ -305,7 +336,7 @@
 		align-items: stretch;
 	}
 
-	/* ===== Action buttons 2×2 grid ===== */
+	/* ===== Action buttons — default: 2×2 grid (large screens) ===== */
 	.gc-actions {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
@@ -330,6 +361,8 @@
 		position: relative;
 		border-radius: 6px;
 		min-height: 4.5rem;
+		container-name: gc;
+		container-type: inline-size;
 	}
 
 	.gc-tile--empty {
@@ -346,7 +379,7 @@
 	.gc-tile-btn {
 		display: flex;
 		flex-direction: column;
-		justify-content: center;
+		justify-content: flex-start;
 		width: 100%;
 		height: 100%;
 		min-height: 4.5rem;
@@ -363,6 +396,10 @@
 	.gc-tile-btn:hover {
 		background: rgba(245, 158, 11, 0.06);
 	}
+	.gc-tile--empty .gc-tile-btn {
+		justify-content: center;
+		align-items: center;
+	}
 
 	/* Placeholder text for empty tiles */
 	.gc-tile-placeholder {
@@ -372,6 +409,24 @@
 		opacity: 0.6;
 		text-align: center;
 		width: 100%;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 0.3rem;
+		height: 100%;
+	}
+	.gc-placeholder-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 32px;
+		height: 32px;
+	}
+	.gc-placeholder-icon :global(svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
 	}
 
 	/* Tile rows */
@@ -411,56 +466,80 @@
 		text-overflow: ellipsis;
 	}
 
-	/* ===== Character tile stat+resource grid ===== */
-	.gc-tile-stat-grid {
+	/* ===== Character chips (stats + resources) ===== */
+	.gc-char-chips {
 		display: flex;
-		gap: 0.3rem;
-		justify-content: center;
-	}
-	.gc-tile-stat-col {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
+		flex-wrap: wrap;
 		gap: 2px;
 	}
-	.gc-tile-stat {
+	.gc-chip-group {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 2px;
+	}
+	.gc-chip {
 		font-family: var(--font-ui);
 		font-weight: 700;
-		letter-spacing: 0.02em;
-		padding: 2px 6px;
-		border-radius: 3px;
-		display: inline-flex;
+		display: flex;
 		flex-direction: column;
 		align-items: center;
+		justify-content: center;
+		width: 2.8rem;
 		line-height: 1;
+		white-space: nowrap;
+		border-radius: 4px;
+		padding: 2px 2px;
 		gap: 1px;
 	}
-	.gc-tile-stat-label {
-		font-size: 0.62rem;
+	.gc-chip-label {
+		font-size: 0.5rem;
 		text-transform: uppercase;
-		letter-spacing: 0.04em;
-	}
-	.gc-tile-stat-value {
-		font-size: 0.82rem;
-	}
-
-	.gc-tile-resource {
+		letter-spacing: 0.03em;
+		font-weight: 600;
 		display: flex;
 		align-items: center;
-		gap: 2px;
-		font-family: var(--font-ui);
-		font-size: 0.78rem;
+		gap: 1px;
+	}
+	.gc-chip-value {
+		font-size: 0.85rem;
+		font-weight: 800;
+	}
+	.gc-chip-icon {
+		display: inline-flex;
+		width: 8px;
+		height: 8px;
+	}
+	.gc-chip-icon :global(svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
+	}
+	/* Stats: muted colored text — rarely change */
+	.gc-chip--stat {
+		color: var(--chip-color);
+		opacity: 0.7;
+	}
+	.gc-chip--stat .gc-chip-value {
 		font-weight: 700;
 	}
-	.gc-tile-resource-icon {
-		display: flex;
-		align-items: center;
-		line-height: 0;
+	/* Resources: colored background pill with icon — change frequently */
+	.gc-chip--resource {
+		background: color-mix(in srgb, var(--chip-color) 15%, transparent);
+		color: var(--chip-color);
+		border-radius: 6px;
+		padding: 2px 4px;
 	}
-	.gc-tile-resource-icon :global(svg) {
-		width: 12px;
-		height: 12px;
-		fill: currentColor;
+	/* Shake animation on resource value change */
+	@keyframes chip-shake {
+		0%, 100% { transform: translateX(0) rotate(0); }
+		15% { transform: translateX(-2px) rotate(-3deg); }
+		30% { transform: translateX(2px) rotate(3deg); }
+		45% { transform: translateX(-1px) rotate(-1.5deg); }
+		60% { transform: translateX(1px) rotate(1.5deg); }
+		75% { transform: translateX(0) rotate(0); }
+	}
+	.gc-chip--shake {
+		animation: chip-shake 0.4s ease-in-out;
 	}
 
 	/* ===== Shared badge/tag (foe nature, expedition type) ===== */
@@ -507,26 +586,6 @@
 		font-size: 0.8rem;
 	}
 
-	/* Initiative badges */
-	.gc-initiative {
-		font-family: var(--font-ui);
-		font-size: 0.65rem;
-		font-weight: 700;
-		letter-spacing: 0.05em;
-		text-transform: uppercase;
-		padding: 2px 5px;
-		border-radius: 3px;
-		white-space: nowrap;
-	}
-	.gc-initiative--you {
-		background: rgba(52, 211, 153, 0.15);
-		color: #34d399;
-	}
-	.gc-initiative--foe {
-		background: rgba(239, 68, 68, 0.15);
-		color: #ef4444;
-	}
-
 	/* Initiative icon badge (character tile, upper-right) */
 	.gc-init-badge {
 		position: absolute;
@@ -539,7 +598,6 @@
 		justify-content: center;
 		border-radius: 50%;
 		z-index: 1;
-		pointer-events: none;
 	}
 	.gc-init-badge :global(svg) { width: 11px; height: 11px; fill: currentColor; }
 	.gc-init-badge--you {
@@ -627,7 +685,27 @@
 		opacity: 0.6;
 	}
 
-	/* ===== Responsive: stack on mobile ===== */
+	/* ===== Action button icons ===== */
+	.gc-action-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.3rem;
+	}
+	.gc-action-icon {
+		display: inline-flex;
+		width: 14px;
+		height: 14px;
+		flex-shrink: 0;
+	}
+	.gc-action-icon :global(svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
+	}
+
+	/* ===== Responsive ===== */
+	/* Small: tiles stack, actions row below */
 	@media (max-width: 768px) {
 		.gc-layout {
 			flex-direction: column;
@@ -636,12 +714,18 @@
 			grid-template-columns: 1fr;
 		}
 		.gc-actions {
-			flex-direction: row;
-			justify-content: flex-end;
+			grid-template-columns: repeat(4, 1fr);
 			padding-left: 0;
 			border-left: none;
 			padding-top: 0.4rem;
 			border-top: 1px solid rgba(245, 158, 11, 0.15);
+		}
+	}
+	/* Medium: actions as 1×4 column */
+	@media (min-width: 769px) and (max-width: 1099px) {
+		.gc-actions {
+			grid-template-columns: 1fr;
+			gap: 0.25rem;
 		}
 	}
 </style>

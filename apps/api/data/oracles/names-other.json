@@ -2,7 +2,7 @@
   "key": "namesOther",
   "title": "Other Names",
   "group": "Core Ironsworn",
-  "selectLabel": "Oracle 15: Other Names",
+  "selectLabel": "Other Names",
   "description": "Generate a random name for Giants, Varou, or Trolls.",
   "data": [
     {

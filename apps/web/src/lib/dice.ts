@@ -39,6 +39,27 @@ const DIE_THEME_BY_SIDES: Record<number, object> = {
 };
 
 // ---------------------------------------------------------------------------
+// 3D dice toggle (persisted to localStorage)
+// ---------------------------------------------------------------------------
+const DICE_3D_KEY = 'ironledger:dice3d';
+
+/** Whether 3D dice animation is enabled. */
+export function isDice3dEnabled(): boolean {
+	if (typeof window === 'undefined') return true;
+	return localStorage.getItem(DICE_3D_KEY) !== 'off';
+}
+
+/** Toggle 3D dice animation on/off and persist the preference. */
+export function setDice3dEnabled(enabled: boolean): void {
+	if (typeof window === 'undefined') return;
+	if (enabled) {
+		localStorage.removeItem(DICE_3D_KEY);
+	} else {
+		localStorage.setItem(DICE_3D_KEY, 'off');
+	}
+}
+
+// ---------------------------------------------------------------------------
 // Module-level singletons
 // ---------------------------------------------------------------------------
 let _scriptLoaded: Promise<void> | null = null;
@@ -142,6 +163,7 @@ export interface DiceSpec {
  */
 export async function animateDice(dice: DiceSpec[]): Promise<void> {
 	if (typeof window === 'undefined' || dice.length === 0) return;
+	if (!isDice3dEnabled()) return;
 
 	const overlay = getOverlay();
 	overlay.style.display = 'block';

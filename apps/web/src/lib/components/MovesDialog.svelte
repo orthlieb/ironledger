@@ -29,6 +29,9 @@
 	import { rollDie, animateDice } from '$lib/dice.js';
 
 	import clearFiltersSvg from '$lib/icons/filter-circle-xmark-solid-full.svg?raw';
+	import diceD6Svg  from '$icons/dice-d6-light.svg?raw';
+	import diceD10Svg from '$icons/dice-d10-light.svg?raw';
+	import { draggable } from '$lib/actions/draggable.js';
 
 	// ---------------------------------------------------------------------------
 	// Props
@@ -36,9 +39,11 @@
 	let {
 		ctx  = null,
 		pctx = {},
+		onInitiativeChange,
 	}: {
 		ctx:  DiceCtx | null;
 		pctx: PreconditionContext;
+		onInitiativeChange?: (value: 'character' | 'foe') => void;
 	} = $props();
 
 	// ---------------------------------------------------------------------------
@@ -50,6 +55,7 @@
 	let search           = $state('');
 	let activeCategories = $state(new Set<string>());
 	let rolling          = $state(false);
+	let hideDisabled     = $state(false);
 
 	// Detail view state
 	let selectedStat     = $state('');
@@ -228,9 +234,13 @@
 		activeCategories = new Set();
 	}
 
-	/** Group filtered moves by category. */
+	/** Group filtered moves by category, optionally hiding disabled ones. */
 	function movesByCategory(cat: string): MoveDefinition[] {
-		return filteredMoves().filter((m) => m.category === cat);
+		return filteredMoves().filter((m) => {
+			if (m.category !== cat) return false;
+			if (hideDisabled && moveFailReason(m)) return false;
+			return true;
+		});
 	}
 
 	// ---------------------------------------------------------------------------
@@ -255,6 +265,11 @@
 		const hits1   = total > c1;
 		const hits2   = total > c2;
 		const isMatch = c1 === c2;
+
+		// Enter the Fray — default foe initiative so outcome links can flip it
+		if (selectedMove.id === 'move/enter-the-fray') {
+			onInitiativeChange?.('foe');
+		}
 
 		// Pre-generate entry id for link enrichment
 		const entryId = crypto.randomUUID();
@@ -380,7 +395,7 @@
 
 	<!-- ── Picker view ────────────────────────────────────────────────────── -->
 
-	<div class="md-header">
+	<div class="md-header" use:draggable>
 		<span class="md-title">Moves</span>
 		<button class="md-close" onclick={close} aria-label="Close">✕</button>
 	</div>
@@ -401,6 +416,19 @@
 				onclick={clearFilters}
 				aria-label="Clear all filters"
 			>{@html clearFiltersSvg}</button>
+			<button
+				class="md-hide-disabled-btn"
+				class:md-hide-disabled-btn--active={hideDisabled}
+				title={hideDisabled ? 'Show all moves' : 'Hide unavailable moves'}
+				onclick={() => (hideDisabled = !hideDisabled)}
+				aria-label={hideDisabled ? 'Show all moves' : 'Hide unavailable moves'}
+			>
+				{#if hideDisabled}
+					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/></svg>
+				{:else}
+					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+				{/if}
+			</button>
 		</div>
 
 		<div class="md-cat-filters">
@@ -457,7 +485,7 @@
 
 	<!-- ── Detail view ───────────────────────────────────────────────────── -->
 
-	<div class="md-header md-header--detail">
+	<div class="md-header md-header--detail" use:draggable>
 		<button class="md-back-btn" onclick={backToPicker}>← Back</button>
 		<span class="md-title md-title--detail">{selectedMove.name}</span>
 		<span class="md-category-badge" style:--ccolor={catColor(selectedMove.category)}>
@@ -479,19 +507,21 @@
 
 			<!-- Stat picker -->
 			{#if selectedMove.stats && selectedMove.stats.length > 0}
-				<div class="md-stat-row">
+				<div class="md-stat-list">
 					{#each selectedMove.stats as s (s.stat)}
 						<button
-							class="md-stat-btn"
+							class="md-stat-row-btn"
 							class:selected={selectedStat === s.stat}
 							style:--scolor={statColor(s.stat)}
 							onclick={() => (selectedStat = s.stat)}
 							disabled={rolling || !ctx}
-							title={s.desc}
 						>
-							<span class="md-sname">{s.stat}</span>
-							<span class="md-sval">{statValue(s.stat)}</span>
+							<span class="md-stat-check" aria-hidden="true">{selectedStat === s.stat ? '✔' : ''}</span>
 							<span class="md-sdesc">{s.desc}</span>
+							<span class="md-stat-chip" style:--scolor={statColor(s.stat)}>
+								<span class="md-sname">{s.stat}</span>
+								<span class="md-sval">+{statValue(s.stat)}</span>
+							</span>
 						</button>
 					{/each}
 				</div>
@@ -501,19 +531,19 @@
 			{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
 				<div class="md-outcomes">
 					{#if selectedMove.strong}
-						<div class="md-outcome-section">
+						<div class="md-outcome-section" style:--outcome-color="var(--color-success, #34d399)">
 							<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
 							<div class="md-outcome-text">{@html selectedMove.strong}</div>
 						</div>
 					{/if}
 					{#if selectedMove.weak}
-						<div class="md-outcome-section">
+						<div class="md-outcome-section" style:--outcome-color="var(--color-momentum, #60a5fa)">
 							<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
 							<div class="md-outcome-text">{@html selectedMove.weak}</div>
 						</div>
 					{/if}
 					{#if selectedMove.miss}
-						<div class="md-outcome-section">
+						<div class="md-outcome-section" style:--outcome-color="var(--color-danger, #ef4444)">
 							<div class="md-outcome-label md-outcome-miss">Miss</div>
 							<div class="md-outcome-text">{@html selectedMove.miss}</div>
 						</div>
@@ -549,7 +579,14 @@
 					onclick={doActionRoll}
 					disabled={rolling || !ctx || !!fail}
 					title={fail ?? ''}
-				>{rolling ? 'Rolling…' : 'Roll Move'}</button>
+				>
+					<span class="md-roll-dice" aria-hidden="true">
+						<span class="md-roll-die md-roll-die--d6">{@html diceD6Svg}</span>
+						<span class="md-roll-die md-roll-die--d10">{@html diceD10Svg}</span>
+						<span class="md-roll-die md-roll-die--d10">{@html diceD10Svg}</span>
+					</span>
+					{rolling ? 'Rolling…' : 'Roll Move'}
+				</button>
 			</div>
 
 		<!-- ── Progress move ── -->
@@ -577,19 +614,19 @@
 			{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
 				<div class="md-outcomes">
 					{#if selectedMove.strong}
-						<div class="md-outcome-section">
+						<div class="md-outcome-section" style:--outcome-color="var(--color-success, #34d399)">
 							<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
 							<div class="md-outcome-text">{@html selectedMove.strong}</div>
 						</div>
 					{/if}
 					{#if selectedMove.weak}
-						<div class="md-outcome-section">
+						<div class="md-outcome-section" style:--outcome-color="var(--color-momentum, #60a5fa)">
 							<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
 							<div class="md-outcome-text">{@html selectedMove.weak}</div>
 						</div>
 					{/if}
 					{#if selectedMove.miss}
-						<div class="md-outcome-section">
+						<div class="md-outcome-section" style:--outcome-color="var(--color-danger, #ef4444)">
 							<div class="md-outcome-label md-outcome-miss">Miss</div>
 							<div class="md-outcome-text">{@html selectedMove.miss}</div>
 						</div>
@@ -609,19 +646,19 @@
 			{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
 				<div class="md-outcomes">
 					{#if selectedMove.strong}
-						<div class="md-outcome-section">
+						<div class="md-outcome-section" style:--outcome-color="var(--color-success, #34d399)">
 							<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
 							<div class="md-outcome-text">{@html selectedMove.strong}</div>
 						</div>
 					{/if}
 					{#if selectedMove.weak}
-						<div class="md-outcome-section">
+						<div class="md-outcome-section" style:--outcome-color="var(--color-momentum, #60a5fa)">
 							<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
 							<div class="md-outcome-text">{@html selectedMove.weak}</div>
 						</div>
 					{/if}
 					{#if selectedMove.miss}
-						<div class="md-outcome-section">
+						<div class="md-outcome-section" style:--outcome-color="var(--color-danger, #ef4444)">
 							<div class="md-outcome-label md-outcome-miss">Miss</div>
 							<div class="md-outcome-text">{@html selectedMove.miss}</div>
 						</div>
@@ -634,10 +671,9 @@
 
 		<!-- Notes -->
 		{#if selectedMove.notes}
-			<details class="md-notes">
-				<summary class="md-notes-label">Notes</summary>
+			<div class="md-notes">
 				<div class="md-notes-text">{selectedMove.notes}</div>
-			</details>
+			</div>
 		{/if}
 	</div>
 
@@ -790,6 +826,26 @@
 		fill:   currentColor;
 	}
 
+	.md-hide-disabled-btn {
+		background:    transparent;
+		border:        1px solid transparent;
+		color:         var(--text-dimmer);
+		cursor:        pointer;
+		padding:       3px 5px;
+		border-radius: 3px;
+		display:       flex;
+		align-items:   center;
+		flex-shrink:   0;
+		transition:    color 0.15s, border-color 0.15s;
+	}
+	.md-hide-disabled-btn:hover {
+		color: var(--text);
+		border-color: var(--border-mid);
+	}
+	.md-hide-disabled-btn--active {
+		color: var(--text-accent);
+	}
+
 	.md-cat-filters {
 		display:   flex;
 		flex-wrap: wrap;
@@ -925,36 +981,64 @@
 	.md-trigger :global(li) { margin-bottom: 2px; }
 
 	/* ── Stat picker ─────────────────────────────────────────────────────── */
-	.md-stat-row {
-		display: flex;
-		gap:     4px;
+	.md-stat-list {
+		display:        flex;
+		flex-direction: column;
+		gap:            3px;
 	}
-	.md-stat-btn {
-		flex:            1;
-		display:         flex;
-		flex-direction:  column;
-		align-items:     center;
-		gap:             2px;
-		padding:         6px 4px;
-		background:      var(--bg-control);
-		border:          1px solid var(--border);
-		border-radius:   5px;
-		cursor:          pointer;
-		color:           var(--text-muted);
-		font-family:     var(--font-ui);
-		transition:      background 0.12s, border-color 0.12s, color 0.12s;
+	.md-stat-row-btn {
+		display:       flex;
+		align-items:   center;
+		gap:           8px;
+		padding:       5px 8px;
+		background:    var(--bg-control);
+		border:        1px solid var(--border);
+		border-radius: 5px;
+		cursor:        pointer;
+		color:         var(--text-muted);
+		font-family:   var(--font-ui);
+		transition:    background 0.12s, border-color 0.12s;
+		text-align:    left;
 	}
-	.md-stat-btn:hover:not(:disabled):not(.selected) {
+	.md-stat-row-btn:hover:not(:disabled):not(.selected) {
 		background:   var(--bg-hover);
 		border-color: var(--border-mid);
 	}
-	.md-stat-btn.selected {
-		background:   color-mix(in srgb, var(--scolor) 12%, var(--bg-control));
+	.md-stat-row-btn.selected {
+		background:   color-mix(in srgb, var(--scolor) 10%, var(--bg-control));
 		border-color: var(--scolor);
-		color:        var(--scolor);
 	}
-	.md-stat-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+	.md-stat-row-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
+	.md-stat-check {
+		width:          16px;
+		flex-shrink:    0;
+		font-size:      0.7rem;
+		color:          var(--scolor);
+		text-align:     center;
+	}
+
+	.md-sdesc {
+		flex:        1;
+		font-family: var(--font-ui);
+		font-size:   0.78rem;
+		color:       var(--text-muted);
+		line-height: 1.3;
+	}
+
+	.md-stat-chip {
+		display:         flex;
+		align-items:     center;
+		justify-content: center;
+		gap:             4px;
+		min-width:       80px;
+		padding:         2px 8px;
+		border-radius:   4px;
+		background:      color-mix(in srgb, var(--scolor) 12%, var(--bg-control));
+		border:          1px solid color-mix(in srgb, var(--scolor) 30%, transparent);
+		color:           var(--scolor);
+		flex-shrink:     0;
+	}
 	.md-sname {
 		font-size:       0.58rem;
 		letter-spacing:  0.05em;
@@ -962,20 +1046,9 @@
 		line-height:     1;
 	}
 	.md-sval {
-		font-size:   1.05rem;
+		font-size:   0.85rem;
 		font-weight: 700;
 		line-height: 1;
-	}
-	.md-sdesc {
-		font-size:   0.55rem;
-		color:       var(--text-dimmer);
-		line-height: 1.2;
-		text-align:  center;
-		max-width:   100%;
-		display:            -webkit-box;
-		-webkit-line-clamp: 2;
-		-webkit-box-orient: vertical;
-		overflow:           hidden;
 	}
 
 	/* ── Action row (adds + roll button) ─────────────────────────────────── */
@@ -1051,11 +1124,36 @@
 
 	/* ── Roll button ─────────────────────────────────────────────────────── */
 	.md-roll-btn {
-		padding:   8px 16px;
-		font-size: 0.8rem;
+		display:     inline-flex;
+		align-items: center;
+		gap:         6px;
+		padding:     8px 16px;
+		font-size:   0.8rem;
 	}
 	/* In action row, roll button fills remaining space */
-	.md-action-row .md-roll-btn { flex: 1; }
+	.md-action-row .md-roll-btn { flex: 1; justify-content: center; }
+
+	.md-roll-dice {
+		display:     inline-flex;
+		align-items: center;
+		gap:         2px;
+	}
+	.md-roll-die {
+		display:     flex;
+		align-items: center;
+	}
+	.md-roll-die :global(svg) {
+		fill: currentColor;
+	}
+	.md-roll-die--d6 :global(svg) {
+		width:  14px;
+		height: 14px;
+	}
+	.md-roll-die--d10 :global(svg) {
+		width:  12px;
+		height: 12px;
+		opacity: 0.8;
+	}
 	/* Standalone roll buttons (progress moves) — full width */
 	.md-roll-btn--full { width: 100%; }
 
@@ -1067,7 +1165,7 @@
 	}
 	.md-outcome-section {
 		padding:       6px 8px;
-		border-left:   3px solid var(--border);
+		border-left:   3px solid var(--outcome-color, var(--border));
 		border-radius: 0 4px 4px 0;
 		background:    var(--bg-inset);
 	}
@@ -1088,6 +1186,7 @@
 		color:       var(--text-muted);
 		line-height: 1.5;
 	}
+	.md-outcome-text :global(.log-only) { display: none; }
 	.md-outcome-text :global(strong) { color: var(--text); font-weight: 600; }
 	.md-outcome-text :global(ul) { margin: 3px 0; padding-left: 1.3em; }
 	.md-outcome-text :global(li) { margin-bottom: 2px; }
@@ -1108,22 +1207,11 @@
 		border-top: 1px solid var(--border);
 		padding-top: 8px;
 	}
-	.md-notes-label {
-		font-family:    var(--font-ui);
-		font-size:      0.65rem;
-		font-weight:    600;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		color:          var(--text-dimmer);
-		cursor:         pointer;
-	}
-	.md-notes-label:hover { color: var(--text-muted); }
 	.md-notes-text {
 		font-family: var(--font-ui);
 		font-size:   0.72rem;
 		color:       var(--text-dimmer);
 		line-height: 1.5;
-		margin-top:  4px;
 		font-style:  italic;
 	}
 </style>

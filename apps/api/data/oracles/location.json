@@ -1,8 +1,8 @@
 {
   "key": "location",
-  "title": "Oracle 4: Location",
+  "title": "Location",
   "group": "Core Ironsworn",
-  "selectLabel": "Oracle 4: Location",
+  "selectLabel": "Location",
   "description": "Use this oracle when traveling to generate a point-of-interest or to answer a question about a place where someone or something can be found.",
   "data": [
     {

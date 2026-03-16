@@ -1,8 +1,8 @@
 {
   "key": "namesIronlander",
-  "title": "Oracle 13: Ironlander Names",
+  "title": "Ironlander Names",
   "group": "Core Ironsworn",
-  "selectLabel": "Oracle 13: Ironlander Names",
+  "selectLabel": "Ironlander Names",
   "description": "Generate a name for an Ironlander character. Surnames are not used in the Ironlands, and names are often gender-neutral.",
   "data": [
     {

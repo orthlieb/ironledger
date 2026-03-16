@@ -22,6 +22,7 @@
 	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
 
 	import clearFiltersSvg from '$lib/icons/filter-circle-xmark-solid-full.svg?raw';
+	import { draggable } from '$lib/actions/draggable.js';
 
 	// ---------------------------------------------------------------------------
 	// Internal state
@@ -142,7 +143,7 @@
 	<!-- ── Picker view ────────────────────────────────────────────────────── -->
 
 	<!-- Header -->
-	<div class="od-header">
+	<div class="od-header" use:draggable>
 		<span class="od-title">Oracles</span>
 		<button class="od-close" onclick={close} aria-label="Close">✕</button>
 	</div>
@@ -214,7 +215,7 @@
 	<!-- ── Detail view ───────────────────────────────────────────────────── -->
 
 	<!-- Header -->
-	<div class="od-header od-header--detail">
+	<div class="od-header od-header--detail" use:draggable>
 		<button class="od-back-btn" onclick={() => (view = 'picker')}>← Back</button>
 		<span class="od-title od-title--detail">{selectedOracle.title}</span>
 		<div class="od-detail-actions">

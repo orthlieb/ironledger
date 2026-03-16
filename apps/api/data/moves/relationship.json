@@ -6,8 +6,8 @@
       "name": "Compel",
       "category": "Relationship",
       "triggerShort": "When you attempt to persuade someone to do something.",
-      "trigger": "When you <strong>attempt to persuade someone to do something</strong>, envision your approach and roll. If you…<ul><li>Charm, pacify, barter, or convince: Roll <strong>+heart</strong> (add +1 if you share a bond).</li><li>Threaten or incite: Roll <strong>+iron</strong>.</li><li>Lie or swindle: Roll <strong>+shadow</strong>.</li></ul>",
-      "triggerPreamble": "When you <strong>attempt to persuade someone to do something</strong>, envision your approach and roll. If you…",
+      "trigger": "When you <strong>attempt to persuade someone to do something</strong>, envision your approach and roll. If you\u2026<ul><li>Charm, pacify, barter, or convince: Roll <strong>+heart</strong> (add +1 if you share a bond).</li><li>Threaten or incite: Roll <strong>+iron</strong>.</li><li>Lie or swindle: Roll <strong>+shadow</strong>.</li></ul>",
+      "triggerPreamble": "When you <strong>attempt to persuade someone to do something</strong>, envision your approach and roll. If you\u2026",
       "stats": [
         {
           "stat": "heart",
@@ -119,8 +119,14 @@
       "miss": "Or if you have no interest in maintaining this relationship, clear the bond and <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a>.",
       "notes": "Triggered by the fiction, not player choice. If something happens that would logically strain a meaningful relationship, this move is prompted. The miss text also applies if you simply have no interest in maintaining the relationship.",
       "preconditions": [
-        { "key": "hasCharacter", "eq": 1 },
-        { "key": "bonds", "min": 1 }
+        {
+          "key": "hasCharacter",
+          "eq": 1
+        },
+        {
+          "key": "bonds",
+          "min": 1
+        }
       ]
     },
     {
@@ -132,7 +138,13 @@
       "strong": "",
       "weak": "",
       "miss": "",
-      "notes": "This is not a separate roll — you make a Secure an Advantage roll and can give the benefits to your ally instead. In combat, a strong hit grants initiative to both of you."
+      "notes": "This is not a separate roll \u2014 you make a Secure an Advantage roll and can give the benefits to your ally instead. In combat, a strong hit grants initiative to both of you.",
+      "preconditions": [
+        {
+          "key": "hasCharacter",
+          "eq": 1
+        }
+      ]
     },
     {
       "id": "move/write-your-epilogue",
@@ -150,10 +162,16 @@
       "strong": "Things come to pass as you hoped.",
       "weak": "Your life takes an unexpected turn, but not necessarily for the worse. You find yourself spending your days with someone or in a place you did not foresee. Envision it (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure).",
       "miss": "Your fears are realized.",
-      "notes": "A progress move — roll challenge dice against your bond progress track. No action die. You may not burn momentum on this roll, and you are not affected by negative momentum.",
+      "notes": "A progress move \u2014 roll challenge dice against your bond progress track. No action die. You may not burn momentum on this roll, and you are not affected by negative momentum.",
       "preconditions": [
-        { "key": "hasCharacter", "eq": 1 },
-        { "key": "bonds", "min": 1 }
+        {
+          "key": "hasCharacter",
+          "eq": 1
+        },
+        {
+          "key": "bonds",
+          "min": 1
+        }
       ]
     }
   ]

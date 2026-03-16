@@ -2,7 +2,7 @@
   "key": "combatAction",
   "title": "Combat Action",
   "group": "Core Ironsworn",
-  "selectLabel": "Oracle 16: Combat Action",
+  "selectLabel": "Combat Action",
   "description": "Use this oracle to help inspire an action for an NPC in combat. When you're not sure what your foe does next, particularly when they have initiative, roll on this table and interpret the result as appropriate to the situation.",
   "data": [
     {

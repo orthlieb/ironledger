@@ -1,8 +1,8 @@
 {
   "key": "characterGoal",
-  "title": "Oracle 11: Character Goal",
+  "title": "Character Goal",
   "group": "Core Ironsworn",
-  "selectLabel": "Oracle 11: Character Goal",
+  "selectLabel": "Character Goal",
   "description": "Use this oracle to define the primary motivation of an NPC or a faction. It can also be used to kick-off a personal quest for your own character.",
   "data": [
     {

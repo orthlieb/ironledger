@@ -1,8 +1,8 @@
 {
   "key": "characterRole",
-  "title": "Oracle 10: Character Role",
+  "title": "Character Role",
   "group": "Core Ironsworn",
-  "selectLabel": "Oracle 10: Character Role",
+  "selectLabel": "Character Role",
   "description": "Determine an NPC's occupation or societal role, or use it to generate a random encounter.",
   "data": [
     {
