@@ -9,7 +9,7 @@
 	 */
 
 	import type { CharacterFull } from '$lib/api.js';
-	import type { FoeEncounter } from '$lib/types.js';
+	import type { FoeEncounter, Expedition } from '$lib/types.js';
 	import { hydrateCharacter } from '$lib/character.js';
 	import { findFoe, FOE_RANKS, FOE_NATURE_COLORS, FOE_QUANTITIES } from '$lib/foeStore.svelte.js';
 
@@ -28,19 +28,27 @@
 		activeCharId,
 		encounters  = [],
 		activeFoeId = '',
+		expeditions = [],
+		activeExpeditionId = '',
 		onSelect,
 		onFoeSelect,
+		onExpeditionSelect,
 		onDiceClick,
 		onOraclesClick,
+		onNotesClick,
 	}: {
-		chars:           CharacterFull[];
-		activeCharId:    string;
-		encounters?:     FoeEncounter[];
-		activeFoeId?:    string;
-		onSelect:        (id: string) => void;
-		onFoeSelect?:    (id: string) => void;
-		onDiceClick?:    () => void;
-		onOraclesClick?: () => void;
+		chars:               CharacterFull[];
+		activeCharId:        string;
+		encounters?:         FoeEncounter[];
+		activeFoeId?:        string;
+		expeditions?:        Expedition[];
+		activeExpeditionId?: string;
+		onSelect:            (id: string) => void;
+		onFoeSelect?:        (id: string) => void;
+		onExpeditionSelect?: (id: string) => void;
+		onDiceClick?:        () => void;
+		onOraclesClick?:     () => void;
+		onNotesClick?:       () => void;
 	} = $props();
 
 	// Derive the active character and its typed data
@@ -54,6 +62,10 @@
 	const activeFoeNature   = $derived(activeFoeDef ? (FOE_NATURE_COLORS[activeFoeDef.nature] ?? '#9ca3af') : '#9ca3af');
 	const activeFoeProgress = $derived(activeFoe ? Math.floor(activeFoe.ticks / 4) : 0);
 	const activeFoeQty      = $derived(activeFoe ? FOE_QUANTITIES.find((q) => q.value === activeFoe.quantity) : null);
+
+	// Derive active expedition
+	const activeExpedition  = $derived(expeditions.find((e) => e.id === activeExpeditionId));
+	const expProgress       = $derived(activeExpedition ? Math.floor(activeExpedition.ticks / 4) : 0);
 
 	// ---------------------------------------------------------------------------
 	// Stat / resource definitions
@@ -100,12 +112,28 @@
 			{/if}
 		</div>
 
-		<!-- Expedition selector (stub) -->
+		<!-- Expedition selector -->
 		<div class="gc-group">
 			<label class="gc-label" for="gcExpedition">Expedition</label>
-			<select id="gcExpedition" class="gc-select" disabled>
-				<option value="">(none)</option>
-			</select>
+			{#if expeditions.length === 0}
+				<span class="gc-name gc-name--empty">(none)</span>
+			{:else}
+				<select
+					id="gcExpedition"
+					class="gc-select"
+					class:gc-select--active={activeExpeditionId !== ''}
+					value={activeExpeditionId}
+					onchange={(e) => onExpeditionSelect?.((e.target as HTMLSelectElement).value)}
+				>
+					<option value="">(none)</option>
+					{#each expeditions as exp (exp.id)}
+						<option value={exp.id}>
+							{exp.name || (exp.type === 'journey' ? 'Unnamed Journey' : 'Unnamed Site')}
+							{exp.complete ? ' \u2713' : ''}
+						</option>
+					{/each}
+				</select>
+			{/if}
 		</div>
 
 		<!-- Foe selector -->
@@ -147,7 +175,11 @@
 				disabled={!onDiceClick}
 				title="Roll dice"
 			>Dice</button>
-			<button class="gc-action-btn" disabled title="Notes (coming soon)">Notes</button>
+			<button
+				class="gc-action-btn"
+				onclick={() => onNotesClick?.()}
+				title="Add a session note"
+			>Notes</button>
 		</div>
 
 	</div>
@@ -250,6 +282,55 @@
 		</div>
 	{/if}
 
+	<!-- ===== Expedition summary row (only when an expedition is selected) ===== -->
+	{#if activeExpedition}
+		<div class="gc-expedition-row">
+			<span class="gc-expedition-type-badge"
+				style="background: {activeExpedition.type === 'journey' ? 'rgba(52,211,153,0.15)' : 'rgba(96,165,250,0.15)'}; color: {activeExpedition.type === 'journey' ? '#34d399' : '#60a5fa'}"
+			>{activeExpedition.type === 'journey' ? 'Journey' : 'Site'}</span>
+			<span class="gc-entity-name">{activeExpedition.name || 'Unnamed'}</span>
+
+			<span class="gc-stats-sep" aria-hidden="true"></span>
+
+			<div class="gc-stats-group">
+				<!-- Difficulty -->
+				<span class="gc-stat-item" title="Difficulty">
+					<span class="gc-stat-label">Rank</span>
+					<span class="gc-stat-value gc-stat-value--normal">
+						{activeExpedition.difficulty.charAt(0).toUpperCase() + activeExpedition.difficulty.slice(1)}
+					</span>
+				</span>
+
+				<!-- Progress -->
+				<span class="gc-stat-item" title="Progress">
+					<span class="gc-stat-label">Progress</span>
+					<span class="gc-stat-value">{expProgress}/10</span>
+				</span>
+
+				<!-- Theme (sites only) -->
+				{#if activeExpedition.type === 'site' && activeExpedition.theme}
+					<span class="gc-stat-item" title="Theme">
+						<span class="gc-stat-label" style="color: #a855f7">Theme</span>
+						<span class="gc-stat-value gc-stat-value--normal">{activeExpedition.theme}</span>
+					</span>
+				{/if}
+
+				<!-- Domain (sites only) -->
+				{#if activeExpedition.type === 'site' && activeExpedition.domain}
+					<span class="gc-stat-item" title="Domain">
+						<span class="gc-stat-label" style="color: #fb923c">Domain</span>
+						<span class="gc-stat-value gc-stat-value--normal">{activeExpedition.domain}</span>
+					</span>
+				{/if}
+
+				<!-- Complete marker -->
+				{#if activeExpedition.complete}
+					<span class="gc-expedition-complete" title="Complete">{'\u2713'} Complete</span>
+				{/if}
+			</div>
+		</div>
+	{/if}
+
 </div>
 
 <style>
@@ -297,7 +378,7 @@
 		font-family: var(--font-ui);
 		font-size: 0.8rem;
 		color: var(--text-dimmer);
-		background: var(--bg-input, rgba(0,0,0,0.25));
+		background: var(--bg-inset);
 		border: 1px solid var(--border);
 		border-radius: 4px;
 		padding: 4px 8px;
@@ -310,7 +391,7 @@
 		font-size: 0.8rem;
 		color: var(--text-dimmer);
 		padding: 4px 8px;
-		background: var(--bg-input, rgba(0,0,0,0.25));
+		background: var(--bg-inset);
 		border: 1px solid var(--border);
 		border-radius: 4px;
 		opacity: 0.45;
@@ -439,7 +520,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: var(--bg-input, rgba(0,0,0,0.25));
+		background: var(--bg-inset);
 		font-size: 0.85rem;
 	}
 
@@ -468,6 +549,37 @@
 		font-weight: 600;
 		letter-spacing: 0.04em;
 		color: var(--color-danger, #ef4444);
+		opacity: 0.8;
+	}
+
+	/* Expedition summary row */
+	.gc-expedition-row {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-top: 0.5rem;
+		padding-top: 0.4rem;
+		border-top: 1px solid rgba(245, 158, 11, 0.15);
+	}
+
+	.gc-expedition-type-badge {
+		font-family: var(--font-ui);
+		font-size: 0.62rem;
+		font-weight: 600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		padding: 2px 6px;
+		border-radius: 3px;
+		white-space: nowrap;
+		flex-shrink: 0;
+	}
+
+	.gc-expedition-complete {
+		font-family: var(--font-ui);
+		font-size: 0.62rem;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		color: #34d399;
 		opacity: 0.8;
 	}
 

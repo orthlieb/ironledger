@@ -357,13 +357,17 @@
 		font-family:   var(--font-ui);
 		font-size:     0.78rem;
 		color:         var(--text);
-		background:    var(--bg-input, rgba(0,0,0,0.2));
+		background:    var(--bg-inset);
 		border:        1px solid var(--border);
 		border-radius: 4px;
 		padding:       5px 8px;
 		min-width:     0;
 	}
-	.od-search:focus { outline: 1px solid var(--text-accent); border-color: var(--text-accent); }
+	.od-search:focus {
+		outline: none;
+		border-color: var(--focus-ring);
+		box-shadow: 0 0 0 2px var(--accent-glow);
+	}
 
 	.od-clear-btn {
 		background:    transparent;

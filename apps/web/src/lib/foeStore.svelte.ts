@@ -117,6 +117,12 @@ export function findFoe(id: string): FoeDef | undefined {
 	return _foes.find((f) => f.id === id);
 }
 
+/** Case-insensitive lookup by name. */
+export function findFoeByName(name: string): FoeDef | undefined {
+	const lower = name.toLowerCase();
+	return _foes.find((f) => f.name.toLowerCase() === lower);
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------

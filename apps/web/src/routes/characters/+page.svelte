@@ -1,21 +1,29 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import type { CharacterFull } from '$lib/api.js';
-	import type { FoeDef, FoeQuantity } from '$lib/types.js';
+	import type { FoeDef, FoeQuantity, Expedition, Journey, Site } from '$lib/types.js';
 	import { characters as api } from '$lib/api.js';
-	import { findFoe, loadFoes, FOE_RANKS } from '$lib/foeStore.svelte.js';
+	import { findFoe, findFoeByName, loadFoes, FOE_RANKS } from '$lib/foeStore.svelte.js';
+	import { loadDelveData } from '$lib/delveStore.svelte.js';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import {
 		loadEncounters, getEncounters,
 		addEncounter, updateEncounter, removeEncounter,
 	} from '$lib/encounterStore.svelte.js';
+	import {
+		loadExpeditions, getExpeditions,
+		addExpedition, updateExpedition, removeExpedition,
+	} from '$lib/expeditionStore.svelte.js';
 	import CharacterSheet    from '$lib/components/CharacterSheet.svelte';
 	import LogPanel          from '$lib/components/LogPanel.svelte';
 	import GlobalContextBar  from '$lib/components/GlobalContextBar.svelte';
 	import DiceRollerDialog  from '$lib/components/DiceRollerDialog.svelte';
 	import OraclesDialog     from '$lib/components/OraclesDialog.svelte';
+	import NotesDialog       from '$lib/components/NotesDialog.svelte';
 	import FoePickerDialog   from '$lib/components/FoePickerDialog.svelte';
 	import FoeCard           from '$lib/components/FoeCard.svelte';
+	import JourneyCard       from '$lib/components/JourneyCard.svelte';
+	import SiteCard          from '$lib/components/SiteCard.svelte';
 	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
 	import { onMount } from 'svelte';
 	import fileImportSvg from '$icons/file-import-solid-full.svg?raw';
@@ -56,12 +64,19 @@
 	// ── Oracles dialog ─────────────────────────────────────────────────────────
 	let oraclesDialogRef = $state<{ open(): void } | null>(null);
 
+	// ── Notes dialog ───────────────────────────────────────────────────────────
+	let notesDialogRef   = $state<{ open(): void } | null>(null);
+
 	// ── Foe picker dialog ──────────────────────────────────────────────────────
 	let foePickerRef = $state<{ open(): void } | null>(null);
 	let activeFoeId  = $state('');
 
 	// Encounters from the global encounter store (not per-character)
 	const encounters = $derived(getEncounters());
+
+	// ── Expeditions ────────────────────────────────────────────────────────────
+	let activeExpeditionId = $state('');
+	const expeditions = $derived(getExpeditions());
 
 	// ── Initial load ───────────────────────────────────────────────────────────
 	onMount(async () => {
@@ -70,6 +85,8 @@
 			api.list(),
 			loadFoes(),
 			loadEncounters(),
+			loadExpeditions(),
+			loadDelveData(),
 		]);
 		if (charResult.status === 'fulfilled') {
 			chars = charResult.value;
@@ -148,6 +165,64 @@
 		await removeEncounter(id);
 	}
 
+	// ── Expedition CRUD ────────────────────────────────────────────────────────
+
+	function handleAddJourney() {
+		const journey: Journey = {
+			id:         crypto.randomUUID(),
+			type:       'journey',
+			name:       'New Journey',
+			difficulty: 'dangerous',
+			ticks:      0,
+			notes:      '',
+			complete:   false,
+		};
+		appendLog(SESSION_LOG_ID, `Journey — ${journey.name}`,
+			`<div>Started a new journey: <strong>${journey.name}</strong></div>`);
+		activeExpeditionId = journey.id;
+		addExpedition(journey);
+	}
+
+	function handleAddSite() {
+		const site: Site = {
+			id:         crypto.randomUUID(),
+			type:       'site',
+			name:       'New Site',
+			objective:  '',
+			theme:      '',
+			domain:     '',
+			difficulty: 'dangerous',
+			ticks:      0,
+			denizens:   Array(12).fill(''),
+			complete:   false,
+		};
+		appendLog(SESSION_LOG_ID, `Site — ${site.name}`,
+			`<div>Discovered a new site: <strong>${site.name}</strong></div>`);
+		activeExpeditionId = site.id;
+		addExpedition(site);
+	}
+
+	async function handleExpeditionChange(exp: Expedition) {
+		await updateExpedition(exp);
+	}
+
+	async function handleExpeditionDelete(id: string) {
+		if (activeExpeditionId === id) activeExpeditionId = '';
+		await removeExpedition(id);
+	}
+
+	/** Called by SiteCard when the user wants to add a denizen as a foe encounter. */
+	function handleDenizenAddFoe(foeName: string) {
+		const foeDef = findFoeByName(foeName);
+		if (!foeDef) {
+			appendLog(SESSION_LOG_ID, 'Denizen',
+				`<div>No matching foe found in catalogue for "<strong>${foeName}</strong>".</div>`);
+			return;
+		}
+		// Go through the normal foe-add flow with defaults
+		handleFoeSelected(foeDef, 'solo', foeDef.rank);
+	}
+
 	async function importCharacter(e: Event) {
 		const file = (e.target as HTMLInputElement).files?.[0];
 		if (!file) return;
@@ -188,6 +263,9 @@
 <!-- Oracles dialog (always mounted; opened by GlobalContextBar Oracles button) -->
 <OraclesDialog bind:this={oraclesDialogRef} />
 
+<!-- Notes dialog (always mounted; opened by GlobalContextBar Notes button) -->
+<NotesDialog bind:this={notesDialogRef} />
+
 <!-- Foe picker dialog (always mounted; opened by + New Foe button in Foes tab) -->
 <FoePickerDialog bind:this={foePickerRef} onSelect={handleFoeSelected} />
 
@@ -198,10 +276,14 @@
 		{activeCharId}
 		{encounters}
 		{activeFoeId}
+		{expeditions}
+		{activeExpeditionId}
 		onSelect={setActiveChar}
 		onFoeSelect={(id) => (activeFoeId = id)}
+		onExpeditionSelect={(id) => (activeExpeditionId = id)}
 		onDiceClick={() => diceRollerRef?.open()}
 		onOraclesClick={() => oraclesDialogRef?.open()}
+		onNotesClick={() => notesDialogRef?.open()}
 	/>
 </div>
 
@@ -346,11 +428,54 @@
 				{/if}
 
 			{:else if activeTab === 'expeditions'}
-				<div class="empty-tab">
-					<span class="empty-tab-icon">{@html locationSvg}</span>
-					<span class="empty-tab-title">No Expeditions</span>
-					<span class="empty-tab-sub">Journey and site progress tracking will appear here.</span>
+				<div class="char-toolbar">
+					<div class="char-toolbar-actions">
+						<button
+							class="btn btn-primary"
+							onclick={handleAddJourney}
+						>+ New Journey</button>
+						<button
+							class="btn btn-primary"
+							onclick={handleAddSite}
+						>+ New Site</button>
+					</div>
 				</div>
+
+				{#if expeditions.length === 0}
+					<div class="empty-tab">
+						<span class="empty-tab-icon">{@html locationSvg}</span>
+						<span class="empty-tab-title">No Expeditions</span>
+						<span class="empty-tab-sub">Start a <strong>Journey</strong> to travel or a <strong>Site</strong> to delve into a perilous location.</span>
+					</div>
+				{:else}
+					<div class="char-list">
+						{#each expeditions as exp (exp.id)}
+							<!-- svelte-ignore a11y_no_static_element_interactions -->
+							<!-- svelte-ignore a11y_click_events_have_key_events -->
+							<div
+								class="char-card"
+								class:char-card--active={exp.id === activeExpeditionId}
+								onclick={() => (activeExpeditionId = exp.id)}
+								onfocusin={() => (activeExpeditionId = exp.id)}
+							>
+								{#if exp.type === 'journey'}
+									<JourneyCard
+										expedition={exp}
+										onChange={handleExpeditionChange}
+										onDelete={() => handleExpeditionDelete(exp.id)}
+									/>
+								{:else}
+									<SiteCard
+										expedition={exp}
+										onChange={handleExpeditionChange}
+										onDelete={() => handleExpeditionDelete(exp.id)}
+										onAddEncounter={handleDenizenAddFoe}
+									/>
+								{/if}
+							</div>
+						{/each}
+					</div>
+				{/if}
 			{/if}
 
 		</div>

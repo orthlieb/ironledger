@@ -60,6 +60,99 @@ export interface FoeEncounter {
 	vanquished:    boolean;
 }
 
+// ---------------------------------------------------------------------------
+// Expedition types (Journeys & Delve Sites)
+// ---------------------------------------------------------------------------
+
+/** Reuse VowDifficulty for expedition difficulty — same rank system. */
+export type ExpeditionDifficulty = VowDifficulty;
+
+/** Ticks earned per Mark Progress by difficulty (same scale as vows). */
+export const EXPEDITION_MARK_TICKS: Record<ExpeditionDifficulty, number> = {
+	troublesome: 12,
+	dangerous: 8,
+	formidable: 4,
+	extreme: 2,
+	epic: 1,
+};
+
+export type ExpeditionType = 'journey' | 'site';
+
+export interface Journey {
+	id:         string;          // crypto.randomUUID()
+	type:       'journey';       // discriminant
+	name:       string;
+	difficulty: ExpeditionDifficulty;
+	ticks:      number;          // 0–40 (10 boxes × 4 ticks)
+	notes:      string;
+	complete:   boolean;
+}
+
+/** The 8 Delve themes */
+export type DelveTheme =
+	| 'Ancient' | 'Corrupted' | 'Fortified' | 'Hallowed'
+	| 'Haunted' | 'Infested' | 'Ravaged' | 'Wild';
+
+export const DELVE_THEMES: DelveTheme[] = [
+	'Ancient', 'Corrupted', 'Fortified', 'Hallowed',
+	'Haunted', 'Infested', 'Ravaged', 'Wild',
+];
+
+/** The 12 Delve domains */
+export type DelveDomain =
+	| 'Barrow' | 'Cavern' | 'Frozen Cavern' | 'Icereach'
+	| 'Mine' | 'Pass' | 'Ruin' | 'Sea Cave'
+	| 'Shadowfen' | 'Stronghold' | 'Tanglewood' | 'Underkeep';
+
+export const DELVE_DOMAINS: DelveDomain[] = [
+	'Barrow', 'Cavern', 'Frozen Cavern', 'Icereach',
+	'Mine', 'Pass', 'Ruin', 'Sea Cave',
+	'Shadowfen', 'Stronghold', 'Tanglewood', 'Underkeep',
+];
+
+export interface Site {
+	id:         string;          // crypto.randomUUID()
+	type:       'site';          // discriminant
+	name:       string;
+	objective:  string;
+	theme:      DelveTheme | '';
+	domain:     DelveDomain | '';
+	difficulty: ExpeditionDifficulty;
+	ticks:      number;          // 0–40 (10 boxes × 4 ticks)
+	denizens:   string[];        // length 12 — one per DENIZEN_CELLS row
+	complete:   boolean;
+}
+
+/** Discriminated union of all expedition types. */
+export type Expedition = Journey | Site;
+
+/** Denizen cell definition for the 12-row d100 table. */
+export interface DenizenCell {
+	label: string;
+	range: string;
+	low:   number;
+	high:  number;
+}
+
+export const DENIZEN_CELLS: DenizenCell[] = [
+	{ label: 'Very Common', range: '01–27', low: 1,   high: 27  },
+	{ label: 'Common',      range: '28–41', low: 28,  high: 41  },
+	{ label: 'Common',      range: '42–55', low: 42,  high: 55  },
+	{ label: 'Common',      range: '56–69', low: 56,  high: 69  },
+	{ label: 'Uncommon',    range: '70–75', low: 70,  high: 75  },
+	{ label: 'Uncommon',    range: '76–81', low: 76,  high: 81  },
+	{ label: 'Uncommon',    range: '82–87', low: 82,  high: 87  },
+	{ label: 'Uncommon',    range: '88–93', low: 88,  high: 93  },
+	{ label: 'Rare',        range: '94–95', low: 94,  high: 95  },
+	{ label: 'Rare',        range: '96–97', low: 96,  high: 97  },
+	{ label: 'Rare',        range: '98–99', low: 98,  high: 99  },
+	{ label: 'Unforeseen',  range: '00',    low: 100, high: 100 },
+];
+
+// ---------------------------------------------------------------------------
+// Character data types
+// ---------------------------------------------------------------------------
+
 export interface CharacterData {
 	// Identity
 	name: string;

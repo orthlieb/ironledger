@@ -1,13 +1,6 @@
 # Expeditions
 
-Reference extracted from `dev/yrt/IronLedger.html`.
-Not yet implemented in Iron Ledger (stub tab shown).
-
----
-
-## Purpose
-
-Tracks journey and site expeditions for the current character. Expeditions represent the two types of progress-track-based travel/exploration in Ironsworn/Starforged:
+Tracks journey and site expeditions. Expeditions represent the two types of progress-track-based travel/exploration in Ironsworn:
 
 - **Journey** — overland or sea travel toward a destination.
 - **Site** — a dangerous place (dungeon, lair, ruin) being delved.
@@ -16,15 +9,16 @@ Both use 10-box progress tracks with 4 ticks per box and a difficulty rank.
 
 ---
 
-## Data Model (reference)
+## Data Model
 
 ### Journey
 ```js
 {
-  id:         string,
+  id:         string,        // crypto.randomUUID()
+  type:       'journey',     // discriminant
   name:       string,
-  difficulty: 'troublesome' | 'dangerous' | 'formidable' | 'extreme' | 'epic',
-  ticks:      number,   // 0–40
+  difficulty: VowDifficulty, // troublesome | dangerous | formidable | extreme | epic
+  ticks:      number,        // 0–40
   complete:   boolean,
   notes:      string,
 }
@@ -34,56 +28,91 @@ Both use 10-box progress tracks with 4 ticks per box and a difficulty rank.
 ```js
 {
   id:         string,
+  type:       'site',
   name:       string,
-  theme:      string,   // e.g. "Ancient", "Corrupted", "Haunted"
-  domain:     string,   // e.g. "Barrow", "Cavern", "Ruin", "Stronghold"
-  difficulty: 'troublesome' | 'dangerous' | 'formidable' | 'extreme' | 'epic',
-  ticks:      number,   // 0–40
+  objective:  string,
+  theme:      DelveTheme | '',  // 8 themes: Ancient, Corrupted, Fortified, Hallowed, Haunted, Infested, Ravaged, Wild
+  domain:     DelveDomain | '', // 12 domains: Barrow, Cavern, Frozen Cavern, Icereach, Mine, Pass, Ruin, Sea Cave, Shadowfen, Stronghold, Tanglewood, Underkeep
+  difficulty: VowDifficulty,
+  ticks:      number,           // 0–40
+  denizens:   string[12],       // one text entry per denizen cell
   complete:   boolean,
-  notes:      string,
-  // denizen table entries (optional)
-  denizens:   Array<{ range: string; name: string }>,
 }
 ```
 
+### Discriminated Union
+Both types are stored in a single `expeditions` array using `type` as the discriminant: `Expedition = Journey | Site`.
+
 ---
 
-## UI Structure (reference)
+## Storage
 
-The Expeditions tab in the YRT app contains two sub-sections:
+- **Database**: `user_data.expeditions` JSONB column
+- **API**: `PATCH /api/v1/session/expeditions`
+- **Client store**: `expeditionStore.svelte.ts` (module-level `$state`, same pattern as encounterStore)
 
-### Journeys sub-tab
-- **Add Journey** button — name + difficulty picker.
-- Journey cards each show: name, difficulty badge, 10-box progress track, **Reach Destination** (complete) button, notes field.
+---
 
-### Sites sub-tab
-- **Add Site** button — name, theme, domain, difficulty picker.
-- Site cards each show: name, theme/domain badges, difficulty, progress track, **Locate Objective** (complete) button, denizen table, notes.
+## UI Structure
 
-Completed expeditions move to a collapsed "Completed" accordion at the bottom.
+The Expeditions tab contains:
+- **+ New Journey** / **+ New Site** buttons
+- Cards displayed in insertion order, intermixed
+- Collapsible cards (JourneyCard, SiteCard) following FoeCard/VowCard patterns
+
+### JourneyCard
+- Name, difficulty selector, notes textarea
+- 10-box progress track with +/- buttons
+- Mark Complete toggle
+
+### SiteCard
+- Name, difficulty, objective fields
+- Theme + Domain selectors with **Features** and **Dangers** buttons inline
+  - Buttons open a DelveTableDialog showing the combined theme+domain oracle table
+  - Roll button performs a d100 roll with dice animation and session log entry
+  - Dialog closes after rolling
+- 12-cell denizen grid with:
+  - d100 range labels and frequency indicators
+  - Text input for each cell
+  - ⊕ button to pick a foe from the catalogue (opens FoePickerDialog in denizen mode)
+  - **Roll Denizen** button for d100 denizen roll with cell highlighting
+  - When a rolled denizen matches a foe in the catalogue, an **Add to Foes?** button appears
+- 10-box progress track with +/- buttons
+- Mark Complete toggle
+
+---
+
+## Delve Data
+
+Theme and domain feature/danger tables are served via:
+- **API**: `GET /api/v1/catalogue/delve` (public, cached with ETag)
+- **BFF proxy**: `GET /api/catalogue/delve`
+- **Client store**: `delveStore.svelte.ts`
+
+The store provides:
+- `buildCombinedTable(theme, domain, 'features' | 'dangers')` — merges theme + domain entries
+- `rollCombinedTable(theme, domain, type)` — d100 roll on the combined table
 
 ---
 
 ## Global Context Integration
 
-The **Expedition selector** in GlobalContextBar is populated with active (non-complete) journeys and sites in separate `<optgroup>` elements:
-
-```html
-<optgroup label="Journeys">…</optgroup>
-<optgroup label="Sites">…</optgroup>
-```
-
-`refreshExpeditionDropdown()` in the reference code handles this population and calls `refreshFoeDropdown()` after, since some foe encounters may be tied to the selected expedition.
+The **Expedition selector** in GlobalContextBar is populated with active (non-complete) journeys and sites in separate `<optgroup>` elements. Selecting an expedition shows a summary row with progress information.
 
 ---
 
-## Iron Ledger Implementation Status
+## Components
 
-- **Stub only** — the Expeditions tab renders an empty state (`"No Expeditions"`).
-- The Expedition selector in GlobalContextBar is disabled until this feature is built.
+| Component | File | Purpose |
+|-----------|------|---------|
+| JourneyCard | `components/JourneyCard.svelte` | Journey expedition card |
+| SiteCard | `components/SiteCard.svelte` | Delve site card with denizen grid |
+| DelveTableDialog | `components/DelveTableDialog.svelte` | Combined feature/danger table with roll |
+| FoePickerDialog | `components/FoePickerDialog.svelte` | Foe picker (encounter + denizen modes) |
 
-### Planned work
-1. Add `journeys` and `sites` arrays to character data schema.
-2. Implement the Expeditions tab: sub-tabs for Journeys and Sites, add/complete/notes.
-3. Wire up the Expedition selector in GlobalContextBar.
-4. Optionally link expedition progress to relevant move outcomes in the Moves dialog.
+## Stores
+
+| Store | File | Purpose |
+|-------|------|---------|
+| expeditionStore | `expeditionStore.svelte.ts` | Expedition CRUD + persistence |
+| delveStore | `delveStore.svelte.ts` | Delve oracle table data |

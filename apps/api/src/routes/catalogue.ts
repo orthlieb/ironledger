@@ -52,6 +52,7 @@ async function loadCatalogue(): Promise<{
   moves:   CatalogueEntry;
   oracles: CatalogueEntry;
   foes:    CatalogueEntry;
+  delve:   CatalogueEntry;
 }> {
   // Load and merge all asset files
   const [assetsIs, assetsDelve, assetsYrt] = await Promise.all([
@@ -93,11 +94,22 @@ async function loadCatalogue(): Promise<{
     foes: [...foesIs.foes, ...foesDelve.foes, ...foesYrt.foes],
   };
 
+  // Load delve oracle tables (theme/domain features + dangers)
+  const [themeFeatures, themeDangers, domainFeatures, domainDangers] = await Promise.all([
+    loadJson(path.join(DATA_ROOT, 'delve/delve-theme-features.json')),
+    loadJson(path.join(DATA_ROOT, 'delve/delve-theme-dangers.json')),
+    loadJson(path.join(DATA_ROOT, 'delve/delve-domain-features.json')),
+    loadJson(path.join(DATA_ROOT, 'delve/delve-domain-dangers.json')),
+  ]);
+
+  const allDelve = { themeFeatures, themeDangers, domainFeatures, domainDangers };
+
   return {
     assets:  { data: allAssets,  etag: makeEtag(allAssets)  },
     moves:   { data: allMoves,   etag: makeEtag(allMoves)   },
     oracles: { data: allOracles, etag: makeEtag(allOracles) },
     foes:    { data: allFoes,    etag: makeEtag(allFoes)    },
+    delve:   { data: allDelve,   etag: makeEtag(allDelve)   },
   };
 }
 
@@ -131,4 +143,5 @@ export async function catalogueRoutes(server: FastifyInstance): Promise<void> {
   server.get('/moves',   (req, reply) => sendCatalogueItem(catalogue.moves,   req, reply));
   server.get('/oracles', (req, reply) => sendCatalogueItem(catalogue.oracles, req, reply));
   server.get('/foes',    (req, reply) => sendCatalogueItem(catalogue.foes,    req, reply));
+  server.get('/delve',   (req, reply) => sendCatalogueItem(catalogue.delve,   req, reply));
 }

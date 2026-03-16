@@ -25,8 +25,11 @@
 	// ---------------------------------------------------------------------------
 	let {
 		onSelect,
+		onDenizenPick,
 	}: {
 		onSelect: (foeDef: FoeDef, quantity: FoeQuantity, effectiveRank: number) => void;
+		/** Called when a foe is picked in denizen mode (name only, no quantity). */
+		onDenizenPick?: (foeName: string) => void;
 	} = $props();
 
 	// ---------------------------------------------------------------------------
@@ -36,6 +39,7 @@
 	let view       = $state<'picker' | 'confirm'>('picker');
 	let confirmFoe = $state<FoeDef | null>(null);
 	let quantity   = $state<FoeQuantity>('solo');
+	let _mode      = $state<'encounter' | 'denizen'>('encounter');
 
 	let search        = $state('');
 	let activeNatures = $state(new Set<string>());
@@ -73,6 +77,20 @@
 	// ---------------------------------------------------------------------------
 	export async function open(): Promise<void> {
 		await loadFoes();
+		_mode    = 'encounter';
+		view     = 'picker';
+		search   = '';
+		activeNatures = new Set();
+		activeSources = new Set();
+		confirmFoe = null;
+		quantity   = 'solo';
+		dialogEl?.showModal();
+	}
+
+	/** Open in denizen-pick mode: clicking a foe returns just the name, no confirm step. */
+	export async function openForDenizen(): Promise<void> {
+		await loadFoes();
+		_mode    = 'denizen';
 		view     = 'picker';
 		search   = '';
 		activeNatures = new Set();
@@ -108,6 +126,11 @@
 	}
 
 	function selectFoe(foe: FoeDef) {
+		if (_mode === 'denizen') {
+			dialogEl?.close();
+			onDenizenPick?.(foe.name);
+			return;
+		}
 		confirmFoe = foe;
 		quantity   = 'solo';
 		view       = 'confirm';
@@ -143,7 +166,7 @@
 	<!-- ===== PICKER VIEW ===== -->
 	{#if view === 'picker'}
 		<div class="fd-header">
-			<span class="fd-title">Choose a Foe</span>
+			<span class="fd-title">{_mode === 'denizen' ? 'Pick a Denizen' : 'Choose a Foe'}</span>
 			<div class="fd-search-row">
 				<input
 					type="search"
@@ -359,12 +382,16 @@
 		font-family: var(--font-ui);
 		font-size: 0.82rem;
 		padding: 5px 10px;
-		background: var(--bg-input, rgba(0,0,0,0.25));
+		background: var(--bg-inset);
 		border: 1px solid var(--border);
 		border-radius: 4px;
 		color: var(--text);
 	}
-	.fd-search:focus { outline: 1px solid var(--text-accent); }
+	.fd-search:focus {
+		outline: none;
+		border-color: var(--focus-ring);
+		box-shadow: 0 0 0 2px var(--accent-glow);
+	}
 
 	.fd-clear-btn {
 		width: 30px;
