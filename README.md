@@ -83,7 +83,10 @@ npm run dev:web   # Web on :5173
 ### Moves & Dice
 - Complete Ironsworn move reference with picker grid
 - Action and progress rolls with 3D animated dice
-- Interactive outcome links in session log
+- Move precondition checking (disables moves with unmet requirements)
+- Burn momentum to upgrade roll outcomes
+- Clickable move cross-references in outcome text
+- Strong Hit / Weak Hit / Miss outcomes shown in move detail view
 
 ### Oracles
 - Oracle table consultation with random rolls
@@ -100,9 +103,15 @@ npm run dev:web   # Web on :5173
 - Delve tables for site exploration
 
 ### Session Log
-- Persistent session log with timestamped entries
-- Interactive links (resource changes, moves, oracles, progress, initiative, debilities, menace)
+- Persistent session log with interactive links
+- Resource changes, moves, oracles, progress, initiative, debilities, menace links
 - State-modifying links with strikethrough after click
+- Burn momentum button on action roll entries
+- Export includes timestamps for each entry
+
+### Initiative Tracking
+- Per-character initiative badges (sword/shield icons) on GCB and character sheet
+- Automatically clears when foe is deselected
 
 ### Admin Dashboard
 - **Users tab** — sortable user table with pagination, role management (promote/demote), delete
@@ -154,8 +163,8 @@ Feature docs are in the `docs/` directory:
 | [log.md](docs/log.md) | Session log with interactive links |
 | [notes.md](docs/notes.md) | Notes dialog |
 | [oracles.md](docs/oracles.md) | Oracle tables |
-| [DATA_FORMAT.md](docs/DATA_FORMAT.md) | Character data format spec |
-| [DICE_ROLLING.md](docs/DICE_ROLLING.md) | Dice rolling implementation |
+| [data_format.md](docs/data_format.md) | Character data format spec |
+| [dice_rolling.md](docs/dice_rolling.md) | Dice rolling implementation |
 
 ## Security
 
