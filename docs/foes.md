@@ -81,7 +81,7 @@ The Foes tab contains:
 
 ## Global Context Integration
 
-The **Foe selector** in GlobalContextBar is populated with active (non-vanquished) encounters. Selecting a foe shows a summary row with rank and progress information.
+The **Foe tile** in GlobalContextBar shows the active encounter's portrait, name, nature (colored), rank, harm, progress score, quantity (if not solo), initiative badge, and vanquished marker. Clicking the tile opens a popover listing all encounters; selecting one updates the active foe. Initiative state (You/Foe) is displayed as a colored badge when set via move outcome links.
 
 ---
 

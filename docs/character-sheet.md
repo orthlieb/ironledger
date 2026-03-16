@@ -131,6 +131,22 @@ Changes to any field in `$state data` trigger a `$effect` watcher that starts/re
 
 ---
 
+## Action Bus Integration
+
+CharacterSheet consumes two reactive buses from `log.svelte.ts`:
+
+### XP Spend Bus
+A `$effect` reads `getXpSpendNonce()` and drains queued XP spend amounts via `drainXpSpend(charId)`. Triggered when the user clicks XP cost links in the session log.
+
+### Generalized Action Bus
+A `$effect` reads `getActionNonce()` and drains queued actions via `drainActions(charId)`. Handles:
+- **Resource changes** (`type: 'resource'`): Applies delta to momentum, health, spirit, supply, mana, xp, bonds, or failures with proper clamping (e.g., momentum -6 to maxMomentum, health/spirit/supply 0-5).
+- **Debility toggles** (`type: 'debility'`): Sets debility flags (wounded, shaken, etc.) to the specified value.
+
+Both buses use the nonce-queue-drain pattern to ensure mutations happen inside Svelte's reactive context (`$effect`), not from external callbacks.
+
+---
+
 ## Icon Imports
 
 | Variable | File | Used for |

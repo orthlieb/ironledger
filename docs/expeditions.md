@@ -97,7 +97,7 @@ The store provides:
 
 ## Global Context Integration
 
-The **Expedition selector** in GlobalContextBar is populated with active (non-complete) journeys and sites in separate `<optgroup>` elements. Selecting an expedition shows a summary row with progress information.
+The **Expedition tile** in GlobalContextBar shows the active expedition's type badge (Journey green / Site blue), name, difficulty, progress score, theme/domain (sites only), and complete marker. Clicking the tile opens a popover listing all expeditions; selecting one updates the active expedition.
 
 ---
 

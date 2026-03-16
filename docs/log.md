@@ -47,25 +47,46 @@ Each entry records a **timestamp**, an optional **delta** (old → new value), a
 
 ### `log.svelte.ts`
 ```ts
-// Reactive store
-let entries: LogEntry[] = $state([]);
+// Module-level reactive state: map of charId → entries (newest first)
+export let logs = $state<Record<string, LogEntry[]>>({});
 
-export function initLog(characterName: string): void
-export function appendLog(entry: LogEntry): void
-export function clearLog(): void
-export function getLog(): LogEntry[]
+export function initLog(charId: string): void        // Load from localStorage
+export function appendLog(charId: string, title: string, html: string, id?: string, source?: string): void
+export function updateLogEntryHtml(charId: string, entryId: string, html: string, source?: string): void
+export function deleteLogEntry(charId: string, entryId: string): void
+export function updateLogEntryNote(charId: string, entryId: string, note: string): void
+export function clearLog(charId: string): void
 ```
 
-`initLog` is called when the CharacterSheet mounts, setting the context character name.
-`appendLog` is called from the character `$effect` watcher whenever a field changes.
+Entries are stored per-character in localStorage keyed as `il-log:{charId}`, max 500 entries. A special `SESSION_LOG_ID = '__session__'` key is used for the global session log shared by all components.
+
+#### XP Spend Bus
+```ts
+export function getXpSpendNonce(): number      // Read in $effect to subscribe
+export function triggerXpSpend(charId, amount)  // Queue XP spend from LogPanel
+export function drainXpSpend(charId): number    // Consume in CharacterSheet $effect
+```
+
+#### Generalized Action Bus
+```ts
+export interface LogAction { charId: string; type: 'resource' | 'debility'; key: string; value: number; }
+export function getActionNonce(): number        // Read in $effect to subscribe
+export function triggerAction(action: LogAction) // Queue from LogPanel click handlers
+export function drainActions(charId): LogAction[] // Consume in CharacterSheet $effect
+```
 
 ### `LogPanel.svelte`
-Props: `characterId: string`, `characterName: string`
-
 Renders:
-- Header bar with character name and **Clear** button (trash icon).
+- Header bar with "SESSION LOG" title, export-as-markdown button, and clear button.
 - Scrollable `<log role="log">` region listing entries in reverse-chronological order (newest at top).
-- Empty state: `◊ NO CHANGES RECORDED YET.` with sub-text.
+- Each entry shows title, timestamp, edit/delete buttons, and rendered HTML content.
+- Per-entry notes with markdown support.
+- Empty state: `◊ NO ENTRIES YET.` with sub-text.
+
+#### Interactive Link Click Delegation
+LogPanel handles clicks on 7 interactive link types embedded in move outcome HTML via event delegation on the entries container. Links that modify state (resource, debility, progress, initiative, menace) are replaced with strikethrough after clicking. Move-links and oracle-links open their respective dialogs.
+
+Callback props: `onMoveLink`, `onOracleLink`, `onProgressLink`, `onInitiativeLink`, `onMenaceLink`.
 
 ---
 
@@ -89,17 +110,15 @@ The log pane in `+page.svelte`:
 
 ---
 
-## Entry Format (reference)
+## Entry Format
 
-```js
-// YRT reference LogEntry shape
-{
-  ts:      number,   // Date.now()
-  type:    LogEntryType,
-  label:   string,   // e.g. "Health"
-  from?:   number,   // previous value
-  to?:     number,   // new value
-  delta?:  number,   // to − from
-  detail?: string,   // freeform note or move name
+```ts
+interface LogEntry {
+  id:      string;   // crypto.randomUUID()
+  title:   string;   // e.g. "Silk Char — Face Danger (Edge)"
+  html:    string;   // rendered HTML content (move outcomes, resource changes, notes)
+  ts:      string;   // ISO 8601 timestamp
+  note?:   string;   // user-authored note attached to this entry
+  source?: string;   // original markdown source (for editable entries like Notes)
 }
 ```

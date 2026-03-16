@@ -2,10 +2,9 @@
 	/**
 	 * GlobalContextBar — Sticky context bar above the tab area.
 	 *
-	 * Shows a character selector dropdown (all owned characters), a live foe
-	 * selector (all active encounters), stubbed expedition selector, action
-	 * buttons (Moves / Oracles / Dice / Notes), and a live stats/resources
-	 * summary for the active character.
+	 * Three tiles (Character, Foe, Expedition) with moderate detail.
+	 * Clicking a tile opens a popover to select/deselect an entity.
+	 * Action buttons (Moves / Oracles / Dice / Notes) sit above the tiles.
 	 */
 
 	import type { CharacterFull } from '$lib/api.js';
@@ -75,350 +74,226 @@
 	// Stat / resource definitions
 	// ---------------------------------------------------------------------------
 	const STAT_DEFS = [
-		{ key: 'edge',   label: 'Edge',   color: '#3b82f6' },
-		{ key: 'heart',  label: 'Heart',  color: '#ef4444' },
-		{ key: 'iron',   label: 'Iron',   color: '#9ca3af' },
-		{ key: 'shadow', label: 'Shadow', color: '#a855f7' },
-		{ key: 'wits',   label: 'Wits',   color: '#f59e0b' },
+		{ key: 'edge',   label: 'E', color: '#3b82f6' },
+		{ key: 'heart',  label: 'H', color: '#ef4444' },
+		{ key: 'iron',   label: 'I', color: '#9ca3af' },
+		{ key: 'shadow', label: 'S', color: '#a855f7' },
+		{ key: 'wits',   label: 'W', color: '#f59e0b' },
 	] as const;
 
 	const RESOURCE_DEFS = [
-		{ key: 'momentum', label: 'Mom',    color: '#60a5fa', icon: iconMomentum },
-		{ key: 'health',   label: 'Health', color: '#f87171', icon: iconHeart    },
-		{ key: 'spirit',   label: 'Spirit', color: '#a78bfa', icon: iconSpirit   },
-		{ key: 'supply',   label: 'Supply', color: '#34d399', icon: iconSupply   },
-		{ key: 'mana',     label: 'Mana',   color: '#f59e0b', icon: iconMana     },
+		{ key: 'momentum', icon: iconMomentum, color: '#60a5fa' },
+		{ key: 'health',   icon: iconHeart,    color: '#f87171' },
+		{ key: 'spirit',   icon: iconSpirit,   color: '#a78bfa' },
+		{ key: 'supply',   icon: iconSupply,   color: '#34d399' },
+		{ key: 'mana',     icon: iconMana,     color: '#f59e0b' },
 	] as const;
+
+	// ---------------------------------------------------------------------------
+	// Popover state
+	// ---------------------------------------------------------------------------
+	let openSelector = $state<'character' | 'foe' | 'expedition' | null>(null);
+
+	function toggleSelector(which: 'character' | 'foe' | 'expedition') {
+		openSelector = openSelector === which ? null : which;
+	}
+	function selectChar(id: string)       { onSelect(id); openSelector = null; }
+	function selectFoe(id: string)        { onFoeSelect?.(id); openSelector = null; }
+	function selectExpedition(id: string)  { onExpeditionSelect?.(id); openSelector = null; }
+
+	function handleWindowClick(e: MouseEvent) {
+		if (openSelector && !(e.target as HTMLElement)?.closest('.gc-tile')) {
+			openSelector = null;
+		}
+	}
 </script>
+
+<svelte:window onclick={handleWindowClick} />
 
 <div class="global-context">
 
-	<!-- ===== Top row: selectors + action buttons ===== -->
-	<div class="global-context-row">
+	<!-- ===== Action buttons row ===== -->
+	<div class="gc-actions-row">
+		<button class="gc-action-btn" onclick={() => onMovesClick?.()} title="Browse and roll moves">Moves</button>
+		<button class="gc-action-btn" onclick={() => onOraclesClick?.()} title="Browse and roll oracles">Oracles</button>
+		<button class="gc-action-btn" onclick={onDiceClick} disabled={!onDiceClick} title="Roll dice">Dice</button>
+		<button class="gc-action-btn" onclick={() => onNotesClick?.()} title="Add a session note">Notes</button>
+	</div>
 
-		<!-- Character dropdown -->
-		<div class="gc-group">
-			<label class="gc-label" for="gcCharacter">Character</label>
-			{#if chars.length === 0}
-				<span class="gc-name gc-name--empty">(none)</span>
-			{:else}
-				<select
-					id="gcCharacter"
-					class="gc-select gc-select--active"
-					value={activeCharId}
-					onchange={(e) => onSelect((e.target as HTMLSelectElement).value)}
-				>
-					<option value="">(none)</option>
+	<!-- ===== Three tiles ===== -->
+	<div class="gc-tiles">
+
+		<!-- CHARACTER TILE -->
+		<div class="gc-tile" class:gc-tile--active={!!data} class:gc-tile--empty={!data}>
+			<button class="gc-tile-btn" onclick={() => toggleSelector('character')} title="Select character">
+				{#if data}
+					<div class="gc-tile-row">
+						{#if data.portrait}
+							<img class="gc-tile-portrait" src={data.portrait} alt={character?.name ?? ''} />
+						{:else}
+							<span class="gc-tile-portrait gc-tile-portrait--placeholder" aria-hidden="true">👤</span>
+						{/if}
+						<span class="gc-tile-name">{character?.name ?? ''}</span>
+					</div>
+					<div class="gc-tile-row gc-tile-stats">
+						{#each STAT_DEFS as stat}
+							<span class="gc-tile-stat" style="color: {stat.color}" title={stat.key}>
+								{stat.label}:{(data as unknown as Record<string, number>)[stat.key] ?? 0}
+							</span>
+						{/each}
+					</div>
+					<div class="gc-tile-row gc-tile-resources">
+						{#each RESOURCE_DEFS as res}
+							<span class="gc-tile-resource" style="color: {res.color}" title={res.key}>
+								<span class="gc-tile-resource-icon">{@html res.icon}</span>
+								{(data as unknown as Record<string, number>)[res.key] ?? 0}
+							</span>
+						{/each}
+					</div>
+				{:else}
+					<span class="gc-tile-placeholder">Select Character</span>
+				{/if}
+			</button>
+
+			{#if openSelector === 'character'}
+				<div class="gc-popover">
+					<button class="gc-popover-item" class:gc-popover-item--active={!activeCharId} onclick={() => selectChar('')}>(None)</button>
 					{#each chars as c (c.id)}
-						<option value={c.id}>{c.name}</option>
+						<button class="gc-popover-item" class:gc-popover-item--active={c.id === activeCharId} onclick={() => selectChar(c.id)}>
+							{c.name}
+						</button>
 					{/each}
-				</select>
+					{#if chars.length === 0}
+						<span class="gc-popover-empty">No characters</span>
+					{/if}
+				</div>
 			{/if}
 		</div>
 
-		<!-- Expedition selector -->
-		<div class="gc-group">
-			<label class="gc-label" for="gcExpedition">Expedition</label>
-			{#if expeditions.length === 0}
-				<span class="gc-name gc-name--empty">(none)</span>
-			{:else}
-				<select
-					id="gcExpedition"
-					class="gc-select"
-					class:gc-select--active={activeExpeditionId !== ''}
-					value={activeExpeditionId}
-					onchange={(e) => onExpeditionSelect?.((e.target as HTMLSelectElement).value)}
-				>
-					<option value="">(none)</option>
-					{#each expeditions as exp (exp.id)}
-						<option value={exp.id}>
-							{exp.name || (exp.type === 'journey' ? 'Unnamed Journey' : 'Unnamed Site')}
-							{exp.complete ? ' \u2713' : ''}
-						</option>
-					{/each}
-				</select>
-			{/if}
-		</div>
+		<!-- FOE TILE -->
+		<div class="gc-tile" class:gc-tile--active={!!activeFoe && !!activeFoeDef} class:gc-tile--empty={!activeFoe || !activeFoeDef}>
+			<button class="gc-tile-btn" onclick={() => toggleSelector('foe')} title="Select foe">
+				{#if activeFoe && activeFoeDef}
+					<div class="gc-tile-row">
+						<img
+							class="gc-tile-portrait"
+							src="/foes/{encodeURIComponent(activeFoeDef.name)}.png"
+							alt={activeFoeDef.name}
+							onerror={(e) => ((e.target as HTMLImageElement).style.display = 'none')}
+						/>
+						<span class="gc-tile-name">{activeFoe.customName || activeFoeDef.name}</span>
+					</div>
+					<div class="gc-tile-row gc-tile-foe-details">
+						<span class="gc-tile-foe-nature" style="color: {activeFoeNature}">{activeFoeDef.nature}</span>
+						<span class="gc-tile-foe-rank">{activeFoeRank?.label ?? activeFoe.effectiveRank}</span>
+						<span class="gc-tile-foe-harm" title="Harm">Harm:{activeFoeRank?.harm ?? '?'}</span>
+					</div>
+					<div class="gc-tile-row gc-tile-foe-bottom">
+						<span class="gc-tile-foe-progress">Progress {activeFoeProgress}/10</span>
+						{#if activeFoe.quantity !== 'solo' && activeFoeQty}
+							<span class="gc-tile-foe-qty">{activeFoeQty.label}</span>
+						{/if}
+						{#if initiative === 1}
+							<span class="gc-initiative gc-initiative--you" title="You have initiative">You</span>
+						{:else if initiative === 2}
+							<span class="gc-initiative gc-initiative--foe" title="Foe has initiative">Foe</span>
+						{/if}
+						{#if activeFoe.vanquished}
+							<span class="gc-tile-vanquished" title="Vanquished">☠</span>
+						{/if}
+					</div>
+				{:else}
+					<span class="gc-tile-placeholder">Select Foe</span>
+				{/if}
+			</button>
 
-		<!-- Foe selector -->
-		<div class="gc-group">
-			<label class="gc-label" for="gcFoe">Foe</label>
-			{#if encounters.length === 0}
-				<span class="gc-name gc-name--empty">(none)</span>
-			{:else}
-				<select
-					id="gcFoe"
-					class="gc-select"
-					class:gc-select--active={activeFoeId !== ''}
-					value={activeFoeId}
-					onchange={(e) => onFoeSelect?.((e.target as HTMLSelectElement).value)}
-				>
-					<option value="">(none)</option>
+			{#if openSelector === 'foe'}
+				<div class="gc-popover">
+					<button class="gc-popover-item" class:gc-popover-item--active={!activeFoeId} onclick={() => selectFoe('')}>(None)</button>
 					{#each encounters as enc (enc.id)}
 						{@const foeDef = findFoe(enc.foeId)}
-						<option value={enc.id}>
+						<button class="gc-popover-item" class:gc-popover-item--active={enc.id === activeFoeId} onclick={() => selectFoe(enc.id)}>
 							{enc.customName || foeDef?.name || enc.foeId}
 							{enc.vanquished ? ' ☠' : ''}
-						</option>
+						</button>
 					{/each}
-				</select>
+					{#if encounters.length === 0}
+						<span class="gc-popover-empty">No encounters</span>
+					{/if}
+				</div>
 			{/if}
 		</div>
 
-		<!-- Action buttons -->
-		<div class="gc-actions">
-			<button
-				class="gc-action-btn"
-				onclick={() => onMovesClick?.()}
-				title="Browse and roll moves"
-			>Moves</button>
-			<button
-				class="gc-action-btn"
-				onclick={() => onOraclesClick?.()}
-				title="Browse and roll oracles"
-			>Oracles</button>
-			<button
-				class="gc-action-btn"
-				onclick={onDiceClick}
-				disabled={!onDiceClick}
-				title="Roll dice"
-			>Dice</button>
-			<button
-				class="gc-action-btn"
-				onclick={() => onNotesClick?.()}
-				title="Add a session note"
-			>Notes</button>
+		<!-- EXPEDITION TILE -->
+		<div class="gc-tile" class:gc-tile--active={!!activeExpedition} class:gc-tile--empty={!activeExpedition}>
+			<button class="gc-tile-btn" onclick={() => toggleSelector('expedition')} title="Select expedition">
+				{#if activeExpedition}
+					<div class="gc-tile-row">
+						<span class="gc-tile-exp-badge"
+							style="background: {activeExpedition.type === 'journey' ? 'rgba(52,211,153,0.15)' : 'rgba(96,165,250,0.15)'}; color: {activeExpedition.type === 'journey' ? '#34d399' : '#60a5fa'}"
+						>{activeExpedition.type === 'journey' ? 'Journey' : 'Site'}</span>
+						<span class="gc-tile-name">{activeExpedition.name || 'Unnamed'}</span>
+					</div>
+					<div class="gc-tile-row gc-tile-exp-details">
+						<span class="gc-tile-exp-difficulty">
+							{activeExpedition.difficulty.charAt(0).toUpperCase() + activeExpedition.difficulty.slice(1)}
+						</span>
+						<span class="gc-tile-exp-progress">Progress {expProgress}/10</span>
+					</div>
+					<div class="gc-tile-row gc-tile-exp-bottom">
+						{#if activeExpedition.type === 'site' && activeExpedition.theme}
+							<span class="gc-tile-exp-meta" style="color: #a855f7">{activeExpedition.theme}</span>
+						{/if}
+						{#if activeExpedition.type === 'site' && activeExpedition.domain}
+							<span class="gc-tile-exp-meta" style="color: #fb923c">{activeExpedition.domain}</span>
+						{/if}
+						{#if activeExpedition.complete}
+							<span class="gc-tile-exp-complete" title="Complete">{'\u2713'} Complete</span>
+						{/if}
+					</div>
+				{:else}
+					<span class="gc-tile-placeholder">Select Expedition</span>
+				{/if}
+			</button>
+
+			{#if openSelector === 'expedition'}
+				<div class="gc-popover">
+					<button class="gc-popover-item" class:gc-popover-item--active={!activeExpeditionId} onclick={() => selectExpedition('')}>(None)</button>
+					{#each expeditions as exp (exp.id)}
+						<button class="gc-popover-item" class:gc-popover-item--active={exp.id === activeExpeditionId} onclick={() => selectExpedition(exp.id)}>
+							{exp.name || (exp.type === 'journey' ? 'Unnamed Journey' : 'Unnamed Site')}
+							{exp.complete ? ' \u2713' : ''}
+						</button>
+					{/each}
+					{#if expeditions.length === 0}
+						<span class="gc-popover-empty">No expeditions</span>
+					{/if}
+				</div>
+			{/if}
 		</div>
 
 	</div>
 
-	<!-- ===== Stats + resources summary row (only when a character is selected) ===== -->
-	{#if data}
-		<div class="gc-stats-row">
-
-			<!-- Character portrait + name -->
-			{#if data.portrait}
-				<img class="gc-char-portrait" src={data.portrait} alt={character?.name ?? 'Character'} />
-			{:else}
-				<span class="gc-char-portrait gc-char-portrait--placeholder" aria-hidden="true">👤</span>
-			{/if}
-			<span class="gc-entity-name">{character?.name ?? ''}</span>
-
-			<span class="gc-stats-sep" aria-hidden="true"></span>
-
-			<!-- Core stats -->
-			<div class="gc-stats-group">
-				{#each STAT_DEFS as stat}
-					<span class="gc-stat-item" title={stat.label}>
-						<span class="gc-stat-label" style="color: {stat.color}">{stat.label}</span>
-						<span class="gc-stat-value">{(data as unknown as Record<string, number>)[stat.key] ?? 0}</span>
-					</span>
-				{/each}
-			</div>
-
-			<span class="gc-stats-sep" aria-hidden="true"></span>
-
-			<!-- Resources -->
-			<div class="gc-stats-group">
-				{#each RESOURCE_DEFS as res}
-					<span class="gc-stat-item gc-resource-item" title={res.label}>
-						<span class="gc-resource-icon" style="color: {res.color}">{@html res.icon}</span>
-						<span class="gc-stat-label" style="color: {res.color}">{res.label}</span>
-						<span class="gc-stat-value">{(data as unknown as Record<string, number>)[res.key] ?? 0}</span>
-					</span>
-				{/each}
-			</div>
-
-		</div>
-	{/if}
-
-	<!-- ===== Foe summary row (only when a foe is selected) ===== -->
-	{#if activeFoe && activeFoeDef}
-		<div class="gc-foe-row">
-
-			<!-- Portrait + name -->
-			<img
-				class="gc-foe-portrait"
-				src="/foes/{encodeURIComponent(activeFoeDef.name)}.png"
-				alt={activeFoeDef.name}
-				onerror={(e) => ((e.target as HTMLImageElement).style.display = 'none')}
-			/>
-			<span class="gc-entity-name">{activeFoe.customName || activeFoeDef.name}</span>
-
-			<span class="gc-stats-sep" aria-hidden="true"></span>
-
-			<div class="gc-stats-group">
-				<!-- Nature -->
-				<span class="gc-stat-item" title="Nature">
-					<span class="gc-stat-label" style="color: {activeFoeNature}">{activeFoeDef.nature}</span>
-				</span>
-
-				<span class="gc-stats-sep" aria-hidden="true"></span>
-
-				<!-- Rank -->
-				<span class="gc-stat-item" title="Rank">
-					<span class="gc-stat-label">Rank</span>
-					<span class="gc-stat-value gc-stat-value--normal">{activeFoeRank?.label ?? activeFoe.effectiveRank}</span>
-				</span>
-
-				<!-- Harm -->
-				<span class="gc-stat-item" title="Harm per strike">
-					<span class="gc-stat-label" style="color: #f87171">Harm</span>
-					<span class="gc-stat-value">{activeFoeRank?.harm ?? '?'}</span>
-				</span>
-
-				<!-- Progress -->
-				<span class="gc-stat-item" title="Progress">
-					<span class="gc-stat-label">Progress</span>
-					<span class="gc-stat-value">{activeFoeProgress}/10</span>
-				</span>
-
-				<!-- Quantity (if not solo) -->
-				{#if activeFoe.quantity !== 'solo' && activeFoeQty}
-					<span class="gc-stat-item" title="Quantity">
-						<span class="gc-stat-label">Qty</span>
-						<span class="gc-stat-value">{activeFoeQty.label}</span>
-					</span>
-				{/if}
-
-				<!-- Initiative badge -->
-				{#if initiative === 1}
-					<span class="gc-initiative gc-initiative--you" title="You have initiative">You</span>
-				{:else if initiative === 2}
-					<span class="gc-initiative gc-initiative--foe" title="Foe has initiative">Foe</span>
-				{/if}
-
-				<!-- Vanquished marker -->
-				{#if activeFoe.vanquished}
-					<span class="gc-foe-vanquished" title="Vanquished">☠ Vanquished</span>
-				{/if}
-			</div>
-
-		</div>
-	{/if}
-
-	<!-- ===== Expedition summary row (only when an expedition is selected) ===== -->
-	{#if activeExpedition}
-		<div class="gc-expedition-row">
-			<span class="gc-expedition-type-badge"
-				style="background: {activeExpedition.type === 'journey' ? 'rgba(52,211,153,0.15)' : 'rgba(96,165,250,0.15)'}; color: {activeExpedition.type === 'journey' ? '#34d399' : '#60a5fa'}"
-			>{activeExpedition.type === 'journey' ? 'Journey' : 'Site'}</span>
-			<span class="gc-entity-name">{activeExpedition.name || 'Unnamed'}</span>
-
-			<span class="gc-stats-sep" aria-hidden="true"></span>
-
-			<div class="gc-stats-group">
-				<!-- Difficulty -->
-				<span class="gc-stat-item" title="Difficulty">
-					<span class="gc-stat-label">Rank</span>
-					<span class="gc-stat-value gc-stat-value--normal">
-						{activeExpedition.difficulty.charAt(0).toUpperCase() + activeExpedition.difficulty.slice(1)}
-					</span>
-				</span>
-
-				<!-- Progress -->
-				<span class="gc-stat-item" title="Progress">
-					<span class="gc-stat-label">Progress</span>
-					<span class="gc-stat-value">{expProgress}/10</span>
-				</span>
-
-				<!-- Theme (sites only) -->
-				{#if activeExpedition.type === 'site' && activeExpedition.theme}
-					<span class="gc-stat-item" title="Theme">
-						<span class="gc-stat-label" style="color: #a855f7">Theme</span>
-						<span class="gc-stat-value gc-stat-value--normal">{activeExpedition.theme}</span>
-					</span>
-				{/if}
-
-				<!-- Domain (sites only) -->
-				{#if activeExpedition.type === 'site' && activeExpedition.domain}
-					<span class="gc-stat-item" title="Domain">
-						<span class="gc-stat-label" style="color: #fb923c">Domain</span>
-						<span class="gc-stat-value gc-stat-value--normal">{activeExpedition.domain}</span>
-					</span>
-				{/if}
-
-				<!-- Complete marker -->
-				{#if activeExpedition.complete}
-					<span class="gc-expedition-complete" title="Complete">{'\u2713'} Complete</span>
-				{/if}
-			</div>
-		</div>
-	{/if}
-
 </div>
 
 <style>
+	/* ===== Container ===== */
 	.global-context {
 		background: rgba(245, 158, 11, 0.07);
 		border: 1px solid rgba(245, 158, 11, 0.18);
 		border-radius: 6px;
-		padding: 0.6rem 0.75rem;
+		padding: 0.5rem 0.6rem;
 		flex-shrink: 0;
 	}
 
-	.global-context-row {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.75rem;
-		align-items: flex-end;
-	}
-
-	.gc-group {
-		display: flex;
-		flex-direction: column;
-		flex: 1;
-		min-width: 8rem;
-	}
-
-	.gc-label {
-		font-family: var(--font-ui);
-		font-size: 0.62rem;
-		font-weight: 600;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--text-dimmer);
-		margin-bottom: 3px;
-	}
-
-	/* Active character dropdown — slightly more prominent than stub selects */
-	.gc-select--active {
-		color: var(--text);
-		opacity: 1;
-		font-weight: 600;
-	}
-
-	/* Disabled/stub dropdowns */
-	.gc-select {
-		font-family: var(--font-ui);
-		font-size: 0.8rem;
-		color: var(--text-dimmer);
-		background: var(--bg-inset);
-		border: 1px solid var(--border);
-		border-radius: 4px;
-		padding: 4px 8px;
-	}
-	.gc-select:disabled { opacity: 0.45; cursor: not-allowed; }
-
-	/* Read-only name when no characters exist */
-	.gc-name--empty {
-		font-family: var(--font-ui);
-		font-size: 0.8rem;
-		color: var(--text-dimmer);
-		padding: 4px 8px;
-		background: var(--bg-inset);
-		border: 1px solid var(--border);
-		border-radius: 4px;
-		opacity: 0.45;
-	}
-
-	.gc-actions {
+	/* ===== Action buttons row ===== */
+	.gc-actions-row {
 		display: flex;
 		gap: 0.35rem;
-		align-self: flex-end;
-		margin-left: auto;
-		padding-left: 0.75rem;
-		border-left: 1px solid rgba(245, 158, 11, 0.2);
+		justify-content: flex-end;
+		padding-bottom: 0.45rem;
+		margin-bottom: 0.45rem;
+		border-bottom: 1px solid rgba(245, 158, 11, 0.15);
 	}
 
 	.gc-action-btn {
@@ -446,125 +321,174 @@
 		background: color-mix(in srgb, var(--text-accent) 8%, transparent);
 	}
 
-	/* Stats row */
-	.gc-stats-row {
-		display: flex;
-		flex-wrap: wrap;
+	/* ===== Tile grid ===== */
+	.gc-tiles {
+		display: grid;
+		grid-template-columns: 1fr 1fr 1fr;
 		gap: 0.5rem;
-		align-items: center;
-		margin-top: 0.5rem;
-		padding-top: 0.4rem;
-		border-top: 1px solid rgba(245, 158, 11, 0.15);
-		font-size: 0.75rem;
 	}
 
-	.gc-stats-group {
-		display: flex;
-		gap: 0.5rem;
-		align-items: center;
+	/* ===== Individual tile ===== */
+	.gc-tile {
+		position: relative;
+		border-radius: 6px;
+		min-height: 4.5rem;
 	}
 
-	.gc-stat-item {
+	.gc-tile--empty {
+		border: 1.5px dashed var(--border);
+		background: rgba(0, 0, 0, 0.06);
+	}
+	.gc-tile--active {
+		border: 1.5px solid rgba(245, 158, 11, 0.3);
+		background: var(--bg-card, rgba(0, 0, 0, 0.12));
+		border-left: 3px solid rgba(245, 158, 11, 0.6);
+	}
+
+	/* Full-area clickable button */
+	.gc-tile-btn {
 		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		width: 100%;
+		height: 100%;
+		min-height: 4.5rem;
+		padding: 0.4rem 0.5rem;
+		background: none;
+		border: none;
+		color: inherit;
+		cursor: pointer;
+		text-align: left;
 		gap: 0.2rem;
-		align-items: baseline;
+		transition: background 0.12s;
+		border-radius: 6px;
+	}
+	.gc-tile-btn:hover {
+		background: rgba(245, 158, 11, 0.06);
 	}
 
-	.gc-resource-item { align-items: center; }
-
-	.gc-stat-label {
+	/* Placeholder text for empty tiles */
+	.gc-tile-placeholder {
 		font-family: var(--font-ui);
-		font-weight: 600;
-		font-size: 0.62rem;
-		text-transform: uppercase;
-		letter-spacing: 0.03em;
-		opacity: 0.9;
+		font-size: 0.72rem;
+		color: var(--text-dimmer);
+		opacity: 0.6;
+		text-align: center;
+		width: 100%;
 	}
 
-	.gc-stat-value {
-		font-family: var(--font-ui);
-		font-weight: 700;
-		font-size: 0.8rem;
-		color: var(--text);
-	}
-	.gc-stat-value--normal { font-weight: 400; }
-
-	.gc-resource-icon {
+	/* Tile rows */
+	.gc-tile-row {
 		display: flex;
 		align-items: center;
-		line-height: 0;
-	}
-	.gc-resource-icon :global(svg) {
-		width: 11px;
-		height: 11px;
-		fill: currentColor;
+		gap: 0.35rem;
+		min-height: 0;
 	}
 
-	.gc-stats-sep {
-		display: inline-block;
-		width: 1px;
-		height: 0.9rem;
-		background: var(--border);
-		flex-shrink: 0;
-		align-self: center;
-	}
-
-	/* Entity name (character or foe) beside portrait */
-	.gc-entity-name {
-		font-family: var(--font-display);
-		font-size: 0.78rem;
-		font-weight: 700;
-		letter-spacing: 0.03em;
-		color: var(--text);
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		max-width: 10rem;
-	}
-
-	/* Character portrait in stats row */
-	.gc-char-portrait {
-		width: 28px;
-		height: 28px;
+	/* Portrait */
+	.gc-tile-portrait {
+		width: 24px;
+		height: 24px;
 		border-radius: 50%;
 		object-fit: cover;
 		border: 1px solid var(--border-mid);
 		flex-shrink: 0;
 	}
-	.gc-char-portrait--placeholder {
+	.gc-tile-portrait--placeholder {
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		background: var(--bg-inset);
-		font-size: 0.85rem;
+		font-size: 0.75rem;
 	}
 
-	/* Foe summary row */
-	.gc-foe-row {
+	/* Entity name */
+	.gc-tile-name {
+		font-family: var(--font-display);
+		font-size: 0.72rem;
+		font-weight: 700;
+		letter-spacing: 0.02em;
+		color: var(--text);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	/* ===== Character tile stats ===== */
+	.gc-tile-stats {
+		gap: 0.4rem;
+	}
+	.gc-tile-stat {
+		font-family: var(--font-ui);
+		font-size: 0.65rem;
+		font-weight: 700;
+		letter-spacing: 0.02em;
+	}
+
+	.gc-tile-resources {
+		gap: 0.35rem;
+	}
+	.gc-tile-resource {
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
-		margin-top: 0.5rem;
-		padding-top: 0.4rem;
-		border-top: 1px solid rgba(245, 158, 11, 0.15);
+		gap: 1px;
+		font-family: var(--font-ui);
+		font-size: 0.65rem;
+		font-weight: 700;
+	}
+	.gc-tile-resource-icon {
+		display: flex;
+		align-items: center;
+		line-height: 0;
+	}
+	.gc-tile-resource-icon :global(svg) {
+		width: 10px;
+		height: 10px;
+		fill: currentColor;
 	}
 
-	.gc-foe-portrait {
-		width: 28px;
-		height: 28px;
-		border-radius: 50%;
-		object-fit: cover;
-		border: 1px solid var(--border-mid);
-		flex-shrink: 0;
+	/* ===== Foe tile details ===== */
+	.gc-tile-foe-details {
+		gap: 0.35rem;
+		font-family: var(--font-ui);
+		font-size: 0.62rem;
+		font-weight: 600;
 	}
-
-	.gc-initiative {
+	.gc-tile-foe-nature {
+		text-transform: capitalize;
+	}
+	.gc-tile-foe-rank {
+		color: var(--text-dimmer);
+	}
+	.gc-tile-foe-harm {
+		color: #f87171;
+	}
+	.gc-tile-foe-bottom {
+		gap: 0.3rem;
 		font-family: var(--font-ui);
 		font-size: 0.6rem;
+	}
+	.gc-tile-foe-progress {
+		color: var(--text-dimmer);
+		font-weight: 600;
+	}
+	.gc-tile-foe-qty {
+		color: var(--text-dimmer);
+		font-weight: 500;
+	}
+	.gc-tile-vanquished {
+		color: var(--color-danger, #ef4444);
+		font-size: 0.7rem;
+	}
+
+	/* Initiative badges */
+	.gc-initiative {
+		font-family: var(--font-ui);
+		font-size: 0.55rem;
 		font-weight: 700;
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		padding: 1px 5px;
+		padding: 1px 4px;
 		border-radius: 3px;
 		white-space: nowrap;
 	}
@@ -577,55 +501,97 @@
 		color: #ef4444;
 	}
 
-	.gc-foe-vanquished {
+	/* ===== Expedition tile details ===== */
+	.gc-tile-exp-badge {
 		font-family: var(--font-ui);
-		font-size: 0.62rem;
+		font-size: 0.58rem;
 		font-weight: 600;
 		letter-spacing: 0.04em;
-		color: var(--color-danger, #ef4444);
-		opacity: 0.8;
-	}
-
-	/* Expedition summary row */
-	.gc-expedition-row {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		margin-top: 0.5rem;
-		padding-top: 0.4rem;
-		border-top: 1px solid rgba(245, 158, 11, 0.15);
-	}
-
-	.gc-expedition-type-badge {
-		font-family: var(--font-ui);
-		font-size: 0.62rem;
-		font-weight: 600;
-		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		padding: 2px 6px;
+		padding: 1px 5px;
 		border-radius: 3px;
 		white-space: nowrap;
 		flex-shrink: 0;
 	}
-
-	.gc-expedition-complete {
+	.gc-tile-exp-details {
+		gap: 0.4rem;
 		font-family: var(--font-ui);
 		font-size: 0.62rem;
 		font-weight: 600;
-		letter-spacing: 0.04em;
+	}
+	.gc-tile-exp-difficulty {
+		color: var(--text-dimmer);
+	}
+	.gc-tile-exp-progress {
+		color: var(--text-dimmer);
+	}
+	.gc-tile-exp-bottom {
+		gap: 0.3rem;
+		font-family: var(--font-ui);
+		font-size: 0.6rem;
+	}
+	.gc-tile-exp-meta {
+		font-weight: 600;
+		font-size: 0.58rem;
+	}
+	.gc-tile-exp-complete {
 		color: #34d399;
-		opacity: 0.8;
+		font-weight: 600;
+		font-size: 0.6rem;
 	}
 
-	@media (max-width: 480px) {
-		.gc-actions {
-			margin-left: 0;
-			padding-left: 0;
-			border-left: none;
-			border-top: 1px solid rgba(245, 158, 11, 0.2);
-			padding-top: 0.5rem;
-			width: 100%;
-			justify-content: flex-end;
+	/* ===== Popover dropdown ===== */
+	.gc-popover {
+		position: absolute;
+		top: 100%;
+		left: 0;
+		right: 0;
+		z-index: 50;
+		background: var(--bg-surface, #1e1e2e);
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+		max-height: 12rem;
+		overflow-y: auto;
+		margin-top: 2px;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.gc-popover-item {
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		color: var(--text);
+		background: none;
+		border: none;
+		padding: 0.4rem 0.6rem;
+		cursor: pointer;
+		text-align: left;
+		transition: background 0.1s;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.gc-popover-item:hover {
+		background: rgba(245, 158, 11, 0.12);
+	}
+	.gc-popover-item--active {
+		color: var(--text-accent, #f59e0b);
+		font-weight: 600;
+	}
+
+	.gc-popover-empty {
+		font-family: var(--font-ui);
+		font-size: 0.68rem;
+		color: var(--text-dimmer);
+		padding: 0.4rem 0.6rem;
+		opacity: 0.6;
+	}
+
+	/* ===== Responsive: stack tiles on mobile ===== */
+	@media (max-width: 768px) {
+		.gc-tiles {
+			grid-template-columns: 1fr;
 		}
 	}
 </style>
