@@ -569,7 +569,7 @@
 	   Full-width header wrapper (Import, New, GlobalContextBar)
 	   ============================================================ */
 	.gc-wrapper {
-		padding: 0.75rem 0 0;
+		padding: 0.25rem 0 0;
 		flex-shrink: 0;
 	}
 

@@ -74,11 +74,11 @@
 	// Stat / resource definitions
 	// ---------------------------------------------------------------------------
 	const STAT_DEFS = [
-		{ key: 'edge',   label: 'E', color: '#3b82f6' },
-		{ key: 'heart',  label: 'H', color: '#ef4444' },
-		{ key: 'iron',   label: 'I', color: '#9ca3af' },
-		{ key: 'shadow', label: 'S', color: '#a855f7' },
-		{ key: 'wits',   label: 'W', color: '#f59e0b' },
+		{ key: 'edge',   label: 'Edge',   color: '#3b82f6' },
+		{ key: 'heart',  label: 'Heart',  color: '#ef4444' },
+		{ key: 'iron',   label: 'Iron',   color: '#9ca3af' },
+		{ key: 'shadow', label: 'Shadow', color: '#a855f7' },
+		{ key: 'wits',   label: 'Wits',   color: '#f59e0b' },
 	] as const;
 
 	const RESOURCE_DEFS = [
@@ -129,19 +129,18 @@
 						{/if}
 						<span class="gc-tile-name">{character?.name ?? ''}</span>
 					</div>
-					<div class="gc-tile-row gc-tile-stats">
-						{#each STAT_DEFS as stat}
-							<span class="gc-tile-stat" style="color: {stat.color}" title={stat.key}>
-								{stat.label}:{(data as unknown as Record<string, number>)[stat.key] ?? 0}
-							</span>
-						{/each}
-					</div>
-					<div class="gc-tile-row gc-tile-resources">
-						{#each RESOURCE_DEFS as res}
-							<span class="gc-tile-resource" style="color: {res.color}" title={res.key}>
-								<span class="gc-tile-resource-icon">{@html res.icon}</span>
-								{(data as unknown as Record<string, number>)[res.key] ?? 0}
-							</span>
+					<div class="gc-tile-stat-grid">
+						{#each STAT_DEFS as stat, i}
+							<div class="gc-tile-stat-col">
+								<span class="gc-tile-stat" style="background: {stat.color}22; color: {stat.color}" title={stat.key}>
+									<span class="gc-tile-stat-label">{stat.label}</span>
+									<span class="gc-tile-stat-value">{(data as unknown as Record<string, number>)[stat.key] ?? 0}</span>
+								</span>
+								<span class="gc-tile-resource" style="color: {RESOURCE_DEFS[i].color}" title={RESOURCE_DEFS[i].key}>
+									<span class="gc-tile-resource-icon">{@html RESOURCE_DEFS[i].icon}</span>
+									{(data as unknown as Record<string, number>)[RESOURCE_DEFS[i].key] ?? 0}
+								</span>
+							</div>
 						{/each}
 					</div>
 				{:else}
@@ -178,7 +177,7 @@
 						<span class="gc-tile-name">{activeFoe.customName || activeFoeDef.name}</span>
 					</div>
 					<div class="gc-tile-row gc-tile-foe-details">
-						<span class="gc-tile-foe-nature" style="color: {activeFoeNature}">{activeFoeDef.nature}</span>
+						<span class="gc-tile-badge" style="background: {activeFoeNature}22; color: {activeFoeNature}">{activeFoeDef.nature}</span>
 						<span class="gc-tile-foe-rank">{activeFoeRank?.label ?? activeFoe.effectiveRank}</span>
 						<span class="gc-tile-foe-harm" title="Harm">Harm:{activeFoeRank?.harm ?? '?'}</span>
 					</div>
@@ -223,24 +222,24 @@
 			<button class="gc-tile-btn" onclick={() => toggleSelector('expedition')} title="Select expedition">
 				{#if activeExpedition}
 					<div class="gc-tile-row">
-						<span class="gc-tile-exp-badge"
-							style="background: {activeExpedition.type === 'journey' ? 'rgba(52,211,153,0.15)' : 'rgba(96,165,250,0.15)'}; color: {activeExpedition.type === 'journey' ? '#34d399' : '#60a5fa'}"
-						>{activeExpedition.type === 'journey' ? 'Journey' : 'Site'}</span>
 						<span class="gc-tile-name">{activeExpedition.name || 'Unnamed'}</span>
 					</div>
 					<div class="gc-tile-row gc-tile-exp-details">
+						<span class="gc-tile-badge"
+							style="background: {activeExpedition.type === 'journey' ? 'rgba(52,211,153,0.15)' : 'rgba(96,165,250,0.15)'}; color: {activeExpedition.type === 'journey' ? '#34d399' : '#60a5fa'}"
+						>{activeExpedition.type === 'journey' ? 'Journey' : 'Site'}</span>
 						<span class="gc-tile-exp-difficulty">
 							{activeExpedition.difficulty.charAt(0).toUpperCase() + activeExpedition.difficulty.slice(1)}
 						</span>
-						<span class="gc-tile-exp-progress">Progress {expProgress}/10</span>
-					</div>
-					<div class="gc-tile-row gc-tile-exp-bottom">
 						{#if activeExpedition.type === 'site' && activeExpedition.theme}
 							<span class="gc-tile-exp-meta" style="color: #a855f7">{activeExpedition.theme}</span>
 						{/if}
 						{#if activeExpedition.type === 'site' && activeExpedition.domain}
 							<span class="gc-tile-exp-meta" style="color: #fb923c">{activeExpedition.domain}</span>
 						{/if}
+					</div>
+					<div class="gc-tile-row gc-tile-exp-bottom">
+						<span class="gc-tile-exp-progress">Progress {expProgress}/10</span>
 						{#if activeExpedition.complete}
 							<span class="gc-tile-exp-complete" title="Complete">{'\u2713'} Complete</span>
 						{/if}
@@ -403,20 +402,39 @@
 		text-overflow: ellipsis;
 	}
 
-	/* ===== Character tile stats ===== */
-	.gc-tile-stats {
-		gap: 0.5rem;
+	/* ===== Character tile stat+resource grid ===== */
+	.gc-tile-stat-grid {
+		display: flex;
+		gap: 0.3rem;
+		justify-content: center;
+	}
+	.gc-tile-stat-col {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 2px;
 	}
 	.gc-tile-stat {
 		font-family: var(--font-ui);
-		font-size: 0.78rem;
 		font-weight: 700;
 		letter-spacing: 0.02em;
+		padding: 2px 6px;
+		border-radius: 3px;
+		display: inline-flex;
+		flex-direction: column;
+		align-items: center;
+		line-height: 1;
+		gap: 1px;
+	}
+	.gc-tile-stat-label {
+		font-size: 0.62rem;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+	}
+	.gc-tile-stat-value {
+		font-size: 0.82rem;
 	}
 
-	.gc-tile-resources {
-		gap: 0.4rem;
-	}
 	.gc-tile-resource {
 		display: flex;
 		align-items: center;
@@ -436,15 +454,25 @@
 		fill: currentColor;
 	}
 
+	/* ===== Shared badge/tag (foe nature, expedition type) ===== */
+	.gc-tile-badge {
+		font-family: var(--font-ui);
+		font-size: 0.68rem;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		text-transform: capitalize;
+		padding: 2px 6px;
+		border-radius: 3px;
+		white-space: nowrap;
+		flex-shrink: 0;
+	}
+
 	/* ===== Foe tile details ===== */
 	.gc-tile-foe-details {
 		gap: 0.4rem;
 		font-family: var(--font-ui);
 		font-size: 0.75rem;
 		font-weight: 600;
-	}
-	.gc-tile-foe-nature {
-		text-transform: capitalize;
 	}
 	.gc-tile-foe-rank {
 		color: var(--text-dimmer);
@@ -491,17 +519,6 @@
 	}
 
 	/* ===== Expedition tile details ===== */
-	.gc-tile-exp-badge {
-		font-family: var(--font-ui);
-		font-size: 0.68rem;
-		font-weight: 600;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		padding: 2px 6px;
-		border-radius: 3px;
-		white-space: nowrap;
-		flex-shrink: 0;
-	}
 	.gc-tile-exp-details {
 		gap: 0.45rem;
 		font-family: var(--font-ui);
