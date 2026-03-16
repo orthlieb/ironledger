@@ -4,7 +4,7 @@
 	 *
 	 * Three tiles (Character, Foe, Expedition) with moderate detail.
 	 * Clicking a tile opens a popover to select/deselect an entity.
-	 * Action buttons (Moves / Oracles / Dice / Notes) sit above the tiles.
+	 * Action buttons (Moves / Oracles / Dice / Notes) stacked on the right.
 	 */
 
 	import type { CharacterFull } from '$lib/api.js';
@@ -112,13 +112,7 @@
 
 <div class="global-context">
 
-	<!-- ===== Action buttons row ===== -->
-	<div class="gc-actions-row">
-		<button class="gc-action-btn" onclick={() => onMovesClick?.()} title="Browse and roll moves">Moves</button>
-		<button class="gc-action-btn" onclick={() => onOraclesClick?.()} title="Browse and roll oracles">Oracles</button>
-		<button class="gc-action-btn" onclick={onDiceClick} disabled={!onDiceClick} title="Roll dice">Dice</button>
-		<button class="gc-action-btn" onclick={() => onNotesClick?.()} title="Add a session note">Notes</button>
-	</div>
+	<div class="gc-layout">
 
 	<!-- ===== Three tiles ===== -->
 	<div class="gc-tiles">
@@ -274,6 +268,16 @@
 
 	</div>
 
+	<!-- ===== Action buttons column ===== -->
+	<div class="gc-actions">
+		<button class="btn btn-primary" onclick={() => onMovesClick?.()} title="Browse and roll moves">Moves</button>
+		<button class="btn btn-primary" onclick={() => onOraclesClick?.()} title="Browse and roll oracles">Oracles</button>
+		<button class="btn btn-primary" onclick={onDiceClick} disabled={!onDiceClick} title="Roll dice">Dice</button>
+		<button class="btn btn-primary" onclick={() => onNotesClick?.()} title="Add a session note">Notes</button>
+	</div>
+
+	</div>
+
 </div>
 
 <style>
@@ -286,43 +290,28 @@
 		flex-shrink: 0;
 	}
 
-	/* ===== Action buttons row ===== */
-	.gc-actions-row {
+	/* ===== Main layout: tiles + actions side-by-side ===== */
+	.gc-layout {
 		display: flex;
-		gap: 0.35rem;
-		justify-content: flex-end;
-		padding-bottom: 0.45rem;
-		margin-bottom: 0.45rem;
-		border-bottom: 1px solid rgba(245, 158, 11, 0.15);
+		gap: 0.5rem;
+		align-items: stretch;
 	}
 
-	.gc-action-btn {
-		font-family: var(--font-ui);
-		font-size: 0.7rem;
-		font-weight: 600;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		color: var(--text-dimmer);
-		background: transparent;
-		border: 1px solid var(--border);
-		border-radius: 4px;
-		padding: 4px 10px;
-		cursor: pointer;
-		white-space: nowrap;
-		transition: color 0.12s, border-color 0.12s, background 0.12s;
-	}
-	.gc-action-btn:disabled {
-		cursor: not-allowed;
-		opacity: 0.5;
-	}
-	.gc-action-btn:not(:disabled):hover {
-		color: var(--text-accent);
-		border-color: var(--text-accent);
-		background: color-mix(in srgb, var(--text-accent) 8%, transparent);
+	/* ===== Action buttons 2×2 grid ===== */
+	.gc-actions {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 0.3rem;
+		flex-shrink: 0;
+		align-content: center;
+		padding-left: 0.4rem;
+		border-left: 1px solid rgba(245, 158, 11, 0.15);
 	}
 
 	/* ===== Tile grid ===== */
 	.gc-tiles {
+		flex: 1;
+		min-width: 0;
 		display: grid;
 		grid-template-columns: 1fr 1fr 1fr;
 		gap: 0.5rem;
@@ -370,7 +359,7 @@
 	/* Placeholder text for empty tiles */
 	.gc-tile-placeholder {
 		font-family: var(--font-ui);
-		font-size: 0.72rem;
+		font-size: 0.82rem;
 		color: var(--text-dimmer);
 		opacity: 0.6;
 		text-align: center;
@@ -387,8 +376,8 @@
 
 	/* Portrait */
 	.gc-tile-portrait {
-		width: 24px;
-		height: 24px;
+		width: 28px;
+		height: 28px;
 		border-radius: 50%;
 		object-fit: cover;
 		border: 1px solid var(--border-mid);
@@ -399,13 +388,13 @@
 		align-items: center;
 		justify-content: center;
 		background: var(--bg-inset);
-		font-size: 0.75rem;
+		font-size: 0.85rem;
 	}
 
 	/* Entity name */
 	.gc-tile-name {
 		font-family: var(--font-display);
-		font-size: 0.72rem;
+		font-size: 0.85rem;
 		font-weight: 700;
 		letter-spacing: 0.02em;
 		color: var(--text);
@@ -416,24 +405,24 @@
 
 	/* ===== Character tile stats ===== */
 	.gc-tile-stats {
-		gap: 0.4rem;
+		gap: 0.5rem;
 	}
 	.gc-tile-stat {
 		font-family: var(--font-ui);
-		font-size: 0.65rem;
+		font-size: 0.78rem;
 		font-weight: 700;
 		letter-spacing: 0.02em;
 	}
 
 	.gc-tile-resources {
-		gap: 0.35rem;
+		gap: 0.4rem;
 	}
 	.gc-tile-resource {
 		display: flex;
 		align-items: center;
-		gap: 1px;
+		gap: 2px;
 		font-family: var(--font-ui);
-		font-size: 0.65rem;
+		font-size: 0.78rem;
 		font-weight: 700;
 	}
 	.gc-tile-resource-icon {
@@ -442,16 +431,16 @@
 		line-height: 0;
 	}
 	.gc-tile-resource-icon :global(svg) {
-		width: 10px;
-		height: 10px;
+		width: 12px;
+		height: 12px;
 		fill: currentColor;
 	}
 
 	/* ===== Foe tile details ===== */
 	.gc-tile-foe-details {
-		gap: 0.35rem;
+		gap: 0.4rem;
 		font-family: var(--font-ui);
-		font-size: 0.62rem;
+		font-size: 0.75rem;
 		font-weight: 600;
 	}
 	.gc-tile-foe-nature {
@@ -464,9 +453,9 @@
 		color: #f87171;
 	}
 	.gc-tile-foe-bottom {
-		gap: 0.3rem;
+		gap: 0.35rem;
 		font-family: var(--font-ui);
-		font-size: 0.6rem;
+		font-size: 0.72rem;
 	}
 	.gc-tile-foe-progress {
 		color: var(--text-dimmer);
@@ -478,17 +467,17 @@
 	}
 	.gc-tile-vanquished {
 		color: var(--color-danger, #ef4444);
-		font-size: 0.7rem;
+		font-size: 0.8rem;
 	}
 
 	/* Initiative badges */
 	.gc-initiative {
 		font-family: var(--font-ui);
-		font-size: 0.55rem;
+		font-size: 0.65rem;
 		font-weight: 700;
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		padding: 1px 4px;
+		padding: 2px 5px;
 		border-radius: 3px;
 		white-space: nowrap;
 	}
@@ -504,19 +493,19 @@
 	/* ===== Expedition tile details ===== */
 	.gc-tile-exp-badge {
 		font-family: var(--font-ui);
-		font-size: 0.58rem;
+		font-size: 0.68rem;
 		font-weight: 600;
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
-		padding: 1px 5px;
+		padding: 2px 6px;
 		border-radius: 3px;
 		white-space: nowrap;
 		flex-shrink: 0;
 	}
 	.gc-tile-exp-details {
-		gap: 0.4rem;
+		gap: 0.45rem;
 		font-family: var(--font-ui);
-		font-size: 0.62rem;
+		font-size: 0.75rem;
 		font-weight: 600;
 	}
 	.gc-tile-exp-difficulty {
@@ -526,18 +515,18 @@
 		color: var(--text-dimmer);
 	}
 	.gc-tile-exp-bottom {
-		gap: 0.3rem;
+		gap: 0.35rem;
 		font-family: var(--font-ui);
-		font-size: 0.6rem;
+		font-size: 0.72rem;
 	}
 	.gc-tile-exp-meta {
 		font-weight: 600;
-		font-size: 0.58rem;
+		font-size: 0.7rem;
 	}
 	.gc-tile-exp-complete {
 		color: #34d399;
 		font-weight: 600;
-		font-size: 0.6rem;
+		font-size: 0.72rem;
 	}
 
 	/* ===== Popover dropdown ===== */
@@ -560,11 +549,11 @@
 
 	.gc-popover-item {
 		font-family: var(--font-ui);
-		font-size: 0.72rem;
+		font-size: 0.82rem;
 		color: var(--text);
 		background: none;
 		border: none;
-		padding: 0.4rem 0.6rem;
+		padding: 0.45rem 0.6rem;
 		cursor: pointer;
 		text-align: left;
 		transition: background 0.1s;
@@ -582,16 +571,27 @@
 
 	.gc-popover-empty {
 		font-family: var(--font-ui);
-		font-size: 0.68rem;
+		font-size: 0.78rem;
 		color: var(--text-dimmer);
-		padding: 0.4rem 0.6rem;
+		padding: 0.45rem 0.6rem;
 		opacity: 0.6;
 	}
 
-	/* ===== Responsive: stack tiles on mobile ===== */
+	/* ===== Responsive: stack on mobile ===== */
 	@media (max-width: 768px) {
+		.gc-layout {
+			flex-direction: column;
+		}
 		.gc-tiles {
 			grid-template-columns: 1fr;
+		}
+		.gc-actions {
+			flex-direction: row;
+			justify-content: flex-end;
+			padding-left: 0;
+			border-left: none;
+			padding-top: 0.4rem;
+			border-top: 1px solid rgba(245, 158, 11, 0.15);
 		}
 	}
 </style>
