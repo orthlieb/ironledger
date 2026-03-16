@@ -1,11 +1,10 @@
 /**
- * Dev seed script — creates (or resets) a verified user account.
+ * Dev seed script — creates (or resets) two verified accounts:
  *
- * Usage:
- *   npm run seed                                    # uses defaults
- *   npm run seed -- admin@example.com MyPassword1!  # custom email + password
+ *   1. admin@ironledger.local / adminpassword123!  (role: admin)
+ *   2. dev@ironledger.local   / devpassword123!    (role: user)
  *
- * The user is inserted with emailVerifiedAt already set so you can log in
+ * Both are inserted with emailVerifiedAt already set so you can log in
  * immediately without going through the email flow. Safe to re-run —
  * existing records are updated (upsert on email).
  *
@@ -29,16 +28,13 @@ if (config.NODE_ENV === 'production') {
 }
 
 // ---------------------------------------------------------------------------
-// Args
+// Seed accounts
 // ---------------------------------------------------------------------------
 
-const email    = process.argv[2] ?? 'dev@ironledger.local';
-const password = process.argv[3] ?? 'devpassword123!';
-
-if (password.length < 12) {
-  console.error('❌  Password must be at least 12 characters.');
-  process.exit(1);
-}
+const accounts = [
+  { email: 'admin@ironledger.local', password: 'adminpassword123!', role: 'admin' as const },
+  { email: 'dev@ironledger.local',   password: 'devpassword123!',   role: 'user'  as const },
+];
 
 // ---------------------------------------------------------------------------
 // Connect (admin bypasses RLS)
@@ -53,28 +49,32 @@ const db     = drizzle(client, { schema });
 // ---------------------------------------------------------------------------
 
 try {
-  const passwordHash = await argon2.hash(password);
+  for (const acct of accounts) {
+    const passwordHash = await argon2.hash(acct.password);
 
-  await db
-    .insert(schema.users)
-    .values({
-      email,
-      passwordHash,
-      emailVerifiedAt: new Date(),   // pre-verified — skips email flow
-      isActive:        true,
-    })
-    .onConflictDoUpdate({
-      target: schema.users.email,
-      set: {
+    await db
+      .insert(schema.users)
+      .values({
+        email:           acct.email,
         passwordHash,
-        emailVerifiedAt: new Date(),
+        emailVerifiedAt: new Date(),   // pre-verified — skips email flow
         isActive:        true,
-      },
-    });
+        role:            acct.role,
+      })
+      .onConflictDoUpdate({
+        target: schema.users.email,
+        set: {
+          passwordHash,
+          emailVerifiedAt: new Date(),
+          isActive:        true,
+          role:            acct.role,
+        },
+      });
 
-  console.log(`✅  Seeded user: ${email}`);
-  console.log(`    Password:    ${password}`);
-  console.log(`    Login at:    http://localhost:5173/login`);
+    console.log(`✅  Seeded ${acct.role}: ${acct.email} / ${acct.password}`);
+  }
+
+  console.log(`\n    Login at: http://localhost:5173/login`);
 } catch (err) {
   console.error('❌  Seed failed:', err);
   process.exit(1);

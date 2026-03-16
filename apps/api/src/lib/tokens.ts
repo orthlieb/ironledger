@@ -40,6 +40,7 @@ const publicKey = await (async () => {
 export interface AccessTokenPayload extends JWTPayload {
   sub:   string;   // user UUID
   email: string;
+  role:  string;   // 'user' | 'admin'
 }
 
 /**
@@ -49,8 +50,9 @@ export interface AccessTokenPayload extends JWTPayload {
 export async function signAccessToken(
   userId: string,
   email: string,
+  role: string = 'user',
 ): Promise<string> {
-  return new SignJWT({ email })
+  return new SignJWT({ email, role })
     .setProtectedHeader({ alg: 'RS256' })
     .setSubject(userId)
     .setIssuedAt()

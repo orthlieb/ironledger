@@ -10,13 +10,14 @@ export const handle: Handle = async ({ event, resolve }) => {
 			const [, payloadB64] = token.split('.');
 			const payload = JSON.parse(
 				Buffer.from(payloadB64, 'base64url').toString('utf8'),
-			) as { sub?: string; email?: string; exp?: number };
+			) as { sub?: string; email?: string; role?: string; exp?: number };
 
 			if (payload.exp && payload.exp * 1000 > Date.now()) {
 				event.locals.accessToken = token;
 				event.locals.user = {
 					id: payload.sub ?? '',
 					email: payload.email ?? '',
+					role: payload.role ?? 'user',
 				};
 			} else {
 				// Expired — clear so login redirect works

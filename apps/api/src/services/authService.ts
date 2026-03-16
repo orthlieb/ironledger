@@ -29,6 +29,7 @@ import {
   sendVerificationEmail,
   sendPasswordResetEmail,
 } from '../lib/mailer.js';
+import { getStatus as getMaintenanceStatus } from './maintenanceService.js';
 
 // ---------------------------------------------------------------------------
 // Argon2id configuration
@@ -80,6 +81,12 @@ export interface AuthResult {
 }
 
 export async function register(input: RegisterInput): Promise<void> {
+  // Block registration during maintenance
+  const maint = await getMaintenanceStatus();
+  if (maint.enabled) {
+    throw new AuthError('System is under maintenance. Please try again later.', 'MAINTENANCE_MODE', 503);
+  }
+
   const email = input.email.toLowerCase().trim();
 
   if (!adminDb) throw new AuthError('Admin DB not configured', 'CONFIG_ERROR', 500);
@@ -167,7 +174,7 @@ export async function verifyEmail(rawToken: string): Promise<AuthResult> {
   const refresh   = generateRefreshToken();
   const expiresAt = refreshTokenExpiresAt();
 
-  let verifiedUser: Pick<User, 'id' | 'email'>;
+  let verifiedUser: Pick<User, 'id' | 'email' | 'role'>;
 
   await withUserContext(token.userId, async (tx) => {
     // Mark token used
@@ -181,7 +188,7 @@ export async function verifyEmail(rawToken: string): Promise<AuthResult> {
       .update(users)
       .set({ emailVerifiedAt: new Date() })
       .where(eq(users.id, token.userId))
-      .returning({ id: users.id, email: users.email });
+      .returning({ id: users.id, email: users.email, role: users.role });
 
     if (!u) throw new AuthError('User not found', 'USER_NOT_FOUND', 500);
     verifiedUser = u;
@@ -195,7 +202,7 @@ export async function verifyEmail(rawToken: string): Promise<AuthResult> {
     });
   });
 
-  const accessToken = await signAccessToken(verifiedUser!.id, verifiedUser!.email);
+  const accessToken = await signAccessToken(verifiedUser!.id, verifiedUser!.email, verifiedUser!.role);
 
   return {
     user:         verifiedUser!,
@@ -250,11 +257,23 @@ export async function login(input: LoginInput): Promise<AuthResult> {
     throw new AuthError('Please verify your email address before logging in', 'EMAIL_UNVERIFIED', 403);
   }
 
+  // Maintenance mode gate — admins can still log in
+  if (user.role !== 'admin') {
+    const maint = await getMaintenanceStatus();
+    if (maint.enabled) {
+      throw new AuthError(
+        maint.message || 'System is under maintenance. Please try again later.',
+        'MAINTENANCE_MODE',
+        503,
+      );
+    }
+  }
+
   // Issue tokens
   const familyId    = generateFamilyId();
   const refresh     = generateRefreshToken();
   const expiresAt   = refreshTokenExpiresAt();
-  const accessToken = await signAccessToken(user.id, user.email);
+  const accessToken = await signAccessToken(user.id, user.email, user.role);
 
   await withUserContext(user.id, async (tx) => {
     await tx.insert(refreshTokens).values({
@@ -284,6 +303,12 @@ export async function login(input: LoginInput): Promise<AuthResult> {
 // ---------------------------------------------------------------------------
 
 export async function refresh(rawToken: string): Promise<AuthResult> {
+  // Maintenance mode — block token refresh so sessions expire naturally
+  const maint = await getMaintenanceStatus();
+  if (maint.enabled) {
+    throw new AuthError('System is under maintenance', 'MAINTENANCE_MODE', 503);
+  }
+
   const tokenHash = hashToken(rawToken);
 
   if (!adminDb) throw new AuthError('Admin DB not configured', 'CONFIG_ERROR', 500);
@@ -316,7 +341,7 @@ export async function refresh(rawToken: string): Promise<AuthResult> {
 
   // Fetch the user
   const [user] = await adminDb
-    .select({ id: users.id, email: users.email, isActive: users.isActive })
+    .select({ id: users.id, email: users.email, isActive: users.isActive, role: users.role })
     .from(users)
     .where(eq(users.id, token.userId))
     .limit(1);
@@ -328,7 +353,7 @@ export async function refresh(rawToken: string): Promise<AuthResult> {
   // Rotate: revoke old token, issue new one (same family)
   const newRefresh  = generateRefreshToken();
   const expiresAt   = refreshTokenExpiresAt();
-  const accessToken = await signAccessToken(user.id, user.email);
+  const accessToken = await signAccessToken(user.id, user.email, user.role);
 
   await withUserContext(user.id, async (tx) => {
     // Revoke the old token

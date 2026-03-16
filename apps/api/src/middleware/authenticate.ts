@@ -50,6 +50,7 @@ export async function authenticate(
     req.user = {
       id:    payload.sub,
       email: payload.email,
+      role:  payload.role ?? 'user',
     };
   } catch {
     // Token is invalid, expired, or tampered with.
@@ -76,7 +77,7 @@ export async function optionalAuth(
   try {
     const payload = await verifyAccessToken(token);
     if (payload.sub && payload.email) {
-      req.user = { id: payload.sub, email: payload.email };
+      req.user = { id: payload.sub, email: payload.email, role: payload.role ?? 'user' };
     }
   } catch {
     // Silently ignore invalid tokens in optional mode

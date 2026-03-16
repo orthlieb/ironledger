@@ -30,6 +30,7 @@ export interface ApiError {
 export interface AuthUser {
   id:    string;   // UUID
   email: string;
+  role:  string;   // 'user' | 'admin'
 }
 
 export interface LoginResponse {
@@ -139,4 +140,49 @@ export interface OracleTable {
 export interface OracleEntry {
   topRange: number;
   value:    string | Record<string, unknown>;
+}
+
+// ---------------------------------------------------------------------------
+// Admin
+// ---------------------------------------------------------------------------
+
+export interface AdminUser {
+  id:              string;
+  email:           string;
+  role:            string;
+  isActive:        boolean;
+  createdAt:       string;
+  lastLoginAt:     string | null;
+  characterCount:  number;
+  encounterCount:  number;
+  expeditionCount: number;
+}
+
+export interface AdminStats {
+  totalUsers:       number;
+  activeUsers7d:    number;
+  activeUsers30d:   number;
+  totalCharacters:  number;
+  totalEncounters:  number;
+  totalExpeditions: number;
+}
+
+export interface AuditEvent {
+  id:         string;
+  adminId:    string | null;
+  adminEmail: string | null;
+  eventType:  string;
+  ipAddress:  string | null;
+  metadata:   Record<string, unknown> | null;
+  createdAt:  string;
+}
+
+// ---------------------------------------------------------------------------
+// Maintenance
+// ---------------------------------------------------------------------------
+
+export interface MaintenanceStatus {
+  enabled:    boolean;
+  message:    string | null;
+  shutdownAt: string | null;
 }

@@ -21,6 +21,7 @@ export const users = pgTable('users', {
   emailVerifiedAt:   timestamp('email_verified_at', { withTimezone: true }),
   passwordHash:      text('password_hash').notNull(),
   isActive:          boolean('is_active').notNull().default(true),
+  role:              text('role').notNull().default('user'),   // 'user' | 'admin'
   createdAt:         timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   lastLoginAt:       timestamp('last_login_at', { withTimezone: true }),
 });

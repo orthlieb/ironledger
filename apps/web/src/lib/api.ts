@@ -89,3 +89,50 @@ export const characters = {
 	remove: (id: string) =>
 		request<void>(`/api/characters/${id}`, { method: 'DELETE' }),
 };
+
+// ---------------------------------------------------------------------------
+// Admin
+// ---------------------------------------------------------------------------
+import type { AdminUser, AdminStats, AuditEvent, MaintenanceStatus } from '@ironledger/shared';
+
+export const admin = {
+	listUsers: () =>
+		request<AdminUser[]>('/api/admin'),
+
+	getStats: () =>
+		request<AdminStats>('/api/admin/stats'),
+
+	getAuditLog: (search?: string) => {
+		const params = search ? `?search=${encodeURIComponent(search)}` : '';
+		return request<AuditEvent[]>(`/api/admin/audit${params}`);
+	},
+
+	clearAuditLog: () =>
+		request<void>('/api/admin/audit', { method: 'DELETE' }),
+
+	deleteUser: (id: string) =>
+		request<void>(`/api/admin/users/${id}`, { method: 'DELETE' }),
+
+	setRole: (id: string, role: 'user' | 'admin') =>
+		request<void>(`/api/admin/users/${id}`, {
+			method: 'PATCH',
+			body: JSON.stringify({ role }),
+		}),
+
+	enableMaintenance: (body: { message: string; minutesUntilShutdown: number }) =>
+		request<MaintenanceStatus>('/api/admin/maintenance', {
+			method: 'POST',
+			body: JSON.stringify(body),
+		}),
+
+	disableMaintenance: () =>
+		request<{ enabled: false }>('/api/admin/maintenance', { method: 'DELETE' }),
+};
+
+// ---------------------------------------------------------------------------
+// Maintenance (public — no auth required)
+// ---------------------------------------------------------------------------
+export const maintenance = {
+	getStatus: () =>
+		request<MaintenanceStatus>('/api/maintenance/status'),
+};

@@ -14,12 +14,14 @@ import rateLimit from '@fastify/rate-limit';
 import { Redis } from 'ioredis';
 
 import { config } from './config.js';
-import { checkDbHealth } from './db/index.js';
+import { checkDbHealth, adminDb } from './db/index.js';
+import { securityEvents } from './db/schema.js';
 
 import { authRoutes }       from './routes/auth.js';
 import { characterRoutes }  from './routes/characters.js';
 import { catalogueRoutes }  from './routes/catalogue.js';
 import { userDataRoutes }   from './routes/userData.js';
+import { adminRoutes }      from './routes/admin.js';
 import { healthRoutes }     from './routes/health.js';
 
 // ---------------------------------------------------------------------------
@@ -130,6 +132,23 @@ export async function buildServer(): Promise<FastifyInstance> {
     // Determine the status code
     const statusCode = error.statusCode ?? 500;
 
+    // Audit-log real errors (skip routine 401/403 auth rejections — too noisy)
+    if (adminDb && statusCode >= 400 && statusCode !== 401 && statusCode !== 403) {
+      void adminDb.insert(securityEvents).values({
+        userId:    req.user?.id ?? null,
+        eventType: 'api_error',
+        ipAddress: req.ip ?? null,
+        metadata: {
+          method:     req.method,
+          url:        req.url,
+          statusCode,
+          message:    error.message,
+          stack:      error.stack ?? null,
+          userEmail:  req.user?.email ?? null,
+        },
+      }).catch(() => { /* don't let logging break the response */ });
+    }
+
     // Never expose internal error details in production
     const message = config.NODE_ENV === 'production' && statusCode === 500
       ? 'An unexpected error occurred'
@@ -159,6 +178,18 @@ export async function buildServer(): Promise<FastifyInstance> {
   await server.register(characterRoutes, { prefix: '/api/v1/characters' });
   await server.register(catalogueRoutes, { prefix: '/api/v1/catalogue' });
   await server.register(userDataRoutes,  { prefix: '/api/v1/session' });
+  await server.register(adminRoutes,     { prefix: '/api/v1/admin' });
+
+  // ── Public maintenance status (no auth) ──────────────────────────────
+  const { getStatus: getMaintenanceStatus } = await import('./services/maintenanceService.js');
+  server.get('/api/v1/maintenance/status', async (_req, reply) => {
+    try {
+      const status = await getMaintenanceStatus();
+      return reply.status(200).send(status);
+    } catch {
+      return reply.status(200).send({ enabled: false, message: null, shutdownAt: null });
+    }
+  });
 
   return server;
 }
@@ -192,6 +223,7 @@ declare module 'fastify' {
     user?: {
       id:    string;
       email: string;
+      role:  string;
     };
   }
 }
