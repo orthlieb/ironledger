@@ -85,8 +85,9 @@
 	let activeExpeditionId = $state('');
 	const expeditions = $derived(getExpeditions());
 
-	// ── Initiative state (0=none, 1=character, 2=foe) ─────────────────────
-	let initiative = $state(0);
+	// ── Initiative state (per-character: 0=none, 1=character, 2=foe) ────────
+	let initiativeMap = $state<Record<string, number>>({});
+	const initiative = $derived(activeCharId ? (initiativeMap[activeCharId] ?? 0) : 0);
 
 	// Build precondition context from active selections
 	const preconditionCtx = $derived<PreconditionContext>({
@@ -181,7 +182,10 @@
 
 	/** Remove a single encounter. */
 	async function handleEncounterDelete(id: string) {
-		if (activeFoeId === id) activeFoeId = '';
+		if (activeFoeId === id) {
+			activeFoeId = '';
+			if (activeCharId) delete initiativeMap[activeCharId];
+		}
 		await removeEncounter(id);
 	}
 
@@ -348,7 +352,7 @@
 		{activeExpeditionId}
 		{initiative}
 		onSelect={setActiveChar}
-		onFoeSelect={(id) => (activeFoeId = id)}
+		onFoeSelect={(id) => { activeFoeId = id; if (!id && activeCharId) delete initiativeMap[activeCharId]; }}
 		onExpeditionSelect={(id) => (activeExpeditionId = id)}
 		onDiceClick={() => diceRollerRef?.open()}
 		onOraclesClick={() => oraclesDialogRef?.open()}
@@ -448,6 +452,7 @@
 								<CharacterSheet
 									character={char}
 									active={char.id === activeCharId}
+									initiative={initiativeMap[char.id] ?? 0}
 									onDelete={() => deleteCharacter(char.id)}
 									onSave={handleSave}
 								/>
@@ -554,10 +559,11 @@
 	<!-- ── Right / Log pane (always visible — global session log) ── -->
 	<div class="log-pane">
 		<LogPanel
+			ctx={activeDiceCtx}
 			onMoveLink={(id) => movesDialogRef?.open(id)}
 			onOracleLink={(key) => oraclesDialogRef?.open(key || undefined)}
 			onProgressLink={handleProgressLink}
-			onInitiativeLink={(val) => { initiative = val === 'character' ? 1 : 2; }}
+			onInitiativeLink={(val) => { if (activeCharId) initiativeMap[activeCharId] = val === 'character' ? 1 : 2; }}
 			onMenaceLink={handleMenaceLink}
 		/>
 	</div>

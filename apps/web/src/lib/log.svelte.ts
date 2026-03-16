@@ -4,6 +4,15 @@
 // Maximum 500 entries per character (oldest are dropped first).
 // =============================================================================
 
+/** Metadata for action rolls — enables burn-momentum after the fact. */
+export interface RollMeta {
+	moveId:      string;   // to look up outcome HTML from move definition
+	actionScore: number;   // total (die + stat + adds)
+	c1:          number;   // challenge die 1
+	c2:          number;   // challenge die 2
+	charId:      string;   // character who rolled
+}
+
 export interface LogEntry {
 	id:    string;
 	title: string;
@@ -11,6 +20,7 @@ export interface LogEntry {
 	ts:    string;
 	note?: string;   // user-authored note attached to this entry
 	source?: string; // original markdown source (for editable entries like Notes)
+	roll?: RollMeta; // present only on action roll entries (enables burn momentum)
 }
 
 /** Fixed key for the single global session log (used by all components). */
@@ -45,8 +55,8 @@ export function initLog(charId: string): void {
 	}
 }
 
-/** Append a new entry and persist to localStorage. Accepts an optional pre-generated id and source markdown. */
-export function appendLog(charId: string, title: string, html: string, id?: string, source?: string): void {
+/** Append a new entry and persist to localStorage. Accepts an optional pre-generated id, source markdown, and roll metadata. */
+export function appendLog(charId: string, title: string, html: string, id?: string, source?: string, roll?: RollMeta): void {
 	if (typeof window === 'undefined') return;
 	initLog(charId);
 	const entry: LogEntry = {
@@ -55,18 +65,22 @@ export function appendLog(charId: string, title: string, html: string, id?: stri
 		html,
 		ts:   new Date().toISOString(),
 		...(source ? { source } : {}),
+		...(roll ? { roll } : {}),
 	};
 	// Prepend (newest first), cap at 500 entries
 	logs[charId] = [entry, ...(logs[charId] ?? [])].slice(0, 500);
 	persist(charId);
 }
 
-/** Replace the HTML body of an existing log entry (e.g. to mark XP links as spent). Optionally update source markdown. */
-export function updateLogEntryHtml(charId: string, entryId: string, html: string, source?: string): void {
+/** Replace the HTML body of an existing log entry (e.g. to mark XP links as spent). Optionally update source markdown. Pass clearRoll to remove roll metadata (prevents double-burn). */
+export function updateLogEntryHtml(charId: string, entryId: string, html: string, source?: string, clearRoll?: boolean): void {
 	if (!logs[charId]) return;
-	logs[charId] = logs[charId].map((e) =>
-		e.id === entryId ? { ...e, html, ...(source !== undefined ? { source } : {}) } : e,
-	);
+	logs[charId] = logs[charId].map((e) => {
+		if (e.id !== entryId) return e;
+		const updated = { ...e, html, ...(source !== undefined ? { source } : {}) };
+		if (clearRoll) delete updated.roll;
+		return updated;
+	});
 	persist(charId);
 }
 
@@ -84,6 +98,17 @@ export function updateLogEntryNote(charId: string, entryId: string, note: string
 		e.id === entryId ? { ...e, note: note.trim() || undefined } : e,
 	);
 	persist(charId);
+}
+
+/**
+ * Enrich outcome HTML with entry-id and char-id on interactive links
+ * so LogPanel click delegation can identify the entry and character.
+ */
+export function enrichOutcomeLinks(html: string, entryId: string, charId: string): string {
+	return html.replace(
+		/<a\s+class="(resource-link|debility-link|progress-link|initiative-link|menace-link)"/g,
+		`<a data-entry-id="${entryId}" data-char-id="${charId}" class="$1"`,
+	);
 }
 
 /** Wipe all entries for a character from state and storage. */

@@ -7,7 +7,10 @@
 	 * Notes are attached per-entry and persist to localStorage.
 	 * Clearing the log requires confirmation via a native dialog (irreversible).
 	 */
-	import { type LogEntry, logs, initLog, clearLog, deleteLogEntry, updateLogEntryNote, updateLogEntryHtml, triggerXpSpend, triggerAction, SESSION_LOG_ID } from '$lib/log.svelte.js';
+	import { type LogEntry, logs, initLog, clearLog, deleteLogEntry, updateLogEntryNote, updateLogEntryHtml, enrichOutcomeLinks, triggerXpSpend, triggerAction, SESSION_LOG_ID } from '$lib/log.svelte.js';
+	import type { DiceCtx } from '$lib/diceContext.svelte.js';
+	import { momentumReset } from '$lib/character.js';
+	import { findMove } from '$lib/moveStore.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
 	import trashSvg      from '$icons/trash-solid-full.svg?raw';
 	import penSvg        from '$icons/pen-to-square-solid-full.svg?raw';
@@ -17,12 +20,14 @@
 	// Callback props for interactive log links (Phase 2)
 	// ---------------------------------------------------------------------------
 	let {
+		ctx = null,
 		onMoveLink,
 		onOracleLink,
 		onProgressLink,
 		onInitiativeLink,
 		onMenaceLink,
 	}: {
+		ctx?:              DiceCtx | null;
 		onMoveLink?:       (moveId: string) => void;
 		onOracleLink?:     (oracleKey: string) => void;
 		onProgressLink?:   (track: string, value: number) => void;
@@ -46,13 +51,97 @@
 	// Clear-log confirmation dialog
 	let clearDialogEl = $state<HTMLDialogElement | null>(null);
 
-	function formatTime(ts: string): string {
-		try {
-			return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-		} catch {
-			return '';
-		}
+	// ---------------------------------------------------------------------------
+	// Burn Momentum
+	// ---------------------------------------------------------------------------
+
+	function outcomeClass(hits1: boolean, hits2: boolean): string {
+		if (hits1 && hits2) return 'roll-outcome-strong';
+		if (hits1 || hits2) return 'roll-outcome-weak';
+		return 'roll-outcome-miss';
 	}
+	function outcomeLabel(hits1: boolean, hits2: boolean): string {
+		if (hits1 && hits2) return 'Strong Hit';
+		if (hits1 || hits2) return 'Weak Hit';
+		return 'Miss';
+	}
+
+	function canBurnMomentum(entry: LogEntry): boolean {
+		if (!entry.roll || !ctx) return false;
+		if (ctx.charId !== entry.roll.charId) return false;
+		const mom = ctx.data.momentum;
+		if (mom <= 0) return false;
+		const { actionScore, c1, c2 } = entry.roll;
+		const hits1 = actionScore > c1;
+		const hits2 = actionScore > c2;
+		if (hits1 && hits2) return false; // already strong hit
+		// Can burn if momentum would cancel at least one die AND improve outcome
+		const burnHits1 = mom > c1 ? true : hits1;
+		const burnHits2 = mom > c2 ? true : hits2;
+		// Only offer if burning would actually change the outcome
+		return (burnHits1 !== hits1) || (burnHits2 !== hits2);
+	}
+
+	function burnMomentum(entry: LogEntry) {
+		if (!entry.roll || !ctx) return;
+		const { moveId, actionScore, c1, c2, charId } = entry.roll;
+		const mom = ctx.data.momentum;
+		const resetVal = momentumReset(ctx.data);
+
+		// Determine which dice are cancelled
+		const cancel1 = mom > c1;
+		const cancel2 = mom > c2;
+		const newHits1 = cancel1 ? true : actionScore > c1;
+		const newHits2 = cancel2 ? true : actionScore > c2;
+
+		// Build burn notification line
+		const cancelled: string[] = [];
+		if (cancel1) cancelled.push(`[${c1}]`);
+		if (cancel2) cancelled.push(`[${c2}]`);
+		const burnLine =
+			`<div class="roll-burn">↯ Burned momentum (${mom} → reset ${resetVal}). ` +
+			`Challenge ${cancelled.length > 1 ? 'dice' : 'die'} ${cancelled.join(' ')} cancelled.</div>`;
+
+		// New outcome line
+		const isMatch = c1 === c2;
+		const matchSpan = isMatch ? ' <span class="roll-match">with a match!</span>' : '';
+		const newOutcomeLine =
+			`<div class="${outcomeClass(newHits1, newHits2)}">` +
+			`<strong>${outcomeLabel(newHits1, newHits2)}</strong>${matchSpan}` +
+			`</div>`;
+
+		// New outcome text from move definition
+		const move = findMove(moveId);
+		let outcomeTextHtml = '';
+		if (move) {
+			let raw = '';
+			if (newHits1 && newHits2) raw = move.strong ?? '';
+			else if (newHits1 || newHits2) raw = move.weak ?? '';
+			else raw = move.miss ?? '';
+			if (raw) {
+				raw = enrichOutcomeLinks(raw, entry.id, charId);
+				outcomeTextHtml = `<div class="move-outcome">${raw}</div>`;
+			}
+		}
+
+		// Rebuild HTML: keep roll-line and roll-cancel, replace everything after
+		const existingHtml = entry.html;
+		// Find the end of the roll-line div(s) — everything before the outcome class
+		const outcomeIdx = existingHtml.search(/<div class="roll-outcome/);
+		const prefix = outcomeIdx >= 0 ? existingHtml.substring(0, outcomeIdx) : existingHtml;
+
+		const newHtml = prefix + burnLine + newOutcomeLine + outcomeTextHtml;
+
+		// Update log entry and clear roll meta (prevents double-burn)
+		updateLogEntryHtml(SESSION_LOG_ID, entry.id, newHtml, undefined, true);
+
+		// Reset momentum via action bus
+		triggerAction({ charId, type: 'resource', key: 'momentum', value: resetVal - mom });
+	}
+
+	// ---------------------------------------------------------------------------
+	// Helpers
+	// ---------------------------------------------------------------------------
 
 	function startEdit(entry: LogEntry) {
 		editingId = entry.id;
@@ -371,7 +460,7 @@
 		</div>
 	</div>
 
-	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions a11y_no_noninteractive_element_interactions -->
 	<div class="log-entries" role="log" aria-live="polite" aria-label="Session log"
 		onclick={handleEntriesClick}>
 		{#if entries.length === 0}
@@ -386,10 +475,18 @@
 					<!-- Header row: title, time, and hover-reveal action buttons -->
 					<div class="entry-header">
 						<span class="entry-title">{entry.title}</span>
-						<span class="entry-time">{formatTime(entry.ts)}</span>
 
 						<!-- Action buttons — opacity 0, revealed on .log-entry:hover -->
 						<div class="entry-actions">
+							{#if canBurnMomentum(entry)}
+								<button
+									class="entry-btn entry-burn-btn"
+									onclick={() => burnMomentum(entry)}
+									title="Burn momentum to improve outcome"
+									aria-label="Burn momentum"
+								><span class="burn-icon">↯</span></button>
+							{/if}
+
 							<button
 								class="entry-btn entry-edit-btn"
 								class:entry-btn-active={editingId === entry.id}
@@ -578,14 +675,6 @@
 		text-overflow: ellipsis;
 	}
 
-	.entry-time {
-		font-family: var(--font-ui);
-		font-size: 0.65rem;
-		letter-spacing: 0.02em;
-		color: var(--text-dimmer);
-		white-space: nowrap;
-		flex-shrink: 0;
-	}
 
 	/* ---- Hover-reveal action buttons ---- */
 	.entry-actions {
@@ -633,6 +722,20 @@
 	.entry-delete-btn:hover {
 		color: var(--color-danger);
 		border-color: var(--color-danger);
+	}
+
+	.entry-burn-btn {
+		color: var(--color-momentum, #60a5fa);
+	}
+	.entry-burn-btn:hover {
+		color: var(--color-momentum, #60a5fa);
+		border-color: var(--color-momentum, #60a5fa);
+		background: color-mix(in srgb, var(--color-momentum, #60a5fa) 12%, transparent);
+	}
+	.burn-icon {
+		font-size: 0.85rem;
+		font-weight: 700;
+		line-height: 1;
 	}
 
 	/* ---- Entry body ---- */
@@ -691,6 +794,11 @@
 	.entry-body :global(.roll-cancel) {
 		color: var(--color-danger, #ef4444);
 		font-size: 0.75rem;
+	}
+	.entry-body :global(.roll-burn) {
+		color: var(--color-momentum, #60a5fa);
+		font-size: 0.75rem;
+		font-weight: 600;
 	}
 
 	/* Move outcome text (embedded in log entries from moves) */

@@ -25,7 +25,7 @@
 		hasRollableStats,
 	} from '$lib/moveStore.svelte.js';
 	import { firstPreconditionFailure } from '$lib/preconditions.js';
-	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
+	import { appendLog, enrichOutcomeLinks, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import { rollDie, animateDice } from '$lib/dice.js';
 
 	import clearFiltersSvg from '$lib/icons/filter-circle-xmark-solid-full.svg?raw';
@@ -201,6 +201,18 @@
 		view = 'picker';
 	}
 
+	/** Click delegation for move-link navigation inside detail view. */
+	function handleDetailClick(e: MouseEvent) {
+		const link = (e.target as HTMLElement).closest('.move-link') as HTMLElement | null;
+		if (!link) return;
+		e.preventDefault();
+		const moveId = link.dataset['id'];
+		if (moveId) {
+			const target = findMove(moveId);
+			if (target) selectMove(target);
+		}
+	}
+
 	// ---------------------------------------------------------------------------
 	// Helpers
 	// ---------------------------------------------------------------------------
@@ -219,17 +231,6 @@
 	/** Group filtered moves by category. */
 	function movesByCategory(cat: string): MoveDefinition[] {
 		return filteredMoves().filter((m) => m.category === cat);
-	}
-
-	// ---------------------------------------------------------------------------
-	// Enrich outcome HTML with entry-id and char-id on interactive links
-	// so LogPanel click delegation can identify the entry and character.
-	// ---------------------------------------------------------------------------
-	function enrichOutcomeLinks(html: string, entryId: string, charId: string): string {
-		return html.replace(
-			/<a\s+class="(resource-link|debility-link|progress-link|initiative-link|menace-link)"/g,
-			`<a data-entry-id="${entryId}" data-char-id="${charId}" class="$1"`,
-		);
 	}
 
 	// ---------------------------------------------------------------------------
@@ -301,7 +302,12 @@
 			{ sides: 10, value: c1   },
 			{ sides: 10, value: c2   },
 		]);
-		appendLog(SESSION_LOG_ID, logTitle(`${selectedMove.name} (${statLabel})`), html, entryId);
+		appendLog(SESSION_LOG_ID, logTitle(`${selectedMove.name} (${statLabel})`), html, entryId, undefined, {
+			moveId: selectedMove.id,
+			actionScore: total,
+			c1, c2,
+			charId: ctx.charId,
+		});
 		rolling = false;
 	}
 
@@ -430,7 +436,8 @@
 									class:md-tile--dimmed={!!fail}
 									style:--tcolor={catColor(move.category)}
 									title={fail ?? move.triggerShort}
-									onclick={() => selectMove(move)}
+									onclick={() => { if (!fail) selectMove(move); }}
+								disabled={!!fail}
 								>
 									<div class="md-tile-stripe"></div>
 									<div class="md-tile-body">
@@ -459,7 +466,8 @@
 		<button class="md-close" onclick={close} aria-label="Close">✕</button>
 	</div>
 
-	<div class="md-body md-body--detail">
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<div class="md-body md-body--detail" role="region" onclick={handleDetailClick}>
 		<!-- Trigger text -->
 		<div class="md-trigger">
 			{@html (selectedMove as Record<string, unknown>).triggerPreamble as string ?? selectedMove.trigger}
@@ -489,41 +497,60 @@
 				</div>
 			{/if}
 
-			<!-- Adds + momentum -->
-			<div class="md-adds-row">
-				<span class="md-adds-label">Adds</span>
-				<button
-					class="md-adj"
-					onclick={() => (adds = Math.max(-5, adds - 1))}
-					disabled={rolling || !ctx || adds <= -5}
-					aria-label="Decrease adds"
-				>−</button>
-				<span
-					class="md-adds-val"
-					class:positive={adds > 0}
-					class:negative={adds < 0}
-				>{adds >= 0 ? '+' : ''}{adds}</span>
-				<button
-					class="md-adj"
-					onclick={() => (adds = Math.min(5, adds + 1))}
-					disabled={rolling || !ctx || adds >= 5}
-					aria-label="Increase adds"
-				>+</button>
+			<!-- ── Outcomes ── -->
+			{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
+				<div class="md-outcomes">
+					{#if selectedMove.strong}
+						<div class="md-outcome-section">
+							<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
+							<div class="md-outcome-text">{@html selectedMove.strong}</div>
+						</div>
+					{/if}
+					{#if selectedMove.weak}
+						<div class="md-outcome-section">
+							<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
+							<div class="md-outcome-text">{@html selectedMove.weak}</div>
+						</div>
+					{/if}
+					{#if selectedMove.miss}
+						<div class="md-outcome-section">
+							<div class="md-outcome-label md-outcome-miss">Miss</div>
+							<div class="md-outcome-text">{@html selectedMove.miss}</div>
+						</div>
+					{/if}
+				</div>
+			{/if}
 
-				<span
-					class="md-momentum-chip"
-					class:md-momentum-neg={(ctx?.data.momentum ?? 0) < 0}
-					title="Current momentum"
-				>↯ {(ctx?.data.momentum ?? 0) >= 0 ? '+' : ''}{ctx?.data.momentum ?? 0}</span>
+			<!-- Adds + Roll button -->
+			<div class="md-action-row">
+				<div class="md-adds-row">
+					<span class="md-adds-label">Adds</span>
+					<button
+						class="md-adj"
+						onclick={() => (adds = Math.max(-5, adds - 1))}
+						disabled={rolling || !ctx || adds <= -5}
+						aria-label="Decrease adds"
+					>−</button>
+					<span
+						class="md-adds-val"
+						class:positive={adds > 0}
+						class:negative={adds < 0}
+					>{adds >= 0 ? '+' : ''}{adds}</span>
+					<button
+						class="md-adj"
+						onclick={() => (adds = Math.min(5, adds + 1))}
+						disabled={rolling || !ctx || adds >= 5}
+						aria-label="Increase adds"
+					>+</button>
+				</div>
+
+				<button
+					class="btn btn-primary md-roll-btn"
+					onclick={doActionRoll}
+					disabled={rolling || !ctx || !!fail}
+					title={fail ?? ''}
+				>{rolling ? 'Rolling…' : 'Roll Move'}</button>
 			</div>
-
-			<!-- Roll button -->
-			<button
-				class="btn btn-primary md-roll-btn"
-				onclick={doActionRoll}
-				disabled={rolling || !ctx || !!fail}
-				title={fail ?? ''}
-			>{rolling ? 'Rolling…' : 'Roll Move'}</button>
 
 		<!-- ── Progress move ── -->
 		{:else if isProgressMove(selectedMove)}
@@ -546,14 +573,39 @@
 				>+</button>
 			</div>
 
+			<!-- ── Outcomes ── -->
+			{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
+				<div class="md-outcomes">
+					{#if selectedMove.strong}
+						<div class="md-outcome-section">
+							<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
+							<div class="md-outcome-text">{@html selectedMove.strong}</div>
+						</div>
+					{/if}
+					{#if selectedMove.weak}
+						<div class="md-outcome-section">
+							<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
+							<div class="md-outcome-text">{@html selectedMove.weak}</div>
+						</div>
+					{/if}
+					{#if selectedMove.miss}
+						<div class="md-outcome-section">
+							<div class="md-outcome-label md-outcome-miss">Miss</div>
+							<div class="md-outcome-text">{@html selectedMove.miss}</div>
+						</div>
+					{/if}
+				</div>
+			{/if}
+
 			<button
-				class="btn btn-primary md-roll-btn"
+				class="btn btn-primary md-roll-btn md-roll-btn--full"
 				onclick={doProgressRoll}
 				disabled={rolling}
 			>{rolling ? 'Rolling…' : 'Roll Progress'}</button>
 
-		<!-- ── No-roll move ── -->
+		<!-- ── No-roll move (no controls needed) ── -->
 		{:else if isNoRollMove(selectedMove)}
+			<!-- ── Outcomes ── -->
 			{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
 				<div class="md-outcomes">
 					{#if selectedMove.strong}
@@ -577,6 +629,8 @@
 				</div>
 			{/if}
 		{/if}
+
+
 
 		<!-- Notes -->
 		{#if selectedMove.notes}
@@ -824,10 +878,12 @@
 		background:   var(--bg-hover);
 		border-color: var(--tcolor, var(--border-mid));
 	}
-	.md-tile--dimmed {
+	.md-tile--dimmed,
+	.md-tile:disabled {
 		opacity: 0.45;
+		cursor: not-allowed;
 	}
-	.md-tile--dimmed:hover { opacity: 0.65; }
+	.md-tile--dimmed:hover:not(:disabled) { opacity: 0.65; }
 
 	.md-tile-stripe {
 		width:       4px;
@@ -864,6 +920,7 @@
 		line-height: 1.5;
 	}
 	.md-trigger :global(strong) { color: var(--text); font-weight: 600; }
+	.md-trigger :global(a) { cursor: pointer; color: var(--text-accent); }
 	.md-trigger :global(ul) { margin: 4px 0; padding-left: 1.3em; }
 	.md-trigger :global(li) { margin-bottom: 2px; }
 
@@ -921,7 +978,12 @@
 		overflow:           hidden;
 	}
 
-	/* ── Adds row ────────────────────────────────────────────────────────── */
+	/* ── Action row (adds + roll button) ─────────────────────────────────── */
+	.md-action-row {
+		display:     flex;
+		align-items: center;
+		gap:         12px;
+	}
 	.md-adds-row {
 		display:     flex;
 		align-items: center;
@@ -964,22 +1026,6 @@
 	.md-adds-val.positive { color: var(--color-success); }
 	.md-adds-val.negative { color: var(--color-danger); }
 
-	.md-momentum-chip {
-		margin-left:   auto;
-		font-family:   var(--font-ui);
-		font-size:     0.72rem;
-		font-weight:   600;
-		color:         var(--color-momentum);
-		padding:       2px 6px;
-		border-radius: 3px;
-		border:        1px solid color-mix(in srgb, var(--color-momentum) 30%, transparent);
-		background:    color-mix(in srgb, var(--color-momentum) 8%, transparent);
-	}
-	.md-momentum-chip.md-momentum-neg {
-		color:        var(--color-danger);
-		border-color: color-mix(in srgb, var(--color-danger) 30%, transparent);
-		background:   color-mix(in srgb, var(--color-danger) 8%, transparent);
-	}
 
 	/* ── Progress row ────────────────────────────────────────────────────── */
 	.md-progress-row {
@@ -1005,10 +1051,13 @@
 
 	/* ── Roll button ─────────────────────────────────────────────────────── */
 	.md-roll-btn {
-		width:     100%;
-		padding:   8px;
+		padding:   8px 16px;
 		font-size: 0.8rem;
 	}
+	/* In action row, roll button fills remaining space */
+	.md-action-row .md-roll-btn { flex: 1; }
+	/* Standalone roll buttons (progress moves) — full width */
+	.md-roll-btn--full { width: 100%; }
 
 	/* ── Outcomes (no-roll moves) ────────────────────────────────────────── */
 	.md-outcomes {
@@ -1042,7 +1091,17 @@
 	.md-outcome-text :global(strong) { color: var(--text); font-weight: 600; }
 	.md-outcome-text :global(ul) { margin: 3px 0; padding-left: 1.3em; }
 	.md-outcome-text :global(li) { margin-bottom: 2px; }
-	.md-outcome-text :global(a) { color: var(--text-accent); text-decoration: underline; }
+	.md-outcome-text :global(a) { color: var(--text-accent); text-decoration: underline; cursor: pointer; }
+	/* Make non-move interactive links inert in dialog (only live in session log) */
+	.md-outcome-text :global(a.resource-link),
+	.md-outcome-text :global(a.debility-link),
+	.md-outcome-text :global(a.progress-link),
+	.md-outcome-text :global(a.initiative-link),
+	.md-outcome-text :global(a.menace-link) {
+		pointer-events: none;
+		cursor: default;
+		text-decoration: none;
+	}
 
 	/* ── Notes ────────────────────────────────────────────────────────────── */
 	.md-notes {

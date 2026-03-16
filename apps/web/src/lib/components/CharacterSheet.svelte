@@ -20,6 +20,8 @@
 
 	import trashSvg      from '$icons/trash-solid-full.svg?raw';
 	import fileExportSvg from '$icons/file-export-solid-full.svg?raw';
+	import swordSvg      from '$icons/sword-solid-full.svg?raw';
+	import shieldSvg     from '$icons/shield-halved-solid.svg?raw';
 
 	// Resource icons (stat icons removed per user request)
 	import iconHeart  from '$lib/images/icon-heart.svg?raw';
@@ -46,12 +48,15 @@
 	let {
 		character,
 		active = false,
+		initiative = 0,
 		onDelete,
 		onSave,
 	}: {
 		character: CharacterFull;
 		/** True when this is the currently selected character — publishes dice context. */
 		active?:   boolean;
+		/** 0 = none, 1 = character has initiative, 2 = foe has initiative */
+		initiative?: number;
 		onDelete?: () => void;
 		onSave?:   (updated: CharacterFull) => void;
 	} = $props();
@@ -402,6 +407,12 @@
 		{/if}
 
 		<span class="char-title">{data.name || 'Unnamed'}</span>
+
+		{#if initiative === 1}
+			<span class="cs-init-badge cs-init-badge--you" title="You have initiative">{@html swordSvg}</span>
+		{:else if initiative === 2}
+			<span class="cs-init-badge cs-init-badge--foe" title="Foe has initiative">{@html shieldSvg}</span>
+		{/if}
 
 		<span
 			class="save-status"
@@ -794,6 +805,26 @@
 		text-overflow: ellipsis;
 		white-space: nowrap;
 		color: var(--text);
+	}
+
+	/* Initiative badge in title bar */
+	.cs-init-badge {
+		flex-shrink: 0;
+		width: 22px;
+		height: 22px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+	}
+	.cs-init-badge :global(svg) { width: 13px; height: 13px; fill: currentColor; }
+	.cs-init-badge--you {
+		background: rgba(52, 211, 153, 0.2);
+		color: #34d399;
+	}
+	.cs-init-badge--foe {
+		background: rgba(239, 68, 68, 0.2);
+		color: #ef4444;
 	}
 
 	/* Portrait */

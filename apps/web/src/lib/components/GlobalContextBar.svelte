@@ -19,6 +19,10 @@
 	import iconSupply   from '$lib/images/icon-supply.svg?raw';
 	import iconMana     from '$lib/images/icon-mana.svg?raw';
 
+	// Initiative icons
+	import swordSvg  from '$icons/sword-solid-full.svg?raw';
+	import shieldSvg from '$icons/shield-halved-solid.svg?raw';
+
 	// ---------------------------------------------------------------------------
 	// Props
 	// ---------------------------------------------------------------------------
@@ -119,6 +123,11 @@
 
 		<!-- CHARACTER TILE -->
 		<div class="gc-tile" class:gc-tile--active={!!data} class:gc-tile--empty={!data}>
+			{#if data && initiative === 1}
+				<span class="gc-init-badge gc-init-badge--you" title="You have initiative">{@html swordSvg}</span>
+			{:else if data && initiative === 2}
+				<span class="gc-init-badge gc-init-badge--foe" title="Foe has initiative">{@html shieldSvg}</span>
+			{/if}
 			<button class="gc-tile-btn" onclick={() => toggleSelector('character')} title="Select character">
 				{#if data}
 					<div class="gc-tile-row">
@@ -518,6 +527,30 @@
 		color: #ef4444;
 	}
 
+	/* Initiative icon badge (character tile, upper-right) */
+	.gc-init-badge {
+		position: absolute;
+		top: 3px;
+		right: 3px;
+		width: 18px;
+		height: 18px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		z-index: 1;
+		pointer-events: none;
+	}
+	.gc-init-badge :global(svg) { width: 11px; height: 11px; fill: currentColor; }
+	.gc-init-badge--you {
+		background: rgba(52, 211, 153, 0.2);
+		color: #34d399;
+	}
+	.gc-init-badge--foe {
+		background: rgba(239, 68, 68, 0.2);
+		color: #ef4444;
+	}
+
 	/* ===== Expedition tile details ===== */
 	.gc-tile-exp-details {
 		gap: 0.45rem;
@@ -553,10 +586,10 @@
 		left: 0;
 		right: 0;
 		z-index: 50;
-		background: var(--bg-surface, #1e1e2e);
+		background: var(--bg-card);
 		border: 1px solid var(--border);
 		border-radius: 6px;
-		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 		max-height: 12rem;
 		overflow-y: auto;
 		margin-top: 2px;
