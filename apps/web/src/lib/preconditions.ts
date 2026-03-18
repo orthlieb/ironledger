@@ -36,6 +36,8 @@ export interface PreconditionContext {
 	hasFoe?:       boolean;
 	/** 0 = none, 1 = character has initiative, 2 = foe has initiative */
 	initiative?:   number;
+	/** Harm dealt by the active foe per hit (from FOE_RANKS). Used to resolve harm-links at roll time. */
+	foeHarm?:      number;
 }
 
 // ---------------------------------------------------------------------------

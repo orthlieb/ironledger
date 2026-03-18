@@ -4,7 +4,7 @@ import { INTERNAL_API_URL } from '$lib/server/config.js';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	// Already logged in? Skip registration.
-	if (locals.user) throw redirect(302, '/characters');
+	if (locals.user) throw redirect(302, '/home');
 	return {};
 };
 

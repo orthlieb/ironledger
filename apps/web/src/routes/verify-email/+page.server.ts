@@ -38,5 +38,5 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 		maxAge:   900, // 15 minutes — matches JWT TTL
 	});
 
-	throw redirect(302, '/characters');
+	throw redirect(302, '/home');
 };

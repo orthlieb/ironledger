@@ -9,8 +9,10 @@
 
 	import type { CharacterFull } from '$lib/api.js';
 	import type { FoeEncounter, Expedition } from '$lib/types.js';
+	import { EXPEDITION_MARK_TICKS } from '$lib/types.js';
 	import { hydrateCharacter } from '$lib/character.js';
 	import { findFoe, FOE_RANKS, FOE_NATURE_COLORS, FOE_QUANTITIES } from '$lib/foeStore.svelte.js';
+	import ProgressTrack from '$lib/components/ProgressTrack.svelte';
 
 	// Resource icons
 	import iconMomentum from '$lib/images/icon-momentum.svg?raw';
@@ -29,10 +31,6 @@
 	import iconDice    from '$icons/dice-d10-light.svg?raw';
 	import iconNotes   from '$icons/note-sticky-solid.svg?raw';
 
-	// Empty tile placeholder icons
-	import iconNinja   from '$icons/user-ninja-duotone.svg?raw';
-	import iconSkull   from '$icons/skull-duotone.svg?raw';
-	import iconDungeon from '$icons/dungeon-duotone.svg?raw';
 
 	// ---------------------------------------------------------------------------
 	// Props
@@ -45,9 +43,12 @@
 		expeditions = [],
 		activeExpeditionId = '',
 		initiative  = 0,
+		stacked     = false,
 		onSelect,
 		onFoeSelect,
 		onExpeditionSelect,
+		onFoeProgress,
+		onExpeditionProgress,
 		onDiceClick,
 		onOraclesClick,
 		onMovesClick,
@@ -60,13 +61,16 @@
 		expeditions?:        Expedition[];
 		activeExpeditionId?: string;
 		initiative?:         number;
-		onSelect:            (id: string) => void;
-		onFoeSelect?:        (id: string) => void;
-		onExpeditionSelect?: (id: string) => void;
-		onDiceClick?:        () => void;
-		onOraclesClick?:     () => void;
-		onMovesClick?:       () => void;
-		onNotesClick?:       () => void;
+		stacked?:            boolean;
+		onSelect:              (id: string) => void;
+		onFoeSelect?:          (id: string) => void;
+		onExpeditionSelect?:   (id: string) => void;
+		onFoeProgress?:        (enc: FoeEncounter) => void;
+		onExpeditionProgress?: (exp: Expedition)   => void;
+		onDiceClick?:          () => void;
+		onOraclesClick?:       () => void;
+		onMovesClick?:         () => void;
+		onNotesClick?:         () => void;
 	} = $props();
 
 	// Derive the active character and its typed data
@@ -84,6 +88,7 @@
 	// Derive active expedition
 	const activeExpedition  = $derived(expeditions.find((e) => e.id === activeExpeditionId));
 	const expProgress       = $derived(activeExpedition ? Math.floor(activeExpedition.ticks / 4) : 0);
+	const expMarkTicks      = $derived(activeExpedition ? (EXPEDITION_MARK_TICKS[activeExpedition.difficulty] ?? 4) : 4);
 
 	// ---------------------------------------------------------------------------
 	// Stat / resource definitions
@@ -133,9 +138,32 @@
 	function toggleSelector(which: 'character' | 'foe' | 'expedition') {
 		openSelector = openSelector === which ? null : which;
 	}
-	function selectChar(id: string)       { onSelect(id); openSelector = null; }
-	function selectFoe(id: string)        { onFoeSelect?.(id); openSelector = null; }
+	function selectChar(id: string)        { onSelect(id); openSelector = null; }
+	function selectFoe(id: string)         { onFoeSelect?.(id); openSelector = null; }
 	function selectExpedition(id: string)  { onExpeditionSelect?.(id); openSelector = null; }
+
+	// ── Foe progress ───────────────────────────────────────────────────────────
+	function handleFoeTrackChange(_old: number, newTicks: number) {
+		if (!activeFoe) return;
+		onFoeProgress?.({ ...activeFoe, ticks: newTicks });
+	}
+	function foeMark(delta: number) {
+		if (!activeFoe || !activeFoeRank) return;
+		const newTicks = Math.min(40, Math.max(0, activeFoe.ticks + delta * activeFoeRank.progressPerHit));
+		onFoeProgress?.({ ...activeFoe, ticks: newTicks });
+	}
+
+	// ── Expedition progress ────────────────────────────────────────────────────
+	function handleExpTrackChange(_old: number, newTicks: number) {
+		if (!activeExpedition) return;
+		onExpeditionProgress?.({ ...activeExpedition, ticks: newTicks });
+	}
+	function expMark(delta: number) {
+		if (!activeExpedition) return;
+		const expMarkTicks = EXPEDITION_MARK_TICKS[activeExpedition.difficulty] ?? 4;
+		const newTicks = Math.min(40, Math.max(0, activeExpedition.ticks + delta * expMarkTicks));
+		onExpeditionProgress?.({ ...activeExpedition, ticks: newTicks });
+	}
 
 	function handleWindowClick(e: MouseEvent) {
 		if (openSelector && !(e.target as HTMLElement)?.closest('.gc-tile')) {
@@ -146,7 +174,7 @@
 
 <svelte:window onclick={handleWindowClick} />
 
-<div class="global-context">
+<div class="global-context" class:gc--stacked={stacked}>
 
 	<div class="gc-layout">
 
@@ -189,7 +217,7 @@
 						</div>
 					</div>
 				{:else}
-					<span class="gc-tile-placeholder"><span class="gc-placeholder-icon">{@html iconNinja}</span>Select Character</span>
+					<span class="gc-tile-placeholder"><img class="gc-placeholder-img" src="/Characters.png" alt="" aria-hidden="true">Select Character</span>
 				{/if}
 			</button>
 
@@ -226,17 +254,29 @@
 						<span class="gc-tile-foe-rank">{activeFoeRank?.label ?? activeFoe.effectiveRank}</span>
 						<span class="gc-tile-foe-harm" title="Harm">Harm:{activeFoeRank?.harm ?? '?'}</span>
 					</div>
-					<div class="gc-tile-row gc-tile-foe-bottom">
-						<span class="gc-tile-foe-progress">Progress {activeFoeProgress}/10</span>
-						{#if activeFoe.quantity !== 'solo' && activeFoeQty}
-							<span class="gc-tile-foe-qty">{activeFoeQty.label}</span>
-						{/if}
-						{#if activeFoe.vanquished}
-							<span class="gc-tile-vanquished" title="Vanquished">☠</span>
-						{/if}
+					<div class="gc-tile-foe-bottom" onclick={(e) => e.stopPropagation()}>
+						<div class="gc-progress-wrap">
+							<ProgressTrack label="" value={activeFoe.ticks} onchange={handleFoeTrackChange} />
+							<div class="gc-progress-btns">
+								<button class="gc-prog-btn" onclick={() => foeMark(1)}
+									disabled={activeFoe.ticks >= 40}
+									title="Mark progress (+{activeFoeRank?.progressPerHit} ticks)"
+								>+{activeFoeRank?.progressPerHit}</button>
+								<button class="gc-prog-btn" onclick={() => foeMark(-1)}
+									disabled={activeFoe.ticks <= 0}
+									title="Unmark progress"
+								>−{activeFoeRank?.progressPerHit}</button>
+								{#if activeFoe.quantity !== 'solo' && activeFoeQty}
+									<span class="gc-tile-foe-qty">{activeFoeQty.label}</span>
+								{/if}
+								{#if activeFoe.vanquished}
+									<span class="gc-tile-vanquished" title="Vanquished">☠</span>
+								{/if}
+							</div>
+						</div>
 					</div>
 				{:else}
-					<span class="gc-tile-placeholder"><span class="gc-placeholder-icon">{@html iconSkull}</span>Select Foe</span>
+					<span class="gc-tile-placeholder"><img class="gc-placeholder-img" src="/Foes.png" alt="" aria-hidden="true">Select Foe</span>
 				{/if}
 			</button>
 
@@ -251,7 +291,7 @@
 						</button>
 					{/each}
 					{#if encounters.length === 0}
-						<span class="gc-popover-empty">No encounters</span>
+						<span class="gc-popover-empty">No foes</span>
 					{/if}
 				</div>
 			{/if}
@@ -278,14 +318,26 @@
 							<span class="gc-tile-exp-meta" style="color: #fb923c">{activeExpedition.domain}</span>
 						{/if}
 					</div>
-					<div class="gc-tile-row gc-tile-exp-bottom">
-						<span class="gc-tile-exp-progress">Progress {expProgress}/10</span>
-						{#if activeExpedition.complete}
-							<span class="gc-tile-exp-complete" title="Complete">{'\u2713'} Complete</span>
-						{/if}
+					<div class="gc-tile-exp-bottom" onclick={(e) => e.stopPropagation()}>
+						<div class="gc-progress-wrap">
+							<ProgressTrack label="" value={activeExpedition.ticks} onchange={handleExpTrackChange} />
+							<div class="gc-progress-btns">
+								<button class="gc-prog-btn" onclick={() => expMark(1)}
+									disabled={activeExpedition.ticks >= 40}
+									title="Mark progress (+{expMarkTicks} ticks)"
+								>+{expMarkTicks}</button>
+								<button class="gc-prog-btn" onclick={() => expMark(-1)}
+									disabled={activeExpedition.ticks <= 0}
+									title="Unmark progress"
+								>−{expMarkTicks}</button>
+								{#if activeExpedition.complete}
+									<span class="gc-tile-exp-complete" title="Complete">✓ Complete</span>
+								{/if}
+							</div>
+						</div>
 					</div>
 				{:else}
-					<span class="gc-tile-placeholder"><span class="gc-placeholder-icon">{@html iconDungeon}</span>Select Expedition</span>
+					<span class="gc-tile-placeholder"><img class="gc-placeholder-img" src="/Expeditions.png" alt="" aria-hidden="true">Select Expedition</span>
 				{/if}
 			</button>
 
@@ -416,17 +468,18 @@
 		gap: 0.3rem;
 		height: 100%;
 	}
-	.gc-placeholder-icon {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 32px;
-		height: 32px;
+	.gc-placeholder-img {
+		width: 36px;
+		height: 36px;
+		object-fit: contain;
+		/* Dim + desaturate to signal "nothing selected yet" */
+		opacity: 0.35;
+		filter: grayscale(0.5);
+		transition: opacity 0.12s, filter 0.12s;
 	}
-	.gc-placeholder-icon :global(svg) {
-		width: 100%;
-		height: 100%;
-		fill: currentColor;
+	.gc-tile-btn:hover .gc-placeholder-img {
+		opacity: 0.6;
+		filter: grayscale(0.2);
 	}
 
 	/* Tile rows */
@@ -569,9 +622,10 @@
 		color: #f87171;
 	}
 	.gc-tile-foe-bottom {
-		gap: 0.35rem;
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
+		width: 100%;
+		margin-top: 0.2rem;
 	}
 	.gc-tile-foe-progress {
 		color: var(--text-dimmer);
@@ -623,9 +677,10 @@
 		color: var(--text-dimmer);
 	}
 	.gc-tile-exp-bottom {
-		gap: 0.35rem;
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
+		width: 100%;
+		margin-top: 0.2rem;
 	}
 	.gc-tile-exp-meta {
 		font-weight: 600;
@@ -704,6 +759,64 @@
 		fill: currentColor;
 	}
 
+	/* ===== Progress track within tiles ===== */
+	.gc-progress-wrap {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		gap: 0.3rem;
+		width: 100%;
+	}
+
+	.gc-progress-btns {
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		gap: 0.3rem;
+	}
+
+	.gc-prog-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		font-family: var(--font-ui);
+		font-size: 0.68rem;
+		font-weight: 600;
+		background: transparent;
+		border: 1px solid var(--border-mid);
+		border-radius: 3px;
+		padding: 0 7px;
+		height: 22px;
+		cursor: pointer;
+		color: var(--text-muted);
+		letter-spacing: 0.02em;
+		white-space: nowrap;
+		transition: background 0.12s, color 0.12s;
+	}
+	.gc-prog-btn:hover:not(:disabled) {
+		background: var(--bg-hover);
+		color: var(--text);
+	}
+	.gc-prog-btn:disabled {
+		opacity: 0.35;
+		cursor: not-allowed;
+	}
+
+	/* ===== Stacked mode (used in Adventure tab sidebar) ===== */
+	.gc--stacked .gc-layout {
+		flex-direction: column;
+	}
+	.gc--stacked .gc-tiles {
+		grid-template-columns: 1fr;
+	}
+	.gc--stacked .gc-actions {
+		grid-template-columns: repeat(4, 1fr);
+		padding-left: 0;
+		border-left: none;
+		padding-top: 0.4rem;
+		border-top: 1px solid rgba(245, 158, 11, 0.15);
+	}
+
 	/* ===== Responsive ===== */
 	/* Small: tiles stack, actions row below */
 	@media (max-width: 768px) {
@@ -721,11 +834,38 @@
 			border-top: 1px solid rgba(245, 158, 11, 0.15);
 		}
 	}
+	/* Very small screens: actions collapse to 2×2 grid */
+	@media (max-width: 480px) {
+		.gc-actions {
+			grid-template-columns: 1fr 1fr;
+		}
+		.gc--stacked .gc-actions {
+			grid-template-columns: 1fr 1fr;
+		}
+	}
 	/* Medium: actions as 1×4 column */
 	@media (min-width: 769px) and (max-width: 1099px) {
 		.gc-actions {
 			grid-template-columns: 1fr;
 			gap: 0.25rem;
 		}
+	}
+
+	/* ===== Theme-aware tinting for placeholder images ===== */
+	/* In dark mode (default): images are dim against a dark background */
+	/* In light mode: keep same perceived dimness — tweak brightness + opacity */
+	@media (prefers-color-scheme: light) {
+		:global(:root:not([data-theme='dark'])) .gc-placeholder-img {
+			opacity: 0.45;
+			filter: grayscale(0.45) brightness(0.75);
+		}
+	}
+	:global(html[data-theme='light']) .gc-placeholder-img {
+		opacity: 0.45;
+		filter: grayscale(0.45) brightness(0.75);
+	}
+	:global(html[data-theme='light']) .gc-tile-btn:hover .gc-placeholder-img {
+		opacity: 0.65;
+		filter: grayscale(0.2) brightness(0.85);
 	}
 </style>

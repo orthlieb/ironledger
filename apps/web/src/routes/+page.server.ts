@@ -3,7 +3,7 @@ import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (locals.user) {
-		throw redirect(302, '/characters');
+		throw redirect(302, '/home');
 	}
 	throw redirect(302, '/login');
 };

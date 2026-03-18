@@ -53,6 +53,12 @@
 	let highlightedCell    = $state(-1);
 	let denizenPickIndex   = $state(-1);
 	let rollingDenizen     = $state(false);
+	let editingName        = $state(false);
+	let nameInputEl        = $state<HTMLInputElement | null>(null);
+	let nameBeforeEdit     = '';
+	$effect(() => {
+		if (editingName && nameInputEl) nameInputEl.select();
+	});
 
 	// "Add Foe?" dialog state
 	let addFoeDialogEl     = $state<HTMLDialogElement | null>(null);
@@ -262,13 +268,30 @@
 			aria-label={collapsed ? 'Expand' : 'Collapse'}
 		>{collapsed ? '▶' : '▼'}</button>
 
-		<!-- svelte-ignore a11y_interactive_supports_focus -->
-		<span
-			class="sc-name"
-			role="button"
-			onclick={() => (collapsed = !collapsed)}
-			onkeydown={(e) => e.key === 'Enter' && (collapsed = !collapsed)}
-		>{displayName}</span>
+		{#if editingName}
+			<input
+				bind:this={nameInputEl}
+				class="sc-name-input"
+				type="text"
+				value={expedition.name}
+				placeholder="Site name..."
+				oninput={(e) => update({ name: (e.target as HTMLInputElement).value })}
+				onblur={() => (editingName = false)}
+				onkeydown={(e) => {
+					if (e.key === 'Enter') nameInputEl?.blur();
+					if (e.key === 'Escape') { update({ name: nameBeforeEdit }); editingName = false; }
+				}}
+			/>
+		{:else}
+			<!-- svelte-ignore a11y_interactive_supports_focus -->
+			<span
+				class="sc-name"
+				role="button"
+				onclick={() => { nameBeforeEdit = expedition.name; editingName = true; }}
+				onkeydown={(e) => e.key === 'Enter' && (editingName = true)}
+				title="Click to rename"
+			>{displayName}</span>
+		{/if}
 
 		<span class="sc-badge sc-badge--type">Site</span>
 
@@ -311,19 +334,8 @@
 	{#if !collapsed}
 		<div class="sc-body">
 
-			<!-- Name + Difficulty row -->
-			<div class="sc-field-row sc-name-diff-row">
-				<div class="sc-field-group sc-field-group--grow">
-					<label class="sc-label" for="sc-name-{expedition.id}">Name</label>
-					<input
-						id="sc-name-{expedition.id}"
-						class="sc-input"
-						type="text"
-						placeholder="Site name…"
-						value={expedition.name}
-						oninput={handleNameChange}
-					/>
-				</div>
+			<!-- Difficulty row -->
+			<div class="sc-field-row">
 				<div class="sc-field-group">
 					<label class="sc-label" for="sc-diff-{expedition.id}">Difficulty</label>
 					<select
@@ -547,12 +559,26 @@
 		font-size: 0.88rem;
 		font-weight: 700;
 		letter-spacing: 0.04em;
-		cursor: pointer;
+		cursor: text;
 		flex: 1;
 		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	.sc-name-input {
+		flex: 1;
+		font-family: var(--font-display);
+		font-weight: 700;
+		font-size: 0.88rem;
+		letter-spacing: 0.04em;
+		background: var(--bg-input);
+		border: 1px solid var(--accent);
+		border-radius: 4px;
+		padding: 2px 6px;
+		color: var(--text);
+		min-width: 0;
 	}
 
 	/* ── Badges ─────────────────────────────────────────────────────────── */

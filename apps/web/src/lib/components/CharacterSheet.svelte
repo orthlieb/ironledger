@@ -93,6 +93,16 @@
 		}
 	});
 
+	// Inline name editing in header
+	let editingName = $state(false);
+	let nameInputEl = $state<HTMLInputElement | null>(null);
+	let nameBeforeEdit = '';
+	$effect(() => {
+		if (editingName && nameInputEl) {
+			nameInputEl.select();
+		}
+	});
+
 	// Initialise log for this character on mount
 	$effect(() => { initLog(SESSION_LOG_ID); });
 
@@ -407,7 +417,27 @@
 			</div>
 		{/if}
 
-		<span class="char-title">{data.name || 'Unnamed'}</span>
+		{#if editingName}
+			<input
+				bind:this={nameInputEl}
+				class="char-name-input"
+				type="text"
+				bind:value={data.name}
+				placeholder="Character name"
+				onblur={() => (editingName = false)}
+				onkeydown={(e) => {
+					if (e.key === 'Enter') nameInputEl?.blur();
+					if (e.key === 'Escape') { data.name = nameBeforeEdit; editingName = false; }
+				}}
+			/>
+		{:else}
+			<!-- svelte-ignore a11y_interactive_supports_focus -->
+			<span class="char-title" role="button"
+				onclick={() => { nameBeforeEdit = data.name; editingName = true; }}
+				onkeydown={(e) => e.key === 'Enter' && (editingName = true)}
+				title="Click to rename"
+			>{data.name || 'Unnamed'}</span>
+		{/if}
 
 		{#if initiative === 1}
 			<span class="cs-init-badge cs-init-badge--you" title="You have the initiative">{@html swordSvg}</span>
@@ -457,15 +487,6 @@
 			<!-- Identity -->
 			<section class="char-section">
 				<div class="identity-fields">
-					<label class="field-group">
-						<span class="section-label">Name</span>
-						<input
-							type="text"
-							bind:value={data.name}
-							placeholder="Character name"
-							class="name-input"
-						/>
-					</label>
 					<div class="field-group flex-1">
 						<button class="bg-toggle" onclick={() => (backgroundCollapsed = !backgroundCollapsed)} title={backgroundCollapsed ? 'Expand background' : 'Collapse background'}>
 							<span class="bg-toggle-arrow" class:bg-toggle-arrow--collapsed={backgroundCollapsed}>▾</span>
@@ -811,6 +832,21 @@
 		text-overflow: ellipsis;
 		white-space: nowrap;
 		color: var(--text);
+		cursor: text;
+	}
+
+	.char-name-input {
+		flex: 1;
+		font-family: var(--font-display);
+		font-weight: 700;
+		font-size: 0.82rem;
+		letter-spacing: 0.08em;
+		background: var(--bg-input);
+		border: 1px solid var(--accent);
+		border-radius: 4px;
+		padding: 2px 6px;
+		color: var(--text);
+		min-width: 0;
 	}
 
 	/* Initiative badge in title bar */
@@ -960,14 +996,6 @@
 		gap: 10px;
 	}
 
-	.name-input {
-		width: 100%;
-		font-family: var(--font-ui);
-		font-size: 0.88rem;
-		font-weight: 600;
-		letter-spacing: 0.06em;
-	}
-
 	/* Collapsible background toggle */
 	.bg-toggle {
 		display: inline-flex;
@@ -978,6 +1006,9 @@
 		padding: 0;
 		cursor: pointer;
 		color: inherit;
+	}
+	.bg-toggle .section-label {
+		margin-bottom: 0;
 	}
 	.bg-toggle:hover .section-label {
 		color: var(--text-accent);

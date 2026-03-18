@@ -40,6 +40,12 @@
 	let confirmingDelete = $state(false);
 	let imgVisible       = $state(true);
 	let thumbHovered     = $state(false);
+	let editingName      = $state(false);
+	let nameInputEl      = $state<HTMLInputElement | null>(null);
+	let nameBeforeEdit   = '';
+	$effect(() => {
+		if (editingName && nameInputEl) nameInputEl.select();
+	});
 
 	// ---------------------------------------------------------------------------
 	// Derived display values
@@ -154,14 +160,31 @@
 			</div>
 		{/if}
 
-		<!-- Name (click to collapse) -->
-		<!-- svelte-ignore a11y_interactive_supports_focus -->
-		<span
-			class="fc-name"
-			role="button"
-			onclick={() => (collapsed = !collapsed)}
-			onkeydown={(e) => e.key === 'Enter' && (collapsed = !collapsed)}
-		>{displayName}</span>
+		<!-- Name (click to edit) -->
+		{#if editingName}
+			<input
+				bind:this={nameInputEl}
+				class="fc-name-input"
+				type="text"
+				value={enc.customName}
+				placeholder={foeDef.name}
+				oninput={(e) => update({ customName: (e.target as HTMLInputElement).value })}
+				onblur={() => (editingName = false)}
+				onkeydown={(e) => {
+					if (e.key === 'Enter') nameInputEl?.blur();
+					if (e.key === 'Escape') { update({ customName: nameBeforeEdit }); editingName = false; }
+				}}
+			/>
+		{:else}
+			<!-- svelte-ignore a11y_interactive_supports_focus -->
+			<span
+				class="fc-name"
+				role="button"
+				onclick={() => { nameBeforeEdit = enc.customName; editingName = true; }}
+				onkeydown={(e) => e.key === 'Enter' && (editingName = true)}
+				title="Click to rename"
+			>{displayName}</span>
+		{/if}
 
 		<!-- Quantity badge (hidden when solo) -->
 		{#if enc.quantity !== 'solo'}
@@ -207,25 +230,11 @@
 	{#if !collapsed}
 		<div class="fc-body">
 
-			<!-- Custom name + harm note on one line -->
-			<div class="fc-field-row">
-				<label class="fc-label" for="fc-name-{enc.id}">Name override</label>
-				<div class="fc-input-harm-row">
-					<input
-						id="fc-name-{enc.id}"
-						class="fc-input"
-						type="text"
-						placeholder={foeDef.name}
-						value={enc.customName}
-						oninput={handleNameChange}
-					/>
-					{#if rankInfo}
-						<div class="fc-harm-note">
-							Inflicts <strong>{rankInfo.harm}</strong> harm per strike
-						</div>
-					{/if}
+			{#if rankInfo}
+				<div class="fc-harm-note">
+					Inflicts <strong>{rankInfo.harm}</strong> harm per strike
 				</div>
-			</div>
+			{/if}
 
 			<!-- Description -->
 			{#if foeDef.description}
@@ -373,12 +382,26 @@
 		font-size: 0.88rem;
 		font-weight: 700;
 		letter-spacing: 0.04em;
-		cursor: pointer;
+		cursor: text;
 		flex: 1;
 		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	.fc-name-input {
+		flex: 1;
+		font-family: var(--font-display);
+		font-weight: 700;
+		font-size: 0.88rem;
+		letter-spacing: 0.04em;
+		background: var(--bg-input);
+		border: 1px solid var(--accent);
+		border-radius: 4px;
+		padding: 2px 6px;
+		color: var(--text);
+		min-width: 0;
 	}
 
 	/* ── Badges ─────────────────────────────────────────────────────────── */

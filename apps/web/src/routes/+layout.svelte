@@ -71,7 +71,7 @@
 
 {#if data.user}
 	<nav class="app-nav">
-		<a href="/characters" class="nav-brand">
+		<a href="/home" class="nav-brand">
 			<span class="nav-brand-icon" aria-hidden="true">{@html swordSvg}</span>
 			Iron Ledger
 		</a>

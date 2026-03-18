@@ -34,6 +34,12 @@
 	// ---------------------------------------------------------------------------
 	let collapsed        = $state(false);
 	let confirmingDelete = $state(false);
+	let editingName      = $state(false);
+	let nameInputEl      = $state<HTMLInputElement | null>(null);
+	let nameBeforeEdit   = '';
+	$effect(() => {
+		if (editingName && nameInputEl) nameInputEl.select();
+	});
 
 	// ---------------------------------------------------------------------------
 	// Derived
@@ -139,13 +145,30 @@
 			aria-label={collapsed ? 'Expand' : 'Collapse'}
 		>{collapsed ? '▶' : '▼'}</button>
 
-		<!-- svelte-ignore a11y_interactive_supports_focus -->
-		<span
-			class="jc-name"
-			role="button"
-			onclick={() => (collapsed = !collapsed)}
-			onkeydown={(e) => e.key === 'Enter' && (collapsed = !collapsed)}
-		>{displayName}</span>
+		{#if editingName}
+			<input
+				bind:this={nameInputEl}
+				class="jc-name-input"
+				type="text"
+				value={expedition.name}
+				placeholder="Journey name..."
+				oninput={(e) => update({ name: (e.target as HTMLInputElement).value })}
+				onblur={() => (editingName = false)}
+				onkeydown={(e) => {
+					if (e.key === 'Enter') nameInputEl?.blur();
+					if (e.key === 'Escape') { update({ name: nameBeforeEdit }); editingName = false; }
+				}}
+			/>
+		{:else}
+			<!-- svelte-ignore a11y_interactive_supports_focus -->
+			<span
+				class="jc-name"
+				role="button"
+				onclick={() => { nameBeforeEdit = expedition.name; editingName = true; }}
+				onkeydown={(e) => e.key === 'Enter' && (editingName = true)}
+				title="Click to rename"
+			>{displayName}</span>
+		{/if}
 
 		<span class="jc-badge jc-badge--type">Journey</span>
 
@@ -180,19 +203,8 @@
 	{#if !collapsed}
 		<div class="jc-body">
 
-			<!-- Name input + difficulty select -->
-			<div class="jc-field-row jc-name-diff-row">
-				<div class="jc-field-group jc-field-group--grow">
-					<label class="jc-label" for="jc-name-{expedition.id}">Name</label>
-					<input
-						id="jc-name-{expedition.id}"
-						class="jc-input"
-						type="text"
-						placeholder="Journey name…"
-						value={expedition.name}
-						oninput={handleNameChange}
-					/>
-				</div>
+			<!-- Difficulty row -->
+			<div class="jc-field-row">
 				<div class="jc-field-group">
 					<label class="jc-label" for="jc-diff-{expedition.id}">Difficulty</label>
 					<select
@@ -301,12 +313,26 @@
 		font-size: 0.88rem;
 		font-weight: 700;
 		letter-spacing: 0.04em;
-		cursor: pointer;
+		cursor: text;
 		flex: 1;
 		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	.jc-name-input {
+		flex: 1;
+		font-family: var(--font-display);
+		font-weight: 700;
+		font-size: 0.88rem;
+		letter-spacing: 0.04em;
+		background: var(--bg-input);
+		border: 1px solid var(--accent);
+		border-radius: 4px;
+		padding: 2px 6px;
+		color: var(--text);
+		min-width: 0;
 	}
 
 	/* ── Badges ─────────────────────────────────────────────────────────── */

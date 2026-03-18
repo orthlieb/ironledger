@@ -4,7 +4,9 @@ import { INTERNAL_API_URL } from '$lib/server/config.js';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	// Already logged in? Skip login page.
-	if (locals.user) throw redirect(302, '/characters');
+	if (locals.user) {
+		throw redirect(302, locals.user.role === 'admin' ? '/admin' : '/home');
+	}
 	return {};
 };
 
@@ -38,6 +40,12 @@ export const actions: Actions = {
 		if (res.status === 401) {
 			return fail(401, { error: 'Invalid email or password.', email });
 		}
+		if (res.status === 503) {
+			// Could be maintenance mode — check the body
+			const body = await res.json().catch(() => ({})) as { message?: string };
+			const message = body.message ?? 'The system is currently under maintenance. Please try again later.';
+			return fail(503, { maintenance: true, message, email });
+		}
 		if (!res.ok) {
 			return fail(res.status, { error: 'Login failed. Please try again.', email });
 		}
@@ -54,7 +62,17 @@ export const actions: Actions = {
 			maxAge: 900, // 15 minutes — matches JWT TTL
 		});
 
+		// Decode the JWT payload to read the role (same approach as hooks.server.ts).
+		// Signature verification happens in the API; here we just need the claim.
+		let role = 'user';
+		try {
+			const [, payloadB64] = body.accessToken.split('.');
+			const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8')) as { role?: string };
+			role = payload.role ?? 'user';
+		} catch { /* ignore — default to 'user' */ }
+
 		// Fastify sets its own 'rt' refresh-token cookie automatically.
-		throw redirect(302, '/characters');
+		// Admins go straight to the admin panel; everyone else to home.
+		throw redirect(302, role === 'admin' ? '/admin' : '/home');
 	},
 };

@@ -280,7 +280,7 @@
 	}
 
 	/** Trigger a browser download of the log as a .md file. */
-	function exportLog() {
+	export function exportLog() {
 		const md = extractLogMarkdown();
 		if (!md) return;
 
@@ -301,6 +301,16 @@
 		a.click();
 		document.body.removeChild(a);
 		URL.revokeObjectURL(url);
+	}
+
+	/** Show the clear-log confirmation dialog (exposed for external toolbar). */
+	export function showClearDialog() {
+		clearDialogEl?.showModal();
+	}
+
+	/** Whether the log has entries (exposed for external toolbar disabled state). */
+	export function hasEntries(): boolean {
+		return entries.length > 0;
 	}
 
 	// ---------------------------------------------------------------------------
@@ -438,28 +448,6 @@
 </script>
 
 <div class="log-panel">
-	<div class="log-header">
-		<div class="log-title-row">
-			<span class="log-title">Session Log</span>
-		</div>
-		<div class="log-header-actions">
-			<button
-				class="btn btn-icon icon-btn"
-				onclick={exportLog}
-				title="Export log as Markdown"
-				aria-label="Export session log as Markdown"
-				disabled={entries.length === 0}
-			>{@html fileExportSvg}</button>
-			<button
-				class="btn btn-icon icon-btn"
-				onclick={() => clearDialogEl?.showModal()}
-				title="Clear log"
-				aria-label="Clear session log"
-				disabled={entries.length === 0}
-			>{@html trashSvg}</button>
-		</div>
-	</div>
-
 	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions a11y_no_noninteractive_element_interactions -->
 	<div class="log-entries" role="log" aria-live="polite" aria-label="Session log"
 		onclick={handleEntriesClick}>
@@ -467,7 +455,7 @@
 			<div class="log-empty">
 				<span class="log-empty-icon">◊</span>
 				<span>No changes recorded yet.</span>
-				<span class="log-empty-sub">Changes to the character will appear here.</span>
+				<span class="log-empty-sub">Changes to the log will appear here.</span>
 			</div>
 		{:else}
 			{#each entries as entry (entry.id)}
@@ -564,45 +552,6 @@
 		height: 100%;
 		background: var(--bg-inset);
 		border-left: 1px solid var(--border);
-	}
-
-	.log-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		/* Height matches tab bar (measured 40.5 px) */
-		padding: 0 14px;
-		min-height: 40.5px;
-		border-bottom: 1px solid var(--border);
-		background: var(--bg-card);
-		flex-shrink: 0;
-		gap: 8px;
-	}
-
-	.log-title-row {
-		display: flex;
-		align-items: center;
-	}
-
-	.log-title {
-		font-family: var(--font-ui);
-		font-size: 0.68rem;
-		font-weight: 600;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		color: var(--text-dimmer);
-	}
-
-	.log-header-actions {
-		display:     flex;
-		align-items: center;
-		gap:         3px;
-	}
-
-	.icon-btn :global(svg) {
-		width: 11px;
-		height: 11px;
-		fill: currentColor;
 	}
 
 	.log-entries {

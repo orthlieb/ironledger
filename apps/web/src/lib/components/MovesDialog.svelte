@@ -164,6 +164,22 @@
 		return m.miss ?? '';
 	}
 
+	// Resolve <a class="harm-link"> placeholders to concrete resource-links.
+	// Must be called before enrichOutcomeLinks so the stamping pass picks up the
+	// resolved resource-link class. Falls back to plain text if no foe harm is known.
+	function resolveHarmLinks(html: string): string {
+		const harm = pctx.foeHarm;
+		const harmRe = /<a class="harm-link" data-resource="health">-harm health<\/a>/g;
+		if (harm) {
+			return html.replace(
+				harmRe,
+				`<a class="resource-link" data-resource="health" data-value="-${harm}">-${harm} health</a>`,
+			);
+		}
+		// No active foe harm — strip to plain text so the link doesn't appear broken
+		return html.replace(harmRe, '-harm health');
+	}
+
 	// ---------------------------------------------------------------------------
 	// Public API
 	// ---------------------------------------------------------------------------
@@ -305,6 +321,7 @@
 
 		let outcomeHtml = getOutcomeHtml(selectedMove, hits1, hits2);
 		if (outcomeHtml) {
+			outcomeHtml = resolveHarmLinks(outcomeHtml);
 			outcomeHtml = enrichOutcomeLinks(outcomeHtml, entryId, ctx.charId);
 			parts.push(`<div class="move-outcome">${outcomeHtml}</div>`);
 		}
@@ -359,6 +376,7 @@
 
 		let outcomeHtml = getOutcomeHtml(selectedMove, hits1, hits2);
 		if (outcomeHtml) {
+			outcomeHtml = resolveHarmLinks(outcomeHtml);
 			if (charId) outcomeHtml = enrichOutcomeLinks(outcomeHtml, entryId, charId);
 			parts.push(`<div class="move-outcome">${outcomeHtml}</div>`);
 		}
