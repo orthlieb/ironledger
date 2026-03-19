@@ -22,15 +22,16 @@
 		findMove,
 		isProgressMove,
 		isNoRollMove,
+		isSpellRollMove,
 		hasRollableStats,
 	} from '$lib/moveStore.svelte.js';
 	import { firstPreconditionFailure } from '$lib/preconditions.js';
 	import { appendLog, enrichOutcomeLinks, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import { rollDie, animateDice } from '$lib/dice.js';
 
-	import clearFiltersSvg from '$lib/icons/filter-circle-xmark-solid-full.svg?raw';
-	import diceD6Svg  from '$icons/dice-d6-light.svg?raw';
-	import diceD10Svg from '$icons/dice-d10-light.svg?raw';
+	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
+	import diceD6RawSvg  from '$icons/dice-d6-light.svg?raw';
+	import diceD10RawSvg from '$icons/dice-d10-light.svg?raw';
 	import { draggable } from '$lib/actions/draggable.js';
 
 	// ---------------------------------------------------------------------------
@@ -39,11 +40,13 @@
 	let {
 		ctx  = null,
 		pctx = {},
+		progressContext = {},
 		onInitiativeChange,
 	}: {
-		ctx:  DiceCtx | null;
-		pctx: PreconditionContext;
-		onInitiativeChange?: (value: 'character' | 'foe') => void;
+		ctx:              DiceCtx | null;
+		pctx:             PreconditionContext;
+		progressContext?: Record<string, number>;
+		onInitiativeChange?: (value: 'character' | 'foe' | 'none') => void;
 	} = $props();
 
 	// ---------------------------------------------------------------------------
@@ -60,7 +63,37 @@
 	// Detail view state
 	let selectedStat     = $state('');
 	let adds             = $state(0);
-	let progressValue    = $state(0);
+	const progressValue  = $derived.by(() => {
+		const src   = selectedMove?.progressSource ?? 'combat';
+		const ticks = progressContext[src] ?? 0;
+		return Math.floor(ticks / 4);
+	});
+
+	// Prepare inline die icons (currentColor so they match the muted text)
+	const d6Icon  = diceD6RawSvg.replace('<svg ', '<svg fill="currentColor" class="rs-die" ');
+	const d10Icon = diceD10RawSvg.replace('<svg ', '<svg fill="currentColor" class="rs-die" ');
+
+	// Roll formula shown in the status area between spinners and roll button
+	const rollStatusHtml = $derived.by(() => {
+		if (!selectedMove) return '';
+		const addsStr = (n: number) => n !== 0 ? ` + adds[${n >= 0 ? '+' : ''}${n}]` : '';
+		if (selectedMove.progressTrack) {
+			return `progress[${progressValue}]${addsStr(adds)} vs ${d10Icon} &amp; ${d10Icon}`;
+		}
+		if (selectedMove.spellRoll) {
+			return `${d6Icon} + mana[${manaCommit}] + adds[${adds >= 0 ? '+' : ''}${adds}] vs difficulty[${spellDifficulty}] &amp; ${d10Icon}`;
+		}
+		if (selectedStat && ctx) {
+			const val = (ctx.data as Record<string, unknown>)[selectedStat] as number ?? 0;
+			return `${d6Icon} + ${selectedStat}[${val}]${addsStr(adds)} vs ${d10Icon} &amp; ${d10Icon}`;
+		}
+		return '';
+	});
+
+	let spellDifficulty  = $state(1);
+	let manaCommit       = $state(0);
+	let factorLevels     = $state<Record<string, number>>({});
+	let factorsManuallySet = $state(false);
 
 	// ---------------------------------------------------------------------------
 	// Derived
@@ -193,8 +226,11 @@
 		}
 		search           = '';
 		activeCategories = new Set();
-		adds             = 0;
-		progressValue    = 0;
+		adds               = 0;
+			spellDifficulty    = 1;
+		manaCommit         = 0;
+		factorLevels       = {};
+		factorsManuallySet = false;
 		loadMoves();
 		dialogEl?.showModal();
 	}
@@ -207,10 +243,13 @@
 	// Navigation
 	// ---------------------------------------------------------------------------
 	function selectMove(m: MoveDefinition) {
-		selectedId   = m.id;
-		view         = 'detail';
-		adds         = 0;
-		progressValue = 0;
+		selectedId     = m.id;
+		view           = 'detail';
+		adds           = 0;
+			spellDifficulty  = 1;
+		manaCommit       = 0;
+		factorLevels     = {};
+		factorsManuallySet = false;
 		// Auto-select first stat
 		if (m.stats && m.stats.length > 0) {
 			selectedStat = m.stats[0].stat;
@@ -350,20 +389,23 @@
 		if (rolling || !selectedMove) return;
 		rolling = true;
 
-		const c1    = rollDie(10);
-		const c2    = rollDie(10);
-		const hits1 = progressValue > c1;
-		const hits2 = progressValue > c2;
+		const total  = progressValue + adds;
+		const c1     = rollDie(10);
+		const c2     = rollDie(10);
+		const hits1  = total > c1;
+		const hits2  = total > c2;
 		const isMatch = c1 === c2;
 
 		// Pre-generate entry id for link enrichment
 		const entryId = crypto.randomUUID();
 		const charId  = ctx?.charId ?? '';
 
+		const addsStr = adds !== 0 ? ` + Adds [<strong>${adds >= 0 ? '+' : ''}${adds}</strong>] = [<strong>${total}</strong>]` : '';
+
 		const parts: string[] = [];
 		parts.push(
 			`<div class="roll-line">` +
-			`Progress [<strong>${progressValue}</strong>] vs 2d10 [${c1}] [${c2}]` +
+			`Progress [<strong>${progressValue}</strong>]${addsStr} vs 2d10 [${c1}] [${c2}]` +
 			`</div>`,
 		);
 
@@ -389,7 +431,105 @@
 			{ sides: 10, value: c2 },
 		]);
 		appendLog(SESSION_LOG_ID, logTitle(selectedMove.name), html, entryId);
+
+		// End the Fight clears the combat (no more initiative)
+		if (selectedMove.id === 'move/end-the-fight') {
+			onInitiativeChange?.('none');
+		}
+
 		rolling = false;
+	}
+
+
+	// ---------------------------------------------------------------------------
+	// Spell Roll (1d6 + adds vs difficulty + 1d10) — Cast Conclave Ritual
+	// ---------------------------------------------------------------------------
+	async function doSpellRoll() {
+		if (rolling || !ctx || !selectedMove) return;
+		rolling = true;
+
+		const aDie   = rollDie(6);
+		const c1     = rollDie(10);
+		const diff   = spellDifficulty;
+		const mana   = manaCommit;
+		const total  = aDie + adds + mana;
+
+		const hitsDiff = total > diff;
+		const hitsC1   = total > c1;
+
+		const entryId = crypto.randomUUID();
+		const parts: string[] = [];
+
+		const addsStr = adds !== 0 ? ` + adds[${adds > 0 ? '+' : ''}${adds}]` : '';
+		const manaStr = mana > 0 ? ` + mana[${mana}]` : '';
+		parts.push(
+			`<div class="roll-line">` +
+			`1d6 [${aDie}]${addsStr}${manaStr}` +
+			` = <strong>${total}</strong> vs difficulty[<strong>${diff}</strong>] 1d10[${c1}]` +
+			`</div>`,
+		);
+		parts.push(
+			`<div class="${outcomeClass(hitsDiff, hitsC1)}">` +
+			`<strong>${outcomeLabel(hitsDiff, hitsC1)}</strong>` +
+			`</div>`,
+		);
+
+		// Build body: outcome text + mandatory mana cost (always spent)
+		let bodyHtml = '';
+		let outcomeHtml = getOutcomeHtml(selectedMove, hitsDiff, hitsC1);
+		if (outcomeHtml) {
+			outcomeHtml = resolveHarmLinks(outcomeHtml);
+			bodyHtml += `<div class="move-outcome">${outcomeHtml}</div>`;
+		}
+		if (mana > 0) {
+			bodyHtml += `<div class="move-outcome"><a class="resource-link" data-resource="mana" data-value="-${mana}">-${mana} mana</a> committed.</div>`;
+		}
+		if (bodyHtml) {
+			bodyHtml = enrichOutcomeLinks(bodyHtml, entryId, ctx.charId);
+			parts.push(bodyHtml);
+		}
+
+		const html = parts.join('');
+
+		close();
+		await animateDice([
+			{ sides: 6,  value: aDie },
+			{ sides: 10, value: c1   },
+		]);
+		appendLog(SESSION_LOG_ID, logTitle(selectedMove.name), html, entryId);
+		rolling = false;
+	}
+
+	async function doApplyNoRollMove() {
+		if (!ctx || !selectedMove) return;
+		const logBody = selectedMove['logBody'] as string | undefined;
+		if (!logBody) return;
+
+		// Extract initiative value from the body and fire immediately
+		const initMatch = logBody.match(/class="initiative-link"[^>]*data-value="(character|foe)"/);
+		if (!initMatch) {
+			const initMatch2 = logBody.match(/data-value="(character|foe)"[^>]*class="initiative-link"/);
+			if (initMatch2) onInitiativeChange?.(initMatch2[1] as 'character' | 'foe');
+		} else {
+			onInitiativeChange?.(initMatch[1] as 'character' | 'foe');
+		}
+
+		const entryId = crypto.randomUUID();
+		const enriched = enrichOutcomeLinks(logBody, entryId, ctx.charId);
+		close();
+		appendLog(SESSION_LOG_ID, logTitle(selectedMove.name), enriched, entryId);
+	}
+
+
+	// When factor levels change (user explicitly set), sync sum → spellDifficulty.
+	$effect(() => {
+		if (!factorsManuallySet) return;
+		spellDifficulty = Math.max(1, Object.values(factorLevels).reduce((s, v) => s + v, 0));
+	});
+
+	function setFactorLevel(ritualId: string, factorKey: string, level: number) {
+		factorsManuallySet = true;
+		factorLevels = { ...factorLevels, [`${ritualId}|${factorKey}`]: level };
 	}
 
 	// Auto-select first stat when move changes
@@ -592,42 +732,173 @@
 					>+</button>
 				</div>
 
+				<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
 				<button
 					class="btn btn-primary md-roll-btn"
 					onclick={doActionRoll}
 					disabled={rolling || !ctx || !!fail}
 					title={fail ?? ''}
 				>
-					<span class="md-roll-dice" aria-hidden="true">
-						<span class="md-roll-die md-roll-die--d6">{@html diceD6Svg}</span>
-						<span class="md-roll-die md-roll-die--d10">{@html diceD10Svg}</span>
-						<span class="md-roll-die md-roll-die--d10">{@html diceD10Svg}</span>
-					</span>
 					{rolling ? 'Rolling…' : 'Roll Move'}
 				</button>
 			</div>
 
-		<!-- ── Progress move ── -->
-		{:else if isProgressMove(selectedMove)}
-			<div class="md-progress-row">
-				<span class="md-progress-label">
-					Progress ({(selectedMove as Record<string, unknown>).progressTrack as string})
-				</span>
+		<!-- ── Spell roll move (1d6+adds vs difficulty+1d10) ── -->
+		{:else if isSpellRollMove(selectedMove)}
+			<!-- Outcomes preview -->
+			{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
+				<div class="md-outcomes">
+					{#if selectedMove.strong}
+						<div class="md-outcome-section" style:--outcome-color="var(--color-success, #34d399)">
+							<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
+							<div class="md-outcome-text">{@html selectedMove.strong}</div>
+						</div>
+					{/if}
+					{#if selectedMove.weak}
+						<div class="md-outcome-section" style:--outcome-color="var(--color-momentum, #60a5fa)">
+							<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
+							<div class="md-outcome-text">{@html selectedMove.weak}</div>
+						</div>
+					{/if}
+					{#if selectedMove.miss}
+						<div class="md-outcome-section" style:--outcome-color="var(--color-danger, #ef4444)">
+							<div class="md-outcome-label md-outcome-miss">Miss</div>
+							<div class="md-outcome-text">{@html selectedMove.miss}</div>
+						</div>
+					{/if}
+				</div>
+			{/if}
+
+			<!-- Adds + Mana + Difficulty + Roll -->
+			<div class="md-action-row md-action-row--spell">
+				<div class="md-adds-row">
+					<span class="md-adds-label">Adds</span>
+					<button
+						class="md-adj"
+						onclick={() => (adds = Math.max(-5, adds - 1))}
+						disabled={rolling || !ctx || adds <= -5}
+						aria-label="Decrease adds"
+					>−</button>
+					<span
+						class="md-adds-val"
+						class:positive={adds > 0}
+						class:negative={adds < 0}
+					>{adds >= 0 ? '+' : ''}{adds}</span>
+					<button
+						class="md-adj"
+						onclick={() => (adds = Math.min(5, adds + 1))}
+						disabled={rolling || !ctx || adds >= 5}
+						aria-label="Increase adds"
+					>+</button>
+					<span class="md-adds-label md-adds-label--gap">Mana</span>
+					<button
+						class="md-adj"
+						onclick={() => (manaCommit = Math.max(0, manaCommit - 1))}
+						disabled={rolling || manaCommit <= 0}
+						aria-label="Decrease mana"
+					>−</button>
+					<span class="md-adds-val" class:positive={manaCommit > 0}>{manaCommit}</span>
+					<button
+						class="md-adj"
+						onclick={() => (manaCommit = Math.min((ctx?.data as Record<string, number>)?.['mana'] ?? 0, manaCommit + 1))}
+						disabled={rolling || manaCommit >= ((ctx?.data as Record<string, number>)?.['mana'] ?? 0)}
+						aria-label="Increase mana"
+					>+</button>
+					<span class="md-adds-label md-adds-label--gap">Difficulty</span>
+					<button
+						class="md-adj"
+						onclick={() => (spellDifficulty = Math.max(1, spellDifficulty - 1))}
+						disabled={rolling || spellDifficulty <= 1}
+						aria-label="Decrease difficulty"
+					>−</button>
+					<span class="md-adds-val">{spellDifficulty}</span>
+					<button
+						class="md-adj"
+						onclick={() => (spellDifficulty = Math.min(10, spellDifficulty + 1))}
+						disabled={rolling || spellDifficulty >= 10}
+						aria-label="Increase difficulty"
+					>+</button>
+				</div>
+
+				<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
 				<button
-					class="md-adj"
-					onclick={() => (progressValue = Math.max(0, progressValue - 1))}
-					disabled={rolling || progressValue <= 0}
-					aria-label="Decrease progress"
-				>−</button>
-				<span class="md-progress-val">{progressValue}</span>
-				<button
-					class="md-adj"
-					onclick={() => (progressValue = Math.min(10, progressValue + 1))}
-					disabled={rolling || progressValue >= 10}
-					aria-label="Increase progress"
-				>+</button>
+					class="btn btn-primary md-roll-btn md-roll-btn--spell"
+					onclick={doSpellRoll}
+					disabled={rolling || !ctx}
+				>
+					{rolling ? 'Rolling\u2026' : 'Roll Move'}
+				</button>
 			</div>
 
+			<!-- Difficulty factors collapsible -->
+			{#if pctx.ritualAssets && pctx.ritualAssets.length > 0}
+				<details class="md-factors">
+					<summary class="md-factors-summary">
+						Difficulty Factors
+						{#if factorsManuallySet}
+							<span class="md-factors-total">= {spellDifficulty}</span>
+						{/if}
+					</summary>
+					{#each pctx.ritualAssets as ritual (ritual.id)}
+						{#if pctx.ritualAssets.length > 1}
+							<div class="md-factors-ritual-name">{ritual.name}</div>
+						{/if}
+						{#each ritual.inspectionFactors as factor (factor.key)}
+							{@const levelKey = `${ritual.id}|${factor.key}`}
+							{@const currentLevel = factorLevels[levelKey] ?? 0}
+							<div class="md-factor">
+								<div class="md-factor-header">
+									<span class="md-factor-name">{factor.name}</span>
+									<div class="md-factor-levels">
+										{#each [0, 1, 2] as lvl}
+											<button
+												class="md-factor-lvl"
+												class:active={currentLevel === lvl}
+												onclick={() => setFactorLevel(ritual.id, factor.key, lvl)}
+											>{lvl}</button>
+										{/each}
+									</div>
+								</div>
+								<div class="md-factor-desc">{factor.levels[currentLevel]}</div>
+							</div>
+						{/each}
+					{/each}
+				</details>
+			{/if}
+
+				<!-- ── Progress move ── -->
+		{:else if isProgressMove(selectedMove)}
+			<div class="md-action-row">
+				<div class="md-adds-row">
+					<span class="md-adds-label">Adds</span>
+					<button
+						class="md-adj"
+						onclick={() => (adds = Math.max(-5, adds - 1))}
+						disabled={rolling || adds <= -5}
+						aria-label="Decrease adds"
+					>−</button>
+					<span
+						class="md-adds-val"
+						class:positive={adds > 0}
+						class:negative={adds < 0}
+					>{adds >= 0 ? '+' : ''}{adds}</span>
+					<button
+						class="md-adj"
+						onclick={() => (adds = Math.min(5, adds + 1))}
+						disabled={rolling || adds >= 5}
+						aria-label="Increase adds"
+					>+</button>
+				</div>
+
+				<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
+				<button
+					class="btn btn-primary md-roll-btn"
+					onclick={doProgressRoll}
+					disabled={rolling}
+				>
+					{rolling ? 'Rolling…' : 'Roll Move'}
+				</button>
+			</div>
 			<!-- ── Outcomes ── -->
 			{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
 				<div class="md-outcomes">
@@ -652,14 +923,15 @@
 				</div>
 			{/if}
 
-			<button
-				class="btn btn-primary md-roll-btn md-roll-btn--full"
-				onclick={doProgressRoll}
-				disabled={rolling}
-			>{rolling ? 'Rolling…' : 'Roll Progress'}</button>
-
 		<!-- ── No-roll move (no controls needed) ── -->
 		{:else if isNoRollMove(selectedMove)}
+			<!-- ── Apply button for moves with a logBody (e.g. Turn the Tide) ── -->
+			{#if selectedMove['logBody']}
+				<button
+					class="btn btn-primary md-roll-btn md-roll-btn--full"
+					onclick={doApplyNoRollMove}
+				>Use Move</button>
+			{/if}
 			<!-- ── Outcomes ── -->
 			{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
 				<div class="md-outcomes">
@@ -995,8 +1267,9 @@
 	}
 	.md-trigger :global(strong) { color: var(--text); font-weight: 600; }
 	.md-trigger :global(a) { cursor: pointer; color: var(--text-accent); }
-	.md-trigger :global(ul) { margin: 4px 0; padding-left: 1.3em; }
-	.md-trigger :global(li) { margin-bottom: 2px; }
+	.md-trigger :global(ul),
+	.md-trigger :global(ol) { margin: 4px 0; padding-left: 1.5em; }
+	.md-trigger :global(li) { margin-bottom: 3px; }
 
 	/* ── Stat picker ─────────────────────────────────────────────────────── */
 	.md-stat-list {
@@ -1149,7 +1422,27 @@
 		font-size:   0.8rem;
 	}
 	/* In action row, roll button fills remaining space */
-	.md-action-row .md-roll-btn { flex: 1; justify-content: center; }
+	/* Roll status formula (between spinners and roll button) */
+	.md-roll-status {
+		flex:          1;
+		text-align:    center;
+		font-family:   var(--font-ui, monospace);
+		font-size:     0.72rem;
+		color:         var(--text-muted);
+		font-style:    italic;
+		white-space:   nowrap;
+		overflow:      hidden;
+		text-overflow: ellipsis;
+		padding:       0 6px;
+	}
+	.md-action-row .md-roll-btn { justify-content: center; }
+	/* Inline die icons inside roll status formula (injected via @html) */
+	:global(.rs-die) {
+		width:          1em;
+		height:         1em;
+		display:        inline;
+		vertical-align: -0.15em;
+	}
 
 	.md-roll-dice {
 		display:     inline-flex;
@@ -1174,6 +1467,25 @@
 	}
 	/* Standalone roll buttons (progress moves) — full width */
 	.md-roll-btn--full { width: 100%; }
+	/* Roll formula elements */
+	.md-roll-vs {
+		font-size:   0.65rem;
+		font-weight: 600;
+		opacity:     0.6;
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+	}
+	.md-roll-sep {
+		font-size:   0.7rem;
+		opacity:     0.5;
+	}
+	.md-roll-num {
+		font-size:   0.85rem;
+		font-weight: 700;
+		font-family: var(--font-ui, monospace);
+		min-width:   1ch;
+		text-align:  center;
+	}
 
 	/* ── Outcomes (no-roll moves) ────────────────────────────────────────── */
 	.md-outcomes {
@@ -1232,4 +1544,116 @@
 		line-height: 1.5;
 		font-style:  italic;
 	}
+	/* ── Difficulty Factors (spell roll collapsible) ───────────────────────── */
+	.md-factors {
+		margin-top: 6px;
+		border: 1px solid var(--border-mid);
+		border-radius: 6px;
+		overflow: hidden;
+	}
+
+	.md-factors-summary {
+		padding: 6px 10px;
+		font-size: 0.7rem;
+		font-weight: 600;
+		color: var(--text-muted);
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		cursor: pointer;
+		list-style: none;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		user-select: none;
+	}
+	.md-factors-summary::-webkit-details-marker { display: none; }
+	.md-factors-summary::before {
+		content: '\25B8';
+		font-size: 0.65rem;
+		transition: transform 0.15s;
+	}
+	details.md-factors[open] .md-factors-summary::before { transform: rotate(90deg); }
+
+	.md-factors-total {
+		margin-left: auto;
+		font-size: 0.8rem;
+		font-weight: 700;
+		color: var(--text-accent, #60a5fa);
+	}
+
+	.md-factors-ritual-name {
+		padding: 4px 10px 2px;
+		font-size: 0.65rem;
+		color: var(--text-dimmer);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		font-weight: 600;
+	}
+
+	.md-factor {
+		padding: 5px 10px;
+		border-top: 1px solid var(--border-mid);
+	}
+
+	.md-factor-header {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.md-factor-name {
+		flex: 1;
+		font-size: 0.72rem;
+		color: var(--text);
+		font-weight: 500;
+	}
+
+	.md-factor-levels {
+		display: flex;
+		gap: 3px;
+	}
+
+	.md-factor-lvl {
+		width: 22px;
+		height: 22px;
+		border-radius: 4px;
+		border: 1px solid var(--border-mid);
+		background: transparent;
+		color: var(--text-muted);
+		font-size: 0.72rem;
+		cursor: pointer;
+		padding: 0;
+		text-align: center;
+		transition: background 0.1s, color 0.1s;
+	}
+	.md-factor-lvl.active {
+		background: var(--text-accent, #60a5fa);
+		color: #fff;
+		border-color: transparent;
+	}
+	.md-factor-lvl:hover:not(.active) {
+		background: rgba(255,255,255,0.06);
+		color: var(--text);
+	}
+
+	.md-factor-desc {
+		margin-top: 2px;
+		font-size: 0.67rem;
+		color: var(--text-dimmer);
+		line-height: 1.45;
+	}
+
+	.md-adds-label--gap {
+		margin-left: 0.65rem;
+	}
+
+	/* Spell roll action row — spinners wrap above roll button on narrow dialogs */
+	.md-action-row--spell {
+		flex-wrap: wrap;
+		gap: 6px 0;
+	}
+	.md-roll-btn--spell {
+		flex: 1 1 auto;
+	}
+
 </style>

@@ -110,9 +110,15 @@ export function isProgressMove(m: MoveDefinition): boolean {
 	return !!(m as Record<string, unknown>).progressTrack;
 }
 
+/** Spell roll moves use 1d6 + adds vs (difficulty + 1d10). */
+export function isSpellRollMove(m: MoveDefinition): boolean {
+	return !!(m as Record<string, unknown>)['spellRoll'];
+}
+
 /** No-roll moves are informational — no stats and no/empty outcomes. */
 export function isNoRollMove(m: MoveDefinition): boolean {
 	if (isProgressMove(m)) return false;
+	if (isSpellRollMove(m)) return false;
 	if (m.stats && m.stats.length > 0) return false;
 	return true;
 }

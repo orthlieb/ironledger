@@ -55,22 +55,22 @@
 			>
 				<svg viewBox="0 0 20 20" width="22" height="22" aria-hidden="true">
 					<!-- box border -->
-					<rect x="1" y="1" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" />
+					<rect x="1" y="1" width="18" height="18" rx="3" ry="3" fill="none" stroke="currentColor" stroke-width="1.5" />
 					<!-- tick 1: top-left → bottom-right \ -->
 					{#if ticks >= 1}
-						<line x1="3" y1="3" x2="17" y2="17" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+						<line x1="3.7" y1="3.7" x2="16.3" y2="16.3" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
 					{/if}
 					<!-- tick 2: top-right → bottom-left / -->
 					{#if ticks >= 2}
-						<line x1="17" y1="3" x2="3" y2="17" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+						<line x1="16.3" y1="3.7" x2="3.7" y2="16.3" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
 					{/if}
 					<!-- tick 3: horizontal — -->
 					{#if ticks >= 3}
-						<line x1="1" y1="10" x2="19" y2="10" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+						<line x1="1.9" y1="10" x2="18.1" y2="10" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
 					{/if}
 					<!-- tick 4: vertical | -->
 					{#if ticks >= 4}
-						<line x1="10" y1="1" x2="10" y2="19" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+						<line x1="10" y1="1.9" x2="10" y2="18.1" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
 					{/if}
 				</svg>
 			</button>

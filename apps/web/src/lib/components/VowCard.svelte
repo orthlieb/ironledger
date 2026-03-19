@@ -2,7 +2,7 @@
 	import type { Vow, VowDifficulty } from '$lib/types.js';
 	import { VOW_MARK_TICKS } from '$lib/types.js';
 	import ProgressTrack from './ProgressTrack.svelte';
-	import trashSvg from '$lib/images/trash-solid.svg?raw';
+	import trashSvg from '$icons/trash-solid.svg?raw';
 
 	let {
 		vow = $bindable(),

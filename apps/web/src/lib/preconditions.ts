@@ -24,6 +24,20 @@ export interface Precondition {
 	ne?:  number;
 }
 
+/** A single difficulty factor level within an inspection ritual. */
+export interface InspectionFactor {
+	key:    string;
+	name:   string;
+	levels: string[];
+}
+
+/** A ritual asset's identity + its difficulty factors, passed via pctx. */
+export interface RitualInfo {
+	id:                string;
+	name:              string;
+	inspectionFactors: InspectionFactor[];
+}
+
 /**
  * Optional runtime context for move preconditions.
  * Defaults to all-false / 0 for asset checks (safe — asset picker has no
@@ -38,6 +52,8 @@ export interface PreconditionContext {
 	initiative?:   number;
 	/** Harm dealt by the active foe per hit (from FOE_RANKS). Used to resolve harm-links at roll time. */
 	foeHarm?:      number;
+	/** Ritual assets owned by the active character that have difficulty factors. */
+	ritualAssets?: RitualInfo[];
 }
 
 // ---------------------------------------------------------------------------

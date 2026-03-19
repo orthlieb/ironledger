@@ -10,13 +10,14 @@
       "strong": "",
       "weak": "",
       "miss": "",
-      "notes": "No roll \u2014 automatically triggered on any miss. Mark 1 tick on your failure track. On a miss from a progress move (Reach Your Destination, Locate Your Objective, etc.), mark 2 ticks instead.",
+      "notes": "No roll — automatically triggered on any miss. Mark 1 tick on your failure track. On a miss from a progress move (Reach Your Destination, Locate Your Objective, etc.), mark 2 ticks instead.",
       "preconditions": [
         {
           "key": "hasCharacter",
           "eq": 1
         }
-      ]
+      ],
+      "logBody": "Mark <a class=\"resource-link\" data-resource=\"failures\" data-value=\"+1\">+1 tick</a> on your failure track."
     },
     {
       "id": "move/learn-from-your-failures",
@@ -34,7 +35,7 @@
       "strong": "You commit to making a dramatic change. Take <a class=\"resource-link\" data-resource=\"xp\" data-value=\"+3\">+3 experience</a> and clear all progress. Then, choose one:<ul><li><strong>Adjust your approach:</strong> Discard a single asset, and take 2 experience for each marked ability.</li><li><strong>Make an oath:</strong> <a class=\"move-link\" data-id=\"move/swear-an-iron-vow\">Swear an Iron Vow</a>, and reroll any dice.</li><li><strong>Ready your next steps:</strong> Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+3\">+3 momentum</a>.</li></ul>",
       "weak": "You learn from your mistakes. Take <a class=\"resource-link\" data-resource=\"xp\" data-value=\"+2\">+2 experience</a> and clear all progress.",
       "miss": "You've learned the wrong lessons. Take <a class=\"resource-link\" data-resource=\"xp\" data-value=\"+1\">+1 experience</a> and clear all progress. Then, envision how you set off on an ill-fated path.",
-      "notes": "Progress move \u2014 roll the challenge dice against your failure track. No action die. Momentum is ignored. Requires failure track to be +6 or greater. Always clears all failure track progress regardless of outcome.",
+      "notes": "Progress move — roll the challenge dice against your failure track. No action die. Momentum is ignored. Requires failure track to be +6 or greater. Always clears all failure track progress regardless of outcome.",
       "preconditions": [
         {
           "key": "hasCharacter",
@@ -44,7 +45,8 @@
           "key": "failures",
           "min": 6
         }
-      ]
+      ],
+      "progressSource": "failures"
     }
   ]
 }

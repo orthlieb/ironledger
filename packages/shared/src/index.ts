@@ -108,16 +108,19 @@ export interface AssetPrecondition {
 
 /** Move definition — mirrors the JSON structure in moves/*.json */
 export interface MoveDefinition {
-  id:           string;
-  name:         string;
-  category:     string;
-  triggerShort: string;
-  trigger:      string;
-  stats?:       MoveStat[];
-  strong?:      string;
-  weak?:        string;
-  miss?:        string;
-  notes?:       string;
+  id:             string;
+  name:           string;
+  category:       string;
+  triggerShort:   string;
+  trigger:        string;
+  stats?:         MoveStat[];
+  strong?:        string;
+  weak?:          string;
+  miss?:          string;
+  notes?:         string;
+  progressTrack?: string;
+  progressSource?: string;
+  spellRoll?:     boolean;
   preconditions?: AssetPrecondition[];
   [key: string]: unknown;
 }

@@ -7,9 +7,9 @@
 	 * The matching anti-flash script in app.html reads this on every page load.
 	 */
 
-	import autoSvg  from '$lib/images/circle-half-stroke-solid.svg?raw';
-	import darkSvg  from '$lib/images/moon-solid.svg?raw';
-	import lightSvg from '$lib/images/sun-solid.svg?raw';
+	import autoSvg  from '$icons/circle-half-stroke-solid.svg?raw';
+	import darkSvg  from '$icons/moon-solid.svg?raw';
+	import lightSvg from '$icons/sun-solid.svg?raw';
 
 	type Theme = 'auto' | 'dark' | 'light';
 

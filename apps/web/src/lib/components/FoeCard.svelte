@@ -14,9 +14,9 @@
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import ProgressTrack from '$lib/components/ProgressTrack.svelte';
 
-	import trashSvg  from '$lib/icons/trash-solid-full.svg?raw';
-	import swordSvg  from '$lib/icons/sword-solid-full.svg?raw';
-	import skullSvg  from '$lib/icons/skull-crossbones-solid-full.svg?raw';
+	import trashSvg  from '$icons/trash-solid-full.svg?raw';
+	import swordSvg  from '$icons/sword-solid-full.svg?raw';
+	import skullSvg  from '$icons/skull-crossbones-solid-full.svg?raw';
 
 	// ---------------------------------------------------------------------------
 	// Props

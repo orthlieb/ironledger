@@ -220,7 +220,8 @@
           "key": "hasJourney",
           "eq": 1
         }
-      ]
+      ],
+      "progressSource": "journey"
     }
   ]
 }

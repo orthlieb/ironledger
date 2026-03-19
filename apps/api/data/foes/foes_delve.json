@@ -19,7 +19,7 @@
         "Strike with spears",
         "Fight as one, and embody the power of the mighty sea"
       ],
-      "description": "These people of the sea dwell among the [Barrier Islands](id:classic/atlas/ironlands/barrier_islands), along the [Ragged Coast](id:classic/atlas/ironlands/ragged_coast), and amid the frozen landscapes of the far north. Some live in isolated villages clinging to rugged shores, or as nomads among the icereaches. Others spend their lives aboard finely-crafted vessels called drift-homes. These ships find safe anchorage during the cruelest depths of winter, and return to the sea in calmer months.\n\nThe atanya are a diverse people, but most are well-suited to a life amid the northern climes. They are strong, hardy, and long-lived. Their height and stout forms give them an imposing physical presence, but they are generally good-natured. They have an unnatural sense of the coming weather and an innate understanding of the sea. Some say they once lived in the depths of the ocean, but were cursed by a forsaken god and banished to the world above."
+      "description": "These people of the sea dwell among the Barrier Islands, along the Ragged Coast, and amid the frozen landscapes of the far north. Some live in isolated villages clinging to rugged shores, or as nomads among the icereaches. Others spend their lives aboard finely-crafted vessels called drift-homes. These ships find safe anchorage during the cruelest depths of winter, and return to the sea in calmer months.\n\nThe atanya are a diverse people, but most are well-suited to a life amid the northern climes. They are strong, hardy, and long-lived. Their height and stout forms give them an imposing physical presence, but they are generally good-natured. They have an unnatural sense of the coming weather and an innate understanding of the sea. Some say they once lived in the depths of the ocean, but were cursed by a forsaken god and banished to the world above."
     },
     {
       "id": "delve/bladewing",
@@ -81,7 +81,7 @@
         "Lie in wait",
         "Grasp, entangle, and feed"
       ],
-      "description": "A blood thorn is a malignant, carnivorous plant. It seizes its victims with long, creeping tendrils. Then, it leeches their life through hollow thorns, eventually bleeding them dry.\n\nBlood thorns appear in woodland areas throughout the Ironlands. They are especially common in the [Deep Wilds](id:classic/atlas/ironlands/deep_wilds), where they often encircle [elf](id:classic/npcs/firstborn/elf) villages. Some suspect they are cultivated by the elves, or share a symbiotic relationship with them."
+      "description": "A blood thorn is a malignant, carnivorous plant. It seizes its victims with long, creeping tendrils. Then, it leeches their life through hollow thorns, eventually bleeding them dry.\n\nBlood thorns appear in woodland areas throughout the Ironlands. They are especially common in the Deep Wilds, where they often encircle elf villages. Some suspect they are cultivated by the elves, or share a symbiotic relationship with them."
     },
     {
       "id": "delve/bog-rot",
@@ -102,7 +102,7 @@
         "Crush with unexpected strength",
         "Share dreadful secrets"
       ],
-      "description": "Long ago, before we arrived on the shores of the Ironlands, other people lived here. Some of those folk dwelled in what we now call the [Flooded Lands](id:classic/atlas/ironlands/flooded_lands), and laid their kin to rest in the vast peat bogs of that place.\n\nA few of those dead do not rest, and rise as bog rots. They are horrible creatures, with preserved flesh stained and withered like old leather. Their eyes are black pits, and their mouths hang open in a perpetual, silent scream.\n\nIt is said a bog rot can only find rest by committing another victim to the mire. A soul for a soul. In those final moments, the creature whispers of ancient secrets and forbidden lore, as if unloading the burden of that dark knowledge. For those few who escape the grasp of a bog rot, these awful truths are sometimes worse than death."
+      "description": "Long ago, before we arrived on the shores of the Ironlands, other people lived here. Some of those folk dwelled in what we now call the Flooded Lands, and laid their kin to rest in the vast peat bogs of that place.\n\nA few of those dead do not rest, and rise as bog rots. They are horrible creatures, with preserved flesh stained and withered like old leather. Their eyes are black pits, and their mouths hang open in a perpetual, silent scream.\n\nIt is said a bog rot can only find rest by committing another victim to the mire. A soul for a soul. In those final moments, the creature whispers of ancient secrets and forbidden lore, as if unloading the burden of that dark knowledge. For those few who escape the grasp of a bog rot, these awful truths are sometimes worse than death."
     },
     {
       "id": "delve/bonehorde",
@@ -163,7 +163,7 @@
         "Leap and bite",
         "Intimidating roar"
       ],
-      "description": "Cave lions are sleek, powerful creatures who dwell primarily in the [Hinterlands](id:classic/atlas/ironlands/hinterlands) and [Tempest Hills](id:classic/atlas/ironlands/tempest_hills). They lair in caverns and other hidden places, emerging to hunt prey such as deer, boar, and rodents. They are typically solitary creatures, but have been seen working together to bring down larger quarry. Even a [mammoth](id:classic/npcs/beasts/mammoth) is no match for a determined pack of cave lions."
+      "description": "Cave lions are sleek, powerful creatures who dwell primarily in the Hinterlands and Tempest Hills. They lair in caverns and other hidden places, emerging to hunt prey such as deer, boar, and rodents. They are typically solitary creatures, but have been seen working together to bring down larger quarry. Even a mammoth is no match for a determined pack of cave lions."
     },
     {
       "id": "delve/chitter",
@@ -396,7 +396,7 @@
         "Entangle in nets",
         "Drag back to the depths"
       ],
-      "description": "These semiaquatic beings dwell within coastal waters, sea caves, and saltwater marshes. They are fierce protectors of their realm, driven by a zealous devotion to their gods. Their eyes are large and glossy black. They have hunched forms and long limbs, and move with deadly grace in watery environments. Their language is a cacophony of clicks, low grunts, and whistles.\n\nThey war against the [atanya](id:delve/npcs/firstborn/atanya) clans, rarely interact with other firstborn, and are openly hostile to Ironlanders. They emerge from their sunken lairs to swarm over ships or coastal settlements, dragging their victims into the depths. As night falls, the people of seaside villages light their torches, ward their gates, and keep an eye to the waters."
+      "description": "These semiaquatic beings dwell within coastal waters, sea caves, and saltwater marshes. They are fierce protectors of their realm, driven by a zealous devotion to their gods. Their eyes are large and glossy black. They have hunched forms and long limbs, and move with deadly grace in watery environments. Their language is a cacophony of clicks, low grunts, and whistles.\n\nThey war against the atanya clans, rarely interact with other firstborn, and are openly hostile to Ironlanders. They emerge from their sunken lairs to swarm over ships or coastal settlements, dragging their victims into the depths. As night falls, the people of seaside villages light their torches, ward their gates, and keep an eye to the waters."
     },
     {
       "id": "delve/nightmare-spider",
@@ -436,7 +436,7 @@
       "tactics": [
         "Varied <a class=\"oracle-link\" data-oracle=\"monstrosityAbilities\">ability</a>"
       ],
-      "description": "What we call the nightspawn are mutated beasts which take a variety of forms. Some are animal-like, or combine the characteristics of different creatures. Others are bizarre aberrations seemingly born of chaos. A few even possess twisted mockeries of human features.\n\nThey are rare beasts, but dwell in every region and environment of the Ironlands, from the dark waters of the [Ragged Coast](id:classic/atlas/ironlands/ragged_coast) to the icy plains of the [Shattered Wastes](id:classic/atlas/ironlands/shattered_wastes). Often, they protect ancient ruins, forgotten relics, and other secrets. They watch and wait, and show no mercy to those who trespass in their domain.\n\nWe do not know the origin of the nightspawn. They are enigmatic creatures, rarely emerging from their dark lairs except during the long nights of winter. Is it the latent magic of these lands which gives them life? Have they passed through the veil from some other realm? Perhaps some questions are best left unanswered."
+      "description": "What we call the nightspawn are mutated beasts which take a variety of forms. Some are animal-like, or combine the characteristics of different creatures. Others are bizarre aberrations seemingly born of chaos. A few even possess twisted mockeries of human features.\n\nThey are rare beasts, but dwell in every region and environment of the Ironlands, from the dark waters of the Ragged Coast to the icy plains of the Shattered Wastes. Often, they protect ancient ruins, forgotten relics, and other secrets. They watch and wait, and show no mercy to those who trespass in their domain.\n\nWe do not know the origin of the nightspawn. They are enigmatic creatures, rarely emerging from their dark lairs except during the long nights of winter. Is it the latent magic of these lands which gives them life? Have they passed through the veil from some other realm? Perhaps some questions are best left unanswered."
     },
     {
       "id": "delve/rhaskar",
@@ -459,7 +459,7 @@
         "Clamp down with a powerful bite",
         "Shake victims like a hound with a rat"
       ],
-      "description": "In the language of the [atanya](id:delve/npcs/firstborn/atanya), rhaskar means “white death.” This mighty beast dwells within northern waters and amid frozen icereaches. It hunts along shorelines, lurks beneath ice, or tracks the frigid wastes in search of prey. Some rhaskar have even been known to attack ships in coastal waters. It is a highly territorial creature, and does not abide trespassers within its domain.\n\nWith its mane of dorsal fur and long, angular head, the rhaskar looks like a fusion of shark and bear—and embodies the strength and cunning of both. It is the uncaring ferocity of these cold northern realms given form."
+      "description": "In the language of the atanya, rhaskar means “white death.” This mighty beast dwells within northern waters and amid frozen icereaches. It hunts along shorelines, lurks beneath ice, or tracks the frigid wastes in search of prey. Some rhaskar have even been known to attack ships in coastal waters. It is a highly territorial creature, and does not abide trespassers within its domain.\n\nWith its mane of dorsal fur and long, angular head, the rhaskar looks like a fusion of shark and bear—and embodies the strength and cunning of both. It is the uncaring ferocity of these cold northern realms given form."
     },
     {
       "id": "delve/shroud-crab",

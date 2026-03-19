@@ -15,11 +15,11 @@
 	import ProgressTrack from '$lib/components/ProgressTrack.svelte';
 
 	// Resource icons
-	import iconMomentum from '$lib/images/icon-momentum.svg?raw';
-	import iconHeart    from '$lib/images/icon-heart.svg?raw';
-	import iconSpirit   from '$lib/images/icon-spirit.svg?raw';
-	import iconSupply   from '$lib/images/icon-supply.svg?raw';
-	import iconMana     from '$lib/images/icon-mana.svg?raw';
+	import iconMomentum from '$icons/icon-momentum.svg?raw';
+	import iconHeart    from '$icons/icon-heart.svg?raw';
+	import iconSpirit   from '$icons/icon-spirit.svg?raw';
+	import iconSupply   from '$icons/icon-supply.svg?raw';
+	import iconMana     from '$icons/icon-mana.svg?raw';
 
 	// Initiative icons
 	import swordSvg  from '$icons/sword-solid-full.svg?raw';
@@ -30,6 +30,11 @@
 	import iconOracles from '$icons/eye-solid.svg?raw';
 	import iconDice    from '$icons/dice-d10-light.svg?raw';
 	import iconNotes   from '$icons/note-sticky-solid.svg?raw';
+
+	// Tab/placeholder icons
+	import charactersSvgUrl from '$icons/Characters.svg?url';
+	import foesSvgUrl       from '$icons/Foes.svg?url';
+	import expedSvgUrl      from '$icons/Expeditions.svg?url';
 
 
 	// ---------------------------------------------------------------------------
@@ -53,6 +58,7 @@
 		onOraclesClick,
 		onMovesClick,
 		onNotesClick,
+		onInitiativeChange,
 	}: {
 		chars:               CharacterFull[];
 		activeCharId:        string;
@@ -71,6 +77,7 @@
 		onOraclesClick?:       () => void;
 		onMovesClick?:         () => void;
 		onNotesClick?:         () => void;
+		onInitiativeChange?:   (value: 'character' | 'foe') => void;
 	} = $props();
 
 	// Derive the active character and its typed data
@@ -184,11 +191,11 @@
 		<!-- CHARACTER TILE -->
 		<div class="gc-tile" class:gc-tile--active={!!data} class:gc-tile--empty={!data}>
 			{#if data && initiative === 1}
-				<span class="gc-init-badge gc-init-badge--you" title="You have the initiative">{@html swordSvg}</span>
+				<button class="gc-init-badge gc-init-badge--you" onclick={() => onInitiativeChange?.('foe')} title="Click to change">{@html swordSvg}<span class="gc-init-label">Has Initiative</span></button>
 			{:else if data && initiative === 2}
-				<span class="gc-init-badge gc-init-badge--foe" title="Foe has the initiative">{@html shieldSvg}</span>
+				<button class="gc-init-badge gc-init-badge--foe" onclick={() => onInitiativeChange?.('character')} title="Click to change">{@html shieldSvg}<span class="gc-init-label">Foe Has Initiative</span></button>
 			{/if}
-			<button class="gc-tile-btn" onclick={() => toggleSelector('character')} title={initiative === 1 ? 'You have the initiative' : initiative === 2 ? 'Foe has the initiative' : 'Select character'}>
+			<button class="gc-tile-btn" onclick={() => toggleSelector('character')} title="Select character">
 				{#if data}
 					<div class="gc-tile-row">
 						{#if data.portrait}
@@ -217,7 +224,7 @@
 						</div>
 					</div>
 				{:else}
-					<span class="gc-tile-placeholder"><img class="gc-placeholder-img" src="/Characters.png" alt="" aria-hidden="true">Select Character</span>
+					<span class="gc-tile-placeholder"><img class="gc-placeholder-img" src={charactersSvgUrl} alt="" aria-hidden="true">Select Character</span>
 				{/if}
 			</button>
 
@@ -237,7 +244,8 @@
 		</div>
 
 		<!-- FOE TILE -->
-		<div class="gc-tile" class:gc-tile--active={!!activeFoe && !!activeFoeDef} class:gc-tile--empty={!activeFoe || !activeFoeDef}>
+		<div class="gc-tile" class:gc-tile--active={!!activeFoe && !!activeFoeDef} class:gc-tile--empty={!activeFoe || !activeFoeDef}
+			style={activeFoe && activeFoeDef ? `border-left: 3px solid ${activeFoeNature}99` : ''}>
 			<button class="gc-tile-btn" onclick={() => toggleSelector('foe')} title="Select foe">
 				{#if activeFoe && activeFoeDef}
 					<div class="gc-tile-row">
@@ -276,7 +284,7 @@
 						</div>
 					</div>
 				{:else}
-					<span class="gc-tile-placeholder"><img class="gc-placeholder-img" src="/Foes.png" alt="" aria-hidden="true">Select Foe</span>
+					<span class="gc-tile-placeholder"><img class="gc-placeholder-img" src={foesSvgUrl} alt="" aria-hidden="true">Select Foe</span>
 				{/if}
 			</button>
 
@@ -298,7 +306,8 @@
 		</div>
 
 		<!-- EXPEDITION TILE -->
-		<div class="gc-tile" class:gc-tile--active={!!activeExpedition} class:gc-tile--empty={!activeExpedition}>
+		<div class="gc-tile" class:gc-tile--active={!!activeExpedition} class:gc-tile--empty={!activeExpedition}
+			style={activeExpedition ? `border-left: 3px solid ${activeExpedition.type === 'journey' ? '#34d399' : '#60a5fa'}99` : ''}>
 			<button class="gc-tile-btn" onclick={() => toggleSelector('expedition')} title="Select expedition">
 				{#if activeExpedition}
 					<div class="gc-tile-row">
@@ -337,7 +346,7 @@
 						</div>
 					</div>
 				{:else}
-					<span class="gc-tile-placeholder"><img class="gc-placeholder-img" src="/Expeditions.png" alt="" aria-hidden="true">Select Expedition</span>
+					<span class="gc-tile-placeholder"><img class="gc-placeholder-img" src={expedSvgUrl} alt="" aria-hidden="true">Select Expedition</span>
 				{/if}
 			</button>
 
@@ -645,22 +654,36 @@
 		position: absolute;
 		top: 3px;
 		right: 3px;
-		width: 18px;
-		height: 18px;
 		display: flex;
 		align-items: center;
-		justify-content: center;
-		border-radius: 50%;
-		z-index: 1;
+		gap: 4px;
+		padding: 2px 6px 2px 4px;
+		border-radius: 999px;
+		z-index: 2;
+		border: none;
+		cursor: pointer;
+		pointer-events: auto;
+		transition: opacity 0.15s;
+		white-space: nowrap;
 	}
-	.gc-init-badge :global(svg) { width: 11px; height: 11px; fill: currentColor; }
+	.gc-init-badge:hover { opacity: 0.75; }
+	.gc-init-badge :global(svg) { width: 10px; height: 10px; fill: currentColor; flex-shrink: 0; }
+	.gc-init-label {
+		font-size: 0.55rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		font-family: var(--font-ui);
+	}
 	.gc-init-badge--you {
 		background: rgba(52, 211, 153, 0.2);
-		color: #34d399;
+		color: #059669;
 	}
 	.gc-init-badge--foe {
 		background: rgba(239, 68, 68, 0.2);
-		color: #ef4444;
+		color: #b91c1c;
 	}
 
 	/* ===== Expedition tile details ===== */

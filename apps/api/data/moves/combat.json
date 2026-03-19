@@ -6,8 +6,8 @@
       "name": "Enter the Fray",
       "category": "Combat",
       "triggerShort": "When you enter into combat.",
-      "trigger": "When you <strong>enter into combat</strong>, first set the rank of each of your foes. Then, roll to determine who is in control. If you are\u2026<ul><li>Facing off against your foe: Roll <strong>+heart</strong>.</li><li>Moving into position against an unaware foe, or striking without warning: Roll <strong>+shadow</strong>.</li><li>Ambushed: Roll <strong>+wits</strong>.</li></ul>",
-      "triggerPreamble": "When you <strong>enter into combat</strong>, first set the rank of each of your foes. Then, roll to determine who is in control. If you are\u2026",
+      "trigger": "When you <strong>enter into combat</strong>, first set the rank of each of your foes. Then, roll to determine who is in control. If you are…<ul><li>Facing off against your foe: Roll <strong>+heart</strong>.</li><li>Moving into position against an unaware foe, or striking without warning: Roll <strong>+shadow</strong>.</li><li>Ambushed: Roll <strong>+wits</strong>.</li></ul>",
+      "triggerPreamble": "When you <strong>enter into combat</strong>, first set the rank of each of your foes. Then, roll to determine who is in control. If you are…",
       "stats": [
         {
           "stat": "heart",
@@ -25,7 +25,7 @@
       "strong": "Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+2\">+2 momentum</a>. <a class=\"initiative-link\" data-value=\"character\">You have initiative</a>.",
       "weak": "Choose one:<ul><li>Bolster your position: Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+2\">+2 momentum</a>.</li><li>Prepare to act: <a class=\"initiative-link\" data-value=\"character\">Take initiative</a>.</li></ul>",
       "miss": "Combat begins with you at a disadvantage. <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a> (typically <a class=\"harm-link\" data-resource=\"health\">-harm health</a>). <a class=\"initiative-link\" data-value=\"foe\">Your foe has initiative</a>.",
-      "notes": "The outcome determines who has initiative at the start of combat. Having initiative lets you Strike rather than Clash on the first exchange \u2014 a significant advantage.",
+      "notes": "The outcome determines who has initiative at the start of combat. Having initiative lets you Strike rather than Clash on the first exchange — a significant advantage.",
       "preconditions": [
         {
           "key": "hasCharacter",
@@ -43,7 +43,7 @@
       "category": "Combat",
       "triggerShort": "When you have initiative and attack.",
       "trigger": "When you <strong>have initiative and attack in close quarters</strong>, roll <strong>+iron</strong>. When you <strong>have initiative and attack at range</strong>, roll <strong>+edge</strong>.",
-      "triggerPreamble": "When you <strong>have initiative and attack</strong>, roll\u2026",
+      "triggerPreamble": "When you <strong>have initiative and attack</strong>, roll…",
       "stats": [
         {
           "stat": "iron",
@@ -79,7 +79,7 @@
       "category": "Combat",
       "triggerShort": "When your foe has initiative and you fight back.",
       "trigger": "When <strong>your foe has initiative and you fight with them in close quarters</strong>, roll <strong>+iron</strong>. When you <strong>exchange a volley at range, or shoot at an advancing foe</strong>, roll <strong>+edge</strong>.",
-      "triggerPreamble": "When <strong>your foe has initiative and you fight back</strong>, roll\u2026",
+      "triggerPreamble": "When <strong>your foe has initiative and you fight back</strong>, roll…",
       "stats": [
         {
           "stat": "iron",
@@ -118,8 +118,8 @@
       "strong": "",
       "weak": "",
       "miss": "",
-      "logBody": "<a class=\"initiative-link\" data-value=\"character\">Steal initiative</a>. Your next combat roll is +1. If you have a strong or weak hit, add an additional <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">+1 momentum</a>. On a miss, you must suffer a dire outcome. <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a>.",
-      "notes": "Once per fight only. This lets you steal initiative and make any non-progress move at +1. On a hit you also get +1 momentum. But if you miss, the consequences are severe \u2014 Pay the Price with a dire outcome. Use it when you're desperate.",
+      "logBody": "You turn the tide and <a class=\"initiative-link\" data-value=\"character\">seize the initiative</a>. Add +1 to your next move and take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">+1 momentum on a hit</a>. If you fail to score a hit on that move, you must suffer a dire outcome. <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a>.",
+      "notes": "Once per fight only. This lets you steal initiative and make any non-progress move at +1. On a hit you also get +1 momentum. But if you miss, the consequences are severe — Pay the Price with a dire outcome. Use it when you're desperate.",
       "preconditions": [
         {
           "key": "hasCharacter",
@@ -140,8 +140,8 @@
       "name": "Battle",
       "category": "Combat",
       "triggerShort": "When you fight a battle in a blur.",
-      "trigger": "When you <strong>fight a battle</strong>, and it happens in a blur, envision your objective and roll. If you primarily\u2026<ul><li>Fight at range, or using your speed and the terrain to your advantage: Roll <strong>+edge</strong>.</li><li>Fight depending on your courage, allies, or companions: Roll <strong>+heart</strong>.</li><li>Fight in close to overpower your opponents: Roll <strong>+iron</strong>.</li><li>Fight using trickery to befuddle your opponents: Roll <strong>+shadow</strong>.</li><li>Fight using careful tactics to outsmart your opponents: Roll <strong>+wits</strong>.</li></ul>",
-      "triggerPreamble": "When you <strong>fight a battle</strong>, and it happens in a blur, envision your objective and roll. If you primarily\u2026",
+      "trigger": "When you <strong>fight a battle</strong>, and it happens in a blur, envision your objective and roll. If you primarily…<ul><li>Fight at range, or using your speed and the terrain to your advantage: Roll <strong>+edge</strong>.</li><li>Fight depending on your courage, allies, or companions: Roll <strong>+heart</strong>.</li><li>Fight in close to overpower your opponents: Roll <strong>+iron</strong>.</li><li>Fight using trickery to befuddle your opponents: Roll <strong>+shadow</strong>.</li><li>Fight using careful tactics to outsmart your opponents: Roll <strong>+wits</strong>.</li></ul>",
+      "triggerPreamble": "When you <strong>fight a battle</strong>, and it happens in a blur, envision your objective and roll. If you primarily…",
       "stats": [
         {
           "stat": "edge",
@@ -189,7 +189,7 @@
       "strong": "This foe is no longer in the fight. They are killed, out of action, flee, or surrender as appropriate to the situation and your intent (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure).",
       "weak": "As above, but you must also choose one:<ul><li>It's worse than you thought: <a class=\"move-link\" data-id=\"move/endure-harm\">Endure Harm</a>.</li><li>You are overcome: <a class=\"move-link\" data-id=\"move/endure-stress\">Endure Stress</a>.</li><li>Your victory is short-lived: A new danger or foe appears, or an existing danger worsens.</li><li>You suffer collateral damage: Something of value is lost or broken, or someone important must pay the cost.</li><li>You'll pay for it: An objective falls out of reach.</li><li>Others won't forget: You are marked for vengeance.</li></ul>",
       "miss": "You have lost this fight. <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a> (typically <a class=\"harm-link\" data-resource=\"health\">-harm health</a>).",
-      "notes": "Progress move \u2014 roll challenge dice against your foe's progress track, not a stat. Momentum is ignored. You can only attempt this after scoring a strong hit on a decisive action. A miss means you've lost the fight entirely.",
+      "notes": "Progress move — roll challenge dice against your foe's progress track, not a stat. Momentum is ignored. You can only attempt this after scoring a strong hit on a decisive action. A miss means you've lost the fight entirely.",
       "preconditions": [
         {
           "key": "hasFoe",
@@ -199,7 +199,8 @@
           "key": "initiative",
           "min": 1
         }
-      ]
+      ],
+      "progressSource": "combat"
     }
   ]
 }

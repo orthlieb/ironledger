@@ -30,11 +30,17 @@
 	import type { DiceCtx } from '$lib/diceContext.svelte.js';
 	import { hydrateCharacter } from '$lib/character.js';
 	import { loadMoves } from '$lib/moveStore.svelte.js';
+	import { getAssets } from '$lib/assetStore.svelte.js';
+	import type { InspectionFactor, RitualInfo } from '$lib/preconditions.js';
 	import type { PreconditionContext } from '$lib/preconditions.js';
 	import { onMount } from 'svelte';
 	import fileImportSvg    from '$icons/file-import-solid-full.svg?raw';
 			import trashSvg         from '$icons/trash-solid-full.svg?raw';
 	import fileExportSvg    from '$icons/file-export-solid-full.svg?raw';
+	import charactersSvgUrl from '$icons/Characters.svg?url';
+	import foesSvgUrl       from '$icons/Foes.svg?url';
+	import expedSvgUrl      from '$icons/Expeditions.svg?url';
+	import adventSvgUrl     from '$icons/Adventure.svg?url';
 
 	let { data }: { data: PageData } = $props();
 
@@ -106,6 +112,16 @@
 	let initiativeMap = $state<Record<string, number>>({});
 	const initiative = $derived(activeCharId ? (initiativeMap[activeCharId] ?? 0) : 0);
 
+	// ── Session persistence ────────────────────────────────────────────────────
+	const SESSION_STORAGE_KEY = 'ironledger:session';
+	$effect(() => {
+		localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({
+			charId:       activeCharId,
+			foeId:        activeFoeId,
+			expeditionId: activeExpeditionId,
+		}));
+	});
+
 	// Build precondition context from active selections
 	const preconditionCtx = $derived<PreconditionContext>({
 		hasCharacter: !!activeCharId,
@@ -114,6 +130,20 @@
 		hasSite:      !!activeExpeditionId && expeditions.find(e => e.id === activeExpeditionId)?.type === 'site',
 		initiative,
 		foeHarm:      activeFoeId ? (FOE_RANKS[encounters.find(e => e.id === activeFoeId)?.effectiveRank ?? 0]?.harm) : undefined,
+		ritualAssets: (() => {
+			if (!activeCharId) return [];
+			const char = chars.find(c => c.id === activeCharId);
+			if (!char) return [];
+			const allAssets = getAssets();
+			return (char.data.assets ?? [])
+				.map((a: { assetId: string }) => allAssets.find(d => d.id === a.assetId))
+				.filter((d): d is NonNullable<typeof d> => !!d && !!(d as Record<string, unknown>)['inspectionFactors'])
+				.map(d => ({
+					id:                d.id,
+					name:              d.name,
+					inspectionFactors: (d as Record<string, unknown>)['inspectionFactors'] as InspectionFactor[],
+				})) as RitualInfo[];
+		})(),
 	});
 
 	// Drain the action bus when CharacterSheet is not mounted (Adventure / Foes /
@@ -176,6 +206,16 @@
 		} else {
 			charError = 'Failed to load characters. Is the server running?';
 		}
+		// Restore previous session selections if they still exist
+		try {
+			const saved = JSON.parse(localStorage.getItem(SESSION_STORAGE_KEY) ?? '{}');
+			if (saved.charId && chars.find((c: { id: string }) => c.id === saved.charId))
+				activeCharId = saved.charId;
+			if (saved.foeId && getEncounters().find(e => e.id === saved.foeId))
+				activeFoeId = saved.foeId;
+			if (saved.expeditionId && getExpeditions().find(e => e.id === saved.expeditionId))
+				activeExpeditionId = saved.expeditionId;
+		} catch { /* ignore bad storage data */ }
 		loadingChars = false;
 	});
 
@@ -408,7 +448,15 @@
 
 <!-- Moves dialog (always mounted; opened by GlobalContextBar Moves button) -->
 <MovesDialog bind:this={movesDialogRef} ctx={activeDiceCtx} pctx={preconditionCtx}
-	onInitiativeChange={(val) => { if (activeCharId) initiativeMap[activeCharId] = val === 'character' ? 1 : 2; }}
+	progressContext={{
+		combat:   encounters.find(e => e.id === activeFoeId)?.ticks ?? 0,
+		journey:  expeditions.find(e => e.id === activeExpeditionId && e.type === 'journey')?.ticks ?? 0,
+		delve:    expeditions.find(e => e.id === activeExpeditionId && e.type === 'site')?.ticks    ?? 0,
+		bonds:    ((activeChar?.data ?? {}) as Record<string, number>).bonds    ?? 0,
+		failures: ((activeChar?.data ?? {}) as Record<string, number>).failures ?? 0,
+		vows:     0,
+	}}
+	onInitiativeChange={(val) => { if (activeCharId) initiativeMap[activeCharId] = val === 'character' ? 1 : val === 'foe' ? 2 : 0; }}
 />
 
 <!-- Foe picker dialog (always mounted; opened by + New Foe button in Foes tab) -->
@@ -429,28 +477,28 @@
 				<button class="tab-btn" class:active={activeTab === 'characters'}
 					role="tab" aria-selected={activeTab === 'characters'}
 					data-tab="characters" title="Characters">
-					<img class="tab-icon" src="/Characters.png" alt="" aria-hidden="true">
+					<img class="tab-icon" src={charactersSvgUrl} alt="" aria-hidden="true">
 					<span class="tab-label">Characters</span>
 				</button>
 
 				<button class="tab-btn" class:active={activeTab === 'foes'}
 					role="tab" aria-selected={activeTab === 'foes'}
 					data-tab="foes" title="Foes">
-					<img class="tab-icon" src="/Foes.png" alt="" aria-hidden="true">
+					<img class="tab-icon" src={foesSvgUrl} alt="" aria-hidden="true">
 					<span class="tab-label">Foes</span>
 				</button>
 
 				<button class="tab-btn" class:active={activeTab === 'expeditions'}
 					role="tab" aria-selected={activeTab === 'expeditions'}
 					data-tab="expeditions" title="Expeditions">
-					<img class="tab-icon" src="/Expeditions.png" alt="" aria-hidden="true">
+					<img class="tab-icon" src={expedSvgUrl} alt="" aria-hidden="true">
 					<span class="tab-label">Expeditions</span>
 				</button>
 
 				<button class="tab-btn" class:active={activeTab === 'adventure'}
 					role="tab" aria-selected={activeTab === 'adventure'}
 					data-tab="adventure" title="Adventure">
-					<img class="tab-icon" src="/Adventure.png" alt="" aria-hidden="true">
+					<img class="tab-icon" src={adventSvgUrl} alt="" aria-hidden="true">
 					<span class="tab-label">Adventure</span>
 				</button>
 			</div>
@@ -486,9 +534,9 @@
 					</div>
 				{:else if chars.length === 0}
 					<div class="empty-tab">
-						<img class="empty-tab-img" src="/Characters.png" alt="">
+						<img class="empty-tab-img" src={charactersSvgUrl} alt="">
 						<span class="empty-tab-title">No Characters Yet</span>
-						<span class="empty-tab-sub">Click <strong>+ New Character</strong> to begin your first journey.</span>
+						<span class="empty-tab-sub">Click <strong>+ New Character</strong> to create your first character.</span>
 					</div>
 				{:else}
 					<div class="char-list">
@@ -507,6 +555,12 @@
 									initiative={initiativeMap[char.id] ?? 0}
 									onDelete={() => deleteCharacter(char.id)}
 									onSave={handleSave}
+									onInitiativeChange={(val) => {
+										initiativeMap[char.id] = val === 'character' ? 1 : 2;
+										const name = char.name || 'Character';
+										appendLog(SESSION_LOG_ID, `${name} — Initiative`,
+											val === 'character' ? '<div>You seize the initiative.</div>' : '<div>You cede the initiative to the foe.</div>');
+									}}
 								/>
 							</div>
 						{/each}
@@ -525,9 +579,9 @@
 
 				{#if encounters.length === 0}
 					<div class="empty-tab">
-						<img class="empty-tab-img" src="/Foes.png" alt="">
+						<img class="empty-tab-img" src={foesSvgUrl} alt="">
 						<span class="empty-tab-title">No Foes Tracked</span>
-						<span class="empty-tab-sub">Use <strong>+ New Foe</strong> to start a fight.</span>
+						<span class="empty-tab-sub">Click <strong>+ New Foe</strong> to create your first foe.</span>
 					</div>
 				{:else}
 					<div class="char-list">
@@ -570,7 +624,7 @@
 
 				{#if expeditions.length === 0}
 					<div class="empty-tab">
-						<img class="empty-tab-img" src="/Expeditions.png" alt="">
+						<img class="empty-tab-img" src={expedSvgUrl} alt="">
 						<span class="empty-tab-title">No Expeditions</span>
 						<span class="empty-tab-sub">Start a <strong>Journey</strong> to travel or a <strong>Site</strong> to delve into a perilous location.</span>
 					</div>
@@ -626,6 +680,13 @@
 							onOraclesClick={() => oraclesDialogRef?.open()}
 							onMovesClick={() => movesDialogRef?.open()}
 							onNotesClick={() => notesDialogRef?.open()}
+							onInitiativeChange={(val) => {
+								if (!activeCharId) return;
+								initiativeMap[activeCharId] = val === 'character' ? 1 : 2;
+								const name = activeChar?.name || 'Character';
+								appendLog(SESSION_LOG_ID, `${name} — Initiative`,
+									val === 'character' ? '<div>You seize the initiative.</div>' : '<div>You cede the initiative to the foe.</div>');
+							}}
 						/>
 					</div>
 
@@ -835,15 +896,18 @@
 		border-bottom-color: var(--text-accent);
 	}
 	/* Tab icon — visible at all sizes; label hidden on very small screens */
+	/* brightness(0) forces source image to black, then subsequent filters tint to theme color */
 	.tab-icon {
 		width: 20px;
 		height: 20px;
 		object-fit: contain;
 		flex-shrink: 0;
-		opacity: 0.45;
-		transition: opacity 0.12s;
+		opacity: 0.38;
+		transition: opacity 0.12s, filter 0.12s;
+		/* Dark theme: tint to #E8A13B (amber gold) */
+		filter: brightness(0) invert(0.55) sepia(1) saturate(5) brightness(0.91);
 	}
-	.tab-btn:hover .tab-icon { opacity: 0.72; }
+	.tab-btn:hover .tab-icon { opacity: 0.68; }
 	.tab-btn.active .tab-icon { opacity: 1; }
 
 	/* ============================================================
@@ -958,10 +1022,10 @@
 	}
 
 	/* ===== Theme-aware tinting for tab icons and empty-state images ===== */
-	/* Light mode: reduce brightness so images read as "dim" on light backgrounds */
+	/* Light theme: tint tab icons to #7A5A1B (dark amber brown) */
 	@media (prefers-color-scheme: light) {
 		:global(:root:not([data-theme='dark'])) .tab-icon {
-			filter: brightness(0.75);
+			filter: brightness(0) invert(0.35) sepia(1) saturate(4) brightness(0.78);
 		}
 		:global(:root:not([data-theme='dark'])) .empty-tab-img {
 			opacity: 0.25;
@@ -969,7 +1033,7 @@
 		}
 	}
 	:global(html[data-theme='light']) .tab-icon {
-		filter: brightness(0.75);
+		filter: brightness(0) invert(0.35) sepia(1) saturate(4) brightness(0.78);
 	}
 	:global(html[data-theme='light']) .empty-tab-img {
 		opacity: 0.25;

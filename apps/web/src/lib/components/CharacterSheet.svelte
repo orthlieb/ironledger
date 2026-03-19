@@ -24,10 +24,10 @@
 	import shieldSvg     from '$icons/shield-halved-solid.svg?raw';
 
 	// Resource icons (stat icons removed per user request)
-	import iconHeart  from '$lib/images/icon-heart.svg?raw';
-	import iconSpirit from '$lib/images/icon-spirit.svg?raw';
-	import iconSupply   from '$lib/images/icon-supply.svg?raw';
-	import iconMana     from '$lib/images/icon-mana.svg?raw';
+	import iconHeart  from '$icons/icon-heart.svg?raw';
+	import iconSpirit from '$icons/icon-spirit.svg?raw';
+	import iconSupply   from '$icons/icon-supply.svg?raw';
+	import iconMana     from '$icons/icon-mana.svg?raw';
 
 	import { initLog, appendLog, getXpSpendNonce, drainXpSpend, getActionNonce, drainActions, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
@@ -440,9 +440,9 @@
 		{/if}
 
 		{#if initiative === 1}
-			<span class="cs-init-badge cs-init-badge--you" title="You have the initiative">{@html swordSvg}</span>
+			<button class="cs-init-badge cs-init-badge--you" onclick={() => onInitiativeChange?.('foe')} title="Click to change">{@html swordSvg}<span class="cs-init-label">Has Initiative</span></button>
 		{:else if initiative === 2}
-			<span class="cs-init-badge cs-init-badge--foe" title="Foe has the initiative">{@html shieldSvg}</span>
+			<button class="cs-init-badge cs-init-badge--foe" onclick={() => onInitiativeChange?.('character')} title="Click to change">{@html shieldSvg}<span class="cs-init-label">Foe Has Initiative</span></button>
 		{/if}
 
 		<span
@@ -852,21 +852,33 @@
 	/* Initiative badge in title bar */
 	.cs-init-badge {
 		flex-shrink: 0;
-		width: 22px;
-		height: 22px;
+		position: relative;
 		display: flex;
 		align-items: center;
-		justify-content: center;
-		border-radius: 50%;
+		gap: 5px;
+		padding: 3px 8px 3px 5px;
+		border-radius: 999px;
+		border: none;
+		cursor: pointer;
+		transition: opacity 0.15s;
+		white-space: nowrap;
 	}
-	.cs-init-badge :global(svg) { width: 13px; height: 13px; fill: currentColor; }
+	.cs-init-badge:hover { opacity: 0.75; }
+	.cs-init-badge :global(svg) { width: 13px; height: 13px; fill: currentColor; flex-shrink: 0; }
+	.cs-init-label {
+		font-size: 0.6rem;
+		font-weight: 700;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		font-family: var(--font-ui);
+	}
 	.cs-init-badge--you {
 		background: rgba(52, 211, 153, 0.2);
-		color: #34d399;
+		color: #059669;
 	}
 	.cs-init-badge--foe {
 		background: rgba(239, 68, 68, 0.2);
-		color: #ef4444;
+		color: #b91c1c;
 	}
 
 	/* Portrait */

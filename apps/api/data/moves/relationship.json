@@ -6,8 +6,8 @@
       "name": "Compel",
       "category": "Relationship",
       "triggerShort": "When you attempt to persuade someone to do something.",
-      "trigger": "When you <strong>attempt to persuade someone to do something</strong>, envision your approach and roll. If you\u2026<ul><li>Charm, pacify, barter, or convince: Roll <strong>+heart</strong> (add +1 if you share a bond).</li><li>Threaten or incite: Roll <strong>+iron</strong>.</li><li>Lie or swindle: Roll <strong>+shadow</strong>.</li></ul>",
-      "triggerPreamble": "When you <strong>attempt to persuade someone to do something</strong>, envision your approach and roll. If you\u2026",
+      "trigger": "When you <strong>attempt to persuade someone to do something</strong>, envision your approach and roll. If you…<ul><li>Charm, pacify, barter, or convince: Roll <strong>+heart</strong> (add +1 if you share a bond).</li><li>Threaten or incite: Roll <strong>+iron</strong>.</li><li>Lie or swindle: Roll <strong>+shadow</strong>.</li></ul>",
+      "triggerPreamble": "When you <strong>attempt to persuade someone to do something</strong>, envision your approach and roll. If you…",
       "stats": [
         {
           "stat": "heart",
@@ -138,7 +138,7 @@
       "strong": "",
       "weak": "",
       "miss": "",
-      "notes": "This is not a separate roll \u2014 you make a Secure an Advantage roll and can give the benefits to your ally instead. In combat, a strong hit grants initiative to both of you.",
+      "notes": "This is not a separate roll — you make a Secure an Advantage roll and can give the benefits to your ally instead. In combat, a strong hit grants initiative to both of you.",
       "preconditions": [
         {
           "key": "hasCharacter",
@@ -162,7 +162,7 @@
       "strong": "Things come to pass as you hoped.",
       "weak": "Your life takes an unexpected turn, but not necessarily for the worse. You find yourself spending your days with someone or in a place you did not foresee. Envision it (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure).",
       "miss": "Your fears are realized.",
-      "notes": "A progress move \u2014 roll challenge dice against your bond progress track. No action die. You may not burn momentum on this roll, and you are not affected by negative momentum.",
+      "notes": "A progress move — roll challenge dice against your bond progress track. No action die. You may not burn momentum on this roll, and you are not affected by negative momentum.",
       "preconditions": [
         {
           "key": "hasCharacter",
@@ -172,7 +172,8 @@
           "key": "bonds",
           "min": 1
         }
-      ]
+      ],
+      "progressSource": "bonds"
     }
   ]
 }

@@ -131,14 +131,18 @@ function ensureDiceBox(): Promise<void> {
 // Public helpers
 // ---------------------------------------------------------------------------
 
-/** Roll a single fair die; returns an integer in [1, sides]. */
+/** Roll a single fair die using CSPRNG; returns an integer in [1, sides]. */
 export function rollDie(sides: number): number {
-	return Math.floor(Math.random() * sides) + 1;
+	const arr = new Uint32Array(1);
+	crypto.getRandomValues(arr);
+	return (arr[0] % sides) + 1;
 }
 
-/** Roll d100; returns an integer in [1, 100]. */
+/** Roll d100 using CSPRNG; returns an integer in [1, 100]. */
 export function rollD100(): number {
-	return Math.floor(Math.random() * 100) + 1;
+	const arr = new Uint32Array(1);
+	crypto.getRandomValues(arr);
+	return (arr[0] % 100) + 1;
 }
 
 export interface DiceSpec {

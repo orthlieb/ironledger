@@ -12,7 +12,10 @@
       "miss": "",
       "notes": "No roll — this is the setup move for entering a delve site. Choose theme and domain, set the rank, then immediately Delve the Depths. Returning to a site: roll 2d10, take the lower, clear that many progress boxes.",
       "preconditions": [
-        { "key": "hasSite", "eq": 1 }
+        {
+          "key": "hasSite",
+          "eq": 1
+        }
       ],
       "references": [
         "expedition"
@@ -98,7 +101,10 @@
       "miss": "",
       "notes": "Triggered by a strong hit on Delve the Depths (or encountered directly). On a strong hit from Delve the Depths, you may skip the roll and simply choose or envision the opportunity.",
       "preconditions": [
-        { "key": "hasSite", "eq": 1 }
+        {
+          "key": "hasSite",
+          "eq": 1
+        }
       ],
       "table": [
         {
@@ -157,7 +163,10 @@
       "miss": "",
       "notes": "Not a player-rolled move — triggered by miss results on Delve the Depths or Find an Opportunity. Dangers can be traps, monsters, environmental hazards, or complications. After revealing it, respond with other moves (Face Danger, Strike, etc.).",
       "preconditions": [
-        { "key": "hasSite", "eq": 1 }
+        {
+          "key": "hasSite",
+          "eq": 1
+        }
       ],
       "table": [
         {
@@ -256,7 +265,8 @@
           "key": "hasSite",
           "eq": 1
         }
-      ]
+      ],
+      "progressSource": "delve"
     },
     {
       "id": "move/advance-a-threat",
@@ -287,8 +297,14 @@
         "expedition"
       ],
       "preconditions": [
-        { "key": "hasCharacter", "eq": 1 },
-        { "key": "vowCount", "min": 1 }
+        {
+          "key": "hasCharacter",
+          "eq": 1
+        },
+        {
+          "key": "vowCount",
+          "min": 1
+        }
       ]
     },
     {
@@ -302,8 +318,14 @@
       "miss": "",
       "notes": "This move has no roll. Take the recovery benefits freely, but each active threat advances — the world does not stand still while you rest.",
       "preconditions": [
-        { "key": "hasCharacter", "eq": 1 },
-        { "key": "vowCount", "min": 1 }
+        {
+          "key": "hasCharacter",
+          "eq": 1
+        },
+        {
+          "key": "vowCount",
+          "min": 1
+        }
       ]
     },
     {

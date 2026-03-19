@@ -28,8 +28,10 @@ Adventure, Relationship, Combat, Suffer, Quest, Fate, Delve, Rarity, Failure, Yr
 
 ### Progress Move
 - Has `progressTrack` field (e.g., "combat", "journey", "bonds")
-- Roll: progress score (0-10) vs `2d10`
-- No action die, no stat, no adds, no momentum
+- Has `progressSource` field identifying which runtime track provides the score
+- Roll: `progress score (0–10) + adds` vs `2d10`
+- No action die, no stat, no momentum
+- Adds are adjustable in the dialog and applied on top of the track score
 
 ### No-Roll Move
 - No stats, empty or no outcomes (e.g., Reach a Milestone, Advance)
@@ -50,10 +52,24 @@ interface MoveDefinition {
   weak?: string;           // Weak hit outcome HTML
   miss?: string;           // Miss outcome HTML
   preconditions?: Precondition[];
-  progressTrack?: string;  // For progress moves
+  progressTrack?: string;  // Classifies this as a progress move (e.g., "combat", "bonds")
+  progressSource?: string; // Runtime track source key (e.g., "combat", "journey", "delve", "bonds", "failures", "vows")
+  spellRoll?: boolean;     // Yrt ritual moves: d6 + mana + adds vs difficulty + d10
   notes?: string;          // Designer tips
 }
 ```
+
+### Roll Status Display
+
+The detail view always shows a reactive formula string between the spinners and the Roll Move button:
+
+| Move Type | Formula Example |
+|-----------|----------------|
+| Action roll | `d6 + iron[3] + adds[+1] vs d10 & d10` |
+| Spell roll | `d6 + mana[2] + adds[+0] vs difficulty[3] & d10` |
+| Progress roll | `progress[7] + adds[+0] vs d10 & d10` |
+
+The formula updates live as stat selection, adds, mana commit, or difficulty change.
 
 ## Momentum Cancellation
 

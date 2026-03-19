@@ -12,9 +12,9 @@
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import ProgressTrack from '$lib/components/ProgressTrack.svelte';
 
-	import trashSvg       from '$lib/icons/trash-solid-full.svg?raw';
-	import checkSvg       from '$lib/icons/circle-check-solid-full.svg?raw';
-	import locationSvg    from '$lib/icons/location-dot-solid-full.svg?raw';
+	import trashSvg       from '$icons/trash-solid-full.svg?raw';
+	import checkSvg       from '$icons/circle-check-solid-full.svg?raw';
+	import locationSvg    from '$icons/location-dot-solid-full.svg?raw';
 
 	// ---------------------------------------------------------------------------
 	// Props

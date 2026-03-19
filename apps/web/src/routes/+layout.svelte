@@ -4,7 +4,7 @@
 	import type { MaintenanceStatus } from '@ironledger/shared';
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { maintenance } from '$lib/api';
-	import swordSvg from '$lib/images/sword.svg?raw';
+	import swordSvg from '$icons/sword.svg?raw';
 	import { isDice3dEnabled, setDice3dEnabled } from '$lib/dice';
 	import diceIconSvg from '$icons/dice-d10-light.svg?raw';
 

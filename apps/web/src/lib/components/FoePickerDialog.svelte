@@ -18,7 +18,7 @@
 		foeSource, effectiveRank as calcEffectiveRank,
 		FOE_RANKS, FOE_QUANTITIES, FOE_NATURE_COLORS,
 	} from '$lib/foeStore.svelte.js';
-	import clearFiltersSvg from '$lib/icons/filter-circle-xmark-solid-full.svg?raw';
+	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
 
 	// ---------------------------------------------------------------------------
 	// Props

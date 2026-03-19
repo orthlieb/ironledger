@@ -3,15 +3,15 @@
   "configurations": [
     {
       "name": "api",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": ["-c", "PATH=/opt/homebrew/bin:$PATH npm run dev"],
       "cwd": "/Users/orthlieb/dev/ironledger/apps/api",
       "port": 3000
     },
     {
       "name": "web",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": ["-c", "PATH=/opt/homebrew/bin:$PATH npm run dev"],
       "cwd": "/Users/orthlieb/dev/ironledger/apps/web",
       "port": 5173
     }

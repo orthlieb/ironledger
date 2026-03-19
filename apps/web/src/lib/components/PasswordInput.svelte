@@ -1,6 +1,6 @@
 <script lang="ts">
-	import eyeSvg      from '$lib/images/eye.svg?raw';
-	import eyeSlashSvg from '$lib/images/eye-slash.svg?raw';
+	import eyeSvg      from '$icons/eye.svg?raw';
+	import eyeSlashSvg from '$icons/eye-slash.svg?raw';
 
 	interface Props {
 		name:         string;

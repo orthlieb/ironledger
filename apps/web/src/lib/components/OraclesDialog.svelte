@@ -21,7 +21,7 @@
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
 
-	import clearFiltersSvg from '$lib/icons/filter-circle-xmark-solid-full.svg?raw';
+	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
 	import { draggable } from '$lib/actions/draggable.js';
 
 	// ---------------------------------------------------------------------------

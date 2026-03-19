@@ -82,7 +82,9 @@ npm run dev:web   # Web on :5173
 
 ### Moves & Dice
 - Complete Ironsworn move reference with picker grid
-- Action and progress rolls with 3D animated dice
+- Action, progress, and spell rolls with 3D animated dice
+- Live roll formula display (e.g., `d6 + iron[3] + adds[+1] vs d10 & d10`) between spinners and roll button
+- Data-driven progress routing: each progress move reads from the correct track (foe, journey, site, bonds, failures) via `progressSource` field
 - Move precondition checking (disables moves with unmet requirements)
 - Burn momentum to upgrade roll outcomes
 - Clickable move cross-references in outcome text

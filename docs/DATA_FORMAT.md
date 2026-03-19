@@ -68,7 +68,8 @@ Each file contains one category of moves:
 | `references` | array of strings | no | Context dropdowns this move's text references (same valid values as `requires`). Unlike `requires`, these don't gate the tile — they inform the dialog/log which context to pull data from. |
 | `table` | array | no | Inline outcome table (see [Inline Tables](#inline-tables)) |
 | `tableType` | string | no | Table variant: `"askOracle"` or `"delveDepths"` |
-| `progressTrack` | string | no | Marks this as a progress move. Value is the track name (`"bonds"`, `"failures"`, `"vows"`, `"journey"`, `"combat"`, `"delve"`). Progress moves skip the d6 action die, ignore momentum, and compare the track value directly against 2d10 challenge dice. Moves with a `stats` entry (bonds, failures) auto-read from the character; moves without `stats` (vows, journey, combat, delve) show a progress spinner (0–10) in the dialog. Track thresholds (e.g., failure track ≥ 6) are encoded via `preconditions`, not hardcoded. |
+| `progressTrack` | string | no | Marks this as a progress move. Value is the track name (`"bonds"`, `"failures"`, `"vows"`, `"journey"`, `"combat"`, `"delve"`). Progress moves skip the d6 action die, ignore momentum, and compare the track score directly against 2d10 challenge dice. Adds are still adjustable and applied on top of the progress score. Track thresholds (e.g., failure track ≥ 6) are encoded via `preconditions`, not hardcoded. |
+| `progressSource` | string | no | For progress moves: identifies which runtime track provides the score. Valid values: `"combat"` (active foe encounter ticks ÷ 4), `"journey"` (active journey expedition ticks ÷ 4), `"delve"` (active site expedition ticks ÷ 4), `"bonds"` (character bonds ticks ÷ 4), `"failures"` (character failures ticks ÷ 4), `"vows"` (placeholder — shows 0 until individual vow routing is implemented). Defaults to `"combat"` if omitted. This field pairs with the `progressContext` prop on `MovesDialog`. |
 | `tableRoll` | boolean | no | If `true`, the move's primary action is rolling this table (no action+challenge roll) |
 | `rarityRoll` | boolean | no | If `true`, the move rolls a single d6 rarity die |
 
@@ -424,6 +425,23 @@ Each entry's `value` is an object with `odds` (label) and `threshold` (minimum d
 Each entry has per-stat `topRange` values (`edge`, `shadow`, `wits`) instead of a single `topRange`. The roll is resolved against the stat the player chose.
 
 ### Special Move Types
+
+#### Progress Moves (`progressTrack` + `progressSource`)
+
+Progress moves roll the track score vs 2d10 (no d6 action die, no stat, no momentum). The `progressTrack` field classifies the move; the `progressSource` field tells the dialog where to read the score from at runtime.
+
+The six progress moves and their sources:
+
+| Move | `progressSource` | Runtime Source |
+|------|-----------------|----------------|
+| End the Fight | `"combat"` | Active foe encounter (ticks ÷ 4) |
+| Reach Your Destination | `"journey"` | Active journey expedition (ticks ÷ 4) |
+| Locate Your Objective | `"delve"` | Active site expedition (ticks ÷ 4) |
+| Fulfill Your Vow | `"vows"` | Placeholder (0) — individual vow routing TBD |
+| Write Your Epilogue | `"bonds"` | Character bonds track (ticks ÷ 4) |
+| Learn From Your Failures | `"failures"` | Character failures track (ticks ÷ 4) |
+
+Adds are still applied on top of the progress score during the roll.
 
 #### Table-Roll Moves (`tableRoll: true`)
 
