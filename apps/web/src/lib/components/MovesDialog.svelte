@@ -27,11 +27,14 @@
 	} from '$lib/moveStore.svelte.js';
 	import { firstPreconditionFailure } from '$lib/preconditions.js';
 	import { appendLog, enrichOutcomeLinks, SESSION_LOG_ID } from '$lib/log.svelte.js';
+	import { momentumReset } from '$lib/character.js';
+	import { BURN_MOMENTUM_TITLE } from '$lib/cascadeRules.js';
 	import { rollDie, animateDice } from '$lib/dice.js';
 
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
-	import diceD6RawSvg  from '$icons/dice-d6-light.svg?raw';
-	import diceD10RawSvg from '$icons/dice-d10-light.svg?raw';
+	import diceD6RawSvg   from '$icons/dice-d6-light.svg?raw';
+	import diceD10RawSvg  from '$icons/dice-d10-light.svg?raw';
+	import diceD100RawSvg from '$icons/dice-d100-solid.svg?raw';
 	import { draggable } from '$lib/actions/draggable.js';
 
 	// ---------------------------------------------------------------------------
@@ -70,8 +73,9 @@
 	});
 
 	// Prepare inline die icons (currentColor so they match the muted text)
-	const d6Icon  = diceD6RawSvg.replace('<svg ', '<svg fill="currentColor" class="rs-die" ');
-	const d10Icon = diceD10RawSvg.replace('<svg ', '<svg fill="currentColor" class="rs-die" ');
+	const d6Icon   = diceD6RawSvg.replace('<svg ', '<svg fill="currentColor" class="rs-die" ');
+	const d10Icon  = diceD10RawSvg.replace('<svg ', '<svg fill="currentColor" class="rs-die" ');
+	const d100Icon = diceD100RawSvg.replace('<svg ', '<svg fill="currentColor" class="rs-die" ');
 
 	// Roll formula shown in the status area between spinners and roll button
 	const rollStatusHtml = $derived.by(() => {
@@ -87,11 +91,27 @@
 			const val = (ctx.data as Record<string, unknown>)[selectedStat] as number ?? 0;
 			return `${d6Icon} + ${selectedStat}[${val}]${addsStr(adds)} vs ${d10Icon} &amp; ${d10Icon}`;
 		}
+		if (isOracleRollMove && oracleTable.length) {
+			const threshold = oracleTable[selectedOddsIdx]?.value?.threshold ?? '?';
+			return `odds[${threshold}] < ${d10Icon} &amp; ${d10Icon}`;
+		}
 		return '';
 	});
 
+	// Oracle roll move detection
+	type OracleOddsEntry = { topRange: number; value: { odds: string; threshold: number } };
+	const isOracleRollMove = $derived(
+		!!(selectedMove && (selectedMove as Record<string, unknown>)['tableType'] === 'askOracle')
+	);
+	const oracleTable = $derived(
+		isOracleRollMove
+			? ((selectedMove as Record<string, unknown>)['table'] as OracleOddsEntry[]) ?? []
+			: [] as OracleOddsEntry[]
+	);
+
 	let spellDifficulty  = $state(1);
 	let manaCommit       = $state(0);
+	let selectedOddsIdx  = $state(2); // default 50/50
 	let factorLevels     = $state<Record<string, number>>({});
 	let factorsManuallySet = $state(false);
 
@@ -197,20 +217,33 @@
 		return m.miss ?? '';
 	}
 
-	// Resolve <a class="harm-link"> placeholders to concrete resource-links.
-	// Must be called before enrichOutcomeLinks so the stamping pass picks up the
-	// resolved resource-link class. Falls back to plain text if no foe harm is known.
-	function resolveHarmLinks(html: string): string {
-		const harm = pctx.foeHarm;
-		const harmRe = /<a class="harm-link" data-resource="health">-harm health<\/a>/g;
-		if (harm) {
-			return html.replace(
-				harmRe,
-				`<a class="resource-link" data-resource="health" data-value="-${harm}">-${harm} health</a>`,
-			);
-		}
-		// No active foe harm — strip to plain text so the link doesn't appear broken
-		return html.replace(harmRe, '-harm health');
+	// Resolve <a class="harm-link"> placeholders.
+	// ctx.moveId + ctx.foeHarm present (Endure Harm/Stress) → real resource-link.
+	// Otherwise → move-link so the player can navigate to the appropriate suffer move.
+	function resolveHarmLinks(html: string, ctx?: { moveId?: string; foeHarm?: number }): string {
+		const harm   = ctx?.foeHarm ?? 1;
+		const moveId = ctx?.moveId ?? '';
+		// Health harm-links: known foe → clickable resource-link; no foe → plain placeholder text.
+		html = html.replace(
+			/<a class="harm-link" data-resource="health">-harm health<\/a>/g,
+			moveId === 'move/endure-harm' && ctx?.foeHarm !== undefined
+				? `<a class="resource-link" data-resource="health" data-value="-${harm}">-${harm} health</a>`
+				: '<span class="harm-note">-harm health</span>',
+		);
+		// Spirit harm-links: known foe → clickable resource-link; no foe → plain placeholder text.
+		html = html.replace(
+			/<a class="harm-link" data-resource="spirit">-harm spirit<\/a>/g,
+			moveId === 'move/endure-stress' && ctx?.foeHarm !== undefined
+				? `<a class="resource-link" data-resource="spirit" data-value="-${harm}">-${harm} spirit</a>`
+				: '<span class="harm-note">-harm spirit</span>',
+		);
+		return html;
+	}
+
+	// Resolve harm links for display in the dialog outcome preview.
+	function displayHtml(html: string | undefined): string {
+		if (!html) return '';
+		return resolveHarmLinks(html, { moveId: selectedMove?.id, foeHarm: pctx.foeHarm });
 	}
 
 	// ---------------------------------------------------------------------------
@@ -229,6 +262,7 @@
 		adds               = 0;
 			spellDifficulty    = 1;
 		manaCommit         = 0;
+		selectedOddsIdx    = 2;
 		factorLevels       = {};
 		factorsManuallySet = false;
 		loadMoves();
@@ -248,6 +282,7 @@
 		adds           = 0;
 			spellDifficulty  = 1;
 		manaCommit       = 0;
+		selectedOddsIdx  = 2;
 		factorLevels     = {};
 		factorsManuallySet = false;
 		// Auto-select first stat
@@ -360,7 +395,7 @@
 
 		let outcomeHtml = getOutcomeHtml(selectedMove, hits1, hits2);
 		if (outcomeHtml) {
-			outcomeHtml = resolveHarmLinks(outcomeHtml);
+			outcomeHtml = resolveHarmLinks(outcomeHtml, { moveId: selectedMove.id, foeHarm: pctx.foeHarm });
 			outcomeHtml = enrichOutcomeLinks(outcomeHtml, entryId, ctx.charId);
 			parts.push(`<div class="move-outcome">${outcomeHtml}</div>`);
 		}
@@ -379,6 +414,29 @@
 			c1, c2,
 			charId: ctx.charId,
 		});
+
+		// Burn momentum suggestion: auto-append a clickable log entry when burn would improve outcome.
+		// Consistent with overflow/floor/debility cascade pattern — player decides whether to click.
+		const burnHits1 = mom > c1 ? true : hits1;
+		const burnHits2 = mom > c2 ? true : hits2;
+		if (!cancelled && mom > 0 && !(hits1 && hits2) && ((burnHits1 !== hits1) || (burnHits2 !== hits2))) {
+			const resetVal     = momentumReset(ctx.data);
+			const currentLabel = outcomeLabel(hits1, hits2);
+			const burnLabel    = outcomeLabel(burnHits1, burnHits2);
+			const burnEntryId  = crypto.randomUUID();
+			const burnHtml =
+				`<p>You may <a class="burn-momentum-link" ` +
+				`data-roll-entry-id="${entryId}" ` +
+				`data-move-id="${selectedMove.id}" ` +
+				`data-action-score="${total}" ` +
+				`data-c1="${c1}" data-c2="${c2}" ` +
+				`data-char-id="${ctx.charId}" ` +
+				`data-entry-id="${burnEntryId}">` +
+				`burn momentum (${mom} → reset ${resetVal})` +
+				`</a> to improve this from <em>${currentLabel}</em> to <em>${burnLabel}</em>.</p>`;
+			appendLog(SESSION_LOG_ID, BURN_MOMENTUM_TITLE, burnHtml, burnEntryId);
+		}
+
 		rolling = false;
 	}
 
@@ -418,7 +476,7 @@
 
 		let outcomeHtml = getOutcomeHtml(selectedMove, hits1, hits2);
 		if (outcomeHtml) {
-			outcomeHtml = resolveHarmLinks(outcomeHtml);
+			outcomeHtml = resolveHarmLinks(outcomeHtml, { moveId: selectedMove.id, foeHarm: pctx.foeHarm });
 			if (charId) outcomeHtml = enrichOutcomeLinks(outcomeHtml, entryId, charId);
 			parts.push(`<div class="move-outcome">${outcomeHtml}</div>`);
 		}
@@ -478,7 +536,7 @@
 		let bodyHtml = '';
 		let outcomeHtml = getOutcomeHtml(selectedMove, hitsDiff, hitsC1);
 		if (outcomeHtml) {
-			outcomeHtml = resolveHarmLinks(outcomeHtml);
+			outcomeHtml = resolveHarmLinks(outcomeHtml, { moveId: selectedMove.id, foeHarm: pctx.foeHarm });
 			bodyHtml += `<div class="move-outcome">${outcomeHtml}</div>`;
 		}
 		if (mana > 0) {
@@ -498,6 +556,20 @@
 		]);
 		appendLog(SESSION_LOG_ID, logTitle(selectedMove.name), html, entryId);
 		rolling = false;
+	}
+
+	async function doAskOracle() {
+		if (!oracleTable.length) return;
+		const entry = oracleTable[selectedOddsIdx];
+		if (!entry) return;
+		const { odds, threshold } = entry.value;
+		const roll = rollDie(100);
+		const isYes = roll >= threshold;
+		const outcomeClass = isYes ? 'roll-outcome-strong' : 'roll-outcome-miss';
+		const html =
+			`<div class="roll-line">1d100 [${roll}]</div>` +
+			`<div class="${outcomeClass}"><strong>${isYes ? 'Yes' : 'No'}</strong> \u2014 ${odds} (\u2265${threshold})</div>`;
+		appendLog(SESSION_LOG_ID, logTitle('Ask the Oracle'), html, crypto.randomUUID());
 	}
 
 	async function doApplyNoRollMove() {
@@ -691,19 +763,19 @@
 					{#if selectedMove.strong}
 						<div class="md-outcome-section" style:--outcome-color="var(--color-success, #34d399)">
 							<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
-							<div class="md-outcome-text">{@html selectedMove.strong}</div>
+							<div class="md-outcome-text">{@html displayHtml(selectedMove.strong)}</div>
 						</div>
 					{/if}
 					{#if selectedMove.weak}
 						<div class="md-outcome-section" style:--outcome-color="var(--color-momentum, #60a5fa)">
 							<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
-							<div class="md-outcome-text">{@html selectedMove.weak}</div>
+							<div class="md-outcome-text">{@html displayHtml(selectedMove.weak)}</div>
 						</div>
 					{/if}
 					{#if selectedMove.miss}
 						<div class="md-outcome-section" style:--outcome-color="var(--color-danger, #ef4444)">
 							<div class="md-outcome-label md-outcome-miss">Miss</div>
-							<div class="md-outcome-text">{@html selectedMove.miss}</div>
+							<div class="md-outcome-text">{@html displayHtml(selectedMove.miss)}</div>
 						</div>
 					{/if}
 				</div>
@@ -751,19 +823,19 @@
 					{#if selectedMove.strong}
 						<div class="md-outcome-section" style:--outcome-color="var(--color-success, #34d399)">
 							<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
-							<div class="md-outcome-text">{@html selectedMove.strong}</div>
+							<div class="md-outcome-text">{@html displayHtml(selectedMove.strong)}</div>
 						</div>
 					{/if}
 					{#if selectedMove.weak}
 						<div class="md-outcome-section" style:--outcome-color="var(--color-momentum, #60a5fa)">
 							<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
-							<div class="md-outcome-text">{@html selectedMove.weak}</div>
+							<div class="md-outcome-text">{@html displayHtml(selectedMove.weak)}</div>
 						</div>
 					{/if}
 					{#if selectedMove.miss}
 						<div class="md-outcome-section" style:--outcome-color="var(--color-danger, #ef4444)">
 							<div class="md-outcome-label md-outcome-miss">Miss</div>
-							<div class="md-outcome-text">{@html selectedMove.miss}</div>
+							<div class="md-outcome-text">{@html displayHtml(selectedMove.miss)}</div>
 						</div>
 					{/if}
 				</div>
@@ -868,6 +940,29 @@
 
 				<!-- ── Progress move ── -->
 		{:else if isProgressMove(selectedMove)}
+			<!-- ── Outcomes ── -->
+			{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
+				<div class="md-outcomes">
+					{#if selectedMove.strong}
+						<div class="md-outcome-section" style:--outcome-color="var(--color-success, #34d399)">
+							<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
+							<div class="md-outcome-text">{@html displayHtml(selectedMove.strong)}</div>
+						</div>
+					{/if}
+					{#if selectedMove.weak}
+						<div class="md-outcome-section" style:--outcome-color="var(--color-momentum, #60a5fa)">
+							<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
+							<div class="md-outcome-text">{@html displayHtml(selectedMove.weak)}</div>
+						</div>
+					{/if}
+					{#if selectedMove.miss}
+						<div class="md-outcome-section" style:--outcome-color="var(--color-danger, #ef4444)">
+							<div class="md-outcome-label md-outcome-miss">Miss</div>
+							<div class="md-outcome-text">{@html displayHtml(selectedMove.miss)}</div>
+						</div>
+					{/if}
+				</div>
+			{/if}
 			<div class="md-action-row">
 				<div class="md-adds-row">
 					<span class="md-adds-label">Adds</span>
@@ -899,29 +994,30 @@
 					{rolling ? 'Rolling…' : 'Roll Move'}
 				</button>
 			</div>
-			<!-- ── Outcomes ── -->
-			{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
-				<div class="md-outcomes">
-					{#if selectedMove.strong}
-						<div class="md-outcome-section" style:--outcome-color="var(--color-success, #34d399)">
-							<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
-							<div class="md-outcome-text">{@html selectedMove.strong}</div>
-						</div>
-					{/if}
-					{#if selectedMove.weak}
-						<div class="md-outcome-section" style:--outcome-color="var(--color-momentum, #60a5fa)">
-							<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
-							<div class="md-outcome-text">{@html selectedMove.weak}</div>
-						</div>
-					{/if}
-					{#if selectedMove.miss}
-						<div class="md-outcome-section" style:--outcome-color="var(--color-danger, #ef4444)">
-							<div class="md-outcome-label md-outcome-miss">Miss</div>
-							<div class="md-outcome-text">{@html selectedMove.miss}</div>
-						</div>
-					{/if}
-				</div>
-			{/if}
+
+		<!-- ── Ask the Oracle (d100 vs odds threshold) ── -->
+		{:else if isOracleRollMove}
+			<div class="md-stat-list">
+				{#each oracleTable as entry, i (entry.value.odds)}
+					<button
+						class="md-stat-row-btn"
+						class:selected={selectedOddsIdx === i}
+						style="--scolor: var(--color-accent, #f59e0b)"
+						onclick={() => selectedOddsIdx = i}
+					>
+						<span class="md-stat-check" aria-hidden="true">{selectedOddsIdx === i ? '\u2714' : ''}</span>
+						<span class="md-sdesc">{entry.value.odds}</span>
+						<span class="md-oracle-threshold">{entry.value.threshold}</span>
+					</button>
+				{/each}
+			</div>
+			<div class="md-action-row">
+				<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
+				<button
+					class="btn btn-primary md-roll-btn"
+					onclick={doAskOracle}
+				>Use Move</button>
+			</div>
 
 		<!-- ── No-roll move (no controls needed) ── -->
 		{:else if isNoRollMove(selectedMove)}
@@ -938,19 +1034,19 @@
 					{#if selectedMove.strong}
 						<div class="md-outcome-section" style:--outcome-color="var(--color-success, #34d399)">
 							<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
-							<div class="md-outcome-text">{@html selectedMove.strong}</div>
+							<div class="md-outcome-text">{@html displayHtml(selectedMove.strong)}</div>
 						</div>
 					{/if}
 					{#if selectedMove.weak}
 						<div class="md-outcome-section" style:--outcome-color="var(--color-momentum, #60a5fa)">
 							<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
-							<div class="md-outcome-text">{@html selectedMove.weak}</div>
+							<div class="md-outcome-text">{@html displayHtml(selectedMove.weak)}</div>
 						</div>
 					{/if}
 					{#if selectedMove.miss}
 						<div class="md-outcome-section" style:--outcome-color="var(--color-danger, #ef4444)">
 							<div class="md-outcome-label md-outcome-miss">Miss</div>
-							<div class="md-outcome-text">{@html selectedMove.miss}</div>
+							<div class="md-outcome-text">{@html displayHtml(selectedMove.miss)}</div>
 						</div>
 					{/if}
 				</div>
@@ -1444,6 +1540,18 @@
 		vertical-align: -0.15em;
 	}
 
+	/* ── Ask the Oracle odds selection ───────────────────────── */
+	.md-oracle-threshold {
+		margin-left:   auto;
+		font-size:     0.8rem;
+		font-weight:   600;
+		color:         var(--text-muted);
+		min-width:     2.5em;
+		text-align:    right;
+	}
+	.md-stat-row-btn.selected .md-oracle-threshold {
+		color: var(--scolor);
+	}
 	.md-roll-dice {
 		display:     inline-flex;
 		align-items: center;
@@ -1530,6 +1638,12 @@
 		pointer-events: none;
 		cursor: default;
 		text-decoration: none;
+	}
+
+	/* Harm placeholder: no foe context — player must resolve manually */
+	.md-outcome-text :global(.harm-note) {
+		font-style: italic;
+		color: var(--text-dimmer);
 	}
 
 	/* ── Notes ────────────────────────────────────────────────────────────── */

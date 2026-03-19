@@ -17,9 +17,9 @@
           "desc": "Enduring with grit and fortitude"
         }
       ],
-      "strong": "Choose one:<ul><li>Shake it off: If your health is greater than 0, suffer <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"-1\">-1 momentum</a> in exchange for <a class=\"resource-link\" data-resource=\"health\" data-value=\"+1\">+1 health</a>.</li><li>Embrace the pain: Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">+1 momentum</a>.</li></ul>",
-      "weak": "You press on. No additional penalty.",
-      "miss": "Also suffer <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"-1\">−1 momentum</a>. If you are at 0 health, you must mark <a class=\"debility-link\" data-debility=\"wounded\" data-value=\"1\">wounded</a> or <a class=\"debility-link\" data-debility=\"maimed\" data-value=\"1\">maimed</a> (if currently unmarked) or roll on the following table.",
+      "strong": "You endure <a class=\"harm-link\" data-resource=\"health\">-harm health</a>. Choose one:<ul><li>Shake it off: If your health is greater than 0, suffer <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"-1\">-1 momentum</a> in exchange for <a class=\"resource-link\" data-resource=\"health\" data-value=\"+1\">+1 health</a>.</li><li>Embrace the pain: Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">+1 momentum</a>.</li></ul>",
+      "weak": "You endure <a class=\"harm-link\" data-resource=\"health\">-harm health</a>. You press on. No additional penalty.",
+      "miss": "You endure <a class=\"harm-link\" data-resource=\"health\">-harm health</a>. Also suffer <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"-1\">−1 momentum</a>. If you are at 0 health, you must mark <a class=\"debility-link\" data-debility=\"wounded\" data-value=\"1\">wounded</a> or <a class=\"debility-link\" data-debility=\"maimed\" data-value=\"1\">maimed</a> (if currently unmarked) or roll on the <a class=\"oracle-link\" data-oracle=\"endureExtremeHarm\">Endure Extreme Harm oracle<\/a>.",
       "notes": "Triggered every time you take harm — not just in combat. If health hits 0 on a miss, mark Wounded or Maimed (if unmarked) or roll the table below. Debilities reduce your stats. This is how characters die.",
       "table": [
         {
@@ -125,8 +125,14 @@
         "foe"
       ],
       "preconditions": [
-        { "key": "hasCharacter", "eq": 1 },
-        { "key": "momentum", "eq": -6 }
+        {
+          "key": "hasCharacter",
+          "eq": 1
+        },
+        {
+          "key": "momentum",
+          "eq": -6
+        }
       ]
     },
     {
@@ -145,9 +151,9 @@
           "desc": "Enduring stress with inner resolve"
         }
       ],
-      "strong": "Choose one:<ul><li>Shake it off: If your spirit is greater than 0, suffer <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"-1\">−1 momentum</a> in exchange for <a class=\"resource-link\" data-resource=\"spirit\" data-value=\"+1\">+1 spirit</a>.</li><li>Embrace the darkness: Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">+1 momentum</a>.</li></ul>",
-      "weak": "You press on.",
-      "miss": "Also suffer <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"-1\">−1 momentum</a>. If you are at 0 spirit, you must mark <a class=\"debility-link\" data-debility=\"shaken\" data-value=\"1\">shaken</a> or <a class=\"debility-link\" data-debility=\"corrupted\" data-value=\"1\">corrupted</a> (if currently unmarked) or roll on the following table.",
+      "strong": "You endure <a class=\"harm-link\" data-resource=\"spirit\">-harm spirit</a>. Choose one:<ul><li>Shake it off: If your spirit is greater than 0, suffer <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"-1\">−1 momentum</a> in exchange for <a class=\"resource-link\" data-resource=\"spirit\" data-value=\"+1\">+1 spirit</a>.</li><li>Embrace the darkness: Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">+1 momentum</a>.</li></ul>",
+      "weak": "You endure <a class=\"harm-link\" data-resource=\"spirit\">-harm spirit</a>. You press on.",
+      "miss": "You endure <a class=\"harm-link\" data-resource=\"spirit\">-harm spirit</a>. Also suffer <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"-1\">−1 momentum</a>. If you are at 0 spirit, you must mark <a class=\"debility-link\" data-debility=\"shaken\" data-value=\"1\">shaken</a> or <a class=\"debility-link\" data-debility=\"corrupted\" data-value=\"1\">corrupted</a> (if currently unmarked) or roll on the <a class=\"oracle-link\" data-oracle=\"endureExtremeStress\">Endure Extreme Stress oracle<\/a>.",
       "notes": "The spirit equivalent of Endure Harm. Roll +heart or +spirit, whichever is higher. If spirit hits 0 on a miss, mark Shaken or Corrupted (if unmarked) or roll the table below.",
       "table": [
         {
@@ -212,8 +218,14 @@
       "miss": "",
       "notes": "No roll — automatically triggered when supply hits 0. You immediately mark the unprepared debility. Any further -supply costs must be absorbed as -health, -spirit, or -momentum.",
       "preconditions": [
-        { "key": "hasCharacter", "eq": 1 },
-        { "key": "supply", "eq": 0 }
+        {
+          "key": "hasCharacter",
+          "eq": 1
+        },
+        {
+          "key": "supply",
+          "eq": 0
+        }
       ]
     }
   ]

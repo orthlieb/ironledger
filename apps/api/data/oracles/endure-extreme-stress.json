@@ -1,0 +1,41 @@
+{
+  "key": "endureExtremeStress",
+  "title": "Endure Extreme Stress",
+  "group": "Core Ironsworn",
+  "selectLabel": "Endure Extreme Stress",
+  "description": "Use this oracle when you roll a miss on Endure Stress and both the Shaken and Corrupted conditions are already marked. Roll to determine the dire consequence of suffering extreme psychological harm.",
+  "data": [
+    {
+      "topRange": 10,
+      "value": "Your will is shattered beyond recovery. Envision your final breakdown — this is the end of your story."
+    },
+    {
+      "topRange": 20,
+      "value": "You descend into madness or despair. Without immediate intervention from an ally, you cannot recover."
+    },
+    {
+      "topRange": 35,
+      "value": "A lasting psychological wound takes hold — a compulsion, phobia, or fractured sense of self. Envision the details and mark a new debility of your choosing."
+    },
+    {
+      "topRange": 50,
+      "value": "You are overcome with grief or terror and cannot act. You must be comforted by an ally before you can make any move."
+    },
+    {
+      "topRange": 65,
+      "value": "You retreat within yourself. You cannot make progress until you find solace and recover at least 1 spirit."
+    },
+    {
+      "topRange": 80,
+      "value": "You hold yourself together through stubborn will. Suffer <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"-1\">-1 momentum</a>."
+    },
+    {
+      "topRange": 90,
+      "value": "A thread of hope holds. Recover <a class=\"resource-link\" data-resource=\"spirit\" data-value=\"+1\">+1 spirit</a>."
+    },
+    {
+      "topRange": 100,
+      "value": "Something deep within you refuses to be extinguished. Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+2\">+2 momentum</a>."
+    }
+  ]
+}

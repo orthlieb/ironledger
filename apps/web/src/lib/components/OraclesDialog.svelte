@@ -18,8 +18,9 @@
 		buildTableHtml,
 		rollOracle,
 	} from '$lib/oracleStore.svelte.js';
-	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
+	import { appendLog, enrichOutcomeLinks, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
+	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
 
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
 	import { draggable } from '$lib/actions/draggable.js';
@@ -109,7 +110,14 @@
 			{ sides: 10, value: tensV, color: DIE_BLACK },
 			{ sides: 10, value: onesV, color: DIE_WHITE },
 		]);
-		appendLog(SESSION_LOG_ID, `Oracle: ${result.title}`, result.html);
+		// Enrich interactive links (resource/debility etc.) with entry + char IDs
+		// so LogPanel click delegation can identify them.
+		const entryId   = crypto.randomUUID();
+		const activeCtx = getActiveDiceCtx();
+		const html = activeCtx
+			? enrichOutcomeLinks(result.html, entryId, activeCtx.charId)
+			: result.html;
+		appendLog(SESSION_LOG_ID, `Oracle: ${result.title}`, html, entryId);
 		rolling = false;
 	}
 

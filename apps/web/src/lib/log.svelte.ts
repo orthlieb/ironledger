@@ -91,6 +91,11 @@ export function deleteLogEntry(charId: string, entryId: string): void {
 	persist(charId);
 }
 
+/** Return the current entries array for a log (read-only intent). */
+export function getLog(charId: string): LogEntry[] {
+	return logs[charId] ?? [];
+}
+
 /** Set or clear the user note on a single entry. */
 export function updateLogEntryNote(charId: string, entryId: string, note: string): void {
 	if (!logs[charId]) return;

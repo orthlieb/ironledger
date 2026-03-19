@@ -30,6 +30,7 @@
 	import iconMana     from '$icons/icon-mana.svg?raw';
 
 	import { initLog, appendLog, getXpSpendNonce, drainXpSpend, getActionNonce, drainActions, SESSION_LOG_ID } from '$lib/log.svelte.js';
+	import { FLOOR_RULES, DEBILITY_MOMENTUM_TITLE } from '$lib/cascadeRules.js';
 	import { renderNote } from '$lib/markdown.js';
 
 	import { getActiveDiceCtx, setActiveDiceCtx } from '$lib/diceContext.svelte.js';
@@ -186,6 +187,11 @@
 			const label = key.charAt(0).toUpperCase() + key.slice(1);
 			appendLog(SESSION_LOG_ID, charTitle(label),
 				`<div>${label}: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : ''}${delta})</div>`);
+			// Floor cascade: resource just hit its minimum — append a note.
+			if (delta < 0) {
+				const floorRule = FLOOR_RULES.find(r => r.resource === key && next === r.floor);
+				if (floorRule) appendLog(SESSION_LOG_ID, floorRule.logTitle, floorRule.logHtml);
+			}
 		}
 	}
 
@@ -198,6 +204,25 @@
 			const label = key.charAt(0).toUpperCase() + key.slice(1);
 			appendLog(SESSION_LOG_ID, charTitle('Debilities'),
 				`<div>${label}: <strong>${active ? 'Marked' : 'Cleared'}</strong></div>`);
+			// Cascade: marking a debility reduces maxMomentum by 1.
+			// Present a clickable log entry rather than auto-applying, consistent
+			// with the app pattern where all resource changes require a player click.
+			if (active) {
+				const newMax   = maxMomentum(data);
+				const resetVal = momentumReset(data);
+				if (data.momentum > newMax) {
+					const cappedFrom = data.momentum;
+					const delta      = newMax - cappedFrom;
+					const entryId    = crypto.randomUUID();
+					const html =
+						`<p>Max momentum reduced to <strong>${newMax}</strong>. ` +
+						`<a class="resource-link" data-resource="momentum" data-value="${delta}" ` +
+						`data-entry-id="${entryId}" data-char-id="${character.id}">` +
+						`Reduce momentum to ${newMax}</a> ` +
+						`(currently ${cappedFrom}). Reset value is now <strong>${resetVal}</strong>.</p>`;
+					appendLog(SESSION_LOG_ID, DEBILITY_MOMENTUM_TITLE, html, entryId);
+				}
+			}
 		}
 	}
 

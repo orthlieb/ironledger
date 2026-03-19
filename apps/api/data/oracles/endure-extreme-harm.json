@@ -1,0 +1,41 @@
+{
+  "key": "endureExtremeHarm",
+  "title": "Endure Extreme Harm",
+  "group": "Core Ironsworn",
+  "selectLabel": "Endure Extreme Harm",
+  "description": "Use this oracle when you roll a miss on Endure Harm and both the Wounded and Maimed conditions are already marked. Roll to determine the dire consequence of suffering extreme physical harm.",
+  "data": [
+    {
+      "topRange": 10,
+      "value": "You are slain. Envision your final moments — this is the end of your story."
+    },
+    {
+      "topRange": 20,
+      "value": "You are dying. Without immediate aid you will not survive. An ally must make a move to save your life now."
+    },
+    {
+      "topRange": 35,
+      "value": "A permanent harm is inflicted — a crippling wound, lost limb, or enduring illness. Envision the details and mark a new debility of your choosing."
+    },
+    {
+      "topRange": 50,
+      "value": "You fall unconscious and are at the mercy of your surroundings. You cannot act until you are aided or the danger has passed."
+    },
+    {
+      "topRange": 65,
+      "value": "The shock of the wound leaves you unable to act. You cannot make progress until you rest and recover at least 1 health."
+    },
+    {
+      "topRange": 80,
+      "value": "You grit your teeth and hold on, barely. Suffer <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"-1\">-1 momentum</a>."
+    },
+    {
+      "topRange": 90,
+      "value": "Against all expectations, you endure the blow. Recover <a class=\"resource-link\" data-resource=\"health\" data-value=\"+1\">+1 health</a>."
+    },
+    {
+      "topRange": 100,
+      "value": "Defying death itself, you rise renewed. Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+2\">+2 momentum</a>."
+    }
+  ]
+}

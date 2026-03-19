@@ -7,7 +7,8 @@
 	 * Notes are attached per-entry and persist to localStorage.
 	 * Clearing the log requires confirmation via a native dialog (irreversible).
 	 */
-	import { type LogEntry, logs, initLog, clearLog, deleteLogEntry, updateLogEntryNote, updateLogEntryHtml, enrichOutcomeLinks, triggerXpSpend, triggerAction, SESSION_LOG_ID } from '$lib/log.svelte.js';
+	import { type LogEntry, logs, initLog, clearLog, deleteLogEntry, updateLogEntryNote, updateLogEntryHtml, enrichOutcomeLinks, triggerXpSpend, triggerAction, appendLog, getLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
+	import { OVERFLOW_RULES, BURN_MOMENTUM_TITLE } from '$lib/cascadeRules.js';
 	import type { DiceCtx } from '$lib/diceContext.svelte.js';
 	import { momentumReset } from '$lib/character.js';
 	import { findMove } from '$lib/moveStore.svelte.js';
@@ -64,22 +65,6 @@
 		if (hits1 && hits2) return 'Strong Hit';
 		if (hits1 || hits2) return 'Weak Hit';
 		return 'Miss';
-	}
-
-	function canBurnMomentum(entry: LogEntry): boolean {
-		if (!entry.roll || !ctx) return false;
-		if (ctx.charId !== entry.roll.charId) return false;
-		const mom = ctx.data.momentum;
-		if (mom <= 0) return false;
-		const { actionScore, c1, c2 } = entry.roll;
-		const hits1 = actionScore > c1;
-		const hits2 = actionScore > c2;
-		if (hits1 && hits2) return false; // already strong hit
-		// Can burn if momentum would cancel at least one die AND improve outcome
-		const burnHits1 = mom > c1 ? true : hits1;
-		const burnHits2 = mom > c2 ? true : hits2;
-		// Only offer if burning would actually change the outcome
-		return (burnHits1 !== hits1) || (burnHits2 !== hits2);
 	}
 
 	function burnMomentum(entry: LogEntry) {
@@ -367,6 +352,20 @@
 			if (!resource || !value || !entryId || !charId) return;
 			markLinkSpent(entryId, resLink);
 			triggerAction({ charId, type: 'resource', key: resource, value });
+			// Overflow cascades: resource drops below 0 — excess converts to another resource.
+			if (value < 0 && ctx) {
+				const rule = OVERFLOW_RULES.find(r => r.resource === resource);
+				if (rule) {
+					const currentVal = (ctx.data as Record<string, number>)[resource] ?? 0;
+					const newVal = currentVal + value;
+					if (newVal < 0) {
+						const overflow   = Math.abs(newVal);
+						const overflowId = crypto.randomUUID();
+						const html = rule.logHtml({ overflow, charId, entryId: overflowId });
+						appendLog(SESSION_LOG_ID, rule.logTitle, html, overflowId);
+					}
+				}
+			}
 			return;
 		}
 
@@ -381,6 +380,22 @@
 			if (!debility || !entryId || !charId) return;
 			markLinkSpent(entryId, debLink);
 			triggerAction({ charId, type: 'debility', key: debility, value });
+			return;
+		}
+
+		// ---- Burn momentum links ----
+		const burnLink = target.closest('.burn-momentum-link') as HTMLElement | null;
+		if (burnLink && !burnLink.closest('.resource-spent')) {
+			e.preventDefault();
+			const rollEntryId = burnLink.dataset['rollEntryId'] ?? '';
+			const burnEntryId = burnLink.dataset['entryId']     ?? '';
+			const charId      = burnLink.dataset['charId']      ?? '';
+			if (!rollEntryId || !burnEntryId || !charId) return;
+			if (!ctx || ctx.charId !== charId || ctx.data.momentum <= 0) return;
+			const rollEntry = getLog(SESSION_LOG_ID).find(e => e.id === rollEntryId);
+			if (!rollEntry) return;
+			markLinkSpent(burnEntryId, burnLink);
+			burnMomentum(rollEntry);
 			return;
 		}
 
@@ -466,15 +481,6 @@
 
 						<!-- Action buttons — opacity 0, revealed on .log-entry:hover -->
 						<div class="entry-actions">
-							{#if canBurnMomentum(entry)}
-								<button
-									class="entry-btn entry-burn-btn"
-									onclick={() => burnMomentum(entry)}
-									title="Burn momentum to improve outcome"
-									aria-label="Burn momentum"
-								><span class="burn-icon">↯</span></button>
-							{/if}
-
 							<button
 								class="entry-btn entry-edit-btn"
 								class:entry-btn-active={editingId === entry.id}
@@ -673,20 +679,6 @@
 		border-color: var(--color-danger);
 	}
 
-	.entry-burn-btn {
-		color: var(--color-momentum, #60a5fa);
-	}
-	.entry-burn-btn:hover {
-		color: var(--color-momentum, #60a5fa);
-		border-color: var(--color-momentum, #60a5fa);
-		background: color-mix(in srgb, var(--color-momentum, #60a5fa) 12%, transparent);
-	}
-	.burn-icon {
-		font-size: 0.85rem;
-		font-weight: 700;
-		line-height: 1;
-	}
-
 	/* ---- Entry body ---- */
 	.entry-body {
 		font-family: var(--font-ui);
@@ -724,16 +716,20 @@
 		font-family: var(--font-mono, 'Roboto Mono', ui-monospace, monospace);
 	}
 
-	/* Roll outcome colours */
-	.entry-body :global(.roll-outcome-strong) {
+	/* Roll outcome colours. Also target <strong> inside each div because
+	   .entry-body :global(strong) { color: var(--text) } would otherwise win */
+	.entry-body :global(.roll-outcome-strong),
+	.entry-body :global(.roll-outcome-strong strong) {
 		color: var(--color-success, #34d399);
 		font-weight: 700;
 	}
-	.entry-body :global(.roll-outcome-weak) {
+	.entry-body :global(.roll-outcome-weak),
+	.entry-body :global(.roll-outcome-weak strong) {
 		color: var(--color-momentum, #60a5fa);
 		font-weight: 700;
 	}
-	.entry-body :global(.roll-outcome-miss) {
+	.entry-body :global(.roll-outcome-miss),
+	.entry-body :global(.roll-outcome-miss strong) {
 		color: var(--color-danger, #ef4444);
 		font-weight: 700;
 	}
@@ -781,7 +777,8 @@
 	.entry-body :global(.initiative-link),
 	.entry-body :global(.progress-link),
 	.entry-body :global(.debility-link),
-	.entry-body :global(.menace-link) {
+	.entry-body :global(.menace-link),
+	.entry-body :global(.burn-momentum-link) {
 		color: var(--text-accent);
 		text-decoration: underline;
 		cursor: pointer;
@@ -792,13 +789,20 @@
 	.entry-body :global(.initiative-link:hover),
 	.entry-body :global(.progress-link:hover),
 	.entry-body :global(.debility-link:hover),
-	.entry-body :global(.menace-link:hover) {
+	.entry-body :global(.menace-link:hover),
+	.entry-body :global(.burn-momentum-link:hover) {
 		opacity: 0.8;
 	}
 	.entry-body :global(.resource-spent) {
 		text-decoration: line-through;
 		color: var(--text-dimmer);
 		cursor: default;
+	}
+
+	/* Harm placeholder: no foe context — player resolves manually */
+	.entry-body :global(.harm-note) {
+		font-style: italic;
+		color: var(--text-dimmer);
 	}
 
 	/* XP cost links (clickable, strike-through after use) */
