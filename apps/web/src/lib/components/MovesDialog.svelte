@@ -35,7 +35,6 @@
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
 	import diceD6RawSvg   from '$icons/dice-d6-light.svg?raw';
 	import diceD10RawSvg  from '$icons/dice-d10-light.svg?raw';
-	import diceD100RawSvg from '$icons/dice-d100-solid.svg?raw';
 	import { draggable } from '$lib/actions/draggable.js';
 
 	// ---------------------------------------------------------------------------
@@ -76,7 +75,6 @@
 	// Prepare inline die icons (currentColor so they match the muted text)
 	const d6Icon   = diceD6RawSvg.replace('<svg ', '<svg fill="currentColor" class="rs-die" ');
 	const d10Icon  = diceD10RawSvg.replace('<svg ', '<svg fill="currentColor" class="rs-die" ');
-	const d100Icon = diceD100RawSvg.replace('<svg ', '<svg fill="currentColor" class="rs-die" ');
 
 	// Roll formula shown in the status area between spinners and roll button
 	const rollStatusHtml = $derived.by(() => {
@@ -94,10 +92,10 @@
 		}
 		if (isOracleRollMove && oracleTable.length) {
 			const threshold = oracleTable[selectedOddsIdx]?.value?.threshold ?? '?';
-			return `${d100Icon} &ge; odds[${threshold}]`;
+			return `${d10Icon} &amp; ${d10Icon} &ge; odds[${threshold}]`;
 		}
 		if (selectedMove && isTableRollMove(selectedMove)) {
-			return `${d100Icon}`;
+			return `${d10Icon} &amp; ${d10Icon}`;
 		}
 		return '';
 	});
@@ -1798,7 +1796,6 @@
 		border-bottom: none;
 	}
 	.md-table-range {
-		font-family:  var(--font-mono, monospace);
 		color:        var(--text-dimmer);
 		font-size:    0.75rem;
 		text-align:   right;
