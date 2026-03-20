@@ -180,6 +180,10 @@
         {
           "key": "hasFoe",
           "eq": 1
+        },
+        {
+          "key": "initiative",
+          "eq": 0
         }
       ]
     },
@@ -190,8 +194,8 @@
       "triggerShort": "When you score a strong hit on a decisive action and resolve the fight.",
       "trigger": "When you <strong>make a move to take decisive action</strong>, and score a <strong>strong hit</strong>, you may resolve the outcome of this fight. If you do, roll the <strong>challenge dice</strong> and compare to your <strong>progress</strong>. Momentum is ignored on this roll.",
       "progressTrack": "combat",
-      "strong": "This foe is no longer in the fight. They are killed, out of action, flee, or surrender as appropriate to the situation and your intent (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure).",
-      "weak": "As above, but you must also choose one:<ul><li>It's worse than you thought: <a class=\"move-link\" data-id=\"move/endure-harm\">Endure Harm</a>.</li><li>You are overcome: <a class=\"move-link\" data-id=\"move/endure-stress\">Endure Stress</a>.</li><li>Your victory is short-lived: A new danger or foe appears, or an existing danger worsens.</li><li>You suffer collateral damage: Something of value is lost or broken, or someone important must pay the cost.</li><li>You'll pay for it: An objective falls out of reach.</li><li>Others won't forget: You are marked for vengeance.</li></ul>",
+      "strong": "This foe is no longer in the fight. They are killed, out of action, flee, or surrender as appropriate to the situation and your intent (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure). <a class=\"vanquish-foe-link\">Vanquish Foe</a>",
+      "weak": "As above. <a class=\"vanquish-foe-link\">Vanquish Foe</a> But you must also choose one:<ul><li>It's worse than you thought: <a class=\"move-link\" data-id=\"move/endure-harm\">Endure Harm</a>.</li><li>You are overcome: <a class=\"move-link\" data-id=\"move/endure-stress\">Endure Stress</a>.</li><li>Your victory is short-lived: A new danger or foe appears, or an existing danger worsens.</li><li>You suffer collateral damage: Something of value is lost or broken, or someone important must pay the cost.</li><li>You'll pay for it: An objective falls out of reach.</li><li>Others won't forget: You are marked for vengeance.</li></ul>",
       "miss": "You have lost this fight. <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a>.",
       "notes": "Progress move — roll challenge dice against your foe's progress track, not a stat. Momentum is ignored. You can only attempt this after scoring a strong hit on a decisive action. A miss means you've lost the fight entirely.",
       "preconditions": [

@@ -111,7 +111,7 @@ export function updateLogEntryNote(charId: string, entryId: string, note: string
  */
 export function enrichOutcomeLinks(html: string, entryId: string, charId: string): string {
 	return html.replace(
-		/<a\s+class="(resource-link|debility-link|progress-link|initiative-link|menace-link)"/g,
+		/<a\s+class="(resource-link|debility-link|progress-link|initiative-link|menace-link|vanquish-foe-link)"/g,
 		`<a data-entry-id="${entryId}" data-char-id="${charId}" class="$1"`,
 	);
 }

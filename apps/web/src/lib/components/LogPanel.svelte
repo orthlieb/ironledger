@@ -27,6 +27,7 @@
 		onProgressLink,
 		onInitiativeLink,
 		onMenaceLink,
+		onVanquishFoe,
 	}: {
 		ctx?:              DiceCtx | null;
 		onMoveLink?:       (moveId: string) => void;
@@ -34,6 +35,7 @@
 		onProgressLink?:   (track: string, value: number) => void;
 		onInitiativeLink?: (value: string) => void;
 		onMenaceLink?:     (value: number) => void;
+		onVanquishFoe?:    () => void;
 	} = $props();
 
 	// The log is global — no characterId prop needed.
@@ -468,6 +470,17 @@
 			onMenaceLink?.(value);
 			return;
 		}
+
+		// ---- Vanquish foe links ----
+		const vanquishLink = target.closest('.vanquish-foe-link') as HTMLElement | null;
+		if (vanquishLink && !vanquishLink.closest('.resource-spent')) {
+			e.preventDefault();
+			const entryId = vanquishLink.dataset['entryId'] ?? '';
+			if (!entryId) return;
+			markLinkSpent(entryId, vanquishLink);
+			onVanquishFoe?.();
+			return;
+		}
 	}
 </script>
 
@@ -797,6 +810,7 @@
 	.entry-body :global(.progress-link),
 	.entry-body :global(.debility-link),
 	.entry-body :global(.menace-link),
+	.entry-body :global(.vanquish-foe-link),
 	.entry-body :global(.burn-momentum-link) {
 		color: var(--text-accent);
 		text-decoration: underline;
@@ -809,6 +823,7 @@
 	.entry-body :global(.progress-link:hover),
 	.entry-body :global(.debility-link:hover),
 	.entry-body :global(.menace-link:hover),
+	.entry-body :global(.vanquish-foe-link:hover),
 	.entry-body :global(.burn-momentum-link:hover) {
 		opacity: 0.8;
 	}

@@ -718,6 +718,7 @@
 							onProgressLink={handleProgressLink}
 							onInitiativeLink={(val) => { if (activeCharId) initiativeMap[activeCharId] = val === 'character' ? 1 : 2; }}
 							onMenaceLink={handleMenaceLink}
+							onVanquishFoe={() => { if (activeFoeId) handleEncounterDelete(activeFoeId); }}
 						/>
 					</div>
 
