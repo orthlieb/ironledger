@@ -77,7 +77,7 @@ When a character's momentum is negative and `|momentum| === action die value`, t
 
 ## Interactive Links in Outcome HTML
 
-Move outcome HTML contains 7 types of interactive links. When a move is rolled, `data-entry-id` and `data-char-id` attributes are injected into links that modify state (resource, debility, progress, initiative, menace) so LogPanel can identify the log entry and character. Links that modify state are drawn in strikethrough after being clicked to prevent double-application.
+Move outcome HTML contains 7 interactive link types plus one display-only link type. When a move is rolled, `data-entry-id` and `data-char-id` attributes are injected into links that modify state (resource, debility, progress, initiative, menace) so LogPanel can identify the log entry and character. Links that modify state are drawn in strikethrough after being clicked to prevent double-application.
 
 | Link Type | CSS Class | Data Attributes | Click Behavior | After Click |
 |-----------|-----------|-----------------|---------------|-------------|
@@ -88,6 +88,7 @@ Move outcome HTML contains 7 types of interactive links. When a move is rolled, 
 | Initiative | `.initiative-link` | `data-value` | Set initiative state (character/foe) | Strikethrough |
 | Debility | `.debility-link` | `data-debility`, `data-value` | Toggle debility on character via action bus | Strikethrough |
 | Menace | `.menace-link` | `data-value` | Mark menace on active vow | Strikethrough |
+| Harm *(display-only)* | `.harm-link` | `data-resource` | None — styled placeholder for actual harm amount in Endure Harm/Stress outcomes | No change |
 
 **Special case**: `move/ask-the-oracle` move-link opens OraclesDialog instead of MovesDialog.
 
@@ -116,7 +117,7 @@ Moves that fail preconditions appear dimmed in the picker with a tooltip showing
 
 - **Phase 1** (complete): Browse, filter, roll, and log moves with 3D dice animation
 - **Phase 2** (complete): Interactive log links — 7 link types with click handlers, action bus for stat mutations, strikethrough for applied links
-- **Phase 3**: Burn momentum — store roll data on log entries, burn button upgrades outcome
+- **Phase 3** (complete): Burn momentum — auto-appended "Momentum: Burn Available" log entry on action rolls where burn would upgrade the outcome; clicking it burns momentum and rewrites the outcome text in-place
 
 ## Key Files
 

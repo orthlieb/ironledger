@@ -334,6 +334,22 @@ Link that rolls an oracle table inline. Used in asset ability text and move outc
 | `class` | Must be `oracle-link` |
 | `data-oracle` | The oracle table's `key` value (e.g., `"manaBacklash"`, `"monstrosityPrimaryForm"`) |
 
+#### Harm Links
+
+A **display-only** placeholder replaced with the actual harm amount when a move result is logged. Used exclusively in Endure Harm and Endure Stress outcome text; not interactive.
+
+```html
+<a class="harm-link" data-resource="health">-harm health</a>
+<a class="harm-link" data-resource="spirit">-harm spirit</a>
+```
+
+| Attribute | Description |
+|-----------|-------------|
+| `class` | Must be `harm-link` |
+| `data-resource` | The resource being harmed: `health` or `spirit` |
+
+The link text `-harm {resource}` is a static placeholder; when the move is logged the UI substitutes the actual harm value that was suffered. Clicking this element has no effect.
+
 ### Context-Aware Visibility (log-only / dialog-only)
 
 When outcome text needs to differ between the move dialog and the log, use `<span>` elements with `log-only` or `dialog-only` CSS classes:

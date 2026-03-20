@@ -115,10 +115,16 @@ export function isSpellRollMove(m: MoveDefinition): boolean {
 	return !!(m as Record<string, unknown>)['spellRoll'];
 }
 
+/** Table-roll moves roll d100 against an inline table (no action die or challenge dice). */
+export function isTableRollMove(m: MoveDefinition): boolean {
+	return !!(m as Record<string, unknown>)['tableRoll'];
+}
+
 /** No-roll moves are informational — no stats and no/empty outcomes. */
 export function isNoRollMove(m: MoveDefinition): boolean {
 	if (isProgressMove(m)) return false;
 	if (isSpellRollMove(m)) return false;
+	if (isTableRollMove(m)) return false;
 	if (m.stats && m.stats.length > 0) return false;
 	return true;
 }

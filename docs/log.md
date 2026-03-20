@@ -86,6 +86,35 @@ Renders:
 #### Interactive Link Click Delegation
 LogPanel handles clicks on 7 interactive link types embedded in move outcome HTML via event delegation on the entries container. Links that modify state (resource, debility, progress, initiative, menace) are replaced with strikethrough after clicking. Move-links and oracle-links open their respective dialogs.
 
+| Link type | CSS class | Behavior | After click |
+|-----------|-----------|----------|-------------|
+| Resource | `.resource-link` | Apply ± stat change via action bus | Strikethrough |
+| Move | `.move-link` | Open MovesDialog to that move | No change |
+| Oracle | `.oracle-link` | Open OraclesDialog to that oracle | No change |
+| Progress | `.progress-link` | Mark progress on active track | Strikethrough |
+| Initiative | `.initiative-link` | Set initiative state | Strikethrough |
+| Debility | `.debility-link` | Toggle debility via action bus | Strikethrough |
+| Menace | `.menace-link` | Mark menace on active vow | Strikethrough |
+
+Additionally, LogPanel handles two JS-generated link types not present in move JSON data:
+
+- **`.burn-momentum-link`** — Appears in the auto-appended "Momentum: Burn Available" log entry after action rolls where burning would upgrade the outcome. Clicking it burns the character's momentum and updates the roll entry's outcome text.
+- **`.xp-cost-link`** — Appears in asset log entries. Clicking deducts the XP cost from the character and strikes through the link to prevent double-use.
+
+#### Cascade Rules
+LogPanel also auto-appends additional log entries in response to resource-link clicks when cascade conditions are met:
+
+- **Overflow** (`OVERFLOW_RULES`): health or spirit drops below 0 — a new entry is appended offering to convert the overflow to momentum loss.
+- **Floor overflow** (`FLOOR_OVERFLOW_RULES`): resource is already at its minimum and further reduction is attempted:
+  - Momentum at −6 → "Face a Setback" entry with per-point clickable exchange links (−health / −spirit / −supply) and a Face a Setback move-link
+  - Health at 0 → "Face Death" entry with a Face Death move-link
+  - Spirit at 0 → "Face Desolation" entry with a Face Desolation move-link
+  - Supply at 0 → "Out of Supply" entry with per-point clickable exchange links (−health / −spirit / −momentum)
+
+CharacterSheet auto-appends entries from **floor rules** (`FLOOR_RULES`) when a resource transitions into its minimum:
+- Momentum hits −6 → "Momentum: Desperate" note appended
+- Supply hits 0 → "Supply: Exhausted" note with clickable Unprepared debility link
+
 Callback props: `onMoveLink`, `onOracleLink`, `onProgressLink`, `onInitiativeLink`, `onMenaceLink`.
 
 ---

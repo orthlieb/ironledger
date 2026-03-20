@@ -99,6 +99,7 @@
       "strong": "",
       "weak": "",
       "miss": "",
+      "tableRoll": true,
       "notes": "Triggered by a strong hit on Delve the Depths (or encountered directly). On a strong hit from Delve the Depths, you may skip the roll and simply choose or envision the opportunity.",
       "preconditions": [
         {
@@ -161,6 +162,7 @@
       "strong": "",
       "weak": "",
       "miss": "",
+      "tableRoll": true,
       "notes": "Not a player-rolled move — triggered by miss results on Delve the Depths or Find an Opportunity. Dangers can be traps, monsters, environmental hazards, or complications. After revealing it, respond with other moves (Face Danger, Strike, etc.).",
       "preconditions": [
         {

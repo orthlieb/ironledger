@@ -23,13 +23,14 @@
 		isProgressMove,
 		isNoRollMove,
 		isSpellRollMove,
+		isTableRollMove,
 		hasRollableStats,
 	} from '$lib/moveStore.svelte.js';
 	import { firstPreconditionFailure } from '$lib/preconditions.js';
 	import { appendLog, enrichOutcomeLinks, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import { momentumReset } from '$lib/character.js';
 	import { BURN_MOMENTUM_TITLE } from '$lib/cascadeRules.js';
-	import { rollDie, animateDice } from '$lib/dice.js';
+	import { rollDie, animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
 
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
 	import diceD6RawSvg   from '$icons/dice-d6-light.svg?raw';
@@ -93,7 +94,10 @@
 		}
 		if (isOracleRollMove && oracleTable.length) {
 			const threshold = oracleTable[selectedOddsIdx]?.value?.threshold ?? '?';
-			return `odds[${threshold}] < ${d10Icon} &amp; ${d10Icon}`;
+			return `${d100Icon} &ge; odds[${threshold}]`;
+		}
+		if (selectedMove && isTableRollMove(selectedMove)) {
+			return `${d100Icon}`;
 		}
 		return '';
 	});
@@ -559,9 +563,10 @@
 	}
 
 	async function doAskOracle() {
-		if (!oracleTable.length) return;
+		if (rolling || !oracleTable.length) return;
 		const entry = oracleTable[selectedOddsIdx];
 		if (!entry) return;
+		rolling = true;
 		const { odds, threshold } = entry.value;
 		const roll = rollDie(100);
 		const isYes = roll >= threshold;
@@ -569,7 +574,41 @@
 		const html =
 			`<div class="roll-line">1d100 [${roll}]</div>` +
 			`<div class="${outcomeClass}"><strong>${isYes ? 'Yes' : 'No'}</strong> \u2014 ${odds} (\u2265${threshold})</div>`;
+		const tensV = Math.floor(roll % 100 / 10) || 10;
+		const onesV = roll % 10 || 10;
+		close();
+		await animateDice([
+			{ sides: 10, value: tensV, color: DIE_BLACK },
+			{ sides: 10, value: onesV, color: DIE_WHITE },
+		]);
 		appendLog(SESSION_LOG_ID, logTitle('Ask the Oracle'), html, crypto.randomUUID());
+		rolling = false;
+	}
+
+	async function doTableRoll() {
+		if (rolling || !selectedMove) return;
+		rolling = true;
+		type TableEntry = { topRange: number; value: string };
+		const raw = (selectedMove as Record<string, unknown>)['table'] as TableEntry[] | undefined;
+		if (!raw?.length) { rolling = false; return; }
+		const entryId = crypto.randomUUID();
+		const roll    = rollDie(100);
+		const found   = raw.find(e => roll <= e.topRange) ?? raw[raw.length - 1];
+		const enriched = ctx
+			? enrichOutcomeLinks(found.value, entryId, ctx.charId)
+			: found.value;
+		const html =
+			`<div class="roll-line">1d100 [${roll}]</div>` +
+			`<div class="move-outcome">${enriched}</div>`;
+		const tensV = Math.floor(roll % 100 / 10) || 10;
+		const onesV = roll % 10 || 10;
+		close();
+		await animateDice([
+			{ sides: 10, value: tensV, color: DIE_BLACK },
+			{ sides: 10, value: onesV, color: DIE_WHITE },
+		]);
+		appendLog(SESSION_LOG_ID, logTitle(selectedMove.name), html, entryId);
+		rolling = false;
 	}
 
 	async function doApplyNoRollMove() {
@@ -1016,7 +1055,32 @@
 				<button
 					class="btn btn-primary md-roll-btn"
 					onclick={doAskOracle}
-				>Use Move</button>
+					disabled={rolling}
+				>{rolling ? 'Rolling\u2026' : 'Roll Move'}</button>
+			</div>
+
+		<!-- ── Table-roll move (d100 against inline table) ── -->
+		{:else if isTableRollMove(selectedMove)}
+			{@const tableEntries = (selectedMove as Record<string, unknown>)['table'] as Array<{ topRange: number; value: string }> ?? []}
+			{#if tableEntries.length > 0}
+				<div class="md-table-list">
+					{#each tableEntries as entry, i (entry.topRange)}
+						{@const prevTop = i === 0 ? 0 : tableEntries[i - 1].topRange}
+						{@const rangeLabel = prevTop + 1 === entry.topRange ? `${entry.topRange}` : `${prevTop + 1}\u2013${entry.topRange}`}
+						<div class="md-table-row">
+							<span class="md-table-range">{rangeLabel}</span>
+							<span class="md-table-value">{@html displayHtml(entry.value)}</span>
+						</div>
+					{/each}
+				</div>
+			{/if}
+			<div class="md-action-row">
+				<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
+				<button
+					class="btn btn-primary md-roll-btn"
+					onclick={doTableRoll}
+					disabled={rolling || !ctx}
+				>{rolling ? 'Rolling\u2026' : 'Roll Move'}</button>
 			</div>
 
 		<!-- ── No-roll move (no controls needed) ── -->
@@ -1644,6 +1708,39 @@
 	.md-outcome-text :global(.harm-note) {
 		font-style: italic;
 		color: var(--text-dimmer);
+	}
+
+	/* ── Inline table (tableRoll moves) ───────────────────────────────────── */
+	.md-table-list {
+		display:        flex;
+		flex-direction: column;
+		gap:            2px;
+		margin:         8px 0;
+	}
+	.md-table-row {
+		display:     grid;
+		grid-template-columns: 3.5rem 1fr;
+		gap:         8px;
+		font-size:   0.8rem;
+		line-height: 1.4;
+		padding:     4px 0;
+		border-bottom: 1px solid var(--border);
+	}
+	.md-table-row:last-child {
+		border-bottom: none;
+	}
+	.md-table-range {
+		font-family:  var(--font-mono, monospace);
+		color:        var(--text-dimmer);
+		font-size:    0.75rem;
+		text-align:   right;
+		padding-right: 4px;
+		white-space:  nowrap;
+		align-self:   start;
+		padding-top:  1px;
+	}
+	.md-table-value {
+		color: var(--text);
 	}
 
 	/* ── Notes ────────────────────────────────────────────────────────────── */

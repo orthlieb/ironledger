@@ -108,7 +108,11 @@ npm run dev:web   # Web on :5173
 - Persistent session log with interactive links
 - Resource changes, moves, oracles, progress, initiative, debilities, menace links
 - State-modifying links with strikethrough after click
-- Burn momentum button on action roll entries
+- Auto-appended "Momentum: Burn Available" log entry when burn is possible on action roll results
+- Cascade rules auto-append log entries on resource floor events:
+  - **Overflow**: health/spirit drops below 0 → excess converts to momentum loss
+  - **Floor**: supply hits 0 → "Supply: Exhausted" with Unprepared debility link; momentum hits −6 → note appended
+  - **Floor overflow**: resource already at minimum → "Face a Setback", "Face Death", "Face Desolation", or "Out of Supply" entries with per-point clickable exchange links
 - Export includes timestamps for each entry
 
 ### Initiative Tracking

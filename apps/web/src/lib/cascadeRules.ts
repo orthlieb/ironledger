@@ -131,7 +131,7 @@ export const FLOOR_OVERFLOW_RULES: FloorOverflowRule[] = [
 				{ resource: 'spirit', label: 'spirit' },
 				{ resource: 'supply', label: 'supply' },
 			], charId, entryId) +
-			`<p>Or <a class="move-link" data-id="move/face-a-setback">view Face a Setback</a> ` +
+			`<p>Or <a class="move-link" data-id="move/face-a-setback">Face a Setback</a> ` +
 			`to lose progress on a track instead.</p>`,
 	},
 	{
