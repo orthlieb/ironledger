@@ -16,7 +16,12 @@ export const actions: Actions = {
 			}
 		}
 
-		cookies.delete('access_token', { path: '/' });
+		cookies.delete('access_token', {
+			path: '/',
+			httpOnly: true,
+			sameSite: 'strict',
+			secure: process.env.NODE_ENV === 'production',
+		});
 		throw redirect(302, '/login');
 	},
 };
