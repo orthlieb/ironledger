@@ -34,6 +34,9 @@ DO $$ BEGIN
   END IF;
 END $$;
 
+-- app_admin must bypass RLS so it can query users during login and admin ops
+ALTER ROLE app_admin BYPASSRLS;
+
 -- ---------------------------------------------------------------------------
 -- Tables
 -- ---------------------------------------------------------------------------
