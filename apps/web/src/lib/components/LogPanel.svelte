@@ -8,7 +8,7 @@
 	 * Clearing the log requires confirmation via a native dialog (irreversible).
 	 */
 	import { type LogEntry, logs, initLog, clearLog, deleteLogEntry, updateLogEntryNote, updateLogEntryHtml, enrichOutcomeLinks, triggerXpSpend, triggerAction, appendLog, getLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
-	import { OVERFLOW_RULES, BURN_MOMENTUM_TITLE } from '$lib/cascadeRules.js';
+	import { OVERFLOW_RULES, FLOOR_OVERFLOW_RULES, BURN_MOMENTUM_TITLE } from '$lib/cascadeRules.js';
 	import type { DiceCtx } from '$lib/diceContext.svelte.js';
 	import { momentumReset } from '$lib/character.js';
 	import { findMove } from '$lib/moveStore.svelte.js';
@@ -352,18 +352,27 @@
 			if (!resource || !value || !entryId || !charId) return;
 			markLinkSpent(entryId, resLink);
 			triggerAction({ charId, type: 'resource', key: resource, value });
-			// Overflow cascades: resource drops below 0 — excess converts to another resource.
+			// Overflow and floor-overflow cascades.
 			if (value < 0 && ctx) {
-				const rule = OVERFLOW_RULES.find(r => r.resource === resource);
-				if (rule) {
-					const currentVal = (ctx.data as Record<string, number>)[resource] ?? 0;
+				const currentVal = (ctx.data as Record<string, number>)[resource] ?? 0;
+				// Overflow: resource drops below 0 — excess converts to another resource.
+				const overflowRule = OVERFLOW_RULES.find(r => r.resource === resource);
+				if (overflowRule) {
 					const newVal = currentVal + value;
 					if (newVal < 0) {
 						const overflow   = Math.abs(newVal);
 						const overflowId = crypto.randomUUID();
-						const html = rule.logHtml({ overflow, charId, entryId: overflowId });
-						appendLog(SESSION_LOG_ID, rule.logTitle, html, overflowId);
+						const html = overflowRule.logHtml({ overflow, charId, entryId: overflowId });
+						appendLog(SESSION_LOG_ID, overflowRule.logTitle, html, overflowId);
 					}
+				}
+				// Floor overflow: resource already at minimum — trigger cascade move.
+				const floorOverflowRule = FLOOR_OVERFLOW_RULES.find(r => r.resource === resource && currentVal <= r.floor);
+				if (floorOverflowRule) {
+					const overflow   = Math.abs(value);
+					const overflowId = crypto.randomUUID();
+					const html = floorOverflowRule.logHtml({ overflow, charId, entryId: overflowId });
+					appendLog(SESSION_LOG_ID, floorOverflowRule.logTitle, html, overflowId);
 				}
 			}
 			return;

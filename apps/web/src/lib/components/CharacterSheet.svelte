@@ -190,7 +190,10 @@
 			// Floor cascade: resource just hit its minimum — append a note.
 			if (delta < 0) {
 				const floorRule = FLOOR_RULES.find(r => r.resource === key && next === r.floor);
-				if (floorRule) appendLog(SESSION_LOG_ID, floorRule.logTitle, floorRule.logHtml);
+				if (floorRule) {
+					const entryId = crypto.randomUUID();
+					appendLog(SESSION_LOG_ID, floorRule.logTitle, floorRule.logHtml({ charId: character.id, entryId }), entryId);
+				}
 			}
 		}
 	}
