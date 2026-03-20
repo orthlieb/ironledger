@@ -58,7 +58,7 @@ export async function withUserContext<T>(
   return db.transaction(async (tx) => {
     // Set the user_id for RLS policies on this connection
     await tx.execute(sql`SELECT set_config('app.user_id', ${userId}, true)`);
-    return fn(tx);
+    return fn(tx as unknown as typeof db);
   });
 }
 

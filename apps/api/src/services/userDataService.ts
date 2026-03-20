@@ -32,8 +32,8 @@ export async function get(userId: string): Promise<UserDataPayload> {
   }
 
   return {
-    encounters:  (rows[0].encounters  as unknown[]) ?? [],
-    expeditions: (rows[0].expeditions as unknown[]) ?? [],
+    encounters:  (rows[0]!.encounters  as unknown[]) ?? [],
+    expeditions: (rows[0]!.expeditions as unknown[]) ?? [],
   };
 }
 

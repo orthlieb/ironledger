@@ -31,7 +31,7 @@ async function shutdown(signal: string) {
     server.log.info('Shutdown complete.');
     process.exit(0);
   } catch (err) {
-    server.log.error('Error during shutdown:', err);
+    server.log.error({ err }, 'Error during shutdown');
     process.exit(1);
   }
 }

@@ -6,7 +6,7 @@
  * binding a port, and the entry point (main.ts) to bind the port separately.
  */
 
-import Fastify, { type FastifyInstance } from 'fastify';
+import Fastify, { type FastifyInstance, type FastifyError } from 'fastify';
 import helmet from '@fastify/helmet';
 import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
@@ -125,7 +125,7 @@ export async function buildServer(): Promise<FastifyInstance> {
   );
 
   // ── Global error handler ──────────────────────────────────────────────────
-  server.setErrorHandler((error, req, reply) => {
+  server.setErrorHandler((error: FastifyError, req, reply) => {
     // Log the full error server-side (with stack trace)
     req.log.error({ err: error }, 'Request error');
 

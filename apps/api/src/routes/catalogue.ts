@@ -59,7 +59,7 @@ async function loadCatalogue(): Promise<{
     loadJson(path.join(DATA_ROOT, 'assets/assets_ironsworn.json')),
     loadJson(path.join(DATA_ROOT, 'assets/assets_delve.json')),
     loadJson(path.join(DATA_ROOT, 'assets/assets_yrt.json')),
-  ]) as Array<{ assets: unknown[]; rarities?: unknown[] }>;
+  ]) as [{ assets: unknown[]; rarities?: unknown[] }, { assets: unknown[]; rarities?: unknown[] }, { assets: unknown[]; rarities?: unknown[] }];
 
   const allAssets = {
     assets:   [...assetsIs.assets,   ...assetsDelve.assets,   ...assetsYrt.assets],
@@ -88,7 +88,7 @@ async function loadCatalogue(): Promise<{
     loadJson(path.join(DATA_ROOT, 'foes/foes_ironsworn.json')),
     loadJson(path.join(DATA_ROOT, 'foes/foes_delve.json')),
     loadJson(path.join(DATA_ROOT, 'foes/foes_yrt.json')),
-  ]) as Array<{ foes: unknown[] }>;
+  ]) as [{ foes: unknown[] }, { foes: unknown[] }, { foes: unknown[] }];
 
   const allFoes = {
     foes: [...foesIs.foes, ...foesDelve.foes, ...foesYrt.foes],
