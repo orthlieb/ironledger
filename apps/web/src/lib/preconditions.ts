@@ -117,6 +117,7 @@ export function checkPrecondition(
 	if (key === 'initiative') {
 		const v = ctx.initiative ?? 0;
 		if (passes(v, pre)) return null;
+		if (pre.eq === 0) return 'Combat already in progress';
 		if (pre.eq === 1) return 'Requires character initiative';
 		if (pre.eq === 2) return 'Requires foe initiative';
 		return 'Initiative requirement not met';

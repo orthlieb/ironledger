@@ -34,6 +34,10 @@
         {
           "key": "hasFoe",
           "eq": 1
+        },
+        {
+          "key": "initiative",
+          "eq": 0
         }
       ]
     },
