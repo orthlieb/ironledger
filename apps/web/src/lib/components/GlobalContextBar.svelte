@@ -33,7 +33,8 @@
 
 	// Tab/placeholder icons
 	import charactersSvgUrl from '$icons/Characters.svg?url';
-	import foesSvgUrl       from '$icons/Foes.svg?url';
+	import foesSvgUrl           from '$icons/Foes.svg?url';
+	import skullCrossbonesSvg   from '$icons/skull-crossbones-solid-full.svg?raw';
 	import expedSvgUrl      from '$icons/Expeditions.svg?url';
 
 
@@ -291,14 +292,13 @@
 			{#if openSelector === 'foe'}
 				<div class="gc-popover">
 					<button class="gc-popover-item" class:gc-popover-item--active={!activeFoeId} onclick={() => selectFoe('')}>(None)</button>
-					{#each encounters as enc (enc.id)}
+					{#each encounters.filter(e => !e.vanquished) as enc (enc.id)}
 						{@const foeDef = findFoe(enc.foeId)}
 						<button class="gc-popover-item" class:gc-popover-item--active={enc.id === activeFoeId} onclick={() => selectFoe(enc.id)}>
 							{enc.customName || foeDef?.name || enc.foeId}
-							{enc.vanquished ? ' ☠' : ''}
 						</button>
 					{/each}
-					{#if encounters.length === 0}
+					{#if encounters.filter(e => !e.vanquished).length === 0}
 						<span class="gc-popover-empty">No foes</span>
 					{/if}
 				</div>
@@ -646,7 +646,13 @@
 	}
 	.gc-tile-vanquished {
 		color: var(--color-danger, #ef4444);
-		font-size: 0.8rem;
+		display: flex;
+		align-items: center;
+	}
+	.gc-tile-vanquished :global(svg) {
+		width: 14px;
+		height: 14px;
+		fill: currentColor;
 	}
 
 	/* Initiative icon badge (character tile, upper-right) */

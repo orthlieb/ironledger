@@ -693,6 +693,7 @@
 					<!-- Log column -->
 					<div class="adventure-log">
 						<div class="char-toolbar">
+							<span class="log-panel-title">Session Log</span>
 							<div class="char-toolbar-actions">
 								<button
 									class="btn icon-btn"
@@ -718,7 +719,13 @@
 							onProgressLink={handleProgressLink}
 							onInitiativeLink={(val) => { if (activeCharId) initiativeMap[activeCharId] = val === 'character' ? 1 : 2; }}
 							onMenaceLink={handleMenaceLink}
-							onVanquishFoe={() => { if (activeFoeId) handleEncounterDelete(activeFoeId); }}
+							onVanquishFoe={async () => {
+								if (!activeFoeId) return;
+								const enc = encounters.find(e => e.id === activeFoeId);
+								if (enc) await updateEncounter({ ...enc, vanquished: true });
+								if (activeCharId) delete initiativeMap[activeCharId];
+								activeFoeId = '';
+							}}
 						/>
 					</div>
 
@@ -782,6 +789,15 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
+	}
+
+	.log-panel-title {
+		font-family:    var(--font-display, 'Cinzel', serif);
+		font-size:      0.75rem;
+		font-weight:    700;
+		letter-spacing: 0.08em;
+		color:          var(--text-muted);
+		margin-right:   auto;
 	}
 
 	.char-error {

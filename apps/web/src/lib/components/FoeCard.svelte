@@ -305,7 +305,7 @@
 					class:btn-danger={!enc.vanquished}
 					onclick={toggleVanquished}
 				>
-					{enc.vanquished ? '⚔ Mark Active' : '☠ Mark Vanquished'}
+					{#if enc.vanquished}⚔ Mark Active{:else}{@html skullSvg} Mark Vanquished{/if}
 				</button>
 			</div>
 		</div>
@@ -616,5 +616,13 @@
 	.fc-status-row {
 		display: flex;
 		justify-content: flex-end;
+	}
+	.fc-status-row .btn :global(svg) {
+		width: 14px;
+		height: 14px;
+		fill: currentColor;
+		vertical-align: middle;
+		flex-shrink: 0;
+		margin-right: 4px;
 	}
 </style>
