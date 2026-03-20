@@ -1923,13 +1923,17 @@
 		margin-left: 0.65rem;
 	}
 
-	/* Spell roll action row — spinners wrap above roll button on narrow dialogs */
+	/* Spell roll action row — spinners on first line, status + button on second */
 	.md-action-row--spell {
 		flex-wrap: wrap;
 		gap: 6px 0;
 	}
+	.md-action-row--spell .md-adds-row {
+		flex-basis: 100%;
+	}
 	.md-roll-btn--spell {
-		flex: 1 1 auto;
+		flex: 0 0 auto;
+		margin-left: auto;
 	}
 
 </style>

@@ -767,6 +767,16 @@
 		line-height: 1.5;
 		color: var(--text-muted);
 	}
+	/* Outcome border colour matches the result */
+	.entry-body :global(.roll-outcome-strong + .move-outcome) {
+		border-left-color: var(--color-success, #34d399);
+	}
+	.entry-body :global(.roll-outcome-weak + .move-outcome) {
+		border-left-color: var(--color-momentum, #60a5fa);
+	}
+	.entry-body :global(.roll-outcome-miss + .move-outcome) {
+		border-left-color: var(--color-danger, #ef4444);
+	}
 	.entry-body :global(.move-outcome strong) {
 		color: var(--text);
 		font-weight: 600;
