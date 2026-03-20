@@ -613,6 +613,74 @@
 
 	async function doApplyNoRollMove() {
 		if (!ctx || !selectedMove) return;
+
+		// \u2500\u2500 Take a Hiatus: build logBody dynamically from character state \u2500\u2500
+		if (selectedMove.id === 'move/take-a-hiatus') {
+			const data = ctx.data as Record<string, unknown>;
+			const parts: string[] = [];
+			// 1. Clear marked conditions
+			const allDebilities: Array<[string, string]> = [
+				['wounded',    'Wounded'],
+				['maimed',     'Maimed'],
+				['shaken',     'Shaken'],
+				['corrupted',  'Corrupted'],
+				['cursed',     'Cursed'],
+				['tormented',  'Tormented'],
+				['unprepared', 'Unprepared'],
+				['encumbered', 'Encumbered'],
+			];
+			const markedDebilities = allDebilities.filter(([key]) => data[key]);
+			if (markedDebilities.length > 0) {
+				const links = markedDebilities
+					.map(([key, label]) =>
+						`<a class="debility-link" data-debility="${key}" data-value="0">Clear ${label}</a>`)
+					.join(' \u00b7 ');
+				parts.push(`<p><strong>Conditions:</strong> ${links}</p>`);
+			}
+			// 2. Restore resources to max
+			const restoreLinks: string[] = [];
+			const toRestore: Array<[string, string, number]> = [
+				['health', 'health', 5],
+				['spirit', 'spirit', 5],
+				['supply', 'supply', 5],
+			];
+			for (const [key, label, max] of toRestore) {
+				const current = (data[key] as number) ?? 0;
+				const delta = max - current;
+				if (delta > 0) {
+					restoreLinks.push(
+						`<a class="resource-link" data-resource="${key}" data-value="+${delta}">+${delta} ${label}</a>`
+					);
+				}
+			}
+			if (restoreLinks.length > 0) {
+				parts.push(`<p><strong>Resources:</strong> ${restoreLinks.join(' \u00b7 ')}</p>`);
+			}
+			// 3. Momentum reset
+			const resetVal   = momentumReset(ctx.data);
+			const momCurrent = (data['momentum'] as number) ?? 0;
+			const momDelta   = resetVal - momCurrent;
+			if (momDelta !== 0) {
+				const sign = momDelta > 0 ? '+' : '';
+				parts.push(
+					`<p><strong>Momentum:</strong> ` +
+					`<a class="resource-link" data-resource="momentum" data-value="${sign}${momDelta}">` +
+					`${sign}${momDelta} momentum (reset to ${resetVal})</a></p>`
+				);
+			}
+			// 4. Static reminders (always shown)
+			parts.push(
+				`<p>Set companion health to max if applicable.</p>` +
+				`<p>For each active threat: ` +
+				`<a class="move-link" data-id="move/advance-a-threat">Advance a Threat</a>.</p>`
+			);
+			const entryId = crypto.randomUUID();
+			const enriched = enrichOutcomeLinks(parts.join(''), entryId, ctx.charId);
+			close();
+			appendLog(SESSION_LOG_ID, logTitle(selectedMove.name), enriched, entryId);
+			return;
+		}
+
 		const logBody = selectedMove['logBody'] as string | undefined;
 		if (!logBody) return;
 
@@ -1085,8 +1153,8 @@
 
 		<!-- ── No-roll move (no controls needed) ── -->
 		{:else if isNoRollMove(selectedMove)}
-			<!-- ── Apply button for moves with a logBody (e.g. Turn the Tide) ── -->
-			{#if selectedMove['logBody']}
+			<!-- ── Apply button for moves with a logBody or special handling (e.g. Turn the Tide, Take a Hiatus) ── -->
+			{#if selectedMove['logBody'] || selectedMove.id === 'move/take-a-hiatus'}
 				<button
 					class="btn btn-primary md-roll-btn md-roll-btn--full"
 					onclick={doApplyNoRollMove}
