@@ -2,6 +2,19 @@
 
 Ironsworn TTRPG character tracker. Manage characters, track progress, roll moves, consult oracles, and run expeditions — all in a web-based interface with real-time state persistence.
 
+* This was a first foray into using Claude to do all the coding. It's an experiment not a social commentary.
+* That being said, the AI generated images for foes are slop, I'd be open to working with a willing artist to make these much nicer.
+* I am not a designer, suggestions for improving the UI are most welcome.
+* I have probably misintrepreted or missed a rule here or there, bug reports are definitely welcome.
+* **Ironsworn and the Delve Expansion** are incredible RPGs, I highly encourage you to support [Shawn Tomkin](https://tomkinpress.com/) and purchase his work.
+
+A final note: The YRT expansion that is referred to is a side project I'm working on set in a post-apocalyptic world where technology is indistinguishable from magic. 
+I'm not ready to release anything yet but you can see some of the the workings in the Conclave spells, the use of mana, and some Oracles.
+
+## Screenshot
+
+![Adventure Tab](<docs/images/Iron Ledger Adventure Tab.png>)
+
 ## Tech Stack
 
 | Layer | Technology |
