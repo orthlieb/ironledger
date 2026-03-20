@@ -16,6 +16,7 @@
     // ── Interop ───────────────────────────────────────────────────────────────
     "esModuleInterop":   true,
     "forceConsistentCasingInFileNames": true,
+    "skipLibCheck":      true,
 
     // ── DX ────────────────────────────────────────────────────────────────────
     "sourceMap":     true,
