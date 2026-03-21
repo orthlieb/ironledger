@@ -6,10 +6,16 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import * as auth from '../../src/services/authService.js';
-import { db }    from '../../src/db/index.js';
+import * as auth          from '../../src/services/authService.js';
+import { adminDb }        from '../../src/db/index.js';
 import { users, authTokens, refreshTokens } from '../../src/db/schema.js';
-import { eq }   from 'drizzle-orm';
+import { eq }             from 'drizzle-orm';
+
+// Tests use adminDb (bypasses RLS) for all setup, cleanup, and verification
+// queries.  The app_user pool gets its session GUC set to '' after any
+// withUserContext transaction ends, causing ''::uuid errors in RLS policies
+// on subsequent plain db.select/delete calls.  adminDb is unaffected by RLS.
+if (!adminDb) throw new Error('adminDb is required — set DATABASE_ADMIN_URL');
 
 // ---------------------------------------------------------------------------
 // Mock external dependencies
@@ -36,15 +42,18 @@ const TEST_EMAIL    = 'integration-test@example.com';
 const TEST_PASSWORD = 'CorrectHorseBatteryStaple!99';
 
 async function cleanupUser(email: string) {
-  // Cascade deletes tokens automatically via FK
-  await db.delete(users).where(eq(users.email, email));
+  // adminDb bypasses RLS — needed because plain db (app_user) has its
+  // session GUC app.user_id reset to '' after any withUserContext transaction,
+  // which causes '':uuid failures in RLS policies on subsequent queries.
+  // Cascade deletes refresh_tokens and auth_tokens automatically via FK.
+  await adminDb!.delete(users).where(eq(users.email, email));
 }
 
 async function createVerifiedUser(email = TEST_EMAIL, password = TEST_PASSWORD) {
   await auth.register({ email, password });
 
-  // Get the verification token directly from the DB (bypassing email)
-  const [tokenRow] = await db
+  // Get the verification token directly from the DB (adminDb bypasses RLS)
+  const [tokenRow] = await adminDb!
     .select()
     .from(authTokens)
     .where(eq(authTokens.purpose, 'verify_email'))
@@ -76,7 +85,7 @@ describe('register', () => {
   it('creates a user with email_verified_at = null', async () => {
     await auth.register({ email: TEST_EMAIL, password: TEST_PASSWORD });
 
-    const [user] = await db
+    const [user] = await adminDb!
       .select()
       .from(users)
       .where(eq(users.email, TEST_EMAIL));
@@ -108,7 +117,7 @@ describe('register', () => {
 
   it('stores email in lowercase', async () => {
     await auth.register({ email: 'UPPER@EXAMPLE.COM', password: TEST_PASSWORD });
-    const [user] = await db
+    const [user] = await adminDb!
       .select({ email: users.email })
       .from(users)
       .where(eq(users.email, 'upper@example.com'));
@@ -131,7 +140,7 @@ describe('verifyEmail', () => {
     expect(result.accessToken).toBeTruthy();
     expect(result.refreshToken).toBeTruthy();
 
-    const [user] = await db
+    const [user] = await adminDb!
       .select({ emailVerifiedAt: users.emailVerifiedAt })
       .from(users)
       .where(eq(users.email, TEST_EMAIL));

@@ -206,11 +206,11 @@ In GitHub Settings > Environments, create a `production` environment with requir
 1. Type-checks TypeScript
 2. SSHs to VPS
 3. `git fetch origin main && git reset --hard origin/main`
-4. `npm ci --omit=dev`
-5. `npm run build`
-6. `npm run migrate` (schema-first, before restart)
-7. `pm2 reload ironledger --update-env` (zero-downtime)
-8. Health check (10 retries, 5s intervals)
+4. `npm ci`
+5. `npm run build --workspace=apps/api` + `npm run build --workspace=apps/web`
+6. `npm run migrate --workspace=apps/api` (schema-first, before restart)
+7. `pm2 reload ironledger-api --update-env && pm2 reload ironledger-web --update-env`
+8. Health check on `/login` (12 retries, 5s intervals)
 
 ### Option B: Manual Deploy Script
 
@@ -372,3 +372,131 @@ curl https://yourdomain.com/health
 | SSL certificate expired | `sudo certbot renew` — Certbot auto-renews via cron |
 | Rate limited during deploy | Health check endpoint (`/health`) has no rate limit |
 | Migration fails | Check `DATABASE_ADMIN_URL` in `.env` has superuser credentials |
+| `pm2` not found when running as root | PM2 is installed under the `ironledger` user's nvm — use `su - ironledger` (interactive) first |
+| `[PM2][ERROR] File ecosystem.config.cjs not found` | Must run PM2 from `~/app` directory: `cd ~/app && pm2 reload ecosystem.config.cjs --update-env` |
+| Cross-site POST form submissions forbidden | CSRF: SvelteKit compares `Origin` header to `ORIGIN` env var — update `ORIGIN` in `ecosystem.config.cjs` and reload after switching to HTTPS |
+| Sign-out not working | `cookies.delete()` must pass the same options (`httpOnly`, `sameSite`, `secure`) as `cookies.set()` or the browser ignores the deletion |
+
+---
+
+## Lessons Learned from the First Deploy
+
+Real-world notes captured during the initial deployment to production.
+
+### PostgreSQL: BYPASSRLS requires superuser
+
+`ALTER ROLE app_admin BYPASSRLS` needs a superuser (`postgres`) to execute. If this runs inside a migration file (which runs as `app_admin`), you get:
+```
+ERROR: permission denied to alter role
+```
+
+**Fix**: Apply it once manually as `postgres` and remove it from migrations:
+```bash
+sudo -u postgres psql -c "ALTER ROLE app_admin BYPASSRLS;"
+```
+
+For CI, add it to the "Setup test database roles" step *before* migrations run, using the `postgres` superuser.
+
+Without `BYPASSRLS`, `FORCE ROW LEVEL SECURITY` on a table means even the table owner (`app_admin`) sees zero rows — silent data loss with no errors.
+
+### PostgreSQL: custom GUC resets to `''` after LOCAL transaction
+
+`set_config('app.user_id', userId, true)` (LOCAL) creates the GUC entry at the session level with default value `''`. When the LOCAL transaction ends, it reverts to `''`. Any subsequent query on that pooled connection runs `''::uuid` in RLS policies, throwing:
+
+```
+invalid input syntax for type uuid: ""
+```
+
+**Fix**: Wrap all `current_setting()` calls in RLS policies with `NULLIF`:
+```sql
+USING (id = NULLIF(current_setting('app.user_id', true), '')::uuid)
+```
+
+`NULLIF('', '')` → `NULL` → `NULL::uuid` → `NULL` → no rows matched, no error.
+
+In integration tests, always use `adminDb` (BYPASSRLS) for cleanup and verification queries rather than the app_user pool.
+
+### SvelteKit: cookie delete options must match cookie set options
+
+`cookies.delete('access_token', { path: '/' })` will not clear a cookie that was set with `httpOnly: true`, `sameSite: 'strict'`, etc. The browser silently ignores the deletion.
+
+**Fix**: Pass identical options to both `set` and `delete`:
+```typescript
+cookies.delete('access_token', {
+  path: '/',
+  httpOnly: true,
+  sameSite: 'strict',
+  secure: process.env.NODE_ENV === 'production',
+});
+```
+
+### SvelteKit: CSRF — update ORIGIN when switching to HTTPS
+
+SvelteKit compares the `Origin` request header against the `ORIGIN` environment variable for POST form submissions. After enabling Let's Encrypt, if `ORIGIN` still has the `http://` address, every login attempt fails with:
+
+```
+Cross-site POST form submissions are forbidden
+```
+
+**Fix**: Update `ORIGIN` in `ecosystem.config.cjs` and reload with env:
+```bash
+cd ~/app
+# The config uses JS object syntax, not env var syntax
+sed -i "s|ORIGIN: 'http://OLD_VALUE'|ORIGIN: 'https://yourdomain.com'|" ecosystem.config.cjs
+pm2 reload ecosystem.config.cjs --update-env
+```
+
+Note: `pm2 reload ironledger-api --update-env` alone won't pick up ecosystem config changes — you must use the `.cjs` file form.
+
+### PM2: must run as ironledger user (nvm dependency)
+
+PM2 and Node.js are installed via nvm under the `ironledger` user. Running `su - ironledger -c "pm2 ..."` fails because nvm is not initialized in a non-interactive shell.
+
+**Fix**: Use an interactive shell login:
+```bash
+su - ironledger         # interactive (-) loads .bashrc / nvm
+cd ~/app
+pm2 reload ecosystem.config.cjs --update-env
+```
+
+### PM2: reload must be run from the app directory
+
+`pm2 reload ecosystem.config.cjs` fails with "file not found" unless the working directory is `~/app`. Always `cd ~/app` first.
+
+### JWT: add jti for guaranteed uniqueness
+
+`iat` (issued-at) is second-precision. Two tokens issued in the same second are byte-for-byte identical, which breaks tests asserting uniqueness and blocks future token revocation.
+
+**Fix**: Add a `jti` (JWT ID) claim with a random value:
+```typescript
+new SignJWT({ email, role })
+  .setJti(randomBytes(16).toString('hex'))
+  // ...
+```
+
+### Resend: onboarding@resend.dev only delivers to account owner
+
+During development, `onboarding@resend.dev` only sends to the Resend account owner's address. Any other recipient silently receives nothing.
+
+**Fix**: Verify your own domain in Resend (DNS TXT + CNAME records), then use `noreply@yourdomain.com` as the sender.
+
+### CI: vitest needs working-directory for monorepo
+
+`npx vitest run --project unit` must be run from the directory containing `vitest.config.ts`. In a monorepo, all test steps need:
+```yaml
+working-directory: apps/api
+```
+
+Without it, vitest can't find the project configuration and fails with "No projects matched the filter."
+
+### CI: schema ownership after DROP/CREATE in integration tests
+
+`setup.ts` runs `DROP SCHEMA public CASCADE; CREATE SCHEMA public;` before migrations. The new schema is owned by the connecting user (`app_admin`). You must explicitly grant ownership back:
+
+```sql
+ALTER SCHEMA public OWNER TO app_admin;
+GRANT ALL   ON SCHEMA public TO app_admin;
+GRANT USAGE ON SCHEMA public TO app_user;
+```
+
+This must happen *before* migrations run (which create the tables).
