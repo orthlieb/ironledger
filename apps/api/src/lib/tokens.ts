@@ -55,6 +55,7 @@ export async function signAccessToken(
   return new SignJWT({ email, role })
     .setProtectedHeader({ alg: 'RS256' })
     .setSubject(userId)
+    .setJti(randomBytes(16).toString('hex'))   // unique per token; enables future revocation
     .setIssuedAt()
     .setExpirationTime(Math.floor(Date.now() / 1000) + config.JWT_EXPIRES_IN)
     .sign(privateKey);
