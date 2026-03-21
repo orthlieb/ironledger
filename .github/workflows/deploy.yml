@@ -15,8 +15,6 @@ jobs:
   deploy:
     name: Deploy to IONOS VPS
     runs-on: ubuntu-latest
-    # Only deploy if CI passed first
-    needs: []   # (CI runs in the same push event; add needs: [test] if using separate workflows)
     environment: production   # requires approval if configured in repo settings
 
     steps:
@@ -42,38 +40,42 @@ jobs:
           host:     ${{ secrets.IONOS_HOST }}
           username: ironledger
           key:      ${{ secrets.IONOS_DEPLOY_KEY }}
-          timeout:  120s
+          timeout:  180s
           script: |
             set -euo pipefail
 
             cd ~/app
 
             echo "▶ Pulling latest code..."
+            source ~/.nvm/nvm.sh
             git fetch origin main
             git reset --hard origin/main
 
             echo "▶ Installing dependencies..."
-            source ~/.nvm/nvm.sh
-            npm ci --omit=dev --workspace=apps/api
+            npm ci
 
-            echo "▶ Building..."
+            echo "▶ Building API..."
             npm run build --workspace=apps/api
+
+            echo "▶ Building web app..."
+            npm run build --workspace=apps/web
 
             echo "▶ Running migrations..."
             npm run migrate --workspace=apps/api
 
             echo "▶ Reloading PM2..."
-            pm2 reload ironledger --update-env
+            pm2 reload ironledger-api --update-env
+            pm2 reload ironledger-web --update-env
 
-            echo "✅ Deploy steps complete."
+            echo "✅ Deploy complete."
 
       - name: Health check
         run: |
           APP_URL="https://${{ secrets.IONOS_DOMAIN }}"
-          echo "Checking $APP_URL/health..."
+          echo "Checking $APP_URL/login..."
 
-          for i in $(seq 1 10); do
-            CODE=$(curl -sf -o /dev/null -w "%{http_code}" "$APP_URL/health" || echo "000")
+          for i in $(seq 1 12); do
+            CODE=$(curl -sf -o /dev/null -w "%{http_code}" "$APP_URL/login" || echo "000")
             if [ "$CODE" = "200" ]; then
               echo "✅ Health check passed on attempt $i"
               exit 0
@@ -82,11 +84,11 @@ jobs:
             sleep 5
           done
 
-          echo "❌ Health check failed after 10 attempts"
+          echo "❌ Health check failed after 12 attempts"
           exit 1
 
       - name: Notify on failure
         if: failure()
         run: |
-          echo "::error::Deploy failed. Check the server with: pm2 logs ironledger"
+          echo "::error::Deploy failed. Check the server with: pm2 logs ironledger-api"
           # Add Slack/email notification here if desired
