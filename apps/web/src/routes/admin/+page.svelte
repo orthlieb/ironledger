@@ -1,4 +1,8 @@
 <script lang="ts">
+	// Build-time constants injected by Vite (see vite.config.ts → define)
+	declare const __APP_VERSION__: string;
+	declare const __BUILD_DATE__: string;
+
 	import { admin, maintenance as maintApi } from '$lib/api';
 	import type { AdminUser, AdminStats, AuditEvent, MaintenanceStatus } from '@ironledger/shared';
 
@@ -260,6 +264,11 @@
 
 <div class="admin-page">
 	<h1 class="admin-title">Admin Dashboard</h1>
+	<p class="admin-build-info">
+		v{__APP_VERSION__}
+		<span class="build-sep">·</span>
+		Built {new Date(__BUILD_DATE__).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+	</p>
 
 	{#if error}
 		<div class="admin-error">{error}</div>
@@ -597,7 +606,20 @@
 		font-size: 1.3rem;
 		color: var(--text-accent);
 		letter-spacing: 0.08em;
+		margin-bottom: 0.25rem;
+	}
+
+	.admin-build-info {
+		font-family: var(--font-mono);
+		font-size: 0.72rem;
+		color: var(--text-dimmer);
 		margin-bottom: 1rem;
+		letter-spacing: 0.03em;
+	}
+
+	.build-sep {
+		margin: 0 0.3em;
+		opacity: 0.5;
 	}
 
 	.admin-error {

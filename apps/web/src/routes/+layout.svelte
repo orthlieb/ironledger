@@ -7,6 +7,7 @@
 	import swordSvg from '$icons/sword.svg?raw';
 	import { isDice3dEnabled, setDice3dEnabled } from '$lib/dice';
 	import diceIconSvg from '$icons/dice-d10-light.svg?raw';
+	import { page } from '$app/stores';
 
 	let dice3d = $state(typeof window !== 'undefined' ? isDice3dEnabled() : true);
 
@@ -76,16 +77,18 @@
 			Iron Ledger
 		</a>
 		<div class="nav-links">
-			<button
-				class="nav-dice-toggle"
-				class:nav-dice-toggle--off={!dice3d}
-				title={dice3d ? '3D dice: on — click to disable' : '3D dice: off — click to enable'}
-				onclick={toggleDice3d}
-				aria-label="Toggle 3D dice"
-			>
-				<span class="nav-dice-icon">{@html diceIconSvg}</span>
-				<span class="nav-dice-label">{dice3d ? '3D' : 'OFF'}</span>
-			</button>
+			{#if !$page.url.pathname.startsWith('/admin')}
+				<button
+					class="nav-dice-toggle"
+					class:nav-dice-toggle--off={!dice3d}
+					title={dice3d ? '3D dice: on — click to disable' : '3D dice: off — click to enable'}
+					onclick={toggleDice3d}
+					aria-label="Toggle 3D dice"
+				>
+					<span class="nav-dice-icon">{@html diceIconSvg}</span>
+					<span class="nav-dice-label">{dice3d ? '3D' : 'OFF'}</span>
+				</button>
+			{/if}
 			<ThemeToggle />
 			{#if data.user?.role === 'admin'}
 				<span class="nav-sep" aria-hidden="true">◆</span>

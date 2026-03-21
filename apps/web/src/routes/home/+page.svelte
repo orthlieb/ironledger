@@ -463,7 +463,7 @@
 <FoePickerDialog bind:this={foePickerRef} onSelect={handleFoeSelected} />
 
 
-<!-- ===== Content + collapse control bar ===== -->
+<!-- ===== Content pane ===== -->
 <div class="page-layout">
 
 	<!-- ── Content pane ── -->
@@ -735,8 +735,6 @@
 		</div>
 	</div>
 
-	<!-- Collapse control bar -->
-	<div class="cc-bar" aria-hidden="true"></div>
 
 </div>
 
@@ -978,14 +976,10 @@
 	}
 
 	/* ============================================================
-	   Desktop layout ≥ 768 px — content + CC bar
+	   Desktop layout ≥ 768 px
 	   ============================================================ */
 	@media (min-width: 768px) {
 		.page-layout {
-			display: grid;
-			grid-template-columns: 1fr 10px;
-			align-items: start;
-			gap: 0;
 			margin-left: -1.25rem;
 			margin-right: -1.25rem;
 			margin-bottom: -4rem; /* cancel .app-main bottom padding */
@@ -1003,19 +997,10 @@
 		.tab-body {
 			padding: 1rem 1.25rem 4rem;
 		}
-
-		/* ── Collapse control bar stretches to match content height ── */
-		.cc-bar {
-			display: block;
-			background: var(--bg-card);
-			border-left: 1px solid var(--border);
-			border-right: 1px solid var(--border);
-			align-self: stretch;
-		}
 	}
 
 	/* ============================================================
-	   Mobile layout < 768 px — single column, no CC bar
+	   Mobile layout < 768 px — single column
 	   ============================================================ */
 	@media (max-width: 767px) {
 		.content-pane {
@@ -1025,10 +1010,6 @@
 
 		.tab-body {
 			padding: 0.75rem 0 3rem;
-		}
-
-		.cc-bar {
-			display: none;
 		}
 	}
 
