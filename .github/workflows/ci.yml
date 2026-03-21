@@ -57,11 +57,12 @@ jobs:
           PGPASSWORD: testpassword
         run: |
           psql -h localhost -U postgres -d ironledger_test <<-SQL
-            CREATE ROLE app_admin WITH LOGIN PASSWORD 'testpassword' CREATEDB;
+            CREATE ROLE app_admin WITH LOGIN PASSWORD 'testpassword' CREATEDB BYPASSRLS;
             CREATE ROLE app_user  WITH LOGIN PASSWORD 'testpassword';
             GRANT ALL PRIVILEGES ON DATABASE ironledger_test TO app_admin;
             GRANT CONNECT ON DATABASE ironledger_test TO app_user;
             \connect ironledger_test
+            ALTER SCHEMA public OWNER TO app_admin;
             GRANT ALL   ON SCHEMA public TO app_admin;
             GRANT USAGE ON SCHEMA public TO app_user;
           SQL
