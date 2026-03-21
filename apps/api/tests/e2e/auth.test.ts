@@ -6,9 +6,14 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { db }    from '../../src/db/index.js';
-import { users } from '../../src/db/schema.js';
-import { eq }    from 'drizzle-orm';
+import { adminDb } from '../../src/db/index.js';
+import { users }   from '../../src/db/schema.js';
+import { eq }      from 'drizzle-orm';
+
+// adminDb bypasses RLS — required for cleanup because the app_user pool
+// has its session GUC app.user_id reset to '' after any withUserContext
+// transaction ends, causing silent zero-row deletes on subsequent queries.
+if (!adminDb) throw new Error('adminDb is required — set DATABASE_ADMIN_URL');
 
 const { sendVerificationEmail } = await import('../../src/lib/mailer.js');
 
@@ -31,7 +36,7 @@ async function post(path: string, body: unknown, cookies = '') {
 }
 
 async function cleanupUser(email: string) {
-  await db.delete(users).where(eq(users.email, email));
+  await adminDb!.delete(users).where(eq(users.email, email));
 }
 
 async function registerAndVerify(email: string, password: string) {
@@ -226,6 +231,10 @@ describe('POST /logout', () => {
         'authorization': `Bearer ${accessToken}`,
         'cookie':        refreshCookie,
       },
+      // Logout takes no body, but content-type is set so we must send
+      // valid JSON — our custom parser calls JSON.parse() on the raw body
+      // and an empty string throws SyntaxError → 500.
+      payload: '{}',
     });
 
     expect(res.statusCode).toBe(200);
