@@ -87,6 +87,7 @@ jobs:
           JWT_EXPIRES_IN:    "900"
           REFRESH_TOKEN_TTL_DAYS: "30"
         run: npx vitest run --project unit
+        working-directory: apps/api
 
       - name: Run integration tests
         env:
