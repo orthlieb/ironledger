@@ -16,7 +16,6 @@
 	import diceD6Svg   from '$icons/dice-d6-light.svg?raw';
 	import { draggable } from '$lib/actions/draggable.js';
 	import diceD10Svg  from '$icons/dice-d10-light.svg?raw';
-	import diceD100Svg from '$icons/dice-d100-solid.svg?raw';
 
 	// ---------------------------------------------------------------------------
 	// Props
