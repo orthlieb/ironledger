@@ -19,11 +19,27 @@
 		<h2>Email verification</h2>
 
 		{#if data.error}
+			<div class="hero-image-wrap">
+				<img
+					class="hero-image"
+					src="/viking-burned-scroll.png"
+					alt="A Norse warrior holds the charred remains of a scroll with resigned disappointment"
+				/>
+				<p class="hero-caption">The link has perished.</p>
+			</div>
 			<div class="error-msg">{data.error}</div>
 			<p class="auth-link">
 				<a href="/register">Register again</a> or <a href="/login">sign in</a>
 			</p>
 		{:else}
+			<div class="hero-image-wrap">
+				<img
+					class="hero-image"
+					src="/viking-oath-sworn.png"
+					alt="A Norse warrior pumps his fist in triumphant relief"
+				/>
+				<p class="hero-caption">The oath is sworn.</p>
+			</div>
 			<p class="auth-info">Verifying your account…</p>
 		{/if}
 	</div>
@@ -62,6 +78,27 @@
 		width: 18px;
 		height: 18px;
 		fill: var(--color-mana, #f59e0b);
+	}
+
+	.hero-image-wrap {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		margin: 1.25rem 0 0.75rem;
+	}
+
+	.hero-image {
+		width: 280px;
+		height: auto;
+	}
+
+	.hero-caption {
+		font-family: var(--font-display, 'Cinzel', Georgia, serif);
+		font-size: 0.875rem;
+		color: var(--text-muted);
+		font-style: italic;
+		margin: 0.5rem 0 0;
+		text-align: center;
 	}
 
 	.auth-info {
