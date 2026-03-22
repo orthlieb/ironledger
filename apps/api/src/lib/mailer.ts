@@ -159,8 +159,8 @@ export async function sendVerificationEmail(
               <img
                 src="${config.APP_URL}/viking-pointing.png"
                 alt="A Norse warrior points directly at you, demanding you claim your destiny"
-                width="160"
-                style="display:block;margin:0 auto;max-width:160px;height:auto;"
+                width="280"
+                style="display:block;margin:0 auto;max-width:280px;height:auto;"
               >
               <p style="margin:8px 0 0;
                         font-family:'Cinzel',Georgia,'Times New Roman',serif;
@@ -246,8 +246,8 @@ export async function sendPasswordResetEmail(
               <img
                 src="${config.APP_URL}/viking-seer.png"
                 alt="A Norse warrior kneels before an oracle, seeking wisdom he should already have"
-                width="160"
-                style="display:block;margin:0 auto;max-width:160px;height:auto;"
+                width="280"
+                style="display:block;margin:0 auto;max-width:280px;height:auto;"
               >
               <p style="margin:8px 0 0;
                         font-family:'Cinzel',Georgia,'Times New Roman',serif;

@@ -79,9 +79,9 @@
 	}
 
 	.hero-image {
-		width: 180px;
-		height: 180px;
-		object-fit: contain;
+		width: 280px;
+		height: auto;
+		object-fit: unset;
 	}
 
 	.hero-caption {
