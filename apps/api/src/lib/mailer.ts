@@ -176,13 +176,13 @@ export async function sendVerificationEmail(
                          font-family:'Cinzel',Georgia,'Times New Roman',serif;
                          font-size:1.05rem;font-weight:600;
                          color:#1e293b;letter-spacing:0.05em;">
-                Welcome to Iron Ledger
+                Your saga awaits.
               </h2>
 
               <p style="margin:0 0 24px;
                         font-family:'Roboto',Arial,Helvetica,sans-serif;
                         font-size:0.9rem;color:#334155;line-height:1.65;">
-                A verification link is on its way. Click it to forge your account and begin your chronicle.
+                The scribes are ready. One click stands between you and the Ironlands.
               </p>
 
               <p style="margin:0 0 24px;text-align:center;">
@@ -191,7 +191,7 @@ export async function sendVerificationEmail(
                           padding:13px 28px;border-radius:5px;text-decoration:none;
                           font-family:'Roboto',Arial,Helvetica,sans-serif;
                           font-size:0.88rem;font-weight:500;letter-spacing:0.04em;">
-                  Verify Email Address
+                  Claim Your Destiny
                 </a>
               </p>
 
