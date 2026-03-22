@@ -103,7 +103,7 @@ function emailWrap(bodyHtml: string): string {
               <span style="font-family:'Cinzel',Georgia,'Times New Roman',serif;
                            font-size:1.2rem;font-weight:600;
                            color:#f59e0b;letter-spacing:0.1em;">
-                &#9876; Iron Ledger
+                &#x1FA93; Iron Ledger
               </span>
             </td>
           </tr>
