@@ -220,7 +220,10 @@
 					<span class="qdie">2d10+d6</span>
 				</button>
 				<button class="quick-btn" onclick={quickRollD100}              disabled={rolling} title="Roll d100">
-					<span class="qicon">{@html diceD100Svg}</span>
+					<span class="qicon qicon-d100">
+						<span class="d100-dark">{@html diceD10Svg}</span>
+						<span class="d100-light">{@html diceD10Svg}</span>
+					</span>
 					<span class="qdie">d100</span>
 				</button>
 			</div>
@@ -249,39 +252,35 @@
 				{/each}
 			</div>
 
-			<!-- Adds + momentum -->
-			<div class="adds-row">
-				<span class="adds-label">Adds</span>
-				<button
-					class="adj"
-					onclick={() => (adds = Math.max(-5, adds - 1))}
-					disabled={rolling || !ctx || adds <= -5}
-					aria-label="Decrease adds"
-				>−</button>
-				<span
-					class="adds-val"
-					class:positive={adds > 0}
-					class:negative={adds < 0}
-				>{adds >= 0 ? '+' : ''}{adds}</span>
-				<button
-					class="adj"
-					onclick={() => (adds = Math.min(5, adds + 1))}
-					disabled={rolling || !ctx || adds >= 5}
-					aria-label="Increase adds"
-				>+</button>
+			<!-- Adds + Roll (side by side) -->
+			<div class="adds-roll-row">
+				<div class="adds-row">
+					<span class="adds-label">Adds</span>
+					<button
+						class="adj"
+						onclick={() => (adds = Math.max(-5, adds - 1))}
+						disabled={rolling || !ctx || adds <= -5}
+						aria-label="Decrease adds"
+					>−</button>
+					<span
+						class="adds-val"
+						class:positive={adds > 0}
+						class:negative={adds < 0}
+					>{adds >= 0 ? '+' : ''}{adds}</span>
+					<button
+						class="adj"
+						onclick={() => (adds = Math.min(5, adds + 1))}
+						disabled={rolling || !ctx || adds >= 5}
+						aria-label="Increase adds"
+					>+</button>
+				</div>
 
-				<span
-					class="momentum-chip"
-					class:momentum-neg={(ctx?.data.momentum ?? 0) < 0}
-					title="Current momentum (affects momentum cancellation)"
-				>↯ {(ctx?.data.momentum ?? 0) >= 0 ? '+' : ''}{ctx?.data.momentum ?? 0}</span>
+				<button
+					class="btn btn-primary roll-btn"
+					onclick={actionRoll}
+					disabled={rolling || !ctx}
+				>{rolling ? 'Rolling…' : 'Roll Action'}</button>
 			</div>
-
-			<button
-				class="btn btn-primary roll-btn"
-				onclick={actionRoll}
-				disabled={rolling || !ctx}
-			>{rolling ? 'Rolling…' : 'Roll Action'}</button>
 		</section>
 
 	</div>
@@ -509,23 +508,19 @@
 	.adds-val.positive { color: var(--color-success); }
 	.adds-val.negative { color: var(--color-danger); }
 
-	.momentum-chip {
-		margin-left:  auto;
-		font-family:  var(--font-ui);
-		font-size:    0.72rem;
-		font-weight:  600;
-		color:        var(--color-momentum);
-		padding:      2px 6px;
-		border-radius: 3px;
-		border:       1px solid color-mix(in srgb, var(--color-momentum) 30%, transparent);
-		background:   color-mix(in srgb, var(--color-momentum) 8%, transparent);
-	}
-	.momentum-chip.momentum-neg {
-		color:      var(--color-danger);
-		border-color: color-mix(in srgb, var(--color-danger) 30%, transparent);
-		background:  color-mix(in srgb, var(--color-danger) 8%, transparent);
-	}
+	/* d100 = two coloured d10s */
+	.qicon-d100 { gap: 3px; }
+	.qicon-d100 :global(svg) { width: 17px; height: 17px; }
+	.d100-dark  :global(svg) { fill: #7b4f2e; }
+	.d100-light :global(svg) { fill: #c4895e; }
+	.quick-btn:hover:not(:disabled) .d100-dark  :global(svg) { fill: #9e6640; }
+	.quick-btn:hover:not(:disabled) .d100-light :global(svg) { fill: #dba878; }
 
-	/* Roll button */
-	.roll-btn { width: 100%; padding: 8px; font-size: 0.8rem; }
+	/* Adds + roll side by side */
+	.adds-roll-row {
+		display:     flex;
+		align-items: center;
+		gap:         8px;
+	}
+	.roll-btn { flex: 1; padding: 8px; font-size: 0.8rem; white-space: nowrap; }
 </style>
