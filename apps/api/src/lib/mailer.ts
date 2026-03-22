@@ -157,15 +157,15 @@ export async function sendVerificationEmail(
           <tr>
             <td style="background:#ffffff;padding:28px 32px 0;text-align:center;">
               <img
-                src="${config.APP_URL}/viking-scanning.png"
-                alt="A Norse warrior scans the horizon, awaiting your arrival"
+                src="${config.APP_URL}/viking-pointing.png"
+                alt="A Norse warrior points directly at you, demanding you claim your destiny"
                 width="160"
                 style="display:block;margin:0 auto;max-width:160px;height:auto;"
               >
               <p style="margin:8px 0 0;
                         font-family:'Cinzel',Georgia,'Times New Roman',serif;
                         font-size:0.78rem;color:#94a3b8;font-style:italic;">
-                The raven has been dispatched.
+                The Ironlands await. You specifically.
               </p>
             </td>
           </tr>
@@ -263,14 +263,13 @@ export async function sendPasswordResetEmail(
                          font-family:'Cinzel',Georgia,'Times New Roman',serif;
                          font-size:1.05rem;font-weight:600;
                          color:#1e293b;letter-spacing:0.05em;">
-                Reset your password
+                Even legends forget.
               </h2>
 
               <p style="margin:0 0 24px;
                         font-family:'Roboto',Arial,Helvetica,sans-serif;
                         font-size:0.9rem;color:#334155;line-height:1.65;">
-                We received a request to reset the password for your Iron&nbsp;Ledger account.
-                Click below to choose a new one.
+                The seer has been consulted. Click below to forge a new battle-word for your Iron&nbsp;Ledger account.
               </p>
 
               <p style="margin:0 0 24px;text-align:center;">
@@ -279,7 +278,7 @@ export async function sendPasswordResetEmail(
                           padding:13px 28px;border-radius:5px;text-decoration:none;
                           font-family:'Roboto',Arial,Helvetica,sans-serif;
                           font-size:0.88rem;font-weight:500;letter-spacing:0.04em;">
-                  Reset Password
+                  Forge a New Oath
                 </a>
               </p>
 

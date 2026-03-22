@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { PageData } from './$types';
-	import swordSvg from '$icons/sword.svg?raw';
+	import swordSvg from '$icons/sharp-axe.svg?raw';
 
 	let { data }: { data: PageData } = $props();
 </script>

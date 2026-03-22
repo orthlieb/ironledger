@@ -1,5 +1,5 @@
 <script lang="ts">
-	import swordSvg from '$icons/sword.svg?raw';
+	import swordSvg from '$icons/sharp-axe.svg?raw';
 </script>
 
 <svelte:head>

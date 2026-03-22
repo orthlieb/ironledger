@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { ActionData } from './$types';
-	import swordSvg from '$icons/sword.svg?raw';
+	import swordSvg from '$icons/sharp-axe.svg?raw';
 
 	let { form }: { form: ActionData } = $props();
 </script>
