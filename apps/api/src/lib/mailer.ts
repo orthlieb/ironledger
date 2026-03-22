@@ -71,6 +71,65 @@ async function sendViaSmtp(opts: MailOptions): Promise<void> {
 // Email templates
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Shared email chrome — header + wrapper used by every outgoing email.
+// Table-based layout for broad email client compatibility.
+// Google Fonts @import works in Apple Mail / iOS Mail / Outlook Mac;
+// degrades to Georgia / Arial on clients that strip <style> tags (Gmail web).
+// ---------------------------------------------------------------------------
+
+function emailWrap(bodyHtml: string): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600&family=Roboto:wght@400;500&family=Roboto+Mono&display=swap');
+  </style>
+</head>
+<body style="margin:0;padding:0;background:#f1f5f9;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+
+        <table width="100%" cellpadding="0" cellspacing="0"
+               style="max-width:520px;border-radius:8px;overflow:hidden;
+                      box-shadow:0 4px 24px rgba(0,0,0,0.12);">
+
+          <!-- Brand header -->
+          <tr>
+            <td style="background:#0f172a;padding:22px 32px;text-align:center;">
+              <span style="font-family:'Cinzel',Georgia,'Times New Roman',serif;
+                           font-size:1.2rem;font-weight:600;
+                           color:#f59e0b;letter-spacing:0.1em;">
+                &#9876; Iron Ledger
+              </span>
+            </td>
+          </tr>
+
+          <!-- Email body (injected per-email) -->
+          ${bodyHtml}
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#f8fafc;border-top:1px solid #e2e8f0;
+                       padding:16px 32px;">
+              <p style="margin:0;font-family:'Roboto',Arial,Helvetica,sans-serif;
+                        font-size:0.72rem;color:#94a3b8;line-height:1.5;">
+                Iron Ledger &mdash; sent to you because an account was requested with this address.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
 /**
  * Sends the email verification link after registration.
  * The token in the link is the raw (unhashed) value from generateAuthToken().
@@ -84,28 +143,62 @@ export async function sendVerificationEmail(
   await send({
     to,
     subject: 'Verify your Iron Ledger account',
-    text: `Welcome to Iron Ledger!\n\nVerify your email address by visiting:\n${link}\n\nThis link expires in 1 hour.\n\nIf you didn't create an account, you can safely ignore this email.`,
-    html: `
-      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-        <h2 style="color: #1e293b;">Welcome to Iron Ledger</h2>
-        <p>Verify your email address to activate your account.</p>
-        <p style="margin: 2rem 0;">
-          <a href="${link}"
-             style="background: #6366f1; color: white; padding: 12px 24px;
-                    border-radius: 6px; text-decoration: none; font-weight: bold;">
-            Verify Email Address
-          </a>
-        </p>
-        <p style="color: #64748b; font-size: 0.875rem;">
-          This link expires in 1 hour. If you didn't create an account,
-          you can safely ignore this email.
-        </p>
-        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 2rem 0;">
-        <p style="color: #94a3b8; font-size: 0.75rem;">
-          Or copy this link: <code>${link}</code>
-        </p>
-      </div>
-    `,
+    text: [
+      'Welcome to Iron Ledger!',
+      '',
+      'Verify your email address by visiting:',
+      link,
+      '',
+      'This link expires in 1 hour.',
+      '',
+      "If you didn't create an account, you can safely ignore this email.",
+    ].join('\n'),
+    html: emailWrap(`
+          <tr>
+            <td style="background:#ffffff;padding:32px 32px 28px;">
+
+              <h2 style="margin:0 0 14px;
+                         font-family:'Cinzel',Georgia,'Times New Roman',serif;
+                         font-size:1.05rem;font-weight:600;
+                         color:#1e293b;letter-spacing:0.05em;">
+                Welcome to Iron Ledger
+              </h2>
+
+              <p style="margin:0 0 24px;
+                        font-family:'Roboto',Arial,Helvetica,sans-serif;
+                        font-size:0.9rem;color:#334155;line-height:1.65;">
+                Verify your email address to activate your account and begin your adventure.
+              </p>
+
+              <p style="margin:0 0 24px;text-align:center;">
+                <a href="${link}"
+                   style="display:inline-block;background:#b45309;color:#ffffff;
+                          padding:13px 28px;border-radius:5px;text-decoration:none;
+                          font-family:'Roboto',Arial,Helvetica,sans-serif;
+                          font-size:0.88rem;font-weight:500;letter-spacing:0.04em;">
+                  Verify Email Address
+                </a>
+              </p>
+
+              <p style="margin:0 0 20px;
+                        font-family:'Roboto',Arial,Helvetica,sans-serif;
+                        font-size:0.82rem;color:#64748b;line-height:1.6;">
+                This link expires in&nbsp;1&nbsp;hour. If you didn&rsquo;t create an account,
+                you can safely ignore this email.
+              </p>
+
+              <hr style="border:none;border-top:1px solid #e2e8f0;margin:0 0 16px;">
+
+              <p style="margin:0;
+                        font-family:'Roboto',Arial,Helvetica,sans-serif;
+                        font-size:0.75rem;color:#94a3b8;line-height:1.5;">
+                Or copy this link:<br>
+                <span style="font-family:'Roboto Mono','Courier New',monospace;
+                             word-break:break-all;color:#64748b;">${link}</span>
+              </p>
+
+            </td>
+          </tr>`),
   });
 }
 
@@ -122,28 +215,63 @@ export async function sendPasswordResetEmail(
   await send({
     to,
     subject: 'Reset your Iron Ledger password',
-    text: `You requested a password reset.\n\nReset your password:\n${link}\n\nThis link expires in 1 hour.\n\nIf you didn't request a reset, you can safely ignore this email. Your password has not changed.`,
-    html: `
-      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-        <h2 style="color: #1e293b;">Reset your password</h2>
-        <p>We received a request to reset the password for your Iron Ledger account.</p>
-        <p style="margin: 2rem 0;">
-          <a href="${link}"
-             style="background: #6366f1; color: white; padding: 12px 24px;
-                    border-radius: 6px; text-decoration: none; font-weight: bold;">
-            Reset Password
-          </a>
-        </p>
-        <p style="color: #64748b; font-size: 0.875rem;">
-          This link expires in 1 hour. If you didn't request a password reset,
-          you can safely ignore this email — your password has not changed.
-        </p>
-        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 2rem 0;">
-        <p style="color: #94a3b8; font-size: 0.75rem;">
-          Or copy this link: <code>${link}</code>
-        </p>
-      </div>
-    `,
+    text: [
+      'You requested a password reset.',
+      '',
+      'Reset your password by visiting:',
+      link,
+      '',
+      'This link expires in 1 hour.',
+      '',
+      "If you didn't request a reset, you can safely ignore this email. Your password has not changed.",
+    ].join('\n'),
+    html: emailWrap(`
+          <tr>
+            <td style="background:#ffffff;padding:32px 32px 28px;">
+
+              <h2 style="margin:0 0 14px;
+                         font-family:'Cinzel',Georgia,'Times New Roman',serif;
+                         font-size:1.05rem;font-weight:600;
+                         color:#1e293b;letter-spacing:0.05em;">
+                Reset your password
+              </h2>
+
+              <p style="margin:0 0 24px;
+                        font-family:'Roboto',Arial,Helvetica,sans-serif;
+                        font-size:0.9rem;color:#334155;line-height:1.65;">
+                We received a request to reset the password for your Iron&nbsp;Ledger account.
+                Click below to choose a new one.
+              </p>
+
+              <p style="margin:0 0 24px;text-align:center;">
+                <a href="${link}"
+                   style="display:inline-block;background:#b45309;color:#ffffff;
+                          padding:13px 28px;border-radius:5px;text-decoration:none;
+                          font-family:'Roboto',Arial,Helvetica,sans-serif;
+                          font-size:0.88rem;font-weight:500;letter-spacing:0.04em;">
+                  Reset Password
+                </a>
+              </p>
+
+              <p style="margin:0 0 20px;
+                        font-family:'Roboto',Arial,Helvetica,sans-serif;
+                        font-size:0.82rem;color:#64748b;line-height:1.6;">
+                This link expires in&nbsp;1&nbsp;hour. If you didn&rsquo;t request a password reset,
+                you can safely ignore this email &mdash; your password has not changed.
+              </p>
+
+              <hr style="border:none;border-top:1px solid #e2e8f0;margin:0 0 16px;">
+
+              <p style="margin:0;
+                        font-family:'Roboto',Arial,Helvetica,sans-serif;
+                        font-size:0.75rem;color:#94a3b8;line-height:1.5;">
+                Or copy this link:<br>
+                <span style="font-family:'Roboto Mono','Courier New',monospace;
+                             word-break:break-all;color:#64748b;">${link}</span>
+              </p>
+
+            </td>
+          </tr>`),
   });
 }
 
