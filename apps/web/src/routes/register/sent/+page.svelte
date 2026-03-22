@@ -15,13 +15,22 @@
 		</div>
 		<h2>Check your email</h2>
 
+		<div class="hero-image-wrap">
+			<img
+				class="hero-image"
+				src="/viking-scanning.png"
+				alt="A Norse warrior scans the horizon, waiting for your verification to arrive"
+			/>
+			<p class="hero-caption">The raven has been dispatched.</p>
+		</div>
+
 		<p class="auth-info">
-			We've sent a verification link to your address. Click it to activate your account
-			and sign in.
+			A verification link is on its way to your address. Click it to forge your account
+			and begin your chronicle.
 		</p>
 
 		<p class="auth-info muted">
-			Didn't receive it? Check your spam folder, or
+			Didn't receive it? Check your spam — even the swiftest ravens go astray. Or
 			<a href="/register">try again</a> with a different address.
 		</p>
 	</div>
@@ -60,6 +69,28 @@
 		width: 18px;
 		height: 18px;
 		fill: var(--color-mana, #f59e0b);
+	}
+
+	.hero-image-wrap {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		margin: 1.25rem 0 0.75rem;
+	}
+
+	.hero-image {
+		width: 180px;
+		height: 180px;
+		object-fit: contain;
+	}
+
+	.hero-caption {
+		font-family: var(--font-display, 'Cinzel', Georgia, serif);
+		font-size: 0.875rem;
+		color: var(--text-muted);
+		font-style: italic;
+		margin: 0.5rem 0 0;
+		text-align: center;
 	}
 
 	.auth-info {

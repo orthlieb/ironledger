@@ -19,10 +19,20 @@
 		<h2>Reset your password</h2>
 
 		{#if form?.sent}
-			<div class="success-msg">
-				If an account exists for <strong>{form.email}</strong>, a reset link is on its way.
-				Check your inbox — and your spam folder.
+			<div class="hero-image-wrap">
+				<img
+					class="hero-image"
+					src="/viking-seer.png"
+					alt="A Norse warrior kneels before an oracle, seeking wisdom he should already have"
+				/>
+				<p class="hero-caption">Even legends seek counsel.</p>
 			</div>
+
+			<div class="success-msg">
+				A password reset link has been sent to <strong>{form.email}</strong>.
+				It expires in one hour.
+			</div>
+			<p class="auth-info muted">No sign of it? The seer suggests checking your spam folder.</p>
 			<p class="auth-link"><a href="/login">← Back to sign in</a></p>
 		{:else}
 			{#if form?.error}
@@ -88,6 +98,39 @@
 		width: 18px;
 		height: 18px;
 		fill: var(--color-mana, #f59e0b);
+	}
+
+	.hero-image-wrap {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		margin: 1.25rem 0 0.75rem;
+	}
+
+	.hero-image {
+		width: 180px;
+		height: 180px;
+		object-fit: contain;
+	}
+
+	.hero-caption {
+		font-family: var(--font-display, 'Cinzel', Georgia, serif);
+		font-size: 0.875rem;
+		color: var(--text-muted);
+		font-style: italic;
+		margin: 0.5rem 0 0;
+		text-align: center;
+	}
+
+	.auth-info {
+		font-family: var(--font-ui);
+		margin-top: 0.75rem;
+		line-height: 1.6;
+		color: var(--text);
+	}
+	.auth-info.muted {
+		color: var(--text-muted);
+		font-size: 0.875rem;
 	}
 
 	.instruction {

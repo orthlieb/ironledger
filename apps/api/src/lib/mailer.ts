@@ -155,7 +155,22 @@ export async function sendVerificationEmail(
     ].join('\n'),
     html: emailWrap(`
           <tr>
-            <td style="background:#ffffff;padding:32px 32px 28px;">
+            <td style="background:#ffffff;padding:28px 32px 0;text-align:center;">
+              <img
+                src="${config.APP_URL}/viking-scanning.png"
+                alt="A Norse warrior scans the horizon, awaiting your arrival"
+                width="160"
+                style="display:block;margin:0 auto;max-width:160px;height:auto;"
+              >
+              <p style="margin:8px 0 0;
+                        font-family:'Cinzel',Georgia,'Times New Roman',serif;
+                        font-size:0.78rem;color:#94a3b8;font-style:italic;">
+                The raven has been dispatched.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#ffffff;padding:24px 32px 28px;">
 
               <h2 style="margin:0 0 14px;
                          font-family:'Cinzel',Georgia,'Times New Roman',serif;
@@ -167,7 +182,7 @@ export async function sendVerificationEmail(
               <p style="margin:0 0 24px;
                         font-family:'Roboto',Arial,Helvetica,sans-serif;
                         font-size:0.9rem;color:#334155;line-height:1.65;">
-                Verify your email address to activate your account and begin your adventure.
+                A verification link is on its way. Click it to forge your account and begin your chronicle.
               </p>
 
               <p style="margin:0 0 24px;text-align:center;">
@@ -227,7 +242,22 @@ export async function sendPasswordResetEmail(
     ].join('\n'),
     html: emailWrap(`
           <tr>
-            <td style="background:#ffffff;padding:32px 32px 28px;">
+            <td style="background:#ffffff;padding:28px 32px 0;text-align:center;">
+              <img
+                src="${config.APP_URL}/viking-seer.png"
+                alt="A Norse warrior kneels before an oracle, seeking wisdom he should already have"
+                width="160"
+                style="display:block;margin:0 auto;max-width:160px;height:auto;"
+              >
+              <p style="margin:8px 0 0;
+                        font-family:'Cinzel',Georgia,'Times New Roman',serif;
+                        font-size:0.78rem;color:#94a3b8;font-style:italic;">
+                Even legends seek counsel.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#ffffff;padding:24px 32px 28px;">
 
               <h2 style="margin:0 0 14px;
                          font-family:'Cinzel',Georgia,'Times New Roman',serif;
