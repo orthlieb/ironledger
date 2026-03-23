@@ -90,10 +90,11 @@ export const characters = pgTable('characters', {
 // Upserted on every write; the row is created automatically on first access.
 // ---------------------------------------------------------------------------
 export const userData = pgTable('user_data', {
-  userId:      uuid('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
-  encounters:  jsonb('encounters').notNull().default([]),
-  expeditions: jsonb('expeditions').notNull().default([]),
-  updatedAt:   timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  userId:       uuid('user_id').primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+  encounters:   jsonb('encounters').notNull().default([]),
+  expeditions:  jsonb('expeditions').notNull().default([]),
+  sessionState: jsonb('session_state').notNull().default({}),
+  updatedAt:    timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
 export type UserData    = typeof userData.$inferSelect;

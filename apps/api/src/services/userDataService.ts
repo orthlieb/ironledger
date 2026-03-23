@@ -1,8 +1,8 @@
 /**
  * User-data service — get/upsert the global (non-character) game state.
  *
- * Stores encounters and expeditions as JSONB in a single row per user.
- * The row is created on first write (upsert pattern).
+ * Stores encounters, expeditions, and session state as JSONB in a single row
+ * per user. The row is created on first write (upsert pattern).
  */
 
 import { withUserContext } from '../db/index.js';
@@ -13,10 +13,22 @@ import { sql } from 'drizzle-orm';
 // Types
 // ---------------------------------------------------------------------------
 
-export interface UserDataPayload {
-  encounters:  unknown[];
-  expeditions: unknown[];
+export interface SessionState {
+  charId:        string;
+  foeId:         string;
+  expeditionId:  string;
+  initiativeMap: Record<string, number>;
 }
+
+export interface UserDataPayload {
+  encounters:   unknown[];
+  expeditions:  unknown[];
+  sessionState: SessionState;
+}
+
+const DEFAULT_SESSION_STATE: SessionState = {
+  charId: '', foeId: '', expeditionId: '', initiativeMap: {},
+};
 
 // ---------------------------------------------------------------------------
 // get — return the user's global data (or defaults if row doesn't exist)
@@ -28,12 +40,13 @@ export async function get(userId: string): Promise<UserDataPayload> {
   });
 
   if (rows.length === 0) {
-    return { encounters: [], expeditions: [] };
+    return { encounters: [], expeditions: [], sessionState: DEFAULT_SESSION_STATE };
   }
 
   return {
-    encounters:  (rows[0]!.encounters  as unknown[]) ?? [],
-    expeditions: (rows[0]!.expeditions as unknown[]) ?? [],
+    encounters:   (rows[0]!.encounters  as unknown[]) ?? [],
+    expeditions:  (rows[0]!.expeditions as unknown[]) ?? [],
+    sessionState: (rows[0]!.sessionState as SessionState) ?? DEFAULT_SESSION_STATE,
   };
 }
 
@@ -47,23 +60,28 @@ export async function upsert(
 ): Promise<UserDataPayload> {
   await withUserContext(userId, async (tx) => {
     await tx.execute(sql`
-      INSERT INTO user_data (user_id, encounters, expeditions, updated_at)
+      INSERT INTO user_data (user_id, encounters, expeditions, session_state, updated_at)
       VALUES (
         ${userId}::uuid,
-        ${JSON.stringify(patch.encounters  ?? [])}::jsonb,
-        ${JSON.stringify(patch.expeditions ?? [])}::jsonb,
+        ${JSON.stringify(patch.encounters   ?? [])}::jsonb,
+        ${JSON.stringify(patch.expeditions  ?? [])}::jsonb,
+        ${JSON.stringify(patch.sessionState ?? {})}::jsonb,
         now()
       )
       ON CONFLICT (user_id) DO UPDATE SET
-        encounters  = COALESCE(
+        encounters    = COALESCE(
           CASE WHEN ${patch.encounters  !== undefined} THEN ${JSON.stringify(patch.encounters  ?? [])}::jsonb END,
           user_data.encounters
         ),
-        expeditions = COALESCE(
+        expeditions   = COALESCE(
           CASE WHEN ${patch.expeditions !== undefined} THEN ${JSON.stringify(patch.expeditions ?? [])}::jsonb END,
           user_data.expeditions
         ),
-        updated_at  = now()
+        session_state = COALESCE(
+          CASE WHEN ${patch.sessionState !== undefined} THEN ${JSON.stringify(patch.sessionState ?? {})}::jsonb END,
+          user_data.session_state
+        ),
+        updated_at    = now()
     `);
   });
 

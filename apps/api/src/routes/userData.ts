@@ -26,6 +26,15 @@ const patchExpeditionsBody = z.object({
   expeditions: z.array(z.record(z.unknown())),
 });
 
+const patchSessionStateBody = z.object({
+  sessionState: z.object({
+    charId:        z.string(),
+    foeId:         z.string(),
+    expeditionId:  z.string(),
+    initiativeMap: z.record(z.number()),
+  }),
+});
+
 // ---------------------------------------------------------------------------
 // Routes
 // ---------------------------------------------------------------------------
@@ -59,6 +68,17 @@ export async function userDataRoutes(server: FastifyInstance): Promise<void> {
       return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: parsed.error.errors.map((e) => e.message).join(', ') });
     }
     const result = await ud.upsert(req.user!.id, { expeditions: parsed.data.expeditions }).catch(handleError(reply));
+    if (!result || reply.sent) return;
+    return reply.status(200).send(result);
+  });
+
+  // ── PATCH /session/state ──────────────────────────────────────────────────
+  server.patch('/state', async (req: FastifyRequest, reply: FastifyReply) => {
+    const parsed = patchSessionStateBody.safeParse(req.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: parsed.error.errors.map((e) => e.message).join(', ') });
+    }
+    const result = await ud.upsert(req.user!.id, { sessionState: parsed.data.sessionState }).catch(handleError(reply));
     if (!result || reply.sent) return;
     return reply.status(200).send(result);
   });

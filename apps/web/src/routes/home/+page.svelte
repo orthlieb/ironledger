@@ -33,6 +33,7 @@
 	import { getAssets } from '$lib/assetStore.svelte.js';
 	import type { InspectionFactor, RitualInfo } from '$lib/preconditions.js';
 	import type { PreconditionContext } from '$lib/preconditions.js';
+	import { loadSessionState, saveSessionState } from '$lib/sessionStore.svelte.js';
 	import { onMount } from 'svelte';
 	import fileImportSvg    from '$icons/file-import-solid-full.svg?raw';
 			import trashSvg         from '$icons/trash-solid-full.svg?raw';
@@ -113,13 +114,16 @@
 	const initiative = $derived(activeCharId ? (initiativeMap[activeCharId] ?? 0) : 0);
 
 	// ── Session persistence ────────────────────────────────────────────────────
-	const SESSION_STORAGE_KEY = 'ironledger:session';
+	// Debounced write to DB on every selection or initiative change.
+	// saveSessionState() no-ops until loadSessionState() has completed so we
+	// never overwrite the DB with empty values on initial mount.
 	$effect(() => {
-		localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({
+		saveSessionState({
 			charId:       activeCharId,
 			foeId:        activeFoeId,
 			expeditionId: activeExpeditionId,
-		}));
+			initiativeMap,
+		});
 	});
 
 	// Build precondition context from active selections
@@ -192,30 +196,34 @@
 	});
 	// ── Initial load ───────────────────────────────────────────────────────────
 	onMount(async () => {
-		// Load characters, foe catalogue, and global session data in parallel
-		const [charResult] = await Promise.allSettled([
+		// Load characters, foe catalogue, global session data, and saved
+		// selections in parallel — all needed before we can validate IDs.
+		const [charResult,,,,,, sessionResult] = await Promise.allSettled([
 			api.list(),
 			loadFoes(),
 			loadEncounters(),
 			loadExpeditions(),
 			loadDelveData(),
 			loadMoves(),
+			loadSessionState(),
 		]);
 		if (charResult.status === 'fulfilled') {
 			chars = charResult.value;
 		} else {
 			charError = 'Failed to load characters. Is the server running?';
 		}
-		// Restore previous session selections if they still exist
-		try {
-			const saved = JSON.parse(localStorage.getItem(SESSION_STORAGE_KEY) ?? '{}');
+		// Restore saved selections — validate each ID still exists before applying
+		if (sessionResult.status === 'fulfilled') {
+			const saved = sessionResult.value;
 			if (saved.charId && chars.find((c: { id: string }) => c.id === saved.charId))
 				activeCharId = saved.charId;
 			if (saved.foeId && getEncounters().find(e => e.id === saved.foeId))
 				activeFoeId = saved.foeId;
 			if (saved.expeditionId && getExpeditions().find(e => e.id === saved.expeditionId))
 				activeExpeditionId = saved.expeditionId;
-		} catch { /* ignore bad storage data */ }
+			if (saved.initiativeMap && Object.keys(saved.initiativeMap).length > 0)
+				initiativeMap = saved.initiativeMap;
+		}
 		loadingChars = false;
 	});
 
