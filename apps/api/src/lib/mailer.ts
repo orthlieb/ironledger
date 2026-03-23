@@ -100,10 +100,13 @@ function emailWrap(bodyHtml: string): string {
           <!-- Brand header -->
           <tr>
             <td style="background:#0f172a;padding:22px 32px;text-align:center;">
+              <img src="${config.APP_URL}/axe-icon.svg"
+                   width="22" height="22" alt=""
+                   style="display:inline-block;vertical-align:middle;margin-right:8px;">
               <span style="font-family:'Cinzel',Georgia,'Times New Roman',serif;
                            font-size:1.2rem;font-weight:600;
-                           color:#f59e0b;letter-spacing:0.1em;">
-                &#x1FA93; Iron Ledger
+                           color:#f59e0b;letter-spacing:0.1em;vertical-align:middle;">
+                Iron Ledger
               </span>
             </td>
           </tr>
