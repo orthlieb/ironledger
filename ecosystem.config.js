@@ -17,7 +17,7 @@ module.exports = {
       name:         'ironledger-api',
       script:       'apps/api/dist/main.js',
       cwd:          '/home/ironledger/app',
-      env_file:     '/home/ironledger/.env',
+      env_file:     '/home/ironledger/app/.env',
 
       // 2 cluster workers for zero-downtime reloads on a 2-vCPU VPS
       instances:    2,
@@ -48,7 +48,7 @@ module.exports = {
       // adapter-node outputs a Node.js server at apps/web/build/index.js
       script:       'apps/web/build/index.js',
       cwd:          '/home/ironledger/app',
-      env_file:     '/home/ironledger/.env',
+      env_file:     '/home/ironledger/app/.env',
 
       // Single instance is fine — SvelteKit is mostly SSR + proxying
       instances:    1,
