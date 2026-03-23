@@ -117,12 +117,14 @@
 	// Debounced write to DB on every selection or initiative change.
 	// saveSessionState() no-ops until loadSessionState() has completed so we
 	// never overwrite the DB with empty values on initial mount.
+	// Spread initiativeMap so Svelte 5 reads its properties and tracks deep
+	// mutations (e.g. initiativeMap[charId] = 1) — not just reassignments.
 	$effect(() => {
 		saveSessionState({
 			charId:       activeCharId,
 			foeId:        activeFoeId,
 			expeditionId: activeExpeditionId,
-			initiativeMap,
+			initiativeMap: { ...initiativeMap },
 		});
 	});
 
