@@ -333,10 +333,11 @@
 		color: var(--text);
 		box-shadow: 0 16px 48px rgba(0,0,0,0.55);
 		width: min(680px, calc(100vw - 2rem));
-		max-height: min(720px, calc(100dvh - 4rem));
+		height: min(720px, 90dvh);
+		max-height: min(720px, 90dvh);
 		/* Fixed top so height changes don't cause dancing */
 		position: fixed;
-		top: 6vh;
+		top: 6dvh;
 		left: 50%;
 		transform: translateX(-50%);
 		overflow: hidden;
@@ -443,6 +444,7 @@
 	.fd-grid-wrap {
 		flex: 1;
 		overflow-y: auto;
+		min-height: 0;
 		padding: 0.75rem 1rem;
 	}
 

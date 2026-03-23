@@ -1204,11 +1204,12 @@
 		padding:       0;
 		border-radius: 10px;
 		position:      fixed;
-		top:           8vh;
+		top:           8dvh;
 		left:          50%;
 		transform:     translateX(-50%);
 		width:         min(640px, calc(100vw - 2rem));
-		max-height:    min(700px, calc(100dvh - 10vh));
+		height:        min(700px, 88dvh);
+		max-height:    min(700px, 88dvh);
 		background:    var(--bg-card);
 		color:         var(--text);
 		box-shadow:    0 16px 48px #00000070, 0 0 0 1px var(--border-mid);
