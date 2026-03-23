@@ -1,13 +1,13 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { INTERNAL_API_URL } from '$lib/server/config.js';
+import { INTERNAL_API_URL, HCAPTCHA_SITE_KEY } from '$lib/server/config.js';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	// Already logged in? Skip login page.
 	if (locals.user) {
 		throw redirect(302, locals.user.role === 'admin' ? '/admin' : '/home');
 	}
-	return {};
+	return { hcaptchaSiteKey: HCAPTCHA_SITE_KEY };
 };
 
 export const actions: Actions = {

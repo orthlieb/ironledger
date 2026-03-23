@@ -1,10 +1,9 @@
 <script lang="ts">
-	import type { ActionData } from './$types';
+	import type { ActionData, PageData } from './$types';
 	import PasswordInput from '$lib/components/PasswordInput.svelte';
 	import swordSvg from '$icons/sharp-axe.svg?raw';
-	import { PUBLIC_HCAPTCHA_SITE_KEY } from '$env/dynamic/public';
 
-	let { form }: { form: ActionData } = $props();
+	let { form, data }: { form: ActionData; data: PageData } = $props();
 </script>
 
 <svelte:head>
@@ -57,7 +56,7 @@
 			/>
 
 			<div class="captcha-wrap">
-				<div class="h-captcha" data-sitekey="{PUBLIC_HCAPTCHA_SITE_KEY}" data-theme="dark"></div>
+				<div class="h-captcha" data-sitekey="{data.hcaptchaSiteKey}" data-theme="dark"></div>
 			</div>
 
 			<div class="auth-actions">

@@ -1,9 +1,9 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { INTERNAL_API_URL } from '$lib/server/config.js';
+import { INTERNAL_API_URL, HCAPTCHA_SITE_KEY } from '$lib/server/config.js';
 
 export const load: PageServerLoad = async () => {
-	return {};
+	return { hcaptchaSiteKey: HCAPTCHA_SITE_KEY };
 };
 
 export const actions: Actions = {
