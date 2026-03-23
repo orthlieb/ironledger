@@ -100,17 +100,20 @@
 		fill: var(--color-mana, #f59e0b);
 	}
 
+	h2 { margin-bottom: 0.75rem; }
+
 	.hero-image-wrap {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		margin: 1.25rem 0 0.75rem;
+		margin: 0 0 0.75rem;
 	}
 
 	.hero-image {
 		width: 100%;
 		height: auto;
-		object-fit: unset;
+		aspect-ratio: 1.82;
+		border-radius: 4px;
 	}
 
 	.hero-caption {
