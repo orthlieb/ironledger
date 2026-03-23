@@ -2,7 +2,7 @@
 	import type { ActionData } from './$types';
 	import PasswordInput from '$lib/components/PasswordInput.svelte';
 	import swordSvg from '$icons/sharp-axe.svg?raw';
-	import { PUBLIC_HCAPTCHA_SITE_KEY } from '$env/static/public';
+	import { PUBLIC_HCAPTCHA_SITE_KEY } from '$env/dynamic/public';
 
 	let { form }: { form: ActionData } = $props();
 </script>
