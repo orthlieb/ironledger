@@ -9,7 +9,7 @@
 
 <svelte:head>
 	<title>Sign In — Iron Ledger</title>
-	<script src="https://js.hcaptcha.com/1/api.js" async defer><\/script>
+	<script src="https://js.hcaptcha.com/1/api.js" async defer></script>
 </svelte:head>
 
 {#if (form as any)?.maintenance}

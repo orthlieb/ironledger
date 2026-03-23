@@ -8,7 +8,7 @@
 
 <svelte:head>
 	<title>Forgot Password — Iron Ledger</title>
-	<script src="https://js.hcaptcha.com/1/api.js" async defer><\/script>
+	<script src="https://js.hcaptcha.com/1/api.js" async defer></script>
 </svelte:head>
 
 <div class="auth-wrap">
