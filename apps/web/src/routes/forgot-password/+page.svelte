@@ -1,8 +1,13 @@
 <script lang="ts">
 	import type { ActionData, PageData } from './$types';
 	import swordSvg from '$icons/sharp-axe.svg?raw';
+	import { browser } from '$app/environment';
 
 	let { form, data }: { form: ActionData; data: PageData } = $props();
+
+	const captchaTheme = browser
+		? ((localStorage.getItem('theme') as 'dark' | 'light' | null) ?? 'auto')
+		: 'auto';
 </script>
 
 <svelte:head>
@@ -57,7 +62,7 @@
 				</label>
 
 				<div class="captcha-wrap">
-					<div class="h-captcha" data-sitekey="{data.hcaptchaSiteKey}" data-theme="dark"></div>
+					<div class="h-captcha" data-sitekey="{data.hcaptchaSiteKey}" data-theme={captchaTheme}></div>
 				</div>
 
 				<button type="submit" class="btn btn-primary">Send Reset Link</button>

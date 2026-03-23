@@ -2,8 +2,15 @@
 	import type { ActionData, PageData } from './$types';
 	import PasswordInput from '$lib/components/PasswordInput.svelte';
 	import swordSvg from '$icons/sharp-axe.svg?raw';
+	import { browser } from '$app/environment';
 
 	let { form, data }: { form: ActionData; data: PageData } = $props();
+
+	// Match hCaptcha theme to the app's current theme (set by app.html from localStorage).
+	// Must be computed synchronously so the DOM attribute is correct before hCaptcha initialises.
+	const captchaTheme = browser
+		? ((localStorage.getItem('theme') as 'dark' | 'light' | null) ?? 'auto')
+		: 'auto';
 </script>
 
 <svelte:head>
@@ -56,7 +63,7 @@
 			/>
 
 			<div class="captcha-wrap">
-				<div class="h-captcha" data-sitekey="{data.hcaptchaSiteKey}" data-theme="dark"></div>
+				<div class="h-captcha" data-sitekey="{data.hcaptchaSiteKey}" data-theme={captchaTheme}></div>
 			</div>
 
 			<div class="auth-actions">
