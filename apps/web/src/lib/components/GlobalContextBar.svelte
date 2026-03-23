@@ -628,7 +628,13 @@
 		color: var(--text-dimmer);
 	}
 	.gc-tile-foe-harm {
-		color: #f87171;
+		display: inline-block;
+		font-size: 0.72rem;
+		color: #991b1b;
+		padding: 2px 6px;
+		background: rgba(239,68,68,0.07);
+		border: 1px solid rgba(239,68,68,0.2);
+		border-radius: 4px;
 	}
 	.gc-tile-foe-bottom {
 		font-family: var(--font-ui);
