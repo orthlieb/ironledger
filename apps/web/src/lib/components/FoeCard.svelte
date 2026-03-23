@@ -516,9 +516,10 @@
 	}
 
 	.fc-harm-note {
+		display: inline-block;
 		font-family: var(--font-ui);
 		font-size: 0.75rem;
-		color: var(--text-dimmer);
+		color: #991b1b;
 		padding: 4px 8px;
 		background: rgba(239,68,68,0.07);
 		border: 1px solid rgba(239,68,68,0.2);
