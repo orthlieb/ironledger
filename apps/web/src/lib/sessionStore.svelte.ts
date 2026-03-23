@@ -19,10 +19,11 @@ export interface SessionState {
 	foeId:         string;
 	expeditionId:  string;
 	initiativeMap: Record<string, number>;
+	activeTab:     string;
 }
 
 export const DEFAULT_SESSION_STATE: SessionState = {
-	charId: '', foeId: '', expeditionId: '', initiativeMap: {},
+	charId: '', foeId: '', expeditionId: '', initiativeMap: {}, activeTab: '',
 };
 
 // ---------------------------------------------------------------------------

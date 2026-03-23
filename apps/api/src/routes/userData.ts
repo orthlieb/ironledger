@@ -32,6 +32,7 @@ const patchSessionStateBody = z.object({
     foeId:         z.string(),
     expeditionId:  z.string(),
     initiativeMap: z.record(z.number()),
+    activeTab:     z.string().optional(),
   }),
 });
 

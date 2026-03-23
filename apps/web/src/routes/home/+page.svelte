@@ -113,6 +113,10 @@
 	let initiativeMap = $state<Record<string, number>>({});
 	const initiative = $derived(activeCharId ? (initiativeMap[activeCharId] ?? 0) : 0);
 
+	// ── Active tab (declared here so the session-persistence effect can track it)
+	type Tab = 'characters' | 'foes' | 'expeditions' | 'adventure';
+	let activeTab = $state<Tab>('characters');
+
 	// ── Session persistence ────────────────────────────────────────────────────
 	// Debounced write to DB on every selection or initiative change.
 	// saveSessionState() no-ops until loadSessionState() has completed so we
@@ -121,10 +125,11 @@
 	// mutations (e.g. initiativeMap[charId] = 1) — not just reassignments.
 	$effect(() => {
 		saveSessionState({
-			charId:       activeCharId,
-			foeId:        activeFoeId,
-			expeditionId: activeExpeditionId,
+			charId:        activeCharId,
+			foeId:         activeFoeId,
+			expeditionId:  activeExpeditionId,
 			initiativeMap: { ...initiativeMap },
+			activeTab,
 		});
 	});
 
@@ -225,13 +230,12 @@
 				activeExpeditionId = saved.expeditionId;
 			if (saved.initiativeMap && Object.keys(saved.initiativeMap).length > 0)
 				initiativeMap = saved.initiativeMap;
+			const validTabs: Tab[] = ['characters', 'foes', 'expeditions', 'adventure'];
+			if (saved.activeTab && validTabs.includes(saved.activeTab as Tab))
+				activeTab = saved.activeTab as Tab;
 		}
 		loadingChars = false;
 	});
-
-	// ── Tabs ───────────────────────────────────────────────────────────────────
-	type Tab = 'characters' | 'foes' | 'expeditions' | 'adventure';
-	let activeTab = $state<Tab>('characters');
 
 	// ── Tab group click handler (manual delegation for all tabs,
 	//    works around Svelte 5 issue with display:none elements) ──────────────
