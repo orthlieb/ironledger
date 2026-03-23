@@ -10,10 +10,11 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 export const actions: Actions = {
 	default: async ({ request }) => {
-		const form     = await request.formData();
-		const email    = (form.get('email')    as string | null) ?? '';
-		const password = (form.get('password') as string | null) ?? '';
-		const confirm  = (form.get('confirm')  as string | null) ?? '';
+		const form         = await request.formData();
+		const email        = (form.get('email')              as string | null) ?? '';
+		const password     = (form.get('password')           as string | null) ?? '';
+		const confirm      = (form.get('confirm')            as string | null) ?? '';
+		const captchaToken = (form.get('h-captcha-response') as string | null) ?? '';
 
 		if (!email || !password || !confirm) {
 			return fail(400, { error: 'All fields are required.', email });
@@ -27,17 +28,16 @@ export const actions: Actions = {
 			return fail(400, { error: 'Password must be at least 12 characters.', email });
 		}
 
+		if (!captchaToken) {
+			return fail(400, { error: 'Please complete the captcha.', email });
+		}
+
 		let res: Response;
 		try {
 			res = await fetch(`${INTERNAL_API_URL}/api/v1/auth/register`, {
 				method:  'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					email,
-					password,
-					// hCaptcha test token — always passes in dev (secret starts with 0x0000…)
-					captchaToken: '10000000-aaaa-bbbb-cccc-000000000001',
-				}),
+				body: JSON.stringify({ email, password, captchaToken }),
 			});
 		} catch {
 			return fail(503, { error: 'Could not reach the API server. Please try again.', email });

@@ -13,11 +13,16 @@ export const load: PageServerLoad = async ({ locals }) => {
 export const actions: Actions = {
 	default: async ({ request, cookies }) => {
 		const form = await request.formData();
-		const email    = (form.get('email')    as string | null) ?? '';
-		const password = (form.get('password') as string | null) ?? '';
+		const email        = (form.get('email')              as string | null) ?? '';
+		const password     = (form.get('password')            as string | null) ?? '';
+		const captchaToken = (form.get('h-captcha-response') as string | null) ?? '';
 
 		if (!email || !password) {
 			return fail(400, { error: 'Email and password are required.', email });
+		}
+
+		if (!captchaToken) {
+			return fail(400, { error: 'Please complete the captcha.', email });
 		}
 
 		let res: Response;
@@ -25,13 +30,7 @@ export const actions: Actions = {
 			res = await fetch(`${INTERNAL_API_URL}/api/v1/auth/login`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					email,
-					password,
-					// Use the hCaptcha test token in all non-production envs.
-					// Replace with a real frontend widget token in production.
-					captchaToken: '10000000-aaaa-bbbb-cccc-000000000001',
-				}),
+				body: JSON.stringify({ email, password, captchaToken }),
 			});
 		} catch {
 			return fail(503, { error: 'Could not reach the API server.', email });

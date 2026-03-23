@@ -1,12 +1,14 @@
 <script lang="ts">
 	import type { ActionData } from './$types';
 	import swordSvg from '$icons/sharp-axe.svg?raw';
+	import { PUBLIC_HCAPTCHA_SITE_KEY } from '$env/static/public';
 
 	let { form }: { form: ActionData } = $props();
 </script>
 
 <svelte:head>
 	<title>Forgot Password — Iron Ledger</title>
+	<script src="https://js.hcaptcha.com/1/api.js" async defer><\/script>
 </svelte:head>
 
 <div class="auth-wrap">
@@ -54,6 +56,10 @@
 						value={form?.email ?? ''}
 					/>
 				</label>
+
+				<div class="captcha-wrap">
+					<div class="h-captcha" data-sitekey="{PUBLIC_HCAPTCHA_SITE_KEY}" data-theme="dark"></div>
+				</div>
 
 				<button type="submit" class="btn btn-primary">Send Reset Link</button>
 			</form>
@@ -154,5 +160,10 @@
 		border-radius: 5px;
 		padding: 10px 14px;
 		margin-bottom: 0.75rem;
+	}
+	.captcha-wrap {
+		display: flex;
+		justify-content: center;
+		margin: 0.25rem 0;
 	}
 </style>

@@ -8,22 +8,23 @@ export const load: PageServerLoad = async () => {
 
 export const actions: Actions = {
 	default: async ({ request }) => {
-		const form  = await request.formData();
-		const email = (form.get('email') as string | null) ?? '';
+		const form         = await request.formData();
+		const email        = (form.get('email')              as string | null) ?? '';
+		const captchaToken = (form.get('h-captcha-response') as string | null) ?? '';
 
 		if (!email) {
 			return fail(400, { error: 'Email is required.', email, sent: false });
+		}
+
+		if (!captchaToken) {
+			return fail(400, { error: 'Please complete the captcha.', email, sent: false });
 		}
 
 		try {
 			await fetch(`${INTERNAL_API_URL}/api/v1/auth/forgot-password`, {
 				method:  'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					email,
-					// hCaptcha test token — always passes in dev
-					captchaToken: '10000000-aaaa-bbbb-cccc-000000000001',
-				}),
+				body: JSON.stringify({ email, captchaToken }),
 			});
 		} catch {
 			return fail(503, { error: 'Could not reach the API server. Please try again.', email, sent: false });

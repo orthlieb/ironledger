@@ -69,7 +69,7 @@ export async function buildServer(): Promise<FastifyInstance> {
         styleSrc:    ["'self'", "'unsafe-inline'", 'https://hcaptcha.com', 'https://*.hcaptcha.com'],
         frameSrc:    ['https://hcaptcha.com', 'https://*.hcaptcha.com'],
         connectSrc:  ["'self'", 'https://hcaptcha.com', 'https://*.hcaptcha.com'],
-        imgSrc:      ["'self'", 'data:'],
+        imgSrc:      ["'self'", 'data:', 'https://hcaptcha.com', 'https://*.hcaptcha.com'],
         fontSrc:     ["'self'"],
         objectSrc:   ["'none'"],
         upgradeInsecureRequests: [],

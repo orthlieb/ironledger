@@ -2,12 +2,14 @@
 	import type { ActionData } from './$types';
 	import PasswordInput from '$lib/components/PasswordInput.svelte';
 	import swordSvg from '$icons/sharp-axe.svg?raw';
+	import { PUBLIC_HCAPTCHA_SITE_KEY } from '$env/static/public';
 
 	let { form }: { form: ActionData } = $props();
 </script>
 
 <svelte:head>
 	<title>Sign In — Iron Ledger</title>
+	<script src="https://js.hcaptcha.com/1/api.js" async defer><\/script>
 </svelte:head>
 
 {#if (form as any)?.maintenance}
@@ -53,6 +55,10 @@
 				label="Password"
 				autocomplete="current-password"
 			/>
+
+			<div class="captcha-wrap">
+				<div class="h-captcha" data-sitekey="{PUBLIC_HCAPTCHA_SITE_KEY}" data-theme="dark"></div>
+			</div>
 
 			<div class="auth-actions">
 				<button type="submit" class="btn btn-primary">Sign In</button>
@@ -111,6 +117,12 @@
 
 	.auth-actions .btn-primary {
 		flex: 1;
+	}
+
+	.captcha-wrap {
+		display: flex;
+		justify-content: center;
+		margin: 0.25rem 0;
 	}
 
 	.forgot-link {
