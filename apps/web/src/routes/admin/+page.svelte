@@ -267,7 +267,7 @@
 	<p class="admin-build-info">
 		v{__APP_VERSION__}
 		<span class="build-sep">·</span>
-		Built {new Date(__BUILD_DATE__).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+		Built {new Date(__BUILD_DATE__).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
 	</p>
 
 	{#if error}
