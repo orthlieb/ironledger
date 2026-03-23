@@ -108,7 +108,7 @@
 	}
 
 	.hero-image {
-		width: 280px;
+		width: 100%;
 		height: auto;
 		object-fit: unset;
 	}

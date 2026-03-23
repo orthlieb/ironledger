@@ -158,14 +158,18 @@ export async function sendVerificationEmail(
     ].join('\n'),
     html: emailWrap(`
           <tr>
-            <td style="background:#ffffff;padding:28px 32px 0;text-align:center;">
+            <td style="background:#ffffff;padding:0;line-height:0;">
               <img
                 src="${config.APP_URL}/viking-pointing.png"
                 alt="A Norse warrior points directly at you, demanding you claim your destiny"
-                width="280"
-                style="display:block;margin:0 auto;max-width:280px;height:auto;"
+                width="520"
+                style="display:block;width:100%;height:auto;"
               >
-              <p style="margin:8px 0 0;
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#ffffff;padding:10px 32px 0;text-align:center;">
+              <p style="margin:0;
                         font-family:'Cinzel',Georgia,'Times New Roman',serif;
                         font-size:0.78rem;color:#94a3b8;font-style:italic;">
                 The Ironlands await. You specifically.
@@ -245,14 +249,18 @@ export async function sendPasswordResetEmail(
     ].join('\n'),
     html: emailWrap(`
           <tr>
-            <td style="background:#ffffff;padding:28px 32px 0;text-align:center;">
+            <td style="background:#ffffff;padding:0;line-height:0;">
               <img
                 src="${config.APP_URL}/viking-seer.png"
                 alt="A Norse warrior kneels before an oracle, seeking wisdom he should already have"
-                width="280"
-                style="display:block;margin:0 auto;max-width:280px;height:auto;"
+                width="520"
+                style="display:block;width:100%;height:auto;"
               >
-              <p style="margin:8px 0 0;
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#ffffff;padding:10px 32px 0;text-align:center;">
+              <p style="margin:0;
                         font-family:'Cinzel',Georgia,'Times New Roman',serif;
                         font-size:0.78rem;color:#94a3b8;font-style:italic;">
                 Even legends seek counsel.
