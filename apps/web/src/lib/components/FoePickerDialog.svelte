@@ -166,7 +166,10 @@
 	<!-- ===== PICKER VIEW ===== -->
 	{#if view === 'picker'}
 		<div class="fd-header">
-			<span class="fd-title">{_mode === 'denizen' ? 'Pick a Denizen' : 'Choose a Foe'}</span>
+			<div class="fd-header-row">
+				<span class="fd-title">{_mode === 'denizen' ? 'Pick a Denizen' : 'Choose a Foe'}</span>
+				<button class="fd-close-btn" onclick={close} aria-label="Close">✕</button>
+			</div>
 			<div class="fd-search-row">
 				<input
 					type="search"
@@ -247,69 +250,104 @@
 			{/if}
 		</div>
 
-		<div class="fd-footer">
-			<button class="btn" onclick={close}>Cancel</button>
-		</div>
-
 	<!-- ===== CONFIRM VIEW ===== -->
 	{:else if view === 'confirm' && confirmFoe}
-		<div class="fd-confirm-header">
+		{@const natureColor  = natureBorderColor(confirmFoe.nature)}
+		{@const baseRankInfo = FOE_RANKS[confirmFoe.rank]}
+
+		<!-- Back bar -->
+		<div class="fd-back-bar" style="--nature-color: {natureColor}">
 			<button class="btn fd-back-btn" onclick={goBack}>← Back</button>
 			<span class="fd-title">{confirmFoe.name}</span>
+			<span class="fd-badge" style="background: {natureColor}22; color: {natureColor}">{confirmFoe.nature}</span>
+			<span class="fd-badge fd-badge--rank">{baseRankInfo?.label ?? confirmFoe.rank}</span>
 		</div>
 
-		<div class="fd-confirm-body">
-			<!-- Portrait -->
-			<div class="fd-confirm-portrait-wrap">
-				<img
-					class="fd-confirm-portrait"
-					src={imageUrl(confirmFoe.name)}
-					alt={confirmFoe.name}
-					onerror={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-				/>
-				<div class="fd-confirm-badges">
-					<span class="fd-badge" style="background: {natureBorderColor(confirmFoe.nature)}22; color: {natureBorderColor(confirmFoe.nature)}">{confirmFoe.nature}</span>
-					<span class="fd-badge fd-badge--rank">{FOE_RANKS[confirmFoe.rank]?.label ?? confirmFoe.rank}</span>
+		<!-- Scrollable body -->
+		<div class="fd-confirm-scroll">
+
+			<!-- ── Top row: portrait + quantity side by side ── -->
+			<div class="fd-top-row">
+
+				<!-- Square portrait -->
+				<div class="fc-portrait-wrap">
+					<img
+						class="fc-portrait"
+						src={imageUrl(confirmFoe.name)}
+						alt={confirmFoe.name}
+						onerror={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+					/>
+				</div>
+
+				<!-- Quantity / rank selector -->
+				<div class="fd-qty-section">
+					<fieldset class="fd-quantity-group">
+						<legend class="fd-quantity-legend">Quantity</legend>
+						{#each FOE_QUANTITIES as qty}
+							<label class="fd-qty-label" class:selected={quantity === qty.value}>
+								<input
+									type="radio"
+									name="foe-quantity"
+									value={qty.value}
+									checked={quantity === qty.value}
+									onchange={() => (quantity = qty.value)}
+								/>
+								<span class="fd-qty-name">{qty.label}</span>
+								<span class="fd-qty-desc">{qty.desc}</span>
+							</label>
+						{/each}
+					</fieldset>
+
+					<div class="fd-eff-rank">
+						<span class="fd-eff-rank-label">Effective rank:</span>
+						<span class="fd-eff-rank-value">{rankInfo?.label ?? '?'} ({effRank})</span>
+						{#if rankAdj > 0}
+							<span class="fd-eff-rank-note">Base {confirmFoe.rank} + {rankAdj}</span>
+						{/if}
+					</div>
+
+					{#if rankInfo}
+						<div class="fd-rank-info">
+							Inflicts <strong>{rankInfo.harm}</strong> harm ·
+							<strong>{rankInfo.progressPerHit}</strong> ticks per progress mark
+						</div>
+					{/if}
 				</div>
 			</div>
 
-			<!-- Description -->
-			{#if confirmFoe.description}
-				<p class="fd-confirm-desc">{confirmFoe.description}</p>
-			{/if}
+			<!-- ── Text body: description + sections ── -->
+			{#if confirmFoe.description || confirmFoe.features.length > 0 || confirmFoe.drives.length > 0 || confirmFoe.tactics.length > 0}
+				<div class="fc-body">
+					{#if confirmFoe.description}
+						<p class="fc-desc">{confirmFoe.description}</p>
+					{/if}
 
-			<!-- Quantity -->
-			<fieldset class="fd-quantity-group">
-				<legend class="fd-quantity-legend">Quantity</legend>
-				{#each FOE_QUANTITIES as qty}
-					<label class="fd-qty-label" class:selected={quantity === qty.value}>
-						<input
-							type="radio"
-							name="foe-quantity"
-							value={qty.value}
-							checked={quantity === qty.value}
-							onchange={() => (quantity = qty.value)}
-						/>
-						<span class="fd-qty-name">{qty.label}</span>
-						<span class="fd-qty-desc">{qty.desc}</span>
-					</label>
-				{/each}
-			</fieldset>
+					{#if confirmFoe.features.length > 0}
+						<div class="fc-section">
+							<span class="fc-section-label">Features</span>
+							<ul class="fc-list">
+								{#each confirmFoe.features as feat}<li>{feat}</li>{/each}
+							</ul>
+						</div>
+					{/if}
 
-			<!-- Effective rank display -->
-			<div class="fd-eff-rank">
-				<span class="fd-eff-rank-label">Effective rank:</span>
-				<span class="fd-eff-rank-value">{rankInfo?.label ?? '?'} ({effRank})</span>
-				{#if rankAdj > 0}
-					<span class="fd-eff-rank-note">Base {confirmFoe.rank} + {rankAdj}</span>
-				{/if}
-			</div>
+					{#if confirmFoe.drives.length > 0}
+						<div class="fc-section">
+							<span class="fc-section-label">Drives</span>
+							<ul class="fc-list">
+								{#each confirmFoe.drives as d}<li>{d}</li>{/each}
+							</ul>
+						</div>
+					{/if}
 
-			<!-- Harm / Progress reminder -->
-			{#if rankInfo}
-				<div class="fd-rank-info">
-					Inflicts <strong>{rankInfo.harm}</strong> harm ·
-					<strong>{rankInfo.progressPerHit}</strong> ticks per progress mark
+					{#if confirmFoe.tactics.length > 0}
+						<div class="fc-section">
+							<span class="fc-section-label">Tactics</span>
+							<ul class="fc-list">
+								{#each confirmFoe.tactics as t}<li>{t}</li>{/each}
+							</ul>
+						</div>
+					{/if}
 				</div>
 			{/if}
 		</div>
@@ -355,12 +393,18 @@
 
 	/* ── Picker: header ─────────────────────────────────────────────────── */
 	.fd-header {
-		padding: 1rem 1rem 0.5rem;
+		padding: 0.75rem 1rem 0.5rem;
 		border-bottom: 1px solid var(--border);
 		flex-shrink: 0;
 		display: flex;
 		flex-direction: column;
 		gap: 0.5rem;
+	}
+
+	.fd-header-row {
+		display:     flex;
+		align-items: center;
+		gap:         8px;
 	}
 
 	.fd-title {
@@ -370,7 +414,27 @@
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
 		color: var(--text-accent);
+		flex: 1;
 	}
+
+	.fd-close-btn {
+		background:  transparent;
+		border:      none;
+		color:       var(--text-dimmer);
+		font-size:   1rem;
+		line-height: 1;
+		cursor:      pointer;
+		padding:     4px 6px;
+		border-radius: 4px;
+		flex-shrink: 0;
+		min-width:   44px;
+		min-height:  44px;
+		display:     flex;
+		align-items: center;
+		justify-content: center;
+		transition:  color 0.12s;
+	}
+	.fd-close-btn:hover { color: var(--text); }
 
 	.fd-search-row {
 		display: flex;
@@ -559,57 +623,106 @@
 		flex-shrink: 0;
 	}
 
-	/* ── Confirm view ───────────────────────────────────────────────────── */
-	.fd-confirm-header {
+	/* ── Confirm view: back bar ─────────────────────────────────────── */
+	.fd-back-bar {
 		display: flex;
 		align-items: center;
-		gap: 0.75rem;
-		padding: 0.75rem 1rem;
+		gap: 0.6rem;
+		padding: 0.6rem 1rem;
 		border-bottom: 1px solid var(--border);
+		border-top: 3px solid var(--nature-color, #9ca3af);
 		flex-shrink: 0;
 	}
 
-	.fd-back-btn {
-		flex-shrink: 0;
-	}
+	.fd-back-bar .fd-title { flex: 1; }
+	.fd-back-btn { flex-shrink: 0; }
 
-	.fd-confirm-body {
+	/* ── Scrollable confirm body ─────────────────────────────────────── */
+	.fd-confirm-scroll {
 		flex: 1;
 		overflow-y: auto;
-		padding: 1rem;
+		min-height: 0;
+		padding: 0.75rem 1rem;
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
 	}
 
-	.fd-confirm-portrait-wrap {
+	/* ── Top row: portrait + quantity side by side ──────────────────── */
+	.fd-top-row {
 		display: flex;
+		gap: 12px;
 		align-items: flex-start;
-		gap: 0.75rem;
+		flex-wrap: wrap; /* drops below on narrow screens */
 	}
 
-	.fd-confirm-portrait {
-		width: 100px;
-		height: 80px;
+	.fc-portrait-wrap {
+		flex-shrink: 0;
+		width: 150px;
+	}
+
+	.fc-portrait {
+		width: 100%;
+		aspect-ratio: 1;
 		object-fit: cover;
-		border-radius: 4px;
-		border: 1px solid var(--border);
+		border-radius: 6px;
+		border: 1px solid var(--border-mid);
+		display: block;
 	}
 
-	.fd-confirm-badges {
+	/* ── Text body: description + sections ──────────────────────────── */
+	.fc-body {
 		display: flex;
-		flex-wrap: wrap;
-		gap: 5px;
-		align-self: center;
+		flex-direction: column;
+		gap: 0.65rem;
+		padding: 0.6rem 0.75rem;
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		background: var(--bg-inset);
 	}
 
-	.fd-confirm-desc {
+	.fc-desc {
 		font-family: var(--font-ui);
 		font-size: 0.78rem;
 		line-height: 1.55;
 		color: var(--text-muted);
 		margin: 0;
-		/* Strip markdown links like [text](url) to plain text */
+	}
+
+	.fc-section {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.fc-section-label {
+		font-family: var(--font-ui);
+		font-size: 0.65rem;
+		font-weight: 600;
+		letter-spacing: 0.07em;
+		text-transform: uppercase;
+		color: var(--text-dimmer);
+	}
+
+	.fc-list {
+		margin: 0;
+		padding-left: 1.2em;
+		list-style: disc;
+	}
+	.fc-list li {
+		font-family: var(--font-ui);
+		font-size: 0.78rem;
+		color: var(--text-muted);
+		margin-bottom: 1px;
+	}
+
+	/* ── Quantity section (right of portrait) ───────────────────────── */
+	.fd-qty-section {
+		flex: 1;
+		min-width: 160px; /* wraps below portrait if too narrow */
+		display: flex;
+		flex-direction: column;
+		gap: 0.65rem;
 	}
 
 	/* ── Quantity selector ──────────────────────────────────────────────── */
@@ -673,11 +786,11 @@
 
 	.fd-rank-info {
 		font-family: var(--font-ui);
-		font-size: 0.78rem;
-		color: var(--text-dimmer);
-		padding: 6px 10px;
-		background: rgba(255,255,255,0.04);
+		font-size: 0.75rem;
+		color: #991b1b;
+		padding: 4px 8px;
+		background: rgba(239,68,68,0.07);
 		border-radius: 4px;
-		border: 1px solid var(--border);
+		border: 1px solid rgba(239,68,68,0.2);
 	}
 </style>

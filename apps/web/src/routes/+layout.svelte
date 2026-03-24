@@ -5,7 +5,7 @@
 	import ThemeToggle from '$lib/components/ThemeToggle.svelte';
 	import { maintenance } from '$lib/api';
 	import swordSvg from '$icons/sharp-axe.svg?raw';
-	import { isDice3dEnabled, setDice3dEnabled } from '$lib/dice';
+	import { isDice3dEnabled, setDice3dEnabled, preloadDice } from '$lib/dice';
 	import diceIconSvg from '$icons/dice-d10-light.svg?raw';
 	import { page } from '$app/stores';
 
@@ -48,6 +48,10 @@
 	}
 
 	$effect(() => {
+		// Preload 3D dice library and WebGL context in the background so the
+		// first actual roll doesn't stall waiting for a CDN fetch + GPU init.
+		if (data.user) preloadDice();
+
 		// Start polling
 		void pollMaintenance();
 		pollInterval = setInterval(() => void pollMaintenance(), 10_000);
@@ -114,6 +118,12 @@
 		{/if}
 	</div>
 {/if}
+
+<svelte:head>
+	<!-- Warm up the CDN connection before the dice library is actually needed -->
+	<link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+	<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin="anonymous" />
+</svelte:head>
 
 <main class="app-main">
 	{@render children()}

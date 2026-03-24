@@ -75,7 +75,11 @@ function getOverlay(): HTMLDivElement {
 	const div = document.createElement('div');
 	div.id = 'il-dice-overlay';
 	Object.assign(div.style, {
-		display:       'none',
+		// visibility:hidden (not display:none) keeps the element in layout so
+		// position:fixed + inset:0 gives it full viewport dimensions.
+		// Three.js reads the container size at init — display:none would give 0×0
+		// and the WebGL renderer would be created with a zero-size canvas.
+		visibility:    'hidden',
 		position:      'fixed',
 		inset:         '0',
 		zIndex:        '9999',
@@ -95,7 +99,11 @@ function loadScript(): Promise<void> {
 		const s       = document.createElement('script');
 		s.src         = DICE_LIB_URL;
 		s.onload      = () => resolve();
-		s.onerror     = () => reject(new Error('Failed to load dice-box-threejs from CDN'));
+		s.onerror     = () => {
+			// Clear the cache so a subsequent roll can retry the CDN fetch.
+			_scriptLoaded = null;
+			reject(new Error('Failed to load dice-box-threejs from CDN'));
+		};
 		document.head.appendChild(s);
 	});
 	return _scriptLoaded;
@@ -123,6 +131,11 @@ function ensureDiceBox(): Promise<void> {
 		// Hide the shadow-catching ground plane after initialisation.
 		// It can reappear after clearDice(), so we also hide it there.
 		if (_diceBox.desk) _diceBox.desk.visible = false;
+	}).catch((e: unknown) => {
+		// Clear the cache so the next roll will retry initialisation from scratch.
+		_diceBoxReady = null;
+		_diceBox      = null;
+		throw e;
 	});
 	return _diceBoxReady;
 }
@@ -170,7 +183,7 @@ export async function animateDice(dice: DiceSpec[]): Promise<void> {
 	if (!isDice3dEnabled()) return;
 
 	const overlay = getOverlay();
-	overlay.style.display = 'block';
+	overlay.style.visibility = 'visible';
 
 	try {
 		await ensureDiceBox();
@@ -221,15 +234,25 @@ export async function animateDice(dice: DiceSpec[]): Promise<void> {
 	} catch (e) {
 		console.warn('[Iron Ledger] 3D dice animation failed:', e);
 	} finally {
-		overlay.style.display = 'none';
+		overlay.style.visibility = 'hidden';
 	}
 }
 
 /**
  * Kick off background loading of the dice library.
- * Call once at app startup to minimise latency on the first actual roll.
+ * Deferred via requestIdleCallback (setTimeout fallback) so it runs after the
+ * browser has finished the initial paint and is otherwise idle — avoids
+ * competing with page render for network and CPU.
+ * Safe to call multiple times; the DiceBox singleton is only created once.
  */
 export function preloadDice(): void {
 	if (typeof window === 'undefined') return;
-	ensureDiceBox().catch(() => {});
+	const load = () => ensureDiceBox().catch(() => {});
+	if ('requestIdleCallback' in window) {
+		// Allow up to 5 s for the browser to find idle time, then force it.
+		(window as Window & typeof globalThis).requestIdleCallback(load, { timeout: 5000 });
+	} else {
+		// Safari < 16 and some older browsers don't support requestIdleCallback.
+		setTimeout(load, 200);
+	}
 }

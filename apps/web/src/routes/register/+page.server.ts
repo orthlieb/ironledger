@@ -5,7 +5,7 @@ import { INTERNAL_API_URL, HCAPTCHA_SITE_KEY } from '$lib/server/config.js';
 export const load: PageServerLoad = async ({ locals }) => {
 	// Already logged in? Skip registration.
 	if (locals.user) throw redirect(302, '/home');
-	return { hcaptchaSiteKey: HCAPTCHA_SITE_KEY };
+	return { hcaptchaSiteKey: HCAPTCHA_SITE_KEY, isDev: process.env.NODE_ENV !== 'production' };
 };
 
 export const actions: Actions = {
@@ -28,7 +28,8 @@ export const actions: Actions = {
 			return fail(400, { error: 'Password must be at least 12 characters.', email });
 		}
 
-		if (!captchaToken) {
+		const isDev = process.env.NODE_ENV !== 'production';
+		if (!captchaToken && !isDev) {
 			return fail(400, { error: 'Please complete the captcha.', email });
 		}
 

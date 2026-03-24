@@ -105,6 +105,26 @@
 		confirmDialogEl?.close();
 		pendingAsset = null;
 	}
+
+	// ---------------------------------------------------------------------------
+	// Ability text renderer (mirrors AssetCard.formatText)
+	// ---------------------------------------------------------------------------
+	function formatText(raw: string): string {
+		return raw
+			.split('\n\n')
+			.map((para) => {
+				const lines = para.split('\n');
+				if (lines.some((l) => /^\s*\*\s/.test(l))) {
+					const items = lines
+						.filter((l) => /^\s*\*\s/.test(l))
+						.map((l) => `<li>${l.replace(/^\s*\*\s/, '').trim()}</li>`)
+						.join('');
+					return `<ul>${items}</ul>`;
+				}
+				return `<p>${para.trim()}</p>`;
+			})
+			.join('');
+	}
 </script>
 
 <!-- ======================================================================
@@ -197,21 +217,53 @@
 </dialog>
 
 <!-- ======================================================================
-     Add-confirm dialog — "Add X to your character?"
+     Asset detail dialog — mirrors an expanded AssetCard
      ====================================================================== -->
 {#if pendingAsset}
+	{@const catColor = CAT_COLOR[pendingAsset.category] ?? 'var(--text-muted)'}
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<dialog
 		bind:this={confirmDialogEl}
 		class="confirm-dialog"
 		oncancel={cancelAdd}
 	>
-		<p class="confirm-msg">
-			Add <strong>{pendingAsset.name}</strong> to your character?
-		</p>
-		<div class="confirm-btns">
+		<!-- Header: mirrors .asset-header from AssetCard -->
+		<div class="asset-header" style="border-top: 3px solid {catColor}">
+			<div class="asset-name-group">
+				<span class="asset-name">{pendingAsset.name}</span>
+				<span class="asset-cat" style:color={catColor}>{pendingAsset.category}</span>
+			</div>
+			<span class="ability-tally">0/{pendingAsset.abilities.length}</span>
+		</div>
+
+		<!-- Body: mirrors .asset-body — scrollable, read-only -->
+		<div class="asset-body">
+			{#if pendingAsset.preamble}
+				<p class="asset-preamble">{pendingAsset.preamble}</p>
+			{/if}
+
+			<div class="abilities-list">
+				{#each pendingAsset.abilities as ab}
+					<div class="ability-row">
+						<div class="ability-text">
+							{#if ab.name}
+								<span class="ability-name">{ab.name}.</span>
+							{/if}
+							{@html formatText(ab.text)}
+						</div>
+					</div>
+				{/each}
+			</div>
+
+			{#if pendingAsset.postamble}
+				<p class="asset-postamble">{pendingAsset.postamble}</p>
+			{/if}
+		</div>
+
+		<!-- Footer -->
+		<div class="cd-footer">
 			<button class="btn" onclick={cancelAdd}>Cancel</button>
-			<button class="btn btn-primary" onclick={confirmAdd}>OK</button>
+			<button class="btn btn-primary" onclick={confirmAdd}>Add to Character</button>
 		</div>
 	</dialog>
 {/if}
@@ -437,40 +489,156 @@
 	}
 
 	/* ================================================================
-	   Add-confirm dialog
+	   Asset detail dialog — mirrors expanded AssetCard
 	   ================================================================ */
 	.confirm-dialog {
-		border: 1px solid var(--border-mid);
-		border-radius: 7px;
-		padding: 16px 18px 14px;
-		background: var(--bg-card);
+		border: none;
+		border-radius: 6px;   /* matches .asset-card border-radius */
+		padding: 0;
+		background: var(--bg-inset); /* matches .asset-card background */
 		color: var(--text);
-		width: min(340px, calc(100vw - 2rem));
-		box-shadow: 0 8px 32px #00000060;
-		/* Explicit centering — overrides browser UA-stylesheet positioning */
+		width: min(460px, calc(100vw - 2rem));
+		max-height: min(82vh, 660px);
+		display: flex;
+		flex-direction: column;
+		box-shadow: 0 16px 48px #00000070, 0 0 0 1px var(--border-mid);
 		position: fixed;
 		top: 50%;
 		left: 50%;
 		transform: translate(-50%, -50%);
 		margin: 0;
+		outline: none;
+		overflow: hidden;
 	}
 	.confirm-dialog::backdrop {
-		background: #00000030;
+		background: #00000060;
+		backdrop-filter: blur(1px);
 	}
 
-	.confirm-msg {
-		font-family: var(--font-ui);
-		font-size: 0.88rem;
-		margin: 0 0 14px;
-		line-height: 1.45;
-		color: var(--text);
-	}
-	.confirm-msg :global(strong) { color: var(--text); }
-
-	.confirm-btns {
+	/* ── Mirrors AssetCard .asset-header ── */
+	.asset-header {
 		display: flex;
-		gap: 6px;
+		align-items: center;
+		gap: 7px;
+		padding: 7px 10px;
+		background: var(--bg-control);
+		flex-shrink: 0;
+	}
+
+	.asset-name-group {
+		flex: 1;
+		display: flex;
+		align-items: baseline;
+		gap: 8px;
+		min-width: 0;
+		overflow: hidden;
+	}
+
+	.asset-name {
+		font-family: var(--font-ui);
+		font-size: 0.86rem;
+		font-weight: 700;
+		letter-spacing: 0.03em;
+		color: var(--text);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.asset-cat {
+		font-family: var(--font-ui);
+		font-size: 0.6rem;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		flex-shrink: 0;
+		white-space: nowrap;
+	}
+
+	.ability-tally {
+		font-family: var(--font-ui);
+		font-size: 0.68rem;
+		color: var(--text-dimmer);
+		flex-shrink: 0;
+		font-variant-numeric: tabular-nums;
+	}
+
+	/* ── Mirrors AssetCard .asset-body ── */
+	.asset-body {
+		padding: 10px 12px;
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		flex: 1;
+		overflow-y: auto;
+		min-height: 0;
+	}
+
+	.asset-preamble {
+		font-family: var(--font-ui);
+		font-size: 0.78rem;
+		font-style: italic;
+		color: var(--text-muted);
+		line-height: 1.4;
+		margin: 0;
+	}
+
+	/* ── Mirrors AssetCard .abilities-list / .ability-row ── */
+	.abilities-list {
+		display: flex;
+		flex-direction: column;
+		gap: 7px;
+	}
+
+	.ability-row {
+		display: flex;
+		align-items: flex-start;
+		gap: 8px;
+		padding: 6px 8px;
+		border-radius: 4px;
+		border: 1px solid var(--border);
+		background: var(--bg);
+		cursor: default;
+	}
+
+	.ability-text {
+		flex: 1;
+		font-family: var(--font-ui);
+		font-size: 0.78rem;
+		color: var(--text-muted);
+		line-height: 1.45;
+	}
+
+	.ability-text :global(p)           { margin: 0 0 4px; }
+	.ability-text :global(p:last-child){ margin-bottom: 0; }
+	.ability-text :global(ul)          { margin: 4px 0 0; padding-left: 1.2em; }
+	.ability-text :global(li)          { margin-bottom: 2px; }
+	.ability-text :global(a.move-link) { color: var(--text-accent); text-decoration: underline; }
+
+	.ability-name {
+		font-weight: 700;
+		color: var(--text);
+		margin-right: 2px;
+	}
+
+	.asset-postamble {
+		font-family: var(--font-ui);
+		font-size: 0.75rem;
+		color: var(--text-dimmer);
+		font-style: italic;
+		line-height: 1.45;
+		margin: 0;
+	}
+
+	/* ── Footer ── */
+	.cd-footer {
+		display: flex;
+		gap: 8px;
 		justify-content: flex-end;
+		padding: 10px 12px;
+		border-top: 1px solid var(--border);
+		flex-shrink: 0;
+		background: var(--bg-card);
 	}
 
 	.btn-primary {
@@ -479,7 +647,5 @@
 		color: var(--bg-card);
 		font-weight: 600;
 	}
-	.btn-primary:hover {
-		opacity: 0.88;
-	}
+	.btn-primary:hover { opacity: 0.88; }
 </style>

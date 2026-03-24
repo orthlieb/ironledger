@@ -7,7 +7,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 	if (locals.user) {
 		throw redirect(302, locals.user.role === 'admin' ? '/admin' : '/home');
 	}
-	return { hcaptchaSiteKey: HCAPTCHA_SITE_KEY };
+	return { hcaptchaSiteKey: HCAPTCHA_SITE_KEY, isDev: process.env.NODE_ENV !== 'production' };
 };
 
 export const actions: Actions = {
@@ -21,7 +21,8 @@ export const actions: Actions = {
 			return fail(400, { error: 'Email and password are required.', email });
 		}
 
-		if (!captchaToken) {
+		const isDev = process.env.NODE_ENV !== 'production';
+		if (!captchaToken && !isDev) {
 			return fail(400, { error: 'Please complete the captcha.', email });
 		}
 

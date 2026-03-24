@@ -13,7 +13,9 @@
 
 <svelte:head>
 	<title>Create Account — Iron Ledger</title>
-	<script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+	{#if !data.isDev}
+		<script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+	{/if}
 </svelte:head>
 
 <div class="auth-wrap">
@@ -56,7 +58,12 @@
 			/>
 
 			<div class="captcha-wrap">
-				<div class="h-captcha" data-sitekey="{data.hcaptchaSiteKey}" data-theme={captchaTheme}></div>
+				{#if data.isDev}
+					<div class="captcha-dev-bypass">⚙ Captcha bypassed in development</div>
+					<input type="hidden" name="h-captcha-response" value="dev-bypass" />
+				{:else}
+					<div class="h-captcha" data-sitekey="{data.hcaptchaSiteKey}" data-theme={captchaTheme}></div>
+				{/if}
 			</div>
 
 			<button type="submit" class="btn btn-primary">Forge Account</button>
@@ -102,9 +109,29 @@
 		height: 18px;
 		fill: var(--color-mana, #f59e0b);
 	}
+
+	h2 {
+		font-family: var(--font-ui);
+		font-style: italic;
+		font-weight: 400;
+		font-size: 0.95rem;
+		color: var(--text-muted);
+		margin-bottom: 0.75rem;
+	}
+
 	.captcha-wrap {
 		display: flex;
 		justify-content: center;
 		margin: 0.25rem 0;
+	}
+
+	.captcha-dev-bypass {
+		font-size: 0.72rem;
+		color: var(--text-dimmer);
+		border: 1px dashed var(--border);
+		border-radius: 4px;
+		padding: 6px 12px;
+		width: 100%;
+		text-align: center;
 	}
 </style>

@@ -36,6 +36,8 @@
 	import diceD6RawSvg   from '$icons/dice-d6-light.svg?raw';
 	import diceD10RawSvg  from '$icons/dice-d10-light.svg?raw';
 	import { draggable } from '$lib/actions/draggable.js';
+	import { loadAssets, findAsset } from '$lib/assetStore.svelte.js';
+	import { loadAssetMoveRefs, getRelevantAbilities } from '$lib/assetMatcherStore.svelte.js';
 
 	// ---------------------------------------------------------------------------
 	// Props
@@ -126,6 +128,15 @@
 		selectedId ? findMove(selectedId) ?? null : null,
 	);
 
+	const relevantAbilities = $derived.by(() => {
+		if (!selectedMove || !ctx) return [];
+		return getRelevantAbilities(
+			selectedMove.id,
+			(ctx.data.assets as import('$lib/types.js').CharacterAsset[]) ?? [],
+			findAsset,
+		);
+	});
+
 	const filteredMoves = $derived(() => {
 		const q = search.trim().toLowerCase();
 		return moves.filter((m) => {
@@ -209,6 +220,13 @@
 		return 'Miss';
 	}
 
+	function stripHtml(html: string): string {
+		return html
+			.replace(/<[^>]*>/g, '')
+			.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+			.replace(/\s+/g, ' ').trim();
+	}
+
 	function logTitle(label: string): string {
 		return ctx ? `${ctx.charName} \u2014 ${label}` : label;
 	}
@@ -268,6 +286,8 @@
 		factorLevels       = {};
 		factorsManuallySet = false;
 		loadMoves();
+		loadAssets();
+		loadAssetMoveRefs();
 		dialogEl?.showModal();
 	}
 
@@ -826,371 +846,363 @@
 		<span class="md-category-badge" style:--ccolor={catColor(selectedMove.category)}>
 			{selectedMove.category}
 		</span>
-		<button class="md-close" onclick={close} aria-label="Close">✕</button>
 	</div>
 
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<div class="md-body md-body--detail" role="region" onclick={handleDetailClick}>
-		<!-- Trigger text -->
-		<div class="md-trigger">
-			{@html (selectedMove as Record<string, unknown>).triggerPreamble as string ?? selectedMove.trigger}
-		</div>
 
-		<!-- ── Standard action move ── -->
-		{#if hasRollableStats(selectedMove)}
-			{@const fail = moveFailReason(selectedMove)}
+		<!-- ── Scrollable read area ── -->
+		<div class="md-detail-scroll">
 
-			<!-- Stat picker -->
-			{#if selectedMove.stats && selectedMove.stats.length > 0}
+			<!-- Relevant Assets (BEFORE trigger) -->
+			{#if ctx && relevantAbilities.length > 0}
+				<div class="md-relevant-assets">
+					<span class="md-relevant-label">Relevant Assets</span>
+					<div class="md-relevant-tags">
+						{#each relevantAbilities as ra (`${ra.assetId}-${ra.abilityIndex}`)}
+							<div class="md-relevant-tag tooltip-down" data-tooltip={stripHtml(ra.abilityText)}>
+								<span class="md-relevant-check">✓</span>
+								{ra.assetName} #{ra.abilityIndex + 1}
+							</div>
+						{/each}
+					</div>
+				</div>
+			{/if}
+
+			<!-- Trigger text -->
+			<div class="md-trigger">
+				{@html (selectedMove as Record<string, unknown>).triggerPreamble as string ?? selectedMove.trigger}
+			</div>
+
+			<!-- ── Standard action move ── -->
+			{#if hasRollableStats(selectedMove)}
+				<!-- Stat picker -->
+				{#if selectedMove.stats && selectedMove.stats.length > 0}
+					<div class="md-stat-list">
+						{#each selectedMove.stats as s (s.stat)}
+							<button
+								class="md-stat-row-btn"
+								class:selected={selectedStat === s.stat}
+								style:--scolor={statColor(s.stat)}
+								onclick={() => (selectedStat = s.stat)}
+								disabled={rolling || !ctx}
+							>
+								<span class="md-stat-check" aria-hidden="true">{selectedStat === s.stat ? '✔' : ''}</span>
+								<span class="md-sdesc">{s.desc}</span>
+								<span class="md-stat-chip" style:--scolor={statColor(s.stat)}>
+									<span class="md-sname">{s.stat}</span>
+									<span class="md-sval">+{statValue(s.stat)}</span>
+								</span>
+							</button>
+						{/each}
+					</div>
+				{/if}
+				<!-- Outcomes -->
+				{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
+					<div class="md-outcomes">
+						{#if selectedMove.strong}
+							<div class="md-outcome-section" style:--outcome-color="var(--color-success, #34d399)">
+								<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
+								<div class="md-outcome-text">{@html displayHtml(selectedMove.strong)}</div>
+							</div>
+						{/if}
+						{#if selectedMove.weak}
+							<div class="md-outcome-section" style:--outcome-color="var(--color-momentum, #60a5fa)">
+								<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
+								<div class="md-outcome-text">{@html displayHtml(selectedMove.weak)}</div>
+							</div>
+						{/if}
+						{#if selectedMove.miss}
+							<div class="md-outcome-section" style:--outcome-color="var(--color-danger, #ef4444)">
+								<div class="md-outcome-label md-outcome-miss">Miss</div>
+								<div class="md-outcome-text">{@html displayHtml(selectedMove.miss)}</div>
+							</div>
+						{/if}
+					</div>
+				{/if}
+
+			<!-- ── Spell roll move ── -->
+			{:else if isSpellRollMove(selectedMove)}
+				{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
+					<div class="md-outcomes">
+						{#if selectedMove.strong}
+							<div class="md-outcome-section" style:--outcome-color="var(--color-success, #34d399)">
+								<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
+								<div class="md-outcome-text">{@html displayHtml(selectedMove.strong)}</div>
+							</div>
+						{/if}
+						{#if selectedMove.weak}
+							<div class="md-outcome-section" style:--outcome-color="var(--color-momentum, #60a5fa)">
+								<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
+								<div class="md-outcome-text">{@html displayHtml(selectedMove.weak)}</div>
+							</div>
+						{/if}
+						{#if selectedMove.miss}
+							<div class="md-outcome-section" style:--outcome-color="var(--color-danger, #ef4444)">
+								<div class="md-outcome-label md-outcome-miss">Miss</div>
+								<div class="md-outcome-text">{@html displayHtml(selectedMove.miss)}</div>
+							</div>
+						{/if}
+					</div>
+				{/if}
+				<!-- Difficulty factors collapsible -->
+				{#if pctx.ritualAssets && pctx.ritualAssets.length > 0}
+					<details class="md-factors">
+						<summary class="md-factors-summary">
+							Difficulty Factors
+							{#if factorsManuallySet}
+								<span class="md-factors-total">= {spellDifficulty}</span>
+							{/if}
+						</summary>
+						{#each pctx.ritualAssets as ritual (ritual.id)}
+							{#if pctx.ritualAssets.length > 1}
+								<div class="md-factors-ritual-name">{ritual.name}</div>
+							{/if}
+							{#each ritual.inspectionFactors as factor (factor.key)}
+								{@const levelKey = `${ritual.id}|${factor.key}`}
+								{@const currentLevel = factorLevels[levelKey] ?? 0}
+								<div class="md-factor">
+									<div class="md-factor-header">
+										<span class="md-factor-name">{factor.name}</span>
+										<div class="md-factor-levels">
+											{#each [0, 1, 2] as lvl}
+												<button
+													class="md-factor-lvl"
+													class:active={currentLevel === lvl}
+													onclick={() => setFactorLevel(ritual.id, factor.key, lvl)}
+												>{lvl}</button>
+											{/each}
+										</div>
+									</div>
+									<div class="md-factor-desc">{factor.levels[currentLevel]}</div>
+								</div>
+							{/each}
+						{/each}
+					</details>
+				{/if}
+
+			<!-- ── Progress move ── -->
+			{:else if isProgressMove(selectedMove)}
+				{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
+					<div class="md-outcomes">
+						{#if selectedMove.strong}
+							<div class="md-outcome-section" style:--outcome-color="var(--color-success, #34d399)">
+								<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
+								<div class="md-outcome-text">{@html displayHtml(selectedMove.strong)}</div>
+							</div>
+						{/if}
+						{#if selectedMove.weak}
+							<div class="md-outcome-section" style:--outcome-color="var(--color-momentum, #60a5fa)">
+								<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
+								<div class="md-outcome-text">{@html displayHtml(selectedMove.weak)}</div>
+							</div>
+						{/if}
+						{#if selectedMove.miss}
+							<div class="md-outcome-section" style:--outcome-color="var(--color-danger, #ef4444)">
+								<div class="md-outcome-label md-outcome-miss">Miss</div>
+								<div class="md-outcome-text">{@html displayHtml(selectedMove.miss)}</div>
+							</div>
+						{/if}
+					</div>
+				{/if}
+
+			<!-- ── Ask the Oracle ── -->
+			{:else if isOracleRollMove}
 				<div class="md-stat-list">
-					{#each selectedMove.stats as s (s.stat)}
+					{#each oracleTable as entry, i (entry.value.odds)}
 						<button
 							class="md-stat-row-btn"
-							class:selected={selectedStat === s.stat}
-							style:--scolor={statColor(s.stat)}
-							onclick={() => (selectedStat = s.stat)}
-							disabled={rolling || !ctx}
+							class:selected={selectedOddsIdx === i}
+							style="--scolor: var(--color-accent, #f59e0b)"
+							onclick={() => selectedOddsIdx = i}
 						>
-							<span class="md-stat-check" aria-hidden="true">{selectedStat === s.stat ? '✔' : ''}</span>
-							<span class="md-sdesc">{s.desc}</span>
-							<span class="md-stat-chip" style:--scolor={statColor(s.stat)}>
-								<span class="md-sname">{s.stat}</span>
-								<span class="md-sval">+{statValue(s.stat)}</span>
-							</span>
+							<span class="md-stat-check" aria-hidden="true">{selectedOddsIdx === i ? '\u2714' : ''}</span>
+							<span class="md-sdesc">{entry.value.odds}</span>
+							<span class="md-oracle-threshold">{entry.value.threshold}</span>
 						</button>
 					{/each}
 				</div>
-			{/if}
 
-			<!-- ── Outcomes ── -->
-			{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
-				<div class="md-outcomes">
-					{#if selectedMove.strong}
-						<div class="md-outcome-section" style:--outcome-color="var(--color-success, #34d399)">
-							<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
-							<div class="md-outcome-text">{@html displayHtml(selectedMove.strong)}</div>
-						</div>
-					{/if}
-					{#if selectedMove.weak}
-						<div class="md-outcome-section" style:--outcome-color="var(--color-momentum, #60a5fa)">
-							<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
-							<div class="md-outcome-text">{@html displayHtml(selectedMove.weak)}</div>
-						</div>
-					{/if}
-					{#if selectedMove.miss}
-						<div class="md-outcome-section" style:--outcome-color="var(--color-danger, #ef4444)">
-							<div class="md-outcome-label md-outcome-miss">Miss</div>
-							<div class="md-outcome-text">{@html displayHtml(selectedMove.miss)}</div>
-						</div>
-					{/if}
-				</div>
-			{/if}
-
-			<!-- Adds + Roll button -->
-			<div class="md-action-row">
-				<div class="md-adds-row">
-					<span class="md-adds-label">Adds</span>
-					<button
-						class="md-adj"
-						onclick={() => (adds = Math.max(-5, adds - 1))}
-						disabled={rolling || !ctx || adds <= -5}
-						aria-label="Decrease adds"
-					>−</button>
-					<span
-						class="md-adds-val"
-						class:positive={adds > 0}
-						class:negative={adds < 0}
-					>{adds >= 0 ? '+' : ''}{adds}</span>
-					<button
-						class="md-adj"
-						onclick={() => (adds = Math.min(5, adds + 1))}
-						disabled={rolling || !ctx || adds >= 5}
-						aria-label="Increase adds"
-					>+</button>
-				</div>
-
-				<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
-				<button
-					class="btn btn-primary md-roll-btn"
-					onclick={doActionRoll}
-					disabled={rolling || !ctx || !!fail}
-					title={fail ?? ''}
-				>
-					{rolling ? 'Rolling…' : 'Roll Move'}
-				</button>
-			</div>
-
-		<!-- ── Spell roll move (1d6+adds vs difficulty+1d10) ── -->
-		{:else if isSpellRollMove(selectedMove)}
-			<!-- Outcomes preview -->
-			{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
-				<div class="md-outcomes">
-					{#if selectedMove.strong}
-						<div class="md-outcome-section" style:--outcome-color="var(--color-success, #34d399)">
-							<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
-							<div class="md-outcome-text">{@html displayHtml(selectedMove.strong)}</div>
-						</div>
-					{/if}
-					{#if selectedMove.weak}
-						<div class="md-outcome-section" style:--outcome-color="var(--color-momentum, #60a5fa)">
-							<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
-							<div class="md-outcome-text">{@html displayHtml(selectedMove.weak)}</div>
-						</div>
-					{/if}
-					{#if selectedMove.miss}
-						<div class="md-outcome-section" style:--outcome-color="var(--color-danger, #ef4444)">
-							<div class="md-outcome-label md-outcome-miss">Miss</div>
-							<div class="md-outcome-text">{@html displayHtml(selectedMove.miss)}</div>
-						</div>
-					{/if}
-				</div>
-			{/if}
-
-			<!-- Adds + Mana + Difficulty + Roll -->
-			<div class="md-action-row md-action-row--spell">
-				<div class="md-adds-row">
-					<span class="md-adds-label">Adds</span>
-					<button
-						class="md-adj"
-						onclick={() => (adds = Math.max(-5, adds - 1))}
-						disabled={rolling || !ctx || adds <= -5}
-						aria-label="Decrease adds"
-					>−</button>
-					<span
-						class="md-adds-val"
-						class:positive={adds > 0}
-						class:negative={adds < 0}
-					>{adds >= 0 ? '+' : ''}{adds}</span>
-					<button
-						class="md-adj"
-						onclick={() => (adds = Math.min(5, adds + 1))}
-						disabled={rolling || !ctx || adds >= 5}
-						aria-label="Increase adds"
-					>+</button>
-					<span class="md-adds-label md-adds-label--gap">Mana</span>
-					<button
-						class="md-adj"
-						onclick={() => (manaCommit = Math.max(0, manaCommit - 1))}
-						disabled={rolling || manaCommit <= 0}
-						aria-label="Decrease mana"
-					>−</button>
-					<span class="md-adds-val" class:positive={manaCommit > 0}>{manaCommit}</span>
-					<button
-						class="md-adj"
-						onclick={() => (manaCommit = Math.min((ctx?.data as Record<string, number>)?.['mana'] ?? 0, manaCommit + 1))}
-						disabled={rolling || manaCommit >= ((ctx?.data as Record<string, number>)?.['mana'] ?? 0)}
-						aria-label="Increase mana"
-					>+</button>
-					<span class="md-adds-label md-adds-label--gap">Difficulty</span>
-					<button
-						class="md-adj"
-						onclick={() => (spellDifficulty = Math.max(1, spellDifficulty - 1))}
-						disabled={rolling || spellDifficulty <= 1}
-						aria-label="Decrease difficulty"
-					>−</button>
-					<span class="md-adds-val">{spellDifficulty}</span>
-					<button
-						class="md-adj"
-						onclick={() => (spellDifficulty = Math.min(10, spellDifficulty + 1))}
-						disabled={rolling || spellDifficulty >= 10}
-						aria-label="Increase difficulty"
-					>+</button>
-				</div>
-
-				<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
-				<button
-					class="btn btn-primary md-roll-btn md-roll-btn--spell"
-					onclick={doSpellRoll}
-					disabled={rolling || !ctx}
-				>
-					{rolling ? 'Rolling\u2026' : 'Roll Move'}
-				</button>
-			</div>
-
-			<!-- Difficulty factors collapsible -->
-			{#if pctx.ritualAssets && pctx.ritualAssets.length > 0}
-				<details class="md-factors">
-					<summary class="md-factors-summary">
-						Difficulty Factors
-						{#if factorsManuallySet}
-							<span class="md-factors-total">= {spellDifficulty}</span>
-						{/if}
-					</summary>
-					{#each pctx.ritualAssets as ritual (ritual.id)}
-						{#if pctx.ritualAssets.length > 1}
-							<div class="md-factors-ritual-name">{ritual.name}</div>
-						{/if}
-						{#each ritual.inspectionFactors as factor (factor.key)}
-							{@const levelKey = `${ritual.id}|${factor.key}`}
-							{@const currentLevel = factorLevels[levelKey] ?? 0}
-							<div class="md-factor">
-								<div class="md-factor-header">
-									<span class="md-factor-name">{factor.name}</span>
-									<div class="md-factor-levels">
-										{#each [0, 1, 2] as lvl}
-											<button
-												class="md-factor-lvl"
-												class:active={currentLevel === lvl}
-												onclick={() => setFactorLevel(ritual.id, factor.key, lvl)}
-											>{lvl}</button>
-										{/each}
-									</div>
-								</div>
-								<div class="md-factor-desc">{factor.levels[currentLevel]}</div>
+			<!-- ── Table-roll move ── -->
+			{:else if isTableRollMove(selectedMove)}
+				{@const tableEntries = (selectedMove as Record<string, unknown>)['table'] as Array<{ topRange: number; value: string }> ?? []}
+				{#if tableEntries.length > 0}
+					<div class="md-table-list">
+						{#each tableEntries as entry, i (entry.topRange)}
+							{@const prevTop = i === 0 ? 0 : tableEntries[i - 1].topRange}
+							{@const rangeLabel = prevTop + 1 === entry.topRange ? `${entry.topRange}` : `${prevTop + 1}\u2013${entry.topRange}`}
+							<div class="md-table-row">
+								<span class="md-table-range">{rangeLabel}</span>
+								<span class="md-table-value">{@html displayHtml(entry.value)}</span>
 							</div>
 						{/each}
-					{/each}
-				</details>
+					</div>
+				{/if}
+
+			<!-- ── No-roll move ── -->
+			{:else if isNoRollMove(selectedMove)}
+				{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
+					<div class="md-outcomes">
+						{#if selectedMove.strong}
+							<div class="md-outcome-section" style:--outcome-color="var(--color-success, #34d399)">
+								<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
+								<div class="md-outcome-text">{@html displayHtml(selectedMove.strong)}</div>
+							</div>
+						{/if}
+						{#if selectedMove.weak}
+							<div class="md-outcome-section" style:--outcome-color="var(--color-momentum, #60a5fa)">
+								<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
+								<div class="md-outcome-text">{@html displayHtml(selectedMove.weak)}</div>
+							</div>
+						{/if}
+						{#if selectedMove.miss}
+							<div class="md-outcome-section" style:--outcome-color="var(--color-danger, #ef4444)">
+								<div class="md-outcome-label md-outcome-miss">Miss</div>
+								<div class="md-outcome-text">{@html displayHtml(selectedMove.miss)}</div>
+							</div>
+						{/if}
+					</div>
+				{/if}
 			{/if}
 
-				<!-- ── Progress move ── -->
-		{:else if isProgressMove(selectedMove)}
-			<!-- ── Outcomes ── -->
-			{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
-				<div class="md-outcomes">
-					{#if selectedMove.strong}
-						<div class="md-outcome-section" style:--outcome-color="var(--color-success, #34d399)">
-							<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
-							<div class="md-outcome-text">{@html displayHtml(selectedMove.strong)}</div>
-						</div>
-					{/if}
-					{#if selectedMove.weak}
-						<div class="md-outcome-section" style:--outcome-color="var(--color-momentum, #60a5fa)">
-							<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
-							<div class="md-outcome-text">{@html displayHtml(selectedMove.weak)}</div>
-						</div>
-					{/if}
-					{#if selectedMove.miss}
-						<div class="md-outcome-section" style:--outcome-color="var(--color-danger, #ef4444)">
-							<div class="md-outcome-label md-outcome-miss">Miss</div>
-							<div class="md-outcome-text">{@html displayHtml(selectedMove.miss)}</div>
-						</div>
-					{/if}
+			<!-- Notes -->
+			{#if selectedMove.notes}
+				<div class="md-notes">
+					<div class="md-notes-text">{selectedMove.notes}</div>
 				</div>
 			{/if}
-			<div class="md-action-row">
-				<div class="md-adds-row">
-					<span class="md-adds-label">Adds</span>
-					<button
-						class="md-adj"
-						onclick={() => (adds = Math.max(-5, adds - 1))}
-						disabled={rolling || adds <= -5}
-						aria-label="Decrease adds"
-					>−</button>
-					<span
-						class="md-adds-val"
-						class:positive={adds > 0}
-						class:negative={adds < 0}
-					>{adds >= 0 ? '+' : ''}{adds}</span>
-					<button
-						class="md-adj"
-						onclick={() => (adds = Math.min(5, adds + 1))}
-						disabled={rolling || adds >= 5}
-						aria-label="Increase adds"
-					>+</button>
-				</div>
 
-				<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
-				<button
-					class="btn btn-primary md-roll-btn"
-					onclick={doProgressRoll}
-					disabled={rolling}
-				>
-					{rolling ? 'Rolling…' : 'Roll Move'}
-				</button>
-			</div>
+		</div><!-- end md-detail-scroll -->
 
-		<!-- ── Ask the Oracle (d100 vs odds threshold) ── -->
-		{:else if isOracleRollMove}
-			<div class="md-stat-list">
-				{#each oracleTable as entry, i (entry.value.odds)}
+		<!-- ── Sticky action footer ── -->
+		<div class="md-detail-footer">
+			{#if hasRollableStats(selectedMove)}
+				{@const fail = moveFailReason(selectedMove)}
+				<div class="md-footer-top">
+					<div class="md-adds-row">
+						<span class="md-adds-label">Adds</span>
+						<button
+							class="md-adj"
+							onclick={() => (adds = Math.max(-5, adds - 1))}
+							disabled={rolling || !ctx || adds <= -5}
+							aria-label="Decrease adds"
+						>−</button>
+						<span
+							class="md-adds-val"
+							class:positive={adds > 0}
+							class:negative={adds < 0}
+						>{adds >= 0 ? '+' : ''}{adds}</span>
+						<button
+							class="md-adj"
+							onclick={() => (adds = Math.min(5, adds + 1))}
+							disabled={rolling || !ctx || adds >= 5}
+							aria-label="Increase adds"
+						>+</button>
+					</div>
+					</div>
+				<div class="md-footer-btns">
+					<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
+					<button class="btn" onclick={close}>Cancel</button>
 					<button
-						class="md-stat-row-btn"
-						class:selected={selectedOddsIdx === i}
-						style="--scolor: var(--color-accent, #f59e0b)"
-						onclick={() => selectedOddsIdx = i}
+						class="btn btn-primary md-roll-btn"
+						onclick={doActionRoll}
+						disabled={rolling || !ctx || !!fail}
+						data-tooltip={fail || undefined}
 					>
-						<span class="md-stat-check" aria-hidden="true">{selectedOddsIdx === i ? '\u2714' : ''}</span>
-						<span class="md-sdesc">{entry.value.odds}</span>
-						<span class="md-oracle-threshold">{entry.value.threshold}</span>
+						{rolling ? 'Rolling…' : 'Roll Move'}
 					</button>
-				{/each}
-			</div>
-			<div class="md-action-row">
-				<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
-				<button
-					class="btn btn-primary md-roll-btn"
-					onclick={doAskOracle}
-					disabled={rolling}
-				>{rolling ? 'Rolling\u2026' : 'Roll Move'}</button>
-			</div>
+				</div>
 
-		<!-- ── Table-roll move (d100 against inline table) ── -->
-		{:else if isTableRollMove(selectedMove)}
-			{@const tableEntries = (selectedMove as Record<string, unknown>)['table'] as Array<{ topRange: number; value: string }> ?? []}
-			{#if tableEntries.length > 0}
-				<div class="md-table-list">
-					{#each tableEntries as entry, i (entry.topRange)}
-						{@const prevTop = i === 0 ? 0 : tableEntries[i - 1].topRange}
-						{@const rangeLabel = prevTop + 1 === entry.topRange ? `${entry.topRange}` : `${prevTop + 1}\u2013${entry.topRange}`}
-						<div class="md-table-row">
-							<span class="md-table-range">{rangeLabel}</span>
-							<span class="md-table-value">{@html displayHtml(entry.value)}</span>
-						</div>
-					{/each}
+			{:else if isSpellRollMove(selectedMove)}
+				<div class="md-footer-top">
+					<div class="md-adds-row">
+						<span class="md-adds-label">Adds</span>
+						<button class="md-adj" onclick={() => (adds = Math.max(-5, adds - 1))} disabled={rolling || !ctx || adds <= -5} aria-label="Decrease adds">−</button>
+						<span class="md-adds-val" class:positive={adds > 0} class:negative={adds < 0}>{adds >= 0 ? '+' : ''}{adds}</span>
+						<button class="md-adj" onclick={() => (adds = Math.min(5, adds + 1))} disabled={rolling || !ctx || adds >= 5} aria-label="Increase adds">+</button>
+						<span class="md-adds-label md-adds-label--gap">Mana</span>
+						<button class="md-adj" onclick={() => (manaCommit = Math.max(0, manaCommit - 1))} disabled={rolling || manaCommit <= 0} aria-label="Decrease mana">−</button>
+						<span class="md-adds-val" class:positive={manaCommit > 0}>{manaCommit}</span>
+						<button class="md-adj" onclick={() => (manaCommit = Math.min((ctx?.data as Record<string, number>)?.['mana'] ?? 0, manaCommit + 1))} disabled={rolling || manaCommit >= ((ctx?.data as Record<string, number>)?.['mana'] ?? 0)} aria-label="Increase mana">+</button>
+						<span class="md-adds-label md-adds-label--gap">Difficulty</span>
+						<button class="md-adj" onclick={() => (spellDifficulty = Math.max(1, spellDifficulty - 1))} disabled={rolling || spellDifficulty <= 1} aria-label="Decrease difficulty">−</button>
+						<span class="md-adds-val">{spellDifficulty}</span>
+						<button class="md-adj" onclick={() => (spellDifficulty = Math.min(10, spellDifficulty + 1))} disabled={rolling || spellDifficulty >= 10} aria-label="Increase difficulty">+</button>
+					</div>
+				</div>
+				<div class="md-footer-btns">
+					<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
+					<button class="btn" onclick={close}>Cancel</button>
+					<button
+						class="btn btn-primary md-roll-btn md-roll-btn--spell"
+						onclick={doSpellRoll}
+						disabled={rolling || !ctx}
+					>
+						{rolling ? 'Rolling…' : 'Roll Move'}
+					</button>
+				</div>
+
+			{:else if isProgressMove(selectedMove)}
+				<div class="md-footer-top">
+					<div class="md-adds-row">
+						<span class="md-adds-label">Adds</span>
+						<button class="md-adj" onclick={() => (adds = Math.max(-5, adds - 1))} disabled={rolling || adds <= -5} aria-label="Decrease adds">−</button>
+						<span class="md-adds-val" class:positive={adds > 0} class:negative={adds < 0}>{adds >= 0 ? '+' : ''}{adds}</span>
+						<button class="md-adj" onclick={() => (adds = Math.min(5, adds + 1))} disabled={rolling || adds >= 5} aria-label="Increase adds">+</button>
+					</div>
+				</div>
+				<div class="md-footer-btns">
+					<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
+					<button class="btn" onclick={close}>Cancel</button>
+					<button
+						class="btn btn-primary md-roll-btn"
+						onclick={doProgressRoll}
+						disabled={rolling}
+					>
+						{rolling ? 'Rolling…' : 'Roll Move'}
+					</button>
+				</div>
+
+			{:else if isOracleRollMove}
+				<div class="md-footer-btns">
+					<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
+					<button class="btn" onclick={close}>Cancel</button>
+					<button
+						class="btn btn-primary md-roll-btn"
+						onclick={doAskOracle}
+						disabled={rolling}
+					>{rolling ? 'Rolling…' : 'Roll Move'}</button>
+				</div>
+
+			{:else if isTableRollMove(selectedMove)}
+				<div class="md-footer-btns">
+					<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
+					<button class="btn" onclick={close}>Cancel</button>
+					<button
+						class="btn btn-primary md-roll-btn"
+						onclick={doTableRoll}
+						disabled={rolling || !ctx}
+					>{rolling ? 'Rolling…' : 'Roll Move'}</button>
+				</div>
+
+			{:else if isNoRollMove(selectedMove)}
+				<div class="md-footer-btns">
+					<button class="btn" onclick={close}>Cancel</button>
+					{#if selectedMove['logBody'] || selectedMove.id === 'move/take-a-hiatus'}
+						<button
+							class="btn btn-primary md-roll-btn md-roll-btn--full"
+							onclick={doApplyNoRollMove}
+						>Use Move</button>
+					{/if}
+				</div>
+
+			{:else}
+				<div class="md-footer-btns">
+					<button class="btn" onclick={close}>Cancel</button>
 				</div>
 			{/if}
-			<div class="md-action-row">
-				<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
-				<button
-					class="btn btn-primary md-roll-btn"
-					onclick={doTableRoll}
-					disabled={rolling || !ctx}
-				>{rolling ? 'Rolling\u2026' : 'Roll Move'}</button>
-			</div>
+		</div><!-- end md-detail-footer -->
 
-		<!-- ── No-roll move (no controls needed) ── -->
-		{:else if isNoRollMove(selectedMove)}
-			<!-- ── Apply button for moves with a logBody or special handling (e.g. Turn the Tide, Take a Hiatus) ── -->
-			{#if selectedMove['logBody'] || selectedMove.id === 'move/take-a-hiatus'}
-				<button
-					class="btn btn-primary md-roll-btn md-roll-btn--full"
-					onclick={doApplyNoRollMove}
-				>Use Move</button>
-			{/if}
-			<!-- ── Outcomes ── -->
-			{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
-				<div class="md-outcomes">
-					{#if selectedMove.strong}
-						<div class="md-outcome-section" style:--outcome-color="var(--color-success, #34d399)">
-							<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
-							<div class="md-outcome-text">{@html displayHtml(selectedMove.strong)}</div>
-						</div>
-					{/if}
-					{#if selectedMove.weak}
-						<div class="md-outcome-section" style:--outcome-color="var(--color-momentum, #60a5fa)">
-							<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
-							<div class="md-outcome-text">{@html displayHtml(selectedMove.weak)}</div>
-						</div>
-					{/if}
-					{#if selectedMove.miss}
-						<div class="md-outcome-section" style:--outcome-color="var(--color-danger, #ef4444)">
-							<div class="md-outcome-label md-outcome-miss">Miss</div>
-							<div class="md-outcome-text">{@html displayHtml(selectedMove.miss)}</div>
-						</div>
-					{/if}
-				</div>
-			{/if}
-		{/if}
-
-
-
-		<!-- Notes -->
-		{#if selectedMove.notes}
-			<div class="md-notes">
-				<div class="md-notes-text">{selectedMove.notes}</div>
-			</div>
-		{/if}
 	</div>
 
 {/if}
@@ -1401,7 +1413,42 @@
 	.md-body--detail {
 		display:        flex;
 		flex-direction: column;
+		gap:            0;
+		overflow:       hidden;
+		padding:        0;
+	}
+
+	.md-detail-scroll {
+		flex:           1;
+		overflow-y:     auto;
+		padding:        10px 14px;
+		min-height:     0;
+		display:        flex;
+		flex-direction: column;
 		gap:            10px;
+	}
+
+	.md-detail-footer {
+		flex-shrink:    0;
+		border-top:     1px solid var(--border);
+		padding:        10px 14px;
+		display:        flex;
+		flex-direction: column;
+		gap:            8px;
+		background:     var(--bg-card);
+	}
+
+	.md-footer-top {
+		display:     flex;
+		align-items: center;
+		flex-wrap:   wrap;
+		gap:         8px;
+	}
+
+	.md-footer-btns {
+		display:     flex;
+		align-items: center;
+		gap:         8px;
 	}
 
 	.md-loading,
@@ -1570,11 +1617,6 @@
 	}
 
 	/* ── Action row (adds + roll button) ─────────────────────────────────── */
-	.md-action-row {
-		display:     flex;
-		align-items: center;
-		gap:         12px;
-	}
 	.md-adds-row {
 		display:     flex;
 		align-items: center;
@@ -1648,11 +1690,11 @@
 		padding:     8px 16px;
 		font-size:   0.8rem;
 	}
-	/* In action row, roll button fills remaining space */
-	/* Roll status formula (between spinners and roll button) */
+	/* Roll status — left side of footer-btns row, expands to fill space */
 	.md-roll-status {
 		flex:          1;
-		text-align:    center;
+		min-width:     0;
+		text-align:    left;
 		font-family:   var(--font-ui, monospace);
 		font-size:     0.72rem;
 		color:         var(--text-muted);
@@ -1662,7 +1704,6 @@
 		text-overflow: ellipsis;
 		padding:       0 6px;
 	}
-	.md-action-row .md-roll-btn { justify-content: center; }
 	/* Inline die icons inside roll status formula (injected via @html) */
 	:global(.rs-die) {
 		width:          1em;
@@ -1704,8 +1745,6 @@
 		height: 12px;
 		opacity: 0.8;
 	}
-	/* Standalone roll buttons (progress moves) — full width */
-	.md-roll-btn--full { width: 100%; }
 	/* Roll formula elements */
 	.md-roll-vs {
 		font-size:   0.65rem;
@@ -1924,17 +1963,61 @@
 		margin-left: 0.65rem;
 	}
 
-	/* Spell roll action row — spinners on first line, status + button on second */
-	.md-action-row--spell {
-		flex-wrap: wrap;
-		gap: 6px 0;
-	}
-	.md-action-row--spell .md-adds-row {
-		flex-basis: 100%;
-	}
 	.md-roll-btn--spell {
 		flex: 0 0 auto;
 		margin-left: auto;
+	}
+
+	/* ── Relevant Assets — tag row ───────────────────────────────────────── */
+	.md-relevant-assets {
+		display:     flex;
+		align-items: center;
+		flex-wrap:   wrap;
+		gap:         6px;
+	}
+
+	.md-relevant-label {
+		font-family:    var(--font-ui);
+		font-size:      0.62rem;
+		font-weight:    600;
+		letter-spacing: 0.07em;
+		text-transform: uppercase;
+		color:          var(--text-dimmer);
+		white-space:    nowrap;
+		flex-shrink:    0;
+	}
+
+	.md-relevant-tags {
+		display:   flex;
+		flex-wrap: wrap;
+		gap:       5px;
+	}
+
+	.md-relevant-tag {
+		display:       inline-flex;
+		align-items:   center;
+		gap:           4px;
+		padding:       3px 9px 3px 7px;
+		border-radius: 10px;
+		border:        1px solid var(--border-mid);
+		background:    var(--bg-inset);
+		font-family:   var(--font-ui);
+		font-size:     0.72rem;
+		font-weight:   500;
+		color:         var(--text-muted);
+		cursor:        default;
+		transition:    border-color 0.12s, color 0.12s, background 0.12s;
+	}
+	.md-relevant-tag:hover {
+		border-color: var(--text-accent);
+		color:        var(--text);
+		background:   color-mix(in srgb, var(--text-accent) 8%, var(--bg-inset));
+	}
+
+	.md-relevant-check {
+		font-size:   0.65rem;
+		color:       var(--color-success, #34d399);
+		flex-shrink: 0;
 	}
 
 </style>

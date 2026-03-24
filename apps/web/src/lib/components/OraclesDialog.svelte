@@ -226,9 +226,6 @@
 	<div class="od-header od-header--detail" use:draggable>
 		<button class="od-back-btn" onclick={() => (view = 'picker')}>← Back</button>
 		<span class="od-title od-title--detail">{selectedOracle.title}</span>
-		<div class="od-detail-actions">
-			<button class="od-close" onclick={close} aria-label="Close">✕</button>
-		</div>
 	</div>
 
 	<!-- Detail body -->
@@ -244,6 +241,7 @@
 
 	<!-- Roll footer -->
 	<div class="od-footer">
+		<button class="btn btn-secondary od-cancel-btn" onclick={close}>Cancel</button>
 		<button
 			class="btn btn-primary od-roll-btn"
 			onclick={() => doRoll(selectedOracle!.key)}
@@ -345,12 +343,6 @@
 		white-space:   nowrap;
 	}
 	.od-back-btn:hover { color: var(--text); border-color: var(--border-mid); }
-
-	.od-detail-actions {
-		display:     flex;
-		align-items: center;
-		flex-shrink: 0;
-	}
 
 	/* ── Controls (search + group tags) ─────────────────────────────────── */
 	.od-controls {
@@ -568,15 +560,20 @@
 
 	/* ── Roll footer ─────────────────────────────────────────────────────── */
 	.od-footer {
-		border-top:  1px solid var(--border);
-		padding:     10px 14px;
-		flex-shrink: 0;
-		display:     flex;
+		border-top:      1px solid var(--border);
+		padding:         10px 14px;
+		flex-shrink:     0;
+		display:         flex;
 		justify-content: flex-end;
+		gap:             8px;
+	}
+	.od-cancel-btn {
+		padding:         6px 16px;
+		font-size:       0.78rem;
 	}
 	.od-roll-btn {
-		padding:          8px 20px;
-		font-size:        0.8rem;
-		justify-content:  center;  /* prevent text left-drift in inline-flex */
+		padding:         8px 20px;
+		font-size:       0.8rem;
+		justify-content: center;  /* prevent text left-drift in inline-flex */
 	}
 </style>

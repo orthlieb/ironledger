@@ -3,7 +3,7 @@ import type { Actions, PageServerLoad } from './$types';
 import { INTERNAL_API_URL, HCAPTCHA_SITE_KEY } from '$lib/server/config.js';
 
 export const load: PageServerLoad = async () => {
-	return { hcaptchaSiteKey: HCAPTCHA_SITE_KEY };
+	return { hcaptchaSiteKey: HCAPTCHA_SITE_KEY, isDev: process.env.NODE_ENV !== 'production' };
 };
 
 export const actions: Actions = {
@@ -16,7 +16,8 @@ export const actions: Actions = {
 			return fail(400, { error: 'Email is required.', email, sent: false });
 		}
 
-		if (!captchaToken) {
+		const isDev = process.env.NODE_ENV !== 'production';
+		if (!captchaToken && !isDev) {
 			return fail(400, { error: 'Please complete the captcha.', email, sent: false });
 		}
 

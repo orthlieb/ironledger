@@ -54,6 +54,10 @@
 	// Clear-log confirmation dialog
 	let clearDialogEl = $state<HTMLDialogElement | null>(null);
 
+	// Mobile tap-tracking — used by touchend delegation to distinguish taps from scrolls.
+	let _touchStartX = 0;
+	let _touchStartY = 0;
+
 	// ---------------------------------------------------------------------------
 	// Burn Momentum
 	// ---------------------------------------------------------------------------
@@ -307,11 +311,32 @@
 	function markLinkSpent(entryId: string, link: HTMLElement): void {
 		const entry = (logs[SESSION_LOG_ID] ?? []).find((e) => e.id === entryId);
 		if (!entry) return;
-		const escaped = link.outerHTML.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-		const newHtml = entry.html.replace(
-			new RegExp(escaped),
-			`<s class="resource-spent">${link.textContent}</s>`,
+
+		// ⚠  Do NOT use link.outerHTML as the regex pattern.
+		//    The browser re-serialises the DOM: \u00a0 → &nbsp;, attribute order
+		//    may change, etc.  The stored HTML was built from a template literal and
+		//    won't match outerHTML character-for-character.
+		//
+		//    Instead build the pattern from the element's *-link class and its
+		//    data-* attributes using lookaheads, which are attribute-order
+		//    independent and never touch text content at all.
+		const esc = (v: string) => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+		const linkClass = [...link.classList].find(c => c.endsWith('-link'));
+		if (!linkClass) return;
+
+		// One lookahead per data-* attribute — order independent.
+		const dataLookaheads = Object.entries(link.dataset)
+			.map(([camel, val]) => {
+				const attr = camel.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`);
+				return `(?=[^>]*\\bdata-${esc(attr)}="${esc(val ?? '')}")`;
+			})
+			.join('');
+
+		const re = new RegExp(
+			`<a\\b(?=[^>]*\\bclass="${esc(linkClass)}")${dataLookaheads}[^>]*>[\\s\\S]*?<\\/a>`,
 		);
+		const newHtml = entry.html.replace(re, `<s class="resource-spent">${link.textContent}</s>`);
 		updateLogEntryHtml(SESSION_LOG_ID, entryId, newHtml);
 	}
 
@@ -319,8 +344,9 @@
 	 * Event-delegation handler for all interactive links in log entry bodies.
 	 * Handles XP cost links, resource/debility/progress/initiative/menace links,
 	 * and move/oracle reference links.
+	 * Accepts both MouseEvent (desktop click) and TouchEvent (mobile touchend).
 	 */
-	function handleEntriesClick(e: MouseEvent) {
+	function handleEntriesClick(e: Event) {
 		const target = e.target as HTMLElement;
 
 		// ---- XP cost links ----
@@ -482,12 +508,43 @@
 			return;
 		}
 	}
+
+	/** Selector covering all interactive link classes — used for touchend fast-tap. */
+	const LINK_SELECTOR = [
+		'.resource-link', '.move-link', '.oracle-link', '.initiative-link',
+		'.progress-link', '.debility-link', '.menace-link', '.vanquish-foe-link',
+		'.burn-momentum-link', '.xp-cost-link',
+	].join(', ');
+
+	function handleEntriesTouchStart(e: TouchEvent) {
+		_touchStartX = e.touches[0].clientX;
+		_touchStartY = e.touches[0].clientY;
+	}
+
+	/**
+	 * Mobile fast-tap: fire the link handler immediately on touchend if the finger
+	 * didn't travel more than 10px (i.e. it's a tap, not a scroll).  This bypasses
+	 * the browser's ~300 ms synthetic-click delay for interactive log links.
+	 */
+	function handleEntriesTouchEnd(e: TouchEvent) {
+		const touch = e.changedTouches[0];
+		const dx = Math.abs(touch.clientX - _touchStartX);
+		const dy = Math.abs(touch.clientY - _touchStartY);
+		if (dx > 10 || dy > 10) return; // scroll gesture — let the browser handle it
+		const target = e.target as HTMLElement;
+		if (!target.closest(LINK_SELECTOR)) return; // not a link tap
+		// Prevent the browser from also firing a synthetic click (~300 ms later).
+		e.preventDefault();
+		handleEntriesClick(e);
+	}
 </script>
 
 <div class="log-panel">
 	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions a11y_no_noninteractive_element_interactions -->
 	<div class="log-entries" role="log" aria-live="polite" aria-label="Session log"
-		onclick={handleEntriesClick}>
+		onclick={handleEntriesClick}
+		ontouchstart={handleEntriesTouchStart}
+		ontouchend={handleEntriesTouchEnd}>
 		{#if entries.length === 0}
 			<div class="log-empty">
 				<span class="log-empty-icon">◊</span>
@@ -815,6 +872,8 @@
 		color: var(--text-accent);
 		text-decoration: underline;
 		cursor: pointer;
+		/* Removes 300 ms tap delay on mobile — browser won't wait for double-tap-to-zoom. */
+		touch-action: manipulation;
 	}
 	.entry-body :global(.resource-link:hover),
 	.entry-body :global(.move-link:hover),
@@ -845,6 +904,7 @@
 		text-decoration: underline;
 		font-weight: 600;
 		cursor: pointer;
+		touch-action: manipulation;
 	}
 	.entry-body :global(.xp-cost-link):hover {
 		opacity: 0.8;

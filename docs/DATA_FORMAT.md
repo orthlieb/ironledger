@@ -18,11 +18,13 @@ For Yrt homebrew extensions (mana, Touched assets, cantrips, Yrt-specific oracle
   - [Special Move Types](#special-move-types)
 - [Assets](#assets)
   - [Asset Object Fields](#asset-object-fields)
+  - [Move Links in Ability Text](#move-links-in-ability-text)
   - [Auto-Enabled Abilities](#auto-enabled-abilities)
   - [XP Cost and Gating](#xp-cost-and-gating)
   - [Asset Log Entry Titles](#asset-log-entry-titles)
   - [Companion Assets](#companion-assets)
   - [Rarities](#rarities)
+  - [Asset Move References (asset-move-refs.json)](#asset-move-references-asset-move-refsjson)
 - [Oracles](#oracles)
   - [Oracle Object Fields](#oracle-object-fields)
   - [Special Oracle Types](#special-oracle-types)
@@ -504,8 +506,30 @@ Each ability object:
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `enabled` | boolean | yes | `true` if the ability starts checked when the asset is first acquired (see [Auto-Enabled Abilities](#auto-enabled-abilities)) |
-| `text` | string (HTML) | yes | Ability description |
+| `text` | string (HTML) | yes | Ability description. Move names that appear in the text are decorated with `<a class="move-link">` tags (see [Move Links in Ability Text](#move-links-in-ability-text)). |
 | `name` | string | no | Named ability (companions only, e.g., `"Scout"`, `"Bonded"`) |
+
+### Move Links in Ability Text
+
+All three asset sources (Ironsworn, Delve, YRT) use `<a class="move-link" data-id="...">` to mark move references in ability `text` fields. This is the same tag used in move outcome text and oracle table values — click delegation is already wired up in `LogPanel` and `MovesDialog`, so move links in asset ability text open the move's detail dialog automatically.
+
+```html
+<!-- Example: Archer ability 1 -->
+When you <a class="move-link" data-id="move/secure-an-advantage">Secure an Advantage</a> by...
+
+<!-- Example: Archer ability 2 -->
+...you may reroll any dice when you <a class="move-link" data-id="move/strike">Strike</a> or
+<a class="move-link" data-id="move/clash">Clash</a>.
+```
+
+**Rules:**
+- One `<a class="move-link">` per move reference; the `data-id` is the move's full `id` (e.g., `move/secure-an-advantage`).
+- The link text preserves the original capitalisation from the source text.
+- Matches are whole-name only (word boundaries); partial substrings are never wrapped.
+- Bold markers (`<b>`, `<strong>`) that were previously used in YRT ability text to highlight move names have been converted to `<a class="move-link">` links.
+- Ability text that does not reference any move is left unchanged.
+
+A companion index file (`asset-move-refs.json`) lists every move ID that each asset and ability references — see [Asset Move References](#asset-move-references-asset-move-refsjson).
 
 ### Auto-Enabled Abilities
 
@@ -593,6 +617,36 @@ Rarity enhancements for existing assets:
 | `assetId` | string | The `id` of the asset this rarity enhances |
 | `xpCost` | number | Experience cost to unlock |
 | `description` | string | Narrative description |
+
+### Asset Move References (asset-move-refs.json)
+
+**Location:** `data/assets/asset-move-refs.json`
+
+A pre-computed index mapping each asset (and each of its abilities) to the set of move IDs referenced in its ability text. Generated from the decorated ability text in the three source files. Only assets that reference at least one move are included.
+
+```json
+[
+  {
+    "id": "combat/archer",
+    "abilities": [
+      { "index": 0, "moves": ["move/secure-an-advantage"] },
+      { "index": 1, "moves": ["move/strike", "move/clash"] },
+      { "index": 2, "moves": ["move/resupply"] }
+    ],
+    "allMoves": ["move/secure-an-advantage", "move/strike", "move/clash", "move/resupply"]
+  }
+]
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Asset ID (matches the asset's `id` field) |
+| `abilities` | array | Per-ability move lists (only abilities with ≥ 1 move reference are included) |
+| `abilities[].index` | number | 0-based index of the ability within the asset's `abilities` array |
+| `abilities[].moves` | array of strings | Move IDs referenced in this ability's `text`, in order of appearance |
+| `allMoves` | array of strings | Deduplicated union of all move IDs across all abilities |
+
+**Usage:** The MovesDialog "Relevant Assets" panel reads this index at dialog-open time to find which of the character's enabled abilities mention the currently-selected move, then surfaces those abilities as contextual suggestions without auto-applying any modifier.
 
 ---
 

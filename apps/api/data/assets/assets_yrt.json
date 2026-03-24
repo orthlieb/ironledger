@@ -8,21 +8,24 @@
       "preamble": null,
       "postamble": "Your touched value determines how many abilities you may use: Pure — none; Prime — 1; Second — 2; Third or Feral — all 3.",
       "preconditions": [
-        { "key": "touched", "min": 1 }
+        {
+          "key": "touched",
+          "min": 1
+        }
       ],
       "touchedFeatures": true,
       "abilities": [
         {
           "enabled": true,
-          "text": "You move with the senses and poise of a night hunter. When you <b>Face Danger</b>, <b>Secure an Advantage</b>, or <b>Gather Information</b> in darkness, dim light, or heavy shadow, add +1. On a strong hit, also take +1 momentum as your night sight and feline awareness reveal more than others can see."
+          "text": "You move with the senses and poise of a night hunter. When you <a class=\"move-link\" data-id=\"move/face-danger\">Face Danger</a>, <a class=\"move-link\" data-id=\"move/secure-an-advantage\">Secure an Advantage</a>, or <a class=\"move-link\" data-id=\"move/gather-information\">Gather Information</a> in darkness, dim light, or heavy shadow, add +1. On a strong hit, also take +1 momentum as your night sight and feline awareness reveal more than others can see."
         },
         {
           "enabled": false,
-          "text": "Your leaps and landings defy human limits. When you <b>Face Danger</b> or <b>Undertake a Journey</b> by jumping, climbing, or risking a fall, add +1 and roll +edge (even if another stat would normally apply). On a strong hit, you land sure-footed; take +1 momentum or inflict +1 harm if your leap carries you into the attack."
+          "text": "Your leaps and landings defy human limits. When you <a class=\"move-link\" data-id=\"move/face-danger\">Face Danger</a> or <a class=\"move-link\" data-id=\"move/undertake-a-journey\">Undertake a Journey</a> by jumping, climbing, or risking a fall, add +1 and roll +edge (even if another stat would normally apply). On a strong hit, you land sure-footed; take +1 momentum or inflict +1 harm if your leap carries you into the attack."
         },
         {
           "enabled": false,
-          "text": "You vanish into stillness like a hidden hunter. When you remain motionless or stalk slowly in cover and then <b>Secure an Advantage</b> or <b>Face Danger</b> by relying on concealment, add +1. On a hit, you are not detected and take +1 momentum; on a strong hit, you may also improve your position (define a safe escape route, observe unnoticed, or set up an ally’s next move)."
+          "text": "You vanish into stillness like a hidden hunter. When you remain motionless or stalk slowly in cover and then <a class=\"move-link\" data-id=\"move/secure-an-advantage\">Secure an Advantage</a> or <a class=\"move-link\" data-id=\"move/face-danger\">Face Danger</a> by relying on concealment, add +1. On a hit, you are not detected and take +1 momentum; on a strong hit, you may also improve your position (define a safe escape route, observe unnoticed, or set up an ally’s next move)."
         }
       ]
     },
@@ -32,21 +35,69 @@
       "category": "Ritual",
       "summary": "Minor magical tricks: clean, light, warm, lock, and more.",
       "preamble": null,
-      "description": "You have learned minor magical tricks \u2014 small, reliable effects drawn from mana seeds. Choose 2 cantrips when you acquire this asset.<br><br><b>Limitations:</b> A cantrip cannot affect anything larger than you can hold in two hands, cannot last longer than 10 minutes or until dispelled (see level exceptions below), cannot reach farther than 10 paces (line of sight required), and cannot directly inflict harm in combat. Most cantrips take several seconds to cast, up to a few minutes for larger or more complex work.",
+      "description": "You have learned minor magical tricks — small, reliable effects drawn from mana seeds. Choose 2 cantrips when you acquire this asset.<br><br><b>Limitations:</b> A cantrip cannot affect anything larger than you can hold in two hands, cannot last longer than 10 minutes or until dispelled (see level exceptions below), cannot reach farther than 10 paces (line of sight required), and cannot directly inflict harm in combat. Most cantrips take several seconds to cast, up to a few minutes for larger or more complex work.",
       "cantrips": [
-        { "key": "tidy-clean",     "name": "Tidy/Clean",     "desc": "Clean or create a minor mess on a surface." },
-        { "key": "mark-unmark",    "name": "Mark/Unmark",    "desc": "Place or remove a small symbol or mark." },
-        { "key": "mute-amplify",   "name": "Mute/Amplify",   "desc": "Mute or amplify a small sound." },
-        { "key": "freshen-spoil",  "name": "Freshen/Spoil",  "desc": "Freshen or spoil a small quantity of food/drink." },
-        { "key": "warm-chill",     "name": "Warm/Chill",     "desc": "Warm or cool a small object or liquid." },
-        { "key": "spark-snuff",    "name": "Spark/Snuff",    "desc": "Light or extinguish a small, non-magical flame." },
-        { "key": "lock-unlock",    "name": "Lock/Unlock",    "desc": "Jam or unjam a simple latch or buckle." },
-        { "key": "tint-clear",     "name": "Tint/Clear",     "desc": "Change the color of a small item or clear a small quantity of liquid." },
-        { "key": "stick-unstick",  "name": "Stick/Unstick",  "desc": "Adhere or separate two small objects." },
-        { "key": "scouts-light",   "name": "Scout's Light",  "desc": "Produce a faint, firefly-like, temporary glow." },
-        { "key": "soften-harden",  "name": "Soften/Harden",  "desc": "Soften (make flexible) or harden (make brittle) a small spot or item." }
+        {
+          "key": "tidy-clean",
+          "name": "Tidy/Clean",
+          "desc": "Clean or create a minor mess on a surface."
+        },
+        {
+          "key": "mark-unmark",
+          "name": "Mark/Unmark",
+          "desc": "Place or remove a small symbol or mark."
+        },
+        {
+          "key": "mute-amplify",
+          "name": "Mute/Amplify",
+          "desc": "Mute or amplify a small sound."
+        },
+        {
+          "key": "freshen-spoil",
+          "name": "Freshen/Spoil",
+          "desc": "Freshen or spoil a small quantity of food/drink."
+        },
+        {
+          "key": "warm-chill",
+          "name": "Warm/Chill",
+          "desc": "Warm or cool a small object or liquid."
+        },
+        {
+          "key": "spark-snuff",
+          "name": "Spark/Snuff",
+          "desc": "Light or extinguish a small, non-magical flame."
+        },
+        {
+          "key": "lock-unlock",
+          "name": "Lock/Unlock",
+          "desc": "Jam or unjam a simple latch or buckle."
+        },
+        {
+          "key": "tint-clear",
+          "name": "Tint/Clear",
+          "desc": "Change the color of a small item or clear a small quantity of liquid."
+        },
+        {
+          "key": "stick-unstick",
+          "name": "Stick/Unstick",
+          "desc": "Adhere or separate two small objects."
+        },
+        {
+          "key": "scouts-light",
+          "name": "Scout's Light",
+          "desc": "Produce a faint, firefly-like, temporary glow."
+        },
+        {
+          "key": "soften-harden",
+          "name": "Soften/Harden",
+          "desc": "Soften (make flexible) or harden (make brittle) a small spot or item."
+        }
       ],
-      "cantripSlots": [2, 2, 2],
+      "cantripSlots": [
+        2,
+        2,
+        2
+      ],
       "abilities": [
         {
           "enabled": true,
@@ -58,7 +109,7 @@
         },
         {
           "enabled": false,
-          "text": "Choose 2 additional cantrips from the list (6 total). Simple/touching cantrips (1 mana cost) are now free \u2014 they cost 0 mana."
+          "text": "Choose 2 additional cantrips from the list (6 total). Simple/touching cantrips (1 mana cost) are now free — they cost 0 mana."
         }
       ]
     },
@@ -68,7 +119,7 @@
       "category": "Ritual",
       "summary": "Sense and interpret mana in a person, object, or area.",
       "preamble": null,
-      "description": "A basic ritual taught early to Neophytes and Disciples of the Conclave, allowing them to sense and interpret mana in a person, object, or area \u2014 \"detect magic,\" grounded in the color-coded manite system. It uses primarily Amber to read patterns, with Luminous to stabilize and Gray as a structural aid when needed.",
+      "description": "A basic ritual taught early to Neophytes and Disciples of the Conclave, allowing them to sense and interpret mana in a person, object, or area — \"detect magic,\" grounded in the color-coded manite system. It uses primarily Amber to read patterns, with Luminous to stabilize and Gray as a structural aid when needed.",
       "inspectionFactors": [
         {
           "key": "presence",
@@ -128,15 +179,33 @@
       "inspectionExample": {
         "scenario": "A Disciple wants to quietly check if a street-side shrine has been marked or trapped by magic, without lighting it up like a beacon.",
         "factors": {
-          "presence": { "score": 1, "reason": "Is there mana, and is it stable or corrupt?" },
-          "color": { "score": 1, "reason": "Broad categories." },
-          "intensity": { "score": 1, "reason": "Localized or extended?" },
-          "temporal": { "score": 0, "reason": "No need for age." },
-          "structure": { "score": 1, "reason": "Protective, harmful, or a signal?" },
-          "penetration": { "score": 1, "reason": "Peek through basic masking, no hard push." }
+          "presence": {
+            "score": 1,
+            "reason": "Is there mana, and is it stable or corrupt?"
+          },
+          "color": {
+            "score": 1,
+            "reason": "Broad categories."
+          },
+          "intensity": {
+            "score": 1,
+            "reason": "Localized or extended?"
+          },
+          "temporal": {
+            "score": 0,
+            "reason": "No need for age."
+          },
+          "structure": {
+            "score": 1,
+            "reason": "Protective, harmful, or a signal?"
+          },
+          "penetration": {
+            "score": 1,
+            "reason": "Peek through basic masking, no hard push."
+          }
         },
         "total": 5,
-        "resolution": "She commits 3 mana and Casts Conclave Ritual. She rolls 1d6[4] + 3 mana = 7 vs difficulty 5 and 1d10[9]. That is a weak hit \u2014 downgrade 2 factors (9 \u2212 7 = 2). She drops Penetration from 1 to 0 (losing the ability to see through masking) and Color from 1 to 0 (only learning whether mana is present, not its type). She still senses a stable mana presence, gets a rough footprint, and knows the shrine\u2019s effect is protective \u2014 enough to decide it\u2019s safe."
+        "resolution": "She commits 3 mana and Casts Conclave Ritual. She rolls 1d6[4] + 3 mana = 7 vs difficulty 5 and 1d10[9]. That is a weak hit — downgrade 2 factors (9 − 7 = 2). She drops Penetration from 1 to 0 (losing the ability to see through masking) and Color from 1 to 0 (only learning whether mana is present, not its type). She still senses a stable mana presence, gets a rough footprint, and knows the shrine’s effect is protective — enough to decide it’s safe."
       },
       "abilities": [
         {
@@ -174,18 +243,18 @@
           "key": "viewing",
           "name": "Viewing",
           "levels": [
-            "Limited \u2014 convincing only from straight on.",
-            "Half sphere \u2014 convincing from most angles.",
-            "Full sphere \u2014 convincing from all angles, top and bottom."
+            "Limited — convincing only from straight on.",
+            "Half sphere — convincing from most angles.",
+            "Full sphere — convincing from all angles, top and bottom."
           ]
         },
         {
           "key": "animation",
           "name": "Animation",
           "levels": [
-            "Static \u2014 no movement.",
-            "Small animated details \u2014 subtle motion. Requires red mana.",
-            "Full animation \u2014 lifelike movement. Requires red mana."
+            "Static — no movement.",
+            "Small animated details — subtle motion. Requires red mana.",
+            "Full animation — lifelike movement. Requires red mana."
           ]
         },
         {
@@ -201,33 +270,51 @@
           "key": "size",
           "name": "Size",
           "levels": [
-            "Small \u2014 deck of cards.",
-            "Medium \u2014 chest sized.",
-            "Large \u2014 horse sized."
+            "Small — deck of cards.",
+            "Medium — chest sized.",
+            "Large — horse sized."
           ]
         },
         {
           "key": "detail",
           "name": "Detail",
           "levels": [
-            "Rough \u2014 obviously an illusion up close.",
+            "Rough — obviously an illusion up close.",
             "Passes casual inspection.",
-            "Lifelike \u2014 indistinguishable from real."
+            "Lifelike — indistinguishable from real."
           ]
         }
       ],
       "inspectionExample": {
         "scenario": "You desire to distract a guard by creating a small hopping frog illusion.",
         "factors": {
-          "components": { "score": 1, "reason": "Visual + auditory." },
-          "viewing": { "score": 1, "reason": "Half sphere \u2014 convincing from most angles." },
-          "animation": { "score": 2, "reason": "Full animation \u2014 lifelike hopping movement." },
-          "persistence": { "score": 0, "reason": "Only while actively casting." },
-          "size": { "score": 0, "reason": "Small \u2014 deck of cards sized frog." },
-          "detail": { "score": 1, "reason": "Passes casual inspection." }
+          "components": {
+            "score": 1,
+            "reason": "Visual + auditory."
+          },
+          "viewing": {
+            "score": 1,
+            "reason": "Half sphere — convincing from most angles."
+          },
+          "animation": {
+            "score": 2,
+            "reason": "Full animation — lifelike hopping movement."
+          },
+          "persistence": {
+            "score": 0,
+            "reason": "Only while actively casting."
+          },
+          "size": {
+            "score": 0,
+            "reason": "Small — deck of cards sized frog."
+          },
+          "detail": {
+            "score": 1,
+            "reason": "Passes casual inspection."
+          }
         },
         "total": 5,
-        "resolution": "You commit 4 mana and Cast Conclave Ritual. You roll 1d6[3] + 4 mana = 7 vs difficulty 5 and 1d10[8]. That is a weak hit \u2014 downgrade 1 factor (8 \u2212 7 = 1). You drop Detail from 1 to 0 (rough \u2014 obviously an illusion up close), hoping the guard focuses on the movement and sound rather than inspecting the frog closely."
+        "resolution": "You commit 4 mana and Cast Conclave Ritual. You roll 1d6[3] + 4 mana = 7 vs difficulty 5 and 1d10[8]. That is a weak hit — downgrade 1 factor (8 − 7 = 1). You drop Detail from 1 to 0 (rough — obviously an illusion up close), hoping the guard focuses on the movement and sound rather than inspecting the frog closely."
       },
       "abilities": [
         {
@@ -250,32 +337,32 @@
       "category": "Ritual",
       "summary": "Influence thoughts, emotions, and perceptions in a target's mind.",
       "preamble": null,
-      "description": "This ritual lets a caster influence thoughts, emotions, and perceptions in a target\u2019s mind. It is more dangerous than simple illusions, because it acts inside the mind rather than in the air. Amber mana interfaces tightly with the nervous system and sensory processing. It can project illusions, dampen fear or pain, or induce specific emotional states; extended or forceful use risks addiction, mindbreak, or erosion of identity.<br><br><b>Risks:</b> Repeated use on the same mind within a short period increases Resistance by +1 each time (max 2) and may create fragmented or contradictory memories. If you roll a miss on a compulsion with Depth 2 or Scope 2, mark a debility related to mental strain (sleeplessness, intrusive memories, emotional numbness). Unsanctioned deep control, if discovered by the Conclave, carries severe consequences.",
+      "description": "This ritual lets a caster influence thoughts, emotions, and perceptions in a target’s mind. It is more dangerous than simple illusions, because it acts inside the mind rather than in the air. Amber mana interfaces tightly with the nervous system and sensory processing. It can project illusions, dampen fear or pain, or induce specific emotional states; extended or forceful use risks addiction, mindbreak, or erosion of identity.<br><br><b>Risks:</b> Repeated use on the same mind within a short period increases Resistance by +1 each time (max 2) and may create fragmented or contradictory memories. If you roll a miss on a compulsion with Depth 2 or Scope 2, mark a debility related to mental strain (sleeplessness, intrusive memories, emotional numbness). Unsanctioned deep control, if discovered by the Conclave, carries severe consequences.",
       "inspectionFactors": [
         {
           "key": "depth",
           "name": "Depth",
           "levels": [
-            "Surface nudge \u2014 momentary distraction, fleeting doubt, slight calm.",
-            "Emotional steering \u2014 fear, trust, guilt, confidence for minutes.",
-            "Directive compulsion \u2014 you plant a specific urge or instruction."
+            "Surface nudge — momentary distraction, fleeting doubt, slight calm.",
+            "Emotional steering — fear, trust, guilt, confidence for minutes.",
+            "Directive compulsion — you plant a specific urge or instruction."
           ]
         },
         {
           "key": "clarity",
           "name": "Clarity",
           "levels": [
-            "Vague impression \u2014 a feeling they can second-guess.",
-            "Convincing emotion or thought \u2014 they think it is their own.",
-            "Overriding priority \u2014 it dominates other concerns while it lasts."
+            "Vague impression — a feeling they can second-guess.",
+            "Convincing emotion or thought — they think it is their own.",
+            "Overriding priority — it dominates other concerns while it lasts."
           ]
         },
         {
           "key": "scope",
           "name": "Scope",
           "levels": [
-            "Single emotional axis \u2014 fear, calm, curiosity, etc.",
-            "Emotion plus a simple belief (\u201cyou can trust me,\u201d \u201cthey are watching\u201d).",
+            "Single emotional axis — fear, calm, curiosity, etc.",
+            "Emotion plus a simple belief (“you can trust me,” “they are watching”).",
             "Emotion plus a specific, framed memory or interpretation."
           ]
         },
@@ -283,7 +370,7 @@
           "key": "duration",
           "name": "Duration",
           "levels": [
-            "Seconds \u2014 enough to slip a question past their guard.",
+            "Seconds — enough to slip a question past their guard.",
             "Minutes.",
             "Up to an hour or until jolted (pain, shock, another caster)."
           ]
@@ -292,33 +379,51 @@
           "key": "resistance",
           "name": "Resistance",
           "levels": [
-            "Willing / unsuspecting \u2014 they want to talk, or think you are helping.",
-            "Guarded / anxious \u2014 afraid, suspicious, but not trained.",
-            "Hardened \u2014 Brotherhood-trained, fanatic, or currently terrified."
+            "Willing / unsuspecting — they want to talk, or think you are helping.",
+            "Guarded / anxious — afraid, suspicious, but not trained.",
+            "Hardened — Brotherhood-trained, fanatic, or currently terrified."
           ]
         },
         {
           "key": "subtlety",
           "name": "Subtlety",
           "levels": [
-            "Crude push \u2014 they feel pushed, may notice something is off.",
-            "Gentle guidance \u2014 they rationalize it as their own reaction.",
-            "Seamless masking \u2014 memories fill in naturally; they are sure it was all their idea."
+            "Crude push — they feel pushed, may notice something is off.",
+            "Gentle guidance — they rationalize it as their own reaction.",
+            "Seamless masking — memories fill in naturally; they are sure it was all their idea."
           ]
         }
       ],
       "inspectionExample": {
         "scenario": "You want to gently coax information from a frightened but untrained witness for a few minutes, nudging their fear away and trust toward you.",
         "factors": {
-          "depth": { "score": 1, "reason": "Emotional steering \u2014 calm them and build trust." },
-          "clarity": { "score": 1, "reason": "Convincing \u2014 they think it is their own feeling." },
-          "scope": { "score": 1, "reason": "Emotion + simple belief: \u201cyou can trust me.\u201d" },
-          "duration": { "score": 1, "reason": "Minutes \u2014 long enough for a conversation." },
-          "resistance": { "score": 1, "reason": "Guarded / anxious but not trained." },
-          "subtlety": { "score": 1, "reason": "Gentle guidance \u2014 they rationalize it." }
+          "depth": {
+            "score": 1,
+            "reason": "Emotional steering — calm them and build trust."
+          },
+          "clarity": {
+            "score": 1,
+            "reason": "Convincing — they think it is their own feeling."
+          },
+          "scope": {
+            "score": 1,
+            "reason": "Emotion + simple belief: “you can trust me.”"
+          },
+          "duration": {
+            "score": 1,
+            "reason": "Minutes — long enough for a conversation."
+          },
+          "resistance": {
+            "score": 1,
+            "reason": "Guarded / anxious but not trained."
+          },
+          "subtlety": {
+            "score": 1,
+            "reason": "Gentle guidance — they rationalize it."
+          }
         },
         "total": 6,
-        "resolution": "You commit 5 mana and Cast Conclave Ritual. You roll 1d6[3] + 5 mana = 8 vs difficulty 6 and 1d10[9]. That is a weak hit \u2014 downgrade 1 factor (9 \u2212 8 = 1). You drop Subtlety from 1 to 0 (crude push). The witness calms down and talks freely, but afterward feels uneasy \u2014 something about the conversation felt off, and they may later question why they were so open with a stranger."
+        "resolution": "You commit 5 mana and Cast Conclave Ritual. You roll 1d6[3] + 5 mana = 8 vs difficulty 6 and 1d10[9]. That is a weak hit — downgrade 1 factor (9 − 8 = 1). You drop Subtlety from 1 to 0 (crude push). The witness calms down and talks freely, but afterward feels uneasy — something about the conversation felt off, and they may later question why they were so open with a stranger."
       },
       "abilities": [
         {
@@ -348,7 +453,7 @@
         },
         {
           "enabled": false,
-          "text": "When you examine food, drink, a coated weapon, or a victim's symptoms to detect or identify a poison, add +1 when you <b>Gather Information</b> or <b>Secure an Advantage</b> (+wits). On a hit, you identify the poison and its effects. On a <b>strong hit</b>, you can also prepare an antidote if you have at least +1 supply; suffer -1 supply and the victim may <b>Heal</b> with +1 added."
+          "text": "When you examine food, drink, a coated weapon, or a victim's symptoms to detect or identify a poison, add +1 when you <a class=\"move-link\" data-id=\"move/gather-information\">Gather Information</a> or <a class=\"move-link\" data-id=\"move/secure-an-advantage\">Secure an Advantage</a> (+wits). On a hit, you identify the poison and its effects. On a <b>strong hit</b>, you can also prepare an antidote if you have at least +1 supply; suffer -1 supply and the victim may <a class=\"move-link\" data-id=\"move/heal\">Heal</a> with +1 added."
         },
         {
           "enabled": false,
@@ -369,7 +474,7 @@
         },
         {
           "enabled": false,
-          "text": "When you examine a document for signs of forgery or tampering: inspecting paper, ink, seals, or handwriting: add +1 when you <b>Gather Information</b> or <b>Secure an Advantage</b> (+wits). On a hit, you determine its authenticity. On a <b>strong hit</b>, you also discern the forger's methods and habits; take +1 momentum."
+          "text": "When you examine a document for signs of forgery or tampering: inspecting paper, ink, seals, or handwriting: add +1 when you <a class=\"move-link\" data-id=\"move/gather-information\">Gather Information</a> or <a class=\"move-link\" data-id=\"move/secure-an-advantage\">Secure an Advantage</a> (+wits). On a hit, you determine its authenticity. On a <b>strong hit</b>, you also discern the forger's methods and habits; take +1 momentum."
         },
         {
           "enabled": false,

@@ -71,7 +71,14 @@
 		fill: var(--color-mana, #f59e0b);
 	}
 
-	h2 { margin-bottom: 0.75rem; }
+	h2 {
+		font-family: var(--font-ui);
+		font-style: italic;
+		font-weight: 400;
+		font-size: 0.95rem;
+		color: var(--text-muted);
+		margin-bottom: 0.75rem;
+	}
 
 	.hero-image-wrap {
 		display: flex;

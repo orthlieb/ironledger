@@ -502,6 +502,7 @@ select option {
 	border-left: 3px solid var(--color-danger);
 	border-radius: 3px;
 	padding: 9px 12px;
+	font-family: var(--font-ui);
 	font-size: 0.875rem;
 	margin-bottom: 0.75rem;
 	opacity: 0.9;
@@ -606,4 +607,75 @@ select option {
 .roll-match {
 	color:      var(--text-accent);
 	font-style: italic;
+}
+
+/* ── Global CSS Tooltips ───────────────────────────────────────────────────── */
+/* Usage: add data-tooltip="text" to any element. Add .tooltip-down to flip direction. */
+[data-tooltip] { position: relative; }
+
+[data-tooltip]::after {
+	content:        attr(data-tooltip);
+	position:       absolute;
+	bottom:         calc(100% + 7px);
+	left:           50%;
+	transform:      translateX(-50%) scale(0.95);
+	transform-origin: bottom center;
+	background:     #0f172a;
+	color:          #e2e8f0;
+	font-family:    var(--font-ui);
+	font-size:      0.72rem;
+	line-height:    1.5;
+	padding:        6px 10px;
+	border-radius:  5px;
+	max-width:      260px;
+	width:          max-content;
+	white-space:    normal;
+	word-break:     break-word;
+	pointer-events: none;
+	opacity:        0;
+	transition:     opacity 0.15s, transform 0.15s;
+	z-index:        9999;
+	box-shadow:     0 4px 16px rgba(0,0,0,0.5);
+	border:         1px solid rgba(255,255,255,0.1);
+	text-align:     left;
+}
+[data-tooltip]::before {
+	content:        '';
+	position:       absolute;
+	bottom:         calc(100% + 1px);
+	left:           50%;
+	transform:      translateX(-50%);
+	border:         5px solid transparent;
+	border-top-color: #0f172a;
+	pointer-events: none;
+	opacity:        0;
+	transition:     opacity 0.15s;
+	z-index:        9999;
+}
+[data-tooltip]:hover::after,
+[data-tooltip]:focus-visible::after {
+	opacity:   1;
+	transform: translateX(-50%) scale(1);
+}
+[data-tooltip]:hover::before,
+[data-tooltip]:focus-visible::before {
+	opacity: 1;
+}
+
+/* .tooltip-down — bubble appears below the element */
+[data-tooltip].tooltip-down::after {
+	bottom:           auto;
+	top:              calc(100% + 7px);
+	transform:        translateX(-50%) scale(0.95);
+	transform-origin: top center;
+}
+[data-tooltip].tooltip-down:hover::after,
+[data-tooltip].tooltip-down:focus-visible::after {
+	transform: translateX(-50%) scale(1);
+}
+[data-tooltip].tooltip-down::before {
+	bottom:              auto;
+	top:                 calc(100% + 1px);
+	border-top-color:    transparent;
+	border-bottom-color: #0f172a;
 }

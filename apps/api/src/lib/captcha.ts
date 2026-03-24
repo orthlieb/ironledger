@@ -31,6 +31,10 @@ export async function verifyCaptcha(
   token: string,
   remoteip?: string,
 ): Promise<void> {
+  // Skip verification outside of production so local dev and tests work without
+  // a real hCaptcha widget or network access to hcaptcha.com.
+  if (config.NODE_ENV !== 'production') return;
+
   // Build the form body
   const body = new URLSearchParams({
     secret:   config.HCAPTCHA_SECRET,

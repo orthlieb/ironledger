@@ -15,7 +15,9 @@
 
 <svelte:head>
 	<title>Sign In — Iron Ledger</title>
-	<script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+	{#if !data.isDev}
+		<script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+	{/if}
 </svelte:head>
 
 {#if (form as any)?.maintenance}
@@ -38,7 +40,14 @@
 			<h1><span class="auth-brand-icon" aria-hidden="true">{@html swordSvg}</span>Iron Ledger</h1>
 			<div class="auth-brand-rule"></div>
 		</div>
-		<h2>Enter your credentials</h2>
+		<div class="hero-image-wrap">
+			<img
+				class="hero-image"
+				src="/viking-at-the-gates.png"
+				alt="A lone Norse warrior stands before the iron-banded doors of a great mead hall, two stern guardians watching"
+			/>
+			<h2>The gates await. Prove yourself worthy.</h2>
+		</div>
 
 		{#if form?.error}
 			<div class="error-msg">{form.error}</div>
@@ -63,17 +72,19 @@
 			/>
 
 			<div class="captcha-wrap">
-				<div class="h-captcha" data-sitekey="{data.hcaptchaSiteKey}" data-theme={captchaTheme}></div>
+				{#if data.isDev}
+					<div class="captcha-dev-bypass">⚙ Captcha bypassed in development</div>
+					<input type="hidden" name="h-captcha-response" value="dev-bypass" />
+				{:else}
+					<div class="h-captcha" data-sitekey="{data.hcaptchaSiteKey}" data-theme={captchaTheme}></div>
+				{/if}
 			</div>
 
-			<div class="auth-actions">
-				<button type="submit" class="btn btn-primary">Sign In</button>
-				<a href="/forgot-password" class="forgot-link">Forgot password?</a>
-			</div>
+			<button type="submit" class="btn btn-primary">Sign In</button>
 		</form>
 
 		<p class="auth-link">
-			No account yet? <a href="/register">Create one</a>
+			No account yet? <a href="/register">Create one</a> · <a href="/forgot-password" class="forgot-link">Forgot password?</a>
 		</p>
 	</div>
 </div>
@@ -114,15 +125,29 @@
 		background: linear-gradient(to left, transparent, var(--border-mid));
 	}
 
-	.auth-actions {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-		margin-top: 0.25rem;
+	h2 {
+		font-family: var(--font-ui);
+		font-style: italic;
+		font-weight: 400;
+		font-size: 0.9rem;
+		color: var(--text-muted);
+		text-align: center;
+		margin: 0;
 	}
 
-	.auth-actions .btn-primary {
-		flex: 1;
+	.hero-image-wrap {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.55rem;
+		margin: 0 0 0.75rem;
+	}
+
+	.hero-image {
+		width: 100%;
+		height: auto;
+		aspect-ratio: 1.82;
+		border-radius: 4px;
 	}
 
 	.captcha-wrap {
@@ -131,12 +156,18 @@
 		margin: 0.25rem 0;
 	}
 
-	.forgot-link {
-		font-family: var(--font-body);
-		font-size: 0.8rem;
-		font-style: italic;
+	.captcha-dev-bypass {
+		font-size: 0.72rem;
 		color: var(--text-dimmer);
-		white-space: nowrap;
+		border: 1px dashed var(--border);
+		border-radius: 4px;
+		padding: 6px 12px;
+		width: 100%;
+		text-align: center;
+	}
+
+	.forgot-link {
+		color: var(--text-dimmer);
 		transition: color 0.12s;
 	}
 

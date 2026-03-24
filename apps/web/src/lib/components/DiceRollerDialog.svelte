@@ -70,12 +70,18 @@
 	// ---------------------------------------------------------------------------
 	// Quick rolls — always available; log only when a character is active
 	// ---------------------------------------------------------------------------
+	/** Wait one animation frame so the dialog's removal is painted before the dice overlay appears. */
+	function afterClose(): Promise<void> {
+		return new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+	}
+
 	async function quickRoll(sides: number, label: string) {
 		if (rolling) return;
 		rolling = true;
 		const v    = rollDie(sides);
 		const html = `<div class="roll-line"><span class="roll-die-label">${label}</span> → <strong>${v}</strong></div>`;
 		close();
+		await afterClose();
 		await animateDice([{ sides, value: v }]);
 		appendLog(SESSION_LOG_ID, logTitle(label), html);
 		rolling = false;
@@ -86,8 +92,15 @@
 		rolling  = true;
 		const d6 = rollDie(6);
 		const v1 = rollDie(10), v2 = rollDie(10);
-		const html = `<div class="roll-line"><span class="roll-die-label">2d10 + d6</span> → challenge [<strong>${v1}</strong>, <strong>${v2}</strong>] action [<strong>${d6}</strong>]</div>`;
+		const hits1 = d6 > v1;
+		const hits2 = d6 > v2;
+		const matchSpan = v1 === v2 ? ' <span class="roll-match">with a match!</span>' : '';
+		const html = [
+			`<div class="roll-line">1d6 [<strong>${d6}</strong>] vs 2d10 [${v1}] [${v2}]</div>`,
+			`<div class="${outcomeClass(hits1, hits2)}"><strong>${outcomeLabel(hits1, hits2)}</strong>${matchSpan}</div>`,
+		].join('');
 		close();
+		await afterClose();
 		await animateDice([{ sides: 6, value: d6 }, { sides: 10, value: v1 }, { sides: 10, value: v2 }]);
 		appendLog(SESSION_LOG_ID, logTitle('2d10 + d6'), html);
 		rolling = false;
@@ -102,6 +115,7 @@
 		const onesV = v % 10                   || 10;
 		const html  = `<div class="roll-line"><span class="roll-die-label">d100</span> → <strong>${v}</strong></div>`;
 		close();
+		await afterClose();
 		await animateDice([
 			{ sides: 10, value: tensV, color: DIE_BLACK },
 			{ sides: 10, value: onesV, color: DIE_WHITE },
@@ -164,6 +178,7 @@
 		const html = parts.join('');
 
 		close();
+		await afterClose();
 		await animateDice([
 			{ sides: 6,  value: actionDie },
 			{ sides: 10, value: c1        },

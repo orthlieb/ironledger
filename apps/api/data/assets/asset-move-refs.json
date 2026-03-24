@@ -1,0 +1,2137 @@
+[
+  {
+    "id": "combat/archer",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/secure-an-advantage"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/strike",
+          "move/clash"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/resupply"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/secure-an-advantage",
+      "move/strike",
+      "move/clash",
+      "move/resupply"
+    ]
+  },
+  {
+    "id": "combat/berserker",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/secure-an-advantage",
+          "move/compel"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/strike",
+          "move/clash",
+          "move/endure-harm",
+          "move/endure-stress"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/endure-harm"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/secure-an-advantage",
+      "move/compel",
+      "move/strike",
+      "move/clash",
+      "move/endure-harm",
+      "move/endure-stress"
+    ]
+  },
+  {
+    "id": "combat/brawler",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/secure-an-advantage"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/strike"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/face-danger",
+          "move/clash"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/secure-an-advantage",
+      "move/strike",
+      "move/face-danger",
+      "move/clash"
+    ]
+  },
+  {
+    "id": "combat/cutthroat",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/strike"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/compel",
+          "move/face-danger"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/secure-an-advantage"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/strike",
+      "move/compel",
+      "move/face-danger",
+      "move/secure-an-advantage"
+    ]
+  },
+  {
+    "id": "combat/duelist",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/strike",
+          "move/clash"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/secure-an-advantage"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/draw-the-circle"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/strike",
+      "move/clash",
+      "move/secure-an-advantage",
+      "move/draw-the-circle"
+    ]
+  },
+  {
+    "id": "combat/fletcher",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/secure-an-advantage"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/resupply",
+          "move/battle"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/strike",
+          "move/clash"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/secure-an-advantage",
+      "move/resupply",
+      "move/battle",
+      "move/strike",
+      "move/clash"
+    ]
+  },
+  {
+    "id": "combat/ironclad",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/endure-harm"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/clash"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/compel"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/endure-harm",
+      "move/clash",
+      "move/compel"
+    ]
+  },
+  {
+    "id": "combat/long-arm",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/strike",
+          "move/clash"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/secure-an-advantage"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/undertake-a-journey"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/strike",
+      "move/clash",
+      "move/secure-an-advantage",
+      "move/undertake-a-journey"
+    ]
+  },
+  {
+    "id": "combat/shield-bearer",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/face-danger",
+          "move/clash"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/endure-stress"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/endure-harm"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/face-danger",
+      "move/clash",
+      "move/endure-stress",
+      "move/endure-harm"
+    ]
+  },
+  {
+    "id": "combat/skirmisher",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/face-danger",
+          "move/strike",
+          "move/clash"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/strike",
+          "move/face-danger"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/secure-an-advantage"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/face-danger",
+      "move/strike",
+      "move/clash",
+      "move/secure-an-advantage"
+    ]
+  },
+  {
+    "id": "combat/slinger",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/enter-the-fray"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/strike"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/secure-an-advantage"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/enter-the-fray",
+      "move/strike",
+      "move/secure-an-advantage"
+    ]
+  },
+  {
+    "id": "combat/sunderer",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/strike",
+          "move/clash"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/compel",
+          "move/secure-an-advantage"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/strike",
+          "move/clash",
+          "move/endure-stress"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/strike",
+      "move/clash",
+      "move/compel",
+      "move/secure-an-advantage",
+      "move/endure-stress"
+    ]
+  },
+  {
+    "id": "combat/swordmaster",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/strike",
+          "move/clash"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/clash",
+          "move/strike"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/swear-an-iron-vow",
+          "move/endure-harm"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/strike",
+      "move/clash",
+      "move/swear-an-iron-vow",
+      "move/endure-harm"
+    ]
+  },
+  {
+    "id": "combat/thunder-bringer",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/face-danger",
+          "move/secure-an-advantage",
+          "move/compel"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/strike"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/turn-the-tide",
+          "move/strike"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/face-danger",
+      "move/secure-an-advantage",
+      "move/compel",
+      "move/strike",
+      "move/turn-the-tide"
+    ]
+  },
+  {
+    "id": "companion/cave-lion",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/resupply"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/enter-the-fray",
+          "move/strike"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/make-camp"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/resupply",
+      "move/enter-the-fray",
+      "move/strike",
+      "move/make-camp"
+    ]
+  },
+  {
+    "id": "companion/giant-spider",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/secure-an-advantage"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/face-danger",
+          "move/gather-information"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/enter-the-fray"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/secure-an-advantage",
+      "move/face-danger",
+      "move/gather-information",
+      "move/enter-the-fray"
+    ]
+  },
+  {
+    "id": "companion/hawk",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/undertake-a-journey",
+          "move/resupply"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/secure-an-advantage"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/face-danger",
+          "move/enter-the-fray"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/undertake-a-journey",
+      "move/resupply",
+      "move/secure-an-advantage",
+      "move/face-danger",
+      "move/enter-the-fray"
+    ]
+  },
+  {
+    "id": "companion/horse",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/face-danger",
+          "move/undertake-a-journey"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/enter-the-fray",
+          "move/secure-an-advantage"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/strike",
+          "move/clash"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/face-danger",
+      "move/undertake-a-journey",
+      "move/enter-the-fray",
+      "move/secure-an-advantage",
+      "move/strike",
+      "move/clash"
+    ]
+  },
+  {
+    "id": "companion/hound",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/gather-information"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/strike",
+          "move/clash"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/endure-stress"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/gather-information",
+      "move/strike",
+      "move/clash",
+      "move/endure-stress"
+    ]
+  },
+  {
+    "id": "companion/kindred",
+    "abilities": [
+      {
+        "index": 1,
+        "moves": [
+          "move/clash",
+          "move/battle",
+          "move/face-danger"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/face-desolation"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/clash",
+      "move/battle",
+      "move/face-danger",
+      "move/face-desolation"
+    ]
+  },
+  {
+    "id": "companion/mammoth",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/undertake-a-journey"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/strike",
+          "move/clash"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/undertake-a-journey",
+      "move/strike",
+      "move/clash"
+    ]
+  },
+  {
+    "id": "companion/owl",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/resupply",
+          "move/enter-the-fray"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/face-death"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/resupply",
+      "move/enter-the-fray",
+      "move/face-death"
+    ]
+  },
+  {
+    "id": "companion/raven",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/secure-an-advantage",
+          "move/face-danger"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/face-death"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/secure-an-advantage",
+          "move/gather-information",
+          "move/compel"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/secure-an-advantage",
+      "move/face-danger",
+      "move/face-death",
+      "move/gather-information",
+      "move/compel"
+    ]
+  },
+  {
+    "id": "companion/young-wyvern",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/undertake-a-journey"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/companion-endure-harm"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/strike"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/undertake-a-journey",
+      "move/companion-endure-harm",
+      "move/strike"
+    ]
+  },
+  {
+    "id": "path/alchemist",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/face-danger"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/face-danger"
+    ]
+  },
+  {
+    "id": "path/animal-kin",
+    "abilities": [
+      {
+        "index": 1,
+        "moves": [
+          "move/forge-a-bond"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/forge-a-bond"
+    ]
+  },
+  {
+    "id": "path/banner-sworn",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/swear-an-iron-vow",
+          "move/fulfill-your-vow"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/sojourn",
+          "move/make-camp"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/enter-the-fray"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/swear-an-iron-vow",
+      "move/fulfill-your-vow",
+      "move/sojourn",
+      "move/make-camp",
+      "move/enter-the-fray"
+    ]
+  },
+  {
+    "id": "path/battle-scarred",
+    "abilities": [
+      {
+        "index": 1,
+        "moves": [
+          "move/endure-stress"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/endure-harm"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/endure-stress",
+      "move/endure-harm"
+    ]
+  },
+  {
+    "id": "path/blade-bound",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/enter-the-fray",
+          "move/draw-the-circle"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/gather-information",
+          "move/endure-stress"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/strike",
+          "move/endure-stress"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/enter-the-fray",
+      "move/draw-the-circle",
+      "move/gather-information",
+      "move/endure-stress",
+      "move/strike"
+    ]
+  },
+  {
+    "id": "path/bonded",
+    "abilities": [
+      {
+        "index": 2,
+        "moves": [
+          "move/face-desolation"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/face-desolation"
+    ]
+  },
+  {
+    "id": "path/commander",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/face-danger",
+          "move/secure-an-advantage",
+          "move/compel",
+          "move/battle",
+          "move/make-camp",
+          "move/sojourn"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/gather-information",
+          "move/resupply"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/forge-a-bond"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/face-danger",
+      "move/secure-an-advantage",
+      "move/compel",
+      "move/battle",
+      "move/make-camp",
+      "move/sojourn",
+      "move/gather-information",
+      "move/resupply",
+      "move/forge-a-bond"
+    ]
+  },
+  {
+    "id": "path/dancer",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/secure-an-advantage"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/face-danger"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/secure-an-advantage",
+      "move/face-danger"
+    ]
+  },
+  {
+    "id": "path/devotant",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/secure-an-advantage"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/swear-an-iron-vow",
+          "move/fulfill-your-vow"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/sojourn"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/secure-an-advantage",
+      "move/swear-an-iron-vow",
+      "move/fulfill-your-vow",
+      "move/sojourn"
+    ]
+  },
+  {
+    "id": "path/empowered",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/sojourn"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/compel"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/forge-a-bond",
+          "move/swear-an-iron-vow"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/sojourn",
+      "move/compel",
+      "move/forge-a-bond",
+      "move/swear-an-iron-vow"
+    ]
+  },
+  {
+    "id": "path/fated",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/face-death",
+          "move/face-desolation",
+          "move/reach-a-milestone"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/reach-a-milestone"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/fulfill-your-vow"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/face-death",
+      "move/face-desolation",
+      "move/reach-a-milestone",
+      "move/fulfill-your-vow"
+    ]
+  },
+  {
+    "id": "path/fortune-hunter",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/swear-an-iron-vow",
+          "move/fulfill-your-vow"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/resupply"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/swear-an-iron-vow",
+      "move/fulfill-your-vow",
+      "move/resupply"
+    ]
+  },
+  {
+    "id": "path/herbalist",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/heal"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/heal"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/make-camp"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/heal",
+      "move/make-camp"
+    ]
+  },
+  {
+    "id": "path/honorbound",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/turn-the-tide"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/secure-an-advantage",
+          "move/compel"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/fulfill-your-vow"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/turn-the-tide",
+      "move/secure-an-advantage",
+      "move/compel",
+      "move/fulfill-your-vow"
+    ]
+  },
+  {
+    "id": "path/improviser",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/check-your-gear"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/secure-an-advantage",
+          "move/face-danger"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/check-your-gear",
+      "move/secure-an-advantage",
+      "move/face-danger"
+    ]
+  },
+  {
+    "id": "path/infiltrator",
+    "abilities": [
+      {
+        "index": 1,
+        "moves": [
+          "move/gather-information",
+          "move/secure-an-advantage"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/resupply"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/gather-information",
+      "move/secure-an-advantage",
+      "move/resupply"
+    ]
+  },
+  {
+    "id": "path/lorekeeper",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/secure-an-advantage",
+          "move/gather-information",
+          "move/ask-the-oracle"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/swear-an-iron-vow",
+          "move/fulfill-your-vow"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/face-desolation"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/secure-an-advantage",
+      "move/gather-information",
+      "move/ask-the-oracle",
+      "move/swear-an-iron-vow",
+      "move/fulfill-your-vow",
+      "move/face-desolation"
+    ]
+  },
+  {
+    "id": "path/loyalist",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/aid-your-ally"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/endure-stress"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/aid-your-ally",
+      "move/endure-stress"
+    ]
+  },
+  {
+    "id": "path/masked",
+    "abilities": [
+      {
+        "index": 2,
+        "moves": [
+          "move/face-death",
+          "move/face-desolation"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/face-death",
+      "move/face-desolation"
+    ]
+  },
+  {
+    "id": "path/oathbreaker",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/swear-an-iron-vow",
+          "move/reach-a-milestone"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/secure-an-advantage",
+          "move/compel"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/fulfill-your-vow"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/swear-an-iron-vow",
+      "move/reach-a-milestone",
+      "move/secure-an-advantage",
+      "move/compel",
+      "move/fulfill-your-vow"
+    ]
+  },
+  {
+    "id": "path/outcast",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/out-of-supply"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/sojourn"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/reach-your-destination"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/out-of-supply",
+      "move/sojourn",
+      "move/reach-your-destination"
+    ]
+  },
+  {
+    "id": "path/pretender",
+    "abilities": [
+      {
+        "index": 1,
+        "moves": [
+          "move/sojourn"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/secure-an-advantage"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/sojourn",
+      "move/secure-an-advantage"
+    ]
+  },
+  {
+    "id": "path/revenant",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/endure-harm",
+          "move/face-death"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/end-the-fight",
+          "move/endure-stress"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/endure-harm",
+      "move/face-death",
+      "move/end-the-fight",
+      "move/endure-stress"
+    ]
+  },
+  {
+    "id": "path/rider",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/heal",
+          "move/face-danger"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/undertake-a-journey",
+          "move/companion-endure-harm"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/secure-an-advantage"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/heal",
+      "move/face-danger",
+      "move/undertake-a-journey",
+      "move/companion-endure-harm",
+      "move/secure-an-advantage"
+    ]
+  },
+  {
+    "id": "path/ritualist",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/secure-an-advantage"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/secure-an-advantage"
+    ]
+  },
+  {
+    "id": "path/shadow-kin",
+    "abilities": [
+      {
+        "index": 2,
+        "moves": [
+          "move/face-death",
+          "move/swear-an-iron-vow",
+          "move/fulfill-your-vow"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/face-death",
+      "move/swear-an-iron-vow",
+      "move/fulfill-your-vow"
+    ]
+  },
+  {
+    "id": "path/sighted",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/face-danger",
+          "move/gather-information"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/compel",
+          "move/forge-a-bond",
+          "move/test-your-bond"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/secure-an-advantage"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/face-danger",
+      "move/gather-information",
+      "move/compel",
+      "move/forge-a-bond",
+      "move/test-your-bond",
+      "move/secure-an-advantage"
+    ]
+  },
+  {
+    "id": "path/slayer",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/gather-information",
+          "move/secure-an-advantage"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/swear-an-iron-vow",
+          "move/fulfill-your-vow"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/sojourn"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/gather-information",
+      "move/secure-an-advantage",
+      "move/swear-an-iron-vow",
+      "move/fulfill-your-vow",
+      "move/sojourn"
+    ]
+  },
+  {
+    "id": "path/spirit-bound",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/secure-an-advantage",
+          "move/gather-information",
+          "move/endure-stress"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/face-death"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/fulfill-your-vow"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/secure-an-advantage",
+      "move/gather-information",
+      "move/endure-stress",
+      "move/face-death",
+      "move/fulfill-your-vow"
+    ]
+  },
+  {
+    "id": "path/storyweaver",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/secure-an-advantage",
+          "move/compel",
+          "move/forge-a-bond"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/make-camp"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/sojourn"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/secure-an-advantage",
+      "move/compel",
+      "move/forge-a-bond",
+      "move/make-camp",
+      "move/sojourn"
+    ]
+  },
+  {
+    "id": "path/trickster",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/face-danger",
+          "move/secure-an-advantage",
+          "move/compel"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/gather-information"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/forge-a-bond"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/face-danger",
+      "move/secure-an-advantage",
+      "move/compel",
+      "move/gather-information",
+      "move/forge-a-bond"
+    ]
+  },
+  {
+    "id": "path/veteran",
+    "abilities": [
+      {
+        "index": 1,
+        "moves": [
+          "move/swear-an-iron-vow",
+          "move/forge-a-bond"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/resupply",
+          "move/battle"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/swear-an-iron-vow",
+      "move/forge-a-bond",
+      "move/resupply",
+      "move/battle"
+    ]
+  },
+  {
+    "id": "path/waterborn",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/face-danger",
+          "move/gather-information",
+          "move/secure-an-advantage"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/undertake-a-journey",
+          "move/make-camp",
+          "move/resupply"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/enter-the-fray"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/face-danger",
+      "move/gather-information",
+      "move/secure-an-advantage",
+      "move/undertake-a-journey",
+      "move/make-camp",
+      "move/resupply",
+      "move/enter-the-fray"
+    ]
+  },
+  {
+    "id": "path/wayfinder",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/undertake-a-journey"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/secure-an-advantage",
+          "move/gather-information"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/swear-an-iron-vow",
+          "move/fulfill-your-vow"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/undertake-a-journey",
+      "move/secure-an-advantage",
+      "move/gather-information",
+      "move/swear-an-iron-vow",
+      "move/fulfill-your-vow"
+    ]
+  },
+  {
+    "id": "path/weaponmaster",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/secure-an-advantage"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/turn-the-tide",
+          "move/strike"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/secure-an-advantage",
+      "move/turn-the-tide",
+      "move/strike"
+    ]
+  },
+  {
+    "id": "path/wildblood",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/face-danger",
+          "move/secure-an-advantage",
+          "move/gather-information"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/face-danger",
+          "move/secure-an-advantage"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/make-camp"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/face-danger",
+      "move/secure-an-advantage",
+      "move/gather-information",
+      "move/make-camp"
+    ]
+  },
+  {
+    "id": "path/wright",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/secure-an-advantage",
+          "move/face-danger"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/compel",
+          "move/forge-a-bond",
+          "move/test-your-bond"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/secure-an-advantage",
+      "move/face-danger",
+      "move/compel",
+      "move/forge-a-bond",
+      "move/test-your-bond"
+    ]
+  },
+  {
+    "id": "ritual/augur",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/ask-the-oracle"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/undertake-a-journey"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/ask-the-oracle",
+      "move/undertake-a-journey"
+    ]
+  },
+  {
+    "id": "ritual/awakening",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/face-danger"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/face-danger"
+    ]
+  },
+  {
+    "id": "ritual/bind",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/endure-stress"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/endure-stress"
+    ]
+  },
+  {
+    "id": "ritual/communion",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/ask-the-oracle",
+          "move/endure-stress"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/ask-the-oracle",
+      "move/endure-stress"
+    ]
+  },
+  {
+    "id": "ritual/divination",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/gather-information",
+          "move/compel",
+          "move/forge-a-bond"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/gather-information",
+      "move/compel",
+      "move/forge-a-bond"
+    ]
+  },
+  {
+    "id": "ritual/invoke",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/secure-an-advantage",
+          "move/face-danger",
+          "move/endure-stress"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/compel"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/secure-an-advantage",
+      "move/face-danger",
+      "move/endure-stress",
+      "move/compel"
+    ]
+  },
+  {
+    "id": "ritual/keen",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/strike",
+          "move/clash",
+          "move/endure-stress"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/draw-the-circle",
+          "move/enter-the-fray",
+          "move/battle"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/strike",
+      "move/clash",
+      "move/endure-stress",
+      "move/draw-the-circle",
+      "move/enter-the-fray",
+      "move/battle"
+    ]
+  },
+  {
+    "id": "ritual/lightbearer",
+    "abilities": [
+      {
+        "index": 1,
+        "moves": [
+          "move/strike",
+          "move/clash"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/strike",
+      "move/clash"
+    ]
+  },
+  {
+    "id": "ritual/scry",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/gather-information",
+          "move/endure-harm",
+          "move/endure-stress"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/gather-information",
+      "move/endure-harm",
+      "move/endure-stress"
+    ]
+  },
+  {
+    "id": "ritual/shadow-walk",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/face-danger"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/undertake-a-journey",
+          "move/endure-stress"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/face-danger",
+      "move/undertake-a-journey",
+      "move/endure-stress"
+    ]
+  },
+  {
+    "id": "ritual/sway",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/ask-the-oracle",
+          "move/compel",
+          "move/endure-stress"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/compel",
+          "move/gather-information"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/ask-the-oracle",
+      "move/compel",
+      "move/endure-stress",
+      "move/gather-information"
+    ]
+  },
+  {
+    "id": "ritual/tether",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/undertake-a-journey",
+          "move/reach-your-destination",
+          "move/face-desolation",
+          "move/endure-stress"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/sojourn"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/undertake-a-journey",
+      "move/reach-your-destination",
+      "move/face-desolation",
+      "move/endure-stress",
+      "move/sojourn"
+    ]
+  },
+  {
+    "id": "ritual/totem",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/endure-stress"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/endure-stress"
+    ]
+  },
+  {
+    "id": "ritual/visage",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/secure-an-advantage",
+          "move/compel",
+          "move/endure-harm"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/strike",
+          "move/clash",
+          "move/battle"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/secure-an-advantage",
+      "move/compel",
+      "move/endure-harm",
+      "move/strike",
+      "move/clash",
+      "move/battle"
+    ]
+  },
+  {
+    "id": "ritual/ward",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/ask-the-oracle"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/ask-the-oracle"
+    ]
+  },
+  {
+    "id": "path/yrt-touched-feline",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/face-danger",
+          "move/secure-an-advantage",
+          "move/gather-information"
+        ]
+      },
+      {
+        "index": 1,
+        "moves": [
+          "move/face-danger",
+          "move/undertake-a-journey"
+        ]
+      },
+      {
+        "index": 2,
+        "moves": [
+          "move/secure-an-advantage",
+          "move/face-danger"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/face-danger",
+      "move/secure-an-advantage",
+      "move/gather-information",
+      "move/undertake-a-journey"
+    ]
+  },
+  {
+    "id": "ritual/yrt-cantrip",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/cast-conclave-ritual",
+          "move/pay-the-price"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/cast-conclave-ritual",
+      "move/pay-the-price"
+    ]
+  },
+  {
+    "id": "ritual/yrt-arcane-inspection",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/cast-conclave-ritual"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/cast-conclave-ritual"
+    ]
+  },
+  {
+    "id": "ritual/yrt-vizion-illusion",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/cast-conclave-ritual"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/cast-conclave-ritual"
+    ]
+  },
+  {
+    "id": "ritual/yrt-compulsion",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": [
+          "move/cast-conclave-ritual"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/cast-conclave-ritual"
+    ]
+  },
+  {
+    "id": "path/yrt-venenigisto",
+    "abilities": [
+      {
+        "index": 1,
+        "moves": [
+          "move/gather-information",
+          "move/secure-an-advantage",
+          "move/heal"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/gather-information",
+      "move/secure-an-advantage",
+      "move/heal"
+    ]
+  },
+  {
+    "id": "path/yrt-falsinto",
+    "abilities": [
+      {
+        "index": 1,
+        "moves": [
+          "move/gather-information",
+          "move/secure-an-advantage"
+        ]
+      }
+    ],
+    "allMoves": [
+      "move/gather-information",
+      "move/secure-an-advantage"
+    ]
+  }
+]
