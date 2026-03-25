@@ -195,7 +195,6 @@
 		<!-- CHARACTER TILE -->
 		<div class="gc-tile" class:gc-tile--active={!!data} class:gc-tile--empty={!data}>
 			<div class="gc-tile-label">
-				<span>Character</span>
 				{#if data && initiative === 1}
 					<button class="gc-init-badge gc-init-badge--you" onclick={() => onInitiativeChange?.('foe')} title="Click to change">{@html swordSvg}<span class="gc-init-label">Has Initiative</span></button>
 				{:else if data && initiative === 2}
@@ -253,9 +252,6 @@
 		<!-- FOE TILE -->
 		<div class="gc-tile" class:gc-tile--active={!!activeFoe && !!activeFoeDef} class:gc-tile--empty={!activeFoe || !activeFoeDef}
 			style={activeFoe && activeFoeDef ? `border-left: 3px solid ${activeFoeNature}` : ''}>
-			<div class="gc-tile-label">
-				<span>Foe</span>
-			</div>
 			<button class="gc-tile-btn" onclick={() => toggleSelector('foe')} title="Select foe">
 				{#if activeFoe && activeFoeDef}
 					<div class="gc-tile-row">
@@ -317,9 +313,6 @@
 		<!-- EXPEDITION TILE -->
 		<div class="gc-tile" class:gc-tile--active={!!activeExpedition} class:gc-tile--empty={!activeExpedition}
 			style={activeExpedition ? `border-left: 3px solid ${activeExpedition.type === 'journey' ? '#34d399' : '#60a5fa'}` : ''}>
-			<div class="gc-tile-label">
-				<span>Expedition</span>
-			</div>
 			<button class="gc-tile-btn" onclick={() => toggleSelector('expedition')} title="Select expedition">
 				{#if activeExpedition}
 					<div class="gc-tile-row">
