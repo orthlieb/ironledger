@@ -38,13 +38,13 @@
 			icon: eyeSvg,
 			title: 'Oracles',
 			body: '49 random result tables from Core Ironsworn, Ironsworn: Delve, and the Yrt homebrew expansion. Roll a d100, get your result, and have it added to the session log automatically.',
-			color: 'var(--color-shadow)',
+			color: 'var(--text-muted)',
 		},
 		{
 			icon: noteSvg,
 			title: 'Session Log & Notes',
 			body: 'Every move, oracle roll, resource change, and vow update is captured in a persistent session log with clickable links. Add freeform notes to keep track of your story as it unfolds.',
-			color: 'var(--color-momentum)',
+			color: 'var(--text-muted)',
 		},
 	];
 </script>
