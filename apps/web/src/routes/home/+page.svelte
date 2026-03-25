@@ -553,7 +553,7 @@
 						<span class="empty-tab-sub">Click <strong>+ New Character</strong> to create your first character.</span>
 					</div>
 				{:else}
-					<div class="char-list">
+					<div class="char-list char-list--characters">
 						{#each chars as char (char.id)}
 							<!-- svelte-ignore a11y_no_static_element_interactions -->
 							<!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -598,7 +598,7 @@
 						<span class="empty-tab-sub">Click <strong>+ New Foe</strong> to create your first foe.</span>
 					</div>
 				{:else}
-					<div class="char-list">
+					<div class="char-list char-list--foes">
 						{#each encounters as enc (enc.id)}
 							{@const foeDef = findFoe(enc.foeId)}
 							{#if foeDef}
@@ -643,7 +643,7 @@
 						<span class="empty-tab-sub">Start a <strong>Journey</strong> to travel or a <strong>Site</strong> to delve into a perilous location.</span>
 					</div>
 				{:else}
-					<div class="char-list">
+					<div class="char-list char-list--expeditions">
 						{#each expeditions as exp (exp.id)}
 							<!-- svelte-ignore a11y_no_static_element_interactions -->
 							<!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -858,11 +858,32 @@
 		40%            { transform: scale(1.2); opacity: 0.9; }
 	}
 
-	/* Character list inside the Characters tab */
+	/* Card grid — single column on mobile, multi-column on larger screens */
 	.char-list {
-		display: flex;
-		flex-direction: column;
+		display: grid;
+		grid-template-columns: 1fr;
 		gap: 12px;
+		align-items: start;
+	}
+
+	/* Characters + Expeditions: 2 per row on ≥768px (≈ ½ screen each) */
+	@media (min-width: 768px) {
+		.char-list--characters,
+		.char-list--expeditions {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+
+	/* Foes: 2 per row on ≥640px, 3 per row on ≥1100px (≈ ⅓ screen each) */
+	@media (min-width: 640px) {
+		.char-list--foes {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+	@media (min-width: 1100px) {
+		.char-list--foes {
+			grid-template-columns: repeat(3, 1fr);
+		}
 	}
 
 	.char-card {
