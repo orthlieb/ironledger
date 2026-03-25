@@ -80,29 +80,6 @@
 		margin-bottom: 0.75rem;
 	}
 
-	.hero-image-wrap {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		margin: 0 0 0.75rem;
-	}
-
-	.hero-image {
-		width: 100%;
-		height: auto;
-		aspect-ratio: 1.82;
-		border-radius: 4px;
-	}
-
-	.hero-caption {
-		font-family: var(--font-display, 'Cinzel', Georgia, serif);
-		font-size: 0.875rem;
-		color: var(--text-muted);
-		font-style: italic;
-		margin: 0.5rem 0 0;
-		text-align: center;
-	}
-
 	.auth-info {
 		font-family: var(--font-ui);
 		margin-top: 1rem;

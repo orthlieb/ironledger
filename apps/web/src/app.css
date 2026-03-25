@@ -428,6 +428,31 @@ select option {
 /* --------------------------------------------------------------------------
    Auth pages
    -------------------------------------------------------------------------- */
+.hero-image-wrap {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.55rem;
+	margin: 0 0 0.75rem;
+}
+
+.hero-image {
+	width: 100%;
+	height: auto;
+	aspect-ratio: 1.82;
+	border-radius: 4px;
+	object-fit: cover;
+}
+
+.hero-caption {
+	font-family: var(--font-display, 'Cinzel', Georgia, serif);
+	font-size: 0.875rem;
+	color: var(--text-muted);
+	font-style: italic;
+	margin: 0;
+	text-align: center;
+}
+
 .auth-wrap {
 	display: flex;
 	align-items: center;
@@ -459,8 +484,6 @@ select option {
 	font-style: italic;
 	color: var(--text-muted);
 	margin-bottom: 1.75rem;
-	padding-bottom: 1.25rem;
-	border-bottom: 1px solid var(--border);
 }
 
 .auth-form {
@@ -678,4 +701,31 @@ select option {
 	top:                 calc(100% + 1px);
 	border-top-color:    transparent;
 	border-bottom-color: #0f172a;
+}
+
+/* ── JS Tooltip (use:tooltip action) ──────────────────────────────────────── */
+/* Body-level fixed tooltip — immune to overflow clipping in scroll containers. */
+.js-tooltip {
+	position:      fixed;
+	z-index:       10000;
+	max-width:     260px;
+	width:         max-content;
+	white-space:   normal;
+	word-break:    break-word;
+	padding:       6px 10px;
+	border-radius: 5px;
+	background:    #0f172a;
+	color:         #e2e8f0;
+	font-family:   var(--font-ui);
+	font-size:     0.72rem;
+	line-height:   1.5;
+	text-align:    left;
+	box-shadow:    0 4px 16px rgba(0,0,0,0.5);
+	border:        1px solid rgba(255,255,255,0.1);
+	pointer-events: none;
+	animation:     js-tooltip-in 0.12s ease forwards;
+}
+@keyframes js-tooltip-in {
+	from { opacity: 0; transform: translateY(3px); }
+	to   { opacity: 1; transform: translateY(0);   }
 }

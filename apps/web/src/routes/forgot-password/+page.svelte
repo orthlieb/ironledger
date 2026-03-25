@@ -24,8 +24,6 @@
 			<h1><span class="auth-brand-icon" aria-hidden="true">{@html swordSvg}</span>Iron Ledger</h1>
 			<div class="auth-brand-rule"></div>
 		</div>
-		<h2>Reset your password</h2>
-
 		{#if form?.sent}
 			<div class="hero-image-wrap">
 				<img
@@ -127,35 +125,12 @@
 	}
 
 	h2 {
-		font-family: var(--font-ui);
+		font-family: 'Roboto', sans-serif;
 		font-style: italic;
 		font-weight: 400;
 		font-size: 0.95rem;
 		color: var(--text-muted);
 		margin-bottom: 0.75rem;
-	}
-
-	.hero-image-wrap {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		margin: 0 0 0.75rem;
-	}
-
-	.hero-image {
-		width: 100%;
-		height: auto;
-		aspect-ratio: 1.82;
-		border-radius: 4px;
-	}
-
-	.hero-caption {
-		font-family: var(--font-display, 'Cinzel', Georgia, serif);
-		font-size: 0.875rem;
-		color: var(--text-muted);
-		font-style: italic;
-		margin: 0.5rem 0 0;
-		text-align: center;
 	}
 
 	.auth-info {
@@ -170,7 +145,7 @@
 	}
 
 	.instruction {
-		font-family: var(--font-body);
+		font-family: 'Roboto', sans-serif;
 		font-size: 0.85rem;
 		color: var(--text-muted);
 		line-height: 1.5;
@@ -178,7 +153,7 @@
 	}
 
 	.success-msg {
-		font-family: var(--font-body);
+		font-family: 'Roboto', sans-serif;
 		font-size: 0.88rem;
 		line-height: 1.55;
 		color: var(--text-muted);

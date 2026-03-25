@@ -36,6 +36,7 @@
 	import diceD6RawSvg   from '$icons/dice-d6-light.svg?raw';
 	import diceD10RawSvg  from '$icons/dice-d10-light.svg?raw';
 	import { draggable } from '$lib/actions/draggable.js';
+	import { tooltip }   from '$lib/actions/tooltip.js';
 	import { loadAssets, findAsset } from '$lib/assetStore.svelte.js';
 	import { loadAssetMoveRefs, getRelevantAbilities } from '$lib/assetMatcherStore.svelte.js';
 
@@ -860,7 +861,7 @@
 					<span class="md-relevant-label">Relevant Assets</span>
 					<div class="md-relevant-tags">
 						{#each relevantAbilities as ra (`${ra.assetId}-${ra.abilityIndex}`)}
-							<div class="md-relevant-tag tooltip-down" data-tooltip={stripHtml(ra.abilityText)}>
+							<div class="md-relevant-tag" use:tooltip={{ text: stripHtml(ra.abilityText), placement: 'below' }}>
 								<span class="md-relevant-check">✓</span>
 								{ra.assetName} #{ra.abilityIndex + 1}
 							</div>

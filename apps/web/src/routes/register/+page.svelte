@@ -25,7 +25,14 @@
 			<h1><span class="auth-brand-icon" aria-hidden="true">{@html swordSvg}</span>Iron Ledger</h1>
 			<div class="auth-brand-rule"></div>
 		</div>
-		<h2>Forge your account</h2>
+		<div class="hero-image-wrap">
+			<img
+				class="hero-image"
+				src="/viking-signup.png"
+				alt="A Norse warrior raises a drinking horn, pledging their name to the ledger"
+			/>
+			<p class="hero-caption">Swear your oath. The mead hall opens soon.</p>
+		</div>
 
 		{#if form?.error}
 			<div class="error-msg">{form.error}</div>
@@ -110,14 +117,6 @@
 		fill: var(--color-mana, #f59e0b);
 	}
 
-	h2 {
-		font-family: var(--font-ui);
-		font-style: italic;
-		font-weight: 400;
-		font-size: 0.95rem;
-		color: var(--text-muted);
-		margin-bottom: 0.75rem;
-	}
 
 	.captcha-wrap {
 		display: flex;

@@ -46,7 +46,7 @@
 				src="/viking-at-the-gates.png"
 				alt="A lone Norse warrior stands before the iron-banded doors of a great mead hall, two stern guardians watching"
 			/>
-			<h2>The gates await. Prove yourself worthy.</h2>
+			<p class="hero-caption">The gates await. Prove yourself worthy.</p>
 		</div>
 
 		{#if form?.error}
@@ -125,30 +125,6 @@
 		background: linear-gradient(to left, transparent, var(--border-mid));
 	}
 
-	h2 {
-		font-family: var(--font-ui);
-		font-style: italic;
-		font-weight: 400;
-		font-size: 0.9rem;
-		color: var(--text-muted);
-		text-align: center;
-		margin: 0;
-	}
-
-	.hero-image-wrap {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 0.55rem;
-		margin: 0 0 0.75rem;
-	}
-
-	.hero-image {
-		width: 100%;
-		height: auto;
-		aspect-ratio: 1.82;
-		border-radius: 4px;
-	}
 
 	.captcha-wrap {
 		display: flex;
