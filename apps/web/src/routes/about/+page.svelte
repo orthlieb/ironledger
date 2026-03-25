@@ -4,7 +4,7 @@
 	import foesSvg          from '$icons/Foes.svg?raw';
 	import expeditionsSvg   from '$icons/Expeditions.svg?raw';
 	import adventureSvg     from '$icons/Adventure.svg?raw';
-	import diceD100Svg      from '$icons/dice-d100-solid.svg?raw';
+	import eyeSvg           from '$icons/eye-solid.svg?raw';
 	import noteSvg          from '$icons/note-sticky-solid.svg?raw';
 
 	let { data }: { data: { user?: { name?: string } } } = $props();
@@ -35,7 +35,7 @@
 			color: 'var(--color-wits)',
 		},
 		{
-			icon: diceD100Svg,
+			icon: eyeSvg,
 			title: 'Oracles',
 			body: '49 random result tables from Core Ironsworn, Ironsworn: Delve, and the Yrt homebrew expansion. Roll a d100, get your result, and have it added to the session log automatically.',
 			color: 'var(--color-shadow)',
