@@ -37,10 +37,7 @@
 
 <div class="progress-section">
 	{#if label}
-		<div class="progress-header">
-			<div class="section-label">{label}</div>
-			<div class="track-readout">{progressText(value, boxes)}</div>
-		</div>
+		<div class="section-label">{label}</div>
 	{/if}
 
 	<div class="track-boxes">
@@ -75,6 +72,9 @@
 				</svg>
 			</button>
 		{/each}
+		{#if label}
+			<div class="track-readout">{progressText(value, boxes)}</div>
+		{/if}
 	</div>
 </div>
 
@@ -85,15 +85,8 @@
 		gap: 5px;
 	}
 
-	.progress-header {
-		display: flex;
-		align-items: baseline;
-		justify-content: space-between;
-		gap: 8px;
-	}
-
-	/* Override the global .section-label margin-bottom when inside progress-header */
-	.progress-header :global(.section-label) {
+	/* Keep section-label margin from doubling with parent gap */
+	.progress-section :global(.section-label) {
 		margin-bottom: 0;
 	}
 
@@ -102,12 +95,15 @@
 		color: var(--text-dimmer);
 		white-space: nowrap;
 		flex-shrink: 0;
+		margin-left: 6px;
+		align-self: center;
 	}
 
 	.track-boxes {
 		display: flex;
 		gap: 2px;
 		flex-wrap: wrap;
+		align-items: center;
 	}
 
 	.track-box {

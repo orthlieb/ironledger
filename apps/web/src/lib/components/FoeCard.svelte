@@ -271,16 +271,14 @@
 
 			<!-- Progress track -->
 			<div class="fc-section">
-				<div class="fc-progress-header">
-					<span class="fc-section-label">Progress track</span>
-					<span class="fc-track-readout">{progressText(enc.ticks)}</span>
-				</div>
+				<span class="fc-section-label">Progress track</span>
 				<div class="fc-progress-row">
 					<ProgressTrack
 						label=""
 						value={enc.ticks}
 						onchange={handleTrackChange}
 					/>
+					<span class="fc-track-readout">{progressText(enc.ticks)}</span>
 					<div class="fc-progress-actions">
 						<button
 							class="btn-progress"
@@ -563,18 +561,12 @@
 	}
 
 	/* ── Progress track ─────────────────────────────────────────────────── */
-	.fc-progress-header {
-		display: flex;
-		align-items: baseline;
-		justify-content: space-between;
-		gap: 8px;
-	}
-
 	.fc-track-readout {
 		font-size: 0.65rem;
 		color: var(--text-dimmer);
 		white-space: nowrap;
 		flex-shrink: 0;
+		margin-left: 2px;
 	}
 
 	.fc-progress-row {
