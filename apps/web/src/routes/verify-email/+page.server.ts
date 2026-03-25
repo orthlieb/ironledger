@@ -3,6 +3,21 @@ import type { PageServerLoad } from './$types';
 import { INTERNAL_API_URL } from '$lib/server/config.js';
 
 export const load: PageServerLoad = async ({ url, cookies }) => {
+	// Block email verification during maintenance.
+	try {
+		const maintRes = await fetch(`${INTERNAL_API_URL}/api/v1/maintenance/status`);
+		if (maintRes.ok) {
+			const maint = await maintRes.json() as { enabled?: boolean; message?: string };
+			if (maint.enabled) {
+				return {
+					maintenance: true,
+					maintenanceMessage: maint.message ?? 'The system is currently under maintenance. Please try again later.',
+					error: null,
+				};
+			}
+		}
+	} catch { /* ignore — don't block the page if the status endpoint is down */ }
+
 	const token = url.searchParams.get('token');
 
 	if (!token) {

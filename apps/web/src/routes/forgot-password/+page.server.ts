@@ -3,6 +3,22 @@ import type { Actions, PageServerLoad } from './$types';
 import { INTERNAL_API_URL, HCAPTCHA_SITE_KEY } from '$lib/server/config.js';
 
 export const load: PageServerLoad = async () => {
+	// Block password reset during maintenance.
+	try {
+		const maintRes = await fetch(`${INTERNAL_API_URL}/api/v1/maintenance/status`);
+		if (maintRes.ok) {
+			const maint = await maintRes.json() as { enabled?: boolean; message?: string };
+			if (maint.enabled) {
+				return {
+					maintenance: true,
+					maintenanceMessage: maint.message ?? 'The system is currently under maintenance. Please try again later.',
+					hcaptchaSiteKey: HCAPTCHA_SITE_KEY,
+					isDev: process.env.NODE_ENV !== 'production',
+				};
+			}
+		}
+	} catch { /* ignore — don't block the page if the status endpoint is down */ }
+
 	return { hcaptchaSiteKey: HCAPTCHA_SITE_KEY, isDev: process.env.NODE_ENV !== 'production' };
 };
 

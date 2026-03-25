@@ -8,6 +8,7 @@
 	import { preloadDice } from '$lib/dice';
 	import { page } from '$app/stores';
 	import gearSvg from '$icons/gear-solid-full.svg?raw';
+	import { goto } from '$app/navigation';
 
 	let { data, children }: { data: LayoutData; children: import('svelte').Snippet } = $props();
 
@@ -18,6 +19,7 @@
 	let countdown = $state('');
 	let countdownInterval: ReturnType<typeof setInterval> | undefined;
 	let pollInterval: ReturnType<typeof setInterval> | undefined;
+	let loggedOut = false; // guard against double-logout
 
 	function updateCountdown() {
 		if (!maintStatus?.enabled || !maintStatus.shutdownAt) {
@@ -27,6 +29,11 @@
 		const diff = new Date(maintStatus.shutdownAt).getTime() - Date.now();
 		if (diff <= 0) {
 			countdown = 'NOW';
+			// Auto-logout logged-in users when the shutdown time arrives.
+			if (data.user && !loggedOut) {
+				loggedOut = true;
+				void goto('/logout');
+			}
 			return;
 		}
 		const mins = Math.floor(diff / 60_000);
@@ -99,11 +106,15 @@
 	<div class="maint-banner" class:maint-imminent={countdown === 'NOW'}>
 		<span class="maint-icon" aria-hidden="true">&#9888;</span>
 		{#if countdown === 'NOW'}
-			<span class="maint-text">System is under maintenance{maintStatus.message ? ` \u2014 ${maintStatus.message}` : ''}</span>
+			<span class="maint-text">Logging you out now…{maintStatus.message ? ` \u2014 ${maintStatus.message}` : ''}</span>
+		{:else if maintStatus.shutdownAt}
+			{#if data.user}
+				<span class="maint-text">Please save your work and sign off. Shutting down in <strong class="maint-countdown">{countdown}</strong>{maintStatus.message ? ` \u2014 ${maintStatus.message}` : ''}</span>
+			{:else}
+				<span class="maint-text">Scheduled maintenance in <strong class="maint-countdown">{countdown}</strong>{maintStatus.message ? ` \u2014 ${maintStatus.message}` : ''}</span>
+			{/if}
 		{:else}
-			<span class="maint-text">
-				Maintenance in <strong class="maint-countdown">{countdown}</strong>{maintStatus.message ? ` \u2014 ${maintStatus.message}` : ''}
-			</span>
+			<span class="maint-text">Scheduled maintenance{maintStatus.message ? ` \u2014 ${maintStatus.message}` : ''}</span>
 		{/if}
 	</div>
 {/if}

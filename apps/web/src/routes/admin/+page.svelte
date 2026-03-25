@@ -4,7 +4,7 @@
 	declare const __BUILD_DATE__: string;
 
 	import { admin, maintenance as maintApi } from '$lib/api';
-	import type { AdminUser, AdminStats, AuditEvent, MaintenanceStatus } from '@ironledger/shared';
+	import type { AdminUser, AdminStats, AuditEvent, MaintenanceStatus, UserTimeseries } from '@ironledger/shared';
 
 	let users: AdminUser[] = $state([]);
 	let stats: AdminStats | null = $state(null);
@@ -56,6 +56,7 @@
 
 	// ── Confirm + delete user ─────────────────────────────────────────────
 	let deleteTarget: AdminUser | null = $state(null);
+	let promoteTarget: AdminUser | null = $state(null);
 
 	async function confirmDelete() {
 		if (!deleteTarget) return;
@@ -73,7 +74,22 @@
 
 	// ── Toggle role ───────────────────────────────────────────────────────
 	async function toggleRole(user: AdminUser) {
-		const newRole = user.role === 'admin' ? 'user' : 'admin';
+		// Demoting is low-risk — no confirmation needed.
+		// Promoting to admin is serious — show a confirmation dialog first.
+		if (user.role === 'user') {
+			promoteTarget = user;
+			return;
+		}
+		await applyRoleChange(user, 'user');
+	}
+
+	async function confirmPromote() {
+		if (!promoteTarget) return;
+		await applyRoleChange(promoteTarget, 'admin');
+		promoteTarget = null;
+	}
+
+	async function applyRoleChange(user: AdminUser, newRole: 'user' | 'admin') {
 		try {
 			await admin.setRole(user.id, newRole);
 			user.role = newRole;
@@ -83,6 +99,25 @@
 			error = err instanceof Error ? err.message : 'Role change failed';
 		}
 	}
+
+	// ── Metrics graph ─────────────────────────────────────────────────────
+	type Timeframe = '1hr' | '1day' | '7day' | '30day';
+	let metricsTimeframe: Timeframe = $state('1day');
+	let timeseries: UserTimeseries | null = $state(null);
+	let metricsLoading = $state(false);
+
+	async function loadTimeseries(tf: Timeframe) {
+		metricsLoading = true;
+		try {
+			timeseries = await admin.getTimeseries(tf);
+		} catch { /* ignore */ } finally {
+			metricsLoading = false;
+		}
+	}
+
+	$effect(() => {
+		void loadTimeseries(metricsTimeframe);
+	});
 
 	// ── Audit log ─────────────────────────────────────────────────────────
 	let auditSearch = $state('');
@@ -304,8 +339,108 @@
 					<span class="stat-value">{stats.totalExpeditions}</span>
 					<span class="stat-label">Expeditions</span>
 				</div>
+				<div class="stat-card stat-online">
+					<span class="stat-value stat-value-online">{stats.currentlyLoggedIn}</span>
+					<span class="stat-label">Online Now</span>
+				</div>
 			</div>
 		{/if}
+
+		<!-- Metrics graph -->
+		<div class="metrics-panel card">
+			<div class="metrics-header">
+				<span class="metrics-title">User Activity</span>
+				<div class="metrics-timeframes">
+					{#each (['1hr', '1day', '7day', '30day'] as const) as tf}
+						<button
+							class="tf-btn"
+							class:active={metricsTimeframe === tf}
+							onclick={() => { metricsTimeframe = tf; }}
+						>{tf}</button>
+					{/each}
+				</div>
+			</div>
+
+			{#if metricsLoading || !timeseries}
+				<div class="metrics-loading">Loading…</div>
+			{:else}
+				{@const buckets = timeseries.buckets}
+				{@const maxTotal = Math.max(...buckets.map(b => b.totalUsers), 1)}
+				{@const maxActive = Math.max(...buckets.map(b => b.activeUsers), 1)}
+				{@const chartH = 120}
+				{@const chartW = 600}
+				{@const padL = 40}
+				{@const padR = 12}
+				{@const padT = 10}
+				{@const padB = 28}
+				{@const plotW = chartW - padL - padR}
+				{@const plotH = chartH - padT - padB}
+				{@const step = buckets.length > 1 ? plotW / (buckets.length - 1) : plotW}
+
+				<div class="metrics-chart-wrap">
+					<svg
+						class="metrics-svg"
+						viewBox="0 0 {chartW} {chartH}"
+						preserveAspectRatio="none"
+						aria-label="User activity chart"
+					>
+						<!-- Y-axis grid lines -->
+						{#each [0, 0.25, 0.5, 0.75, 1] as t}
+							{@const y = padT + plotH * (1 - t)}
+							<line x1={padL} y1={y} x2={chartW - padR} y2={y} class="grid-line" />
+							<text x={padL - 4} y={y + 4} class="axis-label" text-anchor="end">
+								{Math.round(maxTotal * t)}
+							</text>
+						{/each}
+
+						<!-- X-axis labels (every N buckets to avoid crowding) -->
+						{#each buckets as b, i}
+							{#if i % Math.max(1, Math.floor(buckets.length / 6)) === 0}
+								{@const x = padL + i * step}
+								<text x={x} y={chartH - 4} class="axis-label" text-anchor="middle">{b.label}</text>
+							{/if}
+						{/each}
+
+						<!-- Total users line (amber) -->
+						<polyline
+							class="line-total"
+							points={buckets.map((b, i) =>
+								`${padL + i * step},${padT + plotH * (1 - b.totalUsers / maxTotal)}`
+							).join(' ')}
+						/>
+
+						<!-- Active users line (teal) -->
+						<polyline
+							class="line-active"
+							points={buckets.map((b, i) =>
+								`${padL + i * step},${padT + plotH * (1 - b.activeUsers / maxActive)}`
+							).join(' ')}
+						/>
+
+						<!-- Data point dots for total -->
+						{#each buckets as b, i}
+							<circle
+								cx={padL + i * step}
+								cy={padT + plotH * (1 - b.totalUsers / maxTotal)}
+								r="2.5"
+								class="dot-total"
+							/>
+						{/each}
+					</svg>
+				</div>
+
+				<!-- Legend -->
+				<div class="metrics-legend">
+					<span class="legend-item legend-total">Total Users</span>
+					<span class="legend-item legend-active">Active (by last login)</span>
+					{#if stats}
+						<span class="legend-item legend-online">
+							{stats.currentlyLoggedIn} online now
+						</span>
+					{/if}
+				</div>
+			{/if}
+		</div>
 
 		<!-- Tab bar -->
 		<nav class="tab-bar" aria-label="Admin tabs">
@@ -594,6 +729,28 @@
 	</div>
 {/if}
 
+<!-- Promote to admin confirmation dialog -->
+{#if promoteTarget}
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div class="modal-backdrop" onclick={() => (promoteTarget = null)} onkeydown={(e) => e.key === 'Escape' && (promoteTarget = null)}>
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="modal card" onclick={(e) => e.stopPropagation()}>
+			<h3>Promote to Admin</h3>
+			<p>
+				Grant admin privileges to <strong>{promoteTarget.email}</strong>?
+			</p>
+			<p class="modal-warning">
+				Admins can manage all users, view audit logs, and control maintenance mode.
+				This should only be granted to trusted team members.
+			</p>
+			<div class="modal-actions">
+				<button class="btn" onclick={() => (promoteTarget = null)}>Cancel</button>
+				<button class="btn btn-danger" onclick={confirmPromote}>Promote</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
 <style>
 	.admin-page {
 		max-width: 1100px;
@@ -675,6 +832,147 @@
 		letter-spacing: 0.06em;
 		color: var(--text-dimmer);
 	}
+
+	.stat-online {
+		border-color: rgba(52, 211, 153, 0.3);
+	}
+	.stat-value-online {
+		color: #34d399;
+	}
+
+	/* ── Metrics graph ── */
+	.metrics-panel {
+		margin-bottom: 1.25rem;
+		overflow: hidden;
+	}
+
+	.metrics-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 10px 14px;
+		background: var(--bg-inset);
+		border-bottom: 1px solid var(--border);
+	}
+
+	.metrics-title {
+		font-family: var(--font-display);
+		font-size: 0.65rem;
+		font-weight: 700;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--text-accent);
+	}
+
+	.metrics-timeframes {
+		display: flex;
+		gap: 4px;
+	}
+
+	.tf-btn {
+		font-family: var(--font-mono);
+		font-size: 0.7rem;
+		font-weight: 600;
+		background: transparent;
+		border: 1px solid var(--border);
+		border-radius: 3px;
+		padding: 2px 7px;
+		cursor: pointer;
+		color: var(--text-dimmer);
+		transition: color 0.12s, border-color 0.12s, background 0.12s;
+	}
+
+	.tf-btn:hover {
+		color: var(--text-muted);
+		border-color: var(--border-mid);
+	}
+
+	.tf-btn.active {
+		color: var(--text-accent);
+		border-color: var(--text-accent);
+		background: color-mix(in srgb, var(--text-accent) 10%, transparent);
+	}
+
+	.metrics-loading {
+		padding: 2rem;
+		text-align: center;
+		font-family: var(--font-ui);
+		font-size: 0.8rem;
+		color: var(--text-dimmer);
+	}
+
+	.metrics-chart-wrap {
+		padding: 0.5rem 0.75rem 0;
+		overflow: hidden;
+	}
+
+	.metrics-svg {
+		width: 100%;
+		height: 140px;
+		display: block;
+	}
+
+	.grid-line {
+		stroke: var(--border);
+		stroke-width: 0.5;
+	}
+
+	.axis-label {
+		font-family: var(--font-mono);
+		font-size: 8px;
+		fill: var(--text-dimmer);
+	}
+
+	.line-total {
+		fill: none;
+		stroke: #f59e0b;
+		stroke-width: 1.5;
+		stroke-linejoin: round;
+	}
+
+	.line-active {
+		fill: none;
+		stroke: #34d399;
+		stroke-width: 1.5;
+		stroke-linejoin: round;
+		stroke-dasharray: 3 2;
+	}
+
+	.dot-total {
+		fill: #f59e0b;
+	}
+
+	.metrics-legend {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		padding: 0.5rem 0.75rem 0.65rem;
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+	}
+
+	.legend-item {
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+		color: var(--text-dimmer);
+	}
+
+	.legend-item::before {
+		content: '';
+		display: inline-block;
+		width: 16px;
+		height: 2px;
+	}
+
+	.legend-total::before  { background: #f59e0b; }
+	.legend-active::before { background: #34d399; }
+	.legend-online {
+		margin-left: auto;
+		color: #34d399;
+		font-weight: 600;
+	}
+	.legend-online::before { display: none; }
 
 	/* ── Tab bar ── */
 	.tab-bar {
@@ -860,6 +1158,16 @@
 		display: flex;
 		gap: 0.5rem;
 		justify-content: flex-end;
+	}
+
+	.modal-warning {
+		font-size: 0.8rem;
+		color: var(--color-danger);
+		background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+		border: 1px solid color-mix(in srgb, var(--color-danger) 30%, transparent);
+		border-radius: 4px;
+		padding: 8px 12px;
+		margin-top: 0.25rem;
 	}
 
 	/* ── Audit toolbar ── */

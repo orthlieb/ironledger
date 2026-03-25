@@ -162,12 +162,26 @@ export interface AdminUser {
 }
 
 export interface AdminStats {
-  totalUsers:       number;
-  activeUsers7d:    number;
-  activeUsers30d:   number;
-  totalCharacters:  number;
-  totalEncounters:  number;
-  totalExpeditions: number;
+  totalUsers:        number;
+  activeUsers7d:     number;
+  activeUsers30d:    number;
+  totalCharacters:   number;
+  totalEncounters:   number;
+  totalExpeditions:  number;
+  currentlyLoggedIn: number;
+}
+
+export interface TimeseriesBucket {
+  label:       string;
+  timestamp:   string;
+  newUsers:    number;
+  activeUsers: number;
+  totalUsers:  number;
+}
+
+export interface UserTimeseries {
+  timeframe: string;
+  buckets:   TimeseriesBucket[];
 }
 
 export interface AuditEvent {

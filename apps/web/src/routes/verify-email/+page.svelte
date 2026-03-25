@@ -9,6 +9,19 @@
 	<title>Verify email — Iron Ledger</title>
 </svelte:head>
 
+{#if data.maintenance}
+	<div class="maintenance-page">
+		<img
+			src="/ironledger-under-construction.webp"
+			alt="A knight surveys a castle under construction"
+			class="maintenance-image"
+		/>
+		<div class="maintenance-body">
+			<p class="maintenance-title">Under Construction</p>
+			<p class="maintenance-message">{data.maintenanceMessage}</p>
+		</div>
+	</div>
+{:else}
 <div class="auth-wrap">
 	<div class="auth-card card">
 		<div class="auth-brand">
@@ -44,6 +57,7 @@
 		{/if}
 	</div>
 </div>
+{/if}
 
 <style>
 	.auth-brand {
@@ -92,5 +106,48 @@
 	.auth-info {
 		margin-top: 1rem;
 		color: var(--text-muted);
+	}
+
+	/* ── Maintenance mode ─────────────────────────────────────────── */
+	.maintenance-page {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		min-height: 100dvh;
+		padding: 2rem;
+		gap: 1.5rem;
+		background: var(--bg-base);
+	}
+
+	.maintenance-image {
+		width: min(520px, 90vw);
+		border-radius: 12px;
+		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+	}
+
+	.maintenance-body {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.4rem;
+		text-align: center;
+	}
+
+	.maintenance-title {
+		font-family: var(--font-display);
+		font-size: 2rem;
+		font-weight: 700;
+		color: var(--text-accent);
+		margin: 0;
+		letter-spacing: 0.05em;
+	}
+
+	.maintenance-message {
+		font-family: var(--font-display);
+		font-size: 0.9rem;
+		color: var(--text-muted);
+		margin: 0;
+		max-width: 45ch;
 	}
 </style>

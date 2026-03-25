@@ -109,6 +109,18 @@ export async function adminRoutes(server: FastifyInstance): Promise<void> {
     return reply.status(204).send();
   });
 
+  // ── GET /stats/timeseries ── User growth & activity timeseries ──────────
+  server.get('/stats/timeseries', async (req: FastifyRequest, reply: FastifyReply) => {
+    const { timeframe } = req.query as { timeframe?: string };
+    const validFrames = ['1hr', '1day', '7day', '30day'] as const;
+    const tf = validFrames.includes(timeframe as typeof validFrames[number])
+      ? (timeframe as typeof validFrames[number])
+      : '1day';
+    const result = await adminService.getUserTimeseries(tf).catch(handleError(reply));
+    if (!result || reply.sent) return;
+    return reply.status(200).send(result);
+  });
+
   // ── POST /maintenance ── Enable maintenance mode ────────────────────
   server.post('/maintenance', async (req: FastifyRequest, reply: FastifyReply) => {
     const body = parseBody(maintenanceBody, req.body, reply);

@@ -93,7 +93,7 @@ export const characters = {
 // ---------------------------------------------------------------------------
 // Admin
 // ---------------------------------------------------------------------------
-import type { AdminUser, AdminStats, AuditEvent, MaintenanceStatus } from '@ironledger/shared';
+import type { AdminUser, AdminStats, AuditEvent, MaintenanceStatus, UserTimeseries } from '@ironledger/shared';
 
 export const admin = {
 	listUsers: () =>
@@ -101,6 +101,9 @@ export const admin = {
 
 	getStats: () =>
 		request<AdminStats>('/api/admin/stats'),
+
+	getTimeseries: (timeframe: '1hr' | '1day' | '7day' | '30day') =>
+		request<UserTimeseries>(`/api/admin/stats/timeseries?timeframe=${timeframe}`),
 
 	getAuditLog: (search?: string) => {
 		const params = search ? `?search=${encodeURIComponent(search)}` : '';

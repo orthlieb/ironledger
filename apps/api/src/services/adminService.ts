@@ -27,12 +27,26 @@ export interface AdminUser {
 }
 
 export interface AdminStats {
-  totalUsers:       number;
-  activeUsers7d:    number;
-  activeUsers30d:   number;
-  totalCharacters:  number;
-  totalEncounters:  number;
-  totalExpeditions: number;
+  totalUsers:        number;
+  activeUsers7d:     number;
+  activeUsers30d:    number;
+  totalCharacters:   number;
+  totalEncounters:   number;
+  totalExpeditions:  number;
+  currentlyLoggedIn: number;
+}
+
+export interface TimeseriesBucket {
+  label:       string;
+  timestamp:   string;
+  newUsers:    number;
+  activeUsers: number;
+  totalUsers:  number;
+}
+
+export interface UserTimeseries {
+  timeframe: string;
+  buckets:   TimeseriesBucket[];
 }
 
 // ---------------------------------------------------------------------------
@@ -127,16 +141,18 @@ export async function listUsers(): Promise<AdminUser[]> {
 export async function getStats(): Promise<AdminStats> {
   const db = requireAdminDb();
 
-  const now = new Date();
-  const d7  = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const d30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const now  = new Date();
+  const d15m = new Date(now.getTime() - 15 * 60 * 1000);
+  const d7   = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const d30  = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
   // Run all counts in parallel
   const [userStats, charCount, udRows] = await Promise.all([
     db.select({
-      total:     count(),
-      active7d:  sql<number>`count(*) filter (where ${users.lastLoginAt} >= ${d7.toISOString()})::int`,
-      active30d: sql<number>`count(*) filter (where ${users.lastLoginAt} >= ${d30.toISOString()})::int`,
+      total:             count(),
+      active7d:          sql<number>`count(*) filter (where ${users.lastLoginAt} >= ${d7.toISOString()})::int`,
+      active30d:         sql<number>`count(*) filter (where ${users.lastLoginAt} >= ${d30.toISOString()})::int`,
+      currentlyLoggedIn: sql<number>`count(*) filter (where ${users.lastLoginAt} >= ${d15m.toISOString()})::int`,
     }).from(users),
 
     db.select({ total: count() }).from(characters),
@@ -155,10 +171,11 @@ export async function getStats(): Promise<AdminStats> {
   }
 
   return {
-    totalUsers:       userStats[0]?.total ?? 0,
-    activeUsers7d:    userStats[0]?.active7d ?? 0,
-    activeUsers30d:   userStats[0]?.active30d ?? 0,
-    totalCharacters:  charCount[0]?.total ?? 0,
+    totalUsers:        userStats[0]?.total ?? 0,
+    activeUsers7d:     userStats[0]?.active7d ?? 0,
+    activeUsers30d:    userStats[0]?.active30d ?? 0,
+    currentlyLoggedIn: userStats[0]?.currentlyLoggedIn ?? 0,
+    totalCharacters:   charCount[0]?.total ?? 0,
     totalEncounters,
     totalExpeditions,
   };
@@ -292,6 +309,82 @@ export async function getAuditLog(limit = 100, search?: string): Promise<AuditEv
     metadata:   r.metadata as Record<string, unknown> | null,
     createdAt:  r.createdAt.toISOString(),
   }));
+}
+
+// ---------------------------------------------------------------------------
+// User timeseries — for the admin metrics graph
+// ---------------------------------------------------------------------------
+
+type Timeframe = '1hr' | '1day' | '7day' | '30day';
+
+export async function getUserTimeseries(timeframe: Timeframe): Promise<UserTimeseries> {
+  const db = requireAdminDb();
+
+  const now = new Date();
+  let bucketCount: number;
+  let bucketMs: number;
+
+  switch (timeframe) {
+    case '1hr':   bucketCount = 12; bucketMs = 5  * 60 * 1000;        break;
+    case '1day':  bucketCount = 24; bucketMs = 60 * 60 * 1000;        break;
+    case '7day':  bucketCount = 7;  bucketMs = 24 * 60 * 60 * 1000;   break;
+    case '30day': bucketCount = 30; bucketMs = 24 * 60 * 60 * 1000;   break;
+    default:      bucketCount = 24; bucketMs = 60 * 60 * 1000;
+  }
+
+  const startTime = new Date(now.getTime() - bucketCount * bucketMs);
+
+  // Count users registered before the window (baseline for cumulative total)
+  const [baselineRow] = await db
+    .select({ cnt: count() })
+    .from(users)
+    .where(sql`${users.createdAt} < ${startTime.toISOString()}`);
+
+  // Fetch rows relevant to the window
+  const relevantRows = await db
+    .select({ createdAt: users.createdAt, lastLoginAt: users.lastLoginAt })
+    .from(users)
+    .where(
+      sql`${users.createdAt} >= ${startTime.toISOString()} OR (${users.lastLoginAt} IS NOT NULL AND ${users.lastLoginAt} >= ${startTime.toISOString()})`,
+    );
+
+  let running = baselineRow?.cnt ?? 0;
+  const buckets: TimeseriesBucket[] = [];
+
+  for (let i = 0; i < bucketCount; i++) {
+    const bucketStart = new Date(startTime.getTime() + i * bucketMs);
+    const bucketEnd   = new Date(startTime.getTime() + (i + 1) * bucketMs);
+
+    const newInBucket = relevantRows.filter(
+      (r) => r.createdAt >= bucketStart && r.createdAt < bucketEnd,
+    ).length;
+
+    const activeInBucket = relevantRows.filter(
+      (r) => r.lastLoginAt && r.lastLoginAt >= bucketStart && r.lastLoginAt < bucketEnd,
+    ).length;
+
+    running += newInBucket;
+
+    buckets.push({
+      label:       formatBucketLabel(bucketStart, timeframe),
+      timestamp:   bucketStart.toISOString(),
+      newUsers:    newInBucket,
+      activeUsers: activeInBucket,
+      totalUsers:  running,
+    });
+  }
+
+  return { timeframe, buckets };
+}
+
+function formatBucketLabel(date: Date, timeframe: Timeframe): string {
+  if (timeframe === '1hr') {
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  }
+  if (timeframe === '1day') {
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  }
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 // ---------------------------------------------------------------------------
