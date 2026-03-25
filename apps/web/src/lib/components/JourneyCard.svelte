@@ -235,14 +235,16 @@
 
 			<!-- Progress track -->
 			<div class="jc-section">
-				<span class="jc-section-label">Progress track</span>
+				<div class="jc-track-header">
+					<span class="jc-section-label">Progress track</span>
+					<span class="jc-track-readout">{progressText(expedition.ticks)}</span>
+				</div>
 				<div class="jc-progress-row">
 					<ProgressTrack
 						label=""
 						value={expedition.ticks}
 						onchange={handleTrackChange}
 					/>
-					<span class="jc-track-readout">{progressText(expedition.ticks)}</span>
 					<div class="jc-progress-actions">
 						<button
 							class="btn-progress"
@@ -463,12 +465,17 @@
 		color: var(--text-dimmer);
 	}
 
+	.jc-track-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		margin-bottom: 3px;
+	}
+
 	.jc-track-readout {
 		font-size: 0.65rem;
 		color: var(--text-dimmer);
 		white-space: nowrap;
-		flex-shrink: 0;
-		margin-left: 2px;
 	}
 
 	.jc-progress-row {

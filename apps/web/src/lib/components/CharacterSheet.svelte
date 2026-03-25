@@ -735,16 +735,16 @@
 			<!-- Bonds & Failures -->
 			<section class="char-section tracks-row">
 				<div class="track-group">
-					<div class="section-label">Bonds</div>
+					<div class="track-label-row">
+						<div class="section-label">Bonds</div>
+						<span class="track-tally">{Math.floor(data.bonds / 4)}/10 boxes, {data.bonds}/40 ticks</span>
+					</div>
 					<div class="track-row">
 						<ProgressTrack
 							label=""
 							bind:value={data.bonds}
 							onchange={(o, n) => logTrack('Bonds', o, n)}
 						/>
-						<span class="track-tally">
-							{Math.floor(data.bonds / 4)}/10 boxes, {data.bonds}/40 ticks
-						</span>
 						<div class="track-actions">
 							<button class="btn btn-track" onclick={addBond} disabled={data.bonds >= bondsMax}>+</button>
 							<button class="btn btn-track" onclick={removeBond} disabled={data.bonds <= 0}>−</button>
@@ -752,16 +752,16 @@
 					</div>
 				</div>
 				<div class="track-group">
-					<div class="section-label">Failures</div>
+					<div class="track-label-row">
+						<div class="section-label">Failures</div>
+						<span class="track-tally">{Math.floor(data.failures / 4)}/10 boxes, {data.failures}/40 ticks</span>
+					</div>
 					<div class="track-row">
 						<ProgressTrack
 							label=""
 							bind:value={data.failures}
 							onchange={(o, n) => logTrack('Failures', o, n)}
 						/>
-						<span class="track-tally">
-							{Math.floor(data.failures / 4)}/10 boxes, {data.failures}/40 ticks
-						</span>
 						<div class="track-actions">
 							<button class="btn btn-track" onclick={addFailure} disabled={data.failures >= failuresMax}>+</button>
 							<button class="btn btn-track" onclick={removeFailure} disabled={data.failures <= 0}>−</button>
@@ -1258,14 +1258,19 @@
 		gap: 6px;
 	}
 
+	.track-label-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		margin-bottom: 3px;
+	}
+
 	.track-tally {
 		font-family: var(--font-ui);
 		font-size: 0.65rem;
 		color: var(--text-dimmer);
 		font-variant-numeric: tabular-nums;
 		white-space: nowrap;
-		flex-shrink: 0;
-		margin-left: 2px;
 	}
 
 	/* Progress track boxes + action buttons in a single row */
