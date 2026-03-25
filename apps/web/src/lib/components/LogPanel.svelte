@@ -635,8 +635,7 @@
 		display: flex;
 		flex-direction: column;
 		height: 100%;
-		background: var(--bg-inset);
-		border-left: 1px solid var(--border);
+		background: transparent;
 	}
 
 	.log-entries {

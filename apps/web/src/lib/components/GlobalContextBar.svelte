@@ -191,11 +191,14 @@
 
 		<!-- CHARACTER TILE -->
 		<div class="gc-tile" class:gc-tile--active={!!data} class:gc-tile--empty={!data}>
-			{#if data && initiative === 1}
-				<button class="gc-init-badge gc-init-badge--you" onclick={() => onInitiativeChange?.('foe')} title="Click to change">{@html swordSvg}<span class="gc-init-label">Has Initiative</span></button>
-			{:else if data && initiative === 2}
-				<button class="gc-init-badge gc-init-badge--foe" onclick={() => onInitiativeChange?.('character')} title="Click to change">{@html shieldSvg}<span class="gc-init-label">Foe Has Initiative</span></button>
-			{/if}
+			<div class="gc-tile-label">
+				<span>Character</span>
+				{#if data && initiative === 1}
+					<button class="gc-init-badge gc-init-badge--you" onclick={() => onInitiativeChange?.('foe')} title="Click to change">{@html swordSvg}<span class="gc-init-label">Has Initiative</span></button>
+				{:else if data && initiative === 2}
+					<button class="gc-init-badge gc-init-badge--foe" onclick={() => onInitiativeChange?.('character')} title="Click to change">{@html shieldSvg}<span class="gc-init-label">Foe Has Initiative</span></button>
+				{/if}
+			</div>
 			<button class="gc-tile-btn" onclick={() => toggleSelector('character')} title="Select character">
 				{#if data}
 					<div class="gc-tile-row">
@@ -245,8 +248,10 @@
 		</div>
 
 		<!-- FOE TILE -->
-		<div class="gc-tile" class:gc-tile--active={!!activeFoe && !!activeFoeDef} class:gc-tile--empty={!activeFoe || !activeFoeDef}
-			style={activeFoe && activeFoeDef ? `border-left: 3px solid ${activeFoeNature}99` : ''}>
+		<div class="gc-tile" class:gc-tile--active={!!activeFoe && !!activeFoeDef} class:gc-tile--empty={!activeFoe || !activeFoeDef}>
+			<div class="gc-tile-label" style={activeFoe && activeFoeDef ? `border-left: 3px solid ${activeFoeNature}` : ''}>
+				<span>Foe</span>
+			</div>
 			<button class="gc-tile-btn" onclick={() => toggleSelector('foe')} title="Select foe">
 				{#if activeFoe && activeFoeDef}
 					<div class="gc-tile-row">
@@ -306,8 +311,10 @@
 		</div>
 
 		<!-- EXPEDITION TILE -->
-		<div class="gc-tile" class:gc-tile--active={!!activeExpedition} class:gc-tile--empty={!activeExpedition}
-			style={activeExpedition ? `border-left: 3px solid ${activeExpedition.type === 'journey' ? '#34d399' : '#60a5fa'}99` : ''}>
+		<div class="gc-tile" class:gc-tile--active={!!activeExpedition} class:gc-tile--empty={!activeExpedition}>
+			<div class="gc-tile-label" style={activeExpedition ? `border-left: 3px solid ${activeExpedition.type === 'journey' ? '#34d399' : '#60a5fa'}` : ''}>
+				<span>Expedition</span>
+			</div>
 			<button class="gc-tile-btn" onclick={() => toggleSelector('expedition')} title="Select expedition">
 				{#if activeExpedition}
 					<div class="gc-tile-row">
@@ -383,10 +390,6 @@
 <style>
 	/* ===== Container ===== */
 	.global-context {
-		background: rgba(245, 158, 11, 0.07);
-		border: 1px solid rgba(245, 158, 11, 0.18);
-		border-radius: 6px;
-		padding: 0.5rem 0.6rem;
 		flex-shrink: 0;
 	}
 
@@ -420,20 +423,42 @@
 	/* ===== Individual tile ===== */
 	.gc-tile {
 		position: relative;
-		border-radius: 6px;
+		border-radius: 5px;
 		min-height: 4.5rem;
 		container-name: gc;
 		container-type: inline-size;
+		background: var(--bg-card);
+		border: 1px solid var(--border);
+		box-shadow: inset 0 1px 0 #ffffff04, 0 2px 12px #00000050;
+		display: flex;
+		flex-direction: column;
 	}
 
 	.gc-tile--empty {
-		border: 1.5px dashed var(--border);
-		background: rgba(0, 0, 0, 0.06);
+		border: 1px dashed var(--border);
+		background: var(--bg-inset);
+		box-shadow: none;
 	}
 	.gc-tile--active {
-		border: 1.5px solid rgba(245, 158, 11, 0.3);
-		background: var(--bg-card, rgba(0, 0, 0, 0.12));
-		border-left: 3px solid rgba(245, 158, 11, 0.6);
+		/* card chrome already on .gc-tile */
+	}
+
+	/* Tile label header (mirrors char-header) */
+	.gc-tile-label {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 5px 10px;
+		background: var(--bg-inset);
+		border-bottom: 1px solid var(--border);
+		font-family: var(--font-display);
+		font-size: 0.58rem;
+		font-weight: 700;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--text-dimmer);
+		flex-shrink: 0;
+		border-left: 3px solid transparent; /* coloured accent for foe/exp tiles */
 	}
 
 	/* Full-area clickable button */
@@ -442,8 +467,8 @@
 		flex-direction: column;
 		justify-content: flex-start;
 		width: 100%;
-		height: 100%;
-		min-height: 4.5rem;
+		flex: 1;
+		min-height: 3rem;
 		padding: 0.4rem 0.5rem;
 		background: none;
 		border: none;
@@ -661,17 +686,13 @@
 		fill: currentColor;
 	}
 
-	/* Initiative icon badge (character tile, upper-right) */
+	/* Initiative icon badge (character tile, inside label header) */
 	.gc-init-badge {
-		position: absolute;
-		top: 3px;
-		right: 3px;
 		display: flex;
 		align-items: center;
 		gap: 4px;
 		padding: 2px 6px 2px 4px;
 		border-radius: 999px;
-		z-index: 2;
 		border: none;
 		cursor: pointer;
 		pointer-events: auto;

@@ -780,6 +780,11 @@
 		display: flex;
 		flex-direction: column;
 		min-width: 0;
+		background: var(--bg-card);
+		border: 1px solid var(--border);
+		border-radius: 5px;
+		overflow: hidden;
+		box-shadow: inset 0 1px 0 #ffffff04, 0 2px 12px #00000050;
 	}
 
 	@media (min-width: 768px) {
@@ -803,6 +808,15 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
+	}
+
+	/* When char-toolbar is inside the adventure log card, style it as the inset header */
+	.adventure-log .char-toolbar {
+		padding: 10px 14px;
+		padding-bottom: 10px;
+		margin-bottom: 0;
+		background: var(--bg-inset);
+		min-height: 54px;
 	}
 
 	.log-panel-title {

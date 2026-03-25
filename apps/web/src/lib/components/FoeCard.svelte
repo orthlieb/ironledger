@@ -316,9 +316,10 @@
 	/* ── Card shell ─────────────────────────────────────────────────────── */
 	.foe-card {
 		border: 1px solid var(--border);
-		border-radius: 6px;
+		border-radius: 5px;
 		background: var(--bg-card);
 		overflow: hidden;
+		box-shadow: inset 0 1px 0 #ffffff04, 0 2px 12px #00000050;
 		transition: opacity 0.2s;
 	}
 	.foe-card.vanquished { opacity: 0.55; }
@@ -328,10 +329,12 @@
 		position: relative;
 		display: flex;
 		align-items: center;
-		gap: 6px;
-		padding: 6px 8px;
+		gap: 8px;
+		padding: 8px 12px;
 		flex-wrap: wrap;
-		min-height: 42px;
+		min-height: 48px;
+		background: var(--bg-inset);
+		border-bottom: 1px solid var(--border);
 	}
 
 	.fc-collapse-btn {
