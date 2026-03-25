@@ -60,14 +60,11 @@
 		<span class="about-nav-icon" aria-hidden="true">{@html swordSvg}</span>
 		Iron Ledger
 	</a>
-	<div class="about-nav-links">
-		{#if data.user}
+	{#if data.user}
+		<div class="about-nav-links">
 			<a href="/home" class="btn btn-primary">Go to App</a>
-		{:else}
-			<a href="/login"    class="btn">Sign In</a>
-			<a href="/register" class="btn btn-primary">Create Account</a>
-		{/if}
-	</div>
+		</div>
+	{/if}
 </nav>
 
 <!-- ── Hero ───────────────────────────────────────────────────────── -->
