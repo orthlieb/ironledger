@@ -31,7 +31,7 @@
 				src="/ironledger-register.webp"
 				alt="A Norse warrior raises a drinking horn, pledging their name to the ledger"
 			/>
-			<p class="hero-caption">Swear your oath. The mead hall opens soon.</p>
+			<p class="hero-caption">Swear your oath. Glory awaits.</p>
 		</div>
 
 		{#if form?.error}
