@@ -1009,8 +1009,8 @@
 	   ============================================================ */
 	@media (min-width: 768px) {
 		.page-layout {
-			margin-left: -1.25rem;
-			margin-right: -1.25rem;
+			margin-left: calc(-1 * var(--page-gutter));
+			margin-right: calc(-1 * var(--page-gutter));
 			margin-bottom: -4rem; /* cancel .app-main bottom padding */
 			min-height: calc(100dvh + 4rem);
 		}
@@ -1024,7 +1024,7 @@
 
 		/* Tab body padding (tab-bar sticky is inherited from base styles) */
 		.tab-body {
-			padding: 1rem 1.25rem 4rem;
+			padding: 1rem var(--page-gutter) 4rem;
 		}
 	}
 

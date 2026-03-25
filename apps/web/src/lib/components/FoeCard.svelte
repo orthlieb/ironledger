@@ -462,7 +462,7 @@
 
 	/* ── Body ───────────────────────────────────────────────────────────── */
 	.fc-body {
-		padding: 0.75rem 1rem 1rem;
+		padding: 0.75rem var(--page-gutter) 1rem;
 		border-top: 1px solid var(--border);
 		display: flex;
 		flex-direction: column;

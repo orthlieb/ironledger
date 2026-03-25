@@ -66,7 +66,10 @@ export function cycleBox(totalTicks: number, boxIndex: number): number {
 export function progressText(totalTicks: number, boxes = 10): string {
 	const fullBoxes = Math.floor(totalTicks / 4);
 	const remaining = totalTicks % 4;
-	return `${fullBoxes}/${boxes} boxes, ${remaining}/4 ticks`;
+	const parts: string[] = [];
+	if (fullBoxes > 0) parts.push(`${fullBoxes}/${boxes} boxes`);
+	if (remaining > 0) parts.push(`${remaining}/4 ticks`);
+	return parts.join(', ');
 }
 
 /** Merge incoming DB data onto defaults, safe against missing keys from old saves. */

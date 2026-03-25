@@ -14,6 +14,7 @@
 		momentumReset,
 		countDebilities,
 		hydrateCharacter,
+		progressText,
 	} from '$lib/character.js';
 	import { untrack } from 'svelte';
 	import { characters } from '$lib/api.js';
@@ -737,7 +738,7 @@
 				<div class="track-group">
 					<div class="track-label-row">
 						<div class="section-label">Bonds</div>
-						<span class="track-tally">{Math.floor(data.bonds / 4)}/10 boxes, {data.bonds}/40 ticks</span>
+						<span class="track-tally">{progressText(data.bonds)}</span>
 					</div>
 					<div class="track-row">
 						<ProgressTrack
@@ -754,7 +755,7 @@
 				<div class="track-group">
 					<div class="track-label-row">
 						<div class="section-label">Failures</div>
-						<span class="track-tally">{Math.floor(data.failures / 4)}/10 boxes, {data.failures}/40 ticks</span>
+						<span class="track-tally">{progressText(data.failures)}</span>
 					</div>
 					<div class="track-row">
 						<ProgressTrack
@@ -1010,7 +1011,7 @@
 	}
 
 	.char-section {
-		padding: 12px 16px;
+		padding: 12px var(--page-gutter);
 	}
 
 	.section-divider {
