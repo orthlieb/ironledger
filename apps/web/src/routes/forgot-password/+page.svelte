@@ -28,7 +28,7 @@
 			<div class="hero-image-wrap">
 				<img
 					class="hero-image"
-					src="/viking-forge.png"
+					src="/viking-forge.webp"
 					alt="A Norse smith hammers a new key into shape at the forge"
 				/>
 				<p class="hero-caption">Forged in fire. Delivered by raven.</p>
@@ -48,7 +48,7 @@
 			<div class="hero-image-wrap">
 				<img
 					class="hero-image"
-					src="/viking-seer.png"
+					src="/viking-seer.webp"
 					alt="A Norse warrior kneels before an oracle, seeking wisdom he should already have"
 				/>
 				<p class="hero-caption">Even legends seek counsel.</p>

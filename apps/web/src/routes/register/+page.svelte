@@ -28,7 +28,7 @@
 		<div class="hero-image-wrap">
 			<img
 				class="hero-image"
-				src="/viking-signup.png"
+				src="/viking-signup.webp"
 				alt="A Norse warrior raises a drinking horn, pledging their name to the ledger"
 			/>
 			<p class="hero-caption">Swear your oath. The mead hall opens soon.</p>

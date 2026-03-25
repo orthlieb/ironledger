@@ -18,7 +18,7 @@
 		<div class="hero-image-wrap">
 			<img
 				class="hero-image"
-				src="/viking-scanning.png"
+				src="/viking-scanning.webp"
 				alt="A Norse warrior scans the horizon, waiting for your verification to arrive"
 			/>
 			<p class="hero-caption">The raven has been dispatched.</p>

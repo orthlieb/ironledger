@@ -23,7 +23,7 @@
 {#if (form as any)?.maintenance}
 	<div class="maintenance-page">
 		<img
-			src="/UnderConstruction.png"
+			src="/UnderConstruction.webp"
 			alt="A knight surveys a castle under construction"
 			class="maintenance-image"
 		/>
@@ -43,7 +43,7 @@
 		<div class="hero-image-wrap">
 			<img
 				class="hero-image"
-				src="/viking-at-the-gates.png"
+				src="/viking-at-the-gates.webp"
 				alt="A lone Norse warrior stands before the iron-banded doors of a great mead hall, two stern guardians watching"
 			/>
 			<p class="hero-caption">The gates await. Prove yourself worthy.</p>

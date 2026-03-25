@@ -252,7 +252,7 @@
 					<div class="gc-tile-row">
 						<img
 							class="gc-tile-portrait"
-							src="/foes/{encodeURIComponent(activeFoeDef.name)}.png"
+							src="/foes/{encodeURIComponent(activeFoeDef.name)}.webp"
 							alt={activeFoeDef.name}
 							onerror={(e) => ((e.target as HTMLImageElement).style.display = 'none')}
 						/>

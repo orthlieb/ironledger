@@ -153,7 +153,7 @@
 	}
 
 	function imageUrl(name: string): string {
-		return `/foes/${encodeURIComponent(name)}.png`;
+		return `/foes/${encodeURIComponent(name)}.webp`;
 	}
 </script>
 

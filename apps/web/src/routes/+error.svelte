@@ -8,7 +8,7 @@
 
 <div class="error-page">
 	<img
-		src="/Oopsie.png"
+		src="/Oopsie.webp"
 		alt="A fallen knight lies face-down in a forest clearing"
 		class="error-image"
 	/>

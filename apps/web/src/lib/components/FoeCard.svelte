@@ -60,7 +60,7 @@
 	// Helpers
 	// ---------------------------------------------------------------------------
 	function imageUrl(name: string): string {
-		return `/foes/${encodeURIComponent(name)}.png`;
+		return `/foes/${encodeURIComponent(name)}.webp`;
 	}
 
 	function update(patch: Partial<FoeEncounter>) {
