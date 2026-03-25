@@ -8,7 +8,7 @@
 
 <div class="error-page">
 	<img
-		src="/Oopsie.webp"
+		src="/ironledger-error.webp"
 		alt="A fallen knight lies face-down in a forest clearing"
 		class="error-image"
 	/>
