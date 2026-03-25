@@ -34,7 +34,7 @@
 	import type { InspectionFactor, RitualInfo } from '$lib/preconditions.js';
 	import type { PreconditionContext } from '$lib/preconditions.js';
 	import { loadSessionState, saveSessionState } from '$lib/sessionStore.svelte.js';
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import fileImportSvg    from '$icons/file-import-solid-full.svg?raw';
 			import trashSvg         from '$icons/trash-solid-full.svg?raw';
 	import fileExportSvg    from '$icons/file-export-solid-full.svg?raw';
@@ -53,6 +53,7 @@
 	let creating    = $state(false);
 	let importing   = $state(false);
 	let charError   = $state('');
+	let newlyCreatedId = $state('');
 
 	// ── Active character ───────────────────────────────────────────────────────
 	let activeCharId = $state<string>('');
@@ -259,6 +260,9 @@
 			chars = [newChar, ...chars];
 			activeCharId = newChar.id;
 			activeTab = 'characters';
+			newlyCreatedId = newChar.id;
+			await tick();
+			newlyCreatedId = '';
 		} catch {
 			charError = 'Could not create character. Is the server running?';
 		} finally {
@@ -316,7 +320,7 @@
 
 	// ── Expedition CRUD ────────────────────────────────────────────────────────
 
-	function handleAddJourney() {
+	async function handleAddJourney() {
 		const journey: Journey = {
 			id:         crypto.randomUUID(),
 			type:       'journey',
@@ -330,9 +334,12 @@
 			`<div>Started a new journey: <strong>${journey.name}</strong></div>`);
 		activeExpeditionId = journey.id;
 		addExpedition(journey);
+		newlyCreatedId = journey.id;
+		await tick();
+		newlyCreatedId = '';
 	}
 
-	function handleAddSite() {
+	async function handleAddSite() {
 		const site: Site = {
 			id:         crypto.randomUUID(),
 			type:       'site',
@@ -349,6 +356,9 @@
 			`<div>Discovered a new site: <strong>${site.name}</strong></div>`);
 		activeExpeditionId = site.id;
 		addExpedition(site);
+		newlyCreatedId = site.id;
+		await tick();
+		newlyCreatedId = '';
 	}
 
 	async function handleExpeditionChange(exp: Expedition) {
@@ -567,6 +577,7 @@
 									character={char}
 									active={char.id === activeCharId}
 									initiative={initiativeMap[char.id] ?? 0}
+									focusName={char.id === newlyCreatedId}
 									onDelete={() => deleteCharacter(char.id)}
 									onSave={handleSave}
 									onInitiativeChange={(val) => {
@@ -658,6 +669,7 @@
 										expedition={exp}
 										onChange={handleExpeditionChange}
 										onDelete={() => handleExpeditionDelete(exp.id)}
+										focusName={exp.id === newlyCreatedId}
 									/>
 								{:else}
 									<SiteCard
@@ -665,6 +677,7 @@
 										onChange={handleExpeditionChange}
 										onDelete={() => handleExpeditionDelete(exp.id)}
 										onAddEncounter={handleDenizenAddFoe}
+										focusName={exp.id === newlyCreatedId}
 									/>
 								{/if}
 							</div>

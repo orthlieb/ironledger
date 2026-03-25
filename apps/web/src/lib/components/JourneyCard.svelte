@@ -23,10 +23,12 @@
 		expedition,
 		onChange,
 		onDelete,
+		focusName = false,
 	}: {
 		expedition: Journey;
 		onChange:   (updated: Journey) => void;
 		onDelete:  () => void;
+		focusName?: boolean;
 	} = $props();
 
 	// ---------------------------------------------------------------------------
@@ -39,6 +41,9 @@
 	let nameBeforeEdit   = '';
 	$effect(() => {
 		if (editingName && nameInputEl) nameInputEl.select();
+	});
+	$effect(() => {
+		if (focusName) { nameBeforeEdit = expedition.name; editingName = true; }
 	});
 
 	// ---------------------------------------------------------------------------

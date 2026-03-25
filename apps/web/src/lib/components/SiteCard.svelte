@@ -36,12 +36,14 @@
 		onChange,
 		onDelete,
 		onAddEncounter,
+		focusName = false,
 	}: {
 		expedition: Site;
 		onChange:       (updated: Site) => void;
 		onDelete:      () => void;
 		/** Called when the user wants to add a denizen foe as an encounter. */
 		onAddEncounter?: (foeName: string) => void;
+		focusName?: boolean;
 	} = $props();
 
 	// ---------------------------------------------------------------------------
@@ -58,6 +60,9 @@
 	let nameBeforeEdit     = '';
 	$effect(() => {
 		if (editingName && nameInputEl) nameInputEl.select();
+	});
+	$effect(() => {
+		if (focusName) { nameBeforeEdit = expedition.name; editingName = true; }
 	});
 
 	// "Add Foe?" dialog state

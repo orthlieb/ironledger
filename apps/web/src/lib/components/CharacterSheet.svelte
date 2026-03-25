@@ -51,6 +51,7 @@
 		character,
 		active = false,
 		initiative = 0,
+		focusName = false,
 		onDelete,
 		onSave,
 	}: {
@@ -59,6 +60,8 @@
 		active?:   boolean;
 		/** 0 = none, 1 = character has initiative, 2 = foe has initiative */
 		initiative?: number;
+		/** Focus the name field immediately (used when newly created). */
+		focusName?: boolean;
 		onDelete?: () => void;
 		onSave?:   (updated: CharacterFull) => void;
 	} = $props();
@@ -103,6 +106,9 @@
 		if (editingName && nameInputEl) {
 			nameInputEl.select();
 		}
+	});
+	$effect(() => {
+		if (focusName) { nameBeforeEdit = data.name; editingName = true; }
 	});
 
 	// Initialise log for this character on mount
