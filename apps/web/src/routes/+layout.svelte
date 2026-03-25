@@ -77,7 +77,7 @@
 </script>
 
 {#if data.user}
-	<nav class="app-nav">
+	<nav class="app-nav" class:nav--admin={data.user?.role === 'admin'}>
 		<a href="/home" class="nav-brand">
 			<span class="nav-brand-icon" aria-hidden="true">{@html swordSvg}</span>
 			Iron Ledger

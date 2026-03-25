@@ -46,7 +46,7 @@
 				src="/ironledger-login.webp"
 				alt="A lone Norse warrior stands before the iron-banded doors of a great mead hall, two stern guardians watching"
 			/>
-			<p class="hero-caption">The gates await. Prove yourself worthy.</p>
+			<p class="hero-caption">Your adventure awaits.</p>
 		</div>
 
 		{#if form?.error}

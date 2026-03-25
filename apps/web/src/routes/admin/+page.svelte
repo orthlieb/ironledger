@@ -73,6 +73,8 @@
 	}
 
 	// ── Toggle role ───────────────────────────────────────────────────────
+	let adminCount = $derived(users.filter((u) => u.role === 'admin').length);
+
 	async function toggleRole(user: AdminUser) {
 		// Demoting is low-risk — no confirmation needed.
 		// Promoting to admin is serious — show a confirmation dialog first.
@@ -80,6 +82,8 @@
 			promoteTarget = user;
 			return;
 		}
+		// Guard: never demote the last admin.
+		if (adminCount <= 1) return;
 		await applyRoleChange(user, 'user');
 	}
 
@@ -365,7 +369,7 @@
 				<div class="metrics-loading">Loading…</div>
 			{:else}
 				{@const buckets = timeseries.buckets}
-				{@const maxTotal = Math.max(...buckets.map(b => b.totalUsers), 1)}
+				{@const rawMax = Math.max(...buckets.map(b => b.totalUsers), 1)}
 				{@const maxActive = Math.max(...buckets.map(b => b.activeUsers), 1)}
 				{@const chartH = 120}
 				{@const chartW = 600}
@@ -376,6 +380,9 @@
 				{@const plotW = chartW - padL - padR}
 				{@const plotH = chartH - padT - padB}
 				{@const step = buckets.length > 1 ? plotW / (buckets.length - 1) : plotW}
+				{@const yStep = rawMax <= 5 ? 1 : rawMax <= 15 ? 2 : rawMax <= 50 ? 5 : rawMax <= 100 ? 10 : rawMax <= 500 ? 50 : 100}
+				{@const maxTotal = Math.ceil(rawMax / yStep) * yStep}
+				{@const yTicks = Array.from({ length: Math.round(maxTotal / yStep) + 1 }, (_, i) => i * yStep)}
 
 				<div class="metrics-chart-wrap">
 					<svg
@@ -385,11 +392,11 @@
 						aria-label="User activity chart"
 					>
 						<!-- Y-axis grid lines -->
-						{#each [0, 0.25, 0.5, 0.75, 1] as t}
-							{@const y = padT + plotH * (1 - t)}
+						{#each yTicks as v}
+							{@const y = padT + plotH * (1 - v / maxTotal)}
 							<line x1={padL} y1={y} x2={chartW - padR} y2={y} class="grid-line" />
 							<text x={padL - 4} y={y + 4} class="axis-label" text-anchor="end">
-								{Math.round(maxTotal * t)}
+								{v}
 							</text>
 						{/each}
 
@@ -507,6 +514,7 @@
 						</thead>
 						<tbody>
 							{#each paginated as user (user.id)}
+								{@const isLastAdmin = user.role === 'admin' && adminCount <= 1}
 								<tr>
 									<td>{user.email}</td>
 									<td>
@@ -525,7 +533,9 @@
 									<td class="td-actions">
 										<button
 											class="btn btn-icon"
-											title={user.role === 'admin' ? 'Demote to user' : 'Promote to admin'}
+											class:btn-dimmed={isLastAdmin}
+											title={isLastAdmin ? 'Cannot demote the last admin' : user.role === 'admin' ? 'Demote to user' : 'Promote to admin'}
+											disabled={isLastAdmin}
 											onclick={() => toggleRole(user)}
 										>
 											{user.role === 'admin' ? 'Demote' : 'Promote'}
@@ -1124,6 +1134,12 @@
 		color: var(--text-muted);
 	}
 
+	/* Last-admin guard */
+	.btn-dimmed {
+		opacity: 0.35;
+		cursor: not-allowed;
+	}
+
 	/* ── Delete / Clear modals ── */
 	.modal-backdrop {
 		position: fixed;
@@ -1148,6 +1164,7 @@
 	}
 
 	.modal p {
+		font-family: var(--font-ui);
 		font-size: 0.88rem;
 		color: var(--text-muted);
 		margin-bottom: 1rem;
