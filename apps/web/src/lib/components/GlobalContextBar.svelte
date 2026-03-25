@@ -186,6 +186,9 @@
 
 	<div class="gc-layout">
 
+	<!-- ===== Scenario heading ===== -->
+	<div class="gc-scenario-heading">Current Scenario</div>
+
 	<!-- ===== Three tiles ===== -->
 	<div class="gc-tiles">
 
@@ -441,6 +444,17 @@
 	}
 	.gc-tile--active {
 		/* card chrome already on .gc-tile */
+	}
+
+	/* Scenario heading above tiles */
+	.gc-scenario-heading {
+		font-family: var(--font-display);
+		font-size: 0.65rem;
+		font-weight: 700;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--text-accent);
+		margin-bottom: 0.4rem;
 	}
 
 	/* Tile label header (mirrors char-header) */
