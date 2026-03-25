@@ -137,7 +137,7 @@
 		display: flex;
 		align-items: center;
 		flex-shrink: 0;
-		color: var(--color-mana);
+		color: inherit;
 	}
 
 	.nav-brand-icon :global(svg) {
