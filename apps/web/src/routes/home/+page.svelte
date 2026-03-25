@@ -754,13 +754,13 @@
 
 <style>
 	/* ============================================================
-	   Adventure tab layout — GCB + log, stacked on mobile,
-	   side-by-side on desktop
+	   Adventure tab layout — same 2-tile grid as other tabs
 	   ============================================================ */
 	.adventure-layout {
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 12px;
+		align-items: start;
 	}
 
 	.adventure-log {
@@ -771,18 +771,7 @@
 
 	@media (min-width: 768px) {
 		.adventure-layout {
-			flex-direction: row;
-			align-items: flex-start;
-			gap: 1.25rem;
-		}
-
-		.adventure-gcb {
-			flex: 1;
-			min-width: 0;
-		}
-
-		.adventure-log {
-			flex: 1;
+			grid-template-columns: repeat(2, 1fr);
 		}
 	}
 
