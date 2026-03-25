@@ -84,7 +84,7 @@
 		</form>
 
 		<p class="auth-link">
-			No account yet? <a href="/register">Create one</a> · <a href="/forgot-password" class="forgot-link">Forgot password?</a>
+			No account yet? <a href="/register">Create one</a> · <a href="/forgot-password" class="forgot-link">Forgot password?</a> · <a href="/about" class="forgot-link">About</a>
 		</p>
 	</div>
 </div>

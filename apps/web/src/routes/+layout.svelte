@@ -80,6 +80,8 @@
 				<a href="/admin" class="btn btn-icon">Admin</a>
 				<span class="nav-sep" aria-hidden="true">◆</span>
 			{/if}
+			<a href="/about" class="btn btn-icon">About</a>
+			<span class="nav-sep" aria-hidden="true">◆</span>
 			<div class="nav-user-actions">
 				<button
 					class="nav-settings-btn tooltip-down"
