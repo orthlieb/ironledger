@@ -855,6 +855,11 @@
 		align-items: start;
 	}
 
+	/* Prevent grid items from overflowing their cells on narrow screens */
+	.char-list > :global(*) {
+		min-width: 0;
+	}
+
 	/* Characters + Expeditions: 2 per row on ≥768px (≈ ½ screen each) */
 	@media (min-width: 768px) {
 		.char-list--characters,

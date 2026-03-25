@@ -1265,6 +1265,10 @@
 		margin-bottom: 3px;
 	}
 
+	.track-label-row :global(.section-label) {
+		margin-bottom: 0;
+	}
+
 	.track-tally {
 		font-family: var(--font-ui);
 		font-size: 0.65rem;
