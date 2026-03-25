@@ -305,7 +305,7 @@
 					class:btn-danger={!enc.vanquished}
 					onclick={toggleVanquished}
 				>
-					{#if enc.vanquished}⚔ Mark Active{:else}{@html skullSvg} Mark Vanquished{/if}
+					{#if enc.vanquished}{@html swordSvg} Mark Active{:else}{@html skullSvg} Mark Vanquished{/if}
 				</button>
 			</div>
 		</div>

@@ -8,18 +8,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { verifyCaptcha, CaptchaError }           from '../../src/lib/captcha.js';
 
 // ---------------------------------------------------------------------------
-// Minimal env so config.ts parses without errors
+// Mock the config module so captcha.ts sees NODE_ENV:'production' and always
+// runs real verification — without triggering the config parser's process.exit.
+// vi.mock is hoisted above imports by Vitest, so captcha.ts picks this up.
 // ---------------------------------------------------------------------------
-process.env['HCAPTCHA_SECRET']  = '0x0000000000000000000000000000000000000000';
-process.env['NODE_ENV']         = 'test';
-process.env['APP_URL']          = 'http://localhost:3000';
-process.env['DATABASE_URL']     = 'postgres://test:test@localhost:5432/test';
-process.env['REDIS_URL']        = 'redis://localhost:6379';
-process.env['EMAIL_FROM']       = 'test@example.com';
-process.env['JWT_PRIVATE_KEY']  = 'placeholder';
-process.env['JWT_PUBLIC_KEY']   = 'placeholder';
-process.env['EMAIL_PROVIDER']   = 'resend';
-process.env['RESEND_API_KEY']   = 're_test';
+vi.mock('../../src/config.js', () => ({
+  config: {
+    NODE_ENV:         'production',
+    HCAPTCHA_SECRET:  '0x0000000000000000000000000000000000000000',
+  },
+}));
 
 describe('verifyCaptcha', () => {
   beforeEach(() => {
