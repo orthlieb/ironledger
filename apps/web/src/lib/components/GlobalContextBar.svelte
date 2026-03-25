@@ -184,10 +184,10 @@
 
 <div class="global-context" class:gc--stacked={stacked}>
 
-	<div class="gc-layout">
-
-	<!-- ===== Scenario heading ===== -->
+	<!-- ===== Scenario heading (card header) ===== -->
 	<div class="gc-scenario-heading">Current Scenario</div>
+
+	<div class="gc-layout">
 
 	<!-- ===== Three tiles ===== -->
 	<div class="gc-tiles">
@@ -251,8 +251,9 @@
 		</div>
 
 		<!-- FOE TILE -->
-		<div class="gc-tile" class:gc-tile--active={!!activeFoe && !!activeFoeDef} class:gc-tile--empty={!activeFoe || !activeFoeDef}>
-			<div class="gc-tile-label" style={activeFoe && activeFoeDef ? `border-left: 3px solid ${activeFoeNature}` : ''}>
+		<div class="gc-tile" class:gc-tile--active={!!activeFoe && !!activeFoeDef} class:gc-tile--empty={!activeFoe || !activeFoeDef}
+			style={activeFoe && activeFoeDef ? `border-left: 3px solid ${activeFoeNature}` : ''}>
+			<div class="gc-tile-label">
 				<span>Foe</span>
 			</div>
 			<button class="gc-tile-btn" onclick={() => toggleSelector('foe')} title="Select foe">
@@ -314,8 +315,9 @@
 		</div>
 
 		<!-- EXPEDITION TILE -->
-		<div class="gc-tile" class:gc-tile--active={!!activeExpedition} class:gc-tile--empty={!activeExpedition}>
-			<div class="gc-tile-label" style={activeExpedition ? `border-left: 3px solid ${activeExpedition.type === 'journey' ? '#34d399' : '#60a5fa'}` : ''}>
+		<div class="gc-tile" class:gc-tile--active={!!activeExpedition} class:gc-tile--empty={!activeExpedition}
+			style={activeExpedition ? `border-left: 3px solid ${activeExpedition.type === 'journey' ? '#34d399' : '#60a5fa'}` : ''}>
+			<div class="gc-tile-label">
 				<span>Expedition</span>
 			</div>
 			<button class="gc-tile-btn" onclick={() => toggleSelector('expedition')} title="Select expedition">
@@ -401,6 +403,7 @@
 		display: flex;
 		gap: 0.5rem;
 		align-items: stretch;
+		padding: 0.5rem;
 	}
 
 	/* ===== Action buttons — default: 2×2 grid (large screens) ===== */
@@ -423,56 +426,52 @@
 		gap: 0.5rem;
 	}
 
-	/* ===== Individual tile ===== */
+	/* ===== Individual tile (section within the single card) ===== */
 	.gc-tile {
 		position: relative;
-		border-radius: 5px;
-		min-height: 4.5rem;
 		container-name: gc;
 		container-type: inline-size;
-		background: var(--bg-card);
-		border: 1px solid var(--border);
-		box-shadow: inset 0 1px 0 #ffffff04, 0 2px 12px #00000050;
 		display: flex;
 		flex-direction: column;
+		border-top: 1px solid var(--border);
+		border-left: 3px solid transparent;
 	}
 
 	.gc-tile--empty {
-		border: 1px dashed var(--border);
-		background: var(--bg-inset);
-		box-shadow: none;
+		opacity: 0.6;
 	}
 	.gc-tile--active {
-		/* card chrome already on .gc-tile */
+		border-left: 3px solid rgba(245, 158, 11, 0.6);
 	}
 
-	/* Scenario heading above tiles */
+	/* Scenario heading — acts as the card header for the whole GCB tile */
 	.gc-scenario-heading {
+		display: flex;
+		align-items: center;
+		padding: 8px 14px;
+		background: var(--bg-inset);
+		border-bottom: 1px solid var(--border);
 		font-family: var(--font-display);
 		font-size: 0.65rem;
 		font-weight: 700;
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
 		color: var(--text-accent);
-		margin-bottom: 0.4rem;
 	}
 
-	/* Tile label header (mirrors char-header) */
+	/* Tile label — subtle section label within the card */
 	.gc-tile-label {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: 5px 10px;
-		background: var(--bg-inset);
-		border-bottom: 1px solid var(--border);
+		padding: 4px 10px 2px;
 		font-family: var(--font-display);
-		font-size: 0.58rem;
+		font-size: 0.55rem;
 		font-weight: 700;
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
 		color: var(--text-dimmer);
 		flex-shrink: 0;
-		border-left: 3px solid transparent; /* coloured accent for foe/exp tiles */
 	}
 
 	/* Full-area clickable button */
@@ -884,7 +883,7 @@
 		padding-left: 0;
 		border-left: none;
 		padding-top: 0.4rem;
-		border-top: 1px solid rgba(245, 158, 11, 0.15);
+		border-top: 1px solid var(--border);
 	}
 
 	/* ===== Responsive ===== */

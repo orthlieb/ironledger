@@ -776,6 +776,15 @@
 		align-items: start;
 	}
 
+	.adventure-gcb {
+		background: var(--bg-card);
+		border: 1px solid var(--border);
+		border-radius: 5px;
+		overflow: hidden;
+		box-shadow: inset 0 1px 0 #ffffff04, 0 2px 12px #00000050;
+		min-width: 0;
+	}
+
 	.adventure-log {
 		display: flex;
 		flex-direction: column;
@@ -895,13 +904,13 @@
 		}
 	}
 
-	/* Foes: 2 per row on ≥640px, 3 per row on ≥1100px (≈ ⅓ screen each) */
-	@media (min-width: 640px) {
+	/* Foes: 2 per row on ≥768px, 3 per row on ≥1200px */
+	@media (min-width: 768px) {
 		.char-list--foes {
 			grid-template-columns: repeat(2, 1fr);
 		}
 	}
-	@media (min-width: 1100px) {
+	@media (min-width: 1200px) {
 		.char-list--foes {
 			grid-template-columns: repeat(3, 1fr);
 		}
