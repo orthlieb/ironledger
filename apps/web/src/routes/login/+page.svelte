@@ -39,7 +39,6 @@
 		{#if (form as any)?.maintenance}
 			<div class="maintenance-banner">
 				<strong>Under Construction</strong> — {(form as any).message}
-				<br /><em>Admins may still sign in below.</em>
 			</div>
 		{:else if form?.error}
 			<div class="error-msg">{form.error}</div>
