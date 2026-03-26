@@ -8,10 +8,14 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
+import { readFile } from 'fs/promises';
+import { existsSync } from 'fs';
+import { join } from 'path';
 import { authenticate } from '../middleware/authenticate.js';
 import { requireAdmin } from '../middleware/requireAdmin.js';
 import * as adminService from '../services/adminService.js';
 import * as maintenanceService from '../services/maintenanceService.js';
+import { config } from '../config.js';
 
 // ---------------------------------------------------------------------------
 // Input schemas
@@ -149,6 +153,39 @@ export async function adminRoutes(server: FastifyInstance): Promise<void> {
     const result = await adminService.getUserTimeseries(tf).catch(handleError(reply));
     if (!result || reply.sent) return;
     return reply.status(200).send(result);
+  });
+
+  // ── GET /logs ── Tail a PM2 log file ────────────────────────────────
+  // Whitelist prevents path traversal — only these four filenames are valid.
+  const VALID_LOG_FILES = ['api-out', 'api-error', 'web-out', 'web-error'] as const;
+  type LogFile = typeof VALID_LOG_FILES[number];
+
+  server.get('/logs', async (req: FastifyRequest, reply: FastifyReply) => {
+    const { file, lines: linesParam } = req.query as { file?: string; lines?: string };
+
+    if (!VALID_LOG_FILES.includes(file as LogFile)) {
+      return reply.status(400).send({
+        statusCode: 400, error: 'Bad Request',
+        message: `file must be one of: ${VALID_LOG_FILES.join(', ')}`,
+      });
+    }
+
+    const maxLines = Math.min(Math.max(parseInt(linesParam ?? '200', 10) || 200, 1), 2000);
+    const logPath  = join(config.LOG_DIR, `${file}.log`);
+
+    if (!existsSync(logPath)) {
+      return reply.status(200).send({ available: false, file, lines: [] });
+    }
+
+    try {
+      const raw   = await readFile(logPath, 'utf-8');
+      const all   = raw.split('\n').filter((l) => l.trim().length > 0);
+      const tail  = all.slice(-maxLines);
+      return reply.status(200).send({ available: true, file, lines: tail });
+    } catch (err) {
+      req.log.error(err, 'Failed to read log file');
+      return reply.status(200).send({ available: false, file, lines: [] });
+    }
   });
 
   // ── POST /maintenance ── Enable maintenance mode ────────────────────

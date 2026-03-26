@@ -4,19 +4,18 @@
 	declare const __BUILD_DATE__: string;
 
 	import { admin, maintenance as maintApi } from '$lib/api';
-	import type { AdminUser, AdminStats, AuditEvent, MaintenanceStatus, UserTimeseries } from '@ironledger/shared';
+	import type { AdminUser, AdminStats, MaintenanceStatus, UserTimeseries } from '@ironledger/shared';
 	import type { LayoutData } from '../$types';
 
 	let { data }: { data: LayoutData } = $props();
 
 	let users: AdminUser[] = $state([]);
 	let stats: AdminStats | null = $state(null);
-	let auditLog: AuditEvent[] = $state([]);
 	let loading = $state(true);
 	let error = $state('');
 
 	// ── Tabs ──────────────────────────────────────────────────────────────
-	let activeTab: 'users' | 'audit' | 'maintenance' = $state('users');
+	let activeTab: 'users' | 'logs' | 'maintenance' = $state('users');
 
 	// ── Sort state ────────────────────────────────────────────────────────
 	let sortKey: keyof AdminUser = $state('email');
@@ -85,8 +84,7 @@
 			suspendTarget.isActive = !willSuspend;
 			users = [...users];
 			suspendTarget = null;
-			void refreshAuditLog();
-		} catch (err) {
+			} catch (err) {
 			error = err instanceof Error ? err.message : 'Suspend action failed';
 			suspendTarget = null;
 		}
@@ -118,8 +116,7 @@
 			await admin.setRole(user.id, newRole);
 			user.role = newRole;
 			users = [...users];
-			void refreshAuditLog();
-		} catch (err) {
+			} catch (err) {
 			error = err instanceof Error ? err.message : 'Role change failed';
 		}
 	}
@@ -143,32 +140,28 @@
 		void loadTimeseries(metricsTimeframe);
 	});
 
-	// ── Audit log ─────────────────────────────────────────────────────────
-	let auditSearch = $state('');
-	let searchTimeout: ReturnType<typeof setTimeout> | undefined;
+	// ── Server logs ──────────────────────────────────────────────────────────────────
+	type LogFile = 'api-out' | 'api-error' | 'web-out' | 'web-error';
+	let logFile: LogFile = $state('api-out');
+	let logLines: string[] = $state([]);
+	let logAvailable = $state(true);
+	let logLoading = $state(false);
+	let logLineCount: 200 | 500 | 1000 = $state(200);
 
-	async function refreshAuditLog() {
-		try { auditLog = await admin.getAuditLog(auditSearch || undefined); } catch { /* ignore */ }
-	}
-
-	function onSearchInput() {
-		clearTimeout(searchTimeout);
-		searchTimeout = setTimeout(() => { void refreshAuditLog(); }, 300);
-	}
-
-	// ── Clear audit log ───────────────────────────────────────────────────
-	let showClearConfirm = $state(false);
-
-	async function confirmClearAudit() {
+	async function loadLogs(file = logFile, lines = logLineCount) {
+		logLoading = true;
 		try {
-			await admin.clearAuditLog();
-			showClearConfirm = false;
-			await refreshAuditLog();
-		} catch (err) {
-			error = err instanceof Error ? err.message : 'Clear failed';
-			showClearConfirm = false;
+			const result = await admin.getLogs(file, lines);
+			logLines = result.lines;
+			logAvailable = result.available;
+		} catch { logLines = []; logAvailable = false; } finally {
+			logLoading = false;
 		}
 	}
+
+	$effect(() => {
+		if (activeTab === 'logs') void loadLogs(logFile, logLineCount);
+	});
 
 	// ── Maintenance mode ──────────────────────────────────────────────────
 	let maintStatus: MaintenanceStatus | null = $state(null);
@@ -212,8 +205,7 @@
 			await admin.enableMaintenance({ message: maintMessage, minutesUntilShutdown: maintMinutes });
 			showMaintConfirm = false;
 			await refreshMaintStatus();
-			void refreshAuditLog();
-		} catch (err) {
+			} catch (err) {
 			error = err instanceof Error ? err.message : 'Failed to enable maintenance';
 			showMaintConfirm = false;
 		} finally {
@@ -226,8 +218,7 @@
 		try {
 			await admin.disableMaintenance();
 			await refreshMaintStatus();
-			void refreshAuditLog();
-		} catch (err) {
+			} catch (err) {
 			error = err instanceof Error ? err.message : 'Failed to disable maintenance';
 		} finally {
 			maintLoading = false;
@@ -236,87 +227,17 @@
 
 	// ── Event display helpers ─────────────────────────────────────────────
 
-	function eventLabel(eventType: string): string {
-		const map: Record<string, string> = {
-			admin_delete_user:   'Deleted User',
-			admin_set_role:      'Changed Role',
-			admin_clear_audit:   'Cleared Log',
-			api_error:           'API Error',
-			login_success:       'Login',
-			login_failed:        'Login Failed',
-			login_unverified:    'Unverified Login',
-			account_disabled:    'Disabled Acct',
-			register_success:    'Registered',
-			email_verified:      'Email Verified',
-			password_reset_req:  'Password Reset Req',
-			password_reset_done: 'Password Reset',
-			token_theft:         'Token Theft',
-			token_refresh:       'Token Refresh',
-			admin_enable_maintenance:  'Maint Enabled',
-			admin_disable_maintenance: 'Maint Disabled',
-			admin_suspend_user:   'Suspended User',
-			admin_unsuspend_user: 'Unsuspended User',
-			auto_lockout:         'Auto-Lockout',
-		};
-		return map[eventType] ?? eventType;
-	}
-
-	function eventDetail(e: AuditEvent): string {
-		const m = e.metadata;
-		if (!m) return '';
-		if (e.eventType === 'admin_delete_user') {
-			return String(m.targetEmail ?? m.targetUserId ?? '');
-		}
-		if (e.eventType === 'admin_set_role') {
-			return `${m.targetEmail}: ${m.previousRole} \u2192 ${m.newRole}`;
-		}
-		if (e.eventType === 'api_error') {
-			return `${m.method} ${m.url} \u2192 ${m.statusCode}: ${m.message}`;
-		}
-		if (e.eventType === 'login_success' || e.eventType === 'login_failed'
-			|| e.eventType === 'login_unverified' || e.eventType === 'account_disabled'
-			|| e.eventType === 'register_success') {
-			return String(m.email ?? '');
-		}
-		if (e.eventType === 'admin_clear_audit') return '';
-		if (e.eventType === 'admin_enable_maintenance') {
-			return `"${m.message}" (${m.minutesUntilShutdown}m)`;
-		}
-		if (e.eventType === 'admin_disable_maintenance') return '';
-		if (e.eventType === 'admin_suspend_user' || e.eventType === 'admin_unsuspend_user') {
-			return String(m.targetEmail ?? m.targetUserId ?? '');
-		}
-		if (e.eventType === 'auto_lockout') {
-			return `${m.targetEmail ?? ''} (too many failed logins)`;
-		}
-		return JSON.stringify(m);
-	}
-
-	function eventClass(eventType: string): string {
-		if (eventType === 'api_error' || eventType === 'token_theft') return 'audit-type-error';
-		if (eventType === 'login_failed' || eventType === 'login_unverified'
-			|| eventType === 'account_disabled' || eventType === 'auto_lockout'
-			|| eventType === 'admin_suspend_user'
-			|| eventType === 'admin_enable_maintenance') return 'audit-type-warn';
-		if (eventType === 'login_success' || eventType === 'register_success'
-			|| eventType === 'email_verified' || eventType === 'admin_unsuspend_user'
-			|| eventType === 'admin_disable_maintenance') return 'audit-type-success';
-		return '';
-	}
-
 	// ── Load data on mount ────────────────────────────────────────────────
 	$effect(() => {
 		(async () => {
 			try {
-				const [u, s, a, ms] = await Promise.all([
+				const [u, s, ms] = await Promise.all([
 					admin.listUsers(),
 					admin.getStats(),
-					admin.getAuditLog(),
 					maintApi.getStatus(),
 				]);
 				users = u;
 				stats = s;
-				auditLog = a;
 				maintStatus = ms;
 			} catch (err) {
 				error = err instanceof Error ? err.message : 'Failed to load admin data';
@@ -491,11 +412,11 @@
 				>Users</button>
 				<button
 					class="tab-btn"
-					class:active={activeTab === 'audit'}
+					class:active={activeTab === 'logs'}
 					role="tab"
-					aria-selected={activeTab === 'audit'}
-					onclick={() => (activeTab = 'audit')}
-				>Audit Log</button>
+					aria-selected={activeTab === 'logs'}
+					onclick={() => (activeTab = 'logs')}
+				>Logs</button>
 				<button
 					class="tab-btn"
 					class:active={activeTab === 'maintenance'}
@@ -604,42 +525,51 @@
 					</div>
 				{/if}
 
-			<!-- ═══ Audit Log tab ═══ -->
-			{:else if activeTab === 'audit'}
-				<div class="audit-toolbar">
-					<input
-						class="audit-search"
-						type="text"
-						placeholder="Search by email..."
-						bind:value={auditSearch}
-						oninput={onSearchInput}
-					/>
-					<button
-						class="btn btn-icon btn-danger"
-						onclick={() => (showClearConfirm = true)}
-					>Clear Log</button>
+			<!-- ═══ Logs tab ═══ -->
+			{:else if activeTab === 'logs'}
+				<div class="logs-toolbar">
+					<div class="logs-file-btns">
+						{#each ([['api-out','API stdout'],['api-error','API stderr'],['web-out','Web stdout'],['web-error','Web stderr']] as const) as [f, label]}
+							<button
+								class="btn btn-icon"
+								class:active={logFile === f}
+								onclick={() => { logFile = f as typeof logFile; void loadLogs(f as typeof logFile, logLineCount); }}
+							>{label}</button>
+						{/each}
+					</div>
+					<div class="logs-right">
+						<div class="logs-line-btns">
+							{#each ([200, 500, 1000] as const) as n}
+								<button
+									class="btn btn-icon"
+									class:active={logLineCount === n}
+									onclick={() => { logLineCount = n; void loadLogs(logFile, n); }}
+								>{n} lines</button>
+							{/each}
+						</div>
+						<button class="btn btn-icon" onclick={() => void loadLogs()} disabled={logLoading}>
+							{logLoading ? 'Loading…' : '↻ Refresh'}
+						</button>
+					</div>
 				</div>
 
-				{#if auditLog.length === 0}
-					<p class="audit-empty">No audit events found.</p>
+				{#if !logAvailable}
+					<p class="logs-unavailable">
+						Log file not available — server may not be running under PM2,
+						or <code>LOG_DIR</code> is not configured for this environment.
+					</p>
+				{:else if logLoading}
+					<p class="logs-unavailable">Loading…</p>
+				{:else if logLines.length === 0}
+					<p class="logs-unavailable">Log file is empty.</p>
 				{:else}
-					<div class="audit-log">
-						{#each auditLog as event (event.id)}
-							<div class="audit-entry">
-								<span class="audit-time">
-									{new Date(event.createdAt).toLocaleString()}
-								</span>
-								<span class="audit-type {eventClass(event.eventType)}">
-									{eventLabel(event.eventType)}
-								</span>
-								{#if event.adminEmail}
-									<span class="audit-admin">{event.adminEmail}</span>
-								{/if}
-								<span class="audit-detail">{eventDetail(event)}</span>
-								{#if event.ipAddress}
-									<span class="audit-ip">{event.ipAddress}</span>
-								{/if}
-							</div>
+					<div class="log-output" role="log" aria-live="off">
+						{#each logLines as line}
+							<div class="log-line
+								{line.includes('ERROR') || line.includes('error') ? 'log-error' : ''}
+								{line.includes('WARN') || line.includes('warn') ? 'log-warn' : ''}
+								{line.includes('DEBUG') || line.includes('debug') ? 'log-debug' : ''}
+							">{line}</div>
 						{/each}
 					</div>
 				{/if}
@@ -732,24 +662,6 @@
 			<div class="modal-actions">
 				<button class="btn" onclick={() => (deleteTarget = null)}>Cancel</button>
 				<button class="btn btn-danger" onclick={confirmDelete}>Delete</button>
-			</div>
-		</div>
-	</div>
-{/if}
-
-<!-- Clear audit log confirmation dialog -->
-{#if showClearConfirm}
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="modal-backdrop" onclick={() => (showClearConfirm = false)} onkeydown={(e) => e.key === 'Escape' && (showClearConfirm = false)}>
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="modal card" onclick={(e) => e.stopPropagation()}>
-			<h3>Clear Audit Log</h3>
-			<p>
-				Delete all audit log entries? This cannot be undone.
-			</p>
-			<div class="modal-actions">
-				<button class="btn" onclick={() => (showClearConfirm = false)}>Cancel</button>
-				<button class="btn btn-danger" onclick={confirmClearAudit}>Clear</button>
 			</div>
 		</div>
 	</div>
@@ -1258,233 +1170,68 @@
 		margin-top: 0.25rem;
 	}
 
-	/* ── Audit toolbar ── */
-	.audit-toolbar {
+	/* ── Logs tab ── */
+	.logs-toolbar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		margin-bottom: 0.75rem;
+		flex-wrap: wrap;
+	}
+
+	.logs-file-btns,
+	.logs-line-btns {
+		display: flex;
+		gap: 0.3rem;
+		flex-wrap: wrap;
+	}
+
+	.logs-right {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		margin-bottom: 0.75rem;
 	}
 
-	.audit-search {
-		flex: 1;
-		padding: 0.4rem 0.6rem;
-		font-family: var(--font-ui);
-		font-size: 0.78rem;
-		background: var(--bg-inset);
-		color: var(--text-body);
-		border: 1px solid var(--border);
-		border-radius: 4px;
-		outline: none;
-	}
-	.audit-search:focus {
-		border-color: var(--text-accent);
-	}
-	.audit-search::placeholder {
-		color: var(--text-dimmer);
-	}
-
-	.audit-empty {
+	.logs-unavailable {
 		font-family: var(--font-ui);
 		font-size: 0.82rem;
 		color: var(--text-dimmer);
 		text-align: center;
 		padding: 2rem;
 	}
-
-	/* ── Audit log ── */
-	.audit-log {
-		display: flex;
-		flex-direction: column;
-		gap: 1px;
-		background: var(--border);
-		border: 1px solid var(--border);
-		border-radius: 5px;
-		overflow: hidden;
-	}
-
-	.audit-entry {
-		display: flex;
-		align-items: baseline;
-		gap: 0.6rem;
-		padding: 0.4rem 0.6rem;
-		font-family: var(--font-ui);
-		font-size: 0.75rem;
-		background: var(--bg-card);
-	}
-
-	.audit-entry:hover {
-		background: var(--bg-hover);
-	}
-
-	.audit-time {
-		color: var(--text-dimmer);
-		white-space: nowrap;
+	.logs-unavailable code {
 		font-family: var(--font-mono);
-		font-size: 0.7rem;
-		flex-shrink: 0;
-	}
-
-	.audit-type {
+		font-size: 0.8em;
 		color: var(--text-accent);
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.03em;
-		font-size: 0.68rem;
-		flex-shrink: 0;
 	}
 
-	.audit-type-error {
-		color: var(--color-danger);
-	}
-
-	.audit-type-warn {
-		color: #d4a017;
-	}
-
-	.audit-type-success {
-		color: var(--color-success);
-	}
-
-	.audit-admin {
-		color: var(--text-muted);
-		font-weight: 500;
-		font-size: 0.72rem;
-		flex-shrink: 0;
-	}
-
-	.audit-detail {
-		color: var(--text-muted);
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-
-	.audit-ip {
-		color: var(--text-dimmer);
-		font-family: var(--font-mono);
-		font-size: 0.68rem;
-		flex-shrink: 0;
-		margin-left: auto;
-	}
-
-	/* ── Maintenance tab ── */
-	.maint-panel {
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-		max-width: 500px;
-	}
-
-	.maint-status-row {
-		display: flex;
-		align-items: center;
-		gap: 0.6rem;
-		font-family: var(--font-ui);
-	}
-
-	.maint-dot {
-		width: 10px;
-		height: 10px;
-		border-radius: 50%;
-		background: var(--color-success);
-		flex-shrink: 0;
-	}
-
-	.maint-dot-active {
-		background: var(--color-danger);
-		animation: maint-blink 1.2s ease-in-out infinite;
-	}
-
-	@keyframes maint-blink {
-		0%, 100% { opacity: 1; }
-		50% { opacity: 0.4; }
-	}
-
-	.maint-status-label {
-		font-size: 0.85rem;
-		font-weight: 600;
-		color: var(--text-body);
-	}
-
-	.maint-timer {
-		font-family: var(--font-mono);
-		font-size: 0.78rem;
-		color: var(--color-danger);
-		margin-left: auto;
-	}
-
-	.maint-active-info {
-		background: color-mix(in srgb, var(--color-danger) 10%, transparent);
-		border: 1px solid var(--color-danger);
-		border-radius: 5px;
-		padding: 0.6rem 0.8rem;
-	}
-
-	.maint-msg {
-		font-family: var(--font-ui);
-		font-size: 0.82rem;
-		color: var(--text-body);
-		margin: 0;
-	}
-
-	.maint-shutdown {
-		font-family: var(--font-mono);
-		font-size: 0.72rem;
-		color: var(--text-muted);
-		margin: 0.3rem 0 0;
-	}
-
-	.maint-form {
-		display: flex;
-		flex-direction: column;
-		gap: 0.6rem;
-	}
-
-	.maint-label {
-		display: flex;
-		flex-direction: column;
-		gap: 0.2rem;
-		font-family: var(--font-ui);
-		font-size: 0.72rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.04em;
-		color: var(--text-dimmer);
-	}
-
-	.maint-input {
-		padding: 0.4rem 0.6rem;
-		font-family: var(--font-ui);
-		font-size: 0.82rem;
-		background: var(--bg-inset);
-		color: var(--text-body);
+	.log-output {
+		background: #0d1117;
 		border: 1px solid var(--border);
-		border-radius: 4px;
-		outline: none;
-	}
-	.maint-input:focus {
-		border-color: var(--text-accent);
-	}
-
-	.maint-input-num {
-		max-width: 100px;
-	}
-
-	.maint-modal-title {
-		color: var(--color-danger) !important;
+		border-radius: 5px;
+		padding: 0.5rem;
+		max-height: 540px;
+		overflow-y: auto;
+		font-family: var(--font-mono);
+		font-size: 0.72rem;
+		line-height: 1.55;
+		scroll-behavior: smooth;
 	}
 
-	.btn-success {
-		background: var(--color-success);
-		color: #fff;
-		border: 1px solid var(--color-success);
+	.log-line {
+		white-space: pre-wrap;
+		word-break: break-all;
+		color: #c9d1d9;
+		padding: 1px 0;
 	}
-	.btn-success:hover {
-		filter: brightness(1.1);
-	}
+	.log-line.log-error { color: #ff7b72; }
+	.log-line.log-warn  { color: #e3b341; }
+	.log-line.log-debug { color: #6e7681; }
 
-	.btn-warn {
+	.tab-btn.active.logs-active { color: var(--text-accent); }
+
+		.btn-warn {
 		background: #92400e;
 		color: #fde68a;
 		border: 1px solid #b45309;

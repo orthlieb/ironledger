@@ -52,6 +52,11 @@ const schema = z.object({
   // Number of consecutive failed login attempts before the account is suspended.
   LOGIN_FAIL_LOCKOUT_THRESHOLD: z.coerce.number().int().positive().default(5),
 
+  // ── Logging ───────────────────────────────────────────────────────────────
+  // Directory where PM2 writes log files. On production this is
+  // /home/ironledger/logs; override in .env for other environments.
+  LOG_DIR: z.string().default('/home/ironledger/logs'),
+
   // ── Per-user resource limits ──────────────────────────────────────────────
   MAX_CHARACTERS_PER_USER:  z.coerce.number().int().positive().default(20),
   MAX_ENCOUNTERS_PER_USER:  z.coerce.number().int().positive().default(100),

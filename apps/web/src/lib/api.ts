@@ -128,6 +128,11 @@ export const admin = {
 			body: JSON.stringify({ suspended }),
 		}),
 
+	getLogs: (file: 'api-out' | 'api-error' | 'web-out' | 'web-error', lines = 200) =>
+		request<{ available: boolean; file: string; lines: string[] }>(
+			`/api/admin/logs?file=${file}&lines=${lines}`,
+		),
+
 	enableMaintenance: (body: { message: string; minutesUntilShutdown: number }) =>
 		request<MaintenanceStatus>('/api/admin/maintenance', {
 			method: 'POST',
