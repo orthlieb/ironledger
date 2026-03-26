@@ -57,6 +57,11 @@ const schema = z.object({
   // /home/ironledger/logs; override in .env for other environments.
   LOG_DIR: z.string().default('/home/ironledger/logs'),
 
+  // ── Email rate limiting ───────────────────────────────────────────────────
+  // Max verification emails triggered from one IP in a 24-hour window.
+  // Prevents a single actor burning through the Resend daily quota.
+  MAX_REG_EMAILS_PER_IP: z.coerce.number().int().positive().default(10),
+
   // ── Per-user resource limits ──────────────────────────────────────────────
   MAX_CHARACTERS_PER_USER:  z.coerce.number().int().positive().default(20),
   MAX_ENCOUNTERS_PER_USER:  z.coerce.number().int().positive().default(100),

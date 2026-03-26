@@ -20,6 +20,7 @@ import { verifyCaptcha, CaptchaError } from '../lib/captcha.js';
 import { PwnedPasswordError } from '../lib/hibp.js';
 import * as auth from '../services/authService.js';
 import { config } from '../config.js';
+import { redis } from '../server.js';
 
 // ---------------------------------------------------------------------------
 // Cookie configuration for the refresh token
@@ -85,6 +86,20 @@ export async function authRoutes(server: FastifyInstance): Promise<void> {
 
     await verifyCaptcha(body.captchaToken, req.ip).catch(handleCaptchaError(reply));
     if (reply.sent) return;
+
+    // Per-IP email rate limit — silently drop the send if over quota.
+    // The response is always 202 so the caller can't detect the block.
+    if (redis) {
+      const key   = `reg_email_ip:${req.ip}`;
+      const count = await redis.incr(key);
+      if (count === 1) await redis.expire(key, 86_400); // 24-hour window
+      if (count > config.MAX_REG_EMAILS_PER_IP) {
+        req.log.warn({ ip: req.ip, count }, 'reg email quota exceeded for IP');
+        return reply.status(202).send({
+          message: 'If that email is not already registered, a verification link is on its way.',
+        });
+      }
+    }
 
     await auth.register({ email: body.email, password: body.password })
       .catch(handleAuthError(reply));
