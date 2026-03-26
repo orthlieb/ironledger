@@ -19,6 +19,9 @@ build/
 logs/
 *.log
 npm-debug.log*
+# Exception: SvelteKit route directories that happen to be named 'logs'
+!apps/web/src/routes/**/logs/
+!apps/web/src/routes/**/logs/**
 
 # OS
 .DS_Store
