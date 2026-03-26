@@ -931,11 +931,11 @@
 		flex-wrap: wrap;
 	}
 
-	.counter-pip.pip-filled {
+	.pip.counter-pip.pip-filled {
 		background: var(--counter-color);
 		border-color: var(--counter-color);
 	}
-	.counter-pip:hover {
+	.pip.counter-pip:hover {
 		border-color: var(--counter-color);
 	}
 
