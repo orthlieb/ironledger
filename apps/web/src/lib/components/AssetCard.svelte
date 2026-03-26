@@ -399,26 +399,26 @@
 				</div>
 			{/if}
 
-			<!-- Dose / charge tracker (e.g. Venenigisto poison doses) -->
-			{#if definition.dosesMax !== undefined}
-				{@const dosesMax   = definition.dosesMax}
-				{@const dosesLabel = definition.dosesLabel ?? 'Doses'}
-				<div class="doses-row">
-					<span class="companion-field-label">{dosesLabel}</span>
-					<div class="dose-pips">
-						{#each Array(dosesMax) as _, j}
+			<!-- Counter / charge tracker (e.g. Venenigisto poison counter) -->
+			{#if definition.counterMax !== undefined}
+				{@const counterMax   = definition.counterMax}
+				{@const counterLabel = definition.counterLabel ?? 'Counters'}
+				<div class="counter-row">
+					<span class="companion-field-label">{counterLabel}</span>
+					<div class="counter-pips">
+						{#each Array(counterMax) as _, j}
 							<button
-								class="pip dose-pip"
-								class:pip-filled={j < (asset.doses ?? 0)}
+								class="pip counter-pip"
+								class:pip-filled={j < (asset.counter ?? 0)}
 								onclick={() => {
-									const cur = asset.doses ?? 0;
-									asset.doses = j < cur ? j : j + 1;
+									const cur = asset.counter ?? 0;
+									asset.counter = j < cur ? j : j + 1;
 								}}
-								aria-label="Dose {j + 1}"
+								aria-label="Counter {j + 1}"
 							></button>
 						{/each}
 					</div>
-					<span class="health-label">{asset.doses ?? 0}/{dosesMax}</span>
+					<span class="health-label">{asset.counter ?? 0}/{counterMax}</span>
 				</div>
 			{/if}
 
@@ -933,24 +933,24 @@
 		gap: 8px;
 	}
 
-	.doses-row {
+	.counter-row {
 		display: flex;
 		align-items: center;
 		gap: 8px;
 		margin-top: 4px;
 	}
 
-	.dose-pips {
+	.counter-pips {
 		display: flex;
 		gap: 3px;
 		flex-wrap: wrap;
 	}
 
-	.dose-pip.pip-filled {
+	.counter-pip.pip-filled {
 		background: var(--color-success);
 		border-color: var(--color-success);
 	}
-	.dose-pip:hover {
+	.counter-pip:hover {
 		border-color: var(--color-success);
 	}
 

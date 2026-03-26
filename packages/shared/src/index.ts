@@ -89,10 +89,10 @@ export interface AssetDefinition {
   preconditions?: AssetPrecondition[];
   companionHealthMax?: number;
   touchedFeatures?:   boolean;
-  /** Max number of tracked doses/charges. Renders a pip row in the asset card. */
-  dosesMax?:   number;
-  /** Label shown next to the pip row — defaults to "Doses" if omitted. */
-  dosesLabel?: string;
+  /** Max number of pips in the counter tracker. Renders a pip row in the asset card. */
+  counterMax?:   number;
+  /** Label shown next to the pip row — e.g. "Doses", "Charges". */
+  counterLabel?: string;
   [key: string]: unknown;   // allow future fields without breaking the type
 }
 

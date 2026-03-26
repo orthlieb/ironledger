@@ -446,8 +446,8 @@
       "category": "Path",
       "summary": "Poison crafter: brew contact and ingestion toxins from plant extracts, and detect the venomous work of others.",
       "preamble": "If you have trained in the lore of plants, poisons, and their antidotes — whether as a herbalist, assassin, or apothecary.",
-      "dosesMax": 10,
-      "dosesLabel": "Doses",
+      "counterMax": 10,
+      "counterLabel": "Doses",
       "abilities": [
         {
           "enabled": true,
