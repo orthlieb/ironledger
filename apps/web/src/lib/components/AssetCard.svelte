@@ -110,6 +110,11 @@
 	};
 	const catColor = $derived(CAT_COLOR[definition.category] ?? 'var(--text-muted)');
 
+	/** Strips markdown-style links [text](anything) → text, for plain-text contexts. */
+	function stripMdLinks(raw: string): string {
+		return raw.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
+	}
+
 	/**
 	 * Converts asset ability text (uses \n\n paragraph breaks and
 	 * "  * item" list items) into safe HTML.
@@ -217,7 +222,7 @@
 	{#if !collapsed}
 		<div class="asset-body">
 			{#if definition.preamble}
-				<p class="asset-preamble">{definition.preamble}</p>
+				<p class="asset-preamble">{stripMdLinks(definition.preamble)}</p>
 			{/if}
 
 			{#if assetDescription}
@@ -403,7 +408,8 @@
 			{#if definition.counterMax !== undefined}
 				{@const counterMax   = definition.counterMax}
 				{@const counterLabel = definition.counterLabel ?? 'Counters'}
-				<div class="counter-row">
+				{@const counterColor = definition.counterColor ?? 'var(--color-success)'}
+				<div class="counter-row" style:--counter-color={counterColor}>
 					<span class="companion-field-label">{counterLabel}</span>
 					<div class="counter-pips">
 						{#each Array(counterMax) as _, j}
@@ -947,11 +953,11 @@
 	}
 
 	.counter-pip.pip-filled {
-		background: var(--color-success);
-		border-color: var(--color-success);
+		background: var(--counter-color);
+		border-color: var(--counter-color);
 	}
 	.counter-pip:hover {
-		border-color: var(--color-success);
+		border-color: var(--counter-color);
 	}
 
 	.health-pips {

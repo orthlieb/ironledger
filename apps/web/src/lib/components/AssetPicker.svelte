@@ -109,6 +109,11 @@
 	// ---------------------------------------------------------------------------
 	// Ability text renderer (mirrors AssetCard.formatText)
 	// ---------------------------------------------------------------------------
+	/** Strips markdown-style links [text](anything) → text, for plain-text contexts. */
+	function stripMdLinks(raw: string): string {
+		return raw.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
+	}
+
 	function formatText(raw: string): string {
 		return raw
 			.split('\n\n')
@@ -199,9 +204,9 @@
 						<div class="tile-name">{asset.name}</div>
 
 						{#if asset.preamble}
-							<div class="tile-desc">{asset.preamble}</div>
+							<div class="tile-desc">{stripMdLinks(asset.preamble)}</div>
 						{:else if asset.summary}
-							<div class="tile-desc">{asset.summary}</div>
+							<div class="tile-desc">{stripMdLinks(asset.summary)}</div>
 						{/if}
 
 						{#if owned}
@@ -239,7 +244,7 @@
 		<!-- Body: mirrors .asset-body — scrollable, read-only -->
 		<div class="asset-body">
 			{#if pendingAsset.preamble}
-				<p class="asset-preamble">{pendingAsset.preamble}</p>
+				<p class="asset-preamble">{stripMdLinks(pendingAsset.preamble)}</p>
 			{/if}
 
 			<div class="abilities-list">

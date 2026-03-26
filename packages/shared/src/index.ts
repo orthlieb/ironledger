@@ -93,6 +93,8 @@ export interface AssetDefinition {
   counterMax?:   number;
   /** Label shown next to the pip row — e.g. "Doses", "Charges". */
   counterLabel?: string;
+  /** CSS colour for filled counter pips — e.g. "#8aab20" for poison green. */
+  counterColor?: string;
   [key: string]: unknown;   // allow future fields without breaking the type
 }
 

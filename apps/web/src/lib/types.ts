@@ -223,6 +223,9 @@ export interface AssetDefinition {
 	abilities:           AssetAbility[];
 	companionHealthMax?: number;
 	touchedFeatures?:    boolean;
+	counterMax?:         number;
+	counterLabel?:       string;
+	counterColor?:       string;
 	[key: string]:       unknown;
 }
 

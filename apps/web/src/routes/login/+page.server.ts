@@ -2,12 +2,26 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { INTERNAL_API_URL, HCAPTCHA_SITE_KEY } from '$lib/server/config.js';
 
+const TAGLINES = [
+	'Your ledger awaits. Try not to die filling it in.',
+	'Swear vows. Break vows. Swear more vows.',
+	'All progress tracks lead to disappointment.',
+	'Roll dice. Suffer consequences. Build character.',
+	'Where every miss is just a plot twist.',
+	'Momentum: the only resource that hurts when you lose it.',
+	'Debilities not included. Results may vary.',
+	'Death is just a Face Death roll away.',
+	'The Iron is vast and full of terrible things. Good luck.',
+	'An oracle said you\'d be fine. The oracle was wrong.',
+];
+
 export const load: PageServerLoad = async ({ locals }) => {
 	// Already logged in? Skip login page.
 	if (locals.user) {
 		throw redirect(302, locals.user.role === 'admin' ? '/admin' : '/home');
 	}
-	return { hcaptchaSiteKey: HCAPTCHA_SITE_KEY, isDev: process.env.NODE_ENV !== 'production' };
+	const tagline = TAGLINES[Math.floor(Math.random() * TAGLINES.length)];
+	return { hcaptchaSiteKey: HCAPTCHA_SITE_KEY, isDev: process.env.NODE_ENV !== 'production', tagline };
 };
 
 export const actions: Actions = {
