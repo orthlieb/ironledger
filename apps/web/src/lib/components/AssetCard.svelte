@@ -399,6 +399,29 @@
 				</div>
 			{/if}
 
+			<!-- Dose / charge tracker (e.g. Venenigisto poison doses) -->
+			{#if (definition as any).dosesMax !== undefined}
+				{@const dosesMax   = (definition as any).dosesMax as number}
+				{@const dosesLabel = (definition as any).dosesLabel as string ?? 'Doses'}
+				<div class="doses-row">
+					<span class="companion-field-label">{dosesLabel}</span>
+					<div class="dose-pips">
+						{#each Array(dosesMax) as _, j}
+							<button
+								class="pip dose-pip"
+								class:pip-filled={j < (asset.doses ?? 0)}
+								onclick={() => {
+									const cur = asset.doses ?? 0;
+									asset.doses = j < cur ? j : j + 1;
+								}}
+								aria-label="Dose {j + 1}"
+							></button>
+						{/each}
+					</div>
+					<span class="health-label">{asset.doses ?? 0}/{dosesMax}</span>
+				</div>
+			{/if}
+
 			<!-- Rarity slot -->
 			{#if rarity}
 				<div class="rarity-section">
@@ -908,6 +931,27 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
+	}
+
+	.doses-row {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin-top: 4px;
+	}
+
+	.dose-pips {
+		display: flex;
+		gap: 3px;
+		flex-wrap: wrap;
+	}
+
+	.dose-pip.pip-filled {
+		background: var(--color-success);
+		border-color: var(--color-success);
+	}
+	.dose-pip:hover {
+		border-color: var(--color-success);
 	}
 
 	.health-pips {

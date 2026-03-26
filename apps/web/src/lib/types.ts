@@ -29,6 +29,8 @@ export interface CharacterAsset {
 	companionHealth?: number;
 	/** Keys of selected items from a definition's selectable list (e.g. cantrips) */
 	selections?: string[];
+	/** Tracked dose/charge count for assets that define dosesMax */
+	doses?: number;
 }
 
 // ---------------------------------------------------------------------------
