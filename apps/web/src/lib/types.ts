@@ -225,6 +225,8 @@ export interface AssetDefinition {
 	counterMax?:         number;
 	counterLabel?:       string;
 	counterColor?:       string;
+	/** Canonical icon name for the counter badge (e.g. "heart", "skull-and-crossbones"). */
+	counterIcon?:        string;
 	/** If present, renders a name input for this asset (e.g. "Companion Name"). */
 	nameLabel?:          string;
 	[key: string]:       unknown;

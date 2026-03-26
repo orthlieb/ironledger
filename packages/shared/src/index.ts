@@ -94,6 +94,9 @@ export interface AssetDefinition {
   counterLabel?: string;
   /** CSS colour for filled counter pips — e.g. "#8aab20" for poison green. */
   counterColor?: string;
+  /** Canonical icon name for the header badge — maps to an SVG in the icon set.
+   *  e.g. "heart", "skull-and-crossbones", "sword", "shield", "eye", "moon". */
+  counterIcon?:  string;
   /** If present, renders a labelled name input for this asset (e.g. "Companion Name"). */
   nameLabel?:    string;
   [key: string]: unknown;   // allow future fields without breaking the type

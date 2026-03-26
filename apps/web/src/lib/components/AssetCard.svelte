@@ -9,7 +9,29 @@
 	import type { CharacterAsset, AssetDefinition } from '$lib/types.js';
 	import { findRarityForAsset } from '$lib/assetStore.svelte.js';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
-	import trashSvg from '$icons/trash-solid-full.svg?raw';
+	import trashSvg          from '$icons/trash-solid-full.svg?raw';
+	import iconHeart          from '$icons/icon-heart.svg?raw';
+	import iconSkull          from '$icons/skull-crossbones-solid-full.svg?raw';
+	import iconSword          from '$icons/sword-solid-full.svg?raw';
+	import iconShield         from '$icons/shield-halved-solid.svg?raw';
+	import iconEye            from '$icons/eye-solid.svg?raw';
+	import iconMoon           from '$icons/moon-solid.svg?raw';
+	import iconSun            from '$icons/sun-solid.svg?raw';
+	import iconDice           from '$icons/dice-d10-light.svg?raw';
+	import iconNote           from '$icons/note-sticky-solid.svg?raw';
+
+	/** Canonical short-name → SVG string map for counter badges. */
+	const COUNTER_ICONS: Record<string, string> = {
+		'heart':               iconHeart,
+		'skull-and-crossbones': iconSkull,
+		'sword':               iconSword,
+		'shield':              iconShield,
+		'eye':                 iconEye,
+		'moon':                iconMoon,
+		'sun':                 iconSun,
+		'dice':                iconDice,
+		'note':                iconNote,
+	};
 
 	let {
 		asset      = $bindable(),
@@ -200,12 +222,15 @@
 			<span class="asset-cat" style:color={catColor}>{definition.category}</span>
 		</div>
 
-		{#if definition.nameLabel && definition.counterMax !== undefined}
-			{@const curVal = asset.counter ?? asset.companionHealth ?? 0}
+		{#if definition.counterMax !== undefined && definition.counterIcon}
+			{@const curVal      = asset.counter ?? asset.companionHealth ?? 0}
+			{@const counterColor = definition.counterColor ?? 'var(--color-success)'}
+			{@const iconSvg     = COUNTER_ICONS[definition.counterIcon] ?? iconHeart}
 			<span
-				class="companion-health-badge"
-				title="{asset.companionName || definition.nameLabel}: {curVal} / {definition.counterMax}"
-			>♥ {curVal}/{definition.counterMax}</span>
+				class="counter-badge"
+				style:--counter-color={counterColor}
+				title="{definition.counterLabel ?? 'Counter'}: {curVal} / {definition.counterMax}"
+			>{@html iconSvg} {curVal}/{definition.counterMax}</span>
 		{/if}
 
 		<span class="ability-tally" title="{enabledCount} of {total} abilities enabled">
@@ -545,14 +570,23 @@
 		white-space: nowrap;
 	}
 
-	.companion-health-badge {
+	.counter-badge {
+		display: flex;
+		align-items: center;
+		gap: 3px;
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		font-weight: 700;
-		color: var(--color-heart);
+		color: var(--counter-color);
 		flex-shrink: 0;
 		font-variant-numeric: tabular-nums;
 		letter-spacing: 0.02em;
+	}
+	.counter-badge :global(svg) {
+		width: 11px;
+		height: 11px;
+		fill: var(--counter-color);
+		flex-shrink: 0;
 	}
 
 	.ability-tally {

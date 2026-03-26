@@ -462,7 +462,8 @@
           "enabled": false,
           "text": "When you craft a poison, add +1 and you may create two doses instead of one. Additionally, your poisons are subtle and hard to detect: when someone examines your poison, they must score a strong hit to identify it."
         }
-      ]
+      ],
+      "counterIcon": "skull-and-crossbones"
     },
     {
       "id": "path/yrt-falsinto",

@@ -318,7 +318,9 @@
       "summary": "Fierce feline: hunts big game, attacks foes, guards camp.",
       "counterMax": 4,
       "counterLabel": "Health",
-      "nameLabel": "Companion Name"
+      "nameLabel": "Companion Name",
+      "counterIcon": "heart",
+      "counterColor": "var(--color-heart)"
     },
     {
       "id": "companion/giant-spider",
@@ -344,7 +346,9 @@
       "summary": "Eerie arachnid: scouting, reading fears, and setting traps.",
       "counterMax": 4,
       "counterLabel": "Health",
-      "nameLabel": "Companion Name"
+      "nameLabel": "Companion Name",
+      "counterIcon": "heart",
+      "counterColor": "var(--color-heart)"
     },
     {
       "id": "companion/hawk",
@@ -370,7 +374,9 @@
       "summary": "Keen raptor: scouting journeys, harassing foes, detecting threats.",
       "counterMax": 3,
       "counterLabel": "Health",
-      "nameLabel": "Companion Name"
+      "nameLabel": "Companion Name",
+      "counterIcon": "heart",
+      "counterColor": "var(--color-heart)"
     },
     {
       "id": "companion/horse",
@@ -396,7 +402,9 @@
       "summary": "Loyal mount: swift travel, charging combat, mounted strikes.",
       "counterMax": 5,
       "counterLabel": "Health",
-      "nameLabel": "Companion Name"
+      "nameLabel": "Companion Name",
+      "counterIcon": "heart",
+      "counterColor": "var(--color-heart)"
     },
     {
       "id": "companion/hound",
@@ -422,7 +430,9 @@
       "summary": "Faithful tracker: keen senses, fighting alongside, stress relief.",
       "counterMax": 4,
       "counterLabel": "Health",
-      "nameLabel": "Companion Name"
+      "nameLabel": "Companion Name",
+      "counterIcon": "heart",
+      "counterColor": "var(--color-heart)"
     },
     {
       "id": "companion/kindred",
@@ -448,7 +458,9 @@
       "summary": "Human companion: skilled aid, shield-kin in combat, bonded.",
       "counterMax": 4,
       "counterLabel": "Health",
-      "nameLabel": "Companion Name"
+      "nameLabel": "Companion Name",
+      "counterIcon": "heart",
+      "counterColor": "var(--color-heart)"
     },
     {
       "id": "companion/mammoth",
@@ -474,7 +486,9 @@
       "summary": "Massive beast: heavy hauling, supply carrier, trampling foes.",
       "counterMax": 5,
       "counterLabel": "Health",
-      "nameLabel": "Companion Name"
+      "nameLabel": "Companion Name",
+      "counterIcon": "heart",
+      "counterColor": "var(--color-heart)"
     },
     {
       "id": "companion/owl",
@@ -500,7 +514,9 @@
       "summary": "Nocturnal hunter: night raids, secret knowledge, death's guide.",
       "counterMax": 3,
       "counterLabel": "Health",
-      "nameLabel": "Companion Name"
+      "nameLabel": "Companion Name",
+      "counterIcon": "heart",
+      "counterColor": "var(--color-heart)"
     },
     {
       "id": "companion/raven",
@@ -526,7 +542,9 @@
       "summary": "Clever trickster: distractions, theft, messages, and death lore.",
       "counterMax": 2,
       "counterLabel": "Health",
-      "nameLabel": "Companion Name"
+      "nameLabel": "Companion Name",
+      "counterIcon": "heart",
+      "counterColor": "var(--color-heart)"
     },
     {
       "id": "companion/young-wyvern",
@@ -552,7 +570,9 @@
       "summary": "Winged predator: hungry traveler, resilient, savage attacker.",
       "counterMax": 5,
       "counterLabel": "Health",
-      "nameLabel": "Companion Name"
+      "nameLabel": "Companion Name",
+      "counterIcon": "heart",
+      "counterColor": "var(--color-heart)"
     },
     {
       "id": "path/alchemist",
