@@ -139,7 +139,9 @@ export async function catalogueRoutes(server: FastifyInstance): Promise<void> {
 
     reply
       .header('ETag',          entry.etag)
-      .header('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400')
+      .header('Cache-Control', process.env.NODE_ENV === 'production'
+        ? 'public, max-age=3600, stale-while-revalidate=86400'
+        : 'no-store')
       .status(200)
       .send(entry.data);
   }
