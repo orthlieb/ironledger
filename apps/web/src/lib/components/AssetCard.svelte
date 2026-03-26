@@ -423,13 +423,13 @@
 			<!-- Radio selection (e.g. Ironclad: Lightly Armored / Geared for War) -->
 			{#if definition.radioLabels?.length}
 				<div class="radio-row">
-					{#each definition.radioLabels as label}
+					{#each definition.radioLabels as label, i}
 						<label class="radio-option">
 							<input
 								type="radio"
 								name="radio-{asset.assetId}"
-								value={label}
-								bind:group={asset.radioSelection}
+								checked={asset.radioSelection === i}
+								oninput={() => { asset.radioSelection = i; }}
 							/>
 							<span>{label}</span>
 						</label>

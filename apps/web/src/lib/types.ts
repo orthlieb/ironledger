@@ -30,8 +30,8 @@ export interface CharacterAsset {
 	companionHealth?: number;
 	/** Stores values for each entry in the asset definition's nameLabels array. */
 	names?: string[];
-	/** Stores the currently selected radioLabel value for assets with radioLabels. */
-	radioSelection?: string;
+	/** Index into the asset definition's radioLabels array (language-independent). */
+	radioSelection?: number;
 	/** Keys of selected items from a definition's selectable list (e.g. cantrips) */
 	selections?: string[];
 	/** Tracked counter/charge count for assets that define counterMax */
