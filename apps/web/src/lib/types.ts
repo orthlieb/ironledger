@@ -25,11 +25,13 @@ export interface CharacterAsset {
 	assetId: string;
 	abilities: boolean[]; // enabled flags per ability
 	rarityId?: string;
-	/** @deprecated use names[0] instead; kept for reading old saves */
-	companionName?: string;
-	companionHealth?: number;
-	/** Stores values for each entry in the asset definition's nameLabels array. */
+	/** Stores values for each entry in the asset definition's nameLabels array.
+	 *  Old saves may have companionName (index 0 fallback) or companionHealth (counter fallback). */
 	names?: string[];
+	/** @deprecated legacy field from old companion system — read via `asset.counter ?? asset.companionHealth` */
+	companionName?: string;
+	/** @deprecated legacy field from old companion system — read via `asset.counter ?? asset.companionHealth` */
+	companionHealth?: number;
 	/** Index into the asset definition's radioLabels array (language-independent). */
 	radioSelection?: number;
 	/** Keys of selected items from a definition's selectable list (e.g. cantrips) */

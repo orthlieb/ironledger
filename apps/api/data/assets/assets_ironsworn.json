@@ -323,7 +323,7 @@
       "counterMax": 4,
       "counterLabel": "Health",
       "counterIcon": "heart",
-      "counterColor": "var(--color-heart)",
+      "counterColor": "#A2352F",
       "nameLabels": [
         "Companion Name"
       ]
@@ -353,7 +353,7 @@
       "counterMax": 4,
       "counterLabel": "Health",
       "counterIcon": "heart",
-      "counterColor": "var(--color-heart)",
+      "counterColor": "#A2352F",
       "nameLabels": [
         "Companion Name"
       ]
@@ -383,7 +383,7 @@
       "counterMax": 3,
       "counterLabel": "Health",
       "counterIcon": "heart",
-      "counterColor": "var(--color-heart)",
+      "counterColor": "#A2352F",
       "nameLabels": [
         "Companion Name"
       ]
@@ -413,7 +413,7 @@
       "counterMax": 5,
       "counterLabel": "Health",
       "counterIcon": "heart",
-      "counterColor": "var(--color-heart)",
+      "counterColor": "#A2352F",
       "nameLabels": [
         "Companion Name"
       ]
@@ -443,7 +443,7 @@
       "counterMax": 4,
       "counterLabel": "Health",
       "counterIcon": "heart",
-      "counterColor": "var(--color-heart)",
+      "counterColor": "#A2352F",
       "nameLabels": [
         "Companion Name"
       ]
@@ -473,7 +473,7 @@
       "counterMax": 4,
       "counterLabel": "Health",
       "counterIcon": "heart",
-      "counterColor": "var(--color-heart)",
+      "counterColor": "#A2352F",
       "nameLabels": [
         "Companion Name"
       ]
@@ -503,7 +503,7 @@
       "counterMax": 5,
       "counterLabel": "Health",
       "counterIcon": "heart",
-      "counterColor": "var(--color-heart)",
+      "counterColor": "#A2352F",
       "nameLabels": [
         "Companion Name"
       ]
@@ -533,7 +533,7 @@
       "counterMax": 3,
       "counterLabel": "Health",
       "counterIcon": "heart",
-      "counterColor": "var(--color-heart)",
+      "counterColor": "#A2352F",
       "nameLabels": [
         "Companion Name"
       ]
@@ -563,7 +563,7 @@
       "counterMax": 2,
       "counterLabel": "Health",
       "counterIcon": "heart",
-      "counterColor": "var(--color-heart)",
+      "counterColor": "#A2352F",
       "nameLabels": [
         "Companion Name"
       ]
@@ -593,7 +593,7 @@
       "counterMax": 5,
       "counterLabel": "Health",
       "counterIcon": "heart",
-      "counterColor": "var(--color-heart)",
+      "counterColor": "#A2352F",
       "nameLabels": [
         "Companion Name"
       ]
@@ -865,7 +865,7 @@
       "counterMax": 5,
       "counterLabel": "Wealth",
       "counterIcon": "sack-dollar",
-      "counterColor": "#c9a227"
+      "counterColor": "#305E9B"
     },
     {
       "id": "path/herbalist",

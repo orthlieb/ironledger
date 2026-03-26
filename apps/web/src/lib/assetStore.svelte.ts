@@ -1,19 +1,27 @@
 /**
- * Asset catalogue store — module-level, fetched once and cached.
+ * Asset catalogue store — module-level reactive state, client-only.
  *
- * Module-level $state variables are shared across all component instances,
- * so the fetch happens at most once per browser session.
+ * Uses a timestamp-based TTL instead of a boolean `_loaded` flag so that
+ * a page reload after an API restart always gets fresh data (TTL expires).
+ * The `browser` guard prevents accidental SSR execution — server-rendered
+ * templates see empty arrays and hydrate correctly once the client fetches.
  */
+import { browser } from '$app/environment';
 import type { AssetDefinition, RarityDefinition } from '$lib/types.js';
 
-let _assets   = $state<AssetDefinition[]>([]);
-let _rarities = $state<RarityDefinition[]>([]);
-let _loading  = $state(false);
-let _loaded   = false;
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
-/** Fetch the catalogue from /api/catalogue (no-op if already loaded). */
+let _assets      = $state<AssetDefinition[]>([]);
+let _rarities    = $state<RarityDefinition[]>([]);
+let _loading     = $state(false);
+let _lastFetched = 0; // epoch ms of last successful fetch
+
+/** Fetch the catalogue from /api/catalogue.
+ *  No-op on server or if a fetch is already in-flight.
+ *  Re-fetches automatically after CACHE_TTL_MS (handles API restarts in dev). */
 export async function loadAssets(): Promise<void> {
-	if (_loaded || _loading) return;
+	if (!browser || _loading) return;
+	if (_lastFetched && Date.now() - _lastFetched < CACHE_TTL_MS) return;
 	_loading = true;
 	try {
 		const res = await fetch('/api/catalogue');
@@ -22,14 +30,21 @@ export async function loadAssets(): Promise<void> {
 			assets:   AssetDefinition[];
 			rarities: RarityDefinition[];
 		};
-		_assets   = json.assets;
-		_rarities = json.rarities ?? [];
-		_loaded   = true;
+		_assets      = json.assets;
+		_rarities    = json.rarities ?? [];
+		_lastFetched = Date.now();
 	} catch (err) {
 		console.error('[assetStore] Failed to load catalogue:', err);
 	} finally {
 		_loading = false;
 	}
+}
+
+/** Force the store to refetch on next loadAssets() call (useful in dev after API restarts). */
+export function resetAssets(): void {
+	_assets      = [];
+	_rarities    = [];
+	_lastFetched = 0;
 }
 
 /** All loaded asset definitions (reactive — reads tracked by $derived). */

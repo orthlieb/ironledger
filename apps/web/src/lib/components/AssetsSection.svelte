@@ -11,7 +11,7 @@
 	 * (or when this component mounts, so the first click is instant).
 	 */
 	import type { CharacterAsset, CharacterData } from '$lib/types.js';
-	import { loadAssets, findAsset } from '$lib/assetStore.svelte.js';
+	import { loadAssets, findAsset, getAssets } from '$lib/assetStore.svelte.js';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import AssetCard   from './AssetCard.svelte';
 	import AssetPicker from './AssetPicker.svelte';
@@ -44,8 +44,8 @@
 			assetId,
 			abilities: def.abilities.map((ab) => ab.enabled), // all categories: ability[0].enabled = true
 		};
-		if (def.companionHealthMax !== undefined) {
-			newEntry.companionHealth = def.companionHealthMax;
+		if (def.counterMax !== undefined) {
+			newEntry.counter = def.counterMax;
 		}
 		assets = [...assets, newEntry];
 		// Pre-generate the entry id so we can embed it in the XP cost link
@@ -82,7 +82,8 @@
 	{:else}
 		<div class="asset-list">
 			{#each assets as entry, i (entry.assetId)}
-				{@const def = findAsset(entry.assetId)}
+				{@const _catalogue = getAssets()}
+				{@const def = _catalogue.find(a => a.id === entry.assetId)}
 				{#if def}
 					<AssetCard
 						bind:asset={assets[i]}

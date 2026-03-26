@@ -23,6 +23,8 @@ For Yrt homebrew extensions (mana, Touched assets, cantrips, Yrt-specific oracle
   - [XP Cost and Gating](#xp-cost-and-gating)
   - [Asset Log Entry Titles](#asset-log-entry-titles)
   - [Companion Assets](#companion-assets)
+  - [Counter Icons](#counter-icons)
+  - [Assets with Optional Fields — Examples](#assets-with-optional-fields--examples)
   - [Rarities](#rarities)
   - [Asset Move References (asset-move-refs.json)](#asset-move-references-asset-move-refsjson)
 - [Oracles](#oracles)
@@ -495,11 +497,17 @@ Each file contains an `assets` array and an optional `rarities` array:
 | `id` | string | yes | Unique identifier: `category-type/kebab-case-name` (e.g., `combat/archer`) |
 | `name` | string | yes | Display name |
 | `category` | string | yes | One of: `"Combat Talent"`, `"Companion"`, `"Path"`, `"Ritual"` (plus `"Touched"` in [Yrt](DATA_FORMAT_YRT.md#touched-assets)) |
-| `summary` | string | yes | One-line plain-text summary shown in the picker tile (falls back to `preamble` if absent) |
-| `preamble` | string or null | no | Prerequisite or flavour text (e.g., `"If you wield a bow."`) — displayed on the asset card **before** the ability list checkboxes |
-| `postamble` | string or null | no | Explanatory text displayed on the asset card **after** the ability list checkboxes (e.g., asset-specific constraints, Touched feature-use note) |
+| `summary` | string | yes | One-line plain-text summary shown in the picker tile. Preferred over `preamble` for the tile. |
+| `preamble` | string or null | no | Prerequisite or flavour text (e.g., `"If you wield a bow."`) — displayed on the asset card **before** the ability list. Markdown links (`[text](id:...)`) are stripped to plain text at render time. |
+| `postamble` | string or null | no | Explanatory text displayed on the asset card **after** the ability list (e.g., asset-specific constraints, Touched feature-use note) |
 | `preconditions` | array of objects | no | Conditions that must be met to add this asset. Same schema as move [Preconditions](#preconditions). Assets failing preconditions are faded and non-clickable in the picker. |
 | `abilities` | array | yes | Exactly 3 ability objects |
+| `nameLabels` | string[] | no | One labelled text input rendered per entry. Values stored in `CharacterAsset.names[]`. Example: `["Companion Name"]` or `["God's Name", "Stat"]` |
+| `radioLabels` | string[] | no | Mutually-exclusive radio buttons rendered side by side. Selected index stored in `CharacterAsset.radioSelection` (number, language-independent). Example: `["Lightly Armored", "Geared for War"]` |
+| `counterMax` | number | no | Maximum value for the asset's pip/charge track. |
+| `counterLabel` | string | no | Label shown above the pip track (e.g., `"Health"`, `"Doses"`, `"Wealth"`). Defaults to `"Counter"` if omitted. |
+| `counterIcon` | string | no | Canonical icon name for the header badge. See [Counter Icons](#counter-icons). |
+| `counterColor` | string | no | CSS colour for filled pips and badge icon (e.g., `"#A2352F"` or `"var(--color-mana)"`). Defaults to `var(--color-success)`. |
 
 Each ability object:
 
@@ -574,14 +582,18 @@ Rarity names are always displayed with the `RARITY:` prefix in both the asset ca
 
 ### Companion Assets
 
-Companion assets add a health track:
+Companions use the unified counter and name system:
 
 ```json
 {
   "id": "companion/hawk",
   "name": "Hawk",
   "category": "Companion",
-  "companionHealthMax": 3,
+  "nameLabels": ["Companion Name"],
+  "counterMax": 3,
+  "counterLabel": "Health",
+  "counterIcon": "heart",
+  "counterColor": "#A2352F",
   "abilities": [
     { "enabled": false, "name": "Far-seeing", "text": "..." },
     { "enabled": false, "name": "Fierce", "text": "..." },
@@ -590,9 +602,66 @@ Companion assets add a health track:
 }
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `companionHealthMax` | number | Maximum companion health (typically 3–5) |
+The companion name is stored in `CharacterAsset.names[0]` and the health value in `CharacterAsset.counter`.
+
+### Counter Icons
+
+The `counterIcon` field references a canonical short name mapped to an SVG in the icon set. The icon renders in `counterColor` inside the asset card header badge.
+
+| Name | Description |
+|------|-------------|
+| `heart` | Health / vitality (companions) |
+| `skull-and-crossbones` | Poison / doses |
+| `sword` | Combat charges |
+| `shield` | Defensive charges |
+| `eye` | Ritual / perception |
+| `moon` | Magic / dark ritual |
+| `sun` | Light / radiance |
+| `dice` | Fate / chance |
+| `note` | Knowledge / lore |
+| `sack-dollar` | Wealth (Fortune Hunter) |
+| `mana` | Essence / mana (diamond shape) |
+| `puppet` | Animated constructs (Awakening ritual) |
+
+### Assets with Optional Fields — Examples
+
+**Path with counter (Fortune Hunter):**
+```json
+{
+  "id": "path/fortune-hunter",
+  "counterMax": 5,
+  "counterLabel": "Wealth",
+  "counterIcon": "sack-dollar",
+  "counterColor": "#c9a227"
+}
+```
+
+**Path with two name inputs (Devotant):**
+```json
+{
+  "id": "path/devotant",
+  "nameLabels": ["God's Name", "Stat"]
+}
+```
+
+**Combat Talent with radio buttons (Ironclad):**
+```json
+{
+  "id": "combat/ironclad",
+  "radioLabels": ["Lightly Armored", "Geared for War"]
+}
+```
+
+**Ritual with counter (Awakening — the simulacrum ritual):**
+```json
+{
+  "id": "ritual/awakening",
+  "counterMax": 6,
+  "counterLabel": "Health",
+  "counterIcon": "puppet",
+  "counterColor": "#A2352F"
+}
+```
 
 Yrt adds Touched assets and ritual cantrips — see [DATA_FORMAT_YRT.md](DATA_FORMAT_YRT.md#touched-assets).
 
