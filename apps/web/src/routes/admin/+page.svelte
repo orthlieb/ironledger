@@ -67,8 +67,7 @@
 			await admin.deleteUser(deleteTarget.id);
 			users = users.filter((u) => u.id !== deleteTarget!.id);
 			deleteTarget = null;
-			const [s] = await Promise.all([admin.getStats(), refreshAuditLog()]);
-			stats = s;
+			stats = await admin.getStats();
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Delete failed';
 			deleteTarget = null;
@@ -147,9 +146,47 @@
 	let logAvailable = $state(true);
 	let logLoading = $state(false);
 	let logLineCount: 200 | 500 | 1000 = $state(200);
+	let expandedLine = $state<number | null>(null);
+
+	const PINO_LEVELS: Record<number, string> = {
+		10: 'TRACE', 20: 'DEBUG', 30: 'INFO', 40: 'WARN', 50: 'ERROR', 60: 'FATAL',
+	};
+
+	interface ParsedLine {
+		ts: string;
+		level: string;
+		levelNum: number;
+		msg: string;
+		extras: Record<string, unknown>;
+		raw: string;
+	}
+
+	function parseLogLine(raw: string): ParsedLine {
+		try {
+			const pm2 = JSON.parse(raw);
+			const innerStr: string = pm2.message ?? raw;
+			const pm2ts: string = pm2.timestamp ?? '';
+			try {
+				const p = JSON.parse(innerStr);
+				const levelNum = typeof p.level === 'number' ? p.level : 30;
+				const { level: _l, time: _t, pid: _p, hostname: _h, msg, v: _v, ...extras } = p;
+				const ts = pm2ts || (p.time ? new Date(p.time).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '');
+				return { ts, level: PINO_LEVELS[levelNum] ?? 'INFO', levelNum, msg: msg ?? innerStr, extras, raw };
+			} catch {
+				const level = innerStr.includes('ERROR') ? 'ERROR' : innerStr.includes('WARN') ? 'WARN' : innerStr.includes('debug') ? 'DEBUG' : 'INFO';
+				return { ts: pm2ts, level, levelNum: 30, msg: innerStr, extras: {}, raw };
+			}
+		} catch {
+			const level = raw.includes('ERROR') ? 'ERROR' : raw.includes('WARN') ? 'WARN' : raw.includes('DEBUG') ? 'DEBUG' : 'INFO';
+			return { ts: '', level, levelNum: 30, msg: raw, extras: {}, raw };
+		}
+	}
+
+	let parsedLines = $derived(logLines.map(parseLogLine));
 
 	async function loadLogs(file = logFile, lines = logLineCount) {
 		logLoading = true;
+		expandedLine = null;
 		try {
 			const result = await admin.getLogs(file, lines);
 			logLines = result.lines;
@@ -564,12 +601,32 @@
 					<p class="logs-unavailable">Log file is empty.</p>
 				{:else}
 					<div class="log-output" role="log" aria-live="off">
-						{#each logLines as line}
-							<div class="log-line
-								{line.includes('ERROR') || line.includes('error') ? 'log-error' : ''}
-								{line.includes('WARN') || line.includes('warn') ? 'log-warn' : ''}
-								{line.includes('DEBUG') || line.includes('debug') ? 'log-debug' : ''}
-							">{line}</div>
+						{#each parsedLines as entry, i}
+							<div
+								class="log-row log-{entry.level.toLowerCase()}"
+								class:expanded={expandedLine === i}
+								role="button"
+								tabindex="0"
+								onclick={() => expandedLine = expandedLine === i ? null : i}
+								onkeydown={(e) => e.key === 'Enter' && (expandedLine = expandedLine === i ? null : i)}
+							>
+								<span class="log-ts">{entry.ts}</span>
+								<span class="log-level log-level-{entry.level.toLowerCase()}">{entry.level}</span>
+								<span class="log-msg">{entry.msg}</span>
+								{#if Object.keys(entry.extras).length > 0}
+									<span class="log-extras">
+										{#each Object.entries(entry.extras).slice(0, 3) as [k, v]}
+											<span class="log-kv"><span class="log-key">{k}</span>=<span class="log-val">{String(v)}</span></span>
+										{/each}
+										{#if Object.keys(entry.extras).length > 3}
+											<span class="log-more">…</span>
+										{/if}
+									</span>
+								{/if}
+							</div>
+							{#if expandedLine === i}
+								<pre class="log-raw">{(() => { try { return JSON.stringify(JSON.parse(entry.raw), null, 2); } catch { return entry.raw; } })()}</pre>
+							{/if}
 						{/each}
 					</div>
 				{/if}
@@ -1210,26 +1267,81 @@
 		background: #0d1117;
 		border: 1px solid var(--border);
 		border-radius: 5px;
-		padding: 0.5rem;
-		max-height: 540px;
+		max-height: 560px;
 		overflow-y: auto;
 		font-family: var(--font-mono);
 		font-size: 0.72rem;
-		line-height: 1.55;
-		scroll-behavior: smooth;
+		line-height: 1.5;
 	}
 
-	.log-line {
+	.log-row {
+		display: flex;
+		align-items: baseline;
+		gap: 0.5rem;
+		padding: 0.18rem 0.6rem;
+		cursor: pointer;
+		border-bottom: 1px solid #161b22;
+		color: #c9d1d9;
+	}
+	.log-row:hover  { background: #161b22; }
+	.log-row.expanded { background: #1c2128; }
+	.log-row.log-error { background: rgba(255,123,114,0.06); }
+	.log-row.log-fatal { background: rgba(255,123,114,0.12); }
+	.log-row.log-warn  { background: rgba(227,179,65,0.05); }
+
+	.log-ts {
+		color: #484f58;
+		flex-shrink: 0;
+		width: 8ch;
+		text-align: right;
+	}
+
+	.log-level {
+		flex-shrink: 0;
+		width: 5ch;
+		text-align: center;
+		font-weight: 700;
+		font-size: 0.65rem;
+		letter-spacing: 0.04em;
+		border-radius: 3px;
+		padding: 0 3px;
+	}
+	.log-level-info  { color: #58a6ff; background: rgba(88,166,255,0.1); }
+	.log-level-warn  { color: #e3b341; background: rgba(227,179,65,0.1); }
+	.log-level-error { color: #ff7b72; background: rgba(255,123,114,0.1); }
+	.log-level-fatal { color: #ffa198; background: rgba(255,123,114,0.2); }
+	.log-level-debug { color: #6e7681; background: rgba(110,118,129,0.1); }
+	.log-level-trace { color: #3d444d; background: rgba(61,68,77,0.2); }
+
+	.log-msg {
+		flex: 1;
+		color: #e6edf3;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.log-extras {
+		display: flex;
+		gap: 0.6rem;
+		flex-shrink: 0;
+		color: #484f58;
+	}
+	.log-kv { white-space: nowrap; }
+	.log-key { color: #7ee787; }
+	.log-val { color: #a5d6ff; }
+	.log-more { color: #484f58; }
+
+	.log-raw {
+		margin: 0;
+		padding: 0.5rem 0.6rem 0.5rem 14ch;
+		background: #161b22;
+		color: #8b949e;
+		font-size: 0.68rem;
 		white-space: pre-wrap;
 		word-break: break-all;
-		color: #c9d1d9;
-		padding: 1px 0;
+		border-bottom: 1px solid #0d1117;
 	}
-	.log-line.log-error { color: #ff7b72; }
-	.log-line.log-warn  { color: #e3b341; }
-	.log-line.log-debug { color: #6e7681; }
-
-	.tab-btn.active.logs-active { color: var(--text-accent); }
 
 		.btn-warn {
 		background: #92400e;

@@ -20,19 +20,6 @@
 	{/if}
 </svelte:head>
 
-{#if (form as any)?.maintenance}
-	<div class="maintenance-page">
-		<img
-			src="/ironledger-under-construction.webp"
-			alt="A knight surveys a castle under construction"
-			class="maintenance-image"
-		/>
-		<div class="maintenance-body">
-			<p class="maintenance-title">Under Construction</p>
-			<p class="maintenance-message">{(form as any).message}</p>
-		</div>
-	</div>
-{:else}
 <div class="auth-wrap">
 	<div class="auth-card card">
 		<div class="auth-brand">
@@ -49,7 +36,12 @@
 			<p class="hero-caption">Your adventure awaits.</p>
 		</div>
 
-		{#if form?.error}
+		{#if (form as any)?.maintenance}
+			<div class="maintenance-banner">
+				<strong>Under Construction</strong> — {(form as any).message}
+				<br /><em>Admins may still sign in below.</em>
+			</div>
+		{:else if form?.error}
 			<div class="error-msg">{form.error}</div>
 		{/if}
 
@@ -88,7 +80,6 @@
 		</p>
 	</div>
 </div>
-{/if}
 
 <style>
 	.auth-brand {
@@ -152,46 +143,22 @@
 		text-decoration: none;
 	}
 
-	/* ── Maintenance mode ─────────────────────────────────────────── */
-	.maintenance-page {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		min-height: 100dvh;
-		padding: 2rem;
-		gap: 1.5rem;
-		background: var(--bg-base);
-	}
-
-	.maintenance-image {
-		width: min(520px, 90vw);
-		border-radius: 12px;
-		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-	}
-
-	.maintenance-body {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 0.4rem;
-		text-align: center;
-	}
-
-	.maintenance-title {
-		font-family: var(--font-display);
-		font-size: 2rem;
-		font-weight: 700;
-		color: var(--text-accent);
-		margin: 0;
-		letter-spacing: 0.05em;
-	}
-
-	.maintenance-message {
-		font-family: var(--font-display);
-		font-size: 0.9rem;
+	/* ── Maintenance banner ────────────────────────────────────────── */
+	.maintenance-banner {
+		font-family: var(--font-ui);
+		font-size: 0.8rem;
+		background: rgba(220, 38, 38, 0.1);
+		border: 1px solid rgba(220, 38, 38, 0.3);
+		border-radius: 5px;
+		padding: 0.6rem 0.75rem;
 		color: var(--text-muted);
-		margin: 0;
-		max-width: 45ch;
+		line-height: 1.5;
+	}
+	.maintenance-banner strong {
+		color: #fca5a5;
+	}
+	.maintenance-banner em {
+		color: var(--text-dimmer);
+		font-style: normal;
 	}
 </style>
