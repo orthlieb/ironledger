@@ -101,6 +101,8 @@ export interface AssetDefinition {
   nameLabel?:    string;
   /** If present, renders a second labelled name input (e.g. Devotant's two name fields). */
   name2Label?:   string;
+  /** If present, renders mutually-exclusive radio buttons side by side (e.g. Ironclad armor choice). */
+  radioLabels?:  string[];
   [key: string]: unknown;   // allow future fields without breaking the type
 }
 

@@ -145,7 +145,11 @@
           "text": "When you <a class=\"move-link\" data-id=\"move/compel\">Compel</a> in a situation where strength of arms is a factor, add +2."
         }
       ],
-      "summary": "Armored warrior: damage absorption and imposing presence."
+      "summary": "Armored warrior: damage absorption and imposing presence.",
+      "radioLabels": [
+        "Lightly Armored",
+        "Geared for War"
+      ]
     },
     {
       "id": "combat/long-arm",

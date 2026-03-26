@@ -427,6 +427,23 @@
 				</label>
 			{/if}
 
+			<!-- Radio selection (e.g. Ironclad: Lightly Armored / Geared for War) -->
+			{#if definition.radioLabels?.length}
+				<div class="radio-row">
+					{#each definition.radioLabels as label}
+						<label class="radio-option">
+							<input
+								type="radio"
+								name="radio-{asset.assetId}"
+								value={label}
+								bind:group={asset.radioSelection}
+							/>
+							<span>{label}</span>
+						</label>
+					{/each}
+				</div>
+			{/if}
+
 			<!-- Counter / health / charge tracker (any asset with counterMax) -->
 			{#if definition.counterMax !== undefined}
 				{@const counterMax   = definition.counterMax}
@@ -967,6 +984,27 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
+	}
+
+	.radio-row {
+		display: flex;
+		gap: 12px;
+		margin-top: 4px;
+	}
+
+	.radio-option {
+		display: flex;
+		align-items: center;
+		gap: 5px;
+		font-family: var(--font-ui);
+		font-size: 0.82rem;
+		cursor: pointer;
+		white-space: nowrap;
+	}
+
+	.radio-option input[type="radio"] {
+		accent-color: var(--color-accent);
+		cursor: pointer;
 	}
 
 	.counter-row {

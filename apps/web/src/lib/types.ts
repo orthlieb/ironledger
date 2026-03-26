@@ -29,6 +29,8 @@ export interface CharacterAsset {
 	companionHealth?: number;
 	/** Storage for a second name field (e.g. Devotant's second Name field). */
 	name2?: string;
+	/** Stores the currently selected radioLabel value for assets with radioLabels. */
+	radioSelection?: string;
 	/** Keys of selected items from a definition's selectable list (e.g. cantrips) */
 	selections?: string[];
 	/** Tracked counter/charge count for assets that define counterMax */
@@ -233,6 +235,8 @@ export interface AssetDefinition {
 	nameLabel?:          string;
 	/** If present, renders a second name input (e.g. for Devotant's two name fields). */
 	name2Label?:         string;
+	/** If present, renders mutually-exclusive radio buttons side by side (e.g. Ironclad armor choice). */
+	radioLabels?:        string[];
 	[key: string]:       unknown;
 }
 
