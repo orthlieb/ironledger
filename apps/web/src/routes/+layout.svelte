@@ -83,10 +83,14 @@
 			Iron Ledger
 		</a>
 		<div class="nav-links">
-			{#if data.user?.role === 'admin'}
-				<a href="/admin" class="btn btn-icon">Admin</a>
-				<span class="nav-sep" aria-hidden="true">◆</span>
-			{/if}
+			<nav class="nav-page-links" aria-label="Main navigation">
+				{#if data.user?.role === 'admin'}
+					<a href="/admin" class="nav-link" class:nav-link--active={$page.url.pathname.startsWith('/admin')}>Admin</a>
+				{/if}
+				<a href="/home" class="nav-link" class:nav-link--active={$page.url.pathname.startsWith('/home')}>App</a>
+				<a href="/about" class="nav-link" class:nav-link--active={$page.url.pathname === '/about'}>About</a>
+			</nav>
+			<span class="nav-sep" aria-hidden="true">◆</span>
 			<div class="nav-user-actions">
 				<button
 					class="nav-settings-btn tooltip-down"
@@ -174,6 +178,36 @@
 		width:  14px;
 		height: 14px;
 		fill:   currentColor;
+	}
+
+	.nav-page-links {
+		display: flex;
+		align-items: center;
+		gap: 0.1rem;
+	}
+
+	.nav-link {
+		font-family: var(--font-ui);
+		font-size: 0.78rem;
+		font-weight: 500;
+		color: var(--text-dimmer);
+		text-decoration: none;
+		padding: 3px 8px;
+		border-radius: 4px;
+		border: 1px solid transparent;
+		transition: color 0.12s, border-color 0.12s;
+		letter-spacing: 0.02em;
+	}
+	.nav-link:hover {
+		color: var(--text-muted);
+		border-color: var(--border);
+	}
+	.nav-link--active {
+		color: var(--text-accent);
+		border-color: var(--border-mid);
+	}
+	.nav-link--active:hover {
+		color: var(--text-accent);
 	}
 
 	.nav-sep {
