@@ -298,7 +298,6 @@
       "id": "companion/cave-lion",
       "name": "Cave Lion",
       "category": "Companion",
-      "companionHealthMax": 4,
       "abilities": [
         {
           "enabled": false,
@@ -316,13 +315,15 @@
           "text": "When you <a class=\"move-link\" data-id=\"move/make-camp\">Make Camp</a>, your cat is alert to trouble. If you or an ally choose to relax, take +1 spirit. If you focus, take +1 momentum."
         }
       ],
-      "summary": "Fierce feline: hunts big game, attacks foes, guards camp."
+      "summary": "Fierce feline: hunts big game, attacks foes, guards camp.",
+      "counterMax": 4,
+      "counterLabel": "Health",
+      "nameLabel": "Companion Name"
     },
     {
       "id": "companion/giant-spider",
       "name": "Giant Spider",
       "category": "Companion",
-      "companionHealthMax": 4,
       "abilities": [
         {
           "enabled": false,
@@ -340,13 +341,15 @@
           "text": "When your spider sets a trap, add +1 as you <a class=\"move-link\" data-id=\"move/enter-the-fray\">Enter the Fray</a> +shadow. On a strong hit, also inflict 2 harm."
         }
       ],
-      "summary": "Eerie arachnid: scouting, reading fears, and setting traps."
+      "summary": "Eerie arachnid: scouting, reading fears, and setting traps.",
+      "counterMax": 4,
+      "counterLabel": "Health",
+      "nameLabel": "Companion Name"
     },
     {
       "id": "companion/hawk",
       "name": "Hawk",
       "category": "Companion",
-      "companionHealthMax": 3,
       "abilities": [
         {
           "enabled": false,
@@ -364,13 +367,15 @@
           "text": "When you <a class=\"move-link\" data-id=\"move/face-danger\">Face Danger</a> +wits to detect an approaching threat, or when you <a class=\"move-link\" data-id=\"move/enter-the-fray\">Enter the Fray</a> +wits against an ambush, add +2."
         }
       ],
-      "summary": "Keen raptor: scouting journeys, harassing foes, detecting threats."
+      "summary": "Keen raptor: scouting journeys, harassing foes, detecting threats.",
+      "counterMax": 3,
+      "counterLabel": "Health",
+      "nameLabel": "Companion Name"
     },
     {
       "id": "companion/horse",
       "name": "Horse",
       "category": "Companion",
-      "companionHealthMax": 5,
       "abilities": [
         {
           "enabled": false,
@@ -388,13 +393,15 @@
           "text": "When you <a class=\"move-link\" data-id=\"move/strike\">Strike</a> or <a class=\"move-link\" data-id=\"move/clash\">Clash</a> at close range while mounted, add +1 and inflict +1 harm on a hit."
         }
       ],
-      "summary": "Loyal mount: swift travel, charging combat, mounted strikes."
+      "summary": "Loyal mount: swift travel, charging combat, mounted strikes.",
+      "counterMax": 5,
+      "counterLabel": "Health",
+      "nameLabel": "Companion Name"
     },
     {
       "id": "companion/hound",
       "name": "Hound",
       "category": "Companion",
-      "companionHealthMax": 4,
       "abilities": [
         {
           "enabled": false,
@@ -412,13 +419,15 @@
           "text": "When you <a class=\"move-link\" data-id=\"move/endure-stress\">Endure Stress</a> in the company of your hound, add +1."
         }
       ],
-      "summary": "Faithful tracker: keen senses, fighting alongside, stress relief."
+      "summary": "Faithful tracker: keen senses, fighting alongside, stress relief.",
+      "counterMax": 4,
+      "counterLabel": "Health",
+      "nameLabel": "Companion Name"
     },
     {
       "id": "companion/kindred",
       "name": "Kindred",
       "category": "Companion",
-      "companionHealthMax": 4,
       "abilities": [
         {
           "enabled": false,
@@ -436,13 +445,15 @@
           "text": "Once you mark a bond with your companion, add +1 when you <a class=\"move-link\" data-id=\"move/face-desolation\">Face Desolation</a> in their presence."
         }
       ],
-      "summary": "Human companion: skilled aid, shield-kin in combat, bonded."
+      "summary": "Human companion: skilled aid, shield-kin in combat, bonded.",
+      "counterMax": 4,
+      "counterLabel": "Health",
+      "nameLabel": "Companion Name"
     },
     {
       "id": "companion/mammoth",
       "name": "Mammoth",
       "category": "Companion",
-      "companionHealthMax": 5,
       "abilities": [
         {
           "enabled": false,
@@ -460,13 +471,15 @@
           "text": "When you <a class=\"move-link\" data-id=\"move/strike\">Strike</a> or <a class=\"move-link\" data-id=\"move/clash\">Clash</a> by riding your mammoth against a pack of foes, add +1 and inflict +1 harm on a hit."
         }
       ],
-      "summary": "Massive beast: heavy hauling, supply carrier, trampling foes."
+      "summary": "Massive beast: heavy hauling, supply carrier, trampling foes.",
+      "counterMax": 5,
+      "counterLabel": "Health",
+      "nameLabel": "Companion Name"
     },
     {
       "id": "companion/owl",
       "name": "Owl",
       "category": "Companion",
-      "companionHealthMax": 3,
       "abilities": [
         {
           "enabled": false,
@@ -484,13 +497,15 @@
           "text": "When you <a class=\"move-link\" data-id=\"move/face-death\">Face Death</a>, take your owl’s health as +momentum before you roll."
         }
       ],
-      "summary": "Nocturnal hunter: night raids, secret knowledge, death's guide."
+      "summary": "Nocturnal hunter: night raids, secret knowledge, death's guide.",
+      "counterMax": 3,
+      "counterLabel": "Health",
+      "nameLabel": "Companion Name"
     },
     {
       "id": "companion/raven",
       "name": "Raven",
       "category": "Companion",
-      "companionHealthMax": 2,
       "abilities": [
         {
           "enabled": false,
@@ -508,13 +523,15 @@
           "text": "When your raven carries messages for you, you may <a class=\"move-link\" data-id=\"move/secure-an-advantage\">Secure an Advantage</a>, <a class=\"move-link\" data-id=\"move/gather-information\">Gather Information</a>, or <a class=\"move-link\" data-id=\"move/compel\">Compel</a> from a distance."
         }
       ],
-      "summary": "Clever trickster: distractions, theft, messages, and death lore."
+      "summary": "Clever trickster: distractions, theft, messages, and death lore.",
+      "counterMax": 2,
+      "counterLabel": "Health",
+      "nameLabel": "Companion Name"
     },
     {
       "id": "companion/young-wyvern",
       "name": "Young Wyvern",
       "category": "Companion",
-      "companionHealthMax": 5,
       "abilities": [
         {
           "enabled": false,
@@ -532,7 +549,10 @@
           "text": "When you <a class=\"move-link\" data-id=\"move/strike\">Strike</a> by commanding your wyvern to attack, roll +heart. Your wyvern inflicts 3 harm on a hit."
         }
       ],
-      "summary": "Winged predator: hungry traveler, resilient, savage attacker."
+      "summary": "Winged predator: hungry traveler, resilient, savage attacker.",
+      "counterMax": 5,
+      "counterLabel": "Health",
+      "nameLabel": "Companion Name"
     },
     {
       "id": "path/alchemist",

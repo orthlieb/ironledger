@@ -87,14 +87,15 @@ export interface AssetDefinition {
   postamble?:  string;
   abilities:   AssetAbility[];
   preconditions?: AssetPrecondition[];
-  companionHealthMax?: number;
   touchedFeatures?:   boolean;
-  /** Max number of pips in the counter tracker. Renders a pip row in the asset card. */
+  /** Max number of pips in the counter/health tracker. Renders a pip row in the asset card. */
   counterMax?:   number;
-  /** Label shown next to the pip row — e.g. "Doses", "Charges". */
+  /** Label shown next to the pip row — e.g. "Health", "Doses", "Charges". */
   counterLabel?: string;
   /** CSS colour for filled counter pips — e.g. "#8aab20" for poison green. */
   counterColor?: string;
+  /** If present, renders a labelled name input for this asset (e.g. "Companion Name"). */
+  nameLabel?:    string;
   [key: string]: unknown;   // allow future fields without breaking the type
 }
 

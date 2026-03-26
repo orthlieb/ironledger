@@ -160,15 +160,16 @@
 		}
 	}
 
-	function setCompanionHealth(newVal: number) {
-		const old = asset.companionHealth ?? 0;
+	function setCounter(newVal: number) {
+		const old = asset.counter ?? asset.companionHealth ?? 0;
 		if (newVal === old) return;
-		asset.companionHealth = newVal;
+		asset.counter = newVal;
 		const label = asset.companionName
 			? `${asset.companionName} (${definition.name})`
 			: definition.name;
+		const counterLabel = definition.counterLabel ?? 'Counter';
 		appendLog(SESSION_LOG_ID, logTitle,
-			`<div><strong>${label}</strong> Health: ${old} → <strong>${newVal}</strong></div>`);
+			`<div><strong>${label}</strong> ${counterLabel}: ${old} → <strong>${newVal}</strong></div>`);
 	}
 
 	function openRemoveDialog() {
@@ -199,11 +200,12 @@
 			<span class="asset-cat" style:color={catColor}>{definition.category}</span>
 		</div>
 
-		{#if definition.companionHealthMax !== undefined}
+		{#if definition.nameLabel && definition.counterMax !== undefined}
+			{@const curVal = asset.counter ?? asset.companionHealth ?? 0}
 			<span
 				class="companion-health-badge"
-				title="{asset.companionName || 'Companion'} health: {asset.companionHealth ?? 0} / {definition.companionHealthMax}"
-			>♥ {asset.companionHealth ?? 0}/{definition.companionHealthMax}</span>
+				title="{asset.companionName || definition.nameLabel}: {curVal} / {definition.counterMax}"
+			>♥ {curVal}/{definition.counterMax}</span>
 		{/if}
 
 		<span class="ability-tally" title="{enabledCount} of {total} abilities enabled">
@@ -370,61 +372,38 @@
 				</div>
 			{/if}
 
-			<!-- Companion-specific fields -->
-			{#if definition.companionHealthMax !== undefined}
-				<div class="companion-fields">
-					<label class="companion-name-label">
-						<span class="companion-field-label">Name</span>
-						<input
-							type="text"
-							bind:value={asset.companionName}
-							placeholder="Companion name…"
-							class="companion-name-input"
-						/>
-					</label>
-					<div class="companion-health-row">
-						<span class="companion-field-label">Health</span>
-						<div class="health-pips">
-							{#each Array(definition.companionHealthMax) as _, j}
-								<button
-									class="pip"
-									class:pip-filled={j < (asset.companionHealth ?? 0)}
-									onclick={() => {
-										const cur = asset.companionHealth ?? 0;
-										setCompanionHealth(j < cur ? j : j + 1);
-									}}
-									aria-label="Health pip {j + 1}"
-								></button>
-							{/each}
-						</div>
-						<span class="health-label">
-							{asset.companionHealth ?? 0}/{definition.companionHealthMax}
-						</span>
-					</div>
-				</div>
+			<!-- Named asset field (companions and any asset with nameLabel) -->
+			{#if definition.nameLabel}
+				<label class="companion-name-label">
+					<span class="companion-field-label">{definition.nameLabel}</span>
+					<input
+						type="text"
+						bind:value={asset.companionName}
+						placeholder="{definition.nameLabel}…"
+						class="companion-name-input"
+					/>
+				</label>
 			{/if}
 
-			<!-- Counter / charge tracker (e.g. Venenigisto poison counter) -->
+			<!-- Counter / health / charge tracker (any asset with counterMax) -->
 			{#if definition.counterMax !== undefined}
 				{@const counterMax   = definition.counterMax}
-				{@const counterLabel = definition.counterLabel ?? 'Counters'}
+				{@const counterLabel = definition.counterLabel ?? 'Counter'}
 				{@const counterColor = definition.counterColor ?? 'var(--color-success)'}
+				{@const curVal       = asset.counter ?? asset.companionHealth ?? 0}
 				<div class="counter-row" style:--counter-color={counterColor}>
 					<span class="companion-field-label">{counterLabel}</span>
 					<div class="counter-pips">
 						{#each Array(counterMax) as _, j}
 							<button
 								class="pip counter-pip"
-								class:pip-filled={j < (asset.counter ?? 0)}
-								onclick={() => {
-									const cur = asset.counter ?? 0;
-									asset.counter = j < cur ? j : j + 1;
-								}}
-								aria-label="Counter {j + 1}"
+								class:pip-filled={j < curVal}
+								onclick={() => setCounter(j < curVal ? j : j + 1)}
+								aria-label="{counterLabel} pip {j + 1}"
 							></button>
 						{/each}
 					</div>
-					<span class="health-label">{asset.counter ?? 0}/{counterMax}</span>
+					<span class="health-label">{curVal}/{counterMax}</span>
 				</div>
 			{/if}
 
@@ -481,7 +460,7 @@
 	<div class="remove-body">
 		<p>Losing an asset is rare and usually the result of a unique narrative circumstance dictated by the storyline.</p>
 
-		{#if definition.companionHealthMax !== undefined}
+		{#if definition.nameLabel}
 			<p>
 				<strong>Companion Endure Harm:</strong> If your companion is killed or you
 				choose to end your bond, roll +Heart. On a strong hit, take +1 spirit. On a

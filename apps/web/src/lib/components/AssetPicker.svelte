@@ -203,10 +203,10 @@
 
 						<div class="tile-name">{asset.name}</div>
 
-						{#if asset.preamble}
-							<div class="tile-desc">{stripMdLinks(asset.preamble)}</div>
-						{:else if asset.summary}
+						{#if asset.summary}
 							<div class="tile-desc">{stripMdLinks(asset.summary)}</div>
+						{:else if asset.preamble}
+							<div class="tile-desc">{stripMdLinks(asset.preamble)}</div>
 						{/if}
 
 						{#if owned}
@@ -249,7 +249,14 @@
 
 			<div class="abilities-list">
 				{#each pendingAsset.abilities as ab}
-					<div class="ability-row">
+					<div class="ability-row" class:ability-enabled={ab.enabled}>
+						<input
+							type="checkbox"
+							class="ability-check"
+							checked={ab.enabled}
+							disabled
+							aria-label={ab.enabled ? 'Unlocked by default' : 'Locked — costs 2 XP'}
+						/>
 						<div class="ability-text">
 							{#if ab.name}
 								<span class="ability-name">{ab.name}.</span>
@@ -604,6 +611,18 @@
 		border: 1px solid var(--border);
 		background: var(--bg);
 		cursor: default;
+	}
+
+	.ability-check {
+		flex-shrink: 0;
+		margin-top: 2px;
+		accent-color: var(--text-accent);
+		cursor: default;
+	}
+
+	.ability-enabled {
+		background: color-mix(in srgb, var(--text-accent) 6%, var(--bg));
+		border-color: color-mix(in srgb, var(--text-accent) 30%, var(--border));
 	}
 
 	.ability-text {

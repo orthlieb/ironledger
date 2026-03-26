@@ -221,11 +221,12 @@ export interface AssetDefinition {
 	preamble?:           string;
 	postamble?:          string;
 	abilities:           AssetAbility[];
-	companionHealthMax?: number;
 	touchedFeatures?:    boolean;
 	counterMax?:         number;
 	counterLabel?:       string;
 	counterColor?:       string;
+	/** If present, renders a name input for this asset (e.g. "Companion Name"). */
+	nameLabel?:          string;
 	[key: string]:       unknown;
 }
 
