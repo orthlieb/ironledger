@@ -147,6 +147,16 @@
 	let logLoading = $state(false);
 	let logLineCount: 200 | 500 | 1000 = $state(200);
 	let expandedLine = $state<number | null>(null);
+	let logSearch = $state('');
+	let filteredLines = $derived(
+		logSearch.trim()
+			? parsedLines.filter(e =>
+				e.msg.toLowerCase().includes(logSearch.toLowerCase()) ||
+				e.level.toLowerCase().includes(logSearch.toLowerCase()) ||
+				e.raw.toLowerCase().includes(logSearch.toLowerCase())
+			)
+			: parsedLines
+	);
 
 	const PINO_LEVELS: Record<number, string> = {
 		10: 'TRACE', 20: 'DEBUG', 30: 'INFO', 40: 'WARN', 50: 'ERROR', 60: 'FATAL',
@@ -594,6 +604,18 @@
 						</button>
 					</div>
 				</div>
+				<div class="logs-search-row">
+					<input
+						type="search"
+						class="logs-search"
+						placeholder="Filter lines…"
+						bind:value={logSearch}
+					/>
+					{#if logSearch}
+						<button class="btn btn-icon" onclick={() => logSearch = ''}>Clear</button>
+						<span class="logs-match-count">{filteredLines.length} / {parsedLines.length}</span>
+					{/if}
+				</div>
 
 				{#if !logAvailable}
 					<p class="logs-unavailable">
@@ -606,7 +628,7 @@
 					<p class="logs-unavailable">Log file is empty.</p>
 				{:else}
 					<div class="log-output" role="log" aria-live="off">
-						{#each parsedLines as entry, i}
+						{#each filteredLines as entry, i}
 							<div
 								class="log-row log-{entry.level.toLowerCase()}"
 								class:expanded={expandedLine === i}
@@ -1269,7 +1291,7 @@
 	}
 
 	.log-output {
-		background: #0d1117;
+		background: var(--bg-inset);
 		border: 1px solid var(--border);
 		border-radius: 5px;
 		max-height: 560px;
@@ -1285,20 +1307,22 @@
 		gap: 0.5rem;
 		padding: 0.18rem 0.6rem;
 		cursor: pointer;
-		border-bottom: 1px solid #161b22;
-		color: #c9d1d9;
+		border-bottom: 1px solid var(--border);
+		color: var(--text);
+		border-left: 2px solid transparent;
 	}
-	.log-row:hover  { background: #161b22; }
-	.log-row.expanded { background: #1c2128; }
-	.log-row.log-error { background: rgba(255,123,114,0.06); }
-	.log-row.log-fatal { background: rgba(255,123,114,0.12); }
-	.log-row.log-warn  { background: rgba(227,179,65,0.05); }
+	.log-row:hover    { background: var(--bg-hover); }
+	.log-row.expanded { background: var(--bg-control); }
+	.log-row.log-error,
+	.log-row.log-fatal { border-left-color: var(--color-danger); }
+	.log-row.log-warn  { border-left-color: var(--color-warning); }
 
 	.log-ts {
-		color: #484f58;
+		color: var(--text-dimmer);
 		flex-shrink: 0;
-		width: 8ch;
+		width: 20ch;
 		text-align: right;
+		white-space: nowrap;
 	}
 
 	.log-level {
@@ -1311,16 +1335,16 @@
 		border-radius: 3px;
 		padding: 0 3px;
 	}
-	.log-level-info  { color: #58a6ff; background: rgba(88,166,255,0.1); }
-	.log-level-warn  { color: #e3b341; background: rgba(227,179,65,0.1); }
-	.log-level-error { color: #ff7b72; background: rgba(255,123,114,0.1); }
-	.log-level-fatal { color: #ffa198; background: rgba(255,123,114,0.2); }
-	.log-level-debug { color: #6e7681; background: rgba(110,118,129,0.1); }
-	.log-level-trace { color: #3d444d; background: rgba(61,68,77,0.2); }
+	.log-level-info  { color: var(--text-accent);   background: color-mix(in srgb, var(--text-accent)  12%, transparent); }
+	.log-level-warn  { color: var(--color-warning); background: color-mix(in srgb, var(--color-warning) 12%, transparent); }
+	.log-level-error { color: var(--color-danger);  background: color-mix(in srgb, var(--color-danger)  12%, transparent); }
+	.log-level-fatal { color: var(--color-danger);  background: color-mix(in srgb, var(--color-danger)  20%, transparent); }
+	.log-level-debug { color: var(--text-dimmer);   background: color-mix(in srgb, var(--text-dimmer)   12%, transparent); }
+	.log-level-trace { color: var(--text-dimmer);   background: color-mix(in srgb, var(--text-dimmer)    8%, transparent); }
 
 	.log-msg {
 		flex: 1;
-		color: #e6edf3;
+		color: var(--text);
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -1330,22 +1354,50 @@
 		display: flex;
 		gap: 0.6rem;
 		flex-shrink: 0;
-		color: #484f58;
+		color: var(--text-dimmer);
 	}
-	.log-kv { white-space: nowrap; }
-	.log-key { color: #7ee787; }
-	.log-val { color: #a5d6ff; }
-	.log-more { color: #484f58; }
+	.log-kv  { white-space: nowrap; }
+	.log-key { color: var(--color-success); }
+	.log-val { color: var(--text-accent); }
+	.log-more { color: var(--text-dimmer); }
 
 	.log-raw {
 		margin: 0;
 		padding: 0.5rem 0.6rem 0.5rem 14ch;
-		background: #161b22;
-		color: #8b949e;
+		background: var(--bg-control);
+		color: var(--text-muted);
 		font-size: 0.68rem;
 		white-space: pre-wrap;
 		word-break: break-all;
-		border-bottom: 1px solid #0d1117;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.logs-search-row {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-bottom: 0.5rem;
+	}
+
+	.logs-search {
+		flex: 1;
+		padding: 0.35rem 0.6rem;
+		font-family: var(--font-ui);
+		font-size: 0.78rem;
+		background: var(--bg-inset);
+		color: var(--text-body);
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		outline: none;
+	}
+	.logs-search:focus { border-color: var(--text-accent); }
+	.logs-search::placeholder { color: var(--text-dimmer); }
+
+	.logs-match-count {
+		font-family: var(--font-ui);
+		font-size: 0.75rem;
+		color: var(--text-dimmer);
+		white-space: nowrap;
 	}
 
 		.btn-warn {
