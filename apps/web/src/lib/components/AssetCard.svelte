@@ -19,6 +19,7 @@
 	import iconSun            from '$icons/sun-solid.svg?raw';
 	import iconDice           from '$icons/dice-d10-light.svg?raw';
 	import iconNote           from '$icons/note-sticky-solid.svg?raw';
+	import iconSackDollar     from '$icons/sack-dollar-solid-full.svg?raw';
 
 	/** Canonical short-name → SVG string map for counter badges. */
 	const COUNTER_ICONS: Record<string, string> = {
@@ -31,6 +32,7 @@
 		'sun':                 iconSun,
 		'dice':                iconDice,
 		'note':                iconNote,
+		'sack-dollar':         iconSackDollar,
 	};
 
 	let {
@@ -397,7 +399,7 @@
 				</div>
 			{/if}
 
-			<!-- Named asset field (companions and any asset with nameLabel) -->
+			<!-- Named asset field(s) — nameLabel and optional name2Label -->
 			{#if definition.nameLabel}
 				<label class="companion-name-label">
 					<span class="companion-field-label">{definition.nameLabel}</span>
@@ -405,6 +407,17 @@
 						type="text"
 						bind:value={asset.companionName}
 						placeholder="{definition.nameLabel}…"
+						class="companion-name-input"
+					/>
+				</label>
+			{/if}
+			{#if definition.name2Label}
+				<label class="companion-name-label">
+					<span class="companion-field-label">{definition.name2Label}</span>
+					<input
+						type="text"
+						bind:value={asset.name2}
+						placeholder="{definition.name2Label}…"
 						class="companion-name-input"
 					/>
 				</label>

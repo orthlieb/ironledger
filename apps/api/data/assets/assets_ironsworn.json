@@ -635,7 +635,8 @@
           "text": "When you <a class=\"move-link\" data-id=\"move/enter-the-fray\">Enter the Fray</a> bearing your banner, add +1 and take +1 momentum on a hit. When you burn momentum while carrying your banner in combat, take +1 momentum after you reset."
         }
       ],
-      "summary": "Sworn to a leader or faction: vow bonuses and rally in battle."
+      "summary": "Sworn to a leader or faction: vow bonuses and rally in battle.",
+      "nameLabel": "Name"
     },
     {
       "id": "path/battle-scarred",
@@ -677,7 +678,8 @@
           "text": "When you <a class=\"move-link\" data-id=\"move/strike\">Strike</a> with your kin-blade to inflict savage harm (decide before rolling), add +1 and inflict +2 harm on a hit. Then, <a class=\"move-link\" data-id=\"move/endure-stress\">Endure Stress</a> (2 stress)."
         }
       ],
-      "summary": "Bonded to an ancestral sentient blade: power at a mental cost."
+      "summary": "Bonded to an ancestral sentient blade: power at a mental cost.",
+      "nameLabel": "Name"
     },
     {
       "id": "path/bonded",
@@ -761,7 +763,9 @@
           "text": "When you <a class=\"move-link\" data-id=\"move/sojourn\">Sojourn</a> by sharing the word of your god, you may roll +your god’s stat. If you do, take +1 momentum on a hit."
         }
       ],
-      "summary": "Devoted to a god: daily prayers, divine quests, and blessings."
+      "summary": "Devoted to a god: daily prayers, divine quests, and blessings.",
+      "nameLabel": "Name",
+      "name2Label": "Name"
     },
     {
       "id": "path/empowered",
@@ -782,7 +786,8 @@
           "text": "When you forgo your title or lineage and <a class=\"move-link\" data-id=\"move/forge-a-bond\">Forge a Bond</a> as an equal, or when you <a class=\"move-link\" data-id=\"move/swear-an-iron-vow\">Swear an Iron Vow</a> to serve someone of a lower station, add +1 and take +1 momentum or +1 spirit on a hit."
         }
       ],
-      "summary": "Noble lineage: claim hospitality, command respect, or serve humbly."
+      "summary": "Noble lineage: claim hospitality, command respect, or serve humbly.",
+      "nameLabel": "Title/Lineage"
     },
     {
       "id": "path/fated",
@@ -824,7 +829,11 @@
           "text": "When you <a class=\"move-link\" data-id=\"move/resupply\">Resupply</a> by scavenging or looting, and score a strong hit with a match, you may envision finding an object of value. If you do, take +1 supply (instead of +2) and +1 wealth."
         }
       ],
-      "summary": "Mercenary for hire: paid vows, wealth, and lucky scavenging."
+      "summary": "Mercenary for hire: paid vows, wealth, and lucky scavenging.",
+      "counterMax": 5,
+      "counterLabel": "Wealth",
+      "counterIcon": "sack-dollar",
+      "counterColor": "#c9a227"
     },
     {
       "id": "path/herbalist",
@@ -1349,7 +1358,8 @@
           "text": "When you give the item you create as a gift to commemorate an important event or relationship, you may (one time only) reroll any dice when you <a class=\"move-link\" data-id=\"move/compel\">Compel</a>, <a class=\"move-link\" data-id=\"move/forge-a-bond\">Forge a Bond</a>, or <a class=\"move-link\" data-id=\"move/test-your-bond\">Test Your Bond</a>."
         }
       ],
-      "summary": "Skilled crafter: build, repair, and create useful items."
+      "summary": "Skilled crafter: build, repair, and create useful items.",
+      "nameLabel": "Specialty"
     },
     {
       "id": "ritual/augur",
@@ -1391,7 +1401,11 @@
           "text": "When you perform this ritual, add +1 and take +1 momentum on a hit."
         }
       ],
-      "summary": "Rouse the spirits of the land to gain their aid."
+      "summary": "Rouse the spirits of the land to gain their aid.",
+      "counterMax": 6,
+      "counterLabel": "Health",
+      "counterIcon": "heart",
+      "counterColor": "var(--color-heart)"
     },
     {
       "id": "ritual/bind",
@@ -1538,7 +1552,11 @@
           "text": "When you perform this ritual, add +1 and take +1 momentum on a hit."
         }
       ],
-      "summary": "Summon mystic light to banish darkness and reveal secrets."
+      "summary": "Summon mystic light to banish darkness and reveal secrets.",
+      "counterMax": 6,
+      "counterLabel": "Light",
+      "counterIcon": "sun",
+      "counterColor": "#f5c518"
     },
     {
       "id": "ritual/scry",

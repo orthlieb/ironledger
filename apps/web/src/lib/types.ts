@@ -27,6 +27,8 @@ export interface CharacterAsset {
 	rarityId?: string;
 	companionName?: string;
 	companionHealth?: number;
+	/** Storage for a second name field (e.g. Devotant's second Name field). */
+	name2?: string;
 	/** Keys of selected items from a definition's selectable list (e.g. cantrips) */
 	selections?: string[];
 	/** Tracked counter/charge count for assets that define counterMax */
@@ -229,6 +231,8 @@ export interface AssetDefinition {
 	counterIcon?:        string;
 	/** If present, renders a name input for this asset (e.g. "Companion Name"). */
 	nameLabel?:          string;
+	/** If present, renders a second name input (e.g. for Devotant's two name fields). */
+	name2Label?:         string;
 	[key: string]:       unknown;
 }
 

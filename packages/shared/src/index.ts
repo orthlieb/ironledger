@@ -99,6 +99,8 @@ export interface AssetDefinition {
   counterIcon?:  string;
   /** If present, renders a labelled name input for this asset (e.g. "Companion Name"). */
   nameLabel?:    string;
+  /** If present, renders a second labelled name input (e.g. Devotant's two name fields). */
+  name2Label?:   string;
   [key: string]: unknown;   // allow future fields without breaking the type
 }
 
