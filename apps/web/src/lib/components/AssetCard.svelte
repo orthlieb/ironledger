@@ -400,9 +400,9 @@
 			{/if}
 
 			<!-- Dose / charge tracker (e.g. Venenigisto poison doses) -->
-			{#if (definition as any).dosesMax !== undefined}
-				{@const dosesMax   = (definition as any).dosesMax as number}
-				{@const dosesLabel = (definition as any).dosesLabel as string ?? 'Doses'}
+			{#if definition.dosesMax !== undefined}
+				{@const dosesMax   = definition.dosesMax}
+				{@const dosesLabel = definition.dosesLabel ?? 'Doses'}
 				<div class="doses-row">
 					<span class="companion-field-label">{dosesLabel}</span>
 					<div class="dose-pips">
