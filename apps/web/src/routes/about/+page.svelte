@@ -15,37 +15,37 @@
 		{
 			icon: charactersSvg,
 			title: 'Character Sheets',
-			body: 'Full Ironsworn character management — stats (Edge, Heart, Iron, Shadow, Wits), resources (Momentum, Health, Spirit, Supply), vows with progress tracks, bonds, failures, debilities, and XP. Auto-saved as you play.',
+			body: 'Stats, vows, bonds, debilities, XP — everything the Ironlands will hurl at you, and everything you\'ll cling to when the dice betray you. Auto-saved, because the darkness waits for no one.',
 			color: 'var(--color-heart)',
 		},
 		{
 			icon: foesSvg,
 			title: 'Foe Tracker',
-			body: 'Browse a catalogue of 60+ Ironsworn foes — beasts, undead, Ironlanders, and worse. Add encounters to your character, track combat progress, adjust rank and quantity, and mark foes vanquished.',
+			body: '60+ horrors catalogued for your convenience. Know your enemy before it knows you. (Spoiler: it probably already does.) Track combat progress, mark the fallen, and try not to think about what comes next.',
 			color: 'var(--color-danger)',
 		},
 		{
 			icon: expeditionsSvg,
 			title: 'Expeditions',
-			body: 'Track journeys across the Ironlands and delve into dangerous sites. Assign themes (Corrupted, Haunted, Wild…), domains (Barrow, Cavern, Ruin…), denizens, and progress tracks to each delve.',
+			body: 'The road goes ever on. Track journeys and delves so you remember which haunted barrow nearly claimed you last session. Themes, domains, denizens, progress tracks — all the grim details, preserved.',
 			color: 'var(--color-supply)',
 		},
 		{
 			icon: adventureSvg,
 			title: 'Moves & Dice',
-			body: 'Browse all 48 Ironsworn moves across 10 categories. Roll action and progress moves with animated 3D dice — strong hits, weak hits, and misses are logged with interactive outcome text.',
+			body: '48 moves. Animated 3D dice. Strong hits are celebrated. Weak hits are… managed. Misses are logged, linked, and filed under "character development." The oracle sees all.',
 			color: 'var(--color-wits)',
 		},
 		{
 			icon: eyeSvg,
 			title: 'Oracles',
-			body: '49 random result tables from Core Ironsworn, Ironsworn: Delve, and the Yrt homebrew expansion. Roll a d100, get your result, and have it added to the session log automatically.',
+			body: '49 tables of fate spanning Core Ironsworn, Delve, and the Yrt homebrew expansion. Roll a d100, receive your destiny, and accept what the oracle decrees. It is what it is. Pay the price.',
 			color: 'var(--text-muted)',
 		},
 		{
 			icon: noteSvg,
 			title: 'Session Log & Notes',
-			body: 'Every move, oracle roll, resource change, and vow update is captured in a persistent session log with clickable links. Add freeform notes to keep track of your story as it unfolds.',
+			body: 'Because "I think I swore a vow to avenge the blacksmith" is not a strategy. Every move, roll, and resource shift is captured automatically. Add freeform notes so your saga survives contact with real life.',
 			color: 'var(--text-muted)',
 		},
 	];
@@ -72,10 +72,10 @@
 <!-- ── Hero ───────────────────────────────────────────────────────── -->
 <section class="hero">
 	<div class="hero-text">
-		<p class="hero-eyebrow">Digital Companion for Ironsworn</p>
+		<p class="hero-eyebrow">Forged in JavaScript. Tempered by coffee.</p>
 		<h1 class="hero-title">Iron Ledger</h1>
 		<p class="hero-subtitle">
-			Forge your saga. Track your oaths. Face the darkness — and remember every moment of the journey.
+			The Ironlands are brutal, the dice are fickle, and paper character sheets have a way of disappearing right before a climactic vow. Iron Ledger remembers so you don't have to.
 		</p>
 		<div class="hero-cta">
 			{#if data.user}
@@ -101,18 +101,21 @@
 		<h2 class="section-heading">What is Iron Ledger?</h2>
 		<div class="about-prose">
 			<p>
-				<strong>Ironsworn</strong> is an award-winning solo and co-operative tabletop RPG by Shawn Tomkin,
-				set in a dark, mythic land of iron and stone. You swear iron vows, face brutal foes, and carve out
-				a legend against the odds — all with nothing but dice, imagination, and a few tables.
+				<strong>Ironsworn</strong> is an award-winning solo and co-operative tabletop RPG by Shawn Tomkin —
+				a dark, mythic land of iron and stone where you swear oaths on pain of dishonour, face foes that
+				would very much prefer you dead, and carve out a legend through nothing but dice, imagination, and
+				an unreasonable willingness to suffer.
 			</p>
 			<p>
-				<strong>Iron Ledger</strong> is a web-based companion app that handles everything else. No more
-				hunting through rulebooks mid-session, no more paper sheets lost between sessions, no more
-				forgotten oracle rolls. Your full chronicle lives here — always saved, always ready.
+				<strong>Iron Ledger</strong> is the companion app that handles the clerical work while you handle
+				the heroics. No more mid-session rulebook archaeology. No more paper sheets that vanish between
+				sessions. No more "wait, did I mark that vow as Fulfilled or did I just think really hard about it?"
+				Your full chronicle lives here — always saved, always accurate, always ready to witness your next
+				catastrophic miss.
 			</p>
 			<p>
-				Built specifically for Ironsworn (including the <em>Delve</em> supplement and the community
-				<em>Yrt</em> homebrew), Iron Ledger stays true to the system's tone: dark, weighty, and precise.
+				Built for Ironsworn core, the <em>Delve</em> supplement, and the community <em>Yrt</em> homebrew expansion.
+				Iron Ledger takes the game seriously, even when the dice clearly do not.
 			</p>
 		</div>
 	</div>
@@ -121,7 +124,7 @@
 <!-- ── Features ──────────────────────────────────────────────────── -->
 <section class="features-section">
 	<div class="features-section-inner">
-		<h2 class="section-heading">Everything You Need at the Table</h2>
+		<h2 class="section-heading">Everything You Need at the Table (Except Luck)</h2>
 		<div class="feature-grid">
 			{#each features as feat}
 				<div class="feature-card card">
@@ -142,9 +145,10 @@
 		<div class="opensource-text">
 			<h2 class="section-heading">Open Source</h2>
 			<p>
-				Iron Ledger is free and open source. The full codebase lives on GitHub — whether you want to
-				report a bug, suggest a feature, add support for a new Ironsworn supplement, or just see how
-				it's built, contributions are welcome.
+				Iron Ledger is free and open source — written by mortals, for mortals who enjoy pretending to be
+				mortals in a dark mythic age. The full codebase lives on GitHub. Report a bug, suggest a feature,
+				add support for a new supplement, or simply gaze upon it and despair. Contributions are welcome.
+				The Ironlands are vast, and there is always more to build.
 			</p>
 			<a
 				href="https://github.com/orthlieb/ironledger"
@@ -189,7 +193,7 @@
 	<div class="cta-inner">
 		<h2 class="cta-title">Swear Your First Vow</h2>
 		<p class="cta-body">
-			Iron Ledger is free to use. Create an account and bring your chronicle to life.
+			Free to use. No iron required. No actual suffering involved — though the dice make no such promises.
 		</p>
 		<div class="cta-buttons">
 			{#if data.user}
