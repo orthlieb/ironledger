@@ -25,10 +25,11 @@ export interface CharacterAsset {
 	assetId: string;
 	abilities: boolean[]; // enabled flags per ability
 	rarityId?: string;
+	/** @deprecated use names[0] instead; kept for reading old saves */
 	companionName?: string;
 	companionHealth?: number;
-	/** Storage for a second name field (e.g. Devotant's second Name field). */
-	name2?: string;
+	/** Stores values for each entry in the asset definition's nameLabels array. */
+	names?: string[];
 	/** Stores the currently selected radioLabel value for assets with radioLabels. */
 	radioSelection?: string;
 	/** Keys of selected items from a definition's selectable list (e.g. cantrips) */
@@ -231,10 +232,8 @@ export interface AssetDefinition {
 	counterColor?:       string;
 	/** Canonical icon name for the counter badge (e.g. "heart", "skull-and-crossbones"). */
 	counterIcon?:        string;
-	/** If present, renders a name input for this asset (e.g. "Companion Name"). */
-	nameLabel?:          string;
-	/** If present, renders a second name input (e.g. for Devotant's two name fields). */
-	name2Label?:         string;
+	/** If present, renders one text input per entry (e.g. ["Companion Name"] or ["God's Name", "Stat"]). */
+	nameLabels?:         string[];
 	/** If present, renders mutually-exclusive radio buttons side by side (e.g. Ironclad armor choice). */
 	radioLabels?:        string[];
 	[key: string]:       unknown;

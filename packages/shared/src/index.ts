@@ -97,10 +97,8 @@ export interface AssetDefinition {
   /** Canonical icon name for the header badge — maps to an SVG in the icon set.
    *  e.g. "heart", "skull-and-crossbones", "sword", "shield", "eye", "moon". */
   counterIcon?:  string;
-  /** If present, renders a labelled name input for this asset (e.g. "Companion Name"). */
-  nameLabel?:    string;
-  /** If present, renders a second labelled name input (e.g. Devotant's two name fields). */
-  name2Label?:   string;
+  /** If present, renders one labelled text input per entry (e.g. ["Companion Name"] or ["God's Name", "Stat"]). */
+  nameLabels?:   string[];
   /** If present, renders mutually-exclusive radio buttons side by side (e.g. Ironclad armor choice). */
   radioLabels?:  string[];
   [key: string]: unknown;   // allow future fields without breaking the type

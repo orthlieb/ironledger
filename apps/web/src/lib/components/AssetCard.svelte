@@ -192,8 +192,8 @@
 		const old = asset.counter ?? asset.companionHealth ?? 0;
 		if (newVal === old) return;
 		asset.counter = newVal;
-		const label = asset.companionName
-			? `${asset.companionName} (${definition.name})`
+		const label = (asset.names?.[0] ?? asset.companionName)
+			? `${asset.names?.[0] ?? asset.companionName} (${definition.name})`
 			: definition.name;
 		const counterLabel = definition.counterLabel ?? 'Counter';
 		appendLog(SESSION_LOG_ID, logTitle,
@@ -403,29 +403,22 @@
 				</div>
 			{/if}
 
-			<!-- Named asset field(s) — nameLabel and optional name2Label -->
-			{#if definition.nameLabel}
+			<!-- Named asset field(s) — one input per nameLabels entry -->
+			{#each definition.nameLabels ?? [] as label, i}
 				<label class="companion-name-label">
-					<span class="companion-field-label">{definition.nameLabel}</span>
+					<span class="companion-field-label">{label}</span>
 					<input
 						type="text"
-						bind:value={asset.companionName}
-						placeholder="{definition.nameLabel}…"
+						value={asset.names?.[i] ?? (i === 0 ? (asset.companionName ?? '') : '')}
+						oninput={(e) => {
+							if (!asset.names) asset.names = [];
+							asset.names[i] = e.currentTarget.value;
+						}}
+						placeholder="{label}…"
 						class="companion-name-input"
 					/>
 				</label>
-			{/if}
-			{#if definition.name2Label}
-				<label class="companion-name-label">
-					<span class="companion-field-label">{definition.name2Label}</span>
-					<input
-						type="text"
-						bind:value={asset.name2}
-						placeholder="{definition.name2Label}…"
-						class="companion-name-input"
-					/>
-				</label>
-			{/if}
+			{/each}
 
 			<!-- Radio selection (e.g. Ironclad: Lightly Armored / Geared for War) -->
 			{#if definition.radioLabels?.length}
@@ -519,7 +512,7 @@
 	<div class="remove-body">
 		<p>Losing an asset is rare and usually the result of a unique narrative circumstance dictated by the storyline.</p>
 
-		{#if definition.nameLabel}
+		{#if definition.nameLabels?.length}
 			<p>
 				<strong>Companion Endure Harm:</strong> If your companion is killed or you
 				choose to end your bond, roll +Heart. On a strong hit, take +1 spirit. On a

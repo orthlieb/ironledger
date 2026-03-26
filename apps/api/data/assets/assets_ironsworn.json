@@ -322,9 +322,11 @@
       "summary": "Fierce feline: hunts big game, attacks foes, guards camp.",
       "counterMax": 4,
       "counterLabel": "Health",
-      "nameLabel": "Companion Name",
       "counterIcon": "heart",
-      "counterColor": "var(--color-heart)"
+      "counterColor": "var(--color-heart)",
+      "nameLabels": [
+        "Companion Name"
+      ]
     },
     {
       "id": "companion/giant-spider",
@@ -350,9 +352,11 @@
       "summary": "Eerie arachnid: scouting, reading fears, and setting traps.",
       "counterMax": 4,
       "counterLabel": "Health",
-      "nameLabel": "Companion Name",
       "counterIcon": "heart",
-      "counterColor": "var(--color-heart)"
+      "counterColor": "var(--color-heart)",
+      "nameLabels": [
+        "Companion Name"
+      ]
     },
     {
       "id": "companion/hawk",
@@ -378,9 +382,11 @@
       "summary": "Keen raptor: scouting journeys, harassing foes, detecting threats.",
       "counterMax": 3,
       "counterLabel": "Health",
-      "nameLabel": "Companion Name",
       "counterIcon": "heart",
-      "counterColor": "var(--color-heart)"
+      "counterColor": "var(--color-heart)",
+      "nameLabels": [
+        "Companion Name"
+      ]
     },
     {
       "id": "companion/horse",
@@ -406,9 +412,11 @@
       "summary": "Loyal mount: swift travel, charging combat, mounted strikes.",
       "counterMax": 5,
       "counterLabel": "Health",
-      "nameLabel": "Companion Name",
       "counterIcon": "heart",
-      "counterColor": "var(--color-heart)"
+      "counterColor": "var(--color-heart)",
+      "nameLabels": [
+        "Companion Name"
+      ]
     },
     {
       "id": "companion/hound",
@@ -434,9 +442,11 @@
       "summary": "Faithful tracker: keen senses, fighting alongside, stress relief.",
       "counterMax": 4,
       "counterLabel": "Health",
-      "nameLabel": "Companion Name",
       "counterIcon": "heart",
-      "counterColor": "var(--color-heart)"
+      "counterColor": "var(--color-heart)",
+      "nameLabels": [
+        "Companion Name"
+      ]
     },
     {
       "id": "companion/kindred",
@@ -462,9 +472,11 @@
       "summary": "Human companion: skilled aid, shield-kin in combat, bonded.",
       "counterMax": 4,
       "counterLabel": "Health",
-      "nameLabel": "Companion Name",
       "counterIcon": "heart",
-      "counterColor": "var(--color-heart)"
+      "counterColor": "var(--color-heart)",
+      "nameLabels": [
+        "Companion Name"
+      ]
     },
     {
       "id": "companion/mammoth",
@@ -490,9 +502,11 @@
       "summary": "Massive beast: heavy hauling, supply carrier, trampling foes.",
       "counterMax": 5,
       "counterLabel": "Health",
-      "nameLabel": "Companion Name",
       "counterIcon": "heart",
-      "counterColor": "var(--color-heart)"
+      "counterColor": "var(--color-heart)",
+      "nameLabels": [
+        "Companion Name"
+      ]
     },
     {
       "id": "companion/owl",
@@ -518,9 +532,11 @@
       "summary": "Nocturnal hunter: night raids, secret knowledge, death's guide.",
       "counterMax": 3,
       "counterLabel": "Health",
-      "nameLabel": "Companion Name",
       "counterIcon": "heart",
-      "counterColor": "var(--color-heart)"
+      "counterColor": "var(--color-heart)",
+      "nameLabels": [
+        "Companion Name"
+      ]
     },
     {
       "id": "companion/raven",
@@ -546,9 +562,11 @@
       "summary": "Clever trickster: distractions, theft, messages, and death lore.",
       "counterMax": 2,
       "counterLabel": "Health",
-      "nameLabel": "Companion Name",
       "counterIcon": "heart",
-      "counterColor": "var(--color-heart)"
+      "counterColor": "var(--color-heart)",
+      "nameLabels": [
+        "Companion Name"
+      ]
     },
     {
       "id": "companion/young-wyvern",
@@ -574,9 +592,11 @@
       "summary": "Winged predator: hungry traveler, resilient, savage attacker.",
       "counterMax": 5,
       "counterLabel": "Health",
-      "nameLabel": "Companion Name",
       "counterIcon": "heart",
-      "counterColor": "var(--color-heart)"
+      "counterColor": "var(--color-heart)",
+      "nameLabels": [
+        "Companion Name"
+      ]
     },
     {
       "id": "path/alchemist",
@@ -640,7 +660,9 @@
         }
       ],
       "summary": "Sworn to a leader or faction: vow bonuses and rally in battle.",
-      "nameLabel": "Name"
+      "nameLabels": [
+        "Name"
+      ]
     },
     {
       "id": "path/battle-scarred",
@@ -683,7 +705,9 @@
         }
       ],
       "summary": "Bonded to an ancestral sentient blade: power at a mental cost.",
-      "nameLabel": "Name"
+      "nameLabels": [
+        "Name"
+      ]
     },
     {
       "id": "path/bonded",
@@ -768,8 +792,10 @@
         }
       ],
       "summary": "Devoted to a god: daily prayers, divine quests, and blessings.",
-      "nameLabel": "God's Name",
-      "name2Label": "Stat"
+      "nameLabels": [
+        "God's Name",
+        "Stat"
+      ]
     },
     {
       "id": "path/empowered",
@@ -791,7 +817,9 @@
         }
       ],
       "summary": "Noble lineage: claim hospitality, command respect, or serve humbly.",
-      "nameLabel": "Title/Lineage"
+      "nameLabels": [
+        "Title/Lineage"
+      ]
     },
     {
       "id": "path/fated",
@@ -1363,7 +1391,9 @@
         }
       ],
       "summary": "Skilled crafter: build, repair, and create useful items.",
-      "nameLabel": "Specialty"
+      "nameLabels": [
+        "Specialty"
+      ]
     },
     {
       "id": "ritual/augur",
