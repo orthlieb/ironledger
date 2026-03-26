@@ -175,7 +175,11 @@
 		try {
 			const pm2 = JSON.parse(raw);
 			const innerStr: string = pm2.message ?? raw;
-			const pm2ts: string = pm2.timestamp ?? '';
+			const rawTs: string = pm2.timestamp ?? '';
+			// Trim '2026-03-24 06:26:25 +00:00' -> '03-24 06:26:25'
+			const pm2ts = rawTs.length >= 19
+				? rawTs.slice(5, 19)   // 'MM-DD HH:MM:SS'
+				: rawTs;
 			try {
 				const p = JSON.parse(innerStr);
 				const levelNum = typeof p.level === 'number' ? p.level : 30;
@@ -1320,7 +1324,7 @@
 	.log-ts {
 		color: var(--text-dimmer);
 		flex-shrink: 0;
-		width: 20ch;
+		width: 14ch;
 		text-align: right;
 		white-space: nowrap;
 	}
