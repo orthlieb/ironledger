@@ -89,7 +89,8 @@ export async function authRoutes(server: FastifyInstance): Promise<void> {
 
     // Per-IP email rate limit — silently drop the send if over quota.
     // The response is always 202 so the caller can't detect the block.
-    if (redis) {
+    // Skip in test environment — tests share the same IP and would exhaust the quota.
+    if (redis && config.NODE_ENV !== 'test') {
       const key   = `reg_email_ip:${req.ip}`;
       const count = await redis.incr(key);
       if (count === 1) await redis.expire(key, 86_400); // 24-hour window
