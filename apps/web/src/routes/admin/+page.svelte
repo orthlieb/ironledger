@@ -173,8 +173,13 @@
 				const ts = pm2ts || (p.time ? new Date(p.time).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '');
 				return { ts, level: PINO_LEVELS[levelNum] ?? 'INFO', levelNum, msg: msg ?? innerStr, extras, raw };
 			} catch {
-				const level = innerStr.includes('ERROR') ? 'ERROR' : innerStr.includes('WARN') ? 'WARN' : innerStr.includes('debug') ? 'DEBUG' : 'INFO';
-				return { ts: pm2ts, level, levelNum: 30, msg: innerStr, extras: {}, raw };
+				// Inner message is plain text -- use PM2 type field to infer level
+				const level = pm2.type === 'err' ? 'ERROR'
+					: innerStr.includes('ERROR') ? 'ERROR'
+					: innerStr.includes('WARN')  ? 'WARN'
+					: innerStr.includes('debug') ? 'DEBUG' : 'INFO';
+				const levelNum = level === 'ERROR' ? 50 : level === 'WARN' ? 40 : level === 'DEBUG' ? 20 : 30;
+				return { ts: pm2ts, level, levelNum, msg: innerStr, extras: {}, raw };
 			}
 		} catch {
 			const level = raw.includes('ERROR') ? 'ERROR' : raw.includes('WARN') ? 'WARN' : raw.includes('DEBUG') ? 'DEBUG' : 'INFO';
