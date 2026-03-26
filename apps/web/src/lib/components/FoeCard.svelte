@@ -574,6 +574,7 @@
 	}
 
 	.fc-track-readout {
+		font-family: var(--font-ui);
 		font-size: 0.65rem;
 		color: var(--text-dimmer);
 		white-space: nowrap;

@@ -442,7 +442,7 @@
     },
     {
       "id": "path/yrt-venenigisto",
-      "name": "Venenigisto",
+      "name": "Venenigisto (Poisoner)",
       "category": "Path",
       "summary": "Poison crafter: brew contact and ingestion toxins from plant extracts, and detect the venomous work of others.",
       "preamble": "If you have trained in the lore of plants, poisons, and their antidotes — whether as a herbalist, assassin, or apothecary.",
@@ -463,7 +463,7 @@
     },
     {
       "id": "path/yrt-falsinto",
-      "name": "Falsinto",
+      "name": "Falsinto (Forger)",
       "category": "Path",
       "summary": "Document forger: mimic handwriting, replicate seals and official papers, and detect the fakes of others.",
       "preamble": null,
