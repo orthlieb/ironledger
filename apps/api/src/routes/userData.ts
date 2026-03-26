@@ -13,6 +13,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { authenticate } from '../middleware/authenticate.js';
 import * as ud from '../services/userDataService.js';
+import { config } from '../config.js';
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -57,6 +58,13 @@ export async function userDataRoutes(server: FastifyInstance): Promise<void> {
     if (!parsed.success) {
       return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: parsed.error.errors.map((e) => e.message).join(', ') });
     }
+    if (parsed.data.encounters.length > config.MAX_ENCOUNTERS_PER_USER) {
+      return reply.status(422).send({
+        statusCode: 422,
+        error:      'Unprocessable Entity',
+        message:    `Encounter limit reached (max ${config.MAX_ENCOUNTERS_PER_USER})`,
+      });
+    }
     const result = await ud.upsert(req.user!.id, { encounters: parsed.data.encounters }).catch(handleError(reply));
     if (!result || reply.sent) return;
     return reply.status(200).send(result);
@@ -67,6 +75,13 @@ export async function userDataRoutes(server: FastifyInstance): Promise<void> {
     const parsed = patchExpeditionsBody.safeParse(req.body);
     if (!parsed.success) {
       return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: parsed.error.errors.map((e) => e.message).join(', ') });
+    }
+    if (parsed.data.expeditions.length > config.MAX_EXPEDITIONS_PER_USER) {
+      return reply.status(422).send({
+        statusCode: 422,
+        error:      'Unprocessable Entity',
+        message:    `Expedition limit reached (max ${config.MAX_EXPEDITIONS_PER_USER})`,
+      });
     }
     const result = await ud.upsert(req.user!.id, { expeditions: parsed.data.expeditions }).catch(handleError(reply));
     if (!result || reply.sent) return;

@@ -25,6 +25,10 @@ const setRoleBody = z.object({
   role: z.enum(['user', 'admin']),
 });
 
+const setSuspendBody = z.object({
+  suspended: z.boolean(),
+});
+
 const maintenanceBody = z.object({
   message:              z.string().min(1).max(500),
   minutesUntilShutdown: z.number().int().min(0).max(1440),
@@ -90,6 +94,32 @@ export async function adminRoutes(server: FastifyInstance): Promise<void> {
     }
 
     await adminService.setUserRole(params.id, body.role, req.user!.id, req.ip).catch(handleError(reply));
+    if (reply.sent) return;
+    return reply.status(204).send();
+  });
+
+  // ── PATCH /users/:id/suspend ── Suspend / unsuspend user ────────────────
+  server.patch('/users/:id/suspend', async (req: FastifyRequest, reply: FastifyReply) => {
+    const params = parseBody(userIdParam, req.params, reply);
+    if (!params) return;
+
+    const body = parseBody(setSuspendBody, req.body, reply);
+    if (!body) return;
+
+    // Prevent admin from suspending themselves
+    if (params.id === req.user!.id) {
+      return reply.status(400).send({
+        statusCode: 400,
+        error:      'Bad Request',
+        message:    'Cannot suspend your own account',
+      });
+    }
+
+    if (body.suspended) {
+      await adminService.suspendUser(params.id, req.user!.id, req.ip).catch(handleError(reply));
+    } else {
+      await adminService.unsuspendUser(params.id, req.user!.id, req.ip).catch(handleError(reply));
+    }
     if (reply.sent) return;
     return reply.status(204).send();
   });

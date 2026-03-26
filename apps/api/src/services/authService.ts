@@ -30,6 +30,9 @@ import {
   sendPasswordResetEmail,
 } from '../lib/mailer.js';
 import { getStatus as getMaintenanceStatus } from './maintenanceService.js';
+import { autoLockAccount } from './adminService.js';
+import { redis } from '../server.js';
+import { config } from '../config.js';
 
 // ---------------------------------------------------------------------------
 // Argon2id configuration
@@ -246,6 +249,18 @@ export async function login(input: LoginInput): Promise<AuthResult> {
   }
 
   if (!user || !passwordValid) {
+    // Track consecutive failures for existing users to enable auto-lockout.
+    // We only track when the user exists but the password is wrong — locking
+    // out a non-existent account would silently do nothing anyway.
+    if (user && !passwordValid && redis) {
+      const failKey = `login_fail:${email}`;
+      const fails = await redis.incr(failKey);
+      await redis.expire(failKey, 30 * 60); // 30-minute sliding window
+      if (fails >= config.LOGIN_FAIL_LOCKOUT_THRESHOLD) {
+        await redis.del(failKey);
+        void autoLockAccount(user.id, user.email).catch(console.error);
+      }
+    }
     throw new AuthError('Invalid email or password', 'INVALID_CREDENTIALS', 401);
   }
 
@@ -267,6 +282,11 @@ export async function login(input: LoginInput): Promise<AuthResult> {
         503,
       );
     }
+  }
+
+  // Clear any lingering failed-login counter on success
+  if (redis) {
+    void redis.del(`login_fail:${email}`).catch(() => {});
   }
 
   // Issue tokens

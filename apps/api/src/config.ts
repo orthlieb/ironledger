@@ -47,6 +47,15 @@ const schema = z.object({
   RATE_LIMIT_LOGIN:    z.coerce.number().int().positive().default(5),
   RATE_LIMIT_REGISTER: z.coerce.number().int().positive().default(3),
   RATE_LIMIT_GLOBAL:   z.coerce.number().int().positive().default(120),
+
+  // ── Account lockout ───────────────────────────────────────────────────────
+  // Number of consecutive failed login attempts before the account is suspended.
+  LOGIN_FAIL_LOCKOUT_THRESHOLD: z.coerce.number().int().positive().default(5),
+
+  // ── Per-user resource limits ──────────────────────────────────────────────
+  MAX_CHARACTERS_PER_USER:  z.coerce.number().int().positive().default(20),
+  MAX_ENCOUNTERS_PER_USER:  z.coerce.number().int().positive().default(100),
+  MAX_EXPEDITIONS_PER_USER: z.coerce.number().int().positive().default(50),
 });
 
 // ---------------------------------------------------------------------------

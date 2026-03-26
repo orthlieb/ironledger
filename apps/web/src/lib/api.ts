@@ -122,6 +122,12 @@ export const admin = {
 			body: JSON.stringify({ role }),
 		}),
 
+	suspendUser: (id: string, suspended: boolean) =>
+		request<void>(`/api/admin/users/${id}/suspend`, {
+			method: 'PATCH',
+			body: JSON.stringify({ suspended }),
+		}),
+
 	enableMaintenance: (body: { message: string; minutesUntilShutdown: number }) =>
 		request<MaintenanceStatus>('/api/admin/maintenance', {
 			method: 'POST',

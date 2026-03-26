@@ -5,6 +5,9 @@
 
 	import { admin, maintenance as maintApi } from '$lib/api';
 	import type { AdminUser, AdminStats, AuditEvent, MaintenanceStatus, UserTimeseries } from '@ironledger/shared';
+	import type { LayoutData } from '../$types';
+
+	let { data }: { data: LayoutData } = $props();
 
 	let users: AdminUser[] = $state([]);
 	let stats: AdminStats | null = $state(null);
@@ -57,6 +60,7 @@
 	// ── Confirm + delete user ─────────────────────────────────────────────
 	let deleteTarget: AdminUser | null = $state(null);
 	let promoteTarget: AdminUser | null = $state(null);
+	let suspendTarget: AdminUser | null = $state(null);
 
 	async function confirmDelete() {
 		if (!deleteTarget) return;
@@ -69,6 +73,22 @@
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Delete failed';
 			deleteTarget = null;
+		}
+	}
+
+	// ── Suspend / unsuspend user ──────────────────────────────────────────
+	async function confirmSuspend() {
+		if (!suspendTarget) return;
+		try {
+			const willSuspend = suspendTarget.isActive;
+			await admin.suspendUser(suspendTarget.id, willSuspend);
+			suspendTarget.isActive = !willSuspend;
+			users = [...users];
+			suspendTarget = null;
+			void refreshAuditLog();
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Suspend action failed';
+			suspendTarget = null;
 		}
 	}
 
@@ -234,6 +254,9 @@
 			token_refresh:       'Token Refresh',
 			admin_enable_maintenance:  'Maint Enabled',
 			admin_disable_maintenance: 'Maint Disabled',
+			admin_suspend_user:   'Suspended User',
+			admin_unsuspend_user: 'Unsuspended User',
+			auto_lockout:         'Auto-Lockout',
 		};
 		return map[eventType] ?? eventType;
 	}
@@ -260,16 +283,23 @@
 			return `"${m.message}" (${m.minutesUntilShutdown}m)`;
 		}
 		if (e.eventType === 'admin_disable_maintenance') return '';
+		if (e.eventType === 'admin_suspend_user' || e.eventType === 'admin_unsuspend_user') {
+			return String(m.targetEmail ?? m.targetUserId ?? '');
+		}
+		if (e.eventType === 'auto_lockout') {
+			return `${m.targetEmail ?? ''} (too many failed logins)`;
+		}
 		return JSON.stringify(m);
 	}
 
 	function eventClass(eventType: string): string {
 		if (eventType === 'api_error' || eventType === 'token_theft') return 'audit-type-error';
 		if (eventType === 'login_failed' || eventType === 'login_unverified'
-			|| eventType === 'account_disabled'
+			|| eventType === 'account_disabled' || eventType === 'auto_lockout'
+			|| eventType === 'admin_suspend_user'
 			|| eventType === 'admin_enable_maintenance') return 'audit-type-warn';
 		if (eventType === 'login_success' || eventType === 'register_success'
-			|| eventType === 'email_verified'
+			|| eventType === 'email_verified' || eventType === 'admin_unsuspend_user'
 			|| eventType === 'admin_disable_maintenance') return 'audit-type-success';
 		return '';
 	}
@@ -515,6 +545,7 @@
 						<tbody>
 							{#each paginated as user (user.id)}
 								{@const isLastAdmin = user.role === 'admin' && adminCount <= 1}
+								{@const isSelf = user.id === data.user?.id}
 								<tr>
 									<td>{user.email}</td>
 									<td>
@@ -539,6 +570,16 @@
 											onclick={() => toggleRole(user)}
 										>
 											{user.role === 'admin' ? 'Demote' : 'Promote'}
+										</button>
+										<button
+											class="btn btn-icon"
+											class:btn-warn={user.isActive && !isSelf}
+											class:btn-dimmed={isSelf}
+											disabled={isSelf}
+											title={isSelf ? 'Cannot suspend your own account' : user.isActive ? 'Suspend user (immediately boots and blocks login)' : 'Unsuspend user'}
+											onclick={() => (suspendTarget = user)}
+										>
+											{user.isActive ? 'Suspend' : 'Unsuspend'}
 										</button>
 										<button
 											class="btn btn-icon btn-danger"
@@ -756,6 +797,36 @@
 			<div class="modal-actions">
 				<button class="btn" onclick={() => (promoteTarget = null)}>Cancel</button>
 				<button class="btn btn-danger" onclick={confirmPromote}>Promote</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Suspend / unsuspend confirmation dialog -->
+{#if suspendTarget}
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div class="modal-backdrop" onclick={() => (suspendTarget = null)} onkeydown={(e) => e.key === 'Escape' && (suspendTarget = null)}>
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="modal card" onclick={(e) => e.stopPropagation()}>
+			{#if suspendTarget.isActive}
+				<h3>Suspend User</h3>
+				<p>
+					Suspend <strong>{suspendTarget.email}</strong>?
+				</p>
+				<p class="modal-warning">
+					Their active sessions will be revoked immediately and they will be unable to log in until unsuspended.
+				</p>
+			{:else}
+				<h3>Unsuspend User</h3>
+				<p>
+					Re-enable access for <strong>{suspendTarget.email}</strong>?
+				</p>
+			{/if}
+			<div class="modal-actions">
+				<button class="btn" onclick={() => (suspendTarget = null)}>Cancel</button>
+				<button class="btn {suspendTarget.isActive ? 'btn-warn' : 'btn-success'}" onclick={confirmSuspend}>
+					{suspendTarget.isActive ? 'Suspend' : 'Unsuspend'}
+				</button>
 			</div>
 		</div>
 	</div>
@@ -1411,5 +1482,15 @@
 	}
 	.btn-success:hover {
 		filter: brightness(1.1);
+	}
+
+	.btn-warn {
+		background: #92400e;
+		color: #fde68a;
+		border: 1px solid #b45309;
+	}
+	.btn-warn:hover {
+		background: #b45309;
+		color: #fff;
 	}
 </style>

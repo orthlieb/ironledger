@@ -6,9 +6,10 @@
  * route layer passes the wrong userId.
  */
 
-import { eq, and } from 'drizzle-orm';
+import { eq, and, count } from 'drizzle-orm';
 import { withUserContext } from '../db/index.js';
 import { characters, historyEntries, type Character } from '../db/schema.js';
+import { config } from '../config.js';
 
 // ---------------------------------------------------------------------------
 // Domain errors
@@ -108,6 +109,18 @@ export async function create(
   name:   string,
   data:   CharacterData = {},
 ): Promise<CharacterFull> {
+  // Enforce per-user character limit
+  const [countRow] = await withUserContext(userId, async (tx) => {
+    return tx.select({ total: count() }).from(characters);
+  });
+  if ((countRow?.total ?? 0) >= config.MAX_CHARACTERS_PER_USER) {
+    throw new CharacterError(
+      `Character limit reached (max ${config.MAX_CHARACTERS_PER_USER})`,
+      'LIMIT_REACHED',
+      422,
+    );
+  }
+
   const [character] = await withUserContext(userId, async (tx) => {
     return tx
       .insert(characters)

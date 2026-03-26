@@ -6,9 +6,9 @@
  * authenticated admins can call these functions.
  */
 
-import { eq, sql, count, desc, or, ilike } from 'drizzle-orm';
+import { eq, sql, count, desc, or, ilike, isNull, and } from 'drizzle-orm';
 import { adminDb } from '../db/index.js';
-import { users, characters, userData, securityEvents } from '../db/schema.js';
+import { users, characters, userData, securityEvents, refreshTokens } from '../db/schema.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -251,6 +251,92 @@ export async function setUserRole(
     previousRole: target.role,
     newRole:      role,
   }, ip).catch(console.error);
+}
+
+// ---------------------------------------------------------------------------
+// Suspend / unsuspend user
+// ---------------------------------------------------------------------------
+
+export async function suspendUser(
+  userId: string,
+  adminId: string,
+  ip?: string,
+): Promise<void> {
+  const db = requireAdminDb();
+
+  const [target] = await db
+    .select({ email: users.email, isActive: users.isActive })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  if (!target) {
+    throw Object.assign(new Error('User not found'), { code: 'NOT_FOUND', statusCode: 404 });
+  }
+
+  // Deactivate the account
+  await db.update(users).set({ isActive: false }).where(eq(users.id, userId));
+
+  // Revoke all active refresh tokens — boots the user immediately
+  await db
+    .update(refreshTokens)
+    .set({ revokedAt: new Date() })
+    .where(and(eq(refreshTokens.userId, userId), isNull(refreshTokens.revokedAt)));
+
+  void logEvent(adminId, 'admin_suspend_user', {
+    targetUserId: userId,
+    targetEmail:  target.email,
+  }, ip).catch(console.error);
+}
+
+export async function unsuspendUser(
+  userId: string,
+  adminId: string,
+  ip?: string,
+): Promise<void> {
+  const db = requireAdminDb();
+
+  const [target] = await db
+    .select({ email: users.email })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  if (!target) {
+    throw Object.assign(new Error('User not found'), { code: 'NOT_FOUND', statusCode: 404 });
+  }
+
+  await db.update(users).set({ isActive: true }).where(eq(users.id, userId));
+
+  void logEvent(adminId, 'admin_unsuspend_user', {
+    targetUserId: userId,
+    targetEmail:  target.email,
+  }, ip).catch(console.error);
+}
+
+/**
+ * Called automatically when too many failed login attempts are detected.
+ * Uses userId=null in the audit log (no human admin — system action).
+ */
+export async function autoLockAccount(
+  userId: string,
+  email:  string,
+): Promise<void> {
+  const db = requireAdminDb();
+  if (!db) return;
+
+  await db.update(users).set({ isActive: false }).where(eq(users.id, userId));
+
+  await db
+    .update(refreshTokens)
+    .set({ revokedAt: new Date() })
+    .where(and(eq(refreshTokens.userId, userId), isNull(refreshTokens.revokedAt)));
+
+  await db.insert(securityEvents).values({
+    userId:    null,
+    eventType: 'auto_lockout',
+    metadata:  { targetUserId: userId, targetEmail: email, reason: 'too_many_failed_logins' },
+  }).catch(console.error);
 }
 
 // ---------------------------------------------------------------------------
