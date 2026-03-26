@@ -20,19 +20,23 @@
 	import iconDice           from '$icons/dice-d10-light.svg?raw';
 	import iconNote           from '$icons/note-sticky-solid.svg?raw';
 	import iconSackDollar     from '$icons/sack-dollar-solid-full.svg?raw';
+	import iconMana           from '$icons/icon-mana.svg?raw';
+	import iconPuppet         from '$icons/puppet-solid.svg?raw';
 
 	/** Canonical short-name → SVG string map for counter badges. */
 	const COUNTER_ICONS: Record<string, string> = {
-		'heart':               iconHeart,
+		'heart':                iconHeart,
 		'skull-and-crossbones': iconSkull,
-		'sword':               iconSword,
-		'shield':              iconShield,
-		'eye':                 iconEye,
-		'moon':                iconMoon,
-		'sun':                 iconSun,
-		'dice':                iconDice,
-		'note':                iconNote,
-		'sack-dollar':         iconSackDollar,
+		'sword':                iconSword,
+		'shield':               iconShield,
+		'eye':                  iconEye,
+		'moon':                 iconMoon,
+		'sun':                  iconSun,
+		'dice':                 iconDice,
+		'note':                 iconNote,
+		'sack-dollar':          iconSackDollar,
+		'mana':                 iconMana,
+		'puppet':               iconPuppet,
 	};
 
 	let {

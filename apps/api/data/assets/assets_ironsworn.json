@@ -1404,7 +1404,7 @@
       "summary": "Rouse the spirits of the land to gain their aid.",
       "counterMax": 6,
       "counterLabel": "Health",
-      "counterIcon": "heart",
+      "counterIcon": "puppet",
       "counterColor": "var(--color-heart)"
     },
     {
@@ -1489,7 +1489,11 @@
           "text": "When you perform this ritual, add +1 and take +1 essence on a hit."
         }
       ],
-      "summary": "Call upon a mystical force to empower your actions."
+      "summary": "Call upon a mystical force to empower your actions.",
+      "counterMax": 6,
+      "counterLabel": "Essence",
+      "counterIcon": "mana",
+      "counterColor": "var(--color-mana)"
     },
     {
       "id": "ritual/keen",
