@@ -764,8 +764,8 @@
         }
       ],
       "summary": "Devoted to a god: daily prayers, divine quests, and blessings.",
-      "nameLabel": "Name",
-      "name2Label": "Name"
+      "nameLabel": "God's Name",
+      "name2Label": "Stat"
     },
     {
       "id": "path/empowered",
