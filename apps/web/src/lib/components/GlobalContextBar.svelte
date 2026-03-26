@@ -266,6 +266,9 @@
 					<div class="gc-tile-row gc-tile-foe-details">
 						<span class="gc-tile-badge" style="background: {activeFoeNature}22; color: {activeFoeNature}">{activeFoeDef.nature}</span>
 						<span class="gc-tile-foe-rank">{activeFoeRank?.label ?? activeFoe.effectiveRank}</span>
+						{#if activeFoe.quantity !== 'solo' && activeFoeQty}
+							<span class="gc-tile-foe-qty">{activeFoeQty.label}</span>
+						{/if}
 						<span class="gc-tile-foe-harm" title="Harm">Harm:{activeFoeRank?.harm ?? '?'}</span>
 					</div>
 					<div class="gc-tile-foe-bottom" onclick={(e) => e.stopPropagation()}>
@@ -280,9 +283,6 @@
 									disabled={activeFoe.ticks <= 0}
 									title="Unmark progress"
 								>−{activeFoeRank?.progressPerHit}</button>
-								{#if activeFoe.quantity !== 'solo' && activeFoeQty}
-									<span class="gc-tile-foe-qty">{activeFoeQty.label}</span>
-								{/if}
 								{#if activeFoe.vanquished}
 									<span class="gc-tile-vanquished" title="Vanquished">☠</span>
 								{/if}
