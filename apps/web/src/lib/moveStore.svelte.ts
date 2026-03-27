@@ -43,7 +43,7 @@ export async function loadMoves(): Promise<void> {
 	if (_loaded || _loading) return;
 	_loading = true;
 	try {
-		const res = await fetch('/api/catalogue/moves');
+		const res = await fetch('/api/catalogue/moves', { cache: 'no-store' });
 		if (!res.ok) throw new Error(`Moves fetch failed: ${res.status}`);
 		const json = (await res.json()) as { moves: MoveDefinition[] };
 

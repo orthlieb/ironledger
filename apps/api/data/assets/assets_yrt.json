@@ -17,15 +17,28 @@
       "abilities": [
         {
           "enabled": true,
-          "text": "You move with the senses and poise of a night hunter. When you <a class=\"move-link\" data-id=\"move/face-danger\">Face Danger</a>, <a class=\"move-link\" data-id=\"move/secure-an-advantage\">Secure an Advantage</a>, or <a class=\"move-link\" data-id=\"move/gather-information\">Gather Information</a> in darkness, dim light, or heavy shadow, add +1. On a strong hit, also take +1 momentum as your night sight and feline awareness reveal more than others can see."
+          "text": "You move with the senses and poise of a night hunter. When you <a class=\"move-link\" data-id=\"move/face-danger\">Face Danger</a>, <a class=\"move-link\" data-id=\"move/secure-an-advantage\">Secure an Advantage</a>, or <a class=\"move-link\" data-id=\"move/gather-information\">Gather Information</a> in darkness, dim light, or heavy shadow, add +1. On a strong hit, also take +1 momentum as your night sight and feline awareness reveal more than others can see.",
+          "moves": [
+            "move/face-danger",
+            "move/secure-an-advantage",
+            "move/gather-information"
+          ]
         },
         {
           "enabled": false,
-          "text": "Your leaps and landings defy human limits. When you <a class=\"move-link\" data-id=\"move/face-danger\">Face Danger</a> or <a class=\"move-link\" data-id=\"move/undertake-a-journey\">Undertake a Journey</a> by jumping, climbing, or risking a fall, add +1 and roll +edge (even if another stat would normally apply). On a strong hit, you land sure-footed; take +1 momentum or inflict +1 harm if your leap carries you into the attack."
+          "text": "Your leaps and landings defy human limits. When you <a class=\"move-link\" data-id=\"move/face-danger\">Face Danger</a> or <a class=\"move-link\" data-id=\"move/undertake-a-journey\">Undertake a Journey</a> by jumping, climbing, or risking a fall, add +1 and roll +edge (even if another stat would normally apply). On a strong hit, you land sure-footed; take +1 momentum or inflict +1 harm if your leap carries you into the attack.",
+          "moves": [
+            "move/face-danger",
+            "move/undertake-a-journey"
+          ]
         },
         {
           "enabled": false,
-          "text": "You vanish into stillness like a hidden hunter. When you remain motionless or stalk slowly in cover and then <a class=\"move-link\" data-id=\"move/secure-an-advantage\">Secure an Advantage</a> or <a class=\"move-link\" data-id=\"move/face-danger\">Face Danger</a> by relying on concealment, add +1. On a hit, you are not detected and take +1 momentum; on a strong hit, you may also improve your position (define a safe escape route, observe unnoticed, or set up an ally’s next move)."
+          "text": "You vanish into stillness like a hidden hunter. When you remain motionless or stalk slowly in cover and then <a class=\"move-link\" data-id=\"move/secure-an-advantage\">Secure an Advantage</a> or <a class=\"move-link\" data-id=\"move/face-danger\">Face Danger</a> by relying on concealment, add +1. On a hit, you are not detected and take +1 momentum; on a strong hit, you may also improve your position (define a safe escape route, observe unnoticed, or set up an ally’s next move).",
+          "moves": [
+            "move/secure-an-advantage",
+            "move/face-danger"
+          ]
         }
       ]
     },
@@ -101,7 +114,11 @@
       "abilities": [
         {
           "enabled": true,
-          "text": "When you perform a cantrip, <a class=\"move-link\" data-id=\"move/cast-conclave-ritual\">Cast Conclave Ritual</a> with a base difficulty of 1. Add +1 if cast at range, and +1 if cast under stress (e.g. in combat or while being watched). On a <b class=\"mrd-outcome-strong\">strong hit</b>, the cantrip works as intended; take +1 momentum. On a <b class=\"mrd-outcome-weak\">weak hit</b>, the cantrip works but choose one: it is weaker or shorter than intended, it draws unwanted attention, or you suffer -1 spirit from the strain. On a <b class=\"mrd-outcome-miss\">miss</b>, the cantrip misfires; <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a>."
+          "text": "When you perform a cantrip, <a class=\"move-link\" data-id=\"move/cast-conclave-ritual\">Cast Conclave Ritual</a> with a base difficulty of 1. Add +1 if cast at range, and +1 if cast under stress (e.g. in combat or while being watched). On a <b class=\"mrd-outcome-strong\">strong hit</b>, the cantrip works as intended; take +1 momentum. On a <b class=\"mrd-outcome-weak\">weak hit</b>, the cantrip works but choose one: it is weaker or shorter than intended, it draws unwanted attention, or you suffer -1 spirit from the strain. On a <b class=\"mrd-outcome-miss\">miss</b>, the cantrip misfires; <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a>.",
+          "moves": [
+            "move/cast-conclave-ritual",
+            "move/pay-the-price"
+          ]
         },
         {
           "enabled": false,
@@ -210,7 +227,10 @@
       "abilities": [
         {
           "enabled": true,
-          "text": "You can perform an Arcane Inspection to sense and interpret mana in a person, object, or area. Record the total difficulty by summing the difficulty factors and <a class=\"move-link\" data-id=\"move/cast-conclave-ritual\">Cast Conclave Ritual</a>."
+          "text": "You can perform an Arcane Inspection to sense and interpret mana in a person, object, or area. Record the total difficulty by summing the difficulty factors and <a class=\"move-link\" data-id=\"move/cast-conclave-ritual\">Cast Conclave Ritual</a>.",
+          "moves": [
+            "move/cast-conclave-ritual"
+          ]
         },
         {
           "enabled": false,
@@ -319,7 +339,10 @@
       "abilities": [
         {
           "enabled": true,
-          "text": "You can cast illusion spells to deceive others. Choose what you want to create, record the total difficulty by summing the difficulty factors, and <a class=\"move-link\" data-id=\"move/cast-conclave-ritual\">Cast Conclave Ritual</a>."
+          "text": "You can cast illusion spells to deceive others. Choose what you want to create, record the total difficulty by summing the difficulty factors, and <a class=\"move-link\" data-id=\"move/cast-conclave-ritual\">Cast Conclave Ritual</a>.",
+          "moves": [
+            "move/cast-conclave-ritual"
+          ]
         },
         {
           "enabled": false,
@@ -428,7 +451,10 @@
       "abilities": [
         {
           "enabled": true,
-          "text": "You can cast compulsion spells to influence thoughts, emotions, and perceptions. Decide the effect you want, record the total difficulty by summing the difficulty factors, and <a class=\"move-link\" data-id=\"move/cast-conclave-ritual\">Cast Conclave Ritual</a>. You must spend at least 1 mana."
+          "text": "You can cast compulsion spells to influence thoughts, emotions, and perceptions. Decide the effect you want, record the total difficulty by summing the difficulty factors, and <a class=\"move-link\" data-id=\"move/cast-conclave-ritual\">Cast Conclave Ritual</a>. You must spend at least 1 mana.",
+          "moves": [
+            "move/cast-conclave-ritual"
+          ]
         },
         {
           "enabled": false,
@@ -445,22 +471,26 @@
       "name": "Venenigisto (Poisoner)",
       "category": "Path",
       "summary": "Poison crafter: brew contact and ingestion toxins from plant extracts, and detect the venomous work of others.",
-      "preamble": "If you have trained in the lore of plants, poisons, and their antidotes — whether as a herbalist, assassin, or apothecary.",
+      "preamble": "You have trained in the lore of plants, poisons, and their antidotes — whether as a herbalist, assassin, or apothecary.",
       "counterMax": 10,
       "counterLabel": "Doses",
-      "counterColor": "#8aab20",
       "abilities": [
         {
           "enabled": true,
-          "text": "When you craft a poison from foraged plants or gathered extracts, choose a potency and a delivery method.\n\n  * <b>Potency:</b> soporific (induces sleep), debilitating (sickens and weakens), or lethal (kills if untreated).\n  * <b>Delivery:</b> contact (applied to skin or a wound) or ingestion (slipped into food or drink).\n\nSuffer -1 supply and roll +wits. On a <b>strong hit</b>, you create a single dose; take +1 momentum. On a <b>weak hit</b>, you create it but choose one: suffer an additional -1 supply, the potency is weaker than intended, or the poison has a telltale sign (odor, taste, or color)."
+          "text": "When you <a class=\"move-link\" data-id=\"move/craft\">Craft an Item</a>, you are creating a poison from foraged plants or gathered extracts, choose a potency and a delivery method.\n\n  * <b>Potency:</b> soporific (induces sleep), debilitating (sickens and weakens), or lethal (kills if untreated).\n  * <b>Delivery:</b> contact (applied to skin or a wound) or ingestion (slipped into food or drink).\n\nOn a <b>strong hit</b> add one dose. On a <b>weak hit</b> add your dose and if you choose a telltale flaw, the poison has a noticeable odor, taste, or color.",
+          "moves": ["move/craft"]
         },
         {
           "enabled": false,
-          "text": "When you examine food, drink, a coated weapon, or a victim's symptoms to detect or identify a poison, add +1 when you <a class=\"move-link\" data-id=\"move/gather-information\">Gather Information</a> or <a class=\"move-link\" data-id=\"move/secure-an-advantage\">Secure an Advantage</a> (+wits). On a hit, you identify the poison and its effects. On a <b>strong hit</b>, you can also prepare an antidote if you have at least +1 supply; suffer -1 supply and the victim may <a class=\"move-link\" data-id=\"move/heal\">Heal</a> with +1 added."
+          "text": "When you <a class=\"move-link\" data-id=\"move/gather-information\">Gather Information</a> to examine food, drink, a coated weapon, or a victim's symptoms to detect or identify a poison, add +1. On a <b>strong hit</b>, you can also prepare an antidote if you have at least 1 supply. The victim may <b>Heal</b> from the poison with +1 added to their roll. On a <b>weak hit</b>, you identify the poison and its effects.",
+          "moves": [
+            "move/gather-information"
+          ]
         },
         {
           "enabled": false,
-          "text": "When you craft a poison, add +1 and you may create two doses instead of one. Additionally, your poisons are subtle and hard to detect: when someone examines your poison, they must score a strong hit to identify it."
+          "text": "When you <a class=\"move-link\" data-id=\"move/craft\">Craft an Item</a> to create a poison, add +1 to your roll and you may create two doses. Your poisons are subtle and hard to detect: when someone examines your poison, they must score a <b>strong hit</b> to identify it.",
+          "moves": ["move/craft"]
         }
       ],
       "counterIcon": "skull-and-crossbones"
@@ -470,19 +500,24 @@
       "name": "Falsinto (Forger)",
       "category": "Path",
       "summary": "Document forger: mimic handwriting, replicate seals and official papers, and detect the fakes of others.",
-      "preamble": null,
+      "preamble": "You have trained in the art of copying documents — identifying paper types, ink composition, and handwriting characteristics.",
       "abilities": [
         {
           "enabled": true,
-          "text": "You can identify paper types, ink composition, and handwriting characteristics. When you forge a person's handwriting: a letter, note, or simple written message: suffer -1 supply and roll +shadow. On a <b>strong hit</b>, the forgery is convincing and will withstand casual inspection; take +1 momentum. On a <b>weak hit</b>, you create it but choose one: suffer an additional -1 supply for better materials, the handwriting has a subtle inconsistency that someone familiar with the original may notice, or it takes much longer than expected."
+          "text": "When you <a class=\"move-link\" data-id=\"move/craft\">Craft an Item</a>, you can forge a handwritten document — a letter, note, or simple written message — you are forging a person's handwriting. On a <b>strong hit</b>, the forgery withstands casual inspection. On a <b>weak hit</b>, there is a subtle inconsistency that someone familiar with the original may notice, or the work takes longer than expected.",
+          "moves": ["move/craft"]
         },
         {
           "enabled": false,
-          "text": "When you examine a document for signs of forgery or tampering: inspecting paper, ink, seals, or handwriting: add +1 when you <a class=\"move-link\" data-id=\"move/gather-information\">Gather Information</a> or <a class=\"move-link\" data-id=\"move/secure-an-advantage\">Secure an Advantage</a> (+wits). On a hit, you determine its authenticity. On a <b>strong hit</b>, you also discern the forger's methods and habits; take +1 momentum."
+          "text": "When you <a class=\"move-link\" data-id=\"move/gather-information\">Gather Information</a> to examine a document for signs of forgery or tampering — inspecting paper, ink, seals, or handwriting — add +1. On a <b>strong hit</b>, you determine its authenticity and, if forged, identify clues to the forger's methods and habits. On a <b>weak hit</b>, you determine its authenticity.",
+          "moves": [
+            "move/gather-information"
+          ]
         },
         {
           "enabled": false,
-          "text": "You can now forge official documents, wax seals, stamped credentials, and other bureaucratic or institutional papers. When you do, use the same roll as above but the forgery may also include seals, signatures, and formal formatting. On a <b>strong hit</b>, the document passes even official scrutiny; take +1 momentum."
+          "text": "When you <a class=\"move-link\" data-id=\"move/craft\">Craft an Item</a>, you can forge an official document — stamped credentials, sealed correspondence, or institutional papers — the forgery may include formal seals, signatures, and official formatting. On a <b>strong hit</b>, the document passes even official scrutiny.",
+          "moves": ["move/craft"]
         }
       ]
     }

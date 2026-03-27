@@ -38,7 +38,7 @@
 	import { draggable } from '$lib/actions/draggable.js';
 	import { tooltip }   from '$lib/actions/tooltip.js';
 	import { loadAssets, findAsset } from '$lib/assetStore.svelte.js';
-	import { loadAssetMoveRefs, getRelevantAbilities } from '$lib/assetMatcherStore.svelte.js';
+	import { getRelevantAbilities } from '$lib/assetMatcherStore.svelte.js';
 
 	// ---------------------------------------------------------------------------
 	// Props
@@ -288,7 +288,6 @@
 		factorsManuallySet = false;
 		loadMoves();
 		loadAssets();
-		loadAssetMoveRefs();
 		dialogEl?.showModal();
 	}
 
@@ -1697,7 +1696,7 @@
 		min-width:     0;
 		text-align:    left;
 		font-family:   var(--font-ui, monospace);
-		font-size:     0.72rem;
+		font-size:     0.864rem;
 		color:         var(--text-muted);
 		font-style:    italic;
 		white-space:   nowrap;

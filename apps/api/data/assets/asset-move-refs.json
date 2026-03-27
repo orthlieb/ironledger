@@ -2104,34 +2104,42 @@
     "id": "path/yrt-venenigisto",
     "abilities": [
       {
+        "index": 0,
+        "moves": ["move/craft"]
+      },
+      {
         "index": 1,
-        "moves": [
-          "move/gather-information",
-          "move/secure-an-advantage",
-          "move/heal"
-        ]
+        "moves": ["move/gather-information"]
+      },
+      {
+        "index": 2,
+        "moves": ["move/craft"]
       }
     ],
     "allMoves": [
-      "move/gather-information",
-      "move/secure-an-advantage",
-      "move/heal"
+      "move/craft",
+      "move/gather-information"
     ]
   },
   {
     "id": "path/yrt-falsinto",
     "abilities": [
       {
+        "index": 0,
+        "moves": ["move/craft"]
+      },
+      {
         "index": 1,
-        "moves": [
-          "move/gather-information",
-          "move/secure-an-advantage"
-        ]
+        "moves": ["move/gather-information"]
+      },
+      {
+        "index": 2,
+        "moves": ["move/craft"]
       }
     ],
     "allMoves": [
-      "move/gather-information",
-      "move/secure-an-advantage"
+      "move/craft",
+      "move/gather-information"
     ]
   }
 ]
