@@ -218,6 +218,8 @@ export interface AssetAbility {
 	enabled: boolean;
 	text:    string;
 	name?:   string;
+	/** Move IDs referenced in this ability's text (e.g. ["move/strike", "move/clash"]). */
+	moves?:  string[];
 }
 
 export interface AssetDefinition {
@@ -229,8 +231,17 @@ export interface AssetDefinition {
 	postamble?:          string;
 	abilities:           AssetAbility[];
 	touchedFeatures?:    boolean;
-	counterMax?:         number;
+	/**
+	 * Maximum counter value. A plain number is static; an array of numbers maps one-to-one
+	 * onto the asset's abilities — the effective max is the value at the index of the highest
+	 * currently-enabled ability (e.g. [3, 6, 6] for a simulacrum whose health rises from 3 → 6
+	 * when ability 1 is unlocked).
+	 */
+	counterMax?:         number | number[];
+	/** Initial counter value when the asset is first added. Defaults to 0 if omitted. */
+	counterStart?:       number;
 	counterLabel?:       string;
+	/** Overrides the category colour for the counter badge and pips. Accepts any CSS value. */
 	counterColor?:       string;
 	/** Canonical icon name for the counter badge (e.g. "heart", "skull-and-crossbones"). */
 	counterIcon?:        string;

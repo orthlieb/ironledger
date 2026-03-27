@@ -504,7 +504,7 @@ Each file contains an `assets` array and an optional `rarities` array:
 | `abilities` | array | yes | Exactly 3 ability objects |
 | `nameLabels` | string[] | no | One labelled text input rendered per entry. Values stored in `CharacterAsset.names[]`. Example: `["Companion Name"]` or `["God's Name", "Stat"]` |
 | `radioLabels` | string[] | no | Mutually-exclusive radio buttons rendered side by side. Selected index stored in `CharacterAsset.radioSelection` (number, language-independent). Example: `["Lightly Armored", "Geared for War"]` |
-| `counterMax` | number | no | Maximum value for the asset's pip/charge track. |
+| `counterMax` | number \| number[] | no | Maximum value for the asset's pip/charge track. A plain number is static. An array maps one-to-one onto the asset's three abilities: the effective max is the value at the index of the highest currently-enabled ability (e.g. `[3, 6, 6]` — base max 3, rises to 6 when ability 1 is unlocked). |
 | `counterLabel` | string | no | Label shown above the pip track (e.g., `"Health"`, `"Doses"`, `"Wealth"`). Defaults to `"Counter"` if omitted. |
 | `counterIcon` | string | no | Canonical icon name for the header badge. See [Counter Icons](#counter-icons). |
 | `counterColor` | string | no | CSS colour for filled pips and badge icon (e.g., `"#A2352F"` or `"var(--color-mana)"`). Defaults to `var(--color-success)`. |

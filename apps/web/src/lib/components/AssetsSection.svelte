@@ -45,7 +45,9 @@
 			abilities: def.abilities.map((ab) => ab.enabled), // all categories: ability[0].enabled = true
 		};
 		if (def.counterMax !== undefined) {
-			newEntry.counter = def.counterMax;
+			// counterStart always wins; fall back to first element of array or the number itself
+			const baseMax = Array.isArray(def.counterMax) ? def.counterMax[0] : def.counterMax;
+			newEntry.counter = def.counterStart ?? baseMax;
 		}
 		assets = [...assets, newEntry];
 		// Pre-generate the entry id so we can embed it in the XP cost link

@@ -22,6 +22,7 @@
 	import iconSackDollar     from '$icons/sack-dollar-solid-full.svg?raw';
 	import iconMana           from '$icons/icon-mana.svg?raw';
 	import iconPuppet         from '$icons/puppet-solid.svg?raw';
+	import iconGolem          from '$icons/rock-golem.svg?raw';
 
 	/** Canonical short-name → SVG string map for counter badges. */
 	const COUNTER_ICONS: Record<string, string> = {
@@ -37,6 +38,7 @@
 		'sack-dollar':          iconSackDollar,
 		'mana':                 iconMana,
 		'puppet':               iconPuppet,
+		'rock-golem':           iconGolem,
 	};
 
 	let {
@@ -138,6 +140,22 @@
 	};
 	const catColor = $derived(CAT_COLOR[definition.category] ?? 'var(--text-muted)');
 
+	/**
+	 * Resolve the effective counterMax. If the definition supplies an array, use the value
+	 * at the index of the highest currently-enabled ability; otherwise use the number directly.
+	 */
+	const effectiveCounterMax = $derived((): number | undefined => {
+		const cm = definition.counterMax;
+		if (cm === undefined) return undefined;
+		if (typeof cm === 'number') return cm;
+		// Array form — find the index of the last enabled ability
+		let lastEnabled = 0;
+		for (let i = 0; i < asset.abilities.length; i++) {
+			if (asset.abilities[i]) lastEnabled = i;
+		}
+		return cm[Math.min(lastEnabled, cm.length - 1)];
+	});
+
 	/** Strips markdown-style links [text](anything) → text, for plain-text contexts. */
 	function stripMdLinks(raw: string): string {
 		return raw.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
@@ -228,15 +246,16 @@
 			<span class="asset-cat" style:color={catColor}>{definition.category}</span>
 		</div>
 
-		{#if definition.counterMax !== undefined && definition.counterIcon}
-			{@const curVal      = asset.counter ?? asset.companionHealth ?? 0}
-			{@const counterColor = definition.counterColor ?? 'var(--color-success)'}
-			{@const iconSvg     = COUNTER_ICONS[definition.counterIcon] ?? iconHeart}
+		{#if effectiveCounterMax() !== undefined && definition.counterIcon}
+			{@const curVal       = asset.counter ?? asset.companionHealth ?? 0}
+			{@const counterColor = definition.counterColor ?? catColor}
+			{@const iconSvg      = COUNTER_ICONS[definition.counterIcon] ?? iconHeart}
+			{@const maxVal       = effectiveCounterMax()!}
 			<span
 				class="counter-badge"
 				style:--counter-color={counterColor}
-				title="{definition.counterLabel ?? 'Counter'}: {curVal} / {definition.counterMax}"
-			>{@html iconSvg} {curVal}/{definition.counterMax}</span>
+				title="{definition.counterLabel ?? 'Counter'}: {curVal} / {maxVal}"
+			>{@html iconSvg} {curVal}/{maxVal}</span>
 		{/if}
 
 		<span class="ability-tally" title="{enabledCount} of {total} abilities enabled">
@@ -254,6 +273,23 @@
 	<!-- Expanded body -->
 	{#if !collapsed}
 		<div class="asset-body">
+			<!-- Named asset field(s) — one input per nameLabels entry (above preamble) -->
+			{#each definition.nameLabels ?? [] as label, i}
+				<label class="companion-name-label">
+					<span class="companion-field-label">{label}</span>
+					<input
+						type="text"
+						value={asset.names?.[i] ?? (i === 0 ? (asset.companionName ?? '') : '')}
+						oninput={(e) => {
+							if (!asset.names) asset.names = [];
+							asset.names[i] = e.currentTarget.value;
+						}}
+						placeholder="{label}…"
+						class="companion-name-input"
+					/>
+				</label>
+			{/each}
+
 			{#if definition.preamble}
 				<p class="asset-preamble">{stripMdLinks(definition.preamble)}</p>
 			{/if}
@@ -403,23 +439,6 @@
 				</div>
 			{/if}
 
-			<!-- Named asset field(s) — one input per nameLabels entry -->
-			{#each definition.nameLabels ?? [] as label, i}
-				<label class="companion-name-label">
-					<span class="companion-field-label">{label}</span>
-					<input
-						type="text"
-						value={asset.names?.[i] ?? (i === 0 ? (asset.companionName ?? '') : '')}
-						oninput={(e) => {
-							if (!asset.names) asset.names = [];
-							asset.names[i] = e.currentTarget.value;
-						}}
-						placeholder="{label}…"
-						class="companion-name-input"
-					/>
-				</label>
-			{/each}
-
 			<!-- Radio selection (e.g. Ironclad: Lightly Armored / Geared for War) -->
 			{#if definition.radioLabels?.length}
 				<div class="radio-row">
@@ -438,10 +457,10 @@
 			{/if}
 
 			<!-- Counter / health / charge tracker (any asset with counterMax) -->
-			{#if definition.counterMax !== undefined}
-				{@const counterMax   = definition.counterMax}
+			{#if effectiveCounterMax() !== undefined}
+				{@const counterMax   = effectiveCounterMax()!}
 				{@const counterLabel = definition.counterLabel ?? 'Counter'}
-				{@const counterColor = definition.counterColor ?? 'var(--color-success)'}
+				{@const counterColor = definition.counterColor ?? catColor}
 				{@const curVal       = asset.counter ?? asset.companionHealth ?? 0}
 				<div class="counter-row" style:--counter-color={counterColor}>
 					<span class="companion-field-label">{counterLabel}</span>
@@ -453,7 +472,7 @@
 								onclick={() => setCounter(j < curVal ? j : j + 1)}
 								aria-label="{counterLabel} pip {j + 1}"
 							></button>
-						{/each}
+					{/each}
 					</div>
 					<span class="health-label">{curVal}/{counterMax}</span>
 				</div>
@@ -614,6 +633,9 @@
 		height: 11px;
 		fill: var(--counter-color);
 		flex-shrink: 0;
+	}
+	.counter-badge :global(svg) :global(*) {
+		fill: var(--counter-color);
 	}
 
 	.ability-tally {
