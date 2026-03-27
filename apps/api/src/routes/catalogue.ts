@@ -48,12 +48,11 @@ function makeEtag(data: unknown): string {
 }
 
 async function loadCatalogue(): Promise<{
-  assets:        CatalogueEntry;
-  moves:         CatalogueEntry;
-  oracles:       CatalogueEntry;
-  foes:          CatalogueEntry;
-  delve:         CatalogueEntry;
-  assetMoveRefs: CatalogueEntry;
+  assets:  CatalogueEntry;
+  moves:   CatalogueEntry;
+  oracles: CatalogueEntry;
+  foes:    CatalogueEntry;
+  delve:   CatalogueEntry;
 }> {
   // Load and merge all asset files
   const [assetsIs, assetsDelve, assetsYrt] = await Promise.all([
@@ -105,16 +104,12 @@ async function loadCatalogue(): Promise<{
 
   const allDelve = { themeFeatures, themeDangers, domainFeatures, domainDangers };
 
-  // Load asset-move cross-reference index
-  const assetMoveRefs = await loadJson(path.join(DATA_ROOT, 'assets/asset-move-refs.json'));
-
   return {
-    assets:        { data: allAssets,      etag: makeEtag(allAssets)      },
-    moves:         { data: allMoves,       etag: makeEtag(allMoves)       },
-    oracles:       { data: allOracles,     etag: makeEtag(allOracles)     },
-    foes:          { data: allFoes,        etag: makeEtag(allFoes)        },
-    delve:         { data: allDelve,       etag: makeEtag(allDelve)       },
-    assetMoveRefs: { data: assetMoveRefs,  etag: makeEtag(assetMoveRefs)  },
+    assets:  { data: allAssets,  etag: makeEtag(allAssets)  },
+    moves:   { data: allMoves,   etag: makeEtag(allMoves)   },
+    oracles: { data: allOracles, etag: makeEtag(allOracles) },
+    foes:    { data: allFoes,    etag: makeEtag(allFoes)    },
+    delve:   { data: allDelve,   etag: makeEtag(allDelve)   },
   };
 }
 
@@ -146,10 +141,9 @@ export async function catalogueRoutes(server: FastifyInstance): Promise<void> {
       .send(entry.data);
   }
 
-  server.get('/assets',          (req, reply) => sendCatalogueItem(catalogue.assets,        req, reply));
-  server.get('/moves',           (req, reply) => sendCatalogueItem(catalogue.moves,         req, reply));
-  server.get('/oracles',         (req, reply) => sendCatalogueItem(catalogue.oracles,       req, reply));
-  server.get('/foes',            (req, reply) => sendCatalogueItem(catalogue.foes,          req, reply));
-  server.get('/delve',           (req, reply) => sendCatalogueItem(catalogue.delve,         req, reply));
-  server.get('/asset-move-refs', (req, reply) => sendCatalogueItem(catalogue.assetMoveRefs, req, reply));
+  server.get('/assets',  (req, reply) => sendCatalogueItem(catalogue.assets,  req, reply));
+  server.get('/moves',   (req, reply) => sendCatalogueItem(catalogue.moves,   req, reply));
+  server.get('/oracles', (req, reply) => sendCatalogueItem(catalogue.oracles, req, reply));
+  server.get('/foes',    (req, reply) => sendCatalogueItem(catalogue.foes,    req, reply));
+  server.get('/delve',   (req, reply) => sendCatalogueItem(catalogue.delve,   req, reply));
 }

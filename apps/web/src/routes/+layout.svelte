@@ -87,10 +87,7 @@
 				{#if data.user?.role === 'admin'}
 					<a href="/admin" class="nav-link" class:nav-link--active={$page.url.pathname.startsWith('/admin')}>Admin</a>
 				{/if}
-				<a href="/home" class="nav-link" class:nav-link--active={$page.url.pathname.startsWith('/home')}>App</a>
-				<a href="/about" class="nav-link" class:nav-link--active={$page.url.pathname === '/about'}>About</a>
 			</nav>
-			<span class="nav-sep" aria-hidden="true">◆</span>
 			<div class="nav-user-actions">
 				<button
 					class="nav-settings-btn tooltip-down"
