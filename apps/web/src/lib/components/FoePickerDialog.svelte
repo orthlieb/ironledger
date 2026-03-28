@@ -324,8 +324,6 @@
 		<div class="fd-back-bar" style="--nature-color: {natureColor}">
 			<button class="btn fd-back-btn" onclick={goBack}>← Back</button>
 			<span class="fd-title">{confirmFoe.name}</span>
-			<span class="fd-badge" style="background: {natureColor}22; color: {natureColor}">{confirmFoe.nature}</span>
-			<span class="fd-badge fd-badge--rank" style={rankBadgeStyle(confirmFoe.rank)}>{baseRankInfo?.label ?? confirmFoe.rank}</span>
 		</div>
 
 		<!-- Scrollable body -->
@@ -349,32 +347,30 @@
 					<fieldset class="fd-quantity-group">
 						<legend class="fd-quantity-legend">Quantity</legend>
 						{#each FOE_QUANTITIES as qty}
-							<label class="fd-qty-label" class:selected={quantity === qty.value}>
-								<input
-									type="radio"
-									name="foe-quantity"
-									value={qty.value}
-									checked={quantity === qty.value}
-									onchange={() => (quantity = qty.value)}
-								/>
-								<span class="fd-qty-name">{qty.label}</span>
-								<span class="fd-qty-desc">{qty.desc}</span>
-							</label>
+							<div class="fd-qty-item">
+								<label class="fd-qty-label" class:selected={quantity === qty.value}>
+									<input
+										type="radio"
+										name="foe-quantity"
+										value={qty.value}
+										checked={quantity === qty.value}
+										onchange={() => (quantity = qty.value)}
+									/>
+									<span class="fd-qty-name">{qty.label}</span>
+								</label>
+								{#if qty.rankAdj > 0}
+									<span class="fd-qty-rank-note">+{qty.rankAdj} rank{qty.rankAdj > 1 ? 's' : ''}</span>
+								{/if}
+							</div>
 						{/each}
 					</fieldset>
 
-					<div class="fd-eff-rank">
-						<span class="fd-eff-rank-label">Effective rank:</span>
-						<span class="fd-eff-rank-value">{rankInfo?.label ?? '?'} ({effRank})</span>
-						{#if rankAdj > 0}
-							<span class="fd-eff-rank-note">Base {confirmFoe.rank} + {rankAdj}</span>
-						{/if}
-					</div>
-
 					{#if rankInfo}
-						<div class="fd-rank-info">
-							Inflicts <strong>{rankInfo.harm}</strong> harm ·
-							<strong>{rankInfo.progressPerHit}</strong> ticks per progress mark
+						<div class="fd-confirm-pills">
+							<span class="fd-badge" style="background: {natureColor}22; color: {natureColor}">{confirmFoe.nature}</span>
+							<span class="fd-badge fd-badge--rank" style={rankBadgeStyle(effRank)}>{rankInfo.label}</span>
+							<span class="fd-stat-pill fd-stat-pill--harm">Harm: {rankInfo.harm}</span>
+							<span class="fd-stat-pill fd-stat-pill--progress">Progress: {rankInfo.progressPerHit}</span>
 						</div>
 					{/if}
 				</div>
@@ -919,26 +915,46 @@
 		color: var(--text-dimmer);
 	}
 
-	/* ── Effective rank + harm info ─────────────────────────────────────── */
-	.fd-eff-rank {
+	/* ── Quantity item: rank-adj note below each radio row ─────────────── */
+	.fd-qty-item {
 		display: flex;
-		align-items: baseline;
-		gap: 6px;
-		font-family: var(--font-ui);
-		font-size: 0.82rem;
+		flex-direction: column;
 	}
 
-	.fd-eff-rank-label { color: var(--text-dimmer); }
-	.fd-eff-rank-value { font-weight: 700; color: var(--text-accent); }
-	.fd-eff-rank-note  { font-size: 0.72rem; color: var(--text-dimmer); }
-
-	.fd-rank-info {
+	.fd-qty-rank-note {
 		font-family: var(--font-ui);
-		font-size: 0.75rem;
-		color: #991b1b;
-		padding: 4px 8px;
-		background: rgba(239,68,68,0.07);
-		border-radius: 4px;
-		border: 1px solid rgba(239,68,68,0.2);
+		font-size: 0.70rem;
+		color: var(--text-dimmer);
+		/* indent past radio button (~16px) + gap (6px) + label padding (6px) */
+		padding-left: 1.75rem;
+		padding-bottom: 2px;
+	}
+
+	/* ── Confirm pills row (below quantity group) ────────────────────────── */
+	.fd-confirm-pills {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+		align-items: center;
+	}
+
+	.fd-stat-pill {
+		font-family: var(--font-ui);
+		font-size: 0.65rem;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		padding: 2px 8px;
+		border-radius: 10px;
+	}
+	.fd-stat-pill--harm {
+		background: rgba(239,68,68,0.10);
+		color: #ef4444;
+		border: 1px solid rgba(239,68,68,0.25);
+	}
+	.fd-stat-pill--progress {
+		background: rgba(59,130,246,0.10);
+		color: #60a5fa;
+		border: 1px solid rgba(59,130,246,0.25);
 	}
 </style>
