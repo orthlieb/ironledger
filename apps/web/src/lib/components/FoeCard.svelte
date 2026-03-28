@@ -10,7 +10,6 @@
 	import {
 		RANK_COLORS, FOE_RANKS, FOE_QUANTITIES, FOE_NATURE_COLORS,
 	} from '$lib/foeStore.svelte.js';
-	import { progressText } from '$lib/character.js';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import ProgressTrack from '$lib/components/ProgressTrack.svelte';
 
@@ -271,32 +270,25 @@
 
 			<!-- Progress track -->
 			<div class="fc-section">
+				<span class="fc-section-label">Progress track</span>
 				<div class="fc-progress-row">
-					<div class="fc-track-col">
-						<div class="fc-track-header">
-							<span class="fc-section-label">Progress track</span>
-							<span class="fc-track-readout">{progressText(enc.ticks)}</span>
-						</div>
-						<ProgressTrack
-							label=""
-							value={enc.ticks}
-							onchange={handleTrackChange}
-						/>
-					</div>
-					<div class="fc-progress-actions">
-						<button
-							class="btn-progress"
-							onclick={markProgress}
-							disabled={enc.ticks >= 40}
-							title="Mark progress (+{rankInfo?.progressPerHit} ticks)"
-						>+{rankInfo?.progressPerHit}</button>
-						<button
-							class="btn-progress"
-							onclick={unmarkProgress}
-							disabled={enc.ticks <= 0}
-							title="Unmark progress (−{rankInfo?.progressPerHit} ticks)"
-						>−{rankInfo?.progressPerHit}</button>
-					</div>
+					<ProgressTrack
+						label=""
+						value={enc.ticks}
+						onchange={handleTrackChange}
+					/>
+					<button
+						class="btn-progress"
+						onclick={markProgress}
+						disabled={enc.ticks >= 40}
+						title="Mark progress (+{rankInfo?.progressPerHit} ticks)"
+					>+{rankInfo?.progressPerHit}</button>
+					<button
+						class="btn-progress"
+						onclick={unmarkProgress}
+						disabled={enc.ticks <= 0}
+						title="Unmark progress (−{rankInfo?.progressPerHit} ticks)"
+					>−{rankInfo?.progressPerHit}</button>
 				</div>
 			</div>
 
@@ -522,37 +514,12 @@
 	}
 
 	/* ── Progress track ─────────────────────────────────────────────────── */
-	.fc-track-col {
-		flex: 1;
-		min-width: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 3px;
-	}
-
-	.fc-track-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: baseline;
-	}
-
-	.fc-track-readout {
-		font-family: var(--font-ui);
-		font-size: 0.65rem;
-		color: var(--text-dimmer);
-		white-space: nowrap;
-	}
-
 	.fc-progress-row {
 		display: flex;
 		align-items: center;
 		gap: 6px;
-	}
-
-	.fc-progress-actions {
-		display: flex;
-		gap: 4px;
-		flex-shrink: 0;
+		flex-wrap: nowrap;
+		padding-left: 0.4rem;
 	}
 
 	.btn-progress {

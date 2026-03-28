@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import type { CharacterFull } from '$lib/api.js';
-	import type { FoeDef, FoeQuantity, Expedition, Journey, Site } from '$lib/types.js';
-	import { EXPEDITION_MARK_TICKS } from '$lib/types.js';
+	import type { FoeDef, FoeQuantity, Expedition, Journey, Site, VowDifficulty } from '$lib/types.js';
+	import { EXPEDITION_MARK_TICKS, DELVE_THEMES, DELVE_DOMAINS } from '$lib/types.js';
 	import { characters as api } from '$lib/api.js';
 	import { findFoe, findFoeByName, loadFoes, FOE_RANKS } from '$lib/foeStore.svelte.js';
 	import { loadDelveData } from '$lib/delveStore.svelte.js';
@@ -109,6 +109,15 @@
 	// ── Expeditions ────────────────────────────────────────────────────────────
 	let activeExpeditionId = $state('');
 	const expeditions = $derived(getExpeditions());
+
+	// ── New expedition dialogs ─────────────────────────────────────────────────
+	let newJourneyDialogEl   = $state<HTMLDialogElement | null>(null);
+	let newJourneyDifficulty = $state<VowDifficulty>('dangerous');
+
+	let newSiteDialogEl   = $state<HTMLDialogElement | null>(null);
+	let newSiteDifficulty = $state<VowDifficulty>('dangerous');
+	let newSiteTheme      = $state<string>('');
+	let newSiteDomain     = $state<string>('');
 
 	// ── Initiative state (per-character: 0=none, 1=character, 2=foe) ────────
 	let initiativeMap = $state<Record<string, number>>({});
@@ -320,12 +329,18 @@
 
 	// ── Expedition CRUD ────────────────────────────────────────────────────────
 
-	async function handleAddJourney() {
+	function handleAddJourney() {
+		newJourneyDifficulty = 'dangerous';
+		newJourneyDialogEl?.showModal();
+	}
+
+	async function confirmAddJourney() {
+		newJourneyDialogEl?.close();
 		const journey: Journey = {
 			id:         crypto.randomUUID(),
 			type:       'journey',
 			name:       'New Journey',
-			difficulty: 'dangerous',
+			difficulty: newJourneyDifficulty,
 			ticks:      0,
 			notes:      '',
 			complete:   false,
@@ -339,15 +354,25 @@
 		newlyCreatedId = '';
 	}
 
-	async function handleAddSite() {
+	function cancelAddJourney() { newJourneyDialogEl?.close(); }
+
+	function handleAddSite() {
+		newSiteDifficulty = 'dangerous';
+		newSiteTheme      = '';
+		newSiteDomain     = '';
+		newSiteDialogEl?.showModal();
+	}
+
+	async function confirmAddSite() {
+		newSiteDialogEl?.close();
 		const site: Site = {
 			id:         crypto.randomUUID(),
 			type:       'site',
 			name:       'New Site',
 			objective:  '',
-			theme:      '',
-			domain:     '',
-			difficulty: 'dangerous',
+			theme:      newSiteTheme as Site['theme'],
+			domain:     newSiteDomain as Site['domain'],
+			difficulty: newSiteDifficulty,
 			ticks:      0,
 			denizens:   Array(12).fill(''),
 			complete:   false,
@@ -360,6 +385,8 @@
 		await tick();
 		newlyCreatedId = '';
 	}
+
+	function cancelAddSite() { newSiteDialogEl?.close(); }
 
 	async function handleExpeditionChange(exp: Expedition) {
 		await updateExpedition(exp);
@@ -765,6 +792,66 @@
 
 </div>
 
+<!-- ── New Journey dialog ──────────────────────────────────────────────────── -->
+<dialog bind:this={newJourneyDialogEl} class="exp-dialog" oncancel={cancelAddJourney}>
+	<div class="exp-dialog-body">
+		<h3 class="exp-dialog-title">New Journey</h3>
+		<div class="exp-dialog-field">
+			<label class="exp-dialog-label" for="new-journey-diff">Difficulty</label>
+			<select id="new-journey-diff" class="exp-dialog-select"
+				bind:value={newJourneyDifficulty}>
+				<option value="troublesome">Troublesome</option>
+				<option value="dangerous">Dangerous</option>
+				<option value="formidable">Formidable</option>
+				<option value="extreme">Extreme</option>
+				<option value="epic">Epic</option>
+			</select>
+		</div>
+		<div class="exp-dialog-actions">
+			<button class="btn btn-sm" onclick={cancelAddJourney}>Cancel</button>
+			<button class="btn btn-sm btn-primary" onclick={confirmAddJourney}>Start Journey</button>
+		</div>
+	</div>
+</dialog>
+
+<!-- ── New Site dialog ─────────────────────────────────────────────────────── -->
+<dialog bind:this={newSiteDialogEl} class="exp-dialog" oncancel={cancelAddSite}>
+	<div class="exp-dialog-body">
+		<h3 class="exp-dialog-title">New Site</h3>
+		<div class="exp-dialog-field">
+			<label class="exp-dialog-label" for="new-site-diff">Difficulty</label>
+			<select id="new-site-diff" class="exp-dialog-select"
+				bind:value={newSiteDifficulty}>
+				<option value="troublesome">Troublesome</option>
+				<option value="dangerous">Dangerous</option>
+				<option value="formidable">Formidable</option>
+				<option value="extreme">Extreme</option>
+				<option value="epic">Epic</option>
+			</select>
+		</div>
+		<div class="exp-dialog-field">
+			<label class="exp-dialog-label" for="new-site-theme">Theme</label>
+			<select id="new-site-theme" class="exp-dialog-select"
+				bind:value={newSiteTheme}>
+				<option value="">(none)</option>
+				{#each DELVE_THEMES as t (t)}<option value={t}>{t}</option>{/each}
+			</select>
+		</div>
+		<div class="exp-dialog-field">
+			<label class="exp-dialog-label" for="new-site-domain">Domain</label>
+			<select id="new-site-domain" class="exp-dialog-select"
+				bind:value={newSiteDomain}>
+				<option value="">(none)</option>
+				{#each DELVE_DOMAINS as d (d)}<option value={d}>{d}</option>{/each}
+			</select>
+		</div>
+		<div class="exp-dialog-actions">
+			<button class="btn btn-sm" onclick={cancelAddSite}>Cancel</button>
+			<button class="btn btn-sm btn-primary" onclick={confirmAddSite}>Discover Site</button>
+		</div>
+	</div>
+</dialog>
+
 <style>
 	/* ============================================================
 	   Adventure tab layout — same 2-tile grid as other tabs
@@ -1090,5 +1177,71 @@
 	:global(html[data-theme='light']) .empty-tab-img {
 		opacity: 0.25;
 		filter: grayscale(0.5) brightness(0.7);
+	}
+
+	/* ── Expedition creation dialogs ───────────────────────────────────────── */
+	.exp-dialog {
+		border: none;
+		padding: 0;
+		border-radius: 10px;
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		width: min(340px, calc(100vw - 2rem));
+		background: var(--bg-card);
+		color: var(--text);
+		box-shadow: 0 16px 48px #00000070, 0 0 0 1px var(--border-mid);
+		outline: none;
+	}
+	.exp-dialog::backdrop {
+		background: #00000060;
+		backdrop-filter: blur(1px);
+	}
+	.exp-dialog-body {
+		padding: 1.25rem 1.5rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.9rem;
+	}
+	.exp-dialog-title {
+		margin: 0;
+		font-family: var(--font-display);
+		font-size: 1rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+	}
+	.exp-dialog-field {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+	.exp-dialog-label {
+		font-family: var(--font-ui);
+		font-size: 0.65rem;
+		font-weight: 600;
+		letter-spacing: 0.07em;
+		text-transform: uppercase;
+		color: var(--text-dimmer);
+	}
+	.exp-dialog-select {
+		font-family: var(--font-ui);
+		font-size: 0.82rem;
+		padding: 5px 8px;
+		background: var(--bg-inset);
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		color: var(--text);
+	}
+	.exp-dialog-select:focus {
+		outline: none;
+		border-color: var(--focus-ring);
+		box-shadow: 0 0 0 2px var(--accent-glow);
+	}
+	.exp-dialog-actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: 8px;
+		padding-top: 0.25rem;
 	}
 </style>

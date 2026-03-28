@@ -11,7 +11,7 @@
 	import type { FoeEncounter, Expedition } from '$lib/types.js';
 	import { EXPEDITION_MARK_TICKS } from '$lib/types.js';
 	import { hydrateCharacter } from '$lib/character.js';
-	import { findFoe, FOE_RANKS, FOE_NATURE_COLORS, FOE_QUANTITIES } from '$lib/foeStore.svelte.js';
+	import { findFoe, FOE_RANKS, FOE_NATURE_COLORS, FOE_QUANTITIES, RANK_COLORS } from '$lib/foeStore.svelte.js';
 	import ProgressTrack from '$lib/components/ProgressTrack.svelte';
 
 	// Resource icons
@@ -97,6 +97,15 @@
 	const activeExpedition  = $derived(expeditions.find((e) => e.id === activeExpeditionId));
 	const expProgress       = $derived(activeExpedition ? Math.floor(activeExpedition.ticks / 4) : 0);
 	const expMarkTicks      = $derived(activeExpedition ? (EXPEDITION_MARK_TICKS[activeExpedition.difficulty] ?? 4) : 4);
+
+	const DIFFICULTY_RANK: Record<string, number> = {
+		troublesome: 1, dangerous: 2, formidable: 3, extreme: 4, epic: 5,
+	};
+	function rankBadgeStyle(rank: number): string {
+		const rc = RANK_COLORS[rank];
+		if (!rc) return '';
+		return `background: ${rc.bg}22; color: ${rc.bg}`;
+	}
 
 	// ---------------------------------------------------------------------------
 	// Stat / resource definitions
@@ -193,7 +202,7 @@
 	<div class="gc-tiles">
 
 		<!-- CHARACTER TILE -->
-		<div class="gc-tile" class:gc-tile--active={!!data} class:gc-tile--empty={!data}>
+		<div class="gc-tile" class:gc-tile--active={!!data} class:gc-tile--empty={!data} class:gc-tile--open={openSelector === 'character'}>
 			<div class="gc-tile-label">
 				{#if data && initiative === 1}
 					<button class="gc-init-badge gc-init-badge--you" onclick={() => onInitiativeChange?.('foe')} title="Click to change">{@html swordSvg}<span class="gc-init-label">Has Initiative</span></button>
@@ -250,7 +259,7 @@
 		</div>
 
 		<!-- FOE TILE -->
-		<div class="gc-tile" class:gc-tile--active={!!activeFoe && !!activeFoeDef} class:gc-tile--empty={!activeFoe || !activeFoeDef}
+		<div class="gc-tile" class:gc-tile--active={!!activeFoe && !!activeFoeDef} class:gc-tile--empty={!activeFoe || !activeFoeDef} class:gc-tile--open={openSelector === 'foe'}
 			style={activeFoe && activeFoeDef ? `border-left: 3px solid ${activeFoeNature}` : ''}>
 			<button class="gc-tile-btn" onclick={() => toggleSelector('foe')} title="Select foe">
 				{#if activeFoe && activeFoeDef}
@@ -263,13 +272,13 @@
 						/>
 						<span class="gc-tile-name">{activeFoe.customName || activeFoeDef.name}</span>
 					</div>
-					<div class="gc-tile-row gc-tile-foe-details">
-						<span class="gc-tile-badge" style="background: {activeFoeNature}22; color: {activeFoeNature}">{activeFoeDef.nature}</span>
-						<span class="gc-tile-foe-rank">{activeFoeRank?.label ?? activeFoe.effectiveRank}</span>
+					<div class="gc-tile-row gc-tile-pills">
+						<span class="gc-badge" style="background: {activeFoeNature}22; color: {activeFoeNature}">{activeFoeDef.nature}</span>
+						<span class="gc-badge gc-badge--rank" style={rankBadgeStyle(activeFoe.effectiveRank)}>{activeFoeRank?.label ?? activeFoe.effectiveRank}</span>
 						{#if activeFoe.quantity !== 'solo' && activeFoeQty}
-							<span class="gc-tile-foe-qty">{activeFoeQty.label}</span>
+							<span class="gc-badge gc-badge--qty">{activeFoeQty.label}</span>
 						{/if}
-						<span class="gc-tile-foe-harm" title="Harm">Harm:{activeFoeRank?.harm ?? '?'}</span>
+						<span class="gc-badge gc-badge--harm">Harm: {activeFoeRank?.harm ?? '?'}</span>
 					</div>
 				{:else}
 					<span class="gc-tile-placeholder"><img class="gc-placeholder-img" src={foesSvgUrl} alt="" aria-hidden="true">Select Foe</span>
@@ -313,25 +322,25 @@
 		</div>
 
 		<!-- EXPEDITION TILE -->
-		<div class="gc-tile" class:gc-tile--active={!!activeExpedition} class:gc-tile--empty={!activeExpedition}
+		<div class="gc-tile" class:gc-tile--active={!!activeExpedition} class:gc-tile--empty={!activeExpedition} class:gc-tile--open={openSelector === 'expedition'}
 			style={activeExpedition ? `border-left: 3px solid ${activeExpedition.type === 'journey' ? '#34d399' : '#60a5fa'}` : ''}>
 			<button class="gc-tile-btn" onclick={() => toggleSelector('expedition')} title="Select expedition">
 				{#if activeExpedition}
 					<div class="gc-tile-row">
 						<span class="gc-tile-name">{activeExpedition.name || 'Unnamed'}</span>
 					</div>
-					<div class="gc-tile-row gc-tile-exp-details">
-						<span class="gc-tile-badge"
+					<div class="gc-tile-row gc-tile-pills">
+						<span class="gc-badge"
 							style="background: {activeExpedition.type === 'journey' ? 'rgba(52,211,153,0.15)' : 'rgba(96,165,250,0.15)'}; color: {activeExpedition.type === 'journey' ? '#34d399' : '#60a5fa'}"
 						>{activeExpedition.type === 'journey' ? 'Journey' : 'Site'}</span>
-						<span class="gc-tile-exp-difficulty">
+						<span class="gc-badge gc-badge--diff" style={rankBadgeStyle(DIFFICULTY_RANK[activeExpedition.difficulty] ?? 2)}>
 							{activeExpedition.difficulty.charAt(0).toUpperCase() + activeExpedition.difficulty.slice(1)}
 						</span>
 						{#if activeExpedition.type === 'site' && activeExpedition.theme}
-							<span class="gc-tile-exp-meta" style="color: #a855f7">{activeExpedition.theme}</span>
+							<span class="gc-badge gc-badge--theme">{activeExpedition.theme}</span>
 						{/if}
 						{#if activeExpedition.type === 'site' && activeExpedition.domain}
-							<span class="gc-tile-exp-meta" style="color: #fb923c">{activeExpedition.domain}</span>
+							<span class="gc-badge gc-badge--domain">{activeExpedition.domain}</span>
 						{/if}
 					</div>
 				{:else}
@@ -379,10 +388,10 @@
 
 	<!-- ===== Action buttons column ===== -->
 	<div class="gc-actions">
-		<button class="btn btn-primary gc-action-btn" onclick={() => onMovesClick?.()} title="Browse and roll moves"><span class="gc-action-icon">{@html iconMoves}</span>Moves</button>
-		<button class="btn btn-primary gc-action-btn" onclick={() => onOraclesClick?.()} title="Browse and roll oracles"><span class="gc-action-icon">{@html iconOracles}</span>Oracles</button>
-		<button class="btn btn-primary gc-action-btn" onclick={onDiceClick} disabled={!onDiceClick} title="Roll dice"><span class="gc-action-icon">{@html iconDice}</span>Dice</button>
-		<button class="btn btn-primary gc-action-btn" onclick={() => onNotesClick?.()} title="Add a session note"><span class="gc-action-icon">{@html iconNotes}</span>Notes</button>
+		<button class="btn btn-primary gc-action-btn" onclick={() => onMovesClick?.()} title="Browse and roll moves"><span class="gc-action-icon">{@html iconMoves}</span>Make a Move</button>
+		<button class="btn btn-primary gc-action-btn" onclick={() => onOraclesClick?.()} title="Browse and roll oracles"><span class="gc-action-icon">{@html iconOracles}</span>Ask an Oracle</button>
+		<button class="btn btn-primary gc-action-btn" onclick={onDiceClick} disabled={!onDiceClick} title="Roll dice"><span class="gc-action-icon">{@html iconDice}</span>Roll Dice</button>
+		<button class="btn btn-primary gc-action-btn" onclick={() => onNotesClick?.()} title="Add a session note"><span class="gc-action-icon">{@html iconNotes}</span>Add a Note</button>
 	</div>
 
 	</div>
@@ -435,10 +444,13 @@
 	}
 
 	.gc-tile--empty {
-		opacity: 0.6;
+		/* opacity applied to button only so popover dropdown stays fully opaque */
 	}
 	.gc-tile--active {
 		border-left: 3px solid rgba(245, 158, 11, 0.6);
+	}
+	.gc-tile--open {
+		z-index: 10;
 	}
 
 	/* Scenario heading — acts as the card header for the whole GCB tile */
@@ -495,6 +507,7 @@
 	.gc-tile--empty .gc-tile-btn {
 		justify-content: center;
 		align-items: center;
+		opacity: 0.6;
 	}
 
 	/* Placeholder text for empty tiles */
@@ -639,47 +652,38 @@
 		animation: chip-shake 0.4s ease-in-out;
 	}
 
-	/* ===== Shared badge/tag (foe nature, expedition type) ===== */
-	.gc-tile-badge {
+	/* ===== Canonical pill badge ===== */
+	.gc-badge {
 		font-family: var(--font-ui);
-		font-size: 0.68rem;
+		font-size: 0.6rem;
 		font-weight: 600;
-		letter-spacing: 0.04em;
-		text-transform: capitalize;
-		padding: 2px 6px;
-		border-radius: 3px;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		padding: 2px 7px;
+		border-radius: 10px;
+		border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
 		white-space: nowrap;
 		flex-shrink: 0;
 	}
+	.gc-badge--qty    { background: rgba(255,255,255,0.08); color: var(--text-muted); }
+	.gc-badge--rank   { background: rgba(255,255,255,0.08); color: var(--text-muted); }
+	.gc-badge--harm   { background: rgba(239,68,68,0.10);  color: #ef4444; }
+	.gc-badge--diff   { background: rgba(255,255,255,0.08); color: var(--text-muted); }
+	.gc-badge--theme  { background: rgba(168,85,247,0.15);  color: #a855f7; }
+	.gc-badge--domain { background: rgba(251,146,60,0.15);  color: #fb923c; }
 
-	/* ===== Foe tile details ===== */
-	.gc-tile-foe-details {
-		gap: 0.4rem;
-		font-family: var(--font-ui);
-		font-size: 0.75rem;
-		font-weight: 600;
-	}
-	.gc-tile-foe-rank {
-		color: var(--text-dimmer);
-	}
-	.gc-tile-foe-harm {
-		display: inline-block;
-		font-size: 0.72rem;
-		color: #991b1b;
-		padding: 2px 6px;
-		background: rgba(239,68,68,0.07);
-		border: 1px solid rgba(239,68,68,0.2);
-		border-radius: 4px;
+	/* ===== Pill row within tiles ===== */
+	.gc-tile-pills {
+		gap: 5px;
+		flex-wrap: wrap;
 	}
 	.gc-tile-foe-bottom {
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		width: 100%;
-		margin-top: 0.2rem;
-	}
-	.gc-tile-foe-qty {
-		color: var(--text-dimmer);
-		font-weight: 500;
+		margin-top: 0.35rem;
+		padding-top: 0.35rem;
+		border-top: 1px solid var(--border);
 	}
 	.gc-tile-vanquished {
 		color: var(--color-danger, #ef4444);
@@ -726,24 +730,13 @@
 	}
 
 	/* ===== Expedition tile details ===== */
-	.gc-tile-exp-details {
-		gap: 0.45rem;
-		font-family: var(--font-ui);
-		font-size: 0.75rem;
-		font-weight: 600;
-	}
-	.gc-tile-exp-difficulty {
-		color: var(--text-dimmer);
-	}
 	.gc-tile-exp-bottom {
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		width: 100%;
-		margin-top: 0.2rem;
-	}
-	.gc-tile-exp-meta {
-		font-weight: 600;
-		font-size: 0.7rem;
+		margin-top: 0.35rem;
+		padding-top: 0.35rem;
+		border-top: 1px solid var(--border);
 	}
 	.gc-tile-exp-complete {
 		color: #34d399;
@@ -825,6 +818,7 @@
 		align-items: center;
 		gap: 0.3rem;
 		width: 100%;
+		padding-left: 0.4rem;
 	}
 
 	.gc-progress-btns {

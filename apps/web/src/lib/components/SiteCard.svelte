@@ -10,14 +10,11 @@
 	import type { Site, VowDifficulty, DelveTheme, DelveDomain } from '$lib/types.js';
 	import {
 		EXPEDITION_MARK_TICKS,
-		DELVE_THEMES,
-		DELVE_DOMAINS,
 		DENIZEN_CELLS,
 	} from '$lib/types.js';
-	import { progressText } from '$lib/character.js';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import { loadDelveData, buildCombinedTable } from '$lib/delveStore.svelte.js';
-	import { findFoeByName } from '$lib/foeStore.svelte.js';
+	import { findFoeByName, RANK_COLORS } from '$lib/foeStore.svelte.js';
 	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
 	import ProgressTrack    from '$lib/components/ProgressTrack.svelte';
 	import DelveTableDialog from '$lib/components/DelveTableDialog.svelte';
@@ -87,6 +84,15 @@
 	];
 
 	const displayName       = $derived(expedition.name || 'Unnamed Site');
+
+	const DIFFICULTY_RANK: Record<string, number> = {
+		troublesome: 1, dangerous: 2, formidable: 3, extreme: 4, epic: 5,
+	};
+	function diffBadgeStyle(difficulty: string): string {
+		const rc = RANK_COLORS[DIFFICULTY_RANK[difficulty] ?? 2];
+		if (!rc) return '';
+		return `background: ${rc.bg}22; color: ${rc.bg}`;
+	}
 	const markTicks         = $derived(EXPEDITION_MARK_TICKS[expedition.difficulty]);
 	const progressScore     = $derived(Math.floor(expedition.ticks / 4));
 	const hasThemeAndDomain = $derived(expedition.theme !== '' && expedition.domain !== '');
@@ -148,24 +154,6 @@
 
 	function handleObjectiveChange(e: Event) {
 		update({ objective: (e.target as HTMLInputElement).value });
-	}
-
-	function handleDifficultyChange(e: Event) {
-		const val = (e.target as HTMLSelectElement).value as VowDifficulty;
-		logLine(`<div>Difficulty changed to <strong>${val}</strong></div>`);
-		update({ difficulty: val });
-	}
-
-	function handleThemeChange(e: Event) {
-		const val = (e.target as HTMLSelectElement).value;
-		logLine(`<div>Theme set to <strong>${val || '(none)'}</strong></div>`);
-		update({ theme: val as Site['theme'] });
-	}
-
-	function handleDomainChange(e: Event) {
-		const val = (e.target as HTMLSelectElement).value;
-		logLine(`<div>Domain set to <strong>${val || '(none)'}</strong></div>`);
-		update({ domain: val as Site['domain'] });
 	}
 
 	function handleDenizenChange(index: number, value: string) {
@@ -298,20 +286,6 @@
 			>{displayName}</span>
 		{/if}
 
-		<span class="sc-badge sc-badge--type">Site</span>
-
-		{#if expedition.theme}
-			<span class="sc-badge sc-badge--theme">{expedition.theme}</span>
-		{/if}
-
-		{#if expedition.domain}
-			<span class="sc-badge sc-badge--domain">{expedition.domain}</span>
-		{/if}
-
-		<span class="sc-badge sc-badge--diff">
-			{DIFFICULTIES.find(d => d.value === expedition.difficulty)?.label ?? expedition.difficulty}
-		</span>
-
 		<!-- Status icon -->
 		<span class="sc-status-icon" class:status-complete={expedition.complete}>
 			{#if expedition.complete}
@@ -339,21 +313,18 @@
 	{#if !collapsed}
 		<div class="sc-body">
 
-			<!-- Difficulty row -->
-			<div class="sc-field-row">
-				<div class="sc-field-group">
-					<label class="sc-label" for="sc-diff-{expedition.id}">Difficulty</label>
-					<select
-						id="sc-diff-{expedition.id}"
-						class="sc-select"
-						value={expedition.difficulty}
-						onchange={handleDifficultyChange}
-					>
-						{#each DIFFICULTIES as d (d.value)}
-							<option value={d.value}>{d.label}</option>
-						{/each}
-					</select>
-				</div>
+			<!-- Pills -->
+			<div class="sc-pill-strip">
+				<span class="sc-badge sc-badge--type">Site</span>
+				<span class="sc-badge sc-badge--diff" style={diffBadgeStyle(expedition.difficulty)}>
+					{DIFFICULTIES.find(d => d.value === expedition.difficulty)?.label ?? expedition.difficulty}
+				</span>
+				{#if expedition.theme}
+					<span class="sc-badge sc-badge--theme">{expedition.theme}</span>
+				{/if}
+				{#if expedition.domain}
+					<span class="sc-badge sc-badge--domain">{expedition.domain}</span>
+				{/if}
 			</div>
 
 			<!-- Objective -->
@@ -369,50 +340,25 @@
 				/>
 			</div>
 
-			<!-- Theme + Domain + Features/Dangers row -->
-			<div class="sc-field-row sc-theme-domain-row">
-				<div class="sc-field-group sc-field-group--grow">
-					<label class="sc-label" for="sc-theme-{expedition.id}">Theme</label>
-					<select
-						id="sc-theme-{expedition.id}"
-						class="sc-select"
-						value={expedition.theme}
-						onchange={handleThemeChange}
-					>
-						<option value="">(none)</option>
-						{#each DELVE_THEMES as t (t)}
-							<option value={t}>{t}</option>
-						{/each}
-					</select>
-				</div>
-				<div class="sc-field-group sc-field-group--grow">
-					<label class="sc-label" for="sc-domain-{expedition.id}">Domain</label>
-					<select
-						id="sc-domain-{expedition.id}"
-						class="sc-select"
-						value={expedition.domain}
-						onchange={handleDomainChange}
-					>
-						<option value="">(none)</option>
-						{#each DELVE_DOMAINS as d (d)}
-							<option value={d}>{d}</option>
-						{/each}
-					</select>
-				</div>
-				<div class="sc-oracle-row">
-					<button
-						class="btn btn-sm sc-oracle-btn sc-oracle-btn--features"
-						onclick={openFeatures}
-						disabled={!hasThemeAndDomain}
-						title={hasThemeAndDomain ? 'View features table' : 'Set theme and domain first'}
-					>Features</button>
-					<button
-						class="btn btn-sm sc-oracle-btn sc-oracle-btn--dangers"
-						onclick={openDangers}
-						disabled={!hasThemeAndDomain}
-						title={hasThemeAndDomain ? 'View dangers table' : 'Set theme and domain first'}
-					>Dangers</button>
-				</div>
+			<!-- Oracle + Denizen roll buttons -->
+			<div class="sc-oracle-row">
+				<button
+					class="btn btn-sm sc-oracle-btn sc-oracle-btn--features"
+					onclick={openFeatures}
+					disabled={!hasThemeAndDomain}
+					title={hasThemeAndDomain ? 'Roll features table' : 'Set theme and domain first'}
+				>Roll Feature</button>
+				<button
+					class="btn btn-sm sc-oracle-btn sc-oracle-btn--dangers"
+					onclick={openDangers}
+					disabled={!hasThemeAndDomain}
+					title={hasThemeAndDomain ? 'Roll dangers table' : 'Set theme and domain first'}
+				>Roll Danger</button>
+				<button
+					class="btn btn-sm sc-oracle-btn sc-oracle-btn--denizen"
+					onclick={rollDenizen}
+					title="Roll d100 for a denizen"
+				>Roll Denizen</button>
 			</div>
 
 			<!-- Denizens sub-section (collapsible) -->
@@ -424,11 +370,6 @@
 						aria-label={denizensCollapsed ? 'Expand denizens' : 'Collapse denizens'}
 					>{denizensCollapsed ? '▶' : '▼'}</button>
 					<span class="sc-section-label">Denizens</span>
-					<button
-						class="btn btn-sm sc-roll-btn"
-						onclick={rollDenizen}
-						title="Roll d100 for a denizen"
-					>Roll Denizen</button>
 				</div>
 
 				{#if !denizensCollapsed}
@@ -465,32 +406,25 @@
 
 			<!-- Progress track -->
 			<div class="sc-section">
+				<span class="sc-section-label">Progress track</span>
 				<div class="sc-progress-row">
-					<div class="sc-track-col">
-						<div class="sc-track-header">
-							<span class="sc-section-label">Progress track</span>
-							<span class="sc-track-readout">{progressText(expedition.ticks)}</span>
-						</div>
-						<ProgressTrack
-							label=""
-							value={expedition.ticks}
-							onchange={handleTrackChange}
-						/>
-					</div>
-					<div class="sc-progress-actions">
-						<button
-							class="btn-progress"
-							onclick={markProgress}
-							disabled={expedition.ticks >= 40}
-							title="Mark progress (+{markTicks} ticks)"
-						>+{markTicks}</button>
-						<button
-							class="btn-progress"
-							onclick={unmarkProgress}
-							disabled={expedition.ticks <= 0}
-							title="Unmark progress (−{markTicks} ticks)"
-						>−{markTicks}</button>
-					</div>
+					<ProgressTrack
+						label=""
+						value={expedition.ticks}
+						onchange={handleTrackChange}
+					/>
+					<button
+						class="btn-progress"
+						onclick={markProgress}
+						disabled={expedition.ticks >= 40}
+						title="Mark progress (+{markTicks} ticks)"
+					>+{markTicks}</button>
+					<button
+						class="btn-progress"
+						onclick={unmarkProgress}
+						disabled={expedition.ticks <= 0}
+						title="Unmark progress (−{markTicks} ticks)"
+					>−{markTicks}</button>
 				</div>
 			</div>
 
@@ -561,13 +495,20 @@
 		flex-shrink: 0;
 	}
 
+	.sc-pill-strip {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 5px;
+		align-items: center;
+			}
+
 	.sc-name {
+		flex: 1;
 		font-family: var(--font-display);
 		font-size: 0.88rem;
 		font-weight: 700;
 		letter-spacing: 0.04em;
 		cursor: text;
-		flex: 1;
 		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -662,19 +603,11 @@
 		gap: 3px;
 	}
 
-	.sc-theme-domain-row {
-		flex-direction: row;
-		gap: 8px;
-		align-items: flex-end;
-	}
-
 	.sc-field-group {
 		display: flex;
 		flex-direction: column;
 		gap: 3px;
 	}
-	.sc-field-group--grow { flex: 1; min-width: 0; }
-
 	.sc-label {
 		font-family: var(--font-ui);
 		font-size: 0.65rem;
@@ -720,11 +653,6 @@
 		text-transform: uppercase;
 		color: var(--text-dimmer);
 		flex: 1;
-	}
-
-	.sc-roll-btn {
-		font-size: 0.65rem;
-		padding: 2px 8px;
 	}
 
 	/* ── Denizen grid ───────────────────────────────────────────────────── */
@@ -793,37 +721,12 @@
 	}
 
 	/* ── Progress ───────────────────────────────────────────────────────── */
-	.sc-track-col {
-		flex: 1;
-		min-width: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 3px;
-	}
-
-	.sc-track-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: baseline;
-	}
-
-	.sc-track-readout {
-		font-family: var(--font-ui);
-		font-size: 0.65rem;
-		color: var(--text-dimmer);
-		white-space: nowrap;
-	}
-
 	.sc-progress-row {
 		display: flex;
 		align-items: center;
 		gap: 6px;
-	}
-
-	.sc-progress-actions {
-		display: flex;
-		gap: 4px;
-		flex-shrink: 0;
+		flex-wrap: nowrap;
+		padding-left: 0.4rem;
 	}
 
 	.btn-progress {
@@ -877,6 +780,13 @@
 	}
 	.sc-oracle-btn--dangers:hover:not(:disabled) {
 		background: rgba(239, 68, 68, 0.12);
+	}
+	.sc-oracle-btn--denizen {
+		border-color: rgba(52, 211, 153, 0.4);
+		color: #34d399;
+	}
+	.sc-oracle-btn--denizen:hover:not(:disabled) {
+		background: rgba(52, 211, 153, 0.12);
 	}
 	.sc-oracle-btn:disabled {
 		opacity: 0.35;

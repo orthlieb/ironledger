@@ -8,9 +8,9 @@
 
 	import type { Journey, VowDifficulty } from '$lib/types.js';
 	import { EXPEDITION_MARK_TICKS } from '$lib/types.js';
-	import { progressText } from '$lib/character.js';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import ProgressTrack from '$lib/components/ProgressTrack.svelte';
+	import { RANK_COLORS } from '$lib/foeStore.svelte.js';
 
 	import trashSvg       from '$icons/trash-solid-full.svg?raw';
 	import checkSvg       from '$icons/circle-check-solid-full.svg?raw';
@@ -58,6 +58,15 @@
 	];
 
 	const displayName   = $derived(expedition.name || 'Unnamed Journey');
+
+	const DIFFICULTY_RANK: Record<string, number> = {
+		troublesome: 1, dangerous: 2, formidable: 3, extreme: 4, epic: 5,
+	};
+	function diffBadgeStyle(difficulty: string): string {
+		const rc = RANK_COLORS[DIFFICULTY_RANK[difficulty] ?? 2];
+		if (!rc) return '';
+		return `background: ${rc.bg}22; color: ${rc.bg}`;
+	}
 	const markTicks     = $derived(EXPEDITION_MARK_TICKS[expedition.difficulty]);
 	const progressScore = $derived(Math.floor(expedition.ticks / 4));
 
@@ -116,11 +125,6 @@
 		update({ name: (e.target as HTMLInputElement).value });
 	}
 
-	function handleDifficultyChange(e: Event) {
-		const val = (e.target as HTMLSelectElement).value as VowDifficulty;
-		logLine(`<div>Difficulty changed to <strong>${val}</strong></div>`);
-		update({ difficulty: val });
-	}
 
 	function handleNotesChange(e: Event) {
 		update({ notes: (e.target as HTMLTextAreaElement).value });
@@ -175,12 +179,6 @@
 			>{displayName}</span>
 		{/if}
 
-		<span class="jc-badge jc-badge--type">Journey</span>
-
-		<span class="jc-badge jc-badge--diff">
-			{DIFFICULTIES.find(d => d.value === expedition.difficulty)?.label ?? expedition.difficulty}
-		</span>
-
 		<!-- Status icon -->
 		<span class="jc-status-icon" class:status-complete={expedition.complete}>
 			{#if expedition.complete}
@@ -208,21 +206,12 @@
 	{#if !collapsed}
 		<div class="jc-body">
 
-			<!-- Difficulty row -->
-			<div class="jc-field-row">
-				<div class="jc-field-group">
-					<label class="jc-label" for="jc-diff-{expedition.id}">Difficulty</label>
-					<select
-						id="jc-diff-{expedition.id}"
-						class="jc-select"
-						value={expedition.difficulty}
-						onchange={handleDifficultyChange}
-					>
-						{#each DIFFICULTIES as d (d.value)}
-							<option value={d.value}>{d.label}</option>
-						{/each}
-					</select>
-				</div>
+			<!-- Pills -->
+			<div class="jc-pill-strip">
+				<span class="jc-badge jc-badge--type">Journey</span>
+				<span class="jc-badge jc-badge--diff" style={diffBadgeStyle(expedition.difficulty)}>
+					{DIFFICULTIES.find(d => d.value === expedition.difficulty)?.label ?? expedition.difficulty}
+				</span>
 			</div>
 
 			<!-- Notes -->
@@ -240,32 +229,25 @@
 
 			<!-- Progress track -->
 			<div class="jc-section">
+				<span class="jc-section-label">Progress track</span>
 				<div class="jc-progress-row">
-					<div class="jc-track-col">
-						<div class="jc-track-header">
-							<span class="jc-section-label">Progress track</span>
-							<span class="jc-track-readout">{progressText(expedition.ticks)}</span>
-						</div>
-						<ProgressTrack
-							label=""
-							value={expedition.ticks}
-							onchange={handleTrackChange}
-						/>
-					</div>
-					<div class="jc-progress-actions">
-						<button
-							class="btn-progress"
-							onclick={markProgress}
-							disabled={expedition.ticks >= 40}
-							title="Mark progress (+{markTicks} ticks)"
-						>+{markTicks}</button>
-						<button
-							class="btn-progress"
-							onclick={unmarkProgress}
-							disabled={expedition.ticks <= 0}
-							title="Unmark progress (−{markTicks} ticks)"
-						>−{markTicks}</button>
-					</div>
+					<ProgressTrack
+						label=""
+						value={expedition.ticks}
+						onchange={handleTrackChange}
+					/>
+					<button
+						class="btn-progress"
+						onclick={markProgress}
+						disabled={expedition.ticks >= 40}
+						title="Mark progress (+{markTicks} ticks)"
+					>+{markTicks}</button>
+					<button
+						class="btn-progress"
+						onclick={unmarkProgress}
+						disabled={expedition.ticks <= 0}
+						title="Unmark progress (−{markTicks} ticks)"
+					>−{markTicks}</button>
 				</div>
 			</div>
 
@@ -315,13 +297,20 @@
 		flex-shrink: 0;
 	}
 
+	.jc-pill-strip {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 5px;
+		align-items: center;
+	}
+
 	.jc-name {
+		flex: 1;
 		font-family: var(--font-display);
 		font-size: 0.88rem;
 		font-weight: 700;
 		letter-spacing: 0.04em;
 		cursor: text;
-		flex: 1;
 		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -467,37 +456,11 @@
 		color: var(--text-dimmer);
 	}
 
-	.jc-track-col {
-		flex: 1;
-		min-width: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 3px;
-	}
-
-	.jc-track-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: baseline;
-	}
-
-	.jc-track-readout {
-		font-family: var(--font-ui);
-		font-size: 0.65rem;
-		color: var(--text-dimmer);
-		white-space: nowrap;
-	}
-
 	.jc-progress-row {
 		display: flex;
 		align-items: center;
 		gap: 6px;
-	}
-
-	.jc-progress-actions {
-		display: flex;
-		gap: 4px;
-		flex-shrink: 0;
+		flex-wrap: nowrap;
 	}
 
 	.btn-progress {
