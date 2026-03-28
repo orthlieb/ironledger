@@ -28,6 +28,14 @@ let _loaded            = false;
 // Constants
 // ---------------------------------------------------------------------------
 
+export const RANK_COLORS: Record<number, { bg: string; text: string }> = {
+	1: { bg: '#2B2B2B', text: '#E0E0E0' },
+	2: { bg: '#7A1E1E', text: '#FFD0D0' },
+	3: { bg: '#C53A2D', text: '#FFFFFF' },
+	4: { bg: '#FF7A2F', text: '#1C0800' },
+	5: { bg: '#FF2E2E', text: '#FFFFFF' },
+};
+
 export const FOE_RANKS: Record<number, { label: string; progressPerHit: number; harm: number }> = {
 	1: { label: 'Troublesome', progressPerHit: 12, harm: 1 },
 	2: { label: 'Dangerous',   progressPerHit: 8,  harm: 2 },

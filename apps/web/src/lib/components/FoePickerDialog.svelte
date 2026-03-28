@@ -16,18 +16,10 @@
 	import {
 		loadFoes, getFoes, getFoeNatures, getFoeSources,
 		foeSource, effectiveRank as calcEffectiveRank,
-		FOE_RANKS, FOE_QUANTITIES, FOE_NATURE_COLORS,
+		RANK_COLORS, FOE_RANKS, FOE_QUANTITIES, FOE_NATURE_COLORS,
 	} from '$lib/foeStore.svelte.js';
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
 
-	// Background + text colour for each rank chiclet (1 = Troublesome … 5 = Epic)
-	const RANK_COLORS: Record<number, { bg: string; text: string }> = {
-		1: { bg: '#2B2B2B', text: '#E0E0E0' },
-		2: { bg: '#7A1E1E', text: '#FFD0D0' },
-		3: { bg: '#C53A2D', text: '#FFFFFF' },
-		4: { bg: '#FF7A2F', text: '#1C0800' },
-		5: { bg: '#FF2E2E', text: '#FFFFFF' },
-	};
 
 	// ---------------------------------------------------------------------------
 	// Props
@@ -209,21 +201,17 @@
 					bind:value={search}
 					aria-label="Search foes"
 				/>
-				{#if hasActiveFilters}
-					<button class="btn btn-icon fd-clear-btn" onclick={clearFilters} title="Clear all filters" aria-label="Clear filters">
-						{@html clearFiltersSvg}
-					</button>
-				{/if}
-			</div>
-
-			<!-- Filter toggle + collapsible panel -->
-			<div class="fd-filter-toggle-row">
 				<button
 					class="fd-filter-toggle"
 					class:has-filters={activeFilterCount > 0}
 					onclick={() => filtersOpen = !filtersOpen}
 					aria-expanded={filtersOpen}
 				>Filters{#if activeFilterCount > 0}&nbsp;<span class="fd-filter-badge">{activeFilterCount}</span>{/if} {filtersOpen ? '▲' : '▼'}</button>
+				{#if hasActiveFilters}
+					<button class="btn btn-icon fd-clear-btn" onclick={clearFilters} title="Clear all filters" aria-label="Clear filters">
+						{@html clearFiltersSvg}
+					</button>
+				{/if}
 			</div>
 
 			{#if filtersOpen}
@@ -425,14 +413,14 @@
 		background: var(--bg-card);
 		color: var(--text);
 		box-shadow: 0 16px 48px rgba(0,0,0,0.55);
-		width: min(680px, calc(100vw - 2rem));
-		/* top(4dvh) + height(88dvh) = 92dvh — leaves room for browser chrome */
-		height: min(700px, 88dvh);
-		max-height: min(700px, 88dvh);
 		position: fixed;
-		top: 4dvh;
-		left: 50%;
-		transform: translateX(-50%);
+		top: 1rem;
+		left: 1rem;
+		right: 1rem;
+		bottom: 1rem;
+		width: auto;
+		height: auto;
+		max-height: none;
 		overflow: hidden;
 	}
 
@@ -448,12 +436,12 @@
 
 	/* ── Picker: header ─────────────────────────────────────────────────── */
 	.fd-header {
-		padding: 0.75rem 1rem 0.5rem;
+		padding: 0.5rem 1rem 0.4rem;
 		border-bottom: 1px solid var(--border);
 		flex-shrink: 0;
 		display: flex;
 		flex-direction: column;
-		gap: 0.5rem;
+		gap: 0.3rem;
 	}
 
 	.fd-header-row {
@@ -526,10 +514,6 @@
 	}
 
 	/* ── Filter toggle + panel ──────────────────────────────────────────── */
-	.fd-filter-toggle-row {
-		display: flex;
-		align-items: center;
-	}
 
 	.fd-filter-toggle {
 		font-family: var(--font-ui);

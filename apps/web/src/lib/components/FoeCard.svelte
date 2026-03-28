@@ -8,7 +8,7 @@
 
 	import type { FoeEncounter, FoeDef } from '$lib/types.js';
 	import {
-		FOE_RANKS, FOE_QUANTITIES, FOE_NATURE_COLORS,
+		RANK_COLORS, FOE_RANKS, FOE_QUANTITIES, FOE_NATURE_COLORS,
 	} from '$lib/foeStore.svelte.js';
 	import { progressText } from '$lib/character.js';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
@@ -61,6 +61,12 @@
 	// ---------------------------------------------------------------------------
 	function imageUrl(name: string): string {
 		return `/foes/${encodeURIComponent(name)}.webp`;
+	}
+
+	function rankBadgeStyle(rank: number): string {
+		const rc = RANK_COLORS[rank];
+		if (!rc) return '';
+		return `background:${rc.bg}22; color:${rc.bg}`;
 	}
 
 	function update(patch: Partial<FoeEncounter>) {
@@ -156,7 +162,8 @@
 		{/if}
 		{#if thumbHovered && imgVisible}
 			<div class="fc-lightbox" aria-hidden="true">
-				<img src={imageUrl(foeDef.name)} alt={foeDef.name} />
+				<img src={imageUrl(foeDef.name)} alt={foeDef.name}
+					onerror={(e) => { (e.currentTarget as HTMLImageElement).src = '/foes/unknown-foe.webp'; }} />
 			</div>
 		{/if}
 
@@ -186,22 +193,6 @@
 			>{displayName}</span>
 		{/if}
 
-		<!-- Quantity badge (hidden when solo) -->
-		{#if enc.quantity !== 'solo'}
-			<span class="fc-badge fc-badge--qty">{qtyDef?.label ?? enc.quantity}</span>
-		{/if}
-
-		<!-- Nature badge -->
-		<span
-			class="fc-badge"
-			style="background: {natureColor}22; color: {natureColor}"
-		>{foeDef.nature}</span>
-
-		<!-- Rank badge -->
-		<span
-			class="fc-badge fc-badge--rank"
-			title={enc.quantity !== 'solo' ? `Base rank ${foeDef.rank} + ${qtyDef?.rankAdj ?? 0} for ${enc.quantity}` : ''}
-		>{rankInfo?.label ?? enc.effectiveRank}</span>
 
 		<!-- Status icon -->
 		<span class="fc-status-icon" class:status-vanquished={enc.vanquished}>
@@ -230,9 +221,18 @@
 	{#if !collapsed}
 		<div class="fc-body">
 
+			<!-- Pills: nature · rank · quantity · harm · progress -->
 			{#if rankInfo}
-				<div class="fc-harm-note">
-					Inflicts <strong>{rankInfo.harm}</strong> harm per strike
+				<div class="fc-pills-row">
+					<span class="fc-badge" style="background: {natureColor}22; color: {natureColor}">{foeDef.nature}</span>
+					<span class="fc-badge fc-badge--rank" style={rankBadgeStyle(enc.effectiveRank)}
+						title={enc.quantity !== 'solo' ? `Base rank ${foeDef.rank} + ${qtyDef?.rankAdj ?? 0} for ${enc.quantity}` : ''}
+					>{rankInfo.label}</span>
+					{#if enc.quantity !== 'solo'}
+						<span class="fc-badge fc-badge--qty">{qtyDef?.label ?? enc.quantity}</span>
+					{/if}
+					<span class="fc-badge fc-badge--harm">Harm: {rankInfo.harm}</span>
+					<span class="fc-badge fc-badge--progress">Progress: {rankInfo.progressPerHit}</span>
 				</div>
 			{/if}
 
@@ -420,8 +420,17 @@
 		white-space: nowrap;
 		flex-shrink: 0;
 	}
-	.fc-badge--qty  { background: rgba(255,255,255,0.08); color: var(--text-muted); }
-	.fc-badge--rank { background: rgba(255,255,255,0.08); color: var(--text-muted); }
+	.fc-badge--qty      { background: rgba(255,255,255,0.08); color: var(--text-muted); }
+	.fc-badge--rank     { background: rgba(255,255,255,0.08); color: var(--text-muted); }
+	.fc-badge--harm     { background: rgba(239,68,68,0.10);   color: #ef4444; }
+	.fc-badge--progress { background: rgba(59,130,246,0.10);  color: #60a5fa; }
+
+	.fc-pills-row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 5px;
+		align-items: center;
+	}
 
 	/* ── Status icon ────────────────────────────────────────────────────── */
 	.fc-status-icon {
@@ -473,21 +482,6 @@
 		gap: 0.65rem;
 	}
 
-	/* Input + harm note on the same line, same height */
-
-
-
-
-	.fc-harm-note {
-		display: inline-block;
-		font-family: var(--font-ui);
-		font-size: 0.75rem;
-		color: #991b1b;
-		padding: 4px 8px;
-		background: rgba(239,68,68,0.07);
-		border: 1px solid rgba(239,68,68,0.2);
-		border-radius: 4px;
-	}
 
 	.fc-desc {
 		font-family: var(--font-ui);
