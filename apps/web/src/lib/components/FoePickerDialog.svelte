@@ -347,35 +347,29 @@
 					<fieldset class="fd-quantity-group">
 						<legend class="fd-quantity-legend">Quantity</legend>
 						{#each FOE_QUANTITIES as qty}
-							<div class="fd-qty-item">
-								<label class="fd-qty-label" class:selected={quantity === qty.value}>
-									<input
-										type="radio"
-										name="foe-quantity"
-										value={qty.value}
-										checked={quantity === qty.value}
-										onchange={() => (quantity = qty.value)}
-									/>
-									<span class="fd-qty-name">{qty.label}</span>
-								</label>
-								{#if qty.rankAdj > 0}
-									<span class="fd-qty-rank-note">+{qty.rankAdj} rank{qty.rankAdj > 1 ? 's' : ''}</span>
-								{/if}
-							</div>
+							<label class="fd-qty-label" class:selected={quantity === qty.value}>
+								<input
+									type="radio"
+									name="foe-quantity"
+									value={qty.value}
+									checked={quantity === qty.value}
+									onchange={() => (quantity = qty.value)}
+								/>
+								<span class="fd-qty-name">{qty.label}</span>
+							</label>
 						{/each}
 					</fieldset>
-
-					{#if rankInfo}
-						<div class="fd-confirm-pills">
-							<span class="fd-badge" style="background: {natureColor}22; color: {natureColor}">{confirmFoe.nature}</span>
-							<span class="fd-badge fd-badge--rank" style={rankBadgeStyle(effRank)}>{rankInfo.label}</span>
-							<span class="fd-stat-pill fd-stat-pill--harm">Harm: {rankInfo.harm}</span>
-							<span class="fd-stat-pill fd-stat-pill--progress">Progress: {rankInfo.progressPerHit}</span>
-						</div>
-					{/if}
 				</div>
 			</div>
 
+			{#if rankInfo}
+				<div class="fd-confirm-pills">
+					<span class="fd-badge" style="background: {natureColor}22; color: {natureColor}">{confirmFoe.nature}</span>
+					<span class="fd-badge fd-badge--rank" style={rankBadgeStyle(effRank)}>{rankInfo.label}</span>
+					<span class="fd-stat-pill fd-stat-pill--harm">Harm: {rankInfo.harm}</span>
+					<span class="fd-stat-pill fd-stat-pill--progress">Progress: {rankInfo.progressPerHit}</span>
+				</div>
+			{/if}
 			<!-- ── Text body: description + sections ── -->
 			{#if confirmFoe.description || confirmFoe.features.length > 0 || confirmFoe.drives.length > 0 || confirmFoe.tactics.length > 0}
 				<div class="fc-body">
@@ -740,11 +734,11 @@
 		text-transform: uppercase;
 		padding: 2px 7px;
 		border-radius: 10px;
+		border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
 	}
 	.fd-badge--rank {
-		background: rgba(255,255,255,0.08);
+		background: rgba(255,255,255,0.06);
 		color: var(--text-muted);
-		border: 1px solid transparent;
 	}
 
 	/* ── Empty state ────────────────────────────────────────────────────── */
@@ -792,17 +786,16 @@
 		gap: 0.75rem;
 	}
 
-	/* ── Top row: portrait + quantity side by side ──────────────────── */
+	/* ── Top row: portrait + quantity side by side, true 50/50 ─────── */
 	.fd-top-row {
-		display: flex;
-		gap: 12px;
-		align-items: flex-start;
-		flex-wrap: wrap; /* drops below on narrow screens */
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 10px;
+		align-items: start;
 	}
 
 	.fc-portrait-wrap {
-		flex-shrink: 0;
-		width: 150px;
+		width: 100%;
 	}
 
 	.fc-portrait {
@@ -862,24 +855,22 @@
 
 	/* ── Quantity section (right of portrait) ───────────────────────── */
 	.fd-qty-section {
-		flex: 1;
-		min-width: 160px; /* wraps below portrait if too narrow */
 		display: flex;
 		flex-direction: column;
-		gap: 0.65rem;
+		gap: 0.5rem;
 	}
 
 	/* ── Quantity selector ──────────────────────────────────────────────── */
 	.fd-quantity-group {
 		border: 1px solid var(--border);
 		border-radius: 6px;
-		padding: 0.5rem 0.75rem 0.75rem;
+		padding: 0.35rem 0.6rem 0.5rem;
 		margin: 0;
 	}
 
 	.fd-quantity-legend {
 		font-family: var(--font-ui);
-		font-size: 0.68rem;
+		font-size: 0.65rem;
 		font-weight: 600;
 		letter-spacing: 0.07em;
 		text-transform: uppercase;
@@ -889,9 +880,9 @@
 
 	.fd-qty-label {
 		display: flex;
-		align-items: baseline;
+		align-items: center;
 		gap: 6px;
-		padding: 5px 6px;
+		padding: 3px 4px;
 		border-radius: 4px;
 		cursor: pointer;
 		transition: background 0.1s;
@@ -903,31 +894,9 @@
 
 	.fd-qty-name {
 		font-family: var(--font-ui);
-		font-size: 0.82rem;
+		font-size: 0.80rem;
 		font-weight: 600;
 		color: var(--text);
-		flex-shrink: 0;
-	}
-
-	.fd-qty-desc {
-		font-family: var(--font-ui);
-		font-size: 0.74rem;
-		color: var(--text-dimmer);
-	}
-
-	/* ── Quantity item: rank-adj note below each radio row ─────────────── */
-	.fd-qty-item {
-		display: flex;
-		flex-direction: column;
-	}
-
-	.fd-qty-rank-note {
-		font-family: var(--font-ui);
-		font-size: 0.70rem;
-		color: var(--text-dimmer);
-		/* indent past radio button (~16px) + gap (6px) + label padding (6px) */
-		padding-left: 1.75rem;
-		padding-bottom: 2px;
 	}
 
 	/* ── Confirm pills row (below quantity group) ────────────────────────── */
@@ -940,11 +909,11 @@
 
 	.fd-stat-pill {
 		font-family: var(--font-ui);
-		font-size: 0.65rem;
+		font-size: 0.6rem;
 		font-weight: 600;
-		letter-spacing: 0.04em;
+		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		padding: 2px 8px;
+		padding: 2px 7px;
 		border-radius: 10px;
 	}
 	.fd-stat-pill--harm {
