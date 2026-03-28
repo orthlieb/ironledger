@@ -240,16 +240,18 @@
 
 			<!-- Progress track -->
 			<div class="jc-section">
-				<div class="jc-track-header">
-					<span class="jc-section-label">Progress track</span>
-					<span class="jc-track-readout">{progressText(expedition.ticks)}</span>
-				</div>
 				<div class="jc-progress-row">
-					<ProgressTrack
-						label=""
-						value={expedition.ticks}
-						onchange={handleTrackChange}
-					/>
+					<div class="jc-track-col">
+						<div class="jc-track-header">
+							<span class="jc-section-label">Progress track</span>
+							<span class="jc-track-readout">{progressText(expedition.ticks)}</span>
+						</div>
+						<ProgressTrack
+							label=""
+							value={expedition.ticks}
+							onchange={handleTrackChange}
+						/>
+					</div>
 					<div class="jc-progress-actions">
 						<button
 							class="btn-progress"
@@ -465,11 +467,18 @@
 		color: var(--text-dimmer);
 	}
 
+	.jc-track-col {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 3px;
+	}
+
 	.jc-track-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: baseline;
-		margin-bottom: 3px;
 	}
 
 	.jc-track-readout {

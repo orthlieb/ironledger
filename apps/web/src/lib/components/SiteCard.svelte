@@ -465,16 +465,18 @@
 
 			<!-- Progress track -->
 			<div class="sc-section">
-				<div class="sc-track-header">
-					<span class="sc-section-label">Progress track</span>
-					<span class="sc-track-readout">{progressText(expedition.ticks)}</span>
-				</div>
 				<div class="sc-progress-row">
-					<ProgressTrack
-						label=""
-						value={expedition.ticks}
-						onchange={handleTrackChange}
-					/>
+					<div class="sc-track-col">
+						<div class="sc-track-header">
+							<span class="sc-section-label">Progress track</span>
+							<span class="sc-track-readout">{progressText(expedition.ticks)}</span>
+						</div>
+						<ProgressTrack
+							label=""
+							value={expedition.ticks}
+							onchange={handleTrackChange}
+						/>
+					</div>
 					<div class="sc-progress-actions">
 						<button
 							class="btn-progress"
@@ -791,11 +793,18 @@
 	}
 
 	/* ── Progress ───────────────────────────────────────────────────────── */
+	.sc-track-col {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 3px;
+	}
+
 	.sc-track-header {
 		display: flex;
 		justify-content: space-between;
 		align-items: baseline;
-		margin-bottom: 3px;
 	}
 
 	.sc-track-readout {
