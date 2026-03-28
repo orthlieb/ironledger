@@ -79,7 +79,7 @@ export async function loadFoes(): Promise<void> {
 		const res = await fetch('/api/catalogue/foes');
 		if (!res.ok) throw new Error(`Foe fetch failed: ${res.status}`);
 		const json = (await res.json()) as { foes: FoeDef[] };
-		_foes   = json.foes;
+		_foes   = json.foes.sort((a, b) => a.name.localeCompare(b.name));
 		_loaded = true;
 	} catch (err) {
 		console.error('[foeStore] Failed to load foes:', err);
