@@ -4,15 +4,14 @@ import { INTERNAL_API_URL, HCAPTCHA_SITE_KEY } from '$lib/server/config.js';
 
 const TAGLINES = [
 	'Your ledger awaits. Try not to die filling it in.',
-	'Swear vows. Break vows. Swear more vows.',
-	'All progress tracks lead to disappointment.',
 	'Roll dice. Suffer consequences. Build character.',
 	'Where every miss is just a plot twist.',
-	'Momentum: the only resource that hurts when you lose it.',
-	'Debilities not included. Results may vary.',
-	'Death is just a Face Death roll away.',
-	'The Iron is vast and full of terrible things. Good luck.',
 	'An oracle said you\'d be fine. The oracle was wrong.',
+	'Speak, friend, and enter.',
+	'One does not simply walk into the Ironlands.',
+	'Adventure awaits... prove you are worthy.',
+	'A man, a plan, an axe, Ironsworn!',
+	'Challenge roll, miss, mark a debility, repeat.',
 ];
 
 export const load: PageServerLoad = async ({ locals }) => {
