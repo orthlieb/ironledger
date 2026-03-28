@@ -20,6 +20,15 @@
 	} from '$lib/foeStore.svelte.js';
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
 
+	// Background + text colour for each rank chiclet (1 = Troublesome … 5 = Epic)
+	const RANK_COLORS: Record<number, { bg: string; text: string }> = {
+		1: { bg: '#2B2B2B', text: '#E0E0E0' },
+		2: { bg: '#7A1E1E', text: '#FFD0D0' },
+		3: { bg: '#C53A2D', text: '#FFFFFF' },
+		4: { bg: '#FF7A2F', text: '#1C0800' },
+		5: { bg: '#FF2E2E', text: '#FFFFFF' },
+	};
+
 	// ---------------------------------------------------------------------------
 	// Props
 	// ---------------------------------------------------------------------------
@@ -167,6 +176,13 @@
 		return FOE_NATURE_COLORS[nature as keyof typeof FOE_NATURE_COLORS] ?? '#9ca3af';
 	}
 
+	function rankBadgeStyle(rank: number): string {
+		const rc = RANK_COLORS[rank];
+		if (!rc) return '';
+		// Muted style matching the nature chiclets: translucent tint + rank hue as text
+		return `background:${rc.bg}22; color:${rc.bg}`;
+	}
+
 	function imageUrl(name: string): string {
 		return `/foes/${encodeURIComponent(name)}.webp`;
 	}
@@ -244,9 +260,11 @@
 						<span class="fd-filter-group-label">Rank</span>
 						<div class="fd-filter-chips">
 							{#each Object.entries(FOE_RANKS) as [rankNum, rankDef]}
+								{@const rc = RANK_COLORS[Number(rankNum)]}
 								<button
-									class="fd-filter-tag"
+									class="fd-filter-tag fd-filter-tag--rank"
 									class:active={activeRanks.has(Number(rankNum))}
+									style="--tag-bg:{rc.bg}; --tag-text:{rc.text}"
 									onclick={() => toggleRank(Number(rankNum))}
 								>{rankDef.label}</button>
 							{/each}
@@ -283,7 +301,7 @@
 								<span class="fd-tile-name">{foe.name}</span>
 								<div class="fd-tile-badges">
 									<span class="fd-badge" style="background: {natureBorderColor(foe.nature)}22; color: {natureBorderColor(foe.nature)}">{foe.nature}</span>
-									<span class="fd-badge fd-badge--rank">{FOE_RANKS[foe.rank]?.label ?? foe.rank}</span>
+									<span class="fd-badge fd-badge--rank" style={rankBadgeStyle(foe.rank)}>{FOE_RANKS[foe.rank]?.label ?? foe.rank}</span>
 								</div>
 								{#if foe.features.length > 0}
 									<div class="fd-tile-features">
@@ -307,7 +325,7 @@
 			<button class="btn fd-back-btn" onclick={goBack}>← Back</button>
 			<span class="fd-title">{confirmFoe.name}</span>
 			<span class="fd-badge" style="background: {natureColor}22; color: {natureColor}">{confirmFoe.nature}</span>
-			<span class="fd-badge fd-badge--rank">{baseRankInfo?.label ?? confirmFoe.rank}</span>
+			<span class="fd-badge fd-badge--rank" style={rankBadgeStyle(confirmFoe.rank)}>{baseRankInfo?.label ?? confirmFoe.rank}</span>
 		</div>
 
 		<!-- Scrollable body -->
@@ -625,6 +643,23 @@
 	}
 	.fd-filter-tag--src { --tag-color: var(--text-muted); }
 
+	/* Rank chiclets — tinted background matching tile badges; solid fill when active */
+	.fd-filter-tag--rank {
+		background:   color-mix(in srgb, var(--tag-bg) 13%, transparent);
+		border-color: color-mix(in srgb, var(--tag-bg) 35%, transparent);
+		color:        var(--tag-bg);
+	}
+	.fd-filter-tag--rank:hover {
+		background:   color-mix(in srgb, var(--tag-bg) 22%, transparent);
+		border-color: color-mix(in srgb, var(--tag-bg) 60%, transparent);
+		color:        var(--tag-bg);
+	}
+	.fd-filter-tag--rank.active {
+		background:   var(--tag-bg);
+		border-color: var(--tag-bg);
+		color:        var(--tag-text);
+	}
+
 	/* ── Tile grid ──────────────────────────────────────────────────────── */
 	.fd-grid-wrap {
 		flex: 1;
@@ -716,12 +751,13 @@
 		font-weight: 600;
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		padding: 1px 5px;
-		border-radius: 3px;
+		padding: 2px 7px;
+		border-radius: 10px;
 	}
 	.fd-badge--rank {
 		background: rgba(255,255,255,0.08);
 		color: var(--text-muted);
+		border: 1px solid transparent;
 	}
 
 	/* ── Empty state ────────────────────────────────────────────────────── */
