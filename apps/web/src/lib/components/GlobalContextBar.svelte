@@ -271,28 +271,30 @@
 						{/if}
 						<span class="gc-tile-foe-harm" title="Harm">Harm:{activeFoeRank?.harm ?? '?'}</span>
 					</div>
-					<div class="gc-tile-foe-bottom" onclick={(e) => e.stopPropagation()}>
-						<div class="gc-progress-wrap">
-							<ProgressTrack label="" value={activeFoe.ticks} onchange={handleFoeTrackChange} />
-							<div class="gc-progress-btns">
-								<button class="gc-prog-btn" onclick={() => foeMark(1)}
-									disabled={activeFoe.ticks >= 40}
-									title="Mark progress (+{activeFoeRank?.progressPerHit} ticks)"
-								>+{activeFoeRank?.progressPerHit}</button>
-								<button class="gc-prog-btn" onclick={() => foeMark(-1)}
-									disabled={activeFoe.ticks <= 0}
-									title="Unmark progress"
-								>−{activeFoeRank?.progressPerHit}</button>
-								{#if activeFoe.vanquished}
-									<span class="gc-tile-vanquished" title="Vanquished">☠</span>
-								{/if}
-							</div>
-						</div>
-					</div>
 				{:else}
 					<span class="gc-tile-placeholder"><img class="gc-placeholder-img" src={foesSvgUrl} alt="" aria-hidden="true">Select Foe</span>
 				{/if}
 			</button>
+			{#if activeFoe && activeFoeDef}
+				<div class="gc-tile-foe-bottom">
+					<div class="gc-progress-wrap">
+						<ProgressTrack label="" value={activeFoe.ticks} onchange={handleFoeTrackChange} />
+						<div class="gc-progress-btns">
+							<button class="gc-prog-btn" onclick={() => foeMark(1)}
+								disabled={activeFoe.ticks >= 40}
+								title="Mark progress (+{activeFoeRank?.progressPerHit} ticks)"
+							>+{activeFoeRank?.progressPerHit}</button>
+							<button class="gc-prog-btn" onclick={() => foeMark(-1)}
+								disabled={activeFoe.ticks <= 0}
+								title="Unmark progress"
+							>−{activeFoeRank?.progressPerHit}</button>
+							{#if activeFoe.vanquished}
+								<span class="gc-tile-vanquished" title="Vanquished">☠</span>
+							{/if}
+						</div>
+					</div>
+				</div>
+			{/if}
 
 			{#if openSelector === 'foe'}
 				<div class="gc-popover">
@@ -332,28 +334,30 @@
 							<span class="gc-tile-exp-meta" style="color: #fb923c">{activeExpedition.domain}</span>
 						{/if}
 					</div>
-					<div class="gc-tile-exp-bottom" onclick={(e) => e.stopPropagation()}>
-						<div class="gc-progress-wrap">
-							<ProgressTrack label="" value={activeExpedition.ticks} onchange={handleExpTrackChange} />
-							<div class="gc-progress-btns">
-								<button class="gc-prog-btn" onclick={() => expMark(1)}
-									disabled={activeExpedition.ticks >= 40}
-									title="Mark progress (+{expMarkTicks} ticks)"
-								>+{expMarkTicks}</button>
-								<button class="gc-prog-btn" onclick={() => expMark(-1)}
-									disabled={activeExpedition.ticks <= 0}
-									title="Unmark progress"
-								>−{expMarkTicks}</button>
-								{#if activeExpedition.complete}
-									<span class="gc-tile-exp-complete" title="Complete">✓ Complete</span>
-								{/if}
-							</div>
-						</div>
-					</div>
 				{:else}
 					<span class="gc-tile-placeholder"><img class="gc-placeholder-img" src={expedSvgUrl} alt="" aria-hidden="true">Select Expedition</span>
 				{/if}
 			</button>
+			{#if activeExpedition}
+				<div class="gc-tile-exp-bottom">
+					<div class="gc-progress-wrap">
+						<ProgressTrack label="" value={activeExpedition.ticks} onchange={handleExpTrackChange} />
+						<div class="gc-progress-btns">
+							<button class="gc-prog-btn" onclick={() => expMark(1)}
+								disabled={activeExpedition.ticks >= 40}
+								title="Mark progress (+{expMarkTicks} ticks)"
+							>+{expMarkTicks}</button>
+							<button class="gc-prog-btn" onclick={() => expMark(-1)}
+								disabled={activeExpedition.ticks <= 0}
+								title="Unmark progress"
+							>−{expMarkTicks}</button>
+							{#if activeExpedition.complete}
+								<span class="gc-tile-exp-complete" title="Complete">✓ Complete</span>
+							{/if}
+						</div>
+					</div>
+				</div>
+			{/if}
 
 			{#if openSelector === 'expedition'}
 				<div class="gc-popover">
