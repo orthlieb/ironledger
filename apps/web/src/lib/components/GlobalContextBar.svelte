@@ -673,10 +673,6 @@
 		width: 100%;
 		margin-top: 0.2rem;
 	}
-	.gc-tile-foe-progress {
-		color: var(--text-dimmer);
-		font-weight: 600;
-	}
 	.gc-tile-foe-qty {
 		color: var(--text-dimmer);
 		font-weight: 500;
@@ -733,9 +729,6 @@
 		font-weight: 600;
 	}
 	.gc-tile-exp-difficulty {
-		color: var(--text-dimmer);
-	}
-	.gc-tile-exp-progress {
 		color: var(--text-dimmer);
 	}
 	.gc-tile-exp-bottom {

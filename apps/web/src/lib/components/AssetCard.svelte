@@ -963,16 +963,6 @@
 		padding-top: 5px;
 	}
 
-	/* ---- Companion fields ---- */
-	.companion-fields {
-		display: flex;
-		flex-direction: column;
-		gap: 7px;
-		padding: 8px 10px;
-		background: color-mix(in srgb, var(--color-heart) 6%, var(--bg-inset));
-		border: 1px solid color-mix(in srgb, var(--color-heart) 20%, transparent);
-		border-radius: 5px;
-	}
 
 	.companion-name-label {
 		display: flex;
@@ -995,11 +985,6 @@
 		padding: 3px 7px;
 	}
 
-	.companion-health-row {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
 
 	.radio-row {
 		display: flex;
@@ -1043,10 +1028,6 @@
 		border-color: var(--counter-color);
 	}
 
-	.health-pips {
-		display: flex;
-		gap: 3px;
-	}
 
 	.pip {
 		width: 14px;

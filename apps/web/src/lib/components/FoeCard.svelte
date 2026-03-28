@@ -410,12 +410,13 @@
 	/* ── Badges ─────────────────────────────────────────────────────────── */
 	.fc-badge {
 		font-family: var(--font-ui);
-		font-size: 0.62rem;
+		font-size: 0.6rem;
 		font-weight: 600;
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		padding: 2px 6px;
-		border-radius: 3px;
+		padding: 2px 7px;
+		border-radius: 10px;
+		border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
 		white-space: nowrap;
 		flex-shrink: 0;
 	}
@@ -473,50 +474,9 @@
 	}
 
 	/* Input + harm note on the same line, same height */
-	.fc-input-harm-row {
-		display: flex;
-		align-items: stretch;
-		gap: 8px;
-	}
-	.fc-input-harm-row .fc-input {
-		flex: 1;
-		min-width: 0;
-	}
-	.fc-input-harm-row .fc-harm-note {
-		flex-shrink: 0;
-		white-space: nowrap;
-		align-self: center;
-	}
 
-	.fc-field-row {
-		display: flex;
-		flex-direction: column;
-		gap: 3px;
-	}
 
-	.fc-label {
-		font-family: var(--font-ui);
-		font-size: 0.65rem;
-		font-weight: 600;
-		letter-spacing: 0.07em;
-		text-transform: uppercase;
-		color: var(--text-dimmer);
-	}
 
-	.fc-input {
-		font-family: var(--font-ui);
-		font-size: 0.82rem;
-		padding: 4px 8px;
-		background: var(--bg-inset);
-		border: 1px solid var(--border);
-		border-radius: 4px;
-		color: var(--text);
-	}
-	.fc-input:focus {
-		outline: none;
-		border-color: var(--focus-ring);
-		box-shadow: 0 0 0 2px var(--accent-glow);
-	}
 
 	.fc-harm-note {
 		display: inline-block;

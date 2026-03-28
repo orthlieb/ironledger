@@ -1295,14 +1295,14 @@
 
 	.md-category-badge {
 		font-family:    var(--font-ui);
-		font-size:      0.58rem;
+		font-size:      0.6rem;
 		font-weight:    600;
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
 		color:          var(--ccolor, var(--text-dimmer));
 		border:         1px solid color-mix(in srgb, var(--ccolor, var(--border)) 40%, transparent);
-		border-radius:  3px;
-		padding:        2px 6px;
+		border-radius:  10px;
+		padding:        2px 7px;
 		flex-shrink:    0;
 		white-space:    nowrap;
 	}
@@ -1382,14 +1382,14 @@
 	}
 	.md-cat-tag {
 		font-family:    var(--font-ui);
-		font-size:      0.65rem;
+		font-size:      0.6rem;
 		font-weight:    600;
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
 		color:          var(--ccolor, var(--text-dimmer));
 		background:     transparent;
 		border:         1px solid color-mix(in srgb, var(--ccolor, var(--border)) 40%, transparent);
-		border-radius:  3px;
+		border-radius:  10px;
 		padding:        2px 8px;
 		cursor:         pointer;
 		white-space:    nowrap;
@@ -1661,26 +1661,6 @@
 
 
 	/* ── Progress row ────────────────────────────────────────────────────── */
-	.md-progress-row {
-		display:     flex;
-		align-items: center;
-		gap:         6px;
-	}
-	.md-progress-label {
-		font-family: var(--font-ui);
-		font-size:   0.75rem;
-		color:       var(--text-muted);
-		flex:        1;
-	}
-	.md-progress-val {
-		min-width:            28px;
-		text-align:           center;
-		font-family:          var(--font-ui);
-		font-size:            1rem;
-		font-weight:          700;
-		font-variant-numeric: tabular-nums;
-		color:                var(--text);
-	}
 
 	/* ── Roll button ─────────────────────────────────────────────────────── */
 	.md-roll-btn {
@@ -1724,46 +1704,7 @@
 	.md-stat-row-btn.selected .md-oracle-threshold {
 		color: var(--scolor);
 	}
-	.md-roll-dice {
-		display:     inline-flex;
-		align-items: center;
-		gap:         2px;
-	}
-	.md-roll-die {
-		display:     flex;
-		align-items: center;
-	}
-	.md-roll-die :global(svg) {
-		fill: currentColor;
-	}
-	.md-roll-die--d6 :global(svg) {
-		width:  14px;
-		height: 14px;
-	}
-	.md-roll-die--d10 :global(svg) {
-		width:  12px;
-		height: 12px;
-		opacity: 0.8;
-	}
 	/* Roll formula elements */
-	.md-roll-vs {
-		font-size:   0.65rem;
-		font-weight: 600;
-		opacity:     0.6;
-		text-transform: uppercase;
-		letter-spacing: 0.03em;
-	}
-	.md-roll-sep {
-		font-size:   0.7rem;
-		opacity:     0.5;
-	}
-	.md-roll-num {
-		font-size:   0.85rem;
-		font-weight: 700;
-		font-family: var(--font-ui, monospace);
-		min-width:   1ch;
-		text-align:  center;
-	}
 
 	/* ── Outcomes (no-roll moves) ────────────────────────────────────────── */
 	.md-outcomes {

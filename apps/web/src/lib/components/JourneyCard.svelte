@@ -343,12 +343,13 @@
 	/* ── Badges ─────────────────────────────────────────────────────────── */
 	.jc-badge {
 		font-family: var(--font-ui);
-		font-size: 0.62rem;
+		font-size: 0.6rem;
 		font-weight: 600;
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		padding: 2px 6px;
-		border-radius: 3px;
+		padding: 2px 7px;
+		border-radius: 10px;
+		border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
 		white-space: nowrap;
 		flex-shrink: 0;
 	}
@@ -411,18 +412,12 @@
 		gap: 3px;
 	}
 
-	.jc-name-diff-row {
-		flex-direction: row;
-		gap: 8px;
-		align-items: flex-end;
-	}
 
 	.jc-field-group {
 		display: flex;
 		flex-direction: column;
 		gap: 3px;
 	}
-	.jc-field-group--grow { flex: 1; min-width: 0; }
 
 	.jc-label {
 		font-family: var(--font-ui);
@@ -433,7 +428,7 @@
 		color: var(--text-dimmer);
 	}
 
-	.jc-input, .jc-select, .jc-textarea {
+	.jc-select, .jc-textarea {
 		font-family: var(--font-ui);
 		font-size: 0.82rem;
 		padding: 4px 8px;
@@ -442,7 +437,7 @@
 		border-radius: 4px;
 		color: var(--text);
 	}
-	.jc-input:focus, .jc-select:focus, .jc-textarea:focus {
+	.jc-select:focus, .jc-textarea:focus {
 		outline: none;
 		border-color: var(--focus-ring);
 		box-shadow: 0 0 0 2px var(--accent-glow);

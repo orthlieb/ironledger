@@ -589,12 +589,13 @@
 	/* ── Badges ─────────────────────────────────────────────────────────── */
 	.sc-badge {
 		font-family: var(--font-ui);
-		font-size: 0.62rem;
+		font-size: 0.6rem;
 		font-weight: 600;
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		padding: 2px 6px;
-		border-radius: 3px;
+		padding: 2px 7px;
+		border-radius: 10px;
+		border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
 		white-space: nowrap;
 		flex-shrink: 0;
 	}
@@ -659,7 +660,7 @@
 		gap: 3px;
 	}
 
-	.sc-name-diff-row, .sc-theme-domain-row {
+	.sc-theme-domain-row {
 		flex-direction: row;
 		gap: 8px;
 		align-items: flex-end;

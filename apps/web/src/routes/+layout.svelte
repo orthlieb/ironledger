@@ -211,18 +211,6 @@
 		color: var(--text-accent);
 	}
 
-	.nav-sep {
-		display: none;
-		font-size: 0.45rem;
-		color: var(--text-dimmer);
-		opacity: 0.6;
-		user-select: none;
-	}
-
-	@media (min-width: 600px) {
-		.nav-sep { display: inline; }
-	}
-
 	/* ── Maintenance banner ── */
 	.maint-banner {
 		position: sticky;

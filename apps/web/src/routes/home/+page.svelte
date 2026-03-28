@@ -1003,17 +1003,6 @@
 		gap: 12px;
 	}
 
-	.empty-tab-icon {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		opacity: 0.15;
-	}
-	.empty-tab-icon :global(svg) {
-		width: 40px;
-		height: 40px;
-		fill: var(--text-dimmer);
-	}
 	.empty-tab-img {
 		width: 80px;
 		height: 80px;

@@ -156,8 +156,4 @@
 	.maintenance-banner strong {
 		color: #fca5a5;
 	}
-	.maintenance-banner em {
-		color: var(--text-dimmer);
-		font-style: normal;
-	}
 </style>

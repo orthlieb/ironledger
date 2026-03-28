@@ -426,11 +426,11 @@
 		color: var(--text);
 		box-shadow: 0 16px 48px rgba(0,0,0,0.55);
 		width: min(680px, calc(100vw - 2rem));
-		height: min(720px, 90dvh);
-		max-height: min(720px, 90dvh);
-		/* Fixed top so height changes don't cause dancing */
+		/* top(4dvh) + height(88dvh) = 92dvh — leaves room for browser chrome */
+		height: min(700px, 88dvh);
+		max-height: min(700px, 88dvh);
 		position: fixed;
-		top: 6dvh;
+		top: 4dvh;
 		left: 50%;
 		transform: translateX(-50%);
 		overflow: hidden;
