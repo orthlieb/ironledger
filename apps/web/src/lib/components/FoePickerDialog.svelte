@@ -643,21 +643,12 @@
 	}
 	.fd-filter-tag--src { --tag-color: var(--text-muted); }
 
-	/* Rank chiclets — tinted background matching tile badges; solid fill when active */
-	.fd-filter-tag--rank {
+	/* Rank chiclets — plain outline when inactive (like nature pills);
+	   tinted bg + rank hue text when active (matching tile badges) */
+	.fd-filter-tag--rank.active {
 		background:   color-mix(in srgb, var(--tag-bg) 13%, transparent);
 		border-color: color-mix(in srgb, var(--tag-bg) 35%, transparent);
 		color:        var(--tag-bg);
-	}
-	.fd-filter-tag--rank:hover {
-		background:   color-mix(in srgb, var(--tag-bg) 22%, transparent);
-		border-color: color-mix(in srgb, var(--tag-bg) 60%, transparent);
-		color:        var(--tag-bg);
-	}
-	.fd-filter-tag--rank.active {
-		background:   var(--tag-bg);
-		border-color: var(--tag-bg);
-		color:        var(--tag-text);
 	}
 
 	/* ── Tile grid ──────────────────────────────────────────────────────── */
