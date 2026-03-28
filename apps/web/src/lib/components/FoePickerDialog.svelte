@@ -42,8 +42,10 @@
 	let _mode      = $state<'encounter' | 'denizen'>('encounter');
 
 	let search        = $state('');
+	let filtersOpen   = $state(false);
 	let activeNatures = $state(new Set<string>());
 	let activeSources = $state(new Set<string>());
+	let activeRanks   = $state(new Set<number>());
 
 	const foes    = $derived(getFoes());
 	const natures = $derived(getFoeNatures());
@@ -61,6 +63,7 @@
 		return foes.filter((f) => {
 			if (activeNatures.size > 0 && !activeNatures.has(f.nature))  return false;
 			if (activeSources.size > 0 && !activeSources.has(foeSource(f))) return false;
+			if (activeRanks.size > 0 && !activeRanks.has(f.rank)) return false;
 			if (q) {
 				const nameMatch     = f.name.toLowerCase().includes(q);
 				const featureMatch  = f.features.some((ft) => ft.toLowerCase().includes(q));
@@ -70,7 +73,8 @@
 		});
 	});
 
-	const hasActiveFilters = $derived(search.trim() !== '' || activeNatures.size > 0 || activeSources.size > 0);
+	const hasActiveFilters = $derived(search.trim() !== '' || activeNatures.size > 0 || activeSources.size > 0 || activeRanks.size > 0);
+	const activeFilterCount = $derived(activeNatures.size + activeSources.size + activeRanks.size);
 
 	// ---------------------------------------------------------------------------
 	// Public API
@@ -80,8 +84,10 @@
 		_mode    = 'encounter';
 		view     = 'picker';
 		search   = '';
+		filtersOpen   = false;
 		activeNatures = new Set();
 		activeSources = new Set();
+		activeRanks   = new Set();
 		confirmFoe = null;
 		quantity   = 'solo';
 		dialogEl?.showModal();
@@ -93,8 +99,10 @@
 		_mode    = 'denizen';
 		view     = 'picker';
 		search   = '';
+		filtersOpen   = false;
 		activeNatures = new Set();
 		activeSources = new Set();
+		activeRanks   = new Set();
 		confirmFoe = null;
 		quantity   = 'solo';
 		dialogEl?.showModal();
@@ -123,6 +131,13 @@
 		search        = '';
 		activeNatures = new Set();
 		activeSources = new Set();
+		activeRanks   = new Set();
+	}
+
+	function toggleRank(r: number) {
+		const next = new Set(activeRanks);
+		if (next.has(r)) next.delete(r); else next.add(r);
+		activeRanks = next;
 	}
 
 	function selectFoe(foe: FoeDef) {
@@ -185,28 +200,60 @@
 				{/if}
 			</div>
 
-			<!-- Nature filters -->
-			<div class="fd-filter-row">
-				{#each natures as nature}
-					<button
-						class="fd-filter-tag"
-						class:active={activeNatures.has(nature)}
-						style="--tag-color: {FOE_NATURE_COLORS[nature]}"
-						onclick={() => toggleNature(nature)}
-					>{nature}</button>
-				{/each}
+			<!-- Filter toggle + collapsible panel -->
+			<div class="fd-filter-toggle-row">
+				<button
+					class="fd-filter-toggle"
+					class:has-filters={activeFilterCount > 0}
+					onclick={() => filtersOpen = !filtersOpen}
+					aria-expanded={filtersOpen}
+				>Filters{#if activeFilterCount > 0}&nbsp;<span class="fd-filter-badge">{activeFilterCount}</span>{/if} {filtersOpen ? '▲' : '▼'}</button>
 			</div>
 
-			<!-- Source filters -->
-			<div class="fd-filter-row fd-filter-row--sources">
-				{#each sources as src}
-					<button
-						class="fd-filter-tag fd-filter-tag--src"
-						class:active={activeSources.has(src)}
-						onclick={() => toggleSource(src)}
-					>{src}</button>
-				{/each}
-			</div>
+			{#if filtersOpen}
+				<div class="fd-filter-panel">
+					<!-- Nature -->
+					<div class="fd-filter-group">
+						<span class="fd-filter-group-label">Nature</span>
+						<div class="fd-filter-chips">
+							{#each natures as nature}
+								<button
+									class="fd-filter-tag"
+									class:active={activeNatures.has(nature)}
+									style="--tag-color: {FOE_NATURE_COLORS[nature]}"
+									onclick={() => toggleNature(nature)}
+								>{nature}</button>
+							{/each}
+						</div>
+					</div>
+					<!-- Source -->
+					<div class="fd-filter-group">
+						<span class="fd-filter-group-label">Source</span>
+						<div class="fd-filter-chips">
+							{#each sources as src}
+								<button
+									class="fd-filter-tag fd-filter-tag--src"
+									class:active={activeSources.has(src)}
+									onclick={() => toggleSource(src)}
+								>{src}</button>
+							{/each}
+						</div>
+					</div>
+					<!-- Rank -->
+					<div class="fd-filter-group">
+						<span class="fd-filter-group-label">Rank</span>
+						<div class="fd-filter-chips">
+							{#each Object.entries(FOE_RANKS) as [rankNum, rankDef]}
+								<button
+									class="fd-filter-tag"
+									class:active={activeRanks.has(Number(rankNum))}
+									onclick={() => toggleRank(Number(rankNum))}
+								>{rankDef.label}</button>
+							{/each}
+						</div>
+					</div>
+				</div>
+			{/if}
 		</div>
 
 		<div class="fd-grid-wrap">
@@ -470,14 +517,88 @@
 		fill: currentColor;
 	}
 
-	/* ── Filter tag rows ────────────────────────────────────────────────── */
-	.fd-filter-row {
+	/* ── Filter toggle + panel ──────────────────────────────────────────── */
+	.fd-filter-toggle-row {
 		display: flex;
-		flex-wrap: wrap;
-		gap: 5px;
+		align-items: center;
 	}
 
-	.fd-filter-row--sources { margin-top: -2px; }
+	.fd-filter-toggle {
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		font-weight: 600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		padding: 3px 10px;
+		border-radius: 12px;
+		border: 1px solid var(--border);
+		background: transparent;
+		color: var(--text-dimmer);
+		cursor: pointer;
+		transition: border-color 0.1s, color 0.1s;
+		display: flex;
+		align-items: center;
+		gap: 4px;
+	}
+	.fd-filter-toggle:hover,
+	.fd-filter-toggle[aria-expanded='true'] {
+		border-color: var(--text-muted);
+		color: var(--text-muted);
+	}
+	.fd-filter-toggle.has-filters {
+		border-color: var(--focus-ring);
+		color: var(--text);
+	}
+
+	.fd-filter-badge {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 16px;
+		height: 16px;
+		padding: 0 4px;
+		border-radius: 8px;
+		background: var(--focus-ring);
+		color: var(--bg-card);
+		font-size: 0.65rem;
+		font-weight: 700;
+		line-height: 1;
+	}
+
+	.fd-filter-panel {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		padding: 8px 10px;
+		background: var(--bg-inset);
+		border: 1px solid var(--border);
+		border-radius: 6px;
+	}
+
+	.fd-filter-group {
+		display: flex;
+		align-items: baseline;
+		gap: 8px;
+		min-width: 0;
+	}
+
+	.fd-filter-group-label {
+		font-family: var(--font-ui);
+		font-size: 0.62rem;
+		font-weight: 700;
+		letter-spacing: 0.07em;
+		text-transform: uppercase;
+		color: var(--text-dimmer);
+		flex-shrink: 0;
+		width: 3.5rem;
+	}
+
+	.fd-filter-chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+		flex: 1;
+	}
 
 	.fd-filter-tag {
 		font-family: var(--font-ui);
