@@ -259,7 +259,7 @@
 							class="gc-tile-portrait"
 							src="/foes/{encodeURIComponent(activeFoeDef.name)}.webp"
 							alt={activeFoeDef.name}
-							onerror={(e) => ((e.target as HTMLImageElement).style.display = 'none')}
+							onerror={(e) => { (e.target as HTMLImageElement).src = '/foes/unknown-foe.webp'; }}
 						/>
 						<span class="gc-tile-name">{activeFoe.customName || activeFoeDef.name}</span>
 					</div>

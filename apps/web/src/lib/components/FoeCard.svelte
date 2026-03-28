@@ -149,7 +149,7 @@
 				class="fc-thumb"
 				src={imageUrl(foeDef.name)}
 				alt={foeDef.name}
-				onerror={() => (imgVisible = false)}
+				onerror={(e) => { (e.currentTarget as HTMLImageElement).src = '/foes/unknown-foe.webp'; }}
 				onmouseenter={() => (thumbHovered = true)}
 				onmouseleave={() => (thumbHovered = false)}
 			/>

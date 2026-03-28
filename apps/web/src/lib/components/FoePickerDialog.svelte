@@ -294,7 +294,7 @@
 									class="fd-tile-img"
 									src={imageUrl(foe.name)}
 									alt={foe.name}
-									onerror={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+									onerror={(e) => { (e.currentTarget as HTMLImageElement).src = '/foes/unknown-foe.webp'; }}
 								/>
 							</div>
 							<div class="fd-tile-body">
@@ -338,7 +338,7 @@
 						class="fc-portrait"
 						src={imageUrl(confirmFoe.name)}
 						alt={confirmFoe.name}
-						onerror={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+						onerror={(e) => { (e.currentTarget as HTMLImageElement).src = '/foes/unknown-foe.webp'; }}
 					/>
 				</div>
 
