@@ -253,7 +253,14 @@
 							{/each}
 						</div>
 					</div>
-				</div>
+					<button
+					class="fd-clear-btn"
+					onclick={clearFilters}
+					disabled={!hasActiveFilters}
+					title="Clear all filters"
+					aria-label="Clear filters"
+				>{@html clearFiltersSvg}</button>
+			</div>
 			{/if}
 		</div>
 
