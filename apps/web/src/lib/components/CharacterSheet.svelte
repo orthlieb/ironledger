@@ -1238,7 +1238,7 @@
 	}
 
 	.debility-count {
-		font-family: var(--font-body);
+		font-family: var(--font-ui);
 		font-size: 0.75rem;
 		color: var(--color-danger);
 		font-weight: 400;
