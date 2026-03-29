@@ -785,12 +785,6 @@
 					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
 				{/if}
 			</button>
-			<button
-				class="md-clear-btn"
-				title="Clear all filters"
-				onclick={clearFilters}
-				aria-label="Clear all filters"
-			>{@html clearFiltersSvg}</button>
 		</div>
 
 		{#if filtersOpen}
@@ -805,6 +799,13 @@
 						>{cat}</button>
 					{/each}
 				</div>
+				<button
+					class="md-clear-btn"
+					title="Clear all filters"
+					onclick={clearFilters}
+					disabled={activeCategories.size === 0}
+					aria-label="Clear all filters"
+				>{@html clearFiltersSvg}</button>
 			</div>
 		{/if}
 	</div>
@@ -1350,20 +1351,24 @@
 		box-shadow:   0 0 0 2px var(--accent-glow);
 	}
 	.md-clear-btn {
+		position:      absolute;
+		bottom:        6px;
+		right:         6px;
 		background:    transparent;
 		border:        none;
 		color:         var(--text-dimmer);
 		cursor:        pointer;
-		padding:       3px 5px;
+		padding:       3px 4px;
 		border-radius: 3px;
 		display:       flex;
 		align-items:   center;
-		flex-shrink:   0;
+		transition:    color 0.12s, opacity 0.12s;
 	}
-	.md-clear-btn:hover { color: var(--text); }
+	.md-clear-btn:hover:not(:disabled) { color: var(--text); }
+	.md-clear-btn:disabled { opacity: 0.25; cursor: not-allowed; }
 	.md-clear-btn :global(svg) {
-		width:  18px;
-		height: 18px;
+		width:  16px;
+		height: 16px;
 		fill:   currentColor;
 	}
 
@@ -1430,15 +1435,17 @@
 		line-height:     1;
 	}
 	.md-filter-panel {
+		position:      relative;
 		padding:       6px 8px;
 		background:    var(--bg-inset);
 		border:        1px solid var(--border);
 		border-radius: 6px;
 	}
 	.md-filter-chips {
-		display:   flex;
-		flex-wrap: wrap;
-		gap:       4px;
+		display:       flex;
+		flex-wrap:     wrap;
+		gap:           4px;
+		padding-right: 26px;
 	}
 	.md-cat-tag {
 		font-family:    var(--font-ui);

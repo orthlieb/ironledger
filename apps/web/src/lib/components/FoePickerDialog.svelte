@@ -207,11 +207,6 @@
 					onclick={() => filtersOpen = !filtersOpen}
 					aria-expanded={filtersOpen}
 				>Filters{#if activeFilterCount > 0}&nbsp;<span class="fd-filter-badge">{activeFilterCount}</span>{/if} {filtersOpen ? '▲' : '▼'}</button>
-				{#if hasActiveFilters}
-					<button class="btn btn-icon fd-clear-btn" onclick={clearFilters} title="Clear all filters" aria-label="Clear filters">
-						{@html clearFiltersSvg}
-					</button>
-				{/if}
 			</div>
 
 			{#if filtersOpen}
@@ -502,15 +497,25 @@
 	}
 
 	.fd-clear-btn {
-		width: 30px;
-		height: 30px;
-		padding: 5px;
-		flex-shrink: 0;
+		position:      absolute;
+		bottom:        6px;
+		right:         6px;
+		background:    transparent;
+		border:        none;
+		color:         var(--text-dimmer);
+		cursor:        pointer;
+		padding:       3px 4px;
+		border-radius: 3px;
+		display:       flex;
+		align-items:   center;
+		transition:    color 0.12s, opacity 0.12s;
 	}
+	.fd-clear-btn:hover:not(:disabled) { color: var(--text); }
+	.fd-clear-btn:disabled { opacity: 0.25; cursor: not-allowed; }
 	.fd-clear-btn :global(svg) {
-		width: 16px;
+		width:  16px;
 		height: 16px;
-		fill: currentColor;
+		fill:   currentColor;
 	}
 
 	/* ── Filter toggle + panel ──────────────────────────────────────────── */
@@ -558,10 +563,11 @@
 	}
 
 	.fd-filter-panel {
+		position: relative;
 		display: flex;
 		flex-direction: column;
 		gap: 6px;
-		padding: 8px 10px;
+		padding: 8px 32px 8px 10px;
 		background: var(--bg-inset);
 		border: 1px solid var(--border);
 		border-radius: 6px;

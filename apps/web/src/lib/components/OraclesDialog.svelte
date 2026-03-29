@@ -34,6 +34,7 @@
 	let search       = $state('');
 	let activeGroups = $state(new Set<string>());
 	let rolling      = $state(false);
+	let filtersOpen  = $state(false);
 
 	// ---------------------------------------------------------------------------
 	// Derived
@@ -167,25 +168,39 @@
 				bind:value={search}
 				aria-label="Search oracles"
 			/>
+		</div>
+
+		<!-- Group filter toggle -->
+		<button
+			class="od-filter-toggle"
+			class:od-filter-toggle--active={activeGroups.size > 0}
+			onclick={() => (filtersOpen = !filtersOpen)}
+			aria-expanded={filtersOpen}
+		>
+			Filters{#if activeGroups.size > 0}&nbsp;<span class="od-filter-badge">{activeGroups.size}</span>{/if}
+			{filtersOpen ? '▲' : '▼'}
+		</button>
+		{#if filtersOpen}
+		<div class="od-filter-panel">
+			<div class="od-filter-chips">
+				{#each groups as group (group)}
+					<button
+						class="od-group-tag"
+						class:od-group-tag--active={activeGroups.has(group)}
+						style:--gcolor={groupColor(group)}
+						onclick={() => toggleGroup(group)}
+					>{group}</button>
+				{/each}
+			</div>
 			<button
 				class="od-clear-btn"
 				title="Clear all filters"
 				onclick={clearFilters}
+				disabled={activeGroups.size === 0}
 				aria-label="Clear all filters"
 			>{@html clearFiltersSvg}</button>
 		</div>
-
-		<!-- Group filter tags -->
-		<div class="od-group-filters">
-			{#each groups as group (group)}
-				<button
-					class="od-group-tag"
-					class:od-group-tag--active={activeGroups.has(group)}
-					style:--gcolor={groupColor(group)}
-					onclick={() => toggleGroup(group)}
-				>{group}</button>
-			{/each}
-		</div>
+		{/if}
 	</div>
 
 	<!-- Tile grid -->
@@ -377,27 +392,68 @@
 	}
 
 	.od-clear-btn {
+		position:      absolute;
+		bottom:        2px;
+		right:         0;
 		background:    transparent;
 		border:        none;
 		color:         var(--text-dimmer);
 		cursor:        pointer;
-		padding:       3px 5px;
+		padding:       3px 4px;
 		border-radius: 3px;
 		display:       flex;
 		align-items:   center;
-		flex-shrink:   0;
+		transition:    color 0.12s, opacity 0.12s;
 	}
-	.od-clear-btn:hover { color: var(--text); }
+	.od-clear-btn:hover:not(:disabled) { color: var(--text); }
+	.od-clear-btn:disabled { opacity: 0.25; cursor: not-allowed; }
 	.od-clear-btn :global(svg) {
-		width:  18px;
-		height: 18px;
+		width:  16px;
+		height: 16px;
 		fill:   currentColor;
 	}
 
-	.od-group-filters {
+	.od-filter-toggle {
+		display:        flex;
+		align-items:    center;
+		gap:            6px;
+		font-family:    var(--font-ui);
+		font-size:      0.72rem;
+		font-weight:    600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color:          var(--text-dimmer);
+		background:     transparent;
+		border:         1px solid var(--border);
+		border-radius:  4px;
+		padding:        3px 8px;
+		cursor:         pointer;
+		transition:     background 0.12s, color 0.12s, border-color 0.12s;
+	}
+	.od-filter-toggle:hover { color: var(--text); border-color: var(--border-mid); }
+	.od-filter-toggle--active { color: var(--accent); border-color: var(--accent); }
+	.od-filter-badge {
+		display:        inline-flex;
+		align-items:    center;
+		justify-content: center;
+		min-width:      16px;
+		height:         16px;
+		padding:        0 4px;
+		border-radius:  8px;
+		background:     var(--accent);
+		color:          var(--bg);
+		font-size:      0.6rem;
+		font-weight:    700;
+	}
+	.od-filter-panel {
+		position: relative;
+		padding:  4px 0 2px;
+	}
+	.od-filter-chips {
 		display:   flex;
 		flex-wrap: wrap;
 		gap:       4px;
+		padding-right: 26px;
 	}
 	.od-group-tag {
 		font-family:    var(--font-ui);

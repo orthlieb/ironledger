@@ -135,3 +135,141 @@ function diffBadgeStyle(difficulty: string): string {
 ```
 
 `RANK_COLORS` is exported from `foeStore.svelte.ts`.
+
+---
+
+## Filter Pattern (Collapsible Toggle + Panel)
+
+All filter rows in dialogs (FoePickerDialog, MovesDialog, OraclesDialog) follow the same collapsible pattern. **Never show filter chips inline always-visible** — they add visual noise when unused.
+
+### Pattern
+
+1. A **toggle button** is always visible in the controls area. It shows the label "FILTERS", optional active count badge, and a ▲/▼ chevron.
+2. When toggled open, a **filter panel** appears below with the chips/tags inside.
+3. The panel collapses back when toggled again or when all chips are deselected.
+
+### Svelte State
+
+```svelte
+let filtersOpen = $state(false);
+```
+
+### Toggle Button HTML
+
+```svelte
+<button
+  class="xx-filter-toggle"
+  class:xx-filter-toggle--active={activeItems.size > 0}
+  onclick={() => (filtersOpen = !filtersOpen)}
+  aria-expanded={filtersOpen}
+>
+  Filters{#if activeItems.size > 0}&nbsp;<span class="xx-filter-badge">{activeItems.size}</span>{/if}
+  {filtersOpen ? '▲' : '▼'}
+</button>
+{#if filtersOpen}
+<div class="xx-filter-panel">
+  <div class="xx-filter-chips">
+    {#each items as item}
+      <button
+        class="xx-chip"
+        class:xx-chip--active={activeItems.has(item)}
+        onclick={() => toggleItem(item)}
+      >{item}</button>
+    {/each}
+  </div>
+</div>
+{/if}
+```
+
+### CSS
+
+```css
+/* Toggle button */
+.xx-filter-toggle {
+    display:        flex;
+    align-items:    center;
+    gap:            6px;
+    font-family:    var(--font-ui);
+    font-size:      0.72rem;
+    font-weight:    600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color:          var(--text-dimmer);
+    background:     transparent;
+    border:         1px solid var(--border);
+    border-radius:  4px;
+    padding:        3px 8px;
+    cursor:         pointer;
+    transition:     background 0.12s, color 0.12s, border-color 0.12s;
+}
+.xx-filter-toggle:hover        { color: var(--text); border-color: var(--border-mid); }
+.xx-filter-toggle--active      { color: var(--accent); border-color: var(--accent); }
+
+/* Active count badge (inside toggle button) */
+.xx-filter-badge {
+    display:         inline-flex;
+    align-items:     center;
+    justify-content: center;
+    min-width:       16px;
+    height:          16px;
+    padding:         0 4px;
+    border-radius:   8px;
+    background:      var(--accent);
+    color:           var(--bg);
+    font-size:       0.6rem;
+    font-weight:     700;
+}
+
+/* Collapsible panel */
+.xx-filter-panel  { padding: 4px 0 2px; }
+.xx-filter-chips  { display: flex; flex-wrap: wrap; gap: 4px; }
+
+/* Individual chip/tag */
+.xx-chip {
+    font-family:    var(--font-ui);
+    font-size:      0.65rem;
+    font-weight:    600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color:          var(--text-dimmer);
+    background:     transparent;
+    border:         1px solid var(--border);
+    border-radius:  3px;
+    padding:        2px 8px;
+    cursor:         pointer;
+    white-space:    nowrap;
+    transition:     background 0.12s, color 0.12s;
+}
+.xx-chip:hover     { background: color-mix(in srgb, var(--border) 30%, transparent); color: var(--text); }
+.xx-chip--active   { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); border-color: var(--accent); }
+```
+
+> Chips can use a `--gcolor` CSS variable for per-chip color (e.g. oracle groups). Set `style:--gcolor={color}` on each chip and reference `var(--gcolor, var(--text-dimmer))` for `color` and `var(--gcolor, var(--border))` for border/background mixing.
+
+---
+
+## Stat Tile (StatControl)
+
+Square tile used for the five Ironsworn stats (Edge, Heart, Iron, Shadow, Wits).
+
+### Design
+
+- **52×52px** square with 6px border-radius
+- **Border**: 2px solid at 50% opacity of stat color
+- **Background**: 8% tint of stat color over card background
+- **Background icon**: SVG icon dimmed to 12% opacity, centered and filling ~72% of tile. Icons: Edge=sword, Heart=heart, Iron=fist, Shadow=shadow, Wits=brain
+- **Stat name** at top: 0.55rem, bold, uppercase, stat color
+- **Stat value** at bottom: 1.3rem, bold, stat color + **`-webkit-text-stroke: 1px white`** for legibility against icon
+- Focus state: full-opacity border + glow
+
+### SVG Icon Sources
+
+| Stat | File |
+|------|------|
+| Edge | `src/lib/icons/sword-solid-full.svg` |
+| Heart | `src/lib/icons/icon-heart.svg` |
+| Iron | `src/lib/icons/fist.svg` |
+| Shadow | `src/lib/icons/shadow.svg` |
+| Wits | `src/lib/icons/brain.svg` |
+
+All imported as `?raw` and rendered with `{@html icon}`. The `:global(svg)` selector sets `fill: var(--stat-color)` and `width/height: 72%`.
