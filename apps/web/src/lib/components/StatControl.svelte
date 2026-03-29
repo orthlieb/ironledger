@@ -104,6 +104,7 @@
 		width:  72%;
 		height: 72%;
 		fill:   var(--stat-color);
+		color:  var(--stat-color);
 	}
 
 	/* Stat name at top */
