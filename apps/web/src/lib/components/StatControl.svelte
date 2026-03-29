@@ -89,12 +89,12 @@
 		box-shadow:   0 0 0 2px color-mix(in srgb, var(--stat-color) 25%, transparent);
 	}
 
-	/* Background icon */
+	/* Background icon — aligned to bottom */
 	.stat-icon {
 		position:        absolute;
 		inset:           0;
 		display:         flex;
-		align-items:     center;
+		align-items:     flex-end;
 		justify-content: center;
 		opacity:         0.12;
 		pointer-events:  none;

@@ -9,7 +9,7 @@
 	 *   Banes      — 1 × 2 column
 	 *   Burdens    — 1 × 2 column
 	 *
-	 * Toggles are styled as radio buttons (no border / background).
+	 * Toggles are styled as iOS-style slider switches (off/on).
 	 */
 	import type { CharacterData } from '$lib/types.js';
 
@@ -51,11 +51,12 @@
 					<label class="toggle" class:active={data[d.key]}>
 						<input
 							type="checkbox"
-							class="toggle-radio"
+							class="toggle-input"
 							checked={data[d.key]}
 							onchange={() => { const v = !data[d.key]; data[d.key] = v; onchange?.(d.label, v); }}
 						/>
-						{d.label}
+						<span class="toggle-track"><span class="toggle-knob"></span></span>
+						<span class="toggle-label">{d.label}</span>
 					</label>
 				{/each}
 			</div>
@@ -69,11 +70,12 @@
 					<label class="toggle" class:active={data[d.key]}>
 						<input
 							type="checkbox"
-							class="toggle-radio"
+							class="toggle-input"
 							checked={data[d.key]}
 							onchange={() => { const v = !data[d.key]; data[d.key] = v; onchange?.(d.label, v); }}
 						/>
-						{d.label}
+						<span class="toggle-track"><span class="toggle-knob"></span></span>
+						<span class="toggle-label">{d.label}</span>
 					</label>
 				{/each}
 			</div>
@@ -87,11 +89,12 @@
 					<label class="toggle" class:active={data[d.key]}>
 						<input
 							type="checkbox"
-							class="toggle-radio"
+							class="toggle-input"
 							checked={data[d.key]}
 							onchange={() => { const v = !data[d.key]; data[d.key] = v; onchange?.(d.label, v); }}
 						/>
-						{d.label}
+						<span class="toggle-track"><span class="toggle-knob"></span></span>
+						<span class="toggle-label">{d.label}</span>
 					</label>
 				{/each}
 			</div>
@@ -134,7 +137,7 @@
 	/* Conditions: 2 columns × 2 rows */
 	.toggle-grid {
 		display: grid;
-		gap: 0;
+		gap: 2px 6px;
 	}
 
 	.conditions-grid {
@@ -146,53 +149,79 @@
 		grid-template-columns: auto;
 	}
 
-	/* Label wrapper — no border, no background, looks like a checkbox label */
+	/* Label wrapper */
 	.toggle {
 		display: inline-flex;
 		align-items: center;
-		gap: 5px;
-		padding: 2px 3px;
+		gap: 6px;
+		padding: 2px 0;
 		cursor: pointer;
-		font-family: var(--font-ui);
-		font-size: 0.78rem;
-		color: var(--text-muted);
-		white-space: nowrap;
 		user-select: none;
-		border-radius: 3px;
-		transition: color 0.12s;
 	}
 
-	.toggle:hover {
+	/* Hide native checkbox */
+	.toggle-input {
+		position: absolute;
+		opacity: 0;
+		width: 0;
+		height: 0;
+		pointer-events: none;
+	}
+
+	/* Slider track */
+	.toggle-track {
+		position:      relative;
+		width:         28px;
+		height:        15px;
+		border-radius: 8px;
+		background:    var(--bg-inset);
+		border:        1px solid var(--border);
+		flex-shrink:   0;
+		transition:    background 0.2s, border-color 0.2s;
+	}
+
+	/* Sliding knob */
+	.toggle-knob {
+		position:      absolute;
+		top:           2px;
+		left:          2px;
+		width:         9px;
+		height:        9px;
+		border-radius: 50%;
+		background:    var(--text-dimmer);
+		transition:    left 0.2s, background 0.2s;
+	}
+
+	/* Label text */
+	.toggle-label {
+		font-family: var(--font-ui);
+		font-size:   0.75rem;
+		color:       var(--text-muted);
+		white-space: nowrap;
+		transition:  color 0.15s;
+	}
+
+	/* Hover */
+	.toggle:hover .toggle-track {
+		border-color: var(--text-dimmer);
+	}
+	.toggle:hover .toggle-knob {
+		background: var(--text);
+	}
+	.toggle:hover .toggle-label {
 		color: var(--text);
 	}
 
-	.toggle.active {
-		color: var(--color-danger);
-	}
-
-	/* Radio-style checkbox — circular, no native appearance */
-	.toggle-radio {
-		appearance: none;
-		-webkit-appearance: none;
-		width: 13px;
-		height: 13px;
-		border-radius: 50%;
-		border: 1.5px solid var(--text-dimmer);
-		background: transparent;
-		cursor: pointer;
-		flex-shrink: 0;
-		transition: border-color 0.12s, background 0.12s;
-		margin: 0;
-	}
-
-	.toggle:hover .toggle-radio {
+	/* Active (ON) state */
+	.toggle.active .toggle-track {
+		background:   color-mix(in srgb, var(--color-danger) 20%, transparent);
 		border-color: var(--color-danger);
 	}
-
-	.toggle.active .toggle-radio {
-		border-color: var(--color-danger);
+	.toggle.active .toggle-knob {
+		left:       15px;
 		background: var(--color-danger);
-		/* Inner white dot via box-shadow */
-		box-shadow: inset 0 0 0 2.5px var(--bg-card);
+	}
+	.toggle.active .toggle-label {
+		color: var(--color-danger);
 	}
 </style>
