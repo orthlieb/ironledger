@@ -96,7 +96,7 @@
 		display:         flex;
 		align-items:     flex-end;
 		justify-content: center;
-		opacity:         0.12;
+		opacity:         0.18;
 		pointer-events:  none;
 	}
 
@@ -110,7 +110,7 @@
 	.stat-name {
 		font-family:    var(--font-ui);
 		font-size:      0.55rem;
-		font-weight:    700;
+		font-weight:    900;
 		text-transform: uppercase;
 		letter-spacing: 0.06em;
 		color:          var(--stat-color);
