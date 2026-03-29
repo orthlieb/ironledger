@@ -137,6 +137,8 @@
 <div
 	class="foe-card"
 	class:vanquished={enc.vanquished}
+	class:collapsed={collapsed}
+	style="border-left: 3px solid {FOE_NATURE_COLORS[foeDef.nature]}"
 >
 
 	<!-- ── Header (always visible) ── -->
@@ -318,6 +320,11 @@
 	}
 	.foe-card.vanquished { opacity: 0.55; }
 
+	/* Remove header divider when collapsed */
+	.foe-card.collapsed .fc-header {
+		border-bottom: none;
+	}
+
 	/* ── Header ─────────────────────────────────────────────────────────── */
 	.fc-header {
 		position: relative;
@@ -326,7 +333,7 @@
 		gap: 8px;
 		padding: 8px 12px;
 		flex-wrap: wrap;
-		min-height: 48px;
+		min-height: 55px;
 		background: var(--bg-inset);
 		border-bottom: 1px solid var(--border);
 	}
@@ -470,7 +477,6 @@
 	/* ── Body ───────────────────────────────────────────────────────────── */
 	.fc-body {
 		padding: 0.75rem var(--page-gutter) 1rem;
-		border-top: 1px solid var(--border);
 		display: flex;
 		flex-direction: column;
 		gap: 0.65rem;

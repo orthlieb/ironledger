@@ -1154,10 +1154,12 @@
 		}
 	}
 
-	/* Hide tab text labels on very small screens — icons + title tooltip suffice */
+	/* Hide tab text labels on very small screens — icons only, except the active tab */
 	@media (max-width: 520px) {
 		.tab-label { display: none; }
 		.tab-btn { padding: 10px 12px 8px; gap: 0; }
+		.tab-btn.active { gap: 0.35rem; }
+		.tab-btn.active .tab-label { display: inline; }
 	}
 
 	/* ===== Theme-aware tinting for tab icons and empty-state images ===== */

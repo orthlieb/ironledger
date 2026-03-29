@@ -144,6 +144,8 @@
 <div
 	class="jc-card"
 	class:jc-complete={expedition.complete}
+	class:collapsed={collapsed}
+	style="border-left: 3px solid #34d399"
 >
 
 	<!-- ── Header (always visible) ── -->
@@ -269,22 +271,30 @@
 	/* ── Card shell ─────────────────────────────────────────────────────── */
 	.jc-card {
 		border: 1px solid var(--border);
-		border-radius: 6px;
+		border-radius: 5px;
 		background: var(--bg-card);
 		overflow: hidden;
+		box-shadow: inset 0 1px 0 #ffffff04, 0 2px 12px #00000050;
 		transition: opacity 0.2s;
 	}
 	.jc-card.jc-complete { opacity: 0.55; }
+
+	/* Remove header divider when collapsed */
+	.jc-card.collapsed .jc-header {
+		border-bottom: none;
+	}
 
 	/* ── Header ─────────────────────────────────────────────────────────── */
 	.jc-header {
 		position: relative;
 		display: flex;
 		align-items: center;
-		gap: 6px;
-		padding: 6px 8px;
+		gap: 8px;
+		padding: 8px 12px;
 		flex-wrap: wrap;
-		min-height: 42px;
+		min-height: 55px;
+		background: var(--bg-inset);
+		border-bottom: 1px solid var(--border);
 	}
 
 	.jc-collapse-btn {
@@ -391,7 +401,6 @@
 	/* ── Body ───────────────────────────────────────────────────────────── */
 	.jc-body {
 		padding: 0.75rem var(--page-gutter) 1rem;
-		border-top: 1px solid var(--border);
 		display: flex;
 		flex-direction: column;
 		gap: 0.65rem;

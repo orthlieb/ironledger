@@ -203,22 +203,20 @@
 
 		<!-- CHARACTER TILE -->
 		<div class="gc-tile" class:gc-tile--active={!!data} class:gc-tile--empty={!data} class:gc-tile--open={openSelector === 'character'}>
-			<div class="gc-tile-label">
-				{#if data && initiative === 1}
-					<button class="gc-init-badge gc-init-badge--you" onclick={() => onInitiativeChange?.('foe')} title="Click to change">{@html swordSvg}<span class="gc-init-label">Has Initiative</span></button>
-				{:else if data && initiative === 2}
-					<button class="gc-init-badge gc-init-badge--foe" onclick={() => onInitiativeChange?.('character')} title="Click to change">{@html shieldSvg}<span class="gc-init-label">Foe Has Initiative</span></button>
-				{/if}
-			</div>
 			<button class="gc-tile-btn" onclick={() => toggleSelector('character')} title="Select character">
 				{#if data}
-					<div class="gc-tile-row">
+					<div class="gc-tile-row gc-tile-name-row">
 						{#if data.portrait}
 							<img class="gc-tile-portrait" src={data.portrait} alt={character?.name ?? ''} />
 						{:else}
 							<span class="gc-tile-portrait gc-tile-portrait--placeholder" aria-hidden="true">👤</span>
 						{/if}
 						<span class="gc-tile-name">{character?.name ?? ''}</span>
+						{#if initiative === 1}
+							<button class="gc-init-badge gc-init-badge--you" onclick={(e) => { e.stopPropagation(); onInitiativeChange?.('foe'); }} title="Click to change">{@html swordSvg}<span class="gc-init-label">Has Initiative</span></button>
+						{:else if initiative === 2}
+							<button class="gc-init-badge gc-init-badge--foe" onclick={(e) => { e.stopPropagation(); onInitiativeChange?.('character'); }} title="Click to change">{@html shieldSvg}<span class="gc-init-label">Foe Has Initiative</span></button>
+						{/if}
 					</div>
 					<div class="gc-char-chips">
 						<div class="gc-chip-group gc-chip-group--stats">
@@ -263,7 +261,7 @@
 			style={activeFoe && activeFoeDef ? `border-left: 3px solid ${activeFoeNature}` : ''}>
 			<button class="gc-tile-btn" onclick={() => toggleSelector('foe')} title="Select foe">
 				{#if activeFoe && activeFoeDef}
-					<div class="gc-tile-row">
+					<div class="gc-tile-row gc-tile-name-row">
 						<img
 							class="gc-tile-portrait"
 							src="/foes/{encodeURIComponent(activeFoeDef.name)}.webp"
@@ -326,7 +324,7 @@
 			style={activeExpedition ? `border-left: 3px solid ${activeExpedition.type === 'journey' ? '#34d399' : '#60a5fa'}` : ''}>
 			<button class="gc-tile-btn" onclick={() => toggleSelector('expedition')} title="Select expedition">
 				{#if activeExpedition}
-					<div class="gc-tile-row">
+					<div class="gc-tile-row gc-tile-name-row">
 						<span class="gc-tile-name">{activeExpedition.name || 'Unnamed'}</span>
 					</div>
 					<div class="gc-tile-row gc-tile-pills">
@@ -388,10 +386,10 @@
 
 	<!-- ===== Action buttons column ===== -->
 	<div class="gc-actions">
-		<button class="btn btn-primary gc-action-btn" onclick={() => onMovesClick?.()} title="Browse and roll moves"><span class="gc-action-icon">{@html iconMoves}</span>Make a Move</button>
-		<button class="btn btn-primary gc-action-btn" onclick={() => onOraclesClick?.()} title="Browse and roll oracles"><span class="gc-action-icon">{@html iconOracles}</span>Ask an Oracle</button>
-		<button class="btn btn-primary gc-action-btn" onclick={onDiceClick} disabled={!onDiceClick} title="Roll dice"><span class="gc-action-icon">{@html iconDice}</span>Roll Dice</button>
-		<button class="btn btn-primary gc-action-btn" onclick={() => onNotesClick?.()} title="Add a session note"><span class="gc-action-icon">{@html iconNotes}</span>Add a Note</button>
+		<button class="btn btn-primary gc-action-btn" onclick={() => onMovesClick?.()} title="Browse and roll moves"><span class="gc-action-icon">{@html iconMoves}</span><span class="gc-btn-label">Make a Move</span></button>
+		<button class="btn btn-primary gc-action-btn" onclick={() => onOraclesClick?.()} title="Browse and roll oracles"><span class="gc-action-icon">{@html iconOracles}</span><span class="gc-btn-label">Ask an Oracle</span></button>
+		<button class="btn btn-primary gc-action-btn" onclick={onDiceClick} disabled={!onDiceClick} title="Roll dice"><span class="gc-action-icon">{@html iconDice}</span><span class="gc-btn-label">Roll Dice</span></button>
+		<button class="btn btn-primary gc-action-btn" onclick={() => onNotesClick?.()} title="Add a session note"><span class="gc-action-icon">{@html iconNotes}</span><span class="gc-btn-label">Add a Note</span></button>
 	</div>
 
 	</div>
@@ -409,10 +407,11 @@
 		display: flex;
 		gap: 0.5rem;
 		align-items: stretch;
-		padding: 0.5rem;
+		padding: 0.5rem 0.6rem;
 	}
 
-	/* ===== Action buttons — default: 2×2 grid (large screens) ===== */
+	/* ===== Action buttons ===== */
+	/* Default (≥1100px, side column): 2×2 grid with labels */
 	.gc-actions {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
@@ -429,7 +428,7 @@
 		min-width: 0;
 		display: grid;
 		grid-template-columns: 1fr 1fr 1fr;
-		gap: 0.5rem;
+		gap: 0.4rem;
 	}
 
 	/* ===== Individual tile (section within the single card) ===== */
@@ -439,15 +438,18 @@
 		container-type: inline-size;
 		display: flex;
 		flex-direction: column;
-		border-top: 1px solid var(--border);
+		border: 1px solid var(--border);
 		border-left: 3px solid transparent;
+		border-radius: 5px;
+		overflow: hidden;
+		box-shadow: inset 0 1px 0 #ffffff04, 0 2px 8px #00000040;
 	}
 
 	.gc-tile--empty {
 		/* opacity applied to button only so popover dropdown stays fully opaque */
 	}
 	.gc-tile--active {
-		border-left: 3px solid rgba(245, 158, 11, 0.6);
+		border-color: var(--border-mid);
 	}
 	.gc-tile--open {
 		z-index: 10;
@@ -468,21 +470,6 @@
 		color: var(--text-accent);
 	}
 
-	/* Tile label — subtle section label within the card */
-	.gc-tile-label {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 4px 10px 2px;
-		font-family: var(--font-display);
-		font-size: 0.55rem;
-		font-weight: 700;
-		letter-spacing: 0.1em;
-		text-transform: uppercase;
-		color: var(--text-dimmer);
-		flex-shrink: 0;
-	}
-
 	/* Full-area clickable button */
 	.gc-tile-btn {
 		display: flex;
@@ -491,15 +478,15 @@
 		width: 100%;
 		flex: 1;
 		min-height: 3rem;
-		padding: 0.4rem 0.5rem;
+		padding: 0;
 		background: none;
 		border: none;
 		color: inherit;
 		cursor: pointer;
 		text-align: left;
-		gap: 0.2rem;
+		gap: 0;
 		transition: background 0.12s;
-		border-radius: 6px;
+		border-radius: 0;
 	}
 	.gc-tile-btn:hover {
 		background: rgba(245, 158, 11, 0.06);
@@ -524,6 +511,7 @@
 		justify-content: center;
 		gap: 0.3rem;
 		height: 100%;
+		padding: 0.5rem;
 	}
 	.gc-placeholder-img {
 		width: 36px;
@@ -545,6 +533,14 @@
 		align-items: center;
 		gap: 0.35rem;
 		min-height: 0;
+	}
+
+	/* Name/header row — card header style */
+	.gc-tile-name-row {
+		background: var(--bg-inset);
+		border-bottom: 1px solid var(--border);
+		padding: 0.4rem 0.6rem;
+		gap: 0.4rem;
 	}
 
 	/* Portrait */
@@ -581,6 +577,7 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 2px;
+		padding: 0.35rem 0.5rem 0.4rem;
 	}
 	.gc-chip-group {
 		display: flex;
@@ -676,14 +673,14 @@
 	.gc-tile-pills {
 		gap: 5px;
 		flex-wrap: wrap;
+		padding: 0.3rem 0.6rem;
 	}
 	.gc-tile-foe-bottom {
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		width: 100%;
 		margin-top: 0.35rem;
-		padding-top: 0.35rem;
-		border-top: 1px solid var(--border);
+		padding: 0.35rem 0 0.5rem;
 	}
 	.gc-tile-vanquished {
 		color: var(--color-danger, #ef4444);
@@ -735,8 +732,7 @@
 		font-size: 0.72rem;
 		width: 100%;
 		margin-top: 0.35rem;
-		padding-top: 0.35rem;
-		border-top: 1px solid var(--border);
+		padding: 0.35rem 0 0.5rem;
 	}
 	.gc-tile-exp-complete {
 		color: #34d399;
@@ -798,6 +794,13 @@
 		align-items: center;
 		justify-content: center;
 		gap: 0.3rem;
+		white-space: nowrap;
+		overflow: hidden;
+	}
+	.gc-btn-label {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		min-width: 0;
 	}
 	.gc-action-icon {
 		display: inline-flex;
@@ -855,13 +858,11 @@
 		cursor: not-allowed;
 	}
 
-	/* ===== Stacked mode (used in Adventure tab sidebar) ===== */
-	.gc--stacked .gc-layout {
-		flex-direction: column;
-	}
-	.gc--stacked .gc-tiles {
-		grid-template-columns: 1fr;
-	}
+	/* ===== Stacked mode (Adventure tab) ===== */
+	.gc--stacked .gc-layout { flex-direction: column; }
+	.gc--stacked .gc-tiles  { grid-template-columns: 1fr; }
+
+	/* 1×4 row when log is side-by-side (≥768px) */
 	.gc--stacked .gc-actions {
 		grid-template-columns: repeat(4, 1fr);
 		padding-left: 0;
@@ -870,37 +871,23 @@
 		border-top: 1px solid var(--border);
 	}
 
-	/* ===== Responsive ===== */
-	/* Small: tiles stack, actions row below */
-	@media (max-width: 768px) {
-		.gc-layout {
-			flex-direction: column;
-		}
-		.gc-tiles {
-			grid-template-columns: 1fr;
-		}
-		.gc-actions {
-			grid-template-columns: repeat(4, 1fr);
-			padding-left: 0;
-			border-left: none;
-			padding-top: 0.4rem;
-			border-top: 1px solid rgba(245, 158, 11, 0.15);
-		}
-	}
-	/* Very small screens: actions collapse to 2×2 grid */
-	@media (max-width: 480px) {
-		.gc-actions {
-			grid-template-columns: 1fr 1fr;
-		}
+	/* 2×2 grid when log stacks below (<768px) */
+	@media (max-width: 767px) {
 		.gc--stacked .gc-actions {
 			grid-template-columns: 1fr 1fr;
 		}
 	}
-	/* Medium: actions as 1×4 column */
-	@media (min-width: 769px) and (max-width: 1099px) {
+
+	/* ===== Non-stacked responsive (narrow screens) ===== */
+	@media (max-width: 768px) {
+		.gc-layout { flex-direction: column; }
+		.gc-tiles  { grid-template-columns: 1fr; }
 		.gc-actions {
-			grid-template-columns: 1fr;
-			gap: 0.25rem;
+			grid-template-columns: 1fr 1fr;
+			padding-left: 0;
+			border-left: none;
+			padding-top: 0.4rem;
+			border-top: 1px solid rgba(245, 158, 11, 0.15);
 		}
 	}
 

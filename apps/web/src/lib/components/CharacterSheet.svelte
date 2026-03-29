@@ -411,7 +411,7 @@
 <!-- ============================================================
      Character Card
      ============================================================ -->
-<div class="char-card" class:collapsed>
+<div class="char-card" class:collapsed style="border-left: 3px solid #f59e0b">
 
 	<!-- Header ------------------------------------------------- -->
 	<div class="char-header">
@@ -843,14 +843,15 @@
 
 	/* ---- Header ---- */
 	.char-header {
+		position: relative;
 		display: flex;
 		align-items: center;
-		gap: 10px;
-		padding: 10px 14px;
+		gap: 8px;
+		padding: 8px 12px;
+		flex-wrap: wrap;
+		min-height: 55px;
 		background: var(--bg-inset);
 		border-bottom: 1px solid var(--border);
-		min-height: 54px;
-		position: relative;
 	}
 
 	.char-title {
@@ -968,8 +969,14 @@
 		display: block;
 	}
 
-	/* FA SVG icon sizing inside btn-icon buttons */
-	.icon-btn :global(svg) {
+	/* Square icon buttons in header — match foe/journey/site 26×26 */
+	.char-header .icon-btn {
+		width: 26px;
+		height: 26px;
+		padding: 4px;
+		flex-shrink: 0;
+	}
+	.char-header .icon-btn :global(svg) {
 		width: 13px;
 		height: 13px;
 		fill: currentColor;
@@ -1326,12 +1333,5 @@
 		border-bottom: none;
 	}
 
-	/* Accent left-border on hover — forge line */
-	.char-card:not(.collapsed) {
-		border-left: 2px solid var(--border-mid);
-		transition: border-color 0.2s;
-	}
-	.char-card:not(.collapsed):hover {
-		border-left-color: #c98c3850;
-	}
+
 </style>
