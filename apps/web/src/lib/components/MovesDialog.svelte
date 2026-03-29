@@ -65,6 +65,7 @@
 	let activeCategories = $state(new Set<string>());
 	let rolling          = $state(false);
 	let hideDisabled     = $state(false);
+	let filtersOpen      = $state(false);
 
 	// Detail view state
 	let selectedStat     = $state('');
@@ -766,11 +767,11 @@
 				aria-label="Search moves"
 			/>
 			<button
-				class="md-clear-btn"
-				title="Clear all filters"
-				onclick={clearFilters}
-				aria-label="Clear all filters"
-			>{@html clearFiltersSvg}</button>
+				class="md-filter-toggle"
+				class:md-filter-toggle--active={activeCategories.size > 0}
+				onclick={() => (filtersOpen = !filtersOpen)}
+				aria-expanded={filtersOpen}
+			>Filters{#if activeCategories.size > 0}&nbsp;<span class="md-filter-badge">{activeCategories.size}</span>{/if} {filtersOpen ? '▲' : '▼'}</button>
 			<button
 				class="md-hide-disabled-btn"
 				class:md-hide-disabled-btn--active={hideDisabled}
@@ -784,18 +785,28 @@
 					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
 				{/if}
 			</button>
+			<button
+				class="md-clear-btn"
+				title="Clear all filters"
+				onclick={clearFilters}
+				aria-label="Clear all filters"
+			>{@html clearFiltersSvg}</button>
 		</div>
 
-		<div class="md-cat-filters">
-			{#each categories as cat (cat)}
-				<button
-					class="md-cat-tag"
-					class:md-cat-tag--active={activeCategories.has(cat)}
-					style:--ccolor={catColor(cat)}
-					onclick={() => toggleCategory(cat)}
-				>{cat}</button>
-			{/each}
-		</div>
+		{#if filtersOpen}
+			<div class="md-filter-panel">
+				<div class="md-filter-chips">
+					{#each categories as cat (cat)}
+						<button
+							class="md-cat-tag"
+							class:md-cat-tag--active={activeCategories.has(cat)}
+							style:--ccolor={catColor(cat)}
+							onclick={() => toggleCategory(cat)}
+						>{cat}</button>
+					{/each}
+				</div>
+			</div>
+		{/if}
 	</div>
 
 	<!-- Tile grid grouped by category -->
@@ -1376,7 +1387,55 @@
 		color: var(--text-accent);
 	}
 
-	.md-cat-filters {
+	/* ── Filter toggle button ───────────────────────────────────────────── */
+	.md-filter-toggle {
+		font-family:    var(--font-ui);
+		font-size:      0.72rem;
+		font-weight:    600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		padding:        3px 10px;
+		border-radius:  12px;
+		border:         1px solid var(--border);
+		background:     transparent;
+		color:          var(--text-dimmer);
+		cursor:         pointer;
+		transition:     border-color 0.1s, color 0.1s;
+		display:        flex;
+		align-items:    center;
+		gap:            4px;
+		flex-shrink:    0;
+	}
+	.md-filter-toggle:hover,
+	.md-filter-toggle[aria-expanded='true'] {
+		border-color: var(--text-muted);
+		color:        var(--text-muted);
+	}
+	.md-filter-toggle--active {
+		border-color: var(--focus-ring);
+		color:        var(--text);
+	}
+	.md-filter-badge {
+		display:         inline-flex;
+		align-items:     center;
+		justify-content: center;
+		min-width:       16px;
+		height:          16px;
+		padding:         0 4px;
+		border-radius:   8px;
+		background:      var(--focus-ring);
+		color:           var(--bg-card);
+		font-size:       0.65rem;
+		font-weight:     700;
+		line-height:     1;
+	}
+	.md-filter-panel {
+		padding:       6px 8px;
+		background:    var(--bg-inset);
+		border:        1px solid var(--border);
+		border-radius: 6px;
+	}
+	.md-filter-chips {
 		display:   flex;
 		flex-wrap: wrap;
 		gap:       4px;
@@ -1673,8 +1732,7 @@
 		display:     inline-flex;
 		align-items: center;
 		gap:         6px;
-		padding:     8px 16px;
-		font-size:   0.8rem;
+		padding:     5px 16px;
 	}
 	/* Roll status — left side of footer-btns row, expands to fill space */
 	.md-roll-status {

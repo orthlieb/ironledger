@@ -536,5 +536,5 @@
 		align-items: center;
 		gap:         8px;
 	}
-	.roll-btn { margin-left: auto; padding: 6px 16px; font-size: 0.8rem; white-space: nowrap; }
+	.roll-btn { margin-left: auto; padding: 5px 16px; white-space: nowrap; }
 </style>

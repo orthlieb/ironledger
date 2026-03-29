@@ -572,8 +572,7 @@
 		font-size:       0.78rem;
 	}
 	.od-roll-btn {
-		padding:         8px 20px;
-		font-size:       0.8rem;
-		justify-content: center;  /* prevent text left-drift in inline-flex */
+		padding:         5px 20px;
+		justify-content: center;
 	}
 </style>
