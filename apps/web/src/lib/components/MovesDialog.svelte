@@ -1188,13 +1188,13 @@
 
 			{:else if isNoRollMove(selectedMove)}
 				<div class="md-footer-btns">
-					<button class="btn" onclick={close}>Cancel</button>
 					{#if selectedMove['logBody'] || selectedMove.id === 'move/take-a-hiatus'}
 						<button
 							class="btn btn-primary md-roll-btn md-roll-btn--full"
 							onclick={doApplyNoRollMove}
 						>Use Move</button>
 					{/if}
+					<button class="btn" onclick={close}>Cancel</button>
 				</div>
 
 			{:else}
@@ -1447,9 +1447,14 @@
 	}
 
 	.md-footer-btns {
-		display:     flex;
-		align-items: center;
-		gap:         8px;
+		display:          flex;
+		align-items:      center;
+		justify-content:  flex-end;
+		gap:              8px;
+	}
+	.md-roll-status {
+		flex: 1;
+		text-align: left;
 	}
 
 	.md-loading,

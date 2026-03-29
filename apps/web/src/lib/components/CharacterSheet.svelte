@@ -474,12 +474,6 @@
 			>{data.name || 'Unnamed'}</span>
 		{/if}
 
-		{#if initiative === 1}
-			<button class="cs-init-badge cs-init-badge--you" onclick={() => onInitiativeChange?.('foe')} title="Click to change">{@html swordSvg}<span class="cs-init-label">Has Initiative</span></button>
-		{:else if initiative === 2}
-			<button class="cs-init-badge cs-init-badge--foe" onclick={() => onInitiativeChange?.('character')} title="Click to change">{@html shieldSvg}<span class="cs-init-label">Foe Has Initiative</span></button>
-		{/if}
-
 		<span
 			class="save-status"
 			class:saving={saveStatus === 'saving'}
@@ -488,6 +482,12 @@
 			{#if saveStatus === 'saving'}Saving…{/if}
 			{#if saveStatus === 'error'}Save failed!{/if}
 		</span>
+
+		{#if initiative === 1}
+			<button class="cs-init-badge cs-init-badge--you" onclick={() => onInitiativeChange?.('foe')} title="Click to change">{@html swordSvg}<span class="cs-init-label">Has Initiative</span></button>
+		{:else if initiative === 2}
+			<button class="cs-init-badge cs-init-badge--foe" onclick={() => onInitiativeChange?.('character')} title="Click to change">{@html shieldSvg}<span class="cs-init-label">Foe Has Initiative</span></button>
+		{/if}
 
 		<!-- Export button — always visible -->
 		<button
@@ -848,7 +848,6 @@
 		align-items: center;
 		gap: 8px;
 		padding: 8px 12px;
-		flex-wrap: wrap;
 		min-height: 55px;
 		background: var(--bg-inset);
 		border-bottom: 1px solid var(--border);
@@ -881,36 +880,34 @@
 		min-width: 0;
 	}
 
-	/* Initiative badge in title bar */
+	/* Initiative badge — canonical pill style, floated to far right of header */
 	.cs-init-badge {
-		flex-shrink: 0;
-		position: relative;
 		display: flex;
 		align-items: center;
-		gap: 5px;
-		padding: 3px 8px 3px 5px;
-		border-radius: 999px;
-		border: none;
+		gap: 4px;
+		padding: 2px 7px;
+		border-radius: 10px;
+		border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
 		cursor: pointer;
 		transition: opacity 0.15s;
 		white-space: nowrap;
-	}
-	.cs-init-badge:hover { opacity: 0.75; }
-	.cs-init-badge :global(svg) { width: 13px; height: 13px; fill: currentColor; flex-shrink: 0; }
-	.cs-init-label {
+		flex-shrink: 0;
+		margin-left: auto;
+		font-family: var(--font-ui);
 		font-size: 0.6rem;
-		font-weight: 700;
+		font-weight: 600;
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		font-family: var(--font-ui);
 	}
+	.cs-init-badge:hover { opacity: 0.75; }
+	.cs-init-badge :global(svg) { width: 11px; height: 11px; fill: currentColor; flex-shrink: 0; }
 	.cs-init-badge--you {
-		background: rgba(52, 211, 153, 0.2);
-		color: #059669;
+		background: rgba(52, 211, 153, 0.15);
+		color: #34d399;
 	}
 	.cs-init-badge--foe {
-		background: rgba(239, 68, 68, 0.2);
-		color: #b91c1c;
+		background: rgba(239, 68, 68, 0.10);
+		color: #ef4444;
 	}
 
 	/* Portrait */

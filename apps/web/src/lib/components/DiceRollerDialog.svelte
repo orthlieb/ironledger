@@ -370,12 +370,11 @@
 	.quick-btn {
 		flex:            1;
 		display:         flex;
-		flex-direction:  column;
+		flex-direction:  row;
 		align-items:     center;
 		justify-content: center;
-		gap:             4px;
-		min-height:      56px;
-		padding:         8px 4px;
+		gap:             6px;
+		padding:         5px 10px;
 		background:      var(--bg-control);
 		border:          1px solid var(--border);
 		border-radius:   6px;
@@ -537,5 +536,5 @@
 		align-items: center;
 		gap:         8px;
 	}
-	.roll-btn { flex: 1; padding: 8px; font-size: 0.8rem; white-space: nowrap; }
+	.roll-btn { margin-left: auto; padding: 6px 16px; font-size: 0.8rem; white-space: nowrap; }
 </style>

@@ -693,37 +693,35 @@
 		fill: currentColor;
 	}
 
-	/* Initiative icon badge (character tile, inside label header) */
+	/* Initiative badge — canonical pill style, floated right in name row */
 	.gc-init-badge {
 		display: flex;
 		align-items: center;
 		gap: 4px;
-		padding: 2px 6px 2px 4px;
-		border-radius: 999px;
-		border: none;
+		padding: 2px 7px;
+		border-radius: 10px;
+		border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
 		cursor: pointer;
 		pointer-events: auto;
 		transition: opacity 0.15s;
 		white-space: nowrap;
+		flex-shrink: 0;
+		margin-left: auto;
+		font-family: var(--font-ui);
+		font-size: 0.6rem;
+		font-weight: 600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
 	}
 	.gc-init-badge:hover { opacity: 0.75; }
-	.gc-init-badge :global(svg) { width: 10px; height: 10px; fill: currentColor; flex-shrink: 0; }
-	.gc-init-label {
-		font-size: 0.55rem;
-		font-weight: 700;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		font-family: var(--font-ui);
-	}
+	.gc-init-badge :global(svg) { width: 11px; height: 11px; fill: currentColor; flex-shrink: 0; }
 	.gc-init-badge--you {
-		background: rgba(52, 211, 153, 0.2);
-		color: #059669;
+		background: rgba(52, 211, 153, 0.15);
+		color: #34d399;
 	}
 	.gc-init-badge--foe {
-		background: rgba(239, 68, 68, 0.2);
-		color: #b91c1c;
+		background: rgba(239, 68, 68, 0.10);
+		color: #ef4444;
 	}
 
 	/* ===== Expedition tile details ===== */

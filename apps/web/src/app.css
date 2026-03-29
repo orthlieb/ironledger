@@ -401,7 +401,7 @@ dialog label {
 .app-main {
 	max-width: 1600px;
 	margin: 0 auto;
-	padding: 0.5rem var(--page-gutter) 4rem;
+	padding: 0 var(--page-gutter) 4rem;
 }
 
 /* --------------------------------------------------------------------------
