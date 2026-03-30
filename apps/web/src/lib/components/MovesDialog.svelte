@@ -1136,7 +1136,7 @@
 						<span class="md-adds-label md-adds-label--gap">Mana</span>
 						<button class="md-adj" onclick={() => (manaCommit = Math.max(0, manaCommit - 1))} disabled={rolling || manaCommit <= 0} aria-label="Decrease mana">−</button>
 						<span class="md-adds-val" class:positive={manaCommit > 0}>{manaCommit}</span>
-						<button class="md-adj" onclick={() => (manaCommit = Math.min((ctx?.data as Record<string, number>)?.['mana'] ?? 0, manaCommit + 1))} disabled={rolling || manaCommit >= ((ctx?.data as Record<string, number>)?.['mana'] ?? 0)} aria-label="Increase mana">+</button>
+						<button class="md-adj" onclick={() => (manaCommit = Math.min(parseInt(ctx?.data?.globalValues?.['mana'] ?? '0'), manaCommit + 1))} disabled={rolling || manaCommit >= parseInt(ctx?.data?.globalValues?.['mana'] ?? '0')} aria-label="Increase mana">+</button>
 						<span class="md-adds-label md-adds-label--gap">Difficulty</span>
 						<button class="md-adj" onclick={() => (spellDifficulty = Math.max(1, spellDifficulty - 1))} disabled={rolling || spellDifficulty <= 1} aria-label="Decrease difficulty">−</button>
 						<span class="md-adds-val">{spellDifficulty}</span>

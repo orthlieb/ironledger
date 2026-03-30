@@ -181,6 +181,18 @@
 	});
 
 	function applyResourceChange(key: string, delta: number) {
+		// Global counters (e.g. mana) live in data.globalValues as numeric strings.
+		if (key === 'mana') {
+			const old  = parseInt(data.globalValues?.['mana'] ?? '0');
+			const next = Math.max(0, Math.min(10, old + delta));
+			if (next !== old) {
+				if (!data.globalValues) data.globalValues = {};
+				data.globalValues['mana'] = String(next);
+				appendLog(SESSION_LOG_ID, charTitle('Mana'),
+					`<div>Mana: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : ''}${delta})</div>`);
+			}
+			return;
+		}
 		const rec = data as unknown as Record<string, number>;
 		const old = rec[key] ?? 0;
 		let next: number;
