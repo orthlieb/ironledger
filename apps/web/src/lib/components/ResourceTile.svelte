@@ -58,7 +58,7 @@
 			disabled={value <= min}
 			aria-label="Decrease {label}"
 		>−</button>
-		<span class="res-value">{value}</span>
+		<span class="res-value" class:res-value--wide={value > 9}>{value}</span>
 		<button
 			class="res-btn"
 			onclick={increment}
@@ -89,19 +89,19 @@
 		position:        absolute;
 		inset:           0;
 		display:         flex;
-		align-items:     center;
+		align-items:     flex-end;
 		justify-content: center;
-		opacity:         0.12;
+		opacity:         0.22;
 		pointer-events:  none;
 	}
 
 	:global([data-theme="dark"]) .res-icon {
-		opacity: 0.25;
+		opacity: 0.50;
 	}
 
 	.res-icon :global(svg) {
-		width:  60%;
-		height: 60%;
+		width:  100%;
+		height: 100%;
 		fill:   var(--res-color);
 		color:  var(--res-color);
 	}
@@ -137,11 +137,13 @@
 		font-weight:          900;
 		font-variant-numeric: tabular-nums;
 		color:                var(--res-color);
-		-webkit-text-stroke:  1px white;
-		text-stroke:          1px white;
 		line-height:          1;
 		min-width:            1.4ch;
 		text-align:           center;
+	}
+
+	.res-value--wide {
+		font-size: 1.0rem;
 	}
 
 	/* Same style as gc-prog-btn (progress track buttons) */

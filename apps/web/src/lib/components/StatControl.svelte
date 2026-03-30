@@ -96,17 +96,17 @@
 		display:         flex;
 		align-items:     flex-end;
 		justify-content: center;
-		opacity:         0.18;
+		opacity:         0.22;
 		pointer-events:  none;
 	}
 
 	:global([data-theme="dark"]) .stat-icon {
-		opacity: 0.32;
+		opacity: 0.50;
 	}
 
 	.stat-icon :global(svg) {
-		width:  72%;
-		height: 72%;
+		width:  100%;
+		height: 100%;
 		fill:   var(--stat-color);
 		color:  var(--stat-color);
 	}
@@ -136,8 +136,6 @@
 		border:              none;
 		background:          transparent;
 		color:               var(--stat-color);
-		-webkit-text-stroke: 1px white;
-		text-stroke:         1px white;
 		position:            relative;
 		z-index:             1;
 		line-height:         1;

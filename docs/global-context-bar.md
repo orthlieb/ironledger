@@ -51,6 +51,7 @@ A full-width sticky bar rendered above the two-column page layout on the charact
 - **Row 1**: Portrait (24px circle) + character name (display font, bold)
 - **Row 2**: 5 core stats as colored abbreviations (E:1 H:1 I:1 S:1 W:1)
 - **Row 3**: 5 resource icons with values (momentum, health, spirit, supply, mana)
+- **Row 4** *(asset pills)*: One pill per non-`string` `customField` on each owned asset. Pill text is `field.shortLabel` (or `field.label` if `shortLabel` is absent), followed by the current value. Global fields (e.g. mana) are deduplicated. Pill color matches the asset category color.
 
 ### Foe Tile
 - **Row 1**: Portrait (24px circle) + foe name (display font, bold)

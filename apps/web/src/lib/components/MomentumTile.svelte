@@ -148,16 +148,13 @@
 		font-weight:          900;
 		font-variant-numeric: tabular-nums;
 		color:                var(--mt-color);
-		-webkit-text-stroke:  1px white;
-		text-stroke:          1px white;
 		line-height:          1;
 		min-width:            1.8ch;
 		text-align:           center;
 	}
 
 	.mt-val.negative {
-		color:               var(--color-danger);
-		-webkit-text-stroke: 1px white;
+		color: var(--color-danger);
 	}
 
 	.mt-btn {

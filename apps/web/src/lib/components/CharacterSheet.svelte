@@ -27,7 +27,8 @@
 	// Resource icons (stat icons removed per user request)
 	import iconHeart  from '$icons/icon-heart.svg?raw';
 	import iconSpirit from '$icons/icon-spirit.svg?raw';
-	import iconSupply   from '$icons/icon-supply.svg?raw';
+	import iconSupply from '$icons/icon-supply.svg?raw';
+	import iconStar   from '$icons/star-solid-full.svg?raw';
 
 	import { initLog, appendLog, getXpSpendNonce, drainXpSpend, getActionNonce, drainActions, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import { FLOOR_RULES, DEBILITY_MOMENTUM_TITLE } from '$lib/cascadeRules.js';
@@ -74,7 +75,7 @@
 	// untrack() suppresses the "captured initial value" rune warning correctly.
 	let data = $state(untrack(() => hydrateCharacter(character.data)));
 	let collapsed = $state(false);
-	let confirmingDelete = $state(false);
+	let deleteDialogEl = $state<HTMLDialogElement | null>(null);
 	let saveStatus = $state<'idle' | 'saving' | 'error'>('idle');
 
 	// Publish live data to the global dice context whenever this sheet is active
@@ -506,22 +507,30 @@
 		>{@html fileExportSvg}</button>
 
 		{#if onDelete}
-			{#if confirmingDelete}
-				<span class="delete-confirm">
-					<span class="delete-confirm-label">Delete?</span>
-					<button class="btn btn-danger btn-sm" onclick={() => onDelete!()}>Yes</button>
-					<button class="btn btn-sm" onclick={() => (confirmingDelete = false)}>No</button>
-				</span>
-			{:else}
-				<button
-					class="btn btn-danger btn-icon icon-btn"
-					onclick={() => (confirmingDelete = true)}
-					title="Delete character"
-					aria-label="Delete character"
-				>{@html trashSvg}</button>
-			{/if}
+			<button
+				class="btn btn-danger btn-icon icon-btn"
+				onclick={() => deleteDialogEl?.showModal()}
+				use:tooltip={"Delete character"}
+				aria-label="Delete character"
+			>{@html trashSvg}</button>
 		{/if}
 	</div>
+
+	<!-- Delete confirmation dialog -->
+	{#if onDelete}
+		<dialog bind:this={deleteDialogEl} class="del-dialog" oncancel={() => deleteDialogEl?.close()}>
+			<div class="del-header">
+				<span class="del-title">Delete Character</span>
+			</div>
+			<div class="del-body">
+				<p>Permanently delete <strong>{data.name}</strong>? This cannot be undone.</p>
+			</div>
+			<div class="del-footer">
+				<button class="btn" onclick={() => deleteDialogEl?.close()}>Cancel</button>
+				<button class="btn btn-danger" onclick={() => { deleteDialogEl?.close(); onDelete!(); }}>Delete</button>
+			</div>
+		</dialog>
+	{/if}
 
 	<!-- Body (collapsible) ------------------------------------- -->
 	{#if !collapsed}
@@ -655,18 +664,25 @@
 						tooltip="Available provisions and resources"
 						onchange={(o, n) => logMeter('Supply', o, n)}
 					/>
+					<ResourceTile
+						label="Experience"
+						bind:value={data.xp}
+						color="#6b7280"
+						min={0}
+						max={30}
+						icon={iconStar}
+						tooltip="Accumulated experience points (0–30)"
+						onchange={(o, n) => logXp(o, n)}
+					/>
 
 				</div>
 			</section>
 
 			<div class="section-divider"></div>
 
-			<!-- XP + Debilities (side by side) -->
+			<!-- Debilities -->
 			<section class="char-section">
-				<div class="xp-debilities-row">
-					<XpTrack bind:value={data.xp} onchange={logXp} />
-					<DebilitiesSection {data} onchange={logDebility} />
-				</div>
+				<DebilitiesSection {data} onchange={logDebility} />
 			</section>
 
 			<div class="section-divider"></div>
@@ -911,27 +927,44 @@
 		fill: currentColor;
 	}
 
-	/* Delete confirmation */
-	.delete-confirm {
-		display: flex;
-		align-items: center;
-		gap: 5px;
-		flex-shrink: 0;
+	/* Delete dialog */
+	.del-dialog {
+		width: 340px;
+		border-radius: 8px;
+		border: 1px solid var(--border);
+		background: var(--bg-card);
+		color: var(--text);
+		padding: 0;
+		box-shadow: 0 8px 32px #00000060;
 	}
-
-	.delete-confirm-label {
+	.del-dialog::backdrop {
+		background: rgba(0, 0, 0, 0.55);
+	}
+	.del-header {
+		padding: 14px 18px 10px;
+		border-bottom: 1px solid var(--border);
+	}
+	.del-title {
 		font-family: var(--font-ui);
-		font-size: 0.7rem;
-		font-weight: 600;
-		letter-spacing: 0.05em;
+		font-size: 0.85rem;
+		font-weight: 700;
 		text-transform: uppercase;
+		letter-spacing: 0.06em;
 		color: var(--color-danger);
-		white-space: nowrap;
 	}
-
-	.btn-sm {
-		padding: 3px 9px;
-		font-size: 0.68rem;
+	.del-body {
+		padding: 16px 18px;
+		font-family: var(--font-ui);
+		font-size: 0.85rem;
+		color: var(--text);
+		line-height: 1.5;
+	}
+	.del-footer {
+		display: flex;
+		justify-content: flex-end;
+		gap: 8px;
+		padding: 10px 18px 14px;
+		border-top: 1px solid var(--border);
 	}
 
 	/* Save indicator */
@@ -1075,7 +1108,8 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 14px;
-		align-items: flex-start;
+		align-items: stretch;
+		justify-content: center;
 	}
 
 

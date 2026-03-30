@@ -4,6 +4,48 @@ Canonical styles for shared UI patterns across the app. When creating or editing
 
 ---
 
+## Tooltips
+
+**Always use CSS tooltips via `data-tooltip`. Never use the native `title` attribute** — browser `title` tooltips have unpredictable delays, can't be styled, and don't appear in all environments.
+
+### Usage
+
+```svelte
+<span data-tooltip="Tooltip text">hover me</span>
+<!-- Appears above by default -->
+
+<span data-tooltip="Tooltip text" class="tooltip-down">hover me</span>
+<!-- Appears below -->
+```
+
+The global rule in `app.css` handles all styling automatically — no extra CSS needed. The tooltip appears on `:hover` and `:focus-visible`.
+
+### How it works (app.css)
+
+- `[data-tooltip]` gets `position: relative`
+- `::after` renders the bubble using `content: attr(data-tooltip)`
+- `::before` renders the arrow caret
+- Fade + scale transition on hover
+- `.tooltip-down` class flips direction to below the element
+- `z-index: 9999` on bubble, `10000` on JS tooltips (for clipped scroll contexts)
+
+### When to use `use:tooltip` instead
+
+If the element lives inside an `overflow: hidden` or `overflow: scroll` container (e.g. the GCB tile, scroll panels), the CSS `::after` tooltip will be clipped. **Always use `use:tooltip` for pills and controls inside the GCB or any scrollable/clipped container.**
+
+```svelte
+<script>
+  import { tooltip } from '$lib/actions/tooltip.js';
+</script>
+
+<span use:tooltip="Asset name">pill text</span>
+<span use:tooltip={{ text: 'Asset name', placement: 'below' }}>pill text</span>
+```
+
+The action appends a body-level `.js-tooltip` div (fixed position) so it is never clipped by any ancestor overflow.
+
+---
+
 ## Card Headers
 
 Used in: `CharacterSheet` (`.char-header`), `FoeCard` (`.fc-header`), `JourneyCard` (`.jc-header`), `SiteCard` (`.sc-header`)
@@ -273,3 +315,77 @@ Square tile used for the five Ironsworn stats (Edge, Heart, Iron, Shadow, Wits).
 | Wits | `src/lib/icons/brain.svg` |
 
 All imported as `?raw` and rendered with `{@html icon}`. The `:global(svg)` selector sets `fill: var(--stat-color)` and `width/height: 72%`.
+
+---
+
+## Design Tokens — Colors & Fonts
+
+All defined in `apps/web/src/app.css`. Use CSS variables everywhere; never hardcode values except for semantic one-off colors (e.g. danger red `#ef4444`).
+
+### Fonts
+
+| Variable | Value | Use |
+|----------|-------|-----|
+| `--font-display` | `'Cinzel', 'Palatino Linotype', Georgia, serif` | Headings, brand name, card titles |
+| `--font-body` | `'Crimson Pro', 'Palatino Linotype', Georgia, serif` | Body text, asset ability text |
+| `--font-ui` | `'Roboto', system-ui, sans-serif` | Labels, buttons, stats, pills, all UI chrome |
+
+### Text Colors
+
+| Variable | Dark theme | Light/Print theme | Use |
+|----------|-----------|-------------------|-----|
+| `--text` | (body default) | (body default) | Main readable text |
+| `--text-muted` | `#9a886a` | `#5a4e38` | Secondary labels, dimmed controls |
+| `--text-dimmer` | `#6e5e42` | `#8a7860` | Very quiet labels, track readouts |
+| `--text-accent` | `#e8a030` | `#8a4e08` | Brand color — nav logo, links, progress tick strokes, hover highlights |
+
+### Background & Border Colors
+
+| Variable | Dark theme | Light/Print theme | Use |
+|----------|-----------|-------------------|-----|
+| `--bg-card` | `#131008` | `#ede6d6` | Card backgrounds |
+| `--bg-inset` | `#0d0b07` | `#f9f4ea` | Inset sections (card headers, inputs) |
+| `--border` | `#3d3425` | `#c8b89a` | Card/section borders |
+| `--border-mid` | `#574a32` | `#b0a080` | Button borders, control separators |
+
+### Stat Colors
+
+| Variable | Dark theme | Light/Print theme | Stat |
+|----------|-----------|-------------------|------|
+| `--color-edge` | `#4E80ED` | `#1a5fa0` | Edge |
+| `--color-heart` | `#DD514C` | `#b02828` | Heart |
+| `--color-iron` | `#9EA2AD` | `#5a6878` | Iron |
+| `--color-shadow` | `#9E5BEE` | `#6a2aaa` | Shadow |
+| `--color-wits` | `#E8A13B` | `#805800` | Wits |
+| `--color-touched` | `#78DB88` | `#2a8840` | Touched (YRT homebrew) |
+
+### Resource Colors
+
+| Variable | Dark theme | Light/Print theme | Resource |
+|----------|-----------|-------------------|----------|
+| `--color-momentum` | `#73A4F4` | `#1a5fa0` | Momentum |
+| `--color-health` | `#E77974` | `#b02828` | Health |
+| `--color-spirit` | `#A28BF3` | `#6a2aaa` | Spirit |
+| `--color-supply` | `#6ACF9D` | `#0e7a40` | Supply |
+| `--color-mana` | `#f59e0b` | `#b45309` | Mana (YRT homebrew) |
+| `--color-danger` | `#DD514C` | `#b02828` | Danger/menace (foe harm, menace track) |
+
+### Asset Category Colors
+
+Used in `AssetCard` and GCB asset pills. Maps `AssetCategory` → CSS variable:
+
+| Category | CSS variable |
+|----------|-------------|
+| Combat Talent | `var(--color-iron)` |
+| Path | `var(--color-edge)` |
+| Companion | `var(--color-heart)` |
+| Ritual | `var(--color-mana)` |
+| Touched | `var(--color-touched)` |
+
+### Progress Track Strokes
+
+In `ProgressTrack.svelte`:
+- **Box border**: `stroke="currentColor"` (inherits `--text-muted` from `.track-box`), `stroke-width="1.5"`
+- **Tick marks**: `stroke="var(--text-accent)"`, `stroke-width="1.5"`
+- **Hover**: `.track-box:hover` changes color to `var(--text-accent)`
+- **Danger boxes**: box border becomes `#E77974`, fill tinted red

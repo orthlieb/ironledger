@@ -171,7 +171,7 @@
 	// Expeditions tabs). Keeps GCB resource chips in sync with log link clicks.
 	const RESOURCE_CAPS: Record<string, [number, number]> = {
 		momentum: [-6, 10], health: [0, 5], spirit: [0, 5],
-		supply: [0, 5], mana: [0, 5], xp: [0, 999], bonds: [0, 40], failures: [0, 40],
+		supply: [0, 5], xp: [0, 999], bonds: [0, 40], failures: [0, 40],
 	};
 	$effect(() => {
 		getActionNonce();
@@ -184,6 +184,19 @@
 		const rec = char.data as Record<string, number | boolean>;
 		for (const action of actions) {
 			if (action.type === 'resource') {
+				const gv = (char.data as Record<string, unknown>).globalValues as Record<string, string> | undefined;
+				// If the key lives in globalValues (e.g. mana), handle it there.
+				if (gv !== undefined && action.key in gv) {
+					const old = parseInt(gv[action.key] ?? '0');
+					const next = Math.max(0, Math.min(999, old + action.value));
+					if (next !== old) {
+						(char.data as Record<string, unknown>).globalValues = { ...gv, [action.key]: String(next) };
+						const label = action.key.charAt(0).toUpperCase() + action.key.slice(1);
+						appendLog(SESSION_LOG_ID, `${char.name} — ${label}`,
+							`<div>${label}: ${old} → <strong>${next}</strong> (${action.value > 0 ? '+' : ''}${action.value})</div>`);
+					}
+					continue;
+				}
 				const caps = RESOURCE_CAPS[action.key];
 				if (!caps) continue;
 				const old = (rec[action.key] as number) ?? 0;

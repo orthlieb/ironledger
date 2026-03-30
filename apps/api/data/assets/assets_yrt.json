@@ -41,6 +41,7 @@
           "id": "touchedLevel",
           "type": "dropdown",
           "label": "Level",
+          "shortLabel": "Touched",
           "default": "pure",
           "options": [
             {
@@ -165,11 +166,13 @@
           "id": "mana",
           "type": "counter",
           "label": "Mana",
+          "shortLabel": "Mana",
           "position": "bottom",
           "maxValue": 10,
           "default": 0,
           "icon": "mana",
-          "global": true
+          "global": true,
+          "tooltipLabel": "Conclave Ritual"
         }
       ]
     },
@@ -289,11 +292,13 @@
           "id": "mana",
           "type": "counter",
           "label": "Mana",
+          "shortLabel": "Mana",
           "position": "bottom",
           "maxValue": 10,
           "default": 0,
           "icon": "mana",
-          "global": true
+          "global": true,
+          "tooltipLabel": "Conclave Ritual"
         }
       ]
     },
@@ -413,11 +418,13 @@
           "id": "mana",
           "type": "counter",
           "label": "Mana",
+          "shortLabel": "Mana",
           "position": "bottom",
           "maxValue": 10,
           "default": 0,
           "icon": "mana",
-          "global": true
+          "global": true,
+          "tooltipLabel": "Conclave Ritual"
         }
       ]
     },
@@ -537,11 +544,13 @@
           "id": "mana",
           "type": "counter",
           "label": "Mana",
+          "shortLabel": "Mana",
           "position": "bottom",
           "maxValue": 10,
           "default": 0,
           "icon": "mana",
-          "global": true
+          "global": true,
+          "tooltipLabel": "Conclave Ritual"
         }
       ]
     },
@@ -579,6 +588,7 @@
           "id": "doses",
           "type": "counter",
           "label": "Doses",
+          "shortLabel": "Doses",
           "position": "bottom",
           "maxValue": 10,
           "icon": "skull-and-crossbones"

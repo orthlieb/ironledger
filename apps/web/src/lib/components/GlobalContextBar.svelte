@@ -12,6 +12,11 @@
 	import { EXPEDITION_MARK_TICKS } from '$lib/types.js';
 	import { hydrateCharacter } from '$lib/character.js';
 	import { findFoe, FOE_RANKS, FOE_NATURE_COLORS, FOE_QUANTITIES, RANK_COLORS } from '$lib/foeStore.svelte.js';
+	import { getAssets, loadAssets } from '$lib/assetStore.svelte.js';
+	import { tooltip } from '$lib/actions/tooltip.js';
+
+	// Pre-load the asset catalogue so pills can be derived without visiting Characters tab.
+	$effect(() => { loadAssets(); });
 	import ProgressTrack from '$lib/components/ProgressTrack.svelte';
 
 	// Resource icons
@@ -124,6 +129,68 @@
 		{ key: 'supply',   label: 'Supply', icon: iconSupply,   color: 'var(--color-supply)' },
 	] as const;
 
+	const ASSET_CAT_COLOR: Record<string, string> = {
+		'Combat Talent': 'var(--color-iron)',
+		'Path':          'var(--color-edge)',
+		'Companion':     'var(--color-heart)',
+		'Ritual':        'var(--color-mana)',
+		'Touched':       'var(--color-touched)',
+	};
+
+	const DEBILITY_DEFS = [
+		{ key: 'wounded',    label: 'Wounded',    color: 'var(--color-health)' },
+		{ key: 'unprepared', label: 'Unprepared', color: 'var(--color-health)' },
+		{ key: 'shaken',     label: 'Shaken',     color: 'var(--color-health)' },
+		{ key: 'encumbered', label: 'Encumbered', color: 'var(--color-health)' },
+		{ key: 'maimed',     label: 'Maimed',     color: 'var(--color-danger)' },
+		{ key: 'corrupted',  label: 'Corrupted',  color: 'var(--color-danger)' },
+		{ key: 'cursed',     label: 'Cursed',     color: 'var(--color-shadow)' },
+		{ key: 'tormented',  label: 'Tormented',  color: 'var(--color-shadow)' },
+	] as const;
+
+	const activeDebilities = $derived(
+		data ? DEBILITY_DEFS.filter(d => (data as unknown as Record<string, boolean>)[d.key]) : []
+	);
+
+	// Derive pills for asset custom fields that have a shortLabel.
+	// Global fields (e.g. mana) are deduplicated by field id.
+	const assetPills = $derived((() => {
+		if (!data?.assets?.length) return [];
+		const catalogue = getAssets();
+		if (!catalogue.length) return [];
+		const pills: Array<{ label: string; value: string; color: string; assetName: string }> = [];
+		const seenFieldIds = new Set<string>();
+		for (const owned of data.assets) {
+			const def = catalogue.find(a => a.id === owned.assetId);
+			if (!def?.customFields) continue;
+			const color = ASSET_CAT_COLOR[def.category] ?? 'var(--text-muted)';
+			for (const field of def.customFields) {
+				if (field.type === 'string') continue;
+				// Deduplicate global fields across assets
+				if (field.global && seenFieldIds.has(field.id)) continue;
+				if (field.global) seenFieldIds.add(field.id);
+				const raw = field.global
+					? (data.globalValues?.[field.id] ?? String(field.default ?? 0))
+					: (owned.customValues?.[field.id] ?? String(field.default ?? 0));
+				let displayVal: string;
+				if (field.type === 'counter') {
+					displayVal = raw;
+				} else if (field.type === 'dropdown' || field.type === 'radio') {
+					displayVal = field.options?.find(o => o.id === raw)?.label ?? raw;
+				} else if (field.type === 'switch') {
+					displayVal = raw === '1' || raw === 'true' ? 'On' : 'Off';
+				} else {
+					continue;
+				}
+				// shortLabel is stripped by the API's AJV config; fall back to label
+				const pillLabel = (field as Record<string, unknown>)['shortLabel'] as string | undefined ?? field.label;
+				const tooltipText = (field as Record<string, unknown>)['tooltipLabel'] as string | undefined ?? def.name;
+				pills.push({ label: pillLabel, value: displayVal, color, assetName: tooltipText });
+			}
+		}
+		return pills;
+	})());
+
 	// ---------------------------------------------------------------------------
 	// Popover state
 	// ---------------------------------------------------------------------------
@@ -233,6 +300,22 @@
 								</span>
 							{/each}
 						</div>
+						{#if activeDebilities.length > 0}
+							<div class="gc-chip-group gc-chip-group--debilities">
+								<span class="gc-inline-label">Debilities</span>
+								{#each activeDebilities as deb}
+									<span class="gc-debility-pill" use:tooltip={deb.label} style="color: {deb.color}; background: color-mix(in srgb, {deb.color} 12%, transparent); border: 1px solid color-mix(in srgb, {deb.color} 30%, transparent);">{deb.label}</span>
+								{/each}
+							</div>
+						{/if}
+						{#if assetPills.length > 0}
+							<div class="gc-chip-group gc-chip-group--assets">
+								<span class="gc-inline-label">Assets</span>
+								{#each assetPills as pill}
+									<span class="gc-asset-pill" use:tooltip={pill.assetName} style="color: {pill.color}; background: color-mix(in srgb, {pill.color} 12%, transparent); border: 1px solid color-mix(in srgb, {pill.color} 30%, transparent);">{pill.label}: {pill.value}</span>
+								{/each}
+							</div>
+						{/if}
 					</div>
 				{:else}
 					<span class="gc-tile-placeholder"><img class="gc-placeholder-img" src={charactersSvgUrl} alt="" aria-hidden="true">Select Character</span>
@@ -645,6 +728,53 @@
 	}
 	.gc-chip--shake {
 		animation: chip-shake 0.4s ease-in-out;
+	}
+
+	/* Inline section label before pills */
+	.gc-inline-label {
+		font-family:    var(--font-ui);
+		font-size:      0.5rem;
+		font-weight:    700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color:          var(--text-dimmer);
+		flex-shrink:    0;
+		align-self:     center;
+		white-space:    nowrap;
+	}
+
+	/* Debility pills row */
+	.gc-chip-group--debilities {
+		width:      100%;
+		margin-top: 1px;
+		gap:        3px;
+	}
+	.gc-debility-pill {
+		font-family:    var(--font-ui);
+		font-size:      0.55rem;
+		font-weight:    700;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		padding:        2px 6px;
+		border-radius:  8px;
+		white-space:    nowrap;
+	}
+
+	/* Asset pills row */
+	.gc-chip-group--assets {
+		width: 100%;
+		margin-top: 1px;
+		gap: 3px;
+	}
+	.gc-asset-pill {
+		font-family:    var(--font-ui);
+		font-size:      0.55rem;
+		font-weight:    700;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		padding:        2px 6px;
+		border-radius:  8px;
+		white-space:    nowrap;
 	}
 
 	/* ===== Canonical pill badge ===== */

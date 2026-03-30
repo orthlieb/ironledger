@@ -232,6 +232,10 @@ export interface CustomFieldDef {
 	id:           string;
 	type:         'string' | 'counter' | 'radio' | 'dropdown' | 'switch';
 	label:        string;
+	/** Short label shown as a pill in the Global Context Bar (omit to hide from GCB). */
+	shortLabel?:  string;
+	/** Tooltip text shown on hover in the Global Context Bar (falls back to asset def.name). */
+	tooltipLabel?: string;
 	position?:    'top' | 'bottom';          // default 'top'
 	default?:     string | number;
 	// string

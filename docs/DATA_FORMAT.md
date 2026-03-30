@@ -586,6 +586,8 @@ The `customFields` array on an asset definition declares interactive controls re
 | `id` | string | yes | Unique key within this asset (e.g. `"health"`, `"armor"`). Used as the key in `customValues`. |
 | `type` | string | yes | One of `"string"`, `"counter"`, `"radio"`, `"dropdown"`, `"switch"` |
 | `label` | string | yes | Human-readable label shown next to the control |
+| `shortLabel` | string | no | Short label used in the Global Context Bar pill (e.g. `"Hawk"` instead of `"Companion Health"`). Defaults to `label` when omitted. `string`-type fields are never shown as GCB pills regardless of this field. |
+| `tooltipLabel` | string | no | Tooltip text shown on hover over the GCB pill. Falls back to the asset's `name` when omitted. Use when the pill text (`shortLabel`) differs from what the tooltip should say (e.g. `shortLabel: "Mana"`, `tooltipLabel: "Conclave Ritual"`). |
 | `position` | `"top"` \| `"bottom"` | no | `"top"` (default) renders before the preamble; `"bottom"` renders after abilities |
 | `default` | string \| number | no | Initial value when the asset is first added |
 | `placeholder` | string | no | Hint text for `string` fields |
