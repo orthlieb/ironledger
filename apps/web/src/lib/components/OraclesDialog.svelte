@@ -168,18 +168,17 @@
 				bind:value={search}
 				aria-label="Search oracles"
 			/>
+			<!-- Group filter toggle -->
+			<button
+				class="od-filter-toggle"
+				class:od-filter-toggle--active={activeGroups.size > 0}
+				onclick={() => (filtersOpen = !filtersOpen)}
+				aria-expanded={filtersOpen}
+			>
+				Filters{#if activeGroups.size > 0}&nbsp;<span class="od-filter-badge">{activeGroups.size}</span>{/if}
+				{filtersOpen ? '▲' : '▼'}
+			</button>
 		</div>
-
-		<!-- Group filter toggle -->
-		<button
-			class="od-filter-toggle"
-			class:od-filter-toggle--active={activeGroups.size > 0}
-			onclick={() => (filtersOpen = !filtersOpen)}
-			aria-expanded={filtersOpen}
-		>
-			Filters{#if activeGroups.size > 0}&nbsp;<span class="od-filter-badge">{activeGroups.size}</span>{/if}
-			{filtersOpen ? '▲' : '▼'}
-		</button>
 		{#if filtersOpen}
 		<div class="od-filter-panel">
 			<div class="od-filter-chips">
@@ -467,7 +466,7 @@
 		color:          var(--gcolor, var(--text-dimmer));
 		background:     transparent;
 		border:         1px solid color-mix(in srgb, var(--gcolor, var(--border)) 40%, transparent);
-		border-radius:  3px;
+		border-radius:  10px;
 		padding:        2px 8px;
 		cursor:         pointer;
 		white-space:    nowrap;
