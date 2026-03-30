@@ -36,8 +36,8 @@
 	import { getActiveDiceCtx, setActiveDiceCtx } from '$lib/diceContext.svelte.js';
 
 	import StatControl       from './StatControl.svelte';
-	import MeterControl      from './MeterControl.svelte';
 	import ResourceTile      from './ResourceTile.svelte';
+	import MomentumTile      from './MomentumTile.svelte';
 	import XpTrack           from './XpTrack.svelte';
 	import ProgressTrack     from './ProgressTrack.svelte';
 	import DebilitiesSection  from './DebilitiesSection.svelte';
@@ -183,11 +183,11 @@
 	function applyResourceChange(key: string, delta: number) {
 		// Global counters (e.g. mana) live in data.globalValues as numeric strings.
 		if (key === 'mana') {
-			const old  = parseInt(data.globalValues?.['mana'] ?? '0');
+			const gv  = data.globalValues ?? {};
+			const old = parseInt(gv['mana'] ?? '0');
 			const next = Math.max(0, Math.min(10, old + delta));
 			if (next !== old) {
-				if (!data.globalValues) data.globalValues = {};
-				data.globalValues['mana'] = String(next);
+				data.globalValues = { ...gv, mana: String(next) };
 				appendLog(SESSION_LOG_ID, charTitle('Mana'),
 					`<div>Mana: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : ''}${delta})</div>`);
 			}
@@ -252,16 +252,6 @@
 				}
 			}
 		}
-	}
-
-	function decrementMomentum() {
-		const next = Math.max(-6, data.momentum - 1);
-		if (next !== data.momentum) { logMeter('Momentum', data.momentum, next); data.momentum = next; }
-	}
-
-	function incrementMomentum() {
-		const next = Math.min(momentumMax, data.momentum + 1);
-		if (next !== data.momentum) { logMeter('Momentum', data.momentum, next); data.momentum = next; }
 	}
 
 	function doMomentumReset() {
@@ -626,46 +616,13 @@
 					{/if}
 				</div>
 				<div class="meters-row">
-					<!-- Momentum: two-row grid — labels on one line, controls on the next -->
-					<div class="momentum-group">
-						<!-- Label row -->
-						<span class="mom-label" style:color="var(--color-momentum)">
-							<span class="mom-icon" aria-hidden="true">↯</span>
-							Momentum
-						</span>
-						<span class="mom-label" style:color="var(--color-momentum)">Reset</span>
-						<span class="mom-label" style:color="var(--color-momentum)">Max</span>
-						<!-- Control row -->
-						<div class="mom-meter">
-							<button
-								class="btn btn-icon"
-								onclick={decrementMomentum}
-								disabled={data.momentum <= -6}
-								aria-label="Decrease Momentum"
-							>−</button>
-							<span
-								class="mom-val"
-								class:negative={data.momentum < 0}
-								style:color={data.momentum < 0 ? 'var(--color-danger)' : 'var(--color-momentum)'}
-							>{data.momentum}</span>
-							<button
-								class="btn btn-icon"
-								onclick={incrementMomentum}
-								disabled={data.momentum >= momentumMax}
-								aria-label="Increase Momentum"
-							>+</button>
-						</div>
-						<div class="mom-reset">
-							<button
-								class="btn btn-icon momentum-reset-btn"
-								onclick={doMomentumReset}
-								title="Reset momentum to {momentumRstV}"
-								aria-label="Reset momentum"
-							>↺</button>
-							<span class="mom-val">{momentumRstV}</span>
-						</div>
-						<span class="mom-val">{momentumMax}</span>
-					</div>
+					<MomentumTile
+						bind:value={data.momentum}
+						resetVal={momentumRstV}
+						maxVal={momentumMax}
+						onchange={(o, n) => logMeter('Momentum', o, n)}
+						onreset={doMomentumReset}
+					/>
 					<ResourceTile
 						label="Health"
 						bind:value={data.health}
@@ -1121,69 +1078,6 @@
 		align-items: flex-start;
 	}
 
-	/* Momentum: 3-column grid, two rows (labels / controls) */
-	.momentum-group {
-		display: grid;
-		grid-template-columns: auto auto auto;
-		grid-template-rows: auto auto;
-		align-items: center;
-		justify-items: center;
-		gap: 3px 10px;
-	}
-
-	.mom-label {
-		font-family: var(--font-ui);
-		font-size: 0.68rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		display: flex;
-		align-items: center;
-		gap: 4px;
-		cursor: default;
-	}
-
-	.mom-icon {
-		display:     flex;
-		align-items: center;
-		flex-shrink: 0;
-		font-size:   0.8rem;
-		line-height: 1;
-	}
-
-	.mom-meter {
-		display: flex;
-		align-items: center;
-		gap: 3px;
-	}
-
-	.mom-reset {
-		display: flex;
-		align-items: center;
-		gap: 4px;
-	}
-
-	.mom-val {
-		font-family: var(--font-ui);
-		font-size: 1.3rem;
-		font-weight: 700;
-		min-width: 1.8rem;
-		text-align: center;
-		font-variant-numeric: tabular-nums;
-		color: var(--color-momentum);
-		line-height: 1;
-	}
-	.mom-val.negative { color: var(--color-danger); }
-
-	.momentum-reset-btn {
-		font-size: 1rem;
-		padding: 2px 5px;
-		color: var(--text-dimmer);
-	}
-	.momentum-reset-btn:hover {
-		color: var(--color-momentum);
-		border-color: var(--color-momentum);
-	}
 
 	.debility-count {
 		font-family: var(--font-ui);
