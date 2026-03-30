@@ -201,7 +201,16 @@ export function checkPrecondition(
 
 	// ---- Touched level ----
 	if (key === 'touched') {
-		const level = TOUCHED_LEVEL[charData.touched] ?? 0;
+		// Prefer the value stored in the Touched asset card's customValues; fall back to
+		// the legacy charData.touched field for old saves that haven't migrated yet.
+		const touchedAsset = charData.assets.find(
+			(a) => findAsset(a.assetId)?.category === 'Touched',
+		);
+		const touchedLevelStr =
+			touchedAsset?.customValues?.['touchedLevel'] ??
+			charData.touched ??
+			'pure';
+		const level = TOUCHED_LEVEL[touchedLevelStr] ?? 0;
 		if (passes(level, pre)) return null;
 		if (pre.min !== undefined) {
 			const needed = TOUCHED_LABEL[pre.min] ?? String(pre.min);

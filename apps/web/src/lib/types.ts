@@ -38,6 +38,8 @@ export interface CharacterAsset {
 	selections?: string[];
 	/** Tracked counter/charge count for assets that define counterMax */
 	counter?: number;
+	/** Values for each entry in the asset definition's customFields array, keyed by field.key */
+	customValues?: Record<string, string>;
 }
 
 // ---------------------------------------------------------------------------
@@ -176,8 +178,10 @@ export interface CharacterData {
 	wits: number;
 
 	// YRT homebrew
-	touched: TouchedLevel;
-	touchedAnimal: string;
+	/** @deprecated Moved to the Touched asset card's customValues.touchedLevel — kept for old-save migration. */
+	touched?: TouchedLevel;
+	/** @deprecated Moved to the Touched asset card's customValues.animalName — kept for old-save migration. */
+	touchedAnimal?: string;
 
 	// Resources
 	momentum: number; // –6 to dynamic max (10 − debilityCount)
@@ -214,6 +218,25 @@ export interface CharacterData {
 
 export type AssetCategory = 'Combat Talent' | 'Companion' | 'Path' | 'Ritual' | 'Touched';
 
+/** One option in a custom select field on an asset card. */
+export interface CustomFieldOption {
+	value: string;
+	label: string;
+}
+
+/**
+ * Declares a custom input field on an asset definition.
+ * Values are stored in `CharacterAsset.customValues` keyed by `field.key`.
+ */
+export interface CustomFieldDef {
+	key:          string;
+	type:         'select' | 'text';
+	label:        string;
+	options?:     CustomFieldOption[];  // required when type === 'select'
+	placeholder?: string;              // hint text for type === 'text'
+	default?:     string;              // initial value
+}
+
 export interface AssetAbility {
 	enabled: boolean;
 	text:    string;
@@ -249,6 +272,8 @@ export interface AssetDefinition {
 	nameLabels?:         string[];
 	/** If present, renders mutually-exclusive radio buttons side by side (e.g. Ironclad armor choice). */
 	radioLabels?:        string[];
+	/** If present, renders custom input fields (select, text) in the asset body. Values stored in asset.customValues. */
+	customFields?:       CustomFieldDef[];
 	[key: string]:       unknown;
 }
 
@@ -269,8 +294,6 @@ export const DEFAULT_CHARACTER: CharacterData = {
 	iron: 1,
 	shadow: 1,
 	wits: 1,
-	touched: 'pure',
-	touchedAnimal: '',
 	momentum: 2,
 	health: 5,
 	spirit: 5,

@@ -290,6 +290,45 @@
 				</label>
 			{/each}
 
+			<!-- Custom fields (e.g. Touched level + animal name) -->
+			{#if (definition.customFields ?? []).length > 0}
+				<div class="custom-fields">
+					{#each definition.customFields! as field}
+						{#if field.type === 'select' && field.options}
+							<label class="companion-name-label">
+								<span class="companion-field-label">{field.label}</span>
+								<select
+									class="companion-name-input custom-field-select"
+									value={asset.customValues?.[field.key] ?? field.default ?? ''}
+									onchange={(e) => {
+										if (!asset.customValues) asset.customValues = {};
+										asset.customValues[field.key] = e.currentTarget.value;
+									}}
+								>
+									{#each field.options as opt}
+										<option value={opt.value}>{opt.label}</option>
+									{/each}
+								</select>
+							</label>
+						{:else if field.type === 'text'}
+							<label class="companion-name-label">
+								<span class="companion-field-label">{field.label}</span>
+								<input
+									type="text"
+									class="companion-name-input"
+									value={asset.customValues?.[field.key] ?? ''}
+									oninput={(e) => {
+										if (!asset.customValues) asset.customValues = {};
+										asset.customValues[field.key] = e.currentTarget.value;
+									}}
+									placeholder={field.placeholder ?? field.label + '…'}
+								/>
+							</label>
+						{/if}
+					{/each}
+				</div>
+			{/if}
+
 			{#if definition.preamble}
 				<p class="asset-preamble">{stripMdLinks(definition.preamble)}</p>
 			{/if}

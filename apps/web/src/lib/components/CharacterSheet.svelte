@@ -124,9 +124,15 @@
 		appendLog(SESSION_LOG_ID, charTitle(name), `<div>${name}: ${oldVal} → <strong>${newVal}</strong></div>`);
 	}
 
+	let debilityStatus      = $state('');
+	let debilityStatusTimer = 0;
+
 	function logDebility(label: string, active: boolean) {
 		appendLog(SESSION_LOG_ID, charTitle('Debilities'),
 			`<div>${label}: <strong>${active ? 'Activated' : 'Cleared'}</strong></div>`);
+		debilityStatus = `${label}: ${active ? 'Activated' : 'Cleared'}`;
+		clearTimeout(debilityStatusTimer);
+		debilityStatusTimer = setTimeout(() => { debilityStatus = ''; }, 3000) as unknown as number;
 	}
 
 	function logXp(oldVal: number, newVal: number) {
@@ -592,42 +598,6 @@
 						onchange={(o, n) => logStat('Wits', o, n)}
 					/>
 
-					<div class="touched-group">
-						<div class="section-label" style:color="var(--color-touched)">Touched</div>
-						<div class="touched-row">
-							<select
-								class="touched-select"
-								style:border-color="var(--color-touched)"
-								value={data.touched}
-								onchange={(e) => {
-									const old = data.touched;
-									const next = (e.target as HTMLSelectElement).value as typeof data.touched;
-									data.touched = next;
-									appendLog(SESSION_LOG_ID, charTitle('Touched'),
-										`<div>Touched: <strong>${old}</strong> → <strong>${next}</strong></div>`);
-								}}
-							>
-								<option value="pure">Pure</option>
-								<option value="prime">Prime</option>
-								<option value="second">Second</option>
-								<option value="third">Third</option>
-								<option value="feral">Feral</option>
-							</select>
-							<input
-								type="text"
-								bind:value={data.touchedAnimal}
-								placeholder="Animal…"
-								class="animal-input"
-								style:border-color="var(--color-touched)"
-								aria-label="Touched animal"
-								onblur={(e) => {
-									const val = (e.target as HTMLInputElement).value.trim();
-									if (val) appendLog(SESSION_LOG_ID, charTitle('Touched'),
-										`<div>Touched animal: <strong>${val}</strong></div>`);
-								}}
-							/>
-						</div>
-					</div>
 				</div>
 			</section>
 
@@ -637,8 +607,10 @@
 			<section class="char-section">
 				<div class="section-label">
 					Resources
-					{#if debilityCount > 0}
-						<span class="debility-count">({debilityCount} debility{debilityCount > 1 ? 'ies' : ''})</span>
+					{#if debilityStatus}
+						<span class="debility-status">{debilityStatus}</span>
+					{:else if debilityCount > 0}
+						<span class="debility-count">({debilityCount} {debilityCount === 1 ? 'debility' : 'debilities'})</span>
 					{/if}
 				</div>
 				<div class="meters-row">
@@ -1137,34 +1109,6 @@
 		gap: 16px;
 	}
 
-	.touched-group {
-		display: flex;
-		flex-direction: column;
-		gap: 5px;
-	}
-
-	/* The global .section-label has margin-bottom: 6px which stacks with the
-	   flex gap and misaligns the Touched select with the stat inputs. Reset it. */
-	.touched-group .section-label {
-		margin-bottom: 0;
-	}
-
-	.touched-row {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-	}
-
-	.touched-select {
-		font-size: 0.82rem;
-		padding: 4px 7px;
-	}
-
-	.animal-input {
-		width: 100px;
-		font-size: 0.82rem;
-		padding: 4px 7px;
-	}
 
 	/* Meters */
 	.meters-row {
@@ -1247,6 +1191,24 @@
 		text-transform: none;
 		letter-spacing: 0;
 		margin-left: 4px;
+	}
+
+	.debility-status {
+		font-family: var(--font-ui);
+		font-size: 0.75rem;
+		color: var(--color-danger);
+		font-weight: 500;
+		font-style: italic;
+		text-transform: none;
+		letter-spacing: 0;
+		margin-left: 4px;
+		animation: debility-fade 3s ease forwards;
+	}
+
+	@keyframes debility-fade {
+		0%   { opacity: 1; }
+		70%  { opacity: 1; }
+		100% { opacity: 0; }
 	}
 
 	/* XP + Debilities side-by-side */
