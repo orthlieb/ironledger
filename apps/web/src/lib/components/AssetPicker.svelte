@@ -8,7 +8,8 @@
 	 * Clicking an eligible tile shows an "Add X?" confirm dialog.
 	 */
 	import type { AssetCategory, AssetDefinition, CharacterData } from '$lib/types.js';
-	import { getAssets, isAssetsLoading, findAsset } from '$lib/assetStore.svelte.js';
+	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
+	import { getAssets, isAssetsLoading } from '$lib/assetStore.svelte.js';
 	import { firstPreconditionFailure, type Precondition } from '$lib/preconditions.js';
 
 	let {
@@ -34,15 +35,13 @@
 		'Touched':       'var(--color-touched)',
 	};
 
-	const CATEGORIES: Array<AssetCategory | 'All'> = [
-		'All', 'Combat Talent', 'Companion', 'Path', 'Ritual', 'Touched',
-	];
-
+	
 	// ---------------------------------------------------------------------------
 	// Filter state
 	// ---------------------------------------------------------------------------
-	let activeCategory  = $state<AssetCategory | 'All'>('All');
-	let search          = $state('');
+	let activeCategories = $state(new Set<AssetCategory>());
+	let filtersOpen      = $state(false);
+	let search           = $state('');
 	let dialogEl        = $state<HTMLDialogElement | null>(null);
 	let confirmDialogEl = $state<HTMLDialogElement | null>(null);
 	let pendingAsset    = $state<AssetDefinition | null>(null);
@@ -58,15 +57,6 @@
 
 	/** Returns a human-readable failure reason, or null if OK to add. */
 	function preconditionFailure(def: AssetDefinition): string | null {
-		// Implicit rule: only one Touched asset allowed per character
-		if (def.category === 'Touched') {
-			const hasTouch = ownedIds.some(
-				(id) => findAsset(id)?.category === 'Touched',
-			);
-			if (hasTouch) return 'You may only have one Touched asset';
-		}
-
-		// Data-driven preconditions — generic engine covers all keys
 		return firstPreconditionFailure(
 			def.preconditions as Precondition[] | undefined,
 			characterData,
@@ -76,15 +66,29 @@
 	// ---------------------------------------------------------------------------
 	// Filtered asset list
 	// ---------------------------------------------------------------------------
+	const hasActiveFilters = $derived(search.trim() !== '' || activeCategories.size > 0);
+
 	const filtered = $derived(
 		getAssets().filter((a) => {
-			if (activeCategory !== 'All' && a.category !== activeCategory) return false;
+			if (activeCategories.size > 0 && !activeCategories.has(a.category)) return false;
 			const q = search.trim().toLowerCase();
 			if (q && !a.name.toLowerCase().includes(q) &&
 				!(a.summary ?? '').toLowerCase().includes(q)) return false;
 			return true;
 		})
 	);
+
+	function toggleCategory(cat: AssetCategory) {
+		const next = new Set(activeCategories);
+		if (next.has(cat)) next.delete(cat); else next.add(cat);
+		activeCategories = next;
+	}
+
+	function clearFilters() {
+		search = '';
+		activeCategories = new Set();
+		filtersOpen = false;
+	}
 
 	// ---------------------------------------------------------------------------
 	// Add flow
@@ -147,28 +151,44 @@
 		<button class="close-btn" onclick={onClose} aria-label="Close picker">✕</button>
 	</div>
 
-	<!-- Category tabs + search — flex-shrink: 0 so they never scroll away -->
+	<!-- Search row + filter toggle -->
 	<div class="picker-controls">
-		<div class="cat-tabs" role="tablist">
-			{#each CATEGORIES as cat}
-				{@const color = cat === 'All' ? 'var(--text-muted)' : CAT_COLOR[cat]}
-				<button
-					role="tab"
-					class="cat-tab"
-					class:active={activeCategory === cat}
-					style:--cat-color={color}
-					onclick={() => (activeCategory = cat)}
-					aria-selected={activeCategory === cat}
-				>{cat}</button>
-			{/each}
+		<div class="ap-search-row">
+			<input
+				class="search-input"
+				type="search"
+				bind:value={search}
+				placeholder="Search by name or description…"
+				aria-label="Search assets"
+			/>
+			<button
+				class="ap-filter-toggle"
+				class:ap-filter-toggle--active={activeCategories.size > 0}
+				onclick={() => (filtersOpen = !filtersOpen)}
+				aria-expanded={filtersOpen}
+			>Filters{#if activeCategories.size > 0}&nbsp;<span class="ap-filter-badge">{activeCategories.size}</span>{/if} {filtersOpen ? '▲' : '▼'}</button>
 		</div>
-		<input
-			class="search-input"
-			type="search"
-			bind:value={search}
-			placeholder="Search by name or description…"
-			aria-label="Search assets"
-		/>
+		{#if filtersOpen}
+			<div class="ap-filter-panel">
+				<div class="ap-filter-chips">
+					{#each (Object.keys(CAT_COLOR) as AssetCategory[]) as cat}
+						<button
+							class="ap-filter-tag"
+							class:active={activeCategories.has(cat)}
+							style="--tag-color: {CAT_COLOR[cat]}"
+							onclick={() => toggleCategory(cat)}
+						>{cat}</button>
+					{/each}
+				</div>
+				<button
+					class="ap-clear-btn"
+					onclick={clearFilters}
+					disabled={!hasActiveFilters}
+					title="Clear all filters"
+					aria-label="Clear filters"
+				>{@html clearFiltersSvg}</button>
+			</div>
+		{/if}
 	</div>
 
 	<!-- Scrollable body — only this part scrolls -->
@@ -344,53 +364,115 @@
 
 	/* ---- Controls: category tabs + search — pinned, never scrolls ---- */
 	.picker-controls {
-		display: flex;
+		display:       flex;
 		flex-direction: column;
-		gap: 8px;
-		padding: 9px 16px 8px;
+		gap:           6px;
+		padding:       9px 16px 8px;
 		border-bottom: 1px solid var(--border);
-		flex-shrink: 0;
-		background: var(--bg-card);
+		flex-shrink:   0;
+		background:    var(--bg-card);
 	}
 
-	.cat-tabs {
-		display: flex;
-		gap: 4px;
-		flex-wrap: wrap;
-	}
-
-	.cat-tab {
-		border: 1.5px solid transparent;
-		border-radius: 12px;   /* pill shape */
-		padding: 3px 11px;
-		font-family: var(--font-ui);
-		font-size: 0.7rem;
-		font-weight: 500;
-		color: var(--text-muted);
-		background: transparent;
-		cursor: pointer;
-		transition: color 0.12s, border-color 0.12s, background 0.12s;
-		white-space: nowrap;
-		line-height: 1.4;
-	}
-	.cat-tab:hover {
-		color: var(--cat-color);
-		border-color: color-mix(in srgb, var(--cat-color) 50%, transparent);
-	}
-	/* Active tab: solid coloured pill */
-	.cat-tab.active {
-		color: var(--bg-card);
-		background: var(--cat-color);
-		border-color: var(--cat-color);
-		font-weight: 700;
+	.ap-search-row {
+		display:     flex;
+		align-items: center;
+		gap:         6px;
 	}
 
 	.search-input {
-		width: 100%;
+		flex:        1;
 		font-family: var(--font-ui);
-		font-size: 0.82rem;
-		padding: 5px 9px;
+		font-size:   0.82rem;
+		padding:     5px 9px;
+		min-width:   0;
 	}
+
+	.ap-filter-toggle {
+		font-family:    var(--font-ui);
+		font-size:      0.72rem;
+		font-weight:    600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		padding:        3px 10px;
+		border-radius:  12px;
+		border:         1px solid var(--border);
+		background:     transparent;
+		color:          var(--text-dimmer);
+		cursor:         pointer;
+		transition:     border-color 0.1s, color 0.1s;
+		display:        flex;
+		align-items:    center;
+		gap:            4px;
+		flex-shrink:    0;
+	}
+	.ap-filter-toggle:hover { color: var(--text); border-color: var(--border-mid); }
+	.ap-filter-toggle--active { color: var(--accent); border-color: var(--accent); }
+
+	.ap-filter-badge {
+		display:          inline-flex;
+		align-items:      center;
+		justify-content:  center;
+		background:       var(--accent);
+		color:            #fff;
+		font-size:        0.6rem;
+		font-weight:      700;
+		width:            14px;
+		height:           14px;
+		border-radius:    50%;
+	}
+
+	.ap-filter-panel {
+		position:      relative;
+		padding:       6px 8px;
+		background:    var(--bg-inset);
+		border:        1px solid var(--border);
+		border-radius: 6px;
+	}
+	.ap-filter-chips {
+		display:       flex;
+		flex-wrap:     wrap;
+		gap:           4px;
+		padding-right: 26px;
+	}
+	.ap-filter-tag {
+		font-family:    var(--font-ui);
+		font-size:      0.6rem;
+		font-weight:    600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color:          var(--tag-color, var(--text-dimmer));
+		background:     transparent;
+		border:         1px solid color-mix(in srgb, var(--tag-color, var(--border)) 40%, transparent);
+		border-radius:  10px;
+		padding:        2px 8px;
+		cursor:         pointer;
+		white-space:    nowrap;
+		transition:     background 0.12s, color 0.12s;
+	}
+	.ap-filter-tag:hover {
+		background: color-mix(in srgb, var(--tag-color, var(--border)) 12%, transparent);
+	}
+	.ap-filter-tag.active {
+		background:   color-mix(in srgb, var(--tag-color, var(--border)) 18%, transparent);
+		border-color: var(--tag-color, var(--border));
+	}
+	.ap-clear-btn {
+		position:      absolute;
+		bottom:        6px;
+		right:         6px;
+		background:    transparent;
+		border:        none;
+		color:         var(--text-dimmer);
+		cursor:        pointer;
+		padding:       3px 4px;
+		border-radius: 3px;
+		display:       flex;
+		align-items:   center;
+		transition:    color 0.12s, opacity 0.12s;
+	}
+	.ap-clear-btn:hover:not(:disabled) { color: var(--text); }
+	.ap-clear-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+	.ap-clear-btn :global(svg) { width: 16px; height: 16px; fill: currentColor; }
 
 	/* ---- Scrollable body ---- */
 	.picker-body {
