@@ -128,7 +128,7 @@
 	.stat-value-input {
 		font-family:         var(--font-ui);
 		font-size:           1.3rem;
-		font-weight:         700;
+		font-weight:         900;
 		font-variant-numeric: tabular-nums;
 		width:               100%;
 		text-align:          center;

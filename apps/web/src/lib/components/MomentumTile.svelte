@@ -1,8 +1,8 @@
 <script lang="ts">
 	/**
-	 * Momentum tile — matches the ResourceTile visual style.
-	 * Left tile: MOMENTUM label + − value + controls.
-	 * Right meta panel: ↺ Reset: n button (stacked above) MAX: m display.
+	 * Momentum tile — single bordered tile matching ResourceTile height.
+	 * Left column: MOMENTUM label + background icon + − value + controls.
+	 * Right column (divided by hairline): ↺ Reset: n button + MAX: m display.
 	 */
 	import momentumSvg from '$icons/icon-momentum.svg?raw';
 
@@ -33,10 +33,12 @@
 	}
 </script>
 
-<div class="mt-wrap">
-	<!-- Main momentum tile -->
-	<div class="mt-tile" style:--mt-color={COLOR}>
-		<div class="mt-icon" aria-hidden="true">{@html momentumSvg}</div>
+<div class="mt-tile" style:--mt-color={COLOR}>
+	<!-- Background icon behind the left column -->
+	<div class="mt-icon" aria-hidden="true">{@html momentumSvg}</div>
+
+	<!-- Left: name + controls -->
+	<div class="mt-left">
 		<span class="mt-name">Momentum</span>
 		<div class="mt-row">
 			<button
@@ -55,8 +57,11 @@
 		</div>
 	</div>
 
-	<!-- Meta panel: Reset button + MAX display -->
-	<div class="mt-meta" style:--mt-color={COLOR}>
+	<!-- Divider -->
+	<div class="mt-divider"></div>
+
+	<!-- Right: Reset button + MAX -->
+	<div class="mt-right">
 		<button
 			class="mt-reset-btn"
 			onclick={onreset}
@@ -68,32 +73,26 @@
 </div>
 
 <style>
-	.mt-wrap {
-		display:     flex;
-		align-items: stretch;
-		gap:         4px;
-	}
-
-	/* ---- Main tile ---- */
 	.mt-tile {
 		position:        relative;
-		width:           80px;
 		display:         flex;
-		flex-direction:  column;
-		align-items:     center;
-		justify-content: space-between;
+		flex-direction:  row;
+		align-items:     stretch;
 		padding:         5px 4px 5px;
 		border-radius:   6px;
 		border:          2px solid color-mix(in srgb, var(--mt-color) 50%, transparent);
 		background:      color-mix(in srgb, var(--mt-color) 8%, var(--bg-card));
 		overflow:        hidden;
-		gap:             3px;
+		gap:             0;
 	}
 
-	/* Background icon */
+	/* Background icon — sits behind left column */
 	.mt-icon {
 		position:        absolute;
-		inset:           0;
+		top:             0;
+		bottom:          0;
+		left:            0;
+		width:           90px;
 		display:         flex;
 		align-items:     center;
 		justify-content: center;
@@ -112,7 +111,19 @@
 		color:  var(--mt-color);
 	}
 
-	/* Name label */
+	/* Left column: name + − value + */
+	.mt-left {
+		display:         flex;
+		flex-direction:  column;
+		align-items:     center;
+		justify-content: space-between;
+		gap:             3px;
+		width:           80px;
+		position:        relative;
+		z-index:         1;
+		padding:         0 2px;
+	}
+
 	.mt-name {
 		font-family:    var(--font-ui);
 		font-size:      0.55rem;
@@ -120,26 +131,21 @@
 		text-transform: uppercase;
 		letter-spacing: 0.06em;
 		color:          var(--mt-color);
-		position:       relative;
-		z-index:        1;
 		line-height:    1;
 	}
 
-	/* Control row: − value + */
 	.mt-row {
 		display:         flex;
 		align-items:     center;
 		justify-content: center;
 		gap:             4px;
-		position:        relative;
-		z-index:         1;
 		width:           100%;
 	}
 
 	.mt-val {
 		font-family:          var(--font-ui);
 		font-size:            1.3rem;
-		font-weight:          700;
+		font-weight:          900;
 		font-variant-numeric: tabular-nums;
 		color:                var(--mt-color);
 		-webkit-text-stroke:  1px white;
@@ -150,7 +156,7 @@
 	}
 
 	.mt-val.negative {
-		color: var(--color-danger);
+		color:               var(--color-danger);
 		-webkit-text-stroke: 1px white;
 	}
 
@@ -183,23 +189,29 @@
 		cursor:  not-allowed;
 	}
 
-	/* ---- Meta panel: Reset + MAX ---- */
-	.mt-meta {
+	/* Hairline divider */
+	.mt-divider {
+		width:      1px;
+		margin:     0 6px;
+		background: color-mix(in srgb, var(--mt-color) 30%, transparent);
+		flex-shrink: 0;
+	}
+
+	/* Right column: Reset button + MAX */
+	.mt-right {
 		display:         flex;
 		flex-direction:  column;
 		align-items:     stretch;
 		justify-content: space-between;
 		gap:             4px;
-		padding:         5px 6px;
-		border-radius:   6px;
-		border:          2px solid color-mix(in srgb, var(--mt-color) 50%, transparent);
-		background:      color-mix(in srgb, var(--mt-color) 8%, var(--bg-card));
-		min-width:       62px;
+		position:        relative;
+		z-index:         1;
+		min-width:       60px;
 	}
 
 	.mt-reset-btn {
 		font-family:    var(--font-ui);
-		font-size:      0.65rem;
+		font-size:      0.6rem;
 		font-weight:    700;
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
@@ -207,11 +219,12 @@
 		background:     transparent;
 		border:         1px solid color-mix(in srgb, var(--mt-color) 40%, transparent);
 		border-radius:  4px;
-		padding:        3px 6px;
+		padding:        3px 5px;
 		cursor:         pointer;
 		white-space:    nowrap;
 		transition:     background 0.12s, border-color 0.12s;
 		text-align:     center;
+		flex:           1;
 	}
 
 	.mt-reset-btn:hover {
@@ -221,11 +234,15 @@
 
 	.mt-max {
 		font-family:    var(--font-ui);
-		font-size:      0.65rem;
+		font-size:      0.6rem;
 		font-weight:    700;
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
-		color:          var(--text-muted);
+		color:          var(--mt-color);
 		text-align:     center;
+		flex:           1;
+		display:        flex;
+		align-items:    center;
+		justify-content: center;
 	}
 </style>

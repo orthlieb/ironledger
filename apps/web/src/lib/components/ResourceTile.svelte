@@ -134,7 +134,7 @@
 	.res-value {
 		font-family:          var(--font-ui);
 		font-size:            1.3rem;
-		font-weight:          700;
+		font-weight:          900;
 		font-variant-numeric: tabular-nums;
 		color:                var(--res-color);
 		-webkit-text-stroke:  1px white;

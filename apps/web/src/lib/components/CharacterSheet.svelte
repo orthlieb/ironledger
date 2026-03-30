@@ -605,10 +605,10 @@
 
 			<div class="section-divider"></div>
 
-			<!-- Resources / Meters -->
+			<!-- Vitals / Meters -->
 			<section class="char-section">
 				<div class="section-label">
-					Resources
+					Vitals
 					{#if debilityStatus}
 						<span class="debility-status">{debilityStatus}</span>
 					{:else if debilityCount > 0}
