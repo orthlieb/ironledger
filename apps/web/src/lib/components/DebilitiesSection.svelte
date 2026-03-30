@@ -154,7 +154,8 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		padding: 2px 0;
+		padding: 0;
+		margin: 0;
 		cursor: pointer;
 		user-select: none;
 	}

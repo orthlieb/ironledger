@@ -502,12 +502,7 @@ Each file contains an `assets` array and an optional `rarities` array:
 | `postamble` | string or null | no | Explanatory text displayed on the asset card **after** the ability list (e.g., asset-specific constraints, Touched feature-use note) |
 | `preconditions` | array of objects | no | Conditions that must be met to add this asset. Same schema as move [Preconditions](#preconditions). Assets failing preconditions are faded and non-clickable in the picker. |
 | `abilities` | array | yes | Exactly 3 ability objects |
-| `nameLabels` | string[] | no | One labelled text input rendered per entry. Values stored in `CharacterAsset.names[]`. Example: `["Companion Name"]` or `["God's Name", "Stat"]` |
-| `radioLabels` | string[] | no | Mutually-exclusive radio buttons rendered side by side. Selected index stored in `CharacterAsset.radioSelection` (number, language-independent). Example: `["Lightly Armored", "Geared for War"]` |
-| `counterMax` | number \| number[] | no | Maximum value for the asset's pip/charge track. A plain number is static. An array maps one-to-one onto the asset's three abilities: the effective max is the value at the index of the highest currently-enabled ability (e.g. `[3, 6, 6]` — base max 3, rises to 6 when ability 1 is unlocked). |
-| `counterLabel` | string | no | Label shown above the pip track (e.g., `"Health"`, `"Doses"`, `"Wealth"`). Defaults to `"Counter"` if omitted. |
-| `counterIcon` | string | no | Canonical icon name for the header badge. See [Counter Icons](#counter-icons). |
-| `counterColor` | string | no | CSS colour for filled pips and badge icon (e.g., `"#A2352F"` or `"var(--color-mana)"`). Defaults to `var(--color-success)`. |
+| `customFields` | CustomFieldDef[] | no | Array of custom input fields rendered in the asset card body. Values stored in `CharacterAsset.customValues` keyed by `field.id`. See [Custom Fields](#custom-fields). |
 
 Each ability object:
 
@@ -580,33 +575,28 @@ All asset log entries are titled `{characterName} — Assets` (e.g., `Porcius Mo
 
 Rarity names are always displayed with the `RARITY:` prefix in both the asset card UI and log entries.
 
-### Companion Assets
+### Custom Fields
 
-Companions use the unified counter and name system:
+The `customFields` array on an asset definition declares interactive controls rendered in the card body. Values are stored in `CharacterAsset.customValues` as a `Record<string, string>` keyed by `field.id`. Counter values are stored as numeric strings.
 
-```json
-{
-  "id": "companion/hawk",
-  "name": "Hawk",
-  "category": "Companion",
-  "nameLabels": ["Companion Name"],
-  "counterMax": 3,
-  "counterLabel": "Health",
-  "counterIcon": "heart",
-  "counterColor": "#A2352F",
-  "abilities": [
-    { "enabled": false, "name": "Far-seeing", "text": "..." },
-    { "enabled": false, "name": "Fierce", "text": "..." },
-    { "enabled": false, "name": "Bonded", "text": "..." }
-  ]
-}
-```
+#### CustomFieldDef Schema
 
-The companion name is stored in `CharacterAsset.names[0]` and the health value in `CharacterAsset.counter`.
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | string | yes | Unique key within this asset (e.g. `"health"`, `"armor"`). Used as the key in `customValues`. |
+| `type` | string | yes | One of `"string"`, `"counter"`, `"radio"`, `"dropdown"`, `"switch"` |
+| `label` | string | yes | Human-readable label shown next to the control |
+| `position` | `"top"` \| `"bottom"` | no | `"top"` (default) renders before the preamble; `"bottom"` renders after abilities |
+| `default` | string \| number | no | Initial value when the asset is first added |
+| `placeholder` | string | no | Hint text for `string` fields |
+| `maxValue` | number \| number[] | no | `counter` only. Max pip count. Array form maps per-ability: the effective max is the value at the index of the highest enabled ability (e.g. `[3, 6, 6]`) |
+| `icon` | string | no | `counter` only. Canonical icon name shown in the header badge. See [Counter Icons](#counter-icons). |
+| `global` | boolean | no | `counter` only. If `true`, all counter fields with the same `id` share one value across the character (e.g. shared supply). |
+| `options` | CustomFieldOption[] | no | `radio` / `dropdown` only. Each option: `{ id: string, label: string }`. |
 
-### Counter Icons
+#### Counter Icons
 
-The `counterIcon` field references a canonical short name mapped to an SVG in the icon set. The icon renders in `counterColor` inside the asset card header badge.
+The `icon` field on a counter `customField` references a canonical short name:
 
 | Name | Description |
 |------|-------------|
@@ -622,17 +612,40 @@ The `counterIcon` field references a canonical short name mapped to an SVG in th
 | `sack-dollar` | Wealth (Fortune Hunter) |
 | `mana` | Essence / mana (diamond shape) |
 | `puppet` | Animated constructs (Awakening ritual) |
+| `rock-golem` | Simulacrum constructs (Awakening ritual) |
 
-### Assets with Optional Fields — Examples
+### Companion Assets
+
+Companions use `customFields` for the companion name and health track:
+
+```json
+{
+  "id": "companion/hawk",
+  "name": "Hawk",
+  "category": "Companion",
+  "customFields": [
+    { "id": "companion-name", "type": "string", "label": "Companion Name" },
+    { "id": "health", "type": "counter", "label": "Health", "position": "bottom", "maxValue": 3, "default": 3, "icon": "heart" }
+  ],
+  "abilities": [
+    { "enabled": false, "name": "Far-seeing", "text": "..." },
+    { "enabled": false, "name": "Fierce", "text": "..." },
+    { "enabled": false, "name": "Bonded", "text": "..." }
+  ]
+}
+```
+
+The companion name is stored in `customValues["companion-name"]` and health in `customValues["health"]`.
+
+### Assets with Custom Fields — Examples
 
 **Path with counter (Fortune Hunter):**
 ```json
 {
   "id": "path/fortune-hunter",
-  "counterMax": 5,
-  "counterLabel": "Wealth",
-  "counterIcon": "sack-dollar",
-  "counterColor": "#c9a227"
+  "customFields": [
+    { "id": "wealth", "type": "counter", "label": "Wealth", "position": "bottom", "maxValue": 5, "icon": "sack-dollar" }
+  ]
 }
 ```
 
@@ -640,7 +653,10 @@ The `counterIcon` field references a canonical short name mapped to an SVG in th
 ```json
 {
   "id": "path/devotant",
-  "nameLabels": ["God's Name", "Stat"]
+  "customFields": [
+    { "id": "gods-name", "type": "string", "label": "God's Name" },
+    { "id": "stat", "type": "string", "label": "Stat" }
+  ]
 }
 ```
 
@@ -648,18 +664,25 @@ The `counterIcon` field references a canonical short name mapped to an SVG in th
 ```json
 {
   "id": "combat/ironclad",
-  "radioLabels": ["Lightly Armored", "Geared for War"]
+  "customFields": [
+    {
+      "id": "armor", "type": "radio", "label": "Armor", "position": "bottom",
+      "options": [
+        { "id": "lightly-armored", "label": "Lightly Armored" },
+        { "id": "geared-for-war", "label": "Geared for War" }
+      ]
+    }
+  ]
 }
 ```
 
-**Ritual with counter (Awakening — the simulacrum ritual):**
+**Ritual with array counter (Awakening — simulacrum health rises with abilities):**
 ```json
 {
   "id": "ritual/awakening",
-  "counterMax": 6,
-  "counterLabel": "Health",
-  "counterIcon": "puppet",
-  "counterColor": "#A2352F"
+  "customFields": [
+    { "id": "health", "type": "counter", "label": "Health", "position": "bottom", "maxValue": [3, 6, 6], "default": 3, "icon": "rock-golem" }
+  ]
 }
 ```
 

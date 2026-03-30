@@ -38,6 +38,7 @@
 
 	import StatControl       from './StatControl.svelte';
 	import MeterControl      from './MeterControl.svelte';
+	import ResourceTile      from './ResourceTile.svelte';
 	import XpTrack           from './XpTrack.svelte';
 	import ProgressTrack     from './ProgressTrack.svelte';
 	import DebilitiesSection  from './DebilitiesSection.svelte';
@@ -654,7 +655,7 @@
 						</div>
 						<span class="mom-val">{momentumMax}</span>
 					</div>
-					<MeterControl
+					<ResourceTile
 						label="Health"
 						bind:value={data.health}
 						color="var(--color-health)"
@@ -665,7 +666,7 @@
 						tooltip="Physical condition and readiness"
 						onchange={(o, n) => logMeter('Health', o, n)}
 					/>
-					<MeterControl
+					<ResourceTile
 						label="Spirit"
 						bind:value={data.spirit}
 						color="var(--color-spirit)"
@@ -676,7 +677,7 @@
 						tooltip="Mental fortitude and morale"
 						onchange={(o, n) => logMeter('Spirit', o, n)}
 					/>
-					<MeterControl
+					<ResourceTile
 						label="Supply"
 						bind:value={data.supply}
 						color="var(--color-supply)"

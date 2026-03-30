@@ -219,9 +219,23 @@
         }
       ],
       "summary": "Armored warrior: damage absorption and imposing presence.",
-      "radioLabels": [
-        "Lightly Armored",
-        "Geared for War"
+      "customFields": [
+        {
+          "id": "armor",
+          "type": "radio",
+          "label": "Armor",
+          "position": "bottom",
+          "options": [
+            {
+              "id": "lightly-armored",
+              "label": "Lightly Armored"
+            },
+            {
+              "id": "geared-for-war",
+              "label": "Geared for War"
+            }
+          ]
+        }
       ]
     },
     {
@@ -481,14 +495,23 @@
         }
       ],
       "summary": "Fierce feline: hunts big game, attacks foes, guards camp.",
-      "counterMax": 4,
-      "counterLabel": "Health",
-      "counterIcon": "heart",
-      "nameLabels": [
-        "Companion Name"
-      ],
       "preamble": "Your cat takes down its prey.",
-      "counterStart": 4
+      "customFields": [
+        {
+          "id": "companion-name",
+          "type": "string",
+          "label": "Companion Name"
+        },
+        {
+          "id": "health",
+          "type": "counter",
+          "label": "Health",
+          "position": "bottom",
+          "maxValue": 4,
+          "default": 4,
+          "icon": "heart"
+        }
+      ]
     },
     {
       "id": "companion/giant-spider",
@@ -522,14 +545,23 @@
         }
       ],
       "summary": "Eerie arachnid: scouting, reading fears, and setting traps.",
-      "counterMax": 4,
-      "counterLabel": "Health",
-      "counterIcon": "heart",
-      "nameLabels": [
-        "Companion Name"
-      ],
       "preamble": "Your spider uncovers secrets.",
-      "counterStart": 4
+      "customFields": [
+        {
+          "id": "companion-name",
+          "type": "string",
+          "label": "Companion Name"
+        },
+        {
+          "id": "health",
+          "type": "counter",
+          "label": "Health",
+          "position": "bottom",
+          "maxValue": 4,
+          "default": 4,
+          "icon": "heart"
+        }
+      ]
     },
     {
       "id": "companion/hawk",
@@ -564,14 +596,23 @@
         }
       ],
       "summary": "Keen raptor: scouting journeys, harassing foes, detecting threats.",
-      "counterMax": 3,
-      "counterLabel": "Health",
-      "counterIcon": "heart",
-      "nameLabels": [
-        "Companion Name"
-      ],
       "preamble": "Your hawk can aid you while it is aloft.",
-      "counterStart": 3
+      "customFields": [
+        {
+          "id": "companion-name",
+          "type": "string",
+          "label": "Companion Name"
+        },
+        {
+          "id": "health",
+          "type": "counter",
+          "label": "Health",
+          "position": "bottom",
+          "maxValue": 3,
+          "default": 3,
+          "icon": "heart"
+        }
+      ]
     },
     {
       "id": "companion/horse",
@@ -607,14 +648,23 @@
         }
       ],
       "summary": "Loyal mount: swift travel, charging combat, mounted strikes.",
-      "counterMax": 5,
-      "counterLabel": "Health",
-      "counterIcon": "heart",
-      "nameLabels": [
-        "Companion Name"
-      ],
       "preamble": "You and your horse ride as one.",
-      "counterStart": 5
+      "customFields": [
+        {
+          "id": "companion-name",
+          "type": "string",
+          "label": "Companion Name"
+        },
+        {
+          "id": "health",
+          "type": "counter",
+          "label": "Health",
+          "position": "bottom",
+          "maxValue": 5,
+          "default": 5,
+          "icon": "heart"
+        }
+      ]
     },
     {
       "id": "companion/hound",
@@ -648,14 +698,23 @@
         }
       ],
       "summary": "Faithful tracker: keen senses, fighting alongside, stress relief.",
-      "counterMax": 4,
-      "counterLabel": "Health",
-      "counterIcon": "heart",
-      "nameLabels": [
-        "Companion Name"
-      ],
       "preamble": "Your hound is your steadfast companion.",
-      "counterStart": 4
+      "customFields": [
+        {
+          "id": "companion-name",
+          "type": "string",
+          "label": "Companion Name"
+        },
+        {
+          "id": "health",
+          "type": "counter",
+          "label": "Health",
+          "position": "bottom",
+          "maxValue": 4,
+          "default": 4,
+          "icon": "heart"
+        }
+      ]
     },
     {
       "id": "companion/kindred",
@@ -687,14 +746,23 @@
         }
       ],
       "summary": "Human companion: skilled aid, shield-kin in combat, bonded.",
-      "counterMax": 4,
-      "counterLabel": "Health",
-      "counterIcon": "heart",
-      "nameLabels": [
-        "Companion Name"
-      ],
       "preamble": "Your friend stands by you.",
-      "counterStart": 4
+      "customFields": [
+        {
+          "id": "companion-name",
+          "type": "string",
+          "label": "Companion Name"
+        },
+        {
+          "id": "health",
+          "type": "counter",
+          "label": "Health",
+          "position": "bottom",
+          "maxValue": 4,
+          "default": 4,
+          "icon": "heart"
+        }
+      ]
     },
     {
       "id": "companion/mammoth",
@@ -725,14 +793,23 @@
         }
       ],
       "summary": "Massive beast: heavy hauling, supply carrier, trampling foes.",
-      "counterMax": 5,
-      "counterLabel": "Health",
-      "counterIcon": "heart",
-      "nameLabels": [
-        "Companion Name"
-      ],
       "preamble": "Your mammoth walks a resolute path.",
-      "counterStart": 5
+      "customFields": [
+        {
+          "id": "companion-name",
+          "type": "string",
+          "label": "Companion Name"
+        },
+        {
+          "id": "health",
+          "type": "counter",
+          "label": "Health",
+          "position": "bottom",
+          "maxValue": 5,
+          "default": 5,
+          "icon": "heart"
+        }
+      ]
     },
     {
       "id": "companion/owl",
@@ -763,14 +840,23 @@
         }
       ],
       "summary": "Nocturnal hunter: night raids, secret knowledge, death's guide.",
-      "counterMax": 3,
-      "counterLabel": "Health",
-      "counterIcon": "heart",
-      "nameLabels": [
-        "Companion Name"
-      ],
       "preamble": "Your owl soars through the darkness.",
-      "counterStart": 3
+      "customFields": [
+        {
+          "id": "companion-name",
+          "type": "string",
+          "label": "Companion Name"
+        },
+        {
+          "id": "health",
+          "type": "counter",
+          "label": "Health",
+          "position": "bottom",
+          "maxValue": 3,
+          "default": 3,
+          "icon": "heart"
+        }
+      ]
     },
     {
       "id": "companion/raven",
@@ -806,14 +892,23 @@
         }
       ],
       "summary": "Clever trickster: distractions, theft, messages, and death lore.",
-      "counterMax": 2,
-      "counterLabel": "Health",
-      "counterIcon": "heart",
-      "nameLabels": [
-        "Companion Name"
-      ],
       "preamble": "Your raven heeds your call.",
-      "counterStart": 2
+      "customFields": [
+        {
+          "id": "companion-name",
+          "type": "string",
+          "label": "Companion Name"
+        },
+        {
+          "id": "health",
+          "type": "counter",
+          "label": "Health",
+          "position": "bottom",
+          "maxValue": 2,
+          "default": 2,
+          "icon": "heart"
+        }
+      ]
     },
     {
       "id": "companion/young-wyvern",
@@ -846,14 +941,23 @@
         }
       ],
       "summary": "Winged predator: hungry traveler, resilient, savage attacker.",
-      "counterMax": 5,
-      "counterLabel": "Health",
-      "counterIcon": "heart",
-      "nameLabels": [
-        "Companion Name"
-      ],
       "preamble": "Your wyvern won't devour you. For now.",
-      "counterStart": 5
+      "customFields": [
+        {
+          "id": "companion-name",
+          "type": "string",
+          "label": "Companion Name"
+        },
+        {
+          "id": "health",
+          "type": "counter",
+          "label": "Health",
+          "position": "bottom",
+          "maxValue": 5,
+          "default": 5,
+          "icon": "heart"
+        }
+      ]
     },
     {
       "id": "path/alchemist",
@@ -934,8 +1038,12 @@
         }
       ],
       "summary": "Sworn to a leader or faction: vow bonuses and rally in battle.",
-      "nameLabels": [
-        "Name"
+      "customFields": [
+        {
+          "id": "name",
+          "type": "string",
+          "label": "Name"
+        }
       ]
     },
     {
@@ -997,8 +1105,12 @@
         }
       ],
       "summary": "Bonded to an ancestral sentient blade: power at a mental cost.",
-      "nameLabels": [
-        "Name"
+      "customFields": [
+        {
+          "id": "name",
+          "type": "string",
+          "label": "Name"
+        }
       ]
     },
     {
@@ -1118,9 +1230,17 @@
         }
       ],
       "summary": "Devoted to a god: daily prayers, divine quests, and blessings.",
-      "nameLabels": [
-        "God's Name",
-        "Stat"
+      "customFields": [
+        {
+          "id": "gods-name",
+          "type": "string",
+          "label": "God's Name"
+        },
+        {
+          "id": "stat",
+          "type": "string",
+          "label": "Stat"
+        }
       ]
     },
     {
@@ -1153,8 +1273,12 @@
         }
       ],
       "summary": "Noble lineage: claim hospitality, command respect, or serve humbly.",
-      "nameLabels": [
-        "Title/Lineage"
+      "customFields": [
+        {
+          "id": "title-lineage",
+          "type": "string",
+          "label": "Title/Lineage"
+        }
       ]
     },
     {
@@ -1216,9 +1340,16 @@
         }
       ],
       "summary": "Mercenary for hire: paid vows, wealth, and lucky scavenging.",
-      "counterMax": 5,
-      "counterLabel": "Wealth",
-      "counterIcon": "sack-dollar"
+      "customFields": [
+        {
+          "id": "wealth",
+          "type": "counter",
+          "label": "Wealth",
+          "position": "bottom",
+          "maxValue": 5,
+          "icon": "sack-dollar"
+        }
+      ]
     },
     {
       "id": "path/herbalist",
@@ -1968,8 +2099,12 @@
         }
       ],
       "summary": "Skilled crafter: build, repair, and create useful items.",
-      "nameLabels": [
-        "Specialty"
+      "customFields": [
+        {
+          "id": "specialty",
+          "type": "string",
+          "label": "Specialty"
+        }
       ]
     },
     {
@@ -2022,10 +2157,21 @@
         }
       ],
       "summary": "Rouse the spirits of the land to gain their aid.",
-      "counterMax": [3, 6, 6],
-      "counterLabel": "Health",
-      "counterIcon": "rock-golem",
-      "counterStart": 3
+      "customFields": [
+        {
+          "id": "health",
+          "type": "counter",
+          "label": "Health",
+          "position": "bottom",
+          "maxValue": [
+            3,
+            6,
+            6
+          ],
+          "default": 3,
+          "icon": "rock-golem"
+        }
+      ]
     },
     {
       "id": "ritual/bind",
@@ -2130,9 +2276,16 @@
         }
       ],
       "summary": "Call upon a mystical force to empower your actions.",
-      "counterMax": 6,
-      "counterLabel": "Essence",
-      "counterIcon": "mana"
+      "customFields": [
+        {
+          "id": "essence",
+          "type": "counter",
+          "label": "Essence",
+          "position": "bottom",
+          "maxValue": 6,
+          "icon": "mana"
+        }
+      ]
     },
     {
       "id": "ritual/keen",
@@ -2210,9 +2363,16 @@
         }
       ],
       "summary": "Summon mystic light to banish darkness and reveal secrets.",
-      "counterMax": 6,
-      "counterLabel": "Light",
-      "counterIcon": "sun"
+      "customFields": [
+        {
+          "id": "light",
+          "type": "counter",
+          "label": "Light",
+          "position": "bottom",
+          "maxValue": 6,
+          "icon": "sun"
+        }
+      ]
     },
     {
       "id": "ritual/scry",

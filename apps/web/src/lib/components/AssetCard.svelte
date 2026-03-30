@@ -140,21 +140,25 @@
 	};
 	const catColor = $derived(CAT_COLOR[definition.category] ?? 'var(--text-muted)');
 
+	/** Find the first counter customField on this asset definition. */
+	const counterField = $derived(
+		(definition.customFields ?? []).find((f) => f.type === 'counter')
+	);
+
 	/**
-	 * Resolve the effective counterMax. If the definition supplies an array, use the value
-	 * at the index of the highest currently-enabled ability; otherwise use the number directly.
+	 * Resolve effective maxValue for a counter field. If maxValue is an array, use the value
+	 * at the index of the highest currently-enabled ability.
 	 */
-	const effectiveCounterMax = $derived((): number | undefined => {
-		const cm = definition.counterMax;
-		if (cm === undefined) return undefined;
-		if (typeof cm === 'number') return cm;
-		// Array form — find the index of the last enabled ability
+	function getEffectiveMax(cf: import('$lib/types.js').CustomFieldDef): number {
+		const mv = cf.maxValue;
+		if (mv === undefined) return 0;
+		if (typeof mv === 'number') return mv;
 		let lastEnabled = 0;
 		for (let i = 0; i < asset.abilities.length; i++) {
 			if (asset.abilities[i]) lastEnabled = i;
 		}
-		return cm[Math.min(lastEnabled, cm.length - 1)];
-	});
+		return (mv as number[])[Math.min(lastEnabled, (mv as number[]).length - 1)];
+	}
 
 	/** Strips markdown-style links [text](anything) → text, for plain-text contexts. */
 	function stripMdLinks(raw: string): string {
@@ -206,16 +210,16 @@
 		}
 	}
 
-	function setCounter(newVal: number) {
-		const old = asset.counter ?? asset.companionHealth ?? 0;
+	function setCounter(cf: import('$lib/types.js').CustomFieldDef, newVal: number) {
+		const old = parseInt(asset.customValues?.[cf.id] ?? String(cf.default ?? 0));
 		if (newVal === old) return;
-		asset.counter = newVal;
-		const label = (asset.names?.[0] ?? asset.companionName)
-			? `${asset.names?.[0] ?? asset.companionName} (${definition.name})`
-			: definition.name;
-		const counterLabel = definition.counterLabel ?? 'Counter';
+		if (!asset.customValues) asset.customValues = {};
+		asset.customValues[cf.id] = String(newVal);
+		const nameField = (definition.customFields ?? []).find((f) => f.type === 'string');
+		const companionName = nameField ? (asset.customValues?.[nameField.id] ?? '') : '';
+		const label = companionName ? `${companionName} (${definition.name})` : definition.name;
 		appendLog(SESSION_LOG_ID, logTitle,
-			`<div><strong>${label}</strong> ${counterLabel}: ${old} → <strong>${newVal}</strong></div>`);
+			`<div><strong>${label}</strong> ${cf.label}: ${old} → <strong>${newVal}</strong></div>`);
 	}
 
 	function openRemoveDialog() {
@@ -246,15 +250,14 @@
 			<span class="asset-cat" style:color={catColor}>{definition.category}</span>
 		</div>
 
-		{#if effectiveCounterMax() !== undefined && definition.counterIcon}
-			{@const curVal       = asset.counter ?? asset.companionHealth ?? 0}
-			{@const counterColor = definition.counterColor ?? catColor}
-			{@const iconSvg      = COUNTER_ICONS[definition.counterIcon] ?? iconHeart}
-			{@const maxVal       = effectiveCounterMax()!}
+		{#if counterField?.icon}
+			{@const curVal  = parseInt(asset.customValues?.[counterField.id] ?? String(counterField.default ?? 0))}
+			{@const maxVal  = getEffectiveMax(counterField)}
+			{@const iconSvg = COUNTER_ICONS[counterField.icon] ?? iconHeart}
 			<span
 				class="counter-badge"
-				style:--counter-color={counterColor}
-				title="{definition.counterLabel ?? 'Counter'}: {curVal} / {maxVal}"
+				style:--counter-color={catColor}
+				title="{counterField.label}: {curVal} / {maxVal}"
 			>{@html iconSvg} {curVal}/{maxVal}</span>
 		{/if}
 
@@ -273,61 +276,54 @@
 	<!-- Expanded body -->
 	{#if !collapsed}
 		<div class="asset-body">
-			<!-- Named asset field(s) — one input per nameLabels entry (above preamble) -->
-			{#each definition.nameLabels ?? [] as label, i}
-				<label class="companion-name-label">
-					<span class="companion-field-label">{label}</span>
-					<input
-						type="text"
-						value={asset.names?.[i] ?? (i === 0 ? (asset.companionName ?? '') : '')}
-						oninput={(e) => {
-							if (!asset.names) asset.names = [];
-							asset.names[i] = e.currentTarget.value;
-						}}
-						placeholder="{label}…"
-						class="companion-name-input"
-					/>
-				</label>
+			<!-- Top custom fields (position !== 'bottom') rendered above preamble -->
+			{#each (definition.customFields ?? []).filter(f => f.position !== 'bottom') as field}
+				{#if field.type === 'string'}
+					<label class="companion-name-label">
+						<span class="companion-field-label">{field.label}</span>
+						<input
+							type="text"
+							class="companion-name-input"
+							value={asset.customValues?.[field.id] ?? String(field.default ?? '')}
+							oninput={(e) => {
+								if (!asset.customValues) asset.customValues = {};
+								asset.customValues[field.id] = e.currentTarget.value;
+							}}
+							placeholder={field.placeholder ?? field.label + '…'}
+						/>
+					</label>
+				{:else if field.type === 'dropdown' && field.options}
+					<label class="companion-name-label">
+						<span class="companion-field-label">{field.label}</span>
+						<select
+							class="companion-name-input"
+							value={asset.customValues?.[field.id] ?? String(field.default ?? '')}
+							onchange={(e) => {
+								if (!asset.customValues) asset.customValues = {};
+								asset.customValues[field.id] = e.currentTarget.value;
+							}}
+						>
+							{#each field.options as opt}
+								<option value={opt.id}>{opt.label}</option>
+							{/each}
+						</select>
+					</label>
+				{:else if field.type === 'switch'}
+					<label class="cf-switch">
+						<input
+							type="checkbox"
+							class="cf-switch-input"
+							checked={asset.customValues?.[field.id] === '1'}
+							onchange={() => {
+								if (!asset.customValues) asset.customValues = {};
+								asset.customValues[field.id] = asset.customValues[field.id] === '1' ? '0' : '1';
+							}}
+						/>
+						<span class="cf-switch-track"><span class="cf-switch-knob"></span></span>
+						<span class="cf-switch-label">{field.label}</span>
+					</label>
+				{/if}
 			{/each}
-
-			<!-- Custom fields (e.g. Touched level + animal name) -->
-			{#if (definition.customFields ?? []).length > 0}
-				<div class="custom-fields">
-					{#each definition.customFields! as field}
-						{#if field.type === 'select' && field.options}
-							<label class="companion-name-label">
-								<span class="companion-field-label">{field.label}</span>
-								<select
-									class="companion-name-input custom-field-select"
-									value={asset.customValues?.[field.key] ?? field.default ?? ''}
-									onchange={(e) => {
-										if (!asset.customValues) asset.customValues = {};
-										asset.customValues[field.key] = e.currentTarget.value;
-									}}
-								>
-									{#each field.options as opt}
-										<option value={opt.value}>{opt.label}</option>
-									{/each}
-								</select>
-							</label>
-						{:else if field.type === 'text'}
-							<label class="companion-name-label">
-								<span class="companion-field-label">{field.label}</span>
-								<input
-									type="text"
-									class="companion-name-input"
-									value={asset.customValues?.[field.key] ?? ''}
-									oninput={(e) => {
-										if (!asset.customValues) asset.customValues = {};
-										asset.customValues[field.key] = e.currentTarget.value;
-									}}
-									placeholder={field.placeholder ?? field.label + '…'}
-								/>
-							</label>
-						{/if}
-					{/each}
-				</div>
-			{/if}
 
 			{#if definition.preamble}
 				<p class="asset-preamble">{stripMdLinks(definition.preamble)}</p>
@@ -478,44 +474,88 @@
 				</div>
 			{/if}
 
-			<!-- Radio selection (e.g. Ironclad: Lightly Armored / Geared for War) -->
-			{#if definition.radioLabels?.length}
-				<div class="radio-row">
-					{#each definition.radioLabels as label, i}
-						<label class="radio-option">
-							<input
-								type="radio"
-								name="radio-{asset.assetId}"
-								checked={asset.radioSelection === i}
-								oninput={() => { asset.radioSelection = i; }}
-							/>
-							<span>{label}</span>
-						</label>
-					{/each}
-				</div>
-			{/if}
-
-			<!-- Counter / health / charge tracker (any asset with counterMax) -->
-			{#if effectiveCounterMax() !== undefined}
-				{@const counterMax   = effectiveCounterMax()!}
-				{@const counterLabel = definition.counterLabel ?? 'Counter'}
-				{@const counterColor = definition.counterColor ?? catColor}
-				{@const curVal       = asset.counter ?? asset.companionHealth ?? 0}
-				<div class="counter-row" style:--counter-color={counterColor}>
-					<span class="companion-field-label">{counterLabel}</span>
-					<div class="counter-pips">
-						{#each Array(counterMax) as _, j}
-							<button
-								class="pip counter-pip"
-								class:pip-filled={j < curVal}
-								onclick={() => setCounter(j < curVal ? j : j + 1)}
-								aria-label="{counterLabel} pip {j + 1}"
-							></button>
-					{/each}
+			<!-- Bottom custom fields (position: 'bottom') — rendered after abilities -->
+			{#each (definition.customFields ?? []).filter(f => f.position === 'bottom') as field}
+				{#if field.type === 'counter' && field.maxValue !== undefined}
+					{@const maxVal = getEffectiveMax(field)}
+					{@const curVal = parseInt(asset.customValues?.[field.id] ?? String(field.default ?? 0))}
+					<div class="counter-row" style:--counter-color={catColor}>
+						<span class="companion-field-label">{field.label}</span>
+						<div class="counter-pips">
+							{#each {length: maxVal} as _, j}
+								<button
+									class="pip counter-pip"
+									class:pip-filled={j < curVal}
+									onclick={() => setCounter(field, j < curVal ? j : j + 1)}
+									aria-label="{field.label} pip {j + 1}"
+								></button>
+							{/each}
+						</div>
+						<span class="health-label">{curVal}/{maxVal}</span>
 					</div>
-					<span class="health-label">{curVal}/{counterMax}</span>
-				</div>
-			{/if}
+				{:else if field.type === 'radio' && field.options}
+					<div class="radio-row">
+						{#each field.options as opt}
+							<label class="radio-option">
+								<input
+									type="radio"
+									name="radio-{asset.assetId}-{field.id}"
+									checked={(asset.customValues?.[field.id] ?? String(field.default ?? '')) === opt.id}
+									oninput={() => {
+										if (!asset.customValues) asset.customValues = {};
+										asset.customValues[field.id] = opt.id;
+									}}
+								/>
+								<span>{opt.label}</span>
+							</label>
+						{/each}
+					</div>
+				{:else if field.type === 'string'}
+					<label class="companion-name-label">
+						<span class="companion-field-label">{field.label}</span>
+						<input
+							type="text"
+							class="companion-name-input"
+							value={asset.customValues?.[field.id] ?? String(field.default ?? '')}
+							oninput={(e) => {
+								if (!asset.customValues) asset.customValues = {};
+								asset.customValues[field.id] = e.currentTarget.value;
+							}}
+							placeholder={field.placeholder ?? field.label + '…'}
+						/>
+					</label>
+				{:else if field.type === 'dropdown' && field.options}
+					<label class="companion-name-label">
+						<span class="companion-field-label">{field.label}</span>
+						<select
+							class="companion-name-input"
+							value={asset.customValues?.[field.id] ?? String(field.default ?? '')}
+							onchange={(e) => {
+								if (!asset.customValues) asset.customValues = {};
+								asset.customValues[field.id] = e.currentTarget.value;
+							}}
+						>
+							{#each field.options as opt}
+								<option value={opt.id}>{opt.label}</option>
+							{/each}
+						</select>
+					</label>
+				{:else if field.type === 'switch'}
+					<label class="cf-switch">
+						<input
+							type="checkbox"
+							class="cf-switch-input"
+							checked={asset.customValues?.[field.id] === '1'}
+							onchange={() => {
+								if (!asset.customValues) asset.customValues = {};
+								asset.customValues[field.id] = asset.customValues[field.id] === '1' ? '0' : '1';
+							}}
+						/>
+						<span class="cf-switch-track"><span class="cf-switch-knob"></span></span>
+						<span class="cf-switch-label">{field.label}</span>
+					</label>
+				{/if}
+			{/each}
 
 			<!-- Rarity slot -->
 			{#if rarity}
@@ -570,7 +610,7 @@
 	<div class="remove-body">
 		<p>Losing an asset is rare and usually the result of a unique narrative circumstance dictated by the storyline.</p>
 
-		{#if definition.nameLabels?.length}
+		{#if definition.category === 'Companion'}
 			<p>
 				<strong>Companion Endure Harm:</strong> If your companion is killed or you
 				choose to end your bond, roll +Heart. On a strong hit, take +1 spirit. On a
@@ -1327,4 +1367,60 @@
 		font-weight: 600;
 	}
 	.btn-primary:hover { opacity: 0.88; }
+
+	/* ---- Custom field switch (boolean toggle, same style as DebilitiesSection) ---- */
+	.cf-switch {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		cursor: pointer;
+		user-select: none;
+	}
+
+	.cf-switch-input {
+		position: absolute;
+		opacity: 0;
+		width: 0;
+		height: 0;
+		pointer-events: none;
+	}
+
+	.cf-switch-track {
+		position:      relative;
+		width:         28px;
+		height:        15px;
+		border-radius: 8px;
+		background:    var(--bg-inset);
+		border:        1px solid var(--border);
+		flex-shrink:   0;
+		transition:    background 0.2s, border-color 0.2s;
+	}
+
+	.cf-switch-knob {
+		position:      absolute;
+		top:           2px;
+		left:          2px;
+		width:         9px;
+		height:        9px;
+		border-radius: 50%;
+		background:    var(--text-dimmer);
+		transition:    left 0.2s, background 0.2s;
+	}
+
+	.cf-switch:has(.cf-switch-input:checked) .cf-switch-track {
+		background:   color-mix(in srgb, var(--text-accent) 20%, transparent);
+		border-color: var(--text-accent);
+	}
+	.cf-switch:has(.cf-switch-input:checked) .cf-switch-knob {
+		left:       15px;
+		background: var(--text-accent);
+	}
+
+	.cf-switch-label {
+		font-family: var(--font-ui);
+		font-size:   0.75rem;
+		color:       var(--text-muted);
+		white-space: nowrap;
+	}
+
 </style>

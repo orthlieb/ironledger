@@ -1,0 +1,173 @@
+<script lang="ts">
+	/**
+	 * A resource tile for Health, Spirit, and Supply.
+	 * Same visual style as StatControl (coloured border, tinted background, background icon)
+	 * but rectangular to accommodate −/+ controls below the value.
+	 * Button style matches the progress-track buttons in GlobalContextBar.
+	 */
+
+	let {
+		label,
+		value = $bindable(0),
+		color = 'var(--text)',
+		min = 0,
+		max = 5,
+		incDisabled = false,
+		icon = '',
+		tooltip = '',
+		onchange,
+	}: {
+		label:        string;
+		value?:       number;
+		color?:       string;
+		min?:         number;
+		max?:         number;
+		/** Disable the + button (e.g. Wounded blocks Health increment). */
+		incDisabled?: boolean;
+		/** Raw SVG string for the background icon. */
+		icon?:        string;
+		tooltip?:     string;
+		onchange?:    (oldVal: number, newVal: number) => void;
+	} = $props();
+
+	function decrement() {
+		const next = Math.max(min, value - 1);
+		if (next !== value) { onchange?.(value, next); value = next; }
+	}
+
+	function increment() {
+		const next = Math.min(max, value + 1);
+		if (next !== value) { onchange?.(value, next); value = next; }
+	}
+</script>
+
+<div class="res-tile" style:--res-color={color} title={tooltip || undefined}>
+	<!-- Background icon -->
+	{#if icon}
+		<div class="res-icon" aria-hidden="true">{@html icon}</div>
+	{/if}
+
+	<!-- Name -->
+	<span class="res-name">{label}</span>
+
+	<!-- Value -->
+	<span class="res-value">{value}</span>
+
+	<!-- +/− buttons -->
+	<div class="res-btns">
+		<button
+			class="res-btn"
+			onclick={decrement}
+			disabled={value <= min}
+			aria-label="Decrease {label}"
+		>−</button>
+		<button
+			class="res-btn"
+			onclick={increment}
+			disabled={value >= max || incDisabled}
+			aria-label="Increase {label}"
+		>+</button>
+	</div>
+</div>
+
+<style>
+	.res-tile {
+		position:        relative;
+		width:           64px;
+		display:         flex;
+		flex-direction:  column;
+		align-items:     center;
+		justify-content: space-between;
+		padding:         5px 4px 4px;
+		border-radius:   6px;
+		border:          2px solid color-mix(in srgb, var(--res-color) 50%, transparent);
+		background:      color-mix(in srgb, var(--res-color) 8%, var(--bg-card));
+		overflow:        hidden;
+		gap:             2px;
+	}
+
+	/* Background icon */
+	.res-icon {
+		position:        absolute;
+		inset:           0;
+		display:         flex;
+		align-items:     flex-end;
+		justify-content: center;
+		opacity:         0.15;
+		pointer-events:  none;
+	}
+
+	.res-icon :global(svg) {
+		width:  72%;
+		height: 72%;
+		fill:   var(--res-color);
+		color:  var(--res-color);
+	}
+
+	/* Name at top */
+	.res-name {
+		font-family:    var(--font-ui);
+		font-size:      0.55rem;
+		font-weight:    900;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		color:          var(--res-color);
+		position:       relative;
+		z-index:        1;
+		line-height:    1;
+	}
+
+	/* Large value */
+	.res-value {
+		font-family:          var(--font-ui);
+		font-size:            1.3rem;
+		font-weight:          700;
+		font-variant-numeric: tabular-nums;
+		color:                var(--res-color);
+		-webkit-text-stroke:  1px white;
+		text-stroke:          1px white;
+		position:             relative;
+		z-index:              1;
+		line-height:          1;
+	}
+
+	/* Button row */
+	.res-btns {
+		display:         flex;
+		gap:             4px;
+		align-items:     center;
+		justify-content: center;
+		position:        relative;
+		z-index:         1;
+	}
+
+	/* Same style as gc-prog-btn (progress track buttons) */
+	.res-btn {
+		display:         inline-flex;
+		align-items:     center;
+		justify-content: center;
+		font-family:     var(--font-ui);
+		font-size:       0.68rem;
+		font-weight:     600;
+		background:      transparent;
+		border:          1px solid var(--border-mid);
+		border-radius:   3px;
+		padding:         0 7px;
+		height:          22px;
+		cursor:          pointer;
+		color:           var(--text-muted);
+		letter-spacing:  0.02em;
+		transition:      background 0.12s, color 0.12s, border-color 0.12s;
+	}
+
+	.res-btn:hover:not(:disabled) {
+		background:    color-mix(in srgb, var(--res-color) 15%, transparent);
+		color:         var(--res-color);
+		border-color:  var(--res-color);
+	}
+
+	.res-btn:disabled {
+		opacity: 0.35;
+		cursor:  not-allowed;
+	}
+</style>

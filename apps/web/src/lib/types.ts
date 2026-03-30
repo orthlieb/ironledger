@@ -25,20 +25,9 @@ export interface CharacterAsset {
 	assetId: string;
 	abilities: boolean[]; // enabled flags per ability
 	rarityId?: string;
-	/** Stores values for each entry in the asset definition's nameLabels array.
-	 *  Old saves may have companionName (index 0 fallback) or companionHealth (counter fallback). */
-	names?: string[];
-	/** @deprecated legacy field from old companion system — read via `asset.counter ?? asset.companionHealth` */
-	companionName?: string;
-	/** @deprecated legacy field from old companion system — read via `asset.counter ?? asset.companionHealth` */
-	companionHealth?: number;
-	/** Index into the asset definition's radioLabels array (language-independent). */
-	radioSelection?: number;
 	/** Keys of selected items from a definition's selectable list (e.g. cantrips) */
 	selections?: string[];
-	/** Tracked counter/charge count for assets that define counterMax */
-	counter?: number;
-	/** Values for each entry in the asset definition's customFields array, keyed by field.key */
+	/** Values for customFields entries, keyed by field.id. Counters stored as numeric strings. */
 	customValues?: Record<string, string>;
 }
 
@@ -218,23 +207,41 @@ export interface CharacterData {
 
 export type AssetCategory = 'Combat Talent' | 'Companion' | 'Path' | 'Ritual' | 'Touched';
 
-/** One option in a custom select field on an asset card. */
+/** One option in a radio or dropdown custom field on an asset card. */
 export interface CustomFieldOption {
-	value: string;
+	id:    string;
 	label: string;
 }
 
 /**
  * Declares a custom input field on an asset definition.
- * Values are stored in `CharacterAsset.customValues` keyed by `field.key`.
+ * Values are stored in `CharacterAsset.customValues` keyed by `field.id`.
+ *
+ * Types:
+ *   string   — free-text input (optional placeholder)
+ *   counter  — numeric pip tracker (maxValue, optional icon)
+ *   radio    — mutually-exclusive buttons (options required)
+ *   dropdown — select menu (options required)
+ *   switch   — boolean on/off toggle
+ *
+ * position: 'top' renders before the preamble; 'bottom' renders after abilities.
+ * default: initial value (string for string/radio/dropdown/switch; number for counter).
  */
 export interface CustomFieldDef {
-	key:          string;
-	type:         'select' | 'text';
+	id:           string;
+	type:         'string' | 'counter' | 'radio' | 'dropdown' | 'switch';
 	label:        string;
-	options?:     CustomFieldOption[];  // required when type === 'select'
-	placeholder?: string;              // hint text for type === 'text'
-	default?:     string;              // initial value
+	position?:    'top' | 'bottom';          // default 'top'
+	default?:     string | number;
+	// string
+	placeholder?: string;
+	// counter
+	maxValue?:    number | number[];          // array = per-ability-level
+	icon?:        string;
+	/** If true, all counter fields with the same id share one value across the character (e.g. supply). */
+	global?:      boolean;
+	// radio | dropdown
+	options?:     CustomFieldOption[];
 }
 
 export interface AssetAbility {
@@ -246,35 +253,18 @@ export interface AssetAbility {
 }
 
 export interface AssetDefinition {
-	id:                  string;
-	name:                string;
-	category:            AssetCategory;
-	summary?:            string;
-	preamble?:           string;
-	postamble?:          string;
-	abilities:           AssetAbility[];
-	touchedFeatures?:    boolean;
-	/**
-	 * Maximum counter value. A plain number is static; an array of numbers maps one-to-one
-	 * onto the asset's abilities — the effective max is the value at the index of the highest
-	 * currently-enabled ability (e.g. [3, 6, 6] for a simulacrum whose health rises from 3 → 6
-	 * when ability 1 is unlocked).
-	 */
-	counterMax?:         number | number[];
-	/** Initial counter value when the asset is first added. Defaults to 0 if omitted. */
-	counterStart?:       number;
-	counterLabel?:       string;
-	/** Overrides the category colour for the counter badge and pips. Accepts any CSS value. */
-	counterColor?:       string;
-	/** Canonical icon name for the counter badge (e.g. "heart", "skull-and-crossbones"). */
-	counterIcon?:        string;
-	/** If present, renders one text input per entry (e.g. ["Companion Name"] or ["God's Name", "Stat"]). */
-	nameLabels?:         string[];
-	/** If present, renders mutually-exclusive radio buttons side by side (e.g. Ironclad armor choice). */
-	radioLabels?:        string[];
-	/** If present, renders custom input fields (select, text) in the asset body. Values stored in asset.customValues. */
-	customFields?:       CustomFieldDef[];
-	[key: string]:       unknown;
+	id:           string;
+	name:         string;
+	category:     AssetCategory;
+	summary?:     string;
+	preamble?:    string;
+	postamble?:   string;
+	abilities:    AssetAbility[];
+	/** If true, asset uses the touchedFeatures panel in the card body. */
+	touchedFeatures?: boolean;
+	/** Custom input fields rendered in the asset body. Values stored in asset.customValues keyed by field.id. */
+	customFields?:    CustomFieldDef[];
+	[key: string]:    unknown;
 }
 
 export interface RarityDefinition {
