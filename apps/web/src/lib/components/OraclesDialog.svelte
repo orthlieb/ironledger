@@ -415,19 +415,19 @@
 	.od-filter-toggle {
 		display:        flex;
 		align-items:    center;
-		gap:            6px;
+		gap:            4px;
 		font-family:    var(--font-ui);
 		font-size:      0.72rem;
 		font-weight:    600;
-		letter-spacing: 0.04em;
+		letter-spacing: 0.05em;
 		text-transform: uppercase;
 		color:          var(--text-dimmer);
 		background:     transparent;
 		border:         1px solid var(--border);
-		border-radius:  4px;
-		padding:        3px 8px;
+		border-radius:  12px;
+		padding:        3px 10px;
 		cursor:         pointer;
-		transition:     background 0.12s, color 0.12s, border-color 0.12s;
+		transition:     border-color 0.1s, color 0.1s;
 	}
 	.od-filter-toggle:hover { color: var(--text); border-color: var(--border-mid); }
 	.od-filter-toggle--active { color: var(--accent); border-color: var(--accent); }
