@@ -201,14 +201,6 @@
 					bind:value={search}
 					aria-label="Search foes"
 				/>
-				{#if hasActiveFilters}
-					<button
-						class="fd-clear-btn"
-						onclick={clearFilters}
-						title="Clear all filters"
-						aria-label="Clear filters"
-					>{@html clearFiltersSvg}</button>
-				{/if}
 				<button
 					class="fd-filter-toggle"
 					class:has-filters={activeFilterCount > 0}
@@ -262,7 +254,15 @@
 						</div>
 					</div>
 				</div>
-			{/if}
+				<button
+					class="fd-clear-btn"
+					onclick={clearFilters}
+					disabled={!hasActiveFilters}
+					title="Clear all filters"
+					aria-label="Clear filters"
+				>{@html clearFiltersSvg}</button>
+			</div>
+		{/if}
 		</div>
 
 		<div class="fd-grid-wrap">
@@ -505,6 +505,9 @@
 	}
 
 	.fd-clear-btn {
+		position:      absolute;
+		bottom:        6px;
+		right:         6px;
 		background:    transparent;
 		border:        none;
 		color:         var(--text-dimmer);
@@ -513,10 +516,10 @@
 		border-radius: 3px;
 		display:       flex;
 		align-items:   center;
-		flex-shrink:   0;
-		transition:    color 0.12s;
+		transition:    color 0.12s, opacity 0.12s;
 	}
-	.fd-clear-btn:hover { color: var(--text); }
+	.fd-clear-btn:hover:not(:disabled) { color: var(--text); }
+	.fd-clear-btn:disabled { opacity: 0.25; cursor: not-allowed; }
 	.fd-clear-btn :global(svg) {
 		width:  16px;
 		height: 16px;

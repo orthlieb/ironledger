@@ -170,26 +170,16 @@
 			/>
 		</div>
 
-		<!-- Group filter row: toggle + clear -->
-		<div class="od-filter-row">
-			<button
-				class="od-filter-toggle"
-				class:od-filter-toggle--active={activeGroups.size > 0}
-				onclick={() => (filtersOpen = !filtersOpen)}
-				aria-expanded={filtersOpen}
-			>
-				Filters{#if activeGroups.size > 0}&nbsp;<span class="od-filter-badge">{activeGroups.size}</span>{/if}
-				{filtersOpen ? '▲' : '▼'}
-			</button>
-			{#if activeGroups.size > 0}
-				<button
-					class="od-clear-btn"
-					title="Clear all filters"
-					onclick={clearFilters}
-					aria-label="Clear all filters"
-				>{@html clearFiltersSvg}</button>
-			{/if}
-		</div>
+		<!-- Group filter toggle -->
+		<button
+			class="od-filter-toggle"
+			class:od-filter-toggle--active={activeGroups.size > 0}
+			onclick={() => (filtersOpen = !filtersOpen)}
+			aria-expanded={filtersOpen}
+		>
+			Filters{#if activeGroups.size > 0}&nbsp;<span class="od-filter-badge">{activeGroups.size}</span>{/if}
+			{filtersOpen ? '▲' : '▼'}
+		</button>
 		{#if filtersOpen}
 		<div class="od-filter-panel">
 			<div class="od-filter-chips">
@@ -202,6 +192,13 @@
 					>{group}</button>
 				{/each}
 			</div>
+			<button
+				class="od-clear-btn"
+				title="Clear all filters"
+				onclick={clearFilters}
+				disabled={activeGroups.size === 0}
+				aria-label="Clear all filters"
+			>{@html clearFiltersSvg}</button>
 		</div>
 		{/if}
 	</div>
@@ -394,13 +391,10 @@
 		box-shadow: 0 0 0 2px var(--accent-glow);
 	}
 
-	.od-filter-row {
-		display:     flex;
-		align-items: center;
-		gap:         4px;
-	}
-
 	.od-clear-btn {
+		position:      absolute;
+		bottom:        6px;
+		right:         6px;
 		background:    transparent;
 		border:        none;
 		color:         var(--text-dimmer);
@@ -409,10 +403,10 @@
 		border-radius: 3px;
 		display:       flex;
 		align-items:   center;
-		flex-shrink:   0;
-		transition:    color 0.12s;
+		transition:    color 0.12s, opacity 0.12s;
 	}
-	.od-clear-btn:hover { color: var(--text); }
+	.od-clear-btn:hover:not(:disabled) { color: var(--text); }
+	.od-clear-btn:disabled { opacity: 0.25; cursor: not-allowed; }
 	.od-clear-btn :global(svg) {
 		width:  16px;
 		height: 16px;
@@ -452,8 +446,11 @@
 		font-weight:    700;
 	}
 	.od-filter-panel {
-		position: relative;
-		padding:  4px 0 2px;
+		position:      relative;
+		padding:       6px 8px;
+		background:    var(--bg-inset);
+		border:        1px solid var(--border);
+		border-radius: 6px;
 	}
 	.od-filter-chips {
 		display:   flex;
