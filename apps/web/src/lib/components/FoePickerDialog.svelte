@@ -253,7 +253,6 @@
 							{/each}
 						</div>
 					</div>
-				</div>
 				<button
 					class="fd-clear-btn"
 					onclick={clearFilters}
