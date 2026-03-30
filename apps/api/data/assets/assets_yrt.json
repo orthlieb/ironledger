@@ -159,6 +159,18 @@
           "enabled": false,
           "text": "Choose 2 additional cantrips from the list (6 total). Simple/touching cantrips (1 mana cost) are now free — they cost 0 mana."
         }
+      ],
+      "customFields": [
+        {
+          "id": "mana",
+          "type": "counter",
+          "label": "Mana",
+          "position": "bottom",
+          "maxValue": 10,
+          "default": 0,
+          "icon": "mana",
+          "global": true
+        }
       ]
     },
     {
@@ -270,6 +282,18 @@
         {
           "enabled": false,
           "text": "As above, but the spell difficulty is reduced by 4 instead of 2 (minimum 0)."
+        }
+      ],
+      "customFields": [
+        {
+          "id": "mana",
+          "type": "counter",
+          "label": "Mana",
+          "position": "bottom",
+          "maxValue": 10,
+          "default": 0,
+          "icon": "mana",
+          "global": true
         }
       ]
     },
@@ -383,6 +407,18 @@
           "enabled": false,
           "text": "As above, but the spell difficulty is reduced by 4 instead of 2 (minimum 0)."
         }
+      ],
+      "customFields": [
+        {
+          "id": "mana",
+          "type": "counter",
+          "label": "Mana",
+          "position": "bottom",
+          "maxValue": 10,
+          "default": 0,
+          "icon": "mana",
+          "global": true
+        }
       ]
     },
     {
@@ -494,6 +530,18 @@
         {
           "enabled": false,
           "text": "As above, but the spell difficulty is reduced by 4 instead of 2 (minimum 0)."
+        }
+      ],
+      "customFields": [
+        {
+          "id": "mana",
+          "type": "counter",
+          "label": "Mana",
+          "position": "bottom",
+          "maxValue": 10,
+          "default": 0,
+          "icon": "mana",
+          "global": true
         }
       ]
     },

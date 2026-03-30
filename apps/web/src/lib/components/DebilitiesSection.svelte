@@ -107,6 +107,7 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0;
+		align-items: center;
 	}
 
 	/* section-label has a global margin-bottom: 6px — not needed inside a flex gap */

@@ -19,7 +19,6 @@
 	import iconHeart    from '$icons/icon-heart.svg?raw';
 	import iconSpirit   from '$icons/icon-spirit.svg?raw';
 	import iconSupply   from '$icons/icon-supply.svg?raw';
-	import iconMana     from '$icons/icon-mana.svg?raw';
 
 	// Initiative icons
 	import swordSvg  from '$icons/sword-solid-full.svg?raw';
@@ -123,7 +122,6 @@
 		{ key: 'health',   label: 'Health', icon: iconHeart,    color: 'var(--color-health)' },
 		{ key: 'spirit',   label: 'Spirit', icon: iconSpirit,   color: 'var(--color-spirit)' },
 		{ key: 'supply',   label: 'Supply', icon: iconSupply,   color: 'var(--color-supply)' },
-		{ key: 'mana',     label: 'Mana',   icon: iconMana,     color: 'var(--color-mana)' },
 	] as const;
 
 	// ---------------------------------------------------------------------------

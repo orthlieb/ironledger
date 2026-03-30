@@ -129,7 +129,7 @@ export function checkPrecondition(
 		health:     charData.health,
 		spirit:     charData.spirit,
 		supply:     charData.supply,
-		mana:       charData.mana,
+		mana:       parseInt(charData.globalValues?.['mana'] ?? '0'),
 		experience: charData.xp,
 		edge:       charData.edge,
 		heart:      charData.heart,

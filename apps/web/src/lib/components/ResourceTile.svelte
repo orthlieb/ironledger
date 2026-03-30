@@ -2,7 +2,7 @@
 	/**
 	 * A resource tile for Health, Spirit, and Supply.
 	 * Same visual style as StatControl (coloured border, tinted background, background icon)
-	 * but rectangular to accommodate −/+ controls below the value.
+	 * but rectangular — the value sits between − and + buttons on one row.
 	 * Button style matches the progress-track buttons in GlobalContextBar.
 	 */
 
@@ -47,20 +47,18 @@
 		<div class="res-icon" aria-hidden="true">{@html icon}</div>
 	{/if}
 
-	<!-- Name -->
+	<!-- Name at top -->
 	<span class="res-name">{label}</span>
 
-	<!-- Value -->
-	<span class="res-value">{value}</span>
-
-	<!-- +/− buttons -->
-	<div class="res-btns">
+	<!-- Control row: − value + -->
+	<div class="res-row">
 		<button
 			class="res-btn"
 			onclick={decrement}
 			disabled={value <= min}
 			aria-label="Decrease {label}"
 		>−</button>
+		<span class="res-value">{value}</span>
 		<button
 			class="res-btn"
 			onclick={increment}
@@ -73,17 +71,17 @@
 <style>
 	.res-tile {
 		position:        relative;
-		width:           64px;
+		width:           80px;
 		display:         flex;
 		flex-direction:  column;
 		align-items:     center;
 		justify-content: space-between;
-		padding:         5px 4px 4px;
+		padding:         5px 4px 5px;
 		border-radius:   6px;
 		border:          2px solid color-mix(in srgb, var(--res-color) 50%, transparent);
 		background:      color-mix(in srgb, var(--res-color) 8%, var(--bg-card));
 		overflow:        hidden;
-		gap:             2px;
+		gap:             3px;
 	}
 
 	/* Background icon */
@@ -91,15 +89,19 @@
 		position:        absolute;
 		inset:           0;
 		display:         flex;
-		align-items:     flex-end;
+		align-items:     center;
 		justify-content: center;
-		opacity:         0.15;
+		opacity:         0.12;
 		pointer-events:  none;
 	}
 
+	:global([data-theme="dark"]) .res-icon {
+		opacity: 0.25;
+	}
+
 	.res-icon :global(svg) {
-		width:  72%;
-		height: 72%;
+		width:  60%;
+		height: 60%;
 		fill:   var(--res-color);
 		color:  var(--res-color);
 	}
@@ -117,6 +119,17 @@
 		line-height:    1;
 	}
 
+	/* Control row */
+	.res-row {
+		display:         flex;
+		align-items:     center;
+		justify-content: center;
+		gap:             4px;
+		position:        relative;
+		z-index:         1;
+		width:           100%;
+	}
+
 	/* Large value */
 	.res-value {
 		font-family:          var(--font-ui);
@@ -126,19 +139,9 @@
 		color:                var(--res-color);
 		-webkit-text-stroke:  1px white;
 		text-stroke:          1px white;
-		position:             relative;
-		z-index:              1;
 		line-height:          1;
-	}
-
-	/* Button row */
-	.res-btns {
-		display:         flex;
-		gap:             4px;
-		align-items:     center;
-		justify-content: center;
-		position:        relative;
-		z-index:         1;
+		min-width:            1.4ch;
+		text-align:           center;
 	}
 
 	/* Same style as gc-prog-btn (progress track buttons) */
@@ -152,12 +155,13 @@
 		background:      transparent;
 		border:          1px solid var(--border-mid);
 		border-radius:   3px;
-		padding:         0 7px;
+		padding:         0 6px;
 		height:          22px;
 		cursor:          pointer;
 		color:           var(--text-muted);
 		letter-spacing:  0.02em;
 		transition:      background 0.12s, color 0.12s, border-color 0.12s;
+		flex-shrink:     0;
 	}
 
 	.res-btn:hover:not(:disabled) {

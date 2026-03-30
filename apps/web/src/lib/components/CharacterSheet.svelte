@@ -28,7 +28,6 @@
 	import iconHeart  from '$icons/icon-heart.svg?raw';
 	import iconSpirit from '$icons/icon-spirit.svg?raw';
 	import iconSupply   from '$icons/icon-supply.svg?raw';
-	import iconMana     from '$icons/icon-mana.svg?raw';
 
 	import { initLog, appendLog, getXpSpendNonce, drainXpSpend, getActionNonce, drainActions, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import { FLOOR_RULES, DEBILITY_MOMENTUM_TITLE } from '$lib/cascadeRules.js';
@@ -190,7 +189,7 @@
 			case 'health':
 			case 'spirit':
 			case 'supply':
-			case 'mana':     next = Math.max(0, Math.min(5, old + delta)); break;
+
 			case 'xp':       next = Math.max(0, Math.min(999, old + delta)); break;
 			case 'bonds':
 			case 'failures': next = Math.max(0, Math.min(40, old + delta)); break;
@@ -687,16 +686,7 @@
 						tooltip="Available provisions and resources"
 						onchange={(o, n) => logMeter('Supply', o, n)}
 					/>
-					<MeterControl
-						label="Mana"
-						bind:value={data.mana}
-						color="var(--color-mana)"
-						min={0}
-						max={10}
-						icon={iconMana}
-						tooltip="Mana seeds — the foundation of Conclave spellcraft"
-						onchange={(o, n) => logMeter('Mana', o, n)}
-					/>
+
 				</div>
 			</section>
 
@@ -1218,13 +1208,15 @@
 		gap: 20px;
 		align-items: flex-start;
 		flex-wrap: wrap;
+		justify-content: center;
 	}
 
 	/* Tracks */
 	.tracks-row {
 		display: flex;
-		gap: 2rem;
+		gap: 10px;
 		flex-wrap: wrap;
+		justify-content: center;
 	}
 
 	.track-group {

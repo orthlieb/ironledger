@@ -42,19 +42,22 @@
 	};
 
 	let {
-		asset      = $bindable(),
+		asset          = $bindable(),
 		definition,
 		characterId,
 		characterName,
 		characterXp,
+		globalValues   = $bindable(),
 		onRemove,
 	}: {
-		asset:         CharacterAsset;
-		definition:    AssetDefinition;
-		characterId:   string;
-		characterName: string;
-		characterXp:   number;
-		onRemove:      () => void;
+		asset:          CharacterAsset;
+		definition:     AssetDefinition;
+		characterId:    string;
+		characterName:  string;
+		characterXp:    number;
+		/** Shared counter values for fields with global:true, keyed by field.id. */
+		globalValues?:  Record<string, string>;
+		onRemove:       () => void;
 	} = $props();
 
 	// Selectable-list item shape used by cantrips (and any future similar lists)
@@ -210,11 +213,21 @@
 		}
 	}
 
+	function getCounterVal(cf: import('$lib/types.js').CustomFieldDef): number {
+		const store = cf.global ? globalValues : asset.customValues;
+		return parseInt(store?.[cf.id] ?? String(cf.default ?? 0));
+	}
+
 	function setCounter(cf: import('$lib/types.js').CustomFieldDef, newVal: number) {
-		const old = parseInt(asset.customValues?.[cf.id] ?? String(cf.default ?? 0));
+		const old = getCounterVal(cf);
 		if (newVal === old) return;
-		if (!asset.customValues) asset.customValues = {};
-		asset.customValues[cf.id] = String(newVal);
+		if (cf.global) {
+			if (!globalValues) globalValues = {};
+			globalValues[cf.id] = String(newVal);
+		} else {
+			if (!asset.customValues) asset.customValues = {};
+			asset.customValues[cf.id] = String(newVal);
+		}
 		const nameField = (definition.customFields ?? []).find((f) => f.type === 'string');
 		const companionName = nameField ? (asset.customValues?.[nameField.id] ?? '') : '';
 		const label = companionName ? `${companionName} (${definition.name})` : definition.name;
@@ -251,7 +264,7 @@
 		</div>
 
 		{#if counterField?.icon}
-			{@const curVal  = parseInt(asset.customValues?.[counterField.id] ?? String(counterField.default ?? 0))}
+			{@const curVal  = getCounterVal(counterField)}
 			{@const maxVal  = getEffectiveMax(counterField)}
 			{@const iconSvg = COUNTER_ICONS[counterField.icon] ?? iconHeart}
 			<span
@@ -478,7 +491,7 @@
 			{#each (definition.customFields ?? []).filter(f => f.position === 'bottom') as field}
 				{#if field.type === 'counter' && field.maxValue !== undefined}
 					{@const maxVal = getEffectiveMax(field)}
-					{@const curVal = parseInt(asset.customValues?.[field.id] ?? String(field.default ?? 0))}
+					{@const curVal = getCounterVal(field)}
 					<div class="counter-row" style:--counter-color={catColor}>
 						<span class="companion-field-label">{field.label}</span>
 						<div class="counter-pips">

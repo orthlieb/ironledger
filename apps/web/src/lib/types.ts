@@ -177,7 +177,8 @@ export interface CharacterData {
 	health: number;   // 0–5  (blocked by Wounded)
 	spirit: number;   // 0–5  (blocked by Shaken)
 	supply: number;   // 0–5  (party-wide in full app)
-	mana: number;     // 0–10 (YRT Conclave)
+	/** Values for global counters (field.global === true), keyed by field.id. */
+	globalValues?: Record<string, string>;
 
 	// Progress
 	xp: number;       // 0–30
@@ -288,7 +289,7 @@ export const DEFAULT_CHARACTER: CharacterData = {
 	health: 5,
 	spirit: 5,
 	supply: 3,
-	mana: 0,
+	globalValues: {},
 	xp: 0,
 	bonds: 0,
 	failures: 0,

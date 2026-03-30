@@ -100,6 +100,10 @@
 		pointer-events:  none;
 	}
 
+	:global([data-theme="dark"]) .stat-icon {
+		opacity: 0.32;
+	}
+
 	.stat-icon :global(svg) {
 		width:  72%;
 		height: 72%;

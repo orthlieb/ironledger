@@ -93,6 +93,7 @@
 						{characterId}
 						characterName={characterData.name}
 						characterXp={characterData.xp}
+						bind:globalValues={characterData.globalValues}
 						onRemove={() => removeAsset(entry.assetId)}
 					/>
 				{:else}
