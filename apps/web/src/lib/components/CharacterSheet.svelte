@@ -35,6 +35,7 @@
 	import { renderNote } from '$lib/markdown.js';
 
 	import { getActiveDiceCtx, setActiveDiceCtx } from '$lib/diceContext.svelte.js';
+	import { tooltip } from '$lib/actions/tooltip.js';
 
 	import StatControl       from './StatControl.svelte';
 	import ResourceTile      from './ResourceTile.svelte';
@@ -78,12 +79,13 @@
 	let deleteDialogEl = $state<HTMLDialogElement | null>(null);
 	let saveStatus = $state<'idle' | 'saving' | 'error'>('idle');
 
-	// Publish live data to the global dice context whenever this sheet is active
+	// Publish live data to the global dice context whenever this sheet is active.
+	// We deliberately do NOT clear _ctx when active becomes false — the live data
+	// reference must remain available on the Adventure tab (where CharacterSheet is
+	// unmounted) so MovesDialog always reads current stat values, not stale API data.
 	$effect(() => {
 		if (active) {
 			setActiveDiceCtx({ charId: character.id, charName: data.name || 'Unnamed', data });
-		} else if (getActiveDiceCtx()?.charId === character.id) {
-			setActiveDiceCtx(null);
 		}
 	});
 	let saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -629,6 +631,7 @@
 						bind:value={data.momentum}
 						resetVal={momentumRstV}
 						maxVal={momentumMax}
+						tooltipText="Tracks your current momentum (−6 to +10). Burn positive momentum to improve a roll; negative momentum reduces your highest die."
 						onchange={(o, n) => logMeter('Momentum', o, n)}
 						onreset={doMomentumReset}
 					/>
@@ -691,7 +694,7 @@
 			<section class="char-section tracks-row">
 				<div class="track-group">
 					<div class="track-label-row">
-						<div class="section-label">Bonds</div>
+						<div class="section-label" use:tooltip={"The people and places that give your oath meaning — and remind you what you're fighting for."}>Bonds</div>
 						<span class="track-tally">{progressText(data.bonds)}</span>
 					</div>
 					<div class="track-row">
@@ -708,7 +711,7 @@
 				</div>
 				<div class="track-group">
 					<div class="track-label-row">
-						<div class="section-label">Failures</div>
+						<div class="section-label" use:tooltip={"Every scar, stumble, and hard lesson etched into your bones, waiting to be redeemed."}>Failures</div>
 						<span class="track-tally">{progressText(data.failures)}</span>
 					</div>
 					<div class="track-row">
@@ -752,7 +755,7 @@
 
 			<!-- Assets -->
 			<section class="char-section">
-				<AssetsSection bind:assets={data.assets} characterData={data} characterId={character.id} />
+				<AssetsSection bind:assets={data.assets} bind:characterData={data} characterId={character.id} />
 			</section>
 
 		</div>

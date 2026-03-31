@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { CharacterData } from '$lib/types.js';
+	import { tooltip } from '$lib/actions/tooltip.js';
 
 	let {
 		data,
@@ -10,20 +11,20 @@
 	} = $props();
 
 	const CONDITIONS = [
-		{ key: 'wounded',    label: 'Wounded' },
-		{ key: 'unprepared', label: 'Unprepared' },
-		{ key: 'shaken',     label: 'Shaken' },
-		{ key: 'encumbered', label: 'Encumbered' },
+		{ key: 'wounded',    label: 'Wounded',    tip: 'You are severely injured and need treatment to recover.' },
+		{ key: 'unprepared', label: 'Unprepared', tip: 'You lack the resources and provisions necessary for your journey.' },
+		{ key: 'shaken',     label: 'Shaken',     tip: 'You are despairing or distraught, and need comfort to recover.' },
+		{ key: 'encumbered', label: 'Encumbered', tip: 'You are carrying excessive or cumbersome weight.' },
 	] as const;
 
 	const BANES = [
-		{ key: 'maimed',    label: 'Maimed' },
-		{ key: 'corrupted', label: 'Corrupted' },
+		{ key: 'maimed',    label: 'Maimed',    tip: 'You have suffered a wound which causes ongoing physical challenges, such as the loss of an eye or hand. Or, you bear horrific scars which serve as a constant reminder of your failures.' },
+		{ key: 'corrupted', label: 'Corrupted', tip: 'Your experiences have left you emotionally scarred. You are at the threshold of losing yourself to darkness.' },
 	] as const;
 
 	const BURDENS = [
-		{ key: 'cursed',    label: 'Cursed' },
-		{ key: 'tormented', label: 'Tormented' },
+		{ key: 'cursed',    label: 'Cursed',    tip: 'You have faced Death and returned with a soul-bound quest.' },
+		{ key: 'tormented', label: 'Tormented', tip: 'You have faced Desolation and undertake a quest to prevent a dire future.' },
 	] as const;
 </script>
 
@@ -37,6 +38,7 @@
 					<button
 						class="debility-btn"
 						class:active={data[d.key]}
+						use:tooltip={d.tip}
 						onclick={() => { const v = !data[d.key]; data[d.key] = v; onchange?.(d.label, v); }}
 					>{d.label}</button>
 				{/each}
@@ -49,6 +51,7 @@
 					<button
 						class="debility-btn"
 						class:active={data[d.key]}
+						use:tooltip={d.tip}
 						onclick={() => { const v = !data[d.key]; data[d.key] = v; onchange?.(d.label, v); }}
 					>{d.label}</button>
 				{/each}
@@ -61,6 +64,7 @@
 					<button
 						class="debility-btn"
 						class:active={data[d.key]}
+						use:tooltip={d.tip}
 						onclick={() => { const v = !data[d.key]; data[d.key] = v; onchange?.(d.label, v); }}
 					>{d.label}</button>
 				{/each}

@@ -10,7 +10,7 @@
 	 * The catalogue is fetched lazily the first time the picker is opened
 	 * (or when this component mounts, so the first click is instant).
 	 */
-	import type { CharacterAsset, CharacterData } from '$lib/types.js';
+	import type { CharacterAsset, CharacterData, AssetDefinition } from '$lib/types.js';
 	import { loadAssets, findAsset, getAssets } from '$lib/assetStore.svelte.js';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import AssetCard   from './AssetCard.svelte';
@@ -18,15 +18,33 @@
 
 	let {
 		assets = $bindable<CharacterAsset[]>([]),
-		characterData,
+		characterData = $bindable<CharacterData>(),
 		characterId,
 	}: {
-		assets?:       CharacterAsset[];
-		characterData: CharacterData;
-		characterId:   string;
+		assets?:        CharacterAsset[];
+		characterData:  CharacterData;
+		characterId:    string;
 	} = $props();
 
 	let pickerOpen = $state(false);
+
+	// ── Remove-asset dialog (lifted out of AssetCard to avoid bind:this in keyed {#each}) ──
+	let removeTarget = $state<{ assetId: string; def: AssetDefinition; enabledCount: number } | null>(null);
+	let removeDialogEl = $state<HTMLDialogElement | null>(null);
+
+	function requestRemove(assetId: string, def: AssetDefinition, enabledCount: number) {
+		removeTarget = { assetId, def, enabledCount };
+		removeDialogEl?.showModal();
+	}
+
+	function confirmRemove() {
+		if (!removeTarget) return;
+		removeDialogEl?.close();
+		appendLog(SESSION_LOG_ID, `${characterData.name} — Assets`,
+			`<div>Asset removed: <strong>${removeTarget.def.name}</strong> (${removeTarget.def.category}, ${removeTarget.enabledCount} marked)</div>`);
+		removeAsset(removeTarget.assetId);
+		removeTarget = null;
+	}
 
 	// Pre-load the catalogue in the background as soon as this section mounts
 	$effect(() => { loadAssets(); });
@@ -44,11 +62,6 @@
 			assetId,
 			abilities: def.abilities.map((ab) => ab.enabled), // all categories: ability[0].enabled = true
 		};
-		if (def.counterMax !== undefined) {
-			// counterStart always wins; fall back to first element of array or the number itself
-			const baseMax = Array.isArray(def.counterMax) ? def.counterMax[0] : def.counterMax;
-			newEntry.counter = def.counterStart ?? baseMax;
-		}
 		assets = [...assets, newEntry];
 		// Pre-generate the entry id so we can embed it in the XP cost link
 		const entryId = crypto.randomUUID();
@@ -94,7 +107,7 @@
 						characterName={characterData.name}
 						characterXp={characterData.xp}
 						bind:globalValues={characterData.globalValues}
-						onRemove={() => removeAsset(entry.assetId)}
+						onRemove={() => requestRemove(entry.assetId, def, assets[i].abilities.filter(Boolean).length)}
 					/>
 				{:else}
 					<!-- Definition not yet loaded or id mismatch — show minimal fallback -->
@@ -106,6 +119,39 @@
 			{/each}
 		</div>
 	{/if}
+
+	<!-- Remove-asset confirmation dialog (single instance, inside root div) -->
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+	<dialog
+		bind:this={removeDialogEl}
+		class="remove-dialog"
+		oncancel={() => { removeDialogEl?.close(); removeTarget = null; }}
+	>
+		<h3 class="remove-title">Remove {removeTarget?.def.name}?</h3>
+
+		<div class="remove-body">
+			<p>Losing an asset is rare and usually the result of a unique narrative circumstance dictated by the storyline.</p>
+
+			{#if removeTarget?.def.category === 'Companion'}
+				<p>
+					<strong>Companion Endure Harm:</strong> If your companion is killed or you
+					choose to end your bond, roll +Heart. On a strong hit, take +1 spirit. On a
+					weak hit, take +1 spirit and suffer −1 momentum. On a miss, you must Endure
+					Stress. Gain {removeTarget?.enabledCount ?? 1} XP (1 per marked ability, minimum 1).
+				</p>
+			{/if}
+
+			<p>
+				<strong>Learn From Your Failures:</strong> On a strong hit, you may discard a
+				single asset and gain {Math.max(1, (removeTarget?.enabledCount ?? 0) * 2)} XP (2 per marked ability, minimum 1).
+			</p>
+		</div>
+
+		<div class="remove-btns">
+			<button class="btn btn-primary" onclick={() => { removeDialogEl?.close(); removeTarget = null; }}>Keep Asset</button>
+			<button class="btn btn-danger" onclick={confirmRemove}>Remove</button>
+		</div>
+	</dialog>
 
 </div>
 
@@ -143,6 +189,71 @@
 		flex-direction: column;
 		gap: 6px;
 	}
+
+	/* ================================================================
+	   Remove dialog
+	   ================================================================ */
+	.remove-dialog {
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		margin: 0;
+		border: 1px solid var(--border-mid);
+		border-radius: 7px;
+		padding: 16px 18px 14px;
+		background: var(--bg-card);
+		color: var(--text);
+		width: min(420px, calc(100vw - 2rem));
+		box-shadow: 0 8px 32px #00000060;
+	}
+	.remove-dialog::backdrop {
+		background: #00000040;
+		backdrop-filter: blur(1px);
+	}
+
+	.remove-title {
+		font-family: var(--font-ui);
+		font-size: 0.88rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		color: var(--text);
+		margin: 0 0 12px;
+	}
+
+	.remove-body {
+		display: flex;
+		flex-direction: column;
+		gap: 9px;
+		margin-bottom: 16px;
+	}
+
+	.remove-body p {
+		font-family: var(--font-ui);
+		font-size: 0.8rem;
+		line-height: 1.5;
+		color: var(--text-muted);
+		margin: 0;
+	}
+
+	.remove-body :global(strong) {
+		color: var(--text);
+		font-weight: 600;
+	}
+
+	.remove-btns {
+		display: flex;
+		gap: 6px;
+		justify-content: flex-end;
+	}
+
+	.btn-primary {
+		background: var(--text-accent);
+		border-color: var(--text-accent);
+		color: var(--bg-card);
+		font-weight: 600;
+	}
+	.btn-primary:hover { opacity: 0.88; }
 
 	/* Fallback row while catalogue is loading */
 	.asset-loading {

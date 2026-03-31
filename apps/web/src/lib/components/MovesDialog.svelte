@@ -423,6 +423,15 @@
 			parts.push(`<div class="move-outcome">${outcomeHtml}</div>`);
 		}
 
+		// On a miss for a character move, offer +1 failure
+		if (!hits1 && !hits2) {
+			parts.push(
+				`<div class="move-failure-row">` +
+				`<a class="failure-link" data-entry-id="${entryId}" data-char-id="${ctx.charId}" href="#">+1 failure</a>` +
+				`</div>`
+			);
+		}
+
 		const html = parts.join('');
 
 		close();

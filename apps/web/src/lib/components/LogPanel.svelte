@@ -420,6 +420,18 @@
 			return;
 		}
 
+		// ---- Failure links ----
+		const failureLink = target.closest('.failure-link') as HTMLElement | null;
+		if (failureLink && !failureLink.closest('.resource-spent')) {
+			e.preventDefault();
+			const entryId = failureLink.dataset['entryId'] ?? '';
+			const charId  = failureLink.dataset['charId']  ?? '';
+			if (!entryId || !charId) return;
+			markLinkSpent(entryId, failureLink);
+			triggerAction({ charId, type: 'resource', key: 'failures', value: 1 });
+			return;
+		}
+
 		// ---- Burn momentum links ----
 		const burnLink = target.closest('.burn-momentum-link') as HTMLElement | null;
 		if (burnLink && !burnLink.closest('.resource-spent')) {
@@ -513,7 +525,7 @@
 	const LINK_SELECTOR = [
 		'.resource-link', '.move-link', '.oracle-link', '.initiative-link',
 		'.progress-link', '.debility-link', '.menace-link', '.vanquish-foe-link',
-		'.burn-momentum-link', '.xp-cost-link',
+		'.burn-momentum-link', '.xp-cost-link', '.failure-link',
 	].join(', ');
 
 	function handleEntriesTouchStart(e: TouchEvent) {
@@ -857,6 +869,20 @@
 	.entry-body :global(.move-outcome li) {
 		margin-bottom: 2px;
 	}
+
+	/* Failure link row (appended after miss outcomes) */
+	.entry-body :global(.move-failure-row) {
+		margin-top: 5px;
+	}
+	.entry-body :global(.failure-link) {
+		color: var(--color-danger, #ef4444);
+		text-decoration: underline;
+		cursor: pointer;
+		font-size: 0.78rem;
+		font-weight: 600;
+		touch-action: manipulation;
+	}
+	.entry-body :global(.failure-link:hover) { opacity: 0.8; }
 
 	/* Interactive links in move outcomes */
 	.entry-body :global(.resource-link),

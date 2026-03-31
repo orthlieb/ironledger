@@ -7,14 +7,15 @@
 	 * Fires onchange(oldVal, newVal) on blur when the value actually changed.
 	 */
 
-	import brainSvg  from '$icons/brain.svg?raw';
-	import fistSvg   from '$icons/fist.svg?raw';
-	import shadowSvg from '$icons/shadow.svg?raw';
-	import swordSvg  from '$icons/sword-solid-full.svg?raw';
-	import heartSvg  from '$icons/icon-heart.svg?raw';
+	import brainSvg   from '$icons/brain.svg?raw';
+	import fistSvg    from '$icons/fist.svg?raw';
+	import shadowSvg  from '$icons/shadow.svg?raw';
+	import rabbitSvg  from '$icons/rabbit-running-solid-full.svg?raw';
+	import heartSvg   from '$icons/icon-heart.svg?raw';
+	import { tooltip as tooltipAction } from '$lib/actions/tooltip.js';
 
 	const STAT_ICONS: Record<string, string> = {
-		Edge:   swordSvg,
+		Edge:   rabbitSvg,
 		Heart:  heartSvg,
 		Iron:   fistSvg,
 		Shadow: shadowSvg,
@@ -47,7 +48,7 @@
 	const icon = $derived(STAT_ICONS[label] ?? '');
 </script>
 
-<div class="stat-tile" style:--stat-color={color} title={tooltip || undefined}>
+<div class="stat-tile" style:--stat-color={color} use:tooltipAction={tooltip}>
 	<div class="stat-icon" aria-hidden="true">{@html icon}</div>
 	<div class="stat-name">{label}</div>
 	<input

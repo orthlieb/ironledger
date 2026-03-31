@@ -24,6 +24,7 @@
 	import iconHeart    from '$icons/icon-heart.svg?raw';
 	import iconSpirit   from '$icons/icon-spirit.svg?raw';
 	import iconSupply   from '$icons/icon-supply.svg?raw';
+	import iconXp       from '$icons/star-solid-full.svg?raw';
 
 	// Initiative icons
 	import swordSvg  from '$icons/sword-solid-full.svg?raw';
@@ -127,6 +128,7 @@
 		{ key: 'health',   label: 'Health', icon: iconHeart,    color: 'var(--color-health)' },
 		{ key: 'spirit',   label: 'Spirit', icon: iconSpirit,   color: 'var(--color-spirit)' },
 		{ key: 'supply',   label: 'Supply', icon: iconSupply,   color: 'var(--color-supply)' },
+		{ key: 'xp',       label: 'XP',     icon: iconXp,       color: 'var(--text-muted)' },
 	] as const;
 
 	const ASSET_CAT_COLOR: Record<string, string> = {
@@ -300,6 +302,9 @@
 								</span>
 							{/each}
 						</div>
+						{#if activeDebilities.length > 0 || assetPills.length > 0}
+							<hr class="gc-chip-divider" />
+						{/if}
 						{#if activeDebilities.length > 0}
 							<div class="gc-chip-group gc-chip-group--debilities">
 								<span class="gc-inline-label">Debilities</span>
@@ -513,6 +518,8 @@
 	}
 
 	/* ===== Individual tile (section within the single card) ===== */
+	/* NOTE: overflow must stay visible so the popover dropdown can extend below the tile.
+	   The button handles its own hover clipping via border-radius + overflow:hidden. */
 	.gc-tile {
 		position: relative;
 		container-name: gc;
@@ -522,7 +529,6 @@
 		border: 1px solid var(--border);
 		border-left: 3px solid transparent;
 		border-radius: 5px;
-		overflow: hidden;
 		box-shadow: inset 0 1px 0 #ffffff04, 0 2px 8px #00000040;
 	}
 
@@ -543,6 +549,7 @@
 		padding: 8px 14px;
 		background: var(--bg-inset);
 		border-bottom: 1px solid var(--border);
+		border-radius: 5px 5px 0 0;
 		font-family: var(--font-display);
 		font-size: 0.65rem;
 		font-weight: 700;
@@ -567,7 +574,8 @@
 		text-align: left;
 		gap: 0;
 		transition: background 0.12s;
-		border-radius: 0;
+		border-radius: 4px;
+		overflow: hidden;
 	}
 	.gc-tile-btn:hover {
 		background: rgba(245, 158, 11, 0.06);
@@ -659,11 +667,13 @@
 		flex-wrap: wrap;
 		gap: 2px;
 		padding: 0.35rem 0.5rem 0.4rem;
+		justify-content: center;
 	}
 	.gc-chip-group {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 2px;
+		justify-content: center;
 	}
 	.gc-chip {
 		font-family: var(--font-ui);
@@ -702,10 +712,12 @@
 		height: 100%;
 		fill: currentColor;
 	}
-	/* Stats: muted colored text — rarely change */
+	/* Stats: colored text with border */
 	.gc-chip--stat {
 		color: var(--chip-color);
-		opacity: 0.7;
+		border: 1px solid color-mix(in srgb, var(--chip-color) 40%, transparent);
+		border-radius: 6px;
+		padding: 2px 4px;
 	}
 	.gc-chip--stat .gc-chip-value {
 		font-weight: 700;
@@ -743,11 +755,20 @@
 		white-space:    nowrap;
 	}
 
+	/* Divider between stats/vitals chips and debility/asset pills */
+	.gc-chip-divider {
+		width:      100%;
+		margin:     4px 0 2px;
+		border:     none;
+		border-top: 1px solid var(--border);
+		flex-shrink: 0;
+	}
+
 	/* Debility pills row */
 	.gc-chip-group--debilities {
-		width:      100%;
-		margin-top: 1px;
-		gap:        3px;
+		width:           100%;
+		gap:             3px;
+		justify-content: flex-start;
 	}
 	.gc-debility-pill {
 		font-family:    var(--font-ui);
@@ -762,9 +783,10 @@
 
 	/* Asset pills row */
 	.gc-chip-group--assets {
-		width: 100%;
-		margin-top: 1px;
-		gap: 3px;
+		width:           100%;
+		margin-top:      1px;
+		gap:             3px;
+		justify-content: flex-start;
 	}
 	.gc-asset-pill {
 		font-family:    var(--font-ui);

@@ -70,3 +70,7 @@ export function findRarityForAsset(assetId: string): RarityDefinition | undefine
 export function findRarity(rarityId: string): RarityDefinition | undefined {
 	return _rarities.find((r) => r.id === rarityId);
 }
+
+// Auto-start loading as soon as the module is imported on the client.
+// This eliminates the "Loading…" flash caused by waiting for component effects to run.
+if (browser) loadAssets();
