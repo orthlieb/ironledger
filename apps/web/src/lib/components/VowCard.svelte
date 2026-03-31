@@ -491,7 +491,7 @@
 	}
 
 	.forsake-vow-name {
-		font-family: var(--font-body);
+		font-family: var(--font-ui);
 		font-size: 0.9rem;
 		font-style: italic;
 		color: var(--text);
@@ -499,7 +499,7 @@
 	}
 
 	.forsake-rule {
-		font-family: var(--font-body);
+		font-family: var(--font-ui);
 		font-size: 0.8rem;
 		font-style: italic;
 		color: var(--text-muted);
@@ -507,7 +507,7 @@
 	}
 
 	.forsake-cost {
-		font-family: var(--font-body);
+		font-family: var(--font-ui);
 		font-size: 0.82rem;
 		color: var(--text-muted);
 		line-height: 1.45;

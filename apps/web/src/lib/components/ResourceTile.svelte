@@ -6,6 +6,8 @@
 	 * Button style matches the progress-track buttons in GlobalContextBar.
 	 */
 
+	import { tooltip as tooltipAction } from '$lib/actions/tooltip.js';
+
 	let {
 		label,
 		value = $bindable(0),
@@ -41,7 +43,7 @@
 	}
 </script>
 
-<div class="res-tile" style:--res-color={color} title={tooltip || undefined}>
+<div class="res-tile" style:--res-color={color} use:tooltipAction={tooltip}>
 	<!-- Background icon -->
 	{#if icon}
 		<div class="res-icon" aria-hidden="true">{@html icon}</div>

@@ -65,7 +65,9 @@ export function tooltip(node: HTMLElement, param: TooltipParam) {
 			tipEl.showPopover();
 		}
 
-		position();
+		// Use rAF so the browser lays out the popover element before we
+		// measure its dimensions for positioning (fixes first-hover misfire).
+		requestAnimationFrame(() => { if (tipEl) position(); });
 	}
 
 	function position() {

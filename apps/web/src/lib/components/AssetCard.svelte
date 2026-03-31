@@ -9,6 +9,7 @@
 	import type { CharacterAsset, AssetDefinition } from '$lib/types.js';
 	import { findRarityForAsset } from '$lib/assetStore.svelte.js';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
+
 	import trashSvg          from '$icons/trash-solid-full.svg?raw';
 	import iconHeart          from '$icons/icon-heart.svg?raw';
 	import iconSkull          from '$icons/skull-crossbones-solid-full.svg?raw';
@@ -73,7 +74,6 @@
 	};
 
 	let collapsed         = $state(true);
-	let removeDialogEl    = $state<HTMLDialogElement | null>(null);
 	let selectionsOpen    = $state(false);
 	let factorsOpen       = $state(false);
 
@@ -128,10 +128,6 @@
 		}
 	}
 
-	// XP earned when removing via "Learn From Your Failures" (2 per marked ability, min 1)
-	const removeXp         = $derived(Math.max(1, enabledCount * 2));
-	// XP earned when a companion is killed / bond ended (1 per marked ability, min 1)
-	const companionRemoveXp = $derived(Math.max(1, enabledCount));
 
 	// Category colour
 	const CAT_COLOR: Record<string, string> = {
@@ -235,16 +231,6 @@
 			`<div><strong>${label}</strong> ${cf.label}: ${old} → <strong>${newVal}</strong></div>`);
 	}
 
-	function openRemoveDialog() {
-		removeDialogEl?.showModal();
-	}
-
-	function confirmRemove() {
-		removeDialogEl?.close();
-		appendLog(SESSION_LOG_ID, logTitle,
-			`<div>Asset removed: <strong>${definition.name}</strong> (${definition.category}, ${enabledCount} marked)</div>`);
-		onRemove();
-	}
 </script>
 
 <div class="asset-card">
@@ -280,7 +266,7 @@
 
 		<button
 			class="btn btn-icon icon-btn btn-remove"
-			onclick={openRemoveDialog}
+			onclick={onRemove}
 			title="Remove asset"
 			aria-label="Remove {definition.name}"
 		>{@html trashSvg}</button>
@@ -609,40 +595,8 @@
 			{/if}
 		</div>
 	{/if}
+
 </div>
-
-<!-- Remove confirmation dialog — shows rules text -->
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<dialog
-	bind:this={removeDialogEl}
-	class="remove-dialog"
-	oncancel={() => removeDialogEl?.close()}
->
-	<h3 class="remove-title">Remove {definition.name}?</h3>
-
-	<div class="remove-body">
-		<p>Losing an asset is rare and usually the result of a unique narrative circumstance dictated by the storyline.</p>
-
-		{#if definition.category === 'Companion'}
-			<p>
-				<strong>Companion Endure Harm:</strong> If your companion is killed or you
-				choose to end your bond, roll +Heart. On a strong hit, take +1 spirit. On a
-				weak hit, take +1 spirit and suffer −1 momentum. On a miss, you must Endure
-				Stress. Gain {companionRemoveXp} XP (1 per marked ability, minimum 1).
-			</p>
-		{/if}
-
-		<p>
-			<strong>Learn From Your Failures:</strong> On a strong hit, you may discard a
-			single asset and gain {removeXp} XP (2 per marked ability, minimum 1).
-		</p>
-	</div>
-
-	<div class="remove-btns">
-		<button class="btn btn-primary" onclick={() => removeDialogEl?.close()}>Keep Asset</button>
-		<button class="btn btn-danger" onclick={confirmRemove}>Remove</button>
-	</div>
-</dialog>
 
 <style>
 	.asset-card {
@@ -1316,70 +1270,6 @@
 		padding-top: 7px;
 	}
 
-	/* ================================================================
-	   Remove dialog
-	   ================================================================ */
-	.remove-dialog {
-		position: fixed;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		margin: 0;
-		border: 1px solid var(--border-mid);
-		border-radius: 7px;
-		padding: 16px 18px 14px;
-		background: var(--bg-card);
-		color: var(--text);
-		width: min(420px, calc(100vw - 2rem));
-		box-shadow: 0 8px 32px #00000060;
-	}
-	.remove-dialog::backdrop {
-		background: #00000040;
-		backdrop-filter: blur(1px);
-	}
-
-	.remove-title {
-		font-family: var(--font-ui);
-		font-size: 0.88rem;
-		font-weight: 700;
-		letter-spacing: 0.04em;
-		color: var(--text);
-		margin: 0 0 12px;
-	}
-
-	.remove-body {
-		display: flex;
-		flex-direction: column;
-		gap: 9px;
-		margin-bottom: 16px;
-	}
-
-	.remove-body p {
-		font-family: var(--font-ui);
-		font-size: 0.8rem;
-		line-height: 1.5;
-		color: var(--text-muted);
-		margin: 0;
-	}
-
-	.remove-body :global(strong) {
-		color: var(--text);
-		font-weight: 600;
-	}
-
-	.remove-btns {
-		display: flex;
-		gap: 6px;
-		justify-content: flex-end;
-	}
-
-	.btn-primary {
-		background: var(--text-accent);
-		border-color: var(--text-accent);
-		color: var(--bg-card);
-		font-weight: 600;
-	}
-	.btn-primary:hover { opacity: 0.88; }
 
 	/* ---- Custom field switch (boolean toggle, same style as DebilitiesSection) ---- */
 	.cf-switch {

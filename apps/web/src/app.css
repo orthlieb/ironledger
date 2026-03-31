@@ -1,6 +1,6 @@
 /* =============================================================================
    Iron Ledger — "The Ironsworn Codex" Design System
-   Cinzel (engraved stone) + Crimson Pro (manuscript) · Forge-amber on obsidian
+   Cinzel (engraved stone) + Roboto (UI & body) · Forge-amber on obsidian
 
    Theme strategy
    ─────────────
@@ -148,7 +148,7 @@ html[data-theme='light'] {
 /* Typography tokens (theme-independent) */
 :root {
 	--font-display: 'Cinzel', 'Palatino Linotype', Georgia, serif;
-	--font-body:    'Crimson Pro', 'Palatino Linotype', Georgia, serif;
+	--font-body:    'Roboto', system-ui, sans-serif;
 	/* UI labels, buttons, small text — clean sans-serif */
 	--font-ui:      'Roboto', system-ui, sans-serif;
 	/* Dice roll results and numeric data */

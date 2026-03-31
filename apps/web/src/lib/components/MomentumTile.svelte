@@ -5,17 +5,20 @@
 	 * Right column (divided by hairline): ↺ Reset: n button + MAX: m display.
 	 */
 	import momentumSvg from '$icons/icon-momentum.svg?raw';
+	import { tooltip } from '$lib/actions/tooltip.js';
 
 	let {
 		value      = $bindable(0),
 		resetVal   = 2,
 		maxVal     = 10,
+		tooltipText = '',
 		onchange,
 		onreset,
 	}: {
-		value?:    number;
-		resetVal?: number;
-		maxVal?:   number;
+		value?:       number;
+		resetVal?:    number;
+		maxVal?:      number;
+		tooltipText?: string;
 		onchange?: (oldVal: number, newVal: number) => void;
 		onreset?:  () => void;
 	} = $props();
@@ -33,7 +36,7 @@
 	}
 </script>
 
-<div class="mt-tile" style:--mt-color={COLOR}>
+<div class="mt-tile" style:--mt-color={COLOR} use:tooltip={tooltipText}>
 	<!-- Background icon behind the left column -->
 	<div class="mt-icon" aria-hidden="true">{@html momentumSvg}</div>
 
@@ -47,7 +50,7 @@
 				disabled={value <= -6}
 				aria-label="Decrease Momentum"
 			>−</button>
-			<span class="mt-val" class:negative={value < 0}>{value}</span>
+			<span class="mt-val" class:mt-val--wide={Math.abs(value) >= 10} class:negative={value < 0}>{value}</span>
 			<button
 				class="mt-btn"
 				onclick={increment}
@@ -151,6 +154,10 @@
 		line-height:          1;
 		min-width:            1.8ch;
 		text-align:           center;
+	}
+
+	.mt-val--wide {
+		font-size: 1.0rem;
 	}
 
 	.mt-val.negative {

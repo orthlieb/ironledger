@@ -205,6 +205,11 @@
 				const next = Math.max(caps[0], Math.min(caps[1], old + action.value));
 				if (next !== old) {
 					rec[action.key] = next;
+					// Mirror to the live DiceCtx so MovesDialog always reads current values
+					const liveCtx = getActiveDiceCtx();
+					if (liveCtx?.charId === activeCharId) {
+						(liveCtx.data as Record<string, unknown>)[action.key] = next;
+					}
 					const label = action.key.charAt(0).toUpperCase() + action.key.slice(1);
 					appendLog(SESSION_LOG_ID, `${char.name} — ${label}`,
 						`<div>${label}: ${old} → <strong>${next}</strong> (${action.value > 0 ? '+' : ''}${action.value})</div>`);
@@ -215,6 +220,11 @@
 				const active = action.value === 1;
 				if (old !== active) {
 					rec[action.key] = active;
+					// Mirror to the live DiceCtx
+					const liveCtx = getActiveDiceCtx();
+					if (liveCtx?.charId === activeCharId) {
+						(liveCtx.data as Record<string, unknown>)[action.key] = active;
+					}
 					const label = action.key.charAt(0).toUpperCase() + action.key.slice(1);
 					appendLog(SESSION_LOG_ID, `${char.name} — Debilities`,
 						`<div>${label}: <strong>${active ? 'Marked' : 'Cleared'}</strong></div>`);
@@ -937,7 +947,7 @@
 		background: var(--bg-card);
 		border: 1px solid var(--border);
 		border-radius: 5px;
-		overflow: hidden;
+		/* overflow must stay visible so GCB popover dropdowns can extend below the card */
 		box-shadow: inset 0 1px 0 #ffffff04, 0 2px 12px #00000050;
 		min-width: 0;
 	}
