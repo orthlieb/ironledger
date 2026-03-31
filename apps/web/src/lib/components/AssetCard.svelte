@@ -313,7 +313,8 @@
 							type="checkbox"
 							class="cf-switch-input"
 							checked={asset.customValues?.[field.id] === '1'}
-							onchange={() => {
+							onclick={(e: MouseEvent) => {
+								e.preventDefault();
 								if (!asset.customValues) asset.customValues = {};
 								asset.customValues[field.id] = asset.customValues[field.id] === '1' ? '0' : '1';
 							}}
@@ -344,8 +345,7 @@
 							class="ability-check"
 							checked={asset.abilities[i]}
 							disabled={!asset.abilities[i] && characterXp < 2}
-							title={!asset.abilities[i] && characterXp < 2 ? "Requires 2 XP to enable" : undefined}
-							onchange={() => toggleAbility(i)}
+							onclick={(e: MouseEvent) => { e.preventDefault(); toggleAbility(i); }}
 						/>
 						<div class="ability-text">
 							{#if ab.name}
@@ -385,7 +385,7 @@
 										class="selection-check"
 										checked={known}
 										{disabled}
-										onchange={() => toggleSelection(item.key)}
+										onclick={(e: MouseEvent) => { e.preventDefault(); toggleSelection(item.key); }}
 									/>
 									<span class="selection-line">
 										<span class="selection-name">{item.name}</span>
@@ -545,7 +545,8 @@
 							type="checkbox"
 							class="cf-switch-input"
 							checked={asset.customValues?.[field.id] === '1'}
-							onchange={() => {
+							onclick={(e: MouseEvent) => {
+								e.preventDefault();
 								if (!asset.customValues) asset.customValues = {};
 								asset.customValues[field.id] = asset.customValues[field.id] === '1' ? '0' : '1';
 							}}
@@ -565,11 +566,11 @@
 							class="rarity-check"
 							checked={asset.rarityId === rarity.id}
 							disabled={asset.rarityId !== rarity.id && characterXp < rarity.xpCost}
-							title={asset.rarityId !== rarity.id && characterXp < rarity.xpCost ? `Requires ${rarity.xpCost} XP to unlock` : undefined}
-							onchange={(e) => {
-								const checked = (e.target as HTMLInputElement).checked;
-								asset.rarityId = checked ? rarity.id : undefined;
-								if (checked) {
+							onclick={(e: MouseEvent) => {
+								e.preventDefault();
+								const wasChecked = asset.rarityId === rarity.id;
+								asset.rarityId = wasChecked ? undefined : rarity.id;
+								if (!wasChecked) {
 									const entryId = crypto.randomUUID();
 									const xpLink  = `<a class="xp-cost-link" data-entry-id="${entryId}" data-cost="${rarity.xpCost}" data-char-id="${characterId}" href="#">−${rarity.xpCost} experience</a>`;
 									appendLog(SESSION_LOG_ID, logTitle,
