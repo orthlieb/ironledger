@@ -115,8 +115,15 @@ export function tooltip(node: HTMLElement, param: TooltipParam) {
 	}
 
 	// Touch: show on touchstart, auto-hide 1.2 s after release.
-	function onTouchStart(e: TouchEvent) {
-		e.preventDefault();  // suppress the synthetic mouse events that follow
+	// Use a flag to suppress the synthetic mouseenter that follows a touch,
+	// instead of preventDefault() which blocks the tap-to-click default.
+	let recentTouch = false;
+	let touchFlagTimer: ReturnType<typeof setTimeout> | null = null;
+
+	function onTouchStart() {
+		recentTouch = true;
+		if (touchFlagTimer) clearTimeout(touchFlagTimer);
+		touchFlagTimer = setTimeout(() => { recentTouch = false; }, 500);
 		if (hideTimer) { clearTimeout(hideTimer); hideTimer = null; }
 		show();
 	}
@@ -124,11 +131,16 @@ export function tooltip(node: HTMLElement, param: TooltipParam) {
 		hideTimer = setTimeout(hide, 1200);
 	}
 
-	node.addEventListener('mouseenter',  show);
+	function guardedShow() {
+		if (recentTouch) return; // skip synthetic mouseenter after touch
+		show();
+	}
+
+	node.addEventListener('mouseenter',  guardedShow);
 	node.addEventListener('mouseleave',  hide);
 	node.addEventListener('focus',       show);
 	node.addEventListener('blur',        hide);
-	node.addEventListener('touchstart',  onTouchStart, { passive: false });
+	node.addEventListener('touchstart',  onTouchStart, { passive: true });
 	node.addEventListener('touchend',    onTouchEnd);
 	node.addEventListener('touchcancel', hide);
 
@@ -142,7 +154,8 @@ export function tooltip(node: HTMLElement, param: TooltipParam) {
 		},
 		destroy() {
 			hide();
-			node.removeEventListener('mouseenter',  show);
+			if (touchFlagTimer) clearTimeout(touchFlagTimer);
+			node.removeEventListener('mouseenter',  guardedShow);
 			node.removeEventListener('mouseleave',  hide);
 			node.removeEventListener('focus',       show);
 			node.removeEventListener('blur',        hide);
