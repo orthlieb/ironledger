@@ -13,8 +13,9 @@
 	import type { CharacterAsset, CharacterData, AssetDefinition } from '$lib/types.js';
 	import { loadAssets, findAsset, getAssets } from '$lib/assetStore.svelte.js';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
-	import AssetCard   from './AssetCard.svelte';
-	import AssetPicker from './AssetPicker.svelte';
+	import AssetCard     from './AssetCard.svelte';
+	import AssetPicker   from './AssetPicker.svelte';
+	import ConfirmDialog from './ConfirmDialog.svelte';
 
 	let {
 		assets = $bindable<CharacterAsset[]>([]),
@@ -29,17 +30,16 @@
 	let pickerOpen = $state(false);
 
 	// ── Remove-asset dialog (lifted out of AssetCard to avoid bind:this in keyed {#each}) ──
-	let removeTarget = $state<{ assetId: string; def: AssetDefinition; enabledCount: number } | null>(null);
-	let removeDialogEl = $state<HTMLDialogElement | null>(null);
+	let removeTarget    = $state<{ assetId: string; def: AssetDefinition; enabledCount: number } | null>(null);
+	let removeDialogRef = $state<{ open(): void; close(): void } | null>(null);
 
 	function requestRemove(assetId: string, def: AssetDefinition, enabledCount: number) {
 		removeTarget = { assetId, def, enabledCount };
-		removeDialogEl?.showModal();
+		removeDialogRef?.open();
 	}
 
 	function confirmRemove() {
 		if (!removeTarget) return;
-		removeDialogEl?.close();
 		appendLog(SESSION_LOG_ID, `${characterData.name} — Assets`,
 			`<div>Asset removed: <strong>${removeTarget.def.name}</strong> (${removeTarget.def.category}, ${removeTarget.enabledCount} marked)</div>`);
 		removeAsset(removeTarget.assetId);
@@ -120,16 +120,16 @@
 		</div>
 	{/if}
 
-	<!-- Remove-asset confirmation dialog (single instance, inside root div) -->
-	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-	<dialog
-		bind:this={removeDialogEl}
-		class="remove-dialog"
-		oncancel={() => { removeDialogEl?.close(); removeTarget = null; }}
+	<!-- Remove-asset confirmation dialog -->
+	<ConfirmDialog
+		bind:this={removeDialogRef}
+		title="Remove {removeTarget?.def.name ?? 'Asset'}?"
+		onconfirm={confirmRemove}
+		oncancel={() => (removeTarget = null)}
+		confirmLabel="Remove"
+		cancelLabel="Keep Asset"
 	>
-		<h3 class="remove-title">Remove {removeTarget?.def.name}?</h3>
-
-		<div class="remove-body">
+		<div class="rm-body">
 			<p>Losing an asset is rare and usually the result of a unique narrative circumstance dictated by the storyline.</p>
 
 			{#if removeTarget?.def.category === 'Companion'}
@@ -146,12 +146,7 @@
 				single asset and gain {Math.max(1, (removeTarget?.enabledCount ?? 0) * 2)} XP (2 per marked ability, minimum 1).
 			</p>
 		</div>
-
-		<div class="remove-btns">
-			<button class="btn btn-primary" onclick={() => { removeDialogEl?.close(); removeTarget = null; }}>Keep Asset</button>
-			<button class="btn btn-danger" onclick={confirmRemove}>Remove</button>
-		</div>
-	</dialog>
+	</ConfirmDialog>
 
 </div>
 
@@ -191,44 +186,15 @@
 	}
 
 	/* ================================================================
-	   Remove dialog
+	   Remove-asset dialog body
 	   ================================================================ */
-	.remove-dialog {
-		position: fixed;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		margin: 0;
-		border: 1px solid var(--border-mid);
-		border-radius: 7px;
-		padding: 16px 18px 14px;
-		background: var(--bg-card);
-		color: var(--text);
-		width: min(420px, calc(100vw - 2rem));
-		box-shadow: 0 8px 32px #00000060;
-	}
-	.remove-dialog::backdrop {
-		background: #00000040;
-		backdrop-filter: blur(1px);
-	}
-
-	.remove-title {
-		font-family: var(--font-ui);
-		font-size: 0.88rem;
-		font-weight: 700;
-		letter-spacing: 0.04em;
-		color: var(--text);
-		margin: 0 0 12px;
-	}
-
-	.remove-body {
+	.rm-body {
 		display: flex;
 		flex-direction: column;
-		gap: 9px;
-		margin-bottom: 16px;
+		gap: 8px;
 	}
 
-	.remove-body p {
+	.rm-body p {
 		font-family: var(--font-ui);
 		font-size: 0.8rem;
 		line-height: 1.5;
@@ -236,15 +202,9 @@
 		margin: 0;
 	}
 
-	.remove-body :global(strong) {
+	.rm-body :global(strong) {
 		color: var(--text);
 		font-weight: 600;
-	}
-
-	.remove-btns {
-		display: flex;
-		gap: 6px;
-		justify-content: flex-end;
 	}
 
 	.btn-primary {

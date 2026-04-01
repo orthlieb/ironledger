@@ -15,9 +15,9 @@
 	import { isStorytellerEnabled, setStorytellerEnabled } from '$lib/storytellerStore.svelte.js';
 	import { draggable } from '$lib/actions/draggable.js';
 
-	import autoSvg  from '$icons/circle-half-stroke-solid.svg?raw';
-	import darkSvg  from '$icons/moon-solid.svg?raw';
-	import lightSvg from '$icons/sun-solid.svg?raw';
+	import autoSvg    from '$icons/circle-half-stroke-solid.svg?raw';
+	import darkSvg    from '$icons/moon-solid.svg?raw';
+	import lightSvg   from '$icons/sun-solid.svg?raw';
 
 	// ---------------------------------------------------------------------------
 	// Theme
@@ -180,7 +180,7 @@
 		top:           50%;
 		left:          50%;
 		transform:     translate(-50%, -50%);
-		width:         min(320px, calc(100vw - 2rem));
+		width:         min(360px, calc(100vw - 2rem));
 		background:    var(--bg-card);
 		color:         var(--text);
 		box-shadow:    0 16px 48px #00000070, 0 0 0 1px var(--border-mid);
@@ -292,4 +292,5 @@
 		height: 11px;
 		fill:   currentColor;
 	}
+
 </style>

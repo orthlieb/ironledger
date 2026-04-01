@@ -36,6 +36,8 @@ Thumbs.db
 # Test output
 coverage/
 .nyc_output/
+test-results/
+apps/web/tests/e2e/.auth/
 
 # Database
 *.sql.gz

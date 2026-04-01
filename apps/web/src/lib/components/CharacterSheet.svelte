@@ -583,34 +583,35 @@
 
 			<!-- Stats -->
 			<section class="char-section">
-				<div class="section-label">Stats</div>
-				<div class="stats-row">
-					<StatControl
-						label="Edge" bind:value={data.edge} color="var(--color-edge)"
-						tooltip="Quickness, agility, and prowess in ranged combat"
-						onchange={(o, n) => logStat('Edge', o, n)}
-					/>
-					<StatControl
-						label="Heart" bind:value={data.heart} color="var(--color-heart)"
-						tooltip="Courage, willpower, empathy, sociability, and loyalty"
-						onchange={(o, n) => logStat('Heart', o, n)}
-					/>
-					<StatControl
-						label="Iron" bind:value={data.iron} color="var(--color-iron)"
-						tooltip="Physical strength, endurance, and prowess in close combat"
-						onchange={(o, n) => logStat('Iron', o, n)}
-					/>
-					<StatControl
-						label="Shadow" bind:value={data.shadow} color="var(--color-shadow)"
-						tooltip="Sneakiness, deceptiveness, and cunning"
-						onchange={(o, n) => logStat('Shadow', o, n)}
-					/>
-					<StatControl
-						label="Wits" bind:value={data.wits} color="var(--color-wits)"
-						tooltip="Expertise, knowledge, and observation"
-						onchange={(o, n) => logStat('Wits', o, n)}
-					/>
-
+				<div class="stats-row-wrapper">
+					<div class="stats-side-label">STATS</div>
+					<div class="stats-row">
+						<StatControl
+							label="Edge" bind:value={data.edge} color="var(--color-edge)"
+							tooltip="Quickness, agility, and prowess in ranged combat"
+							onchange={(o, n) => logStat('Edge', o, n)}
+						/>
+						<StatControl
+							label="Heart" bind:value={data.heart} color="var(--color-heart)"
+							tooltip="Courage, willpower, empathy, sociability, and loyalty"
+							onchange={(o, n) => logStat('Heart', o, n)}
+						/>
+						<StatControl
+							label="Iron" bind:value={data.iron} color="var(--color-iron)"
+							tooltip="Physical strength, endurance, and prowess in close combat"
+							onchange={(o, n) => logStat('Iron', o, n)}
+						/>
+						<StatControl
+							label="Shadow" bind:value={data.shadow} color="var(--color-shadow)"
+							tooltip="Sneakiness, deceptiveness, and cunning"
+							onchange={(o, n) => logStat('Shadow', o, n)}
+						/>
+						<StatControl
+							label="Wits" bind:value={data.wits} color="var(--color-wits)"
+							tooltip="Expertise, knowledge, and observation"
+							onchange={(o, n) => logStat('Wits', o, n)}
+						/>
+					</div>
 				</div>
 			</section>
 
@@ -618,20 +619,14 @@
 
 			<!-- Vitals / Meters -->
 			<section class="char-section">
-				<div class="section-label">
-					Vitals
-					{#if debilityStatus}
-						<span class="debility-status">{debilityStatus}</span>
-					{:else if debilityCount > 0}
-						<span class="debility-count">({debilityCount} {debilityCount === 1 ? 'debility' : 'debilities'})</span>
-					{/if}
-				</div>
-				<div class="meters-row">
+				<div class="vitals-row-wrapper">
+					<div class="vitals-side-label">VITALS</div>
+					<div class="meters-row">
 					<MomentumTile
 						bind:value={data.momentum}
 						resetVal={momentumRstV}
 						maxVal={momentumMax}
-						tooltipText="Tracks your current momentum (−6 to +10). Burn positive momentum to improve a roll; negative momentum reduces your highest die."
+						tooltipText="Your overall advantage or disadvantage on the quest. Build it up through good rolls and smart choices, then burn it at a crucial moment to force a better outcome."
 						onchange={(o, n) => logMeter('Momentum', o, n)}
 						onreset={doMomentumReset}
 					/>
@@ -674,10 +669,11 @@
 						min={0}
 						max={30}
 						icon={iconStar}
-						tooltip="Accumulated experience points (0–30)"
+						tooltip="Accumulated experience that can be spent on assets and other enhancements."
 						onchange={(o, n) => logXp(o, n)}
 					/>
 
+					</div>
 				</div>
 			</section>
 
@@ -685,7 +681,10 @@
 
 			<!-- Debilities -->
 			<section class="char-section">
-				<DebilitiesSection {data} onchange={logDebility} />
+				<div class="debilities-row-wrapper">
+					<div class="debilities-side-label">DEBILITIES</div>
+					<DebilitiesSection {data} onchange={logDebility} />
+				</div>
 			</section>
 
 			<div class="section-divider"></div>
@@ -1097,14 +1096,82 @@
 	}
 
 	/* Stats */
-	.stats-row {
+	.stats-row-wrapper {
 		display: flex;
-		flex-wrap: wrap;
-		align-items: flex-start;
-		justify-content: center;
-		gap: 16px;
+		align-items: center;
+		gap: 6px;
 	}
 
+	.stats-side-label {
+		writing-mode: vertical-rl;
+		transform: rotate(180deg);
+		font-family: var(--font-ui);
+		font-size: 0.55rem;
+		font-weight: 800;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--text-muted);
+		flex-shrink: 0;
+		align-self: stretch;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.stats-row {
+		display: flex;
+		flex-wrap: nowrap;
+		align-items: flex-start;
+		justify-content: center;
+		gap: 6px;
+		flex: 1;
+	}
+
+	/* Vitals wrapper */
+	.vitals-row-wrapper {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.vitals-side-label {
+		writing-mode: vertical-rl;
+		transform: rotate(180deg);
+		font-family: var(--font-ui);
+		font-size: 0.55rem;
+		font-weight: 800;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--text-muted);
+		flex-shrink: 0;
+		align-self: stretch;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	/* Debilities wrapper */
+	.debilities-row-wrapper {
+		display: flex;
+		align-items: flex-start;
+		gap: 6px;
+	}
+
+	.debilities-side-label {
+		writing-mode: vertical-rl;
+		transform: rotate(180deg);
+		font-family: var(--font-ui);
+		font-size: 0.55rem;
+		font-weight: 800;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--text-muted);
+		flex-shrink: 0;
+		align-self: stretch;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
 
 	/* Meters */
 	.meters-row {

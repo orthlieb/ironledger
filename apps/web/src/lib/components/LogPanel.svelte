@@ -16,6 +16,7 @@
 	import trashSvg      from '$icons/trash-solid-full.svg?raw';
 	import penSvg        from '$icons/pen-to-square-solid-full.svg?raw';
 	import fileExportSvg from '$icons/file-export-solid-full.svg?raw';
+	import ConfirmDialog from './ConfirmDialog.svelte';
 
 	// ---------------------------------------------------------------------------
 	// Callback props for interactive log links (Phase 2)
@@ -52,7 +53,7 @@
 	let draftNote   = $state('');
 
 	// Clear-log confirmation dialog
-	let clearDialogEl = $state<HTMLDialogElement | null>(null);
+	let clearDialogRef = $state<{ open(): void; close(): void } | null>(null);
 
 	// Mobile tap-tracking — used by touchend delegation to distinguish taps from scrolls.
 	let _touchStartX = 0;
@@ -166,7 +167,6 @@
 	}
 
 	function confirmClear() {
-		clearDialogEl?.close();
 		clearLog(SESSION_LOG_ID);
 	}
 
@@ -296,7 +296,7 @@
 
 	/** Show the clear-log confirmation dialog (exposed for external toolbar). */
 	export function showClearDialog() {
-		clearDialogEl?.showModal();
+		clearDialogRef?.open();
 	}
 
 	/** Whether the log has entries (exposed for external toolbar disabled state). */
@@ -625,22 +625,17 @@
 </div>
 
 <!-- Clear-log confirmation dialog -->
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<dialog
-	bind:this={clearDialogEl}
-	class="clear-dialog"
-	oncancel={() => clearDialogEl?.close()}
+<ConfirmDialog
+	bind:this={clearDialogRef}
+	title="Clear Session Log?"
+	onconfirm={confirmClear}
+	confirmLabel="Clear Log"
 >
-	<h3 class="clear-dialog-title">Clear Session Log?</h3>
-	<p class="clear-dialog-body">
+	<p style="font-family: var(--font-ui); font-size: 0.82rem; color: var(--text-muted); margin: 0; line-height: 1.5;">
 		This will permanently remove all {entries.length} {entries.length === 1 ? 'entry' : 'entries'}.
 		This cannot be undone.
 	</p>
-	<div class="clear-dialog-btns">
-		<button class="btn" onclick={() => clearDialogEl?.close()}>Cancel</button>
-		<button class="btn btn-danger" onclick={confirmClear}>Clear Log</button>
-	</div>
-</dialog>
+</ConfirmDialog>
 
 <style>
 	.log-panel {
@@ -1023,51 +1018,6 @@
 		display: block;
 		margin-bottom: 4px;
 		content: '';
-	}
-
-	/* ================================================================
-	   Clear-log confirmation dialog
-	   ================================================================ */
-	.clear-dialog {
-		position: fixed;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		margin: 0;
-		border: 1px solid var(--border-mid);
-		border-radius: 7px;
-		padding: 16px 18px 14px;
-		background: var(--bg-card);
-		color: var(--text);
-		width: min(340px, calc(100vw - 2rem));
-		box-shadow: 0 8px 32px #00000060;
-	}
-	.clear-dialog::backdrop {
-		background: #00000040;
-		backdrop-filter: blur(1px);
-	}
-
-	.clear-dialog-title {
-		font-family: var(--font-ui);
-		font-size: 0.88rem;
-		font-weight: 700;
-		letter-spacing: 0.04em;
-		color: var(--text);
-		margin: 0 0 10px;
-	}
-
-	.clear-dialog-body {
-		font-family: var(--font-ui);
-		font-size: 0.8rem;
-		line-height: 1.5;
-		color: var(--text-muted);
-		margin: 0 0 16px;
-	}
-
-	.clear-dialog-btns {
-		display: flex;
-		gap: 6px;
-		justify-content: flex-end;
 	}
 
 	.btn-danger {

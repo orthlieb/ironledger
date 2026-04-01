@@ -11,7 +11,8 @@
 		RANK_COLORS, FOE_RANKS, FOE_QUANTITIES, FOE_NATURE_COLORS,
 	} from '$lib/foeStore.svelte.js';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
-	import ProgressTrack from '$lib/components/ProgressTrack.svelte';
+	import ProgressTrack   from '$lib/components/ProgressTrack.svelte';
+	import ConfirmDialog   from '$lib/components/ConfirmDialog.svelte';
 
 	import trashSvg  from '$icons/trash-solid-full.svg?raw';
 	import swordSvg  from '$icons/sword-solid-full.svg?raw';
@@ -35,8 +36,8 @@
 	// ---------------------------------------------------------------------------
 	// Local UI state
 	// ---------------------------------------------------------------------------
-	let collapsed        = $state(false);
-	let confirmingDelete = $state(false);
+	let collapsed       = $state(false);
+	let deleteDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let imgVisible       = $state(true);
 	let thumbHovered     = $state(false);
 	let editingName      = $state(false);
@@ -126,8 +127,6 @@
 	// ---------------------------------------------------------------------------
 	// Delete
 	// ---------------------------------------------------------------------------
-	function startDelete() { confirmingDelete = true; }
-	function cancelDelete() { confirmingDelete = false; }
 	function confirmDelete() {
 		logLine(`<div>Removed from encounter</div>`);
 		onDelete();
@@ -205,17 +204,9 @@
 		</span>
 
 		<!-- Delete controls -->
-		{#if confirmingDelete}
-			<span class="fc-del-confirm">
-				<span class="fc-del-label">Remove?</span>
-				<button class="btn btn-danger btn-sm" onclick={confirmDelete}>Yes</button>
-				<button class="btn btn-sm" onclick={cancelDelete}>No</button>
-			</span>
-		{:else}
-			<button class="btn btn-icon fc-del-btn" onclick={startDelete} title="Remove foe" aria-label="Remove foe">
-				{@html trashSvg}
-			</button>
-		{/if}
+		<button class="btn btn-icon fc-del-btn" onclick={() => deleteDialogRef?.open()} title="Remove foe" aria-label="Remove foe">
+			{@html trashSvg}
+		</button>
 	</div>
 
 	<!-- ── Collapsible body ── -->
@@ -307,6 +298,15 @@
 		</div>
 	{/if}
 </div>
+
+<ConfirmDialog
+	bind:this={deleteDialogRef}
+	title="Remove Foe?"
+	onconfirm={confirmDelete}
+	confirmLabel="Remove"
+>
+	<p style="font-family: var(--font-ui); font-size: 0.82rem; color: var(--text-muted); margin: 0; line-height: 1.5;">Remove this foe from the encounter?</p>
+</ConfirmDialog>
 
 <style>
 	/* ── Card shell ─────────────────────────────────────────────────────── */
@@ -459,19 +459,6 @@
 		width: 13px;
 		height: 13px;
 		fill: currentColor;
-	}
-
-	.fc-del-confirm {
-		display: flex;
-		align-items: center;
-		gap: 5px;
-		margin-left: auto;
-		flex-shrink: 0;
-	}
-	.fc-del-label {
-		font-family: var(--font-ui);
-		font-size: 0.72rem;
-		color: var(--text-dimmer);
 	}
 
 	/* ── Body ───────────────────────────────────────────────────────────── */

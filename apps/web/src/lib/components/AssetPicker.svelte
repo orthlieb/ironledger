@@ -46,10 +46,45 @@
 	let confirmDialogEl = $state<HTMLDialogElement | null>(null);
 	let pendingAsset    = $state<AssetDefinition | null>(null);
 
+	let confirmDragX   = $state(0);
+	let confirmDragY   = $state(0);
+	let _cdDragging    = false;
+	let _cdStartMouseX = 0;
+	let _cdStartMouseY = 0;
+	let _cdStartDragX  = 0;
+	let _cdStartDragY  = 0;
+
 	$effect(() => { if (dialogEl) dialogEl.showModal(); });
 	$effect(() => {
-		if (confirmDialogEl && pendingAsset) confirmDialogEl.showModal();
+		if (confirmDialogEl && pendingAsset) {
+			confirmDragX = 0;
+			confirmDragY = 0;
+			confirmDialogEl.showModal();
+		}
 	});
+
+	function startConfirmDrag(e: MouseEvent) {
+		_cdDragging    = true;
+		_cdStartMouseX = e.clientX;
+		_cdStartMouseY = e.clientY;
+		_cdStartDragX  = confirmDragX;
+		_cdStartDragY  = confirmDragY;
+		e.preventDefault();
+		window.addEventListener('mousemove', onConfirmDragMove);
+		window.addEventListener('mouseup',   onConfirmDragEnd);
+	}
+
+	function onConfirmDragMove(e: MouseEvent) {
+		if (!_cdDragging) return;
+		confirmDragX = _cdStartDragX + (e.clientX - _cdStartMouseX);
+		confirmDragY = _cdStartDragY + (e.clientY - _cdStartMouseY);
+	}
+
+	function onConfirmDragEnd() {
+		_cdDragging = false;
+		window.removeEventListener('mousemove', onConfirmDragMove);
+		window.removeEventListener('mouseup',   onConfirmDragEnd);
+	}
 
 	// ---------------------------------------------------------------------------
 	// Precondition checking
@@ -250,10 +285,13 @@
 	<dialog
 		bind:this={confirmDialogEl}
 		class="confirm-dialog"
+		style:--accent={catColor}
+		style:transform="translate(calc(-50% + {confirmDragX}px), calc(-50% + {confirmDragY}px))"
 		oncancel={cancelAdd}
 	>
-		<!-- Header: mirrors .asset-header from AssetCard -->
-		<div class="asset-header" style="border-top: 3px solid {catColor}">
+		<!-- Header: mirrors .asset-header from AssetCard; also serves as drag handle -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="asset-header" style="border-top: 3px solid {catColor}" onmousedown={startConfirmDrag}>
 			<div class="asset-name-group">
 				<span class="asset-name">{pendingAsset.name}</span>
 				<span class="asset-cat" style:color={catColor}>{pendingAsset.category}</span>
@@ -587,25 +625,26 @@
 	   ================================================================ */
 	.confirm-dialog {
 		border: none;
-		border-radius: 6px;   /* matches .asset-card border-radius */
+		border-radius: 6px;
 		padding: 0;
-		background: var(--bg-inset); /* matches .asset-card background */
+		background: color-mix(in srgb, var(--accent, var(--text-muted)) 6%, var(--bg-inset));
 		color: var(--text);
 		width: min(460px, calc(100vw - 2rem));
 		max-height: min(82vh, 660px);
 		display: flex;
 		flex-direction: column;
-		box-shadow: 0 16px 48px #00000070, 0 0 0 1px var(--border-mid);
+		box-shadow:
+			0 16px 48px #00000070,
+			0 0 0 1px color-mix(in srgb, var(--accent, var(--border-mid)) 35%, transparent);
 		position: fixed;
 		top: 50%;
 		left: 50%;
-		transform: translate(-50%, -50%);
 		margin: 0;
 		outline: none;
 		overflow: hidden;
 	}
 	.confirm-dialog::backdrop {
-		background: #00000060;
+		background: #00000050;
 		backdrop-filter: blur(1px);
 	}
 
@@ -615,9 +654,12 @@
 		align-items: center;
 		gap: 7px;
 		padding: 7px 10px;
-		background: var(--bg-control);
+		background: color-mix(in srgb, var(--accent, var(--bg-control)) 10%, var(--bg-control));
 		flex-shrink: 0;
+		cursor: grab;
+		user-select: none;
 	}
+	.asset-header:active { cursor: grabbing; }
 
 	.asset-name-group {
 		flex: 1;

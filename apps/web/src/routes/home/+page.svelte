@@ -676,6 +676,7 @@
 							<div
 								class="char-card"
 								class:char-card--active={char.id === activeCharId}
+								data-char-id={char.id}
 								onfocusin={() => setActiveChar(char.id)}
 								onclick={() => setActiveChar(char.id)}
 							>

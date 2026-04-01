@@ -9,8 +9,9 @@
 	import type { Journey, VowDifficulty } from '$lib/types.js';
 	import { EXPEDITION_MARK_TICKS } from '$lib/types.js';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
-	import ProgressTrack from '$lib/components/ProgressTrack.svelte';
+	import ProgressTrack   from '$lib/components/ProgressTrack.svelte';
 	import { RANK_COLORS } from '$lib/foeStore.svelte.js';
+	import ConfirmDialog   from '$lib/components/ConfirmDialog.svelte';
 
 	import trashSvg       from '$icons/trash-solid-full.svg?raw';
 	import checkSvg       from '$icons/circle-check-solid-full.svg?raw';
@@ -34,8 +35,8 @@
 	// ---------------------------------------------------------------------------
 	// Local UI state
 	// ---------------------------------------------------------------------------
-	let collapsed        = $state(false);
-	let confirmingDelete = $state(false);
+	let collapsed       = $state(false);
+	let deleteDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let editingName      = $state(false);
 	let nameInputEl      = $state<HTMLInputElement | null>(null);
 	let nameBeforeEdit   = '';
@@ -133,8 +134,6 @@
 	// ---------------------------------------------------------------------------
 	// Delete
 	// ---------------------------------------------------------------------------
-	function startDelete()   { confirmingDelete = true; }
-	function cancelDelete()  { confirmingDelete = false; }
 	function confirmDelete() {
 		logLine(`<div>Journey removed</div>`);
 		onDelete();
@@ -191,17 +190,9 @@
 		</span>
 
 		<!-- Delete controls -->
-		{#if confirmingDelete}
-			<span class="jc-del-confirm">
-				<span class="jc-del-label">Remove?</span>
-				<button class="btn btn-danger btn-sm" onclick={confirmDelete}>Yes</button>
-				<button class="btn btn-sm" onclick={cancelDelete}>No</button>
-			</span>
-		{:else}
-			<button class="btn btn-icon jc-del-btn" onclick={startDelete} title="Remove journey" aria-label="Remove journey">
-				{@html trashSvg}
-			</button>
-		{/if}
+		<button class="btn btn-icon jc-del-btn" onclick={() => deleteDialogRef?.open()} title="Remove journey" aria-label="Remove journey">
+			{@html trashSvg}
+		</button>
 	</div>
 
 	<!-- ── Collapsible body ── -->
@@ -266,6 +257,15 @@
 		</div>
 	{/if}
 </div>
+
+<ConfirmDialog
+	bind:this={deleteDialogRef}
+	title="Remove Journey?"
+	onconfirm={confirmDelete}
+	confirmLabel="Remove"
+>
+	<p style="font-family: var(--font-ui); font-size: 0.82rem; color: var(--text-muted); margin: 0; line-height: 1.5;">Remove this journey from your expeditions?</p>
+</ConfirmDialog>
 
 <style>
 	/* ── Card shell ─────────────────────────────────────────────────────── */
@@ -383,19 +383,6 @@
 		width: 13px;
 		height: 13px;
 		fill: currentColor;
-	}
-
-	.jc-del-confirm {
-		display: flex;
-		align-items: center;
-		gap: 5px;
-		margin-left: auto;
-		flex-shrink: 0;
-	}
-	.jc-del-label {
-		font-family: var(--font-ui);
-		font-size: 0.72rem;
-		color: var(--text-dimmer);
 	}
 
 	/* ── Body ───────────────────────────────────────────────────────────── */

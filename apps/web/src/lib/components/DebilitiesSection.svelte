@@ -29,7 +29,6 @@
 </script>
 
 <div class="debilities">
-	<div class="section-label">Debilities</div>
 	<div class="debility-groups">
 		<div class="debility-group">
 			<div class="group-name">Conditions</div>

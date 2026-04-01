@@ -21,9 +21,10 @@
 	import FoePickerDialog  from '$lib/components/FoePickerDialog.svelte';
 	import { onMount } from 'svelte';
 
-	import trashSvg    from '$icons/trash-solid-full.svg?raw';
-	import checkSvg    from '$icons/circle-check-solid-full.svg?raw';
-	import locationSvg from '$icons/location-dot-solid-full.svg?raw';
+	import trashSvg      from '$icons/trash-solid-full.svg?raw';
+	import checkSvg      from '$icons/circle-check-solid-full.svg?raw';
+	import locationSvg   from '$icons/location-dot-solid-full.svg?raw';
+	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 
 	// ---------------------------------------------------------------------------
 	// Props
@@ -48,7 +49,7 @@
 	// ---------------------------------------------------------------------------
 	let collapsed          = $state(false);
 	let denizensCollapsed  = $state(false);
-	let confirmingDelete   = $state(false);
+	let deleteDialogRef    = $state<{ open(): void; close(): void } | null>(null);
 	let highlightedCell    = $state(-1);
 	let denizenPickIndex   = $state(-1);
 	let rollingDenizen     = $state(false);
@@ -240,8 +241,6 @@
 	// ---------------------------------------------------------------------------
 	// Delete
 	// ---------------------------------------------------------------------------
-	function startDelete()   { confirmingDelete = true; }
-	function cancelDelete()  { confirmingDelete = false; }
 	function confirmDelete() {
 		logLine(`<div>Site removed</div>`);
 		onDelete();
@@ -298,17 +297,9 @@
 		</span>
 
 		<!-- Delete controls -->
-		{#if confirmingDelete}
-			<span class="sc-del-confirm">
-				<span class="sc-del-label">Remove?</span>
-				<button class="btn btn-danger btn-sm" onclick={confirmDelete}>Yes</button>
-				<button class="btn btn-sm" onclick={cancelDelete}>No</button>
-			</span>
-		{:else}
-			<button class="btn btn-icon sc-del-btn" onclick={startDelete} title="Remove site" aria-label="Remove site">
-				{@html trashSvg}
-			</button>
-		{/if}
+		<button class="btn btn-icon sc-del-btn" onclick={() => deleteDialogRef?.open()} title="Remove site" aria-label="Remove site">
+			{@html trashSvg}
+		</button>
 	</div>
 
 	<!-- ── Collapsible body ── -->
@@ -452,6 +443,15 @@
 	onDenizenPick={handleDenizenFoePick}
 />
 
+<ConfirmDialog
+	bind:this={deleteDialogRef}
+	title="Remove Site?"
+	onconfirm={confirmDelete}
+	confirmLabel="Remove"
+>
+	<p style="font-family: var(--font-ui); font-size: 0.82rem; color: var(--text-muted); margin: 0; line-height: 1.5;">Remove this site from your expeditions?</p>
+</ConfirmDialog>
+
 <!-- Add Foe? confirmation dialog -->
 <dialog bind:this={addFoeDialogEl} class="sc-add-foe-dialog" oncancel={cancelAddFoe}>
 	<div class="sc-afd-body">
@@ -583,19 +583,6 @@
 		width: 13px;
 		height: 13px;
 		fill: currentColor;
-	}
-
-	.sc-del-confirm {
-		display: flex;
-		align-items: center;
-		gap: 5px;
-		margin-left: auto;
-		flex-shrink: 0;
-	}
-	.sc-del-label {
-		font-family: var(--font-ui);
-		font-size: 0.72rem;
-		color: var(--text-dimmer);
 	}
 
 	/* ── Body ───────────────────────────────────────────────────────────── */
