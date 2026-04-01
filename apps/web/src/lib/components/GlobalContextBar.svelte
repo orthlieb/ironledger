@@ -287,7 +287,8 @@
 					</div>
 					<div class="gc-char-chips">
 						<div class="gc-chip-group gc-chip-group--stats">
-							{#each STAT_DEFS as stat}
+							{#each STAT_DEFS as stat, i}
+								{#if i > 0}<span class="gc-stat-divider" aria-hidden="true"></span>{/if}
 								<span class="gc-chip gc-chip--stat" style="--chip-color: {stat.color}" title={stat.key}>
 									<span class="gc-chip-label">{stat.label}</span>
 									<span class="gc-chip-value">{(data as unknown as Record<string, number>)[stat.key] ?? 0}</span>
@@ -297,8 +298,8 @@
 						<div class="gc-chip-group gc-chip-group--resources">
 							{#each RESOURCE_DEFS as res}
 								<span class="gc-chip gc-chip--resource" class:gc-chip--shake={shakingKeys.has(res.key)} style="--chip-color: {res.color}" title={res.key}>
-									<span class="gc-chip-label"><span class="gc-chip-icon">{@html res.icon}</span>{res.label}</span>
-									<span class="gc-chip-value">{(data as unknown as Record<string, number>)[res.key] ?? 0}</span>
+									<span class="gc-chip-label">{res.label}</span>
+									<span class="gc-chip-value"><span class="gc-chip-icon">{@html res.icon}</span> {(data as unknown as Record<string, number>)[res.key] ?? 0}</span>
 								</span>
 							{/each}
 						</div>
@@ -628,7 +629,7 @@
 	.gc-tile-name-row {
 		background: var(--bg-inset);
 		border-bottom: 1px solid var(--border);
-		padding: 0.4rem 0.6rem;
+		padding: 0.4rem 0.6rem 0;
 		gap: 0.4rem;
 	}
 
@@ -701,31 +702,46 @@
 	.gc-chip-value {
 		font-size: 0.85rem;
 		font-weight: 800;
+		display: flex;
+		align-items: center;
+		gap: 3px;
 	}
 	.gc-chip-icon {
 		display: inline-flex;
-		width: 8px;
-		height: 8px;
+		width: 10px;
+		height: 10px;
+		flex-shrink: 0;
 	}
 	.gc-chip-icon :global(svg) {
 		width: 100%;
 		height: 100%;
 		fill: currentColor;
 	}
-	/* Stats: colored text with border */
+	/* Stats: tinted background, no border, vertical dividers */
+	.gc-chip-group--stats {
+		gap: 3px;
+	}
+	.gc-stat-divider {
+		width: 1px;
+		align-self: stretch;
+		background: var(--border);
+		flex-shrink: 0;
+		margin: 5px 0;
+	}
 	.gc-chip--stat {
 		color: var(--chip-color);
-		border: 1px solid color-mix(in srgb, var(--chip-color) 40%, transparent);
+		background: color-mix(in srgb, var(--chip-color) 8%, var(--bg-card));
 		border-radius: 6px;
-		padding: 2px 4px;
+		padding: 2px 6px;
 	}
 	.gc-chip--stat .gc-chip-value {
 		font-weight: 700;
 	}
-	/* Resources: colored background pill with icon — change frequently */
+	/* Resources: tinted background + colored border */
 	.gc-chip--resource {
-		background: color-mix(in srgb, var(--chip-color) 15%, transparent);
+		background: color-mix(in srgb, var(--chip-color) 8%, var(--bg-card));
 		color: var(--chip-color);
+		border: 2px solid color-mix(in srgb, var(--chip-color) 50%, transparent);
 		border-radius: 6px;
 		padding: 2px 4px;
 	}
@@ -823,13 +839,12 @@
 	.gc-tile-pills {
 		gap: 5px;
 		flex-wrap: wrap;
-		padding: 0.3rem 0.6rem;
+		padding: 0.3rem 0.6rem 0;
 	}
 	.gc-tile-foe-bottom {
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		width: 100%;
-		margin-top: 0.35rem;
 		padding: 0.35rem 0 0.5rem;
 	}
 	.gc-tile-vanquished {
@@ -879,7 +894,6 @@
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		width: 100%;
-		margin-top: 0.35rem;
 		padding: 0.35rem 0 0.5rem;
 	}
 	.gc-tile-exp-complete {

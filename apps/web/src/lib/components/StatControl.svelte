@@ -78,16 +78,14 @@
 		justify-content: space-between;
 		padding:         5px 4px 4px;
 		border-radius:   6px;
-		border:          2px solid color-mix(in srgb, var(--stat-color) 50%, transparent);
 		background:      color-mix(in srgb, var(--stat-color) 8%, var(--bg-card));
 		overflow:        hidden;
 		cursor:          default;
-		transition:      border-color 0.15s, background 0.15s;
+		transition:      background 0.15s;
 	}
 
 	.stat-tile:has(.stat-value-input:focus) {
-		border-color: var(--stat-color);
-		box-shadow:   0 0 0 2px color-mix(in srgb, var(--stat-color) 25%, transparent);
+		background: color-mix(in srgb, var(--stat-color) 16%, var(--bg-card));
 	}
 
 	/* Background icon — aligned to bottom */
