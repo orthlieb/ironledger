@@ -56,6 +56,7 @@
 		focusName = false,
 		onDelete,
 		onSave,
+		onOracleLink,
 	}: {
 		character: CharacterFull;
 		/** True when this is the currently selected character — publishes dice context. */
@@ -64,8 +65,9 @@
 		initiative?: number;
 		/** Focus the name field immediately (used when newly created). */
 		focusName?: boolean;
-		onDelete?: () => void;
-		onSave?:   (updated: CharacterFull) => void;
+		onDelete?:      () => void;
+		onSave?:        (updated: CharacterFull) => void;
+		onOracleLink?:  (key: string) => void;
 	} = $props();
 
 	// ---------------------------------------------------------------------------
@@ -756,7 +758,7 @@
 
 			<!-- Assets -->
 			<section class="char-section">
-				<AssetsSection bind:assets={data.assets} bind:characterData={data} characterId={character.id} />
+				<AssetsSection bind:assets={data.assets} bind:characterData={data} characterId={character.id} {onOracleLink} />
 			</section>
 
 		</div>
@@ -1250,7 +1252,6 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: baseline;
-		margin-bottom: 3px;
 	}
 
 	.track-label-row :global(.section-label) {

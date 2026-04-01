@@ -5,7 +5,7 @@
       "name": "Touched, Feline",
       "category": "Touched",
       "summary": "Feline-touched: night hunter's senses, impossible leaps, and predator stealth.",
-      "preamble": null,
+      "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the <a class=\"oracle-link\" data-oracle=\"yrtTouched\">YRT \u2013 Touched</a> oracle to determine the extent and conditions of your nature.",
       "postamble": "Your touched value determines how many abilities you may use: Pure — none; Prime — 1; Second — 2; Third or Feral — all 3.",
       "preconditions": [],
       "touchedFeatures": true,
@@ -14,8 +14,6 @@
           "enabled": true,
           "text": "You move with the senses and poise of a night hunter. When you <a class=\"move-link\" data-id=\"move/face-danger\">Face Danger</a>, <a class=\"move-link\" data-id=\"move/secure-an-advantage\">Secure an Advantage</a>, or <a class=\"move-link\" data-id=\"move/gather-information\">Gather Information</a> in darkness, dim light, or heavy shadow, add +1. On a strong hit, also take +1 momentum as your night sight and feline awareness reveal more than others can see.",
           "moves": [
-            "move/face-danger",
-            "move/secure-an-advantage",
             "move/gather-information"
           ]
         },
@@ -23,16 +21,84 @@
           "enabled": false,
           "text": "Your leaps and landings defy human limits. When you <a class=\"move-link\" data-id=\"move/face-danger\">Face Danger</a> or <a class=\"move-link\" data-id=\"move/undertake-a-journey\">Undertake a Journey</a> by jumping, climbing, or risking a fall, add +1 and roll +edge (even if another stat would normally apply). On a strong hit, you land sure-footed; take +1 momentum or inflict +1 harm if your leap carries you into the attack.",
           "moves": [
-            "move/face-danger",
-            "move/undertake-a-journey"
+            "move/face-danger"
           ]
         },
         {
           "enabled": false,
           "text": "You vanish into stillness like a hidden hunter. When you remain motionless or stalk slowly in cover and then <a class=\"move-link\" data-id=\"move/secure-an-advantage\">Secure an Advantage</a> or <a class=\"move-link\" data-id=\"move/face-danger\">Face Danger</a> by relying on concealment, add +1. On a hit, you are not detected and take +1 momentum; on a strong hit, you may also improve your position (define a safe escape route, observe unnoticed, or set up an ally’s next move).",
           "moves": [
-            "move/secure-an-advantage",
-            "move/face-danger"
+            "move/secure-an-advantage"
+          ]
+        }
+      ],
+      "customFields": [
+        {
+          "id": "touchedLevel",
+          "type": "dropdown",
+          "label": "Level",
+          "shortLabel": "Touched",
+          "default": "pure",
+          "options": [
+            {
+              "id": "pure",
+              "label": "Pure"
+            },
+            {
+              "id": "prime",
+              "label": "Prime"
+            },
+            {
+              "id": "second",
+              "label": "Second"
+            },
+            {
+              "id": "third",
+              "label": "Third"
+            },
+            {
+              "id": "feral",
+              "label": "Feral"
+            }
+          ]
+        },
+        {
+          "id": "animalName",
+          "type": "string",
+          "label": "Animal",
+          "placeholder": "Animal…"
+        }
+      ]
+    },
+    {
+      "id": "path/yrt-touched-porcine",
+      "name": "Touched, Porcine",
+      "category": "Touched",
+      "summary": "Porcine-touched: unerring nose for hidden threats, iron constitution, and an instinct for finding sustenance.",
+      "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the <a class=\"oracle-link\" data-oracle=\"yrtTouched\">YRT \u2013 Touched</a> oracle to determine the extent and conditions of your nature.",
+      "postamble": "Your touched value determines how many abilities you may use: Pure — none; Prime — 1; Second — 2; Third or Feral — all 3.",
+      "preconditions": [],
+      "touchedFeatures": true,
+      "abilities": [
+        {
+          "enabled": true,
+          "text": "You have a powerful sense of smell. When you <a class=\"move-link\" data-id=\"move/gather-information\">Gather Information</a> to detect hidden threats, ambushes, or track a scent, add +1. On a strong hit, also take +1 momentum as your snout allows you to follow the scent to greater clues.",
+          "moves": [
+            "move/gather-information"
+          ]
+        },
+        {
+          "enabled": false,
+          "text": "Your thick hide and dense body absorb punishment others cannot weather. When you <a class=\"move-link\" data-id=\"move/endure-harm\">Endure Harm</a>, add +1. On a strong hit, take +2 momentum instead of +1 as your stubborn constitution shrugs off the blow.",
+          "moves": [
+            "move/endure-harm"
+          ]
+        },
+        {
+          "enabled": false,
+          "text": "Your rooting instinct finds sustenance where others see only wasteland. When you <a class=\"move-link\" data-id=\"move/resupply\">Resupply</a> in the wilderness or desperate conditions, add +1. On a strong hit, take +2 supply instead of +1.",
+          "moves": [
+            "move/resupply"
           ]
         }
       ],

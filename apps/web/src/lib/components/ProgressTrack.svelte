@@ -52,7 +52,7 @@
 			>
 				<svg viewBox="0 0 20 20" width="22" height="22" aria-hidden="true">
 					<!-- box border -->
-					<rect x="1" y="1" width="18" height="18" rx="3" ry="3" fill="none" stroke="currentColor" stroke-width="1.5" />
+					<rect x="1" y="1" width="18" height="18" rx="3" ry="3" fill="none" stroke="currentColor" stroke-width="1" />
 					<!-- tick 1: top-left → bottom-right \ -->
 					{#if ticks >= 1}
 						<line x1="3.7" y1="3.7" x2="16.3" y2="16.3" stroke="var(--text-accent)" stroke-width="1.5" stroke-linecap="round" />

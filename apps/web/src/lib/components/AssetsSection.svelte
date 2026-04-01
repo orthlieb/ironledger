@@ -21,10 +21,12 @@
 		assets = $bindable<CharacterAsset[]>([]),
 		characterData = $bindable<CharacterData>(),
 		characterId,
+		onOracleLink,
 	}: {
 		assets?:        CharacterAsset[];
 		characterData:  CharacterData;
 		characterId:    string;
+		onOracleLink?:  (key: string) => void;
 	} = $props();
 
 	let pickerOpen = $state(false);
@@ -108,6 +110,7 @@
 						characterXp={characterData.xp}
 						bind:globalValues={characterData.globalValues}
 						onRemove={() => requestRemove(entry.assetId, def, assets[i].abilities.filter(Boolean).length)}
+						{onOracleLink}
 					/>
 				{:else}
 					<!-- Definition not yet loaded or id mismatch — show minimal fallback -->

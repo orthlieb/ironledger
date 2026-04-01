@@ -302,7 +302,7 @@
 		<!-- Body: mirrors .asset-body — scrollable, read-only -->
 		<div class="asset-body">
 			{#if pendingAsset.preamble}
-				<p class="asset-preamble">{stripMdLinks(pendingAsset.preamble)}</p>
+				<p class="asset-preamble">{@html stripMdLinks(pendingAsset.preamble)}</p>
 			{/if}
 
 			<div class="abilities-list">
@@ -627,7 +627,7 @@
 		border: none;
 		border-radius: 6px;
 		padding: 0;
-		background: color-mix(in srgb, var(--accent, var(--text-muted)) 6%, var(--bg-inset));
+		background: var(--bg-inset);
 		color: var(--text);
 		width: min(460px, calc(100vw - 2rem));
 		max-height: min(82vh, 660px);
@@ -635,7 +635,7 @@
 		flex-direction: column;
 		box-shadow:
 			0 16px 48px #00000070,
-			0 0 0 1px color-mix(in srgb, var(--accent, var(--border-mid)) 35%, transparent);
+			0 0 0 1px var(--border-mid);
 		position: fixed;
 		top: 50%;
 		left: 50%;
@@ -654,7 +654,7 @@
 		align-items: center;
 		gap: 7px;
 		padding: 7px 10px;
-		background: color-mix(in srgb, var(--accent, var(--bg-control)) 10%, var(--bg-control));
+		background: var(--bg-control);
 		flex-shrink: 0;
 		cursor: grab;
 		user-select: none;

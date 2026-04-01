@@ -59,6 +59,7 @@
 		/** Shared counter values for fields with global:true, keyed by field.id. */
 		globalValues?:  Record<string, string>;
 		onRemove:       () => void;
+		onOracleLink?:  (key: string) => void;
 	} = $props();
 
 	// Selectable-list item shape used by cantrips (and any future similar lists)
@@ -326,7 +327,11 @@
 			{/each}
 
 			{#if definition.preamble}
-				<p class="asset-preamble">{stripMdLinks(definition.preamble)}</p>
+				<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+				<p class="asset-preamble" onclick={(e) => {
+					const link = (e.target as HTMLElement).closest('.oracle-link') as HTMLElement | null;
+					if (link) { e.preventDefault(); onOracleLink?.(link.dataset['oracle'] ?? ''); }
+				}}>{@html stripMdLinks(definition.preamble)}</p>
 			{/if}
 
 			{#if assetDescription}
@@ -732,6 +737,15 @@
 		color: var(--text-muted);
 		line-height: 1.4;
 		margin: 0;
+	}
+
+	.asset-preamble :global(a.oracle-link) {
+		color: var(--text-accent);
+		text-decoration: underline;
+		cursor: pointer;
+	}
+	.asset-preamble :global(a.oracle-link:hover) {
+		opacity: 0.8;
 	}
 
 	.asset-description {

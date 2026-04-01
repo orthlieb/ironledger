@@ -687,6 +687,7 @@
 									focusName={char.id === newlyCreatedId}
 									onDelete={() => deleteCharacter(char.id)}
 									onSave={handleSave}
+									onOracleLink={(key) => oraclesDialogRef?.open(key || undefined)}
 									onInitiativeChange={(val) => {
 										initiativeMap[char.id] = val === 'character' ? 1 : 2;
 										const name = char.name || 'Character';
