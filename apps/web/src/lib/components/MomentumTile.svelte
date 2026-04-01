@@ -83,7 +83,7 @@
 		align-items:     stretch;
 		padding:         5px 4px 5px;
 		border-radius:   6px;
-		border:          2px solid color-mix(in srgb, var(--mt-color) 50%, transparent);
+		border:          1px solid color-mix(in srgb, var(--mt-color) 50%, transparent);
 		background:      color-mix(in srgb, var(--mt-color) 8%, var(--bg-card));
 		overflow:        hidden;
 		gap:             0;

@@ -25,6 +25,10 @@
 	import iconSpirit   from '$icons/icon-spirit.svg?raw';
 	import iconSupply   from '$icons/icon-supply.svg?raw';
 	import iconXp       from '$icons/star-solid-full.svg?raw';
+	import iconEdge     from '$icons/rabbit-running-solid-full.svg?raw';
+	import iconIron     from '$icons/fist.svg?raw';
+	import iconShadow   from '$icons/shadow.svg?raw';
+	import iconWits     from '$icons/brain.svg?raw';
 
 	// Initiative icons
 	import swordSvg  from '$icons/sword-solid-full.svg?raw';
@@ -116,11 +120,11 @@
 	// Stat / resource definitions
 	// ---------------------------------------------------------------------------
 	const STAT_DEFS = [
-		{ key: 'edge',   label: 'Edge',   color: 'var(--color-edge)' },
-		{ key: 'heart',  label: 'Heart',  color: 'var(--color-heart)' },
-		{ key: 'iron',   label: 'Iron',   color: 'var(--color-iron)' },
-		{ key: 'shadow', label: 'Shadow', color: 'var(--color-shadow)' },
-		{ key: 'wits',   label: 'Wits',   color: 'var(--color-wits)' },
+		{ key: 'edge',   label: 'Edge',   icon: iconEdge,   color: 'var(--color-edge)' },
+		{ key: 'heart',  label: 'Heart',  icon: iconHeart,  color: 'var(--color-heart)' },
+		{ key: 'iron',   label: 'Iron',   icon: iconIron,   color: 'var(--color-iron)' },
+		{ key: 'shadow', label: 'Shadow', icon: iconShadow, color: 'var(--color-shadow)' },
+		{ key: 'wits',   label: 'Wits',   icon: iconWits,   color: 'var(--color-wits)' },
 	] as const;
 
 	const RESOURCE_DEFS = [
@@ -290,7 +294,7 @@
 							{#each STAT_DEFS as stat}
 								<span class="gc-chip gc-chip--stat" style="--chip-color: {stat.color}" title={stat.key}>
 									<span class="gc-chip-label">{stat.label}</span>
-									<span class="gc-chip-value">{(data as unknown as Record<string, number>)[stat.key] ?? 0}</span>
+									<span class="gc-chip-value"><span class="gc-chip-icon">{@html stat.icon}</span> {(data as unknown as Record<string, number>)[stat.key] ?? 0}</span>
 								</span>
 							{/each}
 						</div>
