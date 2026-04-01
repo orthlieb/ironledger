@@ -86,7 +86,7 @@
 
 	.debility-groups {
 		display: flex;
-		flex-wrap: wrap;
+		flex-wrap: nowrap;
 		gap: 10px;
 		justify-content: center;
 		align-items: flex-start;

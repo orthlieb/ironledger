@@ -287,8 +287,7 @@
 					</div>
 					<div class="gc-char-chips">
 						<div class="gc-chip-group gc-chip-group--stats">
-							{#each STAT_DEFS as stat, i}
-								{#if i > 0}<span class="gc-stat-divider" aria-hidden="true"></span>{/if}
+							{#each STAT_DEFS as stat}
 								<span class="gc-chip gc-chip--stat" style="--chip-color: {stat.color}" title={stat.key}>
 									<span class="gc-chip-label">{stat.label}</span>
 									<span class="gc-chip-value">{(data as unknown as Record<string, number>)[stat.key] ?? 0}</span>
@@ -717,16 +716,9 @@
 		height: 100%;
 		fill: currentColor;
 	}
-	/* Stats: tinted background, no border, vertical dividers */
+	/* Stats: tinted background, gap only — no dividers */
 	.gc-chip-group--stats {
 		gap: 3px;
-	}
-	.gc-stat-divider {
-		width: 1px;
-		align-self: stretch;
-		background: var(--border);
-		flex-shrink: 0;
-		margin: 5px 0;
 	}
 	.gc-chip--stat {
 		color: var(--chip-color);
@@ -741,7 +733,7 @@
 	.gc-chip--resource {
 		background: color-mix(in srgb, var(--chip-color) 8%, var(--bg-card));
 		color: var(--chip-color);
-		border: 2px solid color-mix(in srgb, var(--chip-color) 50%, transparent);
+		border: 1px solid color-mix(in srgb, var(--chip-color) 50%, transparent);
 		border-radius: 6px;
 		padding: 2px 4px;
 	}

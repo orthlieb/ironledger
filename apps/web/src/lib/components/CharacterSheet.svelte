@@ -591,25 +591,21 @@
 							tooltip="Quickness, agility, and prowess in ranged combat"
 							onchange={(o, n) => logStat('Edge', o, n)}
 						/>
-						<div class="stat-divider" aria-hidden="true"></div>
 						<StatControl
 							label="Heart" bind:value={data.heart} color="var(--color-heart)"
 							tooltip="Courage, willpower, empathy, sociability, and loyalty"
 							onchange={(o, n) => logStat('Heart', o, n)}
 						/>
-						<div class="stat-divider" aria-hidden="true"></div>
 						<StatControl
 							label="Iron" bind:value={data.iron} color="var(--color-iron)"
 							tooltip="Physical strength, endurance, and prowess in close combat"
 							onchange={(o, n) => logStat('Iron', o, n)}
 						/>
-						<div class="stat-divider" aria-hidden="true"></div>
 						<StatControl
 							label="Shadow" bind:value={data.shadow} color="var(--color-shadow)"
 							tooltip="Sneakiness, deceptiveness, and cunning"
 							onchange={(o, n) => logStat('Shadow', o, n)}
 						/>
-						<div class="stat-divider" aria-hidden="true"></div>
 						<StatControl
 							label="Wits" bind:value={data.wits} color="var(--color-wits)"
 							tooltip="Expertise, knowledge, and observation"
@@ -1122,7 +1118,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		border-left: 2px solid var(--border);
+		border-left: 1px solid var(--border);
 		padding-left: 4px;
 	}
 
@@ -1133,13 +1129,6 @@
 		justify-content: center;
 		gap: 3px;
 		flex: 1;
-	}
-	.stat-divider {
-		width: 1px;
-		align-self: stretch;
-		background: var(--border);
-		flex-shrink: 0;
-		margin: 5px 0;
 	}
 
 	/* Vitals wrapper */
@@ -1163,7 +1152,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		border-left: 2px solid var(--border);
+		border-left: 1px solid var(--border);
 		padding-left: 4px;
 	}
 
@@ -1188,7 +1177,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		border-left: 2px solid var(--border);
+		border-left: 1px solid var(--border);
 		padding-left: 4px;
 	}
 	.debilities-content {
