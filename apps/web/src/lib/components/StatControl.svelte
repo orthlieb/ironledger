@@ -77,7 +77,7 @@
 		align-items:     center;
 		justify-content: space-between;
 		padding:         5px 4px 4px;
-		margin:          2px;
+		margin:          4px;
 		border-radius:   6px;
 		background:      color-mix(in srgb, var(--stat-color) 8%, var(--bg-card));
 		overflow:        hidden;

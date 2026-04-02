@@ -25,6 +25,7 @@
 	import NotesDialog       from '$lib/components/NotesDialog.svelte';
 	import MovesDialog       from '$lib/components/MovesDialog.svelte';
 	import FoePickerDialog   from '$lib/components/FoePickerDialog.svelte';
+	import ErrorBar          from '$lib/components/ErrorBar.svelte';
 	import FoeCard           from '$lib/components/FoeCard.svelte';
 	import JourneyCard       from '$lib/components/JourneyCard.svelte';
 	import SiteCard          from '$lib/components/SiteCard.svelte';
@@ -637,8 +638,8 @@
 		<div class="tab-body">
 
 			{#if activeTab === 'characters'}
+				<ErrorBar message={charError} onDismiss={() => charError = ''} />
 				<div class="char-toolbar">
-					{#if charError}<span class="char-error">{charError}</span>{/if}
 					<div class="char-toolbar-actions">
 						<button
 							class="btn icon-btn"
@@ -994,14 +995,7 @@
 		margin-right:   auto;
 	}
 
-	.char-error {
-		font-family: var(--font-ui);
-		font-size: 0.78rem;
-		color: var(--color-danger, #ef4444);
-		margin-right: auto;
-	}
-
-	.icon-btn {
+.icon-btn {
 		display: inline-flex;
 		align-items: center;
 		gap: 5px;

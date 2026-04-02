@@ -79,7 +79,7 @@
 		align-items:     center;
 		justify-content: space-between;
 		padding:         5px 4px 5px;
-		margin:          2px;
+		margin:          4px;
 		border-radius:   6px;
 		border:          1px solid color-mix(in srgb, var(--res-color) 50%, transparent);
 		background:      color-mix(in srgb, var(--res-color) 8%, var(--bg-card));

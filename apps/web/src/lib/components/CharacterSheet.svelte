@@ -20,6 +20,7 @@
 	import { characters } from '$lib/api.js';
 
 	import trashSvg      from '$icons/trash-solid-full.svg?raw';
+	import ErrorBar      from '$lib/components/ErrorBar.svelte';
 	import fileExportSvg from '$icons/file-export-solid-full.svg?raw';
 	import swordSvg      from '$icons/sword-solid-full.svg?raw';
 	import shieldSvg     from '$icons/shield-halved-solid.svg?raw';
@@ -487,13 +488,8 @@
 			>{data.name || 'Unnamed'}</span>
 		{/if}
 
-		<span
-			class="save-status"
-			class:saving={saveStatus === 'saving'}
-			class:error={saveStatus === 'error'}
-		>
+		<span class="save-status" class:saving={saveStatus === 'saving'}>
 			{#if saveStatus === 'saving'}Saving…{/if}
-			{#if saveStatus === 'error'}Save failed!{/if}
 		</span>
 
 		{#if initiative === 1}
@@ -539,6 +535,10 @@
 	<!-- Body (collapsible) ------------------------------------- -->
 	{#if !collapsed}
 		<div class="char-body">
+			<ErrorBar
+				message={saveStatus === 'error' ? 'Auto-save failed — changes may not be persisted. Is the server running?' : ''}
+				onDismiss={() => saveStatus = 'idle'}
+			/>
 
 			<!-- Identity -->
 			<section class="char-section">
@@ -984,7 +984,6 @@
 		flex-shrink: 0;
 	}
 	.save-status.saving { color: var(--text-dimmer); }
-	.save-status.error  { color: var(--color-danger); }
 
 	/* ---- Body ---- */
 	.char-body {
