@@ -68,7 +68,6 @@
 		onOraclesClick,
 		onMovesClick,
 		onNotesClick,
-		onInitiativeChange,
 	}: {
 		chars:               CharacterFull[];
 		activeCharId:        string;
@@ -87,7 +86,6 @@
 		onOraclesClick?:       () => void;
 		onMovesClick?:         () => void;
 		onNotesClick?:         () => void;
-		onInitiativeChange?:   (value: 'character' | 'foe') => void;
 	} = $props();
 
 	// Derive the active character and its typed data
@@ -284,9 +282,9 @@
 						{/if}
 						<span class="gc-tile-name">{character?.name ?? ''}</span>
 						{#if initiative === 1}
-							<button class="gc-init-badge gc-init-badge--you" onclick={(e) => { e.stopPropagation(); onInitiativeChange?.('foe'); }} title="Click to change">{@html swordSvg}<span class="gc-init-label">Has Initiative</span></button>
+							<div class="gc-init-badge gc-init-badge--you">{@html swordSvg}<span class="gc-init-label">Has Initiative</span></div>
 						{:else if initiative === 2}
-							<button class="gc-init-badge gc-init-badge--foe" onclick={(e) => { e.stopPropagation(); onInitiativeChange?.('character'); }} title="Click to change">{@html shieldSvg}<span class="gc-init-label">Foe Has Initiative</span></button>
+							<div class="gc-init-badge gc-init-badge--foe">{@html shieldSvg}<span class="gc-init-label">Foe Has Initiative</span></div>
 						{/if}
 					</div>
 					<div class="gc-char-chips">

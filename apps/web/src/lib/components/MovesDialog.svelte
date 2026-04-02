@@ -47,12 +47,10 @@
 		ctx  = null,
 		pctx = {},
 		progressContext = {},
-		onInitiativeChange,
 	}: {
 		ctx:              DiceCtx | null;
 		pctx:             PreconditionContext;
 		progressContext?: Record<string, number>;
-		onInitiativeChange?: (value: 'character' | 'foe' | 'none') => void;
 	} = $props();
 
 	// ---------------------------------------------------------------------------
@@ -379,11 +377,6 @@
 		const hits2   = total > c2;
 		const isMatch = c1 === c2;
 
-		// Enter the Fray — default foe initiative so outcome links can flip it
-		if (selectedMove.id === 'move/enter-the-fray') {
-			onInitiativeChange?.('foe');
-		}
-
 		// Pre-generate entry id for link enrichment
 		const entryId = crypto.randomUUID();
 
@@ -521,11 +514,6 @@
 			{ sides: 10, value: c2 },
 		]);
 		appendLog(SESSION_LOG_ID, logTitle(selectedMove.name), html, entryId);
-
-		// End the Fight clears the combat (no more initiative)
-		if (selectedMove.id === 'move/end-the-fight') {
-			onInitiativeChange?.('none');
-		}
 
 		rolling = false;
 	}
@@ -711,15 +699,6 @@
 
 		const logBody = selectedMove['logBody'] as string | undefined;
 		if (!logBody) return;
-
-		// Extract initiative value from the body and fire immediately
-		const initMatch = logBody.match(/class="initiative-link"[^>]*data-value="(character|foe)"/);
-		if (!initMatch) {
-			const initMatch2 = logBody.match(/data-value="(character|foe)"[^>]*class="initiative-link"/);
-			if (initMatch2) onInitiativeChange?.(initMatch2[1] as 'character' | 'foe');
-		} else {
-			onInitiativeChange?.(initMatch[1] as 'character' | 'foe');
-		}
 
 		const entryId = crypto.randomUUID();
 		const enriched = enrichOutcomeLinks(logBody, entryId, ctx.charId);

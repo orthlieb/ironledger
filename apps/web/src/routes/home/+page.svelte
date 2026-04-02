@@ -586,7 +586,6 @@
 		failures: ((activeChar?.data ?? {}) as Record<string, number>).failures ?? 0,
 		vows:     0,
 	}}
-	onInitiativeChange={(val) => { if (activeCharId) initiativeMap[activeCharId] = val === 'character' ? 1 : val === 'foe' ? 2 : 0; }}
 />
 
 <!-- Foe picker dialog (always mounted; opened by + New Foe button in Foes tab) -->
@@ -688,12 +687,6 @@
 									onDelete={() => deleteCharacter(char.id)}
 									onSave={handleSave}
 									onOracleLink={(key) => oraclesDialogRef?.open(key || undefined)}
-									onInitiativeChange={(val) => {
-										initiativeMap[char.id] = val === 'character' ? 1 : 2;
-										const name = char.name || 'Character';
-										appendLog(SESSION_LOG_ID, `${name} — Initiative`,
-											val === 'character' ? '<div>You seize the initiative.</div>' : '<div>You cede the initiative to the foe.</div>');
-									}}
 								/>
 							</div>
 						{/each}
@@ -815,13 +808,6 @@
 							onOraclesClick={() => oraclesDialogRef?.open()}
 							onMovesClick={() => movesDialogRef?.open()}
 							onNotesClick={() => notesDialogRef?.open()}
-							onInitiativeChange={(val) => {
-								if (!activeCharId) return;
-								initiativeMap[activeCharId] = val === 'character' ? 1 : 2;
-								const name = activeChar?.name || 'Character';
-								appendLog(SESSION_LOG_ID, `${name} — Initiative`,
-									val === 'character' ? '<div>You seize the initiative.</div>' : '<div>You cede the initiative to the foe.</div>');
-							}}
 						/>
 					</div>
 
@@ -858,7 +844,9 @@
 								if (!activeFoeId) return;
 								const enc = encounters.find(e => e.id === activeFoeId);
 								if (enc) await updateEncounter({ ...enc, vanquished: true });
-								if (activeCharId) delete initiativeMap[activeCharId];
+								// If no non-vanquished foes remain, clear initiative for all characters
+								const remaining = encounters.filter(e => e.id !== activeFoeId && !e.vanquished);
+								if (remaining.length === 0) initiativeMap = {};
 								activeFoeId = '';
 							}}
 						/>

@@ -50,6 +50,7 @@
 		characterXp,
 		globalValues   = $bindable(),
 		onRemove,
+		onOracleLink,
 	}: {
 		asset:          CharacterAsset;
 		definition:     AssetDefinition;

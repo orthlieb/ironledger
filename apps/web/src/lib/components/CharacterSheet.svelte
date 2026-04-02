@@ -497,9 +497,9 @@
 		</span>
 
 		{#if initiative === 1}
-			<button class="cs-init-badge cs-init-badge--you" onclick={() => onInitiativeChange?.('foe')} title="Click to change">{@html swordSvg}<span class="cs-init-label">Has Initiative</span></button>
+			<div class="cs-init-badge cs-init-badge--you">{@html swordSvg}<span class="cs-init-label">Has Initiative</span></div>
 		{:else if initiative === 2}
-			<button class="cs-init-badge cs-init-badge--foe" onclick={() => onInitiativeChange?.('character')} title="Click to change">{@html shieldSvg}<span class="cs-init-label">Foe Has Initiative</span></button>
+			<div class="cs-init-badge cs-init-badge--foe">{@html shieldSvg}<span class="cs-init-label">Foe Has Initiative</span></div>
 		{/if}
 
 		<!-- Export button — always visible -->
