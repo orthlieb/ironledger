@@ -25,7 +25,6 @@
 	import shieldSvg     from '$icons/shield-halved-solid.svg?raw';
 
 	// Resource icons (stat icons removed per user request)
-	import iconHeart  from '$icons/icon-heart.svg?raw';
 	import iconHealth from '$icons/icon-health.svg?raw';
 	import iconSpirit from '$icons/icon-spirit.svg?raw';
 	import iconSupply from '$icons/icon-supply.svg?raw';
@@ -668,7 +667,7 @@
 					<ResourceTile
 						label="Experience"
 						bind:value={data.xp}
-						color="#6b7280"
+						color="var(--color-xp)"
 						min={0}
 						max={30}
 						icon={iconStar}
