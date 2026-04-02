@@ -26,6 +26,7 @@
 
 	// Resource icons (stat icons removed per user request)
 	import iconHeart  from '$icons/icon-heart.svg?raw';
+	import iconHealth from '$icons/icon-health.svg?raw';
 	import iconSpirit from '$icons/icon-spirit.svg?raw';
 	import iconSupply from '$icons/icon-supply.svg?raw';
 	import iconStar   from '$icons/star-solid-full.svg?raw';
@@ -639,7 +640,7 @@
 						min={0}
 						max={5}
 						incDisabled={healthIncBlocked}
-						icon={iconHeart}
+						icon={iconHealth}
 						tooltip="Physical condition and readiness"
 						onchange={(o, n) => logMeter('Health', o, n)}
 					/>

@@ -22,6 +22,7 @@
 	// Resource icons
 	import iconMomentum from '$icons/icon-momentum.svg?raw';
 	import iconHeart    from '$icons/icon-heart.svg?raw';
+	import iconHealth   from '$icons/icon-health.svg?raw';
 	import iconSpirit   from '$icons/icon-spirit.svg?raw';
 	import iconSupply   from '$icons/icon-supply.svg?raw';
 	import iconXp       from '$icons/star-solid-full.svg?raw';
@@ -127,10 +128,10 @@
 
 	const RESOURCE_DEFS = [
 		{ key: 'momentum', label: 'Mom',    icon: iconMomentum, color: 'var(--color-momentum)' },
-		{ key: 'health',   label: 'Health', icon: iconHeart,    color: 'var(--color-health)' },
+		{ key: 'health',   label: 'Health', icon: iconHealth,   color: 'var(--color-health)' },
 		{ key: 'spirit',   label: 'Spirit', icon: iconSpirit,   color: 'var(--color-spirit)' },
 		{ key: 'supply',   label: 'Supply', icon: iconSupply,   color: 'var(--color-supply)' },
-		{ key: 'xp',       label: 'XP',     icon: iconXp,       color: 'var(--text-muted)' },
+		{ key: 'xp',       label: 'XP',     icon: iconXp,       color: 'var(--color-xp)' },
 	] as const;
 
 	const ASSET_CAT_COLOR: Record<string, string> = {
@@ -629,7 +630,6 @@
 	/* Name/header row — card header style */
 	.gc-tile-name-row {
 		background: var(--bg-inset);
-		border-bottom: 1px solid var(--border);
 		padding: 0.4rem 0.6rem 0;
 		gap: 0.4rem;
 	}

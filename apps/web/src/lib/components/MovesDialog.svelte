@@ -179,9 +179,9 @@
 		iron:     'var(--color-iron)',
 		shadow:   'var(--color-shadow)',
 		wits:     'var(--color-wits)',
-		health:   'var(--color-heart)',
+		health:   'var(--color-health)',
 		spirit:   'var(--color-spirit)',
-		supply:   'var(--color-supply, #34d399)',
+		supply:   'var(--color-supply)',
 		mana:     'var(--color-touched)',
 	};
 

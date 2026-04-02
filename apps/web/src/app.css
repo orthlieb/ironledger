@@ -40,19 +40,20 @@ html[data-theme='dark'] {
 	--accent-glow: #e8a03020;
 	--accent-dim:  #e8a03012;
 
-	/* Stat colours — user-specified */
-	--color-edge:    #4E80ED;
-	--color-heart:   #DD514C;
-	--color-iron:    #9EA2AD;
-	--color-shadow:  #9E5BEE;
-	--color-wits:    #E8A13B;
+	/* Stat colours */
+	--color-edge:    #5B9CF6;   /* sky blue   — swift/agility   */
+	--color-heart:   #F06880;   /* rose       — bonds/empathy   */
+	--color-iron:    #94A8BC;   /* steel      — strength        */
+	--color-shadow:  #C084FC;   /* violet     — cunning/stealth */
+	--color-wits:    #FBBF24;   /* amber      — wisdom          */
 	--color-touched: #78DB88;
 
-	/* Resource colours — user-specified */
-	--color-momentum: #73A4F4;
-	--color-health:   #E77974;
-	--color-spirit:   #A28BF3;
-	--color-supply:   #6ACF9D;
+	/* Resource colours */
+	--color-momentum: #22D3EE;  /* cyan       — flowing action  */
+	--color-health:   #4ADE80;  /* green      — vitality        */
+	--color-spirit:   #818CF8;  /* periwinkle — willpower       */
+	--color-supply:   #FB923C;  /* orange     — provisions      */
+	--color-xp:       #F0D060;  /* pale gold  — advancement     */
 	--color-mana:     #f59e0b;
 
 	/* Semantic */
@@ -86,17 +87,18 @@ html[data-theme='dark'] {
 		--accent-glow: #8a4e0820;
 		--accent-dim:  #8a4e0812;
 
-		--color-edge:    #1a5fa0;
-		--color-heart:   #b02828;
-		--color-iron:    #5a6878;
-		--color-shadow:  #6a2aaa;
-		--color-wits:    #805800;
+		--color-edge:    #1565C0;   /* deep blue    — swift/agility   */
+		--color-heart:   #C0184C;   /* deep rose    — bonds/empathy   */
+		--color-iron:    #3D5A70;   /* dark steel   — strength        */
+		--color-shadow:  #7C3AED;   /* deep violet  — cunning/stealth */
+		--color-wits:    #A16207;   /* dark amber   — wisdom          */
 		--color-touched: #2a8840;
 
-		--color-momentum: #1a5fa0;
-		--color-health:   #b02828;
-		--color-spirit:   #6a2aaa;
-		--color-supply:   #0e7a40;
+		--color-momentum: #0891B2;  /* dark cyan    — flowing action  */
+		--color-health:   #15803D;  /* forest green — vitality        */
+		--color-spirit:   #3730A3;  /* deep indigo  — willpower       */
+		--color-supply:   #C2410C;  /* burnt orange — provisions      */
+		--color-xp:       #927000;  /* dark gold    — advancement     */
 		--color-mana:     #b45309;
 
 		--color-danger:  #b02828;
@@ -125,17 +127,18 @@ html[data-theme='light'] {
 	--accent-glow: #8a4e0820;
 	--accent-dim:  #8a4e0812;
 
-	--color-edge:    #1a5fa0;
-	--color-heart:   #b02828;
-	--color-iron:    #5a6878;
-	--color-shadow:  #6a2aaa;
-	--color-wits:    #805800;
+	--color-edge:    #1565C0;   /* deep blue    — swift/agility   */
+	--color-heart:   #C0184C;   /* deep rose    — bonds/empathy   */
+	--color-iron:    #3D5A70;   /* dark steel   — strength        */
+	--color-shadow:  #7C3AED;   /* deep violet  — cunning/stealth */
+	--color-wits:    #A16207;   /* dark amber   — wisdom          */
 	--color-touched: #2a8840;
 
-	--color-momentum: #1a5fa0;
-	--color-health:   #b02828;
-	--color-spirit:   #6a2aaa;
-	--color-supply:   #0e7a40;
+	--color-momentum: #0891B2;  /* dark cyan    — flowing action  */
+	--color-health:   #15803D;  /* forest green — vitality        */
+	--color-spirit:   #3730A3;  /* deep indigo  — willpower       */
+	--color-supply:   #C2410C;  /* burnt orange — provisions      */
+	--color-xp:       #927000;  /* dark gold    — advancement     */
 	--color-mana:     #805800;
 
 	--color-danger:  #b02828;
