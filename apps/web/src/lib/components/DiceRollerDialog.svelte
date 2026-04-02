@@ -72,7 +72,7 @@
 	// ---------------------------------------------------------------------------
 	/** Wait one animation frame so the dialog's removal is painted before the dice overlay appears. */
 	function afterClose(): Promise<void> {
-		return new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+		return new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => r())));
 	}
 
 	async function quickRoll(sides: number, label: string) {

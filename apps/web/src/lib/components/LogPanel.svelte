@@ -382,7 +382,7 @@
 			triggerAction({ charId, type: 'resource', key: resource, value });
 			// Overflow and floor-overflow cascades.
 			if (value < 0 && ctx) {
-				const currentVal = (ctx.data as Record<string, number>)[resource] ?? 0;
+				const currentVal = (ctx.data as unknown as Record<string, number>)[resource] ?? 0;
 				// Overflow: resource drops below 0 — excess converts to another resource.
 				const overflowRule = OVERFLOW_RULES.find(r => r.resource === resource);
 				if (overflowRule) {

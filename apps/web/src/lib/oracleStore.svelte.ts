@@ -148,12 +148,20 @@ export function buildTableHtml(key: string, table: OracleEntry[]): string {
 
 	if (key === 'yrtTouched') {
 		let html = '<table class="oracle-table"><thead><tr>'
-			+ '<th>d100</th><th>Class</th><th>Social Rank</th><th>Description</th>'
+			+ '<th>d100</th><th>Class</th><th>Rank</th><th>Animal Features</th><th>Description</th>'
 			+ '</tr></thead><tbody>';
 		table.forEach((entry, idx) => {
-			const v = entry.value as { socialRank: number; className: string; description: string };
+			const v = entry.value as { socialRank: number; className: string; description: string; featureCount: number | { min: number; max: number } | null };
+			let featureLabel: string;
+			if (v.featureCount === 0)         featureLabel = '0';
+			else if (v.featureCount === 1)     featureLabel = '1';
+			else if (v.featureCount === null)  featureLabel = 'Narrative';
+			else {
+				const fc = v.featureCount as { min: number; max: number };
+				featureLabel = `${fc.min}–${fc.max} (d6%3+${fc.min})`;
+			}
 			html += `<tr><td>${rangeLabelForEntry(table, idx)}</td>`
-				+ `<td>${v.className}</td><td>${v.socialRank}</td><td>${v.description}</td></tr>`;
+				+ `<td>${v.className}</td><td>${v.socialRank}</td><td>${featureLabel}</td><td>${v.description}</td></tr>`;
 		});
 		return html + '</tbody></table>';
 	}
@@ -309,17 +317,53 @@ export function rollOracle(key: string, allOracles: OracleFile[]): OracleRollRes
 	// ── yrtTouched — compound multi-roll ───────────────────────────────────
 	if (key === 'yrtTouched') {
 		const classRes = rollFromRangeTable(table);
-		const cv = classRes.value as { socialRank: number; className: string; description: string };
+		const cv = classRes.value as {
+			socialRank:   number;
+			className:    string;
+			description:  string;
+			featureCount: number | { min: number; max: number } | null;
+		};
 
-		const animalOracle  = allOracles.find((o) => o.key === 'yrtAnimal');
-		const countOracle   = allOracles.find((o) => o.key === 'touchedCount');
-		const featOracle    = allOracles.find((o) => o.key === 'touchedFeatures');
+		// Pure — no animal aspect or features
+		if (cv.featureCount === 0) {
+			const html =
+				`<div class="roll-line">Class roll: d100 → ${classRes.roll}</div>` +
+				`<div><strong>${cv.className}</strong> (Social rank ${cv.socialRank}) — ${cv.description}</div>`;
+			return { roll: classRes.roll, html, title };
+		}
 
-		const animalRes = animalOracle  ? rollFromRangeTable(animalOracle.data)  : { roll: 0, value: '—' };
-		const countRes  = countOracle   ? rollFromRangeTable(countOracle.data)   : { roll: 0, value: 1   };
-		const count     = countRes.value as number;
+		// All other classes need an animal aspect
+		const animalOracle = allOracles.find((o) => o.key === 'yrtAnimal');
+		const animalRes    = animalOracle ? rollFromRangeTable(animalOracle.data) : { roll: 0, value: '—' };
+
+		// Feral — narrative, no feature rolls
+		if (cv.featureCount === null) {
+			const html =
+				`<div class="roll-line">Class roll: d100 → ${classRes.roll}</div>` +
+				`<div><strong>${cv.className}</strong> (Social rank ${cv.socialRank}) — ${cv.description}</div>` +
+				`<div class="roll-line">Animal roll: d100 → ${animalRes.roll}</div>` +
+				`<div>Animal aspect: <strong>${animalRes.value as string}</strong></div>` +
+				`<div><em>Features are all-encompassing — determine narratively with the player.</em></div>`;
+			return { roll: classRes.roll, html, title };
+		}
+
+		// Determine feature count
+		let count: number;
+		let countLine: string;
+		if (typeof cv.featureCount === 'number') {
+			// Prime: exactly 1
+			count     = cv.featureCount;
+			countLine = `${count} feature`;
+		} else {
+			// Second (1–3) or Third (4–6): roll d6%3+min
+			const { min, max } = cv.featureCount;
+			const d6   = Math.floor(Math.random() * 6) + 1;
+			count      = (d6 % 3) + min;
+			countLine  = `d6 (${d6}) %3+${min} → ${count} feature${count !== 1 ? 's' : ''} (range ${min}–${max})`;
+		}
 
 		// Roll unique features (re-roll duplicates)
+		const featOracle = allOracles.find((o) => o.key === 'touchedFeatures');
 		const features: string[] = [];
 		const seen = new Set<string>();
 		let safety = 0;
@@ -337,7 +381,7 @@ export function rollOracle(key: string, allOracles: OracleFile[]): OracleRollRes
 			`<div><strong>${cv.className}</strong> (Social rank ${cv.socialRank}) — ${cv.description}</div>` +
 			`<div class="roll-line">Animal roll: d100 → ${animalRes.roll}</div>` +
 			`<div>Animal aspect: <strong>${animalRes.value as string}</strong></div>` +
-			`<div class="roll-line">Feature count roll: d100 → ${countRes.roll} → ${count} feature${count !== 1 ? 's' : ''}</div>` +
+			`<div class="roll-line">Feature count: ${countLine}</div>` +
 			(features.length > 0 ? `<ul>${featureItems}</ul>` : '');
 
 		return { roll: classRes.roll, html, title };

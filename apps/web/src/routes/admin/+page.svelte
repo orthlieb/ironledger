@@ -1,8 +1,4 @@
 <script lang="ts">
-	// Build-time constants injected by Vite (see vite.config.ts → define)
-	declare const __APP_VERSION__: string;
-	declare const __BUILD_DATE__: string;
-
 	import { admin, maintenance as maintApi } from '$lib/api';
 	import type { AdminUser, AdminStats, MaintenanceStatus, UserTimeseries } from '@ironledger/shared';
 	import type { LayoutData } from '../$types';
@@ -148,6 +144,7 @@
 	let logLineCount: 200 | 500 | 1000 = $state(200);
 	let expandedLine = $state<number | null>(null);
 	let logSearch = $state('');
+	let parsedLines = $derived(logLines.map(parseLogLine));
 	let filteredLines = $derived(
 		logSearch.trim()
 			? parsedLines.filter(e =>
@@ -200,8 +197,6 @@
 			return { ts: '', level, levelNum: 30, msg: raw, extras: {}, raw };
 		}
 	}
-
-	let parsedLines = $derived(logLines.map(parseLogLine));
 
 	async function loadLogs(file = logFile, lines = logLineCount) {
 		logLoading = true;

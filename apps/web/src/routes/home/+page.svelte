@@ -158,8 +158,8 @@
 			const char = chars.find(c => c.id === activeCharId);
 			if (!char) return [];
 			const allAssets = getAssets();
-			return (char.data.assets ?? [])
-				.map((a: { assetId: string }) => allAssets.find(d => d.id === a.assetId))
+			return ((char.data.assets as import('$lib/types.js').CharacterAsset[] | undefined) ?? [])
+				.map((a) => allAssets.find(d => d.id === a.assetId))
 				.filter((d): d is NonNullable<typeof d> => !!d && !!(d as Record<string, unknown>)['inspectionFactors'])
 				.map(d => ({
 					id:                d.id,
@@ -208,7 +208,7 @@
 					// Mirror to the live DiceCtx so MovesDialog always reads current values
 					const liveCtx = getActiveDiceCtx();
 					if (liveCtx?.charId === activeCharId) {
-						(liveCtx.data as Record<string, unknown>)[action.key] = next;
+						(liveCtx.data as unknown as Record<string, unknown>)[action.key] = next;
 					}
 					const label = action.key.charAt(0).toUpperCase() + action.key.slice(1);
 					appendLog(SESSION_LOG_ID, `${char.name} — ${label}`,
@@ -223,7 +223,7 @@
 					// Mirror to the live DiceCtx
 					const liveCtx = getActiveDiceCtx();
 					if (liveCtx?.charId === activeCharId) {
-						(liveCtx.data as Record<string, unknown>)[action.key] = active;
+						(liveCtx.data as unknown as Record<string, unknown>)[action.key] = active;
 					}
 					const label = action.key.charAt(0).toUpperCase() + action.key.slice(1);
 					appendLog(SESSION_LOG_ID, `${char.name} — Debilities`,

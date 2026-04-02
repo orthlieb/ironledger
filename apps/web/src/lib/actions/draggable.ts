@@ -6,8 +6,10 @@
  * Position resets to CSS defaults each time the dialog opens.
  */
 export function draggable(headerEl: HTMLElement) {
-	const dialog = headerEl.closest('dialog') as HTMLDialogElement | null;
-	if (!dialog) return;
+	const dialogOrNull = headerEl.closest('dialog') as HTMLDialogElement | null;
+	if (!dialogOrNull) return;
+	// Capture as a non-null typed variable so closures see HTMLDialogElement, not HTMLDialogElement | null
+	const dialog: HTMLDialogElement = dialogOrNull;
 
 	let startX = 0;
 	let startY = 0;

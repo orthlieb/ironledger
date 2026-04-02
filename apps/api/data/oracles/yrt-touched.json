@@ -1,16 +1,17 @@
 {
   "key": "yrtTouched",
-  "title": "YRT – Touched",
+  "title": "YRT \u2013 Touched",
   "group": "Yrt",
-  "selectLabel": "YRT – Touched (class + features)",
-  "description": "Generate a Touched character — their social class and supernatural features in the Yrt setting.",
+  "selectLabel": "YRT \u2013 Touched (class + animal + features)",
+  "description": "Generate a Touched character \u2014 their social class, animal aspect, and supernatural features in the Yrt setting.\n\n1. Roll on this table to determine class and feature count. If Pure, stop.\n2. Roll on YRT \u2013 Touched Animal to determine the animal aspect.\n3. For Second/Third, roll the indicated dice for the exact feature count.\n4. Roll on YRT \u2013 Touched Features once per feature (re-roll duplicates).",
   "data": [
     {
       "topRange": 5,
       "value": {
         "socialRank": 1,
         "className": "Pure",
-        "description": "Pure with no detectable characteristics."
+        "description": "Pure with no detectable characteristics. Cannot use Touched Assets. In Freeport interactions requiring a bond or negotiation, receive +1 on your roll.",
+        "featureCount": 0
       }
     },
     {
@@ -18,7 +19,8 @@
       "value": {
         "socialRank": 2,
         "className": "Prime",
-        "description": "Small animal manifestations that are concealable or correctable through surgery or magic."
+        "description": "Small animal manifestations that are concealable or correctable through surgery or magic.",
+        "featureCount": 1
       }
     },
     {
@@ -26,7 +28,8 @@
       "value": {
         "socialRank": 3,
         "className": "Second",
-        "description": "Noticeable deviations with 1–3 major manifestations, diminished but not correctable through surgery or magic."
+        "description": "Noticeable deviations with 1\u20133 major manifestations, diminished but not correctable through surgery or magic.",
+        "featureCount": { "min": 1, "max": 3 }
       }
     },
     {
@@ -34,7 +37,8 @@
       "value": {
         "socialRank": 4,
         "className": "Third",
-        "description": "Gross, uncorrectable or non-symmetric manifestations affecting 4–6 body parts."
+        "description": "Gross, uncorrectable or non-symmetric manifestations affecting 4\u20136 body parts.",
+        "featureCount": { "min": 4, "max": 6 }
       }
     },
     {
@@ -42,7 +46,8 @@
       "value": {
         "socialRank": 5,
         "className": "Feral",
-        "description": "More beast than man, including those affected in their mind only."
+        "description": "More beast than man, including those affected in their mind only. Features are all-encompassing \u2014 determine narratively with the player.",
+        "featureCount": null
       }
     }
   ]

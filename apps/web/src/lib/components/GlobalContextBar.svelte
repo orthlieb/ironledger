@@ -186,9 +186,9 @@
 				} else {
 					continue;
 				}
-				// shortLabel is stripped by the API's AJV config; fall back to label
-				const pillLabel = (field as Record<string, unknown>)['shortLabel'] as string | undefined ?? field.label;
-				const tooltipText = (field as Record<string, unknown>)['tooltipLabel'] as string | undefined ?? def.name;
+				// shortLabel / tooltipLabel may be absent if stripped by AJV; fall back gracefully
+				const pillLabel = field.shortLabel ?? field.label;
+				const tooltipText = field.tooltipLabel ?? def.name;
 				pills.push({ label: pillLabel, value: displayVal, color, assetName: tooltipText });
 			}
 		}

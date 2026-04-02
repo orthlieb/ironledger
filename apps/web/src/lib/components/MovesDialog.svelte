@@ -68,6 +68,11 @@
 	// Detail view state
 	let selectedStat     = $state('');
 	let adds             = $state(0);
+	// Declared here (before progressValue, rollStatusHtml, isOracleRollMove, oracleTable)
+	// so all derived values that reference it are in TDZ-safe order.
+	const selectedMove = $derived(
+		selectedId ? findMove(selectedId) ?? null : null,
+	);
 	const progressValue  = $derived.by(() => {
 		const src   = selectedMove?.progressSource ?? 'combat';
 		const ticks = progressContext[src] ?? 0;
@@ -89,7 +94,7 @@
 			return `${d6Icon} + mana[${manaCommit}] + adds[${adds >= 0 ? '+' : ''}${adds}] vs difficulty[${spellDifficulty}] &amp; ${d10Icon}`;
 		}
 		if (selectedStat && ctx) {
-			const val = (ctx.data as Record<string, unknown>)[selectedStat] as number ?? 0;
+			const val = (ctx.data as unknown as Record<string, unknown>)[selectedStat] as number ?? 0;
 			return `${d6Icon} + ${selectedStat}[${val}]${addsStr(adds)} vs ${d10Icon} &amp; ${d10Icon}`;
 		}
 		if (isOracleRollMove && oracleTable.length) {
@@ -124,9 +129,6 @@
 	// ---------------------------------------------------------------------------
 	const moves      = $derived(getMoves());
 	const categories = $derived(getMoveCategories());
-	const selectedMove = $derived(
-		selectedId ? findMove(selectedId) ?? null : null,
-	);
 
 	const relevantAbilities = $derived.by(() => {
 		if (!selectedMove || !ctx) return [];
@@ -189,7 +191,7 @@
 
 	function statValue(stat: string): number | string {
 		if (!ctx) return '—';
-		return (ctx.data as Record<string, unknown>)[stat] as number ?? 0;
+		return (ctx.data as unknown as Record<string, unknown>)[stat] as number ?? 0;
 	}
 
 	// ---------------------------------------------------------------------------
@@ -362,7 +364,7 @@
 		rolling = true;
 
 		const stat    = selectedStat;
-		const sVal    = (ctx.data as Record<string, number>)[stat] ?? 0;
+		const sVal    = (ctx.data as unknown as Record<string, number>)[stat] ?? 0;
 		const aDie    = rollDie(6);
 		const c1      = rollDie(10);
 		const c2      = rollDie(10);
@@ -632,7 +634,7 @@
 
 		// \u2500\u2500 Take a Hiatus: build logBody dynamically from character state \u2500\u2500
 		if (selectedMove.id === 'move/take-a-hiatus') {
-			const data = ctx.data as Record<string, unknown>;
+			const data = ctx.data as unknown as Record<string, unknown>;
 			const parts: string[] = [];
 			// 1. Clear marked conditions
 			const allDebilities: Array<[string, string]> = [
