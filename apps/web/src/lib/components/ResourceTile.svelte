@@ -79,7 +79,7 @@
 		align-items:     center;
 		justify-content: space-between;
 		padding:         5px 4px 5px;
-		margin:          4px;
+		margin:          2px;
 		border-radius:   6px;
 		border:          1px solid color-mix(in srgb, var(--res-color) 50%, transparent);
 		background:      color-mix(in srgb, var(--res-color) 8%, var(--bg-card));
@@ -103,8 +103,8 @@
 	}
 
 	.res-icon :global(svg) {
-		width:  100%;
-		height: 100%;
+		width:  65%;
+		height: 65%;
 		fill:   var(--res-color);
 		color:  var(--res-color);
 	}

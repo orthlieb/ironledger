@@ -77,7 +77,7 @@
 		align-items:     center;
 		justify-content: space-between;
 		padding:         5px 4px 4px;
-		margin:          4px;
+		margin:          2px;
 		border-radius:   6px;
 		background:      color-mix(in srgb, var(--stat-color) 8%, var(--bg-card));
 		overflow:        hidden;
@@ -105,8 +105,8 @@
 	}
 
 	.stat-icon :global(svg) {
-		width:  100%;
-		height: 100%;
+		width:  65%;
+		height: 65%;
 		fill:   var(--stat-color);
 		color:  var(--stat-color);
 	}
