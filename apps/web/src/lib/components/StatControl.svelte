@@ -105,8 +105,8 @@
 	}
 
 	.stat-icon :global(svg) {
-		width:  65%;
-		height: 65%;
+		width:  calc(100% - 4px);
+		height: calc(100% - 4px);
 		fill:   var(--stat-color);
 		color:  var(--stat-color);
 	}

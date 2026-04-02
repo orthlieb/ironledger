@@ -103,8 +103,8 @@
 	}
 
 	.res-icon :global(svg) {
-		width:  65%;
-		height: 65%;
+		width:  calc(100% - 4px);
+		height: calc(100% - 4px);
 		fill:   var(--res-color);
 		color:  var(--res-color);
 	}
