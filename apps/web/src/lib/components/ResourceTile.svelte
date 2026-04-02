@@ -92,7 +92,7 @@
 		position:        absolute;
 		inset:           0;
 		display:         flex;
-		align-items:     flex-end;
+		align-items:     center;
 		justify-content: center;
 		opacity:         0.22;
 		pointer-events:  none;
@@ -103,8 +103,8 @@
 	}
 
 	.res-icon :global(svg) {
-		width:  calc(100% - 4px);
-		height: calc(100% - 4px);
+		width:  calc(100% - 6px);
+		height: calc(100% - 6px);
 		fill:   var(--res-color);
 		color:  var(--res-color);
 	}
