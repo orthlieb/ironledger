@@ -69,6 +69,7 @@
 		onOraclesClick,
 		onMovesClick,
 		onNotesClick,
+		onInitiativeClick,
 	}: {
 		chars:               CharacterFull[];
 		activeCharId:        string;
@@ -87,6 +88,7 @@
 		onOraclesClick?:       () => void;
 		onMovesClick?:         () => void;
 		onNotesClick?:         () => void;
+		onInitiativeClick?:    (next: number) => void;
 	} = $props();
 
 	// Derive the active character and its typed data
@@ -283,9 +285,11 @@
 						{/if}
 						<span class="gc-tile-name">{character?.name ?? ''}</span>
 						{#if initiative === 1}
-							<div class="gc-init-badge gc-init-badge--you">{@html swordSvg}<span class="gc-init-label">Has Initiative</span></div>
+							<div role="button" tabindex="0" class="gc-init-badge gc-init-badge--you" onclick={(e) => { e.stopPropagation(); onInitiativeClick?.(2); }} onkeydown={(e) => e.key === 'Enter' && onInitiativeClick?.(2)} title="You have initiative — click to give it to foe">{@html swordSvg}<span class="gc-init-label">Has Initiative</span></div>
 						{:else if initiative === 2}
-							<div class="gc-init-badge gc-init-badge--foe">{@html shieldSvg}<span class="gc-init-label">Foe Has Initiative</span></div>
+							<div role="button" tabindex="0" class="gc-init-badge gc-init-badge--foe" onclick={(e) => { e.stopPropagation(); onInitiativeClick?.(0); }} onkeydown={(e) => e.key === 'Enter' && onInitiativeClick?.(0)} title="Foe has initiative — click to clear">{@html shieldSvg}<span class="gc-init-label">Foe Has Initiative</span></div>
+						{:else}
+							<div role="button" tabindex="0" class="gc-init-badge gc-init-badge--none" onclick={(e) => { e.stopPropagation(); onInitiativeClick?.(1); }} onkeydown={(e) => e.key === 'Enter' && onInitiativeClick?.(1)} title="No initiative — click to give it to you">{@html swordSvg}<span class="gc-init-label">No Initiative</span></div>
 						{/if}
 					</div>
 					<div class="gc-char-chips">
@@ -535,9 +539,7 @@
 		box-shadow: inset 0 1px 0 #ffffff04, 0 2px 8px #00000040;
 	}
 
-	.gc-tile--empty {
-		/* opacity applied to button only so popover dropdown stays fully opaque */
-	}
+	/* .gc-tile--empty — opacity applied to button only so popover dropdown stays fully opaque */
 	.gc-tile--active {
 		border-color: var(--border-mid);
 	}
@@ -871,6 +873,10 @@
 		font-weight: 600;
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
+		/* reset button styles */
+		appearance: none;
+		background: none;
+		outline: none;
 	}
 	.gc-init-badge:hover { opacity: 0.75; }
 	.gc-init-badge :global(svg) { width: 11px; height: 11px; fill: currentColor; flex-shrink: 0; }
@@ -882,6 +888,13 @@
 		background: rgba(239, 68, 68, 0.10);
 		color: #ef4444;
 	}
+	.gc-init-badge--none {
+		background: transparent;
+		color: var(--text-dimmer);
+		border-color: color-mix(in srgb, var(--text-dimmer) 30%, transparent);
+		opacity: 0.6;
+	}
+	.gc-init-badge--none:hover { opacity: 1; }
 
 	/* ===== Expedition tile details ===== */
 	.gc-tile-exp-bottom {

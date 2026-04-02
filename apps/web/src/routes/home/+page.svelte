@@ -400,11 +400,11 @@
 
 	/** Remove a single encounter. */
 	async function handleEncounterDelete(id: string) {
-		if (activeFoeId === id) {
-			activeFoeId = '';
-			if (activeCharId) delete initiativeMap[activeCharId];
-		}
+		if (activeFoeId === id) activeFoeId = '';
 		await removeEncounter(id);
+		// If no non-vanquished foes remain after deletion, clear all initiative
+		const remaining = encounters.filter(e => e.id !== id && !e.vanquished);
+		if (remaining.length === 0) initiativeMap = {};
 	}
 
 	// ── Expedition CRUD ────────────────────────────────────────────────────────
@@ -809,6 +809,7 @@
 							onOraclesClick={() => oraclesDialogRef?.open()}
 							onMovesClick={() => movesDialogRef?.open()}
 							onNotesClick={() => notesDialogRef?.open()}
+							onInitiativeClick={(next) => { if (activeCharId) { if (next === 0) delete initiativeMap[activeCharId]; else initiativeMap[activeCharId] = next; initiativeMap = { ...initiativeMap }; } }}
 						/>
 					</div>
 
