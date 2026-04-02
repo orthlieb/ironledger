@@ -139,6 +139,7 @@
 		position:            relative;
 		z-index:             1;
 		line-height:         1;
+		margin-bottom:       2px;
 		/* Hide browser number input spinners */
 		-moz-appearance: textfield;
 		appearance:      textfield;
