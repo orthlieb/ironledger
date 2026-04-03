@@ -1003,7 +1003,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		margin-bottom: 8px;
+		margin-bottom: 0;
 	}
 
 	/* Identity */
@@ -1113,7 +1113,7 @@
 		font-weight: 800;
 		letter-spacing: 0.14em;
 		text-transform: uppercase;
-		color: var(--text-muted);
+		color: var(--text-dimmer);
 		flex-shrink: 0;
 		align-self: stretch;
 		display: flex;
@@ -1127,7 +1127,7 @@
 		display: flex;
 		flex-wrap: nowrap;
 		align-items: flex-start;
-		justify-content: center;
+		justify-content: flex-start;
 		gap: 3px;
 		flex: 1;
 	}
@@ -1147,7 +1147,7 @@
 		font-weight: 800;
 		letter-spacing: 0.14em;
 		text-transform: uppercase;
-		color: var(--text-muted);
+		color: var(--text-dimmer);
 		flex-shrink: 0;
 		align-self: stretch;
 		display: flex;
@@ -1172,7 +1172,7 @@
 		font-weight: 800;
 		letter-spacing: 0.14em;
 		text-transform: uppercase;
-		color: var(--text-muted);
+		color: var(--text-dimmer);
 		flex-shrink: 0;
 		align-self: stretch;
 		display: flex;
@@ -1191,7 +1191,7 @@
 		flex-wrap: wrap;
 		gap: 14px;
 		align-items: stretch;
-		justify-content: center;
+		justify-content: flex-start;
 	}
 
 
@@ -1200,7 +1200,7 @@
 		display: flex;
 		gap: 10px;
 		flex-wrap: wrap;
-		justify-content: center;
+		justify-content: flex-start;
 	}
 
 	.track-group {

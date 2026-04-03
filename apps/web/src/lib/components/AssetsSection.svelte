@@ -174,6 +174,10 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
+		margin-bottom: 0;
+	}
+	.assets-header :global(.section-label) {
+		margin-bottom: 0;
 	}
 
 	.assets-hint {
