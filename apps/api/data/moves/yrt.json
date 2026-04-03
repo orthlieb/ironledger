@@ -51,13 +51,6 @@
         {
           "key": "supply",
           "min": 1
-        },
-        {
-          "key": "hasAnyAsset",
-          "ids": [
-            "path/yrt-venenigisto",
-            "path/yrt-falsinto"
-          ]
         }
       ]
     }

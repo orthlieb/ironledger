@@ -63,8 +63,10 @@ export function getRelevantAbilities(
 			const ability = def.abilities[i];
 			if (!ability.moves?.includes(moveId)) continue;
 
-			// Check character has this ability enabled
-			const enabled = charAsset.abilities[i] ?? false;
+			// Check character has this ability enabled.
+			// Fall back to the asset definition's own `enabled` default when the
+			// character's stored state is absent (e.g. newly acquired asset).
+			const enabled = charAsset.abilities[i] ?? ability.enabled ?? false;
 			if (!enabled) continue;
 
 			results.push({
