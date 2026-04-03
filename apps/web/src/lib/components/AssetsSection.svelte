@@ -210,14 +210,6 @@
 		font-weight: 600;
 	}
 
-	.btn-primary {
-		background: var(--text-accent);
-		border-color: var(--text-accent);
-		color: var(--bg-card);
-		font-weight: 600;
-	}
-	.btn-primary:hover { opacity: 0.88; }
-
 	/* Fallback row while catalogue is loading */
 	.asset-loading {
 		display: flex;

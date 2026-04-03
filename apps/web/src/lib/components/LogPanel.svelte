@@ -1020,12 +1020,4 @@
 		content: '';
 	}
 
-	.btn-danger {
-		background: var(--bg-control);
-		border-color: var(--color-danger);
-		color: var(--color-danger);
-	}
-	.btn-danger:hover {
-		background: var(--bg-hover);
-	}
 </style>

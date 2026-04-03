@@ -599,11 +599,6 @@
 		gap: 3px;
 	}
 
-	.sc-field-group {
-		display: flex;
-		flex-direction: column;
-		gap: 3px;
-	}
 	.sc-label {
 		font-family: var(--font-ui);
 		font-size: 0.65rem;
@@ -613,7 +608,7 @@
 		color: var(--text-dimmer);
 	}
 
-	.sc-input, .sc-select {
+	.sc-input {
 		font-family: var(--font-ui);
 		font-size: 0.82rem;
 		padding: 4px 8px;
@@ -622,7 +617,7 @@
 		border-radius: 4px;
 		color: var(--text);
 	}
-	.sc-input:focus, .sc-select:focus {
+	.sc-input:focus {
 		outline: none;
 		border-color: var(--focus-ring);
 		box-shadow: 0 0 0 2px var(--accent-glow);

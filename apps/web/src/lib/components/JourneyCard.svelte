@@ -400,12 +400,6 @@
 	}
 
 
-	.jc-field-group {
-		display: flex;
-		flex-direction: column;
-		gap: 3px;
-	}
-
 	.jc-label {
 		font-family: var(--font-ui);
 		font-size: 0.65rem;
@@ -415,7 +409,7 @@
 		color: var(--text-dimmer);
 	}
 
-	.jc-select, .jc-textarea {
+	.jc-textarea {
 		font-family: var(--font-ui);
 		font-size: 0.82rem;
 		padding: 4px 8px;
@@ -424,7 +418,7 @@
 		border-radius: 4px;
 		color: var(--text);
 	}
-	.jc-select:focus, .jc-textarea:focus {
+	.jc-textarea:focus {
 		outline: none;
 		border-color: var(--focus-ring);
 		box-shadow: 0 0 0 2px var(--accent-glow);

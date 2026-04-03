@@ -138,14 +138,6 @@
 		fill: var(--color-mana, #f59e0b);
 	}
 
-	h2 {
-		font-family: 'Roboto', sans-serif;
-		font-style: italic;
-		font-weight: 400;
-		font-size: 0.95rem;
-		color: var(--text-muted);
-		margin-bottom: 0.75rem;
-	}
 
 	.auth-info {
 		font-family: var(--font-ui);

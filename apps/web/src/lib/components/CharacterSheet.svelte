@@ -1195,44 +1195,6 @@
 	}
 
 
-	.debility-count {
-		font-family: var(--font-ui);
-		font-size: 0.75rem;
-		color: var(--color-danger);
-		font-weight: 400;
-		font-style: italic;
-		text-transform: none;
-		letter-spacing: 0;
-		margin-left: 4px;
-	}
-
-	.debility-status {
-		font-family: var(--font-ui);
-		font-size: 0.75rem;
-		color: var(--color-danger);
-		font-weight: 500;
-		font-style: italic;
-		text-transform: none;
-		letter-spacing: 0;
-		margin-left: 4px;
-		animation: debility-fade 3s ease forwards;
-	}
-
-	@keyframes debility-fade {
-		0%   { opacity: 1; }
-		70%  { opacity: 1; }
-		100% { opacity: 0; }
-	}
-
-	/* XP + Debilities side-by-side */
-	.xp-debilities-row {
-		display: flex;
-		gap: 20px;
-		align-items: flex-start;
-		flex-wrap: wrap;
-		justify-content: center;
-	}
-
 	/* Tracks */
 	.tracks-row {
 		display: flex;
