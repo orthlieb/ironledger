@@ -289,7 +289,7 @@
 						{:else if initiative === 2}
 							<div role="button" tabindex="0" class="gc-init-badge gc-init-badge--foe" onclick={(e) => { e.stopPropagation(); onInitiativeClick?.(0); }} onkeydown={(e) => e.key === 'Enter' && onInitiativeClick?.(0)} title="Foe has initiative — click to clear">{@html shieldSvg}<span class="gc-init-label">Foe Has Initiative</span></div>
 						{:else}
-							<div role="button" tabindex="0" class="gc-init-badge gc-init-badge--none" onclick={(e) => { e.stopPropagation(); onInitiativeClick?.(1); }} onkeydown={(e) => e.key === 'Enter' && onInitiativeClick?.(1)} title="No initiative — click to give it to you">{@html swordSvg}<span class="gc-init-label">No Initiative</span></div>
+							<div role="button" tabindex="0" class="gc-init-badge gc-init-badge--none" onclick={(e) => { e.stopPropagation(); onInitiativeClick?.(1); }} onkeydown={(e) => e.key === 'Enter' && onInitiativeClick?.(1)} title="No initiative — click to give it to you"><span class="gc-init-label">No Initiative</span></div>
 						{/if}
 					</div>
 					<div class="gc-char-chips">
