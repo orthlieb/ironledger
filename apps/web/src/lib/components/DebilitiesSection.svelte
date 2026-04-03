@@ -76,7 +76,7 @@
 	.debilities {
 		display: flex;
 		flex-direction: column;
-		align-items: center;
+		align-items: flex-start;
 		gap: 6px;
 	}
 
@@ -88,7 +88,7 @@
 		display: flex;
 		flex-wrap: nowrap;
 		gap: 10px;
-		justify-content: center;
+		justify-content: flex-start;
 		align-items: flex-start;
 	}
 
@@ -103,7 +103,6 @@
 		font-size:   0.65rem;
 		color:       var(--text-dimmer);
 		font-style:  italic;
-		text-align:  center;
 	}
 
 	.btn-grid {
