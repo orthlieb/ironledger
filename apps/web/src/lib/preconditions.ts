@@ -22,6 +22,8 @@ export interface Precondition {
 	max?: number;
 	eq?:  number;
 	ne?:  number;
+	/** Used with key="hasAnyAsset": passes if the character owns at least one asset whose id is in this list. */
+	ids?: string[];
 }
 
 /** A single difficulty factor level within an inspection ritual. */
@@ -221,6 +223,18 @@ export function checkPrecondition(
 			return `Requires Touched: ${max} or lower`;
 		}
 		return 'Touched requirement not met';
+	}
+
+	// ---- Any-of asset list (OR: character owns at least one of the listed asset ids) ----
+	if (key === 'hasAnyAsset') {
+		const ownedIds = new Set(charData.assets.map((a) => a.assetId));
+		const has = (pre.ids ?? []).some((id) => ownedIds.has(id));
+		if (has) return null;
+		// Build a readable list of asset names for the error message
+		const names = (pre.ids ?? [])
+			.map((id) => findAsset(id)?.name ?? id)
+			.join(' or ');
+		return `Requires ${names}`;
 	}
 
 	// ---- Asset by name (any remaining key is treated as an asset name) ----
