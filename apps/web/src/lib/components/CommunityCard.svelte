@@ -144,6 +144,14 @@
 			<span class="cc-name" title="Click to rename" onclick={startEditName}>{displayName}</span>
 		{/if}
 
+		<!-- Name oracle -->
+		<button
+			class="cc-oracle-btn cc-oracle-btn--header"
+			title="Roll Settlement Name oracle"
+			aria-label="Roll Settlement Name oracle"
+			onclick={() => onOracleClick?.('settlementName', (v) => update({ name: v }))}
+		>{@html eyeSvg}</button>
+
 		<!-- Delete -->
 		<button
 			class="cc-icon-btn cc-icon-btn--danger"
@@ -159,27 +167,6 @@
 
 			<!-- Community fields -->
 			<div class="cc-fields">
-
-				<!-- Name row (with oracle) -->
-				<div class="cc-field-row">
-					<label class="cc-label" for="cc-name-{community.id}">Name</label>
-					<div class="cc-input-group">
-						<input
-							id="cc-name-{community.id}"
-							class="cc-input"
-							type="text"
-							value={community.name}
-							oninput={(e) => update({ name: (e.target as HTMLInputElement).value })}
-							placeholder="Community name…"
-						/>
-						<button
-							class="cc-oracle-btn"
-							title="Roll Settlement Name oracle"
-							aria-label="Roll Settlement Name oracle"
-							onclick={() => onOracleClick?.('settlementName', (v) => update({ name: v }))}
-						>{@html eyeSvg}</button>
-					</div>
-				</div>
 
 				<!-- Region row (with oracle) -->
 				<div class="cc-field-row">
@@ -267,7 +254,7 @@
 
 				<!-- Notes (markdown, click-to-edit) -->
 				<div class="cc-field-row cc-field-row--full">
-					<label class="cc-label">Notes</label>
+					<span class="cc-label">Notes</span>
 					{#if editingNoteId === 'community'}
 						<textarea
 							bind:this={noteTextareaEl}
@@ -409,7 +396,7 @@
 
 									<!-- Notes (markdown, click-to-edit) -->
 									<div class="cc-field-row cc-field-row--full">
-										<label class="cc-label">Notes</label>
+										<span class="cc-label">Notes</span>
 										{#if editingNoteId === npc.id}
 											<textarea
 												bind:this={noteTextareaEl}
@@ -691,6 +678,12 @@
 		color:      var(--accent);
 		border-color: var(--accent);
 	}
+	.cc-oracle-btn--header {
+		width:      20px;
+		height:     20px;
+		flex-shrink: 0;
+	}
+	.cc-oracle-btn--header :global(svg) { width: 10px; height: 10px; }
 
 	/* ── NPC section ─────────────────────────────────────────────────── */
 	.cc-npc-section {
