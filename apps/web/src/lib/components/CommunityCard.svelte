@@ -534,7 +534,7 @@
 		flex-shrink: 0;
 		border-radius: 4px;
 	}
-	.cc-icon-btn :global(svg) { width: 14px; height: 14px; display: block; }
+	.cc-icon-btn :global(svg) { width: 14px; height: 14px; display: block; fill: currentColor; }
 	.cc-icon-btn:hover { color: var(--text); }
 	.cc-icon-btn--danger:hover { color: var(--color-danger); }
 
@@ -624,7 +624,7 @@
 		color:         var(--text-dimmer);
 		padding:       0;
 	}
-	.cc-oracle-btn :global(svg) { width: 12px; height: 12px; }
+	.cc-oracle-btn :global(svg) { width: 12px; height: 12px; fill: currentColor; }
 	.cc-oracle-btn:hover {
 		background: var(--surface-2);
 		color:      var(--accent);
