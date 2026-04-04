@@ -1,30 +1,31 @@
 <script lang="ts">
 	/**
-	 * CommunityCard — collapsible card for a community/region.
+	 * NpcCard — collapsible card for a standalone NPC.
 	 *
-	 * JourneyCard-style header with amber sidebar accent and portrait thumbnail.
+	 * JourneyCard-style header with purple sidebar accent.
+	 * Portrait thumbnail (click to upload, hover to lightbox).
 	 * Oracle eye buttons open OraclesDialog directly at the relevant oracle.
 	 * Markdown notes (click-to-edit).
 	 */
 
-	import type { Community } from '$lib/types.js';
+	import type { Npc, NpcRelationship } from '$lib/types.js';
 	import { renderNote } from '$lib/markdown.js';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 
 	import trashSvg  from '$icons/trash-solid-full.svg?raw';
-	import hutSvg from '$icons/hut.svg?raw';
+	import farmerSvg from '$icons/farmer.svg?raw';
 
 	// ---------------------------------------------------------------------------
 	// Props
 	// ---------------------------------------------------------------------------
 	let {
-		community,
+		npc,
 		onChange,
 		onDelete,
 		focusName = false,
 	}: {
-		community:       Community;
-		onChange:        (updated: Community) => void;
+		npc:             Npc;
+		onChange:        (updated: Npc) => void;
 		onDelete:        () => void;
 		focusName?:      boolean;
 	} = $props();
@@ -32,14 +33,14 @@
 	// ---------------------------------------------------------------------------
 	// Local UI state
 	// ---------------------------------------------------------------------------
-	let collapsed       = $state(false);
-	let deleteDialogRef = $state<{ open(): void; close(): void } | null>(null);
-	let editingName     = $state(false);
-	let nameInputEl     = $state<HTMLInputElement | null>(null);
-	let nameBeforeEdit  = '';
-	let editingNoteId   = $state<string | null>(null);
-	let noteTextareaEl  = $state<HTMLTextAreaElement | null>(null);
-	let portraitHovered = $state(false);
+	let collapsed         = $state(false);
+	let deleteDialogRef   = $state<{ open(): void; close(): void } | null>(null);
+	let editingName       = $state(false);
+	let nameInputEl       = $state<HTMLInputElement | null>(null);
+	let nameBeforeEdit    = '';
+	let editingNoteId     = $state<string | null>(null);
+	let noteTextareaEl    = $state<HTMLTextAreaElement | null>(null);
+	let portraitHovered   = $state(false);
 
 	$effect(() => {
 		if (editingNoteId && noteTextareaEl) noteTextareaEl.focus();
@@ -48,23 +49,29 @@
 		if (editingName && nameInputEl) nameInputEl.select();
 	});
 	$effect(() => {
-		if (focusName) { nameBeforeEdit = community.name; editingName = true; }
+		if (focusName) { nameBeforeEdit = npc.name; editingName = true; }
 	});
 
 	// ---------------------------------------------------------------------------
 	// Derived
 	// ---------------------------------------------------------------------------
-	const displayName = $derived(community.name || 'Unnamed Community');
+	const displayName = $derived(npc.name || 'Unnamed NPC');
+
+	const RELATIONSHIPS: { value: NpcRelationship; label: string; color: string }[] = [
+		{ value: 'neutral', label: 'Neutral', color: 'var(--text-muted)' },
+		{ value: 'bond',    label: 'Bond',    color: '#34d399' },
+		{ value: 'foe',     label: 'Foe',     color: '#ef4444' },
+	];
 
 	// ---------------------------------------------------------------------------
 	// Helpers
 	// ---------------------------------------------------------------------------
-	function update(patch: Partial<Community>) {
-		onChange({ ...community, ...patch });
+	function update(patch: Partial<Npc>) {
+		onChange({ ...npc, ...patch });
 	}
 
-	function startEditName() { nameBeforeEdit = community.name; editingName = true; }
-	function commitName(v: string) { editingName = false; update({ name: v.trim() || 'Unnamed Community' }); }
+	function startEditName() { nameBeforeEdit = npc.name; editingName = true; }
+	function commitName(v: string) { editingName = false; update({ name: v.trim() || 'Unnamed NPC' }); }
 	function cancelName() { editingName = false; update({ name: nameBeforeEdit }); }
 
 	// ---------------------------------------------------------------------------
@@ -95,14 +102,14 @@
 </script>
 
 <!-- ── Card ──────────────────────────────────────────────────────────────── -->
-<div class="cc-card" class:cc-collapsed={collapsed} style="border-left: 3px solid #E8A13B">
+<div class="nc-card" class:nc-collapsed={collapsed} style="border-left: 3px solid #a78bfa">
 
 	<!-- ── Header ── -->
-	<div class="cc-header">
+	<div class="nc-header">
 
 		<!-- Collapse (leftmost) -->
 		<button
-			class="cc-collapse-btn"
+			class="nc-collapse-btn"
 			onclick={() => (collapsed = !collapsed)}
 			aria-label={collapsed ? 'Expand' : 'Collapse'}
 		>{collapsed ? '▶' : '▼'}</button>
@@ -110,20 +117,20 @@
 		<!-- Portrait -->
 		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 		<label
-			class="cc-portrait-label"
+			class="nc-portrait-label"
 			title="Click to change portrait"
 			onmouseenter={() => (portraitHovered = true)}
 			onmouseleave={() => (portraitHovered = false)}
 		>
-			{#if community.imageUrl}
-				<img src={community.imageUrl} alt="Portrait of {displayName}" class="cc-portrait-img" />
+			{#if npc.imageUrl}
+				<img src={npc.imageUrl} alt="Portrait of {displayName}" class="nc-portrait-img" />
 			{:else}
-				<div class="cc-portrait-placeholder">{@html hutSvg}</div>
+				<div class="nc-portrait-placeholder">{@html farmerSvg}</div>
 			{/if}
 			<input
 				type="file"
 				accept="image/*"
-				class="cc-portrait-input"
+				class="nc-portrait-input"
 				aria-label="Upload portrait"
 				onchange={handlePortrait}
 			/>
@@ -133,10 +140,10 @@
 		{#if editingName}
 			<input
 				bind:this={nameInputEl}
-				class="cc-name-input"
+				class="nc-name-input"
 				type="text"
-				value={community.name}
-				placeholder="Community name…"
+				value={npc.name}
+				placeholder="NPC name…"
 				onblur={(e) => commitName((e.target as HTMLInputElement).value)}
 				onkeydown={(e) => {
 					if (e.key === 'Enter')  { commitName((e.target as HTMLInputElement).value); }
@@ -146,7 +153,7 @@
 		{:else}
 			<!-- svelte-ignore a11y_interactive_supports_focus -->
 			<span
-				class="cc-name"
+				class="nc-name"
 				role="button"
 				onclick={startEditName}
 				onkeydown={(e) => e.key === 'Enter' && startEditName()}
@@ -156,85 +163,102 @@
 
 		<!-- Delete -->
 		<button
-			class="btn btn-icon cc-del-btn"
+			class="btn btn-icon nc-del-btn"
 			onclick={() => deleteDialogRef?.open()}
-			title="Delete community"
-			aria-label="Delete community"
+			title="Delete NPC"
+			aria-label="Delete NPC"
 		>{@html trashSvg}</button>
 
 	</div>
 
 	<!-- Lightbox (portrait hover) -->
-	{#if portraitHovered && community.imageUrl}
-		<div class="cc-portrait-lightbox" aria-hidden="true">
-			<img src={community.imageUrl} alt="Portrait of {displayName}" />
+	{#if portraitHovered && npc.imageUrl}
+		<div class="nc-portrait-lightbox" aria-hidden="true">
+			<img src={npc.imageUrl} alt="Portrait of {displayName}" />
 		</div>
 	{/if}
 
 	<!-- ── Body ── -->
 	{#if !collapsed}
-		<div class="cc-body">
+		<div class="nc-body">
 
-			<!-- Region -->
-			<div class="cc-field-row">
-				<label class="cc-label" for="cc-region-{community.id}">Region</label>
+			<!-- Role -->
+			<div class="nc-field-row">
+				<label class="nc-label" for="nc-role-{npc.id}">Role</label>
 				<input
-					id="cc-region-{community.id}"
-					class="cc-input"
+					id="nc-role-{npc.id}"
+					class="nc-input"
 					type="text"
-					value={community.region}
-					oninput={(e) => update({ region: (e.target as HTMLInputElement).value })}
-					placeholder="Region…"
+					value={npc.role}
+					oninput={(e) => update({ role: (e.target as HTMLInputElement).value })}
+					placeholder="Role…"
 				/>
 			</div>
 
-			<!-- Location -->
-			<div class="cc-field-row">
-				<label class="cc-label" for="cc-location-{community.id}">Location</label>
+			<!-- Goal -->
+			<div class="nc-field-row">
+				<label class="nc-label" for="nc-goal-{npc.id}">Goal</label>
 				<input
-					id="cc-location-{community.id}"
-					class="cc-input"
+					id="nc-goal-{npc.id}"
+					class="nc-input"
 					type="text"
-					value={community.location}
+					value={npc.goal}
+					oninput={(e) => update({ goal: (e.target as HTMLInputElement).value })}
+					placeholder="Goal…"
+				/>
+			</div>
+
+			<!-- Descriptor -->
+			<div class="nc-field-row">
+				<label class="nc-label" for="nc-descriptor-{npc.id}">Descriptor</label>
+				<input
+					id="nc-descriptor-{npc.id}"
+					class="nc-input"
+					type="text"
+					value={npc.descriptor}
+					oninput={(e) => update({ descriptor: (e.target as HTMLInputElement).value })}
+					placeholder="Descriptor…"
+				/>
+			</div>
+
+			<!-- Location (text only, no oracle) -->
+			<div class="nc-field-row">
+				<label class="nc-label" for="nc-location-{npc.id}">Location</label>
+				<input
+					id="nc-location-{npc.id}"
+					class="nc-input"
+					type="text"
+					value={npc.location}
 					oninput={(e) => update({ location: (e.target as HTMLInputElement).value })}
-					placeholder="Location…"
+					placeholder="Current location…"
 				/>
 			</div>
 
-			<!-- Location description -->
-			<div class="cc-field-row">
-				<label class="cc-label" for="cc-locdesc-{community.id}">Description</label>
-				<input
-					id="cc-locdesc-{community.id}"
-					class="cc-input"
-					type="text"
-					value={community.locationDescription}
-					oninput={(e) => update({ locationDescription: (e.target as HTMLInputElement).value })}
-					placeholder="Location description…"
-				/>
-			</div>
-
-			<!-- Trouble -->
-			<div class="cc-field-row">
-				<label class="cc-label" for="cc-trouble-{community.id}">Trouble</label>
-				<input
-					id="cc-trouble-{community.id}"
-					class="cc-input"
-					type="text"
-					value={community.trouble}
-					oninput={(e) => update({ trouble: (e.target as HTMLInputElement).value })}
-					placeholder="Settlement trouble…"
-				/>
+			<!-- Relationship pills -->
+			<div class="nc-field-row nc-field-row--rel">
+				<span class="nc-label">Relationship</span>
+				<div class="nc-rel-group">
+					{#each RELATIONSHIPS as rel}
+						<button
+							class="nc-rel-btn"
+							class:nc-rel-btn--active={npc.relationship === rel.value}
+							style={npc.relationship === rel.value
+								? `color: ${rel.color}; border-color: ${rel.color}; background: color-mix(in srgb, ${rel.color} 12%, transparent)`
+								: ''}
+							onclick={() => update({ relationship: rel.value })}
+						>{rel.label}</button>
+					{/each}
+				</div>
 			</div>
 
 			<!-- Notes (markdown, click-to-edit) -->
-			<div class="cc-field-row cc-field-row--full">
-				<span class="cc-label">Notes</span>
-				{#if editingNoteId === 'community'}
+			<div class="nc-field-row nc-field-row--full">
+				<span class="nc-label">Notes</span>
+				{#if editingNoteId === 'npc'}
 					<textarea
 						bind:this={noteTextareaEl}
-						class="cc-textarea"
-						value={community.notes}
+						class="nc-textarea"
+						value={npc.notes}
 						oninput={(e) => update({ notes: (e.target as HTMLTextAreaElement).value })}
 						onblur={() => (editingNoteId = null)}
 						placeholder="Notes… (**bold**, *italic*, # heading, - list)"
@@ -243,18 +267,18 @@
 				{:else}
 					<!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
 					<div
-						class="cc-note-display"
-						class:cc-note-display--empty={!community.notes?.trim()}
+						class="nc-note-display"
+						class:nc-note-display--empty={!npc.notes?.trim()}
 						role="button"
 						tabindex="0"
 						title="Click to edit"
-						onclick={() => (editingNoteId = 'community')}
-						onkeydown={(e) => { if (e.key === 'Enter') editingNoteId = 'community'; }}
+						onclick={() => (editingNoteId = 'npc')}
+						onkeydown={(e) => { if (e.key === 'Enter') editingNoteId = 'npc'; }}
 					>
-						{#if community.notes?.trim()}
-							{@html renderNote(community.notes)}
+						{#if npc.notes?.trim()}
+							{@html renderNote(npc.notes)}
 						{:else}
-							<span class="cc-note-placeholder">Notes… (**bold**, *italic*, # heading, - list)</span>
+							<span class="nc-note-placeholder">Notes… (**bold**, *italic*, # heading, - list)</span>
 						{/if}
 					</div>
 				{/if}
@@ -268,7 +292,7 @@
 <!-- Delete confirmation dialog -->
 <ConfirmDialog
 	bind:this={deleteDialogRef}
-	title="Delete Community"
+	title="Delete NPC"
 	confirmLabel="Delete"
 	accentColor="var(--color-danger)"
 	onconfirm={onDelete}
@@ -280,7 +304,7 @@
 
 <style>
 	/* ── Card shell ─────────────────────────────────────────────────────── */
-	.cc-card {
+	.nc-card {
 		border:        1px solid var(--border);
 		border-radius: 5px;
 		background:    var(--bg-card);
@@ -290,24 +314,24 @@
 	}
 
 	/* Remove header divider when collapsed */
-	.cc-card.cc-collapsed .cc-header {
+	.nc-card.nc-collapsed .nc-header {
 		border-bottom: none;
 	}
 
 	/* ── Header ─────────────────────────────────────────────────────────── */
-	.cc-header {
-		position:      relative;
-		display:       flex;
-		align-items:   center;
-		gap:           8px;
-		padding:       8px 12px;
-		min-height:    55px;
-		background:    var(--bg-inset);
+	.nc-header {
+		position:   relative;
+		display:    flex;
+		align-items: center;
+		gap:        8px;
+		padding:    8px 12px;
+		min-height: 55px;
+		background: var(--bg-inset);
 		border-bottom: 1px solid var(--border);
 	}
 
 	/* ── Portrait ───────────────────────────────────────────────────────── */
-	.cc-portrait-label {
+	.nc-portrait-label {
 		width:           38px;
 		height:          38px;
 		border-radius:   50%;
@@ -318,20 +342,20 @@
 		justify-content: center;
 		transition:      opacity 0.15s;
 	}
-	.cc-portrait-label:has(.cc-portrait-img) {
+	.nc-portrait-label:has(.nc-portrait-img) {
 		overflow: hidden;
 		border:   1px solid var(--border-mid);
 	}
-	.cc-portrait-label:hover { opacity: 0.85; }
+	.nc-portrait-label:hover { opacity: 0.85; }
 
-	.cc-portrait-img {
+	.nc-portrait-img {
 		width:      100%;
 		height:     100%;
 		object-fit: cover;
 		display:    block;
 	}
 
-	.cc-portrait-placeholder {
+	.nc-portrait-placeholder {
 		width:           38px;
 		height:          38px;
 		border-radius:   50%;
@@ -344,28 +368,30 @@
 		user-select:     none;
 		flex-shrink:     0;
 	}
-	.cc-portrait-placeholder :global(svg) {
-		width:  20px;
-		height: 20px;
-		fill:   currentColor;
+	.nc-portrait-placeholder :global(svg) {
+		width:   20px;
+		height:  20px;
+		fill:    currentColor;
 		opacity: 0.5;
 	}
 
-	.cc-portrait-input { display: none; }
+	.nc-portrait-input {
+		display: none;
+	}
 
 	/* ── Lightbox ───────────────────────────────────────────────────────── */
-	.cc-portrait-lightbox {
-		position:       absolute;
-		top:            60px;
-		left:           10px;
-		z-index:        100;
-		border-radius:  6px;
-		overflow:       hidden;
-		box-shadow:     0 8px 32px rgba(0,0,0,0.7);
-		border:         1px solid var(--border);
+	.nc-portrait-lightbox {
+		position:      absolute;
+		top:           60px;
+		left:          10px;
+		z-index:       100;
+		border-radius: 6px;
+		overflow:      hidden;
+		box-shadow:    0 8px 32px rgba(0,0,0,0.7);
+		border:        1px solid var(--border);
 		pointer-events: none;
 	}
-	.cc-portrait-lightbox img {
+	.nc-portrait-lightbox img {
 		display:    block;
 		width:      160px;
 		height:     160px;
@@ -373,7 +399,7 @@
 	}
 
 	/* ── Collapse btn ───────────────────────────────────────────────────── */
-	.cc-collapse-btn {
+	.nc-collapse-btn {
 		background:  none;
 		border:      none;
 		cursor:      pointer;
@@ -384,7 +410,7 @@
 	}
 
 	/* ── Name ───────────────────────────────────────────────────────────── */
-	.cc-name {
+	.nc-name {
 		flex:          1;
 		font-family:   var(--font-display);
 		font-size:     0.88rem;
@@ -397,14 +423,14 @@
 		white-space:   nowrap;
 	}
 
-	.cc-name-input {
+	.nc-name-input {
 		flex:          1;
 		font-family:   var(--font-display);
 		font-weight:   700;
 		font-size:     0.88rem;
 		letter-spacing: 0.04em;
 		background:    var(--bg-input);
-		border:        1px solid #E8A13B;
+		border:        1px solid #a78bfa;
 		border-radius: 4px;
 		padding:       2px 6px;
 		color:         var(--text);
@@ -413,21 +439,21 @@
 	}
 
 	/* ── Delete btn ─────────────────────────────────────────────────────── */
-	.cc-del-btn {
+	.nc-del-btn {
 		width:       26px;
 		height:      26px;
 		padding:     4px;
 		margin-left: auto;
 		flex-shrink: 0;
 	}
-	.cc-del-btn :global(svg) {
+	.nc-del-btn :global(svg) {
 		width:  13px;
 		height: 13px;
 		fill:   currentColor;
 	}
 
 	/* ── Body ───────────────────────────────────────────────────────────── */
-	.cc-body {
+	.nc-body {
 		padding:        0.75rem var(--page-gutter, 14px) 1rem;
 		display:        flex;
 		flex-direction: column;
@@ -435,14 +461,15 @@
 	}
 
 	/* ── Field rows ─────────────────────────────────────────────────────── */
-	.cc-field-row {
+	.nc-field-row {
 		display:     flex;
 		align-items: center;
 		gap:         8px;
 	}
-	.cc-field-row--full { align-items: flex-start; }
+	.nc-field-row--full { align-items: flex-start; }
+	.nc-field-row--rel  { align-items: center; }
 
-	.cc-label {
+	.nc-label {
 		font-family:    var(--font-ui);
 		font-size:      0.65rem;
 		font-weight:    600;
@@ -454,7 +481,7 @@
 		flex-shrink:    0;
 	}
 
-	.cc-input {
+	.nc-input {
 		flex:          1;
 		font-family:   var(--font-ui);
 		font-size:     0.75rem;
@@ -466,9 +493,9 @@
 		outline:       none;
 		min-width:     0;
 	}
-	.cc-input:focus { border-color: #E8A13B; }
+	.nc-input:focus { border-color: #a78bfa; }
 
-	.cc-textarea {
+	.nc-textarea {
 		flex:          1;
 		font-family:   var(--font-ui);
 		font-size:     0.75rem;
@@ -482,10 +509,10 @@
 		min-height:    54px;
 		width:         100%;
 	}
-	.cc-textarea:focus { border-color: #E8A13B; }
+	.nc-textarea:focus { border-color: #a78bfa; }
 
 	/* ── Markdown note display ───────────────────────────────────────────── */
-	.cc-note-display {
+	.nc-note-display {
 		flex:          1;
 		font-family:   var(--font-ui);
 		font-size:     0.75rem;
@@ -500,29 +527,52 @@
 		width:         100%;
 		transition:    border-color 0.12s;
 	}
-	.cc-note-display:hover,
-	.cc-note-display:focus { border-color: var(--border-mid); outline: none; }
-	.cc-note-display--empty { min-height: 32px; }
+	.nc-note-display:hover,
+	.nc-note-display:focus { border-color: var(--border-mid); outline: none; }
+	.nc-note-display--empty { min-height: 32px; }
 
-	.cc-note-placeholder {
+	.nc-note-placeholder {
 		font-style: italic;
 		color:      var(--text-dimmer);
 	}
 
-	.cc-note-display :global(p)            { margin: 0 0 2px; }
-	.cc-note-display :global(p:last-child) { margin-bottom: 0; }
-	.cc-note-display :global(h3),
-	.cc-note-display :global(h4),
-	.cc-note-display :global(h5) {
+	.nc-note-display :global(p)            { margin: 0 0 2px; }
+	.nc-note-display :global(p:last-child) { margin-bottom: 0; }
+	.nc-note-display :global(h3),
+	.nc-note-display :global(h4),
+	.nc-note-display :global(h5) {
 		font-size:      0.73rem;
 		font-weight:    700;
 		letter-spacing: 0.04em;
 		color:          var(--text-accent);
 		margin:         4px 0 1px;
 	}
-	.cc-note-display :global(ul),
-	.cc-note-display :global(ol)  { margin: 1px 0; padding-left: 1.2em; }
-	.cc-note-display :global(li)  { margin-bottom: 1px; }
-	.cc-note-display :global(strong) { font-weight: 700; color: var(--text); }
-	.cc-note-display :global(br)  { display: block; margin-bottom: 2px; content: ''; }
+	.nc-note-display :global(ul),
+	.nc-note-display :global(ol)  { margin: 1px 0; padding-left: 1.2em; }
+	.nc-note-display :global(li)  { margin-bottom: 1px; }
+	.nc-note-display :global(strong) { font-weight: 700; color: var(--text); }
+	.nc-note-display :global(br)  { display: block; margin-bottom: 2px; content: ''; }
+
+	/* ── Relationship buttons ────────────────────────────────────────────── */
+	.nc-rel-group {
+		display: flex;
+		gap:     3px;
+	}
+
+	.nc-rel-btn {
+		font-family:    var(--font-ui);
+		font-size:      0.58rem;
+		font-weight:    600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color:          var(--text-dimmer);
+		background:     transparent;
+		border:         1px solid var(--border);
+		border-radius:  10px;
+		padding:        2px 6px;
+		cursor:         pointer;
+		white-space:    nowrap;
+		transition:     background 0.12s, color 0.12s, border-color 0.12s;
+	}
+	.nc-rel-btn:hover { color: var(--text); border-color: var(--border-mid); }
 </style>

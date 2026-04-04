@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import type { CharacterFull } from '$lib/api.js';
-	import type { FoeDef, FoeQuantity, Expedition, Journey, Site, VowDifficulty, Community } from '$lib/types.js';
+	import type { FoeDef, FoeQuantity, Expedition, Journey, Site, VowDifficulty, Community, Npc } from '$lib/types.js';
 	import { EXPEDITION_MARK_TICKS, DELVE_THEMES, DELVE_DOMAINS } from '$lib/types.js';
 	import { characters as api } from '$lib/api.js';
 	import { findFoe, findFoeByName, loadFoes, FOE_RANKS } from '$lib/foeStore.svelte.js';
@@ -20,8 +20,13 @@
 		loadCommunities, getCommunities,
 		addCommunity, updateCommunity, removeCommunity,
 	} from '$lib/communityStore.svelte.js';
+	import {
+		loadNpcs, getNpcs,
+		addNpc, updateNpc, removeNpc,
+	} from '$lib/npcStore.svelte.js';
 	import CharacterSheet    from '$lib/components/CharacterSheet.svelte';
 	import CommunityCard     from '$lib/components/CommunityCard.svelte';
+	import NpcCard           from '$lib/components/NpcCard.svelte';
 	import LogPanel          from '$lib/components/LogPanel.svelte';
 	import StorytellerPanel  from '$lib/components/StorytellerPanel.svelte';
 	import GlobalContextBar  from '$lib/components/GlobalContextBar.svelte';
@@ -30,6 +35,7 @@
 	import NotesDialog       from '$lib/components/NotesDialog.svelte';
 	import MovesDialog       from '$lib/components/MovesDialog.svelte';
 	import FoePickerDialog   from '$lib/components/FoePickerDialog.svelte';
+	import ConfirmDialog     from '$lib/components/ConfirmDialog.svelte';
 	import ErrorBar          from '$lib/components/ErrorBar.svelte';
 	import FoeCard           from '$lib/components/FoeCard.svelte';
 	import JourneyCard       from '$lib/components/JourneyCard.svelte';
@@ -39,6 +45,7 @@
 	import { hydrateCharacter } from '$lib/character.js';
 	import { loadMoves } from '$lib/moveStore.svelte.js';
 	import { getAssets } from '$lib/assetStore.svelte.js';
+	import { loadOracles, getOracles, rollOracle } from '$lib/oracleStore.svelte.js';
 	import type { InspectionFactor, RitualInfo } from '$lib/preconditions.js';
 	import type { PreconditionContext } from '$lib/preconditions.js';
 	import { loadSessionState, saveSessionState } from '$lib/sessionStore.svelte.js';
@@ -51,6 +58,10 @@
 	import expedSvgUrl      from '$icons/Expeditions.svg?url';
 	import adventSvgUrl     from '$icons/Adventure.svg?url';
 	import villageSvgUrl    from '$icons/village.svg?url';
+	import iconMoves   from '$icons/person-running-solid.svg?raw';
+	import iconOracles from '$icons/eye-solid.svg?raw';
+	import iconDice    from '$icons/dice-d10-light.svg?raw';
+	import iconNotes   from '$icons/note-sticky-solid.svg?raw';
 
 	let { data }: { data: PageData } = $props();
 
@@ -134,6 +145,17 @@
 
 	// ── Communities ────────────────────────────────────────────────────────────
 	const communities = $derived(getCommunities());
+
+	// ── NPCs ───────────────────────────────────────────────────────────────────
+	const npcs = $derived(getNpcs());
+	let newlyCreatedNpcId = $state('');
+
+	// ── Random-generation dialogs for new community / NPC ─────────────────────
+	let communityRandomDialogRef = $state<{ open(): void; close(): void } | null>(null);
+	let npcRandomDialogRef       = $state<{ open(): void; close(): void } | null>(null);
+	// Pending objects filled before the dialog opens; committed in onconfirm/oncancel
+	let _pendingCommunity = $state<import('$lib/types.js').Community | null>(null);
+	let _pendingNpc       = $state<import('$lib/types.js').Npc | null>(null);
 
 	// ── Active tab (declared here so the session-persistence effect can track it)
 	type Tab = 'characters' | 'foes' | 'expeditions' | 'communities' | 'adventure';
@@ -304,7 +326,7 @@
 	onMount(async () => {
 		// Load characters, foe catalogue, global session data, and saved
 		// selections in parallel — all needed before we can validate IDs.
-		const [charResult,,,,,,, sessionResult] = await Promise.allSettled([
+		const [charResult,,,,,,,, sessionResult] = await Promise.allSettled([
 			api.list(),
 			loadFoes(),
 			loadEncounters(),
@@ -312,6 +334,7 @@
 			loadDelveData(),
 			loadMoves(),
 			loadCommunities(),
+			loadNpcs(),
 			loadSessionState(),
 		]);
 		if (charResult.status === 'fulfilled') {
@@ -502,7 +525,7 @@
 	// ── Community CRUD ─────────────────────────────────────────────────────────
 
 	async function handleAddCommunity() {
-		const c: Community = {
+		_pendingCommunity = {
 			id:                  crypto.randomUUID(),
 			name:                'New Community',
 			region:              '',
@@ -510,8 +533,24 @@
 			locationDescription: '',
 			trouble:             '',
 			notes:               '',
-			npcs:                [],
 		};
+		await loadOracles();
+		communityRandomDialogRef?.open();
+	}
+
+	async function _commitCommunity(random: boolean) {
+		if (!_pendingCommunity) return;
+		const c = _pendingCommunity;
+		_pendingCommunity = null;
+		if (random) {
+			const oracles = getOracles();
+			const nameVal = rollOracle('settlementName', oracles).value;
+			if (nameVal) c.name = nameVal;
+			c.region              = rollOracle('region', oracles).value;
+			c.location            = rollOracle('location', oracles).value;
+			c.locationDescription = rollOracle('locationDescriptor', oracles).value;
+			c.trouble             = rollOracle('settlementTrouble', oracles).value;
+		}
 		await addCommunity(c);
 		newlyCreatedId = c.id;
 		await tick();
@@ -524,6 +563,93 @@
 
 	async function handleCommunityDelete(id: string) {
 		await removeCommunity(id);
+	}
+
+	// ── NPC CRUD ───────────────────────────────────────────────────────────────
+
+	async function handleAddNpc() {
+		_pendingNpc = {
+			id:           crypto.randomUUID(),
+			name:         'New NPC',
+			role:         '',
+			goal:         '',
+			descriptor:   '',
+			relationship: 'neutral',
+			location:     '',
+			notes:        '',
+		};
+		await loadOracles();
+		npcRandomDialogRef?.open();
+	}
+
+	async function _commitNpc(random: boolean) {
+		if (!_pendingNpc) return;
+		const n = _pendingNpc;
+		_pendingNpc = null;
+		if (random) {
+			const oracles = getOracles();
+			n.role       = rollOracle('characterRole', oracles).value;
+			n.goal       = rollOracle('characterGoal', oracles).value;
+			n.descriptor = rollOracle('characterDescriptor', oracles).value;
+		}
+		await addNpc(n);
+		newlyCreatedNpcId = n.id;
+		await tick();
+		newlyCreatedNpcId = '';
+	}
+
+	async function handleNpcChange(n: Npc) {
+		await updateNpc(n);
+	}
+
+	async function handleNpcDelete(id: string) {
+		await removeNpc(id);
+	}
+
+	// ── Communities + NPCs Markdown export ────────────────────────────────────
+	function handleExportCommunities() {
+		const now    = new Date();
+		const stamp  = `${now.getFullYear()}-`
+			+ String(now.getMonth() + 1).padStart(2, '0') + '-'
+			+ String(now.getDate()).padStart(2, '0');
+		const lines: string[] = [`# Communities & NPCs\n`, `*Exported ${stamp}*\n`];
+
+		if (communities.length > 0) {
+			lines.push('## Communities\n');
+			for (const c of communities) {
+				lines.push(`### ${c.name}`);
+				if (c.region)              lines.push(`**Region:** ${c.region}`);
+				if (c.location)            lines.push(`**Location:** ${c.location}`);
+				if (c.locationDescription) lines.push(`**Description:** ${c.locationDescription}`);
+				if (c.trouble)             lines.push(`**Trouble:** ${c.trouble}`);
+				if (c.notes?.trim())       lines.push(`\n${c.notes.trim()}`);
+				lines.push('');
+			}
+		}
+		if (npcs.length > 0) {
+			lines.push('## NPCs\n');
+			for (const n of npcs) {
+				lines.push(`### ${n.name}`);
+				if (n.role)                              lines.push(`**Role:** ${n.role}`);
+				if (n.goal)                              lines.push(`**Goal:** ${n.goal}`);
+				if (n.descriptor)                        lines.push(`**Descriptor:** ${n.descriptor}`);
+				if (n.location)                          lines.push(`**Location:** ${n.location}`);
+				if (n.relationship && n.relationship !== 'neutral') lines.push(`**Relationship:** ${n.relationship}`);
+				if (n.notes?.trim())                     lines.push(`\n${n.notes.trim()}`);
+				lines.push('');
+			}
+		}
+
+		const md  = lines.join('\n');
+		const blob = new Blob([md], { type: 'text/markdown' });
+		const url  = URL.createObjectURL(blob);
+		const a    = document.createElement('a');
+		a.href     = url;
+		a.download = `communities-${stamp}.md`;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
 	}
 
 	// ── Phase 2: Interactive log link handlers ─────────────────────────────
@@ -629,6 +755,37 @@
 <!-- Foe picker dialog (always mounted; opened by + New Foe button in Foes tab) -->
 <FoePickerDialog bind:this={foePickerRef} onSelect={handleFoeSelected} />
 
+<!-- Random-generation prompts for new community / NPC -->
+<ConfirmDialog
+	bind:this={communityRandomDialogRef}
+	title="New Community"
+	confirmLabel="Generate Randomly"
+	confirmClass="btn-primary"
+	cancelLabel="Create Manually"
+	accentColor="var(--color-momentum)"
+	onconfirm={() => _commitCommunity(true)}
+	oncancel={() => _commitCommunity(false)}
+>
+	<p style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 12px;">
+		Generate fields randomly using oracles, or create the community manually?
+	</p>
+</ConfirmDialog>
+
+<ConfirmDialog
+	bind:this={npcRandomDialogRef}
+	title="New NPC"
+	confirmLabel="Generate Randomly"
+	confirmClass="btn-primary"
+	cancelLabel="Create Manually"
+	accentColor="var(--color-momentum)"
+	onconfirm={() => _commitNpc(true)}
+	oncancel={() => _commitNpc(false)}
+>
+	<p style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 12px;">
+		Generate fields randomly using oracles, or create the NPC manually?
+	</p>
+</ConfirmDialog>
+
 
 <!-- ===== Content pane ===== -->
 <div class="page-layout">
@@ -696,7 +853,7 @@
 							class="btn btn-primary"
 							onclick={addCharacter}
 							disabled={creating}
-						>{creating ? 'Creating…' : '+ New Character'}</button>
+						>{creating ? 'Creating…' : '+ Character'}</button>
 					</div>
 				</div>
 
@@ -710,7 +867,7 @@
 					<div class="empty-tab">
 						<img class="empty-tab-img" src={charactersSvgUrl} alt="">
 						<span class="empty-tab-title">No Characters Yet</span>
-						<span class="empty-tab-sub">Click <strong>+ New Character</strong> to create your first character.</span>
+						<span class="empty-tab-sub">Click <strong>+ Character</strong> to create your first character.</span>
 					</div>
 				{:else}
 					<div class="char-list char-list--characters">
@@ -744,7 +901,7 @@
 						<button
 							class="btn btn-primary"
 							onclick={() => foePickerRef?.open()}
-						>+ New Foe</button>
+						>+ Foe</button>
 					</div>
 				</div>
 
@@ -752,7 +909,7 @@
 					<div class="empty-tab">
 						<img class="empty-tab-img" src={foesSvgUrl} alt="">
 						<span class="empty-tab-title">No Foes Tracked</span>
-						<span class="empty-tab-sub">Click <strong>+ New Foe</strong> to create your first foe.</span>
+						<span class="empty-tab-sub">Click <strong>+ Foe</strong> to create your first foe.</span>
 					</div>
 				{:else}
 					<div class="char-list char-list--foes">
@@ -785,11 +942,11 @@
 						<button
 							class="btn btn-primary"
 							onclick={handleAddJourney}
-						>+ New Journey</button>
+						>+ Journey</button>
 						<button
 							class="btn btn-primary"
 							onclick={handleAddSite}
-						>+ New Site</button>
+						>+ Site</button>
 					</div>
 				</div>
 
@@ -834,35 +991,85 @@
 				<div class="char-toolbar">
 					<div class="char-toolbar-actions">
 						<button
+							class="btn icon-btn"
+							onclick={handleExportCommunities}
+							title="Export communities and NPCs as Markdown"
+							aria-label="Export communities and NPCs as Markdown"
+							disabled={communities.length === 0 && npcs.length === 0}
+						>{@html fileExportSvg} Export</button>
+						<button
+							class="btn icon-btn"
+							onclick={() => oraclesDialogRef?.open()}
+							title="Browse and roll oracles"
+							aria-label="Browse and roll oracles"
+						>{@html iconOracles} Ask</button>
+						<button
 							class="btn btn-primary"
 							onclick={handleAddCommunity}
-						>+ New Community</button>
+						>+ Community</button>
+						<button
+							class="btn btn-primary"
+							onclick={handleAddNpc}
+						>+ NPC</button>
 					</div>
 				</div>
 
-				{#if communities.length === 0}
+				{#if communities.length === 0 && npcs.length === 0}
 					<div class="empty-tab">
 						<img class="empty-tab-img" src={villageSvgUrl} alt="">
-						<span class="empty-tab-title">No Communities Yet</span>
-						<span class="empty-tab-sub">Click <strong>+ New Community</strong> to track a settlement, region, or NPC group.</span>
+						<span class="empty-tab-title">No Communities or NPCs Yet</span>
+						<span class="empty-tab-sub">Click <strong>+ Community</strong> to track a settlement or <strong>+ NPC</strong> to track a person.</span>
 					</div>
 				{:else}
-					<div class="char-list char-list--communities">
-						{#each communities as community (community.id)}
-							<div class="char-card">
-								<CommunityCard
-									{community}
-									onChange={handleCommunityChange}
-									onDelete={() => handleCommunityDelete(community.id)}
-									onOracleClick={(key, onFill) => oraclesDialogRef?.open(key, onFill)}
-									focusName={community.id === newlyCreatedId}
-								/>
-							</div>
-						{/each}
-					</div>
+					{#if communities.length > 0}
+						<div class="char-list char-list--communities">
+							{#each communities as community (community.id)}
+								<div class="char-card">
+									<CommunityCard
+										{community}
+										onChange={handleCommunityChange}
+										onDelete={() => handleCommunityDelete(community.id)}
+										focusName={community.id === newlyCreatedId}
+									/>
+								</div>
+							{/each}
+						</div>
+					{/if}
+					{#if npcs.length > 0}
+						<div class="char-list char-list--npcs">
+							{#each npcs as npc (npc.id)}
+								<div class="char-card">
+									<NpcCard
+										{npc}
+										onChange={handleNpcChange}
+										onDelete={() => handleNpcDelete(npc.id)}
+										focusName={npc.id === newlyCreatedNpcId}
+									/>
+								</div>
+							{/each}
+						</div>
+					{/if}
 				{/if}
 
 			{:else if activeTab === 'adventure'}
+				<div class="adventure-wrapper">
+
+				<!-- Action toolbar -->
+				<div class="adventure-action-toolbar">
+					<button class="btn btn-primary act-btn" onclick={() => movesDialogRef?.open()} title="Browse and roll moves">
+						<span class="act-icon">{@html iconMoves}</span><span class="act-label">Move</span>
+					</button>
+					<button class="btn btn-primary act-btn" onclick={() => oraclesDialogRef?.open()} title="Browse and roll oracles">
+						<span class="act-icon">{@html iconOracles}</span><span class="act-label">Ask</span>
+					</button>
+					<button class="btn btn-primary act-btn" onclick={() => diceRollerRef?.open()} title="Roll dice">
+						<span class="act-icon">{@html iconDice}</span><span class="act-label">Roll</span>
+					</button>
+					<button class="btn btn-primary act-btn" onclick={() => notesDialogRef?.open()} title="Add a session note">
+						<span class="act-icon">{@html iconNotes}</span><span class="act-label">Note</span>
+					</button>
+				</div>
+
 				<div class="adventure-layout">
 
 					<!-- GCB column -->
@@ -881,10 +1088,6 @@
 							onExpeditionSelect={(id) => (activeExpeditionId = id)}
 							onFoeProgress={handleEncounterChange}
 							onExpeditionProgress={handleExpeditionChange}
-							onDiceClick={() => diceRollerRef?.open()}
-							onOraclesClick={() => oraclesDialogRef?.open()}
-							onMovesClick={() => movesDialogRef?.open()}
-							onNotesClick={() => notesDialogRef?.open()}
 							onInitiativeClick={(next) => { if (activeCharId) { if (next === 0) delete initiativeMap[activeCharId]; else initiativeMap[activeCharId] = next; initiativeMap = { ...initiativeMap }; } }}
 						/>
 					</div>
@@ -932,6 +1135,7 @@
 					</div>
 
 				</div>
+				</div><!-- end adventure-wrapper -->
 			{/if}
 
 		</div>
@@ -1004,6 +1208,55 @@
 	/* ============================================================
 	   Adventure tab layout — same 2-tile grid as other tabs
 	   ============================================================ */
+	.adventure-wrapper {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.adventure-action-toolbar {
+		display: flex;
+		justify-content: flex-end;
+		gap: 0.4rem;
+		padding-top: 0.75rem;
+		padding-bottom: 0.75rem;
+		border-bottom: 1px solid var(--border);
+		margin-top: -0.75rem;
+		position: sticky;
+		top: 93px; /* app-nav (52px) + tab-bar (41px) */
+		background: var(--bg-page);
+		z-index: 30;
+	}
+
+	.act-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.35rem;
+		white-space: nowrap;
+		overflow: hidden;
+	}
+
+	.act-icon {
+		display: inline-flex;
+		width: 14px;
+		height: 14px;
+		flex-shrink: 0;
+	}
+
+	.act-icon :global(svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
+	}
+
+	.act-label {
+		font-size: 0.72rem;
+		font-weight: 600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+	}
+
 	.adventure-layout {
 		display: grid;
 		grid-template-columns: 1fr;
@@ -1043,9 +1296,15 @@
 		align-items: center;
 		justify-content: flex-end;
 		gap: 8px;
+		padding-top: 0.75rem;
 		padding-bottom: 0.75rem;
 		border-bottom: 1px solid var(--border);
+		margin-top: -0.75rem;
 		margin-bottom: 0.75rem;
+		position: sticky;
+		top: 93px; /* app-nav (52px) + tab-bar (41px) */
+		background: var(--bg-page);
+		z-index: 30;
 	}
 
 	.char-toolbar-actions {
@@ -1058,9 +1317,11 @@
 	.adventure-log .char-toolbar {
 		padding: 10px 14px;
 		padding-bottom: 10px;
+		margin-top: 0;
 		margin-bottom: 0;
 		background: var(--bg-inset);
 		min-height: 54px;
+		position: static;
 	}
 
 	.log-panel-title {
@@ -1130,6 +1391,11 @@
 		.char-list--expeditions {
 			grid-template-columns: repeat(2, 1fr);
 		}
+	}
+
+	/* Gap between community list and NPC list */
+	.char-list--communities + .char-list--npcs {
+		margin-top: 1rem;
 	}
 
 	/* Communities: 2 per row on ≥768px, 3 per row on ≥1200px */

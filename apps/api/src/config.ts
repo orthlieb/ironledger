@@ -67,6 +67,7 @@ const schema = z.object({
   MAX_ENCOUNTERS_PER_USER:   z.coerce.number().int().positive().default(100),
   MAX_EXPEDITIONS_PER_USER:  z.coerce.number().int().positive().default(50),
   MAX_COMMUNITIES_PER_USER:  z.coerce.number().int().positive().default(100),
+  MAX_NPCS_PER_USER:         z.coerce.number().int().positive().default(200),
 });
 
 // ---------------------------------------------------------------------------

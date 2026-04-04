@@ -16,22 +16,24 @@
 
 	let {
 		title,
-		accentColor = 'var(--color-danger)',
+		accentColor  = 'var(--color-danger)',
 		confirmLabel = 'Confirm',
+		confirmClass = 'btn-danger',
 		cancelLabel  = 'Cancel',
 		dialogClass  = '',
 		onconfirm,
 		oncancel,
 		children,
 	}: {
-		title:         string;
-		accentColor?:  string;
-		confirmLabel?: string;
-		cancelLabel?:  string;
-		dialogClass?:  string;
-		onconfirm:     () => void;
-		oncancel?:     () => void;
-		children?:     Snippet;
+		title:          string;
+		accentColor?:   string;
+		confirmLabel?:  string;
+		confirmClass?:  string;
+		cancelLabel?:   string;
+		dialogClass?:   string;
+		onconfirm:      () => void;
+		oncancel?:      () => void;
+		children?:      Snippet;
 	} = $props();
 
 	let dialogEl = $state<HTMLDialogElement | null>(null);
@@ -98,14 +100,15 @@
 >
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="cm-drag-handle" onmousedown={startDrag}>
-		<span class="cm-title">{title}</span>
 		<span class="drag-grip" aria-hidden="true">⠿</span>
+		<span class="cm-title">{title}</span>
+		<button class="cm-close-btn" onclick={handleCancel} onmousedown={(e) => e.stopPropagation()} aria-label="Close">✕</button>
 	</div>
 	<div class="cm-body">
 		{@render children?.()}
 		<div class="cm-actions">
 			<button class="btn" onclick={handleCancel}>{cancelLabel}</button>
-			<button class="btn btn-danger" onclick={handleConfirm}>{confirmLabel}</button>
+			<button class="btn {confirmClass}" onclick={handleConfirm}>{confirmLabel}</button>
 		</div>
 	</div>
 </dialog>
@@ -138,7 +141,7 @@
 	.cm-drag-handle {
 		display:         flex;
 		align-items:     center;
-		justify-content: space-between;
+		gap:             8px;
 		padding:         10px 14px 9px;
 		border-bottom:   1px solid color-mix(in srgb, var(--accent) 25%, transparent);
 		cursor:          grab;
@@ -148,6 +151,14 @@
 	}
 	.cm-drag-handle:active { cursor: grabbing; }
 
+	.drag-grip {
+		font-size:   1rem;
+		color:       var(--text-dimmer);
+		line-height: 1;
+		opacity:     0.6;
+		flex-shrink: 0;
+	}
+
 	.cm-title {
 		font-family:    var(--font-display);
 		font-size:      0.78rem;
@@ -155,13 +166,25 @@
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
 		color:          var(--accent);
+		flex:           1;
 	}
 
-	.drag-grip {
-		font-size:  1rem;
-		color:      var(--text-dimmer);
+	.cm-close-btn {
+		all:         unset;
+		cursor:      pointer;
 		line-height: 1;
-		opacity:    0.6;
+		font-size:   0.85rem;
+		color:       var(--text-dimmer);
+		opacity:     0.6;
+		padding:     2px 4px;
+		border-radius: 3px;
+		flex-shrink: 0;
+		transition:  opacity 0.15s, background 0.15s;
+	}
+	.cm-close-btn:hover {
+		opacity:    1;
+		background: color-mix(in srgb, var(--accent) 15%, transparent);
+		color:      var(--accent);
 	}
 
 	/* ---- Body ---- */

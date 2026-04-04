@@ -7,9 +7,27 @@
  *   503 { status: 'degraded', db: 'error', redis: 'ok' }
  */
 
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import type { FastifyInstance } from 'fastify';
 import { checkDbHealth } from '../db/index.js';
 import { redis } from '../server.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const STATIC_DIR = join(__dirname, '../static');
+
+function loadImage(filename: string): string {
+  try {
+    const data = readFileSync(join(STATIC_DIR, filename));
+    return `data:image/webp;base64,${data.toString('base64')}`;
+  } catch {
+    return '';
+  }
+}
+
+const IMG_WORKING = loadImage('server-working.webp');
+const IMG_DOWN    = loadImage('server-down.webp');
 
 // Uptime tracked from server start
 const START_TIME = Date.now();
@@ -27,52 +45,18 @@ function formatUptime(ms: number): string {
 function statusPage(dbOk: boolean, redisOk: boolean, version: string): string {
   const healthy  = dbOk && redisOk;
   const uptime   = formatUptime(Date.now() - START_TIME);
-  const headline = healthy ? 'Strong Hit' : 'Miss';
+  const headline = healthy ? 'Strong Hit' : 'Miss. Pay the Price.';
   const flavour  = healthy
-    ? 'You rolled a 10. The Oracles confirm: all vows hold. No debilities. No shadows. Just clean JSON.'
-    : 'The dice have spoken ill. One or more services have broken their vow. Check the logs.';
+    ? 'Enemies are vanquished. Sagas are being sung. The mead flows.'
+    : 'The casks are empty. The oracles are blinded. Strange beasts roam the land.';
   const accentOk  = '#E8A13B';   // amber gold
   const accentBad = '#ef4444';   // red
   const accent    = healthy ? accentOk : accentBad;
 
-  // d10 die SVG — pentagon body, "10" face value
-  const die = `
-<svg viewBox="0 0 120 120" width="120" height="120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-  <!-- Drop shadow -->
-  <defs>
-    <filter id="glow">
-      <feGaussianBlur stdDeviation="3" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>
-  </defs>
-  <!-- Pentagon body -->
-  <polygon
-    points="60,8 112,44 92,104 28,104 8,44"
-    fill="#1a1a1a"
-    stroke="${accent}"
-    stroke-width="2.5"
-    filter="url(#glow)"
-  />
-  <!-- Edge highlights -->
-  <polygon
-    points="60,8 112,44 92,104 28,104 8,44"
-    fill="none"
-    stroke="${healthy ? '#ffffff' : '#ff6666'}"
-    stroke-width="0.5"
-    opacity="0.15"
-  />
-  <!-- Face value -->
-  <text
-    x="60" y="67"
-    text-anchor="middle"
-    dominant-baseline="middle"
-    font-family="Georgia, serif"
-    font-size="${healthy ? '36' : '30'}"
-    font-weight="bold"
-    fill="${accent}"
-    filter="url(#glow)"
-  >${healthy ? '10' : '—'}</text>
-</svg>`;
+  const imgSrc = healthy ? IMG_WORKING : IMG_DOWN;
+  const image  = imgSrc
+    ? `<img src="${imgSrc}" alt="${headline}" style="width:100%;height:auto;display:block;">`
+    : '';
 
   function indicator(ok: boolean, label: string): string {
     const color = ok ? '#34d399' : '#ef4444';
@@ -114,9 +98,9 @@ function statusPage(dbOk: boolean, redisOk: boolean, version: string): string {
       box-shadow: 0 24px 64px rgba(0,0,0,0.6);
     }
     .die-wrap {
-      margin-bottom: 1.5rem;
-      display: flex;
-      justify-content: center;
+      margin: -2.5rem -3rem 1.5rem -3rem;
+      overflow: hidden;
+      border-radius: 12px 12px 0 0;
     }
     .headline {
       font-family: Georgia, 'Times New Roman', serif;
@@ -171,19 +155,13 @@ function statusPage(dbOk: boolean, redisOk: boolean, version: string): string {
 </head>
 <body>
   <div class="card">
-    <div class="die-wrap">${die}</div>
+    <div class="die-wrap">${image}</div>
     <div class="app-name">Iron Ledger API</div>
     <div class="headline">${headline}</div>
     <p class="flavour">${flavour}</p>
-    <div class="stats">
-      ${indicator(dbOk,    'Database (PostgreSQL)')}
-      <div class="stats-divider"></div>
-      ${indicator(redisOk, 'Cache (Redis)')}
-    </div>
     <div class="meta">
       <div>v<span>${version}</span></div>
-      <div>up <span>${uptime}</span></div>
-      <div><a href="/health" style="color:#444;text-decoration:none;">JSON ↗</a></div>
+      ${healthy ? `<div>up <span>${uptime}</span></div>` : ''}
     </div>
   </div>
 </body>

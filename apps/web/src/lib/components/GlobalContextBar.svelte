@@ -477,13 +477,15 @@
 
 	</div>
 
-	<!-- ===== Action buttons column ===== -->
+	<!-- ===== Action buttons column (hidden in stacked/Adventure mode) ===== -->
+	{#if !stacked}
 	<div class="gc-actions">
 		<button class="btn btn-primary gc-action-btn" onclick={() => onMovesClick?.()} title="Browse and roll moves"><span class="gc-action-icon">{@html iconMoves}</span><span class="gc-btn-label">Make a Move</span></button>
 		<button class="btn btn-primary gc-action-btn" onclick={() => onOraclesClick?.()} title="Browse and roll oracles"><span class="gc-action-icon">{@html iconOracles}</span><span class="gc-btn-label">Ask an Oracle</span></button>
 		<button class="btn btn-primary gc-action-btn" onclick={onDiceClick} disabled={!onDiceClick} title="Roll dice"><span class="gc-action-icon">{@html iconDice}</span><span class="gc-btn-label">Roll Dice</span></button>
 		<button class="btn btn-primary gc-action-btn" onclick={() => onNotesClick?.()} title="Add a session note"><span class="gc-action-icon">{@html iconNotes}</span><span class="gc-btn-label">Add a Note</span></button>
 	</div>
+	{/if}
 
 	</div>
 

@@ -86,7 +86,8 @@ export const characters = pgTable('characters', {
 // One row per user. Stores global (non-character) game state as JSONB:
 //   • encounters    — active foe encounters
 //   • expeditions   — active journey/site expeditions
-//   • communities   — regions + NPC cards
+//   • communities   — region/settlement cards
+//   • npcs          — standalone NPC cards
 //
 // Upserted on every write; the row is created automatically on first access.
 // ---------------------------------------------------------------------------
@@ -95,6 +96,7 @@ export const userData = pgTable('user_data', {
   encounters:   jsonb('encounters').notNull().default([]),
   expeditions:  jsonb('expeditions').notNull().default([]),
   communities:  jsonb('communities').notNull().default([]),
+  npcs:         jsonb('npcs').notNull().default([]),
   sessionState: jsonb('session_state').notNull().default({}),
   updatedAt:    timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });

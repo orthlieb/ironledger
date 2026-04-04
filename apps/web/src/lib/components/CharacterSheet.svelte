@@ -20,6 +20,7 @@
 	import { characters } from '$lib/api.js';
 
 	import trashSvg      from '$icons/trash-solid-full.svg?raw';
+	import hornedHelmSvg from '$icons/horned-helm.svg?raw';
 	import ErrorBar      from '$lib/components/ErrorBar.svelte';
 	import fileExportSvg from '$icons/file-export-solid-full.svg?raw';
 	import swordSvg      from '$icons/sword-solid-full.svg?raw';
@@ -38,6 +39,7 @@
 	import { getActiveDiceCtx, setActiveDiceCtx } from '$lib/diceContext.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 
+	import ConfirmDialog     from './ConfirmDialog.svelte';
 	import StatControl       from './StatControl.svelte';
 	import ResourceTile      from './ResourceTile.svelte';
 	import MomentumTile      from './MomentumTile.svelte';
@@ -79,7 +81,7 @@
 	// untrack() suppresses the "captured initial value" rune warning correctly.
 	let data = $state(untrack(() => hydrateCharacter(character.data)));
 	let collapsed = $state(false);
-	let deleteDialogEl = $state<HTMLDialogElement | null>(null);
+	let deleteDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let saveStatus = $state<'idle' | 'saving' | 'error'>('idle');
 
 	// Publish live data to the global dice context whenever this sheet is active.
@@ -448,7 +450,7 @@
 			{#if data.portrait}
 				<img src={data.portrait} alt="Portrait of {data.name}" class="portrait-img" />
 			{:else}
-				<div class="portrait-placeholder">👤</div>
+				<div class="portrait-placeholder">{@html hornedHelmSvg}</div>
 			{/if}
 			<input
 				type="file"
@@ -509,7 +511,7 @@
 		{#if onDelete}
 			<button
 				class="btn btn-danger btn-icon icon-btn"
-				onclick={() => deleteDialogEl?.showModal()}
+				onclick={() => deleteDialogRef?.open()}
 				use:tooltip={"Delete character"}
 				aria-label="Delete character"
 			>{@html trashSvg}</button>
@@ -518,18 +520,14 @@
 
 	<!-- Delete confirmation dialog -->
 	{#if onDelete}
-		<dialog bind:this={deleteDialogEl} class="del-dialog" oncancel={() => deleteDialogEl?.close()}>
-			<div class="del-header">
-				<span class="del-title">Delete Character</span>
-			</div>
-			<div class="del-body">
-				<p>Permanently delete <strong>{data.name}</strong>? This cannot be undone.</p>
-			</div>
-			<div class="del-footer">
-				<button class="btn" onclick={() => deleteDialogEl?.close()}>Cancel</button>
-				<button class="btn btn-danger" onclick={() => { deleteDialogEl?.close(); onDelete!(); }}>Delete</button>
-			</div>
-		</dialog>
+		<ConfirmDialog
+			bind:this={deleteDialogRef}
+			title="Delete Character"
+			confirmLabel="Delete"
+			onconfirm={() => onDelete!()}
+		>
+			<p>Permanently delete <strong>{data.name}</strong>? This cannot be undone.</p>
+		</ConfirmDialog>
 	{/if}
 
 	<!-- Body (collapsible) ------------------------------------- -->
@@ -882,16 +880,21 @@
 	}
 
 	.portrait-placeholder {
-		width: 38px;
-		height: 38px;
-		border-radius: 50%;
-		border: 1px dashed var(--border-mid);
-		display: flex;
-		align-items: center;
+		width:           38px;
+		height:          38px;
+		border-radius:   50%;
+		border:          1px dashed var(--border-mid);
+		display:         flex;
+		align-items:     center;
 		justify-content: center;
-		font-size: 1.1rem;
-		color: var(--text-dimmer);
-		background: var(--bg-control);
+		color:           var(--text-dimmer);
+		background:      var(--bg-control);
+	}
+	.portrait-placeholder :global(svg) {
+		width:   20px;
+		height:  20px;
+		fill:    currentColor;
+		opacity: 0.5;
 	}
 
 	.portrait-input {

@@ -310,11 +310,12 @@ export const DEFAULT_CHARACTER: CharacterData = {
 };
 
 // ---------------------------------------------------------------------------
-// Community types (regions + NPCs)
+// Community types (regions + standalone NPCs)
 // ---------------------------------------------------------------------------
 
 export type NpcRelationship = 'neutral' | 'bond' | 'foe';
 
+/** @deprecated Legacy NPC type embedded in communities. Kept for data migration only. */
 export interface CommunityNpc {
 	id:           string;
 	name:         string;
@@ -333,7 +334,19 @@ export interface Community {
 	locationDescription: string;
 	trouble:             string;
 	notes:               string;
-	npcs:                CommunityNpc[];
+	imageUrl?:           string;   // base64 JPEG data URL
+}
+
+export interface Npc {
+	id:           string;
+	name:         string;
+	role:         string;
+	goal:         string;
+	descriptor:   string;
+	relationship: NpcRelationship;
+	location:     string;
+	notes:        string;
+	imageUrl?:    string;   // base64 JPEG data URL
 }
 
 // ---------------------------------------------------------------------------
