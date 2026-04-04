@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import type { CharacterFull } from '$lib/api.js';
-	import type { FoeDef, FoeQuantity, Expedition, Journey, Site, VowDifficulty } from '$lib/types.js';
+	import type { FoeDef, FoeQuantity, Expedition, Journey, Site, VowDifficulty, Community } from '$lib/types.js';
 	import { EXPEDITION_MARK_TICKS, DELVE_THEMES, DELVE_DOMAINS } from '$lib/types.js';
 	import { characters as api } from '$lib/api.js';
 	import { findFoe, findFoeByName, loadFoes, FOE_RANKS } from '$lib/foeStore.svelte.js';
@@ -16,7 +16,12 @@
 		loadExpeditions, getExpeditions,
 		addExpedition, updateExpedition, removeExpedition,
 	} from '$lib/expeditionStore.svelte.js';
+	import {
+		loadCommunities, getCommunities,
+		addCommunity, updateCommunity, removeCommunity,
+	} from '$lib/communityStore.svelte.js';
 	import CharacterSheet    from '$lib/components/CharacterSheet.svelte';
+	import CommunityCard     from '$lib/components/CommunityCard.svelte';
 	import LogPanel          from '$lib/components/LogPanel.svelte';
 	import StorytellerPanel  from '$lib/components/StorytellerPanel.svelte';
 	import GlobalContextBar  from '$lib/components/GlobalContextBar.svelte';
@@ -45,6 +50,7 @@
 	import foesSvgUrl       from '$icons/Foes.svg?url';
 	import expedSvgUrl      from '$icons/Expeditions.svg?url';
 	import adventSvgUrl     from '$icons/Adventure.svg?url';
+	import villageSvgUrl    from '$icons/village.svg?url';
 
 	let { data }: { data: PageData } = $props();
 
@@ -126,8 +132,11 @@
 	let initiativeMap = $state<Record<string, number>>({});
 	const initiative = $derived(activeCharId ? (initiativeMap[activeCharId] ?? 0) : 0);
 
+	// ── Communities ────────────────────────────────────────────────────────────
+	const communities = $derived(getCommunities());
+
 	// ── Active tab (declared here so the session-persistence effect can track it)
-	type Tab = 'characters' | 'foes' | 'expeditions' | 'adventure';
+	type Tab = 'characters' | 'foes' | 'expeditions' | 'communities' | 'adventure';
 	let activeTab = $state<Tab>('characters');
 
 	// ── Session persistence ────────────────────────────────────────────────────
@@ -295,13 +304,14 @@
 	onMount(async () => {
 		// Load characters, foe catalogue, global session data, and saved
 		// selections in parallel — all needed before we can validate IDs.
-		const [charResult,,,,,, sessionResult] = await Promise.allSettled([
+		const [charResult,,,,,,, sessionResult] = await Promise.allSettled([
 			api.list(),
 			loadFoes(),
 			loadEncounters(),
 			loadExpeditions(),
 			loadDelveData(),
 			loadMoves(),
+			loadCommunities(),
 			loadSessionState(),
 		]);
 		if (charResult.status === 'fulfilled') {
@@ -320,7 +330,7 @@
 				activeExpeditionId = saved.expeditionId;
 			if (saved.initiativeMap && Object.keys(saved.initiativeMap).length > 0)
 				initiativeMap = saved.initiativeMap;
-			const validTabs: Tab[] = ['characters', 'foes', 'expeditions', 'adventure'];
+			const validTabs: Tab[] = ['characters', 'foes', 'expeditions', 'communities', 'adventure'];
 			if (saved.activeTab && validTabs.includes(saved.activeTab as Tab))
 				activeTab = saved.activeTab as Tab;
 		}
@@ -489,6 +499,33 @@
 		handleFoeSelected(foeDef, 'solo', foeDef.rank);
 	}
 
+	// ── Community CRUD ─────────────────────────────────────────────────────────
+
+	async function handleAddCommunity() {
+		const c: Community = {
+			id:                  crypto.randomUUID(),
+			name:                'New Community',
+			region:              '',
+			location:            '',
+			locationDescription: '',
+			trouble:             '',
+			notes:               '',
+			npcs:                [],
+		};
+		await addCommunity(c);
+		newlyCreatedId = c.id;
+		await tick();
+		newlyCreatedId = '';
+	}
+
+	async function handleCommunityChange(c: Community) {
+		await updateCommunity(c);
+	}
+
+	async function handleCommunityDelete(id: string) {
+		await removeCommunity(id);
+	}
+
 	// ── Phase 2: Interactive log link handlers ─────────────────────────────
 	function handleProgressLink(track: string, value: number) {
 		if (track === 'combat') {
@@ -623,6 +660,13 @@
 					data-tab="expeditions" title="Expeditions">
 					<img class="tab-icon" src={expedSvgUrl} alt="" aria-hidden="true">
 					<span class="tab-label">Expeditions</span>
+				</button>
+
+				<button class="tab-btn" class:active={activeTab === 'communities'}
+					role="tab" aria-selected={activeTab === 'communities'}
+					data-tab="communities" title="Communities">
+					<img class="tab-icon" src={villageSvgUrl} alt="" aria-hidden="true">
+					<span class="tab-label">Communities</span>
 				</button>
 
 				<button class="tab-btn" class:active={activeTab === 'adventure'}
@@ -786,6 +830,37 @@
 						{/each}
 					</div>
 				{/if}
+			{:else if activeTab === 'communities'}
+				<div class="char-toolbar">
+					<div class="char-toolbar-actions">
+						<button
+							class="btn btn-primary"
+							onclick={handleAddCommunity}
+						>+ New Community</button>
+					</div>
+				</div>
+
+				{#if communities.length === 0}
+					<div class="empty-tab">
+						<img class="empty-tab-img" src={villageSvgUrl} alt="">
+						<span class="empty-tab-title">No Communities Yet</span>
+						<span class="empty-tab-sub">Click <strong>+ New Community</strong> to track a settlement, region, or NPC group.</span>
+					</div>
+				{:else}
+					<div class="char-list char-list--communities">
+						{#each communities as community (community.id)}
+							<div class="char-card">
+								<CommunityCard
+									{community}
+									onChange={handleCommunityChange}
+									onDelete={() => handleCommunityDelete(community.id)}
+									focusName={community.id === newlyCreatedId}
+								/>
+							</div>
+						{/each}
+					</div>
+				{/if}
+
 			{:else if activeTab === 'adventure'}
 				<div class="adventure-layout">
 
@@ -1053,6 +1128,18 @@
 		.char-list--characters,
 		.char-list--expeditions {
 			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+
+	/* Communities: 2 per row on ≥768px, 3 per row on ≥1200px */
+	@media (min-width: 768px) {
+		.char-list--communities {
+			grid-template-columns: repeat(2, 1fr);
+		}
+	}
+	@media (min-width: 1200px) {
+		.char-list--communities {
+			grid-template-columns: repeat(3, 1fr);
 		}
 	}
 

@@ -309,6 +309,35 @@ export const DEFAULT_CHARACTER: CharacterData = {
 	assets: [],
 };
 
+// ---------------------------------------------------------------------------
+// Community types (regions + NPCs)
+// ---------------------------------------------------------------------------
+
+export type NpcRelationship = 'neutral' | 'bond' | 'foe';
+
+export interface CommunityNpc {
+	id:           string;
+	name:         string;
+	role:         string;
+	goal:         string;
+	descriptor:   string;
+	relationship: NpcRelationship;
+	notes:        string;
+}
+
+export interface Community {
+	id:                  string;
+	name:                string;
+	region:              string;
+	location:            string;
+	locationDescription: string;
+	trouble:             string;
+	notes:               string;
+	npcs:                CommunityNpc[];
+}
+
+// ---------------------------------------------------------------------------
+
 // Ticks earned per Mark Progress action by difficulty
 export const VOW_MARK_TICKS: Record<VowDifficulty, number> = {
 	troublesome: 12,

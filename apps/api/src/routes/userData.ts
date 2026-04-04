@@ -1,10 +1,11 @@
 /**
  * User-data routes — global (non-character) game state.
  *
- * GET  /api/v1/session          → { encounters, expeditions }
+ * GET  /api/v1/session          → { encounters, expeditions, communities }
  * PUT  /api/v1/session          → replace entire payload
  * PATCH /api/v1/session/encounters  → replace encounters only
  * PATCH /api/v1/session/expeditions → replace expeditions only
+ * PATCH /api/v1/session/communities → replace communities only
  *
  * All routes require authentication.
  */
@@ -25,6 +26,10 @@ const patchEncountersBody = z.object({
 
 const patchExpeditionsBody = z.object({
   expeditions: z.array(z.record(z.unknown())),
+});
+
+const patchCommunitiesBody = z.object({
+  communities: z.array(z.record(z.unknown())),
 });
 
 const patchSessionStateBody = z.object({
@@ -84,6 +89,24 @@ export async function userDataRoutes(server: FastifyInstance): Promise<void> {
       });
     }
     const result = await ud.upsert(req.user!.id, { expeditions: parsed.data.expeditions }).catch(handleError(reply));
+    if (!result || reply.sent) return;
+    return reply.status(200).send(result);
+  });
+
+  // ── PATCH /session/communities ───────────────────────────────────────────
+  server.patch('/communities', async (req: FastifyRequest, reply: FastifyReply) => {
+    const parsed = patchCommunitiesBody.safeParse(req.body);
+    if (!parsed.success) {
+      return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: parsed.error.errors.map((e) => e.message).join(', ') });
+    }
+    if (parsed.data.communities.length > config.MAX_COMMUNITIES_PER_USER) {
+      return reply.status(422).send({
+        statusCode: 422,
+        error:      'Unprocessable Entity',
+        message:    `Community limit reached (max ${config.MAX_COMMUNITIES_PER_USER})`,
+      });
+    }
+    const result = await ud.upsert(req.user!.id, { communities: parsed.data.communities }).catch(handleError(reply));
     if (!result || reply.sent) return;
     return reply.status(200).send(result);
   });

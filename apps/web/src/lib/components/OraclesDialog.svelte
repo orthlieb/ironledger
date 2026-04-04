@@ -28,13 +28,15 @@
 	// ---------------------------------------------------------------------------
 	// Internal state
 	// ---------------------------------------------------------------------------
-	let dialogEl     = $state<HTMLDialogElement | null>(null);
-	let view         = $state<'picker' | 'detail'>('picker');
-	let selectedKey  = $state<string | null>(null);
-	let search       = $state('');
-	let activeGroups = $state(new Set<string>());
-	let rolling      = $state(false);
-	let filtersOpen  = $state(false);
+	let dialogEl       = $state<HTMLDialogElement | null>(null);
+	let view           = $state<'picker' | 'detail'>('picker');
+	let selectedKey    = $state<string | null>(null);
+	let search         = $state('');
+	let activeGroups   = $state(new Set<string>());
+	let rolling        = $state(false);
+	let filtersOpen    = $state(false);
+	/** True when the dialog was opened directly on a specific oracle key — hides Back button. */
+	let directLaunch   = $state(false);
 
 	// ---------------------------------------------------------------------------
 	// Derived
@@ -77,11 +79,13 @@
 	// ---------------------------------------------------------------------------
 	export function open(oracleKey?: string) {
 		if (oracleKey) {
-			selectedKey = oracleKey;
-			view        = 'detail';
+			selectedKey  = oracleKey;
+			view         = 'detail';
+			directLaunch = true;
 		} else {
-			view        = 'picker';
-			selectedKey = null;
+			view         = 'picker';
+			selectedKey  = null;
+			directLaunch = false;
 		}
 		search       = '';
 		activeGroups = new Set();
@@ -238,7 +242,9 @@
 
 	<!-- Header -->
 	<div class="od-header od-header--detail" use:draggable>
-		<button class="od-back-btn" onclick={() => (view = 'picker')}>← Back</button>
+		{#if !directLaunch}
+			<button class="od-back-btn" onclick={() => (view = 'picker')}>← Back</button>
+		{/if}
 		<span class="od-title od-title--detail">{selectedOracle.title}</span>
 	</div>
 

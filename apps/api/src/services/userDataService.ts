@@ -23,6 +23,7 @@ export interface SessionState {
 export interface UserDataPayload {
   encounters:   unknown[];
   expeditions:  unknown[];
+  communities:  unknown[];
   sessionState: SessionState;
 }
 
@@ -40,12 +41,13 @@ export async function get(userId: string): Promise<UserDataPayload> {
   });
 
   if (rows.length === 0) {
-    return { encounters: [], expeditions: [], sessionState: DEFAULT_SESSION_STATE };
+    return { encounters: [], expeditions: [], communities: [], sessionState: DEFAULT_SESSION_STATE };
   }
 
   return {
     encounters:   (rows[0]!.encounters  as unknown[]) ?? [],
     expeditions:  (rows[0]!.expeditions as unknown[]) ?? [],
+    communities:  (rows[0]!.communities as unknown[]) ?? [],
     sessionState: (rows[0]!.sessionState as SessionState) ?? DEFAULT_SESSION_STATE,
   };
 }
@@ -60,11 +62,12 @@ export async function upsert(
 ): Promise<UserDataPayload> {
   await withUserContext(userId, async (tx) => {
     await tx.execute(sql`
-      INSERT INTO user_data (user_id, encounters, expeditions, session_state, updated_at)
+      INSERT INTO user_data (user_id, encounters, expeditions, communities, session_state, updated_at)
       VALUES (
         ${userId}::uuid,
         ${JSON.stringify(patch.encounters   ?? [])}::jsonb,
         ${JSON.stringify(patch.expeditions  ?? [])}::jsonb,
+        ${JSON.stringify(patch.communities  ?? [])}::jsonb,
         ${JSON.stringify(patch.sessionState ?? {})}::jsonb,
         now()
       )
@@ -76,6 +79,10 @@ export async function upsert(
         expeditions   = COALESCE(
           CASE WHEN ${patch.expeditions !== undefined} THEN ${JSON.stringify(patch.expeditions ?? [])}::jsonb END,
           user_data.expeditions
+        ),
+        communities   = COALESCE(
+          CASE WHEN ${patch.communities !== undefined} THEN ${JSON.stringify(patch.communities ?? [])}::jsonb END,
+          user_data.communities
         ),
         session_state = COALESCE(
           CASE WHEN ${patch.sessionState !== undefined} THEN ${JSON.stringify(patch.sessionState ?? {})}::jsonb END,
