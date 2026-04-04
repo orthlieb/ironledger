@@ -7,6 +7,7 @@
 	 */
 
 	import type { Community, CommunityNpc, NpcRelationship } from '$lib/types.js';
+	import { renderNote } from '$lib/markdown.js';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 
 	import trashSvg from '$icons/trash-solid-full.svg?raw';
@@ -32,11 +33,18 @@
 	// ---------------------------------------------------------------------------
 	// Local UI state
 	// ---------------------------------------------------------------------------
-	let collapsed       = $state(false);
-	let deleteDialogRef = $state<{ open(): void; close(): void } | null>(null);
-	let editingName     = $state(false);
-	let nameInputEl     = $state<HTMLInputElement | null>(null);
-	let nameBeforeEdit  = '';
+	let collapsed             = $state(false);
+	let deleteDialogRef       = $state<{ open(): void; close(): void } | null>(null);
+	let editingName           = $state(false);
+	let nameInputEl           = $state<HTMLInputElement | null>(null);
+	let nameBeforeEdit        = '';
+	/** Which notes textarea is open: 'community' | npcId | null */
+	let editingNoteId         = $state<string | null>(null);
+	let noteTextareaEl        = $state<HTMLTextAreaElement | null>(null);
+
+	$effect(() => {
+		if (editingNoteId && noteTextareaEl) noteTextareaEl.focus();
+	});
 
 	$effect(() => {
 		if (editingName && nameInputEl) nameInputEl.select();
@@ -252,17 +260,37 @@
 					</div>
 				</div>
 
-				<!-- Notes (no oracle) -->
+				<!-- Notes (markdown, click-to-edit) -->
 				<div class="cc-field-row cc-field-row--full">
-					<label class="cc-label" for="cc-notes-{community.id}">Notes</label>
-					<textarea
-						id="cc-notes-{community.id}"
-						class="cc-textarea"
-						value={community.notes}
-						oninput={(e) => update({ notes: (e.target as HTMLTextAreaElement).value })}
-						placeholder="Notes…"
-						rows="3"
-					></textarea>
+					<label class="cc-label">Notes</label>
+					{#if editingNoteId === 'community'}
+						<textarea
+							bind:this={noteTextareaEl}
+							class="cc-textarea"
+							value={community.notes}
+							oninput={(e) => update({ notes: (e.target as HTMLTextAreaElement).value })}
+							onblur={() => (editingNoteId = null)}
+							placeholder="Notes… (**bold**, *italic*, # heading, - list)"
+							rows="3"
+						></textarea>
+					{:else}
+						<!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
+						<div
+							class="cc-note-display"
+							class:cc-note-display--empty={!community.notes?.trim()}
+							role="button"
+							tabindex="0"
+							title="Click to edit"
+							onclick={() => (editingNoteId = 'community')}
+							onkeydown={(e) => { if (e.key === 'Enter') editingNoteId = 'community'; }}
+						>
+							{#if community.notes?.trim()}
+								{@html renderNote(community.notes)}
+							{:else}
+								<span class="cc-note-placeholder">Notes… (**bold**, *italic*, # heading, - list)</span>
+							{/if}
+						</div>
+					{/if}
 				</div>
 
 			</div>
@@ -374,17 +402,37 @@
 										</div>
 									</div>
 
-									<!-- Notes (no oracle) -->
+									<!-- Notes (markdown, click-to-edit) -->
 									<div class="cc-field-row cc-field-row--full">
-										<label class="cc-label" for="cc-npcnotes-{npc.id}">Notes</label>
-										<textarea
-											id="cc-npcnotes-{npc.id}"
-											class="cc-textarea"
-											value={npc.notes}
-											oninput={(e) => updateNpc(npc.id, { notes: (e.target as HTMLTextAreaElement).value })}
-											placeholder="Notes about this NPC…"
-											rows="2"
-										></textarea>
+										<label class="cc-label">Notes</label>
+										{#if editingNoteId === npc.id}
+											<textarea
+												bind:this={noteTextareaEl}
+												class="cc-textarea"
+												value={npc.notes}
+												oninput={(e) => updateNpc(npc.id, { notes: (e.target as HTMLTextAreaElement).value })}
+												onblur={() => (editingNoteId = null)}
+												placeholder="Notes… (**bold**, *italic*, # heading, - list)"
+												rows="2"
+											></textarea>
+										{:else}
+											<!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
+											<div
+												class="cc-note-display"
+												class:cc-note-display--empty={!npc.notes?.trim()}
+												role="button"
+												tabindex="0"
+												title="Click to edit"
+												onclick={() => (editingNoteId = npc.id)}
+												onkeydown={(e) => { if (e.key === 'Enter') editingNoteId = npc.id; }}
+											>
+												{#if npc.notes?.trim()}
+													{@html renderNote(npc.notes)}
+												{:else}
+													<span class="cc-note-placeholder">Notes…</span>
+												{/if}
+											</div>
+										{/if}
 									</div>
 
 								</div>
@@ -560,6 +608,49 @@
 		width:         100%;
 	}
 	.cc-textarea:focus { border-color: var(--accent); }
+
+	/* ── Markdown note display (click-to-edit) ───────────────────────────────── */
+	.cc-note-display {
+		flex:          1;
+		font-family:   var(--font-ui);
+		font-size:     0.75rem;
+		line-height:   1.55;
+		background:    var(--input-bg);
+		border:        1px solid var(--border);
+		border-radius: 4px;
+		color:         var(--text);
+		padding:       4px 7px;
+		cursor:        text;
+		min-height:    54px;
+		width:         100%;
+		transition:    border-color 0.12s;
+	}
+	.cc-note-display:hover,
+	.cc-note-display:focus { border-color: var(--border-mid); outline: none; }
+	.cc-note-display--empty { min-height: 32px; }
+
+	.cc-note-placeholder {
+		font-style: italic;
+		color:      var(--text-dimmer);
+	}
+
+	/* Markdown elements inside notes */
+	.cc-note-display :global(p)           { margin: 0 0 2px; }
+	.cc-note-display :global(p:last-child){ margin-bottom: 0; }
+	.cc-note-display :global(h3),
+	.cc-note-display :global(h4),
+	.cc-note-display :global(h5) {
+		font-size:      0.73rem;
+		font-weight:    700;
+		letter-spacing: 0.04em;
+		color:          var(--text-accent);
+		margin:         4px 0 1px;
+	}
+	.cc-note-display :global(ul),
+	.cc-note-display :global(ol)  { margin: 1px 0; padding-left: 1.2em; }
+	.cc-note-display :global(li)  { margin-bottom: 1px; }
+	.cc-note-display :global(strong) { font-weight: 700; color: var(--text); }
+	.cc-note-display :global(br)  { display: block; margin-bottom: 2px; content: ''; }
 
 	/* ── Oracle button ───────────────────────────────────────────────── */
 	.cc-oracle-btn {
