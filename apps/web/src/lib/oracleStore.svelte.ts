@@ -34,6 +34,8 @@ export interface OracleRollResult {
 	roll:  number;
 	html:  string;
 	title: string;
+	/** Plain-text result value, suitable for auto-filling a text field. */
+	value: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -308,6 +310,7 @@ export function rollOracle(key: string, allOracles: OracleFile[]): OracleRollRes
 			roll:  0,
 			html:  '<div class="roll-line">Error: unknown oracle key.</div>',
 			title: key,
+			value: '',
 		};
 	}
 
@@ -329,7 +332,7 @@ export function rollOracle(key: string, allOracles: OracleFile[]): OracleRollRes
 			const html =
 				`<div class="roll-line">Class roll: d100 → ${classRes.roll}</div>` +
 				`<div><strong>${cv.className}</strong> (Social rank ${cv.socialRank}) — ${cv.description}</div>`;
-			return { roll: classRes.roll, html, title };
+			return { roll: classRes.roll, html, title, value: cv.className };
 		}
 
 		// All other classes need an animal aspect
@@ -344,7 +347,7 @@ export function rollOracle(key: string, allOracles: OracleFile[]): OracleRollRes
 				`<div class="roll-line">Animal roll: d100 → ${animalRes.roll}</div>` +
 				`<div>Animal aspect: <strong>${animalRes.value as string}</strong></div>` +
 				`<div><em>Features are all-encompassing — determine narratively with the player.</em></div>`;
-			return { roll: classRes.roll, html, title };
+			return { roll: classRes.roll, html, title, value: `${cv.className} (${animalRes.value as string})` };
 		}
 
 		// Determine feature count
@@ -384,7 +387,7 @@ export function rollOracle(key: string, allOracles: OracleFile[]): OracleRollRes
 			`<div class="roll-line">Feature count: ${countLine}</div>` +
 			(features.length > 0 ? `<ul>${featureItems}</ul>` : '');
 
-		return { roll: classRes.roll, html, title };
+		return { roll: classRes.roll, html, title, value: `${cv.className} (${animalRes.value as string})` };
 	}
 
 	// ── freeportDenizen ─────────────────────────────────────────────────────
@@ -396,7 +399,7 @@ export function rollOracle(key: string, allOracles: OracleFile[]): OracleRollRes
 			`<div><strong>${v.type}</strong></div>` +
 			`<div>${v.notes}</div>` +
 			`<div>Typical annual salary: ${v.salary} (Population: ${v.count})</div>`;
-		return { roll: res.roll, html, title };
+		return { roll: res.roll, html, title, value: v.type };
 	}
 
 	// ── settlementName — two-step subtable ──────────────────────────────────
@@ -409,7 +412,7 @@ export function rollOracle(key: string, allOracles: OracleFile[]): OracleRollRes
 			`<div><em>${cat.description}</em></div>` +
 			`<div class="roll-line">Name roll: d100 → ${subRes.roll}</div>` +
 			`<div>Name: <strong>${subRes.value as string}</strong></div>`;
-		return { roll: catRes.roll, html, title };
+		return { roll: catRes.roll, html, title, value: subRes.value as string };
 	}
 
 	// ── settlementNameQuick — two independent rolls ──────────────────────────
@@ -422,7 +425,7 @@ export function rollOracle(key: string, allOracles: OracleFile[]): OracleRollRes
 		const html =
 			`<div class="roll-line">Prefix roll: d100 → ${prefixRes.roll} | Suffix roll: d100 → ${suffixRes.roll}</div>` +
 			`<div>Settlement name: <strong>${name}</strong></div>`;
-		return { roll: prefixRes.roll, html, title };
+		return { roll: prefixRes.roll, html, title, value: name };
 	}
 
 	// ── namesOther — three parallel name fields ──────────────────────────────
@@ -432,13 +435,14 @@ export function rollOracle(key: string, allOracles: OracleFile[]): OracleRollRes
 		const html =
 			`<div class="roll-line">Roll: d100 → ${res.roll}</div>` +
 			`<div>Giants: ${v.giants} | Varou: ${v.varou} | Trolls: ${v.trolls}</div>`;
-		return { roll: res.roll, html, title };
+		return { roll: res.roll, html, title, value: v.giants };
 	}
 
 	// ── Default — single roll, string value ─────────────────────────────────
 	const res  = rollFromRangeTable(table);
+	const val  = typeof res.value === 'string' ? res.value : JSON.stringify(res.value);
 	const html =
 		`<div class="roll-line">Roll: d100 → ${res.roll}</div>` +
-		`<div>Result: <strong>${typeof res.value === 'string' ? res.value : JSON.stringify(res.value)}</strong></div>`;
-	return { roll: res.roll, html, title };
+		`<div>Result: <strong>${val}</strong></div>`;
+	return { roll: res.roll, html, title, value: val };
 }

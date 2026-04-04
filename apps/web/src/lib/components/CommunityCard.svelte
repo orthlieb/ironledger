@@ -2,17 +2,15 @@
 	/**
 	 * CommunityCard — collapsible card for a community/region with NPC list.
 	 *
-	 * Fields with oracle buttons: name, region, location, locationDescription, trouble.
-	 * NPC fields with oracle buttons: role, goal, descriptor.
-	 * All fields are user-editable; oracle fills as a starting point.
+	 * Oracle eye buttons open the OraclesDialog directly at the relevant oracle
+	 * (bypassing the picker). The dialog handles dice animation and logging.
 	 */
 
 	import type { Community, CommunityNpc, NpcRelationship } from '$lib/types.js';
-	import { getOracles, loadOracles, findOracle, rollFromRangeTable } from '$lib/oracleStore.svelte.js';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 
-	import trashSvg    from '$icons/trash-solid-full.svg?raw';
-	import eyeSvg      from '$icons/eye.svg?raw';
+	import trashSvg from '$icons/trash-solid-full.svg?raw';
+	import eyeSvg   from '$icons/eye.svg?raw';
 
 	// ---------------------------------------------------------------------------
 	// Props
@@ -21,12 +19,14 @@
 		community,
 		onChange,
 		onDelete,
+		onOracleClick,
 		focusName = false,
 	}: {
-		community:  Community;
-		onChange:   (updated: Community) => void;
-		onDelete:   () => void;
-		focusName?: boolean;
+		community:       Community;
+		onChange:        (updated: Community) => void;
+		onDelete:        () => void;
+		onOracleClick?:  (key: string, onFill: (value: string) => void) => void;
+		focusName?:      boolean;
 	} = $props();
 
 	// ---------------------------------------------------------------------------
@@ -45,9 +45,6 @@
 		if (focusName) { nameBeforeEdit = community.name; editingName = true; }
 	});
 
-	// Ensure oracles are loaded
-	$effect(() => { loadOracles(); });
-
 	// ---------------------------------------------------------------------------
 	// Derived
 	// ---------------------------------------------------------------------------
@@ -65,40 +62,6 @@
 	// ---------------------------------------------------------------------------
 	function update(patch: Partial<Community>) {
 		onChange({ ...community, ...patch });
-	}
-
-	/** Roll a simple d100 oracle and return the plain text result. */
-	function rollSimpleOracle(key: string): string {
-		const oracle = findOracle(key);
-		if (!oracle) return '';
-		const { value } = rollFromRangeTable(oracle.data);
-		return typeof value === 'string' ? value : JSON.stringify(value);
-	}
-
-	/** Roll settlement name (two-step subtable). */
-	function rollSettlementName(): string {
-		const oracle = findOracle('settlementName');
-		if (!oracle) return '';
-		const catRes = rollFromRangeTable(oracle.data);
-		const cat = catRes.value as { description: string; subtable: Array<{ topRange: number; value: unknown }> };
-		const { value } = rollFromRangeTable(cat.subtable);
-		return typeof value === 'string' ? value : '';
-	}
-
-	// Community oracle buttons config
-	const COMMUNITY_ORACLES: { field: keyof Community; label: string; roll: () => string }[] = [
-		{ field: 'name',                label: 'Settlement Name',    roll: rollSettlementName },
-		{ field: 'region',              label: 'Region',             roll: () => rollSimpleOracle('region') },
-		{ field: 'location',            label: 'Location',           roll: () => rollSimpleOracle('location') },
-		{ field: 'locationDescription', label: 'Location Descriptor',roll: () => rollSimpleOracle('locationDescriptor') },
-		{ field: 'trouble',             label: 'Settlement Trouble', roll: () => rollSimpleOracle('settlementTrouble') },
-	];
-
-	function rollCommunityField(field: keyof Community) {
-		const cfg = COMMUNITY_ORACLES.find((o) => o.field === field);
-		if (!cfg) return;
-		const result = cfg.roll();
-		if (result) update({ [field]: result } as Partial<Community>);
 	}
 
 	// NPC helpers
@@ -123,17 +86,6 @@
 
 	function removeNpc(npcId: string) {
 		update({ npcs: community.npcs.filter((n) => n.id !== npcId) });
-	}
-
-	const NPC_ORACLES: { field: keyof CommunityNpc; label: string; key: string }[] = [
-		{ field: 'role',       label: 'Character Role',       key: 'characterRole' },
-		{ field: 'goal',       label: 'Character Goal',       key: 'characterGoal' },
-		{ field: 'descriptor', label: 'Character Descriptor', key: 'characterDescriptor' },
-	];
-
-	function rollNpcField(npcId: string, field: keyof CommunityNpc, oracleKey: string) {
-		const result = rollSimpleOracle(oracleKey);
-		if (result) updateNpc(npcId, { [field]: result } as Partial<CommunityNpc>);
 	}
 
 	// Name editing
@@ -211,7 +163,7 @@
 							class="cc-oracle-btn"
 							title="Roll Settlement Name oracle"
 							aria-label="Roll Settlement Name oracle"
-							onclick={() => rollCommunityField('name')}
+							onclick={() => onOracleClick?.('settlementName', (v) => update({ name: v }))}
 						>{@html eyeSvg}</button>
 					</div>
 				</div>
@@ -232,7 +184,7 @@
 							class="cc-oracle-btn"
 							title="Roll Region oracle"
 							aria-label="Roll Region oracle"
-							onclick={() => rollCommunityField('region')}
+							onclick={() => onOracleClick?.('region', (v) => update({ region: v }))}
 						>{@html eyeSvg}</button>
 					</div>
 				</div>
@@ -253,7 +205,7 @@
 							class="cc-oracle-btn"
 							title="Roll Location oracle"
 							aria-label="Roll Location oracle"
-							onclick={() => rollCommunityField('location')}
+							onclick={() => onOracleClick?.('location', (v) => update({ location: v }))}
 						>{@html eyeSvg}</button>
 					</div>
 				</div>
@@ -274,7 +226,7 @@
 							class="cc-oracle-btn"
 							title="Roll Location Descriptor oracle"
 							aria-label="Roll Location Descriptor oracle"
-							onclick={() => rollCommunityField('locationDescription')}
+							onclick={() => onOracleClick?.('locationDescriptor', (v) => update({ locationDescription: v }))}
 						>{@html eyeSvg}</button>
 					</div>
 				</div>
@@ -295,7 +247,7 @@
 							class="cc-oracle-btn"
 							title="Roll Settlement Trouble oracle"
 							aria-label="Roll Settlement Trouble oracle"
-							onclick={() => rollCommunityField('trouble')}
+							onclick={() => onOracleClick?.('settlementTrouble', (v) => update({ trouble: v }))}
 						>{@html eyeSvg}</button>
 					</div>
 				</div>
@@ -377,7 +329,7 @@
 												class="cc-oracle-btn"
 												title="Roll Character Role oracle"
 												aria-label="Roll Character Role oracle"
-												onclick={() => rollNpcField(npc.id, 'role', 'characterRole')}
+												onclick={() => onOracleClick?.('characterRole', (v) => updateNpc(npc.id, { role: v }))}
 											>{@html eyeSvg}</button>
 										</div>
 									</div>
@@ -397,7 +349,7 @@
 												class="cc-oracle-btn"
 												title="Roll Character Goal oracle"
 												aria-label="Roll Character Goal oracle"
-												onclick={() => rollNpcField(npc.id, 'goal', 'characterGoal')}
+												onclick={() => onOracleClick?.('characterGoal', (v) => updateNpc(npc.id, { goal: v }))}
 											>{@html eyeSvg}</button>
 										</div>
 									</div>
@@ -417,7 +369,7 @@
 												class="cc-oracle-btn"
 												title="Roll Character Descriptor oracle"
 												aria-label="Roll Character Descriptor oracle"
-												onclick={() => rollNpcField(npc.id, 'descriptor', 'characterDescriptor')}
+												onclick={() => onOracleClick?.('characterDescriptor', (v) => updateNpc(npc.id, { descriptor: v }))}
 											>{@html eyeSvg}</button>
 										</div>
 									</div>

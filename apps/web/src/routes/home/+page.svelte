@@ -97,7 +97,7 @@
 	});
 
 	// ── Oracles dialog ─────────────────────────────────────────────────────────
-	let oraclesDialogRef = $state<{ open(oracleKey?: string): void } | null>(null);
+	let oraclesDialogRef = $state<{ open(oracleKey?: string, onFill?: (value: string) => void): void } | null>(null);
 
 	// ── Notes dialog ───────────────────────────────────────────────────────────
 	let notesDialogRef   = $state<{ open(): void } | null>(null);
@@ -854,6 +854,7 @@
 									{community}
 									onChange={handleCommunityChange}
 									onDelete={() => handleCommunityDelete(community.id)}
+									onOracleClick={(key, onFill) => oraclesDialogRef?.open(key, onFill)}
 									focusName={community.id === newlyCreatedId}
 								/>
 							</div>

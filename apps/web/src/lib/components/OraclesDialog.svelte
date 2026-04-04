@@ -37,6 +37,8 @@
 	let filtersOpen    = $state(false);
 	/** True when the dialog was opened directly on a specific oracle key — hides Back button. */
 	let directLaunch   = $state(false);
+	/** Optional callback to auto-fill a field with the rolled plain-text value. */
+	let _onFill: ((value: string) => void) | null = null;
 
 	// ---------------------------------------------------------------------------
 	// Derived
@@ -77,7 +79,8 @@
 	// ---------------------------------------------------------------------------
 	// Public API
 	// ---------------------------------------------------------------------------
-	export function open(oracleKey?: string) {
+	export function open(oracleKey?: string, onFill?: (value: string) => void) {
+		_onFill = onFill ?? null;
 		if (oracleKey) {
 			selectedKey  = oracleKey;
 			view         = 'detail';
@@ -94,6 +97,7 @@
 	}
 
 	export function close() {
+		_onFill = null;
 		dialogEl?.close();
 	}
 
@@ -123,7 +127,9 @@
 			? enrichOutcomeLinks(result.html, entryId, activeCtx.charId)
 			: result.html;
 		appendLog(SESSION_LOG_ID, `Oracle: ${result.title}`, html, entryId);
-		rolling = false;
+		if (_onFill && result.value) _onFill(result.value);
+		_onFill  = null;
+		rolling  = false;
 	}
 
 	// ---------------------------------------------------------------------------
