@@ -107,6 +107,7 @@
 	async function doRoll(key: string) {
 		if (rolling) return;
 		rolling = true;
+		const fillFn = _onFill; // capture before close() clears it
 
 		const result = rollOracle(key, oracles);
 
@@ -127,9 +128,8 @@
 			? enrichOutcomeLinks(result.html, entryId, activeCtx.charId)
 			: result.html;
 		appendLog(SESSION_LOG_ID, `Oracle: ${result.title}`, html, entryId);
-		if (_onFill && result.value) _onFill(result.value);
-		_onFill  = null;
-		rolling  = false;
+		if (fillFn && result.value) fillFn(result.value);
+		rolling = false;
 	}
 
 	// ---------------------------------------------------------------------------
