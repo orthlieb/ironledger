@@ -39,7 +39,7 @@
 	let nameBeforeEdit  = '';
 	let editingNoteId   = $state<string | null>(null);
 	let noteTextareaEl  = $state<HTMLTextAreaElement | null>(null);
-	let portraitHovered = $state(false);
+	let portraitHovered   = $state(false);
 
 	$effect(() => {
 		if (editingNoteId && noteTextareaEl) noteTextareaEl.focus();
@@ -525,4 +525,5 @@
 	.cc-note-display :global(li)  { margin-bottom: 1px; }
 	.cc-note-display :global(strong) { font-weight: 700; color: var(--text); }
 	.cc-note-display :global(br)  { display: block; margin-bottom: 2px; content: ''; }
+
 </style>

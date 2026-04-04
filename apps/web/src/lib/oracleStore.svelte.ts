@@ -438,9 +438,35 @@ export function rollOracle(key: string, allOracles: OracleFile[]): OracleRollRes
 		return { roll: res.roll, html, title, value: v.giants };
 	}
 
-	// ── Default — single roll, string value ─────────────────────────────────
-	const res  = rollFromRangeTable(table);
-	const val  = typeof res.value === 'string' ? res.value : JSON.stringify(res.value);
+	// ── Default — single roll, string value (with Roll Twice support) ──────
+
+	/** Roll once; if "Roll Twice" appears, keep re-rolling until a real result (max 10). */
+	function rollNonDouble(): { roll: number; value: string } {
+		for (let i = 0; i < 10; i++) {
+			const r = rollFromRangeTable(table);
+			const v = typeof r.value === 'string' ? r.value : JSON.stringify(r.value);
+			if (!/roll twice/i.test(v)) return { roll: r.roll, value: v };
+		}
+		const r = rollFromRangeTable(table);
+		return { roll: r.roll, value: typeof r.value === 'string' ? r.value : JSON.stringify(r.value) };
+	}
+
+	const res = rollFromRangeTable(table);
+	const val = typeof res.value === 'string' ? res.value : JSON.stringify(res.value);
+
+	if (/roll twice/i.test(val)) {
+		const a = rollNonDouble();
+		const b = rollNonDouble();
+		const combined = `${a.value} / ${b.value}`;
+		const html =
+			`<div class="roll-line">Roll: d100 → ${res.roll} (Roll Twice!)</div>` +
+			`<div class="roll-line">Roll 1: d100 → ${a.roll}</div>` +
+			`<div>Result 1: <strong>${a.value}</strong></div>` +
+			`<div class="roll-line">Roll 2: d100 → ${b.roll}</div>` +
+			`<div>Result 2: <strong>${b.value}</strong></div>`;
+		return { roll: res.roll, html, title, value: combined };
+	}
+
 	const html =
 		`<div class="roll-line">Roll: d100 → ${res.roll}</div>` +
 		`<div>Result: <strong>${val}</strong></div>`;

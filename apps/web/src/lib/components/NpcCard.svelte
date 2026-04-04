@@ -221,7 +221,7 @@
 				/>
 			</div>
 
-			<!-- Location (text only, no oracle) -->
+			<!-- Location -->
 			<div class="nc-field-row">
 				<label class="nc-label" for="nc-location-{npc.id}">Location</label>
 				<input
@@ -575,4 +575,5 @@
 		transition:     background 0.12s, color 0.12s, border-color 0.12s;
 	}
 	.nc-rel-btn:hover { color: var(--text); border-color: var(--border-mid); }
+
 </style>

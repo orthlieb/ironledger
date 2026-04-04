@@ -53,6 +53,7 @@
 	import fileImportSvg    from '$icons/file-import-solid-full.svg?raw';
 			import trashSvg         from '$icons/trash-solid-full.svg?raw';
 	import fileExportSvg    from '$icons/file-export-solid-full.svg?raw';
+	import broomWideSvg     from '$icons/broom-wide-solid-full.svg?raw';
 	import charactersSvgUrl from '$icons/Characters.svg?url';
 	import foesSvgUrl       from '$icons/Foes.svg?url';
 	import expedSvgUrl      from '$icons/Expeditions.svg?url';
@@ -131,10 +132,8 @@
 	const expeditions = $derived(getExpeditions());
 
 	// ── New expedition dialogs ─────────────────────────────────────────────────
-	let newJourneyDialogEl   = $state<HTMLDialogElement | null>(null);
 	let newJourneyDifficulty = $state<VowDifficulty>('dangerous');
 
-	let newSiteDialogEl   = $state<HTMLDialogElement | null>(null);
 	let newSiteDifficulty = $state<VowDifficulty>('dangerous');
 	let newSiteTheme      = $state<string>('');
 	let newSiteDomain     = $state<string>('');
@@ -153,9 +152,13 @@
 	// ── Random-generation dialogs for new community / NPC ─────────────────────
 	let communityRandomDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let npcRandomDialogRef       = $state<{ open(): void; close(): void } | null>(null);
+	let newJourneyDialogRef      = $state<{ open(): void; close(): void } | null>(null);
+	let newSiteDialogRef         = $state<{ open(): void; close(): void } | null>(null);
 	// Pending objects filled before the dialog opens; committed in onconfirm/oncancel
-	let _pendingCommunity = $state<import('$lib/types.js').Community | null>(null);
-	let _pendingNpc       = $state<import('$lib/types.js').Npc | null>(null);
+	let _pendingCommunity             = $state<import('$lib/types.js').Community | null>(null);
+	let _pendingNpc                   = $state<import('$lib/types.js').Npc | null>(null);
+	let _pendingCommunityLocationType = $state<'location' | 'coastalWatersLocation'>('location');
+	let _pendingNpcNameOracle         = $state('namesIronlander');
 
 	// ── Active tab (declared here so the session-persistence effect can track it)
 	type Tab = 'characters' | 'foes' | 'expeditions' | 'communities' | 'adventure';
@@ -444,11 +447,10 @@
 
 	function handleAddJourney() {
 		newJourneyDifficulty = 'dangerous';
-		newJourneyDialogEl?.showModal();
+		newJourneyDialogRef?.open();
 	}
 
 	async function confirmAddJourney() {
-		newJourneyDialogEl?.close();
 		const journey: Journey = {
 			id:         crypto.randomUUID(),
 			type:       'journey',
@@ -467,17 +469,16 @@
 		newlyCreatedId = '';
 	}
 
-	function cancelAddJourney() { newJourneyDialogEl?.close(); }
+	function cancelAddJourney() { /* ConfirmDialog handles close */ }
 
 	function handleAddSite() {
 		newSiteDifficulty = 'dangerous';
 		newSiteTheme      = '';
 		newSiteDomain     = '';
-		newSiteDialogEl?.showModal();
+		newSiteDialogRef?.open();
 	}
 
 	async function confirmAddSite() {
-		newSiteDialogEl?.close();
 		const site: Site = {
 			id:         crypto.randomUUID(),
 			type:       'site',
@@ -499,7 +500,7 @@
 		newlyCreatedId = '';
 	}
 
-	function cancelAddSite() { newSiteDialogEl?.close(); }
+	function cancelAddSite() { /* ConfirmDialog handles close */ }
 
 	async function handleExpeditionChange(exp: Expedition) {
 		await updateExpedition(exp);
@@ -547,7 +548,7 @@
 			const nameVal = rollOracle('settlementName', oracles).value;
 			if (nameVal) c.name = nameVal;
 			c.region              = rollOracle('region', oracles).value;
-			c.location            = rollOracle('location', oracles).value;
+			c.location            = rollOracle(_pendingCommunityLocationType, oracles).value;
 			c.locationDescription = rollOracle('locationDescriptor', oracles).value;
 			c.trouble             = rollOracle('settlementTrouble', oracles).value;
 		}
@@ -591,6 +592,20 @@
 			n.role       = rollOracle('characterRole', oracles).value;
 			n.goal       = rollOracle('characterGoal', oracles).value;
 			n.descriptor = rollOracle('characterDescriptor', oracles).value;
+			// Roll name
+			const { findOracle, rollFromRangeTable } = await import('$lib/oracleStore.svelte.js');
+			if (_pendingNpcNameOracle.startsWith('namesOther_')) {
+				const o = findOracle('namesOther');
+				if (o) {
+					const r = rollFromRangeTable(o.data);
+					const v = r.value as { giants: string; varou: string; trolls: string };
+					const sub = _pendingNpcNameOracle.split('_')[1] as keyof typeof v;
+					n.name = v[sub];
+				}
+			} else {
+				const o = findOracle(_pendingNpcNameOracle);
+				if (o) n.name = rollFromRangeTable(o.data).value as string;
+			}
 		}
 		await addNpc(n);
 		newlyCreatedNpcId = n.id;
@@ -764,11 +779,20 @@
 	cancelLabel="Create Manually"
 	accentColor="var(--color-momentum)"
 	onconfirm={() => _commitCommunity(true)}
-	oncancel={() => _commitCommunity(false)}
+	oncancel={() => { _pendingCommunity = null; }}
 >
-	<p style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 12px;">
+	<p style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 8px;">
 		Generate fields randomly using oracles, or create the community manually?
 	</p>
+	<fieldset style="border: none; padding: 0; margin: 0 0 4px;">
+		<legend style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); margin-bottom: 5px;">Location oracle</legend>
+		<label style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer; margin-bottom: 4px;">
+			<input type="radio" bind:group={_pendingCommunityLocationType} value="location" /> Inland
+		</label>
+		<label style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer;">
+			<input type="radio" bind:group={_pendingCommunityLocationType} value="coastalWatersLocation" /> Coastal Waters
+		</label>
+	</fieldset>
 </ConfirmDialog>
 
 <ConfirmDialog
@@ -779,11 +803,26 @@
 	cancelLabel="Create Manually"
 	accentColor="var(--color-momentum)"
 	onconfirm={() => _commitNpc(true)}
-	oncancel={() => _commitNpc(false)}
+	oncancel={() => { _pendingNpc = null; }}
 >
-	<p style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 12px;">
+	<p style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 8px;">
 		Generate fields randomly using oracles, or create the NPC manually?
 	</p>
+	<fieldset style="border: none; padding: 0; margin: 0 0 4px;">
+		<legend style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); margin-bottom: 5px;">Name oracle</legend>
+		{#each [
+			{ value: 'namesIronlander',  label: 'Ironlander' },
+			{ value: 'namesIronlander2', label: 'Ironlander 2' },
+			{ value: 'namesElf',         label: 'Elf' },
+			{ value: 'namesOther_giants',label: 'Giants' },
+			{ value: 'namesOther_varou', label: 'Varou' },
+			{ value: 'namesOther_trolls',label: 'Trolls' },
+		] as opt}
+			<label style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer; margin-bottom: 3px;">
+				<input type="radio" bind:group={_pendingNpcNameOracle} value={opt.value} /> {opt.label}
+			</label>
+		{/each}
+	</fieldset>
 </ConfirmDialog>
 
 
@@ -1110,7 +1149,7 @@
 									title="Clear log"
 									aria-label="Clear session log"
 									disabled={!logPanelRef?.hasEntries()}
-								>{@html trashSvg} Clear</button>
+								>{@html broomWideSvg} Clear</button>
 							</div>
 						</div>
 						<LogPanel
@@ -1145,64 +1184,74 @@
 </div>
 
 <!-- ── New Journey dialog ──────────────────────────────────────────────────── -->
-<dialog bind:this={newJourneyDialogEl} class="exp-dialog" oncancel={cancelAddJourney}>
-	<div class="exp-dialog-body">
-		<h3 class="exp-dialog-title">New Journey</h3>
-		<div class="exp-dialog-field">
-			<label class="exp-dialog-label" for="new-journey-diff">Difficulty</label>
-			<select id="new-journey-diff" class="exp-dialog-select"
-				bind:value={newJourneyDifficulty}>
-				<option value="troublesome">Troublesome</option>
-				<option value="dangerous">Dangerous</option>
-				<option value="formidable">Formidable</option>
-				<option value="extreme">Extreme</option>
-				<option value="epic">Epic</option>
-			</select>
-		</div>
-		<div class="exp-dialog-actions">
-			<button class="btn btn-sm" onclick={cancelAddJourney}>Cancel</button>
-			<button class="btn btn-sm btn-primary" onclick={confirmAddJourney}>Start Journey</button>
-		</div>
-	</div>
-</dialog>
+<ConfirmDialog
+	bind:this={newJourneyDialogRef}
+	title="New Journey"
+	confirmLabel="Start Journey"
+	confirmClass="btn-primary"
+	cancelLabel="Cancel"
+	accentColor="var(--color-momentum)"
+	onconfirm={confirmAddJourney}
+	oncancel={cancelAddJourney}
+>
+	<fieldset style="border: none; padding: 0; margin: 0 0 4px;">
+		<legend style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); margin-bottom: 5px;">Difficulty</legend>
+		{#each [
+			{ value: 'troublesome', label: 'Troublesome' },
+			{ value: 'dangerous',   label: 'Dangerous' },
+			{ value: 'formidable',  label: 'Formidable' },
+			{ value: 'extreme',     label: 'Extreme' },
+			{ value: 'epic',        label: 'Epic' },
+		] as opt}
+			<label style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer; margin-bottom: 3px;">
+				<input type="radio" bind:group={newJourneyDifficulty} value={opt.value} /> {opt.label}
+			</label>
+		{/each}
+	</fieldset>
+</ConfirmDialog>
 
 <!-- ── New Site dialog ─────────────────────────────────────────────────────── -->
-<dialog bind:this={newSiteDialogEl} class="exp-dialog" oncancel={cancelAddSite}>
-	<div class="exp-dialog-body">
-		<h3 class="exp-dialog-title">New Site</h3>
-		<div class="exp-dialog-field">
-			<label class="exp-dialog-label" for="new-site-diff">Difficulty</label>
-			<select id="new-site-diff" class="exp-dialog-select"
-				bind:value={newSiteDifficulty}>
-				<option value="troublesome">Troublesome</option>
-				<option value="dangerous">Dangerous</option>
-				<option value="formidable">Formidable</option>
-				<option value="extreme">Extreme</option>
-				<option value="epic">Epic</option>
-			</select>
-		</div>
-		<div class="exp-dialog-field">
-			<label class="exp-dialog-label" for="new-site-theme">Theme</label>
-			<select id="new-site-theme" class="exp-dialog-select"
-				bind:value={newSiteTheme}>
+<ConfirmDialog
+	bind:this={newSiteDialogRef}
+	title="New Site"
+	confirmLabel="Discover Site"
+	confirmClass="btn-primary"
+	cancelLabel="Cancel"
+	accentColor="var(--color-momentum)"
+	onconfirm={confirmAddSite}
+	oncancel={cancelAddSite}
+>
+	<fieldset style="border: none; padding: 0; margin: 0 0 8px;">
+		<legend style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); margin-bottom: 5px;">Difficulty</legend>
+		{#each [
+			{ value: 'troublesome', label: 'Troublesome' },
+			{ value: 'dangerous',   label: 'Dangerous' },
+			{ value: 'formidable',  label: 'Formidable' },
+			{ value: 'extreme',     label: 'Extreme' },
+			{ value: 'epic',        label: 'Epic' },
+		] as opt}
+			<label style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer; margin-bottom: 3px;">
+				<input type="radio" bind:group={newSiteDifficulty} value={opt.value} /> {opt.label}
+			</label>
+		{/each}
+	</fieldset>
+	<div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px;">
+		<div style="display: flex; align-items: center; gap: 8px;">
+			<label for="ns-theme" style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); width: 56px; flex-shrink: 0;">Theme</label>
+			<select id="ns-theme" style="flex: 1; font-family: var(--font-ui); font-size: 0.75rem; background: var(--bg-control); border: 1px solid var(--border); border-radius: 4px; color: var(--text); padding: 3px 6px; outline: none;" bind:value={newSiteTheme}>
 				<option value="">(none)</option>
 				{#each DELVE_THEMES as t (t)}<option value={t}>{t}</option>{/each}
 			</select>
 		</div>
-		<div class="exp-dialog-field">
-			<label class="exp-dialog-label" for="new-site-domain">Domain</label>
-			<select id="new-site-domain" class="exp-dialog-select"
-				bind:value={newSiteDomain}>
+		<div style="display: flex; align-items: center; gap: 8px;">
+			<label for="ns-domain" style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); width: 56px; flex-shrink: 0;">Domain</label>
+			<select id="ns-domain" style="flex: 1; font-family: var(--font-ui); font-size: 0.75rem; background: var(--bg-control); border: 1px solid var(--border); border-radius: 4px; color: var(--text); padding: 3px 6px; outline: none;" bind:value={newSiteDomain}>
 				<option value="">(none)</option>
 				{#each DELVE_DOMAINS as d (d)}<option value={d}>{d}</option>{/each}
 			</select>
 		</div>
-		<div class="exp-dialog-actions">
-			<button class="btn btn-sm" onclick={cancelAddSite}>Cancel</button>
-			<button class="btn btn-sm btn-primary" onclick={confirmAddSite}>Discover Site</button>
-		</div>
 	</div>
-</dialog>
+</ConfirmDialog>
 
 <style>
 	/* ============================================================
@@ -1398,14 +1447,16 @@
 		margin-top: 1rem;
 	}
 
-	/* Communities: 2 per row on ≥768px, 3 per row on ≥1200px */
+	/* Communities + NPCs: 2 per row on ≥768px, 3 per row on ≥1200px */
 	@media (min-width: 768px) {
-		.char-list--communities {
+		.char-list--communities,
+		.char-list--npcs {
 			grid-template-columns: repeat(2, 1fr);
 		}
 	}
 	@media (min-width: 1200px) {
-		.char-list--communities {
+		.char-list--communities,
+		.char-list--npcs {
 			grid-template-columns: repeat(3, 1fr);
 		}
 	}
@@ -1600,69 +1651,4 @@
 		filter: grayscale(0.5) brightness(0.7);
 	}
 
-	/* ── Expedition creation dialogs ───────────────────────────────────────── */
-	.exp-dialog {
-		border: none;
-		padding: 0;
-		border-radius: 10px;
-		position: fixed;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		width: min(340px, calc(100vw - 2rem));
-		background: var(--bg-card);
-		color: var(--text);
-		box-shadow: 0 16px 48px #00000070, 0 0 0 1px var(--border-mid);
-		outline: none;
-	}
-	.exp-dialog::backdrop {
-		background: #00000060;
-		backdrop-filter: blur(1px);
-	}
-	.exp-dialog-body {
-		padding: 1.25rem 1.5rem;
-		display: flex;
-		flex-direction: column;
-		gap: 0.9rem;
-	}
-	.exp-dialog-title {
-		margin: 0;
-		font-family: var(--font-display);
-		font-size: 1rem;
-		font-weight: 700;
-		letter-spacing: 0.04em;
-	}
-	.exp-dialog-field {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-	}
-	.exp-dialog-label {
-		font-family: var(--font-ui);
-		font-size: 0.65rem;
-		font-weight: 600;
-		letter-spacing: 0.07em;
-		text-transform: uppercase;
-		color: var(--text-dimmer);
-	}
-	.exp-dialog-select {
-		font-family: var(--font-ui);
-		font-size: 0.82rem;
-		padding: 5px 8px;
-		background: var(--bg-inset);
-		border: 1px solid var(--border);
-		border-radius: 4px;
-		color: var(--text);
-	}
-	.exp-dialog-select:focus {
-		outline: none;
-		border-color: var(--focus-ring);
-		box-shadow: 0 0 0 2px var(--accent-glow);
-	}
-	.exp-dialog-actions {
-		display: flex;
-		justify-content: flex-end;
-		gap: 8px;
-		padding-top: 0.25rem;
-	}
 </style>

@@ -510,7 +510,7 @@
 
 		{#if onDelete}
 			<button
-				class="btn btn-danger btn-icon icon-btn"
+				class="btn btn-icon icon-btn"
 				onclick={() => deleteDialogRef?.open()}
 				use:tooltip={"Delete character"}
 				aria-label="Delete character"
