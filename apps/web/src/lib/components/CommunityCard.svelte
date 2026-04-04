@@ -35,6 +35,8 @@
 	// ---------------------------------------------------------------------------
 	let collapsed             = $state(false);
 	let deleteDialogRef       = $state<{ open(): void; close(): void } | null>(null);
+	let npcDeleteId           = $state<string | null>(null);
+	let npcDeleteDialogRef    = $state<{ open(): void; close(): void } | null>(null);
 	let editingName           = $state(false);
 	let nameInputEl           = $state<HTMLInputElement | null>(null);
 	let nameBeforeEdit        = '';
@@ -56,7 +58,10 @@
 	// ---------------------------------------------------------------------------
 	// Derived
 	// ---------------------------------------------------------------------------
-	const displayName = $derived(community.name || 'Unnamed Community');
+	const displayName   = $derived(community.name || 'Unnamed Community');
+	const pendingNpcName = $derived(
+		community.npcs.find((n) => n.id === npcDeleteId)?.name?.trim() || 'this NPC'
+	);
 
 	// NPC relationship options
 	const RELATIONSHIPS: { value: NpcRelationship; label: string; color: string }[] = [
@@ -333,7 +338,7 @@
 
 									<button
 										class="cc-icon-btn cc-icon-btn--danger"
-										onclick={() => removeNpc(npc.id)}
+										onclick={() => { npcDeleteId = npc.id; npcDeleteDialogRef?.open(); }}
 										title="Remove NPC"
 										aria-label="Remove NPC"
 									>{@html trashSvg}</button>
@@ -447,7 +452,7 @@
 
 </div>
 
-<!-- Delete confirmation dialog -->
+<!-- Delete community confirmation dialog -->
 <ConfirmDialog
 	bind:this={deleteDialogRef}
 	title="Delete Community"
@@ -457,6 +462,19 @@
 >
 	<p style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 12px;">
 		Delete <strong>{displayName}</strong> and all its NPCs? This cannot be undone.
+	</p>
+</ConfirmDialog>
+
+<!-- Delete NPC confirmation dialog -->
+<ConfirmDialog
+	bind:this={npcDeleteDialogRef}
+	title="Remove NPC"
+	confirmLabel="Remove"
+	accentColor="var(--color-danger)"
+	onconfirm={() => { if (npcDeleteId) { removeNpc(npcDeleteId); npcDeleteId = null; } }}
+>
+	<p style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 12px;">
+		Remove <strong>{pendingNpcName}</strong>? This cannot be undone.
 	</p>
 </ConfirmDialog>
 
