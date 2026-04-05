@@ -365,7 +365,8 @@
 
 	// ── Tab group click handler (manual delegation for all tabs,
 	//    works around Svelte 5 issue with display:none elements) ──────────────
-	function handleTabGroupClick(e: MouseEvent) {
+	function handleTabGroupClick(e: MouseEvent | KeyboardEvent) {
+		if (e instanceof KeyboardEvent && e.key !== 'Enter' && e.key !== ' ') return;
 		const btn = (e.target as HTMLElement).closest('.tab-btn') as HTMLElement | null;
 		if (!btn) return;
 		const tab = btn.dataset.tab as Tab | undefined;
@@ -836,7 +837,7 @@
 		<nav class="tab-bar" aria-label="Section tabs">
 			<!-- onclick on group for delegated handling (works around Svelte 5
 			     event delegation issue with display:none elements) -->
-			<div class="tab-group" role="tablist" onclick={handleTabGroupClick}>
+			<div class="tab-group" role="tablist" tabindex="-1" onclick={handleTabGroupClick} onkeydown={handleTabGroupClick}>
 				<button class="tab-btn" class:active={activeTab === 'characters'}
 					role="tab" aria-selected={activeTab === 'characters'}
 					data-tab="characters" title="Characters">

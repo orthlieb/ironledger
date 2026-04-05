@@ -106,6 +106,7 @@ npm run dev:web   # Web on :5173
 ### Oracles
 - Oracle table consultation with random rolls
 - Linked oracle chains
+- "Roll Twice" results auto-combine two independent re-rolls into one result
 
 ### Foes & Encounters
 - Full foe catalogue from Ironsworn data
@@ -116,6 +117,12 @@ npm run dev:web   # Web on :5173
 - Journey and Delve Site expedition types
 - Progress tracks with waypoint/room mechanics
 - Delve tables for site exploration
+
+### Communities & NPCs
+- Track settlements and the people who inhabit them
+- Oracle-powered random generation for community names, locations (inland/coastal), and NPC names (Ironlander, Elf, Giants, Varou, Trolls variants)
+- Free-form notes, region, trouble, and relationship fields per entry
+- 3-column responsive grid layout
 
 ### Session Log
 - Persistent session log with interactive links
@@ -184,6 +191,12 @@ Feature docs are in the `docs/` directory:
 | [oracles.md](docs/oracles.md) | Oracle tables |
 | [data_format.md](docs/data_format.md) | Character data format spec |
 | [dice_rolling.md](docs/dice_rolling.md) | Dice rolling implementation |
+
+## Credits
+
+- **[Ironsworn](https://tomkinpress.com/)** by Shawn Tomkin — released under CC BY 4.0
+- **[game-icons.net](https://game-icons.net)** — game-themed SVG icons (CC BY 3.0)
+- **[Font Awesome](https://fontawesome.com)** — UI icons (Free tier, CC BY 4.0)
 
 ## Security
 

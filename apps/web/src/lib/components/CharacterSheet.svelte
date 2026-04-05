@@ -936,46 +936,6 @@
 		fill: currentColor;
 	}
 
-	/* Delete dialog */
-	.del-dialog {
-		width: 340px;
-		border-radius: 8px;
-		border: 1px solid var(--border);
-		background: var(--bg-card);
-		color: var(--text);
-		padding: 0;
-		box-shadow: 0 8px 32px #00000060;
-	}
-	.del-dialog::backdrop {
-		background: rgba(0, 0, 0, 0.55);
-	}
-	.del-header {
-		padding: 14px 18px 10px;
-		border-bottom: 1px solid var(--border);
-	}
-	.del-title {
-		font-family: var(--font-ui);
-		font-size: 0.85rem;
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.06em;
-		color: var(--color-danger);
-	}
-	.del-body {
-		padding: 16px 18px;
-		font-family: var(--font-ui);
-		font-size: 0.85rem;
-		color: var(--text);
-		line-height: 1.5;
-	}
-	.del-footer {
-		display: flex;
-		justify-content: flex-end;
-		gap: 8px;
-		padding: 10px 18px 14px;
-		border-top: 1px solid var(--border);
-	}
-
 	/* Save indicator */
 	.save-status {
 		font-family: var(--font-ui);

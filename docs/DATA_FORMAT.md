@@ -33,6 +33,7 @@ For Yrt homebrew extensions (mana, Touched assets, cantrips, Yrt-specific oracle
 - [Foes](#foes)
 - [Delve Themes and Domains](#delve-themes-and-domains)
 - [ID Conventions](#id-conventions)
+- [Communities & NPCs](#communities--npcs)
 
 ---
 
@@ -866,3 +867,69 @@ All IDs follow a `prefix/kebab-case-name` format for consistency and future loca
 | Oracles | camelCase `key` field | `action`, `settlementName` |
 
 IDs must be unique within their data type and stable across versions (they are referenced by saved game data and cross-references in other JSON files).
+
+---
+
+## Communities & NPCs
+
+Communities and NPCs are not data files — they are **runtime user data** stored server-side in the `user_data` PostgreSQL table as JSONB columns.
+
+### Storage
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `communities` | `jsonb` | Array of `Community` objects, one list per user |
+| `npcs` | `jsonb` | Array of `Npc` objects, one list per user |
+
+These are loaded via the `/api/session` endpoint on page mount and persisted via `PATCH /api/user-data` on every mutation. NPCs are independent of communities — they can move freely across the world.
+
+### Community Object
+
+```typescript
+interface Community {
+  id:                  string;   // UUID (crypto.randomUUID)
+  name:                string;
+  region:              string;
+  location:            string;   // e.g. "Barrier Hills" (oracle result or manual)
+  locationDescription: string;
+  trouble:             string;
+  notes:               string;
+  imageUrl?:           string;   // base64 JPEG data URL (user upload)
+}
+```
+
+### NPC Object
+
+```typescript
+type NpcRelationship = 'neutral' | 'bond' | 'foe';
+
+interface Npc {
+  id:           string;          // UUID
+  name:         string;          // e.g. "Elar" (oracle result or manual)
+  role:         string;
+  goal:         string;
+  descriptor:   string;
+  relationship: NpcRelationship;
+  location:     string;
+  notes:        string;
+  imageUrl?:    string;          // base64 JPEG data URL
+}
+```
+
+### Oracle Integration
+
+When creating a Community or NPC via the **+ Community** / **+ NPC** button, a creation dialog offers oracle-powered random generation:
+
+**Community — Location oracle choice:**
+- **Inland** — rolls `location` oracle (`settlementLocation` key)
+- **Coastal Waters** — rolls `coastalWatersLocation` oracle
+
+**NPC — Name oracle choice:**
+- **Ironlander** — rolls `namesIronlander` oracle
+- **Ironlander 2** — rolls `namesIronlander2` oracle
+- **Elf** — rolls `namesElf` oracle
+- **Giants** — rolls `namesOther` oracle, extracts `giants` sub-field
+- **Varou** — rolls `namesOther` oracle, extracts `varou` sub-field
+- **Trolls** — rolls `namesOther` oracle, extracts `trolls` sub-field
+
+Selecting "Generate Randomly" populates oracle-sourced fields; "Create Manually" creates a blank entry. Cancelling the dialog creates nothing.
