@@ -4,6 +4,32 @@ Canonical styles for shared UI patterns across the app. When creating or editing
 
 ---
 
+## Toolbar Button Hierarchy
+
+Toolbars use two button styles to signal action priority. Never invent a third style — pick one of these two.
+
+| Style | Classes | Dark theme | Light theme | When to use |
+|-------|---------|------------|-------------|-------------|
+| **Primary** | `btn btn-primary` | Gold border + gold text (`--text-accent` = `#e8a030`) on putty bg (`--bg-control` = `#1e1a10`) | Dark amber border + text (`--text-accent` = `#8a4e08`) on parchment bg (`--bg-control` = `#f0e9d8`) | Frequent actions — creating items, asking oracles |
+| **Secondary** | `btn` | Muted text (`--text-muted` = `#9a886a`), border (`--border-mid` = `#574a32`) on putty bg | Muted text (`--text-muted` = `#5a4e38`), border (`--border-mid` = `#b0a080`) on parchment bg | Utility/infrequent — Export, Import, Clear |
+
+Icon buttons in toolbars use `btn icon-btn` (secondary by default). Add `btn-primary` when the action is frequently used (e.g. Ask oracle on the Communities toolbar).
+
+### Examples by tab
+
+| Tab | Primary (gold) | Secondary (putty) |
+|-----|---------------|-------------------|
+| Characters | + Character | Import |
+| Foes | + Foe | — |
+| Expeditions | + Journey, + Site | — |
+| Communities | Ask, + Community, + NPC | Export |
+| Adventure | Move, Ask, Roll, Note | — |
+| Session Log | — | Export, Clear |
+
+> **Rule:** If a button opens a dialog or creates something the user will click many times per session, it should be primary. One-off or data-management actions (export, clear, import) stay secondary.
+
+---
+
 ## Tooltips
 
 **Always use CSS tooltips via `data-tooltip`. Never use the native `title` attribute** — browser `title` tooltips have unpredictable delays, can't be styled, and don't appear in all environments.
@@ -290,6 +316,48 @@ let filtersOpen = $state(false);
 
 ---
 
+## GCB Empty Tile Placeholder Icons
+
+Empty tiles in the GlobalContextBar display a placeholder `<img>` icon (loaded via URL, not inline SVG). Because the source images are dark silhouettes, they require a CSS filter chain to match the surrounding text colour on each theme.
+
+### Dark theme (default)
+
+Target colour: `--text-muted` ≈ `#96886D`
+
+Filter derivation (applied to a black source image):
+1. `invert(1)` — black → white
+2. `brightness(0.59)` — white → mid-gray (150, 150, 150)
+3. `sepia(1)` — gray → warm (203, 180, 141)
+4. `brightness(0.75)` — trim to (152, 135, 106) ≈ `#96886A`
+
+```css
+.gc-placeholder-img {
+    filter: invert(1) brightness(0.59) sepia(1) brightness(0.75);
+}
+.gc-tile-btn:hover .gc-placeholder-img {
+    filter: invert(1) brightness(0.59) sepia(1) brightness(0.9);
+}
+```
+
+### Light theme override
+
+Images are dark on a light background — no invert needed. Override restores original dark appearance at reduced opacity:
+
+```css
+.gc-placeholder-img {
+    opacity: 0.45;
+    filter: grayscale(0.45) brightness(0.75);
+}
+.gc-tile-btn:hover .gc-placeholder-img {
+    opacity: 0.65;
+    filter: grayscale(0.2) brightness(0.85);
+}
+```
+
+> **Rule:** Never use `opacity` alone on the dark theme placeholder — the source images are nearly black and will be invisible against a dark background regardless of opacity. Always use the `invert → brightness → sepia → brightness` filter chain.
+
+---
+
 ## Stat Tile (StatControl)
 
 Square tile used for the five Ironsworn stats (Edge, Heart, Iron, Shadow, Wits).
@@ -352,21 +420,22 @@ All defined in `apps/web/src/app.css`. Use CSS variables everywhere; never hardc
 
 | Variable | Dark theme | Light/Print theme | Stat |
 |----------|-----------|-------------------|------|
-| `--color-edge` | `#4E80ED` | `#1a5fa0` | Edge |
-| `--color-heart` | `#DD514C` | `#b02828` | Heart |
-| `--color-iron` | `#9EA2AD` | `#5a6878` | Iron |
-| `--color-shadow` | `#9E5BEE` | `#6a2aaa` | Shadow |
-| `--color-wits` | `#E8A13B` | `#805800` | Wits |
+| `--color-edge` | `#5B9CF6` | `#1565C0` | Edge |
+| `--color-heart` | `#F06880` | `#C0184C` | Heart |
+| `--color-iron` | `#94A8BC` | `#3D5A70` | Iron |
+| `--color-shadow` | `#C084FC` | `#7C3AED` | Shadow |
+| `--color-wits` | `#FBBF24` | `#A16207` | Wits |
 | `--color-touched` | `#78DB88` | `#2a8840` | Touched (YRT homebrew) |
 
 ### Resource Colors
 
 | Variable | Dark theme | Light/Print theme | Resource |
 |----------|-----------|-------------------|----------|
-| `--color-momentum` | `#73A4F4` | `#1a5fa0` | Momentum |
-| `--color-health` | `#E77974` | `#b02828` | Health |
-| `--color-spirit` | `#A28BF3` | `#6a2aaa` | Spirit |
-| `--color-supply` | `#6ACF9D` | `#0e7a40` | Supply |
+| `--color-momentum` | `#22D3EE` | `#0891B2` | Momentum |
+| `--color-health` | `#4ADE80` | `#15803D` | Health |
+| `--color-spirit` | `#818CF8` | `#3730A3` | Spirit |
+| `--color-supply` | `#FB923C` | `#C2410C` | Supply |
+| `--color-xp` | `#A3E635` | `#4D7C0F` | XP |
 | `--color-mana` | `#f59e0b` | `#b45309` | Mana (YRT homebrew) |
 | `--color-danger` | `#DD514C` | `#b02828` | Danger/menace (foe harm, menace track) |
 

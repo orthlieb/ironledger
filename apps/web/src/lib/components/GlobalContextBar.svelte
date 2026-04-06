@@ -538,7 +538,7 @@
 		border: 1px solid var(--border);
 		border-left: 3px solid transparent;
 		border-radius: 5px;
-		box-shadow: inset 0 1px 0 #ffffff04, 0 2px 8px #00000040;
+		box-shadow: none;
 	}
 
 	/* .gc-tile--empty — opacity applied to button only so popover dropdown stays fully opaque */
@@ -546,7 +546,7 @@
 		border-color: var(--border-mid);
 	}
 	.gc-tile--open {
-		z-index: 10;
+		z-index: 35;
 	}
 
 	/* Scenario heading — acts as the card header for the whole GCB tile */
@@ -587,18 +587,19 @@
 	.gc-tile-btn:hover {
 		background: rgba(245, 158, 11, 0.06);
 	}
+	.gc-tile--empty {
+		border-left-color: var(--border-mid);
+	}
 	.gc-tile--empty .gc-tile-btn {
 		justify-content: center;
 		align-items: center;
-		opacity: 0.6;
 	}
 
 	/* Placeholder text for empty tiles */
 	.gc-tile-placeholder {
 		font-family: var(--font-ui);
 		font-size: 0.82rem;
-		color: var(--text-dimmer);
-		opacity: 0.6;
+		color: var(--text-muted);
 		text-align: center;
 		width: 100%;
 		display: flex;
@@ -613,14 +614,12 @@
 		width: 36px;
 		height: 36px;
 		object-fit: contain;
-		/* Dim + desaturate to signal "nothing selected yet" */
-		opacity: 0.35;
-		filter: grayscale(0.5);
+		/* Tint to match --text-muted (#96886D): invert → darken → full sepia → trim */
+		filter: invert(1) brightness(0.59) sepia(1) brightness(0.75);
 		transition: opacity 0.12s, filter 0.12s;
 	}
 	.gc-tile-btn:hover .gc-placeholder-img {
-		opacity: 0.6;
-		filter: grayscale(0.2);
+		filter: invert(1) brightness(0.59) sepia(1) brightness(0.9);
 	}
 
 	/* Tile rows */
@@ -722,26 +721,27 @@
 		height: 100%;
 		fill: currentColor;
 	}
-	/* Stats: tinted background, gap only — no dividers */
+	/* Stats: transparent bg, thick colored bottom bar */
 	.gc-chip-group--stats {
 		gap: 3px;
 	}
 	.gc-chip--stat {
 		color: var(--chip-color);
-		background: color-mix(in srgb, var(--chip-color) 8%, var(--bg-card));
-		border-radius: 6px;
-		padding: 2px 6px;
+		background: transparent;
+		border-radius: 3px 3px 0 0;
+		padding: 3px 6px 4px;
+		border-bottom: 3px solid var(--chip-color);
 	}
 	.gc-chip--stat .gc-chip-value {
 		font-weight: 700;
 	}
-	/* Resources: tinted background + colored border */
+	/* Resources: same treatment as stats */
 	.gc-chip--resource {
-		background: color-mix(in srgb, var(--chip-color) 8%, var(--bg-card));
 		color: var(--chip-color);
-		border: 1px solid color-mix(in srgb, var(--chip-color) 50%, transparent);
-		border-radius: 6px;
-		padding: 2px 4px;
+		background: transparent;
+		border-radius: 3px 3px 0 0;
+		padding: 3px 4px 4px;
+		border-bottom: 3px solid var(--chip-color);
 	}
 	/* Shake animation on resource value change */
 	@keyframes chip-shake {
@@ -1069,6 +1069,10 @@
 		:global(:root:not([data-theme='dark'])) .gc-placeholder-img {
 			opacity: 0.45;
 			filter: grayscale(0.45) brightness(0.75);
+		}
+		:global(:root:not([data-theme='dark'])) .gc-tile-btn:hover .gc-placeholder-img {
+			opacity: 0.65;
+			filter: grayscale(0.2) brightness(0.85);
 		}
 	}
 	:global(html[data-theme='light']) .gc-placeholder-img {

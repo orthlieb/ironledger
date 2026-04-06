@@ -820,9 +820,8 @@
 									class="md-tile"
 									class:md-tile--dimmed={!!fail}
 									style:--tcolor={catColor(move.category)}
-									title={fail ?? move.triggerShort}
+									use:tooltip={{ text: fail ?? move.triggerShort }}
 									onclick={() => { if (!fail) selectMove(move); }}
-								disabled={!!fail}
 								>
 									<div class="md-tile-stripe"></div>
 									<div class="md-tile-body">
@@ -1106,14 +1105,15 @@
 				<div class="md-footer-btns">
 					<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
 					<button class="btn" onclick={close}>Cancel</button>
-					<button
-						class="btn btn-primary md-roll-btn"
-						onclick={doActionRoll}
-						disabled={rolling || !ctx || !!fail}
-						data-tooltip={fail || undefined}
-					>
-						{rolling ? 'Rolling…' : 'Roll Move'}
-					</button>
+					<span use:tooltip={{ text: fail ?? '' }} style="display: inline-flex;">
+						<button
+							class="btn btn-primary md-roll-btn"
+							onclick={doActionRoll}
+							disabled={rolling || !ctx || !!fail}
+						>
+							{rolling ? 'Rolling…' : 'Roll Move'}
+						</button>
+					</span>
 				</div>
 
 			{:else if isSpellRollMove(selectedMove)}

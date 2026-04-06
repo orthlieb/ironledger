@@ -735,8 +735,7 @@
 {#if deleteTarget}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="modal-backdrop" onclick={() => (deleteTarget = null)} onkeydown={(e) => e.key === 'Escape' && (deleteTarget = null)}>
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="modal card" onclick={(e) => e.stopPropagation()}>
+		<div class="modal card" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog" aria-modal="true" tabindex="-1">
 			<h3>Delete User</h3>
 			<p>
 				Permanently delete <strong>{deleteTarget.email}</strong> and all their data?
@@ -754,8 +753,7 @@
 {#if showMaintConfirm}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="modal-backdrop" onclick={() => (showMaintConfirm = false)} onkeydown={(e) => e.key === 'Escape' && (showMaintConfirm = false)}>
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="modal card" onclick={(e) => e.stopPropagation()}>
+		<div class="modal card" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog" aria-modal="true" tabindex="-1">
 			<h3 class="maint-modal-title">Enable Maintenance Mode</h3>
 			<p>
 				This will alert all users and revoke all active sessions.
@@ -779,8 +777,7 @@
 {#if promoteTarget}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="modal-backdrop" onclick={() => (promoteTarget = null)} onkeydown={(e) => e.key === 'Escape' && (promoteTarget = null)}>
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="modal card" onclick={(e) => e.stopPropagation()}>
+		<div class="modal card" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog" aria-modal="true" tabindex="-1">
 			<h3>Promote to Admin</h3>
 			<p>
 				Grant admin privileges to <strong>{promoteTarget.email}</strong>?
@@ -801,8 +798,7 @@
 {#if suspendTarget}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="modal-backdrop" onclick={() => (suspendTarget = null)} onkeydown={(e) => e.key === 'Escape' && (suspendTarget = null)}>
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="modal card" onclick={(e) => e.stopPropagation()}>
+		<div class="modal card" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog" aria-modal="true" tabindex="-1">
 			{#if suspendTarget.isActive}
 				<h3>Suspend User</h3>
 				<p>

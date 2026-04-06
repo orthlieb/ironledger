@@ -157,6 +157,7 @@
 	// Pending objects filled before the dialog opens; committed in onconfirm/oncancel
 	let _pendingCommunity             = $state<import('$lib/types.js').Community | null>(null);
 	let _pendingNpc                   = $state<import('$lib/types.js').Npc | null>(null);
+	let _pendingCommunityRegionType   = $state<'ironlands' | 'yrt'>('ironlands');
 	let _pendingCommunityLocationType = $state<'location' | 'coastalWatersLocation'>('location');
 	let _pendingNpcNameOracle         = $state('namesIronlander');
 
@@ -546,10 +547,13 @@
 		_pendingCommunity = null;
 		if (random) {
 			const oracles = getOracles();
-			const nameVal = rollOracle('settlementName', oracles).value;
+			const nameOracle = Math.random() < 0.5 ? 'settlementName' : 'settlementNameQuick';
+			const nameVal = rollOracle(nameOracle, oracles).value;
 			if (nameVal) c.name = nameVal;
-			c.region              = rollOracle('region', oracles).value;
-			c.location            = rollOracle(_pendingCommunityLocationType, oracles).value;
+			c.region   = _pendingCommunityRegionType === 'yrt'
+				? rollOracle('yrtRegion', oracles).value
+				: rollOracle('region', oracles).value;
+			c.location = rollOracle(_pendingCommunityLocationType, oracles).value;
 			c.locationDescription = rollOracle('locationDescriptor', oracles).value;
 			c.trouble             = rollOracle('settlementTrouble', oracles).value;
 		}
@@ -782,18 +786,29 @@
 	onconfirm={() => _commitCommunity(true)}
 	oncancel={() => { _pendingCommunity = null; }}
 >
-	<p style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 8px;">
+	<p style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 10px;">
 		Generate fields randomly using oracles, or create the community manually?
 	</p>
-	<fieldset style="border: none; padding: 0; margin: 0 0 4px;">
-		<legend style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); margin-bottom: 5px;">Location oracle</legend>
-		<label style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer; margin-bottom: 4px;">
-			<input type="radio" bind:group={_pendingCommunityLocationType} value="location" /> Inland
-		</label>
-		<label style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer;">
-			<input type="radio" bind:group={_pendingCommunityLocationType} value="coastalWatersLocation" /> Coastal Waters
-		</label>
-	</fieldset>
+	<div style="display: flex; gap: 20px; align-items: flex-start;">
+		<fieldset style="border: none; padding: 0; margin: 0;">
+			<legend style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); margin-bottom: 5px;">Region oracle</legend>
+			<label style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer; margin-bottom: 4px;">
+				<input type="radio" bind:group={_pendingCommunityRegionType} value="ironlands" /> Ironlands
+			</label>
+			<label style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer;">
+				<input type="radio" bind:group={_pendingCommunityRegionType} value="yrt" /> YRT
+			</label>
+		</fieldset>
+		<fieldset style="border: none; padding: 0; margin: 0;">
+			<legend style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); margin-bottom: 5px;">Location oracle</legend>
+			<label style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer; margin-bottom: 4px;">
+				<input type="radio" bind:group={_pendingCommunityLocationType} value="location" /> Inland
+			</label>
+			<label style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer;">
+				<input type="radio" bind:group={_pendingCommunityLocationType} value="coastalWatersLocation" /> Coastal Waters
+			</label>
+		</fieldset>
+	</div>
 </ConfirmDialog>
 
 <ConfirmDialog
@@ -1038,7 +1053,7 @@
 							disabled={communities.length === 0 && npcs.length === 0}
 						>{@html fileExportSvg} Export</button>
 						<button
-							class="btn icon-btn"
+							class="btn btn-primary icon-btn"
 							onclick={() => oraclesDialogRef?.open()}
 							title="Browse and roll oracles"
 							aria-label="Browse and roll oracles"
@@ -1477,14 +1492,9 @@
 	.char-card {
 		cursor: default;
 		border-radius: 6px;
-		outline: 2px solid transparent;
-		outline-offset: 2px;
 		transition: outline-color 0.12s;
 	}
 
-	.char-card--active {
-		outline-color: var(--text-accent);
-	}
 
 	/* ============================================================
 	   Tab bar — sticky just below the app nav

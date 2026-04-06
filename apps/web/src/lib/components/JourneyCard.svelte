@@ -144,7 +144,6 @@
 	class="jc-card"
 	class:jc-complete={expedition.complete}
 	class:collapsed={collapsed}
-	style="border-left: 3px solid #34d399"
 >
 
 	<!-- ── Header (always visible) ── -->

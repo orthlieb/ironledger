@@ -427,7 +427,7 @@
 <!-- ============================================================
      Character Card
      ============================================================ -->
-<div class="char-card" class:collapsed style="border-left: 3px solid #f59e0b">
+<div class="char-card" class:collapsed>
 
 	<!-- Header ------------------------------------------------- -->
 	<div class="char-header">

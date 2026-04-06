@@ -137,7 +137,6 @@
 	class="foe-card"
 	class:vanquished={enc.vanquished}
 	class:collapsed={collapsed}
-	style="border-left: 3px solid {FOE_NATURE_COLORS[foeDef.nature]}"
 >
 
 	<!-- ── Header (always visible) ── -->

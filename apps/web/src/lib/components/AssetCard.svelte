@@ -310,16 +310,15 @@
 						</select>
 					</label>
 				{:else if field.type === 'switch'}
-					<label class="cf-switch" onclick={(e: MouseEvent) => {
-						e.preventDefault();
-						if (!asset.customValues) asset.customValues = {};
-						asset.customValues[field.id] = asset.customValues[field.id] === '1' ? '0' : '1';
-					}}>
+					<label class="cf-switch">
 						<input
 							type="checkbox"
 							class="cf-switch-input"
 							checked={asset.customValues?.[field.id] === '1'}
-							tabindex={-1}
+							onchange={() => {
+								if (!asset.customValues) asset.customValues = {};
+								asset.customValues[field.id] = asset.customValues[field.id] === '1' ? '0' : '1';
+							}}
 						/>
 						<span class="cf-switch-track"><span class="cf-switch-knob"></span></span>
 						<span class="cf-switch-label">{field.label}</span>
@@ -329,10 +328,18 @@
 
 			{#if definition.preamble}
 				<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-				<p class="asset-preamble" onclick={(e) => {
-					const link = (e.target as HTMLElement).closest('.oracle-link') as HTMLElement | null;
-					if (link) { e.preventDefault(); onOracleLink?.(link.dataset['oracle'] ?? ''); }
-				}}>{@html stripMdLinks(definition.preamble)}</p>
+			<p class="asset-preamble"
+					onclick={(e) => {
+						const link = (e.target as HTMLElement).closest('.oracle-link') as HTMLElement | null;
+						if (link) { e.preventDefault(); onOracleLink?.(link.dataset['oracle'] ?? ''); }
+					}}
+					onkeydown={(e) => {
+						if (e.key === 'Enter' || e.key === ' ') {
+							const link = (e.target as HTMLElement).closest('.oracle-link') as HTMLElement | null;
+							if (link) { e.preventDefault(); onOracleLink?.(link.dataset['oracle'] ?? ''); }
+						}
+					}}
+				>{@html stripMdLinks(definition.preamble)}</p>
 			{/if}
 
 			{#if assetDescription}
@@ -341,18 +348,16 @@
 
 			<div class="abilities-list">
 				{#each definition.abilities as ab, i}
-					<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 					<label
 						class="ability-row"
 						class:ability-enabled={asset.abilities[i]}
 						class:ability-disabled={!asset.abilities[i] && characterXp < 2}
-						onclick={(e: MouseEvent) => { e.preventDefault(); toggleAbility(i); }}
 					>
 						<input
 							type="checkbox"
 							class="ability-check"
 							checked={asset.abilities[i]}
-							tabindex={-1}
+							onchange={() => toggleAbility(i)}
 						/>
 						<div class="ability-text">
 							{#if ab.name}
@@ -386,13 +391,13 @@
 									class="selection-row"
 									class:selection-known={known}
 									class:selection-disabled={disabled}
-									onclick={(e: MouseEvent) => { e.preventDefault(); if (!disabled) toggleSelection(item.key); }}
 								>
 									<input
 										type="checkbox"
 										class="selection-check"
 										checked={known}
-										tabindex={-1}
+										disabled={disabled}
+										onchange={() => { if (!disabled) toggleSelection(item.key); }}
 									/>
 									<span class="selection-line">
 										<span class="selection-name">{item.name}</span>
@@ -547,16 +552,15 @@
 						</select>
 					</label>
 				{:else if field.type === 'switch'}
-					<label class="cf-switch" onclick={(e: MouseEvent) => {
-						e.preventDefault();
-						if (!asset.customValues) asset.customValues = {};
-						asset.customValues[field.id] = asset.customValues[field.id] === '1' ? '0' : '1';
-					}}>
+					<label class="cf-switch">
 						<input
 							type="checkbox"
 							class="cf-switch-input"
 							checked={asset.customValues?.[field.id] === '1'}
-							tabindex={-1}
+							onchange={() => {
+								if (!asset.customValues) asset.customValues = {};
+								asset.customValues[field.id] = asset.customValues[field.id] === '1' ? '0' : '1';
+							}}
 						/>
 						<span class="cf-switch-track"><span class="cf-switch-knob"></span></span>
 						<span class="cf-switch-label">{field.label}</span>
@@ -567,30 +571,28 @@
 			<!-- Rarity slot -->
 			{#if rarity}
 				<div class="rarity-section">
-					<label class="rarity-label"
-						onclick={(e: MouseEvent) => {
-							e.preventDefault();
-							const rarityDisabled = asset.rarityId !== rarity.id && characterXp < rarity.xpCost;
-							if (rarityDisabled) return;
-							const wasChecked = asset.rarityId === rarity.id;
-							asset.rarityId = wasChecked ? undefined : rarity.id;
-							if (!wasChecked) {
-								const entryId = crypto.randomUUID();
-								const xpLink  = `<a class="xp-cost-link" data-entry-id="${entryId}" data-cost="${rarity.xpCost}" data-char-id="${characterId}" href="#">−${rarity.xpCost} experience</a>`;
-								appendLog(SESSION_LOG_ID, logTitle,
-									`<div>Rarity acquired: <strong>RARITY: ${rarity.name}</strong> for <strong>${definition.name}</strong> ${xpLink}</div>`,
-									entryId);
-							} else {
-								appendLog(SESSION_LOG_ID, logTitle,
-									`<div>Rarity removed: <strong>RARITY: ${rarity.name}</strong> from <strong>${definition.name}</strong></div>`);
-							}
-						}}
-					>
+					<label class="rarity-label">
 						<input
 							type="checkbox"
 							class="rarity-check"
 							checked={asset.rarityId === rarity.id}
-							tabindex={-1}
+							disabled={asset.rarityId !== rarity.id && characterXp < rarity.xpCost}
+							onchange={() => {
+								const rarityDisabled = asset.rarityId !== rarity.id && characterXp < rarity.xpCost;
+								if (rarityDisabled) return;
+								const wasChecked = asset.rarityId === rarity.id;
+								asset.rarityId = wasChecked ? undefined : rarity.id;
+								if (!wasChecked) {
+									const entryId = crypto.randomUUID();
+									const xpLink  = `<a class="xp-cost-link" data-entry-id="${entryId}" data-cost="${rarity.xpCost}" data-char-id="${characterId}" href="#">−${rarity.xpCost} experience</a>`;
+									appendLog(SESSION_LOG_ID, logTitle,
+										`<div>Rarity acquired: <strong>RARITY: ${rarity.name}</strong> for <strong>${definition.name}</strong> ${xpLink}</div>`,
+										entryId);
+								} else {
+									appendLog(SESSION_LOG_ID, logTitle,
+										`<div>Rarity removed: <strong>RARITY: ${rarity.name}</strong> from <strong>${definition.name}</strong></div>`);
+								}
+							}}
 						/>
 						<span class="rarity-name">RARITY: {rarity.name}</span>
 						<span class="rarity-cost">({rarity.xpCost} XP)</span>
