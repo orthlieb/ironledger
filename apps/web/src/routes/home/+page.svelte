@@ -50,9 +50,7 @@
 	import type { PreconditionContext } from '$lib/preconditions.js';
 	import { loadSessionState, saveSessionState } from '$lib/sessionStore.svelte.js';
 	import { onMount, tick } from 'svelte';
-	import fileImportSvg    from '$icons/file-import-solid-full.svg?raw';
-			import trashSvg         from '$icons/trash-solid-full.svg?raw';
-	import fileExportSvg    from '$icons/file-export-solid-full.svg?raw';
+	import trashSvg         from '$icons/trash-solid-full.svg?raw';
 	import broomWideSvg     from '$icons/broom-wide-solid-full.svg?raw';
 	import charactersSvgUrl from '$icons/Characters.svg?url';
 	import foesSvgUrl       from '$icons/Foes.svg?url';
@@ -724,18 +722,255 @@
 		charError = '';
 		try {
 			const text   = await file.text();
-			const parsed = JSON.parse(text) as { name?: string; data?: Record<string, unknown> };
-			const newChar = await api.create(parsed.name ?? 'Imported Character', parsed.data ?? {});
-			chars = [newChar, ...chars];
-			activeCharId = newChar.id;
+			const parsed = JSON.parse(text);
+			// Support manifest-wrapped exports
+			if (parsed.manifest && parsed.data) {
+				const m = parsed.manifest as { type: string };
+				if (m.type === 'character') {
+					const entry = parsed.data as { name?: string; data?: Record<string, unknown> };
+					const newChar = await api.create(entry.name ?? 'Imported Character', entry.data ?? {});
+					chars = [newChar, ...chars];
+					activeCharId = newChar.id;
+				} else if (m.type === 'all-characters') {
+					const entries = parsed.data as Array<{ name?: string; data?: Record<string, unknown> }>;
+					for (const entry of entries) {
+						const newChar = await api.create(entry.name ?? 'Imported Character', entry.data ?? {});
+						chars = [newChar, ...chars];
+						if (!activeCharId) activeCharId = newChar.id;
+					}
+				} else if (m.type === 'log') {
+					const entries = parsed.data as import('$lib/log.svelte.js').LogEntry[];
+					for (const entry of entries) {
+						appendLog(SESSION_LOG_ID, entry.title, entry.html, undefined, entry.source, entry.roll);
+					}
+				}
+			} else {
+				// Legacy format: { name, data }
+				const entry = parsed as { name?: string; data?: Record<string, unknown> };
+				const newChar = await api.create(entry.name ?? 'Imported Character', entry.data ?? {});
+				chars = [newChar, ...chars];
+				activeCharId = newChar.id;
+			}
 			activeTab = 'characters';
 		} catch {
-			charError = 'Could not import character. Make sure the file is a valid Iron Ledger JSON export.';
+			charError = 'Could not import. Make sure the file is a valid Iron Ledger JSON export.';
 		} finally {
 			importing = false;
 			importInput.value = '';
 		}
 	}
+
+	// ---------------------------------------------------------------------------
+	// Export helpers
+	// ---------------------------------------------------------------------------
+
+	function makeTimestamp(): string {
+		const now = new Date();
+		return `${now.getFullYear()}-`
+			+ String(now.getMonth() + 1).padStart(2, '0') + '-'
+			+ String(now.getDate()).padStart(2, '0') + '_'
+			+ String(now.getHours()).padStart(2, '0')
+			+ String(now.getMinutes()).padStart(2, '0');
+	}
+
+	function downloadFile(filename: string, content: string, mime: string) {
+		const blob = new Blob([content], { type: mime });
+		const url  = URL.createObjectURL(blob);
+		const a    = document.createElement('a');
+		a.href     = url;
+		a.download = filename;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
+	}
+
+	function exportJson(type: string, payload: unknown, count: number, filename: string) {
+		const wrapper = {
+			manifest: {
+				app: 'Iron Ledger',
+				version: '1.0.0',
+				exportedAt: new Date().toISOString(),
+				type,
+				count,
+			},
+			data: payload,
+		};
+		downloadFile(filename, JSON.stringify(wrapper, null, 2), 'application/json');
+	}
+
+	/** Simple HTML → markdown for log entries. */
+	function htmlToMd(html: string): string {
+		if (typeof document === 'undefined') return html;
+		const tmp = document.createElement('div');
+		tmp.innerHTML = html;
+		const lines: string[] = [''];
+		function walk(node: Node) {
+			if (node.nodeType === Node.TEXT_NODE) {
+				const t = (node.textContent ?? '').replace(/\n/g, ' ');
+				if (t.trim()) lines[lines.length - 1] = (lines[lines.length - 1] ?? '') + t;
+			} else if (node.nodeType === Node.ELEMENT_NODE) {
+				const el  = node as HTMLElement;
+				const tag = el.tagName.toLowerCase();
+				if (tag === 'ul' || tag === 'ol') {
+					el.querySelectorAll('li').forEach((li) => lines.push(`- ${li.textContent?.trim() ?? ''}`));
+				} else if (tag === 'li') { /* handled by parent */ }
+				else if (tag === 'br') { lines.push(''); }
+				else {
+					const block = ['div', 'p', 'h1', 'h2', 'h3', 'h4'].includes(tag);
+					if (block && lines.length > 0) lines.push('');
+					let inline = '';
+					el.childNodes.forEach((child) => {
+						if (child.nodeType === Node.TEXT_NODE) inline += child.textContent ?? '';
+						else if (child.nodeType === Node.ELEMENT_NODE) {
+							const ct = (child as HTMLElement).tagName.toLowerCase();
+							const inner = (child as HTMLElement).textContent ?? '';
+							if (ct === 'strong' || ct === 'b') inline += `**${inner}**`;
+							else if (ct === 'em' || ct === 'i') inline += `_${inner}_`;
+							else if (ct === 's') inline += `~~${inner}~~`;
+							else inline += inner;
+						}
+					});
+					const text = inline.trim();
+					if (text) lines.push(text);
+				}
+			}
+		}
+		tmp.childNodes.forEach((n) => walk(n));
+		return lines.filter((l, i, a) => !(l === '' && a[i - 1] === '')).join('\n').trim();
+	}
+
+	function charToMarkdown(char: CharacterFull): string {
+		const d = char.data as Record<string, unknown>;
+		const lines: string[] = [];
+		lines.push(`# ${char.name || 'Unnamed Character'}`);
+		lines.push('');
+		if (d.background) lines.push(`**Background:** ${d.background}`, '');
+
+		lines.push('## Stats');
+		lines.push(`| Edge | Heart | Iron | Shadow | Wits |`);
+		lines.push(`|------|-------|------|--------|------|`);
+		lines.push(`| ${d.edge ?? 0} | ${d.heart ?? 0} | ${d.iron ?? 0} | ${d.shadow ?? 0} | ${d.wits ?? 0} |`);
+		lines.push('');
+
+		lines.push('## Resources');
+		lines.push(`- **Health:** ${d.health ?? 0}/5`);
+		lines.push(`- **Spirit:** ${d.spirit ?? 0}/5`);
+		lines.push(`- **Supply:** ${d.supply ?? 0}/5`);
+		lines.push(`- **Momentum:** ${d.momentum ?? 0}`);
+		lines.push('');
+
+		lines.push('## Progress');
+		lines.push(`- **XP:** ${d.xp ?? 0}`);
+		lines.push(`- **Bonds:** ${d.bonds ?? 0}/40`);
+		lines.push(`- **Failures:** ${d.failures ?? 0}/40`);
+		lines.push('');
+
+		const debilities = ['wounded', 'unprepared', 'shaken', 'encumbered', 'maimed', 'corrupted', 'cursed', 'tormented'];
+		const active = debilities.filter(k => d[k]);
+		if (active.length > 0) {
+			lines.push('## Debilities');
+			active.forEach(k => lines.push(`- ${k.charAt(0).toUpperCase() + k.slice(1)}`));
+			lines.push('');
+		}
+
+		const vows = d.vows as Array<{ name: string; difficulty: string; ticks: number }> | undefined;
+		if (vows?.length) {
+			lines.push('## Vows');
+			vows.forEach(v => lines.push(`- **${v.name}** (${v.difficulty}) — ${Math.floor(v.ticks / 4)}/10`));
+			lines.push('');
+		}
+
+		const assets = d.assets as Array<{ assetId: string; abilities: boolean[] }> | undefined;
+		if (assets?.length) {
+			lines.push('## Assets');
+			const catalogue = getAssets();
+			assets.forEach(a => {
+				const def = catalogue.find(d => d.id === a.assetId);
+				const enabledCount = a.abilities.filter(Boolean).length;
+				lines.push(`- **${def?.name ?? a.assetId}** (${def?.category ?? '?'}) — ${enabledCount}/${a.abilities.length} abilities`);
+			});
+			lines.push('');
+		}
+
+		return lines.join('\n');
+	}
+
+	function logToMarkdown(): string {
+		const entries = (logs[SESSION_LOG_ID] ?? []);
+		if (entries.length === 0) return '# Session Log\n\n_No entries._\n';
+		const now = new Date();
+		const stamp = now.toLocaleString(undefined, {
+			year: 'numeric', month: 'short', day: 'numeric',
+			hour: '2-digit', minute: '2-digit',
+		});
+		const lines: string[] = ['# Session Log', `_Exported ${stamp}_`, '', '---', ''];
+		[...entries].reverse().forEach((entry) => {
+			const time = new Date(entry.ts).toLocaleString(undefined, {
+				month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+			});
+			lines.push(`## ${entry.title}  —  ${time}`, '');
+			lines.push(htmlToMd(entry.html));
+			if (entry.note?.trim()) {
+				lines.push('');
+				entry.note.split('\n').forEach((l) => lines.push(`> ${l}`));
+			}
+			lines.push('');
+		});
+		return lines.join('\n').trimEnd();
+	}
+
+	function handleExport(content: string, format: string) {
+		const stamp = makeTimestamp();
+		if (content === 'character') {
+			if (!activeChar) return;
+			const safeName = (activeChar.name || 'character').replace(/[^a-z0-9_\-]+/gi, '_');
+			if (format === 'json') {
+				exportJson('character', { name: activeChar.name, data: $state.snapshot(activeChar.data) }, 1, `${safeName}.json`);
+			} else {
+				downloadFile(`${safeName}.md`, charToMarkdown(activeChar), 'text/markdown');
+			}
+		} else if (content === 'all-characters') {
+			const payload = chars.map(c => ({ name: c.name, data: $state.snapshot(c.data) }));
+			if (format === 'json') {
+				exportJson('all-characters', payload, chars.length, `all-characters-${stamp}.json`);
+			} else {
+				const md = chars.map(c => charToMarkdown(c)).join('\n---\n\n');
+				downloadFile(`all-characters-${stamp}.md`, md, 'text/markdown');
+			}
+		} else if (content === 'log') {
+			if (format === 'json') {
+				const entries = [...(logs[SESSION_LOG_ID] ?? [])].reverse();
+				exportJson('log', entries, entries.length, `session-log-${stamp}.json`);
+			} else {
+				downloadFile(`session-log-${stamp}.md`, logToMarkdown(), 'text/markdown');
+			}
+		} else if (content === 'communities') {
+			if (format === 'json') {
+				const payload = { communities: $state.snapshot(communities), npcs: $state.snapshot(npcs) };
+				exportJson('communities', payload, communities.length + npcs.length, `communities-${stamp}.json`);
+			} else {
+				handleExportCommunities();
+			}
+		}
+	}
+
+	// ---------------------------------------------------------------------------
+	// Menu action listener (from HamburgerMenu in layout)
+	// ---------------------------------------------------------------------------
+	function handleMenuAction(e: Event) {
+		const detail = (e as CustomEvent).detail as { action: string; content?: string; format?: string };
+		if (detail.action === 'import') {
+			importInput.click();
+		} else if (detail.action === 'export' && detail.content && detail.format) {
+			handleExport(detail.content, detail.format);
+		}
+	}
+
+	onMount(() => {
+		document.addEventListener('il-menu-action', handleMenuAction);
+		return () => document.removeEventListener('il-menu-action', handleMenuAction);
+	});
 </script>
 
 <svelte:head>
@@ -898,13 +1133,6 @@
 				<div class="char-toolbar">
 					<div class="char-toolbar-actions">
 						<button
-							class="btn icon-btn"
-							onclick={() => importInput.click()}
-							disabled={importing}
-							title="Import character from JSON"
-							aria-label="Import character from JSON"
-						>{@html fileImportSvg}{importing ? ' Importing…' : ' Import'}</button>
-						<button
 							class="btn btn-primary"
 							onclick={addCharacter}
 							disabled={creating}
@@ -1046,13 +1274,6 @@
 				<div class="char-toolbar">
 					<div class="char-toolbar-actions">
 						<button
-							class="btn icon-btn"
-							onclick={handleExportCommunities}
-							title="Export communities and NPCs as Markdown"
-							aria-label="Export communities and NPCs as Markdown"
-							disabled={communities.length === 0 && npcs.length === 0}
-						>{@html fileExportSvg} Export</button>
-						<button
 							class="btn btn-primary icon-btn"
 							onclick={() => oraclesDialogRef?.open()}
 							title="Browse and roll oracles"
@@ -1152,13 +1373,6 @@
 						<div class="char-toolbar">
 							<span class="log-panel-title">Session Log</span>
 							<div class="char-toolbar-actions">
-								<button
-									class="btn icon-btn"
-									onclick={() => logPanelRef?.exportLog()}
-									title="Export log as Markdown"
-									aria-label="Export session log as Markdown"
-									disabled={!logPanelRef?.hasEntries()}
-								>{@html fileExportSvg} Export</button>
 								<button
 									class="btn icon-btn"
 									onclick={() => logPanelRef?.showClearDialog()}

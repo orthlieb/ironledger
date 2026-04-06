@@ -3,11 +3,11 @@
 	import type { LayoutData } from './$types';
 	import type { MaintenanceStatus } from '@ironledger/shared';
 	import SettingsDialog from '$lib/components/SettingsDialog.svelte';
+	import HamburgerMenu from '$lib/components/HamburgerMenu.svelte';
 	import { maintenance } from '$lib/api';
 	import swordSvg from '$icons/sharp-axe.svg?raw';
 	import { preloadDice } from '$lib/dice';
 	import { page } from '$app/stores';
-	import gearSvg from '$icons/gear-solid-full.svg?raw';
 	import { goto } from '$app/navigation';
 
 	let { data, children }: { data: LayoutData; children: import('svelte').Snippet } = $props();
@@ -89,15 +89,7 @@
 				{/if}
 			</nav>
 			<div class="nav-user-actions">
-				<button
-					class="nav-settings-btn tooltip-down"
-					onclick={() => settingsDialog?.open()}
-					aria-label="Settings"
-					data-tooltip="Settings"
-				>{@html gearSvg}</button>
-				<form method="POST" action="/logout">
-					<button type="submit" class="btn btn-icon">Sign Out</button>
-				</form>
+				<HamburgerMenu onSettings={() => settingsDialog?.open()} />
 			</div>
 		</div>
 	</nav>
@@ -147,34 +139,9 @@
 		fill: currentColor;
 	}
 
-	/* ── Settings button ── */
 	.nav-user-actions {
 		display: flex;
 		align-items: center;
-		gap: 0.35rem;
-	}
-
-	.nav-settings-btn {
-		display:         inline-flex;
-		align-items:     center;
-		justify-content: center;
-		background:      none;
-		border:          1px solid transparent;
-		border-radius:   4px;
-		padding:         3px 6px;
-		cursor:          pointer;
-		color:           var(--text-dimmer);
-		line-height:     1;
-		transition:      color 0.15s, border-color 0.15s;
-	}
-	.nav-settings-btn:hover {
-		color:        var(--text-accent);
-		border-color: var(--border-mid);
-	}
-	.nav-settings-btn :global(svg) {
-		width:  14px;
-		height: 14px;
-		fill:   currentColor;
 	}
 
 	.nav-page-links {
