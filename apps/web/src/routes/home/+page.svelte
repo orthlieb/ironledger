@@ -688,6 +688,27 @@
 					for (const entry of entries) {
 						appendLog(SESSION_LOG_ID, entry.title, entry.html, undefined, entry.source, entry.roll);
 					}
+				} else if (m.type === 'communities') {
+					const d = parsed.data as { communities?: Community[]; npcs?: Npc[] };
+					for (const c of d.communities ?? []) await addCommunity(c);
+					for (const n of d.npcs ?? []) await addNpc(n);
+				} else if (m.type === 'everything') {
+					const d = parsed.data as {
+						characters?: Array<{ name?: string; data?: Record<string, unknown> }>;
+						log?: import('$lib/log.svelte.js').LogEntry[];
+						communities?: Community[];
+						npcs?: Npc[];
+					};
+					for (const entry of d.characters ?? []) {
+						const newChar = await api.create(entry.name ?? 'Imported Character', entry.data ?? {});
+						chars = [newChar, ...chars];
+						if (!activeCharId) activeCharId = newChar.id;
+					}
+					for (const entry of d.log ?? []) {
+						appendLog(SESSION_LOG_ID, entry.title, entry.html, undefined, entry.source, entry.roll);
+					}
+					for (const c of d.communities ?? []) await addCommunity(c);
+					for (const n of d.npcs ?? []) await addNpc(n);
 				}
 			} else {
 				// Legacy format: { name, data }
@@ -867,7 +888,32 @@
 
 	function handleExport(content: string, format: string) {
 		const stamp = makeTimestamp();
-		if (content === 'character') {
+		if (content === 'everything') {
+			if (format === 'json') {
+				const payload = {
+					characters: chars.map(c => ({ name: c.name, data: $state.snapshot(c.data) })),
+					log: [...(logs[SESSION_LOG_ID] ?? [])].reverse(),
+					communities: $state.snapshot(communities),
+					npcs: $state.snapshot(npcs),
+				};
+				const totalCount = chars.length + (logs[SESSION_LOG_ID]?.length ?? 0) + communities.length + npcs.length;
+				exportJson('everything', payload, totalCount, `ironledger-export-${stamp}.json`);
+			} else {
+				const sections: string[] = [];
+				if (chars.length) sections.push(chars.map(c => charToMarkdown(c)).join('\n---\n\n'));
+				const logMd = logToMarkdown();
+				if (logMd) sections.push(`# Session Log\n\n${logMd}`);
+				if (communities.length) {
+					const comLines = communities.map(c => `## ${c.name}\n\nRank: ${c.rank ?? 'n/a'}`).join('\n\n');
+					sections.push(`# Communities\n\n${comLines}`);
+				}
+				if (npcs.length) {
+					const npcLines = npcs.map(n => `## ${n.name}\n\nRole: ${n.role ?? 'n/a'}`).join('\n\n');
+					sections.push(`# NPCs\n\n${npcLines}`);
+				}
+				downloadFile(`ironledger-export-${stamp}.md`, sections.join('\n\n---\n\n'), 'text/markdown');
+			}
+		} else if (content === 'character') {
 			if (!activeChar) return;
 			const safeName = (activeChar.name || 'character').replace(/[^a-z0-9_\-]+/gi, '_');
 			if (format === 'json') {

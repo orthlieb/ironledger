@@ -16,7 +16,7 @@
 
 	let open = $state(false);
 	let exportDialogEl = $state<HTMLDialogElement | null>(null);
-	let exportContent = $state('character');
+	let exportContent = $state('everything');
 	let exportFormat = $state('json');
 
 	function toggle() { open = !open; }
@@ -82,6 +82,7 @@
 		<div class="ed-field">
 			<span class="ed-label">Content</span>
 			<select class="ed-select" bind:value={exportContent}>
+				<option value="everything">Everything</option>
 				<option value="character">Current Character</option>
 				<option value="all-characters">All Characters</option>
 				<option value="log">Session Log</option>
