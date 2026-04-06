@@ -14,7 +14,3 @@ export const INTERNAL_API_URL: string =
 /** hCaptcha site key — public, safe to send to the browser via page data. */
 export const HCAPTCHA_SITE_KEY: string =
 	env.HCAPTCHA_SITE_KEY ?? '';
-
-/** Anthropic API key for the AI Storyteller feature (optional). */
-export const ANTHROPIC_API_KEY: string =
-	env.ANTHROPIC_API_KEY ?? '';

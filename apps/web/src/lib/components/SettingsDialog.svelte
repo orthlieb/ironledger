@@ -12,7 +12,6 @@
 	 */
 
 	import { isDice3dEnabled, setDice3dEnabled } from '$lib/dice';
-	import { isStorytellerEnabled, setStorytellerEnabled } from '$lib/storytellerStore.svelte.js';
 	import { draggable } from '$lib/actions/draggable.js';
 
 	import autoSvg    from '$icons/circle-half-stroke-solid.svg?raw';
@@ -60,16 +59,6 @@
 	}
 
 	// ---------------------------------------------------------------------------
-	// AI Storyteller
-	// ---------------------------------------------------------------------------
-	let storyteller = $state(typeof window !== 'undefined' ? isStorytellerEnabled() : false);
-
-	function applyStoryteller(on: boolean) {
-		storyteller = on;
-		setStorytellerEnabled(on);
-	}
-
-	// ---------------------------------------------------------------------------
 	// Dialog
 	// ---------------------------------------------------------------------------
 	let dialogEl = $state<HTMLDialogElement | null>(null);
@@ -78,7 +67,6 @@
 		// Re-sync with localStorage each time the dialog opens.
 		theme  = savedTheme();
 		dice3d = isDice3dEnabled();
-		storyteller = isStorytellerEnabled();
 		dialogEl?.showModal();
 	}
 
@@ -141,27 +129,6 @@
 					onclick={() => applyDice3d(false)}
 					aria-pressed={!dice3d}
 					data-tooltip="Skip 3D animation, show result immediately"
-				>Off</button>
-			</div>
-		</div>
-
-		<!-- AI Storyteller -->
-		<div class="sd-row">
-			<span class="sd-label">Storyteller</span>
-			<div class="sd-seg" role="group" aria-label="AI narrative commentary">
-				<button
-					class="sd-seg-btn"
-					class:active={storyteller}
-					onclick={() => applyStoryteller(true)}
-					aria-pressed={storyteller}
-					data-tooltip="AI narrator provides running commentary on the action"
-				>On</button>
-				<button
-					class="sd-seg-btn"
-					class:active={!storyteller}
-					onclick={() => applyStoryteller(false)}
-					aria-pressed={!storyteller}
-					data-tooltip="Disable AI narrative commentary"
 				>Off</button>
 			</div>
 		</div>

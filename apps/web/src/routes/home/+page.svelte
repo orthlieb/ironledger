@@ -7,7 +7,6 @@
 	import { findFoe, findFoeByName, loadFoes, FOE_RANKS } from '$lib/foeStore.svelte.js';
 	import { loadDelveData } from '$lib/delveStore.svelte.js';
 	import { appendLog, getActionNonce, drainActions, SESSION_LOG_ID, logs } from '$lib/log.svelte.js';
-	import { isStorytellerEnabled, requestNarration, type StorytellerContext } from '$lib/storytellerStore.svelte.js';
 	import {
 		loadEncounters, getEncounters,
 		addEncounter, updateEncounter, removeEncounter,
@@ -28,7 +27,6 @@
 	import CommunityCard     from '$lib/components/CommunityCard.svelte';
 	import NpcCard           from '$lib/components/NpcCard.svelte';
 	import LogPanel          from '$lib/components/LogPanel.svelte';
-	import StorytellerPanel  from '$lib/components/StorytellerPanel.svelte';
 	import GlobalContextBar  from '$lib/components/GlobalContextBar.svelte';
 	import DiceRollerDialog  from '$lib/components/DiceRollerDialog.svelte';
 	import OraclesDialog     from '$lib/components/OraclesDialog.svelte';
@@ -269,59 +267,6 @@
 		chars = chars.map(c => c.id === activeCharId ? { ...c } : c);
 		// Persist to API (fire-and-forget, same cadence as CharacterSheet auto-save)
 		api.update(activeCharId, char.data).catch(() => {});
-	});
-	// ── AI Storyteller — trigger narration on new log entries ──────────────────
-	let _prevLogLen = 0;
-	$effect(() => {
-		const entries = logs[SESSION_LOG_ID] ?? [];
-		const len = entries.length;
-		// Skip the initial load and only fire when a NEW entry appears
-		if (_prevLogLen === 0) { _prevLogLen = len; return; }
-		if (len <= _prevLogLen) { _prevLogLen = len; return; }
-		_prevLogLen = len;
-		if (!isStorytellerEnabled()) return;
-
-		const latest = entries[0]; // newest first
-		if (!latest) return;
-		// Don't narrate our own storyteller entries (prevent infinite loop)
-		if (latest.title === 'Storyteller') return;
-
-		// Build context from current game state
-		const charObj = activeChar
-			? { name: activeChar.name, ...(activeChar.data as Record<string, unknown>) }
-			: undefined;
-
-		const foeEnc = encounters.find(e => e.id === activeFoeId);
-		const foeDef = foeEnc ? findFoe(foeEnc.foeId) : undefined;
-		const foeObj = foeEnc && foeDef
-			? { ...foeDef, quantity: foeEnc.quantity, effectiveRank: foeEnc.effectiveRank,
-				progressTicks: foeEnc.ticks, notes: foeEnc.notes, customName: foeEnc.customName }
-			: undefined;
-
-		const expObj = expeditions.find(e => e.id === activeExpeditionId) as Record<string, unknown> | undefined;
-
-		// Collect last 8 log entries as plain text summaries
-		const recentLog = entries.slice(0, 8).map(e => {
-			const plain = e.html.replace(/<[^>]+>/g, '').trim();
-			const note = e.note ? ` [Note: ${e.note}]` : '';
-			return `[${e.title}] ${plain}${note}`;
-		});
-
-		const trigger = (() => {
-			const plain = latest.html.replace(/<[^>]+>/g, '').trim();
-			const note = latest.note ? ` Player note: ${latest.note}` : '';
-			return `${latest.title}: ${plain}${note}`;
-		})();
-
-		const ctx: StorytellerContext = {
-			character: charObj,
-			foe:       foeObj,
-			expedition: expObj,
-			recentLog,
-			trigger,
-		};
-
-		requestNarration(ctx);
 	});
 
 	// ── Initial load ───────────────────────────────���───────────────────────────
@@ -1400,7 +1345,6 @@
 								activeFoeId = '';
 							}}
 						/>
-						<StorytellerPanel />
 					</div>
 
 				</div>
