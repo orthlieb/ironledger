@@ -22,7 +22,7 @@
 	import trashSvg      from '$icons/trash-solid-full.svg?raw';
 	import hornedHelmSvg from '$icons/horned-helm.svg?raw';
 	import ErrorBar      from '$lib/components/ErrorBar.svelte';
-	import fileExportSvg from '$icons/file-export-solid-full.svg?raw';
+
 	import swordSvg      from '$icons/sword-solid-full.svg?raw';
 	import shieldSvg     from '$icons/shield-halved-solid.svg?raw';
 
@@ -379,23 +379,6 @@
 	}
 
 	// ---------------------------------------------------------------------------
-	// Export — download character as JSON
-	// ---------------------------------------------------------------------------
-	function exportCharacter() {
-		const snapshot = $state.snapshot(data);
-		const blob = new Blob([JSON.stringify({ name: character.name, data: snapshot }, null, 2)], {
-			type: 'application/json',
-		});
-		const url  = URL.createObjectURL(blob);
-		const link = document.createElement('a');
-		const safeName = (character.name || 'character').replace(/[^a-z0-9_\-]+/gi, '_');
-		link.href     = url;
-		link.download = `${safeName}.json`;
-		link.click();
-		URL.revokeObjectURL(url);
-	}
-
-	// ---------------------------------------------------------------------------
 	// Portrait upload (mirror YRT: resize to 256 px JPEG)
 	// ---------------------------------------------------------------------------
 	function handlePortrait(e: Event) {
@@ -499,14 +482,6 @@
 		{:else if initiative === 2}
 			<div class="cs-init-badge cs-init-badge--foe">{@html shieldSvg}<span class="cs-init-label">Foe Has Initiative</span></div>
 		{/if}
-
-		<!-- Export button — always visible -->
-		<button
-			class="btn btn-icon icon-btn"
-			onclick={exportCharacter}
-			title="Export character as JSON"
-			aria-label="Export character as JSON"
-		>{@html fileExportSvg}</button>
 
 		{#if onDelete}
 			<button
