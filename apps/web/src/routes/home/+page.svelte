@@ -48,6 +48,7 @@
 	import type { PreconditionContext } from '$lib/preconditions.js';
 	import { loadSessionState, saveSessionState } from '$lib/sessionStore.svelte.js';
 	import { onMount, tick } from 'svelte';
+	import { parseImportJson, sanitizeLogHtml, ImportError } from '$lib/importSanitizer.js';
 	import trashSvg         from '$icons/trash-solid-full.svg?raw';
 	import broomWideSvg     from '$icons/broom-wide-solid-full.svg?raw';
 	import charactersSvgUrl from '$icons/Characters.svg?url';
@@ -162,17 +163,15 @@
 	let activeTab = $state<Tab>('characters');
 
 	// ── Session persistence ────────────────────────────────────────────────────
-	// Debounced write to DB on every selection or initiative change.
+	// Debounced write to DB on every selection change.
 	// saveSessionState() no-ops until loadSessionState() has completed so we
 	// never overwrite the DB with empty values on initial mount.
-	// Spread initiativeMap so Svelte 5 reads its properties and tracks deep
-	// mutations (e.g. initiativeMap[charId] = 1) — not just reassignments.
+	// Initiative is stored on each character's data — not here.
 	$effect(() => {
 		saveSessionState({
-			charId:        activeCharId,
-			foeId:         activeFoeId,
-			expeditionId:  activeExpeditionId,
-			initiativeMap: { ...initiativeMap },
+			charId:       activeCharId,
+			foeId:        activeFoeId,
+			expeditionId: activeExpeditionId,
 			activeTab,
 		});
 	});
@@ -286,6 +285,13 @@
 		]);
 		if (charResult.status === 'fulfilled') {
 			chars = charResult.value;
+			// Restore initiative from each character's own data
+			const map: Record<string, number> = {};
+			for (const c of chars) {
+				const v = (c.data as Record<string, unknown>).initiative as number | undefined;
+				if (v) map[c.id] = v;
+			}
+			if (Object.keys(map).length > 0) initiativeMap = map;
 		} else {
 			charError = 'Failed to load characters. Is the server running?';
 		}
@@ -298,8 +304,6 @@
 				activeFoeId = saved.foeId;
 			if (saved.expeditionId && getExpeditions().find(e => e.id === saved.expeditionId))
 				activeExpeditionId = saved.expeditionId;
-			if (saved.initiativeMap && Object.keys(saved.initiativeMap).length > 0)
-				initiativeMap = saved.initiativeMap;
 			const validTabs: Tab[] = ['characters', 'foes', 'expeditions', 'communities', 'adventure'];
 			if (saved.activeTab && validTabs.includes(saved.activeTab as Tab))
 				activeTab = saved.activeTab as Tab;
@@ -667,7 +671,22 @@
 		charError = '';
 		try {
 			const text   = await file.text();
-			const parsed = JSON.parse(text);
+			// parseImportJson validates structure, enforces size/depth limits,
+			// and strips prototype-pollution keys. Throws ImportError on failure.
+			const parsed = parseImportJson(text) as Record<string, unknown>;
+
+			// Helper: sanitize HTML in all log entries before appending
+			function appendSafeLog(entry: { title?: string; html?: string; note?: string; source?: string; roll?: unknown }) {
+				appendLog(
+					SESSION_LOG_ID,
+					String(entry.title ?? ''),
+					sanitizeLogHtml(String(entry.html ?? '')),
+					undefined,
+					entry.source as string | undefined,
+					entry.roll as import('$lib/log.svelte.js').LogEntry['roll'],
+				);
+			}
+
 			// Support manifest-wrapped exports
 			if (parsed.manifest && parsed.data) {
 				const m = parsed.manifest as { type: string };
@@ -684,10 +703,56 @@
 						if (!activeCharId) activeCharId = newChar.id;
 					}
 				} else if (m.type === 'log') {
-					const entries = parsed.data as import('$lib/log.svelte.js').LogEntry[];
-					for (const entry of entries) {
-						appendLog(SESSION_LOG_ID, entry.title, entry.html, undefined, entry.source, entry.roll);
+					const entries = parsed.data as Array<Record<string, unknown>>;
+					for (const entry of entries) appendSafeLog(entry);
+				} else if (m.type === 'communities') {
+					const d = parsed.data as { communities?: Community[]; npcs?: Npc[] };
+					for (const c of d.communities ?? []) await addCommunity(c);
+					for (const n of d.npcs ?? [])        await addNpc(n);
+				} else if (m.type === 'foes') {
+					const entries = parsed.data as import('$lib/types.js').FoeEncounter[];
+					for (const enc of entries) await addEncounter(enc);
+				} else if (m.type === 'expeditions') {
+					const entries = parsed.data as Expedition[];
+					for (const exp of entries) await addExpedition(exp);
+				} else if (m.type === 'everything') {
+					const d = parsed.data as {
+						characters?:  Array<{ name?: string; data?: Record<string, unknown> }>;
+						log?:         Array<Record<string, unknown>>;
+						communities?: Community[];
+						npcs?:        Npc[];
+						foes?:        import('$lib/types.js').FoeEncounter[];
+						expeditions?: Expedition[];
+						session?:     {
+							activeCharId?:       string;
+							activeFoeId?:        string;
+							activeExpeditionId?: string;
+							activeTab?:          string;
+						};
+					};
+					for (const entry of d.characters ?? []) {
+						const newChar = await api.create(entry.name ?? 'Imported Character', entry.data ?? {});
+						chars = [newChar, ...chars];
+						if (!activeCharId) activeCharId = newChar.id;
 					}
+					for (const entry of d.log ?? [])        appendSafeLog(entry);
+					for (const c of d.communities ?? [])    await addCommunity(c);
+					for (const n of d.npcs ?? [])           await addNpc(n);
+					for (const enc of d.foes ?? [])         await addEncounter(enc);
+					for (const exp of d.expeditions ?? [])  await addExpedition(exp);
+					if (d.session) {
+						if (d.session.activeCharId)       activeCharId       = d.session.activeCharId;
+						if (d.session.activeFoeId)        activeFoeId        = d.session.activeFoeId;
+						if (d.session.activeExpeditionId) activeExpeditionId = d.session.activeExpeditionId;
+						if (d.session.activeTab)          activeTab          = d.session.activeTab as Tab;
+					}
+					// Initiative is in each character's data — rebuild the map from imported chars
+					const map: Record<string, number> = {};
+					for (const c of chars) {
+						const v = (c.data as Record<string, unknown>).initiative as number | undefined;
+						if (v) map[c.id] = v;
+					}
+					initiativeMap = map;
 				}
 			} else {
 				// Legacy format: { name, data }
@@ -696,10 +761,13 @@
 				chars = [newChar, ...chars];
 				activeCharId = newChar.id;
 			}
-			activeTab = 'characters';
-		} catch {
-			charError = 'Could not import. Make sure the file is a valid Iron Ledger JSON export.';
+		} catch (err) {
+			charError = err instanceof ImportError
+				? err.message
+				: 'Could not import. Make sure the file is a valid Iron Ledger JSON export.';
 		} finally {
+			// Always switch to characters tab so the ErrorBar (or imported content) is visible
+			activeTab = 'characters';
 			importing = false;
 			importInput.value = '';
 		}
@@ -865,6 +933,41 @@
 		return lines.join('\n').trimEnd();
 	}
 
+	function foesToMarkdown(): string {
+		if (encounters.length === 0) return '# Foes\n\n_No active foes._\n';
+		const lines = ['# Foes', ''];
+		for (const enc of encounters) {
+			const def  = findFoe(enc.foeId);
+			const name = enc.customName || def?.name || enc.foeId;
+			lines.push(`## ${name}${enc.vanquished ? ' _(Vanquished)_' : ''}`);
+			lines.push(`- **Rank:** ${FOE_RANKS[enc.effectiveRank]?.label ?? enc.effectiveRank}`);
+			lines.push(`- **Quantity:** ${enc.quantity.charAt(0).toUpperCase() + enc.quantity.slice(1)}`);
+			lines.push(`- **Progress:** ${Math.floor(enc.ticks / 4)}/10`);
+			if (enc.notes?.trim()) lines.push(`- **Notes:** ${enc.notes.trim()}`);
+			lines.push('');
+		}
+		return lines.join('\n').trimEnd();
+	}
+
+	function expeditionsToMarkdown(): string {
+		if (expeditions.length === 0) return '# Expeditions\n\n_No active expeditions._\n';
+		const lines = ['# Expeditions', ''];
+		for (const exp of expeditions) {
+			const type = exp.type === 'journey' ? 'Journey' : 'Site';
+			lines.push(`## ${exp.name} _(${type})_`);
+			lines.push(`- **Difficulty:** ${exp.difficulty.charAt(0).toUpperCase() + exp.difficulty.slice(1)}`);
+			lines.push(`- **Progress:** ${Math.floor(exp.ticks / 4)}/10`);
+			if (exp.type === 'site') {
+				if (exp.theme)  lines.push(`- **Theme:** ${exp.theme}`);
+				if (exp.domain) lines.push(`- **Domain:** ${exp.domain}`);
+			}
+			if (exp.objective?.trim()) lines.push(`- **Objective:** ${exp.objective.trim()}`);
+			if (exp.notes?.trim())     lines.push(`\n${exp.notes.trim()}`);
+			lines.push('');
+		}
+		return lines.join('\n').trimEnd();
+	}
+
 	function handleExport(content: string, format: string) {
 		const stamp = makeTimestamp();
 		if (content === 'character') {
@@ -897,6 +1000,42 @@
 			} else {
 				handleExportCommunities();
 			}
+		} else if (content === 'foes') {
+			if (format === 'json') {
+				const payload = $state.snapshot(encounters);
+				exportJson('foes', payload, payload.length, `foes-${stamp}.json`);
+			} else {
+				downloadFile(`foes-${stamp}.md`, foesToMarkdown(), 'text/markdown');
+			}
+		} else if (content === 'expeditions') {
+			if (format === 'json') {
+				const payload = $state.snapshot(expeditions);
+				exportJson('expeditions', payload, payload.length, `expeditions-${stamp}.json`);
+			} else {
+				downloadFile(`expeditions-${stamp}.md`, expeditionsToMarkdown(), 'text/markdown');
+			}
+		} else if (content === 'everything') {
+			const characters    = chars.map(c => ({ name: c.name, data: $state.snapshot(c.data) }));
+			const logEntries    = [...(logs[SESSION_LOG_ID] ?? [])].reverse();
+			const foeList       = $state.snapshot(encounters);
+			const expeditionList = $state.snapshot(expeditions);
+			const session       = {
+				activeCharId,
+				activeFoeId,
+				activeExpeditionId,
+				activeTab,
+			};
+			const payload = {
+				characters,
+				log:         logEntries,
+				communities: $state.snapshot(communities),
+				npcs:        $state.snapshot(npcs),
+				foes:        foeList,
+				expeditions: expeditionList,
+				session,
+			};
+			const count = characters.length + logEntries.length + communities.length + npcs.length + foeList.length + expeditionList.length;
+			exportJson('everything', payload, count, `ironledger-${stamp}.json`);
 		}
 	}
 
@@ -1074,7 +1213,6 @@
 		<div class="tab-body">
 
 			{#if activeTab === 'characters'}
-				<ErrorBar message={charError} onDismiss={() => charError = ''} />
 				<div class="char-toolbar">
 					<div class="char-toolbar-actions">
 						<button
@@ -1084,6 +1222,7 @@
 						>{creating ? 'Creating…' : '+ Character'}</button>
 					</div>
 				</div>
+				<ErrorBar message={charError} onDismiss={() => charError = ''} />
 
 				{#if loadingChars}
 					<div class="loading-tab">

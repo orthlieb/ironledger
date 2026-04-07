@@ -83,6 +83,25 @@
 	const total        = $derived(definition.abilities.length);
 	const rarity       = $derived(findRarityForAsset(asset.assetId));
 
+	// ── Level-gated ability cap (e.g. Touched assets) ──────────────────────
+	/**
+	 * Returns the maximum number of abilities the character may enable on this
+	 * asset given their current dropdown selections, or Infinity if no cap is
+	 * defined. Driven by `definition.abilityMaxByField`.
+	 */
+	const abilityMax = $derived((): number => {
+		const abmf = definition.abilityMaxByField;
+		if (!abmf) return Infinity;
+		let cap = Infinity;
+		for (const [fieldId, levelMap] of Object.entries(abmf)) {
+			const currentVal = asset.customValues?.[fieldId] ?? '';
+			if (currentVal in levelMap) {
+				cap = Math.min(cap, levelMap[currentVal]!);
+			}
+		}
+		return cap;
+	});
+
 	// ── Selectable-list support (cantrips, etc.) ─────────────────────────────
 	// A definition can carry:
 	//   selectableItems: [{key, name, desc}, ...]  — the full pool
@@ -194,6 +213,8 @@
 		const enabling = !asset.abilities[i];
 		// XP gate: enabling a new ability costs 2 XP
 		if (enabling && characterXp < 2) return;
+		// Level cap: cannot enable more abilities than the current level allows
+		if (enabling && enabledCount >= abilityMax()) return;
 
 		const next = [...asset.abilities];
 		next[i] = enabling;
@@ -302,6 +323,20 @@
 							onchange={(e) => {
 								if (!asset.customValues) asset.customValues = {};
 								asset.customValues[field.id] = e.currentTarget.value;
+								// Enforce level cap: clear abilities beyond the new max
+								const abmf = definition.abilityMaxByField;
+								if (abmf && field.id in abmf) {
+									const newMax = abmf[field.id]![e.currentTarget.value] ?? Infinity;
+									const cur = [...asset.abilities];
+									let enabled = 0;
+									for (let idx = 0; idx < cur.length; idx++) {
+										if (cur[idx]) {
+											if (enabled < newMax) { enabled++; }
+											else { cur[idx] = false; }
+										}
+									}
+									asset.abilities = cur;
+								}
 							}}
 						>
 							{#each field.options as opt}
@@ -348,15 +383,19 @@
 
 			<div class="abilities-list">
 				{#each definition.abilities as ab, i}
+					{@const _cap = abilityMax()}
+					{@const _atCap = !asset.abilities[i] && enabledCount >= _cap}
 					<label
 						class="ability-row"
 						class:ability-enabled={asset.abilities[i]}
-						class:ability-disabled={!asset.abilities[i] && characterXp < 2}
+						class:ability-disabled={!asset.abilities[i] && (characterXp < 2 || _atCap)}
+						title={_atCap ? `Your current level only allows ${_cap} ${_cap === 1 ? 'ability' : 'abilities'} — increase your touched level to unlock more` : undefined}
 					>
 						<input
 							type="checkbox"
 							class="ability-check"
 							checked={asset.abilities[i]}
+							disabled={_atCap}
 							onchange={() => toggleAbility(i)}
 						/>
 						<div class="ability-text">
@@ -544,6 +583,20 @@
 							onchange={(e) => {
 								if (!asset.customValues) asset.customValues = {};
 								asset.customValues[field.id] = e.currentTarget.value;
+								// Enforce level cap: clear abilities beyond the new max
+								const abmf = definition.abilityMaxByField;
+								if (abmf && field.id in abmf) {
+									const newMax = abmf[field.id]![e.currentTarget.value] ?? Infinity;
+									const cur = [...asset.abilities];
+									let enabled = 0;
+									for (let idx = 0; idx < cur.length; idx++) {
+										if (cur[idx]) {
+											if (enabled < newMax) { enabled++; }
+											else { cur[idx] = false; }
+										}
+									}
+									asset.abilities = cur;
+								}
 							}}
 						>
 							{#each field.options as opt}

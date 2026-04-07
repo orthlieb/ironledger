@@ -503,6 +503,8 @@ Each file contains an `assets` array and an optional `rarities` array:
 | `preconditions` | array of objects | no | Conditions that must be met to add this asset. Same schema as move [Preconditions](#preconditions). Assets failing preconditions are faded and non-clickable in the picker. |
 | `abilities` | array | yes | Exactly 3 ability objects |
 | `customFields` | CustomFieldDef[] | no | Array of custom input fields rendered in the asset card body. Values stored in `CharacterAsset.customValues` keyed by `field.id`. See [Custom Fields](#custom-fields). |
+| `exclusiveGroup` | string | no | If set, the character may own at most one asset whose `exclusiveGroup` matches this value at a time. Attempting to add a second triggers a user-facing error. Example: `"touched"` (only one Touched variant active at once). |
+| `abilityMaxByField` | object | no | Maps a `customField.id` → option value → maximum number of enabled abilities. Used to gate ability checkboxes based on a dropdown selection. When the player selects a lower level, excess enabled abilities are automatically cleared. Example: `{ "touchedLevel": { "pure": 0, "prime": 1, "second": 2, "third": 3, "feral": 3 } }`. |
 
 Each ability object:
 

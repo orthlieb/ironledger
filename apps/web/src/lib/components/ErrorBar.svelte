@@ -40,6 +40,7 @@
 		gap:             0.5rem;
 		width:           100%;
 		padding:         0.55rem 0.75rem;
+		margin-bottom:   0.75rem;
 		background:      color-mix(in srgb, var(--color-danger) 12%, var(--bg-card));
 		border:          1px solid color-mix(in srgb, var(--color-danger) 40%, transparent);
 		border-radius:   6px;

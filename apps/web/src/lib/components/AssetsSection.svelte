@@ -16,6 +16,7 @@
 	import AssetCard     from './AssetCard.svelte';
 	import AssetPicker   from './AssetPicker.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
+	import ErrorBar      from './ErrorBar.svelte';
 
 	let {
 		assets = $bindable<CharacterAsset[]>([]),
@@ -29,7 +30,8 @@
 		onOracleLink?:  (key: string) => void;
 	} = $props();
 
-	let pickerOpen = $state(false);
+	let pickerOpen    = $state(false);
+	let exclusiveMsg  = $state('');
 
 	// ── Remove-asset dialog (lifted out of AssetCard to avoid bind:this in keyed {#each}) ──
 	let removeTarget    = $state<{ assetId: string; def: AssetDefinition; enabledCount: number } | null>(null);
@@ -60,6 +62,21 @@
 		if (ownedIds.includes(assetId)) return; // guard against double-add
 		const def = findAsset(assetId);
 		if (!def) return;
+
+		// Exclusive group: block adding a second asset in the same group
+		if (def.exclusiveGroup) {
+			const allAssets = getAssets();
+			const conflict = assets.find((owned) => {
+				const ownedDef = allAssets.find((a) => a.id === owned.assetId);
+				return ownedDef?.exclusiveGroup === def.exclusiveGroup;
+			});
+			if (conflict) {
+				const conflictDef = allAssets.find((a) => a.id === conflict.assetId);
+				exclusiveMsg = `You already have "${conflictDef?.name ?? conflict.assetId}" — only one ${def.exclusiveGroup} asset may be active at a time. Remove it first.`;
+				setTimeout(() => { exclusiveMsg = ''; }, 6000);
+				return;
+			}
+		}
 		const newEntry: CharacterAsset = {
 			assetId,
 			abilities: def.abilities.map((ab) => ab.enabled), // all categories: ability[0].enabled = true
@@ -92,6 +109,9 @@
 			title={characterData.xp < 3 ? 'Requires 3 XP to acquire an asset' : undefined}
 		>+ Asset</button>
 	</div>
+
+	<!-- Exclusive-group conflict error -->
+	<ErrorBar message={exclusiveMsg} onDismiss={() => (exclusiveMsg = '')} />
 
 	<!-- Owned asset cards -->
 	{#if assets.length === 0}

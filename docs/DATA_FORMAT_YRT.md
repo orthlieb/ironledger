@@ -34,6 +34,8 @@ The Touched are characters physically altered by manite exposure. Touched assets
   "summary": "One-line summary shown in the picker tile.",
   "postamble": "Your touched value determines how many abilities you may use: Pure — none; Prime — 1; ...",
   "touchedFeatures": true,
+  "exclusiveGroup": "touched",
+  "abilityMaxByField": { "touchedLevel": { "pure": 0, "prime": 1, "second": 2, "third": 3, "feral": 3 } },
   "abilities": [ ... ]
 }
 ```
@@ -41,10 +43,16 @@ The Touched are characters physically altered by manite exposure. Touched assets
 | Field | Type | Description |
 |-------|------|-------------|
 | `touchedFeatures` | boolean | When `true`, the UI shows the character's Touched feature list alongside this asset |
+| `exclusiveGroup` | string | Limits the character to owning one asset of this group at a time. All Touched assets set this to `"touched"`. Attempting to add a second Touched asset shows a user-facing error. |
+| `abilityMaxByField` | object | Maps a `customField.id` → option value → maximum enabled abilities. For Touched assets this enforces the level-gated ability rules: Pure = 0, Prime = 1, Second = 2, Third/Feral = 3. When the player lowers their level, excess checked abilities are automatically cleared. |
 
 **Preamble / postamble placement for Touched assets:**
 - `preamble` — shown **before** the ability checkboxes (prerequisite or flavour note)
 - `postamble` — shown **after** the ability checkboxes (used for the "how many abilities you may use" note, since it belongs logically after the list)
+
+**Level-gated abilities:** The `abilityMaxByField` field enforces the rule that a Pure character may use no abilities, Prime one, Second two, Third or Feral all three. The UI disables unchecked boxes when the character is at their level cap and shows a tooltip explaining why. Lowering the level automatically clears any abilities beyond the new cap.
+
+**Exclusive group:** Only one Touched asset may be active at a time. Adding a second Touched asset while one is already owned shows an error message directing the player to remove the existing one first.
 
 Touched assets follow the same auto-enable convention as Paths (see [DATA_FORMAT.md — Auto-Enabled Abilities](DATA_FORMAT.md#auto-enabled-abilities)): the first ability starts checked on acquisition; others start unchecked.
 

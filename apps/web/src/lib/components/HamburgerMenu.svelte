@@ -86,8 +86,12 @@
 				<option value="all-characters">All Characters</option>
 				<option value="log">Session Log</option>
 				<option value="communities">Communities</option>
+				<option value="foes">Foes</option>
+				<option value="expeditions">Expeditions</option>
+				<option value="everything">Everything</option>
 			</select>
 		</div>
+		{#if exportContent !== 'everything'}
 		<div class="ed-field">
 			<span class="ed-label">Format</span>
 			<div class="ed-seg" role="group">
@@ -97,6 +101,7 @@
 					onclick={() => (exportFormat = 'md')}>Markdown</button>
 			</div>
 		</div>
+		{/if}
 	</div>
 	<div class="ed-footer">
 		<button class="btn" onclick={() => exportDialogEl?.close()}>Cancel</button>

@@ -200,6 +200,10 @@ export interface CharacterData {
 	// Collections
 	vows:   Vow[];
 	assets: CharacterAsset[];
+
+	// Combat state
+	/** 0 = no initiative, 1 = character has initiative, 2 = foe has initiative. */
+	initiative?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -269,6 +273,17 @@ export interface AssetDefinition {
 	touchedFeatures?: boolean;
 	/** Custom input fields rendered in the asset body. Values stored in asset.customValues keyed by field.id. */
 	customFields?:    CustomFieldDef[];
+	/**
+	 * If set, only one asset with this group value may be owned at a time.
+	 * Attempting to add a second will be blocked with a user-facing message.
+	 */
+	exclusiveGroup?: string;
+	/**
+	 * Maps a dropdown customField id → option value → maximum enabled ability count.
+	 * e.g. { touchedLevel: { pure: 0, prime: 1, second: 2, third: 3, feral: 3 } }
+	 * When the selected level changes downward the excess abilities are cleared.
+	 */
+	abilityMaxByField?: Record<string, Record<string, number>>;
 	[key: string]:    unknown;
 }
 

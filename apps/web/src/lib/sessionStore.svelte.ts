@@ -1,9 +1,9 @@
 // =============================================================================
 // Iron Ledger — Session Store (Svelte 5 module-level $state)
 //
-// Persists the user's active selections (character, foe, expedition) and
-// per-character initiative map to the server so the UI restores correctly
-// across devices and after logout.
+// Persists the user's active selections (character, foe, expedition) to the
+// server so the UI restores correctly across devices and after logout.
+// Initiative is stored on each character's data and is no longer held here.
 //
 // Provides:
 //   • loadSessionState()    — fetch saved state on page load, returns it
@@ -15,15 +15,14 @@
 // ---------------------------------------------------------------------------
 
 export interface SessionState {
-	charId:        string;
-	foeId:         string;
-	expeditionId:  string;
-	initiativeMap: Record<string, number>;
-	activeTab:     string;
+	charId:       string;
+	foeId:        string;
+	expeditionId: string;
+	activeTab:    string;
 }
 
 export const DEFAULT_SESSION_STATE: SessionState = {
-	charId: '', foeId: '', expeditionId: '', initiativeMap: {}, activeTab: '',
+	charId: '', foeId: '', expeditionId: '', activeTab: '',
 };
 
 // ---------------------------------------------------------------------------

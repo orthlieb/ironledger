@@ -14,10 +14,10 @@ import { sql } from 'drizzle-orm';
 // ---------------------------------------------------------------------------
 
 export interface SessionState {
-  charId:        string;
-  foeId:         string;
-  expeditionId:  string;
-  initiativeMap: Record<string, number>;
+  charId:       string;
+  foeId:        string;
+  expeditionId: string;
+  activeTab?:   string;
 }
 
 export interface UserDataPayload {
@@ -29,7 +29,7 @@ export interface UserDataPayload {
 }
 
 const DEFAULT_SESSION_STATE: SessionState = {
-  charId: '', foeId: '', expeditionId: '', initiativeMap: {},
+  charId: '', foeId: '', expeditionId: '', activeTab: '',
 };
 
 // ---------------------------------------------------------------------------

@@ -15,7 +15,6 @@
 	import { renderNote } from '$lib/markdown.js';
 	import trashSvg      from '$icons/trash-solid-full.svg?raw';
 	import penSvg        from '$icons/pen-to-square-solid-full.svg?raw';
-	import fileExportSvg from '$icons/file-export-solid-full.svg?raw';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 
 	// ---------------------------------------------------------------------------

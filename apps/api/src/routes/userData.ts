@@ -39,11 +39,10 @@ const patchNpcsBody = z.object({
 
 const patchSessionStateBody = z.object({
   sessionState: z.object({
-    charId:        z.string(),
-    foeId:         z.string(),
-    expeditionId:  z.string(),
-    initiativeMap: z.record(z.number()),
-    activeTab:     z.string().optional(),
+    charId:       z.string(),
+    foeId:        z.string(),
+    expeditionId: z.string(),
+    activeTab:    z.string().optional(),
   }),
 });
 

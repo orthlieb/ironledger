@@ -282,6 +282,13 @@
 	const healthIncBlocked  = $derived(data.wounded);
 	const spiritIncBlocked  = $derived(data.shaken);
 
+	// Sync the initiative prop into owned data so it's persisted with the character.
+	// This triggers the auto-save effect below whenever initiative changes externally.
+	$effect(() => {
+		const v = initiative ?? 0;
+		if ((data.initiative ?? 0) !== v) data.initiative = v || undefined;
+	});
+
 	// ---------------------------------------------------------------------------
 	// Auto-save — debounced 1.5 s after any change
 	// ---------------------------------------------------------------------------
