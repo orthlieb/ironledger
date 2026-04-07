@@ -14,8 +14,10 @@ import type { FastifyInstance } from 'fastify';
 import { checkDbHealth } from '../db/index.js';
 import { redis } from '../server.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const STATIC_DIR = join(__dirname, '../static');
+const __dirname   = dirname(fileURLToPath(import.meta.url));
+const STATIC_DIR  = join(__dirname, '../static');
+const pkg         = JSON.parse(readFileSync(join(__dirname, '../../package.json'), 'utf-8')) as { version: string };
+const APP_VERSION = pkg.version;
 
 function loadImage(filename: string): string {
   try {
@@ -172,7 +174,7 @@ export async function healthRoutes(server: FastifyInstance): Promise<void> {
 
   // ── GET / — browser-friendly HTML status page ──────────────────────────────
   server.get('/', async (req, reply) => {
-    const version = process.env['npm_package_version'] ?? 'unknown';
+    const version = APP_VERSION;
     const [dbOk, redisOk] = await Promise.all([
       checkDbHealth(),
       redis.ping().then(() => true).catch(() => false),
@@ -195,7 +197,7 @@ export async function healthRoutes(server: FastifyInstance): Promise<void> {
       db:        dbOk    ? 'ok' : 'error',
       redis:     redisOk ? 'ok' : 'error',
       timestamp: new Date().toISOString(),
-      version:   process.env['npm_package_version'] ?? 'unknown',
+      version:   APP_VERSION,
     });
   });
 }
