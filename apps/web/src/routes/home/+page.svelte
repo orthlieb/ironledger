@@ -323,6 +323,7 @@
 
 	// ── File input ref for import ──────────────────────────────────────────────
 	let importInput: HTMLInputElement;
+	let importConfirmRef = $state<{ open(): void; close(): void } | null>(null);
 
 	// ── CRUD ───────────────────────────────────────────────────────────────────
 	async function addCharacter() {
@@ -1045,7 +1046,7 @@
 	function handleMenuAction(e: Event) {
 		const detail = (e as CustomEvent).detail as { action: string; content?: string; format?: string };
 		if (detail.action === 'import') {
-			importInput.click();
+			importConfirmRef?.open();
 		} else if (detail.action === 'export' && detail.content && detail.format) {
 			handleExport(detail.content, detail.format);
 		}
@@ -1069,6 +1070,21 @@
 	style="display: none"
 	onchange={importCharacter}
 />
+
+<!-- Import warning dialog -->
+<ConfirmDialog
+	bind:this={importConfirmRef}
+	title="Import Data?"
+	confirmLabel="Choose File…"
+	cancelLabel="Cancel"
+	onconfirm={() => importInput.click()}
+>
+	<div style="display:flex; flex-direction:column; gap:8px; font-family:var(--font-ui); font-size:0.8rem; line-height:1.5; color:var(--text-muted);">
+		<p style="margin:0;">Importing a file will <strong style="color:var(--text);">replace</strong> the matching data in your current session.</p>
+		<p style="margin:0;">Depending on the file type, this may overwrite characters, the session log, foes, expeditions, or all campaign data.</p>
+		<p style="margin:0;">This action cannot be undone. Make sure you have exported a backup if needed.</p>
+	</div>
+</ConfirmDialog>
 
 <!-- Dice roller dialog (always mounted; opened by GlobalContextBar Dice button) -->
 <DiceRollerDialog bind:this={diceRollerRef} ctx={activeDiceCtx} />
