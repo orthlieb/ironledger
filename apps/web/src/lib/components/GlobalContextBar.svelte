@@ -558,11 +558,11 @@
 		border-bottom: 1px solid var(--border);
 		border-radius: 5px 5px 0 0;
 		font-family: var(--font-display);
-		font-size: 0.65rem;
+		font-size: 0.75rem;
 		font-weight: 700;
-		letter-spacing: 0.12em;
+		letter-spacing: 0.08em;
 		text-transform: uppercase;
-		color: var(--text-accent);
+		color: var(--text-muted);
 	}
 
 	/* Full-area clickable button */
