@@ -7,6 +7,8 @@
  *   • Increasing supply on one char syncs all others (+ button)
  *   • Decreasing supply on one char syncs all others (− button)
  *   • Supply resource-link click in the log echoes the change to all chars
+ *   • GCB supply chip updates immediately when supply changes (Characters tab)
+ *   • GCB supply chip updates when log resource-link is clicked on Adventure tab
  */
 import { test, expect, type Locator, type Page } from '@playwright/test';
 
@@ -74,6 +76,13 @@ function makeCharManifest(name: string, supply: number) {
 			},
 		},
 	};
+}
+
+/** Read the supply value from the GCB chip on the Adventure tab. */
+async function getGcbSupply(page: Page): Promise<number> {
+	const text = await page.locator('.gc-chip[title="supply"] .gc-chip-value').textContent();
+	const match = (text ?? '').match(/\d+/);
+	return match ? parseInt(match[0], 10) : -1;
 }
 
 /** Upload a JSON blob via the hidden file input (bypasses import confirm dialog). */
@@ -279,5 +288,81 @@ test.describe('Party supply sync', () => {
 			const tile = cards.nth(i).locator('.res-tile').filter({ hasText: 'Supply' });
 			await expect(tile.locator('.res-value')).toHaveText('4', { timeout: 4000 });
 		}
+	});
+
+	// ── GCB chip stays in sync with Characters tab changes ───────────────────
+
+	test('GCB supply chip reflects supply changed via +/- button on Characters tab', async ({ page }) => {
+		await ensureCharCount(page, 1);
+
+		const cards = page.locator('.char-list--characters > .char-card');
+		await cards.first().click();
+		await setSupply(cards.first(), 2);
+
+		// Switch to Adventure tab — GCB becomes visible
+		await page.locator('.tab-btn[data-tab="adventure"]').click();
+		await expect(page.locator('.global-context')).toBeVisible({ timeout: 5000 });
+
+		// GCB should immediately show supply = 2 (not a stale value from page load)
+		const gcbVal = await getGcbSupply(page);
+		expect(gcbVal).toBe(2);
+	});
+
+	test('GCB supply chip updates when log resource-link is clicked on Adventure tab', async ({ page }) => {
+		await ensureCharCount(page, 2);
+
+		const cards = page.locator('.char-list--characters > .char-card');
+
+		// Normalise both chars to supply 3
+		await cards.first().click();
+		await setSupply(cards.first(), 3);
+		await cards.nth(1).click();
+		await setSupply(cards.nth(1), 3);
+
+		// Get the active char's ID
+		await cards.first().click();
+		const activeCard = page.locator('.char-card--active').first();
+		const charId = await activeCard.getAttribute('data-char-id');
+		expect(charId).toBeTruthy();
+
+		// Switch to Adventure tab so GCB + LogPanel are both visible
+		await page.locator('.tab-btn[data-tab="adventure"]').click();
+		await expect(page.locator('.global-context')).toBeVisible({ timeout: 5000 });
+
+		// GCB should show supply = 3 at this point
+		expect(await getGcbSupply(page)).toBe(3);
+
+		// Inject a fake log entry with a −1 supply link for the active char
+		const entryId = 'test-gcb-supply-link';
+		await page.evaluate(
+			({ cId, eId }) => {
+				const logBody = document.querySelector('.log-entries');
+				if (!logBody) return;
+				const div = document.createElement('div');
+				div.className = 'log-entry';
+				div.innerHTML = `<div class="entry-body"><a class="resource-link" data-resource="supply" data-value="-1" data-entry-id="${eId}" data-char-id="${cId}">−1 supply</a></div>`;
+				logBody.prepend(div);
+			},
+			{ cId: charId, eId: entryId }
+		);
+
+		// Click the supply link in the log
+		const supplyLink = page.locator(`.resource-link[data-entry-id="${entryId}"]`).first();
+		await supplyLink.waitFor({ timeout: 3000 });
+		await supplyLink.click();
+		await page.waitForTimeout(300);
+
+		// GCB supply chip should update to 2
+		await expect(page.locator('.gc-chip[title="supply"] .gc-chip-value'))
+			.toContainText('2', { timeout: 3000 });
+
+		// Switching back to Characters tab — both chars should also show 2
+		await page.locator('.tab-btn[data-tab="characters"]').click();
+		await expect(page.locator('.char-toolbar')).toBeVisible({ timeout: 5000 });
+
+		const tile1 = cards.first().locator('.res-tile').filter({ hasText: 'Supply' });
+		const tile2 = cards.nth(1).locator('.res-tile').filter({ hasText: 'Supply' });
+		await expect(tile1.locator('.res-value')).toHaveText('2', { timeout: 4000 });
+		await expect(tile2.locator('.res-value')).toHaveText('2', { timeout: 4000 });
 	});
 });

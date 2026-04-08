@@ -241,6 +241,16 @@
 					if (liveCtx?.charId === activeCharId) {
 						(liveCtx.data as unknown as Record<string, unknown>)[action.key] = next;
 					}
+					// Supply is party-wide: echo to all chars and update _partySupply so
+					// CharacterSheets reinitialise correctly when the Characters tab is opened.
+					if (action.key === 'supply') {
+						_partySupply = next;
+						for (const c of chars) {
+							if (c.id !== activeCharId) {
+								(c.data as Record<string, unknown>).supply = next;
+							}
+						}
+					}
 					const label = action.key.charAt(0).toUpperCase() + action.key.slice(1);
 					appendLog(SESSION_LOG_ID, `${char.name} — ${label}`,
 						`<div>${label}: ${old} → <strong>${next}</strong> (${action.value > 0 ? '+' : ''}${action.value})</div>`);
@@ -262,8 +272,8 @@
 				}
 			}
 		}
-		// Shallow-clone the entry so Svelte sees the mutation and GCB re-renders
-		chars = chars.map(c => c.id === activeCharId ? { ...c } : c);
+		// Shallow-clone all entries (supply may have changed for multiple chars)
+		chars = chars.map(c => ({ ...c }));
 		// Persist to API (fire-and-forget, same cadence as CharacterSheet auto-save)
 		api.update(activeCharId, char.data).catch(() => {});
 	});
@@ -333,6 +343,13 @@
 
 	function handleSupplyChange(val: number) {
 		_partySupply = val;
+		// Also update chars.data.supply so the GCB chip stays in sync while on
+		// the Characters tab (CharacterSheet owns its own data copy and does NOT
+		// mutate chars — so we must mirror the change here).
+		chars = chars.map(c => {
+			(c.data as Record<string, unknown>).supply = val;
+			return { ...c };
+		});
 	}
 
 	function syncPartySupply() {
