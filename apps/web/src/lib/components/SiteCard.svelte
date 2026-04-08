@@ -21,10 +21,11 @@
 	import FoePickerDialog  from '$lib/components/FoePickerDialog.svelte';
 	import { onMount } from 'svelte';
 
-	import trashSvg      from '$icons/trash-solid-full.svg?raw';
-	import checkSvg      from '$icons/circle-check-solid-full.svg?raw';
-	import locationSvg   from '$icons/location-dot-solid-full.svg?raw';
-	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import trashSvg       from '$icons/trash-solid-full.svg?raw';
+	import checkSvg       from '$icons/circle-check-solid-full.svg?raw';
+	import locationSvg    from '$icons/location-dot-solid-full.svg?raw';
+	import placeholderSvg from '$icons/dungeon-gate.svg?raw';
+	import ConfirmDialog  from '$lib/components/ConfirmDialog.svelte';
 
 	// ---------------------------------------------------------------------------
 	// Props
@@ -56,6 +57,30 @@
 	let editingName        = $state(false);
 	let nameInputEl        = $state<HTMLInputElement | null>(null);
 	let nameBeforeEdit     = '';
+	let portraitHovered    = $state(false);
+
+	function handlePortrait(e: Event) {
+		const file = (e.target as HTMLInputElement).files?.[0];
+		if (!file) return;
+		const reader = new FileReader();
+		reader.onload = () => {
+			const img = new Image();
+			img.onload = () => {
+				const canvas = document.createElement('canvas');
+				const size = Math.min(img.width, img.height, 256);
+				canvas.width  = size;
+				canvas.height = size;
+				const ctx = canvas.getContext('2d')!;
+				const side = Math.min(img.width, img.height);
+				const sx   = (img.width  - side) / 2;
+				const sy   = (img.height - side) / 2;
+				ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
+				update({ imageUrl: canvas.toDataURL('image/jpeg', 0.85) });
+			};
+			img.src = reader.result as string;
+		};
+		reader.readAsDataURL(file);
+	}
 	$effect(() => {
 		if (editingName && nameInputEl) nameInputEl.select();
 	});
@@ -264,6 +289,27 @@
 			onclick={() => (collapsed = !collapsed)}
 			aria-label={collapsed ? 'Expand' : 'Collapse'}
 		>{collapsed ? '▶' : '▼'}</button>
+
+		<!-- Portrait -->
+		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+		<label
+			class="sc-portrait-label"
+			title="Click to change portrait"
+			onmouseenter={() => (portraitHovered = true)}
+			onmouseleave={() => (portraitHovered = false)}
+		>
+			{#if expedition.imageUrl}
+				<img src={expedition.imageUrl} alt="Portrait" class="sc-portrait-img" />
+			{:else}
+				<div class="sc-portrait-placeholder">{@html placeholderSvg}</div>
+			{/if}
+			<input type="file" accept="image/*" class="sc-portrait-input" aria-label="Upload portrait" onchange={handlePortrait} />
+		</label>
+		{#if portraitHovered && expedition.imageUrl}
+			<div class="sc-portrait-lightbox">
+				<img src={expedition.imageUrl} alt="Portrait" />
+			</div>
+		{/if}
 
 		{#if editingName}
 			<input
@@ -519,6 +565,71 @@
 		font-size: 0.65rem;
 		padding: 2px 4px;
 		flex-shrink: 0;
+	}
+
+	/* ── Portrait ───────────────────────────────────────────────────────── */
+	.sc-portrait-label {
+		width:           38px;
+		height:          38px;
+		border-radius:   50%;
+		flex-shrink:     0;
+		cursor:          pointer;
+		display:         flex;
+		align-items:     center;
+		justify-content: center;
+		transition:      opacity 0.15s;
+	}
+	.sc-portrait-label:has(.sc-portrait-img) {
+		overflow: hidden;
+		border:   1px solid var(--border-mid);
+	}
+	.sc-portrait-label:hover { opacity: 0.85; }
+
+	.sc-portrait-img {
+		width:      100%;
+		height:     100%;
+		object-fit: cover;
+		display:    block;
+	}
+
+	.sc-portrait-placeholder {
+		width:           38px;
+		height:          38px;
+		border-radius:   50%;
+		border:          1px dashed var(--border-mid);
+		display:         flex;
+		align-items:     center;
+		justify-content: center;
+		color:           var(--text-dimmer);
+		background:      var(--bg-control);
+		user-select:     none;
+		flex-shrink:     0;
+	}
+	.sc-portrait-placeholder :global(svg) {
+		width:   20px;
+		height:  20px;
+		fill:    currentColor;
+		opacity: 0.5;
+	}
+
+	.sc-portrait-input { display: none; }
+
+	.sc-portrait-lightbox {
+		position:       absolute;
+		top:            60px;
+		left:           10px;
+		z-index:        100;
+		border-radius:  6px;
+		overflow:       hidden;
+		box-shadow:     0 8px 32px rgba(0,0,0,0.7);
+		border:         1px solid var(--border);
+		pointer-events: none;
+	}
+	.sc-portrait-lightbox img {
+		display:    block;
+		width:      160px;
+		height:     160px;
+		object-fit: cover;
 	}
 
 	.sc-pill-strip {

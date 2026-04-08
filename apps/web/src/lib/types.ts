@@ -86,6 +86,7 @@ export interface Journey {
 	ticks:      number;          // 0–40 (10 boxes × 4 ticks)
 	notes:      string;
 	complete:   boolean;
+	imageUrl?:  string;          // base64 JPEG data URL
 	createdAt?: number;          // Date.now() on creation
 }
 
@@ -123,6 +124,7 @@ export interface Site {
 	ticks:      number;          // 0–40 (10 boxes × 4 ticks)
 	denizens:   string[];        // length 12 — one per DENIZEN_CELLS row
 	complete:   boolean;
+	imageUrl?:  string;          // base64 JPEG data URL
 	createdAt?: number;          // Date.now() on creation
 }
 
