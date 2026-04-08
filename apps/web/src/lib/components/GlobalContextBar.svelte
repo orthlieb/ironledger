@@ -748,6 +748,10 @@
 	.gc-chip--stat .gc-chip-value {
 		font-weight: 700;
 	}
+	.gc-chip-group--resources {
+		justify-content: space-between;
+		width: 100%;
+	}
 	/* Resources: same treatment as stats */
 	.gc-chip--resource {
 		color: var(--chip-color);
