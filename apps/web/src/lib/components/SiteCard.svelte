@@ -280,6 +280,7 @@
 	class="sc-card"
 	class:sc-complete={expedition.complete}
 	class:collapsed={collapsed}
+	style="border-left: 3px solid #60a5fa"
 >
 
 	<!-- ── Header (always visible) ── -->
