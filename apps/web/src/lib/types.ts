@@ -116,6 +116,7 @@ export interface Site {
 	type:       'site';          // discriminant
 	name:       string;
 	objective:  string;
+	notes:      string;          // freeform markdown notes
 	theme:      DelveTheme | '';
 	domain:     DelveDomain | '';
 	difficulty: ExpeditionDifficulty;

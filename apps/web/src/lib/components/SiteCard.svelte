@@ -157,6 +157,10 @@
 		update({ objective: (e.target as HTMLInputElement).value });
 	}
 
+	function handleNotesChange(e: Event) {
+		update({ notes: (e.target as HTMLTextAreaElement).value });
+	}
+
 	function handleDenizenChange(index: number, value: string) {
 		const denizens = [...expedition.denizens];
 		denizens[index] = value;
@@ -330,6 +334,19 @@
 					value={expedition.objective}
 					oninput={handleObjectiveChange}
 				/>
+			</div>
+
+			<!-- Notes -->
+			<div class="sc-field-row">
+				<label class="sc-label" for="sc-notes-{expedition.id}">Notes</label>
+				<textarea
+					id="sc-notes-{expedition.id}"
+					class="sc-input sc-textarea"
+					rows="3"
+					placeholder="Discoveries, encounters, observations… (**bold**, *italic*, # heading, - list)"
+					value={expedition.notes ?? ''}
+					oninput={handleNotesChange}
+				></textarea>
 			</div>
 
 			<!-- Oracle + Denizen roll buttons -->
@@ -620,6 +637,12 @@
 		outline: none;
 		border-color: var(--focus-ring);
 		box-shadow: 0 0 0 2px var(--accent-glow);
+	}
+
+	.sc-textarea {
+		resize: vertical;
+		min-height: 3rem;
+		line-height: 1.45;
 	}
 
 	/* ── Section headers ────────────────────────────────────────────────── */

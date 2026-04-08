@@ -503,6 +503,7 @@
 			type:       'site',
 			name:       'New Site',
 			objective:  '',
+			notes:      '',
 			theme:      newSiteTheme as Site['theme'],
 			domain:     newSiteDomain as Site['domain'],
 			difficulty: newSiteDifficulty,
