@@ -732,11 +732,13 @@
 		fill: currentColor;
 	}
 	/* Stats: transparent bg, thick colored bottom bar.
-	   Edge is pinned left, Wits right; inner stats fill the space. */
+	   Edge is pinned left, Wits right; inner stats fill the space.
+	   space-between only on small screens — wider layouts look fine at natural spacing. */
 	.gc-chip-group--stats {
 		gap: 3px;
-		justify-content: space-between;
-		width: 100%;
+	}
+	@media (max-width: 767px) {
+		.gc-chip-group--stats { justify-content: space-between; width: 100%; }
 	}
 	.gc-chip--stat {
 		color: var(--chip-color);
@@ -749,8 +751,9 @@
 		font-weight: 700;
 	}
 	.gc-chip-group--resources {
-		justify-content: space-between;
-		width: 100%;
+	}
+	@media (max-width: 767px) {
+		.gc-chip-group--resources { justify-content: space-between; width: 100%; }
 	}
 	/* Resources: same treatment as stats */
 	.gc-chip--resource {
