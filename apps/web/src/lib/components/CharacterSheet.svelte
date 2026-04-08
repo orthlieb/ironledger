@@ -1151,7 +1151,7 @@
 		flex-wrap: wrap;
 		gap: 14px;
 		align-items: stretch;
-		justify-content: flex-start;
+		justify-content: space-between;
 	}
 
 
