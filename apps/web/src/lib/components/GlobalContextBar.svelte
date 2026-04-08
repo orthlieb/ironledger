@@ -38,7 +38,7 @@
 
 	// Action button icons
 	import iconMoves   from '$icons/person-running-solid.svg?raw';
-	import iconOracles from '$icons/eye-solid.svg?raw';
+	import iconOracles from '$icons/crystal-ball.svg?raw';
 	import iconDice    from '$icons/dice-d10-light.svg?raw';
 	import iconNotes   from '$icons/note-sticky-solid.svg?raw';
 
