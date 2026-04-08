@@ -126,7 +126,18 @@
 
 	// ── Expeditions ────────────────────────────────────────────────────────────
 	let activeExpeditionId = $state('');
-	const expeditions = $derived(getExpeditions());
+	let expeditionSearch   = $state('');
+	let hideCompleted      = $state(true);
+	const expeditions = $derived(
+		getExpeditions().slice().sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
+	);
+	const filteredExpeditions = $derived(
+		expeditions.filter(exp => {
+			if (hideCompleted && exp.complete) return false;
+			if (expeditionSearch && !exp.name.toLowerCase().includes(expeditionSearch.toLowerCase())) return false;
+			return true;
+		})
+	);
 
 	// ── New expedition dialogs ─────────────────────────────────────────────────
 	let newJourneyDifficulty = $state<VowDifficulty>('dangerous');
@@ -140,10 +151,25 @@
 	const initiative = $derived(activeCharId ? (initiativeMap[activeCharId] ?? 0) : 0);
 
 	// ── Communities ────────────────────────────────────────────────────────────
-	const communities = $derived(getCommunities());
+	let communitySearch = $state('');
+	const communities = $derived(
+		getCommunities().slice().sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
+	);
+	const filteredCommunities = $derived(
+		communitySearch
+			? communities.filter(c => c.name.toLowerCase().includes(communitySearch.toLowerCase()))
+			: communities
+	);
 
 	// ── NPCs ───────────────────────────────────────────────────────────────────
-	const npcs = $derived(getNpcs());
+	const npcs = $derived(
+		getNpcs().slice().sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
+	);
+	const filteredNpcs = $derived(
+		communitySearch
+			? npcs.filter(n => n.name.toLowerCase().includes(communitySearch.toLowerCase()))
+			: npcs
+	);
 	let newlyCreatedNpcId = $state('');
 
 	// ── Random-generation dialogs for new community / NPC ─────────────────────
@@ -449,6 +475,7 @@
 			ticks:      0,
 			notes:      '',
 			complete:   false,
+			createdAt:  Date.now(),
 		};
 		appendLog(SESSION_LOG_ID, `Journey — ${journey.name}`,
 			`<div>Started a new journey: <strong>${journey.name}</strong></div>`);
@@ -480,6 +507,7 @@
 			ticks:      0,
 			denizens:   Array(12).fill(''),
 			complete:   false,
+			createdAt:  Date.now(),
 		};
 		appendLog(SESSION_LOG_ID, `Site — ${site.name}`,
 			`<div>Discovered a new site: <strong>${site.name}</strong></div>`);
@@ -524,6 +552,7 @@
 			locationDescription: '',
 			trouble:             '',
 			notes:               '',
+			createdAt:           Date.now(),
 		};
 		await loadOracles();
 		communityRandomDialogRef?.open();
@@ -571,6 +600,7 @@
 			relationship: 'neutral',
 			location:     '',
 			notes:        '',
+			createdAt:    Date.now(),
 		};
 		await loadOracles();
 		npcRandomDialogRef?.open();
@@ -1369,6 +1399,28 @@
 
 			{:else if activeTab === 'expeditions'}
 				<div class="char-toolbar">
+					<div class="tab-search-row">
+						<input
+							class="tab-search"
+							type="search"
+							placeholder="Search expeditions…"
+							bind:value={expeditionSearch}
+							aria-label="Search expeditions"
+						/>
+						<button
+							class="tab-eye-btn"
+							class:tab-eye-btn--active={!hideCompleted}
+							onclick={() => (hideCompleted = !hideCompleted)}
+							title={hideCompleted ? 'Show completed' : 'Hide completed'}
+							aria-label={hideCompleted ? 'Show completed' : 'Hide completed'}
+						>
+							{#if hideCompleted}
+								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+							{:else}
+								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+							{/if}
+						</button>
+					</div>
 					<div class="char-toolbar-actions">
 						<button
 							class="btn btn-primary"
@@ -1387,9 +1439,14 @@
 						<span class="empty-tab-title">No Expeditions</span>
 						<span class="empty-tab-sub">Start a <strong>Journey</strong> to travel or a <strong>Site</strong> to delve into a perilous location.</span>
 					</div>
+				{:else if filteredExpeditions.length === 0}
+					<div class="empty-tab">
+						<span class="empty-tab-title">No matches</span>
+						<span class="empty-tab-sub">Try a different search or toggle the completed filter.</span>
+					</div>
 				{:else}
 					<div class="char-list char-list--expeditions">
-						{#each expeditions as exp (exp.id)}
+						{#each filteredExpeditions as exp (exp.id)}
 							<!-- svelte-ignore a11y_no_static_element_interactions -->
 							<!-- svelte-ignore a11y_click_events_have_key_events -->
 							<div
@@ -1420,6 +1477,15 @@
 				{/if}
 			{:else if activeTab === 'communities'}
 				<div class="char-toolbar">
+					<div class="tab-search-row">
+						<input
+							class="tab-search"
+							type="search"
+							placeholder="Search communities &amp; NPCs…"
+							bind:value={communitySearch}
+							aria-label="Search communities and NPCs"
+						/>
+					</div>
 					<div class="char-toolbar-actions">
 						<button
 							class="btn btn-primary icon-btn"
@@ -1444,26 +1510,31 @@
 						<span class="empty-tab-title">No Communities or NPCs Yet</span>
 						<span class="empty-tab-sub">Click <strong>+ Community</strong> to track a settlement or <strong>+ NPC</strong> to track a person.</span>
 					</div>
+				{:else if filteredCommunities.length === 0 && filteredNpcs.length === 0}
+					<div class="empty-tab">
+						<span class="empty-tab-title">No matches</span>
+						<span class="empty-tab-sub">Try a different search term.</span>
+					</div>
 				{:else}
 					<div class="char-list char-list--communities">
-						{#each Array.from({ length: Math.max(communities.length, npcs.length) }) as _, i}
-							{#if communities[i]}
+						{#each Array.from({ length: Math.max(filteredCommunities.length, filteredNpcs.length) }) as _, i}
+							{#if filteredCommunities[i]}
 								<div class="char-card">
 									<CommunityCard
-										community={communities[i]}
+										community={filteredCommunities[i]}
 										onChange={handleCommunityChange}
-										onDelete={() => handleCommunityDelete(communities[i].id)}
-										focusName={communities[i].id === newlyCreatedId}
+										onDelete={() => handleCommunityDelete(filteredCommunities[i].id)}
+										focusName={filteredCommunities[i].id === newlyCreatedId}
 									/>
 								</div>
 							{/if}
-							{#if npcs[i]}
+							{#if filteredNpcs[i]}
 								<div class="char-card">
 									<NpcCard
-										npc={npcs[i]}
+										npc={filteredNpcs[i]}
 										onChange={handleNpcChange}
-										onDelete={() => handleNpcDelete(npcs[i].id)}
-										focusName={npcs[i].id === newlyCreatedNpcId}
+										onDelete={() => handleNpcDelete(filteredNpcs[i].id)}
+										focusName={filteredNpcs[i].id === newlyCreatedNpcId}
 									/>
 								</div>
 							{/if}
@@ -1733,6 +1804,49 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
+	}
+
+	.tab-search-row {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		margin-right: 8px;
+	}
+
+	.tab-search {
+		flex: 1;
+		font-family: var(--font-ui);
+		font-size: 0.78rem;
+		color: var(--text);
+		background: var(--bg-inset);
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		padding: 5px 8px;
+		min-width: 0;
+	}
+	.tab-search:focus {
+		outline: none;
+		border-color: var(--focus-ring);
+		box-shadow: 0 0 0 2px var(--accent-glow);
+	}
+
+	.tab-eye-btn {
+		background: transparent;
+		border: 1px solid transparent;
+		color: var(--text-dimmer);
+		padding: 3px 5px;
+		border-radius: 3px;
+		display: flex;
+		align-items: center;
+		cursor: pointer;
+	}
+	.tab-eye-btn:hover {
+		color: var(--text);
+		border-color: var(--border-mid);
+	}
+	.tab-eye-btn--active {
+		color: var(--text-accent);
 	}
 
 	/* When char-toolbar is inside the adventure log card, style it as the inset header */
