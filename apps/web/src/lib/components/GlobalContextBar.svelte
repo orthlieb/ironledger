@@ -11,6 +11,7 @@
 	import type { FoeEncounter, Expedition } from '$lib/types.js';
 	import { EXPEDITION_MARK_TICKS } from '$lib/types.js';
 	import { hydrateCharacter } from '$lib/character.js';
+	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
 	import { findFoe, FOE_RANKS, FOE_NATURE_COLORS, FOE_QUANTITIES, RANK_COLORS } from '$lib/foeStore.svelte.js';
 	import { getAssets, loadAssets } from '$lib/assetStore.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
@@ -91,9 +92,18 @@
 		onInitiativeClick?:    (next: number) => void;
 	} = $props();
 
-	// Derive the active character and its typed data
+	// Derive the active character and its typed data.
+	// Prefer the live DiceCtx (CharacterSheet's $state reference) so all vital
+	// changes are visible immediately — both from +/- buttons on the Characters
+	// tab and from log resource-link clicks on the Adventure tab.
+	// Falls back to chars[i].data (hydrated) when no DiceCtx is set yet.
 	const character = $derived(chars.find((c) => c.id === activeCharId));
-	const data      = $derived(character ? hydrateCharacter(character.data) : null);
+	const _liveCtx  = $derived(getActiveDiceCtx());
+	const data      = $derived(
+		_liveCtx?.charId === activeCharId
+			? _liveCtx.data
+			: character ? hydrateCharacter(character.data) : null
+	);
 
 	// Derive active foe stats
 	const activeFoe         = $derived(encounters.find((e) => e.id === activeFoeId));
@@ -721,9 +731,12 @@
 		height: 100%;
 		fill: currentColor;
 	}
-	/* Stats: transparent bg, thick colored bottom bar */
+	/* Stats: transparent bg, thick colored bottom bar.
+	   Edge is pinned left, Wits right; inner stats fill the space. */
 	.gc-chip-group--stats {
 		gap: 3px;
+		justify-content: space-between;
+		width: 100%;
 	}
 	.gc-chip--stat {
 		color: var(--chip-color);
