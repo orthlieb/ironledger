@@ -152,23 +152,25 @@
 
 	// ── Communities ────────────────────────────────────────────────────────────
 	let communitySearch = $state('');
-	const communities = $derived(
-		getCommunities().slice().sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
-	);
-	const filteredCommunities = $derived(
-		communitySearch
-			? communities.filter(c => c.name.toLowerCase().includes(communitySearch.toLowerCase()))
-			: communities
-	);
+	const communities = $derived(getCommunities());
+	const npcs        = $derived(getNpcs());
 
-	// ── NPCs ───────────────────────────────────────────────────────────────────
-	const npcs = $derived(
-		getNpcs().slice().sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
+	type CommunityItem =
+		| { kind: 'community'; data: Community }
+		| { kind: 'npc';       data: Npc };
+
+	/** Communities and NPCs merged and sorted newest-first. */
+	const communityItems = $derived<CommunityItem[]>(
+		[
+			...communities.map(c => ({ kind: 'community' as const, data: c })),
+			...npcs.map(n => ({ kind: 'npc' as const, data: n })),
+		].sort((a, b) => (b.data.createdAt ?? 0) - (a.data.createdAt ?? 0))
 	);
-	const filteredNpcs = $derived(
+	const filteredCommunityItems = $derived(
 		communitySearch
-			? npcs.filter(n => n.name.toLowerCase().includes(communitySearch.toLowerCase()))
-			: npcs
+			? communityItems.filter(item =>
+				item.data.name.toLowerCase().includes(communitySearch.toLowerCase()))
+			: communityItems
 	);
 	let newlyCreatedNpcId = $state('');
 
@@ -1504,37 +1506,36 @@
 					</div>
 				</div>
 
-				{#if communities.length === 0 && npcs.length === 0}
+				{#if communityItems.length === 0}
 					<div class="empty-tab">
 						<img class="empty-tab-img" src={villageSvgUrl} alt="">
 						<span class="empty-tab-title">No Communities or NPCs Yet</span>
 						<span class="empty-tab-sub">Click <strong>+ Community</strong> to track a settlement or <strong>+ NPC</strong> to track a person.</span>
 					</div>
-				{:else if filteredCommunities.length === 0 && filteredNpcs.length === 0}
+				{:else if filteredCommunityItems.length === 0}
 					<div class="empty-tab">
 						<span class="empty-tab-title">No matches</span>
 						<span class="empty-tab-sub">Try a different search term.</span>
 					</div>
 				{:else}
 					<div class="char-list char-list--communities">
-						{#each Array.from({ length: Math.max(filteredCommunities.length, filteredNpcs.length) }) as _, i}
-							{#if filteredCommunities[i]}
+						{#each filteredCommunityItems as item (item.data.id)}
+							{#if item.kind === 'community'}
 								<div class="char-card">
 									<CommunityCard
-										community={filteredCommunities[i]}
+										community={item.data}
 										onChange={handleCommunityChange}
-										onDelete={() => handleCommunityDelete(filteredCommunities[i].id)}
-										focusName={filteredCommunities[i].id === newlyCreatedId}
+										onDelete={() => handleCommunityDelete(item.data.id)}
+										focusName={item.data.id === newlyCreatedId}
 									/>
 								</div>
-							{/if}
-							{#if filteredNpcs[i]}
+							{:else}
 								<div class="char-card">
 									<NpcCard
-										npc={filteredNpcs[i]}
+										npc={item.data}
 										onChange={handleNpcChange}
-										onDelete={() => handleNpcDelete(filteredNpcs[i].id)}
-										focusName={filteredNpcs[i].id === newlyCreatedNpcId}
+										onDelete={() => handleNpcDelete(item.data.id)}
+										focusName={item.data.id === newlyCreatedNpcId}
 									/>
 								</div>
 							{/if}
@@ -1921,23 +1922,45 @@
 		min-width: 0;
 	}
 
-	/* Characters + Expeditions: 2 per row on ≥768px (≈ ½ screen each) */
+	/* Characters: 2 per row on ≥768px */
 	@media (min-width: 768px) {
-		.char-list--characters,
-		.char-list--expeditions {
+		.char-list--characters {
 			grid-template-columns: repeat(2, 1fr);
 		}
 	}
 
-	/* Communities + NPCs: 2 per row on ≥768px, 3 per row on ≥1200px */
+	/* Expeditions: columns layout so cards in the same column stack without gaps */
+	.char-list--expeditions {
+		display: block;
+		column-gap: 12px;
+	}
+	.char-list--expeditions :global(.char-card) {
+		break-inside: avoid;
+		margin-bottom: 12px;
+	}
+	@media (min-width: 768px) {
+		.char-list--expeditions {
+			columns: 2;
+		}
+	}
+
+	/* Communities + NPCs: columns layout so cards stack without gaps */
+	.char-list--communities {
+		display: block;
+		column-gap: 12px;
+	}
+	.char-list--communities :global(.char-card) {
+		break-inside: avoid;
+		margin-bottom: 12px;
+	}
 	@media (min-width: 768px) {
 		.char-list--communities {
-			grid-template-columns: repeat(2, 1fr);
+			columns: 2;
 		}
 	}
 	@media (min-width: 1200px) {
 		.char-list--communities {
-			grid-template-columns: repeat(3, 1fr);
+			columns: 3;
 		}
 	}
 
