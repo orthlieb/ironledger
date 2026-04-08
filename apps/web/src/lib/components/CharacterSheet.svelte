@@ -1087,7 +1087,7 @@
 		display: flex;
 		flex-wrap: nowrap;
 		align-items: flex-start;
-		justify-content: flex-start;
+		justify-content: space-between;
 		gap: 3px;
 		flex: 1;
 	}
