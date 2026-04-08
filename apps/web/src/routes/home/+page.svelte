@@ -1445,34 +1445,30 @@
 						<span class="empty-tab-sub">Click <strong>+ Community</strong> to track a settlement or <strong>+ NPC</strong> to track a person.</span>
 					</div>
 				{:else}
-					{#if communities.length > 0}
-						<div class="char-list char-list--communities">
-							{#each communities as community (community.id)}
+					<div class="char-list char-list--communities">
+						{#each Array.from({ length: Math.max(communities.length, npcs.length) }) as _, i}
+							{#if communities[i]}
 								<div class="char-card">
 									<CommunityCard
-										{community}
+										community={communities[i]}
 										onChange={handleCommunityChange}
-										onDelete={() => handleCommunityDelete(community.id)}
-										focusName={community.id === newlyCreatedId}
+										onDelete={() => handleCommunityDelete(communities[i].id)}
+										focusName={communities[i].id === newlyCreatedId}
 									/>
 								</div>
-							{/each}
-						</div>
-					{/if}
-					{#if npcs.length > 0}
-						<div class="char-list char-list--npcs">
-							{#each npcs as npc (npc.id)}
+							{/if}
+							{#if npcs[i]}
 								<div class="char-card">
 									<NpcCard
-										{npc}
+										npc={npcs[i]}
 										onChange={handleNpcChange}
-										onDelete={() => handleNpcDelete(npc.id)}
-										focusName={npc.id === newlyCreatedNpcId}
+										onDelete={() => handleNpcDelete(npcs[i].id)}
+										focusName={npcs[i].id === newlyCreatedNpcId}
 									/>
 								</div>
-							{/each}
-						</div>
-					{/if}
+							{/if}
+						{/each}
+					</div>
 				{/if}
 
 			{:else if activeTab === 'adventure'}
@@ -1819,21 +1815,14 @@
 		}
 	}
 
-	/* Gap between community list and NPC list */
-	.char-list--communities + .char-list--npcs {
-		margin-top: 1rem;
-	}
-
 	/* Communities + NPCs: 2 per row on ≥768px, 3 per row on ≥1200px */
 	@media (min-width: 768px) {
-		.char-list--communities,
-		.char-list--npcs {
+		.char-list--communities {
 			grid-template-columns: repeat(2, 1fr);
 		}
 	}
 	@media (min-width: 1200px) {
-		.char-list--communities,
-		.char-list--npcs {
+		.char-list--communities {
 			grid-template-columns: repeat(3, 1fr);
 		}
 	}
