@@ -285,6 +285,10 @@
 		]);
 		if (charResult.status === 'fulfilled') {
 			chars = charResult.value;
+			// Initialise party supply to the max across all loaded characters
+			if (chars.length > 0) {
+				_partySupply = Math.max(...chars.map(c => (c.data as Record<string, unknown>).supply as number ?? 3));
+			}
 			// Restore initiative from each character's own data
 			const map: Record<string, number> = {};
 			for (const c of chars) {
@@ -321,6 +325,21 @@
 		if (tab) activeTab = tab;
 	}
 
+	// ── Party supply — always in sync across all characters ───────────────────
+	// Single source of truth passed as `supply` prop to every CharacterSheet.
+	// Initialised from the max of all loaded chars; updated whenever any sheet
+	// changes supply so all others are echoed to the same value.
+	let _partySupply = $state<number | null>(null);
+
+	function handleSupplyChange(val: number) {
+		_partySupply = val;
+	}
+
+	function syncPartySupply() {
+		if (chars.length === 0) return;
+		_partySupply = Math.max(...chars.map(c => (c.data as Record<string, unknown>).supply as number ?? 3));
+	}
+
 	// ── File input ref for import ──────────────────────────────────────────────
 	let importInput: HTMLInputElement;
 	let importConfirmRef = $state<{ open(): void; close(): void } | null>(null);
@@ -333,6 +352,10 @@
 		try {
 			const newChar = await api.create('New Character');
 			chars = [newChar, ...chars];
+			// New char inherits party supply via the supply prop; initialize if first char
+			if (_partySupply === null) {
+				_partySupply = (newChar.data as Record<string, unknown>).supply as number ?? 3;
+			}
 			activeCharId = newChar.id;
 			activeTab = 'characters';
 			newlyCreatedId = newChar.id;
@@ -696,6 +719,7 @@
 					const newChar = await api.create(entry.name ?? 'Imported Character', entry.data ?? {});
 					chars = [newChar, ...chars];
 					activeCharId = newChar.id;
+					syncPartySupply();
 				} else if (m.type === 'all-characters') {
 					const entries = parsed.data as Array<{ name?: string; data?: Record<string, unknown> }>;
 					for (const entry of entries) {
@@ -703,6 +727,7 @@
 						chars = [newChar, ...chars];
 						if (!activeCharId) activeCharId = newChar.id;
 					}
+					syncPartySupply();
 				} else if (m.type === 'log') {
 					const entries = parsed.data as Array<Record<string, unknown>>;
 					for (const entry of entries) appendSafeLog(entry);
@@ -754,6 +779,7 @@
 						if (v) map[c.id] = v;
 					}
 					initiativeMap = map;
+					syncPartySupply();
 				}
 			} else {
 				// Legacy format: { name, data }
@@ -761,6 +787,7 @@
 				const newChar = await api.create(entry.name ?? 'Imported Character', entry.data ?? {});
 				chars = [newChar, ...chars];
 				activeCharId = newChar.id;
+				syncPartySupply();
 			}
 		} catch (err) {
 			charError = err instanceof ImportError
@@ -1119,7 +1146,8 @@
 	cancelLabel="Create Manually"
 	accentColor="var(--color-momentum)"
 	onconfirm={() => _commitCommunity(true)}
-	oncancel={() => { _pendingCommunity = null; }}
+	oncancel={() => _commitCommunity(false)}
+	ondismiss={() => { _pendingCommunity = null; }}
 >
 	<p style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 10px;">
 		Generate fields randomly using oracles, or create the community manually?
@@ -1154,7 +1182,8 @@
 	cancelLabel="Create Manually"
 	accentColor="var(--color-momentum)"
 	onconfirm={() => _commitNpc(true)}
-	oncancel={() => { _pendingNpc = null; }}
+	oncancel={() => _commitNpc(false)}
+	ondismiss={() => { _pendingNpc = null; }}
 >
 	<p style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 8px;">
 		Generate fields randomly using oracles, or create the NPC manually?
@@ -1268,9 +1297,11 @@
 									character={char}
 									active={char.id === activeCharId}
 									initiative={initiativeMap[char.id] ?? 0}
+									supply={_partySupply ?? undefined}
 									focusName={char.id === newlyCreatedId}
 									onDelete={() => deleteCharacter(char.id)}
 									onSave={handleSave}
+									onSupplyChange={handleSupplyChange}
 									onOracleLink={(key) => oraclesDialogRef?.open(key || undefined)}
 								/>
 							</div>

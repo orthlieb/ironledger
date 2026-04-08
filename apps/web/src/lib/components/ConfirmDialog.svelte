@@ -23,6 +23,7 @@
 		dialogClass  = '',
 		onconfirm,
 		oncancel,
+		ondismiss,
 		children,
 	}: {
 		title:          string;
@@ -33,6 +34,8 @@
 		dialogClass?:   string;
 		onconfirm:      () => void;
 		oncancel?:      () => void;
+		/** Called when the dialog is dismissed via ✕ or Escape — falls back to oncancel if not provided. */
+		ondismiss?:     () => void;
 		children?:      Snippet;
 	} = $props();
 
@@ -66,6 +69,12 @@
 		oncancel?.();
 	}
 
+	function handleDismiss() {
+		dialogEl?.close();
+		if (ondismiss) ondismiss();
+		else oncancel?.();
+	}
+
 	function startDrag(e: MouseEvent) {
 		_dragging    = true;
 		_startMouseX = e.clientX;
@@ -96,13 +105,13 @@
 	class="confirm-modal {dialogClass}"
 	style:--accent={accentColor}
 	style:transform="translate(calc(-50% + {dragX}px), calc(-50% + {dragY}px))"
-	oncancel={handleCancel}
+	oncancel={handleDismiss}
 >
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="cm-drag-handle" onmousedown={startDrag}>
 		<span class="drag-grip" aria-hidden="true">⠿</span>
 		<span class="cm-title">{title}</span>
-		<button class="cm-close-btn" onclick={handleCancel} onmousedown={(e) => e.stopPropagation()} aria-label="Close">✕</button>
+		<button class="cm-close-btn" onclick={handleDismiss} onmousedown={(e) => e.stopPropagation()} aria-label="Close">✕</button>
 	</div>
 	<div class="cm-body">
 		{@render children?.()}

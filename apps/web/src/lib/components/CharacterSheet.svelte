@@ -56,21 +56,27 @@
 		character,
 		active = false,
 		initiative = 0,
+		supply,
 		focusName = false,
 		onDelete,
 		onSave,
 		onOracleLink,
+		onSupplyChange,
 	}: {
 		character: CharacterFull;
 		/** True when this is the currently selected character — publishes dice context. */
 		active?:   boolean;
 		/** 0 = none, 1 = character has initiative, 2 = foe has initiative */
 		initiative?: number;
+		/** Party-wide supply value pushed from outside — synced into data.supply. */
+		supply?: number;
 		/** Focus the name field immediately (used when newly created). */
 		focusName?: boolean;
 		onDelete?:      () => void;
 		onSave?:        (updated: CharacterFull) => void;
 		onOracleLink?:  (key: string) => void;
+		/** Called when this sheet changes supply — used to echo the value to all party members. */
+		onSupplyChange?: (val: number) => void;
 	} = $props();
 
 	// ---------------------------------------------------------------------------
@@ -220,6 +226,7 @@
 			const label = key.charAt(0).toUpperCase() + key.slice(1);
 			appendLog(SESSION_LOG_ID, charTitle(label),
 				`<div>${label}: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : ''}${delta})</div>`);
+			if (key === 'supply') onSupplyChange?.(next);
 			// Floor cascade: resource just hit its minimum — append a note.
 			if (delta < 0) {
 				const floorRule = FLOOR_RULES.find(r => r.resource === key && next === r.floor);
@@ -287,6 +294,14 @@
 	$effect(() => {
 		const v = initiative ?? 0;
 		if ((data.initiative ?? 0) !== v) data.initiative = v || undefined;
+	});
+
+	// Sync party-wide supply from the parent into owned data.
+	// Only fires when the prop actually changes value (loop-safe: onSupplyChange is
+	// called only from user-driven paths, not from this effect).
+	$effect(() => {
+		const v = supply;
+		if (v !== undefined && v !== null && data.supply !== v) data.supply = v;
 	});
 
 	// ---------------------------------------------------------------------------
@@ -642,7 +657,7 @@
 						max={5}
 						icon={iconSupply}
 						tooltip="Available provisions and resources"
-						onchange={(o, n) => logMeter('Supply', o, n)}
+						onchange={(o, n) => { logMeter('Supply', o, n); onSupplyChange?.(n); }}
 					/>
 					<ResourceTile
 						label="Experience"
