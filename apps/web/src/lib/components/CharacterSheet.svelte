@@ -1087,9 +1087,12 @@
 		display: flex;
 		flex-wrap: nowrap;
 		align-items: flex-start;
-		justify-content: space-between;
+		justify-content: flex-start;
 		gap: 3px;
 		flex: 1;
+	}
+	@media (max-width: 767px) {
+		.stats-row { justify-content: space-between; }
 	}
 
 	/* Vitals wrapper */
@@ -1151,7 +1154,10 @@
 		flex-wrap: wrap;
 		gap: 14px;
 		align-items: stretch;
-		justify-content: space-between;
+		justify-content: flex-start;
+	}
+	@media (max-width: 767px) {
+		.meters-row { justify-content: space-between; }
 	}
 
 
