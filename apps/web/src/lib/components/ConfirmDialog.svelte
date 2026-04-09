@@ -20,6 +20,7 @@
 		confirmLabel  = 'Confirm',
 		confirmClass  = 'btn-danger',
 		cancelLabel   = 'Cancel',
+		showCancelButton = true,
 		secondaryLabel,
 		secondaryClass = 'btn',
 		dialogClass   = '',
@@ -28,18 +29,19 @@
 		onsecondary,
 		children,
 	}: {
-		title:           string;
-		accentColor?:    string;
-		confirmLabel?:   string;
-		confirmClass?:   string;
-		cancelLabel?:    string;
-		secondaryLabel?: string;
-		secondaryClass?: string;
-		dialogClass?:    string;
-		onconfirm:       () => void;
-		oncancel?:       () => void;
-		onsecondary?:    () => void;
-		children?:       Snippet;
+		title:             string;
+		accentColor?:      string;
+		confirmLabel?:     string;
+		confirmClass?:     string;
+		cancelLabel?:      string;
+		showCancelButton?: boolean;
+		secondaryLabel?:   string;
+		secondaryClass?:   string;
+		dialogClass?:      string;
+		onconfirm:         () => void;
+		oncancel?:         () => void;
+		onsecondary?:      () => void;
+		children?:         Snippet;
 	} = $props();
 
 	let dialogEl = $state<HTMLDialogElement | null>(null);
@@ -118,7 +120,9 @@
 	<div class="cm-body">
 		{@render children?.()}
 		<div class="cm-actions">
-			<button class="btn" onclick={handleCancel}>{cancelLabel}</button>
+			{#if showCancelButton}
+				<button class="btn" onclick={handleCancel}>{cancelLabel}</button>
+			{/if}
 			{#if secondaryLabel}
 				<button class="btn {secondaryClass}" onclick={handleSecondary}>{secondaryLabel}</button>
 			{/if}

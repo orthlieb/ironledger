@@ -1007,7 +1007,7 @@
 	title="New Community"
 	confirmLabel="Generate Randomly"
 	confirmClass="btn-primary"
-	cancelLabel="Cancel"
+	showCancelButton={false}
 	secondaryLabel="Create Manually"
 	accentColor="var(--color-momentum)"
 	onconfirm={() => _commitCommunity(true)}
@@ -1044,7 +1044,7 @@
 	title="New NPC"
 	confirmLabel="Generate Randomly"
 	confirmClass="btn-primary"
-	cancelLabel="Cancel"
+	showCancelButton={false}
 	secondaryLabel="Create Manually"
 	accentColor="var(--color-momentum)"
 	onconfirm={() => _commitNpc(true)}

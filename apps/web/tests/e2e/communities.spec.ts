@@ -45,11 +45,11 @@ test.describe('Communities tab', () => {
 			.toHaveCount(before + 1, { timeout: 5000 });
 	});
 
-	test('Cancel closes the dialog without creating', async ({ page }) => {
+	test('Escape closes the dialog without creating', async ({ page }) => {
 		const before = await page.locator('.char-list--communities .char-card').count();
 		await page.click('.char-toolbar button:has-text("+ Community")');
 		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
-		await page.locator('dialog.confirm-modal[open] button:has-text("Cancel")').click();
+		await page.keyboard.press('Escape');
 		await expect(page.locator('dialog.confirm-modal[open]')).not.toBeVisible({ timeout: 3000 });
 		await expect(page.locator('.char-list--communities .char-card')).toHaveCount(before);
 	});
@@ -100,11 +100,11 @@ test.describe('Communities tab', () => {
 			.toHaveCount(before + 1, { timeout: 5000 });
 	});
 
-	test('NPC Cancel closes the dialog without creating', async ({ page }) => {
+	test('NPC Escape closes the dialog without creating', async ({ page }) => {
 		const before = await page.locator('.char-list--npcs .char-card').count();
 		await page.click('.char-toolbar button:has-text("+ NPC")');
 		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
-		await page.locator('dialog.confirm-modal[open] button:has-text("Cancel")').click();
+		await page.keyboard.press('Escape');
 		await expect(page.locator('dialog.confirm-modal[open]')).not.toBeVisible({ timeout: 3000 });
 		await expect(page.locator('.char-list--npcs .char-card')).toHaveCount(before);
 	});
