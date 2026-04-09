@@ -46,7 +46,7 @@ test('can add a note to a log entry and it persists', async ({ page }) => {
 	await goToAdventureWithCharacter(page);
 
 	// Add a note to get a log entry
-	await page.locator('.gc-action-btn').nth(3).click();
+	await page.locator('.act-btn').nth(3).click();
 	await expect(page.locator('.notes-dialog[open]')).toBeVisible({ timeout: 3000 });
 	await page.locator('.notes-dialog .nd-textarea').fill('Initial note content');
 	await page.locator('.notes-dialog .nd-add-btn').click();

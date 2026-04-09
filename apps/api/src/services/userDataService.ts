@@ -45,12 +45,18 @@ export async function get(userId: string): Promise<UserDataPayload> {
     return { encounters: [], expeditions: [], communities: [], npcs: [], sessionState: DEFAULT_SESSION_STATE };
   }
 
+  // JSONB columns can round-trip as `{}` on rows written before the columns
+  // had an array default (or after manual intervention). `?? []` does not
+  // rescue a non-null object, so guard explicitly with Array.isArray.
+  const row = rows[0]!;
+  const asArray = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
+
   return {
-    encounters:   (rows[0]!.encounters  as unknown[]) ?? [],
-    expeditions:  (rows[0]!.expeditions as unknown[]) ?? [],
-    communities:  (rows[0]!.communities as unknown[]) ?? [],
-    npcs:         (rows[0]!.npcs        as unknown[]) ?? [],
-    sessionState: (rows[0]!.sessionState as SessionState) ?? DEFAULT_SESSION_STATE,
+    encounters:   asArray(row.encounters),
+    expeditions:  asArray(row.expeditions),
+    communities:  asArray(row.communities),
+    npcs:         asArray(row.npcs),
+    sessionState: (row.sessionState as SessionState) ?? DEFAULT_SESSION_STATE,
   };
 }
 

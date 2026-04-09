@@ -567,7 +567,7 @@
 			</div>
 		{:else}
 			{#each entries as entry (entry.id)}
-				<div class="log-entry">
+				<div class="log-entry" data-entry-id={entry.id}>
 					<!-- Header row: title, time, and hover-reveal action buttons -->
 					<div class="entry-header">
 						<span class="entry-title">{entry.title}</span>

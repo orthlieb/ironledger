@@ -64,7 +64,7 @@ async function ensureFoeInGCB(page: Page) {
 
 	// Add a foe if none exist
 	await page.click('.tab-btn[data-tab="foes"]');
-	await expect(page.locator('.char-toolbar button:has-text("+ New Foe")')).toBeVisible({ timeout: 5000 });
+	await expect(page.locator('.char-toolbar button:has-text("+ Foe")')).toBeVisible({ timeout: 5000 });
 	if (await page.locator('.char-list--foes .char-card').count() === 0) {
 		await page.click('.char-toolbar button.btn-primary');
 		await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5000 });
@@ -91,11 +91,11 @@ async function ensureExpeditionInGCB(page: Page) {
 	if (tileText?.trim() && !tileText.includes('No') && !tileText.includes('(None)') && !tileText.includes('Expedition')) return;
 
 	await page.click('.tab-btn[data-tab="expeditions"]');
-	await expect(page.locator('.char-toolbar button:has-text("+ New Journey")')).toBeVisible({ timeout: 5000 });
+	await expect(page.locator('.char-toolbar button:has-text("+ Journey")')).toBeVisible({ timeout: 5000 });
 	if (await page.locator('.char-list--expeditions .char-card').count() === 0) {
-		await page.click('.char-toolbar button:has-text("+ New Journey")');
-		await expect(page.locator('dialog.exp-dialog[open]')).toBeVisible({ timeout: 5000 });
-		await page.locator('dialog.exp-dialog button:has-text("Start Journey")').click();
+		await page.click('.char-toolbar button:has-text("+ Journey")');
+		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
+		await page.locator('dialog.confirm-modal[open] button:has-text("Start Journey")').click();
 		await expect(page.locator('.char-list--expeditions .char-card')).not.toHaveCount(0, { timeout: 5000 });
 	}
 
@@ -118,11 +118,12 @@ async function inject(page: Page, title: string, html: string, id: string) {
 	);
 }
 
-/** Locate a log entry that contains a link with the given entry ID. */
+/** Locate a log entry by its entry ID. */
 function entryById(page: Page, id: string) {
-	// Clicking resource links may prepend cascade notification entries.
-	// Using :has() keeps us anchored to the right entry regardless of position.
-	return page.locator(`.log-entry:has([data-entry-id="${id}"])`);
+	// Clicking a link may replace it with <s class="resource-spent">, dropping
+	// the data-entry-id that previously lived on the link.  The .log-entry
+	// wrapper carries data-entry-id so it stays locatable regardless of state.
+	return page.locator(`.log-entry[data-entry-id="${id}"]`);
 }
 
 /** Read numeric value from a GCB resource chip. */
@@ -206,11 +207,12 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		const charId = await goToAdventure(page);
 		const id = crypto.randomUUID();
 
-		// Read current failures from character sheet
+		// Read current failures tally from character sheet
 		await page.click('.tab-btn[data-tab="characters"]');
 		const activeCard = page.locator('.char-card--active').first();
-		const failSection = activeCard.locator('.char-section').filter({ hasText: /Failures/i });
-		const filledBefore = await failSection.locator('.pbox.filled, .pbox--filled, .pbox.ticked').count().catch(() => 0);
+		const failGroup = activeCard.locator('.track-group').filter({ hasText: /Failures/i });
+		// Count rendered tick <line>s across the failures ProgressTrack — each line = 1 tick.
+		const tickCountBefore = await failGroup.locator('.track-box svg line').count();
 
 		await page.click('.tab-btn[data-tab="adventure"]');
 		await expect(page.locator('.adventure-gcb')).toBeVisible({ timeout: 5000 });
@@ -224,11 +226,12 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		await entry.locator('a.failure-link').click();
 		await expect(entry.locator('s.resource-spent')).toBeVisible({ timeout: 3000 });
 
-		// Verify failure count increased in character sheet
+		// Verify failure tick count increased in character sheet
 		await page.click('.tab-btn[data-tab="characters"]');
 		await expect(activeCard).toBeVisible({ timeout: 3000 });
-		const filledAfter = await failSection.locator('.pbox.filled, .pbox--filled, .pbox.ticked').count().catch(() => 0);
-		expect(filledAfter).toBeGreaterThan(filledBefore);
+		await expect(failGroup.locator('.track-box svg line')).not.toHaveCount(tickCountBefore, { timeout: 5000 });
+		const tickCountAfter = await failGroup.locator('.track-box svg line').count();
+		expect(tickCountAfter).toBeGreaterThan(tickCountBefore);
 	});
 
 	// ── Debility link ─────────────────────────────────────────────────────────
@@ -417,7 +420,7 @@ test.describe('Log interactive links (injected mock entries)', () => {
 
 		// Foes
 		await page.click('.tab-btn[data-tab="foes"]');
-		await expect(page.locator('.char-toolbar button:has-text("+ New Foe")')).toBeVisible({ timeout: 5000 });
+		await expect(page.locator('.char-toolbar button:has-text("+ Foe")')).toBeVisible({ timeout: 5000 });
 		const foeCards = page.locator('.char-list--foes .char-card');
 		let foeCount = await foeCards.count();
 		while (foeCount > 0) {
@@ -432,7 +435,7 @@ test.describe('Log interactive links (injected mock entries)', () => {
 
 		// Expeditions
 		await page.click('.tab-btn[data-tab="expeditions"]');
-		await expect(page.locator('.char-toolbar button:has-text("+ New Journey")')).toBeVisible({ timeout: 5000 });
+		await expect(page.locator('.char-toolbar button:has-text("+ Journey")')).toBeVisible({ timeout: 5000 });
 		const expCards = page.locator('.char-list--expeditions .char-card');
 		let expCount = await expCards.count();
 		while (expCount > 0) {
@@ -455,8 +458,8 @@ test.describe('Log interactive links (injected mock entries)', () => {
 			await charCards.first().click();
 			await expect(page.locator('.char-card--active button[aria-label="Delete character"]')).toBeVisible({ timeout: 3000 });
 			await page.locator('.char-card--active button[aria-label="Delete character"]').click();
-			await expect(page.locator('dialog.del-dialog[open]')).toBeVisible({ timeout: 3000 });
-			await page.locator('dialog.del-dialog[open] button.btn-danger').click();
+			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 3000 });
+			await page.locator('dialog.confirm-modal[open] button.btn-danger').click();
 			charCount--;
 			if (charCount > 0) {
 				await expect(charCards).toHaveCount(charCount, { timeout: 5000 });

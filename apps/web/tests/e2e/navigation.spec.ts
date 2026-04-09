@@ -30,7 +30,7 @@ test('expeditions tab switches on click and shows toolbar', async ({ page }) => 
 	await page.click('.tab-btn[data-tab="expeditions"]');
 	await expect(page.locator('.tab-btn[data-tab="expeditions"]')).toHaveClass(/active/);
 	// Wait for expeditions-specific toolbar content
-	await expect(page.locator('.char-toolbar button:has-text("+ New Journey")')).toBeVisible({ timeout: 5000 });
+	await expect(page.locator('.char-toolbar button:has-text("+ Journey")')).toBeVisible({ timeout: 5000 });
 });
 
 test('adventure tab switches on click and shows GCB and log', async ({ page }) => {
@@ -41,7 +41,8 @@ test('adventure tab switches on click and shows GCB and log', async ({ page }) =
 });
 
 test('settings button opens settings dialog', async ({ page }) => {
-	await page.click('.nav-settings-btn');
+	await page.click('.hamburger-btn');
+	await page.click('.menu-item:has-text("Settings")');
 	await expect(page.locator('.settings-dialog')).toBeVisible();
 	await page.keyboard.press('Escape');
 	await expect(page.locator('.settings-dialog')).not.toBeVisible();

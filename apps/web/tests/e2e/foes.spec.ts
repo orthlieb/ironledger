@@ -25,7 +25,7 @@ test.describe('Foes tab', () => {
 		// Wait for DB session to finish loading before clicking — prevents click being overwritten
 		await expect(page.locator('.loading-tab')).not.toBeVisible({ timeout: 8000 });
 		await page.click('.tab-btn[data-tab="foes"]');
-		await expect(page.locator('.char-toolbar button:has-text("+ New Foe")')).toBeVisible({ timeout: 5000 });
+		await expect(page.locator('.char-toolbar button:has-text("+ Foe")')).toBeVisible({ timeout: 5000 });
 	});
 
 	test('shows toolbar with New Foe button', async ({ page }) => {
@@ -68,7 +68,7 @@ test.describe('Foes tab', () => {
 			await expect(foeCards).not.toHaveCount(0, { timeout: 5000 });
 		}
 		await foeCards.first().click();
-		await expect(page.locator('.fc-header')).toBeVisible({ timeout: 3000 });
+		await expect(foeCards.first().locator('.fc-header')).toBeVisible({ timeout: 3000 });
 	});
 
 	test('can delete a foe', async ({ page }) => {
@@ -81,7 +81,7 @@ test.describe('Foes tab', () => {
 		}
 		const countBefore = await foeCards.count();
 		await foeCards.first().click();
-		await expect(page.locator('.fc-header')).toBeVisible({ timeout: 3000 });
+		await expect(foeCards.first().locator('.fc-header')).toBeVisible({ timeout: 3000 });
 		// FoeCard uses .fc-del-btn → opens ConfirmDialog → click "Remove"
 		const deleteBtn = page.locator('.fc-del-btn').first();
 		await expect(deleteBtn).toBeVisible({ timeout: 2000 });

@@ -16,27 +16,35 @@
 
 	let {
 		title,
-		accentColor  = 'var(--color-danger)',
-		confirmLabel = 'Confirm',
-		confirmClass = 'btn-danger',
-		cancelLabel  = 'Cancel',
-		dialogClass  = '',
+		accentColor   = 'var(--color-danger)',
+		confirmLabel  = 'Confirm',
+		confirmClass  = 'btn-danger',
+		cancelLabel   = 'Cancel',
+		showCancelButton = true,
+		secondaryLabel,
+		secondaryClass = 'btn',
+		dialogClass   = '',
 		onconfirm,
 		oncancel,
 		ondismiss,
+		onsecondary,
 		children,
 	}: {
-		title:          string;
-		accentColor?:   string;
-		confirmLabel?:  string;
-		confirmClass?:  string;
-		cancelLabel?:   string;
-		dialogClass?:   string;
-		onconfirm:      () => void;
-		oncancel?:      () => void;
+		title:             string;
+		accentColor?:      string;
+		confirmLabel?:     string;
+		confirmClass?:     string;
+		cancelLabel?:      string;
+		showCancelButton?: boolean;
+		secondaryLabel?:   string;
+		secondaryClass?:   string;
+		dialogClass?:      string;
+		onconfirm:         () => void;
+		oncancel?:         () => void;
 		/** Called when the dialog is dismissed via ✕ or Escape — falls back to oncancel if not provided. */
-		ondismiss?:     () => void;
-		children?:      Snippet;
+		ondismiss?:        () => void;
+		onsecondary?:      () => void;
+		children?:         Snippet;
 	} = $props();
 
 	let dialogEl = $state<HTMLDialogElement | null>(null);
@@ -73,6 +81,11 @@
 		dialogEl?.close();
 		if (ondismiss) ondismiss();
 		else oncancel?.();
+	}
+
+	function handleSecondary() {
+		dialogEl?.close();
+		onsecondary?.();
 	}
 
 	function startDrag(e: MouseEvent) {
@@ -116,7 +129,12 @@
 	<div class="cm-body">
 		{@render children?.()}
 		<div class="cm-actions">
-			<button class="btn" onclick={handleCancel}>{cancelLabel}</button>
+			{#if showCancelButton}
+				<button class="btn" onclick={handleCancel}>{cancelLabel}</button>
+			{/if}
+			{#if secondaryLabel}
+				<button class="btn {secondaryClass}" onclick={handleSecondary}>{secondaryLabel}</button>
+			{/if}
 			<button class="btn {confirmClass}" onclick={handleConfirm}>{confirmLabel}</button>
 		</div>
 	</div>

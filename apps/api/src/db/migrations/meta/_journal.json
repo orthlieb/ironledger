@@ -29,6 +29,27 @@
       "when": 1774120033897,
       "tag": "0004_fix_rls_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1774200000000,
+      "tag": "0005_session_state",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1774280000000,
+      "tag": "0006_npcs",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1774360000000,
+      "tag": "0007_communities",
+      "breakpoints": true
     }
   ]
 }

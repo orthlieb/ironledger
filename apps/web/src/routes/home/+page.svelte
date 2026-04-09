@@ -1048,7 +1048,32 @@
 
 	function handleExport(content: string, format: string) {
 		const stamp = makeTimestamp();
-		if (content === 'character') {
+		if (content === 'everything') {
+			if (format === 'json') {
+				const payload = {
+					characters: chars.map(c => ({ name: c.name, data: $state.snapshot(c.data) })),
+					log: [...(logs[SESSION_LOG_ID] ?? [])].reverse(),
+					communities: $state.snapshot(communities),
+					npcs: $state.snapshot(npcs),
+				};
+				const totalCount = chars.length + (logs[SESSION_LOG_ID]?.length ?? 0) + communities.length + npcs.length;
+				exportJson('everything', payload, totalCount, `ironledger-export-${stamp}.json`);
+			} else {
+				const sections: string[] = [];
+				if (chars.length) sections.push(chars.map(c => charToMarkdown(c)).join('\n---\n\n'));
+				const logMd = logToMarkdown();
+				if (logMd) sections.push(`# Session Log\n\n${logMd}`);
+				if (communities.length) {
+					const comLines = communities.map(c => `## ${c.name}\n\nRegion: ${c.region ?? 'n/a'}`).join('\n\n');
+					sections.push(`# Communities\n\n${comLines}`);
+				}
+				if (npcs.length) {
+					const npcLines = npcs.map(n => `## ${n.name}\n\nRole: ${n.role ?? 'n/a'}`).join('\n\n');
+					sections.push(`# NPCs\n\n${npcLines}`);
+				}
+				downloadFile(`ironledger-export-${stamp}.md`, sections.join('\n\n---\n\n'), 'text/markdown');
+			}
+		} else if (content === 'character') {
 			if (!activeChar) return;
 			const safeName = (activeChar.name || 'character').replace(/[^a-z0-9_\-]+/gi, '_');
 			if (format === 'json') {
@@ -1193,10 +1218,11 @@
 	title="New Community"
 	confirmLabel="Generate Randomly"
 	confirmClass="btn-primary"
-	cancelLabel="Create Manually"
+	showCancelButton={false}
+	secondaryLabel="Create Manually"
 	accentColor="var(--color-momentum)"
 	onconfirm={() => _commitCommunity(true)}
-	oncancel={() => _commitCommunity(false)}
+	onsecondary={() => _commitCommunity(false)}
 	ondismiss={() => { _pendingCommunity = null; }}
 >
 	<p style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 10px;">
@@ -1229,10 +1255,11 @@
 	title="New NPC"
 	confirmLabel="Generate Randomly"
 	confirmClass="btn-primary"
-	cancelLabel="Create Manually"
+	showCancelButton={false}
+	secondaryLabel="Create Manually"
 	accentColor="var(--color-momentum)"
 	onconfirm={() => _commitNpc(true)}
-	oncancel={() => _commitNpc(false)}
+	onsecondary={() => _commitNpc(false)}
 	ondismiss={() => { _pendingNpc = null; }}
 >
 	<p style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 8px;">
