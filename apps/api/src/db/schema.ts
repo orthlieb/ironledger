@@ -105,6 +105,28 @@ export type UserData    = typeof userData.$inferSelect;
 export type NewUserData = typeof userData.$inferInsert;
 
 // ---------------------------------------------------------------------------
+// session_log_entries
+// One row per session log entry. The full LogEntry object is stored as JSONB
+// so the shape can evolve without migrations. occurred_at is a real column
+// for ORDER BY / cursor pagination. A rolling cap of 1000 entries is enforced
+// in sessionLogService on every INSERT.
+// ---------------------------------------------------------------------------
+export const sessionLogEntries = pgTable('session_log_entries', {
+  id:         uuid('id').primaryKey().defaultRandom(),
+  userId:     uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  entryId:    text('entry_id').notNull(),
+  entry:      jsonb('entry').notNull(),
+  occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull(),
+  createdAt:  timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex('session_log_entries_user_entry_idx').on(t.userId, t.entryId),
+  index('session_log_entries_user_occurred_idx').on(t.userId, t.occurredAt),
+]);
+
+export type SessionLogEntry    = typeof sessionLogEntries.$inferSelect;
+export type NewSessionLogEntry = typeof sessionLogEntries.$inferInsert;
+
+// ---------------------------------------------------------------------------
 // history_entries
 // Append-only log of every game event (rolls, resource changes, etc.).
 // Stored as HTML — the same format the existing app writes to localStorage.

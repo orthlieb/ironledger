@@ -1,7 +1,12 @@
 // =============================================================================
 // Iron Ledger — Session Log Store (Svelte 5 module-level $state)
-// Stores log entries per-character in localStorage, keyed as `il-log:{charId}`.
-// Maximum 500 entries per character (oldest are dropped first).
+//
+// One DB row per log entry (JSONB). Local state is the source of truth for
+// rendering; API calls are fire-and-forget (optimistic). On init the latest
+// 200 entries are fetched from the server.
+//
+// The charId parameter is kept for API compatibility but is always called with
+// SESSION_LOG_ID ('__session__') — the log is global, not per-character.
 // =============================================================================
 
 /** Metadata for action rolls — enables burn-momentum after the fact. */
@@ -26,105 +31,198 @@ export interface LogEntry {
 /** Fixed key for the single global session log (used by all components). */
 export const SESSION_LOG_ID = '__session__';
 
-const storageKey = (charId: string) => `il-log:${charId}`;
-
 // Module-level reactive state: map of charId → entries (newest first).
 // Exported directly so components can read logs[charId] inside $derived
 // for fine-grained Svelte 5 proxy tracking per character.
 export let logs = $state<Record<string, LogEntry[]>>({});
 
-/** Persist the current entries for a character to localStorage. */
-function persist(charId: string): void {
-	if (typeof window === 'undefined') return;
-	try {
-		localStorage.setItem(storageKey(charId), JSON.stringify(logs[charId] ?? []));
-	} catch {
-		// Storage quota exceeded — swallow silently
-	}
+// Track which charIds have already been initialised (fetch fired)
+const _initialised = new Set<string>();
+
+// ---------------------------------------------------------------------------
+// API helpers
+// ---------------------------------------------------------------------------
+
+async function apiGet(path: string): Promise<Response> {
+	return fetch(`/api/session/log${path}`);
 }
 
-/** Load stored entries for a character (idempotent — safe to call multiple times). */
+async function apiPost(entry: LogEntry): Promise<void> {
+	await fetch('/api/session/log', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify(entry),
+	});
+}
+
+async function apiPatch(entryId: string, patch: Partial<LogEntry>): Promise<void> {
+	await fetch(`/api/session/log/${entryId}`, {
+		method: 'PATCH',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify(patch),
+	});
+}
+
+async function apiDelete(entryId: string): Promise<void> {
+	await fetch(`/api/session/log/${entryId}`, { method: 'DELETE' });
+}
+
+async function apiDeleteAll(): Promise<void> {
+	await fetch('/api/session/log', { method: 'DELETE' });
+}
+
+// ---------------------------------------------------------------------------
+// initLog — load the latest entries from the server (idempotent)
+// ---------------------------------------------------------------------------
+
+/** Load stored entries for a log (idempotent — safe to call multiple times). */
 export function initLog(charId: string): void {
 	if (typeof window === 'undefined') return;
-	if (logs[charId] !== undefined) return; // already loaded
-	try {
-		const raw = localStorage.getItem(storageKey(charId));
-		logs[charId] = raw ? (JSON.parse(raw) as LogEntry[]) : [];
-	} catch {
-		logs[charId] = [];
-	}
+	if (_initialised.has(charId)) return;
+	_initialised.add(charId);
+
+	// Set an empty array immediately so the log renders (avoids undefined flash)
+	logs[charId] = logs[charId] ?? [];
+
+	// Fetch latest 200 entries in the background; state updates reactively
+	apiGet('?limit=200')
+		.then((res) => res.json())
+		.then((entries: LogEntry[]) => {
+			logs[charId] = entries;
+		})
+		.catch(() => {
+			// Network error — keep the empty array, log will be blank until reload
+		});
 }
 
-/** Append a new entry and persist to localStorage. Accepts an optional pre-generated id, source markdown, and roll metadata. */
-export function appendLog(charId: string, title: string, html: string, id?: string, source?: string, roll?: RollMeta): void {
+// ---------------------------------------------------------------------------
+// appendLog — optimistic prepend + fire-and-forget POST
+// ---------------------------------------------------------------------------
+
+/** Append a new entry. Accepts an optional pre-generated id, source markdown, and roll metadata. */
+export function appendLog(
+	charId: string,
+	title: string,
+	html: string,
+	id?: string,
+	source?: string,
+	roll?: RollMeta,
+): void {
 	if (typeof window === 'undefined') return;
 	initLog(charId);
+
 	const entry: LogEntry = {
 		id:   id ?? crypto.randomUUID(),
 		title,
 		html,
 		ts:   new Date().toISOString(),
 		...(source ? { source } : {}),
-		...(roll ? { roll } : {}),
+		...(roll   ? { roll   } : {}),
 	};
-	// Prepend (newest first), cap at 500 entries
-	logs[charId] = [entry, ...(logs[charId] ?? [])].slice(0, 500);
-	persist(charId);
+
+	// Optimistic: prepend immediately; rolling cap matches server-side 1000
+	logs[charId] = [entry, ...(logs[charId] ?? [])].slice(0, 1000);
+
+	// Persist to server in background
+	apiPost(entry).catch(() => { /* swallow — optimistic state already shown */ });
 }
 
-/** Replace the HTML body of an existing log entry (e.g. to mark XP links as spent). Optionally update source markdown. Pass clearRoll to remove roll metadata (prevents double-burn). */
-export function updateLogEntryHtml(charId: string, entryId: string, html: string, source?: string, clearRoll?: boolean): void {
+// ---------------------------------------------------------------------------
+// updateLogEntryHtml — optimistic local update + PATCH
+// ---------------------------------------------------------------------------
+
+/** Replace the HTML body of an existing log entry. Optionally update source markdown.
+ *  Pass clearRoll to remove roll metadata (prevents double-burn). */
+export function updateLogEntryHtml(
+	charId: string,
+	entryId: string,
+	html: string,
+	source?: string,
+	clearRoll?: boolean,
+): void {
 	if (!logs[charId]) return;
+
+	const patch: Partial<LogEntry> = { html, ...(source !== undefined ? { source } : {}) };
+
 	logs[charId] = logs[charId].map((e) => {
 		if (e.id !== entryId) return e;
-		const updated = { ...e, html, ...(source !== undefined ? { source } : {}) };
+		const updated = { ...e, ...patch };
 		if (clearRoll) delete updated.roll;
 		return updated;
 	});
-	persist(charId);
+
+	apiPatch(entryId, patch).catch(() => {});
 }
+
+// ---------------------------------------------------------------------------
+// deleteLogEntry — optimistic removal + DELETE
+// ---------------------------------------------------------------------------
 
 /** Remove a single entry by id. */
 export function deleteLogEntry(charId: string, entryId: string): void {
 	if (!logs[charId]) return;
 	logs[charId] = logs[charId].filter((e) => e.id !== entryId);
-	persist(charId);
+	apiDelete(entryId).catch(() => {});
 }
+
+// ---------------------------------------------------------------------------
+// getLog — read-only accessor
+// ---------------------------------------------------------------------------
 
 /** Return the current entries array for a log (read-only intent). */
 export function getLog(charId: string): LogEntry[] {
 	return logs[charId] ?? [];
 }
 
+// ---------------------------------------------------------------------------
+// updateLogEntryNote — optimistic + PATCH
+// ---------------------------------------------------------------------------
+
 /** Set or clear the user note on a single entry. */
-export function updateLogEntryNote(charId: string, entryId: string, note: string): void {
+export function updateLogEntryNote(
+	charId: string,
+	entryId: string,
+	note: string,
+): void {
 	if (!logs[charId]) return;
+
+	const trimmed = note.trim();
+	const patch: Partial<LogEntry> = { note: trimmed || undefined };
+
 	logs[charId] = logs[charId].map((e) =>
-		e.id === entryId ? { ...e, note: note.trim() || undefined } : e,
+		e.id === entryId ? { ...e, note: trimmed || undefined } : e,
 	);
-	persist(charId);
+
+	apiPatch(entryId, patch).catch(() => {});
 }
+
+// ---------------------------------------------------------------------------
+// enrichOutcomeLinks
+// ---------------------------------------------------------------------------
 
 /**
  * Enrich outcome HTML with entry-id and char-id on interactive links
  * so LogPanel click delegation can identify the entry and character.
  */
-export function enrichOutcomeLinks(html: string, entryId: string, charId: string): string {
+export function enrichOutcomeLinks(
+	html: string,
+	entryId: string,
+	charId: string,
+): string {
 	return html.replace(
 		/<a\s+class="(resource-link|debility-link|progress-link|initiative-link|menace-link|vanquish-foe-link)"/g,
 		`<a data-entry-id="${entryId}" data-char-id="${charId}" class="$1"`,
 	);
 }
 
-/** Wipe all entries for a character from state and storage. */
+// ---------------------------------------------------------------------------
+// clearLog — optimistic + DELETE all
+// ---------------------------------------------------------------------------
+
+/** Wipe all entries for a character from state and server. */
 export function clearLog(charId: string): void {
 	logs[charId] = [];
-	if (typeof window === 'undefined') return;
-	try {
-		localStorage.removeItem(storageKey(charId));
-	} catch {
-		// ignore
-	}
+	apiDeleteAll().catch(() => {});
 }
 
 // ---------------------------------------------------------------------------

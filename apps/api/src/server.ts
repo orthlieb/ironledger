@@ -17,12 +17,13 @@ import { config } from './config.js';
 import { checkDbHealth, adminDb } from './db/index.js';
 import { securityEvents } from './db/schema.js';
 
-import { authRoutes }       from './routes/auth.js';
-import { characterRoutes }  from './routes/characters.js';
-import { catalogueRoutes }  from './routes/catalogue.js';
-import { userDataRoutes }   from './routes/userData.js';
-import { adminRoutes }      from './routes/admin.js';
-import { healthRoutes }     from './routes/health.js';
+import { authRoutes }        from './routes/auth.js';
+import { characterRoutes }   from './routes/characters.js';
+import { catalogueRoutes }   from './routes/catalogue.js';
+import { userDataRoutes }    from './routes/userData.js';
+import { sessionLogRoutes }  from './routes/sessionLog.js';
+import { adminRoutes }       from './routes/admin.js';
+import { healthRoutes }      from './routes/health.js';
 
 // ---------------------------------------------------------------------------
 // Redis client (shared across the app)
@@ -113,7 +114,7 @@ export async function buildServer(): Promise<FastifyInstance> {
   // Prevents DoS via oversized payloads.
   server.addContentTypeParser(
     'application/json',
-    { parseAs: 'string', bodyLimit: 65536 },
+    { parseAs: 'string', bodyLimit: 2097152 },  // 2 MB (portraits + log HTML)
     (req, body, done) => {
       try {
         done(null, JSON.parse(body as string));
@@ -177,8 +178,9 @@ export async function buildServer(): Promise<FastifyInstance> {
   await server.register(authRoutes,      { prefix: '/api/v1/auth' });
   await server.register(characterRoutes, { prefix: '/api/v1/characters' });
   await server.register(catalogueRoutes, { prefix: '/api/v1/catalogue' });
-  await server.register(userDataRoutes,  { prefix: '/api/v1/session' });
-  await server.register(adminRoutes,     { prefix: '/api/v1/admin' });
+  await server.register(userDataRoutes,   { prefix: '/api/v1/session' });
+  await server.register(sessionLogRoutes, { prefix: '/api/v1/session/log' });
+  await server.register(adminRoutes,      { prefix: '/api/v1/admin' });
 
   // ── Public maintenance status (no auth) ──────────────────────────────
   const { getStatus: getMaintenanceStatus } = await import('./services/maintenanceService.js');
