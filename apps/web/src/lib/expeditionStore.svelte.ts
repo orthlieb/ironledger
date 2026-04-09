@@ -38,8 +38,10 @@ export async function loadExpeditions(): Promise<void> {
 	try {
 		const res = await fetch('/api/session', { credentials: 'include' });
 		if (!res.ok) throw new Error(`Session fetch failed: ${res.status}`);
-		const json = (await res.json()) as { expeditions: Expedition[] };
-		_expeditions = json.expeditions ?? [];
+		const json = (await res.json()) as { expeditions: unknown };
+		// Guard against legacy rows where the JSONB column was persisted as
+		// `{}` instead of `[]` — `?? []` only rescues null/undefined.
+		_expeditions = Array.isArray(json.expeditions) ? (json.expeditions as Expedition[]) : [];
 		_loaded      = true;
 	} catch (err) {
 		console.error('[expeditionStore] Failed to load expeditions:', err);

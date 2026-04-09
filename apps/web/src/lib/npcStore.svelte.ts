@@ -38,8 +38,10 @@ export async function loadNpcs(): Promise<void> {
 	try {
 		const res = await fetch('/api/session', { credentials: 'include' });
 		if (!res.ok) throw new Error(`Session fetch failed: ${res.status}`);
-		const json = (await res.json()) as { npcs: Npc[] };
-		_npcs   = json.npcs ?? [];
+		const json = (await res.json()) as { npcs: unknown };
+		// Guard against legacy rows where the JSONB column was persisted as
+		// `{}` instead of `[]` — `?? []` only rescues null/undefined.
+		_npcs   = Array.isArray(json.npcs) ? (json.npcs as Npc[]) : [];
 		_loaded = true;
 	} catch (err) {
 		console.error('[npcStore] Failed to load NPCs:', err);

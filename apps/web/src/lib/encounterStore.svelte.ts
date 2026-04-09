@@ -38,8 +38,10 @@ export async function loadEncounters(): Promise<void> {
 	try {
 		const res = await fetch('/api/session', { credentials: 'include' });
 		if (!res.ok) throw new Error(`Session fetch failed: ${res.status}`);
-		const json = (await res.json()) as { encounters: FoeEncounter[] };
-		_encounters = json.encounters ?? [];
+		const json = (await res.json()) as { encounters: unknown };
+		// Guard against legacy rows where the JSONB column was persisted as
+		// `{}` instead of `[]` — `?? []` only rescues null/undefined.
+		_encounters = Array.isArray(json.encounters) ? (json.encounters as FoeEncounter[]) : [];
 		_loaded     = true;
 	} catch (err) {
 		console.error('[encounterStore] Failed to load encounters:', err);

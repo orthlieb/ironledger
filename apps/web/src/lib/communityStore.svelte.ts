@@ -37,8 +37,10 @@ export async function loadCommunities(): Promise<void> {
 	try {
 		const res = await fetch('/api/session', { credentials: 'include' });
 		if (!res.ok) throw new Error(`Session fetch failed: ${res.status}`);
-		const json = (await res.json()) as { communities: Community[] };
-		_communities = json.communities ?? [];
+		const json = (await res.json()) as { communities: unknown };
+		// Guard against legacy rows where the JSONB column was persisted as
+		// `{}` instead of `[]` — `?? []` only rescues null/undefined.
+		_communities = Array.isArray(json.communities) ? (json.communities as Community[]) : [];
 		_loaded      = true;
 	} catch (err) {
 		console.error('[communityStore] Failed to load communities:', err);
