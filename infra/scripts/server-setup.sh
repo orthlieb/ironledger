@@ -154,6 +154,14 @@ nginx -t && systemctl reload nginx
 echo "  Nginx installed."
 echo "  ⚠️  Edit /etc/nginx/sites-available/ironledger and replace YOURDOMAIN.COM"
 
+# Allow the ironledger deploy user to reload nginx without a password.
+# This lets the GitHub Actions deploy workflow run 'sudo systemctl reload nginx'
+# after each deploy without needing an interactive password prompt.
+echo "ironledger ALL=(ALL) NOPASSWD: /bin/systemctl reload nginx" \
+    > /etc/sudoers.d/ironledger-nginx
+chmod 440 /etc/sudoers.d/ironledger-nginx
+echo "  sudoers rule added: ironledger can reload nginx without password."
+
 # ── Certbot ───────────────────────────────────────────────────────────────────
 echo "▶ [9/11] Installing Certbot..."
 apt-get install -y -qq certbot python3-certbot-nginx

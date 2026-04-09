@@ -67,6 +67,9 @@ jobs:
             pm2 reload ironledger-api --update-env
             pm2 reload ironledger-web --update-env
 
+            echo "▶ Reloading nginx..."
+            sudo systemctl reload nginx
+
             echo "✅ Deploy complete."
 
       - name: Health check
