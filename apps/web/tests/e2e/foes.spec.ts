@@ -25,7 +25,7 @@ test.describe('Foes tab', () => {
 		// Wait for DB session to finish loading before clicking — prevents click being overwritten
 		await expect(page.locator('.loading-tab')).not.toBeVisible({ timeout: 8000 });
 		await page.click('.tab-btn[data-tab="foes"]');
-		await expect(page.locator('.char-toolbar button:has-text("+ New Foe")')).toBeVisible({ timeout: 5000 });
+		await expect(page.locator('.char-toolbar button:has-text("+ Foe")')).toBeVisible({ timeout: 5000 });
 	});
 
 	test('shows toolbar with New Foe button', async ({ page }) => {

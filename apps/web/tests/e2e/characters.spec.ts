@@ -51,7 +51,7 @@ test.describe('Characters tab', () => {
 	// ── Panel loads ──────────────────────────────────────────────────────────
 
 	test('shows toolbar with New Character button', async ({ page }) => {
-		await expect(page.locator('.char-toolbar button.btn-primary')).toContainText('New Character');
+		await expect(page.locator('.char-toolbar button.btn-primary')).toContainText('Character');
 	});
 
 	test('shows character list or empty state', async ({ page }) => {
@@ -188,8 +188,8 @@ test.describe('Characters tab', () => {
 			await cards.first().click();
 			await expect(page.locator('.char-card--active button[aria-label="Delete character"]')).toBeVisible({ timeout: 3000 });
 			await page.locator('.char-card--active button[aria-label="Delete character"]').click();
-			await expect(page.locator('dialog.del-dialog[open]')).toBeVisible({ timeout: 3000 });
-			await page.locator('dialog.del-dialog[open] button.btn-danger').click();
+			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 3000 });
+			await page.locator('dialog.confirm-modal[open] button.btn-danger').click();
 			count--;
 			if (count > 0) {
 				await expect(cards).toHaveCount(count, { timeout: 5000 });

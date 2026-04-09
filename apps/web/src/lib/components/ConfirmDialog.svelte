@@ -16,24 +16,30 @@
 
 	let {
 		title,
-		accentColor  = 'var(--color-danger)',
-		confirmLabel = 'Confirm',
-		confirmClass = 'btn-danger',
-		cancelLabel  = 'Cancel',
-		dialogClass  = '',
+		accentColor   = 'var(--color-danger)',
+		confirmLabel  = 'Confirm',
+		confirmClass  = 'btn-danger',
+		cancelLabel   = 'Cancel',
+		secondaryLabel,
+		secondaryClass = 'btn',
+		dialogClass   = '',
 		onconfirm,
 		oncancel,
+		onsecondary,
 		children,
 	}: {
-		title:          string;
-		accentColor?:   string;
-		confirmLabel?:  string;
-		confirmClass?:  string;
-		cancelLabel?:   string;
-		dialogClass?:   string;
-		onconfirm:      () => void;
-		oncancel?:      () => void;
-		children?:      Snippet;
+		title:           string;
+		accentColor?:    string;
+		confirmLabel?:   string;
+		confirmClass?:   string;
+		cancelLabel?:    string;
+		secondaryLabel?: string;
+		secondaryClass?: string;
+		dialogClass?:    string;
+		onconfirm:       () => void;
+		oncancel?:       () => void;
+		onsecondary?:    () => void;
+		children?:       Snippet;
 	} = $props();
 
 	let dialogEl = $state<HTMLDialogElement | null>(null);
@@ -64,6 +70,11 @@
 	function handleCancel() {
 		dialogEl?.close();
 		oncancel?.();
+	}
+
+	function handleSecondary() {
+		dialogEl?.close();
+		onsecondary?.();
 	}
 
 	function startDrag(e: MouseEvent) {
@@ -108,6 +119,9 @@
 		{@render children?.()}
 		<div class="cm-actions">
 			<button class="btn" onclick={handleCancel}>{cancelLabel}</button>
+			{#if secondaryLabel}
+				<button class="btn {secondaryClass}" onclick={handleSecondary}>{secondaryLabel}</button>
+			{/if}
 			<button class="btn {confirmClass}" onclick={handleConfirm}>{confirmLabel}</button>
 		</div>
 	</div>

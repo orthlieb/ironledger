@@ -904,7 +904,7 @@
 				const logMd = logToMarkdown();
 				if (logMd) sections.push(`# Session Log\n\n${logMd}`);
 				if (communities.length) {
-					const comLines = communities.map(c => `## ${c.name}\n\nRank: ${c.rank ?? 'n/a'}`).join('\n\n');
+					const comLines = communities.map(c => `## ${c.name}\n\nRegion: ${c.region ?? 'n/a'}`).join('\n\n');
 					sections.push(`# Communities\n\n${comLines}`);
 				}
 				if (npcs.length) {
@@ -1007,9 +1007,11 @@
 	title="New Community"
 	confirmLabel="Generate Randomly"
 	confirmClass="btn-primary"
-	cancelLabel="Create Manually"
+	cancelLabel="Cancel"
+	secondaryLabel="Create Manually"
 	accentColor="var(--color-momentum)"
 	onconfirm={() => _commitCommunity(true)}
+	onsecondary={() => _commitCommunity(false)}
 	oncancel={() => { _pendingCommunity = null; }}
 >
 	<p style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 10px;">
@@ -1042,9 +1044,11 @@
 	title="New NPC"
 	confirmLabel="Generate Randomly"
 	confirmClass="btn-primary"
-	cancelLabel="Create Manually"
+	cancelLabel="Cancel"
+	secondaryLabel="Create Manually"
 	accentColor="var(--color-momentum)"
 	onconfirm={() => _commitNpc(true)}
+	onsecondary={() => _commitNpc(false)}
 	oncancel={() => { _pendingNpc = null; }}
 >
 	<p style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 8px;">
