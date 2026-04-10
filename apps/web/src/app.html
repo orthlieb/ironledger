@@ -2,8 +2,25 @@
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
+
+		<!-- Favicon — SVG for modern browsers, PNG fallback -->
 		<link rel="icon" href="%sveltekit.assets%/favicon.svg?v=2" type="image/svg+xml" />
-		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="icon" href="%sveltekit.assets%/apple-touch-icon.png" sizes="180x180" type="image/png" />
+
+		<!-- iOS home-screen / PWA -->
+		<link rel="apple-touch-icon" href="%sveltekit.assets%/apple-touch-icon.png" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+		<meta name="apple-mobile-web-app-title" content="Iron Ledger" />
+
+		<!-- Web app manifest (Android / Chrome PWA) -->
+		<link rel="manifest" href="%sveltekit.assets%/manifest.webmanifest" />
+
+		<!-- Theme colour for browser chrome (matches app dark background) -->
+		<meta name="theme-color" content="#111827" />
+
+		<!-- Viewport: cover notches, prevent double-tap zoom -->
+		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
 		<meta name="description" content="Iron Ledger — Ironsworn character tracker" />
 		<!-- Cinzel (engraved display titles) + Roboto (UI & body) -->
 		<link rel="preconnect" href="https://fonts.googleapis.com" />

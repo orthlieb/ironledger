@@ -180,6 +180,12 @@ body {
 	background-image:
 		radial-gradient(ellipse 80% 40% at 15% 0%,   var(--accent-dim) 0%, transparent 60%),
 		radial-gradient(ellipse 60% 30% at 85% 100%,  var(--accent-dim) 0%, transparent 60%);
+	/* Push content clear of the iPhone notch (top) and home indicator (bottom)
+	   when running in standalone PWA mode or with viewport-fit=cover. */
+	padding-top:    env(safe-area-inset-top);
+	padding-bottom: env(safe-area-inset-bottom);
+	padding-left:   env(safe-area-inset-left);
+	padding-right:  env(safe-area-inset-right);
 }
 
 a {
