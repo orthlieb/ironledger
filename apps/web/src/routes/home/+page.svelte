@@ -326,11 +326,16 @@
 			if (chars.length > 0) {
 				_partySupply = Math.max(...chars.map(c => (c.data as Record<string, unknown>).supply as number ?? 3));
 			}
-			// Restore initiative from each character's own data
+			// Restore initiative from each character's own data.
+			// Guard: skip initiative === 2 (foe has initiative) if no active foes exist —
+			// the auto-save debounce may not have fired before the previous logout,
+			// leaving a stale value in the DB.
+			const hasActiveFoe = getEncounters().some(e => !e.vanquished);
 			const map: Record<string, number> = {};
 			for (const c of chars) {
 				const v = (c.data as Record<string, unknown>).initiative as number | undefined;
-				if (v) map[c.id] = v;
+				if (v === 1) map[c.id] = v;                        // character has initiative — always safe
+				else if (v === 2 && hasActiveFoe) map[c.id] = v;  // foe has initiative — only if a foe exists
 			}
 			if (Object.keys(map).length > 0) initiativeMap = map;
 		} else {
@@ -454,7 +459,12 @@
 	/** Called when a FoeCard marks its encounter as vanquished. Clear it from the GCB. */
 	function handleFoeVanquished(id: string) {
 		if (activeFoeId === id) activeFoeId = '';
-		// If no non-vanquished foes remain, clear all initiative
+		// Always clear the active character's initiative — the fight with this foe is over.
+		if (activeCharId) {
+			delete initiativeMap[activeCharId];
+			initiativeMap = { ...initiativeMap };
+		}
+		// If no non-vanquished foes remain at all, wipe the full map as a safety net.
 		const remaining = encounters.filter(e => e.id !== id && !e.vanquished);
 		if (remaining.length === 0) initiativeMap = {};
 	}
@@ -1631,13 +1641,21 @@
 							onInitiativeLink={(val) => { if (activeCharId) initiativeMap[activeCharId] = val === 'character' ? 1 : 2; }}
 							onMenaceLink={handleMenaceLink}
 							onVanquishFoe={async () => {
-								if (!activeFoeId) return;
-								const enc = encounters.find(e => e.id === activeFoeId);
-								if (enc) await updateEncounter({ ...enc, vanquished: true });
-								// If no non-vanquished foes remain, clear initiative for all characters
-								const remaining = encounters.filter(e => e.id !== activeFoeId && !e.vanquished);
+								// Mark the active foe vanquished if one is selected.
+								if (activeFoeId) {
+									const enc = encounters.find(e => e.id === activeFoeId);
+									if (enc) await updateEncounter({ ...enc, vanquished: true });
+									activeFoeId = '';
+								}
+								// Always clear the active character's initiative regardless —
+								// the fight is over whether or not activeFoeId was still set.
+								if (activeCharId) {
+									delete initiativeMap[activeCharId];
+									initiativeMap = { ...initiativeMap };
+								}
+								// If no non-vanquished foes remain at all, wipe the full map.
+								const remaining = encounters.filter(e => !e.vanquished);
 								if (remaining.length === 0) initiativeMap = {};
-								activeFoeId = '';
 							}}
 						/>
 					</div>
