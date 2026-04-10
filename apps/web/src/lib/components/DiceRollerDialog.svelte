@@ -12,6 +12,8 @@
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import { rollDie, rollD100, animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
 	import type { DiceCtx } from '$lib/diceContext.svelte.js';
+	import { getActiveDebilityWarnings } from '$lib/debilityWarnings.js';
+	import { tooltip } from '$lib/actions/tooltip.js';
 
 	import diceD6Svg   from '$icons/dice-d6-light.svg?raw';
 	import { draggable } from '$lib/actions/draggable.js';
@@ -52,6 +54,9 @@
 	let selectedStat = $state<StatKey>('heart');
 	let adds         = $state(0);
 	let rolling      = $state(false);
+
+	// All active debility warnings — shown on free rolls since any move could apply
+	const debilityWarnings = $derived(ctx ? getActiveDebilityWarnings('*', ctx.data) : []);
 
 	// ---------------------------------------------------------------------------
 	// Helpers
@@ -296,6 +301,21 @@
 					disabled={rolling || !ctx}
 				>{rolling ? 'Rolling…' : 'Roll Action'}</button>
 			</div>
+
+			<!-- Active debility warnings -->
+			{#if debilityWarnings.length > 0}
+				<div class="drd-debility-bar">
+					<span class="drd-debility-label">Conditions</span>
+					<div class="drd-debility-tags">
+						{#each debilityWarnings as w (w.key)}
+							<div class="drd-debility-tag" use:tooltip={{ text: w.penalty, placement: 'above' }}>
+								<span class="drd-debility-icon">⚠</span>
+								{w.label}
+							</div>
+						{/each}
+					</div>
+				</div>
+			{/if}
 		</section>
 
 	</div>
@@ -537,4 +557,43 @@
 		gap:         8px;
 	}
 	.roll-btn { margin-left: auto; padding: 5px 16px; white-space: nowrap; }
+
+	/* ── Debility warning bar ── */
+	.drd-debility-bar {
+		display:     flex;
+		align-items: center;
+		flex-wrap:   wrap;
+		gap:         6px;
+		margin-top:  8px;
+	}
+	.drd-debility-label {
+		font-family:    var(--font-ui);
+		font-size:      0.62rem;
+		font-weight:    600;
+		letter-spacing: 0.07em;
+		text-transform: uppercase;
+		color:          #f59e0b;
+		white-space:    nowrap;
+		flex-shrink:    0;
+	}
+	.drd-debility-tags {
+		display:   flex;
+		flex-wrap: wrap;
+		gap:       5px;
+	}
+	.drd-debility-tag {
+		display:       inline-flex;
+		align-items:   center;
+		gap:           4px;
+		padding:       3px 9px 3px 7px;
+		border-radius: 10px;
+		border:        1px solid rgba(245, 158, 11, 0.35);
+		background:    rgba(245, 158, 11, 0.10);
+		font-family:   var(--font-ui);
+		font-size:     0.72rem;
+		font-weight:   600;
+		color:         #f59e0b;
+		cursor:        default;
+	}
+	.drd-debility-icon { font-size: 0.65rem; flex-shrink: 0; }
 </style>

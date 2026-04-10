@@ -39,6 +39,7 @@
 	import { tooltip }   from '$lib/actions/tooltip.js';
 	import { loadAssets, findAsset } from '$lib/assetStore.svelte.js';
 	import { getRelevantAbilities } from '$lib/assetMatcherStore.svelte.js';
+	import { getActiveDebilityWarnings } from '$lib/debilityWarnings.js';
 
 	// ---------------------------------------------------------------------------
 	// Props
@@ -137,6 +138,11 @@
 			(ctx.data.assets as import('$lib/types.js').CharacterAsset[]) ?? [],
 			findAsset,
 		);
+	});
+
+	const debilityWarnings = $derived.by(() => {
+		if (!selectedMove || !ctx) return [];
+		return getActiveDebilityWarnings(selectedMove.id, ctx.data);
 	});
 
 	const filteredMoves = $derived(() => {
@@ -865,6 +871,21 @@
 							<div class="md-relevant-tag" use:tooltip={{ text: stripHtml(ra.abilityText), placement: 'below' }}>
 								<span class="md-relevant-check">✓</span>
 								{ra.assetName} #{ra.abilityIndex + 1}
+							</div>
+						{/each}
+					</div>
+				</div>
+			{/if}
+
+			<!-- Debility Warnings -->
+			{#if ctx && debilityWarnings.length > 0}
+				<div class="md-debility-bar">
+					<span class="md-debility-label">Conditions</span>
+					<div class="md-debility-tags">
+						{#each debilityWarnings as w (w.key)}
+							<div class="md-debility-tag" use:tooltip={{ text: w.penalty, placement: 'below' }}>
+								<span class="md-debility-icon">⚠</span>
+								{w.label}
 							</div>
 						{/each}
 					</div>
@@ -2020,6 +2041,51 @@
 	.md-relevant-check {
 		font-size:   0.65rem;
 		color:       var(--color-success, #34d399);
+		flex-shrink: 0;
+	}
+
+	/* ── Debility warning bar ──────────────────────────────────────────── */
+	.md-debility-bar {
+		display:     flex;
+		align-items: center;
+		flex-wrap:   wrap;
+		gap:         6px;
+	}
+
+	.md-debility-label {
+		font-family:    var(--font-ui);
+		font-size:      0.62rem;
+		font-weight:    600;
+		letter-spacing: 0.07em;
+		text-transform: uppercase;
+		color:          #f59e0b;
+		white-space:    nowrap;
+		flex-shrink:    0;
+	}
+
+	.md-debility-tags {
+		display:   flex;
+		flex-wrap: wrap;
+		gap:       5px;
+	}
+
+	.md-debility-tag {
+		display:       inline-flex;
+		align-items:   center;
+		gap:           4px;
+		padding:       3px 9px 3px 7px;
+		border-radius: 10px;
+		border:        1px solid rgba(245, 158, 11, 0.35);
+		background:    rgba(245, 158, 11, 0.10);
+		font-family:   var(--font-ui);
+		font-size:     0.72rem;
+		font-weight:   600;
+		color:         #f59e0b;
+		cursor:        default;
+	}
+
+	.md-debility-icon {
+		font-size:   0.65rem;
 		flex-shrink: 0;
 	}
 
