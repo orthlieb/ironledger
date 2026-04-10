@@ -1895,12 +1895,14 @@
 		gap: 8px;
 		padding-top: 0.75rem;
 		padding-bottom: 0.75rem;
-		border-bottom: 1px solid var(--border);
+		border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 		margin-top: -0.75rem;
 		margin-bottom: 0.75rem;
 		position: sticky;
 		top: 93px; /* app-nav (52px) + tab-bar (41px) */
-		background: var(--bg-page);
+		background: color-mix(in srgb, var(--bg-page) 88%, transparent);
+		backdrop-filter: blur(12px) saturate(150%);
+		-webkit-backdrop-filter: blur(12px) saturate(150%);
 		z-index: 30;
 	}
 
@@ -2160,8 +2162,10 @@
 	.tab-bar {
 		display: flex;
 		align-items: stretch;
-		background: var(--bg-card);
-		border-bottom: 1px solid var(--border);
+		background: color-mix(in srgb, var(--bg-card) 85%, transparent);
+		backdrop-filter: blur(14px) saturate(160%);
+		-webkit-backdrop-filter: blur(14px) saturate(160%);
+		border-bottom: 1px solid rgba(255, 255, 255, 0.07);
 		position: sticky;
 		top: 52px; /* must match .app-nav height */
 		z-index: 40;

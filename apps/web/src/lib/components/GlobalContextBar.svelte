@@ -513,6 +513,14 @@
 		gap: 0.5rem;
 		align-items: stretch;
 		padding: 0.5rem 0.6rem;
+		border-radius: 8px;
+		background: color-mix(in srgb, var(--bg-card) 78%, transparent);
+		backdrop-filter: blur(14px) saturate(160%);
+		-webkit-backdrop-filter: blur(14px) saturate(160%);
+		border: 1px solid rgba(255, 255, 255, 0.07);
+		box-shadow:
+			0 8px 30px rgba(0, 0, 0, 0.40),
+			inset 0 1px 0 rgba(255, 255, 255, 0.10);
 	}
 
 	/* ===== Action buttons ===== */
@@ -545,7 +553,8 @@
 		container-type: inline-size;
 		display: flex;
 		flex-direction: column;
-		border: 1px solid var(--border);
+		background: rgba(255, 255, 255, 0.04);
+		border: 1px solid rgba(255, 255, 255, 0.07);
 		border-left: 3px solid transparent;
 		border-radius: 5px;
 		box-shadow: none;
@@ -553,7 +562,8 @@
 
 	/* .gc-tile--empty — opacity applied to button only so popover dropdown stays fully opaque */
 	.gc-tile--active {
-		border-color: var(--border-mid);
+		background: rgba(255, 255, 255, 0.07);
+		border-color: rgba(245, 158, 11, 0.30);
 	}
 	.gc-tile--open {
 		z-index: 35;
@@ -938,13 +948,17 @@
 		left: 0;
 		right: 0;
 		z-index: 50;
-		background: var(--bg-card);
-		border: 1px solid var(--border);
+		background: color-mix(in srgb, var(--bg-card) 88%, transparent);
+		backdrop-filter: blur(16px) saturate(180%);
+		-webkit-backdrop-filter: blur(16px) saturate(180%);
+		border: 1px solid rgba(255, 255, 255, 0.11);
 		border-radius: 6px;
-		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+		box-shadow:
+			0 12px 40px rgba(0, 0, 0, 0.55),
+			inset 0 1px 0 rgba(255, 255, 255, 0.12);
 		max-height: 12rem;
 		overflow-y: auto;
-		margin-top: 2px;
+		margin-top: 4px;
 		display: flex;
 		flex-direction: column;
 	}
