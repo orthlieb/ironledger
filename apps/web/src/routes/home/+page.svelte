@@ -1895,7 +1895,7 @@
 		gap: 8px;
 		padding-top: 0.75rem;
 		padding-bottom: 0.75rem;
-		border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+		border-bottom: 1px solid var(--border);
 		margin-top: -0.75rem;
 		margin-bottom: 0.75rem;
 		position: sticky;
@@ -2165,7 +2165,7 @@
 		background: color-mix(in srgb, var(--bg-card) 85%, transparent);
 		backdrop-filter: blur(14px) saturate(160%);
 		-webkit-backdrop-filter: blur(14px) saturate(160%);
-		border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+		border-bottom: 1px solid var(--border);
 		position: sticky;
 		top: 52px; /* must match .app-nav height */
 		z-index: 40;

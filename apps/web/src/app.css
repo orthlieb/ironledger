@@ -351,7 +351,7 @@ dialog label {
 	background: color-mix(in srgb, var(--bg-card) 82%, transparent);
 	backdrop-filter: blur(16px) saturate(180%);
 	-webkit-backdrop-filter: blur(16px) saturate(180%);
-	border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+	border-bottom: 1px solid var(--border);
 	position: sticky;
 	top: 0;
 	z-index: 50;
