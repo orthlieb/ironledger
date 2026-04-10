@@ -1119,9 +1119,9 @@
 							aria-label="Increase adds"
 						>+</button>
 					</div>
-					</div>
-				<div class="md-footer-btns">
 					<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
+				</div>
+				<div class="md-footer-btns">
 					<button class="btn" onclick={close}>Cancel</button>
 					<span use:tooltip={{ text: fail ?? '' }} style="display: inline-flex;">
 						<button
@@ -1150,9 +1150,9 @@
 						<span class="md-adds-val">{spellDifficulty}</span>
 						<button class="md-adj" onclick={() => (spellDifficulty = Math.min(10, spellDifficulty + 1))} disabled={rolling || spellDifficulty >= 10} aria-label="Increase difficulty">+</button>
 					</div>
+					<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
 				</div>
 				<div class="md-footer-btns">
-					<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
 					<button class="btn" onclick={close}>Cancel</button>
 					<button
 						class="btn btn-primary md-roll-btn md-roll-btn--spell"
@@ -1171,9 +1171,9 @@
 						<span class="md-adds-val" class:positive={adds > 0} class:negative={adds < 0}>{adds >= 0 ? '+' : ''}{adds}</span>
 						<button class="md-adj" onclick={() => (adds = Math.min(5, adds + 1))} disabled={rolling || adds >= 5} aria-label="Increase adds">+</button>
 					</div>
+					<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
 				</div>
 				<div class="md-footer-btns">
-					<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
 					<button class="btn" onclick={close}>Cancel</button>
 					<button
 						class="btn btn-primary md-roll-btn"
@@ -1525,10 +1525,6 @@
 		align-items:      center;
 		justify-content:  flex-end;
 		gap:              8px;
-	}
-	.md-roll-status {
-		flex: 1;
-		text-align: left;
 	}
 
 	.md-loading,

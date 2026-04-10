@@ -118,6 +118,11 @@
 	const expProgress       = $derived(activeExpedition ? Math.floor(activeExpedition.ticks / 4) : 0);
 	const expMarkTicks      = $derived(activeExpedition ? (EXPEDITION_MARK_TICKS[activeExpedition.difficulty] ?? 4) : 4);
 
+	// Auto-deselect when the active expedition is marked complete (mirrors vanquished-foe behaviour)
+	$effect(() => {
+		if (activeExpedition?.complete) selectExpedition('');
+	});
+
 	const DIFFICULTY_RANK: Record<string, number> = {
 		troublesome: 1, dangerous: 2, formidable: 3, extreme: 4, epic: 5,
 	};
@@ -461,9 +466,6 @@
 								disabled={activeExpedition.ticks <= 0}
 								title="Unmark progress"
 							>−{expMarkTicks}</button>
-							{#if activeExpedition.complete}
-								<span class="gc-tile-exp-complete" title="Complete">✓ Complete</span>
-							{/if}
 						</div>
 					</div>
 				</div>
@@ -472,13 +474,12 @@
 			{#if openSelector === 'expedition'}
 				<div class="gc-popover">
 					<button class="gc-popover-item" class:gc-popover-item--active={!activeExpeditionId} onclick={() => selectExpedition('')}>(None)</button>
-					{#each expeditions as exp (exp.id)}
+					{#each expeditions.filter(e => !e.complete) as exp (exp.id)}
 						<button class="gc-popover-item" class:gc-popover-item--active={exp.id === activeExpeditionId} onclick={() => selectExpedition(exp.id)}>
 							{exp.name || (exp.type === 'journey' ? 'Unnamed Journey' : 'Unnamed Site')}
-							{exp.complete ? ' \u2713' : ''}
 						</button>
 					{/each}
-					{#if expeditions.length === 0}
+					{#if expeditions.filter(e => !e.complete).length === 0}
 						<span class="gc-popover-empty">No expeditions</span>
 					{/if}
 				</div>
@@ -935,12 +936,6 @@
 		width: 100%;
 		padding: 0.35rem 0 0.5rem;
 	}
-	.gc-tile-exp-complete {
-		color: #34d399;
-		font-weight: 600;
-		font-size: 0.72rem;
-	}
-
 	/* ===== Popover dropdown ===== */
 	.gc-popover {
 		position: absolute;
