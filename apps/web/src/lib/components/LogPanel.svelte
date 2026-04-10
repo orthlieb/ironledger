@@ -710,7 +710,7 @@
 		align-items: center;
 		gap: 8px;
 		padding: 10px 14px;
-		background: var(--bg-page);
+		background: var(--bg-inset);
 		border-bottom: 1px solid var(--border);
 		min-height: 54px;
 		flex-shrink: 0;
