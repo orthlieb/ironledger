@@ -285,10 +285,6 @@
 	const momentumRstV  = $derived(momentumReset(data));
 	const debilityCount = $derived(countDebilities(data));
 
-	// Certain meters have their increment blocked by specific debilities
-	const healthIncBlocked  = $derived(data.wounded);
-	const spiritIncBlocked  = $derived(data.shaken);
-
 	// Sync the initiative prop into owned data so it's persisted with the character.
 	// This triggers the auto-save effect below whenever initiative changes externally.
 	$effect(() => {
@@ -633,7 +629,6 @@
 						color="var(--color-health)"
 						min={0}
 						max={5}
-						incDisabled={healthIncBlocked}
 						icon={iconHealth}
 						tooltip="Physical condition and readiness"
 						onchange={(o, n) => logMeter('Health', o, n)}
@@ -644,7 +639,6 @@
 						color="var(--color-spirit)"
 						min={0}
 						max={5}
-						incDisabled={spiritIncBlocked}
 						icon={iconSpirit}
 						tooltip="Mental fortitude and morale"
 						onchange={(o, n) => logMeter('Spirit', o, n)}
