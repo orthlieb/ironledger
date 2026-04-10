@@ -50,7 +50,6 @@
 	import { onMount, tick } from 'svelte';
 	import { parseImportJson, sanitizeLogHtml, ImportError } from '$lib/importSanitizer.js';
 	import trashSvg         from '$icons/trash-solid-full.svg?raw';
-	import broomWideSvg     from '$icons/broom-wide-solid-full.svg?raw';
 	import charactersSvgUrl from '$icons/Characters.svg?url';
 	import foesSvgUrl       from '$icons/Foes.svg?url';
 	import expedSvgUrl      from '$icons/Expeditions.svg?url';
@@ -118,8 +117,8 @@
 	// Encounters from the global encounter store (not per-character)
 	const encounters = $derived(getEncounters());
 
-	// ── LogPanel ref (for toolbar buttons in tab mode) ────────────────────────
-	let logPanelRef = $state<{ exportLog(): void; showClearDialog(): void; hasEntries(): boolean } | null>(null);
+	// ── LogPanel ref ─────────────────────────────────────────────────────────
+	let logPanelRef = $state<{ exportLog(): void } | null>(null);
 
 	// ── Moves dialog ──────────────────────────────────────────────────────────
 	let movesDialogRef = $state<{ open(moveId?: string): void } | null>(null);
@@ -1614,18 +1613,6 @@
 
 					<!-- Log column -->
 					<div class="adventure-log">
-						<div class="char-toolbar">
-							<span class="log-panel-title">Session Log</span>
-							<div class="char-toolbar-actions">
-								<button
-									class="btn icon-btn"
-									onclick={() => logPanelRef?.showClearDialog()}
-									title="Clear log"
-									aria-label="Clear session log"
-									disabled={!logPanelRef?.hasEntries()}
-								>{@html broomWideSvg} Clear</button>
-							</div>
-						</div>
 						<LogPanel
 							bind:this={logPanelRef}
 							ctx={activeDiceCtx}
@@ -1878,25 +1865,6 @@
 		color: var(--text-accent);
 	}
 
-	/* When char-toolbar is inside the adventure log card, style it as the inset header */
-	.adventure-log .char-toolbar {
-		padding: 10px 14px;
-		padding-bottom: 10px;
-		margin-top: 0;
-		margin-bottom: 0;
-		background: var(--bg-inset);
-		min-height: 54px;
-		position: static;
-	}
-
-	.log-panel-title {
-		font-family:    var(--font-display, 'Cinzel', serif);
-		font-size:      0.75rem;
-		font-weight:    700;
-		letter-spacing: 0.08em;
-		color:          var(--text-muted);
-		margin-right:   auto;
-	}
 
 .icon-btn {
 		display: inline-flex;

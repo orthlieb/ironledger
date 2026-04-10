@@ -13,9 +13,12 @@
 	import { momentumReset } from '$lib/character.js';
 	import { findMove } from '$lib/moveStore.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
-	import trashSvg      from '$icons/trash-solid-full.svg?raw';
-	import penSvg        from '$icons/pen-to-square-solid-full.svg?raw';
-	import ConfirmDialog from './ConfirmDialog.svelte';
+	import trashSvg       from '$icons/trash-solid-full.svg?raw';
+	import penSvg         from '$icons/pen-to-square-solid-full.svg?raw';
+	import anglesLeftSvg  from '$icons/angles-left-solid-full.svg?raw';
+	import anglesRightSvg from '$icons/angles-right-solid-full.svg?raw';
+	import broomWideSvg   from '$icons/broom-wide-solid-full.svg?raw';
+	import ConfirmDialog  from './ConfirmDialog.svelte';
 
 	// ---------------------------------------------------------------------------
 	// Callback props for interactive log links (Phase 2)
@@ -46,6 +49,26 @@
 	// Access logs[SESSION_LOG_ID] directly so Svelte 5's proxy records a
 	// fine-grained dependency on the session log only.
 	const entries = $derived(logs[SESSION_LOG_ID] ?? []);
+
+	// ---------------------------------------------------------------------------
+	// Pagination
+	// ---------------------------------------------------------------------------
+	const PAGE_SIZE   = 50;
+	let   page        = $state(0);
+	const totalPages  = $derived(Math.max(1, Math.ceil(entries.length / PAGE_SIZE)));
+	const pagedEntries = $derived(entries.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE));
+
+	// Jump to page 0 when a new entry is prepended so the user always sees it.
+	// Also clamp if the total pages shrink (e.g. after clear or bulk delete).
+	let _headEntryId = '';
+	$effect(() => {
+		const headId = entries[0]?.id ?? '';
+		if (headId && headId !== _headEntryId) {
+			_headEntryId = headId;
+			page = 0;
+		}
+		if (page >= totalPages) page = Math.max(0, totalPages - 1);
+	});
 
 	// Per-entry editing state (entry id → draft note text)
 	let editingId   = $state<string | null>(null);
@@ -551,6 +574,42 @@
 </script>
 
 <div class="log-panel">
+
+	<!-- ── Built-in header: title · pagination · clear ── -->
+	<div class="log-header">
+		<span class="log-title">Session Log</span>
+
+		{#if totalPages > 1}
+			<div class="log-pagination">
+				<button
+					class="pag-btn"
+					onclick={() => page--}
+					disabled={page === 0}
+					title="Previous page"
+					aria-label="Previous page"
+				>{@html anglesLeftSvg}</button>
+				<span class="pag-label">pg {page + 1}/{totalPages}</span>
+				<button
+					class="pag-btn"
+					onclick={() => page++}
+					disabled={page === totalPages - 1}
+					title="Next page"
+					aria-label="Next page"
+				>{@html anglesRightSvg}</button>
+			</div>
+		{/if}
+
+		<div class="log-header-actions">
+			<button
+				class="btn icon-btn"
+				onclick={() => clearDialogRef?.open()}
+				title="Clear log"
+				aria-label="Clear session log"
+				disabled={entries.length === 0}
+			>{@html broomWideSvg} Clear</button>
+		</div>
+	</div>
+
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -566,7 +625,7 @@
 				<span class="log-empty-sub">Changes to the log will appear here.</span>
 			</div>
 		{:else}
-			{#each entries as entry (entry.id)}
+			{#each pagedEntries as entry (entry.id)}
 				<div class="log-entry" data-entry-id={entry.id}>
 					<!-- Header row: title, time, and hover-reveal action buttons -->
 					<div class="entry-header">
@@ -645,6 +704,84 @@
 		flex-direction: column;
 		height: 100%;
 		background: transparent;
+	}
+
+	/* ── Built-in log header ── */
+	.log-header {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 14px;
+		background: var(--bg-page);
+		border-bottom: 1px solid var(--border);
+		min-height: 54px;
+		flex-shrink: 0;
+	}
+
+	.log-title {
+		font-family:    var(--font-display, 'Cinzel', serif);
+		font-size:      0.75rem;
+		font-weight:    700;
+		letter-spacing: 0.08em;
+		color:          var(--text-muted);
+		text-transform: uppercase;
+		flex: 1;
+		min-width: 0;
+	}
+
+	/* ── Pagination controls ── */
+	.log-pagination {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		flex-shrink: 0;
+	}
+
+	.pag-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 22px;
+		height: 22px;
+		padding: 0;
+		background: transparent;
+		border: 1px solid var(--border);
+		border-radius: 3px;
+		cursor: pointer;
+		color: var(--text-muted);
+		transition: color 0.12s, border-color 0.12s;
+	}
+	.pag-btn:hover:not(:disabled) {
+		color: var(--text);
+		border-color: var(--border-mid);
+	}
+	.pag-btn:disabled {
+		opacity: 0.3;
+		cursor: default;
+	}
+	.pag-btn :global(svg) {
+		width: 10px;
+		height: 10px;
+		fill: currentColor;
+	}
+
+	.pag-label {
+		font-family:    var(--font-ui);
+		font-size:      0.65rem;
+		font-weight:    600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color:          var(--text-muted);
+		white-space:    nowrap;
+		min-width:      42px;
+		text-align:     center;
+	}
+
+	.log-header-actions {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		flex-shrink: 0;
 	}
 
 	.log-entries {
