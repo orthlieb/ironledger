@@ -86,8 +86,9 @@ export function initLog(charId: string): void {
 
 	// Fetch latest 200 entries in the background; state updates reactively
 	apiGet('?limit=200')
-		.then((res) => res.json())
-		.then((entries: LogEntry[]) => {
+		.then(async (res) => {
+			if (!res.ok) return; // server error — keep the empty array
+			const entries: LogEntry[] = await res.json();
 			logs[charId] = entries;
 		})
 		.catch(() => {

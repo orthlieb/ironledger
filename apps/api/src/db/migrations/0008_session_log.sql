@@ -16,3 +16,17 @@ CREATE TABLE IF NOT EXISTS session_log_entries (
 
 CREATE INDEX IF NOT EXISTS session_log_entries_user_occurred_idx
   ON session_log_entries (user_id, occurred_at DESC);
+
+-- Allow app_user to read and write their own rows only
+ALTER TABLE session_log_entries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE session_log_entries FORCE ROW LEVEL SECURITY;
+
+CREATE POLICY session_log_entries_isolation ON session_log_entries
+  FOR ALL TO app_user
+  USING (user_id = NULLIF(current_setting('app.user_id', true), '')::uuid);
+
+-- Grant app_user full CRUD on session_log_entries
+GRANT SELECT, INSERT, UPDATE, DELETE ON session_log_entries TO app_user;
+
+-- Grant app_admin full access (bypasses RLS for migrations/admin tools)
+GRANT ALL ON session_log_entries TO app_admin;
