@@ -124,9 +124,13 @@
 	let movesDialogRef = $state<{ open(moveId?: string): void } | null>(null);
 
 	// ── Expeditions ────────────────────────────────────────────────────────────
-	let activeExpeditionId = $state('');
-	let expeditionSearch   = $state('');
-	let hideCompleted      = $state(true);
+	let activeExpeditionId    = $state('');
+	let expeditionSearch      = $state('');
+	let expeditionSearchOpen  = $state(false);
+	let expeditionSearchEl    = $state<HTMLInputElement | undefined>(undefined);
+	let hideCompleted         = $state(true);
+
+	$effect(() => { if (expeditionSearchOpen && expeditionSearchEl) expeditionSearchEl.focus(); });
 	const expeditions = $derived(
 		getExpeditions().slice().sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
 	);
@@ -150,7 +154,11 @@
 	const initiative = $derived(activeCharId ? (initiativeMap[activeCharId] ?? 0) : 0);
 
 	// ── Communities ────────────────────────────────────────────────────────────
-	let communitySearch = $state('');
+	let communitySearch      = $state('');
+	let communitySearchOpen  = $state(false);
+	let communitySearchEl    = $state<HTMLInputElement | undefined>(undefined);
+
+	$effect(() => { if (communitySearchOpen && communitySearchEl) communitySearchEl.focus(); });
 	const communities = $derived(getCommunities());
 	const npcs        = $derived(getNpcs());
 
@@ -188,6 +196,13 @@
 	// ── Active tab (declared here so the session-persistence effect can track it)
 	type Tab = 'characters' | 'foes' | 'expeditions' | 'communities' | 'adventure';
 	let activeTab = $state<Tab>('characters');
+
+	// Close mobile search pills when switching tabs
+	$effect(() => {
+		activeTab;
+		expeditionSearchOpen = false;
+		communitySearchOpen  = false;
+	});
 
 	// ── Session persistence ────────────────────────────────────────────────────
 	// Debounced write to DB on every selection change.
@@ -1447,14 +1462,34 @@
 
 			{:else if activeTab === 'expeditions'}
 				<div class="char-toolbar">
-					<div class="tab-search-row">
-						<input
-							class="tab-search"
-							type="search"
-							placeholder="Search expeditions…"
-							bind:value={expeditionSearch}
+					<div class="tab-search-row" class:is-open={expeditionSearchOpen}>
+						<!-- Collapsed: icon button (mobile only, hidden on desktop) -->
+						<button
+							class="tab-srch-icon"
+							onclick={() => (expeditionSearchOpen = true)}
 							aria-label="Search expeditions"
-						/>
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+						</button>
+						<!-- Glass pill: always visible on desktop, expand-on-demand on mobile -->
+						<div class="tab-srch-pill">
+							<svg class="tab-srch-pill-icon" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+							<input
+								class="tab-search"
+								type="search"
+								placeholder="Search expeditions…"
+								bind:value={expeditionSearch}
+								bind:this={expeditionSearchEl}
+								aria-label="Search expeditions"
+							/>
+							<button
+								class="tab-srch-close"
+								onclick={() => { expeditionSearch = ''; expeditionSearchOpen = false; }}
+								aria-label="Close search"
+							>
+								<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+							</button>
+						</div>
 						<button
 							class="tab-eye-btn"
 							class:tab-eye-btn--active={!hideCompleted}
@@ -1469,7 +1504,7 @@
 							{/if}
 						</button>
 					</div>
-					<div class="char-toolbar-actions">
+					<div class="char-toolbar-actions" class:tb-hidden={expeditionSearchOpen}>
 						<button
 							class="btn btn-primary"
 							onclick={handleAddJourney}
@@ -1525,16 +1560,36 @@
 				{/if}
 			{:else if activeTab === 'communities'}
 				<div class="char-toolbar">
-					<div class="tab-search-row">
-						<input
-							class="tab-search"
-							type="search"
-							placeholder="Search communities &amp; NPCs…"
-							bind:value={communitySearch}
+					<div class="tab-search-row" class:is-open={communitySearchOpen}>
+						<!-- Collapsed: icon button (mobile only, hidden on desktop) -->
+						<button
+							class="tab-srch-icon"
+							onclick={() => (communitySearchOpen = true)}
 							aria-label="Search communities and NPCs"
-						/>
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+						</button>
+						<!-- Glass pill: always visible on desktop, expand-on-demand on mobile -->
+						<div class="tab-srch-pill">
+							<svg class="tab-srch-pill-icon" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+							<input
+								class="tab-search"
+								type="search"
+								placeholder="Search communities &amp; NPCs…"
+								bind:value={communitySearch}
+								bind:this={communitySearchEl}
+								aria-label="Search communities and NPCs"
+							/>
+							<button
+								class="tab-srch-close"
+								onclick={() => { communitySearch = ''; communitySearchOpen = false; }}
+								aria-label="Close search"
+							>
+								<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+							</button>
+						</div>
 					</div>
-					<div class="char-toolbar-actions">
+					<div class="char-toolbar-actions" class:tb-hidden={communitySearchOpen}>
 						<button
 							class="btn btn-primary icon-btn"
 							onclick={() => oraclesDialogRef?.open()}
@@ -1855,12 +1910,43 @@
 		gap: 8px;
 	}
 
+	/* ── Search row ─────────────────────────────────────────────────────────── */
 	.tab-search-row {
 		flex: 1;
 		display: flex;
 		align-items: center;
 		gap: 6px;
 		margin-right: 8px;
+		min-width: 0;
+	}
+
+	/* Collapsed search icon — hidden on desktop, shown on mobile */
+	.tab-srch-icon {
+		display: none;
+	}
+
+	/* Glass pill — wraps the search input + close button */
+	.tab-srch-pill {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 5px 10px;
+		border-radius: 999px;
+		background: var(--bg-inset);
+		border: 1px solid var(--border);
+		min-width: 0;
+		transition: box-shadow 0.15s;
+	}
+	.tab-srch-pill:focus-within {
+		border-color: var(--focus-ring);
+		box-shadow: 0 0 0 2px var(--accent-glow);
+	}
+
+	.tab-srch-pill-icon {
+		flex-shrink: 0;
+		color: var(--text-dimmer);
+		pointer-events: none;
 	}
 
 	.tab-search {
@@ -1868,16 +1954,17 @@
 		font-family: var(--font-ui);
 		font-size: 0.78rem;
 		color: var(--text);
-		background: var(--bg-inset);
-		border: 1px solid var(--border);
-		border-radius: 4px;
-		padding: 5px 8px;
+		background: transparent;
+		border: none;
+		outline: none;
+		padding: 0;
 		min-width: 0;
 	}
-	.tab-search:focus {
-		outline: none;
-		border-color: var(--focus-ring);
-		box-shadow: 0 0 0 2px var(--accent-glow);
+	.tab-search::placeholder { color: var(--text-dimmer); }
+
+	/* Close (×) button inside the pill — hidden on desktop */
+	.tab-srch-close {
+		display: none;
 	}
 
 	.tab-eye-btn {
@@ -1889,6 +1976,7 @@
 		display: flex;
 		align-items: center;
 		cursor: pointer;
+		flex-shrink: 0;
 	}
 	.tab-eye-btn:hover {
 		color: var(--text);
@@ -1896,6 +1984,60 @@
 	}
 	.tab-eye-btn--active {
 		color: var(--text-accent);
+	}
+
+	/* ── Mobile search: collapsed by default, glass pill when open ──────────── */
+	@media (max-width: 767px) {
+		/* When closed: show icon button only, hide pill */
+		.tab-srch-icon {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			background: transparent;
+			border: 1px solid transparent;
+			border-radius: 6px;
+			padding: 4px 6px;
+			color: var(--text-dimmer);
+			cursor: pointer;
+			flex-shrink: 0;
+		}
+		.tab-srch-icon:hover { color: var(--text); border-color: var(--border-mid); }
+
+		.tab-search-row:not(.is-open) .tab-srch-pill { display: none; }
+
+		/* When open: glass pill fills row, action buttons hide */
+		.tab-search-row.is-open .tab-srch-pill {
+			background: rgba(255, 255, 255, 0.07);
+			backdrop-filter: blur(12px) saturate(160%);
+			-webkit-backdrop-filter: blur(12px) saturate(160%);
+			border-color: rgba(255, 255, 255, 0.15);
+			box-shadow:
+				0 4px 20px rgba(0, 0, 0, 0.35),
+				inset 0 1px 0 rgba(255, 255, 255, 0.18);
+		}
+		.tab-search-row.is-open .tab-srch-pill:focus-within {
+			border-color: var(--focus-ring);
+			box-shadow:
+				0 4px 20px rgba(0, 0, 0, 0.35),
+				inset 0 1px 0 rgba(255, 255, 255, 0.18),
+				0 0 0 2px var(--accent-glow);
+		}
+		.tab-search-row.is-open ~ .char-toolbar-actions,
+		.tb-hidden { display: none !important; }
+
+		.tab-search-row.is-open .tab-srch-icon { display: none; }
+		.tab-search-row.is-open .tab-srch-close {
+			display: flex;
+			align-items: center;
+			background: transparent;
+			border: none;
+			padding: 2px;
+			color: var(--text-dimmer);
+			cursor: pointer;
+			flex-shrink: 0;
+			border-radius: 50%;
+		}
+		.tab-search-row.is-open .tab-srch-close:hover { color: var(--text); }
 	}
 
 
