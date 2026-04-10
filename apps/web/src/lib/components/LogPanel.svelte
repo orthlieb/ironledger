@@ -782,6 +782,20 @@
 		flex-shrink: 0;
 	}
 
+	/* icon-btn is defined in page.svelte's scoped styles, so we redefine
+	   SVG sizing here for the Clear button that lives inside LogPanel. */
+	.icon-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+	}
+	.icon-btn :global(svg) {
+		width: 13px;
+		height: 13px;
+		fill: currentColor;
+		flex-shrink: 0;
+	}
+
 	.log-entries {
 		flex: 1;
 		overflow-y: auto;
