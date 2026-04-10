@@ -23,26 +23,26 @@ export const DEBILITY_PENALTIES: DebilityWarning[] = [
 	{
 		key: 'wounded',
 		label: 'Wounded',
-		penalty: '−1 to this roll',
+		penalty: 'Add −1 to your Adds before rolling.',
 		moves: ['move/heal'],
 	},
 	{
 		key: 'shaken',
 		label: 'Shaken',
-		penalty: '−1 to this roll',
+		penalty: 'Add −1 to your Adds before rolling.',
 		moves: ['move/sojourn', 'move/make-camp', 'move/endure-stress', 'move/face-desolation'],
 	},
 	{
 		key: 'unprepared',
 		label: 'Unprepared',
-		penalty: '−1 to this roll (Supply is 0)',
+		penalty: 'Your Supply is 0 — add −1 to your Adds before rolling.',
 		moves: '*',
 		condition: (d) => (d.supply ?? 1) === 0,
 	},
 	{
 		key: 'encumbered',
 		label: 'Encumbered',
-		penalty: '−1 if speed or agility is required',
+		penalty: 'If this move requires speed or agility, add −1 to your Adds before rolling.',
 		moves: [
 			'move/face-danger',
 			'move/secure-an-advantage',
@@ -54,7 +54,7 @@ export const DEBILITY_PENALTIES: DebilityWarning[] = [
 	{
 		key: 'maimed',
 		label: 'Maimed',
-		penalty: '−1 if physical action is required',
+		penalty: 'If this move requires physical action, add −1 to your Adds before rolling.',
 		moves: [
 			'move/face-danger',
 			'move/secure-an-advantage',
@@ -72,7 +72,7 @@ export const DEBILITY_PENALTIES: DebilityWarning[] = [
 	{
 		key: 'corrupted',
 		label: 'Corrupted',
-		penalty: '−1 if acting on humanity or fellowship',
+		penalty: 'If this move draws on your humanity or fellowship, add −1 to your Adds before rolling.',
 		moves: [
 			'move/forge-a-bond',
 			'move/test-your-bond',
@@ -85,13 +85,13 @@ export const DEBILITY_PENALTIES: DebilityWarning[] = [
 	{
 		key: 'tormented',
 		label: 'Tormented',
-		penalty: '−1 if invoking bonds or past',
+		penalty: 'If this move invokes your bonds or past, add −1 to your Adds before rolling.',
 		moves: ['move/sojourn', 'move/swear-an-iron-vow'],
 	},
 	{
 		key: 'cursed',
 		label: 'Cursed',
-		penalty: '−1 to this roll',
+		penalty: 'Add −1 to your Adds before rolling.',
 		moves: '*',
 	},
 ];
