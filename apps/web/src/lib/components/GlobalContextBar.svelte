@@ -399,7 +399,7 @@
 								title="Unmark progress"
 							>−{activeFoeRank?.progressPerHit}</button>
 							{#if activeFoe.vanquished}
-								<span class="gc-tile-vanquished" title="Vanquished">☠</span>
+								<span class="gc-tile-vanquished" title="Vanquished">{@html skullCrossbonesSvg}</span>
 							{/if}
 						</div>
 					</div>
@@ -871,8 +871,8 @@
 		align-items: center;
 	}
 	.gc-tile-vanquished :global(svg) {
-		width: 14px;
-		height: 14px;
+		width: 20px;
+		height: 20px;
 		fill: currentColor;
 	}
 
