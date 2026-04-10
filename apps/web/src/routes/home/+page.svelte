@@ -2149,6 +2149,11 @@
 		.tab-body {
 			padding: 0.75rem 0 3rem;
 		}
+
+		.char-toolbar {
+			padding-left: var(--page-gutter);
+			padding-right: var(--page-gutter);
+		}
 	}
 
 	/* Hide tab text labels on very small screens — icons only, except the active tab */
