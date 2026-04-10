@@ -89,7 +89,7 @@
 	});
 
 	// "Add Foe?" dialog state
-	let addFoeDialogEl     = $state<HTMLDialogElement | null>(null);
+	let addFoeDialogRef    = $state<{ open(): void } | null>(null);
 	let addFoeName         = $state('');
 
 	// Dialog refs
@@ -248,7 +248,7 @@
 		// Check if denizen name matches a foe in the catalogue
 		if (denizen && findFoeByName(denizen)) {
 			addFoeName = denizen;
-			addFoeDialogEl?.showModal();
+			addFoeDialogRef?.open();
 		}
 
 		// Clear highlight after 4s
@@ -257,13 +257,11 @@
 	}
 
 	function confirmAddFoe() {
-		addFoeDialogEl?.close();
 		if (addFoeName) onAddEncounter?.(addFoeName);
 		addFoeName = '';
 	}
 
 	function cancelAddFoe() {
-		addFoeDialogEl?.close();
 		addFoeName = '';
 	}
 
@@ -515,18 +513,19 @@
 	<p style="font-family: var(--font-ui); font-size: 0.82rem; color: var(--text-muted); margin: 0; line-height: 1.5;">Remove this site from your expeditions?</p>
 </ConfirmDialog>
 
-<!-- Add Foe? confirmation dialog -->
-<dialog bind:this={addFoeDialogEl} class="sc-add-foe-dialog" oncancel={cancelAddFoe}>
-	<div class="sc-afd-body">
-		<p class="sc-afd-text">
-			<strong>{addFoeName}</strong> is in the foe catalogue. Add as an encounter?
-		</p>
-		<div class="sc-afd-actions">
-			<button class="btn btn-sm" onclick={cancelAddFoe}>Cancel</button>
-			<button class="btn btn-sm btn-primary" onclick={confirmAddFoe}>Add Foe</button>
-		</div>
-	</div>
-</dialog>
+<ConfirmDialog
+	bind:this={addFoeDialogRef}
+	title="Add Foe?"
+	confirmLabel="Add Foe"
+	confirmClass="btn-primary"
+	accentColor="var(--text-accent)"
+	onconfirm={confirmAddFoe}
+	oncancel={cancelAddFoe}
+>
+	<p style="font-family: var(--font-ui); font-size: 0.82rem; color: var(--text-muted); margin: 0; line-height: 1.5;">
+		<strong>{addFoeName}</strong> is in the foe catalogue. Add as an encounter?
+	</p>
+</ConfirmDialog>
 
 <style>
 	/* ── Card shell ─────────────────────────────────────────────────────── */
@@ -939,42 +938,6 @@
 	}
 	.sc-denizen-pick-btn:hover {
 		color: var(--text-accent);
-	}
-
-	/* ── Add Foe? dialog ─────────────────────────────────────────────── */
-	.sc-add-foe-dialog {
-		border: none;
-		padding: 0;
-		border-radius: 10px;
-		position: fixed;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		width: min(360px, calc(100vw - 2rem));
-		background: var(--bg-card);
-		color: var(--text);
-		box-shadow: 0 16px 48px #00000070, 0 0 0 1px var(--border-mid);
-		outline: none;
-	}
-	.sc-add-foe-dialog::backdrop {
-		background: #00000060;
-		backdrop-filter: blur(1px);
-	}
-	.sc-afd-body {
-		padding: 1.25rem 1.5rem;
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-	}
-	.sc-afd-text {
-		font-family: var(--font-ui);
-		font-size: 0.85rem;
-		line-height: 1.5;
-	}
-	.sc-afd-actions {
-		display: flex;
-		justify-content: flex-end;
-		gap: 8px;
 	}
 
 	/* ── Status row ─────────────────────────────────────────────────────── */
