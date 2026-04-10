@@ -26,11 +26,13 @@
 		foeDef,
 		onChange,
 		onDelete,
+		onVanquish,
 	}: {
-		enc:      FoeEncounter;
-		foeDef:   FoeDef;
-		onChange: (updated: FoeEncounter) => void;
-		onDelete: () => void;
+		enc:         FoeEncounter;
+		foeDef:      FoeDef;
+		onChange:    (updated: FoeEncounter) => void;
+		onDelete:    () => void;
+		onVanquish?: () => void;
 	} = $props();
 
 	// ---------------------------------------------------------------------------
@@ -115,6 +117,7 @@
 		logLine(next
 			? `<div>Marked as <strong>vanquished</strong></div>`
 			: `<div>Returned to <strong>active</strong></div>`);
+		if (next) onVanquish?.();
 	}
 
 	// ---------------------------------------------------------------------------

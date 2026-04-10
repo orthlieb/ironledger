@@ -341,7 +341,7 @@
 			const saved = sessionResult.value;
 			if (saved.charId && chars.find((c: { id: string }) => c.id === saved.charId))
 				activeCharId = saved.charId;
-			if (saved.foeId && getEncounters().find(e => e.id === saved.foeId))
+			if (saved.foeId && getEncounters().find(e => e.id === saved.foeId && !e.vanquished))
 				activeFoeId = saved.foeId;
 			if (saved.expeditionId && getExpeditions().find(e => e.id === saved.expeditionId))
 				activeExpeditionId = saved.expeditionId;
@@ -449,6 +449,14 @@
 	/** Update a single encounter (from FoeCard onChange). */
 	async function handleEncounterChange(enc: import('$lib/types.js').FoeEncounter) {
 		await updateEncounter(enc);
+	}
+
+	/** Called when a FoeCard marks its encounter as vanquished. Clear it from the GCB. */
+	function handleFoeVanquished(id: string) {
+		if (activeFoeId === id) activeFoeId = '';
+		// If no non-vanquished foes remain, clear all initiative
+		const remaining = encounters.filter(e => e.id !== id && !e.vanquished);
+		if (remaining.length === 0) initiativeMap = {};
 	}
 
 	/** Remove a single encounter. */
@@ -1419,6 +1427,7 @@
 										{foeDef}
 										onChange={handleEncounterChange}
 										onDelete={() => handleEncounterDelete(enc.id)}
+										onVanquish={() => handleFoeVanquished(enc.id)}
 									/>
 								</div>
 							{/if}
