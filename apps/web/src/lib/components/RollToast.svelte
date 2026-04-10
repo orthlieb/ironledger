@@ -29,7 +29,8 @@
 		if (!entry)                  return;
 		if (entry.id === _lastSeenId) return;  // already seen
 		if (entry.source)            { _lastSeenId = entry.id; return; }  // skip notes
-		if (activeTab === 'adventure') { _lastSeenId = entry.id; return; } // log visible
+		// Only surface results on tabs where roll actions exist but the log isn't visible
+		if (activeTab !== 'expeditions' && activeTab !== 'communities') { _lastSeenId = entry.id; return; }
 
 		_lastSeenId = entry.id;
 		toastEntry  = entry;
