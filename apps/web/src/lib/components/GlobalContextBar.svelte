@@ -155,14 +155,14 @@
 	};
 
 	const DEBILITY_DEFS = [
-		{ key: 'wounded',    label: 'Wounded',    color: 'var(--color-health)' },
-		{ key: 'unprepared', label: 'Unprepared', color: 'var(--color-health)' },
-		{ key: 'shaken',     label: 'Shaken',     color: 'var(--color-health)' },
-		{ key: 'encumbered', label: 'Encumbered', color: 'var(--color-health)' },
+		{ key: 'wounded',    label: 'Wounded',    color: 'var(--color-danger)' },
+		{ key: 'unprepared', label: 'Unprepared', color: 'var(--color-danger)' },
+		{ key: 'shaken',     label: 'Shaken',     color: 'var(--color-danger)' },
+		{ key: 'encumbered', label: 'Encumbered', color: 'var(--color-danger)' },
 		{ key: 'maimed',     label: 'Maimed',     color: 'var(--color-danger)' },
 		{ key: 'corrupted',  label: 'Corrupted',  color: 'var(--color-danger)' },
-		{ key: 'cursed',     label: 'Cursed',     color: 'var(--color-shadow)' },
-		{ key: 'tormented',  label: 'Tormented',  color: 'var(--color-shadow)' },
+		{ key: 'cursed',     label: 'Cursed',     color: 'var(--color-danger)' },
+		{ key: 'tormented',  label: 'Tormented',  color: 'var(--color-danger)' },
 	] as const;
 
 	const activeDebilities = $derived(
