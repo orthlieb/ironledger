@@ -2022,11 +2022,10 @@
 				inset 0 1px 0 rgba(255, 255, 255, 0.18);
 		}
 		.tab-search-row.is-open .tab-srch-pill:focus-within {
-			border-color: var(--focus-ring);
+			border-color: rgba(255, 255, 255, 0.18);
 			box-shadow:
 				0 4px 20px rgba(0, 0, 0, 0.35),
-				inset 0 1px 0 rgba(255, 255, 255, 0.18),
-				0 0 0 2px var(--accent-glow);
+				inset 0 1px 0 rgba(255, 255, 255, 0.18);
 		}
 		.tab-search-row.is-open ~ .char-toolbar-actions,
 		.tb-hidden { display: none !important; }
