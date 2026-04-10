@@ -579,25 +579,23 @@
 	<div class="log-header">
 		<span class="log-title">Session Log</span>
 
-		{#if totalPages > 1}
-			<div class="log-pagination">
-				<button
-					class="pag-btn"
-					onclick={() => page--}
-					disabled={page === 0}
-					title="Previous page"
-					aria-label="Previous page"
-				>{@html anglesLeftSvg}</button>
-				<span class="pag-label">pg {page + 1}/{totalPages}</span>
-				<button
-					class="pag-btn"
-					onclick={() => page++}
-					disabled={page === totalPages - 1}
-					title="Next page"
-					aria-label="Next page"
-				>{@html anglesRightSvg}</button>
-			</div>
-		{/if}
+		<div class="log-pagination">
+			<button
+				class="pag-btn"
+				onclick={() => page--}
+				disabled={page === 0}
+				title="Previous page"
+				aria-label="Previous page"
+			>{@html anglesLeftSvg}</button>
+			<span class="pag-label">pg {page + 1}/{totalPages}</span>
+			<button
+				class="pag-btn"
+				onclick={() => page++}
+				disabled={page === totalPages - 1}
+				title="Next page"
+				aria-label="Next page"
+			>{@html anglesRightSvg}</button>
+		</div>
 
 		<div class="log-header-actions">
 			<button
