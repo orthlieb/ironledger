@@ -79,25 +79,18 @@
 		<button class="ed-close" onclick={() => exportDialogEl?.close()} aria-label="Close">&#x2715;</button>
 	</div>
 	<div class="ed-body">
-		<div class="ed-field-stack">
+		<div class="ed-field">
 			<span class="ed-label">Content</span>
-			<div class="ed-options" role="group">
-				{#each [
-					{ value: 'everything',    label: 'Everything'       },
-					{ value: 'character',     label: 'Current Character'},
-					{ value: 'all-characters',label: 'All Characters'   },
-					{ value: 'log',           label: 'Session Log'      },
-					{ value: 'communities',   label: 'Communities'      },
-					{ value: 'foes',          label: 'Foes'             },
-					{ value: 'expeditions',   label: 'Expeditions'      },
-				] as opt (opt.value)}
-					<button
-						class="ed-opt-btn"
-						class:active={exportContent === opt.value}
-						onclick={() => (exportContent = opt.value)}
-					>{opt.label}</button>
-				{/each}
-			</div>
+			<select class="ed-select" bind:value={exportContent}>
+				<option value="everything">Everything</option>
+				<option value="character">Current Character</option>
+				<option value="all-characters">All Characters</option>
+				<option value="log">Session Log</option>
+				<option value="communities">Communities</option>
+				<option value="foes">Foes</option>
+				<option value="expeditions">Expeditions</option>
+				<option value="everything">Everything</option>
+			</select>
 		</div>
 		{#if exportContent !== 'everything'}
 		<div class="ed-field">
@@ -145,8 +138,6 @@
 		top: calc(100% + 4px);
 		right: 0;
 		min-width: 160px;
-		max-height: calc(100dvh - 80px);
-		overflow-y: auto;
 		background: var(--bg-card);
 		border: 1px solid var(--border-mid);
 		border-radius: 6px;
@@ -265,40 +256,16 @@
 		color: var(--text-muted);
 		min-width: 58px;
 	}
-	.ed-field-stack {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-	}
-
-	.ed-options {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 5px;
-	}
-
-	.ed-opt-btn {
-		padding: 4px 10px;
-		background: var(--bg-control);
-		border: 1px solid var(--border-mid);
-		border-radius: 12px;
-		cursor: pointer;
-		color: var(--text-dimmer);
+	.ed-select {
+		flex: 1;
 		font-family: var(--font-ui);
-		font-size: 0.72rem;
-		font-weight: 500;
-		white-space: nowrap;
-		transition: background 0.12s, color 0.12s, border-color 0.12s;
-	}
-	.ed-opt-btn:hover:not(.active) {
-		background: var(--bg-hover);
-		color: var(--text-muted);
-	}
-	.ed-opt-btn.active {
-		background: color-mix(in srgb, var(--text-accent) 15%, transparent);
-		border-color: color-mix(in srgb, var(--text-accent) 40%, transparent);
-		color: var(--text-accent);
-		font-weight: 600;
+		font-size: 0.75rem;
+		padding: 5px 8px;
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+		background: var(--bg-control);
+		color: var(--text);
+		cursor: pointer;
 	}
 
 	.ed-seg {
