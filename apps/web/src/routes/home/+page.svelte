@@ -1940,9 +1940,9 @@
 		padding: 5px 10px;
 		border-radius: 999px;
 		background: var(--bg-inset);
-		border: 1px solid var(--border);
+		border: 1px solid transparent;
 		min-width: 0;
-		transition: box-shadow 0.15s;
+		transition: box-shadow 0.15s, border-color 0.15s;
 	}
 	.tab-srch-pill:focus-within {
 		border-color: var(--focus-ring);
