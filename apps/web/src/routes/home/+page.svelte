@@ -35,6 +35,7 @@
 	import FoePickerDialog   from '$lib/components/FoePickerDialog.svelte';
 	import ConfirmDialog     from '$lib/components/ConfirmDialog.svelte';
 	import ErrorBar          from '$lib/components/ErrorBar.svelte';
+	import RollToast         from '$lib/components/RollToast.svelte';
 	import FoeCard           from '$lib/components/FoeCard.svelte';
 	import JourneyCard       from '$lib/components/JourneyCard.svelte';
 	import SiteCard          from '$lib/components/SiteCard.svelte';
@@ -1243,6 +1244,9 @@
 
 <!-- Foe picker dialog (always mounted; opened by + New Foe button in Foes tab) -->
 <FoePickerDialog bind:this={foePickerRef} onSelect={handleFoeSelected} />
+
+<!-- Roll toast — surfaces oracle/roll results when log panel isn't visible -->
+<RollToast {activeTab} />
 
 <!-- Random-generation prompts for new community / NPC -->
 <ConfirmDialog
