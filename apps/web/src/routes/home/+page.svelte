@@ -1678,6 +1678,7 @@
 	confirmClass="btn-primary"
 	cancelLabel="Cancel"
 	accentColor="var(--color-momentum)"
+	confirmDisabled={!newSiteTheme || !newSiteDomain}
 	onconfirm={confirmAddSite}
 	oncancel={cancelAddSite}
 >
@@ -1697,20 +1698,25 @@
 	</fieldset>
 	<div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px;">
 		<div style="display: flex; align-items: center; gap: 8px;">
-			<label for="ns-theme" style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); width: 56px; flex-shrink: 0;">Theme</label>
+			<label for="ns-theme" style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); width: 56px; flex-shrink: 0;">Theme <span style="color: var(--color-danger);">*</span></label>
 			<select id="ns-theme" style="flex: 1; font-family: var(--font-ui); font-size: 0.75rem; background: var(--bg-control); border: 1px solid var(--border); border-radius: 4px; color: var(--text); padding: 3px 6px; outline: none;" bind:value={newSiteTheme}>
-				<option value="">(none)</option>
+				<option value="" disabled>Select a theme…</option>
 				{#each DELVE_THEMES as t (t)}<option value={t}>{t}</option>{/each}
 			</select>
 		</div>
 		<div style="display: flex; align-items: center; gap: 8px;">
-			<label for="ns-domain" style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); width: 56px; flex-shrink: 0;">Domain</label>
+			<label for="ns-domain" style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); width: 56px; flex-shrink: 0;">Domain <span style="color: var(--color-danger);">*</span></label>
 			<select id="ns-domain" style="flex: 1; font-family: var(--font-ui); font-size: 0.75rem; background: var(--bg-control); border: 1px solid var(--border); border-radius: 4px; color: var(--text); padding: 3px 6px; outline: none;" bind:value={newSiteDomain}>
-				<option value="">(none)</option>
+				<option value="" disabled>Select a domain…</option>
 				{#each DELVE_DOMAINS as d (d)}<option value={d}>{d}</option>{/each}
 			</select>
 		</div>
 	</div>
+	{#if !newSiteTheme || !newSiteDomain}
+		<p style="font-family: var(--font-ui); font-size: 0.72rem; color: var(--text-dimmer); margin: 0; font-style: italic;">
+			Theme and domain are required to discover a site.
+		</p>
+	{/if}
 </ConfirmDialog>
 
 <style>

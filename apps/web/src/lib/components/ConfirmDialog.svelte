@@ -23,7 +23,8 @@
 		showCancelButton = true,
 		secondaryLabel,
 		secondaryClass = 'btn',
-		dialogClass   = '',
+		dialogClass      = '',
+		confirmDisabled  = false,
 		onconfirm,
 		oncancel,
 		ondismiss,
@@ -39,6 +40,7 @@
 		secondaryLabel?:   string;
 		secondaryClass?:   string;
 		dialogClass?:      string;
+		confirmDisabled?:  boolean;
 		onconfirm:         () => void;
 		oncancel?:         () => void;
 		/** Called when the dialog is dismissed via ✕ or Escape — falls back to oncancel if not provided. */
@@ -135,7 +137,7 @@
 			{#if secondaryLabel}
 				<button class="btn {secondaryClass}" onclick={handleSecondary}>{secondaryLabel}</button>
 			{/if}
-			<button class="btn {confirmClass}" onclick={handleConfirm}>{confirmLabel}</button>
+			<button class="btn {confirmClass}" onclick={handleConfirm} disabled={confirmDisabled}>{confirmLabel}</button>
 		</div>
 	</div>
 </dialog>
