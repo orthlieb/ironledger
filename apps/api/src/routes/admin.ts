@@ -6,8 +6,8 @@
  * path to admin. The seed script creates the initial admin.
  */
 
-import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { readFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
@@ -15,7 +15,9 @@ import { authenticate } from '../middleware/authenticate.js';
 import { requireAdmin } from '../middleware/requireAdmin.js';
 import * as adminService from '../services/adminService.js';
 import * as maintenanceService from '../services/maintenanceService.js';
+import * as registrationLockService from '../services/registrationLockService.js';
 import { config } from '../config.js';
+import type { FastifyReply } from 'fastify';
 
 // ---------------------------------------------------------------------------
 // Input schemas
@@ -38,36 +40,69 @@ const maintenanceBody = z.object({
   minutesUntilShutdown: z.number().int().min(0).max(1440),
 });
 
+const registrationLockBody = z.object({
+  message: z.string().min(1).max(500),
+});
+
+const auditQuery = z.object({
+  search: z.string().optional(),
+});
+
+const timeseriesQuery = z.object({
+  timeframe: z.enum(['1hr', '1day', '7day', '30day']).optional().default('1day'),
+});
+
+const logsQuery = z.object({
+  file:  z.enum(['api-out', 'api-error', 'web-out', 'web-error']),
+  lines: z.coerce.number().int().min(1).max(2000).default(200),
+});
+
 // ---------------------------------------------------------------------------
 // Routes
 // ---------------------------------------------------------------------------
 
-export async function adminRoutes(server: FastifyInstance): Promise<void> {
+export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
   // Both hooks run on every route in this plugin
   server.addHook('preHandler', authenticate);
   server.addHook('preHandler', requireAdmin);
 
   // ── GET / ── List all users ─────────────────────────────────────────────
-  server.get('/', async (_req: FastifyRequest, reply: FastifyReply) => {
+  server.get('/', {
+    schema: {
+      tags:     ['Admin'],
+      summary:  'List all users',
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (_req, reply) => {
     const result = await adminService.listUsers().catch(handleError(reply));
     if (!result || reply.sent) return;
     return reply.status(200).send(result);
   });
 
   // ── GET /stats ── System health stats ───────────────────────────────────
-  server.get('/stats', async (_req: FastifyRequest, reply: FastifyReply) => {
+  server.get('/stats', {
+    schema: {
+      tags:     ['Admin'],
+      summary:  'Get system health stats',
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (_req, reply) => {
     const result = await adminService.getStats().catch(handleError(reply));
     if (!result || reply.sent) return;
     return reply.status(200).send(result);
   });
 
   // ── DELETE /users/:id ── Delete user + all data ─────────────────────────
-  server.delete('/users/:id', async (req: FastifyRequest, reply: FastifyReply) => {
-    const params = parseBody(userIdParam, req.params, reply);
-    if (!params) return;
-
+  server.delete('/users/:id', {
+    schema: {
+      tags:     ['Admin'],
+      summary:  'Delete a user and all their data',
+      params:   userIdParam,
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (req, reply) => {
     // Prevent admin from deleting themselves
-    if (params.id === req.user!.id) {
+    if (req.params.id === req.user!.id) {
       return reply.status(400).send({
         statusCode: 400,
         error:      'Bad Request',
@@ -75,21 +110,23 @@ export async function adminRoutes(server: FastifyInstance): Promise<void> {
       });
     }
 
-    await adminService.deleteUser(params.id, req.user!.id, req.ip).catch(handleError(reply));
+    await adminService.deleteUser(req.params.id, req.user!.id, req.ip).catch(handleError(reply));
     if (reply.sent) return;
     return reply.status(204).send();
   });
 
   // ── PATCH /users/:id/role ── Promote/demote user ────────────────────────
-  server.patch('/users/:id/role', async (req: FastifyRequest, reply: FastifyReply) => {
-    const params = parseBody(userIdParam, req.params, reply);
-    if (!params) return;
-
-    const body = parseBody(setRoleBody, req.body, reply);
-    if (!body) return;
-
+  server.patch('/users/:id/role', {
+    schema: {
+      tags:     ['Admin'],
+      summary:  'Set a user\'s role',
+      params:   userIdParam,
+      body:     setRoleBody,
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (req, reply) => {
     // Prevent admin from demoting themselves
-    if (params.id === req.user!.id) {
+    if (req.params.id === req.user!.id) {
       return reply.status(400).send({
         statusCode: 400,
         error:      'Bad Request',
@@ -97,21 +134,23 @@ export async function adminRoutes(server: FastifyInstance): Promise<void> {
       });
     }
 
-    await adminService.setUserRole(params.id, body.role, req.user!.id, req.ip).catch(handleError(reply));
+    await adminService.setUserRole(req.params.id, req.body.role, req.user!.id, req.ip).catch(handleError(reply));
     if (reply.sent) return;
     return reply.status(204).send();
   });
 
   // ── PATCH /users/:id/suspend ── Suspend / unsuspend user ────────────────
-  server.patch('/users/:id/suspend', async (req: FastifyRequest, reply: FastifyReply) => {
-    const params = parseBody(userIdParam, req.params, reply);
-    if (!params) return;
-
-    const body = parseBody(setSuspendBody, req.body, reply);
-    if (!body) return;
-
+  server.patch('/users/:id/suspend', {
+    schema: {
+      tags:     ['Admin'],
+      summary:  'Suspend or unsuspend a user',
+      params:   userIdParam,
+      body:     setSuspendBody,
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (req, reply) => {
     // Prevent admin from suspending themselves
-    if (params.id === req.user!.id) {
+    if (req.params.id === req.user!.id) {
       return reply.status(400).send({
         statusCode: 400,
         error:      'Bad Request',
@@ -119,68 +158,78 @@ export async function adminRoutes(server: FastifyInstance): Promise<void> {
       });
     }
 
-    if (body.suspended) {
-      await adminService.suspendUser(params.id, req.user!.id, req.ip).catch(handleError(reply));
+    if (req.body.suspended) {
+      await adminService.suspendUser(req.params.id, req.user!.id, req.ip).catch(handleError(reply));
     } else {
-      await adminService.unsuspendUser(params.id, req.user!.id, req.ip).catch(handleError(reply));
+      await adminService.unsuspendUser(req.params.id, req.user!.id, req.ip).catch(handleError(reply));
     }
     if (reply.sent) return;
     return reply.status(204).send();
   });
 
   // ── GET /audit ── Audit log ───────────────────────────────────────────
-  server.get('/audit', async (req: FastifyRequest, reply: FastifyReply) => {
-    const { search } = req.query as { search?: string };
-    const result = await adminService.getAuditLog(100, search || undefined).catch(handleError(reply));
+  server.get('/audit', {
+    schema: {
+      tags:        ['Admin'],
+      summary:     'Get audit log (last 100 entries)',
+      querystring: auditQuery,
+      security:    [{ bearerAuth: [] }],
+    },
+  }, async (req, reply) => {
+    const result = await adminService.getAuditLog(100, req.query.search || undefined).catch(handleError(reply));
     if (!result || reply.sent) return;
     return reply.status(200).send(result);
   });
 
   // ── DELETE /audit ── Clear audit log ────────────────────────────────
-  server.delete('/audit', async (req: FastifyRequest, reply: FastifyReply) => {
+  server.delete('/audit', {
+    schema: {
+      tags:     ['Admin'],
+      summary:  'Clear the audit log',
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (req, reply) => {
     await adminService.clearAuditLog(req.user!.id, req.ip).catch(handleError(reply));
     if (reply.sent) return;
     return reply.status(204).send();
   });
 
   // ── GET /stats/timeseries ── User growth & activity timeseries ──────────
-  server.get('/stats/timeseries', async (req: FastifyRequest, reply: FastifyReply) => {
-    const { timeframe } = req.query as { timeframe?: string };
-    const validFrames = ['1hr', '1day', '7day', '30day'] as const;
-    const tf = validFrames.includes(timeframe as typeof validFrames[number])
-      ? (timeframe as typeof validFrames[number])
-      : '1day';
-    const result = await adminService.getUserTimeseries(tf).catch(handleError(reply));
+  server.get('/stats/timeseries', {
+    schema: {
+      tags:        ['Admin'],
+      summary:     'Get user growth / activity timeseries',
+      querystring: timeseriesQuery,
+      security:    [{ bearerAuth: [] }],
+    },
+  }, async (req, reply) => {
+    const result = await adminService.getUserTimeseries(req.query.timeframe).catch(handleError(reply));
     if (!result || reply.sent) return;
     return reply.status(200).send(result);
   });
 
   // ── GET /logs ── Tail a PM2 log file ────────────────────────────────
-  // Whitelist prevents path traversal — only these four filenames are valid.
-  const VALID_LOG_FILES = ['api-out', 'api-error', 'web-out', 'web-error'] as const;
-  type LogFile = typeof VALID_LOG_FILES[number];
-
-  server.get('/logs', async (req: FastifyRequest, reply: FastifyReply) => {
-    const { file, lines: linesParam } = req.query as { file?: string; lines?: string };
-
-    if (!VALID_LOG_FILES.includes(file as LogFile)) {
-      return reply.status(400).send({
-        statusCode: 400, error: 'Bad Request',
-        message: `file must be one of: ${VALID_LOG_FILES.join(', ')}`,
-      });
-    }
-
-    const maxLines = Math.min(Math.max(parseInt(linesParam ?? '200', 10) || 200, 1), 2000);
-    const logPath  = join(config.LOG_DIR, `${file}.log`);
+  // Whitelist prevents path traversal — only these four filenames are valid
+  // (enforced by the Zod enum in logsQuery).
+  server.get('/logs', {
+    schema: {
+      tags:        ['Admin'],
+      summary:     'Tail a PM2 log file',
+      querystring: logsQuery,
+      security:    [{ bearerAuth: [] }],
+    },
+  }, async (req, reply) => {
+    const { file, lines } = req.query;
+    const logPath = join(config.LOG_DIR, `${file}.log`);
 
     if (!existsSync(logPath)) {
       return reply.status(200).send({ available: false, file, lines: [] });
     }
 
     try {
-      const raw   = await readFile(logPath, 'utf-8');
-      const all   = raw.split('\n').filter((l) => l.trim().length > 0);
-      const tail  = all.slice(-maxLines);
+      const raw  = await readFile(logPath, 'utf-8');
+      const all  = raw.split('\n').filter((l) => l.trim().length > 0);
+      const tail = all.slice(-lines);
       return reply.status(200).send({ available: true, file, lines: tail });
     } catch (err) {
       req.log.error(err, 'Failed to read log file');
@@ -189,13 +238,17 @@ export async function adminRoutes(server: FastifyInstance): Promise<void> {
   });
 
   // ── POST /maintenance ── Enable maintenance mode ────────────────────
-  server.post('/maintenance', async (req: FastifyRequest, reply: FastifyReply) => {
-    const body = parseBody(maintenanceBody, req.body, reply);
-    if (!body) return;
-
+  server.post('/maintenance', {
+    schema: {
+      tags:     ['Admin'],
+      summary:  'Enable maintenance mode',
+      body:     maintenanceBody,
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (req, reply) => {
     const result = await maintenanceService.enableMaintenance(
-      body.message,
-      body.minutesUntilShutdown,
+      req.body.message,
+      req.body.minutesUntilShutdown,
       req.user!.id,
       req.ip,
     ).catch(handleError(reply));
@@ -204,36 +257,79 @@ export async function adminRoutes(server: FastifyInstance): Promise<void> {
   });
 
   // ── DELETE /maintenance ── Disable maintenance mode ─────────────────
-  server.delete('/maintenance', async (req: FastifyRequest, reply: FastifyReply) => {
+  server.delete('/maintenance', {
+    schema: {
+      tags:     ['Admin'],
+      summary:  'Disable maintenance mode',
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (req, reply) => {
     await maintenanceService.disableMaintenance(req.user!.id, req.ip).catch(handleError(reply));
     if (reply.sent) return;
     return reply.status(200).send({ enabled: false });
   });
 
   // ── GET /maintenance/status ── Maintenance status (admin) ───────────
-  server.get('/maintenance/status', async (_req: FastifyRequest, reply: FastifyReply) => {
+  server.get('/maintenance/status', {
+    schema: {
+      tags:     ['Admin'],
+      summary:  'Get maintenance mode status',
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (_req, reply) => {
     const result = await maintenanceService.getStatus().catch(handleError(reply));
     if (!result || reply.sent) return;
     return reply.status(200).send(result);
   });
-}
+
+  // ── POST /registration-lock ── Enable registration lock ─────────────
+  server.post('/registration-lock', {
+    schema: {
+      tags:        ['Admin'],
+      summary:     'Lock new user registration with a custom message',
+      body:        registrationLockBody,
+      security:    [{ bearerAuth: [] }],
+    },
+  }, async (req, reply) => {
+    const result = await registrationLockService.lockRegistration(
+      req.body.message,
+      req.user!.id,
+      req.ip,
+    ).catch(handleError(reply));
+    if (!result || reply.sent) return;
+    return reply.status(200).send(result);
+  });
+
+  // ── DELETE /registration-lock ── Disable registration lock ──────────
+  server.delete('/registration-lock', {
+    schema: {
+      tags:     ['Admin'],
+      summary:  'Unlock new user registration',
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (req, reply) => {
+    await registrationLockService.unlockRegistration(req.user!.id, req.ip).catch(handleError(reply));
+    if (reply.sent) return;
+    return reply.status(200).send({ locked: false });
+  });
+
+  // ── GET /registration-lock/status ── Registration lock status ────────
+  server.get('/registration-lock/status', {
+    schema: {
+      tags:     ['Admin'],
+      summary:  'Get registration lock status',
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (_req, reply) => {
+    const result = await registrationLockService.getStatus().catch(handleError(reply));
+    if (!result || reply.sent) return;
+    return reply.status(200).send(result);
+  });
+};
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function parseBody<T>(schema: z.ZodType<T>, data: unknown, reply: FastifyReply): T | null {
-  const result = schema.safeParse(data);
-  if (!result.success) {
-    reply.status(400).send({
-      statusCode: 400,
-      error:      'Bad Request',
-      message:    result.error.errors.map((e) => e.message).join(', '),
-    });
-    return null;
-  }
-  return result.data;
-}
 
 function handleError(reply: FastifyReply) {
   return (err: unknown) => {

@@ -21,6 +21,7 @@ CREATE INDEX IF NOT EXISTS session_log_entries_user_occurred_idx
 ALTER TABLE session_log_entries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE session_log_entries FORCE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS session_log_entries_isolation ON session_log_entries;
 CREATE POLICY session_log_entries_isolation ON session_log_entries
   FOR ALL TO app_user
   USING (user_id = NULLIF(current_setting('app.user_id', true), '')::uuid);

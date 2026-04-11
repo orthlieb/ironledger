@@ -9,7 +9,7 @@
  */
 
 import { beforeAll, afterAll, vi } from 'vitest';
-import { buildServer }             from '../../src/server.js';
+import { buildServer, redis }      from '../../src/server.js';
 import type { FastifyInstance }    from 'fastify';
 
 // Mock external services before any import resolves
@@ -35,6 +35,12 @@ declare global {
 }
 
 beforeAll(async () => {
+  // Clear Redis state that could interfere with tests
+  await redis.del('registration:locked', 'registration:message');
+  // Clear per-IP registration email rate-limit keys
+  const ipKeys = await redis.keys('reg_email_ip:*');
+  if (ipKeys.length > 0) await redis.del(...ipKeys);
+
   global.testServer = await buildServer();
   await global.testServer.ready();
   console.log('✔ E2E server ready');

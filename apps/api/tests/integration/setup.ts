@@ -63,9 +63,12 @@ beforeAll(async () => {
   adminPool = postgres(adminUrl, { max: 1 });
   const db  = drizzle(adminPool);
 
-  // Drop all tables and re-run migrations for a clean slate
+  // Drop all tables and re-run migrations for a clean slate.
+  // Also drop the drizzle schema so the migration tracker is reset —
+  // otherwise Drizzle sees all migrations as already applied and skips them.
   await db.execute(`
-    DROP SCHEMA public CASCADE;
+    DROP SCHEMA IF EXISTS public CASCADE;
+    DROP SCHEMA IF EXISTS drizzle CASCADE;
     CREATE SCHEMA public;
     GRANT ALL ON SCHEMA public TO app_admin;
     GRANT ALL ON SCHEMA public TO app_user;

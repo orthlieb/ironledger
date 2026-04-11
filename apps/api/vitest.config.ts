@@ -21,6 +21,7 @@ export default defineConfig({
           name:        'integration',
           include:     ['tests/integration/**/*.test.ts'],
           environment: 'node',
+          env:         { NODE_ENV: 'test' },
           // Integration tests run sequentially — they share a real DB
           // and parallel execution causes constraint violations.
           pool:           'forks',
@@ -36,6 +37,7 @@ export default defineConfig({
           name:        'e2e',
           include:     ['tests/e2e/**/*.test.ts'],
           environment: 'node',
+          env:         { NODE_ENV: 'test' },
           pool:           'forks',
           poolOptions:    { forks: { singleFork: true } },
           testTimeout:    20000,

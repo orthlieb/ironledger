@@ -11,7 +11,10 @@ import helmet from '@fastify/helmet';
 import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
 import rateLimit from '@fastify/rate-limit';
+import swagger from '@fastify/swagger';
+import swaggerUi from '@fastify/swagger-ui';
 import { Redis } from 'ioredis';
+import { serializerCompiler, validatorCompiler, jsonSchemaTransform } from 'fastify-type-provider-zod';
 
 import { config } from './config.js';
 import { checkDbHealth, adminDb } from './db/index.js';
@@ -53,11 +56,41 @@ export async function buildServer(): Promise<FastifyInstance> {
         : undefined,    // in production, output raw JSON (for log aggregators)
     },
     trustProxy: true,   // respect X-Forwarded-For from Nginx
-    ajv: {
-      customOptions: {
-        removeAdditional: 'all',   // strip unknown fields from request bodies
-        coerceTypes:      false,   // don't silently coerce types (fail instead)
+  });
+
+  // ── Zod type provider — replaces AJV for request validation ──────────────
+  server.setValidatorCompiler(validatorCompiler);
+  server.setSerializerCompiler(serializerCompiler);
+
+  // ── OpenAPI spec ──────────────────────────────────────────────────────────
+  await server.register(swagger, {
+    transform: jsonSchemaTransform,
+    openapi: {
+      openapi: '3.0.3',
+      info: {
+        title:       'Iron Ledger API',
+        description: 'REST API for the Ironsworn TTRPG character tracker.',
+        version:     '1.0.1',
       },
+      components: {
+        securitySchemes: {
+          bearerAuth: {
+            type:         'http',
+            scheme:       'bearer',
+            bearerFormat: 'JWT',
+            description:  'Access token obtained from POST /api/v1/auth/login',
+          },
+        },
+      },
+    },
+  });
+
+  // ── Swagger UI at /docs ───────────────────────────────────────────────────
+  await server.register(swaggerUi, {
+    routePrefix: '/docs',
+    uiConfig: {
+      docExpansion: 'list',
+      deepLinking:  true,
     },
   });
 
@@ -77,6 +110,14 @@ export async function buildServer(): Promise<FastifyInstance> {
       },
     },
     crossOriginEmbedderPolicy: false,  // required for some browser APIs
+  });
+
+  // Swagger UI uses inline scripts — remove CSP on /docs paths only
+  server.addHook('onSend', (_req, reply, payload, done) => {
+    if (_req.url.startsWith('/docs')) {
+      reply.removeHeader('content-security-policy');
+    }
+    done(null, payload);
   });
 
   // ── CORS ──────────────────────────────────────────────────────────────────
@@ -110,11 +151,10 @@ export async function buildServer(): Promise<FastifyInstance> {
   });
 
   // ── Request body size limit ───────────────────────────────────────────────
-  // 64KB is more than enough for any API request in this app.
-  // Prevents DoS via oversized payloads.
+  // 2 MB to accommodate portrait images and log HTML payloads.
   server.addContentTypeParser(
     'application/json',
-    { parseAs: 'string', bodyLimit: 2097152 },  // 2 MB (portraits + log HTML)
+    { parseAs: 'string', bodyLimit: 2097152 },
     (req, body, done) => {
       try {
         done(null, JSON.parse(body as string));
@@ -184,7 +224,12 @@ export async function buildServer(): Promise<FastifyInstance> {
 
   // ── Public maintenance status (no auth) ──────────────────────────────
   const { getStatus: getMaintenanceStatus } = await import('./services/maintenanceService.js');
-  server.get('/api/v1/maintenance/status', async (_req, reply) => {
+  server.get('/api/v1/maintenance/status', {
+    schema: {
+      tags:    ['Maintenance'],
+      summary: 'Get current maintenance mode status (public)',
+    },
+  }, async (_req, reply) => {
     try {
       const status = await getMaintenanceStatus();
       return reply.status(200).send(status);

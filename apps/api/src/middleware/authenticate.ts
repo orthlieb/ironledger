@@ -18,7 +18,7 @@
  * handled only by the POST /auth/refresh route — never here.
  */
 
-import type { FastifyRequest, FastifyReply, HookHandlerDoneFunction } from 'fastify';
+import type { FastifyRequest, FastifyReply } from 'fastify';
 import { verifyAccessToken } from '../lib/tokens.js';
 
 // ---------------------------------------------------------------------------

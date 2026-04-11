@@ -50,6 +50,20 @@
       "when": 1774360000000,
       "tag": "0007_communities",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1774440000000,
+      "tag": "0008_session_log",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1774520000000,
+      "tag": "0009_session_log_rls",
+      "breakpoints": true
     }
   ]
 }

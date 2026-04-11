@@ -11,7 +11,8 @@
  * Override the path with CATALOGUE_PATH in .env if needed.
  */
 
-import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
+import type { FastifyRequest, FastifyReply } from 'fastify';
 import { readFile } from 'fs/promises';
 import { createHash } from 'crypto';
 import path from 'path';
@@ -94,15 +95,16 @@ async function loadCatalogue(): Promise<{
     foes: [...foesIs.foes, ...foesDelve.foes, ...foesYrt.foes],
   };
 
-  // Load delve oracle tables (theme/domain features + dangers)
-  const [themeFeatures, themeDangers, domainFeatures, domainDangers] = await Promise.all([
+  // Load delve oracle tables (theme/domain features + dangers + shared danger tail)
+  const [themeFeatures, themeDangers, domainFeatures, domainDangers, commonDangers] = await Promise.all([
     loadJson(path.join(DATA_ROOT, 'delve/delve-theme-features.json')),
     loadJson(path.join(DATA_ROOT, 'delve/delve-theme-dangers.json')),
     loadJson(path.join(DATA_ROOT, 'delve/delve-domain-features.json')),
     loadJson(path.join(DATA_ROOT, 'delve/delve-domain-dangers.json')),
+    loadJson(path.join(DATA_ROOT, 'delve/delve-common-dangers.json')),
   ]);
 
-  const allDelve = { themeFeatures, themeDangers, domainFeatures, domainDangers };
+  const allDelve = { themeFeatures, themeDangers, domainFeatures, domainDangers, commonDangers };
 
   return {
     assets:  { data: allAssets,  etag: makeEtag(allAssets)  },
@@ -117,7 +119,7 @@ async function loadCatalogue(): Promise<{
 // Route plugin
 // ---------------------------------------------------------------------------
 
-export async function catalogueRoutes(server: FastifyInstance): Promise<void> {
+export const catalogueRoutes: FastifyPluginAsyncZod = async (server) => {
   // Load once when the plugin registers
   const catalogue = await loadCatalogue();
 

@@ -2,7 +2,7 @@
  * Auth routes — HTTP layer for authentication.
  *
  * Responsibilities:
- *  - Validate and parse request bodies (Zod)
+ *  - Validate and parse request bodies (Zod schemas on each route)
  *  - Call the auth service
  *  - Set/clear the HttpOnly refresh token cookie
  *  - Map service errors to HTTP status codes
@@ -12,8 +12,8 @@
  * This layer handles only HTTP concerns.
  */
 
-import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { authenticate } from '../middleware/authenticate.js';
 import { logSecurityEvent } from '../middleware/securityLogger.js';
 import { verifyCaptcha, CaptchaError } from '../lib/captcha.js';
@@ -21,6 +21,7 @@ import { PwnedPasswordError } from '../lib/hibp.js';
 import * as auth from '../services/authService.js';
 import { config } from '../config.js';
 import { redis } from '../server.js';
+import type { FastifyReply } from 'fastify';
 
 // ---------------------------------------------------------------------------
 // Cookie configuration for the refresh token
@@ -77,14 +78,21 @@ const verifyBody = z.object({
 // Route plugin
 // ---------------------------------------------------------------------------
 
-export async function authRoutes(server: FastifyInstance): Promise<void> {
+export const authRoutes: FastifyPluginAsyncZod = async (server) => {
 
   // ── POST /register ────────────────────────────────────────────────────────
-  server.post('/register', async (req: FastifyRequest, reply: FastifyReply) => {
-    const body = parseBody(registerBody, req.body, reply);
-    if (!body) return;
+  server.post('/register', {
+    schema: {
+      tags:        ['Auth'],
+      summary:     'Register a new user',
+      description: 'Creates a new account and sends an email verification link. Always returns 202 to prevent email enumeration.',
+      body:        registerBody,
+      response:    { 202: z.object({ message: z.string() }) },
+    },
+  }, async (req, reply) => {
+    const { email, password, captchaToken } = req.body;
 
-    await verifyCaptcha(body.captchaToken, req.ip).catch(handleCaptchaError(reply));
+    await verifyCaptcha(captchaToken, req.ip).catch(handleCaptchaError(reply));
     if (reply.sent) return;
 
     // Per-IP email rate limit — silently drop the send if over quota.
@@ -102,11 +110,10 @@ export async function authRoutes(server: FastifyInstance): Promise<void> {
       }
     }
 
-    await auth.register({ email: body.email, password: body.password })
-      .catch(handleAuthError(reply));
+    await auth.register({ email, password }).catch(handleAuthError(reply));
     if (reply.sent) return;
 
-    logSecurityEvent({ eventType: 'register_success', req, metadata: { email: body.email } });
+    logSecurityEvent({ eventType: 'register_success', req, metadata: { email } });
 
     // Always return 202 — we don't confirm whether the email exists
     return reply.status(202).send({
@@ -115,11 +122,14 @@ export async function authRoutes(server: FastifyInstance): Promise<void> {
   });
 
   // ── POST /verify-email ────────────────────────────────────────────────────
-  server.post('/verify-email', async (req: FastifyRequest, reply: FastifyReply) => {
-    const body = parseBody(verifyBody, req.body, reply);
-    if (!body) return;
-
-    const result = await auth.verifyEmail(body.token).catch(handleAuthError(reply));
+  server.post('/verify-email', {
+    schema: {
+      tags:    ['Auth'],
+      summary: 'Verify email address with token from verification email',
+      body:    verifyBody,
+    },
+  }, async (req, reply) => {
+    const result = await auth.verifyEmail(req.body.token).catch(handleAuthError(reply));
     if (!result || reply.sent) return;
 
     logSecurityEvent({ eventType: 'email_verified', req, userId: result.user.id });
@@ -133,51 +143,56 @@ export async function authRoutes(server: FastifyInstance): Promise<void> {
   });
 
   // ── POST /login ───────────────────────────────────────────────────────────
-  server.post(
-    '/login',
-    {
-      config: {
-        rateLimit: {
-          max:        config.RATE_LIMIT_LOGIN,
-          timeWindow: '15 minutes',
-        },
+  server.post('/login', {
+    schema: {
+      tags:    ['Auth'],
+      summary: 'Log in and receive an access token',
+      body:    loginBody,
+    },
+    config: {
+      rateLimit: {
+        max:        config.RATE_LIMIT_LOGIN,
+        timeWindow: '15 minutes',
       },
     },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const body = parseBody(loginBody, req.body, reply);
-      if (!body) return;
+  }, async (req, reply) => {
+    const { email, password, captchaToken } = req.body;
 
-      await verifyCaptcha(body.captchaToken, req.ip).catch(handleCaptchaError(reply));
-      if (reply.sent) return;
+    await verifyCaptcha(captchaToken, req.ip).catch(handleCaptchaError(reply));
+    if (reply.sent) return;
 
-      const result = await auth.login({ email: body.email, password: body.password })
-        .catch((err: unknown) => {
-          if (err instanceof auth.AuthError) {
-            const eventType =
-              err.code === 'EMAIL_UNVERIFIED' ? 'login_unverified' :
-              err.code === 'ACCOUNT_DISABLED' ? 'account_disabled' :
-              'login_failed';
-            logSecurityEvent({ eventType, req, metadata: { email: body.email } });
-            reply.status(err.statusCode).send({ statusCode: err.statusCode, error: err.name, message: err.message });
-          } else {
-            reply.status(500).send({ statusCode: 500, error: 'Internal Server Error', message: 'Login failed' });
-          }
-        });
-
-      if (!result || reply.sent) return;
-
-      logSecurityEvent({ eventType: 'login_success', req, userId: result.user.id });
-      reply.setCookie(REFRESH_COOKIE, result.refreshToken, cookieOptions());
-
-      return reply.status(200).send({
-        user:        result.user,
-        accessToken: result.accessToken,
+    const result = await auth.login({ email, password })
+      .catch((err: unknown) => {
+        if (err instanceof auth.AuthError) {
+          const eventType =
+            err.code === 'EMAIL_UNVERIFIED' ? 'login_unverified' :
+            err.code === 'ACCOUNT_DISABLED' ? 'account_disabled' :
+            'login_failed';
+          logSecurityEvent({ eventType, req, metadata: { email } });
+          reply.status(err.statusCode).send({ statusCode: err.statusCode, error: err.name, message: err.message });
+        } else {
+          reply.status(500).send({ statusCode: 500, error: 'Internal Server Error', message: 'Login failed' });
+        }
       });
-    },
-  );
+
+    if (!result || reply.sent) return;
+
+    logSecurityEvent({ eventType: 'login_success', req, userId: result.user.id });
+    reply.setCookie(REFRESH_COOKIE, result.refreshToken, cookieOptions());
+
+    return reply.status(200).send({
+      user:        result.user,
+      accessToken: result.accessToken,
+    });
+  });
 
   // ── POST /refresh ─────────────────────────────────────────────────────────
-  server.post('/refresh', async (req: FastifyRequest, reply: FastifyReply) => {
+  server.post('/refresh', {
+    schema: {
+      tags:    ['Auth'],
+      summary: 'Refresh access token using the refresh token cookie',
+    },
+  }, async (req, reply) => {
     const rawToken = req.cookies[REFRESH_COOKIE];
 
     if (!rawToken) {
@@ -213,7 +228,14 @@ export async function authRoutes(server: FastifyInstance): Promise<void> {
   });
 
   // ── POST /logout ──────────────────────────────────────────────────────────
-  server.post('/logout', { preHandler: authenticate }, async (req: FastifyRequest, reply: FastifyReply) => {
+  server.post('/logout', {
+    schema: {
+      tags:     ['Auth'],
+      summary:  'Log out and revoke the refresh token',
+      security: [{ bearerAuth: [] }],
+    },
+    preHandler: authenticate,
+  }, async (req, reply) => {
     const rawToken = req.cookies[REFRESH_COOKIE];
 
     if (rawToken && req.user) {
@@ -226,40 +248,46 @@ export async function authRoutes(server: FastifyInstance): Promise<void> {
   });
 
   // ── POST /forgot-password ─────────────────────────────────────────────────
-  server.post(
-    '/forgot-password',
-    {
-      config: {
-        rateLimit: {
-          max:        config.RATE_LIMIT_REGISTER,
-          timeWindow: '1 hour',
-        },
+  server.post('/forgot-password', {
+    schema: {
+      tags:        ['Auth'],
+      summary:     'Request a password reset email',
+      description: 'Always returns 202 to prevent email enumeration.',
+      body:        forgotBody,
+      response:    { 202: z.object({ message: z.string() }) },
+    },
+    config: {
+      rateLimit: {
+        max:        config.RATE_LIMIT_REGISTER,
+        timeWindow: '1 hour',
       },
     },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const body = parseBody(forgotBody, req.body, reply);
-      if (!body) return;
+  }, async (req, reply) => {
+    const { email, captchaToken } = req.body;
 
-      await verifyCaptcha(body.captchaToken, req.ip).catch(handleCaptchaError(reply));
-      if (reply.sent) return;
+    await verifyCaptcha(captchaToken, req.ip).catch(handleCaptchaError(reply));
+    if (reply.sent) return;
 
-      // Always returns 202 — prevents email enumeration
-      await auth.forgotPassword(body.email).catch(() => {/* silent */});
+    // Always returns 202 — prevents email enumeration
+    await auth.forgotPassword(email).catch(() => {/* silent */});
 
-      logSecurityEvent({ eventType: 'password_reset_req', req, metadata: { email: body.email } });
+    logSecurityEvent({ eventType: 'password_reset_req', req, metadata: { email } });
 
-      return reply.status(202).send({
-        message: 'If an account exists for that email, a reset link is on its way.',
-      });
-    },
-  );
+    return reply.status(202).send({
+      message: 'If an account exists for that email, a reset link is on its way.',
+    });
+  });
 
   // ── POST /reset-password ──────────────────────────────────────────────────
-  server.post('/reset-password', async (req: FastifyRequest, reply: FastifyReply) => {
-    const body = parseBody(resetBody, req.body, reply);
-    if (!body) return;
-
-    await auth.resetPassword(body.token, body.password).catch(handleAuthError(reply));
+  server.post('/reset-password', {
+    schema: {
+      tags:    ['Auth'],
+      summary: 'Reset password using token from reset email',
+      body:    resetBody,
+      response: { 200: z.object({ message: z.string() }) },
+    },
+  }, async (req, reply) => {
+    await auth.resetPassword(req.body.token, req.body.password).catch(handleAuthError(reply));
     if (reply.sent) return;
 
     logSecurityEvent({ eventType: 'password_reset_done', req });
@@ -269,29 +297,11 @@ export async function authRoutes(server: FastifyInstance): Promise<void> {
 
     return reply.status(200).send({ message: 'Password updated. Please log in.' });
   });
-}
+};
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-/** Parse and validate the request body. Sends a 400 and returns null on failure. */
-function parseBody<T>(
-  schema: z.ZodType<T>,
-  body:   unknown,
-  reply:  FastifyReply,
-): T | null {
-  const result = schema.safeParse(body);
-  if (!result.success) {
-    reply.status(400).send({
-      statusCode: 400,
-      error:      'Bad Request',
-      message:    result.error.errors.map((e) => e.message).join(', '),
-    });
-    return null;
-  }
-  return result.data;
-}
 
 /** Returns a catch handler that maps AuthError → HTTP response. */
 function handleAuthError(reply: FastifyReply) {

@@ -10,7 +10,7 @@
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { checkDbHealth } from '../db/index.js';
 import { redis } from '../server.js';
 
@@ -164,13 +164,14 @@ function statusPage(dbOk: boolean, redisOk: boolean, version: string): string {
     <div class="meta">
       <div>v<span>${version}</span></div>
       ${healthy ? `<div>up <span>${uptime}</span></div>` : ''}
+      <div><a href="/docs" style="color:#E8A13B;text-decoration:none;font-size:0.68rem;letter-spacing:0.05em;">API Docs ↗</a></div>
     </div>
   </div>
 </body>
 </html>`;
 }
 
-export async function healthRoutes(server: FastifyInstance): Promise<void> {
+export const healthRoutes: FastifyPluginAsyncZod = async (server) => {
 
   // ── GET / — browser-friendly HTML status page ──────────────────────────────
   server.get('/', async (req, reply) => {

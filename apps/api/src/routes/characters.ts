@@ -5,10 +5,11 @@
  * req.user is guaranteed to be populated.
  */
 
-import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { authenticate } from '../middleware/authenticate.js';
 import * as chars from '../services/characterService.js';
+import type { FastifyReply } from 'fastify';
 
 // ---------------------------------------------------------------------------
 // Input schemas
@@ -37,127 +38,137 @@ const idParam = z.object({
 // Routes
 // ---------------------------------------------------------------------------
 
-export async function characterRoutes(server: FastifyInstance): Promise<void> {
+export const characterRoutes: FastifyPluginAsyncZod = async (server) => {
 
   // All routes in this plugin require authentication
   server.addHook('preHandler', authenticate);
 
   // ── GET / ─────────────────────────────────────────────────────────────────
-  server.get('/', async (req: FastifyRequest, reply: FastifyReply) => {
+  server.get('/', {
+    schema: {
+      tags:     ['Characters'],
+      summary:  'List all characters for the authenticated user',
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (req, reply) => {
     const result = await chars.list(req.user!.id).catch(handleError(reply));
     if (!result || reply.sent) return;
     return reply.status(200).send(result);
   });
 
   // ── POST / ────────────────────────────────────────────────────────────────
-  server.post('/', async (req: FastifyRequest, reply: FastifyReply) => {
-    const body = parseBody(createBody, req.body, reply);
-    if (!body) return;
-
-    const character = await chars.create(req.user!.id, body.name, body.data)
+  server.post('/', {
+    schema: {
+      tags:     ['Characters'],
+      summary:  'Create a new character',
+      body:     createBody,
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (req, reply) => {
+    const character = await chars.create(req.user!.id, req.body.name, req.body.data)
       .catch(handleError(reply));
     if (!character || reply.sent) return;
-
     return reply.status(201).send(character);
   });
 
   // ── GET /:id ──────────────────────────────────────────────────────────────
-  server.get('/:id', async (req: FastifyRequest, reply: FastifyReply) => {
-    const params = parseBody(idParam, req.params, reply);
-    if (!params) return;
-
-    const character = await chars.get(req.user!.id, params.id)
+  server.get('/:id', {
+    schema: {
+      tags:     ['Characters'],
+      summary:  'Get a character by ID',
+      params:   idParam,
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (req, reply) => {
+    const character = await chars.get(req.user!.id, req.params.id)
       .catch(handleError(reply));
     if (!character || reply.sent) return;
-
     return reply.status(200).send(character);
   });
 
   // ── PUT /:id ──────────────────────────────────────────────────────────────
-  server.put('/:id', async (req: FastifyRequest, reply: FastifyReply) => {
-    const params = parseBody(idParam, req.params, reply);
-    if (!params) return;
-
-    const body = parseBody(updateBody, req.body, reply);
-    if (!body) return;
-
-    const character = await chars.update(req.user!.id, params.id, body)
+  server.put('/:id', {
+    schema: {
+      tags:     ['Characters'],
+      summary:  'Update a character',
+      params:   idParam,
+      body:     updateBody,
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (req, reply) => {
+    const character = await chars.update(req.user!.id, req.params.id, req.body)
       .catch(handleError(reply));
     if (!character || reply.sent) return;
-
     return reply.status(200).send(character);
   });
 
   // ── DELETE /:id ───────────────────────────────────────────────────────────
-  server.delete('/:id', async (req: FastifyRequest, reply: FastifyReply) => {
-    const params = parseBody(idParam, req.params, reply);
-    if (!params) return;
-
-    await chars.remove(req.user!.id, params.id).catch(handleError(reply));
+  server.delete('/:id', {
+    schema: {
+      tags:     ['Characters'],
+      summary:  'Delete a character and all associated data',
+      params:   idParam,
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (req, reply) => {
+    await chars.remove(req.user!.id, req.params.id).catch(handleError(reply));
     if (reply.sent) return;
-
     return reply.status(204).send();
   });
 
   // ── GET /:id/history ──────────────────────────────────────────────────────
-  server.get('/:id/history', async (req: FastifyRequest, reply: FastifyReply) => {
-    const params = parseBody(idParam, req.params, reply);
-    if (!params) return;
-
-    const history = await chars.getHistory(req.user!.id, params.id)
+  server.get('/:id/history', {
+    schema: {
+      tags:     ['Characters'],
+      summary:  'Get character history entries',
+      params:   idParam,
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (req, reply) => {
+    const history = await chars.getHistory(req.user!.id, req.params.id)
       .catch(handleError(reply));
     if (!history || reply.sent) return;
-
     return reply.status(200).send(history);
   });
 
   // ── POST /:id/history ─────────────────────────────────────────────────────
-  server.post('/:id/history', async (req: FastifyRequest, reply: FastifyReply) => {
-    const params = parseBody(idParam, req.params, reply);
-    if (!params) return;
-
-    const body = parseBody(historyBody, req.body, reply);
-    if (!body) return;
-
+  server.post('/:id/history', {
+    schema: {
+      tags:     ['Characters'],
+      summary:  'Append a history entry',
+      params:   idParam,
+      body:     historyBody,
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (req, reply) => {
     await chars.appendHistory(
       req.user!.id,
-      params.id,
-      body.entryHtml,
-      body.occurredAt ? new Date(body.occurredAt) : undefined,
+      req.params.id,
+      req.body.entryHtml,
+      req.body.occurredAt ? new Date(req.body.occurredAt) : undefined,
     ).catch(handleError(reply));
     if (reply.sent) return;
-
     return reply.status(201).send({ ok: true });
   });
 
   // ── DELETE /:id/history ───────────────────────────────────────────────────
-  server.delete('/:id/history', async (req: FastifyRequest, reply: FastifyReply) => {
-    const params = parseBody(idParam, req.params, reply);
-    if (!params) return;
-
-    await chars.clearHistory(req.user!.id, params.id).catch(handleError(reply));
+  server.delete('/:id/history', {
+    schema: {
+      tags:     ['Characters'],
+      summary:  'Clear all history entries for a character',
+      params:   idParam,
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (req, reply) => {
+    await chars.clearHistory(req.user!.id, req.params.id).catch(handleError(reply));
     if (reply.sent) return;
-
     return reply.status(204).send();
   });
-}
+};
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function parseBody<T>(schema: z.ZodType<T>, data: unknown, reply: FastifyReply): T | null {
-  const result = schema.safeParse(data);
-  if (!result.success) {
-    reply.status(400).send({
-      statusCode: 400,
-      error:      'Bad Request',
-      message:    result.error.errors.map((e) => e.message).join(', '),
-    });
-    return null;
-  }
-  return result.data;
-}
 
 function handleError(reply: FastifyReply) {
   return (err: unknown) => {
