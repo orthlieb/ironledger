@@ -50,16 +50,18 @@
 	import { loadSessionState, saveSessionState } from '$lib/sessionStore.svelte.js';
 	import { onMount, tick } from 'svelte';
 	import { parseImportJson, sanitizeLogHtml, ImportError } from '$lib/importSanitizer.js';
-	import trashSvg         from '$icons/trash-solid-full.svg?raw';
-	import charactersSvgUrl from '$icons/Characters.svg?url';
-	import foesSvgUrl       from '$icons/Foes.svg?url';
-	import expedSvgUrl      from '$icons/Expeditions.svg?url';
-	import adventSvgUrl     from '$icons/Adventure.svg?url';
-	import villageSvgUrl    from '$icons/village.svg?url';
+	import trashSvg              from '$icons/trash-solid-full.svg?raw';
+	import charactersSvgUrl      from '$icons/Characters.svg?url';
+	import foesSvgUrl            from '$icons/Foes.svg?url';
+	import expedSvgUrl           from '$icons/Expeditions.svg?url';
+	import adventSvgUrl          from '$icons/Adventure.svg?url';
+	import villageSvgUrl         from '$icons/village.svg?url';
+	import adminSvg              from '$icons/screwdriver-wrench-solid.svg?raw';
 	import iconMoves   from '$icons/person-running-solid.svg?raw';
 	import iconOracles from '$icons/crystal-ball.svg?raw';
 	import iconDice    from '$icons/dice-d10-light.svg?raw';
 	import iconNotes   from '$icons/note-sticky-solid.svg?raw';
+	import AdminPanel  from '$lib/components/AdminPanel.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -195,8 +197,9 @@
 	let _pendingNpcNameOracle         = $state('namesIronlander');
 
 	// ── Active tab (declared here so the session-persistence effect can track it)
-	type Tab = 'characters' | 'foes' | 'expeditions' | 'communities' | 'adventure';
+	type Tab = 'characters' | 'foes' | 'expeditions' | 'communities' | 'adventure' | 'admin';
 	let activeTab = $state<Tab>('characters');
+	const isAdmin = $derived(data.user?.role === 'admin');
 
 	// Close mobile search pills when switching tabs
 	$effect(() => {
@@ -215,7 +218,8 @@
 			charId:       activeCharId,
 			foeId:        activeFoeId,
 			expeditionId: activeExpeditionId,
-			activeTab,
+			// Don't persist the admin tab — always start fresh on reload
+			activeTab: activeTab === 'admin' ? 'characters' : activeTab,
 		});
 	});
 
@@ -1069,10 +1073,10 @@
 			lines.push(`- **Difficulty:** ${exp.difficulty.charAt(0).toUpperCase() + exp.difficulty.slice(1)}`);
 			lines.push(`- **Progress:** ${Math.floor(exp.ticks / 4)}/10`);
 			if (exp.type === 'site') {
-				if (exp.theme)  lines.push(`- **Theme:** ${exp.theme}`);
-				if (exp.domain) lines.push(`- **Domain:** ${exp.domain}`);
+				if (exp.theme)             lines.push(`- **Theme:** ${exp.theme}`);
+				if (exp.domain)            lines.push(`- **Domain:** ${exp.domain}`);
+				if (exp.objective?.trim()) lines.push(`- **Objective:** ${exp.objective.trim()}`);
 			}
-			if (exp.objective?.trim()) lines.push(`- **Objective:** ${exp.objective.trim()}`);
 			if (exp.notes?.trim())     lines.push(`\n${exp.notes.trim()}`);
 			lines.push('');
 		}
@@ -1364,6 +1368,15 @@
 					<img class="tab-icon" src={adventSvgUrl} alt="" aria-hidden="true">
 					<span class="tab-label">Adventure</span>
 				</button>
+
+				{#if isAdmin}
+				<button class="tab-btn tab-btn-admin" class:active={activeTab === 'admin'}
+					role="tab" aria-selected={activeTab === 'admin'}
+					data-tab="admin" title="Admin">
+					<span class="tab-icon tab-icon-svg" aria-hidden="true">{@html adminSvg}</span>
+					<span class="tab-label">Admin</span>
+				</button>
+				{/if}
 			</div>
 		</nav>
 
@@ -1723,6 +1736,11 @@
 				</div><!-- end adventure-wrapper -->
 			{/if}
 
+			<!-- ── Admin tab ── -->
+			{#if activeTab === 'admin' && isAdmin}
+				<AdminPanel userId={data.user?.id ?? ''} />
+			{/if}
+
 		</div>
 	</div>
 
@@ -1945,8 +1963,7 @@
 		transition: box-shadow 0.15s, border-color 0.15s;
 	}
 	.tab-srch-pill:focus-within {
-		border-color: var(--focus-ring);
-		box-shadow: 0 0 0 2px var(--accent-glow);
+		border-color: rgba(255, 255, 255, 0.18);
 	}
 
 	.tab-srch-pill-icon {
@@ -2222,6 +2239,31 @@
 	}
 	.tab-btn:hover .tab-icon { opacity: 0.68; }
 	.tab-btn.active .tab-icon { opacity: 1; }
+
+	/* SVG-based tab icon (used for admin tab) */
+	.tab-icon-svg {
+		display: flex;
+		align-items: center;
+		line-height: 0;
+		width: 20px;
+		height: 20px;
+		flex-shrink: 0;
+	}
+	.tab-icon-svg :global(svg) {
+		width: 20px;
+		height: 20px;
+		fill: currentColor;
+		opacity: 0.38;
+		transition: opacity 0.12s;
+	}
+	.tab-btn:hover .tab-icon-svg :global(svg) { opacity: 0.68; }
+	.tab-btn.active .tab-icon-svg :global(svg) { opacity: 1; }
+
+	/* Admin tab uses a distinct accent color when active */
+	.tab-btn-admin.active {
+		color: var(--color-warning);
+		border-bottom-color: var(--color-warning);
+	}
 
 	/* ============================================================
 	   Empty tab state

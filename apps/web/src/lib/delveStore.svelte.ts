@@ -24,6 +24,7 @@ interface DelveData {
 	themeDangers:   Record<string, OracleEntry[]>;
 	domainFeatures: Record<string, OracleEntry[]>;
 	domainDangers:  Record<string, OracleEntry[]>;
+	commonDangers:  OracleEntry[];
 }
 
 // ---------------------------------------------------------------------------
@@ -80,6 +81,7 @@ export function getDomainDangers(domain: DelveDomain): OracleEntry[] {
 /**
  * Build a combined theme + domain oracle table for rolling.
  * Theme entries come first (low topRange), domain entries follow (higher topRange).
+ * For dangers, the shared common tail (rows 46–100, sourced from Datasworn) is appended.
  * The JSON files already have correct topRange values for combining.
  */
 export function buildCombinedTable(
@@ -94,7 +96,8 @@ export function buildCombinedTable(
 	const domainTable = type === 'features'
 		? (_data.domainFeatures[domain] ?? [])
 		: (_data.domainDangers[domain] ?? []);
-	return [...themeTable, ...domainTable];
+	const commonTail  = type === 'dangers' ? (_data.commonDangers ?? []) : [];
+	return [...themeTable, ...domainTable, ...commonTail];
 }
 
 /**
@@ -108,8 +111,4 @@ export function rollCombinedTable(
 	const table = buildCombinedTable(theme, domain, type);
 	if (table.length === 0) return { roll: 0, value: '(no data)' };
 	return rollFromRangeTable(table);
-}
-
-export function isDelveLoaded(): boolean {
-	return _loaded;
 }

@@ -8,16 +8,21 @@
 	 */
 
 	import type { CharacterFull } from '$lib/api.js';
-	import type { FoeEncounter, Expedition } from '$lib/types.js';
-	import { EXPEDITION_MARK_TICKS } from '$lib/types.js';
+	import type { FoeEncounter, Expedition, Site, DelveTheme, DelveDomain } from '$lib/types.js';
+	import { EXPEDITION_MARK_TICKS, DENIZEN_CELLS } from '$lib/types.js';
 	import { hydrateCharacter } from '$lib/character.js';
 	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
 	import { findFoe, FOE_RANKS, FOE_NATURE_COLORS, FOE_QUANTITIES, RANK_COLORS } from '$lib/foeStore.svelte.js';
 	import { getAssets, loadAssets } from '$lib/assetStore.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
+	import { loadDelveData, buildCombinedTable } from '$lib/delveStore.svelte.js';
+	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
+	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
+	import DelveTableDialog from '$lib/components/DelveTableDialog.svelte';
 
-	// Pre-load the asset catalogue so pills can be derived without visiting Characters tab.
+	// Pre-load asset catalogue and delve data.
 	$effect(() => { loadAssets(); });
+	$effect(() => { loadDelveData(); });
 	import ProgressTrack from '$lib/components/ProgressTrack.svelte';
 
 	// Resource icons
@@ -114,14 +119,56 @@
 	const activeFoeQty      = $derived(activeFoe ? FOE_QUANTITIES.find((q) => q.value === activeFoe.quantity) : null);
 
 	// Derive active expedition
-	const activeExpedition  = $derived(expeditions.find((e) => e.id === activeExpeditionId));
-	const expProgress       = $derived(activeExpedition ? Math.floor(activeExpedition.ticks / 4) : 0);
-	const expMarkTicks      = $derived(activeExpedition ? (EXPEDITION_MARK_TICKS[activeExpedition.difficulty] ?? 4) : 4);
+	const activeExpedition      = $derived(expeditions.find((e) => e.id === activeExpeditionId));
+	const expProgress           = $derived(activeExpedition ? Math.floor(activeExpedition.ticks / 4) : 0);
+	const expMarkTicks          = $derived(activeExpedition ? (EXPEDITION_MARK_TICKS[activeExpedition.difficulty] ?? 4) : 4);
+	const expHasThemeAndDomain  = $derived(
+		activeExpedition?.type === 'site' &&
+		(activeExpedition as Site).theme !== '' &&
+		(activeExpedition as Site).domain !== ''
+	);
 
 	// Auto-deselect when the active expedition is marked complete (mirrors vanquished-foe behaviour)
 	$effect(() => {
 		if (activeExpedition?.complete) selectExpedition('');
 	});
+
+	// ── Site oracle rolls ──────────────────────────────────────────────────────
+	let gcDelveTableRef  = $state<{ open(t: string, tbl: import('$lib/oracleStore.svelte.js').OracleEntry[]): void; close(): void } | null>(null);
+	let gcRollingDenizen = $state(false);
+
+	function gcOpenFeatures() {
+		if (!expHasThemeAndDomain || activeExpedition?.type !== 'site') return;
+		const site = activeExpedition as Site;
+		const table = buildCombinedTable(site.theme as DelveTheme, site.domain as DelveDomain, 'features');
+		gcDelveTableRef?.open(`Features: ${site.theme} + ${site.domain}`, table);
+	}
+
+	function gcOpenDangers() {
+		if (!expHasThemeAndDomain || activeExpedition?.type !== 'site') return;
+		const site = activeExpedition as Site;
+		const table = buildCombinedTable(site.theme as DelveTheme, site.domain as DelveDomain, 'dangers');
+		gcDelveTableRef?.open(`Dangers: ${site.theme} + ${site.domain}`, table);
+	}
+
+	async function gcRollDenizen() {
+		if (gcRollingDenizen || activeExpedition?.type !== 'site') return;
+		gcRollingDenizen = true;
+		const site = activeExpedition as Site;
+		const roll = Math.floor(Math.random() * 100) + 1;
+		const cellIndex = DENIZEN_CELLS.findIndex(c => roll >= c.low && roll <= c.high);
+		const cell = DENIZEN_CELLS[cellIndex];
+		const denizen = site.denizens[cellIndex];
+		const tensV = Math.floor(roll % 100 / 10) || 10;
+		const onesV = roll % 10 || 10;
+		await animateDice([
+			{ sides: 10, value: tensV, color: DIE_BLACK },
+			{ sides: 10, value: onesV, color: DIE_WHITE },
+		]);
+		appendLog(SESSION_LOG_ID, `Site — ${site.name || 'Unnamed Site'}`,
+			`<div>Rolled d100: <strong>${roll}</strong> → ${cell.label} (${cell.range})${denizen ? `: <strong>${denizen}</strong>` : ''}</div>`);
+		gcRollingDenizen = false;
+	}
 
 	const DIFFICULTY_RANK: Record<string, number> = {
 		troublesome: 1, dangerous: 2, formidable: 3, extreme: 4, epic: 5,
@@ -455,6 +502,25 @@
 			</button>
 			{#if activeExpedition}
 				<div class="gc-tile-exp-bottom">
+					{#if activeExpedition.type === 'site'}
+					<div class="gc-oracle-row">
+						<button class="gc-oracle-btn"
+							onclick={gcOpenFeatures}
+							disabled={!expHasThemeAndDomain}
+							title={expHasThemeAndDomain ? 'Roll features table' : 'Set theme and domain first'}
+						>Roll Feature</button>
+						<button class="gc-oracle-btn"
+							onclick={gcOpenDangers}
+							disabled={!expHasThemeAndDomain}
+							title={expHasThemeAndDomain ? 'Roll dangers table' : 'Set theme and domain first'}
+						>Roll Danger</button>
+						<button class="gc-oracle-btn"
+							onclick={gcRollDenizen}
+							disabled={gcRollingDenizen}
+							title="Roll d100 for a denizen"
+						>Roll Denizen</button>
+					</div>
+					{/if}
 					<div class="gc-progress-wrap">
 						<ProgressTrack label="" value={activeExpedition.ticks} onchange={handleExpTrackChange} />
 						<div class="gc-progress-btns">
@@ -501,6 +567,8 @@
 	</div>
 
 </div>
+
+<DelveTableDialog bind:this={gcDelveTableRef} />
 
 <style>
 	/* ===== Container ===== */
@@ -761,8 +829,6 @@
 	.gc-chip--stat .gc-chip-value {
 		font-weight: 700;
 	}
-	.gc-chip-group--resources {
-	}
 	@media (max-width: 767px) {
 		.gc-chip-group--resources { justify-content: space-between; width: 100%; }
 	}
@@ -928,6 +994,33 @@
 		opacity: 0.6;
 	}
 	.gc-init-badge--none:hover { opacity: 1; }
+
+	/* ===== Site oracle roll buttons ===== */
+	.gc-oracle-row {
+		display: flex;
+		gap: 5px;
+		flex-wrap: wrap;
+		padding-left: 0.4rem;
+		padding-bottom: 5px;
+	}
+	.gc-oracle-btn {
+		font-family: var(--font-ui);
+		font-size: 0.62rem;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		padding: 2px 8px;
+		background: transparent;
+		border: 1px solid var(--border-mid);
+		border-radius: 3px;
+		color: var(--text-muted);
+		cursor: pointer;
+		transition: background 0.12s, color 0.12s;
+	}
+	.gc-oracle-btn:hover:not(:disabled) {
+		background: rgba(255, 255, 255, 0.06);
+		color: var(--text);
+	}
+	.gc-oracle-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
 	/* ===== Expedition tile details ===== */
 	.gc-tile-exp-bottom {

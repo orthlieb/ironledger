@@ -9,14 +9,6 @@
  */
 
 // ---------------------------------------------------------------------------
-// API response envelope
-// ---------------------------------------------------------------------------
-
-export interface ApiSuccess<T> {
-  data:    T;
-  message?: string;
-}
-
 export interface ApiError {
   statusCode: number;
   error:      string;
@@ -214,4 +206,12 @@ export interface MaintenanceStatus {
   enabled:    boolean;
   message:    string | null;
   shutdownAt: string | null;
+}
+
+// Registration lock
+// ---------------------------------------------------------------------------
+
+export interface RegistrationLockStatus {
+  locked:  boolean;
+  message: string | null;
 }

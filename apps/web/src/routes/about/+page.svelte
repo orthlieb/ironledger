@@ -53,7 +53,7 @@
 			icon: villageSvg,
 			title: 'Communities & NPCs',
 			body: 'The Ironlands are not empty. Track the settlements you\'ve found, the people you\'ve met, and the ones who owe you a favour. Oracle-powered random generation for names and locations — or build them by hand, if you\'re that kind of hero.',
-			color: 'var(--color-supply)',
+			color: 'var(--color-spirit)',
 		},
 	];
 </script>
@@ -190,7 +190,16 @@
 		</div>
 		<p class="systems-note">
 			Iron Ledger is an independent fan project and is not affiliated with or endorsed by Shawn Tomkin
-			or Ironsworn. Ironsworn is released under Creative Commons CC BY 4.0.
+			or Ironsworn.
+		</p>
+		<p class="systems-note systems-note--attribution">
+			This work is based on <a href="https://ironswornrpg.com" target="_blank" rel="noopener noreferrer">Ironsworn</a>
+			and <a href="https://ironswornrpg.com" target="_blank" rel="noopener noreferrer">Ironsworn: Delve</a>,
+			created by Shawn Tomkin, and licensed for use under the
+			<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreferrer">CC BY-NC-SA 4.0</a>
+			license. Game data sourced from
+			<a href="https://github.com/rsek/datasworn" target="_blank" rel="noopener noreferrer">Datasworn</a>
+			by rsek.
 		</p>
 	</div>
 </section>
@@ -241,6 +250,12 @@
 		<a href="https://game-icons.net" target="_blank" rel="noopener noreferrer">game-icons.net</a>
 		&amp;
 		<a href="https://fontawesome.com" target="_blank" rel="noopener noreferrer">Font Awesome</a>
+	</span>
+	<span class="about-footer-sep">·</span>
+	<span class="about-footer-credits">
+		Based on <a href="https://ironswornrpg.com" target="_blank" rel="noopener noreferrer">Ironsworn</a>
+		by Shawn Tomkin (<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreferrer">CC BY-NC-SA 4.0</a>).
+		Data via <a href="https://github.com/rsek/datasworn" target="_blank" rel="noopener noreferrer">Datasworn</a>.
 	</span>
 </footer>
 
@@ -502,6 +517,13 @@
 		line-height: 1.6;
 		max-width: 60ch;
 	}
+	.systems-note + .systems-note { margin-top: 0.5rem; }
+	.systems-note--attribution a {
+		color: var(--text-muted);
+		text-decoration: underline;
+		text-underline-offset: 2px;
+	}
+	.systems-note--attribution a:hover { color: var(--text-accent); }
 
 	/* ── Open Source ──────────────────────────────────────────────── */
 	.opensource-section {

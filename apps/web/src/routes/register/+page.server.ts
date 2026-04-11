@@ -22,6 +22,22 @@ export const load: PageServerLoad = async ({ locals }) => {
 		}
 	} catch { /* ignore — don't block the page if the status endpoint is down */ }
 
+	// Block registration when locked by admin.
+	try {
+		const lockRes = await fetch(`${INTERNAL_API_URL}/api/v1/admin/registration-lock/status`);
+		if (lockRes.ok) {
+			const lock = await lockRes.json() as { locked?: boolean; message?: string };
+			if (lock.locked) {
+				return {
+					registrationLocked: true,
+					registrationLockMessage: lock.message ?? 'New account registration is currently disabled.',
+					hcaptchaSiteKey: HCAPTCHA_SITE_KEY,
+					isDev: process.env.NODE_ENV !== 'production',
+				};
+			}
+		}
+	} catch { /* ignore — don't block the page if the status endpoint is down */ }
+
 	return { hcaptchaSiteKey: HCAPTCHA_SITE_KEY, isDev: process.env.NODE_ENV !== 'production' };
 };
 

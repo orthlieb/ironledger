@@ -71,6 +71,11 @@
 				{/if}
 			</div>
 
+			<label class="remember-me-row">
+				<input type="checkbox" name="rememberMe" />
+				<span>Remember me for 30 days</span>
+			</label>
+
 			<button type="submit" class="btn btn-primary">Sign In</button>
 		</form>
 
@@ -130,6 +135,24 @@
 		padding: 6px 12px;
 		width: 100%;
 		text-align: center;
+	}
+
+	.remember-me-row {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-family: var(--font-ui);
+		font-size: 0.8rem;
+		color: var(--text-muted);
+		cursor: pointer;
+		user-select: none;
+	}
+
+	.remember-me-row input[type='checkbox'] {
+		width: 14px;
+		height: 14px;
+		accent-color: var(--text-accent);
+		cursor: pointer;
 	}
 
 	.forgot-link {

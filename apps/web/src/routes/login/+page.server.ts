@@ -14,10 +14,12 @@ const TAGLINES = [
 	'Challenge roll, miss, mark a debility, repeat.',
 ];
 
+const THIRTY_DAYS = 30 * 24 * 60 * 60; // seconds
+
 export const load: PageServerLoad = async ({ locals }) => {
 	// Already logged in? Skip login page.
 	if (locals.user) {
-		throw redirect(302, locals.user.role === 'admin' ? '/admin' : '/home');
+		throw redirect(302, '/home');
 	}
 	const tagline = TAGLINES[Math.floor(Math.random() * TAGLINES.length)];
 	return { hcaptchaSiteKey: HCAPTCHA_SITE_KEY, isDev: process.env.NODE_ENV !== 'production', tagline };
@@ -29,6 +31,7 @@ export const actions: Actions = {
 		const email        = (form.get('email')              as string | null) ?? '';
 		const password     = (form.get('password')            as string | null) ?? '';
 		const captchaToken = (form.get('h-captcha-response') as string | null) ?? '';
+		const rememberMe   = form.get('rememberMe') === 'on';
 
 		if (!email || !password) {
 			return fail(400, { error: 'Email and password are required.', email });
@@ -65,27 +68,37 @@ export const actions: Actions = {
 
 		const body = (await res.json()) as { accessToken: string };
 
-		// Set the access token in an HttpOnly cookie.
-		// The SvelteKit server reads this in hooks.server.ts and in proxy routes.
+		// Extract the refresh token from the Fastify Set-Cookie header so we can
+		// store it in the browser's cookie jar (Fastify ↔ SvelteKit are separate
+		// servers, so the browser never receives Fastify's Set-Cookie directly).
+		const setCookieHeader = res.headers.get('set-cookie') ?? '';
+		const rtMatch = setCookieHeader.match(/(?:^|,)\s*rt=([^;,]+)/);
+		const refreshToken = rtMatch?.[1];
+
+		// Set the access token — short-lived JWT used by hooks.server.ts for auth.
+		// With remember-me the cookie persists 30 days; auto-refresh keeps it alive.
 		cookies.set('access_token', body.accessToken, {
 			path: '/',
 			httpOnly: true,
 			sameSite: 'strict',
 			secure: process.env.NODE_ENV === 'production',
-			maxAge: 900, // 15 minutes — matches JWT TTL
+			maxAge: rememberMe ? THIRTY_DAYS : 900,
 		});
 
-		// Decode the JWT payload to read the role (same approach as hooks.server.ts).
-		// Signature verification happens in the API; here we just need the claim.
-		let role = 'user';
-		try {
-			const [, payloadB64] = body.accessToken.split('.');
-			const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8')) as { role?: string };
-			role = payload.role ?? 'user';
-		} catch { /* ignore — default to 'user' */ }
+		// Store the refresh token so hooks.server.ts can silently renew the access
+		// token when it expires (every 15 min) without interrupting the session.
+		// Without remember-me this is a session cookie — deleted on browser close.
+		if (refreshToken) {
+			cookies.set('rt', refreshToken, {
+				path: '/',
+				httpOnly: true,
+				sameSite: 'strict',
+				secure: process.env.NODE_ENV === 'production',
+				...(rememberMe ? { maxAge: THIRTY_DAYS } : {}),
+			});
+		}
 
-		// Fastify sets its own 'rt' refresh-token cookie automatically.
-		// Admins go straight to the admin panel; everyone else to home.
-		throw redirect(302, role === 'admin' ? '/admin' : '/home');
+		// Everyone goes to /home; admins see the Admin tab there.
+		throw redirect(302, '/home');
 	},
 };

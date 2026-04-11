@@ -30,6 +30,19 @@
 			<p class="maintenance-message">{data.maintenanceMessage}</p>
 		</div>
 	</div>
+{:else if data.registrationLocked}
+	<div class="maintenance-page">
+		<img
+			src="/ironledger-under-construction.webp"
+			alt="A knight surveys a castle under construction"
+			class="maintenance-image"
+		/>
+		<div class="maintenance-body">
+			<p class="maintenance-title">Registration Closed</p>
+			<p class="maintenance-message">{data.registrationLockMessage}</p>
+			<p class="maintenance-message"><a href="/login">Sign in</a> if you already have an account.</p>
+		</div>
+	</div>
 {:else}
 <div class="auth-wrap">
 	<div class="auth-card card">

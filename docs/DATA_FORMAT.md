@@ -828,14 +828,15 @@ Foe portraits are stored as images at `images/foes/{id-slug}.png` (matching the 
 
 ## Delve Themes and Domains
 
-**Location:** `data/delve/*.json` (4 lookup files)
+**Location:** `data/delve/*.json` (5 lookup files)
 
-- `delve-theme-features.json` — Feature tables keyed by theme name
-- `delve-theme-dangers.json` — Danger tables keyed by theme name
-- `delve-domain-features.json` — Feature tables keyed by domain name
-- `delve-domain-dangers.json` — Danger tables keyed by domain name
+- `delve-theme-features.json` — Feature tables keyed by theme name (rows 1–20)
+- `delve-theme-dangers.json` — Danger tables keyed by theme name (rows 1–30)
+- `delve-domain-features.json` — Feature tables keyed by domain name (rows 21–43)
+- `delve-domain-dangers.json` — Danger tables keyed by domain name (rows 31–45)
+- `delve-common-dangers.json` — Shared danger entries for rows 46–100 (appended to all danger rolls)
 
-Each file is a JSON object with theme/domain names as keys:
+Each theme/domain file is a JSON object with theme/domain names as keys:
 
 ```json
 {
@@ -851,7 +852,24 @@ Each file is a JSON object with theme/domain names as keys:
 }
 ```
 
-Each entry has `topRange` (d100 boundary) and `value` (result text). These tables typically have 5 entries per theme/domain, covering the first 20% of the d100 range (the remaining 80% is handled by shared tables at the Delve site level).
+The `delve-common-dangers.json` is a flat array (not keyed by theme/domain):
+
+```json
+[
+  { "topRange": 57, "value": "You encounter a hostile denizen." },
+  ...
+  { "topRange": 100, "value": "Roll twice more on this table. Both results occur." }
+]
+```
+
+Each entry has `topRange` (d100 boundary, inclusive) and `value` (result text).
+
+**How combined tables work** (per Ironsworn: Delve rules p.6):  
+When rolling features or dangers for a site, the result is assembled from three partial tables:
+- **Features**: theme rows (1–20) + domain rows (21–43) + domain rows continue to 100
+- **Dangers**: theme rows (1–30) + domain rows (31–45) + common rows (46–100)
+
+The `buildCombinedTable()` function in `delveStore.svelte.ts` assembles these at runtime for the selected theme and domain.
 
 ---
 

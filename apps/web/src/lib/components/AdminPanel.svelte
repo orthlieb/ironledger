@@ -1,9 +1,8 @@
 <script lang="ts">
 	import { admin, maintenance as maintApi } from '$lib/api';
 	import type { AdminUser, AdminStats, MaintenanceStatus, UserTimeseries, RegistrationLockStatus } from '@ironledger/shared';
-	import type { LayoutData } from '../$types';
 
-	let { data }: { data: LayoutData } = $props();
+	let { userId }: { userId: string } = $props();
 
 	let users: AdminUser[] = $state([]);
 	let stats: AdminStats | null = $state(null);
@@ -11,7 +10,7 @@
 	let error = $state('');
 
 	// ── Tabs ──────────────────────────────────────────────────────────────
-	let activeTab: 'users' | 'logs' | 'maintenance' | 'registration' = $state('users');
+	let activeTab: 'users' | 'logs' | 'maintenance' = $state('users');
 
 	// ── Sort state ────────────────────────────────────────────────────────
 	let sortKey: keyof AdminUser = $state('email');
@@ -79,7 +78,7 @@
 			suspendTarget.isActive = !willSuspend;
 			users = [...users];
 			suspendTarget = null;
-			} catch (err) {
+		} catch (err) {
 			error = err instanceof Error ? err.message : 'Suspend action failed';
 			suspendTarget = null;
 		}
@@ -89,13 +88,10 @@
 	let adminCount = $derived(users.filter((u) => u.role === 'admin').length);
 
 	async function toggleRole(user: AdminUser) {
-		// Demoting is low-risk — no confirmation needed.
-		// Promoting to admin is serious — show a confirmation dialog first.
 		if (user.role === 'user') {
 			promoteTarget = user;
 			return;
 		}
-		// Guard: never demote the last admin.
 		if (adminCount <= 1) return;
 		await applyRoleChange(user, 'user');
 	}
@@ -111,7 +107,7 @@
 			await admin.setRole(user.id, newRole);
 			user.role = newRole;
 			users = [...users];
-			} catch (err) {
+		} catch (err) {
 			error = err instanceof Error ? err.message : 'Role change failed';
 		}
 	}
@@ -173,10 +169,7 @@
 			const pm2 = JSON.parse(raw);
 			const innerStr: string = pm2.message ?? raw;
 			const rawTs: string = pm2.timestamp ?? '';
-			// Trim '2026-03-24 06:26:25 +00:00' -> '03-24 06:26:25'
-			const pm2ts = rawTs.length >= 19
-				? rawTs.slice(5, 19)   // 'MM-DD HH:MM:SS'
-				: rawTs;
+			const pm2ts = rawTs.length >= 19 ? rawTs.slice(5, 19) : rawTs;
 			try {
 				const p = JSON.parse(innerStr);
 				const levelNum = typeof p.level === 'number' ? p.level : 30;
@@ -184,7 +177,6 @@
 				const ts = pm2ts || (p.time ? new Date(p.time).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '');
 				return { ts, level: PINO_LEVELS[levelNum] ?? 'INFO', levelNum, msg: msg ?? innerStr, extras, raw };
 			} catch {
-				// Inner message is plain text -- use PM2 type field to infer level
 				const level = pm2.type === 'err' ? 'ERROR'
 					: innerStr.includes('ERROR') ? 'ERROR'
 					: innerStr.includes('WARN')  ? 'WARN'
@@ -256,7 +248,7 @@
 			await admin.enableMaintenance({ message: maintMessage, minutesUntilShutdown: maintMinutes });
 			showMaintConfirm = false;
 			await refreshMaintStatus();
-			} catch (err) {
+		} catch (err) {
 			error = err instanceof Error ? err.message : 'Failed to enable maintenance';
 			showMaintConfirm = false;
 		} finally {
@@ -269,7 +261,7 @@
 		try {
 			await admin.disableMaintenance();
 			await refreshMaintStatus();
-			} catch (err) {
+		} catch (err) {
 			error = err instanceof Error ? err.message : 'Failed to disable maintenance';
 		} finally {
 			maintLoading = false;
@@ -320,8 +312,6 @@
 		}
 	}
 
-	// ── Event display helpers ─────────────────────────────────────────────
-
 	// ── Load data on mount ────────────────────────────────────────────────
 	$effect(() => {
 		(async () => {
@@ -344,24 +334,20 @@
 	});
 </script>
 
-<svelte:head>
-	<title>Admin Dashboard | Iron Ledger</title>
-</svelte:head>
-
-<div class="admin-page">
-	<h1 class="admin-title">Admin Dashboard</h1>
-	<p class="admin-build-info">
+<div class="ap-wrap">
+	<h1 class="ap-title">Admin Dashboard</h1>
+	<p class="ap-build-info">
 		v{__APP_VERSION__}
 		<span class="build-sep">·</span>
 		Built {new Date(__BUILD_DATE__).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
 	</p>
 
 	{#if error}
-		<div class="admin-error">{error}</div>
+		<div class="ap-error">{error}</div>
 	{/if}
 
 	{#if loading}
-		<p class="admin-loading">Loading...</p>
+		<p class="ap-loading">Loading...</p>
 	{:else}
 		<!-- Stats Cards -->
 		{#if stats}
@@ -438,16 +424,12 @@
 						preserveAspectRatio="none"
 						aria-label="User activity chart"
 					>
-						<!-- Y-axis grid lines -->
 						{#each yTicks as v}
 							{@const y = padT + plotH * (1 - v / maxTotal)}
 							<line x1={padL} y1={y} x2={chartW - padR} y2={y} class="grid-line" />
-							<text x={padL - 4} y={y + 4} class="axis-label" text-anchor="end">
-								{v}
-							</text>
+							<text x={padL - 4} y={y + 4} class="axis-label" text-anchor="end">{v}</text>
 						{/each}
 
-						<!-- X-axis labels (every N buckets to avoid crowding) -->
 						{#each buckets as b, i}
 							{#if i % Math.max(1, Math.floor(buckets.length / 6)) === 0}
 								{@const x = padL + i * step}
@@ -455,7 +437,6 @@
 							{/if}
 						{/each}
 
-						<!-- Total users line (amber) -->
 						<polyline
 							class="line-total"
 							points={buckets.map((b, i) =>
@@ -463,7 +444,6 @@
 							).join(' ')}
 						/>
 
-						<!-- Active users line (teal) -->
 						<polyline
 							class="line-active"
 							points={buckets.map((b, i) =>
@@ -471,7 +451,6 @@
 							).join(' ')}
 						/>
 
-						<!-- Data point dots for total -->
 						{#each buckets as b, i}
 							<circle
 								cx={padL + i * step}
@@ -483,55 +462,27 @@
 					</svg>
 				</div>
 
-				<!-- Legend -->
 				<div class="metrics-legend">
 					<span class="legend-item legend-total">Total Users</span>
 					<span class="legend-item legend-active">Active (by last login)</span>
 					{#if stats}
-						<span class="legend-item legend-online">
-							{stats.currentlyLoggedIn} online now
-						</span>
+						<span class="legend-item legend-online">{stats.currentlyLoggedIn} online now</span>
 					{/if}
 				</div>
 			{/if}
 		</div>
 
 		<!-- Tab bar -->
-		<nav class="tab-bar" aria-label="Admin tabs">
-			<div class="tab-group" role="tablist">
-				<button
-					class="tab-btn"
-					class:active={activeTab === 'users'}
-					role="tab"
-					aria-selected={activeTab === 'users'}
-					onclick={() => (activeTab = 'users')}
-				>Users</button>
-				<button
-					class="tab-btn"
-					class:active={activeTab === 'logs'}
-					role="tab"
-					aria-selected={activeTab === 'logs'}
-					onclick={() => (activeTab = 'logs')}
-				>Logs</button>
-				<button
-					class="tab-btn"
-					class:active={activeTab === 'maintenance'}
-					role="tab"
-					aria-selected={activeTab === 'maintenance'}
-					onclick={() => { activeTab = 'maintenance'; void refreshMaintStatus(); }}
-				>Maintenance</button>
-				<button
-					class="tab-btn"
-					class:active={activeTab === 'registration'}
-					role="tab"
-					aria-selected={activeTab === 'registration'}
-					onclick={() => { activeTab = 'registration'; void refreshRegLockStatus(); }}
-				>Registration</button>
+		<nav class="ap-tab-bar" aria-label="Admin tabs">
+			<div class="ap-tab-group" role="tablist">
+				<button class="ap-tab-btn" class:active={activeTab === 'users'} role="tab" aria-selected={activeTab === 'users'} onclick={() => (activeTab = 'users')}>Users</button>
+				<button class="ap-tab-btn" class:active={activeTab === 'logs'} role="tab" aria-selected={activeTab === 'logs'} onclick={() => (activeTab = 'logs')}>Logs</button>
+				<button class="ap-tab-btn" class:active={activeTab === 'maintenance'} role="tab" aria-selected={activeTab === 'maintenance'} onclick={() => { activeTab = 'maintenance'; void refreshMaintStatus(); void refreshRegLockStatus(); }}>Maintenance</button>
 			</div>
 		</nav>
 
 		<!-- Tab body -->
-		<div class="tab-body">
+		<div class="ap-tab-body">
 
 			<!-- ═══ Users tab ═══ -->
 			{#if activeTab === 'users'}
@@ -539,43 +490,25 @@
 					<table class="admin-table">
 						<thead>
 							<tr>
-								<th class="sortable" onclick={() => setSort('email')}>
-									Email{sortIcon('email')}
-								</th>
-								<th class="sortable" onclick={() => setSort('role')}>
-									Role{sortIcon('role')}
-								</th>
-								<th class="sortable" onclick={() => setSort('isActive')}>
-									Active{sortIcon('isActive')}
-								</th>
-								<th class="sortable" onclick={() => setSort('lastLoginAt')}>
-									Last Login{sortIcon('lastLoginAt')}
-								</th>
-								<th class="sortable" onclick={() => setSort('createdAt')}>
-									Created{sortIcon('createdAt')}
-								</th>
-								<th class="sortable" onclick={() => setSort('characterCount')}>
-									Chars{sortIcon('characterCount')}
-								</th>
-								<th class="sortable" onclick={() => setSort('encounterCount')}>
-									Enc{sortIcon('encounterCount')}
-								</th>
-								<th class="sortable" onclick={() => setSort('expeditionCount')}>
-									Exp{sortIcon('expeditionCount')}
-								</th>
+								<th class="sortable" onclick={() => setSort('email')}>Email{sortIcon('email')}</th>
+								<th class="sortable" onclick={() => setSort('role')}>Role{sortIcon('role')}</th>
+								<th class="sortable" onclick={() => setSort('isActive')}>Active{sortIcon('isActive')}</th>
+								<th class="sortable" onclick={() => setSort('lastLoginAt')}>Last Login{sortIcon('lastLoginAt')}</th>
+								<th class="sortable" onclick={() => setSort('createdAt')}>Created{sortIcon('createdAt')}</th>
+								<th class="sortable" onclick={() => setSort('characterCount')}>Chars{sortIcon('characterCount')}</th>
+								<th class="sortable" onclick={() => setSort('encounterCount')}>Enc{sortIcon('encounterCount')}</th>
+								<th class="sortable" onclick={() => setSort('expeditionCount')}>Exp{sortIcon('expeditionCount')}</th>
 								<th>Actions</th>
 							</tr>
 						</thead>
 						<tbody>
 							{#each paginated as user (user.id)}
 								{@const isLastAdmin = user.role === 'admin' && adminCount <= 1}
-								{@const isSelf = user.id === data.user?.id}
+								{@const isSelf = user.id === userId}
 								<tr>
 									<td>{user.email}</td>
 									<td>
-										<span class="role-badge" class:role-admin={user.role === 'admin'}>
-											{user.role}
-										</span>
+										<span class="role-badge" class:role-admin={user.role === 'admin'}>{user.role}</span>
 									</td>
 									<td>
 										<span class="active-dot" class:active-yes={user.isActive}></span>
@@ -592,9 +525,7 @@
 											title={isLastAdmin ? 'Cannot demote the last admin' : user.role === 'admin' ? 'Demote to user' : 'Promote to admin'}
 											disabled={isLastAdmin}
 											onclick={() => toggleRole(user)}
-										>
-											{user.role === 'admin' ? 'Demote' : 'Promote'}
-										</button>
+										>{user.role === 'admin' ? 'Demote' : 'Promote'}</button>
 										<button
 											class="btn btn-icon"
 											class:btn-warn={user.isActive && !isSelf}
@@ -602,16 +533,12 @@
 											disabled={isSelf}
 											title={isSelf ? 'Cannot suspend your own account' : user.isActive ? 'Suspend user (immediately boots and blocks login)' : 'Unsuspend user'}
 											onclick={() => (suspendTarget = user)}
-										>
-											{user.isActive ? 'Suspend' : 'Unsuspend'}
-										</button>
+										>{user.isActive ? 'Suspend' : 'Unsuspend'}</button>
 										<button
 											class="btn btn-icon btn-danger"
 											title="Delete user and all data"
 											onclick={() => (deleteTarget = user)}
-										>
-											Delete
-										</button>
+										>Delete</button>
 									</td>
 								</tr>
 							{/each}
@@ -619,7 +546,6 @@
 					</table>
 				</div>
 
-				<!-- Pagination -->
 				{#if totalPages > 1}
 					<div class="pagination">
 						<button class="btn btn-icon" disabled={page <= 1} onclick={() => (page -= 1)}>Prev</button>
@@ -656,12 +582,7 @@
 					</div>
 				</div>
 				<div class="logs-search-row">
-					<input
-						type="search"
-						class="logs-search"
-						placeholder="Filter lines…"
-						bind:value={logSearch}
-					/>
+					<input type="search" class="logs-search" placeholder="Filter lines…" bind:value={logSearch} />
 					{#if logSearch}
 						<button class="btn btn-icon" onclick={() => logSearch = ''}>Clear</button>
 						<span class="logs-match-count">{filteredLines.length} / {parsedLines.length}</span>
@@ -669,10 +590,7 @@
 				</div>
 
 				{#if !logAvailable}
-					<p class="logs-unavailable">
-						Log file not available — server may not be running under PM2,
-						or <code>LOG_DIR</code> is not configured for this environment.
-					</p>
+					<p class="logs-unavailable">Log file not available — server may not be running under PM2, or <code>LOG_DIR</code> is not configured for this environment.</p>
 				{:else if logLoading}
 					<p class="logs-unavailable">Loading…</p>
 				{:else if logLines.length === 0}
@@ -709,119 +627,108 @@
 					</div>
 				{/if}
 
-			<!-- ═══ Registration lock tab ═══ -->
-			{:else if activeTab === 'registration'}
-				<div class="maint-panel">
-					<div class="maint-status-row">
-						<span class="maint-dot" class:maint-dot-active={regLockStatus?.locked}></span>
-						<span class="maint-status-label">
-							{regLockStatus?.locked ? 'Registration Locked' : 'Registration Open'}
-						</span>
-					</div>
+			<!-- ═══ Maintenance tab (includes Registration Lock) ═══ -->
+			{:else if activeTab === 'maintenance'}
+				<div class="maint-panels">
 
-					{#if regLockStatus?.locked}
-						<div class="maint-active-info">
-							{#if regLockStatus.message}
-								<p class="maint-msg">{regLockStatus.message}</p>
+					<!-- Maintenance mode section -->
+					<div class="maint-panel">
+						<p class="maint-section-heading">Maintenance Mode</p>
+						<div class="maint-status-row">
+							<span class="maint-dot" class:maint-dot-active={maintStatus?.enabled}></span>
+							<span class="maint-status-label">
+								{maintStatus?.enabled ? 'Maintenance Active' : 'System Normal'}
+							</span>
+							{#if maintStatus?.enabled && maintCountdown}
+								<span class="maint-timer">Shutdown in <strong>{maintCountdown}</strong></span>
 							{/if}
 						</div>
-						<button
-							class="btn btn-success"
-							disabled={regLockLoading}
-							onclick={disableRegLock}
-						>
-							{regLockLoading ? 'Unlocking...' : 'Unlock Registration'}
-						</button>
-					{:else}
-						<div class="maint-form">
-							<label class="maint-label">
-								<span>Message shown to new visitors</span>
-								<input
-									class="maint-input"
-									type="text"
-									placeholder="e.g. Registration is currently closed."
-									bind:value={regLockMessage}
-									maxlength="500"
-								/>
-							</label>
-						</div>
-						<button
-							class="btn btn-danger"
-							disabled={regLockLoading || !regLockMessage.trim()}
-							onclick={() => (showRegLockConfirm = true)}
-						>
-							Lock Registration
-						</button>
-					{/if}
-				</div>
 
-			<!-- ═══ Maintenance tab ═══ -->
-			{:else if activeTab === 'maintenance'}
-				<div class="maint-panel">
-					<!-- Status indicator -->
-					<div class="maint-status-row">
-						<span class="maint-dot" class:maint-dot-active={maintStatus?.enabled}></span>
-						<span class="maint-status-label">
-							{maintStatus?.enabled ? 'Maintenance Active' : 'System Normal'}
-						</span>
-						{#if maintStatus?.enabled && maintCountdown}
-							<span class="maint-timer">
-								Shutdown in <strong>{maintCountdown}</strong>
-							</span>
+						{#if maintStatus?.enabled}
+							<div class="maint-active-info">
+								{#if maintStatus.message}
+									<p class="maint-msg">{maintStatus.message}</p>
+								{/if}
+								{#if maintStatus.shutdownAt}
+									<p class="maint-shutdown">Shutdown at: {new Date(maintStatus.shutdownAt).toLocaleString()}</p>
+								{/if}
+							</div>
+							<button class="btn btn-success maint-action-btn" disabled={maintLoading} onclick={disableMaint}>
+								{maintLoading ? 'Disabling...' : 'Disable Maintenance'}
+							</button>
+						{:else}
+							<div class="maint-form">
+								<label class="maint-label">
+									<span>Message</span>
+									<input
+										class="maint-input"
+										type="text"
+										placeholder="e.g. Upgrading to v2.0"
+										bind:value={maintMessage}
+										maxlength="500"
+									/>
+								</label>
+								<label class="maint-label">
+									<span>Minutes until shutdown</span>
+									<input
+										class="maint-input maint-input-num"
+										type="number"
+										min="0"
+										max="1440"
+										bind:value={maintMinutes}
+									/>
+								</label>
+							</div>
+							<button
+								class="btn btn-danger maint-action-btn"
+								disabled={maintLoading || !maintMessage.trim()}
+								onclick={() => (showMaintConfirm = true)}
+							>Enable Maintenance Mode</button>
 						{/if}
 					</div>
 
-					{#if maintStatus?.enabled}
-						<!-- Active maintenance info -->
-						<div class="maint-active-info">
-							{#if maintStatus.message}
-								<p class="maint-msg">{maintStatus.message}</p>
-							{/if}
-							{#if maintStatus.shutdownAt}
-								<p class="maint-shutdown">
-									Shutdown at: {new Date(maintStatus.shutdownAt).toLocaleString()}
-								</p>
-							{/if}
+					<div class="maint-divider"></div>
+
+					<!-- Registration lock section -->
+					<div class="maint-panel">
+						<p class="maint-section-heading">Registration Lock</p>
+						<div class="maint-status-row">
+							<span class="maint-dot" class:maint-dot-active={regLockStatus?.locked}></span>
+							<span class="maint-status-label">
+								{regLockStatus?.locked ? 'Registration Locked' : 'Registration Open'}
+							</span>
 						</div>
-						<button
-							class="btn btn-success"
-							disabled={maintLoading}
-							onclick={disableMaint}
-						>
-							{maintLoading ? 'Disabling...' : 'Disable Maintenance'}
-						</button>
-					{:else}
-						<!-- Enable form -->
-						<div class="maint-form">
-							<label class="maint-label">
-								<span>Message</span>
-								<input
-									class="maint-input"
-									type="text"
-									placeholder="e.g. Upgrading to v2.0"
-									bind:value={maintMessage}
-									maxlength="500"
-								/>
-							</label>
-							<label class="maint-label">
-								<span>Minutes until shutdown</span>
-								<input
-									class="maint-input maint-input-num"
-									type="number"
-									min="0"
-									max="1440"
-									bind:value={maintMinutes}
-								/>
-							</label>
-						</div>
-						<button
-							class="btn btn-danger"
-							disabled={maintLoading || !maintMessage.trim()}
-							onclick={() => (showMaintConfirm = true)}
-						>
-							Enable Maintenance Mode
-						</button>
-					{/if}
+
+						{#if regLockStatus?.locked}
+							<div class="maint-active-info">
+								{#if regLockStatus.message}
+									<p class="maint-msg">{regLockStatus.message}</p>
+								{/if}
+							</div>
+							<button class="btn btn-success maint-action-btn" disabled={regLockLoading} onclick={disableRegLock}>
+								{regLockLoading ? 'Unlocking...' : 'Unlock Registration'}
+							</button>
+						{:else}
+							<div class="maint-form">
+								<label class="maint-label">
+									<span>Message shown to new visitors</span>
+									<input
+										class="maint-input"
+										type="text"
+										placeholder="e.g. Registration is currently closed."
+										bind:value={regLockMessage}
+										maxlength="500"
+									/>
+								</label>
+							</div>
+							<button
+								class="btn btn-danger maint-action-btn"
+								disabled={regLockLoading || !regLockMessage.trim()}
+								onclick={() => (showRegLockConfirm = true)}
+							>Lock Registration</button>
+						{/if}
+					</div>
+
 				</div>
 			{/if}
 
@@ -835,10 +742,7 @@
 	<div class="modal-backdrop" onclick={() => (deleteTarget = null)} onkeydown={(e) => e.key === 'Escape' && (deleteTarget = null)}>
 		<div class="modal card" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog" aria-modal="true" tabindex="-1">
 			<h3>Delete User</h3>
-			<p>
-				Permanently delete <strong>{deleteTarget.email}</strong> and all their data?
-				This cannot be undone.
-			</p>
+			<p>Permanently delete <strong>{deleteTarget.email}</strong> and all their data? This cannot be undone.</p>
 			<div class="modal-actions">
 				<button class="btn" onclick={() => (deleteTarget = null)}>Cancel</button>
 				<button class="btn btn-danger" onclick={confirmDelete}>Delete</button>
@@ -871,14 +775,8 @@
 	<div class="modal-backdrop" onclick={() => (showMaintConfirm = false)} onkeydown={(e) => e.key === 'Escape' && (showMaintConfirm = false)}>
 		<div class="modal card" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog" aria-modal="true" tabindex="-1">
 			<h3 class="maint-modal-title">Enable Maintenance Mode</h3>
-			<p>
-				This will alert all users and revoke all active sessions.
-				Non-admin users will be unable to log in.
-			</p>
-			<p>
-				Message: <strong>{maintMessage}</strong><br />
-				Shutdown in: <strong>{maintMinutes} minute{maintMinutes === 1 ? '' : 's'}</strong>
-			</p>
+			<p>This will alert all users and revoke all active sessions. Non-admin users will be unable to log in.</p>
+			<p>Message: <strong>{maintMessage}</strong><br />Shutdown in: <strong>{maintMinutes} minute{maintMinutes === 1 ? '' : 's'}</strong></p>
 			<div class="modal-actions">
 				<button class="btn" onclick={() => (showMaintConfirm = false)}>Cancel</button>
 				<button class="btn btn-danger" disabled={maintLoading} onclick={confirmEnableMaint}>
@@ -895,13 +793,8 @@
 	<div class="modal-backdrop" onclick={() => (promoteTarget = null)} onkeydown={(e) => e.key === 'Escape' && (promoteTarget = null)}>
 		<div class="modal card" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog" aria-modal="true" tabindex="-1">
 			<h3>Promote to Admin</h3>
-			<p>
-				Grant admin privileges to <strong>{promoteTarget.email}</strong>?
-			</p>
-			<p class="modal-warning">
-				Admins can manage all users, view audit logs, and control maintenance mode.
-				This should only be granted to trusted team members.
-			</p>
+			<p>Grant admin privileges to <strong>{promoteTarget.email}</strong>?</p>
+			<p class="modal-warning">Admins can manage all users, view audit logs, and control maintenance mode. This should only be granted to trusted team members.</p>
 			<div class="modal-actions">
 				<button class="btn" onclick={() => (promoteTarget = null)}>Cancel</button>
 				<button class="btn btn-danger" onclick={confirmPromote}>Promote</button>
@@ -917,17 +810,11 @@
 		<div class="modal card" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog" aria-modal="true" tabindex="-1">
 			{#if suspendTarget.isActive}
 				<h3>Suspend User</h3>
-				<p>
-					Suspend <strong>{suspendTarget.email}</strong>?
-				</p>
-				<p class="modal-warning">
-					Their active sessions will be revoked immediately and they will be unable to log in until unsuspended.
-				</p>
+				<p>Suspend <strong>{suspendTarget.email}</strong>?</p>
+				<p class="modal-warning">Their active sessions will be revoked immediately and they will be unable to log in until unsuspended.</p>
 			{:else}
 				<h3>Unsuspend User</h3>
-				<p>
-					Re-enable access for <strong>{suspendTarget.email}</strong>?
-				</p>
+				<p>Re-enable access for <strong>{suspendTarget.email}</strong>?</p>
 			{/if}
 			<div class="modal-actions">
 				<button class="btn" onclick={() => (suspendTarget = null)}>Cancel</button>
@@ -940,13 +827,11 @@
 {/if}
 
 <style>
-	.admin-page {
-		max-width: 1100px;
-		margin: 0 auto;
-		padding: 1rem;
+	.ap-wrap {
+		padding: 1rem 0;
 	}
 
-	.admin-title {
+	.ap-title {
 		font-family: var(--font-display);
 		font-size: 1.3rem;
 		color: var(--text-accent);
@@ -954,7 +839,7 @@
 		margin-bottom: 0.25rem;
 	}
 
-	.admin-build-info {
+	.ap-build-info {
 		font-family: var(--font-mono);
 		font-size: 0.72rem;
 		color: var(--text-dimmer);
@@ -967,7 +852,7 @@
 		opacity: 0.5;
 	}
 
-	.admin-error {
+	.ap-error {
 		background: color-mix(in srgb, var(--color-danger) 15%, transparent);
 		border: 1px solid var(--color-danger);
 		border-radius: 4px;
@@ -978,7 +863,7 @@
 		color: var(--color-danger);
 	}
 
-	.admin-loading {
+	.ap-loading {
 		font-family: var(--font-ui);
 		font-size: 0.85rem;
 		color: var(--text-muted);
@@ -1021,18 +906,11 @@
 		color: var(--text-dimmer);
 	}
 
-	.stat-online {
-		border-color: rgba(52, 211, 153, 0.3);
-	}
-	.stat-value-online {
-		color: #34d399;
-	}
+	.stat-online { border-color: rgba(52, 211, 153, 0.3); }
+	.stat-value-online { color: #34d399; }
 
 	/* ── Metrics graph ── */
-	.metrics-panel {
-		margin-bottom: 1.25rem;
-		overflow: hidden;
-	}
+	.metrics-panel { margin-bottom: 1.25rem; overflow: hidden; }
 
 	.metrics-header {
 		display: flex;
@@ -1052,10 +930,7 @@
 		color: var(--text-accent);
 	}
 
-	.metrics-timeframes {
-		display: flex;
-		gap: 4px;
-	}
+	.metrics-timeframes { display: flex; gap: 4px; }
 
 	.tf-btn {
 		font-family: var(--font-mono);
@@ -1069,12 +944,7 @@
 		color: var(--text-dimmer);
 		transition: color 0.12s, border-color 0.12s, background 0.12s;
 	}
-
-	.tf-btn:hover {
-		color: var(--text-muted);
-		border-color: var(--border-mid);
-	}
-
+	.tf-btn:hover { color: var(--text-muted); border-color: var(--border-mid); }
 	.tf-btn.active {
 		color: var(--text-accent);
 		border-color: var(--text-accent);
@@ -1089,10 +959,7 @@
 		color: var(--text-dimmer);
 	}
 
-	.metrics-chart-wrap {
-		padding: 0.5rem 0.75rem 0;
-		overflow: hidden;
-	}
+	.metrics-chart-wrap { padding: 0.5rem 0.75rem 0; overflow: hidden; }
 
 	.metrics-svg {
 		width: 100%;
@@ -1100,35 +967,11 @@
 		display: block;
 	}
 
-	.grid-line {
-		stroke: var(--border);
-		stroke-width: 0.5;
-	}
-
-	.axis-label {
-		font-family: var(--font-mono);
-		font-size: 8px;
-		fill: var(--text-dimmer);
-	}
-
-	.line-total {
-		fill: none;
-		stroke: #f59e0b;
-		stroke-width: 1.5;
-		stroke-linejoin: round;
-	}
-
-	.line-active {
-		fill: none;
-		stroke: #34d399;
-		stroke-width: 1.5;
-		stroke-linejoin: round;
-		stroke-dasharray: 3 2;
-	}
-
-	.dot-total {
-		fill: #f59e0b;
-	}
+	.grid-line { stroke: var(--border); stroke-width: 0.5; }
+	.axis-label { font-family: var(--font-mono); font-size: 8px; fill: var(--text-dimmer); }
+	.line-total { fill: none; stroke: #f59e0b; stroke-width: 1.5; stroke-linejoin: round; }
+	.line-active { fill: none; stroke: #34d399; stroke-width: 1.5; stroke-linejoin: round; stroke-dasharray: 3 2; }
+	.dot-total { fill: #f59e0b; }
 
 	.metrics-legend {
 		display: flex;
@@ -1138,32 +981,15 @@
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 	}
-
-	.legend-item {
-		display: flex;
-		align-items: center;
-		gap: 0.35rem;
-		color: var(--text-dimmer);
-	}
-
-	.legend-item::before {
-		content: '';
-		display: inline-block;
-		width: 16px;
-		height: 2px;
-	}
-
+	.legend-item { display: flex; align-items: center; gap: 0.35rem; color: var(--text-dimmer); }
+	.legend-item::before { content: ''; display: inline-block; width: 16px; height: 2px; }
 	.legend-total::before  { background: #f59e0b; }
 	.legend-active::before { background: #34d399; }
-	.legend-online {
-		margin-left: auto;
-		color: #34d399;
-		font-weight: 600;
-	}
+	.legend-online { margin-left: auto; color: #34d399; font-weight: 600; }
 	.legend-online::before { display: none; }
 
-	/* ── Tab bar ── */
-	.tab-bar {
+	/* ── Admin tab bar ── */
+	.ap-tab-bar {
 		display: flex;
 		align-items: stretch;
 		background: var(--bg-card);
@@ -1173,14 +999,9 @@
 		flex-shrink: 0;
 		padding-left: 4px;
 	}
-	.tab-bar::-webkit-scrollbar { display: none; }
-
-	.tab-group {
-		display: flex;
-		align-items: stretch;
-	}
-
-	.tab-btn {
+	.ap-tab-bar::-webkit-scrollbar { display: none; }
+	.ap-tab-group { display: flex; align-items: stretch; }
+	.ap-tab-btn {
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		font-weight: 600;
@@ -1196,35 +1017,15 @@
 		flex-shrink: 0;
 		transition: color 0.12s, border-color 0.12s;
 	}
-	.tab-btn:hover  { color: var(--text-muted); }
-	.tab-btn.active {
-		color: var(--text-accent);
-		border-bottom-color: var(--text-accent);
-	}
+	.ap-tab-btn:hover { color: var(--text-muted); }
+	.ap-tab-btn.active { color: var(--text-accent); border-bottom-color: var(--text-accent); }
 
-	.tab-body {
-		padding-top: 0.75rem;
-	}
+	.ap-tab-body { padding-top: 0.75rem; }
 
 	/* ── Table ── */
-	.admin-table-wrap {
-		overflow-x: auto;
-	}
-
-	.admin-table {
-		width: 100%;
-		border-collapse: collapse;
-		font-family: var(--font-ui);
-		font-size: 0.78rem;
-	}
-
-	.admin-table th,
-	.admin-table td {
-		padding: 0.45rem 0.6rem;
-		text-align: left;
-		border-bottom: 1px solid var(--border);
-	}
-
+	.admin-table-wrap { overflow-x: auto; }
+	.admin-table { width: 100%; border-collapse: collapse; font-family: var(--font-ui); font-size: 0.78rem; }
+	.admin-table th, .admin-table td { padding: 0.45rem 0.6rem; text-align: left; border-bottom: 1px solid var(--border); }
 	.admin-table th {
 		font-size: 0.68rem;
 		font-weight: 700;
@@ -1234,37 +1035,13 @@
 		background: var(--bg-card);
 		white-space: nowrap;
 	}
+	.sortable { cursor: pointer; user-select: none; }
+	.sortable:hover { color: var(--text-accent); }
+	.admin-table tbody tr:hover { background: var(--bg-hover); }
+	.td-date { white-space: nowrap; color: var(--text-muted); }
+	.td-num { text-align: center; font-family: var(--font-mono); font-size: 0.8rem; }
+	.td-actions { white-space: nowrap; display: flex; gap: 0.3rem; }
 
-	.sortable {
-		cursor: pointer;
-		user-select: none;
-	}
-	.sortable:hover {
-		color: var(--text-accent);
-	}
-
-	.admin-table tbody tr:hover {
-		background: var(--bg-hover);
-	}
-
-	.td-date {
-		white-space: nowrap;
-		color: var(--text-muted);
-	}
-
-	.td-num {
-		text-align: center;
-		font-family: var(--font-mono);
-		font-size: 0.8rem;
-	}
-
-	.td-actions {
-		white-space: nowrap;
-		display: flex;
-		gap: 0.3rem;
-	}
-
-	/* Role badge */
 	.role-badge {
 		display: inline-block;
 		padding: 1px 7px;
@@ -1277,25 +1054,14 @@
 		color: var(--text-muted);
 		border: 1px solid var(--border);
 	}
-
 	.role-admin {
 		background: color-mix(in srgb, var(--text-accent) 15%, transparent);
 		color: var(--text-accent);
 		border-color: var(--text-accent);
 	}
 
-	/* Active dot */
-	.active-dot {
-		display: inline-block;
-		width: 8px;
-		height: 8px;
-		border-radius: 50%;
-		background: var(--color-danger);
-	}
-
-	.active-yes {
-		background: var(--color-success);
-	}
+	.active-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--color-danger); }
+	.active-yes { background: var(--color-success); }
 
 	/* ── Pagination ── */
 	.pagination {
@@ -1305,20 +1071,11 @@
 		gap: 0.75rem;
 		padding: 0.75rem 0;
 	}
+	.page-info { font-family: var(--font-ui); font-size: 0.75rem; color: var(--text-muted); }
 
-	.page-info {
-		font-family: var(--font-ui);
-		font-size: 0.75rem;
-		color: var(--text-muted);
-	}
+	.btn-dimmed { opacity: 0.35; cursor: not-allowed; }
 
-	/* Last-admin guard */
-	.btn-dimmed {
-		opacity: 0.35;
-		cursor: not-allowed;
-	}
-
-	/* ── Delete / Clear modals ── */
+	/* ── Modals ── */
 	.modal-backdrop {
 		position: fixed;
 		inset: 0;
@@ -1328,33 +1085,10 @@
 		justify-content: center;
 		z-index: 100;
 	}
-
-	.modal {
-		max-width: 400px;
-		width: 90%;
-	}
-
-	.modal h3 {
-		font-family: var(--font-display);
-		font-size: 1rem;
-		color: var(--color-danger);
-		margin-bottom: 0.5rem;
-	}
-
-	.modal p {
-		font-family: var(--font-ui);
-		font-size: 0.88rem;
-		color: var(--text-muted);
-		margin-bottom: 1rem;
-		line-height: 1.5;
-	}
-
-	.modal-actions {
-		display: flex;
-		gap: 0.5rem;
-		justify-content: flex-end;
-	}
-
+	.modal { max-width: 400px; width: 90%; }
+	.modal h3 { font-family: var(--font-display); font-size: 1rem; color: var(--color-danger); margin-bottom: 0.5rem; }
+	.modal p { font-family: var(--font-ui); font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.5; }
+	.modal-actions { display: flex; gap: 0.5rem; justify-content: flex-end; }
 	.modal-warning {
 		font-size: 0.8rem;
 		color: var(--color-danger);
@@ -1364,42 +1098,14 @@
 		padding: 8px 12px;
 		margin-top: 0.25rem;
 	}
+	.maint-modal-title { color: var(--color-warning) !important; }
 
 	/* ── Logs tab ── */
-	.logs-toolbar {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 0.5rem;
-		margin-bottom: 0.75rem;
-		flex-wrap: wrap;
-	}
-
-	.logs-file-btns,
-	.logs-line-btns {
-		display: flex;
-		gap: 0.3rem;
-		flex-wrap: wrap;
-	}
-
-	.logs-right {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
-
-	.logs-unavailable {
-		font-family: var(--font-ui);
-		font-size: 0.82rem;
-		color: var(--text-dimmer);
-		text-align: center;
-		padding: 2rem;
-	}
-	.logs-unavailable code {
-		font-family: var(--font-mono);
-		font-size: 0.8em;
-		color: var(--text-accent);
-	}
+	.logs-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+	.logs-file-btns, .logs-line-btns { display: flex; gap: 0.3rem; flex-wrap: wrap; }
+	.logs-right { display: flex; align-items: center; gap: 0.5rem; }
+	.logs-unavailable { font-family: var(--font-ui); font-size: 0.82rem; color: var(--text-dimmer); text-align: center; padding: 2rem; }
+	.logs-unavailable code { font-family: var(--font-mono); font-size: 0.8em; color: var(--text-accent); }
 
 	.log-output {
 		background: var(--bg-inset);
@@ -1411,113 +1117,75 @@
 		font-size: 0.72rem;
 		line-height: 1.5;
 	}
-
-	.log-row {
-		display: flex;
-		align-items: baseline;
-		gap: 0.5rem;
-		padding: 0.18rem 0.6rem;
-		cursor: pointer;
-		border-bottom: 1px solid var(--border);
-		color: var(--text);
-		border-left: 2px solid transparent;
-	}
-	.log-row:hover    { background: var(--bg-hover); }
+	.log-row { display: flex; align-items: baseline; gap: 0.5rem; padding: 0.18rem 0.6rem; cursor: pointer; border-bottom: 1px solid var(--border); color: var(--text); border-left: 2px solid transparent; }
+	.log-row:hover { background: var(--bg-hover); }
 	.log-row.expanded { background: var(--bg-control); }
-	.log-row.log-error,
-	.log-row.log-fatal { border-left-color: var(--color-danger); }
-	.log-row.log-warn  { border-left-color: var(--color-warning); }
-
-	.log-ts {
-		color: var(--text-dimmer);
-		flex-shrink: 0;
-		width: 14ch;
-		text-align: right;
-		white-space: nowrap;
-	}
-
-	.log-level {
-		flex-shrink: 0;
-		width: 5ch;
-		text-align: center;
-		font-weight: 700;
-		font-size: 0.65rem;
-		letter-spacing: 0.04em;
-		border-radius: 3px;
-		padding: 0 3px;
-	}
+	.log-row.log-error, .log-row.log-fatal { border-left-color: var(--color-danger); }
+	.log-row.log-warn { border-left-color: var(--color-warning); }
+	.log-ts { color: var(--text-dimmer); flex-shrink: 0; width: 14ch; text-align: right; white-space: nowrap; }
+	.log-level { flex-shrink: 0; width: 5ch; text-align: center; font-weight: 700; font-size: 0.65rem; letter-spacing: 0.04em; border-radius: 3px; padding: 0 3px; }
 	.log-level-info  { color: var(--text-accent);   background: color-mix(in srgb, var(--text-accent)  12%, transparent); }
 	.log-level-warn  { color: var(--color-warning); background: color-mix(in srgb, var(--color-warning) 12%, transparent); }
 	.log-level-error { color: var(--color-danger);  background: color-mix(in srgb, var(--color-danger)  12%, transparent); }
 	.log-level-fatal { color: var(--color-danger);  background: color-mix(in srgb, var(--color-danger)  20%, transparent); }
 	.log-level-debug { color: var(--text-dimmer);   background: color-mix(in srgb, var(--text-dimmer)   12%, transparent); }
 	.log-level-trace { color: var(--text-dimmer);   background: color-mix(in srgb, var(--text-dimmer)    8%, transparent); }
-
-	.log-msg {
-		flex: 1;
-		color: var(--text);
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-
-	.log-extras {
-		display: flex;
-		gap: 0.6rem;
-		flex-shrink: 0;
-		color: var(--text-dimmer);
-	}
-	.log-kv  { white-space: nowrap; }
+	.log-msg { flex: 1; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	.log-extras { display: flex; gap: 0.6rem; flex-shrink: 0; color: var(--text-dimmer); }
+	.log-kv { white-space: nowrap; }
 	.log-key { color: var(--color-success); }
 	.log-val { color: var(--text-accent); }
 	.log-more { color: var(--text-dimmer); }
-
-	.log-raw {
-		margin: 0;
-		padding: 0.5rem 0.6rem 0.5rem 14ch;
-		background: var(--bg-control);
-		color: var(--text-muted);
-		font-size: 0.68rem;
-		white-space: pre-wrap;
-		word-break: break-all;
-		border-bottom: 1px solid var(--border);
-	}
-
-	.logs-search-row {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		margin-bottom: 0.5rem;
-	}
-
+	.log-raw { margin: 0; padding: 0.5rem 0.6rem 0.5rem 14ch; background: var(--bg-control); color: var(--text-muted); font-size: 0.68rem; white-space: pre-wrap; word-break: break-all; border-bottom: 1px solid var(--border); }
+	.logs-search-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
 	.logs-search {
 		flex: 1;
 		padding: 0.35rem 0.6rem;
 		font-family: var(--font-ui);
 		font-size: 0.78rem;
 		background: var(--bg-inset);
-		color: var(--text-body);
 		border: 1px solid var(--border);
 		border-radius: 4px;
+		color: var(--text);
 		outline: none;
 	}
-	.logs-search:focus { border-color: var(--text-accent); }
-	.logs-search::placeholder { color: var(--text-dimmer); }
+	.logs-search:focus { border-color: var(--border-mid); }
+	.logs-match-count { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dimmer); }
 
-	.logs-match-count {
+	/* ── Maintenance / Registration ── */
+	.maint-panels { display: flex; flex-direction: column; gap: 0; }
+	.maint-divider { height: 1px; background: var(--border); margin: 1.5rem 0; max-width: 480px; }
+	.maint-section-heading {
 		font-family: var(--font-ui);
-		font-size: 0.75rem;
+		font-size: 0.65rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
 		color: var(--text-dimmer);
-		white-space: nowrap;
+		margin: 0 0 0.75rem;
 	}
-
-		.btn-warn {
-		background: #92400e;
-		color: #fde68a;
-		border: 1px solid #b45309;
+	.maint-panel { display: flex; flex-direction: column; gap: 1rem; max-width: 480px; }
+	.maint-action-btn { align-self: flex-start; }
+	.maint-status-row { display: flex; align-items: center; gap: 0.6rem; }
+	.maint-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--color-success); flex-shrink: 0; }
+	.maint-dot-active { background: var(--color-danger); box-shadow: 0 0 6px var(--color-danger); }
+	.maint-status-label { font-family: var(--font-ui); font-size: 0.85rem; font-weight: 600; color: var(--text-muted); }
+	.maint-timer { font-family: var(--font-mono); font-size: 0.8rem; color: var(--color-warning); }
+	.maint-active-info { background: var(--bg-inset); border: 1px solid var(--border); border-radius: 4px; padding: 0.75rem; }
+	.maint-msg { font-family: var(--font-ui); font-size: 0.82rem; color: var(--text-muted); margin: 0 0 0.25rem; }
+	.maint-shutdown { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-dimmer); margin: 0; }
+	.maint-form { display: flex; flex-direction: column; gap: 0.75rem; }
+	.maint-label { display: flex; flex-direction: column; gap: 0.3rem; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text-muted); }
+	.maint-input {
+		padding: 0.4rem 0.6rem;
+		font-family: var(--font-ui);
+		font-size: 0.82rem;
+		background: var(--bg-inset);
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		color: var(--text);
+		outline: none;
 	}
-	.btn-warn:hover {
-		background: #b45309;
-		color: #fff;
-	}
+	.maint-input:focus { border-color: var(--border-mid); }
+	.maint-input-num { width: 100px; }
 </style>

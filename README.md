@@ -23,7 +23,7 @@ I'm not ready to release anything yet but you can see some of the the workings i
 | **API** | Fastify 5, TypeScript, Zod validation |
 | **Database** | PostgreSQL 16 with Row-Level Security (Drizzle ORM) |
 | **Cache** | Redis (Valkey) — rate limiting, maintenance mode |
-| **Auth** | JWT RS256 (15-min access + 30-day rotating refresh tokens) |
+| **Auth** | JWT RS256 (15-min access + 30-day rotating refresh tokens, auto-refresh in hooks) |
 | **Process** | PM2 (cluster mode for API, fork for web) |
 | **Proxy** | Nginx with TLS (Let's Encrypt), rate limiting |
 
@@ -139,10 +139,12 @@ npm run dev:web   # Web on :5173
 - Per-character initiative badges (sword/shield icons) on GCB and character sheet
 - Automatically clears when foe is deselected
 
-### Admin Dashboard
-- **Users tab** — sortable user table with pagination, role management (promote/demote), delete
-- **Audit Log tab** — searchable event log, admin email attribution, event type coloring, clear log
+### Admin Panel *(admin users only)*
+Integrated into the home page as a dedicated **Admin** tab (screwdriver-wrench icon, only visible to admin-role users).
+- **Users tab** — sortable user table with pagination, role management (promote/demote/suspend), user delete
+- **Logs tab** — live PM2 server log viewer (API/web stdout & stderr), filter, expandable JSON rows
 - **Maintenance tab** — enable/disable maintenance mode with countdown, message, session revocation
+- **Registration tab** — lock/unlock new account creation with a custom message
 
 ### Maintenance Mode
 - Redis-backed system maintenance state shared across instances
@@ -151,6 +153,11 @@ npm run dev:web   # Web on :5173
 - Revokes all refresh tokens to force logoff
 - Admin bypass for login during maintenance
 - Full audit logging of maintenance events
+
+### Registration Lock
+- Admin can disable new user registration without triggering full maintenance mode
+- Locked state shows a custom message on the `/register` page with a link to sign in
+- Backed by Redis — survives server restarts
 
 ## Scripts
 
@@ -194,7 +201,7 @@ Feature docs are in the `docs/` directory:
 
 ## Credits
 
-- **[Ironsworn](https://tomkinpress.com/)** by Shawn Tomkin — released under CC BY 4.0
+- **[Ironsworn](https://ironswornrpg.com/)** and **Ironsworn: Delve** by Shawn Tomkin — licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). Game data sourced from [Datasworn](https://github.com/rsek/datasworn) by rsek.
 - **[game-icons.net](https://game-icons.net)** — game-themed SVG icons (CC BY 3.0)
 - **[Font Awesome](https://fontawesome.com)** — UI icons (Free tier, CC BY 4.0)
 

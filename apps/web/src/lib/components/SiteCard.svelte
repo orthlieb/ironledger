@@ -7,19 +7,15 @@
 	 * Emits log entries for all significant actions.
 	 */
 
-	import type { Site, VowDifficulty, DelveTheme, DelveDomain } from '$lib/types.js';
+	import type { Site, VowDifficulty } from '$lib/types.js';
 	import {
 		EXPEDITION_MARK_TICKS,
 		DENIZEN_CELLS,
 	} from '$lib/types.js';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
-	import { loadDelveData, buildCombinedTable } from '$lib/delveStore.svelte.js';
-	import { findFoeByName, RANK_COLORS } from '$lib/foeStore.svelte.js';
-	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
+	import { RANK_COLORS } from '$lib/foeStore.svelte.js';
 	import ProgressTrack    from '$lib/components/ProgressTrack.svelte';
-	import DelveTableDialog from '$lib/components/DelveTableDialog.svelte';
 	import FoePickerDialog  from '$lib/components/FoePickerDialog.svelte';
-	import { onMount } from 'svelte';
 
 	import trashSvg       from '$icons/trash-solid-full.svg?raw';
 	import checkSvg       from '$icons/circle-check-solid-full.svg?raw';
@@ -51,9 +47,7 @@
 	let collapsed          = $state(false);
 	let denizensCollapsed  = $state(false);
 	let deleteDialogRef    = $state<{ open(): void; close(): void } | null>(null);
-	let highlightedCell    = $state(-1);
 	let denizenPickIndex   = $state(-1);
-	let rollingDenizen     = $state(false);
 	let editingName        = $state(false);
 	let nameInputEl        = $state<HTMLInputElement | null>(null);
 	let nameBeforeEdit     = '';
@@ -88,15 +82,7 @@
 		if (focusName) { nameBeforeEdit = expedition.name; editingName = true; }
 	});
 
-	// "Add Foe?" dialog state
-	let addFoeDialogRef    = $state<{ open(): void } | null>(null);
-	let addFoeName         = $state('');
-
-	// Dialog refs
-	let delveTableRef = $state<{ open(t: string, tbl: import('$lib/oracleStore.svelte.js').OracleEntry[]): void; close(): void } | null>(null);
 	let foePickerRef  = $state<{ openForDenizen(): Promise<void> } | null>(null);
-
-	onMount(() => { loadDelveData(); });
 
 	// ---------------------------------------------------------------------------
 	// Derived
@@ -193,21 +179,6 @@
 	}
 
 	// ---------------------------------------------------------------------------
-	// Features / Dangers dialogs
-	// ---------------------------------------------------------------------------
-	function openFeatures() {
-		if (!hasThemeAndDomain) return;
-		const table = buildCombinedTable(expedition.theme as DelveTheme, expedition.domain as DelveDomain, 'features');
-		delveTableRef?.open(`Features: ${expedition.theme} + ${expedition.domain}`, table);
-	}
-
-	function openDangers() {
-		if (!hasThemeAndDomain) return;
-		const table = buildCombinedTable(expedition.theme as DelveTheme, expedition.domain as DelveDomain, 'dangers');
-		delveTableRef?.open(`Dangers: ${expedition.theme} + ${expedition.domain}`, table);
-	}
-
-	// ---------------------------------------------------------------------------
 	// Denizen foe picker
 	// ---------------------------------------------------------------------------
 	function openDenizenPicker(index: number) {
@@ -220,49 +191,6 @@
 		handleDenizenChange(denizenPickIndex, foeName);
 		logLine(`<div>Denizen ${denizenPickIndex + 1} set to <strong>${foeName}</strong> (foe picker)</div>`);
 		denizenPickIndex = -1;
-	}
-
-	// ---------------------------------------------------------------------------
-	// Roll denizen (d100) — with foe matching
-	// ---------------------------------------------------------------------------
-	async function rollDenizen() {
-		if (rollingDenizen) return;
-		rollingDenizen = true;
-
-		const roll = Math.floor(Math.random() * 100) + 1;
-		const cellIndex = DENIZEN_CELLS.findIndex(c => roll >= c.low && roll <= c.high);
-		highlightedCell = cellIndex;
-		const cell = DENIZEN_CELLS[cellIndex];
-		const denizen = expedition.denizens[cellIndex];
-
-		// d100 dice animation
-		const tensV = Math.floor(roll % 100 / 10) || 10;
-		const onesV = roll % 10 || 10;
-		await animateDice([
-			{ sides: 10, value: tensV, color: DIE_BLACK },
-			{ sides: 10, value: onesV, color: DIE_WHITE },
-		]);
-
-		logLine(`<div>Rolled d100: <strong>${roll}</strong> → ${cell.label} (${cell.range})${denizen ? `: <strong>${denizen}</strong>` : ''}</div>`);
-
-		// Check if denizen name matches a foe in the catalogue
-		if (denizen && findFoeByName(denizen)) {
-			addFoeName = denizen;
-			addFoeDialogRef?.open();
-		}
-
-		// Clear highlight after 4s
-		setTimeout(() => { highlightedCell = -1; }, 4000);
-		rollingDenizen = false;
-	}
-
-	function confirmAddFoe() {
-		if (addFoeName) onAddEncounter?.(addFoeName);
-		addFoeName = '';
-	}
-
-	function cancelAddFoe() {
-		addFoeName = '';
 	}
 
 	// ---------------------------------------------------------------------------
@@ -394,27 +322,6 @@
 				></textarea>
 			</div>
 
-			<!-- Oracle + Denizen roll buttons -->
-			<div class="sc-oracle-row">
-				<button
-					class="btn btn-sm sc-oracle-btn sc-oracle-btn--features"
-					onclick={openFeatures}
-					disabled={!hasThemeAndDomain}
-					title={hasThemeAndDomain ? 'Roll features table' : 'Set theme and domain first'}
-				>Roll Feature</button>
-				<button
-					class="btn btn-sm sc-oracle-btn sc-oracle-btn--dangers"
-					onclick={openDangers}
-					disabled={!hasThemeAndDomain}
-					title={hasThemeAndDomain ? 'Roll dangers table' : 'Set theme and domain first'}
-				>Roll Danger</button>
-				<button
-					class="btn btn-sm sc-oracle-btn sc-oracle-btn--denizen"
-					onclick={rollDenizen}
-					title="Roll d100 for a denizen"
-				>Roll Denizen</button>
-			</div>
-
 			<!-- Denizens sub-section (collapsible) -->
 			<div class="sc-section">
 				<div class="sc-section-header">
@@ -431,7 +338,6 @@
 						{#each DENIZEN_CELLS as cell, i (i)}
 							<div
 								class="sc-denizen-cell"
-								class:sc-denizen-highlight={highlightedCell === i}
 							>
 								<div class="sc-denizen-meta">
 									<span class="sc-denizen-freq">{cell.label}</span>
@@ -497,7 +403,6 @@
 </div>
 
 <!-- Dialogs (always mounted, controlled via refs) -->
-<DelveTableDialog bind:this={delveTableRef} />
 <FoePickerDialog
 	bind:this={foePickerRef}
 	onSelect={() => {}}
@@ -511,20 +416,6 @@
 	confirmLabel="Remove"
 >
 	<p style="font-family: var(--font-ui); font-size: 0.82rem; color: var(--text-muted); margin: 0; line-height: 1.5;">Remove this site from your expeditions?</p>
-</ConfirmDialog>
-
-<ConfirmDialog
-	bind:this={addFoeDialogRef}
-	title="Add Foe?"
-	confirmLabel="Add Foe"
-	confirmClass="btn-primary"
-	accentColor="var(--text-accent)"
-	onconfirm={confirmAddFoe}
-	oncancel={cancelAddFoe}
->
-	<p style="font-family: var(--font-ui); font-size: 0.82rem; color: var(--text-muted); margin: 0; line-height: 1.5;">
-		<strong>{addFoeName}</strong> is in the foe catalogue. Add as an encounter?
-	</p>
 </ConfirmDialog>
 
 <style>
@@ -800,10 +691,6 @@
 		transition: border-color 0.3s, background 0.3s;
 	}
 
-	.sc-denizen-cell.sc-denizen-highlight {
-		border-color: var(--text-accent);
-		background: color-mix(in srgb, var(--text-accent) 12%, transparent);
-	}
 
 	.sc-denizen-meta {
 		display: flex;
@@ -876,46 +763,6 @@
 		color: var(--text);
 	}
 	.btn-progress:disabled { opacity: 0.35; cursor: not-allowed; }
-
-	/* ── Oracle buttons row ─────────────────────────────────────────────── */
-	.sc-oracle-row {
-		display: flex;
-		gap: 6px;
-		align-self: flex-end;
-		flex-shrink: 0;
-	}
-
-	.sc-oracle-btn {
-		font-size: 0.65rem;
-		padding: 3px 10px;
-		font-weight: 600;
-		letter-spacing: 0.04em;
-	}
-	.sc-oracle-btn--features {
-		border-color: rgba(168, 85, 247, 0.4);
-		color: #a855f7;
-	}
-	.sc-oracle-btn--features:hover:not(:disabled) {
-		background: rgba(168, 85, 247, 0.12);
-	}
-	.sc-oracle-btn--dangers {
-		border-color: rgba(239, 68, 68, 0.4);
-		color: #ef4444;
-	}
-	.sc-oracle-btn--dangers:hover:not(:disabled) {
-		background: rgba(239, 68, 68, 0.12);
-	}
-	.sc-oracle-btn--denizen {
-		border-color: rgba(52, 211, 153, 0.4);
-		color: #34d399;
-	}
-	.sc-oracle-btn--denizen:hover:not(:disabled) {
-		background: rgba(52, 211, 153, 0.12);
-	}
-	.sc-oracle-btn:disabled {
-		opacity: 0.35;
-		cursor: not-allowed;
-	}
 
 	/* ── Denizen input row (input + pick button) ──────────────────────── */
 	.sc-denizen-input-row {

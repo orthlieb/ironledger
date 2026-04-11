@@ -30,6 +30,7 @@ import {
   sendPasswordResetEmail,
 } from '../lib/mailer.js';
 import { getStatus as getMaintenanceStatus } from './maintenanceService.js';
+import { getStatus as getRegistrationLockStatus } from './registrationLockService.js';
 import { autoLockAccount } from './adminService.js';
 import { redis } from '../server.js';
 import { config } from '../config.js';
@@ -88,6 +89,16 @@ export async function register(input: RegisterInput): Promise<void> {
   const maint = await getMaintenanceStatus();
   if (maint.enabled) {
     throw new AuthError('System is under maintenance. Please try again later.', 'MAINTENANCE_MODE', 503);
+  }
+
+  // Block registration when locked by admin
+  const regLock = await getRegistrationLockStatus();
+  if (regLock.locked) {
+    throw new AuthError(
+      regLock.message ?? 'New registrations are currently disabled.',
+      'REGISTRATION_LOCKED',
+      403,
+    );
   }
 
   const email = input.email.toLowerCase().trim();
