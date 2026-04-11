@@ -152,6 +152,14 @@
 	let newSiteTheme      = $state<string>('');
 	let newSiteDomain     = $state<string>('');
 
+	// ── Change theme/domain dialogs (from interactive log links) ──────────────
+	let changeThemeDialogRef  = $state<{ open(): void; close(): void } | null>(null);
+	let changeDomainDialogRef = $state<{ open(): void; close(): void } | null>(null);
+	let changeThemeExpId      = $state('');
+	let changeDomainExpId     = $state('');
+	let changeThemeValue      = $state<string>('');
+	let changeDomainValue     = $state<string>('');
+
 	// ── Initiative state (per-character: 0=none, 1=character, 2=foe) ────────
 	let initiativeMap = $state<Record<string, number>>({});
 	const initiative = $derived(activeCharId ? (initiativeMap[activeCharId] ?? 0) : 0);
@@ -559,6 +567,40 @@
 	}
 
 	function cancelAddSite() { /* ConfirmDialog handles close */ }
+
+	function handleChangeTheme(expId: string) {
+		const exp = expeditions.find(e => e.id === expId);
+		if (!exp || exp.type !== 'site') return;
+		changeThemeExpId  = expId;
+		changeThemeValue  = (exp as import('$lib/types.js').Site).theme;
+		changeThemeDialogRef?.open();
+	}
+
+	function handleChangeDomain(expId: string) {
+		const exp = expeditions.find(e => e.id === expId);
+		if (!exp || exp.type !== 'site') return;
+		changeDomainExpId  = expId;
+		changeDomainValue  = (exp as import('$lib/types.js').Site).domain;
+		changeDomainDialogRef?.open();
+	}
+
+	async function confirmChangeTheme() {
+		const exp = expeditions.find(e => e.id === changeThemeExpId);
+		if (!exp || exp.type !== 'site' || !changeThemeValue) return;
+		const updated = { ...exp, theme: changeThemeValue } as import('$lib/types.js').Site;
+		await updateExpedition(updated);
+		appendLog(SESSION_LOG_ID, `Site — ${exp.name}`,
+			`<div>Changed theme to <strong>${changeThemeValue}</strong>.</div>`);
+	}
+
+	async function confirmChangeDomain() {
+		const exp = expeditions.find(e => e.id === changeDomainExpId);
+		if (!exp || exp.type !== 'site' || !changeDomainValue) return;
+		const updated = { ...exp, domain: changeDomainValue } as import('$lib/types.js').Site;
+		await updateExpedition(updated);
+		appendLog(SESSION_LOG_ID, `Site — ${exp.name}`,
+			`<div>Changed domain to <strong>${changeDomainValue}</strong>.</div>`);
+	}
 
 	async function handleExpeditionChange(exp: Expedition) {
 		await updateExpedition(exp);
@@ -1712,6 +1754,8 @@
 							onProgressLink={handleProgressLink}
 							onInitiativeLink={(val) => { if (activeCharId) initiativeMap[activeCharId] = val === 'character' ? 1 : 2; }}
 							onMenaceLink={handleMenaceLink}
+							onChangeTheme={handleChangeTheme}
+							onChangeDomain={handleChangeDomain}
 							onVanquishFoe={async () => {
 								// Mark the active foe vanquished if one is selected.
 								if (activeFoeId) {
@@ -1821,6 +1865,44 @@
 			Theme and domain are required to discover a site.
 		</p>
 	{/if}
+</ConfirmDialog>
+
+<ConfirmDialog
+	bind:this={changeThemeDialogRef}
+	title="Change Theme"
+	confirmLabel="Change Theme"
+	confirmClass="btn-primary"
+	cancelLabel="Cancel"
+	accentColor="var(--color-momentum)"
+	confirmDisabled={!changeThemeValue}
+	onconfirm={confirmChangeTheme}
+>
+	<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+		<label for="ct-theme" style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); width: 56px; flex-shrink: 0;">Theme <span style="color: var(--color-danger);">*</span></label>
+		<select id="ct-theme" style="flex: 1; font-family: var(--font-ui); font-size: 0.75rem; background: var(--bg-control); border: 1px solid var(--border); border-radius: 4px; color: var(--text); padding: 3px 6px; outline: none;" bind:value={changeThemeValue}>
+			<option value="" disabled>Select a theme…</option>
+			{#each DELVE_THEMES as t (t)}<option value={t}>{t}</option>{/each}
+		</select>
+	</div>
+</ConfirmDialog>
+
+<ConfirmDialog
+	bind:this={changeDomainDialogRef}
+	title="Change Domain"
+	confirmLabel="Change Domain"
+	confirmClass="btn-primary"
+	cancelLabel="Cancel"
+	accentColor="var(--color-momentum)"
+	confirmDisabled={!changeDomainValue}
+	onconfirm={confirmChangeDomain}
+>
+	<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+		<label for="cd-domain" style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmed); width: 56px; flex-shrink: 0;">Domain <span style="color: var(--color-danger);">*</span></label>
+		<select id="cd-domain" style="flex: 1; font-family: var(--font-ui); font-size: 0.75rem; background: var(--bg-control); border: 1px solid var(--border); border-radius: 4px; color: var(--text); padding: 3px 6px; outline: none;" bind:value={changeDomainValue}>
+			<option value="" disabled>Select a domain…</option>
+			{#each DELVE_DOMAINS as d (d)}<option value={d}>{d}</option>{/each}
+		</select>
+	</div>
 </ConfirmDialog>
 
 <style>

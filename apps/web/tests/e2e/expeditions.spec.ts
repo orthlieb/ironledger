@@ -101,6 +101,87 @@ test.describe('Expeditions tab', () => {
 		await expect(expCards).toHaveCount(countBefore - 1, { timeout: 5000 });
 	});
 
+	// ── Change theme / domain ─────────────────────────────────────────────────
+
+	/** Helper: ensure a site card is visible and expanded, return its first locator. */
+	async function ensureSiteCard(page: import('@playwright/test').Page) {
+		let siteCards = page.locator('.char-list--expeditions .char-card');
+		if (await siteCards.count() === 0 ||
+		    await page.locator('.sc-theme-btn').count() === 0) {
+			await page.click('.char-toolbar button:has-text("+ Site")');
+			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
+			await page.selectOption('dialog.confirm-modal[open] #ns-theme',  { index: 1 });
+			await page.selectOption('dialog.confirm-modal[open] #ns-domain', { index: 1 });
+			await page.locator('dialog.confirm-modal[open] button:has-text("Discover Site")').click();
+			await expect(page.locator('.sc-theme-btn').first()).toBeVisible({ timeout: 5000 });
+		}
+		siteCards = page.locator('.char-list--expeditions .char-card');
+		const card = siteCards.first();
+		// Expand it if collapsed
+		if (await page.locator('.sc-theme-btn').first().isVisible({ timeout: 1000 }).catch(() => false) === false) {
+			await card.click();
+		}
+		return card;
+	}
+
+	test('Change Theme button opens dialog pre-filled with current theme', async ({ page }) => {
+		await ensureSiteCard(page);
+		const themeBadge = page.locator('.sc-badge--theme').first();
+		const currentTheme = await themeBadge.textContent();
+
+		await page.locator('.sc-theme-btn:has-text("Change Theme")').first().click();
+		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
+		await expect(page.locator('dialog.confirm-modal[open] .cm-title')).toContainText('Change Theme');
+
+		const selectVal = await page.locator('dialog.confirm-modal[open] select').inputValue();
+		expect(selectVal).toBe(currentTheme?.trim());
+		await page.keyboard.press('Escape');
+	});
+
+	test('Change Domain button opens dialog pre-filled with current domain', async ({ page }) => {
+		await ensureSiteCard(page);
+		const domainBadge = page.locator('.sc-badge--domain').first();
+		const currentDomain = await domainBadge.textContent();
+
+		await page.locator('.sc-theme-btn:has-text("Change Domain")').first().click();
+		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
+		await expect(page.locator('dialog.confirm-modal[open] .cm-title')).toContainText('Change Domain');
+
+		const selectVal = await page.locator('dialog.confirm-modal[open] select').inputValue();
+		expect(selectVal).toBe(currentDomain?.trim());
+		await page.keyboard.press('Escape');
+	});
+
+	test('confirming Change Theme updates the theme badge and logs the change', async ({ page }) => {
+		await ensureSiteCard(page);
+
+		await page.locator('.sc-theme-btn:has-text("Change Theme")').first().click();
+		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
+
+		// Pick the last option to ensure it differs from whatever index 1 was
+		await page.locator('dialog.confirm-modal[open] select').selectOption({ index: 5 });
+		const newTheme = await page.locator('dialog.confirm-modal[open] select').inputValue();
+		await page.locator('dialog.confirm-modal[open] button:has-text("Change Theme")').click();
+		await expect(page.locator('dialog.confirm-modal[open]')).not.toBeVisible({ timeout: 3000 });
+
+		// Badge updates reactively
+		await expect(page.locator('.sc-badge--theme').first()).toHaveText(newTheme, { timeout: 5000 });
+	});
+
+	test('confirming Change Domain updates the domain badge and logs the change', async ({ page }) => {
+		await ensureSiteCard(page);
+
+		await page.locator('.sc-theme-btn:has-text("Change Domain")').first().click();
+		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
+
+		await page.locator('dialog.confirm-modal[open] select').selectOption({ index: 5 });
+		const newDomain = await page.locator('dialog.confirm-modal[open] select').inputValue();
+		await page.locator('dialog.confirm-modal[open] button:has-text("Change Domain")').click();
+		await expect(page.locator('dialog.confirm-modal[open]')).not.toBeVisible({ timeout: 3000 });
+
+		await expect(page.locator('.sc-badge--domain').first()).toHaveText(newDomain, { timeout: 5000 });
+	});
+
 	// ── Cleanup ───────────────────────────────────────────────────────────────
 
 	test('cleanup: delete all expeditions', async ({ page }) => {

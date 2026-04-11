@@ -15,7 +15,7 @@ setup('authenticate as dev user', async ({ page }) => {
 	const res = await apiCtx.post('/api/v1/auth/login', {
 		data: {
 			email:        'test@ironledger.local',
-			password:     'testpassword123!',
+			password:     'IronLedgerTest2024!',
 			captchaToken: 'dev-bypass',
 		},
 	});

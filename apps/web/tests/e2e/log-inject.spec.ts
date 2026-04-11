@@ -395,6 +395,139 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		await page.keyboard.press('Escape');
 	});
 
+	// ── Change theme / domain links ───────────────────────────────────────────
+
+	/**
+	 * Ensure a site expedition exists and return its ID.
+	 * The ID is read from the SiteCard's change-theme dialog select, whose
+	 * id attribute is `sc-ct-theme-{expedition.id}`.
+	 */
+	async function ensureSiteExpedition(page: Page): Promise<string> {
+		await page.click('.tab-btn[data-tab="expeditions"]');
+		await expect(page.locator('.char-toolbar button:has-text("+ Site")')).toBeVisible({ timeout: 5000 });
+
+		if (await page.locator('.sc-theme-btn').count() === 0) {
+			await page.click('.char-toolbar button:has-text("+ Site")');
+			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
+			await page.selectOption('dialog.confirm-modal[open] #ns-theme',  { index: 1 });
+			await page.selectOption('dialog.confirm-modal[open] #ns-domain', { index: 1 });
+			await page.locator('dialog.confirm-modal[open] button:has-text("Discover Site")').click();
+			await expect(page.locator('.sc-theme-btn').first()).toBeVisible({ timeout: 5000 });
+		}
+
+		// Extract ID from `sc-ct-theme-{id}` select attribute in the SiteCard dialog
+		const selectId = await page.locator('select[id^="sc-ct-theme-"]').first().getAttribute('id') ?? '';
+		return selectId.replace('sc-ct-theme-', '');
+	}
+
+	test('change-theme-link opens Change Theme dialog and strikes through on click', async ({ page }) => {
+		await goToAdventure(page);
+		const expId = await ensureSiteExpedition(page);
+
+		// Re-navigate to adventure after ensureSiteExpedition may have changed tabs
+		await page.click('.tab-btn[data-tab="adventure"]');
+		await expect(page.locator('.log-entries')).toBeVisible({ timeout: 5000 });
+
+		// Skip if we couldn't get an expedition ID — site may not exist in this env
+		if (!expId) {
+			test.skip();
+			return;
+		}
+
+		const id = crypto.randomUUID();
+		await inject(page, 'Features: Ancient + Barrow', `
+			<div class="roll-line">Roll: d100 → 99</div>
+			<div>Result: <strong>You transition into a new theme</strong>
+				<a class="change-theme-link" data-expedition-id="${expId}" href="#">Change Theme ↗</a>
+			</div>
+		`, id);
+
+		const entry = entryById(page, id);
+		const link = entry.locator('a.change-theme-link');
+		await expect(link).toBeVisible({ timeout: 3000 });
+
+		await link.click();
+
+		// Dialog opens
+		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
+		await expect(page.locator('dialog.confirm-modal[open] .cm-title')).toContainText('Change Theme');
+
+		// Link is struck through
+		await expect(entry.locator('s.resource-spent')).toBeVisible({ timeout: 3000 });
+		await expect(entry.locator('a.change-theme-link')).not.toBeVisible();
+
+		await page.keyboard.press('Escape');
+	});
+
+	test('change-domain-link opens Change Domain dialog and strikes through on click', async ({ page }) => {
+		await goToAdventure(page);
+		const expId = await ensureSiteExpedition(page);
+
+		await page.click('.tab-btn[data-tab="adventure"]');
+		await expect(page.locator('.log-entries')).toBeVisible({ timeout: 5000 });
+
+		if (!expId) {
+			test.skip();
+			return;
+		}
+
+		const id = crypto.randomUUID();
+		await inject(page, 'Features: Ancient + Barrow', `
+			<div class="roll-line">Roll: d100 → 100</div>
+			<div>Result: <strong>You transition into a new domain</strong>
+				<a class="change-domain-link" data-expedition-id="${expId}" href="#">Change Domain ↗</a>
+			</div>
+		`, id);
+
+		const entry = entryById(page, id);
+		const link = entry.locator('a.change-domain-link');
+		await expect(link).toBeVisible({ timeout: 3000 });
+
+		await link.click();
+
+		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
+		await expect(page.locator('dialog.confirm-modal[open] .cm-title')).toContainText('Change Domain');
+
+		await expect(entry.locator('s.resource-spent')).toBeVisible({ timeout: 3000 });
+		await expect(entry.locator('a.change-domain-link')).not.toBeVisible();
+
+		await page.keyboard.press('Escape');
+	});
+
+	test('confirming Change Theme from log link updates site theme badge', async ({ page }) => {
+		await goToAdventure(page);
+		const expId = await ensureSiteExpedition(page);
+
+		await page.click('.tab-btn[data-tab="adventure"]');
+		await expect(page.locator('.log-entries')).toBeVisible({ timeout: 5000 });
+
+		if (!expId) {
+			test.skip();
+			return;
+		}
+
+		const id = crypto.randomUUID();
+		await inject(page, 'Features: Ancient + Barrow', `
+			<div>Result: <strong>You transition into a new theme</strong>
+				<a class="change-theme-link" data-expedition-id="${expId}" href="#">Change Theme ↗</a>
+			</div>
+		`, id);
+
+		const entry = entryById(page, id);
+		await entry.locator('a.change-theme-link').click();
+		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
+
+		// Select a different theme (index 5)
+		await page.locator('dialog.confirm-modal[open] select').selectOption({ index: 5 });
+		const newTheme = await page.locator('dialog.confirm-modal[open] select').inputValue();
+		await page.locator('dialog.confirm-modal[open] button:has-text("Change Theme")').click();
+		await expect(page.locator('dialog.confirm-modal[open]')).not.toBeVisible({ timeout: 3000 });
+
+		// Verify the site card on the Expeditions tab shows the updated theme badge
+		await page.click('.tab-btn[data-tab="expeditions"]');
+		await expect(page.locator('.sc-badge--theme').first()).toHaveText(newTheme, { timeout: 5000 });
+	});
+
 	// ── Oracle link ───────────────────────────────────────────────────────────
 
 	test('oracle-link opens the oracles dialog', async ({ page }) => {

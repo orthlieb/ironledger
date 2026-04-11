@@ -21,7 +21,7 @@ import type { Page } from '@playwright/test';
 
 const API_BASE      = 'http://127.0.0.1:3000';
 const TEST_EMAIL    = 'test@ironledger.local';
-const TEST_PASSWORD = 'testpassword123!';
+const TEST_PASSWORD = 'IronLedgerTest2024!';
 
 // ── Auth helpers ──────────────────────────────────────────────────────────────
 

@@ -16,19 +16,21 @@
 	// ---------------------------------------------------------------------------
 	// Internal state
 	// ---------------------------------------------------------------------------
-	let dialogEl  = $state<HTMLDialogElement | null>(null);
-	let title     = $state('');
-	let table     = $state<OracleEntry[]>([]);
-	let rolling   = $state(false);
-	let rolledIdx = $state(-1);
+	let dialogEl     = $state<HTMLDialogElement | null>(null);
+	let title        = $state('');
+	let table        = $state<OracleEntry[]>([]);
+	let rolling      = $state(false);
+	let rolledIdx    = $state(-1);
+	let expeditionId = $state('');
 
 	// ---------------------------------------------------------------------------
 	// Public API
 	// ---------------------------------------------------------------------------
-	export function open(t: string, tbl: OracleEntry[]) {
-		title     = t;
-		table     = tbl;
-		rolledIdx = -1;
+	export function open(t: string, tbl: OracleEntry[], expId?: string) {
+		title        = t;
+		table        = tbl;
+		rolledIdx    = -1;
+		expeditionId = expId ?? '';
 		dialogEl?.showModal();
 	}
 
@@ -60,9 +62,15 @@
 		]);
 
 		const valueStr = typeof result.value === 'string' ? result.value : JSON.stringify(result.value);
+		let resultHtml = `<div>Result: <strong>${valueStr}</strong>`;
+		if (result.roll === 99 && expeditionId) {
+			resultHtml += ` <a class="change-theme-link" data-expedition-id="${expeditionId}" href="#">Change Theme ↗</a>`;
+		} else if (result.roll === 100 && expeditionId) {
+			resultHtml += ` <a class="change-domain-link" data-expedition-id="${expeditionId}" href="#">Change Domain ↗</a>`;
+		}
+		resultHtml += '</div>';
 		appendLog(SESSION_LOG_ID, title,
-			`<div class="roll-line">Roll: d100 → ${result.roll}</div>` +
-			`<div>Result: <strong>${valueStr}</strong></div>`);
+			`<div class="roll-line">Roll: d100 → ${result.roll}</div>` + resultHtml);
 
 		rolling = false;
 	}

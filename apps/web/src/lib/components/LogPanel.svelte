@@ -31,6 +31,8 @@
 		onInitiativeLink,
 		onMenaceLink,
 		onVanquishFoe,
+		onChangeTheme,
+		onChangeDomain,
 	}: {
 		ctx?:              DiceCtx | null;
 		onMoveLink?:       (moveId: string) => void;
@@ -39,6 +41,8 @@
 		onInitiativeLink?: (value: string) => void;
 		onMenaceLink?:     (value: number) => void;
 		onVanquishFoe?:    () => void;
+		onChangeTheme?:    (expeditionId: string) => void;
+		onChangeDomain?:   (expeditionId: string) => void;
 	} = $props();
 
 	// The log is global — no characterId prop needed.
@@ -541,6 +545,30 @@
 			onVanquishFoe?.();
 			return;
 		}
+
+		// ---- Change theme links ----
+		const changeThemeLink = target.closest('.change-theme-link') as HTMLElement | null;
+		if (changeThemeLink && !changeThemeLink.closest('.resource-spent')) {
+			e.preventDefault();
+			const expId   = changeThemeLink.dataset['expeditionId'] ?? '';
+			const entryId = changeThemeLink.closest('.log-entry')?.getAttribute('data-entry-id') ?? '';
+			if (!expId) return;
+			if (entryId) markLinkSpent(entryId, changeThemeLink);
+			onChangeTheme?.(expId);
+			return;
+		}
+
+		// ---- Change domain links ----
+		const changeDomainLink = target.closest('.change-domain-link') as HTMLElement | null;
+		if (changeDomainLink && !changeDomainLink.closest('.resource-spent')) {
+			e.preventDefault();
+			const expId   = changeDomainLink.dataset['expeditionId'] ?? '';
+			const entryId = changeDomainLink.closest('.log-entry')?.getAttribute('data-entry-id') ?? '';
+			if (!expId) return;
+			if (entryId) markLinkSpent(entryId, changeDomainLink);
+			onChangeDomain?.(expId);
+			return;
+		}
 	}
 
 	/** Selector covering all interactive link classes — used for touchend fast-tap. */
@@ -548,6 +576,7 @@
 		'.resource-link', '.move-link', '.oracle-link', '.initiative-link',
 		'.progress-link', '.debility-link', '.menace-link', '.vanquish-foe-link',
 		'.burn-momentum-link', '.xp-cost-link', '.failure-link',
+		'.change-theme-link', '.change-domain-link',
 	].join(', ');
 
 	function handleEntriesTouchStart(e: TouchEvent) {

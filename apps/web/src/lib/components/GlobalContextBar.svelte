@@ -134,14 +134,14 @@
 	});
 
 	// ── Site oracle rolls ──────────────────────────────────────────────────────
-	let gcDelveTableRef  = $state<{ open(t: string, tbl: import('$lib/oracleStore.svelte.js').OracleEntry[]): void; close(): void } | null>(null);
+	let gcDelveTableRef  = $state<{ open(t: string, tbl: import('$lib/oracleStore.svelte.js').OracleEntry[], expId?: string): void; close(): void } | null>(null);
 	let gcRollingDenizen = $state(false);
 
 	function gcOpenFeatures() {
 		if (!expHasThemeAndDomain || activeExpedition?.type !== 'site') return;
 		const site = activeExpedition as Site;
 		const table = buildCombinedTable(site.theme as DelveTheme, site.domain as DelveDomain, 'features');
-		gcDelveTableRef?.open(`Features: ${site.theme} + ${site.domain}`, table);
+		gcDelveTableRef?.open(`Features: ${site.theme} + ${site.domain}`, table, site.id);
 	}
 
 	function gcOpenDangers() {
@@ -197,6 +197,20 @@
 		{ key: 'supply',   label: 'Supply', icon: iconSupply,   color: 'var(--color-supply)' },
 		{ key: 'xp',       label: 'XP',     icon: iconXp,       color: 'var(--color-xp)' },
 	] as const;
+
+	// Thermometer fill % for resource chips (0–100, clamped to [0,100])
+	function resFillPct(key: string, value: number): string {
+		let pct: number;
+		switch (key) {
+			case 'momentum': pct = ((value + 6) / 15) * 100; break;    // –6 to +9
+			case 'health':
+			case 'spirit':
+			case 'supply':   pct = (value / 5) * 100; break;           // 0 to 5
+			case 'xp':       pct = (value / 30) * 100; break;          // 0 to 30
+			default:         pct = 0;
+		}
+		return `${Math.min(100, Math.max(0, Math.round(pct)))}%`;
+	}
 
 	const ASSET_CAT_COLOR: Record<string, string> = {
 		'Combat Talent': 'var(--color-iron)',
@@ -358,16 +372,19 @@
 						<div class="gc-chip-group gc-chip-group--stats">
 							{#each STAT_DEFS as stat}
 								<span class="gc-chip gc-chip--stat" style="--chip-color: {stat.color}" title={stat.key}>
+									<span class="gc-chip-bg-icon" aria-hidden="true">{@html stat.icon}</span>
 									<span class="gc-chip-label">{stat.label}</span>
-									<span class="gc-chip-value"><span class="gc-chip-icon">{@html stat.icon}</span> {(data as unknown as Record<string, number>)[stat.key] ?? 0}</span>
+									<span class="gc-chip-value">{(data as unknown as Record<string, number>)[stat.key] ?? 0}</span>
 								</span>
 							{/each}
 						</div>
 						<div class="gc-chip-group gc-chip-group--resources">
 							{#each RESOURCE_DEFS as res}
-								<span class="gc-chip gc-chip--resource" class:gc-chip--shake={shakingKeys.has(res.key)} style="--chip-color: {res.color}" title={res.key}>
+								{@const resVal = (data as unknown as Record<string, number>)[res.key] ?? 0}
+								{@const thermoColor = (res.key === 'momentum' && resVal <= 0) ? 'var(--color-danger)' : res.color}
+								<span class="gc-chip gc-chip--resource" class:gc-chip--shake={shakingKeys.has(res.key)} style="--chip-color: {res.color}; --fill-pct: {resFillPct(res.key, resVal)}; --thermo-color: {thermoColor}" title={res.key}>
 									<span class="gc-chip-label">{res.label}</span>
-									<span class="gc-chip-value"><span class="gc-chip-icon">{@html res.icon}</span> {(data as unknown as Record<string, number>)[res.key] ?? 0}</span>
+									<span class="gc-chip-value"><span class="gc-chip-icon">{@html res.icon}</span> {resVal}</span>
 								</span>
 							{/each}
 						</div>
@@ -763,6 +780,11 @@
 		padding: 0.35rem 0.5rem 0.4rem;
 		justify-content: center;
 	}
+	@media (max-width: 767px) {
+		.gc-char-chips {
+			gap: 4px;
+		}
+	}
 	.gc-chip-group {
 		display: flex;
 		flex-wrap: wrap;
@@ -810,35 +832,84 @@
 		height: 100%;
 		fill: currentColor;
 	}
-	/* Stats: transparent bg, thick colored bottom bar.
-	   Edge is pinned left, Wits right; inner stats fill the space.
-	   space-between only on small screens — wider layouts look fine at natural spacing. */
+	/* Stats: mini stat-tile look — colored bg tint, large faded background icon, label + value. */
 	.gc-chip-group--stats {
 		gap: 3px;
 	}
 	@media (max-width: 767px) {
-		.gc-chip-group--stats { justify-content: space-between; width: 100%; }
+		.gc-chip-group--stats { flex-wrap: nowrap; width: 100%; justify-content: space-between; }
 	}
 	.gc-chip--stat {
+		position: relative;
+		overflow: hidden;
 		color: var(--chip-color);
-		background: transparent;
-		border-radius: 3px 3px 0 0;
-		padding: 3px 6px 4px;
-		border-bottom: 3px solid var(--chip-color);
+		background: color-mix(in srgb, var(--chip-color) 10%, var(--bg-card));
+		border-radius: 5px;
+		padding: 3px 4px 4px;
+		justify-content: space-between;
+	}
+	/* Large faded background icon — mirrors StatControl's .stat-icon */
+	.gc-chip-bg-icon {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		opacity: 0.22;
+		pointer-events: none;
+	}
+	:global([data-theme="dark"]) .gc-chip-bg-icon {
+		opacity: 0.50;
+	}
+	.gc-chip-bg-icon :global(svg) {
+		width: calc(100% - 4px);
+		height: calc(100% - 4px);
+		fill: var(--chip-color);
+		color: var(--chip-color);
+	}
+	.gc-chip--stat .gc-chip-label,
+	.gc-chip--stat .gc-chip-value {
+		position: relative;
+		z-index: 1;
 	}
 	.gc-chip--stat .gc-chip-value {
-		font-weight: 700;
+		font-size: 0.95rem;
+		font-weight: 800;
 	}
 	@media (max-width: 767px) {
-		.gc-chip-group--resources { justify-content: space-between; width: 100%; }
+		.gc-chip-group--resources { flex-wrap: nowrap; width: 100%; justify-content: space-between; }
 	}
-	/* Resources: same treatment as stats */
+	/* Resources: thermometer on right edge — track (::before) + fill (::after) */
 	.gc-chip--resource {
-		color: var(--chip-color);
+		position: relative;
+		overflow: hidden;
+		color: var(--thermo-color, var(--chip-color));
 		background: transparent;
-		border-radius: 3px 3px 0 0;
-		padding: 3px 4px 4px;
-		border-bottom: 3px solid var(--chip-color);
+		border-radius: 4px;
+		padding: 3px 7px 3px 4px;
+	}
+	/* Track: faint full-height bar on the right */
+	.gc-chip--resource::before {
+		content: '';
+		position: absolute;
+		right: 2px;
+		top: 0;
+		width: 3px;
+		height: 100%;
+		background: color-mix(in srgb, var(--thermo-color, var(--chip-color)) 20%, transparent);
+		border-radius: 2px;
+	}
+	/* Fill: solid bar rising from the bottom, height = fill% */
+	.gc-chip--resource::after {
+		content: '';
+		position: absolute;
+		right: 2px;
+		bottom: 0;
+		width: 3px;
+		height: var(--fill-pct, 0%);
+		background: var(--thermo-color, var(--chip-color));
+		border-radius: 2px 2px 0 0;
+		transition: height 0.3s ease, background 0.3s ease;
 	}
 	/* Shake animation on resource value change */
 	@keyframes chip-shake {

@@ -11,6 +11,8 @@
 	import {
 		EXPEDITION_MARK_TICKS,
 		DENIZEN_CELLS,
+		DELVE_THEMES,
+		DELVE_DOMAINS,
 	} from '$lib/types.js';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import { RANK_COLORS } from '$lib/foeStore.svelte.js';
@@ -82,7 +84,33 @@
 		if (focusName) { nameBeforeEdit = expedition.name; editingName = true; }
 	});
 
-	let foePickerRef  = $state<{ openForDenizen(): Promise<void> } | null>(null);
+	let foePickerRef          = $state<{ openForDenizen(): Promise<void> } | null>(null);
+	let changeThemeDialogRef  = $state<{ open(): void; close(): void } | null>(null);
+	let changeDomainDialogRef = $state<{ open(): void; close(): void } | null>(null);
+	let newThemeValue         = $state<string>('');
+	let newDomainValue        = $state<string>('');
+
+	function openChangeTheme() {
+		newThemeValue = expedition.theme;
+		changeThemeDialogRef?.open();
+	}
+
+	function openChangeDomain() {
+		newDomainValue = expedition.domain;
+		changeDomainDialogRef?.open();
+	}
+
+	function confirmChangeTheme() {
+		if (!newThemeValue) return;
+		logLine(`<div>Changed theme to <strong>${newThemeValue}</strong>.</div>`);
+		update({ theme: newThemeValue as Site['theme'] });
+	}
+
+	function confirmChangeDomain() {
+		if (!newDomainValue) return;
+		logLine(`<div>Changed domain to <strong>${newDomainValue}</strong>.</div>`);
+		update({ domain: newDomainValue as Site['domain'] });
+	}
 
 	// ---------------------------------------------------------------------------
 	// Derived
@@ -296,6 +324,12 @@
 				{/if}
 			</div>
 
+			<!-- Change theme / domain -->
+			<div class="sc-theme-actions">
+				<button class="sc-theme-btn" onclick={openChangeTheme}>Change Theme</button>
+				<button class="sc-theme-btn" onclick={openChangeDomain}>Change Domain</button>
+			</div>
+
 			<!-- Objective -->
 			<div class="sc-field-row">
 				<label class="sc-label" for="sc-obj-{expedition.id}">Objective</label>
@@ -418,6 +452,44 @@
 	<p style="font-family: var(--font-ui); font-size: 0.82rem; color: var(--text-muted); margin: 0; line-height: 1.5;">Remove this site from your expeditions?</p>
 </ConfirmDialog>
 
+<ConfirmDialog
+	bind:this={changeThemeDialogRef}
+	title="Change Theme"
+	confirmLabel="Change Theme"
+	confirmClass="btn-primary"
+	cancelLabel="Cancel"
+	accentColor="var(--color-momentum)"
+	confirmDisabled={!newThemeValue}
+	onconfirm={confirmChangeTheme}
+>
+	<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+		<label for="sc-ct-theme-{expedition.id}" style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); width: 56px; flex-shrink: 0;">Theme <span style="color: var(--color-danger);">*</span></label>
+		<select id="sc-ct-theme-{expedition.id}" style="flex: 1; font-family: var(--font-ui); font-size: 0.75rem; background: var(--bg-control); border: 1px solid var(--border); border-radius: 4px; color: var(--text); padding: 3px 6px; outline: none;" bind:value={newThemeValue}>
+			<option value="" disabled>Select a theme…</option>
+			{#each DELVE_THEMES as t (t)}<option value={t}>{t}</option>{/each}
+		</select>
+	</div>
+</ConfirmDialog>
+
+<ConfirmDialog
+	bind:this={changeDomainDialogRef}
+	title="Change Domain"
+	confirmLabel="Change Domain"
+	confirmClass="btn-primary"
+	cancelLabel="Cancel"
+	accentColor="var(--color-momentum)"
+	confirmDisabled={!newDomainValue}
+	onconfirm={confirmChangeDomain}
+>
+	<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+		<label for="sc-cd-domain-{expedition.id}" style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); width: 56px; flex-shrink: 0;">Domain <span style="color: var(--color-danger);">*</span></label>
+		<select id="sc-cd-domain-{expedition.id}" style="flex: 1; font-family: var(--font-ui); font-size: 0.75rem; background: var(--bg-control); border: 1px solid var(--border); border-radius: 4px; color: var(--text); padding: 3px 6px; outline: none;" bind:value={newDomainValue}>
+			<option value="" disabled>Select a domain…</option>
+			{#each DELVE_DOMAINS as d (d)}<option value={d}>{d}</option>{/each}
+		</select>
+	</div>
+</ConfirmDialog>
+
 <style>
 	/* ── Card shell ─────────────────────────────────────────────────────── */
 	.sc-card {
@@ -528,7 +600,32 @@
 		flex-wrap: wrap;
 		gap: 5px;
 		align-items: center;
-			}
+	}
+
+	.sc-theme-actions {
+		display:   flex;
+		gap:       6px;
+		flex-wrap: wrap;
+	}
+	.sc-theme-btn {
+		font-family:    var(--font-ui);
+		font-size:      0.65rem;
+		font-weight:    600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color:          var(--text-dimmer);
+		background:     transparent;
+		border:         1px solid var(--border);
+		border-radius:  4px;
+		padding:        2px 8px;
+		cursor:         pointer;
+		line-height:    1.6;
+	}
+	.sc-theme-btn:hover {
+		color:      var(--text);
+		border-color: var(--border-mid);
+		background: var(--bg-hover);
+	}
 
 	.sc-name {
 		flex: 1;
