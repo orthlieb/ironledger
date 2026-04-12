@@ -52,9 +52,9 @@
 
 	{#if open}
 		<div class="menu-dropdown">
-			<a href="/about" class="menu-item" onclick={close}>About</a>
+			<a href="/about" class="menu-item menu-item--link" onclick={close}>About</a>
 
-			<button class="menu-item" onclick={() => { onSettings?.(); close(); }}>Settings</button>
+			<button class="menu-item" onclick={() => { onSettings?.(); close(); }}>Settings…</button>
 
 			<div class="menu-divider"></div>
 
@@ -167,6 +167,23 @@
 	.menu-item:hover {
 		background: var(--bg-hover);
 		color: var(--text);
+	}
+	.menu-item--link {
+		display: block;
+		width: 100%;
+		box-sizing: border-box;
+		font-family: var(--font-ui);
+		font-size: 0.78rem;
+		font-weight: 400;
+		letter-spacing: normal;
+		text-transform: none;
+		color: var(--text-muted);
+	}
+	.menu-item--link:hover {
+		background: var(--bg-hover);
+		color: var(--text);
+		text-decoration: none;
+		filter: none;
 	}
 	.menu-item--danger {
 		color: var(--color-danger);
