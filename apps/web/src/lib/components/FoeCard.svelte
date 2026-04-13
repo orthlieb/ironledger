@@ -215,88 +215,103 @@
 	{#if !collapsed}
 		<div class="fc-body">
 
-			<!-- Pills: nature · rank · quantity · harm · progress -->
-			{#if rankInfo}
-				<div class="fc-pills-row">
-					<span class="fc-badge" style="background: {natureColor}22; color: {natureColor}">{foeDef.nature}</span>
-					<span class="fc-badge fc-badge--rank" style={rankBadgeStyle(enc.effectiveRank)}
-						title={enc.quantity !== 'solo' ? `Base rank ${foeDef.rank} + ${qtyDef?.rankAdj ?? 0} for ${enc.quantity}` : ''}
-					>{rankInfo.label}</span>
-					{#if enc.quantity !== 'solo'}
-						<span class="fc-badge fc-badge--qty">{qtyDef?.label ?? enc.quantity}</span>
-					{/if}
-					<span class="fc-badge fc-badge--harm">Harm: {rankInfo.harm}</span>
-					<span class="fc-badge fc-badge--progress">Progress: {rankInfo.progressPerHit}</span>
-				</div>
-			{/if}
-
-			<!-- Description -->
-			{#if foeDef.description}
-				<p class="fc-desc">{foeDef.description}</p>
-			{/if}
-
-			<!-- Features / Drives / Tactics -->
-			{#if foeDef.features.length > 0}
-				<div class="fc-section">
-					<span class="fc-section-label">Features</span>
-					<ul class="fc-list">
-						{#each foeDef.features as feat}<li>{feat}</li>{/each}
-					</ul>
-				</div>
-			{/if}
-
-			{#if foeDef.drives.length > 0}
-				<div class="fc-section">
-					<span class="fc-section-label">Drives</span>
-					<ul class="fc-list">
-						{#each foeDef.drives as d}<li>{d}</li>{/each}
-					</ul>
-				</div>
-			{/if}
-
-			{#if foeDef.tactics.length > 0}
-				<div class="fc-section">
-					<span class="fc-section-label">Tactics</span>
-					<ul class="fc-list">
-						{#each foeDef.tactics as t}<li>{t}</li>{/each}
-					</ul>
-				</div>
-			{/if}
-
-			<!-- Progress track -->
-			<div class="fc-section">
-				<span class="fc-section-label">Progress track</span>
-				<div class="fc-progress-row">
-					<ProgressTrack
-						label=""
-						value={enc.ticks}
-						onchange={handleTrackChange}
-					/>
-					<button
-						class="btn-progress"
-						onclick={markProgress}
-						disabled={enc.ticks >= 40}
-						title="Mark progress (+{rankInfo?.progressPerHit} ticks)"
-					>+{rankInfo?.progressPerHit}</button>
-					<button
-						class="btn-progress"
-						onclick={unmarkProgress}
-						disabled={enc.ticks <= 0}
-						title="Unmark progress (−{rankInfo?.progressPerHit} ticks)"
-					>−{rankInfo?.progressPerHit}</button>
-				</div>
+			<!-- Portrait column (shown beside content on wider screens) -->
+			<div class="fc-portrait-col">
+				<img
+					class="fc-portrait"
+					src={imageUrl(foeDef.name)}
+					alt={foeDef.name}
+					onerror={(e) => { (e.currentTarget as HTMLImageElement).src = '/foes/unknown-foe.webp'; }}
+				/>
 			</div>
 
-			<!-- Vanquished toggle -->
-			<div class="fc-status-row">
-				<button
-					class="btn btn-sm"
-					class:btn-danger={!enc.vanquished}
-					onclick={toggleVanquished}
-				>
-					{#if enc.vanquished}{@html swordSvg} Mark Active{:else}{@html skullSvg} Mark Vanquished{/if}
-				</button>
-			</div>
+			<!-- Content column -->
+			<div class="fc-content-col">
+
+				<!-- Pills: nature · rank · quantity · harm · progress -->
+				{#if rankInfo}
+					<div class="fc-pills-row">
+						<span class="fc-badge" style="background: {natureColor}22; color: {natureColor}">{foeDef.nature}</span>
+						<span class="fc-badge fc-badge--rank" style={rankBadgeStyle(enc.effectiveRank)}
+							title={enc.quantity !== 'solo' ? `Base rank ${foeDef.rank} + ${qtyDef?.rankAdj ?? 0} for ${enc.quantity}` : ''}
+						>{rankInfo.label}</span>
+						{#if enc.quantity !== 'solo'}
+							<span class="fc-badge fc-badge--qty">{qtyDef?.label ?? enc.quantity}</span>
+						{/if}
+						<span class="fc-badge fc-badge--harm">Harm: {rankInfo.harm}</span>
+						<span class="fc-badge fc-badge--progress">Progress: {rankInfo.progressPerHit}</span>
+					</div>
+				{/if}
+
+				<!-- Description -->
+				{#if foeDef.description}
+					<p class="fc-desc">{foeDef.description}</p>
+				{/if}
+
+				<!-- Features / Drives / Tactics -->
+				{#if foeDef.features.length > 0}
+					<div class="fc-section">
+						<span class="fc-section-label">Features</span>
+						<ul class="fc-list">
+							{#each foeDef.features as feat}<li>{feat}</li>{/each}
+						</ul>
+					</div>
+				{/if}
+
+				{#if foeDef.drives.length > 0}
+					<div class="fc-section">
+						<span class="fc-section-label">Drives</span>
+						<ul class="fc-list">
+							{#each foeDef.drives as d}<li>{d}</li>{/each}
+						</ul>
+					</div>
+				{/if}
+
+				{#if foeDef.tactics.length > 0}
+					<div class="fc-section">
+						<span class="fc-section-label">Tactics</span>
+						<ul class="fc-list">
+							{#each foeDef.tactics as t}<li>{t}</li>{/each}
+						</ul>
+					</div>
+				{/if}
+
+				<!-- Progress track -->
+				<div class="fc-section">
+					<span class="fc-section-label">Progress track</span>
+					<div class="fc-progress-row">
+						<ProgressTrack
+							label=""
+							value={enc.ticks}
+							onchange={handleTrackChange}
+						/>
+						<button
+							class="btn-progress"
+							onclick={markProgress}
+							disabled={enc.ticks >= 40}
+							title="Mark progress (+{rankInfo?.progressPerHit} ticks)"
+						>+{rankInfo?.progressPerHit}</button>
+						<button
+							class="btn-progress"
+							onclick={unmarkProgress}
+							disabled={enc.ticks <= 0}
+							title="Unmark progress (−{rankInfo?.progressPerHit} ticks)"
+						>−{rankInfo?.progressPerHit}</button>
+					</div>
+				</div>
+
+				<!-- Vanquished toggle -->
+				<div class="fc-status-row">
+					<button
+						class="btn btn-sm"
+						class:btn-danger={!enc.vanquished}
+						onclick={toggleVanquished}
+					>
+						{#if enc.vanquished}{@html swordSvg} Mark Active{:else}{@html skullSvg} Mark Vanquished{/if}
+					</button>
+				</div>
+
+			</div><!-- /fc-content-col -->
 		</div>
 	{/if}
 </div>
@@ -468,7 +483,42 @@
 		padding: 0.75rem var(--page-gutter) 1rem;
 		display: flex;
 		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	/* Portrait column — hidden on mobile, visible beside content on wider screens */
+	.fc-portrait-col {
+		display: none;
+		flex: 0 0 110px;
+		width: 110px;
+	}
+
+	.fc-portrait {
+		width: 100%;
+		aspect-ratio: 1;
+		object-fit: cover;
+		border-radius: 6px;
+		border: 1px solid var(--border-mid);
+		display: block;
+	}
+
+	/* Content column — fills remaining space */
+	.fc-content-col {
+		display: flex;
+		flex-direction: column;
 		gap: 0.65rem;
+		min-width: 0;
+		flex: 1;
+	}
+
+	@media (min-width: 520px) {
+		.fc-body {
+			flex-direction: row;
+			align-items: flex-start;
+		}
+		.fc-portrait-col {
+			display: block;
+		}
 	}
 
 

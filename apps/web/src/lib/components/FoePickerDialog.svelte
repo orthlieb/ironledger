@@ -335,11 +335,9 @@
 
 		<!-- Scrollable body -->
 		<div class="fd-confirm-scroll">
+			<div class="fd-confirm-layout">
 
-			<!-- ── Top row: portrait + quantity side by side ── -->
-			<div class="fd-top-row">
-
-				<!-- Square portrait -->
+				<!-- Left column: portrait -->
 				<div class="fc-portrait-wrap">
 					<img
 						class="fc-portrait"
@@ -349,8 +347,10 @@
 					/>
 				</div>
 
-				<!-- Quantity / rank selector -->
-				<div class="fd-qty-section">
+				<!-- Right column: quantity + pills + body -->
+				<div class="fd-confirm-right">
+
+					<!-- Quantity / rank selector -->
 					<fieldset class="fd-quantity-group">
 						<legend class="fd-quantity-legend">Quantity</legend>
 						{#each FOE_QUANTITIES as qty}
@@ -366,52 +366,55 @@
 							</label>
 						{/each}
 					</fieldset>
-				</div>
-			</div>
 
-			{#if rankInfo}
-				<div class="fd-confirm-pills">
-					<span class="fd-badge" style="background: {natureColor}22; color: {natureColor}">{confirmFoe.nature}</span>
-					<span class="fd-badge fd-badge--rank" style={rankBadgeStyle(effRank)}>{rankInfo.label}</span>
-					<span class="fd-stat-pill fd-stat-pill--harm">Harm: {rankInfo.harm}</span>
-					<span class="fd-stat-pill fd-stat-pill--progress">Progress: {rankInfo.progressPerHit}</span>
-				</div>
-			{/if}
-			<!-- ── Text body: description + sections ── -->
-			{#if confirmFoe.description || confirmFoe.features.length > 0 || confirmFoe.drives.length > 0 || confirmFoe.tactics.length > 0}
-				<div class="fc-body">
-					{#if confirmFoe.description}
-						<p class="fc-desc">{confirmFoe.description}</p>
-					{/if}
-
-					{#if confirmFoe.features.length > 0}
-						<div class="fc-section">
-							<span class="fc-section-label">Features</span>
-							<ul class="fc-list">
-								{#each confirmFoe.features as feat}<li>{feat}</li>{/each}
-							</ul>
+					<!-- Pills -->
+					{#if rankInfo}
+						<div class="fd-confirm-pills">
+							<span class="fd-badge" style="background: {natureColor}22; color: {natureColor}">{confirmFoe.nature}</span>
+							<span class="fd-badge fd-badge--rank" style={rankBadgeStyle(effRank)}>{rankInfo.label}</span>
+							<span class="fd-stat-pill fd-stat-pill--harm">Harm: {rankInfo.harm}</span>
+							<span class="fd-stat-pill fd-stat-pill--progress">Progress: {rankInfo.progressPerHit}</span>
 						</div>
 					{/if}
 
-					{#if confirmFoe.drives.length > 0}
-						<div class="fc-section">
-							<span class="fc-section-label">Drives</span>
-							<ul class="fc-list">
-								{#each confirmFoe.drives as d}<li>{d}</li>{/each}
-							</ul>
+					<!-- Text body: description + sections -->
+					{#if confirmFoe.description || confirmFoe.features.length > 0 || confirmFoe.drives.length > 0 || confirmFoe.tactics.length > 0}
+						<div class="fc-body">
+							{#if confirmFoe.description}
+								<p class="fc-desc">{confirmFoe.description}</p>
+							{/if}
+
+							{#if confirmFoe.features.length > 0}
+								<div class="fc-section">
+									<span class="fc-section-label">Features</span>
+									<ul class="fc-list">
+										{#each confirmFoe.features as feat}<li>{feat}</li>{/each}
+									</ul>
+								</div>
+							{/if}
+
+							{#if confirmFoe.drives.length > 0}
+								<div class="fc-section">
+									<span class="fc-section-label">Drives</span>
+									<ul class="fc-list">
+										{#each confirmFoe.drives as d}<li>{d}</li>{/each}
+									</ul>
+								</div>
+							{/if}
+
+							{#if confirmFoe.tactics.length > 0}
+								<div class="fc-section">
+									<span class="fc-section-label">Tactics</span>
+									<ul class="fc-list">
+										{#each confirmFoe.tactics as t}<li>{t}</li>{/each}
+									</ul>
+								</div>
+							{/if}
 						</div>
 					{/if}
 
-					{#if confirmFoe.tactics.length > 0}
-						<div class="fc-section">
-							<span class="fc-section-label">Tactics</span>
-							<ul class="fc-list">
-								{#each confirmFoe.tactics as t}<li>{t}</li>{/each}
-							</ul>
-						</div>
-					{/if}
-				</div>
-			{/if}
+				</div><!-- /fd-confirm-right -->
+			</div><!-- /fd-confirm-layout -->
 		</div>
 
 		<div class="fd-footer">
@@ -800,12 +803,18 @@
 		gap: 0.75rem;
 	}
 
-	/* ── Top row: portrait + quantity side by side, true 50/50 ─────── */
-	.fd-top-row {
+	/* ── Two-column confirm layout: portrait left, everything else right ── */
+	.fd-confirm-layout {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
+		grid-template-columns: 1fr;
 		gap: 10px;
 		align-items: start;
+	}
+
+	@media (min-width: 520px) {
+		.fd-confirm-layout {
+			grid-template-columns: 1fr 1fr;
+		}
 	}
 
 	.fc-portrait-wrap {
@@ -819,6 +828,14 @@
 		border-radius: 6px;
 		border: 1px solid var(--border-mid);
 		display: block;
+	}
+
+	/* Right column: quantity + pills + body stacked */
+	.fd-confirm-right {
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+		min-width: 0;
 	}
 
 	/* ── Text body: description + sections ──────────────────────────── */
@@ -865,13 +882,6 @@
 		font-size: 0.78rem;
 		color: var(--text-muted);
 		margin-bottom: 1px;
-	}
-
-	/* ── Quantity section (right of portrait) ───────────────────────── */
-	.fd-qty-section {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
 	}
 
 	/* ── Quantity selector ──────────────────────────────────────────────── */
