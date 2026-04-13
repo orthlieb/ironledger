@@ -114,7 +114,7 @@
 	let notesDialogRef   = $state<{ open(): void } | null>(null);
 
 	// ── Foe picker dialog ──────────────────────────────────────────────────────
-	let foePickerRef = $state<{ open(): void } | null>(null);
+	let foePickerRef = $state<{ open(): void; openWithFoe(name: string): Promise<void> } | null>(null);
 	let activeFoeId  = $state('');
 
 	// Encounters from the global encounter store (not per-character)
@@ -1741,6 +1741,7 @@
 							onFoeProgress={handleEncounterChange}
 							onExpeditionProgress={handleExpeditionChange}
 							onInitiativeClick={(next) => { if (activeCharId) { if (next === 0) delete initiativeMap[activeCharId]; else initiativeMap[activeCharId] = next; initiativeMap = { ...initiativeMap }; } }}
+							onDenizenRolled={(name) => foePickerRef?.openWithFoe(name)}
 						/>
 					</div>
 

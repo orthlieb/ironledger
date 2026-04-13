@@ -41,6 +41,7 @@
 	let confirmFoe = $state<FoeDef | null>(null);
 	let quantity   = $state<FoeQuantity>('solo');
 	let _mode      = $state<'encounter' | 'denizen'>('encounter');
+	let _noBack    = $state(false);
 
 	let search        = $state('');
 	let filtersOpen   = $state(false);
@@ -83,6 +84,7 @@
 	export async function open(): Promise<void> {
 		await loadFoes();
 		_mode    = 'encounter';
+		_noBack  = false;
 		view     = 'picker';
 		search   = '';
 		filtersOpen   = false;
@@ -106,6 +108,19 @@
 		activeRanks   = new Set();
 		confirmFoe = null;
 		quantity   = 'solo';
+		dialogEl?.showModal();
+	}
+
+	/** Open directly to the confirm view for a foe matched by name (for denizen roll results). */
+	export async function openWithFoe(foeName: string): Promise<void> {
+		await loadFoes();
+		const match = getFoes().find(f => f.name.toLowerCase() === foeName.toLowerCase());
+		if (!match) return;
+		_mode      = 'encounter';
+		_noBack    = true;
+		quantity   = 'solo';
+		confirmFoe = match;
+		view       = 'confirm';
 		dialogEl?.showModal();
 	}
 
@@ -312,7 +327,9 @@
 
 		<!-- Back bar -->
 		<div class="fd-back-bar" style="--nature-color: {natureColor}">
-			<button class="btn fd-back-btn" onclick={goBack}>← Back</button>
+			{#if !_noBack}
+				<button class="btn fd-back-btn" onclick={goBack}>← Back</button>
+			{/if}
 			<span class="fd-title">{confirmFoe.name}</span>
 		</div>
 
@@ -398,7 +415,7 @@
 		</div>
 
 		<div class="fd-footer">
-			<button class="btn" onclick={goBack}>Cancel</button>
+			<button class="btn" onclick={_noBack ? close : goBack}>Cancel</button>
 			<button class="btn btn-primary" onclick={confirm}>Add to Foes</button>
 		</div>
 	{/if}

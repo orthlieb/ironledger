@@ -76,6 +76,7 @@
 		onMovesClick,
 		onNotesClick,
 		onInitiativeClick,
+		onDenizenRolled,
 	}: {
 		chars:               CharacterFull[];
 		activeCharId:        string;
@@ -95,6 +96,7 @@
 		onMovesClick?:         () => void;
 		onNotesClick?:         () => void;
 		onInitiativeClick?:    (next: number) => void;
+		onDenizenRolled?:      (name: string) => void;
 	} = $props();
 
 	// Derive the active character and its typed data.
@@ -168,6 +170,7 @@
 		appendLog(SESSION_LOG_ID, `Site — ${site.name || 'Unnamed Site'}`,
 			`<div>Rolled d100: <strong>${roll}</strong> → ${cell.label} (${cell.range})${denizen ? `: <strong>${denizen}</strong>` : ''}</div>`);
 		gcRollingDenizen = false;
+		if (denizen) onDenizenRolled?.(denizen);
 	}
 
 	const DIFFICULTY_RANK: Record<string, number> = {
