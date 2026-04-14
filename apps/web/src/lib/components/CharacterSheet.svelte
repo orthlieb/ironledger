@@ -1083,7 +1083,7 @@
 		flex-wrap: nowrap;
 		align-items: flex-start;
 		justify-content: space-between;
-		gap: 3px;
+		gap: 5px;
 		flex: 1;
 	}
 	/* When the wrapper is wide enough that total gap space ≥ total tile widths,

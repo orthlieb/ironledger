@@ -761,13 +761,22 @@
 	.gc-char-chips {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 2px;
+		gap: 5px;
 		padding: 0.35rem 0.5rem 0.4rem;
 		justify-content: center;
+		container-type: inline-size;
 	}
 	@media (max-width: 767px) {
 		.gc-char-chips {
-			gap: 4px;
+			gap: 5px;
+		}
+	}
+	/* When wide enough for both groups on one row (245px + 5px + 245px = 495px) */
+	@container (min-width: 495px) {
+		.gc-chip-group--stats,
+		.gc-chip-group--resources {
+			flex: 1;
+			width: auto;
 		}
 	}
 	.gc-chip-group {
@@ -819,7 +828,7 @@
 	}
 	/* Stats: mini stat-tile look — colored bg tint, large faded background icon, label + value. */
 	.gc-chip-group--stats {
-		gap: 3px;
+		gap: 5px;
 		flex-wrap: nowrap;
 		width: 100%;
 		justify-content: space-between;
@@ -867,6 +876,7 @@
 		font-weight: 800;
 	}
 	.gc-chip-group--resources {
+		gap: 5px;
 		flex-wrap: nowrap;
 		width: 100%;
 		justify-content: space-between;
