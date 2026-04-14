@@ -21,14 +21,13 @@
 		confirmClass  = 'btn-danger',
 		cancelLabel   = 'Cancel',
 		showCancelButton = true,
-		secondaryLabel,
-		secondaryClass = 'btn',
-		dialogClass      = '',
+		alternateLabel,
+		alternateClass = 'btn',
 		confirmDisabled  = false,
 		onconfirm,
 		oncancel,
 		ondismiss,
-		onsecondary,
+		onalternate,
 		children,
 	}: {
 		title:             string;
@@ -37,15 +36,14 @@
 		confirmClass?:     string;
 		cancelLabel?:      string;
 		showCancelButton?: boolean;
-		secondaryLabel?:   string;
-		secondaryClass?:   string;
-		dialogClass?:      string;
+		alternateLabel?:   string;
+		alternateClass?:   string;
 		confirmDisabled?:  boolean;
 		onconfirm:         () => void;
 		oncancel?:         () => void;
 		/** Called when the dialog is dismissed via ✕ or Escape — falls back to oncancel if not provided. */
 		ondismiss?:        () => void;
-		onsecondary?:      () => void;
+		onalternate?:      () => void;
 		children?:         Snippet;
 	} = $props();
 
@@ -85,9 +83,9 @@
 		else oncancel?.();
 	}
 
-	function handleSecondary() {
+	function handleAlternate() {
 		dialogEl?.close();
-		onsecondary?.();
+		onalternate?.();
 	}
 
 	function startDrag(e: MouseEvent) {
@@ -117,7 +115,7 @@
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <dialog
 	bind:this={dialogEl}
-	class="confirm-modal {dialogClass}"
+	class="confirm-modal"
 	style:--accent={accentColor}
 	style:transform="translate(calc(-50% + {dragX}px), calc(-50% + {dragY}px))"
 	oncancel={handleDismiss}
@@ -126,7 +124,9 @@
 	<div class="cm-drag-handle" onmousedown={startDrag}>
 		<span class="drag-grip" aria-hidden="true">⠿</span>
 		<span class="cm-title">{title}</span>
-		<button class="cm-close-btn" onclick={handleDismiss} onmousedown={(e) => e.stopPropagation()} aria-label="Close">✕</button>
+		{#if !showCancelButton}
+			<button class="cm-close-btn" onclick={handleDismiss} onmousedown={(e) => e.stopPropagation()} aria-label="Close">✕</button>
+		{/if}
 	</div>
 	<div class="cm-body">
 		{@render children?.()}
@@ -134,8 +134,8 @@
 			{#if showCancelButton}
 				<button class="btn" onclick={handleCancel}>{cancelLabel}</button>
 			{/if}
-			{#if secondaryLabel}
-				<button class="btn {secondaryClass}" onclick={handleSecondary}>{secondaryLabel}</button>
+			{#if alternateLabel}
+				<button class="btn {alternateClass}" onclick={handleAlternate}>{alternateLabel}</button>
 			{/if}
 			<button class="btn {confirmClass}" onclick={handleConfirm} disabled={confirmDisabled}>{confirmLabel}</button>
 		</div>

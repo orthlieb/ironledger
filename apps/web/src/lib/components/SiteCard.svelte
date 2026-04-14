@@ -458,7 +458,7 @@
 	confirmLabel="Change Theme"
 	confirmClass="btn-primary"
 	cancelLabel="Cancel"
-	accentColor="var(--color-momentum)"
+	accentColor="#60a5fa"
 	confirmDisabled={!newThemeValue}
 	onconfirm={confirmChangeTheme}
 >
@@ -477,7 +477,7 @@
 	confirmLabel="Change Domain"
 	confirmClass="btn-primary"
 	cancelLabel="Cancel"
-	accentColor="var(--color-momentum)"
+	accentColor="#60a5fa"
 	confirmDisabled={!newDomainValue}
 	onconfirm={confirmChangeDomain}
 >

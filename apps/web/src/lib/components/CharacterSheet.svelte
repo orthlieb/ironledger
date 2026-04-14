@@ -1057,6 +1057,7 @@
 		display: flex;
 		align-items: center;
 		gap: 6px;
+		container-type: inline-size;
 	}
 
 	.stats-side-label {
@@ -1081,12 +1082,15 @@
 		display: flex;
 		flex-wrap: nowrap;
 		align-items: flex-start;
-		justify-content: flex-start;
+		justify-content: space-between;
 		gap: 3px;
 		flex: 1;
 	}
-	@media (max-width: 767px) {
-		.stats-row { justify-content: space-between; }
+	/* When the wrapper is wide enough that total gap space ≥ total tile widths,
+	   switch to left-align so gaps never exceed the tiles themselves.
+	   Crossover: row-width ≥ 540px → wrapper ≥ ~560px (accounts for side-label overhead). */
+	@container (min-width: 560px) {
+		.stats-row { justify-content: flex-start; }
 	}
 
 	/* Vitals wrapper */
@@ -1094,6 +1098,7 @@
 		display: flex;
 		align-items: center;
 		gap: 6px;
+		container-type: inline-size;
 	}
 
 	.vitals-side-label {
@@ -1148,10 +1153,13 @@
 		flex-wrap: wrap;
 		gap: 14px;
 		align-items: stretch;
-		justify-content: flex-start;
+		justify-content: space-between;
 	}
-	@media (max-width: 767px) {
-		.meters-row { justify-content: space-between; }
+	/* When the wrapper is wide enough that total gap space ≥ total tile widths,
+	   switch to left-align so gaps never exceed the tiles themselves.
+	   Tiles: 1×90px + 4×80px = 410px total. Crossover: row-width ≥ 820px → wrapper ≥ ~840px. */
+	@container (min-width: 840px) {
+		.meters-row { justify-content: flex-start; }
 	}
 
 

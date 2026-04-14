@@ -51,7 +51,7 @@
 	// Component state
 	// ---------------------------------------------------------------------------
 	let dialogEl     = $state<HTMLDialogElement | null>(null);
-	let selectedStat = $state<StatKey>('heart');
+	let selectedStat = $state<StatKey | null>(null);
 	let adds         = $state(0);
 	let rolling      = $state(false);
 
@@ -92,25 +92,6 @@
 		rolling = false;
 	}
 
-	async function quickRoll2d10() {
-		if (rolling) return;
-		rolling  = true;
-		const d6 = rollDie(6);
-		const v1 = rollDie(10), v2 = rollDie(10);
-		const hits1 = d6 > v1;
-		const hits2 = d6 > v2;
-		const matchSpan = v1 === v2 ? ' <span class="roll-match">with a match!</span>' : '';
-		const html = [
-			`<div class="roll-line">1d6 [<strong>${d6}</strong>] vs 2d10 [${v1}] [${v2}]</div>`,
-			`<div class="${outcomeClass(hits1, hits2)}"><strong>${outcomeLabel(hits1, hits2)}</strong>${matchSpan}</div>`,
-		].join('');
-		close();
-		await afterClose();
-		await animateDice([{ sides: 6, value: d6 }, { sides: 10, value: v1 }, { sides: 10, value: v2 }]);
-		appendLog(SESSION_LOG_ID, logTitle('2d10 + d6'), html);
-		rolling = false;
-	}
-
 	async function quickRollD100() {
 		if (rolling) return;
 		rolling = true;
@@ -137,7 +118,7 @@
 		rolling = true;
 
 		const stat      = selectedStat;
-		const statVal   = ctx.data[stat] as number;
+		const statVal   = stat ? ctx.data[stat] as number : 0;
 		const actionDie = rollDie(6);
 		const c1        = rollDie(10);
 		const c2        = rollDie(10);
@@ -152,7 +133,8 @@
 		const hits2   = total > c2;
 		const isMatch = c1 === c2;
 
-		const statLabel = STATS.find(s => s.key === stat)!.label;
+		const statLabel = stat ? STATS.find(s => s.key === stat)!.label : null;
+		const statStr   = statLabel ? ` + ${statLabel.toLowerCase()}[${statVal}]` : '';
 		const addsStr   = adds !== 0
 			? ` + adds[${adds > 0 ? '+' : ''}${adds}]`
 			: '';
@@ -169,7 +151,7 @@
 		}
 		parts.push(
 			`<div class="roll-line">` +
-			`1d6 [${dieStr}] + ${statLabel.toLowerCase()}[${statVal}]${addsStr}` +
+			`1d6 [${dieStr}]${statStr}${addsStr}` +
 			` = <strong>${total}</strong> vs 2d10 [${c1}] [${c2}]` +
 			`</div>`,
 		);
@@ -190,7 +172,7 @@
 			{ sides: 10, value: c2        },
 		]);
 
-		appendLog(SESSION_LOG_ID, logTitle(`Action (${statLabel})`), html);
+		appendLog(SESSION_LOG_ID, logTitle(statLabel ? `Action (${statLabel})` : 'Action'), html);
 		rolling = false;
 	}
 
@@ -235,10 +217,6 @@
 					<span class="qicon">{@html diceD10Svg}</span>
 					<span class="qdie">d10</span>
 				</button>
-				<button class="quick-btn" onclick={quickRoll2d10}              disabled={rolling} title="Roll 2d10 + d6 (challenge dice)">
-					<span class="qicon qicon-triple">{@html diceD10Svg}{@html diceD10Svg}{@html diceD6Svg}</span>
-					<span class="qdie">2d10+d6</span>
-				</button>
 				<button class="quick-btn" onclick={quickRollD100}              disabled={rolling} title="Roll d100">
 					<span class="qicon qicon-d100">
 						<span class="d100-dark">{@html diceD10Svg}</span>
@@ -262,15 +240,27 @@
 						class="stat-btn"
 						class:selected={selectedStat === s.key}
 						style:--scolor={s.color}
-						onclick={() => (selectedStat = s.key)}
+						onclick={() => (selectedStat = selectedStat === s.key ? null : s.key)}
 						disabled={rolling || !ctx}
 						title="{s.label}: {ctx ? ctx.data[s.key] : '—'}"
 					>
 						<span class="sname">{s.label}</span>
-						<span class="sval">{ctx ? ctx.data[s.key] : '—'}</span>
+						<span class="sval">{ctx ? `+${ctx.data[s.key]}` : '—'}</span>
 					</button>
 				{/each}
 			</div>
+
+			<!-- Active debility warnings -->
+			{#if debilityWarnings.length > 0}
+				<div class="drd-debility-bar">
+					<span class="drd-debility-label">Debilities</span>
+					<div class="drd-debility-tags">
+						{#each debilityWarnings as w (w.key)}
+							<div class="drd-debility-tag" use:tooltip={{ text: w.penalty, placement: 'above' }}>{w.label}</div>
+						{/each}
+					</div>
+				</div>
+			{/if}
 
 			<!-- Adds + Roll (side by side) -->
 			<div class="adds-roll-row">
@@ -301,18 +291,6 @@
 					disabled={rolling || !ctx}
 				>{rolling ? 'Rolling…' : 'Roll Action'}</button>
 			</div>
-
-			<!-- Active debility warnings -->
-			{#if debilityWarnings.length > 0}
-				<div class="drd-debility-bar">
-					<span class="drd-debility-label">Debilities</span>
-					<div class="drd-debility-tags">
-						{#each debilityWarnings as w (w.key)}
-							<div class="drd-debility-tag" use:tooltip={{ text: w.penalty, placement: 'above' }}>{w.label}</div>
-						{/each}
-					</div>
-				</div>
-			{/if}
 		</section>
 
 	</div>
@@ -420,11 +398,6 @@
 		height: 22px;
 		fill:   currentColor;
 	}
-	.qicon-triple :global(svg) {
-		width:  14px;
-		height: 14px;
-	}
-
 	.qdie {
 		font-size:      0.72rem;
 		font-weight:    700;

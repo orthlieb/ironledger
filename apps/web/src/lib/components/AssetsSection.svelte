@@ -150,7 +150,7 @@
 		onconfirm={confirmRemove}
 		oncancel={() => (removeTarget = null)}
 		confirmLabel="Remove"
-		cancelLabel="Keep Asset"
+		cancelLabel="Cancel"
 	>
 		<div class="rm-body">
 			<p>Losing an asset is rare and usually the result of a unique narrative circumstance dictated by the storyline.</p>

@@ -33,6 +33,7 @@
 	import NotesDialog       from '$lib/components/NotesDialog.svelte';
 	import MovesDialog       from '$lib/components/MovesDialog.svelte';
 	import FoePickerDialog   from '$lib/components/FoePickerDialog.svelte';
+	import DenizenDialog     from '$lib/components/DenizenDialog.svelte';
 	import ConfirmDialog     from '$lib/components/ConfirmDialog.svelte';
 	import ErrorBar          from '$lib/components/ErrorBar.svelte';
 	import RollToast         from '$lib/components/RollToast.svelte';
@@ -114,7 +115,8 @@
 	let notesDialogRef   = $state<{ open(): void } | null>(null);
 
 	// ── Foe picker dialog ──────────────────────────────────────────────────────
-	let foePickerRef = $state<{ open(): void; openWithFoe(name: string): Promise<void> } | null>(null);
+	let foePickerRef   = $state<{ open(): void; openWithFoe(name: string): Promise<void> } | null>(null);
+	let denizenDialogRef = $state<{ open(site: import('$lib/types.js').Site): Promise<void>; close(): void } | null>(null);
 	let activeFoeId  = $state('');
 
 	// Encounters from the global encounter store (not per-character)
@@ -1257,7 +1259,9 @@
 	bind:this={importConfirmRef}
 	title="Import Data?"
 	confirmLabel="Choose File…"
+	confirmClass="btn-primary"
 	cancelLabel="Cancel"
+	accentColor="var(--text-accent)"
 	onconfirm={() => importInput.click()}
 >
 	<div style="display:flex; flex-direction:column; gap:8px; font-family:var(--font-ui); font-size:0.8rem; line-height:1.5; color:var(--text-muted);">
@@ -1291,6 +1295,9 @@
 <!-- Foe picker dialog (always mounted; opened by + New Foe button in Foes tab) -->
 <FoePickerDialog bind:this={foePickerRef} onSelect={handleFoeSelected} />
 
+<!-- Denizen dialog (opened by Roll Denizen in GCB) -->
+<DenizenDialog bind:this={denizenDialogRef} onSelect={handleFoeSelected} />
+
 <!-- Roll toast — surfaces oracle/roll results when log panel isn't visible -->
 <RollToast {activeTab} />
 
@@ -1301,10 +1308,10 @@
 	confirmLabel="Generate Randomly"
 	confirmClass="btn-primary"
 	showCancelButton={false}
-	secondaryLabel="Create Manually"
-	accentColor="var(--color-momentum)"
+	alternateLabel="Create Manually"
+	accentColor="#E8A13B"
 	onconfirm={() => _commitCommunity(true)}
-	onsecondary={() => _commitCommunity(false)}
+	onalternate={() => _commitCommunity(false)}
 	ondismiss={() => { _pendingCommunity = null; }}
 >
 	<p style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 10px;">
@@ -1338,10 +1345,10 @@
 	confirmLabel="Generate Randomly"
 	confirmClass="btn-primary"
 	showCancelButton={false}
-	secondaryLabel="Create Manually"
-	accentColor="var(--color-momentum)"
+	alternateLabel="Create Manually"
+	accentColor="#a78bfa"
 	onconfirm={() => _commitNpc(true)}
-	onsecondary={() => _commitNpc(false)}
+	onalternate={() => _commitNpc(false)}
 	ondismiss={() => { _pendingNpc = null; }}
 >
 	<p style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 8px;">
@@ -1741,7 +1748,7 @@
 							onFoeProgress={handleEncounterChange}
 							onExpeditionProgress={handleExpeditionChange}
 							onInitiativeClick={(next) => { if (activeCharId) { if (next === 0) delete initiativeMap[activeCharId]; else initiativeMap[activeCharId] = next; initiativeMap = { ...initiativeMap }; } }}
-							onDenizenRolled={(name) => foePickerRef?.openWithFoe(name)}
+							onRollDenizen={(site) => denizenDialogRef?.open(site)}
 						/>
 					</div>
 
@@ -1799,7 +1806,7 @@
 	confirmLabel="Start Journey"
 	confirmClass="btn-primary"
 	cancelLabel="Cancel"
-	accentColor="var(--color-momentum)"
+	accentColor="#34d399"
 	onconfirm={confirmAddJourney}
 	oncancel={cancelAddJourney}
 >
@@ -1826,7 +1833,7 @@
 	confirmLabel="Discover Site"
 	confirmClass="btn-primary"
 	cancelLabel="Cancel"
-	accentColor="var(--color-momentum)"
+	accentColor="#60a5fa"
 	confirmDisabled={!newSiteTheme || !newSiteDomain}
 	onconfirm={confirmAddSite}
 	oncancel={cancelAddSite}
@@ -1874,7 +1881,7 @@
 	confirmLabel="Change Theme"
 	confirmClass="btn-primary"
 	cancelLabel="Cancel"
-	accentColor="var(--color-momentum)"
+	accentColor="#60a5fa"
 	confirmDisabled={!changeThemeValue}
 	onconfirm={confirmChangeTheme}
 >
@@ -1893,7 +1900,7 @@
 	confirmLabel="Change Domain"
 	confirmClass="btn-primary"
 	cancelLabel="Cancel"
-	accentColor="var(--color-momentum)"
+	accentColor="#60a5fa"
 	confirmDisabled={!changeDomainValue}
 	onconfirm={confirmChangeDomain}
 >

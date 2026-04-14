@@ -9,15 +9,13 @@
 
 	import type { CharacterFull } from '$lib/api.js';
 	import type { FoeEncounter, Expedition, Site, DelveTheme, DelveDomain } from '$lib/types.js';
-	import { EXPEDITION_MARK_TICKS, DENIZEN_CELLS } from '$lib/types.js';
+	import { EXPEDITION_MARK_TICKS } from '$lib/types.js';
 	import { hydrateCharacter } from '$lib/character.js';
 	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
 	import { findFoe, FOE_RANKS, FOE_NATURE_COLORS, FOE_QUANTITIES, RANK_COLORS } from '$lib/foeStore.svelte.js';
 	import { getAssets, loadAssets } from '$lib/assetStore.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { loadDelveData, buildCombinedTable } from '$lib/delveStore.svelte.js';
-	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
-	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
 	import DelveTableDialog from '$lib/components/DelveTableDialog.svelte';
 
 	// Pre-load asset catalogue and delve data.
@@ -76,7 +74,7 @@
 		onMovesClick,
 		onNotesClick,
 		onInitiativeClick,
-		onDenizenRolled,
+		onRollDenizen,
 	}: {
 		chars:               CharacterFull[];
 		activeCharId:        string;
@@ -96,7 +94,7 @@
 		onMovesClick?:         () => void;
 		onNotesClick?:         () => void;
 		onInitiativeClick?:    (next: number) => void;
-		onDenizenRolled?:      (name: string) => void;
+		onRollDenizen?:        (site: Site) => void;
 	} = $props();
 
 	// Derive the active character and its typed data.
@@ -137,7 +135,7 @@
 
 	// ── Site oracle rolls ──────────────────────────────────────────────────────
 	let gcDelveTableRef  = $state<{ open(t: string, tbl: import('$lib/oracleStore.svelte.js').OracleEntry[], expId?: string): void; close(): void } | null>(null);
-	let gcRollingDenizen = $state(false);
+
 
 	function gcOpenFeatures() {
 		if (!expHasThemeAndDomain || activeExpedition?.type !== 'site') return;
@@ -153,24 +151,9 @@
 		gcDelveTableRef?.open(`Dangers: ${site.theme} + ${site.domain}`, table);
 	}
 
-	async function gcRollDenizen() {
-		if (gcRollingDenizen || activeExpedition?.type !== 'site') return;
-		gcRollingDenizen = true;
-		const site = activeExpedition as Site;
-		const roll = Math.floor(Math.random() * 100) + 1;
-		const cellIndex = DENIZEN_CELLS.findIndex(c => roll >= c.low && roll <= c.high);
-		const cell = DENIZEN_CELLS[cellIndex];
-		const denizen = site.denizens[cellIndex];
-		const tensV = Math.floor(roll % 100 / 10) || 10;
-		const onesV = roll % 10 || 10;
-		await animateDice([
-			{ sides: 10, value: tensV, color: DIE_BLACK },
-			{ sides: 10, value: onesV, color: DIE_WHITE },
-		]);
-		appendLog(SESSION_LOG_ID, `Site — ${site.name || 'Unnamed Site'}`,
-			`<div>Rolled d100: <strong>${roll}</strong> → ${cell.label} (${cell.range})${denizen ? `: <strong>${denizen}</strong>` : ''}</div>`);
-		gcRollingDenizen = false;
-		if (denizen) onDenizenRolled?.(denizen);
+	function gcRollDenizen() {
+		if (activeExpedition?.type !== 'site') return;
+		onRollDenizen?.(activeExpedition as Site);
 	}
 
 	const DIFFICULTY_RANK: Record<string, number> = {
@@ -536,7 +519,6 @@
 						>Roll Danger</button>
 						<button class="gc-oracle-btn"
 							onclick={gcRollDenizen}
-							disabled={gcRollingDenizen}
 							title="Roll d100 for a denizen"
 						>Roll Denizen</button>
 					</div>
@@ -838,9 +820,14 @@
 	/* Stats: mini stat-tile look — colored bg tint, large faded background icon, label + value. */
 	.gc-chip-group--stats {
 		gap: 3px;
+		flex-wrap: nowrap;
+		width: 100%;
+		justify-content: space-between;
+		container-type: inline-size;
 	}
-	@media (max-width: 767px) {
-		.gc-chip-group--stats { flex-wrap: nowrap; width: 100%; justify-content: space-between; }
+	/* Tiles: 5 × 45px = 225px. Crossover (gap space = tile widths) at row-width = 450px → left-align. */
+	@container (min-width: 450px) {
+		.gc-chip-group--stats { justify-content: flex-start; }
 	}
 	.gc-chip--stat {
 		position: relative;
@@ -879,8 +866,15 @@
 		font-size: 0.95rem;
 		font-weight: 800;
 	}
-	@media (max-width: 767px) {
-		.gc-chip-group--resources { flex-wrap: nowrap; width: 100%; justify-content: space-between; }
+	.gc-chip-group--resources {
+		flex-wrap: nowrap;
+		width: 100%;
+		justify-content: space-between;
+		container-type: inline-size;
+	}
+	/* Tiles: 5 × 45px = 225px. Crossover (gap space = tile widths) at row-width = 450px → left-align. */
+	@container (min-width: 450px) {
+		.gc-chip-group--resources { justify-content: flex-start; }
 	}
 	/* Resources: thermometer on right edge — track (::before) + fill (::after) */
 	.gc-chip--resource {

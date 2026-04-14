@@ -2,7 +2,7 @@
 	/**
 	 * FoeCard — collapsible combat encounter card for a single foe.
 	 *
-	 * Displays the foe's portrait, stats, progress track (10 boxes × 4 ticks),
+	 * Displays a portrait thumbnail (with hover lightbox) in the title bar, the foe's stats, progress track (10 boxes × 4 ticks),
 	 * notes, and a vanquish toggle. Emits log entries for all significant actions.
 	 */
 
@@ -40,9 +40,9 @@
 	// ---------------------------------------------------------------------------
 	let collapsed       = $state(false);
 	let deleteDialogRef = $state<{ open(): void; close(): void } | null>(null);
-	let imgVisible       = $state(true);
-	let thumbHovered     = $state(false);
-	let editingName      = $state(false);
+	let imgVisible      = $state(true);
+	let thumbHovered    = $state(false);
+	let editingName     = $state(false);
 	let nameInputEl      = $state<HTMLInputElement | null>(null);
 	let nameBeforeEdit   = '';
 	$effect(() => {
@@ -140,6 +140,7 @@
 	class="foe-card"
 	class:vanquished={enc.vanquished}
 	class:collapsed={collapsed}
+	style="border-left: 3px solid {natureColor}"
 >
 
 	<!-- ── Header (always visible) ── -->
@@ -157,7 +158,7 @@
 				class="fc-thumb"
 				src={imageUrl(foeDef.name)}
 				alt={foeDef.name}
-				onerror={(e) => { (e.currentTarget as HTMLImageElement).src = '/foes/unknown-foe.webp'; }}
+				onerror={(e) => { (e.currentTarget as HTMLImageElement).src = '/foes/unknown-foe.webp'; imgVisible = false; }}
 				onmouseenter={() => (thumbHovered = true)}
 				onmouseleave={() => (thumbHovered = false)}
 			/>
@@ -214,16 +215,6 @@
 	<!-- ── Collapsible body ── -->
 	{#if !collapsed}
 		<div class="fc-body">
-
-			<!-- Portrait column (shown beside content on wider screens) -->
-			<div class="fc-portrait-col">
-				<img
-					class="fc-portrait"
-					src={imageUrl(foeDef.name)}
-					alt={foeDef.name}
-					onerror={(e) => { (e.currentTarget as HTMLImageElement).src = '/foes/unknown-foe.webp'; }}
-				/>
-			</div>
 
 			<!-- Content column -->
 			<div class="fc-content-col">
@@ -486,22 +477,6 @@
 		gap: 0.75rem;
 	}
 
-	/* Portrait column — hidden on mobile, visible beside content on wider screens */
-	.fc-portrait-col {
-		display: none;
-		flex: 0 0 110px;
-		width: 110px;
-	}
-
-	.fc-portrait {
-		width: 100%;
-		aspect-ratio: 1;
-		object-fit: cover;
-		border-radius: 6px;
-		border: 1px solid var(--border-mid);
-		display: block;
-	}
-
 	/* Content column — fills remaining space */
 	.fc-content-col {
 		display: flex;
@@ -510,17 +485,6 @@
 		min-width: 0;
 		flex: 1;
 	}
-
-	@media (min-width: 520px) {
-		.fc-body {
-			flex-direction: row;
-			align-items: flex-start;
-		}
-		.fc-portrait-col {
-			display: block;
-		}
-	}
-
 
 	.fc-desc {
 		font-family: var(--font-ui);

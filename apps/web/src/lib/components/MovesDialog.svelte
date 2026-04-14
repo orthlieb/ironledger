@@ -1241,8 +1241,8 @@
 		left:          50%;
 		transform:     translateX(-50%);
 		width:         min(640px, calc(100vw - 2rem));
-		height:        min(700px, 88dvh);
-		max-height:    min(700px, 88dvh);
+		height:        fit-content;
+		max-height:    80vh;
 		background:    var(--bg-card);
 		color:         var(--text);
 		box-shadow:    0 16px 48px #00000070, 0 0 0 1px var(--border-mid);

@@ -19,6 +19,37 @@
 	let exportContent = $state('everything');
 	let exportFormat = $state('json');
 
+	let exportDragX = $state(0);
+	let exportDragY = $state(0);
+	let _exportDragging    = false;
+	let _exportStartMouseX = 0;
+	let _exportStartMouseY = 0;
+	let _exportStartDragX  = 0;
+	let _exportStartDragY  = 0;
+
+	function startExportDrag(e: MouseEvent) {
+		_exportDragging    = true;
+		_exportStartMouseX = e.clientX;
+		_exportStartMouseY = e.clientY;
+		_exportStartDragX  = exportDragX;
+		_exportStartDragY  = exportDragY;
+		e.preventDefault();
+		window.addEventListener('mousemove', onExportDragMove);
+		window.addEventListener('mouseup',   onExportDragEnd);
+	}
+
+	function onExportDragMove(e: MouseEvent) {
+		if (!_exportDragging) return;
+		exportDragX = _exportStartDragX + (e.clientX - _exportStartMouseX);
+		exportDragY = _exportStartDragY + (e.clientY - _exportStartMouseY);
+	}
+
+	function onExportDragEnd() {
+		_exportDragging = false;
+		window.removeEventListener('mousemove', onExportDragMove);
+		window.removeEventListener('mouseup',   onExportDragEnd);
+	}
+
 	function toggle() { open = !open; }
 	function close() { open = false; }
 
@@ -28,6 +59,8 @@
 
 	function openExportDialog() {
 		close();
+		exportDragX = 0;
+		exportDragY = 0;
 		exportDialogEl?.showModal();
 	}
 
@@ -73,10 +106,12 @@
 
 <!-- Export dialog -->
 <dialog bind:this={exportDialogEl} class="export-dialog"
+	style:transform="translate(calc(-50% + {exportDragX}px), calc(-50% + {exportDragY}px))"
 	oncancel={() => exportDialogEl?.close()}>
-	<div class="ed-header">
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div class="ed-header" onmousedown={startExportDrag}>
+		<span class="drag-grip" aria-hidden="true">⠿</span>
 		<span class="ed-title">Export</span>
-		<button class="ed-close" onclick={() => exportDialogEl?.close()} aria-label="Close">&#x2715;</button>
 	</div>
 	<div class="ed-body">
 		<div class="ed-field">
@@ -229,12 +264,24 @@
 	.ed-header {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
-		padding: 10px 14px;
+		gap: 8px;
+		padding: 10px 14px 9px;
 		border-bottom: 1px solid var(--border);
 		background: var(--bg-control);
 		border-radius: 8px 8px 0 0;
+		cursor: grab;
+		user-select: none;
 	}
+	.ed-header:active { cursor: grabbing; }
+
+	.drag-grip {
+		font-size: 1rem;
+		color: var(--text-dimmer);
+		line-height: 1;
+		opacity: 0.6;
+		flex-shrink: 0;
+	}
+
 	.ed-title {
 		font-family: var(--font-display);
 		font-size: 0.78rem;
@@ -243,17 +290,6 @@
 		text-transform: uppercase;
 		color: var(--text-accent);
 	}
-	.ed-close {
-		background: transparent;
-		border: none;
-		color: var(--text-dimmer);
-		cursor: pointer;
-		font-size: 0.9rem;
-		padding: 2px 5px;
-		border-radius: 3px;
-		line-height: 1;
-	}
-	.ed-close:hover { color: var(--text); }
 
 	.ed-body {
 		padding: 16px 14px;
@@ -320,11 +356,4 @@
 		justify-content: flex-end;
 		padding: 0 14px 14px;
 	}
-	.btn-primary {
-		background: var(--text-accent);
-		border-color: var(--text-accent);
-		color: var(--bg-card);
-		font-weight: 600;
-	}
-	.btn-primary:hover { opacity: 0.88; }
 </style>
