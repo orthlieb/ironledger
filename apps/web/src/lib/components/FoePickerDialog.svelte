@@ -335,9 +335,9 @@
 
 		<!-- Scrollable body -->
 		<div class="fd-confirm-scroll">
-			<div class="fd-confirm-layout">
 
-				<!-- Left column: portrait -->
+			<!-- Top row: portrait + quantity/pills -->
+			<div class="fd-confirm-top">
 				<div class="fc-portrait-wrap">
 					<img
 						class="fc-portrait"
@@ -347,10 +347,7 @@
 					/>
 				</div>
 
-				<!-- Right column: quantity + pills + body -->
-				<div class="fd-confirm-right">
-
-					<!-- Quantity / rank selector -->
+				<div class="fd-qty-top">
 					<fieldset class="fd-quantity-group">
 						<legend class="fd-quantity-legend">Quantity</legend>
 						{#each FOE_QUANTITIES as qty}
@@ -367,54 +364,52 @@
 						{/each}
 					</fieldset>
 
-					<!-- Pills -->
 					{#if rankInfo}
+						{@const qtyDef = FOE_QUANTITIES.find(q => q.value === quantity)}
 						<div class="fd-confirm-pills">
 							<span class="fd-badge" style="background: {natureColor}22; color: {natureColor}">{confirmFoe.nature}</span>
 							<span class="fd-badge fd-badge--rank" style={rankBadgeStyle(effRank)}>{rankInfo.label}</span>
 							<span class="fd-stat-pill fd-stat-pill--harm">Harm: {rankInfo.harm}</span>
 							<span class="fd-stat-pill fd-stat-pill--progress">Progress: {rankInfo.progressPerHit}</span>
+							<span class="fd-stat-pill fd-stat-pill--qty">{qtyDef?.label ?? quantity}</span>
 						</div>
 					{/if}
+				</div>
+			</div>
 
-					<!-- Text body: description + sections -->
-					{#if confirmFoe.description || confirmFoe.features.length > 0 || confirmFoe.drives.length > 0 || confirmFoe.tactics.length > 0}
-						<div class="fc-body">
-							{#if confirmFoe.description}
-								<p class="fc-desc">{confirmFoe.description}</p>
-							{/if}
-
-							{#if confirmFoe.features.length > 0}
-								<div class="fc-section">
-									<span class="fc-section-label">Features</span>
-									<ul class="fc-list">
-										{#each confirmFoe.features as feat}<li>{feat}</li>{/each}
-									</ul>
-								</div>
-							{/if}
-
-							{#if confirmFoe.drives.length > 0}
-								<div class="fc-section">
-									<span class="fc-section-label">Drives</span>
-									<ul class="fc-list">
-										{#each confirmFoe.drives as d}<li>{d}</li>{/each}
-									</ul>
-								</div>
-							{/if}
-
-							{#if confirmFoe.tactics.length > 0}
-								<div class="fc-section">
-									<span class="fc-section-label">Tactics</span>
-									<ul class="fc-list">
-										{#each confirmFoe.tactics as t}<li>{t}</li>{/each}
-									</ul>
-								</div>
-							{/if}
+			<!-- Bottom: description + features/drives/tactics, always full width -->
+			{#if confirmFoe.description || confirmFoe.features.length > 0 || confirmFoe.drives.length > 0 || confirmFoe.tactics.length > 0}
+				<div class="fd-confirm-bottom">
+					{#if confirmFoe.description}
+						<p class="fc-desc">{confirmFoe.description}</p>
+					{/if}
+					{#if confirmFoe.features.length > 0}
+						<div class="fc-section">
+							<span class="fc-section-label">Features</span>
+							<ul class="fc-list">
+								{#each confirmFoe.features as feat}<li>{feat}</li>{/each}
+							</ul>
 						</div>
 					{/if}
+					{#if confirmFoe.drives.length > 0}
+						<div class="fc-section">
+							<span class="fc-section-label">Drives</span>
+							<ul class="fc-list">
+								{#each confirmFoe.drives as d}<li>{d}</li>{/each}
+							</ul>
+						</div>
+					{/if}
+					{#if confirmFoe.tactics.length > 0}
+						<div class="fc-section">
+							<span class="fc-section-label">Tactics</span>
+							<ul class="fc-list">
+								{#each confirmFoe.tactics as t}<li>{t}</li>{/each}
+							</ul>
+						</div>
+					{/if}
+				</div>
+			{/if}
 
-				</div><!-- /fd-confirm-right -->
-			</div><!-- /fd-confirm-layout -->
 		</div>
 
 		<div class="fd-footer">
@@ -428,7 +423,7 @@
 <style>
 	/* ── Dialog shell ───────────────────────────────────────────────────── */
 	.foe-dialog {
-		margin: 0;
+		margin: auto;
 		padding: 0;
 		border: 1px solid var(--border);
 		border-radius: 8px;
@@ -436,13 +431,10 @@
 		color: var(--text);
 		box-shadow: 0 16px 48px rgba(0,0,0,0.55);
 		position: fixed;
-		top: 1rem;
-		left: 1rem;
-		right: 1rem;
-		bottom: 1rem;
-		width: auto;
-		height: auto;
-		max-height: none;
+		inset: 0;
+		width: 80vw;
+		height: fit-content;
+		max-height: 80vh;
 		overflow: hidden;
 	}
 
@@ -803,23 +795,36 @@
 		gap: 0.75rem;
 	}
 
-	/* ── Two-column confirm layout: portrait left, everything else right ── */
-	.fd-confirm-layout {
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: 10px;
-		align-items: start;
+	/* ── Confirm scroll contents ────────────────────────────────────── */
+	.fd-confirm-scroll {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	/* Top row: single column on mobile, two columns on desktop */
+	.fd-confirm-top {
+		display: flex;
+		flex-direction: column;
+		gap: 0.65rem;
 	}
 
 	@media (min-width: 520px) {
-		.fd-confirm-layout {
-			grid-template-columns: 1fr 1fr;
+		.fd-confirm-top {
+			flex-direction: row;
+			align-items: flex-start;
+			gap: 0.85rem;
+		}
+		.fc-portrait-wrap {
+			flex: 0 0 45%;
+			max-width: 45%;
+		}
+		.fd-qty-top {
+			flex: 1;
 		}
 	}
 
-	.fc-portrait-wrap {
-		width: 100%;
-	}
+	.fc-portrait-wrap { width: 100%; }
 
 	.fc-portrait {
 		width: 100%;
@@ -830,24 +835,14 @@
 		display: block;
 	}
 
-	/* Right column: quantity + pills + body stacked */
-	.fd-confirm-right {
-		display: flex;
-		flex-direction: column;
-		gap: 0.6rem;
-		min-width: 0;
-	}
-
-	/* ── Text body: description + sections ──────────────────────────── */
-	.fc-body {
+	/* Bottom section: always full width */
+	.fd-confirm-bottom {
 		display: flex;
 		flex-direction: column;
 		gap: 0.65rem;
-		padding: 0.6rem 0.75rem;
-		border: 1px solid var(--border);
-		border-radius: 6px;
-		background: var(--bg-inset);
 	}
+
+	/* ── Right col: quantity + pills ─────────────────────────────────── */
 
 	.fc-desc {
 		font-family: var(--font-ui);
@@ -882,6 +877,13 @@
 		font-size: 0.78rem;
 		color: var(--text-muted);
 		margin-bottom: 1px;
+	}
+
+	.fd-qty-top {
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+		min-width: 0;
 	}
 
 	/* ── Quantity selector ──────────────────────────────────────────────── */
@@ -949,5 +951,10 @@
 		background: rgba(59,130,246,0.10);
 		color: #60a5fa;
 		border: 1px solid rgba(59,130,246,0.25);
+	}
+	.fd-stat-pill--qty {
+		background: rgba(255,255,255,0.08);
+		color: var(--text-muted);
+		border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
 	}
 </style>
