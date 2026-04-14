@@ -47,3 +47,70 @@ test('settings button opens settings dialog', async ({ page }) => {
 	await page.keyboard.press('Escape');
 	await expect(page.locator('.settings-dialog')).not.toBeVisible();
 });
+
+// ── Mobile swipe-to-switch-tab ───────────────────────────────────────────────
+// Synthetic touch events on .tab-body should advance/retreat the active tab,
+// clamped at the ends (no wrap-around).
+async function swipeTabBody(page: import('@playwright/test').Page, dx: number, dy = 0) {
+	await page.evaluate(({ dx, dy }) => {
+		const el = document.querySelector('.tab-body');
+		if (!el) throw new Error('.tab-body not found');
+		const rect = el.getBoundingClientRect();
+		const startX = rect.left + rect.width / 2;
+		const startY = rect.top  + rect.height / 2;
+		const mkTouch = (x: number, y: number) => new Touch({
+			identifier: 1, target: el, clientX: x, clientY: y,
+		});
+		el.dispatchEvent(new TouchEvent('touchstart', {
+			bubbles: true, cancelable: true,
+			touches:       [mkTouch(startX, startY)],
+			targetTouches: [mkTouch(startX, startY)],
+			changedTouches:[mkTouch(startX, startY)],
+		}));
+		el.dispatchEvent(new TouchEvent('touchend', {
+			bubbles: true, cancelable: true,
+			touches: [], targetTouches: [],
+			changedTouches: [mkTouch(startX + dx, startY + dy)],
+		}));
+	}, { dx, dy });
+}
+
+test('swipe-left on tab body advances to the next tab', async ({ page }) => {
+	await page.click('.tab-btn[data-tab="characters"]');
+	await expect(page.locator('.tab-btn[data-tab="characters"]')).toHaveClass(/active/);
+	await swipeTabBody(page, -120);
+	await expect(page.locator('.tab-btn[data-tab="foes"]')).toHaveClass(/active/);
+});
+
+test('swipe-right on tab body retreats to the previous tab', async ({ page }) => {
+	await page.click('.tab-btn[data-tab="foes"]');
+	await expect(page.locator('.tab-btn[data-tab="foes"]')).toHaveClass(/active/);
+	await swipeTabBody(page, 120);
+	await expect(page.locator('.tab-btn[data-tab="characters"]')).toHaveClass(/active/);
+});
+
+test('swipe is clamped at the first tab (no wrap-around)', async ({ page }) => {
+	await page.click('.tab-btn[data-tab="characters"]');
+	await swipeTabBody(page, 120);
+	await expect(page.locator('.tab-btn[data-tab="characters"]')).toHaveClass(/active/);
+});
+
+test('swipe is clamped at the last tab (no wrap-around)', async ({ page }) => {
+	await page.click('.tab-btn[data-tab="adventure"]');
+	await swipeTabBody(page, -120);
+	await expect(page.locator('.tab-btn[data-tab="adventure"]')).toHaveClass(/active/);
+});
+
+test('mostly-vertical drag does NOT switch tabs', async ({ page }) => {
+	await page.click('.tab-btn[data-tab="characters"]');
+	// |dx|=40, |dy|=200 → ratio fails; should stay on characters
+	await swipeTabBody(page, 40, 200);
+	await expect(page.locator('.tab-btn[data-tab="characters"]')).toHaveClass(/active/);
+});
+
+test('small horizontal movement (tap-like) does NOT switch tabs', async ({ page }) => {
+	await page.click('.tab-btn[data-tab="characters"]');
+	// |dx|=20 below 60px threshold
+	await swipeTabBody(page, 20);
+	await expect(page.locator('.tab-btn[data-tab="characters"]')).toHaveClass(/active/);
+});

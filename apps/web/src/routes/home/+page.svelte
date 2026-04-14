@@ -207,7 +207,11 @@
 	let _pendingNpcNameOracle         = $state('namesIronlander');
 
 	// ── Active tab (declared here so the session-persistence effect can track it)
-	type Tab = 'characters' | 'foes' | 'expeditions' | 'communities' | 'adventure' | 'admin';
+	// TABS lists the main swipeable tabs (in order). The conditional 'admin'
+	// tab is reachable only via its tab button — kept out of TABS so swipe
+	// never lands a non-admin user there.
+	const TABS = ['characters', 'foes', 'expeditions', 'communities', 'adventure'] as const;
+	type Tab = typeof TABS[number] | 'admin';
 	let activeTab = $state<Tab>('characters');
 	const isAdmin = $derived(data.user?.role === 'admin');
 
@@ -380,8 +384,7 @@
 				activeFoeId = saved.foeId;
 			if (saved.expeditionId && getExpeditions().find(e => e.id === saved.expeditionId))
 				activeExpeditionId = saved.expeditionId;
-			const validTabs: Tab[] = ['characters', 'foes', 'expeditions', 'communities', 'adventure'];
-			if (saved.activeTab && validTabs.includes(saved.activeTab as Tab))
+			if (saved.activeTab && (TABS as readonly string[]).includes(saved.activeTab))
 				activeTab = saved.activeTab as Tab;
 		}
 		loadingChars = false;
@@ -395,6 +398,54 @@
 		if (!btn) return;
 		const tab = btn.dataset.tab as Tab | undefined;
 		if (tab) activeTab = tab;
+	}
+
+	// ── Mobile swipe-to-switch-tab ────────────────────────────────────────────
+	// Inner elements that need horizontal touch handling can opt out by adding
+	// `data-no-swipe-tabs` (the start point is checked for an ancestor with it).
+	const SWIPE_THRESHOLD_PX = 60;
+	const SWIPE_RATIO        = 1.5;   // |dx| must exceed |dy| * this
+	const SWIPE_MAX_TIME_MS  = 600;
+	let swipeStartX    = 0;
+	let swipeStartY    = 0;
+	let swipeStartTime = 0;
+	let swipeActive    = false;
+
+	function switchTabBy(direction: 1 | -1) {
+		// Admin users can swipe into/out of the admin tab; everyone else cycles
+		// through TABS only. Keeping admin out of TABS for non-admins prevents
+		// swipes from landing on a tab they can't see.
+		const order: readonly Tab[] = isAdmin ? [...TABS, 'admin'] : TABS;
+		const idx = order.indexOf(activeTab);
+		const next = idx + direction;
+		if (next < 0 || next >= order.length) return;
+		activeTab = order[next];
+	}
+
+	function handleTabBodyTouchStart(e: TouchEvent) {
+		if (e.touches.length !== 1) { swipeActive = false; return; }
+		const target = e.target as HTMLElement | null;
+		if (target?.closest('[data-no-swipe-tabs]')) { swipeActive = false; return; }
+		const t = e.touches[0];
+		swipeStartX    = t.clientX;
+		swipeStartY    = t.clientY;
+		swipeStartTime = Date.now();
+		swipeActive    = true;
+	}
+
+	function handleTabBodyTouchEnd(e: TouchEvent) {
+		if (!swipeActive) return;
+		swipeActive = false;
+		const t = e.changedTouches[0];
+		if (!t) return;
+		const dx = t.clientX - swipeStartX;
+		const dy = t.clientY - swipeStartY;
+		const dt = Date.now() - swipeStartTime;
+		if (dt > SWIPE_MAX_TIME_MS) return;
+		if (Math.abs(dx) < SWIPE_THRESHOLD_PX) return;
+		if (Math.abs(dx) < Math.abs(dy) * SWIPE_RATIO) return;
+		const dir = dx < 0 ? 1 : -1;
+		switchTabBy(dir);
 	}
 
 	// ── Party supply — always in sync across all characters ───────────────────
@@ -1430,7 +1481,9 @@
 		</nav>
 
 		<!-- Tab body -->
-		<div class="tab-body">
+		<div class="tab-body" role="tabpanel" tabindex="0" aria-label="{activeTab} tab content"
+			ontouchstart={handleTabBodyTouchStart}
+			ontouchend={handleTabBodyTouchEnd}>
 
 			{#if activeTab === 'characters'}
 				<div class="char-toolbar">
