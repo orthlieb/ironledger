@@ -655,6 +655,7 @@
 	.fd-grid-wrap {
 		flex: 1;
 		overflow-y: auto;
+		overscroll-behavior: contain;
 		min-height: 0;
 		padding: 0.75rem 1rem;
 	}
@@ -789,6 +790,7 @@
 	.fd-confirm-scroll {
 		flex: 1;
 		overflow-y: auto;
+		overscroll-behavior: contain;
 		min-height: 0;
 		padding: 0.75rem 1rem;
 		display: flex;

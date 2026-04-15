@@ -188,6 +188,16 @@ body {
 	padding-right:  env(safe-area-inset-right);
 }
 
+/* Lock the page scroll while any modal <dialog> is open. Native showModal()
+   disables pointer interaction with the page behind, but mobile Safari still
+   lets touch-drags scroll the body through the backdrop. Locking html/body
+   overflow freezes the underlying page so touch scrolls are captured by the
+   dialog's own scrollable body. */
+html:has(dialog[open]),
+body:has(dialog[open]) {
+	overflow: hidden;
+}
+
 a {
 	color: var(--text-accent);
 	text-decoration: none;

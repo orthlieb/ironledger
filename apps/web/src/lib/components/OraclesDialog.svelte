@@ -497,6 +497,7 @@
 	.od-body {
 		flex:       1;
 		overflow-y: auto;
+		overscroll-behavior: contain;
 		padding:    10px 14px;
 		min-height: 0;
 	}
