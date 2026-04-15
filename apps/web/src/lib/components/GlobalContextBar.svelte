@@ -207,21 +207,24 @@
 	};
 
 	const DEBILITY_DEFS = [
-		{ key: 'wounded',    label: 'Wounded',    color: 'var(--color-danger)' },
-		{ key: 'unprepared', label: 'Unprepared', color: 'var(--color-danger)' },
-		{ key: 'shaken',     label: 'Shaken',     color: 'var(--color-danger)' },
-		{ key: 'encumbered', label: 'Encumbered', color: 'var(--color-danger)' },
-		{ key: 'maimed',     label: 'Maimed',     color: 'var(--color-danger)' },
-		{ key: 'corrupted',  label: 'Corrupted',  color: 'var(--color-danger)' },
-		{ key: 'cursed',     label: 'Cursed',     color: 'var(--color-danger)' },
-		{ key: 'tormented',  label: 'Tormented',  color: 'var(--color-danger)' },
+		{ key: 'wounded',    label: 'Wounded',    color: 'var(--color-danger)', tip: 'You are severely injured and need treatment to recover.' },
+		{ key: 'unprepared', label: 'Unprepared', color: 'var(--color-danger)', tip: 'You lack the resources and provisions necessary for your journey.' },
+		{ key: 'shaken',     label: 'Shaken',     color: 'var(--color-danger)', tip: 'You are despairing or distraught, and need comfort to recover.' },
+		{ key: 'encumbered', label: 'Encumbered', color: 'var(--color-danger)', tip: 'You are carrying excessive or cumbersome weight.' },
+		{ key: 'maimed',     label: 'Maimed',     color: 'var(--color-danger)', tip: 'You have suffered a wound which causes ongoing physical challenges, such as the loss of an eye or hand. Or, you bear horrific scars which serve as a constant reminder of your failures.' },
+		{ key: 'corrupted',  label: 'Corrupted',  color: 'var(--color-danger)', tip: 'Your experiences have left you emotionally scarred. You are at the threshold of losing yourself to darkness.' },
+		{ key: 'cursed',     label: 'Cursed',     color: 'var(--color-danger)', tip: 'You have faced Death and returned with a soul-bound quest.' },
+		{ key: 'tormented',  label: 'Tormented',  color: 'var(--color-danger)', tip: 'You have faced Desolation and undertake a quest to prevent a dire future.' },
 	] as const;
 
 	const activeDebilities = $derived(
 		data ? DEBILITY_DEFS.filter(d => (data as unknown as Record<string, boolean>)[d.key]) : []
 	);
 
-	// Derive pills for asset custom fields that have a shortLabel.
+	// Derive pills for every owned asset.
+	// Assets with custom fields render one pill per non-string field
+	// (e.g. "Mana: 3", "Touched: Prime"). Assets without custom fields
+	// render a name-only pill so the full roster is visible.
 	// Global fields (e.g. mana) are deduplicated by field id.
 	const assetPills = $derived((() => {
 		if (!data?.assets?.length) return [];
@@ -231,9 +234,11 @@
 		const seenFieldIds = new Set<string>();
 		for (const owned of data.assets) {
 			const def = catalogue.find(a => a.id === owned.assetId);
-			if (!def?.customFields) continue;
+			if (!def) continue;
 			const color = ASSET_CAT_COLOR[def.category] ?? 'var(--text-muted)';
-			for (const field of def.customFields) {
+			const tooltipText = def.summary ?? def.name;
+			let emittedField = false;
+			for (const field of def.customFields ?? []) {
 				if (field.type === 'string') continue;
 				// Deduplicate global fields across assets
 				if (field.global && seenFieldIds.has(field.id)) continue;
@@ -253,8 +258,13 @@
 				}
 				// shortLabel / tooltipLabel may be absent if stripped by AJV; fall back gracefully
 				const pillLabel = field.shortLabel ?? field.label;
-				const tooltipText = field.tooltipLabel ?? def.name;
-				pills.push({ label: pillLabel, value: displayVal, color, assetName: tooltipText });
+				const fieldTooltip = field.tooltipLabel ?? tooltipText;
+				pills.push({ label: pillLabel, value: displayVal, color, assetName: fieldTooltip });
+				emittedField = true;
+			}
+			// Name-only pill for stateless assets (no custom fields, or only string fields)
+			if (!emittedField) {
+				pills.push({ label: def.name, value: '', color, assetName: tooltipText });
 			}
 		}
 		return pills;
@@ -381,7 +391,7 @@
 							<div class="gc-chip-group gc-chip-group--debilities">
 								<span class="gc-inline-label">Debilities</span>
 								{#each activeDebilities as deb}
-									<span class="gc-debility-pill" use:tooltip={deb.label} style="color: {deb.color}; background: color-mix(in srgb, {deb.color} 12%, transparent); border: 1px solid color-mix(in srgb, {deb.color} 30%, transparent);">{deb.label}</span>
+									<span class="gc-debility-pill" use:tooltip={{ text: deb.tip }} style="color: {deb.color}; background: color-mix(in srgb, {deb.color} 12%, transparent); border: 1px solid color-mix(in srgb, {deb.color} 30%, transparent);">{deb.label}</span>
 								{/each}
 							</div>
 						{/if}
@@ -389,7 +399,7 @@
 							<div class="gc-chip-group gc-chip-group--assets">
 								<span class="gc-inline-label">Assets</span>
 								{#each assetPills as pill}
-									<span class="gc-asset-pill" use:tooltip={pill.assetName} style="color: {pill.color}; background: color-mix(in srgb, {pill.color} 12%, transparent); border: 1px solid color-mix(in srgb, {pill.color} 30%, transparent);">{pill.label}: {pill.value}</span>
+									<span class="gc-asset-pill" use:tooltip={{ text: pill.assetName }} style="color: {pill.color}; background: color-mix(in srgb, {pill.color} 12%, transparent); border: 1px solid color-mix(in srgb, {pill.color} 30%, transparent);">{pill.label}{pill.value ? `: ${pill.value}` : ''}</span>
 								{/each}
 							</div>
 						{/if}
