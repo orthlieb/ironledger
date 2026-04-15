@@ -867,9 +867,12 @@
 
 	/* ---- Log entry ---- */
 	.log-entry {
-		background: var(--bg-card);
 		padding: 6px 9px;
 		position: relative;
+		border-bottom: 1px solid var(--border);
+	}
+	.log-entry:last-child {
+		border-bottom: none;
 	}
 
 	.entry-header {
