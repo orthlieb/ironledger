@@ -292,9 +292,10 @@
 		top:           8dvh;
 		left:          50%;
 		transform:     translateX(-50%);
-		width:         min(640px, calc(100vw - 2rem));
-		height:        fit-content;
-		max-height:    80vh;
+		width:         min(640px, calc(100vw - 1rem));
+		/* Definite height — fit-content + max-height collapses the flex:1 body
+		   to near-zero on mobile (dialog only shows header + search bar). */
+		height:        min(84dvh, 720px);
 		background:    var(--bg-card);
 		color:         var(--text);
 		box-shadow:    0 16px 48px #00000070, 0 0 0 1px var(--border-mid);

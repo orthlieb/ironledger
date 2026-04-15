@@ -432,9 +432,10 @@
 		box-shadow: 0 16px 48px rgba(0,0,0,0.55);
 		position: fixed;
 		inset: 0;
-		width: 80vw;
-		height: fit-content;
-		max-height: 80vh;
+		width: min(640px, calc(100vw - 1rem));
+		/* Definite height — fit-content + max-height collapses the flex:1 body
+		   to near-zero on mobile (dialog only shows header + search bar). */
+		height: min(85dvh, 720px);
 		overflow: hidden;
 	}
 
