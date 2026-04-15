@@ -868,8 +868,6 @@
 	/* ---- Log entry ---- */
 	.log-entry {
 		background: var(--bg-card);
-		border: 1px solid var(--border);
-		border-radius: 3px;
 		padding: 6px 9px;
 		position: relative;
 	}
