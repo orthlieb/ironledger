@@ -21,8 +21,8 @@
  * Supported in Chrome 114+, Safari 17+, Firefox 125+. Falls back gracefully
  * (tooltip simply won't show) in older browsers.
  *
- * Disabled entirely on touch / mobile devices to avoid interfering with
- * taps on checkboxes, buttons, and other interactive elements.
+ * On touch / mobile devices tooltips are shown on tap and auto-dismiss
+ * after 2.5 s. `passive: true` ensures the tap itself is never blocked.
  *
  * Usage:
  *   <div use:tooltip="text">…</div>
@@ -47,15 +47,7 @@ function normalise(param: TooltipParam): TooltipOptions {
 export function tooltip(node: HTMLElement, param: TooltipParam) {
 	let opts  = normalise(param);
 
-	// Disable tooltips entirely on touch / mobile devices — they interfere
-	// with taps on checkboxes and buttons.
 	const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-	if (isTouch) {
-		return {
-			update(newParam: TooltipParam) { opts = normalise(newParam); },
-			destroy() {},
-		};
-	}
 
 	let tipEl: HTMLDivElement | null = null;
 	let hideTimer: ReturnType<typeof setTimeout> | null = null;
@@ -125,10 +117,22 @@ export function tooltip(node: HTMLElement, param: TooltipParam) {
 		}
 	}
 
-	node.addEventListener('mouseenter',  show);
-	node.addEventListener('mouseleave',  hide);
-	node.addEventListener('focus',       show);
-	node.addEventListener('blur',        hide);
+	// On touch devices show on tap and auto-dismiss after 2.5 s.
+	// passive:true ensures we never block the tap itself.
+	function handleTouchStart() {
+		show();
+		if (hideTimer) clearTimeout(hideTimer);
+		hideTimer = setTimeout(hide, 2500);
+	}
+
+	if (isTouch) {
+		node.addEventListener('touchstart', handleTouchStart, { passive: true });
+	} else {
+		node.addEventListener('mouseenter', show);
+		node.addEventListener('mouseleave', hide);
+		node.addEventListener('focus',      show);
+		node.addEventListener('blur',       hide);
+	}
 
 	return {
 		update(newParam: TooltipParam) {
@@ -140,10 +144,15 @@ export function tooltip(node: HTMLElement, param: TooltipParam) {
 		},
 		destroy() {
 			hide();
-			node.removeEventListener('mouseenter',  show);
-			node.removeEventListener('mouseleave',  hide);
-			node.removeEventListener('focus',       show);
-			node.removeEventListener('blur',        hide);
+			if (hideTimer) clearTimeout(hideTimer);
+			if (isTouch) {
+				node.removeEventListener('touchstart', handleTouchStart);
+			} else {
+				node.removeEventListener('mouseenter', show);
+				node.removeEventListener('mouseleave', hide);
+				node.removeEventListener('focus',      show);
+				node.removeEventListener('blur',       hide);
+			}
 		},
 	};
 }

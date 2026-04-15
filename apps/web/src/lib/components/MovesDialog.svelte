@@ -862,33 +862,6 @@
 		<!-- ── Scrollable read area ── -->
 		<div class="md-detail-scroll">
 
-			<!-- Relevant Assets (BEFORE trigger) -->
-			{#if ctx && relevantAbilities.length > 0}
-				<div class="md-relevant-assets">
-					<span class="md-relevant-label">Relevant Assets</span>
-					<div class="md-relevant-tags">
-						{#each relevantAbilities as ra (`${ra.assetId}-${ra.abilityIndex}`)}
-							<div class="md-relevant-tag" use:tooltip={{ text: stripHtml(ra.abilityText), placement: 'below' }}>
-								<span class="md-relevant-check">✓</span>
-								{ra.assetName} #{ra.abilityIndex + 1}
-							</div>
-						{/each}
-					</div>
-				</div>
-			{/if}
-
-			<!-- Debility Warnings -->
-			{#if ctx && debilityWarnings.length > 0}
-				<div class="md-debility-bar">
-					<span class="md-debility-label">Debilities</span>
-					<div class="md-debility-tags">
-						{#each debilityWarnings as w (w.key)}
-							<div class="md-debility-tag" use:tooltip={{ text: w.penalty, placement: 'below' }}>{w.label}</div>
-						{/each}
-					</div>
-				</div>
-			{/if}
-
 			<!-- Trigger text -->
 			<div class="md-trigger">
 				{@html (selectedMove as Record<string, unknown>).triggerPreamble as string ?? selectedMove.trigger}
@@ -1096,6 +1069,34 @@
 
 		<!-- ── Sticky action footer ── -->
 		<div class="md-detail-footer">
+
+			<!-- Relevant Assets -->
+			{#if ctx && relevantAbilities.length > 0}
+				<div class="md-relevant-assets">
+					<span class="md-relevant-label">Relevant Assets</span>
+					<div class="md-relevant-tags">
+						{#each relevantAbilities as ra (`${ra.assetId}-${ra.abilityIndex}`)}
+							<div class="md-relevant-tag" use:tooltip={{ text: stripHtml(ra.abilityText), placement: 'above' }}>
+								<span class="md-relevant-check">✓</span>
+								{ra.assetName} #{ra.abilityIndex + 1}
+							</div>
+						{/each}
+					</div>
+				</div>
+			{/if}
+
+			<!-- Debility Warnings -->
+			{#if ctx && debilityWarnings.length > 0}
+				<div class="md-debility-bar">
+					<span class="md-debility-label">Debilities</span>
+					<div class="md-debility-tags">
+						{#each debilityWarnings as w (w.key)}
+							<div class="md-debility-tag" use:tooltip={{ text: w.penalty, placement: 'above' }}>{w.label}</div>
+						{/each}
+					</div>
+				</div>
+			{/if}
+
 			{#if hasRollableStats(selectedMove)}
 				{@const fail = moveFailReason(selectedMove)}
 				<div class="md-footer-top">
