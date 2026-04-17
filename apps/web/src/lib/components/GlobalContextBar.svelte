@@ -412,10 +412,10 @@
 
 <div class="global-context" class:gc--stacked={stacked}>
 
-	<div class="gc-layout">
-
-	<!-- ===== Scenario heading (rotated side label) ===== -->
+	<!-- ===== Scenario heading (card header / rotated side label on narrow) ===== -->
 	<div class="gc-scenario-heading">Current Scenario</div>
+
+	<div class="gc-layout">
 
 	<!-- ===== Three tiles ===== -->
 	<div class="gc-tiles">
@@ -837,33 +837,23 @@
 		z-index: 35;
 	}
 
-	/* Scenario heading — rotated side label (matches STATS / VITALS pattern) */
+	/* Scenario heading — default: horizontal header (matches SESSION LOG header style) */
 	.gc-scenario-heading {
-		writing-mode: vertical-rl;
-		transform: rotate(180deg);
-		font-family: var(--font-display);
-		font-size: 0.55rem;
-		font-weight: 800;
-		letter-spacing: 0.14em;
-		text-transform: uppercase;
-		color: var(--text-dimmer);
-		flex-shrink: 0;
-		align-self: stretch;
 		display: flex;
 		align-items: center;
-		justify-content: center;
-		border-right: 1px solid var(--border);
-		padding-right: 4px;
-	}
-
-	/* In stacked layout, the label sits above the tiles — reset to horizontal */
-	.gc--stacked .gc-scenario-heading {
-		writing-mode: horizontal-tb;
-		transform: none;
-		align-self: auto;
-		border-right: none;
+		gap: 8px;
+		padding: 10px 14px;
+		background: var(--bg-inset);
 		border-bottom: 1px solid var(--border);
-		padding: 4px 0;
+		border-radius: 5px 5px 0 0;
+		min-height: 54px;
+		font-family: var(--font-display);
+		font-size: 0.75rem;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--text-muted);
+		flex-shrink: 0;
 	}
 
 	/* Full-area clickable button */
@@ -1641,7 +1631,16 @@
 
 	/* ===== Non-stacked responsive (narrow screens) ===== */
 	@media (max-width: 768px) {
-		.gc-layout { flex-direction: column; }
+		/* Lay out scenario heading beside the tile column to save vertical space */
+		.global-context {
+			display: flex;
+			align-items: stretch;
+		}
+		.gc-layout {
+			flex-direction: column;
+			flex: 1;
+			min-width: 0;
+		}
 		.gc-tiles  { grid-template-columns: 1fr; }
 		.gc-actions {
 			grid-template-columns: 1fr 1fr;
@@ -1650,13 +1649,23 @@
 			padding-top: 0.4rem;
 			border-top: 1px solid rgba(245, 158, 11, 0.15);
 		}
+		/* Rotated side label (matches STATS / VITALS pattern) */
 		.gc-scenario-heading {
-			writing-mode: horizontal-tb;
-			transform: none;
-			align-self: auto;
-			border-right: none;
-			border-bottom: 1px solid var(--border);
-			padding: 4px 0;
+			writing-mode: vertical-rl;
+			transform: rotate(180deg);
+			font-size: 0.55rem;
+			font-weight: 800;
+			letter-spacing: 0.14em;
+			color: var(--text-dimmer);
+			min-height: 0;
+			padding: 4px;
+			gap: 0;
+			background: transparent;
+			border-bottom: none;
+			border-right: 1px solid var(--border);
+			border-radius: 0;
+			align-self: stretch;
+			justify-content: center;
 		}
 	}
 
