@@ -469,7 +469,7 @@
 						<div class="gc-chip-group gc-chip-group--debilities">
 							<span class="gc-inline-label">Debilities</span>
 							{#each activeDebilities as deb}
-								<span class="gc-debility-pill" use:tooltip={deb.label} style="color: {deb.color}; background: color-mix(in srgb, {deb.color} 12%, transparent); border: 1px solid color-mix(in srgb, {deb.color} 30%, transparent);">{deb.label}</span>
+								<span class="gc-debility-pill" use:tooltip={deb.label} style="color: {deb.color}; background: color-mix(in srgb, {deb.color} 12%, transparent);">{deb.label}</span>
 							{/each}
 						</div>
 					{/if}
@@ -477,7 +477,7 @@
 						<div class="gc-chip-group gc-chip-group--assets">
 							<span class="gc-inline-label">Assets</span>
 							{#each assetPills as pill}
-								<span class="gc-asset-pill" use:tooltip={pill.assetName} style="color: {pill.color}; background: color-mix(in srgb, {pill.color} 12%, transparent); border: 1px solid color-mix(in srgb, {pill.color} 30%, transparent);">{pill.label}{pill.value ? `: ${pill.value}` : ''}</span>
+								<span class="gc-asset-pill" use:tooltip={pill.assetName} style="color: {pill.color}; background: color-mix(in srgb, {pill.color} 12%, transparent);">{pill.label}{pill.value ? `: ${pill.value}` : ''}</span>
 							{/each}
 						</div>
 					{/if}
@@ -1174,7 +1174,10 @@
 		text-transform: uppercase;
 		padding:        2px 7px;
 		border-radius:  10px;
+		border:         1px solid color-mix(in srgb, currentColor 35%, transparent);
+		line-height:    1;
 		white-space:    nowrap;
+		flex-shrink:    0;
 	}
 
 	/* Asset pills row */
@@ -1192,7 +1195,10 @@
 		text-transform: uppercase;
 		padding:        2px 7px;
 		border-radius:  10px;
+		border:         1px solid color-mix(in srgb, currentColor 35%, transparent);
+		line-height:    1;
 		white-space:    nowrap;
+		flex-shrink:    0;
 	}
 
 	/* ===== Canonical pill badge ===== */
@@ -1205,6 +1211,7 @@
 		padding: 2px 7px;
 		border-radius: 10px;
 		border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+		line-height: 1;
 		white-space: nowrap;
 		flex-shrink: 0;
 	}

@@ -737,6 +737,7 @@
 		padding: 2px 7px;
 		border-radius: 10px;
 		border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+		line-height: 1;
 		white-space: nowrap;
 		flex-shrink: 0;
 	}

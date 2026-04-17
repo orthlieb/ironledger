@@ -132,9 +132,11 @@ The global `.btn-icon` style uses `padding: 4px 8px; min-width: 28px` — **not 
 
 ## Canonical Pill / Badge Style
 
-Used in: `FoeCard` (`.fc-badge`), `JourneyCard` (`.jc-badge`), `SiteCard` (`.sc-badge`), `GlobalContextBar` (`.gc-badge`)
+Used in: `FoeCard` (`.fc-badge`), `JourneyCard` (`.jc-badge`), `SiteCard` (`.sc-badge`), `GlobalContextBar` (`.gc-badge`, `.gc-debility-pill`, `.gc-asset-pill`)
 
 ### Base CSS
+
+Every pill/badge **must** include all of these properties. `line-height: 1` is required to guarantee uniform pill height regardless of the parent container's inherited line-height.
 
 ```css
 font-family: var(--font-ui);
@@ -145,9 +147,12 @@ text-transform: uppercase;
 padding: 2px 7px;
 border-radius: 10px;
 border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+line-height: 1;
 white-space: nowrap;
 flex-shrink: 0;
 ```
+
+> **Important:** Put `border` in the CSS class, not in an inline `style` attribute. `currentColor` picks up the `color` value (set inline or by a modifier class), so the border always matches the pill's text color at 35% opacity.
 
 ### Colors by Type
 
@@ -162,12 +167,15 @@ flex-shrink: 0;
 | Site type      | `rgba(96,165,250,0.15)`           | `#60a5fa`                    |
 | Theme          | `rgba(168,85,247,0.15)`           | `#a855f7`                    |
 | Domain         | `rgba(251,146,60,0.15)`           | `#fb923c`                    |
+| Debility       | `color-mix(in srgb, {color} 12%, transparent)` | `var(--color-danger)` |
+| Asset          | `color-mix(in srgb, {color} 12%, transparent)` | `ASSET_CAT_COLOR[category]` |
 
 ### Pill Order
 
 - **Foe:** nature → rank → quantity → harm
 - **Journey (body top):** Journey (type) → difficulty
 - **Site (body top):** Site (type) → difficulty → theme → domain
+- **GCB character tile:** debilities → assets (below initiative toggle)
 - **GCB foe tile:** nature → rank → quantity → harm
 - **GCB expedition tile:** type → difficulty → theme → domain
 
