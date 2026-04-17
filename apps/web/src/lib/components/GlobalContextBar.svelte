@@ -412,10 +412,10 @@
 
 <div class="global-context" class:gc--stacked={stacked}>
 
-	<!-- ===== Scenario heading (card header) ===== -->
-	<div class="gc-scenario-heading">Current Scenario</div>
-
 	<div class="gc-layout">
+
+	<!-- ===== Scenario heading (rotated side label) ===== -->
+	<div class="gc-scenario-heading">Current Scenario</div>
 
 	<!-- ===== Three tiles ===== -->
 	<div class="gc-tiles">
@@ -837,23 +837,33 @@
 		z-index: 35;
 	}
 
-	/* Scenario heading — matches SESSION LOG header style */
+	/* Scenario heading — rotated side label (matches STATS / VITALS pattern) */
 	.gc-scenario-heading {
+		writing-mode: vertical-rl;
+		transform: rotate(180deg);
+		font-family: var(--font-display);
+		font-size: 0.55rem;
+		font-weight: 800;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--text-dimmer);
+		flex-shrink: 0;
+		align-self: stretch;
 		display: flex;
 		align-items: center;
-		gap: 8px;
-		padding: 10px 14px;
-		background: var(--bg-inset);
+		justify-content: center;
+		border-right: 1px solid var(--border);
+		padding-right: 4px;
+	}
+
+	/* In stacked layout, the label sits above the tiles — reset to horizontal */
+	.gc--stacked .gc-scenario-heading {
+		writing-mode: horizontal-tb;
+		transform: none;
+		align-self: auto;
+		border-right: none;
 		border-bottom: 1px solid var(--border);
-		border-radius: 5px 5px 0 0;
-		min-height: 54px;
-		font-family: var(--font-display);
-		font-size: 0.75rem;
-		font-weight: 700;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		color: var(--text-muted);
-		flex-shrink: 0;
+		padding: 4px 0;
 	}
 
 	/* Full-area clickable button */
@@ -1639,6 +1649,14 @@
 			border-left: none;
 			padding-top: 0.4rem;
 			border-top: 1px solid rgba(245, 158, 11, 0.15);
+		}
+		.gc-scenario-heading {
+			writing-mode: horizontal-tb;
+			transform: none;
+			align-self: auto;
+			border-right: none;
+			border-bottom: 1px solid var(--border);
+			padding: 4px 0;
 		}
 	}
 
