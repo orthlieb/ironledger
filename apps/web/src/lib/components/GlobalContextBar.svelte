@@ -415,13 +415,6 @@
 							<span class="gc-tile-portrait gc-tile-portrait--placeholder" aria-hidden="true">👤</span>
 						{/if}
 						<span class="gc-tile-name">{character?.name ?? ''}</span>
-						{#if initiative === 1}
-							<div role="button" tabindex="0" class="gc-init-badge gc-init-badge--you" onclick={(e) => { e.stopPropagation(); onInitiativeClick?.(2); }} onkeydown={(e) => e.key === 'Enter' && onInitiativeClick?.(2)} title="You have initiative — click to give it to foe">{@html swordSvg}<span class="gc-init-label">Has Initiative</span></div>
-						{:else if initiative === 2}
-							<div role="button" tabindex="0" class="gc-init-badge gc-init-badge--foe" onclick={(e) => { e.stopPropagation(); onInitiativeClick?.(0); }} onkeydown={(e) => e.key === 'Enter' && onInitiativeClick?.(0)} title="Foe has initiative — click to clear">{@html shieldSvg}<span class="gc-init-label">Foe Has Initiative</span></div>
-						{:else}
-							<div role="button" tabindex="0" class="gc-init-badge gc-init-badge--none" onclick={(e) => { e.stopPropagation(); onInitiativeClick?.(1); }} onkeydown={(e) => e.key === 'Enter' && onInitiativeClick?.(1)} title="No initiative — click to give it to you"><span class="gc-init-label">No Initiative</span></div>
-						{/if}
 					</div>
 				{:else}
 					<span class="gc-tile-placeholder"><img class="gc-placeholder-img" src={charactersSvgUrl} alt="" aria-hidden="true">Select Character</span>
