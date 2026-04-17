@@ -784,7 +784,7 @@
 		flex-shrink: 0;
 		display: flex;
 		align-items: stretch;
-		gap: 6px;
+		gap: 0;
 	}
 
 	/* ===== Main layout: tiles + actions side-by-side ===== */
@@ -792,7 +792,7 @@
 		display: flex;
 		gap: 0.5rem;
 		align-items: stretch;
-		padding: 0.5rem 0.6rem;
+		padding: 0.25rem 0.3rem;
 		flex: 1;
 		min-width: 0;
 	}
@@ -854,6 +854,7 @@
 		color: var(--text-dimmer);
 		flex-shrink: 0;
 		align-self: stretch;
+		margin: 0.25rem 0 0.25rem 6px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -867,7 +868,6 @@
 		flex-direction: column;
 		justify-content: flex-start;
 		width: 100%;
-		flex: 1;
 		min-height: 3rem;
 		padding: 0;
 		background: none;

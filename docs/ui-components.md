@@ -366,6 +366,75 @@ Images are dark on a light background — no invert needed. Override restores or
 
 ---
 
+## Section Labels
+
+A narrow vertical strip on the **left** side of a content area. Text runs bottom-to-top. Used for STATS, VITALS, DEBILITIES in `CharacterSheet` and "Current Scenario" in `GlobalContextBar`.
+
+All side labels share the same typography and border — the only difference is how they self-align within their flex parent.
+
+### Base CSS (shared by all side labels)
+
+```css
+.xx-side-label {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-family: var(--font-ui);
+    font-size: 0.55rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-dimmer);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-left: 1px solid var(--border);
+    padding-left: 4px;
+}
+```
+
+### Variant A — compact row (`align-self: stretch`)
+
+Used when the label sits alongside a compact, fixed-height row (STATS, VITALS, DEBILITIES). `align-self: stretch` lets the border-left span the full row height as a continuous vertical rule.
+
+```svelte
+<div class="xx-row-wrapper">
+    <div class="xx-side-label" style="align-self: stretch">STATS</div>
+    <div class="xx-content"><!-- stat tiles --></div>
+</div>
+```
+
+```css
+.xx-row-wrapper {
+    display: flex;
+    align-items: center;  /* or flex-start for multi-line content */
+    gap: 6px;
+}
+```
+
+### Variant B — tall container (`align-self: stretch` + `margin`)
+
+Used when the label sits alongside a potentially tall container (e.g. the GCB tile area). `align-self: stretch` is still used so the border spans cleanly, but equal `margin` top and bottom prevents it from reaching the outer edges of the container. Set the margin to match the adjacent content area's vertical padding so the border aligns with the content bounds.
+
+```svelte
+<div class="xx-side-label" style="align-self: stretch; margin: 0.25rem 0">
+    CURRENT SCENARIO
+</div>
+```
+
+```css
+.gc-scenario-heading {
+    /* …base properties… */
+    align-self: stretch;
+    margin: 0.25rem 0;   /* match gc-layout vertical padding — equal top and bottom */
+    padding-left: 4px;   /* border gap only, no top/bottom padding */
+}
+```
+
+> **Why not `align-self: center`?** With `writing-mode: vertical-rl`, flex auto-margins for centering don't always compute symmetrically across browsers. Explicit equal margins on a stretched element are more reliable.
+
+---
+
 ## Stat Tile (StatControl)
 
 Square tile used for the five Ironsworn stats (Edge, Heart, Iron, Shadow, Wits).

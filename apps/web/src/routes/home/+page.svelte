@@ -220,20 +220,64 @@
 	const isAdmin = $derived(data.user?.role === 'admin');
 
 	// ── Adventure split pane ───────────────────────────────────────────────────
-	const SPLIT_KEY = 'ironledger.adventureSplit';
-	let adventureSplitPct  = $state(50);
-	let adventureLayoutRef = $state<HTMLDivElement | null>(null);
-	let isResizing         = $state(false);
+	const SPLIT_KEY        = 'ironledger.adventureSplit';   // desktop: horizontal
+	const SPLIT_KEY_MOBILE = 'il:adventure:split:mobile';  // mobile:  vertical
+	let adventureSplitPct        = $state(50);  // desktop GCB width  % (25–75)
+	let adventureSplitPctMobile  = $state(80);  // mobile  GCB height % (20–95)
+	let adventureLayoutRef       = $state<HTMLDivElement | null>(null);
+	let adventureLayoutHeight    = $state<number | null>(null);
+	let isResizing               = $state(false);
 
-	// Load persisted split on mount (browser-only, avoids SSR issues)
+	// Load persisted splits on mount (browser-only, avoids SSR issues)
 	onMount(() => {
 		const stored = localStorage.getItem(SPLIT_KEY);
 		if (stored !== null) {
 			const n = Number(stored);
 			if (Number.isFinite(n)) adventureSplitPct = Math.min(75, Math.max(25, n));
 		}
+		const storedMobile = localStorage.getItem(SPLIT_KEY_MOBILE);
+		if (storedMobile !== null) {
+			const n = Number(storedMobile);
+			if (Number.isFinite(n)) adventureSplitPctMobile = Math.min(95, Math.max(20, n));
+		}
 	});
 
+	// Measure mobile layout height whenever the ref is bound or window resizes.
+	// Uses document-relative top so the value is stable regardless of scroll position.
+	$effect(() => {
+		const ref = adventureLayoutRef;
+		if (!ref) { adventureLayoutHeight = null; return; }
+		function measure() {
+			if (window.innerWidth >= 768) { adventureLayoutHeight = null; return; }
+			const rect   = ref!.getBoundingClientRect();
+			const docTop = rect.top + window.scrollY;
+			adventureLayoutHeight = Math.max(200, window.innerHeight - docTop);
+		}
+		measure();
+		window.addEventListener('resize', measure);
+		return () => window.removeEventListener('resize', measure);
+	});
+
+	// Lock body scroll on mobile while the adventure split panel is active so
+	// neither the GCB nor the log causes the whole page to scroll.
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		function apply() {
+			if (activeTab === 'adventure' && window.innerWidth < 768) {
+				document.body.style.overflow = 'hidden';
+			} else {
+				document.body.style.overflow = '';
+			}
+		}
+		apply();
+		window.addEventListener('resize', apply);
+		return () => {
+			document.body.style.overflow = '';
+			window.removeEventListener('resize', apply);
+		};
+	});
+
+	// ── Desktop horizontal resize ──────────────────────────────────────────────
 	function startAdventureResize(e: MouseEvent) {
 		e.preventDefault();
 		isResizing = true;
@@ -251,6 +295,30 @@
 		}
 		window.addEventListener('mousemove', onMove);
 		window.addEventListener('mouseup', onUp);
+	}
+
+	// ── Mobile vertical resize (touch + mouse) ─────────────────────────────────
+	function startAdventureResizeMobile() {
+		isResizing = true;
+		function onMove(ev: MouseEvent | TouchEvent) {
+			const y = 'touches' in ev ? (ev as TouchEvent).touches[0].clientY : (ev as MouseEvent).clientY;
+			if (!adventureLayoutRef) return;
+			const rect = adventureLayoutRef.getBoundingClientRect();
+			const pct  = ((y - rect.top) / rect.height) * 100;
+			adventureSplitPctMobile = Math.min(95, Math.max(20, pct));
+		}
+		function onUp() {
+			isResizing = false;
+			localStorage.setItem(SPLIT_KEY_MOBILE, String(adventureSplitPctMobile));
+			window.removeEventListener('mousemove', onMove);
+			window.removeEventListener('mouseup', onUp);
+			window.removeEventListener('touchmove', onMove as EventListener);
+			window.removeEventListener('touchend', onUp);
+		}
+		window.addEventListener('mousemove', onMove);
+		window.addEventListener('mouseup', onUp);
+		window.addEventListener('touchmove', onMove as EventListener, { passive: false });
+		window.addEventListener('touchend', onUp);
 	}
 
 	// Close mobile search pills when switching tabs
@@ -1780,7 +1848,7 @@
 
 				<div class="adventure-layout"
 					bind:this={adventureLayoutRef}
-					style="--gcb-pct: {adventureSplitPct}%"
+					style="--gcb-pct: {adventureSplitPct}%; --gcb-h: {adventureSplitPctMobile}%{adventureLayoutHeight !== null ? `; height: ${adventureLayoutHeight}px` : ''}"
 					class:adventure-layout--resizing={isResizing}>
 
 					<!-- GCB column -->
@@ -1806,11 +1874,12 @@
 						/>
 					</div>
 
-					<!-- Resize handle (desktop only) -->
+					<!-- Resize handle — vertical on desktop, horizontal on mobile -->
 					<div
 						class="adventure-resize-handle"
 						class:adventure-resize-handle--active={isResizing}
-						onmousedown={startAdventureResize}
+						onmousedown={(e) => { if (window.innerWidth < 768) { e.preventDefault(); startAdventureResizeMobile(); } else { startAdventureResize(e); } }}
+						ontouchstart={(e) => { e.preventDefault(); startAdventureResizeMobile(); }}
 						role="separator"
 						aria-label="Resize panels"
 						aria-orientation="vertical"
@@ -1984,6 +2053,7 @@
 		gap: 0.75rem;
 	}
 
+
 	.adventure-action-toolbar {
 		display: flex;
 		justify-content: flex-end;
@@ -2030,22 +2100,31 @@
 	.adventure-layout {
 		display: flex;
 		flex-direction: column;
-		gap: 12px;
+		gap: 0;
 		align-items: stretch;
+	}
+
+	/* Prevent text selection while dragging — cursor set per breakpoint below */
+	.adventure-layout--resizing {
+		user-select: none;
+	}
+
+	/* Mobile: fixed-height split panel — both areas scroll independently */
+	@media (max-width: 767px) {
+		.adventure-layout {
+			overflow: hidden;
+			/* CSS fallback height before JS measures the exact value */
+			height: calc(100dvh - 162px); /* nav(52) + tabs(41) + toolbar(~57) + gap(12) */
+		}
+		.adventure-layout--resizing { cursor: row-resize; }
 	}
 
 	@media (min-width: 768px) {
 		.adventure-layout {
 			flex-direction: row;
-			gap: 0;
 			align-items: start;
 		}
-	}
-
-	/* Prevent text selection while dragging */
-	.adventure-layout--resizing {
-		user-select: none;
-		cursor: col-resize;
+		.adventure-layout--resizing { cursor: col-resize; }
 	}
 
 	.adventure-gcb {
@@ -2058,6 +2137,21 @@
 		flex: 1 1 auto;
 	}
 
+	/* Mobile: GCB takes its percentage slice and scrolls internally */
+	@media (max-width: 767px) {
+		.adventure-gcb {
+			flex: 0 0 var(--gcb-h, 80%);
+			overflow-y: auto;
+			overflow-x: hidden;
+			min-height: 0;
+			/* Hide native scrollbar — touch swipe still works */
+			scrollbar-width: none;
+		}
+		.adventure-gcb::-webkit-scrollbar {
+			display: none;
+		}
+	}
+
 	@media (min-width: 768px) {
 		.adventure-gcb {
 			flex: 0 0 auto;
@@ -2067,24 +2161,71 @@
 		}
 	}
 
-	/* Resize handle — hidden on mobile, visible on desktop */
+	/* Resize handle — shared base; display + orientation set per breakpoint */
 	.adventure-resize-handle {
 		display: none;
+		align-items: center;
+		justify-content: center;
+		flex: 0 0 10px;
+		position: relative;
+		background: transparent;
+		transition: background 0.15s;
+		z-index: 5;
+		align-self: stretch;
+	}
+	/* Grip dots — content differs per breakpoint, all other props shared */
+	.adventure-resize-handle::before {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		font-size: 1rem;
+		line-height: 1;
+		color: var(--text-dimmer);
+		opacity: 0;
+		transition: opacity 0.15s;
+		pointer-events: none;
+		z-index: 1;
+	}
+	.adventure-resize-handle:hover::before,
+	.adventure-resize-handle--active::before {
+		opacity: 1;
 	}
 
+	/* Mobile: horizontal handle */
+	@media (max-width: 767px) {
+		.adventure-resize-handle {
+			display: flex;
+			cursor: row-resize;
+			touch-action: none;
+		}
+		.adventure-resize-handle::before { content: '⋯'; }
+		.adventure-resize-handle::after {
+			content: '';
+			position: absolute;
+			left: 0;
+			right: 0;
+			top: 50%;
+			transform: translateY(-50%);
+			height: 2px;
+			background: var(--border);
+			border-radius: 1px;
+			transition: background 0.15s, height 0.15s;
+		}
+		.adventure-resize-handle:hover::after,
+		.adventure-resize-handle--active::after {
+			height: 3px;
+			background: var(--text-accent);
+		}
+	}
+
+	/* Desktop: vertical handle */
 	@media (min-width: 768px) {
 		.adventure-resize-handle {
 			display: flex;
-			align-items: center;
-			justify-content: center;
-			flex: 0 0 10px;
 			cursor: col-resize;
-			position: relative;
-			background: transparent;
-			transition: background 0.15s;
-			z-index: 5;
-			align-self: stretch;
 		}
+		.adventure-resize-handle::before { content: '⋮'; }
 		.adventure-resize-handle::after {
 			content: '';
 			position: absolute;
@@ -2102,25 +2243,6 @@
 			width: 3px;
 			background: var(--text-accent);
 		}
-		/* Grip dots in the centre */
-		.adventure-resize-handle::before {
-			content: '⋮';
-			position: absolute;
-			top: 50%;
-			left: 50%;
-			transform: translate(-50%, -50%);
-			font-size: 1rem;
-			line-height: 1;
-			color: var(--text-dimmer);
-			opacity: 0;
-			transition: opacity 0.15s;
-			pointer-events: none;
-			z-index: 1;
-		}
-		.adventure-resize-handle:hover::before,
-		.adventure-resize-handle--active::before {
-			opacity: 1;
-		}
 	}
 
 	.adventure-log {
@@ -2133,6 +2255,14 @@
 		overflow: hidden;
 		box-shadow: inset 0 1px 0 #ffffff04, 0 2px 12px #00000050;
 		flex: 1 1 auto;
+	}
+
+	/* Mobile: log fills remaining height after GCB + handle */
+	@media (max-width: 767px) {
+		.adventure-log {
+			flex: 1 1 0;
+			min-height: 0;
+		}
 	}
 
 	@media (min-width: 768px) {
