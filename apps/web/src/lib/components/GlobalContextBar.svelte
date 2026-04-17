@@ -423,46 +423,6 @@
 							<div role="button" tabindex="0" class="gc-init-badge gc-init-badge--none" onclick={(e) => { e.stopPropagation(); onInitiativeClick?.(1); }} onkeydown={(e) => e.key === 'Enter' && onInitiativeClick?.(1)} title="No initiative — click to give it to you"><span class="gc-init-label">No Initiative</span></div>
 						{/if}
 					</div>
-					<div class="gc-char-chips">
-						<div class="gc-chip-group gc-chip-group--stats">
-							{#each STAT_DEFS as stat}
-								<span class="gc-chip gc-chip--stat" style="--chip-color: {stat.color}" title={stat.key}>
-									<span class="gc-chip-bg-icon" aria-hidden="true">{@html stat.icon}</span>
-									<span class="gc-chip-label">{stat.label}</span>
-									<span class="gc-chip-value">{(data as unknown as Record<string, number>)[stat.key] ?? 0}</span>
-								</span>
-							{/each}
-						</div>
-						<div class="gc-chip-group gc-chip-group--resources">
-							{#each RESOURCE_DEFS as res}
-								{@const resVal = (data as unknown as Record<string, number>)[res.key] ?? 0}
-								{@const thermoColor = (res.key === 'momentum' && resVal <= 0) ? 'var(--color-danger)' : res.color}
-								<span class="gc-chip gc-chip--resource" class:gc-chip--shake={shakingKeys.has(res.key)} style="--chip-color: {res.color}; --fill-pct: {resFillPct(res.key, resVal)}; --thermo-color: {thermoColor}" title={res.key}>
-									<span class="gc-chip-label">{res.label}</span>
-									<span class="gc-chip-value"><span class="gc-chip-icon">{@html res.icon}</span> {resVal}</span>
-								</span>
-							{/each}
-						</div>
-						{#if activeDebilities.length > 0 || assetPills.length > 0}
-							<hr class="gc-chip-divider" />
-						{/if}
-						{#if activeDebilities.length > 0}
-							<div class="gc-chip-group gc-chip-group--debilities">
-								<span class="gc-inline-label">Debilities</span>
-								{#each activeDebilities as deb}
-									<span class="gc-debility-pill" use:tooltip={{ text: deb.tip }} style="color: {deb.color}; background: color-mix(in srgb, {deb.color} 12%, transparent); border: 1px solid color-mix(in srgb, {deb.color} 30%, transparent);">{deb.label}</span>
-								{/each}
-							</div>
-						{/if}
-						{#if assetPills.length > 0}
-							<div class="gc-chip-group gc-chip-group--assets">
-								<span class="gc-inline-label">Assets</span>
-								{#each assetPills as pill}
-									<span class="gc-asset-pill" use:tooltip={{ text: pill.assetName }} style="color: {pill.color}; background: color-mix(in srgb, {pill.color} 12%, transparent); border: 1px solid color-mix(in srgb, {pill.color} 30%, transparent);">{pill.label}{pill.value ? `: ${pill.value}` : ''}</span>
-								{/each}
-							</div>
-						{/if}
-					</div>
 				{:else}
 					<span class="gc-tile-placeholder"><img class="gc-placeholder-img" src={charactersSvgUrl} alt="" aria-hidden="true">Select Character</span>
 				{/if}
