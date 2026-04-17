@@ -477,7 +477,7 @@
 						<div class="gc-chip-group gc-chip-group--assets">
 							<span class="gc-inline-label">Assets</span>
 							{#each assetPills as pill}
-								<span class="gc-asset-pill" use:tooltip={pill.assetName} style="color: {pill.color}; background: color-mix(in srgb, {pill.color} 12%, transparent); border: 1px solid color-mix(in srgb, {pill.color} 30%, transparent);">{pill.label}: {pill.value}</span>
+								<span class="gc-asset-pill" use:tooltip={pill.assetName} style="color: {pill.color}; background: color-mix(in srgb, {pill.color} 12%, transparent); border: 1px solid color-mix(in srgb, {pill.color} 30%, transparent);">{pill.label}{pill.value ? `: ${pill.value}` : ''}</span>
 							{/each}
 						</div>
 					{/if}
