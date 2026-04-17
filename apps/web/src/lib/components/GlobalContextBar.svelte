@@ -784,6 +784,7 @@
 		flex-shrink: 0;
 		display: flex;
 		align-items: stretch;
+		gap: 6px;
 	}
 
 	/* ===== Main layout: tiles + actions side-by-side ===== */
@@ -845,7 +846,7 @@
 	.gc-scenario-heading {
 		writing-mode: vertical-rl;
 		transform: rotate(180deg);
-		font-family: var(--font-display);
+		font-family: var(--font-ui);
 		font-size: 0.55rem;
 		font-weight: 800;
 		letter-spacing: 0.14em;
@@ -856,8 +857,8 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		border-right: 1px solid var(--border);
-		padding: 4px;
+		border-left: 1px solid var(--border);
+		padding-left: 4px;
 	}
 
 	/* Full-area clickable button */
