@@ -782,6 +782,8 @@
 	/* ===== Container ===== */
 	.global-context {
 		flex-shrink: 0;
+		display: flex;
+		align-items: stretch;
 	}
 
 	/* ===== Main layout: tiles + actions side-by-side ===== */
@@ -790,6 +792,8 @@
 		gap: 0.5rem;
 		align-items: stretch;
 		padding: 0.5rem 0.6rem;
+		flex: 1;
+		min-width: 0;
 	}
 
 	/* ===== Action buttons ===== */
@@ -837,23 +841,23 @@
 		z-index: 35;
 	}
 
-	/* Scenario heading — default: horizontal header (matches SESSION LOG header style) */
+	/* Scenario heading — rotated side label (matches STATS / VITALS pattern) */
 	.gc-scenario-heading {
+		writing-mode: vertical-rl;
+		transform: rotate(180deg);
+		font-family: var(--font-display);
+		font-size: 0.55rem;
+		font-weight: 800;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--text-dimmer);
+		flex-shrink: 0;
+		align-self: stretch;
 		display: flex;
 		align-items: center;
-		gap: 8px;
-		padding: 10px 14px;
-		background: var(--bg-inset);
-		border-bottom: 1px solid var(--border);
-		border-radius: 5px 5px 0 0;
-		min-height: 54px;
-		font-family: var(--font-display);
-		font-size: 0.75rem;
-		font-weight: 700;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		color: var(--text-muted);
-		flex-shrink: 0;
+		justify-content: center;
+		border-right: 1px solid var(--border);
+		padding: 4px;
 	}
 
 	/* Full-area clickable button */
@@ -1631,16 +1635,7 @@
 
 	/* ===== Non-stacked responsive (narrow screens) ===== */
 	@media (max-width: 768px) {
-		/* Lay out scenario heading beside the tile column to save vertical space */
-		.global-context {
-			display: flex;
-			align-items: stretch;
-		}
-		.gc-layout {
-			flex-direction: column;
-			flex: 1;
-			min-width: 0;
-		}
+		.gc-layout { flex-direction: column; }
 		.gc-tiles  { grid-template-columns: 1fr; }
 		.gc-actions {
 			grid-template-columns: 1fr 1fr;
@@ -1648,24 +1643,6 @@
 			border-left: none;
 			padding-top: 0.4rem;
 			border-top: 1px solid rgba(245, 158, 11, 0.15);
-		}
-		/* Rotated side label (matches STATS / VITALS pattern) */
-		.gc-scenario-heading {
-			writing-mode: vertical-rl;
-			transform: rotate(180deg);
-			font-size: 0.55rem;
-			font-weight: 800;
-			letter-spacing: 0.14em;
-			color: var(--text-dimmer);
-			min-height: 0;
-			padding: 4px;
-			gap: 0;
-			background: transparent;
-			border-bottom: none;
-			border-right: 1px solid var(--border);
-			border-radius: 0;
-			align-self: stretch;
-			justify-content: center;
 		}
 	}
 
