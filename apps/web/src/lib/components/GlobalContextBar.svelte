@@ -412,7 +412,7 @@
 
 <div class="global-context" class:gc--stacked={stacked}>
 
-	<!-- ===== Scenario heading (card header) ===== -->
+	<!-- ===== Scenario heading (card header / rotated side label on narrow) ===== -->
 	<div class="gc-scenario-heading">Current Scenario</div>
 
 	<div class="gc-layout">
@@ -782,6 +782,8 @@
 	/* ===== Container ===== */
 	.global-context {
 		flex-shrink: 0;
+		display: flex;
+		align-items: stretch;
 	}
 
 	/* ===== Main layout: tiles + actions side-by-side ===== */
@@ -790,6 +792,8 @@
 		gap: 0.5rem;
 		align-items: stretch;
 		padding: 0.5rem 0.6rem;
+		flex: 1;
+		min-width: 0;
 	}
 
 	/* ===== Action buttons ===== */
@@ -837,23 +841,23 @@
 		z-index: 35;
 	}
 
-	/* Scenario heading — matches SESSION LOG header style */
+	/* Scenario heading — rotated side label (matches STATS / VITALS pattern) */
 	.gc-scenario-heading {
+		writing-mode: vertical-rl;
+		transform: rotate(180deg);
+		font-family: var(--font-display);
+		font-size: 0.55rem;
+		font-weight: 800;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--text-dimmer);
+		flex-shrink: 0;
+		align-self: stretch;
 		display: flex;
 		align-items: center;
-		gap: 8px;
-		padding: 10px 14px;
-		background: var(--bg-inset);
-		border-bottom: 1px solid var(--border);
-		border-radius: 5px 5px 0 0;
-		min-height: 54px;
-		font-family: var(--font-display);
-		font-size: 0.75rem;
-		font-weight: 700;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		color: var(--text-muted);
-		flex-shrink: 0;
+		justify-content: center;
+		border-right: 1px solid var(--border);
+		padding: 4px;
 	}
 
 	/* Full-area clickable button */
