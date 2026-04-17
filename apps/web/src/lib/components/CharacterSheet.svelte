@@ -84,7 +84,8 @@
 	// We own this state from here on — changes are persisted via auto-save.
 	// untrack() suppresses the "captured initial value" rune warning correctly.
 	let data = $state(untrack(() => hydrateCharacter(character.data)));
-	let collapsed = $state(false);
+	let collapsed = $state(untrack(() => typeof window !== 'undefined' ? localStorage.getItem('il:char:collapse:' + character.id) === 'true' : false));
+	$effect(() => { if (typeof window !== 'undefined') localStorage.setItem('il:char:collapse:' + character.id, String(collapsed)); });
 	let deleteDialogRef = $state<{ open(): void; close(): void } | null>(null);
 
 	// Publish live data to the global dice context whenever this sheet is active.
@@ -100,7 +101,8 @@
 
 	// Background field: toggle between markdown display and textarea editing
 	let editingBackground = $state(false);
-	let backgroundCollapsed = $state(false);
+	let backgroundCollapsed = $state(untrack(() => typeof window !== 'undefined' ? localStorage.getItem('il:char:bg:' + character.id) === 'true' : false));
+	$effect(() => { if (typeof window !== 'undefined') localStorage.setItem('il:char:bg:' + character.id, String(backgroundCollapsed)); });
 	let backgroundTextareaEl = $state<HTMLTextAreaElement | null>(null);
 	$effect(() => {
 		if (editingBackground && backgroundTextareaEl) {

@@ -15,6 +15,7 @@
 		DELVE_THEMES,
 		DELVE_DOMAINS,
 	} from '$lib/types.js';
+	import { untrack } from 'svelte';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import { RANK_COLORS } from '$lib/foeStore.svelte.js';
 	import ProgressTrack    from '$lib/components/ProgressTrack.svelte';
@@ -47,8 +48,10 @@
 	// ---------------------------------------------------------------------------
 	// Local UI state
 	// ---------------------------------------------------------------------------
-	let collapsed          = $state(false);
-	let denizensCollapsed  = $state(false);
+	let collapsed          = $state(untrack(() => typeof window !== 'undefined' ? localStorage.getItem('il:site:collapse:' + expedition.id) === 'true' : false));
+	$effect(() => { if (typeof window !== 'undefined') localStorage.setItem('il:site:collapse:' + expedition.id, String(collapsed)); });
+	let denizensCollapsed  = $state(untrack(() => typeof window !== 'undefined' ? localStorage.getItem('il:site:denizens:' + expedition.id) === 'true' : false));
+	$effect(() => { if (typeof window !== 'undefined') localStorage.setItem('il:site:denizens:' + expedition.id, String(denizensCollapsed)); });
 	let deleteDialogRef    = $state<{ open(): void; close(): void } | null>(null);
 	let denizenPickIndex   = $state(-1);
 	let editingName        = $state(false);

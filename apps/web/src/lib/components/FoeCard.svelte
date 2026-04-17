@@ -10,6 +10,7 @@
 	import {
 		RANK_COLORS, FOE_RANKS, FOE_QUANTITIES, FOE_NATURE_COLORS,
 	} from '$lib/foeStore.svelte.js';
+	import { untrack } from 'svelte';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import ProgressTrack   from '$lib/components/ProgressTrack.svelte';
 	import ConfirmDialog   from '$lib/components/ConfirmDialog.svelte';
@@ -38,7 +39,8 @@
 	// ---------------------------------------------------------------------------
 	// Local UI state
 	// ---------------------------------------------------------------------------
-	let collapsed       = $state(false);
+	let collapsed       = $state(untrack(() => typeof window !== 'undefined' ? localStorage.getItem('il:foe:collapse:' + enc.id) === 'true' : false));
+	$effect(() => { if (typeof window !== 'undefined') localStorage.setItem('il:foe:collapse:' + enc.id, String(collapsed)); });
 	let deleteDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let imgVisible      = $state(true);
 	let thumbHovered    = $state(false);

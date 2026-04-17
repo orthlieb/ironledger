@@ -9,6 +9,7 @@
 
 	import type { Community } from '$lib/types.js';
 	import { renderNote } from '$lib/markdown.js';
+	import { untrack } from 'svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 
 	import trashSvg  from '$icons/trash-solid-full.svg?raw';
@@ -32,7 +33,8 @@
 	// ---------------------------------------------------------------------------
 	// Local UI state
 	// ---------------------------------------------------------------------------
-	let collapsed       = $state(false);
+	let collapsed       = $state(untrack(() => typeof window !== 'undefined' ? localStorage.getItem('il:community:collapse:' + community.id) === 'true' : false));
+	$effect(() => { if (typeof window !== 'undefined') localStorage.setItem('il:community:collapse:' + community.id, String(collapsed)); });
 	let deleteDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let editingName     = $state(false);
 	let nameInputEl     = $state<HTMLInputElement | null>(null);

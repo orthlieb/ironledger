@@ -148,10 +148,15 @@
 	let gcRolling    = $state(false);
 	let expNotesOpen = $state(false);
 
-	// Collapse notes when the active expedition changes
+	// Restore per-expedition notes open state (sticky)
 	$effect(() => {
-		activeExpeditionId;
-		expNotesOpen = false;
+		expNotesOpen = typeof window !== 'undefined'
+			? localStorage.getItem('il:gc:expNotes:' + activeExpeditionId) === 'true'
+			: false;
+	});
+	$effect(() => {
+		if (activeExpeditionId && typeof window !== 'undefined')
+			localStorage.setItem('il:gc:expNotes:' + activeExpeditionId, String(expNotesOpen));
 	});
 
 	async function gcOpenFeatures() {
@@ -333,6 +338,17 @@
 	// ---------------------------------------------------------------------------
 	let openSelector  = $state<'character' | 'foe' | 'expedition' | null>(null);
 	let foeInfoOpen   = $state(false);
+
+	// Restore per-foe info open state (sticky)
+	$effect(() => {
+		foeInfoOpen = typeof window !== 'undefined'
+			? localStorage.getItem('il:gc:foeInfo:' + activeFoeId) === 'true'
+			: false;
+	});
+	$effect(() => {
+		if (activeFoeId && typeof window !== 'undefined')
+			localStorage.setItem('il:gc:foeInfo:' + activeFoeId, String(foeInfoOpen));
+	});
 
 	// ---------------------------------------------------------------------------
 	// Resource change shake animation

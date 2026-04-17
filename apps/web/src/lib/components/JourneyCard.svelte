@@ -9,6 +9,7 @@
 	import type { Journey, VowDifficulty } from '$lib/types.js';
 	import { renderNote } from '$lib/markdown.js';
 	import { EXPEDITION_MARK_TICKS } from '$lib/types.js';
+	import { untrack } from 'svelte';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import ProgressTrack   from '$lib/components/ProgressTrack.svelte';
 	import { RANK_COLORS } from '$lib/foeStore.svelte.js';
@@ -37,7 +38,8 @@
 	// ---------------------------------------------------------------------------
 	// Local UI state
 	// ---------------------------------------------------------------------------
-	let collapsed        = $state(false);
+	let collapsed        = $state(untrack(() => typeof window !== 'undefined' ? localStorage.getItem('il:journey:collapse:' + expedition.id) === 'true' : false));
+	$effect(() => { if (typeof window !== 'undefined') localStorage.setItem('il:journey:collapse:' + expedition.id, String(collapsed)); });
 	let deleteDialogRef  = $state<{ open(): void; close(): void } | null>(null);
 	let editingName      = $state(false);
 	let portraitHovered  = $state(false);
