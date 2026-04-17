@@ -122,8 +122,10 @@ export interface Site {
 	domain:     DelveDomain | '';
 	difficulty: ExpeditionDifficulty;
 	ticks:      number;          // 0–40 (10 boxes × 4 ticks)
-	denizens:   string[];        // length 12 — one per DENIZEN_CELLS row
-	complete:   boolean;
+	denizens:       string[];        // length 12 — one per DENIZEN_CELLS row
+	complete:       boolean;
+	currentFeature?: string;        // last rolled feature result
+	currentDanger?:  string;        // last rolled danger result
 	imageUrl?:  string;          // base64 JPEG data URL
 	createdAt?: number;          // Date.now() on creation
 }

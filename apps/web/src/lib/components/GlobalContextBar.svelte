@@ -16,13 +16,14 @@
 	import { getAssets, loadAssets } from '$lib/assetStore.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { loadDelveData, buildCombinedTable } from '$lib/delveStore.svelte.js';
-	import DelveTableDialog from '$lib/components/DelveTableDialog.svelte';
+	import { rollFromRangeTable } from '$lib/oracleStore.svelte.js';
+	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
+	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
+	import { renderNote } from '$lib/markdown.js';
 
 	// Pre-load asset catalogue and delve data.
 	$effect(() => { loadAssets(); });
 	$effect(() => { loadDelveData(); });
-	import ProgressTrack from '$lib/components/ProgressTrack.svelte';
-
 	// Resource icons
 	import iconMomentum from '$icons/icon-momentum.svg?raw';
 	import iconHeart    from '$icons/icon-heart.svg?raw';
@@ -46,10 +47,13 @@
 	import iconNotes   from '$icons/note-sticky-solid.svg?raw';
 
 	// Tab/placeholder icons
-	import charactersSvgUrl from '$icons/Characters.svg?url';
-	import foesSvgUrl           from '$icons/Foes.svg?url';
-	import skullCrossbonesSvg   from '$icons/skull-crossbones-solid-full.svg?raw';
-	import expedSvgUrl      from '$icons/Expeditions.svg?url';
+	import charactersSvgUrl  from '$icons/Characters.svg?url';
+	import foesSvgUrl        from '$icons/Foes.svg?url';
+	import skullCrossbonesSvg from '$icons/skull-crossbones-solid-full.svg?raw';
+	import circleCheckSvg    from '$icons/circle-check-solid-full.svg?raw';
+	import expedSvgUrl       from '$icons/Expeditions.svg?url';
+	import dungeonGateSvg    from '$icons/dungeon-gate.svg?raw';
+	import treasureMapSvg    from '$icons/treasure-map.svg?raw';
 
 
 	// ---------------------------------------------------------------------------
@@ -68,7 +72,9 @@
 		onFoeSelect,
 		onExpeditionSelect,
 		onFoeProgress,
+		onFoeVanquish,
 		onExpeditionProgress,
+		onExpeditionComplete,
 		onDiceClick,
 		onOraclesClick,
 		onMovesClick,
@@ -88,7 +94,9 @@
 		onFoeSelect?:          (id: string) => void;
 		onExpeditionSelect?:   (id: string) => void;
 		onFoeProgress?:        (enc: FoeEncounter) => void;
+		onFoeVanquish?:        (enc: FoeEncounter) => void;
 		onExpeditionProgress?: (exp: Expedition)   => void;
+		onExpeditionComplete?: (exp: Expedition)   => void;
 		onDiceClick?:          () => void;
 		onOraclesClick?:       () => void;
 		onMovesClick?:         () => void;
@@ -115,7 +123,6 @@
 	const activeFoeDef      = $derived(activeFoe ? findFoe(activeFoe.foeId) : null);
 	const activeFoeRank     = $derived(activeFoe ? FOE_RANKS[activeFoe.effectiveRank] : null);
 	const activeFoeNature   = $derived(activeFoeDef ? (FOE_NATURE_COLORS[activeFoeDef.nature] ?? '#9ca3af') : '#9ca3af');
-	const activeFoeProgress = $derived(activeFoe ? Math.floor(activeFoe.ticks / 4) : 0);
 	const activeFoeQty      = $derived(activeFoe ? FOE_QUANTITIES.find((q) => q.value === activeFoe.quantity) : null);
 
 	// Derive active expedition
@@ -128,27 +135,69 @@
 		(activeExpedition as Site).domain !== ''
 	);
 
-	// Auto-deselect when the active expedition is marked complete (mirrors vanquished-foe behaviour)
+	// Auto-deselect when the active foe is vanquished or the active expedition is marked complete.
+	// This fires regardless of which UI triggered the state change (GCB button or Foes/Expeditions tab).
+	$effect(() => {
+		if (activeFoe?.vanquished) selectFoe('');
+	});
 	$effect(() => {
 		if (activeExpedition?.complete) selectExpedition('');
 	});
 
 	// ── Site oracle rolls ──────────────────────────────────────────────────────
-	let gcDelveTableRef  = $state<{ open(t: string, tbl: import('$lib/oracleStore.svelte.js').OracleEntry[], expId?: string): void; close(): void } | null>(null);
+	let gcRolling    = $state(false);
+	let expNotesOpen = $state(false);
 
+	// Collapse notes when the active expedition changes
+	$effect(() => {
+		activeExpeditionId;
+		expNotesOpen = false;
+	});
 
-	function gcOpenFeatures() {
-		if (!expHasThemeAndDomain || activeExpedition?.type !== 'site') return;
-		const site = activeExpedition as Site;
-		const table = buildCombinedTable(site.theme as DelveTheme, site.domain as DelveDomain, 'features');
-		gcDelveTableRef?.open(`Features: ${site.theme} + ${site.domain}`, table, site.id);
+	async function gcOpenFeatures() {
+		if (!expHasThemeAndDomain || activeExpedition?.type !== 'site' || gcRolling) return;
+		gcRolling = true;
+		const site   = activeExpedition as Site;
+		const table  = buildCombinedTable(site.theme as DelveTheme, site.domain as DelveDomain, 'features');
+		const result = rollFromRangeTable(table);
+		const tensV  = Math.floor(result.roll % 100 / 10) || 10;
+		const onesV  = result.roll % 10 || 10;
+		await animateDice([
+			{ sides: 10, value: tensV, color: DIE_BLACK },
+			{ sides: 10, value: onesV, color: DIE_WHITE },
+		]);
+		const valueStr = typeof result.value === 'string' ? result.value : String(result.value);
+		const logTitle = `Features: ${site.theme} + ${site.domain}`;
+		let resultHtml = `<div>Result: <strong>${valueStr}</strong>`;
+		if (result.roll === 99)  resultHtml += ` <a class="change-theme-link"  data-expedition-id="${site.id}" href="#">Change Theme ↗</a>`;
+		if (result.roll === 100) resultHtml += ` <a class="change-domain-link" data-expedition-id="${site.id}" href="#">Change Domain ↗</a>`;
+		resultHtml += '</div>';
+		appendLog(SESSION_LOG_ID, logTitle, `<div class="roll-line">Roll: d100 → ${result.roll}</div>` + resultHtml);
+		onExpeditionProgress?.({ ...site, currentFeature: valueStr });
+		gcRolling = false;
 	}
 
-	function gcOpenDangers() {
-		if (!expHasThemeAndDomain || activeExpedition?.type !== 'site') return;
-		const site = activeExpedition as Site;
-		const table = buildCombinedTable(site.theme as DelveTheme, site.domain as DelveDomain, 'dangers');
-		gcDelveTableRef?.open(`Dangers: ${site.theme} + ${site.domain}`, table);
+	async function gcOpenDangers() {
+		if (!expHasThemeAndDomain || activeExpedition?.type !== 'site' || gcRolling) return;
+		gcRolling = true;
+		const site   = activeExpedition as Site;
+		const table  = buildCombinedTable(site.theme as DelveTheme, site.domain as DelveDomain, 'dangers');
+		const result = rollFromRangeTable(table);
+		const tensV  = Math.floor(result.roll % 100 / 10) || 10;
+		const onesV  = result.roll % 10 || 10;
+		await animateDice([
+			{ sides: 10, value: tensV, color: DIE_BLACK },
+			{ sides: 10, value: onesV, color: DIE_WHITE },
+		]);
+		const valueStr = typeof result.value === 'string' ? result.value : String(result.value);
+		const logTitle = `Dangers: ${site.theme} + ${site.domain}`;
+		let resultHtml = `<div>Result: <strong>${valueStr}</strong>`;
+		if (result.roll === 99)  resultHtml += ` <a class="change-theme-link"  data-expedition-id="${site.id}" href="#">Change Theme ↗</a>`;
+		if (result.roll === 100) resultHtml += ` <a class="change-domain-link" data-expedition-id="${site.id}" href="#">Change Domain ↗</a>`;
+		resultHtml += '</div>';
+		appendLog(SESSION_LOG_ID, logTitle, `<div class="roll-line">Roll: d100 → ${result.roll}</div>` + resultHtml);
+		onExpeditionProgress?.({ ...site, currentDanger: valueStr });
+		gcRolling = false;
 	}
 
 	function gcRollDenizen() {
@@ -159,6 +208,15 @@
 	const DIFFICULTY_RANK: Record<string, number> = {
 		troublesome: 1, dangerous: 2, formidable: 3, extreme: 4, epic: 5,
 	};
+	function progressDisplay(ticks: number): string {
+		const boxes     = Math.floor(ticks / 4);
+		const remainder = ticks % 4;
+		if (boxes === 0 && remainder === 0) return '0 boxes';
+		if (boxes === 0) return `${remainder}/4 ticks`;
+		if (remainder === 0) return `${boxes}/10 boxes`;
+		return `${boxes}/10 boxes, ${remainder}/4 ticks`;
+	}
+
 	function rankBadgeStyle(rank: number): string {
 		const rc = RANK_COLORS[rank];
 		if (!rc) return '';
@@ -273,7 +331,8 @@
 	// ---------------------------------------------------------------------------
 	// Popover state
 	// ---------------------------------------------------------------------------
-	let openSelector = $state<'character' | 'foe' | 'expedition' | null>(null);
+	let openSelector  = $state<'character' | 'foe' | 'expedition' | null>(null);
+	let foeInfoOpen   = $state(false);
 
 	// ---------------------------------------------------------------------------
 	// Resource change shake animation
@@ -408,6 +467,69 @@
 					<span class="gc-tile-placeholder"><img class="gc-placeholder-img" src={charactersSvgUrl} alt="" aria-hidden="true">Select Character</span>
 				{/if}
 			</button>
+			{#if data}
+				<div class="gc-init-row">
+					<span class="gc-init-row-label">Initiative</span>
+					<div class="gc-init-toggle" role="group" aria-label="Initiative">
+						<button
+							class="gc-init-btn"
+							class:gc-init-btn--active={initiative === 0}
+							onclick={() => onInitiativeClick?.(0)}
+							title="No initiative">None</button>
+						<button
+							class="gc-init-btn gc-init-btn--foe"
+							class:gc-init-btn--active={initiative === 2}
+							onclick={() => onInitiativeClick?.(2)}
+							title="Foe has initiative">{@html shieldSvg}Foe</button>
+						<button
+							class="gc-init-btn gc-init-btn--you"
+							class:gc-init-btn--active={initiative === 1}
+							onclick={() => onInitiativeClick?.(1)}
+							title="You have initiative">{@html swordSvg}Character</button>
+					</div>
+				</div>
+				<div class="gc-char-chips">
+					<hr class="gc-chip-divider gc-chip-divider--init" />
+					<div class="gc-chip-group gc-chip-group--stats">
+						{#each STAT_DEFS as stat}
+							<span class="gc-chip gc-chip--stat" style="--chip-color: {stat.color}" title={stat.key}>
+								<span class="gc-chip-bg-icon" aria-hidden="true">{@html stat.icon}</span>
+								<span class="gc-chip-label">{stat.label}</span>
+								<span class="gc-chip-value">{(data as unknown as Record<string, number>)[stat.key] ?? 0}</span>
+							</span>
+						{/each}
+					</div>
+					<div class="gc-chip-group gc-chip-group--resources">
+						{#each RESOURCE_DEFS as res}
+							{@const resVal = (data as unknown as Record<string, number>)[res.key] ?? 0}
+							{@const thermoColor = (res.key === 'momentum' && resVal <= 0) ? 'var(--color-danger)' : res.color}
+							<span class="gc-chip gc-chip--resource" class:gc-chip--shake={shakingKeys.has(res.key)} style="--chip-color: {res.color}; --fill-pct: {resFillPct(res.key, resVal)}; --thermo-color: {thermoColor}" title={res.key}>
+								<span class="gc-chip-label">{res.label}</span>
+								<span class="gc-chip-value"><span class="gc-chip-icon">{@html res.icon}</span> {resVal}</span>
+							</span>
+						{/each}
+					</div>
+					{#if activeDebilities.length > 0 || assetPills.length > 0}
+						<hr class="gc-chip-divider" />
+					{/if}
+					{#if activeDebilities.length > 0}
+						<div class="gc-chip-group gc-chip-group--debilities">
+							<span class="gc-inline-label">Debilities</span>
+							{#each activeDebilities as deb}
+								<span class="gc-debility-pill" use:tooltip={deb.label} style="color: {deb.color}; background: color-mix(in srgb, {deb.color} 12%, transparent); border: 1px solid color-mix(in srgb, {deb.color} 30%, transparent);">{deb.label}</span>
+							{/each}
+						</div>
+					{/if}
+					{#if assetPills.length > 0}
+						<div class="gc-chip-group gc-chip-group--assets">
+							<span class="gc-inline-label">Assets</span>
+							{#each assetPills as pill}
+								<span class="gc-asset-pill" use:tooltip={pill.assetName} style="color: {pill.color}; background: color-mix(in srgb, {pill.color} 12%, transparent); border: 1px solid color-mix(in srgb, {pill.color} 30%, transparent);">{pill.label}: {pill.value}</span>
+							{/each}
+						</div>
+					{/if}
+				</div>
+			{/if}
 
 			{#if openSelector === 'character'}
 				<div class="gc-popover">
@@ -441,7 +563,7 @@
 					<div class="gc-tile-row gc-tile-pills">
 						<span class="gc-badge" style="background: {activeFoeNature}22; color: {activeFoeNature}">{activeFoeDef.nature}</span>
 						<span class="gc-badge gc-badge--rank" style={rankBadgeStyle(activeFoe.effectiveRank)}>{activeFoeRank?.label ?? activeFoe.effectiveRank}</span>
-						{#if activeFoe.quantity !== 'solo' && activeFoeQty}
+						{#if activeFoeQty}
 							<span class="gc-badge gc-badge--qty">{activeFoeQty.label}</span>
 						{/if}
 						<span class="gc-badge gc-badge--harm">Harm: {activeFoeRank?.harm ?? '?'}</span>
@@ -450,23 +572,63 @@
 					<span class="gc-tile-placeholder"><img class="gc-placeholder-img" src={foesSvgUrl} alt="" aria-hidden="true">Select Foe</span>
 				{/if}
 			</button>
+			{#if activeFoe && activeFoeDef && !activeFoe.vanquished}
+				<button class="gc-tile-title-action gc-tile-title-action--vanquish"
+					onclick={(e) => { e.stopPropagation(); onFoeVanquish?.({ ...activeFoe, vanquished: true }); }}
+					title="Vanquish foe">{@html skullCrossbonesSvg}</button>
+			{/if}
 			{#if activeFoe && activeFoeDef}
 				<div class="gc-tile-foe-bottom">
-					<div class="gc-progress-wrap">
-						<ProgressTrack label="" value={activeFoe.ticks} onchange={handleFoeTrackChange} />
-						<div class="gc-progress-btns">
-							<button class="gc-prog-btn" onclick={() => foeMark(1)}
-								disabled={activeFoe.ticks >= 40}
-								title="Mark progress (+{activeFoeRank?.progressPerHit} ticks)"
-							>+{activeFoeRank?.progressPerHit}</button>
-							<button class="gc-prog-btn" onclick={() => foeMark(-1)}
-								disabled={activeFoe.ticks <= 0}
-								title="Unmark progress"
-							>−{activeFoeRank?.progressPerHit}</button>
-							{#if activeFoe.vanquished}
-								<span class="gc-tile-vanquished" title="Vanquished">{@html skullCrossbonesSvg}</span>
-							{/if}
-						</div>
+					<div class="gc-foe-info">
+						<button class="gc-foe-toggle" onclick={() => (foeInfoOpen = !foeInfoOpen)} aria-expanded={foeInfoOpen}>
+							<span class="gc-foe-toggle-arrow" class:gc-foe-toggle-arrow--open={foeInfoOpen}>▸</span>
+							<span class="gc-foe-toggle-label">Description</span>
+						</button>
+						{#if foeInfoOpen}
+							<div class="gc-foe-body">
+								{#if activeFoeDef.description}
+									<p class="gc-foe-desc">{activeFoeDef.description}</p>
+								{/if}
+								{#if activeFoeDef.features.length > 0}
+									<div class="gc-foe-section">
+										<span class="gc-foe-section-label">Features</span>
+										<ul class="gc-foe-list">
+											{#each activeFoeDef.features as feat}<li>{feat}</li>{/each}
+										</ul>
+									</div>
+								{/if}
+								{#if activeFoeDef.drives.length > 0}
+									<div class="gc-foe-section">
+										<span class="gc-foe-section-label">Drives</span>
+										<ul class="gc-foe-list">
+											{#each activeFoeDef.drives as d}<li>{d}</li>{/each}
+										</ul>
+									</div>
+								{/if}
+								{#if activeFoeDef.tactics.length > 0}
+									<div class="gc-foe-section">
+										<span class="gc-foe-section-label">Tactics</span>
+										<ul class="gc-foe-list">
+											{#each activeFoeDef.tactics as t}<li>{t}</li>{/each}
+										</ul>
+									</div>
+								{/if}
+							</div>
+						{/if}
+						<hr class="gc-chip-divider gc-chip-divider--foe" />
+					</div>
+					<div class="gc-progress-compact">
+						<span class="gc-progress-label">Progress</span>
+						<button class="gc-prog-btn" onclick={() => foeMark(-1)}
+							disabled={activeFoe.ticks <= 0}
+							title="Unmark progress">−{activeFoeRank?.progressPerHit}</button>
+						<button class="gc-prog-btn" onclick={() => foeMark(1)}
+							disabled={activeFoe.ticks >= 40}
+							title="Mark progress (+{activeFoeRank?.progressPerHit} ticks)">+{activeFoeRank?.progressPerHit}</button>
+						<span class="gc-progress-value">{progressDisplay(activeFoe.ticks)}</span>
+						{#if activeFoe.vanquished}
+							<span class="gc-tile-vanquished" title="Vanquished">{@html skullCrossbonesSvg}</span>
+						{/if}
 					</div>
 				</div>
 			{/if}
@@ -493,6 +655,13 @@
 			<button class="gc-tile-btn" onclick={() => toggleSelector('expedition')} title="Select expedition">
 				{#if activeExpedition}
 					<div class="gc-tile-row gc-tile-name-row">
+						{#if activeExpedition.imageUrl}
+							<img class="gc-tile-portrait" src={activeExpedition.imageUrl} alt={activeExpedition.name} />
+						{:else}
+							<span class="gc-tile-portrait gc-tile-portrait--placeholder gc-tile-portrait--exped-icon" aria-hidden="true">
+								{@html activeExpedition.type === 'site' ? dungeonGateSvg : treasureMapSvg}
+							</span>
+						{/if}
 						<span class="gc-tile-name">{activeExpedition.name || 'Unnamed'}</span>
 					</div>
 					<div class="gc-tile-row gc-tile-pills">
@@ -513,38 +682,98 @@
 					<span class="gc-tile-placeholder"><img class="gc-placeholder-img" src={expedSvgUrl} alt="" aria-hidden="true">Select Expedition</span>
 				{/if}
 			</button>
+			{#if activeExpedition && !activeExpedition.complete}
+				<button class="gc-tile-title-action gc-tile-title-action--complete"
+					onclick={(e) => { e.stopPropagation(); onExpeditionComplete?.({ ...activeExpedition, complete: true }); }}
+					title="Mark {activeExpedition.type === 'journey' ? 'journey' : 'site'} complete">{@html circleCheckSvg}</button>
+			{/if}
 			{#if activeExpedition}
 				<div class="gc-tile-exp-bottom">
 					{#if activeExpedition.type === 'site'}
+					{@const site = activeExpedition as import('$lib/types.js').Site}
+					{#if site.objective || site.notes}
+						<div class="gc-exp-info">
+							{#if site.objective}
+								<div class="gc-tile-row gc-exp-objective">
+									<span class="gc-exp-objective-label">Objective</span>
+									<span class="gc-exp-objective-text">{site.objective}</span>
+								</div>
+							{/if}
+							{#if site.notes}
+								<button class="gc-foe-toggle" onclick={() => (expNotesOpen = !expNotesOpen)} aria-expanded={expNotesOpen}>
+									<span class="gc-foe-toggle-arrow" class:gc-foe-toggle-arrow--open={expNotesOpen}>▸</span>
+									<span class="gc-foe-toggle-label">Notes</span>
+								</button>
+								{#if expNotesOpen}
+									<div class="gc-foe-body gc-exp-notes-body">
+										{@html renderNote(site.notes)}
+									</div>
+								{/if}
+							{/if}
+							<hr class="gc-chip-divider gc-chip-divider--foe" />
+						</div>
+					{/if}
 					<div class="gc-oracle-row">
 						<button class="gc-oracle-btn"
 							onclick={gcOpenFeatures}
-							disabled={!expHasThemeAndDomain}
+							disabled={!expHasThemeAndDomain || gcRolling}
 							title={expHasThemeAndDomain ? 'Roll features table' : 'Set theme and domain first'}
 						>Roll Feature</button>
 						<button class="gc-oracle-btn"
 							onclick={gcOpenDangers}
-							disabled={!expHasThemeAndDomain}
+							disabled={!expHasThemeAndDomain || gcRolling}
 							title={expHasThemeAndDomain ? 'Roll dangers table' : 'Set theme and domain first'}
 						>Roll Danger</button>
 						<button class="gc-oracle-btn"
 							onclick={gcRollDenizen}
+							disabled={gcRolling}
 							title="Roll d100 for a denizen"
 						>Roll Denizen</button>
 					</div>
-					{/if}
-					<div class="gc-progress-wrap">
-						<ProgressTrack label="" value={activeExpedition.ticks} onchange={handleExpTrackChange} />
-						<div class="gc-progress-btns">
-							<button class="gc-prog-btn" onclick={() => expMark(1)}
-								disabled={activeExpedition.ticks >= 40}
-								title="Mark progress (+{expMarkTicks} ticks)"
-							>+{expMarkTicks}</button>
-							<button class="gc-prog-btn" onclick={() => expMark(-1)}
-								disabled={activeExpedition.ticks <= 0}
-								title="Unmark progress"
-							>−{expMarkTicks}</button>
+					{#if site.currentFeature || site.currentDanger}
+						<div class="gc-fd-strip">
+							{#if site.currentFeature}
+								<div class="gc-fd-line">
+									<span class="gc-fd-label">Feature</span>
+									<span class="gc-fd-text">{site.currentFeature}</span>
+								</div>
+							{/if}
+							{#if site.currentDanger}
+								<div class="gc-fd-line">
+									<span class="gc-fd-label">Danger</span>
+									<span class="gc-fd-text">{site.currentDanger}</span>
+								</div>
+							{/if}
 						</div>
+					{/if}
+					<div class="gc-exp-divider-wrap"><hr class="gc-chip-divider" /></div>
+					{/if}
+					{#if activeExpedition.type === 'journey'}
+					{@const journey = activeExpedition as import('$lib/types.js').Journey}
+					{#if journey.notes}
+						<div class="gc-exp-info">
+							<button class="gc-foe-toggle" onclick={() => (expNotesOpen = !expNotesOpen)} aria-expanded={expNotesOpen}>
+								<span class="gc-foe-toggle-arrow" class:gc-foe-toggle-arrow--open={expNotesOpen}>▸</span>
+								<span class="gc-foe-toggle-label">Notes</span>
+							</button>
+							{#if expNotesOpen}
+								<div class="gc-foe-body gc-exp-notes-body">
+									{@html renderNote(journey.notes)}
+								</div>
+							{/if}
+							<hr class="gc-chip-divider gc-chip-divider--foe" />
+						</div>
+					{/if}
+					{/if}
+					<div class="gc-progress-compact">
+						<span class="gc-progress-label">Progress</span>
+						<button class="gc-prog-btn" onclick={() => expMark(-1)}
+							disabled={activeExpedition.ticks <= 0}
+							title="Unmark progress">−{expMarkTicks}</button>
+						<button class="gc-prog-btn" onclick={() => expMark(1)}
+							disabled={activeExpedition.ticks >= 40}
+							title="Mark progress (+{expMarkTicks} ticks)">+{expMarkTicks}</button>
+						<span class="gc-progress-value">{progressDisplay(activeExpedition.ticks)}</span>
 					</div>
 				</div>
 			{/if}
@@ -580,8 +809,6 @@
 
 </div>
 
-<DelveTableDialog bind:this={gcDelveTableRef} />
-
 <style>
 	/* ===== Container ===== */
 	.global-context {
@@ -594,14 +821,6 @@
 		gap: 0.5rem;
 		align-items: stretch;
 		padding: 0.5rem 0.6rem;
-		border-radius: 8px;
-		background: color-mix(in srgb, var(--bg-card) 78%, transparent);
-		backdrop-filter: blur(14px) saturate(160%);
-		-webkit-backdrop-filter: blur(14px) saturate(160%);
-		border: 1px solid rgba(255, 255, 255, 0.07);
-		box-shadow:
-			0 8px 30px rgba(0, 0, 0, 0.40),
-			inset 0 1px 0 rgba(255, 255, 255, 0.10);
 	}
 
 	/* ===== Action buttons ===== */
@@ -634,36 +853,38 @@
 		container-type: inline-size;
 		display: flex;
 		flex-direction: column;
-		background: rgba(255, 255, 255, 0.04);
-		border: 1px solid rgba(255, 255, 255, 0.07);
+		background: var(--bg-card);
+		border: 1px solid var(--border);
 		border-left: 3px solid transparent;
 		border-radius: 5px;
-		box-shadow: none;
 	}
 
 	/* .gc-tile--empty — opacity applied to button only so popover dropdown stays fully opaque */
 	.gc-tile--active {
-		background: rgba(255, 255, 255, 0.07);
-		border-color: rgba(245, 158, 11, 0.30);
+		background: var(--bg-card);
+		border-color: var(--border);
 	}
 	.gc-tile--open {
 		z-index: 35;
 	}
 
-	/* Scenario heading — acts as the card header for the whole GCB tile */
+	/* Scenario heading — matches SESSION LOG header style */
 	.gc-scenario-heading {
 		display: flex;
 		align-items: center;
-		padding: 8px 14px;
+		gap: 8px;
+		padding: 10px 14px;
 		background: var(--bg-inset);
 		border-bottom: 1px solid var(--border);
 		border-radius: 5px 5px 0 0;
+		min-height: 54px;
 		font-family: var(--font-display);
 		font-size: 0.75rem;
 		font-weight: 700;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
 		color: var(--text-muted);
+		flex-shrink: 0;
 	}
 
 	/* Full-area clickable button */
@@ -734,7 +955,7 @@
 	/* Name/header row — card header style */
 	.gc-tile-name-row {
 		background: var(--bg-inset);
-		padding: 0.4rem 0.6rem 0;
+		padding: 0.4rem 0.6rem;
 		gap: 0.4rem;
 	}
 
@@ -753,6 +974,16 @@
 		justify-content: center;
 		background: var(--bg-inset);
 		font-size: 0.85rem;
+	}
+	/* Expedition placeholder — circular, inline SVG icon */
+	.gc-tile-portrait--exped-icon {
+		background: var(--bg-inset);
+	}
+	.gc-tile-portrait--exped-icon :global(svg) {
+		width: 60%;
+		height: 60%;
+		fill: var(--text-dimmer);
+		opacity: 0.7;
 	}
 
 	/* Entity name */
@@ -896,6 +1127,15 @@
 	@container (min-width: 450px) {
 		.gc-chip-group--resources { justify-content: flex-start; }
 	}
+
+	/* Narrow tile: shrink chips so 5 fit in ~185px */
+	@container (max-width: 215px) {
+		.gc-chip                        { width: 2.1rem; }
+		.gc-chip-group--stats,
+		.gc-chip-group--resources       { gap: 3px; }
+		.gc-chip--stat .gc-chip-value   { font-size: 0.82rem; }
+		.gc-chip-value                  { font-size: 0.78rem; }
+	}
 	/* Resources: thermometer on right edge — track (::before) + fill (::after) */
 	.gc-chip--resource {
 		position: relative;
@@ -961,6 +1201,10 @@
 		border:     none;
 		border-top: 1px solid var(--border);
 		flex-shrink: 0;
+	}
+	/* First divider at top of chips area (below init row) — no top margin */
+	.gc-chip-divider--init {
+		margin-top: 0;
 	}
 
 	/* Debility pills row */
@@ -1028,8 +1272,90 @@
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		width: 100%;
-		padding: 0.35rem 0 0.5rem;
+		padding: 0.35rem 0 0;
 	}
+
+	/* ===== Foe description / features / drives / tactics ===== */
+	.gc-foe-info {
+		padding: 0 0.5rem;
+	}
+	/* Partial divider in foe/expedition info sections — inset by container padding */
+	.gc-chip-divider--foe {
+		margin: 0.3rem 0;
+	}
+	.gc-foe-toggle {
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+		width: 100%;
+		padding: 0.3rem 0.1rem;
+		background: none;
+		border: none;
+		cursor: pointer;
+		text-align: left;
+		transition: background 0.12s;
+	}
+	.gc-foe-toggle:hover {
+		background: rgba(245, 158, 11, 0.06);
+	}
+	.gc-foe-toggle-label {
+		font-family:    var(--font-ui);
+		font-size:      0.6rem;
+		font-weight:    700;
+		letter-spacing: 0.07em;
+		text-transform: uppercase;
+		color:          var(--text-dimmer);
+	}
+	.gc-foe-toggle-arrow {
+		font-size:  0.6rem;
+		color:      var(--text-dimmer);
+		transition: transform 0.15s;
+		line-height: 1;
+	}
+	.gc-foe-toggle-arrow--open {
+		transform: rotate(90deg);
+	}
+	.gc-foe-body {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		padding: 0 0.1rem 0.6rem;
+		max-height: 14rem;
+		overflow-y: auto;
+	}
+	.gc-foe-desc {
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		line-height: 1.5;
+		color: var(--text-muted);
+		font-style: italic;
+		margin: 0;
+	}
+	.gc-foe-section {
+		display: flex;
+		flex-direction: column;
+		gap: 3px;
+	}
+	.gc-foe-section-label {
+		font-family:    var(--font-ui);
+		font-size:      0.55rem;
+		font-weight:    700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color:          var(--text-dimmer);
+	}
+	.gc-foe-list {
+		margin: 0;
+		padding-left: 1.1em;
+		list-style: disc;
+	}
+	.gc-foe-list li {
+		font-family: var(--font-ui);
+		font-size:   0.7rem;
+		line-height: 1.45;
+		color:       var(--text-muted);
+	}
+
 	.gc-tile-vanquished {
 		color: var(--color-danger, #ef4444);
 		display: flex;
@@ -1041,47 +1367,71 @@
 		fill: currentColor;
 	}
 
-	/* Initiative badge — canonical pill style, floated right in name row */
-	.gc-init-badge {
+	/* Initiative row — sits between name bar and chips */
+	.gc-init-row {
 		display: flex;
 		align-items: center;
-		gap: 4px;
-		padding: 2px 7px;
-		border-radius: 10px;
-		border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
-		cursor: pointer;
-		pointer-events: auto;
-		transition: opacity 0.15s;
-		white-space: nowrap;
-		flex-shrink: 0;
-		margin-left: auto;
-		font-family: var(--font-ui);
-		font-size: 0.6rem;
-		font-weight: 600;
-		letter-spacing: 0.05em;
-		text-transform: uppercase;
-		/* reset button styles */
-		appearance: none;
-		background: none;
-		outline: none;
+		gap: 0.5rem;
+		padding: 0.25rem 0.6rem;
 	}
-	.gc-init-badge:hover { opacity: 0.75; }
-	.gc-init-badge :global(svg) { width: 11px; height: 11px; fill: currentColor; flex-shrink: 0; }
-	.gc-init-badge--you {
-		background: rgba(52, 211, 153, 0.15);
+	.gc-init-row-label {
+		font-family:    var(--font-ui);
+		font-size:      0.55rem;
+		font-weight:    700;
+		letter-spacing: 0.07em;
+		text-transform: uppercase;
+		color:          var(--text-dimmer);
+		white-space:    nowrap;
+		flex-shrink:    0;
+	}
+
+	/* Initiative toggle — segmented button group */
+	.gc-init-toggle {
+		display: flex;
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+		overflow: hidden;
+	}
+	.gc-init-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 3px;
+		padding: 2px 7px;
+		font-family:    var(--font-ui);
+		font-size:      0.58rem;
+		font-weight:    600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		background:     transparent;
+		border:         none;
+		border-right:   1px solid var(--border-mid);
+		color:          var(--text-dimmer);
+		cursor:         pointer;
+		white-space:    nowrap;
+		transition:     background 0.12s, color 0.12s;
+		line-height:    1.6;
+	}
+	.gc-init-btn:last-child { border-right: none; }
+	.gc-init-btn:hover:not(.gc-init-btn--active) {
+		background: rgba(255,255,255,0.05);
+		color: var(--text-muted);
+	}
+	.gc-init-btn :global(svg) {
+		width: 9px; height: 9px; fill: currentColor; flex-shrink: 0;
+	}
+	/* Active states */
+	.gc-init-btn--active {
+		background: var(--text-accent);
+		color: var(--bg-card);
+	}
+	.gc-init-btn--you.gc-init-btn--active {
+		background: rgba(52, 211, 153, 0.18);
 		color: #34d399;
 	}
-	.gc-init-badge--foe {
-		background: rgba(239, 68, 68, 0.10);
+	.gc-init-btn--foe.gc-init-btn--active {
+		background: rgba(239, 68, 68, 0.14);
 		color: #ef4444;
 	}
-	.gc-init-badge--none {
-		background: transparent;
-		color: var(--text-dimmer);
-		border-color: color-mix(in srgb, var(--text-dimmer) 30%, transparent);
-		opacity: 0.6;
-	}
-	.gc-init-badge--none:hover { opacity: 1; }
 
 	/* ===== Site oracle roll buttons ===== */
 	.gc-oracle-row {
@@ -1089,6 +1439,7 @@
 		gap: 5px;
 		flex-wrap: wrap;
 		padding-left: 0.4rem;
+		padding-top: 5px;
 		padding-bottom: 5px;
 	}
 	.gc-oracle-btn {
@@ -1110,12 +1461,43 @@
 	}
 	.gc-oracle-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
+	/* Inset divider wrapper for expedition tile */
+	.gc-exp-divider-wrap {
+		padding: 0 0.5rem;
+	}
+
+	/* Site objective + notes section — same inset padding as gc-foe-info */
+	.gc-exp-info {
+		padding: 0 0.5rem;
+	}
+	.gc-exp-objective {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 2px;
+		padding: 0.25rem 0.1rem 0.1rem;
+	}
+	.gc-exp-objective-label {
+		font-family:    var(--font-ui);
+		font-size:      0.6rem;
+		font-weight:    700;
+		letter-spacing: 0.07em;
+		text-transform: uppercase;
+		color:          var(--text-dimmer);
+	}
+	.gc-exp-objective-text {
+		font-family: var(--font-ui);
+		font-size:   0.72rem;
+		line-height: 1.4;
+		color:       var(--text-muted);
+	}
+
 	/* ===== Expedition tile details ===== */
 	.gc-tile-exp-bottom {
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		width: 100%;
-		padding: 0.35rem 0 0.5rem;
+		padding: 0;
 	}
 	/* ===== Popover dropdown ===== */
 	.gc-popover {
@@ -1195,21 +1577,29 @@
 		fill: currentColor;
 	}
 
-	/* ===== Progress track within tiles ===== */
-	.gc-progress-wrap {
+	/* ===== Compact progress control (replaces ProgressTrack in tiles) ===== */
+	.gc-progress-compact {
 		display: flex;
-		flex-direction: row;
 		align-items: center;
-		gap: 0.3rem;
-		width: 100%;
-		padding-left: 0.4rem;
+		gap: 4px;
+		padding: 0.35rem 0.5rem 0.5rem;
+		flex-wrap: wrap;
 	}
-
-	.gc-progress-btns {
-		display: flex;
-		flex-direction: row;
-		align-items: center;
-		gap: 0.3rem;
+	.gc-progress-label {
+		font-family:    var(--font-ui);
+		font-size:      0.5rem;
+		font-weight:    700;
+		text-transform: uppercase;
+		letter-spacing: 0.07em;
+		color:          var(--text-muted);
+		white-space:    nowrap;
+	}
+	.gc-progress-value {
+		font-family: var(--font-ui);
+		font-size:   0.78rem;
+		font-weight: 700;
+		color:       var(--text);
+		text-align:  left;
 	}
 
 	.gc-prog-btn {
@@ -1241,7 +1631,11 @@
 
 	/* ===== Stacked mode (Adventure tab) ===== */
 	.gc--stacked .gc-layout { flex-direction: column; }
+	/* Mobile: single column; wider screens: three tiles in a row, reflowing when too narrow */
 	.gc--stacked .gc-tiles  { grid-template-columns: 1fr; }
+	@media (min-width: 768px) {
+		.gc--stacked .gc-tiles { grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); }
+	}
 
 	/* 1×4 row when log is side-by-side (≥768px) */
 	.gc--stacked .gc-actions {
@@ -1292,5 +1686,87 @@
 	:global(html[data-theme='light']) .gc-tile-btn:hover .gc-placeholder-img {
 		opacity: 0.65;
 		filter: grayscale(0.2) brightness(0.85);
+	}
+
+	/* ===== Title-bar action button (vanquish / complete) ===== */
+	/* Absolutely positioned in top-right of name row; sibling to gc-tile-btn (not nested) */
+	.gc-tile-title-action {
+		position: absolute;
+		top: 7px;
+		right: 6px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 24px;
+		height: 22px;
+		background: transparent;
+		border: 1px solid var(--border-mid);
+		border-radius: 3px;
+		cursor: pointer;
+		z-index: 5;
+		color: var(--text-muted);
+		transition: background 0.12s, color 0.12s;
+	}
+	.gc-tile-title-action:hover {
+		background: var(--bg-hover);
+		color: var(--text);
+	}
+	.gc-tile-title-action :global(svg) {
+		width: 11px;
+		height: 11px;
+		fill: currentColor;
+	}
+	.gc-tile-title-action--vanquish:hover {
+		color: #ef4444;
+		background: rgba(239, 68, 68, 0.1);
+		border-color: rgba(239, 68, 68, 0.4);
+	}
+	.gc-tile-title-action--complete:hover {
+		color: #34d399;
+		background: rgba(52, 211, 153, 0.1);
+		border-color: rgba(52, 211, 153, 0.4);
+	}
+
+	/* ===== Site notes — markdown body overrides ===== */
+	.gc-exp-notes-body :global(p)  { font-family: var(--font-ui); font-size: 0.72rem; line-height: 1.45; color: var(--text-muted); margin: 0 0 4px; }
+	.gc-exp-notes-body :global(h3),
+	.gc-exp-notes-body :global(h4),
+	.gc-exp-notes-body :global(h5) { font-family: var(--font-ui); font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dimmer); margin: 6px 0 2px; }
+	.gc-exp-notes-body :global(ul),
+	.gc-exp-notes-body :global(ol) { margin: 0 0 4px; padding-left: 1.1em; }
+	.gc-exp-notes-body :global(li) { font-family: var(--font-ui); font-size: 0.7rem; line-height: 1.45; color: var(--text-muted); }
+	.gc-exp-notes-body :global(strong) { font-weight: 700; color: var(--text); }
+	.gc-exp-notes-body :global(em)     { font-style: italic; }
+	.gc-exp-notes-body :global(br)     { display: block; margin: 3px 0; content: \'\'; }
+
+	/* ===== Feature / Danger current result strip (below oracle roll buttons) ===== */
+	.gc-fd-strip {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 3px;
+		padding: 0.25rem 0.6rem 0.3rem;
+		width: 100%;
+	}
+	.gc-fd-line {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 1px;
+	}
+	.gc-fd-label {
+		font-family:    var(--font-ui);
+		font-size:      0.6rem;
+		font-weight:    700;
+		letter-spacing: 0.07em;
+		text-transform: uppercase;
+		color:          var(--text-dimmer);
+	}
+	.gc-fd-text {
+		font-family: var(--font-ui);
+		font-size:   0.72rem;
+		line-height: 1.4;
+		color:       var(--text-muted);
+		font-style:  italic;
 	}
 </style>

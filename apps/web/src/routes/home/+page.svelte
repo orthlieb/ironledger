@@ -6,7 +6,7 @@
 	import { characters as api } from '$lib/api.js';
 	import { findFoe, findFoeByName, loadFoes, FOE_RANKS } from '$lib/foeStore.svelte.js';
 	import { loadDelveData } from '$lib/delveStore.svelte.js';
-	import { appendLog, getActionNonce, drainActions, SESSION_LOG_ID, logs } from '$lib/log.svelte.js';
+	import { appendLog, getActionNonce, drainActions, getXpSpendNonce, drainXpSpend, SESSION_LOG_ID, logs } from '$lib/log.svelte.js';
 	import {
 		loadEncounters, getEncounters,
 		addEncounter, updateEncounter, removeEncounter,
@@ -215,6 +215,40 @@
 	let activeTab = $state<Tab>('characters');
 	const isAdmin = $derived(data.user?.role === 'admin');
 
+	// ── Adventure split pane ───────────────────────────────────────────────────
+	const SPLIT_KEY = 'ironledger.adventureSplit';
+	let adventureSplitPct  = $state(50);
+	let adventureLayoutRef = $state<HTMLDivElement | null>(null);
+	let isResizing         = $state(false);
+
+	// Load persisted split on mount (browser-only, avoids SSR issues)
+	onMount(() => {
+		const stored = localStorage.getItem(SPLIT_KEY);
+		if (stored !== null) {
+			const n = Number(stored);
+			if (Number.isFinite(n)) adventureSplitPct = Math.min(75, Math.max(25, n));
+		}
+	});
+
+	function startAdventureResize(e: MouseEvent) {
+		e.preventDefault();
+		isResizing = true;
+		function onMove(ev: MouseEvent) {
+			if (!adventureLayoutRef) return;
+			const rect = adventureLayoutRef.getBoundingClientRect();
+			const pct  = ((ev.clientX - rect.left) / rect.width) * 100;
+			adventureSplitPct = Math.min(75, Math.max(25, pct));
+		}
+		function onUp() {
+			isResizing = false;
+			localStorage.setItem(SPLIT_KEY, String(adventureSplitPct));
+			window.removeEventListener('mousemove', onMove);
+			window.removeEventListener('mouseup', onUp);
+		}
+		window.addEventListener('mousemove', onMove);
+		window.addEventListener('mouseup', onUp);
+	}
+
 	// Close mobile search pills when switching tabs
 	$effect(() => {
 		activeTab;
@@ -337,6 +371,58 @@
 		chars = chars.map(c => ({ ...c }));
 		// Persist to API (fire-and-forget, same cadence as CharacterSheet auto-save)
 		api.update(activeCharId, char.data).catch(() => {});
+	});
+
+	// Drain the XP spend bus when CharacterSheet is not mounted (Adventure / Foes /
+	// Expeditions tabs). Mirrors the same pattern as the action bus handler above.
+	$effect(() => {
+		getXpSpendNonce();
+		if (activeTab === 'characters') return; // CharacterSheet handles it
+		if (!activeCharId) return;
+		const amount = drainXpSpend(activeCharId);
+		if (amount <= 0) return;
+		const char = chars.find(c => c.id === activeCharId);
+		if (!char) return;
+		const old = ((char.data as Record<string, number>).xp) ?? 0;
+		const next = Math.max(0, old - amount);
+		if (next === old) return;
+		(char.data as Record<string, number>).xp = next;
+		// Mirror to the live DiceCtx so the GCB chip updates immediately
+		const liveCtx = getActiveDiceCtx();
+		if (liveCtx?.charId === activeCharId) {
+			(liveCtx.data as unknown as Record<string, unknown>).xp = next;
+		}
+		appendLog(SESSION_LOG_ID, `${char.name} — Experience`,
+			`<div>XP spent: <strong>−${amount}</strong> (${old} → <strong>${next}</strong>)</div>`);
+		chars = chars.map(c => ({ ...c }));
+		api.update(activeCharId, char.data).catch(() => {});
+	});
+
+	// Persist initiative changes when CharacterSheet is not mounted (non-characters tabs).
+	// Mirrors the XP spend bus drain pattern above.
+	let _prevInitiativeMap = $state<Record<string, number>>({});
+	$effect(() => {
+		const snap = { ...initiativeMap }; // track reactive dependency
+		if (activeTab === 'characters') { _prevInitiativeMap = snap; return; } // CharacterSheet handles it
+		// Find any char whose initiative changed
+		for (const [charId, val] of Object.entries(snap)) {
+			if (_prevInitiativeMap[charId] === val) continue;
+			const char = chars.find(c => c.id === charId);
+			if (!char) continue;
+			(char.data as Record<string, unknown>).initiative = val || undefined;
+			api.update(charId, char.data).catch(() => {});
+		}
+		// Also handle deletions (initiative cleared → key removed from map)
+		for (const charId of Object.keys(_prevInitiativeMap)) {
+			if (!(charId in snap)) {
+				const char = chars.find(c => c.id === charId);
+				if (char) {
+					(char.data as Record<string, unknown>).initiative = undefined;
+					api.update(charId, char.data).catch(() => {});
+				}
+			}
+		}
+		_prevInitiativeMap = snap;
 	});
 
 	// ── Initial load ───────────────────────────────���───────────────────────────
@@ -640,7 +726,7 @@
 	async function confirmChangeTheme() {
 		const exp = expeditions.find(e => e.id === changeThemeExpId);
 		if (!exp || exp.type !== 'site' || !changeThemeValue) return;
-		const updated = { ...exp, theme: changeThemeValue } as import('$lib/types.js').Site;
+		const updated = { ...exp, theme: changeThemeValue, currentFeature: undefined, currentDanger: undefined } as import('$lib/types.js').Site;
 		await updateExpedition(updated);
 		appendLog(SESSION_LOG_ID, `Site — ${exp.name}`,
 			`<div>Changed theme to <strong>${changeThemeValue}</strong>.</div>`);
@@ -649,7 +735,7 @@
 	async function confirmChangeDomain() {
 		const exp = expeditions.find(e => e.id === changeDomainExpId);
 		if (!exp || exp.type !== 'site' || !changeDomainValue) return;
-		const updated = { ...exp, domain: changeDomainValue } as import('$lib/types.js').Site;
+		const updated = { ...exp, domain: changeDomainValue, currentFeature: undefined, currentDanger: undefined } as import('$lib/types.js').Site;
 		await updateExpedition(updated);
 		appendLog(SESSION_LOG_ID, `Site — ${exp.name}`,
 			`<div>Changed domain to <strong>${changeDomainValue}</strong>.</div>`);
@@ -1782,7 +1868,10 @@
 					</button>
 				</div>
 
-				<div class="adventure-layout">
+				<div class="adventure-layout"
+					bind:this={adventureLayoutRef}
+					style="--gcb-pct: {adventureSplitPct}%"
+					class:adventure-layout--resizing={isResizing}>
 
 					<!-- GCB column -->
 					<div class="adventure-gcb">
@@ -1799,11 +1888,23 @@
 							onFoeSelect={(id) => { activeFoeId = id; if (!id && activeCharId) delete initiativeMap[activeCharId]; }}
 							onExpeditionSelect={(id) => (activeExpeditionId = id)}
 							onFoeProgress={handleEncounterChange}
+							onFoeVanquish={async (enc) => { await handleEncounterChange(enc); handleFoeVanquished(enc.id); }}
 							onExpeditionProgress={handleExpeditionChange}
+							onExpeditionComplete={handleExpeditionChange}
 							onInitiativeClick={(next) => { if (activeCharId) { if (next === 0) delete initiativeMap[activeCharId]; else initiativeMap[activeCharId] = next; initiativeMap = { ...initiativeMap }; } }}
 							onRollDenizen={(site) => denizenDialogRef?.open(site)}
 						/>
 					</div>
+
+					<!-- Resize handle (desktop only) -->
+					<div
+						class="adventure-resize-handle"
+						class:adventure-resize-handle--active={isResizing}
+						onmousedown={startAdventureResize}
+						role="separator"
+						aria-label="Resize panels"
+						aria-orientation="vertical"
+					></div>
 
 					<!-- Log column -->
 					<div class="adventure-log">
@@ -2020,10 +2121,24 @@
 	}
 
 	.adventure-layout {
-		display: grid;
-		grid-template-columns: 1fr;
+		display: flex;
+		flex-direction: column;
 		gap: 12px;
-		align-items: start;
+		align-items: stretch;
+	}
+
+	@media (min-width: 768px) {
+		.adventure-layout {
+			flex-direction: row;
+			gap: 0;
+			align-items: start;
+		}
+	}
+
+	/* Prevent text selection while dragging */
+	.adventure-layout--resizing {
+		user-select: none;
+		cursor: col-resize;
 	}
 
 	.adventure-gcb {
@@ -2033,6 +2148,72 @@
 		/* overflow must stay visible so GCB popover dropdowns can extend below the card */
 		box-shadow: inset 0 1px 0 #ffffff04, 0 2px 12px #00000050;
 		min-width: 0;
+		flex: 1 1 auto;
+	}
+
+	@media (min-width: 768px) {
+		.adventure-gcb {
+			flex: 0 0 auto;
+			width: var(--gcb-pct, 50%);
+			min-width: 290px;
+			max-width: 75%;
+		}
+	}
+
+	/* Resize handle — hidden on mobile, visible on desktop */
+	.adventure-resize-handle {
+		display: none;
+	}
+
+	@media (min-width: 768px) {
+		.adventure-resize-handle {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			flex: 0 0 10px;
+			cursor: col-resize;
+			position: relative;
+			background: transparent;
+			transition: background 0.15s;
+			z-index: 5;
+			align-self: stretch;
+		}
+		.adventure-resize-handle::after {
+			content: '';
+			position: absolute;
+			top: 0;
+			bottom: 0;
+			left: 50%;
+			transform: translateX(-50%);
+			width: 2px;
+			background: var(--border);
+			border-radius: 1px;
+			transition: background 0.15s, width 0.15s;
+		}
+		.adventure-resize-handle:hover::after,
+		.adventure-resize-handle--active::after {
+			width: 3px;
+			background: var(--text-accent);
+		}
+		/* Grip dots in the centre */
+		.adventure-resize-handle::before {
+			content: '⋮';
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			font-size: 1rem;
+			line-height: 1;
+			color: var(--text-dimmer);
+			opacity: 0;
+			transition: opacity 0.15s;
+			pointer-events: none;
+			z-index: 1;
+		}
+		.adventure-resize-handle:hover::before,
+		.adventure-resize-handle--active::before {
+			opacity: 1;
+		}
 	}
 
 	.adventure-log {
@@ -2044,13 +2225,16 @@
 		border-radius: 5px;
 		overflow: hidden;
 		box-shadow: inset 0 1px 0 #ffffff04, 0 2px 12px #00000050;
+		flex: 1 1 auto;
 	}
 
 	@media (min-width: 768px) {
-		.adventure-layout {
-			grid-template-columns: repeat(2, 1fr);
+		.adventure-log {
+			flex: 1 1 0;
+			min-width: 200px;
 		}
 	}
+
 
 	/* Toolbar row inside the Characters tab (Import + New buttons) */
 	.char-toolbar {

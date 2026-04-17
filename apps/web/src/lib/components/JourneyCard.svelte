@@ -7,6 +7,7 @@
 	 */
 
 	import type { Journey, VowDifficulty } from '$lib/types.js';
+	import { renderNote } from '$lib/markdown.js';
 	import { EXPEDITION_MARK_TICKS } from '$lib/types.js';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import ProgressTrack   from '$lib/components/ProgressTrack.svelte';
@@ -68,6 +69,10 @@
 	$effect(() => {
 		if (editingName && nameInputEl) nameInputEl.select();
 	});
+
+	let editingNotes      = $state(false);
+	let notesTextareaEl   = $state<HTMLTextAreaElement | null>(null);
+	$effect(() => { if (editingNotes && notesTextareaEl) notesTextareaEl.focus(); });
 	$effect(() => {
 		if (focusName) { nameBeforeEdit = expedition.name; editingName = true; }
 	});
@@ -253,17 +258,39 @@
 				</span>
 			</div>
 
-			<!-- Notes -->
+			<!-- Notes (click-to-edit markdown display, same pattern as CharacterSheet background) -->
 			<div class="jc-field-row">
 				<label class="jc-label" for="jc-notes-{expedition.id}">Notes</label>
-				<textarea
-					id="jc-notes-{expedition.id}"
-					class="jc-textarea"
-					placeholder="Waypoints, landmarks, perils encountered…"
-					value={expedition.notes}
-					oninput={handleNotesChange}
-					rows="3"
-				></textarea>
+				{#if editingNotes}
+					<textarea
+						bind:this={notesTextareaEl}
+						id="jc-notes-{expedition.id}"
+						class="jc-textarea"
+						placeholder="Waypoints, landmarks, perils encountered…"
+						value={expedition.notes}
+						oninput={handleNotesChange}
+						onblur={() => (editingNotes = false)}
+						rows="3"
+					></textarea>
+				{:else}
+					<!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
+					<div
+						id="jc-notes-{expedition.id}"
+						class="jc-notes-display"
+						class:jc-notes-empty={!(expedition.notes ?? '').trim()}
+						onclick={() => (editingNotes = true)}
+						onkeydown={(e) => { if (e.key === 'Enter') editingNotes = true; }}
+						title="Click to edit"
+						role="button"
+						tabindex="0"
+					>
+						{#if (expedition.notes ?? '').trim()}
+							{@html renderNote(expedition.notes ?? '')}
+						{:else}
+							<span class="jc-notes-placeholder">Waypoints, landmarks, perils encountered…</span>
+						{/if}
+					</div>
+				{/if}
 			</div>
 
 			<!-- Progress track -->
@@ -540,6 +567,50 @@
 		min-height: 3rem;
 		line-height: 1.45;
 	}
+
+	/* Read-only markdown display for the notes field (click to edit) */
+	.jc-notes-display {
+		width: 100%;
+		font-family: var(--font-ui);
+		font-size: 0.82rem;
+		line-height: 1.45;
+		min-height: 3rem;
+		padding: 4px 8px;
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		background: var(--bg-inset);
+		color: var(--text);
+		box-sizing: border-box;
+		cursor: text;
+		transition: border-color 0.12s;
+	}
+	.jc-notes-display:hover,
+	.jc-notes-display:focus {
+		border-color: var(--border-mid);
+		outline: none;
+	}
+	.jc-notes-placeholder {
+		color: var(--text-dimmer);
+		font-style: italic;
+	}
+	.jc-notes-display :global(p)            { margin: 0 0 3px; }
+	.jc-notes-display :global(p:last-child) { margin-bottom: 0; }
+	.jc-notes-display :global(h3),
+	.jc-notes-display :global(h4),
+	.jc-notes-display :global(h5) {
+		font-family: var(--font-ui);
+		font-size: 0.78rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		color: var(--text-accent);
+		margin: 4px 0 2px;
+	}
+	.jc-notes-display :global(ul),
+	.jc-notes-display :global(ol)      { margin: 2px 0; padding-left: 1.3em; }
+	.jc-notes-display :global(li)      { margin-bottom: 1px; }
+	.jc-notes-display :global(strong)  { font-weight: 700; color: var(--text); }
+	.jc-notes-display :global(em)      { font-style: italic; }
+	.jc-notes-display :global(br)      { display: block; margin-bottom: 3px; content: ''; }
 
 	/* ── Progress ───────────────────────────────────────────────────────── */
 	.jc-section {

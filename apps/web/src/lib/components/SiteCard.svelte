@@ -8,6 +8,7 @@
 	 */
 
 	import type { Site, VowDifficulty } from '$lib/types.js';
+	import { renderNote } from '$lib/markdown.js';
 	import {
 		EXPEDITION_MARK_TICKS,
 		DENIZEN_CELLS,
@@ -83,6 +84,10 @@
 	$effect(() => {
 		if (focusName) { nameBeforeEdit = expedition.name; editingName = true; }
 	});
+
+	let editingNotes      = $state(false);
+	let notesTextareaEl   = $state<HTMLTextAreaElement | null>(null);
+	$effect(() => { if (editingNotes && notesTextareaEl) notesTextareaEl.focus(); });
 
 	let foePickerRef          = $state<{ openForDenizen(): Promise<void> } | null>(null);
 	let changeThemeDialogRef  = $state<{ open(): void; close(): void } | null>(null);
@@ -324,6 +329,24 @@
 				{/if}
 			</div>
 
+			<!-- Current feature / danger from oracle rolls -->
+			{#if expedition.currentFeature || expedition.currentDanger}
+				<div class="sc-fd-results">
+					{#if expedition.currentFeature}
+						<div class="sc-fd-line">
+							<span class="sc-fd-label">Feature</span>
+							<span class="sc-fd-text">{expedition.currentFeature}</span>
+						</div>
+					{/if}
+					{#if expedition.currentDanger}
+						<div class="sc-fd-line">
+							<span class="sc-fd-label">Danger</span>
+							<span class="sc-fd-text">{expedition.currentDanger}</span>
+						</div>
+					{/if}
+				</div>
+			{/if}
+
 			<!-- Change theme / domain -->
 			<div class="sc-theme-actions">
 				<button class="sc-theme-btn" onclick={openChangeTheme}>Change Theme</button>
@@ -343,17 +366,39 @@
 				/>
 			</div>
 
-			<!-- Notes -->
+			<!-- Notes (click-to-edit markdown display, same pattern as CharacterSheet background) -->
 			<div class="sc-field-row">
 				<label class="sc-label" for="sc-notes-{expedition.id}">Notes</label>
-				<textarea
-					id="sc-notes-{expedition.id}"
-					class="sc-input sc-textarea"
-					rows="3"
-					placeholder="Discoveries, encounters, observations… (**bold**, *italic*, # heading, - list)"
-					value={expedition.notes ?? ''}
-					oninput={handleNotesChange}
-				></textarea>
+				{#if editingNotes}
+					<textarea
+						bind:this={notesTextareaEl}
+						id="sc-notes-{expedition.id}"
+						class="sc-input sc-textarea"
+						rows="3"
+						placeholder="Discoveries, encounters, observations… (**bold**, *italic*, # heading, - list)"
+						value={expedition.notes ?? ''}
+						oninput={handleNotesChange}
+						onblur={() => (editingNotes = false)}
+					></textarea>
+				{:else}
+					<!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
+					<div
+						id="sc-notes-{expedition.id}"
+						class="sc-notes-display"
+						class:sc-notes-empty={!(expedition.notes ?? '').trim()}
+						onclick={() => (editingNotes = true)}
+						onkeydown={(e) => { if (e.key === 'Enter') editingNotes = true; }}
+						title="Click to edit"
+						role="button"
+						tabindex="0"
+					>
+						{#if (expedition.notes ?? '').trim()}
+							{@html renderNote(expedition.notes ?? '')}
+						{:else}
+							<span class="sc-notes-placeholder">Discoveries, encounters, observations… (**bold**, *italic*, # heading, - list)</span>
+						{/if}
+					</div>
+				{/if}
 			</div>
 
 			<!-- Denizens sub-section (collapsible) -->
@@ -602,6 +647,34 @@
 		align-items: center;
 	}
 
+	/* Current feature / danger display */
+	.sc-fd-results {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		padding: 4px 0 2px;
+	}
+	.sc-fd-line {
+		display: flex;
+		flex-direction: column;
+		gap: 1px;
+	}
+	.sc-fd-label {
+		font-family:    var(--font-ui);
+		font-size:      0.55rem;
+		font-weight:    700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color:          var(--text-dimmer);
+	}
+	.sc-fd-text {
+		font-family: var(--font-ui);
+		font-size:   0.8rem;
+		line-height: 1.4;
+		color:       var(--text-muted);
+		font-style:  italic;
+	}
+
 	.sc-theme-actions {
 		display:   flex;
 		gap:       6px;
@@ -743,6 +816,50 @@
 		min-height: 3rem;
 		line-height: 1.45;
 	}
+
+	/* Read-only markdown display for the notes field (click to edit) */
+	.sc-notes-display {
+		width: 100%;
+		font-family: var(--font-ui);
+		font-size: 0.82rem;
+		line-height: 1.45;
+		min-height: 3rem;
+		padding: 4px 8px;
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		background: var(--bg-inset);
+		color: var(--text);
+		box-sizing: border-box;
+		cursor: text;
+		transition: border-color 0.12s;
+	}
+	.sc-notes-display:hover,
+	.sc-notes-display:focus {
+		border-color: var(--border-mid);
+		outline: none;
+	}
+	.sc-notes-placeholder {
+		color: var(--text-dimmer);
+		font-style: italic;
+	}
+	.sc-notes-display :global(p)            { margin: 0 0 3px; }
+	.sc-notes-display :global(p:last-child) { margin-bottom: 0; }
+	.sc-notes-display :global(h3),
+	.sc-notes-display :global(h4),
+	.sc-notes-display :global(h5) {
+		font-family: var(--font-ui);
+		font-size: 0.78rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		color: var(--text-accent);
+		margin: 4px 0 2px;
+	}
+	.sc-notes-display :global(ul),
+	.sc-notes-display :global(ol)      { margin: 2px 0; padding-left: 1.3em; }
+	.sc-notes-display :global(li)      { margin-bottom: 1px; }
+	.sc-notes-display :global(strong)  { font-weight: 700; color: var(--text); }
+	.sc-notes-display :global(em)      { font-style: italic; }
+	.sc-notes-display :global(br)      { display: block; margin-bottom: 3px; content: ''; }
 
 	/* ── Section headers ────────────────────────────────────────────────── */
 	.sc-section {

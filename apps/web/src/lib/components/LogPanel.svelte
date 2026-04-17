@@ -875,6 +875,10 @@
 		border-bottom: none;
 	}
 
+	.log-entry:last-child {
+		border-bottom: none;
+	}
+
 	.entry-header {
 		display: flex;
 		align-items: center;
