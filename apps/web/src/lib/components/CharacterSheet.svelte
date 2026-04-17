@@ -17,7 +17,7 @@
 		progressText,
 	} from '$lib/character.js';
 	import { untrack } from 'svelte';
-	import { characters } from '$lib/api.js';
+	import { persistCharacterNow } from '$lib/characterStore.svelte.js';
 
 	import trashSvg      from '$icons/trash-solid-full.svg?raw';
 	import hornedHelmSvg from '$icons/horned-helm.svg?raw';
@@ -59,7 +59,6 @@
 		supply,
 		focusName = false,
 		onDelete,
-		onSave,
 		onOracleLink,
 		onSupplyChange,
 	}: {
@@ -73,7 +72,6 @@
 		/** Focus the name field immediately (used when newly created). */
 		focusName?: boolean;
 		onDelete?:      () => void;
-		onSave?:        (updated: CharacterFull) => void;
 		onOracleLink?:  (key: string) => void;
 		/** Called when this sheet changes supply — used to echo the value to all party members. */
 		onSupplyChange?: (val: number) => void;
@@ -88,7 +86,6 @@
 	let data = $state(untrack(() => hydrateCharacter(character.data)));
 	let collapsed = $state(false);
 	let deleteDialogRef = $state<{ open(): void; close(): void } | null>(null);
-	let saveStatus = $state<'idle' | 'saving' | 'error'>('idle');
 
 	// Publish live data to the global dice context whenever this sheet is active.
 	// We deliberately do NOT clear _ctx when active becomes false — the live data
@@ -99,7 +96,6 @@
 			setActiveDiceCtx({ charId: character.id, charName: data.name || 'Unnamed', data });
 		}
 	});
-	let saveTimer: ReturnType<typeof setTimeout> | null = null;
 	let portraitHovered = $state(false);
 
 	// Background field: toggle between markdown display and textarea editing
@@ -285,8 +281,7 @@
 	const momentumRstV  = $derived(momentumReset(data));
 	const debilityCount = $derived(countDebilities(data));
 
-	// Sync the initiative prop into owned data so it's persisted with the character.
-	// This triggers the auto-save effect below whenever initiative changes externally.
+	// Sync the initiative prop into owned data so it's included in save snapshots.
 	$effect(() => {
 		const v = initiative ?? 0;
 		if ((data.initiative ?? 0) !== v) data.initiative = v || undefined;
@@ -301,52 +296,21 @@
 	});
 
 	// ---------------------------------------------------------------------------
-	// Auto-save — debounced 1.5 s after any change
+	// Auto-save — debounced 1.5 s after any change, delegated to characterStore
 	// ---------------------------------------------------------------------------
+	let _saveTimer: ReturnType<typeof setTimeout> | null = null;
 	$effect(() => {
-		// Snapshot serialises the deep-reactive proxy to a plain object
 		const snapshot = $state.snapshot(data) as Record<string, unknown>;
-
-		// Notify parent immediately (no debounce) so GlobalContextBar reflects live
-		// values without waiting for the API round-trip.  untrack() prevents
-		// `character` from becoming a reactive dependency of this effect (which would
-		// cause an infinite loop when handleSave updates chars → character prop).
-		untrack(() => {
-			onSave?.({
-				...character,
-				name: (snapshot.name as string) || character.name,
-				data: snapshot,
-			});
-		});
-
-		// Cancel pending save
-		if (saveTimer) clearTimeout(saveTimer);
-		saveStatus = 'idle';
-
-		saveTimer = setTimeout(() => {
-			void save(snapshot);
-		}, 1500);
-
-		// Cleanup: cancel timer when component is destroyed
-		return () => {
-			if (saveTimer) clearTimeout(saveTimer);
-		};
-	});
-
-	async function save(snapshot: Record<string, unknown>) {
-		saveStatus = 'saving';
-		try {
-			const updated = await characters.update(character.id, {
+		if (_saveTimer) clearTimeout(_saveTimer);
+		_saveTimer = setTimeout(() => {
+			_saveTimer = null;
+			persistCharacterNow(character.id, {
 				name: (snapshot.name as string) || 'New Character',
 				data: snapshot,
 			});
-			saveStatus = 'idle';
-			onSave?.(updated);
-		} catch (err) {
-			console.error('Auto-save failed:', err);
-			saveStatus = 'error';
-		}
-	}
+		}, 1500);
+		return () => { if (_saveTimer) clearTimeout(_saveTimer); };
+	});
 
 	// ---------------------------------------------------------------------------
 	// Vow helpers
@@ -491,9 +455,6 @@
 			>{data.name || 'Unnamed'}</span>
 		{/if}
 
-		<span class="save-status" class:saving={saveStatus === 'saving'}>
-			{#if saveStatus === 'saving'}Saving…{/if}
-		</span>
 
 		{#if initiative === 1}
 			<div class="cs-init-badge cs-init-badge--you">{@html swordSvg}<span class="cs-init-label">Has Initiative</span></div>
@@ -526,11 +487,6 @@
 	<!-- Body (collapsible) ------------------------------------- -->
 	{#if !collapsed}
 		<div class="char-body">
-			<ErrorBar
-				message={saveStatus === 'error' ? 'Auto-save failed — changes may not be persisted. Is the server running?' : ''}
-				onDismiss={() => saveStatus = 'idle'}
-			/>
-
 			<!-- Identity -->
 			<section class="char-section">
 				<div class="identity-fields">
@@ -926,18 +882,6 @@
 		height: 13px;
 		fill: currentColor;
 	}
-
-	/* Save indicator */
-	.save-status {
-		font-family: var(--font-ui);
-		font-size: 0.68rem;
-		letter-spacing: 0.05em;
-		text-transform: uppercase;
-		color: transparent;
-		transition: color 0.3s;
-		flex-shrink: 0;
-	}
-	.save-status.saving { color: var(--text-dimmer); }
 
 	/* ---- Body ---- */
 	.char-body {

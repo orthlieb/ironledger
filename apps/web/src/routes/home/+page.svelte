@@ -3,7 +3,6 @@
 	import type { CharacterFull } from '$lib/api.js';
 	import type { FoeDef, FoeQuantity, Expedition, Journey, Site, VowDifficulty, Community, Npc } from '$lib/types.js';
 	import { EXPEDITION_MARK_TICKS, DELVE_THEMES, DELVE_DOMAINS } from '$lib/types.js';
-	import { characters as api } from '$lib/api.js';
 	import { findFoe, findFoeByName, loadFoes, FOE_RANKS } from '$lib/foeStore.svelte.js';
 	import { loadDelveData } from '$lib/delveStore.svelte.js';
 	import { appendLog, getActionNonce, drainActions, getXpSpendNonce, drainXpSpend, SESSION_LOG_ID, logs } from '$lib/log.svelte.js';
@@ -15,6 +14,13 @@
 		loadExpeditions, getExpeditions,
 		addExpedition, updateExpedition, removeExpedition,
 	} from '$lib/expeditionStore.svelte.js';
+	import {
+		loadCharacters, getCharacters, isCharacterLoading,
+		createCharacter, deleteCharacter as storeDeleteCharacter,
+		persistCharacterNow,
+		getInitiativeMap, setInitiative, clearAllInitiative, rebuildInitiativeMap,
+		getPartySupply, setPartySupply, syncPartySupply as storeSyncPartySupply,
+	} from '$lib/characterStore.svelte.js';
 	import {
 		loadCommunities, getCommunities,
 		addCommunity, updateCommunity, removeCommunity,
@@ -66,11 +72,9 @@
 
 	let { data }: { data: PageData } = $props();
 
-	// ── Character list ─────────────────────────────────────────────────────────
-	// Starts empty; populated after mount so the app shell renders immediately.
-	let chars       = $state<CharacterFull[]>([]);
-	let loadingChars = $state(true);
-
+	// ── Character list (driven by characterStore) ────────────────────
+	const chars        = $derived(getCharacters());
+	const loadingChars = $derived(isCharacterLoading());
 	let creating    = $state(false);
 	let importing   = $state(false);
 	let charError   = $state('');
@@ -162,9 +166,9 @@
 	let changeThemeValue      = $state<string>('');
 	let changeDomainValue     = $state<string>('');
 
-	// ── Initiative state (per-character: 0=none, 1=character, 2=foe) ────────
-	let initiativeMap = $state<Record<string, number>>({});
-	const initiative = $derived(activeCharId ? (initiativeMap[activeCharId] ?? 0) : 0);
+	// ── Initiative state (driven by characterStore) ────────────────────
+	const initiativeMap = $derived(getInitiativeMap());
+	const initiative    = $derived(activeCharId ? (initiativeMap[activeCharId] ?? 0) : 0);
 
 	// ── Communities ────────────────────────────────────────────────────────────
 	let communitySearch      = $state('');
@@ -295,30 +299,30 @@
 		})(),
 	});
 
-	// Drain the action bus when CharacterSheet is not mounted (Adventure / Foes /
-	// Expeditions tabs). Keeps GCB resource chips in sync with log link clicks.
+	// Drain the action bus when CharacterSheet is not mounted.
+	// CharacterSheet drains when it IS mounted (child effects run first), making
+	// this a no-op on the characters tab — no tab-gating needed.
 	const RESOURCE_CAPS: Record<string, [number, number]> = {
 		momentum: [-6, 10], health: [0, 5], spirit: [0, 5],
 		supply: [0, 5], xp: [0, 999], bonds: [0, 40], failures: [0, 40],
 	};
 	$effect(() => {
 		getActionNonce();
-		if (activeTab === 'characters') return; // CharacterSheet handles it
 		if (!activeCharId) return;
 		const actions = drainActions(activeCharId);
 		if (actions.length === 0) return;
 		const char = chars.find(c => c.id === activeCharId);
 		if (!char) return;
-		const rec = char.data as Record<string, number | boolean>;
+		const newData = { ...(char.data as Record<string, unknown>) };
+		const rec = newData as Record<string, number | boolean>;
 		for (const action of actions) {
 			if (action.type === 'resource') {
-				const gv = (char.data as Record<string, unknown>).globalValues as Record<string, string> | undefined;
-				// If the key lives in globalValues (e.g. mana), handle it there.
+				const gv = newData.globalValues as Record<string, string> | undefined;
 				if (gv !== undefined && action.key in gv) {
 					const old = parseInt(gv[action.key] ?? '0');
 					const next = Math.max(0, Math.min(999, old + action.value));
 					if (next !== old) {
-						(char.data as Record<string, unknown>).globalValues = { ...gv, [action.key]: String(next) };
+						newData.globalValues = { ...gv, [action.key]: String(next) };
 						const label = action.key.charAt(0).toUpperCase() + action.key.slice(1);
 						appendLog(SESSION_LOG_ID, `${char.name} — ${label}`,
 							`<div>${label}: ${old} → <strong>${next}</strong> (${action.value > 0 ? '+' : ''}${action.value})</div>`);
@@ -331,21 +335,11 @@
 				const next = Math.max(caps[0], Math.min(caps[1], old + action.value));
 				if (next !== old) {
 					rec[action.key] = next;
-					// Mirror to the live DiceCtx so MovesDialog always reads current values
 					const liveCtx = getActiveDiceCtx();
 					if (liveCtx?.charId === activeCharId) {
 						(liveCtx.data as unknown as Record<string, unknown>)[action.key] = next;
 					}
-					// Supply is party-wide: echo to all chars and update _partySupply so
-					// CharacterSheets reinitialise correctly when the Characters tab is opened.
-					if (action.key === 'supply') {
-						_partySupply = next;
-						for (const c of chars) {
-							if (c.id !== activeCharId) {
-								(c.data as Record<string, unknown>).supply = next;
-							}
-						}
-					}
+					if (action.key === 'supply') setPartySupply(next);
 					const label = action.key.charAt(0).toUpperCase() + action.key.slice(1);
 					appendLog(SESSION_LOG_ID, `${char.name} — ${label}`,
 						`<div>${label}: ${old} → <strong>${next}</strong> (${action.value > 0 ? '+' : ''}${action.value})</div>`);
@@ -356,7 +350,6 @@
 				const active = action.value === 1;
 				if (old !== active) {
 					rec[action.key] = active;
-					// Mirror to the live DiceCtx
 					const liveCtx = getActiveDiceCtx();
 					if (liveCtx?.charId === activeCharId) {
 						(liveCtx.data as unknown as Record<string, unknown>)[action.key] = active;
@@ -367,17 +360,14 @@
 				}
 			}
 		}
-		// Shallow-clone all entries (supply may have changed for multiple chars)
-		chars = chars.map(c => ({ ...c }));
-		// Persist to API (fire-and-forget, same cadence as CharacterSheet auto-save)
-		api.update(activeCharId, char.data).catch(() => {});
+		persistCharacterNow(activeCharId, { data: newData as Record<string, unknown> });
 	});
 
-	// Drain the XP spend bus when CharacterSheet is not mounted (Adventure / Foes /
-	// Expeditions tabs). Mirrors the same pattern as the action bus handler above.
+	// Drain the XP spend bus when CharacterSheet is not mounted.
+	// CharacterSheet drains when it IS mounted (child effects run first), making
+	// this a no-op on the characters tab — no tab-gating needed.
 	$effect(() => {
 		getXpSpendNonce();
-		if (activeTab === 'characters') return; // CharacterSheet handles it
 		if (!activeCharId) return;
 		const amount = drainXpSpend(activeCharId);
 		if (amount <= 0) return;
@@ -386,7 +376,7 @@
 		const old = ((char.data as Record<string, number>).xp) ?? 0;
 		const next = Math.max(0, old - amount);
 		if (next === old) return;
-		(char.data as Record<string, number>).xp = next;
+		const newData = { ...(char.data as Record<string, unknown>), xp: next };
 		// Mirror to the live DiceCtx so the GCB chip updates immediately
 		const liveCtx = getActiveDiceCtx();
 		if (liveCtx?.charId === activeCharId) {
@@ -394,71 +384,31 @@
 		}
 		appendLog(SESSION_LOG_ID, `${char.name} — Experience`,
 			`<div>XP spent: <strong>−${amount}</strong> (${old} → <strong>${next}</strong>)</div>`);
-		chars = chars.map(c => ({ ...c }));
-		api.update(activeCharId, char.data).catch(() => {});
+		persistCharacterNow(activeCharId, { data: newData });
 	});
 
-	// Persist initiative changes when CharacterSheet is not mounted (non-characters tabs).
-	// Mirrors the XP spend bus drain pattern above.
-	let _prevInitiativeMap = $state<Record<string, number>>({});
-	$effect(() => {
-		const snap = { ...initiativeMap }; // track reactive dependency
-		if (activeTab === 'characters') { _prevInitiativeMap = snap; return; } // CharacterSheet handles it
-		// Find any char whose initiative changed
-		for (const [charId, val] of Object.entries(snap)) {
-			if (_prevInitiativeMap[charId] === val) continue;
-			const char = chars.find(c => c.id === charId);
-			if (!char) continue;
-			(char.data as Record<string, unknown>).initiative = val || undefined;
-			api.update(charId, char.data).catch(() => {});
-		}
-		// Also handle deletions (initiative cleared → key removed from map)
-		for (const charId of Object.keys(_prevInitiativeMap)) {
-			if (!(charId in snap)) {
-				const char = chars.find(c => c.id === charId);
-				if (char) {
-					(char.data as Record<string, unknown>).initiative = undefined;
-					api.update(charId, char.data).catch(() => {});
-				}
-			}
-		}
-		_prevInitiativeMap = snap;
-	});
+
 
 	// ── Initial load ───────────────────────────────���───────────────────────────
 	onMount(async () => {
 		// Load characters, foe catalogue, global session data, and saved
 		// selections in parallel — all needed before we can validate IDs.
-		const [charResult,,,,,,,, sessionResult] = await Promise.allSettled([
-			api.list(),
+		// Load encounters first so we can pass hasActiveFoe to loadCharacters
+		const [,,, sessionResult] = await Promise.allSettled([
 			loadFoes(),
 			loadEncounters(),
 			loadExpeditions(),
+			loadSessionState(),
 			loadDelveData(),
 			loadMoves(),
 			loadCommunities(),
 			loadNpcs(),
-			loadSessionState(),
 		]);
-		if (charResult.status === 'fulfilled') {
-			chars = charResult.value;
-			// Initialise party supply to the max across all loaded characters
-			if (chars.length > 0) {
-				_partySupply = Math.max(...chars.map(c => (c.data as Record<string, unknown>).supply as number ?? 3));
-			}
-			// Restore initiative from each character's own data.
-			// Guard: skip initiative === 2 (foe has initiative) if no active foes exist —
-			// the auto-save debounce may not have fired before the previous logout,
-			// leaving a stale value in the DB.
+		// Load characters after encounters so the initiative guard has correct foe state
+		try {
 			const hasActiveFoe = getEncounters().some(e => !e.vanquished);
-			const map: Record<string, number> = {};
-			for (const c of chars) {
-				const v = (c.data as Record<string, unknown>).initiative as number | undefined;
-				if (v === 1) map[c.id] = v;                        // character has initiative — always safe
-				else if (v === 2 && hasActiveFoe) map[c.id] = v;  // foe has initiative — only if a foe exists
-			}
-			if (Object.keys(map).length > 0) initiativeMap = map;
-		} else {
+			await loadCharacters(hasActiveFoe);
+		} catch {
 			charError = 'Failed to load characters. Is the server running?';
 		}
 		// Restore saved selections — validate each ID still exists before applying
@@ -473,7 +423,6 @@
 			if (saved.activeTab && (TABS as readonly string[]).includes(saved.activeTab))
 				activeTab = saved.activeTab as Tab;
 		}
-		loadingChars = false;
 	});
 
 	// ── Tab group click handler (manual delegation for all tabs,
@@ -534,27 +483,11 @@
 		switchTabBy(dir);
 	}
 
-	// ── Party supply — always in sync across all characters ───────────────────
-	// Single source of truth passed as `supply` prop to every CharacterSheet.
-	// Initialised from the max of all loaded chars; updated whenever any sheet
-	// changes supply so all others are echoed to the same value.
-	let _partySupply = $state<number | null>(null);
+	// ── Party supply (driven by characterStore) ──────────────────────
+	const _partySupply = $derived(getPartySupply());
 
-	function handleSupplyChange(val: number) {
-		_partySupply = val;
-		// Also update chars.data.supply so the GCB chip stays in sync while on
-		// the Characters tab (CharacterSheet owns its own data copy and does NOT
-		// mutate chars — so we must mirror the change here).
-		chars = chars.map(c => {
-			(c.data as Record<string, unknown>).supply = val;
-			return { ...c };
-		});
-	}
-
-	function syncPartySupply() {
-		if (chars.length === 0) return;
-		_partySupply = Math.max(...chars.map(c => (c.data as Record<string, unknown>).supply as number ?? 3));
-	}
+	function handleSupplyChange(val: number) { setPartySupply(val); }
+	function syncPartySupply()               { storeSyncPartySupply(); }
 
 	// ── File input ref for import ──────────────────────────────────────────────
 	let importInput: HTMLInputElement;
@@ -566,12 +499,7 @@
 		creating = true;
 		charError = '';
 		try {
-			const newChar = await api.create('New Character');
-			chars = [newChar, ...chars];
-			// New char inherits party supply via the supply prop; initialize if first char
-			if (_partySupply === null) {
-				_partySupply = (newChar.data as Record<string, unknown>).supply as number ?? 3;
-			}
+			const newChar = await createCharacter();
 			activeCharId = newChar.id;
 			activeTab = 'characters';
 			newlyCreatedId = newChar.id;
@@ -584,14 +512,9 @@
 		}
 	}
 
-	function handleSave(updated: CharacterFull) {
-		chars = chars.map((c) => c.id === updated.id ? updated : c);
-	}
-
 	async function deleteCharacter(id: string) {
 		try {
-			await api.remove(id);
-			chars = chars.filter((c) => c.id !== id);
+			await storeDeleteCharacter(id);
 		} catch {
 			charError = 'Could not delete character.';
 		}
@@ -627,13 +550,10 @@
 	function handleFoeVanquished(id: string) {
 		if (activeFoeId === id) activeFoeId = '';
 		// Always clear the active character's initiative — the fight with this foe is over.
-		if (activeCharId) {
-			delete initiativeMap[activeCharId];
-			initiativeMap = { ...initiativeMap };
-		}
+		if (activeCharId) setInitiative(activeCharId, 0);
 		// If no non-vanquished foes remain at all, wipe the full map as a safety net.
 		const remaining = encounters.filter(e => e.id !== id && !e.vanquished);
-		if (remaining.length === 0) initiativeMap = {};
+		if (remaining.length === 0) clearAllInitiative();
 	}
 
 	/** Remove a single encounter. */
@@ -642,7 +562,7 @@
 		await removeEncounter(id);
 		// If no non-vanquished foes remain after deletion, clear all initiative
 		const remaining = encounters.filter(e => e.id !== id && !e.vanquished);
-		if (remaining.length === 0) initiativeMap = {};
+		if (remaining.length === 0) clearAllInitiative();
 	}
 
 	// ── Expedition CRUD ────────────────────────────────────────────────────────
@@ -984,15 +904,13 @@
 				const m = parsed.manifest as { type: string };
 				if (m.type === 'character') {
 					const entry = parsed.data as { name?: string; data?: Record<string, unknown> };
-					const newChar = await api.create(entry.name ?? 'Imported Character', entry.data ?? {});
-					chars = [newChar, ...chars];
+					const newChar = await createCharacter(entry.name ?? 'Imported Character', entry.data ?? {});
 					activeCharId = newChar.id;
 					syncPartySupply();
 				} else if (m.type === 'all-characters') {
 					const entries = parsed.data as Array<{ name?: string; data?: Record<string, unknown> }>;
 					for (const entry of entries) {
-						const newChar = await api.create(entry.name ?? 'Imported Character', entry.data ?? {});
-						chars = [newChar, ...chars];
+						const newChar = await createCharacter(entry.name ?? 'Imported Character', entry.data ?? {});
 						if (!activeCharId) activeCharId = newChar.id;
 					}
 					syncPartySupply();
@@ -1025,8 +943,7 @@
 						};
 					};
 					for (const entry of d.characters ?? []) {
-						const newChar = await api.create(entry.name ?? 'Imported Character', entry.data ?? {});
-						chars = [newChar, ...chars];
+						const newChar = await createCharacter(entry.name ?? 'Imported Character', entry.data ?? {});
 						if (!activeCharId) activeCharId = newChar.id;
 					}
 					for (const entry of d.log ?? [])        appendSafeLog(entry);
@@ -1041,19 +958,13 @@
 						if (d.session.activeTab)          activeTab          = d.session.activeTab as Tab;
 					}
 					// Initiative is in each character's data — rebuild the map from imported chars
-					const map: Record<string, number> = {};
-					for (const c of chars) {
-						const v = (c.data as Record<string, unknown>).initiative as number | undefined;
-						if (v) map[c.id] = v;
-					}
-					initiativeMap = map;
+					rebuildInitiativeMap();
 					syncPartySupply();
 				}
 			} else {
 				// Legacy format: { name, data }
 				const entry = parsed as { name?: string; data?: Record<string, unknown> };
-				const newChar = await api.create(entry.name ?? 'Imported Character', entry.data ?? {});
-				chars = [newChar, ...chars];
+				const newChar = await createCharacter(entry.name ?? 'Imported Character', entry.data ?? {});
 				activeCharId = newChar.id;
 				syncPartySupply();
 			}
@@ -1614,8 +1525,7 @@
 									supply={_partySupply ?? undefined}
 									focusName={char.id === newlyCreatedId}
 									onDelete={() => deleteCharacter(char.id)}
-									onSave={handleSave}
-									onSupplyChange={handleSupplyChange}
+												onSupplyChange={handleSupplyChange}
 									onOracleLink={(key) => oraclesDialogRef?.open(key || undefined)}
 								/>
 							</div>
@@ -1885,13 +1795,13 @@
 							{initiative}
 							stacked
 							onSelect={setActiveChar}
-							onFoeSelect={(id) => { activeFoeId = id; if (!id && activeCharId) delete initiativeMap[activeCharId]; }}
+							onFoeSelect={(id) => { activeFoeId = id; if (!id && activeCharId) setInitiative(activeCharId, 0); }}
 							onExpeditionSelect={(id) => (activeExpeditionId = id)}
 							onFoeProgress={handleEncounterChange}
 							onFoeVanquish={async (enc) => { await handleEncounterChange(enc); handleFoeVanquished(enc.id); }}
 							onExpeditionProgress={handleExpeditionChange}
 							onExpeditionComplete={handleExpeditionChange}
-							onInitiativeClick={(next) => { if (activeCharId) { if (next === 0) delete initiativeMap[activeCharId]; else initiativeMap[activeCharId] = next; initiativeMap = { ...initiativeMap }; } }}
+							onInitiativeClick={(next) => { if (activeCharId) setInitiative(activeCharId, next); }}
 							onRollDenizen={(site) => denizenDialogRef?.open(site)}
 						/>
 					</div>
@@ -1914,7 +1824,7 @@
 							onMoveLink={(id) => movesDialogRef?.open(id)}
 							onOracleLink={(key) => oraclesDialogRef?.open(key || undefined)}
 							onProgressLink={handleProgressLink}
-							onInitiativeLink={(val) => { if (activeCharId) initiativeMap[activeCharId] = val === 'character' ? 1 : 2; }}
+							onInitiativeLink={(val) => { if (activeCharId) setInitiative(activeCharId, val === 'character' ? 1 : 2); }}
 							onMenaceLink={handleMenaceLink}
 							onChangeTheme={handleChangeTheme}
 							onChangeDomain={handleChangeDomain}
@@ -1927,13 +1837,10 @@
 								}
 								// Always clear the active character's initiative regardless —
 								// the fight is over whether or not activeFoeId was still set.
-								if (activeCharId) {
-									delete initiativeMap[activeCharId];
-									initiativeMap = { ...initiativeMap };
-								}
+								if (activeCharId) setInitiative(activeCharId, 0);
 								// If no non-vanquished foes remain at all, wipe the full map.
 								const remaining = encounters.filter(e => !e.vanquished);
-								if (remaining.length === 0) initiativeMap = {};
+								if (remaining.length === 0) clearAllInitiative();
 							}}
 						/>
 					</div>
