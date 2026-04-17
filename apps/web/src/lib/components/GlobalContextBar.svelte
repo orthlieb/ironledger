@@ -1168,12 +1168,12 @@
 	}
 	.gc-debility-pill {
 		font-family:    var(--font-ui);
-		font-size:      0.55rem;
-		font-weight:    700;
+		font-size:      0.6rem;
+		font-weight:    600;
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		padding:        2px 6px;
-		border-radius:  8px;
+		padding:        2px 7px;
+		border-radius:  10px;
 		white-space:    nowrap;
 	}
 
@@ -1186,12 +1186,12 @@
 	}
 	.gc-asset-pill {
 		font-family:    var(--font-ui);
-		font-size:      0.55rem;
-		font-weight:    700;
+		font-size:      0.6rem;
+		font-weight:    600;
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		padding:        2px 6px;
-		border-radius:  8px;
+		padding:        2px 7px;
+		border-radius:  10px;
 		white-space:    nowrap;
 	}
 
