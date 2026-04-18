@@ -1,0 +1,179 @@
+{
+  "source": "yrt",
+  "overrides": {
+    "delve/atanya": {
+      "addendum": "In YRT: ordinary cold-adapted seafaring humans; their 'weather-sense' is experience, not mana. The forsaken-god origin is folk legend. If you want flavour, a mild Azure cultural practice (inherited medicinal traditions, topical cold-injury care) fits without changing them biologically."
+    },
+    "delve/bladewing": {
+      "addendum": "In YRT: a mundane nocturnal predator with natural echolocation — no mana required. Optional trace Amber in the inner ear for sharper echolocation."
+    },
+    "delve/blighthound": {
+      "addendum": "In YRT: a blight-zone apex scavenger. Gestation near Black and Crimson outcroppings produces the charred hide, red ocular fluorescence, horns, and heat-leeching breath. The 'death sense' is smelling decaying Black-exposed tissue at long range — drop the prophecy, keep the beast."
+    },
+    "delve/blood-thorn": {
+      "addendum": "In YRT: a carnivorous plant that grew up in a blight zone. Verdant drives the aggressive growth and tendril motion; Azure lets it extract and stitch new pods from prey blood. Green body, red-sheathed thorns, central pod acting as a crude natural seed."
+    },
+    "delve/bog-rot": {
+      "present": false
+    },
+    "delve/bonehorde": {
+      "present": false
+    },
+    "delve/carrion-newt": {
+      "addendum": "In YRT: an ordinary large amphibian. Optional Verdant trace in eggs that incubate in rotting flesh — a Verdant/decay boundary niche."
+    },
+    "delve/cave-lion": {
+      "addendum": "In YRT: a mundane big cat. No changes needed."
+    },
+    "delve/chitter": {
+      "addendum": "In YRT: a blight-adapted giant insect. Verdant drives the scale-up, Azure the chitin regeneration and digestive-slurry vomit, faint Amber the twittering call used for spatial mapping. Grey-brown carapace, yellowish vomit."
+    },
+    "delve/circle-of-stones": {
+      "present": false
+    },
+    "delve/deep-rat": {
+      "addendum": "In YRT: a mundane naked-mole-rat analogue. No mana required."
+    },
+    "delve/glimmer": {
+      "present": false
+    },
+    "delve/gloom": {
+      "addendum": "In YRT: an unbound Amber + Black wild-mana phenomenon in dark, still places — not intelligent, a self-sustaining mana weather system. Amber drives the illusions, voice mimicry, and fear induction; Black is the shadow-mass itself and the life-leech on enveloped prey. Oily black with flickering amber edges."
+    },
+    "delve/gnarl": {
+      "addendum": "In YRT: a huge forest herbivore symbiotic with Verdant mana. Verdant drives hide pigmentation, seasonal colour shift, longevity, and antler growth; Gray gives the bark-textured dermal layer. Hide shifts green / amber / russet / bare-brown through its life."
+    },
+    "delve/husk": {
+      "addendum": "In YRT: the walking worst-case outcome of the mana-backlash oracle — a wizard who over-drew on Black, Amber, and Crimson and survived in a ruined state. 'Forever hungry' is mana addiction. Black for decay and life-leech, Amber for compulsion and extracting mana from others, Crimson for the forbidden attack magic."
+    },
+    "delve/iron-wracked-beast": {
+      "addendum": "In YRT: an industrial-era contamination victim. Free Gray mana from a ruptured pre-Fall site converts the animal's tissue into a structural lattice — a slow, agonising transformation. Crimson residue drives the pain, the heat, and the howl. Iron-grey patches in weeping red flesh. The 'hammer on anvil' sound is Gray crystallisation inside muscle tissue."
+    },
+    "delve/kraken": {
+      "addendum": "In YRT: a mundane giant cephalopod, just very large. Optional Azure trace for regenerative tissue — it's very hard to kill."
+    },
+    "delve/maelstrom": {
+      "present": false
+    },
+    "delve/merrow": {
+      "addendum": "In YRT: an aquatic humanoid species — the religion is human culture, not magic. Crude Azure-based rituals (topical healing, endurance) are consistent with any coastal culture."
+    },
+    "delve/nightmare-spider": {
+      "addendum": "In YRT: a giant spider. The hallucinogenic venom is biochemistry, not magic. Optional Amber trace in the venom glands — the vivid hallucinations are biochemically indistinguishable from a weak Amber dose."
+    },
+    "delve/nightspawn": {
+      "addendum": "In YRT: the definition-perfect blight creature — gestated in or near a contaminated zone. Colour and capability vary by zone: a Black-zone nightspawn leeches life, a Crimson-zone one discharges energy, a mixed-zone one is unpredictable. Roll on a blight-contamination table per individual."
+    },
+    "delve/rhaskar": {
+      "addendum": "In YRT: a mundane large arctic predator — a big territorial animal."
+    },
+    "delve/shroud-crab": {
+      "addendum": "In YRT: a camouflaging crustacean. Optional trace Gray in the carapace for matter-matching camouflage; otherwise mundane chromatophores."
+    },
+    "delve/tempest": {
+      "present": false
+    },
+    "delve/thrall": {
+      "present": false
+    },
+    "delve/trog": {
+      "addendum": "In YRT: a burrowing reptilian predator. Luminous trace gives the bioluminescent scale layer; faint Verdant explains longevity and regrowth of claws and scales. Green-white glow."
+    },
+    "delve/wight": {
+      "present": false
+    },
+    "delve/wyrm": {
+      "addendum": "In YRT: a mundane very large serpent; 'eyes piercing the thickest darkness' is excellent night vision. Optional Verdant-tinted longevity and Crimson trace in the eyes for the torchlight gaze."
+    },
+    "delve/zealot": {
+      "addendum": "In YRT: ordinary religious fanatics, entirely human. 'Powers of the faith' are crude stolen or black-market mana seeds — common-use flares, panic wards, or smuggled Crimson seeds from a sympathetic artificer."
+    },
+    "ironsworn/basilisk": {
+      "addendum": "In YRT: a giant snake. The 'mesmerising gaze' is either mundane predator stillness or a trace Amber organ behind the eyes — slow, short-range, effective on small prey only."
+    },
+    "ironsworn/bear": {
+      "addendum": "In YRT: it's a bear."
+    },
+    "ironsworn/boar": {
+      "addendum": "In YRT: an oversized aggressive pig. If the size wants explaining, mild Verdant in the local environment produces oversized wildlife generally — the same explanation covers elder beasts, gnarls, and mammoths in the same region."
+    },
+    "ironsworn/bonewalker": {
+      "present": false
+    },
+    "ironsworn/broken": {
+      "addendum": "In YRT: humans who have gone feral. If you want a cause, hint at long-term untreated Amber exposure from living on contaminated land — personality erosion matches the backlash description."
+    },
+    "ironsworn/chimera": {
+      "addendum": "In YRT: an unstable Verdant + Azure + Black grafting experiment — someone tried to make a living construct from carrion and it kept moving. Azure fuses tissue, Verdant grows and self-repairs, Black tolerates dead material as substrate. It eats, screams, attacks — no higher cognition."
+    },
+    "ironsworn/common-folk": {
+      "addendum": "In YRT: humans."
+    },
+    "ironsworn/elder-beast": {
+      "addendum": "In YRT: oversized wolves, bears, or boars gestated near a stable long-standing blight zone. Verdant drives the size and longevity; trace Crimson gives the red-glowing eyes. The 'avatars of the old gods, long-lived as trees' is folk belief."
+    },
+    "ironsworn/elf": {
+      "addendum": "In YRT: an isolated forest-dwelling humanoid species. 'Binding animals to aid in defence' is skilled Verdant and Amber use — long-term training reinforced by scent-compulsion seeds. Wooden masks likely contain Amber-tuning channels."
+    },
+    "ironsworn/frostbound": {
+      "present": false
+    },
+    "ironsworn/gaunt": {
+      "addendum": "In YRT: a blight-adapted grazer bred by elves. Gray gives the scaled hide for protection; faint Luminous explains the pale-eye glow. An unusual species, not supernatural."
+    },
+    "ironsworn/giant": {
+      "addendum": "In YRT: an unusually tall humanoid species, or a mountain-adapted subculture of humans. If you want biological flavour, regional Verdant exposure produces larger humans over generations — same explanation as elder beasts."
+    },
+    "ironsworn/harrow-spider": {
+      "addendum": "In YRT: a giant spider — Verdant-tinted gigantism, otherwise a normal arachnid. Iridescent black eyes come from trace Amber/Gray in the lens tissue, not functionally magical."
+    },
+    "ironsworn/haunt": {
+      "present": false
+    },
+    "ironsworn/hollow": {
+      "present": false
+    },
+    "ironsworn/hunter": {
+      "addendum": "In YRT: human."
+    },
+    "ironsworn/iron-revenant": {
+      "present": false
+    },
+    "ironsworn/leviathan": {
+      "addendum": "In YRT: an enormous sea beast, mundane megafauna. Optional deep-ocean blight flavour — Azure-tough tissue and Gray-infused dermis; 'flesh as tough as iron' reads literally."
+    },
+    "ironsworn/mammoth": {
+      "addendum": "In YRT: a mammoth."
+    },
+    "ironsworn/marsh-rat": {
+      "addendum": "In YRT: a large mundane rat."
+    },
+    "ironsworn/mystic": {
+      "addendum": "In YRT: a Conclave-adjacent mage or an unlicensed one. 'Walks in two worlds' is folk description of a heavy Amber user — Amber interfaces with the nervous system, and the shimmering eyes are a documented implant side effect. Amber primary; Luminous + Gray for ward and circle work; some are black-market Black users, which explains 'consumed by the darkness'."
+    },
+    "ironsworn/primordial": {
+      "present": false
+    },
+    "ironsworn/raider": {
+      "addendum": "In YRT: humans with axes."
+    },
+    "ironsworn/sodden": {
+      "present": false
+    },
+    "ironsworn/troll": {
+      "addendum": "In YRT: a large humanoid with camouflaging skin — the same chromatophore trick as a shroud crab, just bigger. Gray-trace dermal layer; otherwise mundane biology. Solitary, shy, hoards objects."
+    },
+    "ironsworn/varou": {
+      "addendum": "In YRT: a wolf-featured humanoid species. The 'bloodcall' reads as Crimson susceptibility — their nervous system reacts to local Crimson mana and blood scent with a rage state. They avoid blight zones for this reason."
+    },
+    "ironsworn/warrior": {
+      "addendum": "In YRT: a human with training."
+    },
+    "ironsworn/wolf": {
+      "addendum": "In YRT: a wolf."
+    },
+    "ironsworn/wyvern": {
+      "addendum": "In YRT: a mundane winged flying reptile. The three breeds map to regional mana exposure: tawny (none), verdant (trace Verdant hide, deeper forest), iron (Gray-infused dermal plates — the metallic sheen is literal). None supernatural."
+    }
+  }
+}

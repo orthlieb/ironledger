@@ -148,6 +148,26 @@ export interface OracleTable {
   data:        OracleEntry[];
 }
 
+/**
+ * Foe override — lets an expansion reshape the base foe catalogue:
+ *   present:  false hides the foe from pickers while that expansion is active
+ *   addendum: appended to the foe's description when that expansion is active
+ *
+ * Stored per-expansion in apps/api/data/foes/foes_overrides_<source>.json.
+ * The override's `source` is the expansion that owns the override, not the
+ * foe's original source.
+ */
+export interface FoeOverride {
+  present?:  boolean;
+  addendum?: string;
+}
+
+/** One expansion's foe overrides — keyed by foe id. */
+export interface FoeOverridesFile {
+  source:    CatalogueSource;
+  overrides: Record<string, FoeOverride>;
+}
+
 export interface OracleEntry {
   topRange: number;
   value:    string | Record<string, unknown>;

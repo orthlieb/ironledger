@@ -4,11 +4,19 @@
 // Provides:
 //   • loadFoes()              — fetch + cache foe catalogue (idempotent)
 //   • getFoes()               — full list of FoeDef (reactive, unfiltered)
-//   • getVisibleFoes()        — foes filtered by enabled expansions
+//   • getVisibleFoes()        — foes filtered by enabled expansions + overrides
 //   • getFoeNatures()         — distinct nature values in display order
 //   • getFoeSources()         — distinct source tags ('base'|'delve'|'yrt')
 //   • getVisibleFoeSources()  — visible sources after filtering
 //   • findFoe(id)             — lookup by id (never filtered)
+//   • resolveFoeDescription() — description + active-expansion addenda
+//
+// Expansion foe overrides:
+//   Each expansion may ship a foes_overrides_<source>.json that marks
+//   base foes as absent or attaches a setting-specific addendum. Overrides
+//   apply only while that expansion is enabled. They affect the picker
+//   (visibility) and the rendered description; findFoe/findFoeByName are
+//   never filtered so existing FoeEncounter records keep resolving.
 //
 // Constants re-exported for use in components:
 //   • FOE_RANKS               — rank label + mechanics
@@ -20,12 +28,27 @@ import type { FoeDef, FoeNature, CatalogueSource } from '$lib/types.js';
 import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
 
 // ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+export interface FoeOverride {
+	present?:  boolean;
+	addendum?: string;
+}
+
+export interface FoeOverridesFile {
+	source:    CatalogueSource;
+	overrides: Record<string, FoeOverride>;
+}
+
+// ---------------------------------------------------------------------------
 // Module-level state (shared across all component instances)
 // ---------------------------------------------------------------------------
 
-let _foes:    FoeDef[] = $state([]);
-let _loading           = $state(false);
-let _loaded            = false;
+let _foes:      FoeDef[]            = $state([]);
+let _overrides: FoeOverridesFile[]  = $state([]);
+let _loading                        = $state(false);
+let _loaded                         = false;
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -89,9 +112,10 @@ export async function loadFoes(): Promise<void> {
 	try {
 		const res = await fetch('/api/catalogue/foes');
 		if (!res.ok) throw new Error(`Foe fetch failed: ${res.status}`);
-		const json = (await res.json()) as { foes: FoeDef[] };
-		_foes   = json.foes.sort((a, b) => a.name.localeCompare(b.name));
-		_loaded = true;
+		const json = (await res.json()) as { foes: FoeDef[]; overrides?: FoeOverridesFile[] };
+		_foes      = json.foes.sort((a, b) => a.name.localeCompare(b.name));
+		_overrides = json.overrides ?? [];
+		_loaded    = true;
 	} catch (err) {
 		console.error('[foeStore] Failed to load foes:', err);
 	} finally {
@@ -108,9 +132,21 @@ export function getFoes(): FoeDef[] {
 	return _foes;
 }
 
-/** Foes whose source is currently enabled. Used by pickers. */
+/**
+ * Foes whose source is currently enabled AND that aren't marked absent by
+ * any active expansion override. Used by pickers; find* lookups stay
+ * unfiltered so existing FoeEncounter records always resolve.
+ */
 export function getVisibleFoes(): FoeDef[] {
-	return _foes.filter((f) => isSourceEnabled(foeSource(f)));
+	return _foes.filter((f) => {
+		if (!isSourceEnabled(foeSource(f))) return false;
+		// Any active expansion can veto presence by marking present: false.
+		for (const file of _overrides) {
+			if (!isSourceEnabled(file.source)) continue;
+			if (file.overrides[f.id]?.present === false) return false;
+		}
+		return true;
+	});
 }
 
 /** Distinct nature values in canonical display order. */
@@ -133,6 +169,22 @@ export function getVisibleFoeSources(): CatalogueSource[] {
 /** Look up a single foe definition by id. Never filtered. */
 export function findFoe(id: string): FoeDef | undefined {
 	return _foes.find((f) => f.id === id);
+}
+
+/**
+ * Return the foe's base description plus any addenda contributed by
+ * currently-enabled expansion overrides, separated by blank lines.
+ * Used when rendering FoeCard and the FoePickerDialog confirm view.
+ */
+export function resolveFoeDescription(foe: FoeDef): string {
+	const parts: string[] = [];
+	if (foe.description) parts.push(foe.description);
+	for (const file of _overrides) {
+		if (!isSourceEnabled(file.source)) continue;
+		const add = file.overrides[foe.id]?.addendum;
+		if (add) parts.push(add);
+	}
+	return parts.join('\n\n');
 }
 
 /** Case-insensitive lookup by name. Never filtered. */
