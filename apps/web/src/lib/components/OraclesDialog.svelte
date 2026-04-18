@@ -14,10 +14,13 @@
 	import {
 		loadOracles,
 		getOracles,
-		getOracleGroups,
+		getVisibleOracles,
+		getVisibleOracleSources,
 		buildTableHtml,
 		rollOracle,
 	} from '$lib/oracleStore.svelte.js';
+	import { sourceLabel } from '$lib/expansionStore.svelte.js';
+	import type { CatalogueSource } from '$lib/types.js';
 	import { appendLog, enrichOutcomeLinks, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
 	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
@@ -32,7 +35,7 @@
 	let view           = $state<'picker' | 'detail'>('picker');
 	let selectedKey    = $state<string | null>(null);
 	let search         = $state('');
-	let activeGroups   = $state(new Set<string>());
+	let activeSources  = $state(new Set<CatalogueSource>());
 	let rolling        = $state(false);
 	let filtersOpen    = $state(false);
 	/** True when the dialog was opened directly on a specific oracle key — hides Back button. */
@@ -43,37 +46,40 @@
 	// ---------------------------------------------------------------------------
 	// Derived
 	// ---------------------------------------------------------------------------
-	const oracles = $derived(getOracles());
-	const groups  = $derived(getOracleGroups());
+	// Detail view / lookups always use the unfiltered list (render-time resolution
+	// for log click-through from disabled expansions).
+	const allOracles     = $derived(getOracles());
+	const visibleOracles = $derived(getVisibleOracles());
+	const sources        = $derived(getVisibleOracleSources());
 
 	/** Oracle selected for the detail view. */
 	const selectedOracle = $derived(
-		selectedKey ? oracles.find((o) => o.key === selectedKey) ?? null : null,
+		selectedKey ? allOracles.find((o) => o.key === selectedKey) ?? null : null,
 	);
 
 	/** Filtered list of oracles for the picker tile grid. */
 	const filteredOracles = $derived(() => {
 		const q = search.trim().toLowerCase();
-		return oracles.filter((o) => {
-			const groupMatch = activeGroups.size === 0 || activeGroups.has(o.group);
-			const textMatch  = !q
+		return visibleOracles.filter((o) => {
+			const sourceMatch = activeSources.size === 0 || activeSources.has(o.source);
+			const textMatch   = !q
 				|| o.title.toLowerCase().includes(q)
 				|| (o.description?.toLowerCase().includes(q) ?? false);
-			return groupMatch && textMatch;
+			return sourceMatch && textMatch;
 		});
 	});
 
 	// ---------------------------------------------------------------------------
-	// Group colour mapping
+	// Source colour mapping
 	// ---------------------------------------------------------------------------
-	const GROUP_COLORS: Record<string, string> = {
-		'Core Ironsworn': 'var(--color-wits)',
-		'Delve':          'var(--color-spirit)',
-		'Yrt':            'var(--color-touched)',
+	const SOURCE_COLORS: Record<string, string> = {
+		base:  'var(--color-wits)',
+		delve: 'var(--color-spirit)',
+		yrt:   'var(--color-touched)',
 	};
 
-	function groupColor(group: string): string {
-		return GROUP_COLORS[group] ?? 'var(--text-accent)';
+	function sourceColor(source: string): string {
+		return SOURCE_COLORS[source] ?? 'var(--text-accent)';
 	}
 
 	// ---------------------------------------------------------------------------
@@ -90,8 +96,8 @@
 			selectedKey  = null;
 			directLaunch = false;
 		}
-		search       = '';
-		activeGroups = new Set();
+		search        = '';
+		activeSources = new Set();
 		loadOracles();            // idempotent — fetches once per session
 		dialogEl?.showModal();
 	}
@@ -109,7 +115,7 @@
 		rolling = true;
 		const fillFn = _onFill; // capture before close() clears it
 
-		const result = rollOracle(key, oracles);
+		const result = rollOracle(key, allOracles);
 
 		// Split the primary roll into tens + ones for the d100 animation
 		const tensV = Math.floor(result.roll % 100 / 10) || 10;
@@ -135,16 +141,16 @@
 	// ---------------------------------------------------------------------------
 	// Helpers
 	// ---------------------------------------------------------------------------
-	function toggleGroup(group: string) {
-		const next = new Set(activeGroups);
-		if (next.has(group)) next.delete(group);
-		else                  next.add(group);
-		activeGroups = next;
+	function toggleSource(source: CatalogueSource) {
+		const next = new Set(activeSources);
+		if (next.has(source)) next.delete(source);
+		else                  next.add(source);
+		activeSources = next;
 	}
 
 	function clearFilters() {
-		search       = '';
-		activeGroups = new Set();
+		search        = '';
+		activeSources = new Set();
 	}
 </script>
 
@@ -178,34 +184,34 @@
 				bind:value={search}
 				aria-label="Search oracles"
 			/>
-			<!-- Group filter toggle -->
+			<!-- Source filter toggle -->
 			<button
 				class="od-filter-toggle"
-				class:od-filter-toggle--active={activeGroups.size > 0}
+				class:od-filter-toggle--active={activeSources.size > 0}
 				onclick={() => (filtersOpen = !filtersOpen)}
 				aria-expanded={filtersOpen}
 			>
-				Filters{#if activeGroups.size > 0}&nbsp;<span class="od-filter-badge">{activeGroups.size}</span>{/if}
+				Filters{#if activeSources.size > 0}&nbsp;<span class="od-filter-badge">{activeSources.size}</span>{/if}
 				{filtersOpen ? '▲' : '▼'}
 			</button>
 		</div>
 		{#if filtersOpen}
 		<div class="od-filter-panel">
 			<div class="od-filter-chips">
-				{#each groups as group (group)}
+				{#each sources as src (src)}
 					<button
 						class="od-group-tag"
-						class:od-group-tag--active={activeGroups.has(group)}
-						style:--gcolor={groupColor(group)}
-						onclick={() => toggleGroup(group)}
-					>{group}</button>
+						class:od-group-tag--active={activeSources.has(src)}
+						style:--gcolor={sourceColor(src)}
+						onclick={() => toggleSource(src)}
+					>{sourceLabel(src)}</button>
 				{/each}
 			</div>
 			<button
 				class="od-clear-btn"
 				title="Clear all filters"
 				onclick={clearFilters}
-				disabled={activeGroups.size === 0}
+				disabled={activeSources.size === 0}
 				aria-label="Clear all filters"
 			>{@html clearFiltersSvg}</button>
 		</div>
@@ -214,7 +220,7 @@
 
 	<!-- Tile grid -->
 	<div class="od-body">
-		{#if oracles.length === 0}
+		{#if allOracles.length === 0}
 			<div class="od-loading">Loading oracles…</div>
 		{:else}
 			{@const list = filteredOracles()}
@@ -225,7 +231,7 @@
 					{#each list as oracle (oracle.key)}
 						<button
 							class="od-tile"
-							style:--tcolor={groupColor(oracle.group)}
+							style:--tcolor={sourceColor(oracle.source)}
 							onclick={() => { selectedKey = oracle.key; view = 'detail'; }}
 						>
 							<div class="od-tile-stripe"></div>

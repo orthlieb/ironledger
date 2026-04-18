@@ -62,14 +62,20 @@
 	const totalPages  = $derived(Math.max(1, Math.ceil(entries.length / PAGE_SIZE)));
 	const pagedEntries = $derived(entries.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE));
 
-	// Jump to page 0 when a new entry is prepended so the user always sees it.
-	// Also clamp if the total pages shrink (e.g. after clear or bulk delete).
+	/** Scroll container for the log entries — bound to the .log-entries div. */
+	let entriesEl = $state<HTMLDivElement | null>(null);
+
+	// Jump to page 0 AND scroll to the top when a new entry is prepended so the
+	// user always sees it. Also clamp if the total pages shrink (e.g. after
+	// clear or bulk delete).
 	let _headEntryId = '';
 	$effect(() => {
 		const headId = entries[0]?.id ?? '';
 		if (headId && headId !== _headEntryId) {
 			_headEntryId = headId;
 			page = 0;
+			// Scroll to top after Svelte renders the new first page.
+			queueMicrotask(() => { if (entriesEl) entriesEl.scrollTop = 0; });
 		}
 		if (page >= totalPages) page = Math.max(0, totalPages - 1);
 	});
@@ -641,6 +647,7 @@
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div class="log-entries" role="log" aria-live="polite" aria-label="Session log"
+		bind:this={entriesEl}
 		tabindex="-1"
 		onclick={handleEntriesClick}
 		ontouchstart={handleEntriesTouchStart}

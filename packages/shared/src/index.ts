@@ -110,11 +110,15 @@ export interface AssetPrecondition {
   ne?:  number;
 }
 
+/** Catalogue source / expansion tag. */
+export type CatalogueSource = 'base' | 'delve' | 'yrt';
+
 /** Move definition — mirrors the JSON structure in moves/*.json */
 export interface MoveDefinition {
   id:             string;
   name:           string;
   category:       string;
+  source?:        CatalogueSource;
   triggerShort:   string;
   trigger:        string;
   stats?:         MoveStat[];
@@ -138,7 +142,7 @@ export interface MoveStat {
 export interface OracleTable {
   key:         string;
   title:       string;
-  group:       string;
+  source:      CatalogueSource;
   selectLabel: string;
   description?: string;
   data:        OracleEntry[];

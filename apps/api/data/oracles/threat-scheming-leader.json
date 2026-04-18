@@ -1,9 +1,9 @@
 {
   "key": "threatSchemingLeader",
   "title": "Threat: Scheming Leader",
-  "group": "Delve",
   "selectLabel": "Threat: Scheming Leader",
   "description": "Generate the next event for a scheming leader threat.",
+  "source": "delve",
   "data": [
     {
       "topRange": 10,

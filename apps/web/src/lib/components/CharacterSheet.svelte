@@ -18,6 +18,7 @@
 	} from '$lib/character.js';
 	import { untrack } from 'svelte';
 	import { persistCharacterNow } from '$lib/characterStore.svelte.js';
+	import { isDelveEnabled } from '$lib/expansionStore.svelte.js';
 
 	import trashSvg      from '$icons/trash-solid-full.svg?raw';
 	import hornedHelmSvg from '$icons/horned-helm.svg?raw';
@@ -659,23 +660,25 @@
 						</div>
 					</div>
 				</div>
-				<div class="track-group">
-					<div class="track-label-row">
-						<div class="section-label" use:tooltip={"Every scar, stumble, and hard lesson etched into your bones, waiting to be redeemed."}>Failures</div>
-						<span class="track-tally">{progressText(data.failures)}</span>
-					</div>
-					<div class="track-row">
-						<ProgressTrack
-							label=""
-							bind:value={data.failures}
-							onchange={(o, n) => logTrack('Failures', o, n)}
-						/>
-						<div class="track-actions">
-							<button class="btn btn-track" onclick={addFailure} disabled={data.failures >= failuresMax}>+</button>
-							<button class="btn btn-track" onclick={removeFailure} disabled={data.failures <= 0}>−</button>
+				{#if isDelveEnabled()}
+					<div class="track-group">
+						<div class="track-label-row">
+							<div class="section-label" use:tooltip={"Every scar, stumble, and hard lesson etched into your bones, waiting to be redeemed."}>Failures</div>
+							<span class="track-tally">{progressText(data.failures)}</span>
+						</div>
+						<div class="track-row">
+							<ProgressTrack
+								label=""
+								bind:value={data.failures}
+								onchange={(o, n) => logTrack('Failures', o, n)}
+							/>
+							<div class="track-actions">
+								<button class="btn btn-track" onclick={addFailure} disabled={data.failures >= failuresMax}>+</button>
+								<button class="btn btn-track" onclick={removeFailure} disabled={data.failures <= 0}>−</button>
+							</div>
 						</div>
 					</div>
-				</div>
+				{/if}
 			</section>
 
 			<div class="section-divider"></div>

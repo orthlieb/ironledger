@@ -31,7 +31,8 @@
           "key": "hasCharacter",
           "eq": 1
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "move/sojourn",
@@ -54,7 +55,8 @@
           "key": "hasCharacter",
           "eq": 1
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "move/draw-the-circle",
@@ -77,7 +79,8 @@
           "key": "hasCharacter",
           "eq": 1
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "move/forge-a-bond",
@@ -100,7 +103,8 @@
           "key": "hasCharacter",
           "eq": 1
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "move/test-your-bond",
@@ -127,7 +131,8 @@
           "key": "bonds",
           "min": 1
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "move/aid-your-ally",
@@ -144,7 +149,8 @@
           "key": "hasCharacter",
           "eq": 1
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "move/write-your-epilogue",
@@ -173,7 +179,9 @@
           "min": 1
         }
       ],
-      "progressSource": "bonds"
+      "progressSource": "bonds",
+      "source": "base"
     }
-  ]
+  ],
+  "source": "base"
 }

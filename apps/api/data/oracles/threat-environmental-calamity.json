@@ -1,9 +1,9 @@
 {
   "key": "threatEnvironmentalCalamity",
   "title": "Threat: Environmental Calamity",
-  "group": "Delve",
   "selectLabel": "Threat: Environmental Calamity",
   "description": "Generate the next event for an environmental calamity threat.",
+  "source": "delve",
   "data": [
     {
       "topRange": 10,

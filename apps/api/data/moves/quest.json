@@ -22,7 +22,8 @@
           "key": "hasCharacter",
           "eq": 1
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "move/reach-a-milestone",
@@ -43,7 +44,8 @@
           "key": "vowCount",
           "min": 1
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "move/fulfill-your-vow",
@@ -66,7 +68,8 @@
           "min": 1
         }
       ],
-      "progressSource": "vows"
+      "progressSource": "vows",
+      "source": "base"
     },
     {
       "id": "move/forsake-your-vow",
@@ -87,7 +90,8 @@
           "key": "vowCount",
           "min": 1
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "move/advance",
@@ -104,7 +108,9 @@
           "key": "hasCharacter",
           "eq": 1
         }
-      ]
+      ],
+      "source": "base"
     }
-  ]
+  ],
+  "source": "base"
 }

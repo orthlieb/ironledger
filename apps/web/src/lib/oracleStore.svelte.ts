@@ -4,13 +4,18 @@
 // Provides:
 //   • loadOracles()              — fetch + cache oracle catalogue
 //   • getOracles()               — sorted list of OracleFile (reactive)
-//   • getOracleGroups()          — distinct group names in display order
-//   • findOracle(key)            — lookup by key
+//   • getOracleSources()         — distinct source tags in display order
+//   • getVisibleOracles()        — oracles filtered by enabled expansions
+//   • getVisibleOracleSources()  — visible sources after filtering
+//   • findOracle(key)            — lookup by key (never filtered)
 //   • rollFromRangeTable(table)  — core d100 algorithm (ported from oracles-pure.js)
 //   • rangeLabelForEntry(t, i)   — range string "1–25" or "26"
 //   • buildTableHtml(key, table) — HTML table for the detail view
 //   • rollOracle(key, oracles)   — high-level dispatcher → { roll, html, title }
 // =============================================================================
+
+import type { CatalogueSource } from '$lib/types.js';
+import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -24,7 +29,7 @@ export interface OracleEntry {
 export interface OracleFile {
 	key:          string;
 	title:        string;
-	group:        string;
+	source:       CatalogueSource;
 	selectLabel:  string;
 	description?: string;
 	data:         OracleEntry[];
@@ -52,6 +57,51 @@ let _loaded                           = false;
 // ---------------------------------------------------------------------------
 
 /**
+ * Fallback source for oracle keys served by an API older than the source-tagging
+ * migration. Used only when an oracle file omits the explicit `source` field.
+ * Keep in sync with the JSON `source` values under apps/api/data/oracles/.
+ */
+const ORACLE_KEY_SOURCE_FALLBACK: Record<string, CatalogueSource> = {
+	// YRT
+	yrtAnimal:        'yrt',
+	yrtRegion:        'yrt',
+	yrtTouched:       'yrt',
+	touchedFeatures:  'yrt',
+	manaBacklash:     'yrt',
+	freeportDenizen:  'yrt',
+	// Delve
+	charDisposition:        'delve',
+	combatEvent:            'delve',
+	featureAspect:          'delve',
+	featureFocus:           'delve',
+	monstrosityAbilities:   'delve',
+	monstrosityCharacteristics: 'delve',
+	monstrosityPrimaryForm: 'delve',
+	monstrositySize:        'delve',
+	siteName:               'delve',
+	siteNameFormat:         'delve',
+	siteNatureDomain:       'delve',
+	siteNatureTheme:        'delve',
+	threatBurgeoningConflict:    'delve',
+	threatCategory:              'delve',
+	threatCursedSite:            'delve',
+	threatEnvironmentalCalamity: 'delve',
+	threatMalignantPlague:       'delve',
+	threatPowerHungryMystic:     'delve',
+	threatRampagingCreature:     'delve',
+	threatRavagingHorde:         'delve',
+	threatSchemingLeader:        'delve',
+	threatZealousCult:           'delve',
+	trap:                   'delve',
+};
+
+/** Resolve an oracle's source — explicit `source` field first, key fallback otherwise. */
+function resolveSource(o: OracleFile): CatalogueSource {
+	if (o.source) return o.source;
+	return ORACLE_KEY_SOURCE_FALLBACK[o.key] ?? 'base';
+}
+
+/**
  * Fetch oracle catalogue from /api/catalogue/oracles and cache it for the session.
  * Idempotent — safe to call multiple times; only fetches once.
  */
@@ -73,8 +123,11 @@ export async function loadOracles(): Promise<void> {
 		for (const item of json.oracles) {
 			const obj = item as Record<string, unknown>;
 			if (Array.isArray(obj['data'])) {
-				// It's a real oracle file
-				files.push(obj as unknown as OracleFile);
+				// It's a real oracle file. Backfill source if absent (defends against
+				// API serving cached data from before the source-tagging migration).
+				const f = obj as unknown as OracleFile;
+				if (!f.source) f.source = resolveSource(f);
+				files.push(f);
 			} else if (typeof obj === 'object' && obj !== null && !Array.isArray(obj)) {
 				// Likely oracle-order.json — use it as the sort order map
 				orderMap = obj as Record<string, number>;
@@ -101,22 +154,32 @@ export async function loadOracles(): Promise<void> {
 // Accessors (reactive — reads tracked by $derived)
 // ---------------------------------------------------------------------------
 
-/** All loaded oracle files, sorted by oracle-order.json weight. */
+/** All loaded oracle files, sorted by oracle-order.json weight (unfiltered — for render-time resolution). */
 export function getOracles(): OracleFile[] {
 	return _oracles;
 }
 
-/** Distinct group names in the order they first appear. */
-export function getOracleGroups(): string[] {
-	const seen = new Set<string>();
-	const out:  string[] = [];
+/** Distinct sources in the order they first appear. */
+export function getOracleSources(): CatalogueSource[] {
+	const seen = new Set<CatalogueSource>();
+	const out:  CatalogueSource[] = [];
 	for (const o of _oracles) {
-		if (!seen.has(o.group)) { seen.add(o.group); out.push(o.group); }
+		if (!seen.has(o.source)) { seen.add(o.source); out.push(o.source); }
 	}
 	return out;
 }
 
-/** Look up a single oracle by key. */
+/** Oracles whose source is currently enabled. Used by pickers; `findOracle` stays unfiltered. */
+export function getVisibleOracles(): OracleFile[] {
+	return _oracles.filter((o) => isSourceEnabled(o.source));
+}
+
+/** Visible sources after expansion filtering. */
+export function getVisibleOracleSources(): CatalogueSource[] {
+	return getOracleSources().filter((s) => isSourceEnabled(s));
+}
+
+/** Look up a single oracle by key. Never filtered — log entries and direct opens must always resolve. */
 export function findOracle(key: string): OracleFile | undefined {
 	return _oracles.find((o) => o.key === key);
 }

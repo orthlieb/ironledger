@@ -5,12 +5,20 @@
       "name": "Touched, Feline",
       "category": "Touched",
       "summary": "Feline-touched: night hunter’s senses, impossible leaps, and predator stealth.",
-      "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the <a class=\"oracle-link\" data-oracle=\"yrtTouched\">YRT \u2013 Touched</a> oracle to determine the extent and conditions of your nature.",
+      "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the <a class=\"oracle-link\" data-oracle=\"yrtTouched\">YRT – Touched</a> oracle to determine the extent and conditions of your nature.",
       "postamble": "Your touched value determines how many abilities you may use: Pure — none; Prime — 1; Second — 2; Third or Feral — all 3.",
       "preconditions": [],
       "touchedFeatures": true,
       "exclusiveGroup": "touched",
-      "abilityMaxByField": { "touchedLevel": { "pure": 0, "prime": 1, "second": 2, "third": 3, "feral": 3 } },
+      "abilityMaxByField": {
+        "touchedLevel": {
+          "pure": 0,
+          "prime": 1,
+          "second": 2,
+          "third": 3,
+          "feral": 3
+        }
+      },
       "abilities": [
         {
           "enabled": true,
@@ -70,19 +78,28 @@
           "label": "Animal",
           "placeholder": "Animal…"
         }
-      ]
+      ],
+      "source": "yrt"
     },
     {
       "id": "path/yrt-touched-porcine",
       "name": "Touched, Porcine",
       "category": "Touched",
       "summary": "Porcine-touched: unerring nose for hidden threats, iron constitution, and an instinct for finding sustenance.",
-      "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the <a class=\"oracle-link\" data-oracle=\"yrtTouched\">YRT \u2013 Touched</a> oracle to determine the extent and conditions of your nature.",
+      "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the <a class=\"oracle-link\" data-oracle=\"yrtTouched\">YRT – Touched</a> oracle to determine the extent and conditions of your nature.",
       "postamble": "Your touched value determines how many abilities you may use: Pure — none; Prime — 1; Second — 2; Third or Feral — all 3.",
       "preconditions": [],
       "touchedFeatures": true,
       "exclusiveGroup": "touched",
-      "abilityMaxByField": { "touchedLevel": { "pure": 0, "prime": 1, "second": 2, "third": 3, "feral": 3 } },
+      "abilityMaxByField": {
+        "touchedLevel": {
+          "pure": 0,
+          "prime": 1,
+          "second": 2,
+          "third": 3,
+          "feral": 3
+        }
+      },
       "abilities": [
         {
           "enabled": true,
@@ -142,7 +159,8 @@
           "label": "Animal",
           "placeholder": "Animal…"
         }
-      ]
+      ],
+      "source": "yrt"
     },
     {
       "id": "ritual/yrt-cantrip",
@@ -244,7 +262,8 @@
           "global": true,
           "tooltipLabel": "Conclave Ritual"
         }
-      ]
+      ],
+      "source": "yrt"
     },
     {
       "id": "ritual/yrt-arcane-inspection",
@@ -370,7 +389,8 @@
           "global": true,
           "tooltipLabel": "Conclave Ritual"
         }
-      ]
+      ],
+      "source": "yrt"
     },
     {
       "id": "ritual/yrt-vizion-illusion",
@@ -496,7 +516,8 @@
           "global": true,
           "tooltipLabel": "Conclave Ritual"
         }
-      ]
+      ],
+      "source": "yrt"
     },
     {
       "id": "ritual/yrt-compulsion",
@@ -622,7 +643,8 @@
           "global": true,
           "tooltipLabel": "Conclave Ritual"
         }
-      ]
+      ],
+      "source": "yrt"
     },
     {
       "id": "path/yrt-venenigisto",
@@ -663,7 +685,8 @@
           "maxValue": 10,
           "icon": "skull-and-crossbones"
         }
-      ]
+      ],
+      "source": "yrt"
     },
     {
       "id": "path/yrt-falsinto",
@@ -693,8 +716,10 @@
             "move/craft"
           ]
         }
-      ]
+      ],
+      "source": "yrt"
     }
   ],
-  "rarities": []
+  "rarities": [],
+  "source": "yrt"
 }

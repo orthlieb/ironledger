@@ -1,9 +1,9 @@
 {
   "key": "trap",
   "title": "Trap",
-  "group": "Delve",
   "selectLabel": "Trap",
   "description": "Discover a trap or hazard when exploring a Delve site.",
+  "source": "delve",
   "data": [
     {
       "topRange": 4,

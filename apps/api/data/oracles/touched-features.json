@@ -1,8 +1,8 @@
 {
   "key": "touchedFeatures",
   "title": "YRT – Touched Features",
-  "group": "Yrt",
   "description": "Generate a specific supernatural feature for a Touched character.",
+  "source": "yrt",
   "data": [
     {
       "topRange": 5,

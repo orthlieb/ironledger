@@ -1,9 +1,9 @@
 {
   "key": "namesOther",
   "title": "Other Names",
-  "group": "Core Ironsworn",
   "selectLabel": "Other Names",
   "description": "Generate a random name for Giants, Varou, or Trolls.",
+  "source": "base",
   "data": [
     {
       "topRange": 4,

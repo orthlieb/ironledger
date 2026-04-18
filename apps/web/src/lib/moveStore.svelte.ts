@@ -2,17 +2,20 @@
 // Iron Ledger — Move Store (Svelte 5 module-level $state)
 //
 // Provides:
-//   • loadMoves()          — fetch + cache move catalogue
-//   • getMoves()           — sorted list of MoveDefinition (reactive)
-//   • getMoveCategories()  — distinct category names in display order
-//   • findMove(id)         — lookup by id
-//   • isProgressMove(m)    — true if move rolls against a progress track
-//   • isNoRollMove(m)      — true if move has no roll (informational only)
-//   • hasRollableStats(m)  — true if move has stats to roll (standard action move)
+//   • loadMoves()                — fetch + cache move catalogue
+//   • getMoves()                 — full sorted list (unfiltered, reactive)
+//   • getVisibleMoves()          — moves filtered by enabled expansions
+//   • getMoveCategories()        — distinct category names in display order
+//   • getVisibleMoveCategories() — categories after expansion filtering
+//   • findMove(id)               — lookup by id (never filtered)
+//   • isProgressMove(m)          — true if move rolls against a progress track
+//   • isNoRollMove(m)            — true if move has no roll (informational only)
+//   • hasRollableStats(m)        — true if move has stats to roll (standard action move)
 // =============================================================================
 
 import type { MoveDefinition } from '@ironledger/shared';
 import type { Precondition } from './preconditions.js';
+import { isSourceEnabled } from './expansionStore.svelte.js';
 
 // ---------------------------------------------------------------------------
 // Category display order
@@ -71,23 +74,37 @@ export async function loadMoves(): Promise<void> {
 // Accessors
 // ---------------------------------------------------------------------------
 
-/** All moves, sorted by category then name. */
+/** All moves, sorted by category then name (unfiltered — for render-time resolution). */
 export function getMoves(): MoveDefinition[] {
 	return _moves;
 }
 
-/** Distinct categories in display order. */
+/** Moves whose source is currently enabled. Used by the MovesDialog picker. */
+export function getVisibleMoves(): MoveDefinition[] {
+	return _moves.filter((m) => isSourceEnabled(m.source));
+}
+
+/** Distinct categories in display order (across the full catalogue). */
 export function getMoveCategories(): string[] {
+	return categoriesFromList(_moves);
+}
+
+/** Visible categories after expansion filtering. */
+export function getVisibleMoveCategories(): string[] {
+	return categoriesFromList(getVisibleMoves());
+}
+
+function categoriesFromList(moves: MoveDefinition[]): string[] {
 	const seen = new Set<string>();
 	const result: string[] = [];
 	for (const cat of CATEGORY_ORDER) {
-		if (_moves.some((m) => m.category === cat) && !seen.has(cat)) {
+		if (moves.some((m) => m.category === cat) && !seen.has(cat)) {
 			seen.add(cat);
 			result.push(cat);
 		}
 	}
 	// Any categories not in CATEGORY_ORDER
-	for (const m of _moves) {
+	for (const m of moves) {
 		if (!seen.has(m.category)) {
 			seen.add(m.category);
 			result.push(m.category);
@@ -96,7 +113,7 @@ export function getMoveCategories(): string[] {
 	return result;
 }
 
-/** Find a move by ID. */
+/** Find a move by ID. Never filtered. */
 export function findMove(id: string): MoveDefinition | undefined {
 	return _moves.find((m) => m.id === id);
 }

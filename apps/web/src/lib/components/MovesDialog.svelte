@@ -18,7 +18,8 @@
 	import {
 		loadMoves,
 		getMoves,
-		getMoveCategories,
+		getVisibleMoves,
+		getVisibleMoveCategories,
 		findMove,
 		isProgressMove,
 		isNoRollMove,
@@ -40,6 +41,7 @@
 	import { loadAssets, findAsset } from '$lib/assetStore.svelte.js';
 	import { getRelevantAbilities } from '$lib/assetMatcherStore.svelte.js';
 	import { getActiveDebilityWarnings } from '$lib/debilityWarnings.js';
+	import { isDelveEnabled } from '$lib/expansionStore.svelte.js';
 
 	// ---------------------------------------------------------------------------
 	// Props
@@ -128,8 +130,11 @@
 	// ---------------------------------------------------------------------------
 	// Derived
 	// ---------------------------------------------------------------------------
-	const moves      = $derived(getMoves());
-	const categories = $derived(getMoveCategories());
+	// Detail view / lookups use the unfiltered list (log click-through to a
+	// disabled-expansion move must still render).
+	const allMoves   = $derived(getMoves());
+	const moves      = $derived(getVisibleMoves());
+	const categories = $derived(getVisibleMoveCategories());
 
 	const relevantAbilities = $derived.by(() => {
 		if (!selectedMove || !ctx) return [];
@@ -424,8 +429,8 @@
 			parts.push(`<div class="move-outcome">${outcomeHtml}</div>`);
 		}
 
-		// On a miss for a character move, offer +1 failure
-		if (!hits1 && !hits2) {
+		// On a miss for a character move, offer +1 failure (Delve-only mechanic)
+		if (!hits1 && !hits2 && isDelveEnabled()) {
 			parts.push(
 				`<div class="move-failure-row">` +
 				`<a class="failure-link" data-entry-id="${entryId}" data-char-id="${ctx.charId}" href="#">+1 failure</a>` +

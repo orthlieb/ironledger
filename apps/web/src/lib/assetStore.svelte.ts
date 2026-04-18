@@ -8,6 +8,7 @@
  */
 import { browser } from '$app/environment';
 import type { AssetDefinition, RarityDefinition } from '$lib/types.js';
+import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
 
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -47,16 +48,31 @@ export function resetAssets(): void {
 	_lastFetched = 0;
 }
 
-/** All loaded asset definitions (reactive — reads tracked by $derived). */
+/** All loaded asset definitions (unfiltered — for render-time resolution). */
 export function getAssets(): AssetDefinition[] {
 	return _assets;
+}
+
+/** Assets whose source is currently enabled. Used by the AssetPicker. */
+export function getVisibleAssets(): AssetDefinition[] {
+	return _assets.filter((a) => isSourceEnabled(a.source));
+}
+
+/** All loaded rarities (unfiltered). */
+export function getRarities(): RarityDefinition[] {
+	return _rarities;
+}
+
+/** Rarities whose source is currently enabled. Used by the acquire-rarity picker. */
+export function getVisibleRarities(): RarityDefinition[] {
+	return _rarities.filter((r) => isSourceEnabled(r.source));
 }
 
 export function isAssetsLoading(): boolean {
 	return _loading;
 }
 
-/** Look up a single asset definition by id. */
+/** Look up a single asset definition by id. Never filtered. */
 export function findAsset(id: string): AssetDefinition | undefined {
 	return _assets.find((a) => a.id === id);
 }
@@ -66,7 +82,7 @@ export function findRarityForAsset(assetId: string): RarityDefinition | undefine
 	return _rarities.find((r) => r.assetId === assetId);
 }
 
-/** Look up a rarity by its own id. */
+/** Look up a rarity by its own id. Never filtered. */
 export function findRarity(rarityId: string): RarityDefinition | undefined {
 	return _rarities.find((r) => r.id === rarityId);
 }
