@@ -824,6 +824,45 @@ Each file contains a `foes` array:
 
 Foe portraits are stored as images at `images/foes/{id-slug}.png` (matching the foe's id, with `/` replaced by `-`).
 
+### Foe Overrides (Expansion Extension Mechanism)
+
+**Location:** `data/foes/foes_overrides_<source>.json` (one per expansion that wants to restrict or decorate the base foe catalogue)
+
+Expansions can ship an overrides file to **exclude** base foes that don't fit their setting or **decorate** base foes with an addendum describing how they appear in that setting. Overrides apply **only while the owning expansion is enabled**; they affect the picker and the rendered description, but never `findFoe()` — existing FoeEncounter records keep resolving regardless of toggle state.
+
+File shape:
+
+```json
+{
+  "source": "yrt",
+  "overrides": {
+    "ironsworn/basilisk": {
+      "present": true,
+      "addendum": "In the Yrt setting, a basilisk's petrifying gaze is an expression of bound Stone mana — the creature is less a beast than a walking focus."
+    },
+    "ironsworn/troll": {
+      "present": false
+    }
+  }
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `source` | string | yes | Expansion tag (`"base"` / `"delve"` / `"yrt"`) that owns this file |
+| `overrides` | object | yes | Map of foe id → `FoeOverride` |
+
+Per-foe `FoeOverride`:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `present` | boolean | no | When `false`, hides the foe from the Foe Picker while this expansion is active. Existing encounters stay visible. |
+| `addendum` | string | no | Prose appended to the foe's description (with a blank line separator) in the Foe Picker confirm view and on FoeCards, while this expansion is active |
+
+**General mechanism:** any expansion may drop a `foes_overrides_<source>.json` file into `data/foes/`. Vetoes are additive — if any active expansion marks `present: false`, the foe is hidden. Addenda from multiple active expansions are concatenated in the order they're loaded.
+
+**Preservation contract:** overrides never delete user data. A FoeEncounter referencing a now-excluded foe still renders via `findFoe(id)`. Only the catalogue-facing pickers filter.
+
 ---
 
 ## Delve Themes and Domains

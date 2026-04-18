@@ -9,6 +9,7 @@
 	import type { FoeEncounter, FoeDef } from '$lib/types.js';
 	import {
 		RANK_COLORS, FOE_RANKS, FOE_QUANTITIES, FOE_NATURE_COLORS,
+		resolveFoeDescription,
 	} from '$lib/foeStore.svelte.js';
 	import { untrack } from 'svelte';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
@@ -236,9 +237,12 @@
 					</div>
 				{/if}
 
-				<!-- Description -->
-				{#if foeDef.description}
-					<p class="fc-desc">{foeDef.description}</p>
+				<!-- Description (with any active-expansion addenda) -->
+				{#if foeDef}
+					{@const resolvedFoeDesc = resolveFoeDescription(foeDef)}
+					{#if resolvedFoeDesc}
+						<p class="fc-desc" style="white-space: pre-line">{resolvedFoeDesc}</p>
+					{/if}
 				{/if}
 
 				<!-- Features / Drives / Tactics -->

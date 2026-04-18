@@ -15,7 +15,7 @@
 	import type { FoeDef, FoeQuantity, CatalogueSource } from '$lib/types.js';
 	import {
 		loadFoes, getFoes, getVisibleFoes, getFoeNatures, getVisibleFoeSources,
-		foeSource, effectiveRank as calcEffectiveRank,
+		foeSource, effectiveRank as calcEffectiveRank, resolveFoeDescription,
 		RANK_COLORS, FOE_RANKS, FOE_QUANTITIES, FOE_NATURE_COLORS,
 	} from '$lib/foeStore.svelte.js';
 	import { sourceLabel } from '$lib/expansionStore.svelte.js';
@@ -326,6 +326,7 @@
 	{:else if view === 'confirm' && confirmFoe}
 		{@const natureColor  = natureBorderColor(confirmFoe.nature)}
 		{@const baseRankInfo = FOE_RANKS[confirmFoe.rank]}
+		{@const resolvedDesc = resolveFoeDescription(confirmFoe)}
 
 		<!-- Back bar -->
 		<div class="fd-back-bar" style="--nature-color: {natureColor}">
@@ -380,10 +381,10 @@
 			</div>
 
 			<!-- Bottom: description + features/drives/tactics, always full width -->
-			{#if confirmFoe.description || confirmFoe.features.length > 0 || confirmFoe.drives.length > 0 || confirmFoe.tactics.length > 0}
+			{#if resolvedDesc || confirmFoe.features.length > 0 || confirmFoe.drives.length > 0 || confirmFoe.tactics.length > 0}
 				<div class="fd-confirm-bottom">
-					{#if confirmFoe.description}
-						<p class="fc-desc">{confirmFoe.description}</p>
+					{#if resolvedDesc}
+						<p class="fc-desc" style="white-space: pre-line">{resolvedDesc}</p>
 					{/if}
 					{#if confirmFoe.features.length > 0}
 						<div class="fc-section">

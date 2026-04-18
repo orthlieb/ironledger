@@ -91,8 +91,19 @@ async function loadCatalogue(): Promise<{
     loadJson(path.join(DATA_ROOT, 'foes/foes_yrt.json')),
   ]) as [{ foes: unknown[] }, { foes: unknown[] }, { foes: unknown[] }];
 
+  // Load any foes_overrides_*.json in the foes dir.
+  // Each file defines one expansion's overrides (present/absent + addendum)
+  // against the base foe catalogue. Filenames follow foes_overrides_<source>.json.
+  const foeOverrideFiles = await import('fs').then(({ readdirSync }) =>
+    readdirSync(path.join(DATA_ROOT, 'foes'))
+      .filter((f) => f.startsWith('foes_overrides_') && f.endsWith('.json'))
+      .map((f) => path.join(DATA_ROOT, 'foes', f)),
+  );
+  const foeOverrides = await Promise.all(foeOverrideFiles.map(loadJson));
+
   const allFoes = {
     foes: [...foesIs.foes, ...foesDelve.foes, ...foesYrt.foes],
+    overrides: foeOverrides,
   };
 
   // Load delve oracle tables (theme/domain features + dangers + shared danger tail)
