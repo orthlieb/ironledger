@@ -1,9 +1,9 @@
 {
   "key": "locationDescriptor",
   "title": "Location Descriptor",
-  "group": "Core Ironsworn",
   "selectLabel": "Location Descriptor",
   "description": "Use this oracle to add detail to the Location or Coastal Waters Location oracles, or by itself to generate a description of a location. Roll more than once for extra detail.",
+  "source": "base",
   "data": [
     {
       "topRange": 2,

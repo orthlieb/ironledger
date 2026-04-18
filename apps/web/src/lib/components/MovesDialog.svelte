@@ -18,7 +18,8 @@
 	import {
 		loadMoves,
 		getMoves,
-		getMoveCategories,
+		getVisibleMoves,
+		getVisibleMoveCategories,
 		findMove,
 		isProgressMove,
 		isNoRollMove,
@@ -128,8 +129,11 @@
 	// ---------------------------------------------------------------------------
 	// Derived
 	// ---------------------------------------------------------------------------
-	const moves      = $derived(getMoves());
-	const categories = $derived(getMoveCategories());
+	// Detail view / lookups use the unfiltered list (log click-through to a
+	// disabled-expansion move must still render).
+	const allMoves   = $derived(getMoves());
+	const moves      = $derived(getVisibleMoves());
+	const categories = $derived(getVisibleMoveCategories());
 
 	const relevantAbilities = $derived.by(() => {
 		if (!selectedMove || !ctx) return [];

@@ -1,9 +1,9 @@
 {
   "key": "featureFocus",
   "title": "Delve: Feature Focus",
-  "group": "Delve",
   "selectLabel": "Delve: Feature Focus",
   "description": "Determine the specific focus or subject of a notable feature within a Delve site.",
+  "source": "delve",
   "data": [
     {
       "topRange": 10,

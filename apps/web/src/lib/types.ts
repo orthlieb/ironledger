@@ -38,11 +38,15 @@ export interface CharacterAsset {
 export type FoeNature = 'Ironlander' | 'Firstborn' | 'Animal' | 'Beast' | 'Horror' | 'Anomaly';
 export type FoeQuantity = 'solo' | 'pack' | 'horde';
 
+/** Catalogue source / expansion tag (duplicated from @ironledger/shared for client-only use). */
+export type CatalogueSource = 'base' | 'delve' | 'yrt';
+
 export interface FoeDef {
 	id:          string;      // "ironsworn/basilisk"
 	name:        string;      // "Basilisk" — also used as image filename
 	rank:        1 | 2 | 3 | 4 | 5;
 	nature:      FoeNature;
+	source?:     CatalogueSource;
 	features:    string[];
 	drives:      string[];
 	tactics:     string[];
@@ -272,6 +276,7 @@ export interface AssetDefinition {
 	id:           string;
 	name:         string;
 	category:     AssetCategory;
+	source?:      CatalogueSource;
 	summary?:     string;
 	preamble?:    string;
 	postamble?:   string;
@@ -298,6 +303,7 @@ export interface RarityDefinition {
 	id:          string;
 	name:        string;
 	assetId:     string;   // the asset this rarity belongs to (1-to-1)
+	source?:     CatalogueSource;
 	xpCost:      number;   // typically 3, 4, or 5
 	description: string;
 }

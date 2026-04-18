@@ -1,9 +1,9 @@
 {
   "key": "siteName",
   "title": "Site Name",
-  "group": "Delve",
   "selectLabel": "Site Name",
   "description": "Generate a specific name component for a Delve site.",
+  "source": "delve",
   "data": [
     {
       "topRange": 2,

@@ -3,8 +3,10 @@
 	 * SettingsDialog — app-wide preferences modal.
 	 *
 	 * Owns:
-	 *   • Theme  — auto / dark / light (persisted to localStorage)
-	 *   • 3D Dice — on / off (persisted to localStorage via dice.ts)
+	 *   • Theme     — auto / dark / light (persisted to localStorage)
+	 *   • 3D Dice   — on / off (persisted to localStorage via dice.ts)
+	 *   • Delve     — on / off (persisted via expansionStore)
+	 *   • YRT       — on / off (persisted via expansionStore)
 	 *
 	 * Usage:
 	 *   <SettingsDialog bind:this={ref} />
@@ -12,6 +14,10 @@
 	 */
 
 	import { isDice3dEnabled, setDice3dEnabled } from '$lib/dice';
+	import {
+		isDelveEnabled, setDelveEnabled,
+		isYrtEnabled,   setYrtEnabled,
+	} from '$lib/expansionStore.svelte.js';
 	import { draggable } from '$lib/actions/draggable.js';
 
 	import autoSvg    from '$icons/circle-half-stroke-solid.svg?raw';
@@ -59,14 +65,25 @@
 	}
 
 	// ---------------------------------------------------------------------------
+	// Expansions (Delve / YRT)
+	// ---------------------------------------------------------------------------
+	let delveOn = $state(typeof window !== 'undefined' ? isDelveEnabled() : true);
+	let yrtOn   = $state(typeof window !== 'undefined' ? isYrtEnabled()   : true);
+
+	function applyDelve(on: boolean) { delveOn = on; setDelveEnabled(on); }
+	function applyYrt(on: boolean)   { yrtOn   = on; setYrtEnabled(on);   }
+
+	// ---------------------------------------------------------------------------
 	// Dialog
 	// ---------------------------------------------------------------------------
 	let dialogEl = $state<HTMLDialogElement | null>(null);
 
 	export function open() {
 		// Re-sync with localStorage each time the dialog opens.
-		theme  = savedTheme();
-		dice3d = isDice3dEnabled();
+		theme   = savedTheme();
+		dice3d  = isDice3dEnabled();
+		delveOn = isDelveEnabled();
+		yrtOn   = isYrtEnabled();
 		dialogEl?.showModal();
 	}
 
@@ -129,6 +146,48 @@
 					onclick={() => applyDice3d(false)}
 					aria-pressed={!dice3d}
 					data-tooltip="Skip 3D animation, show result immediately"
+				>Off</button>
+			</div>
+		</div>
+
+		<!-- Delve expansion -->
+		<div class="sd-row">
+			<span class="sd-label">Delve</span>
+			<div class="sd-seg" role="group" aria-label="Delve expansion">
+				<button
+					class="sd-seg-btn"
+					class:active={delveOn}
+					onclick={() => applyDelve(true)}
+					aria-pressed={delveOn}
+					data-tooltip="Show Delve moves, oracles, foes, assets"
+				>On</button>
+				<button
+					class="sd-seg-btn"
+					class:active={!delveOn}
+					onclick={() => applyDelve(false)}
+					aria-pressed={!delveOn}
+					data-tooltip="Hide Delve content from pickers (existing data preserved)"
+				>Off</button>
+			</div>
+		</div>
+
+		<!-- YRT expansion -->
+		<div class="sd-row">
+			<span class="sd-label">YRT</span>
+			<div class="sd-seg" role="group" aria-label="YRT expansion">
+				<button
+					class="sd-seg-btn"
+					class:active={yrtOn}
+					onclick={() => applyYrt(true)}
+					aria-pressed={yrtOn}
+					data-tooltip="Show YRT moves, oracles, foes, assets"
+				>On</button>
+				<button
+					class="sd-seg-btn"
+					class:active={!yrtOn}
+					onclick={() => applyYrt(false)}
+					aria-pressed={!yrtOn}
+					data-tooltip="Hide YRT content from pickers (existing data preserved)"
 				>Off</button>
 			</div>
 		</div>

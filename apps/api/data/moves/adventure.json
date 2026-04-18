@@ -39,7 +39,8 @@
           "key": "hasCharacter",
           "eq": 1
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "move/secure-an-advantage",
@@ -79,7 +80,8 @@
           "key": "hasCharacter",
           "eq": 1
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "move/gather-information",
@@ -102,7 +104,8 @@
           "key": "hasCharacter",
           "eq": 1
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "move/heal",
@@ -129,7 +132,8 @@
           "key": "hasCharacter",
           "eq": 1
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "move/resupply",
@@ -152,7 +156,8 @@
           "key": "hasCharacter",
           "eq": 1
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "move/make-camp",
@@ -175,7 +180,8 @@
           "key": "hasCharacter",
           "eq": 1
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "move/undertake-a-journey",
@@ -202,7 +208,8 @@
           "key": "hasJourney",
           "eq": 1
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "move/reach-your-destination",
@@ -221,7 +228,9 @@
           "eq": 1
         }
       ],
-      "progressSource": "journey"
+      "progressSource": "journey",
+      "source": "base"
     }
-  ]
+  ],
+  "source": "base"
 }

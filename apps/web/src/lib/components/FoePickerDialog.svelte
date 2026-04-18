@@ -12,12 +12,13 @@
 	 * onSelect is called with (foeDef, quantity, effectiveRank) when confirmed.
 	 */
 
-	import type { FoeDef, FoeQuantity } from '$lib/types.js';
+	import type { FoeDef, FoeQuantity, CatalogueSource } from '$lib/types.js';
 	import {
-		loadFoes, getFoes, getFoeNatures, getFoeSources,
+		loadFoes, getFoes, getVisibleFoes, getFoeNatures, getVisibleFoeSources,
 		foeSource, effectiveRank as calcEffectiveRank,
 		RANK_COLORS, FOE_RANKS, FOE_QUANTITIES, FOE_NATURE_COLORS,
 	} from '$lib/foeStore.svelte.js';
+	import { sourceLabel } from '$lib/expansionStore.svelte.js';
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
 
 
@@ -46,12 +47,13 @@
 	let search        = $state('');
 	let filtersOpen   = $state(false);
 	let activeNatures = $state(new Set<string>());
-	let activeSources = $state(new Set<string>());
+	let activeSources = $state(new Set<CatalogueSource>());
 	let activeRanks   = $state(new Set<number>());
 
-	const foes    = $derived(getFoes());
+	// Pickers use getVisibleFoes (expansion-filtered); direct lookups use getFoes.
+	const foes    = $derived(getVisibleFoes());
 	const natures = $derived(getFoeNatures());
-	const sources = $derived(getFoeSources());
+	const sources = $derived(getVisibleFoeSources());
 
 	const rankAdj    = $derived(FOE_QUANTITIES.find((q) => q.value === quantity)?.rankAdj ?? 0);
 	const effRank    = $derived(confirmFoe ? calcEffectiveRank(confirmFoe.rank, rankAdj) : 1);
@@ -137,7 +139,7 @@
 		activeNatures = next;
 	}
 
-	function toggleSource(s: string) {
+	function toggleSource(s: CatalogueSource) {
 		const next = new Set(activeSources);
 		if (next.has(s)) next.delete(s); else next.add(s);
 		activeSources = next;
@@ -249,7 +251,7 @@
 									class="fd-filter-tag fd-filter-tag--src"
 									class:active={activeSources.has(src)}
 									onclick={() => toggleSource(src)}
-								>{src}</button>
+								>{sourceLabel(src)}</button>
 							{/each}
 						</div>
 					</div>

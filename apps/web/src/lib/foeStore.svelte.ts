@@ -3,10 +3,12 @@
 //
 // Provides:
 //   • loadFoes()              — fetch + cache foe catalogue (idempotent)
-//   • getFoes()               — full list of FoeDef (reactive)
+//   • getFoes()               — full list of FoeDef (reactive, unfiltered)
+//   • getVisibleFoes()        — foes filtered by enabled expansions
 //   • getFoeNatures()         — distinct nature values in display order
-//   • getFoeSources()         — distinct source strings ('Ironsworn'|'Delve'|'Yrt')
-//   • findFoe(id)             — lookup by id
+//   • getFoeSources()         — distinct source tags ('base'|'delve'|'yrt')
+//   • getVisibleFoeSources()  — visible sources after filtering
+//   • findFoe(id)             — lookup by id (never filtered)
 //
 // Constants re-exported for use in components:
 //   • FOE_RANKS               — rank label + mechanics
@@ -14,7 +16,8 @@
 //   • FOE_NATURE_COLORS       — nature → CSS hex colour
 // =============================================================================
 
-import type { FoeDef, FoeNature } from '$lib/types.js';
+import type { FoeDef, FoeNature, CatalogueSource } from '$lib/types.js';
+import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
 
 // ---------------------------------------------------------------------------
 // Module-level state (shared across all component instances)
@@ -65,7 +68,7 @@ export const FOE_NATURE_COLORS: Record<FoeNature, string> = {
 };
 
 // Source order for display
-const SOURCE_ORDER = ['Ironsworn', 'Delve', 'Yrt'];
+const SOURCE_ORDER: CatalogueSource[] = ['base', 'delve', 'yrt'];
 
 // Nature display order
 const NATURE_ORDER: FoeNature[] = [
@@ -100,9 +103,14 @@ export async function loadFoes(): Promise<void> {
 // Accessors (reactive — reads tracked by $derived)
 // ---------------------------------------------------------------------------
 
-/** All loaded foe definitions. */
+/** All loaded foe definitions (unfiltered — for render-time resolution). */
 export function getFoes(): FoeDef[] {
 	return _foes;
+}
+
+/** Foes whose source is currently enabled. Used by pickers. */
+export function getVisibleFoes(): FoeDef[] {
+	return _foes.filter((f) => isSourceEnabled(foeSource(f)));
 }
 
 /** Distinct nature values in canonical display order. */
@@ -111,21 +119,23 @@ export function getFoeNatures(): FoeNature[] {
 	return NATURE_ORDER.filter((n) => present.has(n));
 }
 
-/**
- * Distinct source strings in canonical display order.
- * Derived from the id prefix: "ironsworn/*" → "Ironsworn", etc.
- */
-export function getFoeSources(): string[] {
+/** Distinct source tags present in the catalogue, in canonical display order. */
+export function getFoeSources(): CatalogueSource[] {
 	const present = new Set(_foes.map((f) => foeSource(f)));
 	return SOURCE_ORDER.filter((s) => present.has(s));
 }
 
-/** Look up a single foe definition by id. */
+/** Visible sources after expansion filtering. */
+export function getVisibleFoeSources(): CatalogueSource[] {
+	return getFoeSources().filter((s) => isSourceEnabled(s));
+}
+
+/** Look up a single foe definition by id. Never filtered. */
 export function findFoe(id: string): FoeDef | undefined {
 	return _foes.find((f) => f.id === id);
 }
 
-/** Case-insensitive lookup by name. */
+/** Case-insensitive lookup by name. Never filtered. */
 export function findFoeByName(name: string): FoeDef | undefined {
 	const lower = name.toLowerCase();
 	return _foes.find((f) => f.name.toLowerCase() === lower);
@@ -135,12 +145,16 @@ export function findFoeByName(name: string): FoeDef | undefined {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Derive a human-readable source label from a foe's id prefix. */
-export function foeSource(foe: FoeDef): string {
-	if (foe.id.startsWith('ironsworn/')) return 'Ironsworn';
-	if (foe.id.startsWith('delve/'))     return 'Delve';
-	if (foe.id.startsWith('yrt/'))       return 'Yrt';
-	return 'Other';
+/**
+ * Canonical source tag for a foe. Reads the explicit `source` field first,
+ * falling back to id-prefix derivation for un-migrated entries.
+ */
+export function foeSource(foe: FoeDef): CatalogueSource {
+	if (foe.source) return foe.source;
+	if (foe.id.startsWith('ironsworn/')) return 'base';
+	if (foe.id.startsWith('delve/'))     return 'delve';
+	if (foe.id.startsWith('yrt/'))       return 'yrt';
+	return 'base';
 }
 
 /**

@@ -4,13 +4,18 @@
 // Provides:
 //   • loadOracles()              — fetch + cache oracle catalogue
 //   • getOracles()               — sorted list of OracleFile (reactive)
-//   • getOracleGroups()          — distinct group names in display order
-//   • findOracle(key)            — lookup by key
+//   • getOracleSources()         — distinct source tags in display order
+//   • getVisibleOracles()        — oracles filtered by enabled expansions
+//   • getVisibleOracleSources()  — visible sources after filtering
+//   • findOracle(key)            — lookup by key (never filtered)
 //   • rollFromRangeTable(table)  — core d100 algorithm (ported from oracles-pure.js)
 //   • rangeLabelForEntry(t, i)   — range string "1–25" or "26"
 //   • buildTableHtml(key, table) — HTML table for the detail view
 //   • rollOracle(key, oracles)   — high-level dispatcher → { roll, html, title }
 // =============================================================================
+
+import type { CatalogueSource } from '$lib/types.js';
+import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -24,7 +29,7 @@ export interface OracleEntry {
 export interface OracleFile {
 	key:          string;
 	title:        string;
-	group:        string;
+	source:       CatalogueSource;
 	selectLabel:  string;
 	description?: string;
 	data:         OracleEntry[];
@@ -101,22 +106,32 @@ export async function loadOracles(): Promise<void> {
 // Accessors (reactive — reads tracked by $derived)
 // ---------------------------------------------------------------------------
 
-/** All loaded oracle files, sorted by oracle-order.json weight. */
+/** All loaded oracle files, sorted by oracle-order.json weight (unfiltered — for render-time resolution). */
 export function getOracles(): OracleFile[] {
 	return _oracles;
 }
 
-/** Distinct group names in the order they first appear. */
-export function getOracleGroups(): string[] {
-	const seen = new Set<string>();
-	const out:  string[] = [];
+/** Distinct sources in the order they first appear. */
+export function getOracleSources(): CatalogueSource[] {
+	const seen = new Set<CatalogueSource>();
+	const out:  CatalogueSource[] = [];
 	for (const o of _oracles) {
-		if (!seen.has(o.group)) { seen.add(o.group); out.push(o.group); }
+		if (!seen.has(o.source)) { seen.add(o.source); out.push(o.source); }
 	}
 	return out;
 }
 
-/** Look up a single oracle by key. */
+/** Oracles whose source is currently enabled. Used by pickers; `findOracle` stays unfiltered. */
+export function getVisibleOracles(): OracleFile[] {
+	return _oracles.filter((o) => isSourceEnabled(o.source));
+}
+
+/** Visible sources after expansion filtering. */
+export function getVisibleOracleSources(): CatalogueSource[] {
+	return getOracleSources().filter((s) => isSourceEnabled(s));
+}
+
+/** Look up a single oracle by key. Never filtered — log entries and direct opens must always resolve. */
 export function findOracle(key: string): OracleFile | undefined {
 	return _oracles.find((o) => o.key === key);
 }

@@ -29,7 +29,8 @@
           ]
         }
       ],
-      "summary": "Bow specialist: precise aim, rapid shots, and hunting prowess."
+      "summary": "Bow specialist: precise aim, rapid shots, and hunting prowess.",
+      "source": "base"
     },
     {
       "id": "combat/berserker",
@@ -63,7 +64,8 @@
           ]
         }
       ],
-      "summary": "Unarmored fury: wild rage, devastating strikes, pain as fuel."
+      "summary": "Unarmored fury: wild rage, devastating strikes, pain as fuel.",
+      "source": "base"
     },
     {
       "id": "combat/brawler",
@@ -94,7 +96,8 @@
           ]
         }
       ],
-      "summary": "Unarmed fighter: grappling, punching, and close-quarters combat."
+      "summary": "Unarmed fighter: grappling, punching, and close-quarters combat.",
+      "source": "base"
     },
     {
       "id": "combat/cutthroat",
@@ -125,7 +128,8 @@
           ]
         }
       ],
-      "summary": "Dagger specialist: ambush strikes, intimidation, and feints."
+      "summary": "Dagger specialist: ambush strikes, intimidation, and feints.",
+      "source": "base"
     },
     {
       "id": "combat/duelist",
@@ -156,7 +160,8 @@
           ]
         }
       ],
-      "summary": "Dual-wielding fighter: aggressive offense and bold displays."
+      "summary": "Dual-wielding fighter: aggressive offense and bold displays.",
+      "source": "base"
     },
     {
       "id": "combat/fletcher",
@@ -188,7 +193,8 @@
           ]
         }
       ],
-      "summary": "Arrow crafter: fine ammunition and devastating special arrows."
+      "summary": "Arrow crafter: fine ammunition and devastating special arrows.",
+      "source": "base"
     },
     {
       "id": "combat/ironclad",
@@ -236,7 +242,8 @@
             }
           ]
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "combat/long-arm",
@@ -267,7 +274,8 @@
           ]
         }
       ],
-      "summary": "Staff fighter: versatile reach, trips, disarms, and travel aid."
+      "summary": "Staff fighter: versatile reach, trips, disarms, and travel aid.",
+      "source": "base"
     },
     {
       "id": "combat/shield-bearer",
@@ -298,7 +306,8 @@
           ]
         }
       ],
-      "summary": "Shield specialist: cover, painted symbols, and sacrifice."
+      "summary": "Shield specialist: cover, painted symbols, and sacrifice.",
+      "source": "base"
     },
     {
       "id": "combat/skirmisher",
@@ -308,7 +317,7 @@
       "abilities": [
         {
           "enabled": true,
-          "text": "When you <a class=\"move-link\" data-id=\"move/face-danger\">Face Danger</a> by holding a foe at bay using your spear\u2019s reach, roll +iron or +edge. If you score a hit, you may...\n\n  * Iron: <a class=\"move-link\" data-id=\"move/strike\">Strike</a> (if you have initiative) or <a class=\"move-link\" data-id=\"move/clash\">Clash</a> now, and add +1.\n  * Edge: Take +1 momentum.",
+          "text": "When you <a class=\"move-link\" data-id=\"move/face-danger\">Face Danger</a> by holding a foe at bay using your spear’s reach, roll +iron or +edge. If you score a hit, you may...\n\n  * Iron: <a class=\"move-link\" data-id=\"move/strike\">Strike</a> (if you have initiative) or <a class=\"move-link\" data-id=\"move/clash\">Clash</a> now, and add +1.\n  * Edge: Take +1 momentum.",
           "moves": [
             "move/face-danger",
             "move/strike",
@@ -331,7 +340,8 @@
           ]
         }
       ],
-      "summary": "Spear fighter: reach advantage, charging defense, and thrusts."
+      "summary": "Spear fighter: reach advantage, charging defense, and thrusts.",
+      "source": "base"
     },
     {
       "id": "combat/slinger",
@@ -361,7 +371,8 @@
           ]
         }
       ],
-      "summary": "Sling specialist: deadly stones, ranged control, and crafting."
+      "summary": "Sling specialist: deadly stones, ranged control, and crafting.",
+      "source": "base"
     },
     {
       "id": "combat/sunderer",
@@ -395,7 +406,8 @@
           ]
         }
       ],
-      "summary": "Axe fighter: brutal strikes, intimidation, and tribute runes."
+      "summary": "Axe fighter: brutal strikes, intimidation, and tribute runes.",
+      "source": "base"
     },
     {
       "id": "combat/swordmaster",
@@ -421,14 +433,15 @@
         },
         {
           "enabled": false,
-          "text": "When you <a class=\"move-link\" data-id=\"move/swear-an-iron-vow\">Swear an Iron Vow</a> by kneeling and grasping your sword\u2019s blade, add +1 and take +1 momentum on a hit. If you let the edge draw blood from your hands, <a class=\"move-link\" data-id=\"move/endure-harm\">Endure Harm</a> (1 harm) in exchange for an additional +1 momentum on a hit.",
+          "text": "When you <a class=\"move-link\" data-id=\"move/swear-an-iron-vow\">Swear an Iron Vow</a> by kneeling and grasping your sword’s blade, add +1 and take +1 momentum on a hit. If you let the edge draw blood from your hands, <a class=\"move-link\" data-id=\"move/endure-harm\">Endure Harm</a> (1 harm) in exchange for an additional +1 momentum on a hit.",
           "moves": [
             "move/swear-an-iron-vow",
             "move/endure-harm"
           ]
         }
       ],
-      "summary": "Sword expert: momentum burns, flowing combos, and sworn oaths."
+      "summary": "Sword expert: momentum burns, flowing combos, and sworn oaths.",
+      "source": "base"
     },
     {
       "id": "combat/thunder-bringer",
@@ -461,7 +474,8 @@
           ]
         }
       ],
-      "summary": "Hammer wielder: smashing obstacles, stunning blows, and fury."
+      "summary": "Hammer wielder: smashing obstacles, stunning blows, and fury.",
+      "source": "base"
     },
     {
       "id": "companion/cave-lion",
@@ -512,7 +526,8 @@
           "icon": "heart",
           "shortLabel": "Cave Lion"
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "companion/giant-spider",
@@ -530,7 +545,7 @@
         {
           "enabled": false,
           "name": "Soul-Piercing",
-          "text": "You may <a class=\"move-link\" data-id=\"move/face-danger\">Face Danger</a> +shadow by sending your spider to secretly study someone. On a hit, the spider returns to reveal the target\u2019s deepest fears through a reflection in its glassy eyes. Use this to <a class=\"move-link\" data-id=\"move/gather-information\">Gather Information</a> and reroll any dice.",
+          "text": "You may <a class=\"move-link\" data-id=\"move/face-danger\">Face Danger</a> +shadow by sending your spider to secretly study someone. On a hit, the spider returns to reveal the target’s deepest fears through a reflection in its glassy eyes. Use this to <a class=\"move-link\" data-id=\"move/gather-information\">Gather Information</a> and reroll any dice.",
           "moves": [
             "move/face-danger",
             "move/gather-information"
@@ -563,7 +578,8 @@
           "icon": "heart",
           "shortLabel": "Giant Spider"
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "companion/hawk",
@@ -615,7 +631,8 @@
           "icon": "heart",
           "shortLabel": "Hawk"
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "companion/horse",
@@ -625,7 +642,7 @@
         {
           "enabled": false,
           "name": "Swift",
-          "text": "When you <a class=\"move-link\" data-id=\"move/face-danger\">Face Danger</a> +edge using your horse\u2019s speed and grace, or when you <a class=\"move-link\" data-id=\"move/undertake-a-journey\">Undertake a Journey</a>, add +1.",
+          "text": "When you <a class=\"move-link\" data-id=\"move/face-danger\">Face Danger</a> +edge using your horse’s speed and grace, or when you <a class=\"move-link\" data-id=\"move/undertake-a-journey\">Undertake a Journey</a>, add +1.",
           "moves": [
             "move/face-danger",
             "move/undertake-a-journey"
@@ -668,7 +685,8 @@
           "icon": "heart",
           "shortLabel": "Horse"
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "companion/hound",
@@ -678,7 +696,7 @@
         {
           "enabled": false,
           "name": "Sharp",
-          "text": "When you <a class=\"move-link\" data-id=\"move/gather-information\">Gather Information</a> using your hound\u2019s keen senses to track your quarry or investigate a scene, add +1 and take +1 momentum on a hit.",
+          "text": "When you <a class=\"move-link\" data-id=\"move/gather-information\">Gather Information</a> using your hound’s keen senses to track your quarry or investigate a scene, add +1 and take +1 momentum on a hit.",
           "moves": [
             "move/gather-information"
           ]
@@ -719,7 +737,8 @@
           "icon": "heart",
           "shortLabel": "Hound"
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "companion/kindred",
@@ -729,7 +748,7 @@
         {
           "enabled": false,
           "name": "Skilled",
-          "text": "When you make a move outside of combat aided by your companion\u2019s expertise, add +1."
+          "text": "When you make a move outside of combat aided by your companion’s expertise, add +1."
         },
         {
           "enabled": false,
@@ -768,7 +787,8 @@
           "icon": "heart",
           "shortLabel": "Kindred"
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "companion/mammoth",
@@ -786,7 +806,7 @@
         {
           "enabled": false,
           "name": "Beast of burden",
-          "text": "When you make a move which requires you to roll +supply, you may instead roll +your mammoth\u2019s health."
+          "text": "When you make a move which requires you to roll +supply, you may instead roll +your mammoth’s health."
         },
         {
           "enabled": false,
@@ -816,7 +836,8 @@
           "icon": "heart",
           "shortLabel": "Mammoth"
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "companion/owl",
@@ -835,12 +856,12 @@
         {
           "enabled": false,
           "name": "Sage",
-          "text": "When you leverage your owl\u2019s secret knowledge to perform a ritual, add +1 or take +1 momentum on a hit (decide before rolling)."
+          "text": "When you leverage your owl’s secret knowledge to perform a ritual, add +1 or take +1 momentum on a hit (decide before rolling)."
         },
         {
           "enabled": false,
           "name": "Embodying",
-          "text": "When you <a class=\"move-link\" data-id=\"move/face-death\">Face Death</a>, take your owl\u2019s health as +momentum before you roll.",
+          "text": "When you <a class=\"move-link\" data-id=\"move/face-death\">Face Death</a>, take your owl’s health as +momentum before you roll.",
           "moves": [
             "move/face-death"
           ]
@@ -864,7 +885,8 @@
           "icon": "heart",
           "shortLabel": "Owl"
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "companion/raven",
@@ -917,7 +939,8 @@
           "icon": "heart",
           "shortLabel": "Raven"
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "companion/young-wyvern",
@@ -967,7 +990,8 @@
           "icon": "heart",
           "shortLabel": "Young Wyvern"
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "path/alchemist",
@@ -991,7 +1015,8 @@
           "text": "When you prepare an elixir, add +1 and take +1 momentum on a hit."
         }
       ],
-      "summary": "Brew stat-boosting elixirs from your supply of ingredients."
+      "summary": "Brew stat-boosting elixirs from your supply of ingredients.",
+      "source": "base"
     },
     {
       "id": "path/animal-kin",
@@ -1015,7 +1040,8 @@
           "text": "Once per fight, when you leverage your animal or beast companion to make a move, reroll any dice. On a hit, take +1 momentum."
         }
       ],
-      "summary": "Deep bond with animals: taming, upgrading, and leveraging beasts."
+      "summary": "Deep bond with animals: taming, upgrading, and leveraging beasts.",
+      "source": "base"
     },
     {
       "id": "path/banner-sworn",
@@ -1054,7 +1080,8 @@
           "type": "string",
           "label": "Name"
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "path/battle-scarred",
@@ -1081,7 +1108,8 @@
           ]
         }
       ],
-      "summary": "Maimed but unyielding: refocused stats and iron will."
+      "summary": "Maimed but unyielding: refocused stats and iron will.",
+      "source": "base"
     },
     {
       "id": "path/blade-bound",
@@ -1121,7 +1149,8 @@
           "type": "string",
           "label": "Name"
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "path/bonded",
@@ -1145,7 +1174,8 @@
           ]
         }
       ],
-      "summary": "Strengthened by relationships: bond bonuses and desperate courage."
+      "summary": "Strengthened by relationships: bond bonuses and desperate courage.",
+      "source": "base"
     },
     {
       "id": "path/commander",
@@ -1181,7 +1211,8 @@
           ]
         }
       ],
-      "summary": "Lead a warband: command troops, dispatch scouts, forge loyalty."
+      "summary": "Lead a warband: command troops, dispatch scouts, forge loyalty.",
+      "source": "base"
     },
     {
       "id": "path/dancer",
@@ -1198,7 +1229,7 @@
         },
         {
           "enabled": false,
-          "text": "When you <a class=\"move-link\" data-id=\"move/face-danger\">Face Danger</a> +edge in a fight by nimbly avoiding your foe\u2019s attacks, add +1 and take +1 momentum on a hit.",
+          "text": "When you <a class=\"move-link\" data-id=\"move/face-danger\">Face Danger</a> +edge in a fight by nimbly avoiding your foe’s attacks, add +1 and take +1 momentum on a hit.",
           "moves": [
             "move/face-danger"
           ]
@@ -1208,7 +1239,8 @@
           "text": "When you or an ally make a progress move and score a hit, you may perform a dance to commemorate the event. If you do, roll +edge. On a strong hit, you and each of your allies take +2 momentum and +1 spirit. On a weak hit, you take +1 momentum or +1 spirit, but your allies are unmoved."
         }
       ],
-      "summary": "Graceful performer: captivate audiences and dodge in combat."
+      "summary": "Graceful performer: captivate audiences and dodge in combat.",
+      "source": "base"
     },
     {
       "id": "path/devotant",
@@ -1218,14 +1250,14 @@
       "abilities": [
         {
           "enabled": true,
-          "text": "When you say your daily prayers, you may <a class=\"move-link\" data-id=\"move/secure-an-advantage\">Secure an Advantage</a> by asking your god to grant a blessing. If you do, roll +your god\u2019s stat. On a hit, take +2 momentum.",
+          "text": "When you say your daily prayers, you may <a class=\"move-link\" data-id=\"move/secure-an-advantage\">Secure an Advantage</a> by asking your god to grant a blessing. If you do, roll +your god’s stat. On a hit, take +2 momentum.",
           "moves": [
             "move/secure-an-advantage"
           ]
         },
         {
           "enabled": false,
-          "text": "When you <a class=\"move-link\" data-id=\"move/swear-an-iron-vow\">Swear an Iron Vow</a> to serve your god on a divine quest, you may roll +your god\u2019s stat and reroll any dice. When you <a class=\"move-link\" data-id=\"move/fulfill-your-vow\">Fulfill Your Vow</a> and mark experience, take +1 experience.",
+          "text": "When you <a class=\"move-link\" data-id=\"move/swear-an-iron-vow\">Swear an Iron Vow</a> to serve your god on a divine quest, you may roll +your god’s stat and reroll any dice. When you <a class=\"move-link\" data-id=\"move/fulfill-your-vow\">Fulfill Your Vow</a> and mark experience, take +1 experience.",
           "moves": [
             "move/swear-an-iron-vow",
             "move/fulfill-your-vow"
@@ -1233,7 +1265,7 @@
         },
         {
           "enabled": false,
-          "text": "When you <a class=\"move-link\" data-id=\"move/sojourn\">Sojourn</a> by sharing the word of your god, you may roll +your god\u2019s stat. If you do, take +1 momentum on a hit.",
+          "text": "When you <a class=\"move-link\" data-id=\"move/sojourn\">Sojourn</a> by sharing the word of your god, you may roll +your god’s stat. If you do, take +1 momentum on a hit.",
           "moves": [
             "move/sojourn"
           ]
@@ -1251,7 +1283,8 @@
           "type": "string",
           "label": "Stat"
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "path/empowered",
@@ -1289,7 +1322,8 @@
           "type": "string",
           "label": "Title/Lineage"
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "path/fated",
@@ -1321,7 +1355,8 @@
           ]
         }
       ],
-      "summary": "Destiny-bound: cheat death while your epic vow is unfulfilled."
+      "summary": "Destiny-bound: cheat death while your epic vow is unfulfilled.",
+      "source": "base"
     },
     {
       "id": "path/fortune-hunter",
@@ -1359,7 +1394,8 @@
           "maxValue": 5,
           "icon": "sack-dollar"
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "path/herbalist",
@@ -1389,7 +1425,8 @@
           ]
         }
       ],
-      "summary": "Healer with herbal remedies: potent cures and restorative meals."
+      "summary": "Healer with herbal remedies: potent cures and restorative meals.",
+      "source": "base"
     },
     {
       "id": "path/honorbound",
@@ -1420,7 +1457,8 @@
           ]
         }
       ],
-      "summary": "Driven by sworn vows: hard truths and unyielding resolve."
+      "summary": "Driven by sworn vows: hard truths and unyielding resolve.",
+      "source": "base"
     },
     {
       "id": "path/improviser",
@@ -1448,7 +1486,8 @@
           "text": "When you throw caution to the wind and make an impulsive move in a risky situation, you may add +2. If you do, take +1 momentum on a strong hit, but count a weak hit as a miss."
         }
       ],
-      "summary": "Resourceful tinkerer: clever solutions and impulsive gambits."
+      "summary": "Resourceful tinkerer: clever solutions and impulsive gambits.",
+      "source": "base"
     },
     {
       "id": "path/infiltrator",
@@ -1476,7 +1515,8 @@
           ]
         }
       ],
-      "summary": "Stealth operative: breach enemy lines, spy, and scavenge."
+      "summary": "Stealth operative: breach enemy lines, spy, and scavenge.",
+      "source": "base"
     },
     {
       "id": "path/lorekeeper",
@@ -1503,13 +1543,14 @@
         },
         {
           "enabled": false,
-          "text": "One time only, you may browse the archive\u2019s forbidden depths. If you do, raise your wits by 1 and roll an action die. On 1-3, you must also mark corrupted or <a class=\"move-link\" data-id=\"move/face-desolation\">Face Desolation</a> (ignoring momentum).",
+          "text": "One time only, you may browse the archive’s forbidden depths. If you do, raise your wits by 1 and roll an action die. On 1-3, you must also mark corrupted or <a class=\"move-link\" data-id=\"move/face-desolation\">Face Desolation</a> (ignoring momentum).",
           "moves": [
             "move/face-desolation"
           ]
         }
       ],
-      "summary": "Bearer of a mystical archive: ancient knowledge and forbidden lore."
+      "summary": "Bearer of a mystical archive: ancient knowledge and forbidden lore.",
+      "source": "base"
     },
     {
       "id": "path/loyalist",
@@ -1536,7 +1577,8 @@
           "text": "When you stand with your ally as they make a progress move, envision how you support them. Then, roll one challenge die. On a 1-9, your ally may replace one of their challenge dice with yours. On a 10, envision how you inadvertently undermine their action; your ally must replace their lowest challenge die with yours."
         }
       ],
-      "summary": "Devoted ally: aid companions, share stress, and support progress."
+      "summary": "Devoted ally: aid companions, share stress, and support progress.",
+      "source": "base"
     },
     {
       "id": "path/masked",
@@ -1546,7 +1588,7 @@
       "abilities": [
         {
           "enabled": true,
-          "text": "Choose your mask\u2019s material.\n\n  * Thunderwood: Edge / Health\n  * Bloodwood: Iron / Health\n  * Ghostwood: Shadow / Spirit\n  * Whisperwood: Wits / Spirit\n\nWhen you wear the mask and make a move which uses its stat, add +1. If you roll a 1 on your action die, suffer -1 to the associated track (in addition to any other outcome of the move)."
+          "text": "Choose your mask’s material.\n\n  * Thunderwood: Edge / Health\n  * Bloodwood: Iron / Health\n  * Ghostwood: Shadow / Spirit\n  * Whisperwood: Wits / Spirit\n\nWhen you wear the mask and make a move which uses its stat, add +1. If you roll a 1 on your action die, suffer -1 to the associated track (in addition to any other outcome of the move)."
         },
         {
           "enabled": false,
@@ -1561,7 +1603,8 @@
           ]
         }
       ],
-      "summary": "Elven elderwood mask: stat boost at a cost, defying death."
+      "summary": "Elven elderwood mask: stat boost at a cost, defying death.",
+      "source": "base"
     },
     {
       "id": "path/oathbreaker",
@@ -1593,7 +1636,8 @@
           ]
         }
       ],
-      "summary": "Forsworn and seeking redemption: a debility until redeemed."
+      "summary": "Forsworn and seeking redemption: a debility until redeemed.",
+      "source": "base"
     },
     {
       "id": "path/outcast",
@@ -1623,7 +1667,8 @@
           ]
         }
       ],
-      "summary": "Lone survivor: scraping by when supplies run out."
+      "summary": "Lone survivor: scraping by when supplies run out.",
+      "source": "base"
     },
     {
       "id": "path/pretender",
@@ -1650,7 +1695,8 @@
           ]
         }
       ],
-      "summary": "Master of disguise: false identities and dramatic reveals."
+      "summary": "Master of disguise: false identities and dramatic reveals.",
+      "source": "base"
     },
     {
       "id": "path/revenant",
@@ -1679,7 +1725,8 @@
           ]
         }
       ],
-      "summary": "Returned from death: resilience against harm and the undead."
+      "summary": "Returned from death: resilience against harm and the undead.",
+      "source": "base"
     },
     {
       "id": "path/rider",
@@ -1705,13 +1752,14 @@
         },
         {
           "enabled": false,
-          "text": "When you <a class=\"move-link\" data-id=\"move/secure-an-advantage\">Secure an Advantage</a> +wits by sizing up a perilous situation from the saddle, you are one with your horse\u2019s instincts. Add +1 and take +1 momentum on a hit.",
+          "text": "When you <a class=\"move-link\" data-id=\"move/secure-an-advantage\">Secure an Advantage</a> +wits by sizing up a perilous situation from the saddle, you are one with your horse’s instincts. Add +1 and take +1 momentum on a hit.",
           "moves": [
             "move/secure-an-advantage"
           ]
         }
       ],
-      "summary": "Expert horseman: care, hard rides, and saddle instincts."
+      "summary": "Expert horseman: care, hard rides, and saddle instincts.",
+      "source": "base"
     },
     {
       "id": "path/ritualist",
@@ -1735,7 +1783,8 @@
           "text": "When you tattoo the essence of a new ritual onto your skin, envision the mark you create. You may then purchase and upgrade that ritual asset for 1 fewer experience."
         }
       ],
-      "summary": "Trained mystic: perform rituals with added potency."
+      "summary": "Trained mystic: perform rituals with added potency.",
+      "source": "base"
     },
     {
       "id": "path/shadow-kin",
@@ -1761,7 +1810,8 @@
           ]
         }
       ],
-      "summary": "Corrupted but empowered: dark insight and dread presence."
+      "summary": "Corrupted but empowered: dark insight and dread presence.",
+      "source": "base"
     },
     {
       "id": "path/sighted",
@@ -1794,7 +1844,8 @@
           ]
         }
       ],
-      "summary": "Gifted with visions: mystical sight and prophetic dreams."
+      "summary": "Gifted with visions: mystical sight and prophetic dreams.",
+      "source": "base"
     },
     {
       "id": "path/slayer",
@@ -1826,7 +1877,8 @@
           ]
         }
       ],
-      "summary": "Monster hunter: study prey, exploit weakness, trophy kills."
+      "summary": "Monster hunter: study prey, exploit weakness, trophy kills.",
+      "source": "base"
     },
     {
       "id": "path/spirit-bound",
@@ -1858,7 +1910,8 @@
           ]
         }
       ],
-      "summary": "Bound to a spirit: channeled aid, whispered secrets, possession."
+      "summary": "Bound to a spirit: channeled aid, whispered secrets, possession.",
+      "source": "base"
     },
     {
       "id": "path/storyweaver",
@@ -1890,7 +1943,8 @@
           ]
         }
       ],
-      "summary": "Master storyteller: inspire allies, sway crowds, and chronicle."
+      "summary": "Master storyteller: inspire allies, sway crowds, and chronicle.",
+      "source": "base"
     },
     {
       "id": "path/trickster",
@@ -1922,7 +1976,8 @@
           ]
         }
       ],
-      "summary": "Cunning deceiver: lies, distractions, and clever escapes."
+      "summary": "Cunning deceiver: lies, distractions, and clever escapes.",
+      "source": "base"
     },
     {
       "id": "path/veteran",
@@ -1951,7 +2006,8 @@
           ]
         }
       ],
-      "summary": "Seasoned warrior: read the battlefield and seize the moment."
+      "summary": "Seasoned warrior: read the battlefield and seize the moment.",
+      "source": "base"
     },
     {
       "id": "path/waterborn",
@@ -1985,7 +2041,8 @@
           ]
         }
       ],
-      "summary": "At home on the water: sailing, swimming, and sea knowledge."
+      "summary": "At home on the water: sailing, swimming, and sea knowledge.",
+      "source": "base"
     },
     {
       "id": "path/wayfinder",
@@ -2017,7 +2074,8 @@
           ]
         }
       ],
-      "summary": "Expert navigator: uncharted paths and guiding others safely."
+      "summary": "Expert navigator: uncharted paths and guiding others safely.",
+      "source": "base"
     },
     {
       "id": "path/weaponmaster",
@@ -2045,7 +2103,8 @@
           ]
         }
       ],
-      "summary": "Trained by a master: versatile combat expertise."
+      "summary": "Trained by a master: versatile combat expertise.",
+      "source": "base"
     },
     {
       "id": "path/wildblood",
@@ -2078,7 +2137,8 @@
           ]
         }
       ],
-      "summary": "Raised in the wilds: survival instincts and animal kinship."
+      "summary": "Raised in the wilds: survival instincts and animal kinship.",
+      "source": "base"
     },
     {
       "id": "path/wright",
@@ -2115,7 +2175,8 @@
           "type": "string",
           "label": "Specialty"
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "ritual/augur",
@@ -2142,7 +2203,8 @@
           "text": "When you perform this ritual, add +1 and take +1 momentum on a hit."
         }
       ],
-      "summary": "Read the future in rune-carved bones to guide your path."
+      "summary": "Read the future in rune-carved bones to guide your path.",
+      "source": "base"
     },
     {
       "id": "ritual/awakening",
@@ -2182,7 +2244,8 @@
           "icon": "rock-golem",
           "shortLabel": "Servant"
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "ritual/bind",
@@ -2206,7 +2269,8 @@
           "text": "When you perform this ritual, add +1 and take +1 momentum on a hit."
         }
       ],
-      "summary": "Bind an enemy or object with mystic chains of power."
+      "summary": "Bind an enemy or object with mystic chains of power.",
+      "source": "base"
     },
     {
       "id": "ritual/communion",
@@ -2231,7 +2295,8 @@
           "text": "When you perform this ritual, add +1 and take +1 momentum on a hit."
         }
       ],
-      "summary": "Speak with the dead to gain knowledge from beyond."
+      "summary": "Speak with the dead to gain knowledge from beyond.",
+      "source": "base"
     },
     {
       "id": "ritual/divination",
@@ -2250,14 +2315,15 @@
         },
         {
           "enabled": false,
-          "text": "As above, and your divination can also reveal information about the subject\u2019s future."
+          "text": "As above, and your divination can also reveal information about the subject’s future."
         },
         {
           "enabled": false,
           "text": "When you perform this ritual, add +1 and take +1 momentum on a hit."
         }
       ],
-      "summary": "Cast a divination to glimpse hidden truths and omens."
+      "summary": "Cast a divination to glimpse hidden truths and omens.",
+      "source": "base"
     },
     {
       "id": "ritual/invoke",
@@ -2296,7 +2362,8 @@
           "maxValue": 6,
           "icon": "mana"
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "ritual/keen",
@@ -2327,7 +2394,8 @@
           "text": "When you perform this ritual, add +1 and take +1 momentum on a hit."
         }
       ],
-      "summary": "Sing a keen for the dead to honor and empower the fallen."
+      "summary": "Sing a keen for the dead to honor and empower the fallen.",
+      "source": "base"
     },
     {
       "id": "ritual/leech",
@@ -2337,7 +2405,7 @@
       "abilities": [
         {
           "enabled": true,
-          "text": "When you mark your hands or weapon with an intricate blood rune, roll +iron. On a strong hit, the rune thirsts for fresh blood. One time only, when you make a move to inflict harm, reroll any dice and inflict +2 harm on a hit. Then, for each point of harm inflicted, take +1 and allocate it as +health or +momentum. On a weak hit, as above, but this asset counts as a debility until the rune\u2019s thirst is quenched."
+          "text": "When you mark your hands or weapon with an intricate blood rune, roll +iron. On a strong hit, the rune thirsts for fresh blood. One time only, when you make a move to inflict harm, reroll any dice and inflict +2 harm on a hit. Then, for each point of harm inflicted, take +1 and allocate it as +health or +momentum. On a weak hit, as above, but this asset counts as a debility until the rune’s thirst is quenched."
         },
         {
           "enabled": false,
@@ -2348,7 +2416,8 @@
           "text": "When you perform this ritual, add +1 and take +1 momentum on a hit."
         }
       ],
-      "summary": "Drain life force from a foe to restore your own."
+      "summary": "Drain life force from a foe to restore your own.",
+      "source": "base"
     },
     {
       "id": "ritual/lightbearer",
@@ -2383,7 +2452,8 @@
           "maxValue": 6,
           "icon": "sun"
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "ritual/scry",
@@ -2409,7 +2479,8 @@
           "text": "When you perform this ritual, add +1 and take +1 momentum on a hit."
         }
       ],
-      "summary": "Peer through flame or water to see distant places."
+      "summary": "Peer through flame or water to see distant places.",
+      "source": "base"
     },
     {
       "id": "ritual/shadow-walk",
@@ -2437,7 +2508,8 @@
           "text": "When you perform this ritual, add +1 and take +1 momentum on a hit."
         }
       ],
-      "summary": "Step between shadows to travel unseen and unheard."
+      "summary": "Step between shadows to travel unseen and unheard.",
+      "source": "base"
     },
     {
       "id": "ritual/sway",
@@ -2447,7 +2519,7 @@
       "abilities": [
         {
           "enabled": true,
-          "text": "When you speak a person\u2019s name three times to the wind, roll +wits. On a strong hit, the wind whispers of this person\u2019s need. Envision what you hear (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure). If you use this information or fulfill this need when you <a class=\"move-link\" data-id=\"move/compel\">Compel</a> them, you may reroll any dice (one time only). On a weak hit, as above, but this person\u2019s need creates a troubling dilemma or complication; <a class=\"move-link\" data-id=\"move/endure-stress\">Endure Stress</a> (1 stress).",
+          "text": "When you speak a person’s name three times to the wind, roll +wits. On a strong hit, the wind whispers of this person’s need. Envision what you hear (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure). If you use this information or fulfill this need when you <a class=\"move-link\" data-id=\"move/compel\">Compel</a> them, you may reroll any dice (one time only). On a weak hit, as above, but this person’s need creates a troubling dilemma or complication; <a class=\"move-link\" data-id=\"move/endure-stress\">Endure Stress</a> (1 stress).",
           "moves": [
             "move/ask-the-oracle",
             "move/compel",
@@ -2467,7 +2539,8 @@
           "text": "When you perform this ritual, add +1 and take +1 momentum on a hit."
         }
       ],
-      "summary": "Weave a ritual of persuasion to bend hearts and minds."
+      "summary": "Weave a ritual of persuasion to bend hearts and minds.",
+      "source": "base"
     },
     {
       "id": "ritual/talisman",
@@ -2488,7 +2561,8 @@
           "text": "When you perform this ritual, add +1 and take +1 momentum on a hit."
         }
       ],
-      "summary": "Craft a protective charm to ward off supernatural harm."
+      "summary": "Craft a protective charm to ward off supernatural harm.",
+      "source": "base"
     },
     {
       "id": "ritual/tether",
@@ -2518,7 +2592,8 @@
           "text": "When you perform this ritual, add +1 and take +1 momentum on a hit."
         }
       ],
-      "summary": "Bind your spirit to a place, returning there when in peril."
+      "summary": "Bind your spirit to a place, returning there when in peril.",
+      "source": "base"
     },
     {
       "id": "ritual/totem",
@@ -2535,14 +2610,15 @@
         },
         {
           "enabled": false,
-          "text": "As above, and you may also perceive the world through your companion\u2019s senses while you make moves aided by them (even when you are apart)."
+          "text": "As above, and you may also perceive the world through your companion’s senses while you make moves aided by them (even when you are apart)."
         },
         {
           "enabled": false,
           "text": "When you perform this ritual, add +1 and take +1 momentum on a hit."
         }
       ],
-      "summary": "Channel an animal spirit for primal strength and instinct."
+      "summary": "Channel an animal spirit for primal strength and instinct.",
+      "source": "base"
     },
     {
       "id": "ritual/visage",
@@ -2573,7 +2649,8 @@
           "text": "When you perform this ritual, add +1 and take +1 momentum on a hit."
         }
       ],
-      "summary": "Alter your appearance through ritual magic to deceive others."
+      "summary": "Alter your appearance through ritual magic to deceive others.",
+      "source": "base"
     },
     {
       "id": "ritual/ward",
@@ -2583,22 +2660,24 @@
       "abilities": [
         {
           "enabled": true,
-          "text": "When you walk a wide circle, sprinkling the ground with salt, roll +wits. On a strong hit, choose two. On a weak hit, choose one.\n\n  * When a foe first crosses the boundary, take +1 momentum.\n  * When you first inflict harm against a foe within the boundary, inflict +1 harm.\n  * Your ward is \u2018likely\u2019 (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a>) to trap a foe within the boundary.",
+          "text": "When you walk a wide circle, sprinkling the ground with salt, roll +wits. On a strong hit, choose two. On a weak hit, choose one.\n\n  * When a foe first crosses the boundary, take +1 momentum.\n  * When you first inflict harm against a foe within the boundary, inflict +1 harm.\n  * Your ward is ‘likely’ (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a>) to trap a foe within the boundary.",
           "moves": [
             "move/ask-the-oracle"
           ]
         },
         {
           "enabled": false,
-          "text": "As above, and improve the effect of your ward (+2 momentum, +2 harm, and \u2018almost certain\u2019)."
+          "text": "As above, and improve the effect of your ward (+2 momentum, +2 harm, and ‘almost certain’)."
         },
         {
           "enabled": false,
           "text": "When you perform this ritual, add +1 and take +1 momentum on a hit."
         }
       ],
-      "summary": "Create a protective barrier against physical or mystic threats."
+      "summary": "Create a protective barrier against physical or mystic threats.",
+      "source": "base"
     }
   ],
-  "rarities": []
+  "rarities": [],
+  "source": "base"
 }
