@@ -1,9 +1,9 @@
 {
   "key": "characterRole",
   "title": "Character Role",
-  "group": "Core Ironsworn",
   "selectLabel": "Character Role",
   "description": "Determine an NPC's occupation or societal role, or use it to generate a random encounter.",
+  "source": "base",
   "data": [
     {
       "topRange": 2,

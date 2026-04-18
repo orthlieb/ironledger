@@ -17,7 +17,8 @@
           "eq": 1
         }
       ],
-      "logBody": "Mark <a class=\"resource-link\" data-resource=\"failures\" data-value=\"+1\">+1 tick</a> on your failure track."
+      "logBody": "Mark <a class=\"resource-link\" data-resource=\"failures\" data-value=\"+1\">+1 tick</a> on your failure track.",
+      "source": "base"
     },
     {
       "id": "move/learn-from-your-failures",
@@ -46,7 +47,9 @@
           "min": 6
         }
       ],
-      "progressSource": "failures"
+      "progressSource": "failures",
+      "source": "base"
     }
-  ]
+  ],
+  "source": "base"
 }

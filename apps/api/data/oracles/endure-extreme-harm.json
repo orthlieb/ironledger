@@ -1,9 +1,9 @@
 {
   "key": "endureExtremeHarm",
   "title": "Endure Extreme Harm",
-  "group": "Core Ironsworn",
   "selectLabel": "Endure Extreme Harm",
   "description": "Use this oracle when you roll a miss on Endure Harm and both the Wounded and Maimed conditions are already marked. Roll to determine the dire consequence of suffering extreme physical harm.",
+  "source": "base",
   "data": [
     {
       "topRange": 10,

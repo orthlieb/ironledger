@@ -1,9 +1,9 @@
 {
   "key": "monstrosityPrimaryForm",
   "title": "Monstrosity: Primary Form",
-  "group": "Delve",
   "selectLabel": "Monstrosity: Primary Form",
   "description": "Determine the base physical form of a random monstrosity. Results with two options separated by a slash (/) — pick the one which best fits or take both.",
+  "source": "delve",
   "data": [
     {
       "topRange": 15,

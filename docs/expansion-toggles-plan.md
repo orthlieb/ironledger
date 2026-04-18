@@ -25,13 +25,15 @@
 
 ### 1.2 Oracles — `apps/api/data/oracles/`
 
-Already tagged with `"group"` (`"Core Ironsworn"` / `"Delve"` / `"Yrt"`). No schema change.
+Currently tagged with `"group"` (`"Core Ironsworn"` / `"Delve"` / `"Yrt"`).
+**Rename `group` → `source`** and normalize values to `"base" | "delve" | "yrt"` to match moves/assets. Single discriminator across all catalogues.
 - Delve: 23 files (char-disposition, site-name, site-nature-*, threat-*, trap, monstrosity-*, feature-*, combat-event)
 - YRT: 6 files (freeport-denizen, mana-backlash, touched-features, yrt-animal, yrt-region, yrt-touched)
 
 ### 1.3 Foes — `apps/api/data/foes/`
 
-Per-file split. `foeSource()` in `foeStore.svelte.ts` already derives source from id prefix. Optional: add `"source"` per foe for consistency.
+Per-file split. `foeSource()` in `foeStore.svelte.ts` derives source from id prefix and returns title-case values (`'Ironsworn' | 'Delve' | 'Yrt'`).
+**Recommended:** add per-foe `"source"` with normalized values `"base" | "delve" | "yrt"`, and update `foeSource()` to read the field (falling back to id-prefix derivation for any un-migrated entries). Drives one unified `isSourceEnabled(source)` helper.
 
 ### 1.4 Assets — `apps/api/data/assets/`
 
@@ -54,7 +56,7 @@ Five files (theme-features, theme-dangers, domain-features, domain-dangers, comm
 | Surface | File | Change |
 |---|---|---|
 | Moves browser | `MovesDialog.svelte` | Filter list + category chips by enabled sources. Keep `open(id)` resolving against full catalogue. |
-| Oracles browser | `OraclesDialog.svelte` | Filter list + group chips. Keep `open(key)` for click-through. |
+| Oracles browser | `OraclesDialog.svelte` | Filter list + source chips (renamed from group). Keep `open(key)` for click-through. |
 | Foe picker | `FoePickerDialog.svelte` | Filter grid + source chip row. Keep `openWithFoe(name)`. |
 | Asset picker | `AssetPicker.svelte` | Filter tiles + category chips. |
 | Rarity slot | `AssetCard.svelte` | Hide acquire-rarity UI when Delve off; render owned rarities unchanged. |
@@ -122,7 +124,7 @@ Mirror the 3D-dice pattern (`dice.ts` + `ironledger:dice3d` localStorage key).
 New file: `apps/web/src/lib/expansionStore.svelte.ts`
 - Keys: `ironledger:expansion:delve`, `ironledger:expansion:yrt`
 - Reactive `$state` for `delveEnabled`, `yrtEnabled` (default `true`)
-- Helpers: `setDelveEnabled(b)`, `setYrtEnabled(b)`, `isDelveEnabled()`, `isYrtEnabled()`, `isSourceEnabled(source)`, `isGroupEnabled(group)` (maps `"Delve" | "Yrt" | "Core Ironsworn"` to flags)
+- Helpers: `setDelveEnabled(b)`, `setYrtEnabled(b)`, `isDelveEnabled()`, `isYrtEnabled()`, `isSourceEnabled(source: 'base' | 'delve' | 'yrt')` — single predicate used by every picker (moves, oracles, foes, assets)
 - Hydrate from localStorage at import time (client-only guard)
 
 Added to `SettingsDialog.svelte` as two new toggle rows alongside 3D Dice.
@@ -133,7 +135,7 @@ Added to `SettingsDialog.svelte` as two new toggle rows alongside 3D Dice.
 
 ### Delve OFF hides
 - Moves: all of `delve.json` + `rarity.json` (`move/wield-a-rarity`)
-- Oracles (group `Delve`): 23 entries — site-*, threat-*, monstrosity-*, feature-*, char-disposition, combat-event, trap
+- Oracles (source `delve`): 23 entries — site-*, threat-*, monstrosity-*, feature-*, char-disposition, combat-event, trap
 - Foes (source `Delve`): ~45 entries in `foes_delve.json`
 - Rarities: all entries in `assets_delve.json` (from rarity slot picker)
 - UI: "New Site" creation, GCB Delve feature/danger/denizen actions, Delve + Rarity category chips in MovesDialog, Delve group chip in OraclesDialog, Delve source chip in FoePickerDialog
@@ -142,12 +144,12 @@ Added to `SettingsDialog.svelte` as two new toggle rows alongside 3D Dice.
 
 ### YRT OFF hides
 - Moves: all of `yrt.json` (Cast Conclave Ritual, etc.)
-- Oracles (group `Yrt`): freeport-denizen, mana-backlash, touched-features, yrt-animal, yrt-region, yrt-touched
+- Oracles (source `yrt`): freeport-denizen, mana-backlash, touched-features, yrt-animal, yrt-region, yrt-touched
 - Foes (source `Yrt`): Blighted Guilder, Mana Wraith, Verdant Crawler, Amber Schemer
 - Assets (source `yrt`): both Touched assets, 4 Ritual, 2 Path from `assets_yrt.json`
 - UI: Touched category chip in AssetPicker, Yrt chips in Moves/Oracles/Foe pickers, YRT radio in community region picker
 
-**Preserved:** existing YRT-regioned communities, characters with Touched/YRT assets, mana counter on existing characters, log click-through to YRT content, `mystic-backlash` oracle (Core Ironsworn, not YRT)
+**Preserved:** existing YRT-regioned communities, characters with Touched/YRT assets, mana counter on existing characters, log click-through to YRT content, `mystic-backlash` oracle (source `base`, not YRT)
 
 ---
 
@@ -168,7 +170,7 @@ Added to `SettingsDialog.svelte` as two new toggle rows alongside 3D Dice.
 
 Ordered so each step compiles and tests green.
 
-1. **Tag the JSON.** Add `"source"` to every entry in `apps/api/data/moves/*.json`, `apps/api/data/assets/assets_*.json`. Oracles unchanged (use `group`). Foes optional.
+1. **Tag the JSON.** Add `"source"` (`"base" | "delve" | "yrt"`) to every entry in `apps/api/data/moves/*.json`, `apps/api/data/assets/assets_*.json`, `apps/api/data/foes/foes_*.json`. For oracles: **rename `"group"` → `"source"`** and normalize values (`"Core Ironsworn"` → `"base"`, `"Delve"` → `"delve"`, `"Yrt"` → `"yrt"`). Update `oracleStore.svelte.ts` and any consumer referencing `.group` (e.g. `OraclesDialog` group chips). Update `foeStore.foeSource()` to read the field first, id-prefix fallback.
 2. **Extend types.** Add `source?: 'base' | 'delve' | 'yrt'` to `MoveDefinition`, `AssetDefinition`, `RarityDefinition` (wherever they live in `packages/shared` and `apps/web/src/lib/types.ts`).
 3. **Create `expansionStore.svelte.ts`** with reactive state, localStorage persistence, and `isSourceEnabled`/`isGroupEnabled` helpers.
 4. **Add `getVisible*` accessors** to `moveStore`, `oracleStore`, `foeStore`, `assetStore`. Leave `get*`/`find*` intact for render-time resolution.

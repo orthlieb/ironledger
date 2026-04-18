@@ -39,7 +39,8 @@
           "key": "initiative",
           "eq": 0
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "move/strike",
@@ -75,7 +76,8 @@
           "key": "initiative",
           "eq": 1
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "move/clash",
@@ -111,7 +113,8 @@
           "key": "initiative",
           "eq": 2
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "move/turn-the-tide",
@@ -137,7 +140,8 @@
           "key": "initiative",
           "eq": 2
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "move/battle",
@@ -185,7 +189,8 @@
           "key": "initiative",
           "eq": 0
         }
-      ]
+      ],
+      "source": "base"
     },
     {
       "id": "move/end-the-fight",
@@ -208,7 +213,9 @@
           "min": 1
         }
       ],
-      "progressSource": "combat"
+      "progressSource": "combat",
+      "source": "base"
     }
-  ]
+  ],
+  "source": "base"
 }

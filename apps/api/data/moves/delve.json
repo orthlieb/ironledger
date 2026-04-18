@@ -19,7 +19,8 @@
       ],
       "references": [
         "expedition"
-      ]
+      ],
+      "source": "delve"
     },
     {
       "id": "move/delve-the-depths",
@@ -88,7 +89,8 @@
           "key": "hasSite",
           "eq": 1
         }
-      ]
+      ],
+      "source": "delve"
     },
     {
       "id": "move/find-an-opportunity",
@@ -151,7 +153,8 @@
       ],
       "references": [
         "expedition"
-      ]
+      ],
+      "source": "delve"
     },
     {
       "id": "move/reveal-a-danger",
@@ -222,7 +225,8 @@
       ],
       "references": [
         "expedition"
-      ]
+      ],
+      "source": "delve"
     },
     {
       "id": "move/check-your-gear",
@@ -249,7 +253,8 @@
           "key": "hasSite",
           "eq": 1
         }
-      ]
+      ],
+      "source": "delve"
     },
     {
       "id": "move/locate-your-objective",
@@ -268,7 +273,8 @@
           "eq": 1
         }
       ],
-      "progressSource": "delve"
+      "progressSource": "delve",
+      "source": "delve"
     },
     {
       "id": "move/advance-a-threat",
@@ -307,7 +313,8 @@
           "key": "vowCount",
           "min": 1
         }
-      ]
+      ],
+      "source": "delve"
     },
     {
       "id": "move/take-a-hiatus",
@@ -328,7 +335,8 @@
           "key": "vowCount",
           "min": 1
         }
-      ]
+      ],
+      "source": "delve"
     },
     {
       "id": "move/escape-the-depths",
@@ -372,7 +380,9 @@
           "key": "hasSite",
           "eq": 1
         }
-      ]
+      ],
+      "source": "delve"
     }
-  ]
+  ],
+  "source": "delve"
 }

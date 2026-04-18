@@ -1,9 +1,9 @@
 {
   "key": "monstrositySize",
   "title": "Monstrosity: Size",
-  "group": "Delve",
   "selectLabel": "Monstrosity: Size",
   "description": "Determine the size category of a monstrosity.",
+  "source": "delve",
   "data": [
     {
       "topRange": 5,

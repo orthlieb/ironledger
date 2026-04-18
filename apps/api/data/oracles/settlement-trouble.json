@@ -1,9 +1,9 @@
 {
   "key": "settlementTrouble",
   "title": "Settlement Trouble",
-  "group": "Core Ironsworn",
   "selectLabel": "Settlement Trouble",
   "description": "Use this table to generate a narrative hook for a problem faced by a community. This oracle can help inspire a vow for your character or serve as a prompt for a trouble you encounter when you interact with a settlement.",
+  "source": "base",
   "data": [
     {
       "topRange": 2,

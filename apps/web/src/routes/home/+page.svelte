@@ -3,6 +3,7 @@
 	import type { CharacterFull } from '$lib/api.js';
 	import type { FoeDef, FoeQuantity, Expedition, Journey, Site, VowDifficulty, Community, Npc } from '$lib/types.js';
 	import { EXPEDITION_MARK_TICKS, DELVE_THEMES, DELVE_DOMAINS } from '$lib/types.js';
+	import { isDelveEnabled, isYrtEnabled } from '$lib/expansionStore.svelte.js';
 	import { findFoe, findFoeByName, loadFoes, FOE_RANKS } from '$lib/foeStore.svelte.js';
 	import { loadDelveData } from '$lib/delveStore.svelte.js';
 	import { appendLog, getActionNonce, drainActions, getXpSpendNonce, drainXpSpend, SESSION_LOG_ID, logs } from '$lib/log.svelte.js';
@@ -1439,9 +1440,11 @@
 			<label style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer; margin-bottom: 4px;">
 				<input type="radio" bind:group={_pendingCommunityRegionType} value="ironlands" /> Ironlands
 			</label>
-			<label style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer;">
-				<input type="radio" bind:group={_pendingCommunityRegionType} value="yrt" /> YRT
-			</label>
+			{#if isYrtEnabled()}
+				<label style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer;">
+					<input type="radio" bind:group={_pendingCommunityRegionType} value="yrt" /> YRT
+				</label>
+			{/if}
 		</fieldset>
 		<fieldset style="border: none; padding: 0; margin: 0;">
 			<legend style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); margin-bottom: 5px;">Location oracle</legend>
@@ -1692,10 +1695,12 @@
 							class="btn btn-primary"
 							onclick={handleAddJourney}
 						>+ Journey</button>
-						<button
-							class="btn btn-primary"
-							onclick={handleAddSite}
-						>+ Site</button>
+						{#if isDelveEnabled()}
+							<button
+								class="btn btn-primary"
+								onclick={handleAddSite}
+							>+ Site</button>
+						{/if}
 					</div>
 				</div>
 

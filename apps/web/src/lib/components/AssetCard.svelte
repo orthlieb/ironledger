@@ -8,6 +8,7 @@
 	 */
 	import type { CharacterAsset, AssetDefinition } from '$lib/types.js';
 	import { findRarityForAsset } from '$lib/assetStore.svelte.js';
+	import { isDelveEnabled } from '$lib/expansionStore.svelte.js';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
 
 	import trashSvg          from '$icons/trash-solid-full.svg?raw';
@@ -82,6 +83,11 @@
 	const enabledCount = $derived(asset.abilities.filter(Boolean).length);
 	const total        = $derived(definition.abilities.length);
 	const rarity       = $derived(findRarityForAsset(asset.assetId));
+	/** Show the rarity slot if Delve is enabled OR the character already owns this rarity
+	    (preserve existing characters when the expansion is disabled). */
+	const showRaritySlot = $derived(
+		!!rarity && (isDelveEnabled() || asset.rarityId === rarity.id)
+	);
 
 	// ── Level-gated ability cap (e.g. Touched assets) ──────────────────────
 	/**
@@ -622,7 +628,7 @@
 			{/each}
 
 			<!-- Rarity slot -->
-			{#if rarity}
+			{#if showRaritySlot && rarity}
 				<div class="rarity-section">
 					<label class="rarity-label">
 						<input

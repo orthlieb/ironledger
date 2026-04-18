@@ -1,9 +1,9 @@
 {
   "key": "yrtAnimal",
   "title": "YRT – Animal Type",
-  "group": "Yrt",
   "selectLabel": "YRT – Animal Type",
   "description": "Determine the type of animal encountered in the Yrt setting.",
+  "source": "yrt",
   "data": [
     {
       "topRange": 1,

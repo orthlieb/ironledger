@@ -1,9 +1,9 @@
 {
   "key": "namesElf",
   "title": "Elf Names",
-  "group": "Core Ironsworn",
   "selectLabel": "Elf Names",
   "description": "Generate a random Elf name.",
+  "source": "base",
   "data": [
     {
       "topRange": 2,

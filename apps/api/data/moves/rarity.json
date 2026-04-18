@@ -13,9 +13,17 @@
       "rarityRoll": true,
       "notes": "Replaces your action die (d6) with a rarity die (also d6) when invoking an augmented asset. Results depend on the face showing: 6 = automatic strong hit + momentum, 5 on a hit = momentum, 1 on a miss = power fails or backfires. Other results resolve normally.",
       "preconditions": [
-        { "key": "hasCharacter", "eq": 1 },
-        { "key": "rarityCount", "min": 1 }
-      ]
+        {
+          "key": "hasCharacter",
+          "eq": 1
+        },
+        {
+          "key": "rarityCount",
+          "min": 1
+        }
+      ],
+      "source": "delve"
     }
-  ]
+  ],
+  "source": "delve"
 }

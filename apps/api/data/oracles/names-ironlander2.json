@@ -1,9 +1,9 @@
 {
   "key": "namesIronlander2",
   "title": "Ironlander Names 2",
-  "group": "Core Ironsworn",
   "selectLabel": "Ironlander Names 2",
   "description": "Generate a name for an Ironlander character (second set). Surnames are not used in the Ironlands, and names are often gender-neutral.",
+  "source": "base",
   "data": [
     {
       "topRange": 1,

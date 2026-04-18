@@ -9,7 +9,7 @@
 	 */
 	import type { AssetCategory, AssetDefinition, CharacterData } from '$lib/types.js';
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
-	import { getAssets, isAssetsLoading } from '$lib/assetStore.svelte.js';
+	import { getVisibleAssets, isAssetsLoading } from '$lib/assetStore.svelte.js';
 	import { firstPreconditionFailure, type Precondition } from '$lib/preconditions.js';
 
 	let {
@@ -103,8 +103,17 @@
 	// ---------------------------------------------------------------------------
 	const hasActiveFilters = $derived(search.trim() !== '' || activeCategories.size > 0);
 
+	const visibleAssets = $derived(getVisibleAssets());
+
+	/** Category chips only include categories represented in the visible catalogue. */
+	const visibleCategories = $derived(
+		(Object.keys(CAT_COLOR) as AssetCategory[]).filter((cat) =>
+			visibleAssets.some((a) => a.category === cat),
+		),
+	);
+
 	const filtered = $derived(
-		getAssets().filter((a) => {
+		visibleAssets.filter((a) => {
 			if (activeCategories.size > 0 && !activeCategories.has(a.category)) return false;
 			const q = search.trim().toLowerCase();
 			if (q && !a.name.toLowerCase().includes(q) &&
@@ -206,7 +215,7 @@
 		{#if filtersOpen}
 			<div class="ap-filter-panel">
 				<div class="ap-filter-chips">
-					{#each (Object.keys(CAT_COLOR) as AssetCategory[]) as cat}
+					{#each visibleCategories as cat}
 						<button
 							class="ap-filter-tag"
 							class:active={activeCategories.has(cat)}
