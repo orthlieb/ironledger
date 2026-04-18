@@ -4,6 +4,7 @@
 	import ProgressTrack from './ProgressTrack.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import trashSvg from '$icons/trash-solid.svg?raw';
+	import { isDelveEnabled } from '$lib/expansionStore.svelte.js';
 
 	let {
 		vow = $bindable(),
@@ -90,35 +91,37 @@
 	<!-- Expandable body -->
 	{#if !collapsed}
 		<div class="vow-body">
-			<!-- Threat + Menace row -->
-			<div class="vow-extras">
-				<label class="vow-extra vow-threat">
-					<span>Threat</span>
-					<input bind:value={vow.threat} placeholder="—" aria-label="Threat" />
-				</label>
-				<div class="vow-extra menace-control">
-					<span>Menace</span>
-					<button
-						class="adj-btn"
-						onclick={() => (vow.menace = Math.max(0, vow.menace - 1))}
-						disabled={vow.menace <= 0}
-						aria-label="Decrease menace"
-					>−</button>
-					<span class="menace-val" class:menace-high={vow.menace >= 7}>{vow.menace}</span>
-					<button
-						class="adj-btn"
-						onclick={() => (vow.menace = Math.min(10, vow.menace + 1))}
-						disabled={vow.menace >= 10}
-						aria-label="Increase menace"
-					>+</button>
-					<span class="menace-max">/10</span>
+			<!-- Threat + Menace row (Delve-only — preserves underlying data when hidden) -->
+			{#if isDelveEnabled()}
+				<div class="vow-extras">
+					<label class="vow-extra vow-threat">
+						<span>Threat</span>
+						<input bind:value={vow.threat} placeholder="—" aria-label="Threat" />
+					</label>
+					<div class="vow-extra menace-control">
+						<span>Menace</span>
+						<button
+							class="adj-btn"
+							onclick={() => (vow.menace = Math.max(0, vow.menace - 1))}
+							disabled={vow.menace <= 0}
+							aria-label="Decrease menace"
+						>−</button>
+						<span class="menace-val" class:menace-high={vow.menace >= 7}>{vow.menace}</span>
+						<button
+							class="adj-btn"
+							onclick={() => (vow.menace = Math.min(10, vow.menace + 1))}
+							disabled={vow.menace >= 10}
+							aria-label="Increase menace"
+						>+</button>
+						<span class="menace-max">/10</span>
+					</div>
 				</div>
-			</div>
+			{/if}
 
 			<!-- Progress track + Mark/Unmark buttons (inline right, same height as boxes) -->
 			<div class="vow-progress-row">
 				<div class="progress-wrap">
-					<ProgressTrack bind:value={vow.ticks} label="" boxes={10} dangerCount={vow.menace} />
+					<ProgressTrack bind:value={vow.ticks} label="" boxes={10} dangerCount={isDelveEnabled() ? vow.menace : 0} />
 				</div>
 				<div class="vow-actions">
 					<button
