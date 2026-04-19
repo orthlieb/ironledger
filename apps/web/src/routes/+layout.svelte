@@ -3,6 +3,7 @@
 	import type { LayoutData } from './$types';
 	import type { MaintenanceStatus, BroadcastStatus } from '@ironledger/shared';
 	import SettingsDialog from '$lib/components/SettingsDialog.svelte';
+	import BugReportDialog from '$lib/components/BugReportDialog.svelte';
 	import HamburgerMenu from '$lib/components/HamburgerMenu.svelte';
 	import BroadcastBanner from '$lib/components/BroadcastBanner.svelte';
 	import { system } from '$lib/api';
@@ -13,7 +14,8 @@
 
 	let { data, children }: { data: LayoutData; children: import('svelte').Snippet } = $props();
 
-	let settingsDialog = $state<ReturnType<typeof SettingsDialog> | null>(null);
+	let settingsDialog  = $state<ReturnType<typeof SettingsDialog> | null>(null);
+	let bugReportDialog = $state<ReturnType<typeof BugReportDialog> | null>(null);
 
 	// ── System status polling (maintenance + broadcast) ───────────────────
 	let maintStatus: MaintenanceStatus | null = $state(null);
@@ -93,7 +95,10 @@
 				{/if}
 			</nav>
 			<div class="nav-user-actions">
-				<HamburgerMenu onSettings={() => settingsDialog?.open()} />
+				<HamburgerMenu
+					onSettings={() => settingsDialog?.open()}
+					onReportBug={() => bugReportDialog?.open()}
+				/>
 			</div>
 		</div>
 	</nav>
@@ -129,6 +134,7 @@
 </main>
 
 <SettingsDialog bind:this={settingsDialog} />
+<BugReportDialog bind:this={bugReportDialog} user={data.user} />
 
 <style>
 	/* Span wrapper + SVG sizing for the sword brand icon */
