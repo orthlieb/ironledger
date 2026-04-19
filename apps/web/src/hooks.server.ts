@@ -1,8 +1,18 @@
-import type { Handle } from '@sveltejs/kit';
+import type { Handle, HandleServerError } from '@sveltejs/kit';
 
 const INTERNAL_API_URL = process.env.INTERNAL_API_URL ?? 'http://localhost:3000';
 
+// Credential/vulnerability scanner paths. Nginx blocks these at the edge, but
+// if a request reaches this process (e.g. direct-to-port in dev, or a gap in
+// the Nginx ruleset), short-circuit with a silent 404 instead of letting
+// SvelteKit's router log a red "[404]" error for every probe.
+const SCANNER_PATTERN = /(?:^|\/)(?:\.env|\.git|\.aws|\.ssh|\.htaccess|wp-admin|wp-login|xmlrpc\.php|phpmyadmin|adminer|config\.php|server-status|actuator)(?:\/|$|\.)/i;
+
 export const handle: Handle = async ({ event, resolve }) => {
+	if (SCANNER_PATTERN.test(event.url.pathname)) {
+		return new Response(null, { status: 404 });
+	}
+
 	const token = event.cookies.get('access_token');
 
 	if (token) {
@@ -99,4 +109,18 @@ export const handle: Handle = async ({ event, resolve }) => {
 	event.locals.user = null;
 
 	return resolve(event);
+};
+
+// 404s for unauthenticated, non-existent paths are not errors — scanners probe
+// constantly and legitimate users mistype URLs. SvelteKit's default error
+// logger treats every 404 as ERROR-level, which floods PM2 logs. Downgrade
+// 404 → warn; keep 5xx at error.
+export const handleError: HandleServerError = ({ error, status }) => {
+	const message = error instanceof Error ? error.message : String(error);
+	if (status === 404) {
+		console.warn(`[web] 404 ${message}`);
+		return { message: 'Not found' };
+	}
+	console.error('[web]', error);
+	return { message: message || 'Internal error' };
 };
