@@ -42,7 +42,13 @@ Static JSON data served via:
 - **BFF proxy**: `GET /api/catalogue/foes`
 - **Client store**: `foeStore.svelte.ts`
 
-Sources: Ironsworn core, Delve supplement, Yrt homebrew.
+Sources: Ironsworn core, Delve supplement, Yrt homebrew. Each foe's `source` (`base` / `delve` / `yrt`) is read from the foe definition (with id-prefix fallback in `foeStore.foeSource()`).
+
+The **Delve** and **YRT** [expansion toggles](expansion-toggles.md) filter which foes appear in the picker:
+- Delve off → foes from `foes_delve.json` are hidden in `FoePickerDialog`
+- YRT off → foes from `foes_yrt.json` are hidden, and any `foes_overrides_yrt.json` entries with `present: false` no longer apply to base foes
+
+`findFoe(id)` is **not** filtered — existing `FoeEncounter` records keep resolving regardless of toggle state. See [DATA_FORMAT.md § Foe Overrides](DATA_FORMAT.md#foe-overrides-expansion-extension-mechanism) for how overrides decorate or exclude base foes per active expansion.
 
 ### Ranks & Mechanics
 | Rank | Progress/Hit | Harm/Strike |

@@ -830,6 +830,8 @@ Foe portraits are stored as images at `images/foes/{id-slug}.png` (matching the 
 
 Expansions can ship an overrides file to **exclude** base foes that don't fit their setting or **decorate** base foes with an addendum describing how they appear in that setting. Overrides apply **only while the owning expansion is enabled**; they affect the picker and the rendered description, but never `findFoe()` — existing FoeEncounter records keep resolving regardless of toggle state.
 
+> **Where toggle state lives:** the Delve and YRT expansion toggles are **client-side preferences**, persisted in browser `localStorage` (`ironledger:expansion:delve`, `ironledger:expansion:yrt`, default `true`). They are not stored in `CharacterData` or on the server. The catalogue endpoints always return the full data set; filtering happens at the picker level via `expansionStore.isSourceEnabled()`. See [expansion-toggles.md](expansion-toggles.md).
+
 File shape:
 
 ```json
