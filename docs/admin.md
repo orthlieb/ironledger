@@ -8,10 +8,10 @@ There is no self-registration path to admin. The seed script (`npm run seed --wo
 
 ## Access Control
 
-- **Route:** `apps/web/src/routes/admin/+page.svelte` (also reachable via the Admin tab on `/home`)
+- **Route:** `apps/web/src/routes/admin/+page.svelte` — a dedicated `/admin` page. Non-admins and unauthenticated users are redirected out by `+page.server.ts`.
 - **API prefix:** `/api/v1/admin/...`
 - **Middleware:** every endpoint chains `authenticate` → `requireAdmin`. The latter rejects with 403 for non-admin tokens; absent or expired tokens return 401.
-- **Tab visibility:** the Admin tab in `routes/home/+page.svelte` is conditionally rendered on `data.user.role === 'admin'`. Hiding the tab is cosmetic — direct API calls without admin role are still rejected.
+- **Reachability:** admins navigate directly via the **Admin** link in the top nav (shown only when `data.user.role === 'admin'`). There is no Admin tab inside `/home` — it was removed to eliminate a duplicate-UI drift bug.
 
 ---
 

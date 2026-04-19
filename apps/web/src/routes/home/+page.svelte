@@ -64,12 +64,10 @@
 	import expedSvgUrl           from '$icons/Expeditions.svg?url';
 	import adventSvgUrl          from '$icons/Adventure.svg?url';
 	import villageSvgUrl         from '$icons/village.svg?url';
-	import adminSvg              from '$icons/screwdriver-wrench-solid.svg?raw';
 	import iconMoves   from '$icons/person-running-solid.svg?raw';
 	import iconOracles from '$icons/crystal-ball.svg?raw';
 	import iconDice    from '$icons/dice-d10-light.svg?raw';
 	import iconNotes   from '$icons/note-sticky-solid.svg?raw';
-	import AdminPanel  from '$lib/components/AdminPanel.svelte';
 
 	let { data }: { data: PageData } = $props();
 
@@ -212,13 +210,11 @@
 	let _pendingNpcNameOracle         = $state('namesIronlander');
 
 	// ── Active tab (declared here so the session-persistence effect can track it)
-	// TABS lists the main swipeable tabs (in order). The conditional 'admin'
-	// tab is reachable only via its tab button — kept out of TABS so swipe
-	// never lands a non-admin user there.
+	// TABS lists the main swipeable tabs (in order). Admin users reach the
+	// admin UI via the /admin route (separate page), not via a tab here.
 	const TABS = ['characters', 'foes', 'expeditions', 'communities', 'adventure'] as const;
-	type Tab = typeof TABS[number] | 'admin';
+	type Tab = typeof TABS[number];
 	let activeTab = $state<Tab>('characters');
-	const isAdmin = $derived(data.user?.role === 'admin');
 
 	// ── Adventure split pane ───────────────────────────────────────────────────
 	const SPLIT_KEY        = 'ironledger.adventureSplit';   // desktop: horizontal
@@ -341,8 +337,7 @@
 			charId:       activeCharId,
 			foeId:        activeFoeId,
 			expeditionId: activeExpeditionId,
-			// Don't persist the admin tab — always start fresh on reload
-			activeTab: activeTab === 'admin' ? 'characters' : activeTab,
+			activeTab,
 		});
 	});
 
@@ -518,14 +513,10 @@
 	let swipeActive    = false;
 
 	function switchTabBy(direction: 1 | -1) {
-		// Admin users can swipe into/out of the admin tab; everyone else cycles
-		// through TABS only. Keeping admin out of TABS for non-admins prevents
-		// swipes from landing on a tab they can't see.
-		const order: readonly Tab[] = isAdmin ? [...TABS, 'admin'] : TABS;
-		const idx = order.indexOf(activeTab);
+		const idx = TABS.indexOf(activeTab);
 		const next = idx + direction;
-		if (next < 0 || next >= order.length) return;
-		activeTab = order[next];
+		if (next < 0 || next >= TABS.length) return;
+		activeTab = TABS[next];
 	}
 
 	function handleTabBodyTouchStart(e: TouchEvent) {
@@ -1539,14 +1530,6 @@
 					<span class="tab-label">Adventure</span>
 				</button>
 
-				{#if isAdmin}
-				<button class="tab-btn tab-btn-admin" class:active={activeTab === 'admin'}
-					role="tab" aria-selected={activeTab === 'admin'}
-					data-tab="admin" title="Admin">
-					<span class="tab-icon tab-icon-svg" aria-hidden="true">{@html adminSvg}</span>
-					<span class="tab-label">Admin</span>
-				</button>
-				{/if}
 			</div>
 		</nav>
 
@@ -1923,11 +1906,6 @@
 
 				</div>
 				</div><!-- end adventure-wrapper -->
-			{/if}
-
-			<!-- ── Admin tab ── -->
-			{#if activeTab === 'admin' && isAdmin}
-				<AdminPanel userId={data.user?.id ?? ''} />
 			{/if}
 
 		</div>
@@ -2610,31 +2588,6 @@
 	}
 	.tab-btn:hover .tab-icon { opacity: 0.68; }
 	.tab-btn.active .tab-icon { opacity: 1; }
-
-	/* SVG-based tab icon (used for admin tab) */
-	.tab-icon-svg {
-		display: flex;
-		align-items: center;
-		line-height: 0;
-		width: 20px;
-		height: 20px;
-		flex-shrink: 0;
-	}
-	.tab-icon-svg :global(svg) {
-		width: 20px;
-		height: 20px;
-		fill: currentColor;
-		opacity: 0.38;
-		transition: opacity 0.12s;
-	}
-	.tab-btn:hover .tab-icon-svg :global(svg) { opacity: 0.68; }
-	.tab-btn.active .tab-icon-svg :global(svg) { opacity: 1; }
-
-	/* Admin tab uses a distinct accent color when active */
-	.tab-btn-admin.active {
-		color: var(--color-warning);
-		border-bottom-color: var(--color-warning);
-	}
 
 	/* ============================================================
 	   Empty tab state
