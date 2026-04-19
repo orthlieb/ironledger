@@ -71,6 +71,13 @@
       "when": 1776000000000,
       "tag": "0010_user_display_name",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1776080000000,
+      "tag": "0011_user_invites",
+      "breakpoints": true
     }
   ]
 }

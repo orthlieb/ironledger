@@ -46,7 +46,7 @@ import { config } from '../config.js';
 // On a modest server this takes ~50ms per hash — acceptable for login,
 // imperceptible to users, but brutal for offline cracking attempts.
 // ---------------------------------------------------------------------------
-const ARGON2_OPTIONS = {
+export const ARGON2_OPTIONS = {
   type:        argon2.argon2id,
   memoryCost:  19456,
   timeCost:    2,

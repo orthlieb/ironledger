@@ -26,6 +26,7 @@ import { catalogueRoutes }   from './routes/catalogue.js';
 import { userDataRoutes }    from './routes/userData.js';
 import { sessionLogRoutes }  from './routes/sessionLog.js';
 import { adminRoutes }       from './routes/admin.js';
+import { inviteRoutes }      from './routes/invites.js';
 import { healthRoutes }      from './routes/health.js';
 
 // ---------------------------------------------------------------------------
@@ -221,6 +222,7 @@ export async function buildServer(): Promise<FastifyInstance> {
   await server.register(userDataRoutes,   { prefix: '/api/v1/session' });
   await server.register(sessionLogRoutes, { prefix: '/api/v1/session/log' });
   await server.register(adminRoutes,      { prefix: '/api/v1/admin' });
+  await server.register(inviteRoutes,     { prefix: '/api/v1/invites' });
 
   // ── Public maintenance status (no auth) ──────────────────────────────
   const { getStatus: getMaintenanceStatus } = await import('./services/maintenanceService.js');

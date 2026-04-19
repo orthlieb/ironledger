@@ -177,6 +177,42 @@ export interface OracleEntry {
 // Admin
 // ---------------------------------------------------------------------------
 
+/** Status of a single admin invitation as seen by the admin UI. */
+export type InviteStatus = 'pending' | 'accepted' | 'revoked' | 'expired';
+
+export interface AdminInvite {
+  id:              string;
+  email:           string;
+  displayName:     string | null;
+  role:            string;           // always 'user' for now — admin invites disallowed
+  invitedBy:       string | null;
+  expiresAt:       string;
+  acceptedAt:      string | null;
+  acceptedUserId:  string | null;
+  revokedAt:       string | null;
+  createdAt:       string;
+  status:          InviteStatus;     // derived server-side
+}
+
+/** Admin response after POST /admin/invites — includes the one-time raw URL. */
+export interface CreateInviteResult {
+  invite: AdminInvite;
+  url:    string;                    // always returned so admin can copy if mail fails
+}
+
+/** Public view of an invite, returned by GET /invites/:token. */
+export interface InvitePreview {
+  email:       string;
+  displayName: string | null;
+  expiresAt:   string;
+}
+
+/** Body for POST /invites/:token/accept. */
+export interface AcceptInviteInput {
+  password:    string;
+  displayName?: string;              // optional — overrides stored value if given
+}
+
 export interface AdminUser {
   id:              string;
   email:           string;
