@@ -56,6 +56,7 @@ try {
       .insert(schema.users)
       .values({
         email:           acct.email,
+        displayName:     acct.email,   // seed accounts get email as display name
         passwordHash,
         emailVerifiedAt: new Date(),   // pre-verified — skips email flow
         isActive:        true,

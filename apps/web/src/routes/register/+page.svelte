@@ -76,6 +76,17 @@
 				/>
 			</label>
 
+			<label class="field-group">
+				<span>Display name <span class="field-optional">— optional, defaults to your email</span></span>
+				<input
+					type="text"
+					name="displayName"
+					autocomplete="nickname"
+					maxlength="80"
+					value={form?.displayName ?? ''}
+				/>
+			</label>
+
 			<PasswordInput
 				name="password"
 				label="Password — 12 characters or more"
@@ -159,6 +170,12 @@
 		padding: 6px 12px;
 		width: 100%;
 		text-align: center;
+	}
+
+	.field-optional {
+		color: var(--text-dimmer);
+		font-size: 0.85em;
+		font-weight: normal;
 	}
 
 	/* ── Maintenance mode ─────────────────────────────────────────── */

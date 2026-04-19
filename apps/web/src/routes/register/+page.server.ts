@@ -48,22 +48,24 @@ export const actions: Actions = {
 		const password     = (form.get('password')           as string | null) ?? '';
 		const confirm      = (form.get('confirm')            as string | null) ?? '';
 		const captchaToken = (form.get('h-captcha-response') as string | null) ?? '';
+		const displayNameRaw = (form.get('displayName')      as string | null) ?? '';
+		const displayName  = displayNameRaw.trim();
 
 		if (!email || !password || !confirm) {
-			return fail(400, { error: 'All fields are required.', email });
+			return fail(400, { error: 'All fields are required.', email, displayName });
 		}
 
 		if (password !== confirm) {
-			return fail(400, { error: 'Passwords do not match.', email });
+			return fail(400, { error: 'Passwords do not match.', email, displayName });
 		}
 
 		if (password.length < 12) {
-			return fail(400, { error: 'Password must be at least 12 characters.', email });
+			return fail(400, { error: 'Password must be at least 12 characters.', email, displayName });
 		}
 
 		const isDev = process.env.NODE_ENV !== 'production';
 		if (!captchaToken && !isDev) {
-			return fail(400, { error: 'Please complete the captcha.', email });
+			return fail(400, { error: 'Please complete the captcha.', email, displayName });
 		}
 
 		let res: Response;
@@ -71,10 +73,16 @@ export const actions: Actions = {
 			res = await fetch(`${INTERNAL_API_URL}/api/v1/auth/register`, {
 				method:  'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ email, password, captchaToken }),
+				body: JSON.stringify({
+					email,
+					password,
+					captchaToken,
+					// Only send the field if the user filled it — backend defaults to email.
+					...(displayName ? { displayName } : {}),
+				}),
 			});
 		} catch {
-			return fail(503, { error: 'Could not reach the API server. Please try again.', email });
+			return fail(503, { error: 'Could not reach the API server. Please try again.', email, displayName });
 		}
 
 		if (!res.ok) {
@@ -82,6 +90,7 @@ export const actions: Actions = {
 			return fail(res.status, {
 				error: body.message ?? 'Registration failed. Please try again.',
 				email,
+				displayName,
 			});
 		}
 

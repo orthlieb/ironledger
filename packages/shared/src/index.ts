@@ -180,6 +180,7 @@ export interface OracleEntry {
 export interface AdminUser {
   id:              string;
   email:           string;
+  displayName:     string;
   role:            string;
   isActive:        boolean;
   createdAt:       string;

@@ -64,6 +64,13 @@
       "when": 1774520000000,
       "tag": "0009_session_log_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1776000000000,
+      "tag": "0010_user_display_name",
+      "breakpoints": true
     }
   ]
 }

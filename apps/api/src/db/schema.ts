@@ -18,6 +18,7 @@ import {
 export const users = pgTable('users', {
   id:                uuid('id').primaryKey().defaultRandom(),
   email:             text('email').notNull().unique(),
+  displayName:       text('display_name').notNull(),   // service-layer default: email when blank
   emailVerifiedAt:   timestamp('email_verified_at', { withTimezone: true }),
   passwordHash:      text('password_hash').notNull(),
   isActive:          boolean('is_active').notNull().default(true),

@@ -17,6 +17,7 @@ import { users, characters, userData, securityEvents, refreshTokens } from '../d
 export interface AdminUser {
   id:              string;
   email:           string;
+  displayName:     string;
   role:            string;
   isActive:        boolean;
   createdAt:       string;
@@ -87,6 +88,7 @@ export async function listUsers(): Promise<AdminUser[]> {
       .select({
         id:          users.id,
         email:       users.email,
+        displayName: users.displayName,
         role:        users.role,
         isActive:    users.isActive,
         createdAt:   users.createdAt,
@@ -123,6 +125,7 @@ export async function listUsers(): Promise<AdminUser[]> {
     return {
       id:              r.id,
       email:           r.email,
+      displayName:     r.displayName,
       role:            r.role,
       isActive:        r.isActive,
       createdAt:       r.createdAt.toISOString(),

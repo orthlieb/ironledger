@@ -542,6 +542,9 @@
 								<th class="sortable" onclick={() => setSort('email')}>
 									Email{sortIcon('email')}
 								</th>
+								<th class="sortable" onclick={() => setSort('displayName')}>
+									Display name{sortIcon('displayName')}
+								</th>
 								<th class="sortable" onclick={() => setSort('role')}>
 									Role{sortIcon('role')}
 								</th>
@@ -572,6 +575,7 @@
 								{@const isSelf = user.id === data.user?.id}
 								<tr>
 									<td>{user.email}</td>
+									<td class="td-display-name">{user.displayName}</td>
 									<td>
 										<span class="role-badge" class:role-admin={user.role === 'admin'}>
 											{user.role}

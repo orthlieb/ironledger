@@ -105,6 +105,7 @@ set -a; . "$APP_DIR/.env"; set +a
 EXPECTED_COLUMNS=(
   "user_data:communities"
   "user_data:npcs"
+  "users:display_name"
 )
 MISSING=()
 for pair in "${EXPECTED_COLUMNS[@]}"; do
