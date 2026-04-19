@@ -12,12 +12,13 @@
 #   1. Runs the full test suite locally (skip with --skip-tests)
 #   2. SSHs to the server
 #   3. Pulls latest code from git
-#   4. Installs production dependencies
-#   5. Builds TypeScript
+#   4. Installs dependencies (api prod, web with devDeps needed to build)
+#   5. Builds both apps (api TypeScript + web SvelteKit bundle)
 #   6. Runs database migrations (before restarting — schema-first deploy)
-#   7. Reloads PM2 (zero-downtime rolling restart)
-#   8. Health checks the live server
-#   9. Rolls back if the health check fails
+#   7. Verifies schema columns match the allowlist
+#   8. Reloads both PM2 apps by name (ironledger-api and ironledger-web)
+#   9. Health checks the live server
+#  10. Rolls back if the health check fails
 # ─────────────────────────────────────────────────────────────────────────────
 
 set -euo pipefail
@@ -83,11 +84,19 @@ git fetch origin main
 git reset --hard origin/main
 
 echo "  ▶ Installing dependencies..."
-# Use --omit=dev to skip devDependencies in production
-npm ci --omit=dev --workspace=apps/api
+# API runs without devDependencies in prod (Fastify is compiled ahead of time).
+# Web needs its devDependencies to build — vite / svelte-kit / adapter-node /
+# svelte compiler all live in devDependencies.
+npm ci --omit=dev    --workspace=apps/api
+npm ci --include=dev --workspace=apps/web
 
-echo "  ▶ Building TypeScript..."
+echo "  ▶ Building API (TypeScript)..."
 npm run build --workspace=apps/api
+
+echo "  ▶ Building web (SvelteKit bundle)..."
+# Without this step the web adapter-node server keeps serving the old
+# build/ directory, so UI-only changes never reach users even after deploy.
+npm run build --workspace=apps/web
 
 echo "  ▶ Running database migrations..."
 # Migrations run BEFORE the new app starts (schema-first deploy)
@@ -127,9 +136,13 @@ echo "  ✅ Schema allowlist verified."
 echo "  ▶ Saving previous PM2 state for rollback..."
 pm2 save --force
 
-echo "  ▶ Reloading application (zero-downtime)..."
-# pm2 reload sends SIGINT to old workers, starts new ones, waits for them to be ready
-pm2 reload ironledger --update-env
+echo "  ▶ Reloading applications (zero-downtime)..."
+# Reload both apps explicitly by name. `pm2 reload ironledger` (without a
+# suffix) is not an exact match for either ironledger-api or ironledger-web
+# as defined in ecosystem.config.js and silently reloads nothing or only one
+# depending on the PM2 version.
+pm2 reload ironledger-api --update-env
+pm2 reload ironledger-web --update-env
 
 echo "  ✅ Remote steps complete. Deployed commit $COMMIT."
 REMOTE
@@ -160,10 +173,13 @@ ssh "$SERVER" bash -c "
   cd $APP_DIR
   git rev-parse --short HEAD~1 | xargs -I{} echo 'Rolling back to {}'
   git reset --hard HEAD~1
-  npm ci --omit=dev --workspace=apps/api
+  npm ci --omit=dev    --workspace=apps/api
+  npm ci --include=dev --workspace=apps/web
   npm run build --workspace=apps/api
-  pm2 reload ironledger --update-env
+  npm run build --workspace=apps/web
+  pm2 reload ironledger-api --update-env
+  pm2 reload ironledger-web --update-env
 "
 
-error "Rolled back. Check server logs: pm2 logs ironledger"
+error "Rolled back. Check server logs: pm2 logs ironledger-api ironledger-web"
 exit 1
