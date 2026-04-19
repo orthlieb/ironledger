@@ -6,6 +6,7 @@
 	import eyeSvg           from '$icons/eye-solid.svg?raw';
 	import noteSvg          from '$icons/note-sticky-solid.svg?raw';
 	import villageSvg       from '$icons/village.svg?raw';
+	import mobileSvg        from '$icons/mobile-screen-solid.svg?raw';
 
 	let { data }: { data: { user?: { name?: string } } } = $props();
 
@@ -51,6 +52,12 @@
 			title: 'Communities & NPCs',
 			body: 'The Ironlands are not empty. Track the settlements you\'ve found, the people you\'ve met, and the ones who owe you a favour. Oracle-powered random generation for names and locations — or build them by hand, if you\'re that kind of hero.',
 			color: 'var(--color-health)',
+		},
+		{
+			icon: mobileSvg,
+			title: 'Plays on Your Phone',
+			body: 'Swipe between tabs, drag to resize the Adventure split, tap the Log tab to see what just happened. The Ironlands travel with you — on the couch, on the bus, anywhere your GM can reach you with texts about the next session.',
+			color: 'var(--color-supply)',
 		},
 	];
 </script>
