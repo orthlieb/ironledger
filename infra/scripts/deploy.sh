@@ -93,6 +93,37 @@ echo "  ▶ Running database migrations..."
 # Migrations run BEFORE the new app starts (schema-first deploy)
 npm run migrate --workspace=apps/api
 
+echo "  ▶ Verifying schema against column allowlist..."
+# Guardrail: if a migration silently fails to apply (or a new column lands in
+# schema.ts but its migration file was forgotten), the API will crash on first
+# request with "column X does not exist". Catch it here so deploy fails loudly
+# instead of the next request. Extend EXPECTED_COLUMNS when a new hot-path
+# column is added.
+#
+# Loads DATABASE_ADMIN_URL from the same .env PM2 reads so psql can connect.
+set -a; . "$APP_DIR/.env"; set +a
+EXPECTED_COLUMNS=(
+  "user_data:communities"
+  "user_data:npcs"
+  "users:display_name"
+)
+MISSING=()
+for pair in "${EXPECTED_COLUMNS[@]}"; do
+  TABLE="${pair%%:*}"
+  COLUMN="${pair##*:}"
+  COUNT=$(psql "$DATABASE_ADMIN_URL" -tAc \
+    "SELECT count(*) FROM information_schema.columns WHERE table_name='$TABLE' AND column_name='$COLUMN';")
+  if [[ "$COUNT" != "1" ]]; then
+    MISSING+=("$TABLE.$COLUMN")
+  fi
+done
+if [[ ${#MISSING[@]} -gt 0 ]]; then
+  echo "  ❌ Missing expected columns: ${MISSING[*]}"
+  echo "     Migrations ran but schema is out of sync — aborting before PM2 reload."
+  exit 1
+fi
+echo "  ✅ Schema allowlist verified."
+
 echo "  ▶ Saving previous PM2 state for rollback..."
 pm2 save --force
 

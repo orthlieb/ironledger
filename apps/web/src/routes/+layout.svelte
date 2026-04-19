@@ -1,10 +1,11 @@
 <script lang="ts">
 	import '../app.css';
 	import type { LayoutData } from './$types';
-	import type { MaintenanceStatus } from '@ironledger/shared';
+	import type { MaintenanceStatus, BroadcastStatus } from '@ironledger/shared';
 	import SettingsDialog from '$lib/components/SettingsDialog.svelte';
 	import HamburgerMenu from '$lib/components/HamburgerMenu.svelte';
-	import { maintenance } from '$lib/api';
+	import BroadcastBanner from '$lib/components/BroadcastBanner.svelte';
+	import { system } from '$lib/api';
 	import swordSvg from '$icons/sharp-axe.svg?raw';
 	import { preloadDice } from '$lib/dice';
 	import { page } from '$app/stores';
@@ -14,8 +15,9 @@
 
 	let settingsDialog = $state<ReturnType<typeof SettingsDialog> | null>(null);
 
-	// ── Maintenance banner polling ────────────────────────────────────────
+	// ── System status polling (maintenance + broadcast) ───────────────────
 	let maintStatus: MaintenanceStatus | null = $state(null);
+	let broadcastStatus: BroadcastStatus | null = $state(null);
 	let countdown = $state('');
 	let countdownInterval: ReturnType<typeof setInterval> | undefined;
 	let pollInterval: ReturnType<typeof setInterval> | undefined;
@@ -41,9 +43,11 @@
 		countdown = `${mins}:${secs.toString().padStart(2, '0')}`;
 	}
 
-	async function pollMaintenance() {
+	async function pollSystemStatus() {
 		try {
-			maintStatus = await maintenance.getStatus();
+			const s = await system.getStatus();
+			maintStatus     = s.maintenance;
+			broadcastStatus = s.broadcast;
 		} catch {
 			// ignore — don't break the app if the status endpoint is down
 		}
@@ -54,9 +58,9 @@
 		// first actual roll doesn't stall waiting for a CDN fetch + GPU init.
 		if (data.user) preloadDice();
 
-		// Start polling
-		void pollMaintenance();
-		pollInterval = setInterval(() => void pollMaintenance(), 10_000);
+		// Start polling (maintenance + broadcast share the same 10s cadence).
+		void pollSystemStatus();
+		pollInterval = setInterval(() => void pollSystemStatus(), 10_000);
 
 		return () => {
 			clearInterval(pollInterval);
@@ -111,6 +115,8 @@
 		{/if}
 	</div>
 {/if}
+
+<BroadcastBanner status={broadcastStatus} />
 
 <svelte:head>
 	<!-- Warm up the CDN connection before the dice library is actually needed -->

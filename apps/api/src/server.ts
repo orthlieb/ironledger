@@ -26,6 +26,7 @@ import { catalogueRoutes }   from './routes/catalogue.js';
 import { userDataRoutes }    from './routes/userData.js';
 import { sessionLogRoutes }  from './routes/sessionLog.js';
 import { adminRoutes }       from './routes/admin.js';
+import { inviteRoutes }      from './routes/invites.js';
 import { healthRoutes }      from './routes/health.js';
 
 // ---------------------------------------------------------------------------
@@ -221,13 +222,38 @@ export async function buildServer(): Promise<FastifyInstance> {
   await server.register(userDataRoutes,   { prefix: '/api/v1/session' });
   await server.register(sessionLogRoutes, { prefix: '/api/v1/session/log' });
   await server.register(adminRoutes,      { prefix: '/api/v1/admin' });
+  await server.register(inviteRoutes,     { prefix: '/api/v1/invites' });
 
-  // ── Public maintenance status (no auth) ──────────────────────────────
+  // ── Public system status (no auth) ────────────────────────────────────
+  // Returns maintenance + broadcast in a single response so the web layout
+  // only polls one endpoint for both banners.
   const { getStatus: getMaintenanceStatus } = await import('./services/maintenanceService.js');
+  const { getStatus: getBroadcastStatus }   = await import('./services/broadcastService.js');
+
+  server.get('/api/v1/system/status', {
+    schema: {
+      tags:    ['System'],
+      summary: 'Get combined maintenance + broadcast status (public)',
+    },
+  }, async (_req, reply) => {
+    const [maintenance, broadcast] = await Promise.all([
+      getMaintenanceStatus().catch(() => ({
+        enabled: false, message: null, shutdownAt: null,
+      })),
+      getBroadcastStatus().catch(() => ({
+        active: false, message: null, severity: 'info' as const, postedAt: null,
+      })),
+    ]);
+    return reply.status(200).send({ maintenance, broadcast });
+  });
+
+  // Backwards-compat alias: the web client used to poll this endpoint alone.
+  // Kept for one release so older client builds don't 404 during rolling
+  // deploy. Remove in the release after 5.x.
   server.get('/api/v1/maintenance/status', {
     schema: {
       tags:    ['Maintenance'],
-      summary: 'Get current maintenance mode status (public)',
+      summary: 'Get current maintenance mode status (public, deprecated — use /api/v1/system/status)',
     },
   }, async (_req, reply) => {
     try {

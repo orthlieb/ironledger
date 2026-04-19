@@ -14,8 +14,12 @@ import { join } from 'path';
 import { authenticate } from '../middleware/authenticate.js';
 import { requireAdmin } from '../middleware/requireAdmin.js';
 import * as adminService from '../services/adminService.js';
+import * as broadcastService from '../services/broadcastService.js';
+import * as inviteService from '../services/inviteService.js';
 import * as maintenanceService from '../services/maintenanceService.js';
 import * as registrationLockService from '../services/registrationLockService.js';
+import { sendInviteEmail } from '../lib/mailer.js';
+import { logSecurityEvent } from '../middleware/securityLogger.js';
 import { config } from '../config.js';
 import type { FastifyReply } from 'fastify';
 
@@ -55,6 +59,20 @@ const timeseriesQuery = z.object({
 const logsQuery = z.object({
   file:  z.enum(['api-out', 'api-error', 'web-out', 'web-error']),
   lines: z.coerce.number().int().min(1).max(2000).default(200),
+});
+
+const createInviteBody = z.object({
+  email:       z.string().email('Invalid email address').max(254),
+  displayName: z.string().trim().max(80).optional(),
+});
+
+const inviteIdParam = z.object({
+  id: z.string().uuid('Invalid invite ID'),
+});
+
+const broadcastBody = z.object({
+  message:  z.string().trim().min(1, 'Message is required').max(500),
+  severity: z.enum(['info', 'warning']).default('info'),
 });
 
 // ---------------------------------------------------------------------------
@@ -311,6 +329,131 @@ export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
     await registrationLockService.unlockRegistration(req.user!.id, req.ip).catch(handleError(reply));
     if (reply.sent) return;
     return reply.status(200).send({ locked: false });
+  });
+
+  // ── POST /invites ── Create an invitation ────────────────────────────
+  server.post('/invites', {
+    schema: {
+      tags:     ['Admin'],
+      summary:  'Create a user invitation',
+      body:     createInviteBody,
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (req, reply) => {
+    const result = await inviteService.createInvite({
+      email:       req.body.email,
+      displayName: req.body.displayName,
+      invitedBy:   req.user!.id,
+    }).catch(handleError(reply));
+    if (!result || reply.sent) return;
+
+    const { invite, rawToken } = result;
+    const url = `${config.APP_URL}/invite/${rawToken}`;
+
+    // Fire-and-forget email (same pattern as sendVerificationEmail in auth).
+    // The URL is always returned to the admin so copy-paste still works if
+    // delivery fails.
+    void sendInviteEmail(invite.email, invite.displayName, rawToken).catch((err) => {
+      req.log.error({ err, inviteId: invite.id }, 'sendInviteEmail failed');
+    });
+
+    logSecurityEvent({
+      eventType: 'admin_create_invite',
+      req,
+      userId:    req.user!.id,
+      metadata:  { inviteId: invite.id, email: invite.email },
+    });
+
+    return reply.status(201).send({ invite, url });
+  });
+
+  // ── GET /invites ── List invitations ─────────────────────────────────
+  server.get('/invites', {
+    schema: {
+      tags:     ['Admin'],
+      summary:  'List invitations',
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (_req, reply) => {
+    const result = await inviteService.listInvites().catch(handleError(reply));
+    if (!result || reply.sent) return;
+    return reply.status(200).send(result);
+  });
+
+  // ── DELETE /invites/:id ── Revoke an invitation ──────────────────────
+  server.delete('/invites/:id', {
+    schema: {
+      tags:     ['Admin'],
+      summary:  'Revoke an invitation',
+      params:   inviteIdParam,
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (req, reply) => {
+    const result = await inviteService.revokeInvite(req.params.id).catch(handleError(reply));
+    if (!result || reply.sent) return;
+
+    logSecurityEvent({
+      eventType: 'admin_revoke_invite',
+      req,
+      userId:    req.user!.id,
+      metadata:  { inviteId: result.id, email: result.email },
+    });
+
+    return reply.status(200).send(result);
+  });
+
+  // ── POST /broadcast ── Post or update the banner ──────────────────────
+  server.post('/broadcast', {
+    schema: {
+      tags:     ['Admin'],
+      summary:  'Post or update a broadcast banner',
+      body:     broadcastBody,
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (req, reply) => {
+    try {
+      const status = await broadcastService.postBroadcast(
+        req.body.message,
+        req.body.severity,
+        req.user!.id,
+        req.ip,
+      );
+      return reply.status(200).send(status);
+    } catch (err) {
+      return handleError(reply)(err);
+    }
+  });
+
+  // ── DELETE /broadcast ── Clear the banner ─────────────────────────────
+  server.delete('/broadcast', {
+    schema: {
+      tags:     ['Admin'],
+      summary:  'Clear the broadcast banner',
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (req, reply) => {
+    try {
+      await broadcastService.clearBroadcast(req.user!.id, req.ip);
+      return reply.status(204).send();
+    } catch (err) {
+      return handleError(reply)(err);
+    }
+  });
+
+  // ── GET /broadcast/status ── Admin view of current banner ─────────────
+  server.get('/broadcast/status', {
+    schema: {
+      tags:     ['Admin'],
+      summary:  'Get current broadcast banner status (admin)',
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (_req, reply) => {
+    try {
+      const status = await broadcastService.getStatus();
+      return reply.status(200).send(status);
+    } catch (err) {
+      return handleError(reply)(err);
+    }
   });
 
   // ── GET /registration-lock/status ── Registration lock status ────────

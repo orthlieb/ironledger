@@ -52,6 +52,7 @@ const registerBody = z.object({
   email:          z.string().email('Invalid email address').max(254),
   password:       passwordSchema,
   captchaToken:   z.string().min(1, 'CAPTCHA is required'),
+  displayName:    z.string().trim().max(80, 'Display name is too long').optional(),
 });
 
 const loginBody = z.object({
@@ -90,7 +91,7 @@ export const authRoutes: FastifyPluginAsyncZod = async (server) => {
       response:    { 202: z.object({ message: z.string() }) },
     },
   }, async (req, reply) => {
-    const { email, password, captchaToken } = req.body;
+    const { email, password, captchaToken, displayName } = req.body;
 
     await verifyCaptcha(captchaToken, req.ip).catch(handleCaptchaError(reply));
     if (reply.sent) return;
@@ -110,7 +111,7 @@ export const authRoutes: FastifyPluginAsyncZod = async (server) => {
       }
     }
 
-    await auth.register({ email, password }).catch(handleAuthError(reply));
+    await auth.register({ email, password, displayName }).catch(handleAuthError(reply));
     if (reply.sent) return;
 
     logSecurityEvent({ eventType: 'register_success', req, metadata: { email } });

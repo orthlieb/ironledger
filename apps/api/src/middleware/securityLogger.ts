@@ -35,7 +35,12 @@ export type SecurityEventType =
   | 'password_reset_done'
   | 'token_theft'
   | 'token_refresh'
-  | 'account_disabled';
+  | 'account_disabled'
+  | 'admin_create_invite'
+  | 'admin_revoke_invite'
+  | 'invite_accepted'
+  | 'admin_post_broadcast'
+  | 'admin_clear_broadcast';
 
 interface LogEventOptions {
   eventType:  SecurityEventType;

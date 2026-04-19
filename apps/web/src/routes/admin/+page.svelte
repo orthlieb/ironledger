@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { admin, maintenance as maintApi } from '$lib/api';
-	import type { AdminUser, AdminStats, MaintenanceStatus, UserTimeseries, RegistrationLockStatus } from '@ironledger/shared';
+	import { admin, maintenance as maintApi, broadcast as broadcastApi } from '$lib/api';
+	import type { AdminUser, AdminStats, AdminInvite, MaintenanceStatus, BroadcastStatus, BroadcastSeverity, UserTimeseries, RegistrationLockStatus } from '@ironledger/shared';
 	import type { LayoutData } from '../$types';
 
 	let { data }: { data: LayoutData } = $props();
@@ -11,7 +11,63 @@
 	let error = $state('');
 
 	// ── Tabs ──────────────────────────────────────────────────────────────
-	let activeTab: 'users' | 'logs' | 'maintenance' | 'registration' = $state('users');
+	let activeTab: 'users' | 'invites' | 'logs' | 'maintenance' | 'registration' = $state('users');
+
+	// ── Invites tab state ────────────────────────────────────────────────
+	let invites: AdminInvite[] = $state([]);
+	let inviteEmail       = $state('');
+	let inviteDisplayName = $state('');
+	let inviteBusy        = $state(false);
+	let inviteError       = $state('');
+	let inviteCreatedUrl  = $state('');   // shown after successful create for copy
+	let inviteCreatedFor  = $state('');   // email the URL belongs to
+	let inviteCopyFlash   = $state(false);
+
+	async function loadInvites() {
+		try {
+			invites = await admin.listInvites();
+		} catch (err) {
+			console.error('loadInvites failed', err);
+		}
+	}
+
+	async function handleCreateInvite(ev: Event) {
+		ev.preventDefault();
+		inviteError = '';
+		inviteBusy  = true;
+		try {
+			const body: { email: string; displayName?: string } = { email: inviteEmail.trim() };
+			const dn = inviteDisplayName.trim();
+			if (dn) body.displayName = dn;
+			const res = await admin.createInvite(body);
+			inviteCreatedUrl = res.url;
+			inviteCreatedFor = res.invite.email;
+			inviteEmail       = '';
+			inviteDisplayName = '';
+			await loadInvites();
+		} catch (err) {
+			inviteError = err instanceof Error ? err.message : 'Failed to create invite';
+		} finally {
+			inviteBusy = false;
+		}
+	}
+
+	async function handleRevokeInvite(id: string) {
+		try {
+			await admin.revokeInvite(id);
+			await loadInvites();
+		} catch (err) {
+			inviteError = err instanceof Error ? err.message : 'Failed to revoke invite';
+		}
+	}
+
+	async function copyInviteUrl() {
+		try {
+			await navigator.clipboard.writeText(inviteCreatedUrl);
+			inviteCopyFlash = true;
+			setTimeout(() => (inviteCopyFlash = false), 1500);
+		} catch { /* clipboard may be unavailable — user can select manually */ }
+	}
 
 	// ── Sort state ────────────────────────────────────────────────────────
 	let sortKey: keyof AdminUser = $state('email');
@@ -214,6 +270,10 @@
 		if (activeTab === 'logs') void loadLogs(logFile, logLineCount);
 	});
 
+	$effect(() => {
+		if (activeTab === 'invites') void loadInvites();
+	});
+
 	// ── Maintenance mode ──────────────────────────────────────────────────
 	let maintStatus: MaintenanceStatus | null = $state(null);
 	let maintMessage = $state('Scheduled maintenance');
@@ -261,6 +321,52 @@
 			showMaintConfirm = false;
 		} finally {
 			maintLoading = false;
+		}
+	}
+
+	// ── Broadcast banner ──────────────────────────────────────────────────
+	let broadcastStatus: BroadcastStatus | null = $state(null);
+	let broadcastMessage  = $state('');
+	let broadcastSeverity: BroadcastSeverity = $state('info');
+	let broadcastBusy  = $state(false);
+	let broadcastError = $state('');
+
+	async function refreshBroadcastStatus() {
+		try {
+			broadcastStatus = await broadcastApi.getStatus();
+			if (broadcastStatus?.active) {
+				broadcastMessage  = broadcastStatus.message ?? '';
+				broadcastSeverity = broadcastStatus.severity;
+			}
+		} catch { /* ignore */ }
+	}
+
+	async function postBroadcast() {
+		broadcastError = '';
+		broadcastBusy  = true;
+		try {
+			broadcastStatus = await broadcastApi.post({
+				message:  broadcastMessage.trim(),
+				severity: broadcastSeverity,
+			});
+		} catch (err) {
+			broadcastError = err instanceof Error ? err.message : 'Failed to post broadcast';
+		} finally {
+			broadcastBusy = false;
+		}
+	}
+
+	async function clearBroadcast() {
+		broadcastError = '';
+		broadcastBusy  = true;
+		try {
+			await broadcastApi.clear();
+			broadcastStatus = null;
+			broadcastMessage = '';
+		} catch (err) {
+			broadcastError = err instanceof Error ? err.message : 'Failed to clear broadcast';
+		} finally {
+			broadcastBusy = false;
 		}
 	}
 
@@ -508,6 +614,13 @@
 				>Users</button>
 				<button
 					class="tab-btn"
+					class:active={activeTab === 'invites'}
+					role="tab"
+					aria-selected={activeTab === 'invites'}
+					onclick={() => (activeTab = 'invites')}
+				>Invites</button>
+				<button
+					class="tab-btn"
 					class:active={activeTab === 'logs'}
 					role="tab"
 					aria-selected={activeTab === 'logs'}
@@ -518,7 +631,7 @@
 					class:active={activeTab === 'maintenance'}
 					role="tab"
 					aria-selected={activeTab === 'maintenance'}
-					onclick={() => { activeTab = 'maintenance'; void refreshMaintStatus(); }}
+					onclick={() => { activeTab = 'maintenance'; void refreshMaintStatus(); void refreshBroadcastStatus(); }}
 				>Maintenance</button>
 				<button
 					class="tab-btn"
@@ -541,6 +654,9 @@
 							<tr>
 								<th class="sortable" onclick={() => setSort('email')}>
 									Email{sortIcon('email')}
+								</th>
+								<th class="sortable" onclick={() => setSort('displayName')}>
+									Display name{sortIcon('displayName')}
 								</th>
 								<th class="sortable" onclick={() => setSort('role')}>
 									Role{sortIcon('role')}
@@ -572,6 +688,7 @@
 								{@const isSelf = user.id === data.user?.id}
 								<tr>
 									<td>{user.email}</td>
+									<td class="td-display-name">{user.displayName}</td>
 									<td>
 										<span class="role-badge" class:role-admin={user.role === 'admin'}>
 											{user.role}
@@ -627,6 +744,100 @@
 						<button class="btn btn-icon" disabled={page >= totalPages} onclick={() => (page += 1)}>Next</button>
 					</div>
 				{/if}
+
+			<!-- ═══ Invites tab ═══ -->
+			{:else if activeTab === 'invites'}
+				<div class="invites-panel">
+					<section class="invite-create">
+						<h3 class="invites-h">Send an invitation</h3>
+						<p class="invites-hint">
+							Admin-issued invites bypass registration lock. The recipient will get a
+							72-hour single-use link to set their password. Their account will be created
+							as a normal <code>user</code> — promote to admin separately after they sign in.
+						</p>
+
+						<form class="invite-form" onsubmit={handleCreateInvite}>
+							<label class="invite-field">
+								<span>Email</span>
+								<input
+									type="email"
+									bind:value={inviteEmail}
+									required
+									maxlength="254"
+									autocomplete="email"
+									placeholder="name@example.com"
+								/>
+							</label>
+							<label class="invite-field">
+								<span>Display name <span class="invite-opt">— optional, defaults to email</span></span>
+								<input
+									type="text"
+									bind:value={inviteDisplayName}
+									maxlength="80"
+									autocomplete="nickname"
+								/>
+							</label>
+							<div class="invite-actions">
+								<button type="submit" class="btn btn-primary" disabled={inviteBusy || !inviteEmail.trim()}>
+									{inviteBusy ? 'Sending…' : 'Send invite'}
+								</button>
+							</div>
+							{#if inviteError}
+								<div class="invite-error">{inviteError}</div>
+							{/if}
+						</form>
+
+						{#if inviteCreatedUrl}
+							<div class="invite-created">
+								<p><strong>Invite created for {inviteCreatedFor}.</strong> Email has been sent, but you can also copy the link in case delivery fails:</p>
+								<div class="invite-url-row">
+									<input type="text" class="invite-url" readonly value={inviteCreatedUrl} onclick={(e) => (e.currentTarget as HTMLInputElement).select()} />
+									<button type="button" class="btn" onclick={copyInviteUrl}>
+										{inviteCopyFlash ? 'Copied!' : 'Copy'}
+									</button>
+								</div>
+							</div>
+						{/if}
+					</section>
+
+					<section class="invite-list-section">
+						<h3 class="invites-h">Invitations</h3>
+						{#if invites.length === 0}
+							<p class="invites-empty">No invitations yet.</p>
+						{:else}
+							<table class="invite-table">
+								<thead>
+									<tr>
+										<th>Email</th>
+										<th>Display name</th>
+										<th>Status</th>
+										<th>Expires</th>
+										<th>Created</th>
+										<th></th>
+									</tr>
+								</thead>
+								<tbody>
+									{#each invites as inv (inv.id)}
+										<tr>
+											<td>{inv.email}</td>
+											<td>{inv.displayName ?? '—'}</td>
+											<td>
+												<span class="invite-status invite-status--{inv.status}">{inv.status}</span>
+											</td>
+											<td class="td-date">{new Date(inv.expiresAt).toLocaleDateString()}</td>
+											<td class="td-date">{new Date(inv.createdAt).toLocaleDateString()}</td>
+											<td>
+												{#if inv.status === 'pending'}
+													<button type="button" class="btn btn-sm" onclick={() => handleRevokeInvite(inv.id)}>Revoke</button>
+												{/if}
+											</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						{/if}
+					</section>
+				</div>
 
 			<!-- ═══ Logs tab ═══ -->
 			{:else if activeTab === 'logs'}
@@ -824,6 +1035,74 @@
 					{/if}
 				</div>
 			{/if}
+
+			<!-- ─── Broadcast banner panel ─── -->
+			<section class="broadcast-panel">
+				<h3 class="invites-h">Broadcast banner</h3>
+				<p class="invites-hint">
+					An informational or warning banner shown to every user until they dismiss it.
+					Editing the message re-shows the banner for everyone who previously dismissed it.
+					Does not revoke sessions or block login — use Maintenance above for that.
+				</p>
+
+				{#if broadcastStatus?.active}
+					<div class="broadcast-active">
+						<span class="invite-status invite-status--{broadcastStatus.severity === 'warning' ? 'revoked' : 'accepted'}">{broadcastStatus.severity}</span>
+						<span class="broadcast-message">{broadcastStatus.message}</span>
+					</div>
+					<p class="broadcast-posted-at">
+						Posted {broadcastStatus.postedAt ? new Date(broadcastStatus.postedAt).toLocaleString() : ''}
+					</p>
+				{:else}
+					<p class="broadcast-inactive">No banner currently active.</p>
+				{/if}
+
+				<div class="invite-form">
+					<label class="invite-field">
+						<span>Message</span>
+						<input
+							type="text"
+							bind:value={broadcastMessage}
+							maxlength="500"
+							placeholder="e.g. Foe images are being regenerated tonight 10pm–11pm UTC."
+						/>
+					</label>
+					<label class="invite-field">
+						<span>Severity</span>
+						<div class="severity-row">
+							<label class="severity-opt">
+								<input type="radio" bind:group={broadcastSeverity} value="info" />
+								<span>Info</span>
+							</label>
+							<label class="severity-opt">
+								<input type="radio" bind:group={broadcastSeverity} value="warning" />
+								<span>Warning</span>
+							</label>
+						</div>
+					</label>
+					<div class="invite-actions broadcast-actions">
+						<button
+							type="button"
+							class="btn btn-primary"
+							disabled={broadcastBusy || !broadcastMessage.trim()}
+							onclick={postBroadcast}
+						>
+							{broadcastBusy ? 'Saving…' : (broadcastStatus?.active ? 'Update banner' : 'Post banner')}
+						</button>
+						{#if broadcastStatus?.active}
+							<button
+								type="button"
+								class="btn"
+								disabled={broadcastBusy}
+								onclick={clearBroadcast}
+							>Clear</button>
+						{/if}
+					</div>
+					{#if broadcastError}
+						<div class="invite-error">{broadcastError}</div>
+					{/if}
+				</div>
+			</section>
 
 		</div>
 	{/if}
@@ -1519,5 +1798,198 @@
 	.btn-warn:hover {
 		background: #b45309;
 		color: #fff;
+	}
+
+	/* ── Invites tab ──────────────────────────────────────────────── */
+	.invites-panel {
+		display: flex;
+		flex-direction: column;
+		gap: 2rem;
+		max-width: 820px;
+	}
+	.invites-h {
+		font-family: var(--font-display);
+		font-size: 0.95rem;
+		font-weight: 700;
+		letter-spacing: 0.05em;
+		color: var(--text-accent);
+		margin: 0 0 0.6rem;
+	}
+	.invites-hint {
+		font-size: 0.82rem;
+		line-height: 1.55;
+		color: var(--text-muted);
+		margin: 0 0 1rem;
+		max-width: 68ch;
+	}
+	.invites-hint code {
+		font-family: var(--font-ui);
+		font-size: 0.78rem;
+		padding: 1px 6px;
+		border-radius: 3px;
+		background: var(--bg-inset);
+		color: var(--text);
+	}
+	.invite-form {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+	.invite-field {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+	.invite-field span {
+		font-family: var(--font-ui);
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: var(--text-muted);
+		letter-spacing: 0.03em;
+	}
+	.invite-opt {
+		color: var(--text-dimmer);
+		font-weight: normal;
+	}
+	.invite-field input {
+		padding: 8px 10px;
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+		background: var(--bg-control);
+		color: var(--text);
+		font-family: var(--font-ui);
+		font-size: 0.88rem;
+	}
+	.invite-field input:focus {
+		outline: none;
+		border-color: var(--text-accent);
+	}
+	.invite-actions { margin-top: 0.25rem; }
+	.invite-error {
+		color: var(--color-danger);
+		font-size: 0.82rem;
+		margin-top: 0.25rem;
+	}
+	.invite-created {
+		margin-top: 1rem;
+		padding: 12px 14px;
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		background: var(--bg-inset);
+	}
+	.invite-created p {
+		margin: 0 0 0.6rem;
+		font-size: 0.84rem;
+		line-height: 1.55;
+		color: var(--text-muted);
+	}
+	.invite-url-row {
+		display: flex;
+		gap: 0.5rem;
+		align-items: stretch;
+	}
+	.invite-url {
+		flex: 1;
+		padding: 6px 8px;
+		border: 1px solid var(--border);
+		border-radius: 3px;
+		background: var(--bg-card);
+		color: var(--text);
+		font-family: 'Roboto Mono', monospace;
+		font-size: 0.72rem;
+	}
+	.invites-empty {
+		font-size: 0.82rem;
+		color: var(--text-dimmer);
+		font-style: italic;
+	}
+	.invite-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 0.82rem;
+	}
+	.invite-table th,
+	.invite-table td {
+		padding: 6px 8px;
+		text-align: left;
+		border-bottom: 1px solid var(--border);
+	}
+	.invite-table th {
+		font-family: var(--font-ui);
+		font-size: 0.7rem;
+		font-weight: 700;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color: var(--text-dimmer);
+	}
+	.invite-table .td-date { white-space: nowrap; color: var(--text-muted); }
+	.invite-status {
+		display: inline-block;
+		padding: 2px 8px;
+		border-radius: 10px;
+		font-family: var(--font-ui);
+		font-size: 0.68rem;
+		font-weight: 600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+	}
+	.invite-status--pending  { background: rgba(34, 211, 238, 0.12); color: var(--color-momentum); }
+	.invite-status--accepted { background: rgba(74, 222, 128, 0.12); color: var(--color-health); }
+	.invite-status--revoked  { background: rgba(221, 81, 76, 0.12); color: var(--color-danger); }
+	.invite-status--expired  { background: rgba(255, 255, 255, 0.06); color: var(--text-dimmer); }
+	.btn-sm {
+		padding: 3px 10px;
+		font-size: 0.72rem;
+	}
+
+	/* ── Broadcast panel (inside Maintenance tab) ──────────────────── */
+	.broadcast-panel {
+		max-width: 820px;
+		margin-top: 2rem;
+		padding-top: 1.5rem;
+		border-top: 1px solid var(--border);
+	}
+	.broadcast-active {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 10px 12px;
+		background: var(--bg-inset);
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		margin-bottom: 0.4rem;
+	}
+	.broadcast-message {
+		font-size: 0.88rem;
+		color: var(--text);
+	}
+	.broadcast-posted-at {
+		font-size: 0.72rem;
+		color: var(--text-dimmer);
+		margin: 0 0 1rem;
+	}
+	.broadcast-inactive {
+		font-size: 0.82rem;
+		color: var(--text-dimmer);
+		font-style: italic;
+		margin: 0 0 1rem;
+	}
+	.severity-row {
+		display: flex;
+		gap: 1rem;
+		align-items: center;
+	}
+	.severity-opt {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		font-size: 0.82rem;
+		color: var(--text-muted);
+		cursor: pointer;
+	}
+	.severity-opt input { margin: 0; }
+	.broadcast-actions {
+		display: flex;
+		gap: 0.5rem;
 	}
 </style>

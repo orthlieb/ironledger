@@ -46,7 +46,7 @@ import { config } from '../config.js';
 // On a modest server this takes ~50ms per hash — acceptable for login,
 // imperceptible to users, but brutal for offline cracking attempts.
 // ---------------------------------------------------------------------------
-const ARGON2_OPTIONS = {
+export const ARGON2_OPTIONS = {
   type:        argon2.argon2id,
   memoryCost:  19456,
   timeCost:    2,
@@ -73,8 +73,9 @@ export class AuthError extends Error {
 // ---------------------------------------------------------------------------
 
 export interface RegisterInput {
-  email:    string;
-  password: string;
+  email:       string;
+  password:    string;
+  displayName?: string;   // optional — empty/omitted falls back to the email
 }
 
 export interface AuthResult {
@@ -132,11 +133,16 @@ export async function register(input: RegisterInput): Promise<void> {
   // Hash the real password
   const passwordHash = await argon2.hash(input.password, ARGON2_OPTIONS);
 
+  // Display name: use the trimmed input if the user provided one, else the
+  // email. Length cap matches the zod schema; trim handles accidental
+  // whitespace from paste/autofill.
+  const displayName = (input.displayName?.trim() || email);
+
   // Create the user — use adminDb because there is no user context yet
   // (we're creating the user, so we can't set app.user_id before the INSERT).
   const [newUser] = await adminDb
     .insert(users)
-    .values({ email, passwordHash })
+    .values({ email, displayName, passwordHash })
     .returning({ id: users.id, email: users.email });
 
   if (!newUser) throw new AuthError('Failed to create user', 'CREATE_FAILED', 500);

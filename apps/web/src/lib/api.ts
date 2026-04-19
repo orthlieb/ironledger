@@ -93,7 +93,15 @@ export const characters = {
 // ---------------------------------------------------------------------------
 // Admin
 // ---------------------------------------------------------------------------
-import type { AdminUser, AdminStats, AuditEvent, MaintenanceStatus, UserTimeseries } from '@ironledger/shared';
+import type {
+	AdminUser,
+	AdminStats,
+	AuditEvent,
+	MaintenanceStatus,
+	UserTimeseries,
+	AdminInvite,
+	CreateInviteResult,
+} from '@ironledger/shared';
 
 export const admin = {
 	listUsers: () =>
@@ -141,12 +149,53 @@ export const admin = {
 
 	disableMaintenance: () =>
 		request<{ enabled: false }>('/api/admin/maintenance', { method: 'DELETE' }),
+
+	// ── Invites ──────────────────────────────────────────────────────────
+	listInvites: () =>
+		request<AdminInvite[]>('/api/admin/invites'),
+
+	createInvite: (body: { email: string; displayName?: string }) =>
+		request<CreateInviteResult>('/api/admin/invites', {
+			method: 'POST',
+			body:   JSON.stringify(body),
+		}),
+
+	revokeInvite: (id: string) =>
+		request<AdminInvite>(`/api/admin/invites/${id}`, { method: 'DELETE' }),
 };
 
 // ---------------------------------------------------------------------------
-// Maintenance (public — no auth required)
+// Maintenance (public — deprecated, polls for maintenance only)
+// Prefer `system.getStatus()` which returns maintenance + broadcast together.
 // ---------------------------------------------------------------------------
 export const maintenance = {
 	getStatus: () =>
 		request<MaintenanceStatus>('/api/maintenance/status'),
+};
+
+// ---------------------------------------------------------------------------
+// System status (public — combined maintenance + broadcast)
+// ---------------------------------------------------------------------------
+import type { SystemStatus, BroadcastStatus, BroadcastSeverity } from '@ironledger/shared';
+
+export const system = {
+	getStatus: () =>
+		request<SystemStatus>('/api/system/status'),
+};
+
+// ---------------------------------------------------------------------------
+// Broadcast (admin)
+// ---------------------------------------------------------------------------
+export const broadcast = {
+	getStatus: () =>
+		request<BroadcastStatus>('/api/admin/broadcast'),
+
+	post: (body: { message: string; severity: BroadcastSeverity }) =>
+		request<BroadcastStatus>('/api/admin/broadcast', {
+			method: 'POST',
+			body:   JSON.stringify(body),
+		}),
+
+	clear: () =>
+		request<void>('/api/admin/broadcast', { method: 'DELETE' }),
 };
