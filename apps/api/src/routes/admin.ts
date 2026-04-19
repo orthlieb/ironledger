@@ -14,6 +14,7 @@ import { join } from 'path';
 import { authenticate } from '../middleware/authenticate.js';
 import { requireAdmin } from '../middleware/requireAdmin.js';
 import * as adminService from '../services/adminService.js';
+import * as broadcastService from '../services/broadcastService.js';
 import * as inviteService from '../services/inviteService.js';
 import * as maintenanceService from '../services/maintenanceService.js';
 import * as registrationLockService from '../services/registrationLockService.js';
@@ -67,6 +68,11 @@ const createInviteBody = z.object({
 
 const inviteIdParam = z.object({
   id: z.string().uuid('Invalid invite ID'),
+});
+
+const broadcastBody = z.object({
+  message:  z.string().trim().min(1, 'Message is required').max(500),
+  severity: z.enum(['info', 'warning']).default('info'),
 });
 
 // ---------------------------------------------------------------------------
@@ -394,6 +400,60 @@ export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
     });
 
     return reply.status(200).send(result);
+  });
+
+  // ── POST /broadcast ── Post or update the banner ──────────────────────
+  server.post('/broadcast', {
+    schema: {
+      tags:     ['Admin'],
+      summary:  'Post or update a broadcast banner',
+      body:     broadcastBody,
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (req, reply) => {
+    try {
+      const status = await broadcastService.postBroadcast(
+        req.body.message,
+        req.body.severity,
+        req.user!.id,
+        req.ip,
+      );
+      return reply.status(200).send(status);
+    } catch (err) {
+      return handleError(reply)(err);
+    }
+  });
+
+  // ── DELETE /broadcast ── Clear the banner ─────────────────────────────
+  server.delete('/broadcast', {
+    schema: {
+      tags:     ['Admin'],
+      summary:  'Clear the broadcast banner',
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (req, reply) => {
+    try {
+      await broadcastService.clearBroadcast(req.user!.id, req.ip);
+      return reply.status(204).send();
+    } catch (err) {
+      return handleError(reply)(err);
+    }
+  });
+
+  // ── GET /broadcast/status ── Admin view of current banner ─────────────
+  server.get('/broadcast/status', {
+    schema: {
+      tags:     ['Admin'],
+      summary:  'Get current broadcast banner status (admin)',
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (_req, reply) => {
+    try {
+      const status = await broadcastService.getStatus();
+      return reply.status(200).send(status);
+    } catch (err) {
+      return handleError(reply)(err);
+    }
   });
 
   // ── GET /registration-lock/status ── Registration lock status ────────

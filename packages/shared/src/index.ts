@@ -276,3 +276,21 @@ export interface RegistrationLockStatus {
   locked:  boolean;
   message: string | null;
 }
+
+// Broadcast banner
+// ---------------------------------------------------------------------------
+
+export type BroadcastSeverity = 'info' | 'warning';
+
+export interface BroadcastStatus {
+  active:   boolean;
+  message:  string | null;
+  severity: BroadcastSeverity;
+  postedAt: string | null;   // ISO timestamp — dismissal key
+}
+
+// Combined public status — polled by the app shell on an interval.
+export interface SystemStatus {
+  maintenance: MaintenanceStatus;
+  broadcast:   BroadcastStatus;
+}

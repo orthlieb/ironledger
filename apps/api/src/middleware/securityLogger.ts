@@ -38,7 +38,9 @@ export type SecurityEventType =
   | 'account_disabled'
   | 'admin_create_invite'
   | 'admin_revoke_invite'
-  | 'invite_accepted';
+  | 'invite_accepted'
+  | 'admin_post_broadcast'
+  | 'admin_clear_broadcast';
 
 interface LogEventOptions {
   eventType:  SecurityEventType;
