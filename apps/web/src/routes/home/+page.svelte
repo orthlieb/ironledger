@@ -244,15 +244,17 @@
 	});
 
 	// Measure mobile layout height whenever the ref is bound or window resizes.
-	// Uses document-relative top so the value is stable regardless of scroll position.
+	// Wrapped in rAF so the measurement runs after the browser has completed
+	// layout for the new orientation (resize fires before layout stabilises).
 	$effect(() => {
 		const ref = adventureLayoutRef;
 		if (!ref) { adventureLayoutHeight = null; return; }
 		function measure() {
-			if (window.innerWidth >= 768) { adventureLayoutHeight = null; return; }
-			const rect   = ref!.getBoundingClientRect();
-			const docTop = rect.top + window.scrollY;
-			adventureLayoutHeight = Math.max(200, window.innerHeight - docTop);
+			requestAnimationFrame(() => {
+				if (!ref) return;
+				if (window.innerWidth >= 768) { adventureLayoutHeight = null; return; }
+				adventureLayoutHeight = Math.max(200, window.innerHeight - ref.getBoundingClientRect().top);
+			});
 		}
 		measure();
 		window.addEventListener('resize', measure);
