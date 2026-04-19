@@ -30,7 +30,31 @@ import {
 import { randomBytes } from 'crypto';
 import { AuthError, ARGON2_OPTIONS } from './authService.js';
 import { assertPasswordNotPwned } from '../lib/hibp.js';
-import type { InviteStatus, AdminInvite, InvitePreview } from '@ironledger/shared';
+
+// Types kept local — API doesn't import from @ironledger/shared (matches
+// the pattern used by adminService.ts). Web-side duplicates are in
+// packages/shared/src/index.ts and must stay in sync.
+type InviteStatus = 'pending' | 'accepted' | 'revoked' | 'expired';
+
+interface AdminInvite {
+  id:              string;
+  email:           string;
+  displayName:     string | null;
+  role:            string;
+  invitedBy:       string | null;
+  expiresAt:       string;
+  acceptedAt:      string | null;
+  acceptedUserId:  string | null;
+  revokedAt:       string | null;
+  createdAt:       string;
+  status:          InviteStatus;
+}
+
+interface InvitePreview {
+  email:       string;
+  displayName: string | null;
+  expiresAt:   string;
+}
 
 // ---------------------------------------------------------------------------
 // Constants
