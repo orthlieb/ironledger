@@ -61,12 +61,14 @@ The Expeditions tab contains:
 - Collapsible cards (JourneyCard, SiteCard) following FoeCard/VowCard patterns
 
 ### JourneyCard
-- Name, difficulty selector, notes textarea
+- Name, difficulty selector
+- Click-to-edit **markdown** notes field — renders via `renderNote()` from `$lib/markdown.js` (supports `**bold**`, `*italic*`, `# heading`, `- list`); textarea on click, rendered HTML on blur
 - 10-box progress track with +/- buttons
 - Mark Complete toggle
 
 ### SiteCard
 - Name, difficulty, objective fields
+- Click-to-edit **markdown** notes field (same `renderNote()` pattern as JourneyCard)
 - Theme + Domain selectors with **Features** and **Dangers** buttons inline
   - Buttons open a DelveTableDialog showing the combined theme+domain oracle table
   - Roll button performs a d100 roll with dice animation and session log entry
@@ -79,6 +81,19 @@ The Expeditions tab contains:
   - When a rolled denizen matches a foe in the catalogue, an **Add to Foes?** button appears
 - 10-box progress track with +/- buttons
 - Mark Complete toggle
+
+---
+
+## Expansion Toggle (Delve)
+
+Sites are Delve content. When the **Delve** expansion toggle is off (per-browser, see [expansion-toggles.md](expansion-toggles.md)):
+
+- The **+ New Site** button is hidden (Journey creation still works).
+- The GCB Delve action buttons (feature/danger rolls, Roll Denizen) are hidden.
+- Existing `Site` records are **never deleted** — they keep rendering, including theme/domain change, denizen edits, progress marks, and DelveTableDialog rolls. Toggle gates new-site creation only.
+- The `DELVE_THEMES` / `DELVE_DOMAINS` constants and the `/api/v1/catalogue/delve` endpoint stay loaded so existing sites resolve.
+
+Journeys are part of the base game and are unaffected by either toggle.
 
 ---
 

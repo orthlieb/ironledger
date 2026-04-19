@@ -56,7 +56,7 @@
 		{
 			icon: mobileSvg,
 			title: 'Plays on Your Phone',
-			body: 'Swipe between tabs, drag to resize the Adventure split, tap the Log tab to see what just happened. The Ironlands travel with you — on the couch, on the bus, anywhere your GM can reach you with texts about the next session.',
+			body: 'Swipe between tabs, drag the Adventure split to give the session log more room, see what just happened without losing your place. The Ironlands travel with you — on the couch, on the bus, anywhere your GM can reach you with texts about the next session.',
 			color: 'var(--color-supply)',
 		},
 	];

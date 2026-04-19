@@ -128,7 +128,6 @@ npm run dev:web   # Web on :5173
 - Responsive layout down to 360px; tested on Surface Duo (540px breakpoint for icon-only tabs)
 - Horizontal **swipe-to-switch-tab** on the home page (direction and distance thresholds filter out vertical scrolls and taps); opt out per-element with `data-no-swipe-tabs`
 - On Adventure, a drag-to-resize **split panel** replaces the desktop side-by-side layout: GCB on top, session log below, both scroll independently, split persists to localStorage
-- Session log moves from a persistent right column to a dedicated **Log tab** (4th tab) below 768px
 - Picker dialogs (Foes, Moves, Oracles) size to `min(85dvh, 720px)` so they don't collapse behind mobile browser chrome
 - Collapsible glass search pill on Expeditions and Communities to reclaim toolbar space on narrow screens
 - Body scroll lock when modal pickers or the Adventure split panel are active
@@ -195,19 +194,24 @@ Feature docs are in the `docs/` directory:
 
 | Doc | Description |
 |-----|-------------|
-| [deployment.md](docs/deployment.md) | IONOS VPS deployment guide |
+| [admin.md](docs/admin.md) | Admin panel — users, logs, maintenance, registration lock |
 | [architecture_decisions.md](docs/architecture_decisions.md) | Architecture and design decisions |
 | [character-sheet.md](docs/character-sheet.md) | Character sheet component |
-| [global-context-bar.md](docs/global-context-bar.md) | GlobalContextBar tile layout |
-| [moves.md](docs/moves.md) | Moves system and dice rolling |
-| [foes.md](docs/foes.md) | Foes and encounters |
+| [communities.md](docs/communities.md) | Communities & NPCs — data model, oracle generation |
+| [DATA_FORMAT.md](docs/DATA_FORMAT.md) | Catalogue data format spec (moves, assets, oracles, foes) |
+| [deployment.md](docs/deployment.md) | IONOS VPS deployment guide |
+| [DICE_ROLLING.md](docs/DICE_ROLLING.md) | Dice rolling implementation |
+| [expansion-toggles.md](docs/expansion-toggles.md) | Delve / YRT expansion toggle system |
 | [expeditions.md](docs/expeditions.md) | Expeditions system |
+| [foes.md](docs/foes.md) | Foes and encounters |
+| [global-context-bar.md](docs/global-context-bar.md) | GlobalContextBar tile layout |
 | [log.md](docs/log.md) | Session log with interactive links |
 | [mobile.md](docs/mobile.md) | Mobile layout, swipe gestures, and viewport behaviour |
+| [moves.md](docs/moves.md) | Moves system and dice rolling |
 | [notes.md](docs/notes.md) | Notes dialog |
 | [oracles.md](docs/oracles.md) | Oracle tables |
-| [data_format.md](docs/data_format.md) | Character data format spec |
-| [dice_rolling.md](docs/dice_rolling.md) | Dice rolling implementation |
+| [ui-components.md](docs/ui-components.md) | Shared UI design specs (cards, pills, tooltips, side labels) |
+| [YRT/DATA_FORMAT_YRT.md](docs/YRT/DATA_FORMAT_YRT.md) | YRT homebrew data format extensions |
 
 ## Credits
 

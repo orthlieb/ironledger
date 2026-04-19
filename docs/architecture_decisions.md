@@ -488,7 +488,44 @@ to attackers.
 
 ---
 
-## 23. Audit Trail
+## 23. Sticky UI State (per-entity localStorage)
+
+**Decision:** Per-entity collapse state lives in browser `localStorage` under
+namespaced keys, never in `CharacterData` or on the server.
+
+| Pattern | Owner | Example |
+|---|---|---|
+| `il:foe:collapse:{encounterId}` | `FoeCard.svelte` | `il:foe:collapse:7c1a…` |
+| `il:journey:collapse:{expeditionId}` | `JourneyCard.svelte` | `il:journey:collapse:8b3e…` |
+| `il:site:collapse:{expeditionId}` | `SiteCard.svelte` | `il:site:collapse:9d2f…` |
+| `il:site:denizens:{expeditionId}` | `SiteCard.svelte` | denizen sub-section collapse |
+| `il:community:collapse:{communityId}` | `CommunityCard.svelte` | |
+| `il:npc:collapse:{npcId}` | `NpcCard.svelte` | |
+| `il:gc:expNotes:{activeExpeditionId}` | `GlobalContextBar.svelte` | per-expedition notes section |
+| `il:gc:foeInfo:{activeFoeId}` | `GlobalContextBar.svelte` | per-foe info section |
+
+Other UI preferences also live in `localStorage` under the `ironledger:` or `il:`
+prefix — see [expansion-toggles.md](expansion-toggles.md) (`ironledger:expansion:delve` / `:yrt`),
+[mobile.md](mobile.md) (`il:adventure:split:mobile`), and [log.md](log.md)
+(`ironledger.adventureSplit`).
+
+**Why per-entity:** card collapse is a personal-display preference, not a
+modelled property of the entity. Collapsing a foe on one device shouldn't push
+that state to other browsers or other users sharing data. Per-entity keys
+also avoid migration churn — adding a card type is one new key prefix, not a
+schema change.
+
+**Why `localStorage` and not `sessionStorage`:** users expect a card they
+collapsed last week to still be collapsed today. Sticky collapse is the
+default expectation; refresh-resets would surprise.
+
+**Cleanup:** orphan keys (e.g. for a deleted foe) are harmless — readers
+treat a missing key as "expanded". A periodic `localStorage` sweep keyed off
+the live entity list could be added if leak size becomes a concern.
+
+---
+
+## 24. Audit Trail
 
 **Decision:** `security_events` table — append-only, `app_user` can INSERT but
 not SELECT, UPDATE, or DELETE.
