@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { admin, maintenance as maintApi } from '$lib/api';
-	import type { AdminUser, AdminStats, AdminInvite, MaintenanceStatus, UserTimeseries, RegistrationLockStatus } from '@ironledger/shared';
+	import { admin, maintenance as maintApi, broadcast as broadcastApi } from '$lib/api';
+	import type { AdminUser, AdminStats, AdminInvite, MaintenanceStatus, BroadcastStatus, BroadcastSeverity, UserTimeseries, RegistrationLockStatus } from '@ironledger/shared';
 	import type { LayoutData } from '../$types';
 
 	let { data }: { data: LayoutData } = $props();
@@ -324,6 +324,52 @@
 		}
 	}
 
+	// ── Broadcast banner ──────────────────────────────────────────────────
+	let broadcastStatus: BroadcastStatus | null = $state(null);
+	let broadcastMessage  = $state('');
+	let broadcastSeverity: BroadcastSeverity = $state('info');
+	let broadcastBusy  = $state(false);
+	let broadcastError = $state('');
+
+	async function refreshBroadcastStatus() {
+		try {
+			broadcastStatus = await broadcastApi.getStatus();
+			if (broadcastStatus?.active) {
+				broadcastMessage  = broadcastStatus.message ?? '';
+				broadcastSeverity = broadcastStatus.severity;
+			}
+		} catch { /* ignore */ }
+	}
+
+	async function postBroadcast() {
+		broadcastError = '';
+		broadcastBusy  = true;
+		try {
+			broadcastStatus = await broadcastApi.post({
+				message:  broadcastMessage.trim(),
+				severity: broadcastSeverity,
+			});
+		} catch (err) {
+			broadcastError = err instanceof Error ? err.message : 'Failed to post broadcast';
+		} finally {
+			broadcastBusy = false;
+		}
+	}
+
+	async function clearBroadcast() {
+		broadcastError = '';
+		broadcastBusy  = true;
+		try {
+			await broadcastApi.clear();
+			broadcastStatus = null;
+			broadcastMessage = '';
+		} catch (err) {
+			broadcastError = err instanceof Error ? err.message : 'Failed to clear broadcast';
+		} finally {
+			broadcastBusy = false;
+		}
+	}
+
 	async function disableMaint() {
 		maintLoading = true;
 		try {
@@ -585,7 +631,7 @@
 					class:active={activeTab === 'maintenance'}
 					role="tab"
 					aria-selected={activeTab === 'maintenance'}
-					onclick={() => { activeTab = 'maintenance'; void refreshMaintStatus(); }}
+					onclick={() => { activeTab = 'maintenance'; void refreshMaintStatus(); void refreshBroadcastStatus(); }}
 				>Maintenance</button>
 				<button
 					class="tab-btn"
@@ -989,6 +1035,74 @@
 					{/if}
 				</div>
 			{/if}
+
+			<!-- ─── Broadcast banner panel ─── -->
+			<section class="broadcast-panel">
+				<h3 class="invites-h">Broadcast banner</h3>
+				<p class="invites-hint">
+					An informational or warning banner shown to every user until they dismiss it.
+					Editing the message re-shows the banner for everyone who previously dismissed it.
+					Does not revoke sessions or block login — use Maintenance above for that.
+				</p>
+
+				{#if broadcastStatus?.active}
+					<div class="broadcast-active">
+						<span class="invite-status invite-status--{broadcastStatus.severity === 'warning' ? 'revoked' : 'accepted'}">{broadcastStatus.severity}</span>
+						<span class="broadcast-message">{broadcastStatus.message}</span>
+					</div>
+					<p class="broadcast-posted-at">
+						Posted {broadcastStatus.postedAt ? new Date(broadcastStatus.postedAt).toLocaleString() : ''}
+					</p>
+				{:else}
+					<p class="broadcast-inactive">No banner currently active.</p>
+				{/if}
+
+				<div class="invite-form">
+					<label class="invite-field">
+						<span>Message</span>
+						<input
+							type="text"
+							bind:value={broadcastMessage}
+							maxlength="500"
+							placeholder="e.g. Foe images are being regenerated tonight 10pm–11pm UTC."
+						/>
+					</label>
+					<label class="invite-field">
+						<span>Severity</span>
+						<div class="severity-row">
+							<label class="severity-opt">
+								<input type="radio" bind:group={broadcastSeverity} value="info" />
+								<span>Info</span>
+							</label>
+							<label class="severity-opt">
+								<input type="radio" bind:group={broadcastSeverity} value="warning" />
+								<span>Warning</span>
+							</label>
+						</div>
+					</label>
+					<div class="invite-actions broadcast-actions">
+						<button
+							type="button"
+							class="btn btn-primary"
+							disabled={broadcastBusy || !broadcastMessage.trim()}
+							onclick={postBroadcast}
+						>
+							{broadcastBusy ? 'Saving…' : (broadcastStatus?.active ? 'Update banner' : 'Post banner')}
+						</button>
+						{#if broadcastStatus?.active}
+							<button
+								type="button"
+								class="btn"
+								disabled={broadcastBusy}
+								onclick={clearBroadcast}
+							>Clear</button>
+						{/if}
+					</div>
+					{#if broadcastError}
+						<div class="invite-error">{broadcastError}</div>
+					{/if}
+				</div>
+			</section>
 
 		</div>
 	{/if}
@@ -1826,5 +1940,56 @@
 	.btn-sm {
 		padding: 3px 10px;
 		font-size: 0.72rem;
+	}
+
+	/* ── Broadcast panel (inside Maintenance tab) ──────────────────── */
+	.broadcast-panel {
+		max-width: 820px;
+		margin-top: 2rem;
+		padding-top: 1.5rem;
+		border-top: 1px solid var(--border);
+	}
+	.broadcast-active {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 10px 12px;
+		background: var(--bg-inset);
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		margin-bottom: 0.4rem;
+	}
+	.broadcast-message {
+		font-size: 0.88rem;
+		color: var(--text);
+	}
+	.broadcast-posted-at {
+		font-size: 0.72rem;
+		color: var(--text-dimmer);
+		margin: 0 0 1rem;
+	}
+	.broadcast-inactive {
+		font-size: 0.82rem;
+		color: var(--text-dimmer);
+		font-style: italic;
+		margin: 0 0 1rem;
+	}
+	.severity-row {
+		display: flex;
+		gap: 1rem;
+		align-items: center;
+	}
+	.severity-opt {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		font-size: 0.82rem;
+		color: var(--text-muted);
+		cursor: pointer;
+	}
+	.severity-opt input { margin: 0; }
+	.broadcast-actions {
+		display: flex;
+		gap: 0.5rem;
 	}
 </style>

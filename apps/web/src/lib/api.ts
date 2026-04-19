@@ -165,9 +165,37 @@ export const admin = {
 };
 
 // ---------------------------------------------------------------------------
-// Maintenance (public — no auth required)
+// Maintenance (public — deprecated, polls for maintenance only)
+// Prefer `system.getStatus()` which returns maintenance + broadcast together.
 // ---------------------------------------------------------------------------
 export const maintenance = {
 	getStatus: () =>
 		request<MaintenanceStatus>('/api/maintenance/status'),
+};
+
+// ---------------------------------------------------------------------------
+// System status (public — combined maintenance + broadcast)
+// ---------------------------------------------------------------------------
+import type { SystemStatus, BroadcastStatus, BroadcastSeverity } from '@ironledger/shared';
+
+export const system = {
+	getStatus: () =>
+		request<SystemStatus>('/api/system/status'),
+};
+
+// ---------------------------------------------------------------------------
+// Broadcast (admin)
+// ---------------------------------------------------------------------------
+export const broadcast = {
+	getStatus: () =>
+		request<BroadcastStatus>('/api/admin/broadcast'),
+
+	post: (body: { message: string; severity: BroadcastSeverity }) =>
+		request<BroadcastStatus>('/api/admin/broadcast', {
+			method: 'POST',
+			body:   JSON.stringify(body),
+		}),
+
+	clear: () =>
+		request<void>('/api/admin/broadcast', { method: 'DELETE' }),
 };
