@@ -9,6 +9,10 @@
 
 		<!-- iOS home-screen / PWA -->
 		<link rel="apple-touch-icon" href="%sveltekit.assets%/apple-touch-icon.png" />
+		<!-- Chromium logs a deprecation warning for the Apple-prefixed tag alone.
+		     The `mobile-web-app-capable` form is the standard; the Apple one is
+		     kept for older iOS Safari that doesn't recognise the standard name. -->
+		<meta name="mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 		<meta name="apple-mobile-web-app-title" content="Iron Ledger" />

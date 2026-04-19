@@ -10,8 +10,10 @@
 
 	let {
 		onSettings,
+		onReportBug,
 	}: {
 		onSettings?: () => void;
+		onReportBug?: () => void;
 	} = $props();
 
 	let open = $state(false);
@@ -94,6 +96,10 @@
 			<button class="menu-item" onclick={() => { close(); dispatch('import'); }}>Import...</button>
 
 			<button class="menu-item" onclick={openExportDialog}>Export...</button>
+
+			<div class="menu-divider"></div>
+
+			<button class="menu-item" onclick={() => { onReportBug?.(); close(); }}>Report a bug…</button>
 
 			<div class="menu-divider"></div>
 

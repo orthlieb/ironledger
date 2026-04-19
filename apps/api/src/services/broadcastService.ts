@@ -40,7 +40,7 @@ const KEY_MESSAGE   = 'broadcast:message';
 const KEY_SEVERITY  = 'broadcast:severity';
 const KEY_POSTED_AT = 'broadcast:postedAt';
 
-function parseSeverity(raw: string | null): BroadcastSeverity {
+function parseSeverity(raw: string | null | undefined): BroadcastSeverity {
   return raw === 'warning' ? 'warning' : 'info';   // default + unknown → info
 }
 
@@ -59,7 +59,7 @@ export async function getStatus(): Promise<BroadcastStatus> {
 
   return {
     active:   active === '1',
-    message:  message ?? null,
+    message:  message  ?? null,
     severity: parseSeverity(severity),
     postedAt: postedAt ?? null,
   };
