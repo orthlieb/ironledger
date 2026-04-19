@@ -93,7 +93,15 @@ export const characters = {
 // ---------------------------------------------------------------------------
 // Admin
 // ---------------------------------------------------------------------------
-import type { AdminUser, AdminStats, AuditEvent, MaintenanceStatus, UserTimeseries } from '@ironledger/shared';
+import type {
+	AdminUser,
+	AdminStats,
+	AuditEvent,
+	MaintenanceStatus,
+	UserTimeseries,
+	AdminInvite,
+	CreateInviteResult,
+} from '@ironledger/shared';
 
 export const admin = {
 	listUsers: () =>
@@ -141,6 +149,19 @@ export const admin = {
 
 	disableMaintenance: () =>
 		request<{ enabled: false }>('/api/admin/maintenance', { method: 'DELETE' }),
+
+	// ── Invites ──────────────────────────────────────────────────────────
+	listInvites: () =>
+		request<AdminInvite[]>('/api/admin/invites'),
+
+	createInvite: (body: { email: string; displayName?: string }) =>
+		request<CreateInviteResult>('/api/admin/invites', {
+			method: 'POST',
+			body:   JSON.stringify(body),
+		}),
+
+	revokeInvite: (id: string) =>
+		request<AdminInvite>(`/api/admin/invites/${id}`, { method: 'DELETE' }),
 };
 
 // ---------------------------------------------------------------------------
