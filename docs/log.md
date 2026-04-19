@@ -15,12 +15,14 @@ The log is **ephemeral by default** — it tracks changes made in the current br
 
 ## Layout
 
+The log lives inside the **Adventure** tab in both layouts.
+
 | Viewport | Log position |
 |---|---|
-| Desktop (≥ 768 px) | Always-visible sticky right-hand column (50% of the page width) |
-| Mobile (< 768 px) | Hidden by default; revealed as a 4th tab ("Log") in the tab bar |
+| Desktop (≥ 768 px) | Right-hand column of the Adventure tab, side-by-side with the GCB. Drag-to-resize horizontally; split persists in `localStorage['ironledger.adventureSplit']` (25–75%, default 50). |
+| Mobile (< 768 px) | Bottom panel of the Adventure tab, below the GCB. Drag-to-resize vertically; split persists in `localStorage['il:adventure:split:mobile']` (20–95%, default 80% GCB / 20% log). |
 
-The log panel fills `calc(100dvh - 52px)` on desktop so it extends to the bottom of the viewport below the app nav.
+The log panel fills `calc(100dvh - 52px)` on desktop so it extends to the bottom of the viewport below the app nav. See [mobile.md § Adventure Split Panel](mobile.md#adventure-split-panel) for the mobile resize implementation.
 
 ---
 

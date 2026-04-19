@@ -19,7 +19,7 @@ A horizontal swipe on the tab body advances or retreats one tab. Swipes clamp at
 | Maximum gesture duration | 600 ms |
 | Multi-finger gestures | Ignored |
 
-Admin users swipe through `[characters, foes, expeditions, adventure, communities, log, admin]`. Non-admins don't see `admin` in the order, so a swipe can never land there.
+Admin users swipe through `[...TABS, 'admin']` where `TABS = ['characters', 'foes', 'expeditions', 'communities', 'adventure']`. Non-admins don't see `admin` in the order, so a swipe can never land there.
 
 ### Opting out
 
@@ -50,14 +50,14 @@ Below 768px the layout rotates: **GCB on top, log below, drag-to-resize horizont
 
 ## Session Log Placement
 
-See [log.md](log.md#layout) for the canonical table.
+The session log is rendered by `LogPanel.svelte` and lives **inside the Adventure tab** in both layouts — there is no separate Log tab.
 
 | Viewport | Log position |
 |---|---|
-| ≥ 768 px | Always-visible sticky right column |
-| < 768 px | Hidden by default; revealed as a 4th tab ("Log") in the tab bar |
+| ≥ 768 px | Right-hand column of the Adventure tab, side-by-side with the GCB (drag-to-resize horizontally) |
+| < 768 px | Bottom panel of the Adventure tab, below the GCB (drag-to-resize vertically) |
 
-The mobile log tab and the Adventure-tab split panel are two different views of the same `LogPanel.svelte` — one gets the full viewport, the other gets 20–80% of it. The log store is a single module-level `$state` so entries appear in both without coordination.
+The log store is a module-level `$state`, so entries persist across tab switches and only need a single mount.
 
 ---
 

@@ -128,7 +128,6 @@ npm run dev:web   # Web on :5173
 - Responsive layout down to 360px; tested on Surface Duo (540px breakpoint for icon-only tabs)
 - Horizontal **swipe-to-switch-tab** on the home page (direction and distance thresholds filter out vertical scrolls and taps); opt out per-element with `data-no-swipe-tabs`
 - On Adventure, a drag-to-resize **split panel** replaces the desktop side-by-side layout: GCB on top, session log below, both scroll independently, split persists to localStorage
-- Session log moves from a persistent right column to a dedicated **Log tab** (4th tab) below 768px
 - Picker dialogs (Foes, Moves, Oracles) size to `min(85dvh, 720px)` so they don't collapse behind mobile browser chrome
 - Collapsible glass search pill on Expeditions and Communities to reclaim toolbar space on narrow screens
 - Body scroll lock when modal pickers or the Adventure split panel are active
