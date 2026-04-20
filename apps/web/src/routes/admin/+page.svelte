@@ -11,7 +11,7 @@
 	let error = $state('');
 
 	// ── Tabs ──────────────────────────────────────────────────────────────
-	let activeTab: 'users' | 'invites' | 'logs' | 'maintenance' | 'registration' = $state('users');
+	let activeTab: 'users' | 'invites' | 'logs' | 'tools' = $state('users');
 
 	// ── Invites tab state ────────────────────────────────────────────────
 	let invites: AdminInvite[] = $state([]);
@@ -628,18 +628,16 @@
 				>Logs</button>
 				<button
 					class="tab-btn"
-					class:active={activeTab === 'maintenance'}
+					class:active={activeTab === 'tools'}
 					role="tab"
-					aria-selected={activeTab === 'maintenance'}
-					onclick={() => { activeTab = 'maintenance'; void refreshMaintStatus(); void refreshBroadcastStatus(); }}
-				>Maintenance</button>
-				<button
-					class="tab-btn"
-					class:active={activeTab === 'registration'}
-					role="tab"
-					aria-selected={activeTab === 'registration'}
-					onclick={() => { activeTab = 'registration'; void refreshRegLockStatus(); }}
-				>Registration</button>
+					aria-selected={activeTab === 'tools'}
+					onclick={() => {
+						activeTab = 'tools';
+						void refreshMaintStatus();
+						void refreshRegLockStatus();
+						void refreshBroadcastStatus();
+					}}
+				>Tools</button>
 			</div>
 		</nav>
 
@@ -920,189 +918,185 @@
 					</div>
 				{/if}
 
-			<!-- ═══ Registration lock tab ═══ -->
-			{:else if activeTab === 'registration'}
-				<div class="maint-panel">
-					<div class="maint-status-row">
-						<span class="maint-dot" class:maint-dot-active={regLockStatus?.locked}></span>
-						<span class="maint-status-label">
-							{regLockStatus?.locked ? 'Registration Locked' : 'Registration Open'}
-						</span>
-					</div>
+			<!-- ═══ Tools tab (Maintenance · Registration Lock · Broadcast) ═══ -->
+			{:else if activeTab === 'tools'}
+				<div class="tools-panel">
 
-					{#if regLockStatus?.locked}
-						<div class="maint-active-info">
-							{#if regLockStatus.message}
-								<p class="maint-msg">{regLockStatus.message}</p>
+					<!-- ─── Tile 1: Maintenance Mode ─── -->
+					<section class="tools-tile">
+						<header class="tools-tile-head">
+							<h3 class="tools-tile-title">Maintenance Mode</h3>
+							<span class="tools-tile-dot" class:tools-tile-dot--active={maintStatus?.enabled}></span>
+							<span class="tools-tile-status">{maintStatus?.enabled ? 'Active' : 'Off'}</span>
+							{#if maintStatus?.enabled && maintCountdown}
+								<span class="tools-tile-timer">Shutdown in <strong>{maintCountdown}</strong></span>
 							{/if}
-						</div>
-						<button
-							class="btn btn-success"
-							disabled={regLockLoading}
-							onclick={disableRegLock}
-						>
-							{regLockLoading ? 'Unlocking...' : 'Unlock Registration'}
-						</button>
-					{:else}
-						<div class="maint-form">
-							<label class="maint-label">
-								<span>Message shown to new visitors</span>
-								<input
-									class="maint-input"
-									type="text"
-									placeholder="e.g. Registration is currently closed."
-									bind:value={regLockMessage}
-									maxlength="500"
-								/>
-							</label>
-						</div>
-						<button
-							class="btn btn-danger"
-							disabled={regLockLoading || !regLockMessage.trim()}
-							onclick={() => (showRegLockConfirm = true)}
-						>
-							Lock Registration
-						</button>
-					{/if}
-				</div>
+						</header>
+						<p class="tools-tile-desc">
+							Shows a global countdown banner, blocks non-admin logins, and revokes every active refresh
+							token. Use for planned outages.
+						</p>
 
-			<!-- ═══ Maintenance tab ═══ -->
-			{:else if activeTab === 'maintenance'}
-				<div class="maint-panel">
-					<!-- Status indicator -->
-					<div class="maint-status-row">
-						<span class="maint-dot" class:maint-dot-active={maintStatus?.enabled}></span>
-						<span class="maint-status-label">
-							{maintStatus?.enabled ? 'Maintenance Active' : 'System Normal'}
-						</span>
-						{#if maintStatus?.enabled && maintCountdown}
-							<span class="maint-timer">
-								Shutdown in <strong>{maintCountdown}</strong>
-							</span>
+						{#if maintStatus?.enabled}
+							<div class="tools-tile-info">
+								{#if maintStatus.message}
+									<p class="tools-tile-msg">{maintStatus.message}</p>
+								{/if}
+								{#if maintStatus.shutdownAt}
+									<p class="tools-tile-meta">
+										Shutdown at {new Date(maintStatus.shutdownAt).toLocaleString()}
+									</p>
+								{/if}
+							</div>
+							<div class="tools-tile-actions">
+								<button class="btn btn-success" disabled={maintLoading} onclick={disableMaint}>
+									{maintLoading ? 'Disabling…' : 'Disable Maintenance'}
+								</button>
+							</div>
+						{:else}
+							<div class="tools-tile-form">
+								<label class="tools-tile-field">
+									<span>Message</span>
+									<input
+										type="text"
+										placeholder="e.g. Upgrading to v2.0"
+										bind:value={maintMessage}
+										maxlength="500"
+									/>
+								</label>
+								<label class="tools-tile-field tools-tile-field--narrow">
+									<span>Minutes until shutdown</span>
+									<input
+										type="number"
+										min="0"
+										max="1440"
+										bind:value={maintMinutes}
+									/>
+								</label>
+							</div>
+							<div class="tools-tile-actions">
+								<button
+									class="btn btn-danger"
+									disabled={maintLoading || !maintMessage.trim()}
+									onclick={() => (showMaintConfirm = true)}
+								>Enable Maintenance Mode</button>
+							</div>
 						{/if}
-					</div>
+					</section>
 
-					{#if maintStatus?.enabled}
-						<!-- Active maintenance info -->
-						<div class="maint-active-info">
-							{#if maintStatus.message}
-								<p class="maint-msg">{maintStatus.message}</p>
-							{/if}
-							{#if maintStatus.shutdownAt}
-								<p class="maint-shutdown">
-									Shutdown at: {new Date(maintStatus.shutdownAt).toLocaleString()}
+					<!-- ─── Tile 2: Registration Lock ─── -->
+					<section class="tools-tile">
+						<header class="tools-tile-head">
+							<h3 class="tools-tile-title">Registration Lock</h3>
+							<span class="tools-tile-dot" class:tools-tile-dot--active={regLockStatus?.locked}></span>
+							<span class="tools-tile-status">{regLockStatus?.locked ? 'Locked' : 'Open'}</span>
+						</header>
+						<p class="tools-tile-desc">
+							Blocks new account creation without signing anyone out. Use invites to onboard specific
+							people while registration is locked.
+						</p>
+
+						{#if regLockStatus?.locked}
+							<div class="tools-tile-info">
+								{#if regLockStatus.message}
+									<p class="tools-tile-msg">{regLockStatus.message}</p>
+								{/if}
+							</div>
+							<div class="tools-tile-actions">
+								<button class="btn btn-success" disabled={regLockLoading} onclick={disableRegLock}>
+									{regLockLoading ? 'Unlocking…' : 'Unlock Registration'}
+								</button>
+							</div>
+						{:else}
+							<div class="tools-tile-form">
+								<label class="tools-tile-field">
+									<span>Message shown on the register page</span>
+									<input
+										type="text"
+										placeholder="e.g. Registration is currently closed."
+										bind:value={regLockMessage}
+										maxlength="500"
+									/>
+								</label>
+							</div>
+							<div class="tools-tile-actions">
+								<button
+									class="btn btn-danger"
+									disabled={regLockLoading || !regLockMessage.trim()}
+									onclick={() => (showRegLockConfirm = true)}
+								>Lock Registration</button>
+							</div>
+						{/if}
+					</section>
+
+					<!-- ─── Tile 3: Broadcast Banner ─── -->
+					<section class="tools-tile">
+						<header class="tools-tile-head">
+							<h3 class="tools-tile-title">Broadcast Banner</h3>
+							<span class="tools-tile-dot" class:tools-tile-dot--active={broadcastStatus?.active}></span>
+							<span class="tools-tile-status">{broadcastStatus?.active ? 'Live' : 'Off'}</span>
+						</header>
+						<p class="tools-tile-desc">
+							Informational or warning banner shown to every user until dismissed. Editing the message
+							re-shows it for everyone — does not block login or revoke sessions.
+						</p>
+
+						{#if broadcastStatus?.active}
+							<div class="tools-tile-info">
+								<p class="tools-tile-msg">
+									<span class="invite-status invite-status--{broadcastStatus.severity === 'warning' ? 'revoked' : 'accepted'}">{broadcastStatus.severity}</span>
+									{broadcastStatus.message}
 								</p>
-							{/if}
-						</div>
-						<button
-							class="btn btn-success"
-							disabled={maintLoading}
-							onclick={disableMaint}
-						>
-							{maintLoading ? 'Disabling...' : 'Disable Maintenance'}
-						</button>
-					{:else}
-						<!-- Enable form -->
-						<div class="maint-form">
-							<label class="maint-label">
+								{#if broadcastStatus.postedAt}
+									<p class="tools-tile-meta">
+										Posted {new Date(broadcastStatus.postedAt).toLocaleString()}
+									</p>
+								{/if}
+							</div>
+						{/if}
+
+						<div class="tools-tile-form">
+							<label class="tools-tile-field">
 								<span>Message</span>
 								<input
-									class="maint-input"
 									type="text"
-									placeholder="e.g. Upgrading to v2.0"
-									bind:value={maintMessage}
+									bind:value={broadcastMessage}
 									maxlength="500"
+									placeholder="e.g. Foe images regenerating tonight 10–11pm UTC."
 								/>
 							</label>
-							<label class="maint-label">
-								<span>Minutes until shutdown</span>
-								<input
-									class="maint-input maint-input-num"
-									type="number"
-									min="0"
-									max="1440"
-									bind:value={maintMinutes}
-								/>
-							</label>
+							<div class="tools-tile-severity">
+								<span class="tools-tile-field-label">Severity</span>
+								<label class="severity-opt">
+									<input type="radio" bind:group={broadcastSeverity} value="info" />
+									<span>Info</span>
+								</label>
+								<label class="severity-opt">
+									<input type="radio" bind:group={broadcastSeverity} value="warning" />
+									<span>Warning</span>
+								</label>
+							</div>
 						</div>
-						<button
-							class="btn btn-danger"
-							disabled={maintLoading || !maintMessage.trim()}
-							onclick={() => (showMaintConfirm = true)}
-						>
-							Enable Maintenance Mode
-						</button>
-					{/if}
-				</div>
-			{/if}
-
-			<!-- ─── Broadcast banner panel ─── -->
-			<section class="broadcast-panel">
-				<h3 class="invites-h">Broadcast banner</h3>
-				<p class="invites-hint">
-					An informational or warning banner shown to every user until they dismiss it.
-					Editing the message re-shows the banner for everyone who previously dismissed it.
-					Does not revoke sessions or block login — use Maintenance above for that.
-				</p>
-
-				{#if broadcastStatus?.active}
-					<div class="broadcast-active">
-						<span class="invite-status invite-status--{broadcastStatus.severity === 'warning' ? 'revoked' : 'accepted'}">{broadcastStatus.severity}</span>
-						<span class="broadcast-message">{broadcastStatus.message}</span>
-					</div>
-					<p class="broadcast-posted-at">
-						Posted {broadcastStatus.postedAt ? new Date(broadcastStatus.postedAt).toLocaleString() : ''}
-					</p>
-				{:else}
-					<p class="broadcast-inactive">No banner currently active.</p>
-				{/if}
-
-				<div class="invite-form">
-					<label class="invite-field">
-						<span>Message</span>
-						<input
-							type="text"
-							bind:value={broadcastMessage}
-							maxlength="500"
-							placeholder="e.g. Foe images are being regenerated tonight 10pm–11pm UTC."
-						/>
-					</label>
-					<label class="invite-field">
-						<span>Severity</span>
-						<div class="severity-row">
-							<label class="severity-opt">
-								<input type="radio" bind:group={broadcastSeverity} value="info" />
-								<span>Info</span>
-							</label>
-							<label class="severity-opt">
-								<input type="radio" bind:group={broadcastSeverity} value="warning" />
-								<span>Warning</span>
-							</label>
-						</div>
-					</label>
-					<div class="invite-actions broadcast-actions">
-						<button
-							type="button"
-							class="btn btn-primary"
-							disabled={broadcastBusy || !broadcastMessage.trim()}
-							onclick={postBroadcast}
-						>
-							{broadcastBusy ? 'Saving…' : (broadcastStatus?.active ? 'Update banner' : 'Post banner')}
-						</button>
-						{#if broadcastStatus?.active}
+						<div class="tools-tile-actions">
 							<button
 								type="button"
-								class="btn"
-								disabled={broadcastBusy}
-								onclick={clearBroadcast}
-							>Clear</button>
+								class="btn btn-primary"
+								disabled={broadcastBusy || !broadcastMessage.trim()}
+								onclick={postBroadcast}
+							>
+								{broadcastBusy ? 'Saving…' : (broadcastStatus?.active ? 'Update banner' : 'Post banner')}
+							</button>
+							{#if broadcastStatus?.active}
+								<button type="button" class="btn" disabled={broadcastBusy} onclick={clearBroadcast}>Clear</button>
+							{/if}
+						</div>
+						{#if broadcastError}
+							<div class="invite-error">{broadcastError}</div>
 						{/if}
-					</div>
-					{#if broadcastError}
-						<div class="invite-error">{broadcastError}</div>
-					{/if}
+					</section>
+
 				</div>
-			</section>
+			{/if}
 
 		</div>
 	{/if}
@@ -1942,43 +1936,147 @@
 		font-size: 0.72rem;
 	}
 
-	/* ── Broadcast panel (inside Maintenance tab) ──────────────────── */
-	.broadcast-panel {
+	/* ──────────────────────────────────────────────────────────────────────
+	   Tools tab — three vertical tiles (Maintenance · Reg Lock · Broadcast)
+	   ────────────────────────────────────────────────────────────────────── */
+	.tools-panel {
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
 		max-width: 820px;
-		margin-top: 2rem;
-		padding-top: 1.5rem;
-		border-top: 1px solid var(--border);
 	}
-	.broadcast-active {
+
+	.tools-tile {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		padding: 1.1rem 1.2rem 1.15rem;
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		background: var(--bg-card);
+	}
+
+	.tools-tile-head {
 		display: flex;
 		align-items: center;
-		gap: 0.75rem;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+	.tools-tile-title {
+		flex: 1 1 auto;
+		font-family: var(--font-display);
+		font-size: 0.95rem;
+		font-weight: 700;
+		letter-spacing: 0.05em;
+		color: var(--text-accent);
+		margin: 0;
+	}
+	.tools-tile-dot {
+		width: 9px;
+		height: 9px;
+		border-radius: 50%;
+		background: var(--text-dimmer);
+		flex-shrink: 0;
+	}
+	.tools-tile-dot--active {
+		background: var(--color-danger);
+		box-shadow: 0 0 6px color-mix(in srgb, var(--color-danger) 55%, transparent);
+	}
+	.tools-tile-status {
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		font-weight: 600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color: var(--text-muted);
+	}
+	.tools-tile-timer {
+		font-family: var(--font-ui);
+		font-size: 0.75rem;
+		color: var(--color-danger);
+		margin-left: auto;
+	}
+	.tools-tile-timer strong {
+		font-family: 'Roboto Mono', monospace;
+		font-weight: 700;
+	}
+
+	.tools-tile-desc {
+		margin: 0;
+		font-size: 0.82rem;
+		line-height: 1.55;
+		color: var(--text-muted);
+		max-width: 68ch;
+	}
+
+	.tools-tile-info {
 		padding: 10px 12px;
-		background: var(--bg-inset);
 		border: 1px solid var(--border);
 		border-radius: 4px;
-		margin-bottom: 0.4rem;
+		background: var(--bg-inset);
 	}
-	.broadcast-message {
+	.tools-tile-msg {
+		margin: 0;
 		font-size: 0.88rem;
+		line-height: 1.5;
 		color: var(--text);
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-wrap: wrap;
 	}
-	.broadcast-posted-at {
+	.tools-tile-meta {
+		margin: 0.4rem 0 0;
 		font-size: 0.72rem;
 		color: var(--text-dimmer);
-		margin: 0 0 1rem;
 	}
-	.broadcast-inactive {
-		font-size: 0.82rem;
-		color: var(--text-dimmer);
-		font-style: italic;
-		margin: 0 0 1rem;
-	}
-	.severity-row {
+
+	.tools-tile-form {
 		display: flex;
-		gap: 1rem;
-		align-items: center;
+		flex-direction: column;
+		gap: 0.6rem;
 	}
+	.tools-tile-field {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+	.tools-tile-field--narrow { max-width: 220px; }
+	.tools-tile-field > span,
+	.tools-tile-field-label {
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		font-weight: 600;
+		letter-spacing: 0.03em;
+		color: var(--text-muted);
+	}
+	.tools-tile-field input {
+		padding: 7px 10px;
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+		background: var(--bg-control);
+		color: var(--text);
+		font-family: var(--font-ui);
+		font-size: 0.85rem;
+	}
+	.tools-tile-field input:focus {
+		outline: none;
+		border-color: var(--text-accent);
+	}
+
+	.tools-tile-severity {
+		display: flex;
+		align-items: center;
+		gap: 0.8rem;
+		flex-wrap: wrap;
+	}
+
+	.tools-tile-actions {
+		display: flex;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+
 	.severity-opt {
 		display: flex;
 		align-items: center;
@@ -1988,8 +2086,4 @@
 		cursor: pointer;
 	}
 	.severity-opt input { margin: 0; }
-	.broadcast-actions {
-		display: flex;
-		gap: 0.5rem;
-	}
 </style>
