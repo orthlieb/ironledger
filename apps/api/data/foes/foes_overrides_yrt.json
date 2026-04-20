@@ -14,10 +14,12 @@
       "addendum": "In YRT: a carnivorous plant that grew up in a blight zone. Verdant drives the aggressive growth and tendril motion; Azure lets it extract and stitch new pods from prey blood. Green body, red-sheathed thorns, central pod acting as a crude natural seed."
     },
     "delve/bog-rot": {
-      "present": false
+      "present": false,
+      "addendum": "In YRT: does not exist as written — a preserved corpse that rises with intent, memory, and the ability to bargain requires a soul, and YRT has none. Replaced by the Mire-Form: a wild Verdant + Black construct using a preserved corpse as a plant-growth substrate. Not the dead person, but a plant using a dead body as a pot. See the YRT Bestiary."
     },
     "delve/bonehorde": {
-      "present": false
+      "present": false,
+      "addendum": "In YRT: does not exist as written — the 'spiteful being at the heart' is a soul, and YRT has none. Replaced by the War-Pile: a pre-Fall AI construct with centuries-old standing orders, assembling structural mass (bones, scrap metal, masonry) around a Crimson-powered AI core. Reawakens when dragged into sunlight. See the YRT Bestiary."
     },
     "delve/carrion-newt": {
       "addendum": "In YRT: an ordinary large amphibian. Optional Verdant trace in eggs that incubate in rotting flesh — a Verdant/decay boundary niche."
@@ -29,16 +31,18 @@
       "addendum": "In YRT: a blight-adapted giant insect. Verdant drives the scale-up, Azure the chitin regeneration and digestive-slurry vomit, faint Amber the twittering call used for spatial mapping. Grey-brown carapace, yellowish vomit."
     },
     "delve/circle-of-stones": {
-      "present": false
+      "present": false,
+      "addendum": "In YRT: does not exist as written — thinking stones that trade knowledge for memory require agency stones don't have. Replaced by the Whispering Stones: a leaking pre-Fall Amber communication relay whose decayed buffer inflicts neural-pattern interference on anyone inside the perimeter. Confusion, false recall, personality drift. See the YRT Bestiary."
     },
     "delve/deep-rat": {
       "addendum": "In YRT: a mundane naked-mole-rat analogue. No mana required."
     },
     "delve/glimmer": {
-      "present": false
+      "present": false,
+      "addendum": "In YRT: does not exist as written — paths descending into the past or climbing into the future require time travel, and YRT has none. Replaced by the Wisp-Walker: a drifting Amber + Luminous particle cloud that lures travellers into blight zones by appearing to guide them. Not a person, not a guide — a feedback loop between the cloud and the observer's own brain. See the YRT Bestiary."
     },
     "delve/gloom": {
-      "addendum": "In YRT: an unbound Amber + Black wild-mana phenomenon in dark, still places — not intelligent, a self-sustaining mana weather system. Amber drives the illusions, voice mimicry, and fear induction; Black is the shadow-mass itself and the life-leech on enveloped prey. Oily black with flickering amber edges."
+      "addendum": "In YRT: an unbound Amber + Black wild-mana phenomenon in dark, still places — not intelligent, a self-sustaining mana weather system drifting along gradients of warmth and prey. Amber drives the illusions, voice mimicry, and fear induction; Black is the shadow-mass itself and the life-leech on enveloped prey. Oily black with flickering amber edges where it touches minds. The 'mind like a crow picks at carrion' is a description of Amber backlash effects, not malice."
     },
     "delve/gnarl": {
       "addendum": "In YRT: a huge forest herbivore symbiotic with Verdant mana. Verdant drives hide pigmentation, seasonal colour shift, longevity, and antler growth; Gray gives the bark-textured dermal layer. Hide shifts green / amber / russet / bare-brown through its life."
@@ -47,13 +51,14 @@
       "addendum": "In YRT: the walking worst-case outcome of the mana-backlash oracle — a wizard who over-drew on Black, Amber, and Crimson and survived in a ruined state. 'Forever hungry' is mana addiction. Black for decay and life-leech, Amber for compulsion and extracting mana from others, Crimson for the forbidden attack magic."
     },
     "delve/iron-wracked-beast": {
-      "addendum": "In YRT: an industrial-era contamination victim. Free Gray mana from a ruptured pre-Fall site converts the animal's tissue into a structural lattice — a slow, agonising transformation. Crimson residue drives the pain, the heat, and the howl. Iron-grey patches in weeping red flesh. The 'hammer on anvil' sound is Gray crystallisation inside muscle tissue."
+      "addendum": "In YRT: an industrial-era contamination victim. Free Gray mana from a ruptured pre-Fall site converts the animal's tissue into a structural lattice — a slow, agonising transformation. Crimson residue drives the pain, the heat, and the howl. Iron-grey patches in weeping red flesh. The 'hammer on anvil' sound is Gray crystallisation inside muscle tissue. The 'Iron Blight' is a local name for the industrial contamination gradient itself; affected animals cluster near old Conclave refinery ruins."
     },
     "delve/kraken": {
       "addendum": "In YRT: a mundane giant cephalopod, just very large. Optional Azure trace for regenerative tissue — it's very hard to kill."
     },
     "delve/maelstrom": {
-      "present": false
+      "present": false,
+      "addendum": "In YRT: does not exist as written — a sentient vortex that bargains with the drowning requires agency water doesn't have. Replaced by the Drowning-Eye: a wild mana vortex sustained by ruptured Azure and Luminous seeds from a shipwreck, the 'voices' an Amber imprint on suspended particulates. See the YRT Bestiary."
     },
     "delve/merrow": {
       "addendum": "In YRT: an aquatic humanoid species — the religion is human culture, not magic. Crude Azure-based rituals (topical healing, endurance) are consistent with any coastal culture."
@@ -71,16 +76,19 @@
       "addendum": "In YRT: a camouflaging crustacean. Optional trace Gray in the carapace for matter-matching camouflage; otherwise mundane chromatophores."
     },
     "delve/tempest": {
-      "present": false
+      "present": false,
+      "addendum": "In YRT: does not exist as written — an intelligent storm that offers bargains requires agency weather doesn't have. Replaced by the Witherwind: a wild Luminous + Azure storm drifting along thermal gradients toward warmth, the 'voices' Amber imprints suspended in the Luminous lattice. See the YRT Bestiary."
     },
     "delve/thrall": {
-      "present": false
+      "present": false,
+      "addendum": "In YRT: does not exist as written — possession by an undead spirit requires a spirit, and YRT has none. Replaced by the Carrier: a living host with a surgically implanted Amber compulsion-seed at the base of the skull, keyed to a trigger. The puppeteer is a living caster somewhere, not a ghost. See the YRT Bestiary."
     },
     "delve/trog": {
       "addendum": "In YRT: a burrowing reptilian predator. Luminous trace gives the bioluminescent scale layer; faint Verdant explains longevity and regrowth of claws and scales. Green-white glow."
     },
     "delve/wight": {
-      "present": false
+      "present": false,
+      "addendum": "In YRT: does not exist as written — a corpse that retains reasoning and purpose beyond death requires soul persistence, and YRT has none. Replaced by the Tomb-Walker: a living person inside an illegal Gray + Azure life-support rig, sustained past natural death. Mortal, killable, and they know to the day how long their reservoir will last. See the YRT Bestiary."
     },
     "delve/wyrm": {
       "addendum": "In YRT: a mundane very large serpent; 'eyes piercing the thickest darkness' is excellent night vision. Optional Verdant-tinted longevity and Crimson trace in the eyes for the torchlight gaze."
@@ -98,7 +106,8 @@
       "addendum": "In YRT: an oversized aggressive pig. If the size wants explaining, mild Verdant in the local environment produces oversized wildlife generally — the same explanation covers elder beasts, gnarls, and mammoths in the same region."
     },
     "ironsworn/bonewalker": {
-      "present": false
+      "present": false,
+      "addendum": "In YRT: does not exist as written — animated skeletons with the will to destroy life require a soul, and YRT has none. Replaced by Puppet-Bones: a handler-driven illegal skeletal construct operated remotely via an Amber command-link from up to two hundred paces away. Mindless when the handler quits. See the YRT Bestiary."
     },
     "ironsworn/broken": {
       "addendum": "In YRT: humans who have gone feral. If you want a cause, hint at long-term untreated Amber exposure from living on contaminated land — personality erosion matches the backlash description."
@@ -113,10 +122,11 @@
       "addendum": "In YRT: oversized wolves, bears, or boars gestated near a stable long-standing blight zone. Verdant drives the size and longevity; trace Crimson gives the red-glowing eyes. The 'avatars of the old gods, long-lived as trees' is folk belief."
     },
     "ironsworn/elf": {
-      "addendum": "In YRT: an isolated forest-dwelling humanoid species. 'Binding animals to aid in defence' is skilled Verdant and Amber use — long-term training reinforced by scent-compulsion seeds. Wooden masks likely contain Amber-tuning channels."
+      "addendum": "In YRT: an isolated forest-dwelling humanoid species — verdant-tainted humanoids shaped over many generations by deep Verdant exposure. 'Binding animals to aid in defence' is skilled Verdant and Amber use: long-term training reinforced by scent-compulsion seeds. Wooden masks likely contain Amber-tuning channels. The Conclave dislikes their Mask-Risen practice but has not stopped it."
     },
     "ironsworn/frostbound": {
-      "present": false
+      "present": false,
+      "addendum": "In YRT: does not exist as written — cursed dead driven to seek warmth require a curse, and YRT has none. Replaced by the Coldhusk: a Luminous + Azure-saturated corpse in Luminous-rich permafrost, with a thermal-differential reflex to grasp anything warm that comes within reach. Does not pursue. Does not seek. Waits. See the YRT Bestiary."
     },
     "ironsworn/gaunt": {
       "addendum": "In YRT: a blight-adapted grazer bred by elves. Gray gives the scaled hide for protection; faint Luminous explains the pale-eye glow. An unusual species, not supernatural."
@@ -128,16 +138,19 @@
       "addendum": "In YRT: a giant spider — Verdant-tinted gigantism, otherwise a normal arachnid. Iridescent black eyes come from trace Amber/Gray in the lens tissue, not functionally magical."
     },
     "ironsworn/haunt": {
-      "present": false
+      "present": false,
+      "addendum": "In YRT: does not exist as written — a restless spirit tied to an unjust death requires a spirit, and YRT has none. Replaced by the Echo: an Amber imprint at the site of a violent death, burned onto porous material (stone, old wood, deep snow, standing water). A recording, not a person. Replays when disturbed. See the YRT Bestiary."
     },
     "ironsworn/hollow": {
-      "present": false
+      "present": false,
+      "addendum": "In YRT: does not exist as written — a dead elf's vengeance given self-assembling form requires soul persistence, and YRT has none. Replaced by the Mask-Risen (and its larger Greatmask variant): a Verdant construct walked by a living elven elder via an Amber-laced mask. Kill the mask or stop the walker, not the body. See the YRT Bestiary."
     },
     "ironsworn/hunter": {
       "addendum": "In YRT: human."
     },
     "ironsworn/iron-revenant": {
-      "present": false
+      "present": false,
+      "addendum": "In YRT: does not exist as written — an incorporeal force of vows given metal form requires a soul, and YRT has none. Replaced by the Vow-Walker: a Pura Ecclesia reliquary shell (Luminous armour, Azure joints, Crimson core, ceramic death-mask) operated by an Iron Warden handler via an Amber-encoded oath. Doctrinal necessity, not supernatural. See the YRT Bestiary."
     },
     "ironsworn/leviathan": {
       "addendum": "In YRT: an enormous sea beast, mundane megafauna. Optional deep-ocean blight flavour — Azure-tough tissue and Gray-infused dermis; 'flesh as tough as iron' reads literally."
@@ -149,16 +162,18 @@
       "addendum": "In YRT: a large mundane rat."
     },
     "ironsworn/mystic": {
-      "addendum": "In YRT: a Conclave-adjacent mage or an unlicensed one. 'Walks in two worlds' is folk description of a heavy Amber user — Amber interfaces with the nervous system, and the shimmering eyes are a documented implant side effect. Amber primary; Luminous + Gray for ward and circle work; some are black-market Black users, which explains 'consumed by the darkness'."
+      "addendum": "In YRT: a Vizion (Conclave Amber-trained mage) — or an unlicensed one. 'Walks in two worlds' is folk description of a heavy Amber user, and the shimmering eyes are a documented Amber-implant side effect. Amber primary; Luminous + Gray for ward and circle work; some are black-market Black users, which explains 'consumed by the darkness'."
     },
     "ironsworn/primordial": {
-      "present": false
+      "present": false,
+      "addendum": "In YRT: does not exist as written — vestigial spirits of forgotten gods require gods, and YRT has none. Replaced by the Locus: a walking mana-saturation point, dominated by a single colour, its body whatever local matter that colour wants to bind. Not sentient, not agentic, just very large and drifting toward higher flux. See the YRT Bestiary."
     },
     "ironsworn/raider": {
       "addendum": "In YRT: humans with axes."
     },
     "ironsworn/sodden": {
-      "present": false
+      "present": false,
+      "addendum": "In YRT: does not exist as written — a lonely restless spirit of the drowned requires a spirit, and YRT has none. Replaced by the Bloater: an Azure-saturated corpse in a contaminated water source, with a reflexive spinal response to thermal and pressure stimuli. Grabs, holds, drowns. Not pursuing, not sad, just reactive. See the YRT Bestiary."
     },
     "ironsworn/troll": {
       "addendum": "In YRT: a large humanoid with camouflaging skin — the same chromatophore trick as a shroud crab, just bigger. Gray-trace dermal layer; otherwise mundane biology. Solitary, shy, hoards objects."
