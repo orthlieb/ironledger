@@ -26,12 +26,27 @@
 			</h1>
 			<span class="auth-brand-rule"></span>
 		</div>
-		<p class="hero-caption">You have been invited.</p>
 
 		{#if data.error}
+			<div class="hero-image-wrap">
+				<img
+					src="/ironledger-email-expired.webp"
+					alt="A weathered scroll, its seal broken, drifts away on a cold wind"
+					class="hero-image"
+				/>
+				<p class="hero-caption">The summons has passed its hour.</p>
+			</div>
 			<div class="error-msg">{data.error}</div>
 			<p class="auth-link"><a href="/login">Go to sign in</a></p>
 		{:else if data.preview}
+			<div class="hero-image-wrap">
+				<img
+					src="/ironledger-register.webp"
+					alt="A Norse warrior raises an axe, calling a new oath-sworn into the Ironlands"
+					class="hero-image"
+				/>
+				<p class="hero-caption">You have been invited.</p>
+			</div>
 			<p class="invite-intro">
 				An Iron Ledger admin has opened an account for
 				<strong>{data.preview.email}</strong>. Set a password below to finish

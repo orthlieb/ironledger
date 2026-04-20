@@ -752,8 +752,8 @@
 						<div class="invites-hero">
 							<img
 								class="invites-hero-img"
-								src="/ironledger-scribe.webp"
-								alt="A scribe at a writing desk, quill in hand, drafting a summons by candlelight"
+								src="/ironledger-register.webp"
+								alt="A Norse warrior raises an axe, calling a new oath-sworn into the Ironlands"
 							/>
 							<p class="invites-hero-caption">Scribe a summons — dispatch a new iron-bound oath to the Ironlands.</p>
 						</div>
