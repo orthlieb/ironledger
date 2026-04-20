@@ -734,32 +734,34 @@
 									<td class="td-num">{user.encounterCount}</td>
 									<td class="td-num">{user.expeditionCount}</td>
 									<td class="td-actions">
-										<button
-											class="btn btn-icon"
-											class:btn-dimmed={isLastAdmin}
-											title={isLastAdmin ? 'Cannot demote the last admin' : user.role === 'admin' ? 'Demote to user' : 'Promote to admin'}
-											disabled={isLastAdmin}
-											onclick={() => toggleRole(user)}
-										>
-											{user.role === 'admin' ? 'Demote' : 'Promote'}
-										</button>
-										<button
-											class="btn btn-icon"
-											class:btn-warn={user.isActive && !isSelf}
-											class:btn-dimmed={isSelf}
-											disabled={isSelf}
-											title={isSelf ? 'Cannot suspend your own account' : user.isActive ? 'Suspend user (immediately boots and blocks login)' : 'Unsuspend user'}
-											onclick={() => (suspendTarget = user)}
-										>
-											{user.isActive ? 'Suspend' : 'Unsuspend'}
-										</button>
-										<button
-											class="btn btn-icon btn-danger"
-											title="Delete user and all data"
-											onclick={() => (deleteTarget = user)}
-										>
-											Delete
-										</button>
+										<div class="td-actions-inner">
+											<button
+												class="btn btn-icon"
+												class:btn-dimmed={isLastAdmin}
+												title={isLastAdmin ? 'Cannot demote the last admin' : user.role === 'admin' ? 'Demote to user' : 'Promote to admin'}
+												disabled={isLastAdmin}
+												onclick={() => toggleRole(user)}
+											>
+												{user.role === 'admin' ? 'Demote' : 'Promote'}
+											</button>
+											<button
+												class="btn btn-icon"
+												class:btn-warn={user.isActive && !isSelf}
+												class:btn-dimmed={isSelf}
+												disabled={isSelf}
+												title={isSelf ? 'Cannot suspend your own account' : user.isActive ? 'Suspend user (immediately boots and blocks login)' : 'Unsuspend user'}
+												onclick={() => (suspendTarget = user)}
+											>
+												{user.isActive ? 'Suspend' : 'Unsuspend'}
+											</button>
+											<button
+												class="btn btn-icon btn-danger"
+												title="Delete user and all data"
+												onclick={() => (deleteTarget = user)}
+											>
+												Delete
+											</button>
+										</div>
 									</td>
 								</tr>
 							{/each}
@@ -1645,8 +1647,15 @@
 
 	.td-actions {
 		white-space: nowrap;
+	}
+	/* Flex lives on an inner wrapper, not the td itself — `display: flex`
+	   on a table cell takes it out of the table's flow so its baseline and
+	   border-bottom no longer line up with the neighbouring cells, which
+	   makes the row's border appear disjoint under the actions column. */
+	.td-actions-inner {
 		display: flex;
 		gap: 0.3rem;
+		align-items: center;
 	}
 
 	/* Role badge */
