@@ -14,6 +14,7 @@
 	import { untrack } from 'svelte';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '$lib/foePortrait.js';
+	import FoeImageCarousel from '$lib/components/FoeImageCarousel.svelte';
 	import ProgressTrack   from '$lib/components/ProgressTrack.svelte';
 	import ConfirmDialog   from '$lib/components/ConfirmDialog.svelte';
 
@@ -166,9 +167,13 @@
 			/>
 		{/if}
 		{#if thumbHovered && imgVisible}
-			<div class="fc-lightbox" aria-hidden="true">
-				<img src={imageUrl(foeDef.name)} alt={foeDef.name}
-					onerror={(e) => { (e.currentTarget as HTMLImageElement).src = UNKNOWN_FOE_PORTRAIT; }} />
+			<div
+				class="fc-lightbox"
+				onmouseenter={() => (thumbHovered = true)}
+				onmouseleave={() => (thumbHovered = false)}
+				role="presentation"
+			>
+					<FoeImageCarousel name={foeDef.name} alt={foeDef.name} class="fc-lightbox-img" />
 			</div>
 		{/if}
 
@@ -384,14 +389,17 @@
 		border-radius: 8px;
 		padding: 4px;
 		box-shadow: 0 8px 32px #00000080;
-		pointer-events: none;
+		/* pointer-events enabled so the carousel arrows are clickable. The
+		   lightbox handles its own mouseenter/leave to stay open while the
+		   user hovers the arrows. */
 	}
-	.fc-lightbox img {
+	.fc-lightbox :global(.fc-lightbox-img) {
 		width: 160px;
 		height: 160px;
-		object-fit: cover;
 		border-radius: 5px;
-		display: block;
+	}
+	.fc-lightbox :global(.fc-lightbox-img) :global(img) {
+		border-radius: 5px;
 	}
 
 	.fc-name {

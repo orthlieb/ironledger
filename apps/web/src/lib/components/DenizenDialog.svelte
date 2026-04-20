@@ -20,7 +20,7 @@
 	} from '$lib/foeStore.svelte.js';
 	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
-	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '$lib/foePortrait.js';
+	import FoeImageCarousel from '$lib/components/FoeImageCarousel.svelte';
 
 	// ---------------------------------------------------------------------------
 	// Props
@@ -127,7 +127,6 @@
 		return `background:${rc.bg}22; color:${rc.bg}`;
 	}
 
-	const imageUrl = foePortraitUrl;
 </script>
 
 <dialog
@@ -185,12 +184,7 @@
 				<!-- Top row: portrait + quantity/pills -->
 				<div class="dd-confirm-top">
 					<div class="dd-portrait-wrap">
-						<img
-							class="dd-portrait"
-							src={imageUrl(rolledFoe.name)}
-							alt={rolledFoe.name}
-							onerror={(e) => { (e.currentTarget as HTMLImageElement).src = UNKNOWN_FOE_PORTRAIT; }}
-						/>
+						<FoeImageCarousel name={rolledFoe.name} alt={rolledFoe.name} class="dd-portrait" />
 					</div>
 
 					<div class="dd-qty-section">

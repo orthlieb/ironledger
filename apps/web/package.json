@@ -4,7 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "foe-manifest": "node ./scripts/build-foe-manifest.mjs",
+    "predev": "npm run foe-manifest",
     "dev": "vite dev --port 5173",
+    "prebuild": "npm run foe-manifest",
     "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",

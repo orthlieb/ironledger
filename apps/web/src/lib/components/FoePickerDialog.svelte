@@ -20,6 +20,7 @@
 	} from '$lib/foeStore.svelte.js';
 	import { sourceLabel } from '$lib/expansionStore.svelte.js';
 	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '$lib/foePortrait.js';
+	import FoeImageCarousel from '$lib/components/FoeImageCarousel.svelte';
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
 
 
@@ -341,12 +342,7 @@
 			<!-- Top row: portrait + quantity/pills -->
 			<div class="fd-confirm-top">
 				<div class="fc-portrait-wrap">
-					<img
-						class="fc-portrait"
-						src={imageUrl(confirmFoe.name)}
-						alt={confirmFoe.name}
-						onerror={(e) => { (e.currentTarget as HTMLImageElement).src = UNKNOWN_FOE_PORTRAIT; }}
-					/>
+					<FoeImageCarousel name={confirmFoe.name} alt={confirmFoe.name} class="fc-portrait" />
 				</div>
 
 				<div class="fd-qty-top">
