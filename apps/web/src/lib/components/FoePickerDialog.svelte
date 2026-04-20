@@ -194,7 +194,11 @@
 		return `background:${rc.bg}22; color:${rc.bg}`;
 	}
 
-	const imageUrl = foePortraitUrl;
+	// Grid tiles show just the primary image (index 0) — alternates are
+	// only cycled in the confirm view carousel.
+	function imageUrl(foe: { name: string; images?: string[] }): string {
+		return foePortraitUrl(foe.name, foe.images);
+	}
 </script>
 
 <dialog
@@ -299,7 +303,7 @@
 							<div class="fd-tile-img-wrap">
 								<img
 									class="fd-tile-img"
-									src={imageUrl(foe.name)}
+									src={imageUrl(foe)}
 									alt={foe.name}
 									onerror={(e) => { (e.currentTarget as HTMLImageElement).src = UNKNOWN_FOE_PORTRAIT; }}
 								/>
@@ -342,7 +346,7 @@
 			<!-- Top row: portrait + quantity/pills -->
 			<div class="fd-confirm-top">
 				<div class="fc-portrait-wrap">
-					<FoeImageCarousel name={confirmFoe.name} alt={confirmFoe.name} class="fc-portrait" />
+					<FoeImageCarousel name={confirmFoe.name} images={confirmFoe.images} alt={confirmFoe.name} class="fc-portrait" />
 				</div>
 
 				<div class="fd-qty-top">

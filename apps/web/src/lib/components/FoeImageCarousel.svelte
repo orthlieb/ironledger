@@ -1,62 +1,61 @@
 <script lang="ts">
 	/**
-	 * FoeImageCarousel — displays a foe portrait with prev/next arrows that
-	 * cycle through any numbered alternates in static/foes/ (e.g. bear.webp,
-	 * bear-2.webp, bear-3.webp). Arrows + counter only appear when more
-	 * than one image exists.
+	 * FoeImageCarousel — portrait with prev/next arrows that cycle through
+	 * a foe's alternate portraits. Arrows + the dot indicator only appear
+	 * when more than one image exists.
 	 *
-	 * Drops into any spot that used to show a single <img>. Example:
-	 *
-	 *   <FoeImageCarousel name={foe.name} alt={foe.name} class="fc-portrait" />
+	 *   <FoeImageCarousel name={foe.name} images={foe.images} alt={foe.name} />
 	 *
 	 * Keyboard: ArrowLeft / ArrowRight cycle when the component has focus.
 	 */
 
-	import { foePortraitUrl, discoverFoePortraitCount, UNKNOWN_FOE_PORTRAIT } from '$lib/foePortrait.js';
+	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '$lib/foePortrait.js';
 
 	interface Props {
 		name: string;
+		images?: readonly string[];
 		alt?: string;
 		class?: string;
-		/** Show a small "n / m" counter overlay. Defaults to true when multiple. */
-		showCounter?: boolean;
 	}
 
-	let { name, alt, class: className = '', showCounter = true }: Props = $props();
+	let { name, images, alt, class: className = '' }: Props = $props();
 
 	let index = $state(0);
-	let count = $state(1);   // we always assume the primary exists
 
+	// Reset the cursor to 0 whenever the parent swaps to a different foe or
+	// the image list shape changes.
 	$effect(() => {
-		// Kick off discovery when the name changes; ignore until resolved.
-		const currentName = name;
+		const _reset = name + (images?.length ?? 0);
 		index = 0;
-		count = 1;
-		discoverFoePortraitCount(currentName).then((n) => {
-			if (currentName === name) count = n;
-		});
 	});
+
+	let count       = $derived(images && images.length > 0 ? images.length : 1);
+	let src         = $derived(foePortraitUrl(name, images, index));
+	let hasMultiple = $derived(count > 1);
 
 	function prev(e: Event) {
 		e.stopPropagation();
-		if (count <= 1) return;
+		if (!hasMultiple) return;
 		index = (index - 1 + count) % count;
 	}
 
 	function next(e: Event) {
 		e.stopPropagation();
-		if (count <= 1) return;
+		if (!hasMultiple) return;
 		index = (index + 1) % count;
 	}
 
+	function goto(i: number, e: Event) {
+		e.stopPropagation();
+		if (i < 0 || i >= count) return;
+		index = i;
+	}
+
 	function onKey(e: KeyboardEvent) {
-		if (count <= 1) return;
+		if (!hasMultiple) return;
 		if (e.key === 'ArrowLeft')  { prev(e); e.preventDefault(); }
 		if (e.key === 'ArrowRight') { next(e); e.preventDefault(); }
 	}
-
-	let src = $derived(foePortraitUrl(name, index));
-	let hasMultiple = $derived(count > 1);
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
@@ -89,9 +88,21 @@
 			aria-label="Next image"
 		>›</button>
 
-		{#if showCounter}
-			<span class="foe-carousel-counter" aria-hidden="true">{index + 1} / {count}</span>
-		{/if}
+		<!-- Dot indicator — one dot per image, centered at the bottom. Active
+		     dot is opaque white; inactive are translucent. Clickable so the
+		     user can jump directly. -->
+		<div class="foe-carousel-dots">
+			{#each { length: count } as _, i}
+				<button
+					type="button"
+					class="foe-carousel-dot"
+					class:is-active={i === index}
+					onclick={(e) => goto(i, e)}
+					aria-label={`Go to image ${i + 1}`}
+					aria-current={i === index ? 'true' : undefined}
+				></button>
+			{/each}
+		</div>
 	{/if}
 </div>
 
@@ -146,18 +157,39 @@
 	.foe-carousel-arrow--prev { left: 6px; }
 	.foe-carousel-arrow--next { right: 6px; }
 
-	.foe-carousel-counter {
+	/* Dot indicator — translucent capsule of circles, centered at the bottom. */
+	.foe-carousel-dots {
 		position: absolute;
-		bottom: 6px;
-		right: 8px;
-		padding: 2px 7px;
-		border-radius: 10px;
-		background: rgba(0, 0, 0, 0.55);
-		color: #fff;
-		font-family: var(--font-ui);
-		font-size: 0.68rem;
-		font-weight: 600;
-		letter-spacing: 0.05em;
-		pointer-events: none;
+		bottom: 8px;
+		left: 50%;
+		transform: translateX(-50%);
+		display: flex;
+		gap: 6px;
+		padding: 4px 8px;
+		border-radius: 999px;
+		background: rgba(0, 0, 0, 0.35);
+		-webkit-backdrop-filter: blur(2px);
+		backdrop-filter: blur(2px);
+	}
+	.foe-carousel-dot {
+		width: 8px;
+		height: 8px;
+		padding: 0;
+		border: none;
+		border-radius: 50%;
+		background: rgba(255, 255, 255, 0.35);
+		cursor: pointer;
+		transition: background 0.15s, transform 0.15s;
+	}
+	.foe-carousel-dot:hover {
+		background: rgba(255, 255, 255, 0.6);
+	}
+	.foe-carousel-dot.is-active {
+		background: rgba(255, 255, 255, 0.95);
+		transform: scale(1.15);
+	}
+	.foe-carousel-dot:focus-visible {
+		outline: 2px solid var(--text-accent);
+		outline-offset: 2px;
 	}
 </style>

@@ -3,6 +3,9 @@
     {
       "id": "yrt/mire-form",
       "name": "Mire Form",
+      "images": [
+        "mire-form.webp"
+      ],
       "rank": 2,
       "nature": "Anomaly",
       "features": [
@@ -27,6 +30,9 @@
     {
       "id": "yrt/puppet-bones",
       "name": "Puppet Bones",
+      "images": [
+        "puppet-bones.webp"
+      ],
       "rank": 2,
       "nature": "Construct",
       "features": [
@@ -51,6 +57,9 @@
     {
       "id": "yrt/war-pile",
       "name": "War Pile",
+      "images": [
+        "war-pile.webp"
+      ],
       "rank": 5,
       "nature": "Construct",
       "features": [
@@ -75,6 +84,9 @@
     {
       "id": "yrt/whispering-stones",
       "name": "The Whispering Stones",
+      "images": [
+        "the-whispering-stones.webp"
+      ],
       "rank": 3,
       "nature": "Anomaly",
       "features": [
@@ -97,6 +109,9 @@
     {
       "id": "yrt/coldhusk",
       "name": "Coldhusk",
+      "images": [
+        "coldhusk.webp"
+      ],
       "rank": 2,
       "nature": "Anomaly",
       "features": [
@@ -120,6 +135,9 @@
     {
       "id": "yrt/wisp-walker",
       "name": "Wisp Walker",
+      "images": [
+        "wisp-walker.webp"
+      ],
       "rank": 2,
       "nature": "Anomaly",
       "features": [
@@ -142,6 +160,9 @@
     {
       "id": "yrt/echo",
       "name": "Echo",
+      "images": [
+        "echo.webp"
+      ],
       "rank": 2,
       "nature": "Anomaly",
       "features": [
@@ -164,6 +185,9 @@
     {
       "id": "yrt/mask-risen",
       "name": "Mask Risen",
+      "images": [
+        "mask-risen.webp"
+      ],
       "rank": 4,
       "nature": "Construct",
       "features": [
@@ -188,6 +212,9 @@
     {
       "id": "yrt/greatmask",
       "name": "Greatmask",
+      "images": [
+        "greatmask.webp"
+      ],
       "rank": 5,
       "nature": "Construct",
       "features": [
@@ -212,6 +239,9 @@
     {
       "id": "yrt/vow-walker",
       "name": "Vow Walker",
+      "images": [
+        "vow-walker.webp"
+      ],
       "rank": 5,
       "nature": "Construct",
       "features": [
@@ -237,6 +267,9 @@
     {
       "id": "yrt/drowning-eye",
       "name": "Drowning Eye",
+      "images": [
+        "drowning-eye.webp"
+      ],
       "rank": 3,
       "nature": "Anomaly",
       "features": [
@@ -260,6 +293,13 @@
     {
       "id": "yrt/locus",
       "name": "Locus",
+      "images": [
+        "locus-azure.webp",
+        "locus-crimson.webp",
+        "locus-gray.webp",
+        "locus-luminous.webp",
+        "locus-verdant.webp"
+      ],
       "rank": 5,
       "nature": "Anomaly",
       "features": [
@@ -284,6 +324,9 @@
     {
       "id": "yrt/bloater",
       "name": "Bloater",
+      "images": [
+        "bloater.webp"
+      ],
       "rank": 2,
       "nature": "Anomaly",
       "features": [
@@ -308,6 +351,9 @@
     {
       "id": "yrt/witherwind",
       "name": "Witherwind",
+      "images": [
+        "witherwind.webp"
+      ],
       "rank": 4,
       "nature": "Anomaly",
       "features": [
@@ -332,6 +378,9 @@
     {
       "id": "yrt/carrier",
       "name": "Carrier",
+      "images": [
+        "carrier.webp"
+      ],
       "rank": 3,
       "nature": "Ironlander",
       "features": [
@@ -355,6 +404,9 @@
     {
       "id": "yrt/tomb-walker",
       "name": "Tomb Walker",
+      "images": [
+        "tomb-walker.webp"
+      ],
       "rank": 4,
       "nature": "Ironlander",
       "features": [
@@ -378,6 +430,9 @@
     {
       "id": "yrt/blighted-guilder",
       "name": "Blighted Guilder",
+      "images": [
+        "blighted-guilder.webp"
+      ],
       "rank": 2,
       "nature": "Ironlander",
       "features": [
@@ -401,6 +456,9 @@
     {
       "id": "yrt/verdant-crawler",
       "name": "Verdant Crawler",
+      "images": [
+        "verdant-crawler.webp"
+      ],
       "rank": 2,
       "nature": "Anomaly",
       "features": [
@@ -424,6 +482,9 @@
     {
       "id": "yrt/amber-schemer",
       "name": "Amber Schemer",
+      "images": [
+        "amber-schemer.webp"
+      ],
       "rank": 3,
       "nature": "Ironlander",
       "features": [
@@ -447,6 +508,9 @@
     {
       "id": "yrt/tainted",
       "name": "The Tainted",
+      "images": [
+        "the-tainted.webp"
+      ],
       "rank": 3,
       "nature": "Ironlander",
       "features": [
@@ -471,6 +535,9 @@
     {
       "id": "yrt/rotwell",
       "name": "Rotwell",
+      "images": [
+        "rotwell.webp"
+      ],
       "rank": 3,
       "nature": "Anomaly",
       "features": [
@@ -493,6 +560,9 @@
     {
       "id": "yrt/carrion-mound",
       "name": "Carrion Mound",
+      "images": [
+        "carrion-mound.webp"
+      ],
       "rank": 4,
       "nature": "Anomaly",
       "features": [

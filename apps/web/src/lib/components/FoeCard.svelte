@@ -66,7 +66,11 @@
 	// ---------------------------------------------------------------------------
 	// Helpers
 	// ---------------------------------------------------------------------------
-	const imageUrl = foePortraitUrl;
+	// Thumbnail uses just the primary image (index 0); the lightbox
+	// carousel below lets the user cycle through any alternates.
+	function imageUrl(def: { name: string; images?: string[] }): string {
+		return foePortraitUrl(def.name, def.images);
+	}
 
 	function rankBadgeStyle(rank: number): string {
 		const rc = RANK_COLORS[rank];
@@ -159,7 +163,7 @@
 		{#if imgVisible}
 			<img
 				class="fc-thumb"
-				src={imageUrl(foeDef.name)}
+				src={imageUrl(foeDef)}
 				alt={foeDef.name}
 				onerror={(e) => { (e.currentTarget as HTMLImageElement).src = UNKNOWN_FOE_PORTRAIT; imgVisible = false; }}
 				onmouseenter={() => (thumbHovered = true)}
@@ -173,7 +177,7 @@
 				onmouseleave={() => (thumbHovered = false)}
 				role="presentation"
 			>
-					<FoeImageCarousel name={foeDef.name} alt={foeDef.name} class="fc-lightbox-img" />
+					<FoeImageCarousel name={foeDef.name} images={foeDef.images} alt={foeDef.name} class="fc-lightbox-img" />
 			</div>
 		{/if}
 

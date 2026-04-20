@@ -3,6 +3,9 @@
     {
       "id": "delve/atanya",
       "name": "Atanya",
+      "images": [
+        "atanya.webp"
+      ],
       "rank": 2,
       "nature": "Firstborn",
       "features": [
@@ -25,6 +28,9 @@
     {
       "id": "delve/bladewing",
       "name": "Bladewing",
+      "images": [
+        "bladewing.webp"
+      ],
       "rank": 2,
       "nature": "Animal",
       "features": [
@@ -46,6 +52,9 @@
     {
       "id": "delve/blighthound",
       "name": "Blighthound",
+      "images": [
+        "blighthound.webp"
+      ],
       "rank": 3,
       "nature": "Horror",
       "features": [
@@ -69,6 +78,9 @@
     {
       "id": "delve/blood-thorn",
       "name": "Blood Thorn",
+      "images": [
+        "blood-thorn.webp"
+      ],
       "rank": 2,
       "nature": "Anomaly",
       "features": [
@@ -90,6 +102,9 @@
     {
       "id": "delve/bog-rot",
       "name": "Bog Rot",
+      "images": [
+        "bog-rot.webp"
+      ],
       "rank": 2,
       "nature": "Horror",
       "features": [
@@ -112,6 +127,9 @@
     {
       "id": "delve/bonehorde",
       "name": "Bonehorde",
+      "images": [
+        "bonehorde.webp"
+      ],
       "rank": 4,
       "nature": "Horror",
       "features": [
@@ -134,6 +152,9 @@
     {
       "id": "delve/carrion-newt",
       "name": "Carrion Newt",
+      "images": [
+        "carrion-newt.webp"
+      ],
       "rank": 3,
       "nature": "Animal",
       "features": [
@@ -156,6 +177,9 @@
     {
       "id": "delve/cave-lion",
       "name": "Cave Lion",
+      "images": [
+        "cave-lion.webp"
+      ],
       "rank": 3,
       "nature": "Animal",
       "features": [
@@ -176,6 +200,9 @@
     {
       "id": "delve/chitter",
       "name": "Chitter",
+      "images": [
+        "chitter.webp"
+      ],
       "rank": 2,
       "nature": "Beast",
       "features": [
@@ -197,6 +224,9 @@
     {
       "id": "delve/circle-of-stones",
       "name": "Circle of Stones",
+      "images": [
+        "circle-of-stones.webp"
+      ],
       "rank": 2,
       "nature": "Anomaly",
       "features": [
@@ -219,6 +249,9 @@
     {
       "id": "delve/deep-rat",
       "name": "Deep Rat",
+      "images": [
+        "deep-rat.webp"
+      ],
       "rank": 1,
       "nature": "Animal",
       "features": [
@@ -241,6 +274,9 @@
     {
       "id": "delve/glimmer",
       "name": "Glimmer",
+      "images": [
+        "glimmer.webp"
+      ],
       "rank": 2,
       "nature": "Anomaly",
       "features": [
@@ -262,6 +298,9 @@
     {
       "id": "delve/gloom",
       "name": "Gloom",
+      "images": [
+        "gloom.webp"
+      ],
       "rank": 2,
       "nature": "Anomaly",
       "features": [
@@ -284,6 +323,9 @@
     {
       "id": "delve/gnarl",
       "name": "Gnarl",
+      "images": [
+        "gnarl.webp"
+      ],
       "rank": 4,
       "nature": "Beast",
       "features": [
@@ -307,6 +349,9 @@
     {
       "id": "delve/husk",
       "name": "Husk",
+      "images": [
+        "husk.webp"
+      ],
       "rank": 3,
       "nature": "Ironlander",
       "features": [
@@ -331,6 +376,9 @@
     {
       "id": "delve/iron-wracked-beast",
       "name": "Iron-Wracked Beast",
+      "images": [
+        "iron-wracked-beast.webp"
+      ],
       "rank": 3,
       "nature": "Beast",
       "features": [
@@ -352,6 +400,9 @@
     {
       "id": "delve/kraken",
       "name": "Kraken",
+      "images": [
+        "kraken.webp"
+      ],
       "rank": 5,
       "nature": "Beast",
       "features": [
@@ -376,6 +427,9 @@
     {
       "id": "delve/maelstrom",
       "name": "Maelstrom",
+      "images": [
+        "maelstrom.webp"
+      ],
       "rank": 2,
       "nature": "Anomaly",
       "features": [
@@ -399,6 +453,9 @@
     {
       "id": "delve/merrow",
       "name": "Merrow",
+      "images": [
+        "merrow.webp"
+      ],
       "rank": 2,
       "nature": "Firstborn",
       "features": [
@@ -420,6 +477,9 @@
     {
       "id": "delve/nightmare-spider",
       "name": "Nightmare Spider",
+      "images": [
+        "nightmare-spider.webp"
+      ],
       "rank": 2,
       "nature": "Animal",
       "features": [
@@ -443,6 +503,9 @@
     {
       "id": "delve/nightspawn",
       "name": "Nightspawn",
+      "images": [
+        "nightspawn.webp"
+      ],
       "rank": 3,
       "nature": "Beast",
       "features": [
@@ -462,6 +525,9 @@
     {
       "id": "delve/rhaskar",
       "name": "Rhaskar",
+      "images": [
+        "rhaskar.webp"
+      ],
       "rank": 4,
       "nature": "Beast",
       "features": [
@@ -486,6 +552,9 @@
     {
       "id": "delve/shroud-crab",
       "name": "Shroud Crab",
+      "images": [
+        "shroud-crab.webp"
+      ],
       "rank": 1,
       "nature": "Animal",
       "features": [
@@ -509,6 +578,9 @@
     {
       "id": "delve/tempest",
       "name": "Tempest",
+      "images": [
+        "tempest.webp"
+      ],
       "rank": 2,
       "nature": "Anomaly",
       "features": [
@@ -530,6 +602,9 @@
     {
       "id": "delve/thrall",
       "name": "Thrall",
+      "images": [
+        "thrall.webp"
+      ],
       "rank": 2,
       "nature": "Horror",
       "features": [
@@ -552,6 +627,9 @@
     {
       "id": "delve/trog",
       "name": "Trog",
+      "images": [
+        "trog.webp"
+      ],
       "rank": 2,
       "nature": "Animal",
       "features": [
@@ -576,6 +654,9 @@
     {
       "id": "delve/wight",
       "name": "Wight",
+      "images": [
+        "wight.webp"
+      ],
       "rank": 3,
       "nature": "Horror",
       "features": [
@@ -597,6 +678,9 @@
     {
       "id": "delve/wyrm",
       "name": "Wyrm",
+      "images": [
+        "wyrm.webp"
+      ],
       "rank": 5,
       "nature": "Beast",
       "features": [
@@ -621,6 +705,9 @@
     {
       "id": "delve/zealot",
       "name": "Zealot",
+      "images": [
+        "zealot.webp"
+      ],
       "rank": 1,
       "nature": "Ironlander",
       "features": [

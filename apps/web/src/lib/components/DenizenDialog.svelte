@@ -184,7 +184,7 @@
 				<!-- Top row: portrait + quantity/pills -->
 				<div class="dd-confirm-top">
 					<div class="dd-portrait-wrap">
-						<FoeImageCarousel name={rolledFoe.name} alt={rolledFoe.name} class="dd-portrait" />
+						<FoeImageCarousel name={rolledFoe.name} images={rolledFoe.images} alt={rolledFoe.name} class="dd-portrait" />
 					</div>
 
 					<div class="dd-qty-section">
