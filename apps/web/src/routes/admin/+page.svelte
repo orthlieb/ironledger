@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { admin, maintenance as maintApi, broadcast as broadcastApi } from '$lib/api';
+	import { admin, maintenance as maintApi, broadcast as broadcastApi, registrationQuota as quotaApi, type RegistrationQuotaStatus } from '$lib/api';
 	import type { AdminUser, AdminStats, AdminInvite, MaintenanceStatus, BroadcastStatus, BroadcastSeverity, UserTimeseries, RegistrationLockStatus } from '@ironledger/shared';
 	import type { LayoutData } from '../$types';
 
@@ -324,6 +324,38 @@
 		}
 	}
 
+	// ── Registration daily quota ─────────────────────────────────────────
+	let quotaStatus: RegistrationQuotaStatus | null = $state(null);
+	let quotaMode: 'unlimited' | 'capped' = $state('unlimited');
+	let quotaDailyInput = $state(20);
+	let quotaBusy  = $state(false);
+	let quotaError = $state('');
+
+	async function refreshQuotaStatus() {
+		try {
+			quotaStatus = await quotaApi.getStatus();
+			if (quotaStatus.daily !== null) {
+				quotaMode = 'capped';
+				quotaDailyInput = quotaStatus.daily;
+			} else {
+				quotaMode = 'unlimited';
+			}
+		} catch { /* ignore */ }
+	}
+
+	async function saveQuota() {
+		quotaError = '';
+		quotaBusy  = true;
+		try {
+			const daily = quotaMode === 'unlimited' ? null : quotaDailyInput;
+			quotaStatus = await quotaApi.setQuota(daily);
+		} catch (err) {
+			quotaError = err instanceof Error ? err.message : 'Failed to save quota';
+		} finally {
+			quotaBusy = false;
+		}
+	}
+
 	// ── Broadcast banner ──────────────────────────────────────────────────
 	let broadcastStatus: BroadcastStatus | null = $state(null);
 	let broadcastMessage  = $state('');
@@ -636,6 +668,7 @@
 						void refreshMaintStatus();
 						void refreshRegLockStatus();
 						void refreshBroadcastStatus();
+						void refreshQuotaStatus();
 					}}
 				>Tools</button>
 			</div>
@@ -1043,7 +1076,72 @@
 						{/if}
 					</section>
 
-					<!-- ─── Tile 3: Broadcast Banner ─── -->
+					<!-- ─── Tile 3: Daily Registration Quota ─── -->
+					<section class="tools-tile">
+						<header class="tools-tile-head">
+							<h3 class="tools-tile-title">Daily Quota</h3>
+							<span class="tools-tile-dot" class:tools-tile-dot--active={quotaStatus?.exhausted}></span>
+							<span class="tools-tile-status">
+								{#if quotaStatus?.daily === null}
+									Unlimited
+								{:else if quotaStatus?.exhausted}
+									Full today
+								{:else if quotaStatus?.daily}
+									{quotaStatus.usedToday} / {quotaStatus.daily} today
+								{:else}
+									—
+								{/if}
+							</span>
+							{#if quotaStatus?.daily !== null && quotaStatus?.resetsAt}
+								<span class="tools-tile-timer">Resets {new Date(quotaStatus.resetsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} UTC</span>
+							{/if}
+						</header>
+						<p class="tools-tile-desc">
+							Cap the number of new signups per UTC day. When the cap is hit, the
+							<code>/register</code> page shows "Daily Signups Full" until UTC midnight.
+							Set <strong>Unlimited</strong> to turn the cap off.
+						</p>
+
+						<div class="tools-tile-form">
+							<div class="tools-tile-severity">
+								<span class="tools-tile-field-label">Mode</span>
+								<label class="severity-opt">
+									<input type="radio" bind:group={quotaMode} value="unlimited" />
+									<span>Unlimited</span>
+								</label>
+								<label class="severity-opt">
+									<input type="radio" bind:group={quotaMode} value="capped" />
+									<span>Capped</span>
+								</label>
+							</div>
+							{#if quotaMode === 'capped'}
+								<label class="tools-tile-field tools-tile-field--narrow">
+									<span>New signups per UTC day</span>
+									<input
+										type="number"
+										min="1"
+										max="10000"
+										bind:value={quotaDailyInput}
+									/>
+								</label>
+							{/if}
+						</div>
+						<div class="tools-tile-actions">
+							<button
+								type="button"
+								class="btn btn-primary"
+								disabled={quotaBusy || (quotaMode === 'capped' && (!quotaDailyInput || quotaDailyInput < 1))}
+								onclick={saveQuota}
+							>
+								{quotaBusy ? 'Saving…' : 'Save'}
+							</button>
+						</div>
+						{#if quotaError}
+							<div class="invites-error">{quotaError}</div>
+						{/if}
+					</section>
+
+					<!-- ─── Tile 4: Broadcast Banner ─── -->
 					<section class="tools-tile">
 						<header class="tools-tile-head">
 							<h3 class="tools-tile-title">Broadcast Banner</h3>
