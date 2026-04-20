@@ -13,6 +13,7 @@
 	} from '$lib/foeStore.svelte.js';
 	import { untrack } from 'svelte';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
+	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '$lib/foePortrait.js';
 	import ProgressTrack   from '$lib/components/ProgressTrack.svelte';
 	import ConfirmDialog   from '$lib/components/ConfirmDialog.svelte';
 
@@ -64,9 +65,7 @@
 	// ---------------------------------------------------------------------------
 	// Helpers
 	// ---------------------------------------------------------------------------
-	function imageUrl(name: string): string {
-		return `/foes/${encodeURIComponent(name)}.webp`;
-	}
+	const imageUrl = foePortraitUrl;
 
 	function rankBadgeStyle(rank: number): string {
 		const rc = RANK_COLORS[rank];
@@ -161,7 +160,7 @@
 				class="fc-thumb"
 				src={imageUrl(foeDef.name)}
 				alt={foeDef.name}
-				onerror={(e) => { (e.currentTarget as HTMLImageElement).src = '/foes/unknown-foe.webp'; imgVisible = false; }}
+				onerror={(e) => { (e.currentTarget as HTMLImageElement).src = UNKNOWN_FOE_PORTRAIT; imgVisible = false; }}
 				onmouseenter={() => (thumbHovered = true)}
 				onmouseleave={() => (thumbHovered = false)}
 			/>
@@ -169,7 +168,7 @@
 		{#if thumbHovered && imgVisible}
 			<div class="fc-lightbox" aria-hidden="true">
 				<img src={imageUrl(foeDef.name)} alt={foeDef.name}
-					onerror={(e) => { (e.currentTarget as HTMLImageElement).src = '/foes/unknown-foe.webp'; }} />
+					onerror={(e) => { (e.currentTarget as HTMLImageElement).src = UNKNOWN_FOE_PORTRAIT; }} />
 			</div>
 		{/if}
 

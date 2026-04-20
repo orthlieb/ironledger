@@ -20,6 +20,7 @@
 	} from '$lib/foeStore.svelte.js';
 	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
+	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '$lib/foePortrait.js';
 
 	// ---------------------------------------------------------------------------
 	// Props
@@ -126,9 +127,7 @@
 		return `background:${rc.bg}22; color:${rc.bg}`;
 	}
 
-	function imageUrl(name: string): string {
-		return `/foes/${encodeURIComponent(name)}.webp`;
-	}
+	const imageUrl = foePortraitUrl;
 </script>
 
 <dialog
@@ -190,7 +189,7 @@
 							class="dd-portrait"
 							src={imageUrl(rolledFoe.name)}
 							alt={rolledFoe.name}
-							onerror={(e) => { (e.currentTarget as HTMLImageElement).src = '/foes/unknown-foe.webp'; }}
+							onerror={(e) => { (e.currentTarget as HTMLImageElement).src = UNKNOWN_FOE_PORTRAIT; }}
 						/>
 					</div>
 
