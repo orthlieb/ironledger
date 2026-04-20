@@ -3,6 +3,9 @@
     {
       "id": "ironsworn/basilisk",
       "name": "Basilisk",
+      "images": [
+        "basilisk.webp"
+      ],
       "rank": 4,
       "nature": "Beast",
       "features": [
@@ -25,6 +28,9 @@
     {
       "id": "ironsworn/bear",
       "name": "Bear",
+      "images": [
+        "bear.webp"
+      ],
       "rank": 3,
       "nature": "Animal",
       "features": [
@@ -46,6 +52,9 @@
     {
       "id": "ironsworn/boar",
       "name": "Boar",
+      "images": [
+        "boar.webp"
+      ],
       "rank": 2,
       "nature": "Animal",
       "features": [
@@ -68,6 +77,9 @@
     {
       "id": "ironsworn/bonewalker",
       "name": "Bonewalker",
+      "images": [
+        "bonewalker.webp"
+      ],
       "rank": 2,
       "nature": "Horror",
       "features": [
@@ -89,6 +101,9 @@
     {
       "id": "ironsworn/broken",
       "name": "Broken",
+      "images": [
+        "broken.webp"
+      ],
       "rank": 1,
       "nature": "Ironlander",
       "features": [
@@ -111,6 +126,9 @@
     {
       "id": "ironsworn/chimera",
       "name": "Chimera",
+      "images": [
+        "chimera.webp"
+      ],
       "rank": 4,
       "nature": "Horror",
       "features": [
@@ -131,6 +149,9 @@
     {
       "id": "ironsworn/common-folk",
       "name": "Common Folk",
+      "images": [
+        "common-folk.webp"
+      ],
       "rank": 1,
       "nature": "Ironlander",
       "features": [
@@ -152,6 +173,9 @@
     {
       "id": "ironsworn/elder-beast",
       "name": "Elder Beast",
+      "images": [
+        "elder-beast.webp"
+      ],
       "rank": 4,
       "nature": "Beast",
       "features": [
@@ -171,6 +195,9 @@
     {
       "id": "ironsworn/elf",
       "name": "Elf",
+      "images": [
+        "elf.webp"
+      ],
       "rank": 2,
       "nature": "Firstborn",
       "features": [
@@ -194,6 +221,9 @@
     {
       "id": "ironsworn/frostbound",
       "name": "Frostbound",
+      "images": [
+        "frostbound.webp"
+      ],
       "rank": 3,
       "nature": "Horror",
       "features": [
@@ -214,6 +244,9 @@
     {
       "id": "ironsworn/gaunt",
       "name": "Gaunt",
+      "images": [
+        "gaunt.webp"
+      ],
       "rank": 2,
       "nature": "Animal",
       "features": [
@@ -235,6 +268,9 @@
     {
       "id": "ironsworn/giant",
       "name": "Giant",
+      "images": [
+        "giant.webp"
+      ],
       "rank": 4,
       "nature": "Firstborn",
       "features": [
@@ -258,6 +294,9 @@
     {
       "id": "ironsworn/harrow-spider",
       "name": "Harrow Spider",
+      "images": [
+        "harrow-spider.webp"
+      ],
       "rank": 2,
       "nature": "Beast",
       "features": [
@@ -280,6 +319,9 @@
     {
       "id": "ironsworn/haunt",
       "name": "Haunt",
+      "images": [
+        "haunt.webp"
+      ],
       "rank": 2,
       "nature": "Horror",
       "features": [
@@ -303,6 +345,9 @@
     {
       "id": "ironsworn/hollow",
       "name": "Hollow",
+      "images": [
+        "hollow.webp"
+      ],
       "rank": 4,
       "nature": "Horror",
       "features": [
@@ -324,6 +369,9 @@
     {
       "id": "ironsworn/hunter",
       "name": "Hunter",
+      "images": [
+        "hunter.webp"
+      ],
       "rank": 2,
       "nature": "Ironlander",
       "features": [
@@ -346,6 +394,9 @@
     {
       "id": "ironsworn/iron-revenant",
       "name": "Iron Revenant",
+      "images": [
+        "iron-revenant.webp"
+      ],
       "rank": 4,
       "nature": "Horror",
       "features": [
@@ -367,6 +418,9 @@
     {
       "id": "ironsworn/leviathan",
       "name": "Leviathan",
+      "images": [
+        "leviathan.webp"
+      ],
       "rank": 5,
       "nature": "Beast",
       "features": [
@@ -390,6 +444,9 @@
     {
       "id": "ironsworn/mammoth",
       "name": "Mammoth",
+      "images": [
+        "mammoth.webp"
+      ],
       "rank": 4,
       "nature": "Beast",
       "features": [
@@ -414,6 +471,9 @@
     {
       "id": "ironsworn/marsh-rat",
       "name": "Marsh Rat",
+      "images": [
+        "marsh-rat.webp"
+      ],
       "rank": 1,
       "nature": "Animal",
       "features": [
@@ -433,6 +493,9 @@
     {
       "id": "ironsworn/mystic",
       "name": "Mystic",
+      "images": [
+        "mystic.webp"
+      ],
       "rank": 2,
       "nature": "Ironlander",
       "features": [
@@ -454,6 +517,9 @@
     {
       "id": "ironsworn/primordial",
       "name": "Primordial",
+      "images": [
+        "primordial.webp"
+      ],
       "rank": 4,
       "nature": "Firstborn",
       "features": [
@@ -475,6 +541,9 @@
     {
       "id": "ironsworn/raider",
       "name": "Raider",
+      "images": [
+        "raider.webp"
+      ],
       "rank": 2,
       "nature": "Ironlander",
       "features": [
@@ -497,6 +566,9 @@
     {
       "id": "ironsworn/sodden",
       "name": "Sodden",
+      "images": [
+        "sodden.webp"
+      ],
       "rank": 3,
       "nature": "Horror",
       "features": [
@@ -518,6 +590,9 @@
     {
       "id": "ironsworn/troll",
       "name": "Troll",
+      "images": [
+        "troll.webp"
+      ],
       "rank": 3,
       "nature": "Firstborn",
       "features": [
@@ -542,6 +617,9 @@
     {
       "id": "ironsworn/varou",
       "name": "Varou",
+      "images": [
+        "varou.webp"
+      ],
       "rank": 2,
       "nature": "Firstborn",
       "features": [
@@ -564,6 +642,9 @@
     {
       "id": "ironsworn/warrior",
       "name": "Warrior",
+      "images": [
+        "warrior.webp"
+      ],
       "rank": 2,
       "nature": "Ironlander",
       "features": [
@@ -585,6 +666,9 @@
     {
       "id": "ironsworn/wolf",
       "name": "Wolf",
+      "images": [
+        "wolf.webp"
+      ],
       "rank": 2,
       "nature": "Animal",
       "features": [
@@ -606,6 +690,9 @@
     {
       "id": "ironsworn/wyvern",
       "name": "Wyvern",
+      "images": [
+        "wyvern.webp"
+      ],
       "rank": 4,
       "nature": "Beast",
       "features": [

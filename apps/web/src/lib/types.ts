@@ -43,10 +43,16 @@ export type CatalogueSource = 'base' | 'delve' | 'yrt';
 
 export interface FoeDef {
 	id:          string;      // "ironsworn/basilisk"
-	name:        string;      // "Basilisk" — also used as image filename
+	name:        string;
 	rank:        1 | 2 | 3 | 4 | 5;
 	nature:      FoeNature;
 	source?:     CatalogueSource;
+	/**
+	 * Portrait filenames relative to /foes/, primary first. Pickers and
+	 * thumbnails use images[0]; the lightbox carousel cycles through all
+	 * entries. When missing, the UI falls back to /foes/<slug>.webp.
+	 */
+	images?:     string[];
 	features:    string[];
 	drives:      string[];
 	tactics:     string[];

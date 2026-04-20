@@ -1,20 +1,41 @@
 /**
- * Foe portrait URL resolver.
+ * Foe portrait URL helpers.
  *
- * Portraits live in static/foes/<slug>.webp where <slug> is the foe's
- * display name converted to kebab-case: lowercase, runs of whitespace
- * replaced with a single dash, existing hyphens preserved.
+ * Each foe definition in apps/api/data/foes/*.json carries an `images`
+ * array of filenames relative to /foes/, with the primary (picker /
+ * thumbnail) listed first:
  *
- *   "Bear"                 → /foes/bear.webp
- *   "Circle of Stones"     → /foes/circle-of-stones.webp
- *   "Iron-Wracked Beast"   → /foes/iron-wracked-beast.webp
+ *   { "name": "Bear",  "images": ["bear.webp"] }
+ *   { "name": "Locus", "images": ["locus-azure.webp", "locus-crimson.webp", …] }
  *
- * Call sites that need a fallback on 404 should use UNKNOWN_FOE_PORTRAIT.
+ * These helpers prepend the /foes/ path and handle the missing-images
+ * fallback. No runtime discovery, no manifest fetch — the array is the
+ * single source of truth, shipped alongside the rest of the foe data.
  */
 
-export function foePortraitUrl(name: string): string {
-	const slug = name.toLowerCase().replace(/\s+/g, '-');
-	return `/foes/${slug}.webp`;
+export const UNKNOWN_FOE_PORTRAIT = '/foes/unknown-foe.webp';
+
+/** Foe display name → kebab-case slug (lowercase, spaces → '-'). */
+function slug(name: string): string {
+	return name.toLowerCase().replace(/\s+/g, '-');
 }
 
-export const UNKNOWN_FOE_PORTRAIT = '/foes/unknown-foe.webp';
+/**
+ * URL for a specific image in a foe's list. Pass the foe's `images` array
+ * straight from its definition. `index` is 0-based and clamped.
+ *
+ * If `images` is missing or empty, falls back to /foes/<slug>.webp — a
+ * safety net for foes whose data hasn't been migrated yet; the onerror
+ * handlers on `<img>` still drop to UNKNOWN_FOE_PORTRAIT if that 404s.
+ */
+export function foePortraitUrl(
+	name: string,
+	images?: readonly string[] | null,
+	index = 0,
+): string {
+	if (images && images.length > 0) {
+		const safe = Math.min(Math.max(index, 0), images.length - 1);
+		return `/foes/${images[safe]}`;
+	}
+	return index <= 0 ? `/foes/${slug(name)}.webp` : UNKNOWN_FOE_PORTRAIT;
+}

@@ -524,7 +524,7 @@
 					<div class="gc-tile-row gc-tile-name-row">
 						<img
 							class="gc-tile-portrait"
-							src={foePortraitUrl(activeFoeDef.name)}
+							src={foePortraitUrl(activeFoeDef.name, activeFoeDef.images)}
 							alt={activeFoeDef.name}
 							onerror={(e) => { (e.target as HTMLImageElement).src = UNKNOWN_FOE_PORTRAIT; }}
 						/>
