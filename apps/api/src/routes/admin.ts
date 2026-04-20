@@ -18,6 +18,7 @@ import * as broadcastService from '../services/broadcastService.js';
 import * as inviteService from '../services/inviteService.js';
 import * as maintenanceService from '../services/maintenanceService.js';
 import * as registrationLockService from '../services/registrationLockService.js';
+import * as registrationQuotaService from '../services/registrationQuotaService.js';
 import { sendInviteEmail } from '../lib/mailer.js';
 import { logSecurityEvent } from '../middleware/securityLogger.js';
 import { config } from '../config.js';
@@ -467,6 +468,45 @@ export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
     const result = await registrationLockService.getStatus().catch(handleError(reply));
     if (!result || reply.sent) return;
     return reply.status(200).send(result);
+  });
+
+  // ── GET /registration-quota/status ── Daily signup quota status ───────
+  server.get('/registration-quota/status', {
+    schema: {
+      tags:     ['Admin'],
+      summary:  'Get daily registration quota + usage',
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (_req, reply) => {
+    try {
+      const status = await registrationQuotaService.getStatus();
+      return reply.status(200).send(status);
+    } catch (err) {
+      return handleError(reply)(err);
+    }
+  });
+
+  // ── PUT /registration-quota ── Set the daily cap ──────────────────────
+  server.put('/registration-quota', {
+    schema: {
+      tags:     ['Admin'],
+      summary:  'Set the daily registration quota (null = unlimited)',
+      body:     z.object({
+        daily: z.number().int().min(1).max(10_000).nullable(),
+      }),
+      security: [{ bearerAuth: [] }],
+    },
+  }, async (req, reply) => {
+    try {
+      const status = await registrationQuotaService.setQuota(
+        req.body.daily,
+        req.user!.id,
+        req.ip,
+      );
+      return reply.status(200).send(status);
+    } catch (err) {
+      return handleError(reply)(err);
+    }
   });
 };
 

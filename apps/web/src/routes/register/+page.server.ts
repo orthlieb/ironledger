@@ -6,31 +6,21 @@ export const load: PageServerLoad = async ({ locals }) => {
 	// Already logged in? Skip registration.
 	if (locals.user) throw redirect(302, '/home');
 
-	// Block registration during maintenance.
+	// Single round-trip: maintenance / admin lock / daily quota all fold
+	// into a single { closed } field with reason + message. The /register
+	// page shows the closed-state UI on load (not on submit) whenever any
+	// gate is tripped, so visitors see the wall before typing anything.
 	try {
-		const maintRes = await fetch(`${INTERNAL_API_URL}/api/v1/maintenance/status`);
-		if (maintRes.ok) {
-			const maint = await maintRes.json() as { enabled?: boolean; message?: string };
-			if (maint.enabled) {
+		const res = await fetch(`${INTERNAL_API_URL}/api/v1/registration/status`);
+		if (res.ok) {
+			const body = await res.json() as {
+				closed: { reason: 'maintenance' | 'locked' | 'quota'; message: string } | null;
+			};
+			if (body.closed) {
 				return {
-					maintenance: true,
-					maintenanceMessage: maint.message ?? 'The system is currently under maintenance. Please try again later.',
-					hcaptchaSiteKey: HCAPTCHA_SITE_KEY,
-					isDev: process.env.NODE_ENV !== 'production',
-				};
-			}
-		}
-	} catch { /* ignore — don't block the page if the status endpoint is down */ }
-
-	// Block registration when locked by admin.
-	try {
-		const lockRes = await fetch(`${INTERNAL_API_URL}/api/v1/admin/registration-lock/status`);
-		if (lockRes.ok) {
-			const lock = await lockRes.json() as { locked?: boolean; message?: string };
-			if (lock.locked) {
-				return {
-					registrationLocked: true,
-					registrationLockMessage: lock.message ?? 'New account registration is currently disabled.',
+					registrationClosed: true,
+					closedReason:  body.closed.reason,
+					closedMessage: body.closed.message,
 					hcaptchaSiteKey: HCAPTCHA_SITE_KEY,
 					isDev: process.env.NODE_ENV !== 'production',
 				};

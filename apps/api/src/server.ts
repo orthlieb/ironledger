@@ -247,6 +247,56 @@ export async function buildServer(): Promise<FastifyInstance> {
     return reply.status(200).send({ maintenance, broadcast });
   });
 
+  // ── Public registration status (no auth) ─────────────────────────────
+  // Combines lock + quota + maintenance so /register/+page.server.ts can
+  // decide whether to show the form in one round-trip. Each sub-status
+  // falls back to a "fine" default if Redis is flaky — we never want a
+  // transient infra issue to mark registration closed.
+  const { getStatus: getRegistrationLockStatus } = await import('./services/registrationLockService.js');
+  const { getStatus: getRegistrationQuotaStatus } = await import('./services/registrationQuotaService.js');
+
+  server.get('/api/v1/registration/status', {
+    schema: {
+      tags:    ['System'],
+      summary: 'Combined registration gate status (maintenance / lock / quota)',
+    },
+  }, async (_req, reply) => {
+    const [maintenance, lock, quota] = await Promise.all([
+      getMaintenanceStatus().catch(() => ({
+        enabled: false, message: null, shutdownAt: null,
+      })),
+      getRegistrationLockStatus().catch(() => ({
+        locked: false, message: null,
+      })),
+      getRegistrationQuotaStatus().catch(() => ({
+        daily: null, usedToday: 0, remaining: null,
+        resetsAt: new Date().toISOString(), exhausted: false,
+      })),
+    ]);
+
+    // Derive a single "closed" flag + reason the frontend can render from.
+    // Priority: maintenance > admin lock > daily quota.
+    let closed: null | { reason: 'maintenance' | 'locked' | 'quota'; message: string } = null;
+    if (maintenance.enabled) {
+      closed = {
+        reason:  'maintenance',
+        message: maintenance.message ?? 'The system is currently under maintenance. Please try again later.',
+      };
+    } else if (lock.locked) {
+      closed = {
+        reason:  'locked',
+        message: lock.message ?? 'New account registration is currently disabled.',
+      };
+    } else if (quota.exhausted) {
+      closed = {
+        reason:  'quota',
+        message: "Today's new signups are full. Please come back tomorrow — we reset at UTC midnight.",
+      };
+    }
+
+    return reply.status(200).send({ closed, maintenance, lock, quota });
+  });
+
   // Backwards-compat alias: the web client used to poll this endpoint alone.
   // Kept for one release so older client builds don't 404 during rolling
   // deploy. Remove in the release after 5.x.

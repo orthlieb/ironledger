@@ -31,6 +31,7 @@ import {
 } from '../lib/mailer.js';
 import { getStatus as getMaintenanceStatus } from './maintenanceService.js';
 import { getStatus as getRegistrationLockStatus } from './registrationLockService.js';
+import { checkAndIncrement as checkRegistrationQuota } from './registrationQuotaService.js';
 import { autoLockAccount } from './adminService.js';
 import { redis } from '../server.js';
 import { config } from '../config.js';
@@ -129,6 +130,19 @@ export async function register(input: RegisterInput): Promise<void> {
 
   // Check password against breach database
   await assertPasswordNotPwned(input.password);
+
+  // Daily quota — atomic check-and-increment. Positioned here (after the
+  // existing-email check) so duplicate-email attempts don't consume slots.
+  // If quota exhausted, reject before inserting. The page-load UX catches
+  // this earlier for real visitors; this is the belt-and-braces server guard.
+  const quotaOk = await checkRegistrationQuota();
+  if (!quotaOk) {
+    throw new AuthError(
+      "Today's new signups are full. Please come back tomorrow.",
+      'REGISTRATION_QUOTA_EXHAUSTED',
+      429,
+    );
+  }
 
   // Hash the real password
   const passwordHash = await argon2.hash(input.password, ARGON2_OPTIONS);

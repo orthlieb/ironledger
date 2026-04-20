@@ -184,6 +184,28 @@ export const system = {
 };
 
 // ---------------------------------------------------------------------------
+// Registration daily quota (admin)
+// ---------------------------------------------------------------------------
+export interface RegistrationQuotaStatus {
+	daily:     number | null;
+	usedToday: number;
+	remaining: number | null;
+	resetsAt:  string;
+	exhausted: boolean;
+}
+
+export const registrationQuota = {
+	getStatus: () =>
+		request<RegistrationQuotaStatus>('/api/admin/registration-quota'),
+
+	setQuota: (daily: number | null) =>
+		request<RegistrationQuotaStatus>('/api/admin/registration-quota', {
+			method: 'PUT',
+			body:   JSON.stringify({ daily }),
+		}),
+};
+
+// ---------------------------------------------------------------------------
 // Broadcast (admin)
 // ---------------------------------------------------------------------------
 export const broadcast = {
