@@ -169,7 +169,13 @@ export async function listInvites(): Promise<AdminInvite[]> {
 }
 
 // ---------------------------------------------------------------------------
-// revokeInvite — admin marks a pending invite as revoked
+// revokeInvite — admin invalidates a pending invite by expiring its token
+//
+// We expire the token (set expires_at = now()) rather than setting a separate
+// revoked_at flag. The recipient sees the same "This invitation has expired"
+// UI as a naturally-expired link, and the admin status badge shows 'expired'.
+// The DB column revoked_at is kept for backward-compat with rows written
+// before this change but is no longer set by new revoke calls.
 // ---------------------------------------------------------------------------
 
 export async function revokeInvite(inviteId: string): Promise<AdminInvite> {
@@ -187,12 +193,14 @@ export async function revokeInvite(inviteId: string): Promise<AdminInvite> {
     throw new AuthError('Cannot revoke an already-accepted invite', 'ALREADY_ACCEPTED', 400);
   }
 
-  // Idempotent — if already revoked, return the current row.
-  if (existing.revokedAt) return toAdminInvite(existing);
+  // Idempotent — if already expired (or previously revoked), return as-is.
+  if (existing.revokedAt || existing.expiresAt < new Date()) {
+    return toAdminInvite(existing);
+  }
 
   const [updated] = await db
     .update(userInvites)
-    .set({ revokedAt: new Date() })
+    .set({ expiresAt: new Date() })
     .where(eq(userInvites.id, inviteId))
     .returning();
 
