@@ -2071,23 +2071,28 @@
 	}
 
 	/* ──────────────────────────────────────────────────────────────────────
-	   Tools tab — three vertical tiles (Maintenance · Reg Lock · Broadcast)
+	   Tools tab — four tiles in one horizontal row on desktop
+	   (Maintenance · Reg Lock · Daily Quota · Broadcast). Each tile is a
+	   self-contained mini-form with its own header/status/body/actions.
+	   Grid auto-fits so narrow viewports wrap gracefully (2×2 then 1×4)
+	   instead of squishing the forms unusably.
 	   ────────────────────────────────────────────────────────────────────── */
 	.tools-panel {
-		display: flex;
-		flex-direction: column;
-		gap: 1.25rem;
-		max-width: 820px;
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+		gap: 1rem;
+		align-items: stretch;       /* equal-height tiles per row */
 	}
 
 	.tools-tile {
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
-		padding: 1.1rem 1.2rem 1.15rem;
+		padding: 1rem 1.1rem 1.05rem;
 		border: 1px solid var(--border);
 		border-radius: 6px;
 		background: var(--bg-card);
+		min-width: 0;                /* let the grid column dictate width, not content */
 	}
 
 	.tools-tile-head {
@@ -2209,6 +2214,7 @@
 		display: flex;
 		gap: 0.5rem;
 		flex-wrap: wrap;
+		margin-top: auto;   /* keep Save buttons aligned across tiles */
 	}
 
 	.severity-opt {

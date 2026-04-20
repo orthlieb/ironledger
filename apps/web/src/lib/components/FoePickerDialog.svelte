@@ -19,6 +19,7 @@
 		RANK_COLORS, FOE_RANKS, FOE_QUANTITIES, FOE_NATURE_COLORS,
 	} from '$lib/foeStore.svelte.js';
 	import { sourceLabel } from '$lib/expansionStore.svelte.js';
+	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '$lib/foePortrait.js';
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
 
 
@@ -192,9 +193,7 @@
 		return `background:${rc.bg}22; color:${rc.bg}`;
 	}
 
-	function imageUrl(name: string): string {
-		return `/foes/${encodeURIComponent(name)}.webp`;
-	}
+	const imageUrl = foePortraitUrl;
 </script>
 
 <dialog
@@ -301,7 +300,7 @@
 									class="fd-tile-img"
 									src={imageUrl(foe.name)}
 									alt={foe.name}
-									onerror={(e) => { (e.currentTarget as HTMLImageElement).src = '/foes/unknown-foe.webp'; }}
+									onerror={(e) => { (e.currentTarget as HTMLImageElement).src = UNKNOWN_FOE_PORTRAIT; }}
 								/>
 							</div>
 							<div class="fd-tile-body">
@@ -346,7 +345,7 @@
 						class="fc-portrait"
 						src={imageUrl(confirmFoe.name)}
 						alt={confirmFoe.name}
-						onerror={(e) => { (e.currentTarget as HTMLImageElement).src = '/foes/unknown-foe.webp'; }}
+						onerror={(e) => { (e.currentTarget as HTMLImageElement).src = UNKNOWN_FOE_PORTRAIT; }}
 					/>
 				</div>
 

@@ -20,6 +20,7 @@
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
 	import { renderNote } from '$lib/markdown.js';
+	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '$lib/foePortrait.js';
 
 	// Pre-load asset catalogue and delve data.
 	$effect(() => { loadAssets(); });
@@ -523,9 +524,9 @@
 					<div class="gc-tile-row gc-tile-name-row">
 						<img
 							class="gc-tile-portrait"
-							src="/foes/{encodeURIComponent(activeFoeDef.name)}.webp"
+							src={foePortraitUrl(activeFoeDef.name)}
 							alt={activeFoeDef.name}
-							onerror={(e) => { (e.target as HTMLImageElement).src = '/foes/unknown-foe.webp'; }}
+							onerror={(e) => { (e.target as HTMLImageElement).src = UNKNOWN_FOE_PORTRAIT; }}
 						/>
 						<span class="gc-tile-name">{activeFoe.customName || activeFoeDef.name}</span>
 					</div>
