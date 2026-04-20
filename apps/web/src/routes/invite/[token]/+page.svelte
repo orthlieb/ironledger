@@ -16,8 +16,8 @@
 	<title>Accept Invitation — Iron Ledger</title>
 </svelte:head>
 
-<div class="auth-page">
-	<div class="auth-card">
+<div class="auth-wrap">
+	<div class="auth-card card">
 		<div class="auth-brand">
 			<span class="auth-brand-rule"></span>
 			<h1>

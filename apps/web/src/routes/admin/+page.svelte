@@ -745,24 +745,13 @@
 
 			<!-- ═══ Invites tab ═══ -->
 			{:else if activeTab === 'invites'}
-				<div class="invites-wrap">
-
-					<!-- Send-invite card (mirrors sign-in card layout) -->
-					<div class="invites-card card">
-						<div class="invites-hero">
-							<img
-								class="invites-hero-img"
-								src="/ironledger-register.webp"
-								alt="A Norse warrior raises an axe, calling a new oath-sworn into the Ironlands"
-							/>
-							<p class="invites-hero-caption">Scribe a summons — dispatch a new iron-bound oath to the Ironlands.</p>
-						</div>
-
-						<h3 class="invites-card-title">Send an Invitation</h3>
-						<p class="invites-card-hint">
+				<div class="invites-panel">
+					<section class="invites-section">
+						<h3 class="invites-h">Send an invitation</h3>
+						<p class="invites-hint">
 							Admin-issued invites bypass the registration lock. The recipient receives a 72-hour
-							single-use link to set their password. Accounts are created with role <code>user</code> —
-							promote separately after they sign in.
+							single-use link to set their password. Accounts are created with role
+							<code>user</code> — promote separately after they sign in.
 						</p>
 
 						<form class="invites-form" onsubmit={handleCreateInvite}>
@@ -787,25 +776,25 @@
 									placeholder="e.g. Silk Char"
 								/>
 							</label>
-
+							<div class="invites-actions">
+								<button
+									type="submit"
+									class="btn btn-primary"
+									disabled={inviteBusy || !inviteEmail.trim()}
+								>
+									{inviteBusy ? 'Sending…' : 'Send invite'}
+								</button>
+							</div>
 							{#if inviteError}
 								<div class="invites-error">{inviteError}</div>
 							{/if}
-
-							<button
-								type="submit"
-								class="btn btn-primary invites-submit"
-								disabled={inviteBusy || !inviteEmail.trim()}
-							>
-								{inviteBusy ? 'Sending…' : 'Send Invitation'}
-							</button>
 						</form>
 
 						{#if inviteCreatedUrl}
 							<div class="invites-created">
 								<p class="invites-created-msg">
-									<strong>Invitation dispatched to {inviteCreatedFor}.</strong>
-									The email is on its way. You can also copy the link below in case delivery fails.
+									<strong>Invite dispatched to {inviteCreatedFor}.</strong>
+									Email is on its way. You can also copy the link below in case delivery fails.
 								</p>
 								<div class="invites-url-row">
 									<input
@@ -821,13 +810,12 @@
 								</div>
 							</div>
 						{/if}
-					</div>
+					</section>
 
-					<!-- Pending + past invitations list -->
-					<div class="invites-list-wrap">
-						<h3 class="invites-list-title">Roster</h3>
+					<section class="invites-section">
+						<h3 class="invites-h">Invitations</h3>
 						{#if invites.length === 0}
-							<p class="invites-empty">No invitations yet. Dispatch one above.</p>
+							<p class="invites-empty">No invitations yet.</p>
 						{:else}
 							<table class="invites-table">
 								<thead>
@@ -860,7 +848,7 @@
 								</tbody>
 							</table>
 						{/if}
-					</div>
+					</section>
 				</div>
 
 			<!-- ═══ Logs tab ═══ -->
@@ -1821,65 +1809,37 @@
 	}
 
 	/* ──────────────────────────────────────────────────────────────────────
-	   Invites tab — sign-in-style card for the send form, plain roster below
+	   Invites tab — plain two-section layout (form on top, roster below).
+	   Public /invite/[token] page is the sign-in-styled view; this admin
+	   tab is intentionally unstyled-looking.
 	   ────────────────────────────────────────────────────────────────────── */
-	.invites-wrap {
+	.invites-panel {
 		display: flex;
 		flex-direction: column;
-		align-items: center;
-		gap: 2rem;
-		padding: 1rem 0 2rem;
+		gap: 1.5rem;
+		max-width: 820px;
 	}
-
-	.invites-card {
-		width: 100%;
-		max-width: 460px;
-		padding: 1.5rem 1.75rem 1.75rem;
+	.invites-section {
 		display: flex;
 		flex-direction: column;
-		gap: 0.9rem;
+		gap: 0.6rem;
 	}
-
-	.invites-hero {
-		margin: -1.5rem -1.75rem 0.25rem;   /* bleed to card edges */
-		border-top-left-radius: inherit;
-		border-top-right-radius: inherit;
-		overflow: hidden;
-	}
-	.invites-hero-img {
-		display: block;
-		width: 100%;
-		height: auto;
-		object-fit: cover;
-		aspect-ratio: 16 / 9;
-		background: var(--bg-inset);   /* fallback while loading */
-	}
-	.invites-hero-caption {
-		margin: 0.6rem 0 0;
+	.invites-h {
 		font-family: var(--font-display);
-		font-size: 0.78rem;
-		font-style: italic;
-		text-align: center;
-		color: var(--text-muted);
-	}
-
-	.invites-card-title {
-		font-family: var(--font-display);
-		font-size: 1.05rem;
+		font-size: 0.95rem;
 		font-weight: 700;
-		letter-spacing: 0.06em;
+		letter-spacing: 0.05em;
 		color: var(--text-accent);
-		margin: 0.4rem 0 0.1rem;
-		text-align: center;
+		margin: 0 0 0.2rem;
 	}
-	.invites-card-hint {
-		margin: 0 0 0.35rem;
+	.invites-hint {
+		margin: 0 0 0.4rem;
 		font-size: 0.82rem;
-		line-height: 1.6;
+		line-height: 1.55;
 		color: var(--text-muted);
-		text-align: center;
+		max-width: 68ch;
 	}
-	.invites-card-hint code {
+	.invites-hint code {
 		font-family: var(--font-ui);
 		font-size: 0.78rem;
 		padding: 1px 6px;
@@ -1891,16 +1851,17 @@
 	.invites-form {
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
+		gap: 0.55rem;
 	}
 	.invites-field {
 		display: flex;
 		flex-direction: column;
-		gap: 5px;
+		gap: 4px;
+		max-width: 380px;
 	}
 	.invites-field > span {
 		font-family: var(--font-ui);
-		font-size: 0.75rem;
+		font-size: 0.72rem;
 		font-weight: 600;
 		letter-spacing: 0.03em;
 		color: var(--text-muted);
@@ -1910,37 +1871,36 @@
 		font-weight: normal;
 	}
 	.invites-field input {
-		padding: 9px 11px;
+		padding: 7px 10px;
 		border: 1px solid var(--border-mid);
 		border-radius: 4px;
 		background: var(--bg-control);
 		color: var(--text);
 		font-family: var(--font-ui);
-		font-size: 0.9rem;
+		font-size: 0.85rem;
 	}
 	.invites-field input:focus {
 		outline: none;
 		border-color: var(--text-accent);
 	}
-	.invites-submit {
-		margin-top: 0.4rem;
-		width: 100%;
-	}
+	.invites-actions { margin-top: 0.25rem; }
 	.invites-error {
 		color: var(--color-danger);
 		font-size: 0.82rem;
+		margin-top: 0.25rem;
 	}
 
 	.invites-created {
-		margin-top: 0.9rem;
-		padding: 12px 14px;
+		margin-top: 0.6rem;
+		padding: 10px 12px;
 		border: 1px solid var(--border);
 		border-radius: 4px;
 		background: var(--bg-inset);
+		max-width: 600px;
 	}
 	.invites-created-msg {
-		margin: 0 0 0.6rem;
-		font-size: 0.84rem;
+		margin: 0 0 0.5rem;
+		font-size: 0.82rem;
 		line-height: 1.55;
 		color: var(--text-muted);
 	}
@@ -1958,21 +1918,6 @@
 		color: var(--text);
 		font-family: 'Roboto Mono', monospace;
 		font-size: 0.72rem;
-	}
-
-	/* Roster (list of sent invites) — full-width under the card */
-	.invites-list-wrap {
-		width: 100%;
-		max-width: 900px;
-	}
-	.invites-list-title {
-		font-family: var(--font-display);
-		font-size: 0.88rem;
-		font-weight: 700;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		color: var(--text-dimmer);
-		margin: 0 0 0.75rem;
 	}
 	.invites-empty {
 		font-size: 0.82rem;
