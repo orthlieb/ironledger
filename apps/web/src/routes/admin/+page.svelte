@@ -11,7 +11,7 @@
 	let error = $state('');
 
 	// ── Tabs ──────────────────────────────────────────────────────────────
-	let activeTab: 'users' | 'invites' | 'logs' | 'maintenance' | 'registration' = $state('users');
+	let activeTab: 'users' | 'invites' | 'logs' | 'tools' = $state('users');
 
 	// ── Invites tab state ────────────────────────────────────────────────
 	let invites: AdminInvite[] = $state([]);
@@ -628,18 +628,16 @@
 				>Logs</button>
 				<button
 					class="tab-btn"
-					class:active={activeTab === 'maintenance'}
+					class:active={activeTab === 'tools'}
 					role="tab"
-					aria-selected={activeTab === 'maintenance'}
-					onclick={() => { activeTab = 'maintenance'; void refreshMaintStatus(); void refreshBroadcastStatus(); }}
-				>Maintenance</button>
-				<button
-					class="tab-btn"
-					class:active={activeTab === 'registration'}
-					role="tab"
-					aria-selected={activeTab === 'registration'}
-					onclick={() => { activeTab = 'registration'; void refreshRegLockStatus(); }}
-				>Registration</button>
+					aria-selected={activeTab === 'tools'}
+					onclick={() => {
+						activeTab = 'tools';
+						void refreshMaintStatus();
+						void refreshRegLockStatus();
+						void refreshBroadcastStatus();
+					}}
+				>Tools</button>
 			</div>
 		</nav>
 
@@ -747,17 +745,28 @@
 
 			<!-- ═══ Invites tab ═══ -->
 			{:else if activeTab === 'invites'}
-				<div class="invites-panel">
-					<section class="invite-create">
-						<h3 class="invites-h">Send an invitation</h3>
-						<p class="invites-hint">
-							Admin-issued invites bypass registration lock. The recipient will get a
-							72-hour single-use link to set their password. Their account will be created
-							as a normal <code>user</code> — promote to admin separately after they sign in.
+				<div class="invites-wrap">
+
+					<!-- Send-invite card (mirrors sign-in card layout) -->
+					<div class="invites-card card">
+						<div class="invites-hero">
+							<img
+								class="invites-hero-img"
+								src="/ironledger-register.webp"
+								alt="A Norse warrior raises an axe, calling a new oath-sworn into the Ironlands"
+							/>
+							<p class="invites-hero-caption">Scribe a summons — dispatch a new iron-bound oath to the Ironlands.</p>
+						</div>
+
+						<h3 class="invites-card-title">Send an Invitation</h3>
+						<p class="invites-card-hint">
+							Admin-issued invites bypass the registration lock. The recipient receives a 72-hour
+							single-use link to set their password. Accounts are created with role <code>user</code> —
+							promote separately after they sign in.
 						</p>
 
-						<form class="invite-form" onsubmit={handleCreateInvite}>
-							<label class="invite-field">
+						<form class="invites-form" onsubmit={handleCreateInvite}>
+							<label class="invites-field">
 								<span>Email</span>
 								<input
 									type="email"
@@ -768,44 +777,59 @@
 									placeholder="name@example.com"
 								/>
 							</label>
-							<label class="invite-field">
-								<span>Display name <span class="invite-opt">— optional, defaults to email</span></span>
+							<label class="invites-field">
+								<span>Display name <span class="invites-field-opt">— optional, defaults to email</span></span>
 								<input
 									type="text"
 									bind:value={inviteDisplayName}
 									maxlength="80"
 									autocomplete="nickname"
+									placeholder="e.g. Silk Char"
 								/>
 							</label>
-							<div class="invite-actions">
-								<button type="submit" class="btn btn-primary" disabled={inviteBusy || !inviteEmail.trim()}>
-									{inviteBusy ? 'Sending…' : 'Send invite'}
-								</button>
-							</div>
+
 							{#if inviteError}
-								<div class="invite-error">{inviteError}</div>
+								<div class="invites-error">{inviteError}</div>
 							{/if}
+
+							<button
+								type="submit"
+								class="btn btn-primary invites-submit"
+								disabled={inviteBusy || !inviteEmail.trim()}
+							>
+								{inviteBusy ? 'Sending…' : 'Send Invitation'}
+							</button>
 						</form>
 
 						{#if inviteCreatedUrl}
-							<div class="invite-created">
-								<p><strong>Invite created for {inviteCreatedFor}.</strong> Email has been sent, but you can also copy the link in case delivery fails:</p>
-								<div class="invite-url-row">
-									<input type="text" class="invite-url" readonly value={inviteCreatedUrl} onclick={(e) => (e.currentTarget as HTMLInputElement).select()} />
+							<div class="invites-created">
+								<p class="invites-created-msg">
+									<strong>Invitation dispatched to {inviteCreatedFor}.</strong>
+									The email is on its way. You can also copy the link below in case delivery fails.
+								</p>
+								<div class="invites-url-row">
+									<input
+										type="text"
+										class="invites-url"
+										readonly
+										value={inviteCreatedUrl}
+										onclick={(e) => (e.currentTarget as HTMLInputElement).select()}
+									/>
 									<button type="button" class="btn" onclick={copyInviteUrl}>
 										{inviteCopyFlash ? 'Copied!' : 'Copy'}
 									</button>
 								</div>
 							</div>
 						{/if}
-					</section>
+					</div>
 
-					<section class="invite-list-section">
-						<h3 class="invites-h">Invitations</h3>
+					<!-- Pending + past invitations list -->
+					<div class="invites-list-wrap">
+						<h3 class="invites-list-title">Roster</h3>
 						{#if invites.length === 0}
-							<p class="invites-empty">No invitations yet.</p>
+							<p class="invites-empty">No invitations yet. Dispatch one above.</p>
 						{:else}
-							<table class="invite-table">
+							<table class="invites-table">
 								<thead>
 									<tr>
 										<th>Email</th>
@@ -836,7 +860,7 @@
 								</tbody>
 							</table>
 						{/if}
-					</section>
+					</div>
 				</div>
 
 			<!-- ═══ Logs tab ═══ -->
@@ -920,189 +944,185 @@
 					</div>
 				{/if}
 
-			<!-- ═══ Registration lock tab ═══ -->
-			{:else if activeTab === 'registration'}
-				<div class="maint-panel">
-					<div class="maint-status-row">
-						<span class="maint-dot" class:maint-dot-active={regLockStatus?.locked}></span>
-						<span class="maint-status-label">
-							{regLockStatus?.locked ? 'Registration Locked' : 'Registration Open'}
-						</span>
-					</div>
+			<!-- ═══ Tools tab (Maintenance · Registration Lock · Broadcast) ═══ -->
+			{:else if activeTab === 'tools'}
+				<div class="tools-panel">
 
-					{#if regLockStatus?.locked}
-						<div class="maint-active-info">
-							{#if regLockStatus.message}
-								<p class="maint-msg">{regLockStatus.message}</p>
+					<!-- ─── Tile 1: Maintenance Mode ─── -->
+					<section class="tools-tile">
+						<header class="tools-tile-head">
+							<h3 class="tools-tile-title">Maintenance Mode</h3>
+							<span class="tools-tile-dot" class:tools-tile-dot--active={maintStatus?.enabled}></span>
+							<span class="tools-tile-status">{maintStatus?.enabled ? 'Active' : 'Off'}</span>
+							{#if maintStatus?.enabled && maintCountdown}
+								<span class="tools-tile-timer">Shutdown in <strong>{maintCountdown}</strong></span>
 							{/if}
-						</div>
-						<button
-							class="btn btn-success"
-							disabled={regLockLoading}
-							onclick={disableRegLock}
-						>
-							{regLockLoading ? 'Unlocking...' : 'Unlock Registration'}
-						</button>
-					{:else}
-						<div class="maint-form">
-							<label class="maint-label">
-								<span>Message shown to new visitors</span>
-								<input
-									class="maint-input"
-									type="text"
-									placeholder="e.g. Registration is currently closed."
-									bind:value={regLockMessage}
-									maxlength="500"
-								/>
-							</label>
-						</div>
-						<button
-							class="btn btn-danger"
-							disabled={regLockLoading || !regLockMessage.trim()}
-							onclick={() => (showRegLockConfirm = true)}
-						>
-							Lock Registration
-						</button>
-					{/if}
-				</div>
+						</header>
+						<p class="tools-tile-desc">
+							Shows a global countdown banner, blocks non-admin logins, and revokes every active refresh
+							token. Use for planned outages.
+						</p>
 
-			<!-- ═══ Maintenance tab ═══ -->
-			{:else if activeTab === 'maintenance'}
-				<div class="maint-panel">
-					<!-- Status indicator -->
-					<div class="maint-status-row">
-						<span class="maint-dot" class:maint-dot-active={maintStatus?.enabled}></span>
-						<span class="maint-status-label">
-							{maintStatus?.enabled ? 'Maintenance Active' : 'System Normal'}
-						</span>
-						{#if maintStatus?.enabled && maintCountdown}
-							<span class="maint-timer">
-								Shutdown in <strong>{maintCountdown}</strong>
-							</span>
+						{#if maintStatus?.enabled}
+							<div class="tools-tile-info">
+								{#if maintStatus.message}
+									<p class="tools-tile-msg">{maintStatus.message}</p>
+								{/if}
+								{#if maintStatus.shutdownAt}
+									<p class="tools-tile-meta">
+										Shutdown at {new Date(maintStatus.shutdownAt).toLocaleString()}
+									</p>
+								{/if}
+							</div>
+							<div class="tools-tile-actions">
+								<button class="btn btn-success" disabled={maintLoading} onclick={disableMaint}>
+									{maintLoading ? 'Disabling…' : 'Disable Maintenance'}
+								</button>
+							</div>
+						{:else}
+							<div class="tools-tile-form">
+								<label class="tools-tile-field">
+									<span>Message</span>
+									<input
+										type="text"
+										placeholder="e.g. Upgrading to v2.0"
+										bind:value={maintMessage}
+										maxlength="500"
+									/>
+								</label>
+								<label class="tools-tile-field tools-tile-field--narrow">
+									<span>Minutes until shutdown</span>
+									<input
+										type="number"
+										min="0"
+										max="1440"
+										bind:value={maintMinutes}
+									/>
+								</label>
+							</div>
+							<div class="tools-tile-actions">
+								<button
+									class="btn btn-danger"
+									disabled={maintLoading || !maintMessage.trim()}
+									onclick={() => (showMaintConfirm = true)}
+								>Enable Maintenance Mode</button>
+							</div>
 						{/if}
-					</div>
+					</section>
 
-					{#if maintStatus?.enabled}
-						<!-- Active maintenance info -->
-						<div class="maint-active-info">
-							{#if maintStatus.message}
-								<p class="maint-msg">{maintStatus.message}</p>
-							{/if}
-							{#if maintStatus.shutdownAt}
-								<p class="maint-shutdown">
-									Shutdown at: {new Date(maintStatus.shutdownAt).toLocaleString()}
+					<!-- ─── Tile 2: Registration Lock ─── -->
+					<section class="tools-tile">
+						<header class="tools-tile-head">
+							<h3 class="tools-tile-title">Registration Lock</h3>
+							<span class="tools-tile-dot" class:tools-tile-dot--active={regLockStatus?.locked}></span>
+							<span class="tools-tile-status">{regLockStatus?.locked ? 'Locked' : 'Open'}</span>
+						</header>
+						<p class="tools-tile-desc">
+							Blocks new account creation without signing anyone out. Use invites to onboard specific
+							people while registration is locked.
+						</p>
+
+						{#if regLockStatus?.locked}
+							<div class="tools-tile-info">
+								{#if regLockStatus.message}
+									<p class="tools-tile-msg">{regLockStatus.message}</p>
+								{/if}
+							</div>
+							<div class="tools-tile-actions">
+								<button class="btn btn-success" disabled={regLockLoading} onclick={disableRegLock}>
+									{regLockLoading ? 'Unlocking…' : 'Unlock Registration'}
+								</button>
+							</div>
+						{:else}
+							<div class="tools-tile-form">
+								<label class="tools-tile-field">
+									<span>Message shown on the register page</span>
+									<input
+										type="text"
+										placeholder="e.g. Registration is currently closed."
+										bind:value={regLockMessage}
+										maxlength="500"
+									/>
+								</label>
+							</div>
+							<div class="tools-tile-actions">
+								<button
+									class="btn btn-danger"
+									disabled={regLockLoading || !regLockMessage.trim()}
+									onclick={() => (showRegLockConfirm = true)}
+								>Lock Registration</button>
+							</div>
+						{/if}
+					</section>
+
+					<!-- ─── Tile 3: Broadcast Banner ─── -->
+					<section class="tools-tile">
+						<header class="tools-tile-head">
+							<h3 class="tools-tile-title">Broadcast Banner</h3>
+							<span class="tools-tile-dot" class:tools-tile-dot--active={broadcastStatus?.active}></span>
+							<span class="tools-tile-status">{broadcastStatus?.active ? 'Live' : 'Off'}</span>
+						</header>
+						<p class="tools-tile-desc">
+							Informational or warning banner shown to every user until dismissed. Editing the message
+							re-shows it for everyone — does not block login or revoke sessions.
+						</p>
+
+						{#if broadcastStatus?.active}
+							<div class="tools-tile-info">
+								<p class="tools-tile-msg">
+									<span class="invite-status invite-status--{broadcastStatus.severity === 'warning' ? 'revoked' : 'accepted'}">{broadcastStatus.severity}</span>
+									{broadcastStatus.message}
 								</p>
-							{/if}
-						</div>
-						<button
-							class="btn btn-success"
-							disabled={maintLoading}
-							onclick={disableMaint}
-						>
-							{maintLoading ? 'Disabling...' : 'Disable Maintenance'}
-						</button>
-					{:else}
-						<!-- Enable form -->
-						<div class="maint-form">
-							<label class="maint-label">
+								{#if broadcastStatus.postedAt}
+									<p class="tools-tile-meta">
+										Posted {new Date(broadcastStatus.postedAt).toLocaleString()}
+									</p>
+								{/if}
+							</div>
+						{/if}
+
+						<div class="tools-tile-form">
+							<label class="tools-tile-field">
 								<span>Message</span>
 								<input
-									class="maint-input"
 									type="text"
-									placeholder="e.g. Upgrading to v2.0"
-									bind:value={maintMessage}
+									bind:value={broadcastMessage}
 									maxlength="500"
+									placeholder="e.g. Foe images regenerating tonight 10–11pm UTC."
 								/>
 							</label>
-							<label class="maint-label">
-								<span>Minutes until shutdown</span>
-								<input
-									class="maint-input maint-input-num"
-									type="number"
-									min="0"
-									max="1440"
-									bind:value={maintMinutes}
-								/>
-							</label>
+							<div class="tools-tile-severity">
+								<span class="tools-tile-field-label">Severity</span>
+								<label class="severity-opt">
+									<input type="radio" bind:group={broadcastSeverity} value="info" />
+									<span>Info</span>
+								</label>
+								<label class="severity-opt">
+									<input type="radio" bind:group={broadcastSeverity} value="warning" />
+									<span>Warning</span>
+								</label>
+							</div>
 						</div>
-						<button
-							class="btn btn-danger"
-							disabled={maintLoading || !maintMessage.trim()}
-							onclick={() => (showMaintConfirm = true)}
-						>
-							Enable Maintenance Mode
-						</button>
-					{/if}
-				</div>
-			{/if}
-
-			<!-- ─── Broadcast banner panel ─── -->
-			<section class="broadcast-panel">
-				<h3 class="invites-h">Broadcast banner</h3>
-				<p class="invites-hint">
-					An informational or warning banner shown to every user until they dismiss it.
-					Editing the message re-shows the banner for everyone who previously dismissed it.
-					Does not revoke sessions or block login — use Maintenance above for that.
-				</p>
-
-				{#if broadcastStatus?.active}
-					<div class="broadcast-active">
-						<span class="invite-status invite-status--{broadcastStatus.severity === 'warning' ? 'revoked' : 'accepted'}">{broadcastStatus.severity}</span>
-						<span class="broadcast-message">{broadcastStatus.message}</span>
-					</div>
-					<p class="broadcast-posted-at">
-						Posted {broadcastStatus.postedAt ? new Date(broadcastStatus.postedAt).toLocaleString() : ''}
-					</p>
-				{:else}
-					<p class="broadcast-inactive">No banner currently active.</p>
-				{/if}
-
-				<div class="invite-form">
-					<label class="invite-field">
-						<span>Message</span>
-						<input
-							type="text"
-							bind:value={broadcastMessage}
-							maxlength="500"
-							placeholder="e.g. Foe images are being regenerated tonight 10pm–11pm UTC."
-						/>
-					</label>
-					<label class="invite-field">
-						<span>Severity</span>
-						<div class="severity-row">
-							<label class="severity-opt">
-								<input type="radio" bind:group={broadcastSeverity} value="info" />
-								<span>Info</span>
-							</label>
-							<label class="severity-opt">
-								<input type="radio" bind:group={broadcastSeverity} value="warning" />
-								<span>Warning</span>
-							</label>
-						</div>
-					</label>
-					<div class="invite-actions broadcast-actions">
-						<button
-							type="button"
-							class="btn btn-primary"
-							disabled={broadcastBusy || !broadcastMessage.trim()}
-							onclick={postBroadcast}
-						>
-							{broadcastBusy ? 'Saving…' : (broadcastStatus?.active ? 'Update banner' : 'Post banner')}
-						</button>
-						{#if broadcastStatus?.active}
+						<div class="tools-tile-actions">
 							<button
 								type="button"
-								class="btn"
-								disabled={broadcastBusy}
-								onclick={clearBroadcast}
-							>Clear</button>
+								class="btn btn-primary"
+								disabled={broadcastBusy || !broadcastMessage.trim()}
+								onclick={postBroadcast}
+							>
+								{broadcastBusy ? 'Saving…' : (broadcastStatus?.active ? 'Update banner' : 'Post banner')}
+							</button>
+							{#if broadcastStatus?.active}
+								<button type="button" class="btn" disabled={broadcastBusy} onclick={clearBroadcast}>Clear</button>
+							{/if}
+						</div>
+						{#if broadcastError}
+							<div class="invites-error">{broadcastError}</div>
 						{/if}
-					</div>
-					{#if broadcastError}
-						<div class="invite-error">{broadcastError}</div>
-					{/if}
+					</section>
+
 				</div>
-			</section>
+			{/if}
 
 		</div>
 	{/if}
@@ -1800,29 +1820,66 @@
 		color: #fff;
 	}
 
-	/* ── Invites tab ──────────────────────────────────────────────── */
-	.invites-panel {
+	/* ──────────────────────────────────────────────────────────────────────
+	   Invites tab — sign-in-style card for the send form, plain roster below
+	   ────────────────────────────────────────────────────────────────────── */
+	.invites-wrap {
 		display: flex;
 		flex-direction: column;
+		align-items: center;
 		gap: 2rem;
-		max-width: 820px;
+		padding: 1rem 0 2rem;
 	}
-	.invites-h {
+
+	.invites-card {
+		width: 100%;
+		max-width: 460px;
+		padding: 1.5rem 1.75rem 1.75rem;
+		display: flex;
+		flex-direction: column;
+		gap: 0.9rem;
+	}
+
+	.invites-hero {
+		margin: -1.5rem -1.75rem 0.25rem;   /* bleed to card edges */
+		border-top-left-radius: inherit;
+		border-top-right-radius: inherit;
+		overflow: hidden;
+	}
+	.invites-hero-img {
+		display: block;
+		width: 100%;
+		height: auto;
+		object-fit: cover;
+		aspect-ratio: 16 / 9;
+		background: var(--bg-inset);   /* fallback while loading */
+	}
+	.invites-hero-caption {
+		margin: 0.6rem 0 0;
 		font-family: var(--font-display);
-		font-size: 0.95rem;
-		font-weight: 700;
-		letter-spacing: 0.05em;
-		color: var(--text-accent);
-		margin: 0 0 0.6rem;
-	}
-	.invites-hint {
-		font-size: 0.82rem;
-		line-height: 1.55;
+		font-size: 0.78rem;
+		font-style: italic;
+		text-align: center;
 		color: var(--text-muted);
-		margin: 0 0 1rem;
-		max-width: 68ch;
 	}
-	.invites-hint code {
+
+	.invites-card-title {
+		font-family: var(--font-display);
+		font-size: 1.05rem;
+		font-weight: 700;
+		letter-spacing: 0.06em;
+		color: var(--text-accent);
+		margin: 0.4rem 0 0.1rem;
+		text-align: center;
+	}
+	.invites-card-hint {
+		margin: 0 0 0.35rem;
+		font-size: 0.82rem;
+		line-height: 1.6;
+		color: var(--text-muted);
+		text-align: center;
+	}
+	.invites-card-hint code {
 		font-family: var(--font-ui);
 		font-size: 0.78rem;
 		padding: 1px 6px;
@@ -1830,65 +1887,69 @@
 		background: var(--bg-inset);
 		color: var(--text);
 	}
-	.invite-form {
+
+	.invites-form {
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
 	}
-	.invite-field {
+	.invites-field {
 		display: flex;
 		flex-direction: column;
-		gap: 4px;
+		gap: 5px;
 	}
-	.invite-field span {
+	.invites-field > span {
 		font-family: var(--font-ui);
 		font-size: 0.75rem;
 		font-weight: 600;
-		color: var(--text-muted);
 		letter-spacing: 0.03em;
+		color: var(--text-muted);
 	}
-	.invite-opt {
+	.invites-field-opt {
 		color: var(--text-dimmer);
 		font-weight: normal;
 	}
-	.invite-field input {
-		padding: 8px 10px;
+	.invites-field input {
+		padding: 9px 11px;
 		border: 1px solid var(--border-mid);
 		border-radius: 4px;
 		background: var(--bg-control);
 		color: var(--text);
 		font-family: var(--font-ui);
-		font-size: 0.88rem;
+		font-size: 0.9rem;
 	}
-	.invite-field input:focus {
+	.invites-field input:focus {
 		outline: none;
 		border-color: var(--text-accent);
 	}
-	.invite-actions { margin-top: 0.25rem; }
-	.invite-error {
+	.invites-submit {
+		margin-top: 0.4rem;
+		width: 100%;
+	}
+	.invites-error {
 		color: var(--color-danger);
 		font-size: 0.82rem;
-		margin-top: 0.25rem;
 	}
-	.invite-created {
-		margin-top: 1rem;
+
+	.invites-created {
+		margin-top: 0.9rem;
 		padding: 12px 14px;
 		border: 1px solid var(--border);
 		border-radius: 4px;
 		background: var(--bg-inset);
 	}
-	.invite-created p {
+	.invites-created-msg {
 		margin: 0 0 0.6rem;
 		font-size: 0.84rem;
 		line-height: 1.55;
 		color: var(--text-muted);
 	}
-	.invite-url-row {
+	.invites-url-row {
 		display: flex;
 		gap: 0.5rem;
 		align-items: stretch;
 	}
-	.invite-url {
+	.invites-url {
 		flex: 1;
 		padding: 6px 8px;
 		border: 1px solid var(--border);
@@ -1898,23 +1959,38 @@
 		font-family: 'Roboto Mono', monospace;
 		font-size: 0.72rem;
 	}
+
+	/* Roster (list of sent invites) — full-width under the card */
+	.invites-list-wrap {
+		width: 100%;
+		max-width: 900px;
+	}
+	.invites-list-title {
+		font-family: var(--font-display);
+		font-size: 0.88rem;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--text-dimmer);
+		margin: 0 0 0.75rem;
+	}
 	.invites-empty {
 		font-size: 0.82rem;
 		color: var(--text-dimmer);
 		font-style: italic;
 	}
-	.invite-table {
+	.invites-table {
 		width: 100%;
 		border-collapse: collapse;
 		font-size: 0.82rem;
 	}
-	.invite-table th,
-	.invite-table td {
-		padding: 6px 8px;
+	.invites-table th,
+	.invites-table td {
+		padding: 7px 9px;
 		text-align: left;
 		border-bottom: 1px solid var(--border);
 	}
-	.invite-table th {
+	.invites-table th {
 		font-family: var(--font-ui);
 		font-size: 0.7rem;
 		font-weight: 700;
@@ -1922,7 +1998,7 @@
 		text-transform: uppercase;
 		color: var(--text-dimmer);
 	}
-	.invite-table .td-date { white-space: nowrap; color: var(--text-muted); }
+	.invites-table .td-date { white-space: nowrap; color: var(--text-muted); }
 	.invite-status {
 		display: inline-block;
 		padding: 2px 8px;
@@ -1942,43 +2018,147 @@
 		font-size: 0.72rem;
 	}
 
-	/* ── Broadcast panel (inside Maintenance tab) ──────────────────── */
-	.broadcast-panel {
+	/* ──────────────────────────────────────────────────────────────────────
+	   Tools tab — three vertical tiles (Maintenance · Reg Lock · Broadcast)
+	   ────────────────────────────────────────────────────────────────────── */
+	.tools-panel {
+		display: flex;
+		flex-direction: column;
+		gap: 1.25rem;
 		max-width: 820px;
-		margin-top: 2rem;
-		padding-top: 1.5rem;
-		border-top: 1px solid var(--border);
 	}
-	.broadcast-active {
+
+	.tools-tile {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		padding: 1.1rem 1.2rem 1.15rem;
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		background: var(--bg-card);
+	}
+
+	.tools-tile-head {
 		display: flex;
 		align-items: center;
-		gap: 0.75rem;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+	.tools-tile-title {
+		flex: 1 1 auto;
+		font-family: var(--font-display);
+		font-size: 0.95rem;
+		font-weight: 700;
+		letter-spacing: 0.05em;
+		color: var(--text-accent);
+		margin: 0;
+	}
+	.tools-tile-dot {
+		width: 9px;
+		height: 9px;
+		border-radius: 50%;
+		background: var(--text-dimmer);
+		flex-shrink: 0;
+	}
+	.tools-tile-dot--active {
+		background: var(--color-danger);
+		box-shadow: 0 0 6px color-mix(in srgb, var(--color-danger) 55%, transparent);
+	}
+	.tools-tile-status {
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		font-weight: 600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color: var(--text-muted);
+	}
+	.tools-tile-timer {
+		font-family: var(--font-ui);
+		font-size: 0.75rem;
+		color: var(--color-danger);
+		margin-left: auto;
+	}
+	.tools-tile-timer strong {
+		font-family: 'Roboto Mono', monospace;
+		font-weight: 700;
+	}
+
+	.tools-tile-desc {
+		margin: 0;
+		font-size: 0.82rem;
+		line-height: 1.55;
+		color: var(--text-muted);
+		max-width: 68ch;
+	}
+
+	.tools-tile-info {
 		padding: 10px 12px;
-		background: var(--bg-inset);
 		border: 1px solid var(--border);
 		border-radius: 4px;
-		margin-bottom: 0.4rem;
+		background: var(--bg-inset);
 	}
-	.broadcast-message {
+	.tools-tile-msg {
+		margin: 0;
 		font-size: 0.88rem;
+		line-height: 1.5;
 		color: var(--text);
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-wrap: wrap;
 	}
-	.broadcast-posted-at {
+	.tools-tile-meta {
+		margin: 0.4rem 0 0;
 		font-size: 0.72rem;
 		color: var(--text-dimmer);
-		margin: 0 0 1rem;
 	}
-	.broadcast-inactive {
-		font-size: 0.82rem;
-		color: var(--text-dimmer);
-		font-style: italic;
-		margin: 0 0 1rem;
-	}
-	.severity-row {
+
+	.tools-tile-form {
 		display: flex;
-		gap: 1rem;
-		align-items: center;
+		flex-direction: column;
+		gap: 0.6rem;
 	}
+	.tools-tile-field {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+	.tools-tile-field--narrow { max-width: 220px; }
+	.tools-tile-field > span,
+	.tools-tile-field-label {
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		font-weight: 600;
+		letter-spacing: 0.03em;
+		color: var(--text-muted);
+	}
+	.tools-tile-field input {
+		padding: 7px 10px;
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+		background: var(--bg-control);
+		color: var(--text);
+		font-family: var(--font-ui);
+		font-size: 0.85rem;
+	}
+	.tools-tile-field input:focus {
+		outline: none;
+		border-color: var(--text-accent);
+	}
+
+	.tools-tile-severity {
+		display: flex;
+		align-items: center;
+		gap: 0.8rem;
+		flex-wrap: wrap;
+	}
+
+	.tools-tile-actions {
+		display: flex;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+
 	.severity-opt {
 		display: flex;
 		align-items: center;
@@ -1988,8 +2168,4 @@
 		cursor: pointer;
 	}
 	.severity-opt input { margin: 0; }
-	.broadcast-actions {
-		display: flex;
-		gap: 0.5rem;
-	}
 </style>

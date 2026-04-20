@@ -343,13 +343,32 @@ export async function sendInviteEmail(
     ].join('\n'),
     html: emailWrap(`
           <tr>
+            <td style="background:#ffffff;padding:0;line-height:0;">
+              <img
+                src="${config.APP_URL}/ironledger-email-hero.webp"
+                alt="A Norse warrior points directly at you, demanding you claim your destiny"
+                width="520"
+                style="display:block;width:100%;height:auto;"
+              >
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#ffffff;padding:10px 32px 0;text-align:center;">
+              <p style="margin:0;
+                        font-family:'Cinzel',Georgia,'Times New Roman',serif;
+                        font-size:0.78rem;color:#94a3b8;font-style:italic;">
+                The Ironlands sends for you.
+              </p>
+            </td>
+          </tr>
+          <tr>
             <td style="background:#ffffff;padding:24px 32px 28px;">
 
               <h2 style="margin:0 0 14px;
                          font-family:'Cinzel',Georgia,'Times New Roman',serif;
                          font-size:1.05rem;font-weight:600;
                          color:#1e293b;letter-spacing:0.05em;">
-                The Ironlands send for you.
+                The Ironlands sends for you.
               </h2>
 
               <p style="margin:0 0 18px;
