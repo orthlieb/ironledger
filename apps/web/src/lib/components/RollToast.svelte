@@ -11,6 +11,7 @@
 
 	import { fly, fade } from 'svelte/transition';
 	import { logs, SESSION_LOG_ID, type LogEntry } from '$lib/log.svelte.js';
+	import { sanitizeLogHtml } from '$lib/sanitize.js';
 
 	const AUTO_DISMISS_MS = 6000;
 
@@ -66,7 +67,7 @@
 				</svg>
 			</button>
 		</div>
-		<div class="rt-body">{@html toastEntry.html}</div>
+		<div class="rt-body">{@html sanitizeLogHtml(toastEntry.html)}</div>
 	</div>
 {/if}
 

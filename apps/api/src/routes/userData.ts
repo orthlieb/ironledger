@@ -48,6 +48,45 @@ const patchSessionStateBody = z.object({
 });
 
 // ---------------------------------------------------------------------------
+// imageUrl validation — narrow the attack surface on Community/NPC portraits
+//
+// The item-level schemas above are z.record(z.unknown()) (free-form to allow
+// the data model to evolve), so the `imageUrl` field is untyped at the schema
+// layer. A malicious client could post javascript:, file://, or massive
+// base64 strings with SVG+<script>. Images are rendered via <img src=...>
+// so script-execution is largely blocked by browsers, but defense-in-depth
+// says we should still refuse anything that isn't a recognised image URL.
+//
+// Accept:
+//   data:image/(png|jpeg|webp|gif);base64,<chars>   up to ~1MB encoded
+//   https://<host>/<path>                           external URL
+// Reject everything else.
+// ---------------------------------------------------------------------------
+
+const MAX_IMAGE_DATA_URL_LEN = 1_200_000;                              // ~900KB decoded
+const IMAGE_DATA_URL_RE      = /^data:image\/(?:png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/;
+const HTTPS_URL_RE           = /^https:\/\/[^\s<>"']+$/;
+
+function isValidImageUrl(s: unknown): boolean {
+  if (typeof s !== 'string' || s.length === 0) return true;   // unset is fine
+  if (s.length > MAX_IMAGE_DATA_URL_LEN) return false;
+  if (IMAGE_DATA_URL_RE.test(s)) return true;
+  if (HTTPS_URL_RE.test(s) && s.length <= 2048) return true;
+  return false;
+}
+
+function assertImageUrls(items: Array<Record<string, unknown>>, kind: string): string | null {
+  for (let i = 0; i < items.length; i++) {
+    const url = items[i]?.imageUrl;
+    if (url === undefined || url === null) continue;
+    if (!isValidImageUrl(url)) {
+      return `${kind}[${i}].imageUrl is not a valid image data URL or https URL (or exceeds size cap)`;
+    }
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
 // Routes
 // ---------------------------------------------------------------------------
 
@@ -105,6 +144,8 @@ export const userDataRoutes: FastifyPluginAsyncZod = async (server) => {
         message:    `Expedition limit reached (max ${config.MAX_EXPEDITIONS_PER_USER})`,
       });
     }
+    const imgErr = assertImageUrls(req.body.expeditions, 'expeditions');
+    if (imgErr) return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: imgErr });
     const result = await ud.upsert(req.user!.id, { expeditions: req.body.expeditions }).catch(handleError(reply));
     if (!result || reply.sent) return;
     return reply.status(200).send(result);
@@ -126,6 +167,8 @@ export const userDataRoutes: FastifyPluginAsyncZod = async (server) => {
         message:    `Community limit reached (max ${config.MAX_COMMUNITIES_PER_USER})`,
       });
     }
+    const imgErr = assertImageUrls(req.body.communities, 'communities');
+    if (imgErr) return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: imgErr });
     const result = await ud.upsert(req.user!.id, { communities: req.body.communities }).catch(handleError(reply));
     if (!result || reply.sent) return;
     return reply.status(200).send(result);
@@ -147,6 +190,8 @@ export const userDataRoutes: FastifyPluginAsyncZod = async (server) => {
         message:    `NPC limit reached (max ${config.MAX_NPCS_PER_USER})`,
       });
     }
+    const imgErr = assertImageUrls(req.body.npcs, 'npcs');
+    if (imgErr) return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: imgErr });
     const result = await ud.upsert(req.user!.id, { npcs: req.body.npcs }).catch(handleError(reply));
     if (!result || reply.sent) return;
     return reply.status(200).send(result);

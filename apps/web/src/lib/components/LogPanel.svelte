@@ -13,6 +13,7 @@
 	import { momentumReset } from '$lib/character.js';
 	import { findMove } from '$lib/moveStore.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
+	import { sanitizeLogHtml, sanitizeNoteHtml } from '$lib/sanitize.js';
 	import trashSvg       from '$icons/trash-solid-full.svg?raw';
 	import penSvg         from '$icons/pen-to-square-solid-full.svg?raw';
 	import anglesLeftSvg  from '$icons/angles-left-solid-full.svg?raw';
@@ -689,7 +690,7 @@
 
 					<!-- Entry body — hidden when editing a Note entry (textarea replaces it) -->
 					{#if !(editingId === entry.id && entry.title === 'Note' && entry.source != null)}
-						<div class="entry-body">{@html entry.html}</div>
+						<div class="entry-body">{@html sanitizeLogHtml(entry.html)}</div>
 					{/if}
 
 					<!-- Inline editor: for Note entries edits main content; for others edits sub-note -->
@@ -711,7 +712,7 @@
 							</div>
 						</div>
 					{:else if entry.note}
-						<div class="entry-note">{@html renderNote(entry.note)}</div>
+						<div class="entry-note">{@html sanitizeNoteHtml(renderNote(entry.note))}</div>
 					{/if}
 				</div>
 			{/each}
