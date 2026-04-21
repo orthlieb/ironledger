@@ -106,6 +106,20 @@ On Surface-Duo-class screens (540 px inner width in portrait), labels don't fit 
 
 ---
 
+## Passkeys
+
+Mobile is the primary target for passkey sign-in — a single tap hands off to the OS biometric sheet (Face ID / Touch ID on iOS, fingerprint / face unlock on Android) and returns an authenticated session without the user typing anything. Implementation is shared with desktop; there is no mobile-specific code path.
+
+- Sign-in trigger: the "Sign in with a passkey" button on `/login`, rendered only when `window.PublicKeyCredential` is present (see `isPasskeySupported()` in `apps/web/src/lib/passkey.ts`). The button sits below the password form inside the same `.auth-card`, which is `max-width: 400px` and uses `min-height: 100dvh` on its wrapper so it fits the viewport cleanly with or without the mobile browser chrome.
+- Enrolment trigger: the **Passkeys** section of the Settings dialog (gear icon → Settings). The dialog itself is `width: min(360px, calc(100vw - 2rem))`, so it scales to narrow screens without its own breakpoint.
+- Discoverable-credential sign-in: the server issues an empty `allowCredentials`, which lets the OS sheet list every passkey the device knows about for this origin (including cloud-synced ones from the user's iCloud Keychain / Google Password Manager). No email is required up-front on mobile.
+- Cross-device flow: when the user is on desktop and picks "use a phone", the browser surfaces a QR code; the phone camera completes the `hybrid` transport handshake. This is provided by the browser / OS — we just declare `hybrid` as one of the accepted transports on enrolment and don't special-case it in the UI.
+- Cancel handling: dismissing the native sheet rejects with `NotAllowedError`. The login page matches `/cancel|aborted|NotAllowedError/i` and swallows it silently — accidental dismissals on a small screen shouldn't surface as red error text.
+
+There is **no** `autocomplete="username webauthn"` conditional-mediation hint on the email field. Passkey sign-in is an explicit button, not a drive-by suggestion — this avoids the iOS keyboard presenting a passkey picker every time the user taps the email field.
+
+---
+
 ## Tooltips
 
 Native `title` tooltips behave unpredictably on touch devices — some browsers swallow them entirely, others fire them on long-press but leave them stuck on the next tap. The project uses CSS `data-tooltip` tooltips everywhere (see [ui-components.md § Tooltips](ui-components.md#tooltips)), and for pills inside scrollable containers (like the GCB) the `use:tooltip` action, which renders a body-level fixed-position element so it's never clipped.
