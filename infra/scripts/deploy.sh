@@ -115,6 +115,7 @@ EXPECTED_COLUMNS=(
   "user_data:communities"
   "user_data:npcs"
   "users:display_name"
+  "webauthn_credentials:credential_id"
 )
 MISSING=()
 for pair in "${EXPECTED_COLUMNS[@]}"; do

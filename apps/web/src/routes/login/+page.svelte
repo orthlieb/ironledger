@@ -3,14 +3,36 @@
 	import PasswordInput from '$lib/components/PasswordInput.svelte';
 	import swordSvg from '$icons/sharp-axe.svg?raw';
 	import { browser } from '$app/environment';
+	import { goto } from '$app/navigation';
+	import { signInWithPasskey, isPasskeySupported } from '$lib/passkey.js';
 
 	let { form, data }: { form: ActionData; data: PageData } = $props();
 
-	// Match hCaptcha theme to the app's current theme (set by app.html from localStorage).
-	// Must be computed synchronously so the DOM attribute is correct before hCaptcha initialises.
 	const captchaTheme = browser
 		? ((localStorage.getItem('theme') as 'dark' | 'light' | null) ?? 'auto')
 		: 'auto';
+
+	// Passkey sign-in — JS-driven; the password form remains the default path.
+	let passkeyBusy  = $state(false);
+	let passkeyError = $state('');
+	const passkeySupported = browser && isPasskeySupported();
+
+	async function handlePasskeyLogin() {
+		passkeyError = '';
+		passkeyBusy  = true;
+		try {
+			await signInWithPasskey();
+			await goto('/home');
+		} catch (err) {
+			const msg = err instanceof Error ? err.message : String(err);
+			// User cancel / NotAllowedError is expected when they dismiss the prompt.
+			if (!/cancel|aborted|NotAllowedError/i.test(msg)) {
+				passkeyError = msg;
+			}
+		} finally {
+			passkeyBusy = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -78,6 +100,21 @@
 
 			<button type="submit" class="btn btn-primary">Sign In</button>
 		</form>
+
+		{#if passkeySupported}
+			<div class="passkey-divider" aria-hidden="true"><span>or</span></div>
+			<button
+				type="button"
+				class="btn passkey-btn"
+				onclick={handlePasskeyLogin}
+				disabled={passkeyBusy}
+			>
+				{passkeyBusy ? 'Waiting for passkey…' : 'Sign in with a passkey'}
+			</button>
+			{#if passkeyError}
+				<div class="error-msg">{passkeyError}</div>
+			{/if}
+		{/if}
 
 		<p class="auth-link">
 			No account yet? <a href="/register">Create one</a> · <a href="/forgot-password" class="forgot-link">Forgot password?</a> · <a href="/about" class="forgot-link">About</a>
@@ -178,5 +215,28 @@
 	}
 	.maintenance-banner strong {
 		color: #fca5a5;
+	}
+
+	/* ── Passkey divider + button ───────────────────────────────── */
+	.passkey-divider {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin: 0.8rem 0 0.5rem;
+		color: var(--text-dimmer);
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+	}
+	.passkey-divider::before,
+	.passkey-divider::after {
+		content: '';
+		flex: 1;
+		height: 1px;
+		background: var(--border);
+	}
+	.passkey-btn {
+		width: 100%;
 	}
 </style>

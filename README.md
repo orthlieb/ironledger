@@ -209,6 +209,7 @@ Feature docs are in the `docs/` directory:
 | [mobile.md](docs/mobile.md) | Mobile layout, swipe gestures, and viewport behaviour |
 | [moves.md](docs/moves.md) | Moves system and dice rolling |
 | [notes.md](docs/notes.md) | Notes dialog |
+| [passkeys.md](docs/passkeys.md) | WebAuthn passkey enrolment + sign-in |
 | [oracles.md](docs/oracles.md) | Oracle tables |
 | [ui-components.md](docs/ui-components.md) | Shared UI design specs (cards, pills, tooltips, side labels) |
 | [YRT/DATA_FORMAT_YRT.md](docs/YRT/DATA_FORMAT_YRT.md) | YRT homebrew data format extensions |

@@ -27,6 +27,7 @@ import { userDataRoutes }    from './routes/userData.js';
 import { sessionLogRoutes }  from './routes/sessionLog.js';
 import { adminRoutes }       from './routes/admin.js';
 import { inviteRoutes }      from './routes/invites.js';
+import { passkeyRoutes }     from './routes/passkeys.js';
 import { healthRoutes }      from './routes/health.js';
 
 // ---------------------------------------------------------------------------
@@ -225,6 +226,7 @@ export async function buildServer(): Promise<FastifyInstance> {
   // without breaking existing clients.
   await server.register(healthRoutes);
   await server.register(authRoutes,      { prefix: '/api/v1/auth' });
+  await server.register(passkeyRoutes,   { prefix: '/api/v1/auth/passkey' });
   await server.register(characterRoutes, { prefix: '/api/v1/characters' });
   await server.register(catalogueRoutes, { prefix: '/api/v1/catalogue' });
   await server.register(userDataRoutes,   { prefix: '/api/v1/session' });
