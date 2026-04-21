@@ -111,7 +111,7 @@ export const passkeyRoutes: FastifyPluginAsyncZod = async (server) => {
 	}, async (req, reply) => {
 		const result = await passkey.finishRegistration(
 			req.user!.id,
-			req.body.response as Parameters<typeof passkey.finishRegistration>[1],
+			req.body.response as unknown as Parameters<typeof passkey.finishRegistration>[1],
 			req.body.label,
 		).catch(handlePasskeyError(reply));
 		if (!result || reply.sent) return;
@@ -188,7 +188,7 @@ export const passkeyRoutes: FastifyPluginAsyncZod = async (server) => {
 	}, async (req, reply) => {
 		const result = await passkey.finishAuthentication(
 			req.body.session,
-			req.body.response as Parameters<typeof passkey.finishAuthentication>[1],
+			req.body.response as unknown as Parameters<typeof passkey.finishAuthentication>[1],
 		).catch(handlePasskeyError(reply));
 		if (!result || reply.sent) return;
 
