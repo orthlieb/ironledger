@@ -10,6 +10,7 @@
  */
 
 import argon2 from 'argon2';
+import { randomBytes } from 'crypto';
 import { eq, and, isNull } from 'drizzle-orm';
 import { db, withUserContext, adminDb } from '../db/index.js';
 import {
@@ -53,6 +54,20 @@ export const ARGON2_OPTIONS = {
   timeCost:    2,
   parallelism: 1,
 };
+
+/**
+ * Dummy Argon2id hash used by `login()` when the submitted email isn't in
+ * the database, so the verify path runs at the same CPU cost as a real
+ * login. Computed once at module load from random bytes — nothing will
+ * ever hash to it, so a comparison always fails. Without this, an
+ * attacker could time responses and enumerate valid emails.
+ *
+ * Top-level await is fine in ESM; this adds ~50ms to cold start.
+ */
+const DUMMY_PASSWORD_HASH = await argon2.hash(
+  randomBytes(32).toString('hex'),
+  ARGON2_OPTIONS,
+);
 
 // ---------------------------------------------------------------------------
 // Domain errors — the route layer maps these to HTTP status codes
@@ -269,8 +284,10 @@ export async function login(input: LoginInput): Promise<AuthResult> {
     .where(eq(users.email, email))
     .limit(1);
 
-  // Use a dummy hash for timing consistency when the user doesn't exist
-  const hashToVerify = user?.passwordHash ?? '$argon2id$v=19$m=19456,t=2,p=1$placeholder';
+  // Use a real dummy Argon2id hash for timing consistency when the email
+  // isn't in the DB. A malformed string would make verify() fail fast via
+  // a parse error, which is detectable via response time.
+  const hashToVerify = user?.passwordHash ?? DUMMY_PASSWORD_HASH;
 
   let passwordValid: boolean;
   try {

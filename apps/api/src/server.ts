@@ -63,37 +63,41 @@ export async function buildServer(): Promise<FastifyInstance> {
   server.setValidatorCompiler(validatorCompiler);
   server.setSerializerCompiler(serializerCompiler);
 
-  // ── OpenAPI spec ──────────────────────────────────────────────────────────
-  await server.register(swagger, {
-    transform: jsonSchemaTransform,
-    openapi: {
-      openapi: '3.0.3',
-      info: {
-        title:       'Iron Ledger API',
-        description: 'REST API for the Ironsworn TTRPG character tracker.',
-        version:     '1.0.1',
-      },
-      components: {
-        securitySchemes: {
-          bearerAuth: {
-            type:         'http',
-            scheme:       'bearer',
-            bearerFormat: 'JWT',
-            description:  'Access token obtained from POST /api/v1/auth/login',
+  // ── OpenAPI spec + /docs UI ──────────────────────────────────────────────
+  // Both are useful in dev for exploring the API and verifying zod schemas.
+  // In production they would expose internal route shapes, which helps
+  // attackers map the attack surface. Gate behind non-prod.
+  if (config.NODE_ENV !== 'production') {
+    await server.register(swagger, {
+      transform: jsonSchemaTransform,
+      openapi: {
+        openapi: '3.0.3',
+        info: {
+          title:       'Iron Ledger API',
+          description: 'REST API for the Ironsworn TTRPG character tracker.',
+          version:     '1.0.1',
+        },
+        components: {
+          securitySchemes: {
+            bearerAuth: {
+              type:         'http',
+              scheme:       'bearer',
+              bearerFormat: 'JWT',
+              description:  'Access token obtained from POST /api/v1/auth/login',
+            },
           },
         },
       },
-    },
-  });
+    });
 
-  // ── Swagger UI at /docs ───────────────────────────────────────────────────
-  await server.register(swaggerUi, {
-    routePrefix: '/docs',
-    uiConfig: {
-      docExpansion: 'list',
-      deepLinking:  true,
-    },
-  });
+    await server.register(swaggerUi, {
+      routePrefix: '/docs',
+      uiConfig: {
+        docExpansion: 'list',
+        deepLinking:  true,
+      },
+    });
+  }
 
   // ── Security headers ──────────────────────────────────────────────────────
   await server.register(helmet, {
@@ -159,9 +163,13 @@ export async function buildServer(): Promise<FastifyInstance> {
     (req, body, done) => {
       try {
         done(null, JSON.parse(body as string));
-      } catch (err) {
-        const error = err as Error;
-        done(new Error('Invalid JSON: ' + error.message), undefined);
+      } catch {
+        // Don't include the parser's own error message — it can leak
+        // internals like position offsets / token snippets. Generic is
+        // sufficient; Fastify maps this to a 400 automatically.
+        const e = new Error('Invalid JSON body') as Error & { statusCode?: number };
+        e.statusCode = 400;
+        done(e, undefined);
       }
     },
   );
