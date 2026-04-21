@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@ironledger/shared": "*",
+    "@simplewebauthn/browser": "^13.1.0",
     "@sveltejs/kit": "^2.55.0",
     "isomorphic-dompurify": "^2.16.0",
     "svelte": "^5.0.0"
