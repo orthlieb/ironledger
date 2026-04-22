@@ -123,6 +123,13 @@ jobs:
           JWT_PUBLIC_KEY:    ${{ secrets.CI_JWT_PUBLIC_KEY }}
           JWT_EXPIRES_IN:    "900"
           REFRESH_TOKEN_TTL_DAYS: "30"
+          # auth.test.ts + security.test.ts share a single process and IP
+          # (127.0.0.1 inside Fastify inject()), so the production default
+          # of 5 login attempts / 15 min is exhausted before security's
+          # login-timing tests run and they 429 instead of 401.
+          RATE_LIMIT_LOGIN:     "1000"
+          RATE_LIMIT_REGISTER:  "1000"
+          RATE_LIMIT_GLOBAL:    "10000"
         run: npx vitest run --project e2e
         working-directory: apps/api
 
