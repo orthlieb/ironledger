@@ -53,11 +53,12 @@ export async function enrolPasskey(label?: string): Promise<PasskeySummary> {
 	});
 	if (!verifyRes.ok) throw new Error(await errorMessage(verifyRes));
 
+	const created = await verifyRes.json() as { id: string };
+
 	// Re-fetch list for a fresh summary row; the server's verify response
 	// only returns id + label, and the Settings UI shows timestamps.
 	const list = await listPasskeys();
-	const justCreated = list.find((p) => p.id === (await verifyRes.json()).id);
-	return justCreated ?? list[list.length - 1]!;
+	return list.find((p) => p.id === created.id) ?? list[list.length - 1]!;
 }
 
 // ---------------------------------------------------------------------------
