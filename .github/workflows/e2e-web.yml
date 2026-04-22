@@ -1,0 +1,202 @@
+name: E2E (Web — Playwright)
+
+# Run in parallel with the main CI job, but only when changes could affect the
+# browser-level behaviour. API-only changes are covered by ci.yml's Vitest e2e
+# suite and don't need to pay the Playwright cost.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'apps/api/src/db/seed.ts'          # seed edits change the fixture user
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/e2e-web.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'apps/api/src/db/seed.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/e2e-web.yml'
+
+jobs:
+  playwright:
+    name: Playwright E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB:       ironledger_test
+          POSTGRES_USER:     postgres
+          POSTGRES_PASSWORD: testpassword
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: valkey/valkey:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+
+    env:
+      NODE_ENV:               test
+      APP_URL:                http://localhost:5173
+      INTERNAL_API_URL:       http://localhost:3000
+      DATABASE_URL:           postgres://app_user:testpassword@localhost:5432/ironledger_test
+      DATABASE_ADMIN_URL:     postgres://app_admin:testpassword@localhost:5432/ironledger_test
+      REDIS_URL:              redis://localhost:6379
+      EMAIL_FROM:             test@example.com
+      EMAIL_PROVIDER:         resend
+      RESEND_API_KEY:         re_test
+      HCAPTCHA_SECRET:        "0x0000000000000000000000000000000000000000"
+      JWT_EXPIRES_IN:         "900"
+      REFRESH_TOKEN_TTL_DAYS: "30"
+      # Same reasoning as ci.yml e2e: a single fixture IP runs every test,
+      # so the production-default buckets would trip.
+      RATE_LIMIT_LOGIN:       "1000"
+      RATE_LIMIT_REGISTER:    "1000"
+      RATE_LIMIT_GLOBAL:      "10000"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup test database roles
+        env:
+          PGPASSWORD: testpassword
+        run: |
+          psql -h localhost -U postgres -d ironledger_test <<-SQL
+            CREATE ROLE app_admin WITH LOGIN PASSWORD 'testpassword' CREATEDB BYPASSRLS;
+            CREATE ROLE app_user  WITH LOGIN PASSWORD 'testpassword';
+            GRANT ALL PRIVILEGES ON DATABASE ironledger_test TO app_admin;
+            GRANT CONNECT ON DATABASE ironledger_test TO app_user;
+            \connect ironledger_test
+            ALTER SCHEMA public OWNER TO app_admin;
+            GRANT ALL   ON SCHEMA public TO app_admin;
+            GRANT USAGE ON SCHEMA public TO app_user;
+          SQL
+
+      - name: Generate JWT keys
+        run: |
+          openssl genrsa -out /tmp/jwt_private.pem 2048
+          openssl rsa -in /tmp/jwt_private.pem -pubout -out /tmp/jwt_public.pem
+          # Expose as multi-line env for subsequent steps
+          {
+            echo "JWT_PRIVATE_KEY<<JWTK"
+            cat /tmp/jwt_private.pem
+            echo "JWTK"
+            echo "JWT_PUBLIC_KEY<<JWTK"
+            cat /tmp/jwt_public.pem
+            echo "JWTK"
+          } >> "$GITHUB_ENV"
+
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Playwright browsers
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps chromium
+        working-directory: apps/web
+
+      - name: Install Playwright system deps (cache hit path)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
+        working-directory: apps/web
+
+      - name: Run migrations
+        run: npm run migrate --workspace=apps/api
+
+      - name: Seed fixture accounts
+        run: node --import tsx/esm apps/api/src/db/seed.ts
+
+      - name: Build API
+        run: npm run build --workspace=apps/api
+
+      - name: Build web
+        run: npm run build --workspace=apps/web
+
+      - name: Start API (background)
+        run: |
+          npm run start --workspace=apps/api > /tmp/api.log 2>&1 &
+          echo $! > /tmp/api.pid
+
+      - name: Start web (background)
+        run: |
+          npx vite preview --port 5173 --host 127.0.0.1 > /tmp/web.log 2>&1 &
+          echo $! > /tmp/web.pid
+        working-directory: apps/web
+
+      - name: Wait for servers
+        run: |
+          for port in 3000 5173; do
+            echo "Waiting for :$port..."
+            for i in $(seq 1 60); do
+              if curl -sf "http://127.0.0.1:$port" > /dev/null 2>&1 \
+                 || curl -sf "http://127.0.0.1:$port/health" > /dev/null 2>&1; then
+                echo "  :$port up"
+                break
+              fi
+              sleep 1
+              if [ "$i" = "60" ]; then
+                echo "  :$port did not come up"
+                echo "--- api.log ---"; tail -100 /tmp/api.log || true
+                echo "--- web.log ---"; tail -100 /tmp/web.log || true
+                exit 1
+              fi
+            done
+          done
+
+      - name: Run Playwright
+        run: npx playwright test
+        working-directory: apps/web
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          retention-days: 7
+
+      - name: Upload server logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-logs
+          path: |
+            /tmp/api.log
+            /tmp/web.log
+          retention-days: 3
+
+      - name: Stop background servers
+        if: always()
+        run: |
+          [ -f /tmp/api.pid ] && kill "$(cat /tmp/api.pid)" 2>/dev/null || true
+          [ -f /tmp/web.pid ] && kill "$(cat /tmp/web.pid)" 2>/dev/null || true
