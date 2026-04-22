@@ -84,7 +84,7 @@ describe('password entropy gate', () => {
 
 	it('rejects a 12-char password with only 1 distinct character', async () => {
 		const res = await post('/api/v1/auth/register', {
-			email:        '[email protected]',
+			email:        'sec-zxc1@example.com',
 			password:     'aaaaaaaaaaaa',
 			captchaToken: 'test',
 		});
@@ -94,7 +94,7 @@ describe('password entropy gate', () => {
 
 	it('rejects a password with only 4 distinct characters', async () => {
 		const res = await post('/api/v1/auth/register', {
-			email:        '[email protected]',
+			email:        'sec-zxc2@example.com',
 			password:     'abababababab',          // 12 chars, 2 distinct
 			captchaToken: 'test',
 		});
@@ -102,7 +102,7 @@ describe('password entropy gate', () => {
 	});
 
 	it('accepts a 12-char password with ≥ 5 distinct characters', async () => {
-		const email = `[email protected]`;
+		const email = `sec-accept@example.com`;
 		const res = await post('/api/v1/auth/register', {
 			email,
 			password:     'Kx7!m-Wz-P9a',
@@ -118,7 +118,7 @@ describe('password entropy gate', () => {
 // ---------------------------------------------------------------------------
 
 describe('imageUrl validation', () => {
-	const email = '[email protected]';
+	const email = 'sec-img-tests@example.com';
 	const pw    = 'ValidP@ssw0rd-xy';
 	let bearer  = '';
 
@@ -196,7 +196,7 @@ describe('imageUrl validation', () => {
 // ---------------------------------------------------------------------------
 
 describe('login timing parity', () => {
-	const existing = '[email protected]';
+	const existing = 'sec-timing-existing@example.com';
 	const pw       = 'RealP@ssw0rd-xyz!';
 
 	beforeEach(async () => {
@@ -212,7 +212,7 @@ describe('login timing parity', () => {
 		// verify path ran.
 		const t0 = performance.now();
 		const res = await post('/api/v1/auth/login', {
-			email:        '[email protected]',
+			email:        'sec-timing-nobody@example.com',
 			password:     'WhateverPw123!',
 			captchaToken: 'test',
 		});
