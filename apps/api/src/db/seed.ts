@@ -1,10 +1,11 @@
 /**
- * Dev seed script — creates (or resets) two verified accounts:
+ * Dev seed script — creates (or resets) three verified accounts:
  *
  *   1. admin@ironledger.local / adminpassword123!  (role: admin)
  *   2. dev@ironledger.local   / devpassword123!    (role: user)
+ *   3. test@ironledger.local  / IronLedgerTest2024! (role: user, fixture for Playwright e2e)
  *
- * Both are inserted with emailVerifiedAt already set so you can log in
+ * All three are inserted with emailVerifiedAt already set so you can log in
  * immediately without going through the email flow. Safe to re-run —
  * existing records are updated (upsert on email).
  *
@@ -32,8 +33,9 @@ if (config.NODE_ENV === 'production') {
 // ---------------------------------------------------------------------------
 
 const accounts = [
-  { email: 'admin@ironledger.local', password: 'adminpassword123!', role: 'admin' as const },
-  { email: 'dev@ironledger.local',   password: 'devpassword123!',   role: 'user'  as const },
+  { email: 'admin@ironledger.local', password: 'adminpassword123!',  role: 'admin' as const },
+  { email: 'dev@ironledger.local',   password: 'devpassword123!',    role: 'user'  as const },
+  { email: 'test@ironledger.local',  password: 'IronLedgerTest2024!', role: 'user' as const },
 ];
 
 // ---------------------------------------------------------------------------
