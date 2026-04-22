@@ -411,18 +411,4 @@
 		font-size: 0.8rem;
 	}
 
-	/* ── Footer ────────────────────────────────────────────────────── */
-	.systems-links {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.4rem 0.65rem;
-		margin-top: 1.25rem;
-		padding-top: 1rem;
-		border-top: 1px solid var(--border);
-		font-family: var(--font-ui);
-		font-size: 0.72rem;
-		color: var(--text-dimmer);
-	}
-
 </style>

@@ -6,8 +6,11 @@
 	let { form, data }: { form: ActionData; data: PageData } = $props();
 
 	// Pre-fill the display-name field from the invited value if the admin set one;
-	// blank otherwise. User can type over it before submitting.
+	// blank otherwise. User can type over it before submitting — one-shot capture
+	// at mount is deliberate, not a reactive binding.
+	// svelte-ignore state_referenced_locally
 	let displayName = $state(
+		// svelte-ignore state_referenced_locally
 		(form?.displayName as string | undefined) ?? data.preview?.displayName ?? '',
 	);
 </script>

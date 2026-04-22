@@ -49,8 +49,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: TypeScript type check
+      - name: TypeScript type check (API)
         run: npx tsc --noEmit --project apps/api/tsconfig.json
+
+      # Build the shared package so apps/web can resolve @ironledger/shared
+      # types in svelte-check. Without this every file that imports from
+      # shared trips "Cannot find module" cascade errors.
+      - name: Build shared package
+        run: npm run build --workspace=packages/shared
+
+      # svelte-check catches .svelte template + .ts file errors that the
+      # API-only tsc gate misses (e.g. the `await`-in-non-async-arrow bug
+      # in passkey.ts that silently broke the deploy for 36 hours).
+      - name: svelte-check (web)
+        run: npm run check --workspace=apps/web
 
       - name: Setup test database roles
         env:
