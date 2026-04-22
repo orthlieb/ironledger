@@ -5,15 +5,15 @@
   "type": "module",
   "main": "dist/main.js",
   "scripts": {
-    "dev": "node --env-file=../../.env --watch --import tsx/esm src/main.ts",
+    "dev": "node --env-file-if-exists=../../.env --watch --import tsx/esm src/main.ts",
     "build": "tsc --project tsconfig.json && cp -r src/static dist/static",
     "start": "node dist/main.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src tests --ext .ts",
-    "migrate": "node --env-file=../../.env --import tsx/esm src/db/migrate.ts",
-    "seed": "node --env-file=../../.env --import tsx/esm src/db/seed.ts"
+    "migrate": "node --env-file-if-exists=../../.env --import tsx/esm src/db/migrate.ts",
+    "seed": "node --env-file-if-exists=../../.env --import tsx/esm src/db/seed.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
