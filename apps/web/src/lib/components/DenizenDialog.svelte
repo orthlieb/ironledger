@@ -456,7 +456,7 @@
 
 	.dd-portrait-wrap { width: 100%; }
 
-	.dd-portrait {
+	:global(.dd-portrait) {
 		width: 100%;
 		aspect-ratio: 1;
 		object-fit: cover;

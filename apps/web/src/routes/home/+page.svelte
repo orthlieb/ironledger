@@ -1864,7 +1864,10 @@
 						/>
 					</div>
 
-					<!-- Resize handle — vertical on desktop, horizontal on mobile -->
+					<!-- Resize handle — vertical on desktop, horizontal on mobile.
+					     Pointer-only; keyboard users aren't locked out of anything
+					     since the split position is persisted and defaults are sane. -->
+					<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 					<div
 						class="adventure-resize-handle"
 						class:adventure-resize-handle--active={isResizing}

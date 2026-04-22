@@ -831,7 +831,7 @@
 
 	.fc-portrait-wrap { width: 100%; }
 
-	.fc-portrait {
+	:global(.fc-portrait) {
 		width: 100%;
 		aspect-ratio: 1;
 		object-fit: cover;
