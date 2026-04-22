@@ -30,9 +30,26 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Run a quick smoke test before touching the server
-      - name: TypeScript type check
+      # ── Preflight ──────────────────────────────────────────────────────
+      # Everything below must pass BEFORE we SSH. Otherwise the server
+      # can advance HEAD via `git reset` and then abort on a build or
+      # npm ci, leaving the deployed `build/` directory stale while the
+      # source says we shipped — exactly the 36-hour drift on Apr 20–22.
+
+      - name: TypeScript type check (API)
         run: npx tsc --noEmit --project apps/api/tsconfig.json
+
+      # Build the shared package so apps/web can resolve @ironledger/shared
+      # types in the next step.
+      - name: Build shared package
+        run: npm run build --workspace=packages/shared
+
+      # Full web build on the runner. Cheapest reliable catch for Vite /
+      # esbuild syntax errors (like `await` inside a non-async arrow)
+      # that the API-only tsc gate misses. Produces the same artefacts
+      # the server would, so if this passes the server build will too.
+      - name: Build web
+        run: npm run build --workspace=apps/web
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
