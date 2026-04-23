@@ -223,6 +223,17 @@
 		return `${boxes}/10 boxes, ${remainder}/4 ticks`;
 	}
 
+	/** Returns an array of 10 fill-percentage strings for the mini progress track. */
+	function miniTrackBoxes(ticks: number): string[] {
+		const boxes     = Math.floor(ticks / 4);
+		const remainder = ticks % 4;
+		return Array.from({ length: 10 }, (_, i) => {
+			if (i < boxes)                         return '100%';
+			if (i === boxes && remainder > 0)      return `${remainder * 25}%`;
+			return '0%';
+		});
+	}
+
 	function rankBadgeStyle(rank: number): string {
 		const rc = RANK_COLORS[rank];
 		if (!rc) return '';
@@ -589,13 +600,17 @@
 					</div>
 					<div class="gc-progress-compact">
 						<span class="gc-progress-label">Progress</span>
+						<div class="gc-mini-track" title={progressDisplay(activeFoe.ticks)} style="--track-color: {activeFoeNature}">
+							{#each miniTrackBoxes(activeFoe.ticks) as fill}
+								<div class="gc-mini-box" style="--fill: {fill}"></div>
+							{/each}
+						</div>
 						<button class="gc-prog-btn" onclick={() => foeMark(-1)}
 							disabled={activeFoe.ticks <= 0}
 							title="Unmark progress">−{activeFoeRank?.progressPerHit}</button>
 						<button class="gc-prog-btn" onclick={() => foeMark(1)}
 							disabled={activeFoe.ticks >= 40}
 							title="Mark progress (+{activeFoeRank?.progressPerHit} ticks)">+{activeFoeRank?.progressPerHit}</button>
-						<span class="gc-progress-value">{progressDisplay(activeFoe.ticks)}</span>
 						{#if activeFoe.vanquished}
 							<span class="gc-tile-vanquished" title="Vanquished">{@html skullCrossbonesSvg}</span>
 						{/if}
@@ -737,13 +752,18 @@
 					{/if}
 					<div class="gc-progress-compact">
 						<span class="gc-progress-label">Progress</span>
+						<div class="gc-mini-track" title={progressDisplay(activeExpedition.ticks)}
+							style="--track-color: {activeExpedition.type === 'journey' ? '#34d399' : '#60a5fa'}">
+							{#each miniTrackBoxes(activeExpedition.ticks) as fill}
+								<div class="gc-mini-box" style="--fill: {fill}"></div>
+							{/each}
+						</div>
 						<button class="gc-prog-btn" onclick={() => expMark(-1)}
 							disabled={activeExpedition.ticks <= 0}
 							title="Unmark progress">−{expMarkTicks}</button>
 						<button class="gc-prog-btn" onclick={() => expMark(1)}
 							disabled={activeExpedition.ticks >= 40}
 							title="Mark progress (+{expMarkTicks} ticks)">+{expMarkTicks}</button>
-						<span class="gc-progress-value">{progressDisplay(activeExpedition.ticks)}</span>
 					</div>
 				</div>
 			{/if}
@@ -1576,12 +1596,30 @@
 		color:          var(--text-muted);
 		white-space:    nowrap;
 	}
-	.gc-progress-value {
-		font-family: var(--font-ui);
-		font-size:   0.78rem;
-		font-weight: 700;
-		color:       var(--text);
-		text-align:  left;
+	/* Mini progress track — 10 boxes, same height as gc-prog-btn */
+	.gc-mini-track {
+		display: flex;
+		align-items: stretch;
+		gap: 2px;
+		height: 22px;
+		flex: 1;
+		min-width: 0;
+	}
+	.gc-mini-box {
+		flex: 1;
+		min-width: 0;
+		border-radius: 2px;
+		border: 1px solid color-mix(in srgb, var(--track-color, var(--border-mid)) 35%, transparent);
+		position: relative;
+		overflow: hidden;
+	}
+	.gc-mini-box::after {
+		content: '';
+		position: absolute;
+		inset: 0 auto 0 0;
+		width: var(--fill, 0%);
+		background: color-mix(in srgb, var(--track-color, var(--text-muted)) 60%, transparent);
+		transition: width 0.2s ease;
 	}
 
 	.gc-prog-btn {
