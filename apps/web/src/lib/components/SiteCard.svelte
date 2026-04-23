@@ -450,11 +450,13 @@
 			<div class="sc-section">
 				<span class="sc-section-label">Progress track</span>
 				<div class="sc-progress-row">
-					<ProgressTrack
-						label=""
-						value={expedition.ticks}
-						onchange={handleTrackChange}
-					/>
+					<div class="sc-track-wrap">
+						<ProgressTrack
+							label=""
+							value={expedition.ticks}
+							onchange={handleTrackChange}
+						/>
+					</div>
 					<button
 						class="btn-progress"
 						onclick={markProgress}
@@ -955,8 +957,13 @@
 		align-items: center;
 		gap: 6px;
 		flex-wrap: nowrap;
-		padding-left: 0.4rem;
 	}
+	.sc-track-wrap {
+		flex: 1;
+		min-width: 0;
+	}
+	.sc-track-wrap :global(.track-boxes) { flex-wrap: nowrap; }
+	.sc-track-wrap :global(.track-box)   { flex: 1; width: auto; }
 
 	.btn-progress {
 		display: inline-flex;

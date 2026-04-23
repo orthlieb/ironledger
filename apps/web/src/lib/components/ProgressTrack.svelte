@@ -1,13 +1,16 @@
 <script lang="ts">
 	/**
-	 * 10-box progress track (bonds, failures, vow progress).
+	 * 10-box progress track (bonds, failures, vow progress, foe/expedition progress).
 	 * Value is stored as total ticks (0–40) so it maps directly to the DB field.
 	 *
-	 * Tick mark patterns (matching YRT):
-	 *   1 tick  → diagonal \
-	 *   2 ticks → X  (\/)
-	 *   3 ticks → X + horizontal line
-	 *   4 ticks → full ⊕ (X + both cross lines)
+	 * Each box fills proportionally to its tick count:
+	 *   0 ticks → empty (0%)
+	 *   1 tick  → 25% filled
+	 *   2 ticks → 50% filled
+	 *   3 ticks → 75% filled
+	 *   4 ticks → 100% filled
+	 *
+	 * Clicking a box cycles its tick count 0 → 1 → 2 → 3 → 4 → 0.
 	 */
 	import { boxTicks, cycleBox, progressText } from '$lib/character.js';
 
@@ -42,35 +45,17 @@
 
 	<div class="track-boxes">
 		{#each Array(boxes) as _, i (i)}
-			{@const ticks = boxTicks(value, i)}
+			{@const ticks   = boxTicks(value, i)}
+			{@const fillPct = `${ticks * 25}%`}
+			{@const isDanger = dangerCount > 0 && i < dangerCount}
 			<button
 				class="track-box"
-				class:danger={i < dangerCount}
+				class:danger={isDanger}
 				onclick={() => cycleBoxTick(i)}
+				style="--fill: {fillPct}"
 				title="{ticks}/4 ticks"
 				aria-label="Progress box {i + 1}: {ticks} of 4 ticks"
-			>
-				<svg viewBox="0 0 20 20" width="22" height="22" aria-hidden="true">
-					<!-- box border -->
-					<rect x="1" y="1" width="18" height="18" rx="3" ry="3" fill="none" stroke="currentColor" stroke-width="1" />
-					<!-- tick 1: top-left → bottom-right \ -->
-					{#if ticks >= 1}
-						<line x1="3.7" y1="3.7" x2="16.3" y2="16.3" stroke="var(--text-accent)" stroke-width="1.5" stroke-linecap="round" />
-					{/if}
-					<!-- tick 2: top-right → bottom-left / -->
-					{#if ticks >= 2}
-						<line x1="16.3" y1="3.7" x2="3.7" y2="16.3" stroke="var(--text-accent)" stroke-width="1.5" stroke-linecap="round" />
-					{/if}
-					<!-- tick 3: horizontal — -->
-					{#if ticks >= 3}
-						<line x1="1.9" y1="10" x2="18.1" y2="10" stroke="var(--text-accent)" stroke-width="1.5" stroke-linecap="round" />
-					{/if}
-					<!-- tick 4: vertical | -->
-					{#if ticks >= 4}
-						<line x1="10" y1="1.9" x2="10" y2="18.1" stroke="var(--text-accent)" stroke-width="1.5" stroke-linecap="round" />
-					{/if}
-				</svg>
-			</button>
+			></button>
 		{/each}
 		{#if label}
 			<div class="track-readout">{progressText(value, boxes)}</div>
@@ -107,27 +92,42 @@
 		align-items: center;
 	}
 
+	/* Mini filled box — matches GCB gc-mini-box style */
 	.track-box {
-		background: transparent;
-		border: none;
+		width: 22px;
+		height: 22px;
 		padding: 0;
-		color: var(--text-muted);
-		cursor: pointer;
+		background: transparent;
+		border: 1px solid color-mix(in srgb, var(--text-accent) 35%, transparent);
 		border-radius: 2px;
-		display: flex;
-		transition: color 0.1s;
+		cursor: pointer;
+		position: relative;
+		overflow: hidden;
+		transition: border-color 0.1s;
+	}
+
+	/* Fill bar — grows left-to-right based on tick count */
+	.track-box::after {
+		content: '';
+		position: absolute;
+		inset: 0 auto 0 0;
+		width: var(--fill, 0%);
+		background: color-mix(in srgb, var(--text-accent) 65%, transparent);
+		transition: width 0.15s ease;
 	}
 
 	.track-box:hover {
-		color: var(--text-accent);
+		border-color: color-mix(in srgb, var(--text-accent) 70%, transparent);
 	}
 
-	/* Menace / danger state — only boxes with class:danger (i < dangerCount) */
-	.track-box.danger svg rect {
-		stroke: #E77974;
-		fill: color-mix(in srgb, #E77974 12%, transparent);
+	/* Danger/menace boxes — tinted red */
+	.track-box.danger {
+		border-color: color-mix(in srgb, #E77974 35%, transparent);
+	}
+	.track-box.danger::after {
+		background: color-mix(in srgb, #E77974 65%, transparent);
 	}
 	.track-box.danger:hover {
-		color: #E77974;
+		border-color: color-mix(in srgb, #E77974 70%, transparent);
 	}
 </style>

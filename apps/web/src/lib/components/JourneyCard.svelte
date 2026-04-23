@@ -299,11 +299,13 @@
 			<div class="jc-section">
 				<span class="jc-section-label">Progress track</span>
 				<div class="jc-progress-row">
-					<ProgressTrack
-						label=""
-						value={expedition.ticks}
-						onchange={handleTrackChange}
-					/>
+					<div class="jc-track-wrap">
+						<ProgressTrack
+							label=""
+							value={expedition.ticks}
+							onchange={handleTrackChange}
+						/>
+					</div>
 					<button
 						class="btn-progress"
 						onclick={markProgress}
@@ -637,6 +639,12 @@
 		gap: 6px;
 		flex-wrap: nowrap;
 	}
+	.jc-track-wrap {
+		flex: 1;
+		min-width: 0;
+	}
+	.jc-track-wrap :global(.track-boxes) { flex-wrap: nowrap; }
+	.jc-track-wrap :global(.track-box)   { flex: 1; width: auto; }
 
 	.btn-progress {
 		display: inline-flex;

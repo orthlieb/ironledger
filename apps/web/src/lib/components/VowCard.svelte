@@ -331,8 +331,11 @@
 	}
 
 	.progress-wrap {
-		flex-shrink: 0;
+		flex: 1;
+		min-width: 0;
 	}
+	.progress-wrap :global(.track-boxes) { flex-wrap: nowrap; }
+	.progress-wrap :global(.track-box)   { flex: 1; width: auto; }
 
 	/* Buttons sit inline to the right of the track, flex-shrink: 0 so they never wrap */
 	.vow-actions {
