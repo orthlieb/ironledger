@@ -78,6 +78,6 @@
       "when": 1776080000000,
       "tag": "0011_user_invites",
       "breakpoints": true
-    },
+    }
   ]
 }
