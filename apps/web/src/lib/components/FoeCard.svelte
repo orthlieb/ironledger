@@ -285,25 +285,26 @@
 				<div class="fc-section">
 					<span class="fc-section-label">Progress track</span>
 					<div class="fc-progress-row">
-						<div class="fc-track-wrap">
-							<ProgressTrack
-								label=""
-								value={enc.ticks}
-								onchange={handleTrackChange}
-							/>
+						<ProgressTrack
+							label=""
+							value={enc.ticks}
+							color={natureColor}
+							onchange={handleTrackChange}
+						/>
+						<div class="fc-track-btns">
+							<button
+								class="btn-progress"
+								onclick={markProgress}
+								disabled={enc.ticks >= 40}
+								title="Mark progress (+{rankInfo?.progressPerHit} ticks)"
+							>+{rankInfo?.progressPerHit}</button>
+							<button
+								class="btn-progress"
+								onclick={unmarkProgress}
+								disabled={enc.ticks <= 0}
+								title="Unmark progress (−{rankInfo?.progressPerHit} ticks)"
+							>−{rankInfo?.progressPerHit}</button>
 						</div>
-						<button
-							class="btn-progress"
-							onclick={markProgress}
-							disabled={enc.ticks >= 40}
-							title="Mark progress (+{rankInfo?.progressPerHit} ticks)"
-						>+{rankInfo?.progressPerHit}</button>
-						<button
-							class="btn-progress"
-							onclick={unmarkProgress}
-							disabled={enc.ticks <= 0}
-							title="Unmark progress (−{rankInfo?.progressPerHit} ticks)"
-						>−{rankInfo?.progressPerHit}</button>
 					</div>
 				</div>
 
@@ -547,14 +548,13 @@
 		display: flex;
 		align-items: center;
 		gap: 6px;
-		flex-wrap: nowrap;
 	}
-	.fc-track-wrap {
-		flex: 1;
-		min-width: 0;
+	.fc-track-btns {
+		display: flex;
+		gap: 4px;
+		margin-left: auto;
+		flex-shrink: 0;
 	}
-	.fc-track-wrap :global(.track-boxes) { flex-wrap: nowrap; }
-	.fc-track-wrap :global(.track-box)   { flex: 1; width: auto; }
 
 	.btn-progress {
 		display: inline-flex;

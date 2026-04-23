@@ -11,6 +11,9 @@
 	 *   4 ticks → 100% filled
 	 *
 	 * Clicking a box cycles its tick count 0 → 1 → 2 → 3 → 4 → 0.
+	 *
+	 * Pass `color` to override the default amber accent (e.g. foe nature colour,
+	 * journey green, site blue). Danger boxes always use red regardless of `color`.
 	 */
 	import { boxTicks, cycleBox, progressText } from '$lib/character.js';
 
@@ -19,6 +22,7 @@
 		value = $bindable(0),
 		boxes = 10,
 		dangerCount = 0,
+		color = '',
 		onchange,
 	}: {
 		label: string;
@@ -26,19 +30,19 @@
 		boxes?: number;
 		/** Number of boxes (from the left) to tint red — 0 disables danger styling */
 		dangerCount?: number;
+		/** CSS colour string for the track fill. Defaults to var(--text-accent). */
+		color?: string;
 		onchange?: (oldVal: number, newVal: number) => void;
 	} = $props();
 
-	const max = $derived(boxes * 4);
-
 	function cycleBoxTick(i: number) {
-		const old = value;
+		const old  = value;
 		const next = cycleBox(value, i);
 		if (next !== old) { onchange?.(old, next); value = next; }
 	}
 </script>
 
-<div class="progress-section">
+<div class="progress-section" style={color ? `--track-color: ${color}` : ''}>
 	{#if label}
 		<div class="section-label">{label}</div>
 	{/if}
@@ -88,17 +92,17 @@
 	.track-boxes {
 		display: flex;
 		gap: 2px;
-		flex-wrap: wrap;
 		align-items: center;
 	}
 
-	/* Mini filled box — matches GCB gc-mini-box style */
+	/* Square filled box — 22 × 22 px, matching btn-progress height */
 	.track-box {
 		width: 22px;
 		height: 22px;
+		flex-shrink: 0;
 		padding: 0;
 		background: transparent;
-		border: 1px solid color-mix(in srgb, var(--text-accent) 35%, transparent);
+		border: 1px solid color-mix(in srgb, var(--track-color, var(--text-accent)) 35%, transparent);
 		border-radius: 2px;
 		cursor: pointer;
 		position: relative;
@@ -112,15 +116,15 @@
 		position: absolute;
 		inset: 0 auto 0 0;
 		width: var(--fill, 0%);
-		background: color-mix(in srgb, var(--text-accent) 65%, transparent);
+		background: color-mix(in srgb, var(--track-color, var(--text-accent)) 65%, transparent);
 		transition: width 0.15s ease;
 	}
 
 	.track-box:hover {
-		border-color: color-mix(in srgb, var(--text-accent) 70%, transparent);
+		border-color: color-mix(in srgb, var(--track-color, var(--text-accent)) 70%, transparent);
 	}
 
-	/* Danger/menace boxes — tinted red */
+	/* Danger/menace boxes — always red, overrides track-color */
 	.track-box.danger {
 		border-color: color-mix(in srgb, #E77974 35%, transparent);
 	}

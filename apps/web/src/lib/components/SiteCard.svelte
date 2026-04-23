@@ -450,25 +450,26 @@
 			<div class="sc-section">
 				<span class="sc-section-label">Progress track</span>
 				<div class="sc-progress-row">
-					<div class="sc-track-wrap">
-						<ProgressTrack
-							label=""
-							value={expedition.ticks}
-							onchange={handleTrackChange}
-						/>
+					<ProgressTrack
+						label=""
+						value={expedition.ticks}
+						color="#60a5fa"
+						onchange={handleTrackChange}
+					/>
+					<div class="sc-track-btns">
+						<button
+							class="btn-progress"
+							onclick={markProgress}
+							disabled={expedition.ticks >= 40}
+							title="Mark progress (+{markTicks} ticks)"
+						>+{markTicks}</button>
+						<button
+							class="btn-progress"
+							onclick={unmarkProgress}
+							disabled={expedition.ticks <= 0}
+							title="Unmark progress (−{markTicks} ticks)"
+						>−{markTicks}</button>
 					</div>
-					<button
-						class="btn-progress"
-						onclick={markProgress}
-						disabled={expedition.ticks >= 40}
-						title="Mark progress (+{markTicks} ticks)"
-					>+{markTicks}</button>
-					<button
-						class="btn-progress"
-						onclick={unmarkProgress}
-						disabled={expedition.ticks <= 0}
-						title="Unmark progress (−{markTicks} ticks)"
-					>−{markTicks}</button>
 				</div>
 			</div>
 
@@ -956,14 +957,13 @@
 		display: flex;
 		align-items: center;
 		gap: 6px;
-		flex-wrap: nowrap;
 	}
-	.sc-track-wrap {
-		flex: 1;
-		min-width: 0;
+	.sc-track-btns {
+		display: flex;
+		gap: 4px;
+		margin-left: auto;
+		flex-shrink: 0;
 	}
-	.sc-track-wrap :global(.track-boxes) { flex-wrap: nowrap; }
-	.sc-track-wrap :global(.track-box)   { flex: 1; width: auto; }
 
 	.btn-progress {
 		display: inline-flex;

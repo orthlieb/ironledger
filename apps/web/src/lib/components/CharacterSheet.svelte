@@ -1163,15 +1163,12 @@
 		align-items: center;
 		gap: 6px;
 	}
-	/* Let track fill remaining row space; boxes stretch to fit */
-	.track-row :global(.progress-section) { flex: 1; min-width: 0; }
-	.track-row :global(.track-boxes)      { flex-wrap: nowrap; }
-	.track-row :global(.track-box)        { flex: 1; width: auto; }
 
 	.track-actions {
 		display: flex;
 		gap: 4px;
 		flex-shrink: 0;
+		margin-left: auto;
 	}
 
 	/* Compact button sized to match progress box height (22px) */

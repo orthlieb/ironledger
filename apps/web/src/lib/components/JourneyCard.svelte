@@ -299,25 +299,26 @@
 			<div class="jc-section">
 				<span class="jc-section-label">Progress track</span>
 				<div class="jc-progress-row">
-					<div class="jc-track-wrap">
-						<ProgressTrack
-							label=""
-							value={expedition.ticks}
-							onchange={handleTrackChange}
-						/>
+					<ProgressTrack
+						label=""
+						value={expedition.ticks}
+						color="#34d399"
+						onchange={handleTrackChange}
+					/>
+					<div class="jc-track-btns">
+						<button
+							class="btn-progress"
+							onclick={markProgress}
+							disabled={expedition.ticks >= 40}
+							title="Mark progress (+{markTicks} ticks)"
+						>+{markTicks}</button>
+						<button
+							class="btn-progress"
+							onclick={unmarkProgress}
+							disabled={expedition.ticks <= 0}
+							title="Unmark progress (−{markTicks} ticks)"
+						>−{markTicks}</button>
 					</div>
-					<button
-						class="btn-progress"
-						onclick={markProgress}
-						disabled={expedition.ticks >= 40}
-						title="Mark progress (+{markTicks} ticks)"
-					>+{markTicks}</button>
-					<button
-						class="btn-progress"
-						onclick={unmarkProgress}
-						disabled={expedition.ticks <= 0}
-						title="Unmark progress (−{markTicks} ticks)"
-					>−{markTicks}</button>
 				</div>
 			</div>
 
@@ -637,14 +638,13 @@
 		display: flex;
 		align-items: center;
 		gap: 6px;
-		flex-wrap: nowrap;
 	}
-	.jc-track-wrap {
-		flex: 1;
-		min-width: 0;
+	.jc-track-btns {
+		display: flex;
+		gap: 4px;
+		margin-left: auto;
+		flex-shrink: 0;
 	}
-	.jc-track-wrap :global(.track-boxes) { flex-wrap: nowrap; }
-	.jc-track-wrap :global(.track-box)   { flex: 1; width: auto; }
 
 	.btn-progress {
 		display: inline-flex;
