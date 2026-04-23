@@ -11,10 +11,8 @@ import helmet from '@fastify/helmet';
 import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
 import rateLimit from '@fastify/rate-limit';
-import swagger from '@fastify/swagger';
-import swaggerUi from '@fastify/swagger-ui';
 import { Redis } from 'ioredis';
-import { serializerCompiler, validatorCompiler, jsonSchemaTransform } from 'fastify-type-provider-zod';
+import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 
 import { config } from './config.js';
 import { checkDbHealth, adminDb } from './db/index.js';
@@ -27,7 +25,6 @@ import { userDataRoutes }    from './routes/userData.js';
 import { sessionLogRoutes }  from './routes/sessionLog.js';
 import { adminRoutes }       from './routes/admin.js';
 import { inviteRoutes }      from './routes/invites.js';
-import { passkeyRoutes }     from './routes/passkeys.js';
 import { healthRoutes }      from './routes/health.js';
 
 // ---------------------------------------------------------------------------
@@ -64,42 +61,6 @@ export async function buildServer(): Promise<FastifyInstance> {
   server.setValidatorCompiler(validatorCompiler);
   server.setSerializerCompiler(serializerCompiler);
 
-  // ── OpenAPI spec + /docs UI ──────────────────────────────────────────────
-  // Both are useful in dev for exploring the API and verifying zod schemas.
-  // In production they would expose internal route shapes, which helps
-  // attackers map the attack surface. Gate behind non-prod.
-  if (config.NODE_ENV !== 'production') {
-    await server.register(swagger, {
-      transform: jsonSchemaTransform,
-      openapi: {
-        openapi: '3.0.3',
-        info: {
-          title:       'Iron Ledger API',
-          description: 'REST API for the Ironsworn TTRPG character tracker.',
-          version:     '1.0.1',
-        },
-        components: {
-          securitySchemes: {
-            bearerAuth: {
-              type:         'http',
-              scheme:       'bearer',
-              bearerFormat: 'JWT',
-              description:  'Access token obtained from POST /api/v1/auth/login',
-            },
-          },
-        },
-      },
-    });
-
-    await server.register(swaggerUi, {
-      routePrefix: '/docs',
-      uiConfig: {
-        docExpansion: 'list',
-        deepLinking:  true,
-      },
-    });
-  }
-
   // ── Security headers ──────────────────────────────────────────────────────
   await server.register(helmet, {
     contentSecurityPolicy: {
@@ -116,14 +77,6 @@ export async function buildServer(): Promise<FastifyInstance> {
       },
     },
     crossOriginEmbedderPolicy: false,  // required for some browser APIs
-  });
-
-  // Swagger UI uses inline scripts — remove CSP on /docs paths only
-  server.addHook('onSend', (_req, reply, payload, done) => {
-    if (_req.url.startsWith('/docs')) {
-      reply.removeHeader('content-security-policy');
-    }
-    done(null, payload);
   });
 
   // ── CORS ──────────────────────────────────────────────────────────────────
@@ -226,7 +179,6 @@ export async function buildServer(): Promise<FastifyInstance> {
   // without breaking existing clients.
   await server.register(healthRoutes);
   await server.register(authRoutes,      { prefix: '/api/v1/auth' });
-  await server.register(passkeyRoutes,   { prefix: '/api/v1/auth/passkey' });
   await server.register(characterRoutes, { prefix: '/api/v1/characters' });
   await server.register(catalogueRoutes, { prefix: '/api/v1/catalogue' });
   await server.register(userDataRoutes,   { prefix: '/api/v1/session' });
@@ -240,12 +192,7 @@ export async function buildServer(): Promise<FastifyInstance> {
   const { getStatus: getMaintenanceStatus } = await import('./services/maintenanceService.js');
   const { getStatus: getBroadcastStatus }   = await import('./services/broadcastService.js');
 
-  server.get('/api/v1/system/status', {
-    schema: {
-      tags:    ['System'],
-      summary: 'Get combined maintenance + broadcast status (public)',
-    },
-  }, async (_req, reply) => {
+  server.get('/api/v1/system/status', async (_req, reply) => {
     const [maintenance, broadcast] = await Promise.all([
       getMaintenanceStatus().catch(() => ({
         enabled: false, message: null, shutdownAt: null,
@@ -265,12 +212,7 @@ export async function buildServer(): Promise<FastifyInstance> {
   const { getStatus: getRegistrationLockStatus } = await import('./services/registrationLockService.js');
   const { getStatus: getRegistrationQuotaStatus } = await import('./services/registrationQuotaService.js');
 
-  server.get('/api/v1/registration/status', {
-    schema: {
-      tags:    ['System'],
-      summary: 'Combined registration gate status (maintenance / lock / quota)',
-    },
-  }, async (_req, reply) => {
+  server.get('/api/v1/registration/status', async (_req, reply) => {
     const [maintenance, lock, quota] = await Promise.all([
       getMaintenanceStatus().catch(() => ({
         enabled: false, message: null, shutdownAt: null,
@@ -310,12 +252,7 @@ export async function buildServer(): Promise<FastifyInstance> {
   // Backwards-compat alias: the web client used to poll this endpoint alone.
   // Kept for one release so older client builds don't 404 during rolling
   // deploy. Remove in the release after 5.x.
-  server.get('/api/v1/maintenance/status', {
-    schema: {
-      tags:    ['Maintenance'],
-      summary: 'Get current maintenance mode status (public, deprecated — use /api/v1/system/status)',
-    },
-  }, async (_req, reply) => {
+  server.get('/api/v1/maintenance/status', async (_req, reply) => {
     try {
       const status = await getMaintenanceStatus();
       return reply.status(200).send(status);

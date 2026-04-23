@@ -1,0 +1,209 @@
+{
+  "key": "charActivity",
+  "title": "Delve: Character Activity",
+  "selectLabel": "Character Activity",
+  "description": "Roll to determine what a character is doing when you encounter them.",
+  "source": "delve",
+  "data": [
+    {
+      "topRange": 2,
+      "value": "Guarding"
+    },
+    {
+      "topRange": 4,
+      "value": "Preserving"
+    },
+    {
+      "topRange": 6,
+      "value": "Constructing"
+    },
+    {
+      "topRange": 8,
+      "value": "Mending"
+    },
+    {
+      "topRange": 10,
+      "value": "Assisting"
+    },
+    {
+      "topRange": 12,
+      "value": "Securing"
+    },
+    {
+      "topRange": 14,
+      "value": "Learning"
+    },
+    {
+      "topRange": 16,
+      "value": "Sneaking"
+    },
+    {
+      "topRange": 18,
+      "value": "Fleeing"
+    },
+    {
+      "topRange": 20,
+      "value": "Sacrificing"
+    },
+    {
+      "topRange": 22,
+      "value": "Creating"
+    },
+    {
+      "topRange": 24,
+      "value": "Luring"
+    },
+    {
+      "topRange": 26,
+      "value": "Hunting"
+    },
+    {
+      "topRange": 28,
+      "value": "Seizing"
+    },
+    {
+      "topRange": 30,
+      "value": "Bargaining"
+    },
+    {
+      "topRange": 32,
+      "value": "Mimicking"
+    },
+    {
+      "topRange": 34,
+      "value": "Tricking"
+    },
+    {
+      "topRange": 36,
+      "value": "Tracking"
+    },
+    {
+      "topRange": 38,
+      "value": "Escorting"
+    },
+    {
+      "topRange": 40,
+      "value": "Hiding"
+    },
+    {
+      "topRange": 42,
+      "value": "Raiding"
+    },
+    {
+      "topRange": 44,
+      "value": "Socializing"
+    },
+    {
+      "topRange": 46,
+      "value": "Exploring"
+    },
+    {
+      "topRange": 48,
+      "value": "Journeying"
+    },
+    {
+      "topRange": 50,
+      "value": "Supporting"
+    },
+    {
+      "topRange": 52,
+      "value": "Avoiding"
+    },
+    {
+      "topRange": 54,
+      "value": "Disabling"
+    },
+    {
+      "topRange": 56,
+      "value": "Leading"
+    },
+    {
+      "topRange": 58,
+      "value": "Assaulting"
+    },
+    {
+      "topRange": 60,
+      "value": "Ensnaring"
+    },
+    {
+      "topRange": 62,
+      "value": "Defending"
+    },
+    {
+      "topRange": 64,
+      "value": "Recovering"
+    },
+    {
+      "topRange": 66,
+      "value": "Patrolling"
+    },
+    {
+      "topRange": 68,
+      "value": "Resting"
+    },
+    {
+      "topRange": 70,
+      "value": "Distracting"
+    },
+    {
+      "topRange": 72,
+      "value": "Leaving"
+    },
+    {
+      "topRange": 74,
+      "value": "Fighting"
+    },
+    {
+      "topRange": 76,
+      "value": "Ambushing"
+    },
+    {
+      "topRange": 78,
+      "value": "Controlling"
+    },
+    {
+      "topRange": 80,
+      "value": "Observing"
+    },
+    {
+      "topRange": 82,
+      "value": "Gathering"
+    },
+    {
+      "topRange": 84,
+      "value": "Suffering"
+    },
+    {
+      "topRange": 86,
+      "value": "Threatening"
+    },
+    {
+      "topRange": 88,
+      "value": "Searching"
+    },
+    {
+      "topRange": 90,
+      "value": "Destroying"
+    },
+    {
+      "topRange": 92,
+      "value": "Restoring"
+    },
+    {
+      "topRange": 94,
+      "value": "Consuming"
+    },
+    {
+      "topRange": 96,
+      "value": "Removing"
+    },
+    {
+      "topRange": 98,
+      "value": "Inspecting"
+    },
+    {
+      "topRange": 100,
+      "value": "Summoning"
+    }
+  ]
+}

@@ -94,11 +94,8 @@ export const authRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── POST /register ────────────────────────────────────────────────────────
   server.post('/register', {
     schema: {
-      tags:        ['Auth'],
-      summary:     'Register a new user',
-      description: 'Creates a new account and sends an email verification link. Always returns 202 to prevent email enumeration.',
-      body:        registerBody,
-      response:    { 202: z.object({ message: z.string() }) },
+      body:     registerBody,
+      response: { 202: z.object({ message: z.string() }) },
     },
   }, async (req, reply) => {
     const { email, password, captchaToken, displayName } = req.body;
@@ -135,9 +132,7 @@ export const authRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── POST /verify-email ────────────────────────────────────────────────────
   server.post('/verify-email', {
     schema: {
-      tags:    ['Auth'],
-      summary: 'Verify email address with token from verification email',
-      body:    verifyBody,
+      body: verifyBody,
     },
   }, async (req, reply) => {
     const result = await auth.verifyEmail(req.body.token).catch(handleAuthError(reply));
@@ -156,9 +151,7 @@ export const authRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── POST /login ───────────────────────────────────────────────────────────
   server.post('/login', {
     schema: {
-      tags:    ['Auth'],
-      summary: 'Log in and receive an access token',
-      body:    loginBody,
+      body: loginBody,
     },
     config: {
       rateLimit: {
@@ -198,12 +191,7 @@ export const authRoutes: FastifyPluginAsyncZod = async (server) => {
   });
 
   // ── POST /refresh ─────────────────────────────────────────────────────────
-  server.post('/refresh', {
-    schema: {
-      tags:    ['Auth'],
-      summary: 'Refresh access token using the refresh token cookie',
-    },
-  }, async (req, reply) => {
+  server.post('/refresh', async (req, reply) => {
     const rawToken = req.cookies[REFRESH_COOKIE];
 
     if (!rawToken) {
@@ -240,11 +228,6 @@ export const authRoutes: FastifyPluginAsyncZod = async (server) => {
 
   // ── POST /logout ──────────────────────────────────────────────────────────
   server.post('/logout', {
-    schema: {
-      tags:     ['Auth'],
-      summary:  'Log out and revoke the refresh token',
-      security: [{ bearerAuth: [] }],
-    },
     preHandler: authenticate,
   }, async (req, reply) => {
     const rawToken = req.cookies[REFRESH_COOKIE];
@@ -261,11 +244,8 @@ export const authRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── POST /forgot-password ─────────────────────────────────────────────────
   server.post('/forgot-password', {
     schema: {
-      tags:        ['Auth'],
-      summary:     'Request a password reset email',
-      description: 'Always returns 202 to prevent email enumeration.',
-      body:        forgotBody,
-      response:    { 202: z.object({ message: z.string() }) },
+      body:     forgotBody,
+      response: { 202: z.object({ message: z.string() }) },
     },
     config: {
       rateLimit: {
@@ -292,9 +272,7 @@ export const authRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── POST /reset-password ──────────────────────────────────────────────────
   server.post('/reset-password', {
     schema: {
-      tags:    ['Auth'],
-      summary: 'Reset password using token from reset email',
-      body:    resetBody,
+      body:     resetBody,
       response: { 200: z.object({ message: z.string() }) },
     },
   }, async (req, reply) => {

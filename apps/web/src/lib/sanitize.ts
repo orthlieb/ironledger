@@ -22,22 +22,36 @@
  */
 import DOMPurify from 'isomorphic-dompurify';
 
-const LOG_TAGS = [
+// Exported so tests can assert the allowlist contains every attribute / tag that
+// interactive log links depend on — see tests/unit/sanitize.test.ts.
+export const LOG_TAGS = [
 	'a', 'span', 'div', 'p', 'br', 'strong', 'em', 'code', 'ul', 'ol', 'li',
+	's',   // <s class="resource-spent"> / <s class="xp-spent"> — written by markLinkSpent
 ];
 
-const LOG_ATTRS = [
+export const LOG_ATTRS = [
 	'class',
-	'href',              // move-links sometimes point somewhere
-	'data-value',
-	'data-resource',
-	'data-id',
-	'data-oracle',
-	'data-entry-id',
-	'data-char-id',
-	'data-expedition-id',
-	'data-menace',
-	'data-xp',
+	'href',              // move-links sometimes point somewhere; xp/failure links use href="#"
+
+	// ── Shared across multiple link types ──────────────────────────────────
+	'data-value',        // resource-link, progress-link, initiative-link, menace-link
+	'data-entry-id',     // all stateful links (for markLinkSpent + guard checks)
+	'data-char-id',      // resource-link, debility-link, failure-link, burn-momentum-link, xp-cost-link
+
+	// ── Per-link-type data attributes ──────────────────────────────────────
+	'data-resource',     // resource-link  — which stat to change (momentum, health, …)
+	'data-track',        // progress-link  — which track to mark (combat, journey, delve, …)
+	'data-debility',     // debility-link  — which debility to set/clear
+	'data-id',           // move-link      — move id to open in MovesDialog
+	'data-oracle',       // oracle-link    — oracle key to open in OraclesDialog
+	'data-stat',         // oracle-link    — stat column pre-selected in the oracle
+	'data-expedition-id',// change-theme/domain-link — which expedition to modify
+	'data-cost',         // xp-cost-link   — XP amount to deduct
+	'data-roll-entry-id',// burn-momentum-link — id of the original roll log entry
+	'data-move-id',      // burn-momentum-link — move id (used by burnMomentum)
+	'data-action-score', // burn-momentum-link — action score (used by burnMomentum)
+	'data-menace',       // kept for forward compat; menace-link currently uses data-value
+	'data-xp',           // kept for backwards compat with old saved log entries
 ];
 
 export function sanitizeLogHtml(html: string | null | undefined): string {

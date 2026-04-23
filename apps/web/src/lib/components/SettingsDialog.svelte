@@ -19,10 +19,6 @@
 		isYrtEnabled,   setYrtEnabled,
 	} from '$lib/expansionStore.svelte.js';
 	import { draggable } from '$lib/actions/draggable.js';
-	import {
-		enrolPasskey, listPasskeys, removePasskey, isPasskeySupported,
-		type PasskeySummary,
-	} from '$lib/passkey.js';
 
 	import autoSvg    from '$icons/circle-half-stroke-solid.svg?raw';
 	import darkSvg    from '$icons/moon-solid.svg?raw';
@@ -82,56 +78,12 @@
 	// ---------------------------------------------------------------------------
 	let dialogEl = $state<HTMLDialogElement | null>(null);
 
-	// ── Passkeys ─────────────────────────────────────────────────────────────
-	let passkeys: PasskeySummary[] = $state([]);
-	let passkeyError = $state('');
-	let passkeyBusy  = $state(false);
-	let newPasskeyLabel = $state('');
-	const passkeySupported = isPasskeySupported();
-
-	async function refreshPasskeys() {
-		try {
-			passkeys = await listPasskeys();
-		} catch (err) {
-			passkeyError = err instanceof Error ? err.message : 'Could not load passkeys';
-		}
-	}
-
-	async function addPasskey() {
-		passkeyError = '';
-		passkeyBusy  = true;
-		try {
-			await enrolPasskey(newPasskeyLabel.trim() || undefined);
-			newPasskeyLabel = '';
-			await refreshPasskeys();
-		} catch (err) {
-			// User cancel + "not allowed" are fine — no error UI required for those.
-			const msg = err instanceof Error ? err.message : String(err);
-			if (!/cancel|aborted|NotAllowedError/i.test(msg)) {
-				passkeyError = msg;
-			}
-		} finally {
-			passkeyBusy = false;
-		}
-	}
-
-	async function revokePasskey(id: string) {
-		try {
-			await removePasskey(id);
-			await refreshPasskeys();
-		} catch (err) {
-			passkeyError = err instanceof Error ? err.message : 'Could not remove passkey';
-		}
-	}
-
 	export function open() {
 		// Re-sync with localStorage each time the dialog opens.
 		theme   = savedTheme();
 		dice3d  = isDice3dEnabled();
 		delveOn = isDelveEnabled();
 		yrtOn   = isYrtEnabled();
-		passkeyError = '';
-		void refreshPasskeys();
 		dialogEl?.showModal();
 	}
 
@@ -238,60 +190,6 @@
 					data-tooltip="Hide YRT content from pickers (existing data preserved)"
 				>Off</button>
 			</div>
-		</div>
-
-		<!-- Passkeys -->
-		<div class="sd-section">
-			<div class="sd-section-head">
-				<span class="sd-section-title">Passkeys</span>
-				<span class="sd-section-hint">Sign in with your device instead of a password.</span>
-			</div>
-
-			{#if !passkeySupported}
-				<p class="sd-passkey-empty">This browser doesn't support passkeys.</p>
-			{:else}
-				{#if passkeys.length === 0}
-					<p class="sd-passkey-empty">No passkeys enrolled yet.</p>
-				{:else}
-					<ul class="sd-passkey-list">
-						{#each passkeys as pk (pk.id)}
-							<li class="sd-passkey-row">
-								<span class="sd-passkey-label">{pk.label ?? 'Unnamed passkey'}</span>
-								<span class="sd-passkey-meta">
-									added {new Date(pk.createdAt).toLocaleDateString()}
-									{#if pk.lastUsedAt} · used {new Date(pk.lastUsedAt).toLocaleDateString()}{/if}
-								</span>
-								<button
-									class="sd-passkey-revoke"
-									onclick={() => revokePasskey(pk.id)}
-									aria-label="Revoke passkey"
-								>Remove</button>
-							</li>
-						{/each}
-					</ul>
-				{/if}
-
-				<div class="sd-passkey-add">
-					<input
-						type="text"
-						placeholder="Label (e.g. MacBook fingerprint)"
-						bind:value={newPasskeyLabel}
-						maxlength="80"
-						disabled={passkeyBusy}
-					/>
-					<button
-						type="button"
-						class="btn btn-primary btn-sm"
-						disabled={passkeyBusy}
-						onclick={addPasskey}
-					>
-						{passkeyBusy ? 'Waiting…' : 'Add a passkey'}
-					</button>
-				</div>
-				{#if passkeyError}
-					<div class="sd-passkey-error">{passkeyError}</div>
-				{/if}
-			{/if}
 		</div>
 
 	</div>
@@ -420,102 +318,4 @@
 		height: 11px;
 		fill:   currentColor;
 	}
-
-	/* ── Passkeys ────────────────────────────────────────────────── */
-	.sd-section {
-		margin-top: 0.9rem;
-		padding-top: 0.9rem;
-		border-top: 1px solid var(--border);
-		display: flex;
-		flex-direction: column;
-		gap: 0.55rem;
-	}
-	.sd-section-head {
-		display: flex;
-		flex-direction: column;
-		gap: 0.15rem;
-	}
-	.sd-section-title {
-		font-family: var(--font-ui);
-		font-size: 0.78rem;
-		font-weight: 700;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--text-accent);
-	}
-	.sd-section-hint {
-		font-size: 0.76rem;
-		color: var(--text-muted);
-		line-height: 1.45;
-	}
-	.sd-passkey-empty {
-		font-size: 0.8rem;
-		color: var(--text-dimmer);
-		font-style: italic;
-		margin: 0;
-	}
-	.sd-passkey-list {
-		list-style: none;
-		padding: 0;
-		margin: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 0.4rem;
-	}
-	.sd-passkey-row {
-		display: grid;
-		grid-template-columns: 1fr auto;
-		grid-template-areas: 'label  action' 'meta   action';
-		gap: 2px 0.6rem;
-		align-items: center;
-		padding: 6px 8px;
-		background: var(--bg-inset);
-		border: 1px solid var(--border);
-		border-radius: 4px;
-	}
-	.sd-passkey-label { grid-area: label; font-size: 0.85rem; color: var(--text); }
-	.sd-passkey-meta  { grid-area: meta;  font-size: 0.7rem; color: var(--text-dimmer); }
-	.sd-passkey-revoke {
-		grid-area: action;
-		background: none;
-		border: 1px solid var(--border-mid);
-		color: var(--text-muted);
-		font-family: var(--font-ui);
-		font-size: 0.72rem;
-		padding: 3px 10px;
-		border-radius: 4px;
-		cursor: pointer;
-	}
-	.sd-passkey-revoke:hover {
-		color: var(--color-danger);
-		border-color: var(--color-danger);
-	}
-	.sd-passkey-add {
-		display: flex;
-		gap: 0.4rem;
-		align-items: stretch;
-	}
-	.sd-passkey-add input {
-		flex: 1;
-		padding: 6px 8px;
-		border: 1px solid var(--border-mid);
-		border-radius: 4px;
-		background: var(--bg-control);
-		color: var(--text);
-		font-family: var(--font-ui);
-		font-size: 0.82rem;
-	}
-	.sd-passkey-add input:focus {
-		outline: none;
-		border-color: var(--text-accent);
-	}
-	.sd-passkey-error {
-		font-size: 0.76rem;
-		color: var(--color-danger);
-	}
-	.btn-sm {
-		padding: 3px 10px;
-		font-size: 0.72rem;
-	}
-
 </style>

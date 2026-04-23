@@ -121,6 +121,11 @@
 			: [] as OracleOddsEntry[]
 	);
 
+	// Delve the Depths weak-hit oracle link detection
+	const isDelveDepthsMove = $derived(
+		!!(selectedMove && (selectedMove as Record<string, unknown>)['tableType'] === 'delveDepths')
+	);
+
 	let spellDifficulty  = $state(1);
 	let manaCommit       = $state(0);
 	let selectedOddsIdx  = $state(2); // default 50/50
@@ -425,6 +430,15 @@
 		let outcomeHtml = getOutcomeHtml(selectedMove, hits1, hits2);
 		if (outcomeHtml) {
 			outcomeHtml = resolveHarmLinks(outcomeHtml, { moveId: selectedMove.id, foeHarm: pctx.foeHarm });
+			// Delve the Depths weak hit: inject the rolled stat into the oracle-link so
+			// clicking it opens the oracle with the correct column pre-selected.
+			// Also append "(Edge column)" etc. to the link text.
+			if (isDelveDepthsMove) {
+				outcomeHtml = outcomeHtml.replace(
+					/(data-oracle="delveDepths")>(Delve the Depths Weak Hit Oracle)<\/a>/g,
+					`$1 data-stat="${stat}">$2 (${statLabel} column)</a>`,
+				);
+			}
 			outcomeHtml = enrichOutcomeLinks(outcomeHtml, entryId, ctx.charId);
 			parts.push(`<div class="move-outcome">${outcomeHtml}</div>`);
 		}
@@ -446,7 +460,11 @@
 			{ sides: 10, value: c1   },
 			{ sides: 10, value: c2   },
 		]);
-		appendLog(SESSION_LOG_ID, logTitle(`${selectedMove.name} (${statLabel})`), html, entryId, undefined, {
+		// Build a contextual title for Delve moves (include site name when available)
+		const moveLogLabel = isDelveDepthsMove && pctx.expeditionName
+			? `Delved the Depths (${statLabel}) at ${pctx.expeditionName}`
+			: `${selectedMove.name} (${statLabel})`;
+		appendLog(SESSION_LOG_ID, logTitle(moveLogLabel), html, entryId, undefined, {
 			moveId: selectedMove.id,
 			actionScore: total,
 			c1, c2,

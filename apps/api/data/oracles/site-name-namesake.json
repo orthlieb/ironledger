@@ -1,0 +1,209 @@
+{
+  "key": "siteNameNamesake",
+  "title": "Site Name \u2013 Namesake",
+  "selectLabel": "Site Name: Namesake",
+  "description": "Roll for a namesake when generating a site name using the Format oracle.",
+  "source": "delve",
+  "data": [
+    {
+      "topRange": 2,
+      "value": "Breckon"
+    },
+    {
+      "topRange": 4,
+      "value": "Issara"
+    },
+    {
+      "topRange": 6,
+      "value": "Milenna"
+    },
+    {
+      "topRange": 8,
+      "value": "Thorval"
+    },
+    {
+      "topRange": 10,
+      "value": "Khulan"
+    },
+    {
+      "topRange": 12,
+      "value": "Aurvang"
+    },
+    {
+      "topRange": 14,
+      "value": "Kalida"
+    },
+    {
+      "topRange": 16,
+      "value": "Keeara"
+    },
+    {
+      "topRange": 18,
+      "value": "Andor"
+    },
+    {
+      "topRange": 20,
+      "value": "Zakaria"
+    },
+    {
+      "topRange": 22,
+      "value": "Willa"
+    },
+    {
+      "topRange": 24,
+      "value": "Etana"
+    },
+    {
+      "topRange": 26,
+      "value": "Valgard"
+    },
+    {
+      "topRange": 28,
+      "value": "Kenrick"
+    },
+    {
+      "topRange": 30,
+      "value": "Wyland"
+    },
+    {
+      "topRange": 32,
+      "value": "Sidura"
+    },
+    {
+      "topRange": 34,
+      "value": "Svala"
+    },
+    {
+      "topRange": 36,
+      "value": "Kajir"
+    },
+    {
+      "topRange": 38,
+      "value": "Saiven"
+    },
+    {
+      "topRange": 40,
+      "value": "Callwen"
+    },
+    {
+      "topRange": 42,
+      "value": "Zhan"
+    },
+    {
+      "topRange": 44,
+      "value": "Solana"
+    },
+    {
+      "topRange": 46,
+      "value": "Ildar"
+    },
+    {
+      "topRange": 48,
+      "value": "Keelan"
+    },
+    {
+      "topRange": 50,
+      "value": "Thrain"
+    },
+    {
+      "topRange": 52,
+      "value": "Kynan"
+    },
+    {
+      "topRange": 54,
+      "value": "Jadina"
+    },
+    {
+      "topRange": 56,
+      "value": "Radek"
+    },
+    {
+      "topRange": 58,
+      "value": "Wulan"
+    },
+    {
+      "topRange": 60,
+      "value": "Garion"
+    },
+    {
+      "topRange": 62,
+      "value": "Eysa"
+    },
+    {
+      "topRange": 64,
+      "value": "Kolor"
+    },
+    {
+      "topRange": 66,
+      "value": "Katarra"
+    },
+    {
+      "topRange": 68,
+      "value": "Dain"
+    },
+    {
+      "topRange": 70,
+      "value": "Farina"
+    },
+    {
+      "topRange": 72,
+      "value": "Yala"
+    },
+    {
+      "topRange": 74,
+      "value": "Kodroth"
+    },
+    {
+      "topRange": 76,
+      "value": "Morien"
+    },
+    {
+      "topRange": 78,
+      "value": "Akida"
+    },
+    {
+      "topRange": 80,
+      "value": "Haldorr"
+    },
+    {
+      "topRange": 82,
+      "value": "Nyrad"
+    },
+    {
+      "topRange": 84,
+      "value": "Edda"
+    },
+    {
+      "topRange": 86,
+      "value": "Jorund"
+    },
+    {
+      "topRange": 88,
+      "value": "Morraine"
+    },
+    {
+      "topRange": 90,
+      "value": "Lindar"
+    },
+    {
+      "topRange": 92,
+      "value": "Sithra"
+    },
+    {
+      "topRange": 94,
+      "value": "Torgan"
+    },
+    {
+      "topRange": 96,
+      "value": "Arnorr"
+    },
+    {
+      "topRange": 98,
+      "value": "Thyri"
+    },
+    {
+      "topRange": 100,
+      "value": "Erisia"
+    }
+  ]
+}

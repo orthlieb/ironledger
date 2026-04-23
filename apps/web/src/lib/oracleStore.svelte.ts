@@ -32,6 +32,7 @@ export interface OracleFile {
 	source:       CatalogueSource;
 	selectLabel:  string;
 	description?: string;
+	tableType?:   string;
 	data:         OracleEntry[];
 }
 
@@ -206,10 +207,31 @@ export function rangeLabelForEntry(table: OracleEntry[], index: number): string 
 }
 
 /** Build an HTML table string for the detail view. */
-export function buildTableHtml(key: string, table: OracleEntry[]): string {
+export function buildTableHtml(key: string, table: OracleEntry[], options?: { activeStat?: string }): string {
 	if (!table || table.length === 0) return '<div>No table data.</div>';
 
 	// ── Special layouts ──────────────────────────────────────────────────────
+
+	if (key === 'delveDepths') {
+		const statColMap: Record<string, number> = { edge: 0, shadow: 1, wits: 2 };
+		const activeCol = options?.activeStat ? (statColMap[options.activeStat] ?? -1) : -1;
+		const cc = (i: number) => activeCol === i ? ' class="col-active"' : '';
+
+		type DRow = { edge: number; shadow: number; wits: number; value: string };
+		let html = '<table class="oracle-table"><thead><tr>'
+			+ `<th${cc(0)}>Edge</th><th${cc(1)}>Shadow</th><th${cc(2)}>Wits</th><th>Result</th>`
+			+ '</tr></thead><tbody>';
+		let prevEdge = 0, prevShadow = 0, prevWits = 0;
+		table.forEach((entry) => {
+			const r = entry as unknown as DRow;
+			const edgeLabel   = prevEdge   + 1 === r.edge   ? `${r.edge}`   : `${prevEdge   + 1}–${r.edge}`;
+			const shadowLabel = prevShadow + 1 === r.shadow ? `${r.shadow}` : `${prevShadow + 1}–${r.shadow}`;
+			const witsLabel   = prevWits   + 1 === r.wits   ? `${r.wits}`   : `${prevWits   + 1}–${r.wits}`;
+			html += `<tr><td${cc(0)}>${edgeLabel}</td><td${cc(1)}>${shadowLabel}</td><td${cc(2)}>${witsLabel}</td><td>${r.value}</td></tr>`;
+			prevEdge = r.edge; prevShadow = r.shadow; prevWits = r.wits;
+		});
+		return html + '</tbody></table>';
+	}
 
 	if (key === 'yrtTouched') {
 		let html = '<table class="oracle-table"><thead><tr>'
@@ -366,7 +388,7 @@ export function buildTableHtml(key: string, table: OracleEntry[]): string {
  * Handles all special oracle types; returns { roll, html, title }.
  * `roll` is the primary d100 value (used to drive the dice animation).
  */
-export function rollOracle(key: string, allOracles: OracleFile[]): OracleRollResult {
+export function rollOracle(key: string, allOracles: OracleFile[], options?: { stat?: string }): OracleRollResult {
 	const oracle = allOracles.find((o) => o.key === key);
 	if (!oracle) {
 		return {
@@ -379,6 +401,20 @@ export function rollOracle(key: string, allOracles: OracleFile[]): OracleRollRes
 
 	const title = oracle.title;
 	const table = oracle.data;
+
+	// ── delveDepths — roll against a specific stat column ──────────────────
+	if (key === 'delveDepths') {
+		const stat      = options?.stat ?? 'edge';
+		const roll      = Math.floor(Math.random() * 100) + 1;
+		const statLabel = stat.charAt(0).toUpperCase() + stat.slice(1);
+		type DRow = { edge: number; shadow: number; wits: number; value: string };
+		const rows  = table as unknown as DRow[];
+		const found = rows.find((r) => roll <= (r[stat as keyof DRow] as number)) ?? rows[rows.length - 1];
+		const html  =
+			`<div class="roll-line">Roll (${statLabel}): d100 → ${roll}</div>` +
+			`<div class="move-outcome">${found.value}</div>`;
+		return { roll, html, title, value: found.value };
+	}
 
 	// ── yrtTouched — compound multi-roll ───────────────────────────────────
 	if (key === 'yrtTouched') {

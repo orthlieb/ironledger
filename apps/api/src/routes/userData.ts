@@ -95,13 +95,7 @@ export const userDataRoutes: FastifyPluginAsyncZod = async (server) => {
   server.addHook('preHandler', authenticate);
 
   // ── GET /session ──────────────────────────────────────────────────────────
-  server.get('/', {
-    schema: {
-      tags:     ['Session'],
-      summary:  'Get all global game state (encounters, expeditions, communities)',
-      security: [{ bearerAuth: [] }],
-    },
-  }, async (req, reply) => {
+  server.get('/', async (req, reply) => {
     const result = await ud.get(req.user!.id).catch(handleError(reply));
     if (!result || reply.sent) return;
     return reply.status(200).send(result);
@@ -110,10 +104,7 @@ export const userDataRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── PATCH /session/encounters ─────────────────────────────────────────────
   server.patch('/encounters', {
     schema: {
-      tags:     ['Session'],
-      summary:  'Replace all encounters',
-      body:     patchEncountersBody,
-      security: [{ bearerAuth: [] }],
+      body: patchEncountersBody,
     },
   }, async (req, reply) => {
     if (req.body.encounters.length > config.MAX_ENCOUNTERS_PER_USER) {
@@ -131,10 +122,7 @@ export const userDataRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── PATCH /session/expeditions ────────────────────────────────────────────
   server.patch('/expeditions', {
     schema: {
-      tags:     ['Session'],
-      summary:  'Replace all expeditions',
-      body:     patchExpeditionsBody,
-      security: [{ bearerAuth: [] }],
+      body: patchExpeditionsBody,
     },
   }, async (req, reply) => {
     if (req.body.expeditions.length > config.MAX_EXPEDITIONS_PER_USER) {
@@ -154,10 +142,7 @@ export const userDataRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── PATCH /session/communities ───────────────────────────────────────────
   server.patch('/communities', {
     schema: {
-      tags:     ['Session'],
-      summary:  'Replace all communities',
-      body:     patchCommunitiesBody,
-      security: [{ bearerAuth: [] }],
+      body: patchCommunitiesBody,
     },
   }, async (req, reply) => {
     if (req.body.communities.length > config.MAX_COMMUNITIES_PER_USER) {
@@ -177,10 +162,7 @@ export const userDataRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── PATCH /session/npcs ──────────────────────────────────────────────────
   server.patch('/npcs', {
     schema: {
-      tags:     ['Session'],
-      summary:  'Replace all NPCs',
-      body:     patchNpcsBody,
-      security: [{ bearerAuth: [] }],
+      body: patchNpcsBody,
     },
   }, async (req, reply) => {
     if (req.body.npcs.length > config.MAX_NPCS_PER_USER) {
@@ -200,10 +182,7 @@ export const userDataRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── PATCH /session/state ──────────────────────────────────────────────────
   server.patch('/state', {
     schema: {
-      tags:        ['Session'],
-      summary:     'Update the active selection state (character, foe, expedition, tab)',
-      body:        patchSessionStateBody,
-      security:    [{ bearerAuth: [] }],
+      body: patchSessionStateBody,
     },
   }, async (req, reply) => {
     const result = await ud.upsert(req.user!.id, { sessionState: req.body.sessionState }).catch(handleError(reply));

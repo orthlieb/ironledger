@@ -40,10 +40,7 @@ export type SecurityEventType =
   | 'admin_revoke_invite'
   | 'invite_accepted'
   | 'admin_post_broadcast'
-  | 'admin_clear_broadcast'
-  | 'passkey_registered'
-  | 'passkey_revoked'
-  | 'passkey_login';
+  | 'admin_clear_broadcast';
 
 interface LogEventOptions {
   eventType:  SecurityEventType;

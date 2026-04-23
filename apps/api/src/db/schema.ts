@@ -212,26 +212,3 @@ export type HistoryEntry     = typeof historyEntries.$inferSelect;
 export type NewHistoryEntry  = typeof historyEntries.$inferInsert;
 export type SecurityEvent    = typeof securityEvents.$inferSelect;
 
-// ---------------------------------------------------------------------------
-// webauthn_credentials
-// One row per registered passkey / hardware key per user. Users can enrol
-// many (phone biometric, laptop fingerprint, hardware key); revoking is a
-// simple row delete. credentialId is the public identifier returned by
-// the authenticator on every sign-in and is looked up unauthenticated.
-// ---------------------------------------------------------------------------
-export const webauthnCredentials = pgTable('webauthn_credentials', {
-  id:           uuid('id').primaryKey().defaultRandom(),
-  userId:       uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  credentialId: bytea('credential_id').notNull().unique(),
-  publicKey:    bytea('public_key').notNull(),
-  counter:      bigint('counter', { mode: 'number' }).notNull().default(0),
-  transports:   text('transports').array().notNull().default([]),
-  label:        text('label'),
-  createdAt:    timestamp('created_at',   { withTimezone: true }).notNull().defaultNow(),
-  lastUsedAt:   timestamp('last_used_at', { withTimezone: true }),
-}, (t) => [
-  index('webauthn_credentials_user_id_idx').on(t.userId),
-]);
-
-export type WebauthnCredential    = typeof webauthnCredentials.$inferSelect;
-export type NewWebauthnCredential = typeof webauthnCredentials.$inferInsert;

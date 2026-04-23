@@ -86,26 +86,14 @@ export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
   server.addHook('preHandler', requireAdmin);
 
   // ── GET / ── List all users ─────────────────────────────────────────────
-  server.get('/', {
-    schema: {
-      tags:     ['Admin'],
-      summary:  'List all users',
-      security: [{ bearerAuth: [] }],
-    },
-  }, async (_req, reply) => {
+  server.get('/', async (_req, reply) => {
     const result = await adminService.listUsers().catch(handleError(reply));
     if (!result || reply.sent) return;
     return reply.status(200).send(result);
   });
 
   // ── GET /stats ── System health stats ───────────────────────────────────
-  server.get('/stats', {
-    schema: {
-      tags:     ['Admin'],
-      summary:  'Get system health stats',
-      security: [{ bearerAuth: [] }],
-    },
-  }, async (_req, reply) => {
+  server.get('/stats', async (_req, reply) => {
     const result = await adminService.getStats().catch(handleError(reply));
     if (!result || reply.sent) return;
     return reply.status(200).send(result);
@@ -114,10 +102,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── DELETE /users/:id ── Delete user + all data ─────────────────────────
   server.delete('/users/:id', {
     schema: {
-      tags:     ['Admin'],
-      summary:  'Delete a user and all their data',
-      params:   userIdParam,
-      security: [{ bearerAuth: [] }],
+      params: userIdParam,
     },
   }, async (req, reply) => {
     // Prevent admin from deleting themselves
@@ -137,11 +122,8 @@ export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── PATCH /users/:id/role ── Promote/demote user ────────────────────────
   server.patch('/users/:id/role', {
     schema: {
-      tags:     ['Admin'],
-      summary:  'Set a user\'s role',
-      params:   userIdParam,
-      body:     setRoleBody,
-      security: [{ bearerAuth: [] }],
+      params: userIdParam,
+      body:   setRoleBody,
     },
   }, async (req, reply) => {
     // Prevent admin from demoting themselves
@@ -161,11 +143,8 @@ export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── PATCH /users/:id/suspend ── Suspend / unsuspend user ────────────────
   server.patch('/users/:id/suspend', {
     schema: {
-      tags:     ['Admin'],
-      summary:  'Suspend or unsuspend a user',
-      params:   userIdParam,
-      body:     setSuspendBody,
-      security: [{ bearerAuth: [] }],
+      params: userIdParam,
+      body:   setSuspendBody,
     },
   }, async (req, reply) => {
     // Prevent admin from suspending themselves
@@ -189,10 +168,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── GET /audit ── Audit log ───────────────────────────────────────────
   server.get('/audit', {
     schema: {
-      tags:        ['Admin'],
-      summary:     'Get audit log (last 100 entries)',
       querystring: auditQuery,
-      security:    [{ bearerAuth: [] }],
     },
   }, async (req, reply) => {
     const result = await adminService.getAuditLog(100, req.query.search || undefined).catch(handleError(reply));
@@ -201,13 +177,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
   });
 
   // ── DELETE /audit ── Clear audit log ────────────────────────────────
-  server.delete('/audit', {
-    schema: {
-      tags:     ['Admin'],
-      summary:  'Clear the audit log',
-      security: [{ bearerAuth: [] }],
-    },
-  }, async (req, reply) => {
+  server.delete('/audit', async (req, reply) => {
     await adminService.clearAuditLog(req.user!.id, req.ip).catch(handleError(reply));
     if (reply.sent) return;
     return reply.status(204).send();
@@ -216,10 +186,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── GET /stats/timeseries ── User growth & activity timeseries ──────────
   server.get('/stats/timeseries', {
     schema: {
-      tags:        ['Admin'],
-      summary:     'Get user growth / activity timeseries',
       querystring: timeseriesQuery,
-      security:    [{ bearerAuth: [] }],
     },
   }, async (req, reply) => {
     const result = await adminService.getUserTimeseries(req.query.timeframe).catch(handleError(reply));
@@ -232,10 +199,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
   // (enforced by the Zod enum in logsQuery).
   server.get('/logs', {
     schema: {
-      tags:        ['Admin'],
-      summary:     'Tail a PM2 log file',
       querystring: logsQuery,
-      security:    [{ bearerAuth: [] }],
     },
   }, async (req, reply) => {
     const { file, lines } = req.query;
@@ -259,10 +223,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── POST /maintenance ── Enable maintenance mode ────────────────────
   server.post('/maintenance', {
     schema: {
-      tags:     ['Admin'],
-      summary:  'Enable maintenance mode',
-      body:     maintenanceBody,
-      security: [{ bearerAuth: [] }],
+      body: maintenanceBody,
     },
   }, async (req, reply) => {
     const result = await maintenanceService.enableMaintenance(
@@ -276,26 +237,14 @@ export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
   });
 
   // ── DELETE /maintenance ── Disable maintenance mode ─────────────────
-  server.delete('/maintenance', {
-    schema: {
-      tags:     ['Admin'],
-      summary:  'Disable maintenance mode',
-      security: [{ bearerAuth: [] }],
-    },
-  }, async (req, reply) => {
+  server.delete('/maintenance', async (req, reply) => {
     await maintenanceService.disableMaintenance(req.user!.id, req.ip).catch(handleError(reply));
     if (reply.sent) return;
     return reply.status(200).send({ enabled: false });
   });
 
   // ── GET /maintenance/status ── Maintenance status (admin) ───────────
-  server.get('/maintenance/status', {
-    schema: {
-      tags:     ['Admin'],
-      summary:  'Get maintenance mode status',
-      security: [{ bearerAuth: [] }],
-    },
-  }, async (_req, reply) => {
+  server.get('/maintenance/status', async (_req, reply) => {
     const result = await maintenanceService.getStatus().catch(handleError(reply));
     if (!result || reply.sent) return;
     return reply.status(200).send(result);
@@ -304,10 +253,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── POST /registration-lock ── Enable registration lock ─────────────
   server.post('/registration-lock', {
     schema: {
-      tags:        ['Admin'],
-      summary:     'Lock new user registration with a custom message',
-      body:        registrationLockBody,
-      security:    [{ bearerAuth: [] }],
+      body: registrationLockBody,
     },
   }, async (req, reply) => {
     const result = await registrationLockService.lockRegistration(
@@ -320,13 +266,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
   });
 
   // ── DELETE /registration-lock ── Disable registration lock ──────────
-  server.delete('/registration-lock', {
-    schema: {
-      tags:     ['Admin'],
-      summary:  'Unlock new user registration',
-      security: [{ bearerAuth: [] }],
-    },
-  }, async (req, reply) => {
+  server.delete('/registration-lock', async (req, reply) => {
     await registrationLockService.unlockRegistration(req.user!.id, req.ip).catch(handleError(reply));
     if (reply.sent) return;
     return reply.status(200).send({ locked: false });
@@ -335,10 +275,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── POST /invites ── Create an invitation ────────────────────────────
   server.post('/invites', {
     schema: {
-      tags:     ['Admin'],
-      summary:  'Create a user invitation',
-      body:     createInviteBody,
-      security: [{ bearerAuth: [] }],
+      body: createInviteBody,
     },
   }, async (req, reply) => {
     const result = await inviteService.createInvite({
@@ -369,13 +306,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
   });
 
   // ── GET /invites ── List invitations ─────────────────────────────────
-  server.get('/invites', {
-    schema: {
-      tags:     ['Admin'],
-      summary:  'List invitations',
-      security: [{ bearerAuth: [] }],
-    },
-  }, async (_req, reply) => {
+  server.get('/invites', async (_req, reply) => {
     const result = await inviteService.listInvites().catch(handleError(reply));
     if (!result || reply.sent) return;
     return reply.status(200).send(result);
@@ -384,10 +315,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── DELETE /invites/:id ── Revoke an invitation ──────────────────────
   server.delete('/invites/:id', {
     schema: {
-      tags:     ['Admin'],
-      summary:  'Revoke an invitation',
-      params:   inviteIdParam,
-      security: [{ bearerAuth: [] }],
+      params: inviteIdParam,
     },
   }, async (req, reply) => {
     const result = await inviteService.revokeInvite(req.params.id).catch(handleError(reply));
@@ -406,10 +334,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── POST /broadcast ── Post or update the banner ──────────────────────
   server.post('/broadcast', {
     schema: {
-      tags:     ['Admin'],
-      summary:  'Post or update a broadcast banner',
-      body:     broadcastBody,
-      security: [{ bearerAuth: [] }],
+      body: broadcastBody,
     },
   }, async (req, reply) => {
     try {
@@ -426,13 +351,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
   });
 
   // ── DELETE /broadcast ── Clear the banner ─────────────────────────────
-  server.delete('/broadcast', {
-    schema: {
-      tags:     ['Admin'],
-      summary:  'Clear the broadcast banner',
-      security: [{ bearerAuth: [] }],
-    },
-  }, async (req, reply) => {
+  server.delete('/broadcast', async (req, reply) => {
     try {
       await broadcastService.clearBroadcast(req.user!.id, req.ip);
       return reply.status(204).send();
@@ -442,13 +361,7 @@ export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
   });
 
   // ── GET /broadcast/status ── Admin view of current banner ─────────────
-  server.get('/broadcast/status', {
-    schema: {
-      tags:     ['Admin'],
-      summary:  'Get current broadcast banner status (admin)',
-      security: [{ bearerAuth: [] }],
-    },
-  }, async (_req, reply) => {
+  server.get('/broadcast/status', async (_req, reply) => {
     try {
       const status = await broadcastService.getStatus();
       return reply.status(200).send(status);
@@ -458,26 +371,14 @@ export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
   });
 
   // ── GET /registration-lock/status ── Registration lock status ────────
-  server.get('/registration-lock/status', {
-    schema: {
-      tags:     ['Admin'],
-      summary:  'Get registration lock status',
-      security: [{ bearerAuth: [] }],
-    },
-  }, async (_req, reply) => {
+  server.get('/registration-lock/status', async (_req, reply) => {
     const result = await registrationLockService.getStatus().catch(handleError(reply));
     if (!result || reply.sent) return;
     return reply.status(200).send(result);
   });
 
   // ── GET /registration-quota/status ── Daily signup quota status ───────
-  server.get('/registration-quota/status', {
-    schema: {
-      tags:     ['Admin'],
-      summary:  'Get daily registration quota + usage',
-      security: [{ bearerAuth: [] }],
-    },
-  }, async (_req, reply) => {
+  server.get('/registration-quota/status', async (_req, reply) => {
     try {
       const status = await registrationQuotaService.getStatus();
       return reply.status(200).send(status);
@@ -489,12 +390,9 @@ export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── PUT /registration-quota ── Set the daily cap ──────────────────────
   server.put('/registration-quota', {
     schema: {
-      tags:     ['Admin'],
-      summary:  'Set the daily registration quota (null = unlimited)',
-      body:     z.object({
+      body: z.object({
         daily: z.number().int().min(1).max(10_000).nullable(),
       }),
-      security: [{ bearerAuth: [] }],
     },
   }, async (req, reply) => {
     try {

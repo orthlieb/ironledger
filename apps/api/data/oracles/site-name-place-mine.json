@@ -1,0 +1,33 @@
+{
+  "key": "siteNamePlaceMine",
+  "title": "Site Name \u2013 Place (Mine)",
+  "selectLabel": "Site Name: Place (Mine)",
+  "description": "Roll for a place name for a Mine site.",
+  "source": "delve",
+  "data": [
+    {
+      "topRange": 16,
+      "value": "Lode"
+    },
+    {
+      "topRange": 32,
+      "value": "Dig"
+    },
+    {
+      "topRange": 49,
+      "value": "Forge"
+    },
+    {
+      "topRange": 66,
+      "value": "Mine"
+    },
+    {
+      "topRange": 83,
+      "value": "Tunnels"
+    },
+    {
+      "topRange": 100,
+      "value": "Cut"
+    }
+  ]
+}

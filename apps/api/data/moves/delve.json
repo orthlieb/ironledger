@@ -44,9 +44,9 @@
         }
       ],
       "strong": "You delve deeper. <a class=\"progress-link\" data-value=\"1\" data-track=\"delve\">Mark progress</a> and <a class=\"move-link\" data-id=\"move/find-an-opportunity\">Find an Opportunity</a>.",
-      "weak": "Roll on the following table according to your stat.",
+      "weak": "Roll on the <a class=\"oracle-link\" data-oracle=\"delveDepths\">Delve the Depths Weak Hit Oracle</a>.",
       "miss": "<a class=\"move-link\" data-id=\"move/reveal-a-danger\">Reveal a Danger</a>.",
-      "notes": "The core Delve move. On a strong hit, mark progress and Find an Opportunity. On a weak hit, roll on the table below using whichever stat you rolled. On a miss, Reveal a Danger.",
+      "notes": "The core Delve move. On a strong hit, mark progress and Find an Opportunity. On a weak hit, roll on the Delve the Depths Weak Hit Oracle using the column matching the stat you rolled. On a miss, Reveal a Danger.",
       "tableType": "delveDepths",
       "table": [
         {

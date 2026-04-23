@@ -56,10 +56,7 @@ export const sessionLogRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── GET /session/log?limit=100&before=<iso> ───────────────────────────────
   server.get('/', {
     schema: {
-      tags:        ['Session Log'],
-      summary:     'Get paginated log entries (newest first)',
       querystring: logQuery,
-      security:    [{ bearerAuth: [] }],
     },
   }, async (req, reply) => {
     const { limit, before } = req.query;
@@ -71,10 +68,7 @@ export const sessionLogRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── POST /session/log ─────────────────────────────────────────────────────
   server.post('/', {
     schema: {
-      tags:     ['Session Log'],
-      summary:  'Append a log entry',
-      body:     logEntrySchema,
-      security: [{ bearerAuth: [] }],
+      body: logEntrySchema,
     },
   }, async (req, reply) => {
     await sl.appendEntry(req.user!.id, req.body).catch(handleError(reply));
@@ -85,11 +79,8 @@ export const sessionLogRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── PATCH /session/log/:entryId ───────────────────────────────────────────
   server.patch('/:entryId', {
     schema: {
-      tags:     ['Session Log'],
-      summary:  'Update a log entry in-place',
-      params:   entryIdParam,
-      body:     patchEntrySchema,
-      security: [{ bearerAuth: [] }],
+      params: entryIdParam,
+      body:   patchEntrySchema,
     },
   }, async (req, reply) => {
     await sl.updateEntry(req.user!.id, req.params.entryId, req.body).catch(handleError(reply));
@@ -100,10 +91,7 @@ export const sessionLogRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── DELETE /session/log/:entryId ──────────────────────────────────────────
   server.delete('/:entryId', {
     schema: {
-      tags:     ['Session Log'],
-      summary:  'Delete a single log entry',
-      params:   entryIdParam,
-      security: [{ bearerAuth: [] }],
+      params: entryIdParam,
     },
   }, async (req, reply) => {
     await sl.deleteEntry(req.user!.id, req.params.entryId).catch(handleError(reply));
@@ -112,13 +100,7 @@ export const sessionLogRoutes: FastifyPluginAsyncZod = async (server) => {
   });
 
   // ── DELETE /session/log (clear all) ──────────────────────────────────────
-  server.delete('/', {
-    schema: {
-      tags:     ['Session Log'],
-      summary:  'Clear all log entries for the authenticated user',
-      security: [{ bearerAuth: [] }],
-    },
-  }, async (req, reply) => {
+  server.delete('/', async (req, reply) => {
     await sl.clearLog(req.user!.id).catch(handleError(reply));
     if (reply.sent) return;
     return reply.status(204).send();

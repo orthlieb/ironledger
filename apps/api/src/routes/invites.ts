@@ -70,9 +70,7 @@ export const inviteRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── GET /:token ── Validate + preview ─────────────────────────────────────
   server.get('/:token', {
     schema: {
-      tags:    ['Invites'],
-      summary: 'Preview a pending invitation by token',
-      params:  tokenParam,
+      params: tokenParam,
     },
   }, async (req, reply) => {
     const preview = await inviteService.getInvitePreview(req.params.token)
@@ -84,10 +82,8 @@ export const inviteRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── POST /:token/accept ── Consume invite, create user, issue tokens ─────
   server.post('/:token/accept', {
     schema: {
-      tags:    ['Invites'],
-      summary: 'Accept an invitation and set password',
-      params:  tokenParam,
-      body:    acceptBody,
+      params: tokenParam,
+      body:   acceptBody,
     },
     config: {
       // Reuse the register bucket — accepts create accounts too.

@@ -44,13 +44,7 @@ export const characterRoutes: FastifyPluginAsyncZod = async (server) => {
   server.addHook('preHandler', authenticate);
 
   // ── GET / ─────────────────────────────────────────────────────────────────
-  server.get('/', {
-    schema: {
-      tags:     ['Characters'],
-      summary:  'List all characters for the authenticated user',
-      security: [{ bearerAuth: [] }],
-    },
-  }, async (req, reply) => {
+  server.get('/', async (req, reply) => {
     const result = await chars.list(req.user!.id).catch(handleError(reply));
     if (!result || reply.sent) return;
     return reply.status(200).send(result);
@@ -59,10 +53,7 @@ export const characterRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── POST / ────────────────────────────────────────────────────────────────
   server.post('/', {
     schema: {
-      tags:     ['Characters'],
-      summary:  'Create a new character',
-      body:     createBody,
-      security: [{ bearerAuth: [] }],
+      body: createBody,
     },
   }, async (req, reply) => {
     const character = await chars.create(req.user!.id, req.body.name, req.body.data)
@@ -74,10 +65,7 @@ export const characterRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── GET /:id ──────────────────────────────────────────────────────────────
   server.get('/:id', {
     schema: {
-      tags:     ['Characters'],
-      summary:  'Get a character by ID',
-      params:   idParam,
-      security: [{ bearerAuth: [] }],
+      params: idParam,
     },
   }, async (req, reply) => {
     const character = await chars.get(req.user!.id, req.params.id)
@@ -89,11 +77,8 @@ export const characterRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── PUT /:id ──────────────────────────────────────────────────────────────
   server.put('/:id', {
     schema: {
-      tags:     ['Characters'],
-      summary:  'Update a character',
-      params:   idParam,
-      body:     updateBody,
-      security: [{ bearerAuth: [] }],
+      params: idParam,
+      body:   updateBody,
     },
   }, async (req, reply) => {
     const character = await chars.update(req.user!.id, req.params.id, req.body)
@@ -105,10 +90,7 @@ export const characterRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── DELETE /:id ───────────────────────────────────────────────────────────
   server.delete('/:id', {
     schema: {
-      tags:     ['Characters'],
-      summary:  'Delete a character and all associated data',
-      params:   idParam,
-      security: [{ bearerAuth: [] }],
+      params: idParam,
     },
   }, async (req, reply) => {
     await chars.remove(req.user!.id, req.params.id).catch(handleError(reply));
@@ -119,10 +101,7 @@ export const characterRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── GET /:id/history ──────────────────────────────────────────────────────
   server.get('/:id/history', {
     schema: {
-      tags:     ['Characters'],
-      summary:  'Get character history entries',
-      params:   idParam,
-      security: [{ bearerAuth: [] }],
+      params: idParam,
     },
   }, async (req, reply) => {
     const history = await chars.getHistory(req.user!.id, req.params.id)
@@ -134,11 +113,8 @@ export const characterRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── POST /:id/history ─────────────────────────────────────────────────────
   server.post('/:id/history', {
     schema: {
-      tags:     ['Characters'],
-      summary:  'Append a history entry',
-      params:   idParam,
-      body:     historyBody,
-      security: [{ bearerAuth: [] }],
+      params: idParam,
+      body:   historyBody,
     },
   }, async (req, reply) => {
     await chars.appendHistory(
@@ -154,10 +130,7 @@ export const characterRoutes: FastifyPluginAsyncZod = async (server) => {
   // ── DELETE /:id/history ───────────────────────────────────────────────────
   server.delete('/:id/history', {
     schema: {
-      tags:     ['Characters'],
-      summary:  'Clear all history entries for a character',
-      params:   idParam,
-      security: [{ bearerAuth: [] }],
+      params: idParam,
     },
   }, async (req, reply) => {
     await chars.clearHistory(req.user!.id, req.params.id).catch(handleError(reply));

@@ -1,0 +1,209 @@
+{
+  "key": "siteNameDescription",
+  "title": "Site Name \u2013 Description",
+  "selectLabel": "Site Name: Description",
+  "description": "Roll for a descriptive word when generating a site name using the Format oracle.",
+  "source": "delve",
+  "data": [
+    {
+      "topRange": 2,
+      "value": "Deep"
+    },
+    {
+      "topRange": 4,
+      "value": "Tainted"
+    },
+    {
+      "topRange": 6,
+      "value": "Grey"
+    },
+    {
+      "topRange": 8,
+      "value": "Forgotten"
+    },
+    {
+      "topRange": 10,
+      "value": "Flooded"
+    },
+    {
+      "topRange": 12,
+      "value": "Forbidden"
+    },
+    {
+      "topRange": 14,
+      "value": "Barren"
+    },
+    {
+      "topRange": 16,
+      "value": "Lost"
+    },
+    {
+      "topRange": 18,
+      "value": "Cursed"
+    },
+    {
+      "topRange": 20,
+      "value": "Fell"
+    },
+    {
+      "topRange": 22,
+      "value": "Sunken"
+    },
+    {
+      "topRange": 24,
+      "value": "Nightmare"
+    },
+    {
+      "topRange": 26,
+      "value": "Infernal"
+    },
+    {
+      "topRange": 28,
+      "value": "Dark"
+    },
+    {
+      "topRange": 30,
+      "value": "Bloodstained"
+    },
+    {
+      "topRange": 32,
+      "value": "Haunted"
+    },
+    {
+      "topRange": 34,
+      "value": "White"
+    },
+    {
+      "topRange": 36,
+      "value": "Shrouded"
+    },
+    {
+      "topRange": 38,
+      "value": "Wasted"
+    },
+    {
+      "topRange": 40,
+      "value": "Grim"
+    },
+    {
+      "topRange": 42,
+      "value": "Endless"
+    },
+    {
+      "topRange": 44,
+      "value": "Crumbling"
+    },
+    {
+      "topRange": 46,
+      "value": "Undying"
+    },
+    {
+      "topRange": 48,
+      "value": "Bloodied"
+    },
+    {
+      "topRange": 50,
+      "value": "Forsaken"
+    },
+    {
+      "topRange": 52,
+      "value": "Silent"
+    },
+    {
+      "topRange": 54,
+      "value": "Blighted"
+    },
+    {
+      "topRange": 56,
+      "value": "Iron"
+    },
+    {
+      "topRange": 58,
+      "value": "Frozen"
+    },
+    {
+      "topRange": 60,
+      "value": "Abyssal"
+    },
+    {
+      "topRange": 62,
+      "value": "Crimson"
+    },
+    {
+      "topRange": 64,
+      "value": "Silver"
+    },
+    {
+      "topRange": 66,
+      "value": "Desecrated"
+    },
+    {
+      "topRange": 68,
+      "value": "Ashen"
+    },
+    {
+      "topRange": 70,
+      "value": "Elder"
+    },
+    {
+      "topRange": 72,
+      "value": "Scorched"
+    },
+    {
+      "topRange": 74,
+      "value": "Unknown"
+    },
+    {
+      "topRange": 76,
+      "value": "Scarred"
+    },
+    {
+      "topRange": 78,
+      "value": "Broken"
+    },
+    {
+      "topRange": 80,
+      "value": "Chaotic"
+    },
+    {
+      "topRange": 82,
+      "value": "Black"
+    },
+    {
+      "topRange": 84,
+      "value": "Hidden"
+    },
+    {
+      "topRange": 86,
+      "value": "Sundered"
+    },
+    {
+      "topRange": 88,
+      "value": "Shattered"
+    },
+    {
+      "topRange": 90,
+      "value": "Dreaded"
+    },
+    {
+      "topRange": 92,
+      "value": "Secret"
+    },
+    {
+      "topRange": 94,
+      "value": "High"
+    },
+    {
+      "topRange": 96,
+      "value": "Sacred"
+    },
+    {
+      "topRange": 98,
+      "value": "Fallen"
+    },
+    {
+      "topRange": 100,
+      "value": "Ruined"
+    }
+  ]
+}

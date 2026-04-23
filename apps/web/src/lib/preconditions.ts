@@ -56,6 +56,8 @@ export interface PreconditionContext {
 	foeHarm?:      number;
 	/** Ritual assets owned by the active character that have difficulty factors. */
 	ritualAssets?: RitualInfo[];
+	/** Name of the active expedition/site — used for log entry titles on Delve moves. */
+	expeditionName?: string;
 }
 
 // ---------------------------------------------------------------------------

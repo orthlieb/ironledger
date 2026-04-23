@@ -1,0 +1,40 @@
+{
+  "key": "delveDepths",
+  "title": "Delve the Depths Weak Hit Oracle",
+  "selectLabel": "Delve the Depths Weak Hit Oracle",
+  "description": "On a weak hit, roll on the column matching the stat you used.",
+  "source": "delve",
+  "tableType": "delveDepths",
+  "data": [
+    {
+      "edge": 45,
+      "shadow": 30,
+      "wits": 40,
+      "value": "<a class=\"progress-link\" data-value=\"1\" data-track=\"delve\">Mark progress</a> and <a class=\"move-link\" data-id=\"move/reveal-a-danger\">Reveal a Danger</a>."
+    },
+    {
+      "edge": 65,
+      "shadow": 65,
+      "wits": 55,
+      "value": "<a class=\"progress-link\" data-value=\"1\" data-track=\"delve\">Mark progress</a>."
+    },
+    {
+      "edge": 75,
+      "shadow": 90,
+      "wits": 80,
+      "value": "Choose one: <a class=\"progress-link\" data-value=\"1\" data-track=\"delve\">Mark progress</a> or <a class=\"move-link\" data-id=\"move/find-an-opportunity\">Find an Opportunity</a>."
+    },
+    {
+      "edge": 80,
+      "shadow": 99,
+      "wits": 99,
+      "value": "Take both: <a class=\"progress-link\" data-value=\"1\" data-track=\"delve\">Mark progress</a> and <a class=\"move-link\" data-id=\"move/find-an-opportunity\">Find an Opportunity</a>."
+    },
+    {
+      "edge": 100,
+      "shadow": 100,
+      "wits": 100,
+      "value": "<a class=\"progress-link\" data-value=\"2\" data-track=\"delve\">Mark progress twice</a> and <a class=\"move-link\" data-id=\"move/reveal-a-danger\">Reveal a Danger</a>."
+    }
+  ]
+}

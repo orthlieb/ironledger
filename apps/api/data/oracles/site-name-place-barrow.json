@@ -1,0 +1,33 @@
+{
+  "key": "siteNamePlaceBarrow",
+  "title": "Site Name \u2013 Place (Barrow)",
+  "selectLabel": "Site Name: Place (Barrow)",
+  "description": "Roll for a place name for a Barrow site.",
+  "source": "delve",
+  "data": [
+    {
+      "topRange": 16,
+      "value": "Sepulcher"
+    },
+    {
+      "topRange": 66,
+      "value": "Mound"
+    },
+    {
+      "topRange": 32,
+      "value": "Grave"
+    },
+    {
+      "topRange": 83,
+      "value": "Tomb"
+    },
+    {
+      "topRange": 49,
+      "value": "Crypt"
+    },
+    {
+      "topRange": 100,
+      "value": "Barrow"
+    }
+  ]
+}

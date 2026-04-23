@@ -37,7 +37,7 @@
 	}: {
 		ctx?:              DiceCtx | null;
 		onMoveLink?:       (moveId: string) => void;
-		onOracleLink?:     (oracleKey: string) => void;
+		onOracleLink?:     (oracleKey: string, stat?: string) => void;
 		onProgressLink?:   (track: string, value: number) => void;
 		onInitiativeLink?: (value: string) => void;
 		onMenaceLink?:     (value: number) => void;
@@ -500,8 +500,9 @@
 		const oracleLink = target.closest('.oracle-link') as HTMLElement | null;
 		if (oracleLink) {
 			e.preventDefault();
-			const oracleKey = oracleLink.dataset['oracle'] ?? '';
-			onOracleLink?.(oracleKey);
+			const oracleKey  = oracleLink.dataset['oracle'] ?? '';
+			const oracleStat = oracleLink.dataset['stat'];
+			onOracleLink?.(oracleKey, oracleStat);
 			return;
 		}
 

@@ -1,0 +1,41 @@
+{
+  "key": "siteNamePlaceTanglewood",
+  "title": "Site Name \u2013 Place (Tanglewood)",
+  "selectLabel": "Site Name: Place (Tanglewood)",
+  "description": "Roll for a place name for a Tanglewood site.",
+  "source": "delve",
+  "data": [
+    {
+      "topRange": 11,
+      "value": "Weald"
+    },
+    {
+      "topRange": 23,
+      "value": "Tangle"
+    },
+    {
+      "topRange": 35,
+      "value": "Bramble"
+    },
+    {
+      "topRange": 48,
+      "value": "Briar"
+    },
+    {
+      "topRange": 61,
+      "value": "Thicket"
+    },
+    {
+      "topRange": 74,
+      "value": "Forest"
+    },
+    {
+      "topRange": 87,
+      "value": "Wilds"
+    },
+    {
+      "topRange": 100,
+      "value": "Wood"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "key": "siteNamePlacePass",
+  "title": "Site Name \u2013 Place (Pass)",
+  "selectLabel": "Site Name: Place (Pass)",
+  "description": "Roll for a place name for a Pass site.",
+  "source": "delve",
+  "data": [
+    {
+      "topRange": 10,
+      "value": "Cliffs"
+    },
+    {
+      "topRange": 20,
+      "value": "Crag"
+    },
+    {
+      "topRange": 30,
+      "value": "Cut"
+    },
+    {
+      "topRange": 40,
+      "value": "Gap"
+    },
+    {
+      "topRange": 50,
+      "value": "Gorge"
+    },
+    {
+      "topRange": 60,
+      "value": "Heights"
+    },
+    {
+      "topRange": 70,
+      "value": "Highlands"
+    },
+    {
+      "topRange": 80,
+      "value": "Pass"
+    },
+    {
+      "topRange": 90,
+      "value": "Reach"
+    },
+    {
+      "topRange": 100,
+      "value": "Ridge"
+    }
+  ]
+}

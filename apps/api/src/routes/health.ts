@@ -164,7 +164,6 @@ function statusPage(dbOk: boolean, redisOk: boolean, version: string): string {
     <div class="meta">
       <div>v<span>${version}</span></div>
       ${healthy ? `<div>up <span>${uptime}</span></div>` : ''}
-      <div><a href="/docs" style="color:#E8A13B;text-decoration:none;font-size:0.68rem;letter-spacing:0.05em;">API Docs ↗</a></div>
     </div>
   </div>
 </body>

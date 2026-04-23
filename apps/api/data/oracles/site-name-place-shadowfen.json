@@ -1,0 +1,49 @@
+{
+  "key": "siteNamePlaceShadowfen",
+  "title": "Site Name \u2013 Place (Shadowfen)",
+  "selectLabel": "Site Name: Place (Shadowfen)",
+  "description": "Roll for a place name for a Shadowfen site.",
+  "source": "delve",
+  "data": [
+    {
+      "topRange": 10,
+      "value": "Bog"
+    },
+    {
+      "topRange": 20,
+      "value": "Fen"
+    },
+    {
+      "topRange": 30,
+      "value": "Lowland"
+    },
+    {
+      "topRange": 40,
+      "value": "Marsh"
+    },
+    {
+      "topRange": 50,
+      "value": "Mire"
+    },
+    {
+      "topRange": 60,
+      "value": "Morass"
+    },
+    {
+      "topRange": 70,
+      "value": "Quagmire"
+    },
+    {
+      "topRange": 80,
+      "value": "Floodlands"
+    },
+    {
+      "topRange": 90,
+      "value": "Slough"
+    },
+    {
+      "topRange": 100,
+      "value": "Wetlands"
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "key": "trapComponent",
+  "title": "Trap: Component",
+  "selectLabel": "Trap Component",
+  "description": "Roll for the physical component of a trap. Combine with Trap: Event for a full description.",
+  "source": "delve",
+  "data": [
+    {
+      "topRange": 4,
+      "value": "Pit"
+    },
+    {
+      "topRange": 8,
+      "value": "Water"
+    },
+    {
+      "topRange": 12,
+      "value": "Fire"
+    },
+    {
+      "topRange": 16,
+      "value": "Projectile"
+    },
+    {
+      "topRange": 20,
+      "value": "Passage"
+    },
+    {
+      "topRange": 24,
+      "value": "Fall"
+    },
+    {
+      "topRange": 28,
+      "value": "Debris"
+    },
+    {
+      "topRange": 32,
+      "value": "Fear"
+    },
+    {
+      "topRange": 36,
+      "value": "Alarm"
+    },
+    {
+      "topRange": 40,
+      "value": "Trigger"
+    },
+    {
+      "topRange": 44,
+      "value": "Cold"
+    },
+    {
+      "topRange": 48,
+      "value": "Weapon"
+    },
+    {
+      "topRange": 52,
+      "value": "Darkness"
+    },
+    {
+      "topRange": 56,
+      "value": "Decay"
+    },
+    {
+      "topRange": 60,
+      "value": "Path"
+    },
+    {
+      "topRange": 64,
+      "value": "Stone"
+    },
+    {
+      "topRange": 68,
+      "value": "Terrain"
+    },
+    {
+      "topRange": 72,
+      "value": "Poison"
+    },
+    {
+      "topRange": 76,
+      "value": "Barrier"
+    },
+    {
+      "topRange": 80,
+      "value": "Overhead"
+    },
+    {
+      "topRange": 84,
+      "value": "Magic"
+    },
+    {
+      "topRange": 88,
+      "value": "Toxin"
+    },
+    {
+      "topRange": 92,
+      "value": "Earth"
+    },
+    {
+      "topRange": 96,
+      "value": "Light"
+    },
+    {
+      "topRange": 100,
+      "value": "Denizen"
+    }
+  ]
+}

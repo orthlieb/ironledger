@@ -327,7 +327,7 @@ Link that sets combat initiative. In the log, clicking sets whether the characte
 
 #### Oracle Links
 
-Link that rolls an oracle table inline. Used in asset ability text and move outcome text.
+Link that opens an oracle table. Used in asset ability text and move outcome text.
 
 ```html
 <a class="oracle-link" data-oracle="manaBacklash">Mana Backlash Oracle</a>
@@ -337,6 +337,19 @@ Link that rolls an oracle table inline. Used in asset ability text and move outc
 |-----------|-------------|
 | `class` | Must be `oracle-link` |
 | `data-oracle` | The oracle table's `key` value (e.g., `"manaBacklash"`, `"monstrosityPrimaryForm"`) |
+| `data-stat` | *(Optional)* For multi-stat oracles (e.g. `delveDepths`): the stat column to pre-select and highlight when the oracle opens. Injected dynamically at roll time — **do not hardcode in source JSON**. Valid values: `edge`, `shadow`, `wits`. |
+
+**Stat-aware oracle links** are used when a move's outcome depends on which stat was rolled. The move JSON contains a plain oracle-link (no `data-stat`), and `MovesDialog` injects the rolled stat at log-write time:
+
+```html
+<!-- In move JSON (delve.json) — no data-stat -->
+Roll on the <a class="oracle-link" data-oracle="delveDepths">Delve the Depths Weak Hit Oracle</a>.
+
+<!-- In the session log after rolling with Edge — data-stat injected by MovesDialog -->
+Roll on the <a class="oracle-link" data-oracle="delveDepths" data-stat="edge">Delve the Depths Weak Hit Oracle</a>.
+```
+
+When the log link is clicked, `LogPanel` reads `data-stat` and passes it to `OraclesDialog.open(key, undefined, stat)`, which pre-selects the matching column in the table and highlights it.
 
 #### Harm Links
 

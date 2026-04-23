@@ -27,7 +27,7 @@
 		assets?:        CharacterAsset[];
 		characterData:  CharacterData;
 		characterId:    string;
-		onOracleLink?:  (key: string) => void;
+		onOracleLink?:  (key: string, stat?: string) => void;
 	} = $props();
 
 	let pickerOpen    = $state(false);

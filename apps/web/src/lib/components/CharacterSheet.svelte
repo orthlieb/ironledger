@@ -73,7 +73,7 @@
 		/** Focus the name field immediately (used when newly created). */
 		focusName?: boolean;
 		onDelete?:      () => void;
-		onOracleLink?:  (key: string) => void;
+		onOracleLink?:  (key: string, stat?: string) => void;
 		/** Called when this sheet changes supply — used to echo the value to all party members. */
 		onSupplyChange?: (val: number) => void;
 	} = $props();

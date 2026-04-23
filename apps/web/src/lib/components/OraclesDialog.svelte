@@ -40,6 +40,10 @@
 	let filtersOpen    = $state(false);
 	/** True when the dialog was opened directly on a specific oracle key — hides Back button. */
 	let directLaunch   = $state(false);
+	/** Stat to highlight in the delveDepths table (e.g. 'edge', 'shadow', 'wits'). */
+	let activeStat       = $state<string | null>(null);
+	/** Stat selected for rolling the delveDepths table — defaults to activeStat or 'edge'. */
+	let selectedDelveStat = $state<string>('edge');
 	/** Optional callback to auto-fill a field with the rolled plain-text value. */
 	let _onFill: ((value: string) => void) | null = null;
 
@@ -85,8 +89,10 @@
 	// ---------------------------------------------------------------------------
 	// Public API
 	// ---------------------------------------------------------------------------
-	export function open(oracleKey?: string, onFill?: (value: string) => void) {
-		_onFill = onFill ?? null;
+	export function open(oracleKey?: string, onFill?: (value: string) => void, stat?: string) {
+		_onFill           = onFill ?? null;
+		activeStat        = stat ?? null;
+		selectedDelveStat = stat ?? 'edge';
 		if (oracleKey) {
 			selectedKey  = oracleKey;
 			view         = 'detail';
@@ -103,7 +109,9 @@
 	}
 
 	export function close() {
-		_onFill = null;
+		_onFill           = null;
+		activeStat        = null;
+		selectedDelveStat = 'edge';
 		dialogEl?.close();
 	}
 
@@ -115,7 +123,9 @@
 		rolling = true;
 		const fillFn = _onFill; // capture before close() clears it
 
-		const result = rollOracle(key, allOracles);
+		const result = rollOracle(key, allOracles,
+			key === 'delveDepths' ? { stat: selectedDelveStat } : undefined
+		);
 
 		// Split the primary roll into tens + ones for the d100 animation
 		const tensV = Math.floor(result.roll % 100 / 10) || 10;
@@ -126,13 +136,12 @@
 			{ sides: 10, value: tensV, color: DIE_BLACK },
 			{ sides: 10, value: onesV, color: DIE_WHITE },
 		]);
-		// Enrich interactive links (resource/debility etc.) with entry + char IDs
-		// so LogPanel click delegation can identify them.
+		// Enrich interactive links (resource/debility/progress etc.) with entry + char IDs
+		// so LogPanel click delegation can identify them. Always enrich — entryId is
+		// needed for strikethrough even when there is no active character context.
 		const entryId   = crypto.randomUUID();
 		const activeCtx = getActiveDiceCtx();
-		const html = activeCtx
-			? enrichOutcomeLinks(result.html, entryId, activeCtx.charId)
-			: result.html;
+		const html      = enrichOutcomeLinks(result.html, entryId, activeCtx?.charId ?? '');
 		appendLog(SESSION_LOG_ID, `Oracle: ${result.title}`, html, entryId);
 		if (fillFn && result.value) fillFn(result.value);
 		rolling = false;
@@ -255,7 +264,7 @@
 	<!-- Header -->
 	<div class="od-header od-header--detail" use:draggable>
 		{#if !directLaunch}
-			<button class="od-back-btn" onclick={() => (view = 'picker')}>← Back</button>
+			<button class="od-back-btn" onclick={() => { view = 'picker'; activeStat = null; }}>← Back</button>
 		{/if}
 		<span class="od-title od-title--detail">{selectedOracle.title}</span>
 	</div>
@@ -266,8 +275,21 @@
 			<p class="od-detail-desc">{selectedOracle.description}</p>
 		{/if}
 
-		<div class="od-table-wrap">
-			{@html buildTableHtml(selectedOracle.key, selectedOracle.data)}
+		{#if selectedOracle.tableType === 'delveDepths'}
+			<div class="od-delve-stat-picker">
+				{#each [['edge','Edge','var(--color-edge)'],['shadow','Shadow','var(--color-shadow)'],['wits','Wits','var(--color-wits)']] as [s, label, color] (s)}
+					<button
+						class="od-delve-stat-btn"
+						class:od-delve-stat-btn--active={selectedDelveStat === s}
+						style:--stat-color={color}
+						onclick={() => { selectedDelveStat = s; activeStat = s; }}
+					>{label}</button>
+				{/each}
+			</div>
+		{/if}
+
+		<div class="od-table-wrap" style:--active-col-color={activeStat ? `var(--color-${activeStat})` : 'var(--text-accent)'}>
+			{@html buildTableHtml(selectedOracle.key, selectedOracle.data, activeStat ? { activeStat } : undefined)}
 		</div>
 	</div>
 
@@ -621,6 +643,13 @@
 	.od-table-wrap :global(.oracle-table tr:hover td) {
 		background: var(--bg-hover);
 	}
+	/* Active stat column highlight (delveDepths oracle) — color driven by --active-col-color */
+	.od-table-wrap :global(.oracle-table .col-active) {
+		background: color-mix(in srgb, var(--active-col-color, var(--text-accent)) 8%, transparent);
+		color:      var(--active-col-color, var(--text-accent)) !important;
+		font-weight: 600;
+	}
+
 	/* Range column — monospaced, no wrap */
 	.od-table-wrap :global(.oracle-table td:first-child) {
 		font-variant-numeric: tabular-nums;
@@ -634,6 +663,38 @@
 		background: color-mix(in srgb, var(--text-accent) 5%, transparent);
 		font-style: italic;
 		color:      var(--text-muted) !important;
+	}
+
+	/* ── Delve the Depths stat picker ───────────────────────────────────── */
+	.od-delve-stat-picker {
+		display:     flex;
+		gap:         6px;
+		padding:     8px 0 4px;
+		flex-shrink: 0;
+	}
+	.od-delve-stat-btn {
+		font-family:    var(--font-ui);
+		font-size:      0.7rem;
+		font-weight:    600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		padding:        4px 12px;
+		border-radius:  12px;
+		border:         1px solid var(--border);
+		background:     transparent;
+		color:          var(--text-muted);
+		cursor:         pointer;
+		transition:     background 0.12s, color 0.12s, border-color 0.12s;
+	}
+	.od-delve-stat-btn:hover {
+		background:   color-mix(in srgb, var(--stat-color, var(--text-accent)) 10%, transparent);
+		border-color: var(--stat-color, var(--text-accent));
+		color:        var(--stat-color, var(--text-accent));
+	}
+	.od-delve-stat-btn--active {
+		background:   color-mix(in srgb, var(--stat-color, var(--text-accent)) 15%, transparent);
+		border-color: var(--stat-color, var(--text-accent));
+		color:        var(--stat-color, var(--text-accent));
 	}
 
 	/* ── Roll footer ─────────────────────────────────────────────────────── */

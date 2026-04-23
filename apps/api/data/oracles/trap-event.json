@@ -1,0 +1,109 @@
+{
+  "key": "trapEvent",
+  "title": "Trap: Event",
+  "selectLabel": "Trap Event",
+  "description": "Roll for what a trap does. Combine with Trap: Component for a full description.",
+  "source": "delve",
+  "data": [
+    {
+      "topRange": 4,
+      "value": "Block"
+    },
+    {
+      "topRange": 8,
+      "value": "Create"
+    },
+    {
+      "topRange": 12,
+      "value": "Break"
+    },
+    {
+      "topRange": 16,
+      "value": "Puncture"
+    },
+    {
+      "topRange": 20,
+      "value": "Entangle"
+    },
+    {
+      "topRange": 24,
+      "value": "Enclose"
+    },
+    {
+      "topRange": 28,
+      "value": "Ambush"
+    },
+    {
+      "topRange": 32,
+      "value": "Snare"
+    },
+    {
+      "topRange": 36,
+      "value": "Change"
+    },
+    {
+      "topRange": 40,
+      "value": "Imitate"
+    },
+    {
+      "topRange": 44,
+      "value": "Crush"
+    },
+    {
+      "topRange": 48,
+      "value": "Drop"
+    },
+    {
+      "topRange": 52,
+      "value": "Conceal"
+    },
+    {
+      "topRange": 56,
+      "value": "Lure"
+    },
+    {
+      "topRange": 60,
+      "value": "Release"
+    },
+    {
+      "topRange": 64,
+      "value": "Obscure"
+    },
+    {
+      "topRange": 68,
+      "value": "Cut"
+    },
+    {
+      "topRange": 72,
+      "value": "Smother"
+    },
+    {
+      "topRange": 76,
+      "value": "Collapse"
+    },
+    {
+      "topRange": 80,
+      "value": "Summon"
+    },
+    {
+      "topRange": 84,
+      "value": "Move"
+    },
+    {
+      "topRange": 88,
+      "value": "Surprise"
+    },
+    {
+      "topRange": 92,
+      "value": "Divert"
+    },
+    {
+      "topRange": 96,
+      "value": "Attack"
+    },
+    {
+      "topRange": 100,
+      "value": "Trigger"
+    }
+  ]
+}

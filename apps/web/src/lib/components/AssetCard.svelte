@@ -61,7 +61,7 @@
 		/** Shared counter values for fields with global:true, keyed by field.id. */
 		globalValues?:  Record<string, string>;
 		onRemove:       () => void;
-		onOracleLink?:  (key: string) => void;
+		onOracleLink?:  (key: string, stat?: string) => void;
 	} = $props();
 
 	// Selectable-list item shape used by cantrips (and any future similar lists)

@@ -112,7 +112,7 @@
 	});
 
 	// ── Oracles dialog ─────────────────────────────────────────────────────────
-	let oraclesDialogRef = $state<{ open(oracleKey?: string, onFill?: (value: string) => void): void } | null>(null);
+	let oraclesDialogRef = $state<{ open(oracleKey?: string, onFill?: (value: string) => void, stat?: string): void } | null>(null);
 
 	// ── Notes dialog ───────────────────────────────────────────────────────────
 	let notesDialogRef   = $state<{ open(): void } | null>(null);
@@ -343,10 +343,11 @@
 
 	// Build precondition context from active selections
 	const preconditionCtx = $derived<PreconditionContext>({
-		hasCharacter: !!activeCharId,
-		hasFoe:       !!activeFoeId,
-		hasJourney:   !!activeExpeditionId && expeditions.find(e => e.id === activeExpeditionId)?.type === 'journey',
-		hasSite:      !!activeExpeditionId && expeditions.find(e => e.id === activeExpeditionId)?.type === 'site',
+		hasCharacter:   !!activeCharId,
+		hasFoe:         !!activeFoeId,
+		hasJourney:     !!activeExpeditionId && expeditions.find(e => e.id === activeExpeditionId)?.type === 'journey',
+		hasSite:        !!activeExpeditionId && expeditions.find(e => e.id === activeExpeditionId)?.type === 'site',
+		expeditionName: expeditions.find(e => e.id === activeExpeditionId)?.name,
 		initiative,
 		foeHarm:      activeFoeId ? (FOE_RANKS[encounters.find(e => e.id === activeFoeId)?.effectiveRank ?? 0]?.harm) : undefined,
 		ritualAssets: (() => {
@@ -1582,7 +1583,7 @@
 									focusName={char.id === newlyCreatedId}
 									onDelete={() => deleteCharacter(char.id)}
 												onSupplyChange={handleSupplyChange}
-									onOracleLink={(key) => oraclesDialogRef?.open(key || undefined)}
+									onOracleLink={(key, stat) => oraclesDialogRef?.open(key || undefined, undefined, stat)}
 								/>
 							</div>
 						{/each}
@@ -1884,7 +1885,7 @@
 							bind:this={logPanelRef}
 							ctx={activeDiceCtx}
 							onMoveLink={(id) => movesDialogRef?.open(id)}
-							onOracleLink={(key) => oraclesDialogRef?.open(key || undefined)}
+							onOracleLink={(key, stat) => oraclesDialogRef?.open(key || undefined, undefined, stat)}
 							onProgressLink={handleProgressLink}
 							onInitiativeLink={(val) => { if (activeCharId) setInitiative(activeCharId, val === 'character' ? 1 : 2); }}
 							onMenaceLink={handleMenaceLink}
