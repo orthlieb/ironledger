@@ -52,7 +52,8 @@
           "eq": 1
         }
       ],
-      "source": "base"
+      "source": "base",
+      "logTitle": "{character} endures harm with {stat}"
     },
     {
       "id": "move/companion-endure-harm",
@@ -83,7 +84,8 @@
           "min": 1
         }
       ],
-      "source": "base"
+      "source": "base",
+      "logTitle": "{character}'s companion endures harm with {stat}"
     },
     {
       "id": "move/face-death",
@@ -111,7 +113,8 @@
           "eq": 0
         }
       ],
-      "source": "base"
+      "source": "base",
+      "logTitle": "{character} faces death with {stat}"
     },
     {
       "id": "move/face-a-setback",
@@ -183,7 +186,8 @@
           "eq": 1
         }
       ],
-      "source": "base"
+      "source": "base",
+      "logTitle": "{character} endures stress with {stat}"
     },
     {
       "id": "move/face-desolation",
@@ -211,7 +215,8 @@
           "eq": 0
         }
       ],
-      "source": "base"
+      "source": "base",
+      "logTitle": "{character} faces desolation with {stat}"
     },
     {
       "id": "move/out-of-supply",

@@ -130,6 +130,19 @@ export interface MoveDefinition {
   progressSource?: string;
   spellRoll?:     boolean;
   preconditions?: AssetPrecondition[];
+  /**
+   * Optional log entry title template. Supports placeholders:
+   *   {character}   active character's name
+   *   {stat}        stat used in the roll (capitalised)
+   *   {expedition}  active expedition/site/journey name
+   *   {foe}         active foe name
+   *   {move}        move's literal name from the data file
+   *
+   * When absent the renderer falls back to:
+   *   "{character} — {move name} ({stat})"   for action / spell / table rolls
+   *   "{character} — {move name}"            for progress and no-roll moves
+   */
+  logTitle?:      string;
   [key: string]: unknown;
 }
 

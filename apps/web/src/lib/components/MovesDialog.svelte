@@ -245,8 +245,26 @@
 			.replace(/\s+/g, ' ').trim();
 	}
 
-	function logTitle(label: string): string {
-		return ctx ? `${ctx.charName} \u2014 ${label}` : label;
+	/**
+	 * Resolve a log entry title for a move roll.
+	 *
+	 * Uses the move's optional `logTitle` template when present, otherwise
+	 * falls back to the canonical pattern:
+	 *   "{character} — {move name} ({stat})"   when stat is provided
+	 *   "{character} — {move name}"            otherwise
+	 *
+	 * Supported placeholders: {character}, {stat}, {expedition}, {foe}, {move}.
+	 */
+	function resolveTitle(move: MoveDefinition, stat?: string): string {
+		const tpl = move.logTitle ?? (stat
+			? `{character} \u2014 ${move.name} ({stat})`
+			: `{character} \u2014 ${move.name}`);
+		return tpl
+			.replace('{character}', ctx?.charName ?? '')
+			.replace('{stat}',      stat ?? '')
+			.replace('{expedition}', pctx.expeditionName ?? 'unknown expedition')
+			.replace('{foe}',        pctx.foeName        ?? 'unknown foe')
+			.replace('{move}',       move.name);
 	}
 
 	function getOutcomeHtml(m: MoveDefinition, hits1: boolean, hits2: boolean): string {
@@ -460,11 +478,7 @@
 			{ sides: 10, value: c1   },
 			{ sides: 10, value: c2   },
 		]);
-		// Build a contextual title for Delve moves (include site name when available)
-		const moveLogLabel = isDelveDepthsMove && pctx.expeditionName
-			? `Delved the Depths (${statLabel}) at ${pctx.expeditionName}`
-			: `${selectedMove.name} (${statLabel})`;
-		appendLog(SESSION_LOG_ID, logTitle(moveLogLabel), html, entryId, undefined, {
+		appendLog(SESSION_LOG_ID, resolveTitle(selectedMove, statLabel), html, entryId, undefined, {
 			moveId: selectedMove.id,
 			actionScore: total,
 			c1, c2,
@@ -544,7 +558,7 @@
 			{ sides: 10, value: c1 },
 			{ sides: 10, value: c2 },
 		]);
-		appendLog(SESSION_LOG_ID, logTitle(selectedMove.name), html, entryId);
+		appendLog(SESSION_LOG_ID, resolveTitle(selectedMove), html, entryId);
 
 		rolling = false;
 	}
@@ -605,7 +619,7 @@
 			{ sides: 6,  value: aDie },
 			{ sides: 10, value: c1   },
 		]);
-		appendLog(SESSION_LOG_ID, logTitle(selectedMove.name), html, entryId);
+		appendLog(SESSION_LOG_ID, resolveTitle(selectedMove), html, entryId);
 		rolling = false;
 	}
 
@@ -628,7 +642,7 @@
 			{ sides: 10, value: tensV, color: DIE_BLACK },
 			{ sides: 10, value: onesV, color: DIE_WHITE },
 		]);
-		appendLog(SESSION_LOG_ID, logTitle('Ask the Oracle'), html, crypto.randomUUID());
+		appendLog(SESSION_LOG_ID, selectedMove ? resolveTitle(selectedMove) : (ctx ? `${ctx.charName} \u2014 Ask the Oracle` : 'Ask the Oracle'), html, crypto.randomUUID());
 		rolling = false;
 	}
 
@@ -654,7 +668,7 @@
 			{ sides: 10, value: tensV, color: DIE_BLACK },
 			{ sides: 10, value: onesV, color: DIE_WHITE },
 		]);
-		appendLog(SESSION_LOG_ID, logTitle(selectedMove.name), html, entryId);
+		appendLog(SESSION_LOG_ID, resolveTitle(selectedMove), html, entryId);
 		rolling = false;
 	}
 
@@ -724,7 +738,7 @@
 			const entryId = crypto.randomUUID();
 			const enriched = enrichOutcomeLinks(parts.join(''), entryId, ctx.charId);
 			close();
-			appendLog(SESSION_LOG_ID, logTitle(selectedMove.name), enriched, entryId);
+			appendLog(SESSION_LOG_ID, resolveTitle(selectedMove), enriched, entryId);
 			return;
 		}
 
@@ -734,7 +748,7 @@
 		const entryId = crypto.randomUUID();
 		const enriched = enrichOutcomeLinks(logBody, entryId, ctx.charId);
 		close();
-		appendLog(SESSION_LOG_ID, logTitle(selectedMove.name), enriched, entryId);
+		appendLog(SESSION_LOG_ID, resolveTitle(selectedMove), enriched, entryId);
 	}
 
 
@@ -1084,7 +1098,7 @@
 			<!-- Notes -->
 			{#if selectedMove.notes}
 				<div class="md-notes">
-					<div class="md-notes-text">{selectedMove.notes}</div>
+					<div class="md-notes-text">{@html selectedMove.notes}</div>
 				</div>
 			{/if}
 

@@ -32,7 +32,8 @@
           "eq": 1
         }
       ],
-      "source": "base"
+      "source": "base",
+      "logTitle": "{character} tries to persuade with {stat}"
     },
     {
       "id": "move/sojourn",
@@ -56,7 +57,8 @@
           "eq": 1
         }
       ],
-      "source": "base"
+      "source": "base",
+      "logTitle": "{character} spends time in community seeking assistance using {stat}"
     },
     {
       "id": "move/draw-the-circle",
@@ -80,7 +82,8 @@
           "eq": 1
         }
       ],
-      "source": "base"
+      "source": "base",
+      "logTitle": "{character} draws the circle using {stat}"
     },
     {
       "id": "move/forge-a-bond",
@@ -104,7 +107,8 @@
           "eq": 1
         }
       ],
-      "source": "base"
+      "source": "base",
+      "logTitle": "{character} forges a bond with {stat}"
     },
     {
       "id": "move/test-your-bond",
@@ -132,7 +136,8 @@
           "min": 1
         }
       ],
-      "source": "base"
+      "source": "base",
+      "logTitle": "{character} tests a bond with {stat}"
     },
     {
       "id": "move/aid-your-ally",
@@ -180,7 +185,8 @@
         }
       ],
       "progressSource": "bonds",
-      "source": "base"
+      "source": "base",
+      "logTitle": "{character} writes their epilogue"
     }
   ],
   "source": "base"

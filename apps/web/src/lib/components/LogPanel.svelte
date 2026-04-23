@@ -554,6 +554,19 @@
 			return;
 		}
 
+		// ---- Reset track links (e.g. "clear all progress" on failure track) ----
+		const resetLink = target.closest('.reset-track-link') as HTMLElement | null;
+		if (resetLink && !resetLink.closest('.resource-spent')) {
+			e.preventDefault();
+			const track   = resetLink.dataset['track']   ?? '';
+			const entryId = resetLink.dataset['entryId'] ?? '';
+			const charId  = resetLink.dataset['charId']  ?? '';
+			if (!track || !entryId || !charId) return;
+			markLinkSpent(entryId, resetLink);
+			triggerAction({ charId, type: 'reset-track', key: track, value: 0 });
+			return;
+		}
+
 		// ---- Change theme links ----
 		const changeThemeLink = target.closest('.change-theme-link') as HTMLElement | null;
 		if (changeThemeLink && !changeThemeLink.closest('.resource-spent')) {
@@ -584,7 +597,7 @@
 		'.resource-link', '.move-link', '.oracle-link', '.initiative-link',
 		'.progress-link', '.debility-link', '.menace-link', '.vanquish-foe-link',
 		'.burn-momentum-link', '.xp-cost-link', '.failure-link',
-		'.change-theme-link', '.change-domain-link',
+		'.reset-track-link', '.change-theme-link', '.change-domain-link',
 	].join(', ');
 
 	function handleEntriesTouchStart(e: TouchEvent) {
@@ -1082,7 +1095,8 @@
 	.entry-body :global(.debility-link),
 	.entry-body :global(.menace-link),
 	.entry-body :global(.vanquish-foe-link),
-	.entry-body :global(.burn-momentum-link) {
+	.entry-body :global(.burn-momentum-link),
+	.entry-body :global(.reset-track-link) {
 		color: var(--text-accent);
 		text-decoration: underline;
 		cursor: pointer;
@@ -1097,7 +1111,8 @@
 	.entry-body :global(.debility-link:hover),
 	.entry-body :global(.menace-link:hover),
 	.entry-body :global(.vanquish-foe-link:hover),
-	.entry-body :global(.burn-momentum-link:hover) {
+	.entry-body :global(.burn-momentum-link:hover),
+	.entry-body :global(.reset-track-link:hover) {
 		opacity: 0.8;
 	}
 	.entry-body :global(.resource-spent) {

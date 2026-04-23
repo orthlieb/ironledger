@@ -189,6 +189,8 @@
 				applyResourceChange(action.key, action.value);
 			} else if (action.type === 'debility') {
 				applyDebilityToggle(action.key, action.value);
+			} else if (action.type === 'reset-track') {
+				applyResetTrack(action.key);
 			}
 		}
 	});
@@ -234,6 +236,17 @@
 					appendLog(SESSION_LOG_ID, floorRule.logTitle, floorRule.logHtml({ charId: character.id, entryId }), entryId);
 				}
 			}
+		}
+	}
+
+	function applyResetTrack(key: string) {
+		const rec = data as unknown as Record<string, number>;
+		const old = rec[key] ?? 0;
+		if (old !== 0) {
+			rec[key] = 0;
+			const label = key.charAt(0).toUpperCase() + key.slice(1);
+			appendLog(SESSION_LOG_ID, charTitle(label),
+				`<div>${label} track cleared (${old} ticks → 0)</div>`);
 		}
 	}
 

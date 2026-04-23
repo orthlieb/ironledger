@@ -53,7 +53,7 @@ Each entry records a **timestamp**, an optional **delta** (old → new value), a
 export let logs = $state<Record<string, LogEntry[]>>({});
 
 export function initLog(charId: string): void        // Load from localStorage
-export function appendLog(charId: string, title: string, html: string, id?: string, source?: string): void
+export function appendLog(charId: string, title: string, html: string, id?: string, source?: string, roll?: RollMeta): void
 export function updateLogEntryHtml(charId: string, entryId: string, html: string, source?: string): void
 export function deleteLogEntry(charId: string, entryId: string): void
 export function updateLogEntryNote(charId: string, entryId: string, note: string): void
@@ -71,7 +71,7 @@ export function drainXpSpend(charId): number    // Consume in CharacterSheet $ef
 
 #### Generalized Action Bus
 ```ts
-export interface LogAction { charId: string; type: 'resource' | 'debility'; key: string; value: number; }
+export interface LogAction { charId: string; type: 'resource' | 'debility' | 'reset-track'; key: string; value: number; }
 export function getActionNonce(): number        // Read in $effect to subscribe
 export function triggerAction(action: LogAction) // Queue from LogPanel click handlers
 export function drainActions(charId): LogAction[] // Consume in CharacterSheet $effect
@@ -97,6 +97,7 @@ LogPanel handles clicks on 7 interactive link types embedded in move outcome HTM
 | Initiative | `.initiative-link` | Set initiative state | Strikethrough |
 | Debility | `.debility-link` | Toggle debility via action bus | Strikethrough |
 | Menace | `.menace-link` | Mark menace on active vow | Strikethrough |
+| Reset Track | `.reset-track-link` | Clear named progress track to 0 via action bus | Strikethrough |
 
 Additionally, LogPanel handles two JS-generated link types not present in move JSON data:
 
@@ -151,5 +152,6 @@ interface LogEntry {
   ts:      string;   // ISO 8601 timestamp
   note?:   string;   // user-authored note attached to this entry
   source?: string;   // original markdown source (for editable entries like Notes)
+  roll?:   RollMeta; // present on action roll entries — enables burn-momentum after the fact
 }
 ```

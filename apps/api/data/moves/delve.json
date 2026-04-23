@@ -13,7 +13,7 @@
       "notes": "No roll — this is the setup move for entering a delve site. Choose theme and domain, set the rank, then immediately Delve the Depths. Returning to a site: roll 2d10, take the lower, clear that many progress boxes.",
       "preconditions": [
         {
-          "key": "hasSite",
+          "key": "hasCharacter",
           "eq": 1
         }
       ],
@@ -47,6 +47,7 @@
       "weak": "Roll on the <a class=\"oracle-link\" data-oracle=\"delveDepths\">Delve the Depths Weak Hit Oracle</a>.",
       "miss": "<a class=\"move-link\" data-id=\"move/reveal-a-danger\">Reveal a Danger</a>.",
       "notes": "The core Delve move. On a strong hit, mark progress and Find an Opportunity. On a weak hit, roll on the Delve the Depths Weak Hit Oracle using the column matching the stat you rolled. On a miss, Reveal a Danger.",
+      "logTitle": "{character} delves the depths with {stat} at {expedition}",
       "tableType": "delveDepths",
       "table": [
         {
@@ -154,7 +155,8 @@
       "references": [
         "expedition"
       ],
-      "source": "delve"
+      "source": "delve",
+      "logTitle": "Find an opportunity at {expedition}"
     },
     {
       "id": "move/reveal-a-danger",
@@ -226,7 +228,8 @@
       "references": [
         "expedition"
       ],
-      "source": "delve"
+      "source": "delve",
+      "logTitle": "Reveal a danger at {expedition}"
     },
     {
       "id": "move/check-your-gear",
@@ -254,7 +257,8 @@
           "eq": 1
         }
       ],
-      "source": "delve"
+      "source": "delve",
+      "logTitle": "The party checks its gear"
     },
     {
       "id": "move/locate-your-objective",
@@ -274,7 +278,8 @@
         }
       ],
       "progressSource": "delve",
-      "source": "delve"
+      "source": "delve",
+      "logTitle": "{character} — Locate Your Objective"
     },
     {
       "id": "move/advance-a-threat",
@@ -314,7 +319,8 @@
           "min": 1
         }
       ],
-      "source": "delve"
+      "source": "delve",
+      "logTitle": "{character} advances a threat"
     },
     {
       "id": "move/take-a-hiatus",
@@ -336,7 +342,8 @@
           "min": 1
         }
       ],
-      "source": "delve"
+      "source": "delve",
+      "logTitle": "{character} takes a hiatus"
     },
     {
       "id": "move/escape-the-depths",
@@ -371,6 +378,7 @@
       "weak": "You find your way out, but this place exacts its price. Choose one:<ul><li>You are weary or wounded: <a class=\"move-link\" data-id=\"move/endure-harm\">Endure Harm</a>.</li><li>You are disheartened or frightened: <a class=\"move-link\" data-id=\"move/endure-stress\">Endure Stress</a>.</li><li>You are delayed, and face a new complication.</li><li>You leave behind something important.</li><li>You face a new complication as you emerge.</li><li>A denizen plots its revenge.</li></ul>",
       "miss": "A dire threat or imposing obstacle stands in your way. <a class=\"move-link\" data-id=\"move/reveal-a-danger\">Reveal a Danger</a>. If you survive, you may make your escape.",
       "notes": "Use this when a deliberate retreat is the goal. On a miss, you don't automatically escape — you must face the revealed danger first. If you survive that, you may then attempt to escape again.",
+      "logTitle": "{character} escapes the depths of {expedition} using {stat}",
       "preconditions": [
         {
           "key": "hasCharacter",

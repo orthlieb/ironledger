@@ -58,6 +58,8 @@ export interface PreconditionContext {
 	ritualAssets?: RitualInfo[];
 	/** Name of the active expedition/site — used for log entry titles on Delve moves. */
 	expeditionName?: string;
+	/** Name of the active foe — used for log entry titles on Combat moves. */
+	foeName?: string;
 }
 
 // ---------------------------------------------------------------------------

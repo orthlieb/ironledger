@@ -76,6 +76,7 @@ Each file contains one category of moves:
 | `progressSource` | string | no | For progress moves: identifies which runtime track provides the score. Valid values: `"combat"` (active foe encounter ticks ÷ 4), `"journey"` (active journey expedition ticks ÷ 4), `"delve"` (active site expedition ticks ÷ 4), `"bonds"` (character bonds ticks ÷ 4), `"failures"` (character failures ticks ÷ 4), `"vows"` (placeholder — shows 0 until individual vow routing is implemented). Defaults to `"combat"` if omitted. This field pairs with the `progressContext` prop on `MovesDialog`. |
 | `tableRoll` | boolean | no | If `true`, the move's primary action is rolling this table (no action+challenge roll) |
 | `rarityRoll` | boolean | no | If `true`, the move rolls a single d6 rarity die |
+| `logTitle` | string (template) | no | Template for the session log entry title. Supports placeholder variables: `{character}` (active character name), `{stat}` (stat label used in the roll), `{expedition}` (active expedition/site/journey name), `{foe}` (active foe name), `{move}` (move's literal name). Falls back to `{character} — {move name} ({stat})` or `{character} — {move name}` when omitted. |
 
 ### Preconditions
 
@@ -310,6 +311,23 @@ Link that marks menace progress on a vow's threat track. In the log, clicking op
 |-----------|-------------|
 | `class` | Must be `menace-link` |
 | `data-value` | Positive integer: number of times to mark menace |
+
+#### Reset-Track Links
+
+Link that clears a named progress track to 0 ticks. In the log, clicking zeroes the track and logs the change. In the move dialog, styled but not clickable.
+
+```html
+<a class="reset-track-link" data-track="failures">clear all progress</a>
+```
+
+| Attribute | Description |
+|-----------|-------------|
+| `class` | Must be `reset-track-link` |
+| `data-track` | Name of the character track to reset: `failures`, `bonds`, or any other track stored as a tick count on the character |
+
+After clicking, the link receives strikethrough styling (`.resource-spent`) to prevent double-application. A log entry is appended confirming the old value and the reset to 0.
+
+Used in **Learn From Your Failures** outcomes to let the player clear the failure track after spending it.
 
 #### Initiative Links
 

@@ -49,7 +49,8 @@
           }
         }
       ],
-      "source": "base"
+      "source": "base",
+      "logTitle": "The Oracle is consulted"
     },
     {
       "id": "move/pay-the-price",
@@ -60,6 +61,8 @@
       "strong": "",
       "weak": "",
       "miss": "",
+      "tableRoll": true,
+      "logTitle": "{character} pays the price",
       "notes": "The universal consequence move. When another move tells you to Pay the Price, choose how to determine the outcome: pick the obvious result, use the oracle to decide between two options, or roll on the table below.",
       "table": [
         {

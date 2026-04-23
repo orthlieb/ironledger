@@ -55,7 +55,8 @@ interface MoveDefinition {
   progressTrack?: string;  // Classifies this as a progress move (e.g., "combat", "bonds")
   progressSource?: string; // Runtime track source key (e.g., "combat", "journey", "delve", "bonds", "failures", "vows")
   spellRoll?: boolean;     // Yrt ritual moves: d6 + mana + adds vs difficulty + d10
-  notes?: string;          // Designer tips
+  notes?: string;          // Designer tips (rendered as HTML)
+  logTitle?: string;       // Log entry title template; supports {character}, {stat}, {expedition}, {foe}, {move}
 }
 ```
 
@@ -88,6 +89,7 @@ Move outcome HTML contains 7 interactive link types plus one display-only link t
 | Initiative | `.initiative-link` | `data-value` | Set initiative state (character/foe) | Strikethrough |
 | Debility | `.debility-link` | `data-debility`, `data-value` | Toggle debility on character via action bus | Strikethrough |
 | Menace | `.menace-link` | `data-value` | Mark menace on active vow | Strikethrough |
+| Reset Track | `.reset-track-link` | `data-track` | Clear named progress track to 0 via action bus | Strikethrough |
 | Harm *(display-only)* | `.harm-link` | `data-resource` | None — styled placeholder for actual harm amount in Endure Harm/Stress outcomes | No change |
 
 **Special case**: `move/ask-the-oracle` move-link opens OraclesDialog instead of MovesDialog.
@@ -127,7 +129,7 @@ Moves that fail preconditions appear dimmed in the picker with a tooltip showing
 | `apps/api/src/routes/catalogue.ts` | API endpoint serving moves |
 | `apps/web/src/routes/api/catalogue/moves/+server.ts` | BFF proxy with ETag caching |
 | `apps/web/src/lib/moveStore.svelte.ts` | Reactive data store |
-| `apps/web/src/lib/components/MovesDialog.svelte` | Two-view dialog (picker + detail) |
+| `apps/web/src/lib/components/MovesDialog.svelte` | Two-view dialog (picker + detail); `resolveTitle(move, stat?)` resolves `logTitle` templates at roll time |
 | `apps/web/src/lib/components/GlobalContextBar.svelte` | Moves button in action bar |
 | `apps/web/src/lib/components/LogPanel.svelte` | Move outcome CSS + click delegation for all link types |
 | `apps/web/src/lib/components/OraclesDialog.svelte` | Oracle dialog (supports open with key) |

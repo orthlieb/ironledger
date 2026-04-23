@@ -40,7 +40,8 @@
           "eq": 0
         }
       ],
-      "source": "base"
+      "source": "base",
+      "logTitle": "{character} enters the fray against {foe} using {stat}"
     },
     {
       "id": "move/strike",
@@ -77,7 +78,8 @@
           "eq": 1
         }
       ],
-      "source": "base"
+      "source": "base",
+      "logTitle": "{character} strikes {foe} using {stat}"
     },
     {
       "id": "move/clash",
@@ -114,7 +116,8 @@
           "eq": 2
         }
       ],
-      "source": "base"
+      "source": "base",
+      "logTitle": "{character} clashes with {foe} using {stat}"
     },
     {
       "id": "move/turn-the-tide",
@@ -141,7 +144,8 @@
           "eq": 2
         }
       ],
-      "source": "base"
+      "source": "base",
+      "logTitle": "{character} turns the tide against {foe}"
     },
     {
       "id": "move/battle",
@@ -190,7 +194,8 @@
           "eq": 0
         }
       ],
-      "source": "base"
+      "source": "base",
+      "logTitle": "{character} battles {foe} using {stat}"
     },
     {
       "id": "move/end-the-fight",
@@ -214,7 +219,8 @@
         }
       ],
       "progressSource": "combat",
-      "source": "base"
+      "source": "base",
+      "logTitle": "{character} ends the fight with {foe}"
     }
   ],
   "source": "base"

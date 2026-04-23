@@ -23,7 +23,8 @@
           "eq": 1
         }
       ],
-      "source": "base"
+      "source": "base",
+      "logTitle": "{character} swears an iron vow using {stat}"
     },
     {
       "id": "move/reach-a-milestone",
@@ -69,7 +70,8 @@
         }
       ],
       "progressSource": "vows",
-      "source": "base"
+      "source": "base",
+      "logTitle": "{character} fulfills their vow"
     },
     {
       "id": "move/forsake-your-vow",

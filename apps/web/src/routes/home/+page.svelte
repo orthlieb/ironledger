@@ -348,6 +348,12 @@
 		hasJourney:     !!activeExpeditionId && expeditions.find(e => e.id === activeExpeditionId)?.type === 'journey',
 		hasSite:        !!activeExpeditionId && expeditions.find(e => e.id === activeExpeditionId)?.type === 'site',
 		expeditionName: expeditions.find(e => e.id === activeExpeditionId)?.name,
+		foeName: (() => {
+			if (!activeFoeId) return undefined;
+			const enc = encounters.find(e => e.id === activeFoeId);
+			if (!enc) return undefined;
+			return enc.customName || findFoe(enc.foeId)?.name || enc.foeId;
+		})(),
 		initiative,
 		foeHarm:      activeFoeId ? (FOE_RANKS[encounters.find(e => e.id === activeFoeId)?.effectiveRank ?? 0]?.harm) : undefined,
 		ritualAssets: (() => {

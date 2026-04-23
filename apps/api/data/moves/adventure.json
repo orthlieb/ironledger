@@ -40,7 +40,8 @@
           "eq": 1
         }
       ],
-      "source": "base"
+      "source": "base",
+      "logTitle": "{character} faces danger using {stat}"
     },
     {
       "id": "move/secure-an-advantage",
@@ -81,7 +82,8 @@
           "eq": 1
         }
       ],
-      "source": "base"
+      "source": "base",
+      "logTitle": "{character} secures an advantage using {stat}"
     },
     {
       "id": "move/gather-information",
@@ -105,7 +107,8 @@
           "eq": 1
         }
       ],
-      "source": "base"
+      "source": "base",
+      "logTitle": "{character} gathers information using {stat}"
     },
     {
       "id": "move/heal",
@@ -133,7 +136,8 @@
           "eq": 1
         }
       ],
-      "source": "base"
+      "source": "base",
+      "logTitle": "{character} heals using {stat}"
     },
     {
       "id": "move/resupply",
@@ -157,7 +161,8 @@
           "eq": 1
         }
       ],
-      "source": "base"
+      "source": "base",
+      "logTitle": "{character} resupplies using {stat}"
     },
     {
       "id": "move/make-camp",
@@ -181,7 +186,8 @@
           "eq": 1
         }
       ],
-      "source": "base"
+      "source": "base",
+      "logTitle": "{character} makes camp using {stat}"
     },
     {
       "id": "move/undertake-a-journey",
@@ -209,7 +215,8 @@
           "eq": 1
         }
       ],
-      "source": "base"
+      "source": "base",
+      "logTitle": "{character} undertakes a journey to {expedition} using {stat}"
     },
     {
       "id": "move/reach-your-destination",
@@ -229,7 +236,8 @@
         }
       ],
       "progressSource": "journey",
-      "source": "base"
+      "source": "base",
+      "logTitle": "{character} tries to reach the destination for {expedition}"
     }
   ],
   "source": "base"

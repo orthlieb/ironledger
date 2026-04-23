@@ -211,7 +211,7 @@ export function enrichOutcomeLinks(
 	charId: string,
 ): string {
 	return html.replace(
-		/<a\s+class="(resource-link|debility-link|progress-link|initiative-link|menace-link|vanquish-foe-link)"/g,
+		/<a\s+class="(resource-link|debility-link|progress-link|initiative-link|menace-link|vanquish-foe-link|reset-track-link)"/g,
 		`<a data-entry-id="${entryId}" data-char-id="${charId}" class="$1"`,
 	);
 }
@@ -280,9 +280,9 @@ export function drainXpSpend(charId: string): number {
 
 export interface LogAction {
 	charId:   string;
-	type:     'resource' | 'debility';
-	key:      string;    // resource name or debility name
-	value:    number;    // delta for resource, 0/1 for debility
+	type:     'resource' | 'debility' | 'reset-track';
+	key:      string;    // resource name, debility name, or track name
+	value:    number;    // delta for resource, 0/1 for debility, ignored for reset-track
 }
 
 let _actionNonce = $state(0);
