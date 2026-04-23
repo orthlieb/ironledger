@@ -42,8 +42,8 @@
 	// ---------------------------------------------------------------------------
 	// Local UI state
 	// ---------------------------------------------------------------------------
-	let collapsed       = $state(untrack(() => typeof window !== 'undefined' ? localStorage.getItem('il:foe:collapse:' + enc.id) === 'true' : false));
-	$effect(() => { if (typeof window !== 'undefined') localStorage.setItem('il:foe:collapse:' + enc.id, String(collapsed)); });
+	let descOpen        = $state(untrack(() => typeof window !== 'undefined' ? localStorage.getItem('il:foe:desc:' + enc.id) !== 'false' : true));
+	$effect(() => { if (typeof window !== 'undefined') localStorage.setItem('il:foe:desc:' + enc.id, String(descOpen)); });
 	let deleteDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let imgVisible      = $state(true);
 	let thumbHovered    = $state(false);
@@ -57,11 +57,18 @@
 	// ---------------------------------------------------------------------------
 	// Derived display values
 	// ---------------------------------------------------------------------------
-	const displayName   = $derived(enc.customName || foeDef.name);
-	const rankInfo      = $derived(FOE_RANKS[enc.effectiveRank]);
-	const qtyDef        = $derived(FOE_QUANTITIES.find((q) => q.value === enc.quantity));
-	const natureColor   = $derived(FOE_NATURE_COLORS[foeDef.nature] ?? '#9ca3af');
-	const progressScore = $derived(Math.floor(enc.ticks / 4));
+	const displayName      = $derived(enc.customName || foeDef.name);
+	const rankInfo         = $derived(FOE_RANKS[enc.effectiveRank]);
+	const qtyDef           = $derived(FOE_QUANTITIES.find((q) => q.value === enc.quantity));
+	const natureColor      = $derived(FOE_NATURE_COLORS[foeDef.nature] ?? '#9ca3af');
+	const progressScore    = $derived(Math.floor(enc.ticks / 4));
+	const resolvedFoeDesc  = $derived(resolveFoeDescription(foeDef));
+	const hasDescription   = $derived(
+		!!resolvedFoeDesc ||
+		foeDef.features.length > 0 ||
+		foeDef.drives.length > 0 ||
+		foeDef.tactics.length > 0
+	);
 
 	// ---------------------------------------------------------------------------
 	// Helpers
@@ -146,18 +153,11 @@
 <div
 	class="foe-card"
 	class:vanquished={enc.vanquished}
-	class:collapsed={collapsed}
 	style="border-left: 3px solid {natureColor}"
 >
 
 	<!-- ── Header (always visible) ── -->
 	<div class="fc-header">
-		<!-- Collapse toggle -->
-		<button
-			class="fc-collapse-btn"
-			onclick={() => (collapsed = !collapsed)}
-			aria-label={collapsed ? 'Expand' : 'Collapse'}
-		>{collapsed ? '▶' : '▼'}</button>
 
 		<!-- Portrait thumbnail + hover lightbox -->
 		{#if imgVisible}
@@ -223,105 +223,109 @@
 		</button>
 	</div>
 
-	<!-- ── Collapsible body ── -->
-	{#if !collapsed}
-		<div class="fc-body">
+	<!-- ── Body (always visible) ── -->
+	<div class="fc-body">
 
-			<!-- Content column -->
-			<div class="fc-content-col">
+		<!-- Pills: nature · rank · quantity · harm · progress -->
+		{#if rankInfo}
+			<div class="fc-pills-row">
+				<span class="fc-badge" style="background: {natureColor}22; color: {natureColor}">{foeDef.nature}</span>
+				<span class="fc-badge fc-badge--rank" style={rankBadgeStyle(enc.effectiveRank)}
+					title={enc.quantity !== 'solo' ? `Base rank ${foeDef.rank} + ${qtyDef?.rankAdj ?? 0} for ${enc.quantity}` : ''}
+				>{rankInfo.label}</span>
+				{#if enc.quantity !== 'solo'}
+					<span class="fc-badge fc-badge--qty">{qtyDef?.label ?? enc.quantity}</span>
+				{/if}
+				<span class="fc-badge fc-badge--harm">Harm: {rankInfo.harm}</span>
+				<span class="fc-badge fc-badge--progress">Progress: {rankInfo.progressPerHit}</span>
+			</div>
+		{/if}
 
-				<!-- Pills: nature · rank · quantity · harm · progress -->
-				{#if rankInfo}
-					<div class="fc-pills-row">
-						<span class="fc-badge" style="background: {natureColor}22; color: {natureColor}">{foeDef.nature}</span>
-						<span class="fc-badge fc-badge--rank" style={rankBadgeStyle(enc.effectiveRank)}
-							title={enc.quantity !== 'solo' ? `Base rank ${foeDef.rank} + ${qtyDef?.rankAdj ?? 0} for ${enc.quantity}` : ''}
-						>{rankInfo.label}</span>
-						{#if enc.quantity !== 'solo'}
-							<span class="fc-badge fc-badge--qty">{qtyDef?.label ?? enc.quantity}</span>
+		<!-- Collapsible description section -->
+		{#if hasDescription}
+			<div class="fc-desc-section">
+				<button
+					class="fc-desc-toggle"
+					onclick={() => (descOpen = !descOpen)}
+					aria-expanded={descOpen}
+				>
+					<span class="fc-desc-arrow" class:fc-desc-arrow--open={descOpen}>▸</span>
+					Description
+				</button>
+
+				{#if descOpen}
+					<div class="fc-desc-body">
+						{#if resolvedFoeDesc}
+							<p class="fc-desc" style="white-space: pre-line">{resolvedFoeDesc}</p>
 						{/if}
-						<span class="fc-badge fc-badge--harm">Harm: {rankInfo.harm}</span>
-						<span class="fc-badge fc-badge--progress">Progress: {rankInfo.progressPerHit}</span>
+						{#if foeDef.features.length > 0}
+							<div class="fc-section">
+								<span class="fc-section-label">Features</span>
+								<ul class="fc-list">
+									{#each foeDef.features as feat}<li>{feat}</li>{/each}
+								</ul>
+							</div>
+						{/if}
+						{#if foeDef.drives.length > 0}
+							<div class="fc-section">
+								<span class="fc-section-label">Drives</span>
+								<ul class="fc-list">
+									{#each foeDef.drives as d}<li>{d}</li>{/each}
+								</ul>
+							</div>
+						{/if}
+						{#if foeDef.tactics.length > 0}
+							<div class="fc-section">
+								<span class="fc-section-label">Tactics</span>
+								<ul class="fc-list">
+									{#each foeDef.tactics as t}<li>{t}</li>{/each}
+								</ul>
+							</div>
+						{/if}
 					</div>
 				{/if}
+			</div>
+		{/if}
 
-				<!-- Description (with any active-expansion addenda) -->
-				{#if foeDef}
-					{@const resolvedFoeDesc = resolveFoeDescription(foeDef)}
-					{#if resolvedFoeDesc}
-						<p class="fc-desc" style="white-space: pre-line">{resolvedFoeDesc}</p>
-					{/if}
-				{/if}
-
-				<!-- Features / Drives / Tactics -->
-				{#if foeDef.features.length > 0}
-					<div class="fc-section">
-						<span class="fc-section-label">Features</span>
-						<ul class="fc-list">
-							{#each foeDef.features as feat}<li>{feat}</li>{/each}
-						</ul>
-					</div>
-				{/if}
-
-				{#if foeDef.drives.length > 0}
-					<div class="fc-section">
-						<span class="fc-section-label">Drives</span>
-						<ul class="fc-list">
-							{#each foeDef.drives as d}<li>{d}</li>{/each}
-						</ul>
-					</div>
-				{/if}
-
-				{#if foeDef.tactics.length > 0}
-					<div class="fc-section">
-						<span class="fc-section-label">Tactics</span>
-						<ul class="fc-list">
-							{#each foeDef.tactics as t}<li>{t}</li>{/each}
-						</ul>
-					</div>
-				{/if}
-
-				<!-- Progress track -->
-				<div class="fc-section">
-					<span class="fc-section-label">Progress track</span>
-					<div class="fc-progress-row">
-						<ProgressTrack
-							label=""
-							value={enc.ticks}
-							color={natureColor}
-							onchange={handleTrackChange}
-						/>
-						<div class="fc-track-btns">
-							<button
-								class="btn-progress"
-								onclick={markProgress}
-								disabled={enc.ticks >= 40}
-								title="Mark progress (+{rankInfo?.progressPerHit} ticks)"
-							>+{rankInfo?.progressPerHit}</button>
-							<button
-								class="btn-progress"
-								onclick={unmarkProgress}
-								disabled={enc.ticks <= 0}
-								title="Unmark progress (−{rankInfo?.progressPerHit} ticks)"
-							>−{rankInfo?.progressPerHit}</button>
-						</div>
-					</div>
-				</div>
-
-				<!-- Vanquished toggle -->
-				<div class="fc-status-row">
+		<!-- Progress track -->
+		<div class="fc-section">
+			<span class="fc-section-label">Progress track</span>
+			<div class="fc-progress-row">
+				<ProgressTrack
+					label=""
+					value={enc.ticks}
+					color={natureColor}
+					onchange={handleTrackChange}
+				/>
+				<div class="fc-track-btns">
 					<button
-						class="btn btn-sm"
-						class:btn-danger={!enc.vanquished}
-						onclick={toggleVanquished}
-					>
-						{#if enc.vanquished}{@html swordSvg} Mark Active{:else}{@html skullSvg} Mark Vanquished{/if}
-					</button>
+						class="btn-progress"
+						onclick={markProgress}
+						disabled={enc.ticks >= 40}
+						title="Mark progress (+{rankInfo?.progressPerHit} ticks)"
+					>+{rankInfo?.progressPerHit}</button>
+					<button
+						class="btn-progress"
+						onclick={unmarkProgress}
+						disabled={enc.ticks <= 0}
+						title="Unmark progress (−{rankInfo?.progressPerHit} ticks)"
+					>−{rankInfo?.progressPerHit}</button>
 				</div>
-
-			</div><!-- /fc-content-col -->
+			</div>
 		</div>
-	{/if}
+
+		<!-- Vanquished toggle -->
+		<div class="fc-status-row">
+			<button
+				class="btn btn-sm"
+				class:btn-danger={!enc.vanquished}
+				onclick={toggleVanquished}
+			>
+				{#if enc.vanquished}{@html swordSvg} Mark Active{:else}{@html skullSvg} Mark Vanquished{/if}
+			</button>
+		</div>
+
+	</div>
 </div>
 
 <ConfirmDialog
@@ -345,11 +349,6 @@
 	}
 	.foe-card.vanquished { opacity: 0.55; }
 
-	/* Remove header divider when collapsed */
-	.foe-card.collapsed .fc-header {
-		border-bottom: none;
-	}
-
 	/* ── Header ─────────────────────────────────────────────────────────── */
 	.fc-header {
 		position: relative;
@@ -361,16 +360,6 @@
 		min-height: 55px;
 		background: var(--bg-inset);
 		border-bottom: 1px solid var(--border);
-	}
-
-	.fc-collapse-btn {
-		background: none;
-		border: none;
-		cursor: pointer;
-		color: var(--text-dimmer);
-		font-size: 0.65rem;
-		padding: 2px 4px;
-		flex-shrink: 0;
 	}
 
 	.fc-thumb {
@@ -492,19 +481,55 @@
 
 	/* ── Body ───────────────────────────────────────────────────────────── */
 	.fc-body {
-		padding: 0.75rem var(--page-gutter) 1rem;
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-	}
-
-	/* Content column — fills remaining space */
-	.fc-content-col {
+		padding: 0.6rem var(--page-gutter) 1rem;
 		display: flex;
 		flex-direction: column;
 		gap: 0.65rem;
-		min-width: 0;
-		flex: 1;
+	}
+
+	/* ── Collapsible description section ───────────────────────────────── */
+	.fc-desc-section {
+		display: flex;
+		flex-direction: column;
+		gap: 0;
+		border-top: 1px solid var(--border);
+		margin: 0 calc(-1 * var(--page-gutter));
+		padding: 0 var(--page-gutter);
+	}
+
+	.fc-desc-toggle {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		width: 100%;
+		padding: 0.4rem 0;
+		background: none;
+		border: none;
+		cursor: pointer;
+		text-align: left;
+		font-family: var(--font-ui);
+		font-size: 0.62rem;
+		font-weight: 700;
+		letter-spacing: 0.07em;
+		text-transform: uppercase;
+		color: var(--text-dimmer);
+		transition: color 0.12s;
+	}
+	.fc-desc-toggle:hover { color: var(--text-muted); }
+
+	.fc-desc-arrow {
+		font-size: 0.6rem;
+		transition: transform 0.15s;
+		line-height: 1;
+		flex-shrink: 0;
+	}
+	.fc-desc-arrow--open { transform: rotate(90deg); }
+
+	.fc-desc-body {
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+		padding-bottom: 0.5rem;
 	}
 
 	.fc-desc {
