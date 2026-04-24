@@ -99,6 +99,8 @@
 	.track-box {
 		width: 22px;
 		height: 22px;
+		max-width: 22px;
+		aspect-ratio: 1;
 		flex-shrink: 0;
 		padding: 0;
 		background: transparent;

@@ -359,10 +359,16 @@
 		if (!linkClass) return;
 
 		// One lookahead per data-* attribute — order independent.
-		const dataLookaheads = Object.entries(link.dataset)
+		// Merge link.dataset with entryId (in case DOMPurify stripped data-entry-id
+		// from the DOM element; the stored HTML always has it from enrichOutcomeLinks).
+		const attrs: Record<string, string> = {};
+		for (const [k, v] of Object.entries(link.dataset)) attrs[k] = v ?? '';
+		if (!attrs['entryId'] && entryId) attrs['entryId'] = entryId;
+
+		const dataLookaheads = Object.entries(attrs)
 			.map(([camel, val]) => {
 				const attr = camel.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`);
-				return `(?=[^>]*\\bdata-${esc(attr)}="${esc(val ?? '')}")`;
+				return `(?=[^>]*\\bdata-${esc(attr)}="${esc(val)}")`;
 			})
 			.join('');
 
@@ -387,8 +393,10 @@
 		if (xpLink && !xpLink.classList.contains('xp-spent')) {
 			e.preventDefault();
 			const cost    = parseInt(xpLink.dataset['cost'] ?? '0', 10);
-			const entryId = xpLink.dataset['entryId'] ?? '';
-			const charId  = xpLink.dataset['charId']  ?? '';
+			const entryId = xpLink.dataset['entryId']
+			             ?? xpLink.closest('.log-entry')?.getAttribute('data-entry-id')
+			             ?? '';
+			const charId  = xpLink.dataset['charId'] ?? ctx?.charId ?? '';
 			if (!cost || !entryId || !charId) return;
 			const entry = (logs[SESSION_LOG_ID] ?? []).find((ev) => ev.id === entryId);
 			if (entry) {
@@ -407,10 +415,14 @@
 		if (resLink && !resLink.closest('.resource-spent')) {
 			e.preventDefault();
 			const resource = resLink.dataset['resource'] ?? '';
-			const value    = parseInt(resLink.dataset['value'] ?? '0', 10);
-			const entryId  = resLink.dataset['entryId'] ?? '';
-			const charId   = resLink.dataset['charId']  ?? '';
-			if (!resource || !value || !entryId || !charId) return;
+			const value    = parseInt(resLink.dataset['value'] ?? '', 10);
+			// data-entry-id / data-char-id may be absent if DOMPurify stripped them;
+			// fall back to the parent .log-entry container which is set by Svelte directly.
+			const entryId  = resLink.dataset['entryId']
+			              ?? resLink.closest('.log-entry')?.getAttribute('data-entry-id')
+			              ?? '';
+			const charId   = resLink.dataset['charId'] ?? ctx?.charId ?? '';
+			if (!resource || Number.isNaN(value) || !value || !charId) return;
 			markLinkSpent(entryId, resLink);
 			triggerAction({ charId, type: 'resource', key: resource, value });
 			// Overflow and floor-overflow cascades.
@@ -445,10 +457,12 @@
 			e.preventDefault();
 			const debility = debLink.dataset['debility'] ?? '';
 			const value    = parseInt(debLink.dataset['value'] ?? '1', 10);
-			const entryId  = debLink.dataset['entryId'] ?? '';
-			const charId   = debLink.dataset['charId']  ?? '';
-			if (!debility || !entryId || !charId) return;
-			markLinkSpent(entryId, debLink);
+			const entryId  = debLink.dataset['entryId']
+			              ?? debLink.closest('.log-entry')?.getAttribute('data-entry-id')
+			              ?? '';
+			const charId   = debLink.dataset['charId'] ?? ctx?.charId ?? '';
+			if (!debility || !charId) return;
+			if (entryId) markLinkSpent(entryId, debLink);
 			triggerAction({ charId, type: 'debility', key: debility, value });
 			return;
 		}
@@ -457,8 +471,10 @@
 		const failureLink = target.closest('.failure-link') as HTMLElement | null;
 		if (failureLink && !failureLink.closest('.resource-spent')) {
 			e.preventDefault();
-			const entryId = failureLink.dataset['entryId'] ?? '';
-			const charId  = failureLink.dataset['charId']  ?? '';
+			const entryId = failureLink.dataset['entryId']
+			             ?? failureLink.closest('.log-entry')?.getAttribute('data-entry-id')
+			             ?? '';
+			const charId  = failureLink.dataset['charId'] ?? ctx?.charId ?? '';
 			if (!entryId || !charId) return;
 			markLinkSpent(entryId, failureLink);
 			triggerAction({ charId, type: 'resource', key: 'failures', value: 1 });
@@ -470,8 +486,10 @@
 		if (burnLink && !burnLink.closest('.resource-spent')) {
 			e.preventDefault();
 			const rollEntryId = burnLink.dataset['rollEntryId'] ?? '';
-			const burnEntryId = burnLink.dataset['entryId']     ?? '';
-			const charId      = burnLink.dataset['charId']      ?? '';
+			const burnEntryId = burnLink.dataset['entryId']
+			                 ?? burnLink.closest('.log-entry')?.getAttribute('data-entry-id')
+			                 ?? '';
+			const charId      = burnLink.dataset['charId'] ?? ctx?.charId ?? '';
 			if (!rollEntryId || !burnEntryId || !charId) return;
 			if (!ctx || ctx.charId !== charId || ctx.data.momentum <= 0) return;
 			const rollEntry = getLog(SESSION_LOG_ID).find(e => e.id === rollEntryId);
@@ -512,9 +530,11 @@
 			e.preventDefault();
 			const track   = progLink.dataset['track'] ?? '';
 			const value   = parseInt(progLink.dataset['value'] ?? '1', 10);
-			const entryId = progLink.dataset['entryId'] ?? '';
-			if (!track || !value || !entryId) return;
-			markLinkSpent(entryId, progLink);
+			const entryId = progLink.dataset['entryId']
+			             ?? progLink.closest('.log-entry')?.getAttribute('data-entry-id')
+			             ?? '';
+			if (!track || !value) return;
+			if (entryId) markLinkSpent(entryId, progLink);
 			onProgressLink?.(track, value);
 			return;
 		}
@@ -524,9 +544,13 @@
 		if (initLink && !initLink.closest('.resource-spent')) {
 			e.preventDefault();
 			const value   = initLink.dataset['value'] ?? '';
-			const entryId = initLink.dataset['entryId'] ?? '';
-			if (!value || !entryId) return;
-			markLinkSpent(entryId, initLink);
+			// data-entry-id may be absent if DOMPurify stripped it; fall back to
+			// the parent .log-entry container which is set by Svelte directly.
+			const entryId = initLink.dataset['entryId']
+			             ?? initLink.closest('.log-entry')?.getAttribute('data-entry-id')
+			             ?? '';
+			if (!value) return;
+			if (entryId) markLinkSpent(entryId, initLink);
 			onInitiativeLink?.(value);
 			return;
 		}
@@ -536,9 +560,11 @@
 		if (menaceLink && !menaceLink.closest('.resource-spent')) {
 			e.preventDefault();
 			const value   = parseInt(menaceLink.dataset['value'] ?? '1', 10);
-			const entryId = menaceLink.dataset['entryId'] ?? '';
-			if (!value || !entryId) return;
-			markLinkSpent(entryId, menaceLink);
+			const entryId = menaceLink.dataset['entryId']
+			             ?? menaceLink.closest('.log-entry')?.getAttribute('data-entry-id')
+			             ?? '';
+			if (!value) return;
+			if (entryId) markLinkSpent(entryId, menaceLink);
 			onMenaceLink?.(value);
 			return;
 		}
@@ -547,9 +573,10 @@
 		const vanquishLink = target.closest('.vanquish-foe-link') as HTMLElement | null;
 		if (vanquishLink && !vanquishLink.closest('.resource-spent')) {
 			e.preventDefault();
-			const entryId = vanquishLink.dataset['entryId'] ?? '';
-			if (!entryId) return;
-			markLinkSpent(entryId, vanquishLink);
+			const entryId = vanquishLink.dataset['entryId']
+			             ?? vanquishLink.closest('.log-entry')?.getAttribute('data-entry-id')
+			             ?? '';
+			if (entryId) markLinkSpent(entryId, vanquishLink);
 			onVanquishFoe?.();
 			return;
 		}
@@ -559,10 +586,12 @@
 		if (resetLink && !resetLink.closest('.resource-spent')) {
 			e.preventDefault();
 			const track   = resetLink.dataset['track']   ?? '';
-			const entryId = resetLink.dataset['entryId'] ?? '';
-			const charId  = resetLink.dataset['charId']  ?? '';
-			if (!track || !entryId || !charId) return;
-			markLinkSpent(entryId, resetLink);
+			const entryId = resetLink.dataset['entryId']
+			             ?? resetLink.closest('.log-entry')?.getAttribute('data-entry-id')
+			             ?? '';
+			const charId  = resetLink.dataset['charId'] ?? ctx?.charId ?? '';
+			if (!track || !charId) return;
+			if (entryId) markLinkSpent(entryId, resetLink);
 			triggerAction({ charId, type: 'reset-track', key: track, value: 0 });
 			return;
 		}

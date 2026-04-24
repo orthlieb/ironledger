@@ -156,27 +156,29 @@ flex-shrink: 0;
 
 ### Colors by Type
 
-| Type           | Background                        | Color                        |
-|----------------|-----------------------------------|------------------------------|
-| Nature         | `{FOE_NATURE_COLORS[nature]}22`   | `{FOE_NATURE_COLORS[nature]}`|
-| Rank/Difficulty| `{RANK_COLORS[n].bg}22`           | `{RANK_COLORS[n].bg}`        |
-| Quantity       | `rgba(255,255,255,0.08)`          | `var(--text-muted)`          |
-| Harm           | `rgba(239,68,68,0.10)`            | `#ef4444`                    |
-| Progress/boxes | `rgba(59,130,246,0.10)`           | `#60a5fa`                    |
-| Journey type   | `rgba(52,211,153,0.15)`           | `#34d399`                    |
-| Site type      | `rgba(96,165,250,0.15)`           | `#60a5fa`                    |
-| Theme          | `rgba(168,85,247,0.15)`           | `#a855f7`                    |
-| Domain         | `rgba(251,146,60,0.15)`           | `#fb923c`                    |
-| Debility       | `color-mix(in srgb, {color} 12%, transparent)` | `var(--color-danger)` |
-| Asset          | `color-mix(in srgb, {color} 12%, transparent)` | `ASSET_CAT_COLOR[category]` |
+| Type                   | Background                                              | Color                         | Notes                        |
+|------------------------|---------------------------------------------------------|-------------------------------|------------------------------|
+| Nature                 | `{FOE_NATURE_COLORS[nature]}22`                         | `{FOE_NATURE_COLORS[nature]}` |                              |
+| Rank/Difficulty        | `{RANK_COLORS[n].bg}22`                                 | `{RANK_COLORS[n].bg}`         |                              |
+| Quantity               | `rgba(255,255,255,0.08)`                                | `var(--text-muted)`           |                              |
+| Harm                   | `rgba(239,68,68,0.10)`                                  | `#ef4444`                     | static                       |
+| Harm (escalating)      | `rgba(239,68,68,0.18)`                                  | `#ef4444`                     | italic, `Harm: N ↑`          |
+| Progress/boxes         | `rgba(59,130,246,0.10)`                                 | `#60a5fa`                     | static                       |
+| Progress (defense up)  | `rgba(96,165,250,0.18)`                                 | `#60a5fa`                     | italic, `Progress: N ↓`      |
+| Journey type           | `rgba(52,211,153,0.15)`                                 | `#34d399`                     |                              |
+| Site type              | `rgba(96,165,250,0.15)`                                 | `#60a5fa`                     |                              |
+| Theme                  | `rgba(168,85,247,0.15)`                                 | `#a855f7`                     |                              |
+| Domain                 | `rgba(251,146,60,0.15)`                                 | `#fb923c`                     |                              |
+| Debility               | `color-mix(in srgb, {color} 12%, transparent)`          | `var(--color-danger)`         |                              |
+| Asset                  | `color-mix(in srgb, {color} 12%, transparent)`          | `ASSET_CAT_COLOR[category]`   |                              |
 
 ### Pill Order
 
-- **Foe:** nature → rank → quantity → harm
+- **Foe:** nature → rank → quantity → harm (↑ italic when escalating) → progress (↓ italic when defense active)
 - **Journey (body top):** Journey (type) → difficulty
 - **Site (body top):** Site (type) → difficulty → theme → domain
 - **GCB character tile:** debilities → assets (below initiative toggle)
-- **GCB foe tile:** nature → rank → quantity → harm
+- **GCB foe tile:** nature → rank → quantity → harm (↑ italic when escalating) → progress (↓ italic when defense active)
 - **GCB expedition tile:** type → difficulty → theme → domain
 
 ### Placement

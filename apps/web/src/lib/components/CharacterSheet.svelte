@@ -668,8 +668,8 @@
 							onchange={(o, n) => logTrack('Bonds', o, n)}
 						/>
 						<div class="track-actions">
-							<button class="btn btn-track" onclick={addBond} disabled={data.bonds >= bondsMax}>+</button>
 							<button class="btn btn-track" onclick={removeBond} disabled={data.bonds <= 0}>−</button>
+							<button class="btn btn-track" onclick={addBond} disabled={data.bonds >= bondsMax}>+</button>
 						</div>
 					</div>
 				</div>
@@ -686,8 +686,8 @@
 								onchange={(o, n) => logTrack('Failures', o, n)}
 							/>
 							<div class="track-actions">
-								<button class="btn btn-track" onclick={addFailure} disabled={data.failures >= failuresMax}>+</button>
 								<button class="btn btn-track" onclick={removeFailure} disabled={data.failures <= 0}>−</button>
+								<button class="btn btn-track" onclick={addFailure} disabled={data.failures >= failuresMax}>+</button>
 							</div>
 						</div>
 					</div>

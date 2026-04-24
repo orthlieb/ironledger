@@ -192,7 +192,7 @@
       "nature": "Construct",
       "features": [
         "A shifting mass of leaves, soil, plant matter, insects, bones of small animals",
-        "An elven wooden mask at the head",
+        "A Verdani wooden mask at the head",
         "Moves with a slow, certain shamble",
         "Reassembles when broken apart"
       ],
@@ -206,7 +206,7 @@
         "Envelop and suffocate",
         "Disperse temporarily when destroyed; reform within hours"
       ],
-      "description": "A mask risen is what the elves make when something needs to be done that they cannot do themselves. The mask is the active component: a piece of Amber-laced hardwood, carved with a recognition pattern (the named target) and an instruction (typically confront, sometimes kill). The mask is handed to a designated walker — an elder of the community, usually one with little time left — who carries it into the forest and lays it down in a place of strong Verdant flow.\n\nThe Verdant flow does the rest. Local biomass accretes around the mask: leaves, soil, root mass, beetle shells, fungal mycelium, the bones of small animals. Within a day or two there is a body. Within a week the body is walking.\n\nThe walker is the handler. They do not need to be physically present — the mask carries the recognition pattern and the local Verdant flow carries the energy — but they must be alive, and they must be reasonably close. When the walker dies, the mask risen falls inert. A mask risen cannot be permanently killed by physical means. The only way to stop one for good is to find and destroy the mask, or to find and stop the walker.",
+      "description": "A Mask Risen is what the Verdani make when something needs to be done that they cannot do themselves. The mask is the active component: a piece of Amber-laced hardwood, carved with a recognition pattern (the named target) and an instruction (typically confront, sometimes kill). The mask is handed to a designated walker — an elder of the community, usually one with little time left — who carries it into the forest and lays it down in a place of strong Verdant flow.\n\nThe Verdant flow does the rest. Local biomass accretes around the mask: leaves, soil, root mass, beetle shells, fungal mycelium, the bones of small animals. Within a day or two there is a body. Within a week the body is walking.\n\nThe walker is the handler. They do not need to be physically present — the mask carries the recognition pattern and the local Verdant flow carries the energy — but they must be alive, and they must be reasonably close. When the walker dies, the Mask Risen falls inert. A Mask Risen cannot be permanently killed by physical means. The only way to stop one for good is to find and destroy the mask, or to find and stop the walker.",
       "source": "yrt"
     },
     {
@@ -224,7 +224,7 @@
         "The body is living forest — host to nesting birds, insects, sometimes small mammals"
       ],
       "drives": [
-        "Defend a designated stretch of elven territory",
+        "Defend a designated stretch of Verdani territory",
         "Endure beyond the lifetime of any individual walker"
       ],
       "tactics": [
@@ -233,7 +233,7 @@
         "Uproot and throw boulders, dead trees, large debris",
         "Withdraw into stillness when the threat retreats"
       ],
-      "description": "A greatmask is a mask risen built at a scale and a permanence ordinary mask risen are not. Where a normal mask risen is a single-purpose tool for a single named target, a greatmask is a territory marker — a defensive construct keyed to a region rather than to a person, and intended to persist for generations.\n\nThe mask is enormous, hand-carved by an elven elder over the course of months, and laced with deep Verdant programming that includes recognition of the territorial perimeter, recognition of elven kin, a low-priority stand-down protocol for unrecognised non-hostiles passing through, and an aggressive engagement protocol for unrecognised actors who behave in proscribed ways.\n\nBecause the greatmask is intended to outlive any individual walker, the mask is not held by one elder; it is held by a line — typically a family or a small council — who pass the responsibility down through generations. As long as someone in the line is alive and accepts the role, the greatmask remains active. A greatmask is essentially impossible to defeat in combat. The only practical responses are: do not provoke it, leave the territory, or find the line of keepers and persuade them to stand it down.",
+      "description": "A Greatmask is a Mask Risen built at a scale and a permanence ordinary Mask Risen are not. Where a normal Mask Risen is a single-purpose tool for a single named target, a Greatmask is a territory marker — a defensive construct keyed to a region rather than to a person, and intended to persist for generations.\n\nThe mask is enormous, hand-carved by a Verdani elder over the course of months, and laced with deep Verdant programming that includes recognition of the territorial perimeter, recognition of Verdani kin, a low-priority stand-down protocol for unrecognised non-hostiles passing through, and an aggressive engagement protocol for unrecognised actors who behave in proscribed ways.\n\nBecause the Greatmask is intended to outlive any individual walker, the mask is not held by one elder; it is held by a line — typically a family or a small council — who pass the responsibility down through generations. As long as someone in the line is alive and accepts the role, the Greatmask remains active. A Greatmask is essentially impossible to defeat in combat. The only practical responses are: do not provoke it, leave the territory, or find the line of keepers and persuade them to stand it down.",
       "source": "yrt"
     },
     {
@@ -411,8 +411,9 @@
       "nature": "Ironlander",
       "features": [
         "Pallid, papery skin stretched over visible bone structure",
-        "Iron mask, often with breathing-vents and lens slots",
-        "A faint humming from beneath the armour — the preservation rig at work",
+        "Iron mask with breathing-vents and lens slots",
+        "A faint humming beneath the armour — the preservation rig at work",
+        "Outer plating that visibly resets its alignment after each impact — the Gray lattice redistributing",
         "Slow, deliberate movement; limbs creak when they bend"
       ],
       "drives": [
@@ -420,12 +421,26 @@
         "Preserve the integrity of the rig"
       ],
       "tactics": [
-        "Skulk in the protected location, observing from cover",
-        "Resolute, methodical assault on intruders",
+        "Absorb the opening assault behind the hardened Gray lattice — the rig redistributes automatically",
+        "Methodical, relentless assault once inside engagement distance",
         "Use whatever weapons and knowledge the host had in life — none of which have decayed"
       ],
-      "description": "A tomb walker is a living person inside a partial life-support system designed to extend their function indefinitely beyond the natural end of their body. The rig is Conclave-illegal, expensive, and brutal: a Gray-and-Azure lattice fitted around the host's torso, replacing failing organ function with mana-driven equivalents. Azure handles tissue maintenance. Gray provides structural support where the skeleton has begun to fail. A mana reservoir at the small of the back keeps the whole system running.\n\nThe host is alive. They breathe (the rig's bellows do most of it). Their heart beats (sometimes mechanically assisted). They retain memory, reasoning, personality, and the original charge they accepted at the time of installation. They have not died and come back. They have, with great effort and at terrible cost, refused to die.\n\nA tomb walker's reservoir runs out. Most installations are calibrated for thirty to fifty years. The host knows their remaining time to the day and behaves accordingly — often becoming progressively more reckless as the reservoir depletes. A tomb walker can be killed. They are tough, but they are mortal: damage the reservoir, breach the mask, or destroy enough of the rig and the host dies, often visibly relieved.",
-      "source": "yrt"
+      "description": "A tomb walker is a living person encased in a partial life-support rig designed to extend function indefinitely past the natural end of their body. The setup is Conclave-illegal and brutal: a Gray-and-Azure lattice fitted around the torso replacing failing organ function with mana-driven equivalents, with a reservoir at the small of the back running the whole system. Azure handles tissue maintenance. Gray provides structural support where the skeleton has begun to fail.\n\nThe host is alive. They breathe (the rig assists), their heart beats (mechanically, where necessary), and they retain the memory, reasoning, and charge they accepted at installation. They have not died and come back. They have refused to die at considerable cost, and they know to the day exactly how much time they have left.\n\nThe Gray lattice does more than hold the body together. Under impact stress it automatically redirects from structural support to a compressed outer field — a hardened shell that takes the brunt of each blow before it reaches the host. Each time the tomb walker survives, the remaining lattice compresses and redistributes. When the reserve finally runs dry and the field collapses, the host is fully exposed.",
+      "source": "yrt",
+      "escalatesDefense": true,
+      "escalatingDefense": {
+        "startDefense": 2,
+        "trigger": "miss",
+        "rankCaps": {
+          "1": 12,
+          "2": 8,
+          "3": 4,
+          "4": 2,
+          "5": 1
+        },
+        "minimum": 1,
+        "removal": "When the reserve runs dry and the outer lattice collapses, strikes land at full weight."
+      }
     },
     {
       "id": "yrt/blighted-guilder",
@@ -436,9 +451,10 @@
       "rank": 2,
       "nature": "Ironlander",
       "features": [
-        "Skin veined with grey manite tracery",
+        "Skin veined with grey manite tracery — the unmistakable mark of long blight-zone exposure",
         "Eyes that pulse faintly with crimson light",
         "Conclave guild seal burned into the palm — sometimes still active, sometimes scarred over",
+        "Tracery flares bright and skin goes rigid under impact — the Gray mana hardening reflexively",
         "An untreated Conclave-issue bandolier of mismatched seeds"
       ],
       "drives": [
@@ -448,10 +464,25 @@
       "tactics": [
         "Hurl primed seeds — usually Crimson, sometimes worse",
         "Use Luminous to blind and disorient",
-        "Call for Conclave enforcement if cornered, regardless of whether enforcement will actually come"
+        "Fall back on the hardened Grey lattice when seeds run low or close-combat is forced",
+        "Call for Conclave enforcement if cornered, regardless of whether it will actually come"
       ],
-      "description": "A blighted guilder is a Conclave seed-crafter whose career has gone wrong. The work is dangerous: extended time in the Ravenna refinement complex, in the deeper blight zones, or on long extraction expeditions, all of which require shielding that the Conclave provides at industrial standard. Industrial standard is not always enough. Cumulative low-grade exposure to unrefined manite changes a person — physically, in the visible mana-veining and the slight luminescence of the eyes; cognitively, in a creeping obsessiveness about the work itself.\n\nThe Conclave's policy on blighted guilders is twofold and contradictory. Officially, affected staff are reassigned to lower-exposure work and offered Azure treatment. Unofficially, guilders far enough along to show physical signs are quietly discharged, often with a small payout, and the matter is not pursued further.\n\nA discharged blighted guilder retains their training, their seed-crafting skills, and often a substantial private cache of materials they took with them when they left. Some go to ground in Freeport's underworld. Some take work with the Spero smugglers. A small number drift toward zealotry. Their judgment is unreliable. Their power is real.",
-      "source": "yrt"
+      "description": "A blighted guilder is a Conclave seed-crafter whose career has gone wrong. Extended time in refinement complexes and blight zones accumulates manite at a rate the standard Conclave shielding can't fully prevent. The visible signs — grey veining, luminescent eyes — are the point at which the Conclave quietly discharges affected staff rather than treats them, usually with a small payout and no further acknowledgment.\n\nThe discharged guilder keeps their training, their seed-crafting skills, and whatever cache they walked out with. Some take work in Freeport's underworld or with the Spero smugglers. A few drift toward zealotry. All of them are, to some degree, unstable.\n\nWhat most people don't realise until it's too late: the same Gray saturation that marks a blighted guilder protects them. Under pressure the tracery flares and the lattice beneath the skin hardens into improvised armour — involuntary, drawing from the same mana reserve that's slowly killing them. Each blow the guilder survives lets the remaining lattice consolidate and tighten. Hit them hard enough, consistently enough, and the grey eventually goes dark.",
+      "source": "yrt",
+      "escalatesDefense": true,
+      "escalatingDefense": {
+        "startDefense": 8,
+        "trigger": "miss",
+        "rankCaps": {
+          "1": 12,
+          "2": 8,
+          "3": 4,
+          "4": 2,
+          "5": 1
+        },
+        "minimum": 1,
+        "removal": "When the grey tracery goes dark — eroded through repeated hits — the lattice is spent and strikes land at full weight."
+      }
     },
     {
       "id": "yrt/verdant-crawler",
@@ -582,6 +613,75 @@
         "Cannot be injured by physical attack — only Luminous warding or sustained intense heat can destroy it"
       ],
       "description": "A carrion mound is the inverse of a Locus. Where a Locus draws local matter into itself and grows, a carrion mound dissolves local matter into itself and grows. Where a Locus drifts toward mana flux, a carrion mound drifts toward organic decay. Where a Locus is dangerous because it is huge and unstoppable, a carrion mound is dangerous because it is silent, slow enough to be overlooked, and cannot be fought the way anything else can be fought.\n\nCarrion-mounds form from leftover Black slurry — the same industrial-era disposal product that creates mire forms in bogs and rotwells in water. On dry ground, with sufficient organic matter nearby to feed on, the slurry does not stay put. It aggregates. Stray leaves, dead insects, fallen fruit, the occasional small animal that wandered too close — all are drawn to the slurry's Black gradient and dissolved into it on contact, adding their mass to the mound.\n\nOver a season, a small slurry leak can produce a mound the size of a farm cart. Over a decade, one can become large enough to consume a small paddock and everything in it. The mound has no mind. It does not hunt. It does not retaliate when struck. Destroying a mound is possible but requires specific tools: Luminous warding disrupts the Black binding, or sustained intense heat burns off the organic content.",
+      "source": "yrt"
+    },
+    {
+      "id": "yrt/ember-kite",
+      "name": "Ember Kite",
+      "images": [
+        "ember-kite.webp"
+      ],
+      "rank": 2,
+      "nature": "Animal",
+      "features": [
+        "A large raptor, roughly hawk-sized, with feathers shading from rust-red at the body to deep ember-orange at the wingtips",
+        "Wings radiate faint heat; frost and snow melt in a radius when it lands",
+        "Eyes burning amber-red, pupils slit-vertical, visible from altitude",
+        "Droppings are ash-grey and still warm when they hit the ground"
+      ],
+      "drives": [
+        "Hunt from thermals above Crimson-saturated terrain",
+        "Defend nesting territory without exception",
+        "Roost on warm outcroppings where Crimson mana seeps closest to the surface"
+      ],
+      "tactics": [
+        "Circle high until a target is isolated and exposed on open ground",
+        "Dive at terminal velocity; release stored thermal charge on contact — no flames, instantaneous heat transfer at point of impact",
+        "Disengage and climb back into thermals between passes; rarely closes to sustained melee",
+        "A mated pair staggers attacks to deny the target recovery time"
+      ],
+      "description": "Ember Kites are what happens when a raptor population nests for many generations at the edge of a Crimson blight zone. Their feathers absorb and retain heat through a biology that no ordinary raptor shares: the tissue throughout their flight musculature is threaded with Crimson-saturated capillaries that act as a living heat battery. A kite basking on a warm outcrop is charging. A kite diving is discharging.\n\nThe thermal release on impact is not fire. There are no flames, no ignition source, no visible effect until the moment of contact — at which point the stored heat transfers instantaneously into the target at a level sufficient to cause serious burns and ignite loose cloth or dry material. The bird itself is unharmed.\n\nEmber Kites are territorial and predictable in range. A bonded pair will hold a stretch of thermal-rich cliff or ridge for years and will attack anything that enters their territory without exception, regardless of size. Travellers who know what to look for — the rust-orange silhouettes circling high thermals, the absence of other birds in an area, the shimmer of heat distortion near certain outcroppings — can usually route around them.\n\nConclave surveyors treat Ember Kite sightings as a reliable early indicator of Crimson contamination. The birds do not cause the blight; they only live where it already exists.",
+      "source": "yrt"
+    },
+    {
+      "id": "yrt/necrotic-sea-hare",
+      "name": "Necrotic Sea Hare",
+      "escalates": true,
+      "images": [
+        "necrotic-sea-hare.webp"
+      ],
+      "rank": 1,
+      "nature": "Animal",
+      "features": [
+        "Palm-sized, soft-bodied, resembling a nudibranch",
+        "Mottled grey-black with faint iridescent blue-purple highlights along the mantle edge",
+        "Moves with unhurried deliberateness along contaminated sediment",
+        "Leaves a thin oily trail of Black-saturated mucus in its wake, faintly luminescent"
+      ],
+      "drives": [
+        "Process contaminated sediment",
+        "Anchor to warm tissue when disturbed"
+      ],
+      "tactics": [
+        "Lie motionless in sediment; nearly invisible at rest",
+        "Attach instantly when anything disturbs its substrate — does not chase, latches",
+        "Deliver a sustained dose of Black-contaminated fluid through the attachment point",
+        "Azure saturation in its tissue actively suppresses healing at the contact site",
+        "Does not release voluntarily; must be physically removed or killed while attached"
+      ],
+      "escalatingHarm": {
+        "startHarm": 1,
+        "trigger": "miss-endure-harm",
+        "rankCaps": {
+          "1": 1,
+          "2": 2,
+          "3": 3,
+          "4": 4,
+          "5": 5
+        },
+        "removal": "Sustained heat, concentrated Luminous mana, or saturated salt solution. Killing while attached without treating the wound does not reset — contaminated mucus remains active."
+      },
+      "description": "The Necrotic Sea Hare is a post-Fall bottom-dweller found in contaminated waterways, silted canals, flooded ruins, and any water body close enough to a blight zone for Black mana to have worked into the substrate. It is small enough to hold in your hand and individually not very dangerous. The problem is that it does not stop.\n\nThe creature feeds by dissolving organic matter — sediment detritus, waterlogged wood, dead tissue — through a Black-saturated secretion delivered by contact. This is an effective adaptation for processing the contaminated sediment it lives in. Applied to living tissue, the same mechanism causes progressive necrotic breakdown. The longer the attachment continues and the more times the body is forced to Endure Harm, the deeper the contamination spreads and the faster the tissue fails.\n\nA single Necrotic Sea Hare attached to a foot is unpleasant and should be dealt with promptly. Several of them in a silted crossing you did not see until you were waist-deep in the water is a serious emergency.\n\nRemoval requires getting clear of the water and treating the attachment site directly. Cold water slows but does not stop the process. Cutting the creature off while attached without treating the wound leaves contaminated mucus in the wound, which must be treated separately. Conclave records categorise the Necrotic Sea Hare as a contamination indicator rather than an active threat, which is technically accurate and practically unhelpful.",
       "source": "yrt"
     }
   ],

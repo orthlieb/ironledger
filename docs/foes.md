@@ -9,27 +9,32 @@ Tracks active combat encounters (foes). Each encounter record links to a foe def
 ### Encounter (stored per-character)
 ```js
 {
-  id:         string,   // crypto.randomUUID()
-  foeId:      string,   // references foe catalogue entry
-  customName: string,   // optional display name override
-  rank:       number,   // effective rank (1-5, after quantity adjustment)
-  quantity:   'solo' | 'pack' | 'horde',
-  ticks:      number,   // 0-40 progress track
-  vanquished: boolean,
+  id:              string,   // crypto.randomUUID()
+  foeId:           string,   // references foe catalogue entry
+  customName:      string,   // optional display name override
+  effectiveRank:   number,   // effective rank (1-5, after quantity adjustment)
+  quantity:        'solo' | 'pack' | 'horde',
+  ticks:           number,   // 0-40 progress track
+  vanquished:      boolean,
+  currentHarm?:    number,   // escalating harm level (1–rank); only when foeDef.escalates
+  currentDefense?: number,   // escalating defense level; only when foeDef.escalatesDefense
+                             // absent = full cap (FOE_RANKS[effectiveRank].progressPerHit)
 }
 ```
 
 ### Foe Catalogue Entry (FoeDef)
 ```js
 {
-  id:          string,       // e.g. "ironsworn/bear", "delve/troll"
-  name:        string,
-  nature:      FoeNature,    // Ironlander | Firstborn | Animal | Beast | Horror | Anomaly
-  rank:        number,       // base rank 1-5
-  description: string,
-  features:    string[],
-  drives:      string[],
-  tactics:     string[],
+  id:                 string,       // e.g. "ironsworn/bear", "delve/troll"
+  name:               string,
+  nature:             FoeNature,    // Ironlander | Firstborn | Animal | Beast | Horror | Anomaly
+  rank:               number,       // base rank 1-5
+  description:        string,
+  features:           string[],
+  drives:             string[],
+  tactics:            string[],
+  escalates?:         boolean,      // true → harm escalates; shows +/− harm counter on card
+  escalatesDefense?:  boolean,      // true → has mana defense shield; shows +/− defense counter
 }
 ```
 
@@ -71,10 +76,12 @@ The **Delve** and **YRT** [expansion toggles](expansion-toggles.md) filter which
 The Foes tab contains:
 - **+ New Foe** button — opens FoePickerDialog
 - Encounter cards (FoeCard) displayed in order, each showing:
-  - Foe portrait, name (custom or catalogue), nature badge, rank badge
-  - Name override input + harm-per-strike tag
-  - Description, features, drives, tactics from catalogue
-  - 10-box progress track with +/- mark buttons
+  - Foe portrait, name (custom or catalogue), nature/rank/quantity badges
+  - Pill strip: nature → rank → quantity → harm (↑ italic when escalating) → progress (↓ italic when defense active)
+  - Collapsible description with features, drives, and tactics
+  - **Escalating Harm** spinner (+/−) when `foeDef.escalates` — tracks `currentHarm`
+  - **Escalating Defense** spinner (+/−) when `foeDef.escalatesDefense` — tracks `currentDefense`
+  - 10-box progress track; +/− buttons show defense value and are always enabled by track state (defense only affects label, not enabled state)
   - **Mark Vanquished** / **Return to Active** toggle
 
 ### FoePickerDialog
@@ -87,7 +94,41 @@ The Foes tab contains:
 
 ## Global Context Integration
 
-The **Foe tile** in GlobalContextBar shows the active encounter's portrait, name, nature (colored), rank, harm, progress score, quantity (if not solo), initiative badge, and vanquished marker. Clicking the tile opens a popover listing all encounters; selecting one updates the active foe. Initiative state (You/Foe) is displayed as a colored badge when set via move outcome links.
+The **Foe tile** in GlobalContextBar shows the active encounter's portrait, name, nature (colored), rank, harm (↑ italic when escalating), progress (↓ italic when defense active), quantity (if not solo), initiative badge, and vanquished marker. The detail panel (below the description toggle) contains:
+- **Escalating Harm** spinner when `foeDef.escalates`
+- **Escalating Defense** spinner when `foeDef.escalatesDefense`
+- Mini progress track with +/− buttons (mirroring defense value when active)
+
+Clicking the tile opens a popover listing all encounters; selecting one updates the active foe. Initiative state (You/Foe) is displayed as a colored badge when set via move outcome links.
+
+---
+
+## Escalating Mechanics (YRT Extension)
+
+Two optional escalating mechanics extend base foes. Both are additive — they don't replace any core Ironsworn rules and can coexist on the same foe.
+
+### Escalating Harm (`escalates: true`)
+
+The foe's harm starts at 1 and increases on each Miss. Cap = effective rank (Troublesome = 1, Dangerous = 2, … Epic = 5).
+
+- **+** button increases harm (on Miss)
+- **−** button decreases harm (on Strong Hit recovering)
+- Current value stored as `enc.currentHarm` (absent = 1)
+- Pill shows `Harm: N ↑` in italic red when active
+
+See [YRT/DATA_FORMAT_YRT.md § Escalating Harm](YRT/DATA_FORMAT_YRT.md#escalating-harm-yrt-extension) for full spec.
+
+### Escalating Defense (`escalatesDefense: true`)
+
+The foe projects a mana shield that absorbs strikes. Defense starts at cap and erodes on each Miss. Cap = `FOE_RANKS[effectiveRank].progressPerHit` (Troublesome = 12, Dangerous = 8, … Epic = 1). Minimum = 1.
+
+- **−** button erodes defense (on Miss)
+- **+** button restores defense
+- Current value stored as `enc.currentDefense` (absent = cap)
+- Progress pill shows `Progress: N ↓` in italic blue; progress +/− buttons show the same N
+- Progress mark amount mirrors the current defense value
+
+See [YRT/DATA_FORMAT_YRT.md § Escalating Defense](YRT/DATA_FORMAT_YRT.md#escalating-defense-yrt-extension) for full spec.
 
 ---
 

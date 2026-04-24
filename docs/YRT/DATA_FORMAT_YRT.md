@@ -164,6 +164,122 @@ Yrt-specific foes are defined in `data/foes/foes_yrt.json`, using the same forma
 }
 ```
 
+### Escalating Harm (YRT Extension)
+
+Some Yrt foes inflict harm that starts low and worsens the longer the character fails to deal with them, rather than having a fixed harm value determined by rank. This is declared with the `escalates` flag on the foe definition, and tracked per-encounter with `currentHarm`.
+
+#### Foe definition fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `escalates` | boolean | When `true`, the foe's harm is variable. The FoeCard renders a +/− counter instead of a static Harm badge. |
+| `escalatingHarm` | object | *(Optional)* Metadata documenting escalation rules for reference. Not read by the app at runtime — the UI derives caps from `effectiveRank`. |
+| `escalatingHarm.startHarm` | number | Starting harm value (always `1`). |
+| `escalatingHarm.trigger` | string | Narrative trigger key (e.g., `"miss-endure-harm"`). |
+| `escalatingHarm.rankCaps` | object | Maps rank number → maximum harm (e.g., `{ "1": 1, "2": 2, "3": 3, "4": 4, "5": 5 }`). |
+| `escalatingHarm.removal` | string | Prose description of how to remove the foe and reset escalation. |
+
+```json
+{
+  "id": "yrt/necrotic-sea-hare",
+  "name": "Necrotic Sea Hare",
+  "escalates": true,
+  "rank": 1,
+  "escalatingHarm": {
+    "startHarm": 1,
+    "trigger": "miss-endure-harm",
+    "rankCaps": { "1": 1, "2": 2, "3": 3, "4": 4, "5": 5 },
+    "removal": "Sustained heat, concentrated Luminous mana, or saturated salt solution."
+  }
+}
+```
+
+#### Encounter runtime state
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `currentHarm` | number | Current harm level in ticks. Stored on `FoeEncounter`. Absent = `1`. Persisted with the character via auto-save. |
+
+#### Harm cap by effective rank
+
+The GCB derives the escalation ceiling from the encounter's `effectiveRank` (after quantity adjustment):
+
+| Effective Rank | Cap |
+|---|---|
+| 1 – Troublesome | 1 |
+| 2 – Dangerous | 2 |
+| 3 – Formidable | 3 |
+| 4 – Extreme | 4 |
+| 5 – Epic | 5 |
+
+#### Game mechanic
+
+- Harm starts at **1** regardless of rank.
+- On a **Miss** where the fiction calls for **Endure Harm**, the GM increases `currentHarm` by 1 using the + button (up to the rank cap).
+- On a **Strong Hit when Enduring Harm**, the player may narrate shaking the foe loose — the GM decreases `currentHarm` by 1 using the − button.
+- The counter resets to 1 only when the foe is fully removed **and** the contact site treated. Killing the creature while attached does not reset — use the − button to reflect partial treatment.
+- The Harm badge in the pills row shows the current value (`Harm: N ↑`) in italic red while escalation is active, distinguishing it from the static harm badge on non-escalating foes.
+
+---
+
+### Escalating Defense (YRT Extension)
+
+Some Yrt foes project a magical or mechanical defense that absorbs misses — each miss erodes the defense by one tier rather than inflicting harm. This is declared with the `escalatesDefense` flag on the foe definition, and tracked per-encounter with `currentDefense`.
+
+#### Foe definition fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `escalatesDefense` | boolean | When `true`, the foe has an escalating defense shield. The FoeCard renders a +/− counter and shows a "Defense: N ↓" badge. |
+| `escalatingDefense` | object | *(Optional)* Metadata documenting defense rules for reference. Not read by the app at runtime — the UI derives caps from `effectiveRank`. |
+| `escalatingDefense.startDefense` | number | Starting defense ticks at the foe's baseline rank (informational only). |
+| `escalatingDefense.trigger` | string | Narrative trigger key (e.g., `"miss"`). |
+| `escalatingDefense.rankCaps` | object | Maps rank number → starting defense ticks (e.g., `{ "1": 12, "2": 8, "3": 4, "4": 2, "5": 1 }`). |
+| `escalatingDefense.minimum` | number | Minimum defense value (always `1`). |
+| `escalatingDefense.removal` | string | Prose description of what happens when the encounter ends or the shield collapses. |
+
+```json
+{
+  "id": "yrt/blighted-guilder",
+  "name": "Blighted Guilder",
+  "escalatesDefense": true,
+  "escalatingDefense": {
+    "startDefense": 8,
+    "trigger": "miss",
+    "rankCaps": { "1": 12, "2": 8, "3": 4, "4": 2, "5": 1 },
+    "minimum": 1,
+    "removal": "When the encounter ends or the guilder is defeated, the grey manite tracery disperses."
+  }
+}
+```
+
+#### Encounter runtime state
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `currentDefense` | number | Current defense level in ticks. Stored on `FoeEncounter`. **Absent = full cap** (starts at maximum, decreases on each miss). Minimum 1. Persisted with the character via auto-save. |
+
+#### Defense cap by effective rank
+
+The caps mirror the ticks-per-Mark-Progress scale, making defense track difficulty: a Troublesome defense absorbs the most misses, Epic the fewest.
+
+| Effective Rank | Cap (ticks) |
+|---|---|
+| 1 – Troublesome | 12 |
+| 2 – Dangerous | 8 |
+| 3 – Formidable | 4 |
+| 4 – Extreme | 2 |
+| 5 – Epic | 1 |
+
+#### Game mechanic
+
+- Defense starts at the **rank cap** (absent = full).
+- On a **Miss**, the GM decreases `currentDefense` by 1 using the − button (down to the minimum of 1).
+- On a **Strong Hit when Burning Momentum or otherwise recovering**, the GM may increase `currentDefense` by 1 using the + button.
+- When `currentDefense` reaches **1 (Epic)**, the shield is at its thinnest — further misses still deal their normal narrative consequences.
+- The Defense badge in the pills row shows the current value (`Defense: N ↓`) in italic slate while escalation is active.
+- The defense resets to the cap only when the foe is defeated or a specific narrative trigger (as described in `escalatingDefense.removal`) occurs.
+
 ---
 
 ## Rarity Display Convention

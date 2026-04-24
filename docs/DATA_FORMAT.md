@@ -852,8 +852,27 @@ Each file contains a `foes` array:
 | `drives` | array of strings | yes | 1–2 motivational drivers |
 | `tactics` | array of strings | yes | 2–4 combat or conflict approaches |
 | `description` | string | yes | Narrative background description |
+| `escalates` | boolean | no | If `true`, this foe's harm escalates during combat rather than being fixed by rank. Surfaces a +/− harm counter on the FoeCard. The current level is stored as `currentHarm` on the encounter record. See [Yrt extensions](YRT/DATA_FORMAT_YRT.md#escalating-harm-yrt-extension). |
+| `escalatesDefense` | boolean | no | If `true`, this foe has a mana shield that absorbs strikes. Defense starts at the rank's progressPerHit cap and erodes toward 1 on each Miss. Surfaces a +/− defense counter on the FoeCard. The current level is stored as `currentDefense` on the encounter record. See [Yrt extensions](YRT/DATA_FORMAT_YRT.md#escalating-defense-yrt-extension). |
 
 Foe portraits are stored as images at `images/foes/{id-slug}.png` (matching the foe's id, with `/` replaced by `-`).
+
+### Foe Encounter Fields
+
+A `FoeEncounter` is the runtime record created when a player adds a foe to their active session. It references the catalogue definition by `foeId` and stores the mutable per-session state.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | `crypto.randomUUID()` — unique encounter instance ID |
+| `foeId` | string | References a `FoeDef.id` in the catalogue |
+| `quantity` | string | One of `"solo"`, `"pack"`, `"horde"` |
+| `effectiveRank` | number | Rank after quantity adjustment (1–5) |
+| `ticks` | number | Progress track ticks (0–40; 10 boxes × 4 ticks) |
+| `notes` | string | Free-text encounter notes |
+| `customName` | string | Player-assigned name; if `""`, the foe's catalogue `name` is displayed |
+| `vanquished` | boolean | Whether the foe has been defeated |
+| `currentHarm` | number | *(Optional)* Current escalating harm level. Only meaningful when `FoeDef.escalates` is `true`. Defaults to `1` when absent. See [Yrt extensions](YRT/DATA_FORMAT_YRT.md#escalating-harm-yrt-extension). |
+| `currentDefense` | number | *(Optional)* Current escalating defense level. Only meaningful when `FoeDef.escalatesDefense` is `true`. Absent = full cap (`FOE_RANKS[effectiveRank].progressPerHit`). Minimum 1. See [Yrt extensions](YRT/DATA_FORMAT_YRT.md#escalating-defense-yrt-extension). |
 
 ### Foe Overrides (Expansion Extension Mechanism)
 

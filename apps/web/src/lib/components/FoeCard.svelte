@@ -71,6 +71,48 @@
 	);
 
 	// ---------------------------------------------------------------------------
+	// Escalating harm (YRT extension)
+	// ---------------------------------------------------------------------------
+	// Cap = effective rank (1→1, 2→2, …, 5→5) — same as FOE_RANKS[n].harm.
+	const currentHarm = $derived(enc.currentHarm ?? 1);
+	const harmCap     = $derived(enc.effectiveRank);
+
+	function increaseHarm() {
+		const next = Math.min(harmCap, currentHarm + 1);
+		update({ currentHarm: next });
+		logLine(`<div>Escalating harm increased to <strong>${next}</strong></div>`);
+	}
+	function decreaseHarm() {
+		const next = Math.max(1, currentHarm - 1);
+		update({ currentHarm: next });
+		logLine(`<div>Escalating harm reduced to <strong>${next}</strong></div>`);
+	}
+
+	// ---------------------------------------------------------------------------
+	// Escalating defense (YRT extension)
+	// ---------------------------------------------------------------------------
+	// Cap = progressPerHit for the effective rank (rank 1→12, 2→8, 3→4, 4→2, 5→1).
+	// Reuses FOE_RANKS — no separate lookup table needed.
+	const defenseCap     = $derived(FOE_RANKS[enc.effectiveRank]?.progressPerHit ?? 8);
+	/** Absent = full defense (cap). Decreases toward 1 on each miss. */
+	const currentDefense = $derived(enc.currentDefense ?? defenseCap);
+	/** Tick value shown on the progress buttons: mirrors defense for escalating-defense foes. */
+	const progressTickVal = $derived(
+		foeDef.escalatesDefense ? currentDefense : (rankInfo?.progressPerHit ?? 0)
+	);
+
+	function increaseDefense() {
+		const next = Math.min(defenseCap, currentDefense + 1);
+		update({ currentDefense: next });
+		logLine(`<div>Escalating defense restored to <strong>${next}</strong></div>`);
+	}
+	function decreaseDefense() {
+		const next = Math.max(1, currentDefense - 1);
+		update({ currentDefense: next });
+		logLine(`<div>Escalating defense reduced to <strong>${next}</strong></div>`);
+	}
+
+	// ---------------------------------------------------------------------------
 	// Helpers
 	// ---------------------------------------------------------------------------
 	// Thumbnail uses just the primary image (index 0); the lightbox
@@ -107,7 +149,7 @@
 	function markProgress() {
 		if (!rankInfo) return;
 		const prev = progressScore;
-		const newTicks = Math.min(40, enc.ticks + rankInfo.progressPerHit);
+		const newTicks = Math.min(40, enc.ticks + progressTickVal);
 		update({ ticks: newTicks });
 		const next = Math.floor(newTicks / 4);
 		logLine(`<div>Progress marked (${prev}/10 → ${next}/10)</div>`);
@@ -116,7 +158,7 @@
 	function unmarkProgress() {
 		if (!rankInfo) return;
 		const prev = progressScore;
-		const newTicks = Math.max(0, enc.ticks - rankInfo.progressPerHit);
+		const newTicks = Math.max(0, enc.ticks - progressTickVal);
 		update({ ticks: newTicks });
 		const next = Math.floor(newTicks / 4);
 		logLine(`<div>Progress unmarked (${prev}/10 → ${next}/10)</div>`);
@@ -236,11 +278,20 @@
 				{#if enc.quantity !== 'solo'}
 					<span class="fc-badge fc-badge--qty">{qtyDef?.label ?? enc.quantity}</span>
 				{/if}
-				<span class="fc-badge fc-badge--harm">Harm: {rankInfo.harm}</span>
-				<span class="fc-badge fc-badge--progress">Progress: {rankInfo.progressPerHit}</span>
+				{#if foeDef.escalates}
+					<span class="fc-badge fc-badge--harm fc-badge--escalating">Harm: {currentHarm} ↑</span>
+				{:else}
+					<span class="fc-badge fc-badge--harm">Harm: {rankInfo.harm}</span>
+				{/if}
+				{#if foeDef.escalatesDefense}
+					<span class="fc-badge fc-badge--progress fc-badge--defense-progress">Progress: {currentDefense} ↓</span>
+				{:else}
+					<span class="fc-badge fc-badge--progress">Progress: {rankInfo.progressPerHit}</span>
+				{/if}
 			</div>
 		{/if}
 
+		<!-- Escalating harm counter (YRT extension) -->
 		<!-- Collapsible description section -->
 		{#if hasDescription}
 			<div class="fc-desc-section">
@@ -287,6 +338,52 @@
 			</div>
 		{/if}
 
+		<!-- Escalating harm (above progress track) -->
+		{#if foeDef.escalates}
+			<div class="fc-escalate-row">
+				<span class="fc-escalate-label">Escalating Harm</span>
+				<div class="fc-escalate-ctrl">
+					<button
+						class="fc-adj-btn"
+						onclick={decreaseHarm}
+						disabled={currentHarm <= 1}
+						aria-label="Decrease harm"
+					>−</button>
+					<span class="fc-harm-val" class:fc-harm-high={currentHarm >= harmCap}>{currentHarm}</span>
+					<button
+						class="fc-adj-btn"
+						onclick={increaseHarm}
+						disabled={currentHarm >= harmCap}
+						aria-label="Increase harm"
+					>+</button>
+					<span class="fc-harm-cap">/ {harmCap}</span>
+				</div>
+			</div>
+		{/if}
+
+		<!-- Escalating defense (above progress track) -->
+		{#if foeDef.escalatesDefense}
+			<div class="fc-escalate-row">
+				<span class="fc-escalate-label">Escalating Defense</span>
+				<div class="fc-escalate-ctrl">
+					<button
+						class="fc-adj-btn fc-adj-btn--defense"
+						onclick={decreaseDefense}
+						disabled={currentDefense <= 1}
+						aria-label="Decrease defense"
+					>−</button>
+					<span class="fc-defense-val" class:fc-defense-low={currentDefense <= 1}>{currentDefense}</span>
+					<button
+						class="fc-adj-btn fc-adj-btn--defense"
+						onclick={increaseDefense}
+						disabled={currentDefense >= defenseCap}
+						aria-label="Increase defense"
+					>+</button>
+					<span class="fc-harm-cap">/ {defenseCap}</span>
+				</div>
+			</div>
+		{/if}
+
 		<!-- Progress track -->
 		<div class="fc-section">
 			<span class="fc-section-label">Progress track</span>
@@ -300,16 +397,16 @@
 				<div class="fc-track-btns">
 					<button
 						class="btn-progress"
-						onclick={markProgress}
-						disabled={enc.ticks >= 40}
-						title="Mark progress (+{rankInfo?.progressPerHit} ticks)"
-					>+{rankInfo?.progressPerHit}</button>
-					<button
-						class="btn-progress"
 						onclick={unmarkProgress}
 						disabled={enc.ticks <= 0}
-						title="Unmark progress (−{rankInfo?.progressPerHit} ticks)"
-					>−{rankInfo?.progressPerHit}</button>
+						title="Unmark progress (−{progressTickVal} ticks)"
+					>−{progressTickVal}</button>
+					<button
+						class="btn-progress"
+						onclick={markProgress}
+						disabled={enc.ticks >= 40}
+						title="Mark progress (+{progressTickVal} ticks)"
+					>+{progressTickVal}</button>
 				</div>
 			</div>
 		</div>
@@ -439,10 +536,11 @@
 		white-space: nowrap;
 		flex-shrink: 0;
 	}
-	.fc-badge--qty      { background: rgba(255,255,255,0.08); color: var(--text-muted); }
-	.fc-badge--rank     { background: rgba(255,255,255,0.08); color: var(--text-muted); }
-	.fc-badge--harm     { background: rgba(239,68,68,0.10);   color: #ef4444; }
-	.fc-badge--progress { background: rgba(59,130,246,0.10);  color: #60a5fa; }
+	.fc-badge--qty        { background: rgba(255,255,255,0.08); color: var(--text-muted); }
+	.fc-badge--rank       { background: rgba(255,255,255,0.08); color: var(--text-muted); }
+	.fc-badge--harm       { background: rgba(239,68,68,0.10);   color: #ef4444; }
+	.fc-badge--escalating { background: rgba(239,68,68,0.18);   color: #ef4444; font-style: italic; }
+	.fc-badge--progress   { background: rgba(59,130,246,0.10);  color: #60a5fa; }
 
 	.fc-pills-row {
 		display: flex;
@@ -577,7 +675,6 @@
 	.fc-track-btns {
 		display: flex;
 		gap: 4px;
-		margin-left: auto;
 		flex-shrink: 0;
 	}
 
@@ -604,6 +701,99 @@
 		color: var(--text);
 	}
 	.btn-progress:disabled { opacity: 0.35; cursor: not-allowed; }
+
+	/* ── Escalating harm (YRT extension) ───────────────────────────────── */
+	.fc-escalate-row {
+		display:     flex;
+		align-items: center;
+		gap:         0.5rem;
+		padding:     0.15rem 0;
+	}
+
+	.fc-escalate-label {
+		font-family:    var(--font-ui);
+		font-size:      0.6rem;
+		font-weight:    700;
+		letter-spacing: 0.07em;
+		text-transform: uppercase;
+		color:          var(--text-dimmer);
+		flex-shrink:    1;
+		min-width:      0;
+	}
+
+	.fc-escalate-ctrl {
+		display:     flex;
+		align-items: center;
+		gap:         6px;
+		flex-shrink: 0;
+	}
+
+	.fc-adj-btn {
+		display:         inline-flex;
+		align-items:     center;
+		justify-content: center;
+		width:           20px;
+		height:          20px;
+		padding:         0;
+		background:      transparent;
+		border:          1px solid var(--border-mid);
+		border-radius:   3px;
+		cursor:          pointer;
+		font-family:     var(--font-ui);
+		font-size:       0.85rem;
+		font-weight:     700;
+		color:           var(--text-muted);
+		line-height:     1;
+		transition:      background 0.12s, color 0.12s;
+	}
+	.fc-adj-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+	.fc-adj-btn:not(:disabled):hover {
+		background:   rgba(239,68,68,0.1);
+		color:        #ef4444;
+		border-color: rgba(239,68,68,0.4);
+	}
+
+	.fc-harm-val {
+		font-family:         var(--font-ui);
+		font-size:           0.68rem;
+		font-weight:         800;
+		font-variant-numeric: tabular-nums;
+		min-width:           1em;
+		text-align:          center;
+		color:               var(--text-muted);
+		transition:          color 0.2s;
+	}
+	.fc-harm-high { color: #ef4444; }
+
+	.fc-badge--defense-progress {
+		font-style: italic;
+		background: rgba(96, 165, 250, 0.18);
+		color:      #60a5fa;
+	}
+
+	.fc-adj-btn--defense:not(:disabled):hover {
+		background:   rgba(96, 165, 250, 0.1);
+		color:        #60a5fa;
+		border-color: rgba(96, 165, 250, 0.4);
+	}
+
+	.fc-defense-val {
+		font-family:          var(--font-ui);
+		font-size:            0.68rem;
+		font-weight:          800;
+		font-variant-numeric: tabular-nums;
+		min-width:            1em;
+		text-align:           center;
+		color:                var(--text-muted);
+		transition:           color 0.2s;
+	}
+	.fc-defense-low { color: #60a5fa; }
+
+	.fc-harm-cap {
+		font-family: var(--font-ui);
+		font-size:   0.68rem;
+		color:       var(--text-dimmer);
+	}
 
 	/* ── Status row ─────────────────────────────────────────────────────── */
 	.fc-status-row {

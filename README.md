@@ -109,9 +109,11 @@ npm run dev:web   # Web on :5173
 - "Roll Twice" results auto-combine two independent re-rolls into one result
 
 ### Foes & Encounters
-- Full foe catalogue from Ironsworn data
+- Full foe catalogue from Ironsworn core, Delve supplement, and YRT homebrew
 - Per-character encounter tracking with progress tracks
-- Ranks 1-5 with progress mechanics
+- Ranks 1–5 (Troublesome → Epic) with progress mechanics
+- **Escalating Harm** (YRT): foe harm starts at 1 and increases on each Miss; capped at effective rank
+- **Escalating Defense** (YRT): foe projects a mana shield that absorbs strikes; defense erodes on each Miss and blocks progress marks while active; cap = progress-per-hit for that rank
 
 ### Expeditions
 - Journey and Delve Site expedition types

@@ -126,6 +126,56 @@
 	const activeFoeNature   = $derived(activeFoeDef ? (FOE_NATURE_COLORS[activeFoeDef.nature] ?? '#9ca3af') : '#9ca3af');
 	const activeFoeQty      = $derived(activeFoe ? FOE_QUANTITIES.find((q) => q.value === activeFoe.quantity) : null);
 
+	// Escalating harm (YRT extension)
+	// Cap = effective rank (1→1, 2→2, …, 5→5) — same as FOE_RANKS[n].harm.
+	const gcFoeCurrentHarm  = $derived(activeFoe?.currentHarm ?? 1);
+	const gcFoeHarmCap      = $derived(activeFoe?.effectiveRank ?? 1);
+
+	function increaseFoeHarm() {
+		if (!activeFoe || !activeFoeDef?.escalates) return;
+		const next = Math.min(gcFoeHarmCap, gcFoeCurrentHarm + 1);
+		const name = activeFoe.customName || activeFoeDef.name;
+		onFoeProgress?.({ ...activeFoe, currentHarm: next });
+		appendLog(SESSION_LOG_ID, `Foe — ${name}`,
+			`<div>Escalating harm increased to <strong>${next}</strong></div>`);
+	}
+	function decreaseFoeHarm() {
+		if (!activeFoe || !activeFoeDef?.escalates) return;
+		const next = Math.max(1, gcFoeCurrentHarm - 1);
+		const name = activeFoe.customName || activeFoeDef.name;
+		onFoeProgress?.({ ...activeFoe, currentHarm: next });
+		appendLog(SESSION_LOG_ID, `Foe — ${name}`,
+			`<div>Escalating harm reduced to <strong>${next}</strong></div>`);
+	}
+
+	// Escalating defense (YRT extension)
+	// Cap = progressPerHit for the effective rank — reuses FOE_RANKS, no separate table needed.
+	const gcFoeDefenseCap     = $derived(FOE_RANKS[activeFoe?.effectiveRank ?? 2]?.progressPerHit ?? 8);
+	const gcFoeCurrentDefense = $derived(activeFoe?.currentDefense ?? gcFoeDefenseCap);
+	/** Tick value shown on GCB progress buttons: mirrors defense for escalating-defense foes. */
+	const gcFoeTickVal = $derived(
+		activeFoeDef?.escalatesDefense
+			? gcFoeCurrentDefense
+			: (activeFoeRank?.progressPerHit ?? 0)
+	);
+
+	function increaseFoeDefense() {
+		if (!activeFoe || !activeFoeDef?.escalatesDefense) return;
+		const next = Math.min(gcFoeDefenseCap, gcFoeCurrentDefense + 1);
+		const name = activeFoe.customName || activeFoeDef.name;
+		onFoeProgress?.({ ...activeFoe, currentDefense: next });
+		appendLog(SESSION_LOG_ID, `Foe — ${name}`,
+			`<div>Escalating defense restored to <strong>${next}</strong></div>`);
+	}
+	function decreaseFoeDefense() {
+		if (!activeFoe || !activeFoeDef?.escalatesDefense) return;
+		const next = Math.max(1, gcFoeCurrentDefense - 1);
+		const name = activeFoe.customName || activeFoeDef.name;
+		onFoeProgress?.({ ...activeFoe, currentDefense: next });
+		appendLog(SESSION_LOG_ID, `Foe — ${name}`,
+			`<div>Escalating defense reduced to <strong>${next}</strong></div>`);
+	}
+
 	// Derive active expedition
 	const activeExpedition      = $derived(expeditions.find((e) => e.id === activeExpeditionId));
 	const expProgress           = $derived(activeExpedition ? Math.floor(activeExpedition.ticks / 4) : 0);
@@ -383,6 +433,25 @@
 		}
 	});
 
+	// ── Portrait lightbox ──────────────────────────────────────────────────────
+	let _lightbox = $state<{ src: string; alt: string; top: number; left: number } | null>(null);
+
+	function _openLightbox(e: MouseEvent, src: string, alt: string) {
+		if (!src) return;
+		const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+		const lbW  = 140;
+		const lbH  = 140;
+		const margin = 8;
+		// Center on the portrait horizontally, clamped to both screen edges
+		const raw  = rect.left + rect.width / 2;
+		const left = Math.max(lbW / 2 + margin, Math.min(raw, window.innerWidth - lbW / 2 - margin));
+		// Show below the portrait; flip above if it would clip the bottom of the viewport
+		const topBelow = rect.bottom + 6;
+		const top = (topBelow + lbH > window.innerHeight - margin) ? rect.top - lbH - 6 : topBelow;
+		_lightbox = { src, alt, top, left };
+	}
+	function _closeLightbox() { _lightbox = null; }
+
 	function toggleSelector(which: 'character' | 'foe' | 'expedition') {
 		openSelector = openSelector === which ? null : which;
 	}
@@ -397,7 +466,7 @@
 	}
 	function foeMark(delta: number) {
 		if (!activeFoe || !activeFoeRank) return;
-		const newTicks = Math.min(40, Math.max(0, activeFoe.ticks + delta * activeFoeRank.progressPerHit));
+		const newTicks = Math.min(40, Math.max(0, activeFoe.ticks + delta * gcFoeTickVal));
 		onFoeProgress?.({ ...activeFoe, ticks: newTicks });
 	}
 
@@ -438,7 +507,9 @@
 				{#if data}
 					<div class="gc-tile-row gc-tile-name-row">
 						{#if data.portrait}
-							<img class="gc-tile-portrait" src={data.portrait} alt={character?.name ?? ''} />
+							<img class="gc-tile-portrait" src={data.portrait} alt={character?.name ?? ''}
+								onmouseenter={(e) => _openLightbox(e, data.portrait!, character?.name ?? '')}
+								onmouseleave={_closeLightbox} />
 						{:else}
 							<span class="gc-tile-portrait gc-tile-portrait--placeholder" aria-hidden="true">👤</span>
 						{/if}
@@ -538,6 +609,8 @@
 							src={foePortraitUrl(activeFoeDef.name, activeFoeDef.images)}
 							alt={activeFoeDef.name}
 							onerror={(e) => { (e.target as HTMLImageElement).src = UNKNOWN_FOE_PORTRAIT; }}
+							onmouseenter={(e) => _openLightbox(e, (e.target as HTMLImageElement).src, activeFoe.customName || activeFoeDef.name)}
+							onmouseleave={_closeLightbox}
 						/>
 						<span class="gc-tile-name">{activeFoe.customName || activeFoeDef.name}</span>
 					</div>
@@ -547,7 +620,14 @@
 						{#if activeFoeQty}
 							<span class="gc-badge gc-badge--qty">{activeFoeQty.label}</span>
 						{/if}
-						<span class="gc-badge gc-badge--harm">Harm: {activeFoeRank?.harm ?? '?'}</span>
+						{#if activeFoeDef.escalates}
+							<span class="gc-badge gc-badge--harm gc-badge--harm-escalating">Harm: {gcFoeCurrentHarm} ↑</span>
+						{:else}
+							<span class="gc-badge gc-badge--harm">Harm: {activeFoeRank?.harm ?? '?'}</span>
+						{/if}
+						{#if activeFoeDef.escalatesDefense}
+							<span class="gc-badge gc-badge--progress gc-badge--defense-progress">Progress: {gcFoeCurrentDefense} ↓</span>
+						{/if}
 					</div>
 				{:else}
 					<span class="gc-tile-placeholder"><img class="gc-placeholder-img" src={foesSvgUrl} alt="" aria-hidden="true">Select Foe</span>
@@ -598,6 +678,48 @@
 						{/if}
 						<hr class="gc-chip-divider gc-chip-divider--foe" />
 					</div>
+					{#if activeFoeDef.escalates}
+						<div class="gc-escalate-row">
+							<span class="gc-escalate-label">Escalating Harm</span>
+							<div class="gc-escalate-ctrl">
+								<button
+									class="gc-adj-btn"
+									onclick={decreaseFoeHarm}
+									disabled={gcFoeCurrentHarm <= 1}
+									aria-label="Decrease harm"
+								>−</button>
+								<span class="gc-harm-val" class:gc-harm-high={gcFoeCurrentHarm >= gcFoeHarmCap}>{gcFoeCurrentHarm}</span>
+								<button
+									class="gc-adj-btn"
+									onclick={increaseFoeHarm}
+									disabled={gcFoeCurrentHarm >= gcFoeHarmCap}
+									aria-label="Increase harm"
+								>+</button>
+								<span class="gc-harm-cap">/ {gcFoeHarmCap}</span>
+							</div>
+						</div>
+					{/if}
+					{#if activeFoeDef.escalatesDefense}
+						<div class="gc-escalate-row">
+							<span class="gc-escalate-label">Escalating Defense</span>
+							<div class="gc-escalate-ctrl">
+								<button
+									class="gc-adj-btn gc-adj-btn--defense"
+									onclick={decreaseFoeDefense}
+									disabled={gcFoeCurrentDefense <= 1}
+									aria-label="Decrease defense"
+								>−</button>
+								<span class="gc-defense-val" class:gc-defense-low={gcFoeCurrentDefense <= 1}>{gcFoeCurrentDefense}</span>
+								<button
+									class="gc-adj-btn gc-adj-btn--defense"
+									onclick={increaseFoeDefense}
+									disabled={gcFoeCurrentDefense >= gcFoeDefenseCap}
+									aria-label="Increase defense"
+								>+</button>
+								<span class="gc-harm-cap">/ {gcFoeDefenseCap}</span>
+							</div>
+						</div>
+					{/if}
 					<div class="gc-progress-compact">
 						<span class="gc-progress-label">Progress</span>
 						<div class="gc-mini-track" title={progressDisplay(activeFoe.ticks)} style="--track-color: {activeFoeNature}">
@@ -607,10 +729,10 @@
 						</div>
 						<button class="gc-prog-btn" onclick={() => foeMark(-1)}
 							disabled={activeFoe.ticks <= 0}
-							title="Unmark progress">−{activeFoeRank?.progressPerHit}</button>
+							title="Unmark progress">−{gcFoeTickVal}</button>
 						<button class="gc-prog-btn" onclick={() => foeMark(1)}
 							disabled={activeFoe.ticks >= 40}
-							title="Mark progress (+{activeFoeRank?.progressPerHit} ticks)">+{activeFoeRank?.progressPerHit}</button>
+							title="Mark progress (+{gcFoeTickVal} ticks)">+{gcFoeTickVal}</button>
 						{#if activeFoe.vanquished}
 							<span class="gc-tile-vanquished" title="Vanquished">{@html skullCrossbonesSvg}</span>
 						{/if}
@@ -641,7 +763,9 @@
 				{#if activeExpedition}
 					<div class="gc-tile-row gc-tile-name-row">
 						{#if activeExpedition.imageUrl}
-							<img class="gc-tile-portrait" src={activeExpedition.imageUrl} alt={activeExpedition.name} />
+							<img class="gc-tile-portrait" src={activeExpedition.imageUrl} alt={activeExpedition.name}
+								onmouseenter={(e) => _openLightbox(e, activeExpedition.imageUrl!, activeExpedition.name)}
+								onmouseleave={_closeLightbox} />
 						{:else}
 							<span class="gc-tile-portrait gc-tile-portrait--placeholder gc-tile-portrait--exped-icon" aria-hidden="true">
 								{@html activeExpedition.type === 'site' ? dungeonGateSvg : treasureMapSvg}
@@ -796,6 +920,13 @@
 	{/if}
 
 	</div>
+
+	<!-- ===== Portrait lightbox (fixed overlay on hover) ===== -->
+	{#if _lightbox}
+		<div class="gc-lightbox" style="top: {_lightbox.top}px; left: {_lightbox.left}px;">
+			<img class="gc-lightbox-img" src={_lightbox.src} alt={_lightbox.alt} />
+		</div>
+	{/if}
 
 </div>
 
@@ -1202,6 +1333,8 @@
 		margin-top: 0;
 	}
 
+
+
 	/* Debility pills row */
 	.gc-chip-group--debilities {
 		width:           100%;
@@ -1259,7 +1392,7 @@
 	}
 	.gc-badge--qty    { background: rgba(255,255,255,0.08); color: var(--text-muted); }
 	.gc-badge--rank   { background: rgba(255,255,255,0.08); color: var(--text-muted); }
-	.gc-badge--harm   { background: rgba(239,68,68,0.10);  color: #ef4444; }
+	.gc-badge--harm    { background: rgba(239,68,68,0.10);    color: #ef4444; }
 	.gc-badge--diff   { background: rgba(255,255,255,0.08); color: var(--text-muted); }
 	.gc-badge--theme  { background: rgba(168,85,247,0.15);  color: #a855f7; }
 	.gc-badge--domain { background: rgba(251,146,60,0.15);  color: #fb923c; }
@@ -1602,12 +1735,13 @@
 		align-items: stretch;
 		gap: 2px;
 		height: 22px;
-		flex: 1;
 		min-width: 0;
 	}
 	.gc-mini-box {
 		flex: 1;
 		min-width: 0;
+		max-width: 22px;
+		aspect-ratio: 1;
 		border-radius: 2px;
 		border: 1px solid color-mix(in srgb, var(--track-color, var(--border-mid)) 35%, transparent);
 		position: relative;
@@ -1758,6 +1892,128 @@
 	.gc-exp-notes-body :global(strong) { font-weight: 700; color: var(--text); }
 	.gc-exp-notes-body :global(em)     { font-style: italic; }
 	.gc-exp-notes-body :global(br)     { display: block; margin: 3px 0; content: \'\'; }
+
+	/* ===== Portrait lightbox ===== */
+	.gc-lightbox {
+		position:       fixed;
+		z-index:        9999;
+		transform:      translateX(-50%);
+		pointer-events: none;
+		border-radius:  6px;
+		overflow:       hidden;
+		box-shadow:     0 8px 32px rgba(0,0,0,0.65), 0 0 0 2px var(--border-mid);
+		animation:      gc-lb-in 0.15s ease forwards;
+	}
+	.gc-lightbox-img {
+		display:     block;
+		width:       140px;
+		height:      140px;
+		object-fit:  cover;
+	}
+	@keyframes gc-lb-in {
+		from { opacity: 0; transform: translateX(-50%) scale(0.82); }
+		to   { opacity: 1; transform: translateX(-50%) scale(1); }
+	}
+
+	/* ===== Escalating harm counter (YRT extension) ===== */
+	.gc-escalate-row {
+		display:     flex;
+		flex-direction: row;
+		align-items: center;
+		gap:         0.5rem;
+		padding:     0.3rem 0.5rem;
+	}
+	.gc-escalate-label {
+		font-family:    var(--font-ui);
+		font-size:      0.55rem;
+		font-weight:    700;
+		letter-spacing: 0.07em;
+		text-transform: uppercase;
+		color:          var(--text-dimmer);
+		line-height:    1.3;
+		flex-shrink:    1;
+		min-width:      0;
+	}
+	.gc-escalate-ctrl {
+		display:     flex;
+		align-items: center;
+		gap:         6px;
+		flex-shrink: 0;
+	}
+	.gc-adj-btn {
+		display:         inline-flex;
+		align-items:     center;
+		justify-content: center;
+		width:           15.92px;
+		height:          15.92px;
+		padding:         0;
+		font-family:     var(--font-ui);
+		font-size:       0.62rem;
+		font-weight:     700;
+		background:      transparent;
+		border:          1px solid var(--border-mid);
+		border-radius:   3px;
+		cursor:          pointer;
+		color:           var(--text-muted);
+		transition:      background 0.12s, color 0.12s;
+		flex-shrink:     0;
+		line-height:     1;
+	}
+	.gc-adj-btn:hover:not(:disabled) {
+		background:   rgba(239, 68, 68, 0.1);
+		color:        #ef4444;
+		border-color: rgba(239, 68, 68, 0.4);
+	}
+	.gc-adj-btn:disabled {
+		opacity: 0.35;
+		cursor:  not-allowed;
+	}
+	.gc-harm-val {
+		font-family: var(--font-ui);
+		font-size:   0.68rem;
+		font-weight: 800;
+		color:       var(--text-muted);
+		min-width:   1em;
+		text-align:  center;
+		transition:  color 0.2s;
+	}
+	.gc-harm-high {
+		color: #ef4444;
+	}
+	.gc-harm-cap {
+		font-family: var(--font-ui);
+		font-size:   0.68rem;
+		color:       var(--text-dimmer);
+	}
+	/* Escalating defense badge and spinner */
+	.gc-badge--defense-progress {
+		font-style: italic;
+		background: rgba(96,165,250,0.18);
+		color:      #60a5fa;
+	}
+	.gc-adj-btn--defense:not(:disabled):hover {
+		background:   rgba(96,165,250,0.1);
+		color:        #60a5fa;
+		border-color: rgba(96,165,250,0.4);
+	}
+	.gc-defense-val {
+		font-family: var(--font-ui);
+		font-size:   0.68rem;
+		font-weight: 800;
+		font-variant-numeric: tabular-nums;
+		min-width:   1em;
+		text-align:  center;
+		color:       var(--text-muted);
+		transition:  color 0.2s;
+	}
+	.gc-defense-low { color: #60a5fa; }
+
+	/* Escalating harm pill in tile: italic red, distinguishes from static harm badge */
+	.gc-badge--harm-escalating {
+		font-style: italic;
+		color:      #ef4444;
+		background: rgba(239, 68, 68, 0.10);
+	}
 
 	/* ===== Feature / Danger current result strip (below oracle roll buttons) ===== */
 	.gc-fd-strip {

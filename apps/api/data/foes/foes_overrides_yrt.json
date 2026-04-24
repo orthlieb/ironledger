@@ -122,14 +122,14 @@
       "addendum": "In YRT: oversized wolves, bears, or boars gestated near a stable long-standing blight zone. Verdant drives the size and longevity; trace Crimson gives the red-glowing eyes. The 'avatars of the old gods, long-lived as trees' is folk belief."
     },
     "ironsworn/elf": {
-      "addendum": "In YRT: an isolated forest-dwelling humanoid species — verdant-tainted humanoids shaped over many generations by deep Verdant exposure. 'Binding animals to aid in defence' is skilled Verdant and Amber use: long-term training reinforced by scent-compulsion seeds. Wooden masks likely contain Amber-tuning channels. The Conclave dislikes their Mask-Risen practice but has not stopped it."
+      "addendum": "In YRT, called the Verdani — a humanoid species shaped over generations by sustained deep Verdant exposure, historically tied to farms, bio-preserves, and the great mana estates of the pre-scarcity era. Once widespread wherever green mana reservoirs flourished; now rare, holding the remaining preserves they tend. 'Binding animals to aid in defence' is skilled Verdant and Amber use: long-term training reinforced by scent-compulsion seeds. Wooden masks contain Amber-tuning channels. The Conclave dislikes their Mask-Risen practice but has not stopped it."
     },
     "ironsworn/frostbound": {
       "present": false,
       "addendum": "In YRT: does not exist as written — cursed dead driven to seek warmth require a curse, and YRT has none. Replaced by the Coldhusk: a Luminous + Azure-saturated corpse in Luminous-rich permafrost, with a thermal-differential reflex to grasp anything warm that comes within reach. Does not pursue. Does not seek. Waits. See the YRT Bestiary."
     },
     "ironsworn/gaunt": {
-      "addendum": "In YRT: a blight-adapted grazer bred by elves. Gray gives the scaled hide for protection; faint Luminous explains the pale-eye glow. An unusual species, not supernatural."
+      "addendum": "In YRT: a blight-adapted grazer bred by the Verdani. Gray gives the scaled hide for protection; faint Luminous explains the pale-eye glow. An unusual species, not supernatural."
     },
     "ironsworn/giant": {
       "addendum": "In YRT: an unusually tall humanoid species, or a mountain-adapted subculture of humans. If you want biological flavour, regional Verdant exposure produces larger humans over generations — same explanation as elder beasts."
@@ -143,7 +143,7 @@
     },
     "ironsworn/hollow": {
       "present": false,
-      "addendum": "In YRT: does not exist as written — a dead elf's vengeance given self-assembling form requires soul persistence, and YRT has none. Replaced by the Mask-Risen (and its larger Greatmask variant): a Verdant construct walked by a living elven elder via an Amber-laced mask. Kill the mask or stop the walker, not the body. See the YRT Bestiary."
+      "addendum": "In YRT: does not exist as written — a dead Verdani's vengeance given self-assembling form requires soul persistence, and YRT has none. Replaced by the Mask-Risen (and its larger Greatmask variant): a Verdant construct walked by a living Verdani elder via an Amber-laced mask. Kill the mask or stop the walker, not the body. See the YRT Bestiary."
     },
     "ironsworn/hunter": {
       "addendum": "In YRT: human."

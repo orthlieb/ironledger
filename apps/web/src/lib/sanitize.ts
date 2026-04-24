@@ -56,11 +56,14 @@ export const LOG_ATTRS = [
 
 export function sanitizeLogHtml(html: string | null | undefined): string {
 	if (!html) return '';
+	// NOTE: Do NOT set ALLOWED_URI_REGEXP here. The combination of
+	// ALLOW_DATA_ATTR:false + ALLOWED_URI_REGEXP causes DOMPurify to strip ALL
+	// data-* attributes (even explicitly listed ones). DOMPurify's built-in URI
+	// protection already blocks javascript: and data: hrefs by default.
 	return DOMPurify.sanitize(html, {
 		ALLOWED_TAGS: LOG_TAGS,
 		ALLOWED_ATTR: LOG_ATTRS,
 		ALLOW_DATA_ATTR: false,   // explicit allowlist above, no implicit data-*
-		ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto):|#|\/)/i,  // no javascript:, data: in href
 	});
 }
 

@@ -23,11 +23,11 @@
  *   of the DOM implementation.
  *
  * NOTE ON ATTRIBUTE TESTING
- * isomorphic-dompurify's server-side (non-browser) DOM mode does not honour the
- * combination of ALLOW_DATA_ATTR:false + explicit data-* entries in ALLOWED_ATTR
- * the same way a real browser does.  Testing the allowlist constants directly
- * (Tier 1) gives us the same safety guarantee — if the constant doesn't contain
- * the attribute, DOMPurify won't keep it in the browser.
+ * Tier 3 (below) tests attribute preservation end-to-end using happy-dom, which
+ * runs isomorphic-dompurify in browser mode.  This caught a regression where
+ * combining ALLOW_DATA_ATTR:false + ALLOWED_URI_REGEXP stripped ALL data-*
+ * attributes even when explicitly listed in ALLOWED_ATTR.  The fix was to drop
+ * the custom ALLOWED_URI_REGEXP (DOMPurify's built-in protection is sufficient).
  */
 
 import { describe, it, expect } from 'vitest';
@@ -184,5 +184,106 @@ describe('sanitizeLogHtml — XSS / injection is blocked', () => {
     expect(sanitizeLogHtml(null)).toBe('');
     expect(sanitizeLogHtml(undefined)).toBe('');
     expect(sanitizeLogHtml('')).toBe('');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tier 3 — Data attribute preservation (output-based, happy-dom required)
+//
+// WHY THIS EXISTS
+// The combination of ALLOW_DATA_ATTR:false + ALLOWED_URI_REGEXP in DOMPurify
+// silently strips ALL data-* attributes — even explicitly listed ones — from
+// log entry links.  This caused every interactive link (momentum, initiative,
+// debility, etc.) to silently no-op on click because the click handler reads
+// charId / resource / value from the element's dataset.
+//
+// The fix: remove ALLOWED_URI_REGEXP (DOMPurify's built-in URI protection is
+// sufficient).  These tests guard against that regression being reintroduced.
+// ---------------------------------------------------------------------------
+
+describe('sanitizeLogHtml — data attribute preservation (regression guard)', () => {
+
+  // ── resource-link (as enrichOutcomeLinks produces it: data-* before class) ─
+
+  it('preserves all data-* attrs on a resource-link in enrichOutcomeLinks output format', () => {
+    // enrichOutcomeLinks puts data-entry-id and data-char-id BEFORE the class attr
+    const html = '<a data-entry-id="eid-123" data-char-id="cid-456" class="resource-link" data-resource="momentum" data-value="+2">+2 momentum</a>';
+    const out  = sanitizeLogHtml(html);
+    expect(out).toContain('class="resource-link"');
+    expect(out).toContain('data-entry-id="eid-123"');
+    expect(out).toContain('data-char-id="cid-456"');
+    expect(out).toContain('data-resource="momentum"');
+    expect(out).toContain('data-value="+2"');
+    expect(out).toContain('+2 momentum');
+  });
+
+  // ── initiative-link ───────────────────────────────────────────────────────
+
+  it('preserves data-value and data-entry-id on initiative-link', () => {
+    const html = '<a data-entry-id="eid-789" data-char-id="cid-456" class="initiative-link" data-value="character">You have initiative</a>';
+    const out  = sanitizeLogHtml(html);
+    expect(out).toContain('class="initiative-link"');
+    expect(out).toContain('data-entry-id="eid-789"');
+    expect(out).toContain('data-char-id="cid-456"');
+    expect(out).toContain('data-value="character"');
+  });
+
+  // ── debility-link ─────────────────────────────────────────────────────────
+
+  it('preserves data-debility, data-value, data-entry-id, data-char-id on debility-link', () => {
+    const html = '<a data-entry-id="eid-abc" data-char-id="cid-def" class="debility-link" data-debility="shaken" data-value="1">Mark Shaken</a>';
+    const out  = sanitizeLogHtml(html);
+    expect(out).toContain('data-debility="shaken"');
+    expect(out).toContain('data-value="1"');
+    expect(out).toContain('data-entry-id="eid-abc"');
+    expect(out).toContain('data-char-id="cid-def"');
+  });
+
+  // ── burn-momentum-link ────────────────────────────────────────────────────
+
+  it('preserves data-roll-entry-id and data-entry-id on burn-momentum-link', () => {
+    const html = '<a data-entry-id="burn-001" data-char-id="cid-456" data-roll-entry-id="roll-001" class="burn-momentum-link">Burn momentum</a>';
+    const out  = sanitizeLogHtml(html);
+    expect(out).toContain('data-roll-entry-id="roll-001"');
+    expect(out).toContain('data-entry-id="burn-001"');
+    expect(out).toContain('data-char-id="cid-456"');
+  });
+
+  // ── full move-outcome block (real-world shape) ────────────────────────────
+
+  it('preserves data attrs on all links in a full move-outcome block', () => {
+    const html = `
+      <div class="roll-line">1d6 [4] + heart[1] = <strong>5</strong> vs 2d10 [1] [3]</div>
+      <div class="roll-outcome-strong"><strong>Strong Hit</strong></div>
+      <div class="move-outcome">Take
+        <a data-entry-id="eid-full" data-char-id="cid-full" class="resource-link" data-resource="momentum" data-value="+2">+2 momentum</a>.
+        <a data-entry-id="eid-full" data-char-id="cid-full" class="initiative-link" data-value="character">You have initiative</a>.
+      </div>
+    `;
+    const out = sanitizeLogHtml(html);
+    // Both links should have all their attrs
+    expect(out.match(/data-entry-id="eid-full"/g)?.length).toBe(2);
+    expect(out.match(/data-char-id="cid-full"/g)?.length).toBe(2);
+    expect(out).toContain('data-resource="momentum"');
+    expect(out).toContain('data-value="+2"');
+    expect(out).toContain('data-value="character"');
+  });
+
+  // ── ALLOWED_URI_REGEXP regression guard ───────────────────────────────────
+
+  it('still blocks javascript: href even without a custom ALLOWED_URI_REGEXP', () => {
+    // DOMPurify's built-in URI protection covers this — no custom regexp needed.
+    expect(sanitizeLogHtml('<a href="javascript:evil()">bad</a>')).not.toContain('javascript:');
+  });
+
+  it('still blocks data: URI in href', () => {
+    expect(sanitizeLogHtml('<a href="data:text/html,<h1>xss</h1>">bad</a>')).not.toContain('data:text');
+  });
+
+  it('strips unlisted data-* attributes (ALLOW_DATA_ATTR:false enforced)', () => {
+    const html = '<a class="resource-link" data-evil="injected" data-resource="momentum" data-value="+1">test</a>';
+    const out  = sanitizeLogHtml(html);
+    expect(out).not.toContain('data-evil');
+    expect(out).toContain('data-resource="momentum"');
   });
 });

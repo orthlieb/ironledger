@@ -642,7 +642,6 @@
 	.jc-track-btns {
 		display: flex;
 		gap: 4px;
-		margin-left: auto;
 		flex-shrink: 0;
 	}
 

@@ -57,6 +57,10 @@ export interface FoeDef {
 	drives:      string[];
 	tactics:     string[];
 	description: string;
+	/** If true, this foe's harm escalates during combat (YRT extension). */
+	escalates?:         boolean;
+	/** If true, this foe has an escalating grey-mana defense shield (YRT extension). */
+	escalatesDefense?:  boolean;
 }
 
 export interface FoeEncounter {
@@ -68,6 +72,11 @@ export interface FoeEncounter {
 	notes:         string;
 	customName:    string;       // if '', display foeDef.name
 	vanquished:    boolean;
+	/** Current escalating harm level (ticks). Only meaningful when foeDef.escalates is true. */
+	currentHarm?:    number;
+	/** Current escalating defense level (ticks). Only meaningful when foeDef.escalatesDefense is true.
+	 *  Absent = full defense (cap). Starts at cap and decreases by 1 on each miss. */
+	currentDefense?: number;
 }
 
 // ---------------------------------------------------------------------------
