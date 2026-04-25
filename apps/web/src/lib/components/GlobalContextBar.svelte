@@ -722,17 +722,19 @@
 					{/if}
 					<div class="gc-progress-compact">
 						<span class="gc-progress-label">Progress</span>
-						<div class="gc-mini-track" title={progressDisplay(activeFoe.ticks)} style="--track-color: {activeFoeNature}">
-							{#each miniTrackBoxes(activeFoe.ticks) as fill}
-								<div class="gc-mini-box" style="--fill: {fill}"></div>
-							{/each}
+						<div class="gc-track-group">
+							<div class="gc-mini-track" title={progressDisplay(activeFoe.ticks)} style="--track-color: {activeFoeNature}">
+								{#each miniTrackBoxes(activeFoe.ticks) as fill}
+									<div class="gc-mini-box" style="--fill: {fill}"></div>
+								{/each}
+							</div>
+							<button class="gc-prog-btn" onclick={() => foeMark(-1)}
+								disabled={activeFoe.ticks <= 0}
+								title="Unmark progress">−{gcFoeTickVal}</button>
+							<button class="gc-prog-btn" onclick={() => foeMark(1)}
+								disabled={activeFoe.ticks >= 40}
+								title="Mark progress (+{gcFoeTickVal} ticks)">+{gcFoeTickVal}</button>
 						</div>
-						<button class="gc-prog-btn" onclick={() => foeMark(-1)}
-							disabled={activeFoe.ticks <= 0}
-							title="Unmark progress">−{gcFoeTickVal}</button>
-						<button class="gc-prog-btn" onclick={() => foeMark(1)}
-							disabled={activeFoe.ticks >= 40}
-							title="Mark progress (+{gcFoeTickVal} ticks)">+{gcFoeTickVal}</button>
 						{#if activeFoe.vanquished}
 							<span class="gc-tile-vanquished" title="Vanquished">{@html skullCrossbonesSvg}</span>
 						{/if}
@@ -876,18 +878,20 @@
 					{/if}
 					<div class="gc-progress-compact">
 						<span class="gc-progress-label">Progress</span>
-						<div class="gc-mini-track" title={progressDisplay(activeExpedition.ticks)}
-							style="--track-color: {activeExpedition.type === 'journey' ? '#34d399' : '#60a5fa'}">
-							{#each miniTrackBoxes(activeExpedition.ticks) as fill}
-								<div class="gc-mini-box" style="--fill: {fill}"></div>
-							{/each}
+						<div class="gc-track-group">
+							<div class="gc-mini-track" title={progressDisplay(activeExpedition.ticks)}
+								style="--track-color: {activeExpedition.type === 'journey' ? '#34d399' : '#60a5fa'}">
+								{#each miniTrackBoxes(activeExpedition.ticks) as fill}
+									<div class="gc-mini-box" style="--fill: {fill}"></div>
+								{/each}
+							</div>
+							<button class="gc-prog-btn" onclick={() => expMark(-1)}
+								disabled={activeExpedition.ticks <= 0}
+								title="Unmark progress">−{expMarkTicks}</button>
+							<button class="gc-prog-btn" onclick={() => expMark(1)}
+								disabled={activeExpedition.ticks >= 40}
+								title="Mark progress (+{expMarkTicks} ticks)">+{expMarkTicks}</button>
 						</div>
-						<button class="gc-prog-btn" onclick={() => expMark(-1)}
-							disabled={activeExpedition.ticks <= 0}
-							title="Unmark progress">−{expMarkTicks}</button>
-						<button class="gc-prog-btn" onclick={() => expMark(1)}
-							disabled={activeExpedition.ticks >= 40}
-							title="Mark progress (+{expMarkTicks} ticks)">+{expMarkTicks}</button>
 					</div>
 				</div>
 			{/if}
@@ -1728,6 +1732,14 @@
 		letter-spacing: 0.07em;
 		color:          var(--text-muted);
 		white-space:    nowrap;
+	}
+	/* Wrapper that takes remaining space so gc-prog-btns don't wrap */
+	.gc-track-group {
+		flex: 1;
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		min-width: 0;
 	}
 	/* Mini progress track — 10 boxes, same height as gc-prog-btn */
 	.gc-mini-track {
