@@ -176,7 +176,7 @@ Some Yrt foes inflict harm that starts low and worsens the longer the character 
 | `escalatingHarm` | object | *(Optional)* Metadata documenting escalation rules for reference. Not read by the app at runtime — the UI derives caps from `effectiveRank`. |
 | `escalatingHarm.startHarm` | number | Starting harm value (always `1`). |
 | `escalatingHarm.trigger` | string | Narrative trigger key (e.g., `"miss-endure-harm"`). |
-| `escalatingHarm.rankCaps` | object | Maps rank number → maximum harm (e.g., `{ "1": 2, "2": 3, "3": 4, "4": 5, "5": 6 }`). |
+| `escalatingHarm.rankCaps` | object | Maps rank number → maximum harm (e.g., `{ "1": 2, "2": 3, "3": 4, "4": 5, "5": 5 }`). |
 | `escalatingHarm.removal` | string | Prose description of how to remove the foe and reset escalation. |
 
 ```json
@@ -188,7 +188,7 @@ Some Yrt foes inflict harm that starts low and worsens the longer the character 
   "escalatingHarm": {
     "startHarm": 1,
     "trigger": "miss-endure-harm",
-    "rankCaps": { "1": 2, "2": 3, "3": 4, "4": 5, "5": 6 },
+    "rankCaps": { "1": 2, "2": 3, "3": 4, "4": 5, "5": 5 },
     "removal": "Sustained heat, concentrated Luminous mana, or saturated salt solution."
   }
 }
@@ -210,7 +210,7 @@ The GCB derives the escalation ceiling from the encounter's `effectiveRank` (aft
 | 2 – Dangerous | 3 |
 | 3 – Formidable | 4 |
 | 4 – Extreme | 5 |
-| 5 – Epic | 6 |
+| 5 – Epic | 5 |
 
 #### Game mechanic
 

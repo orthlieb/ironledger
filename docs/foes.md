@@ -109,7 +109,7 @@ Two optional escalating mechanics extend base foes. Both are additive — they d
 
 ### Escalating Harm (`escalates: true`)
 
-The foe's harm starts at 1 and increases on each Miss. Cap = effective rank + 1 (Troublesome = 2, Dangerous = 3, … Epic = 6), so every rank has at least one step of escalation.
+The foe's harm starts at 1 and increases on each Miss. Cap = effective rank + 1 (Troublesome = 2, Dangerous = 3, Formidable = 4, Extreme = 5), capped at 5 for Epic.
 
 - **+** button increases harm (on Miss)
 - **−** button decreases harm (on Strong Hit recovering)

@@ -73,9 +73,9 @@
 	// ---------------------------------------------------------------------------
 	// Escalating harm (YRT extension)
 	// ---------------------------------------------------------------------------
-	// Cap = effective rank + 1 (1→2, 2→3, …, 5→6) so every rank has room to escalate.
+	// Cap = effective rank + 1 (1→2, 2→3, 3→4, 4→5), capped at 5 for Epic.
 	const currentHarm = $derived(enc.currentHarm ?? 1);
-	const harmCap     = $derived(enc.effectiveRank + 1);
+	const harmCap     = $derived(Math.min(enc.effectiveRank + 1, 5));
 
 	function increaseHarm() {
 		const next = Math.min(harmCap, currentHarm + 1);

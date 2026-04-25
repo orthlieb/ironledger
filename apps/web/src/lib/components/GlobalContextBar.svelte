@@ -127,9 +127,9 @@
 	const activeFoeQty      = $derived(activeFoe ? FOE_QUANTITIES.find((q) => q.value === activeFoe.quantity) : null);
 
 	// Escalating harm (YRT extension)
-	// Cap = effective rank + 1 (1→2, 2→3, …, 5→6) so every rank has room to escalate.
+	// Cap = effective rank + 1 (1→2, 2→3, 3→4, 4→5), capped at 5 for Epic.
 	const gcFoeCurrentHarm  = $derived(activeFoe?.currentHarm ?? 1);
-	const gcFoeHarmCap      = $derived((activeFoe?.effectiveRank ?? 1) + 1);
+	const gcFoeHarmCap      = $derived(Math.min((activeFoe?.effectiveRank ?? 1) + 1, 5));
 
 	function increaseFoeHarm() {
 		if (!activeFoe || !activeFoeDef?.escalates) return;
