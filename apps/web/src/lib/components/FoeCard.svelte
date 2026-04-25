@@ -91,25 +91,25 @@
 	// ---------------------------------------------------------------------------
 	// Escalating defense (YRT extension)
 	// ---------------------------------------------------------------------------
-	// Cap = progressPerHit for the effective rank (rank 1→12, 2→8, 3→4, 4→2, 5→1).
+	// Cap = progressPerHit − 1 (so progress ticks never drop below 1).
 	// Reuses FOE_RANKS — no separate lookup table needed.
-	const defenseCap     = $derived(FOE_RANKS[enc.effectiveRank]?.progressPerHit ?? 8);
-	/** Absent = full defense (cap). Decreases toward 1 on each miss. */
-	const currentDefense = $derived(enc.currentDefense ?? defenseCap);
-	/** Tick value shown on the progress buttons: mirrors defense for escalating-defense foes. */
+	const defenseCap     = $derived((FOE_RANKS[enc.effectiveRank]?.progressPerHit ?? 8) - 1);
+	/** Absent = 0 (no armor yet). Increases by 1 on each miss, up to defenseCap. */
+	const currentDefense = $derived(enc.currentDefense ?? 0);
+	/** Tick value shown on progress buttons: progressPerHit − currentDefense (minimum 1). */
 	const progressTickVal = $derived(
-		foeDef.escalatesDefense ? currentDefense : (rankInfo?.progressPerHit ?? 0)
+		foeDef.escalatesDefense ? ((rankInfo?.progressPerHit ?? 1) - currentDefense) : (rankInfo?.progressPerHit ?? 0)
 	);
 
 	function increaseDefense() {
 		const next = Math.min(defenseCap, currentDefense + 1);
 		update({ currentDefense: next });
-		logLine(`<div>Escalating defense restored to <strong>${next}</strong></div>`);
+		logLine(`<div>Escalating defense increased to <strong>${next}</strong> (progress −${(rankInfo?.progressPerHit ?? 1) - next} ticks/mark)</div>`);
 	}
 	function decreaseDefense() {
-		const next = Math.max(1, currentDefense - 1);
+		const next = Math.max(0, currentDefense - 1);
 		update({ currentDefense: next });
-		logLine(`<div>Escalating defense reduced to <strong>${next}</strong></div>`);
+		logLine(`<div>Escalating defense decreased to <strong>${next}</strong> (progress ${(rankInfo?.progressPerHit ?? 1) - next} ticks/mark)</div>`);
 	}
 
 	// ---------------------------------------------------------------------------
@@ -283,8 +283,8 @@
 				{:else}
 					<span class="fc-badge fc-badge--harm">Harm: {rankInfo.harm}</span>
 				{/if}
-				{#if foeDef.escalatesDefense}
-					<span class="fc-badge fc-badge--progress fc-badge--defense-progress">Progress: {currentDefense} ↓</span>
+				{#if foeDef.escalatesDefense && currentDefense > 0}
+					<span class="fc-badge fc-badge--progress fc-badge--defense-progress">Progress: {progressTickVal} ↓</span>
 				{:else}
 					<span class="fc-badge fc-badge--progress">Progress: {rankInfo.progressPerHit}</span>
 				{/if}
@@ -369,10 +369,10 @@
 					<button
 						class="fc-adj-btn fc-adj-btn--defense"
 						onclick={decreaseDefense}
-						disabled={currentDefense <= 1}
+						disabled={currentDefense <= 0}
 						aria-label="Decrease defense"
 					>−</button>
-					<span class="fc-defense-val" class:fc-defense-low={currentDefense <= 1}>{currentDefense}</span>
+					<span class="fc-defense-val" class:fc-defense-low={currentDefense <= 0}>{currentDefense}</span>
 					<button
 						class="fc-adj-btn fc-adj-btn--defense"
 						onclick={increaseDefense}

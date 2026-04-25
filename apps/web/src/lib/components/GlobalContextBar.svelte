@@ -149,13 +149,14 @@
 	}
 
 	// Escalating defense (YRT extension)
-	// Cap = progressPerHit for the effective rank — reuses FOE_RANKS, no separate table needed.
-	const gcFoeDefenseCap     = $derived(FOE_RANKS[activeFoe?.effectiveRank ?? 2]?.progressPerHit ?? 8);
-	const gcFoeCurrentDefense = $derived(activeFoe?.currentDefense ?? gcFoeDefenseCap);
-	/** Tick value shown on GCB progress buttons: mirrors defense for escalating-defense foes. */
+	// Cap = progressPerHit − 1 (so progress ticks never drop below 1).
+	const gcFoeDefenseCap     = $derived((FOE_RANKS[activeFoe?.effectiveRank ?? 2]?.progressPerHit ?? 8) - 1);
+	/** Absent = 0 (no armor yet). Increases on each miss up to gcFoeDefenseCap. */
+	const gcFoeCurrentDefense = $derived(activeFoe?.currentDefense ?? 0);
+	/** Tick value for GCB progress buttons: progressPerHit − currentDefense (minimum 1). */
 	const gcFoeTickVal = $derived(
 		activeFoeDef?.escalatesDefense
-			? gcFoeCurrentDefense
+			? ((activeFoeRank?.progressPerHit ?? 1) - gcFoeCurrentDefense)
 			: (activeFoeRank?.progressPerHit ?? 0)
 	);
 
@@ -165,15 +166,15 @@
 		const name = activeFoe.customName || activeFoeDef.name;
 		onFoeProgress?.({ ...activeFoe, currentDefense: next });
 		appendLog(SESSION_LOG_ID, `Foe — ${name}`,
-			`<div>Escalating defense restored to <strong>${next}</strong></div>`);
+			`<div>Escalating defense increased to <strong>${next}</strong> (progress ${(activeFoeRank?.progressPerHit ?? 1) - next} ticks/mark)</div>`);
 	}
 	function decreaseFoeDefense() {
 		if (!activeFoe || !activeFoeDef?.escalatesDefense) return;
-		const next = Math.max(1, gcFoeCurrentDefense - 1);
+		const next = Math.max(0, gcFoeCurrentDefense - 1);
 		const name = activeFoe.customName || activeFoeDef.name;
 		onFoeProgress?.({ ...activeFoe, currentDefense: next });
 		appendLog(SESSION_LOG_ID, `Foe — ${name}`,
-			`<div>Escalating defense reduced to <strong>${next}</strong></div>`);
+			`<div>Escalating defense decreased to <strong>${next}</strong> (progress ${(activeFoeRank?.progressPerHit ?? 1) - next} ticks/mark)</div>`);
 	}
 
 	// Derive active expedition
@@ -625,8 +626,8 @@
 						{:else}
 							<span class="gc-badge gc-badge--harm">Harm: {activeFoeRank?.harm ?? '?'}</span>
 						{/if}
-						{#if activeFoeDef.escalatesDefense}
-							<span class="gc-badge gc-badge--progress gc-badge--defense-progress">Progress: {gcFoeCurrentDefense} ↓</span>
+						{#if activeFoeDef.escalatesDefense && gcFoeCurrentDefense > 0}
+							<span class="gc-badge gc-badge--progress gc-badge--defense-progress">Progress: {gcFoeTickVal} ↓</span>
 						{/if}
 					</div>
 				{:else}
@@ -706,10 +707,10 @@
 								<button
 									class="gc-adj-btn gc-adj-btn--defense"
 									onclick={decreaseFoeDefense}
-									disabled={gcFoeCurrentDefense <= 1}
+									disabled={gcFoeCurrentDefense <= 0}
 									aria-label="Decrease defense"
 								>−</button>
-								<span class="gc-defense-val" class:gc-defense-low={gcFoeCurrentDefense <= 1}>{gcFoeCurrentDefense}</span>
+								<span class="gc-defense-val" class:gc-defense-low={gcFoeCurrentDefense <= 0}>{gcFoeCurrentDefense}</span>
 								<button
 									class="gc-adj-btn gc-adj-btn--defense"
 									onclick={increaseFoeDefense}

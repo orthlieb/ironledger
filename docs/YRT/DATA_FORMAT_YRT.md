@@ -224,19 +224,19 @@ The GCB derives the escalation ceiling from the encounter's `effectiveRank` (aft
 
 ### Escalating Defense (YRT Extension)
 
-Some Yrt foes project a magical or mechanical defense that absorbs misses — each miss erodes the defense by one tier rather than inflicting harm. This is declared with the `escalatesDefense` flag on the foe definition, and tracked per-encounter with `currentDefense`.
+Some Yrt foes carry a Gray-mana defense that builds up on each miss, making progress progressively harder to mark. The defense starts at 0 and increases by 1 on each Miss. This is declared with `escalatesDefense` on the foe definition and tracked per-encounter with `currentDefense`.
 
 #### Foe definition fields
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `escalatesDefense` | boolean | When `true`, the foe has an escalating defense shield. The FoeCard renders a +/− counter and shows a "Defense: N ↓" badge. |
+| `escalatesDefense` | boolean | When `true`, the foe has an escalating defense. The FoeCard renders a +/− counter and shows a `Progress: N ↓` badge when defense > 0. |
 | `escalatingDefense` | object | *(Optional)* Metadata documenting defense rules for reference. Not read by the app at runtime — the UI derives caps from `effectiveRank`. |
-| `escalatingDefense.startDefense` | number | Starting defense ticks at the foe's baseline rank (informational only). |
+| `escalatingDefense.startDefense` | number | Starting defense value (always `0`). |
 | `escalatingDefense.trigger` | string | Narrative trigger key (e.g., `"miss"`). |
-| `escalatingDefense.rankCaps` | object | Maps rank number → starting defense ticks (e.g., `{ "1": 12, "2": 8, "3": 4, "4": 2, "5": 1 }`). |
-| `escalatingDefense.minimum` | number | Minimum defense value (always `1`). |
-| `escalatingDefense.removal` | string | Prose description of what happens when the encounter ends or the shield collapses. |
+| `escalatingDefense.rankCaps` | object | Maps rank → max defense value (= `progressPerHit − 1`): `{ "1": 11, "2": 7, "3": 3, "4": 1, "5": 0 }`. |
+| `escalatingDefense.minimum` | number | Minimum defense value (always `0`). |
+| `escalatingDefense.removal` | string | Prose description of what happens when the encounter ends. |
 
 ```json
 {
@@ -244,11 +244,11 @@ Some Yrt foes project a magical or mechanical defense that absorbs misses — ea
   "name": "Blighted Guilder",
   "escalatesDefense": true,
   "escalatingDefense": {
-    "startDefense": 8,
+    "startDefense": 0,
     "trigger": "miss",
-    "rankCaps": { "1": 12, "2": 8, "3": 4, "4": 2, "5": 1 },
-    "minimum": 1,
-    "removal": "When the encounter ends or the guilder is defeated, the grey manite tracery disperses."
+    "rankCaps": { "1": 11, "2": 7, "3": 3, "4": 1, "5": 0 },
+    "minimum": 0,
+    "removal": "When the encounter ends or the foe is defeated, the tracery disperses and defense resets to 0."
   }
 }
 ```
@@ -257,28 +257,28 @@ Some Yrt foes project a magical or mechanical defense that absorbs misses — ea
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `currentDefense` | number | Current defense level in ticks. Stored on `FoeEncounter`. **Absent = full cap** (starts at maximum, decreases on each miss). Minimum 1. Persisted with the character via auto-save. |
+| `currentDefense` | number | Current defense level. Stored on `FoeEncounter`. **Absent = 0** (starts at zero, increases on each miss). Max = `progressPerHit − 1`. Persisted with the character via auto-save. |
 
-#### Defense cap by effective rank
+#### Defense max by effective rank
 
-The caps mirror the ticks-per-Mark-Progress scale, making defense track difficulty: a Troublesome defense absorbs the most misses, Epic the fewest.
+Max defense = `progressPerHit − 1`, ensuring ticks per mark never drop below 1.
 
-| Effective Rank | Cap (ticks) |
-|---|---|
-| 1 – Troublesome | 12 |
-| 2 – Dangerous | 8 |
-| 3 – Formidable | 4 |
-| 4 – Extreme | 2 |
-| 5 – Epic | 1 |
+| Effective Rank | progressPerHit | Max defense |
+|---|---|---|
+| 1 – Troublesome | 12 | 11 |
+| 2 – Dangerous | 8 | 7 |
+| 3 – Formidable | 4 | 3 |
+| 4 – Extreme | 2 | 1 |
+| 5 – Epic | 1 | 0 |
 
 #### Game mechanic
 
-- Defense starts at the **rank cap** (absent = full).
-- On a **Miss**, the GM decreases `currentDefense` by 1 using the − button (down to the minimum of 1).
-- On a **Strong Hit when Burning Momentum or otherwise recovering**, the GM may increase `currentDefense` by 1 using the + button.
-- When `currentDefense` reaches **1 (Epic)**, the shield is at its thinnest — further misses still deal their normal narrative consequences.
-- The Defense badge in the pills row shows the current value (`Defense: N ↓`) in italic slate while escalation is active.
-- The defense resets to the cap only when the foe is defeated or a specific narrative trigger (as described in `escalatingDefense.removal`) occurs.
+- Defense starts at **0** (no armor).
+- On a **Miss**, press **+** to increase `currentDefense` by 1 (armor consolidates).
+- To recover, press **−** to decrease `currentDefense` by 1 (minimum 0).
+- Ticks per **Mark Progress** = `progressPerHit − currentDefense` (minimum 1). As defense grows, each progress mark puts in fewer ticks.
+- The pill row shows `Progress: N ↓` in italic blue when `currentDefense > 0`, where N is the current ticks-per-mark value.
+- Defense resets to 0 when the foe is defeated or the encounter ends.
 
 ---
 

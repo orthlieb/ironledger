@@ -429,17 +429,17 @@
       "source": "yrt",
       "escalatesDefense": true,
       "escalatingDefense": {
-        "startDefense": 2,
+        "startDefense": 0,
         "trigger": "miss",
         "rankCaps": {
-          "1": 12,
-          "2": 8,
-          "3": 4,
-          "4": 2,
-          "5": 1
+          "1": 11,
+          "2": 7,
+          "3": 3,
+          "4": 1,
+          "5": 0
         },
-        "minimum": 1,
-        "removal": "When the reserve runs dry and the outer lattice collapses, strikes land at full weight."
+        "minimum": 0,
+        "removal": "When the encounter ends or the foe is defeated, the lattice collapses and defense resets to 0."
       }
     },
     {
@@ -471,17 +471,17 @@
       "source": "yrt",
       "escalatesDefense": true,
       "escalatingDefense": {
-        "startDefense": 8,
+        "startDefense": 0,
         "trigger": "miss",
         "rankCaps": {
-          "1": 12,
-          "2": 8,
-          "3": 4,
-          "4": 2,
-          "5": 1
+          "1": 11,
+          "2": 7,
+          "3": 3,
+          "4": 1,
+          "5": 0
         },
-        "minimum": 1,
-        "removal": "When the grey tracery goes dark — eroded through repeated hits — the lattice is spent and strikes land at full weight."
+        "minimum": 0,
+        "removal": "When the encounter ends or the foe is defeated, the tracery disperses and defense resets to 0."
       }
     },
     {

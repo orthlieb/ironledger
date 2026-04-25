@@ -120,13 +120,13 @@ See [YRT/DATA_FORMAT_YRT.md § Escalating Harm](YRT/DATA_FORMAT_YRT.md#escalatin
 
 ### Escalating Defense (`escalatesDefense: true`)
 
-The foe projects a mana shield that absorbs strikes. Defense starts at cap and erodes on each Miss. Cap = `FOE_RANKS[effectiveRank].progressPerHit` (Troublesome = 12, Dangerous = 8, … Epic = 1). Minimum = 1.
+The foe's armor builds up on each Miss, reducing progress ticks per mark. Defense starts at 0 and increases by 1 on each Miss. Max = `FOE_RANKS[effectiveRank].progressPerHit − 1` (Troublesome = 11, Dangerous = 7, … Epic = 0). Ticks per progress mark = `progressPerHit − currentDefense` (minimum 1).
 
-- **−** button erodes defense (on Miss)
-- **+** button restores defense
-- Current value stored as `enc.currentDefense` (absent = cap)
-- Progress pill shows `Progress: N ↓` in italic blue; progress +/− buttons show the same N
-- Progress mark amount mirrors the current defense value
+- **+** button increases defense by 1 on a Miss (armor consolidates)
+- **−** button decreases defense by 1 (armor recovers)
+- Current value stored as `enc.currentDefense` (absent = 0)
+- Progress pill shows `Progress: N ↓` in italic blue when defense > 0; N = ticks per mark
+- Progress buttons always enabled per normal track rules; mark/unmark `progressPerHit − currentDefense` ticks
 
 See [YRT/DATA_FORMAT_YRT.md § Escalating Defense](YRT/DATA_FORMAT_YRT.md#escalating-defense-yrt-extension) for full spec.
 
