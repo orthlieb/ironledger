@@ -673,11 +673,11 @@
         "startHarm": 1,
         "trigger": "miss-endure-harm",
         "rankCaps": {
-          "1": 1,
-          "2": 2,
-          "3": 3,
-          "4": 4,
-          "5": 5
+          "1": 2,
+          "2": 3,
+          "3": 4,
+          "4": 5,
+          "5": 6
         },
         "removal": "Sustained heat, concentrated Luminous mana, or saturated salt solution. Killing while attached without treating the wound does not reset — contaminated mucus remains active."
       },

@@ -73,9 +73,9 @@
 	// ---------------------------------------------------------------------------
 	// Escalating harm (YRT extension)
 	// ---------------------------------------------------------------------------
-	// Cap = effective rank (1→1, 2→2, …, 5→5) — same as FOE_RANKS[n].harm.
+	// Cap = effective rank + 1 (1→2, 2→3, …, 5→6) so every rank has room to escalate.
 	const currentHarm = $derived(enc.currentHarm ?? 1);
-	const harmCap     = $derived(enc.effectiveRank);
+	const harmCap     = $derived(enc.effectiveRank + 1);
 
 	function increaseHarm() {
 		const next = Math.min(harmCap, currentHarm + 1);
