@@ -126,14 +126,12 @@
 		border-color: color-mix(in srgb, var(--track-color, var(--text-accent)) 70%, transparent);
 	}
 
-	/* Danger/menace boxes — always red, overrides track-color */
+	/* Danger/menace boxes — red outline only, fill uses normal track-color */
 	.track-box.danger {
-		border-color: color-mix(in srgb, #E77974 35%, transparent);
-	}
-	.track-box.danger::after {
-		background: color-mix(in srgb, #E77974 65%, transparent);
+		border-width: 2px;
+		border-color: #ef4444;
 	}
 	.track-box.danger:hover {
-		border-color: color-mix(in srgb, #E77974 70%, transparent);
+		border-color: color-mix(in srgb, #ef4444 85%, white);
 	}
 </style>
