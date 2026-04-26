@@ -170,9 +170,9 @@ test.describe('Registration Daily Quota', () => {
 				captchaToken: 'dev-bypass',
 			},
 		});
-		await ctx.dispose();
 		expect(postRes.status()).toBe(429);
 		const body = await postRes.json() as { message?: string };
+		await ctx.dispose();
 		expect(body.message).toMatch(/signups are full|come back tomorrow/i);
 	});
 

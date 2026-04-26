@@ -113,6 +113,17 @@
 		transition: border-color 0.1s;
 	}
 
+	/* Inner border overlay — sits above the fill */
+	.track-box::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border: 1px solid var(--bg-card);
+		border-radius: 1px;
+		z-index: 1;
+		pointer-events: none;
+	}
+
 	/* Fill bar — grows left-to-right based on tick count */
 	.track-box::after {
 		content: '';

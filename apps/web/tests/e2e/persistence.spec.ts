@@ -79,13 +79,13 @@ async function goToExpeditionsTab(page: Page): Promise<void> {
 	await page.click('.tab-btn[data-tab="expeditions"]');
 	await expect(page.locator('.char-toolbar')).toBeVisible({ timeout: 8_000 });
 	// Buttons are "+ Journey" and "+ Site" (rendered uppercase by CSS)
-	await expect(page.locator('.char-toolbar button').first()).toBeVisible({ timeout: 8_000 });
+	await expect(page.locator('.char-toolbar button.btn-primary').first()).toBeVisible({ timeout: 8_000 });
 }
 
 async function goToCommunitiesTab(page: Page): Promise<void> {
 	await page.click('.tab-btn[data-tab="communities"]');
 	await expect(page.locator('.char-toolbar')).toBeVisible({ timeout: 8_000 });
-	await expect(page.locator('.char-toolbar button').first()).toBeVisible({ timeout: 8_000 });
+	await expect(page.locator('.char-toolbar button.btn-primary').first()).toBeVisible({ timeout: 8_000 });
 }
 
 async function goToAdventureTab(page: Page): Promise<void> {

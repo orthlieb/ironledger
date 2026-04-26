@@ -201,8 +201,7 @@ test.describe('Party supply sync', () => {
 			({ cId, eId }) => {
 				// Use the globally exposed appendLog from the log store module
 				const html = `<div>Resupply: <a class="resource-link" data-resource="supply" data-value="-1" data-entry-id="${eId}" data-char-id="${cId}">−1 supply</a></div>`;
-				(window as unknown as Record<string, (id: string, title: string, html: string, entryId?: string) => void>)
-					.__ironledger_appendLog?.('__session__', 'Test — Supply', html, eId);
+				(window as any).__testLog?.appendLog('__session__', 'Test — Supply', html, eId);
 			},
 			{ cId: charId, eId: entryId }
 		);

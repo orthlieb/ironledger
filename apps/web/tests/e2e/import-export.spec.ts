@@ -69,7 +69,7 @@ test.describe('Export dialog', () => {
 
 	test('opens and lists all content options', async ({ page }) => {
 		await openExportDialog(page, 'character');
-		const select = page.locator('.export-dialog[open] .ed-select');
+		const select = page.locator('.export-dialog[open] .ed-select').first();
 		await expect(select.locator('option[value="character"]')).toBeAttached();
 		await expect(select.locator('option[value="all-characters"]')).toBeAttached();
 		await expect(select.locator('option[value="log"]')).toBeAttached();

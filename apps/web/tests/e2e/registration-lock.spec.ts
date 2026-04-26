@@ -121,10 +121,9 @@ test.describe('Registration Lock', () => {
 				captchaToken: 'dev-bypass',
 			},
 		});
-		await ctx.dispose();
-
 		expect(res.status()).toBe(403);
 		const body = await res.json() as { message?: string };
+		await ctx.dispose();
 		expect(body.message).toContain(LOCK_MESSAGE);
 	});
 });
