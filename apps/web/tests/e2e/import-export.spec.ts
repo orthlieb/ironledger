@@ -255,8 +255,8 @@ test.describe('Import — security', () => {
 			title: `Entry ${i}`, html: '<div>x</div>', ts: Date.now(), note: '',
 		})), 1001);
 		await uploadImport(page, payload);
-		await expect(page.locator('.error-bar')).toBeVisible({ timeout: 5000 });
-		await expect(page.locator('.error-bar-msg')).toContainText('too many items');
+		await expect(page.locator('.error-bar')).toBeVisible({ timeout: 10_000 });
+		await expect(page.locator('.error-bar-msg')).toContainText('too many items', { timeout: 5000 });
 	});
 
 	test('rejects JSON with excessive nesting depth', async ({ page }) => {

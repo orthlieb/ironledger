@@ -131,8 +131,10 @@ async function selectCharacterInGcb(page: Page): Promise<string> {
 		const text = (await item.textContent().catch(() => ''))?.trim() ?? '';
 		if (text && !text.toLowerCase().includes('none')) {
 			await item.click();
-			// Let the PATCH /api/session/state request complete
-			await page.waitForTimeout(800);
+			// saveSessionState is debounced at 1500 ms — wait long enough for the
+			// debounce to fire AND the PATCH /api/session/state request to complete
+			// before we log out, or the selection won't survive the session boundary.
+			await page.waitForTimeout(2500);
 			return text;
 		}
 	}

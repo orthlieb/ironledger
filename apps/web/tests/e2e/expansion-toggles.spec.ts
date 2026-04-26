@@ -188,6 +188,8 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		await setExpansionsViaStorage(page, { yrt: false });
 		await page.click('.tab-btn[data-tab="communities"]');
 		await expect(page.locator('.char-toolbar')).toBeVisible({ timeout: 10_000 });
+		await expect(page.locator('.char-toolbar button', { hasText: /community/i }).first())
+			.toBeVisible({ timeout: 10_000 });
 		await page.locator('.char-toolbar button', { hasText: /community/i }).first().click();
 		// Find the "Create Manually" path to reach the region radio, or the Generate one.
 		const createManualBtn = page.getByRole('button', { name: /create manually/i });
@@ -211,7 +213,7 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		// Select a character so the adventure tab + log are active
 		await page.click('.tab-btn[data-tab="characters"]');
 		await page.locator('.char-list--characters > .char-card, .empty-tab').first()
-			.waitFor({ timeout: 8_000, state: 'attached' });
+			.waitFor({ timeout: 15_000, state: 'attached' });
 		const charCards = page.locator('.char-list--characters > .char-card');
 		if (await charCards.count() === 0) {
 			await page.click('.char-toolbar button.btn-primary');

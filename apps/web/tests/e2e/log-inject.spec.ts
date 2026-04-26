@@ -41,16 +41,23 @@ async function goToAdventure(page: Page): Promise<string> {
 	await page.click('.tab-btn[data-tab="adventure"]');
 	await expect(page.locator('.adventure-gcb')).toBeVisible({ timeout: 5000 });
 
-	// Always force-select the first available character in the GCB tile so it
-	// matches the charId we captured from the characters tab (previous tests may
-	// have left a different character selected in the GCB).
+	// The GCB's activeCharId is the same reactive state as the characters-tab
+	// click above, so the tile should already show the selected character.
+	// Only open the popover if the tile still shows the "Select Character"
+	// placeholder (meaning no char is selected).
 	const charTileBtn = page.locator('.gc-tile').first().locator('.gc-tile-btn');
 	await expect(charTileBtn).toBeVisible({ timeout: 3000 });
-	await charTileBtn.click();
-	await expect(page.locator('.gc-popover').first()).toBeVisible({ timeout: 2000 });
-	const item = page.locator('.gc-popover .gc-popover-item:not([class*="None"])').first();
-	if (await item.isVisible({ timeout: 1000 }).catch(() => false)) await item.click();
-	else await page.keyboard.press('Escape');
+	const tileText = await charTileBtn.textContent().catch(() => '');
+	if (!tileText?.trim() || /select character/i.test(tileText)) {
+		await charTileBtn.click();
+		await expect(page.locator('.gc-popover').first()).toBeVisible({ timeout: 2000 });
+		// Use hasNotText filter — `:not([class*="None"])` matches the "(None)"
+		// button too because "None" is in its *text*, not its CSS class.
+		const item = page.locator('.gc-popover .gc-popover-item')
+			.filter({ hasNotText: '(None)' }).first();
+		if (await item.isVisible({ timeout: 1000 }).catch(() => false)) await item.click();
+		else await page.keyboard.press('Escape');
+	}
 
 	return charId;
 }
@@ -129,7 +136,7 @@ function entryById(page: Page, id: string) {
 async function chip(page: Page, resource: string): Promise<number> {
 	const text = await page
 		.locator(`.gc-chip--resource[title="${resource}"] .gc-chip-value`)
-		.textContent()
+		.textContent({ timeout: 5000 })
 		.catch(() => '0');
 	return parseInt(text?.trim() ?? '0', 10);
 }
