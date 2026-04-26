@@ -113,15 +113,31 @@
 		transition: border-color 0.1s;
 	}
 
-	/* Inner border overlay — sits above the fill */
+	/* Inner border + quarter-slice dividers — sits above the fill.
+	   --track-inner-bg defaults to --bg-card but can be overridden by the
+	   parent (e.g. VowCard sets it to --bg-inset so dividers match the body). */
 	.track-box::before {
 		content: '';
 		position: absolute;
 		inset: 0;
-		border: 1px solid var(--bg-card);
+		border: 1px solid var(--track-inner-bg, var(--bg-card));
 		border-radius: 1px;
 		z-index: 1;
 		pointer-events: none;
+		/* Hairline dividers at 25 / 50 / 75 % to mark each tick slot */
+		background: linear-gradient(
+			to right,
+			transparent                              calc(25% - 0.5px),
+			var(--track-inner-bg, var(--bg-card))    calc(25% - 0.5px),
+			var(--track-inner-bg, var(--bg-card))    calc(25% + 0.5px),
+			transparent                              calc(25% + 0.5px) calc(50% - 0.5px),
+			var(--track-inner-bg, var(--bg-card))    calc(50% - 0.5px),
+			var(--track-inner-bg, var(--bg-card))    calc(50% + 0.5px),
+			transparent                              calc(50% + 0.5px) calc(75% - 0.5px),
+			var(--track-inner-bg, var(--bg-card))    calc(75% - 0.5px),
+			var(--track-inner-bg, var(--bg-card))    calc(75% + 0.5px),
+			transparent                              calc(75% + 0.5px)
+		);
 	}
 
 	/* Fill bar — grows left-to-right based on tick count */

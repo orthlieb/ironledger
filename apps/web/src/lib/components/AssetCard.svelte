@@ -262,7 +262,7 @@
 
 </script>
 
-<div class="asset-card">
+<div class="asset-card" style="--asset-color: {catColor}">
 
 	<!-- Collapsed header row -->
 	<div class="asset-header">
@@ -275,7 +275,6 @@
 
 		<div class="asset-name-group">
 			<span class="asset-name">{definition.name}</span>
-			<span class="asset-cat" style:color={catColor}>{definition.category}</span>
 		</div>
 
 		{#if counterField?.icon}
@@ -304,7 +303,12 @@
 	<!-- Expanded body -->
 	{#if !collapsed}
 		<div class="asset-body">
-			<!-- Top custom fields (position !== 'bottom') rendered above preamble -->
+			<!-- Asset type label — moved here from header so it's collapsible and frees header space -->
+		<div class="asset-cat-row">
+			<span class="asset-cat">{definition.category}</span>
+		</div>
+
+		<!-- Top custom fields (position !== 'bottom') rendered above preamble -->
 			{#each (definition.customFields ?? []).filter(f => f.position !== 'bottom') as field}
 				{#if field.type === 'string'}
 					<label class="companion-name-label">
@@ -674,6 +678,7 @@
 	.asset-card {
 		background: var(--bg-inset);
 		border: 1px solid var(--border);
+		border-left: 3px solid var(--asset-color, var(--text-muted));
 		border-radius: 6px;
 		display: flex;
 		flex-direction: column;
@@ -724,14 +729,19 @@
 		text-overflow: ellipsis;
 	}
 
+	.asset-cat-row {
+		display: flex;
+		align-items: center;
+	}
+
 	.asset-cat {
 		font-family: var(--font-ui);
 		font-size: 0.6rem;
 		font-weight: 600;
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
-		flex-shrink: 0;
 		white-space: nowrap;
+		color: var(--asset-color, var(--text-muted));
 	}
 
 	.counter-badge {
@@ -844,8 +854,8 @@
 		border-color: var(--border-mid);
 	}
 	.ability-row.ability-enabled {
-		border-color: color-mix(in srgb, var(--text-accent) 35%, transparent);
-		background: color-mix(in srgb, var(--text-accent) 5%, var(--bg));
+		border-color: color-mix(in srgb, var(--asset-color, var(--text-accent)) 35%, transparent);
+		background: color-mix(in srgb, var(--asset-color, var(--text-accent)) 5%, var(--bg));
 	}
 	.ability-row.ability-disabled {
 		opacity: 0.45;
@@ -855,7 +865,7 @@
 	.ability-check {
 		margin-top: 2px;
 		flex-shrink: 0;
-		accent-color: var(--text-accent);
+		accent-color: var(--asset-color, var(--text-accent));
 		width: 13px;
 		height: 13px;
 		pointer-events: none;

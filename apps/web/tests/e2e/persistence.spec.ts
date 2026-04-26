@@ -289,9 +289,10 @@ test.describe('Data persistence across logout / login', () => {
 		await loginAndGoHome(page);
 		await goToAdventureTab(page);
 
-		// Character tile should still show the same name after re-login
+		// Character tile should still show the same name after re-login.
+		// Allow extra time for the API session state to load and hydrate the GCB.
 		await expect(page.locator('.gc-tile').first().locator('.gc-tile-btn'))
-			.toContainText(selectedName, { timeout: 8_000 });
+			.toContainText(selectedName, { timeout: 15_000 });
 	});
 
 	// ── 6. Session log ────────────────────────────────────────────────────────

@@ -119,7 +119,7 @@
 			{/if}
 
 			<!-- Progress track + Mark/Unmark buttons (inline right, same height as boxes) -->
-			<div class="vow-progress-row">
+			<div class="vow-progress-row" style="--track-inner-bg: var(--bg-inset)">
 				<div class="progress-wrap">
 					<ProgressTrack bind:value={vow.ticks} label="" boxes={10} dangerCount={isDelveEnabled() ? vow.menace : 0} />
 				</div>

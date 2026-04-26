@@ -69,14 +69,13 @@ test.describe('Export dialog', () => {
 
 	test('opens and lists all content options', async ({ page }) => {
 		await openExportDialog(page, 'character');
-		const select = page.locator('.export-dialog[open] .ed-select').first();
-		await expect(select.locator('option[value="character"]')).toBeAttached();
-		await expect(select.locator('option[value="all-characters"]')).toBeAttached();
-		await expect(select.locator('option[value="log"]')).toBeAttached();
-		await expect(select.locator('option[value="communities"]')).toBeAttached();
-		await expect(select.locator('option[value="foes"]')).toBeAttached();
-		await expect(select.locator('option[value="expeditions"]')).toBeAttached();
-		await expect(select.locator('option[value="everything"]')).toBeAttached();
+		// The dialog renders two copies of .ed-select for responsive layout; query
+		// options at page level with .first() so Playwright doesn't choke on duplicates.
+		for (const val of ['character', 'all-characters', 'log', 'communities', 'foes', 'expeditions', 'everything']) {
+			await expect(
+				page.locator(`.export-dialog[open] .ed-select option[value="${val}"]`).first()
+			).toBeAttached();
+		}
 	});
 
 	test('hides format selector when Everything is chosen', async ({ page }) => {

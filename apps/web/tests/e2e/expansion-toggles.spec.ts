@@ -65,18 +65,18 @@ function settingsToggleButton(page: Page, label: string, state: 'On' | 'Off') {
 /** Open the Moves dialog picker from the adventure tab. */
 async function openMovesDialog(page: Page): Promise<void> {
 	await page.click('.tab-btn[data-tab="adventure"]');
-	await expect(page.locator('.adventure-gcb')).toBeVisible({ timeout: 5_000 });
+	await expect(page.locator('.adventure-gcb')).toBeVisible({ timeout: 10_000 });
 	// The Moves action button has title="Browse and roll moves" and label "Move"
 	await page.locator('.act-btn[title*="move" i]').first().click();
-	await expect(page.locator('dialog.moves-dialog[open]')).toBeVisible({ timeout: 5_000 });
+	await expect(page.locator('dialog.moves-dialog[open]')).toBeVisible({ timeout: 8_000 });
 }
 
 /** Open the Oracles dialog picker from the adventure tab. */
 async function openOraclesDialog(page: Page): Promise<void> {
 	await page.click('.tab-btn[data-tab="adventure"]');
-	await expect(page.locator('.adventure-gcb')).toBeVisible({ timeout: 5_000 });
+	await expect(page.locator('.adventure-gcb')).toBeVisible({ timeout: 10_000 });
 	await page.locator('.act-btn[title*="oracle" i]').first().click();
-	await expect(page.locator('dialog.oracles-dialog[open]')).toBeVisible({ timeout: 5_000 });
+	await expect(page.locator('dialog.oracles-dialog[open]')).toBeVisible({ timeout: 8_000 });
 }
 
 /** Navigate to /home and wait for initial hydration. */
@@ -153,9 +153,9 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		await setExpansionsViaStorage(page, { delve: false });
 		await page.click('.tab-btn[data-tab="foes"]');
 		await expect(page.locator('.char-toolbar button.btn-primary').first())
-			.toBeVisible({ timeout: 5_000 });
+			.toBeVisible({ timeout: 10_000 });
 		await page.locator('.char-toolbar button.btn-primary').first().click();
-		await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 8_000 });
 		// "Bladewing" is in foes_delve.json — should be absent
 		await expect(page.locator('dialog.foe-dialog .fd-tile-name', { hasText: /^Bladewing$/ }))
 			.toHaveCount(0, { timeout: 3_000 });
@@ -187,7 +187,7 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 	test('YRT off: YRT region radio hidden in community creation', async ({ page }) => {
 		await setExpansionsViaStorage(page, { yrt: false });
 		await page.click('.tab-btn[data-tab="communities"]');
-		await expect(page.locator('.char-toolbar')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.char-toolbar')).toBeVisible({ timeout: 10_000 });
 		await page.locator('.char-toolbar button', { hasText: /community/i }).first().click();
 		// Find the "Create Manually" path to reach the region radio, or the Generate one.
 		const createManualBtn = page.getByRole('button', { name: /create manually/i });

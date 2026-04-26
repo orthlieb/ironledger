@@ -206,31 +206,20 @@ test.describe('Party supply sync', () => {
 			{ cId: charId, eId: entryId }
 		);
 
-		// If the global isn't exposed, fall back to injecting via the log panel's innerHTML
-		// by constructing the entry directly and clicking it
-		const link = page.locator(`[data-entry-id="${entryId}"] .resource-link, .resource-link[data-entry-id="${entryId}"]`);
-		const linkExists = await link.count() > 0;
-
-		if (!linkExists) {
-			// Fallback: inject HTML directly into the session log DOM
-			await page.evaluate(
-				({ cId, eId }) => {
-					const logBody = document.querySelector('.log-entries');
-					if (!logBody) return;
-					const div = document.createElement('div');
-					div.className = 'log-entry';
-					div.innerHTML = `<div class="entry-body"><a class="resource-link" data-resource="supply" data-value="-1" data-entry-id="${eId}" data-char-id="${cId}">−1 supply</a></div>`;
-					logBody.prepend(div);
-				},
-				{ cId: charId, eId: entryId }
-			);
-		}
+		// The log is only rendered on the adventure tab — navigate there so the
+		// injected entry is visible before we try to click the link.
+		await page.click('.tab-btn[data-tab="adventure"]');
+		await expect(page.locator('.adventure-gcb')).toBeVisible({ timeout: 5000 });
 
 		// Click the supply link in the log
 		const supplyLink = page.locator(`.resource-link[data-entry-id="${entryId}"]`).first();
-		await supplyLink.waitFor({ timeout: 3000 });
+		await supplyLink.waitFor({ timeout: 5000 });
 		await supplyLink.click();
 		await page.waitForTimeout(300);
+
+		// Navigate back to the characters tab to verify the supply values
+		await page.click('.tab-btn[data-tab="characters"]');
+		await expect(page.locator('.char-toolbar')).toBeVisible({ timeout: 5000 });
 
 		// Both chars should now show supply = 2
 		const tile1 = cards.first().locator('.res-tile').filter({ hasText: 'Supply' });

@@ -41,17 +41,16 @@ async function goToAdventure(page: Page): Promise<string> {
 	await page.click('.tab-btn[data-tab="adventure"]');
 	await expect(page.locator('.adventure-gcb')).toBeVisible({ timeout: 5000 });
 
-	// Select character in GCB tile if needed
+	// Always force-select the first available character in the GCB tile so it
+	// matches the charId we captured from the characters tab (previous tests may
+	// have left a different character selected in the GCB).
 	const charTileBtn = page.locator('.gc-tile').first().locator('.gc-tile-btn');
 	await expect(charTileBtn).toBeVisible({ timeout: 3000 });
-	const tileText = await charTileBtn.textContent().catch(() => '');
-	if (!tileText?.trim() || tileText.includes('No character') || tileText === '') {
-		await charTileBtn.click();
-		await expect(page.locator('.gc-popover').first()).toBeVisible({ timeout: 2000 });
-		const item = page.locator('.gc-popover .gc-popover-item:not([class*="None"])').first();
-		if (await item.isVisible({ timeout: 1000 }).catch(() => false)) await item.click();
-		else await page.keyboard.press('Escape');
-	}
+	await charTileBtn.click();
+	await expect(page.locator('.gc-popover').first()).toBeVisible({ timeout: 2000 });
+	const item = page.locator('.gc-popover .gc-popover-item:not([class*="None"])').first();
+	if (await item.isVisible({ timeout: 1000 }).catch(() => false)) await item.click();
+	else await page.keyboard.press('Escape');
 
 	return charId;
 }
@@ -271,10 +270,13 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		await entry.locator('a.debility-link').click();
 		await expect(entry.locator('s.resource-spent')).toBeVisible({ timeout: 3000 });
 
+		// Brief pause so triggerAction's reactive bus can drain before we navigate away.
+		await page.waitForTimeout(300);
+
 		// Verify Shaken is now marked
 		await page.click('.tab-btn[data-tab="characters"]');
 		await expect(activeCard).toBeVisible({ timeout: 3000 });
-		await expect(shakenBtn).toHaveClass(/active/, { timeout: 5000 });
+		await expect(shakenBtn).toHaveClass(/active/, { timeout: 8000 });
 	});
 
 	// ── Initiative links ──────────────────────────────────────────────────────

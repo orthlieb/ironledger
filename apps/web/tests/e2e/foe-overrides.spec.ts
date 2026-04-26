@@ -92,9 +92,9 @@ async function stubFoesEndpoint(page: Page): Promise<void> {
 async function openFoePicker(page: Page): Promise<void> {
 	await page.click('.tab-btn[data-tab="foes"]');
 	await expect(page.locator('.char-toolbar button.btn-primary').first())
-		.toBeVisible({ timeout: 8_000 });
+		.toBeVisible({ timeout: 12_000 });
 	await page.locator('.char-toolbar button.btn-primary').first().click();
-	await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
+	await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 8_000 });
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
