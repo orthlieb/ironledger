@@ -175,7 +175,7 @@ test.describe('Characters tab', () => {
 		const vowsBefore = await vowCards.count();
 		await vowCards.first().locator('.btn-forsake').click();
 		await expect(page.locator('.confirm-modal[open]')).toBeVisible({ timeout: 3000 });
-		await page.locator('.confirm-modal button.btn-danger').first().click();
+		await page.locator('dialog.confirm-modal[open] button.btn-danger').click();
 		await expect(vowCards).toHaveCount(vowsBefore - 1, { timeout: 5000 });
 	});
 

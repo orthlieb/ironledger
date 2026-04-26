@@ -82,35 +82,35 @@ test.describe('Communities tab', () => {
 	});
 
 	test('can add an NPC via Generate Randomly', async ({ page }) => {
-		const before = await page.locator('.char-list--npcs .char-card').count();
+		const before = await page.locator('.char-list--communities .char-card:has(.nc-card)').count();
 		await page.click('.char-toolbar button:has-text("+ NPC")');
 		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
 		await page.locator('dialog.confirm-modal[open] button:has-text("Generate Randomly")').click();
-		await expect(page.locator('.char-list--npcs .char-card'))
+		await expect(page.locator('.char-list--communities .char-card:has(.nc-card)'))
 			.not.toHaveCount(before, { timeout: 5000 });
 	});
 
 	test('can add an NPC via Create Manually', async ({ page }) => {
-		const before = await page.locator('.char-list--npcs .char-card').count();
+		const before = await page.locator('.char-list--communities .char-card:has(.nc-card)').count();
 		await page.click('.char-toolbar button:has-text("+ NPC")');
 		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
 		await page.locator('dialog.confirm-modal[open] button:has-text("Create Manually")').click();
 		await expect(page.locator('dialog.confirm-modal[open]')).not.toBeVisible({ timeout: 3000 });
-		await expect(page.locator('.char-list--npcs .char-card'))
+		await expect(page.locator('.char-list--communities .char-card:has(.nc-card)'))
 			.toHaveCount(before + 1, { timeout: 5000 });
 	});
 
 	test('NPC Escape closes the dialog without creating', async ({ page }) => {
-		const before = await page.locator('.char-list--npcs .char-card').count();
+		const before = await page.locator('.char-list--communities .char-card:has(.nc-card)').count();
 		await page.click('.char-toolbar button:has-text("+ NPC")');
 		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
 		await page.keyboard.press('Escape');
 		await expect(page.locator('dialog.confirm-modal[open]')).not.toBeVisible({ timeout: 3000 });
-		await expect(page.locator('.char-list--npcs .char-card')).toHaveCount(before);
+		await expect(page.locator('.char-list--communities .char-card:has(.nc-card)')).toHaveCount(before);
 	});
 
 	test('can delete an NPC', async ({ page }) => {
-		let cards = page.locator('.char-list--npcs .char-card');
+		let cards = page.locator('.char-list--communities .char-card:has(.nc-card)');
 		if (await cards.count() === 0) {
 			await page.click('.char-toolbar button:has-text("+ NPC")');
 			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
@@ -131,7 +131,7 @@ test.describe('Communities tab', () => {
 
 	test('cleanup: delete all communities and NPCs', async ({ page }) => {
 		// Delete all communities first
-		let communityCards = page.locator('.char-list--communities .char-card');
+		let communityCards = page.locator('.char-list--communities .char-card:has(.cc-card)');
 		let count = await communityCards.count();
 		while (count > 0) {
 			await page.locator('.cc-del-btn').first().click();
@@ -144,7 +144,7 @@ test.describe('Communities tab', () => {
 			}
 		}
 		// Then delete all NPCs
-		let npcCards = page.locator('.char-list--npcs .char-card');
+		let npcCards = page.locator('.char-list--communities .char-card:has(.nc-card)');
 		count = await npcCards.count();
 		while (count > 0) {
 			await page.locator('.nc-del-btn').first().click();

@@ -112,7 +112,7 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 
 	test('default: YRT oracle appears in Oracles dialog', async ({ page }) => {
 		await openOraclesDialog(page);
-		await expect(page.locator('.oracles-dialog .od-tile-name', { hasText: /^Mana Backlash$/ }))
+		await expect(page.locator('.oracles-dialog .od-tile-name', { hasText: /Mana Backlash/ }))
 			.toBeVisible({ timeout: 5_000 });
 	});
 
@@ -177,7 +177,7 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 	test('YRT off: YRT oracles hidden from Oracles picker', async ({ page }) => {
 		await setExpansionsViaStorage(page, { yrt: false });
 		await openOraclesDialog(page);
-		await expect(page.locator('.oracles-dialog .od-tile-name', { hasText: /^Mana Backlash$/ }))
+		await expect(page.locator('.oracles-dialog .od-tile-name', { hasText: /Mana Backlash/ }))
 			.toHaveCount(0, { timeout: 5_000 });
 		// Base "Mystic Backlash" still visible (source=base, not YRT)
 		await expect(page.locator('.oracles-dialog .od-tile-name', { hasText: /Mystic Backlash/i }))

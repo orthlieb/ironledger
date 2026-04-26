@@ -1253,8 +1253,11 @@
 					log: [...(logs[SESSION_LOG_ID] ?? [])].reverse(),
 					communities: $state.snapshot(communities),
 					npcs: $state.snapshot(npcs),
+					foes: $state.snapshot(encounters),
+					expeditions: $state.snapshot(expeditions),
+					session: { activeCharId, activeFoeId, activeExpeditionId, activeTab },
 				};
-				const totalCount = chars.length + (logs[SESSION_LOG_ID]?.length ?? 0) + communities.length + npcs.length;
+				const totalCount = chars.length + (logs[SESSION_LOG_ID]?.length ?? 0) + communities.length + npcs.length + encounters.length + expeditions.length;
 				exportJson('everything', payload, totalCount, `ironledger-export-${stamp}.json`);
 			} else {
 				const sections: string[] = [];

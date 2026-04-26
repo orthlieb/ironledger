@@ -69,7 +69,7 @@ test.describe('Export dialog', () => {
 
 	test('opens and lists all content options', async ({ page }) => {
 		await openExportDialog(page, 'character');
-		const select = page.locator('.ed-select');
+		const select = page.locator('.export-dialog[open] .ed-select');
 		await expect(select.locator('option[value="character"]')).toBeAttached();
 		await expect(select.locator('option[value="all-characters"]')).toBeAttached();
 		await expect(select.locator('option[value="log"]')).toBeAttached();
@@ -102,7 +102,7 @@ test.describe('Export dialog', () => {
 			page.waitForEvent('download'),
 			page.locator('.export-dialog .btn-primary').click(),
 		]);
-		expect(download.suggestedFilename()).toMatch(/^ironledger-\d{4}-\d{2}-\d{2}_\d{4}\.json$/);
+		expect(download.suggestedFilename()).toMatch(/^ironledger-export-\d{4}-\d{2}-\d{2}_\d{4}\.json$/);
 	});
 
 	test('All Characters JSON export downloads a JSON file', async ({ page }) => {

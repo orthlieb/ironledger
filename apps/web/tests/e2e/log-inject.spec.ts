@@ -211,8 +211,10 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		await page.click('.tab-btn[data-tab="characters"]');
 		const activeCard = page.locator('.char-card--active').first();
 		const failGroup = activeCard.locator('.track-group').filter({ hasText: /Failures/i });
-		// Count rendered tick <line>s across the failures ProgressTrack — each line = 1 tick.
-		const tickCountBefore = await failGroup.locator('.track-box svg line').count();
+		// Sum data-ticks across all failure track boxes.
+		const tickCountBefore = await failGroup.locator('.track-box').evaluateAll(
+			(boxes: HTMLElement[]) => boxes.reduce((s, b) => s + parseInt(b.dataset['ticks'] ?? '0', 10), 0)
+		);
 
 		await page.click('.tab-btn[data-tab="adventure"]');
 		await expect(page.locator('.adventure-gcb')).toBeVisible({ timeout: 5000 });
@@ -229,8 +231,15 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		// Verify failure tick count increased in character sheet
 		await page.click('.tab-btn[data-tab="characters"]');
 		await expect(activeCard).toBeVisible({ timeout: 3000 });
-		await expect(failGroup.locator('.track-box svg line')).not.toHaveCount(tickCountBefore, { timeout: 5000 });
-		const tickCountAfter = await failGroup.locator('.track-box svg line').count();
+		await expect(async () => {
+			const after = await failGroup.locator('.track-box').evaluateAll(
+				(boxes: HTMLElement[]) => boxes.reduce((s, b) => s + parseInt(b.dataset['ticks'] ?? '0', 10), 0)
+			);
+			expect(after).toBeGreaterThan(tickCountBefore);
+		}).toPass({ timeout: 5000 });
+		const tickCountAfter = await failGroup.locator('.track-box').evaluateAll(
+			(boxes: HTMLElement[]) => boxes.reduce((s, b) => s + parseInt(b.dataset['ticks'] ?? '0', 10), 0)
+		);
 		expect(tickCountAfter).toBeGreaterThan(tickCountBefore);
 	});
 
@@ -281,7 +290,7 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		const entry = entryById(page, id);
 		await expect(entry.locator('a.initiative-link[data-value="character"]')).toBeVisible({ timeout: 3000 });
 		await entry.locator('a.initiative-link[data-value="character"]').click();
-		await expect(page.locator('.gc-init-badge--you')).toBeVisible({ timeout: 5000 });
+		await expect(page.locator('.gc-init-btn--you.gc-init-btn--active')).toBeVisible({ timeout: 5000 });
 	});
 
 	test('initiative link: foe has initiative shows GCB badge', async ({ page }) => {
@@ -296,7 +305,7 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		const entry = entryById(page, id);
 		await expect(entry.locator('a.initiative-link[data-value="foe"]')).toBeVisible({ timeout: 3000 });
 		await entry.locator('a.initiative-link[data-value="foe"]').click();
-		await expect(page.locator('.gc-init-badge--foe')).toBeVisible({ timeout: 5000 });
+		await expect(page.locator('.gc-init-btn--foe.gc-init-btn--active')).toBeVisible({ timeout: 5000 });
 	});
 
 	// ── Vanquish foe link ─────────────────────────────────────────────────────
@@ -438,7 +447,7 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		await inject(page, 'Features: Ancient + Barrow', `
 			<div class="roll-line">Roll: d100 → 99</div>
 			<div>Result: <strong>You transition into a new theme</strong>
-				<a class="change-theme-link" data-expedition-id="${expId}" href="#">Change Theme ↗</a>
+				<a class="change-theme-link" data-expedition-id="${expId}" data-entry-id="${id}" href="#">Change Theme ↗</a>
 			</div>
 		`, id);
 
@@ -475,7 +484,7 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		await inject(page, 'Features: Ancient + Barrow', `
 			<div class="roll-line">Roll: d100 → 100</div>
 			<div>Result: <strong>You transition into a new domain</strong>
-				<a class="change-domain-link" data-expedition-id="${expId}" href="#">Change Domain ↗</a>
+				<a class="change-domain-link" data-expedition-id="${expId}" data-entry-id="${id}" href="#">Change Domain ↗</a>
 			</div>
 		`, id);
 

@@ -57,6 +57,7 @@
 				class:danger={isDanger}
 				onclick={() => cycleBoxTick(i)}
 				style="--fill: {fillPct}"
+				data-ticks={ticks}
 				title="{ticks}/4 ticks"
 				aria-label="Progress box {i + 1}: {ticks} of 4 ticks"
 			></button>
