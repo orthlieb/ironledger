@@ -1744,26 +1744,29 @@
 		gap: 4px;
 		min-width: 0;
 	}
-	/* Mini progress track — 10 boxes, same height as gc-prog-btn */
+	/* Mini progress track — 10 squared boxes, same height as gc-prog-btn */
 	.gc-mini-track {
 		display: flex;
 		align-items: stretch;
+		/* Minimum gap; justify-content: space-between distributes any extra
+		   slack inside the track between the boxes so the row spans the full
+		   container width without dissolving the visual chunking into one
+		   continuous bar. */
 		gap: 2px;
+		justify-content: space-between;
 		height: 22px;
 		min-width: 0;
-		/* Grow into the slack inside .gc-track-group so the track + buttons
-		   together span the full row width — without flex: 1 the track was
-		   content-sized (10×22px max) and a wide tile (e.g. iPhone Plus /
-		   Pro Max) showed empty whitespace between the buttons and the right
-		   edge of the row. */
 		flex: 1;
 	}
 	.gc-mini-box {
-		flex: 1;
+		/* Boxes stay square (≤22 px) so the 10 increments are visually
+		   distinct. flex-grow:0 + flex-shrink:1 lets them shrink on
+		   sub-238 px tracks while never exceeding their square size on
+		   wider tracks — extra width becomes gap, not stretched boxes. */
+		flex: 0 1 22px;
 		min-width: 0;
-		/* No max-width / aspect-ratio cap — boxes stretch to share the
-		   track's full width on wider screens, becoming wider rectangles
-		   rather than leaving slack at the end. */
+		max-width: 22px;
+		aspect-ratio: 1;
 		border-radius: 2px;
 		border: 1px solid color-mix(in srgb, var(--track-color, var(--border-mid)) 35%, transparent);
 		position: relative;
