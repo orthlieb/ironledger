@@ -19,13 +19,14 @@
 	import { untrack } from 'svelte';
 	import { persistCharacterNow } from '$lib/characterStore.svelte.js';
 	import { isDelveEnabled } from '$lib/expansionStore.svelte.js';
+	import { headingText }   from '$lib/fontStore.svelte.js';
 
 	import trashSvg      from '$icons/trash-solid-full.svg?raw';
 	import hornedHelmSvg from '$icons/horned-helm.svg?raw';
-	import ErrorBar      from '$lib/components/ErrorBar.svelte';
-
 	import swordSvg      from '$icons/sword-solid-full.svg?raw';
 	import shieldSvg     from '$icons/shield-halved-solid.svg?raw';
+	import ErrorBar      from '$lib/components/ErrorBar.svelte';
+
 
 	// Resource icons (stat icons removed per user request)
 	import iconHealth from '$icons/icon-health.svg?raw';
@@ -62,6 +63,7 @@
 		onDelete,
 		onOracleLink,
 		onSupplyChange,
+		onInitiativeClick,
 	}: {
 		character: CharacterFull;
 		/** True when this is the currently selected character — publishes dice context. */
@@ -72,10 +74,12 @@
 		supply?: number;
 		/** Focus the name field immediately (used when newly created). */
 		focusName?: boolean;
-		onDelete?:      () => void;
-		onOracleLink?:  (key: string, stat?: string) => void;
+		onDelete?:          () => void;
+		onOracleLink?:      (key: string, stat?: string) => void;
 		/** Called when this sheet changes supply — used to echo the value to all party members. */
-		onSupplyChange?: (val: number) => void;
+		onSupplyChange?:    (val: number) => void;
+		/** Called when the user clicks an initiative button (0 = none, 1 = you, 2 = foe). */
+		onInitiativeClick?: (next: number) => void;
 	} = $props();
 
 	// ---------------------------------------------------------------------------
@@ -468,15 +472,9 @@
 				onclick={() => { nameBeforeEdit = data.name; editingName = true; }}
 				onkeydown={(e) => e.key === 'Enter' && (editingName = true)}
 				title="Click to rename"
-			>{data.name || 'Unnamed'}</span>
+			>{headingText(data.name || 'Unnamed')}</span>
 		{/if}
 
-
-		{#if initiative === 1}
-			<div class="cs-init-badge cs-init-badge--you">{@html swordSvg}<span class="cs-init-label">Has Initiative</span></div>
-		{:else if initiative === 2}
-			<div class="cs-init-badge cs-init-badge--foe">{@html shieldSvg}<span class="cs-init-label">Foe Has Initiative</span></div>
-		{/if}
 
 		{#if onDelete}
 			<button
@@ -544,7 +542,30 @@
 				</div>
 			</section>
 
-			<div class="section-divider"></div>
+			<!-- Initiative separator + toggle controls -->
+			<div class="cs-init-section">
+				<span class="cs-init-label">Initiative</span>
+				<div class="cs-init-toggle" role="group" aria-label="Initiative">
+					<button
+						class="cs-init-btn"
+						class:cs-init-btn--active={initiative === 0}
+						onclick={() => onInitiativeClick?.(0)}
+						title="No initiative"
+					>None</button>
+					<button
+						class="cs-init-btn cs-init-btn--foe"
+						class:cs-init-btn--active={initiative === 2}
+						onclick={() => onInitiativeClick?.(2)}
+						title="Foe has initiative"
+					>{@html shieldSvg}Foe</button>
+					<button
+						class="cs-init-btn cs-init-btn--you"
+						class:cs-init-btn--active={initiative === 1}
+						onclick={() => onInitiativeClick?.(1)}
+						title="You have initiative"
+					>{@html swordSvg}Character</button>
+				</div>
+			</div>
 
 			<!-- Stats -->
 			<section class="char-section">
@@ -773,8 +794,9 @@
 	.char-title {
 		flex: 1;
 		font-family: var(--font-display);
-		font-weight: 700;
-		font-size: 0.82rem;
+		font-weight: var(--font-display-weight);
+		font-variant: var(--font-display-variant);
+		font-size: calc(0.82rem * var(--font-display-scale));
 		letter-spacing: 0.08em;
 		overflow: hidden;
 		text-overflow: ellipsis;
@@ -786,8 +808,9 @@
 	.char-name-input {
 		flex: 1;
 		font-family: var(--font-display);
-		font-weight: 700;
-		font-size: 0.82rem;
+		font-weight: var(--font-display-weight);
+		font-variant: var(--font-display-variant);
+		font-size: calc(0.82rem * var(--font-display-scale));
 		letter-spacing: 0.08em;
 		background: var(--bg-input);
 		border: 1px solid var(--accent);
@@ -797,34 +820,71 @@
 		min-width: 0;
 	}
 
-	/* Initiative badge — canonical pill style, floated to far right of header */
-	.cs-init-badge {
-		display: flex;
-		align-items: center;
-		gap: 4px;
-		padding: 2px 7px;
-		border-radius: 10px;
-		border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
-		cursor: pointer;
-		transition: opacity 0.15s;
-		white-space: nowrap;
-		flex-shrink: 0;
-		margin-left: auto;
-		font-family: var(--font-ui);
-		font-size: 0.6rem;
-		font-weight: 600;
-		letter-spacing: 0.05em;
+	/* Initiative divider — coloured border between Background and Stats */
+	/* ── Initiative section (between Background and Stats) ─────────────────── */
+	.cs-init-section {
+		display:       flex;
+		align-items:   center;
+		gap:           0.5rem;
+		padding:       12px var(--page-gutter);
+		border-top:    1px solid var(--border);
+		border-bottom: 1px solid var(--border);
+	}
+
+	.cs-init-label {
+		font-family:    var(--font-ui);
+		font-size:      0.55rem;
+		font-weight:    700;
+		letter-spacing: 0.07em;
 		text-transform: uppercase;
+		color:          var(--text-dimmer);
+		white-space:    nowrap;
+		flex-shrink:    0;
 	}
-	.cs-init-badge:hover { opacity: 0.75; }
-	.cs-init-badge :global(svg) { width: 11px; height: 11px; fill: currentColor; flex-shrink: 0; }
-	.cs-init-badge--you {
-		background: rgba(52, 211, 153, 0.15);
-		color: #34d399;
+	.cs-init-toggle {
+		display:       flex;
+		border:        1px solid var(--border-mid);
+		border-radius: 4px;
+		overflow:      hidden;
 	}
-	.cs-init-badge--foe {
-		background: rgba(239, 68, 68, 0.10);
-		color: #ef4444;
+	.cs-init-btn {
+		display:        inline-flex;
+		align-items:    center;
+		gap:            3px;
+		padding:        2px 7px;
+		font-family:    var(--font-ui);
+		font-size:      0.58rem;
+		font-weight:    600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		background:     transparent;
+		border:         none;
+		border-right:   1px solid var(--border-mid);
+		color:          var(--text-dimmer);
+		cursor:         pointer;
+		white-space:    nowrap;
+		transition:     background 0.12s, color 0.12s;
+		line-height:    1.6;
+	}
+	.cs-init-btn:last-child { border-right: none; }
+	.cs-init-btn:hover:not(.cs-init-btn--active) {
+		background: rgba(255,255,255,0.05);
+		color: var(--text-muted);
+	}
+	.cs-init-btn :global(svg) {
+		width: 9px; height: 9px; fill: currentColor; flex-shrink: 0;
+	}
+	.cs-init-btn--active {
+		background: var(--text-accent);
+		color:      var(--bg-card);
+	}
+	.cs-init-btn--you.cs-init-btn--active {
+		background: rgba(52, 211, 153, 0.18);
+		color:      #34d399;
+	}
+	.cs-init-btn--foe.cs-init-btn--active {
+		background: rgba(239, 68, 68, 0.14);
+		color:      #ef4444;
 	}
 
 	/* Portrait */

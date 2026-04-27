@@ -11,6 +11,7 @@
 	import { renderNote } from '$lib/markdown.js';
 	import { untrack } from 'svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import { headingText } from '$lib/fontStore.svelte.js';
 
 	import trashSvg  from '$icons/trash-solid-full.svg?raw';
 	import hutSvg from '$icons/hut.svg?raw';
@@ -153,7 +154,7 @@
 				onclick={startEditName}
 				onkeydown={(e) => e.key === 'Enter' && startEditName()}
 				title="Click to rename"
-			>{displayName}</span>
+			>{headingText(displayName)}</span>
 		{/if}
 
 		<!-- Delete -->
@@ -389,7 +390,7 @@
 	.cc-name {
 		flex:          1;
 		font-family:   var(--font-display);
-		font-size:     0.88rem;
+		font-size:     calc(0.88rem * var(--font-display-scale));
 		font-weight:   700;
 		letter-spacing: 0.04em;
 		cursor:        text;
@@ -403,7 +404,7 @@
 		flex:          1;
 		font-family:   var(--font-display);
 		font-weight:   700;
-		font-size:     0.88rem;
+		font-size:     calc(0.88rem * var(--font-display-scale));
 		letter-spacing: 0.04em;
 		background:    var(--bg-input);
 		border:        1px solid #E8A13B;

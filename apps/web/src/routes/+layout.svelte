@@ -11,6 +11,7 @@
 	import { preloadDice } from '$lib/dice';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
+	import { headingText } from '$lib/fontStore.svelte.js';
 
 	let { data, children }: { data: LayoutData; children: import('svelte').Snippet } = $props();
 
@@ -86,7 +87,7 @@
 	<nav class="app-nav" class:nav--admin={data.user?.role === 'admin'}>
 		<a href="/home" class="nav-brand">
 			<span class="nav-brand-icon" aria-hidden="true">{@html swordSvg}</span>
-			Iron Ledger
+			{headingText('Iron Ledger')}
 		</a>
 		<div class="nav-links">
 			<nav class="nav-page-links" aria-label="Main navigation">

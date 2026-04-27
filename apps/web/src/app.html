@@ -26,22 +26,32 @@
 		<!-- Viewport: cover notches, prevent double-tap zoom -->
 		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
 		<meta name="description" content="Iron Ledger — Ironsworn character tracker" />
-		<!-- Cinzel (engraved display titles) + Roboto (UI & body) -->
+		<!-- Cinzel + Simonetta (display titles) + Roboto (UI & body) -->
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
 		<link
-			href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Roboto:ital,wght@0,400;0,500;0,600;1,400&display=swap"
+			href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Roboto:ital,wght@0,400;0,500;0,600;1,400&family=Simonetta:ital,wght@0,400;0,900;1,400;1,900&display=swap"
 			rel="stylesheet"
 		/>
 		<!--
-			Apply saved theme before first paint to prevent flash.
-			"auto" (or missing key) → no attribute → CSS media query decides.
+			Apply saved theme + display font before first paint to prevent flash.
+			Theme: "auto" (or missing key) → no attribute → CSS media query decides.
+			Font:  "simonetta" → override --font-display; anything else → Cinzel (default).
 		-->
 		<script>
 			(function () {
 				var t = localStorage.getItem('theme');
 				if (t === 'dark' || t === 'light') {
 					document.documentElement.setAttribute('data-theme', t);
+				}
+				var FONT_STACKS = {
+					simonetta: "'Simonetta', 'Palatino Linotype', Georgia, serif",
+					futhark:   "'Segoe UI Historic', 'Noto Sans Runic', 'Apple Symbols', system-ui, sans-serif",
+				};
+				var f = localStorage.getItem('ironledger:font:display');
+				if (f === 'simonetta' || f === 'futhark') {
+					document.documentElement.setAttribute('data-font', f);
+					document.documentElement.style.setProperty('--font-display', FONT_STACKS[f]);
 				}
 			})();
 		</script>

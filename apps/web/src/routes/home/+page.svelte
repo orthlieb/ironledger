@@ -1591,8 +1591,9 @@
 									supply={_partySupply ?? undefined}
 									focusName={char.id === newlyCreatedId}
 									onDelete={() => deleteCharacter(char.id)}
-												onSupplyChange={handleSupplyChange}
+									onSupplyChange={handleSupplyChange}
 									onOracleLink={(key, stat) => oraclesDialogRef?.open(key || undefined, undefined, stat)}
+									onInitiativeClick={(next) => setInitiative(char.id, next)}
 								/>
 							</div>
 						{/each}
@@ -2625,10 +2626,11 @@
 
 	.empty-tab-title {
 		font-family: var(--font-display);
-		font-size: 0.88rem;
-		font-weight: 700;
+		font-size: calc(0.88rem * var(--font-display-scale));
+		font-weight: var(--font-display-weight);
+		font-variant: var(--font-display-variant);
 		letter-spacing: 0.12em;
-		text-transform: uppercase;
+		text-transform: var(--font-display-transform);
 		color: var(--text-dimmer);
 	}
 

@@ -18,11 +18,25 @@
 		isDelveEnabled, setDelveEnabled,
 		isYrtEnabled,   setYrtEnabled,
 	} from '$lib/expansionStore.svelte.js';
+	import {
+		type FontDisplay,
+		getFontDisplay, savedFont, setFontDisplay,
+	} from '$lib/fontStore.svelte.js';
 	import { draggable } from '$lib/actions/draggable.js';
 
 	import autoSvg    from '$icons/circle-half-stroke-solid.svg?raw';
 	import darkSvg    from '$icons/moon-solid.svg?raw';
 	import lightSvg   from '$icons/sun-solid.svg?raw';
+
+	// ---------------------------------------------------------------------------
+	// Display font — delegated to fontStore
+	// ---------------------------------------------------------------------------
+	let fontDisplay = $state<FontDisplay>(getFontDisplay());
+
+	function applyFont(f: FontDisplay) {
+		fontDisplay = f;
+		setFontDisplay(f);
+	}
 
 	// ---------------------------------------------------------------------------
 	// Theme
@@ -80,10 +94,11 @@
 
 	export function open() {
 		// Re-sync with localStorage each time the dialog opens.
-		theme   = savedTheme();
-		dice3d  = isDice3dEnabled();
-		delveOn = isDelveEnabled();
-		yrtOn   = isYrtEnabled();
+		theme       = savedTheme();
+		dice3d      = isDice3dEnabled();
+		delveOn     = isDelveEnabled();
+		yrtOn       = isYrtEnabled();
+		fontDisplay = savedFont();
 		dialogEl?.showModal();
 	}
 
@@ -126,6 +141,34 @@
 						{mode.label}
 					</button>
 				{/each}
+			</div>
+		</div>
+
+		<!-- Heading Font -->
+		<div class="sd-row">
+			<span class="sd-label">Heading Font</span>
+			<div class="sd-seg" role="group" aria-label="Heading font">
+				<button
+					class="sd-seg-btn"
+					class:active={fontDisplay === 'cinzel'}
+					onclick={() => applyFont('cinzel')}
+					aria-pressed={fontDisplay === 'cinzel'}
+					data-tooltip="Cinzel — engraved titling serif (default)"
+				>Cinzel</button>
+				<button
+					class="sd-seg-btn"
+					class:active={fontDisplay === 'simonetta'}
+					onclick={() => applyFont('simonetta')}
+					aria-pressed={fontDisplay === 'simonetta'}
+					data-tooltip="Simonetta — calligraphic all-caps serif"
+				>Simonetta</button>
+				<button
+					class="sd-seg-btn"
+					class:active={fontDisplay === 'futhark'}
+					onclick={() => applyFont('futhark')}
+					aria-pressed={fontDisplay === 'futhark'}
+					data-tooltip="Elder Futhark — transliterate names to runic script"
+				>ᚠᚢᚦᚨᚱᚲ</button>
 			</div>
 		</div>
 
@@ -234,7 +277,7 @@
 	}
 	.sd-title {
 		font-family:    var(--font-display);
-		font-size:      0.78rem;
+		font-size:      calc(0.78rem * var(--font-display-scale));
 		font-weight:    700;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
@@ -272,7 +315,7 @@
 		font-size:   0.73rem;
 		font-weight: 600;
 		color:       var(--text-muted);
-		min-width:   62px;
+		min-width:   82px;
 	}
 
 	/* ── Segmented control ───────────────────────────────────────────────── */

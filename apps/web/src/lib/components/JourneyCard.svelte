@@ -11,6 +11,7 @@
 	import { EXPEDITION_MARK_TICKS } from '$lib/types.js';
 	import { untrack } from 'svelte';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
+	import { headingText } from '$lib/fontStore.svelte.js';
 	import ProgressTrack   from '$lib/components/ProgressTrack.svelte';
 	import { RANK_COLORS } from '$lib/foeStore.svelte.js';
 	import ConfirmDialog   from '$lib/components/ConfirmDialog.svelte';
@@ -230,7 +231,7 @@
 				onclick={() => { nameBeforeEdit = expedition.name; editingName = true; }}
 				onkeydown={(e) => e.key === 'Enter' && (editingName = true)}
 				title="Click to rename"
-			>{displayName}</span>
+			>{headingText(displayName)}</span>
 		{/if}
 
 		<!-- Status icon -->
@@ -460,8 +461,9 @@
 	.jc-name {
 		flex: 1;
 		font-family: var(--font-display);
-		font-size: 0.88rem;
-		font-weight: 700;
+		font-size: calc(0.88rem * var(--font-display-scale));
+		font-weight: var(--font-display-weight);
+		font-variant: var(--font-display-variant);
 		letter-spacing: 0.04em;
 		cursor: text;
 		min-width: 0;
@@ -473,8 +475,9 @@
 	.jc-name-input {
 		flex: 1;
 		font-family: var(--font-display);
-		font-weight: 700;
-		font-size: 0.88rem;
+		font-weight: var(--font-display-weight);
+		font-variant: var(--font-display-variant);
+		font-size: calc(0.88rem * var(--font-display-scale));
 		letter-spacing: 0.04em;
 		background: var(--bg-input);
 		border: 1px solid var(--accent);

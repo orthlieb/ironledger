@@ -18,6 +18,7 @@
 	import { loadDelveData, buildCombinedTable } from '$lib/delveStore.svelte.js';
 	import { rollFromRangeTable } from '$lib/oracleStore.svelte.js';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
+	import { headingText } from '$lib/fontStore.svelte.js';
 	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
 	import { renderNote } from '$lib/markdown.js';
 	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '$lib/foePortrait.js';
@@ -514,7 +515,7 @@
 						{:else}
 							<span class="gc-tile-portrait gc-tile-portrait--placeholder" aria-hidden="true">👤</span>
 						{/if}
-						<span class="gc-tile-name">{character?.name ?? ''}</span>
+						<span class="gc-tile-name">{headingText(character?.name ?? '')}</span>
 					</div>
 				{:else}
 					<span class="gc-tile-placeholder"><img class="gc-placeholder-img" src={charactersSvgUrl} alt="" aria-hidden="true">Select Character</span>
@@ -1120,8 +1121,9 @@
 	/* Entity name */
 	.gc-tile-name {
 		font-family: var(--font-display);
-		font-size: 0.85rem;
-		font-weight: 700;
+		font-size: calc(0.85rem * var(--font-display-scale));
+		font-weight: var(--font-display-weight);
+		font-variant: var(--font-display-variant);
 		letter-spacing: 0.02em;
 		color: var(--text);
 		white-space: nowrap;

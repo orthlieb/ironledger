@@ -157,8 +157,31 @@ html[data-theme='light'] {
 	/* Dice roll results and numeric data */
 	--font-mono:    'Roboto Mono', ui-monospace, 'Courier New', monospace;
 
+	--font-display-weight:    700;
+	--font-display-variant:   normal;
+	--font-display-transform: uppercase;
+	--font-display-scale:     1;     /* size multiplier — overridden per font */
+
 	/* Horizontal gutter — used consistently for all page/card/section padding */
 	--page-gutter: 0.5rem;
+}
+
+/* Simonetta heading-font mode: regular weight, all-caps, slightly larger */
+[data-font="simonetta"] {
+	--font-display-weight:    400;
+	--font-display-variant:   normal;
+	--font-display-transform: uppercase;
+	--font-display-scale:     1.12;  /* ~2pt bump at typical heading sizes */
+}
+
+/* Elder Futhark mode: runes are already transliterated by JS; CSS just sets
+   font-family + display tweaks. text-transform: none is critical — do not
+   uppercase/lowercase the already-converted rune code-points. */
+[data-font="futhark"] {
+	--font-display-weight:    400;
+	--font-display-variant:   normal;
+	--font-display-transform: none;
+	--font-display-scale:     1.25;  /* Runic glyphs render smaller; compensate */
 }
 
 @media (min-width: 768px) {
@@ -381,8 +404,9 @@ dialog label {
 
 .nav-brand {
 	font-family: var(--font-display);
-	font-size: 0.88rem;
-	font-weight: 700;
+	font-size: calc(0.88rem * var(--font-display-scale));
+	font-weight: var(--font-display-weight);
+	font-variant: var(--font-display-variant);
 	letter-spacing: 0.14em;
 	color: var(--text-accent);
 	text-decoration: none;
@@ -466,10 +490,11 @@ dialog label {
 
 .page-header h1 {
 	font-family: var(--font-display);
-	font-size: 0.95rem;
-	font-weight: 700;
+	font-size: calc(0.95rem * var(--font-display-scale));
+	font-weight: var(--font-display-weight);
+	font-variant: var(--font-display-variant);
 	letter-spacing: 0.16em;
-	text-transform: uppercase;
+	text-transform: var(--font-display-transform);
 	color: var(--text);
 }
 
@@ -494,7 +519,8 @@ dialog label {
 
 .hero-caption {
 	font-family: var(--font-display, 'Cinzel', Georgia, serif);
-	font-size: 0.875rem;
+	font-size: calc(0.875rem * var(--font-display-scale));
+	font-variant: var(--font-display-variant);
 	color: var(--text-muted);
 	font-style: italic;
 	margin: 0;
@@ -518,8 +544,9 @@ dialog label {
 
 .auth-card h1 {
 	font-family: var(--font-display);
-	font-size: 1.4rem;
-	font-weight: 900;
+	font-size: calc(1.4rem * var(--font-display-scale));
+	font-weight: var(--font-display-weight);
+	font-variant: var(--font-display-variant);
 	letter-spacing: 0.14em;
 	color: var(--text-accent);
 	margin-bottom: 0.2rem;
