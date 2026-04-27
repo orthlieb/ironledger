@@ -614,7 +614,7 @@
 							onmouseenter={(e) => _openLightbox(e, (e.target as HTMLImageElement).src, activeFoe.customName || activeFoeDef.name)}
 							onmouseleave={_closeLightbox}
 						/>
-						<span class="gc-tile-name">{activeFoe.customName || activeFoeDef.name}</span>
+						<span class="gc-tile-name">{headingText(activeFoe.customName || activeFoeDef.name)}</span>
 					</div>
 					<div class="gc-tile-row gc-tile-pills">
 						<span class="gc-badge" style="background: {activeFoeNature}22; color: {activeFoeNature}">{activeFoeDef.nature}</span>
@@ -775,7 +775,7 @@
 								{@html activeExpedition.type === 'site' ? dungeonGateSvg : treasureMapSvg}
 							</span>
 						{/if}
-						<span class="gc-tile-name">{activeExpedition.name || 'Unnamed'}</span>
+						<span class="gc-tile-name">{headingText(activeExpedition.name || 'Unnamed')}</span>
 					</div>
 					<div class="gc-tile-row gc-tile-pills">
 						<span class="gc-badge"
