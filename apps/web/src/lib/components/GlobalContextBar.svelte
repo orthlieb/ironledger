@@ -1744,33 +1744,50 @@
 		gap: 4px;
 		min-width: 0;
 	}
-	/* Mini progress track — 10 squared boxes, same height as gc-prog-btn */
+	/* Mini progress track — 10 squared 22×22 boxes packed left.
+	   Same sizing pattern as the Bonds / Vow tracks (ProgressTrack.svelte):
+	   content-sized, fixed-square boxes with hairline dividers at 25/50/75%
+	   so partial fills read as discrete ticks. The row's natural empty
+	   space sits on the right of the container, matching the character
+	   sheet rather than stretching segments edge-to-edge. */
 	.gc-mini-track {
 		display: flex;
-		align-items: stretch;
-		/* Minimum gap; justify-content: space-between distributes any extra
-		   slack inside the track between the boxes so the row spans the full
-		   container width without dissolving the visual chunking into one
-		   continuous bar. */
+		align-items: center;
 		gap: 2px;
-		justify-content: space-between;
-		height: 22px;
 		min-width: 0;
-		flex: 1;
 	}
 	.gc-mini-box {
-		/* Boxes stay square (≤22 px) so the 10 increments are visually
-		   distinct. flex-grow:0 + flex-shrink:1 lets them shrink on
-		   sub-238 px tracks while never exceeding their square size on
-		   wider tracks — extra width becomes gap, not stretched boxes. */
-		flex: 0 1 22px;
-		min-width: 0;
+		width: 22px;
+		height: 22px;
 		max-width: 22px;
 		aspect-ratio: 1;
+		flex-shrink: 0;
 		border-radius: 2px;
 		border: 1px solid color-mix(in srgb, var(--track-color, var(--border-mid)) 35%, transparent);
 		position: relative;
 		overflow: hidden;
+	}
+	/* Hairline dividers at 25/50/75 % marking each tick slot — same gradient
+	   trick as ProgressTrack.svelte. Sits above the fill via z-index. */
+	.gc-mini-box::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		z-index: 1;
+		pointer-events: none;
+		background: linear-gradient(
+			to right,
+			transparent                              calc(25% - 0.5px),
+			var(--bg-card)                           calc(25% - 0.5px),
+			var(--bg-card)                           calc(25% + 0.5px),
+			transparent                              calc(25% + 0.5px) calc(50% - 0.5px),
+			var(--bg-card)                           calc(50% - 0.5px),
+			var(--bg-card)                           calc(50% + 0.5px),
+			transparent                              calc(50% + 0.5px) calc(75% - 0.5px),
+			var(--bg-card)                           calc(75% - 0.5px),
+			var(--bg-card)                           calc(75% + 0.5px),
+			transparent                              calc(75% + 0.5px)
+		);
 	}
 	.gc-mini-box::after {
 		content: '';
