@@ -1751,12 +1751,19 @@
 		gap: 2px;
 		height: 22px;
 		min-width: 0;
+		/* Grow into the slack inside .gc-track-group so the track + buttons
+		   together span the full row width — without flex: 1 the track was
+		   content-sized (10×22px max) and a wide tile (e.g. iPhone Plus /
+		   Pro Max) showed empty whitespace between the buttons and the right
+		   edge of the row. */
+		flex: 1;
 	}
 	.gc-mini-box {
 		flex: 1;
 		min-width: 0;
-		max-width: 22px;
-		aspect-ratio: 1;
+		/* No max-width / aspect-ratio cap — boxes stretch to share the
+		   track's full width on wider screens, becoming wider rectangles
+		   rather than leaving slack at the end. */
 		border-radius: 2px;
 		border: 1px solid color-mix(in srgb, var(--track-color, var(--border-mid)) 35%, transparent);
 		position: relative;
