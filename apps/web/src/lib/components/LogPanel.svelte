@@ -798,7 +798,7 @@
 
 	.log-title {
 		font-family:    var(--font-display, 'Cinzel', serif);
-		font-size:      0.75rem;
+		font-size:      calc(0.75rem * var(--font-display-scale));
 		font-weight:    700;
 		letter-spacing: 0.08em;
 		color:          var(--text-muted);

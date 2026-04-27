@@ -153,21 +153,21 @@
 					class:active={fontDisplay === 'cinzel'}
 					onclick={() => applyFont('cinzel')}
 					aria-pressed={fontDisplay === 'cinzel'}
-					data-tooltip="Cinzel — engraved titling serif (default)"
-				>Cinzel</button>
+					data-tooltip="Gravestone — engraved titling serif (default)"
+				>Gravestone</button>
 				<button
 					class="sd-seg-btn"
 					class:active={fontDisplay === 'simonetta'}
 					onclick={() => applyFont('simonetta')}
 					aria-pressed={fontDisplay === 'simonetta'}
-					data-tooltip="Simonetta — calligraphic all-caps serif"
-				>Simonetta</button>
+					data-tooltip="Grimoire — calligraphic all-caps serif"
+				>Grimoire</button>
 				<button
 					class="sd-seg-btn"
 					class:active={fontDisplay === 'futhark'}
 					onclick={() => applyFont('futhark')}
 					aria-pressed={fontDisplay === 'futhark'}
-					data-tooltip="Elder Futhark — transliterate names to runic script"
+					data-tooltip="Futhark — transliterate names to Elder Futhark runes"
 				>ᚠᚢᚦᚨᚱᚲ</button>
 			</div>
 		</div>

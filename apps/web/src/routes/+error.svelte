@@ -47,8 +47,9 @@
 
 	.error-code {
 		font-family: var(--font-display);
-		font-size: 2.5rem;
-		font-weight: 700;
+		font-size: calc(2.5rem * var(--font-display-scale));
+		font-weight: var(--font-display-weight);
+		font-variant: var(--font-display-variant);
 		color: var(--text-accent);
 		margin: 0;
 		letter-spacing: 0.05em;
@@ -56,7 +57,8 @@
 
 	.error-message {
 		font-family: var(--font-display);
-		font-size: 1rem;
+		font-size: calc(1rem * var(--font-display-scale));
+		font-variant: var(--font-display-variant);
 		color: var(--text-muted);
 		margin: 0;
 		max-width: 40ch;
@@ -65,11 +67,12 @@
 	.error-home {
 		margin-top: 0.75rem;
 		font-family: var(--font-display);
-		font-size: 0.85rem;
+		font-size: calc(0.85rem * var(--font-display-scale));
+		font-variant: var(--font-display-variant);
 		color: var(--text-accent);
 		text-decoration: none;
 		letter-spacing: 0.06em;
-		text-transform: uppercase;
+		text-transform: var(--font-display-transform);
 		border: 1px solid rgba(245, 158, 11, 0.4);
 		padding: 0.4rem 1.2rem;
 		border-radius: 4px;

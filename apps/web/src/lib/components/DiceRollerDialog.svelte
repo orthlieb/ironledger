@@ -329,7 +329,7 @@
 	}
 	.dice-title {
 		font-family:     var(--font-display);
-		font-size:       0.78rem;
+		font-size:       calc(0.78rem * var(--font-display-scale));
 		font-weight:     700;
 		letter-spacing:  0.08em;
 		text-transform:  uppercase;

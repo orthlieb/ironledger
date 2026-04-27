@@ -8,9 +8,12 @@
 
 	let {
 		vow = $bindable(),
+		focusName = false,
 		onDelete,
 	}: {
 		vow: Vow;
+		/** If true, immediately enter name-edit mode (used when a vow is first created). */
+		focusName?: boolean;
 		onDelete: () => void;
 	} = $props();
 
@@ -34,6 +37,14 @@
 	let collapsed        = $state(false);
 	let forsakeDialogRef = $state<{ open(): void; close(): void } | null>(null);
 
+	// Inline name editing (same pattern as CharacterSheet / FoeCard)
+	let editingName  = $state(false);
+	let nameBeforeEdit = '';
+	let nameInputEl  = $state<HTMLInputElement | null>(null);
+
+	$effect(() => { if (editingName && nameInputEl) nameInputEl.select(); });
+	$effect(() => { if (focusName) { nameBeforeEdit = vow.name; editingName = true; } });
+
 	const diffLabel  = $derived(
 		DIFFICULTIES.find((d) => d.value === vow.difficulty)?.label ?? vow.difficulty
 	);
@@ -52,7 +63,7 @@
 
 <div class="vow-card">
 
-	<!-- Header: collapse toggle, name, difficulty, forsake button -->
+	<!-- Header: collapse toggle, name, forsake button -->
 	<div class="vow-header">
 		<button
 			class="collapse-btn"
@@ -63,22 +74,29 @@
 			{collapsed ? '▶' : '▼'}
 		</button>
 
-		<input
-			class="vow-name"
-			bind:value={vow.name}
-			placeholder="Vow name…"
-			aria-label="Vow name"
-		/>
-
-		<select
-			class="vow-difficulty"
-			bind:value={vow.difficulty}
-			aria-label="Vow difficulty"
-		>
-			{#each DIFFICULTIES as d (d.value)}
-				<option value={d.value}>{d.label}</option>
-			{/each}
-		</select>
+		{#if editingName}
+			<input
+				class="vow-name vow-name--editing"
+				bind:this={nameInputEl}
+				bind:value={vow.name}
+				placeholder="Vow name…"
+				aria-label="Vow name"
+				onblur={() => (editingName = false)}
+				onkeydown={(e) => {
+					if (e.key === 'Enter') { e.currentTarget.blur(); }
+					if (e.key === 'Escape') { vow.name = nameBeforeEdit; editingName = false; }
+				}}
+			/>
+		{:else}
+			<!-- svelte-ignore a11y_interactive_supports_focus -->
+			<span
+				class="vow-name vow-name--display"
+				role="button"
+				onclick={() => { nameBeforeEdit = vow.name; editingName = true; }}
+				onkeydown={(e) => e.key === 'Enter' && (editingName = true)}
+				title="Click to rename"
+			>{vow.name || 'Unnamed Vow'}</span>
+		{/if}
 
 		<button
 			class="btn btn-icon icon-btn btn-forsake"
@@ -91,6 +109,22 @@
 	<!-- Expandable body -->
 	{#if !collapsed}
 		<div class="vow-body">
+			<!-- Rank row -->
+			<div class="vow-extras">
+				<label class="vow-extra">
+					<span>Rank</span>
+					<select
+						class="vow-difficulty"
+						bind:value={vow.difficulty}
+						aria-label="Vow difficulty"
+					>
+						{#each DIFFICULTIES as d (d.value)}
+							<option value={d.value}>{d.label}</option>
+						{/each}
+					</select>
+				</label>
+			</div>
+
 			<!-- Threat + Menace row (Delve-only — preserves underlying data when hidden) -->
 			{#if isDelveEnabled()}
 				<div class="vow-extras">
@@ -200,10 +234,32 @@
 
 	.vow-name {
 		flex: 1;
-		min-width: 100px;
+		min-width: 0;
 		font-weight: 600;
 		font-size: 0.88rem;
-		padding: 3px 7px;
+	}
+
+	/* Display mode: looks like plain header text, reveals border on hover */
+	.vow-name--display {
+		display:       block;
+		padding:       2px 6px;
+		border-radius: 3px;
+		color:         var(--text);
+		cursor:        text;
+		white-space:   nowrap;
+		overflow:      hidden;
+		text-overflow: ellipsis;
+		border:        1px solid transparent;
+		transition:    background 0.12s, border-color 0.12s;
+	}
+	.vow-name--display:hover {
+		background:   var(--bg-hover);
+		border-color: var(--border);
+	}
+
+	/* Edit mode: normal input field */
+	.vow-name--editing {
+		padding: 2px 6px;
 	}
 
 	.vow-difficulty {

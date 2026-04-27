@@ -719,6 +719,14 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+		padding:       2px 6px;
+		border:        1px solid transparent;
+		border-radius: 3px;
+		transition:    background 0.12s, border-color 0.12s;
+	}
+	.sc-name:hover {
+		background:   var(--bg-hover);
+		border-color: var(--border);
 	}
 
 	.sc-name-input {

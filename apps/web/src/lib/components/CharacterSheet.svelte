@@ -335,6 +335,8 @@
 	// ---------------------------------------------------------------------------
 	// Vow helpers
 	// ---------------------------------------------------------------------------
+	let newlyCreatedVowId = $state('');
+
 	function addVow() {
 		const newVow: Vow = {
 			id: crypto.randomUUID(),
@@ -345,6 +347,7 @@
 			menace: 0,
 		};
 		data.vows = [...data.vows, newVow];
+		newlyCreatedVowId = newVow.id;
 		appendLog(SESSION_LOG_ID, charTitle('Vow'),
 			`<div>Swore a new iron vow — <strong>Formidable</strong></div>`);
 	}
@@ -731,6 +734,7 @@
 						{#each data.vows as vow, i (vow.id)}
 							<VowCard
 								bind:vow={data.vows[i]}
+								focusName={vow.id === newlyCreatedVowId}
 								onDelete={() => removeVow(vow.id)}
 							/>
 						{/each}
@@ -803,6 +807,15 @@
 		white-space: nowrap;
 		color: var(--text);
 		cursor: text;
+		/* Hover-to-edit affordance */
+		padding:        2px 6px;
+		border:         1px solid transparent;
+		border-radius:  3px;
+		transition:     background 0.12s, border-color 0.12s;
+	}
+	.char-title:hover {
+		background:   var(--bg-hover);
+		border-color: var(--border);
 	}
 
 	.char-name-input {

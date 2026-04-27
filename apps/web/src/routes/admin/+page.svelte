@@ -1335,7 +1335,8 @@
 
 	.admin-title {
 		font-family: var(--font-display);
-		font-size: 1.3rem;
+		font-size: calc(1.3rem * var(--font-display-scale));
+		font-variant: var(--font-display-variant);
 		color: var(--text-accent);
 		letter-spacing: 0.08em;
 		margin-bottom: 0.25rem;
@@ -1432,10 +1433,11 @@
 
 	.metrics-title {
 		font-family: var(--font-display);
-		font-size: 0.65rem;
-		font-weight: 700;
+		font-size: calc(0.65rem * var(--font-display-scale));
+		font-weight: var(--font-display-weight);
+		font-variant: var(--font-display-variant);
 		letter-spacing: 0.12em;
-		text-transform: uppercase;
+		text-transform: var(--font-display-transform);
 		color: var(--text-accent);
 	}
 
@@ -1730,7 +1732,8 @@
 
 	.modal h3 {
 		font-family: var(--font-display);
-		font-size: 1rem;
+		font-size: calc(1rem * var(--font-display-scale));
+		font-variant: var(--font-display-variant);
 		color: var(--color-danger);
 		margin-bottom: 0.5rem;
 	}
@@ -1933,8 +1936,9 @@
 	}
 	.invites-h {
 		font-family: var(--font-display);
-		font-size: 0.95rem;
-		font-weight: 700;
+		font-size: calc(0.95rem * var(--font-display-scale));
+		font-weight: var(--font-display-weight);
+		font-variant: var(--font-display-variant);
 		letter-spacing: 0.05em;
 		color: var(--text-accent);
 		margin: 0 0 0.2rem;
@@ -2104,8 +2108,9 @@
 	.tools-tile-title {
 		flex: 1 1 auto;
 		font-family: var(--font-display);
-		font-size: 0.95rem;
-		font-weight: 700;
+		font-size: calc(0.95rem * var(--font-display-scale));
+		font-weight: var(--font-display-weight);
+		font-variant: var(--font-display-variant);
 		letter-spacing: 0.05em;
 		color: var(--text-accent);
 		margin: 0;

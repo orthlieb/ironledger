@@ -469,10 +469,11 @@
 
 	.fd-title {
 		font-family: var(--font-display);
-		font-size: 1rem;
-		font-weight: 700;
+		font-size: calc(1rem * var(--font-display-scale));
+		font-weight: var(--font-display-weight);
+		font-variant: var(--font-display-variant);
 		letter-spacing: 0.08em;
-		text-transform: uppercase;
+		text-transform: var(--font-display-transform);
 		color: var(--text-accent);
 		flex: 1;
 	}
@@ -710,8 +711,9 @@
 
 	.fd-tile-name {
 		font-family: var(--font-display);
-		font-size: 0.78rem;
-		font-weight: 700;
+		font-size: calc(0.78rem * var(--font-display-scale));
+		font-weight: var(--font-display-weight);
+		font-variant: var(--font-display-variant);
 		letter-spacing: 0.04em;
 		color: var(--text);
 		line-clamp: 1;

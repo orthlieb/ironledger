@@ -213,7 +213,7 @@
 
 	.maintenance-title {
 		font-family: var(--font-display);
-		font-size: 2rem;
+		font-size: calc(2rem * var(--font-display-scale));
 		font-weight: 700;
 		color: var(--text-accent);
 		margin: 0;
@@ -222,7 +222,7 @@
 
 	.maintenance-message {
 		font-family: var(--font-display);
-		font-size: 0.9rem;
+		font-size: calc(0.9rem * var(--font-display-scale));
 		color: var(--text-muted);
 		margin: 0;
 		max-width: 45ch;
