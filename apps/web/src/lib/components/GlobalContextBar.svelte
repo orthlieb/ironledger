@@ -1781,8 +1781,14 @@
 		background: transparent;
 		border: 1px solid var(--border-mid);
 		border-radius: 3px;
-		padding: 0 7px;
+		/* Always square, regardless of rank label width (+1 / +3 / −2 …).
+		   Matches gc-mini-track height so the button sits flush with the
+		   track on its left. Without flex:0 the button shrank on iPhone,
+		   producing a "compressed" look and inconsistent button widths. */
+		padding: 0;
+		width: 22px;
 		height: 22px;
+		flex: 0 0 22px;
 		cursor: pointer;
 		color: var(--text-muted);
 		letter-spacing: 0.02em;
