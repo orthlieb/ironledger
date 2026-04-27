@@ -14,6 +14,7 @@
 	 */
 
 	import { isDice3dEnabled, setDice3dEnabled } from '$lib/dice';
+	import { isDiceSoundEnabled, setDiceSoundEnabled } from '$lib/diceSound.js';
 	import {
 		isDelveEnabled, setDelveEnabled,
 		isYrtEnabled,   setYrtEnabled,
@@ -79,6 +80,16 @@
 	}
 
 	// ---------------------------------------------------------------------------
+	// Dice sound
+	// ---------------------------------------------------------------------------
+	let diceSound = $state(typeof window !== 'undefined' ? isDiceSoundEnabled() : true);
+
+	function applyDiceSound(on: boolean) {
+		diceSound = on;
+		setDiceSoundEnabled(on);
+	}
+
+	// ---------------------------------------------------------------------------
 	// Expansions (Delve / YRT)
 	// ---------------------------------------------------------------------------
 	let delveOn = $state(typeof window !== 'undefined' ? isDelveEnabled() : true);
@@ -96,6 +107,7 @@
 		// Re-sync with localStorage each time the dialog opens.
 		theme       = savedTheme();
 		dice3d      = isDice3dEnabled();
+		diceSound   = isDiceSoundEnabled();
 		delveOn     = isDelveEnabled();
 		yrtOn       = isYrtEnabled();
 		fontDisplay = savedFont();
@@ -189,6 +201,27 @@
 					onclick={() => applyDice3d(false)}
 					aria-pressed={!dice3d}
 					data-tooltip="Skip 3D animation, show result immediately"
+				>Off</button>
+			</div>
+		</div>
+
+		<!-- Dice Sound -->
+		<div class="sd-row">
+			<span class="sd-label">Dice Sound</span>
+			<div class="sd-seg" role="group" aria-label="Dice rattle sound">
+				<button
+					class="sd-seg-btn"
+					class:active={diceSound}
+					onclick={() => applyDiceSound(true)}
+					aria-pressed={diceSound}
+					data-tooltip="Play a dice rattle while the dice roll"
+				>On</button>
+				<button
+					class="sd-seg-btn"
+					class:active={!diceSound}
+					onclick={() => applyDiceSound(false)}
+					aria-pressed={!diceSound}
+					data-tooltip="Roll silently"
 				>Off</button>
 			</div>
 		</div>

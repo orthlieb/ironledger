@@ -11,6 +11,8 @@
 // DiceRollerDialog instances share one Three.js context.
 // =============================================================================
 
+import { playDiceRattle } from './diceSound.js';
+
 /** CDN paths for the 3D dice library and its asset bundle. */
 const DICE_LIB_URL =
 	'https://cdn.jsdelivr.net/npm/@3d-dice/dice-box-threejs@0.0.12/dist/dice-box-threejs.umd.js';
@@ -219,6 +221,10 @@ export async function animateDice(dice: DiceSpec[]): Promise<void> {
 		// Roll first step, then chain subsequent steps via .then() so each colour
 		// change is applied only after the previous dice have been placed.
 		applyTheme(steps[0].theme);
+		// Fire the rattle synth right before the first throw so the audio
+		// envelope tracks the visible dice motion. The sound is a no-op
+		// when the user has disabled it in Settings.
+		playDiceRattle();
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		let p: Promise<any> = _diceBox.roll(stepNotation(steps[0]));
 		for (let i = 1; i < steps.length; i++) {
