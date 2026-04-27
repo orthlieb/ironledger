@@ -13,9 +13,15 @@ test.describe('Adventure tab', () => {
 		// Ensure at least one character exists AND is the active selection so moves
 		// with preconditions aren't dimmed ("No character selected").
 		await page.click('.tab-btn[data-tab="characters"]');
+		// Wait for the char-list to appear — tab content re-renders after data load,
+		// so we must wait for the list container before interacting with the toolbar.
+		await expect(page.locator('.char-list--characters')).toBeVisible({ timeout: 8000 });
 		const existingCards = page.locator('.char-list--characters > .char-card');
 		if (await existingCards.count() === 0) {
-			await page.click('.char-toolbar button.btn-primary');
+			// Use locator.click() so Playwright can auto-retry if the button is
+			// momentarily detached during Svelte's initial render.
+			await page.locator('.char-toolbar button.btn-primary').click({ timeout: 10_000 });
+			await expect(existingCards.first()).toBeVisible({ timeout: 8000 });
 		}
 		// Click the first card to make it the active selection (fresh page loads
 		// reset activeCharId, so we must re-select it on every beforeEach).

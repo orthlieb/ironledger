@@ -91,9 +91,10 @@ async function stubFoesEndpoint(page: Page): Promise<void> {
 /** Open the Foe Picker by going to the Foes tab and clicking + Foe. */
 async function openFoePicker(page: Page): Promise<void> {
 	await page.click('.tab-btn[data-tab="foes"]');
-	await expect(page.locator('.char-toolbar button.btn-primary').first())
-		.toBeVisible({ timeout: 12_000 });
-	await page.locator('.char-toolbar button.btn-primary').first().click();
+	// Wait for the foe list container — tab content re-renders after data loads,
+	// so we must wait for the list to appear before the toolbar is stable.
+	await expect(page.locator('.char-list--foes')).toBeVisible({ timeout: 12_000 });
+	await page.locator('.char-toolbar button.btn-primary').first().click({ timeout: 8_000 });
 	await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 8_000 });
 }
 

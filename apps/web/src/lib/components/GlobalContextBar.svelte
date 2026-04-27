@@ -503,7 +503,7 @@
 	<div class="gc-tiles">
 
 		<!-- CHARACTER TILE -->
-		<div class="gc-tile" class:gc-tile--active={!!data} class:gc-tile--empty={!data} class:gc-tile--open={openSelector === 'character'}>
+		<div class="gc-tile" data-char-id={activeCharId} class:gc-tile--active={!!data} class:gc-tile--empty={!data} class:gc-tile--open={openSelector === 'character'}>
 			<button class="gc-tile-btn" onclick={() => toggleSelector('character')} title="Select character">
 				{#if data}
 					<div class="gc-tile-row gc-tile-name-row">

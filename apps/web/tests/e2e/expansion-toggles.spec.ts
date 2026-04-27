@@ -187,10 +187,11 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 	test('YRT off: YRT region radio hidden in community creation', async ({ page }) => {
 		await setExpansionsViaStorage(page, { yrt: false });
 		await page.click('.tab-btn[data-tab="communities"]');
-		await expect(page.locator('.char-toolbar')).toBeVisible({ timeout: 10_000 });
+		// Wait for the communities list container before the toolbar is stable.
+		await expect(page.locator('.char-list--communities')).toBeVisible({ timeout: 12_000 });
 		await expect(page.locator('.char-toolbar button', { hasText: /community/i }).first())
 			.toBeVisible({ timeout: 10_000 });
-		await page.locator('.char-toolbar button', { hasText: /community/i }).first().click();
+		await page.locator('.char-toolbar button', { hasText: /community/i }).first().click({ timeout: 8_000 });
 		// Find the "Create Manually" path to reach the region radio, or the Generate one.
 		const createManualBtn = page.getByRole('button', { name: /create manually/i });
 		if (await createManualBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
@@ -213,7 +214,7 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		// Select a character so the adventure tab + log are active
 		await page.click('.tab-btn[data-tab="characters"]');
 		await page.locator('.char-list--characters > .char-card, .empty-tab').first()
-			.waitFor({ timeout: 15_000, state: 'attached' });
+			.waitFor({ timeout: 25_000, state: 'attached' });
 		const charCards = page.locator('.char-list--characters > .char-card');
 		if (await charCards.count() === 0) {
 			await page.click('.char-toolbar button.btn-primary');

@@ -17,48 +17,53 @@ import { test, expect, type Page } from '@playwright/test';
 
 /**
  * Navigate to the adventure tab with a character selected in the GCB.
- * Returns the active character's UUID (from data-char-id on the char-card).
+ * Returns the active character's UUID (from data-char-id on the GCB character tile).
+ *
+ * The GCB tile drives activeCharId in the action bus drain effect, so we MUST
+ * select the character through the GCB popover to guarantee charId == activeCharId.
+ * Reading charId from the Characters-tab card isn't sufficient — session state may
+ * leave a different character shown in the GCB.
  */
 async function goToAdventure(page: Page): Promise<string> {
 	await page.goto('/home');
 	await expect(page.locator('.loading-tab')).not.toBeVisible({ timeout: 8000 });
 
-	// Characters tab — ensure one exists and is selected
+	// Characters tab — ensure at least one character exists.
 	await page.click('.tab-btn[data-tab="characters"]');
 	await page.locator('.char-list--characters > .char-card, .empty-tab').first()
 		.waitFor({ timeout: 8000, state: 'attached' });
 
-	const cards = page.locator('.char-list--characters > .char-card');
-	if (await cards.count() === 0) {
-		await page.click('.char-toolbar button.btn-primary');
-		await expect(page.locator('.char-card--active')).toBeVisible({ timeout: 5000 });
-	} else {
-		await cards.first().click();
+	if (await page.locator('.char-list--characters > .char-card').count() === 0) {
+		await page.locator('.char-toolbar button.btn-primary').click();
+		await expect(page.locator('.char-list--characters > .char-card').first())
+			.toBeVisible({ timeout: 8000 });
 	}
-	const charId = await page.locator('.char-card--active').getAttribute('data-char-id') ?? '';
 
 	// Adventure tab
 	await page.click('.tab-btn[data-tab="adventure"]');
 	await expect(page.locator('.adventure-gcb')).toBeVisible({ timeout: 5000 });
 
-	// The GCB's activeCharId is the same reactive state as the characters-tab
-	// click above, so the tile should already show the selected character.
-	// Only open the popover if the tile still shows the "Select Character"
-	// placeholder (meaning no char is selected).
-	const charTileBtn = page.locator('.gc-tile').first().locator('.gc-tile-btn');
+	// Always explicitly select a character through the GCB popover so that
+	// activeCharId (the action-bus drain key) matches the charId we return.
+	// The GCB tile exposes data-char-id={activeCharId} after selection.
+	const charTile    = page.locator('.gc-tile').first();
+	const charTileBtn = charTile.locator('.gc-tile-btn');
 	await expect(charTileBtn).toBeVisible({ timeout: 3000 });
-	const tileText = await charTileBtn.textContent().catch(() => '');
-	if (!tileText?.trim() || /select character/i.test(tileText)) {
-		await charTileBtn.click();
-		await expect(page.locator('.gc-popover').first()).toBeVisible({ timeout: 2000 });
-		// Use hasNotText filter — `:not([class*="None"])` matches the "(None)"
-		// button too because "None" is in its *text*, not its CSS class.
-		const item = page.locator('.gc-popover .gc-popover-item')
-			.filter({ hasNotText: '(None)' }).first();
-		if (await item.isVisible({ timeout: 1000 }).catch(() => false)) await item.click();
-		else await page.keyboard.press('Escape');
+	await charTileBtn.click();
+	await expect(page.locator('.gc-popover').first()).toBeVisible({ timeout: 2000 });
+	// Use hasNotText filter — `:not([class*="None"])` matches the "(None)"
+	// button too because "None" is in its *text*, not its CSS class.
+	const item = page.locator('.gc-popover .gc-popover-item')
+		.filter({ hasNotText: '(None)' }).first();
+	if (await item.isVisible({ timeout: 1000 }).catch(() => false)) {
+		await item.click();
+	} else {
+		await page.keyboard.press('Escape');
+		return '';
 	}
 
+	// Read charId from the GCB tile's data-char-id (set by GlobalContextBar after selection).
+	const charId = await charTile.getAttribute('data-char-id') ?? '';
 	return charId;
 }
 
