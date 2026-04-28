@@ -14,7 +14,7 @@
 	 */
 
 	import { isDice3dEnabled, setDice3dEnabled } from '$lib/dice';
-	import { isDiceSoundEnabled, setDiceSoundEnabled } from '$lib/diceSound.js';
+	import { isDiceSoundEnabled, setDiceSoundEnabled, isDiceSoundSupported } from '$lib/diceSound.js';
 	import {
 		isDelveEnabled, setDelveEnabled,
 		isYrtEnabled,   setYrtEnabled,
@@ -205,26 +205,29 @@
 			</div>
 		</div>
 
-		<!-- Dice Sound -->
-		<div class="sd-row">
-			<span class="sd-label">Dice Sound</span>
-			<div class="sd-seg" role="group" aria-label="Dice rattle sound">
-				<button
-					class="sd-seg-btn"
-					class:active={diceSound}
-					onclick={() => applyDiceSound(true)}
-					aria-pressed={diceSound}
-					data-tooltip="Play a dice rattle while the dice roll"
-				>On</button>
-				<button
-					class="sd-seg-btn"
-					class:active={!diceSound}
-					onclick={() => applyDiceSound(false)}
-					aria-pressed={!diceSound}
-					data-tooltip="Roll silently"
-				>Off</button>
+		<!-- Dice Sound — hidden on iOS Safari, where the library's sound
+		     preload pipeline hangs `_diceBox.initialize()`. -->
+		{#if isDiceSoundSupported()}
+			<div class="sd-row">
+				<span class="sd-label">Dice Sound</span>
+				<div class="sd-seg" role="group" aria-label="Dice rattle sound">
+					<button
+						class="sd-seg-btn"
+						class:active={diceSound}
+						onclick={() => applyDiceSound(true)}
+						aria-pressed={diceSound}
+						data-tooltip="Play a dice rattle while the dice roll"
+					>On</button>
+					<button
+						class="sd-seg-btn"
+						class:active={!diceSound}
+						onclick={() => applyDiceSound(false)}
+						aria-pressed={!diceSound}
+						data-tooltip="Roll silently"
+					>Off</button>
+				</div>
 			</div>
-		</div>
+		{/if}
 
 		<!-- Delve expansion -->
 		<div class="sd-row">

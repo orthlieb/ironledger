@@ -1,44 +1,65 @@
 // =============================================================================
-// Iron Ledger — Dice + miss-scream audio (Web Audio API)
+// Iron Ledger — Dice sound preference + miss scream
 //
-// We don't use @3d-dice/dice-box-threejs's built-in sound system: it loads
-// audio via `new Audio()` and `await`s preload events that iOS Safari
-// withholds without a gesture, hanging `_diceBox.initialize()` indefinitely.
-//
-// Instead, we fetch the same MP3s ourselves and play them through the
-// Web Audio API, which iOS handles cleanly once the AudioContext is
-// unlocked from a user gesture (the click on the Roll button is the
-// gesture; the AudioContext is created inside that chain on first call).
-//
-// Three public functions:
-//   - isDiceSoundEnabled / setDiceSoundEnabled — settings toggle (existing)
-//   - playDiceClacks(count)  — schedule a tumbling sound for `count` dice
-//   - playMissScream()       — fire the Wilhelm scream (move-roll miss)
+// Library audio (15 plastic-die-hit MP3s shipped by @3d-dice/dice-box-threejs)
+// is the on-platform sound source — see dice.ts for how it's wired into the
+// dice config. This module only handles:
+//   - the Settings toggle (persisted to localStorage)
+//   - the iOS gate, since dice-box-threejs's audio preload pipeline hangs
+//     `_diceBox.initialize()` on iPhone Safari. Sounds are disabled on iOS
+//     entirely; the Settings toggle is hidden on those devices.
+//   - the Wilhelm scream on a move-roll miss, played via Web Audio API.
+//     Ship the MP3 at `apps/web/static/sounds/wilhelm.mp3`. Without that
+//     file the loader silently fails — the rest of the app keeps working.
 // =============================================================================
 
 const SOUND_KEY = 'ironledger:dice:sound';
 
-// Plastic-die-hit MP3s shipped by @3d-dice/dice-box-threejs. Loading them
-// from the same CDN we already use for the library script keeps deploys
-// network-light and avoids needing to commit binary assets.
-const DICE_HIT_BASE = 'https://cdn.jsdelivr.net/npm/@3d-dice/dice-box-threejs@0.0.12/public/sounds/dicehit/';
-const DICE_HIT_VARIANTS = [1, 3, 5, 7, 9, 11, 13];
-
-// Wilhelm scream. Wikimedia Commons hosts the original OGG plus an
-// auto-transcoded MP3; we use the MP3 because iOS Safari's Web Audio
-// can fail to decode OGG on older versions. Public domain (US, pre-1928).
-const WILHELM_URL =
-	'https://upload.wikimedia.org/wikipedia/commons/transcoded/8/82/Wilhelm_Scream.ogg/Wilhelm_Scream.ogg.mp3';
+const WILHELM_URL = '/sounds/wilhelm.mp3';
 
 let _ctx: AudioContext | null = null;
 const _buffers = new Map<string, Promise<AudioBuffer>>();
 
 // ---------------------------------------------------------------------------
-// Toggle (persisted to localStorage)
+// Platform detection
 // ---------------------------------------------------------------------------
 
+/**
+ * iOS Safari (iPhone + iPadOS-as-Mac). dice-box-threejs's `loadSounds()`
+ * pipeline awaits `canplaythrough` events that iOS withholds without a
+ * gesture, hanging `_diceBox.initialize()`. Sounds are unavailable on iOS
+ * until that's fixed upstream; we hide the Settings row entirely on these
+ * devices to avoid showing a toggle that does nothing.
+ */
+export function isIOSSafari(): boolean {
+	if (typeof window === 'undefined') return false;
+	const ua = navigator.userAgent;
+	const isClassicIOS = /iPad|iPhone|iPod/.test(ua);
+	const isIPadOS    = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const isMSMobile  = !!(window as any).MSStream;
+	return (isClassicIOS || isIPadOS) && !isMSMobile;
+}
+
+/** True iff this device can play dice sounds. SettingsDialog uses this to
+ *  decide whether to render the "Dice Sound" row at all. */
+export function isDiceSoundSupported(): boolean {
+	if (typeof window === 'undefined') return false;
+	return !isIOSSafari();
+}
+
+// ---------------------------------------------------------------------------
+// Settings toggle
+// ---------------------------------------------------------------------------
+
+/**
+ * Whether dice sounds should play. Hard-off on iOS regardless of the
+ * stored preference — caller code can call this without re-checking the
+ * platform.
+ */
 export function isDiceSoundEnabled(): boolean {
-	if (typeof window === 'undefined') return true;
+	if (typeof window === 'undefined') return false;
+	if (isIOSSafari()) return false;
 	return localStorage.getItem(SOUND_KEY) !== 'off';
 }
 
@@ -52,7 +73,7 @@ export function setDiceSoundEnabled(enabled: boolean): void {
 }
 
 // ---------------------------------------------------------------------------
-// AudioContext + buffer loading
+// Wilhelm scream (Web Audio API — works on every platform we'd play it on)
 // ---------------------------------------------------------------------------
 
 function getCtx(): AudioContext | null {
@@ -75,7 +96,7 @@ async function loadBuffer(url: string): Promise<AudioBuffer | null> {
 	if (!ctx) return null;
 
 	const promise = (async () => {
-		const res = await fetch(url, { mode: 'cors' });
+		const res = await fetch(url);
 		if (!res.ok) throw new Error(`HTTP ${res.status}`);
 		const ab = await res.arrayBuffer();
 		return await ctx.decodeAudioData(ab);
@@ -91,74 +112,16 @@ async function loadBuffer(url: string): Promise<AudioBuffer | null> {
 	}
 }
 
-function playBuffer(
-	ctx: AudioContext,
-	buffer: AudioBuffer,
-	when: number,
-	volume: number,
-	rate: number,
-): void {
-	const src = ctx.createBufferSource();
-	src.buffer = buffer;
-	src.playbackRate.value = rate;
-
-	const gain = ctx.createGain();
-	gain.gain.value = volume;
-
-	src.connect(gain).connect(ctx.destination);
-	src.start(when);
-}
-
-// ---------------------------------------------------------------------------
-// Dice clacks
-// ---------------------------------------------------------------------------
-
-/**
- * Schedule a dice tumbling sound that loosely matches a roll of `diceCount`
- * dice. Each die contributes ~3 plastic clacks scheduled across the first
- * 1.2 s with random offsets, ±15 % pitch jitter, and intensity tapering as
- * the dice slow. Total length matches the typical physics settle time
- * (~1.5 s) so the rattle ends as the dice come to rest.
- */
-export async function playDiceClacks(diceCount: number): Promise<void> {
-	if (!isDiceSoundEnabled()) return;
-	if (diceCount <= 0) return;
-	const ctx = getCtx();
-	if (!ctx) return;
-	if (ctx.state === 'suspended') void ctx.resume();
-
-	// Load every variant in parallel; whichever finish first will be used.
-	const buffers = (await Promise.all(
-		DICE_HIT_VARIANTS.map((n) => loadBuffer(`${DICE_HIT_BASE}dicehit_plastic${n}.mp3`)),
-	)).filter((b): b is AudioBuffer => b !== null);
-
-	if (buffers.length === 0) return;
-
-	const t0 = ctx.currentTime;
-	const totalHits = Math.max(3, diceCount * 3);
-
-	for (let i = 0; i < totalHits; i++) {
-		const buf = buffers[Math.floor(Math.random() * buffers.length)];
-		if (!buf) continue;
-		const offset = Math.random() * 1.2;                   // 0–1.2 s
-		const rate   = 0.85 + Math.random() * 0.3;            // 0.85–1.15
-		const vol    = (0.45 + Math.random() * 0.25) * (1 - offset / 1.6);
-		playBuffer(ctx, buf, t0 + offset, vol, rate);
-	}
-}
-
-// ---------------------------------------------------------------------------
-// Wilhelm scream — call on a move-roll miss
-// ---------------------------------------------------------------------------
-
 /** Pre-warm the Wilhelm scream buffer so the first miss isn't delayed by a fetch. */
 export function preloadMissScream(): void {
+	if (!isDiceSoundEnabled()) return;
 	void loadBuffer(WILHELM_URL);
 }
 
 /**
  * Fire the Wilhelm scream. Gates on the same `isDiceSoundEnabled()` toggle
  * as the dice clacks — turn dice sounds off, the scream is silent too.
+ * Silent no-op if the local mp3 isn't shipped yet.
  */
 export async function playMissScream(): Promise<void> {
 	if (!isDiceSoundEnabled()) return;
@@ -168,5 +131,11 @@ export async function playMissScream(): Promise<void> {
 
 	const buf = await loadBuffer(WILHELM_URL);
 	if (!buf) return;
-	playBuffer(ctx, buf, ctx.currentTime, 0.7, 1.0);
+
+	const src = ctx.createBufferSource();
+	src.buffer = buf;
+	const gain = ctx.createGain();
+	gain.gain.value = 0.7;
+	src.connect(gain).connect(ctx.destination);
+	src.start(ctx.currentTime);
 }
