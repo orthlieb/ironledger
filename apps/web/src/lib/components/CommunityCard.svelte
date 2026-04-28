@@ -390,8 +390,9 @@
 	.cc-name {
 		flex:          1;
 		font-family:   var(--font-display);
-		font-size:     calc(0.88rem * var(--font-display-scale));
-		font-weight:   700;
+		font-size:     calc(0.82rem * var(--font-display-scale));
+		font-weight:   var(--font-display-weight);
+		font-variant:  var(--font-display-variant);
 		letter-spacing: 0.04em;
 		cursor:        text;
 		min-width:     0;
@@ -411,8 +412,9 @@
 	.cc-name-input {
 		flex:          1;
 		font-family:   var(--font-display);
-		font-weight:   700;
-		font-size:     calc(0.88rem * var(--font-display-scale));
+		font-weight:   var(--font-display-weight);
+		font-variant:  var(--font-display-variant);
+		font-size:     calc(0.82rem * var(--font-display-scale));
 		letter-spacing: 0.04em;
 		background:    var(--bg-input);
 		border:        1px solid #E8A13B;

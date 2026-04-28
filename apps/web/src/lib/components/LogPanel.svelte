@@ -798,15 +798,16 @@
 
 	.log-title {
 		font-family:    var(--font-display, 'Cinzel', serif);
-		font-size:      calc(0.75rem * var(--font-display-scale));
-		font-weight:    700;
+		font-size:      calc(0.82rem * var(--font-display-scale));
+		font-weight:    var(--font-display-weight);
+		font-variant:   var(--font-display-variant);
 		letter-spacing: 0.08em;
 		color:          var(--text-muted);
 		text-transform: uppercase;
 		flex: 1;
 		min-width: 0;
 	}
-	/* Grimoire (Simonetta) is a calligraphic display face that already reads
+	/* Grimoire (Simonetta) is a calligraphic face that already reads
 	   as a heading at title case — forcing uppercase produces oddly-cramped
 	   glyph forms. Drop the transform when the user has Grimoire active.
 	   Cinzel keeps the uppercase since it's a small-cap-style face. */
