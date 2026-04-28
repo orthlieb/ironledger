@@ -1019,6 +1019,12 @@
 		border-left: 1px solid var(--border);
 		padding-left: 4px;
 	}
+	/* On mobile the vertical "Current Scenario" rule is redundant context
+	   the user already gets from being on the Adventure tab, and it eats
+	   ~16 px of horizontal room that the tiles + log need more. */
+	@media (max-width: 767px) {
+		.gc-scenario-heading { display: none; }
+	}
 
 	/* Full-area clickable button */
 	.gc-tile-btn {
