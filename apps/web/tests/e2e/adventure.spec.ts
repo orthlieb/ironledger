@@ -13,9 +13,11 @@ test.describe('Adventure tab', () => {
 		// Ensure at least one character exists AND is the active selection so moves
 		// with preconditions aren't dimmed ("No character selected").
 		await page.click('.tab-btn[data-tab="characters"]');
-		// Wait for the char-list to appear — tab content re-renders after data load,
-		// so we must wait for the list container before interacting with the toolbar.
-		await expect(page.locator('.char-list--characters')).toBeVisible({ timeout: 8000 });
+		// Wait for either the populated list OR the empty-state placeholder —
+		// a freshly-seeded test account starts empty and renders `.empty-tab`
+		// instead of `.char-list--characters`.
+		await page.locator('.char-list--characters > .char-card, .empty-tab').first()
+			.waitFor({ timeout: 8000, state: 'attached' });
 		const existingCards = page.locator('.char-list--characters > .char-card');
 		if (await existingCards.count() === 0) {
 			// Use locator.click() so Playwright can auto-retry if the button is
