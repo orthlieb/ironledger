@@ -11,6 +11,8 @@
 // DiceRollerDialog instances share one Three.js context.
 // =============================================================================
 
+import { isDiceSoundEnabled } from './diceSound.js';
+
 /** CDN paths for the 3D dice library and its asset bundle. */
 const DICE_LIB_URL =
 	'https://cdn.jsdelivr.net/npm/@3d-dice/dice-box-threejs@0.0.12/dist/dice-box-threejs.umd.js';
@@ -67,6 +69,58 @@ let _scriptLoaded: Promise<void> | null = null;
 let _diceBox:      any                  = null;
 let _diceBoxReady: Promise<void> | null = null;
 
+/**
+ * Push the current overlay dimensions into the dice library, so the camera
+ * and physics walls match what the user actually sees on screen.
+ *
+ * The library has its own debounced `resize` listener, but on the
+ * no-arguments code path it sets `containerWidth = clientWidth / 2`,
+ * shrinking the play area to a quarter of the visible canvas. Calling
+ * `setDimensions({ x, y })` ourselves with the real overlay size keeps the
+ * walls flush with the visible viewport. setDimensions reads `dimensions.x`
+ * and `dimensions.y` only — a plain object works the same as THREE.Vector2,
+ * which we don't have access to outside the library bundle.
+ */
+function syncDiceBoxToOverlay(): void {
+	if (!_diceBox) return;
+	const overlay = getOverlay();
+	const w = overlay.clientWidth;
+	const h = overlay.clientHeight;
+	if (w === 0 || h === 0) return;     // overlay not yet laid out
+	try {
+		_diceBox.setDimensions({ x: w, y: h });
+	} catch (e) {
+		console.warn('[Iron Ledger] dice setDimensions failed:', e);
+	}
+}
+
+/**
+ * Attach our own listeners for `resize` and `orientationchange`. iOS in
+ * particular fires `orientationchange` *before* the layout settles, and the
+ * library's debounced `resize` listener can read stale dimensions, so we
+ * re-sync after a couple of animation frames + a backup setTimeout.
+ * Idempotent — only attaches once per session.
+ */
+let _resizeListenerAttached = false;
+function attachResizeListener(): void {
+	if (_resizeListenerAttached || typeof window === 'undefined') return;
+	_resizeListenerAttached = true;
+
+	let pending: ReturnType<typeof setTimeout> | null = null;
+	const sync = () => {
+		if (pending !== null) clearTimeout(pending);
+		pending = setTimeout(syncDiceBoxToOverlay, 200);
+	};
+
+	window.addEventListener('resize', sync);
+	window.addEventListener('orientationchange', () => {
+		// orientationchange fires before the new layout is computed; defer
+		// the sync until after the browser has rotated and re-laid out.
+		requestAnimationFrame(() => requestAnimationFrame(sync));
+		sync();   // backup if rAF doesn't fire (page hidden, etc.)
+	});
+}
+
 /** Return (or lazily create) the full-screen overlay div for Three.js rendering. */
 function getOverlay(): HTMLDivElement {
 	const existing = document.getElementById('il-dice-overlay');
@@ -116,9 +170,16 @@ function ensureDiceBox(): Promise<void> {
 		getOverlay(); // create the overlay div before DiceBox tries to attach to it
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const Lib  = (window as any)['dice-box-threejs'];
-		_diceBox   = new Lib('#il-dice-overlay', {
+		// Library audio: 15 plastic-die-hit MP3s on the same CDN we already
+		// pull the script from. `isDiceSoundEnabled()` is hard-false on iOS
+		// (the library's `loadSounds()` pipeline hangs `_diceBox.initialize`
+		// there), so iPhone never tries to load audio and never hangs.
+		const wantSounds = isDiceSoundEnabled();
+		_diceBox = new Lib('#il-dice-overlay', {
 			assetPath:            DICE_ASSET_CDN,
-			sounds:               false,
+			sounds:               wantSounds,
+			sound_dieMaterial:    'plastic',
+			volume:               wantSounds ? 60 : 0,
 			shadows:              false,
 			theme_colorset:       'custom',
 			theme_material:       'plastic',
@@ -131,6 +192,10 @@ function ensureDiceBox(): Promise<void> {
 		// Hide the shadow-catching ground plane after initialisation.
 		// It can reappear after clearDice(), so we also hide it there.
 		if (_diceBox.desk) _diceBox.desk.visible = false;
+		// Make sure the camera + walls match the current viewport, then
+		// keep them in sync across resize / rotation.
+		syncDiceBoxToOverlay();
+		attachResizeListener();
 	}).catch((e: unknown) => {
 		// Clear the cache so the next roll will retry initialisation from scratch.
 		_diceBoxReady = null;
@@ -216,9 +281,20 @@ export async function animateDice(dice: DiceSpec[]): Promise<void> {
 		const applyTheme = (theme: object) =>
 			_diceBox.updateConfig({ theme_colorset: 'custom', theme_customColorset: theme });
 
+		// Make sure the camera + physics walls match the current viewport
+		// before launching dice — handles late layout settle after rotation
+		// and any case where the library's debounced resize listener was
+		// triggered with a stale half-size value.
+		syncDiceBoxToOverlay();
+
 		// Roll first step, then chain subsequent steps via .then() so each colour
 		// change is applied only after the previous dice have been placed.
 		applyTheme(steps[0].theme);
+		// Apply the current sound preference. Effective only when sounds
+		// were loaded at init time (i.e. the toggle was on at last reload
+		// AND the device isn't iOS); otherwise the library has nothing to
+		// mute/unmute and updateConfig is a cheap no-op.
+		_diceBox.updateConfig({ volume: isDiceSoundEnabled() ? 60 : 0 });
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		let p: Promise<any> = _diceBox.roll(stepNotation(steps[0]));
 		for (let i = 1; i < steps.length; i++) {

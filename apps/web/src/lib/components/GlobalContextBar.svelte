@@ -614,7 +614,7 @@
 							onmouseenter={(e) => _openLightbox(e, (e.target as HTMLImageElement).src, activeFoe.customName || activeFoeDef.name)}
 							onmouseleave={_closeLightbox}
 						/>
-						<span class="gc-tile-name">{activeFoe.customName || activeFoeDef.name}</span>
+						<span class="gc-tile-name">{headingText(activeFoe.customName || activeFoeDef.name)}</span>
 					</div>
 					<div class="gc-tile-row gc-tile-pills">
 						<span class="gc-badge" style="background: {activeFoeNature}22; color: {activeFoeNature}">{activeFoeDef.nature}</span>
@@ -775,7 +775,7 @@
 								{@html activeExpedition.type === 'site' ? dungeonGateSvg : treasureMapSvg}
 							</span>
 						{/if}
-						<span class="gc-tile-name">{activeExpedition.name || 'Unnamed'}</span>
+						<span class="gc-tile-name">{headingText(activeExpedition.name || 'Unnamed')}</span>
 					</div>
 					<div class="gc-tile-row gc-tile-pills">
 						<span class="gc-badge"
@@ -1744,23 +1744,54 @@
 		gap: 4px;
 		min-width: 0;
 	}
-	/* Mini progress track — 10 boxes, same height as gc-prog-btn */
+	/* Mini progress track — 10 squared 22×22 boxes packed left.
+	   Same sizing pattern as the Bonds / Vow tracks (ProgressTrack.svelte):
+	   content-sized, fixed-square boxes with hairline dividers at 25/50/75%
+	   so partial fills read as discrete ticks. The row's natural empty
+	   space sits on the right of the container, matching the character
+	   sheet rather than stretching segments edge-to-edge. */
 	.gc-mini-track {
 		display: flex;
-		align-items: stretch;
+		align-items: center;
 		gap: 2px;
-		height: 22px;
 		min-width: 0;
 	}
 	.gc-mini-box {
-		flex: 1;
-		min-width: 0;
-		max-width: 22px;
+		width: 20px;
+		height: 20px;
+		max-width: 20px;
 		aspect-ratio: 1;
+		flex-shrink: 0;
 		border-radius: 2px;
 		border: 1px solid color-mix(in srgb, var(--track-color, var(--border-mid)) 35%, transparent);
 		position: relative;
 		overflow: hidden;
+	}
+	/* Inner border + hairline dividers at 25/50/75 % — matches the
+	   ProgressTrack.svelte pattern. The 1px solid border in the page
+	   background colour gives the box its inset frame, sitting above the
+	   fill so it reads as part of the box outline rather than the fill. */
+	.gc-mini-box::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border: 1px solid var(--bg-card);
+		border-radius: 1px;
+		z-index: 1;
+		pointer-events: none;
+		background: linear-gradient(
+			to right,
+			transparent                              calc(25% - 0.5px),
+			var(--bg-card)                           calc(25% - 0.5px),
+			var(--bg-card)                           calc(25% + 0.5px),
+			transparent                              calc(25% + 0.5px) calc(50% - 0.5px),
+			var(--bg-card)                           calc(50% - 0.5px),
+			var(--bg-card)                           calc(50% + 0.5px),
+			transparent                              calc(50% + 0.5px) calc(75% - 0.5px),
+			var(--bg-card)                           calc(75% - 0.5px),
+			var(--bg-card)                           calc(75% + 0.5px),
+			transparent                              calc(75% + 0.5px)
+		);
 	}
 	.gc-mini-box::after {
 		content: '';
@@ -1781,8 +1812,14 @@
 		background: transparent;
 		border: 1px solid var(--border-mid);
 		border-radius: 3px;
-		padding: 0 7px;
+		/* Always square, regardless of rank label width (+1 / +3 / −2 …).
+		   Matches gc-mini-track height so the button sits flush with the
+		   track on its left. Without flex:0 the button shrank on iPhone,
+		   producing a "compressed" look and inconsistent button widths. */
+		padding: 0;
+		width: 22px;
 		height: 22px;
+		flex: 0 0 22px;
 		cursor: pointer;
 		color: var(--text-muted);
 		letter-spacing: 0.02em;
