@@ -1757,9 +1757,9 @@
 		min-width: 0;
 	}
 	.gc-mini-box {
-		width: 22px;
-		height: 22px;
-		max-width: 22px;
+		width: 20px;
+		height: 20px;
+		max-width: 20px;
 		aspect-ratio: 1;
 		flex-shrink: 0;
 		border-radius: 2px;
@@ -1767,12 +1767,16 @@
 		position: relative;
 		overflow: hidden;
 	}
-	/* Hairline dividers at 25/50/75 % marking each tick slot — same gradient
-	   trick as ProgressTrack.svelte. Sits above the fill via z-index. */
+	/* Inner border + hairline dividers at 25/50/75 % — matches the
+	   ProgressTrack.svelte pattern. The 1px solid border in the page
+	   background colour gives the box its inset frame, sitting above the
+	   fill so it reads as part of the box outline rather than the fill. */
 	.gc-mini-box::before {
 		content: '';
 		position: absolute;
 		inset: 0;
+		border: 1px solid var(--bg-card);
+		border-radius: 1px;
 		z-index: 1;
 		pointer-events: none;
 		background: linear-gradient(
