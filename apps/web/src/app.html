@@ -56,6 +56,22 @@
 			})();
 		</script>
 		%sveltekit.head%
+
+		<!--
+			Mobile in-page DevTools (eruda). Loaded only when the URL has
+			?debug=1 — zero cost otherwise. Catches console errors,
+			network requests, and unhandled rejections that would
+			otherwise be invisible without a Mac + Web Inspector.
+		-->
+		<script>
+			(function () {
+				if (location.search.indexOf('debug=1') === -1) return;
+				var s = document.createElement('script');
+				s.src = 'https://cdn.jsdelivr.net/npm/eruda';
+				s.onload = function () { window.eruda && window.eruda.init(); };
+				document.head.appendChild(s);
+			})();
+		</script>
 	</head>
 	<body data-sveltekit-preload-data="hover">
 		<div style="display: contents">%sveltekit.body%</div>
