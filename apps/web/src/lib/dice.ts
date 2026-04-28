@@ -11,8 +11,6 @@
 // DiceRollerDialog instances share one Three.js context.
 // =============================================================================
 
-import { isDiceSoundEnabled } from './diceSound.js';
-
 /** CDN paths for the 3D dice library and its asset bundle. */
 const DICE_LIB_URL =
 	'https://cdn.jsdelivr.net/npm/@3d-dice/dice-box-threejs@0.0.12/dist/dice-box-threejs.umd.js';
@@ -120,13 +118,12 @@ function ensureDiceBox(): Promise<void> {
 		const Lib  = (window as any)['dice-box-threejs'];
 		_diceBox   = new Lib('#il-dice-overlay', {
 			assetPath:            DICE_ASSET_CDN,
-			// dice-box-threejs ships 15 plastic-hit MP3s + surface clips on
-			// the same CDN we already pull the textures from. Loaded once
-			// at init; the library randomises the variant per collision.
-			// Per-roll mute is applied via updateConfig() before each throw.
-			sounds:               true,
-			sound_dieMaterial:    'plastic',
-			volume:               isDiceSoundEnabled() ? 60 : 0,
+			// Temporarily off — `sounds: true` caused first-roll-never-resolves
+			// on iPhone Safari (likely the library awaits canplaythrough events
+			// that iOS withholds without a user gesture, hanging initialize()).
+			// Once we have a real error from Web Inspector / eruda we can ship
+			// either a timeout-guarded init or an iOS-only fallback.
+			sounds:               false,
 			shadows:              false,
 			theme_colorset:       'custom',
 			theme_material:       'plastic',
@@ -227,10 +224,6 @@ export async function animateDice(dice: DiceSpec[]): Promise<void> {
 		// Roll first step, then chain subsequent steps via .then() so each colour
 		// change is applied only after the previous dice have been placed.
 		applyTheme(steps[0].theme);
-		// Apply the current sound preference. updateConfig is cheap; doing
-		// it per-roll lets a Settings toggle take effect immediately on
-		// the next throw without reinitialising the dice box.
-		_diceBox.updateConfig({ volume: isDiceSoundEnabled() ? 60 : 0 });
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		let p: Promise<any> = _diceBox.roll(stepNotation(steps[0]));
 		for (let i = 1; i < steps.length; i++) {
