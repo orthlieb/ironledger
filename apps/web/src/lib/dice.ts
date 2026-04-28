@@ -11,6 +11,8 @@
 // DiceRollerDialog instances share one Three.js context.
 // =============================================================================
 
+import { isDiceSoundEnabled } from './diceSound.js';
+
 /** CDN paths for the 3D dice library and its asset bundle. */
 const DICE_LIB_URL =
 	'https://cdn.jsdelivr.net/npm/@3d-dice/dice-box-threejs@0.0.12/dist/dice-box-threejs.umd.js';
@@ -67,6 +69,28 @@ let _scriptLoaded: Promise<void> | null = null;
 let _diceBox:      any                  = null;
 let _diceBoxReady: Promise<void> | null = null;
 
+/**
+ * iOS Safari (iPhone + iPadOS-as-Mac) hangs `_diceBox.initialize()` when
+ * the library tries to preload its 15 plastic-hit MP3s. The library appears
+ * to await audio events that iOS withholds without a user gesture, so the
+ * cached _diceBoxReady promise never resolves and every subsequent roll
+ * stalls. Detect the platform up front and gate library sounds on it —
+ * iOS gets silent dice, every other platform gets the real recordings.
+ *
+ * iPadOS 13+ identifies its UA as Mac, so we also check for multi-touch
+ * which Macs don't have. The MSStream check excludes IE11 mobile (which
+ * spoofs an iOS UA).
+ */
+function isIOSSafari(): boolean {
+	if (typeof window === 'undefined') return false;
+	const ua = navigator.userAgent;
+	const isClassicIOS = /iPad|iPhone|iPod/.test(ua);
+	const isIPadOS    = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const isMSMobile  = !!(window as any).MSStream;
+	return (isClassicIOS || isIPadOS) && !isMSMobile;
+}
+
 /** Return (or lazily create) the full-screen overlay div for Three.js rendering. */
 function getOverlay(): HTMLDivElement {
 	const existing = document.getElementById('il-dice-overlay');
@@ -116,14 +140,16 @@ function ensureDiceBox(): Promise<void> {
 		getOverlay(); // create the overlay div before DiceBox tries to attach to it
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const Lib  = (window as any)['dice-box-threejs'];
-		_diceBox   = new Lib('#il-dice-overlay', {
+		// Library sounds: ON everywhere except iOS Safari, which hangs
+		// initialize() when the library preloads its MP3s. The user's
+		// Settings toggle controls volume per roll on supported platforms;
+		// on iOS it's silently no-op since sounds aren't loaded.
+		const useLibrarySounds = !isIOSSafari();
+		_diceBox = new Lib('#il-dice-overlay', {
 			assetPath:            DICE_ASSET_CDN,
-			// Temporarily off — `sounds: true` caused first-roll-never-resolves
-			// on iPhone Safari (likely the library awaits canplaythrough events
-			// that iOS withholds without a user gesture, hanging initialize()).
-			// Once we have a real error from Web Inspector / eruda we can ship
-			// either a timeout-guarded init or an iOS-only fallback.
-			sounds:               false,
+			sounds:               useLibrarySounds,
+			sound_dieMaterial:    'plastic',
+			volume:               useLibrarySounds && isDiceSoundEnabled() ? 60 : 0,
 			shadows:              false,
 			theme_colorset:       'custom',
 			theme_material:       'plastic',
@@ -224,6 +250,12 @@ export async function animateDice(dice: DiceSpec[]): Promise<void> {
 		// Roll first step, then chain subsequent steps via .then() so each colour
 		// change is applied only after the previous dice have been placed.
 		applyTheme(steps[0].theme);
+		// Apply the current sound preference. No-op on iOS (sounds were
+		// never loaded so there's nothing to mute/unmute), live on
+		// desktop / Android.
+		if (!isIOSSafari()) {
+			_diceBox.updateConfig({ volume: isDiceSoundEnabled() ? 60 : 0 });
+		}
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		let p: Promise<any> = _diceBox.roll(stepNotation(steps[0]));
 		for (let i = 1; i < steps.length; i++) {
