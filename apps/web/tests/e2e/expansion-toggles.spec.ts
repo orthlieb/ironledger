@@ -187,8 +187,10 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 	test('YRT off: YRT region radio hidden in community creation', async ({ page }) => {
 		await setExpansionsViaStorage(page, { yrt: false });
 		await page.click('.tab-btn[data-tab="communities"]');
-		// Wait for the communities list container before the toolbar is stable.
-		await expect(page.locator('.char-list--communities')).toBeVisible({ timeout: 12_000 });
+		// Wait for tab content — populated list OR empty-state. The toolbar
+		// is rendered in both cases.
+		await page.locator('.char-list--communities > .char-card, .empty-tab').first()
+			.waitFor({ timeout: 12_000, state: 'attached' });
 		await expect(page.locator('.char-toolbar button', { hasText: /community/i }).first())
 			.toBeVisible({ timeout: 10_000 });
 		await page.locator('.char-toolbar button', { hasText: /community/i }).first().click({ timeout: 8_000 });
