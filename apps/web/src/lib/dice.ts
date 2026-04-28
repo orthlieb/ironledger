@@ -11,7 +11,7 @@
 // DiceRollerDialog instances share one Three.js context.
 // =============================================================================
 
-import { isDiceSoundEnabled } from './diceSound.js';
+import { playDiceClacks } from './diceSound.js';
 
 /** CDN paths for the 3D dice library and its asset bundle. */
 const DICE_LIB_URL =
@@ -170,17 +170,14 @@ function ensureDiceBox(): Promise<void> {
 		getOverlay(); // create the overlay div before DiceBox tries to attach to it
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const Lib  = (window as any)['dice-box-threejs'];
-		// Library sounds gate on the current toggle value at init time.
-		// Toggling in Settings while the box is alive only changes volume
-		// per-roll — switching between loaded/unloaded sound state needs
-		// a page reload (intentional: lets the user disable sounds on
-		// iPhone to bypass the still-being-debugged init hang).
-		const wantSounds = isDiceSoundEnabled();
+		// Library audio is permanently off — its loadSounds() pipeline hangs
+		// initialize() on iOS Safari. Dice clacks come from our own Web
+		// Audio path in diceSound.ts (which fetches the same MP3s but plays
+		// them via decodeAudioData + AudioBufferSourceNode, both of which
+		// iOS handles cleanly inside a click-handler gesture).
 		_diceBox = new Lib('#il-dice-overlay', {
 			assetPath:            DICE_ASSET_CDN,
-			sounds:               wantSounds,
-			sound_dieMaterial:    'plastic',
-			volume:               wantSounds ? 60 : 0,
+			sounds:               false,
 			shadows:              false,
 			theme_colorset:       'custom',
 			theme_material:       'plastic',
@@ -288,13 +285,13 @@ export async function animateDice(dice: DiceSpec[]): Promise<void> {
 		// triggered with a stale half-size value.
 		syncDiceBoxToOverlay();
 
+		// Schedule the dice-clack rattle in parallel with the physics
+		// simulation. No-op when the Settings toggle is off.
+		void playDiceClacks(dice.length);
+
 		// Roll first step, then chain subsequent steps via .then() so each colour
 		// change is applied only after the previous dice have been placed.
 		applyTheme(steps[0].theme);
-		// Apply the current sound preference. Effective only when sounds
-		// were loaded at init time (i.e. the toggle was on at last reload);
-		// otherwise the library has nothing to mute/unmute.
-		_diceBox.updateConfig({ volume: isDiceSoundEnabled() ? 60 : 0 });
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		let p: Promise<any> = _diceBox.roll(stepNotation(steps[0]));
 		for (let i = 1; i < steps.length; i++) {

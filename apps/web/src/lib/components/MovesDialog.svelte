@@ -32,6 +32,7 @@
 	import { momentumReset } from '$lib/character.js';
 	import { BURN_MOMENTUM_TITLE } from '$lib/cascadeRules.js';
 	import { rollDie, animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
+	import { playMissScream, preloadMissScream } from '$lib/diceSound.js';
 
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
 	import diceD6RawSvg   from '$icons/dice-d6-light.svg?raw';
@@ -306,6 +307,9 @@
 	// Public API
 	// ---------------------------------------------------------------------------
 	export function open(moveId?: string) {
+		// Pre-warm the Wilhelm scream buffer so a miss outcome doesn't
+		// have to wait on the fetch (idempotent — cached after first call).
+		preloadMissScream();
 		if (moveId) {
 			selectedId = moveId;
 			view       = 'detail';
@@ -478,6 +482,7 @@
 			{ sides: 10, value: c1   },
 			{ sides: 10, value: c2   },
 		]);
+		if (!hits1 && !hits2) void playMissScream();
 		appendLog(SESSION_LOG_ID, resolveTitle(selectedMove, statLabel), html, entryId, undefined, {
 			moveId: selectedMove.id,
 			actionScore: total,
@@ -558,6 +563,7 @@
 			{ sides: 10, value: c1 },
 			{ sides: 10, value: c2 },
 		]);
+		if (!hits1 && !hits2) void playMissScream();
 		appendLog(SESSION_LOG_ID, resolveTitle(selectedMove), html, entryId);
 
 		rolling = false;
@@ -619,6 +625,7 @@
 			{ sides: 6,  value: aDie },
 			{ sides: 10, value: c1   },
 		]);
+		if (!hitsDiff && !hitsC1) void playMissScream();
 		appendLog(SESSION_LOG_ID, resolveTitle(selectedMove), html, entryId);
 		rolling = false;
 	}
