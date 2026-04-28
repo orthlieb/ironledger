@@ -806,6 +806,13 @@
 		flex: 1;
 		min-width: 0;
 	}
+	/* Grimoire (Simonetta) is a calligraphic display face that already reads
+	   as a heading at title case — forcing uppercase produces oddly-cramped
+	   glyph forms. Drop the transform when the user has Grimoire active.
+	   Cinzel keeps the uppercase since it's a small-cap-style face. */
+	:global(html[data-font='simonetta']) .log-title {
+		text-transform: none;
+	}
 
 	/* ── Pagination controls ── */
 	.log-pagination {
