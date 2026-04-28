@@ -197,6 +197,8 @@
 		color:          var(--accent);
 		flex:           1;
 	}
+	/* Grimoire (Simonetta) is a calligraphic face — let it render in title case. */
+	:global(html[data-font='simonetta']) .cm-title { text-transform: none; }
 
 	.cm-close-btn {
 		all:         unset;
