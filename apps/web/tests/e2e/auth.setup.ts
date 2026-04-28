@@ -44,6 +44,19 @@ setup('authenticate as dev user', async ({ page }) => {
 	await page.goto('/home');
 	await page.waitForURL(/\/home/, { timeout: 10000 });
 
+	// Force the 3D dice animation OFF for every test that inherits this storage
+	// state. The library's WebGL physics + audio preload pipeline is the single
+	// largest source of flakes in CI — chromium-headless audio can stall the
+	// async init for several seconds, and the resulting timing variance trips
+	// any test that does `await animateDice(...)` with a tight timeout. With
+	// dice3d=off, animateDice() early-returns instantly and the log entry is
+	// appended synchronously after the roll, which is what the assertions
+	// actually care about. Same reasoning for dice sound: not under test.
+	await page.evaluate(() => {
+		localStorage.setItem('ironledger:dice3d',     'off');
+		localStorage.setItem('ironledger:dice:sound', 'off');
+	});
+
 	// Save the authenticated state (cookies + localStorage)
 	fs.mkdirSync(path.dirname(AUTH_FILE), { recursive: true });
 	await page.context().storageState({ path: AUTH_FILE });
