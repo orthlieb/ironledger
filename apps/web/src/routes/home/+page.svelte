@@ -386,7 +386,13 @@
 		if (actions.length === 0) return;
 		const char = chars.find(c => c.id === activeCharId);
 		if (!char) return;
-		const newData = { ...(char.data as Record<string, unknown>) };
+		// Hydrate the raw data so missing default fields (health, spirit,
+		// supply, momentum, …) are present before we read+update them.
+		// Without this, a fresh character whose data was never written by
+		// CharacterSheet ends up with `rec.health === undefined` here,
+		// which `?? 0` collapses to 0 — and -1 clamped to [0,5] is still 0,
+		// so `next === old` and the chip never moves.
+		const newData = hydrateCharacter(char.data) as unknown as Record<string, unknown>;
 		const rec = newData as Record<string, number | boolean>;
 		for (const action of actions) {
 			if (action.type === 'resource') {
