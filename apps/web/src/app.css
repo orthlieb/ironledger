@@ -166,11 +166,13 @@ html[data-theme='light'] {
 	--page-gutter: 0.5rem;
 }
 
-/* Simonetta heading-font mode: regular weight, all-caps, slightly larger */
+/* Simonetta heading-font mode: calligraphic regular weight; titles render
+   in their natural title case rather than forced uppercase, since the
+   lowercase glyphs aren't designed for forced-uppercase rendering. */
 [data-font="simonetta"] {
 	--font-display-weight:    400;
 	--font-display-variant:   normal;
-	--font-display-transform: uppercase;
+	--font-display-transform: none;
 	--font-display-scale:     1.12;  /* ~2pt bump at typical heading sizes */
 }
 
