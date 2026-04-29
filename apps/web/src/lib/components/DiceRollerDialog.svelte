@@ -12,6 +12,7 @@
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import { rollDie, rollD100, animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
 	import type { DiceCtx } from '$lib/diceContext.svelte.js';
+	import { headingText } from '$lib/fontStore.svelte.js';
 	import { getActiveDebilityWarnings } from '$lib/debilityWarnings.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 
@@ -199,7 +200,7 @@
 
 	<!-- Header -->
 	<div class="dice-header" use:draggable>
-		<span class="dice-title">Roll Dice</span>
+		<span class="dice-title">{headingText('Roll Dice')}</span>
 		<button class="dice-close" onclick={close} aria-label="Close">✕</button>
 	</div>
 

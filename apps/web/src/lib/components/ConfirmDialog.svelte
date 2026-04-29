@@ -13,6 +13,7 @@
 	 *   ref?.open();
 	 */
 	import type { Snippet } from 'svelte';
+	import { headingText } from '$lib/fontStore.svelte.js';
 
 	let {
 		title,
@@ -123,7 +124,7 @@
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="cm-drag-handle" onmousedown={startDrag}>
 		<span class="drag-grip" aria-hidden="true">⠿</span>
-		<span class="cm-title">{title}</span>
+		<span class="cm-title">{headingText(title)}</span>
 		{#if !showCancelButton}
 			<button class="cm-close-btn" onclick={handleDismiss} onmousedown={(e) => e.stopPropagation()} aria-label="Close">✕</button>
 		{/if}

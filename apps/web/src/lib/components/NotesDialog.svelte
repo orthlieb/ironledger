@@ -10,6 +10,7 @@
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import { draggable } from '$lib/actions/draggable.js';
 	import { renderNote } from '$lib/markdown.js';
+	import { headingText } from '$lib/fontStore.svelte.js';
 
 	// ---------------------------------------------------------------------------
 	// Internal state
@@ -60,7 +61,7 @@
 >
 	<!-- Header -->
 	<div class="nd-header" use:draggable>
-		<span class="nd-title">Session Note</span>
+		<span class="nd-title">{headingText('Session Note')}</span>
 		<button class="nd-close" onclick={close} aria-label="Close">✕</button>
 	</div>
 

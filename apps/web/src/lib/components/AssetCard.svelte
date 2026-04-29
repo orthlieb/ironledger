@@ -719,14 +719,15 @@
 	}
 
 	.asset-name {
-		font-family: var(--font-ui);
-		font-size: 0.86rem;
-		font-weight: 700;
-		letter-spacing: 0.03em;
-		color: var(--text);
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
+		font-family:    var(--font-display);
+		font-size:      calc(0.82rem * var(--font-display-scale));
+		font-weight:    var(--font-display-weight);
+		font-variant:   var(--font-display-variant);
+		letter-spacing: 0.04em;
+		color:          var(--text);
+		white-space:    nowrap;
+		overflow:       hidden;
+		text-overflow:  ellipsis;
 	}
 
 	.asset-cat-row {
