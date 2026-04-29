@@ -483,7 +483,7 @@
 </script>
 
 <svelte:head>
-	<title>Admin Dashboard | Iron Ledger</title>
+	<title>Iron Ledger</title>
 </svelte:head>
 
 <div class="admin-page">

@@ -63,7 +63,7 @@
 </script>
 
 <svelte:head>
-	<title>About — Iron Ledger</title>
+	<title>Iron Ledger</title>
 	<meta name="description" content="Iron Ledger is a digital companion app for Ironsworn — manage characters, foes, expeditions, moves, oracles, and session logs in one place." />
 </svelte:head>
 

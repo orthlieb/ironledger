@@ -3,7 +3,7 @@
 </script>
 
 <svelte:head>
-	<title>Error — Iron Ledger</title>
+	<title>Iron Ledger</title>
 </svelte:head>
 
 <div class="error-page">

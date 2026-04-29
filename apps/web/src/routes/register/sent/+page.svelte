@@ -3,7 +3,7 @@
 </script>
 
 <svelte:head>
-	<title>Check your email — Iron Ledger</title>
+	<title>Iron Ledger</title>
 </svelte:head>
 
 <div class="auth-wrap">

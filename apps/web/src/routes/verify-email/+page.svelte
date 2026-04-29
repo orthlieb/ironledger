@@ -6,7 +6,7 @@
 </script>
 
 <svelte:head>
-	<title>Verify email — Iron Ledger</title>
+	<title>Iron Ledger</title>
 </svelte:head>
 
 {#if data.maintenance}

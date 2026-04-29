@@ -1368,7 +1368,7 @@
 </script>
 
 <svelte:head>
-	<title>{activeChar ? `${activeChar.name} — Iron Ledger` : 'Characters — Iron Ledger'}</title>
+	<title>Iron Ledger</title>
 </svelte:head>
 
 <!-- Hidden file input for JSON import -->
