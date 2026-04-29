@@ -802,7 +802,7 @@
 		font-weight:    var(--font-display-weight);
 		font-variant:   var(--font-display-variant);
 		letter-spacing: 0.08em;
-		color:          var(--text-muted);
+		color:          var(--text-accent);
 		text-transform: var(--font-display-transform);
 		flex: 1;
 		min-width: 0;
