@@ -183,7 +183,7 @@ html[data-theme='light'] {
 	--font-display-weight:    400;
 	--font-display-variant:   normal;
 	--font-display-transform: none;
-	--font-display-scale:     1.25;  /* Runic glyphs render smaller; compensate */
+	--font-display-scale:     1.12;  /* matches Simonetta's bump */
 }
 
 @media (min-width: 768px) {
