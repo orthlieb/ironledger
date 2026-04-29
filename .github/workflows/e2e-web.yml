@@ -148,8 +148,14 @@ jobs:
           echo $! > /tmp/api.pid
 
       - name: Start web (background)
+        # `vite preview` is the dev preview server and does not execute the
+        # SvelteKit form-action handlers — every POST returns 403 ("Cross-
+        # site POST form submissions are forbidden"). Run the actual
+        # adapter-node output instead, with ORIGIN matching the served URL
+        # so SvelteKit's CSRF check passes.
         run: |
-          npx vite preview --port 5173 --host 127.0.0.1 > /tmp/web.log 2>&1 &
+          ORIGIN=http://localhost:5173 PORT=5173 HOST=127.0.0.1 \
+            node build/index.js > /tmp/web.log 2>&1 &
           echo $! > /tmp/web.pid
         working-directory: apps/web
 
