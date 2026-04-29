@@ -16,7 +16,7 @@
 </script>
 
 <svelte:head>
-	<title>Accept Invitation — Iron Ledger</title>
+	<title>Iron Ledger</title>
 </svelte:head>
 
 <div class="auth-wrap">

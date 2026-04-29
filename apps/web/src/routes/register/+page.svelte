@@ -12,7 +12,7 @@
 </script>
 
 <svelte:head>
-	<title>Create Account — Iron Ledger</title>
+	<title>Iron Ledger</title>
 	{#if !data.isDev}
 		<script src="https://js.hcaptcha.com/1/api.js" async defer></script>
 	{/if}
