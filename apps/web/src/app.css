@@ -157,7 +157,7 @@ html[data-theme='light'] {
 	/* Dice roll results and numeric data */
 	--font-mono:    'Roboto Mono', ui-monospace, 'Courier New', monospace;
 
-	--font-display-weight:    700;
+	--font-display-weight:    400;
 	--font-display-variant:   normal;
 	--font-display-transform: uppercase;
 	--font-display-scale:     1;     /* size multiplier — overridden per font */
