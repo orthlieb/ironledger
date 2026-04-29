@@ -91,6 +91,10 @@ async function stubFoesEndpoint(page: Page): Promise<void> {
 /** Open the Foe Picker by going to the Foes tab and clicking + Foe. */
 async function openFoePicker(page: Page): Promise<void> {
 	await page.click('.tab-btn[data-tab="foes"]');
+	// First confirm the click actually switched tabs — a previous test can leave
+	// the page on a different tab (e.g. Adventure restored from session state),
+	// and SvelteKit's tab swap can race a quick click() under load.
+	await expect(page.locator('.tab-btn[data-tab="foes"]')).toHaveClass(/active/, { timeout: 5_000 });
 	// Wait for tab content to render — populated list OR empty-state. The
 	// `+ Foe` toolbar button is rendered in both cases, so it's safe to
 	// click as soon as either appears.

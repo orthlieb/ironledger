@@ -139,18 +139,28 @@ test.describe('Registration Daily Quota', () => {
 	});
 
 	test('run out of tokens: closed UI shows on load, API rejects with 429', async ({ page }) => {
-		// Cap exactly at current usage → 0 remaining → exhausted now.
-		const current = await getQuota(token);
-		const status = await setQuota(token, Math.max(current.usedToday, 1));
-
-		// The set above pins the cap so it's exhausted (or immediately becomes
-		// exhausted on the next register attempt). If usedToday was 0 at the
-		// time of capping to 1, we need the quota to already be full — bump it
-		// by one more registration to guarantee exhaustion. Simpler: if not
-		// exhausted yet, set to usedToday.
-		if (!status.exhausted) {
-			await setQuota(token, current.usedToday);
+		// We want the quota in "exhausted" state (used >= cap) before navigating.
+		// The setQuota API only accepts daily >= 1, so we can't simply set the
+		// cap to 0 when usedToday is 0. Instead, raise the cap, consume a
+		// registration via the public endpoint to bump usedToday >= 1, then
+		// pin the cap to that count.
+		let current = await getQuota(token);
+		if (current.usedToday === 0) {
+			await setQuota(token, 10);
+			const bumpCtx = await request.newContext({ baseURL: API });
+			await bumpCtx.post('/api/v1/auth/register', {
+				data: {
+					email:        `e2e-quota-bump-${Date.now()}@ironledger.test`,
+					password:     `BumpE2E-${Date.now()}!`,
+					captchaToken: 'dev-bypass',
+				},
+			});
+			await bumpCtx.dispose();
+			current = await getQuota(token);
 		}
+
+		// Pin the cap exactly at current usage → 0 remaining → exhausted.
+		await setQuota(token, current.usedToday);
 
 		// 1. /register page shows the closed UI before the user types anything
 		await page.context().clearCookies();
