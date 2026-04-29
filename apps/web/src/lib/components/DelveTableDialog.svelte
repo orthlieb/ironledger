@@ -164,14 +164,13 @@
 	.dt-title {
 		font-family:    var(--font-display);
 		font-size:      calc(0.78rem * var(--font-display-scale));
-		font-weight:    700;
+		font-weight:    var(--font-display-weight);
+		font-variant:   var(--font-display-variant);
 		letter-spacing: 0.08em;
-		text-transform: uppercase;
+		text-transform: var(--font-display-transform);
 		color:          var(--text-accent);
 		flex:           1;
 	}
-	/* Grimoire (Simonetta) is a calligraphic face — let it render in title case. */
-	:global(html[data-font='simonetta']) .dt-title { text-transform: none; }
 	.dt-close {
 		background:    transparent;
 		border:        none;
