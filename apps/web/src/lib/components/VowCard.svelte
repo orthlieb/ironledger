@@ -5,6 +5,7 @@
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import trashSvg from '$icons/trash-solid.svg?raw';
 	import { isDelveEnabled } from '$lib/expansionStore.svelte.js';
+	import { renderNote } from '$lib/markdown.js';
 
 	let {
 		vow = $bindable(),
@@ -44,6 +45,11 @@
 
 	$effect(() => { if (editingName && nameInputEl) nameInputEl.select(); });
 	$effect(() => { if (focusName) { nameBeforeEdit = vow.name; editingName = true; } });
+
+	// Inline notes editing (markdown, click-to-edit — same pattern as CommunityCard)
+	let editingNotes   = $state(false);
+	let notesTextareaEl = $state<HTMLTextAreaElement | null>(null);
+	$effect(() => { if (editingNotes && notesTextareaEl) notesTextareaEl.focus(); });
 
 	const diffLabel  = $derived(
 		DIFFICULTIES.find((d) => d.value === vow.difficulty)?.label ?? vow.difficulty
@@ -151,6 +157,38 @@
 					</div>
 				</div>
 			{/if}
+
+			<!-- Notes (markdown, click-to-edit) -->
+			<div class="vow-notes-row">
+				<span class="vow-notes-label">Notes</span>
+				{#if editingNotes}
+					<textarea
+						bind:this={notesTextareaEl}
+						class="vow-notes-textarea"
+						bind:value={vow.notes}
+						onblur={() => (editingNotes = false)}
+						placeholder="Notes… (**bold**, *italic*, # heading, - list)"
+						rows="3"
+					></textarea>
+				{:else}
+					<!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
+					<div
+						class="vow-notes-display"
+						class:vow-notes-display--empty={!vow.notes?.trim()}
+						role="button"
+						tabindex="0"
+						title="Click to edit"
+						onclick={() => (editingNotes = true)}
+						onkeydown={(e) => { if (e.key === 'Enter') editingNotes = true; }}
+					>
+						{#if vow.notes?.trim()}
+							{@html renderNote(vow.notes)}
+						{:else}
+							<span class="vow-notes-placeholder">Notes… (**bold**, *italic*, # heading, - list)</span>
+						{/if}
+					</div>
+				{/if}
+			</div>
 
 			<!-- Progress track + Mark/Unmark buttons (inline right, same height as boxes) -->
 			<div class="vow-progress-row" style="--track-inner-bg: var(--bg-inset)">
@@ -448,4 +486,72 @@
 		color: var(--color-danger);
 		font-weight: 700;
 	}
+
+	/* ---- Notes (markdown, click-to-edit) ---- */
+	.vow-notes-row {
+		display:        flex;
+		flex-direction: column;
+		gap:            3px;
+	}
+
+	.vow-notes-label {
+		font-family: var(--font-ui);
+		font-size:   0.72rem;
+		color:       var(--text-muted);
+	}
+
+	.vow-notes-textarea {
+		font-family:   var(--font-ui);
+		font-size:     0.78rem;
+		background:    var(--bg);
+		border:        1px solid var(--border);
+		border-radius: 4px;
+		color:         var(--text);
+		padding:       4px 7px;
+		outline:       none;
+		resize:        vertical;
+		min-height:    54px;
+		width:         100%;
+	}
+	.vow-notes-textarea:focus { border-color: var(--focus-ring, #E8A13B); }
+
+	.vow-notes-display {
+		font-family:   var(--font-ui);
+		font-size:     0.78rem;
+		line-height:   1.55;
+		background:    var(--bg);
+		border:        1px solid var(--border);
+		border-radius: 4px;
+		color:         var(--text);
+		padding:       4px 7px;
+		cursor:        text;
+		min-height:    32px;
+		width:         100%;
+		transition:    border-color 0.12s;
+	}
+	.vow-notes-display:hover,
+	.vow-notes-display:focus { border-color: var(--border-mid); outline: none; }
+
+	.vow-notes-placeholder {
+		font-style: italic;
+		color:      var(--text-dimmer);
+	}
+
+	.vow-notes-display :global(p)            { margin: 0 0 2px; }
+	.vow-notes-display :global(p:last-child) { margin-bottom: 0; }
+	.vow-notes-display :global(h3),
+	.vow-notes-display :global(h4),
+	.vow-notes-display :global(h5) {
+		font-size:      0.76rem;
+		font-weight:    700;
+		letter-spacing: 0.04em;
+		color:          var(--text-accent);
+		margin:         4px 0 1px;
+	}
+	.vow-notes-display :global(ul),
+	.vow-notes-display :global(ol)  { margin: 1px 0; padding-left: 1.2em; }
+	.vow-notes-display :global(li)  { margin-bottom: 1px; }
+	.vow-notes-display :global(strong) { font-weight: 700; color: var(--text); }
+	.vow-notes-display :global(em)     { font-style: italic; }
+	.vow-notes-display :global(br)  { display: block; margin-bottom: 2px; content: ''; }
 </style>
