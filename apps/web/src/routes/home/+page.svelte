@@ -68,6 +68,7 @@
 	import iconOracles from '$icons/crystal-ball.svg?raw';
 	import iconDice    from '$icons/dice-d10-light.svg?raw';
 	import iconNotes   from '$icons/note-sticky-solid.svg?raw';
+	import axeSvg      from '$icons/sharp-axe.svg?raw';
 
 	let { data }: { data: PageData } = $props();
 
@@ -1568,9 +1569,7 @@
 
 				{#if loadingChars}
 					<div class="loading-tab">
-						<span class="loading-dot"></span>
-						<span class="loading-dot"></span>
-						<span class="loading-dot"></span>
+						<span class="loading-axe">{@html axeSvg}</span>
 					</div>
 				{:else if chars.length === 0}
 					<div class="empty-tab">
@@ -2454,21 +2453,26 @@
 		padding: 5rem 2rem;
 	}
 
-	.loading-dot {
-		display: inline-block;
-		width: 7px;
-		height: 7px;
-		border-radius: 50%;
-		background: var(--text-dimmer);
-		opacity: 0.4;
-		animation: loading-pulse 1.2s ease-in-out infinite;
+	.loading-axe {
+		display:        inline-flex;
+		align-items:    center;
+		justify-content: center;
+		width:          32px;
+		height:         32px;
+		color:          var(--text-dimmer);
+		opacity:        0.7;
+		animation:      loading-spin 1.4s linear infinite;
+		transform-origin: center;
 	}
-	.loading-dot:nth-child(2) { animation-delay: 0.2s; }
-	.loading-dot:nth-child(3) { animation-delay: 0.4s; }
+	.loading-axe :global(svg) {
+		width:  100%;
+		height: 100%;
+		fill:   currentColor;
+	}
 
-	@keyframes loading-pulse {
-		0%, 80%, 100% { transform: scale(0.8); opacity: 0.3; }
-		40%            { transform: scale(1.2); opacity: 0.9; }
+	@keyframes loading-spin {
+		from { transform: rotate(0deg); }
+		to   { transform: rotate(360deg); }
 	}
 
 	/* Card grid — single column on mobile, multi-column on larger screens */

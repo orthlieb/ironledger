@@ -19,6 +19,7 @@
 		isDelveEnabled, setDelveEnabled,
 		isYrtEnabled,   setYrtEnabled,
 	} from '$lib/expansionStore.svelte.js';
+	import { headingText } from '$lib/fontStore.svelte.js';
 	import {
 		type FontDisplay,
 		getFontDisplay, savedFont, setFontDisplay,
@@ -130,7 +131,7 @@
 
 	<!-- Header -->
 	<div class="sd-header" use:draggable>
-		<span class="sd-title">Settings</span>
+		<span class="sd-title">{headingText('Settings')}</span>
 		<button class="sd-close" onclick={close} aria-label="Close">✕</button>
 	</div>
 

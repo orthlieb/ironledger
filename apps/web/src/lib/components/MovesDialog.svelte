@@ -15,6 +15,7 @@
 	import type { MoveDefinition } from '@ironledger/shared';
 	import type { DiceCtx } from '$lib/diceContext.svelte.js';
 	import type { PreconditionContext } from '$lib/preconditions.js';
+	import { headingText } from '$lib/fontStore.svelte.js';
 	import {
 		loadMoves,
 		getMoves,
@@ -792,7 +793,7 @@
 	<!-- ── Picker view ────────────────────────────────────────────────────── -->
 
 	<div class="md-header" use:draggable>
-		<span class="md-title">Moves</span>
+		<span class="md-title">{headingText('Moves')}</span>
 		<button class="md-close" onclick={close} aria-label="Close">✕</button>
 	</div>
 

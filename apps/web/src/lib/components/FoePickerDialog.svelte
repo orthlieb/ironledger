@@ -19,6 +19,7 @@
 		RANK_COLORS, FOE_RANKS, FOE_QUANTITIES, FOE_NATURE_COLORS,
 	} from '$lib/foeStore.svelte.js';
 	import { sourceLabel } from '$lib/expansionStore.svelte.js';
+	import { headingText } from '$lib/fontStore.svelte.js';
 	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '$lib/foePortrait.js';
 	import FoeImageCarousel from '$lib/components/FoeImageCarousel.svelte';
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
@@ -211,7 +212,7 @@
 	{#if view === 'picker'}
 		<div class="fd-header">
 			<div class="fd-header-row">
-				<span class="fd-title">{_mode === 'denizen' ? 'Pick a Denizen' : 'Choose a Foe'}</span>
+				<span class="fd-title">{headingText(_mode === 'denizen' ? 'Pick a Denizen' : 'Choose a Foe')}</span>
 				<button class="fd-close-btn" onclick={close} aria-label="Close">✕</button>
 			</div>
 			<div class="fd-search-row">
@@ -337,7 +338,7 @@
 			{#if !_noBack}
 				<button class="btn fd-back-btn" onclick={goBack}>← Back</button>
 			{/if}
-			<span class="fd-title">{confirmFoe.name}</span>
+			<span class="fd-title">{headingText(confirmFoe.name)}</span>
 		</div>
 
 		<!-- Scrollable body -->

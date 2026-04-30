@@ -11,6 +11,7 @@
 	import type { OracleEntry } from '$lib/oracleStore.svelte.js';
 	import { rangeLabelForEntry, rollFromRangeTable } from '$lib/oracleStore.svelte.js';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
+	import { headingText } from '$lib/fontStore.svelte.js';
 	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
 
 	// ---------------------------------------------------------------------------
@@ -101,7 +102,7 @@
 >
 	<!-- Header -->
 	<div class="dt-header">
-		<span class="dt-title">{title}</span>
+		<span class="dt-title">{headingText(title)}</span>
 		<button class="dt-close" onclick={close} aria-label="Close">✕</button>
 	</div>
 

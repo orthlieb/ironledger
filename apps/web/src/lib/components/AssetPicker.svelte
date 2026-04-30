@@ -11,6 +11,7 @@
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
 	import { getVisibleAssets, isAssetsLoading } from '$lib/assetStore.svelte.js';
 	import { firstPreconditionFailure, type Precondition } from '$lib/preconditions.js';
+	import { headingText } from '$lib/fontStore.svelte.js';
 
 	let {
 		ownedIds       = [],
@@ -191,7 +192,7 @@
 >
 	<!-- Header -->
 	<div class="picker-header">
-		<span class="picker-title">Choose an Asset</span>
+		<span class="picker-title">{headingText('Choose an Asset')}</span>
 		<button class="close-btn" onclick={onClose} aria-label="Close picker">✕</button>
 	</div>
 

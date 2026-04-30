@@ -20,6 +20,7 @@
 		rollOracle,
 	} from '$lib/oracleStore.svelte.js';
 	import { sourceLabel } from '$lib/expansionStore.svelte.js';
+	import { headingText } from '$lib/fontStore.svelte.js';
 	import type { CatalogueSource } from '$lib/types.js';
 	import { appendLog, enrichOutcomeLinks, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
@@ -178,7 +179,7 @@
 
 	<!-- Header -->
 	<div class="od-header" use:draggable>
-		<span class="od-title">Oracles</span>
+		<span class="od-title">{headingText('Oracles')}</span>
 		<button class="od-close" onclick={close} aria-label="Close">✕</button>
 	</div>
 

@@ -10,6 +10,7 @@
 	import { type LogEntry, logs, initLog, clearLog, deleteLogEntry, updateLogEntryNote, updateLogEntryHtml, enrichOutcomeLinks, triggerXpSpend, triggerAction, appendLog, getLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import { OVERFLOW_RULES, FLOOR_OVERFLOW_RULES, BURN_MOMENTUM_TITLE } from '$lib/cascadeRules.js';
 	import type { DiceCtx } from '$lib/diceContext.svelte.js';
+	import { headingText } from '$lib/fontStore.svelte.js';
 	import { momentumReset } from '$lib/character.js';
 	import { findMove } from '$lib/moveStore.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
@@ -656,7 +657,7 @@
 
 	<!-- ── Built-in header: title · pagination · clear ── -->
 	<div class="log-header">
-		<span class="log-title">Session Log</span>
+		<span class="log-title">{headingText('Session Log')}</span>
 
 		<div class="log-pagination">
 			<button

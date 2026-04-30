@@ -164,7 +164,7 @@
     },
     {
       "id": "ritual/yrt-cantrip",
-      "name": "Conclave Ritual: Cantrip",
+      "name": "Cantrip",
       "category": "Ritual",
       "summary": "Minor magical tricks: clean, light, warm, lock, and more.",
       "preamble": null,
@@ -267,7 +267,7 @@
     },
     {
       "id": "ritual/yrt-arcane-inspection",
-      "name": "Conclave Ritual: Arcane Inspection",
+      "name": "Arcane Inspection",
       "category": "Ritual",
       "summary": "Sense and interpret mana in a person, object, or area.",
       "preamble": null,
@@ -394,7 +394,7 @@
     },
     {
       "id": "ritual/yrt-vizion-illusion",
-      "name": "Conclave Ritual: Illusion",
+      "name": "Illusion",
       "category": "Ritual",
       "summary": "Create visual, auditory, and physical illusions to deceive.",
       "preamble": null,
@@ -521,7 +521,7 @@
     },
     {
       "id": "ritual/yrt-compulsion",
-      "name": "Conclave Ritual: Compulsion",
+      "name": "Compulsion",
       "category": "Ritual",
       "summary": "Influence thoughts, emotions, and perceptions in a target's mind.",
       "preamble": null,

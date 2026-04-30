@@ -14,6 +14,7 @@
 
 	import type { Site, FoeDef, FoeQuantity } from '$lib/types.js';
 	import { DENIZEN_CELLS } from '$lib/types.js';
+	import { headingText } from '$lib/fontStore.svelte.js';
 	import {
 		loadFoes, getFoes, RANK_COLORS, FOE_RANKS, FOE_QUANTITIES,
 		FOE_NATURE_COLORS, effectiveRank as calcEffectiveRank,
@@ -138,7 +139,7 @@
 	<!-- ===== TABLE VIEW ===== -->
 	{#if view === 'table'}
 		<div class="dd-header">
-			<span class="dd-title">Denizen Table</span>
+			<span class="dd-title">{headingText('Denizen Table')}</span>
 		</div>
 
 		<div class="dd-table-wrap">
@@ -175,7 +176,7 @@
 
 		<div class="dd-back-bar">
 			<button class="btn dd-back-btn" onclick={() => (view = 'table')}>← Back</button>
-			<span class="dd-title">{rolledFoe?.name ?? (rolledName || 'Unknown Denizen')}</span>
+			<span class="dd-title">{headingText(rolledFoe?.name ?? (rolledName || 'Unknown Denizen'))}</span>
 		</div>
 
 		<div class="dd-result-scroll">
