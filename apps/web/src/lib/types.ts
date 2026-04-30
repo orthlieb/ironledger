@@ -19,6 +19,8 @@ export interface Vow {
 	ticks: number; // 0–40 (10 boxes × 4 ticks)
 	threat: string;
 	menace: number; // 0–10 menace track
+	/** Free-form session notes (mini markdown: **bold**, *italic*, # headings, - lists). */
+	notes?: string;
 }
 
 export interface CharacterAsset {

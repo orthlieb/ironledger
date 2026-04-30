@@ -345,6 +345,7 @@
 			ticks: 0,
 			threat: '',
 			menace: 0,
+			notes: '',
 		};
 		data.vows = [...data.vows, newVow];
 		newlyCreatedVowId = newVow.id;
