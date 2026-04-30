@@ -179,6 +179,125 @@ test.describe('Characters tab', () => {
 		await expect(vowCards).toHaveCount(vowsBefore - 1, { timeout: 5000 });
 	});
 
+	// ── Vow notes (markdown) ─────────────────────────────────────────────────
+	//
+	// Three things are pinned here:
+	//   1. A note typed into the textarea is captured and persisted (the textarea
+	//      switches into a rendered <p>… block on blur).
+	//   2. After a full page reload the note still renders — the backend round-trip
+	//      and hydrate path keep `vow.notes` intact.
+	//   3. Markdown features (bold, headings, lists) are turned into the matching
+	//      HTML by renderNote() — this is what the user sees when they're not in
+	//      edit mode.
+	//
+	// We give the auto-save (1500 ms debounce) at least 2 s before reloading to
+	// make sure the PATCH /api/characters/:id has fired and committed.
+
+	test('vow notes: typed text shows rendered HTML on blur', async ({ page }) => {
+		await ensureCharacterSelected(page);
+		const activeCard = page.locator('.char-card--active').first();
+
+		// Make sure we have a vow to work with.
+		const vowCards = activeCard.locator('.vow-card');
+		if (await vowCards.count() === 0) {
+			await activeCard.locator('button:has-text("+ Vow")').click();
+			await expect(vowCards).toHaveCount(1, { timeout: 5000 });
+		}
+		const vow = vowCards.first();
+
+		// The display block is shown by default — clicking it switches into edit mode.
+		const display  = vow.locator('.vow-notes-display');
+		const textarea = vow.locator('.vow-notes-textarea');
+		await expect(display).toBeVisible();
+		await display.click();
+		await expect(textarea).toBeVisible({ timeout: 3000 });
+
+		// Type a plain note, blur, expect it to render as a paragraph.
+		const noteText = 'Track the smith into the Deep.';
+		await textarea.fill(noteText);
+		await textarea.blur();
+
+		await expect(display).toBeVisible({ timeout: 3000 });
+		await expect(display.locator('p')).toHaveText(noteText);
+	});
+
+	test('vow notes: persist across a page reload', async ({ page }) => {
+		await ensureCharacterSelected(page);
+		const activeCard = page.locator('.char-card--active').first();
+		const vowCards   = activeCard.locator('.vow-card');
+		if (await vowCards.count() === 0) {
+			await activeCard.locator('button:has-text("+ Vow")').click();
+			await expect(vowCards).toHaveCount(1, { timeout: 5000 });
+		}
+
+		// Use a unique marker so the assertion is unambiguous even if the
+		// fixture character already had other vows around.
+		const marker   = `note-persist-${Date.now()}`;
+		const noteText = `Persisted: ${marker}`;
+
+		const vow      = vowCards.first();
+		const display  = vow.locator('.vow-notes-display');
+		const textarea = vow.locator('.vow-notes-textarea');
+
+		await display.click();
+		await expect(textarea).toBeVisible({ timeout: 3000 });
+		await textarea.fill(noteText);
+		await textarea.blur();
+		await expect(display.locator('p')).toHaveText(noteText, { timeout: 3000 });
+
+		// Wait out the 1500 ms auto-save debounce + the PATCH round-trip.
+		await page.waitForTimeout(2200);
+
+		await page.reload();
+		await expect(page.locator('.loading-tab')).not.toBeVisible({ timeout: 8000 });
+		await page.click('.tab-btn[data-tab="characters"]');
+		await expect(page.locator('.char-toolbar')).toBeVisible({ timeout: 5000 });
+
+		// Re-select the same character; the note should already be on the rendered card.
+		const reloadedCard = page.locator('.char-card--active').first();
+		if (!(await reloadedCard.isVisible().catch(() => false))) {
+			await page.locator('.char-list--characters > .char-card').first().click();
+		}
+		const restoredVow = page.locator('.char-card--active .vow-card', {
+			has: page.locator(`.vow-notes-display p:has-text("${marker}")`),
+		}).first();
+		await expect(restoredVow).toBeVisible({ timeout: 8000 });
+	});
+
+	test('vow notes: markdown renders bold, heading, and list', async ({ page }) => {
+		await ensureCharacterSelected(page);
+		const activeCard = page.locator('.char-card--active').first();
+		const vowCards   = activeCard.locator('.vow-card');
+		if (await vowCards.count() === 0) {
+			await activeCard.locator('button:has-text("+ Vow")').click();
+			await expect(vowCards).toHaveCount(1, { timeout: 5000 });
+		}
+		const vow      = vowCards.first();
+		const display  = vow.locator('.vow-notes-display');
+		const textarea = vow.locator('.vow-notes-textarea');
+
+		const markdown =
+			'# The Iron Heart\n' +
+			'Promised to **Edda** the smith.\n' +
+			'- recover the shard\n' +
+			'- return alive';
+
+		await display.click();
+		await expect(textarea).toBeVisible({ timeout: 3000 });
+		await textarea.fill(markdown);
+		await textarea.blur();
+
+		await expect(display).toBeVisible({ timeout: 3000 });
+		// Heading
+		await expect(display.locator('h3')).toHaveText('The Iron Heart');
+		// Bold inside paragraph
+		await expect(display.locator('p strong')).toHaveText('Edda');
+		// Bullet list — two <li>
+		await expect(display.locator('ul > li')).toHaveCount(2);
+		await expect(display.locator('ul > li').first()).toHaveText('recover the shard');
+		await expect(display.locator('ul > li').nth(1)).toHaveText('return alive');
+	});
+
 	// ── Cleanup ───────────────────────────────────────────────────────────────
 
 	test('cleanup: delete all characters', async ({ page }) => {
