@@ -650,7 +650,7 @@
       "id": "path/yrt-venenigisto",
       "name": "Poisoner",
       "category": "Path",
-      "summary": "Poison crafter: brew contact and ingestion toxins from plant extracts, and detect the venomous work of others.",
+      "summary": "Poison crafter: brew contact and ingestion toxins from plant extracts, deploy them on blades, arrows, or in food and drink, and detect the venomous work of others. Coated weapons deal +1 harm.",
       "preamble": "You have trained in the lore of plants, poisons, and their antidotes — whether as a herbalist, assassin, or apothecary.",
       "abilities": [
         {
@@ -669,9 +669,12 @@
         },
         {
           "enabled": false,
-          "text": "When you <a class=\"move-link\" data-id=\"move/craft\">Craft an Item</a> to create a poison, add +1 to your roll and you may create two doses. Your poisons are subtle and hard to detect: when someone examines your poison, they must score a <b>strong hit</b> to identify it.",
+          "text": "When you <b>deploy</b> a poison you have crafted, spend 1 dose and resolve as follows:\n\n  * <b>Combat application</b> (coated blade or arrow): your next <a class=\"move-link\" data-id=\"move/strike\">Strike</a> or <a class=\"move-link\" data-id=\"move/clash\">Clash</a> deals <b>+1 harm</b> if it hits. The coating is consumed by the attempt, hit or miss. For arrows, spend 1 dose per shot at fire time.\n  * <b>Stealth application</b> (drink, food, contact): make a <a class=\"move-link\" data-id=\"move/secure-an-advantage\">Secure an Advantage</a> roll. On a <b>strong hit</b>, the poison takes effect by its potency — soporific incapacitates, debilitating sickens for the next scene, lethal kills (per the fiction's pace) — and you gain Secure an Advantage's standard benefit (take control: next move +1; or +2 momentum). On a <b>weak hit</b>, the effect lands but the target acts once more, leaves a clue, or raises an alarm. On a <b>miss</b>, the dose is wasted; <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a>.\n\nA <b>flawed</b> poison (the Craft weak-hit telltale) imposes <b>-1 on the deployment roll</b> — Strike/Clash for combat, Secure an Advantage for stealth.",
           "moves": [
-            "move/craft"
+            "move/strike",
+            "move/clash",
+            "move/secure-an-advantage",
+            "move/pay-the-price"
           ]
         }
       ],
