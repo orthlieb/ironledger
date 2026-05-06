@@ -44,7 +44,7 @@
       "strong": "You perfectly craft your item. <a class=\"resource-link\" data-resource=\"supply\" data-value=\"-1\">Consume -1 supply</a>. Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">+1 momentum</a>.",
       "weak": "You craft your item but with complications. <a class=\"resource-link\" data-resource=\"supply\" data-value=\"-1\">Consume -1 supply</a>. Choose one:<ul><li>The item requires more materials than you thought. <a class=\"resource-link\" data-resource=\"supply\" data-value=\"-1\">Consume an additional -1 supply</a>.</li><li>The item is weaker or more fragile than intended.</li><li>The item has a telltale flaw.</li></ul>",
       "miss": "You bungle the operation and the item is ruined. <a class=\"resource-link\" data-resource=\"supply\" data-value=\"-1\">Consume -1 supply</a>. <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a>.",
-      "notes": "This move is only available to those who have a specific Path that enables it, such as Bittercraft or Forger. The asset provides the context for what is being crafted and any additional flavor for the outcome.",
+      "notes": "This move is only available to those who have a specific Path that enables it, such as Bittercraft or Quillwise. The asset provides the context for what is being crafted and any additional flavor for the outcome.",
       "logTitle": "{character} crafts an item using {stat}",
       "preconditions": [
         {
