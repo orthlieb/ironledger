@@ -650,28 +650,31 @@
       "id": "path/yrt-venenigisto",
       "name": "Poisoner",
       "category": "Path",
-      "summary": "Poison crafter: brew contact and ingestion toxins from plant extracts, and detect the venomous work of others.",
+      "summary": "Detect the venomous work of others, brew contact and ingestion toxins from plant extracts, and deploy them on blades, arrows, or in food and drink.",
       "preamble": "You have trained in the lore of plants, poisons, and their antidotes — whether as a herbalist, assassin, or apothecary.",
       "abilities": [
         {
           "enabled": true,
-          "text": "When you <a class=\"move-link\" data-id=\"move/craft\">Craft an Item</a>, you are creating a poison from foraged plants or gathered extracts, choose a potency and a delivery method.\n\n  * <b>Potency:</b> soporific (induces sleep), debilitating (sickens and weakens), or lethal (kills if untreated).\n  * <b>Delivery:</b> contact (applied to skin or a wound) or ingestion (slipped into food or drink).\n\nOn a <b>strong hit</b> add one dose. On a <b>weak hit</b> add your dose and if you choose a telltale flaw, the poison has a noticeable odor, taste, or color.",
+          "text": "When you <a class=\"move-link\" data-id=\"move/gather-information\">Gather Information</a> to examine food, drink, a coated weapon, or a victim's symptoms to detect or identify a poison, add +1. On a <b>strong hit</b>, you can also prepare an antidote if you have at least 1 supply. The victim may <a class=\"move-link\" data-id=\"move/heal\">Heal</a> from the poison with +1 added to their roll. On a <b>weak hit</b>, you identify the poison and its effects.",
+          "moves": [
+            "move/gather-information",
+            "move/heal"
+          ]
+        },
+        {
+          "enabled": false,
+          "text": "When you <a class=\"move-link\" data-id=\"move/craft\">Craft an Item</a>, you are creating a poison from foraged plants or gathered extracts. Choose a potency and a delivery method.\n\n  * <b>Potency:</b> soporific (induces sleep), debilitating (sickens and weakens), or lethal (kills if untreated).\n  * <b>Delivery:</b> contact (applied to skin or a wound) or ingestion (slipped into food or drink).\n\nOn a <b>strong hit</b>, add one dose. On a <b>weak hit</b>, add your dose, and if you choose a telltale flaw, the poison has a noticeable odor, taste, or color.",
           "moves": [
             "move/craft"
           ]
         },
         {
           "enabled": false,
-          "text": "When you <a class=\"move-link\" data-id=\"move/gather-information\">Gather Information</a> to examine food, drink, a coated weapon, or a victim's symptoms to detect or identify a poison, add +1. On a <b>strong hit</b>, you can also prepare an antidote if you have at least 1 supply. The victim may <b>Heal</b> from the poison with +1 added to their roll. On a <b>weak hit</b>, you identify the poison and its effects.",
+          "text": "When you <b>deploy</b> a poison you have crafted — by coating a weapon, slipping it into food or drink, or applying it by contact — spend 1 dose. The move you make to deliver it (typically <a class=\"move-link\" data-id=\"move/strike\">Strike</a> or <a class=\"move-link\" data-id=\"move/clash\">Clash</a> in combat, <a class=\"move-link\" data-id=\"move/secure-an-advantage\">Secure an Advantage</a> in stealth) resolves the poison alongside its normal effect:\n\n  * <b>Strong hit</b>: the poison takes hold at full potency. In combat, your weapon also deals <b>+1 harm</b>; the coating is consumed by the attempt and must be re-applied outside combat. In stealth, the target succumbs by potency — soporific incapacitates, debilitating sickens for the next scene, lethal kills per the fiction's pace.\n  * <b>Weak hit</b>: the poison lands but with a complication — the target gets one last act, leaves a telltale, or fights through it. No bonus harm.\n  * <b>Miss</b>: the dose is wasted; the move's normal miss outcome applies.\n\nA <b>flawed</b> poison (Craft weak-hit telltale) takes <b>-1</b> on the deploy roll.",
           "moves": [
-            "move/gather-information"
-          ]
-        },
-        {
-          "enabled": false,
-          "text": "When you <a class=\"move-link\" data-id=\"move/craft\">Craft an Item</a> to create a poison, add +1 to your roll and you may create two doses. Your poisons are subtle and hard to detect: when someone examines your poison, they must score a <b>strong hit</b> to identify it.",
-          "moves": [
-            "move/craft"
+            "move/strike",
+            "move/clash",
+            "move/secure-an-advantage"
           ]
         }
       ],
@@ -682,7 +685,7 @@
           "label": "Doses",
           "shortLabel": "Doses",
           "position": "bottom",
-          "maxValue": 10,
+          "maxValue": 5,
           "icon": "skull-and-crossbones"
         }
       ],
