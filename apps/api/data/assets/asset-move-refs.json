@@ -2043,6 +2043,29 @@
     ]
   },
   {
+    "id": "path/yrt-touched-bovine",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": ["move/strike", "move/clash"]
+      },
+      {
+        "index": 1,
+        "moves": ["move/endure-stress"]
+      },
+      {
+        "index": 2,
+        "moves": ["move/compel"]
+      }
+    ],
+    "allMoves": [
+      "move/strike",
+      "move/clash",
+      "move/endure-stress",
+      "move/compel"
+    ]
+  },
+  {
     "id": "ritual/yrt-cantrip",
     "abilities": [
       {
