@@ -7,8 +7,8 @@
 	 * All fonts are var(--font-ui) (Roboto) per design spec.
 	 */
 	import type { CharacterAsset, AssetDefinition } from '$lib/types.js';
-	import { findRarityForAsset } from '$lib/assetStore.svelte.js';
-	import { isDelveEnabled } from '$lib/expansionStore.svelte.js';
+	import { findRaritiesForAsset } from '$lib/assetStore.svelte.js';
+	import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
 
 	import trashSvg          from '$icons/trash-solid-full.svg?raw';
@@ -82,12 +82,16 @@
 
 	const enabledCount = $derived(asset.abilities.filter(Boolean).length);
 	const total        = $derived(definition.abilities.length);
-	const rarity       = $derived(findRarityForAsset(asset.assetId));
-	/** Show the rarity slot if Delve is enabled OR the character already owns this rarity
-	    (preserve existing characters when the expansion is disabled). */
-	const showRaritySlot = $derived(
-		!!rarity && (isDelveEnabled() || asset.rarityId === rarity.id)
+	/** All rarities pinned to this asset id, filtered to those visible to the character —
+	    a rarity shows if its source's expansion is enabled OR the character already owns it
+	    (preserves data when the expansion is disabled). Multiple rarities can share an
+	    assetId (e.g. Cutthroat has Dagger of the Blooded + Nemezo); a character may own
+	    at most one of them at a time. */
+	const visibleRarities = $derived(
+		findRaritiesForAsset(asset.assetId)
+			.filter(r => isSourceEnabled(r.source) || asset.rarityId === r.id),
 	);
+	const showRaritySlot = $derived(visibleRarities.length > 0);
 
 	// ── Level-gated ability cap (e.g. Touched assets) ──────────────────────
 	/**
@@ -631,38 +635,46 @@
 				{/if}
 			{/each}
 
-			<!-- Rarity slot -->
-			{#if showRaritySlot && rarity}
+			<!-- Rarity slot — multiple rarities may exist per asset; exclusive (at most one owned). -->
+			{#if showRaritySlot}
 				<div class="rarity-section">
-					<label class="rarity-label">
-						<input
-							type="checkbox"
-							class="rarity-check"
-							checked={asset.rarityId === rarity.id}
-							disabled={asset.rarityId !== rarity.id && characterXp < rarity.xpCost}
-							onchange={() => {
-								const rarityDisabled = asset.rarityId !== rarity.id && characterXp < rarity.xpCost;
-								if (rarityDisabled) return;
-								const wasChecked = asset.rarityId === rarity.id;
-								asset.rarityId = wasChecked ? undefined : rarity.id;
-								if (!wasChecked) {
-									const entryId = crypto.randomUUID();
-									const xpLink  = `<a class="xp-cost-link" data-entry-id="${entryId}" data-cost="${rarity.xpCost}" data-char-id="${characterId}" href="#">−${rarity.xpCost} experience</a>`;
-									appendLog(SESSION_LOG_ID, logTitle,
-										`<div>Rarity acquired: <strong>RARITY: ${rarity.name}</strong> for <strong>${definition.name}</strong> ${xpLink}</div>`,
-										entryId);
-								} else {
-									appendLog(SESSION_LOG_ID, logTitle,
-										`<div>Rarity removed: <strong>RARITY: ${rarity.name}</strong> from <strong>${definition.name}</strong></div>`);
-								}
-							}}
-						/>
-						<span class="rarity-name">RARITY: {rarity.name}</span>
-						<span class="rarity-cost">({rarity.xpCost} XP)</span>
-					</label>
-					{#if asset.rarityId === rarity.id}
-						<p class="rarity-desc">{rarity.description}</p>
-					{/if}
+					{#each visibleRarities as rarity (rarity.id)}
+						{@const isChecked = asset.rarityId === rarity.id}
+						{@const ownsAnother = !!asset.rarityId && !isChecked}
+						{@const cantAfford = !isChecked && characterXp < rarity.xpCost}
+						{@const disabled = ownsAnother || cantAfford}
+						<label
+							class="rarity-label"
+							class:rarity-label--locked={ownsAnother}
+							title={ownsAnother ? 'Uncheck the current rarity first' : undefined}
+						>
+							<input
+								type="checkbox"
+								class="rarity-check"
+								checked={isChecked}
+								{disabled}
+								onchange={() => {
+									if (disabled) return;
+									asset.rarityId = isChecked ? undefined : rarity.id;
+									if (!isChecked) {
+										const entryId = crypto.randomUUID();
+										const xpLink  = `<a class="xp-cost-link" data-entry-id="${entryId}" data-cost="${rarity.xpCost}" data-char-id="${characterId}" href="#">−${rarity.xpCost} experience</a>`;
+										appendLog(SESSION_LOG_ID, logTitle,
+											`<div>Rarity acquired: <strong>RARITY: ${rarity.name}</strong> for <strong>${definition.name}</strong> ${xpLink}</div>`,
+											entryId);
+									} else {
+										appendLog(SESSION_LOG_ID, logTitle,
+											`<div>Rarity removed: <strong>RARITY: ${rarity.name}</strong> from <strong>${definition.name}</strong></div>`);
+									}
+								}}
+							/>
+							<span class="rarity-name">RARITY: {rarity.name}</span>
+							<span class="rarity-cost">({rarity.xpCost} XP)</span>
+						</label>
+						{#if isChecked}
+							<p class="rarity-desc">{rarity.description}</p>
+						{/if}
+					{/each}
 				</div>
 			{/if}
 
@@ -1318,6 +1330,10 @@
 		align-items: center;
 		gap: 7px;
 		cursor: pointer;
+	}
+	.rarity-label--locked {
+		opacity: 0.45;
+		cursor: not-allowed;
 	}
 
 	.rarity-check {

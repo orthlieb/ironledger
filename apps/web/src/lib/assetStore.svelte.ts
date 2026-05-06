@@ -77,9 +77,16 @@ export function findAsset(id: string): AssetDefinition | undefined {
 	return _assets.find((a) => a.id === id);
 }
 
-/** Find the rarity associated with a given asset id (returns undefined if none). */
+/** Find the rarity associated with a given asset id (returns undefined if none).
+ *  @deprecated Multiple rarities may now share an assetId (e.g. Cutthroat → Dagger
+ *  of the Blooded + Nemezo). Use findRaritiesForAsset(); this returns the first match. */
 export function findRarityForAsset(assetId: string): RarityDefinition | undefined {
 	return _rarities.find((r) => r.assetId === assetId);
+}
+
+/** All rarities pinned to a given asset id (unfiltered — render layer applies source gating). */
+export function findRaritiesForAsset(assetId: string): RarityDefinition[] {
+	return _rarities.filter((r) => r.assetId === assetId);
 }
 
 /** Look up a rarity by its own id. Never filtered. */
