@@ -2066,6 +2066,30 @@
     ]
   },
   {
+    "id": "path/yrt-touched-ursine",
+    "abilities": [
+      {
+        "index": 0,
+        "moves": ["move/compel", "move/face-danger"]
+      },
+      {
+        "index": 1,
+        "moves": ["move/strike", "move/clash"]
+      },
+      {
+        "index": 2,
+        "moves": ["move/make-camp"]
+      }
+    ],
+    "allMoves": [
+      "move/compel",
+      "move/face-danger",
+      "move/strike",
+      "move/clash",
+      "move/make-camp"
+    ]
+  },
+  {
     "id": "ritual/yrt-cantrip",
     "abilities": [
       {
