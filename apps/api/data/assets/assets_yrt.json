@@ -21,7 +21,7 @@
       },
       "abilities": [
         {
-          "enabled": true,
+          "enabled": false,
           "text": "You move with the senses and poise of a night hunter. When you <a class=\"move-link\" data-id=\"move/gather-information\">Gather Information</a> in darkness, dim light, or heavy shadow, add +1. On a strong hit, also take +1 momentum as your night sight and feline awareness reveal more than others can see.",
           "moves": [
             "move/gather-information"
@@ -102,7 +102,7 @@
       },
       "abilities": [
         {
-          "enabled": true,
+          "enabled": false,
           "text": "You have a powerful sense of smell. When you <a class=\"move-link\" data-id=\"move/gather-information\">Gather Information</a> to detect hidden threats, ambushes, or track a scent, add +1. On a strong hit, also take +1 momentum as your snout allows you to follow the scent to greater clues.",
           "moves": [
             "move/gather-information"
@@ -183,7 +183,7 @@
       },
       "abilities": [
         {
-          "enabled": true,
+          "enabled": false,
           "text": "Your bulk and lowered horns turn forward motion into a shattering blow. When you <a class=\"move-link\" data-id=\"move/strike\">Strike</a> or <a class=\"move-link\" data-id=\"move/clash\">Clash</a> by charging — at speed, with armored shoulder, lowered horn, or full body weight — you may roll +iron (even if another stat would normally apply). On a strong hit, also deal +1 harm and your foe is thrown off-balance, knocked back, or driven from their footing.",
           "moves": [
             "move/strike",
@@ -265,7 +265,7 @@
       },
       "abilities": [
         {
-          "enabled": true,
+          "enabled": false,
           "text": "Your size and bearing draw every eye and bend the will of those who face you. When you <a class=\"move-link\" data-id=\"move/compel\">Compel</a> or <a class=\"move-link\" data-id=\"move/face-danger\">Face Danger</a> by intimidation — a roar, a bared claw, drawing yourself up to your full height — add +1, and you may roll +iron (even if another stat would normally apply). On a strong hit, also take +1 momentum as your sheer presence cows witness and foe alike.",
           "moves": [
             "move/compel",
