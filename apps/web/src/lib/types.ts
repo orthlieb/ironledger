@@ -262,7 +262,7 @@ export interface CustomFieldOption {
  */
 export interface CustomFieldDef {
 	id:           string;
-	type:         'string' | 'counter' | 'radio' | 'dropdown' | 'switch';
+	type:         'string' | 'counter' | 'radio' | 'dropdown' | 'switch' | 'markdown';
 	label:        string;
 	/** Short label shown as a pill in the Global Context Bar (omit to hide from GCB). */
 	shortLabel?:  string;
