@@ -888,6 +888,15 @@
       "source": "yrt"
     }
   ],
-  "rarities": [],
+  "rarities": [
+    {
+      "id": "rarity/nemezo",
+      "name": "Nemezo",
+      "assetId": "combat/cutthroat",
+      "xpCost": 5,
+      "description": "Eight inches of double-edged steel, balanced for the thrust, with a small piece of unworked amber set into the pommel — the inset of a Conclave foreman's crown, kept as a memento of a quiet dismissal and forged into a blade at a village smithy at the bearer's own request. The dagger alone is ordinary steel; forensic analysis would find nothing remarkable. The Black mana lives in the sheath. A plain leather exterior conceals a luminous-lined interior — white mana woven through the inner surface in standard Conclave containment patterns — and a small reservoir set into the lower chamber, fitted to receive the dagger's tip when fully sheathed. Drawn from the reservoir's volatile Black, the lower inches of the blade carry a thin necrotic coat across each unsheathing. Wounds dealt by the coated steel refuse to heal: flesh blackens around the entry, the corruption spreads, and the dying is unhurried. Treat Heal moves as -1 against harm dealt by Nemezo until the Black mana has been cleansed by a containment rite. The reservoir holds roughly thirty doses; when it runs dry the dagger is again just steel, and any breach of the luminous lining will spill the Black across the bearer's clothes and skin.",
+      "source": "yrt"
+    }
+  ],
   "source": "yrt"
 }
