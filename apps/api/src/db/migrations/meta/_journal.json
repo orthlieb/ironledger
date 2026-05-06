@@ -78,6 +78,13 @@
       "when": 1776080000000,
       "tag": "0011_user_invites",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1776160000000,
+      "tag": "0012_yrt_asset_id_rename",
+      "breakpoints": true
     }
   ]
 }
