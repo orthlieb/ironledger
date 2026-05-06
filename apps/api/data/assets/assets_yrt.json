@@ -663,7 +663,7 @@
         },
         {
           "enabled": false,
-          "text": "When you <a class=\"move-link\" data-id=\"move/craft\">Craft an Item</a>, you are creating a poison from foraged plants or gathered extracts. Choose a potency and a delivery method.\n\n  * <b>Potency:</b> soporific (induces sleep), debilitating (sickens and weakens), or lethal (kills if untreated).\n  * <b>Delivery:</b> contact (applied to skin or a wound) or ingestion (slipped into food or drink).\n\nOn a <b>strong hit</b>, add one dose. On a <b>weak hit</b>, add your dose, and if you choose a telltale flaw, the poison has a noticeable odor, taste, or color.",
+          "text": "When you <a class=\"move-link\" data-id=\"move/craft\">Craft an Item</a>, you are creating a poison from foraged plants or gathered extracts. Choose a potency and a delivery method.\n\n  * <b>Potency:</b> soporific (induces sleep), debilitating (sickens and weakens), or lethal (kills if untreated).\n  * <b>Delivery:</b> contact (applied to skin or a wound) or ingestion (slipped into food or drink).\n\nOn a <b>strong hit</b>, add one dose. On a <b>weak hit</b>, add your dose, and if you choose a telltale flaw, the poison has a noticeable odor, taste, or color.\n\n<i>Narrative: You must have been taught the crafting of a specific poison by another poisoner.</i>",
           "moves": [
             "move/craft"
           ]
