@@ -10,6 +10,7 @@
 	import { findRaritiesForAsset } from '$lib/assetStore.svelte.js';
 	import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
+	import { renderNote } from '$lib/markdown.js';
 
 	import trashSvg          from '$icons/trash-solid-full.svg?raw';
 	import iconHeart          from '$icons/icon-heart.svg?raw';
@@ -76,7 +77,12 @@
 		resolution: string;
 	};
 
-	let collapsed         = $state(true);
+	let collapsed             = $state(true);
+	// Inline markdown-field editing (click-to-edit, mirrors VowCard / CommunityCard pattern).
+	// Only one markdown field at a time is in edit mode; tracked by field.id.
+	let editingNotesFieldId   = $state<string | null>(null);
+	let notesTextareaEl       = $state<HTMLTextAreaElement | null>(null);
+	$effect(() => { if (editingNotesFieldId && notesTextareaEl) notesTextareaEl.focus(); });
 	let selectionsOpen    = $state(false);
 	let factorsOpen       = $state(false);
 
@@ -632,6 +638,44 @@
 						<span class="cf-switch-track"><span class="cf-switch-knob"></span></span>
 						<span class="cf-switch-label">{field.label}</span>
 					</label>
+				{:else if field.type === 'markdown'}
+					{@const editing = editingNotesFieldId === field.id}
+					{@const value   = asset.customValues?.[field.id] ?? ''}
+					{@const placeholder = field.placeholder ?? 'Notes… (**bold**, *italic*, # heading, - list)'}
+					<div class="asset-notes-row">
+						<span class="asset-notes-label">{field.label}</span>
+						{#if editing}
+							<textarea
+								bind:this={notesTextareaEl}
+								class="asset-notes-textarea"
+								value={value}
+								oninput={(e) => {
+									if (!asset.customValues) asset.customValues = {};
+									asset.customValues[field.id] = (e.target as HTMLTextAreaElement).value;
+								}}
+								onblur={() => (editingNotesFieldId = null)}
+								{placeholder}
+								rows="3"
+							></textarea>
+						{:else}
+							<!-- svelte-ignore a11y_no_static_element_interactions a11y_click_events_have_key_events -->
+							<div
+								class="asset-notes-display"
+								class:asset-notes-display--empty={!value.trim()}
+								role="button"
+								tabindex="0"
+								title="Click to edit"
+								onclick={() => (editingNotesFieldId = field.id)}
+								onkeydown={(e) => { if (e.key === 'Enter') editingNotesFieldId = field.id; }}
+							>
+								{#if value.trim()}
+									{@html renderNote(value)}
+								{:else}
+									<span class="asset-notes-placeholder">{placeholder}</span>
+								{/if}
+							</div>
+						{/if}
+					</div>
 				{/if}
 			{/each}
 
@@ -1435,4 +1479,66 @@
 		white-space: nowrap;
 	}
 
+	/* ---- Markdown notes custom field (click-to-edit) ---- */
+	.asset-notes-row {
+		display:        flex;
+		flex-direction: column;
+		gap:            3px;
+	}
+	.asset-notes-label {
+		font-family: var(--font-ui);
+		font-size:   0.72rem;
+		color:       var(--text-muted);
+	}
+	.asset-notes-textarea {
+		font-family:   var(--font-ui);
+		font-size:     0.78rem;
+		background:    var(--bg);
+		border:        1px solid var(--border);
+		border-radius: 4px;
+		color:         var(--text);
+		padding:       4px 7px;
+		outline:       none;
+		resize:        vertical;
+		min-height:    54px;
+		width:         100%;
+	}
+	.asset-notes-textarea:focus { border-color: var(--focus-ring, #E8A13B); }
+	.asset-notes-display {
+		font-family:   var(--font-ui);
+		font-size:     0.78rem;
+		line-height:   1.55;
+		background:    var(--bg);
+		border:        1px solid var(--border);
+		border-radius: 4px;
+		color:         var(--text);
+		padding:       4px 7px;
+		cursor:        text;
+		min-height:    32px;
+		width:         100%;
+		transition:    border-color 0.12s;
+	}
+	.asset-notes-display:hover,
+	.asset-notes-display:focus { border-color: var(--border-mid); outline: none; }
+	.asset-notes-placeholder {
+		font-style: italic;
+		color:      var(--text-dimmer);
+	}
+	.asset-notes-display :global(p)            { margin: 0 0 2px; }
+	.asset-notes-display :global(p:last-child) { margin-bottom: 0; }
+	.asset-notes-display :global(h3),
+	.asset-notes-display :global(h4),
+	.asset-notes-display :global(h5) {
+		font-size:      0.76rem;
+		font-weight:    700;
+		letter-spacing: 0.04em;
+		color:          var(--text-accent);
+		margin:         4px 0 1px;
+	}
+	.asset-notes-display :global(ul),
+	.asset-notes-display :global(ol)  { margin: 1px 0; padding-left: 1.2em; }
+	.asset-notes-display :global(li)  { margin-bottom: 1px; }
+	.asset-notes-display :global(strong) { font-weight: 700; color: var(--text); }
+	.asset-notes-display :global(em)     { font-style: italic; }
+	.asset-notes-display :global(br)  { display: block; margin-bottom: 2px; content: ''; }
 </style>

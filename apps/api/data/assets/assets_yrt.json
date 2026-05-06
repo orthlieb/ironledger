@@ -845,6 +845,13 @@
       ],
       "customFields": [
         {
+          "id": "notes",
+          "type": "markdown",
+          "label": "Notes",
+          "position": "bottom",
+          "placeholder": "Recipes, taught poisons, contacts… (**bold**, *italic*, # heading, - list)"
+        },
+        {
           "id": "doses",
           "type": "counter",
           "label": "Doses",
