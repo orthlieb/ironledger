@@ -2101,28 +2101,32 @@
     ]
   },
   {
-    "id": "path/yrt-venenigisto",
+    "id": "path/yrt-bittercraft",
     "abilities": [
       {
         "index": 0,
-        "moves": ["move/craft"]
+        "moves": ["move/gather-information", "move/heal"]
       },
       {
         "index": 1,
-        "moves": ["move/gather-information"]
+        "moves": ["move/craft"]
       },
       {
         "index": 2,
-        "moves": ["move/craft"]
+        "moves": ["move/strike", "move/clash", "move/secure-an-advantage"]
       }
     ],
     "allMoves": [
+      "move/gather-information",
+      "move/heal",
       "move/craft",
-      "move/gather-information"
+      "move/strike",
+      "move/clash",
+      "move/secure-an-advantage"
     ]
   },
   {
-    "id": "path/yrt-falsinto",
+    "id": "path/yrt-quillwise",
     "abilities": [
       {
         "index": 0,

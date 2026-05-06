@@ -647,7 +647,7 @@
       "source": "yrt"
     },
     {
-      "id": "path/yrt-venenigisto",
+      "id": "path/yrt-bittercraft",
       "name": "Bittercraft",
       "category": "Path",
       "summary": "Detect the venomous work of others, brew contact and ingestion toxins from plant extracts, and deploy them on blades, arrows, or in food and drink.",
@@ -692,7 +692,7 @@
       "source": "yrt"
     },
     {
-      "id": "path/yrt-falsinto",
+      "id": "path/yrt-quillwise",
       "name": "Quillwise",
       "category": "Path",
       "summary": "Document forger: mimic handwriting, replicate seals and official papers, and detect the fakes of others.",
