@@ -15,12 +15,14 @@
 	 *   └──────┴──────────────────────────────────────────────┘
 	 *
 	 * "Active character" is the front-of-deck. Click a spine to bring its deck
-	 * to the front. Click an asset thumbnail to expand it inline.
+	 * to the front. Asset tabs are tucked under the bottom of the active card;
+	 * clicking one opens the v1 AssetCard in a dismissible dialog.
 	 */
 	import { getCharacters, isCharacterLoading } from '$lib/characterStore.svelte.js';
 	import { findAsset, isAssetsLoading }        from '$lib/assetStore.svelte.js';
 	import { hydrateCharacter } from '$lib/character.js';
-	import type { CharacterData } from '$lib/types.js';
+	import type { CharacterData, CharacterAsset } from '$lib/types.js';
+	import AssetCard from '$lib/components/AssetCard.svelte';
 
 	type CardKey = 'background' | 'core' | 'vows';
 	const CARD_LABELS: { key: CardKey; label: string }[] = [
@@ -31,7 +33,8 @@
 
 	let activeCharId  = $state<string | null>(null);
 	let activeCard    = $state<CardKey>('core');
-	let expandedAssetId = $state<string | null>(null);
+	let dialogAssetId = $state<string | null>(null);
+	let dialogEl      = $state<HTMLDialogElement | null>(null);
 
 	const characters = $derived(getCharacters());
 	const loading    = $derived(isCharacterLoading() || isAssetsLoading());
@@ -51,11 +54,18 @@
 	function selectChar(id: string) {
 		activeCharId = id;
 		activeCard = 'core';
-		expandedAssetId = null;
+		closeAssetDialog();
 	}
 
-	function toggleAsset(assetId: string) {
-		expandedAssetId = expandedAssetId === assetId ? null : assetId;
+	function openAssetDialog(id: string) {
+		dialogAssetId = id;
+		// Wait for the dialog node to mount, then showModal().
+		queueMicrotask(() => dialogEl?.showModal());
+	}
+
+	function closeAssetDialog() {
+		dialogEl?.close();
+		dialogAssetId = null;
 	}
 </script>
 
@@ -159,55 +169,65 @@
 						{/if}
 					</div>
 
-					<!-- Asset strip (bottom) -->
-					<div class="ca-assets" aria-label="Assets">
+					<!-- Asset tabs — tucked under the bottom of the character card. -->
+					<div class="ca-asset-tabs" aria-label="Assets">
 						{#if (d.assets ?? []).length === 0}
-							<span class="ca-assets-empty">No assets.</span>
+							<span class="ca-asset-tabs-empty">No assets.</span>
 						{:else}
 							{#each d.assets ?? [] as a (a.assetId)}
 								{@const def = findAsset(a.assetId)}
 								<button
-									class="ca-asset-chip"
-									class:ca-asset-chip--active={expandedAssetId === a.assetId}
-									onclick={() => toggleAsset(a.assetId)}
+									class="ca-asset-tab"
+									onclick={() => openAssetDialog(a.assetId)}
 									title={def?.name ?? a.assetId}
 								>
-									<span class="ca-asset-chip-name">{def?.name ?? a.assetId}</span>
-									{#if def?.category}
-										<span class="ca-asset-chip-cat">{def.category}</span>
-									{/if}
+									<span class="ca-asset-tab-name">{def?.name ?? a.assetId}</span>
 								</button>
 							{/each}
 						{/if}
 					</div>
-
-					<!-- Expanded asset (inline overlay) -->
-					{#if expandedAssetId}
-						{@const exp = (d.assets ?? []).find(a => a.assetId === expandedAssetId)}
-						{@const expDef = exp ? findAsset(exp.assetId) : undefined}
-						{#if exp && expDef}
-							<div class="ca-asset-expanded">
-								<div class="ca-asset-expanded-header">
-									<span class="ca-asset-expanded-name">{expDef.name}</span>
-									<button class="ca-asset-expanded-close" onclick={() => (expandedAssetId = null)} aria-label="Close">✕</button>
-								</div>
-								<p class="ca-asset-expanded-summary">{expDef.summary ?? ''}</p>
-								<ul class="ca-asset-expanded-abilities">
-									{#each expDef.abilities as ab, i}
-										<li class:ca-ab--enabled={exp.abilities?.[i]}>
-											{#if exp.abilities?.[i]}<strong>✓</strong>{:else}<span class="ca-ab-dot">○</span>{/if}
-											{@html ab.text}
-										</li>
-									{/each}
-								</ul>
-							</div>
-						{/if}
-					{/if}
 				{/if}
 			</div>
 		</div>
 	{/if}
 </div>
+
+<!-- Asset card dialog — hosts the v1 AssetCard with full editing affordances.
+     Mutations here flow to in-memory character state but aren't persisted to
+     the API yet (prototype is read-mostly). -->
+{#if activeChar && dialogAssetId}
+	{@const arr = activeChar.data.assets as CharacterAsset[]}
+	{@const idx = arr.findIndex(a => a.assetId === dialogAssetId)}
+	{@const def = findAsset(dialogAssetId)}
+	{#if idx >= 0 && def && activeData}
+		<dialog
+			bind:this={dialogEl}
+			class="ca-asset-dialog"
+			oncancel={closeAssetDialog}
+			onclose={() => { dialogAssetId = null; }}
+		>
+			<header class="ca-asset-dialog-header">
+				<span class="ca-asset-dialog-title">{def.name}</span>
+				<button
+					class="ca-asset-dialog-close"
+					onclick={closeAssetDialog}
+					aria-label="Close"
+				>✕</button>
+			</header>
+			<div class="ca-asset-dialog-body">
+				<AssetCard
+					bind:asset={arr[idx]}
+					definition={def}
+					characterId={activeChar.id}
+					characterName={activeChar.name}
+					characterXp={activeData.xp ?? 0}
+					bind:globalValues={activeChar.data.globalValues as Record<string, string>}
+					onRemove={closeAssetDialog}
+				/>
+			</div>
+		</dialog>
+	{/if}
+{/if}
 
 <style>
 	.ca-area {
@@ -483,106 +503,114 @@
 		font-style: italic;
 	}
 
-	/* Asset strip */
-	.ca-assets {
+	/* ── Asset tabs (tucked under the bottom of the character card) ──
+	   Visual metaphor: each asset is a card peeking out from below the
+	   character card's bottom edge. The tabs share the card's background
+	   and have a soft top-shadow that suggests they're tucked behind. */
+	.ca-asset-tabs {
 		display: flex;
-		gap: 6px;
+		gap: 4px;
+		padding: 0 10px;
 		flex-wrap: wrap;
-		margin-top: 10px;
-		padding-top: 10px;
-		border-top: 1px solid var(--border);
+		/* Pull up so the top edges sit *under* the character card's bottom edge. */
+		margin-top: -6px;
+		position: relative;
+		z-index: 0;
 	}
-	.ca-assets-empty {
+	.ca-asset-tabs-empty {
 		font-family: var(--font-ui);
-		font-size: 0.74rem;
+		font-size: 0.72rem;
 		color: var(--text-dimmer);
 		font-style: italic;
+		padding: 6px 10px;
 	}
-	.ca-asset-chip {
+	.ca-asset-tab {
 		all: unset;
 		cursor: pointer;
-		padding: 5px 9px;
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-		background: var(--bg-inset);
+		padding: 9px 14px 6px;          /* top padding hidden by overlap; bottom is visible */
+		background: var(--bg-card);
 		border: 1px solid var(--border);
-		border-radius: 4px;
-		min-width: 80px;
-		transition: border-color 0.12s, background 0.12s;
-	}
-	.ca-asset-chip:hover { border-color: var(--border-mid); }
-	.ca-asset-chip--active {
-		border-color: var(--text-accent);
-		background: color-mix(in srgb, var(--text-accent) 8%, var(--bg-inset));
-	}
-	.ca-asset-chip-name {
+		border-top: none;               /* top edge hidden behind the card */
+		border-radius: 0 0 6px 6px;     /* round only the bottom corners */
 		font-family: var(--font-ui);
-		font-size: 0.74rem;
+		font-size: 0.72rem;
 		font-weight: 600;
-		color: var(--text);
+		color: var(--text-muted);
+		box-shadow: 0 2px 4px #0000001a;
+		transition: transform 0.12s, color 0.12s, background 0.12s, border-color 0.12s;
 	}
-	.ca-asset-chip-cat {
-		font-family: var(--font-ui);
-		font-size: 0.62rem;
-		color: var(--text-dimmer);
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
+	.ca-asset-tab:hover {
+		color: var(--text);
+		background: var(--bg-hover);
+		border-color: var(--border-mid);
+		transform: translateY(2px);     /* "pulls out" a hair on hover */
+	}
+	.ca-asset-tab-name {
+		white-space: nowrap;
+		max-width: 130px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		display: inline-block;
+		vertical-align: middle;
 	}
 
-	/* Expanded asset overlay */
-	.ca-asset-expanded {
-		margin-top: 8px;
-		padding: 10px 12px;
+	/* ── Asset detail dialog ── */
+	.ca-asset-dialog {
+		border: none;
+		padding: 0;
+		border-radius: 8px;
 		background: var(--bg-card);
-		border: 1px solid var(--text-accent);
-		border-radius: 4px;
+		color: var(--text);
+		width: min(640px, calc(100vw - 2rem));
+		max-height: calc(100vh - 4rem);
+		box-shadow: 0 16px 48px #00000070, 0 0 0 1px var(--border-mid);
+		outline: none;
 	}
-	.ca-asset-expanded-header {
+	.ca-asset-dialog::backdrop {
+		background: #00000060;
+		backdrop-filter: blur(1px);
+	}
+	.ca-asset-dialog[open] {
 		display: flex;
-		justify-content: space-between;
-		align-items: baseline;
-		margin-bottom: 4px;
+		flex-direction: column;
 	}
-	.ca-asset-expanded-name {
-		font-family: var(--font-display);
-		font-size: 0.9rem;
-		font-weight: 700;
-		color: var(--text-accent);
+	.ca-asset-dialog-header {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 14px;
+		border-bottom: 1px solid var(--border);
+		background: var(--bg-control);
+		border-radius: 8px 8px 0 0;
+		flex-shrink: 0;
 	}
-	.ca-asset-expanded-close {
+	.ca-asset-dialog-title {
+		flex: 1;
+		font-family:    var(--font-display);
+		font-size:      calc(0.82rem * var(--font-display-scale));
+		font-weight:    var(--font-display-weight);
+		letter-spacing: 0.08em;
+		text-transform: var(--font-display-transform);
+		color:          var(--text-accent);
+	}
+	.ca-asset-dialog-close {
 		all: unset;
 		cursor: pointer;
 		color: var(--text-dimmer);
-		padding: 0 4px;
+		padding: 2px 6px;
+		font-size: 0.9rem;
+		line-height: 1;
+		border-radius: 3px;
+		transition: color 0.12s, background 0.12s;
 	}
-	.ca-asset-expanded-close:hover { color: var(--text); }
-	.ca-asset-expanded-summary {
-		font-family: var(--font-ui);
-		font-size: 0.78rem;
-		color: var(--text-muted);
-		font-style: italic;
-		margin: 0 0 8px;
-	}
-	.ca-asset-expanded-abilities {
-		list-style: none;
-		padding: 0;
-		margin: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-	}
-	.ca-asset-expanded-abilities li {
-		font-family: var(--font-ui);
-		font-size: 0.76rem;
-		color: var(--text-muted);
-		line-height: 1.5;
-		padding: 4px 6px;
-		border-left: 2px solid var(--border);
-	}
-	.ca-ab--enabled {
+	.ca-asset-dialog-close:hover {
 		color: var(--text);
-		border-left-color: var(--text-accent);
+		background: var(--bg-hover);
 	}
-	.ca-ab-dot { color: var(--text-dimmer); margin-right: 4px; }
+	.ca-asset-dialog-body {
+		padding: 12px 14px;
+		overflow: auto;
+		flex: 1;
+		min-height: 0;
+	}
 </style>
