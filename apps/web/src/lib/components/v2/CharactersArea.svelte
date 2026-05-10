@@ -22,7 +22,14 @@
 	import { findAsset, isAssetsLoading }        from '$lib/assetStore.svelte.js';
 	import { hydrateCharacter } from '$lib/character.js';
 	import type { CharacterData, CharacterAsset } from '$lib/types.js';
-	import AssetCard from '$lib/components/AssetCard.svelte';
+	import AssetCard      from '$lib/components/AssetCard.svelte';
+	import StatControl    from '$lib/components/StatControl.svelte';
+	import ResourceTile   from '$lib/components/ResourceTile.svelte';
+	import MomentumTile   from '$lib/components/MomentumTile.svelte';
+	import iconHealth     from '$icons/icon-health.svg?raw';
+	import iconSpirit     from '$icons/icon-spirit.svg?raw';
+	import iconSupply     from '$icons/icon-supply.svg?raw';
+	import iconStar       from '$icons/star-solid-full.svg?raw';
 
 	type CardKey = 'background' | 'core' | 'vows';
 	const CARD_LABELS: { key: CardKey; label: string }[] = [
@@ -47,8 +54,19 @@
 	});
 
 	const activeChar = $derived(characters.find(c => c.id === activeCharId));
+
+	// Ensure the active character's data has every CharacterData field, then expose
+	// it as a typed live ref so <StatControl bind:value={d.edge}>, <ResourceTile
+	// bind:value={d.health}>, etc., write through to the source object directly.
+	// (The original hydrateCharacter() returns a copy via spread, which would
+	// silently break two-way binding.)
+	$effect(() => {
+		if (activeChar) {
+			activeChar.data = hydrateCharacter(activeChar.data) as unknown as Record<string, unknown>;
+		}
+	});
 	const activeData = $derived<CharacterData | null>(
-		activeChar ? hydrateCharacter(activeChar.data) : null,
+		activeChar ? (activeChar.data as unknown as CharacterData) : null,
 	);
 
 	function selectChar(id: string) {
@@ -130,19 +148,72 @@
 							</div>
 						{:else if activeCard === 'core'}
 							<div class="ca-card-section">
-								<div class="ca-stats">
-									<div class="ca-stat"><span class="ca-stat-label">Edge</span>  <span class="ca-stat-val">{d.edge}</span></div>
-									<div class="ca-stat"><span class="ca-stat-label">Heart</span> <span class="ca-stat-val">{d.heart}</span></div>
-									<div class="ca-stat"><span class="ca-stat-label">Iron</span>  <span class="ca-stat-val">{d.iron}</span></div>
-									<div class="ca-stat"><span class="ca-stat-label">Shadow</span><span class="ca-stat-val">{d.shadow}</span></div>
-									<div class="ca-stat"><span class="ca-stat-label">Wits</span>  <span class="ca-stat-val">{d.wits}</span></div>
+								<!-- Stats — same StatControl tiles as v1, with the same color vars and stat-icon mapping. -->
+								<div class="ca-stats-row">
+									<StatControl
+										label="Edge"   bind:value={d.edge}   color="var(--color-edge)"
+										tooltip="Quickness, agility, and prowess in ranged combat"
+									/>
+									<StatControl
+										label="Heart"  bind:value={d.heart}  color="var(--color-heart)"
+										tooltip="Courage, willpower, empathy, sociability, and loyalty"
+									/>
+									<StatControl
+										label="Iron"   bind:value={d.iron}   color="var(--color-iron)"
+										tooltip="Physical strength, endurance, and prowess in close combat"
+									/>
+									<StatControl
+										label="Shadow" bind:value={d.shadow} color="var(--color-shadow)"
+										tooltip="Sneakiness, deceptiveness, and cunning"
+									/>
+									<StatControl
+										label="Wits"   bind:value={d.wits}   color="var(--color-wits)"
+										tooltip="Expertise, knowledge, and observation"
+									/>
 								</div>
 
-								<div class="ca-vitals">
-									<div class="ca-vital"><span class="ca-vital-label">Health</span>  <span class="ca-vital-val"><strong>{d.health}</strong><span class="ca-vital-max">/5</span></span></div>
-									<div class="ca-vital"><span class="ca-vital-label">Spirit</span>  <span class="ca-vital-val"><strong>{d.spirit}</strong><span class="ca-vital-max">/5</span></span></div>
-									<div class="ca-vital"><span class="ca-vital-label">Supply</span>  <span class="ca-vital-val"><strong>{d.supply}</strong><span class="ca-vital-max">/5</span></span></div>
-									<div class="ca-vital"><span class="ca-vital-label">Momentum</span><span class="ca-vital-val"><strong>{d.momentum}</strong><span class="ca-vital-max">/10</span></span></div>
+								<!-- Vitals — Momentum + Health/Spirit/Supply + Experience. Spinners on every tile;
+								     ResourceTile carries its own +/− buttons. XP lives here per the v2 layout
+								     so it sits with the other tracked resources. -->
+								<div class="ca-vitals-row">
+									<MomentumTile
+										bind:value={d.momentum}
+										resetVal={2}
+										maxVal={10}
+										tooltipText="Your overall advantage or disadvantage on the quest. Build it up through good rolls and smart choices, then burn it at a crucial moment to force a better outcome."
+									/>
+									<ResourceTile
+										label="Health"
+										bind:value={d.health}
+										color="var(--color-health)"
+										max={5}
+										icon={iconHealth}
+										tooltip="Physical condition and readiness"
+									/>
+									<ResourceTile
+										label="Spirit"
+										bind:value={d.spirit}
+										color="var(--color-spirit)"
+										max={5}
+										icon={iconSpirit}
+										tooltip="Mental fortitude and morale"
+									/>
+									<ResourceTile
+										label="Supply"
+										bind:value={d.supply}
+										color="var(--color-supply)"
+										max={5}
+										icon={iconSupply}
+										tooltip="Available provisions and resources"
+									/>
+									<ResourceTile
+										label="Experience"
+										bind:value={d.xp}
+										color="var(--color-xp)"
+										max={30}
+										icon={iconStar}
+										tooltip="Accumulated experience that can be spent on assets and other enhancements."
+									/>
 								</div>
 
 								<div class="ca-track-row">
@@ -200,31 +271,26 @@
 	{@const idx = arr.findIndex(a => a.assetId === dialogAssetId)}
 	{@const def = findAsset(dialogAssetId)}
 	{#if idx >= 0 && def && activeData}
+		<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
 		<dialog
 			bind:this={dialogEl}
 			class="ca-asset-dialog"
 			oncancel={closeAssetDialog}
 			onclose={() => { dialogAssetId = null; }}
+			onclick={(e) => { if (e.target === dialogEl) closeAssetDialog(); }}
 		>
-			<header class="ca-asset-dialog-header">
-				<span class="ca-asset-dialog-title">{def.name}</span>
-				<button
-					class="ca-asset-dialog-close"
-					onclick={closeAssetDialog}
-					aria-label="Close"
-				>✕</button>
-			</header>
-			<div class="ca-asset-dialog-body">
-				<AssetCard
-					bind:asset={arr[idx]}
-					definition={def}
-					characterId={activeChar.id}
-					characterName={activeChar.name}
-					characterXp={activeData.xp ?? 0}
-					bind:globalValues={activeChar.data.globalValues as Record<string, string>}
-					onRemove={closeAssetDialog}
-				/>
-			</div>
+			<!-- Dialog is a transparent shell — AssetCard renders with its own v1
+			     header / body / footer styling so the popup looks identical to the
+			     expanded card on the original /home page. Backdrop click + ESC dismiss. -->
+			<AssetCard
+				bind:asset={arr[idx]}
+				definition={def}
+				characterId={activeChar.id}
+				characterName={activeChar.name}
+				characterXp={activeData.xp ?? 0}
+				bind:globalValues={activeChar.data.globalValues as Record<string, string>}
+				onRemove={closeAssetDialog}
+			/>
 		</dialog>
 	{/if}
 {/if}
@@ -402,60 +468,19 @@
 		font-style: italic;
 	}
 
-	.ca-stats {
-		display: grid;
-		grid-template-columns: repeat(5, 1fr);
-		gap: 8px;
-	}
-	.ca-stat {
+	.ca-stats-row {
 		display: flex;
-		flex-direction: column;
-		align-items: center;
-		padding: 8px;
-		background: var(--bg-inset);
-		border: 1px solid var(--border);
-		border-radius: 4px;
+		gap: 8px;
+		flex-wrap: wrap;
 	}
-	.ca-stat-label {
-		font-family: var(--font-ui);
-		font-size: 0.7rem;
-		color: var(--text-muted);
-		text-transform: uppercase;
-		letter-spacing: 0.06em;
-	}
-	.ca-stat-val {
-		font-family: var(--font-display);
-		font-size: 1.25rem;
-		font-weight: 700;
-		color: var(--text);
-	}
+	.ca-stats-row > :global(*) { flex: 1; min-width: 80px; }
 
-	.ca-vitals {
-		display: grid;
-		grid-template-columns: repeat(4, 1fr);
-		gap: 8px;
-	}
-	.ca-vital {
+	.ca-vitals-row {
 		display: flex;
-		flex-direction: column;
-		gap: 2px;
-		padding: 8px;
-		background: var(--bg-inset);
-		border: 1px solid var(--border);
-		border-radius: 4px;
+		gap: 8px;
+		flex-wrap: wrap;
 	}
-	.ca-vital-label {
-		font-family: var(--font-ui);
-		font-size: 0.7rem;
-		color: var(--text-muted);
-	}
-	.ca-vital-val {
-		font-family: var(--font-display);
-		font-size: 1rem;
-		color: var(--text);
-	}
-	.ca-vital-val strong { font-weight: 700; }
-	.ca-vital-max { color: var(--text-dimmer); font-size: 0.8em; }
+	.ca-vitals-row > :global(*) { flex: 1; min-width: 130px; }
 
 	.ca-track-row {
 		display: flex;
@@ -554,63 +579,21 @@
 		vertical-align: middle;
 	}
 
-	/* ── Asset detail dialog ── */
+	/* ── Asset detail dialog ── transparent shell; the AssetCard inside owns
+	   all visual structure (header, abilities, custom fields) so the popup
+	   matches v1's expanded asset look exactly. */
 	.ca-asset-dialog {
 		border: none;
 		padding: 0;
-		border-radius: 8px;
-		background: var(--bg-card);
+		background: transparent;
 		color: var(--text);
 		width: min(640px, calc(100vw - 2rem));
 		max-height: calc(100vh - 4rem);
-		box-shadow: 0 16px 48px #00000070, 0 0 0 1px var(--border-mid);
+		overflow: visible;
 		outline: none;
 	}
 	.ca-asset-dialog::backdrop {
 		background: #00000060;
 		backdrop-filter: blur(1px);
-	}
-	.ca-asset-dialog[open] {
-		display: flex;
-		flex-direction: column;
-	}
-	.ca-asset-dialog-header {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 10px 14px;
-		border-bottom: 1px solid var(--border);
-		background: var(--bg-control);
-		border-radius: 8px 8px 0 0;
-		flex-shrink: 0;
-	}
-	.ca-asset-dialog-title {
-		flex: 1;
-		font-family:    var(--font-display);
-		font-size:      calc(0.82rem * var(--font-display-scale));
-		font-weight:    var(--font-display-weight);
-		letter-spacing: 0.08em;
-		text-transform: var(--font-display-transform);
-		color:          var(--text-accent);
-	}
-	.ca-asset-dialog-close {
-		all: unset;
-		cursor: pointer;
-		color: var(--text-dimmer);
-		padding: 2px 6px;
-		font-size: 0.9rem;
-		line-height: 1;
-		border-radius: 3px;
-		transition: color 0.12s, background 0.12s;
-	}
-	.ca-asset-dialog-close:hover {
-		color: var(--text);
-		background: var(--bg-hover);
-	}
-	.ca-asset-dialog-body {
-		padding: 12px 14px;
-		overflow: auto;
-		flex: 1;
-		min-height: 0;
 	}
 </style>
