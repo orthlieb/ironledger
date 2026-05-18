@@ -90,11 +90,13 @@ test.describe('Adventure-action dialogs (v2)', () => {
 	});
 
 	test('clicking a quick-roll die button adds a result to the log', async ({ page }) => {
-		const entriesBefore = await page.locator('.log-entry').count();
+		// The log is paginated (50/page); capture the first entry's text so we
+		// can verify a genuinely new entry appears even when the page is full.
+		const firstBefore = await page.locator('.log-entry').first().textContent();
 		await page.locator(`${APP_NAV} .act-btn`).nth(2).click();
 		await expect(page.locator('.dice-dialog[open]')).toBeVisible({ timeout: 3_000 });
 		await page.locator('.dice-dialog .quick-btn').first().click();
-		await expect(page.locator('.log-entry')).not.toHaveCount(entriesBefore, { timeout: 7_000 });
+		await expect(page.locator('.log-entry').first()).not.toHaveText(firstBefore ?? '', { timeout: 7_000 });
 		await page.keyboard.press('Escape');
 	});
 
@@ -107,7 +109,7 @@ test.describe('Adventure-action dialogs (v2)', () => {
 	});
 
 	test('clicking an oracle tile adds a result to the log', async ({ page }) => {
-		const entriesBefore = await page.locator('.log-entry').count();
+		const firstBefore = await page.locator('.log-entry').first().textContent();
 		await page.locator(`${APP_NAV} .act-btn`).nth(1).click();
 		await expect(page.locator('.oracles-dialog[open]')).toBeVisible({ timeout: 3_000 });
 		const firstTile = page.locator('.oracles-dialog .od-tile').first();
@@ -117,7 +119,7 @@ test.describe('Adventure-action dialogs (v2)', () => {
 		await expect(rollBtn).toBeVisible({ timeout: 3_000 });
 		await rollBtn.click();
 		await expect(page.locator('.oracles-dialog[open]')).not.toBeVisible({ timeout: 5_000 });
-		await expect(page.locator('.log-entry')).not.toHaveCount(entriesBefore, { timeout: 5_000 });
+		await expect(page.locator('.log-entry').first()).not.toHaveText(firstBefore ?? '', { timeout: 5_000 });
 	});
 
 	// ── Add a Note ───────────────────────────────────────────────────────────
@@ -129,12 +131,12 @@ test.describe('Adventure-action dialogs (v2)', () => {
 	});
 
 	test('adding a note creates a log entry', async ({ page }) => {
-		const entriesBefore = await page.locator('.log-entry').count();
 		await page.locator(`${APP_NAV} .act-btn`).nth(3).click();
 		await expect(page.locator('.notes-dialog[open]')).toBeVisible({ timeout: 3_000 });
 		await page.locator('.notes-dialog .nd-textarea').fill('E2E test note');
 		await page.locator('.notes-dialog .nd-add-btn').click();
 		await expect(page.locator('.notes-dialog[open]')).not.toBeVisible({ timeout: 3_000 });
-		await expect(page.locator('.log-entry')).not.toHaveCount(entriesBefore, { timeout: 5_000 });
+		// Verify the note text appears in the newest log entry (log is newest-first).
+		await expect(page.locator('.log-entry').first()).toContainText('E2E test note', { timeout: 5_000 });
 	});
 });
