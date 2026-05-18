@@ -12,6 +12,7 @@
 	import type { DiceCtx } from '$lib/diceContext.svelte.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { momentumReset } from '$lib/character.js';
+	import { tooltip } from '$lib/actions/tooltip.js';
 	import { findMove } from '$lib/moveStore.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
 	import { sanitizeLogHtml, sanitizeNoteHtml } from '$lib/sanitize.js';
@@ -657,7 +658,7 @@
 
 	<!-- ── Built-in header: title · pagination · clear ── -->
 	<div class="log-header">
-		<span class="log-title">{headingText('Session Log')}</span>
+		<span class="log-title">{headingText('Log')}</span>
 
 		<div class="log-pagination">
 			<button
@@ -679,12 +680,12 @@
 
 		<div class="log-header-actions">
 			<button
-				class="btn icon-btn"
+				class="btn icon-btn log-clear-btn"
 				onclick={() => clearDialogRef?.open()}
-				title="Clear log"
-				aria-label="Clear session log"
+				use:tooltip={'Clear the log'}
+				aria-label="Clear the log"
 				disabled={entries.length === 0}
-			>{@html broomWideSvg} Clear</button>
+			>{@html broomWideSvg}</button>
 		</div>
 	</div>
 
@@ -800,7 +801,7 @@
 	.log-title {
 		font-family:    var(--font-display, 'Cinzel', serif);
 		font-size:      calc(0.82rem * var(--font-display-scale));
-		font-weight:    var(--font-display-weight);
+		font-weight:    700;
 		font-variant:   var(--font-display-variant);
 		letter-spacing: 0.08em;
 		color:          var(--text-accent);
@@ -863,6 +864,25 @@
 		gap: 8px;
 		flex-shrink: 0;
 	}
+	/* Icon-only "Clear the log" button — square, matches the stage-header
+	   delete buttons (28×22). pointer-events:none on the SVG so the tooltip
+	   surfaces over the broom icon. fill: currentColor so the icon picks up
+	   the button's text color in both light and dark themes. */
+	.log-clear-btn {
+		box-sizing: border-box;
+		width: 28px; height: 22px;
+		min-width: 28px;
+		padding: 0;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+	.log-clear-btn :global(svg) {
+		width: 14px; height: 14px;
+		fill: currentColor;
+		pointer-events: none;
+	}
+	.log-clear-btn :global(svg) :global(path) { fill: currentColor; }
 
 	/* icon-btn is defined in page.svelte's scoped styles, so we redefine
 	   SVG sizing here for the Clear button that lives inside LogPanel. */

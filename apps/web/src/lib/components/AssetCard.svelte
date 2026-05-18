@@ -53,6 +53,8 @@
 		globalValues   = $bindable(),
 		onRemove,
 		onOracleLink,
+		forceExpanded  = false,
+		onClose,
 	}: {
 		asset:          CharacterAsset;
 		definition:     AssetDefinition;
@@ -63,6 +65,10 @@
 		globalValues?:  Record<string, string>;
 		onRemove:       () => void;
 		onOracleLink?:  (key: string, stat?: string) => void;
+		/** When true (e.g. v2 dialog), start expanded and hide the collapse toggle. */
+		forceExpanded?: boolean;
+		/** When provided, an ✕ close button is rendered in the upper-right of the header. */
+		onClose?:       () => void;
 	} = $props();
 
 	// Selectable-list item shape used by cantrips (and any future similar lists)
@@ -77,7 +83,8 @@
 		resolution: string;
 	};
 
-	let collapsed             = $state(true);
+	let userCollapsed         = $state(true);
+	const collapsed           = $derived(forceExpanded ? false : userCollapsed);
 	// Inline markdown-field editing (click-to-edit, mirrors VowCard / CommunityCard pattern).
 	// Only one markdown field at a time is in edit mode; tracked by field.id.
 	let editingNotesFieldId   = $state<string | null>(null);
@@ -276,12 +283,14 @@
 
 	<!-- Collapsed header row -->
 	<div class="asset-header">
-		<button
-			class="collapse-btn"
-			onclick={() => (collapsed = !collapsed)}
-			aria-label={collapsed ? 'Expand asset' : 'Collapse asset'}
-			title={collapsed ? 'Expand' : 'Collapse'}
-		>{collapsed ? '▶' : '▼'}</button>
+		{#if !forceExpanded}
+			<button
+				class="collapse-btn"
+				onclick={() => (userCollapsed = !userCollapsed)}
+				aria-label={collapsed ? 'Expand asset' : 'Collapse asset'}
+				title={collapsed ? 'Expand' : 'Collapse'}
+			>{collapsed ? '▶' : '▼'}</button>
+		{/if}
 
 		<div class="asset-name-group">
 			<span class="asset-name">{definition.name}</span>
@@ -308,6 +317,15 @@
 			title="Remove asset"
 			aria-label="Remove {definition.name}"
 		>{@html trashSvg}</button>
+
+		{#if onClose}
+			<button
+				class="dialog-close-btn"
+				onclick={onClose}
+				aria-label="Close"
+				title="Close"
+			>✕</button>
+		{/if}
 	</div>
 
 	<!-- Expanded body -->
@@ -764,6 +782,23 @@
 		transition: color 0.12s;
 	}
 	.collapse-btn:hover { color: var(--text); }
+
+	.dialog-close-btn {
+		all:          unset;
+		cursor:       pointer;
+		line-height:  1;
+		font-size:    0.85rem;
+		color:        var(--text-dimmer);
+		opacity:      0.6;
+		padding:      2px 4px;
+		border-radius: 3px;
+		flex-shrink:  0;
+		transition:   opacity 0.15s, background 0.15s;
+	}
+	.dialog-close-btn:hover {
+		opacity:    1;
+		background: var(--bg-hover);
+	}
 
 	.asset-name-group {
 		flex: 1;

@@ -1,5 +1,5 @@
 /**
- * expansion-toggles.spec.ts — Delve / YRT expansion toggles.
+ * expansion-toggles.spec.ts — Delve / YRT expansion toggles (v2).
  *
  * Verifies:
  *   • Both expansions default to ON (fresh storage).
@@ -10,16 +10,27 @@
  *   • Toggles persist across page reloads (localStorage).
  *   • Re-enabling restores visibility.
  *
- * Each test resets localStorage so prior tests can't leak toggle state.
+ * v2 changes: the Move / Ask / Roll / Note buttons are in `.app-nav`, not the
+ * Adventure tab; the "+ Site" button lives in the Expeditions area header.
  */
 import { test, expect, type Page } from '@playwright/test';
+
+const CHAR_AREA   = '.home-area--characters';
+const CHAR_HEADER = `${CHAR_AREA} .ca-header`;
+const CHAR_SPINE  = `${CHAR_AREA} .ca-spine`;
+const FOE_AREA    = '.home-area--foes';
+const FOE_HEADER  = `${FOE_AREA} .fa-header`;
+const EXP_AREA    = '.home-area--expeditions';
+const EXP_HEADER  = `${EXP_AREA} .ea-header`;
+const CM_AREA     = '.home-area--communities';
+const CM_HEADER   = `${CM_AREA} .cm-header`;
+const APP_NAV     = '.app-nav';
 
 const DELVE_KEY = 'ironledger:expansion:delve';
 const YRT_KEY   = 'ironledger:expansion:yrt';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Reset expansion toggles to default (both ON) before each test. */
 async function resetExpansionToggles(page: Page): Promise<void> {
 	await page.evaluate(
 		({ delveKey, yrtKey }) => {
@@ -30,7 +41,6 @@ async function resetExpansionToggles(page: Page): Promise<void> {
 	);
 }
 
-/** Force a specific toggle state via localStorage, then reload so stores re-hydrate. */
 async function setExpansionsViaStorage(
 	page: Page,
 	opts: { delve?: boolean; yrt?: boolean },
@@ -45,44 +55,42 @@ async function setExpansionsViaStorage(
 		{ delveKey: DELVE_KEY, yrtKey: YRT_KEY, delve: opts.delve, yrt: opts.yrt },
 	);
 	await page.reload();
-	await expect(page.locator('.loading-tab')).not.toBeVisible({ timeout: 8_000 });
+	await waitForHome(page);
 }
 
-/** Open the Settings dialog via the hamburger menu. */
 async function openSettings(page: Page): Promise<void> {
 	await page.locator('.hamburger-btn').click();
 	await page.locator('.menu-item', { hasText: /settings/i }).click();
 	await expect(page.locator('dialog.settings-dialog[open]')).toBeVisible({ timeout: 3_000 });
 }
 
-/** Locate the On/Off button within a settings row by its label. */
 function settingsToggleButton(page: Page, label: string, state: 'On' | 'Off') {
 	return page
 		.locator('.sd-row', { has: page.locator('.sd-label', { hasText: new RegExp(`^${label}$`, 'i') }) })
 		.locator('.sd-seg-btn', { hasText: new RegExp(`^${state}$`, 'i') });
 }
 
-/** Open the Moves dialog picker from the adventure tab. */
+/** Open the Moves dialog via the global app-nav button. */
 async function openMovesDialog(page: Page): Promise<void> {
-	await page.click('.tab-btn[data-tab="adventure"]');
-	await expect(page.locator('.adventure-gcb')).toBeVisible({ timeout: 10_000 });
-	// The Moves action button has title="Browse and roll moves" and label "Move"
-	await page.locator('.act-btn[title*="move" i]').first().click();
+	await page.locator(`${APP_NAV} .act-btn[title*="move" i]`).first().click();
 	await expect(page.locator('dialog.moves-dialog[open]')).toBeVisible({ timeout: 8_000 });
 }
 
-/** Open the Oracles dialog picker from the adventure tab. */
+/** Open the Oracles dialog via the global app-nav button. */
 async function openOraclesDialog(page: Page): Promise<void> {
-	await page.click('.tab-btn[data-tab="adventure"]');
-	await expect(page.locator('.adventure-gcb')).toBeVisible({ timeout: 10_000 });
-	await page.locator('.act-btn[title*="oracle" i]').first().click();
+	await page.locator(`${APP_NAV} .act-btn[title*="oracle" i]`).first().click();
 	await expect(page.locator('dialog.oracles-dialog[open]')).toBeVisible({ timeout: 8_000 });
 }
 
-/** Navigate to /home and wait for initial hydration. */
+async function waitForHome(page: Page): Promise<void> {
+	await expect(page.locator(`${CHAR_AREA} .ca-loading`)).not.toBeVisible({ timeout: 12_000 });
+	await page.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`).first()
+		.waitFor({ timeout: 12_000, state: 'attached' });
+}
+
 async function goHome(page: Page): Promise<void> {
 	await page.goto('/home');
-	await expect(page.locator('.loading-tab')).not.toBeVisible({ timeout: 10_000 });
+	await waitForHome(page);
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -93,7 +101,7 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		await goHome(page);
 		await resetExpansionToggles(page);
 		await page.reload();
-		await expect(page.locator('.loading-tab')).not.toBeVisible({ timeout: 10_000 });
+		await waitForHome(page);
 	});
 
 	// ── 1. Defaults ───────────────────────────────────────────────────────────
@@ -123,7 +131,6 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		await openMovesDialog(page);
 		await expect(page.locator('.moves-dialog .md-tile-name', { hasText: /^Discover a Site$/ }))
 			.toHaveCount(0, { timeout: 5_000 });
-		// A base move must still be visible (sanity check)
 		await expect(page.locator('.moves-dialog .md-tile-name', { hasText: /^Face Danger$/ }))
 			.toBeVisible({ timeout: 5_000 });
 	});
@@ -131,35 +138,28 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 	test('Delve off: Delve oracles hidden from Oracles picker', async ({ page }) => {
 		await setExpansionsViaStorage(page, { delve: false });
 		await openOraclesDialog(page);
-		// "Site Nature: Theme" is Delve-only
 		await expect(page.locator('.oracles-dialog .od-tile-name', { hasText: /Site Nature: Theme/i }))
 			.toHaveCount(0, { timeout: 5_000 });
-		// Base "Action" oracle still visible
 		await expect(page.locator('.oracles-dialog .od-tile-name', { hasText: /^Action$/ }))
 			.toBeVisible({ timeout: 5_000 });
 	});
 
-	test('Delve off: "+ Site" button hidden on Expeditions tab', async ({ page }) => {
+	test('Delve off: "+ Site" button hidden in Expeditions area header', async ({ page }) => {
 		await setExpansionsViaStorage(page, { delve: false });
-		await page.click('.tab-btn[data-tab="expeditions"]');
-		await expect(page.locator('.char-toolbar')).toBeVisible({ timeout: 5_000 });
-		await expect(page.locator('.char-toolbar button', { hasText: /\bjourney\b/i }).first())
+		// Expeditions area should still show "+ Journey".
+		await expect(page.locator(`${EXP_HEADER} button:has-text("+ Journey")`))
 			.toBeVisible({ timeout: 5_000 });
-		await expect(page.locator('.char-toolbar button', { hasText: /\+ ?site/i }))
+		// "+ Site" should be gone.
+		await expect(page.locator(`${EXP_HEADER} button:has-text("+ Site")`))
 			.toHaveCount(0, { timeout: 5_000 });
 	});
 
 	test('Delve off: Delve foes hidden from Foe picker', async ({ page }) => {
 		await setExpansionsViaStorage(page, { delve: false });
-		await page.click('.tab-btn[data-tab="foes"]');
-		await expect(page.locator('.char-toolbar button.btn-primary').first())
-			.toBeVisible({ timeout: 10_000 });
-		await page.locator('.char-toolbar button.btn-primary').first().click();
+		await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
 		await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 8_000 });
-		// "Bladewing" is in foes_delve.json — should be absent
 		await expect(page.locator('dialog.foe-dialog .fd-tile-name', { hasText: /^Bladewing$/ }))
 			.toHaveCount(0, { timeout: 3_000 });
-		// "Basilisk" is in foes_ironsworn.json — should still be present
 		await expect(page.locator('dialog.foe-dialog .fd-tile-name', { hasText: /^Basilisk$/ }))
 			.toHaveCount(1, { timeout: 3_000 });
 		await page.keyboard.press('Escape');
@@ -179,30 +179,25 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		await openOraclesDialog(page);
 		await expect(page.locator('.oracles-dialog .od-tile-name', { hasText: /Mana Backlash/ }))
 			.toHaveCount(0, { timeout: 5_000 });
-		// Base "Mystic Backlash" still visible (source=base, not YRT)
 		await expect(page.locator('.oracles-dialog .od-tile-name', { hasText: /Mystic Backlash/i }))
 			.toBeVisible({ timeout: 5_000 });
 	});
 
 	test('YRT off: YRT region radio hidden in community creation', async ({ page }) => {
 		await setExpansionsViaStorage(page, { yrt: false });
-		await page.click('.tab-btn[data-tab="communities"]');
-		// Wait for tab content — populated list OR empty-state. The toolbar
-		// is rendered in both cases.
-		await page.locator('.char-list--communities > .char-card, .empty-tab').first()
+		// Wait for communities area to render.
+		await expect(page.locator(`${CM_AREA} .cm-loading`)).not.toBeVisible({ timeout: 12_000 });
+		await page.locator(`${CM_AREA} .cm-empty, ${CM_AREA} .cm-body`).first()
 			.waitFor({ timeout: 12_000, state: 'attached' });
-		await expect(page.locator('.char-toolbar button', { hasText: /community/i }).first())
-			.toBeVisible({ timeout: 10_000 });
-		await page.locator('.char-toolbar button', { hasText: /community/i }).first().click({ timeout: 8_000 });
-		// Find the "Create Manually" path to reach the region radio, or the Generate one.
+
+		await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click({ timeout: 8_000 });
+
 		const createManualBtn = page.getByRole('button', { name: /create manually/i });
 		if (await createManualBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
 			await createManualBtn.click();
 		}
-		// The region fieldset legend reads "Region oracle"; YRT radio has a sibling label "YRT".
 		const yrtRadio = page.locator('input[type="radio"][value="yrt"]');
 		await expect(yrtRadio).toHaveCount(0);
-		// Ironlands radio must remain
 		await expect(page.locator('input[type="radio"][value="ironlands"]'))
 			.toHaveCount(1, { timeout: 3_000 });
 		await page.keyboard.press('Escape');
@@ -213,25 +208,17 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 	test('Delve off: log link to a Delve move still opens the move', async ({ page }) => {
 		await setExpansionsViaStorage(page, { delve: false });
 
-		// Select a character so the adventure tab + log are active
-		await page.click('.tab-btn[data-tab="characters"]');
-		await page.locator('.char-list--characters > .char-card, .empty-tab').first()
-			.waitFor({ timeout: 25_000, state: 'attached' });
-		const charCards = page.locator('.char-list--characters > .char-card');
-		if (await charCards.count() === 0) {
-			await page.click('.char-toolbar button.btn-primary');
-			await expect(page.locator('.char-card--active')).toBeVisible({ timeout: 5_000 });
-		} else {
-			await charCards.first().click();
+		// Ensure a character exists so the log can attach entries.
+		if (await page.locator(CHAR_SPINE).count() === 0) {
+			await page.locator(`${CHAR_HEADER} button:has-text("+ Character")`).click();
+			await expect(page.locator(CHAR_SPINE)).not.toHaveCount(0, { timeout: 8_000 });
 		}
-
-		await page.click('.tab-btn[data-tab="adventure"]');
-		await expect(page.locator('.adventure-gcb')).toBeVisible({ timeout: 5_000 });
 
 		// Inject a log entry containing a link to a Delve move.
 		const entryId = 'e2e-delve-off-move-link';
 		await page.evaluate(
 			({ id }) => {
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				(window as any).__testLog.appendLog(
 					'__session__',
 					'E2E Delve link',
@@ -242,8 +229,6 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 			{ id: entryId },
 		);
 
-		// Click the injected move-link — MovesDialog.open(id) should resolve via findMove
-		// even though Delve is disabled (render-time resolution contract).
 		const link = page.locator(`.log-entry[data-entry-id="${entryId}"] .move-link`);
 		await expect(link).toBeVisible({ timeout: 5_000 });
 		await link.click();
@@ -260,10 +245,9 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		await openSettings(page);
 		await settingsToggleButton(page, 'Delve', 'Off').click();
 		await settingsToggleButton(page, 'YRT',   'Off').click();
-		// Close and reload
 		await page.keyboard.press('Escape');
 		await page.reload();
-		await expect(page.locator('.loading-tab')).not.toBeVisible({ timeout: 10_000 });
+		await waitForHome(page);
 
 		await openSettings(page);
 		await expect(settingsToggleButton(page, 'Delve', 'Off')).toHaveClass(/\bactive\b/);
@@ -279,7 +263,6 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 			.toHaveCount(0, { timeout: 5_000 });
 		await page.keyboard.press('Escape');
 
-		// Toggle back on via Settings UI
 		await openSettings(page);
 		await settingsToggleButton(page, 'Delve', 'On').click();
 		await page.keyboard.press('Escape');
@@ -289,9 +272,4 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 			.toBeVisible({ timeout: 5_000 });
 		await page.keyboard.press('Escape');
 	});
-
-	// Note: no afterAll cleanup needed — each Playwright test starts with a
-	// fresh browser context loaded from storageState (setup.ts), which does
-	// not include the expansion toggle keys, so they default to "on" for
-	// subsequent specs.
 });

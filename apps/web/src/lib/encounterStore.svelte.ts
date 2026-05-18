@@ -89,6 +89,13 @@ export async function removeEncounter(id: string): Promise<void> {
 	await persist();
 }
 
+/** Push the current array to the API without rewriting `_encounters`. Use
+ *  when the UI has already mutated proxy fields directly and the store is
+ *  the source of truth — a debounced effect typically calls this. */
+export async function flushEncountersToApi(): Promise<void> {
+	await persist();
+}
+
 // ---------------------------------------------------------------------------
 // Internal
 // ---------------------------------------------------------------------------

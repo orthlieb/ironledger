@@ -1,7 +1,21 @@
 /**
- * foes.spec.ts — Foes tab: add and delete a foe.
+ * foes.spec.ts — Foes area (v2): add and delete a foe.
+ *
+ * v2 layout: the Foes area lives in the bottom-left of the deck-of-cards
+ * layout and is always visible. No tab switching is needed.
  */
 import { test, expect } from '@playwright/test';
+
+const FOE_AREA   = '.home-area--foes';
+const FOE_HEADER = `${FOE_AREA} .fa-header`;
+const FOE_SPINE  = `${FOE_AREA} .fa-spine`;
+const FOE_STAGE  = `${FOE_AREA} .fa-stage`;
+
+async function waitForFoesLoaded(page: import('@playwright/test').Page) {
+	await expect(page.locator(`${FOE_AREA} .fa-loading`)).not.toBeVisible({ timeout: 10_000 });
+	await page.locator(`${FOE_AREA} .fa-empty, ${FOE_AREA} .fa-body`).first()
+		.waitFor({ timeout: 10_000, state: 'attached' });
+}
 
 /**
  * Add a foe via the two-step picker flow:
@@ -10,104 +24,97 @@ import { test, expect } from '@playwright/test';
  */
 async function addFoeFromPicker(page: import('@playwright/test').Page) {
 	const foeTile = page.locator('dialog.foe-dialog .fd-tile').first();
-	await expect(foeTile).toBeVisible({ timeout: 8000 });
+	await expect(foeTile).toBeVisible({ timeout: 8_000 });
 	await foeTile.click();
-	// Confirm view: click "Add to Foes"
 	const addBtn = page.locator('dialog.foe-dialog button:has-text("Add to Foes")');
-	await expect(addBtn).toBeVisible({ timeout: 3000 });
+	await expect(addBtn).toBeVisible({ timeout: 3_000 });
 	await addBtn.click();
-	await expect(page.locator('dialog.foe-dialog[open]')).not.toBeVisible({ timeout: 5000 });
+	await expect(page.locator('dialog.foe-dialog[open]')).not.toBeVisible({ timeout: 5_000 });
 }
 
-test.describe('Foes tab', () => {
+test.describe('Foes area (v2)', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/home');
-		// Wait for DB session to finish loading before clicking — prevents click being overwritten
-		await expect(page.locator('.loading-tab')).not.toBeVisible({ timeout: 8000 });
-		await page.click('.tab-btn[data-tab="foes"]');
-		await expect(page.locator('.char-toolbar button:has-text("+ Foe")')).toBeVisible({ timeout: 5000 });
+		await waitForFoesLoaded(page);
 	});
 
-	test('shows toolbar with New Foe button', async ({ page }) => {
-		await expect(page.locator('.char-toolbar button.btn-primary').first()).toBeVisible();
+	test('shows header with + Foe button', async ({ page }) => {
+		await expect(page.locator(`${FOE_HEADER} button:has-text("+ Foe")`)).toBeVisible();
 	});
 
-	test('clicking New Foe opens foe picker dialog', async ({ page }) => {
-		await page.click('.char-toolbar button.btn-primary');
-		await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5000 });
+	test('clicking + Foe opens foe picker dialog', async ({ page }) => {
+		await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
+		await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
 		await page.keyboard.press('Escape');
 	});
 
 	test('can add a foe from the picker', async ({ page }) => {
-		const foesBefore = await page.locator('.char-list--foes .char-card').count();
-		await page.click('.char-toolbar button.btn-primary');
-		await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5000 });
+		const before = await page.locator(FOE_SPINE).count();
+		await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
+		await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
 		await addFoeFromPicker(page);
-		await expect(page.locator('.char-list--foes .char-card'))
-			.not.toHaveCount(foesBefore, { timeout: 5000 });
+		await expect(page.locator(FOE_SPINE)).not.toHaveCount(before, { timeout: 5_000 });
 	});
 
-	test('clicking a foe card selects it', async ({ page }) => {
-		let foeCards = page.locator('.char-list--foes .char-card');
-		if (await foeCards.count() === 0) {
-			await page.click('.char-toolbar button.btn-primary');
-			await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5000 });
+	test('clicking a foe spine selects it', async ({ page }) => {
+		const spines = page.locator(FOE_SPINE);
+		if (await spines.count() === 0) {
+			await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
+			await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
 			await addFoeFromPicker(page);
-			await expect(foeCards).not.toHaveCount(0, { timeout: 5000 });
+			await expect(spines).not.toHaveCount(0, { timeout: 5_000 });
 		}
-		await foeCards.first().click();
-		await expect(foeCards.first()).toHaveClass(/char-card--active/);
+		await spines.first().click();
+		await expect(spines.first()).toHaveClass(/fa-spine--active/);
 	});
 
-	test('selected foe shows foe card details', async ({ page }) => {
-		let foeCards = page.locator('.char-list--foes .char-card');
-		if (await foeCards.count() === 0) {
-			await page.click('.char-toolbar button.btn-primary');
-			await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5000 });
+	test('selected foe shows stage with foe details', async ({ page }) => {
+		const spines = page.locator(FOE_SPINE);
+		if (await spines.count() === 0) {
+			await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
+			await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
 			await addFoeFromPicker(page);
-			await expect(foeCards).not.toHaveCount(0, { timeout: 5000 });
+			await expect(spines).not.toHaveCount(0, { timeout: 5_000 });
 		}
-		await foeCards.first().click();
-		await expect(foeCards.first().locator('.fc-header')).toBeVisible({ timeout: 3000 });
+		await spines.first().click();
+		await expect(page.locator(`${FOE_AREA} .fa-stage-name`)).toBeVisible({ timeout: 3_000 });
 	});
 
 	test('can delete a foe', async ({ page }) => {
-		let foeCards = page.locator('.char-list--foes .char-card');
-		if (await foeCards.count() === 0) {
-			await page.click('.char-toolbar button.btn-primary');
-			await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5000 });
+		const spines = page.locator(FOE_SPINE);
+		if (await spines.count() === 0) {
+			await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
+			await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
 			await addFoeFromPicker(page);
-			await expect(foeCards).not.toHaveCount(0, { timeout: 5000 });
+			await expect(spines).not.toHaveCount(0, { timeout: 5_000 });
 		}
-		const countBefore = await foeCards.count();
-		await foeCards.first().click();
-		await expect(foeCards.first().locator('.fc-header')).toBeVisible({ timeout: 3000 });
-		// FoeCard uses .fc-del-btn → opens ConfirmDialog → click "Remove"
-		const deleteBtn = page.locator('.fc-del-btn').first();
-		await expect(deleteBtn).toBeVisible({ timeout: 2000 });
+		const countBefore = await spines.count();
+		await spines.first().click();
+		const deleteBtn = page.locator(`${FOE_AREA} .fa-stage-delete-btn`).first();
+		await expect(deleteBtn).toBeVisible({ timeout: 3_000 });
 		await deleteBtn.click();
-		// ConfirmDialog modal appears — click "Remove"
 		const confirmBtn = page.locator('dialog.confirm-modal[open] button.btn-danger');
-		await expect(confirmBtn).toBeVisible({ timeout: 2000 });
+		await expect(confirmBtn).toBeVisible({ timeout: 3_000 });
 		await confirmBtn.click();
-		await expect(foeCards).toHaveCount(countBefore - 1, { timeout: 5000 });
+		await expect(spines).toHaveCount(countBefore - 1, { timeout: 5_000 });
 	});
 
 	// ── Cleanup ───────────────────────────────────────────────────────────────
 
 	test('cleanup: delete all foes', async ({ page }) => {
-		const cards = page.locator('.char-list--foes .char-card');
-		let count = await cards.count();
+		const spines = page.locator(FOE_SPINE);
+		let count = await spines.count();
 		while (count > 0) {
-			await cards.first().click();
-			await expect(page.locator('.fc-del-btn').first()).toBeVisible({ timeout: 3000 });
-			await page.locator('.fc-del-btn').first().click();
+			await spines.first().click();
+			const deleteBtn = page.locator(`${FOE_AREA} .fa-stage-delete-btn`).first();
+			await expect(deleteBtn).toBeVisible({ timeout: 3_000 });
+			await deleteBtn.click();
 			const confirmBtn = page.locator('dialog.confirm-modal[open] button.btn-danger');
-			await expect(confirmBtn).toBeVisible({ timeout: 3000 });
+			await expect(confirmBtn).toBeVisible({ timeout: 3_000 });
 			await confirmBtn.click();
 			count--;
 			if (count > 0) {
-				await expect(cards).toHaveCount(count, { timeout: 5000 });
+				await expect(spines).toHaveCount(count, { timeout: 5_000 });
 			}
 		}
 	});

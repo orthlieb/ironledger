@@ -7,122 +7,101 @@
  * Clicking a resource link may prepend cascade notification entries; we always
  * locate the mock entry by data-entry-id (via :has()), never by position.
  *
- * Prerequisites (provided by hooks.client.ts, DEV mode only):
+ * Prerequisites (provided by hooks.client.ts):
  *   window.__testLog.appendLog(charId, title, html, id?, source?, roll?)
  *   window.__testLog.SESSION_LOG_ID  === '__session__'
+ *
+ * v2 changes: no tabs, no GCB. The active character is whatever spine is
+ * `.ca-spine--active` in the Characters area. Resource values are read from
+ * the .res-tile / .mt-tile inside the Characters area's Core sub-tab.
  */
 import { test, expect, type Page } from '@playwright/test';
 
+const CHAR_AREA   = '.home-area--characters';
+const CHAR_HEADER = `${CHAR_AREA} .ca-header`;
+const CHAR_SPINE  = `${CHAR_AREA} .ca-spine`;
+const FOE_AREA    = '.home-area--foes';
+const FOE_HEADER  = `${FOE_AREA} .fa-header`;
+const FOE_SPINE   = `${FOE_AREA} .fa-spine`;
+const EXP_AREA    = '.home-area--expeditions';
+const EXP_HEADER  = `${EXP_AREA} .ea-header`;
+const EXP_SPINE   = `${EXP_AREA} .ea-spine`;
+
 // ── Shared helpers ────────────────────────────────────────────────────────────
 
+async function waitForCharactersArea(page: Page) {
+	await expect(page.locator(`${CHAR_AREA} .ca-loading`)).not.toBeVisible({ timeout: 12_000 });
+	await page.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`).first()
+		.waitFor({ timeout: 12_000, state: 'attached' });
+}
+
+async function switchCharTab(page: Page, label: string) {
+	await page.locator(`${CHAR_AREA} .ca-tab`, { hasText: new RegExp(`^${label}$`, 'i') }).click();
+}
+
 /**
- * Navigate to the adventure tab with a character selected in the GCB.
- * Returns the active character's UUID (from data-char-id on the GCB character tile).
- *
- * The GCB tile drives activeCharId in the action bus drain effect, so we MUST
- * select the character through the GCB popover to guarantee charId == activeCharId.
- * Reading charId from the Characters-tab card isn't sufficient — session state may
- * leave a different character shown in the GCB.
+ * Navigate to /home, ensure a character exists, and return the active character's id.
+ * The id is fetched via the BFF /api/characters endpoint and matched against the
+ * stage name. In v2 the first character is auto-selected on load.
  */
-async function goToAdventure(page: Page): Promise<string> {
+async function goToHomeWithCharacter(page: Page): Promise<string> {
 	await page.goto('/home');
-	await expect(page.locator('.loading-tab')).not.toBeVisible({ timeout: 8000 });
+	await waitForCharactersArea(page);
 
-	// Characters tab — ensure at least one character exists.
-	await page.click('.tab-btn[data-tab="characters"]');
-	await page.locator('.char-list--characters > .char-card, .empty-tab').first()
-		.waitFor({ timeout: 8000, state: 'attached' });
-
-	if (await page.locator('.char-list--characters > .char-card').count() === 0) {
-		await page.locator('.char-toolbar button.btn-primary').click();
-		await expect(page.locator('.char-list--characters > .char-card').first())
-			.toBeVisible({ timeout: 8000 });
+	if (await page.locator(CHAR_SPINE).count() === 0) {
+		await page.locator(`${CHAR_HEADER} button:has-text("+ Character")`).click();
+		await expect(page.locator(CHAR_SPINE)).not.toHaveCount(0, { timeout: 8_000 });
 	}
-
-	// Adventure tab
-	await page.click('.tab-btn[data-tab="adventure"]');
-	await expect(page.locator('.adventure-gcb')).toBeVisible({ timeout: 5000 });
-
-	// Always explicitly select a character through the GCB popover so that
-	// activeCharId (the action-bus drain key) matches the charId we return.
-	// The GCB tile exposes data-char-id={activeCharId} after selection.
-	const charTile    = page.locator('.gc-tile').first();
-	const charTileBtn = charTile.locator('.gc-tile-btn');
-	await expect(charTileBtn).toBeVisible({ timeout: 3000 });
-	await charTileBtn.click();
-	await expect(page.locator('.gc-popover').first()).toBeVisible({ timeout: 2000 });
-	// Use hasNotText filter — `:not([class*="None"])` matches the "(None)"
-	// button too because "None" is in its *text*, not its CSS class.
-	const item = page.locator('.gc-popover .gc-popover-item')
-		.filter({ hasNotText: '(None)' }).first();
-	if (await item.isVisible({ timeout: 1000 }).catch(() => false)) {
-		await item.click();
-	} else {
-		await page.keyboard.press('Escape');
-		return '';
+	// Ensure first spine is active.
+	const first = page.locator(CHAR_SPINE).first();
+	if (!(await first.evaluate(el => el.classList.contains('ca-spine--active')).catch(() => false))) {
+		await first.click();
 	}
+	await expect(first).toHaveClass(/ca-spine--active/, { timeout: 3_000 });
 
-	// Read charId from the GCB tile's data-char-id (set by GlobalContextBar after selection).
-	const charId = await charTile.getAttribute('data-char-id') ?? '';
-	return charId;
+	return await getActiveCharId(page);
 }
 
-/** Ensure a foe exists and is selected in the GCB foe tile (nth(1)). */
-async function ensureFoeInGCB(page: Page) {
-	const foeTileBtn = page.locator('.gc-tile').nth(1).locator('.gc-tile-btn');
-	const tileText = await foeTileBtn.textContent().catch(() => '');
-	if (tileText?.trim() && !tileText.includes('No') && !tileText.includes('(None)') && !tileText.includes('Foe')) return;
+/** Look up active char's id via the /api/characters list matched by stage name. */
+async function getActiveCharId(page: Page): Promise<string> {
+	const stageName = (await page.locator(`${CHAR_AREA} .ca-stage-name`).textContent())?.trim() ?? '';
+	if (!stageName) return '';
+	const list = await page.evaluate(async () => {
+		const res = await fetch('/api/characters', { credentials: 'include' });
+		return res.ok ? await res.json() : [];
+	}) as Array<{ id: string; name: string }>;
+	return list.find(c => c.name === stageName)?.id ?? '';
+}
 
-	// Add a foe if none exist
-	await page.click('.tab-btn[data-tab="foes"]');
-	await expect(page.locator('.char-toolbar button:has-text("+ Foe")')).toBeVisible({ timeout: 5000 });
-	if (await page.locator('.char-list--foes .char-card').count() === 0) {
-		await page.click('.char-toolbar button.btn-primary');
-		await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5000 });
+/** Ensure a foe exists; in v2 the foes area always auto-selects the first foe. */
+async function ensureFoeExists(page: Page) {
+	if (await page.locator(FOE_SPINE).count() === 0) {
+		await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
+		await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
 		const foeTile = page.locator('dialog.foe-dialog .fd-tile').first();
-		await expect(foeTile).toBeVisible({ timeout: 8000 });
+		await expect(foeTile).toBeVisible({ timeout: 8_000 });
 		await foeTile.click();
-		await expect(page.locator('dialog.foe-dialog button:has-text("Add to Foes")')).toBeVisible({ timeout: 3000 });
+		await expect(page.locator('dialog.foe-dialog button:has-text("Add to Foes")')).toBeVisible({ timeout: 3_000 });
 		await page.locator('dialog.foe-dialog button:has-text("Add to Foes")').click();
+		await expect(page.locator(FOE_SPINE)).not.toHaveCount(0, { timeout: 5_000 });
 	}
-
-	await page.click('.tab-btn[data-tab="adventure"]');
-	await expect(page.locator('.adventure-gcb')).toBeVisible({ timeout: 5000 });
-	await foeTileBtn.click();
-	await expect(page.locator('.gc-popover').first()).toBeVisible({ timeout: 2000 });
-	const foeItem = page.locator('.gc-popover .gc-popover-item:not([class*="None"])').first();
-	if (await foeItem.isVisible({ timeout: 1000 }).catch(() => false)) await foeItem.click();
-	else await page.keyboard.press('Escape');
 }
 
-/** Ensure a journey exists and is selected in the GCB expedition tile (nth(2)). */
-async function ensureExpeditionInGCB(page: Page) {
-	const expTileBtn = page.locator('.gc-tile').nth(2).locator('.gc-tile-btn');
-	const tileText = await expTileBtn.textContent().catch(() => '');
-	if (tileText?.trim() && !tileText.includes('No') && !tileText.includes('(None)') && !tileText.includes('Expedition')) return;
-
-	await page.click('.tab-btn[data-tab="expeditions"]');
-	await expect(page.locator('.char-toolbar button:has-text("+ Journey")')).toBeVisible({ timeout: 5000 });
-	if (await page.locator('.char-list--expeditions .char-card').count() === 0) {
-		await page.click('.char-toolbar button:has-text("+ Journey")');
-		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
+/** Ensure an expedition (journey) exists. */
+async function ensureExpeditionExists(page: Page) {
+	if (await page.locator(EXP_SPINE).count() === 0) {
+		await page.locator(`${EXP_HEADER} button:has-text("+ Journey")`).click();
+		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
 		await page.locator('dialog.confirm-modal[open] button:has-text("Start Journey")').click();
-		await expect(page.locator('.char-list--expeditions .char-card')).not.toHaveCount(0, { timeout: 5000 });
+		await expect(page.locator(EXP_SPINE)).not.toHaveCount(0, { timeout: 5_000 });
 	}
-
-	await page.click('.tab-btn[data-tab="adventure"]');
-	await expect(page.locator('.adventure-gcb')).toBeVisible({ timeout: 5000 });
-	await expTileBtn.click();
-	await expect(page.locator('.gc-popover').first()).toBeVisible({ timeout: 2000 });
-	const expItem = page.locator('.gc-popover .gc-popover-item:not([class*="None"])').first();
-	if (await expItem.isVisible({ timeout: 1000 }).catch(() => false)) await expItem.click();
-	else await page.keyboard.press('Escape');
 }
 
 /** Inject a log entry into the session log via window.__testLog. */
 async function inject(page: Page, title: string, html: string, id: string) {
 	await page.evaluate(
 		({ id, title, html }) => {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			(window as any).__testLog.appendLog('__session__', title, html, id);
 		},
 		{ id, title, html },
@@ -131,25 +110,35 @@ async function inject(page: Page, title: string, html: string, id: string) {
 
 /** Locate a log entry by its entry ID. */
 function entryById(page: Page, id: string) {
-	// Clicking a link may replace it with <s class="resource-spent">, dropping
-	// the data-entry-id that previously lived on the link.  The .log-entry
-	// wrapper carries data-entry-id so it stays locatable regardless of state.
 	return page.locator(`.log-entry[data-entry-id="${id}"]`);
 }
 
-/** Read numeric value from a GCB resource chip. */
-async function chip(page: Page, resource: string): Promise<number> {
-	const text = await page
-		.locator(`.gc-chip--resource[title="${resource}"] .gc-chip-value`)
-		.textContent({ timeout: 5000 })
-		.catch(() => '0');
-	return parseInt(text?.trim() ?? '0', 10);
+/** Read a vitals tile's numeric value from the active character's Core tab. */
+async function readVital(page: Page, label: 'Health' | 'Spirit' | 'Supply' | 'Experience'): Promise<number> {
+	await switchCharTab(page, 'Core');
+	const tile = page.locator(`${CHAR_AREA} .res-tile`).filter({ hasText: label });
+	const text = await tile.locator('.res-value').textContent({ timeout: 5_000 }).catch(() => '0');
+	return parseInt((text ?? '0').trim(), 10);
 }
 
-/** Wait until a GCB chip value differs from `was`, return new value. */
-async function waitChipChange(page: Page, resource: string, was: number): Promise<number> {
-	await expect(async () => expect(await chip(page, resource)).not.toBe(was)).toPass({ timeout: 5000 });
-	return chip(page, resource);
+/** Read momentum (a MomentumTile, not a ResourceTile). */
+async function readMomentum(page: Page): Promise<number> {
+	await switchCharTab(page, 'Core');
+	// MomentumTile renders .mt-tile > .mt-left > .mt-row > .mt-val.
+	const tile = page.locator(`${CHAR_AREA} .mt-tile`);
+	const text = await tile.locator('.mt-val').first().textContent({ timeout: 5_000 }).catch(() => '0');
+	return parseInt((text ?? '0').trim(), 10);
+}
+
+/** Wait until a vital value differs from `was`, return new value. */
+async function waitVitalChange(page: Page, label: 'Health' | 'Spirit' | 'Supply' | 'Experience', was: number): Promise<number> {
+	await expect(async () => expect(await readVital(page, label)).not.toBe(was)).toPass({ timeout: 5_000 });
+	return readVital(page, label);
+}
+
+async function waitMomentumChange(page: Page, was: number): Promise<number> {
+	await expect(async () => expect(await readMomentum(page)).not.toBe(was)).toPass({ timeout: 5_000 });
+	return readMomentum(page);
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -158,15 +147,16 @@ test.describe('Log interactive links (injected mock entries)', () => {
 
 	// ── Resource links ───────────────────────────────────────────────────────
 
-	test('resource links update GCB chips: health, spirit, supply, momentum, xp', async ({ page }) => {
-		const charId = await goToAdventure(page);
+	test('resource links update vitals: health, spirit, supply, momentum, xp', async ({ page }) => {
+		const charId = await goToHomeWithCharacter(page);
+		expect(charId).toBeTruthy();
 		const id = crypto.randomUUID();
 
-		const hPre   = await chip(page, 'health');
-		const sPre   = await chip(page, 'spirit');
-		const supPre = await chip(page, 'supply');
-		const momPre = await chip(page, 'momentum');
-		const xpPre  = await chip(page, 'xp');
+		const hPre   = await readVital(page,    'Health');
+		const sPre   = await readVital(page,    'Spirit');
+		const supPre = await readVital(page,    'Supply');
+		const momPre = await readMomentum(page);
+		const xpPre  = await readVital(page,    'Experience');
 
 		await inject(page, 'Mock Outcome', `
 			<p><a class="resource-link" data-resource="health"   data-value="-1" data-entry-id="${id}" data-char-id="${charId}">-1 health</a></p>
@@ -177,28 +167,26 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		`, id);
 
 		const entry = entryById(page, id);
-		await expect(entry).toBeVisible({ timeout: 3000 });
+		await expect(entry).toBeVisible({ timeout: 3_000 });
 
-		// Click each link and wait for its chip to change before clicking next;
-		// each click may prepend a cascade notification, but entryById stays anchored.
 		await entry.locator('a.resource-link[data-resource="health"]').click();
-		expect(await waitChipChange(page, 'health', hPre)).toBe(hPre - 1);
+		expect(await waitVitalChange(page, 'Health', hPre)).toBe(hPre - 1);
 
 		await entry.locator('a.resource-link[data-resource="spirit"]').click();
-		expect(await waitChipChange(page, 'spirit', sPre)).toBe(sPre - 1);
+		expect(await waitVitalChange(page, 'Spirit', sPre)).toBe(sPre - 1);
 
 		await entry.locator('a.resource-link[data-resource="supply"]').click();
-		expect(await waitChipChange(page, 'supply', supPre)).toBe(supPre - 1);
+		expect(await waitVitalChange(page, 'Supply', supPre)).toBe(supPre - 1);
 
 		await entry.locator('a.resource-link[data-resource="momentum"]').click();
-		expect(await waitChipChange(page, 'momentum', momPre)).toBe(momPre + 1);
+		expect(await waitMomentumChange(page, momPre)).toBe(momPre + 1);
 
 		await entry.locator('a.resource-link[data-resource="xp"]').click();
-		expect(await waitChipChange(page, 'xp', xpPre)).toBe(xpPre + 1);
+		expect(await waitVitalChange(page, 'Experience', xpPre)).toBe(xpPre + 1);
 	});
 
 	test('mana resource link is marked spent', async ({ page }) => {
-		const charId = await goToAdventure(page);
+		const charId = await goToHomeWithCharacter(page);
 		const id = crypto.randomUUID();
 
 		await inject(page, 'Mock Outcome', `
@@ -207,94 +195,76 @@ test.describe('Log interactive links (injected mock entries)', () => {
 
 		const entry = entryById(page, id);
 		const link = entry.locator('a.resource-link[data-resource="mana"]');
-		await expect(link).toBeVisible({ timeout: 3000 });
+		await expect(link).toBeVisible({ timeout: 3_000 });
 		await link.click();
-		await expect(entry.locator('s.resource-spent')).toBeVisible({ timeout: 3000 });
+		await expect(entry.locator('s.resource-spent')).toBeVisible({ timeout: 3_000 });
 	});
 
 	// ── Failure link ─────────────────────────────────────────────────────────
 
 	test('failure link advances the failure track', async ({ page }) => {
-		const charId = await goToAdventure(page);
+		const charId = await goToHomeWithCharacter(page);
 		const id = crypto.randomUUID();
 
-		// Read current failures tally from character sheet
-		await page.click('.tab-btn[data-tab="characters"]');
-		const activeCard = page.locator('.char-card--active').first();
-		const failGroup = activeCard.locator('.track-group').filter({ hasText: /Failures/i });
-		// Sum data-ticks across all failure track boxes.
+		// Status tab hosts the failures track (still uses .track-box / data-ticks).
+		await switchCharTab(page, 'Status');
+		const failGroup = page.locator(`${CHAR_AREA} .ca-track-group`).filter({ hasText: /Failures/i });
 		const tickCountBefore = await failGroup.locator('.track-box').evaluateAll(
-			(boxes: HTMLElement[]) => boxes.reduce((s, b) => s + parseInt(b.dataset['ticks'] ?? '0', 10), 0)
+			(boxes: HTMLElement[]) => boxes.reduce((s, b) => s + parseInt(b.dataset['ticks'] ?? '0', 10), 0),
 		);
-
-		await page.click('.tab-btn[data-tab="adventure"]');
-		await expect(page.locator('.adventure-gcb')).toBeVisible({ timeout: 5000 });
 
 		await inject(page, 'Mock Miss', `
 			<p><a class="failure-link" data-entry-id="${id}" data-char-id="${charId}">+1 failure</a></p>
 		`, id);
 
 		const entry = entryById(page, id);
-		await expect(entry.locator('a.failure-link')).toBeVisible({ timeout: 3000 });
+		await expect(entry.locator('a.failure-link')).toBeVisible({ timeout: 3_000 });
 		await entry.locator('a.failure-link').click();
-		await expect(entry.locator('s.resource-spent')).toBeVisible({ timeout: 3000 });
+		await expect(entry.locator('s.resource-spent')).toBeVisible({ timeout: 3_000 });
 
-		// Verify failure tick count increased in character sheet
-		await page.click('.tab-btn[data-tab="characters"]');
-		await expect(activeCard).toBeVisible({ timeout: 3000 });
+		await switchCharTab(page, 'Status');
 		await expect(async () => {
 			const after = await failGroup.locator('.track-box').evaluateAll(
-				(boxes: HTMLElement[]) => boxes.reduce((s, b) => s + parseInt(b.dataset['ticks'] ?? '0', 10), 0)
+				(boxes: HTMLElement[]) => boxes.reduce((s, b) => s + parseInt(b.dataset['ticks'] ?? '0', 10), 0),
 			);
 			expect(after).toBeGreaterThan(tickCountBefore);
-		}).toPass({ timeout: 5000 });
-		const tickCountAfter = await failGroup.locator('.track-box').evaluateAll(
-			(boxes: HTMLElement[]) => boxes.reduce((s, b) => s + parseInt(b.dataset['ticks'] ?? '0', 10), 0)
-		);
-		expect(tickCountAfter).toBeGreaterThan(tickCountBefore);
+		}).toPass({ timeout: 5_000 });
 	});
 
 	// ── Debility link ─────────────────────────────────────────────────────────
 
 	test('debility link marks the debility on the character sheet', async ({ page }) => {
-		const charId = await goToAdventure(page);
+		const charId = await goToHomeWithCharacter(page);
 		const id = crypto.randomUUID();
 
-		// Ensure Shaken is unmarked before the test
-		await page.click('.tab-btn[data-tab="characters"]');
-		const activeCard = page.locator('.char-card--active').first();
-		const shakenBtn = activeCard.locator('.debility-btn').filter({ hasText: 'Shaken' });
-		await expect(shakenBtn).toBeVisible({ timeout: 3000 });
+		// Ensure Shaken is unmarked before the test. Debilities live on the Status tab.
+		await switchCharTab(page, 'Status');
+		const shakenBtn = page.locator(`${CHAR_AREA} .debility-btn`).filter({ hasText: 'Shaken' });
+		await expect(shakenBtn).toBeVisible({ timeout: 3_000 });
 		if (await shakenBtn.evaluate(el => el.classList.contains('active'))) {
 			await shakenBtn.click();
-			await expect(shakenBtn).not.toHaveClass(/active/, { timeout: 2000 });
+			await expect(shakenBtn).not.toHaveClass(/active/, { timeout: 2_000 });
 		}
-
-		await page.click('.tab-btn[data-tab="adventure"]');
-		await expect(page.locator('.adventure-gcb')).toBeVisible({ timeout: 5000 });
 
 		await inject(page, 'Mock Outcome', `
 			<p><a class="debility-link" data-debility="shaken" data-value="1" data-entry-id="${id}" data-char-id="${charId}">Mark Shaken</a></p>
 		`, id);
 
 		const entry = entryById(page, id);
-		await expect(entry.locator('a.debility-link')).toBeVisible({ timeout: 3000 });
+		await expect(entry.locator('a.debility-link')).toBeVisible({ timeout: 3_000 });
 		await entry.locator('a.debility-link').click();
-		await expect(entry.locator('s.resource-spent')).toBeVisible({ timeout: 3000 });
+		await expect(entry.locator('s.resource-spent')).toBeVisible({ timeout: 3_000 });
 
-		// Brief pause so triggerAction's reactive bus can drain before we navigate away.
 		await page.waitForTimeout(300);
 
-		// Verify Shaken is now marked
-		await page.click('.tab-btn[data-tab="characters"]');
-		await expect(activeCard).toBeVisible({ timeout: 3000 });
-		await expect(shakenBtn).toHaveClass(/active/, { timeout: 8000 });
+		await switchCharTab(page, 'Status');
+		await expect(shakenBtn).toHaveClass(/active/, { timeout: 8_000 });
 	});
 
 	// ── Initiative links ──────────────────────────────────────────────────────
 
-	test('initiative link: character has initiative shows GCB badge', async ({ page }) => {
-		const charId = await goToAdventure(page);
+	test('initiative link: character has initiative shows in Core tab toggle', async ({ page }) => {
+		const charId = await goToHomeWithCharacter(page);
 		const id = crypto.randomUUID();
 
 		await inject(page, 'Mock Outcome', `
@@ -302,14 +272,18 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		`, id);
 
 		const entry = entryById(page, id);
-		await expect(entry.locator('a.initiative-link[data-value="character"]')).toBeVisible({ timeout: 3000 });
+		await expect(entry.locator('a.initiative-link[data-value="character"]')).toBeVisible({ timeout: 3_000 });
 		await entry.locator('a.initiative-link[data-value="character"]').click();
-		await expect(page.locator('.gc-init-btn--you.gc-init-btn--active')).toBeVisible({ timeout: 5000 });
+
+		await switchCharTab(page, 'Core');
+		await expect(
+			page.locator(`${CHAR_AREA} .ca-init-btn--you.ca-init-btn--active`),
+		).toBeVisible({ timeout: 5_000 });
 	});
 
-	test('initiative link: foe has initiative shows GCB badge', async ({ page }) => {
-		const charId = await goToAdventure(page);
-		await ensureFoeInGCB(page);
+	test('initiative link: foe has initiative shows in Core tab toggle', async ({ page }) => {
+		const charId = await goToHomeWithCharacter(page);
+		await ensureFoeExists(page);
 		const id = crypto.randomUUID();
 
 		await inject(page, 'Mock Outcome', `
@@ -317,16 +291,20 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		`, id);
 
 		const entry = entryById(page, id);
-		await expect(entry.locator('a.initiative-link[data-value="foe"]')).toBeVisible({ timeout: 3000 });
+		await expect(entry.locator('a.initiative-link[data-value="foe"]')).toBeVisible({ timeout: 3_000 });
 		await entry.locator('a.initiative-link[data-value="foe"]').click();
-		await expect(page.locator('.gc-init-btn--foe.gc-init-btn--active')).toBeVisible({ timeout: 5000 });
+
+		await switchCharTab(page, 'Core');
+		await expect(
+			page.locator(`${CHAR_AREA} .ca-init-btn--foe.ca-init-btn--active`),
+		).toBeVisible({ timeout: 5_000 });
 	});
 
 	// ── Vanquish foe link ─────────────────────────────────────────────────────
 
 	test('vanquish-foe link fires and link is marked spent', async ({ page }) => {
-		const charId = await goToAdventure(page);
-		await ensureFoeInGCB(page);
+		const charId = await goToHomeWithCharacter(page);
+		await ensureFoeExists(page);
 		const id = crypto.randomUUID();
 
 		await inject(page, 'Mock Outcome', `
@@ -334,16 +312,16 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		`, id);
 
 		const entry = entryById(page, id);
-		await expect(entry.locator('a.vanquish-foe-link')).toBeVisible({ timeout: 3000 });
+		await expect(entry.locator('a.vanquish-foe-link')).toBeVisible({ timeout: 3_000 });
 		await entry.locator('a.vanquish-foe-link').click();
-		await expect(entry.locator('s.resource-spent')).toBeVisible({ timeout: 3000 });
+		await expect(entry.locator('s.resource-spent')).toBeVisible({ timeout: 3_000 });
 	});
 
 	// ── Progress link ─────────────────────────────────────────────────────────
 
 	test('progress link marks journey progress and link is spent', async ({ page }) => {
-		const charId = await goToAdventure(page);
-		await ensureExpeditionInGCB(page);
+		const charId = await goToHomeWithCharacter(page);
+		await ensureExpeditionExists(page);
 		const id = crypto.randomUUID();
 
 		await inject(page, 'Mock Outcome', `
@@ -351,29 +329,30 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		`, id);
 
 		const entry = entryById(page, id);
-		await expect(entry.locator('a.progress-link')).toBeVisible({ timeout: 3000 });
+		await expect(entry.locator('a.progress-link')).toBeVisible({ timeout: 3_000 });
 		await entry.locator('a.progress-link').click();
-		await expect(entry.locator('s.resource-spent')).toBeVisible({ timeout: 3000 });
+		await expect(entry.locator('s.resource-spent')).toBeVisible({ timeout: 3_000 });
 	});
 
 	// ── Burn momentum link ────────────────────────────────────────────────────
 
 	test('burn-momentum link resets momentum and shows burn in log', async ({ page }) => {
-		const charId = await goToAdventure(page);
+		const charId = await goToHomeWithCharacter(page);
 
-		// Boost momentum to be well above reset (ensures burn is observable)
+		// Boost momentum to be well above reset.
 		const boostId = crypto.randomUUID();
-		const momBefore = await chip(page, 'momentum');
+		const momBefore = await readMomentum(page);
 		await inject(page, 'Boost', `
 			<p><a class="resource-link" data-resource="momentum" data-value="+3" data-entry-id="${boostId}" data-char-id="${charId}">+3 momentum</a></p>
 		`, boostId);
 		await entryById(page, boostId).locator('a.resource-link[data-resource="momentum"]').click();
-		const momBoosted = await waitChipChange(page, 'momentum', momBefore);
+		const momBoosted = await waitMomentumChange(page, momBefore);
 
-		// Inject a roll entry with RollMeta (miss: actionScore=1 vs c1=1, c2=9)
+		// Inject a roll entry with RollMeta (miss).
 		const rollId = crypto.randomUUID();
 		await page.evaluate(
 			({ rollId, charId }) => {
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				(window as any).__testLog.appendLog(
 					'__session__',
 					'Strike',
@@ -386,25 +365,25 @@ test.describe('Log interactive links (injected mock entries)', () => {
 			{ rollId, charId },
 		);
 
-		// Inject the burn-momentum entry referencing the roll entry
+		// Burn momentum entry referencing the roll.
 		const burnId = crypto.randomUUID();
 		await inject(page, 'Burn Momentum', `
 			<p><a class="burn-momentum-link" data-roll-entry-id="${rollId}" data-entry-id="${burnId}" data-char-id="${charId}">burn momentum</a></p>
 		`, burnId);
 
 		const burnEntry = entryById(page, burnId);
-		await expect(burnEntry.locator('a.burn-momentum-link')).toBeVisible({ timeout: 3000 });
+		await expect(burnEntry.locator('a.burn-momentum-link')).toBeVisible({ timeout: 3_000 });
 		await burnEntry.locator('a.burn-momentum-link').click();
 
-		// Momentum should reset to below boosted value
-		await waitChipChange(page, 'momentum', momBoosted);
-		expect(await chip(page, 'momentum')).toBeLessThan(momBoosted);
+		// Momentum should drop after burn.
+		await waitMomentumChange(page, momBoosted);
+		expect(await readMomentum(page)).toBeLessThan(momBoosted);
 	});
 
 	// ── Move link (Pay the Price) ─────────────────────────────────────────────
 
 	test('move-link opens Pay the Price in the moves dialog', async ({ page }) => {
-		const charId = await goToAdventure(page);
+		const charId = await goToHomeWithCharacter(page);
 		const id = crypto.randomUUID();
 
 		await inject(page, 'Mock Outcome', `
@@ -412,46 +391,44 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		`, id);
 
 		const entry = entryById(page, id);
-		await expect(entry.locator('a.move-link')).toBeVisible({ timeout: 3000 });
+		await expect(entry.locator('a.move-link')).toBeVisible({ timeout: 3_000 });
 		await entry.locator('a.move-link').click();
-		await expect(page.locator('.moves-dialog[open]')).toBeVisible({ timeout: 5000 });
+		await expect(page.locator('.moves-dialog[open]')).toBeVisible({ timeout: 5_000 });
 		await page.keyboard.press('Escape');
 	});
 
 	// ── Change theme / domain links ───────────────────────────────────────────
 
 	/**
-	 * Ensure a site expedition exists and return its ID.
-	 * The ID is read from the SiteCard's change-theme dialog select, whose
-	 * id attribute is `sc-ct-theme-{expedition.id}`.
+	 * Ensure a site expedition exists and return its id.
+	 * Reads the id from the in-area theme select (id="ea-theme-{expId}").
 	 */
 	async function ensureSiteExpedition(page: Page): Promise<string> {
-		await page.click('.tab-btn[data-tab="expeditions"]');
-		await expect(page.locator('.char-toolbar button:has-text("+ Site")')).toBeVisible({ timeout: 5000 });
-
-		if (await page.locator('.sc-theme-btn').count() === 0) {
-			await page.click('.char-toolbar button:has-text("+ Site")');
-			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
+		if (await page.locator(`${EXP_AREA} select[id^="ea-theme-"]`).count() === 0) {
+			await page.locator(`${EXP_HEADER} button:has-text("+ Site")`).click();
+			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
 			await page.selectOption('dialog.confirm-modal[open] #ns-theme',  { index: 1 });
 			await page.selectOption('dialog.confirm-modal[open] #ns-domain', { index: 1 });
 			await page.locator('dialog.confirm-modal[open] button:has-text("Discover Site")').click();
-			await expect(page.locator('.sc-theme-btn').first()).toBeVisible({ timeout: 5000 });
+			await expect(page.locator(EXP_SPINE)).not.toHaveCount(0, { timeout: 5_000 });
 		}
-
-		// Extract ID from `sc-ct-theme-{id}` select attribute in the SiteCard dialog
-		const selectId = await page.locator('select[id^="sc-ct-theme-"]').first().getAttribute('id') ?? '';
-		return selectId.replace('sc-ct-theme-', '');
+		// Find a site spine — auto-selected expedition may be a journey.
+		const themeSelect = page.locator(`${EXP_AREA} select[id^="ea-theme-"]`).first();
+		if (!(await themeSelect.isVisible({ timeout: 1_000 }).catch(() => false))) {
+			const spines = page.locator(EXP_SPINE);
+			const count = await spines.count();
+			for (let i = 0; i < count; i++) {
+				await spines.nth(i).click();
+				if (await themeSelect.isVisible({ timeout: 500 }).catch(() => false)) break;
+			}
+		}
+		const id = (await themeSelect.getAttribute('id')) ?? '';
+		return id.replace(/^ea-theme-/, '');
 	}
 
 	test('change-theme-link opens Change Theme dialog and strikes through on click', async ({ page }) => {
-		await goToAdventure(page);
+		await goToHomeWithCharacter(page);
 		const expId = await ensureSiteExpedition(page);
-
-		// Re-navigate to adventure after ensureSiteExpedition may have changed tabs
-		await page.click('.tab-btn[data-tab="adventure"]');
-		await expect(page.locator('.log-entries')).toBeVisible({ timeout: 5000 });
-
-		// Skip if we couldn't get an expedition ID — site may not exist in this env
 		if (!expId) {
 			test.skip();
 			return;
@@ -467,28 +444,21 @@ test.describe('Log interactive links (injected mock entries)', () => {
 
 		const entry = entryById(page, id);
 		const link = entry.locator('a.change-theme-link');
-		await expect(link).toBeVisible({ timeout: 3000 });
-
+		await expect(link).toBeVisible({ timeout: 3_000 });
 		await link.click();
 
-		// Dialog opens
-		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
+		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
 		await expect(page.locator('dialog.confirm-modal[open] .cm-title')).toContainText('Change Theme');
 
-		// Link is struck through
-		await expect(entry.locator('s.resource-spent')).toBeVisible({ timeout: 3000 });
+		await expect(entry.locator('s.resource-spent')).toBeVisible({ timeout: 3_000 });
 		await expect(entry.locator('a.change-theme-link')).not.toBeVisible();
 
 		await page.keyboard.press('Escape');
 	});
 
 	test('change-domain-link opens Change Domain dialog and strikes through on click', async ({ page }) => {
-		await goToAdventure(page);
+		await goToHomeWithCharacter(page);
 		const expId = await ensureSiteExpedition(page);
-
-		await page.click('.tab-btn[data-tab="adventure"]');
-		await expect(page.locator('.log-entries')).toBeVisible({ timeout: 5000 });
-
 		if (!expId) {
 			test.skip();
 			return;
@@ -504,26 +474,21 @@ test.describe('Log interactive links (injected mock entries)', () => {
 
 		const entry = entryById(page, id);
 		const link = entry.locator('a.change-domain-link');
-		await expect(link).toBeVisible({ timeout: 3000 });
-
+		await expect(link).toBeVisible({ timeout: 3_000 });
 		await link.click();
 
-		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
+		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
 		await expect(page.locator('dialog.confirm-modal[open] .cm-title')).toContainText('Change Domain');
 
-		await expect(entry.locator('s.resource-spent')).toBeVisible({ timeout: 3000 });
+		await expect(entry.locator('s.resource-spent')).toBeVisible({ timeout: 3_000 });
 		await expect(entry.locator('a.change-domain-link')).not.toBeVisible();
 
 		await page.keyboard.press('Escape');
 	});
 
-	test('confirming Change Theme from log link updates site theme badge', async ({ page }) => {
-		await goToAdventure(page);
+	test('confirming Change Theme from log link updates site theme select', async ({ page }) => {
+		await goToHomeWithCharacter(page);
 		const expId = await ensureSiteExpedition(page);
-
-		await page.click('.tab-btn[data-tab="adventure"]');
-		await expect(page.locator('.log-entries')).toBeVisible({ timeout: 5000 });
-
 		if (!expId) {
 			test.skip();
 			return;
@@ -538,23 +503,22 @@ test.describe('Log interactive links (injected mock entries)', () => {
 
 		const entry = entryById(page, id);
 		await entry.locator('a.change-theme-link').click();
-		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
+		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
 
-		// Select a different theme (index 5)
 		await page.locator('dialog.confirm-modal[open] select').selectOption({ index: 5 });
 		const newTheme = await page.locator('dialog.confirm-modal[open] select').inputValue();
-		await page.locator('dialog.confirm-modal[open] button:has-text("Change Theme")').click();
-		await expect(page.locator('dialog.confirm-modal[open]')).not.toBeVisible({ timeout: 3000 });
+		await page.locator('dialog.confirm-modal[open] .btn-danger').click();
+		await expect(page.locator('dialog.confirm-modal[open]')).not.toBeVisible({ timeout: 3_000 });
 
-		// Verify the site card on the Expeditions tab shows the updated theme badge
-		await page.click('.tab-btn[data-tab="expeditions"]');
-		await expect(page.locator('.sc-badge--theme').first()).toHaveText(newTheme, { timeout: 5000 });
+		// Verify the in-area Theme select now reflects the new theme.
+		await expect(page.locator(`${EXP_AREA} select[id="ea-theme-${expId}"]`))
+			.toHaveValue(newTheme, { timeout: 5_000 });
 	});
 
 	// ── Oracle link ───────────────────────────────────────────────────────────
 
 	test('oracle-link opens the oracles dialog', async ({ page }) => {
-		const charId = await goToAdventure(page);
+		const charId = await goToHomeWithCharacter(page);
 		const id = crypto.randomUUID();
 
 		await inject(page, 'Mock Outcome', `
@@ -562,9 +526,9 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		`, id);
 
 		const entry = entryById(page, id);
-		await expect(entry.locator('a.oracle-link')).toBeVisible({ timeout: 3000 });
+		await expect(entry.locator('a.oracle-link')).toBeVisible({ timeout: 3_000 });
 		await entry.locator('a.oracle-link').click();
-		await expect(page.locator('.oracles-dialog[open]')).toBeVisible({ timeout: 5000 });
+		await expect(page.locator('.oracles-dialog[open]')).toBeVisible({ timeout: 5_000 });
 		await page.keyboard.press('Escape');
 	});
 
@@ -572,55 +536,51 @@ test.describe('Log interactive links (injected mock entries)', () => {
 
 	test('cleanup: delete all foes, expeditions, and characters', async ({ page }) => {
 		await page.goto('/home');
-		await expect(page.locator('.loading-tab')).not.toBeVisible({ timeout: 8000 });
+		await waitForCharactersArea(page);
 
 		// Foes
-		await page.click('.tab-btn[data-tab="foes"]');
-		await expect(page.locator('.char-toolbar button:has-text("+ Foe")')).toBeVisible({ timeout: 5000 });
-		const foeCards = page.locator('.char-list--foes .char-card');
-		let foeCount = await foeCards.count();
+		const foeSpines = page.locator(FOE_SPINE);
+		let foeCount = await foeSpines.count();
 		while (foeCount > 0) {
-			await foeCards.first().click();
-			await expect(page.locator('.fc-del-btn').first()).toBeVisible({ timeout: 3000 });
-			await page.locator('.fc-del-btn').first().click();
-			await expect(page.locator('dialog.confirm-modal[open] button.btn-danger')).toBeVisible({ timeout: 3000 });
+			await foeSpines.first().click();
+			const delBtn = page.locator(`${FOE_AREA} .fa-stage-delete-btn`).first();
+			await expect(delBtn).toBeVisible({ timeout: 3_000 });
+			await delBtn.click();
+			await expect(page.locator('dialog.confirm-modal[open] button.btn-danger')).toBeVisible({ timeout: 3_000 });
 			await page.locator('dialog.confirm-modal[open] button.btn-danger').click();
 			foeCount--;
-			if (foeCount > 0) await expect(foeCards).toHaveCount(foeCount, { timeout: 5000 });
+			if (foeCount > 0) await expect(foeSpines).toHaveCount(foeCount, { timeout: 5_000 });
 		}
 
 		// Expeditions
-		await page.click('.tab-btn[data-tab="expeditions"]');
-		await expect(page.locator('.char-toolbar button:has-text("+ Journey")')).toBeVisible({ timeout: 5000 });
-		const expCards = page.locator('.char-list--expeditions .char-card');
-		let expCount = await expCards.count();
+		const expSpines = page.locator(EXP_SPINE);
+		let expCount = await expSpines.count();
 		while (expCount > 0) {
-			await expCards.first().click();
-			const delBtn = page.locator('.sc-del-btn, .jc-del-btn').first();
-			await expect(delBtn).toBeVisible({ timeout: 3000 });
+			await expSpines.first().click();
+			const delBtn = page.locator(`${EXP_AREA} .ea-stage-delete-btn`).first();
+			await expect(delBtn).toBeVisible({ timeout: 3_000 });
 			await delBtn.click();
-			await expect(page.locator('dialog.confirm-modal[open] button.btn-danger')).toBeVisible({ timeout: 3000 });
+			await expect(page.locator('dialog.confirm-modal[open] button.btn-danger')).toBeVisible({ timeout: 3_000 });
 			await page.locator('dialog.confirm-modal[open] button.btn-danger').click();
 			expCount--;
-			if (expCount > 0) await expect(expCards).toHaveCount(expCount, { timeout: 5000 });
+			if (expCount > 0) await expect(expSpines).toHaveCount(expCount, { timeout: 5_000 });
 		}
 
 		// Characters
-		await page.click('.tab-btn[data-tab="characters"]');
-		await expect(page.locator('.char-toolbar')).toBeVisible({ timeout: 5000 });
-		const charCards = page.locator('.char-list--characters > .char-card');
-		let charCount = await charCards.count();
+		const charSpines = page.locator(CHAR_SPINE);
+		let charCount = await charSpines.count();
 		while (charCount > 0) {
-			await charCards.first().click();
-			await expect(page.locator('.char-card--active button[aria-label="Delete character"]')).toBeVisible({ timeout: 3000 });
-			await page.locator('.char-card--active button[aria-label="Delete character"]').click();
-			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 3000 });
+			await charSpines.first().click();
+			const delBtn = page.locator(`${CHAR_AREA} .ca-stage-delete-btn`).first();
+			await expect(delBtn).toBeVisible({ timeout: 3_000 });
+			await delBtn.click();
+			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 3_000 });
 			await page.locator('dialog.confirm-modal[open] button.btn-danger').click();
 			charCount--;
 			if (charCount > 0) {
-				await expect(charCards).toHaveCount(charCount, { timeout: 5000 });
+				await expect(charSpines).toHaveCount(charCount, { timeout: 5_000 });
 			} else {
-				await expect(page.locator('.empty-tab')).toBeVisible({ timeout: 5000 });
+				await expect(page.locator(`${CHAR_AREA} .ca-empty`)).toBeVisible({ timeout: 5_000 });
 			}
 		}
 	});

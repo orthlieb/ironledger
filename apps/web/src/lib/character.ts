@@ -76,3 +76,15 @@ export function progressText(totalTicks: number, boxes = 10): string {
 export function hydrateCharacter(raw: Record<string, unknown>): CharacterData {
 	return { ...DEFAULT_CHARACTER, ...raw } as CharacterData;
 }
+
+/**
+ * Patch missing keys onto an existing data object IN PLACE. Use when the
+ * object is a Svelte 5 $state proxy and you must preserve its identity so
+ * downstream bindings keep working. Replacing the object with a fresh spread
+ * (as hydrateCharacter does) loses the proxy and breaks `bind:value`.
+ */
+export function hydrateCharacterInPlace(d: Record<string, unknown>): void {
+	for (const [k, v] of Object.entries(DEFAULT_CHARACTER as unknown as Record<string, unknown>)) {
+		if (d[k] === undefined) d[k] = v;
+	}
+}

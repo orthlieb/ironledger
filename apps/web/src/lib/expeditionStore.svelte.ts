@@ -83,6 +83,18 @@ export async function updateExpedition(updated: Expedition): Promise<void> {
 	await persist();
 }
 
+/** Replace one expedition by id WITHOUT persisting. Use this when the caller
+ *  is debouncing the API write — pair with persistExpeditionsNow(). */
+export function updateExpeditionLocal(updated: Expedition): void {
+	_expeditions = _expeditions.map((e) => e.id === updated.id ? updated : e);
+}
+
+/** Force a save of the current encounter set. Used by debounced callers
+ *  (ExpeditionsArea) after they've already updated local state. */
+export async function persistExpeditionsNow(): Promise<void> {
+	await persist();
+}
+
 /** Remove one expedition by id and persist. */
 export async function removeExpedition(id: string): Promise<void> {
 	_expeditions = _expeditions.filter((e) => e.id !== id);
