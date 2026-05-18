@@ -280,7 +280,7 @@ export function drainXpSpend(charId: string): number {
 
 export interface LogAction {
 	charId:   string;
-	type:     'resource' | 'debility' | 'reset-track';
+	type:     'resource' | 'debility' | 'reset-track' | 'set';
 	key:      string;    // resource name, debility name, or track name
 	value:    number;    // delta for resource, 0/1 for debility, ignored for reset-track
 }

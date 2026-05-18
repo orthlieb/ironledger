@@ -42,6 +42,7 @@
 	let foePickerRef   = $state<{ open(): Promise<void>; close(): void } | null>(null);
 	let deleteDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let imgVisible     = $state(true);
+	let editingName    = $state(false);
 
 	const encounters = $derived(getEncounters());
 	const loading    = $derived(isEncounterLoading());
@@ -56,10 +57,11 @@
 	// Publish the active foe id so MovesDialog / log / preconditions can see it.
 	$effect(() => { setActiveFoeId(activeFoeId ?? ''); });
 
-	function selectFoe(id: string) {
+	export function selectFoe(id: string) {
 		activeFoeId = id;
 		activeTab   = 'core';
 		imgVisible  = true;
+		editingName = false;
 	}
 
 	async function handleFoeSelected(foeDef: FoeDef, quantity: FoeQuantity, effectiveRank: number) {
@@ -154,6 +156,23 @@
 
 	// Vanquish
 	function toggleVanquished() { update({ vanquished: !(activeEnc?.vanquished) }); }
+	export function vanquishActiveFoe() { if (activeEnc && !activeEnc.vanquished) update({ vanquished: true }); }
+	export function applyMenace(value: number) { if (activeEnc) update({ ticks: Math.min(40, activeEnc.ticks + value * progressTickVal) }); }
+
+	// Name editing — matches CharactersArea / ExpeditionsArea pattern.
+	let nameInputEl    = $state<HTMLInputElement | null>(null);
+	let nameBeforeEdit = '';
+	$effect(() => { if (editingName && nameInputEl) { nameInputEl.focus(); nameInputEl.select(); } });
+	function startEditName() {
+		if (!activeEnc) return;
+		nameBeforeEdit = activeEnc.customName ?? '';
+		editingName = true;
+	}
+	function commitName() { editingName = false; }
+	function cancelName() {
+		if (activeEnc) update({ customName: nameBeforeEdit });
+		editingName = false;
+	}
 
 	function rankBadgeStyle(rank: number): string {
 		const rc = RANK_COLORS[rank];
@@ -199,7 +218,29 @@
 				     Carries the same --fa-nature so the coloured band is continuous
 				     from the header all the way down the card's left side. -->
 				<div class="fa-stage-header" style="--fa-nature: {natureColor}">
-					<h2 class="fa-stage-name">{displayName}</h2>
+					{#if editingName}
+						<input
+							bind:this={nameInputEl}
+							class="fa-stage-name-input"
+							type="text"
+							value={activeEnc.customName ?? ''}
+							placeholder={activeDef?.name ?? activeEnc.foeId}
+							oninput={(e) => update({ customName: (e.target as HTMLInputElement).value })}
+							onblur={commitName}
+							onkeydown={(e) => {
+								if (e.key === 'Enter') nameInputEl?.blur();
+								if (e.key === 'Escape') cancelName();
+							}}
+						/>
+					{:else}
+						<!-- svelte-ignore a11y_click_events_have_key_events a11y_interactive_supports_focus -->
+						<h2
+							class="fa-stage-name fa-stage-name--editable"
+							role="button"
+							title="Click to rename"
+							onclick={startEditName}
+						>{displayName}</h2>
+					{/if}
 					<button
 						class="btn btn-icon icon-btn fa-stage-vanquish-btn"
 						class:fa-stage-vanquish-btn--vanquished={activeEnc.vanquished}
@@ -309,7 +350,7 @@
 								<!-- Escalating harm -->
 								{#if activeDef.escalates}
 									<div class="fa-escalate-row">
-										<span class="fa-escalate-label">Escalating Harm</span>
+										<span class="fa-escalate-label" use:tooltip={"This foe's attack increases every time a miss happens in combat."}>Escalating Harm</span>
 										<div class="fa-escalate-ctrl">
 											<button class="fa-adj-btn" onclick={decreaseHarm} disabled={currentHarm <= 1}      aria-label="Decrease harm">−</button>
 											<span class="fa-harm-val" class:fa-harm-high={currentHarm >= harmCap}>{currentHarm}</span>
@@ -322,7 +363,7 @@
 								<!-- Escalating defense -->
 								{#if activeDef.escalatesDefense}
 									<div class="fa-escalate-row">
-										<span class="fa-escalate-label">Escalating Defense</span>
+										<span class="fa-escalate-label" use:tooltip={"This foe's defence increases every time a miss happens in combat."}>Escalating Defense</span>
 										<div class="fa-escalate-ctrl">
 											<button class="fa-adj-btn" onclick={decreaseDefense} disabled={currentDefense <= 0}          aria-label="Decrease defense">−</button>
 											<span class="fa-harm-val">{currentDefense}</span>
@@ -406,7 +447,6 @@
 		text-transform: var(--font-display-transform);
 		color:          var(--text-accent);
 	}
-	.fa-count { font-family: var(--font-ui); font-size: 0.7rem; color: var(--text-dimmer); }
 	.fa-header-actions { display: flex; align-items: center; gap: 6px; flex: 1; justify-content: flex-end; }
 	.fa-hdr-btn { font-size: 0.7rem; padding: 3px 9px; min-width: unset; }
 
@@ -482,6 +522,33 @@
 		color:          var(--text-accent);
 		overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 	}
+	.fa-stage-name--editable {
+		cursor: pointer;
+		padding: 2px 6px;
+		border: 1px solid transparent;
+		border-radius: 3px;
+		transition: background 0.12s, border-color 0.12s;
+	}
+	.fa-stage-name--editable:hover {
+		background:   var(--bg-hover);
+		border-color: var(--border);
+	}
+	.fa-stage-name-input {
+		flex: 1;
+		font-family:    var(--font-display);
+		font-size:      calc(0.82rem * var(--font-display-scale));
+		font-weight:    var(--font-display-weight);
+		font-variant:   var(--font-display-variant);
+		letter-spacing: 0.08em;
+		text-transform: var(--font-display-transform);
+		color:          var(--text-accent);
+		background:     transparent;
+		border:         1px solid var(--border-mid);
+		border-radius:  3px;
+		padding:        2px 6px;
+		outline:        none;
+	}
+	.fa-stage-name-input:focus { border-color: var(--text-accent); }
 	.fa-stage-delete-btn { flex-shrink: 0; opacity: 0.7; transition: opacity 0.12s, color 0.12s; }
 	.fa-stage-delete-btn:hover { opacity: 1; color: var(--color-danger); }
 
@@ -719,6 +786,4 @@
 		opacity: 0.35;
 		cursor:  not-allowed;
 	}
-	.fa-status-row { display: flex; justify-content: flex-end; }
-	.fa-status-row :global(svg) { width: 12px; height: 12px; fill: currentColor; }
 </style>
