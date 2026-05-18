@@ -19,6 +19,7 @@
 
 import type { CharacterFull } from '$lib/api.js';
 import { characters as api } from '$lib/api.js';
+import { hydrateCharacterInPlace } from '$lib/character.js';
 
 // ---------------------------------------------------------------------------
 // Module-level state
@@ -39,6 +40,11 @@ export async function loadCharacters(): Promise<void> {
 	_loading = true;
 	try {
 		const list = await api.list();
+		// Ensure every loaded character has all default fields so downstream
+		// bind:value directives never receive undefined.
+		for (const char of list) {
+			hydrateCharacterInPlace(char.data as Record<string, unknown>);
+		}
 		_characters = list;
 
 		// Initialise party supply to the max across all loaded characters.
@@ -86,6 +92,8 @@ export async function createCharacter(
 	initialData: Record<string, unknown> = {},
 ): Promise<CharacterFull> {
 	const newChar = await api.create(name, initialData);
+	// Hydrate defaults so bind:value directives never receive undefined.
+	hydrateCharacterInPlace(newChar.data as Record<string, unknown>);
 	_characters = [newChar, ..._characters];
 	// Initialise party supply if this is the first character
 	if (_partySupply === null) {
