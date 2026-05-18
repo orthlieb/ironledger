@@ -270,14 +270,4 @@ test.describe('Party supply sync (v2)', () => {
 		await expectAllCharsSupply(page, 4);
 	});
 
-	// ── GCB chip tests dropped — v2 has no GlobalContextBar.
-	test.skip('GCB supply chip reflects supply changed via +/- button on Characters tab', async () => {
-		// v2: there is no GlobalContextBar. The Supply tile in the Core sub-tab IS
-		// the single source of truth and is verified by the sibling tests above.
-	});
-
-	test.skip('GCB supply chip updates when log resource-link is clicked on Adventure tab', async () => {
-		// v2: no GCB; behaviour covered by "supply resource-link click in log
-		// syncs all chars".
-	});
 });

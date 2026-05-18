@@ -50,35 +50,3 @@ test.skip('foes tab switches on click and shows toolbar', async () => {
 	// v2: no tabs — the Foes area header is always visible.
 });
 
-test.skip('expeditions tab switches on click and shows toolbar', async () => {
-	// v2: no tabs — the Expeditions area header is always visible.
-});
-
-test.skip('adventure tab switches on click and shows GCB and log', async () => {
-	// v2: no Adventure tab. Adventure-action buttons live in .app-nav; the
-	// log rail is always visible.
-});
-
-test.skip('swipe-left on tab body advances to the next tab', async () => {
-	// v2: no .tab-body; swipe-to-switch-tab gesture removed.
-});
-
-test.skip('swipe-right on tab body retreats to the previous tab', async () => {
-	// v2: no .tab-body; swipe-to-switch-tab gesture removed.
-});
-
-test.skip('swipe is clamped at the first tab (no wrap-around)', async () => {
-	// v2: no tab swipe gesture.
-});
-
-test.skip('swipe is clamped at the last tab (no wrap-around)', async () => {
-	// v2: no tab swipe gesture.
-});
-
-test.skip('mostly-vertical drag does NOT switch tabs', async () => {
-	// v2: no tab swipe gesture.
-});
-
-test.skip('small horizontal movement (tap-like) does NOT switch tabs', async () => {
-	// v2: no tab swipe gesture.
-});

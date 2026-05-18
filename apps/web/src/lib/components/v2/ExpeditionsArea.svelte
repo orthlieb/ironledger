@@ -143,6 +143,11 @@
 	// confirms the choice (matches the v1 confirm flow). The dialog reads
 	// activeSite, so we have to wait one tick after activeExpId changes
 	// before opening, or activeSite will still be stale.
+	/** Mark progress on the active expedition. `marks` = number of progress marks (each worth markTicks ticks). */
+	export function applyProgress(marks: number) {
+		if (activeExp) updateExp({ ticks: Math.min(40, activeExp.ticks + marks * markTicks) });
+	}
+
 	export function openChangeThemeForExp(expId: string) {
 		flushPersist();
 		activeExpId = expId;
@@ -732,7 +737,7 @@
 												onclick={() => openDenizenPicker(i)}
 												title="Pick a foe for this denizen"
 												aria-label="Pick foe for denizen {i + 1}"
-											>⊕</button>
+											>+</button>
 										</div>
 									</div>
 								{/each}
@@ -1037,7 +1042,7 @@
 	/* Tabs — V1 tab-btn style. */
 	.ea-tabs {
 		display: flex; align-items: stretch; gap: 0;
-		margin: 6px 0 8px;
+		margin-bottom: 8px;
 		border-bottom: 1px solid var(--border);
 	}
 	.ea-tab {
@@ -1220,15 +1225,16 @@
 	   the portrait + prose flow below it without crowding the input. */
 	.ea-objective-row { margin-bottom: 10px; }
 
-	/* Denizens tab — 12-cell grid (2 columns × 6 rows on wider screens). */
+	/* Denizens tab — 12-cell grid, always 2 columns × 6 rows. */
 	.ea-denizen-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+		grid-template-columns: repeat(2, 1fr);
 		gap: 6px;
 	}
 	.ea-denizen-cell {
 		display: flex; flex-direction: column; gap: 2px;
 		padding: 6px 8px;
+		min-width: 0;
 		background: var(--bg-inset);
 		border: 1px solid var(--border);
 		border-radius: 4px;
@@ -1245,6 +1251,7 @@
 	.ea-denizen-input-row { display: flex; gap: 4px; }
 	.ea-denizen-input {
 		flex: 1;
+		min-width: 0;
 		font-family: var(--font-ui);
 		font-size: 0.78rem;
 		color: var(--text);
@@ -1256,17 +1263,28 @@
 	}
 	.ea-denizen-input:focus { border-color: var(--text-accent); }
 	.ea-denizen-pick-btn {
-		all: unset;
-		cursor: pointer;
-		font-size: 0.9rem;
-		color: var(--text-dimmer);
-		padding: 0 6px;
-		border-radius: 3px;
-		transition: color 0.12s, background 0.12s;
+		display:         inline-flex;
+		align-items:     center;
+		justify-content: center;
+		flex-shrink:     0;
+		width:           22px;
+		height:          22px;
+		padding:         0;
+		font-family:     var(--font-ui);
+		font-size:       0.82rem;
+		font-weight:     600;
+		line-height:     1;
+		background:      transparent;
+		border:          1px solid var(--border-mid);
+		border-radius:   3px;
+		color:           var(--text-muted);
+		cursor:          pointer;
+		transition:      background 0.12s, color 0.12s, border-color 0.12s;
 	}
 	.ea-denizen-pick-btn:hover {
-		color: var(--text-accent);
-		background: var(--bg-hover);
+		background:    var(--bg-hover);
+		color:         var(--text-accent);
+		border-color:  var(--text-accent);
 	}
 
 	.ea-field-row {
