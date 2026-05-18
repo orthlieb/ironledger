@@ -336,6 +336,23 @@
 		}
 	}
 
+	// Set (not add) a field to an absolute value — used for initiative.
+	function applySet(key: string, value: number) {
+		if (!activeData) return;
+		const rec = activeData as unknown as Record<string, number>;
+		const old = rec[key] ?? 0;
+		if (old !== value) {
+			rec[key] = value;
+			const label = key.charAt(0).toUpperCase() + key.slice(1);
+			const INITIATIVE_NAMES: Record<number, string> = { 0: 'None', 1: 'Character', 2: 'Foe' };
+			const display = key === 'initiative'
+				? `${INITIATIVE_NAMES[old] ?? old} → <strong>${INITIATIVE_NAMES[value] ?? value}</strong>`
+				: `${old} → <strong>${value}</strong>`;
+			appendLog(SESSION_LOG_ID, charTitle(label),
+				`<div>${label}: ${display}</div>`);
+		}
+	}
+
 	// ── XP spend bus drain — fires when AssetCard logs an XP cost via
 	//     triggerXpSpend(charId, amount). drainXpSpend() is keyed by charId
 	//     so only the active character's queued spend is consumed. ────────
@@ -366,6 +383,7 @@
 			if      (action.type === 'resource')    applyResourceChange(action.key, action.value);
 			else if (action.type === 'debility')    applyDebilityToggle(action.key, action.value);
 			else if (action.type === 'reset-track') applyResetTrack(action.key);
+			else if (action.type === 'set')         applySet(action.key, action.value);
 		}
 	});
 
@@ -1033,11 +1051,6 @@
 		text-transform: var(--font-display-transform);
 		color:          var(--text-accent);
 	}
-	.ca-count {
-		font-family: var(--font-ui);
-		font-size: 0.7rem;
-		color: var(--text-dimmer);
-	}
 	/* Toolbar — + Character / + Asset / + Vow / Delete. Delete pinned right. */
 	.ca-header-actions {
 		display: flex;
@@ -1276,15 +1289,6 @@
 		flex-direction: column;
 		gap: 14px;
 	}
-	.ca-card-name {
-		font-family:    var(--font-display);
-		font-size:      calc(1rem * var(--font-display-scale));
-		font-weight:    var(--font-display-weight);
-		letter-spacing: 0.06em;
-		text-transform: var(--font-display-transform);
-		color:          var(--text-accent);
-		margin: 0;
-	}
 	.ca-card-bg {
 		font-family: var(--font-ui);
 		font-size: 0.85rem;
@@ -1304,9 +1308,6 @@
 	.ca-bg-section {
 		display: block;
 		position: relative;
-	}
-	.ca-bg-section .ca-card-name {
-		margin-bottom: 10px;
 	}
 	.ca-bg-portrait-label {
 		display: contents;            /* let the inner <img> own the float */
@@ -1351,23 +1352,6 @@
 		transition: color 0.12s;
 	}
 	.ca-card-name--editable:hover { color: var(--text); }
-	.ca-card-name-input {
-		font-family:    var(--font-display);
-		font-size:      calc(1rem * var(--font-display-scale));
-		font-weight:    var(--font-display-weight);
-		letter-spacing: 0.06em;
-		text-transform: var(--font-display-transform);
-		color:          var(--text-accent);
-		background:     transparent;
-		border:         none;
-		border-bottom:  1px dashed var(--border-mid);
-		padding:        0 0 2px;
-		margin:         0 0 10px;
-		width:          100%;
-		outline:        none;
-	}
-	.ca-card-name-input:focus { border-bottom-color: var(--text-accent); }
-
 	.ca-card-bg--display {
 		cursor: pointer;
 		min-height: 1.5em;

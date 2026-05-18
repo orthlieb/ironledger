@@ -892,7 +892,6 @@
 		text-transform: var(--font-display-transform);
 		color:          var(--text-accent);
 	}
-	.ea-count { font-family: var(--font-ui); font-size: 0.7rem; color: var(--text-dimmer); }
 	.ea-header-actions { display: flex; align-items: center; gap: 6px; flex: 1; justify-content: flex-end; }
 	.ea-hdr-btn { font-size: 0.7rem; padding: 3px 9px; min-width: unset; }
 
@@ -1173,14 +1172,6 @@
 		background: rgba(96,165,250,0.15);
 		color: #60a5fa;
 	}
-	.ea-badge--theme {
-		background: rgba(168,85,247,0.15);
-		color: #a855f7;
-	}
-	.ea-badge--domain {
-		background: rgba(251,146,60,0.15);
-		color: #fb923c;
-	}
 	.ea-badge--diff { border-color: transparent; }
 
 	/* Inputs (text, select) for Site fields. */
@@ -1202,32 +1193,6 @@
 		outline: none;
 	}
 	.ea-input:focus { border-color: var(--text-accent); }
-
-	.ea-fd-results {
-		display: flex; flex-direction: column; gap: 4px;
-		background: var(--bg-inset);
-		border: 1px solid var(--border);
-		border-radius: 4px;
-		padding: 6px 10px;
-	}
-	.ea-fd-line { display: flex; gap: 8px; align-items: baseline; }
-	.ea-fd-label {
-		font-family: var(--font-ui);
-		font-size: 0.65rem;
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
-		color: var(--text-dimmer);
-		min-width: 60px;
-	}
-	.ea-fd-text {
-		font-family: var(--font-ui);
-		font-size: 0.82rem;
-		color: var(--text);
-	}
-
-	.ea-theme-actions { display: flex; gap: 6px; flex-wrap: wrap; }
-	.ea-oracle-row    { display: flex; gap: 6px; flex-wrap: wrap; }
 
 	/* Square d6 button sitting next to a combo box. Sized to match the
 	   combo's height (22 px) so the row reads as one control. */
@@ -1374,7 +1339,5 @@
 	}
 	.ea-track-btns :global(.btn-progress:disabled) { opacity: 0.35; cursor: not-allowed; }
 
-	.ea-status-row { display: flex; justify-content: flex-end; }
-	.ea-status-row :global(svg) { width: 12px; height: 12px; fill: currentColor; }
 
 </style>

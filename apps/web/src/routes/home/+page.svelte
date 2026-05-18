@@ -31,6 +31,10 @@
 	import FoesArea             from '$lib/components/v2/FoesArea.svelte';
 	import ExpeditionsArea      from '$lib/components/v2/ExpeditionsArea.svelte';
 	import CommunitiesArea      from '$lib/components/v2/CommunitiesArea.svelte';
+	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
+	import { getActiveFoeId }   from '$lib/activeContext.svelte.js';
+	import { getEncounters }    from '$lib/encounterStore.svelte.js';
+	import { triggerAction }    from '$lib/log.svelte.js';
 
 	const LOG_WIDTH_KEY = 'il:home:logWidth';
 	const MIN_LOG       = 240;
@@ -49,6 +53,16 @@
 		openChangeThemeForExp(expId: string):  void;
 		openChangeDomainForExp(expId: string): void;
 	} | null>(null);
+
+	/** Ref to FoesArea — used to forward vanquish / menace from log links. */
+	let foeAreaRef = $state<{
+		selectFoe(id: string): void;
+		vanquishActiveFoe():   void;
+		applyMenace(value: number): void;
+	} | null>(null);
+
+	/** Active dice context — provides charId + data for LogPanel's link handlers. */
+	const activeDiceCtx = $derived(getActiveDiceCtx());
 
 	onMount(async () => {
 		// First-paint default: 1/3 of viewport so Char/Foe + Exp/Comm + Log
@@ -112,7 +126,7 @@
 			<CharactersArea />
 		</section>
 		<section class="home-area home-area--foes">
-			<FoesArea />
+			<FoesArea bind:this={foeAreaRef} />
 		</section>
 	</div>
 
@@ -144,6 +158,23 @@
 	     change dialog opens. -->
 	<aside class="home-log">
 		<LogPanel
+			ctx={activeDiceCtx}
+			onMoveLink={(moveId) => document.dispatchEvent(new CustomEvent('ironledger:open-move', { detail: { id: moveId } }))}
+			onOracleLink={(key, stat) => document.dispatchEvent(new CustomEvent('ironledger:open-oracle', { detail: { key, stat } }))}
+			onProgressLink={(track, value) => {
+				if (track === 'foe') {
+					foeAreaRef?.applyMenace(value);
+				}
+			}}
+			onInitiativeLink={(value) => {
+				const charId = activeDiceCtx?.charId;
+				if (charId) {
+					const numVal = value === 'character' ? 1 : value === 'foe' ? 2 : 0;
+					triggerAction({ charId, type: 'set', key: 'initiative', value: numVal });
+				}
+			}}
+			onMenaceLink={(value) => foeAreaRef?.applyMenace(value)}
+			onVanquishFoe={() => foeAreaRef?.vanquishActiveFoe()}
 			onChangeTheme={(id) => expAreaRef?.openChangeThemeForExp(id)}
 			onChangeDomain={(id) => expAreaRef?.openChangeDomainForExp(id)}
 		/>
