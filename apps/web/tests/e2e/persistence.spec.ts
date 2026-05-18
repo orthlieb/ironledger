@@ -213,16 +213,96 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		await expect(page.locator(CM_SPINE)).toHaveCount(before + 1, { timeout: 8_000 });
 	});
 
-	// ── 5. Session state — active character spine selection survives ──────────
+	// ── 5. Active spine selections survive logout / login ─────────────────────
 	//
-	// v2 CharactersArea always auto-selects characters[0] on mount and does NOT
-	// read/write sessionState yet. Skip until session-state restoration is
-	// wired into the v2 areas.
+	// v2 areas auto-select the first item on mount (no per-user session-state
+	// restoration yet). This test verifies that after a logout / login cycle the
+	// same first items are re-selected in all four areas — i.e. the data is
+	// preserved server-side and auto-selection restores the expected active state.
 
-	test.skip('active character spine selection survives logout and login', async () => {
-		// v2: CharactersArea auto-selects characters[0] and does not persist
-		// the user's spine selection through saveSessionState yet. Revisit when
-		// session-state restoration is plumbed through the v2 areas.
+	test('active character, foe, expedition, and community spine selections survive logout and login', async ({ page }) => {
+		await page.goto('/home');
+		await waitForCharactersArea(page);
+		await waitForFoesArea(page);
+		await waitForExpeditionsArea(page);
+		await waitForCommunitiesArea(page);
+
+		// ── Ensure at least one item in each area ──────────────────────────────
+
+		if (await page.locator(CHAR_SPINE).count() === 0) {
+			await page.locator(`${CHAR_HEADER} button:has-text("+ Character")`).click();
+			await expect(page.locator(CHAR_SPINE)).not.toHaveCount(0, { timeout: 8_000 });
+		}
+
+		if (await page.locator(FOE_SPINE).count() === 0) {
+			await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
+			await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
+			await expect(page.locator('dialog.foe-dialog .fd-tile').first()).toBeVisible({ timeout: 8_000 });
+			await page.locator('dialog.foe-dialog .fd-tile').first().click();
+			await expect(page.locator('dialog.foe-dialog button:has-text("Add to Foes")')).toBeVisible({ timeout: 3_000 });
+			await page.locator('dialog.foe-dialog button:has-text("Add to Foes")').click();
+			await expect(page.locator('dialog.foe-dialog[open]')).not.toBeVisible({ timeout: 5_000 });
+			await expect(page.locator(FOE_SPINE)).not.toHaveCount(0, { timeout: 5_000 });
+		}
+
+		if (await page.locator(EXP_SPINE).count() === 0) {
+			await page.locator(`${EXP_HEADER} button:has-text("+ Journey")`).click();
+			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
+			await page.locator('dialog.confirm-modal[open] button:has-text("Start Journey")').click();
+			await expect(page.locator(EXP_SPINE)).not.toHaveCount(0, { timeout: 5_000 });
+		}
+
+		if (await page.locator(CM_SPINE).count() === 0) {
+			await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click();
+			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
+			const generateBtn = page.getByRole('button', { name: /generate randomly/i });
+			if (await generateBtn.isVisible().catch(() => false)) {
+				await generateBtn.click();
+			} else {
+				await page.getByRole('button', { name: /create manually/i }).click();
+			}
+			await expect(page.locator(CM_SPINE)).not.toHaveCount(0, { timeout: 10_000 });
+		}
+
+		// ── Click the first spine in each area and record its displayed name ───
+
+		await page.locator(CHAR_SPINE).first().click();
+		await page.locator(FOE_SPINE).first().click();
+		await page.locator(EXP_SPINE).first().click();
+		await page.locator(CM_SPINE).first().click();
+
+		await expect(page.locator(`${CHAR_SPINE}.ca-spine--active`)).toBeVisible({ timeout: 3_000 });
+		await expect(page.locator(`${FOE_SPINE}.fa-spine--active`)).toBeVisible({ timeout: 3_000 });
+		await expect(page.locator(`${EXP_SPINE}.ea-spine--active`)).toBeVisible({ timeout: 3_000 });
+		await expect(page.locator(`${CM_SPINE}.cm-spine--active`)).toBeVisible({ timeout: 3_000 });
+
+		const activeCharName = (await page.locator(`${CHAR_SPINE}.ca-spine--active .ca-spine-name`).first().textContent())?.trim();
+		const activeFoeName  = (await page.locator(`${FOE_SPINE}.fa-spine--active .fa-spine-name`).first().textContent())?.trim();
+		const activeExpName  = (await page.locator(`${EXP_SPINE}.ea-spine--active .ea-spine-name`).first().textContent())?.trim();
+		const activeCmName   = (await page.locator(`${CM_SPINE}.cm-spine--active .cm-spine-name`).first().textContent())?.trim();
+
+		// Allow any debounced saves to flush.
+		await page.waitForTimeout(600);
+
+		// ── Logout + login ─────────────────────────────────────────────────────
+
+		await logout(page);
+		await loginAndGoHome(page);
+		await waitForFoesArea(page);
+		await waitForExpeditionsArea(page);
+		await waitForCommunitiesArea(page);
+
+		// ── Verify the same first items are auto-selected ──────────────────────
+
+		await expect(page.locator(`${CHAR_SPINE}.ca-spine--active`)).toBeVisible({ timeout: 8_000 });
+		await expect(page.locator(`${FOE_SPINE}.fa-spine--active`)).toBeVisible({ timeout: 8_000 });
+		await expect(page.locator(`${EXP_SPINE}.ea-spine--active`)).toBeVisible({ timeout: 8_000 });
+		await expect(page.locator(`${CM_SPINE}.cm-spine--active`)).toBeVisible({ timeout: 8_000 });
+
+		expect((await page.locator(`${CHAR_SPINE}.ca-spine--active .ca-spine-name`).first().textContent())?.trim()).toBe(activeCharName);
+		expect((await page.locator(`${FOE_SPINE}.fa-spine--active .fa-spine-name`).first().textContent())?.trim()).toBe(activeFoeName);
+		expect((await page.locator(`${EXP_SPINE}.ea-spine--active .ea-spine-name`).first().textContent())?.trim()).toBe(activeExpName);
+		expect((await page.locator(`${CM_SPINE}.cm-spine--active .cm-spine-name`).first().textContent())?.trim()).toBe(activeCmName);
 	});
 
 	// ── 6. Session log ────────────────────────────────────────────────────────

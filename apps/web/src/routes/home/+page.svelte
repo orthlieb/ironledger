@@ -48,10 +48,12 @@
 
 	/** Ref to ExpeditionsArea — used to forward `change-theme-link` /
 	    `change-domain-link` clicks from the LogPanel into the right
-	    expedition's theme/domain change dialog. */
+	    expedition's theme/domain change dialog, and to mark expedition
+	    progress from `journey` / `delve` progress-links. */
 	let expAreaRef = $state<{
 		openChangeThemeForExp(expId: string):  void;
 		openChangeDomainForExp(expId: string): void;
+		applyProgress(marks: number): void;
 	} | null>(null);
 
 	/** Ref to FoesArea — used to forward vanquish / menace from log links. */
@@ -162,8 +164,12 @@
 			onMoveLink={(moveId) => document.dispatchEvent(new CustomEvent('ironledger:open-move', { detail: { id: moveId } }))}
 			onOracleLink={(key, stat) => document.dispatchEvent(new CustomEvent('ironledger:open-oracle', { detail: { key, stat } }))}
 			onProgressLink={(track, value) => {
-				if (track === 'foe') {
+				if (track === 'combat') {
+					// Strike / Clash — mark progress on the active foe's track.
 					foeAreaRef?.applyMenace(value);
+				} else if (track === 'journey' || track === 'delve') {
+					// Undertake a Journey / Delve the Depths — mark progress on the active expedition.
+					expAreaRef?.applyProgress(value);
 				}
 			}}
 			onInitiativeLink={(value) => {

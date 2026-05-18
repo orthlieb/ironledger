@@ -54,23 +54,6 @@ test.describe('Adventure-action dialogs (v2)', () => {
 		await expect(page.locator('.home-log')).toBeVisible();
 	});
 
-	// ── GCB-only tests removed for v2 ───────────────────────────────────────
-
-	test.skip('clicking character tile opens its popover', async () => {
-		// v2 has no GlobalContextBar. The active character is set directly by
-		// clicking a .ca-spine in the Characters area.
-	});
-
-	test.skip('clicking foe tile opens its popover', async () => {
-		// v2 has no GlobalContextBar. The active foe is set by clicking a
-		// .fa-spine in the Foes area.
-	});
-
-	test.skip('clicking expedition tile opens its popover', async () => {
-		// v2 has no GlobalContextBar. The active expedition is set by clicking
-		// a .ea-spine in the Expeditions area.
-	});
-
 	// ── Make a Move ──────────────────────────────────────────────────────────
 
 	test('Move button (1st action) opens moves dialog', async ({ page }) => {

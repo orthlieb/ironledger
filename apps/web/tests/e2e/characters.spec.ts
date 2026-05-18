@@ -269,6 +269,35 @@ test.describe('Characters area (v2)', () => {
 		await expect(display.locator('ul > li').nth(1)).toHaveText('return alive');
 	});
 
+	// ── Portrait ──────────────────────────────────────────────────────────────
+
+	test('clicking the portrait in the Description tab opens a file picker and displays the selected image', async ({ page }) => {
+		await ensureCharacterSelected(page);
+		await switchCharTab(page, 'Description');
+
+		const portraitLabel = page.locator(`${CHAR_AREA} .ca-bg-portrait-label`);
+		await expect(portraitLabel).toBeVisible({ timeout: 3_000 });
+
+		// Supply a tiny synthetic PNG so the FileReader → Image → canvas pipeline runs.
+		// Using setInputFiles bypasses the system file-picker dialog.
+		const pngBuffer = Buffer.from(
+			'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI6QAAAABJRU5ErkJggg==',
+			'base64',
+		);
+		const input = page.locator(`${CHAR_AREA} .ca-bg-portrait-input`);
+		await input.setInputFiles({ name: 'portrait.png', mimeType: 'image/png', buffer: pngBuffer });
+
+		// After the FileReader → Image → canvas pipeline the portrait <img> should appear
+		// (replaces the .ca-bg-portrait--placeholder div).
+		await expect(
+			page.locator(`${CHAR_AREA} img.ca-bg-portrait`),
+		).toBeVisible({ timeout: 5_000 });
+
+		// The src must be a JPEG data URL produced by canvas.toDataURL('image/jpeg', 0.85).
+		const src = await page.locator(`${CHAR_AREA} img.ca-bg-portrait`).getAttribute('src');
+		expect(src).toMatch(/^data:image\/jpeg;base64,/);
+	});
+
 	// ── Cleanup ───────────────────────────────────────────────────────────────
 
 	test('cleanup: delete all characters', async ({ page }) => {

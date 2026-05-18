@@ -786,7 +786,7 @@
 
 	.cm-tabs {
 		display: flex; align-items: stretch; gap: 0;
-		margin: 6px 0 8px;
+		margin-bottom: 8px;
 		border-bottom: 1px solid var(--border);
 	}
 	.cm-tab {

@@ -505,7 +505,7 @@
 	   continuously down the LHS from the header into the card below. */
 	.fa-stage-header {
 		display: flex; align-items: center; gap: 6px;
-		padding: 7px 10px;
+		padding: 5px 10px;
 		background: var(--bg-control);
 		border: none;
 		border-left: 3px solid var(--fa-nature, var(--text-muted));
@@ -577,7 +577,7 @@
 	/* Card tabs — same V1 tab-btn style as CharactersArea. */
 	.fa-tabs {
 		display: flex; align-items: stretch; gap: 0;
-		margin: 6px 0 8px;
+		margin-bottom: 8px;
 		border-bottom: 1px solid var(--border);
 	}
 	.fa-tab {
