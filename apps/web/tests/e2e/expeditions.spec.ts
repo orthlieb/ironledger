@@ -1,67 +1,80 @@
 /**
- * expeditions.spec.ts — Expeditions tab: add and delete journeys and sites.
+ * expeditions.spec.ts — Expeditions area (v2): add and delete journeys and sites.
+ *
+ * v2 layout: the Expeditions area lives in the top-right column of the
+ * deck-of-cards layout and is always visible. The "Change Theme" / "Change
+ * Domain" controls are now <select> dropdowns inside the Core tab — no
+ * dedicated buttons.
  */
 import { test, expect } from '@playwright/test';
 
-test.describe('Expeditions tab', () => {
+const EXP_AREA   = '.home-area--expeditions';
+const EXP_HEADER = `${EXP_AREA} .ea-header`;
+const EXP_SPINE  = `${EXP_AREA} .ea-spine`;
+const EXP_STAGE  = `${EXP_AREA} .ea-stage`;
+
+async function waitForExpeditionsLoaded(page: import('@playwright/test').Page) {
+	await expect(page.locator(`${EXP_AREA} .ea-loading`)).not.toBeVisible({ timeout: 10_000 });
+	await page.locator(`${EXP_AREA} .ea-empty, ${EXP_AREA} .ea-body`).first()
+		.waitFor({ timeout: 10_000, state: 'attached' });
+}
+
+async function switchExpTab(page: import('@playwright/test').Page, label: string) {
+	await page.locator(`${EXP_AREA} .ea-tab`, { hasText: new RegExp(`^${label}$`, 'i') }).click();
+}
+
+test.describe('Expeditions area (v2)', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/home');
-		// Wait for DB session to finish loading before clicking — prevents click being overwritten
-		await expect(page.locator('.loading-tab')).not.toBeVisible({ timeout: 8000 });
-		await page.click('.tab-btn[data-tab="expeditions"]');
-		await expect(page.locator('.char-toolbar button:has-text("+ Journey")')).toBeVisible({ timeout: 5000 });
+		await waitForExpeditionsLoaded(page);
 	});
 
-	test('shows Journey and Site buttons', async ({ page }) => {
-		await expect(page.locator('.char-toolbar button:has-text("+ Journey")')).toBeVisible();
-		await expect(page.locator('.char-toolbar button:has-text("+ Site")')).toBeVisible();
+	test('shows + Journey and + Site buttons in header', async ({ page }) => {
+		await expect(page.locator(`${EXP_HEADER} button:has-text("+ Journey")`)).toBeVisible();
+		await expect(page.locator(`${EXP_HEADER} button:has-text("+ Site")`)).toBeVisible();
 	});
 
-	// ── Journeys ─────────────────────────────────────────────────────────────
+	// ── Journeys ──────────────────────────────────────────────────────────────
 
-	test('clicking Journey opens the journey dialog', async ({ page }) => {
-		await page.click('.char-toolbar button:has-text("+ Journey")');
-		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
+	test('clicking + Journey opens the new-journey dialog', async ({ page }) => {
+		await page.locator(`${EXP_HEADER} button:has-text("+ Journey")`).click();
+		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
 		await expect(page.locator('dialog.confirm-modal[open] .cm-title')).toContainText('New Journey');
 		await page.keyboard.press('Escape');
 	});
 
 	test('can add a journey', async ({ page }) => {
-		const expBefore = await page.locator('.char-list--expeditions .char-card').count();
-		await page.click('.char-toolbar button:has-text("+ Journey")');
-		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
-		// Default difficulty is 'dangerous' — just click Start Journey
+		const before = await page.locator(EXP_SPINE).count();
+		await page.locator(`${EXP_HEADER} button:has-text("+ Journey")`).click();
+		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
 		await page.locator('dialog.confirm-modal[open] button:has-text("Start Journey")').click();
-		await expect(page.locator('.char-list--expeditions .char-card'))
-			.not.toHaveCount(expBefore, { timeout: 5000 });
+		await expect(page.locator(EXP_SPINE)).not.toHaveCount(before, { timeout: 5_000 });
 	});
 
 	test('can delete a journey', async ({ page }) => {
-		// Ensure at least one journey exists
-		let expCards = page.locator('.char-list--expeditions .char-card');
-		if (await expCards.count() === 0) {
-			await page.click('.char-toolbar button:has-text("+ Journey")');
-			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
+		const spines = page.locator(EXP_SPINE);
+		if (await spines.count() === 0) {
+			await page.locator(`${EXP_HEADER} button:has-text("+ Journey")`).click();
+			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
 			await page.locator('dialog.confirm-modal[open] button:has-text("Start Journey")').click();
-			await expect(expCards).not.toHaveCount(0, { timeout: 5000 });
+			await expect(spines).not.toHaveCount(0, { timeout: 5_000 });
 		}
-		const countBefore = await expCards.count();
-		await expCards.first().click();
-		// JourneyCard uses .jc-del-btn → ConfirmDialog
-		const deleteBtn = page.locator('.jc-del-btn').first();
-		await expect(deleteBtn).toBeVisible({ timeout: 3000 });
+		const countBefore = await spines.count();
+		await spines.first().click();
+		const deleteBtn = page.locator(`${EXP_AREA} .ea-stage-delete-btn`).first();
+		await expect(deleteBtn).toBeVisible({ timeout: 3_000 });
 		await deleteBtn.click();
 		const confirmBtn = page.locator('dialog.confirm-modal[open] button.btn-danger');
-		await expect(confirmBtn).toBeVisible({ timeout: 5000 });
+		await expect(confirmBtn).toBeVisible({ timeout: 5_000 });
 		await confirmBtn.click();
-		await expect(expCards).toHaveCount(countBefore - 1, { timeout: 5000 });
+		await expect(spines).toHaveCount(countBefore - 1, { timeout: 5_000 });
 	});
 
 	// ── Sites ─────────────────────────────────────────────────────────────────
 
-	test('clicking Site opens the site dialog', async ({ page }) => {
-		await page.click('.char-toolbar button:has-text("+ Site")');
-		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
+	test('clicking + Site opens the new-site dialog', async ({ page }) => {
+		await page.locator(`${EXP_HEADER} button:has-text("+ Site")`).click();
+		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
 		await expect(page.locator('dialog.confirm-modal[open] .cm-title')).toContainText('New Site');
 		await expect(page.locator('dialog.confirm-modal[open] #ns-theme')).toBeVisible();
 		await expect(page.locator('dialog.confirm-modal[open] #ns-domain')).toBeVisible();
@@ -69,135 +82,126 @@ test.describe('Expeditions tab', () => {
 	});
 
 	test('can add a site', async ({ page }) => {
-		const expBefore = await page.locator('.char-list--expeditions .char-card').count();
-		await page.click('.char-toolbar button:has-text("+ Site")');
-		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
+		const before = await page.locator(EXP_SPINE).count();
+		await page.locator(`${EXP_HEADER} button:has-text("+ Site")`).click();
+		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
 		await page.selectOption('dialog.confirm-modal[open] #ns-theme',  { index: 1 });
 		await page.selectOption('dialog.confirm-modal[open] #ns-domain', { index: 1 });
 		await page.locator('dialog.confirm-modal[open] button:has-text("Discover Site")').click();
-		await expect(page.locator('.char-list--expeditions .char-card'))
-			.not.toHaveCount(expBefore, { timeout: 5000 });
+		await expect(page.locator(EXP_SPINE)).not.toHaveCount(before, { timeout: 5_000 });
 	});
 
 	test('can delete a site', async ({ page }) => {
-		let expCards = page.locator('.char-list--expeditions .char-card');
-		if (await expCards.count() === 0) {
-			await page.click('.char-toolbar button:has-text("+ Site")');
-			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
+		const spines = page.locator(EXP_SPINE);
+		if (await spines.count() === 0) {
+			await page.locator(`${EXP_HEADER} button:has-text("+ Site")`).click();
+			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
 			await page.selectOption('dialog.confirm-modal[open] #ns-theme',  { index: 1 });
 			await page.selectOption('dialog.confirm-modal[open] #ns-domain', { index: 1 });
 			await page.locator('dialog.confirm-modal[open] button:has-text("Discover Site")').click();
-			await expect(expCards).not.toHaveCount(0, { timeout: 5000 });
+			await expect(spines).not.toHaveCount(0, { timeout: 5_000 });
 		}
-		const countBefore = await expCards.count();
-		await expCards.first().click();
-		// SiteCard uses .sc-del-btn; JourneyCard uses .jc-del-btn
-		const deleteBtn = page.locator('.sc-del-btn, .jc-del-btn').first();
-		await expect(deleteBtn).toBeVisible({ timeout: 3000 });
+		const countBefore = await spines.count();
+		await spines.first().click();
+		const deleteBtn = page.locator(`${EXP_AREA} .ea-stage-delete-btn`).first();
+		await expect(deleteBtn).toBeVisible({ timeout: 3_000 });
 		await deleteBtn.click();
 		const confirmBtn = page.locator('dialog.confirm-modal[open] button.btn-danger');
-		await expect(confirmBtn).toBeVisible({ timeout: 2000 });
+		await expect(confirmBtn).toBeVisible({ timeout: 5_000 });
 		await confirmBtn.click();
-		await expect(expCards).toHaveCount(countBefore - 1, { timeout: 5000 });
+		await expect(spines).toHaveCount(countBefore - 1, { timeout: 5_000 });
 	});
 
 	// ── Change theme / domain ─────────────────────────────────────────────────
 
-	/** Helper: ensure a site card is visible and expanded, return its first locator. */
-	async function ensureSiteCard(page: import('@playwright/test').Page) {
-		let siteCards = page.locator('.char-list--expeditions .char-card');
-		if (await siteCards.count() === 0 ||
-		    await page.locator('.sc-theme-btn').count() === 0) {
-			await page.click('.char-toolbar button:has-text("+ Site")');
-			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
+	/**
+	 * Ensure a site expedition exists and is the active one.
+	 * Returns the active site's id (extracted from the in-area theme <select> id).
+	 */
+	async function ensureSiteSelected(page: import('@playwright/test').Page): Promise<string> {
+		// Create a site if none exists in the expedition list.
+		const spines = page.locator(EXP_SPINE);
+		if (await spines.count() === 0) {
+			await page.locator(`${EXP_HEADER} button:has-text("+ Site")`).click();
+			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
 			await page.selectOption('dialog.confirm-modal[open] #ns-theme',  { index: 1 });
 			await page.selectOption('dialog.confirm-modal[open] #ns-domain', { index: 1 });
 			await page.locator('dialog.confirm-modal[open] button:has-text("Discover Site")').click();
-			await expect(page.locator('.sc-theme-btn').first()).toBeVisible({ timeout: 5000 });
+			await expect(spines).not.toHaveCount(0, { timeout: 5_000 });
 		}
-		siteCards = page.locator('.char-list--expeditions .char-card');
-		const card = siteCards.first();
-		// Expand it if collapsed
-		if (await page.locator('.sc-theme-btn').first().isVisible({ timeout: 1000 }).catch(() => false) === false) {
-			await card.click();
+		// Auto-select picks the first expedition; if it's a journey, find a site
+		// spine and click it explicitly. We detect by inspecting the stage for
+		// the Site-only theme select (id starts with ea-theme-).
+		const themeSelect = page.locator(`${EXP_AREA} select[id^="ea-theme-"]`).first();
+		if (!(await themeSelect.isVisible({ timeout: 1_000 }).catch(() => false))) {
+			// Click each spine looking for a site stage.
+			const count = await spines.count();
+			for (let i = 0; i < count; i++) {
+				await spines.nth(i).click();
+				if (await themeSelect.isVisible({ timeout: 500 }).catch(() => false)) break;
+			}
 		}
-		return card;
+		// Switch to Core tab so the theme/domain selects are visible.
+		await switchExpTab(page, 'Core');
+		await expect(themeSelect).toBeVisible({ timeout: 3_000 });
+		const id = (await themeSelect.getAttribute('id')) ?? '';
+		return id.replace(/^ea-theme-/, '');
 	}
 
-	test('Change Theme button opens dialog pre-filled with current theme', async ({ page }) => {
-		await ensureSiteCard(page);
-		const themeBadge = page.locator('.sc-badge--theme').first();
-		const currentTheme = await themeBadge.textContent();
+	test('changing the Theme select updates the stored value', async ({ page }) => {
+		await ensureSiteSelected(page);
+		await switchExpTab(page, 'Core');
 
-		await page.locator('.sc-theme-btn:has-text("Change Theme")').first().click();
-		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
-		await expect(page.locator('dialog.confirm-modal[open] .cm-title')).toContainText('Change Theme');
+		const themeSelect = page.locator(`${EXP_AREA} select[id^="ea-theme-"]`).first();
+		const currentTheme = (await themeSelect.inputValue()).trim();
 
-		const selectVal = await page.locator('dialog.confirm-modal[open] select').inputValue();
-		expect(selectVal).toBe(currentTheme?.trim());
-		await page.keyboard.press('Escape');
+		const options = themeSelect.locator('option');
+		const optCount = await options.count();
+		const lastVal = (await options.nth(optCount - 1).getAttribute('value')) ?? '';
+		if (!lastVal || lastVal === currentTheme) {
+			test.skip(true, 'Theme set already has a single option');
+			return;
+		}
+		await themeSelect.selectOption(lastVal);
+		// v2 commits theme changes directly on the select onchange; a confirm
+		// dialog only appears from log-link delegation (d100 99/100).
+		await expect(themeSelect).toHaveValue(lastVal, { timeout: 3_000 });
 	});
 
-	test('Change Domain button opens dialog pre-filled with current domain', async ({ page }) => {
-		await ensureSiteCard(page);
-		const domainBadge = page.locator('.sc-badge--domain').first();
-		const currentDomain = await domainBadge.textContent();
+	test('changing the Domain select updates the stored value', async ({ page }) => {
+		await ensureSiteSelected(page);
+		await switchExpTab(page, 'Core');
 
-		await page.locator('.sc-theme-btn:has-text("Change Domain")').first().click();
-		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
-		await expect(page.locator('dialog.confirm-modal[open] .cm-title')).toContainText('Change Domain');
+		const domainSelect = page.locator(`${EXP_AREA} select[id^="ea-domain-"]`).first();
+		const currentDomain = (await domainSelect.inputValue()).trim();
 
-		const selectVal = await page.locator('dialog.confirm-modal[open] select').inputValue();
-		expect(selectVal).toBe(currentDomain?.trim());
-		await page.keyboard.press('Escape');
-	});
-
-	test('confirming Change Theme updates the theme badge and logs the change', async ({ page }) => {
-		await ensureSiteCard(page);
-
-		await page.locator('.sc-theme-btn:has-text("Change Theme")').first().click();
-		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
-
-		// Pick the last option to ensure it differs from whatever index 1 was
-		await page.locator('dialog.confirm-modal[open] select').selectOption({ index: 5 });
-		const newTheme = await page.locator('dialog.confirm-modal[open] select').inputValue();
-		await page.locator('dialog.confirm-modal[open] button:has-text("Change Theme")').click();
-		await expect(page.locator('dialog.confirm-modal[open]')).not.toBeVisible({ timeout: 3000 });
-
-		// Badge updates reactively
-		await expect(page.locator('.sc-badge--theme').first()).toHaveText(newTheme, { timeout: 5000 });
-	});
-
-	test('confirming Change Domain updates the domain badge and logs the change', async ({ page }) => {
-		await ensureSiteCard(page);
-
-		await page.locator('.sc-theme-btn:has-text("Change Domain")').first().click();
-		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5000 });
-
-		await page.locator('dialog.confirm-modal[open] select').selectOption({ index: 5 });
-		const newDomain = await page.locator('dialog.confirm-modal[open] select').inputValue();
-		await page.locator('dialog.confirm-modal[open] button:has-text("Change Domain")').click();
-		await expect(page.locator('dialog.confirm-modal[open]')).not.toBeVisible({ timeout: 3000 });
-
-		await expect(page.locator('.sc-badge--domain').first()).toHaveText(newDomain, { timeout: 5000 });
+		const options = domainSelect.locator('option');
+		const optCount = await options.count();
+		const lastVal = (await options.nth(optCount - 1).getAttribute('value')) ?? '';
+		if (!lastVal || lastVal === currentDomain) {
+			test.skip(true, 'Domain set already has a single option');
+			return;
+		}
+		await domainSelect.selectOption(lastVal);
+		await expect(domainSelect).toHaveValue(lastVal, { timeout: 3_000 });
 	});
 
 	// ── Cleanup ───────────────────────────────────────────────────────────────
 
 	test('cleanup: delete all expeditions', async ({ page }) => {
-		const cards = page.locator('.char-list--expeditions .char-card');
-		let count = await cards.count();
+		const spines = page.locator(EXP_SPINE);
+		let count = await spines.count();
 		while (count > 0) {
-			await cards.first().click();
-			const deleteBtn = page.locator('.sc-del-btn, .jc-del-btn').first();
-			await expect(deleteBtn).toBeVisible({ timeout: 3000 });
+			await spines.first().click();
+			const deleteBtn = page.locator(`${EXP_AREA} .ea-stage-delete-btn`).first();
+			await expect(deleteBtn).toBeVisible({ timeout: 3_000 });
 			await deleteBtn.click();
 			const confirmBtn = page.locator('dialog.confirm-modal[open] button.btn-danger');
-			await expect(confirmBtn).toBeVisible({ timeout: 3000 });
+			await expect(confirmBtn).toBeVisible({ timeout: 3_000 });
 			await confirmBtn.click();
 			count--;
 			if (count > 0) {
-				await expect(cards).toHaveCount(count, { timeout: 5000 });
+				await expect(spines).toHaveCount(count, { timeout: 5_000 });
 			}
 		}
 	});

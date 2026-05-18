@@ -1,160 +1,157 @@
 /**
- * adventure.spec.ts — Adventure tab: GCB tiles, Make a Move, Dice Roll,
- *                     Consult an Oracle, Add a Note.
+ * adventure.spec.ts — Adventure-action dialogs (v2).
+ *
+ * v2 has no Adventure tab and no GlobalContextBar. The MOVE / ASK / ROLL /
+ * NOTE buttons live in `.app-nav` and are available on every page. The
+ * active character is whatever spine is `.ca-spine--active` in the
+ * Characters area.
+ *
+ * GCB-specific tile / popover tests have been removed (no longer applicable
+ * in v2). The remaining tests cover that each action button opens the
+ * correct dialog and that user interactions still produce log entries.
  */
 import { test, expect } from '@playwright/test';
 
-test.describe('Adventure tab', () => {
+const CHAR_AREA   = '.home-area--characters';
+const CHAR_HEADER = `${CHAR_AREA} .ca-header`;
+const CHAR_SPINE  = `${CHAR_AREA} .ca-spine`;
+
+const APP_NAV     = '.app-nav';
+
+async function waitForCharactersArea(page: import('@playwright/test').Page) {
+	await expect(page.locator(`${CHAR_AREA} .ca-loading`)).not.toBeVisible({ timeout: 12_000 });
+	await page.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`).first()
+		.waitFor({ timeout: 12_000, state: 'attached' });
+}
+
+test.describe('Adventure-action dialogs (v2)', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/home');
-		// Wait for DB session to finish loading before clicking — prevents click being overwritten
-		await expect(page.locator('.loading-tab')).not.toBeVisible({ timeout: 8000 });
+		await waitForCharactersArea(page);
 
 		// Ensure at least one character exists AND is the active selection so moves
 		// with preconditions aren't dimmed ("No character selected").
-		await page.click('.tab-btn[data-tab="characters"]');
-		// Wait for either the populated list OR the empty-state placeholder —
-		// a freshly-seeded test account starts empty and renders `.empty-tab`
-		// instead of `.char-list--characters`.
-		await page.locator('.char-list--characters > .char-card, .empty-tab').first()
-			.waitFor({ timeout: 8000, state: 'attached' });
-		const existingCards = page.locator('.char-list--characters > .char-card');
-		if (await existingCards.count() === 0) {
-			// Use locator.click() so Playwright can auto-retry if the button is
-			// momentarily detached during Svelte's initial render.
-			await page.locator('.char-toolbar button.btn-primary').click({ timeout: 10_000 });
-			await expect(existingCards.first()).toBeVisible({ timeout: 8000 });
+		if (await page.locator(CHAR_SPINE).count() === 0) {
+			await page.locator(`${CHAR_HEADER} button:has-text("+ Character")`).click();
+			await expect(page.locator(CHAR_SPINE)).not.toHaveCount(0, { timeout: 8_000 });
 		}
-		// Click the first card to make it the active selection (fresh page loads
-		// reset activeCharId, so we must re-select it on every beforeEach).
-		await existingCards.first().click();
-		await expect(page.locator('.char-card--active')).toBeVisible({ timeout: 5000 });
-
-		await page.click('.tab-btn[data-tab="adventure"]');
-		await expect(page.locator('.adventure-gcb')).toBeVisible({ timeout: 5000 });
+		// Auto-select picks the first spine; ensure it is active.
+		const first = page.locator(CHAR_SPINE).first();
+		if (!(await first.evaluate(el => el.classList.contains('ca-spine--active')).catch(() => false))) {
+			await first.click();
+		}
+		await expect(first).toHaveClass(/ca-spine--active/, { timeout: 3_000 });
+		await expect(page.locator(APP_NAV)).toBeVisible();
 	});
 
 	// ── Layout ───────────────────────────────────────────────────────────────
 
-	test('shows GCB column and log column', async ({ page }) => {
-		await expect(page.locator('.adventure-gcb')).toBeVisible();
-		await expect(page.locator('.adventure-log')).toBeVisible();
+	test('app-nav exposes the four adventure-action buttons', async ({ page }) => {
+		await expect(page.locator(`${APP_NAV} .act-btn`)).toHaveCount(4);
 	});
 
-	test('GCB has three tiles and four action buttons', async ({ page }) => {
-		await expect(page.locator('.gc-tile')).toHaveCount(3);
-		await expect(page.locator('.act-btn')).toHaveCount(4);
+	test('the log rail is visible alongside the deck areas', async ({ page }) => {
+		await expect(page.locator('.home-log')).toBeVisible();
 	});
 
-	// ── GCB tile popovers ─────────────────────────────────────────────────────
+	// ── GCB-only tests removed for v2 ───────────────────────────────────────
 
-	test('clicking character tile opens its popover', async ({ page }) => {
-		await page.locator('.gc-tile').first().locator('.gc-tile-btn').click();
-		await expect(page.locator('.gc-popover').first()).toBeVisible({ timeout: 2000 });
-		await page.keyboard.press('Escape');
+	test.skip('clicking character tile opens its popover', async () => {
+		// v2 has no GlobalContextBar. The active character is set directly by
+		// clicking a .ca-spine in the Characters area.
 	});
 
-	test('clicking foe tile opens its popover', async ({ page }) => {
-		await page.locator('.gc-tile').nth(1).locator('.gc-tile-btn').click();
-		await expect(page.locator('.gc-popover').first()).toBeVisible({ timeout: 2000 });
-		await page.keyboard.press('Escape');
+	test.skip('clicking foe tile opens its popover', async () => {
+		// v2 has no GlobalContextBar. The active foe is set by clicking a
+		// .fa-spine in the Foes area.
 	});
 
-	test('clicking expedition tile opens its popover', async ({ page }) => {
-		await page.locator('.gc-tile').nth(2).locator('.gc-tile-btn').click();
-		await expect(page.locator('.gc-popover').first()).toBeVisible({ timeout: 2000 });
-		await page.keyboard.press('Escape');
+	test.skip('clicking expedition tile opens its popover', async () => {
+		// v2 has no GlobalContextBar. The active expedition is set by clicking
+		// a .ea-spine in the Expeditions area.
 	});
 
 	// ── Make a Move ──────────────────────────────────────────────────────────
 
-	test('Make a Move button (1st action) opens moves dialog', async ({ page }) => {
-		await page.locator('.act-btn').first().click();
-		await expect(page.locator('.moves-dialog[open]')).toBeVisible({ timeout: 3000 });
+	test('Move button (1st action) opens moves dialog', async ({ page }) => {
+		await page.locator(`${APP_NAV} .act-btn`).first().click();
+		await expect(page.locator('.moves-dialog[open]')).toBeVisible({ timeout: 3_000 });
 		await page.keyboard.press('Escape');
 		await expect(page.locator('.moves-dialog[open]')).not.toBeVisible();
 	});
 
 	test('can browse move tiles in the picker', async ({ page }) => {
-		await page.locator('.act-btn').first().click();
-		await expect(page.locator('.moves-dialog[open]')).toBeVisible({ timeout: 3000 });
-		// Move tiles should be in the picker grid
-		await expect(page.locator('.moves-dialog .md-tile').first()).toBeVisible({ timeout: 5000 });
+		await page.locator(`${APP_NAV} .act-btn`).first().click();
+		await expect(page.locator('.moves-dialog[open]')).toBeVisible({ timeout: 3_000 });
+		await expect(page.locator('.moves-dialog .md-tile').first()).toBeVisible({ timeout: 5_000 });
 		await page.keyboard.press('Escape');
 	});
 
 	test('clicking a move tile shows its detail view with Roll button', async ({ page }) => {
-		await page.locator('.act-btn').first().click();
-		await expect(page.locator('.moves-dialog[open]')).toBeVisible({ timeout: 3000 });
+		await page.locator(`${APP_NAV} .act-btn`).first().click();
+		await expect(page.locator('.moves-dialog[open]')).toBeVisible({ timeout: 3_000 });
 		await page.locator('.moves-dialog .md-tile').first().click();
-		// Detail view: the detail body should be visible and a Roll button or
-		// stat-row button should appear (depending on the move type).
-		await expect(page.locator('.moves-dialog .md-body--detail')).toBeVisible({ timeout: 3000 });
+		await expect(page.locator('.moves-dialog .md-body--detail')).toBeVisible({ timeout: 3_000 });
 		await expect(
-			page.locator('.moves-dialog .md-roll-btn, .moves-dialog .md-stat-row-btn').first()
-		).toBeVisible({ timeout: 3000 });
+			page.locator('.moves-dialog .md-roll-btn, .moves-dialog .md-stat-row-btn').first(),
+		).toBeVisible({ timeout: 3_000 });
 		await page.keyboard.press('Escape');
 	});
 
 	// ── Dice Roll ────────────────────────────────────────────────────────────
 
-	test('Roll Dice button (3rd action) opens dice dialog', async ({ page }) => {
-		await page.locator('.act-btn').nth(2).click();
-		await expect(page.locator('.dice-dialog[open]')).toBeVisible({ timeout: 3000 });
+	test('Roll button (3rd action) opens dice dialog', async ({ page }) => {
+		await page.locator(`${APP_NAV} .act-btn`).nth(2).click();
+		await expect(page.locator('.dice-dialog[open]')).toBeVisible({ timeout: 3_000 });
 		await page.keyboard.press('Escape');
 	});
 
 	test('clicking a quick-roll die button adds a result to the log', async ({ page }) => {
 		const entriesBefore = await page.locator('.log-entry').count();
-		await page.locator('.act-btn').nth(2).click();
-		await expect(page.locator('.dice-dialog[open]')).toBeVisible({ timeout: 3000 });
-		// Click the d6 quick roll button
+		await page.locator(`${APP_NAV} .act-btn`).nth(2).click();
+		await expect(page.locator('.dice-dialog[open]')).toBeVisible({ timeout: 3_000 });
 		await page.locator('.dice-dialog .quick-btn').first().click();
-		// Wait up to 5 s for dice animation
-		await expect(page.locator('.log-entry')).not.toHaveCount(entriesBefore, { timeout: 7000 });
+		await expect(page.locator('.log-entry')).not.toHaveCount(entriesBefore, { timeout: 7_000 });
 		await page.keyboard.press('Escape');
 	});
 
 	// ── Consult an Oracle ────────────────────────────────────────────────────
 
-	test('Ask an Oracle button (2nd action) opens oracles dialog', async ({ page }) => {
-		await page.locator('.act-btn').nth(1).click();
-		await expect(page.locator('.oracles-dialog[open]')).toBeVisible({ timeout: 3000 });
+	test('Ask button (2nd action) opens oracles dialog', async ({ page }) => {
+		await page.locator(`${APP_NAV} .act-btn`).nth(1).click();
+		await expect(page.locator('.oracles-dialog[open]')).toBeVisible({ timeout: 3_000 });
 		await page.keyboard.press('Escape');
 	});
 
 	test('clicking an oracle tile adds a result to the log', async ({ page }) => {
 		const entriesBefore = await page.locator('.log-entry').count();
-		await page.locator('.act-btn').nth(1).click();
-		await expect(page.locator('.oracles-dialog[open]')).toBeVisible({ timeout: 3000 });
-		// Wait for oracle tiles to load before clicking
+		await page.locator(`${APP_NAV} .act-btn`).nth(1).click();
+		await expect(page.locator('.oracles-dialog[open]')).toBeVisible({ timeout: 3_000 });
 		const firstTile = page.locator('.oracles-dialog .od-tile').first();
-		await expect(firstTile).toBeVisible({ timeout: 5000 });
-		// Clicking a tile opens the detail view; then click Roll to roll and close
+		await expect(firstTile).toBeVisible({ timeout: 5_000 });
 		await firstTile.click();
 		const rollBtn = page.locator('.oracles-dialog button.od-roll-btn');
-		await expect(rollBtn).toBeVisible({ timeout: 3000 });
+		await expect(rollBtn).toBeVisible({ timeout: 3_000 });
 		await rollBtn.click();
-		// Oracle rolls add a log entry and close the dialog
-		await expect(page.locator('.oracles-dialog[open]')).not.toBeVisible({ timeout: 5000 });
-		await expect(page.locator('.log-entry')).not.toHaveCount(entriesBefore, { timeout: 5000 });
+		await expect(page.locator('.oracles-dialog[open]')).not.toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.log-entry')).not.toHaveCount(entriesBefore, { timeout: 5_000 });
 	});
 
 	// ── Add a Note ───────────────────────────────────────────────────────────
 
-	test('Add a Note button (4th action) opens notes dialog', async ({ page }) => {
-		await page.locator('.act-btn').nth(3).click();
-		await expect(page.locator('.notes-dialog[open]')).toBeVisible({ timeout: 3000 });
+	test('Note button (4th action) opens notes dialog', async ({ page }) => {
+		await page.locator(`${APP_NAV} .act-btn`).nth(3).click();
+		await expect(page.locator('.notes-dialog[open]')).toBeVisible({ timeout: 3_000 });
 		await page.keyboard.press('Escape');
 	});
 
 	test('adding a note creates a log entry', async ({ page }) => {
 		const entriesBefore = await page.locator('.log-entry').count();
-		await page.locator('.act-btn').nth(3).click();
-		await expect(page.locator('.notes-dialog[open]')).toBeVisible({ timeout: 3000 });
+		await page.locator(`${APP_NAV} .act-btn`).nth(3).click();
+		await expect(page.locator('.notes-dialog[open]')).toBeVisible({ timeout: 3_000 });
 		await page.locator('.notes-dialog .nd-textarea').fill('E2E test note');
 		await page.locator('.notes-dialog .nd-add-btn').click();
-		await expect(page.locator('.notes-dialog[open]')).not.toBeVisible({ timeout: 3000 });
-		await expect(page.locator('.log-entry')).not.toHaveCount(entriesBefore, { timeout: 5000 });
+		await expect(page.locator('.notes-dialog[open]')).not.toBeVisible({ timeout: 3_000 });
+		await expect(page.locator('.log-entry')).not.toHaveCount(entriesBefore, { timeout: 5_000 });
 	});
 });

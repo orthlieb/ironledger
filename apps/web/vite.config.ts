@@ -19,6 +19,11 @@ export default defineConfig({
 	plugins: [sveltekit()],
 	server: {
 		port: 5173,
+		fs: {
+			// Allow serving files from the monorepo root when running from a
+			// git worktree whose node_modules is symlinked back to the root.
+			allow: ['..', '../..', '/Users/orthlieb/dev/ironledger'],
+		},
 	},
 	define: {
 		// Replaced at build time — read in admin panel to show version/deploy info.

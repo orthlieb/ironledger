@@ -82,6 +82,16 @@ export async function updateCommunity(updated: Community): Promise<void> {
 	await persist();
 }
 
+/** Replace one community by id WITHOUT persisting. Pair with
+    persistCommunitiesNow() to debounce rapid text edits. */
+export function updateCommunityLocal(updated: Community): void {
+	_communities = _communities.map((c) => c.id === updated.id ? updated : c);
+}
+/** Force a save of the current community list (debounce-friendly partner). */
+export async function persistCommunitiesNow(): Promise<void> {
+	await persist();
+}
+
 /** Remove one community by id and persist. */
 export async function removeCommunity(id: string): Promise<void> {
 	_communities = _communities.filter((c) => c.id !== id);

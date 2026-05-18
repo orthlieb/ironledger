@@ -11,6 +11,9 @@
  */
 import { test, expect, type Page, type Route } from '@playwright/test';
 
+const FOE_AREA   = '.home-area--foes';
+const FOE_HEADER = `${FOE_AREA} .fa-header`;
+
 const DELVE_KEY = 'ironledger:expansion:delve';
 const YRT_KEY   = 'ironledger:expansion:yrt';
 
@@ -55,6 +58,13 @@ const FIXTURE_PAYLOAD = {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+async function waitForHome(page: Page) {
+	// Foes area: wait for it to render either spines or the empty state.
+	await expect(page.locator(`${FOE_AREA} .fa-loading`)).not.toBeVisible({ timeout: 12_000 });
+	await page.locator(`${FOE_AREA} .fa-empty, ${FOE_AREA} .fa-body`).first()
+		.waitFor({ timeout: 12_000, state: 'attached' });
+}
+
 /** Reset the expansion toggles to defaults (both on). */
 async function resetToggles(page: Page): Promise<void> {
 	await page.evaluate(
@@ -88,19 +98,9 @@ async function stubFoesEndpoint(page: Page): Promise<void> {
 	});
 }
 
-/** Open the Foe Picker by going to the Foes tab and clicking + Foe. */
+/** Open the Foe Picker via the Foes area header's "+ Foe" button. */
 async function openFoePicker(page: Page): Promise<void> {
-	await page.click('.tab-btn[data-tab="foes"]');
-	// First confirm the click actually switched tabs — a previous test can leave
-	// the page on a different tab (e.g. Adventure restored from session state),
-	// and SvelteKit's tab swap can race a quick click() under load.
-	await expect(page.locator('.tab-btn[data-tab="foes"]')).toHaveClass(/active/, { timeout: 5_000 });
-	// Wait for tab content to render — populated list OR empty-state. The
-	// `+ Foe` toolbar button is rendered in both cases, so it's safe to
-	// click as soon as either appears.
-	await page.locator('.char-list--foes > .char-card, .empty-tab').first()
-		.waitFor({ timeout: 12_000, state: 'attached' });
-	await page.locator('.char-toolbar button.btn-primary').first().click({ timeout: 8_000 });
+	await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click({ timeout: 8_000 });
 	await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 8_000 });
 }
 
@@ -113,18 +113,16 @@ test.describe('Foe overrides — expansion exclusion + addendum', () => {
 		// the fixture, not real data.
 		await stubFoesEndpoint(page);
 		await page.goto('/home');
-		await expect(page.locator('.loading-tab')).not.toBeVisible({ timeout: 10_000 });
+		await waitForHome(page);
 		await resetToggles(page);
 		await page.reload();
-		await expect(page.locator('.loading-tab')).not.toBeVisible({ timeout: 10_000 });
+		await waitForHome(page);
 	});
 
 	test('YRT on: excluded foe is hidden from the picker', async ({ page }) => {
-		// Both toggles default to ON after reset.
 		await openFoePicker(page);
 		await expect(page.locator('dialog.foe-dialog .fd-tile-name', { hasText: BASE_FOE_A.name }))
 			.toHaveCount(0, { timeout: 5_000 });
-		// Control: the decorated (non-excluded) foe still shows.
 		await expect(page.locator('dialog.foe-dialog .fd-tile-name', { hasText: BASE_FOE_B.name }))
 			.toHaveCount(1, { timeout: 5_000 });
 		await page.keyboard.press('Escape');
@@ -133,7 +131,7 @@ test.describe('Foe overrides — expansion exclusion + addendum', () => {
 	test('YRT off: previously excluded foe reappears in the picker', async ({ page }) => {
 		await setToggles(page, { yrt: false });
 		await page.reload();
-		await expect(page.locator('.loading-tab')).not.toBeVisible({ timeout: 10_000 });
+		await waitForHome(page);
 
 		await openFoePicker(page);
 		await expect(page.locator('dialog.foe-dialog .fd-tile-name', { hasText: BASE_FOE_A.name }))
@@ -156,7 +154,7 @@ test.describe('Foe overrides — expansion exclusion + addendum', () => {
 	test('YRT off: addendum is NOT shown even though the data is loaded', async ({ page }) => {
 		await setToggles(page, { yrt: false });
 		await page.reload();
-		await expect(page.locator('.loading-tab')).not.toBeVisible({ timeout: 10_000 });
+		await waitForHome(page);
 
 		await openFoePicker(page);
 		await page.locator('dialog.foe-dialog .fd-tile', { has: page.locator('.fd-tile-name', { hasText: BASE_FOE_B.name }) })

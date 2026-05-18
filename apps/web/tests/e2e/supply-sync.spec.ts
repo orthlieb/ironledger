@@ -1,56 +1,108 @@
 /**
  * supply-sync.spec.ts — Party supply is always in sync across all characters.
  *
- * Covers:
+ * Covers (v2 — no GlobalContextBar, no tabs):
  *   • New character inherits current party supply on creation
  *   • Imported character syncs all chars to max(existing, imported) supply
  *   • Increasing supply on one char syncs all others (+ button)
  *   • Decreasing supply on one char syncs all others (− button)
  *   • Supply resource-link click in the log echoes the change to all chars
- *   • GCB supply chip updates immediately when supply changes (Characters tab)
- *   • GCB supply chip updates when log resource-link is clicked on Adventure tab
+ *
+ * v2: only the active character's vitals are visible at a time. To verify
+ * sync, we click each spine in turn and read its Supply tile value.
  */
 import { test, expect, type Locator, type Page } from '@playwright/test';
+
+const CHAR_AREA   = '.home-area--characters';
+const CHAR_HEADER = `${CHAR_AREA} .ca-header`;
+const CHAR_SPINE  = `${CHAR_AREA} .ca-spine`;
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-async function gotoCharactersTab(page: Page) {
-	await page.goto('/home');
-	await expect(page.locator('.loading-tab')).not.toBeVisible({ timeout: 10000 });
-	await page.locator('.tab-btn[data-tab="characters"]').click();
-	await expect(page.locator('.char-toolbar')).toBeVisible({ timeout: 5000 });
+async function waitForHome(page: Page) {
+	await expect(page.locator(`${CHAR_AREA} .ca-loading`)).not.toBeVisible({ timeout: 12_000 });
+	await page.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`).first()
+		.waitFor({ timeout: 12_000, state: 'attached' });
 }
 
-/** Wait until at least N character cards exist, creating new ones as needed. */
+async function gotoHome(page: Page) {
+	await page.goto('/home');
+	await waitForHome(page);
+}
+
+async function switchCharTab(page: Page, label: string) {
+	await page.locator(`${CHAR_AREA} .ca-tab`, { hasText: new RegExp(`^${label}$`, 'i') }).click();
+}
+
+/** Wait until at least N character spines exist, creating new ones as needed. */
 async function ensureCharCount(page: Page, n: number) {
-	await page.locator('.char-list--characters > .char-card, .empty-tab').first()
-		.waitFor({ timeout: 8000, state: 'attached' });
-	while (await page.locator('.char-list--characters > .char-card').count() < n) {
-		await page.locator('.char-toolbar button.btn-primary').click();
-		await expect(page.locator('.char-list--characters > .char-card'))
-			.not.toHaveCount(await page.locator('.char-list--characters > .char-card').count() - 1, { timeout: 6000 });
+	while (await page.locator(CHAR_SPINE).count() < n) {
+		const before = await page.locator(CHAR_SPINE).count();
+		await page.locator(`${CHAR_HEADER} button:has-text("+ Character")`).click();
+		await expect(page.locator(CHAR_SPINE)).not.toHaveCount(before, { timeout: 8_000 });
 	}
 }
 
-/** Read the displayed supply value from a char-card locator. */
-async function getSupply(card: Locator): Promise<number> {
-	const tile = card.locator('.res-tile').filter({ hasText: 'Supply' });
+/** Open the Core sub-tab so the supply tile is visible. */
+async function showVitals(page: Page) {
+	await switchCharTab(page, 'Core');
+}
+
+/** Read displayed supply value from the active character's Core tab. */
+async function getSupplyOfActive(page: Page): Promise<number> {
+	await showVitals(page);
+	const tile = page.locator(`${CHAR_AREA} .res-tile`).filter({ hasText: 'Supply' });
 	const text = await tile.locator('.res-value').textContent();
 	return parseInt(text ?? '0', 10);
 }
 
-/** Set a char's supply to a specific value by clicking +/- buttons. */
-async function setSupply(card: Locator, target: number) {
-	const tile = card.locator('.res-tile').filter({ hasText: 'Supply' });
-	for (let attempts = 0; attempts < 10; attempts++) {
-		const cur = await getSupply(card);
+/** Set the active character's supply to `target` by clicking + / − buttons. */
+async function setActiveSupply(page: Page, target: number) {
+	await showVitals(page);
+	const tile = page.locator(`${CHAR_AREA} .res-tile`).filter({ hasText: 'Supply' });
+	for (let attempts = 0; attempts < 12; attempts++) {
+		const cur = await getSupplyOfActive(page);
 		if (cur === target) break;
 		if (cur < target) await tile.locator('button[aria-label="Increase Supply"]').click();
 		else              await tile.locator('button[aria-label="Decrease Supply"]').click();
-		await card.page().waitForTimeout(80);
+		await page.waitForTimeout(80);
 	}
+}
+
+/** Click the Nth spine and wait for it to become active. */
+async function selectSpine(page: Page, idx: number) {
+	const spine = page.locator(CHAR_SPINE).nth(idx);
+	await spine.click();
+	await expect(spine).toHaveClass(/ca-spine--active/, { timeout: 3_000 });
+}
+
+/** Verify every character's supply equals `expected` by walking the spines. */
+async function expectAllCharsSupply(page: Page, expected: number) {
+	const total = await page.locator(CHAR_SPINE).count();
+	for (let i = 0; i < total; i++) {
+		await selectSpine(page, i);
+		await showVitals(page);
+		const tile = page.locator(`${CHAR_AREA} .res-tile`).filter({ hasText: 'Supply' });
+		await expect(tile.locator('.res-value')).toHaveText(String(expected), { timeout: 4_000 });
+	}
+}
+
+/**
+ * Fetch the active character's id from the API by matching the stage name.
+ * Returns the id, or '' if not found.
+ */
+async function getActiveCharId(page: Page): Promise<string> {
+	const stageName = await page.locator(`${CHAR_AREA} .ca-stage-name`).textContent();
+	const name = (stageName ?? '').trim();
+	if (!name) return '';
+	const list = await page.evaluate(async () => {
+		const res = await fetch('/api/characters', { credentials: 'include' });
+		return res.ok ? await res.json() : [];
+	}) as Array<{ id: string; name: string }>;
+	const match = list.find(c => c.name === name);
+	return match?.id ?? '';
 }
 
 /** Build a minimal valid character manifest for import. */
@@ -78,13 +130,6 @@ function makeCharManifest(name: string, supply: number) {
 	};
 }
 
-/** Read the supply value from the GCB chip on the Adventure tab. */
-async function getGcbSupply(page: Page): Promise<number> {
-	const text = await page.locator('.gc-chip[title="supply"] .gc-chip-value').textContent();
-	const match = (text ?? '').match(/\d+/);
-	return match ? parseInt(match[0], 10) : -1;
-}
-
 /** Upload a JSON blob via the hidden file input (bypasses import confirm dialog). */
 async function uploadImport(page: Page, payload: unknown) {
 	const fileInput = page.locator('input[type="file"][accept=".json,application/json"]');
@@ -99,9 +144,9 @@ async function uploadImport(page: Page, payload: unknown) {
 // Tests
 // ---------------------------------------------------------------------------
 
-test.describe('Party supply sync', () => {
+test.describe('Party supply sync (v2)', () => {
 	test.beforeEach(async ({ page }) => {
-		await gotoCharactersTab(page);
+		await gotoHome(page);
 	});
 
 	// ── New character creation inherits party supply ──────────────────────────
@@ -109,21 +154,20 @@ test.describe('Party supply sync', () => {
 	test('new character inherits party supply on creation', async ({ page }) => {
 		await ensureCharCount(page, 1);
 
-		// Set first char's supply to a known non-default value
-		const cards = page.locator('.char-list--characters > .char-card');
-		const firstCard = cards.first();
-		await firstCard.click();
-		await setSupply(firstCard, 4);
+		await selectSpine(page, 0);
+		await setActiveSupply(page, 4);
 
-		// Create a second character
-		const beforeCount = await cards.count();
-		await page.locator('.char-toolbar button.btn-primary').click();
-		await expect(cards).not.toHaveCount(beforeCount, { timeout: 6000 });
+		// Create a second character.
+		const beforeCount = await page.locator(CHAR_SPINE).count();
+		await page.locator(`${CHAR_HEADER} button:has-text("+ Character")`).click();
+		await expect(page.locator(CHAR_SPINE)).not.toHaveCount(beforeCount, { timeout: 6_000 });
 
-		// New char (first in list after creation) should have supply = 4
-		const newCard = cards.first();
-		await expect(newCard.locator('.res-tile').filter({ hasText: 'Supply' }).locator('.res-value'))
-			.toHaveText('4', { timeout: 4000 });
+		// New character is appended; it should auto-pick up the existing party supply.
+		const newIdx = (await page.locator(CHAR_SPINE).count()) - 1;
+		await selectSpine(page, newIdx);
+		await showVitals(page);
+		const tile = page.locator(`${CHAR_AREA} .res-tile`).filter({ hasText: 'Supply' });
+		await expect(tile.locator('.res-value')).toHaveText('4', { timeout: 4_000 });
 	});
 
 	// ── Increment syncs all ───────────────────────────────────────────────────
@@ -131,24 +175,18 @@ test.describe('Party supply sync', () => {
 	test('increasing supply on one char syncs to all others', async ({ page }) => {
 		await ensureCharCount(page, 2);
 
-		const cards = page.locator('.char-list--characters > .char-card');
+		// Normalise both to supply 2.
+		await selectSpine(page, 0); await setActiveSupply(page, 2);
+		await selectSpine(page, 1); await setActiveSupply(page, 2);
 
-		// Normalise both to supply 2
-		await cards.first().click();
-		await setSupply(cards.first(), 2);
-		await cards.nth(1).click();
-		await setSupply(cards.nth(1), 2);
-
-		// Increment on first char
-		await cards.first().click();
-		const supplyTile = cards.first().locator('.res-tile').filter({ hasText: 'Supply' });
-		await supplyTile.locator('button[aria-label="Increase Supply"]').click();
+		// Increment on first char.
+		await selectSpine(page, 0);
+		await showVitals(page);
+		const tile = page.locator(`${CHAR_AREA} .res-tile`).filter({ hasText: 'Supply' });
+		await tile.locator('button[aria-label="Increase Supply"]').click();
 		await page.waitForTimeout(200);
 
-		// Both cards should now show 3
-		const secondTile = cards.nth(1).locator('.res-tile').filter({ hasText: 'Supply' });
-		await expect(supplyTile.locator('.res-value')).toHaveText('3', { timeout: 3000 });
-		await expect(secondTile.locator('.res-value')).toHaveText('3', { timeout: 3000 });
+		await expectAllCharsSupply(page, 3);
 	});
 
 	// ── Decrement syncs all ───────────────────────────────────────────────────
@@ -156,24 +194,17 @@ test.describe('Party supply sync', () => {
 	test('decreasing supply on one char syncs to all others', async ({ page }) => {
 		await ensureCharCount(page, 2);
 
-		const cards = page.locator('.char-list--characters > .char-card');
+		await selectSpine(page, 0); await setActiveSupply(page, 3);
+		await selectSpine(page, 1); await setActiveSupply(page, 3);
 
-		// Normalise both to supply 3
-		await cards.first().click();
-		await setSupply(cards.first(), 3);
-		await cards.nth(1).click();
-		await setSupply(cards.nth(1), 3);
-
-		// Decrement on second char
-		await cards.nth(1).click();
-		const supplyTile2 = cards.nth(1).locator('.res-tile').filter({ hasText: 'Supply' });
-		await supplyTile2.locator('button[aria-label="Decrease Supply"]').click();
+		// Decrement on second char.
+		await selectSpine(page, 1);
+		await showVitals(page);
+		const tile = page.locator(`${CHAR_AREA} .res-tile`).filter({ hasText: 'Supply' });
+		await tile.locator('button[aria-label="Decrease Supply"]').click();
 		await page.waitForTimeout(200);
 
-		// Both cards should now show 2
-		const supplyTile1 = cards.first().locator('.res-tile').filter({ hasText: 'Supply' });
-		await expect(supplyTile1.locator('.res-value')).toHaveText('2', { timeout: 3000 });
-		await expect(supplyTile2.locator('.res-value')).toHaveText('2', { timeout: 3000 });
+		await expectAllCharsSupply(page, 2);
 	});
 
 	// ── Log resource-link click syncs all ─────────────────────────────────────
@@ -181,51 +212,32 @@ test.describe('Party supply sync', () => {
 	test('supply resource-link click in log syncs all chars', async ({ page }) => {
 		await ensureCharCount(page, 2);
 
-		const cards = page.locator('.char-list--characters > .char-card');
+		await selectSpine(page, 0); await setActiveSupply(page, 3);
+		await selectSpine(page, 1); await setActiveSupply(page, 3);
 
-		// Normalise both to supply 3
-		await cards.first().click();
-		await setSupply(cards.first(), 3);
-		await cards.nth(1).click();
-		await setSupply(cards.nth(1), 3);
-
-		// Get the active char's ID from the DOM
-		await cards.first().click();
-		const activeCard = page.locator('.char-card--active').first();
-		const charId = await activeCard.getAttribute('data-char-id');
+		// Get the active char's id via the API (active stage name -> lookup).
+		await selectSpine(page, 0);
+		const charId = await getActiveCharId(page);
 		expect(charId).toBeTruthy();
 
-		// Inject a fake log entry with a supply resource link for that char
+		// Inject a fake log entry with a supply resource link for that char.
 		const entryId = 'test-supply-link-entry';
 		await page.evaluate(
 			({ cId, eId }) => {
-				// Use the globally exposed appendLog from the log store module
 				const html = `<div>Resupply: <a class="resource-link" data-resource="supply" data-value="-1" data-entry-id="${eId}" data-char-id="${cId}">−1 supply</a></div>`;
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				(window as any).__testLog?.appendLog('__session__', 'Test — Supply', html, eId);
 			},
-			{ cId: charId, eId: entryId }
+			{ cId: charId, eId: entryId },
 		);
 
-		// The log is only rendered on the adventure tab — navigate there so the
-		// injected entry is visible before we try to click the link.
-		await page.click('.tab-btn[data-tab="adventure"]');
-		await expect(page.locator('.adventure-gcb')).toBeVisible({ timeout: 5000 });
-
-		// Click the supply link in the log
+		// Log is always visible in v2 (right column). Click the link.
 		const supplyLink = page.locator(`.resource-link[data-entry-id="${entryId}"]`).first();
-		await supplyLink.waitFor({ timeout: 5000 });
+		await supplyLink.waitFor({ timeout: 5_000 });
 		await supplyLink.click();
 		await page.waitForTimeout(300);
 
-		// Navigate back to the characters tab to verify the supply values
-		await page.click('.tab-btn[data-tab="characters"]');
-		await expect(page.locator('.char-toolbar')).toBeVisible({ timeout: 5000 });
-
-		// Both chars should now show supply = 2
-		const tile1 = cards.first().locator('.res-tile').filter({ hasText: 'Supply' });
-		const tile2 = cards.nth(1).locator('.res-tile').filter({ hasText: 'Supply' });
-		await expect(tile1.locator('.res-value')).toHaveText('2', { timeout: 3000 });
-		await expect(tile2.locator('.res-value')).toHaveText('2', { timeout: 3000 });
+		await expectAllCharsSupply(page, 2);
 	});
 
 	// ── Import syncs to max ───────────────────────────────────────────────────
@@ -233,124 +245,39 @@ test.describe('Party supply sync', () => {
 	test('importing a character syncs all chars to max supply', async ({ page }) => {
 		await ensureCharCount(page, 1);
 
-		const cards = page.locator('.char-list--characters > .char-card');
+		await selectSpine(page, 0);
+		await setActiveSupply(page, 2);
 
-		// Set existing char to supply 2
-		await cards.first().click();
-		await setSupply(cards.first(), 2);
-
-		const beforeCount = await cards.count();
-
-		// Import a character with supply 5 (higher than existing)
+		const beforeCount = await page.locator(CHAR_SPINE).count();
 		await uploadImport(page, makeCharManifest('Supply Test Import', 5));
-		await expect(cards).not.toHaveCount(beforeCount, { timeout: 8000 });
+		await expect(page.locator(CHAR_SPINE)).not.toHaveCount(beforeCount, { timeout: 8_000 });
 		await page.waitForTimeout(300);
 
-		// All cards should have supply = 5 (max of 2 and 5)
-		const count = await cards.count();
-		for (let i = 0; i < count; i++) {
-			const tile = cards.nth(i).locator('.res-tile').filter({ hasText: 'Supply' });
-			await expect(tile.locator('.res-value')).toHaveText('5', { timeout: 4000 });
-		}
+		await expectAllCharsSupply(page, 5);
 	});
 
 	test('importing a character with lower supply does not reduce party supply', async ({ page }) => {
 		await ensureCharCount(page, 1);
 
-		const cards = page.locator('.char-list--characters > .char-card');
+		await selectSpine(page, 0);
+		await setActiveSupply(page, 4);
 
-		// Set existing char to supply 4
-		await cards.first().click();
-		await setSupply(cards.first(), 4);
-
-		const beforeCount = await cards.count();
-
-		// Import a character with supply 1 (lower than existing)
+		const beforeCount = await page.locator(CHAR_SPINE).count();
 		await uploadImport(page, makeCharManifest('Low Supply Import', 1));
-		await expect(cards).not.toHaveCount(beforeCount, { timeout: 8000 });
+		await expect(page.locator(CHAR_SPINE)).not.toHaveCount(beforeCount, { timeout: 8_000 });
 		await page.waitForTimeout(300);
 
-		// All cards should have supply = 4 (max of 4 and 1)
-		const count = await cards.count();
-		for (let i = 0; i < count; i++) {
-			const tile = cards.nth(i).locator('.res-tile').filter({ hasText: 'Supply' });
-			await expect(tile.locator('.res-value')).toHaveText('4', { timeout: 4000 });
-		}
+		await expectAllCharsSupply(page, 4);
 	});
 
-	// ── GCB chip stays in sync with Characters tab changes ───────────────────
-
-	test('GCB supply chip reflects supply changed via +/- button on Characters tab', async ({ page }) => {
-		await ensureCharCount(page, 1);
-
-		const cards = page.locator('.char-list--characters > .char-card');
-		await cards.first().click();
-		await setSupply(cards.first(), 2);
-
-		// Switch to Adventure tab — GCB becomes visible
-		await page.locator('.tab-btn[data-tab="adventure"]').click();
-		await expect(page.locator('.global-context')).toBeVisible({ timeout: 5000 });
-
-		// GCB should immediately show supply = 2 (not a stale value from page load)
-		const gcbVal = await getGcbSupply(page);
-		expect(gcbVal).toBe(2);
+	// ── GCB chip tests dropped — v2 has no GlobalContextBar.
+	test.skip('GCB supply chip reflects supply changed via +/- button on Characters tab', async () => {
+		// v2: there is no GlobalContextBar. The Supply tile in the Core sub-tab IS
+		// the single source of truth and is verified by the sibling tests above.
 	});
 
-	test('GCB supply chip updates when log resource-link is clicked on Adventure tab', async ({ page }) => {
-		await ensureCharCount(page, 2);
-
-		const cards = page.locator('.char-list--characters > .char-card');
-
-		// Normalise both chars to supply 3
-		await cards.first().click();
-		await setSupply(cards.first(), 3);
-		await cards.nth(1).click();
-		await setSupply(cards.nth(1), 3);
-
-		// Get the active char's ID
-		await cards.first().click();
-		const activeCard = page.locator('.char-card--active').first();
-		const charId = await activeCard.getAttribute('data-char-id');
-		expect(charId).toBeTruthy();
-
-		// Switch to Adventure tab so GCB + LogPanel are both visible
-		await page.locator('.tab-btn[data-tab="adventure"]').click();
-		await expect(page.locator('.global-context')).toBeVisible({ timeout: 5000 });
-
-		// GCB should show supply = 3 at this point
-		expect(await getGcbSupply(page)).toBe(3);
-
-		// Inject a fake log entry with a −1 supply link for the active char
-		const entryId = 'test-gcb-supply-link';
-		await page.evaluate(
-			({ cId, eId }) => {
-				const logBody = document.querySelector('.log-entries');
-				if (!logBody) return;
-				const div = document.createElement('div');
-				div.className = 'log-entry';
-				div.innerHTML = `<div class="entry-body"><a class="resource-link" data-resource="supply" data-value="-1" data-entry-id="${eId}" data-char-id="${cId}">−1 supply</a></div>`;
-				logBody.prepend(div);
-			},
-			{ cId: charId, eId: entryId }
-		);
-
-		// Click the supply link in the log
-		const supplyLink = page.locator(`.resource-link[data-entry-id="${entryId}"]`).first();
-		await supplyLink.waitFor({ timeout: 3000 });
-		await supplyLink.click();
-		await page.waitForTimeout(300);
-
-		// GCB supply chip should update to 2
-		await expect(page.locator('.gc-chip[title="supply"] .gc-chip-value'))
-			.toContainText('2', { timeout: 3000 });
-
-		// Switching back to Characters tab — both chars should also show 2
-		await page.locator('.tab-btn[data-tab="characters"]').click();
-		await expect(page.locator('.char-toolbar')).toBeVisible({ timeout: 5000 });
-
-		const tile1 = cards.first().locator('.res-tile').filter({ hasText: 'Supply' });
-		const tile2 = cards.nth(1).locator('.res-tile').filter({ hasText: 'Supply' });
-		await expect(tile1.locator('.res-value')).toHaveText('2', { timeout: 4000 });
-		await expect(tile2.locator('.res-value')).toHaveText('2', { timeout: 4000 });
+	test.skip('GCB supply chip updates when log resource-link is clicked on Adventure tab', async () => {
+		// v2: no GCB; behaviour covered by "supply resource-link click in log
+		// syncs all chars".
 	});
 });

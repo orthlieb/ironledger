@@ -83,6 +83,16 @@ export async function updateNpc(updated: Npc): Promise<void> {
 	await persist();
 }
 
+/** Replace one NPC by id WITHOUT persisting. Pair with persistNpcsNow()
+    when the caller is debouncing the API write. */
+export function updateNpcLocal(updated: Npc): void {
+	_npcs = _npcs.map((n) => n.id === updated.id ? updated : n);
+}
+/** Force a save of the current NPC list (debounce-friendly partner). */
+export async function persistNpcsNow(): Promise<void> {
+	await persist();
+}
+
 /** Remove one NPC by id and persist. */
 export async function removeNpc(id: string): Promise<void> {
 	_npcs = _npcs.filter((n) => n.id !== id);

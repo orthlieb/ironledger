@@ -447,38 +447,8 @@ dialog label {
    -------------------------------------------------------------------------- */
 .app-main {
 	max-width: 1600px;
-	margin: 0 auto;
-	padding: 0 var(--page-gutter) 4rem;
-}
-
-/* --------------------------------------------------------------------------
-   Split layout — 50/50 character sheet + log panel
-   Breaks out of app-main padding so the split fills the sidebar cleanly.
-   -------------------------------------------------------------------------- */
-.split-layout {
-	display: grid;
-	grid-template-columns: 1fr 1fr;
-	align-items: start;
-	gap: 0;
-	/* Escape the app-main horizontal padding */
-	margin-left: calc(-1 * var(--page-gutter));
-	margin-right: calc(-1 * var(--page-gutter));
-	margin-bottom: -4rem;
-}
-
-.split-left {
-	padding: 0 var(--page-gutter) 4rem;
-	min-width: 0;
-}
-
-.split-right {
-	position: sticky;
-	top: 52px; /* nav height */
-	height: calc(100dvh - 52px);
-	align-self: start;
-	overflow: hidden;
-	display: flex;
-	flex-direction: column;
+	margin: 0;
+	padding: 0 0 4rem;
 }
 
 .page-header {
@@ -606,66 +576,6 @@ dialog label {
 	font-size: 0.875rem;
 	margin-bottom: 0.75rem;
 	opacity: 0.9;
-}
-
-/* --------------------------------------------------------------------------
-   Character list page
-   -------------------------------------------------------------------------- */
-.char-list {
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-}
-
-.char-list-item {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	background: var(--bg-card);
-	border: 1px solid var(--border);
-	border-radius: 5px;
-	padding: 0.875rem 1rem;
-	text-decoration: none;
-	color: var(--text);
-	transition: background 0.12s, border-color 0.12s;
-}
-.char-list-item:hover {
-	background: var(--bg-hover);
-	border-color: var(--border-mid);
-	text-decoration: none;
-}
-.char-list-name {
-	font-family: var(--font-ui);
-	font-size: 0.82rem;
-	font-weight: 600;
-	letter-spacing: 0.02em;
-}
-.char-list-meta {
-	font-size: 0.8rem;
-	font-style: italic;
-	color: var(--text-dimmer);
-}
-
-.empty-state {
-	background: var(--bg-card);
-	border: 1px dashed var(--border-mid);
-	border-radius: 5px;
-	padding: 3rem;
-	text-align: center;
-	color: var(--text-muted);
-	font-style: italic;
-}
-
-/* --------------------------------------------------------------------------
-   Breadcrumb
-   -------------------------------------------------------------------------- */
-.breadcrumb {
-	margin-bottom: 1rem;
-	font-family: var(--font-ui);
-	font-size: 0.72rem;
-	font-weight: 600;
-	letter-spacing: 0.05em;
-	text-transform: uppercase;
 }
 
 /* --------------------------------------------------------------------------

@@ -6,8 +6,22 @@
 	import BugReportDialog from '$lib/components/BugReportDialog.svelte';
 	import HamburgerMenu from '$lib/components/HamburgerMenu.svelte';
 	import BroadcastBanner from '$lib/components/BroadcastBanner.svelte';
+	import MovesDialog from '$lib/components/MovesDialog.svelte';
+	import OraclesDialog from '$lib/components/OraclesDialog.svelte';
+	import DiceRollerDialog from '$lib/components/DiceRollerDialog.svelte';
+	import NotesDialog from '$lib/components/NotesDialog.svelte';
 	import { system } from '$lib/api';
-	import swordSvg from '$icons/sharp-axe.svg?raw';
+	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
+	import { getActiveFoeId, getActiveExpeditionId } from '$lib/activeContext.svelte.js';
+	import { getEncounters } from '$lib/encounterStore.svelte.js';
+	import { getExpeditions } from '$lib/expeditionStore.svelte.js';
+	import { FOE_RANKS, findFoe } from '$lib/foeStore.svelte.js';
+	import type { PreconditionContext } from '$lib/preconditions.js';
+	import swordSvg     from '$icons/sharp-axe.svg?raw';
+	import iconMoves    from '$icons/person-running-solid.svg?raw';
+	import iconOracles  from '$icons/crystal-ball.svg?raw';
+	import iconDice     from '$icons/dice-d10-light.svg?raw';
+	import iconNotes    from '$icons/note-sticky-solid.svg?raw';
 	import { preloadDice } from '$lib/dice';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
@@ -17,6 +31,66 @@
 
 	let settingsDialog  = $state<ReturnType<typeof SettingsDialog> | null>(null);
 	let bugReportDialog = $state<ReturnType<typeof BugReportDialog> | null>(null);
+
+	// V1 "adventure-action-toolbar" dialogs — promoted to the global nav so
+	// they're reachable from /home, /admin, etc.
+	let movesDialogRef   = $state<{ open(id?: string): void } | null>(null);
+	let oraclesDialogRef = $state<{ open(oracleKey?: string, onFill?: (value: string) => void, stat?: string): void } | null>(null);
+	let diceRollerRef    = $state<{ open(): void } | null>(null);
+	let notesDialogRef   = $state<{ open(): void } | null>(null);
+	const activeDiceCtx = $derived(getActiveDiceCtx());
+
+	// Build a precondition context for MovesDialog from the v2 spine selections.
+	// Pages that don't publish active selections (e.g. /admin) read empty
+	// strings here so preconditions like `hasFoe` come out false — which is
+	// the correct behavior for a no-foe-selected state.
+	const preconditionCtx = $derived.by<PreconditionContext>(() => {
+		const foeId = getActiveFoeId();
+		const expId = getActiveExpeditionId();
+		const encs  = getEncounters();
+		const exps  = getExpeditions();
+		const enc   = foeId ? encs.find(e => e.id === foeId) : undefined;
+		const exp   = expId ? exps.find(e => e.id === expId) : undefined;
+		const foeDef = enc ? findFoe(enc.foeId) : undefined;
+		const foeName = enc
+			? (enc.customName?.trim() || foeDef?.name || enc.foeId)
+			: undefined;
+		return {
+			hasCharacter:   !!activeDiceCtx,
+			hasFoe:         !!enc,
+			hasJourney:     exp?.type === 'journey',
+			hasSite:        exp?.type === 'site',
+			expeditionName: exp?.name,
+			foeName,
+			initiative:     activeDiceCtx?.data?.initiative,
+			foeHarm:        enc ? FOE_RANKS[enc.effectiveRank]?.harm : undefined,
+		};
+	});
+
+	// ── Cross-component dialog-open events ────────────────────────────────
+	// Components that render dialog content with embedded move/oracle links
+	// (e.g. v2 CharactersArea's asset dialog) dispatch a custom DOM event so
+	// the layout-level dialogs can react. Avoids prop-drilling refs through
+	// the route tree.
+	import { onMount } from 'svelte';
+	onMount(() => {
+		const openMove = (e: Event) => {
+			const id = (e as CustomEvent<{ id: string }>).detail?.id ?? '';
+			if (id) movesDialogRef?.open(id);
+		};
+		const openOracle = (e: Event) => {
+			const d = (e as CustomEvent<{ key: string; stat: string }>).detail;
+			// The 2nd arg (onFill callback) is intentionally omitted — links
+			// from asset cards just want the picker to open, not auto-fill.
+			oraclesDialogRef?.open(d?.key, undefined, d?.stat);
+		};
+		document.addEventListener('ironledger:open-move',   openMove);
+		document.addEventListener('ironledger:open-oracle', openOracle);
+		return () => {
+			document.removeEventListener('ironledger:open-move',   openMove);
+			document.removeEventListener('ironledger:open-oracle', openOracle);
+		};
+	});
 
 	// ── System status polling (maintenance + broadcast) ───────────────────
 	let maintStatus: MaintenanceStatus | null = $state(null);
@@ -96,6 +170,22 @@
 				{/if}
 			</nav>
 			<div class="nav-user-actions">
+				<!-- V1 adventure-action-toolbar promoted to the global nav so
+				     Move / Ask / Roll / Note are reachable from any page. -->
+				<div class="nav-action-toolbar">
+					<button class="btn btn-primary act-btn" onclick={() => movesDialogRef?.open()} title="Browse and roll moves">
+						<span class="act-icon">{@html iconMoves}</span><span class="act-label">Move</span>
+					</button>
+					<button class="btn btn-primary act-btn" onclick={() => oraclesDialogRef?.open()} title="Browse and roll oracles">
+						<span class="act-icon">{@html iconOracles}</span><span class="act-label">Ask</span>
+					</button>
+					<button class="btn btn-primary act-btn" onclick={() => diceRollerRef?.open()} title="Roll dice">
+						<span class="act-icon">{@html iconDice}</span><span class="act-label">Roll</span>
+					</button>
+					<button class="btn btn-primary act-btn" onclick={() => notesDialogRef?.open()} title="Add a session note">
+						<span class="act-icon">{@html iconNotes}</span><span class="act-label">Note</span>
+					</button>
+				</div>
 				<HamburgerMenu
 					onSettings={() => settingsDialog?.open()}
 					onReportBug={() => bugReportDialog?.open()}
@@ -137,6 +227,13 @@
 <SettingsDialog bind:this={settingsDialog} />
 <BugReportDialog bind:this={bugReportDialog} user={data.user} />
 
+<!-- Adventure-action dialogs — promoted from the v1 toolbar so they're
+     mounted once at the layout level and openable from anywhere. -->
+<MovesDialog       bind:this={movesDialogRef}   ctx={activeDiceCtx} pctx={preconditionCtx} />
+<OraclesDialog     bind:this={oraclesDialogRef} />
+<DiceRollerDialog  bind:this={diceRollerRef}    ctx={activeDiceCtx} />
+<NotesDialog       bind:this={notesDialogRef} />
+
 <style>
 	/* Span wrapper + SVG sizing for the sword brand icon */
 	.nav-brand-icon {
@@ -155,6 +252,45 @@
 	.nav-user-actions {
 		display: flex;
 		align-items: center;
+		gap: 0.5rem;
+	}
+
+	/* Adventure action toolbar — copied from V1 home page's
+	   .adventure-action-toolbar so the buttons look and feel identical. */
+	.nav-action-toolbar {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+	}
+	.act-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.35rem;
+		white-space: nowrap;
+		overflow: hidden;
+	}
+	.act-icon {
+		display: inline-flex;
+		width: 14px;
+		height: 14px;
+		flex-shrink: 0;
+	}
+	.act-icon :global(svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
+	}
+	.act-label {
+		font-size: 0.72rem;
+		font-weight: 600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+	}
+	/* Narrow screens: hide the labels, keep icons only. */
+	@media (max-width: 600px) {
+		.act-label { display: none; }
+		.act-btn { padding-left: 0.5rem; padding-right: 0.5rem; }
 	}
 
 	.nav-page-links {
