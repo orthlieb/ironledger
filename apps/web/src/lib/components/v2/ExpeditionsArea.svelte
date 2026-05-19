@@ -40,6 +40,7 @@
 	import sitePlaceholderSvg    from '$icons/dungeon-gate.svg?raw';
 	import diceD6Svg              from '$icons/dice-d6-light.svg?raw';
 	import expeditionsIconSvg    from '$icons/Expeditions.svg?raw';
+	import { headingText } from '$lib/fontStore.svelte.js';
 
 	let { showTitle = true }: { showTitle?: boolean } = $props();
 
@@ -509,7 +510,7 @@
 							class="ea-stage-name ea-stage-name--editable"
 							title="Click to rename"
 							onclick={startEditName}
-						>{activeExp.name || 'Unnamed'}</button>
+						>{headingText(activeExp.name || 'Unnamed')}</button>
 					{/if}
 					<button
 						class="btn btn-icon icon-btn ea-stage-complete-btn"

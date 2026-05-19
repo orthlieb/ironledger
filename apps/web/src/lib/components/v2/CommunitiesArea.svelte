@@ -38,6 +38,7 @@
 	import hutSvg       from '$icons/hut.svg?raw';
 	import farmerSvg    from '$icons/farmer.svg?raw';
 	import villageIconSvg from '$icons/village.svg?raw';
+	import { headingText } from '$lib/fontStore.svelte.js';
 
 	let { showTitle = true }: { showTitle?: boolean } = $props();
 
@@ -366,7 +367,7 @@
 							class="cm-stage-name cm-stage-name--editable"
 							title="Click to rename"
 							onclick={startEditName}
-						>{activeEntry.data.name || (activeEntry.kind === 'npc' ? 'Unnamed NPC' : 'Unnamed Community')}</button>
+						>{headingText(activeEntry.data.name || (activeEntry.kind === 'npc' ? 'Unnamed NPC' : 'Unnamed Community'))}</button>
 					{/if}
 					<button
 						class="btn btn-icon icon-btn cm-stage-delete-btn"

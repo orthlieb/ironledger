@@ -66,6 +66,7 @@
 	import iconMana       from '$icons/icon-mana.svg?raw';
 	import iconPuppet     from '$icons/puppet-solid.svg?raw';
 	import iconGolem      from '$icons/rock-golem.svg?raw';
+	import { headingText } from '$lib/fontStore.svelte.js';
 
 	let { showTitle = true }: { showTitle?: boolean } = $props();
 
@@ -742,7 +743,7 @@
 							class="ca-stage-name ca-card-name--editable"
 							title="Click to rename"
 							onclick={startEditName}
-						>{d.name || activeChar.name || 'Unnamed'}</button>
+						>{headingText(d.name || activeChar.name || 'Unnamed')}</button>
 					{/if}
 					<button
 						class="btn btn-icon icon-btn ca-stage-delete-btn"

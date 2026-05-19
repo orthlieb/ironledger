@@ -659,7 +659,7 @@
 
 	<!-- ── Built-in header: title · pagination · clear ── -->
 	<div class="log-header">
-		<span class="log-title">{headingText('Log')}</span>
+		<span class="log-title">Log</span>
 
 		<div class="log-pagination">
 			<button

@@ -30,6 +30,7 @@
 	import swordSvg from '$icons/sword-solid-full.svg?raw';
 	import skullSvg from '$icons/skull-crossbones-solid-full.svg?raw';
 	import foesIconSvg from '$icons/Foes.svg?raw';
+	import { headingText } from '$lib/fontStore.svelte.js';
 
 	let { showTitle = true }: { showTitle?: boolean } = $props();
 
@@ -242,7 +243,7 @@
 							class="fa-stage-name fa-stage-name--editable"
 							title="Click to rename"
 							onclick={startEditName}
-						>{displayName}</button>
+						>{headingText(displayName)}</button>
 					{/if}
 					<button
 						class="btn btn-icon icon-btn fa-stage-vanquish-btn"
