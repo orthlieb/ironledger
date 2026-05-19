@@ -1831,23 +1831,30 @@
 
 	/* ── Asset detail dialog ── transparent shell; the AssetCard inside owns
 	   all visual structure (header, abilities, custom fields) so the popup
-	   matches v1's expanded asset look exactly. When the card is taller than
-	   the viewport, the body scrolls and the header stays pinned to the top. */
+	   matches v1's expanded asset look exactly. Height fits the content but
+	   never exceeds 80% of the viewport — when content is taller, the body
+	   scrolls and the header stays pinned to the top.
+
+	   Centering uses top/left + transform instead of `inset: 0; margin: auto`
+	   because the latter combined with `display: flex` + `min-height: 0`
+	   children collapses to a thin line on mobile Safari. */
 	.ca-asset-dialog {
 		border: none;
 		padding: 0;
 		background: transparent;
 		color: var(--text);
-		width: min(640px, calc(100vw - 2rem));
-		max-height: calc(100vh - 4rem);
+		width: min(640px, calc(100vw - 1rem));
+		height: fit-content;              /* shrink to content when smaller */
+		max-height: 80vh;                 /* but never exceed 80% of viewport */
 		overflow: hidden;                 /* clip the inner card to max-height */
 		outline: none;
 		display: flex;                    /* let the AssetCard fill height */
 		flex-direction: column;
-		/* Center in the viewport regardless of UA defaults. */
 		position: fixed;
-		inset: 0;
-		margin: auto;
+		top: 50%;
+		left: 50%;
+		margin: 0;
+		transform: translate(-50%, -50%); /* steady-state centering */
 		z-index: 9999;                    /* sit above any in-page stacking contexts */
 	}
 	.ca-asset-dialog::backdrop {
@@ -1873,11 +1880,11 @@
 	@keyframes ca-asset-open {
 		from {
 			opacity: 0;
-			transform: translate(var(--ca-origin-x, 0), var(--ca-origin-y, 0)) scale(0.05);
+			transform: translate(calc(-50% + var(--ca-origin-x, 0px)), calc(-50% + var(--ca-origin-y, 0px))) scale(0.05);
 		}
 		to {
 			opacity: 1;
-			transform: translate(0, 0) scale(1);
+			transform: translate(-50%, -50%) scale(1);
 		}
 	}
 	@keyframes ca-asset-backdrop-in {
