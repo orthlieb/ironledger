@@ -678,7 +678,7 @@
 				onclick={addCharacter}
 				disabled={creatingChar}
 				title="Add character"
-			>+ Character</button>
+			>+ Character</button>
 			<button
 				class="btn ca-hdr-btn"
 				onclick={() => (pickerOpen = true)}
@@ -699,7 +699,7 @@
 	{:else if characters.length === 0}
 		<div class="ca-empty">
 			<span class="ca-empty-icon" aria-hidden="true">{@html charactersIconSvg}</span>
-			<p class="ca-empty-text">Your saga begins not with a battle, but with a button. Click <strong>+ CHARACTER</strong> to start.</p>
+			<p class="ca-empty-text">Your saga begins not with a battle, but with a button. Click <strong>+ CHARACTER</strong> to start.</p>
 		</div>
 	{:else}
 		<div class="ca-body">

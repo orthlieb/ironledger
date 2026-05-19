@@ -792,10 +792,9 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		padding: 10px 14px;
+		padding: 6px 12px;
 		background: var(--bg-inset);
 		border-bottom: 1px solid var(--border);
-		min-height: 54px;
 		flex-shrink: 0;
 	}
 
@@ -916,11 +915,9 @@
 		padding: 3rem 1.5rem;
 		text-align: center;
 		gap: 8px;
-		color: var(--text-dimmer);
+		color: var(--text-muted);
 		font-family: var(--font-ui);
-		font-size: 0.68rem;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
+		font-size: 0.8rem;
 	}
 
 	.log-empty-icon {

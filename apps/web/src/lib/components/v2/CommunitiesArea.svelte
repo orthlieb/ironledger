@@ -319,8 +319,8 @@
 			<span class="cmt-title">Communities</span>
 		{/if}
 		<div class="cm-header-actions">
-			<button class="btn cm-hdr-btn" onclick={addNewCommunity} title="Add community">+ Community</button>
-			<button class="btn cm-hdr-btn" onclick={addNewNpc}       title="Add NPC">+ NPC</button>
+			<button class="btn cm-hdr-btn" onclick={addNewCommunity} title="Add community">+ Community</button>
+			<button class="btn cm-hdr-btn" onclick={addNewNpc}       title="Add NPC">+ NPC</button>
 		</div>
 	</header>
 
@@ -329,7 +329,7 @@
 	{:else if entries.length === 0}
 		<div class="cm-empty">
 			<span class="cm-empty-icon" aria-hidden="true">{@html villageIconSvg}</span>
-			<p class="cm-empty-text">There are people and places to <s>plunder</s> discover. Click <strong>+ COMMUNITY</strong> or <strong>+ NPC</strong> to begin.</p>
+			<p class="cm-empty-text">There are people and places to <s>plunder</s> discover. Click <strong>+ COMMUNITY</strong> or <strong>+ NPC</strong> to begin.</p>
 		</div>
 	{:else}
 		<div class="cm-body">

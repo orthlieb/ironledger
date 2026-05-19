@@ -193,7 +193,7 @@
 			<span class="fa-title">Foes</span>
 		{/if}
 		<div class="fa-header-actions">
-			<button class="btn fa-hdr-btn" onclick={() => foePickerRef?.open()} title="Add foe">+ Foe</button>
+			<button class="btn fa-hdr-btn" onclick={() => foePickerRef?.open()} title="Add foe">+ Foe</button>
 		</div>
 	</header>
 
@@ -202,7 +202,7 @@
 	{:else if encounters.length === 0}
 		<div class="fa-empty">
 			<span class="fa-empty-icon" aria-hidden="true">{@html foesIconSvg}</span>
-			<p class="fa-empty-text">Nothing currently wants you dead. Disappointing. Click <strong>+ FOE</strong> to dance with fate.</p>
+			<p class="fa-empty-text">Nothing currently wants you dead. Disappointing. Click <strong>+ FOE</strong> to dance with fate.</p>
 		</div>
 	{:else}
 		<div class="fa-body">

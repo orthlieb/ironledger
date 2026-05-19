@@ -458,9 +458,9 @@
 			<span class="ea-title">Expeditions</span>
 		{/if}
 		<div class="ea-header-actions">
-			<button class="btn ea-hdr-btn" onclick={addJourney} title="Add journey">+ Journey</button>
+			<button class="btn ea-hdr-btn" onclick={addJourney} title="Add journey">+ Journey</button>
 			{#if isDelveEnabled()}
-				<button class="btn ea-hdr-btn" onclick={addSite}    title="Add site">+ Site</button>
+				<button class="btn ea-hdr-btn" onclick={addSite}    title="Add site">+ Site</button>
 			{/if}
 		</div>
 	</header>
@@ -470,7 +470,7 @@
 	{:else if expeditions.length === 0}
 		<div class="ea-empty">
 			<span class="ea-empty-icon" aria-hidden="true">{@html expeditionsIconSvg}</span>
-			<p class="ea-empty-text">You seem to be a homebody. Click <strong>+ JOURNEY</strong> or <strong>+ SITE</strong> to take your first step.</p>
+			<p class="ea-empty-text">You seem to be a homebody. Click <strong>+ JOURNEY</strong> or <strong>+ SITE</strong> to take your first step.</p>
 		</div>
 	{:else}
 		<div class="ea-body">
