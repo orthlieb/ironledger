@@ -67,6 +67,8 @@
 	import iconPuppet     from '$icons/puppet-solid.svg?raw';
 	import iconGolem      from '$icons/rock-golem.svg?raw';
 
+	let { showTitle = true }: { showTitle?: boolean } = $props();
+
 	const COUNTER_ICONS: Record<string, string> = {
 		'heart':                iconHeart,
 		'skull-and-crossbones': iconSkull,
@@ -660,8 +662,10 @@
 <div class="ca-area">
 	<!-- Header -->
 	<header class="ca-header">
-		<span class="ca-title-icon" aria-hidden="true">{@html charactersIconSvg}</span>
-		<span class="ca-title">Characters</span>
+		{#if showTitle}
+			<span class="ca-title-icon" aria-hidden="true">{@html charactersIconSvg}</span>
+			<span class="ca-title">Characters</span>
+		{/if}
 
 		<!-- Toolbar actions — apply to the active character. + Asset / + Vow
 		     are disabled when there's no character. Delete lives next to the
@@ -733,13 +737,12 @@
 							}}
 						/>
 					{:else}
-						<!-- svelte-ignore a11y_click_events_have_key_events a11y_interactive_supports_focus -->
-						<h2
+						<button
+							type="button"
 							class="ca-stage-name ca-card-name--editable"
-							role="button"
 							title="Click to rename"
 							onclick={startEditName}
-						>{d.name || activeChar.name || 'Unnamed'}</h2>
+						>{d.name || activeChar.name || 'Unnamed'}</button>
 					{/if}
 					<button
 						class="btn btn-icon icon-btn ca-stage-delete-btn"
@@ -1245,6 +1248,10 @@
 	   match V1's .char-title (0.82rem × font-display-scale, 0.08em tracking,
 	   default line-height, 2px 6px padding, 1px transparent border). */
 	.ca-stage-name {
+		appearance:     none;
+		-webkit-appearance: none;
+		text-align:     left;
+		background:     transparent;
 		font-family:    var(--font-display);
 		font-size:      calc(0.82rem * var(--font-display-scale));
 		font-weight:    var(--font-display-weight);

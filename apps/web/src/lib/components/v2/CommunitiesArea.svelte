@@ -39,6 +39,8 @@
 	import farmerSvg    from '$icons/farmer.svg?raw';
 	import villageIconSvg from '$icons/village.svg?raw';
 
+	let { showTitle = true }: { showTitle?: boolean } = $props();
+
 	const COMMUNITY_COLOR = '#D06840';
 	const NPC_COLOR       = '#C848A8';
 
@@ -311,8 +313,10 @@
 
 <div class="cm-area">
 	<header class="cm-header">
-		<span class="cm-title-icon" aria-hidden="true">{@html villageIconSvg}</span>
-		<span class="cmt-title">Communities</span>
+		{#if showTitle}
+			<span class="cm-title-icon" aria-hidden="true">{@html villageIconSvg}</span>
+			<span class="cmt-title">Communities</span>
+		{/if}
 		<div class="cm-header-actions">
 			<button class="btn cm-hdr-btn" onclick={addNewCommunity} title="Add community">+ Community</button>
 			<button class="btn cm-hdr-btn" onclick={addNewNpc}       title="Add NPC">+ NPC</button>
@@ -357,13 +361,12 @@
 							}}
 						/>
 					{:else}
-						<!-- svelte-ignore a11y_click_events_have_key_events a11y_interactive_supports_focus a11y_no_noninteractive_element_to_interactive_role -->
-						<h2
+						<button
+							type="button"
 							class="cm-stage-name cm-stage-name--editable"
-							role="button"
 							title="Click to rename"
 							onclick={startEditName}
-						>{activeEntry.data.name || (activeEntry.kind === 'npc' ? 'Unnamed NPC' : 'Unnamed Community')}</h2>
+						>{activeEntry.data.name || (activeEntry.kind === 'npc' ? 'Unnamed NPC' : 'Unnamed Community')}</button>
 					{/if}
 					<button
 						class="btn btn-icon icon-btn cm-stage-delete-btn"
@@ -737,6 +740,10 @@
 		border-bottom: 1px solid var(--border);
 	}
 	.cm-stage-name {
+		appearance:     none;
+		-webkit-appearance: none;
+		text-align:     left;
+		background:     transparent;
 		flex: 1; margin: 0;
 		font-family:    var(--font-display);
 		font-size:      calc(0.82rem * var(--font-display-scale));

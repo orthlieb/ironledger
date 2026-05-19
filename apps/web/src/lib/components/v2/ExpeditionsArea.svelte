@@ -41,6 +41,8 @@
 	import diceD6Svg              from '$icons/dice-d6-light.svg?raw';
 	import expeditionsIconSvg    from '$icons/Expeditions.svg?raw';
 
+	let { showTitle = true }: { showTitle?: boolean } = $props();
+
 	const JOURNEY_COLOR = '#E4AA28';
 	const SITE_COLOR    = '#4472D0';
 
@@ -450,8 +452,10 @@
 
 <div class="ea-area">
 	<header class="ea-header">
-		<span class="ea-title-icon" aria-hidden="true">{@html expeditionsIconSvg}</span>
-		<span class="ea-title">Expeditions</span>
+		{#if showTitle}
+			<span class="ea-title-icon" aria-hidden="true">{@html expeditionsIconSvg}</span>
+			<span class="ea-title">Expeditions</span>
+		{/if}
 		<div class="ea-header-actions">
 			<button class="btn ea-hdr-btn" onclick={addJourney} title="Add journey">+ Journey</button>
 			{#if isDelveEnabled()}
@@ -500,13 +504,12 @@
 							}}
 						/>
 					{:else}
-						<!-- svelte-ignore a11y_click_events_have_key_events a11y_interactive_supports_focus a11y_no_noninteractive_element_to_interactive_role -->
-						<h2
+						<button
+							type="button"
 							class="ea-stage-name ea-stage-name--editable"
-							role="button"
 							title="Click to rename"
 							onclick={startEditName}
-						>{activeExp.name || 'Unnamed'}</h2>
+						>{activeExp.name || 'Unnamed'}</button>
 					{/if}
 					<button
 						class="btn btn-icon icon-btn ea-stage-complete-btn"
@@ -975,6 +978,10 @@
 		border-bottom: 1px solid var(--border);
 	}
 	.ea-stage-name {
+		appearance:     none;
+		-webkit-appearance: none;
+		text-align:     left;
+		background:     transparent;
 		flex: 1; margin: 0;
 		font-family:    var(--font-display);
 		font-size:      calc(0.82rem * var(--font-display-scale));

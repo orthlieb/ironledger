@@ -31,6 +31,8 @@
 	import skullSvg from '$icons/skull-crossbones-solid-full.svg?raw';
 	import foesIconSvg from '$icons/Foes.svg?raw';
 
+	let { showTitle = true }: { showTitle?: boolean } = $props();
+
 	type FoeTab = 'description' | 'core';
 	const TAB_LABELS: { key: FoeTab; label: string }[] = [
 		{ key: 'core',        label: 'Core' },
@@ -185,8 +187,10 @@
 
 <div class="fa-area">
 	<header class="fa-header">
-		<span class="fa-title-icon" aria-hidden="true">{@html foesIconSvg}</span>
-		<span class="fa-title">Foes</span>
+		{#if showTitle}
+			<span class="fa-title-icon" aria-hidden="true">{@html foesIconSvg}</span>
+			<span class="fa-title">Foes</span>
+		{/if}
 		<div class="fa-header-actions">
 			<button class="btn fa-hdr-btn" onclick={() => foePickerRef?.open()} title="Add foe">+ Foe</button>
 		</div>
@@ -233,13 +237,12 @@
 							}}
 						/>
 					{:else}
-						<!-- svelte-ignore a11y_click_events_have_key_events a11y_interactive_supports_focus a11y_no_noninteractive_element_to_interactive_role -->
-						<h2
+						<button
+							type="button"
 							class="fa-stage-name fa-stage-name--editable"
-							role="button"
 							title="Click to rename"
 							onclick={startEditName}
-						>{displayName}</h2>
+						>{displayName}</button>
 					{/if}
 					<button
 						class="btn btn-icon icon-btn fa-stage-vanquish-btn"
@@ -512,6 +515,10 @@
 		border-bottom: 1px solid var(--border);
 	}
 	.fa-stage-name {
+		appearance:     none;
+		-webkit-appearance: none;
+		text-align:     left;
+		background:     transparent;
 		flex: 1; margin: 0;
 		font-family:    var(--font-display);
 		font-size:      calc(0.82rem * var(--font-display-scale));
