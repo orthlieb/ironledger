@@ -660,7 +660,7 @@
 
 	<!-- ── Built-in header: title · pagination · clear ── -->
 	<div class="log-header">
-		<span class="log-title">Log</span>
+		<span class="log-title">{headingText('Log')}</span>
 
 		<div class="log-pagination">
 			<button
@@ -703,7 +703,7 @@
 		{#if entries.length === 0}
 			<div class="log-empty">
 				<span class="log-empty-icon" aria-hidden="true">{@html logIconSvg}</span>
-				<span>No entries yet. History waits patiently. It will not wait forever.</span>
+				<span>No entries yet. History waits patiently.<br>It will not wait forever.</span>
 			</div>
 		{:else}
 			{#each pagedEntries as entry (entry.id)}
