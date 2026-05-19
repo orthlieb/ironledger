@@ -698,7 +698,8 @@
 		<div class="ca-loading">Loading…</div>
 	{:else if characters.length === 0}
 		<div class="ca-empty">
-			No characters yet. Use the original /home page to create one — this prototype is read-only for now.
+			<span class="ca-empty-icon" aria-hidden="true">{@html charactersIconSvg}</span>
+			<p class="ca-empty-text">Your saga begins not with a battle, but with a button. Click <strong>+ CHARACTER</strong> to start.</p>
 		</div>
 	{:else}
 		<div class="ca-body">
@@ -1191,14 +1192,33 @@
 	.ca-empty {
 		flex: 1;
 		display: flex;
+		flex-direction: column;
 		align-items: center;
 		justify-content: center;
 		font-family: var(--font-ui);
 		font-size: 0.8rem;
 		color: var(--text-muted);
-		font-style: italic;
 		padding: 20px;
+		gap: 12px;
 		text-align: center;
+	}
+
+	.ca-empty-icon {
+		display: flex;
+		width: 48px;
+		height: 48px;
+		opacity: 0.25;
+	}
+	.ca-empty-icon :global(svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
+	}
+
+	.ca-empty-text {
+		margin: 0;
+		line-height: 1.5;
+		max-width: 26ch;
 	}
 
 	/* ── Body: spines + (name header + stage) ─────────── */
