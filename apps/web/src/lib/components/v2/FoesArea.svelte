@@ -190,7 +190,7 @@
 	<header class="fa-header">
 		{#if showTitle}
 			<span class="fa-title-icon" aria-hidden="true">{@html foesIconSvg}</span>
-			<span class="fa-title">Foes</span>
+			<span class="fa-title">{headingText('Foes')}</span>
 		{/if}
 		<div class="fa-header-actions">
 			<button class="btn fa-hdr-btn" onclick={() => foePickerRef?.open()} title="Add foe">+ Foe</button>

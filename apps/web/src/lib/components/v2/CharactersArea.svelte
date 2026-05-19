@@ -665,7 +665,7 @@
 	<header class="ca-header">
 		{#if showTitle}
 			<span class="ca-title-icon" aria-hidden="true">{@html charactersIconSvg}</span>
-			<span class="ca-title">Characters</span>
+			<span class="ca-title">{headingText('Characters')}</span>
 		{/if}
 
 		<!-- Toolbar actions — apply to the active character. + Asset / + Vow

@@ -316,7 +316,7 @@
 	<header class="cm-header">
 		{#if showTitle}
 			<span class="cm-title-icon" aria-hidden="true">{@html villageIconSvg}</span>
-			<span class="cmt-title">Communities</span>
+			<span class="cmt-title">{headingText('Communities')}</span>
 		{/if}
 		<div class="cm-header-actions">
 			<button class="btn cm-hdr-btn" onclick={addNewCommunity} title="Add community">+ Community</button>

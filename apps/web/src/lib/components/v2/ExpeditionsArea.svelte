@@ -455,7 +455,7 @@
 	<header class="ea-header">
 		{#if showTitle}
 			<span class="ea-title-icon" aria-hidden="true">{@html expeditionsIconSvg}</span>
-			<span class="ea-title">Expeditions</span>
+			<span class="ea-title">{headingText('Expeditions')}</span>
 		{/if}
 		<div class="ea-header-actions">
 			<button class="btn ea-hdr-btn" onclick={addJourney} title="Add journey">+ Journey</button>
