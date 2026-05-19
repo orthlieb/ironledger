@@ -401,6 +401,8 @@
 				const label = key.charAt(0).toUpperCase() + key.slice(1);
 				appendLog(SESSION_LOG_ID, title(label),
 					`<div>${label}: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : ''}${delta})</div>`);
+				// Supply is party-wide — broadcast to every character.
+				if (key === 'supply') setPartySupply(next);
 			}
 		} else if (action.type === 'debility') {
 			const rec    = data as unknown as Record<string, boolean>;
@@ -710,6 +712,7 @@
 					<button
 						class="ca-spine"
 						class:ca-spine--active={char.id === activeCharId}
+						data-char-id={char.id}
 						onclick={() => selectChar(char.id)}
 						use:tooltip={cn}
 					>

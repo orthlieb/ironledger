@@ -91,13 +91,36 @@ export async function createCharacter(
 	name: string = 'New Character',
 	initialData: Record<string, unknown> = {},
 ): Promise<CharacterFull> {
-	const newChar = await api.create(name, initialData);
+	// If there's an established party supply, the new char should always start at
+	// at least that level — bump it up BEFORE the API create call.  This avoids
+	// calling setPartySupply() (which fires N concurrent PATCHes for all existing
+	// chars) in the common "new char inherits party supply" case.
+	//
+	//   • Button press (no supply in initialData): inherit party supply
+	//   • Import with lower supply: raise to party supply
+	//   • Import with higher supply: keep as-is (setPartySupply will sync others)
+	const importedSupply = (initialData.supply as number | undefined) ?? 3;
+	let dataForApi = initialData;
+	if (_partySupply !== null && importedSupply < _partySupply) {
+		dataForApi = { ...initialData, supply: _partySupply };
+	}
+
+	const newChar = await api.create(name, dataForApi);
 	// Hydrate defaults so bind:value directives never receive undefined.
 	hydrateCharacterInPlace(newChar.data as Record<string, unknown>);
 	_characters = [newChar, ..._characters];
-	// Initialise party supply if this is the first character
+	// Sync party supply:
+	//   - First character: set party supply from it.
+	//   - Imported char with higher supply: raise all existing chars to match
+	//     (setPartySupply fires N PATCHes, but this is intentional — the whole
+	//     party gets a supply boost).
+	//   - New char with lower or equal supply: already handled above by bumping
+	//     the char's initial supply, so no further sync needed.
+	const newCharSupply = (newChar.data as Record<string, unknown>).supply as number ?? 3;
 	if (_partySupply === null) {
-		_partySupply = (newChar.data as Record<string, unknown>).supply as number ?? 3;
+		_partySupply = newCharSupply;
+	} else if (newCharSupply > _partySupply) {
+		setPartySupply(newCharSupply);
 	}
 	return newChar;
 }

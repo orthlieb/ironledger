@@ -74,8 +74,11 @@ async function setActiveSupply(page: Page, target: number) {
 /** Click the Nth spine and wait for it to become active. */
 async function selectSpine(page: Page, idx: number) {
 	const spine = page.locator(CHAR_SPINE).nth(idx);
-	await spine.click();
-	await expect(spine).toHaveClass(/ca-spine--active/, { timeout: 3_000 });
+	// Use force:true to bypass any tooltip popover that may be in the top layer.
+	// The tooltip action shows on mouseenter (which Playwright triggers before
+	// clicking) and can intercept the click since popovers render above everything.
+	await spine.click({ force: true });
+	await expect(spine).toHaveClass(/ca-spine--active/, { timeout: 5_000 });
 }
 
 /** Verify every character's supply equals `expected` by walking the spines. */
@@ -90,19 +93,12 @@ async function expectAllCharsSupply(page: Page, expected: number) {
 }
 
 /**
- * Fetch the active character's id from the API by matching the stage name.
- * Returns the id, or '' if not found.
+ * Get the active character's id directly from the data-char-id attribute
+ * on the active spine button. Returns the id, or '' if not found.
  */
 async function getActiveCharId(page: Page): Promise<string> {
-	const stageName = await page.locator(`${CHAR_AREA} .ca-stage-name`).textContent();
-	const name = (stageName ?? '').trim();
-	if (!name) return '';
-	const list = await page.evaluate(async () => {
-		const res = await fetch('/api/characters', { credentials: 'include' });
-		return res.ok ? await res.json() : [];
-	}) as Array<{ id: string; name: string }>;
-	const match = list.find(c => c.name === name);
-	return match?.id ?? '';
+	const activeSpine = page.locator(`${CHAR_AREA} .ca-spine.ca-spine--active`);
+	return await activeSpine.getAttribute('data-char-id') ?? '';
 }
 
 /** Build a minimal valid character manifest for import. */
