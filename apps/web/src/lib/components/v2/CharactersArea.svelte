@@ -19,7 +19,7 @@
 	 * clicking one opens the v1 AssetCard in a dismissible dialog.
 	 */
 	import { untrack } from 'svelte';
-	import { getCharacters, isCharacterLoading, createCharacter, deleteCharacter, flushCharacterToApi, setPartySupply } from '$lib/characterStore.svelte.js';
+	import { getCharacters, isCharacterLoading, createCharacter, deleteCharacter, flushCharacterToApi, persistCharacterNow, setPartySupply } from '$lib/characterStore.svelte.js';
 	import { setActiveDiceCtx } from '$lib/diceContext.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { findAsset, isAssetsLoading, getAssets } from '$lib/assetStore.svelte.js';
@@ -42,6 +42,7 @@
 		appendLog, SESSION_LOG_ID,
 		getXpSpendNonce, drainXpSpend,
 		getActionNonce, drainActions,
+		type LogAction,
 	} from '$lib/log.svelte.js';
 	import { FLOOR_RULES, DEBILITY_MOMENTUM_TITLE } from '$lib/cascadeRules.js';
 	import type { Vow } from '$lib/types.js';
@@ -344,46 +345,159 @@
 		if (old !== value) {
 			rec[key] = value;
 			const label = key.charAt(0).toUpperCase() + key.slice(1);
-			const INITIATIVE_NAMES: Record<number, string> = { 0: 'None', 1: 'Character', 2: 'Foe' };
+			const INITIATIVE_NAMES_ACTIVE: Record<number, string> = { 0: 'None', 1: 'Character', 2: 'Foe' };
 			const display = key === 'initiative'
-				? `${INITIATIVE_NAMES[old] ?? old} → <strong>${INITIATIVE_NAMES[value] ?? value}</strong>`
+				? `${INITIATIVE_NAMES_ACTIVE[old] ?? old} → <strong>${INITIATIVE_NAMES_ACTIVE[value] ?? value}</strong>`
 				: `${old} → <strong>${value}</strong>`;
 			appendLog(SESSION_LOG_ID, charTitle(label),
 				`<div>${label}: ${display}</div>`);
 		}
 	}
 
+	// Apply a LogAction to an arbitrary character's plain data object.
+	// Used for non-active characters whose actions can't go through the
+	// activeData fast path. Cascades (floor rules, debility momentum cap,
+	// supply sync) are intentionally skipped — the primary field mutation
+	// and log entry are what matter for historical log-link clicks.
+	const _INITIATIVE_NAMES: Record<number, string> = { 0: 'None', 1: 'Character', 2: 'Foe' };
+	function applyActionToData(
+		data: Record<string, unknown>,
+		action: LogAction,
+		charName: string,
+	): void {
+		const title = (label: string) => `${charName || 'Character'} — ${label}`;
+		if (action.type === 'resource') {
+			const key   = action.key;
+			const delta = action.value as number;
+			if (key === 'mana') {
+				const gv  = (data.globalValues as Record<string, string>) ?? {};
+				const old = parseInt(gv['mana'] ?? '0');
+				const next = Math.max(0, Math.min(10, old + delta));
+				if (next !== old) {
+					data.globalValues = { ...gv, mana: String(next) };
+					appendLog(SESSION_LOG_ID, title('Mana'),
+						`<div>Mana: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : ''}${delta})</div>`);
+				}
+				return;
+			}
+			const rec = data as unknown as Record<string, number>;
+			const old = rec[key] ?? 0;
+			let next: number;
+			switch (key) {
+				case 'momentum': next = Math.max(-6, Math.min(maxMomentum(data as unknown as import('$lib/types.js').CharacterData), old + delta)); break;
+				case 'health':
+				case 'spirit':
+				case 'supply':
+				case 'xp':       next = Math.max(0, Math.min(999, old + delta)); break;
+				case 'bonds':
+				case 'failures': next = Math.max(0, Math.min(40, old + delta)); break;
+				default: return;
+			}
+			if (next !== old) {
+				rec[key] = next;
+				const label = key.charAt(0).toUpperCase() + key.slice(1);
+				appendLog(SESSION_LOG_ID, title(label),
+					`<div>${label}: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : ''}${delta})</div>`);
+			}
+		} else if (action.type === 'debility') {
+			const rec    = data as unknown as Record<string, boolean>;
+			if (rec[action.key] === undefined) return;
+			const active = (action.value as number) === 1;
+			if (rec[action.key] !== active) {
+				rec[action.key] = active;
+				const label = action.key.charAt(0).toUpperCase() + action.key.slice(1);
+				appendLog(SESSION_LOG_ID, title('Debilities'),
+					`<div>${label}: <strong>${active ? 'Marked' : 'Cleared'}</strong></div>`);
+			}
+		} else if (action.type === 'reset-track') {
+			const rec = data as unknown as Record<string, number>;
+			const old = rec[action.key] ?? 0;
+			if (old !== 0) {
+				rec[action.key] = 0;
+				const label = action.key.charAt(0).toUpperCase() + action.key.slice(1);
+				appendLog(SESSION_LOG_ID, title(label),
+					`<div>${label} track cleared (${old} ticks → 0)</div>`);
+			}
+		} else if (action.type === 'set') {
+			const rec  = data as unknown as Record<string, number>;
+			const old  = rec[action.key] ?? 0;
+			const next = action.value as number;
+			if (old !== next) {
+				rec[action.key] = next;
+				const label   = action.key.charAt(0).toUpperCase() + action.key.slice(1);
+				const display = action.key === 'initiative'
+					? `${_INITIATIVE_NAMES[old] ?? old} → <strong>${_INITIATIVE_NAMES[next] ?? next}</strong>`
+					: `${old} → <strong>${next}</strong>`;
+				appendLog(SESSION_LOG_ID, title(label),
+					`<div>${label}: ${display}</div>`);
+			}
+		}
+	}
+
 	// ── XP spend bus drain — fires when AssetCard logs an XP cost via
-	//     triggerXpSpend(charId, amount). drainXpSpend() is keyed by charId
-	//     so only the active character's queued spend is consumed. ────────
+	//     triggerXpSpend(charId, amount). Drains the active character first,
+	//     then sweeps all other loaded characters so a click on a non-active
+	//     character's XP link is applied to the correct character. ──────────
 	$effect(() => {
 		getXpSpendNonce(); // subscribe
-		if (!activeData || !activeCharId) return;
-		const amount = drainXpSpend(activeCharId);
-		if (amount > 0) {
-			const old  = activeData.xp;
+		// Active character fast path.
+		if (activeData && activeCharId) {
+			const amount = drainXpSpend(activeCharId);
+			if (amount > 0) {
+				const old  = activeData.xp;
+				const next = Math.max(0, old - amount);
+				if (next !== old) {
+					activeData.xp = next;
+					appendLog(SESSION_LOG_ID, charTitle('Experience'),
+						`<div>XP spent: <strong>−${amount}</strong> (${old} → <strong>${next}</strong>)</div>`);
+				}
+			}
+		}
+		// Non-active characters — apply directly and persist.
+		for (const char of getCharacters()) {
+			if (char.id === activeCharId) continue;
+			const amount = drainXpSpend(char.id);
+			if (amount <= 0) continue;
+			const data = $state.snapshot(char.data) as Record<string, unknown>;
+			const old  = (data.xp as number) ?? 0;
 			const next = Math.max(0, old - amount);
 			if (next !== old) {
-				activeData.xp = next;
-				appendLog(SESSION_LOG_ID, charTitle('Experience'),
+				data.xp = next;
+				const name = char.name || 'Character';
+				appendLog(SESSION_LOG_ID, `${name} — Experience`,
 					`<div>XP spent: <strong>−${amount}</strong> (${old} → <strong>${next}</strong>)</div>`);
+				persistCharacterNow(char.id, { name: char.name, data });
 			}
 		}
 	});
 
 	// ── Action bus drain — handles clicks on interactive log links
-	//     (resource / debility / reset-track). LogPanel's click handler
+	//     (resource / debility / reset-track / set). LogPanel's click handler
 	//     calls triggerAction({ type, key, value, charId }) and we consume
-	//     them here so the writes happen against this character's $state. ──
+	//     them here. Active character uses the fast reactive path; non-active
+	//     characters are updated directly in the store and persisted. ────────
 	$effect(() => {
 		getActionNonce();
-		if (!activeCharId) return;
-		const actions = drainActions(activeCharId);
-		for (const action of actions) {
-			if      (action.type === 'resource')    applyResourceChange(action.key, action.value);
-			else if (action.type === 'debility')    applyDebilityToggle(action.key, action.value);
-			else if (action.type === 'reset-track') applyResetTrack(action.key);
-			else if (action.type === 'set')         applySet(action.key, action.value);
+		// Active character fast path — mutations via activeData are reactive.
+		if (activeCharId) {
+			const actions = drainActions(activeCharId);
+			for (const action of actions) {
+				if      (action.type === 'resource')    applyResourceChange(action.key, action.value);
+				else if (action.type === 'debility')    applyDebilityToggle(action.key, action.value);
+				else if (action.type === 'reset-track') applyResetTrack(action.key);
+				else if (action.type === 'set')         applySet(action.key, action.value);
+			}
+		}
+		// Non-active characters — drain their queued actions and persist.
+		for (const char of getCharacters()) {
+			if (char.id === activeCharId) continue;
+			const actions = drainActions(char.id);
+			if (!actions.length) continue;
+			const data = $state.snapshot(char.data) as Record<string, unknown>;
+			for (const action of actions) {
+				applyActionToData(data, action, char.name);
+			}
+			persistCharacterNow(char.id, { name: char.name, data });
 		}
 	});
 

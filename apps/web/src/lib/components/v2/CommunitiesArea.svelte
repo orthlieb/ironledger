@@ -4,8 +4,8 @@
 	 *
 	 * Spine column lists both entry types interleaved (sorted by createdAt).
 	 * Each entry's spine accent and stage-header LHS band are coloured by type:
-	 *   community → #E8A13B (gold)
-	 *   npc       → #a78bfa (purple)
+	 *   community → #D06840 (terracotta)
+	 *   npc       → #C848A8 (orchid)
 	 *
 	 * Header toolbar adds "+ Community" and "+ NPC" (both open V1 random /
 	 * manual dialogs with oracle pickers).
@@ -39,8 +39,8 @@
 	import farmerSvg    from '$icons/farmer.svg?raw';
 	import villageIconSvg from '$icons/village.svg?raw';
 
-	const COMMUNITY_COLOR = '#E8A13B';
-	const NPC_COLOR       = '#a78bfa';
+	const COMMUNITY_COLOR = '#D06840';
+	const NPC_COLOR       = '#C848A8';
 
 	type EntryKind = 'community' | 'npc';
 	type CommunityEntry = { kind: 'community'; id: string; createdAt: number; data: Community };

@@ -185,7 +185,7 @@
 	}
 
 	function natureBorderColor(nature: string): string {
-		return FOE_NATURE_COLORS[nature as keyof typeof FOE_NATURE_COLORS] ?? '#9ca3af';
+		return FOE_NATURE_COLORS[nature as keyof typeof FOE_NATURE_COLORS] ?? '#7A9AB8';
 	}
 
 	function rankBadgeStyle(rank: number): string {

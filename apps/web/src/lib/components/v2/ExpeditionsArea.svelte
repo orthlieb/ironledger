@@ -41,8 +41,8 @@
 	import diceD6Svg              from '$icons/dice-d6-light.svg?raw';
 	import expeditionsIconSvg    from '$icons/Expeditions.svg?raw';
 
-	const JOURNEY_COLOR = '#34d399';
-	const SITE_COLOR    = '#60a5fa';
+	const JOURNEY_COLOR = '#E4AA28';
+	const SITE_COLOR    = '#4472D0';
 
 	type ExpTab = 'description' | 'notes' | 'core' | 'denizens';
 	const JOURNEY_TAB_LABELS: { key: ExpTab; label: string }[] = [
@@ -780,7 +780,7 @@
 	confirmLabel="Start Journey"
 	confirmClass="btn-primary"
 	cancelLabel="Cancel"
-	accentColor="#34d399"
+	accentColor={JOURNEY_COLOR}
 	onconfirm={confirmAddJourney}
 >
 	<fieldset style="border: none; padding: 0; margin: 0 0 4px;">
@@ -800,7 +800,7 @@
 	confirmLabel="Discover Site"
 	confirmClass="btn-primary"
 	cancelLabel="Cancel"
-	accentColor="#60a5fa"
+	accentColor={SITE_COLOR}
 	confirmDisabled={!newSiteTheme || !newSiteDomain}
 	onconfirm={confirmAddSite}
 >
@@ -1020,8 +1020,8 @@
 	   (clicking marks it complete), location-dot when complete (clicking
 	   marks it active again). Green tint when currently marked complete. */
 	.ea-stage-complete-btn { flex-shrink: 0; opacity: 0.7; transition: opacity 0.12s, color 0.12s; }
-	.ea-stage-complete-btn:hover { opacity: 1; color: #34d399; }
-	.ea-stage-complete-btn--complete { opacity: 1; color: #34d399; }
+	.ea-stage-complete-btn:hover { opacity: 1; color: #E4AA28; }
+	.ea-stage-complete-btn--complete { opacity: 1; color: #E4AA28; }
 
 	/* Lock all stage-header icon button SVGs to a 12px square so non-square
 	   FontAwesome icons (e.g. location-dot 3:4) don't stretch the button.
@@ -1170,12 +1170,12 @@
 		flex-shrink: 0;
 	}
 	.ea-badge--type {
-		background: rgba(52,211,153,0.15);
-		color: #34d399;
+		background: rgba(228,170,40,0.15);
+		color: #E4AA28;
 	}
 	.ea-badge--site {
-		background: rgba(96,165,250,0.15);
-		color: #60a5fa;
+		background: rgba(68,114,208,0.15);
+		color: #4472D0;
 	}
 	.ea-badge--diff { border-color: transparent; }
 

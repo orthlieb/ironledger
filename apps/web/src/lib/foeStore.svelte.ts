@@ -82,12 +82,12 @@ export const FOE_QUANTITIES: Array<{
 ];
 
 export const FOE_NATURE_COLORS: Record<FoeNature, string> = {
-	Ironlander: '#9ca3af',
-	Firstborn:  '#f59e0b',
-	Animal:     '#34d399',
-	Beast:      '#ef4444',
-	Horror:     '#a855f7',
-	Anomaly:    '#fb923c',
+	Ironlander: '#7A9AB8',
+	Firstborn:  '#B87AE8',
+	Animal:     '#3DBF82',
+	Beast:      '#F08840',
+	Horror:     '#E03050',
+	Anomaly:    '#20BCCC',
 };
 
 // Source order for display
