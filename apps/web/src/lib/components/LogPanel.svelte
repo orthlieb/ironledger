@@ -660,6 +660,7 @@
 
 	<!-- ── Built-in header: title · pagination · clear ── -->
 	<div class="log-header">
+		<span class="log-title-icon" aria-hidden="true">{@html logIconSvg}</span>
 		<span class="log-title">{headingText('Log')}</span>
 
 		<div class="log-pagination">
@@ -796,6 +797,21 @@
 		background: var(--bg-inset);
 		border-bottom: 1px solid var(--border);
 		flex-shrink: 0;
+	}
+
+	.log-title-icon {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 18px;
+		height: 18px;
+		flex-shrink: 0;
+		color: var(--text-accent);
+	}
+	.log-title-icon :global(svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
 	}
 
 	.log-title {
