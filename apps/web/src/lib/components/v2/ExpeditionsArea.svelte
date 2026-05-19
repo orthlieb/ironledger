@@ -468,7 +468,10 @@
 	{#if loading}
 		<div class="ea-loading">Loading…</div>
 	{:else if expeditions.length === 0}
-		<div class="ea-empty">No expeditions yet — use the “+ Journey” or “+ Site” button in the header to add one.</div>
+		<div class="ea-empty">
+			<span class="ea-empty-icon" aria-hidden="true">{@html expeditionsIconSvg}</span>
+			<p class="ea-empty-text">You seem to be a homebody. Click <strong>+ JOURNEY</strong> or <strong>+ SITE</strong> to take your first step.</p>
+		</div>
 	{:else}
 		<div class="ea-body">
 			<nav class="ea-spines" aria-label="Expedition list">
@@ -905,10 +908,14 @@
 	.ea-hdr-btn { font-size: 0.7rem; padding: 3px 9px; min-width: unset; }
 
 	.ea-loading, .ea-empty {
-		flex: 1; display: flex; align-items: center; justify-content: center;
+		flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
 		font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted);
-		font-style: italic; padding: 20px; text-align: center;
+		padding: 20px; gap: 12px; text-align: center;
 	}
+
+	.ea-empty-icon { display: flex; width: 48px; height: 48px; opacity: 0.25; }
+	.ea-empty-icon :global(svg) { width: 100%; height: 100%; fill: currentColor; }
+	.ea-empty-text { margin: 0; line-height: 1.5; max-width: 26ch; }
 
 	.ea-body {
 		display: grid;

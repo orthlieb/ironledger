@@ -21,6 +21,7 @@
 	import anglesLeftSvg  from '$icons/angles-left-solid-full.svg?raw';
 	import anglesRightSvg from '$icons/angles-right-solid-full.svg?raw';
 	import broomWideSvg   from '$icons/broom-wide-solid-full.svg?raw';
+	import logIconSvg     from '$icons/log.svg?raw';
 	import ConfirmDialog  from './ConfirmDialog.svelte';
 
 	// ---------------------------------------------------------------------------
@@ -701,9 +702,8 @@
 		ontouchend={handleEntriesTouchEnd}>
 		{#if entries.length === 0}
 			<div class="log-empty">
-				<span class="log-empty-icon">◊</span>
-				<span>No changes recorded yet.</span>
-				<span class="log-empty-sub">Changes to the log will appear here.</span>
+				<span class="log-empty-icon" aria-hidden="true">{@html logIconSvg}</span>
+				<span>No entries yet. History waits patiently. It will not wait forever.</span>
 			</div>
 		{:else}
 			{#each pagedEntries as entry (entry.id)}
@@ -924,19 +924,16 @@
 	}
 
 	.log-empty-icon {
-		font-size: 1.8rem;
-		opacity: 0.3;
-		line-height: 1;
+		display: flex;
+		width: 48px;
+		height: 48px;
+		opacity: 0.25;
 		margin-bottom: 4px;
 	}
-
-	.log-empty-sub {
-		font-family: var(--font-ui);
-		font-size: 0.8rem;
-		font-style: italic;
-		text-transform: none;
-		letter-spacing: 0;
-		margin-top: 2px;
+	.log-empty-icon :global(svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
 	}
 
 	/* ---- Log entry ---- */

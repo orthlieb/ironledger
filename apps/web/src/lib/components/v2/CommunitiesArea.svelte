@@ -327,7 +327,10 @@
 	{#if loading}
 		<div class="cm-loading">Loading…</div>
 	{:else if entries.length === 0}
-		<div class="cm-empty">No communities or NPCs yet — use the toolbar buttons to add one.</div>
+		<div class="cm-empty">
+			<span class="cm-empty-icon" aria-hidden="true">{@html villageIconSvg}</span>
+			<p class="cm-empty-text">There are people and places to <s>plunder</s> discover. Click <strong>+ COMMUNITY</strong> or <strong>+ NPC</strong> to begin.</p>
+		</div>
 	{:else}
 		<div class="cm-body">
 			<nav class="cm-spines" aria-label="Communities and NPCs">
@@ -672,10 +675,14 @@
 	.cm-hdr-btn { font-size: 0.7rem; padding: 3px 9px; min-width: unset; }
 
 	.cm-loading, .cm-empty {
-		flex: 1; display: flex; align-items: center; justify-content: center;
+		flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
 		font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted);
-		font-style: italic; padding: 20px; text-align: center;
+		padding: 20px; gap: 12px; text-align: center;
 	}
+
+	.cm-empty-icon { display: flex; width: 48px; height: 48px; opacity: 0.25; }
+	.cm-empty-icon :global(svg) { width: 100%; height: 100%; fill: currentColor; }
+	.cm-empty-text { margin: 0; line-height: 1.5; max-width: 26ch; }
 
 	.cm-body {
 		display: grid;
