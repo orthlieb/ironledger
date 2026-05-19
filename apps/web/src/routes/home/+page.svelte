@@ -108,7 +108,7 @@
 		return () => mq.removeEventListener('change', handler);
 	});
 
-	onMount(async () => {
+	onMount(() => {
 		// Desktop log width
 		const saved = Number(localStorage.getItem(LOG_WIDTH_KEY));
 		if (Number.isFinite(saved) && saved >= MIN_LOG && saved <= MAX_LOG) {
@@ -125,7 +125,8 @@
 			mobLogHeight = Math.round(window.innerHeight * 0.25);
 		}
 
-		await Promise.all([
+		// Fire-and-forget — stores update reactively when each resolves
+		Promise.all([
 			loadAssets(),
 			loadFoes(),
 			loadCharacters(),
