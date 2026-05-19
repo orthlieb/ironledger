@@ -415,8 +415,8 @@
 			flex-shrink: 0;
 		}
 		.mob-tab-icon :global(svg) {
-			width:  100% !important;
-			height: 100% !important;
+			width:  100%;
+			height: 100%;
 		}
 		.mob-tab-icon :global(svg path) { fill: currentColor; }
 
