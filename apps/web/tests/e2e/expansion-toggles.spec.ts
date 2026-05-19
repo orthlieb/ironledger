@@ -60,6 +60,7 @@ async function setExpansionsViaStorage(
 
 async function openSettings(page: Page): Promise<void> {
 	await page.locator('.hamburger-btn').click();
+	await page.locator('.menu-dropdown').waitFor({ state: 'visible', timeout: 3_000 });
 	await page.locator('.menu-item', { hasText: /settings/i }).click();
 	await expect(page.locator('dialog.settings-dialog[open]')).toBeVisible({ timeout: 3_000 });
 }
@@ -83,6 +84,7 @@ async function openOraclesDialog(page: Page): Promise<void> {
 }
 
 async function waitForHome(page: Page): Promise<void> {
+	await page.waitForLoadState('networkidle', { timeout: 15_000 });
 	await expect(page.locator(`${CHAR_AREA} .ca-loading`)).not.toBeVisible({ timeout: 12_000 });
 	await page.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`).first()
 		.waitFor({ timeout: 12_000, state: 'attached' });
@@ -158,9 +160,9 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		await setExpansionsViaStorage(page, { delve: false });
 		await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
 		await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 8_000 });
-		await expect(page.locator('dialog.foe-dialog .fd-tile-name', { hasText: /^Bladewing$/ }))
+		await expect(page.locator('dialog.foe-dialog[open] .fd-tile-name', { hasText: /^Bladewing$/ }))
 			.toHaveCount(0, { timeout: 3_000 });
-		await expect(page.locator('dialog.foe-dialog .fd-tile-name', { hasText: /^Basilisk$/ }))
+		await expect(page.locator('dialog.foe-dialog[open] .fd-tile-name', { hasText: /^Basilisk$/ }))
 			.toHaveCount(1, { timeout: 3_000 });
 		await page.keyboard.press('Escape');
 	});
