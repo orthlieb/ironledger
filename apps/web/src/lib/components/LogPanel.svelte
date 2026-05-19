@@ -794,7 +794,7 @@
 		align-items: center;
 		gap: 8px;
 		padding: 6px 12px;
-		background: var(--bg-inset);
+		background: var(--bg-control);
 		border-bottom: 1px solid var(--border);
 		flex-shrink: 0;
 	}
