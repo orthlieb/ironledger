@@ -52,7 +52,7 @@
 			? (getFoes().find(f => f.name.toLowerCase() === rolledName.toLowerCase()) ?? null)
 			: null
 	);
-	const natureColor = $derived(rolledFoe ? (FOE_NATURE_COLORS[rolledFoe.nature] ?? '#9ca3af') : '#9ca3af');
+	const natureColor = $derived(rolledFoe ? (FOE_NATURE_COLORS[rolledFoe.nature] ?? '#7A9AB8') : '#7A9AB8');
 	const rankAdj     = $derived(FOE_QUANTITIES.find(q => q.value === quantity)?.rankAdj ?? 0);
 	const effRank     = $derived(rolledFoe ? calcEffectiveRank(rolledFoe.rank, rankAdj) : 1);
 	const rankInfo    = $derived(FOE_RANKS[effRank]);

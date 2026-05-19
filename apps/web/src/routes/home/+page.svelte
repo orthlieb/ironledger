@@ -172,11 +172,11 @@
 					expAreaRef?.applyProgress(value);
 				}
 			}}
-			onInitiativeLink={(value) => {
-				const charId = activeDiceCtx?.charId;
-				if (charId) {
+			onInitiativeLink={(value, charId) => {
+				const id = charId || activeDiceCtx?.charId;
+				if (id) {
 					const numVal = value === 'character' ? 1 : value === 'foe' ? 2 : 0;
-					triggerAction({ charId, type: 'set', key: 'initiative', value: numVal });
+					triggerAction({ charId: id, type: 'set', key: 'initiative', value: numVal });
 				}
 			}}
 			onMenaceLink={(value) => foeAreaRef?.applyMenace(value)}

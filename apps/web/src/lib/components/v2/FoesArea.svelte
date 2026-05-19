@@ -122,7 +122,7 @@
 	const displayName     = $derived(activeEnc?.customName?.trim() || activeDef?.name || activeEnc?.foeId || '');
 	const rankInfo        = $derived(activeEnc ? FOE_RANKS[activeEnc.effectiveRank] : undefined);
 	const qtyDef          = $derived(activeEnc ? FOE_QUANTITIES.find(q => q.value === activeEnc.quantity) : undefined);
-	const natureColor     = $derived(activeDef ? (FOE_NATURE_COLORS[activeDef.nature] ?? '#9ca3af') : '#9ca3af');
+	const natureColor     = $derived(activeDef ? (FOE_NATURE_COLORS[activeDef.nature] ?? '#7A9AB8') : '#7A9AB8');
 	const progressScore   = $derived(activeEnc ? Math.floor(activeEnc.ticks / 4) : 0);
 	const resolvedDesc    = $derived(activeDef ? resolveFoeDescription(activeDef) : '');
 	const hasDescription  = $derived(

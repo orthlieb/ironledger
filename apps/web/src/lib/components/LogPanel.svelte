@@ -41,7 +41,7 @@
 		onMoveLink?:       (moveId: string) => void;
 		onOracleLink?:     (oracleKey: string, stat?: string) => void;
 		onProgressLink?:   (track: string, value: number) => void;
-		onInitiativeLink?: (value: string) => void;
+		onInitiativeLink?: (value: string, charId: string) => void;
 		onMenaceLink?:     (value: number) => void;
 		onVanquishFoe?:    () => void;
 		onChangeTheme?:    (expeditionId: string) => void;
@@ -546,6 +546,7 @@
 		if (initLink && !initLink.closest('.resource-spent')) {
 			e.preventDefault();
 			const value   = initLink.dataset['value'] ?? '';
+			const charId  = initLink.dataset['charId'] ?? ctx?.charId ?? '';
 			// data-entry-id may be absent if DOMPurify stripped it; fall back to
 			// the parent .log-entry container which is set by Svelte directly.
 			const entryId = initLink.dataset['entryId']
@@ -553,7 +554,7 @@
 			             ?? '';
 			if (!value) return;
 			if (entryId) markLinkSpent(entryId, initLink);
-			onInitiativeLink?.(value);
+			onInitiativeLink?.(value, charId);
 			return;
 		}
 
