@@ -37,6 +37,10 @@
 	import { getActiveFoeId }   from '$lib/activeContext.svelte.js';
 	import { getEncounters }    from '$lib/encounterStore.svelte.js';
 	import { triggerAction }    from '$lib/log.svelte.js';
+	import charactersIconSvg    from '$icons/Characters.svg?raw';
+	import foesIconSvg          from '$icons/Foes.svg?raw';
+	import expeditionsIconSvg   from '$icons/Expeditions.svg?raw';
+	import villageIconSvg       from '$icons/village.svg?raw';
 
 	const LOG_WIDTH_KEY      = 'il:home:logWidth';
 	const MIN_LOG            = 240;
@@ -176,10 +180,18 @@
 >
 	<!-- Mobile tab bar (hidden on desktop via CSS) -->
 	<nav class="mob-tabbar">
-		<button class="mob-tab" class:mob-tab--active={mobileTab === 'characters'}  onclick={() => mobileTab = 'characters'}>Characters</button>
-		<button class="mob-tab" class:mob-tab--active={mobileTab === 'foes'}         onclick={() => mobileTab = 'foes'}>Foes</button>
-		<button class="mob-tab" class:mob-tab--active={mobileTab === 'expeditions'} onclick={() => mobileTab = 'expeditions'}>Expeditions</button>
-		<button class="mob-tab" class:mob-tab--active={mobileTab === 'communities'} onclick={() => mobileTab = 'communities'}>Communities</button>
+		<button class="mob-tab" class:mob-tab--active={mobileTab === 'characters'}  onclick={() => mobileTab = 'characters'}>
+			<span class="mob-tab-icon" aria-hidden="true">{@html charactersIconSvg}</span>Characters
+		</button>
+		<button class="mob-tab" class:mob-tab--active={mobileTab === 'foes'}         onclick={() => mobileTab = 'foes'}>
+			<span class="mob-tab-icon" aria-hidden="true">{@html foesIconSvg}</span>Foes
+		</button>
+		<button class="mob-tab" class:mob-tab--active={mobileTab === 'expeditions'} onclick={() => mobileTab = 'expeditions'}>
+			<span class="mob-tab-icon" aria-hidden="true">{@html expeditionsIconSvg}</span>Expeditions
+		</button>
+		<button class="mob-tab" class:mob-tab--active={mobileTab === 'communities'} onclick={() => mobileTab = 'communities'}>
+			<span class="mob-tab-icon" aria-hidden="true">{@html villageIconSvg}</span>Communities
+		</button>
 	</nav>
 
 	<!-- Column 1: Characters (top) + Foes (bottom) -->
@@ -374,24 +386,39 @@
 			border-bottom: 1px solid var(--border);
 		}
 		.mob-tab {
-			flex:          1;
-			padding:       9px 4px;
-			font-family:   var(--font-ui);
-			font-size:     0.68rem;
-			font-weight:   600;
+			flex:           1;
+			padding:        7px 4px;
+			display:        flex;
+			flex-direction: column;
+			align-items:    center;
+			gap:            3px;
+			font-family:    var(--font-ui);
+			font-size:      0.6rem;
+			font-weight:    600;
 			text-transform: uppercase;
 			letter-spacing: 0.04em;
-			color:         var(--text-muted);
-			background:    transparent;
-			border:        none;
-			border-bottom: 2px solid transparent;
-			cursor:        pointer;
-			transition:    color 0.1s, border-color 0.1s;
+			color:          var(--text-muted);
+			background:     transparent;
+			border:         none;
+			border-bottom:  2px solid transparent;
+			cursor:         pointer;
+			transition:     color 0.1s, border-color 0.1s;
 		}
 		.mob-tab--active {
-			color:             var(--text-accent);
+			color:               var(--text-accent);
 			border-bottom-color: var(--text-accent);
 		}
+		.mob-tab-icon {
+			display:     flex;
+			width:       18px;
+			height:      18px;
+			flex-shrink: 0;
+		}
+		.mob-tab-icon :global(svg) {
+			width:  100% !important;
+			height: 100% !important;
+		}
+		.mob-tab-icon :global(svg path) { fill: currentColor; }
 
 		/* Areas fill the remaining flex space */
 		.home-area {
