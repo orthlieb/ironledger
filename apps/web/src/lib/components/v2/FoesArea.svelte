@@ -200,7 +200,10 @@
 	{#if loading}
 		<div class="fa-loading">Loading…</div>
 	{:else if encounters.length === 0}
-		<div class="fa-empty">No foes yet — use the “+ Foe” button in the header to add one.</div>
+		<div class="fa-empty">
+			<span class="fa-empty-icon" aria-hidden="true">{@html foesIconSvg}</span>
+			<p class="fa-empty-text">Nothing currently wants you dead. Disappointing. Click <strong>+ FOE</strong> to dance with fate.</p>
+		</div>
 	{:else}
 		<div class="fa-body">
 			<nav class="fa-spines" aria-label="Foe encounters">
@@ -455,9 +458,27 @@
 	.fa-hdr-btn { font-size: 0.7rem; padding: 3px 9px; min-width: unset; }
 
 	.fa-loading, .fa-empty {
-		flex: 1; display: flex; align-items: center; justify-content: center;
+		flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
 		font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted);
-		font-style: italic; padding: 20px; text-align: center;
+		padding: 20px; gap: 12px; text-align: center;
+	}
+
+	.fa-empty-icon {
+		display: flex;
+		width: 48px;
+		height: 48px;
+		opacity: 0.25;
+	}
+	.fa-empty-icon :global(svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
+	}
+
+	.fa-empty-text {
+		margin: 0;
+		line-height: 1.5;
+		max-width: 26ch;
 	}
 
 	/* Body grid: spines (col 1, spans both rows) + name banner (row 1, col 2)
