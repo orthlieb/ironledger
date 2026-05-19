@@ -67,6 +67,32 @@
 		};
 	});
 
+	// Build the progress-track context for progress rolls in MovesDialog.
+	// Each key matches a move's `progressSource` field.
+	const progressContext = $derived.by<Record<string, number>>(() => {
+		const result: Record<string, number> = {};
+
+		// Combat: active foe encounter's progress track
+		const foeId = getActiveFoeId();
+		const enc   = foeId ? getEncounters().find(e => e.id === foeId) : undefined;
+		if (enc) result.combat = enc.ticks;
+
+		// Journey / Delve (site): active expedition's progress track
+		const expId = getActiveExpeditionId();
+		const exp   = expId ? getExpeditions().find(e => e.id === expId) : undefined;
+		if (exp?.type === 'journey') result.journey = exp.ticks;
+		if (exp?.type === 'site')    result.delve   = exp.ticks;
+
+		// Bonds and Failures are per-character single values
+		const d = activeDiceCtx?.data;
+		if (d) {
+			result.bonds    = d.bonds    ?? 0;
+			result.failures = d.failures ?? 0;
+		}
+
+		return result;
+	});
+
 	// ── Cross-component dialog-open events ────────────────────────────────
 	// Components that render dialog content with embedded move/oracle links
 	// (e.g. v2 CharactersArea's asset dialog) dispatch a custom DOM event so
@@ -229,7 +255,7 @@
 
 <!-- Adventure-action dialogs — promoted from the v1 toolbar so they're
      mounted once at the layout level and openable from anywhere. -->
-<MovesDialog       bind:this={movesDialogRef}   ctx={activeDiceCtx} pctx={preconditionCtx} />
+<MovesDialog       bind:this={movesDialogRef}   ctx={activeDiceCtx} pctx={preconditionCtx} {progressContext} />
 <OraclesDialog     bind:this={oraclesDialogRef} />
 <DiceRollerDialog  bind:this={diceRollerRef}    ctx={activeDiceCtx} />
 <NotesDialog       bind:this={notesDialogRef} />
