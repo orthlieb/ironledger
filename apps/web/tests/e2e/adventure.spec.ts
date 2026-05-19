@@ -11,6 +11,7 @@
  * correct dialog and that user interactions still produce log entries.
  */
 import { test, expect } from '@playwright/test';
+import { resetCharacters } from './helpers/reset';
 
 const CHAR_AREA   = '.home-area--characters';
 const CHAR_HEADER = `${CHAR_AREA} .ca-header`;
@@ -25,6 +26,8 @@ async function waitForCharactersArea(page: import('@playwright/test').Page) {
 }
 
 test.describe('Adventure-action dialogs (v2)', () => {
+	test.beforeAll(async () => { await resetCharacters(); });
+
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/home');
 		await waitForCharactersArea(page);

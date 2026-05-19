@@ -16,6 +16,7 @@
  * the .res-tile / .mt-tile inside the Characters area's Core sub-tab.
  */
 import { test, expect, type Page } from '@playwright/test';
+import { resetAll } from './helpers/reset';
 
 const CHAR_AREA   = '.home-area--characters';
 const CHAR_HEADER = `${CHAR_AREA} .ca-header`;
@@ -144,6 +145,8 @@ async function waitMomentumChange(page: Page, was: number): Promise<number> {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 test.describe('Log interactive links (injected mock entries)', () => {
+	test.beforeAll(async () => { await resetAll(); });
+
 
 	// ── Resource links ───────────────────────────────────────────────────────
 

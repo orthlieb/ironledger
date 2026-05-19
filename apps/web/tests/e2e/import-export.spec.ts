@@ -12,6 +12,7 @@
  * dialog are unchanged.
  */
 import { test, expect } from '@playwright/test';
+import { resetAll } from './helpers/reset';
 
 const CHAR_AREA = '.home-area--characters';
 
@@ -67,6 +68,12 @@ function makeManifest(type: string, data: unknown, count = 0) {
 }
 
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Global blank-slate reset (runs once before the first test in this file).
+// ---------------------------------------------------------------------------
+
+test.beforeAll(async () => { await resetAll(); });
+
 // Export dialog
 // ---------------------------------------------------------------------------
 

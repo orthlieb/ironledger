@@ -6,6 +6,7 @@
  * Status are sub-tabs INSIDE the area's stage (.ca-tab buttons).
  */
 import { test, expect } from '@playwright/test';
+import { resetCharacters } from './helpers/reset';
 
 const CHAR_AREA   = '.home-area--characters';
 const CHAR_HEADER = `${CHAR_AREA} .ca-header`;
@@ -50,6 +51,8 @@ async function ensureCharacterSelected(page: import('@playwright/test').Page) {
 }
 
 test.describe('Characters area (v2)', () => {
+	test.beforeAll(async () => { await resetCharacters(); });
+
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/home');
 		await waitForCharactersLoaded(page);

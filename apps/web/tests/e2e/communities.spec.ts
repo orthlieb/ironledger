@@ -7,6 +7,7 @@
  * "Delete community").
  */
 import { test, expect } from '@playwright/test';
+import { resetCommunities } from './helpers/reset';
 
 const CM_AREA   = '.home-area--communities';
 const CM_HEADER = `${CM_AREA} .cm-header`;
@@ -49,6 +50,8 @@ async function selectSpineOfKind(page: import('@playwright/test').Page, kind: 'n
 }
 
 test.describe('Communities area (v2)', () => {
+	test.beforeAll(async () => { await resetCommunities(); });
+
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/home');
 		await waitForCommunitiesLoaded(page);

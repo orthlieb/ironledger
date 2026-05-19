@@ -17,6 +17,7 @@
  */
 
 import { test, expect, request as playwrightRequest } from '@playwright/test';
+import { resetAll } from './helpers/reset';
 import type { Page } from '@playwright/test';
 
 const API_BASE      = 'http://127.0.0.1:3000';
@@ -114,6 +115,7 @@ async function ensureCharacterSelected(page: Page): Promise<void> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 test.describe('Data persistence across logout / login (v2)', () => {
+	test.beforeAll(async () => { await resetAll(); });
 
 	// ── 1. Characters ──────────────────────────────────────────────────────────
 

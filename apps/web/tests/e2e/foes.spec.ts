@@ -5,6 +5,7 @@
  * layout and is always visible. No tab switching is needed.
  */
 import { test, expect } from '@playwright/test';
+import { resetFoes } from './helpers/reset';
 
 const FOE_AREA   = '.home-area--foes';
 const FOE_HEADER = `${FOE_AREA} .fa-header`;
@@ -33,6 +34,8 @@ async function addFoeFromPicker(page: import('@playwright/test').Page) {
 }
 
 test.describe('Foes area (v2)', () => {
+	test.beforeAll(async () => { await resetFoes(); });
+
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/home');
 		await waitForFoesLoaded(page);

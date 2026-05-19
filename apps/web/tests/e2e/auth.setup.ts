@@ -6,6 +6,7 @@
 import { test as setup, request } from '@playwright/test';
 import path from 'path';
 import fs from 'fs';
+import { resetAll } from './helpers/reset';
 
 const AUTH_FILE = path.join(import.meta.dirname, '.auth/user.json');
 
@@ -26,6 +27,11 @@ setup('authenticate as dev user', async ({ page }) => {
 
 	const body = await res.json() as { accessToken: string };
 	await apiCtx.dispose();
+
+	// Wipe all test-user data so the entire suite starts from a blank slate.
+	// Per-spec beforeAll hooks repeat this for each describe block in case a
+	// previous spec left data behind after a crash or mid-run failure.
+	await resetAll(body.accessToken);
 
 	// Inject the access_token cookie into the browser context, then navigate to /home
 	await page.context().addCookies([

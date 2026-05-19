@@ -12,6 +12,7 @@
  * sync, we click each spine in turn and read its Supply tile value.
  */
 import { test, expect, type Locator, type Page } from '@playwright/test';
+import { resetCharacters } from './helpers/reset';
 
 const CHAR_AREA   = '.home-area--characters';
 const CHAR_HEADER = `${CHAR_AREA} .ca-header`;
@@ -141,6 +142,8 @@ async function uploadImport(page: Page, payload: unknown) {
 // ---------------------------------------------------------------------------
 
 test.describe('Party supply sync (v2)', () => {
+	test.beforeAll(async () => { await resetCharacters(); });
+
 	test.beforeEach(async ({ page }) => {
 		await gotoHome(page);
 	});

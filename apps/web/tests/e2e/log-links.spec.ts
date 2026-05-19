@@ -6,6 +6,10 @@
  * rather than relying on specific dice outcomes.
  */
 import { test, expect } from '@playwright/test';
+import { resetCharacters } from './helpers/reset';
+
+// Wipe characters before this file's tests so notes from prior runs don't bleed in.
+test.beforeAll(async () => { await resetCharacters(); });
 
 const CHAR_AREA   = '.home-area--characters';
 const CHAR_HEADER = `${CHAR_AREA} .ca-header`;

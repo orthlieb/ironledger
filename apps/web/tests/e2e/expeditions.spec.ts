@@ -11,6 +11,7 @@
  *   - Roll Denizen: opens the denizen dialog, rolls, and can add to Foes
  */
 import { test, expect } from '@playwright/test';
+import { resetExpeditions, resetFoes } from './helpers/reset';
 
 const EXP_AREA   = '.home-area--expeditions';
 const EXP_HEADER = `${EXP_AREA} .ea-header`;
@@ -100,6 +101,12 @@ async function ensureSiteSelected(page: import('@playwright/test').Page): Promis
 // ─────────────────────────────────────────────────────────────────────────────
 
 test.describe('Expeditions area (v2)', () => {
+	// Expeditions tests also add foes to the denizen table, so wipe both.
+	test.beforeAll(async () => {
+		await resetExpeditions();
+		await resetFoes();
+	});
+
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/home');
 		await waitForExpeditionsLoaded(page);
