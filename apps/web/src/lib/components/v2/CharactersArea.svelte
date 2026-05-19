@@ -1831,25 +1831,20 @@
 
 	/* ── Asset detail dialog ── transparent shell; the AssetCard inside owns
 	   all visual structure (header, abilities, custom fields) so the popup
-	   matches v1's expanded asset look exactly. Height fits the content but
-	   never exceeds 80% of the viewport — when content is taller, the body
-	   scrolls and the header stays pinned to the top.
-
-	   Centering uses top/left + transform instead of `inset: 0; margin: auto`
-	   because the latter combined with `display: flex` + `min-height: 0`
-	   children collapses to a thin line on mobile Safari. */
+	   matches v1's expanded asset look exactly. The dialog itself uses no
+	   flex container — content sizes it naturally — and overflow scrolling
+	   is delegated to the .asset-body with a viewport-relative max-height.
+	   This avoids a flex chain (`display: flex` + `min-height: 0` children)
+	   that collapsed the dialog to a thin line on iOS Safari. */
 	.ca-asset-dialog {
 		border: none;
 		padding: 0;
 		background: transparent;
 		color: var(--text);
 		width: min(640px, calc(100vw - 1rem));
-		height: fit-content;              /* shrink to content when smaller */
-		max-height: 80vh;                 /* but never exceed 80% of viewport */
-		overflow: hidden;                 /* clip the inner card to max-height */
+		max-height: 80vh;                 /* hard cap at 80% of viewport */
+		overflow: hidden;                 /* clip rounded corners */
 		outline: none;
-		display: flex;                    /* let the AssetCard fill height */
-		flex-direction: column;
 		position: fixed;
 		top: 50%;
 		left: 50%;
@@ -1891,31 +1886,26 @@
 		from { opacity: 0; }
 		to   { opacity: 1; }
 	}
-	/* Let the AssetCard fill the dialog height and scroll only its body. */
+	/* AssetCard sizes itself to its content; no flex-fill needed. The body
+	   carries the scroll constraint directly. */
 	.ca-asset-dialog :global(.asset-card) {
-		flex: 1 1 auto;
-		min-height: 0;
-		max-height: 100%;
+		width: 100%;
 	}
 	.ca-asset-dialog :global(.asset-header) {
-		flex-shrink: 0;
 		position: sticky;
 		top: 0;
 		z-index: 1;
 	}
 	.ca-asset-dialog :global(.asset-body) {
-		/* Without flex: 1, the body grows to fit content and overflows the
-		   capped dialog — opening a collapsible (e.g. Difficulty Factors)
-		   would push past the viewport instead of scrolling internally. */
-		flex:       1 1 auto;
-		min-height: 0;
+		/* Cap the body's height so it scrolls internally when an asset is
+		   tall (e.g. Difficulty Factors expanded). Leaves ~3rem for the
+		   sticky header — the dialog's own 80vh cap contains everything. */
+		max-height: calc(80vh - 3rem);
 		overflow-y: auto;
 	}
 	/* asset-body is itself a flex column. Without flex-shrink: 0 on its
-	   children, sections like .factors-section (which has overflow: hidden)
-	   get squashed by the flex algorithm to fit the available space — so
-	   when Difficulty Factors expands its inner table never makes the body
-	   overflow. Force every direct child to keep its natural height. */
+	   children, sections with overflow: hidden (e.g. .factors-section) get
+	   squashed by the flex algorithm to fit the available space. */
 	.ca-asset-dialog :global(.asset-body > *) {
 		flex-shrink: 0;
 	}
