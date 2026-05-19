@@ -233,7 +233,7 @@
 							}}
 						/>
 					{:else}
-						<!-- svelte-ignore a11y_click_events_have_key_events a11y_interactive_supports_focus -->
+						<!-- svelte-ignore a11y_click_events_have_key_events a11y_interactive_supports_focus a11y_no_noninteractive_element_to_interactive_role -->
 						<h2
 							class="fa-stage-name fa-stage-name--editable"
 							role="button"
