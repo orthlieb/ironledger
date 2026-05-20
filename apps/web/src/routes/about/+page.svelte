@@ -98,24 +98,33 @@
 <section class="about-section">
 	<div class="about-section-inner">
 		<h2 class="section-heading">What is Iron Ledger?</h2>
-		<div class="about-prose">
-			<p>
-				<strong>Ironsworn</strong> is an award-winning solo and co-operative tabletop RPG by Shawn Tomkin —
-				a dark, mythic land of iron and stone where you swear oaths on pain of dishonour, face foes that
-				would very much prefer you dead, and carve out a legend through nothing but dice, imagination, and
-				an unreasonable willingness to suffer.
-			</p>
-			<p>
-				<strong>Iron Ledger</strong> is the companion app that handles the clerical work while you handle
-				the heroics. No more mid-session rulebook archaeology. No more paper sheets that vanish between
-				sessions. No more "wait, did I mark that vow as Fulfilled or did I just think really hard about it?"
-				Your full chronicle lives here — always saved, always accurate, always ready to witness your next
-				catastrophic miss.
-			</p>
-			<p>
-				Built for Ironsworn core, the <em>Delve</em> supplement, and the community <em>Yrt</em> homebrew expansion.
-				Iron Ledger takes the game seriously, even when the dice clearly do not.
-			</p>
+		<div class="about-layout">
+			<div class="about-prose">
+				<p>
+					<strong>Ironsworn</strong> is an award-winning solo and co-operative tabletop RPG by Shawn Tomkin —
+					a dark, mythic land of iron and stone where you swear oaths on pain of dishonour, face foes that
+					would very much prefer you dead, and carve out a legend through nothing but dice, imagination, and
+					an unreasonable willingness to suffer.
+				</p>
+				<p>
+					<strong>Iron Ledger</strong> is the companion app that handles the clerical work while you handle
+					the heroics. No more mid-session rulebook archaeology. No more paper sheets that vanish between
+					sessions. No more "wait, did I mark that vow as Fulfilled or did I just think really hard about it?"
+					Your full chronicle lives here — always saved, always accurate, always ready to witness your next
+					catastrophic miss.
+				</p>
+				<p>
+					Built for Ironsworn core, the <em>Delve</em> supplement, and the community <em>Yrt</em> homebrew expansion.
+					Iron Ledger takes the game seriously, even when the dice clearly do not.
+				</p>
+			</div>
+			<div class="about-mobile-wrap">
+				<img
+					src="/ironledger-mobile.webp"
+					alt="Iron Ledger running on a phone — character sheet with stats, resources, and adventure-action buttons within thumb reach"
+					class="about-mobile"
+				/>
+			</div>
 		</div>
 	</div>
 </section>
@@ -290,6 +299,38 @@
 	}
 
 	/* ── About prose ───────────────────────────────────────────────── */
+	.about-layout {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 2rem;
+		align-items: start;
+	}
+
+	@media (min-width: 768px) {
+		.about-layout {
+			grid-template-columns: minmax(0, 68ch) 260px;
+			justify-content: center;
+			gap: 2.5rem;
+		}
+	}
+
+	.about-mobile-wrap {
+		border-radius: 28px;
+		overflow: hidden;
+		box-shadow: 0 12px 48px rgba(0, 0, 0, 0.45);
+		border: 1px solid var(--border-mid);
+		width: 100%;
+		max-width: 260px;
+		margin: 0 auto;
+		justify-self: center;
+	}
+
+	.about-mobile {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+
 	.about-prose {
 		display: flex;
 		flex-direction: column;
