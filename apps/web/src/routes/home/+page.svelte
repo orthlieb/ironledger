@@ -39,6 +39,7 @@
 	import ExpeditionsArea      from '$lib/components/v2/ExpeditionsArea.svelte';
 	import CommunitiesArea      from '$lib/components/v2/CommunitiesArea.svelte';
 	import ConfirmDialog        from '$lib/components/ConfirmDialog.svelte';
+	import ErrorBar             from '$lib/components/ErrorBar.svelte';
 	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
 	import { getActiveFoeId, getActiveExpeditionId } from '$lib/activeContext.svelte.js';
 	import { triggerAction, appendLog, logs, SESSION_LOG_ID } from '$lib/log.svelte.js';
@@ -503,17 +504,9 @@
 <!-- Top-level error bar — shows import failures from sanitization, parsing,
      or post-parse validation. The same message also appears inside the
      Import dialog body when that dialog is open. -->
-{#if importError}
-	<div class="error-bar" role="alert">
-		<span class="error-bar-msg">{importError}</span>
-		<button
-			type="button"
-			class="error-bar-close"
-			onclick={() => (importError = '')}
-			aria-label="Dismiss error"
-		>×</button>
-	</div>
-{/if}
+<div class="error-bar-host">
+	<ErrorBar message={importError} onDismiss={() => (importError = '')} />
+</div>
 
 <!-- Import warning dialog -->
 <ConfirmDialog
@@ -641,34 +634,11 @@
 		padding: 0;
 	}
 
-	/* ── Top-level error bar ─────────────────────────────────────────────────── */
-
-	.error-bar {
-		display:         flex;
-		align-items:     center;
-		gap:             8px;
-		padding:         8px 12px;
-		background:      color-mix(in srgb, var(--color-danger) 18%, transparent);
-		border:          1px solid color-mix(in srgb, var(--color-danger) 50%, transparent);
-		border-radius:   6px;
-		margin:          8px var(--page-gutter, 10px);
-		font-family:     var(--font-ui);
-		font-size:       0.85rem;
-		line-height:     1.4;
-		color:           var(--color-danger);
+	/* ── Top-level error bar host (margin only; styles live in ErrorBar) ───── */
+	.error-bar-host {
+		margin: 8px var(--page-gutter, 10px) 0;
 	}
-	.error-bar-msg {
-		flex: 1;
-	}
-	.error-bar-close {
-		background:   transparent;
-		border:       none;
-		color:        inherit;
-		cursor:       pointer;
-		font-size:    1.2rem;
-		line-height:  1;
-		padding:      0 4px;
-	}
+	.error-bar-host:empty { display: none; }
 
 	/* ── Desktop layout ──────────────────────────────────────────────────────── */
 
