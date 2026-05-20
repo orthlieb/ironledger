@@ -1,10 +1,11 @@
 /**
  * navigation.spec.ts — top-level nav (v2).
  *
- * v2 has no tabs and no tab-body swipe gestures — the home page is a
- * deck-of-cards layout with all four areas visible at once. Swipe / tap-
- * between-tabs tests are kept as `.skip` placeholders so we can revisit
- * if a v2 navigation equivalent appears.
+ * On desktop (>900px) v2 is a deck-of-cards layout with all four areas
+ * visible simultaneously — no tabs. At ≤900px a mobile tab bar appears
+ * (.mob-tabbar) with one tab per area; the active area is shown and the
+ * others get .mob-hidden. The mobile-only tests at the bottom of the
+ * file exercise that switch.
  */
 import { test, expect } from '@playwright/test';
 
@@ -38,15 +39,39 @@ test('settings button opens settings dialog', async ({ page }) => {
 	await expect(page.locator('.settings-dialog')).not.toBeVisible();
 });
 
-// ── v1 tab/swipe tests — kept as documented `.skip` for revisit ─────────────
-// v2 has no top-level tabs, no .tab-body, and no swipe handler. If a
-// per-area expand/collapse navigation gesture lands later, port these.
+// ── Mobile tab bar (≤900px) ────────────────────────────────────────────────
+// At ≤900px the home page shows .mob-tabbar with one tab per area and
+// hides non-active areas via .mob-hidden. Above 900px the tab bar is
+// hidden (display: none) and all four areas render side-by-side.
 
-test.skip('characters tab switches on click', async () => {
-	// v2: no tabs — all areas are visible simultaneously.
+test.describe('Mobile tab bar (≤900px)', () => {
+	test.beforeEach(async ({ page }) => {
+		await page.setViewportSize({ width: 800, height: 900 });
+		await page.goto('/home');
+		await expect(page.locator('.home-area--characters .ca-loading'))
+			.not.toBeVisible({ timeout: 12_000 });
+	});
+
+	test('characters tab is active by default and characters area is visible', async ({ page }) => {
+		await expect(page.locator('.mob-tabbar')).toBeVisible();
+		await expect(page.locator('.mob-tab--active')).toHaveText(/Characters/i);
+		await expect(page.locator('.home-area--characters')).not.toHaveClass(/mob-hidden/);
+		await expect(page.locator('.home-area--foes')).toHaveClass(/mob-hidden/);
+	});
+
+	test('clicking the Foes tab switches the visible area to Foes', async ({ page }) => {
+		await page.locator('.mob-tab', { hasText: 'Foes' }).click();
+		await expect(page.locator('.mob-tab--active')).toHaveText(/Foes/i);
+		await expect(page.locator('.home-area--foes')).not.toHaveClass(/mob-hidden/);
+		await expect(page.locator('.home-area--characters')).toHaveClass(/mob-hidden/);
+	});
 });
 
-test.skip('foes tab switches on click and shows toolbar', async () => {
-	// v2: no tabs — the Foes area header is always visible.
+test('mobile tab bar is hidden at desktop widths (>900px)', async ({ page }) => {
+	await page.setViewportSize({ width: 1280, height: 900 });
+	await page.goto('/home');
+	await expect(page.locator('.home-area--characters .ca-loading'))
+		.not.toBeVisible({ timeout: 12_000 });
+	await expect(page.locator('.mob-tabbar')).not.toBeVisible();
 });
 
