@@ -1,12 +1,17 @@
-# Global Context Bar
+# Global Context Bar *(removed in v2)*
 
-Implemented in `apps/web/src/lib/components/GlobalContextBar.svelte`.
+> **Status: v1 only.** The GlobalContextBar was removed when the v2
+> deck-of-cards layout shipped. The component no longer exists. Action
+> buttons (Moves, Oracles, Dice, Notes) now live in `.app-nav` in
+> `+layout.svelte`. Entity state is visible directly in the always-visible
+> area panels (Characters, Foes, Expeditions). This document is kept for
+> historical reference only.
 
 ---
 
-## Purpose
+## Purpose (historical)
 
-A full-width sticky bar rendered above the two-column page layout on the character detail page. It provides quick-launch action buttons (Moves, Oracles, Dice, Notes) and three entity tiles showing the currently active character, foe, and expedition at a glance.
+A full-width sticky bar rendered above the two-column page layout on the character detail page. It provided quick-launch action buttons (Moves, Oracles, Dice, Notes) and three entity tiles showing the currently active character, foe, and expedition at a glance.
 
 ---
 

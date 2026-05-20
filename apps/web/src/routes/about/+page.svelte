@@ -138,6 +138,24 @@
 	</div>
 </section>
 
+<!-- ── App preview ────────────────────────────────────────────────── -->
+<section class="preview-section">
+	<div class="preview-section-inner">
+		<h2 class="section-heading">The Saga at a Glance</h2>
+		<p class="preview-caption">
+			Everything on one screen. Characters, foes, expeditions, communities, and your session
+			log — always visible, never buried in a menu.
+		</p>
+		<div class="preview-image-wrap">
+			<img
+				src="/ironledger-home.webp"
+				alt="Iron Ledger home screen showing the deck-of-cards layout with character sheet, foes, expeditions, communities, and session log panels"
+				class="preview-image"
+			/>
+		</div>
+	</div>
+</section>
+
 <!-- ── Open Source ───────────────────────────────────────────────── -->
 <!-- ── Systems ────────────────────────────────────────────────────── -->
 <section class="systems-section">
@@ -403,6 +421,39 @@
 		text-underline-offset: 2px;
 	}
 	.systems-note--attribution a:hover { color: var(--text-accent); }
+
+	/* ── App preview ──────────────────────────────────────────────── */
+	.preview-section {
+		padding: 3rem var(--page-gutter);
+		border-top: 1px solid var(--border);
+	}
+
+	.preview-section-inner {
+		max-width: 1100px;
+		margin: 0 auto;
+	}
+
+	.preview-caption {
+		font-family: var(--font-body);
+		font-size: 1.05rem;
+		line-height: 1.65;
+		color: var(--text-muted);
+		max-width: 60ch;
+		margin-bottom: 1.5rem;
+	}
+
+	.preview-image-wrap {
+		border-radius: 10px;
+		overflow: hidden;
+		box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
+		border: 1px solid var(--border-mid);
+	}
+
+	.preview-image {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
 
 	/* ── Open Source ──────────────────────────────────────────────── */
 	/* ── Large button variant ──────────────────────────────────────── */

@@ -8,7 +8,6 @@
 // Provides:
 //   • loadCharacters()                  — fetch + init on page load (idempotent)
 //   • getCharacters()                   — reactive list (insertion order)
-//   • getPartySupply()                  — reactive party-wide supply
 //   • isCharacterLoading()
 //   • createCharacter(name?, data?)     — API create + prepend
 //   • deleteCharacter(id)               — API delete + filter
@@ -72,11 +71,6 @@ export function getCharacters(): CharacterFull[] {
 
 export function isCharacterLoading(): boolean {
 	return _loading;
-}
-
-/** Party-wide supply value (null until first character loads). */
-export function getPartySupply(): number | null {
-	return _partySupply;
 }
 
 // ---------------------------------------------------------------------------

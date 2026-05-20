@@ -32,6 +32,8 @@ Each entry explains **what** was chosen, **why** it was chosen, and
 21. [Backups](#21-backups)
 22. [Error Handling](#22-error-handling)
 23. [Audit Trail](#23-audit-trail)
+24. [v2 Deck-of-Cards UI Layout](#24-v2-deck-of-cards-ui-layout)
+25. [E2E Testing Strategy: Idempotent Suites](#25-e2e-testing-strategy-idempotent-suites)
 
 ---
 
@@ -537,6 +539,68 @@ The table intentionally has no foreign key on `user_id` so events are preserved
 even if the user account is deleted.
 
 Events are read and archived by `app_admin` scripts only, not via the API.
+
+---
+
+---
+
+## 24. v2 Deck-of-Cards UI Layout
+
+**Decision:** Replace the v1 tab-and-GlobalContextBar layout with an
+always-visible "deck of cards" arrangement: Characters (top-left),
+Foes (bottom-left), Expeditions (bottom-centre), Communities (bottom-right),
+Session Log (right column). All areas are simultaneously visible; the active
+entity within each area is surfaced by a spine (tab strip) + stage (detail
+panel) pattern inside each area.
+
+**Why:** The v1 layout required navigating to a dedicated character detail
+page and used a GlobalContextBar to summarise other entities. This created
+context-switching friction — players had to leave one view to act on another.
+The deck layout makes all information visible at the same time, matches the
+mental model of cards on a table, and eliminates the GCB entirely.
+
+**What was removed:** `GlobalContextBar.svelte` (deleted), Adventure tab
+route (`/home/adventure`), and the v1 two-column layout.
+
+**Action buttons** (`Make a Move`, `Ask an Oracle`, `Roll Dice`, `Add a Note`)
+moved from the GlobalContextBar into `.app-nav` in `+layout.svelte`, making
+them available on every page — not just the home page.
+
+**Party supply sync:** Supply is now an explicit party-wide value stored as
+`_partySupply` in `characterStore.svelte.ts`. Any character's supply change
+calls `setPartySupply()` which fires PATCH requests for every character.
+New characters and imports bake the party supply into the initial POST to avoid
+N concurrent PATCHes in the common "inherit" case.
+
+---
+
+## 25. E2E Testing Strategy: Idempotent Suites
+
+**Decision:** Every E2E test suite (`test.describe` block) must start from a
+blank slate. `auth.setup.ts` wipes all test-user data once before the suite
+starts; each spec file adds a `test.beforeAll` hook that resets its relevant
+entity types via direct API calls.
+
+**Why:** Playwright tests run serially and accumulate persistent data across
+runs. With SQLite's single-writer constraint, a database with 20+ characters
+causes setPartySupply() to fire 20 concurrent PATCHes, which can overwhelm
+the DB and cause the next write to fail. The blank-slate contract prevents
+this cascade.
+
+**How (helpers/reset.ts):**
+- `resetCharacters` — sequential `DELETE /api/v1/characters/:id`
+  (sequential required — SQLite single writer)
+- `resetFoes / resetExpeditions / resetCommunities / resetLog` — atomic
+  PATCH `[]` / DELETE; run concurrently with each other
+- `resetAll` — all of the above with one login round-trip
+
+**Key pitfall:** DELETE requests must NOT include `Content-Type: application/json`.
+Fastify rejects body-less requests with a JSON content-type as 400. Separate
+`auth()` and `json()` header helpers enforce this.
+
+**Test user credentials:** `test@ironledger.local` / `IronLedgerTest2024!`
+with `captchaToken: 'dev-bypass'`. Separate from the dev user
+(`dev@ironledger.local`) so test runs never pollute dev data.
 
 ---
 

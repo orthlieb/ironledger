@@ -72,11 +72,6 @@ export function progressText(totalTicks: number, boxes = 10): string {
 	return parts.join(', ');
 }
 
-/** Merge incoming DB data onto defaults, safe against missing keys from old saves. */
-export function hydrateCharacter(raw: Record<string, unknown>): CharacterData {
-	return { ...DEFAULT_CHARACTER, ...raw } as CharacterData;
-}
-
 /**
  * Patch missing keys onto an existing data object IN PLACE. Use when the
  * object is a Svelte 5 $state proxy and you must preserve its identity so

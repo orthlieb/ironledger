@@ -22,15 +22,6 @@ export interface RelevantAbility {
 }
 
 // ---------------------------------------------------------------------------
-// No-op shim — move refs are now in the asset catalogue (loaded by assetStore)
-// ---------------------------------------------------------------------------
-
-/** @deprecated No-op — move refs are now embedded in asset abilities. */
-export async function loadAssetMoveRefs(): Promise<void> {
-	// intentional no-op
-}
-
-// ---------------------------------------------------------------------------
 // Query
 // ---------------------------------------------------------------------------
 
