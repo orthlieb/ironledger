@@ -51,3 +51,4 @@ ecosystem.config.cjs
 # Local-only developer scripts (not tracked; each dev keeps their own)
 create-admin.ts
 .obsidian/
+/.claude/worktrees

@@ -11,7 +11,7 @@
  * correct dialog and that user interactions still produce log entries.
  */
 import { test, expect } from '@playwright/test';
-import { resetCharacters } from './helpers/reset';
+import { resetCharacters, seedCharacter } from './helpers/reset';
 
 const CHAR_AREA   = '.home-area--characters';
 const CHAR_HEADER = `${CHAR_AREA} .ca-header`;
@@ -26,7 +26,10 @@ async function waitForCharactersArea(page: import('@playwright/test').Page) {
 }
 
 test.describe('Adventure-action dialogs (v2)', () => {
-	test.beforeAll(async () => { await resetCharacters(); });
+	test.beforeAll(async () => {
+		await resetCharacters();
+		await seedCharacter(); // pre-seed so beforeEach never hits the UI cold-start timeout
+	});
 
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/home');
@@ -95,13 +98,12 @@ test.describe('Adventure-action dialogs (v2)', () => {
 	});
 
 	test('clicking a quick-roll die button adds a result to the log', async ({ page }) => {
-		// The log is paginated (50/page); capture the first entry's text so we
-		// can verify a genuinely new entry appears even when the page is full.
-		const firstBefore = await page.locator('.log-entry').first().textContent();
+		// Count entries before — works whether the log starts empty or has prior entries.
+		const countBefore = await page.locator('.log-entry').count();
 		await page.locator(`${APP_NAV} .act-btn`).nth(2).click();
 		await expect(page.locator('.dice-dialog[open]')).toBeVisible({ timeout: 3_000 });
 		await page.locator('.dice-dialog .quick-btn').first().click();
-		await expect(page.locator('.log-entry').first()).not.toHaveText(firstBefore ?? '', { timeout: 7_000 });
+		await expect(page.locator('.log-entry')).not.toHaveCount(countBefore, { timeout: 7_000 });
 		await page.keyboard.press('Escape');
 	});
 
@@ -114,7 +116,7 @@ test.describe('Adventure-action dialogs (v2)', () => {
 	});
 
 	test('clicking an oracle tile adds a result to the log', async ({ page }) => {
-		const firstBefore = await page.locator('.log-entry').first().textContent();
+		const countBefore = await page.locator('.log-entry').count();
 		await page.locator(`${APP_NAV} .act-btn`).nth(1).click();
 		await expect(page.locator('.oracles-dialog[open]')).toBeVisible({ timeout: 3_000 });
 		const firstTile = page.locator('.oracles-dialog .od-tile').first();
@@ -124,7 +126,7 @@ test.describe('Adventure-action dialogs (v2)', () => {
 		await expect(rollBtn).toBeVisible({ timeout: 3_000 });
 		await rollBtn.click();
 		await expect(page.locator('.oracles-dialog[open]')).not.toBeVisible({ timeout: 5_000 });
-		await expect(page.locator('.log-entry').first()).not.toHaveText(firstBefore ?? '', { timeout: 5_000 });
+		await expect(page.locator('.log-entry')).not.toHaveCount(countBefore, { timeout: 5_000 });
 	});
 
 	// ── Add a Note ───────────────────────────────────────────────────────────

@@ -109,6 +109,23 @@ export async function resetLog(token?: string): Promise<void> {
 	await fetch(`${API}/session/log`, { method: 'DELETE', headers: auth(tok) });
 }
 
+// ── Seeding ───────────────────────────────────────────────────────────────────
+
+/**
+ * Create one character for the test user.
+ * Call after resetCharacters() so specs that need a character can skip the
+ * slow UI-based creation path in beforeEach.
+ */
+export async function seedCharacter(name = 'Test Character', token?: string): Promise<void> {
+	const tok = token ?? await getTestToken();
+	const res = await fetch(`${API}/characters`, {
+		method:  'POST',
+		headers: json(tok),
+		body:    JSON.stringify({ name }),
+	});
+	if (!res.ok) throw new Error(`POST /characters failed: ${res.status} ${await res.text()}`);
+}
+
 // ── Full reset ────────────────────────────────────────────────────────────────
 
 /**
