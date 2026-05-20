@@ -426,19 +426,25 @@
 <style>
 	/* ── Dialog shell ───────────────────────────────────────────────────── */
 	.foe-dialog {
-		margin: auto;
 		padding: 0;
 		border: 1px solid var(--border);
 		border-radius: 8px;
 		background: var(--bg-card);
 		color: var(--text);
 		box-shadow: 0 16px 48px rgba(0,0,0,0.55);
+		/* Centre via top/left + transform; `inset: 0; margin: auto` collapses
+		   the dialog to a thin line on iOS Safari when combined with an open-
+		   state `display: flex` container. */
 		position: fixed;
-		inset: 0;
+		top: 50%;
+		left: 50%;
+		margin: 0;
+		transform: translate(-50%, -50%);
 		width: min(640px, calc(100vw - 1rem));
 		/* Definite height — fit-content + max-height collapses the flex:1 body
-		   to near-zero on mobile (dialog only shows header + search bar). */
-		height: min(85dvh, 720px);
+		   to near-zero on mobile (dialog only shows header + search bar). vh
+		   (not dvh) for broader iOS Safari reliability. */
+		height: min(85vh, 720px);
 		overflow: hidden;
 	}
 
