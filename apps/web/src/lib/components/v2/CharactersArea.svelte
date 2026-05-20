@@ -539,6 +539,30 @@
 		}
 	}
 
+	// ── Asset removal confirmation ──────────────────────────────────────
+	// Clicking the trash icon inside the asset dialog opens a ConfirmDialog;
+	// confirming removes the asset from activeData.assets, which the deep-
+	// snapshot auto-save effect will then persist.
+	let removeAssetDialogRef = $state<{ open(): void; close(): void } | null>(null);
+	let pendingRemoveAssetId = $state<string | null>(null);
+	function openRemoveAssetConfirm(id: string) {
+		pendingRemoveAssetId = id;
+		removeAssetDialogRef?.open();
+	}
+	function confirmRemoveAsset() {
+		if (!activeData || !pendingRemoveAssetId) return;
+		const id  = pendingRemoveAssetId;
+		const arr = (activeData.assets ?? []) as CharacterAsset[];
+		const def = findAsset(id);
+		activeData.assets = arr.filter(a => a.assetId !== id);
+		if (def) {
+			appendLog(SESSION_LOG_ID, charTitle('Assets'),
+				`<div>Asset removed: <strong>${def.name}</strong> <em>(${def.category})</em></div>`);
+		}
+		pendingRemoveAssetId = null;
+		closeAssetDialog();
+	}
+
 	let newlyCreatedVowId = $state('');
 	function addVow() {
 		if (!activeData) return;
@@ -1103,7 +1127,7 @@
 				characterName={activeChar.name}
 				characterXp={activeData.xp ?? 0}
 				bind:globalValues={activeData.globalValues as Record<string, string>}
-				onRemove={closeAssetDialog}
+				onRemove={() => dialogAssetId && openRemoveAssetConfirm(dialogAssetId)}
 				onClose={closeAssetDialog}
 				forceExpanded
 			/>
@@ -1133,6 +1157,22 @@
 		onconfirm={confirmDeleteCharacter}
 	>
 		<p>Permanently delete <strong>{d.name || activeChar.name || 'this character'}</strong>? This cannot be undone.</p>
+	</ConfirmDialog>
+{/if}
+
+<!-- Remove-asset confirmation — opens from the asset dialog's trash icon,
+     then on confirm filters the asset out of activeData.assets. -->
+{#if activeChar && activeData}
+	{@const assetDef = pendingRemoveAssetId ? findAsset(pendingRemoveAssetId) : undefined}
+	<ConfirmDialog
+		bind:this={removeAssetDialogRef}
+		title="Remove Asset"
+		confirmLabel="Remove"
+		onconfirm={confirmRemoveAsset}
+		oncancel={() => (pendingRemoveAssetId = null)}
+		ondismiss={() => (pendingRemoveAssetId = null)}
+	>
+		<p>Remove <strong>{assetDef?.name ?? 'this asset'}</strong> from <strong>{activeChar.name || 'this character'}</strong>?</p>
 	</ConfirmDialog>
 {/if}
 
