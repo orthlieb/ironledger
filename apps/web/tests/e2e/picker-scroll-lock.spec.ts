@@ -49,7 +49,10 @@ test('page scroll is restored after foe picker dialog closes', async ({ page }) 
 
 test('dialog body uses overscroll-behavior: contain', async ({ page }) => {
 	await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
-	await expect(page.locator('.fd-grid-wrap')).toBeVisible();
-	const behavior = await page.locator('.fd-grid-wrap').evaluate(el => getComputedStyle(el).overscrollBehavior);
+	// Scope to [open] — FoePickerDialog is rendered twice on the page
+	// (FoesArea + ExpeditionsArea), so the unscoped selector is ambiguous.
+	const wrap = page.locator('.foe-dialog[open] .fd-grid-wrap');
+	await expect(wrap).toBeVisible();
+	const behavior = await wrap.evaluate(el => getComputedStyle(el).overscrollBehavior);
 	expect(behavior).toContain('contain');
 });

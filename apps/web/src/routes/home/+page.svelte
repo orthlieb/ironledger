@@ -438,7 +438,7 @@
 				session:     { activeCharId, activeFoeId, activeExpeditionId },
 			};
 			const count = chars.length + (logs[SESSION_LOG_ID]?.length ?? 0) + communities.length + npcs.length + encounters.length + expeditions.length;
-			exportJson('everything', payload, count, `ironledger-${stamp}.json`);
+			exportJson('everything', payload, count, `ironledger-export-${stamp}.json`);
 		} else if (content === 'character') {
 			const char = chars.find(c => c.id === activeCharId);
 			if (!char) return;
@@ -499,6 +499,21 @@
 	style="display: none"
 	onchange={onImportFile}
 />
+
+<!-- Top-level error bar — shows import failures from sanitization, parsing,
+     or post-parse validation. The same message also appears inside the
+     Import dialog body when that dialog is open. -->
+{#if importError}
+	<div class="error-bar" role="alert">
+		<span class="error-bar-msg">{importError}</span>
+		<button
+			type="button"
+			class="error-bar-close"
+			onclick={() => (importError = '')}
+			aria-label="Dismiss error"
+		>×</button>
+	</div>
+{/if}
 
 <!-- Import warning dialog -->
 <ConfirmDialog
@@ -624,6 +639,35 @@
 	:global(.app-main) {
 		max-width: none;
 		padding: 0;
+	}
+
+	/* ── Top-level error bar ─────────────────────────────────────────────────── */
+
+	.error-bar {
+		display:         flex;
+		align-items:     center;
+		gap:             8px;
+		padding:         8px 12px;
+		background:      color-mix(in srgb, var(--color-danger) 18%, transparent);
+		border:          1px solid color-mix(in srgb, var(--color-danger) 50%, transparent);
+		border-radius:   6px;
+		margin:          8px var(--page-gutter, 10px);
+		font-family:     var(--font-ui);
+		font-size:       0.85rem;
+		line-height:     1.4;
+		color:           var(--color-danger);
+	}
+	.error-bar-msg {
+		flex: 1;
+	}
+	.error-bar-close {
+		background:   transparent;
+		border:       none;
+		color:        inherit;
+		cursor:       pointer;
+		font-size:    1.2rem;
+		line-height:  1;
+		padding:      0 4px;
 	}
 
 	/* ── Desktop layout ──────────────────────────────────────────────────────── */

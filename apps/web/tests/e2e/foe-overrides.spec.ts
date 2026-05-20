@@ -121,9 +121,9 @@ test.describe('Foe overrides — expansion exclusion + addendum', () => {
 
 	test('YRT on: excluded foe is hidden from the picker', async ({ page }) => {
 		await openFoePicker(page);
-		await expect(page.locator('dialog.foe-dialog .fd-tile-name', { hasText: BASE_FOE_A.name }))
+		await expect(page.locator('dialog.foe-dialog[open] .fd-tile-name', { hasText: BASE_FOE_A.name }))
 			.toHaveCount(0, { timeout: 5_000 });
-		await expect(page.locator('dialog.foe-dialog .fd-tile-name', { hasText: BASE_FOE_B.name }))
+		await expect(page.locator('dialog.foe-dialog[open] .fd-tile-name', { hasText: BASE_FOE_B.name }))
 			.toHaveCount(1, { timeout: 5_000 });
 		await page.keyboard.press('Escape');
 	});
@@ -134,17 +134,17 @@ test.describe('Foe overrides — expansion exclusion + addendum', () => {
 		await waitForHome(page);
 
 		await openFoePicker(page);
-		await expect(page.locator('dialog.foe-dialog .fd-tile-name', { hasText: BASE_FOE_A.name }))
+		await expect(page.locator('dialog.foe-dialog[open] .fd-tile-name', { hasText: BASE_FOE_A.name }))
 			.toHaveCount(1, { timeout: 5_000 });
 		await page.keyboard.press('Escape');
 	});
 
 	test('YRT on: addendum is appended to the foe description', async ({ page }) => {
 		await openFoePicker(page);
-		await page.locator('dialog.foe-dialog .fd-tile', { has: page.locator('.fd-tile-name', { hasText: BASE_FOE_B.name }) })
+		await page.locator('dialog.foe-dialog[open] .fd-tile', { has: page.locator('.fd-tile-name', { hasText: BASE_FOE_B.name }) })
 			.first().click();
 
-		const desc = page.locator('dialog.foe-dialog .fc-desc');
+		const desc = page.locator('dialog.foe-dialog[open] .fc-desc');
 		await expect(desc).toBeVisible({ timeout: 5_000 });
 		await expect(desc).toContainText(BASE_FOE_B.description);
 		await expect(desc).toContainText(YRT_ADDENDUM);
@@ -157,10 +157,10 @@ test.describe('Foe overrides — expansion exclusion + addendum', () => {
 		await waitForHome(page);
 
 		await openFoePicker(page);
-		await page.locator('dialog.foe-dialog .fd-tile', { has: page.locator('.fd-tile-name', { hasText: BASE_FOE_B.name }) })
+		await page.locator('dialog.foe-dialog[open] .fd-tile', { has: page.locator('.fd-tile-name', { hasText: BASE_FOE_B.name }) })
 			.first().click();
 
-		const desc = page.locator('dialog.foe-dialog .fc-desc');
+		const desc = page.locator('dialog.foe-dialog[open] .fc-desc');
 		await expect(desc).toBeVisible({ timeout: 5_000 });
 		await expect(desc).toContainText(BASE_FOE_B.description);
 		await expect(desc).not.toContainText(YRT_ADDENDUM);

@@ -363,8 +363,10 @@ test.describe('Expeditions area (v2)', () => {
 		// FoePickerDialog opens in denizen mode.
 		await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
 
-		// Click the first foe tile.
-		const firstTile = page.locator('dialog.foe-dialog .fd-tile').first();
+		// Click the first foe tile. Scope to [open] because FoePickerDialog is
+		// rendered twice on the page (FoesArea + ExpeditionsArea); only the
+		// open one is interactable.
+		const firstTile = page.locator('dialog.foe-dialog[open] .fd-tile').first();
 		await expect(firstTile).toBeVisible({ timeout: 8_000 });
 		await firstTile.click();
 
@@ -404,7 +406,7 @@ test.describe('Expeditions area (v2)', () => {
 		await expect(pickBtn).toBeVisible({ timeout: 3_000 });
 		await pickBtn.click();
 		await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
-		const firstTile = page.locator('dialog.foe-dialog .fd-tile').first();
+		const firstTile = page.locator('dialog.foe-dialog[open] .fd-tile').first();
 		await expect(firstTile).toBeVisible({ timeout: 8_000 });
 		await firstTile.click();
 		await expect(page.locator('dialog.foe-dialog[open]')).not.toBeVisible({ timeout: 5_000 });
