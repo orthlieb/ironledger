@@ -928,8 +928,11 @@
 
 	/* Installed as a PWA / web app: drop the home-indicator inset so the log
 	   runs all the way to the viewport edge, per the design rule that the
-	   app must fill the screen when launched standalone. */
-	@media (display-mode: standalone) {
+	   app must fill the screen when launched standalone. Cover every
+	   non-browser display-mode in case iOS reports fullscreen/minimal-ui. */
+	@media (display-mode: standalone),
+	       (display-mode: minimal-ui),
+	       (display-mode: fullscreen) {
 		.log-entries {
 			padding-bottom: 8px;
 		}
