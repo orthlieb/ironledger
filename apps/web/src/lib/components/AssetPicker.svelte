@@ -632,7 +632,11 @@
 	}
 
 	/* ================================================================
-	   Asset detail dialog — mirrors expanded AssetCard
+	   Asset detail dialog — mirrors expanded AssetCard.
+	   No flex container — children flow naturally and the .asset-body
+	   carries the scroll cap directly. A `display: flex` + `min-height: 0`
+	   chain on a `<dialog>` collapses to a thin horizontal strip on iOS
+	   Safari (same bug as #11/#12).
 	   ================================================================ */
 	.confirm-dialog {
 		border: none;
@@ -641,9 +645,7 @@
 		background: var(--bg-inset);
 		color: var(--text);
 		width: min(460px, calc(100vw - 2rem));
-		max-height: min(82vh, 660px);
-		display: flex;
-		flex-direction: column;
+		max-height: 82vh;
 		box-shadow:
 			0 16px 48px #00000070,
 			0 0 0 1px var(--border-mid);
@@ -666,7 +668,6 @@
 		gap: 7px;
 		padding: 7px 10px;
 		background: var(--bg-control);
-		flex-shrink: 0;
 		cursor: grab;
 		user-select: none;
 	}
@@ -710,15 +711,16 @@
 		font-variant-numeric: tabular-nums;
 	}
 
-	/* ── Mirrors AssetCard .asset-body ── */
+	/* ── Mirrors AssetCard .asset-body ──
+	   The dialog has no flex container, so cap the body's height directly
+	   (dialog 82vh minus header + footer ≈ 6rem) and scroll it internally. */
 	.asset-body {
 		padding: 10px 12px;
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
-		flex: 1;
+		max-height: calc(82vh - 6rem);
 		overflow-y: auto;
-		min-height: 0;
 	}
 
 	.asset-preamble {
@@ -796,7 +798,6 @@
 		justify-content: flex-end;
 		padding: 10px 12px;
 		border-top: 1px solid var(--border);
-		flex-shrink: 0;
 		background: var(--bg-card);
 	}
 
