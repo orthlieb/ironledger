@@ -2,6 +2,7 @@
 	import { admin, maintenance as maintApi, broadcast as broadcastApi, registrationQuota as quotaApi, type RegistrationQuotaStatus } from '$lib/api';
 	import type { AdminUser, AdminStats, AdminInvite, MaintenanceStatus, BroadcastStatus, BroadcastSeverity, UserTimeseries, RegistrationLockStatus } from '@ironledger/shared';
 	import type { LayoutData } from '../$types';
+	import ErrorBar from '$lib/components/ErrorBar.svelte';
 
 	let { data }: { data: LayoutData } = $props();
 
@@ -494,9 +495,9 @@
 		Built {new Date(__BUILD_DATE__).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
 	</p>
 
-	{#if error}
-		<div class="admin-error">{error}</div>
-	{/if}
+	<div class="admin-error-host">
+		<ErrorBar message={error} onDismiss={() => (error = '')} />
+	</div>
 
 	{#if loading}
 		<p class="admin-loading">Loading...</p>
@@ -820,9 +821,7 @@
 									{inviteBusy ? 'Sending…' : 'Send invite'}
 								</button>
 							</div>
-							{#if inviteError}
-								<div class="invites-error">{inviteError}</div>
-							{/if}
+							<ErrorBar message={inviteError} compact />
 						</form>
 
 						{#if inviteCreatedUrl}
@@ -1138,9 +1137,7 @@
 								{quotaBusy ? 'Saving…' : 'Save'}
 							</button>
 						</div>
-						{#if quotaError}
-							<div class="invites-error">{quotaError}</div>
-						{/if}
+						<ErrorBar message={quotaError} compact />
 					</section>
 
 					<!-- ─── Tile 4: Broadcast Banner ─── -->
@@ -1204,9 +1201,7 @@
 								<button type="button" class="btn" disabled={broadcastBusy} onclick={clearBroadcast}>Clear</button>
 							{/if}
 						</div>
-						{#if broadcastError}
-							<div class="invites-error">{broadcastError}</div>
-						{/if}
+						<ErrorBar message={broadcastError} compact />
 					</section>
 
 				</div>
@@ -1355,16 +1350,11 @@
 		opacity: 0.5;
 	}
 
-	.admin-error {
-		background: color-mix(in srgb, var(--color-danger) 15%, transparent);
-		border: 1px solid var(--color-danger);
-		border-radius: 4px;
-		padding: 0.5rem 0.75rem;
+	/* Host wrapper for the page-level ErrorBar (margin only — styles in ErrorBar). */
+	.admin-error-host {
 		margin-bottom: 1rem;
-		font-family: var(--font-ui);
-		font-size: 0.82rem;
-		color: var(--color-danger);
 	}
+	.admin-error-host:empty { display: none; }
 
 	.admin-loading {
 		font-family: var(--font-ui);
@@ -1995,12 +1985,6 @@
 		border-color: var(--text-accent);
 	}
 	.invites-actions { margin-top: 0.25rem; }
-	.invites-error {
-		color: var(--color-danger);
-		font-size: 0.82rem;
-		margin-top: 0.25rem;
-	}
-
 	.invites-created {
 		margin-top: 0.6rem;
 		padding: 10px 12px;
