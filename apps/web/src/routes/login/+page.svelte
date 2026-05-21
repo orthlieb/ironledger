@@ -71,7 +71,7 @@
 
 			<label class="remember-me-row">
 				<input type="checkbox" name="rememberMe" />
-				<span>Remember me for 30 days</span>
+				<span>Remember me</span>
 			</label>
 
 			<button type="submit" class="btn btn-primary">Sign In</button>
