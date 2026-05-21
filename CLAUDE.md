@@ -1,5 +1,27 @@
 # Repo notes for Claude
 
+## App-level scroll architecture
+
+The viewport itself (`html` and `body`) **never** scrolls. `app.css` sets
+both to `height: 100dvh; overflow: hidden;` permanently, and makes `body`
+a flex column. `<main class="app-main">` is the per-route scroll container
+(`flex: 1; min-height: 0; overflow-y: auto;`):
+
+- Pages with their own internal scroll regions (e.g. `/home`'s `.home-shell`)
+  set their root to `height: 100%; overflow: hidden;` so `main` doesn't need
+  to scroll — only the inner area stages do.
+- Pages with natural-flow content (e.g. `/about`, `/admin`) just let `main`
+  scroll their content.
+
+When any `<dialog>` is open, `app.css` also locks `main` (`body:has(dialog[open])
+main.app-main { overflow: hidden }`). Combined with `dialog[open] {
+overscroll-behavior: contain }` (see Rule 4 below), this means a scroll
+gesture inside a dialog can never reach **any** ancestor scroll container —
+viewport, main, or inner area stage.
+
+Don't reintroduce `body { min-height: 100dvh }` without also restoring the
+overflow:hidden; the body must always equal viewport size or shorter.
+
 ## `<dialog>` mobile rules (iOS Safari)
 
 `<dialog>` elements live in the browser's top layer, which exposes three
@@ -44,26 +66,34 @@ The `- 6rem` accounts for header + footer (~3rem each). This is what
 ### 4. Always lock background scroll while a dialog is open
 Native `<dialog>.showModal()` blocks pointer events on the page behind the
 backdrop but does **not** stop touch-scroll on iOS Safari — a drag inside the
-dialog's chrome or at a scroll boundary can bleed through. Two layers of
-defence, both required:
+dialog's chrome or at a scroll boundary can bleed through. Three layers of
+defence work together:
 
-**Global (already in `apps/web/src/app.css`):**
+**Viewport (permanent, in `apps/web/src/app.css`):**
 ```css
-html:has(dialog[open]),
-body:has(dialog[open]) { overflow: hidden; }
+html, body { height: 100dvh; overflow: hidden; }
 ```
-This freezes the page when any `<dialog>` is open. Don't remove it.
+See the "App-level scroll architecture" section above — the viewport never
+scrolls, so the dialog never has the document itself behind it to leak into.
+
+**Route scroll container (locked when a dialog is open):**
+```css
+body:has(dialog[open]) main.app-main { overflow: hidden; }
+```
+`<main>` is the per-route scroll container; this freezes it while a dialog
+is up so dialog gestures can't reach it on routes that have overflowing
+content.
 
 **Dialog-level (also in `apps/web/src/app.css`):**
 ```css
 dialog[open] { overscroll-behavior: contain; }
 ```
-This catches scroll chains that the body lock doesn't — wheel/touch on a
-dialog's header, footer, or short non-scrolling content falls past the
-per-body `contain` and otherwise reaches inner scroll containers in the page
+This catches scroll chains regardless of where the gesture starts — wheel/
+touch on a dialog's header, footer, or short non-scrolling content stops at
+the dialog boundary instead of reaching inner scroll containers in the page
 below (`.fa-stage`, `.ca-stage`, etc.).
 
-**Per-dialog body:** every scrollable child inside a dialog must also set
+**Per-dialog body:** every scrollable child inside a dialog should also set
 `overscroll-behavior: contain` alongside its `overflow-y: auto`:
 ```css
 .dialog-body {
@@ -71,8 +101,8 @@ below (`.fa-stage`, `.ca-stage`, etc.).
     overscroll-behavior: contain;
 }
 ```
-This is the inner layer; without it, hitting the top/bottom of a scrollable
-body can still rubber-band past on iOS Safari.
+This is the innermost layer — it stops rubber-band at the body's own
+scroll boundaries on iOS Safari.
 
 The e2e test at `apps/web/tests/e2e/picker-scroll-lock.spec.ts` checks both
 mechanisms on the foe picker — keep that test passing.

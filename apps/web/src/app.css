@@ -195,13 +195,28 @@ html[data-theme='light'] {
 /* --------------------------------------------------------------------------
    Base
    -------------------------------------------------------------------------- */
+
+/* The viewport (html/body) never scrolls. Each route's <main> is the scroll
+   container — pages either lay out within 100dvh (e.g. /home with its own
+   internal scroll regions) or let <main class="app-main"> scroll their
+   content (e.g. /about, /admin). This prevents touches/wheels that escape a
+   dialog (short content, header/footer chrome) from scrolling the page
+   behind the dialog. */
+html {
+	height: 100dvh;
+	overflow: hidden;
+}
+
 body {
 	font-family: var(--font-body);
 	font-size: 15px;
 	line-height: 1.6;
 	background: var(--bg-page);
 	color: var(--text);
-	min-height: 100dvh;
+	height: 100dvh;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
 	background-image:
 		radial-gradient(ellipse 80% 40% at 15% 0%,   var(--accent-dim) 0%, transparent 60%),
 		radial-gradient(ellipse 60% 30% at 85% 100%,  var(--accent-dim) 0%, transparent 60%);
@@ -213,13 +228,21 @@ body {
 	padding-right:  env(safe-area-inset-right);
 }
 
+/* <main class="app-main"> is the route's scroll container. Pages with their
+   own internal scrolling (e.g. /home's .home-shell) overflow: hidden their
+   own children; pages with natural-flow content (e.g. /about) scroll here. */
+main.app-main {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+}
+
 /* Lock the page scroll while any modal <dialog> is open. Native showModal()
    disables pointer interaction with the page behind, but mobile Safari still
-   lets touch-drags scroll the body through the backdrop. Locking html/body
-   overflow freezes the underlying page so touch scrolls are captured by the
-   dialog's own scrollable body. */
-html:has(dialog[open]),
-body:has(dialog[open]) {
+   lets touch-drags scroll inner scroll containers through the backdrop.
+   html/body are already overflow: hidden, but <main> can scroll on routes
+   with overflowing content — lock it too so dialog scrolls never reach it. */
+body:has(dialog[open]) main.app-main {
 	overflow: hidden;
 }
 

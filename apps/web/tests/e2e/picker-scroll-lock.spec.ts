@@ -6,6 +6,12 @@ import { test, expect } from '@playwright/test';
  * (or at the body's scroll boundaries) falls through and scrolls the page
  * behind the backdrop.
  *
+ * Architecture: html/body are always `overflow: hidden` (the viewport never
+ * scrolls); `<main class="app-main">` is the route-level scroll container.
+ * When a dialog opens, main is also locked so dialog gestures can't reach
+ * inner scrolling content. The first two tests verify the main lock; the
+ * third verifies that the dialog's own body declares overscroll containment.
+ *
  * v2: the home page has no `.loading-tab` and no tabs — the Foes area is
  * always rendered with its "+ Foe" header button.
  */
@@ -29,22 +35,28 @@ test.beforeEach(async ({ page }) => {
 	await gotoHomeAndWait(page);
 });
 
-test('page scroll is locked while foe picker dialog is open', async ({ page }) => {
+test('main scroll is locked while foe picker dialog is open', async ({ page }) => {
 	await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
 	await expect(page.locator('.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
-	const htmlOverflow = await page.evaluate(() => getComputedStyle(document.documentElement).overflow);
-	const bodyOverflow = await page.evaluate(() => getComputedStyle(document.body).overflow);
-	expect(htmlOverflow).toBe('hidden');
-	expect(bodyOverflow).toBe('hidden');
+	const mainOverflow = await page.evaluate(() => getComputedStyle(document.querySelector('main.app-main')!).overflowY);
+	expect(mainOverflow).toBe('hidden');
 });
 
-test('page scroll is restored after foe picker dialog closes', async ({ page }) => {
+test('main scroll is restored after foe picker dialog closes', async ({ page }) => {
 	await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
 	await expect(page.locator('.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
 	await page.keyboard.press('Escape');
 	await expect(page.locator('.foe-dialog[open]')).not.toBeVisible();
-	const htmlOverflow = await page.evaluate(() => getComputedStyle(document.documentElement).overflow);
-	expect(htmlOverflow).not.toBe('hidden');
+	const mainOverflow = await page.evaluate(() => getComputedStyle(document.querySelector('main.app-main')!).overflowY);
+	expect(mainOverflow).toBe('auto');
+});
+
+test('open dialog declares overscroll containment', async ({ page }) => {
+	await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
+	const dialog = page.locator('.foe-dialog[open]');
+	await expect(dialog).toBeVisible();
+	const behavior = await dialog.evaluate(el => getComputedStyle(el).overscrollBehavior);
+	expect(behavior).toContain('contain');
 });
 
 test('dialog body uses overscroll-behavior: contain', async ({ page }) => {

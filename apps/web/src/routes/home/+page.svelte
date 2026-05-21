@@ -646,7 +646,10 @@
 		display:        grid;
 		grid-template-columns: 1fr 1fr 6px var(--log-width, 33vw);
 		gap:            0;
-		height:         calc(100vh - 52px);
+		/* Fill the parent <main class="app-main"> exactly — app.css makes
+		   html/body 100dvh and main flex:1, so 100% here is the available
+		   viewport space minus nav and safe-area insets. */
+		height:         100%;
 		padding:        10px;
 		background:     var(--bg);
 		box-sizing:     border-box;
@@ -725,7 +728,7 @@
 			display:        flex;
 			flex-direction: column;
 			grid-template-columns: unset;
-			height:         calc(100vh - 52px);
+			height:         100%;
 			padding:        0;
 		}
 
