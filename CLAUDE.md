@@ -54,7 +54,16 @@ body:has(dialog[open]) { overflow: hidden; }
 ```
 This freezes the page when any `<dialog>` is open. Don't remove it.
 
-**Per-dialog:** every scrollable child inside a dialog must set
+**Dialog-level (also in `apps/web/src/app.css`):**
+```css
+dialog[open] { overscroll-behavior: contain; }
+```
+This catches scroll chains that the body lock doesn't — wheel/touch on a
+dialog's header, footer, or short non-scrolling content falls past the
+per-body `contain` and otherwise reaches inner scroll containers in the page
+below (`.fa-stage`, `.ca-stage`, etc.).
+
+**Per-dialog body:** every scrollable child inside a dialog must also set
 `overscroll-behavior: contain` alongside its `overflow-y: auto`:
 ```css
 .dialog-body {
@@ -62,8 +71,8 @@ This freezes the page when any `<dialog>` is open. Don't remove it.
     overscroll-behavior: contain;
 }
 ```
-Without it, iOS Safari rubber-banding or scroll-chaining can still propagate
-past the dialog when the body hits its top/bottom boundary.
+This is the inner layer; without it, hitting the top/bottom of a scrollable
+body can still rubber-band past on iOS Safari.
 
 The e2e test at `apps/web/tests/e2e/picker-scroll-lock.spec.ts` checks both
 mechanisms on the foe picker — keep that test passing.
@@ -74,6 +83,7 @@ mechanisms on the foe picker — keep that test passing.
 - [ ] Either an explicit `height:`, **or** no `display: flex` on the dialog
       and `max-height` lives on the scrollable child.
 - [ ] Every `overflow-y: auto` child inside the dialog also sets
-      `overscroll-behavior: contain`.
+      `overscroll-behavior: contain` (defence in depth; the global
+      `dialog[open]` rule is the primary catch).
 - [ ] Smoke-test on a real iOS Safari (or DevTools iPhone emulation) before
       claiming the dialog works on mobile.
