@@ -646,11 +646,16 @@
 		display:        grid;
 		grid-template-columns: 1fr 1fr 6px var(--log-width, 33vw);
 		gap:            0;
-		/* Fill the parent <main class="app-main"> exactly — app.css makes
-		   html/body 100dvh and main flex:1, so 100% here is the available
-		   viewport space minus nav and safe-area insets. */
+		/* Fill the parent <main class="app-main"> exactly. main is flex:1 in
+		   a 100dvh body, so 100% here is "all the space main has". */
 		height:         100%;
+		/* Safe-area padding lives here (not on body) so the shell itself
+		   extends edge-to-edge and its content avoids the home indicator
+		   and any landscape notch. */
 		padding:        10px;
+		padding-bottom: max(10px, env(safe-area-inset-bottom));
+		padding-left:   max(10px, env(safe-area-inset-left));
+		padding-right:  max(10px, env(safe-area-inset-right));
 		background:     var(--bg);
 		box-sizing:     border-box;
 		overflow:       hidden;
@@ -730,6 +735,12 @@
 			grid-template-columns: unset;
 			height:         100%;
 			padding:        0;
+			/* The log lives at the bottom of the stacked layout — pad the
+			   shell so it clears the home indicator. Left/right keep the
+			   landscape notch out of the cards too. */
+			padding-bottom: env(safe-area-inset-bottom);
+			padding-left:   env(safe-area-inset-left);
+			padding-right:  env(safe-area-inset-right);
 		}
 
 		/* Columns become transparent — sections flow directly into the flex shell */
