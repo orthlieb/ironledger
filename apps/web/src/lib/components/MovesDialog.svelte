@@ -1545,12 +1545,13 @@
 	}
 
 	.md-detail-scroll {
-		flex:           1;
-		overflow-y:     auto;
-		padding:        10px 14px;
-		min-height:     0;
-		display:        flex;
-		flex-direction: column;
+		flex:                1;
+		overflow-y:          auto;
+		overscroll-behavior: contain;
+		padding:             10px 14px;
+		min-height:          0;
+		display:             flex;
+		flex-direction:      column;
 		gap:            10px;
 	}
 

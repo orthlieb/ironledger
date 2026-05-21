@@ -526,6 +526,7 @@
 	/* ---- Scrollable body ---- */
 	.picker-body {
 		overflow-y: auto;
+		overscroll-behavior: contain;
 		padding: 12px 16px;
 		flex: 1;
 		min-height: 0;
@@ -721,6 +722,7 @@
 		gap: 8px;
 		max-height: calc(82vh - 6rem);
 		overflow-y: auto;
+		overscroll-behavior: contain;
 	}
 
 	.asset-preamble {

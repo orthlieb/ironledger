@@ -285,6 +285,7 @@
 		flex-direction: column;
 		gap: 12px;
 		overflow-y: auto;
+		overscroll-behavior: contain;
 	}
 	.bg-intro {
 		margin: 0 0 0.25rem;

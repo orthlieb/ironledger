@@ -359,6 +359,7 @@
 	.dd-table-wrap {
 		flex: 1;
 		overflow-y: auto;
+		overscroll-behavior: contain;
 		min-height: 0;
 	}
 
@@ -435,6 +436,7 @@
 	.dd-result-scroll {
 		flex: 1;
 		overflow-y: auto;
+		overscroll-behavior: contain;
 		min-height: 0;
 		padding: 0.75rem 1rem;
 		display: flex;

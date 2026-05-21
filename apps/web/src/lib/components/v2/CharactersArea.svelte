@@ -1939,9 +1939,12 @@
 	.ca-asset-dialog :global(.asset-body) {
 		/* Cap the body's height so it scrolls internally when an asset is
 		   tall (e.g. Difficulty Factors expanded). Leaves ~3rem for the
-		   sticky header — the dialog's own 80vh cap contains everything. */
+		   sticky header — the dialog's own 80vh cap contains everything.
+		   `overscroll-behavior: contain` stops touch-drag at the body's
+		   scroll boundary from bleeding through to the page on iOS Safari. */
 		max-height: calc(80vh - 3rem);
 		overflow-y: auto;
+		overscroll-behavior: contain;
 	}
 	/* asset-body is itself a flex column. Without flex-shrink: 0 on its
 	   children, sections with overflow: hidden (e.g. .factors-section) get
