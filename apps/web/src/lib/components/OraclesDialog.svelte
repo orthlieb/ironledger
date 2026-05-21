@@ -317,14 +317,16 @@
 		position:      fixed;
 		/* Anchor to a fixed top — prevents the dialog "dancing" when the tile
 		   grid shrinks as filters are applied. true vertical centering
-		   (top:50% / translateY(-50%)) shifts the box as height changes. */
-		top:           8dvh;
+		   (top:50% / translateY(-50%)) shifts the box as height changes.
+		   vh (not dvh): iOS Safari reports dvh as 0 for top-layer dialogs,
+		   collapsing `top` and the height cap to zero. */
+		top:           8vh;
 		left:          50%;
 		transform:     translateX(-50%);
 		width:         min(640px, calc(100vw - 1rem));
 		/* Definite height — fit-content + max-height collapses the flex:1 body
 		   to near-zero on mobile (dialog only shows header + search bar). */
-		height:        min(84dvh, 720px);
+		height:        min(84vh, 720px);
 		background:    var(--bg-card);
 		color:         var(--text);
 		box-shadow:    0 16px 48px #00000070, 0 0 0 1px var(--border-mid);
