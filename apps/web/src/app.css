@@ -228,11 +228,16 @@ body {
 
 /* <main class="app-main"> is the route's scroll container. Pages with their
    own internal scrolling (e.g. /home's .home-shell) overflow: hidden their
-   own children; pages with natural-flow content (e.g. /about) scroll here. */
+   own children; pages with natural-flow content (e.g. /about) scroll here.
+   `display: flex` so children using `flex: 1` (e.g. .home-shell) fill main
+   reliably — `height: 100%` on a child of an `overflow: auto` parent
+   sometimes collapses to content-height in Safari. */
 main.app-main {
 	flex: 1;
 	min-height: 0;
 	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
 }
 
 /* Safe-area fallback for routes without an edge-to-edge shell. /home owns

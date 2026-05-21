@@ -646,9 +646,11 @@
 		display:        grid;
 		grid-template-columns: 1fr 1fr 6px var(--log-width, 33vw);
 		gap:            0;
-		/* Fill the parent <main class="app-main"> exactly. main is flex:1 in
-		   a 100dvh body, so 100% here is "all the space main has". */
-		height:         100%;
+		/* Fill <main> as a flex item — main is `display: flex` column with
+		   flex: 1 inside a 100dvh body, so `flex: 1` reliably gives us the
+		   full available height (more robust than `height: 100%` on Safari). */
+		flex:           1;
+		min-height:     0;
 		/* Safe-area padding lives here (not on body) so the shell itself
 		   extends edge-to-edge and its content avoids the home indicator
 		   and any landscape notch. */
@@ -733,11 +735,11 @@
 			display:        flex;
 			flex-direction: column;
 			grid-template-columns: unset;
-			height:         100%;
 			padding:        0;
 			/* The log lives at the bottom of the stacked layout — pad the
 			   shell so it clears the home indicator. Left/right keep the
-			   landscape notch out of the cards too. */
+			   landscape notch out of the cards too. flex: 1 is inherited
+			   from the base rule above (don't re-declare height). */
 			padding-bottom: env(safe-area-inset-bottom);
 			padding-left:   env(safe-area-inset-left);
 			padding-right:  env(safe-area-inset-right);
