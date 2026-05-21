@@ -918,6 +918,11 @@
 		flex: 1;
 		overflow-y: auto;
 		padding: 8px;
+		/* Bottom needs at least 8px, but extends to env(safe-area-inset-bottom)
+		   on devices with a home indicator so the last entry isn't tucked
+		   under the gesture area. The log surface itself reaches viewport
+		   bottom on mobile (see /home's flex layout). */
+		padding-bottom: max(8px, env(safe-area-inset-bottom));
 		display: flex;
 		flex-direction: column;
 		gap: 4px;

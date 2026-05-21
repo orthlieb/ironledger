@@ -736,11 +736,9 @@
 			flex-direction: column;
 			grid-template-columns: unset;
 			padding:        0;
-			/* The log lives at the bottom of the stacked layout — pad the
-			   shell so it clears the home indicator. Left/right keep the
-			   landscape notch out of the cards too. flex: 1 is inherited
-			   from the base rule above (don't re-declare height). */
-			padding-bottom: env(safe-area-inset-bottom);
+			/* No padding-bottom here on mobile — the log lives at the bottom
+			   and carries its own safe-area-inset internally so its surface
+			   extends edge-to-edge while entries clear the home indicator. */
 			padding-left:   env(safe-area-inset-left);
 			padding-right:  env(safe-area-inset-right);
 		}
