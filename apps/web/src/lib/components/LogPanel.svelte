@@ -917,25 +917,14 @@
 	.log-entries {
 		flex: 1;
 		overflow-y: auto;
+		/* Plain 8px on all sides. iOS Safari (browser mode) reports
+		   env(safe-area-inset-bottom) as 0 because its tab bar already
+		   reserves the home-indicator zone, and in PWA mode the design
+		   rule is the log surface reaches the viewport edge. */
 		padding: 8px;
-		/* In a regular browser we reserve env(safe-area-inset-bottom) so the
-		   last entry isn't tucked under the home-indicator gesture area. */
-		padding-bottom: max(8px, env(safe-area-inset-bottom));
 		display: flex;
 		flex-direction: column;
 		gap: 4px;
-	}
-
-	/* Installed as a PWA / web app: drop the home-indicator inset so the log
-	   runs all the way to the viewport edge, per the design rule that the
-	   app must fill the screen when launched standalone. Cover every
-	   non-browser display-mode in case iOS reports fullscreen/minimal-ui. */
-	@media (display-mode: standalone),
-	       (display-mode: minimal-ui),
-	       (display-mode: fullscreen) {
-		.log-entries {
-			padding-bottom: 8px;
-		}
 	}
 
 	.log-empty {
