@@ -460,8 +460,10 @@
 					lines.push('');
 				}
 				lines.push('## Progress', `- **XP:** ${d.xp ?? 0}`,
-					`- **Bonds:** ${formatTicks(Number(d.bonds ?? 0))}`,
-					`- **Failures:** ${formatTicks(Number(d.failures ?? 0))}`);
+					`- **Bonds:** ${formatTicks(Number(d.bonds ?? 0))}`);
+				if ((d.bondsFormed as string | undefined)?.trim())
+					lines.push(`  - Bonds Formed: ${(d.bondsFormed as string).trim()}`);
+				lines.push(`- **Failures:** ${formatTicks(Number(d.failures ?? 0))}`);
 				if ((d.lessonsLearned as string | undefined)?.trim())
 					lines.push(`  - Lessons Learned: ${(d.lessonsLearned as string).trim()}`);
 				lines.push('');
@@ -639,8 +641,10 @@
 			lines.push('');
 		}
 		lines.push('## Progress', `- **XP:** ${d.xp ?? 0}`,
-			`- **Bonds:** ${formatTicks(Number(d.bonds ?? 0))}`,
-			`- **Failures:** ${formatTicks(Number(d.failures ?? 0))}`);
+			`- **Bonds:** ${formatTicks(Number(d.bonds ?? 0))}`);
+		if ((d.bondsFormed as string | undefined)?.trim())
+			lines.push(`  - Bonds Formed: ${(d.bondsFormed as string).trim()}`);
+		lines.push(`- **Failures:** ${formatTicks(Number(d.failures ?? 0))}`);
 		if ((d.lessonsLearned as string | undefined)?.trim())
 			lines.push(`  - Lessons Learned: ${(d.lessonsLearned as string).trim()}`);
 		lines.push('');

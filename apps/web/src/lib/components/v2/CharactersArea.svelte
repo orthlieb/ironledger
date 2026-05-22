@@ -112,8 +112,10 @@
 	let pickerOpen    = $state(false);
 
 	// Background card edit state
-	let editingName       = $state(false);
-	let editingBackground = $state(false);
+	let editingName        = $state(false);
+	let editingBackground  = $state(false);
+	let editingBondsFormed = $state(false);
+	let editingLessons     = $state(false);
 	let nameBeforeEdit    = $state('');
 	let nameInputEl       = $state<HTMLInputElement | null>(null);
 	let bgTextareaEl      = $state<HTMLTextAreaElement | null>(null);
@@ -1077,6 +1079,30 @@
 										</div>
 									</div>
 
+									<!-- Bonds Formed — markdown notes below Bonds track -->
+									<div class="ca-md-notes-wrap">
+										<span class="ca-md-notes-label">Bonds Formed</span>
+										<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+										{#if editingBondsFormed}
+											<textarea
+												class="ca-md-notes-input"
+												placeholder="Note significant bonds — people, communities, places… (markdown supported)"
+												bind:value={d.bondsFormed}
+												onblur={() => (editingBondsFormed = false)}
+											></textarea>
+										{:else}
+											<div
+												class="ca-md-notes-display"
+												class:ca-md-notes-display--empty={!d.bondsFormed?.trim()}
+												role="button"
+												tabindex="0"
+												title="Click to edit (markdown supported)"
+												onclick={() => (editingBondsFormed = true)}
+												onkeydown={(e) => { if (e.key === 'Enter') editingBondsFormed = true; }}
+											>{#if d.bondsFormed?.trim()}{@html renderNote(d.bondsFormed)}{:else}<span class="ca-md-notes-placeholder">Note significant bonds — people, communities, places…</span>{/if}</div>
+										{/if}
+									</div>
+
 									{#if isDelveEnabled()}
 										<div class="ca-track-group">
 											<div class="ca-track-label-row">
@@ -1099,15 +1125,28 @@
 												</div>
 											</div>
 										</div>
-										<div class="ca-lessons-wrap">
-											<label class="ca-lessons-label" for="ca-lessons-{activeChar?.id}">Lessons Learned</label>
-											<textarea
-												id="ca-lessons-{activeChar?.id}"
-												class="ca-lessons-input"
-												placeholder="What has this character learned from their failures…"
-												value={d.lessonsLearned ?? ''}
-												oninput={(e) => { d.lessonsLearned = (e.target as HTMLTextAreaElement).value; }}
-											></textarea>
+										<!-- Lessons Learned — markdown notes below Failures -->
+										<div class="ca-md-notes-wrap">
+											<span class="ca-md-notes-label">Lessons Learned</span>
+											<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+											{#if editingLessons}
+												<textarea
+													class="ca-md-notes-input"
+													placeholder="What has this character learned from their failures… (markdown supported)"
+													bind:value={d.lessonsLearned}
+													onblur={() => (editingLessons = false)}
+												></textarea>
+											{:else}
+												<div
+													class="ca-md-notes-display"
+													class:ca-md-notes-display--empty={!d.lessonsLearned?.trim()}
+													role="button"
+													tabindex="0"
+													title="Click to edit (markdown supported)"
+													onclick={() => (editingLessons = true)}
+													onkeydown={(e) => { if (e.key === 'Enter') editingLessons = true; }}
+												>{#if d.lessonsLearned?.trim()}{@html renderNote(d.lessonsLearned)}{:else}<span class="ca-md-notes-placeholder">What has this character learned from their failures…</span>{/if}</div>
+											{/if}
 										</div>
 									{/if}
 								</div>
@@ -1830,13 +1869,14 @@
 		min-width:  unset;
 	}
 
-	.ca-lessons-wrap {
+	/* Shared styles for Bonds Formed + Lessons Learned click-to-edit markdown notes */
+	.ca-md-notes-wrap {
 		display:        flex;
 		flex-direction: column;
 		gap:            4px;
-		margin-top:     6px;
+		margin-top:     8px;
 	}
-	.ca-lessons-label {
+	.ca-md-notes-label {
 		font-family:    var(--font-ui);
 		font-size:      0.65rem;
 		font-weight:    700;
@@ -1844,12 +1884,12 @@
 		letter-spacing: 0.08em;
 		color:          var(--text-dimmer);
 	}
-	.ca-lessons-input {
+	.ca-md-notes-input {
 		font-family:  var(--font-ui);
 		font-size:    0.78rem;
 		color:        var(--text);
 		background:   var(--bg-inset);
-		border:       1px solid var(--border);
+		border:       1px solid var(--text-accent);
 		border-radius: 4px;
 		padding:      6px 8px;
 		resize:       vertical;
@@ -1858,7 +1898,26 @@
 		width:        100%;
 		box-sizing:   border-box;
 	}
-	.ca-lessons-input:focus { border-color: var(--text-accent); }
+	.ca-md-notes-display {
+		font-family:  var(--font-ui);
+		font-size:    0.78rem;
+		color:        var(--text);
+		background:   var(--bg-inset);
+		border:       1px solid var(--border);
+		border-radius: 4px;
+		padding:      6px 8px;
+		min-height:   34px;
+		cursor:       text;
+		width:        100%;
+		box-sizing:   border-box;
+	}
+	.ca-md-notes-display:hover { border-color: var(--border-mid); }
+	.ca-md-notes-display--empty { color: var(--text-dimmer); }
+	.ca-md-notes-placeholder { font-style: italic; }
+	.ca-md-notes-display :global(p)  { margin: 0 0 4px; }
+	.ca-md-notes-display :global(ul),
+	.ca-md-notes-display :global(ol) { margin: 0 0 4px; padding-left: 18px; }
+	.ca-md-notes-display :global(li) { margin-bottom: 2px; }
 
 	/* Vows tab — stack of VowCards. The "+ Vow" action lives in the header
 	   toolbar now, so no per-tab header is needed. */
