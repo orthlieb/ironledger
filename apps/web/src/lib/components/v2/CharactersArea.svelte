@@ -1816,9 +1816,8 @@
 	   each with label · tally on top and progress boxes + ± buttons below. */
 	.ca-tracks-row {
 		display: flex;
+		flex-direction: column;
 		gap: 10px;
-		flex-wrap: wrap;
-		justify-content: flex-start;
 		padding-top: 4px;
 	}
 	.ca-track-group {
