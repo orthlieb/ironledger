@@ -211,12 +211,13 @@
 
 	<!-- ===== PICKER VIEW ===== -->
 	{#if view === 'picker'}
-		<div class="fd-header">
-			<div class="fd-header-row" use:draggable>
-				<span class="drag-grip" aria-hidden="true">⠿</span>
-				<span class="fd-title">{headingText(_mode === 'denizen' ? 'Pick a Denizen' : 'Choose a Foe')}</span>
-				<button class="fd-close-btn" onclick={close} aria-label="Close">✕</button>
-			</div>
+		<div class="fd-header" use:draggable>
+			<span class="drag-grip" aria-hidden="true">⠿</span>
+			<span class="fd-title">{headingText(_mode === 'denizen' ? 'Pick a Denizen' : 'Choose a Foe')}</span>
+			<button class="fd-close-btn" onclick={close} aria-label="Close">✕</button>
+		</div>
+
+		<div class="fd-controls">
 			<div class="fd-search-row">
 				<input
 					type="search"
@@ -277,15 +278,15 @@
 							{/each}
 						</div>
 					</div>
-				<button
-					class="fd-clear-btn"
-					onclick={clearFilters}
-					disabled={!hasActiveFilters}
-					title="Clear all filters"
-					aria-label="Clear filters"
-				>{@html clearFiltersSvg}</button>
-			</div>
-		{/if}
+					<button
+						class="fd-clear-btn"
+						onclick={clearFilters}
+						disabled={!hasActiveFilters}
+						title="Clear all filters"
+						aria-label="Clear filters"
+					>{@html clearFiltersSvg}</button>
+				</div>
+			{/if}
 		</div>
 
 		<div class="fd-grid-wrap">
@@ -461,23 +462,26 @@
 		backdrop-filter: blur(2px);
 	}
 
-	/* ── Picker: header ─────────────────────────────────────────────────── */
+	/* ── Picker: header — mirrors AssetPicker .picker-header ────────────── */
 	.fd-header {
-		border-bottom: 1px solid var(--border);
-		flex-shrink: 0;
-		display: flex;
-		flex-direction: column;
-		gap: 0;
+		display:         flex;
+		align-items:     center;
+		gap:             8px;
+		padding:         10px 14px;
+		border-bottom:   1px solid var(--border);
+		background:      var(--bg-control);
+		border-radius:   8px 8px 0 0;
+		flex-shrink:     0;
 	}
 
-	.fd-header-row {
-		display:       flex;
-		align-items:   center;
-		gap:           8px;
-		padding:       10px 14px;
-		background:    var(--bg-control);
-		border-bottom: 1px solid var(--border);
-		border-radius: 8px 8px 0 0;
+	.fd-controls {
+		display:        flex;
+		flex-direction: column;
+		gap:            6px;
+		padding:        9px 14px 8px;
+		border-bottom:  1px solid var(--border);
+		flex-shrink:    0;
+		background:     var(--bg-card);
 	}
 
 	.fd-title {
@@ -492,21 +496,16 @@
 	}
 
 	.fd-close-btn {
-		background:  transparent;
-		border:      none;
-		color:       var(--text-dimmer);
-		font-size:   1rem;
-		line-height: 1;
-		cursor:      pointer;
-		padding:     4px 6px;
-		border-radius: 4px;
-		flex-shrink: 0;
-		min-width:   44px;
-		min-height:  44px;
-		display:     flex;
-		align-items: center;
-		justify-content: center;
-		transition:  color 0.12s;
+		background:    transparent;
+		border:        none;
+		color:         var(--text-dimmer);
+		font-size:     0.9rem;
+		line-height:   1;
+		cursor:        pointer;
+		padding:       2px 5px;
+		border-radius: 3px;
+		flex-shrink:   0;
+		font-family:   inherit;
 	}
 	.fd-close-btn:hover { color: var(--text); }
 
@@ -514,7 +513,6 @@
 		display: flex;
 		gap: 6px;
 		align-items: center;
-		padding: 8px 1rem 0;
 	}
 
 	.fd-search {
