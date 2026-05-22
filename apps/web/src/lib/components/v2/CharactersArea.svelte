@@ -1868,6 +1868,7 @@
 		align-items:     flex-end;
 		gap:             2px;
 		flex-shrink:     0;
+		margin-left:     auto;
 	}
 	.ca-track-btns {
 		display: flex;
