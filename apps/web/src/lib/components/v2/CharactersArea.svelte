@@ -1087,19 +1087,26 @@
 											<textarea
 												class="ca-md-notes-input"
 												placeholder="Note significant bonds — people, communities, places… (markdown supported)"
-												bind:value={d.bondsFormed}
+												value={d.bondsFormed ?? ''}
+												oninput={(e) => (d.bondsFormed = (e.target as HTMLTextAreaElement).value)}
 												onblur={() => (editingBondsFormed = false)}
+												rows="4"
 											></textarea>
 										{:else}
 											<div
 												class="ca-md-notes-display"
-												class:ca-md-notes-display--empty={!d.bondsFormed?.trim()}
 												role="button"
 												tabindex="0"
 												title="Click to edit (markdown supported)"
 												onclick={() => (editingBondsFormed = true)}
 												onkeydown={(e) => { if (e.key === 'Enter') editingBondsFormed = true; }}
-											>{#if d.bondsFormed?.trim()}{@html renderNote(d.bondsFormed)}{:else}<span class="ca-md-notes-placeholder">Note significant bonds — people, communities, places…</span>{/if}</div>
+											>
+												{#if d.bondsFormed?.trim()}
+													{@html renderNote(d.bondsFormed)}
+												{:else}
+													<span class="ca-md-notes-placeholder">Note significant bonds — people, communities, places…</span>
+												{/if}
+											</div>
 										{/if}
 									</div>
 
@@ -1133,19 +1140,26 @@
 												<textarea
 													class="ca-md-notes-input"
 													placeholder="What has this character learned from their failures… (markdown supported)"
-													bind:value={d.lessonsLearned}
+													value={d.lessonsLearned ?? ''}
+													oninput={(e) => (d.lessonsLearned = (e.target as HTMLTextAreaElement).value)}
 													onblur={() => (editingLessons = false)}
+													rows="4"
 												></textarea>
 											{:else}
 												<div
 													class="ca-md-notes-display"
-													class:ca-md-notes-display--empty={!d.lessonsLearned?.trim()}
 													role="button"
 													tabindex="0"
 													title="Click to edit (markdown supported)"
 													onclick={() => (editingLessons = true)}
 													onkeydown={(e) => { if (e.key === 'Enter') editingLessons = true; }}
-												>{#if d.lessonsLearned?.trim()}{@html renderNote(d.lessonsLearned)}{:else}<span class="ca-md-notes-placeholder">What has this character learned from their failures…</span>{/if}</div>
+												>
+													{#if d.lessonsLearned?.trim()}
+														{@html renderNote(d.lessonsLearned)}
+													{:else}
+														<span class="ca-md-notes-placeholder">What has this character learned from their failures…</span>
+													{/if}
+												</div>
 											{/if}
 										</div>
 									{/if}
@@ -1884,39 +1898,46 @@
 		color:          var(--text-dimmer);
 	}
 	.ca-md-notes-input {
-		font-family:  var(--font-ui);
-		font-size:    0.78rem;
-		color:        var(--text);
-		background:   var(--bg-inset);
-		border:       1px solid var(--text-accent);
-		border-radius: 4px;
-		padding:      6px 8px;
-		resize:       vertical;
-		min-height:   60px;
-		outline:      none;
 		width:        100%;
-		box-sizing:   border-box;
-	}
-	.ca-md-notes-display {
+		min-height:   7em;
 		font-family:  var(--font-ui);
-		font-size:    0.78rem;
+		font-size:    0.85rem;
+		line-height:  1.5;
 		color:        var(--text);
 		background:   var(--bg-inset);
 		border:       1px solid var(--border);
 		border-radius: 4px;
-		padding:      6px 8px;
-		min-height:   34px;
-		cursor:       text;
-		width:        100%;
+		padding:      8px 10px;
+		outline:      none;
+		resize:       vertical;
 		box-sizing:   border-box;
 	}
-	.ca-md-notes-display:hover { border-color: var(--border-mid); }
-	.ca-md-notes-display--empty { color: var(--text-dimmer); }
-	.ca-md-notes-placeholder { font-style: italic; }
-	.ca-md-notes-display :global(p)  { margin: 0 0 4px; }
+	.ca-md-notes-input:focus { border-color: var(--text-accent); }
+	.ca-md-notes-display {
+		cursor:       pointer;
+		min-height:   1.5em;
+		font-family:  var(--font-ui);
+		font-size:    0.85rem;
+		line-height:  1.5;
+		color:        var(--text);
+	}
+	.ca-md-notes-display:focus-visible {
+		outline:        2px solid var(--text-accent);
+		outline-offset: 2px;
+		border-radius:  2px;
+	}
+	.ca-md-notes-placeholder {
+		font-family: var(--font-ui);
+		font-size:   0.85rem;
+		color:       var(--text-dimmer);
+		font-style:  italic;
+	}
+	.ca-md-notes-display :global(p)           { margin: 0 0 0.6em; }
+	.ca-md-notes-display :global(p:last-child) { margin-bottom: 0; }
 	.ca-md-notes-display :global(ul),
-	.ca-md-notes-display :global(ol) { margin: 0 0 4px; padding-left: 18px; }
-	.ca-md-notes-display :global(li) { margin-bottom: 2px; }
+	.ca-md-notes-display :global(ol)          { margin: 0 0 0.6em; padding-left: 1.2em; }
+	.ca-md-notes-display :global(strong)      { font-weight: 700; color: var(--text); }
+	.ca-md-notes-display :global(em)          { font-style: italic; }
 
 	/* Vows tab — stack of VowCards. The "+ Vow" action lives in the header
 	   toolbar now, so no per-tab header is needed. */
