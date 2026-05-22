@@ -117,3 +117,64 @@ mechanisms on the foe picker — keep that test passing.
       `dialog[open]` rule is the primary catch).
 - [ ] Smoke-test on a real iOS Safari (or DevTools iPhone emulation) before
       claiming the dialog works on mobile.
+
+## Standard dialog title bar style
+
+All draggable dialogs share the same header pattern. Use this as the
+template for any new dialog header:
+
+```svelte
+<div class="my-header" use:draggable>
+    <span class="drag-grip" aria-hidden="true">⠿</span>
+    <span class="my-title">{headingText('Dialog Title')}</span>
+    <!-- optional close button or back button here -->
+</div>
+```
+
+```css
+.my-header {
+    display:         flex;
+    align-items:     center;
+    gap:             8px;
+    padding:         10px 14px;
+    border-bottom:   1px solid var(--border);
+    background:      var(--bg-control);
+    border-radius:   8px 8px 0 0;   /* match dialog's border-radius */
+    flex-shrink:     0;
+}
+
+.my-title {
+    font-family:    var(--font-display);
+    font-size:      calc(0.78rem * var(--font-display-scale));
+    font-weight:    var(--font-display-weight);
+    font-variant:   var(--font-display-variant);
+    letter-spacing: 0.08em;
+    text-transform: var(--font-display-transform);
+    color:          var(--text-accent);
+    flex:           1;
+}
+```
+
+The `.drag-grip` class is global in `app.css` (braille ⠿, `color:
+var(--text-dimmer)`, `opacity: 0.6`). Import the action from
+`$lib/actions/draggable.js`.
+
+**Element order:** gripper → title → close/back button. The title has
+`flex: 1` so it fills available space between the gripper and the button.
+
+**Two-view dialogs** (list → detail, e.g. OraclesDialog, MovesDialog,
+FoePickerDialog, DenizenDialog) apply `use:draggable` to **both** headers
+so the dialog stays draggable in both views. Place the gripper before the
+Back button in the detail view header.
+
+**Dialogs that are not always inside a `<dialog>` element** (e.g. AssetCard,
+which can also render inline): the `draggable` action is safe to apply
+unconditionally — it does `closest('dialog')` internally and no-ops if not
+inside a dialog.
+
+### Checklist when adding a new draggable dialog header
+- [ ] `use:draggable` on the header element (not the dialog itself).
+- [ ] `<span class="drag-grip" aria-hidden="true">⠿</span>` as the first child.
+- [ ] Title uses `calc(0.78rem * var(--font-display-scale))` and `flex: 1`.
+- [ ] Background is `var(--bg-control)` with `border-bottom: 1px solid var(--border)`.
+- [ ] Both views get `use:draggable` if the dialog has two views.
