@@ -266,9 +266,6 @@
 	<!-- Header -->
 	<div class="od-header od-header--detail" use:draggable>
 		<span class="drag-grip" aria-hidden="true">⠿</span>
-		{#if !directLaunch}
-			<button class="od-back-btn" onclick={() => { view = 'picker'; activeStat = null; }}>← Back</button>
-		{/if}
 		<span class="od-title od-title--detail">{selectedOracle.title}</span>
 	</div>
 
@@ -298,6 +295,9 @@
 
 	<!-- Roll footer -->
 	<div class="od-footer">
+		{#if !directLaunch}
+			<button class="btn od-back-btn" onclick={() => { view = 'picker'; activeStat = null; }} style="margin-right: auto">← Back</button>
+		{/if}
 		<button class="btn btn-secondary od-cancel-btn" onclick={close}>Cancel</button>
 		<button
 			class="btn btn-primary od-roll-btn"

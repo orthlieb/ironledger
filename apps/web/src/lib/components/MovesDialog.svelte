@@ -895,7 +895,6 @@
 
 	<div class="md-header md-header--detail" use:draggable>
 		<span class="drag-grip" aria-hidden="true">⠿</span>
-		<button class="md-back-btn" onclick={backToPicker}>← Back</button>
 		<span class="md-title md-title--detail">{selectedMove.name}</span>
 		<span class="md-category-badge" style:--ccolor={catColor(selectedMove.category)}>
 			{selectedMove.category}
@@ -1170,6 +1169,7 @@
 					<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
 				</div>
 				<div class="md-footer-btns">
+					<button class="btn md-back-btn" onclick={backToPicker} style="margin-right: auto">← Back</button>
 					<button class="btn" onclick={close}>Cancel</button>
 					<span use:tooltip={{ text: fail ?? '' }} style="display: inline-flex;">
 						<button
@@ -1201,6 +1201,7 @@
 					<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
 				</div>
 				<div class="md-footer-btns">
+					<button class="btn md-back-btn" onclick={backToPicker} style="margin-right: auto">← Back</button>
 					<button class="btn" onclick={close}>Cancel</button>
 					<button
 						class="btn btn-primary md-roll-btn md-roll-btn--spell"
@@ -1222,6 +1223,7 @@
 					<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
 				</div>
 				<div class="md-footer-btns">
+					<button class="btn md-back-btn" onclick={backToPicker} style="margin-right: auto">← Back</button>
 					<button class="btn" onclick={close}>Cancel</button>
 					<button
 						class="btn btn-primary md-roll-btn"
@@ -1234,6 +1236,7 @@
 
 			{:else if isOracleRollMove}
 				<div class="md-footer-btns">
+					<button class="btn md-back-btn" onclick={backToPicker}>← Back</button>
 					<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
 					<button class="btn" onclick={close}>Cancel</button>
 					<button
@@ -1245,6 +1248,7 @@
 
 			{:else if isTableRollMove(selectedMove)}
 				<div class="md-footer-btns">
+					<button class="btn md-back-btn" onclick={backToPicker}>← Back</button>
 					<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
 					<button class="btn" onclick={close}>Cancel</button>
 					<button
@@ -1256,6 +1260,7 @@
 
 			{:else if isNoRollMove(selectedMove)}
 				<div class="md-footer-btns">
+					<button class="btn md-back-btn" onclick={backToPicker} style="margin-right: auto">← Back</button>
 					{#if selectedMove['logBody'] || selectedMove.id === 'move/take-a-hiatus'}
 						<button
 							class="btn btn-primary md-roll-btn md-roll-btn--full"
@@ -1267,6 +1272,7 @@
 
 			{:else}
 				<div class="md-footer-btns">
+					<button class="btn md-back-btn" onclick={backToPicker} style="margin-right: auto">← Back</button>
 					<button class="btn" onclick={close}>Cancel</button>
 				</div>
 			{/if}

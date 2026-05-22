@@ -178,7 +178,6 @@
 
 		<div class="dd-back-bar" use:draggable>
 			<span class="drag-grip" aria-hidden="true">⠿</span>
-			<button class="btn dd-back-btn" onclick={() => (view = 'table')}>← Back</button>
 			<span class="dd-title">{headingText(rolledFoe?.name ?? (rolledName || 'Unknown Denizen'))}</span>
 		</div>
 
@@ -269,6 +268,7 @@
 		</div>
 
 		<div class="dd-footer">
+			<button class="btn dd-back-btn" onclick={() => (view = 'table')} style="margin-right: auto">← Back</button>
 			<button class="btn" onclick={close}>Cancel</button>
 			{#if rolledFoe}
 				<button class="btn btn-primary" onclick={confirm}>Add to Foes</button>

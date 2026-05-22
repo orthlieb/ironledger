@@ -338,9 +338,6 @@
 		<!-- Back bar -->
 		<div class="fd-back-bar" style="--nature-color: {natureColor}" use:draggable>
 			<span class="drag-grip" aria-hidden="true">⠿</span>
-			{#if !_noBack}
-				<button class="btn fd-back-btn" onclick={goBack}>← Back</button>
-			{/if}
 			<span class="fd-title">{headingText(confirmFoe.name)}</span>
 		</div>
 
@@ -419,7 +416,10 @@
 		</div>
 
 		<div class="fd-footer">
-			<button class="btn" onclick={_noBack ? close : goBack}>Cancel</button>
+			{#if !_noBack}
+				<button class="btn fd-back-btn" onclick={goBack} style="margin-right: auto">← Back</button>
+			{/if}
+			<button class="btn" onclick={close}>Cancel</button>
 			<button class="btn btn-primary" onclick={confirm}>Add to Foes</button>
 		</div>
 	{/if}
@@ -463,18 +463,21 @@
 
 	/* ── Picker: header ─────────────────────────────────────────────────── */
 	.fd-header {
-		padding: 0.5rem 1rem 0.4rem;
 		border-bottom: 1px solid var(--border);
 		flex-shrink: 0;
 		display: flex;
 		flex-direction: column;
-		gap: 0.3rem;
+		gap: 0;
 	}
 
 	.fd-header-row {
-		display:     flex;
-		align-items: center;
-		gap:         8px;
+		display:       flex;
+		align-items:   center;
+		gap:           8px;
+		padding:       10px 14px;
+		background:    var(--bg-control);
+		border-bottom: 1px solid var(--border);
+		border-radius: 8px 8px 0 0;
 	}
 
 	.fd-title {
@@ -511,6 +514,7 @@
 		display: flex;
 		gap: 6px;
 		align-items: center;
+		padding: 8px 1rem 0;
 	}
 
 	.fd-search {
@@ -788,13 +792,15 @@
 
 	/* ── Confirm view: back bar ─────────────────────────────────────── */
 	.fd-back-bar {
-		display: flex;
-		align-items: center;
-		gap: 0.6rem;
-		padding: 0.6rem 1rem;
+		display:       flex;
+		align-items:   center;
+		gap:           8px;
+		padding:       10px 14px;
 		border-bottom: 1px solid var(--border);
-		border-top: 3px solid var(--nature-color, #9ca3af);
-		flex-shrink: 0;
+		border-top:    3px solid var(--nature-color, #9ca3af);
+		background:    var(--bg-control);
+		border-radius: 8px 8px 0 0;
+		flex-shrink:   0;
 	}
 
 	.fd-back-bar .fd-title { flex: 1; }
