@@ -44,6 +44,7 @@
 	import { getActiveFoeId, getActiveExpeditionId } from '$lib/activeContext.svelte.js';
 	import { triggerAction, appendLog, logs, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import { parseImportJson, sanitizeLogHtml, ImportError } from '$lib/importSanitizer.js';
+	import { zipSync, strToU8 } from 'fflate';
 	import charactersIconSvg    from '$icons/Characters.svg?raw';
 	import foesIconSvg          from '$icons/Foes.svg?raw';
 	import expeditionsIconSvg   from '$icons/Expeditions.svg?raw';
@@ -411,6 +412,187 @@
 		downloadFile(filename, JSON.stringify(wrapper, null, 2), 'application/json');
 	}
 
+	function b64ToU8(dataUrl: string): Uint8Array {
+		const b64    = dataUrl.split(',')[1] ?? '';
+		const binary = atob(b64);
+		const bytes  = new Uint8Array(binary.length);
+		for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+		return bytes;
+	}
+
+	function slugify(name: string): string {
+		return (name || 'unnamed').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+	}
+
+	function exportMarkdownZip(stamp: string) {
+		const zipFiles: Record<string, Uint8Array> = {};
+		const usedNames = new Set<string>();
+
+		function addImage(dataUrl: string, prefix: string, name: string): string {
+			let base = `images/${prefix}-${slugify(name)}`;
+			let path = `${base}.jpg`;
+			let i = 2;
+			while (usedNames.has(path)) { path = `${base}-${i++}.jpg`; }
+			usedNames.add(path);
+			zipFiles[path] = b64ToU8(dataUrl);
+			return `./${path}`;
+		}
+
+		// ── Characters ──────────────────────────────────────────────────
+		if (chars.length) {
+			const lines: string[] = [];
+			chars.forEach((char, idx) => {
+				if (idx > 0) lines.push('', '---', '');
+				const d = char.data as Record<string, unknown>;
+				lines.push(`# ${char.name || 'Unnamed Character'}`, '');
+				if (d.portrait) {
+					const src = addImage(d.portrait as string, 'char', char.name);
+					lines.push(`![Portrait](${src})`, '');
+				}
+				if (d.background)  lines.push(`**Background:** ${d.background}`, '');
+				const initiativeLabels: Record<number, string> = { 0: 'None', 1: 'You have initiative', 2: 'Foe has initiative' };
+				const init = d.initiative as number | undefined;
+				if (init !== undefined && init !== null) lines.push(`**Initiative:** ${initiativeLabels[init] ?? init}`, '');
+				lines.push('## Stats', `| Edge | Heart | Iron | Shadow | Wits |`, `|------|-------|------|--------|------|`,
+					`| ${d.edge ?? 0} | ${d.heart ?? 0} | ${d.iron ?? 0} | ${d.shadow ?? 0} | ${d.wits ?? 0} |`, '');
+				lines.push('## Resources',
+					`- **Health:** ${d.health ?? 0}/5`, `- **Spirit:** ${d.spirit ?? 0}/5`,
+					`- **Supply:** ${d.supply ?? 0}/5`, `- **Momentum:** ${d.momentum ?? 0}`, '');
+				const gv = d.globalValues as Record<string, string> | undefined;
+				if (gv && Object.keys(gv).length > 0) {
+					lines.push('## Counters');
+					Object.entries(gv).forEach(([k, v]) => lines.push(`- **${k.charAt(0).toUpperCase() + k.slice(1)}:** ${v}`));
+					lines.push('');
+				}
+				lines.push('## Progress', `- **XP:** ${d.xp ?? 0}`,
+					`- **Bonds:** ${formatTicks(Number(d.bonds ?? 0))}`,
+					`- **Failures:** ${formatTicks(Number(d.failures ?? 0))}`, '');
+				const debilities = ['wounded','unprepared','shaken','encumbered','maimed','corrupted','cursed','tormented'];
+				const active = debilities.filter(k => d[k]);
+				if (active.length) {
+					lines.push('## Debilities');
+					active.forEach(k => lines.push(`- ${k.charAt(0).toUpperCase() + k.slice(1)}`));
+					lines.push('');
+				}
+				const vows = d.vows as Array<{ name: string; difficulty: string; ticks: number; threat?: string; menace?: number; notes?: string }> | undefined;
+				if (vows?.length) {
+					lines.push('## Vows');
+					vows.forEach(v => {
+						lines.push(`- **${v.name}** (${v.difficulty}) — ${formatTicks(v.ticks)}`);
+						if (v.threat?.trim())  lines.push(`  - Threat: ${v.threat.trim()}`);
+						if (v.menace)          lines.push(`  - Menace: ${v.menace}/10`);
+						if (v.notes?.trim())   lines.push(`  - Notes: ${v.notes.trim()}`);
+					});
+					lines.push('');
+				}
+				const assets = d.assets as Array<{ assetId: string; abilities: boolean[] }> | undefined;
+				if (assets?.length) {
+					lines.push('## Assets');
+					const catalogue = getAssets();
+					assets.forEach(a => {
+						const def = catalogue.find(x => x.id === a.assetId);
+						lines.push(`- **${def?.name ?? a.assetId}** (${def?.category ?? '?'}) — ${a.abilities.filter(Boolean).length}/${a.abilities.length} abilities`);
+					});
+				}
+			});
+			zipFiles['characters.md'] = strToU8(lines.join('\n'));
+		}
+
+		// ── Connections & NPCs ───────────────────────────────────────────
+		if (communities.length || npcs.length) {
+			const lines: string[] = ['# Connections & NPCs', ''];
+			for (const c of communities) {
+				lines.push(`## ${c.name} _(Community)_`);
+				if (c.imageUrl) {
+					const src = addImage(c.imageUrl, 'community', c.name);
+					lines.push(`![Portrait](${src})`);
+				}
+				if (c.region)              lines.push(`**Region:** ${c.region}`);
+				if (c.location)            lines.push(`**Location:** ${c.location}`);
+				if (c.locationDescription) lines.push(`**Description:** ${c.locationDescription}`);
+				if (c.trouble)             lines.push(`**Trouble:** ${c.trouble}`);
+				if (c.notes?.trim())       lines.push(``, `**Notes:**`, c.notes.trim());
+				lines.push('');
+			}
+			for (const n of npcs) {
+				lines.push(`## ${n.name} _(NPC)_`);
+				if (n.imageUrl) {
+					const src = addImage(n.imageUrl, 'npc', n.name);
+					lines.push(`![Portrait](${src})`);
+				}
+				if (n.role)          lines.push(`**Role:** ${n.role}`);
+				if (n.goal)          lines.push(`**Goal:** ${n.goal}`);
+				if (n.descriptor)    lines.push(`**Descriptor:** ${n.descriptor}`);
+				if (n.relationship)  lines.push(`**Relationship:** ${n.relationship.charAt(0).toUpperCase() + n.relationship.slice(1)}`);
+				if (n.location)      lines.push(`**Location:** ${n.location}`);
+				if (n.notes?.trim()) lines.push(``, `**Notes:**`, n.notes.trim());
+				lines.push('');
+			}
+			zipFiles['connections.md'] = strToU8(lines.join('\n').trimEnd());
+		}
+
+		// ── Expeditions ──────────────────────────────────────────────────
+		if (expeditions.length) {
+			const lines: string[] = ['# Expeditions', ''];
+			for (const exp of expeditions) {
+				const type = exp.type === 'journey' ? 'Journey' : 'Site';
+				lines.push(`## ${exp.name} _(${type})_`);
+				if (exp.imageUrl) {
+					const src = addImage(exp.imageUrl, 'expedition', exp.name);
+					lines.push(`![Portrait](${src})`);
+				}
+				if (exp.complete) lines.push(`- **Status:** Complete`);
+				lines.push(`- **Difficulty:** ${exp.difficulty.charAt(0).toUpperCase() + exp.difficulty.slice(1)}`);
+				lines.push(`- **Progress:** ${formatTicks(exp.ticks)}`);
+				if (exp.type === 'site') {
+					if (exp.theme)                 lines.push(`- **Theme:** ${exp.theme}`);
+					if (exp.domain)                lines.push(`- **Domain:** ${exp.domain}`);
+					if (exp.objective?.trim())      lines.push(`- **Objective:** ${exp.objective.trim()}`);
+					if (exp.currentFeature?.trim()) lines.push(`- **Current Feature:** ${exp.currentFeature.trim()}`);
+					if (exp.currentDanger?.trim())  lines.push(`- **Current Danger:** ${exp.currentDanger.trim()}`);
+					const activeDenizens = (exp.denizens ?? []).map(id => id ? (findFoe(id)?.name ?? id) : null).filter(Boolean) as string[];
+					if (activeDenizens.length > 0)  lines.push(`- **Denizens:** ${activeDenizens.join(', ')}`);
+				}
+				if (exp.notes?.trim()) lines.push(``, `**Notes:**`, exp.notes.trim());
+				lines.push('');
+			}
+			zipFiles['expeditions.md'] = strToU8(lines.join('\n').trimEnd());
+		}
+
+		// ── Foes ─────────────────────────────────────────────────────────
+		if (encounters.length) {
+			const lines: string[] = ['# Foes', ''];
+			for (const enc of encounters) {
+				const def  = findFoe(enc.foeId);
+				const name = enc.customName || def?.name || enc.foeId;
+				lines.push(`## ${name}${enc.vanquished ? ' _(Vanquished)_' : ''}`);
+				lines.push(`- **Rank:** ${FOE_RANKS[enc.effectiveRank]?.label ?? enc.effectiveRank}`);
+				lines.push(`- **Quantity:** ${enc.quantity.charAt(0).toUpperCase() + enc.quantity.slice(1)}`);
+				lines.push(`- **Progress:** ${formatTicks(enc.ticks)}`);
+				if (enc.currentHarm    !== undefined) lines.push(`- **Escalating Harm:** ${enc.currentHarm}`);
+				if (enc.currentDefense !== undefined) lines.push(`- **Defense Shield:** ${enc.currentDefense}`);
+				if (enc.notes?.trim()) lines.push(`- **Notes:** ${enc.notes.trim()}`);
+				lines.push('');
+			}
+			zipFiles['foes.md'] = strToU8(lines.join('\n').trimEnd());
+		}
+
+		// ── Session Log ──────────────────────────────────────────────────
+		zipFiles['session-log.md'] = strToU8(logToMarkdown());
+
+		// ── ZIP & download ───────────────────────────────────────────────
+		const zip  = zipSync(zipFiles, { level: 6 });
+		const blob = new Blob([zip], { type: 'application/zip' });
+		const url  = URL.createObjectURL(blob);
+		const a    = document.createElement('a');
+		a.href     = url;
+		a.download = `ironledger-export-${stamp}.zip`;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
+	}
+
 	function htmlToMd(html: string): string {
 		if (typeof document === 'undefined') return html;
 		const tmp = document.createElement('div');
@@ -572,37 +754,7 @@
 		const stamp = makeTimestamp();
 		if (content === 'everything') {
 			if (format === 'md') {
-				const sections: string[] = [];
-				if (chars.length)       sections.push(chars.map(c => charToMarkdown(c)).join('\n\n---\n\n'));
-				if (communities.length || npcs.length) {
-					const lines: string[] = ['# Connections & NPCs', ''];
-					for (const c of communities) {
-						lines.push(`## ${c.name} _(Community)_`);
-						if (c.imageUrl)            lines.push(`_Has portrait photo — see JSON export for image data._`);
-						if (c.region)              lines.push(`**Region:** ${c.region}`);
-						if (c.location)            lines.push(`**Location:** ${c.location}`);
-						if (c.locationDescription) lines.push(`**Description:** ${c.locationDescription}`);
-						if (c.trouble)             lines.push(`**Trouble:** ${c.trouble}`);
-						if (c.notes?.trim())       lines.push(``, `**Notes:**`, c.notes.trim());
-						lines.push('');
-					}
-					for (const n of npcs) {
-						lines.push(`## ${n.name} _(NPC)_`);
-						if (n.imageUrl)      lines.push(`_Has portrait photo — see JSON export for image data._`);
-						if (n.role)          lines.push(`**Role:** ${n.role}`);
-						if (n.goal)          lines.push(`**Goal:** ${n.goal}`);
-						if (n.descriptor)    lines.push(`**Descriptor:** ${n.descriptor}`);
-						if (n.relationship)  lines.push(`**Relationship:** ${n.relationship.charAt(0).toUpperCase() + n.relationship.slice(1)}`);
-						if (n.location)      lines.push(`**Location:** ${n.location}`);
-						if (n.notes?.trim()) lines.push(``, `**Notes:**`, n.notes.trim());
-						lines.push('');
-					}
-					sections.push(lines.join('\n').trimEnd());
-				}
-				if (expeditions.length) sections.push(expeditionsToMarkdown());
-				if (encounters.length)  sections.push(foesToMarkdown());
-				sections.push(logToMarkdown());
-				downloadFile(`ironledger-export-${stamp}.md`, sections.join('\n\n---\n\n'), 'text/markdown');
+				exportMarkdownZip(stamp);
 			} else {
 				const payload = {
 					characters:  chars.map(c => ({ name: c.name, data: $state.snapshot(c.data) })),

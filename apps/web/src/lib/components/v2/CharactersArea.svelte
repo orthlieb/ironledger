@@ -1744,7 +1744,7 @@
 
 	.ca-vitals-row {
 		display:               grid;
-		grid-template-columns: auto 80px 80px;
+		grid-template-columns: repeat(3, 80px);
 		gap:                   8px;
 		align-items:           stretch;
 		flex:                  1;
