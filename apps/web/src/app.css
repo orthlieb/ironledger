@@ -197,13 +197,23 @@ html[data-theme='light'] {
    -------------------------------------------------------------------------- */
 
 /* The viewport (html/body) never scrolls. Each route's <main> is the scroll
-   container — pages either lay out within 100dvh (e.g. /home with its own
-   internal scroll regions) or let <main class="app-main"> scroll their
+   container — pages either lay out within the viewport (e.g. /home with its
+   own internal scroll regions) or let <main class="app-main"> scroll their
    content (e.g. /about, /admin). This prevents touches/wheels that escape a
    dialog (short content, header/footer chrome) from scrolling the page
-   behind the dialog. */
+   behind the dialog.
+
+   Height stack:
+     100vh                  → fallback for very old browsers
+     100dvh                 → modern dynamic-viewport units
+     -webkit-fill-available → iOS Safari PWA, which sometimes resolves
+                              100dvh to the area below a *phantom* toolbar
+                              even in standalone mode. -webkit-fill-available
+                              gives us the true visible viewport. */
 html {
+	height: 100vh;
 	height: 100dvh;
+	height: -webkit-fill-available;
 	overflow: hidden;
 }
 
@@ -213,7 +223,9 @@ body {
 	line-height: 1.6;
 	background: var(--bg-page);
 	color: var(--text);
+	height: 100vh;
 	height: 100dvh;
+	height: -webkit-fill-available;
 	overflow: hidden;
 	display: flex;
 	flex-direction: column;
