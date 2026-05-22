@@ -571,66 +571,70 @@
 	function handleExport(content: string, format: string) {
 		const stamp = makeTimestamp();
 		if (content === 'everything') {
-			const payload = {
-				characters:  chars.map(c => ({ name: c.name, data: $state.snapshot(c.data) })),
-				log:         [...(logs[SESSION_LOG_ID] ?? [])].reverse(),
-				communities: $state.snapshot(communities),
-				npcs:        $state.snapshot(npcs),
-				foes:        $state.snapshot(encounters),
-				expeditions: $state.snapshot(expeditions),
-				session:     { activeCharId, activeFoeId, activeExpeditionId },
-			};
-			const count = chars.length + (logs[SESSION_LOG_ID]?.length ?? 0) + communities.length + npcs.length + encounters.length + expeditions.length;
-			exportJson('everything', payload, count, `ironledger-export-${stamp}.json`);
+			if (format === 'md') {
+				const sections: string[] = [];
+				if (chars.length)       sections.push(chars.map(c => charToMarkdown(c)).join('\n\n---\n\n'));
+				if (communities.length || npcs.length) {
+					const lines: string[] = ['# Connections & NPCs', ''];
+					for (const c of communities) {
+						lines.push(`## ${c.name} _(Community)_`);
+						if (c.imageUrl)            lines.push(`_Has portrait photo — see JSON export for image data._`);
+						if (c.region)              lines.push(`**Region:** ${c.region}`);
+						if (c.location)            lines.push(`**Location:** ${c.location}`);
+						if (c.locationDescription) lines.push(`**Description:** ${c.locationDescription}`);
+						if (c.trouble)             lines.push(`**Trouble:** ${c.trouble}`);
+						if (c.notes?.trim())       lines.push(``, `**Notes:**`, c.notes.trim());
+						lines.push('');
+					}
+					for (const n of npcs) {
+						lines.push(`## ${n.name} _(NPC)_`);
+						if (n.imageUrl)      lines.push(`_Has portrait photo — see JSON export for image data._`);
+						if (n.role)          lines.push(`**Role:** ${n.role}`);
+						if (n.goal)          lines.push(`**Goal:** ${n.goal}`);
+						if (n.descriptor)    lines.push(`**Descriptor:** ${n.descriptor}`);
+						if (n.relationship)  lines.push(`**Relationship:** ${n.relationship.charAt(0).toUpperCase() + n.relationship.slice(1)}`);
+						if (n.location)      lines.push(`**Location:** ${n.location}`);
+						if (n.notes?.trim()) lines.push(``, `**Notes:**`, n.notes.trim());
+						lines.push('');
+					}
+					sections.push(lines.join('\n').trimEnd());
+				}
+				if (expeditions.length) sections.push(expeditionsToMarkdown());
+				if (encounters.length)  sections.push(foesToMarkdown());
+				sections.push(logToMarkdown());
+				downloadFile(`ironledger-export-${stamp}.md`, sections.join('\n\n---\n\n'), 'text/markdown');
+			} else {
+				const payload = {
+					characters:  chars.map(c => ({ name: c.name, data: $state.snapshot(c.data) })),
+					log:         [...(logs[SESSION_LOG_ID] ?? [])].reverse(),
+					communities: $state.snapshot(communities),
+					npcs:        $state.snapshot(npcs),
+					foes:        $state.snapshot(encounters),
+					expeditions: $state.snapshot(expeditions),
+					session:     { activeCharId, activeFoeId, activeExpeditionId },
+				};
+				const count = chars.length + (logs[SESSION_LOG_ID]?.length ?? 0) + communities.length + npcs.length + encounters.length + expeditions.length;
+				exportJson('everything', payload, count, `ironledger-export-${stamp}.json`);
+			}
 		} else if (content === 'character') {
 			const char = chars.find(c => c.id === activeCharId);
 			if (!char) return;
 			const safeName = char.name.replace(/[^a-z0-9]/gi, '-').toLowerCase() || 'character';
-			if (format === 'json') exportJson('character', { name: char.name, data: $state.snapshot(char.data) }, 1, `${safeName}.json`);
-			else downloadFile(`${safeName}.md`, charToMarkdown(char), 'text/markdown');
+			exportJson('character', { name: char.name, data: $state.snapshot(char.data) }, 1, `${safeName}.json`);
 		} else if (content === 'all-characters') {
 			const payload = chars.map(c => ({ name: c.name, data: $state.snapshot(c.data) }));
-			if (format === 'json') exportJson('all-characters', payload, chars.length, `all-characters-${stamp}.json`);
-			else downloadFile(`all-characters-${stamp}.md`, chars.map(c => charToMarkdown(c)).join('\n\n---\n\n'), 'text/markdown');
+			exportJson('all-characters', payload, chars.length, `all-characters-${stamp}.json`);
 		} else if (content === 'log') {
 			if (format === 'json') {
 				const entries = [...(logs[SESSION_LOG_ID] ?? [])].reverse();
 				exportJson('log', entries, entries.length, `session-log-${stamp}.json`);
 			} else downloadFile(`session-log-${stamp}.md`, logToMarkdown(), 'text/markdown');
 		} else if (content === 'communities') {
-			if (format === 'json') {
-				exportJson('communities', { communities: $state.snapshot(communities), npcs: $state.snapshot(npcs) }, communities.length + npcs.length, `communities-${stamp}.json`);
-			} else {
-				const lines: string[] = ['# Connections & NPCs', ''];
-				for (const c of communities) {
-					lines.push(`## ${c.name} _(Community)_`);
-					if (c.imageUrl)            lines.push(`_Has portrait photo — see JSON export for image data._`);
-					if (c.region)              lines.push(`**Region:** ${c.region}`);
-					if (c.location)            lines.push(`**Location:** ${c.location}`);
-					if (c.locationDescription) lines.push(`**Description:** ${c.locationDescription}`);
-					if (c.trouble)             lines.push(`**Trouble:** ${c.trouble}`);
-					if (c.notes?.trim())       lines.push(``, `**Notes:**`, c.notes.trim());
-					lines.push('');
-				}
-				for (const n of npcs) {
-					lines.push(`## ${n.name} _(NPC)_`);
-					if (n.imageUrl)         lines.push(`_Has portrait photo — see JSON export for image data._`);
-					if (n.role)             lines.push(`**Role:** ${n.role}`);
-					if (n.goal)             lines.push(`**Goal:** ${n.goal}`);
-					if (n.descriptor)       lines.push(`**Descriptor:** ${n.descriptor}`);
-					if (n.relationship)     lines.push(`**Relationship:** ${n.relationship.charAt(0).toUpperCase() + n.relationship.slice(1)}`);
-					if (n.location)         lines.push(`**Location:** ${n.location}`);
-					if (n.notes?.trim())    lines.push(``, `**Notes:**`, n.notes.trim());
-					lines.push('');
-				}
-				downloadFile(`communities-${stamp}.md`, lines.join('\n'), 'text/markdown');
-			}
+			exportJson('communities', { communities: $state.snapshot(communities), npcs: $state.snapshot(npcs) }, communities.length + npcs.length, `communities-${stamp}.json`);
 		} else if (content === 'foes') {
-			if (format === 'json') exportJson('foes', $state.snapshot(encounters), encounters.length, `foes-${stamp}.json`);
-			else downloadFile(`foes-${stamp}.md`, foesToMarkdown(), 'text/markdown');
+			exportJson('foes', $state.snapshot(encounters), encounters.length, `foes-${stamp}.json`);
 		} else if (content === 'expeditions') {
-			if (format === 'json') exportJson('expeditions', $state.snapshot(expeditions), expeditions.length, `expeditions-${stamp}.json`);
-			else downloadFile(`expeditions-${stamp}.md`, expeditionsToMarkdown(), 'text/markdown');
+			exportJson('expeditions', $state.snapshot(expeditions), expeditions.length, `expeditions-${stamp}.json`);
 		}
 	}
 </script>

@@ -122,7 +122,8 @@
 	<div class="ed-body">
 		<div class="ed-field">
 			<span class="ed-label">Content</span>
-			<select class="ed-select" bind:value={exportContent}>
+			<select class="ed-select" bind:value={exportContent}
+				onchange={() => { if (exportContent !== 'everything' && exportContent !== 'log') exportFormat = 'json'; }}>
 				<option value="everything">Everything</option>
 				<option value="character">Current Character</option>
 				<option value="all-characters">All Characters</option>
@@ -130,10 +131,9 @@
 				<option value="communities">Connections</option>
 				<option value="foes">Foes</option>
 				<option value="expeditions">Expeditions</option>
-				<option value="everything">Everything</option>
 			</select>
 		</div>
-		{#if exportContent !== 'everything'}
+		{#if exportContent === 'everything' || exportContent === 'log'}
 		<div class="ed-field">
 			<span class="ed-label">Format</span>
 			<div class="ed-seg" role="group">
