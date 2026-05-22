@@ -302,6 +302,7 @@
 		<!-- Header: mirrors .asset-header from AssetCard; also serves as drag handle -->
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div class="asset-header" style="border-top: 3px solid {catColor}" onmousedown={startConfirmDrag}>
+			<span class="drag-grip" aria-hidden="true">⠿</span>
 			<div class="asset-name-group">
 				<span class="asset-name">{pendingAsset.name}</span>
 				<span class="asset-cat" style:color={catColor}>{pendingAsset.category}</span>

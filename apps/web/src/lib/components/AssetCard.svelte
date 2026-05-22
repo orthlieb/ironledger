@@ -11,6 +11,7 @@
 	import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
+	import { draggable } from '$lib/actions/draggable.js';
 
 	import trashSvg          from '$icons/trash-solid-full.svg?raw';
 	import iconHeart          from '$icons/icon-heart.svg?raw';
@@ -282,9 +283,13 @@
 
 <div class="asset-card" style="--asset-color: {catColor}">
 
-	<!-- Collapsed header row -->
-	<div class="asset-header">
-		{#if !forceExpanded}
+	<!-- Collapsed header row. In dialog mode (forceExpanded) use:draggable
+	     makes the header a drag handle; the action is a safe no-op when the
+	     card is not inside a <dialog>. -->
+	<div class="asset-header" use:draggable>
+		{#if forceExpanded}
+			<span class="drag-grip" aria-hidden="true">⠿</span>
+		{:else}
 			<button
 				class="collapse-btn"
 				onclick={() => (userCollapsed = !userCollapsed)}

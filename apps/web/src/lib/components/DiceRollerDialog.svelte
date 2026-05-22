@@ -200,6 +200,7 @@
 
 	<!-- Header -->
 	<div class="dice-header" use:draggable>
+		<span class="drag-grip" aria-hidden="true">⠿</span>
 		<span class="dice-title">{headingText('Roll Dice')}</span>
 		<button class="dice-close" onclick={close} aria-label="Close">✕</button>
 	</div>

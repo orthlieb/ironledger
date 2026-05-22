@@ -280,14 +280,6 @@
 	}
 	.ed-header:active { cursor: grabbing; }
 
-	.drag-grip {
-		font-size: 1rem;
-		color: var(--text-dimmer);
-		line-height: 1;
-		opacity: 0.6;
-		flex-shrink: 0;
-	}
-
 	.ed-title {
 		font-family: var(--font-display);
 		font-size: calc(0.78rem * var(--font-display-scale));

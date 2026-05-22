@@ -61,6 +61,7 @@
 >
 	<!-- Header -->
 	<div class="nd-header" use:draggable>
+		<span class="drag-grip" aria-hidden="true">⠿</span>
 		<span class="nd-title">{headingText('Session Note')}</span>
 		<button class="nd-close" onclick={close} aria-label="Close">✕</button>
 	</div>

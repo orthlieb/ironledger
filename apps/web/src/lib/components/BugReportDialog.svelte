@@ -250,13 +250,6 @@
 		user-select: none;
 	}
 	.bg-header:active { cursor: grabbing; }
-	.drag-grip {
-		font-size: 1rem;
-		color: var(--text-dimmer);
-		line-height: 1;
-		opacity: 0.6;
-		flex-shrink: 0;
-	}
 	.bg-title {
 		flex: 1;
 		font-family: var(--font-display);

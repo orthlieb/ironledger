@@ -793,6 +793,7 @@
 	<!-- ── Picker view ────────────────────────────────────────────────────── -->
 
 	<div class="md-header" use:draggable>
+		<span class="drag-grip" aria-hidden="true">⠿</span>
 		<span class="md-title">{headingText('Moves')}</span>
 		<button class="md-close" onclick={close} aria-label="Close">✕</button>
 	</div>
@@ -893,6 +894,7 @@
 	<!-- ── Detail view ───────────────────────────────────────────────────── -->
 
 	<div class="md-header md-header--detail" use:draggable>
+		<span class="drag-grip" aria-hidden="true">⠿</span>
 		<button class="md-back-btn" onclick={backToPicker}>← Back</button>
 		<span class="md-title md-title--detail">{selectedMove.name}</span>
 		<span class="md-category-badge" style:--ccolor={catColor(selectedMove.category)}>

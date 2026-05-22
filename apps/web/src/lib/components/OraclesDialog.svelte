@@ -179,6 +179,7 @@
 
 	<!-- Header -->
 	<div class="od-header" use:draggable>
+		<span class="drag-grip" aria-hidden="true">⠿</span>
 		<span class="od-title">{headingText('Oracles')}</span>
 		<button class="od-close" onclick={close} aria-label="Close">✕</button>
 	</div>
@@ -264,6 +265,7 @@
 
 	<!-- Header -->
 	<div class="od-header od-header--detail" use:draggable>
+		<span class="drag-grip" aria-hidden="true">⠿</span>
 		{#if !directLaunch}
 			<button class="od-back-btn" onclick={() => { view = 'picker'; activeStat = null; }}>← Back</button>
 		{/if}

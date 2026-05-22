@@ -131,6 +131,7 @@
 
 	<!-- Header -->
 	<div class="sd-header" use:draggable>
+		<span class="drag-grip" aria-hidden="true">⠿</span>
 		<span class="sd-title">{headingText('Settings')}</span>
 		<button class="sd-close" onclick={close} aria-label="Close">✕</button>
 	</div>
