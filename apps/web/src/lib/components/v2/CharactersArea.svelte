@@ -117,7 +117,17 @@
 	let nameBeforeEdit    = $state('');
 	let nameInputEl       = $state<HTMLInputElement | null>(null);
 	let bgTextareaEl      = $state<HTMLTextAreaElement | null>(null);
-	$effect(() => { if (editingName && nameInputEl) { nameInputEl.focus(); nameInputEl.select(); } });
+	$effect(() => {
+		if (editingName && nameInputEl) {
+			nameInputEl.focus();
+			nameInputEl.select();
+			// Pull the input into view if the character list / card body has
+			// pushed it off-screen. `nearest` is a no-op when it's already
+			// visible, so click-to-rename on an existing character doesn't
+			// trigger a stray scroll.
+			nameInputEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+		}
+	});
 	$effect(() => { if (editingBackground && bgTextareaEl) bgTextareaEl.focus(); });
 
 	const characters = $derived(getCharacters());
@@ -594,7 +604,13 @@
 		try {
 			const newChar = await createCharacter();
 			activeCharId = newChar.id;
-			activeCard = 'background';
+			activeCard = 'core';
+			// Drop straight into rename mode so the user can name the new
+			// character without an extra click. Reading the default name from
+			// newChar directly because activeData ($derived) won't reflect
+			// the just-set activeCharId synchronously.
+			nameBeforeEdit = (newChar.data as { name?: string })?.name ?? newChar.name ?? '';
+			editingName = true;
 		} catch (err) {
 			console.error('[v2] addCharacter failed', err);
 		} finally {
