@@ -460,12 +460,22 @@
 	function charToMarkdown(char: CharacterFull): string {
 		const d = char.data as Record<string, unknown>;
 		const lines: string[] = [`# ${char.name || 'Unnamed Character'}`, ''];
-		if (d.background) lines.push(`**Background:** ${d.background}`, '');
+		if (d.portrait)    lines.push(`_Has portrait photo — see JSON export for image data._`, '');
+		if (d.background)  lines.push(`**Background:** ${d.background}`, '');
+		const initiativeLabels: Record<number, string> = { 0: 'None', 1: 'You have initiative', 2: 'Foe has initiative' };
+		const init = d.initiative as number | undefined;
+		if (init !== undefined && init !== null) lines.push(`**Initiative:** ${initiativeLabels[init] ?? init}`, '');
 		lines.push('## Stats', `| Edge | Heart | Iron | Shadow | Wits |`, `|------|-------|------|--------|------|`,
 			`| ${d.edge ?? 0} | ${d.heart ?? 0} | ${d.iron ?? 0} | ${d.shadow ?? 0} | ${d.wits ?? 0} |`, '');
 		lines.push('## Resources',
 			`- **Health:** ${d.health ?? 0}/5`, `- **Spirit:** ${d.spirit ?? 0}/5`,
 			`- **Supply:** ${d.supply ?? 0}/5`, `- **Momentum:** ${d.momentum ?? 0}`, '');
+		const gv = d.globalValues as Record<string, string> | undefined;
+		if (gv && Object.keys(gv).length > 0) {
+			lines.push('## Counters');
+			Object.entries(gv).forEach(([k, v]) => lines.push(`- **${k.charAt(0).toUpperCase() + k.slice(1)}:** ${v}`));
+			lines.push('');
+		}
 		lines.push('## Progress', `- **XP:** ${d.xp ?? 0}`,
 			`- **Bonds:** ${formatTicks(Number(d.bonds ?? 0))}`,
 			`- **Failures:** ${formatTicks(Number(d.failures ?? 0))}`, '');
@@ -476,10 +486,15 @@
 			active.forEach(k => lines.push(`- ${k.charAt(0).toUpperCase() + k.slice(1)}`));
 			lines.push('');
 		}
-		const vows = d.vows as Array<{ name: string; difficulty: string; ticks: number }> | undefined;
+		const vows = d.vows as Array<{ name: string; difficulty: string; ticks: number; threat?: string; menace?: number; notes?: string }> | undefined;
 		if (vows?.length) {
 			lines.push('## Vows');
-			vows.forEach(v => lines.push(`- **${v.name}** (${v.difficulty}) — ${formatTicks(v.ticks)}`));
+			vows.forEach(v => {
+				lines.push(`- **${v.name}** (${v.difficulty}) — ${formatTicks(v.ticks)}`);
+				if (v.threat?.trim())  lines.push(`  - Threat: ${v.threat.trim()}`);
+				if (v.menace)          lines.push(`  - Menace: ${v.menace}/10`);
+				if (v.notes?.trim())   lines.push(`  - Notes: ${v.notes.trim()}`);
+			});
 			lines.push('');
 		}
 		const assets = d.assets as Array<{ assetId: string; abilities: boolean[] }> | undefined;
@@ -518,6 +533,8 @@
 			lines.push(`- **Rank:** ${FOE_RANKS[enc.effectiveRank]?.label ?? enc.effectiveRank}`);
 			lines.push(`- **Quantity:** ${enc.quantity.charAt(0).toUpperCase() + enc.quantity.slice(1)}`);
 			lines.push(`- **Progress:** ${formatTicks(enc.ticks)}`);
+			if (enc.currentHarm    !== undefined) lines.push(`- **Escalating Harm:** ${enc.currentHarm}`);
+			if (enc.currentDefense !== undefined) lines.push(`- **Defense Shield:** ${enc.currentDefense}`);
 			if (enc.notes?.trim()) lines.push(`- **Notes:** ${enc.notes.trim()}`);
 			lines.push('');
 		}
@@ -531,12 +548,19 @@
 			const type = exp.type === 'journey' ? 'Journey' : 'Site';
 			lines.push(`## ${exp.name} _(${type})_`);
 			if (exp.imageUrl) lines.push(`_Has portrait photo — see JSON export for image data._`);
+			if (exp.complete) lines.push(`- **Status:** Complete`);
 			lines.push(`- **Difficulty:** ${exp.difficulty.charAt(0).toUpperCase() + exp.difficulty.slice(1)}`);
 			lines.push(`- **Progress:** ${formatTicks(exp.ticks)}`);
 			if (exp.type === 'site') {
-				if (exp.theme)             lines.push(`- **Theme:** ${exp.theme}`);
-				if (exp.domain)            lines.push(`- **Domain:** ${exp.domain}`);
-				if (exp.objective?.trim()) lines.push(`- **Objective:** ${exp.objective.trim()}`);
+				if (exp.theme)                    lines.push(`- **Theme:** ${exp.theme}`);
+				if (exp.domain)                   lines.push(`- **Domain:** ${exp.domain}`);
+				if (exp.objective?.trim())         lines.push(`- **Objective:** ${exp.objective.trim()}`);
+				if (exp.currentFeature?.trim())    lines.push(`- **Current Feature:** ${exp.currentFeature.trim()}`);
+				if (exp.currentDanger?.trim())     lines.push(`- **Current Danger:** ${exp.currentDanger.trim()}`);
+				const activeDenizens = (exp.denizens ?? [])
+					.map(id => id ? (findFoe(id)?.name ?? id) : null)
+					.filter(Boolean) as string[];
+				if (activeDenizens.length > 0) lines.push(`- **Denizens:** ${activeDenizens.join(', ')}`);
 			}
 			if (exp.notes?.trim()) lines.push(``, `**Notes:**`, exp.notes.trim());
 			lines.push('');
