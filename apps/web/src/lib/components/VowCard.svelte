@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Vow, VowDifficulty } from '$lib/types.js';
 	import { VOW_MARK_TICKS } from '$lib/types.js';
-	import ProgressTrack from './ProgressTrack.svelte';
+	import ProgressTrackPanel from './ProgressTrackPanel.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import trashSvg from '$icons/trash-solid.svg?raw';
 	import { isDelveEnabled } from '$lib/expansionStore.svelte.js';
@@ -65,16 +65,6 @@
 		DIFFICULTIES.find((d) => d.value === vow.difficulty)?.label ?? vow.difficulty
 	);
 	const stressCost = $derived(FORSAKE_STRESS[vow.difficulty]);
-
-	function markProgress() {
-		const ticks = VOW_MARK_TICKS[vow.difficulty];
-		vow.ticks = Math.min(40, vow.ticks + ticks);
-	}
-
-	function unmarkProgress() {
-		const ticks = VOW_MARK_TICKS[vow.difficulty];
-		vow.ticks = Math.max(0, vow.ticks - ticks);
-	}
 </script>
 
 <div class="vow-card">
@@ -200,30 +190,14 @@
 				{/if}
 			</div>
 
-			<!-- Progress track — foe-pattern layout: align-self:flex-start +
-			     label-row space-between so the tally lines up with the + button. -->
-			<div class="vow-track-group" style="--track-inner-bg: var(--bg-inset)">
-				<div class="vow-track-label-row">
-					<span class="vow-track-label">Progress</span>
-					<span class="vow-track-tally">{Math.floor(vow.ticks / 4)}/10 boxes{vow.ticks % 4 ? `, ${vow.ticks % 4}/4 ticks` : ''}</span>
-				</div>
-				<div class="vow-track-controls">
-					<ProgressTrack bind:value={vow.ticks} label="" boxes={10} dangerCount={isDelveEnabled() ? vow.menace : 0} />
-					<div class="vow-track-btns">
-						<button
-							class="btn btn-progress"
-							onclick={markProgress}
-							disabled={vow.ticks >= 40}
-							title="Mark progress (+{VOW_MARK_TICKS[vow.difficulty]} ticks)"
-						>+{VOW_MARK_TICKS[vow.difficulty]}</button>
-						<button
-							class="btn btn-progress"
-							onclick={unmarkProgress}
-							disabled={vow.ticks <= 0}
-							title="Unmark progress (−{VOW_MARK_TICKS[vow.difficulty]} ticks)"
-						>−{VOW_MARK_TICKS[vow.difficulty]}</button>
-					</div>
-				</div>
+			<div style="--track-inner-bg: var(--bg-inset)">
+				<ProgressTrackPanel
+					label="Progress"
+					bind:value={vow.ticks}
+					step={VOW_MARK_TICKS[vow.difficulty]}
+					showStep
+					dangerCount={isDelveEnabled() ? vow.menace : 0}
+				/>
 			</div>
 		</div>
 	{/if}
@@ -420,69 +394,6 @@
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 	}
-
-	/* ---- Progress track — foe-pattern layout (align-self:flex-start + space-between label row) ---- */
-	.vow-track-group {
-		display:        flex;
-		flex-direction: column;
-		gap:            6px;
-		align-self:     flex-start;
-	}
-	.vow-track-label-row {
-		display:         flex;
-		justify-content: space-between;
-		align-items:     baseline;
-		gap:             8px;
-	}
-	.vow-track-label {
-		font-family:    var(--font-ui);
-		font-size:      0.7rem;
-		font-weight:    600;
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
-		color:          var(--text-dimmer);
-	}
-	.vow-track-tally {
-		font-family:          var(--font-ui);
-		font-size:            0.65rem;
-		color:                var(--text-dimmer);
-		font-variant-numeric: tabular-nums;
-		white-space:          nowrap;
-	}
-	.vow-track-controls {
-		display:     flex;
-		align-items: center;
-		gap:         6px;
-	}
-	.vow-track-btns {
-		display:     flex;
-		gap:         4px;
-		flex-shrink: 0;
-	}
-
-	.btn-progress {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		height: 22px;
-		padding: 0 7px;
-		border-radius: 3px;
-		border: 1px solid var(--border-mid);
-		background: transparent;
-		color: var(--text-muted);
-		font-family: var(--font-ui);
-		font-size: 0.68rem;
-		font-weight: 600;
-		letter-spacing: 0.02em;
-		cursor: pointer;
-		white-space: nowrap;
-		transition: background 0.12s, color 0.12s;
-	}
-	.btn-progress:hover:not(:disabled) {
-		background: var(--bg-hover);
-		color: var(--text);
-	}
-	.btn-progress:disabled { opacity: 0.35; cursor: not-allowed; }
 
 	.forsake-vow-name {
 		font-family: var(--font-ui);

@@ -29,7 +29,7 @@
 	import { addEncounter } from '$lib/encounterStore.svelte.js';
 	import { onMount } from 'svelte';
 
-	import ProgressTrack    from '$lib/components/ProgressTrack.svelte';
+	import ProgressTrackPanel from '$lib/components/ProgressTrackPanel.svelte';
 	import FoePickerDialog  from '$lib/components/FoePickerDialog.svelte';
 	import DenizenDialog    from '$lib/components/DenizenDialog.svelte';
 	import ConfirmDialog    from '$lib/components/ConfirmDialog.svelte';
@@ -359,11 +359,8 @@
 	}
 
 	// Derived values shared across journey + site
-	const markTicks     = $derived(activeExp ? EXPEDITION_MARK_TICKS[activeExp.difficulty] : 0);
-	const progressScore = $derived(activeExp ? Math.floor(activeExp.ticks / 4) : 0);
+	const markTicks = $derived(activeExp ? EXPEDITION_MARK_TICKS[activeExp.difficulty] : 0);
 
-	function markProgress()   { if (activeExp) updateExp({ ticks: Math.min(40, activeExp.ticks + markTicks) }); }
-	function unmarkProgress() { if (activeExp) updateExp({ ticks: Math.max(0,  activeExp.ticks - markTicks) }); }
 	function handleTrackChange(_o: number, n: number) { updateExp({ ticks: n }); }
 	function toggleComplete() { if (activeExp) updateExp({ complete: !activeExp.complete }); }
 
@@ -708,23 +705,15 @@
 							     surfaced via the rank-coloured pill above. -->
 
 							<!-- Progress track -->
-							<div class="ea-section ea-track-group">
-								<div class="ea-track-label-row">
-									<span class="ea-section-label">Progress track</span>
-									<span class="ea-track-tally">{progressScore}/10 boxes{activeExp.ticks % 4 ? `, ${activeExp.ticks % 4}/4 ticks` : ''}</span>
-								</div>
-								<div class="ea-track-controls">
-									<ProgressTrack
-										label=""
-										value={activeExp.ticks}
-										color={activeColor}
-										onchange={handleTrackChange}
-									/>
-									<div class="ea-track-btns">
-										<button class="btn-progress" onclick={unmarkProgress} disabled={activeExp.ticks <= 0}  title="Unmark progress (−{markTicks} ticks)">−{markTicks}</button>
-										<button class="btn-progress" onclick={markProgress}   disabled={activeExp.ticks >= 40} title="Mark progress (+{markTicks} ticks)">+{markTicks}</button>
-									</div>
-								</div>
+							<div class="ea-section">
+								<ProgressTrackPanel
+									label="Progress track"
+									value={activeExp.ticks}
+									color={activeColor}
+									step={markTicks}
+									showStep
+									onchange={handleTrackChange}
+								/>
 							</div>
 
 						<!-- ── Denizens — 12-cell d100 grid, foe picker per row. ── -->
@@ -1368,51 +1357,4 @@
 	}
 
 	.ea-section { display: flex; flex-direction: column; gap: 4px; }
-	.ea-section-label {
-		font-family: var(--font-ui);
-		font-size: 0.7rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
-		color: var(--text-dimmer);
-	}
-	.ea-track-group {
-		display: flex; flex-direction: column; gap: 6px;
-		align-self: flex-start;
-	}
-	.ea-track-label-row {
-		display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
-	}
-	.ea-track-tally {
-		font-family: var(--font-ui);
-		font-size: 0.65rem;
-		color: var(--text-dimmer);
-		font-variant-numeric: tabular-nums;
-		white-space: nowrap;
-	}
-	.ea-track-controls { display: flex; align-items: center; gap: 6px; }
-	.ea-track-btns { display: flex; gap: 4px; flex-shrink: 0; }
-	.ea-track-btns :global(.btn-progress) {
-		display: inline-flex; align-items: center; justify-content: center;
-		height: 22px;
-		padding: 0 7px;
-		border-radius: 3px;
-		border: 1px solid var(--border-mid);
-		background: transparent;
-		color: var(--text-muted);
-		font-family: var(--font-ui);
-		font-size: 0.68rem;
-		font-weight: 600;
-		letter-spacing: 0.02em;
-		cursor: pointer;
-		white-space: nowrap;
-		transition: background 0.12s, color 0.12s;
-	}
-	.ea-track-btns :global(.btn-progress:hover:not(:disabled)) {
-		background: var(--bg-hover);
-		color: var(--text);
-	}
-	.ea-track-btns :global(.btn-progress:disabled) { opacity: 0.35; cursor: not-allowed; }
-
-
 </style>

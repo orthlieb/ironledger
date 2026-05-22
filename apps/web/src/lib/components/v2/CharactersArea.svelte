@@ -24,7 +24,7 @@
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { findAsset, isAssetsLoading, getAssets } from '$lib/assetStore.svelte.js';
 	import { isDelveEnabled }                    from '$lib/expansionStore.svelte.js';
-	import { hydrateCharacterInPlace, progressText, maxMomentum, momentumReset } from '$lib/character.js';
+	import { hydrateCharacterInPlace, maxMomentum, momentumReset } from '$lib/character.js';
 	import { renderNote }                        from '$lib/markdown.js';
 	import hornedHelmSvg from '$icons/horned-helm.svg?raw';
 	import charactersIconSvg from '$icons/Characters.svg?raw';
@@ -34,7 +34,7 @@
 	import StatControl    from '$lib/components/StatControl.svelte';
 	import ResourceTile   from '$lib/components/ResourceTile.svelte';
 	import MomentumTile   from '$lib/components/MomentumTile.svelte';
-	import ProgressTrack  from '$lib/components/ProgressTrack.svelte';
+	import ProgressTrackPanel from '$lib/components/ProgressTrackPanel.svelte';
 	import ConfirmDialog  from '$lib/components/ConfirmDialog.svelte';
 	import VowCard        from '$lib/components/VowCard.svelte';
 	import DebilitiesSection from '$lib/components/DebilitiesSection.svelte';
@@ -1057,27 +1057,7 @@
 
 								<!-- Bonds & Failures — V1 progress tracks with ± spinners. -->
 								<div class="ca-tracks-row">
-									<div class="ca-track-group">
-										<div class="ca-track-label-row">
-											<span class="ca-track-label">Bonds</span>
-											<span class="ca-track-tally">{progressText(d.bonds ?? 0)}</span>
-										</div>
-										<div class="ca-track-controls">
-											<ProgressTrack label="" bind:value={d.bonds} />
-											<div class="ca-track-btns">
-												<button
-													class="btn btn-track"
-													onclick={() => { d.bonds = Math.max(0, (d.bonds ?? 0) - 1); }}
-													disabled={(d.bonds ?? 0) <= 0}
-												>−</button>
-												<button
-													class="btn btn-track"
-													onclick={() => { d.bonds = Math.min(40, (d.bonds ?? 0) + 1); }}
-													disabled={(d.bonds ?? 0) >= 40}
-												>+</button>
-											</div>
-										</div>
-									</div>
+									<ProgressTrackPanel label="Bonds" bind:value={d.bonds} />
 
 									<!-- Bonds Formed — markdown notes below Bonds track -->
 									<div class="ca-md-notes-wrap">
@@ -1111,27 +1091,7 @@
 									</div>
 
 									{#if isDelveEnabled()}
-										<div class="ca-track-group">
-											<div class="ca-track-label-row">
-												<span class="ca-track-label">Failures</span>
-												<span class="ca-track-tally">{progressText(d.failures ?? 0)}</span>
-											</div>
-											<div class="ca-track-controls">
-												<ProgressTrack label="" bind:value={d.failures} />
-												<div class="ca-track-btns">
-													<button
-														class="btn btn-track"
-														onclick={() => { d.failures = Math.max(0, (d.failures ?? 0) - 1); }}
-														disabled={(d.failures ?? 0) <= 0}
-													>−</button>
-													<button
-														class="btn btn-track"
-														onclick={() => { d.failures = Math.min(40, (d.failures ?? 0) + 1); }}
-														disabled={(d.failures ?? 0) >= 40}
-													>+</button>
-												</div>
-											</div>
-										</div>
+										<ProgressTrackPanel label="Failures" bind:value={d.failures} />
 										<!-- Lessons Learned — markdown notes below Failures -->
 										<div class="ca-md-notes-wrap">
 											<span class="ca-md-notes-label">Lessons Learned</span>
@@ -1834,59 +1794,6 @@
 		gap: 10px;
 		padding-top: 4px;
 	}
-	/* Track group natural-width pattern (mirrors FoesArea):
-	   align-self: flex-start shrinks the group to its widest child (the
-	   controls row of boxes + ± buttons). The label row then uses
-	   space-between so the tally lands at the same right edge as the
-	   + button. */
-	.ca-track-group {
-		display:        flex;
-		flex-direction: column;
-		gap:            6px;
-		align-self:     flex-start;
-	}
-	.ca-track-label-row {
-		display:         flex;
-		justify-content: space-between;
-		align-items:     baseline;
-		gap:             8px;
-	}
-	.ca-track-label {
-		font-family:    var(--font-ui);
-		font-size:      0.7rem;
-		font-weight:    600;
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
-		color:          var(--text-dimmer);
-		margin-bottom:  0;
-	}
-	.ca-track-tally {
-		font-family:          var(--font-ui);
-		font-size:            0.65rem;
-		color:                var(--text-dimmer);
-		font-variant-numeric: tabular-nums;
-		white-space:          nowrap;
-	}
-	.ca-track-controls {
-		display:     flex;
-		align-items: center;
-		gap:         6px;
-	}
-	.ca-track-btns {
-		display:     flex;
-		gap:         4px;
-		flex-shrink: 0;
-	}
-	/* V1's compact track ± button — match CharacterSheet so the buttons line
-	   up with the 22px progress boxes. */
-	:global(.btn-track) {
-		height:     22px;
-		padding:    0 7px;
-		font-size:  0.68rem;
-		line-height: 1;
-		min-width:  unset;
-	}
-
 	/* Shared styles for Bonds Formed + Lessons Learned click-to-edit markdown notes */
 	.ca-md-notes-wrap {
 		display:        flex;

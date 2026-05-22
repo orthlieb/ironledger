@@ -23,7 +23,7 @@
 	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '$lib/foePortrait.js';
 	import type { FoeEncounter, FoeDef, FoeQuantity } from '$lib/types.js';
 
-	import ProgressTrack   from '$lib/components/ProgressTrack.svelte';
+	import ProgressTrackPanel from '$lib/components/ProgressTrackPanel.svelte';
 	import FoePickerDialog from '$lib/components/FoePickerDialog.svelte';
 	import ConfirmDialog   from '$lib/components/ConfirmDialog.svelte';
 	import trashSvg from '$icons/trash-solid-full.svg?raw';
@@ -126,7 +126,6 @@
 	const rankInfo        = $derived(activeEnc ? FOE_RANKS[activeEnc.effectiveRank] : undefined);
 	const qtyDef          = $derived(activeEnc ? FOE_QUANTITIES.find(q => q.value === activeEnc.quantity) : undefined);
 	const natureColor     = $derived(activeDef ? (FOE_NATURE_COLORS[activeDef.nature] ?? '#7A9AB8') : '#7A9AB8');
-	const progressScore   = $derived(activeEnc ? Math.floor(activeEnc.ticks / 4) : 0);
 	const resolvedDesc    = $derived(activeDef ? resolveFoeDescription(activeDef) : '');
 	const hasDescription  = $derived(
 		!!resolvedDesc ||
@@ -154,8 +153,6 @@
 
 	// Progress track
 	function handleTrackChange(_old: number, next: number) { update({ ticks: next }); }
-	function markProgress()   { if (activeEnc) update({ ticks: Math.min(40, activeEnc.ticks + progressTickVal) }); }
-	function unmarkProgress() { if (activeEnc) update({ ticks: Math.max(0,  activeEnc.ticks - progressTickVal) }); }
 
 	// Vanquish
 	function toggleVanquished() { update({ vanquished: !(activeEnc?.vanquished) }); }
@@ -380,27 +377,15 @@
 									</div>
 								{/if}
 
-								<!-- Progress track — matches Characters' Bonds/Failures layout:
-								     fa-track-group's natural width = boxes + ± buttons, so the
-								     label-row (label + tally with justify-content: space-between)
-								     stretches to the same right edge as the buttons. -->
-								<div class="fa-section fa-track-group">
-									<div class="fa-track-label-row">
-										<span class="fa-section-label">Progress track</span>
-										<span class="fa-track-tally">{progressScore}/10 boxes{activeEnc.ticks % 4 ? `, ${activeEnc.ticks % 4}/4 ticks` : ''}</span>
-									</div>
-									<div class="fa-track-controls">
-										<ProgressTrack
-											label=""
-											value={activeEnc.ticks}
-											color={natureColor}
-											onchange={handleTrackChange}
-										/>
-										<div class="fa-track-btns">
-											<button class="btn-progress" onclick={unmarkProgress} disabled={activeEnc.ticks <= 0}  title="Unmark progress (−{progressTickVal} ticks)">−{progressTickVal}</button>
-											<button class="btn-progress" onclick={markProgress}   disabled={activeEnc.ticks >= 40} title="Mark progress (+{progressTickVal} ticks)">+{progressTickVal}</button>
-										</div>
-									</div>
+								<div class="fa-section">
+									<ProgressTrackPanel
+										label="Progress track"
+										value={activeEnc.ticks}
+										color={natureColor}
+										step={progressTickVal}
+										showStep
+										onchange={handleTrackChange}
+									/>
 								</div>
 
 							{:else}
@@ -751,64 +736,4 @@
 		color: var(--text-dimmer);
 	}
 
-	/* Track group — Characters Bonds/Failures pattern. The track-group is a
-	   flex column sized to its content (boxes + ± buttons width). The
-	   label-row uses justify-content: space-between, so the tally's right
-	   edge lands on the same edge as the buttons. align-self: start keeps
-	   the column from stretching to fill the parent. */
-	.fa-track-group {
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-		align-self: flex-start;
-	}
-	.fa-track-label-row {
-		display: flex;
-		justify-content: space-between;
-		align-items: baseline;
-		gap: 8px;
-	}
-	.fa-track-tally {
-		font-family:          var(--font-ui);
-		font-size:            0.65rem;
-		color:                var(--text-dimmer);
-		font-variant-numeric: tabular-nums;
-		white-space:          nowrap;
-	}
-	.fa-track-controls {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-	}
-	.fa-track-btns { display: flex; gap: 4px; flex-shrink: 0; }
-
-	/* Progress ± buttons — mirror FoeCard's .btn-progress. The class is
-	   scoped inside FoeCard's stylesheet, so v2 has to declare its own copy
-	   (otherwise these buttons render unstyled). */
-	.fa-track-btns :global(.btn-progress) {
-		display:        inline-flex;
-		align-items:    center;
-		justify-content: center;
-		height:         22px;
-		padding:        0 7px;
-		border-radius:  3px;
-		border:         1px solid var(--border-mid);
-		background:     transparent;
-		color:          var(--text-muted);
-		font-family:    var(--font-ui);
-		font-size:      0.68rem;
-		font-weight:    600;
-		letter-spacing: 0.02em;
-		cursor:         pointer;
-		white-space:    nowrap;
-		transition:     background 0.12s, color 0.12s;
-	}
-	.fa-track-btns :global(.btn-progress:hover:not(:disabled)) {
-		background: var(--bg-hover);
-		color:      var(--text);
-	}
-	.fa-track-btns :global(.btn-progress:disabled) {
-		opacity: 0.35;
-		cursor:  not-allowed;
-	}
 </style>
