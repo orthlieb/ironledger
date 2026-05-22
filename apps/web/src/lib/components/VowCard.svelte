@@ -200,24 +200,29 @@
 				{/if}
 			</div>
 
-			<!-- Progress track + Mark/Unmark buttons (inline right, same height as boxes) -->
-			<div class="vow-progress-row" style="--track-inner-bg: var(--bg-inset)">
-				<div class="progress-wrap">
-					<ProgressTrack bind:value={vow.ticks} label="" boxes={10} dangerCount={isDelveEnabled() ? vow.menace : 0} />
+			<!-- Progress track — foe-pattern layout: align-self:flex-start +
+			     label-row space-between so the tally lines up with the + button. -->
+			<div class="vow-track-group" style="--track-inner-bg: var(--bg-inset)">
+				<div class="vow-track-label-row">
+					<span class="vow-track-label">Progress</span>
+					<span class="vow-track-tally">{Math.floor(vow.ticks / 4)}/10 boxes{vow.ticks % 4 ? `, ${vow.ticks % 4}/4 ticks` : ''}</span>
 				</div>
-				<div class="vow-actions">
-					<button
-						class="btn btn-progress"
-						onclick={markProgress}
-						disabled={vow.ticks >= 40}
-						title="Mark progress (+{VOW_MARK_TICKS[vow.difficulty]} ticks)"
-					>+{VOW_MARK_TICKS[vow.difficulty]}</button>
-					<button
-						class="btn btn-progress"
-						onclick={unmarkProgress}
-						disabled={vow.ticks <= 0}
-						title="Unmark progress (−{VOW_MARK_TICKS[vow.difficulty]} ticks)"
-					>−{VOW_MARK_TICKS[vow.difficulty]}</button>
+				<div class="vow-track-controls">
+					<ProgressTrack bind:value={vow.ticks} label="" boxes={10} dangerCount={isDelveEnabled() ? vow.menace : 0} />
+					<div class="vow-track-btns">
+						<button
+							class="btn btn-progress"
+							onclick={markProgress}
+							disabled={vow.ticks >= 40}
+							title="Mark progress (+{VOW_MARK_TICKS[vow.difficulty]} ticks)"
+						>+{VOW_MARK_TICKS[vow.difficulty]}</button>
+						<button
+							class="btn btn-progress"
+							onclick={unmarkProgress}
+							disabled={vow.ticks <= 0}
+							title="Unmark progress (−{VOW_MARK_TICKS[vow.difficulty]} ticks)"
+						>−{VOW_MARK_TICKS[vow.difficulty]}</button>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -416,21 +421,42 @@
 		font-size: 0.72rem;
 	}
 
-	/* ---- Progress track row — mirrors Bonds/Failures layout in CharacterSheet ---- */
-	.vow-progress-row {
-		display: flex;
+	/* ---- Progress track — foe-pattern layout (align-self:flex-start + space-between label row) ---- */
+	.vow-track-group {
+		display:        flex;
+		flex-direction: column;
+		gap:            6px;
+		align-self:     flex-start;
+	}
+	.vow-track-label-row {
+		display:         flex;
+		justify-content: space-between;
+		align-items:     baseline;
+		gap:             8px;
+	}
+	.vow-track-label {
+		font-family:    var(--font-ui);
+		font-size:      0.7rem;
+		font-weight:    600;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color:          var(--text-dimmer);
+	}
+	.vow-track-tally {
+		font-family:          var(--font-ui);
+		font-size:            0.65rem;
+		color:                var(--text-dimmer);
+		font-variant-numeric: tabular-nums;
+		white-space:          nowrap;
+	}
+	.vow-track-controls {
+		display:     flex;
 		align-items: center;
-		gap: 6px;
+		gap:         6px;
 	}
-
-	.progress-wrap {
-		flex-shrink: 0;
-	}
-
-	/* Buttons sit inline to the right of the track, flex-shrink: 0 so they never wrap */
-	.vow-actions {
-		display: flex;
-		gap: 4px;
+	.vow-track-btns {
+		display:     flex;
+		gap:         4px;
 		flex-shrink: 0;
 	}
 
