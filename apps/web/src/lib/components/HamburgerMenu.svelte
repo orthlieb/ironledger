@@ -129,7 +129,6 @@
 				<option value="all-characters">All Characters</option>
 				<option value="log">Session Log</option>
 				<option value="communities">Connections</option>
-				<option value="foes">Foes</option>
 				<option value="expeditions">Expeditions</option>
 			</select>
 		</div>

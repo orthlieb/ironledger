@@ -559,24 +559,6 @@
 			zipFiles['expeditions.md'] = strToU8(lines.join('\n').trimEnd());
 		}
 
-		// ── Foes ─────────────────────────────────────────────────────────
-		if (encounters.length) {
-			const lines: string[] = ['# Foes', ''];
-			for (const enc of encounters) {
-				const def  = findFoe(enc.foeId);
-				const name = enc.customName || def?.name || enc.foeId;
-				lines.push(`## ${name}${enc.vanquished ? ' _(Vanquished)_' : ''}`);
-				lines.push(`- **Rank:** ${FOE_RANKS[enc.effectiveRank]?.label ?? enc.effectiveRank}`);
-				lines.push(`- **Quantity:** ${enc.quantity.charAt(0).toUpperCase() + enc.quantity.slice(1)}`);
-				lines.push(`- **Progress:** ${formatTicks(enc.ticks)}`);
-				if (enc.currentHarm    !== undefined) lines.push(`- **Escalating Harm:** ${enc.currentHarm}`);
-				if (enc.currentDefense !== undefined) lines.push(`- **Defense Shield:** ${enc.currentDefense}`);
-				if (enc.notes?.trim()) lines.push(`- **Notes:** ${enc.notes.trim()}`);
-				lines.push('');
-			}
-			zipFiles['foes.md'] = strToU8(lines.join('\n').trimEnd());
-		}
-
 		// ── Session Log ──────────────────────────────────────────────────
 		zipFiles['session-log.md'] = strToU8(logToMarkdown());
 
@@ -705,24 +687,6 @@
 		return lines.join('\n').trimEnd();
 	}
 
-	function foesToMarkdown(): string {
-		if (encounters.length === 0) return '# Foes\n\n_No active foes._\n';
-		const lines = ['# Foes', ''];
-		for (const enc of encounters) {
-			const def  = findFoe(enc.foeId);
-			const name = enc.customName || def?.name || enc.foeId;
-			lines.push(`## ${name}${enc.vanquished ? ' _(Vanquished)_' : ''}`);
-			lines.push(`- **Rank:** ${FOE_RANKS[enc.effectiveRank]?.label ?? enc.effectiveRank}`);
-			lines.push(`- **Quantity:** ${enc.quantity.charAt(0).toUpperCase() + enc.quantity.slice(1)}`);
-			lines.push(`- **Progress:** ${formatTicks(enc.ticks)}`);
-			if (enc.currentHarm    !== undefined) lines.push(`- **Escalating Harm:** ${enc.currentHarm}`);
-			if (enc.currentDefense !== undefined) lines.push(`- **Defense Shield:** ${enc.currentDefense}`);
-			if (enc.notes?.trim()) lines.push(`- **Notes:** ${enc.notes.trim()}`);
-			lines.push('');
-		}
-		return lines.join('\n').trimEnd();
-	}
-
 	function expeditionsToMarkdown(): string {
 		if (expeditions.length === 0) return '# Expeditions\n\n_No active expeditions._\n';
 		const lines = ['# Expeditions', ''];
@@ -783,8 +747,6 @@
 			} else downloadFile(`session-log-${stamp}.md`, logToMarkdown(), 'text/markdown');
 		} else if (content === 'communities') {
 			exportJson('communities', { communities: $state.snapshot(communities), npcs: $state.snapshot(npcs) }, communities.length + npcs.length, `communities-${stamp}.json`);
-		} else if (content === 'foes') {
-			exportJson('foes', $state.snapshot(encounters), encounters.length, `foes-${stamp}.json`);
 		} else if (content === 'expeditions') {
 			exportJson('expeditions', $state.snapshot(expeditions), expeditions.length, `expeditions-${stamp}.json`);
 		}
