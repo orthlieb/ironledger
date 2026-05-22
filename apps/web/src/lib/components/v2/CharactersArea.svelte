@@ -576,6 +576,10 @@
 	let newlyCreatedVowId = $state('');
 	function addVow() {
 		if (!activeData) return;
+		// Switch the card's tab strip to Vows so the new card actually renders;
+		// VowCard's focusName effect can then move the user straight into the
+		// name input.
+		activeCard = 'vows';
 		const newVow: Vow = {
 			id: crypto.randomUUID(),
 			name: '',

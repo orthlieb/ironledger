@@ -43,7 +43,17 @@
 	let nameBeforeEdit = '';
 	let nameInputEl  = $state<HTMLInputElement | null>(null);
 
-	$effect(() => { if (editingName && nameInputEl) nameInputEl.select(); });
+	$effect(() => {
+		if (editingName && nameInputEl) {
+			nameInputEl.focus();
+			nameInputEl.select();
+			// New vows are appended to the end of the list — if the user has a
+			// long list, the new card lives below the visible area. `nearest`
+			// is a no-op when the input is already in view, so clicking an
+			// existing vow name doesn't trigger a stray scroll.
+			nameInputEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+		}
+	});
 	$effect(() => { if (focusName) { nameBeforeEdit = vow.name; editingName = true; } });
 
 	// Inline notes editing (markdown, click-to-edit — same pattern as CommunityCard)
