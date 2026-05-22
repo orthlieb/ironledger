@@ -1944,11 +1944,12 @@
 	}
 	.ca-asset-dialog :global(.asset-body) {
 		/* Cap the body's height so it scrolls internally when an asset is
-		   tall (e.g. Difficulty Factors expanded). Leaves ~3rem for the
-		   sticky header — the dialog's own 80vh cap contains everything.
-		   `overscroll-behavior: contain` stops touch-drag at the body's
-		   scroll boundary from bleeding through to the page on iOS Safari. */
-		max-height: calc(80vh - 3rem);
+		   tall (e.g. Difficulty Factors expanded). Leaves ~3rem each for the
+		   sticky header and the Cancel/Delete footer — the dialog's own
+		   80vh cap contains everything. `overscroll-behavior: contain` stops
+		   touch-drag at the body's scroll boundary from bleeding through to
+		   the page on iOS Safari. */
+		max-height: calc(80vh - 6rem);
 		overflow-y: auto;
 		overscroll-behavior: contain;
 	}

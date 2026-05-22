@@ -67,7 +67,8 @@
 		onOracleLink?:  (key: string, stat?: string) => void;
 		/** When true (e.g. v2 dialog), start expanded and hide the collapse toggle. */
 		forceExpanded?: boolean;
-		/** When provided, an ✕ close button is rendered in the upper-right of the header. */
+		/** When provided alongside forceExpanded, a Cancel/Delete footer is rendered
+		    at the bottom of the card. Cancel invokes this callback. */
 		onClose?:       () => void;
 	} = $props();
 
@@ -311,20 +312,16 @@
 			{enabledCount}/{total}
 		</span>
 
-		<button
-			class="btn btn-icon icon-btn btn-trash"
-			onclick={onRemove}
-			title="Remove asset"
-			aria-label="Remove {definition.name}"
-		>{@html trashSvg}</button>
-
-		{#if onClose}
+		{#if !forceExpanded}
+			<!-- Inline mode (collapsible card on character sheet): trash sits in the
+			     header. Dialog mode (forceExpanded) moves Delete to the footer below
+			     so it isn't crammed against the close affordance. -->
 			<button
-				class="dialog-close-btn"
-				onclick={onClose}
-				aria-label="Close"
-				title="Close"
-			>✕</button>
+				class="btn btn-icon icon-btn btn-trash"
+				onclick={onRemove}
+				title="Remove asset"
+				aria-label="Remove {definition.name}"
+			>{@html trashSvg}</button>
 		{/if}
 	</div>
 
@@ -746,6 +743,18 @@
 		</div>
 	{/if}
 
+	{#if forceExpanded && onClose}
+		<!-- Dialog-mode footer — mirrors AssetPicker's cancel/confirm pattern. -->
+		<div class="asset-footer">
+			<button class="btn" onclick={onClose}>Cancel</button>
+			<button
+				class="btn btn-danger"
+				onclick={onRemove}
+				aria-label="Delete {definition.name}"
+			>Delete</button>
+		</div>
+	{/if}
+
 </div>
 
 <style>
@@ -782,23 +791,6 @@
 		transition: color 0.12s;
 	}
 	.collapse-btn:hover { color: var(--text); }
-
-	.dialog-close-btn {
-		all:          unset;
-		cursor:       pointer;
-		line-height:  1;
-		font-size:    0.85rem;
-		color:        var(--text-dimmer);
-		opacity:      0.6;
-		padding:      2px 4px;
-		border-radius: 3px;
-		flex-shrink:  0;
-		transition:   opacity 0.15s, background 0.15s;
-	}
-	.dialog-close-btn:hover {
-		opacity:    1;
-		background: var(--bg-hover);
-	}
 
 	.asset-name-group {
 		flex: 1;
@@ -880,6 +872,16 @@
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
+	}
+
+	/* ---- Dialog-mode footer (Cancel + Delete) ---- */
+	.asset-footer {
+		display: flex;
+		gap: 8px;
+		justify-content: flex-end;
+		padding: 10px 12px;
+		border-top: 1px solid var(--border);
+		background: var(--bg-control);
 	}
 
 	.asset-preamble {
