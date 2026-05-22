@@ -27,7 +27,7 @@
 		loadCharacters, getCharacters,
 		createCharacter,
 	} from '$lib/characterStore.svelte.js';
-	import { loadEncounters, getEncounters, addEncounter } from '$lib/encounterStore.svelte.js';
+	import { loadEncounters, getEncounters } from '$lib/encounterStore.svelte.js';
 	import { loadExpeditions, getExpeditions, addExpedition } from '$lib/expeditionStore.svelte.js';
 	import { loadCommunities, getCommunities, addCommunity } from '$lib/communityStore.svelte.js';
 	import { loadNpcs, getNpcs, addNpc } from '$lib/npcStore.svelte.js';
@@ -347,9 +347,6 @@
 					const d = parsed.data as { communities?: Community[]; npcs?: Npc[] };
 					for (const c of d.communities ?? []) await addCommunity(c);
 					for (const n of d.npcs ?? [])        await addNpc(n);
-				} else if (m.type === 'foes') {
-					const entries = parsed.data as import('$lib/types.js').FoeEncounter[];
-					for (const enc of entries) await addEncounter(enc);
 				} else if (m.type === 'expeditions') {
 					const entries = parsed.data as Expedition[];
 					for (const exp of entries) await addExpedition(exp);
@@ -359,14 +356,12 @@
 						log?:         Array<Record<string, unknown>>;
 						communities?: Community[];
 						npcs?:        Npc[];
-						foes?:        import('$lib/types.js').FoeEncounter[];
 						expeditions?: Expedition[];
 					};
 					for (const entry of d.characters ?? []) await createCharacter(entry.name ?? 'Imported Character', entry.data ?? {});
 					for (const entry of d.log ?? [])        appendSafeLog(entry);
 					for (const c of d.communities ?? [])    await addCommunity(c);
 					for (const n of d.npcs ?? [])           await addNpc(n);
-					for (const enc of d.foes ?? [])         await addEncounter(enc);
 					for (const exp of d.expeditions ?? [])  await addExpedition(exp);
 				}
 			} else {
@@ -785,7 +780,7 @@
 >
 	<div style="display:flex; flex-direction:column; gap:8px; font-family:var(--font-ui); font-size:0.8rem; line-height:1.5; color:var(--text-muted);">
 		<p style="margin:0;">Importing a file will <strong style="color:var(--text);">replace</strong> the matching data in your current session.</p>
-		<p style="margin:0;">Depending on the file type, this may overwrite characters, the session log, foes, expeditions, or all campaign data.</p>
+		<p style="margin:0;">Depending on the file type, this may overwrite characters, the session log, expeditions, connections, or all campaign data.</p>
 		<p style="margin:0;">This action cannot be undone. Make sure you have exported a backup if needed.</p>
 		{#if importError}<p style="margin:0; color:var(--color-danger);">{importError}</p>{/if}
 	</div>
