@@ -350,6 +350,7 @@
 
 			{#if activeEntry}
 				<div class="cm-stage-header" style="--cm-nature: {activeColor}">
+					<span class="cm-stage-icon" aria-hidden="true">{@html activeEntry.kind === 'npc' ? farmerSvg : hutSvg}</span>
 					{#if editingName}
 						<input
 							bind:this={nameInputEl}
@@ -506,22 +507,36 @@
 						{:else if activeTab === 'notes'}
 							<div class="cm-notes-section">
 								{#if !editingNotes}
-									<label class="cm-portrait-label" title="Click to change portrait">
+									<div class="cm-portrait-wrap">
+										<label class="cm-portrait-label" title="Click to change portrait">
+											{#if activeEntry.data.imageUrl}
+												<img class="cm-portrait" src={activeEntry.data.imageUrl} alt={activeEntry.data.name} />
+											{:else}
+												<div class="cm-portrait cm-portrait--placeholder" aria-hidden="true">
+													{@html activeEntry.kind === 'npc' ? farmerSvg : hutSvg}
+												</div>
+											{/if}
+											<input
+												type="file"
+												accept="image/*"
+												class="cm-portrait-input"
+												onchange={handlePortrait}
+												aria-label="Upload portrait"
+											/>
+										</label>
 										{#if activeEntry.data.imageUrl}
-											<img class="cm-portrait" src={activeEntry.data.imageUrl} alt={activeEntry.data.name} />
-										{:else}
-											<div class="cm-portrait cm-portrait--placeholder" aria-hidden="true">
-												{@html activeEntry.kind === 'npc' ? farmerSvg : hutSvg}
-											</div>
+											<button
+												type="button"
+												class="cm-portrait-clear"
+												onclick={() => {
+													if (activeEntry?.kind === 'community') updateCommunity({ imageUrl: '' });
+													else if (activeEntry?.kind === 'npc')  updateNpc({ imageUrl: '' });
+												}}
+												title="Clear portrait"
+												aria-label="Clear portrait"
+											>✕</button>
 										{/if}
-										<input
-											type="file"
-											accept="image/*"
-											class="cm-portrait-input"
-											onchange={handlePortrait}
-											aria-label="Upload portrait"
-										/>
-									</label>
+									</div>
 								{/if}
 
 								{#if editingNotes}
@@ -747,6 +762,20 @@
 		border-left: 3px solid var(--cm-nature, var(--text-muted));
 		border-bottom: 1px solid var(--border);
 	}
+	.cm-stage-icon {
+		display:         flex;
+		align-items:     center;
+		justify-content: center;
+		width:           18px;
+		height:          18px;
+		flex-shrink:     0;
+		color:           var(--cm-nature, var(--text-muted));
+	}
+	.cm-stage-icon :global(svg) {
+		width:  100%;
+		height: 100%;
+		fill:   currentColor;
+	}
 	.cm-stage-name {
 		appearance:     none;
 		-webkit-appearance: none;
@@ -841,19 +870,23 @@
 		display: block;
 		margin-bottom: 4px;
 	}
+	.cm-portrait-wrap {
+		position: relative;
+		float: right;
+		margin: 0 0 10px 14px;
+		shape-outside: margin-box;
+	}
 	.cm-portrait-label {
-		display: contents;
+		display: block;
 		cursor: pointer;
 	}
 	.cm-portrait {
-		float: right;
+		display: block;
 		width: 170px; height: 170px; max-height: 240px;
 		object-fit: cover;
-		margin: 0 0 10px 14px;
 		border: 1px solid var(--border);
 		border-radius: 6px;
 		opacity: 0.95;
-		shape-outside: margin-box;
 		transition: opacity 0.12s;
 	}
 	.cm-portrait-label:hover .cm-portrait { opacity: 0.75; }
@@ -869,6 +902,23 @@
 		position: absolute;
 		left: -9999px; width: 1px; height: 1px;
 	}
+	.cm-portrait-clear {
+		position: absolute;
+		top: 4px; right: 4px;
+		z-index: 2;
+		width: 22px; height: 22px;
+		display: flex; align-items: center; justify-content: center;
+		padding: 0;
+		border: none;
+		border-radius: 50%;
+		background: rgba(0,0,0,0.55);
+		color: #fff;
+		font-size: 0.7rem;
+		line-height: 1;
+		cursor: pointer;
+		transition: background 0.12s;
+	}
+	.cm-portrait-clear:hover { background: rgba(0,0,0,0.8); }
 
 	.cm-notes--display {
 		cursor: pointer;

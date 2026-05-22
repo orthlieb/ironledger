@@ -825,26 +825,37 @@
 								     background is being edited so the textarea gets the full
 								     card width; reappears on blur. -->
 								{#if !editingBackground}
-									<label class="ca-bg-portrait-label" title="Click to change portrait">
-										{#if d.portrait}
-											<img
-												class="ca-bg-portrait"
-												src={d.portrait}
-												alt="Portrait of {d.name || activeChar.name}"
+									<div class="ca-bg-portrait-wrap">
+										<label class="ca-bg-portrait-label" title="Click to change portrait">
+											{#if d.portrait}
+												<img
+													class="ca-bg-portrait"
+													src={d.portrait}
+													alt="Portrait of {d.name || activeChar.name}"
+												/>
+											{:else}
+												<div class="ca-bg-portrait ca-bg-portrait--placeholder" aria-hidden="true">
+													{@html hornedHelmSvg}
+												</div>
+											{/if}
+											<input
+												type="file"
+												accept="image/*"
+												class="ca-bg-portrait-input"
+												onchange={handlePortrait}
+												aria-label="Upload portrait"
 											/>
-										{:else}
-											<div class="ca-bg-portrait ca-bg-portrait--placeholder" aria-hidden="true">
-												{@html hornedHelmSvg}
-											</div>
+										</label>
+										{#if d.portrait}
+											<button
+												type="button"
+												class="ca-bg-portrait-clear"
+												onclick={() => { (activeChar.data as Record<string, unknown>).portrait = ''; }}
+												title="Clear portrait"
+												aria-label="Clear portrait"
+											>✕</button>
 										{/if}
-										<input
-											type="file"
-											accept="image/*"
-											class="ca-bg-portrait-input"
-											onchange={handlePortrait}
-											aria-label="Upload portrait"
-										/>
-									</label>
+									</div>
 								{/if}
 
 								<!-- Editable background — click renders a textarea, otherwise
@@ -1500,20 +1511,24 @@
 		display: block;
 		position: relative;
 	}
+	.ca-bg-portrait-wrap {
+		position:      relative;
+		float:         right;
+		margin:        0 0 10px 14px;
+		shape-outside: margin-box;
+	}
 	.ca-bg-portrait-label {
-		display: contents;            /* let the inner <img> own the float */
-		cursor: pointer;
+		display: block;
+		cursor:  pointer;
 	}
 	.ca-bg-portrait {
-		float:         right;
+		display:       block;
 		width:         170px;
 		height:        170px;
 		max-height:    240px;
 		object-fit:    cover;
-		margin:        0 0 10px 14px;
 		border:        1px solid var(--border);
 		border-radius: 6px;
-		shape-outside: margin-box;
 		opacity:       0.95;
 		transition:    opacity 0.12s;
 	}
@@ -1536,6 +1551,27 @@
 		width:    1px;
 		height:   1px;
 	}
+	.ca-bg-portrait-clear {
+		position:        absolute;
+		top:             4px;
+		right:           4px;
+		z-index:         2;
+		width:           22px;
+		height:          22px;
+		display:         flex;
+		align-items:     center;
+		justify-content: center;
+		padding:         0;
+		border:          none;
+		border-radius:   50%;
+		background:      rgba(0,0,0,0.55);
+		color:           #fff;
+		font-size:       0.7rem;
+		line-height:     1;
+		cursor:          pointer;
+		transition:      background 0.12s;
+	}
+	.ca-bg-portrait-clear:hover { background: rgba(0,0,0,0.8); }
 
 	/* Editable name / background — click to edit affordances. */
 	.ca-card-name--editable {

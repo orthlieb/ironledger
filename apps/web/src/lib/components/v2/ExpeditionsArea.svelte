@@ -493,6 +493,7 @@
 				<!-- Name + delete header — coloured band on the LHS keyed to type
 				     (green = journey, blue = site). -->
 				<div class="ea-stage-header" style="--ea-nature: {activeColor}">
+					<span class="ea-stage-icon" aria-hidden="true">{@html placeholderImg}</span>
 					{#if editingName}
 						<input
 							bind:this={nameInputEl}
@@ -566,20 +567,31 @@
 							{/if}
 							<div class="ea-desc-section">
 								{#if !editingNotes}
-									<label class="ea-portrait-label" title="Click to change portrait">
+									<div class="ea-portrait-wrap">
+										<label class="ea-portrait-label" title="Click to change portrait">
+											{#if activeExp.imageUrl}
+												<img class="ea-portrait" src={activeExp.imageUrl} alt={activeExp.name} />
+											{:else}
+												<div class="ea-portrait ea-portrait--placeholder" aria-hidden="true">{@html placeholderImg}</div>
+											{/if}
+											<input
+												type="file"
+												accept="image/*"
+												class="ea-portrait-input"
+												onchange={handlePortrait}
+												aria-label="Upload portrait"
+											/>
+										</label>
 										{#if activeExp.imageUrl}
-											<img class="ea-portrait" src={activeExp.imageUrl} alt={activeExp.name} />
-										{:else}
-											<div class="ea-portrait ea-portrait--placeholder" aria-hidden="true">{@html placeholderImg}</div>
+											<button
+												type="button"
+												class="ea-portrait-clear"
+												onclick={() => updateExp({ imageUrl: '' })}
+												title="Clear portrait"
+												aria-label="Clear portrait"
+											>✕</button>
 										{/if}
-										<input
-											type="file"
-											accept="image/*"
-											class="ea-portrait-input"
-											onchange={handlePortrait}
-											aria-label="Upload portrait"
-										/>
-									</label>
+									</div>
 								{/if}
 
 								{#if editingNotes}
@@ -985,6 +997,20 @@
 		border-left: 3px solid var(--ea-nature, var(--text-muted));
 		border-bottom: 1px solid var(--border);
 	}
+	.ea-stage-icon {
+		display:         flex;
+		align-items:     center;
+		justify-content: center;
+		width:           18px;
+		height:          18px;
+		flex-shrink:     0;
+		color:           var(--ea-nature, var(--text-muted));
+	}
+	.ea-stage-icon :global(svg) {
+		width:  100%;
+		height: 100%;
+		fill:   currentColor;
+	}
 	.ea-stage-name {
 		appearance:     none;
 		-webkit-appearance: none;
@@ -1087,19 +1113,23 @@
 
 	/* ── Description tab ── portrait floats right; notes wrap. */
 	.ea-desc-section { display: block; }
+	.ea-portrait-wrap {
+		position: relative;
+		float: right;
+		margin: 0 0 10px 14px;
+		shape-outside: margin-box;
+	}
 	.ea-portrait-label {
-		display: contents;
+		display: block;
 		cursor: pointer;
 	}
 	.ea-portrait {
-		float: right;
+		display: block;
 		width: 170px; height: 170px; max-height: 240px;
 		object-fit: cover;
-		margin: 0 0 10px 14px;
 		border: 1px solid var(--border);
 		border-radius: 6px;
 		opacity: 0.95;
-		shape-outside: margin-box;
 		transition: opacity 0.12s;
 	}
 	.ea-portrait-label:hover .ea-portrait { opacity: 0.75; }
@@ -1115,6 +1145,23 @@
 		position: absolute;
 		left: -9999px; width: 1px; height: 1px;
 	}
+	.ea-portrait-clear {
+		position: absolute;
+		top: 4px; right: 4px;
+		z-index: 2;
+		width: 22px; height: 22px;
+		display: flex; align-items: center; justify-content: center;
+		padding: 0;
+		border: none;
+		border-radius: 50%;
+		background: rgba(0,0,0,0.55);
+		color: #fff;
+		font-size: 0.7rem;
+		line-height: 1;
+		cursor: pointer;
+		transition: background 0.12s;
+	}
+	.ea-portrait-clear:hover { background: rgba(0,0,0,0.8); }
 
 	.ea-notes--display {
 		cursor: pointer;
