@@ -15,6 +15,7 @@
 	import type { Site, FoeDef, FoeQuantity } from '$lib/types.js';
 	import { DENIZEN_CELLS } from '$lib/types.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
+	import { draggable } from '$lib/actions/draggable.js';
 	import {
 		loadFoes, getFoes, RANK_COLORS, FOE_RANKS, FOE_QUANTITIES,
 		FOE_NATURE_COLORS, effectiveRank as calcEffectiveRank,
@@ -138,7 +139,8 @@
 
 	<!-- ===== TABLE VIEW ===== -->
 	{#if view === 'table'}
-		<div class="dd-header">
+		<div class="dd-header" use:draggable>
+			<span class="drag-grip" aria-hidden="true">⠿</span>
 			<span class="dd-title">{headingText('Denizen Table')}</span>
 		</div>
 
@@ -174,7 +176,8 @@
 	{:else if view === 'result'}
 		{@const qtyDef = FOE_QUANTITIES.find(q => q.value === quantity)}
 
-		<div class="dd-back-bar">
+		<div class="dd-back-bar" use:draggable>
+			<span class="drag-grip" aria-hidden="true">⠿</span>
 			<button class="btn dd-back-btn" onclick={() => (view = 'table')}>← Back</button>
 			<span class="dd-title">{headingText(rolledFoe?.name ?? (rolledName || 'Unknown Denizen'))}</span>
 		</div>

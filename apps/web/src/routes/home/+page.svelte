@@ -805,7 +805,6 @@
 		box-sizing:     border-box;
 		overflow:       hidden;
 	}
-	.home-shell > .home-log { margin-left: 4px; }
 	.home-shell--dragging      { cursor: col-resize; user-select: none; }
 	.home-shell--dragging *    { pointer-events: none; }
 	.home-shell--mob-dragging  { cursor: row-resize; user-select: none; }
@@ -948,7 +947,6 @@
 		}
 
 		/* Desktop gutters and resize handles invisible on mobile */
-		.home-shell > .home-log { margin-left: 0; }
 		.home-resize-handle     { display: none; }
 		.col-resize-handle      { display: none; }
 		.row-resize-handle      { display: none; }

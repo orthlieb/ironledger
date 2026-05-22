@@ -12,6 +12,7 @@
 	import { getVisibleAssets, isAssetsLoading } from '$lib/assetStore.svelte.js';
 	import { firstPreconditionFailure, type Precondition } from '$lib/preconditions.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
+	import { draggable } from '$lib/actions/draggable.js';
 
 	let {
 		ownedIds       = [],
@@ -190,8 +191,9 @@
 	class="picker-dialog"
 	oncancel={onClose}
 >
-	<!-- Header -->
-	<div class="picker-header">
+	<!-- Header — mirrors OraclesDialog .od-header (draggable, with gripper) -->
+	<div class="picker-header" use:draggable>
+		<span class="drag-grip" aria-hidden="true">⠿</span>
 		<span class="picker-title">{headingText('Choose an Asset')}</span>
 		<button class="close-btn" onclick={onClose} aria-label="Close picker">✕</button>
 	</div>
@@ -378,24 +380,27 @@
 		backdrop-filter: blur(2px);
 	}
 
-	/* ---- Header ---- */
+	/* ---- Header — mirrors OraclesDialog .od-header style ---- */
 	.picker-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 11px 16px 10px;
-		border-bottom: 1px solid var(--border);
-		flex-shrink: 0;
+		display:         flex;
+		align-items:     center;
+		gap:             8px;
+		padding:         10px 14px;
+		border-bottom:   1px solid var(--border);
+		background:      var(--bg-control);
+		border-radius:   10px 10px 0 0;
+		flex-shrink:     0;
 	}
 
 	.picker-title {
 		font-family:    var(--font-display);
-		font-size:      calc(0.82rem * var(--font-display-scale));
+		font-size:      calc(0.78rem * var(--font-display-scale));
 		font-weight:    var(--font-display-weight);
 		font-variant:   var(--font-display-variant);
 		letter-spacing: 0.08em;
 		text-transform: var(--font-display-transform);
 		color:          var(--text-accent);
+		flex:           1;
 	}
 
 	.close-btn {

@@ -20,6 +20,7 @@
 	} from '$lib/foeStore.svelte.js';
 	import { sourceLabel } from '$lib/expansionStore.svelte.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
+	import { draggable } from '$lib/actions/draggable.js';
 	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '$lib/foePortrait.js';
 	import FoeImageCarousel from '$lib/components/FoeImageCarousel.svelte';
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
@@ -211,7 +212,8 @@
 	<!-- ===== PICKER VIEW ===== -->
 	{#if view === 'picker'}
 		<div class="fd-header">
-			<div class="fd-header-row">
+			<div class="fd-header-row" use:draggable>
+				<span class="drag-grip" aria-hidden="true">⠿</span>
 				<span class="fd-title">{headingText(_mode === 'denizen' ? 'Pick a Denizen' : 'Choose a Foe')}</span>
 				<button class="fd-close-btn" onclick={close} aria-label="Close">✕</button>
 			</div>
@@ -334,7 +336,8 @@
 		{@const resolvedDesc = resolveFoeDescription(confirmFoe)}
 
 		<!-- Back bar -->
-		<div class="fd-back-bar" style="--nature-color: {natureColor}">
+		<div class="fd-back-bar" style="--nature-color: {natureColor}" use:draggable>
+			<span class="drag-grip" aria-hidden="true">⠿</span>
 			{#if !_noBack}
 				<button class="btn fd-back-btn" onclick={goBack}>← Back</button>
 			{/if}
@@ -475,14 +478,14 @@
 	}
 
 	.fd-title {
-		font-family: var(--font-display);
-		font-size: calc(1rem * var(--font-display-scale));
-		font-weight: var(--font-display-weight);
-		font-variant: var(--font-display-variant);
+		font-family:    var(--font-display);
+		font-size:      calc(0.78rem * var(--font-display-scale));
+		font-weight:    var(--font-display-weight);
+		font-variant:   var(--font-display-variant);
 		letter-spacing: 0.08em;
 		text-transform: var(--font-display-transform);
-		color: var(--text-accent);
-		flex: 1;
+		color:          var(--text-accent);
+		flex:           1;
 	}
 
 	.fd-close-btn {
