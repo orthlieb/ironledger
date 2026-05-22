@@ -1058,23 +1058,23 @@
 								<!-- Bonds & Failures — V1 progress tracks with ± spinners. -->
 								<div class="ca-tracks-row">
 									<div class="ca-track-group">
-										<div class="ca-track-label-row">
-											<span class="ca-track-label">Bonds</span>
-											<span class="ca-track-tally">{progressText(d.bonds ?? 0)}</span>
-										</div>
+										<span class="ca-track-label">Bonds</span>
 										<div class="ca-track-controls">
 											<ProgressTrack label="" bind:value={d.bonds} />
 											<div class="ca-track-actions">
-												<button
-													class="btn btn-track"
-													onclick={() => { d.bonds = Math.max(0, (d.bonds ?? 0) - 1); }}
-													disabled={(d.bonds ?? 0) <= 0}
-												>−</button>
-												<button
-													class="btn btn-track"
-													onclick={() => { d.bonds = Math.min(40, (d.bonds ?? 0) + 1); }}
-													disabled={(d.bonds ?? 0) >= 40}
-												>+</button>
+												<span class="ca-track-tally">{progressText(d.bonds ?? 0)}</span>
+												<div class="ca-track-btns">
+													<button
+														class="btn btn-track"
+														onclick={() => { d.bonds = Math.max(0, (d.bonds ?? 0) - 1); }}
+														disabled={(d.bonds ?? 0) <= 0}
+													>−</button>
+													<button
+														class="btn btn-track"
+														onclick={() => { d.bonds = Math.min(40, (d.bonds ?? 0) + 1); }}
+														disabled={(d.bonds ?? 0) >= 40}
+													>+</button>
+												</div>
 											</div>
 										</div>
 									</div>
@@ -1112,23 +1112,23 @@
 
 									{#if isDelveEnabled()}
 										<div class="ca-track-group">
-											<div class="ca-track-label-row">
-												<span class="ca-track-label">Failures</span>
-												<span class="ca-track-tally">{progressText(d.failures ?? 0)}</span>
-											</div>
+											<span class="ca-track-label">Failures</span>
 											<div class="ca-track-controls">
 												<ProgressTrack label="" bind:value={d.failures} />
 												<div class="ca-track-actions">
-													<button
-														class="btn btn-track"
-														onclick={() => { d.failures = Math.max(0, (d.failures ?? 0) - 1); }}
-														disabled={(d.failures ?? 0) <= 0}
-													>−</button>
-													<button
-														class="btn btn-track"
-														onclick={() => { d.failures = Math.min(40, (d.failures ?? 0) + 1); }}
-														disabled={(d.failures ?? 0) >= 40}
-													>+</button>
+													<span class="ca-track-tally">{progressText(d.failures ?? 0)}</span>
+													<div class="ca-track-btns">
+														<button
+															class="btn btn-track"
+															onclick={() => { d.failures = Math.max(0, (d.failures ?? 0) - 1); }}
+															disabled={(d.failures ?? 0) <= 0}
+														>−</button>
+														<button
+															class="btn btn-track"
+															onclick={() => { d.failures = Math.min(40, (d.failures ?? 0) + 1); }}
+															disabled={(d.failures ?? 0) >= 40}
+														>+</button>
+													</div>
 												</div>
 											</div>
 										</div>
@@ -1839,12 +1839,6 @@
 		flex-direction: column;
 		gap: 6px;
 	}
-	.ca-track-label-row {
-		display: flex;
-		justify-content: space-between;
-		align-items: baseline;
-		gap: 8px;
-	}
 	/* Mirror V1 .section-label exactly (margin-bottom 0 inside tracks-row). */
 	.ca-track-label {
 		font-family:    var(--font-ui);
@@ -1861,6 +1855,7 @@
 		color:                var(--text-dimmer);
 		font-variant-numeric: tabular-nums;
 		white-space:          nowrap;
+		text-align:           right;
 	}
 	.ca-track-controls {
 		display: flex;
@@ -1868,9 +1863,15 @@
 		gap: 6px;
 	}
 	.ca-track-actions {
+		display:         flex;
+		flex-direction:  column;
+		align-items:     flex-end;
+		gap:             2px;
+		flex-shrink:     0;
+	}
+	.ca-track-btns {
 		display: flex;
-		gap: 4px;
-		flex-shrink: 0;
+		gap:     4px;
 	}
 	/* V1's compact track ± button — match CharacterSheet so the buttons line
 	   up with the 22px progress boxes. */
