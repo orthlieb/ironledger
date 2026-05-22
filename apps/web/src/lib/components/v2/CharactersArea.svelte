@@ -1743,12 +1743,15 @@
 	.ca-stats-row > :global(*) { flex: 0 0 auto; }
 
 	.ca-vitals-row {
-		display:               grid;
-		grid-template-columns: repeat(3, 80px);
-		gap:                   8px;
-		align-items:           stretch;
-		flex:                  1;
+		display:         flex;
+		flex-wrap:       wrap;
+		justify-content: flex-start;
+		align-items:     stretch;
+		gap:             8px;
+		flex:            1;
 	}
+	.ca-vitals-row > :global(*) { flex: 0 0 auto; }
+	.ca-vitals-row > :global(.mt-tile) { width: 168px; }
 
 	/* Debilities — Conditions / Banes / Burdens grid above Bonds/Failures.
 	   padding-bottom matches v2 ExpeditionsArea's .ea-pills-row (14px) so the

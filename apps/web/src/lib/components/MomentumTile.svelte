@@ -87,7 +87,7 @@
 		background:      color-mix(in srgb, var(--mt-color) 8%, var(--bg-card));
 		overflow:        hidden;
 		gap:             0;
-		grid-column:     span 2;
+		flex-shrink:     0;
 	}
 
 	/* Background icon — sits behind left column */
