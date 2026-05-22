@@ -52,9 +52,14 @@
 	const LOG_WIDTH_KEY      = 'il:home:logWidth';
 	const MIN_LOG            = 240;
 	const MAX_LOG            = 800;
-	const MOB_LOG_HEIGHT_KEY = 'il:home:mobLogHeight';
-	const MIN_MOB_LOG        = 80;
-	const MAX_MOB_LOG_FRAC   = 0.70;
+	const MOB_LOG_HEIGHT_KEY  = 'il:home:mobLogHeight';
+	const MIN_MOB_LOG         = 80;
+	const MAX_MOB_LOG_FRAC    = 0.70;
+	const COL1_WIDTH_KEY      = 'il:home:col1Width';
+	const CHAR_HEIGHT_KEY     = 'il:home:charHeight';
+	const EXPED_HEIGHT_KEY    = 'il:home:expedHeight';
+	const MIN_COL             = 200;
+	const MIN_AREA            = 80;
 
 	/** Desktop: log column width in px. */
 	let logWidth = $state(0);
@@ -66,7 +71,15 @@
 	let mobileTab    = $state<MobileTab>('characters');
 	let mobLogHeight = $state(200);   // px; updated in onMount from saved pref / viewport
 	let mobDragging  = $state(false);
-	let isMobile     = $state(false);
+	let isMobile      = $state(false);
+	let col1Width     = $state<number | null>(null);
+	let charHeight    = $state<number | null>(null);
+	let expedHeight   = $state<number | null>(null);
+	let colDragging   = $state(false);
+	let charDragging  = $state(false);
+	let expedDragging = $state(false);
+	let charFoeColEl  = $state<HTMLDivElement | null>(null);
+	let expCommColEl  = $state<HTMLDivElement | null>(null);
 
 	/** Ref to ExpeditionsArea — forwards log link actions. */
 	let expAreaRef = $state<{
@@ -124,6 +137,34 @@
 			mobLogHeight = savedMob;
 		} else {
 			mobLogHeight = Math.round(window.innerHeight * 0.25);
+		}
+
+		// Desktop column split (col1 pixel width)
+		const savedCol1 = Number(localStorage.getItem(COL1_WIDTH_KEY));
+		// Available width = shell width minus padding (20px) minus log minus two 6px handles
+		const shellW   = shellEl?.offsetWidth ?? window.innerWidth;
+		const availW   = shellW - 20 - logWidth - 12;
+		if (Number.isFinite(savedCol1) && savedCol1 >= MIN_COL && savedCol1 <= availW - MIN_COL) {
+			col1Width = savedCol1;
+		} else {
+			col1Width = Math.max(MIN_COL, Math.round(availW / 2));
+		}
+
+		// Desktop row splits (chars/foes and expeditions/communities)
+		const savedChar  = Number(localStorage.getItem(CHAR_HEIGHT_KEY));
+		const savedExped = Number(localStorage.getItem(EXPED_HEIGHT_KEY));
+		// Read the actual col heights while the grid is still at 1fr/1fr fallback
+		const charFoeH = charFoeColEl?.offsetHeight ?? Math.round(window.innerHeight * 0.8);
+		const expCommH = expCommColEl?.offsetHeight ?? charFoeH;
+		if (Number.isFinite(savedChar) && savedChar >= MIN_AREA && savedChar <= charFoeH - 6 - MIN_AREA) {
+			charHeight = savedChar;
+		} else {
+			charHeight = Math.max(MIN_AREA, Math.round((charFoeH - 6) / 2));
+		}
+		if (Number.isFinite(savedExped) && savedExped >= MIN_AREA && savedExped <= expCommH - 6 - MIN_AREA) {
+			expedHeight = savedExped;
+		} else {
+			expedHeight = Math.max(MIN_AREA, Math.round((expCommH - 6) / 2));
 		}
 
 		// Fire-and-forget — stores update reactively when each resolves
@@ -189,6 +230,75 @@
 		window.addEventListener('mouseup',   onUp);
 		window.addEventListener('touchmove', onMove as EventListener, { passive: false });
 		window.addEventListener('touchend',  onUp);
+	}
+
+	/** Desktop column split (between chars/foes and expeditions/communities). */
+	function startColResize(e: MouseEvent) {
+		e.preventDefault();
+		colDragging = true;
+		const startX = e.clientX;
+		const startW = col1Width ?? 0;
+
+		const onMove = (ev: MouseEvent) => {
+			const shellW = shellEl?.offsetWidth ?? window.innerWidth;
+			const maxW   = shellW - 20 - logWidth - 12 - MIN_COL;
+			const next   = Math.max(MIN_COL, Math.min(maxW, startW + (ev.clientX - startX)));
+			col1Width = next;
+		};
+		const onUp = () => {
+			colDragging = false;
+			window.removeEventListener('mousemove', onMove);
+			window.removeEventListener('mouseup',   onUp);
+			if (col1Width !== null) localStorage.setItem(COL1_WIDTH_KEY, String(col1Width));
+		};
+		window.addEventListener('mousemove', onMove);
+		window.addEventListener('mouseup',   onUp);
+	}
+
+	/** Desktop row split — chars / foes within the left column. */
+	function startCharResize(e: MouseEvent) {
+		e.preventDefault();
+		charDragging = true;
+		const startY = e.clientY;
+		const startH = charHeight ?? 0;
+
+		const onMove = (ev: MouseEvent) => {
+			const colH = charFoeColEl?.offsetHeight ?? 600;
+			const maxH = colH - 6 - MIN_AREA;
+			const next = Math.max(MIN_AREA, Math.min(maxH, startH + (ev.clientY - startY)));
+			charHeight = next;
+		};
+		const onUp = () => {
+			charDragging = false;
+			window.removeEventListener('mousemove', onMove);
+			window.removeEventListener('mouseup',   onUp);
+			if (charHeight !== null) localStorage.setItem(CHAR_HEIGHT_KEY, String(charHeight));
+		};
+		window.addEventListener('mousemove', onMove);
+		window.addEventListener('mouseup',   onUp);
+	}
+
+	/** Desktop row split — expeditions / communities within the right column. */
+	function startExpedResize(e: MouseEvent) {
+		e.preventDefault();
+		expedDragging = true;
+		const startY = e.clientY;
+		const startH = expedHeight ?? 0;
+
+		const onMove = (ev: MouseEvent) => {
+			const colH = expCommColEl?.offsetHeight ?? 600;
+			const maxH = colH - 6 - MIN_AREA;
+			const next = Math.max(MIN_AREA, Math.min(maxH, startH + (ev.clientY - startY)));
+			expedHeight = next;
+		};
+		const onUp = () => {
+			expedDragging = false;
+			window.removeEventListener('mousemove', onMove);
+			window.removeEventListener('mouseup',   onUp);
+			if (expedHeight !== null) localStorage.setItem(EXPED_HEIGHT_KEY, String(expedHeight));
+		};
+		window.addEventListener('mousemove', onMove);
+		window.addEventListener('mouseup',   onUp);
 	}
 
 	// ── Menu action handler ──────────────────────────────────────────────────
@@ -531,8 +641,14 @@
 	class="home-shell"
 	class:home-shell--dragging={dragging}
 	class:home-shell--mob-dragging={mobDragging}
+	class:home-shell--col-dragging={colDragging}
+	class:home-shell--char-dragging={charDragging}
+	class:home-shell--exped-dragging={expedDragging}
 	style:--log-width="{logWidth}px"
 	style:--mob-log-height="{mobLogHeight}px"
+	style:--col1-width={col1Width !== null ? col1Width + 'px' : undefined}
+	style:--char-height={charHeight !== null ? charHeight + 'px' : undefined}
+	style:--exped-height={expedHeight !== null ? expedHeight + 'px' : undefined}
 >
 	<!-- Mobile tab bar (hidden on desktop via CSS) -->
 	<nav class="mob-tabbar">
@@ -551,26 +667,52 @@
 	</nav>
 
 	<!-- Column 1: Characters (top) + Foes (bottom) -->
-	<div class="home-col home-col--char-foe">
+	<div bind:this={charFoeColEl} class="home-col home-col--char-foe">
 		<section class="home-area home-area--characters" class:mob-hidden={mobileTab !== 'characters'}>
 			<CharactersArea showTitle={!isMobile} />
 		</section>
+		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+		<div
+			class="row-resize-handle"
+			role="separator"
+			aria-label="Resize characters and foes"
+			aria-orientation="horizontal"
+			onmousedown={startCharResize}
+		></div>
 		<section class="home-area home-area--foes" class:mob-hidden={mobileTab !== 'foes'}>
 			<FoesArea bind:this={foeAreaRef} showTitle={!isMobile} />
 		</section>
 	</div>
 
+	<!-- Desktop column resize handle (hidden on mobile) -->
+	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+	<div
+		class="col-resize-handle"
+		role="separator"
+		aria-label="Resize columns"
+		aria-orientation="vertical"
+		onmousedown={startColResize}
+	></div>
+
 	<!-- Column 2: Expeditions (top) + Communities (bottom) -->
-	<div class="home-col home-col--exp-comm">
+	<div bind:this={expCommColEl} class="home-col home-col--exp-comm">
 		<section class="home-area home-area--expeditions" class:mob-hidden={mobileTab !== 'expeditions'}>
 			<ExpeditionsArea bind:this={expAreaRef} showTitle={!isMobile} />
 		</section>
+		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+		<div
+			class="row-resize-handle"
+			role="separator"
+			aria-label="Resize expeditions and communities"
+			aria-orientation="horizontal"
+			onmousedown={startExpedResize}
+		></div>
 		<section class="home-area home-area--communities" class:mob-hidden={mobileTab !== 'communities'}>
 			<CommunitiesArea showTitle={!isMobile} />
 		</section>
 	</div>
 
-	<!-- Desktop horizontal resize handle (hidden on mobile) -->
+	<!-- Desktop log resize handle (hidden on mobile) -->
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
 		class="home-resize-handle"
@@ -644,7 +786,8 @@
 
 	.home-shell {
 		display:        grid;
-		grid-template-columns: 1fr 1fr 6px var(--log-width, 33vw);
+		/* col1 | col-handle | col2 | log-handle | log */
+		grid-template-columns: var(--col1-width, 1fr) 6px 1fr 6px var(--log-width, 33vw);
 		gap:            0;
 		/* Fill <main> as a flex item — main is `display: flex` column with
 		   flex: 1 inside a 100dvh body, so `flex: 1` reliably gives us the
@@ -662,15 +805,19 @@
 		box-sizing:     border-box;
 		overflow:       hidden;
 	}
-	.home-shell > .home-col:nth-of-type(1) { margin-right: 12px; }
-	.home-shell > .home-col:nth-of-type(2) { margin-right: 4px; }
-	.home-shell > .home-log                { margin-left:  4px; }
-	.home-shell--dragging                  { cursor: col-resize; user-select: none; }
-	.home-shell--dragging *                { pointer-events: none; }
-	.home-shell--mob-dragging              { cursor: row-resize; user-select: none; }
-	.home-shell--mob-dragging *            { pointer-events: none; }
+	.home-shell > .home-log { margin-left: 4px; }
+	.home-shell--dragging      { cursor: col-resize; user-select: none; }
+	.home-shell--dragging *    { pointer-events: none; }
+	.home-shell--mob-dragging  { cursor: row-resize; user-select: none; }
+	.home-shell--mob-dragging * { pointer-events: none; }
+	.home-shell--col-dragging   { cursor: col-resize; user-select: none; }
+	.home-shell--col-dragging * { pointer-events: none; }
+	.home-shell--char-dragging,
+	.home-shell--exped-dragging { cursor: row-resize; user-select: none; }
+	.home-shell--char-dragging *,
+	.home-shell--exped-dragging * { pointer-events: none; }
 
-	/* Desktop horizontal resize handle */
+	/* Desktop log resize handle (vertical bar, right edge) */
 	.home-resize-handle {
 		width: 6px;
 		cursor: col-resize;
@@ -695,13 +842,65 @@
 		width: 2px;
 	}
 
-	/* Vertical column: 50/50 split of available height for its two stacked areas. */
+	/* Desktop column resize handle (vertical bar between the two content cols) */
+	.col-resize-handle {
+		cursor: col-resize;
+		background: transparent;
+		position: relative;
+		z-index: 1;
+	}
+	.col-resize-handle::before {
+		content: '';
+		position: absolute;
+		top: 0; bottom: 0;
+		left: 50%;
+		width: 1px;
+		background: var(--border);
+		transform: translateX(-50%);
+		transition: background 0.12s, width 0.12s;
+	}
+	.col-resize-handle:hover::before,
+	.home-shell--col-dragging .col-resize-handle::before {
+		background: var(--text-accent);
+		width: 2px;
+	}
+
+	/* Desktop row resize handle (horizontal bar within each column) */
+	.row-resize-handle {
+		cursor: row-resize;
+		background: transparent;
+		position: relative;
+		z-index: 1;
+	}
+	.row-resize-handle::before {
+		content: '';
+		position: absolute;
+		left: 0; right: 0;
+		top: 50%;
+		height: 1px;
+		background: var(--border);
+		transform: translateY(-50%);
+		transition: background 0.12s, height 0.12s;
+	}
+	.row-resize-handle:hover::before,
+	.home-shell--char-dragging .home-col--char-foe .row-resize-handle::before,
+	.home-shell--exped-dragging .home-col--exp-comm .row-resize-handle::before {
+		background: var(--text-accent);
+		height: 2px;
+	}
+
+	/* Columns use explicit row tracks driven by CSS vars; gap replaced by 6px handle. */
 	.home-col {
 		display: grid;
-		grid-template-rows: 1fr 1fr;
-		gap: 10px;
+		gap: 0;
 		min-width: 0;
 		min-height: 0;
+	}
+	.home-col--char-foe {
+		grid-template-rows: var(--char-height, 1fr) 6px 1fr;
+	}
+	.home-col--exp-comm {
+		grid-template-rows: var(--exped-height, 1fr) 6px 1fr;
 	}
 
 	.home-area {
@@ -748,11 +947,11 @@
 			display: contents;
 		}
 
-		/* Desktop gutters and resize handle invisible on mobile */
-		.home-shell > .home-col:nth-of-type(1),
-		.home-shell > .home-col:nth-of-type(2) { margin-right: 0; }
-		.home-shell > .home-log                { margin-left:  0; }
-		.home-resize-handle                    { display: none; }
+		/* Desktop gutters and resize handles invisible on mobile */
+		.home-shell > .home-log { margin-left: 0; }
+		.home-resize-handle     { display: none; }
+		.col-resize-handle      { display: none; }
+		.row-resize-handle      { display: none; }
 
 		/* Tab bar */
 		.mob-tabbar {
