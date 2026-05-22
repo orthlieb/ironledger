@@ -1099,6 +1099,16 @@
 												</div>
 											</div>
 										</div>
+										<div class="ca-lessons-wrap">
+											<label class="ca-lessons-label" for="ca-lessons-{activeChar?.id}">Lessons Learned</label>
+											<textarea
+												id="ca-lessons-{activeChar?.id}"
+												class="ca-lessons-input"
+												placeholder="What has this character learned from their failures…"
+												value={d.lessonsLearned ?? ''}
+												oninput={(e) => { d.lessonsLearned = (e.target as HTMLTextAreaElement).value; }}
+											></textarea>
+										</div>
 									{/if}
 								</div>
 							</div>
@@ -1819,6 +1829,36 @@
 		line-height: 1;
 		min-width:  unset;
 	}
+
+	.ca-lessons-wrap {
+		display:        flex;
+		flex-direction: column;
+		gap:            4px;
+		margin-top:     6px;
+	}
+	.ca-lessons-label {
+		font-family:    var(--font-ui);
+		font-size:      0.65rem;
+		font-weight:    700;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color:          var(--text-dimmer);
+	}
+	.ca-lessons-input {
+		font-family:  var(--font-ui);
+		font-size:    0.78rem;
+		color:        var(--text);
+		background:   var(--bg-inset);
+		border:       1px solid var(--border);
+		border-radius: 4px;
+		padding:      6px 8px;
+		resize:       vertical;
+		min-height:   60px;
+		outline:      none;
+		width:        100%;
+		box-sizing:   border-box;
+	}
+	.ca-lessons-input:focus { border-color: var(--text-accent); }
 
 	/* Vows tab — stack of VowCards. The "+ Vow" action lives in the header
 	   toolbar now, so no per-tab header is needed. */

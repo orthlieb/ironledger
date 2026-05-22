@@ -461,7 +461,10 @@
 				}
 				lines.push('## Progress', `- **XP:** ${d.xp ?? 0}`,
 					`- **Bonds:** ${formatTicks(Number(d.bonds ?? 0))}`,
-					`- **Failures:** ${formatTicks(Number(d.failures ?? 0))}`, '');
+					`- **Failures:** ${formatTicks(Number(d.failures ?? 0))}`);
+				if ((d.lessonsLearned as string | undefined)?.trim())
+					lines.push(`  - Lessons Learned: ${(d.lessonsLearned as string).trim()}`);
+				lines.push('');
 				const debilities = ['wounded','unprepared','shaken','encumbered','maimed','corrupted','cursed','tormented'];
 				const active = debilities.filter(k => d[k]);
 				if (active.length) {
@@ -637,7 +640,10 @@
 		}
 		lines.push('## Progress', `- **XP:** ${d.xp ?? 0}`,
 			`- **Bonds:** ${formatTicks(Number(d.bonds ?? 0))}`,
-			`- **Failures:** ${formatTicks(Number(d.failures ?? 0))}`, '');
+			`- **Failures:** ${formatTicks(Number(d.failures ?? 0))}`);
+		if ((d.lessonsLearned as string | undefined)?.trim())
+			lines.push(`  - Lessons Learned: ${(d.lessonsLearned as string).trim()}`);
+		lines.push('');
 		const debilities = ['wounded','unprepared','shaken','encumbered','maimed','corrupted','cursed','tormented'];
 		const active = debilities.filter(k => d[k]);
 		if (active.length) {

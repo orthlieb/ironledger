@@ -212,6 +212,8 @@ export interface CharacterData {
 	xp: number;       // 0–30
 	bonds: number;    // 0–40
 	failures: number; // 0–40
+	/** Notes beneath the Failures track — what the character learned from their failures. */
+	lessonsLearned?: string;
 
 	// Debilities — Conditions
 	wounded: boolean;
