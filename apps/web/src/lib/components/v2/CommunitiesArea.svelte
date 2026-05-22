@@ -223,7 +223,7 @@
 	async function addNewCommunity() {
 		_pendingCommunity = {
 			id:                  crypto.randomUUID(),
-			name:                'New Community',
+			name:                'New Connection',
 			region:              '',
 			location:            '',
 			locationDescription: '',
@@ -316,10 +316,10 @@
 	<header class="cm-header">
 		{#if showTitle}
 			<span class="cm-title-icon" aria-hidden="true">{@html villageIconSvg}</span>
-			<span class="cmt-title">{headingText('Communities')}</span>
+			<span class="cmt-title">{headingText('Connections')}</span>
 		{/if}
 		<div class="cm-header-actions">
-			<button class="btn cm-hdr-btn" onclick={addNewCommunity} title="Add community">+ Community</button>
+			<button class="btn cm-hdr-btn" onclick={addNewCommunity} title="Add connection">+ Connection</button>
 			<button class="btn cm-hdr-btn" onclick={addNewNpc}       title="Add NPC">+ NPC</button>
 		</div>
 	</header>
@@ -333,7 +333,7 @@
 		</div>
 	{:else}
 		<div class="cm-body">
-			<nav class="cm-spines" aria-label="Communities and NPCs">
+			<nav class="cm-spines" aria-label="Connections and NPCs">
 				{#each entries as entry (entry.id)}
 					{@const accent = entry.kind === 'npc' ? NPC_COLOR : COMMUNITY_COLOR}
 					<button
@@ -343,7 +343,7 @@
 						onclick={() => selectEntry(entry.id)}
 						use:tooltip={`${entry.data.name} (${entry.kind})`}
 					>
-						<span class="cm-spine-name">{entry.data.name || (entry.kind === 'npc' ? 'Unnamed NPC' : 'Unnamed Community')}</span>
+						<span class="cm-spine-name">{entry.data.name || (entry.kind === 'npc' ? 'Unnamed NPC' : 'Unnamed Connection')}</span>
 					</button>
 				{/each}
 			</nav>
@@ -356,7 +356,7 @@
 							class="cm-stage-name-input"
 							type="text"
 							value={activeEntry.data.name}
-							placeholder={activeEntry.kind === 'npc' ? 'NPC name…' : 'Community name…'}
+							placeholder={activeEntry.kind === 'npc' ? 'NPC name…' : 'Connection name…'}
 							oninput={(e) => setName((e.target as HTMLInputElement).value)}
 							onblur={commitName}
 							onkeydown={(e) => {
@@ -370,13 +370,13 @@
 							class="cm-stage-name cm-stage-name--editable"
 							title="Click to rename"
 							onclick={startEditName}
-						>{headingText(activeEntry.data.name || (activeEntry.kind === 'npc' ? 'Unnamed NPC' : 'Unnamed Community'))}</button>
+						>{headingText(activeEntry.data.name || (activeEntry.kind === 'npc' ? 'Unnamed NPC' : 'Unnamed Connection'))}</button>
 					{/if}
 					<button
 						class="btn btn-icon icon-btn btn-trash cm-stage-delete-btn"
 						onclick={() => deleteDialogRef?.open()}
-						use:tooltip={activeEntry.kind === 'npc' ? 'Delete NPC' : 'Delete community'}
-						aria-label={activeEntry.kind === 'npc' ? 'Delete NPC' : 'Delete community'}
+						use:tooltip={activeEntry.kind === 'npc' ? 'Delete NPC' : 'Delete connection'}
+						aria-label={activeEntry.kind === 'npc' ? 'Delete NPC' : 'Delete connection'}
 					>{@html trashSvg}</button>
 				</div>
 
@@ -479,7 +479,7 @@
 										bind:this={coreNotesTextareaEl}
 										value={activeEntry.data.notes ?? ''}
 										oninput={(e) => setNotes((e.target as HTMLTextAreaElement).value)}
-										placeholder={activeEntry.kind === 'npc' ? 'Notes about this NPC… (markdown supported)' : 'Notes about this community… (markdown supported)'}
+										placeholder={activeEntry.kind === 'npc' ? 'Notes about this NPC… (markdown supported)' : 'Notes about this connection… (markdown supported)'}
 										class="cm-notes-input"
 										rows="5"
 										onblur={() => (editingCoreNotes = false)}
@@ -498,7 +498,7 @@
 										{#if activeEntry.data.notes?.trim()}
 											{@html renderNote(activeEntry.data.notes)}
 										{:else}
-											<span class="cm-notes-placeholder">{activeEntry.kind === 'npc' ? 'Notes about this NPC…' : 'Notes about this community…'}</span>
+											<span class="cm-notes-placeholder">{activeEntry.kind === 'npc' ? 'Notes about this NPC…' : 'Notes about this connection…'}</span>
 										{/if}
 									</div>
 								{/if}
@@ -529,7 +529,7 @@
 										bind:this={notesTextareaEl}
 										value={activeEntry.data.notes ?? ''}
 										oninput={(e) => setNotes((e.target as HTMLTextAreaElement).value)}
-										placeholder={activeEntry.kind === 'npc' ? 'Notes about this NPC… (markdown supported)' : 'Notes about this community… (markdown supported)'}
+										placeholder={activeEntry.kind === 'npc' ? 'Notes about this NPC… (markdown supported)' : 'Notes about this connection… (markdown supported)'}
 										class="cm-notes-input"
 										rows="6"
 										onblur={() => (editingNotes = false)}
@@ -548,7 +548,7 @@
 										{#if activeEntry.data.notes?.trim()}
 											{@html renderNote(activeEntry.data.notes)}
 										{:else}
-											<span class="cm-notes-placeholder">{activeEntry.kind === 'npc' ? 'Notes about this NPC…' : 'Notes about this community…'}</span>
+											<span class="cm-notes-placeholder">{activeEntry.kind === 'npc' ? 'Notes about this NPC…' : 'Notes about this connection…'}</span>
 										{/if}
 									</div>
 								{/if}
@@ -564,18 +564,18 @@
 {#if activeEntry}
 	<ConfirmDialog
 		bind:this={deleteDialogRef}
-		title={activeEntry.kind === 'npc' ? 'Delete NPC' : 'Delete Community'}
+		title={activeEntry.kind === 'npc' ? 'Delete NPC' : 'Delete Connection'}
 		confirmLabel="Delete"
 		onconfirm={confirmDeleteEntry}
 	>
-		<p>Permanently delete <strong>{activeEntry.data.name || (activeEntry.kind === 'npc' ? 'this NPC' : 'this community')}</strong>? This cannot be undone.</p>
+		<p>Permanently delete <strong>{activeEntry.data.name || (activeEntry.kind === 'npc' ? 'this NPC' : 'this connection')}</strong>? This cannot be undone.</p>
 	</ConfirmDialog>
 {/if}
 
-<!-- New Community dialog — V1 pattern. -->
+<!-- New Connection dialog — V1 pattern. -->
 <ConfirmDialog
 	bind:this={newCommunityDialogRef}
-	title="New Community"
+	title="New Connection"
 	confirmLabel="Generate Randomly"
 	confirmClass="btn-primary"
 	showCancelButton={false}
@@ -586,7 +586,7 @@
 	ondismiss={() => { _pendingCommunity = null; }}
 >
 	<p style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 10px;">
-		Generate fields randomly using oracles, or create the community manually?
+		Generate fields randomly using oracles, or create the connection manually?
 	</p>
 	<div style="display: flex; gap: 20px; align-items: flex-start;">
 		<fieldset style="border: none; padding: 0; margin: 0;">

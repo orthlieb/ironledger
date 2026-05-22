@@ -49,7 +49,7 @@
 		},
 		{
 			icon: villageSvg,
-			title: 'Communities & NPCs',
+			title: 'Connections & NPCs',
 			body: 'The Ironlands are not empty. Track the settlements you\'ve found, the people you\'ve met, and the ones who owe you a favour. Oracle-powered random generation for names and locations — or build them by hand, if you\'re that kind of hero.',
 			color: 'var(--color-health)',
 		},
@@ -152,13 +152,13 @@
 	<div class="preview-section-inner">
 		<h2 class="section-heading">The Saga at a Glance</h2>
 		<p class="preview-caption">
-			Everything on one screen. Characters, foes, expeditions, communities, and your session
+			Everything on one screen. Characters, foes, expeditions, connections, and your session
 			log — always visible, never buried in a menu.
 		</p>
 		<div class="preview-image-wrap">
 			<img
 				src="/ironledger-home.webp"
-				alt="Iron Ledger home screen showing the deck-of-cards layout with character sheet, foes, expeditions, communities, and session log panels"
+				alt="Iron Ledger home screen showing the deck-of-cards layout with character sheet, foes, expeditions, connections, and session log panels"
 				class="preview-image"
 			/>
 		</div>

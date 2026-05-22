@@ -6,7 +6,7 @@
 	 *   ┌────────────────┬────────────────┬──────────┐
 	 *   │   Characters   │   Expeditions  │          │
 	 *   ├────────────────┼────────────────┤   Log    │
-	 *   │     Foes       │  Communities   │          │
+	 *   │     Foes       │  Connections   │          │
 	 *   └────────────────┴────────────────┴──────────┘
 	 *
 	 * Mobile (≤900px): tab bar + active area + vertical resize + log.
@@ -569,7 +569,7 @@
 			if (format === 'json') {
 				exportJson('communities', { communities: $state.snapshot(communities), npcs: $state.snapshot(npcs) }, communities.length + npcs.length, `communities-${stamp}.json`);
 			} else {
-				const lines: string[] = ['# Communities & NPCs', ''];
+				const lines: string[] = ['# Connections & NPCs', ''];
 				for (const c of communities) {
 					lines.push(`## ${c.name}`);
 					if (c.region)              lines.push(`**Region:** ${c.region}`);
@@ -662,7 +662,7 @@
 			<span class="mob-tab-icon" aria-hidden="true">{@html expeditionsIconSvg}</span>Expeditions
 		</button>
 		<button class="mob-tab" class:mob-tab--active={mobileTab === 'communities'} onclick={() => mobileTab = 'communities'}>
-			<span class="mob-tab-icon" aria-hidden="true">{@html villageIconSvg}</span>Communities
+			<span class="mob-tab-icon" aria-hidden="true">{@html villageIconSvg}</span>Connections
 		</button>
 	</nav>
 
@@ -694,7 +694,7 @@
 		onmousedown={startColResize}
 	></div>
 
-	<!-- Column 2: Expeditions (top) + Communities (bottom) -->
+	<!-- Column 2: Expeditions (top) + Connections (bottom) -->
 	<div bind:this={expCommColEl} class="home-col home-col--exp-comm">
 		<section class="home-area home-area--expeditions" class:mob-hidden={mobileTab !== 'expeditions'}>
 			<ExpeditionsArea bind:this={expAreaRef} showTitle={!isMobile} />
@@ -703,7 +703,7 @@
 		<div
 			class="row-resize-handle"
 			role="separator"
-			aria-label="Resize expeditions and communities"
+			aria-label="Resize expeditions and connections"
 			aria-orientation="horizontal"
 			onmousedown={startExpedResize}
 		></div>
