@@ -1032,9 +1032,10 @@
 	.entry-delete-btn {
 		color: var(--text-dimmer);
 	}
+	/* Match the rest of the trashcan family: only the icon colour turns red
+	   on hover; the border keeps its default tone, matching .btn-trash. */
 	.entry-delete-btn:hover {
 		color: var(--color-danger);
-		border-color: var(--color-danger);
 	}
 
 	/* ---- Entry body ---- */

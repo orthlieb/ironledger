@@ -115,7 +115,7 @@
 		{/if}
 
 		<button
-			class="btn btn-icon icon-btn btn-forsake"
+			class="btn btn-icon icon-btn btn-trash"
 			onclick={() => forsakeDialogRef?.open()}
 			title="Forsake vow"
 			aria-label="Forsake vow"
@@ -317,20 +317,9 @@
 		padding: 3px 6px;
 	}
 
-	/* Forsake button (trash icon) — danger color */
-	.btn-forsake {
-		color: var(--color-danger);
-		border-color: transparent;
-		background: transparent;
-		opacity: 0.55;
-		transition: opacity 0.12s, border-color 0.12s;
-	}
-	.btn-forsake:hover:not(:disabled) {
-		opacity: 1;
-		border-color: var(--color-danger);
-		background: transparent;
-	}
-	.icon-btn :global(svg) {
+	/* Forsake / trash button uses the shared .btn-trash styling from app.css.
+	   Other .icon-btn instances on this card keep an 11×11 svg. */
+	.icon-btn:not(.btn-trash) :global(svg) {
 		width: 11px;
 		height: 11px;
 		fill: currentColor;

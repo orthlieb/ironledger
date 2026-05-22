@@ -373,7 +373,7 @@
 						>{headingText(activeEntry.data.name || (activeEntry.kind === 'npc' ? 'Unnamed NPC' : 'Unnamed Community'))}</button>
 					{/if}
 					<button
-						class="btn btn-icon icon-btn cm-stage-delete-btn"
+						class="btn btn-icon icon-btn btn-trash cm-stage-delete-btn"
 						onclick={() => deleteDialogRef?.open()}
 						use:tooltip={activeEntry.kind === 'npc' ? 'Delete NPC' : 'Delete community'}
 						aria-label={activeEntry.kind === 'npc' ? 'Delete NPC' : 'Delete community'}
@@ -789,15 +789,8 @@
 		outline:        none;
 	}
 	.cm-stage-name-input:focus { border-color: var(--text-accent); }
-	.cm-stage-delete-btn { flex-shrink: 0; opacity: 0.7; transition: opacity 0.12s, color 0.12s; }
-	.cm-stage-delete-btn:hover { opacity: 1; color: var(--color-danger); }
-	.cm-stage-delete-btn :global(svg) {
-		width: 12px; height: 12px;
-		flex-shrink: 0;
-		pointer-events: none;
-		fill: currentColor;
-	}
-	.cm-stage-delete-btn :global(svg) :global(path) { fill: currentColor; }
+	/* Delete: visual comes from .btn-trash in app.css; only positioning here. */
+	.cm-stage-delete-btn { flex-shrink: 0; }
 
 	.cm-tabs {
 		display: flex; align-items: stretch; gap: 0;

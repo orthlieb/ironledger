@@ -257,7 +257,7 @@
 						aria-pressed={activeEnc.vanquished}
 					>{@html activeEnc.vanquished ? swordSvg : skullSvg}</button>
 					<button
-						class="btn btn-icon icon-btn fa-stage-delete-btn"
+						class="btn btn-icon icon-btn btn-trash fa-stage-delete-btn"
 						onclick={() => deleteDialogRef?.open()}
 						use:tooltip={'Delete foe'}
 						aria-label="Delete foe"
@@ -578,8 +578,8 @@
 		outline:        none;
 	}
 	.fa-stage-name-input:focus { border-color: var(--text-accent); }
-	.fa-stage-delete-btn { flex-shrink: 0; opacity: 0.7; transition: opacity 0.12s, color 0.12s; }
-	.fa-stage-delete-btn:hover { opacity: 1; color: var(--color-danger); }
+	/* Delete: visual comes from .btn-trash in app.css; only positioning here. */
+	.fa-stage-delete-btn { flex-shrink: 0; }
 
 	/* Vanquish toggle — square icon-only button in the title row.
 	   Renders the active-state icon: skull when unvanquished, sword when vanquished.
@@ -589,19 +589,15 @@
 	.fa-stage-vanquish-btn:hover { opacity: 1; color: var(--color-danger); }
 	.fa-stage-vanquish-btn--vanquished { opacity: 1; color: var(--color-danger); }
 
-	/* Lock stage-header icon-button SVGs to a 12px square; pointer-events:none
-	   lets the native `title` tooltip on the button surface over the SVG path. */
-	.fa-stage-vanquish-btn :global(svg),
-	.fa-stage-delete-btn   :global(svg) {
+	/* Lock vanquish-button SVG to a 12px square; pointer-events:none lets the
+	   native `title` tooltip on the button surface over the SVG path. */
+	.fa-stage-vanquish-btn :global(svg) {
 		width: 12px; height: 12px;
 		flex-shrink: 0;
 		pointer-events: none;
 		fill: currentColor;
 	}
-	.fa-stage-vanquish-btn :global(svg) :global(path),
-	.fa-stage-delete-btn   :global(svg) :global(path) {
-		fill: currentColor;
-	}
+	.fa-stage-vanquish-btn :global(svg) :global(path) { fill: currentColor; }
 
 	/* Card tabs — same V1 tab-btn style as CharactersArea. */
 	.fa-tabs {

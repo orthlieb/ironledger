@@ -312,7 +312,7 @@
 		</span>
 
 		<button
-			class="btn btn-icon icon-btn btn-remove"
+			class="btn btn-icon icon-btn btn-trash"
 			onclick={onRemove}
 			title="Remove asset"
 			aria-label="Remove {definition.name}"
@@ -866,21 +866,9 @@
 		font-variant-numeric: tabular-nums;
 	}
 
-	/* Remove button (trash icon) */
-	.btn-remove {
-		color: var(--color-danger);
-		border-color: transparent;
-		background: transparent;
-		opacity: 0.5;
-		transition: opacity 0.12s, border-color 0.12s;
-		flex-shrink: 0;
-	}
-	.btn-remove:hover:not(:disabled) {
-		opacity: 1;
-		border-color: var(--color-danger);
-		background: transparent;
-	}
-	.icon-btn :global(svg) {
+	/* Trash button uses the shared .btn-trash styling from app.css. Other
+	   .icon-btn instances on this card keep an 11×11 svg. */
+	.icon-btn:not(.btn-trash) :global(svg) {
 		width: 11px;
 		height: 11px;
 		fill: currentColor;

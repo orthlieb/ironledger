@@ -794,7 +794,7 @@
 						>{headingText(d.name || activeChar.name || 'Unnamed')}</button>
 					{/if}
 					<button
-						class="btn btn-icon icon-btn ca-stage-delete-btn"
+						class="btn btn-icon icon-btn btn-trash ca-stage-delete-btn"
 						onclick={() => deleteDialogRef?.open()}
 						use:tooltip={'Delete character'}
 						aria-label="Delete character"
@@ -1311,22 +1311,8 @@
 	}
 	.ca-stage-header > .ca-stage-name,
 	.ca-stage-header > .ca-stage-name-input { flex: 1; margin: 0; }
-	.ca-stage-delete-btn {
-		flex-shrink: 0;
-		opacity:     0.7;
-		transition:  opacity 0.12s, color 0.12s;
-	}
-	.ca-stage-delete-btn:hover {
-		opacity: 1;
-		color:   var(--color-danger);
-	}
-	.ca-stage-delete-btn :global(svg) {
-		width: 12px; height: 12px;
-		flex-shrink: 0;
-		pointer-events: none;
-		fill: currentColor;
-	}
-	.ca-stage-delete-btn :global(svg) :global(path) { fill: currentColor; }
+	/* Positioning only — visual styling comes from .btn-trash in app.css. */
+	.ca-stage-delete-btn { flex-shrink: 0; }
 
 	/* Persistent character name sits above the tab strip / stage. Sized to
 	   match V1's .char-title (0.82rem × font-display-scale, 0.08em tracking,

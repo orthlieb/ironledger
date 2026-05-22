@@ -524,7 +524,7 @@
 						aria-pressed={activeExp.complete}
 					>{@html activeExp.complete ? locationSvg : checkSvg}</button>
 					<button
-						class="btn btn-icon icon-btn ea-stage-delete-btn"
+						class="btn btn-icon icon-btn btn-trash ea-stage-delete-btn"
 						onclick={() => deleteDialogRef?.open()}
 						use:tooltip={'Delete expedition'}
 						aria-label="Delete expedition"
@@ -1027,8 +1027,8 @@
 		outline:        none;
 	}
 	.ea-stage-name-input:focus { border-color: var(--text-accent); }
-	.ea-stage-delete-btn { flex-shrink: 0; opacity: 0.7; transition: opacity 0.12s, color 0.12s; }
-	.ea-stage-delete-btn:hover { opacity: 1; color: var(--color-danger); }
+	/* Delete: visual comes from .btn-trash in app.css; only positioning here. */
+	.ea-stage-delete-btn { flex-shrink: 0; }
 
 	/* Mark-complete toggle — square icon-only sibling of the delete button.
 	   Icon renders the active-state action: circle-check when not complete
@@ -1038,21 +1038,16 @@
 	.ea-stage-complete-btn:hover { opacity: 1; color: #E4AA28; }
 	.ea-stage-complete-btn--complete { opacity: 1; color: #E4AA28; }
 
-	/* Lock all stage-header icon button SVGs to a 12px square so non-square
-	   FontAwesome icons (e.g. location-dot 3:4) don't stretch the button.
-	   pointer-events: none lets the native `title` tooltip on the button
-	   surface even when the cursor is over the SVG path. */
-	.ea-stage-complete-btn :global(svg),
-	.ea-stage-delete-btn   :global(svg) {
+	/* Lock the mark-complete SVG to a 12px square so non-square FontAwesome
+	   icons (e.g. location-dot 3:4) don't stretch the button. pointer-events
+	   none lets the native `title` tooltip surface over the SVG path. */
+	.ea-stage-complete-btn :global(svg) {
 		width: 12px; height: 12px;
 		flex-shrink: 0;
 		pointer-events: none;
 		fill: currentColor;
 	}
-	.ea-stage-complete-btn :global(svg) :global(path),
-	.ea-stage-delete-btn   :global(svg) :global(path) {
-		fill: currentColor;
-	}
+	.ea-stage-complete-btn :global(svg) :global(path) { fill: currentColor; }
 
 	/* Tabs — V1 tab-btn style. */
 	.ea-tabs {

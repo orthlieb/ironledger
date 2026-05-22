@@ -394,6 +394,29 @@ select option {
 	justify-content: center;
 }
 
+/* Trash / delete buttons — apply alongside `.btn .btn-icon`. The icon is
+   dimmed in the default state (currentColor at 0.7 opacity, so it picks up
+   .btn's text-muted) and turns red on hover. The border and background come
+   from .btn itself (border-mid + bg-control → bg-hover) so the surrounding
+   surface stays consistent; override background per component if a card
+   sits on a different surface. */
+.btn-trash {
+	opacity: 0.7;
+	transition: opacity 0.12s, color 0.12s, background 0.12s, border-color 0.12s;
+}
+.btn-trash:hover:not(:disabled) {
+	opacity: 1;
+	color: var(--color-danger);
+}
+.btn-trash svg {
+	width: 12px;
+	height: 12px;
+	flex-shrink: 0;
+	pointer-events: none;
+	fill: currentColor;
+}
+.btn-trash svg path { fill: currentColor; }
+
 /* --------------------------------------------------------------------------
    Layout primitives
    -------------------------------------------------------------------------- */
