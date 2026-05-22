@@ -38,6 +38,7 @@
 	import hutSvg       from '$icons/hut.svg?raw';
 	import farmerSvg    from '$icons/farmer.svg?raw';
 	import villageIconSvg from '$icons/village.svg?raw';
+	import diceD6Svg    from '$icons/dice-d6-light.svg?raw';
 	import { headingText } from '$lib/fontStore.svelte.js';
 
 	let { showTitle = true }: { showTitle?: boolean } = $props();
@@ -419,12 +420,22 @@
 										oninput={(e) => updateCommunity({ locationDescription: (e.target as HTMLInputElement).value })}
 										placeholder="Location description…" />
 								</div>
-								<div class="cm-field-row">
+								<div class="cm-field-row cm-field-row--trouble">
 									<label class="cm-field-label" for="cm-trouble-{c.id}">Trouble</label>
 									<input id="cm-trouble-{c.id}" class="cm-input" type="text"
 										value={c.trouble}
 										oninput={(e) => updateCommunity({ trouble: (e.target as HTMLInputElement).value })}
 										placeholder="Settlement trouble…" />
+									<button
+										class="cm-dice-btn"
+										type="button"
+										onclick={() => {
+											const result = rollOracle('settlementTrouble', getOracles());
+											if (result) updateCommunity({ trouble: result.value });
+										}}
+										title="Roll settlement trouble oracle"
+										aria-label="Roll settlement trouble oracle"
+									>{@html diceD6Svg}</button>
 								</div>
 							{:else}
 								{@const n = activeEntry.data}
@@ -988,4 +999,32 @@
 		outline: none;
 	}
 	.cm-input:focus { border-color: var(--text-accent); }
+
+	.cm-field-row--trouble { align-items: center; }
+
+	.cm-dice-btn {
+		display:         inline-flex;
+		align-items:     center;
+		justify-content: center;
+		width:           26px;
+		height:          26px;
+		padding:         0;
+		background:      transparent;
+		border:          1px solid var(--border-mid);
+		border-radius:   4px;
+		color:           var(--text-muted);
+		cursor:          pointer;
+		flex-shrink:     0;
+		transition:      background 0.12s, color 0.12s, border-color 0.12s;
+	}
+	.cm-dice-btn:hover {
+		background:   color-mix(in srgb, var(--text-accent) 12%, transparent);
+		color:        var(--text-accent);
+		border-color: var(--text-accent);
+	}
+	.cm-dice-btn :global(svg) {
+		width:  16px;
+		height: 16px;
+		fill:   currentColor;
+	}
 </style>

@@ -451,6 +451,12 @@
 		return lines.filter((l, i, a) => !(l === '' && a[i - 1] === '')).join('\n').trim();
 	}
 
+	function formatTicks(ticks: number, totalBoxes = 10): string {
+		const boxes = Math.floor(ticks / 4);
+		const rem   = ticks % 4;
+		return rem > 0 ? `${boxes}/${totalBoxes} boxes, ${rem}/4 ticks` : `${boxes}/${totalBoxes} boxes`;
+	}
+
 	function charToMarkdown(char: CharacterFull): string {
 		const d = char.data as Record<string, unknown>;
 		const lines: string[] = [`# ${char.name || 'Unnamed Character'}`, ''];
@@ -461,7 +467,8 @@
 			`- **Health:** ${d.health ?? 0}/5`, `- **Spirit:** ${d.spirit ?? 0}/5`,
 			`- **Supply:** ${d.supply ?? 0}/5`, `- **Momentum:** ${d.momentum ?? 0}`, '');
 		lines.push('## Progress', `- **XP:** ${d.xp ?? 0}`,
-			`- **Bonds:** ${d.bonds ?? 0}/40`, `- **Failures:** ${d.failures ?? 0}/40`, '');
+			`- **Bonds:** ${formatTicks(Number(d.bonds ?? 0))}`,
+			`- **Failures:** ${formatTicks(Number(d.failures ?? 0))}`, '');
 		const debilities = ['wounded','unprepared','shaken','encumbered','maimed','corrupted','cursed','tormented'];
 		const active = debilities.filter(k => d[k]);
 		if (active.length) {
@@ -472,7 +479,7 @@
 		const vows = d.vows as Array<{ name: string; difficulty: string; ticks: number }> | undefined;
 		if (vows?.length) {
 			lines.push('## Vows');
-			vows.forEach(v => lines.push(`- **${v.name}** (${v.difficulty}) — ${Math.floor(v.ticks / 4)}/10`));
+			vows.forEach(v => lines.push(`- **${v.name}** (${v.difficulty}) — ${formatTicks(v.ticks)}`));
 			lines.push('');
 		}
 		const assets = d.assets as Array<{ assetId: string; abilities: boolean[] }> | undefined;
@@ -510,7 +517,7 @@
 			lines.push(`## ${name}${enc.vanquished ? ' _(Vanquished)_' : ''}`);
 			lines.push(`- **Rank:** ${FOE_RANKS[enc.effectiveRank]?.label ?? enc.effectiveRank}`);
 			lines.push(`- **Quantity:** ${enc.quantity.charAt(0).toUpperCase() + enc.quantity.slice(1)}`);
-			lines.push(`- **Progress:** ${Math.floor(enc.ticks / 4)}/10`);
+			lines.push(`- **Progress:** ${formatTicks(enc.ticks)}`);
 			if (enc.notes?.trim()) lines.push(`- **Notes:** ${enc.notes.trim()}`);
 			lines.push('');
 		}
@@ -523,14 +530,15 @@
 		for (const exp of expeditions) {
 			const type = exp.type === 'journey' ? 'Journey' : 'Site';
 			lines.push(`## ${exp.name} _(${type})_`);
+			if (exp.imageUrl) lines.push(`_Has portrait photo — see JSON export for image data._`);
 			lines.push(`- **Difficulty:** ${exp.difficulty.charAt(0).toUpperCase() + exp.difficulty.slice(1)}`);
-			lines.push(`- **Progress:** ${Math.floor(exp.ticks / 4)}/10`);
+			lines.push(`- **Progress:** ${formatTicks(exp.ticks)}`);
 			if (exp.type === 'site') {
 				if (exp.theme)             lines.push(`- **Theme:** ${exp.theme}`);
 				if (exp.domain)            lines.push(`- **Domain:** ${exp.domain}`);
 				if (exp.objective?.trim()) lines.push(`- **Objective:** ${exp.objective.trim()}`);
 			}
-			if (exp.notes?.trim()) lines.push(`\n${exp.notes.trim()}`);
+			if (exp.notes?.trim()) lines.push(``, `**Notes:**`, exp.notes.trim());
 			lines.push('');
 		}
 		return lines.join('\n').trimEnd();
@@ -571,19 +579,24 @@
 			} else {
 				const lines: string[] = ['# Connections & NPCs', ''];
 				for (const c of communities) {
-					lines.push(`## ${c.name}`);
+					lines.push(`## ${c.name} _(Community)_`);
+					if (c.imageUrl)            lines.push(`_Has portrait photo — see JSON export for image data._`);
 					if (c.region)              lines.push(`**Region:** ${c.region}`);
 					if (c.location)            lines.push(`**Location:** ${c.location}`);
 					if (c.locationDescription) lines.push(`**Description:** ${c.locationDescription}`);
 					if (c.trouble)             lines.push(`**Trouble:** ${c.trouble}`);
-					if (c.notes?.trim())       lines.push(`\n${c.notes.trim()}`);
+					if (c.notes?.trim())       lines.push(``, `**Notes:**`, c.notes.trim());
 					lines.push('');
 				}
 				for (const n of npcs) {
-					lines.push(`## ${n.name}`);
-					if (n.role)        lines.push(`**Role:** ${n.role}`);
-					if (n.goal)        lines.push(`**Goal:** ${n.goal}`);
-					if (n.notes?.trim()) lines.push(`\n${n.notes.trim()}`);
+					lines.push(`## ${n.name} _(NPC)_`);
+					if (n.imageUrl)         lines.push(`_Has portrait photo — see JSON export for image data._`);
+					if (n.role)             lines.push(`**Role:** ${n.role}`);
+					if (n.goal)             lines.push(`**Goal:** ${n.goal}`);
+					if (n.descriptor)       lines.push(`**Descriptor:** ${n.descriptor}`);
+					if (n.relationship)     lines.push(`**Relationship:** ${n.relationship.charAt(0).toUpperCase() + n.relationship.slice(1)}`);
+					if (n.location)         lines.push(`**Location:** ${n.location}`);
+					if (n.notes?.trim())    lines.push(``, `**Notes:**`, n.notes.trim());
 					lines.push('');
 				}
 				downloadFile(`communities-${stamp}.md`, lines.join('\n'), 'text/markdown');
