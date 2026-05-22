@@ -727,7 +727,7 @@
 			>+ Character</button>
 			<button
 				class="btn ca-hdr-btn"
-				onclick={() => (pickerOpen = true)}
+				onclick={() => { activeCard = 'assets'; pickerOpen = true; }}
 				disabled={!activeChar}
 				title="Add asset"
 			>+ Asset</button>
