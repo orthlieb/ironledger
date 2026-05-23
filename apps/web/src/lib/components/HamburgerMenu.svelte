@@ -287,6 +287,7 @@
 		letter-spacing: 0.08em;
 		text-transform: var(--font-display-transform);
 		color: var(--text-accent);
+		flex: 1;
 	}
 
 	.ed-body {

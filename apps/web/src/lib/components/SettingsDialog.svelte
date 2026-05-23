@@ -306,7 +306,7 @@
 	.sd-header {
 		display:         flex;
 		align-items:     center;
-		justify-content: space-between;
+		gap:             8px;
 		padding:         10px 14px;
 		border-bottom:   1px solid var(--border);
 		background:      var(--bg-control);
@@ -321,6 +321,7 @@
 		letter-spacing: 0.08em;
 		text-transform: var(--font-display-transform);
 		color:          var(--text-accent);
+		flex:           1;
 	}
 	.sd-close {
 		background:    transparent;
