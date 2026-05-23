@@ -13,7 +13,7 @@ I'm not ready to release anything yet but you can see some of the the workings i
 
 ## Screenshot
 
-![Adventure Tab](<docs/images/Iron Ledger Adventure Tab.png>)
+![Adventure Tab](<docs/images/iron-ledger-adventure-tab.png>)
 
 ## Tech Stack
 
@@ -200,9 +200,9 @@ Feature docs are in the `docs/` directory:
 | [architecture_decisions.md](docs/architecture_decisions.md) | Architecture and design decisions |
 | [character-sheet.md](docs/character-sheet.md) | Character sheet component |
 | [communities.md](docs/communities.md) | Communities & NPCs — data model, oracle generation |
-| [DATA_FORMAT.md](docs/DATA_FORMAT.md) | Catalogue data format spec (moves, assets, oracles, foes) |
+| [data-format.md](docs/data-format.md) | Catalogue data format spec (moves, assets, oracles, foes) |
 | [deployment.md](docs/deployment.md) | IONOS VPS deployment guide |
-| [DICE_ROLLING.md](docs/DICE_ROLLING.md) | Dice rolling implementation |
+| [dice-rolling.md](docs/dice-rolling.md) | Dice rolling implementation |
 | [expansion-toggles.md](docs/expansion-toggles.md) | Delve / YRT expansion toggle system |
 | [expeditions.md](docs/expeditions.md) | Expeditions system |
 | [foes.md](docs/foes.md) | Foes and encounters |
@@ -213,7 +213,7 @@ Feature docs are in the `docs/` directory:
 | [notes.md](docs/notes.md) | Notes dialog |
 | [oracles.md](docs/oracles.md) | Oracle tables |
 | [ui-components.md](docs/ui-components.md) | Shared UI design specs (cards, pills, tooltips, side labels) |
-| [YRT/DATA_FORMAT_YRT.md](docs/YRT/DATA_FORMAT_YRT.md) | YRT homebrew data format extensions |
+| [yrt/data-format-yrt.md](docs/yrt/data-format-yrt.md) | YRT homebrew data format extensions |
 
 ## Credits
 

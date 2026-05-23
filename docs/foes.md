@@ -53,7 +53,7 @@ The **Delve** and **YRT** [expansion toggles](expansion-toggles.md) filter which
 - Delve off → foes from `foes_delve.json` are hidden in `FoePickerDialog`
 - YRT off → foes from `foes_yrt.json` are hidden, and any `foes_overrides_yrt.json` entries with `present: false` no longer apply to base foes
 
-`findFoe(id)` is **not** filtered — existing `FoeEncounter` records keep resolving regardless of toggle state. See [DATA_FORMAT.md § Foe Overrides](DATA_FORMAT.md#foe-overrides-expansion-extension-mechanism) for how overrides decorate or exclude base foes per active expansion.
+`findFoe(id)` is **not** filtered — existing `FoeEncounter` records keep resolving regardless of toggle state. See [data-format.md § Foe Overrides](data-format.md#foe-overrides-expansion-extension-mechanism) for how overrides decorate or exclude base foes per active expansion.
 
 ### Ranks & Mechanics
 | Rank | Progress/Hit | Harm/Strike |
@@ -116,7 +116,7 @@ The foe's harm starts at 1 and increases on each Miss. Cap = effective rank + 1 
 - Current value stored as `enc.currentHarm` (absent = 1)
 - Pill shows `Harm: N ↑` in italic red when active
 
-See [YRT/DATA_FORMAT_YRT.md § Escalating Harm](YRT/DATA_FORMAT_YRT.md#escalating-harm-yrt-extension) for full spec.
+See [yrt/data-format-yrt.md § Escalating Harm](yrt/data-format-yrt.md#escalating-harm-yrt-extension) for full spec.
 
 ### Escalating Defense (`escalatesDefense: true`)
 
@@ -128,7 +128,7 @@ The foe's armor builds up on each Miss, reducing progress ticks per mark. Defens
 - Progress pill shows `Progress: N ↓` in italic blue when defense > 0; N = ticks per mark
 - Progress buttons always enabled per normal track rules; mark/unmark `progressPerHit − currentDefense` ticks
 
-See [YRT/DATA_FORMAT_YRT.md § Escalating Defense](YRT/DATA_FORMAT_YRT.md#escalating-defense-yrt-extension) for full spec.
+See [yrt/data-format-yrt.md § Escalating Defense](yrt/data-format-yrt.md#escalating-defense-yrt-extension) for full spec.
 
 ---
 

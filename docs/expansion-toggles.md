@@ -110,7 +110,7 @@ Catalogue entries carry a `source` field with normalized values `'base' | 'delve
 | Rarities | per rarity in `assets_delve.json` | All `'delve'` |
 | Delve themes/domains | implicit (`'delve'`) | No per-entry tag; loaded unconditionally so existing sites resolve |
 
-See [DATA_FORMAT.md](DATA_FORMAT.md) for the catalogue schemas.
+See [data-format.md](data-format.md) for the catalogue schemas.
 
 ---
 
@@ -131,7 +131,7 @@ A second mechanism — independent of the picker filter — lets an active expan
 }
 ```
 
-Overrides apply **only while their owning expansion is enabled**. `resolveFoeDescription()` in `foeStore.svelte.ts` walks all loaded override files, skips disabled-source files, and concatenates active addenda. Vetoes (`present: false`) are additive across active expansions. Existing `FoeEncounter` records resolve regardless. See [DATA_FORMAT.md § Foe Overrides](DATA_FORMAT.md#foe-overrides-expansion-extension-mechanism) for the file format.
+Overrides apply **only while their owning expansion is enabled**. `resolveFoeDescription()` in `foeStore.svelte.ts` walks all loaded override files, skips disabled-source files, and concatenates active addenda. Vetoes (`present: false`) are additive across active expansions. Existing `FoeEncounter` records resolve regardless. See [data-format.md § Foe Overrides](data-format.md#foe-overrides-expansion-extension-mechanism) for the file format.
 
 ---
 

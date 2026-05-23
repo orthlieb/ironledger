@@ -1,6 +1,6 @@
 # Yrt Homebrew Data Extensions
 
-This document describes data format extensions specific to the **Yrt** homebrew setting. These extend the base formats documented in [DATA_FORMAT.md](DATA_FORMAT.md).
+This document describes data format extensions specific to the **Yrt** homebrew setting. These extend the base formats documented in [data-format.md](../data-format.md).
 
 ---
 
@@ -54,7 +54,7 @@ The Touched are characters physically altered by manite exposure. Touched assets
 
 **Exclusive group:** Only one Touched asset may be active at a time. Adding a second Touched asset while one is already owned shows an error message directing the player to remove the existing one first.
 
-Touched assets follow the same auto-enable convention as Paths (see [DATA_FORMAT.md — Auto-Enabled Abilities](DATA_FORMAT.md#auto-enabled-abilities)): the first ability starts checked on acquisition; others start unchecked.
+Touched assets follow the same auto-enable convention as Paths (see [data-format.md — Auto-Enabled Abilities](../data-format.md#auto-enabled-abilities)): the first ability starts checked on acquisition; others start unchecked.
 
 Touched assets are defined in `data/assets/assets_yrt.json`.
 
@@ -103,7 +103,7 @@ The card renders content in this order:
 5. Difficulty Factors collapsible (if `inspectionFactors` is present — Conclave Rituals only)
 6. `postamble` — explanatory note that belongs logically after the ability list
 
-Ritual assets follow the same auto-enable convention as Paths: the first ability starts checked on acquisition (see [DATA_FORMAT.md — Auto-Enabled Abilities](DATA_FORMAT.md#auto-enabled-abilities)).
+Ritual assets follow the same auto-enable convention as Paths: the first ability starts checked on acquisition (see [data-format.md — Auto-Enabled Abilities](../data-format.md#auto-enabled-abilities)).
 
 ---
 
@@ -152,7 +152,7 @@ The freeport denizen oracle uses structured `value` objects instead of plain str
 
 ## Yrt Foes
 
-Yrt-specific foes are defined in `data/foes/foes_yrt.json`, using the same format as base Ironsworn and Delve foes (see [DATA_FORMAT.md — Foes](DATA_FORMAT.md#foes)). Their IDs use the `yrt/` prefix:
+Yrt-specific foes are defined in `data/foes/foes_yrt.json`, using the same format as base Ironsworn and Delve foes (see [data-format.md — Foes](../data-format.md#foes)). Their IDs use the `yrt/` prefix:
 
 ```json
 {
@@ -296,7 +296,7 @@ This prefix is added by the UI (`AssetCard.svelte`) and does **not** appear in t
 
 ## Yrt Assets
 
-Yrt-specific assets are defined in `data/assets/assets_yrt.json`, using the same base format as Ironsworn and Delve assets (see [DATA_FORMAT.md — Assets](DATA_FORMAT.md#assets)). Their IDs typically include a `yrt-` prefix in the name portion:
+Yrt-specific assets are defined in `data/assets/assets_yrt.json`, using the same base format as Ironsworn and Delve assets (see [data-format.md — Assets](../data-format.md#assets)). Their IDs typically include a `yrt-` prefix in the name portion:
 
 ```json
 {
