@@ -22,7 +22,7 @@
 	import { getCharacters, isCharacterLoading, createCharacter, deleteCharacter, flushCharacterToApi, persistCharacterNow, setPartySupply } from '$lib/characterStore.svelte.js';
 	import { setActiveDiceCtx } from '$lib/diceContext.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
-	import { findAsset, isAssetsLoading, getAssets } from '$lib/assetStore.svelte.js';
+	import { findAsset, findRaritiesForAsset, isAssetsLoading, getAssets } from '$lib/assetStore.svelte.js';
 	import { isDelveEnabled }                    from '$lib/expansionStore.svelte.js';
 	import { hydrateCharacterInPlace, maxMomentum, momentumReset } from '$lib/character.js';
 	import hornedHelmSvg from '$icons/horned-helm.svg?raw';
@@ -109,9 +109,18 @@
 
 	let activeCharId  = $state<string | null>(null);
 	let activeCard    = $state<CardKey>('core');
-	let dialogAssetId = $state<string | null>(null);
 	let dialogEl      = $state<HTMLDialogElement | null>(null);
 	let pickerOpen    = $state(false);
+
+	// Asset dialog (add + edit modes). Edits accumulate in a local draft so
+	// Cancel/X never mutate the live character. On OK / Add the parent
+	// computes the XP diff vs the snapshot, logs once, and persists.
+	let dialogMode             = $state<'add' | 'edit'>('edit');
+	let dialogDraft            = $state<CharacterAsset | null>(null);
+	let dialogGlobals          = $state<Record<string, string>>({});
+	let dialogSnapshotAbilities = $state<boolean[]>([]);
+	let dialogSnapshotRarityId  = $state<string | undefined>(undefined);
+	let dialogPurchaseCost      = $state(0);
 
 	// Background card edit state
 	let editingBackground = $state(false);
@@ -512,10 +521,29 @@
 		}
 	});
 
+	/** Open the asset dialog in edit mode for an owned asset. Snapshots the
+	 *  live asset's abilities/rarity and clones it into a draft; the dialog
+	 *  mutates only the draft until OK is clicked. */
 	function openAssetDialog(id: string, evt: MouseEvent) {
-		dialogAssetId = id;
-		// Capture the clicked tab's centre so the dialog can grow from there.
-		const tab = (evt.currentTarget as HTMLElement | null)?.getBoundingClientRect();
+		if (!activeData) return;
+		const arr = (activeData.assets ?? []) as CharacterAsset[];
+		const live = arr.find(a => a.assetId === id);
+		if (!live) return;
+
+		dialogMode              = 'edit';
+		dialogDraft             = cloneAsset(live);
+		dialogGlobals           = { ...(activeData.globalValues ?? {}) };
+		dialogSnapshotAbilities = [...live.abilities];
+		dialogSnapshotRarityId  = live.rarityId;
+		dialogPurchaseCost      = 0;
+
+		showDialogFromOrigin(evt);
+	}
+
+	/** Capture the clicked element's centre so the dialog can scale-fade in
+	 *  from that point (set via CSS custom properties on dialogEl). */
+	function showDialogFromOrigin(evt: MouseEvent | null) {
+		const tab = (evt?.currentTarget as HTMLElement | null)?.getBoundingClientRect();
 		queueMicrotask(() => {
 			if (!dialogEl) return;
 			if (tab) {
@@ -528,9 +556,61 @@
 		});
 	}
 
+	function cloneAsset(a: CharacterAsset): CharacterAsset {
+		return {
+			assetId:       a.assetId,
+			abilities:     [...a.abilities],
+			rarityId:      a.rarityId,
+			selections:    a.selections ? [...a.selections] : undefined,
+			customValues:  a.customValues ? { ...a.customValues } : undefined,
+		};
+	}
+
+	/** Cancel/X — discard the draft. Live character was never touched. */
 	function closeAssetDialog() {
 		dialogEl?.close();
-		dialogAssetId = null;
+		dialogDraft = null;
+	}
+
+	/** OK / Add — diff the draft against the snapshot, log the consolidated
+	 *  XP cost (if any), and persist draft → live. */
+	function commitAssetDialog() {
+		if (!dialogDraft || !activeData || !activeChar) return;
+
+		// XP diff
+		let newEnables = 0;
+		for (let i = 0; i < dialogDraft.abilities.length; i++) {
+			if (!dialogSnapshotAbilities[i] && dialogDraft.abilities[i]) newEnables++;
+		}
+		let rarityXp = 0;
+		if (dialogDraft.rarityId !== dialogSnapshotRarityId && dialogDraft.rarityId) {
+			const allRarities = findRaritiesForAsset(dialogDraft.assetId);
+			const r = allRarities.find(r => r.id === dialogDraft!.rarityId);
+			if (r) rarityXp = r.xpCost;
+		}
+		const totalCost = dialogPurchaseCost + newEnables * 2 + rarityXp;
+
+		// Persist draft → live
+		const arr = (activeData.assets ?? []) as CharacterAsset[];
+		if (dialogMode === 'add') {
+			activeData.assets = [...arr, dialogDraft];
+		} else {
+			activeData.assets = arr.map(a => a.assetId === dialogDraft!.assetId ? dialogDraft! : a);
+		}
+		activeData.globalValues = dialogGlobals;
+
+		// Consolidated log entry — only when something costs XP.
+		if (totalCost > 0) {
+			const def     = findAsset(dialogDraft.assetId);
+			const action  = dialogMode === 'add' ? 'added' : 'modified';
+			const entryId = crypto.randomUUID();
+			const xpLink  = `<a class="xp-cost-link" data-entry-id="${entryId}" data-cost="${totalCost}" data-char-id="${activeChar.id}" href="#">−${totalCost} experience</a>`;
+			appendLog(SESSION_LOG_ID, charTitle('Assets'),
+				`<div>Asset ${action}: <strong>${def?.name ?? dialogDraft.assetId}</strong> ${xpLink}</div>`,
+				entryId);
+		}
+
+		closeAssetDialog();
 	}
 
 	let deleteDialogRef = $state<{ open(): void; close(): void } | null>(null);
@@ -618,10 +698,11 @@
 	}
 
 
+	/** Picker → parent flow. Instead of immediately appending the asset, set
+	 *  up a draft and open the asset dialog in 'add' mode so the user can
+	 *  pre-configure abilities/rarity/counters before committing. The 3-XP
+	 *  asset-purchase cost rides along in dialogPurchaseCost. */
 	function handleAddAsset(assetId: string) {
-		// activeData is a $derived view of activeChar.data — mutating it
-		// writes through the store proxy and triggers the deep-snapshot
-		// auto-save effect.
 		if (!activeData || !activeChar) return;
 		const def = findAsset(assetId);
 		if (!def) return;
@@ -647,22 +728,21 @@
 			}
 		}
 
-		const newEntry: CharacterAsset = {
+		// Construct a draft from definition defaults. The dialog's snapshot is
+		// also the defaults — so newly-flipped-on abilities count as 2 XP each
+		// against the 3-XP asset purchase budget.
+		const defaultAbilities = def.abilities.map(a => a.enabled);
+		dialogMode              = 'add';
+		dialogDraft             = {
 			assetId,
-			abilities: def.abilities.map((ab) => ab.enabled),
+			abilities: [...defaultAbilities],
 		};
-		activeData.assets = [...arr, newEntry];
-
-		// Log asset acquisition with an XP-cost link (3 XP per v1 pricing).
-		// Clicking the link triggers the XP spend bus which our drain
-		// effect already handles.
-		const entryId = crypto.randomUUID();
-		const xpLink  = `<a class="xp-cost-link" data-entry-id="${entryId}" data-cost="3" data-char-id="${activeChar.id}" href="#">−3 experience</a>`;
-		appendLog(SESSION_LOG_ID, charTitle('Assets'),
-			`<div>Asset added: <strong>${def.name}</strong> <em>(${def.category})</em> ${xpLink}</div>`,
-			entryId);
-
+		dialogGlobals           = { ...(activeData.globalValues ?? {}) };
+		dialogSnapshotAbilities = defaultAbilities;
+		dialogSnapshotRarityId  = undefined;
+		dialogPurchaseCost      = 3;
 		pickerOpen = false;
+		showDialogFromOrigin(null);
 	}
 </script>
 
@@ -989,25 +1069,23 @@
 	{/if}
 </div>
 
-<!-- Asset card dialog — hosts the v1 AssetCard with full editing affordances.
-     Mutations here flow to in-memory character state but aren't persisted to
-     the API yet (prototype is read-mostly). -->
-{#if activeChar && activeData && dialogAssetId}
-	{@const arr = (activeData.assets ?? []) as CharacterAsset[]}
-	{@const idx = arr.findIndex(a => a.assetId === dialogAssetId)}
-	{@const def = findAsset(dialogAssetId)}
-	{#if idx >= 0 && def}
+<!-- Asset card dialog — hosts AssetCard in either 'add' or 'edit' mode.
+     dialogDraft is a clone of the live asset (edit) or a defaults-seeded
+     stub (add); edits accumulate locally and only persist on OK / Add. -->
+{#if activeChar && activeData && dialogDraft}
+	{@const def = findAsset(dialogDraft.assetId)}
+	{#if def}
 		<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
 		<dialog
 			bind:this={dialogEl}
 			class="ca-asset-dialog"
 			oncancel={closeAssetDialog}
-			onclose={() => { dialogAssetId = null; }}
+			onclose={() => { dialogDraft = null; }}
 			onclick={(e) => {
 				if (e.target === dialogEl) { closeAssetDialog(); return; }
 				// Delegate move-links / oracle-links inside asset abilities to the
-				// layout-level dialogs via a custom DOM event. v1's AssetCard has
-				// no internal handler for these; without this delegation clicking
+				// layout-level dialogs via a custom DOM event. AssetCard has no
+				// internal handler for these; without this delegation clicking
 				// e.g. "Face Danger" inside an ability text is a no-op.
 				const ml = (e.target as HTMLElement).closest('a.move-link') as HTMLElement | null;
 				if (ml) {
@@ -1026,19 +1104,20 @@
 				}
 			}}
 		>
-			<!-- AssetCard renders with v1 header / body styling. forceExpanded
-			     starts it un-collapsed and hides the ▶ toggle; onClose renders
-			     the ✕ in the upper-right of the header. -->
 			<AssetCard
-				bind:asset={arr[idx]}
+				bind:asset={dialogDraft}
 				definition={def}
 				characterId={activeChar.id}
 				characterName={activeChar.name}
 				characterXp={activeData.xp ?? 0}
-				bind:globalValues={activeData.globalValues as Record<string, string>}
-				onRemove={() => dialogAssetId && openRemoveAssetConfirm(dialogAssetId)}
+				bind:globalValues={dialogGlobals}
+				mode={dialogMode}
+				snapshotAbilities={dialogSnapshotAbilities}
+				snapshotRarityId={dialogSnapshotRarityId}
+				purchaseCost={dialogPurchaseCost}
+				onRemove={() => dialogDraft && openRemoveAssetConfirm(dialogDraft.assetId)}
+				onCommit={commitAssetDialog}
 				onClose={closeAssetDialog}
-				forceExpanded
 			/>
 		</dialog>
 	{/if}

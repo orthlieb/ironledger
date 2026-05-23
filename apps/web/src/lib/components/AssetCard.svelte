@@ -9,11 +9,9 @@
 	import type { CharacterAsset, AssetDefinition } from '$lib/types.js';
 	import { findRaritiesForAsset } from '$lib/assetStore.svelte.js';
 	import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
-	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
 	import { draggable } from '$lib/actions/draggable.js';
 
-	import trashSvg          from '$icons/trash-solid-full.svg?raw';
 	import iconHeart          from '$icons/icon-heart.svg?raw';
 	import iconSkull          from '$icons/skull-crossbones-solid-full.svg?raw';
 	import iconSword          from '$icons/sword-solid-full.svg?raw';
@@ -52,9 +50,13 @@
 		characterName,
 		characterXp,
 		globalValues   = $bindable(),
+		mode,
+		snapshotAbilities,
+		snapshotRarityId,
+		purchaseCost   = 0,
 		onRemove,
 		onOracleLink,
-		forceExpanded  = false,
+		onCommit,
 		onClose,
 	}: {
 		asset:          CharacterAsset;
@@ -62,15 +64,25 @@
 		characterId:    string;
 		characterName:  string;
 		characterXp:    number;
-		/** Shared counter values for fields with global:true, keyed by field.id. */
+		/** Shared counter values for fields with global:true, keyed by field.id.
+		 *  Always a draft copy of character.globalValues — parent commits on OK. */
 		globalValues?:  Record<string, string>;
-		onRemove:       () => void;
+		/** 'add' renders an Add footer; 'edit' renders Delete/OK. X close is in
+		 *  the header in both modes. */
+		mode:           'add' | 'edit';
+		/** Snapshot of asset.abilities at dialog open. Used by the affordability
+		 *  gate to compute newly-enabled-since-snapshot. */
+		snapshotAbilities: boolean[];
+		/** Snapshot of asset.rarityId at dialog open. */
+		snapshotRarityId?: string;
+		/** XP cost charged for the act of acquiring the asset itself (3 in add
+		 *  mode, 0 in edit mode). Folded into the affordability check. */
+		purchaseCost?:  number;
+		onRemove?:      () => void;
 		onOracleLink?:  (key: string, stat?: string) => void;
-		/** When true (e.g. v2 dialog), start expanded and hide the collapse toggle. */
-		forceExpanded?: boolean;
-		/** When provided alongside forceExpanded, an X close button is rendered
-		    in the header and a Delete/OK footer at the bottom. Both X and OK
-		    invoke this callback (edits save live, so OK is just a confirm-close). */
+		/** OK (edit mode) and Add (add mode). Parent applies the diff + logs. */
+		onCommit?:      () => void;
+		/** X close button. Discards the draft without committing. */
 		onClose?:       () => void;
 	} = $props();
 
@@ -86,8 +98,6 @@
 		resolution: string;
 	};
 
-	let userCollapsed         = $state(true);
-	const collapsed           = $derived(forceExpanded ? false : userCollapsed);
 	// Inline markdown-field editing (click-to-edit, mirrors VowCard / CommunityCard pattern).
 	// Only one markdown field at a time is in edit mode; tracked by field.id.
 	let editingNotesFieldId   = $state<string | null>(null);
@@ -162,17 +172,29 @@
 	);
 
 	function toggleSelection(key: string) {
-		const cur  = asset.selections ?? [];
-		const item = selectableItems.find((it) => it.key === key);
+		const cur = asset.selections ?? [];
 		if (cur.includes(key)) {
 			asset.selections = cur.filter((k) => k !== key);
-			appendLog(SESSION_LOG_ID, logTitle,
-				`<div>${selectableLabel} forgotten: <strong>${item?.name ?? key}</strong> (${definition.name})</div>`);
 		} else if (cur.length < totalSlots) {
 			asset.selections = [...cur, key];
-			appendLog(SESSION_LOG_ID, logTitle,
-				`<div>${selectableLabel} learned: <strong>${item?.name ?? key}</strong> (${definition.name})</div>`);
 		}
+	}
+
+	/** Returns true when a candidate (abilities, rarityId) state fits inside
+	 *  the character's current XP budget given the snapshot baseline. Used to
+	 *  gate ability/rarity toggles so the user can't run themselves negative
+	 *  inside the dialog. */
+	function canAfford(abilities: boolean[], rarityId: string | undefined): boolean {
+		let newEnables = 0;
+		for (let i = 0; i < abilities.length; i++) {
+			if (!snapshotAbilities[i] && abilities[i]) newEnables++;
+		}
+		let rarityXp = 0;
+		if (rarityId !== snapshotRarityId && rarityId) {
+			const r = visibleRarities.find((r) => r.id === rarityId);
+			if (r) rarityXp = r.xpCost;
+		}
+		return purchaseCost + newEnables * 2 + rarityXp <= characterXp;
 	}
 
 
@@ -232,30 +254,19 @@
 			.join('');
 	}
 
-	// Shared log title for all asset events on this card
-	const logTitle = $derived(`${characterName} — Assets`);
-
 	function toggleAbility(i: number) {
 		const enabling = !asset.abilities[i];
-		// XP gate: enabling a new ability costs 2 XP
-		if (enabling && characterXp < 2) return;
 		// Level cap: cannot enable more abilities than the current level allows
 		if (enabling && enabledCount >= abilityMax()) return;
 
 		const next = [...asset.abilities];
 		next[i] = enabling;
-		asset.abilities = next;
 
-		if (enabling) {
-			const entryId = crypto.randomUUID();
-			const xpLink  = `<a class="xp-cost-link" data-entry-id="${entryId}" data-cost="2" data-char-id="${characterId}" href="#">−2 experience</a>`;
-			appendLog(SESSION_LOG_ID, logTitle,
-				`<div>Ability: <strong>${definition.name}</strong> #${i + 1} — <strong>enabled</strong> ${xpLink}</div>`,
-				entryId);
-		} else {
-			appendLog(SESSION_LOG_ID, logTitle,
-				`<div>Ability: <strong>${definition.name}</strong> #${i + 1} — <strong>disabled</strong></div>`);
-		}
+		// Budget gate: simulate the toggle and reject if it would push the
+		// pending cost above the character's available XP.
+		if (enabling && !canAfford(next, asset.rarityId)) return;
+
+		asset.abilities = next;
 	}
 
 	function getCounterVal(cf: import('$lib/types.js').CustomFieldDef): number {
@@ -273,31 +284,16 @@
 			if (!asset.customValues) asset.customValues = {};
 			asset.customValues[cf.id] = String(newVal);
 		}
-		const nameField = (definition.customFields ?? []).find((f) => f.type === 'string');
-		const companionName = nameField ? (asset.customValues?.[nameField.id] ?? '') : '';
-		const label = companionName ? `${companionName} (${definition.name})` : definition.name;
-		appendLog(SESSION_LOG_ID, logTitle,
-			`<div><strong>${label}</strong> ${cf.label}: ${old} → <strong>${newVal}</strong></div>`);
 	}
 
 </script>
 
 <div class="asset-card" style="--asset-color: {catColor}">
 
-	<!-- Collapsed header row. In dialog mode (forceExpanded) use:draggable
-	     makes the header a drag handle; the action is a safe no-op when the
-	     card is not inside a <dialog>. -->
+	<!-- Header. use:draggable makes the header a drag handle when the card
+	     is inside a <dialog>; the action is a safe no-op otherwise. -->
 	<div class="asset-header" use:draggable>
-		{#if forceExpanded}
-			<span class="drag-grip" aria-hidden="true">⠿</span>
-		{:else}
-			<button
-				class="collapse-btn"
-				onclick={() => (userCollapsed = !userCollapsed)}
-				aria-label={collapsed ? 'Expand asset' : 'Collapse asset'}
-				title={collapsed ? 'Expand' : 'Collapse'}
-			>{collapsed ? '▶' : '▼'}</button>
-		{/if}
+		<span class="drag-grip" aria-hidden="true">⠿</span>
 
 		<div class="asset-name-group">
 			<span class="asset-name">{definition.name}</span>
@@ -318,17 +314,7 @@
 			{enabledCount}/{total}
 		</span>
 
-		{#if !forceExpanded}
-			<!-- Inline mode (collapsible card on character sheet): trash sits in the
-			     header. Dialog mode (forceExpanded) moves Delete to the footer below
-			     and uses an X close button in the header. -->
-			<button
-				class="btn btn-icon icon-btn btn-trash"
-				onclick={onRemove}
-				title="Remove asset"
-				aria-label="Remove {definition.name}"
-			>{@html trashSvg}</button>
-		{:else if onClose}
+		{#if onClose}
 			<button
 				class="asset-close"
 				onclick={onClose}
@@ -338,10 +324,7 @@
 		{/if}
 	</div>
 
-	<!-- Expanded body -->
-	{#if !collapsed}
-		<div class="asset-body">
-			<!-- Asset type label — moved here from header so it's collapsible and frees header space -->
+	<div class="asset-body">
 		<div class="asset-cat-row">
 			<span class="asset-cat">{definition.category}</span>
 		</div>
@@ -713,7 +696,7 @@
 					{#each visibleRarities as rarity (rarity.id)}
 						{@const isChecked = asset.rarityId === rarity.id}
 						{@const ownsAnother = !!asset.rarityId && !isChecked}
-						{@const cantAfford = !isChecked && characterXp < rarity.xpCost}
+						{@const cantAfford = !isChecked && !canAfford(asset.abilities, rarity.id)}
 						{@const disabled = ownsAnother || cantAfford}
 						<label
 							class="rarity-label"
@@ -728,16 +711,6 @@
 								onchange={() => {
 									if (disabled) return;
 									asset.rarityId = isChecked ? undefined : rarity.id;
-									if (!isChecked) {
-										const entryId = crypto.randomUUID();
-										const xpLink  = `<a class="xp-cost-link" data-entry-id="${entryId}" data-cost="${rarity.xpCost}" data-char-id="${characterId}" href="#">−${rarity.xpCost} experience</a>`;
-										appendLog(SESSION_LOG_ID, logTitle,
-											`<div>Rarity acquired: <strong>RARITY: ${rarity.name}</strong> for <strong>${definition.name}</strong> ${xpLink}</div>`,
-											entryId);
-									} else {
-										appendLog(SESSION_LOG_ID, logTitle,
-											`<div>Rarity removed: <strong>RARITY: ${rarity.name}</strong> from <strong>${definition.name}</strong></div>`);
-									}
 								}}
 							/>
 							<span class="rarity-name">RARITY: {rarity.name}</span>
@@ -750,23 +723,27 @@
 				</div>
 			{/if}
 
-			{#if definition.postamble}
-				<p class="asset-postamble">{definition.postamble}</p>
-			{/if}
-		</div>
-	{/if}
+		{#if definition.postamble}
+			<p class="asset-postamble">{definition.postamble}</p>
+		{/if}
+	</div>
 
-	{#if forceExpanded && onClose}
-		<!-- Dialog-mode footer — Delete on the left, OK on the right. Cancel
-		     lives in the header as an X (see above). Edits save live so OK
-		     simply closes the dialog. -->
+	{#if mode === 'edit'}
+		<!-- Edit-mode footer — Delete on the left, OK on the right. X close
+		     in the header discards the draft; OK fires onCommit and the
+		     parent applies the diff. -->
 		<div class="asset-footer">
 			<button
 				class="btn btn-danger"
 				onclick={onRemove}
 				aria-label="Delete {definition.name}"
 			>Delete</button>
-			<button class="btn btn-primary" onclick={onClose}>OK</button>
+			<button class="btn btn-primary" onclick={onCommit}>OK</button>
+		</div>
+	{:else}
+		<!-- Add-mode footer — single Add button. X close discards. -->
+		<div class="asset-footer asset-footer--add">
+			<button class="btn btn-primary" onclick={onCommit}>Add to Character</button>
 		</div>
 	{/if}
 
@@ -792,20 +769,6 @@
 		background: var(--bg-control);
 	}
 
-	.collapse-btn {
-		background: transparent;
-		border: none;
-		color: var(--text-dimmer);
-		padding: 2px 4px;
-		cursor: pointer;
-		font-size: 0.55rem;
-		line-height: 1;
-		flex-shrink: 0;
-		border-radius: 2px;
-		font-family: var(--font-ui);
-		transition: color 0.12s;
-	}
-	.collapse-btn:hover { color: var(--text); }
 
 	.asset-name-group {
 		flex: 1;
@@ -871,14 +834,6 @@
 		color: var(--text-dimmer);
 		flex-shrink: 0;
 		font-variant-numeric: tabular-nums;
-	}
-
-	/* Trash button uses the shared .btn-trash styling from app.css. Other
-	   .icon-btn instances on this card keep an 11×11 svg. */
-	.icon-btn:not(.btn-trash) :global(svg) {
-		width: 11px;
-		height: 11px;
-		fill: currentColor;
 	}
 
 	/* ---- Expanded body ---- */
