@@ -18,7 +18,6 @@
 	import type { Expedition, Journey, Site, VowDifficulty, DelveTheme, DelveDomain, FoeDef, FoeQuantity, FoeEncounter } from '$lib/types.js';
 	import { EXPEDITION_MARK_TICKS, DENIZEN_CELLS, DELVE_THEMES, DELVE_DOMAINS } from '$lib/types.js';
 	import { RANK_COLORS } from '$lib/foeStore.svelte.js';
-	import { renderNote } from '$lib/markdown.js';
 	import { isDelveEnabled } from '$lib/expansionStore.svelte.js';
 	import { setActiveExpeditionId } from '$lib/activeContext.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
@@ -30,6 +29,7 @@
 	import { onMount } from 'svelte';
 
 	import ProgressTrackPanel from '$lib/components/ProgressTrackPanel.svelte';
+	import MarkdownNotes    from '$lib/components/MarkdownNotes.svelte';
 	import FoePickerDialog  from '$lib/components/FoePickerDialog.svelte';
 	import DenizenDialog    from '$lib/components/DenizenDialog.svelte';
 	import ConfirmDialog    from '$lib/components/ConfirmDialog.svelte';
@@ -95,13 +95,11 @@
 	let newSiteDomain        = $state<string>('');
 
 	// Inline-edit state for journeys
-	let editingName     = $state(false);
-	let editingNotes    = $state(false);
-	let nameBeforeEdit  = $state('');
-	let nameInputEl     = $state<HTMLInputElement | null>(null);
-	let notesTextareaEl = $state<HTMLTextAreaElement | null>(null);
+	let editingName    = $state(false);
+	let editingNotes   = $state(false);
+	let nameBeforeEdit = $state('');
+	let nameInputEl    = $state<HTMLInputElement | null>(null);
 	$effect(() => { if (editingName && nameInputEl) { nameInputEl.focus(); nameInputEl.select(); } });
-	$effect(() => { if (editingNotes && notesTextareaEl) notesTextareaEl.focus(); });
 
 	const expeditions = $derived(getExpeditions());
 	const loading     = $derived(isExpeditionLoading());
@@ -591,38 +589,15 @@
 									</div>
 								{/if}
 
-								{#if editingNotes}
-									<textarea
-										bind:this={notesTextareaEl}
-										value={activeExp.notes ?? ''}
-										oninput={(e) => updateExp({ notes: (e.target as HTMLTextAreaElement).value })}
-										placeholder={activeExp.type === 'site'
-											? 'Discoveries, encounters, observations…  (markdown supported)'
-											: 'Waypoints, landmarks, perils encountered…  (markdown supported)'}
-										class="ea-notes-input"
-										rows="6"
-										onblur={() => (editingNotes = false)}
-									></textarea>
-								{:else}
-									<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-									<div
-										class="ea-notes ea-notes--display"
-										class:ea-notes--empty={!activeExp.notes?.trim()}
-										role="button"
-										tabindex="0"
-										title="Click to edit (markdown supported)"
-										onclick={() => (editingNotes = true)}
-										onkeydown={(e) => { if (e.key === 'Enter') editingNotes = true; }}
-									>
-										{#if activeExp.notes?.trim()}
-											{@html renderNote(activeExp.notes)}
-										{:else}
-											<span class="ea-notes-placeholder">{activeExp.type === 'site'
-												? 'Discoveries, encounters, observations…'
-												: 'Waypoints, landmarks, perils encountered…'}</span>
-										{/if}
-									</div>
-								{/if}
+								<MarkdownNotes
+									bind:editing={editingNotes}
+									value={activeExp.notes ?? ''}
+									oninput={(v) => updateExp({ notes: v })}
+									placeholder={activeExp.type === 'site'
+										? 'Discoveries, encounters, observations…'
+										: 'Waypoints, landmarks, perils encountered…'}
+									rows={6}
+								/>
 							</div>
 
 						<!-- ── Core — pills + objective + difficulty + progress + complete. ── -->
@@ -1151,50 +1126,6 @@
 		transition: background 0.12s;
 	}
 	.ea-portrait-clear:hover { background: rgba(0,0,0,0.8); }
-
-	.ea-notes--display {
-		cursor: pointer;
-		min-height: 1.5em;
-		font-family: var(--font-ui);
-		font-size: 0.85rem;
-		line-height: 1.5;
-		color: var(--text);
-	}
-	.ea-notes--display:focus-visible {
-		outline: 2px solid var(--text-accent);
-		outline-offset: 2px;
-		border-radius: 2px;
-	}
-	.ea-notes--display :global(p) { margin: 0 0 0.6em; }
-	.ea-notes--display :global(p:last-child) { margin-bottom: 0; }
-	.ea-notes--display :global(ul),
-	.ea-notes--display :global(ol) {
-		margin: 0 0 0.6em;
-		padding-left: 1.2em;
-	}
-	.ea-notes--display :global(strong) { font-weight: 700; color: var(--text); }
-	.ea-notes--display :global(em)     { font-style: italic; }
-	.ea-notes-placeholder {
-		font-family: var(--font-ui);
-		font-size: 0.85rem;
-		color: var(--text-dimmer);
-		font-style: italic;
-	}
-	.ea-notes-input {
-		width: 100%;
-		min-height: 7em;
-		font-family: var(--font-ui);
-		font-size: 0.85rem;
-		line-height: 1.5;
-		color: var(--text);
-		background: var(--bg-inset);
-		border: 1px solid var(--border);
-		border-radius: 4px;
-		padding: 8px 10px;
-		outline: none;
-		resize: vertical;
-	}
-	.ea-notes-input:focus { border-color: var(--text-accent); }
 
 	/* ── Core tab ── pills, difficulty selector, progress, complete. */
 	.ea-pills-row {

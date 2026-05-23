@@ -25,7 +25,6 @@
 	import { findAsset, isAssetsLoading, getAssets } from '$lib/assetStore.svelte.js';
 	import { isDelveEnabled }                    from '$lib/expansionStore.svelte.js';
 	import { hydrateCharacterInPlace, maxMomentum, momentumReset } from '$lib/character.js';
-	import { renderNote }                        from '$lib/markdown.js';
 	import hornedHelmSvg from '$icons/horned-helm.svg?raw';
 	import charactersIconSvg from '$icons/Characters.svg?raw';
 	import type { CharacterData, CharacterAsset } from '$lib/types.js';
@@ -35,6 +34,7 @@
 	import ResourceTile   from '$lib/components/ResourceTile.svelte';
 	import MomentumTile   from '$lib/components/MomentumTile.svelte';
 	import ProgressTrackPanel from '$lib/components/ProgressTrackPanel.svelte';
+	import MarkdownNotes  from '$lib/components/MarkdownNotes.svelte';
 	import ConfirmDialog  from '$lib/components/ConfirmDialog.svelte';
 	import VowCard        from '$lib/components/VowCard.svelte';
 	import DebilitiesSection from '$lib/components/DebilitiesSection.svelte';
@@ -112,13 +112,10 @@
 	let pickerOpen    = $state(false);
 
 	// Background card edit state
-	let editingName        = $state(false);
-	let editingBackground  = $state(false);
-	let editingBondsFormed = $state(false);
-	let editingLessons     = $state(false);
+	let editingName       = $state(false);
+	let editingBackground = $state(false);
 	let nameBeforeEdit    = $state('');
 	let nameInputEl       = $state<HTMLInputElement | null>(null);
-	let bgTextareaEl      = $state<HTMLTextAreaElement | null>(null);
 	$effect(() => {
 		if (editingName && nameInputEl) {
 			nameInputEl.focus();
@@ -130,8 +127,6 @@
 			nameInputEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 		}
 	});
-	$effect(() => { if (editingBackground && bgTextareaEl) bgTextareaEl.focus(); });
-
 	const characters = $derived(getCharacters());
 	const loading    = $derived(isCharacterLoading() || isAssetsLoading());
 
@@ -860,35 +855,12 @@
 									</div>
 								{/if}
 
-								<!-- Editable background — click renders a textarea, otherwise
-								     the markdown-rendered text is shown. -->
-								{#if editingBackground}
-									<textarea
-										bind:this={bgTextareaEl}
-										bind:value={d.background}
-										placeholder="Background, history, or notes…  (markdown supported)"
-										class="ca-card-bg-input"
-										rows="6"
-										onblur={() => (editingBackground = false)}
-									></textarea>
-								{:else}
-									<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-									<div
-										class="ca-card-bg ca-card-bg--display"
-										class:ca-card-bg--empty={!d.background?.trim()}
-										role="button"
-										tabindex="0"
-										title="Click to edit (markdown supported)"
-										onclick={() => (editingBackground = true)}
-										onkeydown={(e) => { if (e.key === 'Enter') editingBackground = true; }}
-									>
-										{#if d.background?.trim()}
-											{@html renderNote(d.background)}
-										{:else}
-											<span class="ca-card-bg-placeholder">Background, history, or notes…</span>
-										{/if}
-									</div>
-								{/if}
+								<MarkdownNotes
+									bind:value={d.background}
+									bind:editing={editingBackground}
+									placeholder="Background, history, or notes…"
+									rows={6}
+								/>
 							</div>
 						{:else if activeCard === 'core'}
 							<div class="ca-card-section">
@@ -1059,69 +1031,19 @@
 								<div class="ca-tracks-row">
 									<ProgressTrackPanel label="Bonds" bind:value={d.bonds} />
 
-									<!-- Bonds Formed — markdown notes below Bonds track -->
-									<div class="ca-md-notes-wrap">
-										<span class="ca-md-notes-label">Bonds Formed</span>
-										<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-										{#if editingBondsFormed}
-											<textarea
-												class="ca-md-notes-input"
-												placeholder="Note significant bonds — people, communities, places… (markdown supported)"
-												value={d.bondsFormed ?? ''}
-												oninput={(e) => (d.bondsFormed = (e.target as HTMLTextAreaElement).value)}
-												onblur={() => (editingBondsFormed = false)}
-												rows="4"
-											></textarea>
-										{:else}
-											<div
-												class="ca-md-notes-display"
-												role="button"
-												tabindex="0"
-												title="Click to edit (markdown supported)"
-												onclick={() => (editingBondsFormed = true)}
-												onkeydown={(e) => { if (e.key === 'Enter') editingBondsFormed = true; }}
-											>
-												{#if d.bondsFormed?.trim()}
-													{@html renderNote(d.bondsFormed)}
-												{:else}
-													<span class="ca-md-notes-placeholder">Note significant bonds — people, communities, places…</span>
-												{/if}
-											</div>
-										{/if}
-									</div>
+									<MarkdownNotes
+										label="Bonds Formed"
+										bind:value={d.bondsFormed}
+										placeholder="Note significant bonds — people, communities, places…"
+									/>
 
 									{#if isDelveEnabled()}
 										<ProgressTrackPanel label="Failures" bind:value={d.failures} />
-										<!-- Lessons Learned — markdown notes below Failures -->
-										<div class="ca-md-notes-wrap">
-											<span class="ca-md-notes-label">Lessons Learned</span>
-											<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-											{#if editingLessons}
-												<textarea
-													class="ca-md-notes-input"
-													placeholder="What has this character learned from their failures… (markdown supported)"
-													value={d.lessonsLearned ?? ''}
-													oninput={(e) => (d.lessonsLearned = (e.target as HTMLTextAreaElement).value)}
-													onblur={() => (editingLessons = false)}
-													rows="4"
-												></textarea>
-											{:else}
-												<div
-													class="ca-md-notes-display"
-													role="button"
-													tabindex="0"
-													title="Click to edit (markdown supported)"
-													onclick={() => (editingLessons = true)}
-													onkeydown={(e) => { if (e.key === 'Enter') editingLessons = true; }}
-												>
-													{#if d.lessonsLearned?.trim()}
-														{@html renderNote(d.lessonsLearned)}
-													{:else}
-														<span class="ca-md-notes-placeholder">What has this character learned from their failures…</span>
-													{/if}
-												</div>
-											{/if}
-										</div>
+										<MarkdownNotes
+											label="Lessons Learned"
+											bind:value={d.lessonsLearned}
+											placeholder="What has this character learned from their failures…"
+										/>
 									{/if}
 								</div>
 							</div>
@@ -1514,19 +1436,6 @@
 		flex-direction: column;
 		gap: 14px;
 	}
-	.ca-card-bg {
-		font-family: var(--font-ui);
-		font-size: 0.85rem;
-		line-height: 1.5;
-		color: var(--text);
-		margin: 0;
-		white-space: pre-wrap;
-	}
-	.ca-card-bg--empty {
-		color: var(--text-dimmer);
-		font-style: italic;
-	}
-
 	/* Background card portrait — floats right so the text wraps around it.
 	   `float` is ignored inside flex containers, so the background section
 	   uses block layout (overriding .ca-card-section's flex). */
@@ -1596,70 +1505,12 @@
 	}
 	.ca-bg-portrait-clear:hover { background: rgba(0,0,0,0.8); }
 
-	/* Editable name / background — click to edit affordances. */
+	/* Editable name — click to edit affordances. */
 	.ca-card-name--editable {
 		cursor: pointer;
 		transition: color 0.12s;
 	}
 	.ca-card-name--editable:hover { color: var(--text); }
-	.ca-card-bg--display {
-		cursor: pointer;
-		min-height: 1.5em;
-	}
-	.ca-card-bg--display:focus-visible {
-		outline: 2px solid var(--text-accent);
-		outline-offset: 2px;
-		border-radius: 2px;
-	}
-	/* Style the markdown the same way the raw <p> was styled. */
-	.ca-card-bg--display :global(p) {
-		font-family: var(--font-ui);
-		font-size:   0.85rem;
-		line-height: 1.5;
-		color:       var(--text);
-		margin:      0 0 0.6em;
-	}
-	.ca-card-bg--display :global(p:last-child) { margin-bottom: 0; }
-	.ca-card-bg--display :global(ul),
-	.ca-card-bg--display :global(ol) {
-		font-family: var(--font-ui);
-		font-size:   0.85rem;
-		line-height: 1.5;
-		color:       var(--text);
-		margin:      0 0 0.6em;
-		padding-left: 1.2em;
-	}
-	.ca-card-bg--display :global(strong) { font-weight: 700; color: var(--text); }
-	.ca-card-bg--display :global(em)     { font-style: italic; }
-	.ca-card-bg--display :global(h1),
-	.ca-card-bg--display :global(h2),
-	.ca-card-bg--display :global(h3) {
-		font-family: var(--font-ui);
-		font-weight: 700;
-		color:       var(--text-accent);
-		margin:      0.4em 0 0.3em;
-	}
-	.ca-card-bg-placeholder {
-		font-family: var(--font-ui);
-		font-size:   0.85rem;
-		color:       var(--text-dimmer);
-		font-style:  italic;
-	}
-	.ca-card-bg-input {
-		width:          100%;
-		min-height:     7em;
-		font-family:    var(--font-ui);
-		font-size:      0.85rem;
-		line-height:    1.5;
-		color:          var(--text);
-		background:     var(--bg-inset);
-		border:         1px solid var(--border);
-		border-radius:  4px;
-		padding:        8px 10px;
-		outline:        none;
-		resize:         vertical;
-	}
-	.ca-card-bg-input:focus { border-color: var(--text-accent); }
 
 	/* Initiative widget — mirrors V1 .cs-init-section: small toggle group
 	   with three pill buttons (None / Foe / Character). */
@@ -1794,63 +1645,6 @@
 		gap: 10px;
 		padding-top: 4px;
 	}
-	/* Shared styles for Bonds Formed + Lessons Learned click-to-edit markdown notes */
-	.ca-md-notes-wrap {
-		display:        flex;
-		flex-direction: column;
-		gap:            4px;
-		margin-top:     8px;
-	}
-	.ca-md-notes-label {
-		font-family:    var(--font-ui);
-		font-size:      0.65rem;
-		font-weight:    700;
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
-		color:          var(--text-dimmer);
-	}
-	.ca-md-notes-input {
-		width:        100%;
-		min-height:   7em;
-		font-family:  var(--font-ui);
-		font-size:    0.85rem;
-		line-height:  1.5;
-		color:        var(--text);
-		background:   var(--bg-inset);
-		border:       1px solid var(--border);
-		border-radius: 4px;
-		padding:      8px 10px;
-		outline:      none;
-		resize:       vertical;
-		box-sizing:   border-box;
-	}
-	.ca-md-notes-input:focus { border-color: var(--text-accent); }
-	.ca-md-notes-display {
-		cursor:       pointer;
-		min-height:   1.5em;
-		font-family:  var(--font-ui);
-		font-size:    0.85rem;
-		line-height:  1.5;
-		color:        var(--text);
-	}
-	.ca-md-notes-display:focus-visible {
-		outline:        2px solid var(--text-accent);
-		outline-offset: 2px;
-		border-radius:  2px;
-	}
-	.ca-md-notes-placeholder {
-		font-family: var(--font-ui);
-		font-size:   0.85rem;
-		color:       var(--text-dimmer);
-		font-style:  italic;
-	}
-	.ca-md-notes-display :global(p)           { margin: 0 0 0.6em; }
-	.ca-md-notes-display :global(p:last-child) { margin-bottom: 0; }
-	.ca-md-notes-display :global(ul),
-	.ca-md-notes-display :global(ol)          { margin: 0 0 0.6em; padding-left: 1.2em; }
-	.ca-md-notes-display :global(strong)      { font-weight: 700; color: var(--text); }
-	.ca-md-notes-display :global(em)          { font-style: italic; }
-
 	/* Vows tab — stack of VowCards. The "+ Vow" action lives in the header
 	   toolbar now, so no per-tab header is needed. */
 	.ca-vows-list {

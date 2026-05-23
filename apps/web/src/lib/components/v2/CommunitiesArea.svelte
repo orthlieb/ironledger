@@ -28,7 +28,7 @@
 		addNpc, removeNpc,
 	} from '$lib/npcStore.svelte.js';
 	import type { Community, Npc, NpcRelationship } from '$lib/types.js';
-	import { renderNote } from '$lib/markdown.js';
+	import MarkdownNotes from '$lib/components/MarkdownNotes.svelte';
 	import { isYrtEnabled } from '$lib/expansionStore.svelte.js';
 	import { loadOracles, getOracles, rollOracle, findOracle, rollFromRangeTable } from '$lib/oracleStore.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
@@ -80,16 +80,11 @@
 	let _pendingNpcNameOracle = $state<string>('namesIronlander');
 
 	// Inline-edit state
-	let editingName     = $state(false);
-	let editingNotes        = $state(false);
-	let editingCoreNotes    = $state(false);
-	let nameBeforeEdit      = $state('');
-	let nameInputEl         = $state<HTMLInputElement | null>(null);
-	let notesTextareaEl     = $state<HTMLTextAreaElement | null>(null);
-	let coreNotesTextareaEl = $state<HTMLTextAreaElement | null>(null);
+	let editingName    = $state(false);
+	let editingNotes   = $state(false);
+	let nameBeforeEdit = $state('');
+	let nameInputEl    = $state<HTMLInputElement | null>(null);
 	$effect(() => { if (editingName && nameInputEl) { nameInputEl.focus(); nameInputEl.select(); } });
-	$effect(() => { if (editingNotes && notesTextareaEl) notesTextareaEl.focus(); });
-	$effect(() => { if (editingCoreNotes && coreNotesTextareaEl) coreNotesTextareaEl.focus(); });
 
 	const communities = $derived(getCommunities());
 	const npcs        = $derived(getNpcs());
@@ -113,9 +108,8 @@
 		flushPersist();
 		activeEntryId    = id;
 		activeTab        = 'core';
-		editingName      = false;
-		editingNotes     = false;
-		editingCoreNotes = false;
+		editingName  = false;
+		editingNotes = false;
 	}
 
 	// ── Direct-proxy writes + debounced API flush ─────────────────────────
@@ -486,34 +480,12 @@
 							     the `notes` field is already part of the entry). -->
 							<div class="cm-core-notes">
 								<span class="cm-field-label cm-core-notes-label">Notes</span>
-								{#if editingCoreNotes}
-									<textarea
-										bind:this={coreNotesTextareaEl}
-										value={activeEntry.data.notes ?? ''}
-										oninput={(e) => setNotes((e.target as HTMLTextAreaElement).value)}
-										placeholder={activeEntry.kind === 'npc' ? 'Notes about this NPC… (markdown supported)' : 'Notes about this community… (markdown supported)'}
-										class="cm-notes-input"
-										rows="5"
-										onblur={() => (editingCoreNotes = false)}
-									></textarea>
-								{:else}
-									<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-									<div
-										class="cm-notes cm-notes--display"
-										class:cm-notes--empty={!activeEntry.data.notes?.trim()}
-										role="button"
-										tabindex="0"
-										title="Click to edit (markdown supported)"
-										onclick={() => (editingCoreNotes = true)}
-										onkeydown={(e) => { if (e.key === 'Enter') editingCoreNotes = true; }}
-									>
-										{#if activeEntry.data.notes?.trim()}
-											{@html renderNote(activeEntry.data.notes)}
-										{:else}
-											<span class="cm-notes-placeholder">{activeEntry.kind === 'npc' ? 'Notes about this NPC…' : 'Notes about this community…'}</span>
-										{/if}
-									</div>
-								{/if}
+								<MarkdownNotes
+									value={activeEntry.data.notes ?? ''}
+									oninput={(v) => setNotes(v)}
+									placeholder={activeEntry.kind === 'npc' ? 'Notes about this NPC…' : 'Notes about this community…'}
+									rows={5}
+								/>
 							</div>
 						{:else if activeTab === 'notes'}
 							<div class="cm-notes-section">
@@ -550,34 +522,13 @@
 									</div>
 								{/if}
 
-								{#if editingNotes}
-									<textarea
-										bind:this={notesTextareaEl}
-										value={activeEntry.data.notes ?? ''}
-										oninput={(e) => setNotes((e.target as HTMLTextAreaElement).value)}
-										placeholder={activeEntry.kind === 'npc' ? 'Notes about this NPC… (markdown supported)' : 'Notes about this community… (markdown supported)'}
-										class="cm-notes-input"
-										rows="6"
-										onblur={() => (editingNotes = false)}
-									></textarea>
-								{:else}
-									<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-									<div
-										class="cm-notes cm-notes--display"
-										class:cm-notes--empty={!activeEntry.data.notes?.trim()}
-										role="button"
-										tabindex="0"
-										title="Click to edit (markdown supported)"
-										onclick={() => (editingNotes = true)}
-										onkeydown={(e) => { if (e.key === 'Enter') editingNotes = true; }}
-									>
-										{#if activeEntry.data.notes?.trim()}
-											{@html renderNote(activeEntry.data.notes)}
-										{:else}
-											<span class="cm-notes-placeholder">{activeEntry.kind === 'npc' ? 'Notes about this NPC…' : 'Notes about this community…'}</span>
-										{/if}
-									</div>
-								{/if}
+								<MarkdownNotes
+									bind:editing={editingNotes}
+									value={activeEntry.data.notes ?? ''}
+									oninput={(v) => setNotes(v)}
+									placeholder={activeEntry.kind === 'npc' ? 'Notes about this NPC…' : 'Notes about this community…'}
+									rows={6}
+								/>
 							</div>
 						{/if}
 					</div>
@@ -930,50 +881,6 @@
 		transition: background 0.12s;
 	}
 	.cm-portrait-clear:hover { background: rgba(0,0,0,0.8); }
-
-	.cm-notes--display {
-		cursor: pointer;
-		min-height: 1.5em;
-		font-family: var(--font-ui);
-		font-size: 0.85rem;
-		line-height: 1.5;
-		color: var(--text);
-	}
-	.cm-notes--display:focus-visible {
-		outline: 2px solid var(--text-accent);
-		outline-offset: 2px;
-		border-radius: 2px;
-	}
-	.cm-notes--display :global(p) { margin: 0 0 0.6em; }
-	.cm-notes--display :global(p:last-child) { margin-bottom: 0; }
-	.cm-notes--display :global(ul),
-	.cm-notes--display :global(ol) {
-		margin: 0 0 0.6em;
-		padding-left: 1.2em;
-	}
-	.cm-notes--display :global(strong) { font-weight: 700; color: var(--text); }
-	.cm-notes--display :global(em)     { font-style: italic; }
-	.cm-notes-placeholder {
-		font-family: var(--font-ui);
-		font-size: 0.85rem;
-		color: var(--text-dimmer);
-		font-style: italic;
-	}
-	.cm-notes-input {
-		width: 100%;
-		min-height: 7em;
-		font-family: var(--font-ui);
-		font-size: 0.85rem;
-		line-height: 1.5;
-		color: var(--text);
-		background: var(--bg-inset);
-		border: 1px solid var(--border);
-		border-radius: 4px;
-		padding: 8px 10px;
-		outline: none;
-		resize: vertical;
-	}
-	.cm-notes-input:focus { border-color: var(--text-accent); }
 
 	.cm-field-row {
 		display: flex; align-items: center; gap: 8px;
