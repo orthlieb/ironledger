@@ -206,11 +206,12 @@
 	// the current value resolved against the effective max — accounting for
 	// per-ability-level maxValue arrays. Returns null when the asset has no
 	// counter so the card just shows its category.
-	function assetCounter(asset: CharacterAsset): { iconSvg: string; label: string; value: number; max: number } | null {
+	function assetCounter(asset: CharacterAsset, globalValues?: Record<string, string>): { iconSvg: string; label: string; value: number; max: number } | null {
 		const def = findAsset(asset.assetId);
 		const field = (def?.customFields ?? []).find((f) => f.type === 'counter');
 		if (!def || !field || field.maxValue === undefined) return null;
-		const raw = asset.customValues?.[field.id];
+		const store = field.global ? globalValues : asset.customValues;
+		const raw = store?.[field.id];
 		const dflt = typeof field.default === 'number' ? field.default : 0;
 		const value = raw != null && raw !== '' ? Number(raw) : dflt;
 		let max: number;
@@ -926,7 +927,7 @@
 										{#each d.assets ?? [] as a (a.assetId)}
 											{@const def = findAsset(a.assetId)}
 											{@const catColor = CAT_COLOR[def?.category ?? ''] ?? 'var(--text-muted)'}
-											{@const counter = assetCounter(a)}
+											{@const counter = assetCounter(a, d.globalValues)}
 											<button
 												class="ca-asset-card"
 												style="--cat-color: {catColor}"

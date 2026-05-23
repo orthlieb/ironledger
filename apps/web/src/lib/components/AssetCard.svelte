@@ -68,8 +68,9 @@
 		onOracleLink?:  (key: string, stat?: string) => void;
 		/** When true (e.g. v2 dialog), start expanded and hide the collapse toggle. */
 		forceExpanded?: boolean;
-		/** When provided alongside forceExpanded, a Cancel/Delete footer is rendered
-		    at the bottom of the card. Cancel invokes this callback. */
+		/** When provided alongside forceExpanded, an X close button is rendered
+		    in the header and a Delete/OK footer at the bottom. Both X and OK
+		    invoke this callback (edits save live, so OK is just a confirm-close). */
 		onClose?:       () => void;
 	} = $props();
 
@@ -320,13 +321,20 @@
 		{#if !forceExpanded}
 			<!-- Inline mode (collapsible card on character sheet): trash sits in the
 			     header. Dialog mode (forceExpanded) moves Delete to the footer below
-			     so it isn't crammed against the close affordance. -->
+			     and uses an X close button in the header. -->
 			<button
 				class="btn btn-icon icon-btn btn-trash"
 				onclick={onRemove}
 				title="Remove asset"
 				aria-label="Remove {definition.name}"
 			>{@html trashSvg}</button>
+		{:else if onClose}
+			<button
+				class="asset-close"
+				onclick={onClose}
+				title="Close"
+				aria-label="Close"
+			>✕</button>
 		{/if}
 	</div>
 
@@ -749,14 +757,16 @@
 	{/if}
 
 	{#if forceExpanded && onClose}
-		<!-- Dialog-mode footer — mirrors AssetPicker's cancel/confirm pattern. -->
+		<!-- Dialog-mode footer — Delete on the left, OK on the right. Cancel
+		     lives in the header as an X (see above). Edits save live so OK
+		     simply closes the dialog. -->
 		<div class="asset-footer">
-			<button class="btn" onclick={onClose}>Cancel</button>
 			<button
 				class="btn btn-danger"
 				onclick={onRemove}
 				aria-label="Delete {definition.name}"
 			>Delete</button>
+			<button class="btn btn-primary" onclick={onClose}>OK</button>
 		</div>
 	{/if}
 
@@ -879,14 +889,33 @@
 		gap: 8px;
 	}
 
-	/* ---- Dialog-mode footer (Cancel + Delete) ---- */
+	/* ---- Dialog-mode footer (Delete left, OK right) ---- */
 	.asset-footer {
 		display: flex;
 		gap: 8px;
-		justify-content: flex-end;
+		justify-content: space-between;
 		padding: 10px 12px;
 		border-top: 1px solid var(--border);
 		background: var(--bg-control);
+	}
+
+	/* ---- Dialog-mode X close button (upper right of header) ---- */
+	.asset-close {
+		background:    transparent;
+		border:        none;
+		color:         var(--text-dimmer);
+		cursor:        pointer;
+		font-size:     0.9rem;
+		padding:       2px 5px;
+		border-radius: 3px;
+		line-height:   1;
+		font-family:   inherit;
+		flex-shrink:   0;
+		transition:    color 0.12s, background 0.12s;
+	}
+	.asset-close:hover {
+		color:      var(--text);
+		background: var(--bg-hover);
 	}
 
 	.asset-preamble {
