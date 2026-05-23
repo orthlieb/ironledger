@@ -1056,9 +1056,9 @@
 															>{@html gemSvg}</span>
 														{/if}
 													</span>
-													<span class="ca-asset-card-name" class:ca-asset-card-name--custom={display.custom}>
+													<span class="ca-asset-card-name-row">
 														<span class="ca-asset-card-name-icon" aria-hidden="true">{@html assetIcon(def)}</span>
-														{display.text}
+														<span class="ca-asset-card-name" class:ca-asset-card-name--custom={display.custom}>{display.text}</span>
 													</span>
 												</button>
 												{#if counter}
@@ -1728,18 +1728,23 @@
 		color: var(--cat-color, var(--text-muted));
 		line-height: 1;
 	}
-	/* Category icon — sits to the left of the asset name and scales with
-	   the surrounding text (width/height: 1em). Coloured to match the
-	   asset's category accent. */
+	/* Name row — flex with category icon on the left and the name text
+	   on the right. Mirrors the Communities / Expeditions stage-icon
+	   pattern. 16-px icon fits the compact chit size. */
+	.ca-asset-card-name-row {
+		display:     flex;
+		align-items: center;
+		gap:         6px;
+		min-width:   0;
+	}
 	.ca-asset-card-name-icon {
-		display:         inline-flex;
+		display:         flex;
 		align-items:     center;
 		justify-content: center;
-		width:           1em;
-		height:          1em;
+		width:           16px;
+		height:          16px;
 		color:           var(--cat-color, var(--text-muted));
 		flex-shrink:     0;
-		vertical-align:  -0.12em;
 	}
 	.ca-asset-card-name-icon :global(svg) { width: 100%; height: 100%; fill: currentColor; }
 	.ca-asset-card-name-icon :global(svg path) { fill: currentColor; }
@@ -1758,13 +1763,13 @@
 	.ca-asset-card-rarity :global(svg) { width: 100%; height: 100%; fill: currentColor; }
 	.ca-asset-card-rarity :global(svg path) { fill: currentColor; }
 	.ca-asset-card-name {
-		display:       inline-flex;
-		align-items:   center;
-		gap:           5px;
+		flex:          1;
+		min-width:     0;
 		font-family:   var(--font-ui);
 		font-size:     0.78rem;
 		color:         var(--text);
 		overflow:      hidden;
+		text-overflow: ellipsis;
 		white-space:   nowrap;
 	}
 	/* User-supplied name (filled in via the asset's "string" custom field —

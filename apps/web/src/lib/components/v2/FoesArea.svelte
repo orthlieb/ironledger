@@ -531,17 +531,17 @@
 		border-radius: 3px;
 		transition: background 0.12s, border-color 0.12s;
 	}
-	/* Nature icon — sits to the left of the foe name, scales with the
-	   surrounding text. Coloured to the active nature accent. */
+	/* Nature icon — sits to the left of the foe name in the stage header,
+	   matching the Communities / Expeditions stage-icon pattern (fixed
+	   18-px size; sibling of the name element, not inside it). */
 	.fa-stage-name-icon {
-		display:         inline-flex;
+		display:         flex;
 		align-items:     center;
 		justify-content: center;
-		width:           calc(0.82rem * var(--font-display-scale));
-		height:          calc(0.82rem * var(--font-display-scale));
+		width:           18px;
+		height:          18px;
 		color:           var(--fa-nature, var(--text-muted));
 		flex-shrink:     0;
-		margin-right:    2px;
 	}
 	.fa-stage-name-icon :global(svg) { width: 100%; height: 100%; fill: currentColor; }
 	.fa-stage-name-icon :global(svg path) { fill: currentColor; }

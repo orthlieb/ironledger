@@ -199,9 +199,9 @@
 							{asset.category}
 						</span>
 
-						<div class="tile-name">
+						<div class="tile-name-row">
 							<span class="tile-name-icon" aria-hidden="true" style:color={catColor}>{@html assetIcon(asset)}</span>
-							{asset.name}
+							<span class="tile-name">{asset.name}</span>
 						</div>
 
 						{#if asset.summary}
@@ -472,15 +472,19 @@
 		white-space:    nowrap;
 		line-height:    1.3;
 	}
+	.tile-name-row {
+		display:     flex;
+		align-items: center;
+		gap:         6px;
+		min-width:   0;
+	}
 	.tile-name-icon {
-		display:         inline-flex;
+		display:         flex;
 		align-items:     center;
 		justify-content: center;
-		width:           1em;
-		height:          1em;
+		width:           16px;
+		height:          16px;
 		flex-shrink:     0;
-		vertical-align:  -0.12em;
-		margin-right:    5px;
 	}
 	.tile-name-icon :global(svg) { width: 100%; height: 100%; fill: currentColor; }
 	.tile-name-icon :global(svg path) { fill: currentColor; }

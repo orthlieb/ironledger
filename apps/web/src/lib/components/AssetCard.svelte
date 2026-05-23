@@ -792,15 +792,14 @@
 		min-width:   0;
 		overflow:    hidden;
 	}
-	/* Category icon — sits to the left of the asset name and scales with
-	   the surrounding text (width/height: 1em). */
+	/* Category icon — sits to the left of the asset name, matching the
+	   Communities / Expeditions stage-icon pattern (fixed 18-px size). */
 	.asset-name-icon {
-		display:         inline-flex;
+		display:         flex;
 		align-items:     center;
 		justify-content: center;
-		width:           1em;
-		height:          1em;
-		font-size:       calc(0.82rem * var(--font-display-scale));
+		width:           18px;
+		height:          18px;
 		color:           var(--asset-color, var(--text-muted));
 		flex-shrink:     0;
 	}
