@@ -44,49 +44,9 @@
 	let activeCategories = $state(new Set<AssetCategory>());
 	let filtersOpen      = $state(false);
 	let search           = $state('');
-	let dialogEl        = $state<HTMLDialogElement | null>(null);
-	let confirmDialogEl = $state<HTMLDialogElement | null>(null);
-	let pendingAsset    = $state<AssetDefinition | null>(null);
-
-	let confirmDragX   = $state(0);
-	let confirmDragY   = $state(0);
-	let _cdDragging    = false;
-	let _cdStartMouseX = 0;
-	let _cdStartMouseY = 0;
-	let _cdStartDragX  = 0;
-	let _cdStartDragY  = 0;
+	let dialogEl = $state<HTMLDialogElement | null>(null);
 
 	$effect(() => { if (dialogEl) dialogEl.showModal(); });
-	$effect(() => {
-		if (confirmDialogEl && pendingAsset) {
-			confirmDragX = 0;
-			confirmDragY = 0;
-			confirmDialogEl.showModal();
-		}
-	});
-
-	function startConfirmDrag(e: MouseEvent) {
-		_cdDragging    = true;
-		_cdStartMouseX = e.clientX;
-		_cdStartMouseY = e.clientY;
-		_cdStartDragX  = confirmDragX;
-		_cdStartDragY  = confirmDragY;
-		e.preventDefault();
-		window.addEventListener('mousemove', onConfirmDragMove);
-		window.addEventListener('mouseup',   onConfirmDragEnd);
-	}
-
-	function onConfirmDragMove(e: MouseEvent) {
-		if (!_cdDragging) return;
-		confirmDragX = _cdStartDragX + (e.clientX - _cdStartMouseX);
-		confirmDragY = _cdStartDragY + (e.clientY - _cdStartMouseY);
-	}
-
-	function onConfirmDragEnd() {
-		_cdDragging = false;
-		window.removeEventListener('mousemove', onConfirmDragMove);
-		window.removeEventListener('mouseup',   onConfirmDragEnd);
-	}
 
 	// ---------------------------------------------------------------------------
 	// Precondition checking
@@ -137,48 +97,17 @@
 	}
 
 	// ---------------------------------------------------------------------------
-	// Add flow
+	// Add flow — click a tile to hand off to the parent's add dialog.
+	// The parent (CharactersArea.handleAddAsset) constructs the editable
+	// draft and opens AssetCard in add mode.
 	// ---------------------------------------------------------------------------
 	function tryAdd(def: AssetDefinition) {
-		pendingAsset = def;
+		onAdd(def.id);
 	}
 
-	function confirmAdd() {
-		if (pendingAsset) {
-			onAdd(pendingAsset.id);
-			confirmDialogEl?.close();
-			pendingAsset = null;
-		}
-	}
-
-	function cancelAdd() {
-		confirmDialogEl?.close();
-		pendingAsset = null;
-	}
-
-	// ---------------------------------------------------------------------------
-	// Ability text renderer (mirrors AssetCard.formatText)
-	// ---------------------------------------------------------------------------
-	/** Strips markdown-style links [text](anything) → text, for plain-text contexts. */
+	/** Strips markdown-style links [text](anything) → text, for tile descriptions. */
 	function stripMdLinks(raw: string): string {
 		return raw.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
-	}
-
-	function formatText(raw: string): string {
-		return raw
-			.split('\n\n')
-			.map((para) => {
-				const lines = para.split('\n');
-				if (lines.some((l) => /^\s*\*\s/.test(l))) {
-					const items = lines
-						.filter((l) => /^\s*\*\s/.test(l))
-						.map((l) => `<li>${l.replace(/^\s*\*\s/, '').trim()}</li>`)
-						.join('');
-					return `<ul>${items}</ul>`;
-				}
-				return `<p>${para.trim()}</p>`;
-			})
-			.join('');
 	}
 </script>
 
@@ -287,69 +216,6 @@
 		{/if}
 	</div>
 </dialog>
-
-<!-- ======================================================================
-     Asset detail dialog — mirrors an expanded AssetCard
-     ====================================================================== -->
-{#if pendingAsset}
-	{@const catColor = CAT_COLOR[pendingAsset.category] ?? 'var(--text-muted)'}
-	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-	<dialog
-		bind:this={confirmDialogEl}
-		class="confirm-dialog"
-		style:--accent={catColor}
-		style:transform="translate(calc(-50% + {confirmDragX}px), calc(-50% + {confirmDragY}px))"
-		oncancel={cancelAdd}
-	>
-		<!-- Header: mirrors .asset-header from AssetCard; also serves as drag handle -->
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="asset-header" style="border-top: 3px solid {catColor}" onmousedown={startConfirmDrag}>
-			<span class="drag-grip" aria-hidden="true">⠿</span>
-			<div class="asset-name-group">
-				<span class="asset-name">{pendingAsset.name}</span>
-				<span class="asset-cat" style:color={catColor}>{pendingAsset.category}</span>
-			</div>
-			<span class="ability-tally">0/{pendingAsset.abilities.length}</span>
-		</div>
-
-		<!-- Body: mirrors .asset-body — scrollable, read-only -->
-		<div class="asset-body">
-			{#if pendingAsset.preamble}
-				<p class="asset-preamble">{@html stripMdLinks(pendingAsset.preamble)}</p>
-			{/if}
-
-			<div class="abilities-list">
-				{#each pendingAsset.abilities as ab}
-					<div class="ability-row" class:ability-enabled={ab.enabled}>
-						<input
-							type="checkbox"
-							class="ability-check"
-							checked={ab.enabled}
-							disabled
-							aria-label={ab.enabled ? 'Unlocked by default' : 'Locked — costs 2 XP'}
-						/>
-						<div class="ability-text">
-							{#if ab.name}
-								<span class="ability-name">{ab.name}.</span>
-							{/if}
-							{@html formatText(ab.text)}
-						</div>
-					</div>
-				{/each}
-			</div>
-
-			{#if pendingAsset.postamble}
-				<p class="asset-postamble">{pendingAsset.postamble}</p>
-			{/if}
-		</div>
-
-		<!-- Footer -->
-		<div class="cd-footer">
-			<button class="btn" onclick={cancelAdd}>Cancel</button>
-			<button class="btn btn-primary" onclick={confirmAdd}>Add to Character</button>
-		</div>
-	</dialog>
-{/if}
 
 <style>
 	/* ================================================================
@@ -637,183 +503,4 @@
 		font-style: italic;
 		margin-top: auto;
 	}
-
-	/* ================================================================
-	   Asset detail dialog — mirrors expanded AssetCard.
-	   No flex container — children flow naturally and the .asset-body
-	   carries the scroll cap directly. A `display: flex` + `min-height: 0`
-	   chain on a `<dialog>` collapses to a thin horizontal strip on iOS
-	   Safari (same bug as #11/#12).
-	   ================================================================ */
-	.confirm-dialog {
-		border: none;
-		border-radius: 6px;
-		padding: 0;
-		background: var(--bg-inset);
-		color: var(--text);
-		width: min(460px, calc(100vw - 2rem));
-		max-height: 82vh;
-		box-shadow:
-			0 16px 48px #00000070,
-			0 0 0 1px var(--border-mid);
-		position: fixed;
-		top: 50%;
-		left: 50%;
-		margin: 0;
-		outline: none;
-		overflow: hidden;
-	}
-	.confirm-dialog::backdrop {
-		background: #00000050;
-		backdrop-filter: blur(1px);
-	}
-
-	/* ── Mirrors AssetCard .asset-header ── */
-	.asset-header {
-		display: flex;
-		align-items: center;
-		gap: 7px;
-		padding: 7px 10px;
-		background: var(--bg-control);
-		cursor: grab;
-		user-select: none;
-	}
-	.asset-header:active { cursor: grabbing; }
-
-	.asset-name-group {
-		flex: 1;
-		display: flex;
-		align-items: baseline;
-		gap: 8px;
-		min-width: 0;
-		overflow: hidden;
-	}
-
-	.asset-name {
-		font-family: var(--font-ui);
-		font-size: 0.86rem;
-		font-weight: 700;
-		letter-spacing: 0.03em;
-		color: var(--text);
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-
-	.asset-cat {
-		font-family: var(--font-ui);
-		font-size: 0.6rem;
-		font-weight: 600;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		flex-shrink: 0;
-		white-space: nowrap;
-	}
-
-	.ability-tally {
-		font-family: var(--font-ui);
-		font-size: 0.68rem;
-		color: var(--text-dimmer);
-		flex-shrink: 0;
-		font-variant-numeric: tabular-nums;
-	}
-
-	/* ── Mirrors AssetCard .asset-body ──
-	   The dialog has no flex container, so cap the body's height directly
-	   (dialog 82vh minus header + footer ≈ 6rem) and scroll it internally. */
-	.asset-body {
-		padding: 10px 12px;
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-		max-height: calc(82vh - 6rem);
-		overflow-y: auto;
-		overscroll-behavior: contain;
-	}
-
-	.asset-preamble {
-		font-family: var(--font-ui);
-		font-size: 0.78rem;
-		font-style: italic;
-		color: var(--text-muted);
-		line-height: 1.4;
-		margin: 0;
-	}
-
-	/* ── Mirrors AssetCard .abilities-list / .ability-row ── */
-	.abilities-list {
-		display: flex;
-		flex-direction: column;
-		gap: 7px;
-	}
-
-	.ability-row {
-		display: flex;
-		align-items: flex-start;
-		gap: 8px;
-		padding: 6px 8px;
-		border-radius: 4px;
-		border: 1px solid var(--border);
-		background: var(--bg);
-		cursor: default;
-	}
-
-	.ability-check {
-		flex-shrink: 0;
-		margin-top: 2px;
-		accent-color: var(--text-accent);
-		cursor: default;
-	}
-
-	.ability-enabled {
-		background: color-mix(in srgb, var(--text-accent) 6%, var(--bg));
-		border-color: color-mix(in srgb, var(--text-accent) 30%, var(--border));
-	}
-
-	.ability-text {
-		flex: 1;
-		font-family: var(--font-ui);
-		font-size: 0.78rem;
-		color: var(--text-muted);
-		line-height: 1.45;
-	}
-
-	.ability-text :global(p)           { margin: 0 0 4px; }
-	.ability-text :global(p:last-child){ margin-bottom: 0; }
-	.ability-text :global(ul)          { margin: 4px 0 0; padding-left: 1.2em; }
-	.ability-text :global(li)          { margin-bottom: 2px; }
-	.ability-text :global(a.move-link) { color: var(--text-accent); text-decoration: underline; }
-
-	.ability-name {
-		font-weight: 700;
-		color: var(--text);
-		margin-right: 2px;
-	}
-
-	.asset-postamble {
-		font-family: var(--font-ui);
-		font-size: 0.75rem;
-		color: var(--text-dimmer);
-		font-style: italic;
-		line-height: 1.45;
-		margin: 0;
-	}
-
-	/* ── Footer ── */
-	.cd-footer {
-		display: flex;
-		gap: 8px;
-		justify-content: flex-end;
-		padding: 10px 12px;
-		border-top: 1px solid var(--border);
-		background: var(--bg-card);
-	}
-
-	.btn-primary {
-		background: var(--text-accent);
-		border-color: var(--text-accent);
-		color: var(--bg-card);
-		font-weight: 600;
-	}
-	.btn-primary:hover { opacity: 0.88; }
 </style>
