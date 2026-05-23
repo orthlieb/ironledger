@@ -12,7 +12,7 @@ During gameplay, players need to jot down observations, reminders, or narrative 
 
 ## UI
 
-The **Notes** button in the GlobalContextBar opens a centered modal dialog:
+The **Notes** button in the top-level app nav (`+layout.svelte`'s `.app-nav` toolbar — formerly the GlobalContextBar before its v2 removal) opens a centered modal dialog:
 - Textarea with placeholder text and markdown hint
 - **Add to Log** button (disabled when empty)
 - Ctrl/Cmd+Enter keyboard shortcut to submit

@@ -102,7 +102,7 @@ LogPanel handles clicks on 7 interactive link types embedded in move outcome HTM
 Additionally, LogPanel handles two JS-generated link types not present in move JSON data:
 
 - **`.burn-momentum-link`** — Appears in the auto-appended "Momentum: Burn Available" log entry after action rolls where burning would upgrade the outcome. Clicking it burns the character's momentum and updates the roll entry's outcome text.
-- **`.xp-cost-link`** — Appears in asset log entries. Clicking deducts the XP cost from the character and strikes through the link to prevent double-use.
+- **`.xp-cost-link`** — Appears in asset log entries. **One link per add/modify dialog session, not per individual change.** When the user opens the asset dialog (add or edit mode), edits accumulate in a draft; on OK/Add the parent computes the total XP cost (asset purchase cost + 2 × newly-enabled abilities + rarity xpCost, if applicable) and emits one log entry with one xp-cost-link for the cumulative total. Clicking the link deducts that total from the character and strikes through to prevent double-use. If the diff is 0 (e.g. user opened the dialog, toggled an ability on then back off, clicked OK), no log entry is written at all.
 
 #### Cascade Rules
 LogPanel also auto-appends additional log entries in response to resource-link clicks when cascade conditions are met:

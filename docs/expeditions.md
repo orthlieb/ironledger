@@ -110,9 +110,14 @@ The store provides:
 
 ---
 
-## Global Context Integration
+## Active expedition selection
 
-The **Expedition tile** in GlobalContextBar shows the active expedition's type badge (Journey green / Site blue), name, difficulty, progress score, theme/domain (sites only), and complete marker. Clicking the tile opens a popover listing all expeditions; selecting one updates the active expedition.
+In v2, the expedition selector is inside the Expeditions area itself
+(`ExpeditionsArea.svelte`) — there is no GlobalContextBar. The left-hand
+list shows every expedition with type badge (Journey green / Site blue),
+difficulty, progress score, theme/domain (sites only), and a complete
+marker. Clicking an item makes it the active expedition; the stage on
+the right then renders the editable card.
 
 ---
 

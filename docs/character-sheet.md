@@ -88,13 +88,24 @@ Each asset references an `assetId` from the asset catalogue, with per-ability `e
 interface CharacterData {
   name: string; background: string; portrait?: string;  // base64 JPEG
   edge: number; heart: number; iron: number; shadow: number; wits: number;
-  touched: TouchedLevel; touchedAnimal: string;
-  momentum: number; health: number; spirit: number; supply: number; mana: number;
+  /** @deprecated migrated to Touched asset's customValues.touchedLevel */
+  touched?: TouchedLevel;
+  /** @deprecated migrated to Touched asset's customValues.animalName */
+  touchedAnimal?: string;
+  momentum: number; health: number; spirit: number; supply: number;
+  /** Shared counter values for asset CustomFieldDefs with global:true (e.g. mana). Keyed by field.id. */
+  globalValues?: Record<string, string>;
   xp: number; bonds: number; failures: number;
+  /** Markdown notes shown beneath the Bonds track — significant bonds formed. */
+  bondsFormed?: string;
+  /** Markdown notes shown beneath the Failures track (delve mode only). */
+  lessonsLearned?: string;
   wounded: boolean; unprepared: boolean; shaken: boolean; encumbered: boolean;
   maimed: boolean; corrupted: boolean; cursed: boolean; tormented: boolean;
   vows: Vow[];
   assets: CharacterAsset[];
+  /** 0 = no initiative, 1 = character has it, 2 = foe has it. */
+  initiative?: number;
 }
 
 type TouchedLevel = 'pure' | 'prime' | 'second' | 'third' | 'feral';

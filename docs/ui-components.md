@@ -537,3 +537,120 @@ In `ProgressTrack.svelte`:
 - **Tick marks**: `stroke="var(--text-accent)"`, `stroke-width="1.5"`
 - **Hover**: `.track-box:hover` changes color to `var(--text-accent)`
 - **Danger boxes**: box border becomes `#E77974`, fill tinted red
+
+---
+
+## Shared components extracted from per-area duplication
+
+Several patterns that were originally copy-pasted across area
+components (CharactersArea, FoesArea, ExpeditionsArea, CommunitiesArea,
+VowCard, AssetCard) have been extracted into single shared components.
+Prefer these over rebuilding the pattern inline.
+
+### `ProgressTrackPanel` (`$lib/components/ProgressTrackPanel.svelte`)
+
+Wraps `ProgressTrack` with the **foe-pattern** layout: a label row
+(title + tally) above a controls row (boxes + ± buttons),
+`align-self: flex-start` shrinks the group to the controls width so the
+tally lands flush with the + button.
+
+```svelte
+<ProgressTrackPanel
+  label="Bonds"
+  bind:value={d.bonds}
+/>
+
+<ProgressTrackPanel
+  label="Progress"
+  bind:value={vow.ticks}
+  step={VOW_MARK_TICKS[vow.difficulty]}
+  showStep
+  dangerCount={vow.menace}
+/>
+```
+
+Props: `value` (bindable), `label`, `color?`, `step?` (default 1),
+`showStep?`, `min?`, `max?` (default 40), `boxes?`, `dangerCount?`,
+`onchange?`. Used by Characters (Bonds, Failures), VowCard, FoesArea,
+ExpeditionsArea.
+
+### `MarkdownNotes` (`$lib/components/MarkdownNotes.svelte`)
+
+Click-to-edit markdown notes field — rendered HTML in display mode,
+textarea on click, returns to display on blur. Supports both
+`bind:value` and `value + oninput` for parents whose data lives in
+nested state.
+
+```svelte
+<MarkdownNotes
+  label="Bonds Formed"
+  bind:value={d.bondsFormed}
+  placeholder="Note significant bonds…"
+/>
+```
+
+Props: `value` (bindable), `editing?` (bindable, exposes the dialog
+state so parents can hide e.g. floating portraits during edit),
+`label?`, `placeholder?`, `rows?` (default 4), `oninput?`. Used by
+Characters (background, bondsFormed, lessonsLearned), VowCard,
+ExpeditionsArea, CommunitiesArea (core + notes tab).
+
+### `PortraitUploader` (`$lib/components/PortraitUploader.svelte`)
+
+170×170 floating portrait with file picker + clear button. Crops to a
+256-pixel-square JPEG via `cropImageFile()` (`$lib/imageCrop.ts`).
+
+```svelte
+<PortraitUploader
+  bind:value={d.portrait}
+  placeholderSvg={hornedHelmSvg}
+  alt={`Portrait of ${d.name}`}
+/>
+```
+
+Props: `value` (bindable, JPEG data URL), `placeholderSvg` (raw SVG
+string), `alt?`, `oninput?`. Used by Characters, CommunitiesArea
+(community + NPC), ExpeditionsArea.
+
+### `EditableName` (`$lib/editableName.svelte.ts`)
+
+Helper class (NOT a component) encapsulating the click-to-edit name
+pattern — state, focus/select effect, Enter/Escape key handling,
+snapshot-and-restore on cancel. The parent renders the markup but
+delegates behaviour to this helper, so per-area stage-header styling
+remains in the parent.
+
+```ts
+const nameEdit = new EditableName((restored) => { d.name = restored; });
+```
+
+```svelte
+{#if nameEdit.editing}
+  <input
+    bind:this={nameEdit.inputEl}
+    bind:value={d.name}
+    onblur={nameEdit.commit}
+    onkeydown={nameEdit.onKeydown}
+  />
+{:else}
+  <button onclick={() => nameEdit.start(d.name)}>{d.name}</button>
+{/if}
+```
+
+Used by Characters, FoesArea, ExpeditionsArea, CommunitiesArea,
+VowCard.
+
+### `cropImageFile()` (`$lib/imageCrop.ts`)
+
+Pure async helper: takes a `File`, returns a Promise<string> resolving
+to a centred-square JPEG data URL (default max 256 × 256 at 0.85
+quality). Used internally by `PortraitUploader`.
+
+### Global counter registry (`$lib/globalCounters.ts`)
+
+`buildGlobalCounterRegistry(assets, onMismatch?)` and
+`getGlobalCounterDef(id)` / `getGlobalCounterIds()` (re-exported by
+`$lib/assetStore.svelte.ts`) provide the canonical definition for
+counter fields declared `global: true`. First declaration wins; later
+mismatches log `console.error`. See `docs/DATA_FORMAT.md` for the
+draft/snapshot model that depends on this.
