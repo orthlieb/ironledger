@@ -1344,24 +1344,18 @@
 		border-bottom-color: var(--text-accent);
 	}
 
-	/* Card content — simplified: no top/side border, no background. Bottom
-	   border closes off the card from the asset tabs below. Section
-	   dividers come from per-section border-top rules below. */
+	/* Card content — flat panel inside the stage. Section dividers come
+	   from per-section border-top rules below. */
 	.ca-card {
 		flex: 1;
 		min-height: 200px;
-		/* Matches the surrounding area so the card reads as borderless but is
-		   still opaque — needed so the asset tabs that are tucked under it
-		   (margin-top: -6px) don't poke through. */
 		background: var(--bg-inset);
 		border: none;
-		border-bottom: 1px solid #C5B99E;
 		border-radius: 0;
 		padding: 0 7px;                   /* no top/bottom padding — sections control their own spacing */
 		margin-bottom: 0;
 		overflow: auto;
 		position: relative;
-		z-index: 1;                       /* sit above ca-asset-tabs so the tucked edge is hidden */
 	}
 	.ca-card-section {
 		display: flex;
