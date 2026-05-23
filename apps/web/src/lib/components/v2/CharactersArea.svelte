@@ -37,6 +37,7 @@
 	import MarkdownNotes    from '$lib/components/MarkdownNotes.svelte';
 	import PortraitUploader from '$lib/components/PortraitUploader.svelte';
 	import { EditableName } from '$lib/editableName.svelte.js';
+	import { assetIcon, categoryIcon } from '$lib/iconRegistry.js';
 	import ConfirmDialog  from '$lib/components/ConfirmDialog.svelte';
 	import VowCard        from '$lib/components/VowCard.svelte';
 	import DebilitiesSection from '$lib/components/DebilitiesSection.svelte';
@@ -1045,6 +1046,7 @@
 													use:tooltip={def ? `${def.name} · ${def.category}` : a.assetId}
 												>
 													<span class="ca-asset-card-meta">
+														<span class="ca-asset-card-cat-icon" aria-hidden="true">{@html assetIcon(def)}</span>
 														<span class="ca-asset-card-cat">{def?.category ?? ''}</span>
 														{#if a.rarityId}
 															{@const rarity = findRaritiesForAsset(a.assetId).find(r => r.id === a.rarityId)}
@@ -1724,6 +1726,19 @@
 		color: var(--cat-color, var(--text-muted));
 		line-height: 1;
 	}
+	/* Category icon — sits to the left of the category text, coloured to
+	   match the asset's accent. */
+	.ca-asset-card-cat-icon {
+		display:         inline-flex;
+		align-items:     center;
+		justify-content: center;
+		width:           11px;
+		height:          11px;
+		color:           var(--cat-color, var(--text-muted));
+		flex-shrink:     0;
+	}
+	.ca-asset-card-cat-icon :global(svg) { width: 100%; height: 100%; fill: currentColor; }
+	.ca-asset-card-cat-icon :global(svg path) { fill: currentColor; }
 	/* Gem badge — appears in the meta row when the asset has a selected
 	   rarity. Inherits the asset category colour via currentColor on the
 	   SVG fill. */

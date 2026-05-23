@@ -8,6 +8,7 @@
 	 */
 	import type { CharacterAsset, AssetDefinition } from '$lib/types.js';
 	import { findRaritiesForAsset, getGlobalCounterDef } from '$lib/assetStore.svelte.js';
+	import { assetIcon } from '$lib/iconRegistry.js';
 	import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
 	import { draggable } from '$lib/actions/draggable.js';
@@ -338,6 +339,7 @@
 
 	<div class="asset-body">
 		<div class="asset-cat-row">
+			<span class="asset-cat-icon" aria-hidden="true">{@html assetIcon(definition)}</span>
 			<span class="asset-cat">{definition.category}</span>
 		</div>
 
@@ -804,9 +806,21 @@
 	}
 
 	.asset-cat-row {
-		display: flex;
+		display:     flex;
 		align-items: center;
+		gap:         5px;
 	}
+	.asset-cat-icon {
+		display:         inline-flex;
+		align-items:     center;
+		justify-content: center;
+		width:           12px;
+		height:          12px;
+		color:           var(--asset-color, var(--text-muted));
+		flex-shrink:     0;
+	}
+	.asset-cat-icon :global(svg) { width: 100%; height: 100%; fill: currentColor; }
+	.asset-cat-icon :global(svg path) { fill: currentColor; }
 
 	.asset-cat {
 		font-family: var(--font-ui);

@@ -59,6 +59,9 @@ export interface FoeDef {
 	drives:      string[];
 	tactics:     string[];
 	description: string;
+	/** Optional icon override — slug of an SVG in $lib/icons/ (e.g.
+	 *  "wolf-pup"). Falls back to the nature icon when absent. */
+	icon?:       string;
 	/** If true, this foe's harm escalates during combat (YRT extension). */
 	escalates?:         boolean;
 	/** If true, this foe has an escalating grey-mana defense shield (YRT extension). */
@@ -298,6 +301,9 @@ export interface AssetDefinition {
 	name:         string;
 	category:     AssetCategory;
 	source?:      CatalogueSource;
+	/** Optional icon override — slug of an SVG in $lib/icons/ (e.g.
+	 *  "asset-wayfinder"). Falls back to the category icon when absent. */
+	icon?:        string;
 	summary?:     string;
 	preamble?:    string;
 	postamble?:   string;

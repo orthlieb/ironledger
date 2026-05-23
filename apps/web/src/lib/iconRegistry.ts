@@ -1,0 +1,96 @@
+// =============================================================================
+// Icon registry — build-time scan of $lib/icons/*.svg.
+//
+// Vite's import.meta.glob enumerates every SVG in the icons directory at
+// build time and inlines them as raw strings. Adding a new SVG to the
+// directory makes it automatically available; no per-file import line or
+// map entry is needed.
+//
+// Each consumer renders an icon by slug — either the catalogue's per-asset
+// override (`def.icon = "wolf-pup"`) or the category fallback. The renderer
+// gracefully returns an empty string when the slug isn't registered, so
+// missing icons degrade silently instead of throwing.
+// =============================================================================
+import type { AssetCategory, AssetDefinition, FoeDef, FoeNature } from '$lib/types.js';
+
+// `eager: true` inlines the SVG text into the bundle (no async, no chunk
+// splitting). With the current ~12 icons each ~1–3 KB this is comfortably
+// trivial; if the registry grew to hundreds we'd switch to eager: false
+// and async-loaded chunks.
+const sources = import.meta.glob('/src/lib/icons/*.svg', {
+	eager:  true,
+	query:  '?raw',
+	import: 'default',
+}) as Record<string, string>;
+
+/** Map of icon slug → raw SVG. Slug is the filename minus directory and
+ *  `.svg` extension: e.g. `/src/lib/icons/cat-combat.svg` → `cat-combat`. */
+const REGISTRY: Map<string, string> = new Map(
+	Object.entries(sources).map(([path, svg]) => [
+		path.replace(/^.*\//, '').replace(/\.svg$/, ''),
+		svg,
+	]),
+);
+
+/** Lookup by slug. Returns undefined when the slug isn't a registered file. */
+export function getIcon(slug: string | undefined | null): string | undefined {
+	if (!slug) return undefined;
+	return REGISTRY.get(slug);
+}
+
+/** True when an icon with the given slug exists. Useful for catalogue lints. */
+export function hasIcon(slug: string): boolean {
+	return REGISTRY.has(slug);
+}
+
+/** Every registered slug. Useful for catalogue lints and dev tooling. */
+export function listIcons(): string[] {
+	return Array.from(REGISTRY.keys());
+}
+
+// ---------------------------------------------------------------------------
+// Category / nature fallbacks
+// ---------------------------------------------------------------------------
+
+const CAT_ICON: Record<AssetCategory, string> = {
+	'Combat Talent': 'cat-combat',
+	'Companion':     'cat-companion',
+	'Path':          'cat-path',
+	'Ritual':        'cat-ritual',
+	'Touched':       'cat-touched',
+};
+
+const NATURE_ICON: Record<FoeNature, string> = {
+	'Ironlander': 'foe-ironlander',
+	'Firstborn':  'foe-firstborn',
+	'Animal':     'foe-animal',
+	'Beast':      'foe-beast',
+	'Horror':     'foe-horror',
+	'Anomaly':    'foe-anomaly',
+};
+
+/** Resolve the icon SVG for an asset, with per-asset override taking
+ *  precedence over the category fallback. Returns '' when nothing matches
+ *  so consumers can render `{@html assetIcon(def)}` directly. */
+export function assetIcon(def: AssetDefinition | undefined | null): string {
+	if (!def) return '';
+	return getIcon(def.icon) ?? getIcon(CAT_ICON[def.category]) ?? '';
+}
+
+/** Same as assetIcon, by category alone. Use in places where you don't have
+ *  the full definition (e.g. picker filter chips that show category names). */
+export function categoryIcon(category: AssetCategory): string {
+	return getIcon(CAT_ICON[category]) ?? '';
+}
+
+/** Resolve the icon SVG for a foe, with per-foe override taking precedence
+ *  over the nature fallback. */
+export function foeIcon(def: FoeDef | undefined | null): string {
+	if (!def) return '';
+	return getIcon(def.icon) ?? getIcon(NATURE_ICON[def.nature]) ?? '';
+}
+
+/** Foe icon by nature alone (picker filter chips, etc.). */
+export function natureIcon(nature: FoeNature): string {
+	return getIcon(NATURE_ICON[nature]) ?? '';
+}
