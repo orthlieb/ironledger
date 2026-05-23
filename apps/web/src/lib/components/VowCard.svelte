@@ -190,7 +190,7 @@
 				{/if}
 			</div>
 
-			<div style="--track-inner-bg: var(--bg-inset)">
+			<div style="--track-inner-bg: var(--bg-inset); display: contents">
 				<ProgressTrackPanel
 					label="Progress"
 					bind:value={vow.ticks}
