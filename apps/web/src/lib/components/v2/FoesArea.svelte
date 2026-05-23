@@ -213,6 +213,7 @@
 				     Carries the same --fa-nature so the coloured band is continuous
 				     from the header all the way down the card's left side. -->
 				<div class="fa-stage-header" style="--fa-nature: {natureColor}">
+					<span class="fa-stage-name-icon" aria-hidden="true">{@html foeIcon(activeDef)}</span>
 					{#if nameEdit.editing}
 						<input
 							bind:this={nameEdit.inputEl}
@@ -317,10 +318,7 @@
 							{#if activeDef && rankInfo}
 								<!-- Pills row -->
 								<div class="fa-pills-row">
-									<span class="fa-badge" style="background: {natureColor}22; color: {natureColor}">
-										<span class="fa-badge-icon" aria-hidden="true">{@html foeIcon(activeDef)}</span>
-										{activeDef.nature}
-									</span>
+									<span class="fa-badge" style="background: {natureColor}22; color: {natureColor}">{activeDef.nature}</span>
 									<span
 										class="fa-badge fa-badge--rank"
 										style={rankBadgeStyle(activeEnc.effectiveRank)}
@@ -533,6 +531,20 @@
 		border-radius: 3px;
 		transition: background 0.12s, border-color 0.12s;
 	}
+	/* Nature icon — sits to the left of the foe name, scales with the
+	   surrounding text. Coloured to the active nature accent. */
+	.fa-stage-name-icon {
+		display:         inline-flex;
+		align-items:     center;
+		justify-content: center;
+		width:           calc(0.82rem * var(--font-display-scale));
+		height:          calc(0.82rem * var(--font-display-scale));
+		color:           var(--fa-nature, var(--text-muted));
+		flex-shrink:     0;
+		margin-right:    2px;
+	}
+	.fa-stage-name-icon :global(svg) { width: 100%; height: 100%; fill: currentColor; }
+	.fa-stage-name-icon :global(svg path) { fill: currentColor; }
 	.fa-stage-name--editable:hover {
 		background:   var(--bg-hover);
 		border-color: var(--border);
@@ -662,32 +674,18 @@
 		padding-bottom: 14px;
 	}
 	.fa-badge {
-		display:      inline-flex;
-		align-items:  center;
-		gap:          4px;
-		font-family:  var(--font-ui);
-		font-size:    0.6rem;
-		font-weight:  600;
+		font-family:    var(--font-ui);
+		font-size:      0.6rem;
+		font-weight:    600;
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		padding:      2px 7px;
-		border-radius: 10px;
-		border:       1px solid color-mix(in srgb, currentColor 35%, transparent);
-		line-height:  1;
-		white-space:  nowrap;
-		flex-shrink:  0;
+		padding:        2px 7px;
+		border-radius:  10px;
+		border:         1px solid color-mix(in srgb, currentColor 35%, transparent);
+		line-height:    1;
+		white-space:    nowrap;
+		flex-shrink:    0;
 	}
-	.fa-badge-icon {
-		display:         inline-flex;
-		align-items:     center;
-		justify-content: center;
-		width:           11px;
-		height:          11px;
-		color:           inherit;
-		flex-shrink:     0;
-	}
-	.fa-badge-icon :global(svg) { width: 100%; height: 100%; fill: currentColor; }
-	.fa-badge-icon :global(svg path) { fill: currentColor; }
 	.fa-badge--qty      { background: rgba(255,255,255,0.08); color: var(--text-muted); }
 	.fa-badge--harm     { background: rgba(239,68,68,0.10);  color: #ef4444; }
 	.fa-badge--escalating { background: rgba(239,68,68,0.18); font-style: italic; }

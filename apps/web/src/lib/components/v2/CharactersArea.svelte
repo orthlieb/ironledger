@@ -1046,7 +1046,6 @@
 													use:tooltip={def ? `${def.name} · ${def.category}` : a.assetId}
 												>
 													<span class="ca-asset-card-meta">
-														<span class="ca-asset-card-cat-icon" aria-hidden="true">{@html assetIcon(def)}</span>
 														<span class="ca-asset-card-cat">{def?.category ?? ''}</span>
 														{#if a.rarityId}
 															{@const rarity = findRaritiesForAsset(a.assetId).find(r => r.id === a.rarityId)}
@@ -1057,7 +1056,10 @@
 															>{@html gemSvg}</span>
 														{/if}
 													</span>
-													<span class="ca-asset-card-name" class:ca-asset-card-name--custom={display.custom}>{display.text}</span>
+													<span class="ca-asset-card-name" class:ca-asset-card-name--custom={display.custom}>
+														<span class="ca-asset-card-name-icon" aria-hidden="true">{@html assetIcon(def)}</span>
+														{display.text}
+													</span>
 												</button>
 												{#if counter}
 													<div class="ca-asset-card-tile" style:--res-color={catColor} use:tooltip={`${counter.label}: ${counter.value}/${counter.max}`}>
@@ -1726,19 +1728,21 @@
 		color: var(--cat-color, var(--text-muted));
 		line-height: 1;
 	}
-	/* Category icon — sits to the left of the category text, coloured to
-	   match the asset's accent. */
-	.ca-asset-card-cat-icon {
+	/* Category icon — sits to the left of the asset name and scales with
+	   the surrounding text (width/height: 1em). Coloured to match the
+	   asset's category accent. */
+	.ca-asset-card-name-icon {
 		display:         inline-flex;
 		align-items:     center;
 		justify-content: center;
-		width:           11px;
-		height:          11px;
+		width:           1em;
+		height:          1em;
 		color:           var(--cat-color, var(--text-muted));
 		flex-shrink:     0;
+		vertical-align:  -0.12em;
 	}
-	.ca-asset-card-cat-icon :global(svg) { width: 100%; height: 100%; fill: currentColor; }
-	.ca-asset-card-cat-icon :global(svg path) { fill: currentColor; }
+	.ca-asset-card-name-icon :global(svg) { width: 100%; height: 100%; fill: currentColor; }
+	.ca-asset-card-name-icon :global(svg path) { fill: currentColor; }
 	/* Gem badge — appears in the meta row when the asset has a selected
 	   rarity. Inherits the asset category colour via currentColor on the
 	   SVG fill. */
@@ -1754,12 +1758,14 @@
 	.ca-asset-card-rarity :global(svg) { width: 100%; height: 100%; fill: currentColor; }
 	.ca-asset-card-rarity :global(svg path) { fill: currentColor; }
 	.ca-asset-card-name {
-		font-family: var(--font-ui);
-		font-size: 0.78rem;
-		color: var(--text);
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
+		display:       inline-flex;
+		align-items:   center;
+		gap:           5px;
+		font-family:   var(--font-ui);
+		font-size:     0.78rem;
+		color:         var(--text);
+		overflow:      hidden;
+		white-space:   nowrap;
 	}
 	/* User-supplied name (filled in via the asset's "string" custom field —
 	   companion name, specialty, etc.). Italic signals it's not the catalogue

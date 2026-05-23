@@ -14,7 +14,7 @@
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { draggable } from '$lib/actions/draggable.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
-	import { assetIcon, categoryIcon } from '$lib/iconRegistry.js';
+	import { assetIcon } from '$lib/iconRegistry.js';
 
 	let {
 		ownedIds       = [],
@@ -155,10 +155,7 @@
 							class:active={activeCategories.has(cat)}
 							style="--tag-color: {CAT_COLOR[cat]}"
 							onclick={() => toggleCategory(cat)}
-						>
-							<span class="ap-filter-tag-icon" aria-hidden="true">{@html categoryIcon(cat)}</span>
-							{cat}
-						</button>
+						>{cat}</button>
 					{/each}
 				</div>
 				<button
@@ -199,11 +196,13 @@
 					>
 						<!-- Category badge — top right, coloured -->
 						<span class="tile-badge" style:background={catColor}>
-							<span class="tile-badge-icon" aria-hidden="true">{@html assetIcon(asset)}</span>
 							{asset.category}
 						</span>
 
-						<div class="tile-name">{asset.name}</div>
+						<div class="tile-name">
+							<span class="tile-name-icon" aria-hidden="true" style:color={catColor}>{@html assetIcon(asset)}</span>
+							{asset.name}
+						</div>
 
 						{#if asset.summary}
 							<div class="tile-desc">{stripMdLinks(asset.summary)}</div>
@@ -362,9 +361,6 @@
 		padding-right: 26px;
 	}
 	.ap-filter-tag {
-		display:        inline-flex;
-		align-items:    center;
-		gap:            4px;
 		font-family:    var(--font-ui);
 		font-size:      0.6rem;
 		font-weight:    600;
@@ -379,17 +375,6 @@
 		white-space:    nowrap;
 		transition:     background 0.12s, color 0.12s;
 	}
-	.ap-filter-tag-icon {
-		display:         inline-flex;
-		align-items:     center;
-		justify-content: center;
-		width:           11px;
-		height:          11px;
-		color:           inherit;
-		flex-shrink:     0;
-	}
-	.ap-filter-tag-icon :global(svg) { width: 100%; height: 100%; fill: currentColor; }
-	.ap-filter-tag-icon :global(svg path) { fill: currentColor; }
 	.ap-filter-tag:hover {
 		background: color-mix(in srgb, var(--tag-color, var(--border)) 12%, transparent);
 	}
@@ -473,34 +458,32 @@
 
 	/* Category badge — coloured pill, absolute top-right */
 	.tile-badge {
-		position:        absolute;
-		top:             6px;
-		right:           7px;
-		display:         inline-flex;
-		align-items:     center;
-		gap:             4px;
-		font-family:     var(--font-ui);
-		font-size:       0.58rem;
-		font-weight:     700;
-		letter-spacing:  0.05em;
-		text-transform:  uppercase;
-		color:           #fff;
-		padding:         2px 6px;
-		border-radius:   8px;
-		white-space:     nowrap;
-		line-height:     1.3;
+		position:       absolute;
+		top:            6px;
+		right:          7px;
+		font-family:    var(--font-ui);
+		font-size:      0.58rem;
+		font-weight:    700;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color:          #fff;
+		padding:        2px 6px;
+		border-radius:  8px;
+		white-space:    nowrap;
+		line-height:    1.3;
 	}
-	.tile-badge-icon {
+	.tile-name-icon {
 		display:         inline-flex;
 		align-items:     center;
 		justify-content: center;
-		width:           11px;
-		height:          11px;
-		color:           inherit;
+		width:           1em;
+		height:          1em;
 		flex-shrink:     0;
+		vertical-align:  -0.12em;
+		margin-right:    5px;
 	}
-	.tile-badge-icon :global(svg) { width: 100%; height: 100%; fill: currentColor; }
-	.tile-badge-icon :global(svg path) { fill: currentColor; }
+	.tile-name-icon :global(svg) { width: 100%; height: 100%; fill: currentColor; }
+	.tile-name-icon :global(svg path) { fill: currentColor; }
 
 	.tile-name {
 		font-family: var(--font-ui);

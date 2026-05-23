@@ -25,7 +25,7 @@
 	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '$lib/foePortrait.js';
 	import FoeImageCarousel from '$lib/components/FoeImageCarousel.svelte';
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
-	import { foeIcon, natureIcon } from '$lib/iconRegistry.js';
+	import { foeIcon } from '$lib/iconRegistry.js';
 
 
 	// ---------------------------------------------------------------------------
@@ -248,10 +248,7 @@
 									class:active={activeNatures.has(nature)}
 									style="--tag-color: {FOE_NATURE_COLORS[nature]}"
 									onclick={() => toggleNature(nature)}
-								>
-									<span class="fd-filter-tag-icon" aria-hidden="true">{@html natureIcon(nature)}</span>
-									{nature}
-								</button>
+								>{nature}</button>
 							{/each}
 						</div>
 					</div>
@@ -318,12 +315,12 @@
 								/>
 							</div>
 							<div class="fd-tile-body">
-								<span class="fd-tile-name">{foe.name}</span>
+								<span class="fd-tile-name">
+									<span class="fd-tile-name-icon" aria-hidden="true" style:color={natureBorderColor(foe.nature)}>{@html foeIcon(foe)}</span>
+									{foe.name}
+								</span>
 								<div class="fd-tile-badges">
-									<span class="fd-badge" style="background: {natureBorderColor(foe.nature)}22; color: {natureBorderColor(foe.nature)}">
-										<span class="fd-badge-icon" aria-hidden="true">{@html foeIcon(foe)}</span>
-										{foe.nature}
-									</span>
+									<span class="fd-badge" style="background: {natureBorderColor(foe.nature)}22; color: {natureBorderColor(foe.nature)}">{foe.nature}</span>
 									<span class="fd-badge fd-badge--rank" style={rankBadgeStyle(foe.rank)}>{FOE_RANKS[foe.rank]?.label ?? foe.rank}</span>
 								</div>
 								{#if foe.features.length > 0}
@@ -642,9 +639,6 @@
 	}
 
 	.fd-filter-tag {
-		display:        inline-flex;
-		align-items:    center;
-		gap:            5px;
 		font-family:    var(--font-ui);
 		font-size:      0.68rem;
 		font-weight:    600;
@@ -658,21 +652,18 @@
 		cursor:         pointer;
 		transition:     background 0.1s, color 0.1s, border-color 0.1s;
 	}
-	.fd-filter-tag-icon,
-	.fd-badge-icon {
+	.fd-tile-name-icon {
 		display:         inline-flex;
 		align-items:     center;
 		justify-content: center;
-		width:           12px;
-		height:          12px;
-		color:           inherit;
+		width:           1em;
+		height:          1em;
 		flex-shrink:     0;
+		vertical-align:  -0.12em;
+		margin-right:    5px;
 	}
-	.fd-filter-tag-icon :global(svg),
-	.fd-badge-icon :global(svg) { width: 100%; height: 100%; fill: currentColor; }
-	.fd-filter-tag-icon :global(svg path),
-	.fd-badge-icon :global(svg path) { fill: currentColor; }
-	.fd-badge { display: inline-flex; align-items: center; gap: 4px; }
+	.fd-tile-name-icon :global(svg) { width: 100%; height: 100%; fill: currentColor; }
+	.fd-tile-name-icon :global(svg path) { fill: currentColor; }
 	.fd-filter-tag:hover {
 		border-color: var(--tag-color, var(--text-dimmer));
 		color: var(--tag-color, var(--text-dimmer));

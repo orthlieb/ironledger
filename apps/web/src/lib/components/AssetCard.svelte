@@ -308,6 +308,7 @@
 		<span class="drag-grip" aria-hidden="true">⠿</span>
 
 		<div class="asset-name-group">
+			<span class="asset-name-icon" aria-hidden="true">{@html assetIcon(definition)}</span>
 			<span class="asset-name">{definition.name}</span>
 		</div>
 
@@ -339,7 +340,6 @@
 
 	<div class="asset-body">
 		<div class="asset-cat-row">
-			<span class="asset-cat-icon" aria-hidden="true">{@html assetIcon(definition)}</span>
 			<span class="asset-cat">{definition.category}</span>
 		</div>
 
@@ -785,13 +785,27 @@
 
 
 	.asset-name-group {
-		flex: 1;
-		display: flex;
-		align-items: baseline;
-		gap: 8px;
-		min-width: 0;
-		overflow: hidden;
+		flex:        1;
+		display:     flex;
+		align-items: center;
+		gap:         6px;
+		min-width:   0;
+		overflow:    hidden;
 	}
+	/* Category icon — sits to the left of the asset name and scales with
+	   the surrounding text (width/height: 1em). */
+	.asset-name-icon {
+		display:         inline-flex;
+		align-items:     center;
+		justify-content: center;
+		width:           1em;
+		height:          1em;
+		font-size:       calc(0.82rem * var(--font-display-scale));
+		color:           var(--asset-color, var(--text-muted));
+		flex-shrink:     0;
+	}
+	.asset-name-icon :global(svg) { width: 100%; height: 100%; fill: currentColor; }
+	.asset-name-icon :global(svg path) { fill: currentColor; }
 
 	.asset-name {
 		font-family:    var(--font-display);
@@ -808,19 +822,7 @@
 	.asset-cat-row {
 		display:     flex;
 		align-items: center;
-		gap:         5px;
 	}
-	.asset-cat-icon {
-		display:         inline-flex;
-		align-items:     center;
-		justify-content: center;
-		width:           12px;
-		height:          12px;
-		color:           var(--asset-color, var(--text-muted));
-		flex-shrink:     0;
-	}
-	.asset-cat-icon :global(svg) { width: 100%; height: 100%; fill: currentColor; }
-	.asset-cat-icon :global(svg path) { fill: currentColor; }
 
 	.asset-cat {
 		font-family: var(--font-ui);
