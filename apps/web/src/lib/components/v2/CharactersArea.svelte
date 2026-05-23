@@ -1731,8 +1731,8 @@
 		display:         inline-flex;
 		align-items:     center;
 		justify-content: center;
-		width:           10px;
-		height:          10px;
+		width:           12px;
+		height:          12px;
 		color:           var(--cat-color, var(--text-muted));
 		flex-shrink:     0;
 	}
