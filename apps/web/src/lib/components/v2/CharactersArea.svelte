@@ -1050,7 +1050,7 @@
 															{@const rarity = findRaritiesForAsset(a.assetId).find(r => r.id === a.rarityId)}
 															<span
 																class="ca-asset-card-rarity"
-																title={rarity ? `Rarity: ${rarity.name}` : 'Has rarity'}
+																use:tooltip={rarity ? `Rarity: ${rarity.name}` : 'Has rarity'}
 																aria-label={rarity ? `Rarity: ${rarity.name}` : 'Has rarity'}
 															>{@html gemSvg}</span>
 														{/if}
