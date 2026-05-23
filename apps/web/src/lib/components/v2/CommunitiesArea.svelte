@@ -29,6 +29,7 @@
 	} from '$lib/npcStore.svelte.js';
 	import type { Community, Npc, NpcRelationship } from '$lib/types.js';
 	import MarkdownNotes from '$lib/components/MarkdownNotes.svelte';
+	import { EditableName } from '$lib/editableName.svelte.js';
 	import { isYrtEnabled } from '$lib/expansionStore.svelte.js';
 	import { loadOracles, getOracles, rollOracle, findOracle, rollFromRangeTable } from '$lib/oracleStore.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
@@ -80,11 +81,11 @@
 	let _pendingNpcNameOracle = $state<string>('namesIronlander');
 
 	// Inline-edit state
-	let editingName    = $state(false);
-	let editingNotes   = $state(false);
-	let nameBeforeEdit = $state('');
-	let nameInputEl    = $state<HTMLInputElement | null>(null);
-	$effect(() => { if (editingName && nameInputEl) { nameInputEl.focus(); nameInputEl.select(); } });
+	let editingNotes = $state(false);
+	const nameEdit = new EditableName((restored) => {
+		if (activeEntry?.kind === 'community') updateCommunity({ name: restored });
+		else if (activeEntry?.kind === 'npc')  updateNpc({ name: restored });
+	});
 
 	const communities = $derived(getCommunities());
 	const npcs        = $derived(getNpcs());
@@ -106,10 +107,10 @@
 
 	function selectEntry(id: string) {
 		flushPersist();
-		activeEntryId    = id;
-		activeTab        = 'core';
-		editingName  = false;
-		editingNotes = false;
+		activeEntryId = id;
+		activeTab     = 'core';
+		nameEdit.commit();
+		editingNotes  = false;
 	}
 
 	// ── Direct-proxy writes + debounced API flush ─────────────────────────
@@ -169,17 +170,6 @@
 		}
 	}
 
-	function startEditName() {
-		if (!activeEntry) return;
-		nameBeforeEdit = activeEntry.data.name;
-		editingName = true;
-	}
-	function commitName() { editingName = false; }
-	function cancelName() {
-		if (activeEntry?.kind === 'community') updateCommunity({ name: nameBeforeEdit });
-		else if (activeEntry?.kind === 'npc')  updateNpc({ name: nameBeforeEdit });
-		editingName = false;
-	}
 	function setName(value: string) {
 		if (activeEntry?.kind === 'community') updateCommunity({ name: value });
 		else if (activeEntry?.kind === 'npc')  updateNpc({ name: value });
@@ -346,26 +336,23 @@
 			{#if activeEntry}
 				<div class="cm-stage-header" style="--cm-nature: {activeColor}">
 					<span class="cm-stage-icon" aria-hidden="true">{@html activeEntry.kind === 'npc' ? farmerSvg : hutSvg}</span>
-					{#if editingName}
+					{#if nameEdit.editing}
 						<input
-							bind:this={nameInputEl}
+							bind:this={nameEdit.inputEl}
 							class="cm-stage-name-input"
 							type="text"
 							value={activeEntry.data.name}
 							placeholder={activeEntry.kind === 'npc' ? 'NPC name…' : 'Community name…'}
 							oninput={(e) => setName((e.target as HTMLInputElement).value)}
-							onblur={commitName}
-							onkeydown={(e) => {
-								if (e.key === 'Enter') nameInputEl?.blur();
-								if (e.key === 'Escape') cancelName();
-							}}
+							onblur={nameEdit.commit}
+							onkeydown={nameEdit.onKeydown}
 						/>
 					{:else}
 						<button
 							type="button"
 							class="cm-stage-name cm-stage-name--editable"
 							title="Click to rename"
-							onclick={startEditName}
+							onclick={() => nameEdit.start(activeEntry.data.name)}
 						>{headingText(activeEntry.data.name || (activeEntry.kind === 'npc' ? 'Unnamed NPC' : 'Unnamed Community'))}</button>
 					{/if}
 					<button

@@ -24,6 +24,7 @@
 	import type { FoeEncounter, FoeDef, FoeQuantity } from '$lib/types.js';
 
 	import ProgressTrackPanel from '$lib/components/ProgressTrackPanel.svelte';
+	import { EditableName } from '$lib/editableName.svelte.js';
 	import FoePickerDialog from '$lib/components/FoePickerDialog.svelte';
 	import ConfirmDialog   from '$lib/components/ConfirmDialog.svelte';
 	import trashSvg from '$icons/trash-solid-full.svg?raw';
@@ -45,7 +46,9 @@
 	let foePickerRef   = $state<{ open(): Promise<void>; close(): void } | null>(null);
 	let deleteDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let imgVisible     = $state(true);
-	let editingName    = $state(false);
+	const nameEdit = new EditableName((restored) => {
+		if (activeEnc) update({ customName: restored });
+	});
 
 	const encounters = $derived(getEncounters());
 	const loading    = $derived(isEncounterLoading());
@@ -64,7 +67,7 @@
 		activeFoeId = id;
 		activeTab   = 'core';
 		imgVisible  = true;
-		editingName = false;
+		nameEdit.commit();
 	}
 
 	async function handleFoeSelected(foeDef: FoeDef, quantity: FoeQuantity, effectiveRank: number) {
@@ -159,20 +162,6 @@
 	export function vanquishActiveFoe() { if (activeEnc && !activeEnc.vanquished) update({ vanquished: true }); }
 	export function applyMenace(value: number) { if (activeEnc) update({ ticks: Math.min(40, activeEnc.ticks + value * progressTickVal) }); }
 
-	// Name editing — matches CharactersArea / ExpeditionsArea pattern.
-	let nameInputEl    = $state<HTMLInputElement | null>(null);
-	let nameBeforeEdit = '';
-	$effect(() => { if (editingName && nameInputEl) { nameInputEl.focus(); nameInputEl.select(); } });
-	function startEditName() {
-		if (!activeEnc) return;
-		nameBeforeEdit = activeEnc.customName ?? '';
-		editingName = true;
-	}
-	function commitName() { editingName = false; }
-	function cancelName() {
-		if (activeEnc) update({ customName: nameBeforeEdit });
-		editingName = false;
-	}
 
 	function rankBadgeStyle(rank: number): string {
 		const rc = RANK_COLORS[rank];
@@ -223,26 +212,23 @@
 				     Carries the same --fa-nature so the coloured band is continuous
 				     from the header all the way down the card's left side. -->
 				<div class="fa-stage-header" style="--fa-nature: {natureColor}">
-					{#if editingName}
+					{#if nameEdit.editing}
 						<input
-							bind:this={nameInputEl}
+							bind:this={nameEdit.inputEl}
 							class="fa-stage-name-input"
 							type="text"
 							value={activeEnc.customName ?? ''}
 							placeholder={activeDef?.name ?? activeEnc.foeId}
 							oninput={(e) => update({ customName: (e.target as HTMLInputElement).value })}
-							onblur={commitName}
-							onkeydown={(e) => {
-								if (e.key === 'Enter') nameInputEl?.blur();
-								if (e.key === 'Escape') cancelName();
-							}}
+							onblur={nameEdit.commit}
+							onkeydown={nameEdit.onKeydown}
 						/>
 					{:else}
 						<button
 							type="button"
 							class="fa-stage-name fa-stage-name--editable"
 							title="Click to rename"
-							onclick={startEditName}
+							onclick={() => nameEdit.start(activeEnc.customName ?? '')}
 						>{headingText(displayName)}</button>
 					{/if}
 					<button

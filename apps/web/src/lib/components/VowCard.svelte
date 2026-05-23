@@ -3,6 +3,7 @@
 	import { VOW_MARK_TICKS } from '$lib/types.js';
 	import ProgressTrackPanel from './ProgressTrackPanel.svelte';
 	import MarkdownNotes from './MarkdownNotes.svelte';
+	import { EditableName } from '$lib/editableName.svelte.js';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import trashSvg from '$icons/trash-solid.svg?raw';
 	import { isDelveEnabled } from '$lib/expansionStore.svelte.js';
@@ -38,23 +39,17 @@
 	let collapsed        = $state(false);
 	let forsakeDialogRef = $state<{ open(): void; close(): void } | null>(null);
 
-	// Inline name editing (same pattern as CharacterSheet / FoeCard)
-	let editingName  = $state(false);
-	let nameBeforeEdit = '';
-	let nameInputEl  = $state<HTMLInputElement | null>(null);
-
+	// Inline name editing
+	const nameEdit = new EditableName((restored) => { vow.name = restored; });
+	// Scroll a new vow's rename input into view (new vows are appended to
+	// the list and may be off-screen). `nearest` is a no-op when the input
+	// is already visible, so this doesn't trigger a stray scroll on existing vows.
 	$effect(() => {
-		if (editingName && nameInputEl) {
-			nameInputEl.focus();
-			nameInputEl.select();
-			// New vows are appended to the end of the list — if the user has a
-			// long list, the new card lives below the visible area. `nearest`
-			// is a no-op when the input is already in view, so clicking an
-			// existing vow name doesn't trigger a stray scroll.
-			nameInputEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+		if (nameEdit.editing && nameEdit.inputEl) {
+			nameEdit.inputEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 		}
 	});
-	$effect(() => { if (focusName) { nameBeforeEdit = vow.name; editingName = true; } });
+	$effect(() => { if (focusName) nameEdit.start(vow.name); });
 
 	const diffLabel  = $derived(
 		DIFFICULTIES.find((d) => d.value === vow.difficulty)?.label ?? vow.difficulty
@@ -75,26 +70,23 @@
 			{collapsed ? '▶' : '▼'}
 		</button>
 
-		{#if editingName}
+		{#if nameEdit.editing}
 			<input
 				class="vow-name vow-name--editing"
-				bind:this={nameInputEl}
+				bind:this={nameEdit.inputEl}
 				bind:value={vow.name}
 				placeholder="Vow name…"
 				aria-label="Vow name"
-				onblur={() => (editingName = false)}
-				onkeydown={(e) => {
-					if (e.key === 'Enter') { e.currentTarget.blur(); }
-					if (e.key === 'Escape') { vow.name = nameBeforeEdit; editingName = false; }
-				}}
+				onblur={nameEdit.commit}
+				onkeydown={nameEdit.onKeydown}
 			/>
 		{:else}
 			<!-- svelte-ignore a11y_interactive_supports_focus -->
 			<span
 				class="vow-name vow-name--display"
 				role="button"
-				onclick={() => { nameBeforeEdit = vow.name; editingName = true; }}
-				onkeydown={(e) => e.key === 'Enter' && (editingName = true)}
+				onclick={() => nameEdit.start(vow.name)}
+				onkeydown={(e) => e.key === 'Enter' && nameEdit.start(vow.name)}
 				title="Click to rename"
 			>{vow.name || 'Unnamed Vow'}</span>
 		{/if}

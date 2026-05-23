@@ -35,6 +35,7 @@
 	import MomentumTile   from '$lib/components/MomentumTile.svelte';
 	import ProgressTrackPanel from '$lib/components/ProgressTrackPanel.svelte';
 	import MarkdownNotes  from '$lib/components/MarkdownNotes.svelte';
+	import { EditableName } from '$lib/editableName.svelte.js';
 	import ConfirmDialog  from '$lib/components/ConfirmDialog.svelte';
 	import VowCard        from '$lib/components/VowCard.svelte';
 	import DebilitiesSection from '$lib/components/DebilitiesSection.svelte';
@@ -112,19 +113,15 @@
 	let pickerOpen    = $state(false);
 
 	// Background card edit state
-	let editingName       = $state(false);
 	let editingBackground = $state(false);
-	let nameBeforeEdit    = $state('');
-	let nameInputEl       = $state<HTMLInputElement | null>(null);
+	const nameEdit = new EditableName((restored) => {
+		if (activeData) activeData.name = restored;
+	});
+	// Scroll the rename input into view when entering edit mode on a
+	// character whose card has been scrolled off-screen.
 	$effect(() => {
-		if (editingName && nameInputEl) {
-			nameInputEl.focus();
-			nameInputEl.select();
-			// Pull the input into view if the character list / card body has
-			// pushed it off-screen. `nearest` is a no-op when it's already
-			// visible, so click-to-rename on an existing character doesn't
-			// trigger a stray scroll.
-			nameInputEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+		if (nameEdit.editing && nameEdit.inputEl) {
+			nameEdit.inputEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 		}
 	});
 	const characters = $derived(getCharacters());
@@ -610,8 +607,7 @@
 			// character without an extra click. Reading the default name from
 			// newChar directly because activeData ($derived) won't reflect
 			// the just-set activeCharId synchronously.
-			nameBeforeEdit = (newChar.data as { name?: string })?.name ?? newChar.name ?? '';
-			editingName = true;
+			nameEdit.start((newChar.data as { name?: string })?.name ?? newChar.name ?? '');
 		} catch (err) {
 			console.error('[v2] addCharacter failed', err);
 		} finally {
@@ -642,17 +638,6 @@
 			img.src = reader.result as string;
 		};
 		reader.readAsDataURL(file);
-	}
-
-	function startEditName() {
-		if (!activeData) return;
-		nameBeforeEdit = activeData.name ?? '';
-		editingName = true;
-	}
-	function commitName() { editingName = false; }
-	function cancelName() {
-		if (activeData) activeData.name = nameBeforeEdit;
-		editingName = false;
 	}
 
 	function handleAddAsset(assetId: string) {
@@ -769,25 +754,22 @@
 				     visible on every tab. Name: click to rename / Enter / Escape.
 				     Trash button to the right opens the V1 ConfirmDialog. -->
 				<div class="ca-stage-header">
-					{#if editingName}
+					{#if nameEdit.editing}
 						<input
-							bind:this={nameInputEl}
+							bind:this={nameEdit.inputEl}
 							class="ca-stage-name-input"
 							type="text"
 							bind:value={d.name}
 							placeholder="Character name"
-							onblur={commitName}
-							onkeydown={(e) => {
-								if (e.key === 'Enter') nameInputEl?.blur();
-								if (e.key === 'Escape') cancelName();
-							}}
+							onblur={nameEdit.commit}
+							onkeydown={nameEdit.onKeydown}
 						/>
 					{:else}
 						<button
 							type="button"
 							class="ca-stage-name ca-card-name--editable"
 							title="Click to rename"
-							onclick={startEditName}
+							onclick={() => nameEdit.start(d.name ?? '')}
 						>{headingText(d.name || activeChar.name || 'Unnamed')}</button>
 					{/if}
 					<button
@@ -1425,7 +1407,7 @@
 		border: none;
 		border-bottom: 1px solid #C5B99E;
 		border-radius: 0;
-		padding: 7px 7px 0;               /* no bottom padding — bottom border hugs the last section */
+		padding: 0 7px;                   /* no top/bottom padding — sections control their own spacing */
 		margin-bottom: 0;
 		overflow: auto;
 		position: relative;
@@ -1434,7 +1416,7 @@
 	.ca-card-section {
 		display: flex;
 		flex-direction: column;
-		gap: 14px;
+		gap: 8px;
 	}
 	/* Background card portrait — floats right so the text wraps around it.
 	   `float` is ignored inside flex containers, so the background section

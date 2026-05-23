@@ -30,6 +30,7 @@
 
 	import ProgressTrackPanel from '$lib/components/ProgressTrackPanel.svelte';
 	import MarkdownNotes    from '$lib/components/MarkdownNotes.svelte';
+	import { EditableName } from '$lib/editableName.svelte.js';
 	import FoePickerDialog  from '$lib/components/FoePickerDialog.svelte';
 	import DenizenDialog    from '$lib/components/DenizenDialog.svelte';
 	import ConfirmDialog    from '$lib/components/ConfirmDialog.svelte';
@@ -95,11 +96,10 @@
 	let newSiteDomain        = $state<string>('');
 
 	// Inline-edit state for journeys
-	let editingName    = $state(false);
-	let editingNotes   = $state(false);
-	let nameBeforeEdit = $state('');
-	let nameInputEl    = $state<HTMLInputElement | null>(null);
-	$effect(() => { if (editingName && nameInputEl) { nameInputEl.focus(); nameInputEl.select(); } });
+	let editingNotes = $state(false);
+	const nameEdit = new EditableName((restored) => {
+		if (activeExp) updateExp({ name: restored });
+	});
 
 	const expeditions = $derived(getExpeditions());
 	const loading     = $derived(isExpeditionLoading());
@@ -121,7 +121,7 @@
 		activeExpId = id;
 		const next = expeditions.find(e => e.id === id);
 		activeTab   = 'core';
-		editingName = false;
+		nameEdit.commit();
 		editingNotes = false;
 		editingObjective = false;
 	}
@@ -265,16 +265,6 @@
 		}
 	}
 
-	function startEditName() {
-		if (!activeExp) return;
-		nameBeforeEdit = activeExp.name;
-		editingName = true;
-	}
-	function commitName() { editingName = false; }
-	function cancelName() {
-		if (activeExp) updateExp({ name: nameBeforeEdit });
-		editingName = false;
-	}
 
 	function handlePortrait(e: Event) {
 		const file = (e.target as HTMLInputElement).files?.[0];
@@ -489,26 +479,23 @@
 				     (green = journey, blue = site). -->
 				<div class="ea-stage-header" style="--ea-nature: {activeColor}">
 					<span class="ea-stage-icon" aria-hidden="true">{@html placeholderImg}</span>
-					{#if editingName}
+					{#if nameEdit.editing}
 						<input
-							bind:this={nameInputEl}
+							bind:this={nameEdit.inputEl}
 							class="ea-stage-name-input"
 							type="text"
 							value={activeExp.name}
 							placeholder={activeExp.type === 'site' ? 'Site name…' : 'Journey name…'}
 							oninput={(e) => updateExp({ name: (e.target as HTMLInputElement).value })}
-							onblur={commitName}
-							onkeydown={(e) => {
-								if (e.key === 'Enter') nameInputEl?.blur();
-								if (e.key === 'Escape') cancelName();
-							}}
+							onblur={nameEdit.commit}
+							onkeydown={nameEdit.onKeydown}
 						/>
 					{:else}
 						<button
 							type="button"
 							class="ea-stage-name ea-stage-name--editable"
 							title="Click to rename"
-							onclick={startEditName}
+							onclick={() => nameEdit.start(activeExp.name)}
 						>{headingText(activeExp.name || 'Unnamed')}</button>
 					{/if}
 					<button
