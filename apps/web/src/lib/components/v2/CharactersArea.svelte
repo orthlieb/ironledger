@@ -24,7 +24,7 @@
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { findAsset, findRaritiesForAsset, getGlobalCounterDef, isAssetsLoading, getAssets } from '$lib/assetStore.svelte.js';
 	import { isDelveEnabled }                    from '$lib/expansionStore.svelte.js';
-	import { hydrateCharacterInPlace, maxMomentum, momentumReset } from '$lib/character.js';
+	import { hydrateCharacterInPlace, maxMomentum, momentumReset, computeAssetXpDiff, assetDisplayName } from '$lib/character.js';
 	import hornedHelmSvg from '$icons/horned-helm.svg?raw';
 	import charactersIconSvg from '$icons/Characters.svg?raw';
 	import type { CharacterData, CharacterAsset } from '$lib/types.js';
@@ -239,6 +239,32 @@
 		}
 		const iconSvg = (eff.icon && COUNTER_ICONS[eff.icon]) || iconHeart;
 		return { iconSvg, label: eff.label ?? field.label, value, max };
+	}
+
+	/** Apply a counter delta directly to the live character. Used by the chit
+	 *  ± buttons in the assets tab (asset counters never cost XP, so the
+	 *  snapshot/diff machinery doesn't apply here — these mutations are
+	 *  immediate). Routes to globalValues for global:true fields, otherwise
+	 *  to the asset's customValues. */
+	function bumpAssetCounter(asset: CharacterAsset, delta: number) {
+		if (!activeData) return;
+		const def   = findAsset(asset.assetId);
+		const field = (def?.customFields ?? []).find((f) => f.type === 'counter');
+		if (!def || !field) return;
+		const cur = assetCounter(asset, activeData.globalValues);
+		if (!cur) return;
+		const next = Math.max(0, Math.min(cur.max, cur.value + delta));
+		if (next === cur.value) return;
+		if (field.global) {
+			activeData.globalValues = { ...(activeData.globalValues ?? {}), [field.id]: String(next) };
+		} else {
+			const arr = (activeData.assets ?? []) as CharacterAsset[];
+			activeData.assets = arr.map(a =>
+				a.assetId === asset.assetId
+					? { ...a, customValues: { ...(a.customValues ?? {}), [field.id]: String(next) } }
+					: a,
+			);
+		}
 	}
 
 	function selectChar(id: string) {
@@ -582,18 +608,15 @@
 	function commitAssetDialog() {
 		if (!dialogDraft || !activeData || !activeChar) return;
 
-		// XP diff
-		let newEnables = 0;
-		for (let i = 0; i < dialogDraft.abilities.length; i++) {
-			if (!dialogSnapshotAbilities[i] && dialogDraft.abilities[i]) newEnables++;
-		}
-		let rarityXp = 0;
-		if (dialogDraft.rarityId !== dialogSnapshotRarityId && dialogDraft.rarityId) {
-			const allRarities = findRaritiesForAsset(dialogDraft.assetId);
-			const r = allRarities.find(r => r.id === dialogDraft!.rarityId);
-			if (r) rarityXp = r.xpCost;
-		}
-		const totalCost = dialogPurchaseCost + newEnables * 2 + rarityXp;
+		const rarities = findRaritiesForAsset(dialogDraft.assetId);
+		const totalCost = computeAssetXpDiff({
+			snapshotAbilities: dialogSnapshotAbilities,
+			draftAbilities:    dialogDraft.abilities,
+			snapshotRarityId:  dialogSnapshotRarityId,
+			draftRarityId:     dialogDraft.rarityId,
+			rarityXpCost:      (id) => rarities.find(r => r.id === id)?.xpCost ?? 0,
+			purchaseCost:      dialogPurchaseCost,
+		});
 
 		// Persist draft → live
 		const arr = (activeData.assets ?? []) as CharacterAsset[];
@@ -1013,23 +1036,38 @@
 											{@const def = findAsset(a.assetId)}
 											{@const catColor = CAT_COLOR[def?.category ?? ''] ?? 'var(--text-muted)'}
 											{@const counter = assetCounter(a, d.globalValues)}
-											<button
-												class="ca-asset-card"
-												style="--cat-color: {catColor}"
-												onclick={(e) => openAssetDialog(a.assetId, e)}
-												use:tooltip={def ? `${def.name} · ${def.category}` : a.assetId}
-											>
-												<span class="ca-asset-card-meta">
+											{@const display = assetDisplayName(a, def)}
+											<div class="ca-asset-card" style="--cat-color: {catColor}">
+												<button
+													class="ca-asset-card-main"
+													onclick={(e) => openAssetDialog(a.assetId, e)}
+													use:tooltip={def ? `${def.name} · ${def.category}` : a.assetId}
+												>
 													<span class="ca-asset-card-cat">{def?.category ?? ''}</span>
-													{#if counter}
-														<span class="ca-asset-card-counter" title="{counter.label}: {counter.value}/{counter.max}">
-															<span class="ca-asset-card-counter-icon" aria-hidden="true">{@html counter.iconSvg}</span>
-															<span>{counter.value}/{counter.max}</span>
-														</span>
-													{/if}
-												</span>
-												<span class="ca-asset-card-name">{def?.name ?? a.assetId}</span>
-											</button>
+													<span class="ca-asset-card-name" class:ca-asset-card-name--custom={display.custom}>{display.text}</span>
+												</button>
+												{#if counter}
+													<div class="ca-asset-card-tile" style:--res-color={catColor} title="{counter.label}: {counter.value}/{counter.max}">
+														<div class="ca-asset-card-tile-bg" aria-hidden="true">{@html counter.iconSvg}</div>
+														<span class="ca-asset-card-tile-name">{counter.label}</span>
+														<div class="ca-asset-card-tile-row">
+															<button
+																class="ca-asset-card-tile-btn"
+																onclick={() => bumpAssetCounter(a, -1)}
+																disabled={counter.value <= 0}
+																aria-label="Decrease {counter.label}"
+															>−</button>
+															<span class="ca-asset-card-tile-val">{counter.value}/{counter.max}</span>
+															<button
+																class="ca-asset-card-tile-btn"
+																onclick={() => bumpAssetCounter(a, 1)}
+																disabled={counter.value >= counter.max}
+																aria-label="Increase {counter.label}"
+															>+</button>
+														</div>
+													</div>
+												{/if}
+											</div>
 										{/each}
 									</div>
 								{/if}
@@ -1614,35 +1652,45 @@
 	   asset's category color (Combat/Path/Companion/Ritual/Talent). */
 	.ca-asset-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+		/* Wider tiles to accommodate the vitals-style counter on the right. */
+		grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 		gap: 6px;
 	}
+	/* Outer card is now a flex row: main info area on the left + optional
+	   counter tile on the right. Hover state and category accent stay on the
+	   outer container so the whole chit reads as one unit. */
 	.ca-asset-card {
-		all: unset;
-		cursor: pointer;
 		display: flex;
-		flex-direction: column;
-		gap: 2px;
-		padding: 7px 10px;
+		align-items: stretch;
+		gap: 0;
 		background: var(--bg-inset);
 		border: 1px solid var(--border);
 		border-left: 3px solid var(--cat-color, var(--text-muted));
 		border-radius: 4px;
-		transition: background 0.12s, border-color 0.12s, transform 0.12s;
+		overflow: hidden;
+		transition: border-color 0.12s, transform 0.12s;
 	}
 	.ca-asset-card:hover {
-		background: var(--bg-hover);
 		border-top-color: var(--border-mid);
 		border-right-color: var(--border-mid);
 		border-bottom-color: var(--border-mid);
 		transform: translateY(-1px);
 	}
-	.ca-asset-card-meta {
+	/* Clickable main area — opens the asset dialog. The ± buttons in the
+	   tile to its right have their own focus, so this region is purely
+	   for "open detail". */
+	.ca-asset-card-main {
+		all: unset;
+		flex: 1;
+		min-width: 0;
+		cursor: pointer;
 		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 6px;
+		flex-direction: column;
+		gap: 2px;
+		padding: 7px 10px;
+		transition: background 0.12s;
 	}
+	.ca-asset-card-main:hover { background: var(--bg-hover); }
 	.ca-asset-card-cat {
 		font-family: var(--font-ui);
 		font-size: 0.55rem;
@@ -1652,29 +1700,6 @@
 		color: var(--cat-color, var(--text-muted));
 		line-height: 1;
 	}
-	/* Counter pill on the right of the meta row — icon + "N/MAX". Icon
-	   inherits the counter's color via currentColor on the SVG fill. */
-	.ca-asset-card-counter {
-		display: inline-flex;
-		align-items: center;
-		gap: 3px;
-		font-family: var(--font-ui);
-		font-size: 0.6rem;
-		font-weight: 700;
-		letter-spacing: 0.03em;
-		color: var(--text-muted);
-		line-height: 1;
-	}
-	.ca-asset-card-counter-icon {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 11px;
-		height: 11px;
-		color: var(--cat-color, var(--text-muted));
-	}
-	.ca-asset-card-counter-icon :global(svg) { width: 100%; height: 100%; fill: currentColor; }
-	.ca-asset-card-counter-icon :global(svg) :global(path) { fill: currentColor; }
 	.ca-asset-card-name {
 		font-family: var(--font-ui);
 		font-size: 0.78rem;
@@ -1683,6 +1708,99 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+	/* User-supplied name (filled in via the asset's "string" custom field —
+	   companion name, specialty, etc.). Italic signals it's not the catalogue
+	   name. */
+	.ca-asset-card-name--custom {
+		font-style: italic;
+	}
+
+	/* Counter tile on the right end of the chit — mirrors ResourceTile's
+	   visual structure (label + value/± row + faded background icon) but
+	   compact. ± buttons mutate the underlying counter directly; counters
+	   don't cost XP so no draft/snapshot is needed. */
+	.ca-asset-card-tile {
+		position:        relative;
+		flex-shrink:     0;
+		width:           84px;
+		display:         flex;
+		flex-direction:  column;
+		align-items:     center;
+		justify-content: space-between;
+		gap:             3px;
+		padding:         5px 4px;
+		border-left:     1px solid color-mix(in srgb, var(--res-color) 30%, var(--border));
+		background:      color-mix(in srgb, var(--res-color) 8%, var(--bg-card));
+		overflow:        hidden;
+	}
+	.ca-asset-card-tile-bg {
+		position:        absolute;
+		inset:           0;
+		display:         flex;
+		align-items:     center;
+		justify-content: center;
+		opacity:         0.18;
+		pointer-events:  none;
+	}
+	:global([data-theme="dark"]) .ca-asset-card-tile-bg { opacity: 0.40; }
+	.ca-asset-card-tile-bg :global(svg) {
+		width:  60%;
+		height: 60%;
+		fill:   var(--res-color);
+		color:  var(--res-color);
+	}
+	.ca-asset-card-tile-name {
+		font-family:    var(--font-ui);
+		font-size:      0.55rem;
+		font-weight:    900;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		color:          var(--res-color);
+		line-height:    1;
+		position:       relative;
+		z-index:        1;
+	}
+	.ca-asset-card-tile-row {
+		display:     flex;
+		align-items: center;
+		gap:         3px;
+		position:    relative;
+		z-index:     1;
+	}
+	.ca-asset-card-tile-btn {
+		background:    transparent;
+		border:        1px solid var(--border-mid);
+		color:         var(--text-muted);
+		cursor:        pointer;
+		padding:       0;
+		width:         18px;
+		height:        18px;
+		font-size:     0.7rem;
+		line-height:   1;
+		border-radius: 3px;
+		display:       inline-flex;
+		align-items:   center;
+		justify-content: center;
+		transition:    border-color 0.12s, color 0.12s;
+	}
+	.ca-asset-card-tile-btn:hover:not(:disabled) {
+		border-color: var(--res-color);
+		color:        var(--res-color);
+	}
+	.ca-asset-card-tile-btn:disabled {
+		opacity: 0.35;
+		cursor:  not-allowed;
+	}
+	.ca-asset-card-tile-val {
+		font-family:          var(--font-ui);
+		font-size:            0.65rem;
+		font-weight:          800;
+		color:                var(--res-color);
+		font-variant-numeric: tabular-nums;
+		min-width:            2.6em;
+		text-align:           center;
+		line-height:          1;
 	}
 
 	/* ── Asset detail dialog ── transparent shell; the AssetCard inside owns

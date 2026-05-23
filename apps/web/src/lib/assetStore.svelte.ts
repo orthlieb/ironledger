@@ -9,6 +9,7 @@
 import { browser } from '$app/environment';
 import type { AssetDefinition, CustomFieldDef, RarityDefinition } from '$lib/types.js';
 import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
+import { buildGlobalCounterRegistry } from '$lib/globalCounters.js';
 
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -108,49 +109,17 @@ export function findRarity(rarityId: string): RarityDefinition | undefined {
 // regardless of which asset card surfaces it.
 // ---------------------------------------------------------------------------
 
-function buildGlobalCounterRegistry(): Map<string, CustomFieldDef> {
-	const reg  = new Map<string, CustomFieldDef>();
-	const seen = new Map<string, string>(); // counter id → asset id that first declared it
-	for (const a of _assets) {
-		for (const cf of a.customFields ?? []) {
-			if (!cf.global) continue;
-			const existing = reg.get(cf.id);
-			if (!existing) {
-				reg.set(cf.id, cf);
-				seen.set(cf.id, a.id);
-				continue;
-			}
-			// Already registered — verify the new declaration agrees on the
-			// shared properties. Label may legitimately differ across assets
-			// (a counter's display label is contextual), so it isn't checked.
-			const sameMax     = JSON.stringify(existing.maxValue) === JSON.stringify(cf.maxValue);
-			const sameDefault = existing.default === cf.default;
-			const sameIcon    = existing.icon === cf.icon;
-			if (!sameMax || !sameDefault || !sameIcon) {
-				const firstAsset = seen.get(cf.id);
-				console.error(
-					`[assetStore] Global counter "${cf.id}" has inconsistent declarations:\n` +
-					`  ${firstAsset}: default=${existing.default}, max=${JSON.stringify(existing.maxValue)}, icon=${existing.icon}\n` +
-					`  ${a.id}: default=${cf.default}, max=${JSON.stringify(cf.maxValue)}, icon=${cf.icon}\n` +
-					`Using first declaration as canonical.`,
-				);
-			}
-		}
-	}
-	return reg;
-}
-
 /** Canonical CustomFieldDef for a global counter, or undefined if no asset
  *  declares it. Render code should prefer this over the per-asset declaration
  *  so the same counter renders consistently across all asset surfaces. */
 export function getGlobalCounterDef(fieldId: string): CustomFieldDef | undefined {
-	if (!_globalCounterDefs) _globalCounterDefs = buildGlobalCounterRegistry();
+	if (!_globalCounterDefs) _globalCounterDefs = buildGlobalCounterRegistry(_assets);
 	return _globalCounterDefs.get(fieldId);
 }
 
 /** All known global counter ids (for import reconciliation). */
 export function getGlobalCounterIds(): string[] {
-	if (!_globalCounterDefs) _globalCounterDefs = buildGlobalCounterRegistry();
+	if (!_globalCounterDefs) _globalCounterDefs = buildGlobalCounterRegistry(_assets);
 	return Array.from(_globalCounterDefs.keys());
 }
 

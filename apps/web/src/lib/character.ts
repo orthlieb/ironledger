@@ -85,6 +85,63 @@ export function hydrateCharacterInPlace(d: Record<string, unknown>): void {
 }
 
 /**
+ * Resolve the display name for an asset chit. When the asset definition has
+ * a `type: 'string'` custom field (e.g. companion name, ritual specialty)
+ * and the user has filled it in, return that value flagged as custom.
+ * Otherwise return the definition's name.
+ *
+ * The caller renders custom names in italics to signal they are user-supplied.
+ */
+export function assetDisplayName(
+	asset: { assetId: string; customValues?: Record<string, string> },
+	def:   { name: string; customFields?: Array<{ id: string; type: string }> } | undefined,
+): { text: string; custom: boolean } {
+	if (!def) return { text: asset.assetId, custom: false };
+	const nameField = (def.customFields ?? []).find((f) => f.type === 'string');
+	if (nameField) {
+		const custom = asset.customValues?.[nameField.id]?.trim();
+		if (custom) return { text: custom, custom: true };
+	}
+	return { text: def.name, custom: false };
+}
+
+/**
+ * Compute the XP cost of moving an asset from its snapshot state to its
+ * draft state, plus a one-shot purchase cost (3 XP for adding a new asset,
+ * 0 for editing one already owned).
+ *
+ *   • Ability XP: 2 per new enable (false → true since snapshot). Disables
+ *     are free (Ironsworn RAW: XP spent is sunk).
+ *   • Rarity XP: only when `draftRarityId` differs from `snapshotRarityId`
+ *     AND a new rarity is selected. Cleared rarities aren't refunded.
+ *   • Toggling on then off within the dialog is free (state-based diff,
+ *     not history-based).
+ *
+ * Pure function — exposed for unit testing the snapshot/diff edge cases.
+ */
+export function computeAssetXpDiff(args: {
+	snapshotAbilities: boolean[];
+	draftAbilities:    boolean[];
+	snapshotRarityId?: string;
+	draftRarityId?:    string;
+	/** Returns the XP cost for a given rarity id, or 0 if unknown. */
+	rarityXpCost:      (id: string) => number;
+	/** 3 in add mode (new asset purchase), 0 in edit mode. */
+	purchaseCost:      number;
+}): number {
+	const { snapshotAbilities, draftAbilities, snapshotRarityId, draftRarityId, rarityXpCost, purchaseCost } = args;
+	let newEnables = 0;
+	for (let i = 0; i < draftAbilities.length; i++) {
+		if (!snapshotAbilities[i] && draftAbilities[i]) newEnables++;
+	}
+	let rarityXp = 0;
+	if (draftRarityId !== snapshotRarityId && draftRarityId) {
+		rarityXp = rarityXpCost(draftRarityId);
+	}
+	return purchaseCost + newEnables * 2 + rarityXp;
+}
+
+/**
  * Reconcile an imported `globalValues` map against the current catalogue.
  *   • Drops counter ids no asset declares (orphans from an older catalogue).
  *   • Drops non-numeric values (corrupted exports).
