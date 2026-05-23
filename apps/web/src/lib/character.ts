@@ -83,3 +83,38 @@ export function hydrateCharacterInPlace(d: Record<string, unknown>): void {
 		if (d[k] === undefined) d[k] = v;
 	}
 }
+
+/**
+ * Reconcile an imported `globalValues` map against the current catalogue.
+ *   • Drops counter ids no asset declares (orphans from an older catalogue).
+ *   • Drops non-numeric values (corrupted exports).
+ *   • Clamps numeric values to [0, canonical maxValue] when the canonical
+ *     definition provides a fixed-number maxValue. Array-typed maxValue is
+ *     left unclamped (it depends on per-asset ability state we don't have
+ *     at import time).
+ *
+ * Returns a new object — the input is not mutated. Pass an empty knownIds
+ * set (or call it before the catalogue loads) and the function will return
+ * the input unchanged for safety.
+ */
+export function reconcileGlobalValues(
+	values: Record<string, string> | undefined,
+	knownDefs: Map<string, { maxValue?: number | number[] }>,
+): Record<string, string> {
+	if (!values) return {};
+	// If we don't know any global counters (catalogue not loaded), pass
+	// through unchanged rather than wiping the user's saved data.
+	if (knownDefs.size === 0) return { ...values };
+
+	const out: Record<string, string> = {};
+	for (const [id, raw] of Object.entries(values)) {
+		const def = knownDefs.get(id);
+		if (!def) continue; // unknown counter id — drop
+		const n = Number(raw);
+		if (!Number.isFinite(n)) continue;
+		let clamped = Math.max(0, Math.floor(n));
+		if (typeof def.maxValue === 'number') clamped = Math.min(clamped, def.maxValue);
+		out[id] = String(clamped);
+	}
+	return out;
+}

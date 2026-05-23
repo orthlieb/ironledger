@@ -31,7 +31,8 @@
 	import { loadExpeditions, getExpeditions, addExpedition } from '$lib/expeditionStore.svelte.js';
 	import { loadCommunities, getCommunities, addCommunity } from '$lib/communityStore.svelte.js';
 	import { loadNpcs, getNpcs, addNpc } from '$lib/npcStore.svelte.js';
-	import { loadAssets, getAssets } from '$lib/assetStore.svelte.js';
+	import { loadAssets, getAssets, getGlobalCounterDef, getGlobalCounterIds } from '$lib/assetStore.svelte.js';
+	import { reconcileGlobalValues } from '$lib/character.js';
 	import { loadFoes, findFoe, FOE_RANKS } from '$lib/foeStore.svelte.js';
 	import LogPanel             from '$lib/components/LogPanel.svelte';
 	import CharactersArea       from '$lib/components/v2/CharactersArea.svelte';
@@ -321,6 +322,25 @@
 			const text   = await file.text();
 			const parsed = parseImportJson(text) as Record<string, unknown>;
 
+			// Reconcile imported globalValues against the current catalogue
+			// (drops unknown counter ids, clamps to canonical maxValue, drops
+			// non-numeric values). Catalogue is already auto-loaded on mount;
+			// this await is a safety net for very early imports.
+			await loadAssets();
+			const knownDefs = new Map(
+				getGlobalCounterIds().map(id => [id, getGlobalCounterDef(id)!] as const),
+			);
+			function reconcileImportedChar(entry: { name?: string; data?: Record<string, unknown> }) {
+				const data = entry.data ?? {};
+				if (data.globalValues && typeof data.globalValues === 'object') {
+					data.globalValues = reconcileGlobalValues(
+						data.globalValues as Record<string, string>,
+						knownDefs,
+					);
+				}
+				return entry;
+			}
+
 			function appendSafeLog(entry: { title?: string; html?: string; note?: string; source?: string; roll?: unknown }) {
 				appendLog(
 					SESSION_LOG_ID,
@@ -335,11 +355,14 @@
 			if (parsed.manifest && parsed.data) {
 				const m = parsed.manifest as { type: string };
 				if (m.type === 'character') {
-					const entry = parsed.data as { name?: string; data?: Record<string, unknown> };
+					const entry = reconcileImportedChar(parsed.data as { name?: string; data?: Record<string, unknown> });
 					await createCharacter(entry.name ?? 'Imported Character', entry.data ?? {});
 				} else if (m.type === 'all-characters') {
 					const entries = parsed.data as Array<{ name?: string; data?: Record<string, unknown> }>;
-					for (const entry of entries) await createCharacter(entry.name ?? 'Imported Character', entry.data ?? {});
+					for (const entry of entries) {
+						reconcileImportedChar(entry);
+						await createCharacter(entry.name ?? 'Imported Character', entry.data ?? {});
+					}
 				} else if (m.type === 'log') {
 					const entries = parsed.data as Array<Record<string, unknown>>;
 					for (const entry of entries) appendSafeLog(entry);
@@ -358,14 +381,17 @@
 						npcs?:        Npc[];
 						expeditions?: Expedition[];
 					};
-					for (const entry of d.characters ?? []) await createCharacter(entry.name ?? 'Imported Character', entry.data ?? {});
+					for (const entry of d.characters ?? []) {
+						reconcileImportedChar(entry);
+						await createCharacter(entry.name ?? 'Imported Character', entry.data ?? {});
+					}
 					for (const entry of d.log ?? [])        appendSafeLog(entry);
 					for (const c of d.communities ?? [])    await addCommunity(c);
 					for (const n of d.npcs ?? [])           await addNpc(n);
 					for (const exp of d.expeditions ?? [])  await addExpedition(exp);
 				}
 			} else {
-				const entry = parsed as { name?: string; data?: Record<string, unknown> };
+				const entry = reconcileImportedChar(parsed as { name?: string; data?: Record<string, unknown> });
 				await createCharacter(entry.name ?? 'Imported Character', entry.data ?? {});
 			}
 		} catch (err) {

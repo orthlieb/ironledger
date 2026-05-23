@@ -22,7 +22,7 @@
 	import { getCharacters, isCharacterLoading, createCharacter, deleteCharacter, flushCharacterToApi, persistCharacterNow, setPartySupply } from '$lib/characterStore.svelte.js';
 	import { setActiveDiceCtx } from '$lib/diceContext.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
-	import { findAsset, findRaritiesForAsset, isAssetsLoading, getAssets } from '$lib/assetStore.svelte.js';
+	import { findAsset, findRaritiesForAsset, getGlobalCounterDef, isAssetsLoading, getAssets } from '$lib/assetStore.svelte.js';
 	import { isDelveEnabled }                    from '$lib/expansionStore.svelte.js';
 	import { hydrateCharacterInPlace, maxMomentum, momentumReset } from '$lib/character.js';
 	import hornedHelmSvg from '$icons/horned-helm.svg?raw';
@@ -218,22 +218,27 @@
 	function assetCounter(asset: CharacterAsset, globalValues?: Record<string, string>): { iconSvg: string; label: string; value: number; max: number } | null {
 		const def = findAsset(asset.assetId);
 		const field = (def?.customFields ?? []).find((f) => f.type === 'counter');
-		if (!def || !field || field.maxValue === undefined) return null;
+		if (!def || !field) return null;
+		// For global counters use the canonical catalogue-wide definition so
+		// cap/default/icon are consistent across every surface that renders
+		// the same counter id.
+		const eff = field.global ? (getGlobalCounterDef(field.id) ?? field) : field;
+		if (eff.maxValue === undefined) return null;
 		const store = field.global ? globalValues : asset.customValues;
-		const raw = store?.[field.id];
-		const dflt = typeof field.default === 'number' ? field.default : 0;
+		const raw   = store?.[field.id];
+		const dflt  = typeof eff.default === 'number' ? eff.default : 0;
 		const value = raw != null && raw !== '' ? Number(raw) : dflt;
 		let max: number;
-		if (typeof field.maxValue === 'number') {
-			max = field.maxValue;
+		if (typeof eff.maxValue === 'number') {
+			max = eff.maxValue;
 		} else {
 			let lastEnabled = 0;
 			for (let i = 0; i < asset.abilities.length; i++) if (asset.abilities[i]) lastEnabled = i;
-			const arr = field.maxValue as number[];
+			const arr = eff.maxValue as number[];
 			max = arr[Math.min(lastEnabled, arr.length - 1)] ?? 0;
 		}
-		const iconSvg = (field.icon && COUNTER_ICONS[field.icon]) || iconHeart;
-		return { iconSvg, label: field.label, value, max };
+		const iconSvg = (eff.icon && COUNTER_ICONS[eff.icon]) || iconHeart;
+		return { iconSvg, label: eff.label ?? field.label, value, max };
 	}
 
 	function selectChar(id: string) {

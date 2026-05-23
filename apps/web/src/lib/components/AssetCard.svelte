@@ -7,7 +7,7 @@
 	 * All fonts are var(--font-ui) (Roboto) per design spec.
 	 */
 	import type { CharacterAsset, AssetDefinition } from '$lib/types.js';
-	import { findRaritiesForAsset } from '$lib/assetStore.svelte.js';
+	import { findRaritiesForAsset, getGlobalCounterDef } from '$lib/assetStore.svelte.js';
 	import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
 	import { draggable } from '$lib/actions/draggable.js';
@@ -213,12 +213,21 @@
 		(definition.customFields ?? []).find((f) => f.type === 'counter')
 	);
 
+	/** Returns the canonical CustomFieldDef for `cf`. For non-global fields the
+	 *  per-asset declaration IS the source of truth. For global fields we use
+	 *  the catalogue-wide canonical definition so the cap/default/icon are
+	 *  consistent regardless of which asset surfaces the counter. */
+	function effectiveCf(cf: import('$lib/types.js').CustomFieldDef): import('$lib/types.js').CustomFieldDef {
+		return cf.global ? (getGlobalCounterDef(cf.id) ?? cf) : cf;
+	}
+
 	/**
 	 * Resolve effective maxValue for a counter field. If maxValue is an array, use the value
 	 * at the index of the highest currently-enabled ability.
 	 */
 	function getEffectiveMax(cf: import('$lib/types.js').CustomFieldDef): number {
-		const mv = cf.maxValue;
+		const eff = effectiveCf(cf);
+		const mv  = eff.maxValue;
 		if (mv === undefined) return 0;
 		if (typeof mv === 'number') return mv;
 		let lastEnabled = 0;
@@ -270,8 +279,9 @@
 	}
 
 	function getCounterVal(cf: import('$lib/types.js').CustomFieldDef): number {
+		const eff   = effectiveCf(cf);
 		const store = cf.global ? globalValues : asset.customValues;
-		return parseInt(store?.[cf.id] ?? String(cf.default ?? 0));
+		return parseInt(store?.[cf.id] ?? String(eff.default ?? 0));
 	}
 
 	function setCounter(cf: import('$lib/types.js').CustomFieldDef, newVal: number) {
@@ -299,10 +309,11 @@
 			<span class="asset-name">{definition.name}</span>
 		</div>
 
-		{#if counterField?.icon}
+		{#if counterField}
+			{@const effCf   = effectiveCf(counterField)}
 			{@const curVal  = getCounterVal(counterField)}
 			{@const maxVal  = getEffectiveMax(counterField)}
-			{@const iconSvg = COUNTER_ICONS[counterField.icon] ?? iconHeart}
+			{@const iconSvg = (effCf.icon && COUNTER_ICONS[effCf.icon]) || iconHeart}
 			<span
 				class="counter-badge"
 				style:--counter-color={catColor}
