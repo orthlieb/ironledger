@@ -29,6 +29,7 @@
 	} from '$lib/npcStore.svelte.js';
 	import type { Community, Npc, NpcRelationship } from '$lib/types.js';
 	import MarkdownNotes from '$lib/components/MarkdownNotes.svelte';
+	import PortraitUploader from '$lib/components/PortraitUploader.svelte';
 	import { EditableName } from '$lib/editableName.svelte.js';
 	import { isYrtEnabled } from '$lib/expansionStore.svelte.js';
 	import { loadOracles, getOracles, rollOracle, findOracle, rollFromRangeTable } from '$lib/oracleStore.svelte.js';
@@ -177,31 +178,6 @@
 	function setNotes(value: string) {
 		if (activeEntry?.kind === 'community') updateCommunity({ notes: value });
 		else if (activeEntry?.kind === 'npc')  updateNpc({ notes: value });
-	}
-
-	function handlePortrait(e: Event) {
-		const file = (e.target as HTMLInputElement).files?.[0];
-		if (!file || !activeEntry) return;
-		const reader = new FileReader();
-		reader.onload = () => {
-			const img = new Image();
-			img.onload = () => {
-				const canvas = document.createElement('canvas');
-				const size = Math.min(img.width, img.height, 256);
-				canvas.width = size;
-				canvas.height = size;
-				const ctx = canvas.getContext('2d')!;
-				const side = Math.min(img.width, img.height);
-				const sx = (img.width  - side) / 2;
-				const sy = (img.height - side) / 2;
-				ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
-				const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-				if (activeEntry?.kind === 'community') updateCommunity({ imageUrl: dataUrl });
-				else if (activeEntry?.kind === 'npc')  updateNpc({ imageUrl: dataUrl });
-			};
-			img.src = reader.result as string;
-		};
-		reader.readAsDataURL(file);
 	}
 
 	// ── Add Community / NPC (V1 random-or-manual pattern) ──────────────────
@@ -477,36 +453,15 @@
 						{:else if activeTab === 'notes'}
 							<div class="cm-notes-section">
 								{#if !editingNotes}
-									<div class="cm-portrait-wrap">
-										<label class="cm-portrait-label" title="Click to change portrait">
-											{#if activeEntry.data.imageUrl}
-												<img class="cm-portrait" src={activeEntry.data.imageUrl} alt={activeEntry.data.name} />
-											{:else}
-												<div class="cm-portrait cm-portrait--placeholder" aria-hidden="true">
-													{@html activeEntry.kind === 'npc' ? farmerSvg : hutSvg}
-												</div>
-											{/if}
-											<input
-												type="file"
-												accept="image/*"
-												class="cm-portrait-input"
-												onchange={handlePortrait}
-												aria-label="Upload portrait"
-											/>
-										</label>
-										{#if activeEntry.data.imageUrl}
-											<button
-												type="button"
-												class="cm-portrait-clear"
-												onclick={() => {
-													if (activeEntry?.kind === 'community') updateCommunity({ imageUrl: '' });
-													else if (activeEntry?.kind === 'npc')  updateNpc({ imageUrl: '' });
-												}}
-												title="Clear portrait"
-												aria-label="Clear portrait"
-											>✕</button>
-										{/if}
-									</div>
+									<PortraitUploader
+										value={activeEntry.data.imageUrl ?? ''}
+										oninput={(v) => {
+											if (activeEntry?.kind === 'community') updateCommunity({ imageUrl: v });
+											else if (activeEntry?.kind === 'npc')  updateNpc({ imageUrl: v });
+										}}
+										placeholderSvg={activeEntry.kind === 'npc' ? farmerSvg : hutSvg}
+										alt={activeEntry.data.name}
+									/>
 								{/if}
 
 								<MarkdownNotes
@@ -819,56 +774,6 @@
 		display: block;
 		margin-bottom: 4px;
 	}
-	.cm-portrait-wrap {
-		position: relative;
-		float: right;
-		margin: 0 0 10px 14px;
-		shape-outside: margin-box;
-	}
-	.cm-portrait-label {
-		display: block;
-		cursor: pointer;
-	}
-	.cm-portrait {
-		display: block;
-		width: 170px; height: 170px; max-height: 240px;
-		object-fit: cover;
-		border: 1px solid var(--border);
-		border-radius: 6px;
-		opacity: 0.95;
-		transition: opacity 0.12s;
-	}
-	.cm-portrait-label:hover .cm-portrait { opacity: 0.75; }
-	.cm-portrait--placeholder {
-		background: var(--bg-inset);
-		display: flex; align-items: center; justify-content: center;
-		color: var(--text-dimmer);
-	}
-	.cm-portrait--placeholder :global(svg) {
-		width: 60%; height: 60%; fill: var(--text-dimmer);
-	}
-	.cm-portrait-input {
-		position: absolute;
-		left: -9999px; width: 1px; height: 1px;
-	}
-	.cm-portrait-clear {
-		position: absolute;
-		top: 4px; right: 4px;
-		z-index: 2;
-		width: 22px; height: 22px;
-		display: flex; align-items: center; justify-content: center;
-		padding: 0;
-		border: none;
-		border-radius: 50%;
-		background: rgba(0,0,0,0.55);
-		color: #fff;
-		font-size: 0.7rem;
-		line-height: 1;
-		cursor: pointer;
-		transition: background 0.12s;
-	}
-	.cm-portrait-clear:hover { background: rgba(0,0,0,0.8); }
-
 	.cm-field-row {
 		display: flex; align-items: center; gap: 8px;
 	}

@@ -34,7 +34,8 @@
 	import ResourceTile   from '$lib/components/ResourceTile.svelte';
 	import MomentumTile   from '$lib/components/MomentumTile.svelte';
 	import ProgressTrackPanel from '$lib/components/ProgressTrackPanel.svelte';
-	import MarkdownNotes  from '$lib/components/MarkdownNotes.svelte';
+	import MarkdownNotes    from '$lib/components/MarkdownNotes.svelte';
+	import PortraitUploader from '$lib/components/PortraitUploader.svelte';
 	import { EditableName } from '$lib/editableName.svelte.js';
 	import ConfirmDialog  from '$lib/components/ConfirmDialog.svelte';
 	import VowCard        from '$lib/components/VowCard.svelte';
@@ -615,30 +616,6 @@
 		}
 	}
 
-	function handlePortrait(e: Event) {
-		const file = (e.target as HTMLInputElement).files?.[0];
-		if (!file || !activeChar) return;
-		const reader = new FileReader();
-		reader.onload = () => {
-			const img = new Image();
-			img.onload = () => {
-				const canvas = document.createElement('canvas');
-				const size = Math.min(img.width, img.height, 256);
-				canvas.width = size;
-				canvas.height = size;
-				const ctx = canvas.getContext('2d')!;
-				const side = Math.min(img.width, img.height);
-				const sx = (img.width  - side) / 2;
-				const sy = (img.height - side) / 2;
-				ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
-				if (activeChar) {
-					(activeChar.data as Record<string, unknown>).portrait = canvas.toDataURL('image/jpeg', 0.85);
-				}
-			};
-			img.src = reader.result as string;
-		};
-		reader.readAsDataURL(file);
-	}
 
 	function handleAddAsset(assetId: string) {
 		// activeData is a $derived view of activeChar.data — mutating it
@@ -799,42 +776,15 @@
 					<div class="ca-card" role="tabpanel">
 						{#if activeCard === 'background'}
 							<div class="ca-card-section ca-bg-section">
-								<!-- Portrait — click to upload + crop. Floats right so background
-								     text wraps around it (markdown-aware). Hidden while the
-								     background is being edited so the textarea gets the full
-								     card width; reappears on blur. -->
+								<!-- Portrait — hidden while editing the background so the
+								     textarea gets the full card width. -->
 								{#if !editingBackground}
-									<div class="ca-bg-portrait-wrap">
-										<label class="ca-bg-portrait-label" title="Click to change portrait">
-											{#if d.portrait}
-												<img
-													class="ca-bg-portrait"
-													src={d.portrait}
-													alt="Portrait of {d.name || activeChar.name}"
-												/>
-											{:else}
-												<div class="ca-bg-portrait ca-bg-portrait--placeholder" aria-hidden="true">
-													{@html hornedHelmSvg}
-												</div>
-											{/if}
-											<input
-												type="file"
-												accept="image/*"
-												class="ca-bg-portrait-input"
-												onchange={handlePortrait}
-												aria-label="Upload portrait"
-											/>
-										</label>
-										{#if d.portrait}
-											<button
-												type="button"
-												class="ca-bg-portrait-clear"
-												onclick={() => { (activeChar.data as Record<string, unknown>).portrait = ''; }}
-												title="Clear portrait"
-												aria-label="Clear portrait"
-											>✕</button>
-										{/if}
-									</div>
+									<PortraitUploader
+										value={d.portrait ?? ''}
+										oninput={(v) => { (activeChar.data as Record<string, unknown>).portrait = v; }}
+										placeholderSvg={hornedHelmSvg}
+										alt={`Portrait of ${d.name || activeChar.name}`}
+									/>
 								{/if}
 
 								<MarkdownNotes
@@ -1418,74 +1368,11 @@
 		flex-direction: column;
 		gap: 8px;
 	}
-	/* Background card portrait — floats right so the text wraps around it.
-	   `float` is ignored inside flex containers, so the background section
-	   uses block layout (overriding .ca-card-section's flex). */
+	/* Background section — block layout so the floated portrait can wrap text. */
 	.ca-bg-section {
 		display: block;
 		position: relative;
 	}
-	.ca-bg-portrait-wrap {
-		position:      relative;
-		float:         right;
-		margin:        0 0 10px 14px;
-		shape-outside: margin-box;
-	}
-	.ca-bg-portrait-label {
-		display: block;
-		cursor:  pointer;
-	}
-	.ca-bg-portrait {
-		display:       block;
-		width:         170px;
-		height:        170px;
-		max-height:    240px;
-		object-fit:    cover;
-		border:        1px solid var(--border);
-		border-radius: 6px;
-		opacity:       0.95;
-		transition:    opacity 0.12s;
-	}
-	.ca-bg-portrait-label:hover .ca-bg-portrait { opacity: 0.7; }
-	.ca-bg-portrait--placeholder {
-		background: var(--bg-inset);
-		display:    flex;
-		align-items: center;
-		justify-content: center;
-		color:      var(--text-dimmer);
-	}
-	.ca-bg-portrait--placeholder :global(svg) {
-		width:  60%;
-		height: 60%;
-		fill:   var(--text-dimmer);
-	}
-	.ca-bg-portrait-input {
-		position: absolute;
-		left:     -9999px;            /* keep input accessible but visually hidden */
-		width:    1px;
-		height:   1px;
-	}
-	.ca-bg-portrait-clear {
-		position:        absolute;
-		top:             4px;
-		right:           4px;
-		z-index:         2;
-		width:           22px;
-		height:          22px;
-		display:         flex;
-		align-items:     center;
-		justify-content: center;
-		padding:         0;
-		border:          none;
-		border-radius:   50%;
-		background:      rgba(0,0,0,0.55);
-		color:           #fff;
-		font-size:       0.7rem;
-		line-height:     1;
-		cursor:          pointer;
-		transition:      background 0.12s;
-	}
-	.ca-bg-portrait-clear:hover { background: rgba(0,0,0,0.8); }
 
 	/* Editable name — click to edit affordances. */
 	.ca-card-name--editable {

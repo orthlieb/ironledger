@@ -30,6 +30,7 @@
 
 	import ProgressTrackPanel from '$lib/components/ProgressTrackPanel.svelte';
 	import MarkdownNotes    from '$lib/components/MarkdownNotes.svelte';
+	import PortraitUploader from '$lib/components/PortraitUploader.svelte';
 	import { EditableName } from '$lib/editableName.svelte.js';
 	import FoePickerDialog  from '$lib/components/FoePickerDialog.svelte';
 	import DenizenDialog    from '$lib/components/DenizenDialog.svelte';
@@ -266,28 +267,6 @@
 	}
 
 
-	function handlePortrait(e: Event) {
-		const file = (e.target as HTMLInputElement).files?.[0];
-		if (!file || !activeExp) return;
-		const reader = new FileReader();
-		reader.onload = () => {
-			const img = new Image();
-			img.onload = () => {
-				const canvas = document.createElement('canvas');
-				const size = Math.min(img.width, img.height, 256);
-				canvas.width = size;
-				canvas.height = size;
-				const ctx = canvas.getContext('2d')!;
-				const side = Math.min(img.width, img.height);
-				const sx = (img.width  - side) / 2;
-				const sy = (img.height - side) / 2;
-				ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
-				updateExp({ imageUrl: canvas.toDataURL('image/jpeg', 0.85) });
-			};
-			img.src = reader.result as string;
-		};
-		reader.readAsDataURL(file);
-	}
 
 	function addJourney() {
 		newJourneyDifficulty = 'dangerous';
@@ -549,31 +528,12 @@
 							{/if}
 							<div class="ea-desc-section">
 								{#if !editingNotes}
-									<div class="ea-portrait-wrap">
-										<label class="ea-portrait-label" title="Click to change portrait">
-											{#if activeExp.imageUrl}
-												<img class="ea-portrait" src={activeExp.imageUrl} alt={activeExp.name} />
-											{:else}
-												<div class="ea-portrait ea-portrait--placeholder" aria-hidden="true">{@html placeholderImg}</div>
-											{/if}
-											<input
-												type="file"
-												accept="image/*"
-												class="ea-portrait-input"
-												onchange={handlePortrait}
-												aria-label="Upload portrait"
-											/>
-										</label>
-										{#if activeExp.imageUrl}
-											<button
-												type="button"
-												class="ea-portrait-clear"
-												onclick={() => updateExp({ imageUrl: '' })}
-												title="Clear portrait"
-												aria-label="Clear portrait"
-											>✕</button>
-										{/if}
-									</div>
+									<PortraitUploader
+										value={activeExp.imageUrl ?? ''}
+										oninput={(v) => updateExp({ imageUrl: v })}
+										placeholderSvg={placeholderImg}
+										alt={activeExp.name}
+									/>
 								{/if}
 
 								<MarkdownNotes
@@ -1064,55 +1024,6 @@
 
 	/* ── Description tab ── portrait floats right; notes wrap. */
 	.ea-desc-section { display: block; }
-	.ea-portrait-wrap {
-		position: relative;
-		float: right;
-		margin: 0 0 10px 14px;
-		shape-outside: margin-box;
-	}
-	.ea-portrait-label {
-		display: block;
-		cursor: pointer;
-	}
-	.ea-portrait {
-		display: block;
-		width: 170px; height: 170px; max-height: 240px;
-		object-fit: cover;
-		border: 1px solid var(--border);
-		border-radius: 6px;
-		opacity: 0.95;
-		transition: opacity 0.12s;
-	}
-	.ea-portrait-label:hover .ea-portrait { opacity: 0.75; }
-	.ea-portrait--placeholder {
-		background: var(--bg-inset);
-		display: flex; align-items: center; justify-content: center;
-		color: var(--text-dimmer);
-	}
-	.ea-portrait--placeholder :global(svg) {
-		width: 60%; height: 60%; fill: var(--text-dimmer);
-	}
-	.ea-portrait-input {
-		position: absolute;
-		left: -9999px; width: 1px; height: 1px;
-	}
-	.ea-portrait-clear {
-		position: absolute;
-		top: 4px; right: 4px;
-		z-index: 2;
-		width: 22px; height: 22px;
-		display: flex; align-items: center; justify-content: center;
-		padding: 0;
-		border: none;
-		border-radius: 50%;
-		background: rgba(0,0,0,0.55);
-		color: #fff;
-		font-size: 0.7rem;
-		line-height: 1;
-		cursor: pointer;
-		transition: background 0.12s;
-	}
-	.ea-portrait-clear:hover { background: rgba(0,0,0,0.8); }
 
 	/* ── Core tab ── pills, difficulty selector, progress, complete. */
 	.ea-pills-row {
