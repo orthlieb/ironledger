@@ -1124,6 +1124,18 @@
 			class="ca-asset-dialog"
 			oncancel={closeAssetDialog}
 			onclose={() => { dialogDraft = null; }}
+			onkeydown={(e) => {
+				// Enter = OK/Add (the primary action). Skip when the user is
+				// typing into a textarea (markdown notes), in which case
+				// Enter should insert a newline. Buttons handle their own
+				// Enter via the default activation behaviour.
+				if (e.key !== 'Enter') return;
+				const t = e.target as HTMLElement | null;
+				if (t?.tagName === 'TEXTAREA') return;
+				if (t?.tagName === 'BUTTON') return;
+				e.preventDefault();
+				commitAssetDialog();
+			}}
 			onclick={(e) => {
 				if (e.target === dialogEl) { closeAssetDialog(); return; }
 				// Delegate move-links / oracle-links inside asset abilities to the
@@ -1652,15 +1664,10 @@
 	   asset's category color (Combat/Path/Companion/Ritual/Talent). */
 	.ca-asset-grid {
 		display: grid;
-		/* Single column on phones; two columns once the stage is wide enough
-		   to fit two ~220-pixel chits comfortably with the 84-pixel counter
-		   tile on each. Capped at 2 — wider screens get wider chits, not
-		   more columns. */
-		grid-template-columns: 1fr;
+		/* As many ~220-px columns as fit. Mobile gets 1 column; mid-width
+		   screens get 2; wide desktops can get 3+. */
+		grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 		gap: 6px;
-	}
-	@media (min-width: 600px) {
-		.ca-asset-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 	}
 	/* Outer card is now a flex row: main info area on the left + optional
 	   counter tile on the right. Hover state is on the inner main-button
@@ -1704,7 +1711,6 @@
 	.ca-asset-card-name {
 		font-family: var(--font-ui);
 		font-size: 0.78rem;
-		font-weight: 600;
 		color: var(--text);
 		overflow: hidden;
 		text-overflow: ellipsis;
