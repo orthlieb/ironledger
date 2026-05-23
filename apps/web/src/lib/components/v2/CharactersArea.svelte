@@ -54,6 +54,7 @@
 	import iconStar       from '$icons/star-solid-full.svg?raw';
 	import trashSvg       from '$icons/trash-solid-full.svg?raw';
 	import swordSvg       from '$icons/sword-solid-full.svg?raw';
+	import gemSvg         from '$icons/gem-solid.svg?raw';
 	// Counter icons — same map as v1 AssetCard.COUNTER_ICONS. The asset
 	// definition's customField.icon string keys into this map.
 	import iconHeart      from '$icons/icon-heart.svg?raw';
@@ -1043,7 +1044,17 @@
 													onclick={(e) => openAssetDialog(a.assetId, e)}
 													use:tooltip={def ? `${def.name} · ${def.category}` : a.assetId}
 												>
-													<span class="ca-asset-card-cat">{def?.category ?? ''}</span>
+													<span class="ca-asset-card-meta">
+														<span class="ca-asset-card-cat">{def?.category ?? ''}</span>
+														{#if a.rarityId}
+															{@const rarity = findRaritiesForAsset(a.assetId).find(r => r.id === a.rarityId)}
+															<span
+																class="ca-asset-card-rarity"
+																title={rarity ? `Rarity: ${rarity.name}` : 'Has rarity'}
+																aria-label={rarity ? `Rarity: ${rarity.name}` : 'Has rarity'}
+															>{@html gemSvg}</span>
+														{/if}
+													</span>
 													<span class="ca-asset-card-name" class:ca-asset-card-name--custom={display.custom}>{display.text}</span>
 												</button>
 												{#if counter}
@@ -1699,6 +1710,11 @@
 		transition: background 0.12s;
 	}
 	.ca-asset-card-main:hover { background: var(--bg-hover); }
+	.ca-asset-card-meta {
+		display:     flex;
+		align-items: center;
+		gap:         5px;
+	}
 	.ca-asset-card-cat {
 		font-family: var(--font-ui);
 		font-size: 0.55rem;
@@ -1708,6 +1724,20 @@
 		color: var(--cat-color, var(--text-muted));
 		line-height: 1;
 	}
+	/* Gem badge — appears in the meta row when the asset has a selected
+	   rarity. Inherits the asset category colour via currentColor on the
+	   SVG fill. */
+	.ca-asset-card-rarity {
+		display:         inline-flex;
+		align-items:     center;
+		justify-content: center;
+		width:           10px;
+		height:          10px;
+		color:           var(--cat-color, var(--text-muted));
+		flex-shrink:     0;
+	}
+	.ca-asset-card-rarity :global(svg) { width: 100%; height: 100%; fill: currentColor; }
+	.ca-asset-card-rarity :global(svg path) { fill: currentColor; }
 	.ca-asset-card-name {
 		font-family: var(--font-ui);
 		font-size: 0.78rem;
