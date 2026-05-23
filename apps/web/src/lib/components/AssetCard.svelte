@@ -745,16 +745,16 @@
 		     parent applies the diff. -->
 		<div class="asset-footer">
 			<button
-				class="btn btn-danger"
+				class="btn btn-danger asset-footer-btn"
 				onclick={onRemove}
 				aria-label="Delete {definition.name}"
 			>Delete</button>
-			<button class="btn btn-primary" onclick={onCommit}>OK</button>
+			<button class="btn btn-primary asset-footer-btn" onclick={onCommit}>OK</button>
 		</div>
 	{:else}
-		<!-- Add-mode footer — single Add button. X close discards. -->
+		<!-- Add-mode footer — single Add button on the right. X close discards. -->
 		<div class="asset-footer asset-footer--add">
-			<button class="btn btn-primary" onclick={onCommit}>Add to Character</button>
+			<button class="btn btn-primary asset-footer-btn" onclick={onCommit}>Add</button>
 		</div>
 	{/if}
 
@@ -855,7 +855,7 @@
 		gap: 8px;
 	}
 
-	/* ---- Dialog-mode footer (Delete left, OK right) ---- */
+	/* ---- Dialog-mode footer ---- */
 	.asset-footer {
 		display: flex;
 		gap: 8px;
@@ -863,6 +863,15 @@
 		padding: 10px 12px;
 		border-top: 1px solid var(--border);
 		background: var(--bg-control);
+	}
+	/* Add mode has a single button — anchor it to the right edge instead of
+	   getting the space-between default (which would left-align it). */
+	.asset-footer--add { justify-content: flex-end; }
+	/* Same minimum width on every footer button so OK / Delete / Add all
+	   render the same physical size regardless of label length. */
+	.asset-footer-btn {
+		min-width:       70px;
+		justify-content: center;
 	}
 
 	/* ---- Dialog-mode X close button (upper right of header) ---- */

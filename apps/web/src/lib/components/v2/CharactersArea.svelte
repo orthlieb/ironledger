@@ -1652,13 +1652,20 @@
 	   asset's category color (Combat/Path/Companion/Ritual/Talent). */
 	.ca-asset-grid {
 		display: grid;
-		/* Wider tiles to accommodate the vitals-style counter on the right. */
-		grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+		/* Single column on phones; two columns once the stage is wide enough
+		   to fit two ~220-pixel chits comfortably with the 84-pixel counter
+		   tile on each. Capped at 2 — wider screens get wider chits, not
+		   more columns. */
+		grid-template-columns: 1fr;
 		gap: 6px;
 	}
+	@media (min-width: 600px) {
+		.ca-asset-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	}
 	/* Outer card is now a flex row: main info area on the left + optional
-	   counter tile on the right. Hover state and category accent stay on the
-	   outer container so the whole chit reads as one unit. */
+	   counter tile on the right. Hover state is on the inner main-button
+	   area only — putting it on the outer card caused the whole chit to
+	   lift when the cursor moved onto the counter ± buttons. */
 	.ca-asset-card {
 		display: flex;
 		align-items: stretch;
@@ -1668,13 +1675,7 @@
 		border-left: 3px solid var(--cat-color, var(--text-muted));
 		border-radius: 4px;
 		overflow: hidden;
-		transition: border-color 0.12s, transform 0.12s;
-	}
-	.ca-asset-card:hover {
-		border-top-color: var(--border-mid);
-		border-right-color: var(--border-mid);
-		border-bottom-color: var(--border-mid);
-		transform: translateY(-1px);
+		transition: border-color 0.12s;
 	}
 	/* Clickable main area — opens the asset dialog. The ± buttons in the
 	   tile to its right have their own focus, so this region is purely
