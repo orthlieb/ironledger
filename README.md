@@ -13,7 +13,7 @@ I'm not ready to release anything yet but you can see some of the the workings i
 
 ## Screenshot
 
-![Adventure Tab](<docs/images/iron-ledger-adventure-tab.png>)
+![Iron Ledger home screen](docs/images/ironledger-home.webp)
 
 ## Tech Stack
 
