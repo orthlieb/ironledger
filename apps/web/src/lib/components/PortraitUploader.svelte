@@ -13,6 +13,7 @@
 	 *     state store updated through an explicit callback.
 	 */
 	import { cropImageFile } from '$lib/imageCrop.js';
+	import { tooltip } from '$lib/actions/tooltip.js';
 
 	let {
 		value = $bindable(''),
@@ -50,7 +51,7 @@
 </script>
 
 <div class="pu-wrap">
-	<label class="pu-label" title="Click to change portrait">
+	<label class="pu-label" use:tooltip={'Click to change portrait'}>
 		{#if value}
 			<img class="pu-img" src={value} {alt} />
 		{:else}
@@ -69,7 +70,7 @@
 			type="button"
 			class="pu-clear"
 			onclick={clear}
-			title="Clear portrait"
+			use:tooltip={'Clear portrait'}
 			aria-label="Clear portrait"
 		>✕</button>
 	{/if}

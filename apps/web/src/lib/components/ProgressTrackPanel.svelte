@@ -12,6 +12,7 @@
 	 */
 	import ProgressTrack from './ProgressTrack.svelte';
 	import { progressText } from '$lib/character.js';
+	import { tooltip } from '$lib/actions/tooltip.js';
 
 	let {
 		value = $bindable(0),
@@ -73,8 +74,8 @@
 			onchange={(o, n) => onchange?.(o, n)}
 		/>
 		<div class="ptp-btns">
-			<button class="ptp-btn" onclick={unmark} disabled={value <= min} title={minusTitle} aria-label={minusTitle}>{minusLabel}</button>
-			<button class="ptp-btn" onclick={mark}   disabled={value >= max} title={plusTitle}  aria-label={plusTitle}>{plusLabel}</button>
+			<button class="ptp-btn" onclick={unmark} disabled={value <= min} use:tooltip={minusTitle} aria-label={minusTitle}>{minusLabel}</button>
+			<button class="ptp-btn" onclick={mark}   disabled={value >= max} use:tooltip={plusTitle}  aria-label={plusTitle}>{plusLabel}</button>
 		</div>
 	</div>
 </div>

@@ -179,7 +179,7 @@
 			<span class="fa-title">{headingText('Foes')}</span>
 		{/if}
 		<div class="fa-header-actions">
-			<button class="btn fa-hdr-btn" onclick={() => foePickerRef?.open()} title="Add foe">+ Foe</button>
+			<button class="btn fa-hdr-btn" onclick={() => foePickerRef?.open()} use:tooltip={'Add foe'}>+ Foe</button>
 		</div>
 	</header>
 
@@ -227,7 +227,7 @@
 						<button
 							type="button"
 							class="fa-stage-name fa-stage-name--editable"
-							title="Click to rename"
+							use:tooltip={'Click to rename'}
 							onclick={() => nameEdit.start(activeEnc.customName ?? '')}
 						>{headingText(displayName)}</button>
 					{/if}
@@ -320,7 +320,7 @@
 									<span
 										class="fa-badge fa-badge--rank"
 										style={rankBadgeStyle(activeEnc.effectiveRank)}
-										title={activeEnc.quantity !== 'solo' ? `Base rank ${activeDef.rank} + ${qtyDef?.rankAdj ?? 0} for ${activeEnc.quantity}` : ''}
+										use:tooltip={activeEnc.quantity !== 'solo' ? `Base rank ${activeDef.rank} + ${qtyDef?.rankAdj ?? 0} for ${activeEnc.quantity}` : ''}
 									>{rankInfo.label}</span>
 									{#if activeEnc.quantity !== 'solo'}
 										<span class="fa-badge fa-badge--qty">{qtyDef?.label ?? activeEnc.quantity}</span>

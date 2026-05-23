@@ -7,6 +7,7 @@
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import trashSvg from '$icons/trash-solid.svg?raw';
 	import { isDelveEnabled } from '$lib/expansionStore.svelte.js';
+	import { tooltip } from '$lib/actions/tooltip.js';
 
 	let {
 		vow = $bindable(),
@@ -65,7 +66,7 @@
 			class="collapse-btn"
 			onclick={() => (collapsed = !collapsed)}
 			aria-label={collapsed ? 'Expand vow' : 'Collapse vow'}
-			title={collapsed ? 'Expand' : 'Collapse'}
+			use:tooltip={collapsed ? 'Expand' : 'Collapse'}
 		>
 			{collapsed ? '▶' : '▼'}
 		</button>
@@ -87,14 +88,14 @@
 				role="button"
 				onclick={() => nameEdit.start(vow.name)}
 				onkeydown={(e) => e.key === 'Enter' && nameEdit.start(vow.name)}
-				title="Click to rename"
+				use:tooltip={'Click to rename'}
 			>{vow.name || 'Unnamed Vow'}</span>
 		{/if}
 
 		<button
 			class="btn btn-icon icon-btn btn-trash"
 			onclick={() => forsakeDialogRef?.open()}
-			title="Forsake vow"
+			use:tooltip={'Forsake vow'}
 			aria-label="Forsake vow"
 		>{@html trashSvg}</button>
 	</div>

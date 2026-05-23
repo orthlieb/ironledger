@@ -1,6 +1,7 @@
 <script lang="ts">
 	import eyeSvg      from '$icons/eye.svg?raw';
 	import eyeSlashSvg from '$icons/eye-slash.svg?raw';
+	import { tooltip } from '$lib/actions/tooltip.js';
 
 	interface Props {
 		name:         string;
@@ -33,7 +34,7 @@
 			class="pw-toggle"
 			onclick={() => (visible = !visible)}
 			aria-label={visible ? 'Hide password' : 'Show password'}
-			title={visible ? 'Hide password' : 'Show password'}
+			use:tooltip={visible ? 'Hide password' : 'Show password'}
 			tabindex="-1"
 		>
 			{@html visible ? eyeSlashSvg : eyeSvg}

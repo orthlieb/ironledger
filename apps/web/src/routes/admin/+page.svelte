@@ -3,6 +3,7 @@
 	import type { AdminUser, AdminStats, AdminInvite, MaintenanceStatus, BroadcastStatus, BroadcastSeverity, UserTimeseries, RegistrationLockStatus } from '@ironledger/shared';
 	import type { LayoutData } from '../$types';
 	import ErrorBar from '$lib/components/ErrorBar.svelte';
+	import { tooltip } from '$lib/actions/tooltip.js';
 
 	let { data }: { data: LayoutData } = $props();
 
@@ -739,7 +740,7 @@
 											<button
 												class="btn btn-icon"
 												class:btn-dimmed={isLastAdmin}
-												title={isLastAdmin ? 'Cannot demote the last admin' : user.role === 'admin' ? 'Demote to user' : 'Promote to admin'}
+												use:tooltip={isLastAdmin ? 'Cannot demote the last admin' : user.role === 'admin' ? 'Demote to user' : 'Promote to admin'}
 												disabled={isLastAdmin}
 												onclick={() => toggleRole(user)}
 											>
@@ -750,14 +751,14 @@
 												class:btn-warn={user.isActive && !isSelf}
 												class:btn-dimmed={isSelf}
 												disabled={isSelf}
-												title={isSelf ? 'Cannot suspend your own account' : user.isActive ? 'Suspend user (immediately boots and blocks login)' : 'Unsuspend user'}
+												use:tooltip={isSelf ? 'Cannot suspend your own account' : user.isActive ? 'Suspend user (immediately boots and blocks login)' : 'Unsuspend user'}
 												onclick={() => (suspendTarget = user)}
 											>
 												{user.isActive ? 'Suspend' : 'Unsuspend'}
 											</button>
 											<button
 												class="btn btn-icon btn-danger"
-												title="Delete user and all data"
+												use:tooltip={'Delete user and all data'}
 												onclick={() => (deleteTarget = user)}
 											>
 												Delete

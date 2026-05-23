@@ -21,6 +21,7 @@
 	import { sourceLabel } from '$lib/expansionStore.svelte.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { draggable } from '$lib/actions/draggable.js';
+	import { tooltip } from '$lib/actions/tooltip.js';
 	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '$lib/foePortrait.js';
 	import FoeImageCarousel from '$lib/components/FoeImageCarousel.svelte';
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
@@ -282,7 +283,7 @@
 						class="fd-clear-btn"
 						onclick={clearFilters}
 						disabled={!hasActiveFilters}
-						title="Clear all filters"
+						use:tooltip={'Clear all filters'}
 						aria-label="Clear filters"
 					>{@html clearFiltersSvg}</button>
 				</div>

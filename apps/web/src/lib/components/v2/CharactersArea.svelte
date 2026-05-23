@@ -792,19 +792,19 @@
 				class="btn ca-hdr-btn"
 				onclick={addCharacter}
 				disabled={creatingChar}
-				title="Add character"
+				use:tooltip={'Add character'}
 			>+ Character</button>
 			<button
 				class="btn ca-hdr-btn"
 				onclick={() => { activeCard = 'assets'; pickerOpen = true; }}
 				disabled={!activeChar}
-				title="Add asset"
+				use:tooltip={'Add asset'}
 			>+ Asset</button>
 			<button
 				class="btn ca-hdr-btn"
 				onclick={addVow}
 				disabled={!activeChar}
-				title="Add vow"
+				use:tooltip={'Add vow'}
 			>+ Vow</button>
 		</div>
 	</header>
@@ -855,7 +855,7 @@
 						<button
 							type="button"
 							class="ca-stage-name ca-card-name--editable"
-							title="Click to rename"
+							use:tooltip={'Click to rename'}
 							onclick={() => nameEdit.start(d.name ?? '')}
 						>{headingText(d.name || activeChar.name || 'Unnamed')}</button>
 					{/if}
@@ -916,19 +916,19 @@
 											class="ca-init-btn"
 											class:ca-init-btn--active={(d.initiative ?? 0) === 0}
 											onclick={() => { d.initiative = 0; }}
-											title="No initiative"
+											use:tooltip={'No initiative'}
 										>None</button>
 										<button
 											class="ca-init-btn ca-init-btn--foe"
 											class:ca-init-btn--active={(d.initiative ?? 0) === 2}
 											onclick={() => { d.initiative = 2; }}
-											title="Foe has initiative"
+											use:tooltip={'Foe has initiative'}
 										>{@html shieldSvg}Foe</button>
 										<button
 											class="ca-init-btn ca-init-btn--you"
 											class:ca-init-btn--active={(d.initiative ?? 0) === 1}
 											onclick={() => { d.initiative = 1; }}
-											title="You have initiative"
+											use:tooltip={'You have initiative'}
 										>{@html swordSvg}Character</button>
 									</div>
 								</div>
@@ -1058,7 +1058,7 @@
 													<span class="ca-asset-card-name" class:ca-asset-card-name--custom={display.custom}>{display.text}</span>
 												</button>
 												{#if counter}
-													<div class="ca-asset-card-tile" style:--res-color={catColor} title="{counter.label}: {counter.value}/{counter.max}">
+													<div class="ca-asset-card-tile" style:--res-color={catColor} use:tooltip={`${counter.label}: ${counter.value}/${counter.max}`}>
 														<div class="ca-asset-card-tile-bg" aria-hidden="true">{@html counter.iconSvg}</div>
 														<span class="ca-asset-card-tile-name">{counter.label}</span>
 														<div class="ca-asset-card-tile-row">

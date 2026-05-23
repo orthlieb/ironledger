@@ -23,6 +23,8 @@
 	 *   .error-bar-msg, .error-bar-dismiss
 	 */
 
+	import { tooltip } from '$lib/actions/tooltip.js';
+
 	type Severity = 'notification' | 'warning' | 'error';
 
 	let {
@@ -71,7 +73,7 @@
 		{/if}
 		<span class="error-bar-msg">{message}</span>
 		{#if onDismiss}
-			<button class="error-bar-dismiss" onclick={onDismiss} aria-label="Dismiss" title="Dismiss">✕</button>
+			<button class="error-bar-dismiss" onclick={onDismiss} aria-label="Dismiss" use:tooltip={'Dismiss'}>✕</button>
 		{/if}
 	</div>
 {/if}

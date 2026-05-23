@@ -178,3 +178,38 @@ inside a dialog.
 - [ ] Title uses `calc(0.78rem * var(--font-display-scale))` and `flex: 1`.
 - [ ] Background is `var(--bg-control)` with `border-bottom: 1px solid var(--border)`.
 - [ ] Both views get `use:draggable` if the dialog has two views.
+
+## Tooltips — use `use:tooltip`, not the native `title=` attribute
+
+For every visible hover hint on HTML elements, use the `tooltip` action
+from `$lib/actions/tooltip.js`:
+
+```svelte
+<script>
+  import { tooltip } from '$lib/actions/tooltip.js';
+</script>
+
+<button use:tooltip={'Save changes'} aria-label="Save">{@html saveIcon}</button>
+<button use:tooltip={isOn ? 'Hide' : 'Show'}>…</button>
+```
+
+**Don't** use the native HTML `title=` attribute for hover hints. It:
+- Is clipped by `overflow: hidden/auto` ancestors (common inside `<dialog>`s).
+- Renders OS-styled chrome that doesn't match the rest of the UI.
+- Doesn't show on touch devices.
+
+`use:tooltip` uses the browser's Popover API to promote the tip into the top
+layer, so it works correctly above dialogs and other floating UI without DOM
+walking. It also auto-shows on tap and dismisses after 2.5 s on mobile.
+
+**Exceptions** (where `title=` is fine — these are NOT HTML `title`
+attributes):
+- The `title` *prop* on `<ConfirmDialog title="...">` and the new-thing
+  dialogs (NewCommunity, NewNPC, NewJourney, NewSite, ChangeTheme,
+  ChangeDomain). These set the dialog's heading text, unrelated to hover.
+- The HTML `<title>` element in the document `<head>`.
+
+**Accessibility**: if you're converting a `title=` on an icon-only button
+to `use:tooltip`, add `aria-label="..."` with the same text. The native
+`title` attribute doubles as the accessible name for icon buttons; the
+action does not.

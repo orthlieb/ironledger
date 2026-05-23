@@ -13,6 +13,7 @@
 	import { firstPreconditionFailure, type Precondition } from '$lib/preconditions.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { draggable } from '$lib/actions/draggable.js';
+	import { tooltip } from '$lib/actions/tooltip.js';
 
 	let {
 		ownedIds       = [],
@@ -160,7 +161,7 @@
 					class="ap-clear-btn"
 					onclick={clearFilters}
 					disabled={!hasActiveFilters}
-					title="Clear all filters"
+					use:tooltip={'Clear all filters'}
 					aria-label="Clear filters"
 				>{@html clearFiltersSvg}</button>
 			</div>
@@ -185,7 +186,7 @@
 						class:pick-tile-owned={owned}
 						class:pick-tile-blocked={!!blocked && !owned}
 						style:--tile-color={catColor}
-						title={blocked && !owned ? blocked : undefined}
+						use:tooltip={blocked && !owned ? blocked : ''}
 						onclick={() => { if (!owned && !blocked) tryAdd(asset); }}
 						onkeydown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !owned && !blocked) tryAdd(asset); }}
 						tabindex={owned || !!blocked ? -1 : 0}

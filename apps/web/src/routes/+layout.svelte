@@ -26,6 +26,7 @@
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { headingText } from '$lib/fontStore.svelte.js';
+	import { tooltip } from '$lib/actions/tooltip.js';
 
 	let { data, children }: { data: LayoutData; children: import('svelte').Snippet } = $props();
 
@@ -199,16 +200,16 @@
 				<!-- V1 adventure-action-toolbar promoted to the global nav so
 				     Move / Ask / Roll / Note are reachable from any page. -->
 				<div class="nav-action-toolbar">
-					<button class="btn btn-primary act-btn" onclick={() => movesDialogRef?.open()} title="Browse and roll moves">
+					<button class="btn btn-primary act-btn" onclick={() => movesDialogRef?.open()} use:tooltip={'Browse and roll moves'}>
 						<span class="act-icon">{@html iconMoves}</span><span class="act-label">Move</span>
 					</button>
-					<button class="btn btn-primary act-btn" onclick={() => oraclesDialogRef?.open()} title="Browse and roll oracles">
+					<button class="btn btn-primary act-btn" onclick={() => oraclesDialogRef?.open()} use:tooltip={'Browse and roll oracles'}>
 						<span class="act-icon">{@html iconOracles}</span><span class="act-label">Ask</span>
 					</button>
-					<button class="btn btn-primary act-btn" onclick={() => diceRollerRef?.open()} title="Roll dice">
+					<button class="btn btn-primary act-btn" onclick={() => diceRollerRef?.open()} use:tooltip={'Roll dice'}>
 						<span class="act-icon">{@html iconDice}</span><span class="act-label">Roll</span>
 					</button>
-					<button class="btn btn-primary act-btn" onclick={() => notesDialogRef?.open()} title="Add a session note">
+					<button class="btn btn-primary act-btn" onclick={() => notesDialogRef?.open()} use:tooltip={'Add a session note'}>
 						<span class="act-icon">{@html iconNotes}</span><span class="act-label">Note</span>
 					</button>
 				</div>

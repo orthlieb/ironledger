@@ -16,6 +16,7 @@
 	 * journey green, site blue). Danger boxes always use red regardless of `color`.
 	 */
 	import { boxTicks, cycleBox, progressText } from '$lib/character.js';
+	import { tooltip } from '$lib/actions/tooltip.js';
 
 	let {
 		label,
@@ -58,7 +59,7 @@
 				onclick={() => cycleBoxTick(i)}
 				style="--fill: {fillPct}"
 				data-ticks={ticks}
-				title="{ticks}/4 ticks"
+				use:tooltip={`${ticks}/4 ticks`}
 				aria-label="Progress box {i + 1}: {ticks} of 4 ticks"
 			></button>
 		{/each}

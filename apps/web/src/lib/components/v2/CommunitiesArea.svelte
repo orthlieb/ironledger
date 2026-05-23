@@ -280,8 +280,8 @@
 			<span class="cmt-title">{headingText('Connections')}</span>
 		{/if}
 		<div class="cm-header-actions">
-			<button class="btn cm-hdr-btn" onclick={addNewCommunity} title="Add community">+ Community</button>
-			<button class="btn cm-hdr-btn" onclick={addNewNpc}       title="Add NPC">+ NPC</button>
+			<button class="btn cm-hdr-btn" onclick={addNewCommunity} use:tooltip={'Add community'}>+ Community</button>
+			<button class="btn cm-hdr-btn" onclick={addNewNpc}       use:tooltip={'Add NPC'}>+ NPC</button>
 		</div>
 	</header>
 
@@ -327,7 +327,7 @@
 						<button
 							type="button"
 							class="cm-stage-name cm-stage-name--editable"
-							title="Click to rename"
+							use:tooltip={'Click to rename'}
 							onclick={() => nameEdit.start(activeEntry.data.name)}
 						>{headingText(activeEntry.data.name || (activeEntry.kind === 'npc' ? 'Unnamed NPC' : 'Unnamed Community'))}</button>
 					{/if}
@@ -390,7 +390,7 @@
 											const result = rollOracle('settlementTrouble', getOracles());
 											if (result) updateCommunity({ trouble: result.value });
 										}}
-										title="Roll settlement trouble oracle"
+										use:tooltip={'Roll settlement trouble oracle'}
 										aria-label="Roll settlement trouble oracle"
 									>{@html diceD6Svg}</button>
 								</div>

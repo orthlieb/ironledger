@@ -422,9 +422,9 @@
 			<span class="ea-title">{headingText('Expeditions')}</span>
 		{/if}
 		<div class="ea-header-actions">
-			<button class="btn ea-hdr-btn" onclick={addJourney} title="Add journey">+ Journey</button>
+			<button class="btn ea-hdr-btn" onclick={addJourney} use:tooltip={'Add journey'}>+ Journey</button>
 			{#if isDelveEnabled()}
-				<button class="btn ea-hdr-btn" onclick={addSite}    title="Add site">+ Site</button>
+				<button class="btn ea-hdr-btn" onclick={addSite}    use:tooltip={'Add site'}>+ Site</button>
 			{/if}
 		</div>
 	</header>
@@ -473,7 +473,7 @@
 						<button
 							type="button"
 							class="ea-stage-name ea-stage-name--editable"
-							title="Click to rename"
+							use:tooltip={'Click to rename'}
 							onclick={() => nameEdit.start(activeExp.name)}
 						>{headingText(activeExp.name || 'Unnamed')}</button>
 					{/if}
@@ -665,7 +665,7 @@
 											<button
 												class="ea-denizen-pick-btn"
 												onclick={() => openDenizenPicker(i)}
-												title="Pick a foe for this denizen"
+												use:tooltip={'Pick a foe for this denizen'}
 												aria-label="Pick foe for denizen {i + 1}"
 											>+</button>
 										</div>

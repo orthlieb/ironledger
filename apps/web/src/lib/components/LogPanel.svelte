@@ -668,7 +668,7 @@
 				class="pag-btn"
 				onclick={() => page--}
 				disabled={page === 0}
-				title="Previous page"
+				use:tooltip={'Previous page'}
 				aria-label="Previous page"
 			>{@html anglesLeftSvg}</button>
 			<span class="pag-label">pg {page + 1}/{totalPages}</span>
@@ -676,7 +676,7 @@
 				class="pag-btn"
 				onclick={() => page++}
 				disabled={page === totalPages - 1}
-				title="Next page"
+				use:tooltip={'Next page'}
 				aria-label="Next page"
 			>{@html anglesRightSvg}</button>
 		</div>
@@ -719,7 +719,7 @@
 								class="entry-btn entry-edit-btn"
 								class:entry-btn-active={editingId === entry.id}
 								onclick={() => editingId === entry.id ? cancelEdit() : startEdit(entry)}
-								title={editingId === entry.id ? 'Cancel edit' : entry.title === 'Note' ? 'Edit note' : 'Add/edit note'}
+								use:tooltip={editingId === entry.id ? 'Cancel edit' : entry.title === 'Note' ? 'Edit note' : 'Add/edit note'}
 								aria-label={entry.title === 'Note' ? 'Edit this note' : 'Edit note for this entry'}
 							>{@html penSvg}</button>
 
@@ -729,7 +729,7 @@
 									if (editingId === entry.id) cancelEdit();
 									deleteLogEntry(SESSION_LOG_ID, entry.id);
 								}}
-								title="Delete this log entry"
+								use:tooltip={'Delete this log entry'}
 								aria-label="Delete log entry"
 							>{@html trashSvg}</button>
 						</div>

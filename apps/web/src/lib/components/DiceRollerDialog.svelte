@@ -211,15 +211,15 @@
 		<section>
 			<div class="section-label">Quick Roll</div>
 			<div class="quick-row">
-				<button class="quick-btn" onclick={() => quickRoll(6, 'd6')}   disabled={rolling} title="Roll d6">
+				<button class="quick-btn" onclick={() => quickRoll(6, 'd6')}   disabled={rolling} use:tooltip={'Roll d6'}>
 					<span class="qicon">{@html diceD6Svg}</span>
 					<span class="qdie">d6</span>
 				</button>
-				<button class="quick-btn" onclick={() => quickRoll(10, 'd10')} disabled={rolling} title="Roll d10">
+				<button class="quick-btn" onclick={() => quickRoll(10, 'd10')} disabled={rolling} use:tooltip={'Roll d10'}>
 					<span class="qicon">{@html diceD10Svg}</span>
 					<span class="qdie">d10</span>
 				</button>
-				<button class="quick-btn" onclick={quickRollD100}              disabled={rolling} title="Roll d100">
+				<button class="quick-btn" onclick={quickRollD100}              disabled={rolling} use:tooltip={'Roll d100'}>
 					<span class="qicon qicon-d100">
 						<span class="d100-dark">{@html diceD10Svg}</span>
 						<span class="d100-light">{@html diceD10Svg}</span>
@@ -244,7 +244,7 @@
 						style:--scolor={s.color}
 						onclick={() => (selectedStat = selectedStat === s.key ? null : s.key)}
 						disabled={rolling || !ctx}
-						title="{s.label}: {ctx ? ctx.data[s.key] : '—'}"
+						use:tooltip={`${s.label}: ${ctx ? ctx.data[s.key] : '—'}`}
 					>
 						<span class="sname">{s.label}</span>
 						<span class="sval">{ctx ? `+${ctx.data[s.key]}` : '—'}</span>

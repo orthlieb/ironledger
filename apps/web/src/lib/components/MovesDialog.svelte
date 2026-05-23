@@ -817,7 +817,7 @@
 			<button
 				class="md-hide-disabled-btn"
 				class:md-hide-disabled-btn--active={hideDisabled}
-				title={hideDisabled ? 'Show all moves' : 'Hide unavailable moves'}
+				use:tooltip={hideDisabled ? 'Show all moves' : 'Hide unavailable moves'}
 				onclick={() => (hideDisabled = !hideDisabled)}
 				aria-label={hideDisabled ? 'Show all moves' : 'Hide unavailable moves'}
 			>
@@ -843,7 +843,7 @@
 				</div>
 				<button
 					class="md-clear-btn"
-					title="Clear all filters"
+					use:tooltip={'Clear all filters'}
 					onclick={clearFilters}
 					disabled={activeCategories.size === 0}
 					aria-label="Clear all filters"

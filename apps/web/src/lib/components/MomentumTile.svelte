@@ -68,7 +68,7 @@
 		<button
 			class="mt-reset-btn"
 			onclick={onreset}
-			title="Reset momentum to {resetVal}"
+			use:tooltip={`Reset momentum to ${resetVal}`}
 			aria-label="Reset momentum to {resetVal}"
 		>↺ Reset: {resetVal}</button>
 		<span class="mt-max">MAX: {maxVal}</span>

@@ -11,6 +11,7 @@
 	import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
 	import { draggable } from '$lib/actions/draggable.js';
+	import { tooltip }   from '$lib/actions/tooltip.js';
 
 	import iconHeart          from '$icons/icon-heart.svg?raw';
 	import iconSkull          from '$icons/skull-crossbones-solid-full.svg?raw';
@@ -317,11 +318,11 @@
 			<span
 				class="counter-badge"
 				style:--counter-color={catColor}
-				title="{counterField.label}: {curVal} / {maxVal}"
+				use:tooltip={`${counterField.label}: ${curVal} / ${maxVal}`}
 			>{@html iconSvg} {curVal}/{maxVal}</span>
 		{/if}
 
-		<span class="ability-tally" title="{enabledCount} of {total} abilities enabled">
+		<span class="ability-tally" use:tooltip={`${enabledCount} of ${total} abilities enabled`}>
 			{enabledCount}/{total}
 		</span>
 
@@ -329,7 +330,7 @@
 			<button
 				class="asset-close"
 				onclick={onClose}
-				title="Close"
+				use:tooltip={'Close'}
 				aria-label="Close"
 			>✕</button>
 		{/if}
@@ -431,7 +432,7 @@
 						class="ability-row"
 						class:ability-enabled={asset.abilities[i]}
 						class:ability-disabled={!asset.abilities[i] && (characterXp < 2 || _atCap)}
-						title={_atCap ? `Your current level only allows ${_cap} ${_cap === 1 ? 'ability' : 'abilities'} — increase your touched level to unlock more` : undefined}
+						use:tooltip={_atCap ? `Your current level only allows ${_cap} ${_cap === 1 ? 'ability' : 'abilities'} — increase your touched level to unlock more` : ''}
 					>
 						<input
 							type="checkbox"
@@ -686,7 +687,7 @@
 								class:asset-notes-display--empty={!value.trim()}
 								role="button"
 								tabindex="0"
-								title="Click to edit"
+								use:tooltip={'Click to edit'}
 								onclick={() => (editingNotesFieldId = field.id)}
 								onkeydown={(e) => { if (e.key === 'Enter') editingNotesFieldId = field.id; }}
 							>
@@ -712,7 +713,7 @@
 						<label
 							class="rarity-label"
 							class:rarity-label--locked={ownsAnother}
-							title={ownsAnother ? 'Uncheck the current rarity first' : undefined}
+							use:tooltip={ownsAnother ? 'Uncheck the current rarity first' : ''}
 						>
 							<input
 								type="checkbox"

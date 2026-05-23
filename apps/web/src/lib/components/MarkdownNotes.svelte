@@ -11,6 +11,7 @@
 	 *     nested state and is updated through an update callback.
 	 */
 	import { renderNote } from '$lib/markdown.js';
+	import { tooltip } from '$lib/actions/tooltip.js';
 
 	let {
 		value = $bindable(''),
@@ -66,7 +67,7 @@
 			class="md-notes-display"
 			role="button"
 			tabindex="0"
-			title="Click to edit (markdown supported)"
+			use:tooltip={'Click to edit (markdown supported)'}
 			onclick={() => (editing = true)}
 			onkeydown={(e) => { if (e.key === 'Enter') editing = true; }}
 		>
