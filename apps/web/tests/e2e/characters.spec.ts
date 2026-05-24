@@ -120,8 +120,10 @@ test.describe('Characters area (v2)', () => {
 		const tile = page.locator('dialog.picker-dialog .pick-tile:not(.pick-tile-owned)').first();
 		await expect(tile).toBeVisible({ timeout: 5_000 });
 		await tile.click();
-		// Confirmation dialog — click "Add to Character".
-		await page.locator('dialog.confirm-dialog button:has-text("Add to Character")').click();
+		// Editable AssetCard opens in add mode — click "Add" in its footer.
+		await expect(page.locator('dialog.ca-asset-dialog[open]')).toBeVisible({ timeout: 5_000 });
+		await page.locator('dialog.ca-asset-dialog[open] .asset-footer .btn-primary').click();
+		await expect(page.locator('dialog.ca-asset-dialog[open]')).not.toBeVisible({ timeout: 5_000 });
 		await expect(page.locator('dialog.picker-dialog[open]')).not.toBeVisible({ timeout: 5_000 });
 		await expect(assetCards).not.toHaveCount(assetsBefore, { timeout: 5_000 });
 	});
@@ -136,16 +138,18 @@ test.describe('Characters area (v2)', () => {
 			await page.locator(`${CHAR_HEADER} button:has-text("+ Asset")`).click();
 			await expect(page.locator('dialog.picker-dialog[open]')).toBeVisible({ timeout: 5_000 });
 			await page.locator('dialog.picker-dialog .pick-tile:not(.pick-tile-owned)').first().click();
-			await page.locator('dialog.confirm-dialog button:has-text("Add to Character")').click();
+			// AssetCard opens in add mode — click Add to commit.
+			await expect(page.locator('dialog.ca-asset-dialog[open]')).toBeVisible({ timeout: 5_000 });
+			await page.locator('dialog.ca-asset-dialog[open] .asset-footer .btn-primary').click();
 			await expect(page.locator('dialog.picker-dialog[open]')).not.toBeVisible({ timeout: 5_000 });
 			await expect(assetCards).not.toHaveCount(0, { timeout: 5_000 });
 		}
 		const countBefore = await assetCards.count();
 
-		// Click the small asset chip → opens the asset dialog → click Remove.
-		await assetCards.first().click();
+		// Click the asset chit's main button → opens the asset dialog → click Delete.
+		await assetCards.first().locator('.ca-asset-card-main').click();
 		await expect(page.locator('dialog.ca-asset-dialog[open]')).toBeVisible({ timeout: 3_000 });
-		await page.locator('dialog.ca-asset-dialog[open] .btn-remove').click();
+		await page.locator('dialog.ca-asset-dialog[open] .asset-footer .btn-danger').click();
 		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 3_000 });
 		await page.locator('dialog.confirm-modal[open] button.btn-danger').click();
 		await expect(assetCards).toHaveCount(countBefore - 1, { timeout: 5_000 });
@@ -171,7 +175,7 @@ test.describe('Characters area (v2)', () => {
 			await expect(vowCards).toHaveCount(1, { timeout: 5_000 });
 		}
 		const vowsBefore = await vowCards.count();
-		await vowCards.first().locator('.btn-forsake').click();
+		await vowCards.first().locator('.btn-trash').click();
 		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 3_000 });
 		await page.locator('dialog.confirm-modal[open] button.btn-danger').click();
 		await expect(vowCards).toHaveCount(vowsBefore - 1, { timeout: 5_000 });
@@ -190,8 +194,8 @@ test.describe('Characters area (v2)', () => {
 		}
 		const vow = vowCards.first();
 
-		const display  = vow.locator('.vow-notes-display');
-		const textarea = vow.locator('.vow-notes-textarea');
+		const display  = vow.locator('.md-notes-display');
+		const textarea = vow.locator('.md-notes-input');
 		await expect(display).toBeVisible();
 		await display.click();
 		await expect(textarea).toBeVisible({ timeout: 3_000 });
@@ -218,8 +222,8 @@ test.describe('Characters area (v2)', () => {
 		const noteText = `Persisted: ${marker}`;
 
 		const vow      = vowCards.first();
-		const display  = vow.locator('.vow-notes-display');
-		const textarea = vow.locator('.vow-notes-textarea');
+		const display  = vow.locator('.md-notes-display');
+		const textarea = vow.locator('.md-notes-input');
 
 		await display.click();
 		await expect(textarea).toBeVisible({ timeout: 3_000 });
@@ -235,7 +239,7 @@ test.describe('Characters area (v2)', () => {
 		await switchCharTab(page, 'Vows');
 
 		const restoredVow = page.locator(`${CHAR_AREA} .vow-card`, {
-			has: page.locator(`.vow-notes-display p:has-text("${marker}")`),
+			has: page.locator(`.md-notes-display p:has-text("${marker}")`),
 		}).first();
 		await expect(restoredVow).toBeVisible({ timeout: 8_000 });
 	});
@@ -250,8 +254,8 @@ test.describe('Characters area (v2)', () => {
 			await expect(vowCards).toHaveCount(1, { timeout: 5_000 });
 		}
 		const vow      = vowCards.first();
-		const display  = vow.locator('.vow-notes-display');
-		const textarea = vow.locator('.vow-notes-textarea');
+		const display  = vow.locator('.md-notes-display');
+		const textarea = vow.locator('.md-notes-input');
 
 		const markdown =
 			'# The Iron Heart\n' +
@@ -278,7 +282,7 @@ test.describe('Characters area (v2)', () => {
 		await ensureCharacterSelected(page);
 		await switchCharTab(page, 'Description');
 
-		const portraitLabel = page.locator(`${CHAR_AREA} .ca-bg-portrait-label`);
+		const portraitLabel = page.locator(`${CHAR_AREA} .pu-label`);
 		await expect(portraitLabel).toBeVisible({ timeout: 3_000 });
 
 		// Supply a tiny synthetic PNG so the FileReader → Image → canvas pipeline runs.
@@ -287,17 +291,17 @@ test.describe('Characters area (v2)', () => {
 			'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI6QAAAABJRU5ErkJggg==',
 			'base64',
 		);
-		const input = page.locator(`${CHAR_AREA} .ca-bg-portrait-input`);
+		const input = page.locator(`${CHAR_AREA} .pu-input`);
 		await input.setInputFiles({ name: 'portrait.png', mimeType: 'image/png', buffer: pngBuffer });
 
 		// After the FileReader → Image → canvas pipeline the portrait <img> should appear
-		// (replaces the .ca-bg-portrait--placeholder div).
+		// (replaces the .pu-img--placeholder div).
 		await expect(
-			page.locator(`${CHAR_AREA} img.ca-bg-portrait`),
+			page.locator(`${CHAR_AREA} img.pu-img`),
 		).toBeVisible({ timeout: 5_000 });
 
 		// The src must be a JPEG data URL produced by canvas.toDataURL('image/jpeg', 0.85).
-		const src = await page.locator(`${CHAR_AREA} img.ca-bg-portrait`).getAttribute('src');
+		const src = await page.locator(`${CHAR_AREA} img.pu-img`).getAttribute('src');
 		expect(src).toMatch(/^data:image\/jpeg;base64,/);
 	});
 

@@ -73,13 +73,13 @@ function settingsToggleButton(page: Page, label: string, state: 'On' | 'Off') {
 
 /** Open the Moves dialog via the global app-nav button. */
 async function openMovesDialog(page: Page): Promise<void> {
-	await page.locator(`${APP_NAV} .act-btn[title*="move" i]`).first().click();
+	await page.locator(`${APP_NAV} .act-btn`, { hasText: 'Move' }).first().click();
 	await expect(page.locator('dialog.moves-dialog[open]')).toBeVisible({ timeout: 8_000 });
 }
 
 /** Open the Oracles dialog via the global app-nav button. */
 async function openOraclesDialog(page: Page): Promise<void> {
-	await page.locator(`${APP_NAV} .act-btn[title*="oracle" i]`).first().click();
+	await page.locator(`${APP_NAV} .act-btn`, { hasText: 'Ask' }).first().click();
 	await expect(page.locator('dialog.oracles-dialog[open]')).toBeVisible({ timeout: 8_000 });
 }
 
