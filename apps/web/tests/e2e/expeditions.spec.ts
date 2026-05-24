@@ -320,16 +320,16 @@ test.describe('Expeditions area (v2)', () => {
 		await ensureJourneySelected(page);
 		await switchExpTab(page, 'Description');
 
-		const portraitLabel = page.locator(`${EXP_AREA} .ea-portrait-label`);
+		const portraitLabel = page.locator(`${EXP_AREA} .pu-label`);
 		await expect(portraitLabel).toBeVisible({ timeout: 3_000 });
 
-		await page.locator(`${EXP_AREA} .ea-portrait-input`).setInputFiles(
+		await page.locator(`${EXP_AREA} .pu-input`).setInputFiles(
 			{ name: 'journey.png', mimeType: 'image/png', buffer: PNG_1X1 },
 		);
 
 		// FileReader → Image → canvas pipeline produces a JPEG data URL.
-		await expect(page.locator(`${EXP_AREA} img.ea-portrait`)).toBeVisible({ timeout: 5_000 });
-		const src = await page.locator(`${EXP_AREA} img.ea-portrait`).getAttribute('src');
+		await expect(page.locator(`${EXP_AREA} img.pu-img`)).toBeVisible({ timeout: 5_000 });
+		const src = await page.locator(`${EXP_AREA} img.pu-img`).getAttribute('src');
 		expect(src).toMatch(/^data:image\/jpeg;base64,/);
 	});
 
@@ -337,15 +337,15 @@ test.describe('Expeditions area (v2)', () => {
 		await ensureSiteSelected(page);
 		await switchExpTab(page, 'Description');
 
-		const portraitLabel = page.locator(`${EXP_AREA} .ea-portrait-label`);
+		const portraitLabel = page.locator(`${EXP_AREA} .pu-label`);
 		await expect(portraitLabel).toBeVisible({ timeout: 3_000 });
 
-		await page.locator(`${EXP_AREA} .ea-portrait-input`).setInputFiles(
+		await page.locator(`${EXP_AREA} .pu-input`).setInputFiles(
 			{ name: 'site.png', mimeType: 'image/png', buffer: PNG_1X1 },
 		);
 
-		await expect(page.locator(`${EXP_AREA} img.ea-portrait`)).toBeVisible({ timeout: 5_000 });
-		const src = await page.locator(`${EXP_AREA} img.ea-portrait`).getAttribute('src');
+		await expect(page.locator(`${EXP_AREA} img.pu-img`)).toBeVisible({ timeout: 5_000 });
+		const src = await page.locator(`${EXP_AREA} img.pu-img`).getAttribute('src');
 		expect(src).toMatch(/^data:image\/jpeg;base64,/);
 	});
 

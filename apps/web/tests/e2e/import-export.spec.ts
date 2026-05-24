@@ -84,21 +84,21 @@ test.describe('Export dialog', () => {
 
 	test('opens and lists all content options', async ({ page }) => {
 		await openExportDialog(page, 'character');
-		for (const val of ['character', 'all-characters', 'log', 'communities', 'foes', 'expeditions', 'everything']) {
+		for (const val of ['character', 'all-characters', 'log', 'communities', 'expeditions', 'everything']) {
 			await expect(
 				page.locator(`.export-dialog[open] .ed-select option[value="${val}"]`).first(),
 			).toBeAttached();
 		}
 	});
 
-	test('hides format selector when Everything is chosen', async ({ page }) => {
+	test('shows format selector for Everything (JSON or Markdown ZIP)', async ({ page }) => {
 		await openExportDialog(page, 'everything');
-		await expect(page.locator('.ed-label:has-text("Format")')).not.toBeVisible();
+		await expect(page.locator('.export-dialog[open] .ed-label:has-text("Format")')).toBeVisible();
 	});
 
-	test('shows format selector for non-Everything options', async ({ page }) => {
+	test('hides format selector for JSON-only content types', async ({ page }) => {
 		await openExportDialog(page, 'all-characters');
-		await expect(page.locator('.ed-label:has-text("Format")')).toBeVisible();
+		await expect(page.locator('.export-dialog[open] .ed-label:has-text("Format")')).not.toBeVisible();
 	});
 
 	test('Cancel closes the dialog without exporting', async ({ page }) => {
@@ -117,8 +117,8 @@ test.describe('Export dialog', () => {
 	});
 
 	test('All Characters JSON export downloads a JSON file', async ({ page }) => {
+		// All Characters is JSON-only — no format selector.
 		await openExportDialog(page, 'all-characters');
-		await page.locator('.ed-seg-btn:has-text("JSON")').click();
 		const [download] = await Promise.all([
 			page.waitForEvent('download'),
 			page.locator('.export-dialog .btn-primary').click(),

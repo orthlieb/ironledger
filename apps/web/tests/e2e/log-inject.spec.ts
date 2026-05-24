@@ -211,7 +211,7 @@ test.describe('Log interactive links (injected mock entries)', () => {
 
 		// Status tab hosts the failures track (still uses .track-box / data-ticks).
 		await switchCharTab(page, 'Status');
-		const failGroup = page.locator(`${CHAR_AREA} .ca-track-group`).filter({ hasText: /Failures/i });
+		const failGroup = page.locator(`${CHAR_AREA} .ptp-group`).filter({ hasText: /Failures/i });
 		const tickCountBefore = await failGroup.locator('.track-box').evaluateAll(
 			(boxes: HTMLElement[]) => boxes.reduce((s, b) => s + parseInt(b.dataset['ticks'] ?? '0', 10), 0),
 		);
