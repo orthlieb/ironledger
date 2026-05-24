@@ -816,7 +816,8 @@
           "tooltipLabel": "Conclave Ritual"
         }
       ],
-      "source": "yrt"
+      "source": "yrt",
+      "icon": "asset-compulsion"
     },
     {
       "id": "path/yrt-bittercraft",
