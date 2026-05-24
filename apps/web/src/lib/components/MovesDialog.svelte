@@ -1357,20 +1357,7 @@
 	}
 	.md-close:hover { color: var(--text); }
 
-	.md-back-btn {
-		font-family:   var(--font-ui);
-		font-size:     0.7rem;
-		font-weight:   600;
-		color:         var(--text-dimmer);
-		background:    transparent;
-		border:        1px solid var(--border);
-		border-radius: 4px;
-		padding:       3px 8px;
-		cursor:        pointer;
-		flex-shrink:   0;
-		white-space:   nowrap;
-	}
-	.md-back-btn:hover { color: var(--text); border-color: var(--border-mid); }
+	.md-back-btn { flex-shrink: 0; }
 
 	.md-category-badge {
 		font-family:    var(--font-ui);

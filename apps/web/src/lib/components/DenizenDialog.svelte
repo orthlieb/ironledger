@@ -334,20 +334,7 @@
 		flex: 1;
 	}
 
-	.dd-back-btn {
-		font-family:   var(--font-ui);
-		font-size:     0.7rem;
-		font-weight:   600;
-		color:         var(--text-dimmer);
-		background:    transparent;
-		border:        1px solid var(--border);
-		border-radius: 4px;
-		padding:       3px 8px;
-		cursor:        pointer;
-		flex-shrink:   0;
-		white-space:   nowrap;
-	}
-	.dd-back-btn:hover { color: var(--text); border-color: var(--border-mid); }
+	.dd-back-btn { flex-shrink: 0; }
 
 	.dd-footer {
 		display: flex;
@@ -433,7 +420,6 @@
 		flex-shrink: 0;
 	}
 	.dd-back-bar .dd-title { flex: 1; }
-	.dd-back-btn { flex-shrink: 0; }
 
 	/* ── Result scroll area ────────────────────────────────────────── */
 	.dd-result-scroll {
