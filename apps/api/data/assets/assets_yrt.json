@@ -79,7 +79,8 @@
           "placeholder": "Animal…"
         }
       ],
-      "source": "yrt"
+      "source": "yrt",
+      "icon": "asset-touched-feline"
     },
     {
       "id": "path/yrt-touched-porcine",
@@ -160,7 +161,8 @@
           "placeholder": "Animal…"
         }
       ],
-      "source": "yrt"
+      "source": "yrt",
+      "icon": "asset-touched-porcine"
     },
     {
       "id": "path/yrt-touched-bovine",
@@ -242,7 +244,8 @@
           "placeholder": "Animal…"
         }
       ],
-      "source": "yrt"
+      "source": "yrt",
+      "icon": "asset-touched-bovine"
     },
     {
       "id": "path/yrt-touched-ursine",
@@ -325,7 +328,8 @@
           "placeholder": "Animal…"
         }
       ],
-      "source": "yrt"
+      "source": "yrt",
+      "icon": "asset-touched-ursine"
     },
     {
       "id": "ritual/yrt-cantrip",
@@ -428,7 +432,8 @@
           "tooltipLabel": "Conclave Ritual"
         }
       ],
-      "source": "yrt"
+      "source": "yrt",
+      "icon": "asset-cantrip"
     },
     {
       "id": "ritual/yrt-arcane-inspection",
@@ -555,7 +560,8 @@
           "tooltipLabel": "Conclave Ritual"
         }
       ],
-      "source": "yrt"
+      "source": "yrt",
+      "icon": "asset-arcane-inspection"
     },
     {
       "id": "ritual/yrt-vizion-illusion",
@@ -682,7 +688,8 @@
           "tooltipLabel": "Conclave Ritual"
         }
       ],
-      "source": "yrt"
+      "source": "yrt",
+      "icon": "asset-illusion"
     },
     {
       "id": "ritual/yrt-compulsion",
@@ -861,7 +868,8 @@
           "icon": "skull-and-crossbones"
         }
       ],
-      "source": "yrt"
+      "source": "yrt",
+      "icon": "asset-bittercraft"
     },
     {
       "id": "path/yrt-quillwise",
@@ -892,7 +900,8 @@
           ]
         }
       ],
-      "source": "yrt"
+      "source": "yrt",
+      "icon": "asset-quillwise"
     }
   ],
   "rarities": [
