@@ -194,14 +194,10 @@
 						role="button"
 						aria-disabled={owned || !!blocked}
 					>
-						<!-- Category badge — top right, coloured -->
-						<span class="tile-badge" style:background={catColor}>
-							{asset.category}
-						</span>
-
 						<div class="tile-name-row">
 							<span class="tile-name-icon" aria-hidden="true" style:color={catColor}>{@html assetIcon(asset)}</span>
 							<span class="tile-name">{asset.name}</span>
+							<span class="tile-badge" style:background={catColor}>{asset.category}</span>
 						</div>
 
 						{#if asset.summary}
@@ -426,13 +422,12 @@
 	}
 
 	.pick-tile {
-		position: relative;
 		background: var(--bg-inset);
 		border: 1px solid var(--border);
 		/* Coloured top border matching the category */
 		border-top: 3px solid var(--tile-color);
 		border-radius: 5px;
-		padding: 28px 9px 9px; /* top padding clears the badge */
+		padding: 9px;
 		display: flex;
 		flex-direction: column;
 		gap: 5px;
@@ -457,21 +452,7 @@
 	}
 
 	/* Category badge — coloured pill, absolute top-right */
-	.tile-badge {
-		position:       absolute;
-		top:            6px;
-		right:          7px;
-		font-family:    var(--font-ui);
-		font-size:      0.58rem;
-		font-weight:    700;
-		letter-spacing: 0.05em;
-		text-transform: uppercase;
-		color:          #fff;
-		padding:        2px 6px;
-		border-radius:  8px;
-		white-space:    nowrap;
-		line-height:    1.3;
-	}
+	/* Name row — icon, name (grows to fill), badge anchored to the right. */
 	.tile-name-row {
 		display:     flex;
 		align-items: center;
@@ -490,12 +471,28 @@
 	.tile-name-icon :global(svg path) { fill: currentColor; }
 
 	.tile-name {
-		font-family: var(--font-ui);
-		font-size: 0.84rem;
-		font-weight: 700;
-		color: var(--text);
-		/* leave room for the badge */
-		padding-right: 4px;
+		flex:          1;
+		min-width:     0;
+		font-family:   var(--font-ui);
+		font-size:     0.84rem;
+		font-weight:   700;
+		color:         var(--text);
+		overflow:      hidden;
+		text-overflow: ellipsis;
+		white-space:   nowrap;
+	}
+	.tile-badge {
+		flex-shrink:    0;
+		font-family:    var(--font-ui);
+		font-size:      0.58rem;
+		font-weight:    700;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color:          #fff;
+		padding:        2px 6px;
+		border-radius:  8px;
+		white-space:    nowrap;
+		line-height:    1.3;
 	}
 
 	.tile-desc {
