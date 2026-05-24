@@ -352,6 +352,8 @@ export const DEFAULT_CHARACTER: CharacterData = {
 	xp: 0,
 	bonds: 0,
 	failures: 0,
+	bondsFormed: '',
+	lessonsLearned: '',
 	wounded: false,
 	unprepared: false,
 	shaken: false,
