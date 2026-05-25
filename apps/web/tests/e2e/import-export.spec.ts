@@ -84,6 +84,8 @@ test.describe('Export dialog', () => {
 
 	test('opens and lists all content options', async ({ page }) => {
 		await openExportDialog(page, 'character');
+		// 'foes' was removed from the export menu in commit 7eff969 — foes now
+		// only ship as part of an Everything export.
 		for (const val of ['character', 'all-characters', 'log', 'communities', 'expeditions', 'everything']) {
 			await expect(
 				page.locator(`.export-dialog[open] .ed-select option[value="${val}"]`).first(),
