@@ -33,6 +33,8 @@
 	import { EditableName } from '$lib/editableName.svelte.js';
 	import { isYrtEnabled } from '$lib/expansionStore.svelte.js';
 	import { loadOracles, getOracles, rollOracle, findOracle, rollFromRangeTable } from '$lib/oracleStore.svelte.js';
+	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
+	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
@@ -83,6 +85,9 @@
 
 	// Inline-edit state
 	let editingNotes = $state(false);
+
+	// Re-entrance guard for dice-button rolls (matches ExpeditionsArea pattern).
+	let rolling = $state(false);
 	const nameEdit = new EditableName((restored) => {
 		if (activeEntry?.kind === 'community') updateCommunity({ name: restored });
 		else if (activeEntry?.kind === 'npc')  updateNpc({ name: restored });
@@ -130,6 +135,30 @@
 	function updateNpc(patch: Partial<Npc>) {
 		if (activeEntry?.kind !== 'npc') return;
 		Object.assign(activeEntry.data as object, patch);
+	}
+
+	/** Roll on the Settlement Trouble oracle, animate the d100, log the
+	 *  outcome, then apply it to the active community — mirrors the pattern
+	 *  used by ExpeditionsArea.rollFeature / rollDanger. */
+	async function rollSettlementTrouble() {
+		if (activeEntry?.kind !== 'community' || rolling) return;
+		rolling = true;
+		try {
+			const result = rollOracle('settlementTrouble', getOracles());
+			if (!result.value) return;
+			const tensV = Math.floor(result.roll % 100 / 10) || 10;
+			const onesV = result.roll % 10 || 10;
+			await animateDice([
+				{ sides: 10, value: tensV, color: DIE_BLACK },
+				{ sides: 10, value: onesV, color: DIE_WHITE },
+			]);
+			appendLog(SESSION_LOG_ID, result.title,
+				`<div class="roll-line">Roll: d100 → ${result.roll}</div>` +
+				`<div>Result: <strong>${result.value}</strong></div>`);
+			updateCommunity({ trouble: result.value });
+		} finally {
+			rolling = false;
+		}
 	}
 
 	$effect(() => {
@@ -386,10 +415,8 @@
 									<button
 										class="cm-dice-btn"
 										type="button"
-										onclick={() => {
-											const result = rollOracle('settlementTrouble', getOracles());
-											if (result) updateCommunity({ trouble: result.value });
-										}}
+										onclick={rollSettlementTrouble}
+										disabled={rolling}
 										use:tooltip={'Roll settlement trouble oracle'}
 										aria-label="Roll settlement trouble oracle"
 									>{@html diceD6Svg}</button>
