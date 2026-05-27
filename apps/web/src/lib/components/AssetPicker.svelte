@@ -9,7 +9,7 @@
 	 */
 	import type { AssetCategory, AssetDefinition, CharacterData } from '$lib/types.js';
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
-	import { getVisibleAssets, isAssetsLoading } from '$lib/assetStore.svelte.js';
+	import { getVisibleAssets, isAssetsLoading, findAsset } from '$lib/assetStore.svelte.js';
 	import { firstPreconditionFailure, type Precondition } from '$lib/preconditions.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { draggable } from '$lib/actions/draggable.js';
@@ -60,6 +60,22 @@
 			def.preconditions as Precondition[] | undefined,
 			characterData,
 		);
+	}
+
+	/** Returns a human-readable conflict reason if the character already owns
+	 *  another asset in the same exclusiveGroup (e.g. Touched), or null. The
+	 *  add handler in CharactersArea enforces this too — picker-side disables
+	 *  the tile up-front so the user can see why before clicking. */
+	function exclusiveGroupConflict(def: AssetDefinition): string | null {
+		if (!def.exclusiveGroup) return null;
+		for (const ownedId of ownedIds) {
+			if (ownedId === def.id) continue;
+			const ownedDef = findAsset(ownedId);
+			if (ownedDef?.exclusiveGroup === def.exclusiveGroup) {
+				return `Already have ${ownedDef.name} — only one ${def.exclusiveGroup} asset allowed`;
+			}
+		}
+		return null;
 	}
 
 	// ---------------------------------------------------------------------------
@@ -179,7 +195,7 @@
 			<div class="pick-grid">
 				{#each filtered as asset (asset.id)}
 					{@const owned    = ownedIds.includes(asset.id)}
-					{@const blocked  = preconditionFailure(asset)}
+					{@const blocked  = preconditionFailure(asset) ?? exclusiveGroupConflict(asset)}
 					{@const catColor = CAT_COLOR[asset.category] ?? 'var(--text-muted)'}
 					<!-- svelte-ignore a11y_no_static_element_interactions -->
 					<div
