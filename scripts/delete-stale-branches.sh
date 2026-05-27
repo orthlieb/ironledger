@@ -33,11 +33,13 @@ echo "Keeping: ${KEEP[*]}"
 echo
 
 # Build the candidate list — older than cutoff AND not in KEEP.
-mapfile -t candidates < <(
+# Branch names are whitespace-free, so plain word-split is safe (this avoids
+# bash 4's `mapfile`, which isn't on macOS's bash 3.2).
+candidates=( $(
   git for-each-ref --format='%(committerdate:short) %(refname:short)' refs/remotes/origin/ \
     | awk -v cutoff="$cutoff" '$1 < cutoff { sub(/^origin\//, "", $2); print $2 }' \
     | grep -vxFf <(printf '%s\n' "${KEEP[@]}")
-)
+) )
 
 if [[ ${#candidates[@]} -eq 0 ]]; then
   echo "Nothing to delete. ✓"
