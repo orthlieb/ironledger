@@ -646,6 +646,7 @@
     {
       "id": "yrt/necrotic-sea-hare",
       "name": "Necrotic Sea Hare",
+      "icon": "foe-necrotic-sea-hare",
       "escalates": true,
       "images": [
         "necrotic-sea-hare.webp"
