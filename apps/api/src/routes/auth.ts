@@ -105,8 +105,13 @@ export const authRoutes: FastifyPluginAsyncZod = async (server) => {
 
     // Per-IP email rate limit — silently drop the send if over quota.
     // The response is always 202 so the caller can't detect the block.
-    // Skip in test environment — tests share the same IP and would exhaust the quota.
-    if (redis && config.NODE_ENV !== 'test') {
+    // Production-only: in dev and test the developer machine and the e2e
+    // runner share 127.0.0.1, so the per-IP counter accumulates across
+    // suites and eventually short-circuits every register POST to a silent
+    // 202 — which then bypasses the maintenance / lock / quota checks
+    // below and breaks the registration-lock and registration-quota
+    // specs. Same rationale as captcha.ts:36 (verifyCaptcha bypass).
+    if (redis && config.NODE_ENV === 'production') {
       const key   = `reg_email_ip:${req.ip}`;
       const count = await redis.incr(key);
       if (count === 1) await redis.expire(key, 86_400); // 24-hour window

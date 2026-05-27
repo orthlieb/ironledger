@@ -332,6 +332,88 @@
       "icon": "asset-touched-ursine"
     },
     {
+      "id": "path/yrt-touched-hircine",
+      "name": "Touched, Hircine",
+      "category": "Touched",
+      "summary": "Hircine-touched: surefooted on lethal heights, a gut that shrugs off poison and rot, and a wrongness of aspect that unsettles every room.",
+      "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the <a class=\"oracle-link\" data-oracle=\"yrtTouched\">YRT – Touched</a> oracle to determine the extent and conditions of your nature.",
+      "postamble": "Your touched value determines how many abilities you may use: Pure — none; Prime — 1; Second — 2; Third or Feral — all 3.",
+      "preconditions": [],
+      "touchedFeatures": true,
+      "exclusiveGroup": "touched",
+      "abilityMaxByField": {
+        "touchedLevel": {
+          "pure": 0,
+          "prime": 1,
+          "second": 2,
+          "third": 3,
+          "feral": 3
+        }
+      },
+      "abilities": [
+        {
+          "enabled": false,
+          "text": "Your footing holds where others fall. When you <a class=\"move-link\" data-id=\"move/face-danger\">Face Danger</a> by traversing narrow, slick, steep, or precarious terrain — a ledge, a roof-peak, a fence-top, a beam over a drop — add +1, and you may roll +edge (even if another stat would normally apply). On a strong hit, you cross unhurried; take +1 momentum, or set the way for an ally who follows.",
+          "moves": [
+            "move/face-danger"
+          ]
+        },
+        {
+          "enabled": false,
+          "text": "Your gut chews through what would sicken others. When you <a class=\"move-link\" data-id=\"move/endure-harm\">Endure Harm</a> from poison, tainted food, foul water, fume, blight, or mana-sickness, add +1. On a strong hit, take +2 momentum instead of +1 as your stomach turns over and goes on.",
+          "moves": [
+            "move/endure-harm"
+          ]
+        },
+        {
+          "enabled": false,
+          "text": "Your stare is wrong, your laugh is wrong, and the rut-stink of you fills a room. When you <a class=\"move-link\" data-id=\"move/compel\">Compel</a> through menace, taboo, or sheer disquiet — a horizontal-pupil grin, a low bleating chuckle, the hircine reek that makes dogs whine — add +1, and you may roll +shadow (even if another stat would normally apply). On a strong hit, also take +1 momentum.",
+          "moves": [
+            "move/compel"
+          ]
+        }
+      ],
+      "customFields": [
+        {
+          "id": "touchedLevel",
+          "type": "dropdown",
+          "label": "Level",
+          "shortLabel": "Touched",
+          "default": "pure",
+          "options": [
+            {
+              "id": "pure",
+              "label": "Pure"
+            },
+            {
+              "id": "prime",
+              "label": "Prime"
+            },
+            {
+              "id": "second",
+              "label": "Second"
+            },
+            {
+              "id": "third",
+              "label": "Third"
+            },
+            {
+              "id": "feral",
+              "label": "Feral"
+            }
+          ]
+        },
+        {
+          "id": "animalName",
+          "type": "string",
+          "label": "Animal",
+          "placeholder": "Animal…"
+        }
+      ],
+      "source": "yrt",
+      "icon": "asset-touched-hircine"
+    },
+    {
       "id": "ritual/yrt-cantrip",
       "name": "Cantrip",
       "category": "Ritual",

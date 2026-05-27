@@ -63,15 +63,17 @@ async function goToHomeWithCharacter(page: Page): Promise<string> {
 	return await getActiveCharId(page);
 }
 
-/** Look up active char's id via the /api/characters list matched by stage name. */
+/** Read the active char's id straight off the active spine's data-char-id.
+ *  We can't infer it from the stage name: addCharacter() drops straight into
+ *  rename mode (the .ca-stage-name button isn't rendered while the input is
+ *  open), and headingText() can transform the visible name (e.g. Futhark
+ *  runes) so it won't match the API value anyway. The spine carries the id
+ *  directly. */
 async function getActiveCharId(page: Page): Promise<string> {
-	const stageName = (await page.locator(`${CHAR_AREA} .ca-stage-name`).textContent())?.trim() ?? '';
-	if (!stageName) return '';
-	const list = await page.evaluate(async () => {
-		const res = await fetch('/api/characters', { credentials: 'include' });
-		return res.ok ? await res.json() : [];
-	}) as Array<{ id: string; name: string }>;
-	return list.find(c => c.name === stageName)?.id ?? '';
+	const id = await page.locator(`${CHAR_SPINE}.ca-spine--active`)
+		.first()
+		.getAttribute('data-char-id');
+	return id ?? '';
 }
 
 /** Ensure a foe exists; in v2 the foes area always auto-selects the first foe. */
@@ -210,6 +212,8 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		const id = crypto.randomUUID();
 
 		// Status tab hosts the failures track (still uses .track-box / data-ticks).
+		// The track now lives inside ProgressTrackPanel, whose root class is .ptp-group
+		// (was .ca-track-group before the panel was extracted).
 		await switchCharTab(page, 'Status');
 		const failGroup = page.locator(`${CHAR_AREA} .ptp-group`).filter({ hasText: /Failures/i });
 		const tickCountBefore = await failGroup.locator('.track-box').evaluateAll(

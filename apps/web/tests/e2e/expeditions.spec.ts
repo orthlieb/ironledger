@@ -320,6 +320,8 @@ test.describe('Expeditions area (v2)', () => {
 		await ensureJourneySelected(page);
 		await switchExpTab(page, 'Description');
 
+		// The Description tab now uses <PortraitUploader> (.pu-label / .pu-input /
+		// .pu-img) — the old inline .ea-portrait-* markup is gone.
 		const portraitLabel = page.locator(`${EXP_AREA} .pu-label`);
 		await expect(portraitLabel).toBeVisible({ timeout: 3_000 });
 
@@ -328,8 +330,10 @@ test.describe('Expeditions area (v2)', () => {
 		);
 
 		// FileReader → Image → canvas pipeline produces a JPEG data URL.
-		await expect(page.locator(`${EXP_AREA} img.pu-img`)).toBeVisible({ timeout: 5_000 });
-		const src = await page.locator(`${EXP_AREA} img.pu-img`).getAttribute('src');
+		// PortraitUploader renders the result as img.pu-img (no .pu-img--placeholder).
+		const portraitImg = page.locator(`${EXP_AREA} img.pu-img:not(.pu-img--placeholder)`);
+		await expect(portraitImg).toBeVisible({ timeout: 5_000 });
+		const src = await portraitImg.getAttribute('src');
 		expect(src).toMatch(/^data:image\/jpeg;base64,/);
 	});
 
@@ -344,8 +348,9 @@ test.describe('Expeditions area (v2)', () => {
 			{ name: 'site.png', mimeType: 'image/png', buffer: PNG_1X1 },
 		);
 
-		await expect(page.locator(`${EXP_AREA} img.pu-img`)).toBeVisible({ timeout: 5_000 });
-		const src = await page.locator(`${EXP_AREA} img.pu-img`).getAttribute('src');
+		const portraitImg = page.locator(`${EXP_AREA} img.pu-img:not(.pu-img--placeholder)`);
+		await expect(portraitImg).toBeVisible({ timeout: 5_000 });
+		const src = await portraitImg.getAttribute('src');
 		expect(src).toMatch(/^data:image\/jpeg;base64,/);
 	});
 

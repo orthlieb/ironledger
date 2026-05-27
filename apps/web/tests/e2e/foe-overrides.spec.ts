@@ -98,10 +98,25 @@ async function stubFoesEndpoint(page: Page): Promise<void> {
 	});
 }
 
-/** Open the Foe Picker via the Foes area header's "+ Foe" button. */
+/** Open the Foe Picker via the Foes area header's "+ Foe" button.
+ *
+ *  Retries the click once because the button onclick is `foePickerRef?.open()`
+ *  — a no-op when the dialog component hasn't bound `bind:this={foePickerRef}`
+ *  yet. After a page.reload() (which this spec does in beforeEach), the
+ *  Foes-area mount can race ahead of FoePickerDialog's mount; the first
+ *  click then silently does nothing. waitForHome only checks for .fa-empty
+ *  attachment, which doesn't guarantee child components have hydrated.
+ *  foes.spec.ts doesn't see this because it never reloads. */
 async function openFoePicker(page: Page): Promise<void> {
-	await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click({ timeout: 8_000 });
-	await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 8_000 });
+	const addBtn = page.locator(`${FOE_HEADER} button:has-text("+ Foe")`);
+	const dialog = page.locator('dialog.foe-dialog[open]');
+	await addBtn.click({ timeout: 8_000 });
+	try {
+		await expect(dialog).toBeVisible({ timeout: 2_000 });
+	} catch {
+		await addBtn.click({ timeout: 5_000 });
+		await expect(dialog).toBeVisible({ timeout: 8_000 });
+	}
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
