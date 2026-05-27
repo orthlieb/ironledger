@@ -67,6 +67,7 @@ const NATURE_ICON: Record<FoeNature, string> = {
 	'Beast':      'foe-beast',
 	'Horror':     'foe-horror',
 	'Anomaly':    'foe-anomaly',
+	'Construct':  'foe-construct',
 };
 
 /** Resolve the icon SVG for an asset, with per-asset override taking

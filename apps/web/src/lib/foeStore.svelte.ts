@@ -88,6 +88,7 @@ export const FOE_NATURE_COLORS: Record<FoeNature, string> = {
 	Beast:      '#F08840',
 	Horror:     '#E03050',
 	Anomaly:    '#20BCCC',
+	Construct:  '#A8A8A8',
 };
 
 // Source order for display
@@ -95,7 +96,7 @@ const SOURCE_ORDER: CatalogueSource[] = ['base', 'delve', 'yrt'];
 
 // Nature display order
 const NATURE_ORDER: FoeNature[] = [
-	'Ironlander', 'Firstborn', 'Animal', 'Beast', 'Horror', 'Anomaly',
+	'Ironlander', 'Firstborn', 'Animal', 'Beast', 'Horror', 'Anomaly', 'Construct',
 ];
 
 // ---------------------------------------------------------------------------

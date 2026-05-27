@@ -37,7 +37,7 @@ export interface CharacterAsset {
 // Foe catalogue types
 // ---------------------------------------------------------------------------
 
-export type FoeNature = 'Ironlander' | 'Firstborn' | 'Animal' | 'Beast' | 'Horror' | 'Anomaly';
+export type FoeNature = 'Ironlander' | 'Firstborn' | 'Animal' | 'Beast' | 'Horror' | 'Anomaly' | 'Construct';
 export type FoeQuantity = 'solo' | 'pack' | 'horde';
 
 /** Catalogue source / expansion tag (duplicated from @ironledger/shared for client-only use). */
