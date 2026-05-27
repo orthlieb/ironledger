@@ -224,8 +224,6 @@
 
 						{#if owned}
 							<div class="tile-acquired">Acquired</div>
-						{:else if blocked}
-							<div class="tile-req">{blocked}</div>
 						{/if}
 					</div>
 				{/each}
@@ -530,11 +528,4 @@
 		margin-top: auto;
 	}
 
-	.tile-req {
-		font-family: var(--font-ui);
-		font-size: 0.65rem;
-		color: var(--color-danger);
-		font-style: italic;
-		margin-top: auto;
-	}
 </style>
