@@ -161,7 +161,18 @@
 		color:           #fff;
 		line-height:     1;
 		cursor:          pointer;
-		transition:      background 0.12s;
+		opacity:         0;
+		transition:      background 0.12s, opacity 0.12s;
+	}
+	/* Reveal the trash button only while hovering the portrait (or when it
+	   gains keyboard focus). On touch devices there's no hover, so keep it
+	   visible there. */
+	.pu-wrap:hover .pu-clear,
+	.pu-clear:focus-visible {
+		opacity: 1;
+	}
+	@media (hover: none) {
+		.pu-clear { opacity: 1; }
 	}
 	.pu-clear :global(svg) {
 		width:  12px;

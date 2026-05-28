@@ -1,11 +1,13 @@
 /**
  * Crop an uploaded image file to a centred square JPEG data URL, sized
- * down to at most `maxSize × maxSize` (default 256×256) at 0.85 quality.
+ * down to at most `maxSize × maxSize` (default 512×512) at 0.85 quality.
+ * 512 keeps the portrait crisp when opened in the lightbox (up to
+ * 80vw/80vh) while staying manageable in the character JSON payload.
  *
  * Shared by the character, expedition, community, and NPC portrait
  * uploaders. Returns a Promise that resolves with the data URL.
  */
-export function cropImageFile(file: File, maxSize = 256, quality = 0.85): Promise<string> {
+export function cropImageFile(file: File, maxSize = 512, quality = 0.85): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const reader = new FileReader();
 		reader.onerror = () => reject(reader.error ?? new Error('FileReader failed'));
