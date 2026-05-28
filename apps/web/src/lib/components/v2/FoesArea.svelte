@@ -28,6 +28,7 @@
 	import { foeIcon } from '$lib/iconRegistry.js';
 	import FoePickerDialog from '$lib/components/FoePickerDialog.svelte';
 	import ConfirmDialog   from '$lib/components/ConfirmDialog.svelte';
+	import Lightbox        from '$lib/components/Lightbox.svelte';
 	import trashSvg from '$icons/trash-solid-full.svg?raw';
 	import swordSvg from '$icons/sword-solid-full.svg?raw';
 	import skullSvg from '$icons/skull-crossbones-solid-full.svg?raw';
@@ -47,6 +48,7 @@
 	let foePickerRef   = $state<{ open(): Promise<void>; close(): void } | null>(null);
 	let deleteDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let imgVisible     = $state(true);
+	let lightboxOpen   = $state(false);
 	const nameEdit = new EditableName((restored) => {
 		if (activeEnc) update({ customName: restored });
 	});
@@ -272,11 +274,15 @@
 							{#if activeDef}
 								<div class="fa-desc-section">
 									{#if imgVisible}
+										<!-- svelte-ignore a11y_click_events_have_key_events -->
+										<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 										<img
 											class="fa-portrait"
 											src={imageUrl(activeDef)}
 											alt={activeDef.name}
+											onclick={() => (lightboxOpen = true)}
 											onerror={(e) => { (e.currentTarget as HTMLImageElement).src = UNKNOWN_FOE_PORTRAIT; imgVisible = false; }}
+											use:tooltip={'Click to enlarge'}
 										/>
 									{/if}
 									{#if hasDescription}
@@ -386,6 +392,14 @@
 		</div>
 	{/if}
 </div>
+
+{#if lightboxOpen && activeDef}
+	<Lightbox
+		src={imageUrl(activeDef)}
+		alt={activeDef.name}
+		onclose={() => (lightboxOpen = false)}
+	/>
+{/if}
 
 <FoePickerDialog bind:this={foePickerRef} onSelect={handleFoeSelected} />
 
@@ -635,6 +649,12 @@
 		border-radius: 6px;
 		opacity: 0.95;
 		shape-outside: margin-box;
+		cursor: zoom-in;
+		transition: opacity 0.12s, box-shadow 0.12s;
+	}
+	.fa-portrait:hover {
+		opacity: 1;
+		box-shadow: 0 4px 14px #00000040;
 	}
 	.fa-desc {
 		font-family: var(--font-ui);

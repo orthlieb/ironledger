@@ -3,9 +3,16 @@
 	 * 170×170 portrait uploader that floats right so adjacent prose wraps
 	 * around it. Shared by characters, expeditions, communities, and NPCs.
 	 *
-	 * Click the image to open a file picker; the chosen file is centred-
-	 * cropped and downscaled to a 256-pixel-square JPEG via cropImageFile.
-	 * A small "✕" appears when a picture is present and clears it.
+	 *   • Empty (placeholder)  → click opens a file picker; the chosen file
+	 *     is centred-cropped and downscaled to a 256-pixel JPEG via
+	 *     cropImageFile.
+	 *   • Filled (real image)  → click opens a Lightbox showing the
+	 *     enlarged image (80vw / 80vh, whichever hits first).
+	 *   • A trash button (top-right corner of the image) clears the
+	 *     portrait, returning to the placeholder state.
+	 *
+	 * To change a portrait, click the trash first, then click the
+	 * placeholder.
 	 *
 	 * Supports both binding styles:
 	 *   • `bind:value={...}` — direct two-way binding.
@@ -14,6 +21,8 @@
 	 */
 	import { cropImageFile } from '$lib/imageCrop.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
+	import Lightbox from '$lib/components/Lightbox.svelte';
+	import trashSvg from '$icons/trash-solid-full.svg?raw';
 
 	let {
 		value = $bindable(''),
@@ -31,6 +40,8 @@
 		 *  the user clicked the clear button. */
 		oninput?: (newValue: string) => void;
 	} = $props();
+
+	let lightboxOpen = $state(false);
 
 	async function onFile(e: Event) {
 		const file = (e.target as HTMLInputElement).files?.[0];
@@ -51,30 +62,42 @@
 </script>
 
 <div class="pu-wrap">
-	<label class="pu-label" use:tooltip={'Click to change portrait'}>
-		{#if value}
-			<img class="pu-img" src={value} {alt} />
-		{:else}
-			<div class="pu-img pu-img--placeholder" aria-hidden="true">{@html placeholderSvg}</div>
-		{/if}
-		<input
-			type="file"
-			accept="image/*"
-			class="pu-input"
-			onchange={onFile}
-			aria-label="Upload portrait"
-		/>
-	</label>
 	{#if value}
+		<!-- Filled state: image is a button that opens the lightbox. -->
+		<button
+			type="button"
+			class="pu-label pu-label--view"
+			onclick={() => (lightboxOpen = true)}
+			use:tooltip={'Click to enlarge'}
+			aria-label="View enlarged portrait"
+		>
+			<img class="pu-img" src={value} {alt} />
+		</button>
 		<button
 			type="button"
 			class="pu-clear"
 			onclick={clear}
-			use:tooltip={'Clear portrait'}
-			aria-label="Clear portrait"
-		>✕</button>
+			use:tooltip={'Delete portrait'}
+			aria-label="Delete portrait"
+		>{@html trashSvg}</button>
+	{:else}
+		<!-- Empty state: label wraps the hidden file input; click opens it. -->
+		<label class="pu-label" use:tooltip={'Click to upload portrait'}>
+			<div class="pu-img pu-img--placeholder" aria-hidden="true">{@html placeholderSvg}</div>
+			<input
+				type="file"
+				accept="image/*"
+				class="pu-input"
+				onchange={onFile}
+				aria-label="Upload portrait"
+			/>
+		</label>
 	{/if}
 </div>
+
+{#if lightboxOpen && value}
+	<Lightbox src={value} {alt} onclose={() => (lightboxOpen = false)} />
+{/if}
 
 <style>
 	.pu-wrap {
@@ -86,7 +109,11 @@
 	.pu-label {
 		display: block;
 		cursor:  pointer;
+		padding: 0;
+		border:  none;
+		background: transparent;
 	}
+	.pu-label--view { cursor: zoom-in; }
 	.pu-img {
 		display:       block;
 		width:         170px;
@@ -132,10 +159,14 @@
 		border-radius:   50%;
 		background:      rgba(0,0,0,0.55);
 		color:           #fff;
-		font-size:       0.7rem;
 		line-height:     1;
 		cursor:          pointer;
 		transition:      background 0.12s;
+	}
+	.pu-clear :global(svg) {
+		width:  12px;
+		height: 12px;
+		fill:   currentColor;
 	}
 	.pu-clear:hover { background: rgba(0,0,0,0.8); }
 </style>
