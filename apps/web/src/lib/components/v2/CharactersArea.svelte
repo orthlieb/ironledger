@@ -740,9 +740,9 @@
 		if (arr.some(a => a.assetId === assetId)) return;
 
 		// Exclusive group enforcement (mirrors v1 AssetsSection.addAsset):
-		// block adding a second asset in the same group. Surface the
-		// conflict via a transient log entry so the user sees why nothing
-		// happened.
+		// defence-in-depth for any non-picker entry path. The picker already
+		// disables conflicting tiles up front, so reaching this branch from
+		// the UI shouldn't happen — silent refusal is fine.
 		if (def.exclusiveGroup) {
 			const allDefs  = getAssets();
 			const conflict = arr.find(owned => {
@@ -750,9 +750,6 @@
 				return ownedDef?.exclusiveGroup === def.exclusiveGroup;
 			});
 			if (conflict) {
-				const conflictDef = allDefs.find(a => a.id === conflict.assetId);
-				appendLog(SESSION_LOG_ID, charTitle('Assets'),
-					`<div>Can't add <strong>${def.name}</strong>: only one ${def.exclusiveGroup} asset may be active at a time (already have <strong>${conflictDef?.name ?? conflict.assetId}</strong>).</div>`);
 				pickerOpen = false;
 				return;
 			}
