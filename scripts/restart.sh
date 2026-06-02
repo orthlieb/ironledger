@@ -6,21 +6,27 @@
 #   ./scripts/restart.sh [level] [--api-only | --web-only]
 #
 # Levels:
-#   soft    Zero-downtime graceful reload. Does NOT pick up new env vars.
-#           Use after a code deploy when .env hasn't changed.
+#   soft    Zero-downtime graceful reload. Now picks up .env changes too —
+#           ecosystem.config.js passes --env-file-if-exists to Node, so each
+#           worker reads .env at spawn time. Use after any code deploy or
+#           .env edit.
 #           API: rolling (cluster workers replaced one by one, no dropped reqs)
 #           Web: brief interruption (~1s, single fork process)
 #
-#   med     Delete + start from ecosystem.config.js. Picks up env vars and
-#           ecosystem config changes. ~3s downtime per process.
-#           Use after: .env changes, ecosystem.config.js changes.
+#   med     Delete + start from ecosystem.config.js. Same .env behaviour as
+#           soft, but tears down and recreates the processes — picks up
+#           ecosystem.config.js structural changes (script paths, instance
+#           counts, etc.). ~3s downtime per process.
+#           Use after: ecosystem.config.js structural changes.
 #
 #   hard    Kill anything holding ports 3000/3001, then med restart.
 #           Clears EADDRINUSE port conflicts and stuck orphan processes.
 #           Use after: a bad manual restart left processes in a bad state.
 #
 #   nuclear Kill the PM2 daemon entirely, then start fresh from scratch.
-#           Use when PM2 itself is broken or in an unrecoverable state.
+#           Required when the long-lived daemon has polluted env or saved
+#           state that survives delete/start. Use when PM2 itself is broken
+#           or in an unrecoverable state.
 #
 # Flags:
 #   --api-only   Restart only ironledger-api
@@ -127,11 +133,15 @@ fi
 
 # ── Soft ─────────────────────────────────────────────────────────────────────
 if [[ "$LEVEL" == "soft" ]]; then
-  info "=== SOFT RELOAD (no env update) ==="
+  info "=== SOFT RELOAD ==="
   for proc in "${PROCS[@]}"; do
     if pm2_exists "$proc"; then
       info "Reloading $proc..."
-      pm2 reload "$proc"
+      # --update-env so pm2 re-reads the ecosystem.config.js env: block and any
+      # shell-exported overrides. The actual .env file is loaded by Node itself
+      # via the --env-file-if-exists node_arg, which runs on every worker spawn,
+      # so a reload automatically picks up .env edits as well.
+      pm2 reload "$proc" --update-env
     else
       warn "$proc not found in PM2 — skipping (run 'med' to start from scratch)"
     fi

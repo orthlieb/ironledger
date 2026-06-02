@@ -5,6 +5,10 @@
  * so that tests can call buildServer() without starting a real listener.
  */
 
+// Side-effect import — must run before any module that reads process.env at
+// import time (config.ts and friends). See loadEnv.ts for why.
+import './loadEnv.js';
+
 import { buildServer, redis } from './server.js';
 import { pool } from './db/index.js';
 
