@@ -8,7 +8,18 @@
  *
  * Do NOT commit ecosystem.config.local.js — that file holds per-machine
  * overrides (e.g. different env_file paths) and is in .gitignore.
+ *
+ * Env loading: we pass --env-file-if-exists to Node directly via node_args
+ * rather than relying on PM2's env_file: directive. PM2 v6's env_file is
+ * silently ignored on some installs (the workers boot with no .env vars,
+ * the inline `env:` block alone, and a long-lived daemon's inherited env);
+ * Node 20.6+'s built-in flag loads the file at process start regardless of
+ * how PM2 was invoked. The app's main entrypoint also calls
+ * process.loadEnvFile() defensively so behaviour is identical even if
+ * node_args drops off.
  */
+
+const ENV_FILE = '/home/ironledger/app/.env';
 
 module.exports = {
   apps: [
@@ -17,7 +28,7 @@ module.exports = {
       name:         'ironledger-api',
       script:       'apps/api/dist/main.js',
       cwd:          '/home/ironledger/app',
-      env_file:     '/home/ironledger/app/.env',
+      node_args:    [`--env-file-if-exists=${ENV_FILE}`],
 
       // 2 cluster workers for zero-downtime reloads on a 2-vCPU VPS
       instances:    2,
@@ -48,7 +59,7 @@ module.exports = {
       // adapter-node outputs a Node.js server at apps/web/build/index.js
       script:       'apps/web/build/index.js',
       cwd:          '/home/ironledger/app',
-      env_file:     '/home/ironledger/app/.env',
+      node_args:    [`--env-file-if-exists=${ENV_FILE}`],
 
       // Single instance is fine — SvelteKit is mostly SSR + proxying
       instances:    1,
