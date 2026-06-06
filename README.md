@@ -47,7 +47,7 @@ ironledger/
 
 ### Prerequisites
 
-- Node.js 22+
+- Node.js 22+ (pinned in `.nvmrc` — run `nvm use` to select it)
 - PostgreSQL 16+ (or Docker)
 - Redis 7+ (or Docker)
 
