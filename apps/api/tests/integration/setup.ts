@@ -61,6 +61,16 @@ beforeAll(async () => {
   }
 
   adminPool = postgres(adminUrl, { max: 1 });
+
+  // SAFETY: never run the destructive reset against a non-test database.
+  const [{ db_name }] = await adminPool`select current_database() as db_name`;
+  if (!db_name.endsWith('_test')) {
+    throw new Error(
+      `Refusing to reset database "${db_name}": integration tests only run ` +
+      `against a database whose name ends in "_test". Check DATABASE_ADMIN_URL.`,
+    );
+  }
+
   const db  = drizzle(adminPool);
 
   // Drop all tables and re-run migrations for a clean slate.
