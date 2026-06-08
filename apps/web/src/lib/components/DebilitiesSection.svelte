@@ -11,20 +11,52 @@
 	} = $props();
 
 	const CONDITIONS = [
-		{ key: 'wounded',    label: 'Wounded',    tip: 'You are severely injured and need treatment to recover.' },
-		{ key: 'unprepared', label: 'Unprepared', tip: 'You lack the resources and provisions necessary for your journey.' },
-		{ key: 'shaken',     label: 'Shaken',     tip: 'You are despairing or distraught, and need comfort to recover.' },
-		{ key: 'encumbered', label: 'Encumbered', tip: 'You are carrying excessive or cumbersome weight.' },
+		{
+			key: 'wounded',
+			label: 'Wounded',
+			tip: 'You are severely injured and need treatment to recover.',
+		},
+		{
+			key: 'unprepared',
+			label: 'Unprepared',
+			tip: 'You lack the resources and provisions necessary for your journey.',
+		},
+		{
+			key: 'shaken',
+			label: 'Shaken',
+			tip: 'You are despairing or distraught, and need comfort to recover.',
+		},
+		{
+			key: 'encumbered',
+			label: 'Encumbered',
+			tip: 'You are carrying excessive or cumbersome weight.',
+		},
 	] as const;
 
 	const BANES = [
-		{ key: 'maimed',    label: 'Maimed',    tip: 'You have suffered a wound which causes ongoing physical challenges, such as the loss of an eye or hand. Or, you bear horrific scars which serve as a constant reminder of your failures.' },
-		{ key: 'corrupted', label: 'Corrupted', tip: 'Your experiences have left you emotionally scarred. You are at the threshold of losing yourself to darkness.' },
+		{
+			key: 'maimed',
+			label: 'Maimed',
+			tip: 'You have suffered a wound which causes ongoing physical challenges, such as the loss of an eye or hand. Or, you bear horrific scars which serve as a constant reminder of your failures.',
+		},
+		{
+			key: 'corrupted',
+			label: 'Corrupted',
+			tip: 'Your experiences have left you emotionally scarred. You are at the threshold of losing yourself to darkness.',
+		},
 	] as const;
 
 	const BURDENS = [
-		{ key: 'cursed',    label: 'Cursed',    tip: 'You have faced Death and returned with a soul-bound quest.' },
-		{ key: 'tormented', label: 'Tormented', tip: 'You have faced Desolation and undertake a quest to prevent a dire future.' },
+		{
+			key: 'cursed',
+			label: 'Cursed',
+			tip: 'You have faced Death and returned with a soul-bound quest.',
+		},
+		{
+			key: 'tormented',
+			label: 'Tormented',
+			tip: 'You have faced Desolation and undertake a quest to prevent a dire future.',
+		},
 	] as const;
 </script>
 
@@ -38,8 +70,12 @@
 						class="debility-btn"
 						class:active={data[d.key]}
 						use:tooltip={d.tip}
-						onclick={() => { const v = !data[d.key]; data[d.key] = v; onchange?.(d.label, v); }}
-					>{d.label}</button>
+						onclick={() => {
+							const v = !data[d.key];
+							data[d.key] = v;
+							onchange?.(d.label, v);
+						}}>{d.label}</button
+					>
 				{/each}
 			</div>
 		</div>
@@ -51,8 +87,12 @@
 						class="debility-btn"
 						class:active={data[d.key]}
 						use:tooltip={d.tip}
-						onclick={() => { const v = !data[d.key]; data[d.key] = v; onchange?.(d.label, v); }}
-					>{d.label}</button>
+						onclick={() => {
+							const v = !data[d.key];
+							data[d.key] = v;
+							onchange?.(d.label, v);
+						}}>{d.label}</button
+					>
 				{/each}
 			</div>
 		</div>
@@ -64,8 +104,12 @@
 						class="debility-btn"
 						class:active={data[d.key]}
 						use:tooltip={d.tip}
-						onclick={() => { const v = !data[d.key]; data[d.key] = v; onchange?.(d.label, v); }}
-					>{d.label}</button>
+						onclick={() => {
+							const v = !data[d.key];
+							data[d.key] = v;
+							onchange?.(d.label, v);
+						}}>{d.label}</button
+					>
 				{/each}
 			</div>
 		</div>
@@ -100,9 +144,9 @@
 
 	.group-name {
 		font-family: var(--font-ui);
-		font-size:   0.65rem;
-		color:       var(--text-dimmer);
-		font-style:  italic;
+		font-size: 0.65rem;
+		color: var(--text-dimmer);
+		font-style: italic;
 	}
 
 	.btn-grid {
@@ -119,29 +163,32 @@
 	}
 
 	.debility-btn {
-		font-family:    var(--font-ui);
-		font-size:      0.6rem;
-		font-weight:    600;
+		font-family: var(--font-ui);
+		font-size: 0.6rem;
+		font-weight: 600;
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
-		color:          var(--text-dimmer);
-		background:     transparent;
-		border:         1px solid var(--border);
-		border-radius:  4px;
-		padding:        2px 6px;
-		cursor:         pointer;
-		white-space:    nowrap;
-		transition:     background 0.12s, color 0.12s, border-color 0.12s;
+		color: var(--text-dimmer);
+		background: transparent;
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		padding: 2px 6px;
+		cursor: pointer;
+		white-space: nowrap;
+		transition:
+			background 0.12s,
+			color 0.12s,
+			border-color 0.12s;
 	}
 
 	.debility-btn:hover {
-		color:        var(--text);
+		color: var(--text);
 		border-color: var(--border-mid);
 	}
 
 	.debility-btn.active {
-		color:        var(--color-danger);
+		color: var(--color-danger);
 		border-color: var(--color-danger);
-		background:   color-mix(in srgb, var(--color-danger) 12%, transparent);
+		background: color-mix(in srgb, var(--color-danger) 12%, transparent);
 	}
 </style>

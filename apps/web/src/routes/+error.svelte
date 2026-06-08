@@ -76,7 +76,9 @@
 		border: 1px solid rgba(245, 158, 11, 0.4);
 		padding: 0.4rem 1.2rem;
 		border-radius: 4px;
-		transition: background 0.15s, color 0.15s;
+		transition:
+			background 0.15s,
+			color 0.15s;
 	}
 
 	.error-home:hover {

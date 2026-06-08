@@ -6,7 +6,8 @@ const INTERNAL_API_URL = process.env.INTERNAL_API_URL ?? 'http://localhost:3000'
 // if a request reaches this process (e.g. direct-to-port in dev, or a gap in
 // the Nginx ruleset), short-circuit with a silent 404 instead of letting
 // SvelteKit's router log a red "[404]" error for every probe.
-const SCANNER_PATTERN = /(?:^|\/)(?:\.env|\.git|\.aws|\.ssh|\.htaccess|wp-admin|wp-login|xmlrpc\.php|phpmyadmin|adminer|config\.php|server-status|actuator)(?:\/|$|\.)/i;
+const SCANNER_PATTERN =
+	/(?:^|\/)(?:\.env|\.git|\.aws|\.ssh|\.htaccess|wp-admin|wp-login|xmlrpc\.php|phpmyadmin|adminer|config\.php|server-status|actuator)(?:\/|$|\.)/i;
 
 export const handle: Handle = async ({ event, resolve }) => {
 	if (SCANNER_PATTERN.test(event.url.pathname)) {
@@ -20,9 +21,12 @@ export const handle: Handle = async ({ event, resolve }) => {
 			// Decode JWT payload — Fastify verifies the signature when we call it.
 			// We just need the claims for SSR page rendering.
 			const [, payloadB64] = token.split('.');
-			const payload = JSON.parse(
-				Buffer.from(payloadB64, 'base64url').toString('utf8'),
-			) as { sub?: string; email?: string; role?: string; exp?: number };
+			const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8')) as {
+				sub?: string;
+				email?: string;
+				role?: string;
+				exp?: number;
+			};
 
 			if (payload.exp && payload.exp * 1000 > Date.now()) {
 				// Token is still valid.
@@ -56,9 +60,12 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 				// Decode to get claims and exp.
 				const [, payloadB64] = newToken.split('.');
-				const payload = JSON.parse(
-					Buffer.from(payloadB64, 'base64url').toString('utf8'),
-				) as { sub?: string; email?: string; role?: string; exp?: number };
+				const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8')) as {
+					sub?: string;
+					email?: string;
+					role?: string;
+					exp?: number;
+				};
 
 				// Determine if we should persist the cookie (remember-me mode).
 				// Check if the existing rt cookie had a long maxAge by comparing

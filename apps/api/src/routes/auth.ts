@@ -27,15 +27,15 @@ import type { FastifyReply } from 'fastify';
 // Cookie configuration for the refresh token
 // ---------------------------------------------------------------------------
 
-const REFRESH_COOKIE = 'rt';  // short name — less visible in logs
+const REFRESH_COOKIE = 'rt'; // short name — less visible in logs
 
 function cookieOptions() {
   return {
-    httpOnly: true,                                    // JS cannot read it
-    secure:   config.NODE_ENV === 'production',        // HTTPS only in prod
-    sameSite: 'strict' as const,                       // not sent cross-site
-    path:     '/api/v1/auth',                          // only sent to auth routes
-    maxAge:   config.REFRESH_TOKEN_TTL_DAYS * 86400,   // seconds
+    httpOnly: true, // JS cannot read it
+    secure: config.NODE_ENV === 'production', // HTTPS only in prod
+    sameSite: 'strict' as const, // not sent cross-site
+    path: '/api/v1/auth', // only sent to auth routes
+    maxAge: config.REFRESH_TOKEN_TTL_DAYS * 86400, // seconds
   };
 }
 
@@ -45,7 +45,7 @@ function cookieOptions() {
 
 const passwordSchema = z
   .string()
-  .min(12,   'Password must be at least 12 characters')
+  .min(12, 'Password must be at least 12 characters')
   .max(1000, 'Password is too long')
   // HIBP catches known-breached passwords at the service layer. This gate
   // catches low-entropy passwords that haven't been breached yet —
@@ -53,31 +53,30 @@ const passwordSchema = z
   // Minimum 5 distinct characters rejects the obvious degenerate cases
   // (single-char repeats, "ababababab", "1234512345") without nagging
   // realistic pass-phrases.
-  .refine(
-    (pw) => new Set(pw).size >= 5,
-    { message: 'Password is too repetitive — use at least 5 distinct characters' },
-  );
+  .refine((pw) => new Set(pw).size >= 5, {
+    message: 'Password is too repetitive — use at least 5 distinct characters',
+  });
 
 const registerBody = z.object({
-  email:          z.string().email('Invalid email address').max(254),
-  password:       passwordSchema,
-  captchaToken:   z.string().min(1, 'CAPTCHA is required'),
-  displayName:    z.string().trim().max(80, 'Display name is too long').optional(),
+  email: z.string().email('Invalid email address').max(254),
+  password: passwordSchema,
+  captchaToken: z.string().min(1, 'CAPTCHA is required'),
+  displayName: z.string().trim().max(80, 'Display name is too long').optional(),
 });
 
 const loginBody = z.object({
-  email:          z.string().email().max(254),
-  password:       z.string().min(1),
-  captchaToken:   z.string().min(1, 'CAPTCHA is required'),
+  email: z.string().email().max(254),
+  password: z.string().min(1),
+  captchaToken: z.string().min(1, 'CAPTCHA is required'),
 });
 
 const forgotBody = z.object({
-  email:        z.string().email().max(254),
+  email: z.string().email().max(254),
   captchaToken: z.string().min(1, 'CAPTCHA is required'),
 });
 
 const resetBody = z.object({
-  token:    z.string().min(1),
+  token: z.string().min(1),
   password: passwordSchema,
 });
 
@@ -90,110 +89,126 @@ const verifyBody = z.object({
 // ---------------------------------------------------------------------------
 
 export const authRoutes: FastifyPluginAsyncZod = async (server) => {
-
   // ── POST /register ────────────────────────────────────────────────────────
-  server.post('/register', {
-    schema: {
-      body:     registerBody,
-      response: { 202: z.object({ message: z.string() }) },
-    },
-  }, async (req, reply) => {
-    const { email, password, captchaToken, displayName } = req.body;
-
-    await verifyCaptcha(captchaToken, req.ip).catch(handleCaptchaError(reply));
-    if (reply.sent) return;
-
-    // Per-IP email rate limit — silently drop the send if over quota.
-    // The response is always 202 so the caller can't detect the block.
-    // Production-only: in dev and test the developer machine and the e2e
-    // runner share 127.0.0.1, so the per-IP counter accumulates across
-    // suites and eventually short-circuits every register POST to a silent
-    // 202 — which then bypasses the maintenance / lock / quota checks
-    // below and breaks the registration-lock and registration-quota
-    // specs. Same rationale as captcha.ts:36 (verifyCaptcha bypass).
-    if (redis && config.NODE_ENV === 'production') {
-      const key   = `reg_email_ip:${req.ip}`;
-      const count = await redis.incr(key);
-      if (count === 1) await redis.expire(key, 86_400); // 24-hour window
-      if (count > config.MAX_REG_EMAILS_PER_IP) {
-        req.log.warn({ ip: req.ip, count }, 'reg email quota exceeded for IP');
-        return reply.status(202).send({
-          message: 'If that email is not already registered, a verification link is on its way.',
-        });
-      }
-    }
-
-    await auth.register({ email, password, displayName }).catch(handleAuthError(reply));
-    if (reply.sent) return;
-
-    logSecurityEvent({ eventType: 'register_success', req, metadata: { email } });
-
-    // Always return 202 — we don't confirm whether the email exists
-    return reply.status(202).send({
-      message: 'If that email is not already registered, a verification link is on its way.',
-    });
-  });
-
-  // ── POST /verify-email ────────────────────────────────────────────────────
-  server.post('/verify-email', {
-    schema: {
-      body: verifyBody,
-    },
-  }, async (req, reply) => {
-    const result = await auth.verifyEmail(req.body.token).catch(handleAuthError(reply));
-    if (!result || reply.sent) return;
-
-    logSecurityEvent({ eventType: 'email_verified', req, userId: result.user.id });
-
-    reply.setCookie(REFRESH_COOKIE, result.refreshToken, cookieOptions());
-
-    return reply.status(200).send({
-      user:        result.user,
-      accessToken: result.accessToken,
-    });
-  });
-
-  // ── POST /login ───────────────────────────────────────────────────────────
-  server.post('/login', {
-    schema: {
-      body: loginBody,
-    },
-    config: {
-      rateLimit: {
-        max:        config.RATE_LIMIT_LOGIN,
-        timeWindow: '15 minutes',
+  server.post(
+    '/register',
+    {
+      schema: {
+        body: registerBody,
+        response: { 202: z.object({ message: z.string() }) },
       },
     },
-  }, async (req, reply) => {
-    const { email, password, captchaToken } = req.body;
+    async (req, reply) => {
+      const { email, password, captchaToken, displayName } = req.body;
 
-    await verifyCaptcha(captchaToken, req.ip).catch(handleCaptchaError(reply));
-    if (reply.sent) return;
+      await verifyCaptcha(captchaToken, req.ip).catch(handleCaptchaError(reply));
+      if (reply.sent) return;
 
-    const result = await auth.login({ email, password })
-      .catch((err: unknown) => {
+      // Per-IP email rate limit — silently drop the send if over quota.
+      // The response is always 202 so the caller can't detect the block.
+      // Production-only: in dev and test the developer machine and the e2e
+      // runner share 127.0.0.1, so the per-IP counter accumulates across
+      // suites and eventually short-circuits every register POST to a silent
+      // 202 — which then bypasses the maintenance / lock / quota checks
+      // below and breaks the registration-lock and registration-quota
+      // specs. Same rationale as captcha.ts:36 (verifyCaptcha bypass).
+      if (redis && config.NODE_ENV === 'production') {
+        const key = `reg_email_ip:${req.ip}`;
+        const count = await redis.incr(key);
+        if (count === 1) await redis.expire(key, 86_400); // 24-hour window
+        if (count > config.MAX_REG_EMAILS_PER_IP) {
+          req.log.warn({ ip: req.ip, count }, 'reg email quota exceeded for IP');
+          return reply.status(202).send({
+            message: 'If that email is not already registered, a verification link is on its way.',
+          });
+        }
+      }
+
+      await auth.register({ email, password, displayName }).catch(handleAuthError(reply));
+      if (reply.sent) return;
+
+      logSecurityEvent({ eventType: 'register_success', req, metadata: { email } });
+
+      // Always return 202 — we don't confirm whether the email exists
+      return reply.status(202).send({
+        message: 'If that email is not already registered, a verification link is on its way.',
+      });
+    },
+  );
+
+  // ── POST /verify-email ────────────────────────────────────────────────────
+  server.post(
+    '/verify-email',
+    {
+      schema: {
+        body: verifyBody,
+      },
+    },
+    async (req, reply) => {
+      const result = await auth.verifyEmail(req.body.token).catch(handleAuthError(reply));
+      if (!result || reply.sent) return;
+
+      logSecurityEvent({ eventType: 'email_verified', req, userId: result.user.id });
+
+      reply.setCookie(REFRESH_COOKIE, result.refreshToken, cookieOptions());
+
+      return reply.status(200).send({
+        user: result.user,
+        accessToken: result.accessToken,
+      });
+    },
+  );
+
+  // ── POST /login ───────────────────────────────────────────────────────────
+  server.post(
+    '/login',
+    {
+      schema: {
+        body: loginBody,
+      },
+      config: {
+        rateLimit: {
+          max: config.RATE_LIMIT_LOGIN,
+          timeWindow: '15 minutes',
+        },
+      },
+    },
+    async (req, reply) => {
+      const { email, password, captchaToken } = req.body;
+
+      await verifyCaptcha(captchaToken, req.ip).catch(handleCaptchaError(reply));
+      if (reply.sent) return;
+
+      const result = await auth.login({ email, password }).catch((err: unknown) => {
         if (err instanceof auth.AuthError) {
           const eventType =
-            err.code === 'EMAIL_UNVERIFIED' ? 'login_unverified' :
-            err.code === 'ACCOUNT_DISABLED' ? 'account_disabled' :
-            'login_failed';
+            err.code === 'EMAIL_UNVERIFIED'
+              ? 'login_unverified'
+              : err.code === 'ACCOUNT_DISABLED'
+                ? 'account_disabled'
+                : 'login_failed';
           logSecurityEvent({ eventType, req, metadata: { email } });
-          reply.status(err.statusCode).send({ statusCode: err.statusCode, error: err.name, message: err.message });
+          reply
+            .status(err.statusCode)
+            .send({ statusCode: err.statusCode, error: err.name, message: err.message });
         } else {
-          reply.status(500).send({ statusCode: 500, error: 'Internal Server Error', message: 'Login failed' });
+          reply
+            .status(500)
+            .send({ statusCode: 500, error: 'Internal Server Error', message: 'Login failed' });
         }
       });
 
-    if (!result || reply.sent) return;
+      if (!result || reply.sent) return;
 
-    logSecurityEvent({ eventType: 'login_success', req, userId: result.user.id });
-    reply.setCookie(REFRESH_COOKIE, result.refreshToken, cookieOptions());
+      logSecurityEvent({ eventType: 'login_success', req, userId: result.user.id });
+      reply.setCookie(REFRESH_COOKIE, result.refreshToken, cookieOptions());
 
-    return reply.status(200).send({
-      user:        result.user,
-      accessToken: result.accessToken,
-    });
-  });
+      return reply.status(200).send({
+        user: result.user,
+        accessToken: result.accessToken,
+      });
+    },
+  );
 
   // ── POST /refresh ─────────────────────────────────────────────────────────
   server.post('/refresh', async (req, reply) => {
@@ -202,8 +217,8 @@ export const authRoutes: FastifyPluginAsyncZod = async (server) => {
     if (!rawToken) {
       return reply.status(401).send({
         statusCode: 401,
-        error:      'Unauthorized',
-        message:    'No refresh token',
+        error: 'Unauthorized',
+        message: 'No refresh token',
       });
     }
 
@@ -214,9 +229,13 @@ export const authRoutes: FastifyPluginAsyncZod = async (server) => {
           // Clear the cookie — the legitimate user's browser will get this
           reply.clearCookie(REFRESH_COOKIE, { path: '/api/v1/auth' });
         }
-        reply.status(err.statusCode).send({ statusCode: err.statusCode, error: err.name, message: err.message });
+        reply
+          .status(err.statusCode)
+          .send({ statusCode: err.statusCode, error: err.name, message: err.message });
       } else {
-        reply.status(500).send({ statusCode: 500, error: 'Internal Server Error', message: 'Refresh failed' });
+        reply
+          .status(500)
+          .send({ statusCode: 500, error: 'Internal Server Error', message: 'Refresh failed' });
       }
     });
 
@@ -226,71 +245,87 @@ export const authRoutes: FastifyPluginAsyncZod = async (server) => {
     reply.setCookie(REFRESH_COOKIE, result.refreshToken, cookieOptions());
 
     return reply.status(200).send({
-      user:        result.user,
+      user: result.user,
       accessToken: result.accessToken,
     });
   });
 
   // ── POST /logout ──────────────────────────────────────────────────────────
-  server.post('/logout', {
-    preHandler: authenticate,
-  }, async (req, reply) => {
-    const rawToken = req.cookies[REFRESH_COOKIE];
+  server.post(
+    '/logout',
+    {
+      preHandler: authenticate,
+    },
+    async (req, reply) => {
+      const rawToken = req.cookies[REFRESH_COOKIE];
 
-    if (rawToken && req.user) {
-      await auth.logout(rawToken, req.user.id).catch(() => {/* ignore */});
-    }
+      if (rawToken && req.user) {
+        await auth.logout(rawToken, req.user.id).catch(() => {
+          /* ignore */
+        });
+      }
 
-    reply.clearCookie(REFRESH_COOKIE, { path: '/api/v1/auth' });
+      reply.clearCookie(REFRESH_COOKIE, { path: '/api/v1/auth' });
 
-    return reply.status(200).send({ message: 'Logged out' });
-  });
+      return reply.status(200).send({ message: 'Logged out' });
+    },
+  );
 
   // ── POST /forgot-password ─────────────────────────────────────────────────
-  server.post('/forgot-password', {
-    schema: {
-      body:     forgotBody,
-      response: { 202: z.object({ message: z.string() }) },
-    },
-    config: {
-      rateLimit: {
-        max:        config.RATE_LIMIT_REGISTER,
-        timeWindow: '1 hour',
+  server.post(
+    '/forgot-password',
+    {
+      schema: {
+        body: forgotBody,
+        response: { 202: z.object({ message: z.string() }) },
+      },
+      config: {
+        rateLimit: {
+          max: config.RATE_LIMIT_REGISTER,
+          timeWindow: '1 hour',
+        },
       },
     },
-  }, async (req, reply) => {
-    const { email, captchaToken } = req.body;
+    async (req, reply) => {
+      const { email, captchaToken } = req.body;
 
-    await verifyCaptcha(captchaToken, req.ip).catch(handleCaptchaError(reply));
-    if (reply.sent) return;
+      await verifyCaptcha(captchaToken, req.ip).catch(handleCaptchaError(reply));
+      if (reply.sent) return;
 
-    // Always returns 202 — prevents email enumeration
-    await auth.forgotPassword(email).catch(() => {/* silent */});
+      // Always returns 202 — prevents email enumeration
+      await auth.forgotPassword(email).catch(() => {
+        /* silent */
+      });
 
-    logSecurityEvent({ eventType: 'password_reset_req', req, metadata: { email } });
+      logSecurityEvent({ eventType: 'password_reset_req', req, metadata: { email } });
 
-    return reply.status(202).send({
-      message: 'If an account exists for that email, a reset link is on its way.',
-    });
-  });
+      return reply.status(202).send({
+        message: 'If an account exists for that email, a reset link is on its way.',
+      });
+    },
+  );
 
   // ── POST /reset-password ──────────────────────────────────────────────────
-  server.post('/reset-password', {
-    schema: {
-      body:     resetBody,
-      response: { 200: z.object({ message: z.string() }) },
+  server.post(
+    '/reset-password',
+    {
+      schema: {
+        body: resetBody,
+        response: { 200: z.object({ message: z.string() }) },
+      },
     },
-  }, async (req, reply) => {
-    await auth.resetPassword(req.body.token, req.body.password).catch(handleAuthError(reply));
-    if (reply.sent) return;
+    async (req, reply) => {
+      await auth.resetPassword(req.body.token, req.body.password).catch(handleAuthError(reply));
+      if (reply.sent) return;
 
-    logSecurityEvent({ eventType: 'password_reset_done', req });
+      logSecurityEvent({ eventType: 'password_reset_done', req });
 
-    // Clear any refresh cookie — the user must log in again on all devices
-    reply.clearCookie(REFRESH_COOKIE, { path: '/api/v1/auth' });
+      // Clear any refresh cookie — the user must log in again on all devices
+      reply.clearCookie(REFRESH_COOKIE, { path: '/api/v1/auth' });
 
-    return reply.status(200).send({ message: 'Password updated. Please log in.' });
-  });
+      return reply.status(200).send({ message: 'Password updated. Please log in.' });
+    },
+  );
 };
 
 // ---------------------------------------------------------------------------
@@ -303,20 +338,20 @@ function handleAuthError(reply: FastifyReply) {
     if (err instanceof auth.AuthError) {
       reply.status(err.statusCode).send({
         statusCode: err.statusCode,
-        error:      err.name,
-        message:    err.message,
+        error: err.name,
+        message: err.message,
       });
     } else if (err instanceof PwnedPasswordError) {
       reply.status(400).send({
         statusCode: 400,
-        error:      'Bad Request',
-        message:    err.message,
+        error: 'Bad Request',
+        message: err.message,
       });
     } else {
       reply.status(500).send({
         statusCode: 500,
-        error:      'Internal Server Error',
-        message:    'An unexpected error occurred',
+        error: 'Internal Server Error',
+        message: 'An unexpected error occurred',
       });
     }
   };
@@ -328,14 +363,14 @@ function handleCaptchaError(reply: FastifyReply) {
     if (err instanceof CaptchaError) {
       reply.status(400).send({
         statusCode: 400,
-        error:      'Bad Request',
-        message:    'CAPTCHA verification failed. Please try again.',
+        error: 'Bad Request',
+        message: 'CAPTCHA verification failed. Please try again.',
       });
     } else {
       reply.status(503).send({
         statusCode: 503,
-        error:      'Service Unavailable',
-        message:    'CAPTCHA service temporarily unavailable',
+        error: 'Service Unavailable',
+        message: 'CAPTCHA service temporarily unavailable',
       });
     }
   };

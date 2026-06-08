@@ -43,9 +43,7 @@
           "value": "You are battered but still standing."
         }
       ],
-      "references": [
-        "foe"
-      ],
+      "references": ["foe"],
       "preconditions": [
         {
           "key": "hasCharacter",
@@ -71,9 +69,7 @@
       "weak": "Your companion is battered. If their health is 0, they cannot assist you until they gain at least <a class=\"resource-link\" data-resource=\"health\" data-value=\"+1\">+1 health</a>.",
       "miss": "Also suffer <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"-1\">−1 momentum</a>. If your companion's health is 0, they are gravely wounded and out of action. Without aid, they die in an hour or two. If you roll a miss with a <strong>1 on your action die</strong>, and your companion's health is 0, they are now dead. Take 1 experience for each marked ability on your companion asset, and remove it.",
       "notes": "Roll +heart or +companion health, whichever is higher. A dead companion (miss with action die 1 at 0 health) is permanent — remove the asset and gain experience equal to its marked abilities.",
-      "references": [
-        "foe"
-      ],
+      "references": ["foe"],
       "preconditions": [
         {
           "key": "hasCharacter",
@@ -126,10 +122,7 @@
       "weak": "",
       "miss": "",
       "notes": "No roll — automatically triggered when momentum is already at -6 and you would suffer more -momentum. You must absorb the overflow as either stat damage or progress loss. This is how bad situations spiral.",
-      "references": [
-        "expedition",
-        "foe"
-      ],
+      "references": ["expedition", "foe"],
       "preconditions": [
         {
           "key": "hasCharacter",

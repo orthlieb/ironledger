@@ -16,19 +16,23 @@
 	import { isDice3dEnabled, setDice3dEnabled } from '$lib/dice';
 	import { isDiceSoundEnabled, setDiceSoundEnabled, isDiceSoundSupported } from '$lib/diceSound.js';
 	import {
-		isDelveEnabled, setDelveEnabled,
-		isYrtEnabled,   setYrtEnabled,
+		isDelveEnabled,
+		setDelveEnabled,
+		isYrtEnabled,
+		setYrtEnabled,
 	} from '$lib/expansionStore.svelte.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import {
 		type FontDisplay,
-		getFontDisplay, savedFont, setFontDisplay,
+		getFontDisplay,
+		savedFont,
+		setFontDisplay,
 	} from '$lib/fontStore.svelte.js';
 	import { draggable } from '$lib/actions/draggable.js';
 
-	import autoSvg    from '$icons/circle-half-stroke-solid.svg?raw';
-	import darkSvg    from '$icons/moon-solid.svg?raw';
-	import lightSvg   from '$icons/sun-solid.svg?raw';
+	import autoSvg from '$icons/circle-half-stroke-solid.svg?raw';
+	import darkSvg from '$icons/moon-solid.svg?raw';
+	import lightSvg from '$icons/sun-solid.svg?raw';
 
 	// ---------------------------------------------------------------------------
 	// Display font — delegated to fontStore
@@ -46,9 +50,9 @@
 	type Theme = 'auto' | 'dark' | 'light';
 
 	const THEME_MODES: { value: Theme; icon: string; label: string; title: string }[] = [
-		{ value: 'auto',  icon: autoSvg,  label: 'Auto',  title: 'Follow system preference' },
-		{ value: 'dark',  icon: darkSvg,  label: 'Dark',  title: 'Dark mode'                },
-		{ value: 'light', icon: lightSvg, label: 'Light', title: 'Light mode'               },
+		{ value: 'auto', icon: autoSvg, label: 'Auto', title: 'Follow system preference' },
+		{ value: 'dark', icon: darkSvg, label: 'Dark', title: 'Dark mode' },
+		{ value: 'light', icon: lightSvg, label: 'Light', title: 'Light mode' },
 	];
 
 	function savedTheme(): Theme {
@@ -94,10 +98,16 @@
 	// Expansions (Delve / YRT)
 	// ---------------------------------------------------------------------------
 	let delveOn = $state(typeof window !== 'undefined' ? isDelveEnabled() : true);
-	let yrtOn   = $state(typeof window !== 'undefined' ? isYrtEnabled()   : true);
+	let yrtOn = $state(typeof window !== 'undefined' ? isYrtEnabled() : true);
 
-	function applyDelve(on: boolean) { delveOn = on; setDelveEnabled(on); }
-	function applyYrt(on: boolean)   { yrtOn   = on; setYrtEnabled(on);   }
+	function applyDelve(on: boolean) {
+		delveOn = on;
+		setDelveEnabled(on);
+	}
+	function applyYrt(on: boolean) {
+		yrtOn = on;
+		setYrtEnabled(on);
+	}
 
 	// ---------------------------------------------------------------------------
 	// Dialog
@@ -106,11 +116,11 @@
 
 	export function open() {
 		// Re-sync with localStorage each time the dialog opens.
-		theme       = savedTheme();
-		dice3d      = isDice3dEnabled();
-		diceSound   = isDiceSoundEnabled();
-		delveOn     = isDelveEnabled();
-		yrtOn       = isYrtEnabled();
+		theme = savedTheme();
+		dice3d = isDice3dEnabled();
+		diceSound = isDiceSoundEnabled();
+		delveOn = isDelveEnabled();
+		yrtOn = isYrtEnabled();
 		fontDisplay = savedFont();
 		dialogEl?.showModal();
 	}
@@ -123,12 +133,7 @@
 <!-- =========================================================================
      Dialog
      ========================================================================= -->
-<dialog
-	bind:this={dialogEl}
-	class="settings-dialog"
-	oncancel={close}
->
-
+<dialog bind:this={dialogEl} class="settings-dialog" oncancel={close}>
 	<!-- Header -->
 	<div class="sd-header" use:draggable>
 		<span class="drag-grip" aria-hidden="true">⠿</span>
@@ -138,7 +143,6 @@
 
 	<!-- Body -->
 	<div class="sd-body">
-
 		<!-- Theme -->
 		<div class="sd-row">
 			<span class="sd-label">Theme</span>
@@ -167,22 +171,22 @@
 					class:active={fontDisplay === 'cinzel'}
 					onclick={() => applyFont('cinzel')}
 					aria-pressed={fontDisplay === 'cinzel'}
-					data-tooltip="Gravestone — engraved titling serif (default)"
-				>Gravestone</button>
+					data-tooltip="Gravestone — engraved titling serif (default)">Gravestone</button
+				>
 				<button
 					class="sd-seg-btn"
 					class:active={fontDisplay === 'simonetta'}
 					onclick={() => applyFont('simonetta')}
 					aria-pressed={fontDisplay === 'simonetta'}
-					data-tooltip="Grimoire — calligraphic all-caps serif"
-				>Grimoire</button>
+					data-tooltip="Grimoire — calligraphic all-caps serif">Grimoire</button
+				>
 				<button
 					class="sd-seg-btn"
 					class:active={fontDisplay === 'futhark'}
 					onclick={() => applyFont('futhark')}
 					aria-pressed={fontDisplay === 'futhark'}
-					data-tooltip="Futhark — transliterate names to Elder Futhark runes"
-				>ᚠᚢᚦᚨᚱᚲ</button>
+					data-tooltip="Futhark — transliterate names to Elder Futhark runes">ᚠᚢᚦᚨᚱᚲ</button
+				>
 			</div>
 		</div>
 
@@ -195,15 +199,15 @@
 					class:active={dice3d}
 					onclick={() => applyDice3d(true)}
 					aria-pressed={dice3d}
-					data-tooltip="Animate dice rolls in 3D"
-				>On</button>
+					data-tooltip="Animate dice rolls in 3D">On</button
+				>
 				<button
 					class="sd-seg-btn"
 					class:active={!dice3d}
 					onclick={() => applyDice3d(false)}
 					aria-pressed={!dice3d}
-					data-tooltip="Skip 3D animation, show result immediately"
-				>Off</button>
+					data-tooltip="Skip 3D animation, show result immediately">Off</button
+				>
 			</div>
 		</div>
 
@@ -218,15 +222,15 @@
 						class:active={diceSound}
 						onclick={() => applyDiceSound(true)}
 						aria-pressed={diceSound}
-						data-tooltip="Play a dice rattle while the dice roll"
-					>On</button>
+						data-tooltip="Play a dice rattle while the dice roll">On</button
+					>
 					<button
 						class="sd-seg-btn"
 						class:active={!diceSound}
 						onclick={() => applyDiceSound(false)}
 						aria-pressed={!diceSound}
-						data-tooltip="Roll silently"
-					>Off</button>
+						data-tooltip="Roll silently">Off</button
+					>
 				</div>
 			</div>
 		{/if}
@@ -240,15 +244,15 @@
 					class:active={delveOn}
 					onclick={() => applyDelve(true)}
 					aria-pressed={delveOn}
-					data-tooltip="Show Delve moves, oracles, foes, assets"
-				>On</button>
+					data-tooltip="Show Delve moves, oracles, foes, assets">On</button
+				>
 				<button
 					class="sd-seg-btn"
 					class:active={!delveOn}
 					onclick={() => applyDelve(false)}
 					aria-pressed={!delveOn}
-					data-tooltip="Hide Delve content from pickers (existing data preserved)"
-				>Off</button>
+					data-tooltip="Hide Delve content from pickers (existing data preserved)">Off</button
+				>
 			</div>
 		</div>
 
@@ -261,144 +265,150 @@
 					class:active={yrtOn}
 					onclick={() => applyYrt(true)}
 					aria-pressed={yrtOn}
-					data-tooltip="Show YRT moves, oracles, foes, assets"
-				>On</button>
+					data-tooltip="Show YRT moves, oracles, foes, assets">On</button
+				>
 				<button
 					class="sd-seg-btn"
 					class:active={!yrtOn}
 					onclick={() => applyYrt(false)}
 					aria-pressed={!yrtOn}
-					data-tooltip="Hide YRT content from pickers (existing data preserved)"
-				>Off</button>
+					data-tooltip="Hide YRT content from pickers (existing data preserved)">Off</button
+				>
 			</div>
 		</div>
-
 	</div>
-
 </dialog>
 
 <style>
 	/* ── Dialog shell ────────────────────────────────────────────────────── */
 	.settings-dialog {
-		border:        none;
-		padding:       0;
+		border: none;
+		padding: 0;
 		border-radius: 10px;
-		position:      fixed;
-		top:           50%;
-		left:          50%;
-		transform:     translate(-50%, -50%);
-		width:         min(360px, calc(100vw - 2rem));
-		background:    var(--bg-card);
-		color:         var(--text);
-		box-shadow:    0 16px 48px #00000070, 0 0 0 1px var(--border-mid);
-		outline:       none;
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		width: min(360px, calc(100vw - 2rem));
+		background: var(--bg-card);
+		color: var(--text);
+		box-shadow:
+			0 16px 48px #00000070,
+			0 0 0 1px var(--border-mid);
+		outline: none;
 	}
 	.settings-dialog[open] {
-		display:        flex;
+		display: flex;
 		flex-direction: column;
 	}
 	.settings-dialog::backdrop {
-		background:      #00000060;
+		background: #00000060;
 		backdrop-filter: blur(1px);
 	}
 
 	/* ── Header ─────────────────────────────────────────────────────────── */
 	.sd-header {
-		display:         flex;
-		align-items:     center;
-		gap:             8px;
-		padding:         10px 14px;
-		border-bottom:   1px solid var(--border);
-		background:      var(--bg-control);
-		border-radius:   10px 10px 0 0;
-		flex-shrink:     0;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 14px;
+		border-bottom: 1px solid var(--border);
+		background: var(--bg-control);
+		border-radius: 10px 10px 0 0;
+		flex-shrink: 0;
 	}
 	.sd-title {
-		font-family:    var(--font-display);
-		font-size:      calc(0.78rem * var(--font-display-scale));
-		font-weight:    var(--font-display-weight);
-		font-variant:   var(--font-display-variant);
+		font-family: var(--font-display);
+		font-size: calc(0.78rem * var(--font-display-scale));
+		font-weight: var(--font-display-weight);
+		font-variant: var(--font-display-variant);
 		letter-spacing: 0.08em;
 		text-transform: var(--font-display-transform);
-		color:          var(--text-accent);
-		flex:           1;
+		color: var(--text-accent);
+		flex: 1;
 	}
 	.sd-close {
-		background:    transparent;
-		border:        none;
-		color:         var(--text-dimmer);
-		cursor:        pointer;
-		font-size:     0.9rem;
-		padding:       2px 5px;
+		background: transparent;
+		border: none;
+		color: var(--text-dimmer);
+		cursor: pointer;
+		font-size: 0.9rem;
+		padding: 2px 5px;
 		border-radius: 3px;
-		line-height:   1;
-		font-family:   inherit;
+		line-height: 1;
+		font-family: inherit;
 	}
-	.sd-close:hover { color: var(--text); }
+	.sd-close:hover {
+		color: var(--text);
+	}
 
 	/* ── Body ────────────────────────────────────────────────────────────── */
 	.sd-body {
-		padding:        16px 14px;
-		display:        flex;
+		padding: 16px 14px;
+		display: flex;
 		flex-direction: column;
-		gap:            14px;
+		gap: 14px;
 	}
 
 	/* ── Setting row ─────────────────────────────────────────────────────── */
 	.sd-row {
-		display:     flex;
+		display: flex;
 		align-items: center;
-		gap:         12px;
+		gap: 12px;
 	}
 	.sd-label {
 		font-family: var(--font-ui);
-		font-size:   0.73rem;
+		font-size: 0.73rem;
 		font-weight: 600;
-		color:       var(--text-muted);
-		min-width:   82px;
+		color: var(--text-muted);
+		min-width: 82px;
 	}
 
 	/* ── Segmented control ───────────────────────────────────────────────── */
 	.sd-seg {
-		display:       flex;
-		border:        1px solid var(--border-mid);
+		display: flex;
+		border: 1px solid var(--border-mid);
 		border-radius: 5px;
-		overflow:      hidden;
+		overflow: hidden;
 	}
 	.sd-seg-btn {
-		display:        flex;
-		align-items:    center;
-		gap:            5px;
-		padding:        5px 11px;
-		background:     var(--bg-control);
-		border:         none;
-		border-right:   1px solid var(--border-mid);
-		cursor:         pointer;
-		color:          var(--text-dimmer);
-		font-family:    var(--font-ui);
-		font-size:      0.72rem;
-		font-weight:    500;
-		transition:     background 0.12s, color 0.12s;
-		white-space:    nowrap;
+		display: flex;
+		align-items: center;
+		gap: 5px;
+		padding: 5px 11px;
+		background: var(--bg-control);
+		border: none;
+		border-right: 1px solid var(--border-mid);
+		cursor: pointer;
+		color: var(--text-dimmer);
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		font-weight: 500;
+		transition:
+			background 0.12s,
+			color 0.12s;
+		white-space: nowrap;
 	}
-	.sd-seg-btn:last-child { border-right: none; }
+	.sd-seg-btn:last-child {
+		border-right: none;
+	}
 	.sd-seg-btn:hover:not(.active) {
 		background: var(--bg-hover);
-		color:      var(--text-muted);
+		color: var(--text-muted);
 	}
 	.sd-seg-btn.active {
 		background: var(--bg-hover);
-		color:      var(--text-accent);
+		color: var(--text-accent);
 		font-weight: 600;
 	}
 	.sd-seg-icon {
-		display:     flex;
+		display: flex;
 		align-items: center;
 		line-height: 0;
 	}
 	.sd-seg-icon :global(svg) {
-		width:  11px;
+		width: 11px;
 		height: 11px;
-		fill:   currentColor;
+		fill: currentColor;
 	}
 </style>

@@ -29,9 +29,9 @@ async function shutdown(signal: string) {
   server.log.info(`Received ${signal}, shutting down...`);
 
   try {
-    await server.close();           // stops accepting, drains in-flight requests
-    await pool.end();               // closes all DB connections
-    await redis.quit();             // sends QUIT to Redis
+    await server.close(); // stops accepting, drains in-flight requests
+    await pool.end(); // closes all DB connections
+    await redis.quit(); // sends QUIT to Redis
     server.log.info('Shutdown complete.');
     process.exit(0);
   } catch (err) {
@@ -41,7 +41,7 @@ async function shutdown(signal: string) {
 }
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));
-process.on('SIGINT',  () => shutdown('SIGINT'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 
 // ---------------------------------------------------------------------------
 // Unhandled rejections / uncaught exceptions
@@ -67,7 +67,7 @@ process.on('uncaughtException', (err) => {
 try {
   await server.listen({
     port: 3000,
-    host: '0.0.0.0',   // listen on all interfaces — Nginx proxies to this
+    host: '0.0.0.0', // listen on all interfaces — Nginx proxies to this
   });
 } catch (err) {
   server.log.error(err, 'Failed to start server');

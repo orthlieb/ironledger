@@ -14,9 +14,11 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { checkDbHealth } from '../db/index.js';
 import { redis } from '../server.js';
 
-const __dirname   = dirname(fileURLToPath(import.meta.url));
-const STATIC_DIR  = join(__dirname, '../static');
-const pkg         = JSON.parse(readFileSync(join(__dirname, '../../package.json'), 'utf-8')) as { version: string };
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const STATIC_DIR = join(__dirname, '../static');
+const pkg = JSON.parse(readFileSync(join(__dirname, '../../package.json'), 'utf-8')) as {
+  version: string;
+};
 const APP_VERSION = pkg.version;
 
 function loadImage(filename: string): string {
@@ -29,7 +31,7 @@ function loadImage(filename: string): string {
 }
 
 const IMG_WORKING = loadImage('server-working.webp');
-const IMG_DOWN    = loadImage('server-down.webp');
+const IMG_DOWN = loadImage('server-down.webp');
 
 // Uptime tracked from server start
 const START_TIME = Date.now();
@@ -45,24 +47,24 @@ function formatUptime(ms: number): string {
 }
 
 function statusPage(dbOk: boolean, redisOk: boolean, version: string): string {
-  const healthy  = dbOk && redisOk;
-  const uptime   = formatUptime(Date.now() - START_TIME);
+  const healthy = dbOk && redisOk;
+  const uptime = formatUptime(Date.now() - START_TIME);
   const headline = healthy ? 'Strong Hit' : 'Miss. Pay the Price.';
-  const flavour  = healthy
+  const flavour = healthy
     ? 'Enemies are vanquished. Sagas are being sung. The mead flows.'
     : 'The casks are empty. The oracles are blinded. Strange beasts roam the land.';
-  const accentOk  = '#E8A13B';   // amber gold
-  const accentBad = '#ef4444';   // red
-  const accent    = healthy ? accentOk : accentBad;
+  const accentOk = '#E8A13B'; // amber gold
+  const accentBad = '#ef4444'; // red
+  const accent = healthy ? accentOk : accentBad;
 
   const imgSrc = healthy ? IMG_WORKING : IMG_DOWN;
-  const image  = imgSrc
+  const image = imgSrc
     ? `<img src="${imgSrc}" alt="${headline}" style="width:100%;height:auto;display:block;">`
     : '';
 
   function indicator(ok: boolean, label: string): string {
     const color = ok ? '#34d399' : '#ef4444';
-    const icon  = ok ? '✓' : '✗';
+    const icon = ok ? '✓' : '✗';
     return `
     <div style="display:flex;align-items:center;gap:8px;">
       <span style="color:${color};font-size:1rem;font-weight:700;">${icon}</span>
@@ -171,13 +173,15 @@ function statusPage(dbOk: boolean, redisOk: boolean, version: string): string {
 }
 
 export const healthRoutes: FastifyPluginAsyncZod = async (server) => {
-
   // ── GET / — browser-friendly HTML status page ──────────────────────────────
   server.get('/', async (req, reply) => {
     const version = APP_VERSION;
     const [dbOk, redisOk] = await Promise.all([
       checkDbHealth(),
-      redis.ping().then(() => true).catch(() => false),
+      redis
+        .ping()
+        .then(() => true)
+        .catch(() => false),
     ]);
     return reply
       .status(dbOk && redisOk ? 200 : 503)
@@ -189,15 +193,18 @@ export const healthRoutes: FastifyPluginAsyncZod = async (server) => {
   server.get('/health', async (req, reply) => {
     const [dbOk, redisOk] = await Promise.all([
       checkDbHealth(),
-      redis.ping().then(() => true).catch(() => false),
+      redis
+        .ping()
+        .then(() => true)
+        .catch(() => false),
     ]);
     const healthy = dbOk && redisOk;
     return reply.status(healthy ? 200 : 503).send({
-      status:    healthy ? 'ok' : 'degraded',
-      db:        dbOk    ? 'ok' : 'error',
-      redis:     redisOk ? 'ok' : 'error',
+      status: healthy ? 'ok' : 'degraded',
+      db: dbOk ? 'ok' : 'error',
+      redis: redisOk ? 'ok' : 'error',
       timestamp: new Date().toISOString(),
-      version:   APP_VERSION,
+      version: APP_VERSION,
     });
   });
-}
+};

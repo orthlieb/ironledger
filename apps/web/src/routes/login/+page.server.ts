@@ -6,7 +6,7 @@ const TAGLINES = [
 	'Your ledger awaits. Try not to die filling it in.',
 	'Roll dice. Suffer consequences. Build character.',
 	'Where every miss is just a plot twist.',
-	'An oracle said you\'d be fine. The oracle was wrong.',
+	"An oracle said you'd be fine. The oracle was wrong.",
 	'Speak, friend, and enter.',
 	'One does not simply walk into the Ironlands.',
 	'Adventure awaits... prove you are worthy.',
@@ -22,16 +22,20 @@ export const load: PageServerLoad = async ({ locals }) => {
 		throw redirect(302, '/home');
 	}
 	const tagline = TAGLINES[Math.floor(Math.random() * TAGLINES.length)];
-	return { hcaptchaSiteKey: HCAPTCHA_SITE_KEY, isDev: process.env.NODE_ENV !== 'production', tagline };
+	return {
+		hcaptchaSiteKey: HCAPTCHA_SITE_KEY,
+		isDev: process.env.NODE_ENV !== 'production',
+		tagline,
+	};
 };
 
 export const actions: Actions = {
 	default: async ({ request, cookies }) => {
 		const form = await request.formData();
-		const email        = (form.get('email')              as string | null) ?? '';
-		const password     = (form.get('password')            as string | null) ?? '';
+		const email = (form.get('email') as string | null) ?? '';
+		const password = (form.get('password') as string | null) ?? '';
 		const captchaToken = (form.get('h-captcha-response') as string | null) ?? '';
-		const rememberMe   = form.get('rememberMe') === 'on';
+		const rememberMe = form.get('rememberMe') === 'on';
 
 		if (!email || !password) {
 			return fail(400, { error: 'Email and password are required.', email });
@@ -58,8 +62,9 @@ export const actions: Actions = {
 		}
 		if (res.status === 503) {
 			// Could be maintenance mode — check the body
-			const body = await res.json().catch(() => ({})) as { message?: string };
-			const message = body.message ?? 'The system is currently under maintenance. Please try again later.';
+			const body = (await res.json().catch(() => ({}))) as { message?: string };
+			const message =
+				body.message ?? 'The system is currently under maintenance. Please try again later.';
 			return fail(503, { maintenance: true, message, email });
 		}
 		if (!res.ok) {

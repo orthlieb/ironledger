@@ -78,8 +78,8 @@
 			class="pu-clear"
 			onclick={clear}
 			use:tooltip={'Delete portrait'}
-			aria-label="Delete portrait"
-		>{@html trashSvg}</button>
+			aria-label="Delete portrait">{@html trashSvg}</button
+		>
 	{:else}
 		<!-- Empty state: label wraps the hidden file input; click opens it. -->
 		<label class="pu-label" use:tooltip={'Click to upload portrait'}>
@@ -101,68 +101,74 @@
 
 <style>
 	.pu-wrap {
-		position:      relative;
-		float:         right;
-		margin:        0 0 10px 14px;
+		position: relative;
+		float: right;
+		margin: 0 0 10px 14px;
 		shape-outside: margin-box;
 	}
 	.pu-label {
 		display: block;
-		cursor:  pointer;
+		cursor: pointer;
 		padding: 0;
-		border:  none;
+		border: none;
 		background: transparent;
 	}
-	.pu-label--view { cursor: zoom-in; }
-	.pu-img {
-		display:       block;
-		width:         170px;
-		height:        170px;
-		max-height:    240px;
-		object-fit:    cover;
-		border:        1px solid var(--border);
-		border-radius: 6px;
-		opacity:       0.95;
-		transition:    opacity 0.12s;
+	.pu-label--view {
+		cursor: zoom-in;
 	}
-	.pu-label:hover .pu-img { opacity: 0.75; }
+	.pu-img {
+		display: block;
+		width: 170px;
+		height: 170px;
+		max-height: 240px;
+		object-fit: cover;
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		opacity: 0.95;
+		transition: opacity 0.12s;
+	}
+	.pu-label:hover .pu-img {
+		opacity: 0.75;
+	}
 	.pu-img--placeholder {
-		background:      var(--bg-inset);
-		display:         flex;
-		align-items:     center;
+		background: var(--bg-inset);
+		display: flex;
+		align-items: center;
 		justify-content: center;
-		color:           var(--text-dimmer);
+		color: var(--text-dimmer);
 	}
 	.pu-img--placeholder :global(svg) {
-		width:  60%;
+		width: 60%;
 		height: 60%;
-		fill:   var(--text-dimmer);
+		fill: var(--text-dimmer);
 	}
 	.pu-input {
 		position: absolute;
-		left:     -9999px;
-		width:    1px;
-		height:   1px;
+		left: -9999px;
+		width: 1px;
+		height: 1px;
 	}
 	.pu-clear {
-		position:        absolute;
-		top:             4px;
-		right:           4px;
-		z-index:         2;
-		width:           22px;
-		height:          22px;
-		display:         flex;
-		align-items:     center;
+		position: absolute;
+		top: 4px;
+		right: 4px;
+		z-index: 2;
+		width: 22px;
+		height: 22px;
+		display: flex;
+		align-items: center;
 		justify-content: center;
-		padding:         0;
-		border:          none;
-		border-radius:   50%;
-		background:      rgba(0,0,0,0.55);
-		color:           #fff;
-		line-height:     1;
-		cursor:          pointer;
-		opacity:         0;
-		transition:      background 0.12s, opacity 0.12s;
+		padding: 0;
+		border: none;
+		border-radius: 50%;
+		background: rgba(0, 0, 0, 0.55);
+		color: #fff;
+		line-height: 1;
+		cursor: pointer;
+		opacity: 0;
+		transition:
+			background 0.12s,
+			opacity 0.12s;
 	}
 	/* Reveal the trash button only while hovering the portrait (or when it
 	   gains keyboard focus). On touch devices there's no hover, so keep it
@@ -172,12 +178,16 @@
 		opacity: 1;
 	}
 	@media (hover: none) {
-		.pu-clear { opacity: 1; }
+		.pu-clear {
+			opacity: 1;
+		}
 	}
 	.pu-clear :global(svg) {
-		width:  12px;
+		width: 12px;
 		height: 12px;
-		fill:   currentColor;
+		fill: currentColor;
 	}
-	.pu-clear:hover { background: rgba(0,0,0,0.8); }
+	.pu-clear:hover {
+		background: rgba(0, 0, 0, 0.8);
+	}
 </style>

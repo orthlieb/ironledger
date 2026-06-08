@@ -14,9 +14,9 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import { resetCharacters } from './helpers/reset';
 
-const CHAR_AREA   = '.home-area--characters';
+const CHAR_AREA = '.home-area--characters';
 const CHAR_HEADER = `${CHAR_AREA} .ca-header`;
-const CHAR_SPINE  = `${CHAR_AREA} .ca-spine`;
+const CHAR_SPINE = `${CHAR_AREA} .ca-spine`;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -24,7 +24,9 @@ const CHAR_SPINE  = `${CHAR_AREA} .ca-spine`;
 
 async function waitForHome(page: Page) {
 	await expect(page.locator(`${CHAR_AREA} .ca-loading`)).not.toBeVisible({ timeout: 12_000 });
-	await page.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`).first()
+	await page
+		.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`)
+		.first()
 		.waitFor({ timeout: 12_000, state: 'attached' });
 }
 
@@ -39,7 +41,7 @@ async function switchCharTab(page: Page, label: string) {
 
 /** Wait until at least N character spines exist, creating new ones as needed. */
 async function ensureCharCount(page: Page, n: number) {
-	while (await page.locator(CHAR_SPINE).count() < n) {
+	while ((await page.locator(CHAR_SPINE).count()) < n) {
 		const before = await page.locator(CHAR_SPINE).count();
 		await page.locator(`${CHAR_HEADER} button:has-text("+ Character")`).click();
 		await expect(page.locator(CHAR_SPINE)).not.toHaveCount(before, { timeout: 8_000 });
@@ -67,7 +69,7 @@ async function setActiveSupply(page: Page, target: number) {
 		const cur = await getSupplyOfActive(page);
 		if (cur === target) break;
 		if (cur < target) await tile.locator('button[aria-label="Increase Supply"]').click();
-		else              await tile.locator('button[aria-label="Decrease Supply"]').click();
+		else await tile.locator('button[aria-label="Decrease Supply"]').click();
 		await page.waitForTimeout(80);
 	}
 }
@@ -99,29 +101,45 @@ async function expectAllCharsSupply(page: Page, expected: number) {
  */
 async function getActiveCharId(page: Page): Promise<string> {
 	const activeSpine = page.locator(`${CHAR_AREA} .ca-spine.ca-spine--active`);
-	return await activeSpine.getAttribute('data-char-id') ?? '';
+	return (await activeSpine.getAttribute('data-char-id')) ?? '';
 }
 
 /** Build a minimal valid character manifest for import. */
 function makeCharManifest(name: string, supply: number) {
 	return {
 		manifest: {
-			app:        'Iron Ledger',
-			version:    '1.0.0',
+			app: 'Iron Ledger',
+			version: '1.0.0',
 			exportedAt: new Date().toISOString(),
-			type:       'character',
-			count:      1,
+			type: 'character',
+			count: 1,
 		},
 		data: {
 			name,
 			data: {
 				name,
-				edge: 1, heart: 1, iron: 1, shadow: 1, wits: 1,
-				momentum: 2, health: 5, spirit: 5, supply,
-				xp: 0, bonds: 0, failures: 0,
-				wounded: false, unprepared: false, shaken: false, encumbered: false,
-				maimed: false, corrupted: false, cursed: false, tormented: false,
-				vows: [], assets: [],
+				edge: 1,
+				heart: 1,
+				iron: 1,
+				shadow: 1,
+				wits: 1,
+				momentum: 2,
+				health: 5,
+				spirit: 5,
+				supply,
+				xp: 0,
+				bonds: 0,
+				failures: 0,
+				wounded: false,
+				unprepared: false,
+				shaken: false,
+				encumbered: false,
+				maimed: false,
+				corrupted: false,
+				cursed: false,
+				tormented: false,
+				vows: [],
+				assets: [],
 			},
 		},
 	};
@@ -131,9 +149,9 @@ function makeCharManifest(name: string, supply: number) {
 async function uploadImport(page: Page, payload: unknown) {
 	const fileInput = page.locator('input[type="file"][accept=".json,application/json"]');
 	await fileInput.setInputFiles({
-		name:     'test-import.json',
+		name: 'test-import.json',
 		mimeType: 'application/json',
-		buffer:   Buffer.from(JSON.stringify(payload)),
+		buffer: Buffer.from(JSON.stringify(payload)),
 	});
 }
 
@@ -142,7 +160,9 @@ async function uploadImport(page: Page, payload: unknown) {
 // ---------------------------------------------------------------------------
 
 test.describe('Party supply sync (v2)', () => {
-	test.beforeAll(async () => { await resetCharacters(); });
+	test.beforeAll(async () => {
+		await resetCharacters();
+	});
 
 	test.beforeEach(async ({ page }) => {
 		await gotoHome(page);
@@ -175,8 +195,10 @@ test.describe('Party supply sync (v2)', () => {
 		await ensureCharCount(page, 2);
 
 		// Normalise both to supply 2.
-		await selectSpine(page, 0); await setActiveSupply(page, 2);
-		await selectSpine(page, 1); await setActiveSupply(page, 2);
+		await selectSpine(page, 0);
+		await setActiveSupply(page, 2);
+		await selectSpine(page, 1);
+		await setActiveSupply(page, 2);
 
 		// Increment on first char.
 		await selectSpine(page, 0);
@@ -193,8 +215,10 @@ test.describe('Party supply sync (v2)', () => {
 	test('decreasing supply on one char syncs to all others', async ({ page }) => {
 		await ensureCharCount(page, 2);
 
-		await selectSpine(page, 0); await setActiveSupply(page, 3);
-		await selectSpine(page, 1); await setActiveSupply(page, 3);
+		await selectSpine(page, 0);
+		await setActiveSupply(page, 3);
+		await selectSpine(page, 1);
+		await setActiveSupply(page, 3);
 
 		// Decrement on second char.
 		await selectSpine(page, 1);
@@ -211,8 +235,10 @@ test.describe('Party supply sync (v2)', () => {
 	test('supply resource-link click in log syncs all chars', async ({ page }) => {
 		await ensureCharCount(page, 2);
 
-		await selectSpine(page, 0); await setActiveSupply(page, 3);
-		await selectSpine(page, 1); await setActiveSupply(page, 3);
+		await selectSpine(page, 0);
+		await setActiveSupply(page, 3);
+		await selectSpine(page, 1);
+		await setActiveSupply(page, 3);
 
 		// Get the active char's id via the API (active stage name -> lookup).
 		await selectSpine(page, 0);
@@ -268,5 +294,4 @@ test.describe('Party supply sync (v2)', () => {
 
 		await expectAllCharsSupply(page, 4);
 	});
-
 });

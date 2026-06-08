@@ -13,27 +13,29 @@ import { resetAll } from './helpers/reset';
 
 // ── Area constants ───────────────────────────────────────────────────────────
 
-const CHAR_AREA   = '.home-area--characters';
+const CHAR_AREA = '.home-area--characters';
 const CHAR_HEADER = `${CHAR_AREA} .ca-header`;
-const CHAR_SPINE  = `${CHAR_AREA} .ca-spine`;
+const CHAR_SPINE = `${CHAR_AREA} .ca-spine`;
 
-const CM_AREA     = '.home-area--communities';
-const CM_HEADER   = `${CM_AREA} .cm-header`;
-const CM_SPINE    = `${CM_AREA} .cm-spine`;
+const CM_AREA = '.home-area--communities';
+const CM_HEADER = `${CM_AREA} .cm-header`;
+const CM_SPINE = `${CM_AREA} .cm-spine`;
 
-const EXP_AREA    = '.home-area--expeditions';
-const EXP_HEADER  = `${EXP_AREA} .ea-header`;
-const EXP_SPINE   = `${EXP_AREA} .ea-spine`;
+const EXP_AREA = '.home-area--expeditions';
+const EXP_HEADER = `${EXP_AREA} .ea-header`;
+const EXP_SPINE = `${EXP_AREA} .ea-spine`;
 
-const FOE_AREA    = '.home-area--foes';
-const FOE_HEADER  = `${FOE_AREA} .fa-header`;
-const FOE_SPINE   = `${FOE_AREA} .fa-spine`;
+const FOE_AREA = '.home-area--foes';
+const FOE_HEADER = `${FOE_AREA} .fa-header`;
+const FOE_SPINE = `${FOE_AREA} .fa-spine`;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 async function waitForHome(page: Page): Promise<void> {
 	await expect(page.locator(`${CHAR_AREA} .ca-loading`)).not.toBeVisible({ timeout: 12_000 });
-	await page.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`).first()
+	await page
+		.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`)
+		.first()
 		.waitFor({ timeout: 12_000, state: 'attached' });
 }
 
@@ -58,7 +60,9 @@ async function expectTabActivates(
 // ── Tests ────────────────────────────────────────────────────────────────────
 
 test.describe('Tab accessibility — v2 areas', () => {
-	test.beforeAll(async () => { await resetAll(); });
+	test.beforeAll(async () => {
+		await resetAll();
+	});
 
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/home');
@@ -69,7 +73,7 @@ test.describe('Tab accessibility — v2 areas', () => {
 
 	test('CharactersArea — every tab activates and renders its panel', async ({ page }) => {
 		// Ensure a character exists.
-		if (await page.locator(CHAR_SPINE).count() === 0) {
+		if ((await page.locator(CHAR_SPINE).count()) === 0) {
 			await page.locator(`${CHAR_HEADER} button:has-text("+ Character")`).click();
 			await expect(page.locator(CHAR_SPINE)).not.toHaveCount(0, { timeout: 8_000 });
 		}
@@ -99,7 +103,8 @@ test.describe('Tab accessibility — v2 areas', () => {
 			await tab.click();
 			await expect(tab).toHaveClass(/\bca-tab--active\b/);
 			await expect(
-				page.locator(`${CHAR_AREA} .ca-vows-list`)
+				page
+					.locator(`${CHAR_AREA} .ca-vows-list`)
 					.or(page.locator(`${CHAR_AREA} .ca-empty-mini`, { hasText: /vows/i })),
 			).toBeVisible({ timeout: 3_000 });
 			// Other tabs' content should be gone.
@@ -112,7 +117,8 @@ test.describe('Tab accessibility — v2 areas', () => {
 			await tab.click();
 			await expect(tab).toHaveClass(/\bca-tab--active\b/);
 			await expect(
-				page.locator(`${CHAR_AREA} .ca-asset-grid`)
+				page
+					.locator(`${CHAR_AREA} .ca-asset-grid`)
 					.or(page.locator(`${CHAR_AREA} .ca-empty-mini`, { hasText: /assets/i })),
 			).toBeVisible({ timeout: 3_000 });
 		}
@@ -130,7 +136,7 @@ test.describe('Tab accessibility — v2 areas', () => {
 
 	test('CommunitiesArea — every tab activates and renders its panel', async ({ page }) => {
 		// Ensure a community exists.
-		if (await page.locator(CM_SPINE).count() === 0) {
+		if ((await page.locator(CM_SPINE).count()) === 0) {
 			await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click();
 			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 15_000 });
 			await page.locator('dialog.confirm-modal[open] button:has-text("Generate Randomly")').click();
@@ -160,9 +166,11 @@ test.describe('Tab accessibility — v2 areas', () => {
 
 	// ── Expeditions area ─────────────────────────────────────────────────────
 
-	test('ExpeditionsArea — every tab activates and renders its panel (journey)', async ({ page }) => {
+	test('ExpeditionsArea — every tab activates and renders its panel (journey)', async ({
+		page,
+	}) => {
 		// Ensure a journey exists.
-		if (await page.locator(EXP_SPINE).count() === 0) {
+		if ((await page.locator(EXP_SPINE).count()) === 0) {
 			await page.locator(`${EXP_HEADER} button:has-text("+ Journey")`).click();
 			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 10_000 });
 			await page.locator('dialog.confirm-modal[open] button:has-text("Start Journey")').click();
@@ -193,7 +201,7 @@ test.describe('Tab accessibility — v2 areas', () => {
 
 	test('FoesArea — every tab activates and renders its panel', async ({ page }) => {
 		// Ensure a foe encounter exists.
-		if (await page.locator(FOE_SPINE).count() === 0) {
+		if ((await page.locator(FOE_SPINE).count()) === 0) {
 			await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
 			await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 8_000 });
 			// Click first available foe tile.

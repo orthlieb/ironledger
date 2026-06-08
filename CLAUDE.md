@@ -30,12 +30,15 @@ PR #11, #12, #13, and the dialog fixes on the `claude/fix-asset-cards-mobile-*`
 branch all chased the same bug class.
 
 ### 1. Never use `dvh` on a `<dialog>`
+
 iOS Safari reports `dvh` as `0` for top-layer dialogs, so `min(85dvh, 720px)`
 collapses to `0`. Use `vh` for any dialog height, `top:`, or `max-height:`.
 
 ### 2. Never centre a `<dialog>` with `inset: 0; margin: auto`
+
 Combined with an open-state `display: flex` container it renders as a thin
 horizontal line on iOS Safari. Centre with:
+
 ```css
 position: fixed;
 top: 50%;
@@ -45,7 +48,8 @@ transform: translate(-50%, -50%);
 ```
 
 ### 3. Don't chain `display: flex` + `flex: 1; min-height: 0;` on a dialog
-   whose only sizing constraint is `max-height:`
+
+whose only sizing constraint is `max-height:`
 With no explicit `height`, the flex algorithm collapses the body to zero on
 iOS Safari. Two safe patterns:
 
@@ -56,38 +60,61 @@ AssetPicker's `.picker-dialog`).
 
 **B. Content-sized dialog.** Drop `display: flex` from the dialog entirely
 and put the scroll constraint directly on the body:
+
 ```css
-.dialog        { max-height: 82vh; overflow: hidden; }
-.dialog-body   { max-height: calc(82vh - 6rem); overflow-y: auto; }
+.dialog {
+  max-height: 82vh;
+  overflow: hidden;
+}
+.dialog-body {
+  max-height: calc(82vh - 6rem);
+  overflow-y: auto;
+}
 ```
+
 The `- 6rem` accounts for header + footer (~3rem each). This is what
 `.ca-asset-dialog` (CharactersArea) and `.confirm-dialog` (AssetPicker) use.
 
 ### 4. Always lock background scroll while a dialog is open
+
 Native `<dialog>.showModal()` blocks pointer events on the page behind the
 backdrop but does **not** stop touch-scroll on iOS Safari — a drag inside the
 dialog's chrome or at a scroll boundary can bleed through. Three layers of
 defence work together:
 
 **Viewport (permanent, in `apps/web/src/app.css`):**
+
 ```css
-html, body { height: 100dvh; overflow: hidden; }
+html,
+body {
+  height: 100dvh;
+  overflow: hidden;
+}
 ```
+
 See the "App-level scroll architecture" section above — the viewport never
 scrolls, so the dialog never has the document itself behind it to leak into.
 
 **Route scroll container (locked when a dialog is open):**
+
 ```css
-body:has(dialog[open]) main.app-main { overflow: hidden; }
+body:has(dialog[open]) main.app-main {
+  overflow: hidden;
+}
 ```
+
 `<main>` is the per-route scroll container; this freezes it while a dialog
 is up so dialog gestures can't reach it on routes that have overflowing
 content.
 
 **Dialog-level (also in `apps/web/src/app.css`):**
+
 ```css
-dialog[open] { overscroll-behavior: contain; }
+dialog[open] {
+  overscroll-behavior: contain;
+}
 ```
+
 This catches scroll chains regardless of where the gesture starts — wheel/
 touch on a dialog's header, footer, or short non-scrolling content stops at
 the dialog boundary instead of reaching inner scroll containers in the page
@@ -95,12 +122,14 @@ below (`.fa-stage`, `.ca-stage`, etc.).
 
 **Per-dialog body:** every scrollable child inside a dialog should also set
 `overscroll-behavior: contain` alongside its `overflow-y: auto`:
+
 ```css
 .dialog-body {
-    overflow-y: auto;
-    overscroll-behavior: contain;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 ```
+
 This is the innermost layer — it stops rubber-band at the body's own
 scroll boundaries on iOS Safari.
 
@@ -108,6 +137,7 @@ The e2e test at `apps/web/tests/e2e/picker-scroll-lock.spec.ts` checks both
 mechanisms on the foe picker — keep that test passing.
 
 ### Checklist when adding a new `<dialog>`
+
 - [ ] No `dvh` anywhere on the dialog or its descendants.
 - [ ] Centring uses `top/left + transform`, not `inset: 0; margin: auto`.
 - [ ] Either an explicit `height:`, **or** no `display: flex` on the dialog
@@ -125,33 +155,33 @@ template for any new dialog header:
 
 ```svelte
 <div class="my-header" use:draggable>
-    <span class="drag-grip" aria-hidden="true">⠿</span>
-    <span class="my-title">{headingText('Dialog Title')}</span>
-    <!-- optional close button or back button here -->
+  <span class="drag-grip" aria-hidden="true">⠿</span>
+  <span class="my-title">{headingText('Dialog Title')}</span>
+  <!-- optional close button or back button here -->
 </div>
 ```
 
 ```css
 .my-header {
-    display:         flex;
-    align-items:     center;
-    gap:             8px;
-    padding:         10px 14px;
-    border-bottom:   1px solid var(--border);
-    background:      var(--bg-control);
-    border-radius:   8px 8px 0 0;   /* match dialog's border-radius */
-    flex-shrink:     0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-control);
+  border-radius: 8px 8px 0 0; /* match dialog's border-radius */
+  flex-shrink: 0;
 }
 
 .my-title {
-    font-family:    var(--font-display);
-    font-size:      calc(0.78rem * var(--font-display-scale));
-    font-weight:    var(--font-display-weight);
-    font-variant:   var(--font-display-variant);
-    letter-spacing: 0.08em;
-    text-transform: var(--font-display-transform);
-    color:          var(--text-accent);
-    flex:           1;
+  font-family: var(--font-display);
+  font-size: calc(0.78rem * var(--font-display-scale));
+  font-weight: var(--font-display-weight);
+  font-variant: var(--font-display-variant);
+  letter-spacing: 0.08em;
+  text-transform: var(--font-display-transform);
+  color: var(--text-accent);
+  flex: 1;
 }
 ```
 
@@ -173,6 +203,7 @@ unconditionally — it does `closest('dialog')` internally and no-ops if not
 inside a dialog.
 
 ### Checklist when adding a new draggable dialog header
+
 - [ ] `use:draggable` on the header element (not the dialog itself).
 - [ ] `<span class="drag-grip" aria-hidden="true">⠿</span>` as the first child.
 - [ ] Title uses `calc(0.78rem * var(--font-display-scale))` and `flex: 1`.
@@ -194,6 +225,7 @@ from `$lib/actions/tooltip.js`:
 ```
 
 **Don't** use the native HTML `title=` attribute for hover hints. It:
+
 - Is clipped by `overflow: hidden/auto` ancestors (common inside `<dialog>`s).
 - Renders OS-styled chrome that doesn't match the rest of the UI.
 - Doesn't show on touch devices.
@@ -204,7 +236,8 @@ walking. It also auto-shows on tap and dismisses after 2.5 s on mobile.
 
 **Exceptions** (where `title=` is fine — these are NOT HTML `title`
 attributes):
-- The `title` *prop* on `<ConfirmDialog title="...">` and the new-thing
+
+- The `title` _prop_ on `<ConfirmDialog title="...">` and the new-thing
   dialogs (NewCommunity, NewNPC, NewJourney, NewSite, ChangeTheme,
   ChangeDomain). These set the dialog's heading text, unrelated to hover.
 - The HTML `<title>` element in the document `<head>`.

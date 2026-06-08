@@ -17,8 +17,13 @@
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { draggable } from '$lib/actions/draggable.js';
 	import {
-		loadFoes, getFoes, RANK_COLORS, FOE_RANKS, FOE_QUANTITIES,
-		FOE_NATURE_COLORS, effectiveRank as calcEffectiveRank,
+		loadFoes,
+		getFoes,
+		RANK_COLORS,
+		FOE_RANKS,
+		FOE_QUANTITIES,
+		FOE_NATURE_COLORS,
+		effectiveRank as calcEffectiveRank,
 	} from '$lib/foeStore.svelte.js';
 	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
@@ -36,38 +41,40 @@
 	// ---------------------------------------------------------------------------
 	// State
 	// ---------------------------------------------------------------------------
-	let dialogEl    = $state<HTMLDialogElement | null>(null);
-	let view        = $state<'table' | 'result'>('table');
-	let rolling     = $state(false);
+	let dialogEl = $state<HTMLDialogElement | null>(null);
+	let view = $state<'table' | 'result'>('table');
+	let rolling = $state(false);
 	let rolledIndex = $state(-1);
-	let site        = $state<Site | null>(null);
-	let quantity    = $state<FoeQuantity>('solo');
+	let site = $state<Site | null>(null);
+	let quantity = $state<FoeQuantity>('solo');
 
 	// ---------------------------------------------------------------------------
 	// Derived
 	// ---------------------------------------------------------------------------
-	const rolledCell  = $derived(rolledIndex >= 0 ? DENIZEN_CELLS[rolledIndex] : null);
-	const rolledName  = $derived(rolledIndex >= 0 ? (site?.denizens[rolledIndex] ?? '') : '');
-	const rolledFoe   = $derived(
+	const rolledCell = $derived(rolledIndex >= 0 ? DENIZEN_CELLS[rolledIndex] : null);
+	const rolledName = $derived(rolledIndex >= 0 ? (site?.denizens[rolledIndex] ?? '') : '');
+	const rolledFoe = $derived(
 		rolledName
-			? (getFoes().find(f => f.name.toLowerCase() === rolledName.toLowerCase()) ?? null)
-			: null
+			? (getFoes().find((f) => f.name.toLowerCase() === rolledName.toLowerCase()) ?? null)
+			: null,
 	);
-	const natureColor = $derived(rolledFoe ? (FOE_NATURE_COLORS[rolledFoe.nature] ?? '#7A9AB8') : '#7A9AB8');
-	const rankAdj     = $derived(FOE_QUANTITIES.find(q => q.value === quantity)?.rankAdj ?? 0);
-	const effRank     = $derived(rolledFoe ? calcEffectiveRank(rolledFoe.rank, rankAdj) : 1);
-	const rankInfo    = $derived(FOE_RANKS[effRank]);
+	const natureColor = $derived(
+		rolledFoe ? (FOE_NATURE_COLORS[rolledFoe.nature] ?? '#7A9AB8') : '#7A9AB8',
+	);
+	const rankAdj = $derived(FOE_QUANTITIES.find((q) => q.value === quantity)?.rankAdj ?? 0);
+	const effRank = $derived(rolledFoe ? calcEffectiveRank(rolledFoe.rank, rankAdj) : 1);
+	const rankInfo = $derived(FOE_RANKS[effRank]);
 
 	// ---------------------------------------------------------------------------
 	// Public API
 	// ---------------------------------------------------------------------------
 	export async function open(s: Site): Promise<void> {
 		await loadFoes();
-		site        = s;
-		view        = 'table';
-		rolling     = false;
+		site = s;
+		view = 'table';
+		rolling = false;
 		rolledIndex = -1;
-		quantity    = 'solo';
+		quantity = 'solo';
 		dialogEl?.showModal();
 	}
 
@@ -82,28 +89,31 @@
 		if (rolling) return;
 		rolling = true;
 
-		const rollVal     = Math.floor(Math.random() * 100) + 1;
-		const idx         = DENIZEN_CELLS.findIndex(c => rollVal >= c.low && rollVal <= c.high);
-		const cell        = DENIZEN_CELLS[idx];
+		const rollVal = Math.floor(Math.random() * 100) + 1;
+		const idx = DENIZEN_CELLS.findIndex((c) => rollVal >= c.low && rollVal <= c.high);
+		const cell = DENIZEN_CELLS[idx];
 		const denizenName = site?.denizens[idx] ?? '';
 
 		// Close dialog so dice animation is visible
 		dialogEl?.close();
 
-		const tensV = Math.floor(rollVal % 100 / 10) || 10;
+		const tensV = Math.floor((rollVal % 100) / 10) || 10;
 		const onesV = rollVal % 10 || 10;
 		await animateDice([
 			{ sides: 10, value: tensV, color: DIE_BLACK },
 			{ sides: 10, value: onesV, color: DIE_WHITE },
 		]);
 
-		appendLog(SESSION_LOG_ID, `Site — ${site?.name || 'Unnamed Site'}`,
-			`<div>Rolled d100: <strong>${rollVal}</strong> → ${cell.label} (${cell.range})${denizenName ? `: <strong>${denizenName}</strong>` : ''}</div>`);
+		appendLog(
+			SESSION_LOG_ID,
+			`Site — ${site?.name || 'Unnamed Site'}`,
+			`<div>Rolled d100: <strong>${rollVal}</strong> → ${cell.label} (${cell.range})${denizenName ? `: <strong>${denizenName}</strong>` : ''}</div>`,
+		);
 
 		rolledIndex = idx;
-		quantity    = 'solo';
-		rolling     = false;
-		view        = 'result';
+		quantity = 'solo';
+		rolling = false;
+		view = 'result';
 
 		// Reopen dialog to show result
 		dialogEl?.showModal();
@@ -115,7 +125,7 @@
 	function confirm(): void {
 		if (!rolledFoe) return;
 		const qty = quantity;
-		const er  = effRank;
+		const er = effRank;
 		dialogEl?.close();
 		onSelect(rolledFoe, qty, er);
 	}
@@ -128,15 +138,9 @@
 		if (!rc) return '';
 		return `background:${rc.bg}22; color:${rc.bg}`;
 	}
-
 </script>
 
-<dialog
-	bind:this={dialogEl}
-	class="denizen-dialog"
-	aria-label="Denizen Table"
->
-
+<dialog bind:this={dialogEl} class="denizen-dialog" aria-label="Denizen Table">
 	<!-- ===== TABLE VIEW ===== -->
 	{#if view === 'table'}
 		<div class="dd-header" use:draggable>
@@ -172,22 +176,28 @@
 			</button>
 		</div>
 
-	<!-- ===== RESULT VIEW ===== -->
+		<!-- ===== RESULT VIEW ===== -->
 	{:else if view === 'result'}
-		{@const qtyDef = FOE_QUANTITIES.find(q => q.value === quantity)}
+		{@const qtyDef = FOE_QUANTITIES.find((q) => q.value === quantity)}
 
 		<div class="dd-back-bar" use:draggable>
 			<span class="drag-grip" aria-hidden="true">⠿</span>
-			<span class="dd-title">{headingText(rolledFoe?.name ?? (rolledName || 'Unknown Denizen'))}</span>
+			<span class="dd-title"
+				>{headingText(rolledFoe?.name ?? (rolledName || 'Unknown Denizen'))}</span
+			>
 		</div>
 
 		<div class="dd-result-scroll">
 			{#if rolledFoe && rankInfo}
-
 				<!-- Top row: portrait + quantity/pills -->
 				<div class="dd-confirm-top">
 					<div class="dd-portrait-wrap">
-						<FoeImageCarousel name={rolledFoe.name} images={rolledFoe.images} alt={rolledFoe.name} class="dd-portrait" />
+						<FoeImageCarousel
+							name={rolledFoe.name}
+							images={rolledFoe.images}
+							alt={rolledFoe.name}
+							class="dd-portrait"
+						/>
 					</div>
 
 					<div class="dd-qty-section">
@@ -208,10 +218,16 @@
 						</fieldset>
 
 						<div class="dd-pills">
-							<span class="dd-badge" style="background: {natureColor}22; color: {natureColor}">{rolledFoe.nature}</span>
-							<span class="dd-badge dd-badge--rank" style={rankBadgeStyle(effRank)}>{rankInfo.label}</span>
+							<span class="dd-badge" style="background: {natureColor}22; color: {natureColor}"
+								>{rolledFoe.nature}</span
+							>
+							<span class="dd-badge dd-badge--rank" style={rankBadgeStyle(effRank)}
+								>{rankInfo.label}</span
+							>
 							<span class="dd-stat-pill dd-stat-pill--harm">Harm: {rankInfo.harm}</span>
-							<span class="dd-stat-pill dd-stat-pill--progress">Progress: {rankInfo.progressPerHit}</span>
+							<span class="dd-stat-pill dd-stat-pill--progress"
+								>Progress: {rankInfo.progressPerHit}</span
+							>
 							<span class="dd-stat-pill dd-stat-pill--qty">{qtyDef?.label ?? quantity}</span>
 						</div>
 					</div>
@@ -249,7 +265,6 @@
 						{/if}
 					</div>
 				{/if}
-
 			{:else}
 				<!-- No matching foe — show roll info only -->
 				<div class="dd-no-foe">
@@ -268,14 +283,15 @@
 		</div>
 
 		<div class="dd-footer">
-			<button class="btn dd-back-btn" onclick={() => (view = 'table')} style="margin-right: auto">← Back</button>
+			<button class="btn dd-back-btn" onclick={() => (view = 'table')} style="margin-right: auto"
+				>← Back</button
+			>
 			<button class="btn" onclick={close}>Cancel</button>
 			{#if rolledFoe}
 				<button class="btn btn-primary" onclick={confirm}>Add to Foes</button>
 			{/if}
 		</div>
 	{/if}
-
 </dialog>
 
 <style>
@@ -286,7 +302,7 @@
 		border-radius: 8px;
 		background: var(--bg-card);
 		color: var(--text);
-		box-shadow: 0 16px 48px rgba(0,0,0,0.55);
+		box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
 		/* Centre via top/left + transform; `inset: 0; margin: auto` collapses
 		   the dialog to a thin line on iOS Safari when combined with an open-
 		   state `display: flex` container. */
@@ -307,7 +323,7 @@
 		flex-direction: column;
 	}
 	.denizen-dialog::backdrop {
-		background: rgba(0,0,0,0.6);
+		background: rgba(0, 0, 0, 0.6);
 		backdrop-filter: blur(2px);
 	}
 
@@ -334,7 +350,9 @@
 		flex: 1;
 	}
 
-	.dd-back-btn { flex-shrink: 0; }
+	.dd-back-btn {
+		flex-shrink: 0;
+	}
 
 	.dd-footer {
 		display: flex;
@@ -400,7 +418,9 @@
 		color: var(--text);
 	}
 
-	.dd-table tbody tr:hover td { background: var(--bg-hover); }
+	.dd-table tbody tr:hover td {
+		background: var(--bg-hover);
+	}
 
 	.dd-row-rolled td {
 		background: color-mix(in srgb, var(--text-accent) 12%, transparent) !important;
@@ -419,7 +439,9 @@
 		border-radius: 8px 8px 0 0;
 		flex-shrink: 0;
 	}
-	.dd-back-bar .dd-title { flex: 1; }
+	.dd-back-bar .dd-title {
+		flex: 1;
+	}
 
 	/* ── Result scroll area ────────────────────────────────────────── */
 	.dd-result-scroll {
@@ -450,10 +472,14 @@
 			flex: 0 0 45%;
 			max-width: 45%;
 		}
-		.dd-qty-section { flex: 1; }
+		.dd-qty-section {
+			flex: 1;
+		}
 	}
 
-	.dd-portrait-wrap { width: 100%; }
+	.dd-portrait-wrap {
+		width: 100%;
+	}
 
 	:global(.dd-portrait) {
 		width: 100%;
@@ -498,13 +524,20 @@
 		cursor: pointer;
 		transition: background 0.1s;
 	}
-	.dd-qty-label:hover { background: rgba(255,255,255,0.05); }
-	.dd-qty-label.selected { background: rgba(255,255,255,0.08); }
-	.dd-qty-label input[type="radio"] { flex-shrink: 0; accent-color: var(--text-accent); }
+	.dd-qty-label:hover {
+		background: rgba(255, 255, 255, 0.05);
+	}
+	.dd-qty-label.selected {
+		background: rgba(255, 255, 255, 0.08);
+	}
+	.dd-qty-label input[type='radio'] {
+		flex-shrink: 0;
+		accent-color: var(--text-accent);
+	}
 
 	.dd-qty-name {
 		font-family: var(--font-ui);
-		font-size: 0.80rem;
+		font-size: 0.8rem;
 		font-weight: 600;
 		color: var(--text);
 	}
@@ -528,7 +561,10 @@
 		border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
 		white-space: nowrap;
 	}
-	.dd-badge--rank { background: rgba(255,255,255,0.06); color: var(--text-muted); }
+	.dd-badge--rank {
+		background: rgba(255, 255, 255, 0.06);
+		color: var(--text-muted);
+	}
 
 	.dd-stat-pill {
 		font-family: var(--font-ui);
@@ -540,9 +576,21 @@
 		border-radius: 10px;
 		white-space: nowrap;
 	}
-	.dd-stat-pill--harm     { background: rgba(239,68,68,0.10);   color: #ef4444; border: 1px solid rgba(239,68,68,0.25); }
-	.dd-stat-pill--progress { background: rgba(59,130,246,0.10);  color: #60a5fa; border: 1px solid rgba(59,130,246,0.25); }
-	.dd-stat-pill--qty      { background: rgba(255,255,255,0.08); color: var(--text-muted); border: 1px solid color-mix(in srgb, currentColor 35%, transparent); }
+	.dd-stat-pill--harm {
+		background: rgba(239, 68, 68, 0.1);
+		color: #ef4444;
+		border: 1px solid rgba(239, 68, 68, 0.25);
+	}
+	.dd-stat-pill--progress {
+		background: rgba(59, 130, 246, 0.1);
+		color: #60a5fa;
+		border: 1px solid rgba(59, 130, 246, 0.25);
+	}
+	.dd-stat-pill--qty {
+		background: rgba(255, 255, 255, 0.08);
+		color: var(--text-muted);
+		border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+	}
 
 	/* ── Bottom: description + sections ───────────────────────────── */
 	.dd-confirm-bottom {

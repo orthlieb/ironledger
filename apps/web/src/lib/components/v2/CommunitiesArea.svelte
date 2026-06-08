@@ -18,68 +18,72 @@
 	 * All edits flow through a 1.5 s debounce shared between both stores.
 	 */
 	import {
-		getCommunities, isCommunityLoading,
+		getCommunities,
+		isCommunityLoading,
 		persistCommunitiesNow,
-		addCommunity, removeCommunity,
+		addCommunity,
+		removeCommunity,
 	} from '$lib/communityStore.svelte.js';
-	import {
-		getNpcs,
-		persistNpcsNow,
-		addNpc, removeNpc,
-	} from '$lib/npcStore.svelte.js';
+	import { getNpcs, persistNpcsNow, addNpc, removeNpc } from '$lib/npcStore.svelte.js';
 	import type { Community, Npc, NpcRelationship } from '$lib/types.js';
 	import MarkdownNotes from '$lib/components/MarkdownNotes.svelte';
 	import PortraitUploader from '$lib/components/PortraitUploader.svelte';
 	import { EditableName } from '$lib/editableName.svelte.js';
 	import { isYrtEnabled } from '$lib/expansionStore.svelte.js';
-	import { loadOracles, getOracles, rollOracle, findOracle, rollFromRangeTable } from '$lib/oracleStore.svelte.js';
+	import {
+		loadOracles,
+		getOracles,
+		rollOracle,
+		findOracle,
+		rollFromRangeTable,
+	} from '$lib/oracleStore.svelte.js';
 	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
 	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
-	import trashSvg     from '$icons/trash-solid-full.svg?raw';
-	import hutSvg       from '$icons/hut.svg?raw';
-	import farmerSvg    from '$icons/farmer.svg?raw';
+	import trashSvg from '$icons/trash-solid-full.svg?raw';
+	import hutSvg from '$icons/hut.svg?raw';
+	import farmerSvg from '$icons/farmer.svg?raw';
 	import villageIconSvg from '$icons/village.svg?raw';
-	import diceD6Svg    from '$icons/dice-d6-light.svg?raw';
+	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
 	import { headingText } from '$lib/fontStore.svelte.js';
 
 	let { showTitle = true }: { showTitle?: boolean } = $props();
 
 	const COMMUNITY_COLOR = '#D06840';
-	const NPC_COLOR       = '#C848A8';
+	const NPC_COLOR = '#C848A8';
 
 	type EntryKind = 'community' | 'npc';
 	type CommunityEntry = { kind: 'community'; id: string; createdAt: number; data: Community };
-	type NpcEntry       = { kind: 'npc';       id: string; createdAt: number; data: Npc };
-	type Entry          = CommunityEntry | NpcEntry;
+	type NpcEntry = { kind: 'npc'; id: string; createdAt: number; data: Npc };
+	type Entry = CommunityEntry | NpcEntry;
 
 	type CmTab = 'core' | 'notes';
 	const TAB_LABELS: { key: CmTab; label: string }[] = [
-		{ key: 'core',  label: 'Core'  },
+		{ key: 'core', label: 'Core' },
 		{ key: 'notes', label: 'Description' },
 	];
 
 	const RELATIONSHIPS: { value: NpcRelationship; label: string }[] = [
-		{ value: 'bond',    label: 'Bond'    },
+		{ value: 'bond', label: 'Bond' },
 		{ value: 'neutral', label: 'Neutral' },
-		{ value: 'foe',     label: 'Foe'     },
+		{ value: 'foe', label: 'Foe' },
 	];
 
-	let activeEntryId    = $state<string | null>(null);
-	let activeTab        = $state<CmTab>('core');
-	let deleteDialogRef  = $state<{ open(): void; close(): void } | null>(null);
-	let newlyCreatedId   = $state('');
+	let activeEntryId = $state<string | null>(null);
+	let activeTab = $state<CmTab>('core');
+	let deleteDialogRef = $state<{ open(): void; close(): void } | null>(null);
+	let newlyCreatedId = $state('');
 
 	// New-community dialog state
 	let newCommunityDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let _pendingCommunity: Community | null = null;
-	let _pendingCommunityRegionType   = $state<'ironlands' | 'yrt'>('ironlands');
+	let _pendingCommunityRegionType = $state<'ironlands' | 'yrt'>('ironlands');
 	let _pendingCommunityLocationType = $state<'location' | 'coastalWatersLocation'>('location');
 
 	// New-NPC dialog state
-	let newNpcDialogRef       = $state<{ open(): void; close(): void } | null>(null);
+	let newNpcDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let _pendingNpc: Npc | null = null;
 	let _pendingNpcNameOracle = $state<string>('namesIronlander');
 
@@ -90,33 +94,45 @@
 	let rolling = $state(false);
 	const nameEdit = new EditableName((restored) => {
 		if (activeEntry?.kind === 'community') updateCommunity({ name: restored });
-		else if (activeEntry?.kind === 'npc')  updateNpc({ name: restored });
+		else if (activeEntry?.kind === 'npc') updateNpc({ name: restored });
 	});
 
 	const communities = $derived(getCommunities());
-	const npcs        = $derived(getNpcs());
-	const loading     = $derived(isCommunityLoading());
+	const npcs = $derived(getNpcs());
+	const loading = $derived(isCommunityLoading());
 
 	/** Combined list — communities + NPCs, sorted by createdAt (oldest first). */
-	const entries = $derived<Entry[]>([
-		...communities.map<CommunityEntry>(c => ({ kind: 'community', id: c.id, createdAt: c.createdAt ?? 0, data: c })),
-		...npcs       .map<NpcEntry>      (n => ({ kind: 'npc',       id: n.id, createdAt: n.createdAt ?? 0, data: n })),
-	].sort((a, b) => a.createdAt - b.createdAt));
+	const entries = $derived<Entry[]>(
+		[
+			...communities.map<CommunityEntry>((c) => ({
+				kind: 'community',
+				id: c.id,
+				createdAt: c.createdAt ?? 0,
+				data: c,
+			})),
+			...npcs.map<NpcEntry>((n) => ({
+				kind: 'npc',
+				id: n.id,
+				createdAt: n.createdAt ?? 0,
+				data: n,
+			})),
+		].sort((a, b) => a.createdAt - b.createdAt),
+	);
 
 	$effect(() => {
 		if (!activeEntryId && entries.length > 0) activeEntryId = entries[0].id;
 	});
 
-	const activeEntry = $derived(entries.find(e => e.id === activeEntryId));
-	const activeKind  = $derived<EntryKind | null>(activeEntry?.kind ?? null);
+	const activeEntry = $derived(entries.find((e) => e.id === activeEntryId));
+	const activeKind = $derived<EntryKind | null>(activeEntry?.kind ?? null);
 	const activeColor = $derived(activeKind === 'npc' ? NPC_COLOR : COMMUNITY_COLOR);
 
 	function selectEntry(id: string) {
 		flushPersist();
 		activeEntryId = id;
-		activeTab     = 'core';
+		activeTab = 'core';
 		nameEdit.commit();
-		editingNotes  = false;
+		editingNotes = false;
 	}
 
 	// ── Direct-proxy writes + debounced API flush ─────────────────────────
@@ -146,15 +162,18 @@
 		try {
 			const result = rollOracle('settlementTrouble', getOracles());
 			if (!result.value) return;
-			const tensV = Math.floor(result.roll % 100 / 10) || 10;
+			const tensV = Math.floor((result.roll % 100) / 10) || 10;
 			const onesV = result.roll % 10 || 10;
 			await animateDice([
 				{ sides: 10, value: tensV, color: DIE_BLACK },
 				{ sides: 10, value: onesV, color: DIE_WHITE },
 			]);
-			appendLog(SESSION_LOG_ID, result.title,
+			appendLog(
+				SESSION_LOG_ID,
+				result.title,
 				`<div class="roll-line">Roll: d100 → ${result.roll}</div>` +
-				`<div>Result: <strong>${result.value}</strong></div>`);
+					`<div>Result: <strong>${result.value}</strong></div>`,
+			);
 			updateCommunity({ trouble: result.value });
 		} finally {
 			rolling = false;
@@ -175,7 +194,7 @@
 			_saveTimer = null;
 			_savingKind = null;
 			const p = k === 'npc' ? persistNpcsNow() : persistCommunitiesNow();
-			p.catch(err => console.error('[v2] save failed', err));
+			p.catch((err) => console.error('[v2] save failed', err));
 		}, 1500);
 		return () => {
 			if (_saveTimer) {
@@ -184,7 +203,7 @@
 				_saveTimer = null;
 				_savingKind = null;
 				const p = k === 'npc' ? persistNpcsNow() : persistCommunitiesNow();
-				p.catch(err => console.error('[v2] save failed', err));
+				p.catch((err) => console.error('[v2] save failed', err));
 			}
 		};
 	});
@@ -196,30 +215,30 @@
 			_saveTimer = null;
 			_savingKind = null;
 			const p = k === 'npc' ? persistNpcsNow() : persistCommunitiesNow();
-			p.catch(err => console.error('[v2] save failed', err));
+			p.catch((err) => console.error('[v2] save failed', err));
 		}
 	}
 
 	function setName(value: string) {
 		if (activeEntry?.kind === 'community') updateCommunity({ name: value });
-		else if (activeEntry?.kind === 'npc')  updateNpc({ name: value });
+		else if (activeEntry?.kind === 'npc') updateNpc({ name: value });
 	}
 	function setNotes(value: string) {
 		if (activeEntry?.kind === 'community') updateCommunity({ notes: value });
-		else if (activeEntry?.kind === 'npc')  updateNpc({ notes: value });
+		else if (activeEntry?.kind === 'npc') updateNpc({ notes: value });
 	}
 
 	// ── Add Community / NPC (V1 random-or-manual pattern) ──────────────────
 	async function addNewCommunity() {
 		_pendingCommunity = {
-			id:                  crypto.randomUUID(),
-			name:                'New Community',
-			region:              '',
-			location:            '',
+			id: crypto.randomUUID(),
+			name: 'New Community',
+			region: '',
+			location: '',
 			locationDescription: '',
-			trouble:             '',
-			notes:               '',
-			createdAt:           Date.now(),
+			trouble: '',
+			notes: '',
+			createdAt: Date.now(),
 		};
 		await loadOracles();
 		newCommunityDialogRef?.open();
@@ -234,31 +253,32 @@
 			const nameOracle = Math.random() < 0.5 ? 'settlementName' : 'settlementNameQuick';
 			const nameVal = rollOracle(nameOracle, oracles).value;
 			if (nameVal) c.name = nameVal;
-			c.region              = _pendingCommunityRegionType === 'yrt'
-				? rollOracle('yrtRegion', oracles).value
-				: rollOracle('region', oracles).value;
-			c.location            = rollOracle(_pendingCommunityLocationType, oracles).value;
+			c.region =
+				_pendingCommunityRegionType === 'yrt'
+					? rollOracle('yrtRegion', oracles).value
+					: rollOracle('region', oracles).value;
+			c.location = rollOracle(_pendingCommunityLocationType, oracles).value;
 			c.locationDescription = rollOracle('locationDescriptor', oracles).value;
-			c.trouble             = rollOracle('settlementTrouble', oracles).value;
+			c.trouble = rollOracle('settlementTrouble', oracles).value;
 		}
 		await addCommunity(c);
-		activeEntryId  = c.id;
+		activeEntryId = c.id;
 		newlyCreatedId = c.id;
-		activeTab      = 'core';
+		activeTab = 'core';
 		setTimeout(() => (newlyCreatedId = ''), 0);
 	}
 
 	async function addNewNpc() {
 		_pendingNpc = {
-			id:           crypto.randomUUID(),
-			name:         'New NPC',
-			role:         '',
-			goal:         '',
-			descriptor:   '',
+			id: crypto.randomUUID(),
+			name: 'New NPC',
+			role: '',
+			goal: '',
+			descriptor: '',
 			relationship: 'neutral',
-			location:     '',
-			notes:        '',
-			createdAt:    Date.now(),
+			location: '',
+			notes: '',
+			createdAt: Date.now(),
 		};
 		await loadOracles();
 		newNpcDialogRef?.open();
@@ -270,8 +290,8 @@
 		_pendingNpc = null;
 		if (random) {
 			const oracles = getOracles();
-			n.role       = rollOracle('characterRole', oracles).value;
-			n.goal       = rollOracle('characterGoal', oracles).value;
+			n.role = rollOracle('characterRole', oracles).value;
+			n.goal = rollOracle('characterGoal', oracles).value;
 			n.descriptor = rollOracle('characterDescriptor', oracles).value;
 			if (_pendingNpcNameOracle.startsWith('namesOther_')) {
 				const o = findOracle('namesOther');
@@ -287,9 +307,9 @@
 			}
 		}
 		await addNpc(n);
-		activeEntryId  = n.id;
+		activeEntryId = n.id;
 		newlyCreatedId = n.id;
-		activeTab      = 'core';
+		activeTab = 'core';
 		setTimeout(() => (newlyCreatedId = ''), 0);
 	}
 
@@ -297,7 +317,7 @@
 		if (!activeEntry) return;
 		const id = activeEntry.id;
 		if (activeEntry.kind === 'community') await removeCommunity(id);
-		else                                   await removeNpc(id);
+		else await removeNpc(id);
 		if (activeEntryId === id) activeEntryId = null;
 	}
 </script>
@@ -309,8 +329,10 @@
 			<span class="cmt-title">{headingText('Connections')}</span>
 		{/if}
 		<div class="cm-header-actions">
-			<button class="btn cm-hdr-btn" onclick={addNewCommunity} use:tooltip={'Add community'}>+ Community</button>
-			<button class="btn cm-hdr-btn" onclick={addNewNpc}       use:tooltip={'Add NPC'}>+ NPC</button>
+			<button class="btn cm-hdr-btn" onclick={addNewCommunity} use:tooltip={'Add community'}
+				>+ Community</button
+			>
+			<button class="btn cm-hdr-btn" onclick={addNewNpc} use:tooltip={'Add NPC'}>+ NPC</button>
 		</div>
 	</header>
 
@@ -319,7 +341,10 @@
 	{:else if entries.length === 0}
 		<div class="cm-empty">
 			<span class="cm-empty-icon" aria-hidden="true">{@html villageIconSvg}</span>
-			<p class="cm-empty-text">There are people and places to <s>plunder</s> discover. Click <strong>+ COMMUNITY</strong> or <strong>+ NPC</strong> to begin.</p>
+			<p class="cm-empty-text">
+				There are people and places to <s>plunder</s> discover. Click <strong>+ COMMUNITY</strong>
+				or <strong>+ NPC</strong> to begin.
+			</p>
 		</div>
 	{:else}
 		<div class="cm-body">
@@ -333,14 +358,19 @@
 						onclick={() => selectEntry(entry.id)}
 						use:tooltip={`${entry.data.name} (${entry.kind})`}
 					>
-						<span class="cm-spine-name">{entry.data.name || (entry.kind === 'npc' ? 'Unnamed NPC' : 'Unnamed Community')}</span>
+						<span class="cm-spine-name"
+							>{entry.data.name ||
+								(entry.kind === 'npc' ? 'Unnamed NPC' : 'Unnamed Community')}</span
+						>
 					</button>
 				{/each}
 			</nav>
 
 			{#if activeEntry}
 				<div class="cm-stage-header" style="--cm-nature: {activeColor}">
-					<span class="cm-stage-icon" aria-hidden="true">{@html activeEntry.kind === 'npc' ? farmerSvg : hutSvg}</span>
+					<span class="cm-stage-icon" aria-hidden="true"
+						>{@html activeEntry.kind === 'npc' ? farmerSvg : hutSvg}</span
+					>
 					{#if nameEdit.editing}
 						<input
 							bind:this={nameEdit.inputEl}
@@ -358,14 +388,19 @@
 							class="cm-stage-name cm-stage-name--editable"
 							use:tooltip={'Click to rename'}
 							onclick={() => nameEdit.start(activeEntry.data.name)}
-						>{headingText(activeEntry.data.name || (activeEntry.kind === 'npc' ? 'Unnamed NPC' : 'Unnamed Community'))}</button>
+							>{headingText(
+								activeEntry.data.name ||
+									(activeEntry.kind === 'npc' ? 'Unnamed NPC' : 'Unnamed Community'),
+							)}</button
+						>
 					{/if}
 					<button
 						class="btn btn-icon icon-btn btn-trash cm-stage-delete-btn"
 						onclick={() => deleteDialogRef?.open()}
 						use:tooltip={activeEntry.kind === 'npc' ? 'Delete NPC' : 'Delete community'}
 						aria-label={activeEntry.kind === 'npc' ? 'Delete NPC' : 'Delete community'}
-					>{@html trashSvg}</button>
+						>{@html trashSvg}</button
+					>
 				</div>
 
 				<div class="cm-stage">
@@ -376,8 +411,8 @@
 								class="cm-tab"
 								class:cm-tab--active={activeTab === tab.key}
 								aria-selected={activeTab === tab.key}
-								onclick={() => (activeTab = tab.key)}
-							>{tab.label}</button>
+								onclick={() => (activeTab = tab.key)}>{tab.label}</button
+							>
 						{/each}
 					</div>
 
@@ -387,68 +422,108 @@
 								{@const c = activeEntry.data}
 								<div class="cm-field-row">
 									<label class="cm-field-label" for="cm-region-{c.id}">Region</label>
-									<input id="cm-region-{c.id}" class="cm-input" type="text"
+									<input
+										id="cm-region-{c.id}"
+										class="cm-input"
+										type="text"
 										value={c.region}
-										oninput={(e) => updateCommunity({ region: (e.target as HTMLInputElement).value })}
-										placeholder="Region…" />
+										oninput={(e) =>
+											updateCommunity({ region: (e.target as HTMLInputElement).value })}
+										placeholder="Region…"
+									/>
 								</div>
 								<div class="cm-field-row">
 									<label class="cm-field-label" for="cm-location-{c.id}">Location</label>
-									<input id="cm-location-{c.id}" class="cm-input" type="text"
+									<input
+										id="cm-location-{c.id}"
+										class="cm-input"
+										type="text"
 										value={c.location}
-										oninput={(e) => updateCommunity({ location: (e.target as HTMLInputElement).value })}
-										placeholder="Location…" />
+										oninput={(e) =>
+											updateCommunity({ location: (e.target as HTMLInputElement).value })}
+										placeholder="Location…"
+									/>
 								</div>
 								<div class="cm-field-row">
 									<label class="cm-field-label" for="cm-locdesc-{c.id}">Description</label>
-									<input id="cm-locdesc-{c.id}" class="cm-input" type="text"
+									<input
+										id="cm-locdesc-{c.id}"
+										class="cm-input"
+										type="text"
 										value={c.locationDescription}
-										oninput={(e) => updateCommunity({ locationDescription: (e.target as HTMLInputElement).value })}
-										placeholder="Location description…" />
+										oninput={(e) =>
+											updateCommunity({
+												locationDescription: (e.target as HTMLInputElement).value,
+											})}
+										placeholder="Location description…"
+									/>
 								</div>
 								<div class="cm-field-row cm-field-row--trouble">
 									<label class="cm-field-label" for="cm-trouble-{c.id}">Trouble</label>
-									<input id="cm-trouble-{c.id}" class="cm-input" type="text"
+									<input
+										id="cm-trouble-{c.id}"
+										class="cm-input"
+										type="text"
 										value={c.trouble}
-										oninput={(e) => updateCommunity({ trouble: (e.target as HTMLInputElement).value })}
-										placeholder="Settlement trouble…" />
+										oninput={(e) =>
+											updateCommunity({ trouble: (e.target as HTMLInputElement).value })}
+										placeholder="Settlement trouble…"
+									/>
 									<button
 										class="cm-dice-btn"
 										type="button"
 										onclick={rollSettlementTrouble}
 										disabled={rolling}
 										use:tooltip={'Roll settlement trouble oracle'}
-										aria-label="Roll settlement trouble oracle"
-									>{@html diceD6Svg}</button>
+										aria-label="Roll settlement trouble oracle">{@html diceD6Svg}</button
+									>
 								</div>
 							{:else}
 								{@const n = activeEntry.data}
 								<div class="cm-field-row">
 									<label class="cm-field-label" for="cm-role-{n.id}">Role</label>
-									<input id="cm-role-{n.id}" class="cm-input" type="text"
+									<input
+										id="cm-role-{n.id}"
+										class="cm-input"
+										type="text"
 										value={n.role}
 										oninput={(e) => updateNpc({ role: (e.target as HTMLInputElement).value })}
-										placeholder="Role…" />
+										placeholder="Role…"
+									/>
 								</div>
 								<div class="cm-field-row">
 									<label class="cm-field-label" for="cm-goal-{n.id}">Goal</label>
-									<input id="cm-goal-{n.id}" class="cm-input" type="text"
+									<input
+										id="cm-goal-{n.id}"
+										class="cm-input"
+										type="text"
 										value={n.goal}
 										oninput={(e) => updateNpc({ goal: (e.target as HTMLInputElement).value })}
-										placeholder="Goal…" />
+										placeholder="Goal…"
+									/>
 								</div>
 								<div class="cm-field-row">
 									<label class="cm-field-label" for="cm-desc-{n.id}">Descriptor</label>
-									<input id="cm-desc-{n.id}" class="cm-input" type="text"
+									<input
+										id="cm-desc-{n.id}"
+										class="cm-input"
+										type="text"
 										value={n.descriptor}
 										oninput={(e) => updateNpc({ descriptor: (e.target as HTMLInputElement).value })}
-										placeholder="Descriptor…" />
+										placeholder="Descriptor…"
+									/>
 								</div>
 								<div class="cm-field-row">
 									<label class="cm-field-label" for="cm-rel-{n.id}">Relationship</label>
-									<select id="cm-rel-{n.id}" class="cm-input"
+									<select
+										id="cm-rel-{n.id}"
+										class="cm-input"
 										value={n.relationship}
-										onchange={(e) => updateNpc({ relationship: (e.target as HTMLSelectElement).value as NpcRelationship })}>
+										onchange={(e) =>
+											updateNpc({
+												relationship: (e.target as HTMLSelectElement).value as NpcRelationship,
+											})}
+									>
 										{#each RELATIONSHIPS as r}
 											<option value={r.value}>{r.label}</option>
 										{/each}
@@ -456,10 +531,14 @@
 								</div>
 								<div class="cm-field-row">
 									<label class="cm-field-label" for="cm-loc-{n.id}">Location</label>
-									<input id="cm-loc-{n.id}" class="cm-input" type="text"
+									<input
+										id="cm-loc-{n.id}"
+										class="cm-input"
+										type="text"
 										value={n.location}
 										oninput={(e) => updateNpc({ location: (e.target as HTMLInputElement).value })}
-										placeholder="Location…" />
+										placeholder="Location…"
+									/>
 								</div>
 							{/if}
 
@@ -473,7 +552,9 @@
 								<MarkdownNotes
 									value={activeEntry.data.notes ?? ''}
 									oninput={(v) => setNotes(v)}
-									placeholder={activeEntry.kind === 'npc' ? 'Notes about this NPC…' : 'Notes about this community…'}
+									placeholder={activeEntry.kind === 'npc'
+										? 'Notes about this NPC…'
+										: 'Notes about this community…'}
 									rows={5}
 								/>
 							</div>
@@ -484,7 +565,7 @@
 										value={activeEntry.data.imageUrl ?? ''}
 										oninput={(v) => {
 											if (activeEntry?.kind === 'community') updateCommunity({ imageUrl: v });
-											else if (activeEntry?.kind === 'npc')  updateNpc({ imageUrl: v });
+											else if (activeEntry?.kind === 'npc') updateNpc({ imageUrl: v });
 										}}
 										placeholderSvg={activeEntry.kind === 'npc' ? farmerSvg : hutSvg}
 										alt={activeEntry.data.name}
@@ -495,7 +576,9 @@
 									bind:editing={editingNotes}
 									value={activeEntry.data.notes ?? ''}
 									oninput={(v) => setNotes(v)}
-									placeholder={activeEntry.kind === 'npc' ? 'Notes about this NPC…' : 'Notes about this community…'}
+									placeholder={activeEntry.kind === 'npc'
+										? 'Notes about this NPC…'
+										: 'Notes about this community…'}
 									rows={6}
 								/>
 							</div>
@@ -514,7 +597,12 @@
 		confirmLabel="Delete"
 		onconfirm={confirmDeleteEntry}
 	>
-		<p>Permanently delete <strong>{activeEntry.data.name || (activeEntry.kind === 'npc' ? 'this NPC' : 'this community')}</strong>? This cannot be undone.</p>
+		<p>
+			Permanently delete <strong
+				>{activeEntry.data.name ||
+					(activeEntry.kind === 'npc' ? 'this NPC' : 'this community')}</strong
+			>? This cannot be undone.
+		</p>
 	</ConfirmDialog>
 {/if}
 
@@ -529,30 +617,52 @@
 	accentColor={COMMUNITY_COLOR}
 	onconfirm={() => _commitCommunity(true)}
 	onalternate={() => _commitCommunity(false)}
-	ondismiss={() => { _pendingCommunity = null; }}
+	ondismiss={() => {
+		_pendingCommunity = null;
+	}}
 >
-	<p style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 10px;">
+	<p
+		style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 10px;"
+	>
 		Generate fields randomly using oracles, or create the community manually?
 	</p>
 	<div style="display: flex; gap: 20px; align-items: flex-start;">
 		<fieldset style="border: none; padding: 0; margin: 0;">
-			<legend style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); margin-bottom: 5px;">Region oracle</legend>
-			<label style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer; margin-bottom: 4px;">
+			<legend
+				style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); margin-bottom: 5px;"
+				>Region oracle</legend
+			>
+			<label
+				style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer; margin-bottom: 4px;"
+			>
 				<input type="radio" bind:group={_pendingCommunityRegionType} value="ironlands" /> Ironlands
 			</label>
 			{#if isYrtEnabled()}
-				<label style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer;">
+				<label
+					style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer;"
+				>
 					<input type="radio" bind:group={_pendingCommunityRegionType} value="yrt" /> YRT
 				</label>
 			{/if}
 		</fieldset>
 		<fieldset style="border: none; padding: 0; margin: 0;">
-			<legend style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); margin-bottom: 5px;">Location oracle</legend>
-			<label style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer; margin-bottom: 4px;">
+			<legend
+				style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); margin-bottom: 5px;"
+				>Location oracle</legend
+			>
+			<label
+				style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer; margin-bottom: 4px;"
+			>
 				<input type="radio" bind:group={_pendingCommunityLocationType} value="location" /> Inland
 			</label>
-			<label style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer;">
-				<input type="radio" bind:group={_pendingCommunityLocationType} value="coastalWatersLocation" /> Coastal Waters
+			<label
+				style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer;"
+			>
+				<input
+					type="radio"
+					bind:group={_pendingCommunityLocationType}
+					value="coastalWatersLocation"
+				/> Coastal Waters
 			</label>
 		</fieldset>
 	</div>
@@ -569,111 +679,181 @@
 	accentColor={NPC_COLOR}
 	onconfirm={() => _commitNpc(true)}
 	onalternate={() => _commitNpc(false)}
-	ondismiss={() => { _pendingNpc = null; }}
+	ondismiss={() => {
+		_pendingNpc = null;
+	}}
 >
-	<p style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 8px;">
+	<p
+		style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 8px;"
+	>
 		Generate fields randomly using oracles, or create the NPC manually?
 	</p>
 	<fieldset style="border: none; padding: 0; margin: 0 0 4px;">
-		<legend style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); margin-bottom: 5px;">Name oracle</legend>
-		{#each [
-			{ value: 'namesIronlander',   label: 'Ironlander'   },
-			{ value: 'namesIronlander2',  label: 'Ironlander 2' },
-			{ value: 'namesElf',          label: 'Elf'          },
-			{ value: 'namesOther_giants', label: 'Giants'       },
-			{ value: 'namesOther_varou',  label: 'Varou'        },
-			{ value: 'namesOther_trolls', label: 'Trolls'       },
-		] as opt}
-			<label style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer; margin-bottom: 3px;">
-				<input type="radio" bind:group={_pendingNpcNameOracle} value={opt.value} /> {opt.label}
+		<legend
+			style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); margin-bottom: 5px;"
+			>Name oracle</legend
+		>
+		{#each [{ value: 'namesIronlander', label: 'Ironlander' }, { value: 'namesIronlander2', label: 'Ironlander 2' }, { value: 'namesElf', label: 'Elf' }, { value: 'namesOther_giants', label: 'Giants' }, { value: 'namesOther_varou', label: 'Varou' }, { value: 'namesOther_trolls', label: 'Trolls' }] as opt}
+			<label
+				style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer; margin-bottom: 3px;"
+			>
+				<input type="radio" bind:group={_pendingNpcNameOracle} value={opt.value} />
+				{opt.label}
 			</label>
 		{/each}
 	</fieldset>
 </ConfirmDialog>
 
 <style>
-	.cm-area { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+	.cm-area {
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+		min-height: 0;
+	}
 
 	.cm-header {
-		display: flex; align-items: center; gap: 10px;
+		display: flex;
+		align-items: center;
+		gap: 10px;
 		padding: 6px 12px;
 		border-bottom: 1px solid var(--border);
 		background: var(--bg-control);
 		flex-shrink: 0;
 	}
 	.cm-title-icon {
-		display: inline-flex; align-items: center; justify-content: center;
-		width: 18px; height: 18px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 18px;
+		height: 18px;
 		flex-shrink: 0;
 		color: var(--text-accent);
 	}
-	.cm-title-icon :global(svg) { width: 100%; height: 100%; fill: currentColor; }
-	.cm-title-icon :global(svg) :global(path) { fill: currentColor; }
+	.cm-title-icon :global(svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
+	}
+	.cm-title-icon :global(svg) :global(path) {
+		fill: currentColor;
+	}
 	.cmt-title {
-		font-family:    var(--font-display);
-		font-size:      calc(0.82rem * var(--font-display-scale));
-		font-weight:    700;
+		font-family: var(--font-display);
+		font-size: calc(0.82rem * var(--font-display-scale));
+		font-weight: 700;
 		letter-spacing: 0.08em;
 		text-transform: var(--font-display-transform);
-		color:          var(--text-accent);
+		color: var(--text-accent);
 	}
-	.cm-header-actions { display: flex; align-items: center; gap: 6px; flex: 1; justify-content: flex-end; }
-	.cm-hdr-btn { font-size: 0.7rem; padding: 3px 9px; min-width: unset; }
-
-	.cm-loading, .cm-empty {
-		flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-		font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted);
-		padding: 20px; gap: 12px; text-align: center;
+	.cm-header-actions {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		flex: 1;
+		justify-content: flex-end;
+	}
+	.cm-hdr-btn {
+		font-size: 0.7rem;
+		padding: 3px 9px;
+		min-width: unset;
 	}
 
-	.cm-empty-icon { display: flex; width: 48px; height: 48px; opacity: 0.25; }
-	.cm-empty-icon :global(svg) { width: 100%; height: 100%; fill: currentColor; }
-	.cm-empty-text { margin: 0; line-height: 1.5; max-width: 26ch; }
+	.cm-loading,
+	.cm-empty {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		font-family: var(--font-ui);
+		font-size: 0.8rem;
+		color: var(--text-muted);
+		padding: 20px;
+		gap: 12px;
+		text-align: center;
+	}
+
+	.cm-empty-icon {
+		display: flex;
+		width: 48px;
+		height: 48px;
+		opacity: 0.25;
+	}
+	.cm-empty-icon :global(svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
+	}
+	.cm-empty-text {
+		margin: 0;
+		line-height: 1.5;
+		max-width: 26ch;
+	}
 
 	.cm-body {
 		display: grid;
 		grid-template-columns: 36px 1fr;
 		grid-template-rows: auto 1fr;
-		flex: 1; min-height: 0;
+		flex: 1;
+		min-height: 0;
 	}
-	.cm-spines       { grid-row: 1 / span 2; }
-	.cm-stage-header { grid-column: 2; grid-row: 1; }
+	.cm-spines {
+		grid-row: 1 / span 2;
+	}
+	.cm-stage-header {
+		grid-column: 2;
+		grid-row: 1;
+	}
 	.cm-stage {
-		grid-column: 2; grid-row: 2;
+		grid-column: 2;
+		grid-row: 2;
 		padding: 0 12px 10px 0;
-		min-height: 0; min-width: 0;
+		min-height: 0;
+		min-width: 0;
 		overflow: auto;
-		display: flex; flex-direction: column;
+		display: flex;
+		flex-direction: column;
 	}
 
 	.cm-spines {
-		display: flex; flex-direction: column; align-items: stretch;
-		gap: 0; padding: 0; overflow-y: auto;
+		display: flex;
+		flex-direction: column;
+		align-items: stretch;
+		gap: 0;
+		padding: 0;
+		overflow-y: auto;
 		border-right: 1px solid var(--border);
 		background: transparent;
 	}
 	.cm-spine {
 		all: unset;
 		cursor: pointer;
-		font-family:    var(--font-ui);
-		font-size:      0.72rem;
-		font-weight:    600;
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		font-weight: 600;
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
-		color:          var(--text-dimmer);
-		background:     transparent;
+		color: var(--text-dimmer);
+		background: transparent;
 		border: none;
 		border-right: 2px solid transparent;
 		padding: 16px 7px 16px 7px;
 		text-align: center;
 		writing-mode: sideways-lr;
-		flex: 1 1 0; min-height: 0; overflow: hidden;
+		flex: 1 1 0;
+		min-height: 0;
+		overflow: hidden;
 		margin-right: -1px;
-		transition: color 0.12s, border-color 0.12s;
+		transition:
+			color 0.12s,
+			border-color 0.12s;
 	}
-	.cm-spine:hover { color: var(--text-muted); }
+	.cm-spine:hover {
+		color: var(--text-muted);
+	}
 	.cm-spine--active {
-		color:              var(--text-accent);
+		color: var(--text-accent);
 		border-right-color: var(--text-accent);
 	}
 	.cm-spine-name {
@@ -686,7 +866,9 @@
 
 	/* Stage banner — colored band keyed to entry type. */
 	.cm-stage-header {
-		display: flex; align-items: center; gap: 6px;
+		display: flex;
+		align-items: center;
+		gap: 6px;
 		padding: 5px 10px;
 		background: var(--bg-control);
 		border: none;
@@ -694,40 +876,45 @@
 		border-bottom: 1px solid var(--border);
 	}
 	.cm-stage-icon {
-		display:         flex;
-		align-items:     center;
+		display: flex;
+		align-items: center;
 		justify-content: center;
-		width:           18px;
-		height:          18px;
-		flex-shrink:     0;
-		color:           var(--cm-nature, var(--text-muted));
+		width: 18px;
+		height: 18px;
+		flex-shrink: 0;
+		color: var(--cm-nature, var(--text-muted));
 	}
 	.cm-stage-icon :global(svg) {
-		width:  100%;
+		width: 100%;
 		height: 100%;
-		fill:   currentColor;
+		fill: currentColor;
 	}
 	.cm-stage-name {
-		appearance:     none;
+		appearance: none;
 		-webkit-appearance: none;
-		text-align:     left;
-		background:     transparent;
-		flex: 1; margin: 0;
-		font-family:    var(--font-display);
-		font-size:      calc(0.82rem * var(--font-display-scale));
-		font-weight:    var(--font-display-weight);
-		font-variant:   var(--font-display-variant);
+		text-align: left;
+		background: transparent;
+		flex: 1;
+		margin: 0;
+		font-family: var(--font-display);
+		font-size: calc(0.82rem * var(--font-display-scale));
+		font-weight: var(--font-display-weight);
+		font-variant: var(--font-display-variant);
 		letter-spacing: 0.08em;
 		text-transform: var(--font-display-transform);
-		color:          var(--text-accent);
-		overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+		color: var(--text-accent);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 	.cm-stage-name--editable {
 		cursor: pointer;
 		padding: 2px 6px;
 		border: 1px solid transparent;
 		border-radius: 3px;
-		transition: background 0.12s, border-color 0.12s;
+		transition:
+			background 0.12s,
+			border-color 0.12s;
 	}
 	.cm-stage-name--editable:hover {
 		background: var(--bg-hover);
@@ -735,58 +922,82 @@
 	}
 	.cm-stage-name-input {
 		flex: 1;
-		font-family:    var(--font-display);
-		font-size:      calc(0.82rem * var(--font-display-scale));
-		font-weight:    var(--font-display-weight);
-		font-variant:   var(--font-display-variant);
+		font-family: var(--font-display);
+		font-size: calc(0.82rem * var(--font-display-scale));
+		font-weight: var(--font-display-weight);
+		font-variant: var(--font-display-variant);
 		letter-spacing: 0.08em;
 		text-transform: var(--font-display-transform);
-		color:          var(--text-accent);
-		background:     transparent;
-		border:         1px solid var(--border-mid);
-		border-radius:  3px;
-		padding:        2px 6px;
-		outline:        none;
+		color: var(--text-accent);
+		background: transparent;
+		border: 1px solid var(--border-mid);
+		border-radius: 3px;
+		padding: 2px 6px;
+		outline: none;
 	}
-	.cm-stage-name-input:focus { border-color: var(--text-accent); }
+	.cm-stage-name-input:focus {
+		border-color: var(--text-accent);
+	}
 	/* Delete: visual comes from .btn-trash in app.css; only positioning here. */
-	.cm-stage-delete-btn { flex-shrink: 0; }
+	.cm-stage-delete-btn {
+		flex-shrink: 0;
+	}
 
 	.cm-tabs {
-		display: flex; align-items: stretch; gap: 0;
+		display: flex;
+		align-items: stretch;
+		gap: 0;
 		margin-bottom: 8px;
 		border-bottom: 1px solid var(--border);
 	}
 	.cm-tab {
-		all: unset; cursor: pointer;
-		font-family:    var(--font-ui);
-		font-size:      0.72rem;
-		font-weight:    600;
+		all: unset;
+		cursor: pointer;
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		font-weight: 600;
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
-		color:          var(--text-dimmer);
-		background:     transparent;
-		border: none; border-bottom: 2px solid transparent;
+		color: var(--text-dimmer);
+		background: transparent;
+		border: none;
+		border-bottom: 2px solid transparent;
 		padding: 7px 8px 6px;
-		white-space: nowrap; flex-shrink: 0;
+		white-space: nowrap;
+		flex-shrink: 0;
 		margin-bottom: -1px;
-		transition: color 0.12s, border-color 0.12s;
-		display: inline-flex; align-items: center; gap: 0.35rem;
+		transition:
+			color 0.12s,
+			border-color 0.12s;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
 	}
-	.cm-tab:hover { color: var(--text-muted); }
-	.cm-tab--active { color: var(--text-accent); border-bottom-color: var(--text-accent); }
+	.cm-tab:hover {
+		color: var(--text-muted);
+	}
+	.cm-tab--active {
+		color: var(--text-accent);
+		border-bottom-color: var(--text-accent);
+	}
 
 	.cm-card {
-		flex: 1; min-height: 200px;
+		flex: 1;
+		min-height: 200px;
 		background: var(--bg-inset);
-		border: none; border-radius: 0;
+		border: none;
+		border-radius: 0;
 		padding: 7px;
 		overflow: auto;
 		position: relative;
-		display: flex; flex-direction: column; gap: 10px;
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
 	}
 
-	.cm-notes-section { display: block; }
+	.cm-notes-section {
+		display: block;
+	}
 
 	/* Core-tab notes block — same `notes` field as the Description tab,
 	   exposed at the bottom of Core for quick edits. The Description tab
@@ -802,7 +1013,9 @@
 		margin-bottom: 4px;
 	}
 	.cm-field-row {
-		display: flex; align-items: center; gap: 8px;
+		display: flex;
+		align-items: center;
+		gap: 8px;
 	}
 	.cm-field-label {
 		font-family: var(--font-ui);
@@ -824,33 +1037,40 @@
 		padding: 3px 8px;
 		outline: none;
 	}
-	.cm-input:focus { border-color: var(--text-accent); }
+	.cm-input:focus {
+		border-color: var(--text-accent);
+	}
 
-	.cm-field-row--trouble { align-items: center; }
+	.cm-field-row--trouble {
+		align-items: center;
+	}
 
 	.cm-dice-btn {
-		display:         inline-flex;
-		align-items:     center;
+		display: inline-flex;
+		align-items: center;
 		justify-content: center;
-		width:           26px;
-		height:          26px;
-		padding:         0;
-		background:      transparent;
-		border:          1px solid var(--border-mid);
-		border-radius:   4px;
-		color:           var(--text-muted);
-		cursor:          pointer;
-		flex-shrink:     0;
-		transition:      background 0.12s, color 0.12s, border-color 0.12s;
+		width: 26px;
+		height: 26px;
+		padding: 0;
+		background: transparent;
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+		color: var(--text-muted);
+		cursor: pointer;
+		flex-shrink: 0;
+		transition:
+			background 0.12s,
+			color 0.12s,
+			border-color 0.12s;
 	}
 	.cm-dice-btn:hover {
-		background:   color-mix(in srgb, var(--text-accent) 12%, transparent);
-		color:        var(--text-accent);
+		background: color-mix(in srgb, var(--text-accent) 12%, transparent);
+		color: var(--text-accent);
 		border-color: var(--text-accent);
 	}
 	.cm-dice-btn :global(svg) {
-		width:  16px;
+		width: 16px;
 		height: 16px;
-		fill:   currentColor;
+		fill: currentColor;
 	}
 </style>

@@ -15,10 +15,10 @@ import { config } from '../config.js';
 // ---------------------------------------------------------------------------
 
 interface MailOptions {
-  to:      string;
+  to: string;
   subject: string;
-  html:    string;
-  text:    string;   // plain-text fallback (important for spam filters)
+  html: string;
+  text: string; // plain-text fallback (important for spam filters)
 }
 
 async function send(opts: MailOptions): Promise<void> {
@@ -34,11 +34,11 @@ async function sendViaResend(opts: MailOptions): Promise<void> {
   const resend = new Resend(config.RESEND_API_KEY);
 
   const { error } = await resend.emails.send({
-    from:    config.EMAIL_FROM,
-    to:      opts.to,
+    from: config.EMAIL_FROM,
+    to: opts.to,
     subject: opts.subject,
-    html:    opts.html,
-    text:    opts.text,
+    html: opts.html,
+    text: opts.text,
   });
 
   if (error) {
@@ -49,9 +49,9 @@ async function sendViaResend(opts: MailOptions): Promise<void> {
 async function sendViaSmtp(opts: MailOptions): Promise<void> {
   const nodemailer = await import('nodemailer');
   const transporter = nodemailer.createTransport({
-    host:   config.SMTP_HOST,
-    port:   config.SMTP_PORT,
-    secure: config.SMTP_PORT === 465,   // true for port 465, STARTTLS for 587
+    host: config.SMTP_HOST,
+    port: config.SMTP_PORT,
+    secure: config.SMTP_PORT === 465, // true for port 465, STARTTLS for 587
     auth: {
       user: config.SMTP_USER,
       pass: config.SMTP_PASS,
@@ -59,11 +59,11 @@ async function sendViaSmtp(opts: MailOptions): Promise<void> {
   });
 
   await transporter.sendMail({
-    from:    config.EMAIL_FROM,
-    to:      opts.to,
+    from: config.EMAIL_FROM,
+    to: opts.to,
     subject: opts.subject,
-    html:    opts.html,
-    text:    opts.text,
+    html: opts.html,
+    text: opts.text,
   });
 }
 
@@ -137,10 +137,7 @@ function emailWrap(bodyHtml: string): string {
  * Sends the email verification link after registration.
  * The token in the link is the raw (unhashed) value from generateAuthToken().
  */
-export async function sendVerificationEmail(
-  to: string,
-  token: string,
-): Promise<void> {
+export async function sendVerificationEmail(to: string, token: string): Promise<void> {
   const link = `${config.APP_URL}/verify-email?token=${token}`;
 
   await send({
@@ -228,10 +225,7 @@ export async function sendVerificationEmail(
  * Sends the password reset link.
  * The token is the raw (unhashed) value from generateAuthToken().
  */
-export async function sendPasswordResetEmail(
-  to: string,
-  token: string,
-): Promise<void> {
+export async function sendPasswordResetEmail(to: string, token: string): Promise<void> {
   const link = `${config.APP_URL}/reset-password?token=${token}`;
 
   await send({
@@ -325,7 +319,7 @@ export async function sendInviteEmail(
   displayName: string | null,
   token: string,
 ): Promise<void> {
-  const link  = `${config.APP_URL}/invite/${token}`;
+  const link = `${config.APP_URL}/invite/${token}`;
   const hello = displayName ? `Hello ${displayName},` : 'Hello,';
 
   await send({

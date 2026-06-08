@@ -7,15 +7,12 @@
 
 import type { FastifyRequest, FastifyReply } from 'fastify';
 
-export async function requireAdmin(
-  req:   FastifyRequest,
-  reply: FastifyReply,
-): Promise<void> {
+export async function requireAdmin(req: FastifyRequest, reply: FastifyReply): Promise<void> {
   if (req.user?.role !== 'admin') {
     return reply.status(403).send({
       statusCode: 403,
-      error:      'Forbidden',
-      message:    'Admin access required',
+      error: 'Forbidden',
+      message: 'Admin access required',
     });
   }
 }

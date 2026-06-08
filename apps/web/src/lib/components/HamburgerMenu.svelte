@@ -23,21 +23,21 @@
 
 	let exportDragX = $state(0);
 	let exportDragY = $state(0);
-	let _exportDragging    = false;
+	let _exportDragging = false;
 	let _exportStartMouseX = 0;
 	let _exportStartMouseY = 0;
-	let _exportStartDragX  = 0;
-	let _exportStartDragY  = 0;
+	let _exportStartDragX = 0;
+	let _exportStartDragY = 0;
 
 	function startExportDrag(e: MouseEvent) {
-		_exportDragging    = true;
+		_exportDragging = true;
 		_exportStartMouseX = e.clientX;
 		_exportStartMouseY = e.clientY;
-		_exportStartDragX  = exportDragX;
-		_exportStartDragY  = exportDragY;
+		_exportStartDragX = exportDragX;
+		_exportStartDragY = exportDragY;
 		e.preventDefault();
 		window.addEventListener('mousemove', onExportDragMove);
-		window.addEventListener('mouseup',   onExportDragEnd);
+		window.addEventListener('mouseup', onExportDragEnd);
 	}
 
 	function onExportDragMove(e: MouseEvent) {
@@ -49,11 +49,15 @@
 	function onExportDragEnd() {
 		_exportDragging = false;
 		window.removeEventListener('mousemove', onExportDragMove);
-		window.removeEventListener('mouseup',   onExportDragEnd);
+		window.removeEventListener('mouseup', onExportDragEnd);
 	}
 
-	function toggle() { open = !open; }
-	function close() { open = false; }
+	function toggle() {
+		open = !open;
+	}
+	function close() {
+		open = false;
+	}
 
 	function dispatch(action: string, detail: Record<string, string> = {}) {
 		document.dispatchEvent(new CustomEvent('il-menu-action', { detail: { action, ...detail } }));
@@ -72,16 +76,18 @@
 	}
 </script>
 
-<svelte:window onclick={(e) => {
-	if (open && !(e.target as HTMLElement).closest('.hamburger-menu')) close();
-}} />
+<svelte:window
+	onclick={(e) => {
+		if (open && !(e.target as HTMLElement).closest('.hamburger-menu')) close();
+	}}
+/>
 
 <div class="hamburger-menu">
 	<button class="hamburger-btn" onclick={toggle} aria-label="Menu" aria-expanded={open}>
 		<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-			<rect y="2" width="16" height="2" rx="1" fill="currentColor"/>
-			<rect y="7" width="16" height="2" rx="1" fill="currentColor"/>
-			<rect y="12" width="16" height="2" rx="1" fill="currentColor"/>
+			<rect y="2" width="16" height="2" rx="1" fill="currentColor" />
+			<rect y="7" width="16" height="2" rx="1" fill="currentColor" />
+			<rect y="12" width="16" height="2" rx="1" fill="currentColor" />
 		</svg>
 	</button>
 
@@ -89,17 +95,35 @@
 		<div class="menu-dropdown">
 			<a href="/about" class="menu-item menu-item--link" onclick={close}>About</a>
 
-			<button class="menu-item" onclick={() => { onSettings?.(); close(); }}>Settings…</button>
+			<button
+				class="menu-item"
+				onclick={() => {
+					onSettings?.();
+					close();
+				}}>Settings…</button
+			>
 
 			<div class="menu-divider"></div>
 
-			<button class="menu-item" onclick={() => { close(); dispatch('import'); }}>Import...</button>
+			<button
+				class="menu-item"
+				onclick={() => {
+					close();
+					dispatch('import');
+				}}>Import...</button
+			>
 
 			<button class="menu-item" onclick={openExportDialog}>Export...</button>
 
 			<div class="menu-divider"></div>
 
-			<button class="menu-item" onclick={() => { onReportBug?.(); close(); }}>Report a bug…</button>
+			<button
+				class="menu-item"
+				onclick={() => {
+					onReportBug?.();
+					close();
+				}}>Report a bug…</button
+			>
 
 			<div class="menu-divider"></div>
 
@@ -111,9 +135,12 @@
 </div>
 
 <!-- Export dialog -->
-<dialog bind:this={exportDialogEl} class="export-dialog"
+<dialog
+	bind:this={exportDialogEl}
+	class="export-dialog"
 	style:transform="translate(calc(-50% + {exportDragX}px), calc(-50% + {exportDragY}px))"
-	oncancel={() => exportDialogEl?.close()}>
+	oncancel={() => exportDialogEl?.close()}
+>
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="ed-header" onmousedown={startExportDrag}>
 		<span class="drag-grip" aria-hidden="true">⠿</span>
@@ -122,8 +149,13 @@
 	<div class="ed-body">
 		<div class="ed-field">
 			<span class="ed-label">Content</span>
-			<select class="ed-select" bind:value={exportContent}
-				onchange={() => { if (exportContent !== 'everything' && exportContent !== 'log') exportFormat = 'json'; }}>
+			<select
+				class="ed-select"
+				bind:value={exportContent}
+				onchange={() => {
+					if (exportContent !== 'everything' && exportContent !== 'log') exportFormat = 'json';
+				}}
+			>
 				<option value="everything">Everything</option>
 				<option value="character">Current Character</option>
 				<option value="all-characters">All Characters</option>
@@ -133,15 +165,21 @@
 			</select>
 		</div>
 		{#if exportContent === 'everything' || exportContent === 'log'}
-		<div class="ed-field">
-			<span class="ed-label">Format</span>
-			<div class="ed-seg" role="group">
-				<button class="ed-seg-btn" class:active={exportFormat === 'json'}
-					onclick={() => (exportFormat = 'json')}>JSON</button>
-				<button class="ed-seg-btn" class:active={exportFormat === 'md'}
-					onclick={() => (exportFormat = 'md')}>Markdown</button>
+			<div class="ed-field">
+				<span class="ed-label">Format</span>
+				<div class="ed-seg" role="group">
+					<button
+						class="ed-seg-btn"
+						class:active={exportFormat === 'json'}
+						onclick={() => (exportFormat = 'json')}>JSON</button
+					>
+					<button
+						class="ed-seg-btn"
+						class:active={exportFormat === 'md'}
+						onclick={() => (exportFormat = 'md')}>Markdown</button
+					>
+				</div>
 			</div>
-		</div>
 		{/if}
 	</div>
 	<div class="ed-footer">
@@ -166,7 +204,9 @@
 		cursor: pointer;
 		color: var(--text-dimmer);
 		line-height: 1;
-		transition: color 0.15s, border-color 0.15s;
+		transition:
+			color 0.15s,
+			border-color 0.15s;
 	}
 	.hamburger-btn:hover {
 		color: var(--text-accent);
@@ -202,7 +242,9 @@
 		cursor: pointer;
 		text-align: left;
 		text-decoration: none;
-		transition: background 0.1s, color 0.1s;
+		transition:
+			background 0.1s,
+			color 0.1s;
 	}
 	.menu-item:hover {
 		background: var(--bg-hover);
@@ -254,7 +296,9 @@
 		width: min(320px, calc(100vw - 2rem));
 		background: var(--bg-card);
 		color: var(--text);
-		box-shadow: 0 12px 40px #00000060, 0 0 0 1px var(--border-mid);
+		box-shadow:
+			0 12px 40px #00000060,
+			0 0 0 1px var(--border-mid);
 		outline: none;
 	}
 	.export-dialog[open] {
@@ -277,7 +321,9 @@
 		cursor: grab;
 		user-select: none;
 	}
-	.ed-header:active { cursor: grabbing; }
+	.ed-header:active {
+		cursor: grabbing;
+	}
 
 	.ed-title {
 		font-family: var(--font-display);
@@ -336,9 +382,13 @@
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		font-weight: 500;
-		transition: background 0.12s, color 0.12s;
+		transition:
+			background 0.12s,
+			color 0.12s;
 	}
-	.ed-seg-btn:last-child { border-right: none; }
+	.ed-seg-btn:last-child {
+		border-right: none;
+	}
 	.ed-seg-btn:hover:not(.active) {
 		background: var(--bg-hover);
 		color: var(--text-muted);

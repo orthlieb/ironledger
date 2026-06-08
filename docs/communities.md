@@ -7,35 +7,37 @@ Tracks the settlements you've found and the people who inhabit them. Both are or
 ## Data Model
 
 ### Community
+
 ```typescript
 // apps/web/src/lib/types.ts:357
 interface Community {
-  id:                  string;   // crypto.randomUUID()
-  name:                string;
-  region:              string;
-  location:            string;
+  id: string; // crypto.randomUUID()
+  name: string;
+  region: string;
+  location: string;
   locationDescription: string;
-  trouble:             string;
-  notes:               string;   // markdown
-  imageUrl?:           string;   // base64 JPEG data URL
-  createdAt?:          number;   // Date.now() on creation
+  trouble: string;
+  notes: string; // markdown
+  imageUrl?: string; // base64 JPEG data URL
+  createdAt?: number; // Date.now() on creation
 }
 ```
 
 ### NPC
+
 ```typescript
 // apps/web/src/lib/types.ts:369
 interface Npc {
-  id:           string;
-  name:         string;
-  role:         string;
-  goal:         string;
-  descriptor:   string;
+  id: string;
+  name: string;
+  role: string;
+  goal: string;
+  descriptor: string;
   relationship: 'neutral' | 'bond' | 'foe';
-  location:     string;       // free-form, not an FK to Community.id
-  notes:        string;       // markdown
-  imageUrl?:    string;
-  createdAt?:   number;
+  location: string; // free-form, not an FK to Community.id
+  notes: string; // markdown
+  imageUrl?: string;
+  createdAt?: number;
 }
 ```
 
@@ -45,12 +47,12 @@ NPCs are not formally linked to a Community — `Npc.location` is a plain string
 
 ## Storage
 
-| Layer | Detail |
-|---|---|
-| Database | `user_data.communities` and `user_data.npcs` JSONB columns |
-| API (BFF) | `PATCH /api/session/communities`, `PATCH /api/session/npcs` |
+| Layer        | Detail                                                                                                                        |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| Database     | `user_data.communities` and `user_data.npcs` JSONB columns                                                                    |
+| API (BFF)    | `PATCH /api/session/communities`, `PATCH /api/session/npcs`                                                                   |
 | Client store | `apps/web/src/lib/communityStore.svelte.ts`, `apps/web/src/lib/npcStore.svelte.ts` (module-level `$state`, identical pattern) |
-| Initial load | `loadCommunities()` / `loadNpcs()` hits `GET /api/session` and seeds the store |
+| Initial load | `loadCommunities()` / `loadNpcs()` hits `GET /api/session` and seeds the store                                                |
 
 Store API (mirrored across both):
 
@@ -70,12 +72,12 @@ Mutations are optimistic: the store is updated synchronously, then `persist()` P
 
 Communities tab toolbar:
 
-| Button | Style | Action |
-|---|---|---|
-| **Ask** | primary | Roll the active oracle (settlementName / settlementTrouble / etc., picked via a small in-toolbar dropdown) |
-| **+ Community** | primary | Create a blank community, then optionally fill via Ask buttons inside the card |
-| **+ NPC** | primary | Create a blank NPC |
-| **Export** | secondary | Download all communities + NPCs as JSON |
+| Button          | Style     | Action                                                                                                     |
+| --------------- | --------- | ---------------------------------------------------------------------------------------------------------- |
+| **Ask**         | primary   | Roll the active oracle (settlementName / settlementTrouble / etc., picked via a small in-toolbar dropdown) |
+| **+ Community** | primary   | Create a blank community, then optionally fill via Ask buttons inside the card                             |
+| **+ NPC**       | primary   | Create a blank NPC                                                                                         |
+| **Export**      | secondary | Download all communities + NPCs as JSON                                                                    |
 
 Cards lay out in a 3-column responsive grid (1-col on mobile). See [ui-components.md § Toolbar Button Hierarchy](ui-components.md#toolbar-button-hierarchy) for the primary/secondary rules.
 
@@ -91,24 +93,24 @@ Each text field on a community or NPC has a small "ask oracle" button that rolls
 
 Routed in `apps/web/src/routes/home/+page.svelte`:
 
-| Field | Oracle key |
-|---|---|
-| `name` | `settlementName` or `settlementNameQuick` (50/50 split) |
-| `region` | `region` (Ironlands) **or** `yrtRegion` when YRT region radio is selected |
-| `location` | `location` (inland) **or** `coastalWatersLocation` (coastal radio) |
-| `locationDescription` | `locationDescriptor` |
-| `trouble` | `settlementTrouble` |
+| Field                 | Oracle key                                                                |
+| --------------------- | ------------------------------------------------------------------------- |
+| `name`                | `settlementName` or `settlementNameQuick` (50/50 split)                   |
+| `region`              | `region` (Ironlands) **or** `yrtRegion` when YRT region radio is selected |
+| `location`            | `location` (inland) **or** `coastalWatersLocation` (coastal radio)        |
+| `locationDescription` | `locationDescriptor`                                                      |
+| `trouble`             | `settlementTrouble`                                                       |
 
 The **YRT** region radio is hidden when the YRT [expansion toggle](expansion-toggles.md) is off. Existing communities with YRT regions keep displaying their region label regardless.
 
 ### NPC fields → oracle keys
 
-| Field | Oracle key |
-|---|---|
-| `role` | `characterRole` |
-| `goal` | `characterGoal` |
-| `descriptor` | `characterDescriptor` |
-| `name` | `namesIronlander` (default) or `namesOther` (Elf, Giants, Varou, Trolls — a sub-table picker) |
+| Field        | Oracle key                                                                                    |
+| ------------ | --------------------------------------------------------------------------------------------- |
+| `role`       | `characterRole`                                                                               |
+| `goal`       | `characterGoal`                                                                               |
+| `descriptor` | `characterDescriptor`                                                                         |
+| `name`       | `namesIronlander` (default) or `namesOther` (Elf, Giants, Varou, Trolls — a sub-table picker) |
 
 The name oracle selection is sticky per session (`_pendingNpcNameOracle`).
 
@@ -128,15 +130,15 @@ Both cards render the `notes` field as **click-to-edit markdown** via `renderNot
 
 ## Components
 
-| Component | File | Purpose |
-|---|---|---|
-| CommunityCard | `lib/components/CommunityCard.svelte` | Settlement card |
-| NpcCard | `lib/components/NpcCard.svelte` | NPC card |
-| (toolbar + creation flow) | `routes/home/+page.svelte` | + buttons, Ask dropdown, region-type radio |
+| Component                 | File                                  | Purpose                                    |
+| ------------------------- | ------------------------------------- | ------------------------------------------ |
+| CommunityCard             | `lib/components/CommunityCard.svelte` | Settlement card                            |
+| NpcCard                   | `lib/components/NpcCard.svelte`       | NPC card                                   |
+| (toolbar + creation flow) | `routes/home/+page.svelte`            | + buttons, Ask dropdown, region-type radio |
 
 ## Stores
 
-| Store | File | Purpose |
-|---|---|---|
+| Store          | File                           | Purpose                      |
+| -------------- | ------------------------------ | ---------------------------- |
 | communityStore | `lib/communityStore.svelte.ts` | Community CRUD + persistence |
-| npcStore | `lib/npcStore.svelte.ts` | NPC CRUD + persistence |
+| npcStore       | `lib/npcStore.svelte.ts`       | NPC CRUD + persistence       |

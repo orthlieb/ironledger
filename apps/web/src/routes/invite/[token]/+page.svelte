@@ -52,14 +52,14 @@
 			</div>
 			<p class="invite-intro">
 				An Iron Ledger admin has opened an account for
-				<strong>{data.preview.email}</strong>. Set a password below to finish
-				claiming it. This link expires on {new Date(data.preview.expiresAt).toLocaleString()}.
+				<strong>{data.preview.email}</strong>. Set a password below to finish claiming it. This link
+				expires on {new Date(data.preview.expiresAt).toLocaleString()}.
 			</p>
 
 			{#if data.alreadySignedIn}
 				<div class="info-msg">
-					You are currently signed in as a different account. Accepting this invitation
-					will sign you in as <strong>{data.preview.email}</strong>.
+					You are currently signed in as a different account. Accepting this invitation will sign
+					you in as <strong>{data.preview.email}</strong>.
 				</div>
 			{/if}
 

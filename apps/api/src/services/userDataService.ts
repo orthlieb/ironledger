@@ -14,22 +14,25 @@ import { sql } from 'drizzle-orm';
 // ---------------------------------------------------------------------------
 
 export interface SessionState {
-  charId:       string;
-  foeId:        string;
+  charId: string;
+  foeId: string;
   expeditionId: string;
-  activeTab?:   string;
+  activeTab?: string;
 }
 
 export interface UserDataPayload {
-  encounters:   unknown[];
-  expeditions:  unknown[];
-  communities:  unknown[];
-  npcs:         unknown[];
+  encounters: unknown[];
+  expeditions: unknown[];
+  communities: unknown[];
+  npcs: unknown[];
   sessionState: SessionState;
 }
 
 const DEFAULT_SESSION_STATE: SessionState = {
-  charId: '', foeId: '', expeditionId: '', activeTab: '',
+  charId: '',
+  foeId: '',
+  expeditionId: '',
+  activeTab: '',
 };
 
 // ---------------------------------------------------------------------------
@@ -42,7 +45,13 @@ export async function get(userId: string): Promise<UserDataPayload> {
   });
 
   if (rows.length === 0) {
-    return { encounters: [], expeditions: [], communities: [], npcs: [], sessionState: DEFAULT_SESSION_STATE };
+    return {
+      encounters: [],
+      expeditions: [],
+      communities: [],
+      npcs: [],
+      sessionState: DEFAULT_SESSION_STATE,
+    };
   }
 
   // JSONB columns can round-trip as `{}` on rows written before the columns
@@ -52,10 +61,10 @@ export async function get(userId: string): Promise<UserDataPayload> {
   const asArray = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
 
   return {
-    encounters:   asArray(row.encounters),
-    expeditions:  asArray(row.expeditions),
-    communities:  asArray(row.communities),
-    npcs:         asArray(row.npcs),
+    encounters: asArray(row.encounters),
+    expeditions: asArray(row.expeditions),
+    communities: asArray(row.communities),
+    npcs: asArray(row.npcs),
     sessionState: (row.sessionState as SessionState) ?? DEFAULT_SESSION_STATE,
   };
 }
@@ -73,16 +82,16 @@ export async function upsert(
       INSERT INTO user_data (user_id, encounters, expeditions, communities, npcs, session_state, updated_at)
       VALUES (
         ${userId}::uuid,
-        ${JSON.stringify(patch.encounters   ?? [])}::jsonb,
-        ${JSON.stringify(patch.expeditions  ?? [])}::jsonb,
-        ${JSON.stringify(patch.communities  ?? [])}::jsonb,
-        ${JSON.stringify(patch.npcs         ?? [])}::jsonb,
+        ${JSON.stringify(patch.encounters ?? [])}::jsonb,
+        ${JSON.stringify(patch.expeditions ?? [])}::jsonb,
+        ${JSON.stringify(patch.communities ?? [])}::jsonb,
+        ${JSON.stringify(patch.npcs ?? [])}::jsonb,
         ${JSON.stringify(patch.sessionState ?? {})}::jsonb,
         now()
       )
       ON CONFLICT (user_id) DO UPDATE SET
         encounters    = COALESCE(
-          CASE WHEN ${patch.encounters  !== undefined} THEN ${JSON.stringify(patch.encounters  ?? [])}::jsonb END,
+          CASE WHEN ${patch.encounters !== undefined} THEN ${JSON.stringify(patch.encounters ?? [])}::jsonb END,
           user_data.encounters
         ),
         expeditions   = COALESCE(
@@ -94,7 +103,7 @@ export async function upsert(
           user_data.communities
         ),
         npcs          = COALESCE(
-          CASE WHEN ${patch.npcs        !== undefined} THEN ${JSON.stringify(patch.npcs        ?? [])}::jsonb END,
+          CASE WHEN ${patch.npcs !== undefined} THEN ${JSON.stringify(patch.npcs ?? [])}::jsonb END,
           user_data.npcs
         ),
         session_state = COALESCE(

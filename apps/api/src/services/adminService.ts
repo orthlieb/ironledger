@@ -15,39 +15,39 @@ import { users, characters, userData, securityEvents, refreshTokens } from '../d
 // ---------------------------------------------------------------------------
 
 export interface AdminUser {
-  id:              string;
-  email:           string;
-  displayName:     string;
-  role:            string;
-  isActive:        boolean;
-  createdAt:       string;
-  lastLoginAt:     string | null;
-  characterCount:  number;
-  encounterCount:  number;
+  id: string;
+  email: string;
+  displayName: string;
+  role: string;
+  isActive: boolean;
+  createdAt: string;
+  lastLoginAt: string | null;
+  characterCount: number;
+  encounterCount: number;
   expeditionCount: number;
 }
 
 export interface AdminStats {
-  totalUsers:        number;
-  activeUsers7d:     number;
-  activeUsers30d:    number;
-  totalCharacters:   number;
-  totalEncounters:   number;
-  totalExpeditions:  number;
+  totalUsers: number;
+  activeUsers7d: number;
+  activeUsers30d: number;
+  totalCharacters: number;
+  totalEncounters: number;
+  totalExpeditions: number;
   currentlyLoggedIn: number;
 }
 
 export interface TimeseriesBucket {
-  label:       string;
-  timestamp:   string;
-  newUsers:    number;
+  label: string;
+  timestamp: string;
+  newUsers: number;
   activeUsers: number;
-  totalUsers:  number;
+  totalUsers: number;
 }
 
 export interface UserTimeseries {
   timeframe: string;
-  buckets:   TimeseriesBucket[];
+  buckets: TimeseriesBucket[];
 }
 
 // ---------------------------------------------------------------------------
@@ -55,7 +55,11 @@ export interface UserTimeseries {
 // ---------------------------------------------------------------------------
 
 function requireAdminDb() {
-  if (!adminDb) throw Object.assign(new Error('Admin DB not configured'), { code: 'CONFIG_ERROR', statusCode: 500 });
+  if (!adminDb)
+    throw Object.assign(new Error('Admin DB not configured'), {
+      code: 'CONFIG_ERROR',
+      statusCode: 500,
+    });
   return adminDb;
 }
 
@@ -68,7 +72,7 @@ async function logEvent(
 ): Promise<void> {
   const db = requireAdminDb();
   await db.insert(securityEvents).values({
-    userId:    adminId,
+    userId: adminId,
     eventType,
     ipAddress: ip ?? null,
     metadata,
@@ -86,12 +90,12 @@ export async function listUsers(): Promise<AdminUser[]> {
   const [rows, charRows, udRows] = await Promise.all([
     db
       .select({
-        id:          users.id,
-        email:       users.email,
+        id: users.id,
+        email: users.email,
         displayName: users.displayName,
-        role:        users.role,
-        isActive:    users.isActive,
-        createdAt:   users.createdAt,
+        role: users.role,
+        isActive: users.isActive,
+        createdAt: users.createdAt,
         lastLoginAt: users.lastLoginAt,
       })
       .from(users)
@@ -100,22 +104,22 @@ export async function listUsers(): Promise<AdminUser[]> {
     db
       .select({
         userId: characters.userId,
-        count:  count(),
+        count: count(),
       })
       .from(characters)
       .groupBy(characters.userId),
 
     db
       .select({
-        userId:      userData.userId,
-        encounters:  userData.encounters,
+        userId: userData.userId,
+        encounters: userData.encounters,
         expeditions: userData.expeditions,
       })
       .from(userData),
   ]);
 
   const charMap = new Map(charRows.map((r) => [r.userId, r.count]));
-  const udMap   = new Map(udRows.map((r) => [r.userId, r]));
+  const udMap = new Map(udRows.map((r) => [r.userId, r]));
 
   return rows.map((r) => {
     const ud = udMap.get(r.id);
@@ -123,15 +127,15 @@ export async function listUsers(): Promise<AdminUser[]> {
     const expeditions = Array.isArray(ud?.expeditions) ? ud.expeditions : [];
 
     return {
-      id:              r.id,
-      email:           r.email,
-      displayName:     r.displayName,
-      role:            r.role,
-      isActive:        r.isActive,
-      createdAt:       r.createdAt.toISOString(),
-      lastLoginAt:     r.lastLoginAt?.toISOString() ?? null,
-      characterCount:  charMap.get(r.id) ?? 0,
-      encounterCount:  encounters.length,
+      id: r.id,
+      email: r.email,
+      displayName: r.displayName,
+      role: r.role,
+      isActive: r.isActive,
+      createdAt: r.createdAt.toISOString(),
+      lastLoginAt: r.lastLoginAt?.toISOString() ?? null,
+      characterCount: charMap.get(r.id) ?? 0,
+      encounterCount: encounters.length,
       expeditionCount: expeditions.length,
     };
   });
@@ -144,41 +148,45 @@ export async function listUsers(): Promise<AdminUser[]> {
 export async function getStats(): Promise<AdminStats> {
   const db = requireAdminDb();
 
-  const now  = new Date();
+  const now = new Date();
   const d15m = new Date(now.getTime() - 15 * 60 * 1000);
-  const d7   = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const d30  = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const d7 = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const d30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
   // Run all counts in parallel
   const [userStats, charCount, udRows] = await Promise.all([
-    db.select({
-      total:             count(),
-      active7d:          sql<number>`count(*) filter (where ${users.lastLoginAt} >= ${d7.toISOString()})::int`,
-      active30d:         sql<number>`count(*) filter (where ${users.lastLoginAt} >= ${d30.toISOString()})::int`,
-      currentlyLoggedIn: sql<number>`count(*) filter (where ${users.lastLoginAt} >= ${d15m.toISOString()})::int`,
-    }).from(users),
+    db
+      .select({
+        total: count(),
+        active7d: sql<number>`count(*) filter (where ${users.lastLoginAt} >= ${d7.toISOString()})::int`,
+        active30d: sql<number>`count(*) filter (where ${users.lastLoginAt} >= ${d30.toISOString()})::int`,
+        currentlyLoggedIn: sql<number>`count(*) filter (where ${users.lastLoginAt} >= ${d15m.toISOString()})::int`,
+      })
+      .from(users),
 
     db.select({ total: count() }).from(characters),
 
-    db.select({
-      encounters:  userData.encounters,
-      expeditions: userData.expeditions,
-    }).from(userData),
+    db
+      .select({
+        encounters: userData.encounters,
+        expeditions: userData.expeditions,
+      })
+      .from(userData),
   ]);
 
   let totalEncounters = 0;
   let totalExpeditions = 0;
   for (const r of udRows) {
-    if (Array.isArray(r.encounters))  totalEncounters  += r.encounters.length;
+    if (Array.isArray(r.encounters)) totalEncounters += r.encounters.length;
     if (Array.isArray(r.expeditions)) totalExpeditions += r.expeditions.length;
   }
 
   return {
-    totalUsers:        userStats[0]?.total ?? 0,
-    activeUsers7d:     userStats[0]?.active7d ?? 0,
-    activeUsers30d:    userStats[0]?.active30d ?? 0,
+    totalUsers: userStats[0]?.total ?? 0,
+    activeUsers7d: userStats[0]?.active7d ?? 0,
+    activeUsers30d: userStats[0]?.active30d ?? 0,
     currentlyLoggedIn: userStats[0]?.currentlyLoggedIn ?? 0,
-    totalCharacters:   charCount[0]?.total ?? 0,
+    totalCharacters: charCount[0]?.total ?? 0,
     totalEncounters,
     totalExpeditions,
   };
@@ -188,11 +196,7 @@ export async function getStats(): Promise<AdminStats> {
 // Delete user (cascading — ON DELETE CASCADE handles all child tables)
 // ---------------------------------------------------------------------------
 
-export async function deleteUser(
-  userId: string,
-  adminId: string,
-  ip?: string,
-): Promise<void> {
+export async function deleteUser(userId: string, adminId: string, ip?: string): Promise<void> {
   const db = requireAdminDb();
 
   // Fetch the target email before deleting (for audit trail — user row gone after delete)
@@ -209,10 +213,15 @@ export async function deleteUser(
   await db.delete(users).where(eq(users.id, userId));
 
   // Audit log — fire-and-forget (don't fail the request if logging fails)
-  void logEvent(adminId, 'admin_delete_user', {
-    targetUserId: userId,
-    targetEmail:  target.email,
-  }, ip).catch(console.error);
+  void logEvent(
+    adminId,
+    'admin_delete_user',
+    {
+      targetUserId: userId,
+      targetEmail: target.email,
+    },
+    ip,
+  ).catch(console.error);
 }
 
 // ---------------------------------------------------------------------------
@@ -242,29 +251,27 @@ export async function setUserRole(
     throw Object.assign(new Error('User not found'), { code: 'NOT_FOUND', statusCode: 404 });
   }
 
-  await db
-    .update(users)
-    .set({ role })
-    .where(eq(users.id, userId));
+  await db.update(users).set({ role }).where(eq(users.id, userId));
 
   // Audit log
-  void logEvent(adminId, 'admin_set_role', {
-    targetUserId: userId,
-    targetEmail:  target.email,
-    previousRole: target.role,
-    newRole:      role,
-  }, ip).catch(console.error);
+  void logEvent(
+    adminId,
+    'admin_set_role',
+    {
+      targetUserId: userId,
+      targetEmail: target.email,
+      previousRole: target.role,
+      newRole: role,
+    },
+    ip,
+  ).catch(console.error);
 }
 
 // ---------------------------------------------------------------------------
 // Suspend / unsuspend user
 // ---------------------------------------------------------------------------
 
-export async function suspendUser(
-  userId: string,
-  adminId: string,
-  ip?: string,
-): Promise<void> {
+export async function suspendUser(userId: string, adminId: string, ip?: string): Promise<void> {
   const db = requireAdminDb();
 
   const [target] = await db
@@ -286,17 +293,18 @@ export async function suspendUser(
     .set({ revokedAt: new Date() })
     .where(and(eq(refreshTokens.userId, userId), isNull(refreshTokens.revokedAt)));
 
-  void logEvent(adminId, 'admin_suspend_user', {
-    targetUserId: userId,
-    targetEmail:  target.email,
-  }, ip).catch(console.error);
+  void logEvent(
+    adminId,
+    'admin_suspend_user',
+    {
+      targetUserId: userId,
+      targetEmail: target.email,
+    },
+    ip,
+  ).catch(console.error);
 }
 
-export async function unsuspendUser(
-  userId: string,
-  adminId: string,
-  ip?: string,
-): Promise<void> {
+export async function unsuspendUser(userId: string, adminId: string, ip?: string): Promise<void> {
   const db = requireAdminDb();
 
   const [target] = await db
@@ -311,20 +319,22 @@ export async function unsuspendUser(
 
   await db.update(users).set({ isActive: true }).where(eq(users.id, userId));
 
-  void logEvent(adminId, 'admin_unsuspend_user', {
-    targetUserId: userId,
-    targetEmail:  target.email,
-  }, ip).catch(console.error);
+  void logEvent(
+    adminId,
+    'admin_unsuspend_user',
+    {
+      targetUserId: userId,
+      targetEmail: target.email,
+    },
+    ip,
+  ).catch(console.error);
 }
 
 /**
  * Called automatically when too many failed login attempts are detected.
  * Uses userId=null in the audit log (no human admin — system action).
  */
-export async function autoLockAccount(
-  userId: string,
-  email:  string,
-): Promise<void> {
+export async function autoLockAccount(userId: string, email: string): Promise<void> {
   const db = requireAdminDb();
   if (!db) return;
 
@@ -335,11 +345,14 @@ export async function autoLockAccount(
     .set({ revokedAt: new Date() })
     .where(and(eq(refreshTokens.userId, userId), isNull(refreshTokens.revokedAt)));
 
-  await db.insert(securityEvents).values({
-    userId:    null,
-    eventType: 'auto_lockout',
-    metadata:  { targetUserId: userId, targetEmail: email, reason: 'too_many_failed_logins' },
-  }).catch(console.error);
+  await db
+    .insert(securityEvents)
+    .values({
+      userId: null,
+      eventType: 'auto_lockout',
+      metadata: { targetUserId: userId, targetEmail: email, reason: 'too_many_failed_logins' },
+    })
+    .catch(console.error);
 }
 
 // ---------------------------------------------------------------------------
@@ -347,13 +360,13 @@ export async function autoLockAccount(
 // ---------------------------------------------------------------------------
 
 export interface AuditEvent {
-  id:         string;
-  adminId:    string | null;
+  id: string;
+  adminId: string | null;
   adminEmail: string | null;
-  eventType:  string;
-  ipAddress:  string | null;
-  metadata:   Record<string, unknown> | null;
-  createdAt:  string;
+  eventType: string;
+  ipAddress: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
 }
 
 export async function getAuditLog(limit = 100, search?: string): Promise<AuditEvent[]> {
@@ -361,13 +374,13 @@ export async function getAuditLog(limit = 100, search?: string): Promise<AuditEv
 
   let query = db
     .select({
-      id:         securityEvents.id,
-      adminId:    securityEvents.userId,
+      id: securityEvents.id,
+      adminId: securityEvents.userId,
       adminEmail: users.email,
-      eventType:  securityEvents.eventType,
-      ipAddress:  securityEvents.ipAddress,
-      metadata:   securityEvents.metadata,
-      createdAt:  securityEvents.createdAt,
+      eventType: securityEvents.eventType,
+      ipAddress: securityEvents.ipAddress,
+      metadata: securityEvents.metadata,
+      createdAt: securityEvents.createdAt,
     })
     .from(securityEvents)
     .leftJoin(users, eq(securityEvents.userId, users.id))
@@ -390,13 +403,13 @@ export async function getAuditLog(limit = 100, search?: string): Promise<AuditEv
   const rows = await query;
 
   return rows.map((r) => ({
-    id:         r.id,
-    adminId:    r.adminId,
+    id: r.id,
+    adminId: r.adminId,
     adminEmail: r.adminEmail ?? null,
-    eventType:  r.eventType,
-    ipAddress:  r.ipAddress,
-    metadata:   r.metadata as Record<string, unknown> | null,
-    createdAt:  r.createdAt.toISOString(),
+    eventType: r.eventType,
+    ipAddress: r.ipAddress,
+    metadata: r.metadata as Record<string, unknown> | null,
+    createdAt: r.createdAt.toISOString(),
   }));
 }
 
@@ -414,11 +427,25 @@ export async function getUserTimeseries(timeframe: Timeframe): Promise<UserTimes
   let bucketMs: number;
 
   switch (timeframe) {
-    case '1hr':   bucketCount = 12; bucketMs = 5  * 60 * 1000;        break;
-    case '1day':  bucketCount = 24; bucketMs = 60 * 60 * 1000;        break;
-    case '7day':  bucketCount = 7;  bucketMs = 24 * 60 * 60 * 1000;   break;
-    case '30day': bucketCount = 30; bucketMs = 24 * 60 * 60 * 1000;   break;
-    default:      bucketCount = 24; bucketMs = 60 * 60 * 1000;
+    case '1hr':
+      bucketCount = 12;
+      bucketMs = 5 * 60 * 1000;
+      break;
+    case '1day':
+      bucketCount = 24;
+      bucketMs = 60 * 60 * 1000;
+      break;
+    case '7day':
+      bucketCount = 7;
+      bucketMs = 24 * 60 * 60 * 1000;
+      break;
+    case '30day':
+      bucketCount = 30;
+      bucketMs = 24 * 60 * 60 * 1000;
+      break;
+    default:
+      bucketCount = 24;
+      bucketMs = 60 * 60 * 1000;
   }
 
   const startTime = new Date(now.getTime() - bucketCount * bucketMs);
@@ -442,7 +469,7 @@ export async function getUserTimeseries(timeframe: Timeframe): Promise<UserTimes
 
   for (let i = 0; i < bucketCount; i++) {
     const bucketStart = new Date(startTime.getTime() + i * bucketMs);
-    const bucketEnd   = new Date(startTime.getTime() + (i + 1) * bucketMs);
+    const bucketEnd = new Date(startTime.getTime() + (i + 1) * bucketMs);
 
     const newInBucket = relevantRows.filter(
       (r) => r.createdAt >= bucketStart && r.createdAt < bucketEnd,
@@ -455,11 +482,11 @@ export async function getUserTimeseries(timeframe: Timeframe): Promise<UserTimes
     running += newInBucket;
 
     buckets.push({
-      label:       formatBucketLabel(bucketStart, timeframe),
-      timestamp:   bucketStart.toISOString(),
-      newUsers:    newInBucket,
+      label: formatBucketLabel(bucketStart, timeframe),
+      timestamp: bucketStart.toISOString(),
+      newUsers: newInBucket,
       activeUsers: activeInBucket,
-      totalUsers:  running,
+      totalUsers: running,
     });
   }
 

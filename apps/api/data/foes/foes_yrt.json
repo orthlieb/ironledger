@@ -3,9 +3,7 @@
     {
       "id": "yrt/mire-form",
       "name": "Mire Form",
-      "images": [
-        "mire-form.webp"
-      ],
+      "images": ["mire-form.webp"],
       "rank": 2,
       "nature": "Anomaly",
       "features": [
@@ -14,10 +12,7 @@
         "A central pod of compacted Verdant matter visible in the chest cavity",
         "Mouth fixed open, but no sound — the \"silent scream\" is real"
       ],
-      "drives": [
-        "Drag warm matter into the bog",
-        "Replace the anchor body with a fresher one"
-      ],
+      "drives": ["Drag warm matter into the bog", "Replace the anchor body with a fresher one"],
       "tactics": [
         "Rise from beneath the surface when warmth passes overhead",
         "Seize with grasping hands and pull downward",
@@ -30,9 +25,7 @@
     {
       "id": "yrt/puppet-bones",
       "name": "Puppet Bones",
-      "images": [
-        "puppet-bones.webp"
-      ],
+      "images": ["puppet-bones.webp"],
       "rank": 2,
       "nature": "Construct",
       "features": [
@@ -57,9 +50,7 @@
     {
       "id": "yrt/war-pile",
       "name": "War Pile",
-      "images": [
-        "war-pile.webp"
-      ],
+      "images": ["war-pile.webp"],
       "rank": 5,
       "nature": "Construct",
       "features": [
@@ -84,9 +75,7 @@
     {
       "id": "yrt/whispering-stones",
       "name": "The Whispering Stones",
-      "images": [
-        "the-whispering-stones.webp"
-      ],
+      "images": ["the-whispering-stones.webp"],
       "rank": 3,
       "nature": "Anomaly",
       "features": [
@@ -95,9 +84,7 @@
         "Visions of one's own memories, played back wrong",
         "Birds avoid the circle; insects do not"
       ],
-      "drives": [
-        "None — the stones are a site, not a creature"
-      ],
+      "drives": ["None — the stones are a site, not a creature"],
       "tactics": [
         "Induce confusion and false recall in anyone within the perimeter",
         "Cause loss of recent memory in those who linger",
@@ -109,9 +96,7 @@
     {
       "id": "yrt/coldhusk",
       "name": "Coldhusk",
-      "images": [
-        "coldhusk.webp"
-      ],
+      "images": ["coldhusk.webp"],
       "rank": 2,
       "nature": "Anomaly",
       "features": [
@@ -120,9 +105,7 @@
         "Skin painfully cold to touch",
         "A faint sucking sensation in the air around it"
       ],
-      "drives": [
-        "Maintain its own internal cold equilibrium"
-      ],
+      "drives": ["Maintain its own internal cold equilibrium"],
       "tactics": [
         "Stand motionless until heat passes within reach",
         "Grasp with both hands and hold on",
@@ -135,9 +118,7 @@
     {
       "id": "yrt/wisp-walker",
       "name": "Wisp Walker",
-      "images": [
-        "wisp-walker.webp"
-      ],
+      "images": ["wisp-walker.webp"],
       "rank": 2,
       "nature": "Anomaly",
       "features": [
@@ -146,9 +127,7 @@
         "Slow, beckoning movement",
         "Cannot be touched — the form disperses and reforms"
       ],
-      "drives": [
-        "Drift toward the nearest source of warmth and motion"
-      ],
+      "drives": ["Drift toward the nearest source of warmth and motion"],
       "tactics": [
         "Appear to a lost or desperate traveller and gesture toward a path",
         "Lead the traveller into a blight zone, deeper water, or an unstable ruin",
@@ -160,9 +139,7 @@
     {
       "id": "yrt/echo",
       "name": "Echo",
-      "images": [
-        "echo.webp"
-      ],
+      "images": ["echo.webp"],
       "rank": 2,
       "nature": "Anomaly",
       "features": [
@@ -171,9 +148,7 @@
         "Stench of the moment of death (smoke, blood, river water, etc.)",
         "Cannot be touched, cannot touch back"
       ],
-      "drives": [
-        "None — it is a recording"
-      ],
+      "drives": ["None — it is a recording"],
       "tactics": [
         "Manifest at the trigger point of the trauma",
         "Replay the same fragmentary action — a fall, a strike, a turning-away",
@@ -185,9 +160,7 @@
     {
       "id": "yrt/mask-risen",
       "name": "Mask Risen",
-      "images": [
-        "mask-risen.webp"
-      ],
+      "images": ["mask-risen.webp"],
       "rank": 4,
       "nature": "Construct",
       "features": [
@@ -212,9 +185,7 @@
     {
       "id": "yrt/greatmask",
       "name": "Greatmask",
-      "images": [
-        "greatmask.webp"
-      ],
+      "images": ["greatmask.webp"],
       "rank": 5,
       "nature": "Construct",
       "features": [
@@ -239,9 +210,7 @@
     {
       "id": "yrt/vow-walker",
       "name": "Vow Walker",
-      "images": [
-        "vow-walker.webp"
-      ],
+      "images": ["vow-walker.webp"],
       "rank": 5,
       "nature": "Construct",
       "features": [
@@ -267,9 +236,7 @@
     {
       "id": "yrt/drowning-eye",
       "name": "Drowning Eye",
-      "images": [
-        "drowning-eye.webp"
-      ],
+      "images": ["drowning-eye.webp"],
       "rank": 3,
       "nature": "Anomaly",
       "features": [
@@ -278,9 +245,7 @@
         "A persistent low moan as air is drawn through gaps in the spinning debris",
         "A still, calm \"eye\" at the centre"
       ],
-      "drives": [
-        "None — it is a weather system"
-      ],
+      "drives": ["None — it is a weather system"],
       "tactics": [
         "Pull nearby boats and swimmers inward by the current",
         "Batter caught objects with debris",
@@ -309,10 +274,7 @@
         "No face, no eyes, no apparent attention",
         "Variants: Verdant (wood and soil), Crimson (fire and ash), Azure (water and silt), Gray (stone and ice), Luminous (condensed light)"
       ],
-      "drives": [
-        "Drift toward areas of high mana flux",
-        "Reorganise its mass when destabilised"
-      ],
+      "drives": ["Drift toward areas of high mana flux", "Reorganise its mass when destabilised"],
       "tactics": [
         "Crush or engulf anything in its drift-path",
         "Discharge its dominant mana effect outward — flood, fire, stone-shift, growth-burst — when threatened",
@@ -324,9 +286,7 @@
     {
       "id": "yrt/bloater",
       "name": "Bloater",
-      "images": [
-        "bloater.webp"
-      ],
+      "images": ["bloater.webp"],
       "rank": 2,
       "nature": "Anomaly",
       "features": [
@@ -351,9 +311,7 @@
     {
       "id": "yrt/witherwind",
       "name": "Witherwind",
-      "images": [
-        "witherwind.webp"
-      ],
+      "images": ["witherwind.webp"],
       "rank": 4,
       "nature": "Anomaly",
       "features": [
@@ -378,9 +336,7 @@
     {
       "id": "yrt/carrier",
       "name": "Carrier",
-      "images": [
-        "carrier.webp"
-      ],
+      "images": ["carrier.webp"],
       "rank": 3,
       "nature": "Ironlander",
       "features": [
@@ -404,9 +360,7 @@
     {
       "id": "yrt/tomb-walker",
       "name": "Tomb Walker",
-      "images": [
-        "tomb-walker.webp"
-      ],
+      "images": ["tomb-walker.webp"],
       "rank": 4,
       "nature": "Ironlander",
       "features": [
@@ -445,9 +399,7 @@
     {
       "id": "yrt/blighted-guilder",
       "name": "Blighted Guilder",
-      "images": [
-        "blighted-guilder.webp"
-      ],
+      "images": ["blighted-guilder.webp"],
       "rank": 2,
       "nature": "Ironlander",
       "features": [
@@ -487,9 +439,7 @@
     {
       "id": "yrt/verdant-crawler",
       "name": "Verdant Crawler",
-      "images": [
-        "verdant-crawler.webp"
-      ],
+      "images": ["verdant-crawler.webp"],
       "rank": 2,
       "nature": "Anomaly",
       "features": [
@@ -513,9 +463,7 @@
     {
       "id": "yrt/amber-schemer",
       "name": "Amber Schemer",
-      "images": [
-        "amber-schemer.webp"
-      ],
+      "images": ["amber-schemer.webp"],
       "rank": 3,
       "nature": "Ironlander",
       "features": [
@@ -539,9 +487,7 @@
     {
       "id": "yrt/tainted",
       "name": "The Tainted",
-      "images": [
-        "the-tainted.webp"
-      ],
+      "images": ["the-tainted.webp"],
       "rank": 3,
       "nature": "Ironlander",
       "features": [
@@ -550,10 +496,7 @@
         "A faint smell of ozone and rotten meat around the body",
         "Small dead things — flies, mice, birds — tend to accumulate near where they have been"
       ],
-      "drives": [
-        "Keep using; nothing else has ever felt like this",
-        "Protect the supply"
-      ],
+      "drives": ["Keep using; nothing else has ever felt like this", "Protect the supply"],
       "tactics": [
         "Use Black-tainted seeds recklessly, accepting backlash as the cost of power",
         "Lash out with Black-infused Crimson blasts when cornered",
@@ -566,9 +509,7 @@
     {
       "id": "yrt/rotwell",
       "name": "Rotwell",
-      "images": [
-        "rotwell.webp"
-      ],
+      "images": ["rotwell.webp"],
       "rank": 3,
       "nature": "Anomaly",
       "features": [
@@ -577,9 +518,7 @@
         "Dead vegetation for several paces around the edge, sharply bounded — the ring of dead plants is almost perfectly circular",
         "Animals avoid the water; insects do not"
       ],
-      "drives": [
-        "None — it is a site, not a creature"
-      ],
+      "drives": ["None — it is a site, not a creature"],
       "tactics": [
         "Passively dissolve organic matter that enters the water",
         "Accelerate decay in living tissue on contact — painful but not instantly lethal",
@@ -591,9 +530,7 @@
     {
       "id": "yrt/carrion-mound",
       "name": "Carrion Mound",
-      "images": [
-        "carrion-mound.webp"
-      ],
+      "images": ["carrion-mound.webp"],
       "rank": 4,
       "nature": "Anomaly",
       "features": [
@@ -618,9 +555,7 @@
     {
       "id": "yrt/ember-kite",
       "name": "Ember Kite",
-      "images": [
-        "ember-kite.webp"
-      ],
+      "images": ["ember-kite.webp"],
       "rank": 2,
       "nature": "Animal",
       "features": [
@@ -648,9 +583,7 @@
       "name": "Necrotic Sea Hare",
       "icon": "foe-necrotic-sea-hare",
       "escalates": true,
-      "images": [
-        "necrotic-sea-hare.webp"
-      ],
+      "images": ["necrotic-sea-hare.webp"],
       "rank": 1,
       "nature": "Animal",
       "features": [
@@ -659,10 +592,7 @@
         "Moves with unhurried deliberateness along contaminated sediment",
         "Leaves a thin oily trail of Black-saturated mucus in its wake, faintly luminescent"
       ],
-      "drives": [
-        "Process contaminated sediment",
-        "Anchor to warm tissue when disturbed"
-      ],
+      "drives": ["Process contaminated sediment", "Anchor to warm tissue when disturbed"],
       "tactics": [
         "Lie motionless in sediment; nearly invisible at rest",
         "Attach instantly when anything disturbs its substrate — does not chase, latches",

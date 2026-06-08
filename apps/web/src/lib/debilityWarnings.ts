@@ -11,10 +11,10 @@
 import type { CharacterData } from '$lib/types.js';
 
 export interface DebilityWarning {
-	key:       keyof CharacterData;
-	label:     string;
-	penalty:   string;
-	moves:     string[] | '*';
+	key: keyof CharacterData;
+	label: string;
+	penalty: string;
+	moves: string[] | '*';
 	/** Extra runtime check beyond just the debility being true. */
 	condition?: (data: CharacterData) => boolean;
 }
@@ -72,7 +72,8 @@ export const DEBILITY_PENALTIES: DebilityWarning[] = [
 	{
 		key: 'corrupted',
 		label: 'Corrupted',
-		penalty: 'If this move draws on your humanity or fellowship, add −1 to your Adds before rolling.',
+		penalty:
+			'If this move draws on your humanity or fellowship, add −1 to your Adds before rolling.',
 		moves: [
 			'move/forge-a-bond',
 			'move/test-your-bond',
@@ -106,11 +107,11 @@ export function getActiveDebilityWarnings(
 	moveId: string | '*',
 	data: CharacterData,
 ): DebilityWarning[] {
-	return DEBILITY_PENALTIES.filter(p => {
-		if (!data[p.key])                          return false; // debility not active
-		if (p.condition && !p.condition(data))     return false; // extra condition unmet
-		if (moveId === '*')                        return true;  // caller wants all
-		if (p.moves === '*')                       return true;  // applies to every move
+	return DEBILITY_PENALTIES.filter((p) => {
+		if (!data[p.key]) return false; // debility not active
+		if (p.condition && !p.condition(data)) return false; // extra condition unmet
+		if (moveId === '*') return true; // caller wants all
+		if (p.moves === '*') return true; // applies to every move
 		return (p.moves as string[]).includes(moveId);
 	});
 }

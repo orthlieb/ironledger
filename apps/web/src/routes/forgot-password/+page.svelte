@@ -30,77 +30,81 @@
 		</div>
 	</div>
 {:else}
-<div class="auth-wrap">
-	<div class="auth-card card">
-		<div class="auth-brand">
-			<div class="auth-brand-rule"></div>
-			<h1><span class="auth-brand-icon" aria-hidden="true">{@html swordSvg}</span>Iron Ledger</h1>
-			<div class="auth-brand-rule"></div>
-		</div>
-		{#if form?.sent}
-			<div class="hero-image-wrap">
-				<img
-					class="hero-image"
-					src="/ironledger-forgot-password.webp"
-					alt="A Norse smith hammers a new key into shape at the forge"
-				/>
-				<p class="hero-caption">Forged in fire. Delivered by raven.</p>
+	<div class="auth-wrap">
+		<div class="auth-card card">
+			<div class="auth-brand">
+				<div class="auth-brand-rule"></div>
+				<h1><span class="auth-brand-icon" aria-hidden="true">{@html swordSvg}</span>Iron Ledger</h1>
+				<div class="auth-brand-rule"></div>
 			</div>
-
-			<div class="success-msg">
-				A password reset link has been sent to <strong>{form.email}</strong>.
-				It expires in one hour.
-			</div>
-			<p class="auth-info muted">No sign of it? The seer suggests checking your spam folder.</p>
-			<p class="auth-link"><a href="/login">← Back to sign in</a></p>
-		{:else}
-			{#if form?.error}
-				<div class="error-msg">{form.error}</div>
-			{/if}
-
-			<div class="hero-image-wrap">
-				<img
-					class="hero-image"
-					src="/ironledger-reset-password.webp"
-					alt="A Norse warrior kneels before an oracle, seeking wisdom he should already have"
-				/>
-				<p class="hero-caption">Even legends seek counsel.</p>
-			</div>
-
-			<p class="instruction">
-				Enter your email address and we'll send you a link to reset your password.
-			</p>
-
-			<form method="POST" class="auth-form">
-				<label class="field-group">
-					<span>Email</span>
-					<input
-						type="email"
-						name="email"
-						required
-						autocomplete="email"
-						value={form?.email ?? ''}
+			{#if form?.sent}
+				<div class="hero-image-wrap">
+					<img
+						class="hero-image"
+						src="/ironledger-forgot-password.webp"
+						alt="A Norse smith hammers a new key into shape at the forge"
 					/>
-				</label>
-
-				<div class="captcha-wrap">
-					{#if data.isDev}
-						<div class="captcha-dev-bypass">⚙ Captcha bypassed in development</div>
-						<input type="hidden" name="h-captcha-response" value="dev-bypass" />
-					{:else}
-						<div class="h-captcha" data-sitekey="{data.hcaptchaSiteKey}" data-theme={captchaTheme}></div>
-					{/if}
+					<p class="hero-caption">Forged in fire. Delivered by raven.</p>
 				</div>
 
-				<button type="submit" class="btn btn-primary">Send Reset Link</button>
-			</form>
+				<div class="success-msg">
+					A password reset link has been sent to <strong>{form.email}</strong>. It expires in one
+					hour.
+				</div>
+				<p class="auth-info muted">No sign of it? The seer suggests checking your spam folder.</p>
+				<p class="auth-link"><a href="/login">← Back to sign in</a></p>
+			{:else}
+				{#if form?.error}
+					<div class="error-msg">{form.error}</div>
+				{/if}
 
-			<p class="auth-link">
-				Remembered it? <a href="/login">Sign in</a>
-			</p>
-		{/if}
+				<div class="hero-image-wrap">
+					<img
+						class="hero-image"
+						src="/ironledger-reset-password.webp"
+						alt="A Norse warrior kneels before an oracle, seeking wisdom he should already have"
+					/>
+					<p class="hero-caption">Even legends seek counsel.</p>
+				</div>
+
+				<p class="instruction">
+					Enter your email address and we'll send you a link to reset your password.
+				</p>
+
+				<form method="POST" class="auth-form">
+					<label class="field-group">
+						<span>Email</span>
+						<input
+							type="email"
+							name="email"
+							required
+							autocomplete="email"
+							value={form?.email ?? ''}
+						/>
+					</label>
+
+					<div class="captcha-wrap">
+						{#if data.isDev}
+							<div class="captcha-dev-bypass">⚙ Captcha bypassed in development</div>
+							<input type="hidden" name="h-captcha-response" value="dev-bypass" />
+						{:else}
+							<div
+								class="h-captcha"
+								data-sitekey={data.hcaptchaSiteKey}
+								data-theme={captchaTheme}
+							></div>
+						{/if}
+					</div>
+
+					<button type="submit" class="btn btn-primary">Send Reset Link</button>
+				</form>
+
+				<p class="auth-link">
+					Remembered it? <a href="/login">Sign in</a>
+				</p>
+			{/if}
+		</div>
 	</div>
-</div>
 {/if}
 
 <style>
@@ -137,7 +141,6 @@
 		height: 18px;
 		fill: var(--color-mana, #f59e0b);
 	}
-
 
 	.auth-info {
 		font-family: var(--font-ui);

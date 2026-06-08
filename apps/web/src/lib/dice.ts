@@ -16,8 +16,7 @@ import { isDiceSoundEnabled } from './diceSound.js';
 /** CDN paths for the 3D dice library and its asset bundle. */
 const DICE_LIB_URL =
 	'https://cdn.jsdelivr.net/npm/@3d-dice/dice-box-threejs@0.0.12/dist/dice-box-threejs.umd.js';
-const DICE_ASSET_CDN =
-	'https://cdn.jsdelivr.net/npm/@3d-dice/dice-box-threejs@0.0.12/public/';
+const DICE_ASSET_CDN = 'https://cdn.jsdelivr.net/npm/@3d-dice/dice-box-threejs@0.0.12/public/';
 
 /** How long (ms) to keep the dice overlay visible after they land. */
 const DICE_LINGER_MS = 600;
@@ -26,17 +25,37 @@ const DICE_LINGER_MS = 600;
 // Die colour themes  (matching reference implementation)
 // ---------------------------------------------------------------------------
 /** Blue — used for d6 (action die). */
-export const DIE_BLUE  = { foreground: '#ffffff', background: '#5383EC', outline: 'none', texture: 'none' } as const;
+export const DIE_BLUE = {
+	foreground: '#ffffff',
+	background: '#5383EC',
+	outline: 'none',
+	texture: 'none',
+} as const;
 /** Red  — used for d10 (challenge dice). */
-const        DIE_RED   = { foreground: '#ffffff', background: '#DD0000', outline: 'none', texture: 'none' } as const;
+const DIE_RED = {
+	foreground: '#ffffff',
+	background: '#DD0000',
+	outline: 'none',
+	texture: 'none',
+} as const;
 /** Black — used for the tens d10 in a d100 roll. */
-export const DIE_BLACK = { foreground: '#ffffff', background: '#222222', outline: 'none', texture: 'none' } as const;
+export const DIE_BLACK = {
+	foreground: '#ffffff',
+	background: '#222222',
+	outline: 'none',
+	texture: 'none',
+} as const;
 /** White — used for the ones d10 in a d100 roll. */
-export const DIE_WHITE = { foreground: '#000000', background: '#ffffff', outline: 'none', texture: 'none' } as const;
+export const DIE_WHITE = {
+	foreground: '#000000',
+	background: '#ffffff',
+	outline: 'none',
+	texture: 'none',
+} as const;
 
 /** Default colour theme keyed by die size (d6 = blue, d10 = red). */
 const DIE_THEME_BY_SIDES: Record<number, object> = {
-	6:  DIE_BLUE,
+	6: DIE_BLUE,
 	10: DIE_RED,
 };
 
@@ -66,7 +85,7 @@ export function setDice3dEnabled(enabled: boolean): void {
 // ---------------------------------------------------------------------------
 let _scriptLoaded: Promise<void> | null = null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let _diceBox:      any                  = null;
+let _diceBox: any = null;
 let _diceBoxReady: Promise<void> | null = null;
 
 /**
@@ -86,7 +105,7 @@ function syncDiceBoxToOverlay(): void {
 	const overlay = getOverlay();
 	const w = overlay.clientWidth;
 	const h = overlay.clientHeight;
-	if (w === 0 || h === 0) return;     // overlay not yet laid out
+	if (w === 0 || h === 0) return; // overlay not yet laid out
 	try {
 		_diceBox.setDimensions({ x: w, y: h });
 	} catch (e) {
@@ -117,7 +136,7 @@ function attachResizeListener(): void {
 		// orientationchange fires before the new layout is computed; defer
 		// the sync until after the browser has rotated and re-laid out.
 		requestAnimationFrame(() => requestAnimationFrame(sync));
-		sync();   // backup if rAF doesn't fire (page hidden, etc.)
+		sync(); // backup if rAF doesn't fire (page hidden, etc.)
 	});
 }
 
@@ -133,12 +152,12 @@ function getOverlay(): HTMLDivElement {
 		// position:fixed + inset:0 gives it full viewport dimensions.
 		// Three.js reads the container size at init — display:none would give 0×0
 		// and the WebGL renderer would be created with a zero-size canvas.
-		visibility:    'hidden',
-		position:      'fixed',
-		inset:         '0',
-		zIndex:        '9999',
+		visibility: 'hidden',
+		position: 'fixed',
+		inset: '0',
+		zIndex: '9999',
 		pointerEvents: 'none',
-		background:    'transparent',
+		background: 'transparent',
 	});
 	document.body.appendChild(div);
 	return div;
@@ -149,11 +168,14 @@ function loadScript(): Promise<void> {
 	if (_scriptLoaded) return _scriptLoaded;
 	_scriptLoaded = new Promise<void>((resolve, reject) => {
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		if ((window as any)['dice-box-threejs']) { resolve(); return; }
-		const s       = document.createElement('script');
-		s.src         = DICE_LIB_URL;
-		s.onload      = () => resolve();
-		s.onerror     = () => {
+		if ((window as any)['dice-box-threejs']) {
+			resolve();
+			return;
+		}
+		const s = document.createElement('script');
+		s.src = DICE_LIB_URL;
+		s.onload = () => resolve();
+		s.onerror = () => {
 			// Clear the cache so a subsequent roll can retry the CDN fetch.
 			_scriptLoaded = null;
 			reject(new Error('Failed to load dice-box-threejs from CDN'));
@@ -166,42 +188,44 @@ function loadScript(): Promise<void> {
 /** Ensure the DiceBox is initialised and ready to roll (idempotent). */
 function ensureDiceBox(): Promise<void> {
 	if (_diceBoxReady) return _diceBoxReady;
-	_diceBoxReady = loadScript().then(async () => {
-		getOverlay(); // create the overlay div before DiceBox tries to attach to it
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const Lib  = (window as any)['dice-box-threejs'];
-		// Library audio: 15 plastic-die-hit MP3s on the same CDN we already
-		// pull the script from. `isDiceSoundEnabled()` is hard-false on iOS
-		// (the library's `loadSounds()` pipeline hangs `_diceBox.initialize`
-		// there), so iPhone never tries to load audio and never hangs.
-		const wantSounds = isDiceSoundEnabled();
-		_diceBox = new Lib('#il-dice-overlay', {
-			assetPath:            DICE_ASSET_CDN,
-			sounds:               wantSounds,
-			sound_dieMaterial:    'plastic',
-			volume:               wantSounds ? 60 : 0,
-			shadows:              false,
-			theme_colorset:       'custom',
-			theme_material:       'plastic',
-			gravity_multiplier:   1000,
-			strength:             1,
-			iterationLimit:       500,
-			theme_customColorset: DIE_RED,
+	_diceBoxReady = loadScript()
+		.then(async () => {
+			getOverlay(); // create the overlay div before DiceBox tries to attach to it
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			const Lib = (window as any)['dice-box-threejs'];
+			// Library audio: 15 plastic-die-hit MP3s on the same CDN we already
+			// pull the script from. `isDiceSoundEnabled()` is hard-false on iOS
+			// (the library's `loadSounds()` pipeline hangs `_diceBox.initialize`
+			// there), so iPhone never tries to load audio and never hangs.
+			const wantSounds = isDiceSoundEnabled();
+			_diceBox = new Lib('#il-dice-overlay', {
+				assetPath: DICE_ASSET_CDN,
+				sounds: wantSounds,
+				sound_dieMaterial: 'plastic',
+				volume: wantSounds ? 60 : 0,
+				shadows: false,
+				theme_colorset: 'custom',
+				theme_material: 'plastic',
+				gravity_multiplier: 1000,
+				strength: 1,
+				iterationLimit: 500,
+				theme_customColorset: DIE_RED,
+			});
+			await _diceBox.initialize();
+			// Hide the shadow-catching ground plane after initialisation.
+			// It can reappear after clearDice(), so we also hide it there.
+			if (_diceBox.desk) _diceBox.desk.visible = false;
+			// Make sure the camera + walls match the current viewport, then
+			// keep them in sync across resize / rotation.
+			syncDiceBoxToOverlay();
+			attachResizeListener();
+		})
+		.catch((e: unknown) => {
+			// Clear the cache so the next roll will retry initialisation from scratch.
+			_diceBoxReady = null;
+			_diceBox = null;
+			throw e;
 		});
-		await _diceBox.initialize();
-		// Hide the shadow-catching ground plane after initialisation.
-		// It can reappear after clearDice(), so we also hide it there.
-		if (_diceBox.desk) _diceBox.desk.visible = false;
-		// Make sure the camera + walls match the current viewport, then
-		// keep them in sync across resize / rotation.
-		syncDiceBoxToOverlay();
-		attachResizeListener();
-	}).catch((e: unknown) => {
-		// Clear the cache so the next roll will retry initialisation from scratch.
-		_diceBoxReady = null;
-		_diceBox      = null;
-		throw e;
-	});
 	return _diceBoxReady;
 }
 
@@ -224,8 +248,8 @@ export function rollD100(): number {
 }
 
 export interface DiceSpec {
-	sides:  number;
-	value:  number;
+	sides: number;
+	value: number;
 	/** Override the default colour theme for this die group. */
 	color?: object;
 }
@@ -267,7 +291,7 @@ export async function animateDice(dice: DiceSpec[]): Promise<void> {
 
 		for (const die of dice) {
 			const theme = die.color ?? DIE_THEME_BY_SIDES[die.sides] ?? DIE_RED;
-			const last  = steps[steps.length - 1];
+			const last = steps[steps.length - 1];
 			if (last && last.sides === die.sides && last.theme === theme) {
 				last.values.push(die.value);
 			} else {
@@ -275,8 +299,7 @@ export async function animateDice(dice: DiceSpec[]): Promise<void> {
 			}
 		}
 
-		const stepNotation = (s: Step) =>
-			`${s.values.length}d${s.sides}@${s.values.join(',')}`;
+		const stepNotation = (s: Step) => `${s.values.length}d${s.sides}@${s.values.join(',')}`;
 
 		const applyTheme = (theme: object) =>
 			_diceBox.updateConfig({ theme_colorset: 'custom', theme_customColorset: theme });
@@ -306,7 +329,7 @@ export async function animateDice(dice: DiceSpec[]): Promise<void> {
 		}
 		await p;
 
-		await new Promise<void>(r => setTimeout(r, DICE_LINGER_MS));
+		await new Promise<void>((r) => setTimeout(r, DICE_LINGER_MS));
 	} catch (e) {
 		console.warn('[Iron Ledger] 3D dice animation failed:', e);
 	} finally {

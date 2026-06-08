@@ -29,8 +29,8 @@
 		index = 0;
 	});
 
-	let count       = $derived(images && images.length > 0 ? images.length : 1);
-	let src         = $derived(foePortraitUrl(name, images, index));
+	let count = $derived(images && images.length > 0 ? images.length : 1);
+	let src = $derived(foePortraitUrl(name, images, index));
 	let hasMultiple = $derived(count > 1);
 
 	function prev(e: Event) {
@@ -53,8 +53,14 @@
 
 	function onKey(e: KeyboardEvent) {
 		if (!hasMultiple) return;
-		if (e.key === 'ArrowLeft')  { prev(e); e.preventDefault(); }
-		if (e.key === 'ArrowRight') { next(e); e.preventDefault(); }
+		if (e.key === 'ArrowLeft') {
+			prev(e);
+			e.preventDefault();
+		}
+		if (e.key === 'ArrowRight') {
+			next(e);
+			e.preventDefault();
+		}
 	}
 </script>
 
@@ -71,7 +77,9 @@
 		{src}
 		alt={alt ?? ''}
 		draggable="false"
-		onerror={(e) => { (e.currentTarget as HTMLImageElement).src = UNKNOWN_FOE_PORTRAIT; }}
+		onerror={(e) => {
+			(e.currentTarget as HTMLImageElement).src = UNKNOWN_FOE_PORTRAIT;
+		}}
 	/>
 
 	{#if hasMultiple}
@@ -79,14 +87,14 @@
 			type="button"
 			class="foe-carousel-arrow foe-carousel-arrow--prev"
 			onclick={prev}
-			aria-label="Previous image"
-		>‹</button>
+			aria-label="Previous image">‹</button
+		>
 		<button
 			type="button"
 			class="foe-carousel-arrow foe-carousel-arrow--next"
 			onclick={next}
-			aria-label="Next image"
-		>›</button>
+			aria-label="Next image">›</button
+		>
 
 		<!-- Dot indicator — one dot per image, centered at the bottom. Active
 		     dot is opaque white; inactive are translucent. Clickable so the
@@ -138,7 +146,9 @@
 		padding: 0;
 		border-radius: 4px;
 		opacity: 0;
-		transition: opacity 0.15s, background 0.15s;
+		transition:
+			opacity 0.15s,
+			background 0.15s;
 		user-select: none;
 	}
 	.foe-carousel:hover .foe-carousel-arrow,
@@ -154,8 +164,12 @@
 		outline-offset: 2px;
 	}
 
-	.foe-carousel-arrow--prev { left: 6px; }
-	.foe-carousel-arrow--next { right: 6px; }
+	.foe-carousel-arrow--prev {
+		left: 6px;
+	}
+	.foe-carousel-arrow--next {
+		right: 6px;
+	}
 
 	/* Dot indicator — translucent capsule of circles, centered at the bottom. */
 	.foe-carousel-dots {
@@ -179,7 +193,9 @@
 		border-radius: 50%;
 		background: rgba(255, 255, 255, 0.35);
 		cursor: pointer;
-		transition: background 0.15s, transform 0.15s;
+		transition:
+			background 0.15s,
+			transform 0.15s;
 	}
 	.foe-carousel-dot:hover {
 		background: rgba(255, 255, 255, 0.6);

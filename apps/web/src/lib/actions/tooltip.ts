@@ -34,7 +34,7 @@
  */
 
 export interface TooltipOptions {
-	text:       string;
+	text: string;
 	placement?: 'above' | 'below';
 }
 
@@ -45,7 +45,7 @@ function normalise(param: TooltipParam): TooltipOptions {
 }
 
 export function tooltip(node: HTMLElement, param: TooltipParam) {
-	let opts  = normalise(param);
+	let opts = normalise(param);
 
 	const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
@@ -54,11 +54,11 @@ export function tooltip(node: HTMLElement, param: TooltipParam) {
 
 	function show() {
 		if (!opts.text) return;
-		if (tipEl) return;  // already visible
+		if (tipEl) return; // already visible
 
 		tipEl = document.createElement('div');
 		tipEl.setAttribute('popover', 'manual');
-		tipEl.className   = 'js-tooltip';
+		tipEl.className = 'js-tooltip';
 		tipEl.textContent = opts.text;
 		document.body.appendChild(tipEl);
 
@@ -70,19 +70,21 @@ export function tooltip(node: HTMLElement, param: TooltipParam) {
 
 		// Use rAF so the browser lays out the popover element before we
 		// measure its dimensions for positioning (fixes first-hover misfire).
-		requestAnimationFrame(() => { if (tipEl) position(); });
+		requestAnimationFrame(() => {
+			if (tipEl) position();
+		});
 	}
 
 	function position() {
 		if (!tipEl) return;
-		const rect      = node.getBoundingClientRect();
+		const rect = node.getBoundingClientRect();
 		const placement = opts.placement ?? 'above';
-		const gap       = 8;
+		const gap = 8;
 
 		// Measure tooltip dimensions (render off-screen first).
 		tipEl.style.visibility = 'hidden';
 		tipEl.style.left = '0';
-		tipEl.style.top  = '0';
+		tipEl.style.top = '0';
 
 		const tw = tipEl.offsetWidth;
 		const th = tipEl.offsetHeight;
@@ -104,7 +106,7 @@ export function tooltip(node: HTMLElement, param: TooltipParam) {
 		}
 
 		tipEl.style.left = `${left}px`;
-		tipEl.style.top  = `${top}px`;
+		tipEl.style.top = `${top}px`;
 	}
 
 	function hide() {
@@ -130,8 +132,8 @@ export function tooltip(node: HTMLElement, param: TooltipParam) {
 	} else {
 		node.addEventListener('mouseenter', show);
 		node.addEventListener('mouseleave', hide);
-		node.addEventListener('focus',      show);
-		node.addEventListener('blur',       hide);
+		node.addEventListener('focus', show);
+		node.addEventListener('blur', hide);
 	}
 
 	return {
@@ -150,8 +152,8 @@ export function tooltip(node: HTMLElement, param: TooltipParam) {
 			} else {
 				node.removeEventListener('mouseenter', show);
 				node.removeEventListener('mouseleave', hide);
-				node.removeEventListener('focus',      show);
-				node.removeEventListener('blur',       hide);
+				node.removeEventListener('focus', show);
+				node.removeEventListener('blur', hide);
 			}
 		},
 	};

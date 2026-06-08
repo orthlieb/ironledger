@@ -14,11 +14,11 @@ import type { CharacterAsset, AssetDefinition } from '$lib/types.js';
 // ---------------------------------------------------------------------------
 
 export interface RelevantAbility {
-	assetId:      string;
-	assetName:    string;
-	category:     string;
+	assetId: string;
+	assetName: string;
+	category: string;
 	abilityIndex: number;
-	abilityText:  string;
+	abilityText: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -38,9 +38,9 @@ export interface RelevantAbility {
  * @param findAsset       Lookup function from assetStore (findAsset)
  */
 export function getRelevantAbilities(
-	moveId:          string,
+	moveId: string,
 	characterAssets: CharacterAsset[],
-	findAssetFn:     (id: string) => AssetDefinition | undefined,
+	findAssetFn: (id: string) => AssetDefinition | undefined,
 ): RelevantAbility[] {
 	if (!moveId || !characterAssets.length) return [];
 
@@ -61,11 +61,11 @@ export function getRelevantAbilities(
 			if (!enabled) continue;
 
 			results.push({
-				assetId:      charAsset.assetId,
-				assetName:    def.name,
-				category:     def.category,
+				assetId: charAsset.assetId,
+				assetName: def.name,
+				category: def.category,
 				abilityIndex: i,
-				abilityText:  ability.text,
+				abilityText: ability.text,
 			});
 		}
 	}

@@ -1,15 +1,15 @@
 <script lang="ts">
-	import eyeSvg      from '$icons/eye.svg?raw';
+	import eyeSvg from '$icons/eye.svg?raw';
 	import eyeSlashSvg from '$icons/eye-slash.svg?raw';
 	import { tooltip } from '$lib/actions/tooltip.js';
 
 	interface Props {
-		name:         string;
-		label:        string;
+		name: string;
+		label: string;
 		autocomplete: AutoFill;
-		minlength?:   number;
-		value?:       string;
-		required?:    boolean;
+		minlength?: number;
+		value?: string;
+		required?: boolean;
 	}
 
 	let { name, label, autocomplete, minlength, value = '', required = true }: Props = $props();

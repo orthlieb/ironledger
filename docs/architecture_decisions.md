@@ -47,6 +47,7 @@ from `@ironledger/shared` without publishing to npm or copy-pasting types.
 npm workspaces is built into npm — no third-party tool (Turborepo, Nx, Lerna) required.
 
 **Rejected:**
+
 - **Separate repositories** — types would drift out of sync between API and frontend.
 - **Turborepo/Nx** — adds complexity and build caching that isn't needed at this scale.
 
@@ -57,6 +58,7 @@ npm workspaces is built into npm — no third-party tool (Turborepo, Nx, Lerna) 
 **Decision:** Node.js 22 (LTS) + TypeScript 5 + Fastify 5.
 
 **Why:**
+
 - Node.js 22 is the current LTS with full ES2022+ support and native ESM.
 - Fastify is faster than Express (~3× throughput in benchmarks), has native
   TypeScript support, schema-based validation built in, and a mature plugin ecosystem.
@@ -64,6 +66,7 @@ npm workspaces is built into npm — no third-party tool (Turborepo, Nx, Lerna) 
   mismatches, missing properties — that would only surface at runtime in plain JS.
 
 **Rejected:**
+
 - **Express** — slower, no built-in validation, TypeScript support is bolted on.
 - **Hono / Elysia** — newer, less proven in production, smaller ecosystems.
 - **Next.js API routes** — overengineered for a dedicated API server; mixes
@@ -84,6 +87,7 @@ weeks of work and a significant bundle size increase. The existing build pipelin
 (`build.js`) continues to assemble and minify the frontend.
 
 **Rejected:**
+
 - **React** — no benefit for this app's interaction model; adds ~150KB to the bundle.
 - **Vue / Svelte** — same reasoning.
 - **HTMX** — interesting but would require restructuring the existing UI significantly.
@@ -96,6 +100,7 @@ weeks of work and a significant bundle size increase. The existing build pipelin
 
 **Why:** PostgreSQL is the most capable open-source relational database.
 Specifically chosen features:
+
 - **JSONB** — stores semi-structured character data without requiring a migration
   every time the game rules change.
 - **Row-Level Security (RLS)** — enforces tenant isolation at the database layer.
@@ -106,6 +111,7 @@ Installed natively (not in Docker) on the production VPS for simpler operation,
 better performance, and easier `pg_dump` backup integration.
 
 **Rejected:**
+
 - **MySQL / MariaDB** — no RLS, weaker JSONB support.
 - **MongoDB** — JSONB in PostgreSQL provides the same flexibility with the
   integrity guarantees of a relational database.
@@ -126,10 +132,12 @@ user data goes through `withUserContext(userId)`, which sets `app.user_id` as a
 transaction-local PostgreSQL setting checked by all RLS policies.
 
 Two database roles:
+
 - `app_user` — subject to RLS, used by the API server.
 - `app_admin` — bypasses RLS, used only by migration scripts.
 
 **Rejected:**
+
 - **Schema-per-tenant** — overkill for personal game data; complicates migrations
   and connection pooling significantly.
 - **Database-per-tenant** — extreme isolation with extreme operational cost.
@@ -150,6 +158,7 @@ prevents throwaway registrations and ensures a working contact address.
 added as an optional second factor without changing the core auth flow.
 
 **Rejected:**
+
 - **Magic link (passwordless)** — every login requires email access; impractical
   for frequent use.
 - **OAuth only (Sign in with Google)** — excludes users without Google/GitHub
@@ -164,6 +173,7 @@ added as an optional second factor without changing the core auth flow.
 refresh tokens (30 days, stored hashed in DB, rotated on every use).
 
 **Why:**
+
 - **RS256 (asymmetric)** over HS256 (symmetric): the private key signs tokens,
   the public key verifies them. A second service can verify tokens without the
   ability to create them.
@@ -181,6 +191,7 @@ refresh tokens (30 days, stored hashed in DB, rotated on every use).
   and containing refresh token theft.
 
 **Rejected:**
+
 - **JWT in localStorage** — readable by JavaScript; stolen by any XSS.
 - **Session cookies only** — requires server-side session store for every
   request; harder to scale.
@@ -203,6 +214,7 @@ Passwords are additionally checked against HaveIBeenPwned's breach database
 at registration and reset time (see §11).
 
 **Rejected:**
+
 - **bcrypt** — CPU-hard but not memory-hard; GPUs can crack bcrypt much faster
   than Argon2id.
 - **scrypt** — also acceptable, but Argon2id is the current recommendation.
@@ -228,6 +240,7 @@ Local development uses hCaptcha's published test secret
 is rejected. A CAPTCHA that degrades open is no CAPTCHA.
 
 **Rejected:**
+
 - **reCAPTCHA v3** — privacy concerns, Google dependency, scoring is opaque.
 - **No CAPTCHA** — registration and login endpoints are primary targets for
   credential stuffing and spam registration bots.
@@ -248,6 +261,7 @@ All emails include both HTML and plain-text versions. Plain-text fallbacks impro
 deliverability (spam filters trust emails with both) and support accessibility tools.
 
 **Rejected:**
+
 - **SendGrid** — more expensive, more complex.
 - **AWS SES** — adds AWS dependency; IONOS SMTP is simpler at this scale.
 - **Nodemailer direct to recipient** — poor deliverability; IP reputation issues.
@@ -272,6 +286,7 @@ response size (different prefixes return different numbers of hashes; padding
 normalises the response size).
 
 **Rejected:**
+
 - **Client-side checking** — the password would have to leave the client in cleartext.
 - **Maintaining a local breach list** — the HIBP dataset is hundreds of GB;
   impractical to self-host and keep current.
@@ -289,6 +304,7 @@ used for schema-level stripping (`removeAdditional: 'all'`) to prevent
 mass-assignment attacks.
 
 **Rejected:**
+
 - **Joi** — not TypeScript-native; verbose.
 - **Yup** — slower than Zod; less ergonomic TypeScript integration.
 - **Manual validation** — error-prone, inconsistent.
@@ -305,6 +321,7 @@ with multiple PM2 workers. In-memory rate limiting would be per-process — a
 client could bypass it by hitting different workers in round-robin.
 
 Limits:
+
 - Login: 5 requests per 15 minutes per IP
 - Register: 3 requests per hour per IP
 - Global: 120 requests per minute per user (or IP if unauthenticated)
@@ -324,6 +341,7 @@ The CSP is tuned for this application: `'self'` for all resources, with
 explicit allowances for hCaptcha's CDN domains (scripts, frames, and connections).
 
 Key headers:
+
 - `Content-Security-Policy` — prevents XSS by whitelisting script sources.
 - `Strict-Transport-Security` — forces HTTPS for 2 years, including subdomains.
 - `X-Frame-Options: DENY` — prevents clickjacking.
@@ -363,6 +381,7 @@ A column to be dropped is first made nullable (deploy 1), then removed after
 the code no longer references it (deploy 2). This allows zero-downtime deploys.
 
 **Rejected:**
+
 - **Prisma** — heavy generated client, difficult to use RLS correctly, slower
   query performance in benchmarks.
 - **TypeORM** — decorator-based, complex, poor ESM support.
@@ -392,6 +411,7 @@ is handled by Zod refinements on the full config object.
 **Decision:** Three-tier testing with Vitest: unit → integration → e2e.
 
 **Tiers:**
+
 - **Unit** — pure logic, no I/O. Test token generation, hashing, validation
   schemas, utility functions. Run in milliseconds. External dependencies mocked.
 - **Integration** — real PostgreSQL database, external services mocked.
@@ -423,6 +443,7 @@ which is more than adequate for a hobbyist RPG tracker. PM2 provides zero-downti
 restarts, automatic crash recovery, and log rotation.
 
 Deploy process:
+
 1. GitHub Actions runs tests on every PR.
 2. Merge to `main` triggers the deploy workflow.
 3. The workflow SSHs to the server, runs `git pull`, `npm ci`, `npm run build`,
@@ -431,6 +452,7 @@ Deploy process:
    alerts if it doesn't return 200 within 30 seconds.
 
 **Rejected:**
+
 - **Docker in production** — adds overhead and complexity on a single VPS.
 - **Serverless / Lambda** — cold start latency is unacceptable for an interactive app.
 - **Managed database (Supabase, Neon)** — adds cost and a third-party dependency.
@@ -453,6 +475,7 @@ know which variables to populate.
 to HashiCorp Vault or AWS Secrets Manager.
 
 **Rejected:**
+
 - **Hardcoded values** — never acceptable.
 - **Committed `.env`** — the most common cause of credential leaks.
 - **AWS Secrets Manager now** — adds AWS dependency and cost for a single-server setup.
@@ -495,16 +518,16 @@ to attackers.
 **Decision:** Per-entity collapse state lives in browser `localStorage` under
 namespaced keys, never in `CharacterData` or on the server.
 
-| Pattern | Owner | Example |
-|---|---|---|
-| `il:foe:collapse:{encounterId}` | `FoeCard.svelte` | `il:foe:collapse:7c1a…` |
-| `il:journey:collapse:{expeditionId}` | `JourneyCard.svelte` | `il:journey:collapse:8b3e…` |
-| `il:site:collapse:{expeditionId}` | `SiteCard.svelte` | `il:site:collapse:9d2f…` |
-| `il:site:denizens:{expeditionId}` | `SiteCard.svelte` | denizen sub-section collapse |
-| `il:community:collapse:{communityId}` | `CommunityCard.svelte` | |
-| `il:npc:collapse:{npcId}` | `NpcCard.svelte` | |
+| Pattern                               | Owner                     | Example                      |
+| ------------------------------------- | ------------------------- | ---------------------------- |
+| `il:foe:collapse:{encounterId}`       | `FoeCard.svelte`          | `il:foe:collapse:7c1a…`      |
+| `il:journey:collapse:{expeditionId}`  | `JourneyCard.svelte`      | `il:journey:collapse:8b3e…`  |
+| `il:site:collapse:{expeditionId}`     | `SiteCard.svelte`         | `il:site:collapse:9d2f…`     |
+| `il:site:denizens:{expeditionId}`     | `SiteCard.svelte`         | denizen sub-section collapse |
+| `il:community:collapse:{communityId}` | `CommunityCard.svelte`    |                              |
+| `il:npc:collapse:{npcId}`             | `NpcCard.svelte`          |                              |
 | `il:gc:expNotes:{activeExpeditionId}` | `GlobalContextBar.svelte` | per-expedition notes section |
-| `il:gc:foeInfo:{activeFoeId}` | `GlobalContextBar.svelte` | per-foe info section |
+| `il:gc:foeInfo:{activeFoeId}`         | `GlobalContextBar.svelte` | per-foe info section         |
 
 Other UI preferences also live in `localStorage` under the `ironledger:` or `il:`
 prefix — see [expansion-toggles.md](expansion-toggles.md) (`ironledger:expansion:delve` / `:yrt`),
@@ -588,6 +611,7 @@ the DB and cause the next write to fail. The blank-slate contract prevents
 this cascade.
 
 **How (helpers/reset.ts):**
+
 - `resetCharacters` — sequential `DELETE /api/v1/characters/:id`
   (sequential required — SQLite single writer)
 - `resetFoes / resetExpeditions / resetCommunities / resetLog` — atomic
@@ -604,5 +628,5 @@ with `captchaToken: 'dev-bypass'`. Separate from the dev user
 
 ---
 
-*Document last updated during initial project scaffolding (Layer 8).*
-*Update this document whenever a significant decision is made or revisited.*
+_Document last updated during initial project scaffolding (Layer 8)._
+_Update this document whenever a significant decision is made or revisited._

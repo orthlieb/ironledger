@@ -9,13 +9,13 @@ on:
 # Prevent concurrent deploys — if a deploy is already running, queue the next
 concurrency:
   group: deploy-production
-  cancel-in-progress: false   # don't cancel a running deploy; queue instead
+  cancel-in-progress: false # don't cancel a running deploy; queue instead
 
 jobs:
   deploy:
     name: Deploy to IONOS VPS
     runs-on: ubuntu-latest
-    environment: production   # requires approval if configured in repo settings
+    environment: production # requires approval if configured in repo settings
 
     steps:
       - name: Checkout
@@ -54,10 +54,10 @@ jobs:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host:     ${{ secrets.IONOS_HOST }}
+          host: ${{ secrets.IONOS_HOST }}
           username: ironledger
-          key:      ${{ secrets.IONOS_DEPLOY_KEY }}
-          timeout:  180s
+          key: ${{ secrets.IONOS_DEPLOY_KEY }}
+          timeout: 180s
           script: |
             set -euo pipefail
 

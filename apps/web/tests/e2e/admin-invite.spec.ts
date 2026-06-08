@@ -26,13 +26,13 @@ async function adminToken(): Promise<string> {
 	const ctx = await request.newContext({ baseURL: API });
 	const res = await ctx.post('/api/v1/auth/login', {
 		data: {
-			email:        'admin@ironledger.local',
-			password:     'adminpassword123!',
+			email: 'admin@ironledger.local',
+			password: 'adminpassword123!',
 			captchaToken: 'dev-bypass',
 		},
 	});
 	if (!res.ok()) throw new Error(`Admin login failed: ${res.status()} ${await res.text()}`);
-	const body = await res.json() as { accessToken: string };
+	const body = (await res.json()) as { accessToken: string };
 	await ctx.dispose();
 	return body.accessToken;
 }
@@ -72,7 +72,7 @@ async function deleteUserByEmail(token: string, email: string): Promise<void> {
 			headers: { Authorization: `Bearer ${token}` },
 		});
 		if (!listRes.ok()) return;
-		const users = await listRes.json() as Array<{ id: string; email: string }>;
+		const users = (await listRes.json()) as Array<{ id: string; email: string }>;
 		const target = users.find((u) => u.email === email.toLowerCase());
 		if (target) {
 			await ctx.delete(`/api/v1/admin/users/${target.id}`, {
@@ -102,7 +102,9 @@ test.describe('Admin Invite', () => {
 		token = await adminToken();
 	});
 
-	test('happy path: admin creates invite, recipient accepts and lands on /home', async ({ page }) => {
+	test('happy path: admin creates invite, recipient accepts and lands on /home', async ({
+		page,
+	}) => {
 		const email = `e2e-invite-${Date.now()}@ironledger.test`;
 		const { url } = await createInvite(token, email, 'E2E Invitee');
 
@@ -135,7 +137,9 @@ test.describe('Admin Invite', () => {
 		}
 	});
 
-	test('expired link: revoked invite shows the expired hero and error, no form', async ({ page }) => {
+	test('expired link: revoked invite shows the expired hero and error, no form', async ({
+		page,
+	}) => {
 		const email = `e2e-invite-expired-${Date.now()}@ironledger.test`;
 		const { invite, url } = await createInvite(token, email);
 

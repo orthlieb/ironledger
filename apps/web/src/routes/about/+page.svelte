@@ -1,12 +1,12 @@
 <script lang="ts">
-	import charactersSvg    from '$icons/Characters.svg?raw';
-	import foesSvg          from '$icons/Foes.svg?raw';
-	import expeditionsSvg   from '$icons/Expeditions.svg?raw';
-	import adventureSvg     from '$icons/Adventure.svg?raw';
-	import eyeSvg           from '$icons/eye-solid.svg?raw';
-	import noteSvg          from '$icons/note-sticky-solid.svg?raw';
-	import villageSvg       from '$icons/village.svg?raw';
-	import mobileSvg        from '$icons/mobile-screen-solid.svg?raw';
+	import charactersSvg from '$icons/Characters.svg?raw';
+	import foesSvg from '$icons/Foes.svg?raw';
+	import expeditionsSvg from '$icons/Expeditions.svg?raw';
+	import adventureSvg from '$icons/Adventure.svg?raw';
+	import eyeSvg from '$icons/eye-solid.svg?raw';
+	import noteSvg from '$icons/note-sticky-solid.svg?raw';
+	import villageSvg from '$icons/village.svg?raw';
+	import mobileSvg from '$icons/mobile-screen-solid.svg?raw';
 
 	let { data }: { data: { user?: { name?: string } } } = $props();
 
@@ -14,7 +14,7 @@
 		{
 			icon: charactersSvg,
 			title: 'Character Sheets',
-			body: 'Stats, vows, bonds, debilities, XP — everything the Ironlands will hurl at you, and everything you\'ll cling to when the dice betray you. Auto-saved, because the darkness waits for no one.',
+			body: "Stats, vows, bonds, debilities, XP — everything the Ironlands will hurl at you, and everything you'll cling to when the dice betray you. Auto-saved, because the darkness waits for no one.",
 			color: 'var(--color-edge)',
 		},
 		{
@@ -50,7 +50,7 @@
 		{
 			icon: villageSvg,
 			title: 'Connections & NPCs',
-			body: 'The Ironlands are not empty. Track the settlements you\'ve found, the people you\'ve met, and the ones who owe you a favour. Oracle-powered random generation for names and locations — or build them by hand, if you\'re that kind of hero.',
+			body: "The Ironlands are not empty. Track the settlements you've found, the people you've met, and the ones who owe you a favour. Oracle-powered random generation for names and locations — or build them by hand, if you're that kind of hero.",
 			color: 'var(--color-health)',
 		},
 		{
@@ -64,9 +64,11 @@
 
 <svelte:head>
 	<title>Iron Ledger</title>
-	<meta name="description" content="Iron Ledger is a digital companion app for Ironsworn — manage characters, foes, expeditions, moves, oracles, and session logs in one place." />
+	<meta
+		name="description"
+		content="Iron Ledger is a digital companion app for Ironsworn — manage characters, foes, expeditions, moves, oracles, and session logs in one place."
+	/>
 </svelte:head>
-
 
 <!-- ── Hero ───────────────────────────────────────────────────────── -->
 <section class="hero">
@@ -74,7 +76,8 @@
 		<p class="hero-eyebrow">Forged in JavaScript. Tempered by coffee.</p>
 		<h1 class="hero-title">Iron Ledger</h1>
 		<p class="hero-subtitle">
-			The Ironlands are brutal, the dice are fickle, and paper character sheets have a way of disappearing right before a climactic vow. Iron Ledger remembers so you don't have to.
+			The Ironlands are brutal, the dice are fickle, and paper character sheets have a way of
+			disappearing right before a climactic vow. Iron Ledger remembers so you don't have to.
 		</p>
 	</div>
 	<div class="hero-image-wrap">
@@ -86,10 +89,10 @@
 	</div>
 	<div class="hero-cta">
 		{#if data.user}
-			<a href="/home"     class="btn btn-primary btn-lg">Continue Your Journey</a>
+			<a href="/home" class="btn btn-primary btn-lg">Continue Your Journey</a>
 		{:else}
 			<a href="/register" class="btn btn-primary btn-lg">Begin Your Journey</a>
-			<a href="/login"    class="btn btn-lg">Sign In</a>
+			<a href="/login" class="btn btn-lg">Sign In</a>
 		{/if}
 	</div>
 </section>
@@ -101,21 +104,21 @@
 		<div class="about-layout">
 			<div class="about-prose">
 				<p>
-					<strong>Ironsworn</strong> is an award-winning solo and co-operative tabletop RPG by Shawn Tomkin —
-					a dark, mythic land of iron and stone where you swear oaths on pain of dishonour, face foes that
-					would very much prefer you dead, and carve out a legend through nothing but dice, imagination, and
-					an unreasonable willingness to suffer.
+					<strong>Ironsworn</strong> is an award-winning solo and co-operative tabletop RPG by Shawn Tomkin
+					— a dark, mythic land of iron and stone where you swear oaths on pain of dishonour, face foes
+					that would very much prefer you dead, and carve out a legend through nothing but dice, imagination,
+					and an unreasonable willingness to suffer.
 				</p>
 				<p>
 					<strong>Iron Ledger</strong> is the companion app that handles the clerical work while you handle
 					the heroics. No more mid-session rulebook archaeology. No more paper sheets that vanish between
-					sessions. No more "wait, did I mark that vow as Fulfilled or did I just think really hard about it?"
-					Your full chronicle lives here — always saved, always accurate, always ready to witness your next
-					catastrophic miss.
+					sessions. No more "wait, did I mark that vow as Fulfilled or did I just think really hard about
+					it?" Your full chronicle lives here — always saved, always accurate, always ready to witness
+					your next catastrophic miss.
 				</p>
 				<p>
-					Built for Ironsworn core, the <em>Delve</em> supplement, and the community <em>Yrt</em> homebrew expansion.
-					Iron Ledger takes the game seriously, even when the dice clearly do not.
+					Built for Ironsworn core, the <em>Delve</em> supplement, and the community <em>Yrt</em> homebrew
+					expansion. Iron Ledger takes the game seriously, even when the dice clearly do not.
 				</p>
 			</div>
 			<div class="about-mobile-wrap">
@@ -152,8 +155,8 @@
 	<div class="preview-section-inner">
 		<h2 class="section-heading">The Saga at a Glance</h2>
 		<p class="preview-caption">
-			Everything on one screen. Characters, foes, expeditions, connections, and your session
-			log — always visible, never buried in a menu.
+			Everything on one screen. Characters, foes, expeditions, connections, and your session log —
+			always visible, never buried in a menu.
 		</p>
 		<div class="preview-image-wrap">
 			<img
@@ -185,21 +188,36 @@
 			</div>
 		</div>
 		<p class="systems-note">
-			Iron Ledger is an independent fan project and is not affiliated with or endorsed by Shawn Tomkin
-			or Ironsworn.
+			Iron Ledger is an independent fan project and is not affiliated with or endorsed by Shawn
+			Tomkin or Ironsworn.
 		</p>
 		<p class="systems-note systems-note--attribution">
-			This work is based on <a href="https://ironswornrpg.com" target="_blank" rel="noopener noreferrer">Ironsworn</a>
-			and <a href="https://ironswornrpg.com" target="_blank" rel="noopener noreferrer">Ironsworn: Delve</a>,
-			created by Shawn Tomkin, and licensed for use under the
-			<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreferrer">CC BY-NC-SA 4.0</a>
+			This work is based on <a
+				href="https://ironswornrpg.com"
+				target="_blank"
+				rel="noopener noreferrer">Ironsworn</a
+			>
+			and
+			<a href="https://ironswornrpg.com" target="_blank" rel="noopener noreferrer"
+				>Ironsworn: Delve</a
+			>, created by Shawn Tomkin, and licensed for use under the
+			<a
+				href="https://creativecommons.org/licenses/by-nc-sa/4.0/"
+				target="_blank"
+				rel="noopener noreferrer">CC BY-NC-SA 4.0</a
+			>
 			license. Game data sourced from
-			<a href="https://github.com/rsek/datasworn" target="_blank" rel="noopener noreferrer">Datasworn</a>
-			by rsek.
-			Icons by <a href="https://game-icons.net" target="_blank" rel="noopener noreferrer">game-icons.net</a>
-			&amp; <a href="https://fontawesome.com" target="_blank" rel="noopener noreferrer">Font Awesome</a>.
+			<a href="https://github.com/rsek/datasworn" target="_blank" rel="noopener noreferrer"
+				>Datasworn</a
+			>
+			by rsek. Icons by
+			<a href="https://game-icons.net" target="_blank" rel="noopener noreferrer">game-icons.net</a>
+			&amp;
+			<a href="https://fontawesome.com" target="_blank" rel="noopener noreferrer">Font Awesome</a>.
 			Iron Ledger is free and open source — source available on
-			<a href="https://github.com/orthlieb/ironledger" target="_blank" rel="noopener noreferrer">GitHub</a>.
+			<a href="https://github.com/orthlieb/ironledger" target="_blank" rel="noopener noreferrer"
+				>GitHub</a
+			>.
 		</p>
 	</div>
 </section>
@@ -363,11 +381,15 @@
 	}
 
 	@media (min-width: 600px) {
-		.feature-grid { grid-template-columns: repeat(2, 1fr); }
+		.feature-grid {
+			grid-template-columns: repeat(2, 1fr);
+		}
 	}
 
 	@media (min-width: 960px) {
-		.feature-grid { grid-template-columns: repeat(3, 1fr); }
+		.feature-grid {
+			grid-template-columns: repeat(3, 1fr);
+		}
 	}
 
 	.feature-card {
@@ -378,7 +400,10 @@
 		border: 1px solid color-mix(in srgb, var(--feat-color) 25%, transparent);
 		border-radius: 6px;
 		background: color-mix(in srgb, var(--feat-color) 6%, var(--bg-card));
-		transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+		transition:
+			border-color 0.15s,
+			box-shadow 0.15s,
+			background 0.15s;
 	}
 
 	.feature-card:hover {
@@ -455,13 +480,17 @@
 		line-height: 1.6;
 		max-width: 100%;
 	}
-	.systems-note + .systems-note { margin-top: 0.5rem; }
+	.systems-note + .systems-note {
+		margin-top: 0.5rem;
+	}
 	.systems-note--attribution a {
 		color: var(--text-muted);
 		text-decoration: underline;
 		text-underline-offset: 2px;
 	}
-	.systems-note--attribution a:hover { color: var(--text-accent); }
+	.systems-note--attribution a:hover {
+		color: var(--text-accent);
+	}
 
 	/* ── App preview ──────────────────────────────────────────────── */
 	.preview-section {
@@ -502,5 +531,4 @@
 		padding: 8px 22px;
 		font-size: 0.8rem;
 	}
-
 </style>

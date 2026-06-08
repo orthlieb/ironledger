@@ -33,7 +33,7 @@ async function runMigrations() {
   console.log('▶ Connecting to database...');
   const migrationPool = postgres(config.DATABASE_ADMIN_URL, {
     max: 1,
-    onnotice: () => {},  // suppress NOTICE messages from migrations
+    onnotice: () => {}, // suppress NOTICE messages from migrations
   });
 
   const db = drizzle(migrationPool);

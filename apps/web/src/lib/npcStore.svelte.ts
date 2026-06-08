@@ -20,9 +20,9 @@ import type { Npc } from '$lib/types.js';
 // ---------------------------------------------------------------------------
 
 let _npcs: Npc[] = $state([]);
-let _loading      = $state(false);
-let _loaded       = false;
-let _saving       = $state(false);
+let _loading = $state(false);
+let _loaded = false;
+let _saving = $state(false);
 
 // ---------------------------------------------------------------------------
 // Fetch
@@ -41,7 +41,7 @@ export async function loadNpcs(): Promise<void> {
 		const json = (await res.json()) as { npcs: unknown };
 		// Guard against legacy rows where the JSONB column was persisted as
 		// `{}` instead of `[]` — `?? []` only rescues null/undefined.
-		_npcs   = Array.isArray(json.npcs) ? (json.npcs as Npc[]) : [];
+		_npcs = Array.isArray(json.npcs) ? (json.npcs as Npc[]) : [];
 		_loaded = true;
 	} catch (err) {
 		console.error('[npcStore] Failed to load NPCs:', err);
@@ -79,14 +79,14 @@ export async function addNpc(n: Npc): Promise<void> {
 
 /** Replace one NPC by id and persist. */
 export async function updateNpc(updated: Npc): Promise<void> {
-	_npcs = _npcs.map((n) => n.id === updated.id ? updated : n);
+	_npcs = _npcs.map((n) => (n.id === updated.id ? updated : n));
 	await persist();
 }
 
 /** Replace one NPC by id WITHOUT persisting. Pair with persistNpcsNow()
     when the caller is debouncing the API write. */
 export function updateNpcLocal(updated: Npc): void {
-	_npcs = _npcs.map((n) => n.id === updated.id ? updated : n);
+	_npcs = _npcs.map((n) => (n.id === updated.id ? updated : n));
 }
 /** Force a save of the current NPC list (debounce-friendly partner). */
 export async function persistNpcsNow(): Promise<void> {
@@ -108,10 +108,10 @@ async function persist(): Promise<void> {
 	_saving = true;
 	try {
 		const res = await fetch('/api/session/npcs', {
-			method:      'PATCH',
+			method: 'PATCH',
 			credentials: 'include',
-			headers:     { 'Content-Type': 'application/json' },
-			body:        JSON.stringify({ npcs: _npcs }),
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ npcs: _npcs }),
 		});
 		if (!res.ok) {
 			console.error('[npcStore] Persist failed:', res.status);

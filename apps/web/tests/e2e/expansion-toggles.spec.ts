@@ -15,19 +15,19 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 
-const CHAR_AREA   = '.home-area--characters';
+const CHAR_AREA = '.home-area--characters';
 const CHAR_HEADER = `${CHAR_AREA} .ca-header`;
-const CHAR_SPINE  = `${CHAR_AREA} .ca-spine`;
-const FOE_AREA    = '.home-area--foes';
-const FOE_HEADER  = `${FOE_AREA} .fa-header`;
-const EXP_AREA    = '.home-area--expeditions';
-const EXP_HEADER  = `${EXP_AREA} .ea-header`;
-const CM_AREA     = '.home-area--communities';
-const CM_HEADER   = `${CM_AREA} .cm-header`;
-const APP_NAV     = '.app-nav';
+const CHAR_SPINE = `${CHAR_AREA} .ca-spine`;
+const FOE_AREA = '.home-area--foes';
+const FOE_HEADER = `${FOE_AREA} .fa-header`;
+const EXP_AREA = '.home-area--expeditions';
+const EXP_HEADER = `${EXP_AREA} .ea-header`;
+const CM_AREA = '.home-area--communities';
+const CM_HEADER = `${CM_AREA} .cm-header`;
+const APP_NAV = '.app-nav';
 
 const DELVE_KEY = 'ironledger:expansion:delve';
-const YRT_KEY   = 'ironledger:expansion:yrt';
+const YRT_KEY = 'ironledger:expansion:yrt';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -47,10 +47,10 @@ async function setExpansionsViaStorage(
 ): Promise<void> {
 	await page.evaluate(
 		({ delveKey, yrtKey, delve, yrt }) => {
-			if (delve === true)       localStorage.removeItem(delveKey);
+			if (delve === true) localStorage.removeItem(delveKey);
 			else if (delve === false) localStorage.setItem(delveKey, 'off');
-			if (yrt === true)         localStorage.removeItem(yrtKey);
-			else if (yrt === false)   localStorage.setItem(yrtKey, 'off');
+			if (yrt === true) localStorage.removeItem(yrtKey);
+			else if (yrt === false) localStorage.setItem(yrtKey, 'off');
 		},
 		{ delveKey: DELVE_KEY, yrtKey: YRT_KEY, delve: opts.delve, yrt: opts.yrt },
 	);
@@ -67,7 +67,9 @@ async function openSettings(page: Page): Promise<void> {
 
 function settingsToggleButton(page: Page, label: string, state: 'On' | 'Off') {
 	return page
-		.locator('.sd-row', { has: page.locator('.sd-label', { hasText: new RegExp(`^${label}$`, 'i') }) })
+		.locator('.sd-row', {
+			has: page.locator('.sd-label', { hasText: new RegExp(`^${label}$`, 'i') }),
+		})
 		.locator('.sd-seg-btn', { hasText: new RegExp(`^${state}$`, 'i') });
 }
 
@@ -86,7 +88,9 @@ async function openOraclesDialog(page: Page): Promise<void> {
 async function waitForHome(page: Page): Promise<void> {
 	await page.waitForLoadState('networkidle', { timeout: 15_000 });
 	await expect(page.locator(`${CHAR_AREA} .ca-loading`)).not.toBeVisible({ timeout: 12_000 });
-	await page.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`).first()
+	await page
+		.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`)
+		.first()
 		.waitFor({ timeout: 12_000, state: 'attached' });
 }
 
@@ -98,7 +102,6 @@ async function goHome(page: Page): Promise<void> {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 test.describe('Expansion toggles — Delve / YRT', () => {
-
 	test.beforeEach(async ({ page }) => {
 		await goHome(page);
 		await resetExpansionToggles(page);
@@ -111,19 +114,21 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 	test('both expansions default to ON', async ({ page }) => {
 		await openSettings(page);
 		await expect(settingsToggleButton(page, 'Delve', 'On')).toHaveClass(/\bactive\b/);
-		await expect(settingsToggleButton(page, 'YRT',   'On')).toHaveClass(/\bactive\b/);
+		await expect(settingsToggleButton(page, 'YRT', 'On')).toHaveClass(/\bactive\b/);
 	});
 
 	test('default: Delve moves appear in Moves dialog', async ({ page }) => {
 		await openMovesDialog(page);
-		await expect(page.locator('.moves-dialog .md-tile-name', { hasText: /^Discover a Site$/ }))
-			.toBeVisible({ timeout: 5_000 });
+		await expect(
+			page.locator('.moves-dialog .md-tile-name', { hasText: /^Discover a Site$/ }),
+		).toBeVisible({ timeout: 5_000 });
 	});
 
 	test('default: YRT oracle appears in Oracles dialog', async ({ page }) => {
 		await openOraclesDialog(page);
-		await expect(page.locator('.oracles-dialog .od-tile-name', { hasText: /Mana Backlash/ }))
-			.toBeVisible({ timeout: 5_000 });
+		await expect(
+			page.locator('.oracles-dialog .od-tile-name', { hasText: /Mana Backlash/ }),
+		).toBeVisible({ timeout: 5_000 });
 	});
 
 	// ── 2. Disabling Delve ────────────────────────────────────────────────────
@@ -131,39 +136,47 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 	test('Delve off: Delve moves hidden from Moves picker', async ({ page }) => {
 		await setExpansionsViaStorage(page, { delve: false });
 		await openMovesDialog(page);
-		await expect(page.locator('.moves-dialog .md-tile-name', { hasText: /^Discover a Site$/ }))
-			.toHaveCount(0, { timeout: 5_000 });
-		await expect(page.locator('.moves-dialog .md-tile-name', { hasText: /^Face Danger$/ }))
-			.toBeVisible({ timeout: 5_000 });
+		await expect(
+			page.locator('.moves-dialog .md-tile-name', { hasText: /^Discover a Site$/ }),
+		).toHaveCount(0, { timeout: 5_000 });
+		await expect(
+			page.locator('.moves-dialog .md-tile-name', { hasText: /^Face Danger$/ }),
+		).toBeVisible({ timeout: 5_000 });
 	});
 
 	test('Delve off: Delve oracles hidden from Oracles picker', async ({ page }) => {
 		await setExpansionsViaStorage(page, { delve: false });
 		await openOraclesDialog(page);
-		await expect(page.locator('.oracles-dialog .od-tile-name', { hasText: /Site Nature: Theme/i }))
-			.toHaveCount(0, { timeout: 5_000 });
-		await expect(page.locator('.oracles-dialog .od-tile-name', { hasText: /^Action$/ }))
-			.toBeVisible({ timeout: 5_000 });
+		await expect(
+			page.locator('.oracles-dialog .od-tile-name', { hasText: /Site Nature: Theme/i }),
+		).toHaveCount(0, { timeout: 5_000 });
+		await expect(
+			page.locator('.oracles-dialog .od-tile-name', { hasText: /^Action$/ }),
+		).toBeVisible({ timeout: 5_000 });
 	});
 
 	test('Delve off: "+ Site" button hidden in Expeditions area header', async ({ page }) => {
 		await setExpansionsViaStorage(page, { delve: false });
 		// Expeditions area should still show "+ Journey".
-		await expect(page.locator(`${EXP_HEADER} button:has-text("+ Journey")`))
-			.toBeVisible({ timeout: 5_000 });
+		await expect(page.locator(`${EXP_HEADER} button:has-text("+ Journey")`)).toBeVisible({
+			timeout: 5_000,
+		});
 		// "+ Site" should be gone.
-		await expect(page.locator(`${EXP_HEADER} button:has-text("+ Site")`))
-			.toHaveCount(0, { timeout: 5_000 });
+		await expect(page.locator(`${EXP_HEADER} button:has-text("+ Site")`)).toHaveCount(0, {
+			timeout: 5_000,
+		});
 	});
 
 	test('Delve off: Delve foes hidden from Foe picker', async ({ page }) => {
 		await setExpansionsViaStorage(page, { delve: false });
 		await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
 		await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 8_000 });
-		await expect(page.locator('dialog.foe-dialog[open] .fd-tile-name', { hasText: /^Bladewing$/ }))
-			.toHaveCount(0, { timeout: 3_000 });
-		await expect(page.locator('dialog.foe-dialog[open] .fd-tile-name', { hasText: /^Basilisk$/ }))
-			.toHaveCount(1, { timeout: 3_000 });
+		await expect(
+			page.locator('dialog.foe-dialog[open] .fd-tile-name', { hasText: /^Bladewing$/ }),
+		).toHaveCount(0, { timeout: 3_000 });
+		await expect(
+			page.locator('dialog.foe-dialog[open] .fd-tile-name', { hasText: /^Basilisk$/ }),
+		).toHaveCount(1, { timeout: 3_000 });
 		await page.keyboard.press('Escape');
 	});
 
@@ -172,24 +185,29 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 	test('YRT off: YRT moves hidden from Moves picker', async ({ page }) => {
 		await setExpansionsViaStorage(page, { yrt: false });
 		await openMovesDialog(page);
-		await expect(page.locator('.moves-dialog .md-tile-name', { hasText: /Cast Conclave Ritual/i }))
-			.toHaveCount(0, { timeout: 5_000 });
+		await expect(
+			page.locator('.moves-dialog .md-tile-name', { hasText: /Cast Conclave Ritual/i }),
+		).toHaveCount(0, { timeout: 5_000 });
 	});
 
 	test('YRT off: YRT oracles hidden from Oracles picker', async ({ page }) => {
 		await setExpansionsViaStorage(page, { yrt: false });
 		await openOraclesDialog(page);
-		await expect(page.locator('.oracles-dialog .od-tile-name', { hasText: /Mana Backlash/ }))
-			.toHaveCount(0, { timeout: 5_000 });
-		await expect(page.locator('.oracles-dialog .od-tile-name', { hasText: /Mystic Backlash/i }))
-			.toBeVisible({ timeout: 5_000 });
+		await expect(
+			page.locator('.oracles-dialog .od-tile-name', { hasText: /Mana Backlash/ }),
+		).toHaveCount(0, { timeout: 5_000 });
+		await expect(
+			page.locator('.oracles-dialog .od-tile-name', { hasText: /Mystic Backlash/i }),
+		).toBeVisible({ timeout: 5_000 });
 	});
 
 	test('YRT off: YRT region radio hidden in community creation', async ({ page }) => {
 		await setExpansionsViaStorage(page, { yrt: false });
 		// Wait for communities area to render.
 		await expect(page.locator(`${CM_AREA} .cm-loading`)).not.toBeVisible({ timeout: 12_000 });
-		await page.locator(`${CM_AREA} .cm-empty, ${CM_AREA} .cm-body`).first()
+		await page
+			.locator(`${CM_AREA} .cm-empty, ${CM_AREA} .cm-body`)
+			.first()
 			.waitFor({ timeout: 12_000, state: 'attached' });
 
 		await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click({ timeout: 8_000 });
@@ -200,8 +218,9 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		}
 		const yrtRadio = page.locator('input[type="radio"][value="yrt"]');
 		await expect(yrtRadio).toHaveCount(0);
-		await expect(page.locator('input[type="radio"][value="ironlands"]'))
-			.toHaveCount(1, { timeout: 3_000 });
+		await expect(page.locator('input[type="radio"][value="ironlands"]')).toHaveCount(1, {
+			timeout: 3_000,
+		});
 		await page.keyboard.press('Escape');
 	});
 
@@ -211,7 +230,7 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		await setExpansionsViaStorage(page, { delve: false });
 
 		// Ensure a character exists so the log can attach entries.
-		if (await page.locator(CHAR_SPINE).count() === 0) {
+		if ((await page.locator(CHAR_SPINE).count()) === 0) {
 			await page.locator(`${CHAR_HEADER} button:has-text("+ Character")`).click();
 			await expect(page.locator(CHAR_SPINE)).not.toHaveCount(0, { timeout: 8_000 });
 		}
@@ -236,8 +255,12 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		await link.click();
 
 		await expect(page.locator('dialog.moves-dialog[open]')).toBeVisible({ timeout: 5_000 });
-		await expect(page.locator('dialog.moves-dialog').getByText(/Discover a Site/i).first())
-			.toBeVisible({ timeout: 5_000 });
+		await expect(
+			page
+				.locator('dialog.moves-dialog')
+				.getByText(/Discover a Site/i)
+				.first(),
+		).toBeVisible({ timeout: 5_000 });
 		await page.keyboard.press('Escape');
 	});
 
@@ -246,14 +269,14 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 	test('toggles persist across page reload', async ({ page }) => {
 		await openSettings(page);
 		await settingsToggleButton(page, 'Delve', 'Off').click();
-		await settingsToggleButton(page, 'YRT',   'Off').click();
+		await settingsToggleButton(page, 'YRT', 'Off').click();
 		await page.keyboard.press('Escape');
 		await page.reload();
 		await waitForHome(page);
 
 		await openSettings(page);
 		await expect(settingsToggleButton(page, 'Delve', 'Off')).toHaveClass(/\bactive\b/);
-		await expect(settingsToggleButton(page, 'YRT',   'Off')).toHaveClass(/\bactive\b/);
+		await expect(settingsToggleButton(page, 'YRT', 'Off')).toHaveClass(/\bactive\b/);
 	});
 
 	// ── 6. Re-enable restores visibility ──────────────────────────────────────
@@ -261,8 +284,9 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 	test('re-enabling Delve restores picker visibility', async ({ page }) => {
 		await setExpansionsViaStorage(page, { delve: false });
 		await openMovesDialog(page);
-		await expect(page.locator('.moves-dialog').getByText(/Discover a Site/i))
-			.toHaveCount(0, { timeout: 5_000 });
+		await expect(page.locator('.moves-dialog').getByText(/Discover a Site/i)).toHaveCount(0, {
+			timeout: 5_000,
+		});
 		await page.keyboard.press('Escape');
 
 		await openSettings(page);
@@ -270,8 +294,12 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		await page.keyboard.press('Escape');
 
 		await openMovesDialog(page);
-		await expect(page.locator('.moves-dialog').getByText(/Discover a Site/i).first())
-			.toBeVisible({ timeout: 5_000 });
+		await expect(
+			page
+				.locator('.moves-dialog')
+				.getByText(/Discover a Site/i)
+				.first(),
+		).toBeVisible({ timeout: 5_000 });
 		await page.keyboard.press('Escape');
 	});
 });

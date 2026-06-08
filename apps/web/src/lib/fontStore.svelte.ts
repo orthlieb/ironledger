@@ -17,9 +17,9 @@ export type FontDisplay = 'cinzel' | 'simonetta' | 'futhark';
 export const FONT_DISPLAY_KEY = 'ironledger:font:display';
 
 export const FONT_STACKS: Record<FontDisplay, string> = {
-	cinzel:    "'Cinzel', 'Palatino Linotype', Georgia, serif",
+	cinzel: "'Cinzel', 'Palatino Linotype', Georgia, serif",
 	simonetta: "'Simonetta', 'Palatino Linotype', Georgia, serif",
-	futhark:   "'Segoe UI Historic', 'Noto Sans Runic', 'Apple Symbols', system-ui, sans-serif",
+	futhark: "'Segoe UI Historic', 'Noto Sans Runic', 'Apple Symbols', system-ui, sans-serif",
 };
 
 // ── Reactive state ────────────────────────────────────────────────────────────
@@ -35,9 +35,13 @@ let _font = $state<FontDisplay>(_readSaved());
 
 // ── Getters / setters ─────────────────────────────────────────────────────────
 
-export function getFontDisplay(): FontDisplay { return _font; }
+export function getFontDisplay(): FontDisplay {
+	return _font;
+}
 
-export function savedFont(): FontDisplay { return _readSaved(); }
+export function savedFont(): FontDisplay {
+	return _readSaved();
+}
 
 /** Apply a font mode: persists to localStorage, updates DOM attributes + CSS var. */
 export function setFontDisplay(f: FontDisplay): void {

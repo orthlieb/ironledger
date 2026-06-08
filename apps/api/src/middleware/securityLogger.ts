@@ -43,10 +43,10 @@ export type SecurityEventType =
   | 'admin_clear_broadcast';
 
 interface LogEventOptions {
-  eventType:  SecurityEventType;
-  req:        FastifyRequest;
-  userId?:    string;
-  metadata?:  Record<string, unknown>;
+  eventType: SecurityEventType;
+  req: FastifyRequest;
+  userId?: string;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -61,11 +61,11 @@ export function logSecurityEvent(opts: LogEventOptions): void {
   void db
     .insert(securityEvents)
     .values({
-      userId:    opts.userId,
+      userId: opts.userId,
       eventType: opts.eventType,
       ipAddress: req_ip(opts.req),
       userAgent: opts.req.headers['user-agent'] ?? null,
-      metadata:  opts.metadata ?? null,
+      metadata: opts.metadata ?? null,
     })
     .catch((err: unknown) => {
       // Log to server log but don't throw — audit failure != request failure

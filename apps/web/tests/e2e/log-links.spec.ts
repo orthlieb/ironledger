@@ -9,20 +9,24 @@ import { test, expect } from '@playwright/test';
 import { resetCharacters } from './helpers/reset';
 
 // Wipe characters before this file's tests so notes from prior runs don't bleed in.
-test.beforeAll(async () => { await resetCharacters(); });
+test.beforeAll(async () => {
+	await resetCharacters();
+});
 
-const CHAR_AREA   = '.home-area--characters';
+const CHAR_AREA = '.home-area--characters';
 const CHAR_HEADER = `${CHAR_AREA} .ca-header`;
-const CHAR_SPINE  = `${CHAR_AREA} .ca-spine`;
+const CHAR_SPINE = `${CHAR_AREA} .ca-spine`;
 
 /** Ensure a character exists in the v2 Characters area; auto-select handles activation. */
 async function ensureCharacter(page: import('@playwright/test').Page) {
 	await page.goto('/home');
 	await expect(page.locator(`${CHAR_AREA} .ca-loading`)).not.toBeVisible({ timeout: 10_000 });
-	await page.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`).first()
+	await page
+		.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`)
+		.first()
 		.waitFor({ timeout: 10_000, state: 'attached' });
 
-	if (await page.locator(CHAR_SPINE).count() === 0) {
+	if ((await page.locator(CHAR_SPINE).count()) === 0) {
 		await page.locator(`${CHAR_HEADER} button:has-text("+ Character")`).click();
 		await expect(page.locator(CHAR_SPINE)).not.toHaveCount(0, { timeout: 8_000 });
 	}
@@ -43,7 +47,11 @@ test('can add a note to a log entry and it persists', async ({ page }) => {
 	// Click the edit (pen) icon on the latest entry.
 	const latestEntry = page.locator('.log-entry').first();
 	await latestEntry.hover();
-	const editBtn = latestEntry.locator('.edit-btn, button[aria-label*="edit" i], button[title*="Edit" i], button[aria-label*="note" i]').first();
+	const editBtn = latestEntry
+		.locator(
+			'.edit-btn, button[aria-label*="edit" i], button[title*="Edit" i], button[aria-label*="note" i]',
+		)
+		.first();
 
 	if (await editBtn.isVisible({ timeout: 2_000 }).catch(() => false)) {
 		await editBtn.click();

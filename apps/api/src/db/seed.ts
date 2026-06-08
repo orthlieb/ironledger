@@ -33,9 +33,9 @@ if (config.NODE_ENV === 'production') {
 // ---------------------------------------------------------------------------
 
 const accounts = [
-  { email: 'admin@ironledger.local', password: 'adminpassword123!',  role: 'admin' as const },
-  { email: 'dev@ironledger.local',   password: 'devpassword123!',    role: 'user'  as const },
-  { email: 'test@ironledger.local',  password: 'IronLedgerTest2024!', role: 'user' as const },
+  { email: 'admin@ironledger.local', password: 'adminpassword123!', role: 'admin' as const },
+  { email: 'dev@ironledger.local', password: 'devpassword123!', role: 'user' as const },
+  { email: 'test@ironledger.local', password: 'IronLedgerTest2024!', role: 'user' as const },
 ];
 
 // ---------------------------------------------------------------------------
@@ -44,7 +44,7 @@ const accounts = [
 
 const connectionUrl = config.DATABASE_ADMIN_URL ?? config.DATABASE_URL;
 const client = postgres(connectionUrl, { max: 1 });
-const db     = drizzle(client, { schema });
+const db = drizzle(client, { schema });
 
 // ---------------------------------------------------------------------------
 // Seed
@@ -57,20 +57,20 @@ try {
     await db
       .insert(schema.users)
       .values({
-        email:           acct.email,
-        displayName:     acct.email,   // seed accounts get email as display name
+        email: acct.email,
+        displayName: acct.email, // seed accounts get email as display name
         passwordHash,
-        emailVerifiedAt: new Date(),   // pre-verified — skips email flow
-        isActive:        true,
-        role:            acct.role,
+        emailVerifiedAt: new Date(), // pre-verified — skips email flow
+        isActive: true,
+        role: acct.role,
       })
       .onConflictDoUpdate({
         target: schema.users.email,
         set: {
           passwordHash,
           emailVerifiedAt: new Date(),
-          isActive:        true,
-          role:            acct.role,
+          isActive: true,
+          role: acct.role,
         },
       });
 

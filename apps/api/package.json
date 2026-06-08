@@ -11,7 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "lint": "eslint src tests --ext .ts",
+    "lint": "eslint src tests",
     "migrate": "node --env-file-if-exists=../../.env --import tsx/esm src/db/migrate.ts",
     "seed": "node --env-file-if-exists=../../.env --import tsx/esm src/db/seed.ts"
   },

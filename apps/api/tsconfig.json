@@ -1,26 +1,26 @@
 {
   "compilerOptions": {
     // ── Output ────────────────────────────────────────────────────────────────
-    "outDir":        "./dist",
-    "rootDir":       "./src",
-    "target":        "ES2022",
-    "module":        "NodeNext",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "target": "ES2022",
+    "module": "NodeNext",
     "moduleResolution": "NodeNext",
 
     // ── Strictness ────────────────────────────────────────────────────────────
-    "strict":                    true,
-    "noUncheckedIndexedAccess":  true,
-    "noImplicitReturns":         true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
 
     // ── Interop ───────────────────────────────────────────────────────────────
-    "esModuleInterop":   true,
+    "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "skipLibCheck":      true,
+    "skipLibCheck": true,
 
     // ── DX ────────────────────────────────────────────────────────────────────
-    "sourceMap":     true,
-    "declaration":   true,
+    "sourceMap": true,
+    "declaration": true,
     "declarationMap": true
   },
   "include": ["src/**/*"],

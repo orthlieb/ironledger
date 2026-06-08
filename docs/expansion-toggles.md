@@ -2,11 +2,11 @@
 
 Iron Ledger ships content from three sources:
 
-| Source | Content |
-|---|---|
-| `base` | Core Ironsworn — always on |
+| Source  | Content                                                                                                          |
+| ------- | ---------------------------------------------------------------------------------------------------------------- |
+| `base`  | Core Ironsworn — always on                                                                                       |
 | `delve` | Ironsworn: Delve supplement (sites, themes, domains, rarities, monstrosity & feature/danger oracles, Delve foes) |
-| `yrt` | Yrt homebrew expansion (Touched assets, mana, Conclave rituals, freeport denizens, YRT foes & oracles) |
+| `yrt`   | Yrt homebrew expansion (Touched assets, mana, Conclave rituals, freeport denizens, YRT foes & oracles)           |
 
 Each user can toggle the **Delve** and **YRT** sources independently. The toggles live in **browser `localStorage`** — they are not stored in `CharacterData` and do not sync between devices or browsers.
 
@@ -27,7 +27,7 @@ The toggles are a **picker filter**, not a content firewall.
 
 1. **Pickers and catalogues** filter by enabled source. Disabled-source items don't appear in `MovesDialog`, `OraclesDialog`, `FoePickerDialog`, `AssetPicker`, or the rarity slot.
 2. **Render-time `findX(id)` lookups are never filtered.** A log entry, owned asset, populated denizen, or active site referencing a now-disabled source still resolves and displays.
-3. **User-created data is never deleted** when a toggle flips. Existing sites, encounters, communities, NPCs, and assets remain untouched. The toggle gates *new* acquisitions and *new* picker visibility only.
+3. **User-created data is never deleted** when a toggle flips. Existing sites, encounters, communities, NPCs, and assets remain untouched. The toggle gates _new_ acquisitions and _new_ picker visibility only.
 4. **Defaults are both ON** — existing users see no change on first load.
 
 This means a player can disable YRT before a session, run an Ironsworn-only game without distraction in the pickers, and re-enable YRT later with all of their prior YRT data intact.
@@ -43,7 +43,7 @@ import type { CatalogueSource } from '$lib/types.js';
 // CatalogueSource = 'base' | 'delve' | 'yrt'
 
 export function isDelveEnabled(): boolean;
-export function isYrtEnabled():   boolean;
+export function isYrtEnabled(): boolean;
 
 /** Single predicate used by every catalogue filter. */
 export function isSourceEnabled(source: CatalogueSource | string | undefined): boolean;
@@ -65,27 +65,27 @@ Hydration is synchronous on first import (with a `typeof window` guard for SSR).
 
 ### Delve OFF
 
-| Surface | Effect |
-|---|---|
-| `MovesDialog` | Hides Delve & Rarity category chips and their moves (`delve.json`, `rarity.json`) |
-| `OraclesDialog` | Hides 23 Delve oracles (site-*, threat-*, monstrosity-*, feature-*, char-disposition, combat-event, trap) |
-| `FoePickerDialog` | Hides ~45 entries from `foes_delve.json` |
-| `AssetCard` (rarity slot) | Hides the acquire-rarity affordance |
-| Expeditions tab | Hides **+ New Site** (Journey creation still works) |
-| `GlobalContextBar` | Hides feature/danger roll buttons and **Roll Denizen** action |
-| `CharacterSheet` | Hides the Failures track group |
-| `VowCard` | Hides the Threat + Menace controls; `ProgressTrack` is rendered with `dangerCount: 0` |
-| `MovesDialog` outcome rendering | Suppresses the `+1 failure` link on a miss |
+| Surface                         | Effect                                                                                                    |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `MovesDialog`                   | Hides Delve & Rarity category chips and their moves (`delve.json`, `rarity.json`)                         |
+| `OraclesDialog`                 | Hides 23 Delve oracles (site-_, threat-_, monstrosity-_, feature-_, char-disposition, combat-event, trap) |
+| `FoePickerDialog`               | Hides ~45 entries from `foes_delve.json`                                                                  |
+| `AssetCard` (rarity slot)       | Hides the acquire-rarity affordance                                                                       |
+| Expeditions tab                 | Hides **+ New Site** (Journey creation still works)                                                       |
+| `GlobalContextBar`              | Hides feature/danger roll buttons and **Roll Denizen** action                                             |
+| `CharacterSheet`                | Hides the Failures track group                                                                            |
+| `VowCard`                       | Hides the Threat + Menace controls; `ProgressTrack` is rendered with `dangerCount: 0`                     |
+| `MovesDialog` outcome rendering | Suppresses the `+1 failure` link on a miss                                                                |
 
 ### YRT OFF
 
-| Surface | Effect |
-|---|---|
-| `MovesDialog` | Hides Yrt chip and `yrt.json` (Cast Conclave Ritual, etc.) |
-| `OraclesDialog` | Hides freeport-denizen, mana-backlash, touched-features, yrt-animal, yrt-region, yrt-touched |
-| `FoePickerDialog` | Hides Blighted Guilder, Mana Wraith, Verdant Crawler, Amber Schemer |
-| `AssetPicker` | Hides Touched chip and YRT assets (2 Touched, 4 Ritual, 2 Path from `assets_yrt.json`) |
-| Communities | Hides the YRT radio in the region picker |
+| Surface           | Effect                                                                                       |
+| ----------------- | -------------------------------------------------------------------------------------------- |
+| `MovesDialog`     | Hides Yrt chip and `yrt.json` (Cast Conclave Ritual, etc.)                                   |
+| `OraclesDialog`   | Hides freeport-denizen, mana-backlash, touched-features, yrt-animal, yrt-region, yrt-touched |
+| `FoePickerDialog` | Hides Blighted Guilder, Mana Wraith, Verdant Crawler, Amber Schemer                          |
+| `AssetPicker`     | Hides Touched chip and YRT assets (2 Touched, 4 Ritual, 2 Path from `assets_yrt.json`)       |
+| Communities       | Hides the YRT radio in the region picker                                                     |
 
 ### Always preserved
 
@@ -101,14 +101,14 @@ Hydration is synchronous on first import (with a `typeof window` guard for SSR).
 
 Catalogue entries carry a `source` field with normalized values `'base' | 'delve' | 'yrt'`.
 
-| Catalogue | Tagged at | Notes |
-|---|---|---|
-| Moves | per move + per file | `rarity.json` is `'delve'` even though the category is "Rarity" |
-| Oracles | per oracle (was `group`, renamed to `source`) | Values normalized: `"Core Ironsworn"` → `"base"`, etc. |
-| Foes | per foe | `foeStore.foeSource()` reads the field, with id-prefix fallback for un-migrated entries |
-| Assets | per asset | Per-file would be insufficient — `Touched` vs. base `Ritual` only differs at the category level otherwise |
-| Rarities | per rarity in `assets_delve.json` | All `'delve'` |
-| Delve themes/domains | implicit (`'delve'`) | No per-entry tag; loaded unconditionally so existing sites resolve |
+| Catalogue            | Tagged at                                     | Notes                                                                                                     |
+| -------------------- | --------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Moves                | per move + per file                           | `rarity.json` is `'delve'` even though the category is "Rarity"                                           |
+| Oracles              | per oracle (was `group`, renamed to `source`) | Values normalized: `"Core Ironsworn"` → `"base"`, etc.                                                    |
+| Foes                 | per foe                                       | `foeStore.foeSource()` reads the field, with id-prefix fallback for un-migrated entries                   |
+| Assets               | per asset                                     | Per-file would be insufficient — `Touched` vs. base `Ritual` only differs at the category level otherwise |
+| Rarities             | per rarity in `assets_delve.json`             | All `'delve'`                                                                                             |
+| Delve themes/domains | implicit (`'delve'`)                          | No per-entry tag; loaded unconditionally so existing sites resolve                                        |
 
 See [data-format.md](data-format.md) for the catalogue schemas.
 

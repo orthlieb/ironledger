@@ -10,11 +10,19 @@
 // because it carries a live data reference, not just an id.
 // =============================================================================
 
-let _activeFoeId        = $state<string>('');
+let _activeFoeId = $state<string>('');
 let _activeExpeditionId = $state<string>('');
 
-export function getActiveFoeId():        string { return _activeFoeId; }
-export function getActiveExpeditionId(): string { return _activeExpeditionId; }
+export function getActiveFoeId(): string {
+	return _activeFoeId;
+}
+export function getActiveExpeditionId(): string {
+	return _activeExpeditionId;
+}
 
-export function setActiveFoeId(id: string):        void { _activeFoeId        = id; }
-export function setActiveExpeditionId(id: string): void { _activeExpeditionId = id; }
+export function setActiveFoeId(id: string): void {
+	_activeFoeId = id;
+}
+export function setActiveExpeditionId(id: string): void {
+	_activeExpeditionId = id;
+}

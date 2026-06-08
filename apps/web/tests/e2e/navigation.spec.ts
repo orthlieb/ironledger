@@ -13,8 +13,9 @@ test.beforeEach(async ({ page }) => {
 	await page.goto('/home');
 	// Wait for the Characters area to finish initial load — proves the home
 	// page hydrated. The other areas finish around the same time.
-	await expect(page.locator('.home-area--characters .ca-loading'))
-		.not.toBeVisible({ timeout: 12_000 });
+	await expect(page.locator('.home-area--characters .ca-loading')).not.toBeVisible({
+		timeout: 12_000,
+	});
 });
 
 test('page loads and shows all four home areas', async ({ page }) => {
@@ -48,8 +49,9 @@ test.describe('Mobile tab bar (≤900px)', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.setViewportSize({ width: 800, height: 900 });
 		await page.goto('/home');
-		await expect(page.locator('.home-area--characters .ca-loading'))
-			.not.toBeVisible({ timeout: 12_000 });
+		await expect(page.locator('.home-area--characters .ca-loading')).not.toBeVisible({
+			timeout: 12_000,
+		});
 	});
 
 	test('characters tab is active by default and characters area is visible', async ({ page }) => {
@@ -70,8 +72,8 @@ test.describe('Mobile tab bar (≤900px)', () => {
 test('mobile tab bar is hidden at desktop widths (>900px)', async ({ page }) => {
 	await page.setViewportSize({ width: 1280, height: 900 });
 	await page.goto('/home');
-	await expect(page.locator('.home-area--characters .ca-loading'))
-		.not.toBeVisible({ timeout: 12_000 });
+	await expect(page.locator('.home-area--characters .ca-loading')).not.toBeVisible({
+		timeout: 12_000,
+	});
 	await expect(page.locator('.mob-tabbar')).not.toBeVisible();
 });
-

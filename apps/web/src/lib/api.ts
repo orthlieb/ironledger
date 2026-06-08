@@ -46,8 +46,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 // enhancement via HTML forms; these helpers are for programmatic use in JS)
 // ---------------------------------------------------------------------------
 export const auth = {
-	logout: () =>
-		request<void>('/api/auth/logout', { method: 'POST' }),
+	logout: () => request<void>('/api/auth/logout', { method: 'POST' }),
 };
 
 // ---------------------------------------------------------------------------
@@ -65,11 +64,9 @@ export interface CharacterFull extends CharacterSummary {
 }
 
 export const characters = {
-	list: () =>
-		request<CharacterFull[]>('/api/characters'),
+	list: () => request<CharacterFull[]>('/api/characters'),
 
-	get: (id: string) =>
-		request<CharacterFull>(`/api/characters/${id}`),
+	get: (id: string) => request<CharacterFull>(`/api/characters/${id}`),
 
 	create: (name: string, data: Record<string, unknown> = {}) =>
 		request<CharacterFull>('/api/characters', {
@@ -77,17 +74,13 @@ export const characters = {
 			body: JSON.stringify({ name, data }),
 		}),
 
-	update: (
-		id: string,
-		patch: { name?: string; data?: Record<string, unknown> },
-	) =>
+	update: (id: string, patch: { name?: string; data?: Record<string, unknown> }) =>
 		request<CharacterFull>(`/api/characters/${id}`, {
 			method: 'PUT',
 			body: JSON.stringify(patch),
 		}),
 
-	remove: (id: string) =>
-		request<void>(`/api/characters/${id}`, { method: 'DELETE' }),
+	remove: (id: string) => request<void>(`/api/characters/${id}`, { method: 'DELETE' }),
 };
 
 // ---------------------------------------------------------------------------
@@ -104,11 +97,9 @@ import type {
 } from '@ironledger/shared';
 
 export const admin = {
-	listUsers: () =>
-		request<AdminUser[]>('/api/admin'),
+	listUsers: () => request<AdminUser[]>('/api/admin'),
 
-	getStats: () =>
-		request<AdminStats>('/api/admin/stats'),
+	getStats: () => request<AdminStats>('/api/admin/stats'),
 
 	getTimeseries: (timeframe: '1hr' | '1day' | '7day' | '30day') =>
 		request<UserTimeseries>(`/api/admin/stats/timeseries?timeframe=${timeframe}`),
@@ -118,11 +109,9 @@ export const admin = {
 		return request<AuditEvent[]>(`/api/admin/audit${params}`);
 	},
 
-	clearAuditLog: () =>
-		request<void>('/api/admin/audit', { method: 'DELETE' }),
+	clearAuditLog: () => request<void>('/api/admin/audit', { method: 'DELETE' }),
 
-	deleteUser: (id: string) =>
-		request<void>(`/api/admin/users/${id}`, { method: 'DELETE' }),
+	deleteUser: (id: string) => request<void>(`/api/admin/users/${id}`, { method: 'DELETE' }),
 
 	setRole: (id: string, role: 'user' | 'admin') =>
 		request<void>(`/api/admin/users/${id}`, {
@@ -151,13 +140,12 @@ export const admin = {
 		request<{ enabled: false }>('/api/admin/maintenance', { method: 'DELETE' }),
 
 	// ── Invites ──────────────────────────────────────────────────────────
-	listInvites: () =>
-		request<AdminInvite[]>('/api/admin/invites'),
+	listInvites: () => request<AdminInvite[]>('/api/admin/invites'),
 
 	createInvite: (body: { email: string; displayName?: string }) =>
 		request<CreateInviteResult>('/api/admin/invites', {
 			method: 'POST',
-			body:   JSON.stringify(body),
+			body: JSON.stringify(body),
 		}),
 
 	revokeInvite: (id: string) =>
@@ -169,8 +157,7 @@ export const admin = {
 // Prefer `system.getStatus()` which returns maintenance + broadcast together.
 // ---------------------------------------------------------------------------
 export const maintenance = {
-	getStatus: () =>
-		request<MaintenanceStatus>('/api/maintenance/status'),
+	getStatus: () => request<MaintenanceStatus>('/api/maintenance/status'),
 };
 
 // ---------------------------------------------------------------------------
@@ -179,29 +166,27 @@ export const maintenance = {
 import type { SystemStatus, BroadcastStatus, BroadcastSeverity } from '@ironledger/shared';
 
 export const system = {
-	getStatus: () =>
-		request<SystemStatus>('/api/system/status'),
+	getStatus: () => request<SystemStatus>('/api/system/status'),
 };
 
 // ---------------------------------------------------------------------------
 // Registration daily quota (admin)
 // ---------------------------------------------------------------------------
 export interface RegistrationQuotaStatus {
-	daily:     number | null;
+	daily: number | null;
 	usedToday: number;
 	remaining: number | null;
-	resetsAt:  string;
+	resetsAt: string;
 	exhausted: boolean;
 }
 
 export const registrationQuota = {
-	getStatus: () =>
-		request<RegistrationQuotaStatus>('/api/admin/registration-quota'),
+	getStatus: () => request<RegistrationQuotaStatus>('/api/admin/registration-quota'),
 
 	setQuota: (daily: number | null) =>
 		request<RegistrationQuotaStatus>('/api/admin/registration-quota', {
 			method: 'PUT',
-			body:   JSON.stringify({ daily }),
+			body: JSON.stringify({ daily }),
 		}),
 };
 
@@ -209,15 +194,13 @@ export const registrationQuota = {
 // Broadcast (admin)
 // ---------------------------------------------------------------------------
 export const broadcast = {
-	getStatus: () =>
-		request<BroadcastStatus>('/api/admin/broadcast'),
+	getStatus: () => request<BroadcastStatus>('/api/admin/broadcast'),
 
 	post: (body: { message: string; severity: BroadcastSeverity }) =>
 		request<BroadcastStatus>('/api/admin/broadcast', {
 			method: 'POST',
-			body:   JSON.stringify(body),
+			body: JSON.stringify(body),
 		}),
 
-	clear: () =>
-		request<void>('/api/admin/broadcast', { method: 'DELETE' }),
+	clear: () => request<void>('/api/admin/broadcast', { method: 'DELETE' }),
 };

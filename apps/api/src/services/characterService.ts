@@ -18,7 +18,7 @@ import { config } from '../config.js';
 export class CharacterError extends Error {
   constructor(
     message: string,
-    public readonly code:       string,
+    public readonly code: string,
     public readonly statusCode: number = 400,
   ) {
     super(message);
@@ -35,8 +35,8 @@ export class CharacterError extends Error {
 export type CharacterData = Record<string, unknown>;
 
 export interface CharacterSummary {
-  id:        string;
-  name:      string;
+  id: string;
+  name: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -51,16 +51,13 @@ export interface CharacterFull extends CharacterSummary {
 
 export async function list(userId: string): Promise<CharacterFull[]> {
   const rows = await withUserContext(userId, async (tx) => {
-    return tx
-      .select()
-      .from(characters)
-      .orderBy(characters.updatedAt);
+    return tx.select().from(characters).orderBy(characters.updatedAt);
   });
 
   return rows.map((c) => ({
-    id:        c.id,
-    name:      c.name,
-    data:      c.data as CharacterData,
+    id: c.id,
+    name: c.name,
+    data: c.data as CharacterData,
     createdAt: c.createdAt,
     updatedAt: c.updatedAt,
   }));
@@ -70,17 +67,14 @@ export async function list(userId: string): Promise<CharacterFull[]> {
 // get — single character by ID
 // ---------------------------------------------------------------------------
 
-export async function get(
-  userId:      string,
-  characterId: string,
-): Promise<CharacterFull> {
+export async function get(userId: string, characterId: string): Promise<CharacterFull> {
   const [character] = await withUserContext(userId, async (tx) => {
     return tx
       .select()
       .from(characters)
       .where(
         and(
-          eq(characters.userId, userId),      // RLS also enforces this
+          eq(characters.userId, userId), // RLS also enforces this
           eq(characters.id, characterId),
         ),
       )
@@ -92,9 +86,9 @@ export async function get(
   }
 
   return {
-    id:        character.id,
-    name:      character.name,
-    data:      character.data as CharacterData,
+    id: character.id,
+    name: character.name,
+    data: character.data as CharacterData,
     createdAt: character.createdAt,
     updatedAt: character.updatedAt,
   };
@@ -106,8 +100,8 @@ export async function get(
 
 export async function create(
   userId: string,
-  name:   string,
-  data:   CharacterData = {},
+  name: string,
+  data: CharacterData = {},
 ): Promise<CharacterFull> {
   // Enforce per-user character limit
   const [countRow] = await withUserContext(userId, async (tx) => {
@@ -122,10 +116,7 @@ export async function create(
   }
 
   const [character] = await withUserContext(userId, async (tx) => {
-    return tx
-      .insert(characters)
-      .values({ userId, name, data })
-      .returning();
+    return tx.insert(characters).values({ userId, name, data }).returning();
   });
 
   if (!character) {
@@ -133,9 +124,9 @@ export async function create(
   }
 
   return {
-    id:        character.id,
-    name:      character.name,
-    data:      character.data as CharacterData,
+    id: character.id,
+    name: character.name,
+    data: character.data as CharacterData,
     createdAt: character.createdAt,
     updatedAt: character.updatedAt,
   };
@@ -146,7 +137,7 @@ export async function create(
 // ---------------------------------------------------------------------------
 
 export async function update(
-  userId:      string,
+  userId: string,
   characterId: string,
   patch: {
     name?: string;
@@ -165,12 +156,7 @@ export async function update(
         ...(patch.data ? { data: patch.data } : {}),
         // updatedAt is handled by the DB trigger
       })
-      .where(
-        and(
-          eq(characters.userId, userId),
-          eq(characters.id, characterId),
-        ),
-      )
+      .where(and(eq(characters.userId, userId), eq(characters.id, characterId)))
       .returning();
   });
 
@@ -179,9 +165,9 @@ export async function update(
   }
 
   return {
-    id:        updated.id,
-    name:      updated.name,
-    data:      updated.data as CharacterData,
+    id: updated.id,
+    name: updated.name,
+    data: updated.data as CharacterData,
     createdAt: updated.createdAt,
     updatedAt: updated.updatedAt,
   };
@@ -191,19 +177,11 @@ export async function update(
 // remove
 // ---------------------------------------------------------------------------
 
-export async function remove(
-  userId:      string,
-  characterId: string,
-): Promise<void> {
+export async function remove(userId: string, characterId: string): Promise<void> {
   const result = await withUserContext(userId, async (tx) => {
     return tx
       .delete(characters)
-      .where(
-        and(
-          eq(characters.userId, userId),
-          eq(characters.id, characterId),
-        ),
-      )
+      .where(and(eq(characters.userId, userId), eq(characters.id, characterId)))
       .returning({ id: characters.id });
   });
 
@@ -217,34 +195,29 @@ export async function remove(
 // ---------------------------------------------------------------------------
 
 export async function getHistory(
-  userId:      string,
+  userId: string,
   characterId: string,
   limit = 200,
 ): Promise<{ id: string; entryHtml: string; occurredAt: Date }[]> {
   return withUserContext(userId, async (tx) => {
     return tx
       .select({
-        id:         historyEntries.id,
-        entryHtml:  historyEntries.entryHtml,
+        id: historyEntries.id,
+        entryHtml: historyEntries.entryHtml,
         occurredAt: historyEntries.occurredAt,
       })
       .from(historyEntries)
-      .where(
-        and(
-          eq(historyEntries.userId, userId),
-          eq(historyEntries.characterId, characterId),
-        ),
-      )
+      .where(and(eq(historyEntries.userId, userId), eq(historyEntries.characterId, characterId)))
       .orderBy(historyEntries.occurredAt)
       .limit(limit);
   });
 }
 
 export async function appendHistory(
-  userId:      string,
+  userId: string,
   characterId: string,
-  entryHtml:   string,
-  occurredAt:  Date = new Date(),
+  entryHtml: string,
+  occurredAt: Date = new Date(),
 ): Promise<void> {
   await withUserContext(userId, async (tx) => {
     await tx.insert(historyEntries).values({
@@ -256,18 +229,10 @@ export async function appendHistory(
   });
 }
 
-export async function clearHistory(
-  userId:      string,
-  characterId: string,
-): Promise<void> {
+export async function clearHistory(userId: string, characterId: string): Promise<void> {
   await withUserContext(userId, async (tx) => {
     await tx
       .delete(historyEntries)
-      .where(
-        and(
-          eq(historyEntries.userId, userId),
-          eq(historyEntries.characterId, characterId),
-        ),
-      );
+      .where(and(eq(historyEntries.userId, userId), eq(historyEntries.characterId, characterId)));
   });
 }

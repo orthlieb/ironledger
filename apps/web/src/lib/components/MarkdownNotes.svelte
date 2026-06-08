@@ -38,7 +38,9 @@
 
 	let textareaEl = $state<HTMLTextAreaElement | null>(null);
 
-	$effect(() => { if (editing && textareaEl) textareaEl.focus(); });
+	$effect(() => {
+		if (editing && textareaEl) textareaEl.focus();
+	});
 
 	function onInput(e: Event) {
 		const v = (e.target as HTMLTextAreaElement).value;
@@ -69,7 +71,9 @@
 			tabindex="0"
 			use:tooltip={'Click to edit (markdown supported)'}
 			onclick={() => (editing = true)}
-			onkeydown={(e) => { if (e.key === 'Enter') editing = true; }}
+			onkeydown={(e) => {
+				if (e.key === 'Enter') editing = true;
+			}}
 		>
 			{#if value?.trim()}
 				{@html renderNote(value)}
@@ -82,58 +86,72 @@
 
 <style>
 	.md-notes {
-		display:        flex;
+		display: flex;
 		flex-direction: column;
-		gap:            4px;
+		gap: 4px;
 	}
 	.md-notes-label {
-		font-family:    var(--font-ui);
-		font-size:      0.65rem;
-		font-weight:    700;
+		font-family: var(--font-ui);
+		font-size: 0.65rem;
+		font-weight: 700;
 		text-transform: uppercase;
 		letter-spacing: 0.08em;
-		color:          var(--text-dimmer);
+		color: var(--text-dimmer);
 	}
 	.md-notes-input {
-		width:        100%;
-		min-height:   7em;
-		font-family:  var(--font-ui);
-		font-size:    0.85rem;
-		line-height:  1.5;
-		color:        var(--text);
-		background:   var(--bg-inset);
-		border:       1px solid var(--border);
+		width: 100%;
+		min-height: 7em;
+		font-family: var(--font-ui);
+		font-size: 0.85rem;
+		line-height: 1.5;
+		color: var(--text);
+		background: var(--bg-inset);
+		border: 1px solid var(--border);
 		border-radius: 4px;
-		padding:      8px 10px;
-		outline:      none;
-		resize:       vertical;
-		box-sizing:   border-box;
+		padding: 8px 10px;
+		outline: none;
+		resize: vertical;
+		box-sizing: border-box;
 	}
-	.md-notes-input:focus { border-color: var(--text-accent); }
+	.md-notes-input:focus {
+		border-color: var(--text-accent);
+	}
 
 	.md-notes-display {
-		cursor:      pointer;
-		min-height:  1.5em;
+		cursor: pointer;
+		min-height: 1.5em;
 		font-family: var(--font-ui);
-		font-size:   0.85rem;
+		font-size: 0.85rem;
 		line-height: 1.5;
-		color:       var(--text);
+		color: var(--text);
 	}
 	.md-notes-display:focus-visible {
-		outline:        2px solid var(--text-accent);
+		outline: 2px solid var(--text-accent);
 		outline-offset: 2px;
-		border-radius:  2px;
+		border-radius: 2px;
 	}
 	.md-notes-placeholder {
 		font-family: var(--font-ui);
-		font-size:   0.85rem;
-		color:       var(--text-dimmer);
-		font-style:  italic;
+		font-size: 0.85rem;
+		color: var(--text-dimmer);
+		font-style: italic;
 	}
-	.md-notes-display :global(p)            { margin: 0 0 0.6em; }
-	.md-notes-display :global(p:last-child) { margin-bottom: 0; }
+	.md-notes-display :global(p) {
+		margin: 0 0 0.6em;
+	}
+	.md-notes-display :global(p:last-child) {
+		margin-bottom: 0;
+	}
 	.md-notes-display :global(ul),
-	.md-notes-display :global(ol)           { margin: 0 0 0.6em; padding-left: 1.2em; }
-	.md-notes-display :global(strong)       { font-weight: 700; color: var(--text); }
-	.md-notes-display :global(em)           { font-style: italic; }
+	.md-notes-display :global(ol) {
+		margin: 0 0 0.6em;
+		padding-left: 1.2em;
+	}
+	.md-notes-display :global(strong) {
+		font-weight: 700;
+		color: var(--text);
+	}
+	.md-notes-display :global(em) {
+		font-style: italic;
+	}
 </style>

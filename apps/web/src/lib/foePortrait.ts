@@ -28,11 +28,7 @@ function slug(name: string): string {
  * safety net for foes whose data hasn't been migrated yet; the onerror
  * handlers on `<img>` still drop to UNKNOWN_FOE_PORTRAIT if that 404s.
  */
-export function foePortraitUrl(
-	name: string,
-	images?: readonly string[] | null,
-	index = 0,
-): string {
+export function foePortraitUrl(name: string, images?: readonly string[] | null, index = 0): string {
 	if (images && images.length > 0) {
 		const safe = Math.min(Math.max(index, 0), images.length - 1);
 		return `/foes/${images[safe]}`;

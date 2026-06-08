@@ -18,14 +18,14 @@ import { config } from './config.js';
 import { checkDbHealth, adminDb } from './db/index.js';
 import { securityEvents } from './db/schema.js';
 
-import { authRoutes }        from './routes/auth.js';
-import { characterRoutes }   from './routes/characters.js';
-import { catalogueRoutes }   from './routes/catalogue.js';
-import { userDataRoutes }    from './routes/userData.js';
-import { sessionLogRoutes }  from './routes/sessionLog.js';
-import { adminRoutes }       from './routes/admin.js';
-import { inviteRoutes }      from './routes/invites.js';
-import { healthRoutes }      from './routes/health.js';
+import { authRoutes } from './routes/auth.js';
+import { characterRoutes } from './routes/characters.js';
+import { catalogueRoutes } from './routes/catalogue.js';
+import { userDataRoutes } from './routes/userData.js';
+import { sessionLogRoutes } from './routes/sessionLog.js';
+import { adminRoutes } from './routes/admin.js';
+import { inviteRoutes } from './routes/invites.js';
+import { healthRoutes } from './routes/health.js';
 
 // ---------------------------------------------------------------------------
 // Redis client (shared across the app)
@@ -33,8 +33,8 @@ import { healthRoutes }      from './routes/health.js';
 
 export const redis = new Redis(config.REDIS_URL, {
   maxRetriesPerRequest: 3,
-  enableReadyCheck:     true,
-  lazyConnect:          false,
+  enableReadyCheck: true,
+  lazyConnect: false,
 });
 
 redis.on('error', (err) => {
@@ -49,12 +49,13 @@ redis.on('error', (err) => {
 export async function buildServer(): Promise<FastifyInstance> {
   const server = Fastify({
     logger: {
-      level:     config.NODE_ENV === 'production' ? 'info' : 'debug',
-      transport: config.NODE_ENV !== 'production'
-        ? { target: 'pino-pretty', options: { colorize: true } }
-        : undefined,    // in production, output raw JSON (for log aggregators)
+      level: config.NODE_ENV === 'production' ? 'info' : 'debug',
+      transport:
+        config.NODE_ENV !== 'production'
+          ? { target: 'pino-pretty', options: { colorize: true } }
+          : undefined, // in production, output raw JSON (for log aggregators)
     },
-    trustProxy: true,   // respect X-Forwarded-For from Nginx
+    trustProxy: true, // respect X-Forwarded-For from Nginx
   });
 
   // ── Zod type provider — replaces AJV for request validation ──────────────
@@ -65,25 +66,25 @@ export async function buildServer(): Promise<FastifyInstance> {
   await server.register(helmet, {
     contentSecurityPolicy: {
       directives: {
-        defaultSrc:  ["'self'"],
-        scriptSrc:   ["'self'", 'https://hcaptcha.com', 'https://*.hcaptcha.com'],
-        styleSrc:    ["'self'", "'unsafe-inline'", 'https://hcaptcha.com', 'https://*.hcaptcha.com'],
-        frameSrc:    ['https://hcaptcha.com', 'https://*.hcaptcha.com'],
-        connectSrc:  ["'self'", 'https://hcaptcha.com', 'https://*.hcaptcha.com'],
-        imgSrc:      ["'self'", 'data:', 'https://hcaptcha.com', 'https://*.hcaptcha.com'],
-        fontSrc:     ["'self'"],
-        objectSrc:   ["'none'"],
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", 'https://hcaptcha.com', 'https://*.hcaptcha.com'],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://hcaptcha.com', 'https://*.hcaptcha.com'],
+        frameSrc: ['https://hcaptcha.com', 'https://*.hcaptcha.com'],
+        connectSrc: ["'self'", 'https://hcaptcha.com', 'https://*.hcaptcha.com'],
+        imgSrc: ["'self'", 'data:', 'https://hcaptcha.com', 'https://*.hcaptcha.com'],
+        fontSrc: ["'self'"],
+        objectSrc: ["'none'"],
         upgradeInsecureRequests: [],
       },
     },
-    crossOriginEmbedderPolicy: false,  // required for some browser APIs
+    crossOriginEmbedderPolicy: false, // required for some browser APIs
   });
 
   // ── CORS ──────────────────────────────────────────────────────────────────
   await server.register(cors, {
-    origin:      config.NODE_ENV === 'production' ? config.APP_URL : true,
-    credentials: true,    // allow cookies on cross-origin requests
-    methods:     ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    origin: config.NODE_ENV === 'production' ? config.APP_URL : true,
+    credentials: true, // allow cookies on cross-origin requests
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   });
 
   // ── Cookies ───────────────────────────────────────────────────────────────
@@ -93,8 +94,8 @@ export async function buildServer(): Promise<FastifyInstance> {
 
   // ── Rate limiting (backed by Redis) ───────────────────────────────────────
   await server.register(rateLimit, {
-    global:    true,
-    max:       config.RATE_LIMIT_GLOBAL,
+    global: true,
+    max: config.RATE_LIMIT_GLOBAL,
     timeWindow: '1 minute',
     redis,
     keyGenerator: (req) => {
@@ -104,8 +105,8 @@ export async function buildServer(): Promise<FastifyInstance> {
     },
     errorResponseBuilder: () => ({
       statusCode: 429,
-      error:      'Too Many Requests',
-      message:    'Rate limit exceeded. Please slow down.',
+      error: 'Too Many Requests',
+      message: 'Rate limit exceeded. Please slow down.',
     }),
   });
 
@@ -138,29 +139,35 @@ export async function buildServer(): Promise<FastifyInstance> {
 
     // Audit-log real errors (skip routine 401/403 auth rejections — too noisy)
     if (adminDb && statusCode >= 400 && statusCode !== 401 && statusCode !== 403) {
-      void adminDb.insert(securityEvents).values({
-        userId:    req.user?.id ?? null,
-        eventType: 'api_error',
-        ipAddress: req.ip ?? null,
-        metadata: {
-          method:     req.method,
-          url:        req.url,
-          statusCode,
-          message:    error.message,
-          stack:      error.stack ?? null,
-          userEmail:  req.user?.email ?? null,
-        },
-      }).catch(() => { /* don't let logging break the response */ });
+      void adminDb
+        .insert(securityEvents)
+        .values({
+          userId: req.user?.id ?? null,
+          eventType: 'api_error',
+          ipAddress: req.ip ?? null,
+          metadata: {
+            method: req.method,
+            url: req.url,
+            statusCode,
+            message: error.message,
+            stack: error.stack ?? null,
+            userEmail: req.user?.email ?? null,
+          },
+        })
+        .catch(() => {
+          /* don't let logging break the response */
+        });
     }
 
     // Never expose internal error details in production
-    const message = config.NODE_ENV === 'production' && statusCode === 500
-      ? 'An unexpected error occurred'
-      : error.message;
+    const message =
+      config.NODE_ENV === 'production' && statusCode === 500
+        ? 'An unexpected error occurred'
+        : error.message;
 
     reply.status(statusCode).send({
       statusCode,
-      error:   getErrorName(statusCode),
+      error: getErrorName(statusCode),
       message,
     });
   });
@@ -169,8 +176,8 @@ export async function buildServer(): Promise<FastifyInstance> {
   server.setNotFoundHandler((req, reply) => {
     reply.status(404).send({
       statusCode: 404,
-      error:      'Not Found',
-      message:    `Route ${req.method} ${req.url} not found`,
+      error: 'Not Found',
+      message: `Route ${req.method} ${req.url} not found`,
     });
   });
 
@@ -178,27 +185,32 @@ export async function buildServer(): Promise<FastifyInstance> {
   // All routes are prefixed with /api/v1 — future versions can add /api/v2
   // without breaking existing clients.
   await server.register(healthRoutes);
-  await server.register(authRoutes,      { prefix: '/api/v1/auth' });
+  await server.register(authRoutes, { prefix: '/api/v1/auth' });
   await server.register(characterRoutes, { prefix: '/api/v1/characters' });
   await server.register(catalogueRoutes, { prefix: '/api/v1/catalogue' });
-  await server.register(userDataRoutes,   { prefix: '/api/v1/session' });
+  await server.register(userDataRoutes, { prefix: '/api/v1/session' });
   await server.register(sessionLogRoutes, { prefix: '/api/v1/session/log' });
-  await server.register(adminRoutes,      { prefix: '/api/v1/admin' });
-  await server.register(inviteRoutes,     { prefix: '/api/v1/invites' });
+  await server.register(adminRoutes, { prefix: '/api/v1/admin' });
+  await server.register(inviteRoutes, { prefix: '/api/v1/invites' });
 
   // ── Public system status (no auth) ────────────────────────────────────
   // Returns maintenance + broadcast in a single response so the web layout
   // only polls one endpoint for both banners.
   const { getStatus: getMaintenanceStatus } = await import('./services/maintenanceService.js');
-  const { getStatus: getBroadcastStatus }   = await import('./services/broadcastService.js');
+  const { getStatus: getBroadcastStatus } = await import('./services/broadcastService.js');
 
   server.get('/api/v1/system/status', async (_req, reply) => {
     const [maintenance, broadcast] = await Promise.all([
       getMaintenanceStatus().catch(() => ({
-        enabled: false, message: null, shutdownAt: null,
+        enabled: false,
+        message: null,
+        shutdownAt: null,
       })),
       getBroadcastStatus().catch(() => ({
-        active: false, message: null, severity: 'info' as const, postedAt: null,
+        active: false,
+        message: null,
+        severity: 'info' as const,
+        postedAt: null,
       })),
     ]);
     return reply.status(200).send({ maintenance, broadcast });
@@ -209,20 +221,28 @@ export async function buildServer(): Promise<FastifyInstance> {
   // decide whether to show the form in one round-trip. Each sub-status
   // falls back to a "fine" default if Redis is flaky — we never want a
   // transient infra issue to mark registration closed.
-  const { getStatus: getRegistrationLockStatus } = await import('./services/registrationLockService.js');
-  const { getStatus: getRegistrationQuotaStatus } = await import('./services/registrationQuotaService.js');
+  const { getStatus: getRegistrationLockStatus } =
+    await import('./services/registrationLockService.js');
+  const { getStatus: getRegistrationQuotaStatus } =
+    await import('./services/registrationQuotaService.js');
 
   server.get('/api/v1/registration/status', async (_req, reply) => {
     const [maintenance, lock, quota] = await Promise.all([
       getMaintenanceStatus().catch(() => ({
-        enabled: false, message: null, shutdownAt: null,
+        enabled: false,
+        message: null,
+        shutdownAt: null,
       })),
       getRegistrationLockStatus().catch(() => ({
-        locked: false, message: null,
+        locked: false,
+        message: null,
       })),
       getRegistrationQuotaStatus().catch(() => ({
-        daily: null, usedToday: 0, remaining: null,
-        resetsAt: new Date().toISOString(), exhausted: false,
+        daily: null,
+        usedToday: 0,
+        remaining: null,
+        resetsAt: new Date().toISOString(),
+        exhausted: false,
       })),
     ]);
 
@@ -231,18 +251,21 @@ export async function buildServer(): Promise<FastifyInstance> {
     let closed: null | { reason: 'maintenance' | 'locked' | 'quota'; message: string } = null;
     if (maintenance.enabled) {
       closed = {
-        reason:  'maintenance',
-        message: maintenance.message ?? 'The system is currently under maintenance. Please try again later.',
+        reason: 'maintenance',
+        message:
+          maintenance.message ??
+          'The system is currently under maintenance. Please try again later.',
       };
     } else if (lock.locked) {
       closed = {
-        reason:  'locked',
+        reason: 'locked',
         message: lock.message ?? 'New account registration is currently disabled.',
       };
     } else if (quota.exhausted) {
       closed = {
-        reason:  'quota',
-        message: "Today's new signups are full. Please come back tomorrow — we reset at UTC midnight.",
+        reason: 'quota',
+        message:
+          "Today's new signups are full. Please come back tomorrow — we reset at UTC midnight.",
       };
     }
 
@@ -291,9 +314,9 @@ function getErrorName(statusCode: number): string {
 declare module 'fastify' {
   interface FastifyRequest {
     user?: {
-      id:    string;
+      id: string;
       email: string;
-      role:  string;
+      role: string;
     };
   }
 }

@@ -25,9 +25,9 @@ import { hydrateCharacterInPlace } from '$lib/character.js';
 // ---------------------------------------------------------------------------
 
 let _characters: CharacterFull[] = $state([]);
-let _loading                     = $state(false);
-let _loaded                      = false;
-let _partySupply: number | null  = $state(null);
+let _loading = $state(false);
+let _loaded = false;
+let _partySupply: number | null = $state(null);
 
 // ---------------------------------------------------------------------------
 // Fetch
@@ -48,7 +48,9 @@ export async function loadCharacters(): Promise<void> {
 
 		// Initialise party supply to the max across all loaded characters.
 		if (list.length > 0) {
-			_partySupply = Math.max(...list.map(c => (c.data as Record<string, unknown>).supply as number ?? 3));
+			_partySupply = Math.max(
+				...list.map((c) => ((c.data as Record<string, unknown>).supply as number) ?? 3),
+			);
 		}
 
 		_loaded = true;
@@ -110,7 +112,7 @@ export async function createCharacter(
 	//     party gets a supply boost).
 	//   - New char with lower or equal supply: already handled above by bumping
 	//     the char's initial supply, so no further sync needed.
-	const newCharSupply = (newChar.data as Record<string, unknown>).supply as number ?? 3;
+	const newCharSupply = ((newChar.data as Record<string, unknown>).supply as number) ?? 3;
 	if (_partySupply === null) {
 		_partySupply = newCharSupply;
 	} else if (newCharSupply > _partySupply) {
@@ -122,7 +124,7 @@ export async function createCharacter(
 /** Delete a character by id. */
 export async function deleteCharacter(id: string): Promise<void> {
 	await api.remove(id);
-	_characters = _characters.filter(c => c.id !== id);
+	_characters = _characters.filter((c) => c.id !== id);
 }
 
 // ---------------------------------------------------------------------------
@@ -138,12 +140,10 @@ export function persistCharacterNow(
 	id: string,
 	patch: { name?: string; data: Record<string, unknown> },
 ): void {
-	_characters = _characters.map(c =>
+	_characters = _characters.map((c) =>
 		c.id === id ? { ...c, name: patch.name ?? c.name, data: patch.data } : c,
 	);
-	api.update(id, patch).catch(err =>
-		console.error('[characterStore] Save failed:', err),
-	);
+	api.update(id, patch).catch((err) => console.error('[characterStore] Save failed:', err));
 }
 
 /**
@@ -153,12 +153,12 @@ export function persistCharacterNow(
  * fires this on edits.
  */
 export function flushCharacterToApi(id: string): void {
-	const c = _characters.find(c => c.id === id);
+	const c = _characters.find((c) => c.id === id);
 	if (!c) return;
 	const data = $state.snapshot(c.data) as Record<string, unknown>;
-	api.update(id, { name: c.name, data }).catch(err =>
-		console.error('[characterStore] Save failed:', err),
-	);
+	api
+		.update(id, { name: c.name, data })
+		.catch((err) => console.error('[characterStore] Save failed:', err));
 }
 
 // ---------------------------------------------------------------------------
@@ -180,9 +180,8 @@ export function setPartySupply(val: number): void {
 		api.update(c.id, { data: newData }).catch(() => {});
 	}
 	// Single reactive assignment covers all chars
-	_characters = _characters.map(c => ({
+	_characters = _characters.map((c) => ({
 		...c,
 		data: { ...(c.data as Record<string, unknown>), supply: val },
 	}));
 }
-

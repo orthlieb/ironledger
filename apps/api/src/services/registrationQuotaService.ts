@@ -24,13 +24,13 @@ import { securityEvents } from '../db/schema.js';
 
 export interface RegistrationQuotaStatus {
   /** null when unlimited. Integer 1..N when capped. */
-  daily:     number | null;
+  daily: number | null;
   /** Number of successful registrations so far today (UTC). */
   usedToday: number;
   /** null when unlimited, else `max(0, daily - usedToday)`. */
   remaining: number | null;
   /** ISO timestamp of the next UTC midnight. */
-  resetsAt:  string;
+  resetsAt: string;
   /** True if a quota is configured AND it has been hit for today. */
   exhausted: boolean;
 }
@@ -44,8 +44,8 @@ const KEY_QUOTA = 'registration:daily_quota';
 /** Today's counter key, keyed by UTC day. */
 function countKey(d: Date = new Date()): string {
   const yyyy = d.getUTCFullYear();
-  const mm   = String(d.getUTCMonth() + 1).padStart(2, '0');
-  const dd   = String(d.getUTCDate()).padStart(2, '0');
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(d.getUTCDate()).padStart(2, '0');
   return `registration:count:${yyyy}-${mm}-${dd}`;
 }
 
@@ -72,7 +72,7 @@ export async function getStatus(): Promise<RegistrationQuotaStatus> {
     daily,
     usedToday,
     remaining,
-    resetsAt:  nextUtcMidnightIso(),
+    resetsAt: nextUtcMidnightIso(),
     exhausted: daily !== null && usedToday >= daily,
   };
 }
@@ -82,9 +82,9 @@ export async function getStatus(): Promise<RegistrationQuotaStatus> {
  * Integer > 0 when capping.
  */
 export async function setQuota(
-  daily:   number | null,
+  daily: number | null,
   adminId: string,
-  ip?:     string,
+  ip?: string,
 ): Promise<RegistrationQuotaStatus> {
   if (daily === null) {
     await redis.del(KEY_QUOTA);
@@ -113,7 +113,7 @@ export async function setQuota(
  */
 export async function checkAndIncrement(): Promise<boolean> {
   const quotaRaw = await redis.get(KEY_QUOTA);
-  const quota    = quotaRaw ? parsePositiveInt(quotaRaw) : null;
+  const quota = quotaRaw ? parsePositiveInt(quotaRaw) : null;
 
   // Unlimited — always allow, don't bother counting.
   if (quota === null) return true;
@@ -146,16 +146,19 @@ function parsePositiveInt(s: string): number | null {
 }
 
 async function logEvent(
-  adminId:   string,
+  adminId: string,
   eventType: string,
-  metadata:  Record<string, unknown>,
-  ip?:       string,
+  metadata: Record<string, unknown>,
+  ip?: string,
 ): Promise<void> {
   if (!adminDb) return;
-  await adminDb.insert(securityEvents).values({
-    userId:    adminId,
-    eventType,
-    ipAddress: ip ?? null,
-    metadata,
-  }).catch(console.error);
+  await adminDb
+    .insert(securityEvents)
+    .values({
+      userId: adminId,
+      eventType,
+      ipAddress: ip ?? null,
+      metadata,
+    })
+    .catch(console.error);
 }

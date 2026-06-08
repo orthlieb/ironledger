@@ -17,26 +17,26 @@ import { findAsset } from './assetStore.svelte.js';
 // ---------------------------------------------------------------------------
 
 export interface Precondition {
-	key:  string;
+	key: string;
 	min?: number;
 	max?: number;
-	eq?:  number;
-	ne?:  number;
+	eq?: number;
+	ne?: number;
 	/** Used with key="hasAnyAsset": passes if the character owns at least one asset whose id is in this list. */
 	ids?: string[];
 }
 
 /** A single difficulty factor level within an inspection ritual. */
 export interface InspectionFactor {
-	key:    string;
-	name:   string;
+	key: string;
+	name: string;
 	levels: string[];
 }
 
 /** A ritual asset's identity + its difficulty factors, passed via pctx. */
 export interface RitualInfo {
-	id:                string;
-	name:              string;
+	id: string;
+	name: string;
 	inspectionFactors: InspectionFactor[];
 }
 
@@ -47,13 +47,13 @@ export interface RitualInfo {
  */
 export interface PreconditionContext {
 	hasCharacter?: boolean;
-	hasSite?:      boolean;
-	hasJourney?:   boolean;
-	hasFoe?:       boolean;
+	hasSite?: boolean;
+	hasJourney?: boolean;
+	hasFoe?: boolean;
 	/** 0 = none, 1 = character has initiative, 2 = foe has initiative */
-	initiative?:   number;
+	initiative?: number;
 	/** Harm dealt by the active foe per hit (from FOE_RANKS). Used to resolve harm-links at roll time. */
-	foeHarm?:      number;
+	foeHarm?: number;
 	/** Ritual assets owned by the active character that have difficulty factors. */
 	ritualAssets?: RitualInfo[];
 	/** Name of the active expedition/site — used for log entry titles on Delve moves. */
@@ -67,14 +67,24 @@ export interface PreconditionContext {
 // ---------------------------------------------------------------------------
 
 const TOUCHED_LEVEL: Record<string, number> = {
-	pure: 0, prime: 1, second: 2, third: 3, feral: 4,
+	pure: 0,
+	prime: 1,
+	second: 2,
+	third: 3,
+	feral: 4,
 };
 
 const TOUCHED_LABEL = ['Pure', 'Prime', 'Second', 'Third', 'Feral'];
 
 const DEBILITY_KEYS = new Set([
-	'wounded', 'shaken', 'unprepared', 'encumbered',
-	'maimed', 'corrupted', 'cursed', 'tormented',
+	'wounded',
+	'shaken',
+	'unprepared',
+	'encumbered',
+	'maimed',
+	'corrupted',
+	'cursed',
+	'tormented',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -85,8 +95,8 @@ const DEBILITY_KEYS = new Set([
 function passes(value: number, pre: Precondition): boolean {
 	if (pre.min !== undefined && value < pre.min) return false;
 	if (pre.max !== undefined && value > pre.max) return false;
-	if (pre.eq  !== undefined && value !== pre.eq) return false;
-	if (pre.ne  !== undefined && value === pre.ne) return false;
+	if (pre.eq !== undefined && value !== pre.eq) return false;
+	if (pre.ne !== undefined && value === pre.ne) return false;
 	return true;
 }
 
@@ -99,9 +109,9 @@ function passes(value: number, pre: Precondition): boolean {
  * Returns a human-readable failure string, or `null` if the check passes.
  */
 export function checkPrecondition(
-	pre:      Precondition,
+	pre: Precondition,
 	charData: CharacterData,
-	ctx:      PreconditionContext = {},
+	ctx: PreconditionContext = {},
 ): string | null {
 	const { key } = pre;
 
@@ -131,17 +141,17 @@ export function checkPrecondition(
 
 	// ---- Character stats ----
 	const statMap: Record<string, number | undefined> = {
-		momentum:   charData.momentum,
-		health:     charData.health,
-		spirit:     charData.spirit,
-		supply:     charData.supply,
-		mana:       parseInt(charData.globalValues?.['mana'] ?? '0'),
+		momentum: charData.momentum,
+		health: charData.health,
+		spirit: charData.spirit,
+		supply: charData.supply,
+		mana: parseInt(charData.globalValues?.['mana'] ?? '0'),
 		experience: charData.xp,
-		edge:       charData.edge,
-		heart:      charData.heart,
-		iron:       charData.iron,
-		shadow:     charData.shadow,
-		wits:       charData.wits,
+		edge: charData.edge,
+		heart: charData.heart,
+		iron: charData.iron,
+		shadow: charData.shadow,
+		wits: charData.wits,
 	};
 	if (key in statMap) {
 		const v = statMap[key]!;
@@ -149,7 +159,7 @@ export function checkPrecondition(
 		const label = key.charAt(0).toUpperCase() + key.slice(1);
 		if (pre.min !== undefined) return `Requires ${label} ≥ ${pre.min} (current: ${v})`;
 		if (pre.max !== undefined) return `Requires ${label} ≤ ${pre.max} (current: ${v})`;
-		if (pre.eq  !== undefined) return `Requires ${label} = ${pre.eq} (current: ${v})`;
+		if (pre.eq !== undefined) return `Requires ${label} = ${pre.eq} (current: ${v})`;
 		return `${label} requirement not met`;
 	}
 
@@ -171,13 +181,15 @@ export function checkPrecondition(
 	if (key === 'vowCount') {
 		const count = charData.vows.length;
 		if (passes(count, pre)) return null;
-		if (pre.min !== undefined) return `Requires ≥ ${pre.min} vow${pre.min !== 1 ? 's' : ''} (current: ${count})`;
+		if (pre.min !== undefined)
+			return `Requires ≥ ${pre.min} vow${pre.min !== 1 ? 's' : ''} (current: ${count})`;
 		return 'Vow count requirement not met';
 	}
 	if (key === 'assetCount') {
 		const count = charData.assets.length;
 		if (passes(count, pre)) return null;
-		if (pre.min !== undefined) return `Requires ≥ ${pre.min} asset${pre.min !== 1 ? 's' : ''} (current: ${count})`;
+		if (pre.min !== undefined)
+			return `Requires ≥ ${pre.min} asset${pre.min !== 1 ? 's' : ''} (current: ${count})`;
 		return 'Asset count requirement not met';
 	}
 	if (key === 'companionCount') {
@@ -185,13 +197,15 @@ export function checkPrecondition(
 			(a) => findAsset(a.assetId)?.category === 'Companion',
 		).length;
 		if (passes(count, pre)) return null;
-		if (pre.min !== undefined) return `Requires ≥ ${pre.min} companion${pre.min !== 1 ? 's' : ''} (current: ${count})`;
+		if (pre.min !== undefined)
+			return `Requires ≥ ${pre.min} companion${pre.min !== 1 ? 's' : ''} (current: ${count})`;
 		return 'Companion count requirement not met';
 	}
 	if (key === 'rarityCount') {
 		const count = charData.assets.filter((a) => !!a.rarityId).length;
 		if (passes(count, pre)) return null;
-		if (pre.min !== undefined) return `Requires ≥ ${pre.min} rarity item${pre.min !== 1 ? 's' : ''} (current: ${count})`;
+		if (pre.min !== undefined)
+			return `Requires ≥ ${pre.min} rarity item${pre.min !== 1 ? 's' : ''} (current: ${count})`;
 		return 'Rarity count requirement not met';
 	}
 
@@ -209,13 +223,9 @@ export function checkPrecondition(
 	if (key === 'touched') {
 		// Prefer the value stored in the Touched asset card's customValues; fall back to
 		// the legacy charData.touched field for old saves that haven't migrated yet.
-		const touchedAsset = charData.assets.find(
-			(a) => findAsset(a.assetId)?.category === 'Touched',
-		);
+		const touchedAsset = charData.assets.find((a) => findAsset(a.assetId)?.category === 'Touched');
 		const touchedLevelStr =
-			touchedAsset?.customValues?.['touchedLevel'] ??
-			charData.touched ??
-			'pure';
+			touchedAsset?.customValues?.['touchedLevel'] ?? charData.touched ?? 'pure';
 		const level = TOUCHED_LEVEL[touchedLevelStr] ?? 0;
 		if (passes(level, pre)) return null;
 		if (pre.min !== undefined) {
@@ -235,16 +245,12 @@ export function checkPrecondition(
 		const has = (pre.ids ?? []).some((id) => ownedIds.has(id));
 		if (has) return null;
 		// Build a readable list of asset names for the error message
-		const names = (pre.ids ?? [])
-			.map((id) => findAsset(id)?.name ?? id)
-			.join(' or ');
+		const names = (pre.ids ?? []).map((id) => findAsset(id)?.name ?? id).join(' or ');
 		return `Requires ${names}`;
 	}
 
 	// ---- Asset by name (any remaining key is treated as an asset name) ----
-	const hasNamed = charData.assets.some(
-		(a) => findAsset(a.assetId)?.name === key,
-	);
+	const hasNamed = charData.assets.some((a) => findAsset(a.assetId)?.name === key);
 	if (passes(hasNamed ? 1 : 0, pre)) return null;
 	if (pre.eq === 1) return `Requires the "${key}" asset`;
 	if (pre.eq === 0) return `Must not have the "${key}" asset`;
@@ -258,8 +264,8 @@ export function checkPrecondition(
  */
 export function firstPreconditionFailure(
 	preconditions: Precondition[] | undefined,
-	charData:      CharacterData,
-	ctx:           PreconditionContext = {},
+	charData: CharacterData,
+	ctx: PreconditionContext = {},
 ): string | null {
 	if (!preconditions || preconditions.length === 0) return null;
 	for (const pre of preconditions) {

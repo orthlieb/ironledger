@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { verifyCaptcha, CaptchaError }           from '../../src/lib/captcha.js';
+import { verifyCaptcha, CaptchaError } from '../../src/lib/captcha.js';
 
 // ---------------------------------------------------------------------------
 // Mock the config module so captcha.ts sees NODE_ENV:'production' and always
@@ -14,8 +14,8 @@ import { verifyCaptcha, CaptchaError }           from '../../src/lib/captcha.js'
 // ---------------------------------------------------------------------------
 vi.mock('../../src/config.js', () => ({
   config: {
-    NODE_ENV:         'production',
-    HCAPTCHA_SECRET:  '0x0000000000000000000000000000000000000000',
+    NODE_ENV: 'production',
+    HCAPTCHA_SECRET: '0x0000000000000000000000000000000000000000',
   },
 }));
 
@@ -25,17 +25,23 @@ describe('verifyCaptcha', () => {
   });
 
   it('resolves when hCaptcha returns success: true', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      json: async () => ({ success: true }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        json: async () => ({ success: true }),
+      }),
+    );
 
     await expect(verifyCaptcha('valid-token', '1.2.3.4')).resolves.toBeUndefined();
   });
 
   it('throws CaptchaError when hCaptcha returns success: false', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      json: async () => ({ success: false, 'error-codes': ['invalid-input-response'] }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        json: async () => ({ success: false, 'error-codes': ['invalid-input-response'] }),
+      }),
+    );
 
     await expect(verifyCaptcha('bad-token')).rejects.toThrow(CaptchaError);
   });
@@ -47,15 +53,16 @@ describe('verifyCaptcha', () => {
   });
 
   it('includes error codes in the error message', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      json: async () => ({
-        success: false,
-        'error-codes': ['timeout-or-duplicate'],
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        json: async () => ({
+          success: false,
+          'error-codes': ['timeout-or-duplicate'],
+        }),
       }),
-    }));
+    );
 
-    await expect(verifyCaptcha('token'))
-      .rejects
-      .toThrow('timeout-or-duplicate');
+    await expect(verifyCaptcha('token')).rejects.toThrow('timeout-or-duplicate');
   });
 });

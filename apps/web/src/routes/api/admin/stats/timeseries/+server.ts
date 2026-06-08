@@ -12,9 +12,12 @@ function authHeader(locals: App.Locals): Record<string, string> {
 
 export const GET: RequestHandler = async ({ locals, url }) => {
 	const timeframe = url.searchParams.get('timeframe') ?? '1day';
-	const res = await fetch(`${INTERNAL_API_URL}/api/v1/admin/stats/timeseries?timeframe=${timeframe}`, {
-		headers: authHeader(locals),
-	});
+	const res = await fetch(
+		`${INTERNAL_API_URL}/api/v1/admin/stats/timeseries?timeframe=${timeframe}`,
+		{
+			headers: authHeader(locals),
+		},
+	);
 	return new Response(res.body, {
 		status: res.status,
 		headers: { 'Content-Type': 'application/json' },

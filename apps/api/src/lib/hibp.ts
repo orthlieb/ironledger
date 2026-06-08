@@ -21,31 +21,25 @@ import { config } from '../config.js';
  */
 export async function getPwnedCount(password: string): Promise<number> {
   // SHA-1 hash of the password (HIBP uses SHA-1 for its Pwned Passwords API)
-  const sha1 = createHash('sha1')
-    .update(password)
-    .digest('hex')
-    .toUpperCase();
+  const sha1 = createHash('sha1').update(password).digest('hex').toUpperCase();
 
-  const prefix = sha1.slice(0, 5);    // sent to HIBP
-  const suffix = sha1.slice(5);       // checked locally — never sent
+  const prefix = sha1.slice(0, 5); // sent to HIBP
+  const suffix = sha1.slice(5); // checked locally — never sent
 
   const headers: Record<string, string> = {
-    'Add-Padding': 'true',   // ask HIBP to pad response to fixed size (prevents traffic analysis)
+    'Add-Padding': 'true', // ask HIBP to pad response to fixed size (prevents traffic analysis)
   };
   if (config.HIBP_API_KEY) {
     headers['hibp-api-key'] = config.HIBP_API_KEY;
   }
 
   try {
-    const res = await fetch(
-      `https://api.pwnedpasswords.com/range/${prefix}`,
-      {
-        headers,
-        signal: AbortSignal.timeout(4000),
-      },
-    );
+    const res = await fetch(`https://api.pwnedpasswords.com/range/${prefix}`, {
+      headers,
+      signal: AbortSignal.timeout(4000),
+    });
 
-    if (!res.ok) return 0;  // fail open for HIBP — don't block registration if it's down
+    if (!res.ok) return 0; // fail open for HIBP — don't block registration if it's down
 
     const text = await res.text();
 
@@ -57,9 +51,9 @@ export async function getPwnedCount(password: string): Promise<number> {
       }
     }
 
-    return 0;  // not found in breach list
+    return 0; // not found in breach list
   } catch {
-    return 0;  // fail open — network error shouldn't block registration
+    return 0; // fail open — network error shouldn't block registration
   }
 }
 

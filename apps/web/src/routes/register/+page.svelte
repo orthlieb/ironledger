@@ -36,84 +36,93 @@
 				{/if}
 			</p>
 			<p class="maintenance-message">{data.closedMessage}</p>
-			<p class="maintenance-message"><a href="/login">Sign in</a> if you already have an account.</p>
+			<p class="maintenance-message">
+				<a href="/login">Sign in</a> if you already have an account.
+			</p>
 		</div>
 	</div>
 {:else}
-<div class="auth-wrap">
-	<div class="auth-card card">
-		<div class="auth-brand">
-			<div class="auth-brand-rule"></div>
-			<h1><span class="auth-brand-icon" aria-hidden="true">{@html swordSvg}</span>Iron Ledger</h1>
-			<div class="auth-brand-rule"></div>
-		</div>
-		<div class="hero-image-wrap">
-			<img
-				class="hero-image"
-				src="/ironledger-register.webp"
-				alt="A Norse warrior raises a drinking horn, pledging their name to the ledger"
-			/>
-			<p class="hero-caption">Swear your oath. Glory awaits.</p>
-		</div>
-
-		{#if form?.error}
-			<div class="error-msg">{form.error}</div>
-		{/if}
-
-		<form method="POST" class="auth-form">
-			<label class="field-group">
-				<span>Email</span>
-				<input
-					type="email"
-					name="email"
-					required
-					autocomplete="email"
-					value={form?.email ?? ''}
+	<div class="auth-wrap">
+		<div class="auth-card card">
+			<div class="auth-brand">
+				<div class="auth-brand-rule"></div>
+				<h1><span class="auth-brand-icon" aria-hidden="true">{@html swordSvg}</span>Iron Ledger</h1>
+				<div class="auth-brand-rule"></div>
+			</div>
+			<div class="hero-image-wrap">
+				<img
+					class="hero-image"
+					src="/ironledger-register.webp"
+					alt="A Norse warrior raises a drinking horn, pledging their name to the ledger"
 				/>
-			</label>
-
-			<label class="field-group">
-				<span>Display name <span class="field-optional">— optional, defaults to your email</span></span>
-				<input
-					type="text"
-					name="displayName"
-					autocomplete="nickname"
-					maxlength="80"
-					value={form?.displayName ?? ''}
-				/>
-			</label>
-
-			<PasswordInput
-				name="password"
-				label="Password — 12 characters or more"
-				autocomplete="new-password"
-				minlength={12}
-			/>
-
-			<PasswordInput
-				name="confirm"
-				label="Confirm password"
-				autocomplete="new-password"
-				minlength={12}
-			/>
-
-			<div class="captcha-wrap">
-				{#if data.isDev}
-					<div class="captcha-dev-bypass">⚙ Captcha bypassed in development</div>
-					<input type="hidden" name="h-captcha-response" value="dev-bypass" />
-				{:else}
-					<div class="h-captcha" data-sitekey="{data.hcaptchaSiteKey}" data-theme={captchaTheme}></div>
-				{/if}
+				<p class="hero-caption">Swear your oath. Glory awaits.</p>
 			</div>
 
-			<button type="submit" class="btn btn-primary">Forge Account</button>
-		</form>
+			{#if form?.error}
+				<div class="error-msg">{form.error}</div>
+			{/if}
 
-		<p class="auth-link">
-			Already sworn in? <a href="/login">Sign in</a>
-		</p>
+			<form method="POST" class="auth-form">
+				<label class="field-group">
+					<span>Email</span>
+					<input
+						type="email"
+						name="email"
+						required
+						autocomplete="email"
+						value={form?.email ?? ''}
+					/>
+				</label>
+
+				<label class="field-group">
+					<span
+						>Display name <span class="field-optional">— optional, defaults to your email</span
+						></span
+					>
+					<input
+						type="text"
+						name="displayName"
+						autocomplete="nickname"
+						maxlength="80"
+						value={form?.displayName ?? ''}
+					/>
+				</label>
+
+				<PasswordInput
+					name="password"
+					label="Password — 12 characters or more"
+					autocomplete="new-password"
+					minlength={12}
+				/>
+
+				<PasswordInput
+					name="confirm"
+					label="Confirm password"
+					autocomplete="new-password"
+					minlength={12}
+				/>
+
+				<div class="captcha-wrap">
+					{#if data.isDev}
+						<div class="captcha-dev-bypass">⚙ Captcha bypassed in development</div>
+						<input type="hidden" name="h-captcha-response" value="dev-bypass" />
+					{:else}
+						<div
+							class="h-captcha"
+							data-sitekey={data.hcaptchaSiteKey}
+							data-theme={captchaTheme}
+						></div>
+					{/if}
+				</div>
+
+				<button type="submit" class="btn btn-primary">Forge Account</button>
+			</form>
+
+			<p class="auth-link">
+				Already sworn in? <a href="/login">Sign in</a>
+			</p>
+		</div>
 	</div>
-</div>
 {/if}
 
 <style>
@@ -150,7 +159,6 @@
 		height: 18px;
 		fill: var(--color-mana, #f59e0b);
 	}
-
 
 	.captcha-wrap {
 		display: flex;

@@ -17,9 +17,7 @@
           "eq": 1
         }
       ],
-      "references": [
-        "expedition"
-      ],
+      "references": ["expedition"],
       "source": "delve"
     },
     {
@@ -152,9 +150,7 @@
           "value": "You encounter a denizen in need of help."
         }
       ],
-      "references": [
-        "expedition"
-      ],
+      "references": ["expedition"],
       "source": "delve",
       "logTitle": "Find an opportunity at {expedition}"
     },
@@ -225,9 +221,7 @@
           "value": "Roll twice more on this table. Both results occur. If they are the same result, make it worse."
         }
       ],
-      "references": [
-        "expedition"
-      ],
+      "references": ["expedition"],
       "source": "delve",
       "logTitle": "Reveal a danger at {expedition}"
     },
@@ -306,9 +300,7 @@
           "value": "The threat makes a dramatic and immediate move, or a major event reveals new complications. <a class=\"menace-link\" data-value=\"2\">Mark menace twice</a>."
         }
       ],
-      "references": [
-        "expedition"
-      ],
+      "references": ["expedition"],
       "preconditions": [
         {
           "key": "hasCharacter",

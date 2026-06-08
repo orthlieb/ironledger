@@ -13,7 +13,7 @@
 import type { CatalogueSource } from '$lib/types.js';
 
 const DELVE_KEY = 'ironledger:expansion:delve';
-const YRT_KEY   = 'ironledger:expansion:yrt';
+const YRT_KEY = 'ironledger:expansion:yrt';
 
 function readLocal(key: string): boolean {
 	if (typeof window === 'undefined') return true;
@@ -22,14 +22,18 @@ function readLocal(key: string): boolean {
 
 // Hydrate synchronously from localStorage on first import (client-only guard lives in readLocal).
 let _delveEnabled = $state(readLocal(DELVE_KEY));
-let _yrtEnabled   = $state(readLocal(YRT_KEY));
+let _yrtEnabled = $state(readLocal(YRT_KEY));
 
 // ---------------------------------------------------------------------------
 // Getters — function form (pickers + filters call these)
 // ---------------------------------------------------------------------------
 
-export function isDelveEnabled(): boolean { return _delveEnabled; }
-export function isYrtEnabled():   boolean { return _yrtEnabled; }
+export function isDelveEnabled(): boolean {
+	return _delveEnabled;
+}
+export function isYrtEnabled(): boolean {
+	return _yrtEnabled;
+}
 
 /** Single predicate usable across moves/oracles/foes/assets. */
 export function isSourceEnabled(source: CatalogueSource | string | undefined): boolean {
@@ -37,12 +41,15 @@ export function isSourceEnabled(source: CatalogueSource | string | undefined): b
 	// Defensive: any truthy-but-unknown string also defaults to enabled so new
 	// expansions added before a toggle exists don't silently disappear.
 	switch (source) {
-		case 'delve': return _delveEnabled;
-		case 'yrt':   return _yrtEnabled;
+		case 'delve':
+			return _delveEnabled;
+		case 'yrt':
+			return _yrtEnabled;
 		case 'base':
 		case undefined:
 		case '':
-		default:      return true;
+		default:
+			return true;
 	}
 }
 
@@ -53,7 +60,7 @@ export function isSourceEnabled(source: CatalogueSource | string | undefined): b
 function writeLocal(key: string, enabled: boolean): void {
 	if (typeof window === 'undefined') return;
 	if (enabled) localStorage.removeItem(key);
-	else         localStorage.setItem(key, 'off');
+	else localStorage.setItem(key, 'off');
 }
 
 export function setDelveEnabled(enabled: boolean): void {
@@ -73,9 +80,13 @@ export function setYrtEnabled(enabled: boolean): void {
 /** Human-readable label for a catalogue source — used in picker chips and badges. */
 export function sourceLabel(source: CatalogueSource | string): string {
 	switch (source) {
-		case 'base':  return 'Core';
-		case 'delve': return 'Delve';
-		case 'yrt':   return 'YRT';
-		default:      return String(source);
+		case 'base':
+			return 'Core';
+		case 'delve':
+			return 'Delve';
+		case 'yrt':
+			return 'YRT';
+		default:
+			return String(source);
 	}
 }

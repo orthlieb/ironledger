@@ -25,8 +25,8 @@ import { securityEvents } from '../db/schema.js';
 export type BroadcastSeverity = 'info' | 'warning';
 
 export interface BroadcastStatus {
-  active:   boolean;
-  message:  string | null;
+  active: boolean;
+  message: string | null;
   severity: BroadcastSeverity;
   postedAt: string | null;
 }
@@ -35,13 +35,13 @@ export interface BroadcastStatus {
 // Redis key constants
 // ---------------------------------------------------------------------------
 
-const KEY_ACTIVE    = 'broadcast:active';
-const KEY_MESSAGE   = 'broadcast:message';
-const KEY_SEVERITY  = 'broadcast:severity';
+const KEY_ACTIVE = 'broadcast:active';
+const KEY_MESSAGE = 'broadcast:message';
+const KEY_SEVERITY = 'broadcast:severity';
 const KEY_POSTED_AT = 'broadcast:postedAt';
 
 function parseSeverity(raw: string | null | undefined): BroadcastSeverity {
-  return raw === 'warning' ? 'warning' : 'info';   // default + unknown → info
+  return raw === 'warning' ? 'warning' : 'info'; // default + unknown → info
 }
 
 // ---------------------------------------------------------------------------
@@ -58,8 +58,8 @@ export async function getStatus(): Promise<BroadcastStatus> {
   );
 
   return {
-    active:   active === '1',
-    message:  message  ?? null,
+    active: active === '1',
+    message: message ?? null,
     severity: parseSeverity(severity),
     postedAt: postedAt ?? null,
   };
@@ -71,18 +71,18 @@ export async function getStatus(): Promise<BroadcastStatus> {
  * edit is a new message.
  */
 export async function postBroadcast(
-  message:  string,
+  message: string,
   severity: BroadcastSeverity,
-  adminId:  string,
-  ip?:      string,
+  adminId: string,
+  ip?: string,
 ): Promise<BroadcastStatus> {
   const postedAt = new Date().toISOString();
 
   await redis
     .pipeline()
-    .set(KEY_ACTIVE,    '1')
-    .set(KEY_MESSAGE,   message)
-    .set(KEY_SEVERITY,  severity)
+    .set(KEY_ACTIVE, '1')
+    .set(KEY_MESSAGE, message)
+    .set(KEY_SEVERITY, severity)
     .set(KEY_POSTED_AT, postedAt)
     .exec();
 
@@ -92,10 +92,7 @@ export async function postBroadcast(
 }
 
 /** Clear the banner — all keys deleted. */
-export async function clearBroadcast(
-  adminId: string,
-  ip?:     string,
-): Promise<void> {
+export async function clearBroadcast(adminId: string, ip?: string): Promise<void> {
   await redis.del(KEY_ACTIVE, KEY_MESSAGE, KEY_SEVERITY, KEY_POSTED_AT);
   void logBroadcastEvent(adminId, 'admin_clear_broadcast', {}, ip);
 }
@@ -105,16 +102,19 @@ export async function clearBroadcast(
 // ---------------------------------------------------------------------------
 
 async function logBroadcastEvent(
-  adminId:   string,
+  adminId: string,
   eventType: string,
-  metadata:  Record<string, unknown>,
-  ip?:       string,
+  metadata: Record<string, unknown>,
+  ip?: string,
 ): Promise<void> {
   if (!adminDb) return;
-  await adminDb.insert(securityEvents).values({
-    userId:    adminId,
-    eventType,
-    ipAddress: ip ?? null,
-    metadata,
-  }).catch(console.error);
+  await adminDb
+    .insert(securityEvents)
+    .values({
+      userId: adminId,
+      eventType,
+      ipAddress: ip ?? null,
+      metadata,
+    })
+    .catch(console.error);
 }

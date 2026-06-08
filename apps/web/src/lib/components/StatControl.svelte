@@ -7,19 +7,19 @@
 	 * Fires onchange(oldVal, newVal) on blur when the value actually changed.
 	 */
 
-	import brainSvg   from '$icons/brain.svg?raw';
-	import fistSvg    from '$icons/fist.svg?raw';
-	import shadowSvg  from '$icons/shadow.svg?raw';
-	import rabbitSvg  from '$icons/rabbit-running-solid-full.svg?raw';
-	import heartSvg   from '$icons/icon-heart.svg?raw';
+	import brainSvg from '$icons/brain.svg?raw';
+	import fistSvg from '$icons/fist.svg?raw';
+	import shadowSvg from '$icons/shadow.svg?raw';
+	import rabbitSvg from '$icons/rabbit-running-solid-full.svg?raw';
+	import heartSvg from '$icons/icon-heart.svg?raw';
 	import { tooltip as tooltipAction } from '$lib/actions/tooltip.js';
 
 	const STAT_ICONS: Record<string, string> = {
-		Edge:   rabbitSvg,
-		Heart:  heartSvg,
-		Iron:   fistSvg,
+		Edge: rabbitSvg,
+		Heart: heartSvg,
+		Iron: fistSvg,
 		Shadow: shadowSvg,
-		Wits:   brainSvg,
+		Wits: brainSvg,
 	};
 
 	let {
@@ -57,7 +57,9 @@
 		bind:value
 		{min}
 		{max}
-		onfocus={() => { focusValue = value; }}
+		onfocus={() => {
+			focusValue = value;
+		}}
 		onblur={() => {
 			const clamped = Math.min(max, Math.max(min, value || min));
 			value = clamped;
@@ -69,20 +71,20 @@
 
 <style>
 	.stat-tile {
-		position:        relative;
-		width:           52px;
-		height:          52px;
-		display:         flex;
-		flex-direction:  column;
-		align-items:     center;
+		position: relative;
+		width: 52px;
+		height: 52px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
 		justify-content: space-between;
-		padding:         5px 4px 4px;
-		margin:          2px;
-		border-radius:   6px;
-		background:      color-mix(in srgb, var(--stat-color) 8%, var(--bg-card));
-		overflow:        hidden;
-		cursor:          default;
-		transition:      background 0.15s;
+		padding: 5px 4px 4px;
+		margin: 2px;
+		border-radius: 6px;
+		background: color-mix(in srgb, var(--stat-color) 8%, var(--bg-card));
+		overflow: hidden;
+		cursor: default;
+		transition: background 0.15s;
 	}
 
 	.stat-tile:has(.stat-value-input:focus) {
@@ -91,58 +93,58 @@
 
 	/* Background icon — aligned to bottom */
 	.stat-icon {
-		position:        absolute;
-		inset:           0;
-		display:         flex;
-		align-items:     center;
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
 		justify-content: center;
-		opacity:         0.22;
-		pointer-events:  none;
+		opacity: 0.22;
+		pointer-events: none;
 	}
 
-	:global([data-theme="dark"]) .stat-icon {
-		opacity: 0.50;
+	:global([data-theme='dark']) .stat-icon {
+		opacity: 0.5;
 	}
 
 	.stat-icon :global(svg) {
-		width:  calc(100% - 6px);
+		width: calc(100% - 6px);
 		height: calc(100% - 6px);
-		fill:   var(--stat-color);
-		color:  var(--stat-color);
+		fill: var(--stat-color);
+		color: var(--stat-color);
 	}
 
 	/* Stat name at top */
 	.stat-name {
-		font-family:    var(--font-ui);
-		font-size:      0.55rem;
-		font-weight:    900;
+		font-family: var(--font-ui);
+		font-size: 0.55rem;
+		font-weight: 900;
 		text-transform: uppercase;
 		letter-spacing: 0.06em;
-		color:          var(--stat-color);
-		position:       relative;
-		z-index:        1;
-		line-height:    1;
+		color: var(--stat-color);
+		position: relative;
+		z-index: 1;
+		line-height: 1;
 	}
 
 	/* Value input at bottom */
 	.stat-value-input {
-		font-family:         var(--font-ui);
-		font-size:           1.3rem;
-		font-weight:         900;
+		font-family: var(--font-ui);
+		font-size: 1.3rem;
+		font-weight: 900;
 		font-variant-numeric: tabular-nums;
-		width:               100%;
-		text-align:          center;
-		padding:             0;
-		border:              none;
-		background:          transparent;
-		color:               var(--stat-color);
-		position:            relative;
-		z-index:             1;
-		line-height:         1;
-		margin-bottom:       2px;
+		width: 100%;
+		text-align: center;
+		padding: 0;
+		border: none;
+		background: transparent;
+		color: var(--stat-color);
+		position: relative;
+		z-index: 1;
+		line-height: 1;
+		margin-bottom: 2px;
 		/* Hide browser number input spinners */
 		-moz-appearance: textfield;
-		appearance:      textfield;
+		appearance: textfield;
 	}
 
 	.stat-value-input:focus {

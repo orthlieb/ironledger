@@ -18,13 +18,13 @@ const LOG_CAP = 1000;
 // ---------------------------------------------------------------------------
 
 export interface LogEntryPayload {
-  id:      string;
-  title:   string;
-  html:    string;
-  ts:      string;
-  note?:   string;
+  id: string;
+  title: string;
+  html: string;
+  ts: string;
+  note?: string;
   source?: string;
-  roll?:   unknown;
+  roll?: unknown;
 }
 
 // ---------------------------------------------------------------------------
@@ -61,10 +61,7 @@ export async function getLog(
 // appendEntry — insert one entry, then trim to rolling cap
 // ---------------------------------------------------------------------------
 
-export async function appendEntry(
-  userId: string,
-  payload: LogEntryPayload,
-): Promise<void> {
+export async function appendEntry(userId: string, payload: LogEntryPayload): Promise<void> {
   await withUserContext(userId, async (tx) => {
     // Insert (idempotent — ON CONFLICT DO NOTHING handles duplicate entry_id)
     await tx.execute(sql`
@@ -116,10 +113,7 @@ export async function updateEntry(
 // deleteEntry — remove a single entry
 // ---------------------------------------------------------------------------
 
-export async function deleteEntry(
-  userId: string,
-  entryId: string,
-): Promise<void> {
+export async function deleteEntry(userId: string, entryId: string): Promise<void> {
   await withUserContext(userId, async (tx) => {
     await tx.execute(sql`
       DELETE FROM session_log_entries

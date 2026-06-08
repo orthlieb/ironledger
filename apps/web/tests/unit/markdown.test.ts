@@ -73,31 +73,27 @@ describe('renderNote — lists', () => {
 		expect(renderNote('1. one\n2. two')).toBe('<ol><li>one</li><li>two</li></ol>');
 	});
 	it('closes a list when a paragraph follows', () => {
-		expect(renderNote('- one\nfollowup'))
-			.toBe('<ul><li>one</li></ul><p>followup</p>');
+		expect(renderNote('- one\nfollowup')).toBe('<ul><li>one</li></ul><p>followup</p>');
 	});
 	it('switches between list types cleanly', () => {
-		expect(renderNote('- a\n1. b'))
-			.toBe('<ul><li>a</li></ul><ol><li>b</li></ol>');
+		expect(renderNote('- a\n1. b')).toBe('<ul><li>a</li></ul><ol><li>b</li></ol>');
 	});
 });
 
 describe('renderNote — XSS / escaping', () => {
 	it('escapes raw HTML inside paragraphs', () => {
-		expect(renderNote('<script>alert(1)</script>'))
-			.toBe('<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>');
+		expect(renderNote('<script>alert(1)</script>')).toBe(
+			'<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>',
+		);
 	});
 	it('escapes < > & " in plain text', () => {
-		expect(renderNote('a < b & c "d"'))
-			.toBe('<p>a &lt; b &amp; c &quot;d&quot;</p>');
+		expect(renderNote('a < b & c "d"')).toBe('<p>a &lt; b &amp; c &quot;d&quot;</p>');
 	});
 	it('escapes HTML inside bold/italic spans', () => {
-		expect(renderNote('**<img>**'))
-			.toBe('<p><strong>&lt;img&gt;</strong></p>');
+		expect(renderNote('**<img>**')).toBe('<p><strong>&lt;img&gt;</strong></p>');
 	});
 	it('escapes HTML inside list items', () => {
-		expect(renderNote('- <b>x</b>'))
-			.toBe('<ul><li>&lt;b&gt;x&lt;/b&gt;</li></ul>');
+		expect(renderNote('- <b>x</b>')).toBe('<ul><li>&lt;b&gt;x&lt;/b&gt;</li></ul>');
 	});
 });
 
@@ -112,9 +108,9 @@ describe('renderNote — vow-notes integration scenario', () => {
 			'2. survive';
 		expect(renderNote(input)).toBe(
 			'<h3>The Iron Heart</h3>' +
-			'<p>Promised to <strong>Edda</strong> the smith.</p>' +
-			'<ul><li>recover the shard</li><li><em>quietly</em></li></ul>' +
-			'<ol><li>find the cave</li><li>survive</li></ol>',
+				'<p>Promised to <strong>Edda</strong> the smith.</p>' +
+				'<ul><li>recover the shard</li><li><em>quietly</em></li></ul>' +
+				'<ol><li>find the cave</li><li>survive</li></ol>',
 		);
 	});
 });

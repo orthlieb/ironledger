@@ -30,7 +30,9 @@
 		if (!status?.postedAt) return;
 		try {
 			localStorage.setItem(dismissedKey(status.postedAt), '1');
-		} catch { /* quota exceeded / private mode — tolerate */ }
+		} catch {
+			/* quota exceeded / private mode — tolerate */
+		}
 		dismissed = true;
 	}
 
@@ -48,12 +50,9 @@
 			{status.severity === 'warning' ? '\u26A0' : '\u24D8'}
 		</span>
 		<span class="bc-text">{status.message}</span>
-		<button
-			type="button"
-			class="bc-dismiss"
-			onclick={dismiss}
-			aria-label="Dismiss announcement"
-		>&times;</button>
+		<button type="button" class="bc-dismiss" onclick={dismiss} aria-label="Dismiss announcement"
+			>&times;</button
+		>
 	</div>
 {/if}
 

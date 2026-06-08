@@ -7,6 +7,7 @@ Tracks active combat encounters (foes). Each encounter record links to a foe def
 ## Data Model
 
 ### Encounter (stored per-character)
+
 ```js
 {
   id:              string,   // crypto.randomUUID()
@@ -23,6 +24,7 @@ Tracks active combat encounters (foes). Each encounter record links to a foe def
 ```
 
 ### Foe Catalogue Entry (FoeDef)
+
 ```js
 {
   id:                 string,       // e.g. "ironsworn/bear", "delve/troll"
@@ -43,6 +45,7 @@ Tracks active combat encounters (foes). Each encounter record links to a foe def
 ## Foe Catalogue
 
 Static JSON data served via:
+
 - **API**: `GET /api/v1/catalogue/foes` (public, cached with ETag)
 - **BFF proxy**: `GET /api/catalogue/foes`
 - **Client store**: `foeStore.svelte.ts`
@@ -50,21 +53,24 @@ Static JSON data served via:
 Sources: Ironsworn core, Delve supplement, Yrt homebrew. Each foe's `source` (`base` / `delve` / `yrt`) is read from the foe definition (with id-prefix fallback in `foeStore.foeSource()`).
 
 The **Delve** and **YRT** [expansion toggles](expansion-toggles.md) filter which foes appear in the picker:
+
 - Delve off → foes from `foes_delve.json` are hidden in `FoePickerDialog`
 - YRT off → foes from `foes_yrt.json` are hidden, and any `foes_overrides_yrt.json` entries with `present: false` no longer apply to base foes
 
 `findFoe(id)` is **not** filtered — existing `FoeEncounter` records keep resolving regardless of toggle state. See [data-format.md § Foe Overrides](data-format.md#foe-overrides-expansion-extension-mechanism) for how overrides decorate or exclude base foes per active expansion.
 
 ### Ranks & Mechanics
-| Rank | Progress/Hit | Harm/Strike |
-|------|-------------|-------------|
-| Troublesome | 12 | 1 |
-| Dangerous | 8 | 2 |
-| Formidable | 4 | 3 |
-| Extreme | 2 | 4 |
-| Epic | 1 | 5 |
+
+| Rank        | Progress/Hit | Harm/Strike |
+| ----------- | ------------ | ----------- |
+| Troublesome | 12           | 1           |
+| Dangerous   | 8            | 2           |
+| Formidable  | 4            | 3           |
+| Extreme     | 2            | 4           |
+| Epic        | 1            | 5           |
 
 ### Quantities
+
 - **Solo** — base rank, one foe
 - **Pack (2-4)** — +1 rank adjustment
 - **Horde (5+)** — +2 rank adjustment
@@ -74,6 +80,7 @@ The **Delve** and **YRT** [expansion toggles](expansion-toggles.md) filter which
 ## UI Structure
 
 The Foes tab contains:
+
 - **+ New Foe** button — opens FoePickerDialog
 - Encounter cards (FoeCard) displayed in order, each showing:
   - Foe portrait, name (custom or catalogue), nature/rank/quantity badges
@@ -85,6 +92,7 @@ The Foes tab contains:
   - **Mark Vanquished** / **Return to Active** toggle
 
 ### FoePickerDialog
+
 - Searchable grid of foe tiles filtered by name and nature
 - Two modes:
   - **Encounter mode** — pick foe → confirm with quantity selector → adds encounter
@@ -95,6 +103,7 @@ The Foes tab contains:
 ## Global Context Integration
 
 The **Foe tile** in GlobalContextBar shows the active encounter's portrait, name, nature (colored), rank, harm (↑ italic when escalating), progress (↓ italic when defense active), quantity (if not solo), initiative badge, and vanquished marker. The detail panel (below the description toggle) contains:
+
 - **Escalating Harm** spinner when `foeDef.escalates`
 - **Escalating Defense** spinner when `foeDef.escalatesDefense`
 - Mini progress track with +/− buttons (mirroring defense value when active)
@@ -134,14 +143,14 @@ See [yrt/data-format-yrt.md § Escalating Defense](yrt/data-format-yrt.md#escala
 
 ## Components
 
-| Component | File | Purpose |
-|-----------|------|---------|
-| FoeCard | `components/FoeCard.svelte` | Individual encounter card |
-| FoePickerDialog | `components/FoePickerDialog.svelte` | Foe selection dialog |
+| Component       | File                                | Purpose                   |
+| --------------- | ----------------------------------- | ------------------------- |
+| FoeCard         | `components/FoeCard.svelte`         | Individual encounter card |
+| FoePickerDialog | `components/FoePickerDialog.svelte` | Foe selection dialog      |
 
 ## Stores
 
-| Store | File | Purpose |
-|-------|------|---------|
+| Store          | File                       | Purpose                      |
+| -------------- | -------------------------- | ---------------------------- |
 | encounterStore | `encounterStore.svelte.ts` | Encounter CRUD + persistence |
-| foeStore | `foeStore.svelte.ts` | Foe catalogue data + lookups |
+| foeStore       | `foeStore.svelte.ts`       | Foe catalogue data + lookups |

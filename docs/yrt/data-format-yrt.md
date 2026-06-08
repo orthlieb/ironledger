@@ -8,9 +8,9 @@ This document describes data format extensions specific to the **Yrt** homebrew 
 
 Yrt adds a **mana** resource to characters, representing Conclave spellcraft fuel (mana seeds).
 
-| Resource | Range | Color |
-|----------|-------|-------|
-| `mana` | 0–10 | amber (`#f59e0b`) |
+| Resource | Range | Color             |
+| -------- | ----- | ----------------- |
+| `mana`   | 0–10  | amber (`#f59e0b`) |
 
 Mana is a valid `data-resource` value in resource links:
 
@@ -40,13 +40,14 @@ The Touched are characters physically altered by manite exposure. Touched assets
 }
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `touchedFeatures` | boolean | When `true`, the UI shows the character's Touched feature list alongside this asset |
-| `exclusiveGroup` | string | Limits the character to owning one asset of this group at a time. All Touched assets set this to `"touched"`. Attempting to add a second Touched asset shows a user-facing error. |
-| `abilityMaxByField` | object | Maps a `customField.id` → option value → maximum enabled abilities. For Touched assets this enforces the level-gated ability rules: Pure = 0, Prime = 1, Second = 2, Third/Feral = 3. When the player lowers their level, excess checked abilities are automatically cleared. |
+| Field               | Type    | Description                                                                                                                                                                                                                                                                   |
+| ------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `touchedFeatures`   | boolean | When `true`, the UI shows the character's Touched feature list alongside this asset                                                                                                                                                                                           |
+| `exclusiveGroup`    | string  | Limits the character to owning one asset of this group at a time. All Touched assets set this to `"touched"`. Attempting to add a second Touched asset shows a user-facing error.                                                                                             |
+| `abilityMaxByField` | object  | Maps a `customField.id` → option value → maximum enabled abilities. For Touched assets this enforces the level-gated ability rules: Pure = 0, Prime = 1, Second = 2, Third/Feral = 3. When the player lowers their level, excess checked abilities are automatically cleared. |
 
 **Preamble / postamble placement for Touched assets:**
+
 - `preamble` — shown **before** the ability checkboxes (prerequisite or flavour note)
 - `postamble` — shown **after** the ability checkboxes (used for the "how many abilities you may use" note, since it belongs logically after the list)
 
@@ -82,20 +83,21 @@ Some Yrt ritual assets include a cantrip system — minor magical effects that d
 }
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `description` | string (HTML) | Extended narrative text displayed on the card between `preamble` and the ability checkboxes. Used for Conclave Ritual lore and usage guidance. Supports `<strong>`, `<br>`, and other inline HTML. |
-| `cantrips` | array | Pool of available cantrip definitions |
-| `cantrips[].key` | string | Unique cantrip identifier (kebab-case) |
-| `cantrips[].name` | string | Display name |
-| `cantrips[].desc` | string | Short description of the effect |
-| `cantripSlots` | array of numbers | Number of cantrip slots unlocked per ability tier (e.g., `[2, 2, 2]` = 2 slots per ability, 6 total when all marked) |
+| Field             | Type             | Description                                                                                                                                                                                        |
+| ----------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `description`     | string (HTML)    | Extended narrative text displayed on the card between `preamble` and the ability checkboxes. Used for Conclave Ritual lore and usage guidance. Supports `<strong>`, `<br>`, and other inline HTML. |
+| `cantrips`        | array            | Pool of available cantrip definitions                                                                                                                                                              |
+| `cantrips[].key`  | string           | Unique cantrip identifier (kebab-case)                                                                                                                                                             |
+| `cantrips[].name` | string           | Display name                                                                                                                                                                                       |
+| `cantrips[].desc` | string           | Short description of the effect                                                                                                                                                                    |
+| `cantripSlots`    | array of numbers | Number of cantrip slots unlocked per ability tier (e.g., `[2, 2, 2]` = 2 slots per ability, 6 total when all marked)                                                                               |
 
 The character selects cantrips from the pool to fill their available slots. Unlocking more abilities opens more slots.
 
 **Preamble / postamble / description placement for Ritual assets:**
 
 The card renders content in this order:
+
 1. `preamble` — prerequisite or flavour text (e.g., "If you are a Conclave ritualist.")
 2. `description` — extended narrative / usage guidance (Yrt-specific, HTML supported)
 3. Ability checkboxes (3 rows)
@@ -111,14 +113,14 @@ Ritual assets follow the same auto-enable convention as Paths: the first ability
 
 Yrt adds several oracle tables in `data/oracles/`, identified by `"group": "Yrt"`:
 
-| File | Key | Description |
-|------|-----|-------------|
-| `yrt-touched.json` | `yrtTouched` | Touched class, social rank, and description |
-| `touched-count.json` | `touchedCount` | Number of Touched features |
-| `touched-features.json` | `touchedFeatures` | Specific Touched feature types |
-| `mana-backlash.json` | `manaBacklash` | Consequences of mana overuse or failure |
-| `yrt-animal.json` | `yrtAnimal` | Animals native to the Yrt setting |
-| `freeport-denizen.json` | `freeportDenizen` | NPCs for Freeport settlements |
+| File                    | Key               | Description                                 |
+| ----------------------- | ----------------- | ------------------------------------------- |
+| `yrt-touched.json`      | `yrtTouched`      | Touched class, social rank, and description |
+| `touched-count.json`    | `touchedCount`    | Number of Touched features                  |
+| `touched-features.json` | `touchedFeatures` | Specific Touched feature types              |
+| `mana-backlash.json`    | `manaBacklash`    | Consequences of mana overuse or failure     |
+| `yrt-animal.json`       | `yrtAnimal`       | Animals native to the Yrt setting           |
+| `freeport-denizen.json` | `freeportDenizen` | NPCs for Freeport settlements               |
 
 ### Freeport Denizen (structured values)
 
@@ -141,12 +143,12 @@ The freeport denizen oracle uses structured `value` objects instead of plain str
 }
 ```
 
-| Value Field | Type | Description |
-|-------------|------|-------------|
-| `type` | string | Denizen occupation or role |
-| `notes` | string | Additional details |
-| `salary` | string | Cost to hire |
-| `count` | string | Dice expression for number present |
+| Value Field | Type   | Description                        |
+| ----------- | ------ | ---------------------------------- |
+| `type`      | string | Denizen occupation or role         |
+| `notes`     | string | Additional details                 |
+| `salary`    | string | Cost to hire                       |
+| `count`     | string | Dice expression for number present |
 
 ---
 
@@ -170,14 +172,14 @@ Some Yrt foes inflict harm that starts low and worsens the longer the character 
 
 #### Foe definition fields
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `escalates` | boolean | When `true`, the foe's harm is variable. The FoeCard renders a +/− counter instead of a static Harm badge. |
-| `escalatingHarm` | object | *(Optional)* Metadata documenting escalation rules for reference. Not read by the app at runtime — the UI derives caps from `effectiveRank`. |
-| `escalatingHarm.startHarm` | number | Starting harm value (always `1`). |
-| `escalatingHarm.trigger` | string | Narrative trigger key (e.g., `"miss-endure-harm"`). |
-| `escalatingHarm.rankCaps` | object | Maps rank number → maximum harm (e.g., `{ "1": 2, "2": 3, "3": 4, "4": 5, "5": 5 }`). |
-| `escalatingHarm.removal` | string | Prose description of how to remove the foe and reset escalation. |
+| Field                      | Type    | Description                                                                                                                                  |
+| -------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `escalates`                | boolean | When `true`, the foe's harm is variable. The FoeCard renders a +/− counter instead of a static Harm badge.                                   |
+| `escalatingHarm`           | object  | _(Optional)_ Metadata documenting escalation rules for reference. Not read by the app at runtime — the UI derives caps from `effectiveRank`. |
+| `escalatingHarm.startHarm` | number  | Starting harm value (always `1`).                                                                                                            |
+| `escalatingHarm.trigger`   | string  | Narrative trigger key (e.g., `"miss-endure-harm"`).                                                                                          |
+| `escalatingHarm.rankCaps`  | object  | Maps rank number → maximum harm (e.g., `{ "1": 2, "2": 3, "3": 4, "4": 5, "5": 5 }`).                                                        |
+| `escalatingHarm.removal`   | string  | Prose description of how to remove the foe and reset escalation.                                                                             |
 
 ```json
 {
@@ -196,21 +198,21 @@ Some Yrt foes inflict harm that starts low and worsens the longer the character 
 
 #### Encounter runtime state
 
-| Field | Type | Description |
-|-------|------|-------------|
+| Field         | Type   | Description                                                                                                      |
+| ------------- | ------ | ---------------------------------------------------------------------------------------------------------------- |
 | `currentHarm` | number | Current harm level in ticks. Stored on `FoeEncounter`. Absent = `1`. Persisted with the character via auto-save. |
 
 #### Harm cap by effective rank
 
 The GCB derives the escalation ceiling from the encounter's `effectiveRank` (after quantity adjustment):
 
-| Effective Rank | Cap |
-|---|---|
-| 1 – Troublesome | 2 |
-| 2 – Dangerous | 3 |
-| 3 – Formidable | 4 |
-| 4 – Extreme | 5 |
-| 5 – Epic | 5 |
+| Effective Rank  | Cap |
+| --------------- | --- |
+| 1 – Troublesome | 2   |
+| 2 – Dangerous   | 3   |
+| 3 – Formidable  | 4   |
+| 4 – Extreme     | 5   |
+| 5 – Epic        | 5   |
 
 #### Game mechanic
 
@@ -228,15 +230,15 @@ Some Yrt foes carry a Gray-mana defense that builds up on each miss, making prog
 
 #### Foe definition fields
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `escalatesDefense` | boolean | When `true`, the foe has an escalating defense. The FoeCard renders a +/− counter and shows a `Progress: N ↓` badge when defense > 0. |
-| `escalatingDefense` | object | *(Optional)* Metadata documenting defense rules for reference. Not read by the app at runtime — the UI derives caps from `effectiveRank`. |
-| `escalatingDefense.startDefense` | number | Starting defense value (always `0`). |
-| `escalatingDefense.trigger` | string | Narrative trigger key (e.g., `"miss"`). |
-| `escalatingDefense.rankCaps` | object | Maps rank → max defense value (= `progressPerHit − 1`): `{ "1": 11, "2": 7, "3": 3, "4": 1, "5": 0 }`. |
-| `escalatingDefense.minimum` | number | Minimum defense value (always `0`). |
-| `escalatingDefense.removal` | string | Prose description of what happens when the encounter ends. |
+| Field                            | Type    | Description                                                                                                                               |
+| -------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `escalatesDefense`               | boolean | When `true`, the foe has an escalating defense. The FoeCard renders a +/− counter and shows a `Progress: N ↓` badge when defense > 0.     |
+| `escalatingDefense`              | object  | _(Optional)_ Metadata documenting defense rules for reference. Not read by the app at runtime — the UI derives caps from `effectiveRank`. |
+| `escalatingDefense.startDefense` | number  | Starting defense value (always `0`).                                                                                                      |
+| `escalatingDefense.trigger`      | string  | Narrative trigger key (e.g., `"miss"`).                                                                                                   |
+| `escalatingDefense.rankCaps`     | object  | Maps rank → max defense value (= `progressPerHit − 1`): `{ "1": 11, "2": 7, "3": 3, "4": 1, "5": 0 }`.                                    |
+| `escalatingDefense.minimum`      | number  | Minimum defense value (always `0`).                                                                                                       |
+| `escalatingDefense.removal`      | string  | Prose description of what happens when the encounter ends.                                                                                |
 
 ```json
 {
@@ -255,21 +257,21 @@ Some Yrt foes carry a Gray-mana defense that builds up on each miss, making prog
 
 #### Encounter runtime state
 
-| Field | Type | Description |
-|-------|------|-------------|
+| Field            | Type   | Description                                                                                                                                                                       |
+| ---------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `currentDefense` | number | Current defense level. Stored on `FoeEncounter`. **Absent = 0** (starts at zero, increases on each miss). Max = `progressPerHit − 1`. Persisted with the character via auto-save. |
 
 #### Defense max by effective rank
 
 Max defense = `progressPerHit − 1`, ensuring ticks per mark never drop below 1.
 
-| Effective Rank | progressPerHit | Max defense |
-|---|---|---|
-| 1 – Troublesome | 12 | 11 |
-| 2 – Dangerous | 8 | 7 |
-| 3 – Formidable | 4 | 3 |
-| 4 – Extreme | 2 | 1 |
-| 5 – Epic | 1 | 0 |
+| Effective Rank  | progressPerHit | Max defense |
+| --------------- | -------------- | ----------- |
+| 1 – Troublesome | 12             | 11          |
+| 2 – Dangerous   | 8              | 7           |
+| 3 – Formidable  | 4              | 3           |
+| 4 – Extreme     | 2              | 1           |
+| 5 – Epic        | 1              | 0           |
 
 #### Game mechanic
 
@@ -287,6 +289,7 @@ Max defense = `progressPerHit − 1`, ensuring ticks per mark never drop below 1
 All rarity names are displayed with the `RARITY:` prefix in the Iron Ledger UI — both on the asset card's rarity checkbox label and in session log entries. This applies to Ironsworn, Delve, and Yrt rarities alike.
 
 Examples in the log:
+
 - `Rarity acquired: **RARITY: Hawk's Eye Bow** for **Archer** −3 experience`
 - `Rarity removed: **RARITY: Hawk's Eye Bow** from **Archer**`
 
@@ -312,8 +315,8 @@ The Yrt asset file also includes Touched assets and ritual assets with cantrips 
 
 ## Yrt Source Files Summary
 
-| Data Type | File | Contents |
-|-----------|------|----------|
-| Assets | `data/assets/assets_yrt.json` | Yrt combat talents, companions, paths, rituals, Touched assets, and rarities |
-| Foes | `data/foes/foes_yrt.json` | Yrt-specific creatures, horrors, and NPCs |
-| Oracles | `data/oracles/yrt-*.json`, `touched-*.json`, `mana-backlash.json`, `freeport-denizen.json` | Setting-specific oracle tables |
+| Data Type | File                                                                                       | Contents                                                                     |
+| --------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| Assets    | `data/assets/assets_yrt.json`                                                              | Yrt combat talents, companions, paths, rituals, Touched assets, and rarities |
+| Foes      | `data/foes/foes_yrt.json`                                                                  | Yrt-specific creatures, horrors, and NPCs                                    |
+| Oracles   | `data/oracles/yrt-*.json`, `touched-*.json`, `mana-backlash.json`, `freeport-denizen.json` | Setting-specific oracle tables                                               |

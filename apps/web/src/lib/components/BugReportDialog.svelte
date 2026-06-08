@@ -24,44 +24,44 @@
 	let dialogEl = $state<HTMLDialogElement | null>(null);
 
 	// Form state
-	let doing     = $state('');
-	let expected  = $state('');
-	let happened  = $state('');
+	let doing = $state('');
+	let expected = $state('');
+	let happened = $state('');
 	let copyFlash = $state(false);
 
 	// Diagnostics captured at open() time — we freeze these so what's shown in
 	// the dialog is what gets sent, even if the user resizes mid-composition.
 	let diagnostics = $state<{
 		displayName: string;
-		email:       string;
-		route:       string;
-		userAgent:   string;
-		platform:    string;
-		language:    string;
-		timezone:    string;
-		viewport:    string;
-		screen:      string;
-		version:     string;
-		capturedAt:  string;
+		email: string;
+		route: string;
+		userAgent: string;
+		platform: string;
+		language: string;
+		timezone: string;
+		viewport: string;
+		screen: string;
+		version: string;
+		capturedAt: string;
 	} | null>(null);
 
 	function capture() {
 		if (typeof window === 'undefined') return;
 		// displayName isn't in the JWT payload today, so it may be absent even
 		// when signed in — fall back to email, then to "(not signed in)".
-		const hasUser = !!(user?.email);
+		const hasUser = !!user?.email;
 		diagnostics = {
 			displayName: user?.displayName || user?.email || '(not signed in)',
-			email:       hasUser ? (user!.email ?? '') : '(not signed in)',
-			route:       window.location.pathname + window.location.search,
-			userAgent:   navigator.userAgent,
-			platform:    navigator.platform,
-			language:    navigator.language,
-			timezone:    Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'unknown',
-			viewport:    `${window.innerWidth}\u00D7${window.innerHeight}`,
-			screen:      `${screen.width}\u00D7${screen.height}`,
-			version:     typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'unknown',
-			capturedAt:  new Date().toISOString(),
+			email: hasUser ? (user!.email ?? '') : '(not signed in)',
+			route: window.location.pathname + window.location.search,
+			userAgent: navigator.userAgent,
+			platform: navigator.platform,
+			language: navigator.language,
+			timezone: Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'unknown',
+			viewport: `${window.innerWidth}\u00D7${window.innerHeight}`,
+			screen: `${screen.width}\u00D7${screen.height}`,
+			version: typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'unknown',
+			capturedAt: new Date().toISOString(),
 		};
 	}
 
@@ -90,18 +90,20 @@
 			'---',
 			'Diagnostics (please keep these in your email so we can reproduce):',
 			d ? `User:         ${d.displayName} <${d.email}>` : '',
-			d ? `Route:        ${d.route}`                    : '',
-			d ? `App version:  ${d.version}`                  : '',
-			d ? `Browser:      ${d.userAgent}`                : '',
-			d ? `Platform:     ${d.platform}`                 : '',
-			d ? `Language:     ${d.language}`                 : '',
-			d ? `Timezone:     ${d.timezone}`                 : '',
-			d ? `Viewport:     ${d.viewport}`                 : '',
-			d ? `Screen:       ${d.screen}`                   : '',
-			d ? `Captured at:  ${d.capturedAt}`               : '',
+			d ? `Route:        ${d.route}` : '',
+			d ? `App version:  ${d.version}` : '',
+			d ? `Browser:      ${d.userAgent}` : '',
+			d ? `Platform:     ${d.platform}` : '',
+			d ? `Language:     ${d.language}` : '',
+			d ? `Timezone:     ${d.timezone}` : '',
+			d ? `Viewport:     ${d.viewport}` : '',
+			d ? `Screen:       ${d.screen}` : '',
+			d ? `Captured at:  ${d.capturedAt}` : '',
 			'',
 			'(Please attach a screenshot before sending, if you have one.)',
-		].filter(Boolean).join('\n');
+		]
+			.filter(Boolean)
+			.join('\n');
 		return { subject, body };
 	}
 
@@ -128,19 +130,14 @@
 	}
 
 	function reset() {
-		doing     = '';
-		expected  = '';
-		happened  = '';
+		doing = '';
+		expected = '';
+		happened = '';
 		diagnostics = null;
 	}
 </script>
 
-<dialog
-	bind:this={dialogEl}
-	class="bug-dialog"
-	onclose={reset}
-	oncancel={() => dialogEl?.close()}
->
+<dialog bind:this={dialogEl} class="bug-dialog" onclose={reset} oncancel={() => dialogEl?.close()}>
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<div class="bg-header" use:draggable>
 		<span class="drag-grip" aria-hidden="true">⠿</span>
@@ -150,8 +147,8 @@
 
 	<div class="bg-body">
 		<p class="bg-intro">
-			Tell us what happened. We'll open your email client with everything pre-filled —
-			attach a screenshot there before sending if you have one.
+			Tell us what happened. We'll open your email client with everything pre-filled — attach a
+			screenshot there before sending if you have one.
 		</p>
 
 		<label class="bg-field">
@@ -185,15 +182,24 @@
 			<details class="bg-diag">
 				<summary>Diagnostics (sent with your report)</summary>
 				<dl>
-					<dt>User</dt>       <dd>{diagnostics.displayName} &lt;{diagnostics.email}&gt;</dd>
-					<dt>Route</dt>      <dd>{diagnostics.route}</dd>
-					<dt>Version</dt>    <dd>{diagnostics.version}</dd>
-					<dt>Browser</dt>    <dd class="bg-ua">{diagnostics.userAgent}</dd>
-					<dt>Platform</dt>   <dd>{diagnostics.platform}</dd>
-					<dt>Language</dt>   <dd>{diagnostics.language}</dd>
-					<dt>Timezone</dt>   <dd>{diagnostics.timezone}</dd>
-					<dt>Viewport</dt>   <dd>{diagnostics.viewport}</dd>
-					<dt>Screen</dt>     <dd>{diagnostics.screen}</dd>
+					<dt>User</dt>
+					<dd>{diagnostics.displayName} &lt;{diagnostics.email}&gt;</dd>
+					<dt>Route</dt>
+					<dd>{diagnostics.route}</dd>
+					<dt>Version</dt>
+					<dd>{diagnostics.version}</dd>
+					<dt>Browser</dt>
+					<dd class="bg-ua">{diagnostics.userAgent}</dd>
+					<dt>Platform</dt>
+					<dd>{diagnostics.platform}</dd>
+					<dt>Language</dt>
+					<dd>{diagnostics.language}</dd>
+					<dt>Timezone</dt>
+					<dd>{diagnostics.timezone}</dd>
+					<dt>Viewport</dt>
+					<dd>{diagnostics.viewport}</dd>
+					<dt>Screen</dt>
+					<dd>{diagnostics.screen}</dd>
 				</dl>
 			</details>
 		{/if}
@@ -208,8 +214,8 @@
 			type="button"
 			class="btn btn-primary"
 			onclick={sendEmail}
-			disabled={!doing.trim() && !expected.trim() && !happened.trim()}
-		>Open email</button>
+			disabled={!doing.trim() && !expected.trim() && !happened.trim()}>Open email</button
+		>
 	</div>
 </dialog>
 
@@ -226,7 +232,9 @@
 		max-height: calc(100vh - 2rem);
 		background: var(--bg-card);
 		color: var(--text);
-		box-shadow: 0 12px 40px #00000060, 0 0 0 1px var(--border-mid);
+		box-shadow:
+			0 12px 40px #00000060,
+			0 0 0 1px var(--border-mid);
 		outline: none;
 	}
 	.bug-dialog[open] {
@@ -249,7 +257,9 @@
 		cursor: grab;
 		user-select: none;
 	}
-	.bg-header:active { cursor: grabbing; }
+	.bg-header:active {
+		cursor: grabbing;
+	}
 	.bg-title {
 		flex: 1;
 		font-family: var(--font-display);
@@ -270,7 +280,10 @@
 		cursor: pointer;
 		border-radius: 3px;
 	}
-	.bg-close:hover { color: var(--text); background: var(--bg-hover); }
+	.bg-close:hover {
+		color: var(--text);
+		background: var(--bg-hover);
+	}
 
 	.bg-body {
 		padding: 14px 16px;

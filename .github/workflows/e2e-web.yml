@@ -8,7 +8,7 @@ on:
     branches: [main]
     paths:
       - 'apps/web/**'
-      - 'apps/api/src/db/seed.ts'          # seed edits change the fixture user
+      - 'apps/api/src/db/seed.ts' # seed edits change the fixture user
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/e2e-web.yml'
@@ -31,8 +31,8 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_DB:       ironledger_test
-          POSTGRES_USER:     postgres
+          POSTGRES_DB: ironledger_test
+          POSTGRES_USER: postgres
           POSTGRES_PASSWORD: testpassword
         ports:
           - 5432:5432
@@ -53,23 +53,23 @@ jobs:
           --health-retries 5
 
     env:
-      NODE_ENV:               test
-      APP_URL:                http://localhost:5173
-      INTERNAL_API_URL:       http://localhost:3000
-      DATABASE_URL:           postgres://app_user:testpassword@localhost:5432/ironledger_test
-      DATABASE_ADMIN_URL:     postgres://app_admin:testpassword@localhost:5432/ironledger_test
-      REDIS_URL:              redis://localhost:6379
-      EMAIL_FROM:             test@example.com
-      EMAIL_PROVIDER:         resend
-      RESEND_API_KEY:         re_test
-      HCAPTCHA_SECRET:        "0x0000000000000000000000000000000000000000"
-      JWT_EXPIRES_IN:         "900"
-      REFRESH_TOKEN_TTL_DAYS: "30"
+      NODE_ENV: test
+      APP_URL: http://localhost:5173
+      INTERNAL_API_URL: http://localhost:3000
+      DATABASE_URL: postgres://app_user:testpassword@localhost:5432/ironledger_test
+      DATABASE_ADMIN_URL: postgres://app_admin:testpassword@localhost:5432/ironledger_test
+      REDIS_URL: redis://localhost:6379
+      EMAIL_FROM: test@example.com
+      EMAIL_PROVIDER: resend
+      RESEND_API_KEY: re_test
+      HCAPTCHA_SECRET: '0x0000000000000000000000000000000000000000'
+      JWT_EXPIRES_IN: '900'
+      REFRESH_TOKEN_TTL_DAYS: '30'
       # Same reasoning as ci.yml e2e: a single fixture IP runs every test,
       # so the production-default buckets would trip.
-      RATE_LIMIT_LOGIN:       "1000"
-      RATE_LIMIT_REGISTER:    "1000"
-      RATE_LIMIT_GLOBAL:      "10000"
+      RATE_LIMIT_LOGIN: '1000'
+      RATE_LIMIT_REGISTER: '1000'
+      RATE_LIMIT_GLOBAL: '10000'
 
     steps:
       - name: Checkout

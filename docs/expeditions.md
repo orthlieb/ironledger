@@ -12,6 +12,7 @@ Both use 10-box progress tracks with 4 ticks per box and a difficulty rank.
 ## Data Model
 
 ### Journey
+
 ```js
 {
   id:         string,        // crypto.randomUUID()
@@ -25,6 +26,7 @@ Both use 10-box progress tracks with 4 ticks per box and a difficulty rank.
 ```
 
 ### Site
+
 ```js
 {
   id:         string,
@@ -41,6 +43,7 @@ Both use 10-box progress tracks with 4 ticks per box and a difficulty rank.
 ```
 
 ### Discriminated Union
+
 Both types are stored in a single `expeditions` array using `type` as the discriminant: `Expedition = Journey | Site`.
 
 ---
@@ -56,17 +59,20 @@ Both types are stored in a single `expeditions` array using `type` as the discri
 ## UI Structure
 
 The Expeditions tab contains:
+
 - **+ New Journey** / **+ New Site** buttons
 - Cards displayed in insertion order, intermixed
 - Collapsible cards (JourneyCard, SiteCard) following FoeCard/VowCard patterns
 
 ### JourneyCard
+
 - Name, difficulty selector
 - Click-to-edit **markdown** notes field — renders via `renderNote()` from `$lib/markdown.js` (supports `**bold**`, `*italic*`, `# heading`, `- list`); textarea on click, rendered HTML on blur
 - 10-box progress track with +/- buttons
 - Mark Complete toggle
 
 ### SiteCard
+
 - Name, difficulty, objective fields
 - Click-to-edit **markdown** notes field (same `renderNote()` pattern as JourneyCard)
 - Theme + Domain selectors with **Features** and **Dangers** buttons inline
@@ -100,11 +106,13 @@ Journeys are part of the base game and are unaffected by either toggle.
 ## Delve Data
 
 Theme and domain feature/danger tables are served via:
+
 - **API**: `GET /api/v1/catalogue/delve` (public, cached with ETag)
 - **BFF proxy**: `GET /api/catalogue/delve`
 - **Client store**: `delveStore.svelte.ts`
 
 The store provides:
+
 - `buildCombinedTable(theme, domain, 'features' | 'dangers')` — merges theme + domain entries
 - `rollCombinedTable(theme, domain, type)` — d100 roll on the combined table
 
@@ -123,16 +131,16 @@ the right then renders the editable card.
 
 ## Components
 
-| Component | File | Purpose |
-|-----------|------|---------|
-| JourneyCard | `components/JourneyCard.svelte` | Journey expedition card |
-| SiteCard | `components/SiteCard.svelte` | Delve site card with denizen grid |
+| Component        | File                                 | Purpose                                 |
+| ---------------- | ------------------------------------ | --------------------------------------- |
+| JourneyCard      | `components/JourneyCard.svelte`      | Journey expedition card                 |
+| SiteCard         | `components/SiteCard.svelte`         | Delve site card with denizen grid       |
 | DelveTableDialog | `components/DelveTableDialog.svelte` | Combined feature/danger table with roll |
-| FoePickerDialog | `components/FoePickerDialog.svelte` | Foe picker (encounter + denizen modes) |
+| FoePickerDialog  | `components/FoePickerDialog.svelte`  | Foe picker (encounter + denizen modes)  |
 
 ## Stores
 
-| Store | File | Purpose |
-|-------|------|---------|
+| Store           | File                        | Purpose                       |
+| --------------- | --------------------------- | ----------------------------- |
 | expeditionStore | `expeditionStore.svelte.ts` | Expedition CRUD + persistence |
-| delveStore | `delveStore.svelte.ts` | Delve oracle table data |
+| delveStore      | `delveStore.svelte.ts`      | Delve oracle table data       |

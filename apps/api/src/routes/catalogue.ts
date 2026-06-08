@@ -24,8 +24,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // __dirname = apps/api/src/routes/  →  ../.. = apps/api/
 // Same relative depth from dist/routes/ after build.
 // Override with CATALOGUE_PATH in .env for custom layouts.
-const DATA_ROOT = process.env['CATALOGUE_PATH']
-  ?? path.resolve(__dirname, '../../data');
+const DATA_ROOT = process.env['CATALOGUE_PATH'] ?? path.resolve(__dirname, '../../data');
 
 // ---------------------------------------------------------------------------
 // Load data files once at startup
@@ -42,37 +41,52 @@ async function loadJson(filePath: string): Promise<unknown> {
 }
 
 function makeEtag(data: unknown): string {
-  return createHash('md5')
-    .update(JSON.stringify(data))
-    .digest('hex')
-    .slice(0, 16);
+  return createHash('md5').update(JSON.stringify(data)).digest('hex').slice(0, 16);
 }
 
 async function loadCatalogue(): Promise<{
-  assets:  CatalogueEntry;
-  moves:   CatalogueEntry;
+  assets: CatalogueEntry;
+  moves: CatalogueEntry;
   oracles: CatalogueEntry;
-  foes:    CatalogueEntry;
-  delve:   CatalogueEntry;
+  foes: CatalogueEntry;
+  delve: CatalogueEntry;
 }> {
   // Load and merge all asset files
-  const [assetsIs, assetsDelve, assetsYrt] = await Promise.all([
+  const [assetsIs, assetsDelve, assetsYrt] = (await Promise.all([
     loadJson(path.join(DATA_ROOT, 'assets/assets_ironsworn.json')),
     loadJson(path.join(DATA_ROOT, 'assets/assets_delve.json')),
     loadJson(path.join(DATA_ROOT, 'assets/assets_yrt.json')),
-  ]) as [{ assets: unknown[]; rarities?: unknown[] }, { assets: unknown[]; rarities?: unknown[] }, { assets: unknown[]; rarities?: unknown[] }];
+  ])) as [
+    { assets: unknown[]; rarities?: unknown[] },
+    { assets: unknown[]; rarities?: unknown[] },
+    { assets: unknown[]; rarities?: unknown[] },
+  ];
 
   const allAssets = {
-    assets:   [...assetsIs.assets,   ...assetsDelve.assets,   ...assetsYrt.assets],
-    rarities: [...(assetsIs.rarities   ?? []), ...(assetsDelve.rarities  ?? []), ...(assetsYrt.rarities  ?? [])],
+    assets: [...assetsIs.assets, ...assetsDelve.assets, ...assetsYrt.assets],
+    rarities: [
+      ...(assetsIs.rarities ?? []),
+      ...(assetsDelve.rarities ?? []),
+      ...(assetsYrt.rarities ?? []),
+    ],
   };
 
   // Load all move files
-  const moveFiles = ['adventure', 'combat', 'delve', 'failure', 'fate',
-                     'quest', 'rarity', 'relationship', 'suffer', 'yrt'];
-  const moveData = await Promise.all(
+  const moveFiles = [
+    'adventure',
+    'combat',
+    'delve',
+    'failure',
+    'fate',
+    'quest',
+    'rarity',
+    'relationship',
+    'suffer',
+    'yrt',
+  ];
+  const moveData = (await Promise.all(
     moveFiles.map((f) => loadJson(path.join(DATA_ROOT, `moves/${f}.json`))),
-  ) as Array<{ category: string; moves: unknown[] }>;
+  )) as Array<{ category: string; moves: unknown[] }>;
   const allMoves = { moves: moveData.flatMap((f) => f.moves) };
 
   // Load all oracle files
@@ -85,11 +99,11 @@ async function loadCatalogue(): Promise<{
   const allOracles = { oracles: oracleData };
 
   // Load and merge all foe files
-  const [foesIs, foesDelve, foesYrt] = await Promise.all([
+  const [foesIs, foesDelve, foesYrt] = (await Promise.all([
     loadJson(path.join(DATA_ROOT, 'foes/foes_ironsworn.json')),
     loadJson(path.join(DATA_ROOT, 'foes/foes_delve.json')),
     loadJson(path.join(DATA_ROOT, 'foes/foes_yrt.json')),
-  ]) as [{ foes: unknown[] }, { foes: unknown[] }, { foes: unknown[] }];
+  ])) as [{ foes: unknown[] }, { foes: unknown[] }, { foes: unknown[] }];
 
   // Load any foes_overrides_*.json in the foes dir.
   // Each file defines one expansion's overrides (present/absent + addendum)
@@ -107,22 +121,23 @@ async function loadCatalogue(): Promise<{
   };
 
   // Load delve oracle tables (theme/domain features + dangers + shared danger tail)
-  const [themeFeatures, themeDangers, domainFeatures, domainDangers, commonDangers] = await Promise.all([
-    loadJson(path.join(DATA_ROOT, 'delve/delve-theme-features.json')),
-    loadJson(path.join(DATA_ROOT, 'delve/delve-theme-dangers.json')),
-    loadJson(path.join(DATA_ROOT, 'delve/delve-domain-features.json')),
-    loadJson(path.join(DATA_ROOT, 'delve/delve-domain-dangers.json')),
-    loadJson(path.join(DATA_ROOT, 'delve/delve-common-dangers.json')),
-  ]);
+  const [themeFeatures, themeDangers, domainFeatures, domainDangers, commonDangers] =
+    await Promise.all([
+      loadJson(path.join(DATA_ROOT, 'delve/delve-theme-features.json')),
+      loadJson(path.join(DATA_ROOT, 'delve/delve-theme-dangers.json')),
+      loadJson(path.join(DATA_ROOT, 'delve/delve-domain-features.json')),
+      loadJson(path.join(DATA_ROOT, 'delve/delve-domain-dangers.json')),
+      loadJson(path.join(DATA_ROOT, 'delve/delve-common-dangers.json')),
+    ]);
 
   const allDelve = { themeFeatures, themeDangers, domainFeatures, domainDangers, commonDangers };
 
   return {
-    assets:  { data: allAssets,  etag: makeEtag(allAssets)  },
-    moves:   { data: allMoves,   etag: makeEtag(allMoves)   },
+    assets: { data: allAssets, etag: makeEtag(allAssets) },
+    moves: { data: allMoves, etag: makeEtag(allMoves) },
     oracles: { data: allOracles, etag: makeEtag(allOracles) },
-    foes:    { data: allFoes,    etag: makeEtag(allFoes)    },
-    delve:   { data: allDelve,   etag: makeEtag(allDelve)   },
+    foes: { data: allFoes, etag: makeEtag(allFoes) },
+    delve: { data: allDelve, etag: makeEtag(allDelve) },
   };
 }
 
@@ -136,7 +151,7 @@ export const catalogueRoutes: FastifyPluginAsyncZod = async (server) => {
 
   function sendCatalogueItem(
     entry: CatalogueEntry,
-    req:   FastifyRequest,
+    req: FastifyRequest,
     reply: FastifyReply,
   ): void {
     // Return 304 Not Modified if the client already has this version
@@ -146,17 +161,20 @@ export const catalogueRoutes: FastifyPluginAsyncZod = async (server) => {
     }
 
     reply
-      .header('ETag',          entry.etag)
-      .header('Cache-Control', process.env.NODE_ENV === 'production'
-        ? 'public, max-age=3600, stale-while-revalidate=86400'
-        : 'no-store')
+      .header('ETag', entry.etag)
+      .header(
+        'Cache-Control',
+        process.env.NODE_ENV === 'production'
+          ? 'public, max-age=3600, stale-while-revalidate=86400'
+          : 'no-store',
+      )
       .status(200)
       .send(entry.data);
   }
 
-  server.get('/assets',  (req, reply) => sendCatalogueItem(catalogue.assets,  req, reply));
-  server.get('/moves',   (req, reply) => sendCatalogueItem(catalogue.moves,   req, reply));
+  server.get('/assets', (req, reply) => sendCatalogueItem(catalogue.assets, req, reply));
+  server.get('/moves', (req, reply) => sendCatalogueItem(catalogue.moves, req, reply));
   server.get('/oracles', (req, reply) => sendCatalogueItem(catalogue.oracles, req, reply));
-  server.get('/foes',    (req, reply) => sendCatalogueItem(catalogue.foes,    req, reply));
-  server.get('/delve',   (req, reply) => sendCatalogueItem(catalogue.delve,   req, reply));
-}
+  server.get('/foes', (req, reply) => sendCatalogueItem(catalogue.foes, req, reply));
+  server.get('/delve', (req, reply) => sendCatalogueItem(catalogue.delve, req, reply));
+};

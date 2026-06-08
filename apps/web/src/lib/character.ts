@@ -94,7 +94,7 @@ export function hydrateCharacterInPlace(d: Record<string, unknown>): void {
  */
 export function assetDisplayName(
 	asset: { assetId: string; customValues?: Record<string, string> },
-	def:   { name: string; customFields?: Array<{ id: string; type: string }> } | undefined,
+	def: { name: string; customFields?: Array<{ id: string; type: string }> } | undefined,
 ): { text: string; custom: boolean } {
 	if (!def) return { text: asset.assetId, custom: false };
 	const nameField = (def.customFields ?? []).find((f) => f.type === 'string');
@@ -121,15 +121,22 @@ export function assetDisplayName(
  */
 export function computeAssetXpDiff(args: {
 	snapshotAbilities: boolean[];
-	draftAbilities:    boolean[];
+	draftAbilities: boolean[];
 	snapshotRarityId?: string;
-	draftRarityId?:    string;
+	draftRarityId?: string;
 	/** Returns the XP cost for a given rarity id, or 0 if unknown. */
-	rarityXpCost:      (id: string) => number;
+	rarityXpCost: (id: string) => number;
 	/** 3 in add mode (new asset purchase), 0 in edit mode. */
-	purchaseCost:      number;
+	purchaseCost: number;
 }): number {
-	const { snapshotAbilities, draftAbilities, snapshotRarityId, draftRarityId, rarityXpCost, purchaseCost } = args;
+	const {
+		snapshotAbilities,
+		draftAbilities,
+		snapshotRarityId,
+		draftRarityId,
+		rarityXpCost,
+		purchaseCost,
+	} = args;
 	let newEnables = 0;
 	for (let i = 0; i < draftAbilities.length; i++) {
 		if (!snapshotAbilities[i] && draftAbilities[i]) newEnables++;

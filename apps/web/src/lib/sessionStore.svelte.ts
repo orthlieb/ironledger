@@ -15,14 +15,17 @@
 // ---------------------------------------------------------------------------
 
 export interface SessionState {
-	charId:       string;
-	foeId:        string;
+	charId: string;
+	foeId: string;
 	expeditionId: string;
-	activeTab:    string;
+	activeTab: string;
 }
 
 export const DEFAULT_SESSION_STATE: SessionState = {
-	charId: '', foeId: '', expeditionId: '', activeTab: '',
+	charId: '',
+	foeId: '',
+	expeditionId: '',
+	activeTab: '',
 };
 
 // ---------------------------------------------------------------------------
@@ -74,10 +77,10 @@ export function saveSessionState(state: SessionState): void {
 	_saveTimer = setTimeout(async () => {
 		try {
 			const res = await fetch('/api/session/state', {
-				method:      'PATCH',
+				method: 'PATCH',
 				credentials: 'include',
-				headers:     { 'Content-Type': 'application/json' },
-				body:        JSON.stringify({ sessionState: state }),
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ sessionState: state }),
 			});
 			if (!res.ok) {
 				console.error('[sessionStore] Save failed:', res.status);

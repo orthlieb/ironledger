@@ -37,31 +37,31 @@ import { assertPasswordNotPwned } from '../lib/hibp.js';
 type InviteStatus = 'pending' | 'accepted' | 'revoked' | 'expired';
 
 interface AdminInvite {
-  id:              string;
-  email:           string;
-  displayName:     string | null;
-  role:            string;
-  invitedBy:       string | null;
-  expiresAt:       string;
-  acceptedAt:      string | null;
-  acceptedUserId:  string | null;
-  revokedAt:       string | null;
-  createdAt:       string;
-  status:          InviteStatus;
+  id: string;
+  email: string;
+  displayName: string | null;
+  role: string;
+  invitedBy: string | null;
+  expiresAt: string;
+  acceptedAt: string | null;
+  acceptedUserId: string | null;
+  revokedAt: string | null;
+  createdAt: string;
+  status: InviteStatus;
 }
 
 interface InvitePreview {
-  email:       string;
+  email: string;
   displayName: string | null;
-  expiresAt:   string;
+  expiresAt: string;
 }
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const INVITE_TTL_MS = 72 * 60 * 60 * 1000;   // 72 hours
-const TOKEN_BYTES   = 32;                    // 256 bits, 64 hex chars
+const INVITE_TTL_MS = 72 * 60 * 60 * 1000; // 72 hours
+const TOKEN_BYTES = 32; // 256 bits, 64 hex chars
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -73,32 +73,32 @@ function requireAdminDb() {
 }
 
 function generateInviteToken(): { raw: string; hash: string; expiresAt: Date } {
-  const raw       = randomBytes(TOKEN_BYTES).toString('hex');
-  const hash      = hashToken(raw);
+  const raw = randomBytes(TOKEN_BYTES).toString('hex');
+  const hash = hashToken(raw);
   const expiresAt = new Date(Date.now() + INVITE_TTL_MS);
   return { raw, hash, expiresAt };
 }
 
 function deriveStatus(row: UserInvite): InviteStatus {
-  if (row.revokedAt)            return 'revoked';
-  if (row.acceptedAt)           return 'accepted';
+  if (row.revokedAt) return 'revoked';
+  if (row.acceptedAt) return 'accepted';
   if (row.expiresAt < new Date()) return 'expired';
   return 'pending';
 }
 
 function toAdminInvite(row: UserInvite): AdminInvite {
   return {
-    id:             row.id,
-    email:          row.email,
-    displayName:    row.displayName,
-    role:           row.role,
-    invitedBy:      row.invitedBy,
-    expiresAt:      row.expiresAt.toISOString(),
-    acceptedAt:     row.acceptedAt?.toISOString() ?? null,
+    id: row.id,
+    email: row.email,
+    displayName: row.displayName,
+    role: row.role,
+    invitedBy: row.invitedBy,
+    expiresAt: row.expiresAt.toISOString(),
+    acceptedAt: row.acceptedAt?.toISOString() ?? null,
     acceptedUserId: row.acceptedUserId,
-    revokedAt:      row.revokedAt?.toISOString() ?? null,
-    createdAt:      row.createdAt.toISOString(),
-    status:         deriveStatus(row),
+    revokedAt: row.revokedAt?.toISOString() ?? null,
+    createdAt: row.createdAt.toISOString(),
+    status: deriveStatus(row),
   };
 }
 
@@ -107,9 +107,9 @@ function toAdminInvite(row: UserInvite): AdminInvite {
 // ---------------------------------------------------------------------------
 
 export interface CreateInviteInput {
-  email:        string;
+  email: string;
   displayName?: string;
-  invitedBy:    string;   // admin's user id
+  invitedBy: string; // admin's user id
 }
 
 export async function createInvite(
@@ -117,7 +117,7 @@ export async function createInvite(
 ): Promise<{ invite: AdminInvite; rawToken: string }> {
   const db = requireAdminDb();
 
-  const email       = input.email.toLowerCase().trim();
+  const email = input.email.toLowerCase().trim();
   const displayName = input.displayName?.trim() || null;
 
   // Hard 400 on already-registered email. Endpoint is behind requireAdmin, so
@@ -140,9 +140,9 @@ export async function createInvite(
     .values({
       email,
       displayName,
-      role:       'user',
-      tokenHash:  hash,
-      invitedBy:  input.invitedBy,
+      role: 'user',
+      tokenHash: hash,
+      invitedBy: input.invitedBy,
       expiresAt,
     })
     .returning();
@@ -159,11 +159,7 @@ export async function createInvite(
 export async function listInvites(): Promise<AdminInvite[]> {
   const db = requireAdminDb();
 
-  const rows = await db
-    .select()
-    .from(userInvites)
-    .orderBy(userInvites.createdAt)
-    .limit(200);   // generous cap; pending invites should never be this many
+  const rows = await db.select().from(userInvites).orderBy(userInvites.createdAt).limit(200); // generous cap; pending invites should never be this many
 
   return rows.map(toAdminInvite);
 }
@@ -221,15 +217,17 @@ export async function getInvitePreview(rawToken: string): Promise<InvitePreview>
     .where(eq(userInvites.tokenHash, hashToken(rawToken)))
     .limit(1);
 
-  if (!row)                               throw new AuthError('Invalid invitation link', 'TOKEN_INVALID', 400);
-  if (row.revokedAt)                      throw new AuthError('This invitation has been revoked', 'TOKEN_REVOKED', 400);
-  if (row.acceptedAt)                     throw new AuthError('This invitation has already been used', 'TOKEN_USED', 400);
-  if (row.expiresAt < new Date())         throw new AuthError('This invitation has expired', 'TOKEN_EXPIRED', 400);
+  if (!row) throw new AuthError('Invalid invitation link', 'TOKEN_INVALID', 400);
+  if (row.revokedAt) throw new AuthError('This invitation has been revoked', 'TOKEN_REVOKED', 400);
+  if (row.acceptedAt)
+    throw new AuthError('This invitation has already been used', 'TOKEN_USED', 400);
+  if (row.expiresAt < new Date())
+    throw new AuthError('This invitation has expired', 'TOKEN_EXPIRED', 400);
 
   return {
-    email:       row.email,
+    email: row.email,
     displayName: row.displayName,
-    expiresAt:   row.expiresAt.toISOString(),
+    expiresAt: row.expiresAt.toISOString(),
   };
 }
 
@@ -238,10 +236,10 @@ export async function getInvitePreview(rawToken: string): Promise<InvitePreview>
 // ---------------------------------------------------------------------------
 
 export interface AcceptInviteResult {
-  user:         { id: string; email: string; role: string; displayName: string };
-  accessToken:  string;
+  user: { id: string; email: string; role: string; displayName: string };
+  accessToken: string;
   refreshToken: string;
-  familyId:     string;
+  familyId: string;
 }
 
 export async function acceptInvite(
@@ -258,10 +256,13 @@ export async function acceptInvite(
     .where(eq(userInvites.tokenHash, hashToken(rawToken)))
     .limit(1);
 
-  if (!invite)                         throw new AuthError('Invalid invitation link', 'TOKEN_INVALID', 400);
-  if (invite.revokedAt)                throw new AuthError('This invitation has been revoked', 'TOKEN_REVOKED', 400);
-  if (invite.acceptedAt)               throw new AuthError('This invitation has already been used', 'TOKEN_USED', 400);
-  if (invite.expiresAt < new Date())   throw new AuthError('This invitation has expired', 'TOKEN_EXPIRED', 400);
+  if (!invite) throw new AuthError('Invalid invitation link', 'TOKEN_INVALID', 400);
+  if (invite.revokedAt)
+    throw new AuthError('This invitation has been revoked', 'TOKEN_REVOKED', 400);
+  if (invite.acceptedAt)
+    throw new AuthError('This invitation has already been used', 'TOKEN_USED', 400);
+  if (invite.expiresAt < new Date())
+    throw new AuthError('This invitation has expired', 'TOKEN_EXPIRED', 400);
 
   // Belt-and-braces: if the email got registered through some other path
   // (e.g. an old verification link), refuse rather than silently orphan the
@@ -280,13 +281,10 @@ export async function acceptInvite(
 
   // Display name: accept override from the form, fall back to stored, fall
   // back to email — mirrors the registration default.
-  const displayName =
-    displayNameOverride?.trim() ||
-    invite.displayName?.trim() ||
-    invite.email;
+  const displayName = displayNameOverride?.trim() || invite.displayName?.trim() || invite.email;
 
-  const familyId  = generateFamilyId();
-  const refresh   = generateRefreshToken();
+  const familyId = generateFamilyId();
+  const refresh = generateRefreshToken();
   const rtExpires = refreshTokenExpiresAt();
 
   // Create user + mark invite accepted + issue refresh token in one txn.
@@ -294,17 +292,17 @@ export async function acceptInvite(
     const [newUser] = await tx
       .insert(users)
       .values({
-        email:           invite.email,
+        email: invite.email,
         displayName,
         passwordHash,
-        emailVerifiedAt: new Date(),   // invitee proved email ownership by clicking the link
-        isActive:        true,
-        role:            invite.role,  // 'user' — admin-role invites are rejected at create time
+        emailVerifiedAt: new Date(), // invitee proved email ownership by clicking the link
+        isActive: true,
+        role: invite.role, // 'user' — admin-role invites are rejected at create time
       })
       .returning({
-        id:          users.id,
-        email:       users.email,
-        role:        users.role,
+        id: users.id,
+        email: users.email,
+        role: users.role,
         displayName: users.displayName,
       });
 
@@ -313,18 +311,18 @@ export async function acceptInvite(
     await tx
       .update(userInvites)
       .set({
-        acceptedAt:     new Date(),
+        acceptedAt: new Date(),
         acceptedUserId: newUser.id,
       })
       .where(
         and(
           eq(userInvites.id, invite.id),
-          isNull(userInvites.acceptedAt),   // guard against race
+          isNull(userInvites.acceptedAt), // guard against race
         ),
       );
 
     await tx.insert(refreshTokens).values({
-      userId:    newUser.id,
+      userId: newUser.id,
       tokenHash: refresh.hash,
       familyId,
       expiresAt: rtExpires,
@@ -336,7 +334,7 @@ export async function acceptInvite(
   const accessToken = await signAccessToken(created.id, created.email, created.role);
 
   return {
-    user:         created,
+    user: created,
     accessToken,
     refreshToken: refresh.raw,
     familyId,

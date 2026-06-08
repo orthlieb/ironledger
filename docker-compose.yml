@@ -18,17 +18,17 @@ services:
   postgres:
     image: postgres:17-alpine
     environment:
-      POSTGRES_USER:     app_admin
+      POSTGRES_USER: app_admin
       POSTGRES_PASSWORD: changeme
-      POSTGRES_DB:       ironledger
+      POSTGRES_DB: ironledger
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
       # Create app_user on first boot
       - ./docker/postgres-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U app_admin -d ironledger"]
+      test: ['CMD-SHELL', 'pg_isready -U app_admin -d ironledger']
       interval: 5s
       timeout: 5s
       retries: 10
@@ -36,9 +36,9 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - '6379:6379'
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
       timeout: 3s
       retries: 10

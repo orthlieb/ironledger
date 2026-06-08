@@ -4,55 +4,33 @@
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/secure-an-advantage"
-        ]
+        "moves": ["move/secure-an-advantage"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/strike",
-          "move/clash"
-        ]
+        "moves": ["move/strike", "move/clash"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/resupply"
-        ]
+        "moves": ["move/resupply"]
       }
     ],
-    "allMoves": [
-      "move/secure-an-advantage",
-      "move/strike",
-      "move/clash",
-      "move/resupply"
-    ]
+    "allMoves": ["move/secure-an-advantage", "move/strike", "move/clash", "move/resupply"]
   },
   {
     "id": "combat/berserker",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/secure-an-advantage",
-          "move/compel"
-        ]
+        "moves": ["move/secure-an-advantage", "move/compel"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/strike",
-          "move/clash",
-          "move/endure-harm",
-          "move/endure-stress"
-        ]
+        "moves": ["move/strike", "move/clash", "move/endure-harm", "move/endure-stress"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/endure-harm"
-        ]
+        "moves": ["move/endure-harm"]
       }
     ],
     "allMoves": [
@@ -69,113 +47,69 @@
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/secure-an-advantage"
-        ]
+        "moves": ["move/secure-an-advantage"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/strike"
-        ]
+        "moves": ["move/strike"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/face-danger",
-          "move/clash"
-        ]
+        "moves": ["move/face-danger", "move/clash"]
       }
     ],
-    "allMoves": [
-      "move/secure-an-advantage",
-      "move/strike",
-      "move/face-danger",
-      "move/clash"
-    ]
+    "allMoves": ["move/secure-an-advantage", "move/strike", "move/face-danger", "move/clash"]
   },
   {
     "id": "combat/cutthroat",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/strike"
-        ]
+        "moves": ["move/strike"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/compel",
-          "move/face-danger"
-        ]
+        "moves": ["move/compel", "move/face-danger"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/secure-an-advantage"
-        ]
+        "moves": ["move/secure-an-advantage"]
       }
     ],
-    "allMoves": [
-      "move/strike",
-      "move/compel",
-      "move/face-danger",
-      "move/secure-an-advantage"
-    ]
+    "allMoves": ["move/strike", "move/compel", "move/face-danger", "move/secure-an-advantage"]
   },
   {
     "id": "combat/duelist",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/strike",
-          "move/clash"
-        ]
+        "moves": ["move/strike", "move/clash"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/secure-an-advantage"
-        ]
+        "moves": ["move/secure-an-advantage"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/draw-the-circle"
-        ]
+        "moves": ["move/draw-the-circle"]
       }
     ],
-    "allMoves": [
-      "move/strike",
-      "move/clash",
-      "move/secure-an-advantage",
-      "move/draw-the-circle"
-    ]
+    "allMoves": ["move/strike", "move/clash", "move/secure-an-advantage", "move/draw-the-circle"]
   },
   {
     "id": "combat/fletcher",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/secure-an-advantage"
-        ]
+        "moves": ["move/secure-an-advantage"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/resupply",
-          "move/battle"
-        ]
+        "moves": ["move/resupply", "move/battle"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/strike",
-          "move/clash"
-        ]
+        "moves": ["move/strike", "move/clash"]
       }
     ],
     "allMoves": [
@@ -191,50 +125,33 @@
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/endure-harm"
-        ]
+        "moves": ["move/endure-harm"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/clash"
-        ]
+        "moves": ["move/clash"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/compel"
-        ]
+        "moves": ["move/compel"]
       }
     ],
-    "allMoves": [
-      "move/endure-harm",
-      "move/clash",
-      "move/compel"
-    ]
+    "allMoves": ["move/endure-harm", "move/clash", "move/compel"]
   },
   {
     "id": "combat/long-arm",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/strike",
-          "move/clash"
-        ]
+        "moves": ["move/strike", "move/clash"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/secure-an-advantage"
-        ]
+        "moves": ["move/secure-an-advantage"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/undertake-a-journey"
-        ]
+        "moves": ["move/undertake-a-journey"]
       }
     ],
     "allMoves": [
@@ -249,115 +166,69 @@
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/face-danger",
-          "move/clash"
-        ]
+        "moves": ["move/face-danger", "move/clash"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/endure-stress"
-        ]
+        "moves": ["move/endure-stress"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/endure-harm"
-        ]
+        "moves": ["move/endure-harm"]
       }
     ],
-    "allMoves": [
-      "move/face-danger",
-      "move/clash",
-      "move/endure-stress",
-      "move/endure-harm"
-    ]
+    "allMoves": ["move/face-danger", "move/clash", "move/endure-stress", "move/endure-harm"]
   },
   {
     "id": "combat/skirmisher",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/face-danger",
-          "move/strike",
-          "move/clash"
-        ]
+        "moves": ["move/face-danger", "move/strike", "move/clash"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/strike",
-          "move/face-danger"
-        ]
+        "moves": ["move/strike", "move/face-danger"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/secure-an-advantage"
-        ]
+        "moves": ["move/secure-an-advantage"]
       }
     ],
-    "allMoves": [
-      "move/face-danger",
-      "move/strike",
-      "move/clash",
-      "move/secure-an-advantage"
-    ]
+    "allMoves": ["move/face-danger", "move/strike", "move/clash", "move/secure-an-advantage"]
   },
   {
     "id": "combat/slinger",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/enter-the-fray"
-        ]
+        "moves": ["move/enter-the-fray"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/strike"
-        ]
+        "moves": ["move/strike"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/secure-an-advantage"
-        ]
+        "moves": ["move/secure-an-advantage"]
       }
     ],
-    "allMoves": [
-      "move/enter-the-fray",
-      "move/strike",
-      "move/secure-an-advantage"
-    ]
+    "allMoves": ["move/enter-the-fray", "move/strike", "move/secure-an-advantage"]
   },
   {
     "id": "combat/sunderer",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/strike",
-          "move/clash"
-        ]
+        "moves": ["move/strike", "move/clash"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/compel",
-          "move/secure-an-advantage"
-        ]
+        "moves": ["move/compel", "move/secure-an-advantage"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/strike",
-          "move/clash",
-          "move/endure-stress"
-        ]
+        "moves": ["move/strike", "move/clash", "move/endure-stress"]
       }
     ],
     "allMoves": [
@@ -373,56 +244,33 @@
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/strike",
-          "move/clash"
-        ]
+        "moves": ["move/strike", "move/clash"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/clash",
-          "move/strike"
-        ]
+        "moves": ["move/clash", "move/strike"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/swear-an-iron-vow",
-          "move/endure-harm"
-        ]
+        "moves": ["move/swear-an-iron-vow", "move/endure-harm"]
       }
     ],
-    "allMoves": [
-      "move/strike",
-      "move/clash",
-      "move/swear-an-iron-vow",
-      "move/endure-harm"
-    ]
+    "allMoves": ["move/strike", "move/clash", "move/swear-an-iron-vow", "move/endure-harm"]
   },
   {
     "id": "combat/thunder-bringer",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/face-danger",
-          "move/secure-an-advantage",
-          "move/compel"
-        ]
+        "moves": ["move/face-danger", "move/secure-an-advantage", "move/compel"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/strike"
-        ]
+        "moves": ["move/strike"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/turn-the-tide",
-          "move/strike"
-        ]
+        "moves": ["move/turn-the-tide", "move/strike"]
       }
     ],
     "allMoves": [
@@ -438,52 +286,33 @@
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/resupply"
-        ]
+        "moves": ["move/resupply"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/enter-the-fray",
-          "move/strike"
-        ]
+        "moves": ["move/enter-the-fray", "move/strike"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/make-camp"
-        ]
+        "moves": ["move/make-camp"]
       }
     ],
-    "allMoves": [
-      "move/resupply",
-      "move/enter-the-fray",
-      "move/strike",
-      "move/make-camp"
-    ]
+    "allMoves": ["move/resupply", "move/enter-the-fray", "move/strike", "move/make-camp"]
   },
   {
     "id": "companion/giant-spider",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/secure-an-advantage"
-        ]
+        "moves": ["move/secure-an-advantage"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/face-danger",
-          "move/gather-information"
-        ]
+        "moves": ["move/face-danger", "move/gather-information"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/enter-the-fray"
-        ]
+        "moves": ["move/enter-the-fray"]
       }
     ],
     "allMoves": [
@@ -498,23 +327,15 @@
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/undertake-a-journey",
-          "move/resupply"
-        ]
+        "moves": ["move/undertake-a-journey", "move/resupply"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/secure-an-advantage"
-        ]
+        "moves": ["move/secure-an-advantage"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/face-danger",
-          "move/enter-the-fray"
-        ]
+        "moves": ["move/face-danger", "move/enter-the-fray"]
       }
     ],
     "allMoves": [
@@ -530,24 +351,15 @@
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/face-danger",
-          "move/undertake-a-journey"
-        ]
+        "moves": ["move/face-danger", "move/undertake-a-journey"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/enter-the-fray",
-          "move/secure-an-advantage"
-        ]
+        "moves": ["move/enter-the-fray", "move/secure-an-advantage"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/strike",
-          "move/clash"
-        ]
+        "moves": ["move/strike", "move/clash"]
       }
     ],
     "allMoves": [
@@ -564,125 +376,75 @@
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/gather-information"
-        ]
+        "moves": ["move/gather-information"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/strike",
-          "move/clash"
-        ]
+        "moves": ["move/strike", "move/clash"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/endure-stress"
-        ]
+        "moves": ["move/endure-stress"]
       }
     ],
-    "allMoves": [
-      "move/gather-information",
-      "move/strike",
-      "move/clash",
-      "move/endure-stress"
-    ]
+    "allMoves": ["move/gather-information", "move/strike", "move/clash", "move/endure-stress"]
   },
   {
     "id": "companion/kindred",
     "abilities": [
       {
         "index": 1,
-        "moves": [
-          "move/clash",
-          "move/battle",
-          "move/face-danger"
-        ]
+        "moves": ["move/clash", "move/battle", "move/face-danger"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/face-desolation"
-        ]
+        "moves": ["move/face-desolation"]
       }
     ],
-    "allMoves": [
-      "move/clash",
-      "move/battle",
-      "move/face-danger",
-      "move/face-desolation"
-    ]
+    "allMoves": ["move/clash", "move/battle", "move/face-danger", "move/face-desolation"]
   },
   {
     "id": "companion/mammoth",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/undertake-a-journey"
-        ]
+        "moves": ["move/undertake-a-journey"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/strike",
-          "move/clash"
-        ]
+        "moves": ["move/strike", "move/clash"]
       }
     ],
-    "allMoves": [
-      "move/undertake-a-journey",
-      "move/strike",
-      "move/clash"
-    ]
+    "allMoves": ["move/undertake-a-journey", "move/strike", "move/clash"]
   },
   {
     "id": "companion/owl",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/resupply",
-          "move/enter-the-fray"
-        ]
+        "moves": ["move/resupply", "move/enter-the-fray"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/face-death"
-        ]
+        "moves": ["move/face-death"]
       }
     ],
-    "allMoves": [
-      "move/resupply",
-      "move/enter-the-fray",
-      "move/face-death"
-    ]
+    "allMoves": ["move/resupply", "move/enter-the-fray", "move/face-death"]
   },
   {
     "id": "companion/raven",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/secure-an-advantage",
-          "move/face-danger"
-        ]
+        "moves": ["move/secure-an-advantage", "move/face-danger"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/face-death"
-        ]
+        "moves": ["move/face-death"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/secure-an-advantage",
-          "move/gather-information",
-          "move/compel"
-        ]
+        "moves": ["move/secure-an-advantage", "move/gather-information", "move/compel"]
       }
     ],
     "allMoves": [
@@ -698,79 +460,53 @@
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/undertake-a-journey"
-        ]
+        "moves": ["move/undertake-a-journey"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/companion-endure-harm"
-        ]
+        "moves": ["move/companion-endure-harm"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/strike"
-        ]
+        "moves": ["move/strike"]
       }
     ],
-    "allMoves": [
-      "move/undertake-a-journey",
-      "move/companion-endure-harm",
-      "move/strike"
-    ]
+    "allMoves": ["move/undertake-a-journey", "move/companion-endure-harm", "move/strike"]
   },
   {
     "id": "path/alchemist",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/face-danger"
-        ]
+        "moves": ["move/face-danger"]
       }
     ],
-    "allMoves": [
-      "move/face-danger"
-    ]
+    "allMoves": ["move/face-danger"]
   },
   {
     "id": "path/animal-kin",
     "abilities": [
       {
         "index": 1,
-        "moves": [
-          "move/forge-a-bond"
-        ]
+        "moves": ["move/forge-a-bond"]
       }
     ],
-    "allMoves": [
-      "move/forge-a-bond"
-    ]
+    "allMoves": ["move/forge-a-bond"]
   },
   {
     "id": "path/banner-sworn",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/swear-an-iron-vow",
-          "move/fulfill-your-vow"
-        ]
+        "moves": ["move/swear-an-iron-vow", "move/fulfill-your-vow"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/sojourn",
-          "move/make-camp"
-        ]
+        "moves": ["move/sojourn", "move/make-camp"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/enter-the-fray"
-        ]
+        "moves": ["move/enter-the-fray"]
       }
     ],
     "allMoves": [
@@ -786,45 +522,29 @@
     "abilities": [
       {
         "index": 1,
-        "moves": [
-          "move/endure-stress"
-        ]
+        "moves": ["move/endure-stress"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/endure-harm"
-        ]
+        "moves": ["move/endure-harm"]
       }
     ],
-    "allMoves": [
-      "move/endure-stress",
-      "move/endure-harm"
-    ]
+    "allMoves": ["move/endure-stress", "move/endure-harm"]
   },
   {
     "id": "path/blade-bound",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/enter-the-fray",
-          "move/draw-the-circle"
-        ]
+        "moves": ["move/enter-the-fray", "move/draw-the-circle"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/gather-information",
-          "move/endure-stress"
-        ]
+        "moves": ["move/gather-information", "move/endure-stress"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/strike",
-          "move/endure-stress"
-        ]
+        "moves": ["move/strike", "move/endure-stress"]
       }
     ],
     "allMoves": [
@@ -840,14 +560,10 @@
     "abilities": [
       {
         "index": 2,
-        "moves": [
-          "move/face-desolation"
-        ]
+        "moves": ["move/face-desolation"]
       }
     ],
-    "allMoves": [
-      "move/face-desolation"
-    ]
+    "allMoves": ["move/face-desolation"]
   },
   {
     "id": "path/commander",
@@ -865,16 +581,11 @@
       },
       {
         "index": 1,
-        "moves": [
-          "move/gather-information",
-          "move/resupply"
-        ]
+        "moves": ["move/gather-information", "move/resupply"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/forge-a-bond"
-        ]
+        "moves": ["move/forge-a-bond"]
       }
     ],
     "allMoves": [
@@ -894,43 +605,29 @@
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/secure-an-advantage"
-        ]
+        "moves": ["move/secure-an-advantage"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/face-danger"
-        ]
+        "moves": ["move/face-danger"]
       }
     ],
-    "allMoves": [
-      "move/secure-an-advantage",
-      "move/face-danger"
-    ]
+    "allMoves": ["move/secure-an-advantage", "move/face-danger"]
   },
   {
     "id": "path/devotant",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/secure-an-advantage"
-        ]
+        "moves": ["move/secure-an-advantage"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/swear-an-iron-vow",
-          "move/fulfill-your-vow"
-        ]
+        "moves": ["move/swear-an-iron-vow", "move/fulfill-your-vow"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/sojourn"
-        ]
+        "moves": ["move/sojourn"]
       }
     ],
     "allMoves": [
@@ -945,53 +642,33 @@
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/sojourn"
-        ]
+        "moves": ["move/sojourn"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/compel"
-        ]
+        "moves": ["move/compel"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/forge-a-bond",
-          "move/swear-an-iron-vow"
-        ]
+        "moves": ["move/forge-a-bond", "move/swear-an-iron-vow"]
       }
     ],
-    "allMoves": [
-      "move/sojourn",
-      "move/compel",
-      "move/forge-a-bond",
-      "move/swear-an-iron-vow"
-    ]
+    "allMoves": ["move/sojourn", "move/compel", "move/forge-a-bond", "move/swear-an-iron-vow"]
   },
   {
     "id": "path/fated",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/face-death",
-          "move/face-desolation",
-          "move/reach-a-milestone"
-        ]
+        "moves": ["move/face-death", "move/face-desolation", "move/reach-a-milestone"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/reach-a-milestone"
-        ]
+        "moves": ["move/reach-a-milestone"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/fulfill-your-vow"
-        ]
+        "moves": ["move/fulfill-your-vow"]
       }
     ],
     "allMoves": [
@@ -1006,72 +683,47 @@
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/swear-an-iron-vow",
-          "move/fulfill-your-vow"
-        ]
+        "moves": ["move/swear-an-iron-vow", "move/fulfill-your-vow"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/resupply"
-        ]
+        "moves": ["move/resupply"]
       }
     ],
-    "allMoves": [
-      "move/swear-an-iron-vow",
-      "move/fulfill-your-vow",
-      "move/resupply"
-    ]
+    "allMoves": ["move/swear-an-iron-vow", "move/fulfill-your-vow", "move/resupply"]
   },
   {
     "id": "path/herbalist",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/heal"
-        ]
+        "moves": ["move/heal"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/heal"
-        ]
+        "moves": ["move/heal"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/make-camp"
-        ]
+        "moves": ["move/make-camp"]
       }
     ],
-    "allMoves": [
-      "move/heal",
-      "move/make-camp"
-    ]
+    "allMoves": ["move/heal", "move/make-camp"]
   },
   {
     "id": "path/honorbound",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/turn-the-tide"
-        ]
+        "moves": ["move/turn-the-tide"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/secure-an-advantage",
-          "move/compel"
-        ]
+        "moves": ["move/secure-an-advantage", "move/compel"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/fulfill-your-vow"
-        ]
+        "moves": ["move/fulfill-your-vow"]
       }
     ],
     "allMoves": [
@@ -1086,70 +738,43 @@
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/check-your-gear"
-        ]
+        "moves": ["move/check-your-gear"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/secure-an-advantage",
-          "move/face-danger"
-        ]
+        "moves": ["move/secure-an-advantage", "move/face-danger"]
       }
     ],
-    "allMoves": [
-      "move/check-your-gear",
-      "move/secure-an-advantage",
-      "move/face-danger"
-    ]
+    "allMoves": ["move/check-your-gear", "move/secure-an-advantage", "move/face-danger"]
   },
   {
     "id": "path/infiltrator",
     "abilities": [
       {
         "index": 1,
-        "moves": [
-          "move/gather-information",
-          "move/secure-an-advantage"
-        ]
+        "moves": ["move/gather-information", "move/secure-an-advantage"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/resupply"
-        ]
+        "moves": ["move/resupply"]
       }
     ],
-    "allMoves": [
-      "move/gather-information",
-      "move/secure-an-advantage",
-      "move/resupply"
-    ]
+    "allMoves": ["move/gather-information", "move/secure-an-advantage", "move/resupply"]
   },
   {
     "id": "path/lorekeeper",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/secure-an-advantage",
-          "move/gather-information",
-          "move/ask-the-oracle"
-        ]
+        "moves": ["move/secure-an-advantage", "move/gather-information", "move/ask-the-oracle"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/swear-an-iron-vow",
-          "move/fulfill-your-vow"
-        ]
+        "moves": ["move/swear-an-iron-vow", "move/fulfill-your-vow"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/face-desolation"
-        ]
+        "moves": ["move/face-desolation"]
       }
     ],
     "allMoves": [
@@ -1166,60 +791,39 @@
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/aid-your-ally"
-        ]
+        "moves": ["move/aid-your-ally"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/endure-stress"
-        ]
+        "moves": ["move/endure-stress"]
       }
     ],
-    "allMoves": [
-      "move/aid-your-ally",
-      "move/endure-stress"
-    ]
+    "allMoves": ["move/aid-your-ally", "move/endure-stress"]
   },
   {
     "id": "path/masked",
     "abilities": [
       {
         "index": 2,
-        "moves": [
-          "move/face-death",
-          "move/face-desolation"
-        ]
+        "moves": ["move/face-death", "move/face-desolation"]
       }
     ],
-    "allMoves": [
-      "move/face-death",
-      "move/face-desolation"
-    ]
+    "allMoves": ["move/face-death", "move/face-desolation"]
   },
   {
     "id": "path/oathbreaker",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/swear-an-iron-vow",
-          "move/reach-a-milestone"
-        ]
+        "moves": ["move/swear-an-iron-vow", "move/reach-a-milestone"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/secure-an-advantage",
-          "move/compel"
-        ]
+        "moves": ["move/secure-an-advantage", "move/compel"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/fulfill-your-vow"
-        ]
+        "moves": ["move/fulfill-your-vow"]
       }
     ],
     "allMoves": [
@@ -1235,97 +839,61 @@
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/out-of-supply"
-        ]
+        "moves": ["move/out-of-supply"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/sojourn"
-        ]
+        "moves": ["move/sojourn"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/reach-your-destination"
-        ]
+        "moves": ["move/reach-your-destination"]
       }
     ],
-    "allMoves": [
-      "move/out-of-supply",
-      "move/sojourn",
-      "move/reach-your-destination"
-    ]
+    "allMoves": ["move/out-of-supply", "move/sojourn", "move/reach-your-destination"]
   },
   {
     "id": "path/pretender",
     "abilities": [
       {
         "index": 1,
-        "moves": [
-          "move/sojourn"
-        ]
+        "moves": ["move/sojourn"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/secure-an-advantage"
-        ]
+        "moves": ["move/secure-an-advantage"]
       }
     ],
-    "allMoves": [
-      "move/sojourn",
-      "move/secure-an-advantage"
-    ]
+    "allMoves": ["move/sojourn", "move/secure-an-advantage"]
   },
   {
     "id": "path/revenant",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/endure-harm",
-          "move/face-death"
-        ]
+        "moves": ["move/endure-harm", "move/face-death"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/end-the-fight",
-          "move/endure-stress"
-        ]
+        "moves": ["move/end-the-fight", "move/endure-stress"]
       }
     ],
-    "allMoves": [
-      "move/endure-harm",
-      "move/face-death",
-      "move/end-the-fight",
-      "move/endure-stress"
-    ]
+    "allMoves": ["move/endure-harm", "move/face-death", "move/end-the-fight", "move/endure-stress"]
   },
   {
     "id": "path/rider",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/heal",
-          "move/face-danger"
-        ]
+        "moves": ["move/heal", "move/face-danger"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/undertake-a-journey",
-          "move/companion-endure-harm"
-        ]
+        "moves": ["move/undertake-a-journey", "move/companion-endure-harm"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/secure-an-advantage"
-        ]
+        "moves": ["move/secure-an-advantage"]
       }
     ],
     "allMoves": [
@@ -1341,56 +909,35 @@
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/secure-an-advantage"
-        ]
+        "moves": ["move/secure-an-advantage"]
       }
     ],
-    "allMoves": [
-      "move/secure-an-advantage"
-    ]
+    "allMoves": ["move/secure-an-advantage"]
   },
   {
     "id": "path/shadow-kin",
     "abilities": [
       {
         "index": 2,
-        "moves": [
-          "move/face-death",
-          "move/swear-an-iron-vow",
-          "move/fulfill-your-vow"
-        ]
+        "moves": ["move/face-death", "move/swear-an-iron-vow", "move/fulfill-your-vow"]
       }
     ],
-    "allMoves": [
-      "move/face-death",
-      "move/swear-an-iron-vow",
-      "move/fulfill-your-vow"
-    ]
+    "allMoves": ["move/face-death", "move/swear-an-iron-vow", "move/fulfill-your-vow"]
   },
   {
     "id": "path/sighted",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/face-danger",
-          "move/gather-information"
-        ]
+        "moves": ["move/face-danger", "move/gather-information"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/compel",
-          "move/forge-a-bond",
-          "move/test-your-bond"
-        ]
+        "moves": ["move/compel", "move/forge-a-bond", "move/test-your-bond"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/secure-an-advantage"
-        ]
+        "moves": ["move/secure-an-advantage"]
       }
     ],
     "allMoves": [
@@ -1407,23 +954,15 @@
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/gather-information",
-          "move/secure-an-advantage"
-        ]
+        "moves": ["move/gather-information", "move/secure-an-advantage"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/swear-an-iron-vow",
-          "move/fulfill-your-vow"
-        ]
+        "moves": ["move/swear-an-iron-vow", "move/fulfill-your-vow"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/sojourn"
-        ]
+        "moves": ["move/sojourn"]
       }
     ],
     "allMoves": [
@@ -1439,23 +978,15 @@
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/secure-an-advantage",
-          "move/gather-information",
-          "move/endure-stress"
-        ]
+        "moves": ["move/secure-an-advantage", "move/gather-information", "move/endure-stress"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/face-death"
-        ]
+        "moves": ["move/face-death"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/fulfill-your-vow"
-        ]
+        "moves": ["move/fulfill-your-vow"]
       }
     ],
     "allMoves": [
@@ -1471,23 +1002,15 @@
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/secure-an-advantage",
-          "move/compel",
-          "move/forge-a-bond"
-        ]
+        "moves": ["move/secure-an-advantage", "move/compel", "move/forge-a-bond"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/make-camp"
-        ]
+        "moves": ["move/make-camp"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/sojourn"
-        ]
+        "moves": ["move/sojourn"]
       }
     ],
     "allMoves": [
@@ -1503,23 +1026,15 @@
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/face-danger",
-          "move/secure-an-advantage",
-          "move/compel"
-        ]
+        "moves": ["move/face-danger", "move/secure-an-advantage", "move/compel"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/gather-information"
-        ]
+        "moves": ["move/gather-information"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/forge-a-bond"
-        ]
+        "moves": ["move/forge-a-bond"]
       }
     ],
     "allMoves": [
@@ -1535,50 +1050,29 @@
     "abilities": [
       {
         "index": 1,
-        "moves": [
-          "move/swear-an-iron-vow",
-          "move/forge-a-bond"
-        ]
+        "moves": ["move/swear-an-iron-vow", "move/forge-a-bond"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/resupply",
-          "move/battle"
-        ]
+        "moves": ["move/resupply", "move/battle"]
       }
     ],
-    "allMoves": [
-      "move/swear-an-iron-vow",
-      "move/forge-a-bond",
-      "move/resupply",
-      "move/battle"
-    ]
+    "allMoves": ["move/swear-an-iron-vow", "move/forge-a-bond", "move/resupply", "move/battle"]
   },
   {
     "id": "path/waterborn",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/face-danger",
-          "move/gather-information",
-          "move/secure-an-advantage"
-        ]
+        "moves": ["move/face-danger", "move/gather-information", "move/secure-an-advantage"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/undertake-a-journey",
-          "move/make-camp",
-          "move/resupply"
-        ]
+        "moves": ["move/undertake-a-journey", "move/make-camp", "move/resupply"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/enter-the-fray"
-        ]
+        "moves": ["move/enter-the-fray"]
       }
     ],
     "allMoves": [
@@ -1596,23 +1090,15 @@
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/undertake-a-journey"
-        ]
+        "moves": ["move/undertake-a-journey"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/secure-an-advantage",
-          "move/gather-information"
-        ]
+        "moves": ["move/secure-an-advantage", "move/gather-information"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/swear-an-iron-vow",
-          "move/fulfill-your-vow"
-        ]
+        "moves": ["move/swear-an-iron-vow", "move/fulfill-your-vow"]
       }
     ],
     "allMoves": [
@@ -1628,47 +1114,29 @@
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/secure-an-advantage"
-        ]
+        "moves": ["move/secure-an-advantage"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/turn-the-tide",
-          "move/strike"
-        ]
+        "moves": ["move/turn-the-tide", "move/strike"]
       }
     ],
-    "allMoves": [
-      "move/secure-an-advantage",
-      "move/turn-the-tide",
-      "move/strike"
-    ]
+    "allMoves": ["move/secure-an-advantage", "move/turn-the-tide", "move/strike"]
   },
   {
     "id": "path/wildblood",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/face-danger",
-          "move/secure-an-advantage",
-          "move/gather-information"
-        ]
+        "moves": ["move/face-danger", "move/secure-an-advantage", "move/gather-information"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/face-danger",
-          "move/secure-an-advantage"
-        ]
+        "moves": ["move/face-danger", "move/secure-an-advantage"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/make-camp"
-        ]
+        "moves": ["move/make-camp"]
       }
     ],
     "allMoves": [
@@ -1683,18 +1151,11 @@
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/secure-an-advantage",
-          "move/face-danger"
-        ]
+        "moves": ["move/secure-an-advantage", "move/face-danger"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/compel",
-          "move/forge-a-bond",
-          "move/test-your-bond"
-        ]
+        "moves": ["move/compel", "move/forge-a-bond", "move/test-your-bond"]
       }
     ],
     "allMoves": [
@@ -1710,100 +1171,65 @@
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/ask-the-oracle"
-        ]
+        "moves": ["move/ask-the-oracle"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/undertake-a-journey"
-        ]
+        "moves": ["move/undertake-a-journey"]
       }
     ],
-    "allMoves": [
-      "move/ask-the-oracle",
-      "move/undertake-a-journey"
-    ]
+    "allMoves": ["move/ask-the-oracle", "move/undertake-a-journey"]
   },
   {
     "id": "ritual/awakening",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/face-danger"
-        ]
+        "moves": ["move/face-danger"]
       }
     ],
-    "allMoves": [
-      "move/face-danger"
-    ]
+    "allMoves": ["move/face-danger"]
   },
   {
     "id": "ritual/bind",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/endure-stress"
-        ]
+        "moves": ["move/endure-stress"]
       }
     ],
-    "allMoves": [
-      "move/endure-stress"
-    ]
+    "allMoves": ["move/endure-stress"]
   },
   {
     "id": "ritual/communion",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/ask-the-oracle",
-          "move/endure-stress"
-        ]
+        "moves": ["move/ask-the-oracle", "move/endure-stress"]
       }
     ],
-    "allMoves": [
-      "move/ask-the-oracle",
-      "move/endure-stress"
-    ]
+    "allMoves": ["move/ask-the-oracle", "move/endure-stress"]
   },
   {
     "id": "ritual/divination",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/gather-information",
-          "move/compel",
-          "move/forge-a-bond"
-        ]
+        "moves": ["move/gather-information", "move/compel", "move/forge-a-bond"]
       }
     ],
-    "allMoves": [
-      "move/gather-information",
-      "move/compel",
-      "move/forge-a-bond"
-    ]
+    "allMoves": ["move/gather-information", "move/compel", "move/forge-a-bond"]
   },
   {
     "id": "ritual/invoke",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/secure-an-advantage",
-          "move/face-danger",
-          "move/endure-stress"
-        ]
+        "moves": ["move/secure-an-advantage", "move/face-danger", "move/endure-stress"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/compel"
-        ]
+        "moves": ["move/compel"]
       }
     ],
     "allMoves": [
@@ -1818,19 +1244,11 @@
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/strike",
-          "move/clash",
-          "move/endure-stress"
-        ]
+        "moves": ["move/strike", "move/clash", "move/endure-stress"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/draw-the-circle",
-          "move/enter-the-fray",
-          "move/battle"
-        ]
+        "moves": ["move/draw-the-circle", "move/enter-the-fray", "move/battle"]
       }
     ],
     "allMoves": [
@@ -1847,75 +1265,45 @@
     "abilities": [
       {
         "index": 1,
-        "moves": [
-          "move/strike",
-          "move/clash"
-        ]
+        "moves": ["move/strike", "move/clash"]
       }
     ],
-    "allMoves": [
-      "move/strike",
-      "move/clash"
-    ]
+    "allMoves": ["move/strike", "move/clash"]
   },
   {
     "id": "ritual/scry",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/gather-information",
-          "move/endure-harm",
-          "move/endure-stress"
-        ]
+        "moves": ["move/gather-information", "move/endure-harm", "move/endure-stress"]
       }
     ],
-    "allMoves": [
-      "move/gather-information",
-      "move/endure-harm",
-      "move/endure-stress"
-    ]
+    "allMoves": ["move/gather-information", "move/endure-harm", "move/endure-stress"]
   },
   {
     "id": "ritual/shadow-walk",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/face-danger"
-        ]
+        "moves": ["move/face-danger"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/undertake-a-journey",
-          "move/endure-stress"
-        ]
+        "moves": ["move/undertake-a-journey", "move/endure-stress"]
       }
     ],
-    "allMoves": [
-      "move/face-danger",
-      "move/undertake-a-journey",
-      "move/endure-stress"
-    ]
+    "allMoves": ["move/face-danger", "move/undertake-a-journey", "move/endure-stress"]
   },
   {
     "id": "ritual/sway",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/ask-the-oracle",
-          "move/compel",
-          "move/endure-stress"
-        ]
+        "moves": ["move/ask-the-oracle", "move/compel", "move/endure-stress"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/compel",
-          "move/gather-information"
-        ]
+        "moves": ["move/compel", "move/gather-information"]
       }
     ],
     "allMoves": [
@@ -1939,9 +1327,7 @@
       },
       {
         "index": 1,
-        "moves": [
-          "move/sojourn"
-        ]
+        "moves": ["move/sojourn"]
       }
     ],
     "allMoves": [
@@ -1957,33 +1343,21 @@
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/endure-stress"
-        ]
+        "moves": ["move/endure-stress"]
       }
     ],
-    "allMoves": [
-      "move/endure-stress"
-    ]
+    "allMoves": ["move/endure-stress"]
   },
   {
     "id": "ritual/visage",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/secure-an-advantage",
-          "move/compel",
-          "move/endure-harm"
-        ]
+        "moves": ["move/secure-an-advantage", "move/compel", "move/endure-harm"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/strike",
-          "move/clash",
-          "move/battle"
-        ]
+        "moves": ["move/strike", "move/clash", "move/battle"]
       }
     ],
     "allMoves": [
@@ -2000,39 +1374,25 @@
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/ask-the-oracle"
-        ]
+        "moves": ["move/ask-the-oracle"]
       }
     ],
-    "allMoves": [
-      "move/ask-the-oracle"
-    ]
+    "allMoves": ["move/ask-the-oracle"]
   },
   {
     "id": "path/yrt-touched-feline",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/face-danger",
-          "move/secure-an-advantage",
-          "move/gather-information"
-        ]
+        "moves": ["move/face-danger", "move/secure-an-advantage", "move/gather-information"]
       },
       {
         "index": 1,
-        "moves": [
-          "move/face-danger",
-          "move/undertake-a-journey"
-        ]
+        "moves": ["move/face-danger", "move/undertake-a-journey"]
       },
       {
         "index": 2,
-        "moves": [
-          "move/secure-an-advantage",
-          "move/face-danger"
-        ]
+        "moves": ["move/secure-an-advantage", "move/face-danger"]
       }
     ],
     "allMoves": [
@@ -2058,12 +1418,7 @@
         "moves": ["move/compel"]
       }
     ],
-    "allMoves": [
-      "move/strike",
-      "move/clash",
-      "move/endure-stress",
-      "move/compel"
-    ]
+    "allMoves": ["move/strike", "move/clash", "move/endure-stress", "move/compel"]
   },
   {
     "id": "path/yrt-touched-ursine",
@@ -2081,71 +1436,47 @@
         "moves": ["move/make-camp"]
       }
     ],
-    "allMoves": [
-      "move/compel",
-      "move/face-danger",
-      "move/strike",
-      "move/clash",
-      "move/make-camp"
-    ]
+    "allMoves": ["move/compel", "move/face-danger", "move/strike", "move/clash", "move/make-camp"]
   },
   {
     "id": "ritual/yrt-cantrip",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/cast-conclave-ritual",
-          "move/pay-the-price"
-        ]
+        "moves": ["move/cast-conclave-ritual", "move/pay-the-price"]
       }
     ],
-    "allMoves": [
-      "move/cast-conclave-ritual",
-      "move/pay-the-price"
-    ]
+    "allMoves": ["move/cast-conclave-ritual", "move/pay-the-price"]
   },
   {
     "id": "ritual/yrt-arcane-inspection",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/cast-conclave-ritual"
-        ]
+        "moves": ["move/cast-conclave-ritual"]
       }
     ],
-    "allMoves": [
-      "move/cast-conclave-ritual"
-    ]
+    "allMoves": ["move/cast-conclave-ritual"]
   },
   {
     "id": "ritual/yrt-vizion-illusion",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/cast-conclave-ritual"
-        ]
+        "moves": ["move/cast-conclave-ritual"]
       }
     ],
-    "allMoves": [
-      "move/cast-conclave-ritual"
-    ]
+    "allMoves": ["move/cast-conclave-ritual"]
   },
   {
     "id": "ritual/yrt-compulsion",
     "abilities": [
       {
         "index": 0,
-        "moves": [
-          "move/cast-conclave-ritual"
-        ]
+        "moves": ["move/cast-conclave-ritual"]
       }
     ],
-    "allMoves": [
-      "move/cast-conclave-ritual"
-    ]
+    "allMoves": ["move/cast-conclave-ritual"]
   },
   {
     "id": "path/yrt-bittercraft",
@@ -2188,9 +1519,6 @@
         "moves": ["move/craft"]
       }
     ],
-    "allMoves": [
-      "move/craft",
-      "move/gather-information"
-    ]
+    "allMoves": ["move/craft", "move/gather-information"]
   }
 ]

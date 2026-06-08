@@ -20,20 +20,20 @@ import type { DelveTheme, DelveDomain } from './types.js';
 // ---------------------------------------------------------------------------
 
 interface DelveData {
-	themeFeatures:  Record<string, OracleEntry[]>;
-	themeDangers:   Record<string, OracleEntry[]>;
+	themeFeatures: Record<string, OracleEntry[]>;
+	themeDangers: Record<string, OracleEntry[]>;
 	domainFeatures: Record<string, OracleEntry[]>;
-	domainDangers:  Record<string, OracleEntry[]>;
-	commonDangers:  OracleEntry[];
+	domainDangers: Record<string, OracleEntry[]>;
+	commonDangers: OracleEntry[];
 }
 
 // ---------------------------------------------------------------------------
 // Module-level state
 // ---------------------------------------------------------------------------
 
-let _data:    DelveData | null = $state(null);
-let _loading                   = $state(false);
-let _loaded                    = false;
+let _data: DelveData | null = $state(null);
+let _loading = $state(false);
+let _loaded = false;
 
 // ---------------------------------------------------------------------------
 // Fetch
@@ -45,7 +45,7 @@ export async function loadDelveData(): Promise<void> {
 	try {
 		const res = await fetch('/api/catalogue/delve');
 		if (!res.ok) throw new Error(`Delve fetch failed: ${res.status}`);
-		_data   = (await res.json()) as DelveData;
+		_data = (await res.json()) as DelveData;
 		_loaded = true;
 	} catch (err) {
 		console.error('[delveStore] Failed to load delve data:', err);
@@ -85,18 +85,18 @@ export function getDomainDangers(domain: DelveDomain): OracleEntry[] {
  * The JSON files already have correct topRange values for combining.
  */
 export function buildCombinedTable(
-	theme:  DelveTheme,
+	theme: DelveTheme,
 	domain: DelveDomain,
-	type:   'features' | 'dangers',
+	type: 'features' | 'dangers',
 ): OracleEntry[] {
 	if (!_data) return [];
-	const themeTable  = type === 'features'
-		? (_data.themeFeatures[theme] ?? [])
-		: (_data.themeDangers[theme] ?? []);
-	const domainTable = type === 'features'
-		? (_data.domainFeatures[domain] ?? [])
-		: (_data.domainDangers[domain] ?? []);
-	const commonTail  = type === 'dangers' ? (_data.commonDangers ?? []) : [];
+	const themeTable =
+		type === 'features' ? (_data.themeFeatures[theme] ?? []) : (_data.themeDangers[theme] ?? []);
+	const domainTable =
+		type === 'features'
+			? (_data.domainFeatures[domain] ?? [])
+			: (_data.domainDangers[domain] ?? []);
+	const commonTail = type === 'dangers' ? (_data.commonDangers ?? []) : [];
 	return [...themeTable, ...domainTable, ...commonTail];
 }
 
@@ -104,9 +104,9 @@ export function buildCombinedTable(
  * Roll d100 on a combined theme+domain table.
  */
 export function rollCombinedTable(
-	theme:  DelveTheme,
+	theme: DelveTheme,
 	domain: DelveDomain,
-	type:   'features' | 'dangers',
+	type: 'features' | 'dangers',
 ): { roll: number; value: unknown } {
 	const table = buildCombinedTable(theme, domain, type);
 	if (table.length === 0) return { roll: 0, value: '(no data)' };

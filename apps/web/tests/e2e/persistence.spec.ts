@@ -20,25 +20,25 @@ import { test, expect, request as playwrightRequest } from '@playwright/test';
 import { resetAll } from './helpers/reset';
 import type { Page } from '@playwright/test';
 
-const API_BASE      = 'http://127.0.0.1:3000';
-const TEST_EMAIL    = 'test@ironledger.local';
+const API_BASE = 'http://127.0.0.1:3000';
+const TEST_EMAIL = 'test@ironledger.local';
 const TEST_PASSWORD = 'IronLedgerTest2024!';
 
-const CHAR_AREA   = '.home-area--characters';
+const CHAR_AREA = '.home-area--characters';
 const CHAR_HEADER = `${CHAR_AREA} .ca-header`;
-const CHAR_SPINE  = `${CHAR_AREA} .ca-spine`;
+const CHAR_SPINE = `${CHAR_AREA} .ca-spine`;
 
-const FOE_AREA    = '.home-area--foes';
-const FOE_HEADER  = `${FOE_AREA} .fa-header`;
-const FOE_SPINE   = `${FOE_AREA} .fa-spine`;
+const FOE_AREA = '.home-area--foes';
+const FOE_HEADER = `${FOE_AREA} .fa-header`;
+const FOE_SPINE = `${FOE_AREA} .fa-spine`;
 
-const EXP_AREA    = '.home-area--expeditions';
-const EXP_HEADER  = `${EXP_AREA} .ea-header`;
-const EXP_SPINE   = `${EXP_AREA} .ea-spine`;
+const EXP_AREA = '.home-area--expeditions';
+const EXP_HEADER = `${EXP_AREA} .ea-header`;
+const EXP_SPINE = `${EXP_AREA} .ea-spine`;
 
-const CM_AREA     = '.home-area--communities';
-const CM_HEADER   = `${CM_AREA} .cm-header`;
-const CM_SPINE    = `${CM_AREA} .cm-spine`;
+const CM_AREA = '.home-area--communities';
+const CM_HEADER = `${CM_AREA} .cm-header`;
+const CM_SPINE = `${CM_AREA} .cm-spine`;
 
 // ── Auth helpers ──────────────────────────────────────────────────────────────
 
@@ -54,18 +54,20 @@ async function loginAndGoHome(page: Page): Promise<void> {
 		data: { email: TEST_EMAIL, password: TEST_PASSWORD, captchaToken: 'dev-bypass' },
 	});
 	if (!res.ok()) throw new Error(`Re-login failed: ${res.status()} ${await res.text()}`);
-	const body = await res.json() as { accessToken: string };
+	const body = (await res.json()) as { accessToken: string };
 	await apiCtx.dispose();
 
-	await page.context().addCookies([{
-		name:     'access_token',
-		value:    body.accessToken,
-		domain:   'localhost',
-		path:     '/',
-		httpOnly: true,
-		sameSite: 'Strict',
-		secure:   false,
-	}]);
+	await page.context().addCookies([
+		{
+			name: 'access_token',
+			value: body.accessToken,
+			domain: 'localhost',
+			path: '/',
+			httpOnly: true,
+			sameSite: 'Strict',
+			secure: false,
+		},
+	]);
 
 	await page.goto('/home');
 	await page.waitForURL(/\/home/, { timeout: 10_000 });
@@ -76,25 +78,33 @@ async function loginAndGoHome(page: Page): Promise<void> {
 
 async function waitForCharactersArea(page: Page) {
 	await expect(page.locator(`${CHAR_AREA} .ca-loading`)).not.toBeVisible({ timeout: 12_000 });
-	await page.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`).first()
+	await page
+		.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`)
+		.first()
 		.waitFor({ timeout: 12_000, state: 'attached' });
 }
 
 async function waitForFoesArea(page: Page) {
 	await expect(page.locator(`${FOE_AREA} .fa-loading`)).not.toBeVisible({ timeout: 12_000 });
-	await page.locator(`${FOE_AREA} .fa-empty, ${FOE_AREA} .fa-body`).first()
+	await page
+		.locator(`${FOE_AREA} .fa-empty, ${FOE_AREA} .fa-body`)
+		.first()
 		.waitFor({ timeout: 12_000, state: 'attached' });
 }
 
 async function waitForExpeditionsArea(page: Page) {
 	await expect(page.locator(`${EXP_AREA} .ea-loading`)).not.toBeVisible({ timeout: 12_000 });
-	await page.locator(`${EXP_AREA} .ea-empty, ${EXP_AREA} .ea-body`).first()
+	await page
+		.locator(`${EXP_AREA} .ea-empty, ${EXP_AREA} .ea-body`)
+		.first()
 		.waitFor({ timeout: 12_000, state: 'attached' });
 }
 
 async function waitForCommunitiesArea(page: Page) {
 	await expect(page.locator(`${CM_AREA} .cm-loading`)).not.toBeVisible({ timeout: 12_000 });
-	await page.locator(`${CM_AREA} .cm-empty, ${CM_AREA} .cm-body`).first()
+	await page
+		.locator(`${CM_AREA} .cm-empty, ${CM_AREA} .cm-body`)
+		.first()
 		.waitFor({ timeout: 12_000, state: 'attached' });
 }
 
@@ -102,7 +112,7 @@ async function waitForCommunitiesArea(page: Page) {
 
 async function ensureCharacterSelected(page: Page): Promise<void> {
 	await waitForCharactersArea(page);
-	if (await page.locator(CHAR_SPINE).count() === 0) {
+	if ((await page.locator(CHAR_SPINE).count()) === 0) {
 		await page.locator(`${CHAR_HEADER} button:has-text("+ Character")`).click();
 		await expect(page.locator(CHAR_SPINE)).not.toHaveCount(0, { timeout: 8_000 });
 	}
@@ -115,7 +125,9 @@ async function ensureCharacterSelected(page: Page): Promise<void> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 test.describe('Data persistence across logout / login (v2)', () => {
-	test.beforeAll(async () => { await resetAll(); });
+	test.beforeAll(async () => {
+		await resetAll();
+	});
 
 	// ── 1. Characters ──────────────────────────────────────────────────────────
 
@@ -196,7 +208,7 @@ test.describe('Data persistence across logout / login (v2)', () => {
 
 		await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click();
 		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
-		const generateBtn   = page.getByRole('button', { name: /generate randomly/i });
+		const generateBtn = page.getByRole('button', { name: /generate randomly/i });
 		const createManualBtn = page.getByRole('button', { name: /create manually/i });
 		await expect(generateBtn.or(createManualBtn).first()).toBeVisible({ timeout: 5_000 });
 		if (await generateBtn.isVisible().catch(() => false)) {
@@ -222,7 +234,9 @@ test.describe('Data persistence across logout / login (v2)', () => {
 	// same first items are re-selected in all four areas — i.e. the data is
 	// preserved server-side and auto-selection restores the expected active state.
 
-	test('active character, foe, expedition, and community spine selections survive logout and login', async ({ page }) => {
+	test('active character, foe, expedition, and community spine selections survive logout and login', async ({
+		page,
+	}) => {
 		await page.goto('/home');
 		await waitForCharactersArea(page);
 		await waitForFoesArea(page);
@@ -231,30 +245,34 @@ test.describe('Data persistence across logout / login (v2)', () => {
 
 		// ── Ensure at least one item in each area ──────────────────────────────
 
-		if (await page.locator(CHAR_SPINE).count() === 0) {
+		if ((await page.locator(CHAR_SPINE).count()) === 0) {
 			await page.locator(`${CHAR_HEADER} button:has-text("+ Character")`).click();
 			await expect(page.locator(CHAR_SPINE)).not.toHaveCount(0, { timeout: 8_000 });
 		}
 
-		if (await page.locator(FOE_SPINE).count() === 0) {
+		if ((await page.locator(FOE_SPINE).count()) === 0) {
 			await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
 			await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
-			await expect(page.locator('dialog.foe-dialog .fd-tile').first()).toBeVisible({ timeout: 8_000 });
+			await expect(page.locator('dialog.foe-dialog .fd-tile').first()).toBeVisible({
+				timeout: 8_000,
+			});
 			await page.locator('dialog.foe-dialog .fd-tile').first().click();
-			await expect(page.locator('dialog.foe-dialog button:has-text("Add to Foes")')).toBeVisible({ timeout: 3_000 });
+			await expect(page.locator('dialog.foe-dialog button:has-text("Add to Foes")')).toBeVisible({
+				timeout: 3_000,
+			});
 			await page.locator('dialog.foe-dialog button:has-text("Add to Foes")').click();
 			await expect(page.locator('dialog.foe-dialog[open]')).not.toBeVisible({ timeout: 5_000 });
 			await expect(page.locator(FOE_SPINE)).not.toHaveCount(0, { timeout: 5_000 });
 		}
 
-		if (await page.locator(EXP_SPINE).count() === 0) {
+		if ((await page.locator(EXP_SPINE).count()) === 0) {
 			await page.locator(`${EXP_HEADER} button:has-text("+ Journey")`).click();
 			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
 			await page.locator('dialog.confirm-modal[open] button:has-text("Start Journey")').click();
 			await expect(page.locator(EXP_SPINE)).not.toHaveCount(0, { timeout: 5_000 });
 		}
 
-		if (await page.locator(CM_SPINE).count() === 0) {
+		if ((await page.locator(CM_SPINE).count()) === 0) {
 			await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click();
 			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
 			const generateBtn = page.getByRole('button', { name: /generate randomly/i });
@@ -278,10 +296,18 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		await expect(page.locator(`${EXP_SPINE}.ea-spine--active`)).toBeVisible({ timeout: 3_000 });
 		await expect(page.locator(`${CM_SPINE}.cm-spine--active`)).toBeVisible({ timeout: 3_000 });
 
-		const activeCharName = (await page.locator(`${CHAR_SPINE}.ca-spine--active .ca-spine-name`).first().textContent())?.trim();
-		const activeFoeName  = (await page.locator(`${FOE_SPINE}.fa-spine--active .fa-spine-name`).first().textContent())?.trim();
-		const activeExpName  = (await page.locator(`${EXP_SPINE}.ea-spine--active .ea-spine-name`).first().textContent())?.trim();
-		const activeCmName   = (await page.locator(`${CM_SPINE}.cm-spine--active .cm-spine-name`).first().textContent())?.trim();
+		const activeCharName = (
+			await page.locator(`${CHAR_SPINE}.ca-spine--active .ca-spine-name`).first().textContent()
+		)?.trim();
+		const activeFoeName = (
+			await page.locator(`${FOE_SPINE}.fa-spine--active .fa-spine-name`).first().textContent()
+		)?.trim();
+		const activeExpName = (
+			await page.locator(`${EXP_SPINE}.ea-spine--active .ea-spine-name`).first().textContent()
+		)?.trim();
+		const activeCmName = (
+			await page.locator(`${CM_SPINE}.cm-spine--active .cm-spine-name`).first().textContent()
+		)?.trim();
 
 		// Allow any debounced saves to flush.
 		await page.waitForTimeout(600);
@@ -301,10 +327,26 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		await expect(page.locator(`${EXP_SPINE}.ea-spine--active`)).toBeVisible({ timeout: 8_000 });
 		await expect(page.locator(`${CM_SPINE}.cm-spine--active`)).toBeVisible({ timeout: 8_000 });
 
-		expect((await page.locator(`${CHAR_SPINE}.ca-spine--active .ca-spine-name`).first().textContent())?.trim()).toBe(activeCharName);
-		expect((await page.locator(`${FOE_SPINE}.fa-spine--active .fa-spine-name`).first().textContent())?.trim()).toBe(activeFoeName);
-		expect((await page.locator(`${EXP_SPINE}.ea-spine--active .ea-spine-name`).first().textContent())?.trim()).toBe(activeExpName);
-		expect((await page.locator(`${CM_SPINE}.cm-spine--active .cm-spine-name`).first().textContent())?.trim()).toBe(activeCmName);
+		expect(
+			(
+				await page.locator(`${CHAR_SPINE}.ca-spine--active .ca-spine-name`).first().textContent()
+			)?.trim(),
+		).toBe(activeCharName);
+		expect(
+			(
+				await page.locator(`${FOE_SPINE}.fa-spine--active .fa-spine-name`).first().textContent()
+			)?.trim(),
+		).toBe(activeFoeName);
+		expect(
+			(
+				await page.locator(`${EXP_SPINE}.ea-spine--active .ea-spine-name`).first().textContent()
+			)?.trim(),
+		).toBe(activeExpName);
+		expect(
+			(
+				await page.locator(`${CM_SPINE}.cm-spine--active .cm-spine-name`).first().textContent()
+			)?.trim(),
+		).toBe(activeCmName);
 	});
 
 	// ── 6. Session log ────────────────────────────────────────────────────────
@@ -316,22 +358,27 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		const uniqueText = `E2E persistence ${Date.now()}`;
 
 		// Add a Note via the app-nav Note button.
-		await page.getByRole('button', { name: /^note$/i }).first().click();
+		await page
+			.getByRole('button', { name: /^note$/i })
+			.first()
+			.click();
 		await expect(page.locator('.notes-dialog[open]')).toBeVisible({ timeout: 3_000 });
 		await page.locator('.notes-dialog .nd-textarea').fill(uniqueText);
 		await page.locator('.notes-dialog .nd-add-btn').click();
 		await expect(page.locator('.notes-dialog[open]')).not.toBeVisible({ timeout: 3_000 });
 
-		await expect(page.locator('.log-entry').filter({ hasText: uniqueText }))
-			.toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.log-entry').filter({ hasText: uniqueText })).toBeVisible({
+			timeout: 5_000,
+		});
 
 		await page.waitForTimeout(1_200);
 
 		await logout(page);
 		await loginAndGoHome(page);
 
-		await expect(page.locator('.log-entry').filter({ hasText: uniqueText }))
-			.toBeVisible({ timeout: 10_000 });
+		await expect(page.locator('.log-entry').filter({ hasText: uniqueText })).toBeVisible({
+			timeout: 10_000,
+		});
 	});
 
 	// ── Cleanup ───────────────────────────────────────────────────────────────

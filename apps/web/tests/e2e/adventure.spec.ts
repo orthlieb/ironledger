@@ -13,15 +13,17 @@
 import { test, expect } from '@playwright/test';
 import { resetCharacters, seedCharacter } from './helpers/reset';
 
-const CHAR_AREA   = '.home-area--characters';
+const CHAR_AREA = '.home-area--characters';
 const CHAR_HEADER = `${CHAR_AREA} .ca-header`;
-const CHAR_SPINE  = `${CHAR_AREA} .ca-spine`;
+const CHAR_SPINE = `${CHAR_AREA} .ca-spine`;
 
-const APP_NAV     = '.app-nav';
+const APP_NAV = '.app-nav';
 
 async function waitForCharactersArea(page: import('@playwright/test').Page) {
 	await expect(page.locator(`${CHAR_AREA} .ca-loading`)).not.toBeVisible({ timeout: 12_000 });
-	await page.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`).first()
+	await page
+		.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`)
+		.first()
 		.waitFor({ timeout: 12_000, state: 'attached' });
 }
 
@@ -36,7 +38,7 @@ test.describe('Adventure-action dialogs (v2)', () => {
 		await waitForCharactersArea(page);
 
 		// Ensure at least one character exists.
-		if (await page.locator(CHAR_SPINE).count() === 0) {
+		if ((await page.locator(CHAR_SPINE).count()) === 0) {
 			await page.locator(`${CHAR_HEADER} button:has-text("+ Character")`).click();
 			await expect(page.locator(CHAR_SPINE)).not.toHaveCount(0, { timeout: 8_000 });
 		}
@@ -144,6 +146,8 @@ test.describe('Adventure-action dialogs (v2)', () => {
 		await page.locator('.notes-dialog .nd-add-btn').click();
 		await expect(page.locator('.notes-dialog[open]')).not.toBeVisible({ timeout: 3_000 });
 		// Verify the note text appears in the newest log entry (log is newest-first).
-		await expect(page.locator('.log-entry').first()).toContainText('E2E test note', { timeout: 5_000 });
+		await expect(page.locator('.log-entry').first()).toContainText('E2E test note', {
+			timeout: 5_000,
+		});
 	});
 });

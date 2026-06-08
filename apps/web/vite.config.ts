@@ -1,7 +1,7 @@
 import { sveltekit } from '@sveltejs/kit/vite';
-import { defineConfig }  from 'vite';
-import { readFileSync }  from 'fs';
-import { execSync }      from 'child_process';
+import { defineConfig } from 'vite';
+import { readFileSync } from 'fs';
+import { execSync } from 'child_process';
 
 const { version } = JSON.parse(readFileSync('package.json', 'utf-8')) as { version: string };
 
@@ -28,6 +28,6 @@ export default defineConfig({
 	define: {
 		// Replaced at build time — read in admin panel to show version/deploy info.
 		__APP_VERSION__: JSON.stringify(version),
-		__BUILD_DATE__:  JSON.stringify(buildDate),
+		__BUILD_DATE__: JSON.stringify(buildDate),
 	},
 });

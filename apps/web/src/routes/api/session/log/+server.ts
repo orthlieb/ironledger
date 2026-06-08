@@ -16,10 +16,9 @@ function authHeader(locals: App.Locals): Record<string, string> {
 
 export const GET: RequestHandler = async ({ locals, url }) => {
 	const params = url.searchParams.toString();
-	const res = await fetch(
-		`${INTERNAL_API_URL}/api/v1/session/log${params ? '?' + params : ''}`,
-		{ headers: authHeader(locals) },
-	);
+	const res = await fetch(`${INTERNAL_API_URL}/api/v1/session/log${params ? '?' + params : ''}`, {
+		headers: authHeader(locals),
+	});
 	return new Response(res.body, {
 		status: res.status,
 		headers: { 'Content-Type': 'application/json' },

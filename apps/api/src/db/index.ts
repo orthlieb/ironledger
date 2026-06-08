@@ -19,8 +19,8 @@ import * as schema from './schema.js';
 // ---------------------------------------------------------------------------
 
 export const pool = postgres(config.DATABASE_URL, {
-  max:         10,
-  idle_timeout: 30,   // close idle connections after 30s
+  max: 10,
+  idle_timeout: 30, // close idle connections after 30s
   connect_timeout: 10, // fail fast if DB is unreachable
 });
 
@@ -31,9 +31,7 @@ export const adminPool = config.DATABASE_ADMIN_URL
   ? postgres(config.DATABASE_ADMIN_URL, { max: 1 })
   : null;
 
-export const adminDb = adminPool
-  ? drizzle(adminPool, { schema })
-  : null;
+export const adminDb = adminPool ? drizzle(adminPool, { schema }) : null;
 
 // ---------------------------------------------------------------------------
 // RLS context injection

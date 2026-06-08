@@ -12,12 +12,12 @@ Implemented in `apps/web/src/routes/home/+page.svelte` (`handleTabBodyTouchStart
 
 A horizontal swipe on the tab body advances or retreats one tab. Swipes clamp at each end — there is no wrap-around.
 
-| Parameter | Value |
-|---|---|
-| Minimum horizontal distance | 60 px |
-| Direction ratio (\|dx\| / \|dy\|) | > 1.5 |
-| Maximum gesture duration | 600 ms |
-| Multi-finger gestures | Ignored |
+| Parameter                         | Value   |
+| --------------------------------- | ------- |
+| Minimum horizontal distance       | 60 px   |
+| Direction ratio (\|dx\| / \|dy\|) | > 1.5   |
+| Maximum gesture duration          | 600 ms  |
+| Multi-finger gestures             | Ignored |
 
 Admin users swipe through `[...TABS, 'admin']` where `TABS = ['characters', 'foes', 'expeditions', 'communities', 'adventure']`. Non-admins don't see `admin` in the order, so a swipe can never land there.
 
@@ -52,10 +52,10 @@ Below 768px the layout rotates: **GCB on top, log below, drag-to-resize horizont
 
 The session log is rendered by `LogPanel.svelte` and lives **inside the Adventure tab** in both layouts — there is no separate Log tab.
 
-| Viewport | Log position |
-|---|---|
+| Viewport | Log position                                                                                    |
+| -------- | ----------------------------------------------------------------------------------------------- |
 | ≥ 768 px | Right-hand column of the Adventure tab, side-by-side with the GCB (drag-to-resize horizontally) |
-| < 768 px | Bottom panel of the Adventure tab, below the GCB (drag-to-resize vertically) |
+| < 768 px | Bottom panel of the Adventure tab, below the GCB (drag-to-resize vertically)                    |
 
 The log store is a module-level `$state`, so entries persist across tab switches and only need a single mount.
 
@@ -68,9 +68,9 @@ The log store is a module-level `$state`, so entries persist across tab switches
 Fix: definite height using dynamic viewport units.
 
 ```css
-height: min(85dvh, 720px);   /* FoePickerDialog, OraclesDialog */
-height: min(84dvh, 720px);   /* MovesDialog */
-width:  min(calc(100vw - 1rem), …);
+height: min(85dvh, 720px); /* FoePickerDialog, OraclesDialog */
+height: min(84dvh, 720px); /* MovesDialog */
+width: min(calc(100vw - 1rem), …);
 ```
 
 `dvh` (dynamic viewport height) accounts for mobile browser chrome showing and hiding. `vh` would over-size the dialog when the URL bar is visible.
@@ -97,10 +97,19 @@ On Surface-Duo-class screens (540 px inner width in portrait), labels don't fit 
 
 ```css
 @media (max-width: 540px) {
-    .tab-label { display: none; }
-    .tab-btn { padding: 10px 12px 8px; gap: 0; }
-    .tab-btn.active { gap: 0.35rem; }
-    .tab-btn.active .tab-label { display: inline; }
+  .tab-label {
+    display: none;
+  }
+  .tab-btn {
+    padding: 10px 12px 8px;
+    gap: 0;
+  }
+  .tab-btn.active {
+    gap: 0.35rem;
+  }
+  .tab-btn.active .tab-label {
+    display: inline;
+  }
 }
 ```
 

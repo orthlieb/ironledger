@@ -17,15 +17,15 @@
 	import { assetIcon } from '$lib/iconRegistry.js';
 
 	let {
-		ownedIds       = [],
+		ownedIds = [],
 		characterData,
 		onAdd,
 		onClose,
 	}: {
-		ownedIds:      string[];
+		ownedIds: string[];
 		characterData: CharacterData;
-		onAdd:         (assetId: string) => void;
-		onClose:       () => void;
+		onAdd: (assetId: string) => void;
+		onClose: () => void;
 	} = $props();
 
 	// ---------------------------------------------------------------------------
@@ -33,22 +33,23 @@
 	// ---------------------------------------------------------------------------
 	export const CAT_COLOR: Record<string, string> = {
 		'Combat Talent': 'var(--color-iron)',
-		'Path':          'var(--color-edge)',
-		'Companion':     'var(--color-heart)',
-		'Ritual':        'var(--color-mana)',
-		'Touched':       'var(--color-touched)',
+		Path: 'var(--color-edge)',
+		Companion: 'var(--color-heart)',
+		Ritual: 'var(--color-mana)',
+		Touched: 'var(--color-touched)',
 	};
 
-	
 	// ---------------------------------------------------------------------------
 	// Filter state
 	// ---------------------------------------------------------------------------
 	let activeCategories = $state(new Set<AssetCategory>());
-	let filtersOpen      = $state(false);
-	let search           = $state('');
+	let filtersOpen = $state(false);
+	let search = $state('');
 	let dialogEl = $state<HTMLDialogElement | null>(null);
 
-	$effect(() => { if (dialogEl) dialogEl.showModal(); });
+	$effect(() => {
+		if (dialogEl) dialogEl.showModal();
+	});
 
 	// ---------------------------------------------------------------------------
 	// Precondition checking
@@ -56,10 +57,7 @@
 
 	/** Returns a human-readable failure reason, or null if OK to add. */
 	function preconditionFailure(def: AssetDefinition): string | null {
-		return firstPreconditionFailure(
-			def.preconditions as Precondition[] | undefined,
-			characterData,
-		);
+		return firstPreconditionFailure(def.preconditions as Precondition[] | undefined, characterData);
 	}
 
 	/** Returns a human-readable conflict reason if the character already owns
@@ -96,15 +94,16 @@
 		visibleAssets.filter((a) => {
 			if (activeCategories.size > 0 && !activeCategories.has(a.category)) return false;
 			const q = search.trim().toLowerCase();
-			if (q && !a.name.toLowerCase().includes(q) &&
-				!(a.summary ?? '').toLowerCase().includes(q)) return false;
+			if (q && !a.name.toLowerCase().includes(q) && !(a.summary ?? '').toLowerCase().includes(q))
+				return false;
 			return true;
-		})
+		}),
 	);
 
 	function toggleCategory(cat: AssetCategory) {
 		const next = new Set(activeCategories);
-		if (next.has(cat)) next.delete(cat); else next.add(cat);
+		if (next.has(cat)) next.delete(cat);
+		else next.add(cat);
 		activeCategories = next;
 	}
 
@@ -133,11 +132,7 @@
      Main picker dialog — fixed height so it never bounces while filtering
      ====================================================================== -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<dialog
-	bind:this={dialogEl}
-	class="picker-dialog"
-	oncancel={onClose}
->
+<dialog bind:this={dialogEl} class="picker-dialog" oncancel={onClose}>
 	<!-- Header — mirrors OraclesDialog .od-header (draggable, with gripper) -->
 	<div class="picker-header" use:draggable>
 		<span class="drag-grip" aria-hidden="true">⠿</span>
@@ -160,7 +155,11 @@
 				class:ap-filter-toggle--active={activeCategories.size > 0}
 				onclick={() => (filtersOpen = !filtersOpen)}
 				aria-expanded={filtersOpen}
-			>Filters{#if activeCategories.size > 0}&nbsp;<span class="ap-filter-badge">{activeCategories.size}</span>{/if} {filtersOpen ? '▲' : '▼'}</button>
+				>Filters{#if activeCategories.size > 0}&nbsp;<span class="ap-filter-badge"
+						>{activeCategories.size}</span
+					>{/if}
+				{filtersOpen ? '▲' : '▼'}</button
+			>
 		</div>
 		{#if filtersOpen}
 			<div class="ap-filter-panel">
@@ -170,8 +169,8 @@
 							class="ap-filter-tag"
 							class:active={activeCategories.has(cat)}
 							style="--tag-color: {CAT_COLOR[cat]}"
-							onclick={() => toggleCategory(cat)}
-						>{cat}</button>
+							onclick={() => toggleCategory(cat)}>{cat}</button
+						>
 					{/each}
 				</div>
 				<button
@@ -179,8 +178,8 @@
 					onclick={clearFilters}
 					disabled={!hasActiveFilters}
 					use:tooltip={'Clear all filters'}
-					aria-label="Clear filters"
-				>{@html clearFiltersSvg}</button>
+					aria-label="Clear filters">{@html clearFiltersSvg}</button
+				>
 			</div>
 		{/if}
 	</div>
@@ -194,8 +193,8 @@
 		{:else}
 			<div class="pick-grid">
 				{#each filtered as asset (asset.id)}
-					{@const owned    = ownedIds.includes(asset.id)}
-					{@const blocked  = preconditionFailure(asset) ?? exclusiveGroupConflict(asset)}
+					{@const owned = ownedIds.includes(asset.id)}
+					{@const blocked = preconditionFailure(asset) ?? exclusiveGroupConflict(asset)}
 					{@const catColor = CAT_COLOR[asset.category] ?? 'var(--text-muted)'}
 					<!-- svelte-ignore a11y_no_static_element_interactions -->
 					<div
@@ -204,14 +203,20 @@
 						class:pick-tile-blocked={!!blocked && !owned}
 						style:--tile-color={catColor}
 						use:tooltip={blocked && !owned ? blocked : ''}
-						onclick={() => { if (!owned && !blocked) tryAdd(asset); }}
-						onkeydown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !owned && !blocked) tryAdd(asset); }}
+						onclick={() => {
+							if (!owned && !blocked) tryAdd(asset);
+						}}
+						onkeydown={(e) => {
+							if ((e.key === 'Enter' || e.key === ' ') && !owned && !blocked) tryAdd(asset);
+						}}
 						tabindex={owned || !!blocked ? -1 : 0}
 						role="button"
 						aria-disabled={owned || !!blocked}
 					>
 						<div class="tile-name-row">
-							<span class="tile-name-icon" aria-hidden="true" style:color={catColor}>{@html assetIcon(asset)}</span>
+							<span class="tile-name-icon" aria-hidden="true" style:color={catColor}
+								>{@html assetIcon(asset)}</span
+							>
 							<span class="tile-name">{asset.name}</span>
 							<span class="tile-badge" style:background={catColor}>{asset.category}</span>
 						</div>
@@ -247,7 +252,9 @@
 		height: min(82vh, 720px);
 		display: flex;
 		flex-direction: column;
-		box-shadow: 0 16px 48px #00000070, 0 0 0 1px var(--border-mid);
+		box-shadow:
+			0 16px 48px #00000070,
+			0 0 0 1px var(--border-mid);
 		position: fixed;
 		top: 50%;
 		left: 50%;
@@ -263,25 +270,25 @@
 
 	/* ---- Header — mirrors OraclesDialog .od-header style ---- */
 	.picker-header {
-		display:         flex;
-		align-items:     center;
-		gap:             8px;
-		padding:         10px 14px;
-		border-bottom:   1px solid var(--border);
-		background:      var(--bg-control);
-		border-radius:   10px 10px 0 0;
-		flex-shrink:     0;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 14px;
+		border-bottom: 1px solid var(--border);
+		background: var(--bg-control);
+		border-radius: 10px 10px 0 0;
+		flex-shrink: 0;
 	}
 
 	.picker-title {
-		font-family:    var(--font-display);
-		font-size:      calc(0.78rem * var(--font-display-scale));
-		font-weight:    var(--font-display-weight);
-		font-variant:   var(--font-display-variant);
+		font-family: var(--font-display);
+		font-size: calc(0.78rem * var(--font-display-scale));
+		font-weight: var(--font-display-weight);
+		font-variant: var(--font-display-variant);
 		letter-spacing: 0.08em;
 		text-transform: var(--font-display-transform);
-		color:          var(--text-accent);
-		flex:           1;
+		color: var(--text-accent);
+		flex: 1;
 	}
 
 	.close-btn {
@@ -296,119 +303,142 @@
 		font-family: var(--font-ui);
 		transition: color 0.12s;
 	}
-	.close-btn:hover { color: var(--text); }
+	.close-btn:hover {
+		color: var(--text);
+	}
 
 	/* ---- Controls: category tabs + search — pinned, never scrolls ---- */
 	.picker-controls {
-		display:       flex;
+		display: flex;
 		flex-direction: column;
-		gap:           6px;
-		padding:       9px 16px 8px;
+		gap: 6px;
+		padding: 9px 16px 8px;
 		border-bottom: 1px solid var(--border);
-		flex-shrink:   0;
-		background:    var(--bg-card);
+		flex-shrink: 0;
+		background: var(--bg-card);
 	}
 
 	.ap-search-row {
-		display:     flex;
+		display: flex;
 		align-items: center;
-		gap:         6px;
+		gap: 6px;
 	}
 
 	.search-input {
-		flex:        1;
+		flex: 1;
 		font-family: var(--font-ui);
-		font-size:   0.82rem;
-		padding:     5px 9px;
-		min-width:   0;
+		font-size: 0.82rem;
+		padding: 5px 9px;
+		min-width: 0;
 	}
 
 	.ap-filter-toggle {
-		font-family:    var(--font-ui);
-		font-size:      0.72rem;
-		font-weight:    600;
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		font-weight: 600;
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		padding:        3px 10px;
-		border-radius:  12px;
-		border:         1px solid var(--border);
-		background:     transparent;
-		color:          var(--text-dimmer);
-		cursor:         pointer;
-		transition:     border-color 0.1s, color 0.1s;
-		display:        flex;
-		align-items:    center;
-		gap:            4px;
-		flex-shrink:    0;
+		padding: 3px 10px;
+		border-radius: 12px;
+		border: 1px solid var(--border);
+		background: transparent;
+		color: var(--text-dimmer);
+		cursor: pointer;
+		transition:
+			border-color 0.1s,
+			color 0.1s;
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		flex-shrink: 0;
 	}
-	.ap-filter-toggle:hover { color: var(--text); border-color: var(--border-mid); }
-	.ap-filter-toggle--active { color: var(--accent); border-color: var(--accent); }
+	.ap-filter-toggle:hover {
+		color: var(--text);
+		border-color: var(--border-mid);
+	}
+	.ap-filter-toggle--active {
+		color: var(--accent);
+		border-color: var(--accent);
+	}
 
 	.ap-filter-badge {
-		display:          inline-flex;
-		align-items:      center;
-		justify-content:  center;
-		background:       var(--accent);
-		color:            #fff;
-		font-size:        0.6rem;
-		font-weight:      700;
-		width:            14px;
-		height:           14px;
-		border-radius:    50%;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--accent);
+		color: #fff;
+		font-size: 0.6rem;
+		font-weight: 700;
+		width: 14px;
+		height: 14px;
+		border-radius: 50%;
 	}
 
 	.ap-filter-panel {
-		position:      relative;
-		padding:       6px 8px;
-		background:    var(--bg-inset);
-		border:        1px solid var(--border);
+		position: relative;
+		padding: 6px 8px;
+		background: var(--bg-inset);
+		border: 1px solid var(--border);
 		border-radius: 6px;
 	}
 	.ap-filter-chips {
-		display:       flex;
-		flex-wrap:     wrap;
-		gap:           4px;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
 		padding-right: 26px;
 	}
 	.ap-filter-tag {
-		font-family:    var(--font-ui);
-		font-size:      0.6rem;
-		font-weight:    600;
+		font-family: var(--font-ui);
+		font-size: 0.6rem;
+		font-weight: 600;
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
-		color:          var(--tag-color, var(--text-dimmer));
-		background:     transparent;
-		border:         1px solid color-mix(in srgb, var(--tag-color, var(--border)) 40%, transparent);
-		border-radius:  10px;
-		padding:        2px 8px;
-		cursor:         pointer;
-		white-space:    nowrap;
-		transition:     background 0.12s, color 0.12s;
+		color: var(--tag-color, var(--text-dimmer));
+		background: transparent;
+		border: 1px solid color-mix(in srgb, var(--tag-color, var(--border)) 40%, transparent);
+		border-radius: 10px;
+		padding: 2px 8px;
+		cursor: pointer;
+		white-space: nowrap;
+		transition:
+			background 0.12s,
+			color 0.12s;
 	}
 	.ap-filter-tag:hover {
 		background: color-mix(in srgb, var(--tag-color, var(--border)) 12%, transparent);
 	}
 	.ap-filter-tag.active {
-		background:   color-mix(in srgb, var(--tag-color, var(--border)) 18%, transparent);
+		background: color-mix(in srgb, var(--tag-color, var(--border)) 18%, transparent);
 		border-color: var(--tag-color, var(--border));
 	}
 	.ap-clear-btn {
-		position:      absolute;
-		bottom:        6px;
-		right:         6px;
-		background:    transparent;
-		border:        none;
-		color:         var(--text-dimmer);
-		cursor:        pointer;
-		padding:       3px 4px;
+		position: absolute;
+		bottom: 6px;
+		right: 6px;
+		background: transparent;
+		border: none;
+		color: var(--text-dimmer);
+		cursor: pointer;
+		padding: 3px 4px;
 		border-radius: 3px;
-		display:       flex;
-		align-items:   center;
-		transition:    color 0.12s, opacity 0.12s;
+		display: flex;
+		align-items: center;
+		transition:
+			color 0.12s,
+			opacity 0.12s;
 	}
-	.ap-clear-btn:hover:not(:disabled) { color: var(--text); }
-	.ap-clear-btn:disabled { opacity: 0.25; cursor: not-allowed; }
-	.ap-clear-btn :global(svg) { width: 16px; height: 16px; fill: currentColor; }
+	.ap-clear-btn:hover:not(:disabled) {
+		color: var(--text);
+	}
+	.ap-clear-btn:disabled {
+		opacity: 0.25;
+		cursor: not-allowed;
+	}
+	.ap-clear-btn :global(svg) {
+		width: 16px;
+		height: 16px;
+		fill: currentColor;
+	}
 
 	/* ---- Scrollable body ---- */
 	.picker-body {
@@ -446,7 +476,9 @@
 		flex-direction: column;
 		gap: 5px;
 		cursor: pointer;
-		transition: border-color 0.12s, background 0.12s;
+		transition:
+			border-color 0.12s,
+			background 0.12s;
 		outline: none;
 	}
 	.pick-tile:hover:not(.pick-tile-owned):not(.pick-tile-blocked) {
@@ -468,45 +500,51 @@
 	/* Category badge — coloured pill, absolute top-right */
 	/* Name row — icon, name (grows to fill), badge anchored to the right. */
 	.tile-name-row {
-		display:     flex;
+		display: flex;
 		align-items: center;
-		gap:         6px;
-		min-width:   0;
+		gap: 6px;
+		min-width: 0;
 	}
 	.tile-name-icon {
-		display:         flex;
-		align-items:     center;
+		display: flex;
+		align-items: center;
 		justify-content: center;
-		width:           16px;
-		height:          16px;
-		flex-shrink:     0;
+		width: 16px;
+		height: 16px;
+		flex-shrink: 0;
 	}
-	.tile-name-icon :global(svg) { width: 100%; height: 100%; fill: currentColor; }
-	.tile-name-icon :global(svg path) { fill: currentColor; }
+	.tile-name-icon :global(svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
+	}
+	.tile-name-icon :global(svg path) {
+		fill: currentColor;
+	}
 
 	.tile-name {
-		flex:          1;
-		min-width:     0;
-		font-family:   var(--font-ui);
-		font-size:     0.84rem;
-		font-weight:   700;
-		color:         var(--text);
-		overflow:      hidden;
+		flex: 1;
+		min-width: 0;
+		font-family: var(--font-ui);
+		font-size: 0.84rem;
+		font-weight: 700;
+		color: var(--text);
+		overflow: hidden;
 		text-overflow: ellipsis;
-		white-space:   nowrap;
+		white-space: nowrap;
 	}
 	.tile-badge {
-		flex-shrink:    0;
-		font-family:    var(--font-ui);
-		font-size:      0.58rem;
-		font-weight:    700;
+		flex-shrink: 0;
+		font-family: var(--font-ui);
+		font-size: 0.58rem;
+		font-weight: 700;
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		color:          #fff;
-		padding:        2px 6px;
-		border-radius:  8px;
-		white-space:    nowrap;
-		line-height:    1.3;
+		color: #fff;
+		padding: 2px 6px;
+		border-radius: 8px;
+		white-space: nowrap;
+		line-height: 1.3;
 	}
 
 	.tile-desc {
@@ -527,5 +565,4 @@
 		letter-spacing: 0.06em;
 		margin-top: auto;
 	}
-
 </style>

@@ -22,17 +22,25 @@ import { isSourceEnabled } from './expansionStore.svelte.js';
 // ---------------------------------------------------------------------------
 
 const CATEGORY_ORDER = [
-	'Adventure', 'Relationship', 'Combat', 'Suffer',
-	'Quest', 'Fate', 'Delve', 'Rarity', 'Failure', 'Yrt',
+	'Adventure',
+	'Relationship',
+	'Combat',
+	'Suffer',
+	'Quest',
+	'Fate',
+	'Delve',
+	'Rarity',
+	'Failure',
+	'Yrt',
 ];
 
 // ---------------------------------------------------------------------------
 // Module-level state
 // ---------------------------------------------------------------------------
 
-let _moves:   MoveDefinition[] = $state([]);
-let _loading                   = $state(false);
-let _loaded                    = false;
+let _moves: MoveDefinition[] = $state([]);
+let _loading = $state(false);
+let _loaded = false;
 
 // ---------------------------------------------------------------------------
 // Fetch
@@ -61,7 +69,7 @@ export async function loadMoves(): Promise<void> {
 			return a.name.localeCompare(b.name);
 		});
 
-		_moves  = json.moves;
+		_moves = json.moves;
 		_loaded = true;
 	} catch (err) {
 		console.error('[moveStore]', err);

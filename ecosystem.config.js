@@ -25,63 +25,63 @@ module.exports = {
   apps: [
     // ── Fastify API ──────────────────────────────────────────────────────────
     {
-      name:         'ironledger-api',
-      script:       'apps/api/dist/main.js',
-      cwd:          '/home/ironledger/app',
-      node_args:    [`--env-file-if-exists=${ENV_FILE}`],
+      name: 'ironledger-api',
+      script: 'apps/api/dist/main.js',
+      cwd: '/home/ironledger/app',
+      node_args: [`--env-file-if-exists=${ENV_FILE}`],
 
       // 2 cluster workers for zero-downtime reloads on a 2-vCPU VPS
-      instances:    2,
-      exec_mode:    'cluster',
+      instances: 2,
+      exec_mode: 'cluster',
 
-      autorestart:  true,
+      autorestart: true,
       max_restarts: 10,
-      min_uptime:   '10s',
+      min_uptime: '10s',
       restart_delay: 1000,
-      kill_timeout:   10000,
+      kill_timeout: 10000,
       listen_timeout: 8000,
 
-      out_file:     '/home/ironledger/logs/api-out.log',
-      error_file:   '/home/ironledger/logs/api-error.log',
-      merge_logs:   true,
+      out_file: '/home/ironledger/logs/api-out.log',
+      error_file: '/home/ironledger/logs/api-error.log',
+      merge_logs: true,
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
-      log_type:     'json',
+      log_type: 'json',
 
       env: {
         NODE_ENV: 'production',
-        PORT:     '3000',
+        PORT: '3000',
       },
     },
 
     // ── SvelteKit Web ────────────────────────────────────────────────────────
     {
-      name:         'ironledger-web',
+      name: 'ironledger-web',
       // adapter-node outputs a Node.js server at apps/web/build/index.js
-      script:       'apps/web/build/index.js',
-      cwd:          '/home/ironledger/app',
-      node_args:    [`--env-file-if-exists=${ENV_FILE}`],
+      script: 'apps/web/build/index.js',
+      cwd: '/home/ironledger/app',
+      node_args: [`--env-file-if-exists=${ENV_FILE}`],
 
       // Single instance is fine — SvelteKit is mostly SSR + proxying
-      instances:    1,
-      exec_mode:    'fork',
+      instances: 1,
+      exec_mode: 'fork',
 
-      autorestart:  true,
+      autorestart: true,
       max_restarts: 10,
-      min_uptime:   '10s',
+      min_uptime: '10s',
       restart_delay: 1000,
-      kill_timeout:   10000,
+      kill_timeout: 10000,
       listen_timeout: 8000,
 
-      out_file:     '/home/ironledger/logs/web-out.log',
-      error_file:   '/home/ironledger/logs/web-error.log',
-      merge_logs:   true,
+      out_file: '/home/ironledger/logs/web-out.log',
+      error_file: '/home/ironledger/logs/web-error.log',
+      merge_logs: true,
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
-      log_type:     'json',
+      log_type: 'json',
 
       env: {
-        NODE_ENV:          'production',
-        PORT:              '3001',   // Nginx proxies 443 → 3001
-        INTERNAL_API_URL:  'http://localhost:3000',
+        NODE_ENV: 'production',
+        PORT: '3001', // Nginx proxies 443 → 3001
+        INTERNAL_API_URL: 'http://localhost:3000',
       },
     },
   ],

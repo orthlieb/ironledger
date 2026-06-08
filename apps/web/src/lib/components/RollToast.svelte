@@ -17,9 +17,9 @@
 
 	let { activeTab }: { activeTab: string } = $props();
 
-	let visible      = $state(false);
-	let toastEntry   = $state<LogEntry | null>(null);
-	let _lastSeenId  = '';
+	let visible = $state(false);
+	let toastEntry = $state<LogEntry | null>(null);
+	let _lastSeenId = '';
 	let _timer: ReturnType<typeof setTimeout> | undefined;
 
 	// Derive the latest log entry reactively
@@ -27,15 +27,21 @@
 
 	$effect(() => {
 		const entry = latestEntry;
-		if (!entry)                  return;
-		if (entry.id === _lastSeenId) return;  // already seen
-		if (entry.source)            { _lastSeenId = entry.id; return; }  // skip notes
+		if (!entry) return;
+		if (entry.id === _lastSeenId) return; // already seen
+		if (entry.source) {
+			_lastSeenId = entry.id;
+			return;
+		} // skip notes
 		// Only surface results on tabs where roll actions exist but the log isn't visible
-		if (activeTab !== 'expeditions' && activeTab !== 'communities') { _lastSeenId = entry.id; return; }
+		if (activeTab !== 'expeditions' && activeTab !== 'communities') {
+			_lastSeenId = entry.id;
+			return;
+		}
 
 		_lastSeenId = entry.id;
-		toastEntry  = entry;
-		visible     = true;
+		toastEntry = entry;
+		visible = true;
 
 		clearTimeout(_timer);
 		_timer = setTimeout(dismiss, AUTO_DISMISS_MS);
@@ -59,11 +65,19 @@
 		<div class="rt-header">
 			<span class="rt-title">{toastEntry.title}</span>
 			<button class="rt-close" onclick={dismiss} aria-label="Dismiss">
-				<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24"
-					fill="none" stroke="currentColor" stroke-width="2.5"
-					stroke-linecap="round" stroke-linejoin="round">
-					<line x1="18" y1="6" x2="6" y2="18"/>
-					<line x1="6" y1="6" x2="18" y2="18"/>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					width="13"
+					height="13"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2.5"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
+					<line x1="18" y1="6" x2="6" y2="18" />
+					<line x1="6" y1="6" x2="18" y2="18" />
 				</svg>
 			</button>
 		</div>
@@ -129,7 +143,9 @@
 		line-height: 1;
 		transition: color 0.12s;
 	}
-	.rt-close:hover { color: var(--text); }
+	.rt-close:hover {
+		color: var(--text);
+	}
 
 	.rt-body {
 		padding: 10px 12px 12px;

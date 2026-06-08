@@ -22,10 +22,10 @@ const REFRESH_COOKIE = 'rt';
 function cookieOptions() {
   return {
     httpOnly: true,
-    secure:   config.NODE_ENV === 'production',
+    secure: config.NODE_ENV === 'production',
     sameSite: 'strict' as const,
-    path:     '/api/v1/auth',
-    maxAge:   config.REFRESH_TOKEN_TTL_DAYS * 86400,
+    path: '/api/v1/auth',
+    maxAge: config.REFRESH_TOKEN_TTL_DAYS * 86400,
   };
 }
 
@@ -36,21 +36,21 @@ function handleInviteError(reply: FastifyReply) {
     if (err instanceof AuthError) {
       reply.status(err.statusCode).send({
         statusCode: err.statusCode,
-        error:      err.name,
-        message:    err.message,
+        error: err.name,
+        message: err.message,
       });
     } else if (err instanceof PwnedPasswordError) {
       reply.status(400).send({
         statusCode: 400,
-        error:      'Bad Request',
-        message:    err.message,
+        error: 'Bad Request',
+        message: err.message,
       });
     } else {
       reply.log.error({ err }, 'invite error');
       reply.status(500).send({
         statusCode: 500,
-        error:      'Internal Server Error',
-        message:    'An unexpected error occurred',
+        error: 'Internal Server Error',
+        message: 'An unexpected error occurred',
       });
     }
   };
@@ -61,57 +61,63 @@ const tokenParam = z.object({
 });
 
 const acceptBody = z.object({
-  password:    z.string().min(12, 'Password must be at least 12 characters').max(1000),
+  password: z.string().min(12, 'Password must be at least 12 characters').max(1000),
   displayName: z.string().trim().max(80).optional(),
 });
 
 export const inviteRoutes: FastifyPluginAsyncZod = async (server) => {
-
   // ── GET /:token ── Validate + preview ─────────────────────────────────────
-  server.get('/:token', {
-    schema: {
-      params: tokenParam,
-    },
-  }, async (req, reply) => {
-    const preview = await inviteService.getInvitePreview(req.params.token)
-      .catch(handleInviteError(reply));
-    if (!preview || reply.sent) return;
-    return reply.status(200).send(preview);
-  });
-
-  // ── POST /:token/accept ── Consume invite, create user, issue tokens ─────
-  server.post('/:token/accept', {
-    schema: {
-      params: tokenParam,
-      body:   acceptBody,
-    },
-    config: {
-      // Reuse the register bucket — accepts create accounts too.
-      rateLimit: {
-        max:        config.RATE_LIMIT_REGISTER,
-        timeWindow: '1 hour',
+  server.get(
+    '/:token',
+    {
+      schema: {
+        params: tokenParam,
       },
     },
-  }, async (req, reply) => {
-    const result = await inviteService.acceptInvite(
-      req.params.token,
-      req.body.password,
-      req.body.displayName,
-    ).catch(handleInviteError(reply));
-    if (!result || reply.sent) return;
+    async (req, reply) => {
+      const preview = await inviteService
+        .getInvitePreview(req.params.token)
+        .catch(handleInviteError(reply));
+      if (!preview || reply.sent) return;
+      return reply.status(200).send(preview);
+    },
+  );
 
-    logSecurityEvent({
-      eventType: 'invite_accepted',
-      req,
-      userId:    result.user.id,
-      metadata:  { email: result.user.email },
-    });
+  // ── POST /:token/accept ── Consume invite, create user, issue tokens ─────
+  server.post(
+    '/:token/accept',
+    {
+      schema: {
+        params: tokenParam,
+        body: acceptBody,
+      },
+      config: {
+        // Reuse the register bucket — accepts create accounts too.
+        rateLimit: {
+          max: config.RATE_LIMIT_REGISTER,
+          timeWindow: '1 hour',
+        },
+      },
+    },
+    async (req, reply) => {
+      const result = await inviteService
+        .acceptInvite(req.params.token, req.body.password, req.body.displayName)
+        .catch(handleInviteError(reply));
+      if (!result || reply.sent) return;
 
-    reply.setCookie(REFRESH_COOKIE, result.refreshToken, cookieOptions());
+      logSecurityEvent({
+        eventType: 'invite_accepted',
+        req,
+        userId: result.user.id,
+        metadata: { email: result.user.email },
+      });
 
-    return reply.status(200).send({
-      user:        result.user,
-      accessToken: result.accessToken,
-    });
-  });
+      reply.setCookie(REFRESH_COOKIE, result.refreshToken, cookieOptions());
+
+      return reply.status(200).send({
+        user: result.user,
+        accessToken: result.accessToken,
+      });
+    },
+  );
 };

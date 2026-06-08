@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { generateKeyPairSync }             from 'crypto';
+import { generateKeyPairSync } from 'crypto';
 import {
   signAccessToken,
   verifyAccessToken,
@@ -26,22 +26,22 @@ import {
 
 const { privateKey, publicKey } = generateKeyPairSync('rsa', {
   modulusLength: 2048,
-  publicKeyEncoding:  { type: 'spki',  format: 'pem' },
+  publicKeyEncoding: { type: 'spki', format: 'pem' },
   privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
 });
 
 // Inject test keys before module load
 process.env['JWT_PRIVATE_KEY'] = privateKey.replace(/\n/g, '\\n');
-process.env['JWT_PUBLIC_KEY']  = publicKey.replace(/\n/g, '\\n');
-process.env['JWT_EXPIRES_IN']  = '900';
-process.env['APP_URL']         = 'http://localhost:3000';
-process.env['DATABASE_URL']    = 'postgres://test:test@localhost:5432/test';
-process.env['REDIS_URL']       = 'redis://localhost:6379';
-process.env['EMAIL_FROM']      = 'test@example.com';
+process.env['JWT_PUBLIC_KEY'] = publicKey.replace(/\n/g, '\\n');
+process.env['JWT_EXPIRES_IN'] = '900';
+process.env['APP_URL'] = 'http://localhost:3000';
+process.env['DATABASE_URL'] = 'postgres://test:test@localhost:5432/test';
+process.env['REDIS_URL'] = 'redis://localhost:6379';
+process.env['EMAIL_FROM'] = 'test@example.com';
 process.env['HCAPTCHA_SECRET'] = '0x0000000000000000000000000000000000000000';
 process.env['REFRESH_TOKEN_TTL_DAYS'] = '30';
-process.env['EMAIL_PROVIDER']  = 'resend';
-process.env['RESEND_API_KEY']  = 're_test';
+process.env['EMAIL_PROVIDER'] = 'resend';
+process.env['RESEND_API_KEY'] = 're_test';
 
 // ---------------------------------------------------------------------------
 // Access tokens
@@ -49,10 +49,10 @@ process.env['RESEND_API_KEY']  = 're_test';
 
 describe('signAccessToken / verifyAccessToken', () => {
   const userId = '018e1b3a-dead-beef-cafe-000000000001';
-  const email  = 'hero@example.com';
+  const email = 'hero@example.com';
 
   it('signs a token and verifies it successfully', async () => {
-    const token   = await signAccessToken(userId, email);
+    const token = await signAccessToken(userId, email);
     const payload = await verifyAccessToken(token);
 
     expect(payload.sub).toBe(userId);
@@ -65,11 +65,12 @@ describe('signAccessToken / verifyAccessToken', () => {
   });
 
   it('rejects a tampered token', async () => {
-    const token  = await signAccessToken(userId, email);
-    const parts  = token.split('.');
+    const token = await signAccessToken(userId, email);
+    const parts = token.split('.');
     // Corrupt the payload section
-    parts[1] = Buffer.from(JSON.stringify({ sub: 'hacker', email: 'evil@example.com' }))
-      .toString('base64url');
+    parts[1] = Buffer.from(JSON.stringify({ sub: 'hacker', email: 'evil@example.com' })).toString(
+      'base64url',
+    );
     const tampered = parts.join('.');
 
     await expect(verifyAccessToken(tampered)).rejects.toThrow();
@@ -77,8 +78,8 @@ describe('signAccessToken / verifyAccessToken', () => {
 
   it('rejects a token signed with a different key', async () => {
     const { privateKey: otherKey } = generateKeyPairSync('rsa', {
-      modulusLength:    2048,
-      publicKeyEncoding:  { type: 'spki',  format: 'pem' },
+      modulusLength: 2048,
+      publicKeyEncoding: { type: 'spki', format: 'pem' },
       privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
     });
     // Manually sign with the wrong key using jose
@@ -182,12 +183,12 @@ describe('refreshTokenExpiresAt', () => {
   });
 
   it('is approximately 30 days from now', () => {
-    const expires     = refreshTokenExpiresAt();
-    const thirtyDays  = 30 * 24 * 60 * 60 * 1000;
-    const delta       = expires.getTime() - Date.now();
+    const expires = refreshTokenExpiresAt();
+    const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+    const delta = expires.getTime() - Date.now();
     // Allow 5 seconds of slack
     expect(delta).toBeGreaterThan(thirtyDays - 5000);
-    expect(delta).toBeLessThan(thirtyDays   + 5000);
+    expect(delta).toBeLessThan(thirtyDays + 5000);
   });
 });
 
@@ -205,10 +206,10 @@ describe('generateAuthToken', () => {
 
   it('expires approximately 1 hour from now', () => {
     const { expiresAt } = generateAuthToken();
-    const oneHour       = 60 * 60 * 1000;
-    const delta         = expiresAt.getTime() - Date.now();
+    const oneHour = 60 * 60 * 1000;
+    const delta = expiresAt.getTime() - Date.now();
     expect(delta).toBeGreaterThan(oneHour - 5000);
-    expect(delta).toBeLessThan(oneHour   + 5000);
+    expect(delta).toBeLessThan(oneHour + 5000);
   });
 
   it('hash matches hashToken(raw)', () => {
