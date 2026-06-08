@@ -35,9 +35,9 @@ export function isIOSSafari(): boolean {
 	if (typeof window === 'undefined') return false;
 	const ua = navigator.userAgent;
 	const isClassicIOS = /iPad|iPhone|iPod/.test(ua);
-	const isIPadOS    = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+	const isIPadOS = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const isMSMobile  = !!(window as any).MSStream;
+	const isMSMobile = !!(window as any).MSStream;
 	return (isClassicIOS || isIPadOS) && !isMSMobile;
 }
 
@@ -90,7 +90,11 @@ function getCtx(): AudioContext | null {
 async function loadBuffer(url: string): Promise<AudioBuffer | null> {
 	const cached = _buffers.get(url);
 	if (cached) {
-		try { return await cached; } catch { return null; }
+		try {
+			return await cached;
+		} catch {
+			return null;
+		}
 	}
 	const ctx = getCtx();
 	if (!ctx) return null;
@@ -107,7 +111,7 @@ async function loadBuffer(url: string): Promise<AudioBuffer | null> {
 		return await promise;
 	} catch (e) {
 		console.warn('[Iron Ledger] audio load failed:', url, e);
-		_buffers.delete(url);   // allow retry next time
+		_buffers.delete(url); // allow retry next time
 		return null;
 	}
 }

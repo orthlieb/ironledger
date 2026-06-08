@@ -17,11 +17,11 @@
 	import { getExpeditions } from '$lib/expeditionStore.svelte.js';
 	import { FOE_RANKS, findFoe } from '$lib/foeStore.svelte.js';
 	import type { PreconditionContext } from '$lib/preconditions.js';
-	import swordSvg     from '$icons/sharp-axe.svg?raw';
-	import iconMoves    from '$icons/person-running-solid.svg?raw';
-	import iconOracles  from '$icons/crystal-ball.svg?raw';
-	import iconDice     from '$icons/dice-d10-light.svg?raw';
-	import iconNotes    from '$icons/note-sticky-solid.svg?raw';
+	import swordSvg from '$icons/sharp-axe.svg?raw';
+	import iconMoves from '$icons/person-running-solid.svg?raw';
+	import iconOracles from '$icons/crystal-ball.svg?raw';
+	import iconDice from '$icons/dice-d10-light.svg?raw';
+	import iconNotes from '$icons/note-sticky-solid.svg?raw';
 	import { preloadDice } from '$lib/dice';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
@@ -30,15 +30,17 @@
 
 	let { data, children }: { data: LayoutData; children: import('svelte').Snippet } = $props();
 
-	let settingsDialog  = $state<ReturnType<typeof SettingsDialog> | null>(null);
+	let settingsDialog = $state<ReturnType<typeof SettingsDialog> | null>(null);
 	let bugReportDialog = $state<ReturnType<typeof BugReportDialog> | null>(null);
 
 	// V1 "adventure-action-toolbar" dialogs — promoted to the global nav so
 	// they're reachable from /home, /admin, etc.
-	let movesDialogRef   = $state<{ open(id?: string): void } | null>(null);
-	let oraclesDialogRef = $state<{ open(oracleKey?: string, onFill?: (value: string) => void, stat?: string): void } | null>(null);
-	let diceRollerRef    = $state<{ open(): void } | null>(null);
-	let notesDialogRef   = $state<{ open(): void } | null>(null);
+	let movesDialogRef = $state<{ open(id?: string): void } | null>(null);
+	let oraclesDialogRef = $state<{
+		open(oracleKey?: string, onFill?: (value: string) => void, stat?: string): void;
+	} | null>(null);
+	let diceRollerRef = $state<{ open(): void } | null>(null);
+	let notesDialogRef = $state<{ open(): void } | null>(null);
 	const activeDiceCtx = $derived(getActiveDiceCtx());
 
 	// Build a precondition context for MovesDialog from the v2 spine selections.
@@ -48,23 +50,21 @@
 	const preconditionCtx = $derived.by<PreconditionContext>(() => {
 		const foeId = getActiveFoeId();
 		const expId = getActiveExpeditionId();
-		const encs  = getEncounters();
-		const exps  = getExpeditions();
-		const enc   = foeId ? encs.find(e => e.id === foeId) : undefined;
-		const exp   = expId ? exps.find(e => e.id === expId) : undefined;
+		const encs = getEncounters();
+		const exps = getExpeditions();
+		const enc = foeId ? encs.find((e) => e.id === foeId) : undefined;
+		const exp = expId ? exps.find((e) => e.id === expId) : undefined;
 		const foeDef = enc ? findFoe(enc.foeId) : undefined;
-		const foeName = enc
-			? (enc.customName?.trim() || foeDef?.name || enc.foeId)
-			: undefined;
+		const foeName = enc ? enc.customName?.trim() || foeDef?.name || enc.foeId : undefined;
 		return {
-			hasCharacter:   !!activeDiceCtx,
-			hasFoe:         !!enc,
-			hasJourney:     exp?.type === 'journey',
-			hasSite:        exp?.type === 'site',
+			hasCharacter: !!activeDiceCtx,
+			hasFoe: !!enc,
+			hasJourney: exp?.type === 'journey',
+			hasSite: exp?.type === 'site',
 			expeditionName: exp?.name,
 			foeName,
-			initiative:     activeDiceCtx?.data?.initiative,
-			foeHarm:        enc ? FOE_RANKS[enc.effectiveRank]?.harm : undefined,
+			initiative: activeDiceCtx?.data?.initiative,
+			foeHarm: enc ? FOE_RANKS[enc.effectiveRank]?.harm : undefined,
 		};
 	});
 
@@ -75,19 +75,19 @@
 
 		// Combat: active foe encounter's progress track
 		const foeId = getActiveFoeId();
-		const enc   = foeId ? getEncounters().find(e => e.id === foeId) : undefined;
+		const enc = foeId ? getEncounters().find((e) => e.id === foeId) : undefined;
 		if (enc) result.combat = enc.ticks;
 
 		// Journey / Delve (site): active expedition's progress track
 		const expId = getActiveExpeditionId();
-		const exp   = expId ? getExpeditions().find(e => e.id === expId) : undefined;
+		const exp = expId ? getExpeditions().find((e) => e.id === expId) : undefined;
 		if (exp?.type === 'journey') result.journey = exp.ticks;
-		if (exp?.type === 'site')    result.delve   = exp.ticks;
+		if (exp?.type === 'site') result.delve = exp.ticks;
 
 		// Bonds and Failures are per-character single values
 		const d = activeDiceCtx?.data;
 		if (d) {
-			result.bonds    = d.bonds    ?? 0;
+			result.bonds = d.bonds ?? 0;
 			result.failures = d.failures ?? 0;
 		}
 
@@ -111,10 +111,10 @@
 			// from asset cards just want the picker to open, not auto-fill.
 			oraclesDialogRef?.open(d?.key, undefined, d?.stat);
 		};
-		document.addEventListener('ironledger:open-move',   openMove);
+		document.addEventListener('ironledger:open-move', openMove);
 		document.addEventListener('ironledger:open-oracle', openOracle);
 		return () => {
-			document.removeEventListener('ironledger:open-move',   openMove);
+			document.removeEventListener('ironledger:open-move', openMove);
 			document.removeEventListener('ironledger:open-oracle', openOracle);
 		};
 	});
@@ -150,7 +150,7 @@
 	async function pollSystemStatus() {
 		try {
 			const s = await system.getStatus();
-			maintStatus     = s.maintenance;
+			maintStatus = s.maintenance;
 			broadcastStatus = s.broadcast;
 		} catch {
 			// ignore — don't break the app if the status endpoint is down
@@ -193,23 +193,43 @@
 		<div class="nav-links">
 			<nav class="nav-page-links" aria-label="Main navigation">
 				{#if data.user?.role === 'admin'}
-					<a href="/admin" class="nav-link" class:nav-link--active={$page.url.pathname.startsWith('/admin')}>Admin</a>
+					<a
+						href="/admin"
+						class="nav-link"
+						class:nav-link--active={$page.url.pathname.startsWith('/admin')}>Admin</a
+					>
 				{/if}
 			</nav>
 			<div class="nav-user-actions">
 				<!-- V1 adventure-action-toolbar promoted to the global nav so
 				     Move / Ask / Roll / Note are reachable from any page. -->
 				<div class="nav-action-toolbar">
-					<button class="btn btn-primary act-btn" onclick={() => movesDialogRef?.open()} use:tooltip={'Browse and roll moves'}>
+					<button
+						class="btn btn-primary act-btn"
+						onclick={() => movesDialogRef?.open()}
+						use:tooltip={'Browse and roll moves'}
+					>
 						<span class="act-icon">{@html iconMoves}</span><span class="act-label">Move</span>
 					</button>
-					<button class="btn btn-primary act-btn" onclick={() => oraclesDialogRef?.open()} use:tooltip={'Browse and roll oracles'}>
+					<button
+						class="btn btn-primary act-btn"
+						onclick={() => oraclesDialogRef?.open()}
+						use:tooltip={'Browse and roll oracles'}
+					>
 						<span class="act-icon">{@html iconOracles}</span><span class="act-label">Ask</span>
 					</button>
-					<button class="btn btn-primary act-btn" onclick={() => diceRollerRef?.open()} use:tooltip={'Roll dice'}>
+					<button
+						class="btn btn-primary act-btn"
+						onclick={() => diceRollerRef?.open()}
+						use:tooltip={'Roll dice'}
+					>
 						<span class="act-icon">{@html iconDice}</span><span class="act-label">Roll</span>
 					</button>
-					<button class="btn btn-primary act-btn" onclick={() => notesDialogRef?.open()} use:tooltip={'Add a session note'}>
+					<button
+						class="btn btn-primary act-btn"
+						onclick={() => notesDialogRef?.open()}
+						use:tooltip={'Add a session note'}
+					>
 						<span class="act-icon">{@html iconNotes}</span><span class="act-label">Note</span>
 					</button>
 				</div>
@@ -226,15 +246,26 @@
 	<div class="maint-banner" class:maint-imminent={countdown === 'NOW'}>
 		<span class="maint-icon" aria-hidden="true">&#9888;</span>
 		{#if countdown === 'NOW'}
-			<span class="maint-text">Logging you out now…{maintStatus.message ? ` \u2014 ${maintStatus.message}` : ''}</span>
+			<span class="maint-text"
+				>Logging you out now…{maintStatus.message ? ` \u2014 ${maintStatus.message}` : ''}</span
+			>
 		{:else if maintStatus.shutdownAt}
 			{#if data.user}
-				<span class="maint-text">Please save your work and sign off. Shutting down in <strong class="maint-countdown">{countdown}</strong>{maintStatus.message ? ` \u2014 ${maintStatus.message}` : ''}</span>
+				<span class="maint-text"
+					>Please save your work and sign off. Shutting down in <strong class="maint-countdown"
+						>{countdown}</strong
+					>{maintStatus.message ? ` \u2014 ${maintStatus.message}` : ''}</span
+				>
 			{:else}
-				<span class="maint-text">Scheduled maintenance in <strong class="maint-countdown">{countdown}</strong>{maintStatus.message ? ` \u2014 ${maintStatus.message}` : ''}</span>
+				<span class="maint-text"
+					>Scheduled maintenance in <strong class="maint-countdown">{countdown}</strong
+					>{maintStatus.message ? ` \u2014 ${maintStatus.message}` : ''}</span
+				>
 			{/if}
 		{:else}
-			<span class="maint-text">Scheduled maintenance{maintStatus.message ? ` \u2014 ${maintStatus.message}` : ''}</span>
+			<span class="maint-text"
+				>Scheduled maintenance{maintStatus.message ? ` \u2014 ${maintStatus.message}` : ''}</span
+			>
 		{/if}
 	</div>
 {/if}
@@ -256,10 +287,15 @@
 
 <!-- Adventure-action dialogs — promoted from the v1 toolbar so they're
      mounted once at the layout level and openable from anywhere. -->
-<MovesDialog       bind:this={movesDialogRef}   ctx={activeDiceCtx} pctx={preconditionCtx} {progressContext} />
-<OraclesDialog     bind:this={oraclesDialogRef} />
-<DiceRollerDialog  bind:this={diceRollerRef}    ctx={activeDiceCtx} />
-<NotesDialog       bind:this={notesDialogRef} />
+<MovesDialog
+	bind:this={movesDialogRef}
+	ctx={activeDiceCtx}
+	pctx={preconditionCtx}
+	{progressContext}
+/>
+<OraclesDialog bind:this={oraclesDialogRef} />
+<DiceRollerDialog bind:this={diceRollerRef} ctx={activeDiceCtx} />
+<NotesDialog bind:this={notesDialogRef} />
 
 <style>
 	/* Span wrapper + SVG sizing for the sword brand icon */
@@ -316,8 +352,13 @@
 	}
 	/* Narrow screens: hide the labels, keep icons only. */
 	@media (max-width: 600px) {
-		.act-label { display: none; }
-		.act-btn { padding-left: 0.5rem; padding-right: 0.5rem; }
+		.act-label {
+			display: none;
+		}
+		.act-btn {
+			padding-left: 0.5rem;
+			padding-right: 0.5rem;
+		}
 	}
 
 	.nav-page-links {
@@ -327,7 +368,9 @@
 	}
 
 	@media (min-width: 600px) {
-		.nav-page-links { display: flex; }
+		.nav-page-links {
+			display: flex;
+		}
 	}
 
 	.nav-link {
@@ -339,7 +382,9 @@
 		padding: 3px 8px;
 		border-radius: 4px;
 		border: 1px solid transparent;
-		transition: color 0.12s, border-color 0.12s;
+		transition:
+			color 0.12s,
+			border-color 0.12s;
 		letter-spacing: 0.02em;
 	}
 	.nav-link:hover {
@@ -390,7 +435,12 @@
 	}
 
 	@keyframes maint-pulse {
-		0%, 100% { opacity: 1; }
-		50% { opacity: 0.8; }
+		0%,
+		100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.8;
+		}
 	}
 </style>

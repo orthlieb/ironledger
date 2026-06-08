@@ -1,6 +1,6 @@
 {
   "Ancient": [
-    { "topRange":  5, "value": "Ancient trap" },
+    { "topRange": 5, "value": "Ancient trap" },
     { "topRange": 10, "value": "Hazardous architecture or terrain" },
     { "topRange": 12, "value": "Blocked or broken path" },
     { "topRange": 14, "value": "Denizen protects an ancient secret" },
@@ -14,7 +14,7 @@
     { "topRange": 30, "value": "Others seek power or knowledge" }
   ],
   "Corrupted": [
-    { "topRange":  5, "value": "Denizen spawned from dark magic" },
+    { "topRange": 5, "value": "Denizen spawned from dark magic" },
     { "topRange": 10, "value": "Denizen controls dark magic" },
     { "topRange": 12, "value": "Denizen corrupted by dark magic" },
     { "topRange": 14, "value": "Corruption marks you" },
@@ -28,7 +28,7 @@
     { "topRange": 30, "value": "Dread harbingers of a greater magic" }
   ],
   "Fortified": [
-    { "topRange":  5, "value": "Denizen patrols the area" },
+    { "topRange": 5, "value": "Denizen patrols the area" },
     { "topRange": 10, "value": "Denizen on guard" },
     { "topRange": 12, "value": "Denizen ready to sound the alarm" },
     { "topRange": 14, "value": "Denizen sets an ambush" },
@@ -42,7 +42,7 @@
     { "topRange": 30, "value": "Alarm trigger" }
   ],
   "Hallowed": [
-    { "topRange":  5, "value": "Denizen defends their sanctum" },
+    { "topRange": 5, "value": "Denizen defends their sanctum" },
     { "topRange": 10, "value": "Denizen enacts the will of their god" },
     { "topRange": 12, "value": "Denizen seeks martyrdom" },
     { "topRange": 14, "value": "Secret of the faith is revealed" },
@@ -56,7 +56,7 @@
     { "topRange": 30, "value": "Prophecies reveal a dark fate" }
   ],
   "Haunted": [
-    { "topRange":  5, "value": "Denizen haunts this area" },
+    { "topRange": 5, "value": "Denizen haunts this area" },
     { "topRange": 10, "value": "Unsettling sounds or foreboding signs" },
     { "topRange": 12, "value": "Denizen attacks without warning" },
     { "topRange": 14, "value": "Denizen makes a costly demand" },
@@ -70,7 +70,7 @@
     { "topRange": 30, "value": "Sudden, shocking manifestation" }
   ],
   "Infested": [
-    { "topRange":  5, "value": "Denizens swarm and attack" },
+    { "topRange": 5, "value": "Denizens swarm and attack" },
     { "topRange": 10, "value": "Toxic or sickening environment" },
     { "topRange": 12, "value": "Denizen stalks you" },
     { "topRange": 14, "value": "Denizen takes or destroys something" },
@@ -84,7 +84,7 @@
     { "topRange": 30, "value": "Victim's horrible fate is revealed" }
   ],
   "Ravaged": [
-    { "topRange":  5, "value": "Precarious architecture or terrain" },
+    { "topRange": 5, "value": "Precarious architecture or terrain" },
     { "topRange": 10, "value": "Imminent collapse or destruction" },
     { "topRange": 12, "value": "Path undermined" },
     { "topRange": 14, "value": "Blocked or broken path" },
@@ -98,7 +98,7 @@
     { "topRange": 30, "value": "Ravages return anew" }
   ],
   "Wild": [
-    { "topRange":  5, "value": "Denizen hunts" },
+    { "topRange": 5, "value": "Denizen hunts" },
     { "topRange": 10, "value": "Denizen strikes without warning" },
     { "topRange": 12, "value": "Denizen leverages the environment" },
     { "topRange": 14, "value": "Denizen wields unexpected abilities" },

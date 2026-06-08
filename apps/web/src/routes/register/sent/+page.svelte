@@ -25,8 +25,8 @@
 		</div>
 
 		<p class="auth-info">
-			A verification link is on its way to your address. Click it to forge your account
-			and begin your chronicle.
+			A verification link is on its way to your address. Click it to forge your account and begin
+			your chronicle.
 		</p>
 
 		<p class="auth-info muted">

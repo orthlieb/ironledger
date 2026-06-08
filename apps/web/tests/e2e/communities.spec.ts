@@ -9,27 +9,33 @@
 import { test, expect } from '@playwright/test';
 import { resetCommunities } from './helpers/reset';
 
-const CM_AREA   = '.home-area--communities';
+const CM_AREA = '.home-area--communities';
 const CM_HEADER = `${CM_AREA} .cm-header`;
-const CM_SPINE  = `${CM_AREA} .cm-spine`;
-const CM_STAGE  = `${CM_AREA} .cm-stage`;
+const CM_SPINE = `${CM_AREA} .cm-spine`;
+const CM_STAGE = `${CM_AREA} .cm-stage`;
 
 async function waitForCommunitiesLoaded(page: import('@playwright/test').Page) {
 	await expect(page.locator(`${CM_AREA} .cm-loading`)).not.toBeVisible({ timeout: 10_000 });
-	await page.locator(`${CM_AREA} .cm-empty, ${CM_AREA} .cm-body`).first()
+	await page
+		.locator(`${CM_AREA} .cm-empty, ${CM_AREA} .cm-body`)
+		.first()
 		.waitFor({ timeout: 10_000, state: 'attached' });
 	// Allow both community and NPC stores to finish populating their spine items.
 	await page.waitForTimeout(500);
 }
 
 /** Walk all spines; return how many have the given kind ("npc" or "community"). */
-async function countByKind(page: import('@playwright/test').Page, kind: 'npc' | 'community'): Promise<number> {
+async function countByKind(
+	page: import('@playwright/test').Page,
+	kind: 'npc' | 'community',
+): Promise<number> {
 	const spines = page.locator(CM_SPINE);
 	const total = await spines.count();
 	let matched = 0;
 	for (let i = 0; i < total; i++) {
 		await spines.nth(i).click();
-		const aria = await page.locator(`${CM_AREA} .cm-stage-delete-btn`).getAttribute('aria-label') ?? '';
+		const aria =
+			(await page.locator(`${CM_AREA} .cm-stage-delete-btn`).getAttribute('aria-label')) ?? '';
 		if (kind === 'npc' && aria === 'Delete NPC') matched++;
 		else if (kind === 'community' && aria === 'Delete community') matched++;
 	}
@@ -42,7 +48,8 @@ async function selectSpineOfKind(page: import('@playwright/test').Page, kind: 'n
 	const total = await spines.count();
 	for (let i = 0; i < total; i++) {
 		await spines.nth(i).click();
-		const aria = await page.locator(`${CM_AREA} .cm-stage-delete-btn`).getAttribute('aria-label') ?? '';
+		const aria =
+			(await page.locator(`${CM_AREA} .cm-stage-delete-btn`).getAttribute('aria-label')) ?? '';
 		if (kind === 'npc' && aria === 'Delete NPC') return spines.nth(i);
 		if (kind === 'community' && aria === 'Delete community') return spines.nth(i);
 	}
@@ -50,7 +57,9 @@ async function selectSpineOfKind(page: import('@playwright/test').Page, kind: 'n
 }
 
 test.describe('Communities area (v2)', () => {
-	test.beforeAll(async () => { await resetCommunities(); });
+	test.beforeAll(async () => {
+		await resetCommunities();
+	});
 
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/home');
@@ -67,7 +76,9 @@ test.describe('Communities area (v2)', () => {
 	test('clicking + Community opens the new-community dialog', async ({ page }) => {
 		await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click();
 		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 15_000 });
-		await expect(page.locator('dialog.confirm-modal[open] .cm-title')).toContainText('New Community');
+		await expect(page.locator('dialog.confirm-modal[open] .cm-title')).toContainText(
+			'New Community',
+		);
 		await page.keyboard.press('Escape');
 	});
 

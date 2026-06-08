@@ -25,33 +25,43 @@ import DOMPurify from 'isomorphic-dompurify';
 // Exported so tests can assert the allowlist contains every attribute / tag that
 // interactive log links depend on — see tests/unit/sanitize.test.ts.
 export const LOG_TAGS = [
-	'a', 'span', 'div', 'p', 'br', 'strong', 'em', 'code', 'ul', 'ol', 'li',
-	's',   // <s class="resource-spent"> / <s class="xp-spent"> — written by markLinkSpent
+	'a',
+	'span',
+	'div',
+	'p',
+	'br',
+	'strong',
+	'em',
+	'code',
+	'ul',
+	'ol',
+	'li',
+	's', // <s class="resource-spent"> / <s class="xp-spent"> — written by markLinkSpent
 ];
 
 export const LOG_ATTRS = [
 	'class',
-	'href',              // move-links sometimes point somewhere; xp/failure links use href="#"
+	'href', // move-links sometimes point somewhere; xp/failure links use href="#"
 
 	// ── Shared across multiple link types ──────────────────────────────────
-	'data-value',        // resource-link, progress-link, initiative-link, menace-link
-	'data-entry-id',     // all stateful links (for markLinkSpent + guard checks)
-	'data-char-id',      // resource-link, debility-link, failure-link, burn-momentum-link, xp-cost-link
+	'data-value', // resource-link, progress-link, initiative-link, menace-link
+	'data-entry-id', // all stateful links (for markLinkSpent + guard checks)
+	'data-char-id', // resource-link, debility-link, failure-link, burn-momentum-link, xp-cost-link
 
 	// ── Per-link-type data attributes ──────────────────────────────────────
-	'data-resource',     // resource-link  — which stat to change (momentum, health, …)
-	'data-track',        // progress-link  — which track to mark (combat, journey, delve, …)
-	'data-debility',     // debility-link  — which debility to set/clear
-	'data-id',           // move-link      — move id to open in MovesDialog
-	'data-oracle',       // oracle-link    — oracle key to open in OraclesDialog
-	'data-stat',         // oracle-link    — stat column pre-selected in the oracle
-	'data-expedition-id',// change-theme/domain-link — which expedition to modify
-	'data-cost',         // xp-cost-link   — XP amount to deduct
-	'data-roll-entry-id',// burn-momentum-link — id of the original roll log entry
-	'data-move-id',      // burn-momentum-link — move id (used by burnMomentum)
+	'data-resource', // resource-link  — which stat to change (momentum, health, …)
+	'data-track', // progress-link  — which track to mark (combat, journey, delve, …)
+	'data-debility', // debility-link  — which debility to set/clear
+	'data-id', // move-link      — move id to open in MovesDialog
+	'data-oracle', // oracle-link    — oracle key to open in OraclesDialog
+	'data-stat', // oracle-link    — stat column pre-selected in the oracle
+	'data-expedition-id', // change-theme/domain-link — which expedition to modify
+	'data-cost', // xp-cost-link   — XP amount to deduct
+	'data-roll-entry-id', // burn-momentum-link — id of the original roll log entry
+	'data-move-id', // burn-momentum-link — move id (used by burnMomentum)
 	'data-action-score', // burn-momentum-link — action score (used by burnMomentum)
-	'data-menace',       // kept for forward compat; menace-link currently uses data-value
-	'data-xp',           // kept for backwards compat with old saved log entries
+	'data-menace', // kept for forward compat; menace-link currently uses data-value
+	'data-xp', // kept for backwards compat with old saved log entries
 ];
 
 export function sanitizeLogHtml(html: string | null | undefined): string {
@@ -63,7 +73,7 @@ export function sanitizeLogHtml(html: string | null | undefined): string {
 	return DOMPurify.sanitize(html, {
 		ALLOWED_TAGS: LOG_TAGS,
 		ALLOWED_ATTR: LOG_ATTRS,
-		ALLOW_DATA_ATTR: false,   // explicit allowlist above, no implicit data-*
+		ALLOW_DATA_ATTR: false, // explicit allowlist above, no implicit data-*
 	});
 }
 
@@ -79,6 +89,6 @@ export function sanitizeNoteHtml(html: string | null | undefined): string {
 	if (!html) return '';
 	return DOMPurify.sanitize(html, {
 		ALLOWED_TAGS: NOTE_TAGS,
-		ALLOWED_ATTR: [],          // notes have no interactive attrs
+		ALLOWED_ATTR: [], // notes have no interactive attrs
 	});
 }

@@ -1,4 +1,4 @@
-# Global Context Bar *(removed in v2)*
+# Global Context Bar _(removed in v2)_
 
 > **Status: v1 only.** The GlobalContextBar was removed when the v2
 > deck-of-cards layout shipped. The component no longer exists. Action
@@ -39,10 +39,12 @@ A full-width sticky bar rendered above the two-column page layout on the charact
 ## Tile States
 
 ### Empty State
+
 - Dashed border, dimmed background
 - Centered placeholder text: "Select Character" / "Select Foe" / "Select Expedition"
 
 ### Active State
+
 - Solid border with amber accent (`rgba(245, 158, 11, 0.3)`)
 - Left accent stripe (3px solid amber)
 - Card background color
@@ -53,12 +55,14 @@ A full-width sticky bar rendered above the two-column page layout on the charact
 ## Tile Content (Moderate Detail)
 
 ### Character Tile
+
 - **Row 1**: Portrait (24px circle) + character name (display font, bold)
 - **Row 2**: 5 core stats as colored abbreviations (E:1 H:1 I:1 S:1 W:1)
 - **Row 3**: 5 resource icons with values (momentum, health, spirit, supply, mana)
-- **Row 4** *(asset pills)*: One pill per non-`string` `customField` on each owned asset. Pill text is `field.shortLabel` (or `field.label` if `shortLabel` is absent), followed by the current value. Global fields (e.g. mana) are deduplicated. Pill color matches the asset category color.
+- **Row 4** _(asset pills)_: One pill per non-`string` `customField` on each owned asset. Pill text is `field.shortLabel` (or `field.label` if `shortLabel` is absent), followed by the current value. Global fields (e.g. mana) are deduplicated. Pill color matches the asset category color.
 
 ### Foe Tile
+
 - **Row 1**: Portrait (24px circle) + foe name (display font, bold)
 - **Row 2 (pills)**: Nature (colored) → rank → quantity (if not solo) → harm (`Harm: N ↑` italic red when escalating) → progress (`Progress: N ↓` italic blue when `escalatesDefense`)
 - **Detail panel** (below collapsible description):
@@ -68,6 +72,7 @@ A full-width sticky bar rendered above the two-column page layout on the charact
 - Initiative badge and vanquished marker shown in the detail panel
 
 ### Expedition Tile
+
 - **Row 1**: Type badge (Journey green / Site blue) + expedition name (display font, bold)
 - **Row 2**: Difficulty + progress X/10
 - **Row 3**: Theme + domain (sites only) + complete marker
@@ -77,6 +82,7 @@ A full-width sticky bar rendered above the two-column page layout on the charact
 ## Selection Mechanism
 
 Clicking a tile toggles a popover dropdown anchored below it:
+
 - Popover lists "(None)" + all available entities as clickable rows
 - Active entity is highlighted with accent color and bold weight
 - Clicking outside or selecting an option closes the popover
@@ -91,24 +97,26 @@ A `<svelte:window onclick>` handler closes the popover when clicking outside any
 ## Stat / Resource Definitions
 
 ### STAT_DEFS
+
 ```js
 const STAT_DEFS = [
-  { key: 'edge',   label: 'E', color: '#3b82f6' },
-  { key: 'heart',  label: 'H', color: '#ef4444' },
-  { key: 'iron',   label: 'I', color: '#9ca3af' },
+  { key: 'edge', label: 'E', color: '#3b82f6' },
+  { key: 'heart', label: 'H', color: '#ef4444' },
+  { key: 'iron', label: 'I', color: '#9ca3af' },
   { key: 'shadow', label: 'S', color: '#a855f7' },
-  { key: 'wits',   label: 'W', color: '#f59e0b' },
+  { key: 'wits', label: 'W', color: '#f59e0b' },
 ];
 ```
 
 ### RESOURCE_DEFS
+
 ```js
 const RESOURCE_DEFS = [
   { key: 'momentum', icon: iconMomentum, color: '#60a5fa' },
-  { key: 'health',   icon: iconHeart,    color: '#f87171' },
-  { key: 'spirit',   icon: iconSpirit,   color: '#a78bfa' },
-  { key: 'supply',   icon: iconSupply,   color: '#34d399' },
-  { key: 'mana',     icon: iconMana,     color: '#f59e0b' },
+  { key: 'health', icon: iconHeart, color: '#f87171' },
+  { key: 'spirit', icon: iconSpirit, color: '#a78bfa' },
+  { key: 'supply', icon: iconSupply, color: '#34d399' },
+  { key: 'mana', icon: iconMana, color: '#f59e0b' },
 ];
 ```
 
@@ -141,17 +149,17 @@ Resource icons are inline SVGs from `$lib/images/icon-*.svg?raw` using `currentC
 
 ## Derived State
 
-| Derived | Source | Purpose |
-|---------|--------|---------|
-| `character` | `chars.find(c => c.id === activeCharId)` | Active character object |
-| `data` | `hydrateCharacter(character.data)` | Typed character data with defaults |
-| `activeFoe` | `encounters.find(e => e.id === activeFoeId)` | Active encounter |
-| `activeFoeDef` | `findFoe(activeFoe.foeId)` | Catalogue entry for active foe |
-| `activeFoeRank` | `FOE_RANKS[activeFoe.effectiveRank]` | Rank label + harm |
-| `activeFoeNature` | `FOE_NATURE_COLORS[activeFoeDef.nature]` | Nature color |
-| `activeFoeProgress` | `Math.floor(activeFoe.ticks / 4)` | Progress score 0-10 |
-| `activeExpedition` | `expeditions.find(e => e.id === activeExpeditionId)` | Active expedition |
-| `expProgress` | `Math.floor(activeExpedition.ticks / 4)` | Expedition progress 0-10 |
+| Derived             | Source                                               | Purpose                            |
+| ------------------- | ---------------------------------------------------- | ---------------------------------- |
+| `character`         | `chars.find(c => c.id === activeCharId)`             | Active character object            |
+| `data`              | `hydrateCharacter(character.data)`                   | Typed character data with defaults |
+| `activeFoe`         | `encounters.find(e => e.id === activeFoeId)`         | Active encounter                   |
+| `activeFoeDef`      | `findFoe(activeFoe.foeId)`                           | Catalogue entry for active foe     |
+| `activeFoeRank`     | `FOE_RANKS[activeFoe.effectiveRank]`                 | Rank label + harm                  |
+| `activeFoeNature`   | `FOE_NATURE_COLORS[activeFoeDef.nature]`             | Nature color                       |
+| `activeFoeProgress` | `Math.floor(activeFoe.ticks / 4)`                    | Progress score 0-10                |
+| `activeExpedition`  | `expeditions.find(e => e.id === activeExpeditionId)` | Active expedition                  |
+| `expProgress`       | `Math.floor(activeExpedition.ticks / 4)`             | Expedition progress 0-10           |
 
 ---
 
@@ -159,7 +167,7 @@ Resource icons are inline SVGs from `$lib/images/icon-*.svg?raw` using `currentC
 
 ```css
 .global-context {
-  background: rgba(245, 158, 11, 0.07);   /* amber tint */
+  background: rgba(245, 158, 11, 0.07); /* amber tint */
   border: 1px solid rgba(245, 158, 11, 0.18);
   border-radius: 6px;
   padding: 0.5rem 0.6rem;
@@ -196,7 +204,9 @@ Resource icons are inline SVGs from `$lib/images/icon-*.svg?raw` using `currentC
 
 /* Mobile: stack tiles vertically */
 @media (max-width: 768px) {
-  .gc-tiles { grid-template-columns: 1fr; }
+  .gc-tiles {
+    grid-template-columns: 1fr;
+  }
 }
 ```
 
@@ -205,6 +215,7 @@ Resource icons are inline SVGs from `$lib/images/icon-*.svg?raw` using `currentC
 ## Initiative Badge
 
 Shown in the foe tile when initiative state is set:
+
 - `initiative === 1`: Green "You" badge (character has initiative)
 - `initiative === 2`: Red "Foe" badge (foe has initiative)
 - Set via interactive initiative-links in move outcomes

@@ -8,20 +8,34 @@
     "packages/shared"
   ],
   "scripts": {
-    "dev":        "lsof -ti :3000 | xargs kill -9; npm run dev --workspace=apps/api",
-    "dev:web":    "npm run dev --workspace=apps/web",
-    "build":      "npm run build --workspace=apps/api && npm run build --workspace=apps/web",
-    "build:api":  "npm run build --workspace=apps/api",
-    "build:web":  "npm run build --workspace=apps/web",
-    "check:web":  "npm run check --workspace=apps/web",
-    "test":       "npm run test --workspace=apps/api",
-    "migrate":    "npm run migrate --workspace=apps/api"
+    "dev": "lsof -ti :3000 | xargs kill -9; npm run dev --workspace=apps/api",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "build": "npm run build --workspace=apps/api && npm run build --workspace=apps/web",
+    "build:api": "npm run build --workspace=apps/api",
+    "build:web": "npm run build --workspace=apps/web",
+    "check:web": "npm run check --workspace=apps/web",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "npm run test --workspace=apps/api",
+    "migrate": "npm run migrate --workspace=apps/api"
   },
   "engines": {
     "node": ">=22.0.0",
-    "npm":  ">=10.0.0"
+    "npm": ">=10.0.0"
   },
   "overrides": {
     "cookie": ">=0.7.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-svelte": "^3.19.0",
+    "globals": "^16.5.0",
+    "prettier": "^3.8.3",
+    "prettier-plugin-svelte": "^3.5.2",
+    "typescript-eslint": "^8.60.1"
   }
 }

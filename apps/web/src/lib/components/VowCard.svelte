@@ -22,26 +22,28 @@
 
 	const DIFFICULTIES: { value: VowDifficulty; label: string }[] = [
 		{ value: 'troublesome', label: 'Troublesome' },
-		{ value: 'dangerous',   label: 'Dangerous' },
-		{ value: 'formidable',  label: 'Formidable' },
-		{ value: 'extreme',     label: 'Extreme' },
-		{ value: 'epic',        label: 'Epic' },
+		{ value: 'dangerous', label: 'Dangerous' },
+		{ value: 'formidable', label: 'Formidable' },
+		{ value: 'extreme', label: 'Extreme' },
+		{ value: 'epic', label: 'Epic' },
 	];
 
 	/** Endure Stress cost when forsaking each rank of vow. */
 	const FORSAKE_STRESS: Record<VowDifficulty, number> = {
 		troublesome: 1,
-		dangerous:   2,
-		formidable:  3,
-		extreme:     4,
-		epic:        5,
+		dangerous: 2,
+		formidable: 3,
+		extreme: 4,
+		epic: 5,
 	};
 
-	let collapsed        = $state(false);
+	let collapsed = $state(false);
 	let forsakeDialogRef = $state<{ open(): void; close(): void } | null>(null);
 
 	// Inline name editing
-	const nameEdit = new EditableName((restored) => { vow.name = restored; });
+	const nameEdit = new EditableName((restored) => {
+		vow.name = restored;
+	});
 	// Scroll a new vow's rename input into view (new vows are appended to
 	// the list and may be off-screen). `nearest` is a no-op when the input
 	// is already visible, so this doesn't trigger a stray scroll on existing vows.
@@ -50,16 +52,17 @@
 			nameEdit.inputEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 		}
 	});
-	$effect(() => { if (focusName) nameEdit.start(vow.name); });
+	$effect(() => {
+		if (focusName) nameEdit.start(vow.name);
+	});
 
-	const diffLabel  = $derived(
-		DIFFICULTIES.find((d) => d.value === vow.difficulty)?.label ?? vow.difficulty
+	const diffLabel = $derived(
+		DIFFICULTIES.find((d) => d.value === vow.difficulty)?.label ?? vow.difficulty,
 	);
 	const stressCost = $derived(FORSAKE_STRESS[vow.difficulty]);
 </script>
 
 <div class="vow-card">
-
 	<!-- Header: collapse toggle, name, forsake button -->
 	<div class="vow-header">
 		<button
@@ -88,16 +91,16 @@
 				role="button"
 				onclick={() => nameEdit.start(vow.name)}
 				onkeydown={(e) => e.key === 'Enter' && nameEdit.start(vow.name)}
-				use:tooltip={'Click to rename'}
-			>{vow.name || 'Unnamed Vow'}</span>
+				use:tooltip={'Click to rename'}>{vow.name || 'Unnamed Vow'}</span
+			>
 		{/if}
 
 		<button
 			class="btn btn-icon icon-btn btn-trash"
 			onclick={() => forsakeDialogRef?.open()}
 			use:tooltip={'Forsake vow'}
-			aria-label="Forsake vow"
-		>{@html trashSvg}</button>
+			aria-label="Forsake vow">{@html trashSvg}</button
+		>
 	</div>
 
 	<!-- Expandable body -->
@@ -107,11 +110,7 @@
 			<div class="vow-extras">
 				<label class="vow-extra">
 					<span>Rank</span>
-					<select
-						class="vow-difficulty"
-						bind:value={vow.difficulty}
-						aria-label="Vow difficulty"
-					>
+					<select class="vow-difficulty" bind:value={vow.difficulty} aria-label="Vow difficulty">
 						{#each DIFFICULTIES as d (d.value)}
 							<option value={d.value}>{d.label}</option>
 						{/each}
@@ -132,15 +131,15 @@
 							class="adj-btn"
 							onclick={() => (vow.menace = Math.max(0, vow.menace - 1))}
 							disabled={vow.menace <= 0}
-							aria-label="Decrease menace"
-						>−</button>
+							aria-label="Decrease menace">−</button
+						>
 						<span class="menace-val" class:menace-high={vow.menace >= 7}>{vow.menace}</span>
 						<button
 							class="adj-btn"
 							onclick={() => (vow.menace = Math.min(10, vow.menace + 1))}
 							disabled={vow.menace >= 10}
-							aria-label="Increase menace"
-						>+</button>
+							aria-label="Increase menace">+</button
+						>
 						<span class="menace-max">/10</span>
 					</div>
 				</div>
@@ -176,12 +175,11 @@
 >
 	<div class="forsake-vow-name">"{vow.name || 'Unnamed Vow'}" ({diffLabel})</div>
 	<p class="forsake-rule">
-		When you renounce your quest or are unable to continue, clear the vow
-		and Endure Stress.
+		When you renounce your quest or are unable to continue, clear the vow and Endure Stress.
 	</p>
 	<p class="forsake-cost">
-		An iron vow is a sacred promise. Forsaking it means accepting failure
-		and the weight of a broken oath. You must
+		An iron vow is a sacred promise. Forsaking it means accepting failure and the weight of a broken
+		oath. You must
 		<strong>Endure Stress (−{stressCost})</strong> for a
 		{diffLabel.toLowerCase()} vow.
 	</p>
@@ -220,7 +218,9 @@
 		font-family: inherit;
 		transition: color 0.12s;
 	}
-	.collapse-btn:hover { color: var(--text); }
+	.collapse-btn:hover {
+		color: var(--text);
+	}
 
 	.vow-name {
 		flex: 1;
@@ -231,19 +231,21 @@
 
 	/* Display mode: looks like plain header text, reveals border on hover */
 	.vow-name--display {
-		display:       block;
-		padding:       2px 6px;
+		display: block;
+		padding: 2px 6px;
 		border-radius: 3px;
-		color:         var(--text);
-		cursor:        text;
-		white-space:   nowrap;
-		overflow:      hidden;
+		color: var(--text);
+		cursor: text;
+		white-space: nowrap;
+		overflow: hidden;
 		text-overflow: ellipsis;
-		border:        1px solid transparent;
-		transition:    background 0.12s, border-color 0.12s;
+		border: 1px solid transparent;
+		transition:
+			background 0.12s,
+			border-color 0.12s;
 	}
 	.vow-name--display:hover {
-		background:   var(--bg-hover);
+		background: var(--bg-hover);
 		border-color: var(--border);
 	}
 
@@ -336,7 +338,10 @@
 		line-height: 1;
 	}
 
-	.adj-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+	.adj-btn:disabled {
+		opacity: 0.35;
+		cursor: not-allowed;
+	}
 	.adj-btn:not(:disabled):hover {
 		background: var(--bg-hover);
 		border-color: var(--border-mid);
@@ -350,7 +355,9 @@
 		font-weight: 600;
 		font-variant-numeric: tabular-nums;
 	}
-	.menace-val.menace-high { color: var(--color-danger); }
+	.menace-val.menace-high {
+		color: var(--color-danger);
+	}
 
 	.menace-max {
 		color: var(--text-muted);
@@ -385,5 +392,4 @@
 		color: var(--color-danger);
 		font-weight: 700;
 	}
-
 </style>

@@ -27,10 +27,10 @@ export class ImportError extends Error {
 // Limits
 // ---------------------------------------------------------------------------
 
-const MAX_BYTES       = 5 * 1024 * 1024; // 5 MB — enough for any real campaign
-const MAX_DEPTH       = 12;              // manifest → data → object → field → …
-const MAX_ARRAY_ITEMS = 1000;            // generous upper bound
-const MAX_STR_LEN     = 200_000;         // ~200k chars per string field
+const MAX_BYTES = 5 * 1024 * 1024; // 5 MB — enough for any real campaign
+const MAX_DEPTH = 12; // manifest → data → object → field → …
+const MAX_ARRAY_ITEMS = 1000; // generous upper bound
+const MAX_STR_LEN = 200_000; // ~200k chars per string field
 
 /** Keys that trigger prototype pollution if assigned to a plain object. */
 const POISON_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -62,19 +62,21 @@ export function parseImportJson(text: string): unknown {
  * Removes script tags, event-handler attributes, and dangerous protocols.
  */
 export function sanitizeLogHtml(html: string): string {
-	return html
-		// Remove <script> blocks (including multiline)
-		.replace(/<script\b[\s\S]*?<\/script>/gi, '')
-		// Remove dangerous embedding elements
-		.replace(/<(iframe|object|embed|link|meta|base)\b[^>]*>[\s\S]*?<\/\1>/gi, '')
-		.replace(/<(iframe|object|embed|link|meta|base)\b[^>]*\/?>/gi, '')
-		// Remove event-handler attributes (onclick=, onerror=, onload=, …)
-		.replace(/\bon\w+\s*=/gi, 'data-removed=')
-		// Remove dangerous URL protocols
-		.replace(/javascript\s*:/gi, 'removed:')
-		.replace(/data\s*:\s*text\/html/gi, 'removed:text/html')
-		// Remove vbscript: protocol
-		.replace(/vbscript\s*:/gi, 'removed:');
+	return (
+		html
+			// Remove <script> blocks (including multiline)
+			.replace(/<script\b[\s\S]*?<\/script>/gi, '')
+			// Remove dangerous embedding elements
+			.replace(/<(iframe|object|embed|link|meta|base)\b[^>]*>[\s\S]*?<\/\1>/gi, '')
+			.replace(/<(iframe|object|embed|link|meta|base)\b[^>]*\/?>/gi, '')
+			// Remove event-handler attributes (onclick=, onerror=, onload=, …)
+			.replace(/\bon\w+\s*=/gi, 'data-removed=')
+			// Remove dangerous URL protocols
+			.replace(/javascript\s*:/gi, 'removed:')
+			.replace(/data\s*:\s*text\/html/gi, 'removed:text/html')
+			// Remove vbscript: protocol
+			.replace(/vbscript\s*:/gi, 'removed:')
+	);
 }
 
 // ---------------------------------------------------------------------------
@@ -100,9 +102,7 @@ function sanitize(value: unknown, depth: number): unknown {
 
 	if (Array.isArray(value)) {
 		if (value.length > MAX_ARRAY_ITEMS) {
-			throw new ImportError(
-				`An array in the file has too many items (max ${MAX_ARRAY_ITEMS}).`,
-			);
+			throw new ImportError(`An array in the file has too many items (max ${MAX_ARRAY_ITEMS}).`);
 		}
 		return value.map((item) => sanitize(item, depth + 1));
 	}

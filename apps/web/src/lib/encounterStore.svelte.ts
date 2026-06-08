@@ -20,9 +20,9 @@ import type { FoeEncounter } from '$lib/types.js';
 // ---------------------------------------------------------------------------
 
 let _encounters: FoeEncounter[] = $state([]);
-let _loading                     = $state(false);
-let _loaded                      = false;
-let _saving                      = $state(false);
+let _loading = $state(false);
+let _loaded = false;
+let _saving = $state(false);
 
 // ---------------------------------------------------------------------------
 // Fetch
@@ -42,7 +42,7 @@ export async function loadEncounters(): Promise<void> {
 		// Guard against legacy rows where the JSONB column was persisted as
 		// `{}` instead of `[]` — `?? []` only rescues null/undefined.
 		_encounters = Array.isArray(json.encounters) ? (json.encounters as FoeEncounter[]) : [];
-		_loaded     = true;
+		_loaded = true;
 	} catch (err) {
 		console.error('[encounterStore] Failed to load encounters:', err);
 	} finally {
@@ -79,7 +79,7 @@ export async function addEncounter(enc: FoeEncounter): Promise<void> {
 
 /** Replace one encounter by id and persist. */
 export async function updateEncounter(updated: FoeEncounter): Promise<void> {
-	_encounters = _encounters.map((e) => e.id === updated.id ? updated : e);
+	_encounters = _encounters.map((e) => (e.id === updated.id ? updated : e));
 	await persist();
 }
 
@@ -105,10 +105,10 @@ async function persist(): Promise<void> {
 	_saving = true;
 	try {
 		const res = await fetch('/api/session/encounters', {
-			method:      'PATCH',
+			method: 'PATCH',
 			credentials: 'include',
-			headers:     { 'Content-Type': 'application/json' },
-			body:        JSON.stringify({ encounters: _encounters }),
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ encounters: _encounters }),
 		});
 		if (!res.ok) {
 			console.error('[encounterStore] Persist failed:', res.status);

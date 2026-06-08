@@ -22,13 +22,13 @@ async function adminToken(): Promise<string> {
 	const ctx = await request.newContext({ baseURL: API });
 	const res = await ctx.post('/api/v1/auth/login', {
 		data: {
-			email:        'admin@ironledger.local',
-			password:     'adminpassword123!',
+			email: 'admin@ironledger.local',
+			password: 'adminpassword123!',
 			captchaToken: 'dev-bypass',
 		},
 	});
 	if (!res.ok()) throw new Error(`Admin login failed: ${res.status()} ${await res.text()}`);
-	const body = await res.json() as { accessToken: string };
+	const body = (await res.json()) as { accessToken: string };
 	await ctx.dispose();
 	return body.accessToken;
 }
@@ -116,13 +116,13 @@ test.describe('Registration Lock', () => {
 		const ctx = await request.newContext({ baseURL: API });
 		const res = await ctx.post('/api/v1/auth/register', {
 			data: {
-				email:        'newuser_locked_test@ironledger.local',
-				password:     'somepassword123!',
+				email: 'newuser_locked_test@ironledger.local',
+				password: 'somepassword123!',
 				captchaToken: 'dev-bypass',
 			},
 		});
 		expect(res.status()).toBe(403);
-		const body = await res.json() as { message?: string };
+		const body = (await res.json()) as { message?: string };
 		await ctx.dispose();
 		expect(body.message).toContain(LOCK_MESSAGE);
 	});

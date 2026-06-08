@@ -11,37 +11,38 @@
  */
 import { test, expect, type Page, type Route } from '@playwright/test';
 
-const FOE_AREA   = '.home-area--foes';
+const FOE_AREA = '.home-area--foes';
 const FOE_HEADER = `${FOE_AREA} .fa-header`;
 
 const DELVE_KEY = 'ironledger:expansion:delve';
-const YRT_KEY   = 'ironledger:expansion:yrt';
+const YRT_KEY = 'ironledger:expansion:yrt';
 
 const BASE_FOE_A = {
-	id:          'ironsworn/test-excluded',
-	name:        'ZZZ Test Excluded',
-	rank:        2,
-	nature:      'Beast',
-	features:    ['Sharp claws', 'Fanged jaw'],
-	drives:      ['Hunt solitary prey'],
-	tactics:     ['Ambush from shadow'],
+	id: 'ironsworn/test-excluded',
+	name: 'ZZZ Test Excluded',
+	rank: 2,
+	nature: 'Beast',
+	features: ['Sharp claws', 'Fanged jaw'],
+	drives: ['Hunt solitary prey'],
+	tactics: ['Ambush from shadow'],
 	description: 'A base-setting creature that YRT excludes from its world.',
-	source:      'base',
+	source: 'base',
 };
 
 const BASE_FOE_B = {
-	id:          'ironsworn/test-decorated',
-	name:        'ZZZ Test Decorated',
-	rank:        2,
-	nature:      'Beast',
-	features:    ['Matted fur', 'Steady gaze'],
-	drives:      ['Defend its range'],
-	tactics:     ['Charge intruders'],
+	id: 'ironsworn/test-decorated',
+	name: 'ZZZ Test Decorated',
+	rank: 2,
+	nature: 'Beast',
+	features: ['Matted fur', 'Steady gaze'],
+	drives: ['Defend its range'],
+	tactics: ['Charge intruders'],
 	description: 'A base-setting creature that YRT keeps but re-explains.',
-	source:      'base',
+	source: 'base',
 };
 
-const YRT_ADDENDUM = 'In YRT, this beast is bound to Green mana and has persisted through the sundering.';
+const YRT_ADDENDUM =
+	'In YRT, this beast is bound to Green mana and has persisted through the sundering.';
 
 const FIXTURE_PAYLOAD = {
 	foes: [BASE_FOE_A, BASE_FOE_B],
@@ -61,7 +62,9 @@ const FIXTURE_PAYLOAD = {
 async function waitForHome(page: Page) {
 	// Foes area: wait for it to render either spines or the empty state.
 	await expect(page.locator(`${FOE_AREA} .fa-loading`)).not.toBeVisible({ timeout: 12_000 });
-	await page.locator(`${FOE_AREA} .fa-empty, ${FOE_AREA} .fa-body`).first()
+	await page
+		.locator(`${FOE_AREA} .fa-empty, ${FOE_AREA} .fa-body`)
+		.first()
 		.waitFor({ timeout: 12_000, state: 'attached' });
 }
 
@@ -80,8 +83,10 @@ async function resetToggles(page: Page): Promise<void> {
 async function setToggles(page: Page, opts: { delve?: boolean; yrt?: boolean }): Promise<void> {
 	await page.evaluate(
 		({ d, y, delve, yrt }) => {
-			if (delve === true) localStorage.removeItem(d); else if (delve === false) localStorage.setItem(d, 'off');
-			if (yrt   === true) localStorage.removeItem(y); else if (yrt   === false) localStorage.setItem(y, 'off');
+			if (delve === true) localStorage.removeItem(d);
+			else if (delve === false) localStorage.setItem(d, 'off');
+			if (yrt === true) localStorage.removeItem(y);
+			else if (yrt === false) localStorage.setItem(y, 'off');
 		},
 		{ d: DELVE_KEY, y: YRT_KEY, delve: opts.delve, yrt: opts.yrt },
 	);
@@ -93,7 +98,7 @@ async function stubFoesEndpoint(page: Page): Promise<void> {
 		route.fulfill({
 			status: 200,
 			headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-			body:   JSON.stringify(FIXTURE_PAYLOAD),
+			body: JSON.stringify(FIXTURE_PAYLOAD),
 		});
 	});
 }
@@ -122,7 +127,6 @@ async function openFoePicker(page: Page): Promise<void> {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 test.describe('Foe overrides — expansion exclusion + addendum', () => {
-
 	test.beforeEach(async ({ page }) => {
 		// Install the intercept BEFORE the initial navigation so loadFoes sees
 		// the fixture, not real data.
@@ -136,10 +140,12 @@ test.describe('Foe overrides — expansion exclusion + addendum', () => {
 
 	test('YRT on: excluded foe is hidden from the picker', async ({ page }) => {
 		await openFoePicker(page);
-		await expect(page.locator('dialog.foe-dialog[open] .fd-tile-name', { hasText: BASE_FOE_A.name }))
-			.toHaveCount(0, { timeout: 5_000 });
-		await expect(page.locator('dialog.foe-dialog[open] .fd-tile-name', { hasText: BASE_FOE_B.name }))
-			.toHaveCount(1, { timeout: 5_000 });
+		await expect(
+			page.locator('dialog.foe-dialog[open] .fd-tile-name', { hasText: BASE_FOE_A.name }),
+		).toHaveCount(0, { timeout: 5_000 });
+		await expect(
+			page.locator('dialog.foe-dialog[open] .fd-tile-name', { hasText: BASE_FOE_B.name }),
+		).toHaveCount(1, { timeout: 5_000 });
 		await page.keyboard.press('Escape');
 	});
 
@@ -149,15 +155,20 @@ test.describe('Foe overrides — expansion exclusion + addendum', () => {
 		await waitForHome(page);
 
 		await openFoePicker(page);
-		await expect(page.locator('dialog.foe-dialog[open] .fd-tile-name', { hasText: BASE_FOE_A.name }))
-			.toHaveCount(1, { timeout: 5_000 });
+		await expect(
+			page.locator('dialog.foe-dialog[open] .fd-tile-name', { hasText: BASE_FOE_A.name }),
+		).toHaveCount(1, { timeout: 5_000 });
 		await page.keyboard.press('Escape');
 	});
 
 	test('YRT on: addendum is appended to the foe description', async ({ page }) => {
 		await openFoePicker(page);
-		await page.locator('dialog.foe-dialog[open] .fd-tile', { has: page.locator('.fd-tile-name', { hasText: BASE_FOE_B.name }) })
-			.first().click();
+		await page
+			.locator('dialog.foe-dialog[open] .fd-tile', {
+				has: page.locator('.fd-tile-name', { hasText: BASE_FOE_B.name }),
+			})
+			.first()
+			.click();
 
 		const desc = page.locator('dialog.foe-dialog[open] .fc-desc');
 		await expect(desc).toBeVisible({ timeout: 5_000 });
@@ -172,8 +183,12 @@ test.describe('Foe overrides — expansion exclusion + addendum', () => {
 		await waitForHome(page);
 
 		await openFoePicker(page);
-		await page.locator('dialog.foe-dialog[open] .fd-tile', { has: page.locator('.fd-tile-name', { hasText: BASE_FOE_B.name }) })
-			.first().click();
+		await page
+			.locator('dialog.foe-dialog[open] .fd-tile', {
+				has: page.locator('.fd-tile-name', { hasText: BASE_FOE_B.name }),
+			})
+			.first()
+			.click();
 
 		const desc = page.locator('dialog.foe-dialog[open] .fc-desc');
 		await expect(desc).toBeVisible({ timeout: 5_000 });

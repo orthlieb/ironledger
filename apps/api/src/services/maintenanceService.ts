@@ -18,8 +18,8 @@ import { refreshTokens, securityEvents } from '../db/schema.js';
 // ---------------------------------------------------------------------------
 
 export interface MaintenanceStatus {
-  enabled:    boolean;
-  message:    string | null;
+  enabled: boolean;
+  message: string | null;
   shutdownAt: string | null;
 }
 
@@ -27,8 +27,8 @@ export interface MaintenanceStatus {
 // Redis key constants
 // ---------------------------------------------------------------------------
 
-const KEY_ENABLED     = 'maintenance:enabled';
-const KEY_MESSAGE     = 'maintenance:message';
+const KEY_ENABLED = 'maintenance:enabled';
+const KEY_MESSAGE = 'maintenance:message';
 const KEY_SHUTDOWN_AT = 'maintenance:shutdownAt';
 
 // ---------------------------------------------------------------------------
@@ -44,8 +44,8 @@ export async function getStatus(): Promise<MaintenanceStatus> {
   );
 
   return {
-    enabled:    enabled === '1',
-    message:    message ?? null,
+    enabled: enabled === '1',
+    message: message ?? null,
     shutdownAt: shutdownAt ?? null,
   };
 }
@@ -82,20 +82,22 @@ export async function enableMaintenance(
   }
 
   // Audit log
-  void logMaintenanceEvent(adminId, 'admin_enable_maintenance', {
-    message,
-    minutesUntilShutdown,
-    shutdownAt,
-  }, ip);
+  void logMaintenanceEvent(
+    adminId,
+    'admin_enable_maintenance',
+    {
+      message,
+      minutesUntilShutdown,
+      shutdownAt,
+    },
+    ip,
+  );
 
   return { enabled: true, message, shutdownAt };
 }
 
 /** Disable maintenance mode — clears all Redis keys. */
-export async function disableMaintenance(
-  adminId: string,
-  ip?: string,
-): Promise<void> {
+export async function disableMaintenance(adminId: string, ip?: string): Promise<void> {
   await redis.del(KEY_ENABLED, KEY_MESSAGE, KEY_SHUTDOWN_AT);
 
   // Audit log
@@ -113,10 +115,13 @@ async function logMaintenanceEvent(
   ip?: string,
 ): Promise<void> {
   if (!adminDb) return;
-  await adminDb.insert(securityEvents).values({
-    userId:    adminId,
-    eventType,
-    ipAddress: ip ?? null,
-    metadata,
-  }).catch(console.error);
+  await adminDb
+    .insert(securityEvents)
+    .values({
+      userId: adminId,
+      eventType,
+      ipAddress: ip ?? null,
+      metadata,
+    })
+    .catch(console.error);
 }

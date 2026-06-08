@@ -20,9 +20,9 @@ import type { Expedition } from '$lib/types.js';
 // ---------------------------------------------------------------------------
 
 let _expeditions: Expedition[] = $state([]);
-let _loading                    = $state(false);
-let _loaded                     = false;
-let _saving                     = $state(false);
+let _loading = $state(false);
+let _loaded = false;
+let _saving = $state(false);
 
 // ---------------------------------------------------------------------------
 // Fetch
@@ -42,7 +42,7 @@ export async function loadExpeditions(): Promise<void> {
 		// Guard against legacy rows where the JSONB column was persisted as
 		// `{}` instead of `[]` — `?? []` only rescues null/undefined.
 		_expeditions = Array.isArray(json.expeditions) ? (json.expeditions as Expedition[]) : [];
-		_loaded      = true;
+		_loaded = true;
 	} catch (err) {
 		console.error('[expeditionStore] Failed to load expeditions:', err);
 	} finally {
@@ -79,14 +79,14 @@ export async function addExpedition(exp: Expedition): Promise<void> {
 
 /** Replace one expedition by id and persist. */
 export async function updateExpedition(updated: Expedition): Promise<void> {
-	_expeditions = _expeditions.map((e) => e.id === updated.id ? updated : e);
+	_expeditions = _expeditions.map((e) => (e.id === updated.id ? updated : e));
 	await persist();
 }
 
 /** Replace one expedition by id WITHOUT persisting. Use this when the caller
  *  is debouncing the API write — pair with persistExpeditionsNow(). */
 export function updateExpeditionLocal(updated: Expedition): void {
-	_expeditions = _expeditions.map((e) => e.id === updated.id ? updated : e);
+	_expeditions = _expeditions.map((e) => (e.id === updated.id ? updated : e));
 }
 
 /** Force a save of the current encounter set. Used by debounced callers
@@ -110,10 +110,10 @@ async function persist(): Promise<void> {
 	_saving = true;
 	try {
 		const res = await fetch('/api/session/expeditions', {
-			method:      'PATCH',
+			method: 'PATCH',
 			credentials: 'include',
-			headers:     { 'Content-Type': 'application/json' },
-			body:        JSON.stringify({ expeditions: _expeditions }),
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ expeditions: _expeditions }),
 		});
 		if (!res.ok) {
 			console.error('[expeditionStore] Persist failed:', res.status);

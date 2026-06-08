@@ -22,44 +22,44 @@
    -------------------------------------------------------------------------- */
 :root,
 html[data-theme='dark'] {
-	--bg-page:    #0b0906;
-	--bg-card:    #131008;
-	--bg-inset:   #0d0b07;
+	--bg-page: #0b0906;
+	--bg-card: #131008;
+	--bg-inset: #0d0b07;
 	--bg-control: #1a1610;
-	--bg-hover:   #221d14;
-	--border:     #3d3425;   /* was #2c261a — much more visible */
-	--border-mid: #574a32;   /* was #3d3524 — clearly distinct */
+	--bg-hover: #221d14;
+	--border: #3d3425; /* was #2c261a — much more visible */
+	--border-mid: #574a32; /* was #3d3524 — clearly distinct */
 
-	--text:        #ddd0aa;  /* was #d8c9a5 — slightly brighter */
-	--text-muted:  #9a886a;  /* was #7a7058 — legible on dark bg */
-	--text-dimmer: #6e5e42;  /* was #4a4130 — was nearly invisible */
+	--text: #ddd0aa; /* was #d8c9a5 — slightly brighter */
+	--text-muted: #9a886a; /* was #7a7058 — legible on dark bg */
+	--text-dimmer: #6e5e42; /* was #4a4130 — was nearly invisible */
 
 	/* Brighter forge-amber — clearly visible on dark bg */
 	--text-accent: #e8a030;
-	--focus-ring:  #e8a030;
+	--focus-ring: #e8a030;
 	--accent-glow: #e8a03020;
-	--accent-dim:  #e8a03012;
+	--accent-dim: #e8a03012;
 
 	/* Stat colours */
-	--color-edge:    #5B9CF6;   /* sky blue   — swift/agility   */
-	--color-heart:   #F06880;   /* rose       — bonds/empathy   */
-	--color-iron:    #94A8BC;   /* steel      — strength        */
-	--color-shadow:  #C084FC;   /* violet     — cunning/stealth */
-	--color-wits:    #FBBF24;   /* amber      — wisdom          */
-	--color-touched: #78DB88;
+	--color-edge: #5b9cf6; /* sky blue   — swift/agility   */
+	--color-heart: #f06880; /* rose       — bonds/empathy   */
+	--color-iron: #94a8bc; /* steel      — strength        */
+	--color-shadow: #c084fc; /* violet     — cunning/stealth */
+	--color-wits: #fbbf24; /* amber      — wisdom          */
+	--color-touched: #78db88;
 
 	/* Resource colours */
-	--color-momentum: #22D3EE;  /* cyan       — flowing action  */
-	--color-health:   #4ADE80;  /* green      — vitality        */
-	--color-spirit:   #818CF8;  /* periwinkle — willpower       */
-	--color-supply:   #FB923C;  /* orange     — provisions      */
-	--color-xp:       #A3E635;  /* lime       — advancement     */
-	--color-mana:     #f59e0b;
+	--color-momentum: #22d3ee; /* cyan       — flowing action  */
+	--color-health: #4ade80; /* green      — vitality        */
+	--color-spirit: #818cf8; /* periwinkle — willpower       */
+	--color-supply: #fb923c; /* orange     — provisions      */
+	--color-xp: #a3e635; /* lime       — advancement     */
+	--color-mana: #f59e0b;
 
 	/* Semantic */
-	--color-danger:  #DD514C;
-	--color-success: #6ACF9D;
-	--color-warning: #E8A13B;
+	--color-danger: #dd514c;
+	--color-success: #6acf9d;
+	--color-warning: #e8a13b;
 
 	color-scheme: dark;
 }
@@ -69,39 +69,39 @@ html[data-theme='dark'] {
    -------------------------------------------------------------------------- */
 @media (prefers-color-scheme: light) {
 	:root:not([data-theme='dark']) {
-		--bg-page:    #f4ede0;
-		--bg-card:    #ede6d6;
-		--bg-inset:   #f9f4ea;
+		--bg-page: #f4ede0;
+		--bg-card: #ede6d6;
+		--bg-inset: #f9f4ea;
 		--bg-control: #f0e9d8;
-		--bg-hover:   #e8dfcc;
-		--border:     #c8b89a;
+		--bg-hover: #e8dfcc;
+		--border: #c8b89a;
 		--border-mid: #b0a080;
 
-		--text:        #1c1710;
-		--text-muted:  #5a4e38;
+		--text: #1c1710;
+		--text-muted: #5a4e38;
 		--text-dimmer: #8a7860;
 
 		/* Dark amber — legible on parchment */
 		--text-accent: #8a4e08;
-		--focus-ring:  #8a4e08;
+		--focus-ring: #8a4e08;
 		--accent-glow: #8a4e0820;
-		--accent-dim:  #8a4e0812;
+		--accent-dim: #8a4e0812;
 
-		--color-edge:    #1565C0;   /* deep blue    — swift/agility   */
-		--color-heart:   #C0184C;   /* deep rose    — bonds/empathy   */
-		--color-iron:    #3D5A70;   /* dark steel   — strength        */
-		--color-shadow:  #7C3AED;   /* deep violet  — cunning/stealth */
-		--color-wits:    #A16207;   /* dark amber   — wisdom          */
+		--color-edge: #1565c0; /* deep blue    — swift/agility   */
+		--color-heart: #c0184c; /* deep rose    — bonds/empathy   */
+		--color-iron: #3d5a70; /* dark steel   — strength        */
+		--color-shadow: #7c3aed; /* deep violet  — cunning/stealth */
+		--color-wits: #a16207; /* dark amber   — wisdom          */
 		--color-touched: #2a8840;
 
-		--color-momentum: #0891B2;  /* dark cyan    — flowing action  */
-		--color-health:   #15803D;  /* forest green — vitality        */
-		--color-spirit:   #3730A3;  /* deep indigo  — willpower       */
-		--color-supply:   #C2410C;  /* burnt orange — provisions      */
-		--color-xp:       #4D7C0F;  /* dark lime    — advancement     */
-		--color-mana:     #b45309;
+		--color-momentum: #0891b2; /* dark cyan    — flowing action  */
+		--color-health: #15803d; /* forest green — vitality        */
+		--color-spirit: #3730a3; /* deep indigo  — willpower       */
+		--color-supply: #c2410c; /* burnt orange — provisions      */
+		--color-xp: #4d7c0f; /* dark lime    — advancement     */
+		--color-mana: #b45309;
 
-		--color-danger:  #b02828;
+		--color-danger: #b02828;
 		--color-success: #0e7a40;
 		--color-warning: #805800;
 
@@ -110,38 +110,38 @@ html[data-theme='dark'] {
 }
 
 html[data-theme='light'] {
-	--bg-page:    #f4ede0;
-	--bg-card:    #ede6d6;
-	--bg-inset:   #f9f4ea;
+	--bg-page: #f4ede0;
+	--bg-card: #ede6d6;
+	--bg-inset: #f9f4ea;
 	--bg-control: #f0e9d8;
-	--bg-hover:   #e8dfcc;
-	--border:     #c8b89a;
+	--bg-hover: #e8dfcc;
+	--border: #c8b89a;
 	--border-mid: #b0a080;
 
-	--text:        #1c1710;
-	--text-muted:  #5a4e38;
+	--text: #1c1710;
+	--text-muted: #5a4e38;
 	--text-dimmer: #8a7860;
 
 	--text-accent: #8a4e08;
-	--focus-ring:  #8a4e08;
+	--focus-ring: #8a4e08;
 	--accent-glow: #8a4e0820;
-	--accent-dim:  #8a4e0812;
+	--accent-dim: #8a4e0812;
 
-	--color-edge:    #1565C0;   /* deep blue    — swift/agility   */
-	--color-heart:   #C0184C;   /* deep rose    — bonds/empathy   */
-	--color-iron:    #3D5A70;   /* dark steel   — strength        */
-	--color-shadow:  #7C3AED;   /* deep violet  — cunning/stealth */
-	--color-wits:    #A16207;   /* dark amber   — wisdom          */
+	--color-edge: #1565c0; /* deep blue    — swift/agility   */
+	--color-heart: #c0184c; /* deep rose    — bonds/empathy   */
+	--color-iron: #3d5a70; /* dark steel   — strength        */
+	--color-shadow: #7c3aed; /* deep violet  — cunning/stealth */
+	--color-wits: #a16207; /* dark amber   — wisdom          */
 	--color-touched: #2a8840;
 
-	--color-momentum: #0891B2;  /* dark cyan    — flowing action  */
-	--color-health:   #15803D;  /* forest green — vitality        */
-	--color-spirit:   #3730A3;  /* deep indigo  — willpower       */
-	--color-supply:   #C2410C;  /* burnt orange — provisions      */
-	--color-xp:       #4D7C0F;  /* dark lime    — advancement     */
-	--color-mana:     #805800;
+	--color-momentum: #0891b2; /* dark cyan    — flowing action  */
+	--color-health: #15803d; /* forest green — vitality        */
+	--color-spirit: #3730a3; /* deep indigo  — willpower       */
+	--color-supply: #c2410c; /* burnt orange — provisions      */
+	--color-xp: #4d7c0f; /* dark lime    — advancement     */
+	--color-mana: #805800;
 
-	--color-danger:  #b02828;
+	--color-danger: #b02828;
 	--color-success: #0e7a40;
 	--color-warning: #805800;
 
@@ -151,16 +151,16 @@ html[data-theme='light'] {
 /* Typography tokens (theme-independent) */
 :root {
 	--font-display: 'Cinzel', 'Palatino Linotype', Georgia, serif;
-	--font-body:    'Roboto', system-ui, sans-serif;
+	--font-body: 'Roboto', system-ui, sans-serif;
 	/* UI labels, buttons, small text — clean sans-serif */
-	--font-ui:      'Roboto', system-ui, sans-serif;
+	--font-ui: 'Roboto', system-ui, sans-serif;
 	/* Dice roll results and numeric data */
-	--font-mono:    'Roboto Mono', ui-monospace, 'Courier New', monospace;
+	--font-mono: 'Roboto Mono', ui-monospace, 'Courier New', monospace;
 
-	--font-display-weight:    400;
-	--font-display-variant:   normal;
+	--font-display-weight: 400;
+	--font-display-variant: normal;
 	--font-display-transform: uppercase;
-	--font-display-scale:     1;     /* size multiplier — overridden per font */
+	--font-display-scale: 1; /* size multiplier — overridden per font */
 
 	/* Horizontal gutter — used consistently for all page/card/section padding */
 	--page-gutter: 0.5rem;
@@ -169,21 +169,21 @@ html[data-theme='light'] {
 /* Simonetta heading-font mode: calligraphic regular weight; titles render
    in their natural title case rather than forced uppercase, since the
    lowercase glyphs aren't designed for forced-uppercase rendering. */
-[data-font="simonetta"] {
-	--font-display-weight:    400;
-	--font-display-variant:   normal;
+[data-font='simonetta'] {
+	--font-display-weight: 400;
+	--font-display-variant: normal;
 	--font-display-transform: none;
-	--font-display-scale:     1.12;  /* ~2pt bump at typical heading sizes */
+	--font-display-scale: 1.12; /* ~2pt bump at typical heading sizes */
 }
 
 /* Elder Futhark mode: runes are already transliterated by JS; CSS just sets
    font-family + display tweaks. text-transform: none is critical — do not
    uppercase/lowercase the already-converted rune code-points. */
-[data-font="futhark"] {
-	--font-display-weight:    400;
-	--font-display-variant:   normal;
+[data-font='futhark'] {
+	--font-display-weight: 400;
+	--font-display-variant: normal;
 	--font-display-transform: none;
-	--font-display-scale:     1.12;  /* matches Simonetta's bump */
+	--font-display-scale: 1.12; /* matches Simonetta's bump */
 }
 
 @media (min-width: 768px) {
@@ -230,8 +230,8 @@ body {
 	display: flex;
 	flex-direction: column;
 	background-image:
-		radial-gradient(ellipse 80% 40% at 15% 0%,   var(--accent-dim) 0%, transparent 60%),
-		radial-gradient(ellipse 60% 30% at 85% 100%,  var(--accent-dim) 0%, transparent 60%);
+		radial-gradient(ellipse 80% 40% at 15% 0%, var(--accent-dim) 0%, transparent 60%),
+		radial-gradient(ellipse 60% 30% at 85% 100%, var(--accent-dim) 0%, transparent 60%);
 	/* Safe-area insets are NOT applied to body — that would push every child
 	   inwards and leave a visible body-background strip in the home-indicator
 	   region. Each element that needs it (nav, home-shell, etc.) adds its own
@@ -258,8 +258,8 @@ main.app-main {
    (admin, about, login, …) gets the padding here. */
 main.app-main:not(:has(.home-shell)) {
 	padding-bottom: env(safe-area-inset-bottom);
-	padding-left:   env(safe-area-inset-left);
-	padding-right:  env(safe-area-inset-right);
+	padding-left: env(safe-area-inset-left);
+	padding-right: env(safe-area-inset-right);
 }
 
 /* Logged-out routes have no <nav> at the top of <body>, so main itself
@@ -314,7 +314,9 @@ select {
 	border: 1px solid var(--border);
 	border-radius: 3px;
 	padding: 5px 9px;
-	transition: border-color 0.15s, box-shadow 0.15s;
+	transition:
+		border-color 0.15s,
+		box-shadow 0.15s;
 }
 
 input:focus,
@@ -347,7 +349,10 @@ select option {
 	letter-spacing: 0.04em;
 	text-transform: uppercase;
 	line-height: 1.5;
-	transition: background 0.12s, border-color 0.12s, color 0.12s;
+	transition:
+		background 0.12s,
+		border-color 0.12s,
+		color 0.12s;
 	white-space: nowrap;
 }
 .btn:hover:not(:disabled) {
@@ -368,7 +373,9 @@ select option {
 	background: var(--bg-control);
 	border-color: var(--text-accent);
 	color: var(--text-accent);
-	box-shadow: inset 0 1px 0 var(--accent-dim), 0 1px 4px #00000030;
+	box-shadow:
+		inset 0 1px 0 var(--accent-dim),
+		0 1px 4px #00000030;
 }
 .btn-primary:hover:not(:disabled) {
 	background: var(--bg-hover);
@@ -390,12 +397,12 @@ select option {
 /* Drag gripper — shared visual indicator used in every draggable dialog header.
    The ⠿ braille character renders as 6 dots in a 2×3 grid. */
 .drag-grip {
-	font-size:   1rem;
-	color:       var(--text-dimmer);
+	font-size: 1rem;
+	color: var(--text-dimmer);
 	line-height: 1;
-	opacity:     0.6;
+	opacity: 0.6;
 	flex-shrink: 0;
-	cursor:      inherit;
+	cursor: inherit;
 }
 
 /* Icon buttons */
@@ -413,7 +420,11 @@ select option {
    sits on a different surface. */
 .btn-trash {
 	opacity: 0.7;
-	transition: opacity 0.12s, color 0.12s, background 0.12s, border-color 0.12s;
+	transition:
+		opacity 0.12s,
+		color 0.12s,
+		background 0.12s,
+		border-color 0.12s;
 }
 .btn-trash:hover:not(:disabled) {
 	opacity: 1;
@@ -426,7 +437,9 @@ select option {
 	pointer-events: none;
 	fill: currentColor;
 }
-.btn-trash svg path { fill: currentColor; }
+.btn-trash svg path {
+	fill: currentColor;
+}
 
 /* --------------------------------------------------------------------------
    Layout primitives
@@ -481,7 +494,8 @@ dialog label {
 	align-items: center;
 	justify-content: space-between;
 	/* Safe-area: extend the nav up under the notch and pad its content down. */
-	padding: env(safe-area-inset-top) max(1.5rem, env(safe-area-inset-right)) 0 max(1.5rem, env(safe-area-inset-left));
+	padding: env(safe-area-inset-top) max(1.5rem, env(safe-area-inset-right)) 0
+		max(1.5rem, env(safe-area-inset-left));
 	height: calc(52px + env(safe-area-inset-top));
 	flex-shrink: 0;
 	background: color-mix(in srgb, var(--bg-card) 82%, transparent);
@@ -491,14 +505,18 @@ dialog label {
 	position: sticky;
 	top: 0;
 	z-index: 50;
-	box-shadow: inset 0 2px 0 var(--accent-dim), 0 4px 20px #00000055;
+	box-shadow:
+		inset 0 2px 0 var(--accent-dim),
+		0 4px 20px #00000055;
 }
 
 /* Admin mode — warning red nav to make elevated-privilege context unmistakable */
 .app-nav.nav--admin {
 	background: #3b0a0a;
 	border-bottom-color: #7f1d1d;
-	box-shadow: inset 0 2px 0 rgba(220, 38, 38, 0.35), 0 2px 12px #00000060;
+	box-shadow:
+		inset 0 2px 0 rgba(220, 38, 38, 0.35),
+		0 2px 12px #00000060;
 }
 
 .app-nav.nav--admin .nav-brand {
@@ -686,86 +704,90 @@ dialog label {
    -------------------------------------------------------------------------- */
 .roll-line {
 	font-family: var(--font-mono);
-	font-size:   0.75rem;
-	color:       var(--text-muted);
+	font-size: 0.75rem;
+	color: var(--text-muted);
 	line-height: 1.55;
 }
 .roll-die-label {
-	color:       var(--text-dimmer);
+	color: var(--text-dimmer);
 	font-weight: 600;
 }
 .roll-cancel {
 	font-family: var(--font-mono);
-	font-size:   0.7rem;
-	color:       var(--color-danger);
-	font-style:  italic;
+	font-size: 0.7rem;
+	color: var(--color-danger);
+	font-style: italic;
 }
 .roll-outcome-strong {
 	font-family: var(--font-mono);
-	font-size:   0.82rem;
-	color:       var(--color-success);
+	font-size: 0.82rem;
+	color: var(--color-success);
 }
 .roll-outcome-weak {
 	font-family: var(--font-mono);
-	font-size:   0.82rem;
-	color:       var(--color-warning);
+	font-size: 0.82rem;
+	color: var(--color-warning);
 }
 .roll-outcome-miss {
 	font-family: var(--font-mono);
-	font-size:   0.82rem;
-	color:       var(--color-danger);
+	font-size: 0.82rem;
+	color: var(--color-danger);
 }
 .roll-match {
-	color:      var(--text-accent);
+	color: var(--text-accent);
 	font-style: italic;
 }
 
 /* ── Global CSS Tooltips ───────────────────────────────────────────────────── */
 /* Usage: add data-tooltip="text" to any element. Add .tooltip-down to flip direction. */
-[data-tooltip] { position: relative; }
+[data-tooltip] {
+	position: relative;
+}
 
 [data-tooltip]::after {
-	content:        attr(data-tooltip);
-	position:       absolute;
-	bottom:         calc(100% + 7px);
-	left:           50%;
-	transform:      translateX(-50%) scale(0.95);
+	content: attr(data-tooltip);
+	position: absolute;
+	bottom: calc(100% + 7px);
+	left: 50%;
+	transform: translateX(-50%) scale(0.95);
 	transform-origin: bottom center;
-	background:     #0f172a;
-	color:          #e2e8f0;
-	font-family:    var(--font-ui);
-	font-size:      0.72rem;
-	line-height:    1.5;
-	padding:        6px 10px;
-	border-radius:  5px;
-	max-width:      260px;
-	width:          max-content;
-	white-space:    normal;
-	word-break:     break-word;
+	background: #0f172a;
+	color: #e2e8f0;
+	font-family: var(--font-ui);
+	font-size: 0.72rem;
+	line-height: 1.5;
+	padding: 6px 10px;
+	border-radius: 5px;
+	max-width: 260px;
+	width: max-content;
+	white-space: normal;
+	word-break: break-word;
 	pointer-events: none;
-	opacity:        0;
-	transition:     opacity 0.15s, transform 0.15s;
-	z-index:        9999;
-	box-shadow:     0 4px 16px rgba(0,0,0,0.5);
-	border:         1px solid rgba(255,255,255,0.1);
-	text-align:     left;
+	opacity: 0;
+	transition:
+		opacity 0.15s,
+		transform 0.15s;
+	z-index: 9999;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	text-align: left;
 }
 [data-tooltip]::before {
-	content:        '';
-	position:       absolute;
-	bottom:         calc(100% + 1px);
-	left:           50%;
-	transform:      translateX(-50%);
-	border:         5px solid transparent;
+	content: '';
+	position: absolute;
+	bottom: calc(100% + 1px);
+	left: 50%;
+	transform: translateX(-50%);
+	border: 5px solid transparent;
 	border-top-color: #0f172a;
 	pointer-events: none;
-	opacity:        0;
-	transition:     opacity 0.15s;
-	z-index:        9999;
+	opacity: 0;
+	transition: opacity 0.15s;
+	z-index: 9999;
 }
 [data-tooltip]:hover::after,
 [data-tooltip]:focus-visible::after {
-	opacity:   1;
+	opacity: 1;
 	transform: translateX(-50%) scale(1);
 }
 [data-tooltip]:hover::before,
@@ -775,9 +797,9 @@ dialog label {
 
 /* .tooltip-down — bubble appears below the element */
 [data-tooltip].tooltip-down::after {
-	bottom:           auto;
-	top:              calc(100% + 7px);
-	transform:        translateX(-50%) scale(0.95);
+	bottom: auto;
+	top: calc(100% + 7px);
+	transform: translateX(-50%) scale(0.95);
 	transform-origin: top center;
 }
 [data-tooltip].tooltip-down:hover::after,
@@ -785,35 +807,41 @@ dialog label {
 	transform: translateX(-50%) scale(1);
 }
 [data-tooltip].tooltip-down::before {
-	bottom:              auto;
-	top:                 calc(100% + 1px);
-	border-top-color:    transparent;
+	bottom: auto;
+	top: calc(100% + 1px);
+	border-top-color: transparent;
 	border-bottom-color: #0f172a;
 }
 
 /* ── JS Tooltip (use:tooltip action) ──────────────────────────────────────── */
 /* Body-level fixed tooltip — immune to overflow clipping in scroll containers. */
 .js-tooltip {
-	position:      fixed;
-	z-index:       10000;
-	max-width:     260px;
-	width:         max-content;
-	white-space:   normal;
-	word-break:    break-word;
-	padding:       6px 10px;
+	position: fixed;
+	z-index: 10000;
+	max-width: 260px;
+	width: max-content;
+	white-space: normal;
+	word-break: break-word;
+	padding: 6px 10px;
 	border-radius: 5px;
-	background:    #0f172a;
-	color:         #e2e8f0;
-	font-family:   var(--font-ui);
-	font-size:     0.72rem;
-	line-height:   1.5;
-	text-align:    left;
-	box-shadow:    0 4px 16px rgba(0,0,0,0.5);
-	border:        1px solid rgba(255,255,255,0.1);
+	background: #0f172a;
+	color: #e2e8f0;
+	font-family: var(--font-ui);
+	font-size: 0.72rem;
+	line-height: 1.5;
+	text-align: left;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+	border: 1px solid rgba(255, 255, 255, 0.1);
 	pointer-events: none;
-	animation:     js-tooltip-in 0.12s ease forwards;
+	animation: js-tooltip-in 0.12s ease forwards;
 }
 @keyframes js-tooltip-in {
-	from { opacity: 0; transform: translateY(3px); }
-	to   { opacity: 1; transform: translateY(0);   }
+	from {
+		opacity: 0;
+		transform: translateY(3px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }

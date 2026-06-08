@@ -21,16 +21,12 @@ import { config } from '../config.js';
 
 const privateKey = await (async () => {
   const { createPrivateKey } = await import('crypto');
-  return createPrivateKey(
-    config.JWT_PRIVATE_KEY.replace(/\\n/g, '\n'),
-  );
+  return createPrivateKey(config.JWT_PRIVATE_KEY.replace(/\\n/g, '\n'));
 })();
 
 const publicKey = await (async () => {
   const { createPublicKey } = await import('crypto');
-  return createPublicKey(
-    config.JWT_PUBLIC_KEY.replace(/\\n/g, '\n'),
-  );
+  return createPublicKey(config.JWT_PUBLIC_KEY.replace(/\\n/g, '\n'));
 })();
 
 // ---------------------------------------------------------------------------
@@ -38,9 +34,9 @@ const publicKey = await (async () => {
 // ---------------------------------------------------------------------------
 
 export interface AccessTokenPayload extends JWTPayload {
-  sub:   string;   // user UUID
+  sub: string; // user UUID
   email: string;
-  role:  string;   // 'user' | 'admin'
+  role: string; // 'user' | 'admin'
 }
 
 /**
@@ -55,7 +51,7 @@ export async function signAccessToken(
   return new SignJWT({ email, role })
     .setProtectedHeader({ alg: 'RS256' })
     .setSubject(userId)
-    .setJti(randomBytes(16).toString('hex'))   // unique per token; enables future revocation
+    .setJti(randomBytes(16).toString('hex')) // unique per token; enables future revocation
     .setIssuedAt()
     .setExpirationTime(Math.floor(Date.now() / 1000) + config.JWT_EXPIRES_IN)
     .sign(privateKey);
@@ -65,9 +61,7 @@ export async function signAccessToken(
  * Verifies a JWT access token and returns its payload.
  * Throws if the token is invalid, expired, or tampered with.
  */
-export async function verifyAccessToken(
-  token: string,
-): Promise<AccessTokenPayload> {
+export async function verifyAccessToken(token: string): Promise<AccessTokenPayload> {
   const { payload } = await jwtVerify(token, publicKey, {
     algorithms: ['RS256'],
   });
@@ -84,7 +78,7 @@ export async function verifyAccessToken(
  * (stored in the database — we never store the raw token).
  */
 export function generateRefreshToken(): { raw: string; hash: string } {
-  const raw = randomBytes(32).toString('hex');   // 64 hex chars, 256 bits
+  const raw = randomBytes(32).toString('hex'); // 64 hex chars, 256 bits
   const hash = hashToken(raw);
   return { raw, hash };
 }
@@ -130,6 +124,6 @@ export function generateAuthToken(): {
 } {
   const raw = randomBytes(32).toString('hex');
   const hash = hashToken(raw);
-  const expiresAt = new Date(Date.now() + 60 * 60 * 1000);  // 1 hour
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
   return { raw, hash, expiresAt };
 }

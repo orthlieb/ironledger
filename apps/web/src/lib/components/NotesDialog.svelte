@@ -54,11 +54,7 @@
 	}
 </script>
 
-<dialog
-	bind:this={dialogEl}
-	class="notes-dialog"
-	oncancel={close}
->
+<dialog bind:this={dialogEl} class="notes-dialog" oncancel={close}>
 	<!-- Header -->
 	<div class="nd-header" use:draggable>
 		<span class="drag-grip" aria-hidden="true">⠿</span>
@@ -75,128 +71,128 @@
 			onkeydown={handleKeydown}
 			rows="6"
 		></textarea>
-		<div class="nd-hint">
-			Supports **bold**, *italic*, # headings, - lists. Ctrl+Enter to add.
-		</div>
+		<div class="nd-hint">Supports **bold**, *italic*, # headings, - lists. Ctrl+Enter to add.</div>
 	</div>
 
 	<!-- Footer -->
 	<div class="nd-footer">
-		<button
-			class="btn btn-primary nd-add-btn"
-			onclick={addNote}
-			disabled={!hasContent}
-		>Add to Log</button>
+		<button class="btn btn-primary nd-add-btn" onclick={addNote} disabled={!hasContent}
+			>Add to Log</button
+		>
 	</div>
 </dialog>
 
 <style>
 	/* ── Dialog shell ────────────────────────────────────────────────────── */
 	.notes-dialog {
-		border:        none;
-		padding:       0;
+		border: none;
+		padding: 0;
 		border-radius: 10px;
-		position:      fixed;
-		top:           50%;
-		left:          50%;
-		transform:     translate(-50%, -50%);
-		width:         min(480px, calc(100vw - 2rem));
-		background:    var(--bg-card);
-		color:         var(--text);
-		box-shadow:    0 16px 48px #00000070, 0 0 0 1px var(--border-mid);
-		outline:       none;
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		width: min(480px, calc(100vw - 2rem));
+		background: var(--bg-card);
+		color: var(--text);
+		box-shadow:
+			0 16px 48px #00000070,
+			0 0 0 1px var(--border-mid);
+		outline: none;
 	}
 	.notes-dialog[open] {
-		display:        flex;
+		display: flex;
 		flex-direction: column;
 	}
 	.notes-dialog::backdrop {
-		background:      #00000060;
+		background: #00000060;
 		backdrop-filter: blur(1px);
 	}
 
 	/* ── Header ─────────────────────────────────────────────────────────── */
 	.nd-header {
-		display:       flex;
-		align-items:   center;
-		gap:           8px;
-		padding:       10px 14px;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 14px;
 		border-bottom: 1px solid var(--border);
-		background:    var(--bg-control);
+		background: var(--bg-control);
 		border-radius: 10px 10px 0 0;
-		flex-shrink:   0;
+		flex-shrink: 0;
 	}
 	.nd-title {
-		font-family:    var(--font-display);
-		font-size:      calc(0.78rem * var(--font-display-scale));
-		font-weight:    var(--font-display-weight);
-		font-variant:   var(--font-display-variant);
+		font-family: var(--font-display);
+		font-size: calc(0.78rem * var(--font-display-scale));
+		font-weight: var(--font-display-weight);
+		font-variant: var(--font-display-variant);
 		letter-spacing: 0.08em;
 		text-transform: var(--font-display-transform);
-		color:          var(--text-accent);
-		flex:           1;
+		color: var(--text-accent);
+		flex: 1;
 	}
 	.nd-close {
-		background:    transparent;
-		border:        none;
-		color:         var(--text-dimmer);
-		cursor:        pointer;
-		font-size:     0.9rem;
-		padding:       2px 5px;
+		background: transparent;
+		border: none;
+		color: var(--text-dimmer);
+		cursor: pointer;
+		font-size: 0.9rem;
+		padding: 2px 5px;
 		border-radius: 3px;
-		line-height:   1;
-		font-family:   inherit;
-		flex-shrink:   0;
+		line-height: 1;
+		font-family: inherit;
+		flex-shrink: 0;
 	}
-	.nd-close:hover { color: var(--text); }
+	.nd-close:hover {
+		color: var(--text);
+	}
 
 	/* ── Body ───────────────────────────────────────────────────────────── */
 	.nd-body {
-		padding:        12px 14px;
-		display:        flex;
+		padding: 12px 14px;
+		display: flex;
 		flex-direction: column;
-		gap:            6px;
+		gap: 6px;
 	}
 	.nd-textarea {
-		width:         100%;
-		font-family:   var(--font-ui);
-		font-size:     0.82rem;
-		color:         var(--text);
-		background:    var(--bg-inset);
-		border:        1px solid var(--border);
+		width: 100%;
+		font-family: var(--font-ui);
+		font-size: 0.82rem;
+		color: var(--text);
+		background: var(--bg-inset);
+		border: 1px solid var(--border);
 		border-radius: 4px;
-		padding:       8px 10px;
-		resize:        vertical;
-		min-height:    100px;
-		line-height:   1.5;
+		padding: 8px 10px;
+		resize: vertical;
+		min-height: 100px;
+		line-height: 1.5;
 	}
 	.nd-textarea:focus {
-		outline:      none;
+		outline: none;
 		border-color: var(--focus-ring);
-		box-shadow:   0 0 0 2px var(--accent-glow);
+		box-shadow: 0 0 0 2px var(--accent-glow);
 	}
 	.nd-textarea::placeholder {
-		color:      var(--text-dimmer);
+		color: var(--text-dimmer);
 		font-style: italic;
 	}
 	.nd-hint {
 		font-family: var(--font-ui);
-		font-size:   0.65rem;
-		color:       var(--text-dimmer);
-		font-style:  italic;
+		font-size: 0.65rem;
+		color: var(--text-dimmer);
+		font-style: italic;
 	}
 
 	/* ── Footer ─────────────────────────────────────────────────────────── */
 	.nd-footer {
-		border-top:      1px solid var(--border);
-		padding:         10px 14px;
-		flex-shrink:     0;
-		display:         flex;
+		border-top: 1px solid var(--border);
+		padding: 10px 14px;
+		flex-shrink: 0;
+		display: flex;
 		justify-content: flex-end;
 	}
 	.nd-add-btn {
-		padding:         8px 20px;
-		font-size:       0.8rem;
+		padding: 8px 20px;
+		font-size: 0.8rem;
 		justify-content: center;
 	}
 </style>

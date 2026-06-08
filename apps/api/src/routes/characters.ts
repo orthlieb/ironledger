@@ -26,7 +26,7 @@ const updateBody = z.object({
 });
 
 const historyBody = z.object({
-  entryHtml:  z.string().min(1).max(65536),
+  entryHtml: z.string().min(1).max(65536),
   occurredAt: z.string().datetime().optional(),
 });
 
@@ -39,7 +39,6 @@ const idParam = z.object({
 // ---------------------------------------------------------------------------
 
 export const characterRoutes: FastifyPluginAsyncZod = async (server) => {
-
   // All routes in this plugin require authentication
   server.addHook('preHandler', authenticate);
 
@@ -51,92 +50,122 @@ export const characterRoutes: FastifyPluginAsyncZod = async (server) => {
   });
 
   // ── POST / ────────────────────────────────────────────────────────────────
-  server.post('/', {
-    schema: {
-      body: createBody,
+  server.post(
+    '/',
+    {
+      schema: {
+        body: createBody,
+      },
     },
-  }, async (req, reply) => {
-    const character = await chars.create(req.user!.id, req.body.name, req.body.data)
-      .catch(handleError(reply));
-    if (!character || reply.sent) return;
-    return reply.status(201).send(character);
-  });
+    async (req, reply) => {
+      const character = await chars
+        .create(req.user!.id, req.body.name, req.body.data)
+        .catch(handleError(reply));
+      if (!character || reply.sent) return;
+      return reply.status(201).send(character);
+    },
+  );
 
   // ── GET /:id ──────────────────────────────────────────────────────────────
-  server.get('/:id', {
-    schema: {
-      params: idParam,
+  server.get(
+    '/:id',
+    {
+      schema: {
+        params: idParam,
+      },
     },
-  }, async (req, reply) => {
-    const character = await chars.get(req.user!.id, req.params.id)
-      .catch(handleError(reply));
-    if (!character || reply.sent) return;
-    return reply.status(200).send(character);
-  });
+    async (req, reply) => {
+      const character = await chars.get(req.user!.id, req.params.id).catch(handleError(reply));
+      if (!character || reply.sent) return;
+      return reply.status(200).send(character);
+    },
+  );
 
   // ── PUT /:id ──────────────────────────────────────────────────────────────
-  server.put('/:id', {
-    schema: {
-      params: idParam,
-      body:   updateBody,
+  server.put(
+    '/:id',
+    {
+      schema: {
+        params: idParam,
+        body: updateBody,
+      },
     },
-  }, async (req, reply) => {
-    const character = await chars.update(req.user!.id, req.params.id, req.body)
-      .catch(handleError(reply));
-    if (!character || reply.sent) return;
-    return reply.status(200).send(character);
-  });
+    async (req, reply) => {
+      const character = await chars
+        .update(req.user!.id, req.params.id, req.body)
+        .catch(handleError(reply));
+      if (!character || reply.sent) return;
+      return reply.status(200).send(character);
+    },
+  );
 
   // ── DELETE /:id ───────────────────────────────────────────────────────────
-  server.delete('/:id', {
-    schema: {
-      params: idParam,
+  server.delete(
+    '/:id',
+    {
+      schema: {
+        params: idParam,
+      },
     },
-  }, async (req, reply) => {
-    await chars.remove(req.user!.id, req.params.id).catch(handleError(reply));
-    if (reply.sent) return;
-    return reply.status(204).send();
-  });
+    async (req, reply) => {
+      await chars.remove(req.user!.id, req.params.id).catch(handleError(reply));
+      if (reply.sent) return;
+      return reply.status(204).send();
+    },
+  );
 
   // ── GET /:id/history ──────────────────────────────────────────────────────
-  server.get('/:id/history', {
-    schema: {
-      params: idParam,
+  server.get(
+    '/:id/history',
+    {
+      schema: {
+        params: idParam,
+      },
     },
-  }, async (req, reply) => {
-    const history = await chars.getHistory(req.user!.id, req.params.id)
-      .catch(handleError(reply));
-    if (!history || reply.sent) return;
-    return reply.status(200).send(history);
-  });
+    async (req, reply) => {
+      const history = await chars.getHistory(req.user!.id, req.params.id).catch(handleError(reply));
+      if (!history || reply.sent) return;
+      return reply.status(200).send(history);
+    },
+  );
 
   // ── POST /:id/history ─────────────────────────────────────────────────────
-  server.post('/:id/history', {
-    schema: {
-      params: idParam,
-      body:   historyBody,
+  server.post(
+    '/:id/history',
+    {
+      schema: {
+        params: idParam,
+        body: historyBody,
+      },
     },
-  }, async (req, reply) => {
-    await chars.appendHistory(
-      req.user!.id,
-      req.params.id,
-      req.body.entryHtml,
-      req.body.occurredAt ? new Date(req.body.occurredAt) : undefined,
-    ).catch(handleError(reply));
-    if (reply.sent) return;
-    return reply.status(201).send({ ok: true });
-  });
+    async (req, reply) => {
+      await chars
+        .appendHistory(
+          req.user!.id,
+          req.params.id,
+          req.body.entryHtml,
+          req.body.occurredAt ? new Date(req.body.occurredAt) : undefined,
+        )
+        .catch(handleError(reply));
+      if (reply.sent) return;
+      return reply.status(201).send({ ok: true });
+    },
+  );
 
   // ── DELETE /:id/history ───────────────────────────────────────────────────
-  server.delete('/:id/history', {
-    schema: {
-      params: idParam,
+  server.delete(
+    '/:id/history',
+    {
+      schema: {
+        params: idParam,
+      },
     },
-  }, async (req, reply) => {
-    await chars.clearHistory(req.user!.id, req.params.id).catch(handleError(reply));
-    if (reply.sent) return;
-    return reply.status(204).send();
-  });
+    async (req, reply) => {
+      await chars.clearHistory(req.user!.id, req.params.id).catch(handleError(reply));
+      if (reply.sent) return;
+      return reply.status(204).send();
+    },
+  );
 };
 
 // ---------------------------------------------------------------------------
@@ -148,14 +177,14 @@ function handleError(reply: FastifyReply) {
     if (err instanceof chars.CharacterError) {
       reply.status(err.statusCode).send({
         statusCode: err.statusCode,
-        error:      err.name,
-        message:    err.message,
+        error: err.name,
+        message: err.message,
       });
     } else {
       reply.status(500).send({
         statusCode: 500,
-        error:      'Internal Server Error',
-        message:    'An unexpected error occurred',
+        error: 'Internal Server Error',
+        message: 'An unexpected error occurred',
       });
     }
   };

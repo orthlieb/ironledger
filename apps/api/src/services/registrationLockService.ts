@@ -15,7 +15,7 @@ import { securityEvents } from '../db/schema.js';
 // ---------------------------------------------------------------------------
 
 export interface RegistrationLockStatus {
-  locked:  boolean;
+  locked: boolean;
   message: string | null;
 }
 
@@ -23,7 +23,7 @@ export interface RegistrationLockStatus {
 // Redis key constants
 // ---------------------------------------------------------------------------
 
-const KEY_LOCKED  = 'registration:locked';
+const KEY_LOCKED = 'registration:locked';
 const KEY_MESSAGE = 'registration:message';
 
 // ---------------------------------------------------------------------------
@@ -34,7 +34,7 @@ const KEY_MESSAGE = 'registration:message';
 export async function getStatus(): Promise<RegistrationLockStatus> {
   const [locked, message] = await redis.mget(KEY_LOCKED, KEY_MESSAGE);
   return {
-    locked:  locked === '1',
+    locked: locked === '1',
     message: message ?? null,
   };
 }
@@ -45,11 +45,7 @@ export async function lockRegistration(
   adminId: string,
   ip?: string,
 ): Promise<RegistrationLockStatus> {
-  await redis
-    .pipeline()
-    .set(KEY_LOCKED, '1')
-    .set(KEY_MESSAGE, message)
-    .exec();
+  await redis.pipeline().set(KEY_LOCKED, '1').set(KEY_MESSAGE, message).exec();
 
   void logEvent(adminId, 'admin_lock_registration', { message }, ip);
 
@@ -57,10 +53,7 @@ export async function lockRegistration(
 }
 
 /** Unlock new registrations. */
-export async function unlockRegistration(
-  adminId: string,
-  ip?: string,
-): Promise<void> {
+export async function unlockRegistration(adminId: string, ip?: string): Promise<void> {
   await redis.del(KEY_LOCKED, KEY_MESSAGE);
   void logEvent(adminId, 'admin_unlock_registration', {}, ip);
 }
@@ -76,10 +69,13 @@ async function logEvent(
   ip?: string,
 ): Promise<void> {
   if (!adminDb) return;
-  await adminDb.insert(securityEvents).values({
-    userId:    adminId,
-    eventType,
-    ipAddress: ip ?? null,
-    metadata,
-  }).catch(console.error);
+  await adminDb
+    .insert(securityEvents)
+    .values({
+      userId: adminId,
+      eventType,
+      ipAddress: ip ?? null,
+      metadata,
+    })
+    .catch(console.error);
 }

@@ -23,22 +23,22 @@ import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
 
 export interface OracleEntry {
 	topRange: number;
-	value:    unknown;
+	value: unknown;
 }
 
 export interface OracleFile {
-	key:          string;
-	title:        string;
-	source:       CatalogueSource;
-	selectLabel:  string;
+	key: string;
+	title: string;
+	source: CatalogueSource;
+	selectLabel: string;
 	description?: string;
-	tableType?:   string;
-	data:         OracleEntry[];
+	tableType?: string;
+	data: OracleEntry[];
 }
 
 export interface OracleRollResult {
-	roll:  number;
-	html:  string;
+	roll: number;
+	html: string;
 	title: string;
 	/** Plain-text result value, suitable for auto-filling a text field. */
 	value: string;
@@ -48,10 +48,10 @@ export interface OracleRollResult {
 // Module-level state (shared across all component instances)
 // ---------------------------------------------------------------------------
 
-let _oracles: OracleFile[]            = $state([]);
+let _oracles: OracleFile[] = $state([]);
 let _orderMap: Record<string, number> = $state({});
-let _loading                          = $state(false);
-let _loaded                           = false;
+let _loading = $state(false);
+let _loaded = false;
 
 // ---------------------------------------------------------------------------
 // Fetch
@@ -64,36 +64,36 @@ let _loaded                           = false;
  */
 const ORACLE_KEY_SOURCE_FALLBACK: Record<string, CatalogueSource> = {
 	// YRT
-	yrtAnimal:        'yrt',
-	yrtRegion:        'yrt',
-	yrtTouched:       'yrt',
-	touchedFeatures:  'yrt',
-	manaBacklash:     'yrt',
-	freeportDenizen:  'yrt',
+	yrtAnimal: 'yrt',
+	yrtRegion: 'yrt',
+	yrtTouched: 'yrt',
+	touchedFeatures: 'yrt',
+	manaBacklash: 'yrt',
+	freeportDenizen: 'yrt',
 	// Delve
-	charDisposition:        'delve',
-	combatEvent:            'delve',
-	featureAspect:          'delve',
-	featureFocus:           'delve',
-	monstrosityAbilities:   'delve',
+	charDisposition: 'delve',
+	combatEvent: 'delve',
+	featureAspect: 'delve',
+	featureFocus: 'delve',
+	monstrosityAbilities: 'delve',
 	monstrosityCharacteristics: 'delve',
 	monstrosityPrimaryForm: 'delve',
-	monstrositySize:        'delve',
-	siteName:               'delve',
-	siteNameFormat:         'delve',
-	siteNatureDomain:       'delve',
-	siteNatureTheme:        'delve',
-	threatBurgeoningConflict:    'delve',
-	threatCategory:              'delve',
-	threatCursedSite:            'delve',
+	monstrositySize: 'delve',
+	siteName: 'delve',
+	siteNameFormat: 'delve',
+	siteNatureDomain: 'delve',
+	siteNatureTheme: 'delve',
+	threatBurgeoningConflict: 'delve',
+	threatCategory: 'delve',
+	threatCursedSite: 'delve',
 	threatEnvironmentalCalamity: 'delve',
-	threatMalignantPlague:       'delve',
-	threatPowerHungryMystic:     'delve',
-	threatRampagingCreature:     'delve',
-	threatRavagingHorde:         'delve',
-	threatSchemingLeader:        'delve',
-	threatZealousCult:           'delve',
-	trap:                   'delve',
+	threatMalignantPlague: 'delve',
+	threatPowerHungryMystic: 'delve',
+	threatRampagingCreature: 'delve',
+	threatRavagingHorde: 'delve',
+	threatSchemingLeader: 'delve',
+	threatZealousCult: 'delve',
+	trap: 'delve',
 };
 
 /** Resolve an oracle's source — explicit `source` field first, key fallback otherwise. */
@@ -143,7 +143,7 @@ export async function loadOracles(): Promise<void> {
 			return wa !== wb ? wa - wb : a.key.localeCompare(b.key);
 		});
 		_oracles = files;
-		_loaded  = true;
+		_loaded = true;
 	} catch (err) {
 		console.error('[oracleStore] Failed to load oracles:', err);
 	} finally {
@@ -163,9 +163,12 @@ export function getOracles(): OracleFile[] {
 /** Distinct sources in the order they first appear. */
 export function getOracleSources(): CatalogueSource[] {
 	const seen = new Set<CatalogueSource>();
-	const out:  CatalogueSource[] = [];
+	const out: CatalogueSource[] = [];
 	for (const o of _oracles) {
-		if (!seen.has(o.source)) { seen.add(o.source); out.push(o.source); }
+		if (!seen.has(o.source)) {
+			seen.add(o.source);
+			out.push(o.source);
+		}
 	}
 	return out;
 }
@@ -191,23 +194,30 @@ export function findOracle(key: string): OracleFile | undefined {
 
 /** Roll d100 and look up the result in a range table. */
 export function rollFromRangeTable(table: OracleEntry[]): { roll: number; value: unknown } {
-	const roll   = Math.floor(Math.random() * 100) + 1;
-	let   picked = table[table.length - 1];
+	const roll = Math.floor(Math.random() * 100) + 1;
+	let picked = table[table.length - 1];
 	for (const entry of table) {
-		if (roll <= entry.topRange) { picked = entry; break; }
+		if (roll <= entry.topRange) {
+			picked = entry;
+			break;
+		}
 	}
 	return { roll, value: picked.value };
 }
 
 /** Build a display label for one table row: "1–25" or "26". */
 export function rangeLabelForEntry(table: OracleEntry[], index: number): string {
-	const low  = index === 0 ? 1 : (table[index - 1].topRange + 1);
+	const low = index === 0 ? 1 : table[index - 1].topRange + 1;
 	const high = table[index].topRange;
 	return low === high ? `${low}` : `${low}–${high}`;
 }
 
 /** Build an HTML table string for the detail view. */
-export function buildTableHtml(key: string, table: OracleEntry[], options?: { activeStat?: string }): string {
+export function buildTableHtml(
+	key: string,
+	table: OracleEntry[],
+	options?: { activeStat?: string },
+): string {
 	if (!table || table.length === 0) return '<div>No table data.</div>';
 
 	// ── Special layouts ──────────────────────────────────────────────────────
@@ -215,68 +225,84 @@ export function buildTableHtml(key: string, table: OracleEntry[], options?: { ac
 	if (key === 'delveDepths') {
 		const statColMap: Record<string, number> = { edge: 0, shadow: 1, wits: 2 };
 		const activeCol = options?.activeStat ? (statColMap[options.activeStat] ?? -1) : -1;
-		const cc = (i: number) => activeCol === i ? ' class="col-active"' : '';
+		const cc = (i: number) => (activeCol === i ? ' class="col-active"' : '');
 
 		type DRow = { edge: number; shadow: number; wits: number; value: string };
-		let html = '<table class="oracle-table"><thead><tr>'
-			+ `<th${cc(0)}>Edge</th><th${cc(1)}>Shadow</th><th${cc(2)}>Wits</th><th>Result</th>`
-			+ '</tr></thead><tbody>';
-		let prevEdge = 0, prevShadow = 0, prevWits = 0;
+		let html =
+			'<table class="oracle-table"><thead><tr>' +
+			`<th${cc(0)}>Edge</th><th${cc(1)}>Shadow</th><th${cc(2)}>Wits</th><th>Result</th>` +
+			'</tr></thead><tbody>';
+		let prevEdge = 0,
+			prevShadow = 0,
+			prevWits = 0;
 		table.forEach((entry) => {
 			const r = entry as unknown as DRow;
-			const edgeLabel   = prevEdge   + 1 === r.edge   ? `${r.edge}`   : `${prevEdge   + 1}–${r.edge}`;
-			const shadowLabel = prevShadow + 1 === r.shadow ? `${r.shadow}` : `${prevShadow + 1}–${r.shadow}`;
-			const witsLabel   = prevWits   + 1 === r.wits   ? `${r.wits}`   : `${prevWits   + 1}–${r.wits}`;
+			const edgeLabel = prevEdge + 1 === r.edge ? `${r.edge}` : `${prevEdge + 1}–${r.edge}`;
+			const shadowLabel =
+				prevShadow + 1 === r.shadow ? `${r.shadow}` : `${prevShadow + 1}–${r.shadow}`;
+			const witsLabel = prevWits + 1 === r.wits ? `${r.wits}` : `${prevWits + 1}–${r.wits}`;
 			html += `<tr><td${cc(0)}>${edgeLabel}</td><td${cc(1)}>${shadowLabel}</td><td${cc(2)}>${witsLabel}</td><td>${r.value}</td></tr>`;
-			prevEdge = r.edge; prevShadow = r.shadow; prevWits = r.wits;
+			prevEdge = r.edge;
+			prevShadow = r.shadow;
+			prevWits = r.wits;
 		});
 		return html + '</tbody></table>';
 	}
 
 	if (key === 'yrtTouched') {
-		let html = '<table class="oracle-table"><thead><tr>'
-			+ '<th>d100</th><th>Class</th><th>Rank</th><th>Animal Features</th><th>Description</th>'
-			+ '</tr></thead><tbody>';
+		let html =
+			'<table class="oracle-table"><thead><tr>' +
+			'<th>d100</th><th>Class</th><th>Rank</th><th>Animal Features</th><th>Description</th>' +
+			'</tr></thead><tbody>';
 		table.forEach((entry, idx) => {
-			const v = entry.value as { socialRank: number; className: string; description: string; featureCount: number | { min: number; max: number } | null };
+			const v = entry.value as {
+				socialRank: number;
+				className: string;
+				description: string;
+				featureCount: number | { min: number; max: number } | null;
+			};
 			let featureLabel: string;
-			if (v.featureCount === 0)         featureLabel = '0';
-			else if (v.featureCount === 1)     featureLabel = '1';
-			else if (v.featureCount === null)  featureLabel = 'Narrative';
+			if (v.featureCount === 0) featureLabel = '0';
+			else if (v.featureCount === 1) featureLabel = '1';
+			else if (v.featureCount === null) featureLabel = 'Narrative';
 			else {
 				const fc = v.featureCount as { min: number; max: number };
 				featureLabel = `${fc.min}–${fc.max} (d6%3+${fc.min})`;
 			}
-			html += `<tr><td>${rangeLabelForEntry(table, idx)}</td>`
-				+ `<td>${v.className}</td><td>${v.socialRank}</td><td>${featureLabel}</td><td>${v.description}</td></tr>`;
+			html +=
+				`<tr><td>${rangeLabelForEntry(table, idx)}</td>` +
+				`<td>${v.className}</td><td>${v.socialRank}</td><td>${featureLabel}</td><td>${v.description}</td></tr>`;
 		});
 		return html + '</tbody></table>';
 	}
 
 	if (key === 'settlementName') {
-		let html = '<table class="oracle-table"><thead><tr>'
-			+ '<th>d100</th><th>Category</th><th>d100</th><th>Name</th><th>d100</th><th>Name</th>'
-			+ '</tr></thead><tbody>';
+		let html =
+			'<table class="oracle-table"><thead><tr>' +
+			'<th>d100</th><th>Category</th><th>d100</th><th>Name</th><th>d100</th><th>Name</th>' +
+			'</tr></thead><tbody>';
 		table.forEach((entry, idx) => {
 			const rangeStr = rangeLabelForEntry(table, idx);
-			const v   = entry.value as { description: string; subtable: OracleEntry[] };
+			const v = entry.value as { description: string; subtable: OracleEntry[] };
 			const sub = v.subtable;
 			const half = Math.ceil(sub.length / 2);
 			for (let i = 0; i < half; i++) {
-				const left  = sub[i];
+				const left = sub[i];
 				const right = sub[i + half];
 				const lRange = rangeLabelForEntry(sub, i);
 				const rRange = right ? rangeLabelForEntry(sub, i + half) : '';
 				if (i === 0) {
-					html += `<tr>`
-						+ `<td rowspan="${half}" class="oracle-cat-range">${rangeStr}</td>`
-						+ `<td rowspan="${half}" class="oracle-cat-desc">${v.description}</td>`
-						+ `<td>${lRange}</td><td>${left.value as string}</td>`
-						+ `<td>${rRange}</td><td>${right ? (right.value as string) : ''}</td>`
-						+ `</tr>`;
+					html +=
+						`<tr>` +
+						`<td rowspan="${half}" class="oracle-cat-range">${rangeStr}</td>` +
+						`<td rowspan="${half}" class="oracle-cat-desc">${v.description}</td>` +
+						`<td>${lRange}</td><td>${left.value as string}</td>` +
+						`<td>${rRange}</td><td>${right ? (right.value as string) : ''}</td>` +
+						`</tr>`;
 				} else {
-					html += `<tr><td>${lRange}</td><td>${left.value as string}</td>`
-						+ `<td>${rRange}</td><td>${right ? (right.value as string) : ''}</td></tr>`;
+					html +=
+						`<tr><td>${lRange}</td><td>${left.value as string}</td>` +
+						`<td>${rRange}</td><td>${right ? (right.value as string) : ''}</td></tr>`;
 				}
 			}
 		});
@@ -285,19 +311,21 @@ export function buildTableHtml(key: string, table: OracleEntry[], options?: { ac
 
 	if (key === 'settlementNameQuick') {
 		const third = Math.ceil(table.length / 3);
-		let html = '<table class="oracle-table"><thead><tr>'
-			+ '<th>d100</th><th>Prefix</th><th>Suffix</th>'
-			+ '<th>d100</th><th>Prefix</th><th>Suffix</th>'
-			+ '<th>d100</th><th>Prefix</th><th>Suffix</th>'
-			+ '</tr></thead><tbody>';
+		let html =
+			'<table class="oracle-table"><thead><tr>' +
+			'<th>d100</th><th>Prefix</th><th>Suffix</th>' +
+			'<th>d100</th><th>Prefix</th><th>Suffix</th>' +
+			'<th>d100</th><th>Prefix</th><th>Suffix</th>' +
+			'</tr></thead><tbody>';
 		for (let i = 0; i < third; i++) {
 			html += '<tr>';
 			for (let col = 0; col < 3; col++) {
 				const entry = table[i + third * col];
 				if (entry) {
 					const v = entry.value as { prefix: string; suffix: string };
-					html += `<td>${rangeLabelForEntry(table, i + third * col)}</td>`
-						+ `<td>${v.prefix}-</td><td>-${v.suffix}</td>`;
+					html +=
+						`<td>${rangeLabelForEntry(table, i + third * col)}</td>` +
+						`<td>${v.prefix}-</td><td>-${v.suffix}</td>`;
 				} else {
 					html += '<td></td><td></td><td></td>';
 				}
@@ -308,25 +336,29 @@ export function buildTableHtml(key: string, table: OracleEntry[], options?: { ac
 	}
 
 	if (key === 'namesOther') {
-		let html = '<table class="oracle-table"><thead><tr>'
-			+ '<th>d100</th><th>Giants</th><th>Varou</th><th>Trolls</th>'
-			+ '</tr></thead><tbody>';
+		let html =
+			'<table class="oracle-table"><thead><tr>' +
+			'<th>d100</th><th>Giants</th><th>Varou</th><th>Trolls</th>' +
+			'</tr></thead><tbody>';
 		table.forEach((entry, idx) => {
 			const v = entry.value as { giants: string; varou: string; trolls: string };
-			html += `<tr><td>${rangeLabelForEntry(table, idx)}</td>`
-				+ `<td>${v.giants}</td><td>${v.varou}</td><td>${v.trolls}</td></tr>`;
+			html +=
+				`<tr><td>${rangeLabelForEntry(table, idx)}</td>` +
+				`<td>${v.giants}</td><td>${v.varou}</td><td>${v.trolls}</td></tr>`;
 		});
 		return html + '</tbody></table>';
 	}
 
 	if (key === 'freeportDenizen') {
-		let html = '<table class="oracle-table"><thead><tr>'
-			+ '<th>d100</th><th>Type</th><th>Notes</th><th>Salary</th><th>Count</th>'
-			+ '</tr></thead><tbody>';
+		let html =
+			'<table class="oracle-table"><thead><tr>' +
+			'<th>d100</th><th>Type</th><th>Notes</th><th>Salary</th><th>Count</th>' +
+			'</tr></thead><tbody>';
 		table.forEach((entry, idx) => {
 			const v = entry.value as { type: string; notes: string; salary: string; count: number };
-			html += `<tr><td>${rangeLabelForEntry(table, idx)}</td>`
-				+ `<td>${v.type}</td><td>${v.notes}</td><td>${v.salary}</td><td>${v.count}</td></tr>`;
+			html +=
+				`<tr><td>${rangeLabelForEntry(table, idx)}</td>` +
+				`<td>${v.type}</td><td>${v.notes}</td><td>${v.salary}</td><td>${v.count}</td></tr>`;
 		});
 		return html + '</tbody></table>';
 	}
@@ -335,15 +367,16 @@ export function buildTableHtml(key: string, table: OracleEntry[], options?: { ac
 
 	if (table.length > 60) {
 		const third = Math.ceil(table.length / 3);
-		let html = '<table class="oracle-table"><thead><tr>'
-			+ '<th>d100</th><th>Result</th>'
-			+ '<th>d100</th><th>Result</th>'
-			+ '<th>d100</th><th>Result</th>'
-			+ '</tr></thead><tbody>';
+		let html =
+			'<table class="oracle-table"><thead><tr>' +
+			'<th>d100</th><th>Result</th>' +
+			'<th>d100</th><th>Result</th>' +
+			'<th>d100</th><th>Result</th>' +
+			'</tr></thead><tbody>';
 		for (let i = 0; i < third; i++) {
 			html += '<tr>';
 			for (let col = 0; col < 3; col++) {
-				const idx   = i + third * col;
+				const idx = i + third * col;
 				const entry = table[idx];
 				html += entry
 					? `<td>${rangeLabelForEntry(table, idx)}</td><td>${entry.value as string}</td>`
@@ -356,23 +389,26 @@ export function buildTableHtml(key: string, table: OracleEntry[], options?: { ac
 
 	if (table.length > 40) {
 		const half = Math.ceil(table.length / 2);
-		let html = '<table class="oracle-table"><thead><tr>'
-			+ '<th>d100</th><th>Result</th>'
-			+ '<th>d100</th><th>Result</th>'
-			+ '</tr></thead><tbody>';
+		let html =
+			'<table class="oracle-table"><thead><tr>' +
+			'<th>d100</th><th>Result</th>' +
+			'<th>d100</th><th>Result</th>' +
+			'</tr></thead><tbody>';
 		for (let i = 0; i < half; i++) {
-			const left  = table[i];
+			const left = table[i];
 			const right = table[i + half];
-			html += `<tr><td>${rangeLabelForEntry(table, i)}</td><td>${left.value as string}</td>`
-				+ `<td>${right ? rangeLabelForEntry(table, i + half) : ''}</td>`
-				+ `<td>${right ? (right.value as string) : ''}</td></tr>`;
+			html +=
+				`<tr><td>${rangeLabelForEntry(table, i)}</td><td>${left.value as string}</td>` +
+				`<td>${right ? rangeLabelForEntry(table, i + half) : ''}</td>` +
+				`<td>${right ? (right.value as string) : ''}</td></tr>`;
 		}
 		return html + '</tbody></table>';
 	}
 
-	let html = '<table class="oracle-table"><thead><tr>'
-		+ '<th>d100</th><th>Result</th>'
-		+ '</tr></thead><tbody>';
+	let html =
+		'<table class="oracle-table"><thead><tr>' +
+		'<th>d100</th><th>Result</th>' +
+		'</tr></thead><tbody>';
 	table.forEach((entry, idx) => {
 		html += `<tr><td>${rangeLabelForEntry(table, idx)}</td><td>${entry.value as string}</td></tr>`;
 	});
@@ -388,12 +424,16 @@ export function buildTableHtml(key: string, table: OracleEntry[], options?: { ac
  * Handles all special oracle types; returns { roll, html, title }.
  * `roll` is the primary d100 value (used to drive the dice animation).
  */
-export function rollOracle(key: string, allOracles: OracleFile[], options?: { stat?: string }): OracleRollResult {
+export function rollOracle(
+	key: string,
+	allOracles: OracleFile[],
+	options?: { stat?: string },
+): OracleRollResult {
 	const oracle = allOracles.find((o) => o.key === key);
 	if (!oracle) {
 		return {
-			roll:  0,
-			html:  '<div class="roll-line">Error: unknown oracle key.</div>',
+			roll: 0,
+			html: '<div class="roll-line">Error: unknown oracle key.</div>',
 			title: key,
 			value: '',
 		};
@@ -404,13 +444,14 @@ export function rollOracle(key: string, allOracles: OracleFile[], options?: { st
 
 	// ── delveDepths — roll against a specific stat column ──────────────────
 	if (key === 'delveDepths') {
-		const stat      = options?.stat ?? 'edge';
-		const roll      = Math.floor(Math.random() * 100) + 1;
+		const stat = options?.stat ?? 'edge';
+		const roll = Math.floor(Math.random() * 100) + 1;
 		const statLabel = stat.charAt(0).toUpperCase() + stat.slice(1);
 		type DRow = { edge: number; shadow: number; wits: number; value: string };
-		const rows  = table as unknown as DRow[];
-		const found = rows.find((r) => roll <= (r[stat as keyof DRow] as number)) ?? rows[rows.length - 1];
-		const html  =
+		const rows = table as unknown as DRow[];
+		const found =
+			rows.find((r) => roll <= (r[stat as keyof DRow] as number)) ?? rows[rows.length - 1];
+		const html =
 			`<div class="roll-line">Roll (${statLabel}): d100 → ${roll}</div>` +
 			`<div class="move-outcome">${found.value}</div>`;
 		return { roll, html, title, value: found.value };
@@ -420,9 +461,9 @@ export function rollOracle(key: string, allOracles: OracleFile[], options?: { st
 	if (key === 'yrtTouched') {
 		const classRes = rollFromRangeTable(table);
 		const cv = classRes.value as {
-			socialRank:   number;
-			className:    string;
-			description:  string;
+			socialRank: number;
+			className: string;
+			description: string;
 			featureCount: number | { min: number; max: number } | null;
 		};
 
@@ -436,7 +477,9 @@ export function rollOracle(key: string, allOracles: OracleFile[], options?: { st
 
 		// All other classes need an animal aspect
 		const animalOracle = allOracles.find((o) => o.key === 'yrtAnimal');
-		const animalRes    = animalOracle ? rollFromRangeTable(animalOracle.data) : { roll: 0, value: '—' };
+		const animalRes = animalOracle
+			? rollFromRangeTable(animalOracle.data)
+			: { roll: 0, value: '—' };
 
 		// Feral — narrative, no feature rolls
 		if (cv.featureCount === null) {
@@ -446,7 +489,12 @@ export function rollOracle(key: string, allOracles: OracleFile[], options?: { st
 				`<div class="roll-line">Animal roll: d100 → ${animalRes.roll}</div>` +
 				`<div>Animal aspect: <strong>${animalRes.value as string}</strong></div>` +
 				`<div><em>Features are all-encompassing — determine narratively with the player.</em></div>`;
-			return { roll: classRes.roll, html, title, value: `${cv.className} (${animalRes.value as string})` };
+			return {
+				roll: classRes.roll,
+				html,
+				title,
+				value: `${cv.className} (${animalRes.value as string})`,
+			};
 		}
 
 		// Determine feature count
@@ -454,14 +502,14 @@ export function rollOracle(key: string, allOracles: OracleFile[], options?: { st
 		let countLine: string;
 		if (typeof cv.featureCount === 'number') {
 			// Prime: exactly 1
-			count     = cv.featureCount;
+			count = cv.featureCount;
 			countLine = `${count} feature`;
 		} else {
 			// Second (1–3) or Third (4–6): roll d6%3+min
 			const { min, max } = cv.featureCount;
-			const d6   = Math.floor(Math.random() * 6) + 1;
-			count      = (d6 % 3) + min;
-			countLine  = `d6 (${d6}) %3+${min} → ${count} feature${count !== 1 ? 's' : ''} (range ${min}–${max})`;
+			const d6 = Math.floor(Math.random() * 6) + 1;
+			count = (d6 % 3) + min;
+			countLine = `d6 (${d6}) %3+${min} → ${count} feature${count !== 1 ? 's' : ''} (range ${min}–${max})`;
 		}
 
 		// Roll unique features (re-roll duplicates)
@@ -473,7 +521,10 @@ export function rollOracle(key: string, allOracles: OracleFile[], options?: { st
 			while (features.length < count && safety++ < 1000) {
 				const r = rollFromRangeTable(featOracle.data);
 				const f = r.value as string;
-				if (!seen.has(f)) { seen.add(f); features.push(f); }
+				if (!seen.has(f)) {
+					seen.add(f);
+					features.push(f);
+				}
 			}
 		}
 
@@ -486,13 +537,18 @@ export function rollOracle(key: string, allOracles: OracleFile[], options?: { st
 			`<div class="roll-line">Feature count: ${countLine}</div>` +
 			(features.length > 0 ? `<ul>${featureItems}</ul>` : '');
 
-		return { roll: classRes.roll, html, title, value: `${cv.className} (${animalRes.value as string})` };
+		return {
+			roll: classRes.roll,
+			html,
+			title,
+			value: `${cv.className} (${animalRes.value as string})`,
+		};
 	}
 
 	// ── freeportDenizen ─────────────────────────────────────────────────────
 	if (key === 'freeportDenizen') {
 		const res = rollFromRangeTable(table);
-		const v   = res.value as { type: string; notes: string; salary: string; count: number };
+		const v = res.value as { type: string; notes: string; salary: string; count: number };
 		const html =
 			`<div class="roll-line">Roll: d100 → ${res.roll}</div>` +
 			`<div><strong>${v.type}</strong></div>` +
@@ -504,7 +560,7 @@ export function rollOracle(key: string, allOracles: OracleFile[], options?: { st
 	// ── settlementName — two-step subtable ──────────────────────────────────
 	if (key === 'settlementName') {
 		const catRes = rollFromRangeTable(table);
-		const cat    = catRes.value as { description: string; subtable: OracleEntry[] };
+		const cat = catRes.value as { description: string; subtable: OracleEntry[] };
 		const subRes = rollFromRangeTable(cat.subtable);
 		const html =
 			`<div class="roll-line">Category roll: d100 → ${catRes.roll}</div>` +
@@ -518,8 +574,8 @@ export function rollOracle(key: string, allOracles: OracleFile[], options?: { st
 	if (key === 'settlementNameQuick') {
 		const prefixRes = rollFromRangeTable(table);
 		const suffixRes = rollFromRangeTable(table);
-		const pv   = prefixRes.value as { prefix: string; suffix: string };
-		const sv   = suffixRes.value as { prefix: string; suffix: string };
+		const pv = prefixRes.value as { prefix: string; suffix: string };
+		const sv = suffixRes.value as { prefix: string; suffix: string };
 		const name = pv.prefix + sv.suffix;
 		const html =
 			`<div class="roll-line">Prefix roll: d100 → ${prefixRes.roll} | Suffix roll: d100 → ${suffixRes.roll}</div>` +
@@ -530,7 +586,7 @@ export function rollOracle(key: string, allOracles: OracleFile[], options?: { st
 	// ── namesOther — three parallel name fields ──────────────────────────────
 	if (key === 'namesOther') {
 		const res = rollFromRangeTable(table);
-		const v   = res.value as { giants: string; varou: string; trolls: string };
+		const v = res.value as { giants: string; varou: string; trolls: string };
 		const html =
 			`<div class="roll-line">Roll: d100 → ${res.roll}</div>` +
 			`<div>Giants: ${v.giants} | Varou: ${v.varou} | Trolls: ${v.trolls}</div>`;

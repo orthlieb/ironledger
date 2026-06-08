@@ -13,33 +13,35 @@ export const load: PageServerLoad = async ({ locals }) => {
 	try {
 		const res = await fetch(`${INTERNAL_API_URL}/api/v1/registration/status`);
 		if (res.ok) {
-			const body = await res.json() as {
+			const body = (await res.json()) as {
 				closed: { reason: 'maintenance' | 'locked' | 'quota'; message: string } | null;
 			};
 			if (body.closed) {
 				return {
 					registrationClosed: true,
-					closedReason:  body.closed.reason,
+					closedReason: body.closed.reason,
 					closedMessage: body.closed.message,
 					hcaptchaSiteKey: HCAPTCHA_SITE_KEY,
 					isDev: process.env.NODE_ENV !== 'production',
 				};
 			}
 		}
-	} catch { /* ignore — don't block the page if the status endpoint is down */ }
+	} catch {
+		/* ignore — don't block the page if the status endpoint is down */
+	}
 
 	return { hcaptchaSiteKey: HCAPTCHA_SITE_KEY, isDev: process.env.NODE_ENV !== 'production' };
 };
 
 export const actions: Actions = {
 	default: async ({ request }) => {
-		const form         = await request.formData();
-		const email        = (form.get('email')              as string | null) ?? '';
-		const password     = (form.get('password')           as string | null) ?? '';
-		const confirm      = (form.get('confirm')            as string | null) ?? '';
+		const form = await request.formData();
+		const email = (form.get('email') as string | null) ?? '';
+		const password = (form.get('password') as string | null) ?? '';
+		const confirm = (form.get('confirm') as string | null) ?? '';
 		const captchaToken = (form.get('h-captcha-response') as string | null) ?? '';
-		const displayNameRaw = (form.get('displayName')      as string | null) ?? '';
-		const displayName  = displayNameRaw.trim();
+		const displayNameRaw = (form.get('displayName') as string | null) ?? '';
+		const displayName = displayNameRaw.trim();
 
 		if (!email || !password || !confirm) {
 			return fail(400, { error: 'All fields are required.', email, displayName });
@@ -61,7 +63,7 @@ export const actions: Actions = {
 		let res: Response;
 		try {
 			res = await fetch(`${INTERNAL_API_URL}/api/v1/auth/register`, {
-				method:  'POST',
+				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					email,
@@ -72,11 +74,15 @@ export const actions: Actions = {
 				}),
 			});
 		} catch {
-			return fail(503, { error: 'Could not reach the API server. Please try again.', email, displayName });
+			return fail(503, {
+				error: 'Could not reach the API server. Please try again.',
+				email,
+				displayName,
+			});
 		}
 
 		if (!res.ok) {
-			const body = await res.json().catch(() => ({})) as { message?: string };
+			const body = (await res.json().catch(() => ({}))) as { message?: string };
 			return fail(res.status, {
 				error: body.message ?? 'Registration failed. Please try again.',
 				email,

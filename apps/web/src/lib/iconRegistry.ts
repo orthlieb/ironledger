@@ -18,8 +18,8 @@ import type { AssetCategory, AssetDefinition, FoeDef, FoeNature } from '$lib/typ
 // trivial; if the registry grew to hundreds we'd switch to eager: false
 // and async-loaded chunks.
 const sources = import.meta.glob('/src/lib/icons/*.svg', {
-	eager:  true,
-	query:  '?raw',
+	eager: true,
+	query: '?raw',
 	import: 'default',
 }) as Record<string, string>;
 
@@ -54,20 +54,20 @@ export function listIcons(): string[] {
 
 const CAT_ICON: Record<AssetCategory, string> = {
 	'Combat Talent': 'cat-combat',
-	'Companion':     'cat-companion',
-	'Path':          'cat-path',
-	'Ritual':        'cat-ritual',
-	'Touched':       'cat-touched',
+	Companion: 'cat-companion',
+	Path: 'cat-path',
+	Ritual: 'cat-ritual',
+	Touched: 'cat-touched',
 };
 
 const NATURE_ICON: Record<FoeNature, string> = {
-	'Ironlander': 'foe-ironlander',
-	'Firstborn':  'foe-firstborn',
-	'Animal':     'foe-animal',
-	'Beast':      'foe-beast',
-	'Horror':     'foe-horror',
-	'Anomaly':    'foe-anomaly',
-	'Construct':  'foe-construct',
+	Ironlander: 'foe-ironlander',
+	Firstborn: 'foe-firstborn',
+	Animal: 'foe-animal',
+	Beast: 'foe-beast',
+	Horror: 'foe-horror',
+	Anomaly: 'foe-anomaly',
+	Construct: 'foe-construct',
 };
 
 /** Resolve the icon SVG for an asset, with per-asset override taking

@@ -19,7 +19,7 @@ export function buildGlobalCounterRegistry(
 	assets: AssetDefinition[],
 	onMismatch: (msg: string) => void = (m) => console.error(m),
 ): Map<string, CustomFieldDef> {
-	const reg  = new Map<string, CustomFieldDef>();
+	const reg = new Map<string, CustomFieldDef>();
 	const seen = new Map<string, string>(); // counter id → asset id that first declared it
 	for (const a of assets) {
 		for (const cf of a.customFields ?? []) {
@@ -30,16 +30,16 @@ export function buildGlobalCounterRegistry(
 				seen.set(cf.id, a.id);
 				continue;
 			}
-			const sameMax     = JSON.stringify(existing.maxValue) === JSON.stringify(cf.maxValue);
+			const sameMax = JSON.stringify(existing.maxValue) === JSON.stringify(cf.maxValue);
 			const sameDefault = existing.default === cf.default;
-			const sameIcon    = existing.icon === cf.icon;
+			const sameIcon = existing.icon === cf.icon;
 			if (!sameMax || !sameDefault || !sameIcon) {
 				const firstAsset = seen.get(cf.id);
 				onMismatch(
 					`[assetStore] Global counter "${cf.id}" has inconsistent declarations:\n` +
-					`  ${firstAsset}: default=${existing.default}, max=${JSON.stringify(existing.maxValue)}, icon=${existing.icon}\n` +
-					`  ${a.id}: default=${cf.default}, max=${JSON.stringify(cf.maxValue)}, icon=${cf.icon}\n` +
-					`Using first declaration as canonical.`,
+						`  ${firstAsset}: default=${existing.default}, max=${JSON.stringify(existing.maxValue)}, icon=${existing.icon}\n` +
+						`  ${a.id}: default=${cf.default}, max=${JSON.stringify(cf.maxValue)}, icon=${cf.icon}\n` +
+						`Using first declaration as canonical.`,
 				);
 			}
 		}

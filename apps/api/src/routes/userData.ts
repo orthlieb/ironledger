@@ -40,10 +40,10 @@ const patchNpcsBody = z.object({
 
 const patchSessionStateBody = z.object({
   sessionState: z.object({
-    charId:       z.string(),
-    foeId:        z.string(),
+    charId: z.string(),
+    foeId: z.string(),
     expeditionId: z.string(),
-    activeTab:    z.string().optional(),
+    activeTab: z.string().optional(),
   }),
 });
 
@@ -63,12 +63,12 @@ const patchSessionStateBody = z.object({
 // Reject everything else.
 // ---------------------------------------------------------------------------
 
-const MAX_IMAGE_DATA_URL_LEN = 1_200_000;                              // ~900KB decoded
-const IMAGE_DATA_URL_RE      = /^data:image\/(?:png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/;
-const HTTPS_URL_RE           = /^https:\/\/[^\s<>"']+$/;
+const MAX_IMAGE_DATA_URL_LEN = 1_200_000; // ~900KB decoded
+const IMAGE_DATA_URL_RE = /^data:image\/(?:png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/;
+const HTTPS_URL_RE = /^https:\/\/[^\s<>"']+$/;
 
 function isValidImageUrl(s: unknown): boolean {
-  if (typeof s !== 'string' || s.length === 0) return true;   // unset is fine
+  if (typeof s !== 'string' || s.length === 0) return true; // unset is fine
   if (s.length > MAX_IMAGE_DATA_URL_LEN) return false;
   if (IMAGE_DATA_URL_RE.test(s)) return true;
   if (HTTPS_URL_RE.test(s) && s.length <= 2048) return true;
@@ -91,7 +91,6 @@ function assertImageUrls(items: Array<Record<string, unknown>>, kind: string): s
 // ---------------------------------------------------------------------------
 
 export const userDataRoutes: FastifyPluginAsyncZod = async (server) => {
-
   server.addHook('preHandler', authenticate);
 
   // ── GET /session ──────────────────────────────────────────────────────────
@@ -102,93 +101,126 @@ export const userDataRoutes: FastifyPluginAsyncZod = async (server) => {
   });
 
   // ── PATCH /session/encounters ─────────────────────────────────────────────
-  server.patch('/encounters', {
-    schema: {
-      body: patchEncountersBody,
+  server.patch(
+    '/encounters',
+    {
+      schema: {
+        body: patchEncountersBody,
+      },
     },
-  }, async (req, reply) => {
-    if (req.body.encounters.length > config.MAX_ENCOUNTERS_PER_USER) {
-      return reply.status(422).send({
-        statusCode: 422,
-        error:      'Unprocessable Entity',
-        message:    `Encounter limit reached (max ${config.MAX_ENCOUNTERS_PER_USER})`,
-      });
-    }
-    const result = await ud.upsert(req.user!.id, { encounters: req.body.encounters }).catch(handleError(reply));
-    if (!result || reply.sent) return;
-    return reply.status(200).send(result);
-  });
+    async (req, reply) => {
+      if (req.body.encounters.length > config.MAX_ENCOUNTERS_PER_USER) {
+        return reply.status(422).send({
+          statusCode: 422,
+          error: 'Unprocessable Entity',
+          message: `Encounter limit reached (max ${config.MAX_ENCOUNTERS_PER_USER})`,
+        });
+      }
+      const result = await ud
+        .upsert(req.user!.id, { encounters: req.body.encounters })
+        .catch(handleError(reply));
+      if (!result || reply.sent) return;
+      return reply.status(200).send(result);
+    },
+  );
 
   // ── PATCH /session/expeditions ────────────────────────────────────────────
-  server.patch('/expeditions', {
-    schema: {
-      body: patchExpeditionsBody,
+  server.patch(
+    '/expeditions',
+    {
+      schema: {
+        body: patchExpeditionsBody,
+      },
     },
-  }, async (req, reply) => {
-    if (req.body.expeditions.length > config.MAX_EXPEDITIONS_PER_USER) {
-      return reply.status(422).send({
-        statusCode: 422,
-        error:      'Unprocessable Entity',
-        message:    `Expedition limit reached (max ${config.MAX_EXPEDITIONS_PER_USER})`,
-      });
-    }
-    const imgErr = assertImageUrls(req.body.expeditions, 'expeditions');
-    if (imgErr) return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: imgErr });
-    const result = await ud.upsert(req.user!.id, { expeditions: req.body.expeditions }).catch(handleError(reply));
-    if (!result || reply.sent) return;
-    return reply.status(200).send(result);
-  });
+    async (req, reply) => {
+      if (req.body.expeditions.length > config.MAX_EXPEDITIONS_PER_USER) {
+        return reply.status(422).send({
+          statusCode: 422,
+          error: 'Unprocessable Entity',
+          message: `Expedition limit reached (max ${config.MAX_EXPEDITIONS_PER_USER})`,
+        });
+      }
+      const imgErr = assertImageUrls(req.body.expeditions, 'expeditions');
+      if (imgErr)
+        return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: imgErr });
+      const result = await ud
+        .upsert(req.user!.id, { expeditions: req.body.expeditions })
+        .catch(handleError(reply));
+      if (!result || reply.sent) return;
+      return reply.status(200).send(result);
+    },
+  );
 
   // ── PATCH /session/communities ───────────────────────────────────────────
-  server.patch('/communities', {
-    schema: {
-      body: patchCommunitiesBody,
+  server.patch(
+    '/communities',
+    {
+      schema: {
+        body: patchCommunitiesBody,
+      },
     },
-  }, async (req, reply) => {
-    if (req.body.communities.length > config.MAX_COMMUNITIES_PER_USER) {
-      return reply.status(422).send({
-        statusCode: 422,
-        error:      'Unprocessable Entity',
-        message:    `Community limit reached (max ${config.MAX_COMMUNITIES_PER_USER})`,
-      });
-    }
-    const imgErr = assertImageUrls(req.body.communities, 'communities');
-    if (imgErr) return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: imgErr });
-    const result = await ud.upsert(req.user!.id, { communities: req.body.communities }).catch(handleError(reply));
-    if (!result || reply.sent) return;
-    return reply.status(200).send(result);
-  });
+    async (req, reply) => {
+      if (req.body.communities.length > config.MAX_COMMUNITIES_PER_USER) {
+        return reply.status(422).send({
+          statusCode: 422,
+          error: 'Unprocessable Entity',
+          message: `Community limit reached (max ${config.MAX_COMMUNITIES_PER_USER})`,
+        });
+      }
+      const imgErr = assertImageUrls(req.body.communities, 'communities');
+      if (imgErr)
+        return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: imgErr });
+      const result = await ud
+        .upsert(req.user!.id, { communities: req.body.communities })
+        .catch(handleError(reply));
+      if (!result || reply.sent) return;
+      return reply.status(200).send(result);
+    },
+  );
 
   // ── PATCH /session/npcs ──────────────────────────────────────────────────
-  server.patch('/npcs', {
-    schema: {
-      body: patchNpcsBody,
+  server.patch(
+    '/npcs',
+    {
+      schema: {
+        body: patchNpcsBody,
+      },
     },
-  }, async (req, reply) => {
-    if (req.body.npcs.length > config.MAX_NPCS_PER_USER) {
-      return reply.status(422).send({
-        statusCode: 422,
-        error:      'Unprocessable Entity',
-        message:    `NPC limit reached (max ${config.MAX_NPCS_PER_USER})`,
-      });
-    }
-    const imgErr = assertImageUrls(req.body.npcs, 'npcs');
-    if (imgErr) return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: imgErr });
-    const result = await ud.upsert(req.user!.id, { npcs: req.body.npcs }).catch(handleError(reply));
-    if (!result || reply.sent) return;
-    return reply.status(200).send(result);
-  });
+    async (req, reply) => {
+      if (req.body.npcs.length > config.MAX_NPCS_PER_USER) {
+        return reply.status(422).send({
+          statusCode: 422,
+          error: 'Unprocessable Entity',
+          message: `NPC limit reached (max ${config.MAX_NPCS_PER_USER})`,
+        });
+      }
+      const imgErr = assertImageUrls(req.body.npcs, 'npcs');
+      if (imgErr)
+        return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: imgErr });
+      const result = await ud
+        .upsert(req.user!.id, { npcs: req.body.npcs })
+        .catch(handleError(reply));
+      if (!result || reply.sent) return;
+      return reply.status(200).send(result);
+    },
+  );
 
   // ── PATCH /session/state ──────────────────────────────────────────────────
-  server.patch('/state', {
-    schema: {
-      body: patchSessionStateBody,
+  server.patch(
+    '/state',
+    {
+      schema: {
+        body: patchSessionStateBody,
+      },
     },
-  }, async (req, reply) => {
-    const result = await ud.upsert(req.user!.id, { sessionState: req.body.sessionState }).catch(handleError(reply));
-    if (!result || reply.sent) return;
-    return reply.status(200).send(result);
-  });
+    async (req, reply) => {
+      const result = await ud
+        .upsert(req.user!.id, { sessionState: req.body.sessionState })
+        .catch(handleError(reply));
+      if (!result || reply.sent) return;
+      return reply.status(200).send(result);
+    },
+  );
 };
 
 // ---------------------------------------------------------------------------
@@ -198,6 +230,10 @@ export const userDataRoutes: FastifyPluginAsyncZod = async (server) => {
 function handleError(reply: FastifyReply) {
   return (err: unknown) => {
     console.error('[userDataRoutes]', err);
-    reply.status(500).send({ statusCode: 500, error: 'Internal Server Error', message: 'An unexpected error occurred' });
+    reply.status(500).send({
+      statusCode: 500,
+      error: 'Internal Server Error',
+      message: 'An unexpected error occurred',
+    });
   };
 }

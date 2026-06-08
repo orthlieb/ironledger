@@ -17,10 +17,10 @@
  *   });
  */
 
-const API   = 'http://127.0.0.1:3000/api/v1';
+const API = 'http://127.0.0.1:3000/api/v1';
 const CREDS = {
-	email:        'test@ironledger.local',
-	password:     'IronLedgerTest2024!',
+	email: 'test@ironledger.local',
+	password: 'IronLedgerTest2024!',
 	captchaToken: 'dev-bypass',
 };
 
@@ -29,9 +29,9 @@ const CREDS = {
 /** Log in as the E2E test user and return a short-lived access token. */
 export async function getTestToken(): Promise<string> {
 	const res = await fetch(`${API}/auth/login`, {
-		method:  'POST',
+		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body:    JSON.stringify(CREDS),
+		body: JSON.stringify(CREDS),
 	});
 	if (!res.ok) throw new Error(`E2E test login failed: ${res.status} ${await res.text()}`);
 	return ((await res.json()) as { accessToken: string }).accessToken;
@@ -54,7 +54,7 @@ function json(tok: string): Record<string, string> {
  * Deletes sequentially to respect SQLite's single-writer constraint.
  */
 export async function resetCharacters(token?: string): Promise<void> {
-	const tok = token ?? await getTestToken();
+	const tok = token ?? (await getTestToken());
 	const res = await fetch(`${API}/characters`, { headers: auth(tok) });
 	if (!res.ok) throw new Error(`GET /characters failed: ${res.status}`);
 	const list = (await res.json()) as Array<{ id: string }>;
@@ -68,44 +68,44 @@ export async function resetCharacters(token?: string): Promise<void> {
 
 /** Replace the foe-encounter list with an empty array. */
 export async function resetFoes(token?: string): Promise<void> {
-	const tok = token ?? await getTestToken();
+	const tok = token ?? (await getTestToken());
 	await fetch(`${API}/session/encounters`, {
-		method:  'PATCH',
+		method: 'PATCH',
 		headers: json(tok),
-		body:    JSON.stringify({ encounters: [] }),
+		body: JSON.stringify({ encounters: [] }),
 	});
 }
 
 /** Replace the expedition list with an empty array. */
 export async function resetExpeditions(token?: string): Promise<void> {
-	const tok = token ?? await getTestToken();
+	const tok = token ?? (await getTestToken());
 	await fetch(`${API}/session/expeditions`, {
-		method:  'PATCH',
+		method: 'PATCH',
 		headers: json(tok),
-		body:    JSON.stringify({ expeditions: [] }),
+		body: JSON.stringify({ expeditions: [] }),
 	});
 }
 
 /** Replace both the communities list and the NPC list with empty arrays. */
 export async function resetCommunities(token?: string): Promise<void> {
-	const tok = token ?? await getTestToken();
+	const tok = token ?? (await getTestToken());
 	await Promise.all([
 		fetch(`${API}/session/communities`, {
-			method:  'PATCH',
+			method: 'PATCH',
 			headers: json(tok),
-			body:    JSON.stringify({ communities: [] }),
+			body: JSON.stringify({ communities: [] }),
 		}),
 		fetch(`${API}/session/npcs`, {
-			method:  'PATCH',
+			method: 'PATCH',
 			headers: json(tok),
-			body:    JSON.stringify({ npcs: [] }),
+			body: JSON.stringify({ npcs: [] }),
 		}),
 	]);
 }
 
 /** Clear the entire session log. */
 export async function resetLog(token?: string): Promise<void> {
-	const tok = token ?? await getTestToken();
+	const tok = token ?? (await getTestToken());
 	await fetch(`${API}/session/log`, { method: 'DELETE', headers: auth(tok) });
 }
 
@@ -117,11 +117,11 @@ export async function resetLog(token?: string): Promise<void> {
  * slow UI-based creation path in beforeEach.
  */
 export async function seedCharacter(name = 'Test Character', token?: string): Promise<void> {
-	const tok = token ?? await getTestToken();
+	const tok = token ?? (await getTestToken());
 	const res = await fetch(`${API}/characters`, {
-		method:  'POST',
+		method: 'POST',
 		headers: json(tok),
-		body:    JSON.stringify({ name }),
+		body: JSON.stringify({ name }),
 	});
 	if (!res.ok) throw new Error(`POST /characters failed: ${res.status} ${await res.text()}`);
 }
@@ -136,14 +136,9 @@ export async function seedCharacter(name = 'Test Character', token?: string): Pr
  * already have one (e.g. from auth.setup.ts).
  */
 export async function resetAll(token?: string): Promise<void> {
-	const tok = token ?? await getTestToken();
+	const tok = token ?? (await getTestToken());
 	// Characters require sequential deletes (SQLite single-writer).
 	await resetCharacters(tok);
 	// Session collections and log are each a single atomic write — safe to parallelize.
-	await Promise.all([
-		resetFoes(tok),
-		resetExpeditions(tok),
-		resetCommunities(tok),
-		resetLog(tok),
-	]);
+	await Promise.all([resetFoes(tok), resetExpeditions(tok), resetCommunities(tok), resetLog(tok)]);
 }

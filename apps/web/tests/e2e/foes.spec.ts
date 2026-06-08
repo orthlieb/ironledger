@@ -7,14 +7,16 @@
 import { test, expect } from '@playwright/test';
 import { resetFoes } from './helpers/reset';
 
-const FOE_AREA   = '.home-area--foes';
+const FOE_AREA = '.home-area--foes';
 const FOE_HEADER = `${FOE_AREA} .fa-header`;
-const FOE_SPINE  = `${FOE_AREA} .fa-spine`;
-const FOE_STAGE  = `${FOE_AREA} .fa-stage`;
+const FOE_SPINE = `${FOE_AREA} .fa-spine`;
+const FOE_STAGE = `${FOE_AREA} .fa-stage`;
 
 async function waitForFoesLoaded(page: import('@playwright/test').Page) {
 	await expect(page.locator(`${FOE_AREA} .fa-loading`)).not.toBeVisible({ timeout: 10_000 });
-	await page.locator(`${FOE_AREA} .fa-empty, ${FOE_AREA} .fa-body`).first()
+	await page
+		.locator(`${FOE_AREA} .fa-empty, ${FOE_AREA} .fa-body`)
+		.first()
 		.waitFor({ timeout: 10_000, state: 'attached' });
 }
 
@@ -34,7 +36,9 @@ async function addFoeFromPicker(page: import('@playwright/test').Page) {
 }
 
 test.describe('Foes area (v2)', () => {
-	test.beforeAll(async () => { await resetFoes(); });
+	test.beforeAll(async () => {
+		await resetFoes();
+	});
 
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/home');
@@ -61,7 +65,7 @@ test.describe('Foes area (v2)', () => {
 
 	test('clicking a foe spine selects it', async ({ page }) => {
 		const spines = page.locator(FOE_SPINE);
-		if (await spines.count() === 0) {
+		if ((await spines.count()) === 0) {
 			await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
 			await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
 			await addFoeFromPicker(page);
@@ -73,7 +77,7 @@ test.describe('Foes area (v2)', () => {
 
 	test('selected foe shows stage with foe details', async ({ page }) => {
 		const spines = page.locator(FOE_SPINE);
-		if (await spines.count() === 0) {
+		if ((await spines.count()) === 0) {
 			await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
 			await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
 			await addFoeFromPicker(page);
@@ -85,7 +89,7 @@ test.describe('Foes area (v2)', () => {
 
 	test('can delete a foe', async ({ page }) => {
 		const spines = page.locator(FOE_SPINE);
-		if (await spines.count() === 0) {
+		if ((await spines.count()) === 0) {
 			await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
 			await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
 			await addFoeFromPicker(page);

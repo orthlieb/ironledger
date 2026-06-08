@@ -22,17 +22,17 @@ import { fileURLToPath } from 'node:url';
 // runtimes — operators on those won't get .env auto-load and will need to
 // export env themselves (same as before this module existed).
 if (typeof process.loadEnvFile === 'function') {
-	// src/loadEnv.ts → ../../../.env  (workspace root, dev)
-	// dist/loadEnv.js → ../../../.env (production, same depth after tsc)
-	const here  = dirname(fileURLToPath(import.meta.url));
-	const envPath = resolve(here, '../../..', '.env');
-	if (existsSync(envPath)) {
-		try {
-			process.loadEnvFile(envPath);
-		} catch {
-			// loadEnvFile only throws on parser errors; treat as a soft failure
-			// so the app still boots and the Zod check in config.ts produces a
-			// clean "VAR required" message instead of a stack trace.
-		}
-	}
+  // src/loadEnv.ts → ../../../.env  (workspace root, dev)
+  // dist/loadEnv.js → ../../../.env (production, same depth after tsc)
+  const here = dirname(fileURLToPath(import.meta.url));
+  const envPath = resolve(here, '../../..', '.env');
+  if (existsSync(envPath)) {
+    try {
+      process.loadEnvFile(envPath);
+    } catch {
+      // loadEnvFile only throws on parser errors; treat as a soft failure
+      // so the app still boots and the Zod check in config.ts produces a
+      // clean "VAR required" message instead of a stack trace.
+    }
+  }
 }

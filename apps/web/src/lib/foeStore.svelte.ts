@@ -32,12 +32,12 @@ import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
 // ---------------------------------------------------------------------------
 
 export interface FoeOverride {
-	present?:  boolean;
+	present?: boolean;
 	addendum?: string;
 }
 
 export interface FoeOverridesFile {
-	source:    CatalogueSource;
+	source: CatalogueSource;
 	overrides: Record<string, FoeOverride>;
 }
 
@@ -45,10 +45,10 @@ export interface FoeOverridesFile {
 // Module-level state (shared across all component instances)
 // ---------------------------------------------------------------------------
 
-let _foes:      FoeDef[]            = $state([]);
-let _overrides: FoeOverridesFile[]  = $state([]);
-let _loading                        = $state(false);
-let _loaded                         = false;
+let _foes: FoeDef[] = $state([]);
+let _overrides: FoeOverridesFile[] = $state([]);
+let _loading = $state(false);
+let _loaded = false;
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -64,10 +64,10 @@ export const RANK_COLORS: Record<number, { bg: string; text: string }> = {
 
 export const FOE_RANKS: Record<number, { label: string; progressPerHit: number; harm: number }> = {
 	1: { label: 'Troublesome', progressPerHit: 12, harm: 1 },
-	2: { label: 'Dangerous',   progressPerHit: 8,  harm: 2 },
-	3: { label: 'Formidable',  progressPerHit: 4,  harm: 3 },
-	4: { label: 'Extreme',     progressPerHit: 2,  harm: 4 },
-	5: { label: 'Epic',        progressPerHit: 1,  harm: 5 },
+	2: { label: 'Dangerous', progressPerHit: 8, harm: 2 },
+	3: { label: 'Formidable', progressPerHit: 4, harm: 3 },
+	4: { label: 'Extreme', progressPerHit: 2, harm: 4 },
+	5: { label: 'Epic', progressPerHit: 1, harm: 5 },
 };
 
 export const FOE_QUANTITIES: Array<{
@@ -76,19 +76,19 @@ export const FOE_QUANTITIES: Array<{
 	rankAdj: number;
 	desc: string;
 }> = [
-	{ value: 'solo',  label: 'Solo',       rankAdj: 0, desc: 'One foe'   },
-	{ value: 'pack',  label: 'Pack (2–4)', rankAdj: 1, desc: '+1 rank'   },
-	{ value: 'horde', label: 'Horde (5+)', rankAdj: 2, desc: '+2 ranks'  },
+	{ value: 'solo', label: 'Solo', rankAdj: 0, desc: 'One foe' },
+	{ value: 'pack', label: 'Pack (2–4)', rankAdj: 1, desc: '+1 rank' },
+	{ value: 'horde', label: 'Horde (5+)', rankAdj: 2, desc: '+2 ranks' },
 ];
 
 export const FOE_NATURE_COLORS: Record<FoeNature, string> = {
 	Ironlander: '#7A9AB8',
-	Firstborn:  '#B87AE8',
-	Animal:     '#3DBF82',
-	Beast:      '#F08840',
-	Horror:     '#E03050',
-	Anomaly:    '#20BCCC',
-	Construct:  '#A8A8A8',
+	Firstborn: '#B87AE8',
+	Animal: '#3DBF82',
+	Beast: '#F08840',
+	Horror: '#E03050',
+	Anomaly: '#20BCCC',
+	Construct: '#A8A8A8',
 };
 
 // Source order for display
@@ -96,7 +96,13 @@ const SOURCE_ORDER: CatalogueSource[] = ['base', 'delve', 'yrt'];
 
 // Nature display order
 const NATURE_ORDER: FoeNature[] = [
-	'Ironlander', 'Firstborn', 'Animal', 'Beast', 'Horror', 'Anomaly', 'Construct',
+	'Ironlander',
+	'Firstborn',
+	'Animal',
+	'Beast',
+	'Horror',
+	'Anomaly',
+	'Construct',
 ];
 
 // ---------------------------------------------------------------------------
@@ -114,9 +120,9 @@ export async function loadFoes(): Promise<void> {
 		const res = await fetch('/api/catalogue/foes', { cache: 'reload' });
 		if (!res.ok) throw new Error(`Foe fetch failed: ${res.status}`);
 		const json = (await res.json()) as { foes: FoeDef[]; overrides?: FoeOverridesFile[] };
-		_foes      = json.foes.sort((a, b) => a.name.localeCompare(b.name));
+		_foes = json.foes.sort((a, b) => a.name.localeCompare(b.name));
 		_overrides = json.overrides ?? [];
-		_loaded    = true;
+		_loaded = true;
 	} catch (err) {
 		console.error('[foeStore] Failed to load foes:', err);
 	} finally {
@@ -205,8 +211,8 @@ export function findFoeByName(name: string): FoeDef | undefined {
 export function foeSource(foe: FoeDef): CatalogueSource {
 	if (foe.source) return foe.source;
 	if (foe.id.startsWith('ironsworn/')) return 'base';
-	if (foe.id.startsWith('delve/'))     return 'delve';
-	if (foe.id.startsWith('yrt/'))       return 'yrt';
+	if (foe.id.startsWith('delve/')) return 'delve';
+	if (foe.id.startsWith('yrt/')) return 'yrt';
 	return 'base';
 }
 

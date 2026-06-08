@@ -1,0 +1,22 @@
+# Build output
+**/dist/
+**/build/
+apps/web/.svelte-kit/
+apps/web/playwright-report/
+apps/web/test-results/
+
+# Dependencies / lockfiles
+node_modules/
+package-lock.json
+
+# Claude Code tooling (config + isolated git worktrees)
+.claude/
+**/.claude/
+
+# Generated
+**/coverage/
+apps/api/src/db/migrations/
+
+# Misc
+*.min.js
+*.min.css

@@ -15,8 +15,8 @@ setup('authenticate as dev user', async ({ page }) => {
 	const apiCtx = await request.newContext({ baseURL: 'http://127.0.0.1:3000' });
 	const res = await apiCtx.post('/api/v1/auth/login', {
 		data: {
-			email:        'test@ironledger.local',
-			password:     'IronLedgerTest2024!',
+			email: 'test@ironledger.local',
+			password: 'IronLedgerTest2024!',
 			captchaToken: 'dev-bypass',
 		},
 	});
@@ -25,7 +25,7 @@ setup('authenticate as dev user', async ({ page }) => {
 		throw new Error(`Login failed: ${res.status()} ${await res.text()}`);
 	}
 
-	const body = await res.json() as { accessToken: string };
+	const body = (await res.json()) as { accessToken: string };
 	await apiCtx.dispose();
 
 	// Wipe all test-user data so the entire suite starts from a blank slate.
@@ -36,13 +36,13 @@ setup('authenticate as dev user', async ({ page }) => {
 	// Inject the access_token cookie into the browser context, then navigate to /home
 	await page.context().addCookies([
 		{
-			name:     'access_token',
-			value:    body.accessToken,
-			domain:   'localhost',
-			path:     '/',
+			name: 'access_token',
+			value: body.accessToken,
+			domain: 'localhost',
+			path: '/',
 			httpOnly: true,
 			sameSite: 'Strict',
-			secure:   false,
+			secure: false,
 		},
 	]);
 
@@ -59,7 +59,7 @@ setup('authenticate as dev user', async ({ page }) => {
 	// appended synchronously after the roll, which is what the assertions
 	// actually care about. Same reasoning for dice sound: not under test.
 	await page.evaluate(() => {
-		localStorage.setItem('ironledger:dice3d',     'off');
+		localStorage.setItem('ironledger:dice3d', 'off');
 		localStorage.setItem('ironledger:dice:sound', 'off');
 	});
 

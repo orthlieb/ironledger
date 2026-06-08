@@ -24,26 +24,26 @@
 // ---------------------------------------------------------------------------
 
 export interface OverflowRule {
-	resource:   string;   // which resource triggers the overflow ('health' | 'spirit')
-	overflowTo: string;   // where excess damage flows ('momentum')
-	logTitle:   string;
+	resource: string; // which resource triggers the overflow ('health' | 'spirit')
+	overflowTo: string; // where excess damage flows ('momentum')
+	logTitle: string;
 	logHtml: (ctx: { overflow: number; charId: string; entryId: string }) => string;
 }
 
 export const OVERFLOW_RULES: OverflowRule[] = [
 	{
-		resource:   'health',
+		resource: 'health',
 		overflowTo: 'momentum',
-		logTitle:   'Health: Zero',
+		logTitle: 'Health: Zero',
 		logHtml: ({ overflow, charId, entryId }) =>
 			`<p>Your health is zero. You also lose ` +
 			`<a class="resource-link" data-resource="momentum" data-value="-${overflow}" ` +
 			`data-entry-id="${entryId}" data-char-id="${charId}">-${overflow} momentum</a>.</p>`,
 	},
 	{
-		resource:   'spirit',
+		resource: 'spirit',
 		overflowTo: 'momentum',
-		logTitle:   'Spirit: Zero',
+		logTitle: 'Spirit: Zero',
 		logHtml: ({ overflow, charId, entryId }) =>
 			`<p>Your spirit is zero. You also lose ` +
 			`<a class="resource-link" data-resource="momentum" data-value="-${overflow}" ` +
@@ -59,8 +59,8 @@ export const OVERFLOW_RULES: OverflowRule[] = [
 // ---------------------------------------------------------------------------
 
 export interface FloorRule {
-	resource: string;   // 'momentum' | 'supply'
-	floor:    number;   //  -6        |  0
+	resource: string; // 'momentum' | 'supply'
+	floor: number; //  -6        |  0
 	logTitle: string;
 	logHtml: (ctx: { charId: string; entryId: string }) => string;
 }
@@ -68,15 +68,16 @@ export interface FloorRule {
 export const FLOOR_RULES: FloorRule[] = [
 	{
 		resource: 'momentum',
-		floor:    -6,
+		floor: -6,
 		logTitle: 'Momentum: Desperate',
-		logHtml:  () => '<p>Your momentum is at its minimum of \u22126. You face a desperate situation.</p>',
+		logHtml: () =>
+			'<p>Your momentum is at its minimum of \u22126. You face a desperate situation.</p>',
 	},
 	{
 		resource: 'supply',
-		floor:    0,
+		floor: 0,
 		logTitle: 'Supply: Exhausted',
-		logHtml:  ({ charId, entryId }) =>
+		logHtml: ({ charId, entryId }) =>
 			`<p>Your supply is exhausted. Mark ` +
 			`<a class="debility-link" data-debility="unprepared" data-value="1" ` +
 			`data-entry-id="${entryId}" data-char-id="${charId}">Unprepared</a>. ` +
@@ -94,8 +95,8 @@ export const FLOOR_RULES: FloorRule[] = [
 // ---------------------------------------------------------------------------
 
 export interface FloorOverflowRule {
-	resource: string;   // 'momentum' | 'health' | 'spirit' | 'supply'
-	floor:    number;   //  -6        |  0       |  0       |  0
+	resource: string; // 'momentum' | 'health' | 'spirit' | 'supply'
+	floor: number; //  -6        |  0       |  0       |  0
 	logTitle: string;
 	logHtml: (ctx: { overflow: number; charId: string; entryId: string }) => string;
 }
@@ -107,13 +108,18 @@ function makeOverflowRows(
 	charId: string,
 	entryId: string,
 ): string {
-	const rows = Array.from({ length: overflow }, () =>
-		`<li>` +
-		stats.map(s =>
-			`<a class="resource-link" data-resource="${s.resource}" data-value="-1" ` +
-			`data-entry-id="${entryId}" data-char-id="${charId}">\u22121\u00a0${s.label}</a>`,
-		).join(' / ') +
-		`</li>`,
+	const rows = Array.from(
+		{ length: overflow },
+		() =>
+			`<li>` +
+			stats
+				.map(
+					(s) =>
+						`<a class="resource-link" data-resource="${s.resource}" data-value="-1" ` +
+						`data-entry-id="${entryId}" data-char-id="${charId}">\u22121\u00a0${s.label}</a>`,
+				)
+				.join(' / ') +
+			`</li>`,
 	).join('');
 	return `<ul>${rows}</ul>`;
 }
@@ -121,22 +127,27 @@ function makeOverflowRows(
 export const FLOOR_OVERFLOW_RULES: FloorOverflowRule[] = [
 	{
 		resource: 'momentum',
-		floor:    -6,
+		floor: -6,
 		logTitle: 'Face a Setback',
 		logHtml: ({ overflow, charId, entryId }) =>
 			`<p>Your momentum is at its minimum of \u22126. Distribute ${overflow} overflow ` +
 			`\u2014 choose one per point:</p>` +
-			makeOverflowRows(overflow, [
-				{ resource: 'health', label: 'health' },
-				{ resource: 'spirit', label: 'spirit' },
-				{ resource: 'supply', label: 'supply' },
-			], charId, entryId) +
+			makeOverflowRows(
+				overflow,
+				[
+					{ resource: 'health', label: 'health' },
+					{ resource: 'spirit', label: 'spirit' },
+					{ resource: 'supply', label: 'supply' },
+				],
+				charId,
+				entryId,
+			) +
 			`<p>Or <a class="move-link" data-id="move/face-a-setback">Face a Setback</a> ` +
 			`to lose progress on a track instead.</p>`,
 	},
 	{
 		resource: 'health',
-		floor:    0,
+		floor: 0,
 		logTitle: 'Face Death',
 		logHtml: () =>
 			`<p>Your health is at zero and you suffer further harm. You must ` +
@@ -145,7 +156,7 @@ export const FLOOR_OVERFLOW_RULES: FloorOverflowRule[] = [
 	},
 	{
 		resource: 'spirit',
-		floor:    0,
+		floor: 0,
 		logTitle: 'Face Desolation',
 		logHtml: () =>
 			`<p>Your spirit is at zero and you suffer further stress. You must ` +
@@ -154,16 +165,21 @@ export const FLOOR_OVERFLOW_RULES: FloorOverflowRule[] = [
 	},
 	{
 		resource: 'supply',
-		floor:    0,
+		floor: 0,
 		logTitle: 'Out of Supply',
 		logHtml: ({ overflow, charId, entryId }) =>
 			`<p>Your supply is exhausted. Exchange ${overflow} overflow ` +
 			`\u2014 choose one per point:</p>` +
-			makeOverflowRows(overflow, [
-				{ resource: 'health',   label: 'health'   },
-				{ resource: 'spirit',   label: 'spirit'   },
-				{ resource: 'momentum', label: 'momentum' },
-			], charId, entryId),
+			makeOverflowRows(
+				overflow,
+				[
+					{ resource: 'health', label: 'health' },
+					{ resource: 'spirit', label: 'spirit' },
+					{ resource: 'momentum', label: 'momentum' },
+				],
+				charId,
+				entryId,
+			),
 	},
 ];
 
@@ -177,4 +193,4 @@ export const FLOOR_OVERFLOW_RULES: FloorOverflowRule[] = [
 // ---------------------------------------------------------------------------
 
 export const DEBILITY_MOMENTUM_TITLE = 'Momentum: Reduced';
-export const BURN_MOMENTUM_TITLE     = 'Momentum: Burn Available';
+export const BURN_MOMENTUM_TITLE = 'Momentum: Burn Available';

@@ -45,27 +45,21 @@
 		<form method="POST" class="auth-form">
 			<label class="field-group">
 				<span>Email</span>
-				<input
-					type="email"
-					name="email"
-					required
-					autocomplete="email"
-					value={form?.email ?? ''}
-				/>
+				<input type="email" name="email" required autocomplete="email" value={form?.email ?? ''} />
 			</label>
 
-			<PasswordInput
-				name="password"
-				label="Password"
-				autocomplete="current-password"
-			/>
+			<PasswordInput name="password" label="Password" autocomplete="current-password" />
 
 			<div class="captcha-wrap">
 				{#if data.isDev}
 					<div class="captcha-dev-bypass">⚙ Captcha bypassed in development</div>
 					<input type="hidden" name="h-captcha-response" value="dev-bypass" />
 				{:else}
-					<div class="h-captcha" data-sitekey="{data.hcaptchaSiteKey}" data-theme={captchaTheme}></div>
+					<div
+						class="h-captcha"
+						data-sitekey={data.hcaptchaSiteKey}
+						data-theme={captchaTheme}
+					></div>
 				{/if}
 			</div>
 
@@ -78,7 +72,9 @@
 		</form>
 
 		<p class="auth-link">
-			No account yet? <a href="/register">Create one</a> · <a href="/forgot-password" class="forgot-link">Forgot password?</a> · <a href="/about" class="forgot-link">About</a>
+			No account yet? <a href="/register">Create one</a> ·
+			<a href="/forgot-password" class="forgot-link">Forgot password?</a>
+			· <a href="/about" class="forgot-link">About</a>
 		</p>
 	</div>
 </div>
@@ -117,7 +113,6 @@
 	.auth-brand-rule:first-child {
 		background: linear-gradient(to left, transparent, var(--border-mid));
 	}
-
 
 	.captcha-wrap {
 		display: flex;

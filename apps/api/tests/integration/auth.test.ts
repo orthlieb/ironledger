@@ -6,10 +6,10 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import * as auth          from '../../src/services/authService.js';
-import { adminDb }        from '../../src/db/index.js';
+import * as auth from '../../src/services/authService.js';
+import { adminDb } from '../../src/db/index.js';
 import { users, authTokens, refreshTokens } from '../../src/db/schema.js';
-import { eq }             from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
 // Tests use adminDb (bypasses RLS) for all setup, cleanup, and verification
 // queries.  The app_user pool gets its session GUC set to '' after any
@@ -22,14 +22,14 @@ if (!adminDb) throw new Error('adminDb is required — set DATABASE_ADMIN_URL');
 // ---------------------------------------------------------------------------
 
 vi.mock('../../src/lib/mailer.js', () => ({
-  sendVerificationEmail:  vi.fn().mockResolvedValue(undefined),
+  sendVerificationEmail: vi.fn().mockResolvedValue(undefined),
   sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../../src/lib/hibp.js', () => ({
   assertPasswordNotPwned: vi.fn().mockResolvedValue(undefined),
-  getPwnedCount:          vi.fn().mockResolvedValue(0),
-  PwnedPasswordError:     class PwnedPasswordError extends Error {},
+  getPwnedCount: vi.fn().mockResolvedValue(0),
+  PwnedPasswordError: class PwnedPasswordError extends Error {},
 }));
 
 const { sendVerificationEmail } = await import('../../src/lib/mailer.js');
@@ -38,7 +38,7 @@ const { sendVerificationEmail } = await import('../../src/lib/mailer.js');
 // Helpers
 // ---------------------------------------------------------------------------
 
-const TEST_EMAIL    = 'integration-test@example.com';
+const TEST_EMAIL = 'integration-test@example.com';
 const TEST_PASSWORD = 'CorrectHorseBatteryStaple!99';
 
 async function cleanupUser(email: string) {
@@ -67,7 +67,7 @@ async function createVerifiedUser(email = TEST_EMAIL, password = TEST_PASSWORD) 
   const calls = vi.mocked(sendVerificationEmail).mock.calls;
   const lastCall = calls[calls.length - 1];
   if (!lastCall) throw new Error('sendVerificationEmail was not called');
-  const rawToken = lastCall[1];  // second arg is the raw token
+  const rawToken = lastCall[1]; // second arg is the raw token
 
   return auth.verifyEmail(rawToken);
 }
@@ -85,14 +85,11 @@ describe('register', () => {
   it('creates a user with email_verified_at = null', async () => {
     await auth.register({ email: TEST_EMAIL, password: TEST_PASSWORD });
 
-    const [user] = await adminDb!
-      .select()
-      .from(users)
-      .where(eq(users.email, TEST_EMAIL));
+    const [user] = await adminDb!.select().from(users).where(eq(users.email, TEST_EMAIL));
 
     expect(user).toBeDefined();
     expect(user!.emailVerifiedAt).toBeNull();
-    expect(user!.passwordHash).not.toBe(TEST_PASSWORD);   // must be hashed
+    expect(user!.passwordHash).not.toBe(TEST_PASSWORD); // must be hashed
     expect(user!.passwordHash).toMatch(/^\$argon2/);
   });
 
@@ -101,10 +98,7 @@ describe('register', () => {
     // Allow fire-and-forget to settle
     await new Promise((r) => setTimeout(r, 50));
 
-    expect(sendVerificationEmail).toHaveBeenCalledWith(
-      TEST_EMAIL,
-      expect.any(String),
-    );
+    expect(sendVerificationEmail).toHaveBeenCalledWith(TEST_EMAIL, expect.any(String));
   });
 
   it('silently succeeds for duplicate emails (no enumeration)', async () => {
@@ -149,16 +143,14 @@ describe('verifyEmail', () => {
   });
 
   it('rejects an invalid token', async () => {
-    await expect(auth.verifyEmail('not-a-real-token')).rejects.toThrow(
-      auth.AuthError,
-    );
+    await expect(auth.verifyEmail('not-a-real-token')).rejects.toThrow(auth.AuthError);
   });
 
   it('rejects a token used twice', async () => {
     await auth.register({ email: TEST_EMAIL, password: TEST_PASSWORD });
     await new Promise((r) => setTimeout(r, 50));
 
-    const calls    = vi.mocked(sendVerificationEmail).mock.calls;
+    const calls = vi.mocked(sendVerificationEmail).mock.calls;
     const rawToken = calls[calls.length - 1]![1];
 
     await auth.verifyEmail(rawToken);
@@ -214,7 +206,7 @@ describe('refresh token rotation', () => {
   });
 
   it('issues a new access and refresh token', async () => {
-    const loginResult   = await auth.login({ email: TEST_EMAIL, password: TEST_PASSWORD });
+    const loginResult = await auth.login({ email: TEST_EMAIL, password: TEST_PASSWORD });
     const refreshResult = await auth.refresh(loginResult.refreshToken);
 
     expect(refreshResult.accessToken).toBeTruthy();
@@ -222,8 +214,8 @@ describe('refresh token rotation', () => {
   });
 
   it('detects token reuse and revokes entire family', async () => {
-    const login    = await auth.login({ email: TEST_EMAIL, password: TEST_PASSWORD });
-    const rotated  = await auth.refresh(login.refreshToken);
+    const login = await auth.login({ email: TEST_EMAIL, password: TEST_PASSWORD });
+    const rotated = await auth.refresh(login.refreshToken);
 
     // Use the OLD (now revoked) token again — theft detection triggers
     await expect(auth.refresh(login.refreshToken)).rejects.toMatchObject({
@@ -247,10 +239,7 @@ describe('forgotPassword / resetPassword', () => {
     await auth.forgotPassword(TEST_EMAIL);
     await new Promise((r) => setTimeout(r, 50));
 
-    expect(sendPasswordResetEmail).toHaveBeenCalledWith(
-      TEST_EMAIL,
-      expect.any(String),
-    );
+    expect(sendPasswordResetEmail).toHaveBeenCalledWith(TEST_EMAIL, expect.any(String));
   });
 
   it('silently does nothing for unknown address', async () => {
@@ -266,15 +255,16 @@ describe('forgotPassword / resetPassword', () => {
 
     // Log in first to create a session
     const { refreshToken } = await auth.login({
-      email: TEST_EMAIL, password: TEST_PASSWORD,
+      email: TEST_EMAIL,
+      password: TEST_PASSWORD,
     });
 
     await auth.forgotPassword(TEST_EMAIL);
     await new Promise((r) => setTimeout(r, 50));
 
-    const calls    = vi.mocked(sendPasswordResetEmail).mock.calls;
+    const calls = vi.mocked(sendPasswordResetEmail).mock.calls;
     const rawToken = calls[calls.length - 1]![1];
-    const newPass  = 'NewSuperSecurePassword!42';
+    const newPass = 'NewSuperSecurePassword!42';
 
     await auth.resetPassword(rawToken, newPass);
 
@@ -282,8 +272,6 @@ describe('forgotPassword / resetPassword', () => {
     await expect(auth.refresh(refreshToken)).rejects.toThrow();
 
     // New password should work
-    await expect(
-      auth.login({ email: TEST_EMAIL, password: newPass }),
-    ).resolves.toBeDefined();
+    await expect(auth.login({ email: TEST_EMAIL, password: newPass })).resolves.toBeDefined();
   });
 });

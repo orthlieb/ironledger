@@ -22,41 +22,41 @@
 		</div>
 	</div>
 {:else}
-<div class="auth-wrap">
-	<div class="auth-card card">
-		<div class="auth-brand">
-			<div class="auth-brand-rule"></div>
-			<h1><span class="auth-brand-icon" aria-hidden="true">{@html swordSvg}</span>Iron Ledger</h1>
-			<div class="auth-brand-rule"></div>
-		</div>
-		<h2>Email verification</h2>
+	<div class="auth-wrap">
+		<div class="auth-card card">
+			<div class="auth-brand">
+				<div class="auth-brand-rule"></div>
+				<h1><span class="auth-brand-icon" aria-hidden="true">{@html swordSvg}</span>Iron Ledger</h1>
+				<div class="auth-brand-rule"></div>
+			</div>
+			<h2>Email verification</h2>
 
-		{#if data.error}
-			<div class="hero-image-wrap">
-				<img
-					class="hero-image"
-					src="/ironledger-email-expired.webp"
-					alt="A Norse warrior holds the charred remains of a scroll with resigned disappointment"
-				/>
-				<p class="hero-caption">The link has perished.</p>
-			</div>
-			<div class="error-msg">{data.error}</div>
-			<p class="auth-link">
-				<a href="/register">Register again</a> or <a href="/login">sign in</a>
-			</p>
-		{:else}
-			<div class="hero-image-wrap">
-				<img
-					class="hero-image"
-					src="/ironledger-email-verified.webp"
-					alt="A Norse warrior pumps his fist in triumphant relief"
-				/>
-				<p class="hero-caption">The oath is sworn.</p>
-			</div>
-			<p class="auth-info">Verifying your account…</p>
-		{/if}
+			{#if data.error}
+				<div class="hero-image-wrap">
+					<img
+						class="hero-image"
+						src="/ironledger-email-expired.webp"
+						alt="A Norse warrior holds the charred remains of a scroll with resigned disappointment"
+					/>
+					<p class="hero-caption">The link has perished.</p>
+				</div>
+				<div class="error-msg">{data.error}</div>
+				<p class="auth-link">
+					<a href="/register">Register again</a> or <a href="/login">sign in</a>
+				</p>
+			{:else}
+				<div class="hero-image-wrap">
+					<img
+						class="hero-image"
+						src="/ironledger-email-verified.webp"
+						alt="A Norse warrior pumps his fist in triumphant relief"
+					/>
+					<p class="hero-caption">The oath is sworn.</p>
+				</div>
+				<p class="auth-info">Verifying your account…</p>
+			{/if}
+		</div>
 	</div>
-</div>
 {/if}
 
 <style>

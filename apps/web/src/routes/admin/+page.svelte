@@ -1,6 +1,21 @@
 <script lang="ts">
-	import { admin, maintenance as maintApi, broadcast as broadcastApi, registrationQuota as quotaApi, type RegistrationQuotaStatus } from '$lib/api';
-	import type { AdminUser, AdminStats, AdminInvite, MaintenanceStatus, BroadcastStatus, BroadcastSeverity, UserTimeseries, RegistrationLockStatus } from '@ironledger/shared';
+	import {
+		admin,
+		maintenance as maintApi,
+		broadcast as broadcastApi,
+		registrationQuota as quotaApi,
+		type RegistrationQuotaStatus,
+	} from '$lib/api';
+	import type {
+		AdminUser,
+		AdminStats,
+		AdminInvite,
+		MaintenanceStatus,
+		BroadcastStatus,
+		BroadcastSeverity,
+		UserTimeseries,
+		RegistrationLockStatus,
+	} from '@ironledger/shared';
 	import type { LayoutData } from '../$types';
 	import ErrorBar from '$lib/components/ErrorBar.svelte';
 	import { tooltip } from '$lib/actions/tooltip.js';
@@ -17,13 +32,13 @@
 
 	// ── Invites tab state ────────────────────────────────────────────────
 	let invites: AdminInvite[] = $state([]);
-	let inviteEmail       = $state('');
+	let inviteEmail = $state('');
 	let inviteDisplayName = $state('');
-	let inviteBusy        = $state(false);
-	let inviteError       = $state('');
-	let inviteCreatedUrl  = $state('');   // shown after successful create for copy
-	let inviteCreatedFor  = $state('');   // email the URL belongs to
-	let inviteCopyFlash   = $state(false);
+	let inviteBusy = $state(false);
+	let inviteError = $state('');
+	let inviteCreatedUrl = $state(''); // shown after successful create for copy
+	let inviteCreatedFor = $state(''); // email the URL belongs to
+	let inviteCopyFlash = $state(false);
 
 	async function loadInvites() {
 		try {
@@ -36,7 +51,7 @@
 	async function handleCreateInvite(ev: Event) {
 		ev.preventDefault();
 		inviteError = '';
-		inviteBusy  = true;
+		inviteBusy = true;
 		try {
 			const body: { email: string; displayName?: string } = { email: inviteEmail.trim() };
 			const dn = inviteDisplayName.trim();
@@ -44,7 +59,7 @@
 			const res = await admin.createInvite(body);
 			inviteCreatedUrl = res.url;
 			inviteCreatedFor = res.invite.email;
-			inviteEmail       = '';
+			inviteEmail = '';
 			inviteDisplayName = '';
 			await loadInvites();
 		} catch (err) {
@@ -68,7 +83,9 @@
 			await navigator.clipboard.writeText(inviteCreatedUrl);
 			inviteCopyFlash = true;
 			setTimeout(() => (inviteCopyFlash = false), 1500);
-		} catch { /* clipboard may be unavailable — user can select manually */ }
+		} catch {
+			/* clipboard may be unavailable — user can select manually */
+		}
 	}
 
 	// ── Sort state ────────────────────────────────────────────────────────
@@ -82,9 +99,8 @@
 			if (av == null && bv == null) return 0;
 			if (av == null) return 1;
 			if (bv == null) return -1;
-			const cmp = typeof av === 'string'
-				? av.localeCompare(bv as string)
-				: (av as number) - (bv as number);
+			const cmp =
+				typeof av === 'string' ? av.localeCompare(bv as string) : (av as number) - (bv as number);
 			return sortAsc ? cmp : -cmp;
 		}),
 	);
@@ -137,7 +153,7 @@
 			suspendTarget.isActive = !willSuspend;
 			users = [...users];
 			suspendTarget = null;
-			} catch (err) {
+		} catch (err) {
 			error = err instanceof Error ? err.message : 'Suspend action failed';
 			suspendTarget = null;
 		}
@@ -169,7 +185,7 @@
 			await admin.setRole(user.id, newRole);
 			user.role = newRole;
 			users = [...users];
-			} catch (err) {
+		} catch (err) {
 			error = err instanceof Error ? err.message : 'Role change failed';
 		}
 	}
@@ -184,7 +200,9 @@
 		metricsLoading = true;
 		try {
 			timeseries = await admin.getTimeseries(tf);
-		} catch { /* ignore */ } finally {
+		} catch {
+			/* ignore */
+		} finally {
 			metricsLoading = false;
 		}
 	}
@@ -205,16 +223,22 @@
 	let parsedLines = $derived(logLines.map(parseLogLine));
 	let filteredLines = $derived(
 		logSearch.trim()
-			? parsedLines.filter(e =>
-				e.msg.toLowerCase().includes(logSearch.toLowerCase()) ||
-				e.level.toLowerCase().includes(logSearch.toLowerCase()) ||
-				e.raw.toLowerCase().includes(logSearch.toLowerCase())
-			)
-			: parsedLines
+			? parsedLines.filter(
+					(e) =>
+						e.msg.toLowerCase().includes(logSearch.toLowerCase()) ||
+						e.level.toLowerCase().includes(logSearch.toLowerCase()) ||
+						e.raw.toLowerCase().includes(logSearch.toLowerCase()),
+				)
+			: parsedLines,
 	);
 
 	const PINO_LEVELS: Record<number, string> = {
-		10: 'TRACE', 20: 'DEBUG', 30: 'INFO', 40: 'WARN', 50: 'ERROR', 60: 'FATAL',
+		10: 'TRACE',
+		20: 'DEBUG',
+		30: 'INFO',
+		40: 'WARN',
+		50: 'ERROR',
+		60: 'FATAL',
 	};
 
 	interface ParsedLine {
@@ -232,26 +256,56 @@
 			const innerStr: string = pm2.message ?? raw;
 			const rawTs: string = pm2.timestamp ?? '';
 			// Trim '2026-03-24 06:26:25 +00:00' -> '03-24 06:26:25'
-			const pm2ts = rawTs.length >= 19
-				? rawTs.slice(5, 19)   // 'MM-DD HH:MM:SS'
-				: rawTs;
+			const pm2ts =
+				rawTs.length >= 19
+					? rawTs.slice(5, 19) // 'MM-DD HH:MM:SS'
+					: rawTs;
 			try {
 				const p = JSON.parse(innerStr);
 				const levelNum = typeof p.level === 'number' ? p.level : 30;
 				const { level: _l, time: _t, pid: _p, hostname: _h, msg, v: _v, ...extras } = p;
-				const ts = pm2ts || (p.time ? new Date(p.time).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '');
-				return { ts, level: PINO_LEVELS[levelNum] ?? 'INFO', levelNum, msg: msg ?? innerStr, extras, raw };
+				const ts =
+					pm2ts ||
+					(p.time
+						? new Date(p.time).toLocaleTimeString('en-US', {
+								hour12: false,
+								hour: '2-digit',
+								minute: '2-digit',
+								second: '2-digit',
+							})
+						: '');
+				return {
+					ts,
+					level: PINO_LEVELS[levelNum] ?? 'INFO',
+					levelNum,
+					msg: msg ?? innerStr,
+					extras,
+					raw,
+				};
 			} catch {
 				// Inner message is plain text -- use PM2 type field to infer level
-				const level = pm2.type === 'err' ? 'ERROR'
-					: innerStr.includes('ERROR') ? 'ERROR'
-					: innerStr.includes('WARN')  ? 'WARN'
-					: innerStr.includes('debug') ? 'DEBUG' : 'INFO';
-				const levelNum = level === 'ERROR' ? 50 : level === 'WARN' ? 40 : level === 'DEBUG' ? 20 : 30;
+				const level =
+					pm2.type === 'err'
+						? 'ERROR'
+						: innerStr.includes('ERROR')
+							? 'ERROR'
+							: innerStr.includes('WARN')
+								? 'WARN'
+								: innerStr.includes('debug')
+									? 'DEBUG'
+									: 'INFO';
+				const levelNum =
+					level === 'ERROR' ? 50 : level === 'WARN' ? 40 : level === 'DEBUG' ? 20 : 30;
 				return { ts: pm2ts, level, levelNum, msg: innerStr, extras: {}, raw };
 			}
 		} catch {
-			const level = raw.includes('ERROR') ? 'ERROR' : raw.includes('WARN') ? 'WARN' : raw.includes('DEBUG') ? 'DEBUG' : 'INFO';
+			const level = raw.includes('ERROR')
+				? 'ERROR'
+				: raw.includes('WARN')
+					? 'WARN'
+					: raw.includes('DEBUG')
+						? 'DEBUG'
+						: 'INFO';
 			return { ts: '', level, levelNum: 30, msg: raw, extras: {}, raw };
 		}
 	}
@@ -263,7 +317,10 @@
 			const result = await admin.getLogs(file, lines);
 			logLines = result.lines;
 			logAvailable = result.available;
-		} catch { logLines = []; logAvailable = false; } finally {
+		} catch {
+			logLines = [];
+			logAvailable = false;
+		} finally {
 			logLoading = false;
 		}
 	}
@@ -286,7 +343,11 @@
 	let maintCountdownInterval: ReturnType<typeof setInterval> | undefined;
 
 	async function refreshMaintStatus() {
-		try { maintStatus = await maintApi.getStatus(); } catch { /* ignore */ }
+		try {
+			maintStatus = await maintApi.getStatus();
+		} catch {
+			/* ignore */
+		}
 	}
 
 	function updateMaintCountdown() {
@@ -295,7 +356,10 @@
 			return;
 		}
 		const diff = new Date(maintStatus.shutdownAt).getTime() - Date.now();
-		if (diff <= 0) { maintCountdown = 'NOW'; return; }
+		if (diff <= 0) {
+			maintCountdown = 'NOW';
+			return;
+		}
 		const mins = Math.floor(diff / 60_000);
 		const secs = Math.floor((diff % 60_000) / 1000);
 		maintCountdown = `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -318,7 +382,7 @@
 			await admin.enableMaintenance({ message: maintMessage, minutesUntilShutdown: maintMinutes });
 			showMaintConfirm = false;
 			await refreshMaintStatus();
-			} catch (err) {
+		} catch (err) {
 			error = err instanceof Error ? err.message : 'Failed to enable maintenance';
 			showMaintConfirm = false;
 		} finally {
@@ -330,7 +394,7 @@
 	let quotaStatus: RegistrationQuotaStatus | null = $state(null);
 	let quotaMode: 'unlimited' | 'capped' = $state('unlimited');
 	let quotaDailyInput = $state(20);
-	let quotaBusy  = $state(false);
+	let quotaBusy = $state(false);
 	let quotaError = $state('');
 
 	async function refreshQuotaStatus() {
@@ -342,12 +406,14 @@
 			} else {
 				quotaMode = 'unlimited';
 			}
-		} catch { /* ignore */ }
+		} catch {
+			/* ignore */
+		}
 	}
 
 	async function saveQuota() {
 		quotaError = '';
-		quotaBusy  = true;
+		quotaBusy = true;
 		try {
 			const daily = quotaMode === 'unlimited' ? null : quotaDailyInput;
 			quotaStatus = await quotaApi.setQuota(daily);
@@ -360,27 +426,29 @@
 
 	// ── Broadcast banner ──────────────────────────────────────────────────
 	let broadcastStatus: BroadcastStatus | null = $state(null);
-	let broadcastMessage  = $state('');
+	let broadcastMessage = $state('');
 	let broadcastSeverity: BroadcastSeverity = $state('info');
-	let broadcastBusy  = $state(false);
+	let broadcastBusy = $state(false);
 	let broadcastError = $state('');
 
 	async function refreshBroadcastStatus() {
 		try {
 			broadcastStatus = await broadcastApi.getStatus();
 			if (broadcastStatus?.active) {
-				broadcastMessage  = broadcastStatus.message ?? '';
+				broadcastMessage = broadcastStatus.message ?? '';
 				broadcastSeverity = broadcastStatus.severity;
 			}
-		} catch { /* ignore */ }
+		} catch {
+			/* ignore */
+		}
 	}
 
 	async function postBroadcast() {
 		broadcastError = '';
-		broadcastBusy  = true;
+		broadcastBusy = true;
 		try {
 			broadcastStatus = await broadcastApi.post({
-				message:  broadcastMessage.trim(),
+				message: broadcastMessage.trim(),
 				severity: broadcastSeverity,
 			});
 		} catch (err) {
@@ -392,7 +460,7 @@
 
 	async function clearBroadcast() {
 		broadcastError = '';
-		broadcastBusy  = true;
+		broadcastBusy = true;
 		try {
 			await broadcastApi.clear();
 			broadcastStatus = null;
@@ -409,7 +477,7 @@
 		try {
 			await admin.disableMaintenance();
 			await refreshMaintStatus();
-			} catch (err) {
+		} catch (err) {
 			error = err instanceof Error ? err.message : 'Failed to disable maintenance';
 		} finally {
 			maintLoading = false;
@@ -425,8 +493,10 @@
 	async function refreshRegLockStatus() {
 		try {
 			const res = await fetch('/api/admin/registration-lock');
-			if (res.ok) regLockStatus = await res.json() as RegistrationLockStatus;
-		} catch { /* ignore */ }
+			if (res.ok) regLockStatus = (await res.json()) as RegistrationLockStatus;
+		} catch {
+			/* ignore */
+		}
 	}
 
 	async function confirmEnableRegLock() {
@@ -493,7 +563,13 @@
 	<p class="admin-build-info">
 		v{__APP_VERSION__}
 		<span class="build-sep">·</span>
-		Built {new Date(__BUILD_DATE__).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+		Built {new Date(__BUILD_DATE__).toLocaleString('en-US', {
+			year: 'numeric',
+			month: 'short',
+			day: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit',
+		})}
 	</p>
 
 	<div class="admin-error-host">
@@ -542,12 +618,14 @@
 			<div class="metrics-header">
 				<span class="metrics-title">User Activity</span>
 				<div class="metrics-timeframes">
-					{#each (['1hr', '1day', '7day', '30day'] as const) as tf}
+					{#each ['1hr', '1day', '7day', '30day'] as const as tf}
 						<button
 							class="tf-btn"
 							class:active={metricsTimeframe === tf}
-							onclick={() => { metricsTimeframe = tf; }}
-						>{tf}</button>
+							onclick={() => {
+								metricsTimeframe = tf;
+							}}>{tf}</button
+						>
 					{/each}
 				</div>
 			</div>
@@ -556,8 +634,8 @@
 				<div class="metrics-loading">Loading…</div>
 			{:else}
 				{@const buckets = timeseries.buckets}
-				{@const rawMax = Math.max(...buckets.map(b => b.totalUsers), 1)}
-				{@const maxActive = Math.max(...buckets.map(b => b.activeUsers), 1)}
+				{@const rawMax = Math.max(...buckets.map((b) => b.totalUsers), 1)}
+				{@const maxActive = Math.max(...buckets.map((b) => b.activeUsers), 1)}
 				{@const chartH = 120}
 				{@const chartW = 600}
 				{@const padL = 40}
@@ -567,9 +645,23 @@
 				{@const plotW = chartW - padL - padR}
 				{@const plotH = chartH - padT - padB}
 				{@const step = buckets.length > 1 ? plotW / (buckets.length - 1) : plotW}
-				{@const yStep = rawMax <= 5 ? 1 : rawMax <= 15 ? 2 : rawMax <= 50 ? 5 : rawMax <= 100 ? 10 : rawMax <= 500 ? 50 : 100}
+				{@const yStep =
+					rawMax <= 5
+						? 1
+						: rawMax <= 15
+							? 2
+							: rawMax <= 50
+								? 5
+								: rawMax <= 100
+									? 10
+									: rawMax <= 500
+										? 50
+										: 100}
 				{@const maxTotal = Math.ceil(rawMax / yStep) * yStep}
-				{@const yTicks = Array.from({ length: Math.round(maxTotal / yStep) + 1 }, (_, i) => i * yStep)}
+				{@const yTicks = Array.from(
+					{ length: Math.round(maxTotal / yStep) + 1 },
+					(_, i) => i * yStep,
+				)}
 
 				<div class="metrics-chart-wrap">
 					<svg
@@ -591,24 +683,26 @@
 						{#each buckets as b, i}
 							{#if i % Math.max(1, Math.floor(buckets.length / 6)) === 0}
 								{@const x = padL + i * step}
-								<text x={x} y={chartH - 4} class="axis-label" text-anchor="middle">{b.label}</text>
+								<text {x} y={chartH - 4} class="axis-label" text-anchor="middle">{b.label}</text>
 							{/if}
 						{/each}
 
 						<!-- Total users line (amber) -->
 						<polyline
 							class="line-total"
-							points={buckets.map((b, i) =>
-								`${padL + i * step},${padT + plotH * (1 - b.totalUsers / maxTotal)}`
-							).join(' ')}
+							points={buckets
+								.map((b, i) => `${padL + i * step},${padT + plotH * (1 - b.totalUsers / maxTotal)}`)
+								.join(' ')}
 						/>
 
 						<!-- Active users line (teal) -->
 						<polyline
 							class="line-active"
-							points={buckets.map((b, i) =>
-								`${padL + i * step},${padT + plotH * (1 - b.activeUsers / maxActive)}`
-							).join(' ')}
+							points={buckets
+								.map(
+									(b, i) => `${padL + i * step},${padT + plotH * (1 - b.activeUsers / maxActive)}`,
+								)
+								.join(' ')}
 						/>
 
 						<!-- Data point dots for total -->
@@ -644,22 +738,22 @@
 					class:active={activeTab === 'users'}
 					role="tab"
 					aria-selected={activeTab === 'users'}
-					onclick={() => (activeTab = 'users')}
-				>Users</button>
+					onclick={() => (activeTab = 'users')}>Users</button
+				>
 				<button
 					class="tab-btn"
 					class:active={activeTab === 'invites'}
 					role="tab"
 					aria-selected={activeTab === 'invites'}
-					onclick={() => (activeTab = 'invites')}
-				>Invites</button>
+					onclick={() => (activeTab = 'invites')}>Invites</button
+				>
 				<button
 					class="tab-btn"
 					class:active={activeTab === 'logs'}
 					role="tab"
 					aria-selected={activeTab === 'logs'}
-					onclick={() => (activeTab = 'logs')}
-				>Logs</button>
+					onclick={() => (activeTab = 'logs')}>Logs</button
+				>
 				<button
 					class="tab-btn"
 					class:active={activeTab === 'tools'}
@@ -671,14 +765,13 @@
 						void refreshRegLockStatus();
 						void refreshBroadcastStatus();
 						void refreshQuotaStatus();
-					}}
-				>Tools</button>
+					}}>Tools</button
+				>
 			</div>
 		</nav>
 
 		<!-- Tab body -->
 		<div class="tab-body">
-
 			<!-- ═══ Users tab ═══ -->
 			{#if activeTab === 'users'}
 				<div class="admin-table-wrap">
@@ -730,7 +823,11 @@
 									<td>
 										<span class="active-dot" class:active-yes={user.isActive}></span>
 									</td>
-									<td class="td-date">{user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : 'Never'}</td>
+									<td class="td-date"
+										>{user.lastLoginAt
+											? new Date(user.lastLoginAt).toLocaleDateString()
+											: 'Never'}</td
+									>
 									<td class="td-date">{new Date(user.createdAt).toLocaleDateString()}</td>
 									<td class="td-num">{user.characterCount}</td>
 									<td class="td-num">{user.encounterCount}</td>
@@ -740,7 +837,11 @@
 											<button
 												class="btn btn-icon"
 												class:btn-dimmed={isLastAdmin}
-												use:tooltip={isLastAdmin ? 'Cannot demote the last admin' : user.role === 'admin' ? 'Demote to user' : 'Promote to admin'}
+												use:tooltip={isLastAdmin
+													? 'Cannot demote the last admin'
+													: user.role === 'admin'
+														? 'Demote to user'
+														: 'Promote to admin'}
 												disabled={isLastAdmin}
 												onclick={() => toggleRole(user)}
 											>
@@ -751,7 +852,11 @@
 												class:btn-warn={user.isActive && !isSelf}
 												class:btn-dimmed={isSelf}
 												disabled={isSelf}
-												use:tooltip={isSelf ? 'Cannot suspend your own account' : user.isActive ? 'Suspend user (immediately boots and blocks login)' : 'Unsuspend user'}
+												use:tooltip={isSelf
+													? 'Cannot suspend your own account'
+													: user.isActive
+														? 'Suspend user (immediately boots and blocks login)'
+														: 'Unsuspend user'}
 												onclick={() => (suspendTarget = user)}
 											>
 												{user.isActive ? 'Suspend' : 'Unsuspend'}
@@ -774,13 +879,17 @@
 				<!-- Pagination -->
 				{#if totalPages > 1}
 					<div class="pagination">
-						<button class="btn btn-icon" disabled={page <= 1} onclick={() => (page -= 1)}>Prev</button>
+						<button class="btn btn-icon" disabled={page <= 1} onclick={() => (page -= 1)}
+							>Prev</button
+						>
 						<span class="page-info">Page {page} of {totalPages}</span>
-						<button class="btn btn-icon" disabled={page >= totalPages} onclick={() => (page += 1)}>Next</button>
+						<button class="btn btn-icon" disabled={page >= totalPages} onclick={() => (page += 1)}
+							>Next</button
+						>
 					</div>
 				{/if}
 
-			<!-- ═══ Invites tab ═══ -->
+				<!-- ═══ Invites tab ═══ -->
 			{:else if activeTab === 'invites'}
 				<div class="invites-panel">
 					<section class="invites-section">
@@ -804,7 +913,10 @@
 								/>
 							</label>
 							<label class="invites-field">
-								<span>Display name <span class="invites-field-opt">— optional, defaults to email</span></span>
+								<span
+									>Display name <span class="invites-field-opt">— optional, defaults to email</span
+									></span
+								>
 								<input
 									type="text"
 									bind:value={inviteDisplayName}
@@ -875,7 +987,11 @@
 											<td class="td-date">{new Date(inv.createdAt).toLocaleDateString()}</td>
 											<td>
 												{#if inv.status === 'pending'}
-													<button type="button" class="btn btn-sm" onclick={() => handleRevokeInvite(inv.id)}>Revoke</button>
+													<button
+														type="button"
+														class="btn btn-sm"
+														onclick={() => handleRevokeInvite(inv.id)}>Revoke</button
+													>
 												{/if}
 											</td>
 										</tr>
@@ -886,26 +1002,32 @@
 					</section>
 				</div>
 
-			<!-- ═══ Logs tab ═══ -->
+				<!-- ═══ Logs tab ═══ -->
 			{:else if activeTab === 'logs'}
 				<div class="logs-toolbar">
 					<div class="logs-file-btns">
-						{#each ([['api-out','API stdout'],['api-error','API stderr'],['web-out','Web stdout'],['web-error','Web stderr']] as const) as [f, label]}
+						{#each [['api-out', 'API stdout'], ['api-error', 'API stderr'], ['web-out', 'Web stdout'], ['web-error', 'Web stderr']] as const as [f, label]}
 							<button
 								class="btn btn-icon"
 								class:active={logFile === f}
-								onclick={() => { logFile = f as typeof logFile; void loadLogs(f as typeof logFile, logLineCount); }}
-							>{label}</button>
+								onclick={() => {
+									logFile = f as typeof logFile;
+									void loadLogs(f as typeof logFile, logLineCount);
+								}}>{label}</button
+							>
 						{/each}
 					</div>
 					<div class="logs-right">
 						<div class="logs-line-btns">
-							{#each ([200, 500, 1000] as const) as n}
+							{#each [200, 500, 1000] as const as n}
 								<button
 									class="btn btn-icon"
 									class:active={logLineCount === n}
-									onclick={() => { logLineCount = n; void loadLogs(logFile, n); }}
-								>{n} lines</button>
+									onclick={() => {
+										logLineCount = n;
+										void loadLogs(logFile, n);
+									}}>{n} lines</button
+								>
 							{/each}
 						</div>
 						<button class="btn btn-icon" onclick={() => void loadLogs()} disabled={logLoading}>
@@ -921,15 +1043,15 @@
 						bind:value={logSearch}
 					/>
 					{#if logSearch}
-						<button class="btn btn-icon" onclick={() => logSearch = ''}>Clear</button>
+						<button class="btn btn-icon" onclick={() => (logSearch = '')}>Clear</button>
 						<span class="logs-match-count">{filteredLines.length} / {parsedLines.length}</span>
 					{/if}
 				</div>
 
 				{#if !logAvailable}
 					<p class="logs-unavailable">
-						Log file not available — server may not be running under PM2,
-						or <code>LOG_DIR</code> is not configured for this environment.
+						Log file not available — server may not be running under PM2, or <code>LOG_DIR</code> is not
+						configured for this environment.
 					</p>
 				{:else if logLoading}
 					<p class="logs-unavailable">Loading…</p>
@@ -943,8 +1065,9 @@
 								class:expanded={expandedLine === i}
 								role="button"
 								tabindex="0"
-								onclick={() => expandedLine = expandedLine === i ? null : i}
-								onkeydown={(e) => e.key === 'Enter' && (expandedLine = expandedLine === i ? null : i)}
+								onclick={() => (expandedLine = expandedLine === i ? null : i)}
+								onkeydown={(e) =>
+									e.key === 'Enter' && (expandedLine = expandedLine === i ? null : i)}
 							>
 								<span class="log-ts">{entry.ts}</span>
 								<span class="log-level log-level-{entry.level.toLowerCase()}">{entry.level}</span>
@@ -952,7 +1075,10 @@
 								{#if Object.keys(entry.extras).length > 0}
 									<span class="log-extras">
 										{#each Object.entries(entry.extras).slice(0, 3) as [k, v]}
-											<span class="log-kv"><span class="log-key">{k}</span>=<span class="log-val">{String(v)}</span></span>
+											<span class="log-kv"
+												><span class="log-key">{k}</span>=<span class="log-val">{String(v)}</span
+												></span
+											>
 										{/each}
 										{#if Object.keys(entry.extras).length > 3}
 											<span class="log-more">…</span>
@@ -961,29 +1087,35 @@
 								{/if}
 							</div>
 							{#if expandedLine === i}
-								<pre class="log-raw">{(() => { try { return JSON.stringify(JSON.parse(entry.raw), null, 2); } catch { return entry.raw; } })()}</pre>
+								<pre class="log-raw">{(() => {
+										try {
+											return JSON.stringify(JSON.parse(entry.raw), null, 2);
+										} catch {
+											return entry.raw;
+										}
+									})()}</pre>
 							{/if}
 						{/each}
 					</div>
 				{/if}
 
-			<!-- ═══ Tools tab (Maintenance · Registration Lock · Broadcast) ═══ -->
+				<!-- ═══ Tools tab (Maintenance · Registration Lock · Broadcast) ═══ -->
 			{:else if activeTab === 'tools'}
 				<div class="tools-panel">
-
 					<!-- ─── Tile 1: Maintenance Mode ─── -->
 					<section class="tools-tile">
 						<header class="tools-tile-head">
 							<h3 class="tools-tile-title">Maintenance Mode</h3>
-							<span class="tools-tile-dot" class:tools-tile-dot--active={maintStatus?.enabled}></span>
+							<span class="tools-tile-dot" class:tools-tile-dot--active={maintStatus?.enabled}
+							></span>
 							<span class="tools-tile-status">{maintStatus?.enabled ? 'Active' : 'Off'}</span>
 							{#if maintStatus?.enabled && maintCountdown}
 								<span class="tools-tile-timer">Shutdown in <strong>{maintCountdown}</strong></span>
 							{/if}
 						</header>
 						<p class="tools-tile-desc">
-							Shows a global countdown banner, blocks non-admin logins, and revokes every active refresh
-							token. Use for planned outages.
+							Shows a global countdown banner, blocks non-admin logins, and revokes every active
+							refresh token. Use for planned outages.
 						</p>
 
 						{#if maintStatus?.enabled}
@@ -1015,20 +1147,15 @@
 								</label>
 								<label class="tools-tile-field tools-tile-field--narrow">
 									<span>Minutes until shutdown</span>
-									<input
-										type="number"
-										min="0"
-										max="1440"
-										bind:value={maintMinutes}
-									/>
+									<input type="number" min="0" max="1440" bind:value={maintMinutes} />
 								</label>
 							</div>
 							<div class="tools-tile-actions">
 								<button
 									class="btn btn-danger"
 									disabled={maintLoading || !maintMessage.trim()}
-									onclick={() => (showMaintConfirm = true)}
-								>Enable Maintenance Mode</button>
+									onclick={() => (showMaintConfirm = true)}>Enable Maintenance Mode</button
+								>
 							</div>
 						{/if}
 					</section>
@@ -1037,12 +1164,13 @@
 					<section class="tools-tile">
 						<header class="tools-tile-head">
 							<h3 class="tools-tile-title">Registration Lock</h3>
-							<span class="tools-tile-dot" class:tools-tile-dot--active={regLockStatus?.locked}></span>
+							<span class="tools-tile-dot" class:tools-tile-dot--active={regLockStatus?.locked}
+							></span>
 							<span class="tools-tile-status">{regLockStatus?.locked ? 'Locked' : 'Open'}</span>
 						</header>
 						<p class="tools-tile-desc">
-							Blocks new account creation without signing anyone out. Use invites to onboard specific
-							people while registration is locked.
+							Blocks new account creation without signing anyone out. Use invites to onboard
+							specific people while registration is locked.
 						</p>
 
 						{#if regLockStatus?.locked}
@@ -1072,8 +1200,8 @@
 								<button
 									class="btn btn-danger"
 									disabled={regLockLoading || !regLockMessage.trim()}
-									onclick={() => (showRegLockConfirm = true)}
-								>Lock Registration</button>
+									onclick={() => (showRegLockConfirm = true)}>Lock Registration</button
+								>
 							</div>
 						{/if}
 					</section>
@@ -1082,7 +1210,8 @@
 					<section class="tools-tile">
 						<header class="tools-tile-head">
 							<h3 class="tools-tile-title">Daily Quota</h3>
-							<span class="tools-tile-dot" class:tools-tile-dot--active={quotaStatus?.exhausted}></span>
+							<span class="tools-tile-dot" class:tools-tile-dot--active={quotaStatus?.exhausted}
+							></span>
 							<span class="tools-tile-status">
 								{#if quotaStatus?.daily === null}
 									Unlimited
@@ -1095,13 +1224,18 @@
 								{/if}
 							</span>
 							{#if quotaStatus?.daily !== null && quotaStatus?.resetsAt}
-								<span class="tools-tile-timer">Resets {new Date(quotaStatus.resetsAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} UTC</span>
+								<span class="tools-tile-timer"
+									>Resets {new Date(quotaStatus.resetsAt).toLocaleTimeString([], {
+										hour: '2-digit',
+										minute: '2-digit',
+									})} UTC</span
+								>
 							{/if}
 						</header>
 						<p class="tools-tile-desc">
 							Cap the number of new signups per UTC day. When the cap is hit, the
-							<code>/register</code> page shows "Daily Signups Full" until UTC midnight.
-							Set <strong>Unlimited</strong> to turn the cap off.
+							<code>/register</code> page shows "Daily Signups Full" until UTC midnight. Set
+							<strong>Unlimited</strong> to turn the cap off.
 						</p>
 
 						<div class="tools-tile-form">
@@ -1119,12 +1253,7 @@
 							{#if quotaMode === 'capped'}
 								<label class="tools-tile-field tools-tile-field--narrow">
 									<span>New signups per UTC day</span>
-									<input
-										type="number"
-										min="1"
-										max="10000"
-										bind:value={quotaDailyInput}
-									/>
+									<input type="number" min="1" max="10000" bind:value={quotaDailyInput} />
 								</label>
 							{/if}
 						</div>
@@ -1132,7 +1261,8 @@
 							<button
 								type="button"
 								class="btn btn-primary"
-								disabled={quotaBusy || (quotaMode === 'capped' && (!quotaDailyInput || quotaDailyInput < 1))}
+								disabled={quotaBusy ||
+									(quotaMode === 'capped' && (!quotaDailyInput || quotaDailyInput < 1))}
 								onclick={saveQuota}
 							>
 								{quotaBusy ? 'Saving…' : 'Save'}
@@ -1145,18 +1275,23 @@
 					<section class="tools-tile">
 						<header class="tools-tile-head">
 							<h3 class="tools-tile-title">Broadcast Banner</h3>
-							<span class="tools-tile-dot" class:tools-tile-dot--active={broadcastStatus?.active}></span>
+							<span class="tools-tile-dot" class:tools-tile-dot--active={broadcastStatus?.active}
+							></span>
 							<span class="tools-tile-status">{broadcastStatus?.active ? 'Live' : 'Off'}</span>
 						</header>
 						<p class="tools-tile-desc">
-							Informational or warning banner shown to every user until dismissed. Editing the message
-							re-shows it for everyone — does not block login or revoke sessions.
+							Informational or warning banner shown to every user until dismissed. Editing the
+							message re-shows it for everyone — does not block login or revoke sessions.
 						</p>
 
 						{#if broadcastStatus?.active}
 							<div class="tools-tile-info">
 								<p class="tools-tile-msg">
-									<span class="invite-status invite-status--{broadcastStatus.severity === 'warning' ? 'revoked' : 'accepted'}">{broadcastStatus.severity}</span>
+									<span
+										class="invite-status invite-status--{broadcastStatus.severity === 'warning'
+											? 'revoked'
+											: 'accepted'}">{broadcastStatus.severity}</span
+									>
 									{broadcastStatus.message}
 								</p>
 								{#if broadcastStatus.postedAt}
@@ -1196,18 +1331,22 @@
 								disabled={broadcastBusy || !broadcastMessage.trim()}
 								onclick={postBroadcast}
 							>
-								{broadcastBusy ? 'Saving…' : (broadcastStatus?.active ? 'Update banner' : 'Post banner')}
+								{broadcastBusy
+									? 'Saving…'
+									: broadcastStatus?.active
+										? 'Update banner'
+										: 'Post banner'}
 							</button>
 							{#if broadcastStatus?.active}
-								<button type="button" class="btn" disabled={broadcastBusy} onclick={clearBroadcast}>Clear</button>
+								<button type="button" class="btn" disabled={broadcastBusy} onclick={clearBroadcast}
+									>Clear</button
+								>
 							{/if}
 						</div>
 						<ErrorBar message={broadcastError} compact />
 					</section>
-
 				</div>
 			{/if}
-
 		</div>
 	{/if}
 </div>
@@ -1215,12 +1354,22 @@
 <!-- Delete confirmation dialog -->
 {#if deleteTarget}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="modal-backdrop" onclick={() => (deleteTarget = null)} onkeydown={(e) => e.key === 'Escape' && (deleteTarget = null)}>
-		<div class="modal card" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog" aria-modal="true" tabindex="-1">
+	<div
+		class="modal-backdrop"
+		onclick={() => (deleteTarget = null)}
+		onkeydown={(e) => e.key === 'Escape' && (deleteTarget = null)}
+	>
+		<div
+			class="modal card"
+			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => e.stopPropagation()}
+			role="dialog"
+			aria-modal="true"
+			tabindex="-1"
+		>
 			<h3>Delete User</h3>
 			<p>
-				Permanently delete <strong>{deleteTarget.email}</strong> and all their data?
-				This cannot be undone.
+				Permanently delete <strong>{deleteTarget.email}</strong> and all their data? This cannot be undone.
 			</p>
 			<div class="modal-actions">
 				<button class="btn" onclick={() => (deleteTarget = null)}>Cancel</button>
@@ -1233,8 +1382,19 @@
 <!-- Lock registration confirmation dialog -->
 {#if showRegLockConfirm}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="modal-backdrop" onclick={() => (showRegLockConfirm = false)} onkeydown={(e) => e.key === 'Escape' && (showRegLockConfirm = false)}>
-		<div class="modal card" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog" aria-modal="true" tabindex="-1">
+	<div
+		class="modal-backdrop"
+		onclick={() => (showRegLockConfirm = false)}
+		onkeydown={(e) => e.key === 'Escape' && (showRegLockConfirm = false)}
+	>
+		<div
+			class="modal card"
+			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => e.stopPropagation()}
+			role="dialog"
+			aria-modal="true"
+			tabindex="-1"
+		>
 			<h3 class="maint-modal-title">Lock Registration</h3>
 			<p>New users will be unable to create accounts. Existing users are unaffected.</p>
 			<p>Message: <strong>{regLockMessage}</strong></p>
@@ -1251,12 +1411,23 @@
 <!-- Enable maintenance confirmation dialog -->
 {#if showMaintConfirm}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="modal-backdrop" onclick={() => (showMaintConfirm = false)} onkeydown={(e) => e.key === 'Escape' && (showMaintConfirm = false)}>
-		<div class="modal card" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog" aria-modal="true" tabindex="-1">
+	<div
+		class="modal-backdrop"
+		onclick={() => (showMaintConfirm = false)}
+		onkeydown={(e) => e.key === 'Escape' && (showMaintConfirm = false)}
+	>
+		<div
+			class="modal card"
+			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => e.stopPropagation()}
+			role="dialog"
+			aria-modal="true"
+			tabindex="-1"
+		>
 			<h3 class="maint-modal-title">Enable Maintenance Mode</h3>
 			<p>
-				This will alert all users and revoke all active sessions.
-				Non-admin users will be unable to log in.
+				This will alert all users and revoke all active sessions. Non-admin users will be unable to
+				log in.
 			</p>
 			<p>
 				Message: <strong>{maintMessage}</strong><br />
@@ -1275,15 +1446,26 @@
 <!-- Promote to admin confirmation dialog -->
 {#if promoteTarget}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="modal-backdrop" onclick={() => (promoteTarget = null)} onkeydown={(e) => e.key === 'Escape' && (promoteTarget = null)}>
-		<div class="modal card" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog" aria-modal="true" tabindex="-1">
+	<div
+		class="modal-backdrop"
+		onclick={() => (promoteTarget = null)}
+		onkeydown={(e) => e.key === 'Escape' && (promoteTarget = null)}
+	>
+		<div
+			class="modal card"
+			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => e.stopPropagation()}
+			role="dialog"
+			aria-modal="true"
+			tabindex="-1"
+		>
 			<h3>Promote to Admin</h3>
 			<p>
 				Grant admin privileges to <strong>{promoteTarget.email}</strong>?
 			</p>
 			<p class="modal-warning">
-				Admins can manage all users, view audit logs, and control maintenance mode.
-				This should only be granted to trusted team members.
+				Admins can manage all users, view audit logs, and control maintenance mode. This should only
+				be granted to trusted team members.
 			</p>
 			<div class="modal-actions">
 				<button class="btn" onclick={() => (promoteTarget = null)}>Cancel</button>
@@ -1296,15 +1478,27 @@
 <!-- Suspend / unsuspend confirmation dialog -->
 {#if suspendTarget}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="modal-backdrop" onclick={() => (suspendTarget = null)} onkeydown={(e) => e.key === 'Escape' && (suspendTarget = null)}>
-		<div class="modal card" onclick={(e) => e.stopPropagation()} onkeydown={(e) => e.stopPropagation()} role="dialog" aria-modal="true" tabindex="-1">
+	<div
+		class="modal-backdrop"
+		onclick={() => (suspendTarget = null)}
+		onkeydown={(e) => e.key === 'Escape' && (suspendTarget = null)}
+	>
+		<div
+			class="modal card"
+			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => e.stopPropagation()}
+			role="dialog"
+			aria-modal="true"
+			tabindex="-1"
+		>
 			{#if suspendTarget.isActive}
 				<h3>Suspend User</h3>
 				<p>
 					Suspend <strong>{suspendTarget.email}</strong>?
 				</p>
 				<p class="modal-warning">
-					Their active sessions will be revoked immediately and they will be unable to log in until unsuspended.
+					Their active sessions will be revoked immediately and they will be unable to log in until
+					unsuspended.
 				</p>
 			{:else}
 				<h3>Unsuspend User</h3>
@@ -1314,7 +1508,10 @@
 			{/if}
 			<div class="modal-actions">
 				<button class="btn" onclick={() => (suspendTarget = null)}>Cancel</button>
-				<button class="btn {suspendTarget.isActive ? 'btn-warn' : 'btn-success'}" onclick={confirmSuspend}>
+				<button
+					class="btn {suspendTarget.isActive ? 'btn-warn' : 'btn-success'}"
+					onclick={confirmSuspend}
+				>
 					{suspendTarget.isActive ? 'Suspend' : 'Unsuspend'}
 				</button>
 			</div>
@@ -1355,7 +1552,9 @@
 	.admin-error-host {
 		margin-bottom: 1rem;
 	}
-	.admin-error-host:empty { display: none; }
+	.admin-error-host:empty {
+		display: none;
+	}
 
 	.admin-loading {
 		font-family: var(--font-ui);
@@ -1447,7 +1646,10 @@
 		padding: 2px 7px;
 		cursor: pointer;
 		color: var(--text-dimmer);
-		transition: color 0.12s, border-color 0.12s, background 0.12s;
+		transition:
+			color 0.12s,
+			border-color 0.12s,
+			background 0.12s;
 	}
 
 	.tf-btn:hover {
@@ -1533,14 +1735,20 @@
 		height: 2px;
 	}
 
-	.legend-total::before  { background: #f59e0b; }
-	.legend-active::before { background: #34d399; }
+	.legend-total::before {
+		background: #f59e0b;
+	}
+	.legend-active::before {
+		background: #34d399;
+	}
 	.legend-online {
 		margin-left: auto;
 		color: #34d399;
 		font-weight: 600;
 	}
-	.legend-online::before { display: none; }
+	.legend-online::before {
+		display: none;
+	}
 
 	/* ── Tab bar ── */
 	.tab-bar {
@@ -1553,7 +1761,9 @@
 		flex-shrink: 0;
 		padding-left: 4px;
 	}
-	.tab-bar::-webkit-scrollbar { display: none; }
+	.tab-bar::-webkit-scrollbar {
+		display: none;
+	}
 
 	.tab-group {
 		display: flex;
@@ -1574,9 +1784,13 @@
 		cursor: pointer;
 		white-space: nowrap;
 		flex-shrink: 0;
-		transition: color 0.12s, border-color 0.12s;
+		transition:
+			color 0.12s,
+			border-color 0.12s;
 	}
-	.tab-btn:hover  { color: var(--text-muted); }
+	.tab-btn:hover {
+		color: var(--text-muted);
+	}
 	.tab-btn.active {
 		color: var(--text-accent);
 		border-bottom-color: var(--text-accent);
@@ -1810,11 +2024,19 @@
 		color: var(--text);
 		border-left: 2px solid transparent;
 	}
-	.log-row:hover    { background: var(--bg-hover); }
-	.log-row.expanded { background: var(--bg-control); }
+	.log-row:hover {
+		background: var(--bg-hover);
+	}
+	.log-row.expanded {
+		background: var(--bg-control);
+	}
 	.log-row.log-error,
-	.log-row.log-fatal { border-left-color: var(--color-danger); }
-	.log-row.log-warn  { border-left-color: var(--color-warning); }
+	.log-row.log-fatal {
+		border-left-color: var(--color-danger);
+	}
+	.log-row.log-warn {
+		border-left-color: var(--color-warning);
+	}
 
 	.log-ts {
 		color: var(--text-dimmer);
@@ -1834,12 +2056,30 @@
 		border-radius: 3px;
 		padding: 0 3px;
 	}
-	.log-level-info  { color: var(--text-accent);   background: color-mix(in srgb, var(--text-accent)  12%, transparent); }
-	.log-level-warn  { color: var(--color-warning); background: color-mix(in srgb, var(--color-warning) 12%, transparent); }
-	.log-level-error { color: var(--color-danger);  background: color-mix(in srgb, var(--color-danger)  12%, transparent); }
-	.log-level-fatal { color: var(--color-danger);  background: color-mix(in srgb, var(--color-danger)  20%, transparent); }
-	.log-level-debug { color: var(--text-dimmer);   background: color-mix(in srgb, var(--text-dimmer)   12%, transparent); }
-	.log-level-trace { color: var(--text-dimmer);   background: color-mix(in srgb, var(--text-dimmer)    8%, transparent); }
+	.log-level-info {
+		color: var(--text-accent);
+		background: color-mix(in srgb, var(--text-accent) 12%, transparent);
+	}
+	.log-level-warn {
+		color: var(--color-warning);
+		background: color-mix(in srgb, var(--color-warning) 12%, transparent);
+	}
+	.log-level-error {
+		color: var(--color-danger);
+		background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+	}
+	.log-level-fatal {
+		color: var(--color-danger);
+		background: color-mix(in srgb, var(--color-danger) 20%, transparent);
+	}
+	.log-level-debug {
+		color: var(--text-dimmer);
+		background: color-mix(in srgb, var(--text-dimmer) 12%, transparent);
+	}
+	.log-level-trace {
+		color: var(--text-dimmer);
+		background: color-mix(in srgb, var(--text-dimmer) 8%, transparent);
+	}
 
 	.log-msg {
 		flex: 1;
@@ -1855,10 +2095,18 @@
 		flex-shrink: 0;
 		color: var(--text-dimmer);
 	}
-	.log-kv  { white-space: nowrap; }
-	.log-key { color: var(--color-success); }
-	.log-val { color: var(--text-accent); }
-	.log-more { color: var(--text-dimmer); }
+	.log-kv {
+		white-space: nowrap;
+	}
+	.log-key {
+		color: var(--color-success);
+	}
+	.log-val {
+		color: var(--text-accent);
+	}
+	.log-more {
+		color: var(--text-dimmer);
+	}
 
 	.log-raw {
 		margin: 0;
@@ -1889,8 +2137,12 @@
 		border-radius: 4px;
 		outline: none;
 	}
-	.logs-search:focus { border-color: var(--text-accent); }
-	.logs-search::placeholder { color: var(--text-dimmer); }
+	.logs-search:focus {
+		border-color: var(--text-accent);
+	}
+	.logs-search::placeholder {
+		color: var(--text-dimmer);
+	}
 
 	.logs-match-count {
 		font-family: var(--font-ui);
@@ -1899,7 +2151,7 @@
 		white-space: nowrap;
 	}
 
-		.btn-warn {
+	.btn-warn {
 		background: #92400e;
 		color: #fde68a;
 		border: 1px solid #b45309;
@@ -1985,7 +2237,9 @@
 		outline: none;
 		border-color: var(--text-accent);
 	}
-	.invites-actions { margin-top: 0.25rem; }
+	.invites-actions {
+		margin-top: 0.25rem;
+	}
 	.invites-created {
 		margin-top: 0.6rem;
 		padding: 10px 12px;
@@ -2039,7 +2293,10 @@
 		text-transform: uppercase;
 		color: var(--text-dimmer);
 	}
-	.invites-table .td-date { white-space: nowrap; color: var(--text-muted); }
+	.invites-table .td-date {
+		white-space: nowrap;
+		color: var(--text-muted);
+	}
 	.invite-status {
 		display: inline-block;
 		padding: 2px 8px;
@@ -2050,10 +2307,22 @@
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
 	}
-	.invite-status--pending  { background: rgba(34, 211, 238, 0.12); color: var(--color-momentum); }
-	.invite-status--accepted { background: rgba(74, 222, 128, 0.12); color: var(--color-health); }
-	.invite-status--revoked  { background: rgba(221, 81, 76, 0.12); color: var(--color-danger); }
-	.invite-status--expired  { background: rgba(255, 255, 255, 0.06); color: var(--text-dimmer); }
+	.invite-status--pending {
+		background: rgba(34, 211, 238, 0.12);
+		color: var(--color-momentum);
+	}
+	.invite-status--accepted {
+		background: rgba(74, 222, 128, 0.12);
+		color: var(--color-health);
+	}
+	.invite-status--revoked {
+		background: rgba(221, 81, 76, 0.12);
+		color: var(--color-danger);
+	}
+	.invite-status--expired {
+		background: rgba(255, 255, 255, 0.06);
+		color: var(--text-dimmer);
+	}
 	.btn-sm {
 		padding: 3px 10px;
 		font-size: 0.72rem;
@@ -2070,7 +2339,7 @@
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 		gap: 1rem;
-		align-items: stretch;       /* equal-height tiles per row */
+		align-items: stretch; /* equal-height tiles per row */
 	}
 
 	.tools-tile {
@@ -2081,7 +2350,7 @@
 		border: 1px solid var(--border);
 		border-radius: 6px;
 		background: var(--bg-card);
-		min-width: 0;                /* let the grid column dictate width, not content */
+		min-width: 0; /* let the grid column dictate width, not content */
 	}
 
 	.tools-tile-head {
@@ -2170,7 +2439,9 @@
 		flex-direction: column;
 		gap: 4px;
 	}
-	.tools-tile-field--narrow { max-width: 220px; }
+	.tools-tile-field--narrow {
+		max-width: 220px;
+	}
 	.tools-tile-field > span,
 	.tools-tile-field-label {
 		font-family: var(--font-ui);
@@ -2204,7 +2475,7 @@
 		display: flex;
 		gap: 0.5rem;
 		flex-wrap: wrap;
-		margin-top: auto;   /* keep Save buttons aligned across tiles */
+		margin-top: auto; /* keep Save buttons aligned across tiles */
 	}
 
 	.severity-opt {
@@ -2215,5 +2486,7 @@
 		color: var(--text-muted);
 		cursor: pointer;
 	}
-	.severity-opt input { margin: 0; }
+	.severity-opt input {
+		margin: 0;
+	}
 </style>

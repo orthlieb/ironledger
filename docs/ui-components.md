@@ -8,23 +8,23 @@ Canonical styles for shared UI patterns across the app. When creating or editing
 
 Toolbars use two button styles to signal action priority. Never invent a third style — pick one of these two.
 
-| Style | Classes | Dark theme | Light theme | When to use |
-|-------|---------|------------|-------------|-------------|
-| **Primary** | `btn btn-primary` | Gold border + gold text (`--text-accent` = `#e8a030`) on putty bg (`--bg-control` = `#1e1a10`) | Dark amber border + text (`--text-accent` = `#8a4e08`) on parchment bg (`--bg-control` = `#f0e9d8`) | Frequent actions — creating items, asking oracles |
-| **Secondary** | `btn` | Muted text (`--text-muted` = `#9a886a`), border (`--border-mid` = `#574a32`) on putty bg | Muted text (`--text-muted` = `#5a4e38`), border (`--border-mid` = `#b0a080`) on parchment bg | Utility/infrequent — Export, Import, Clear |
+| Style         | Classes           | Dark theme                                                                                     | Light theme                                                                                         | When to use                                       |
+| ------------- | ----------------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| **Primary**   | `btn btn-primary` | Gold border + gold text (`--text-accent` = `#e8a030`) on putty bg (`--bg-control` = `#1e1a10`) | Dark amber border + text (`--text-accent` = `#8a4e08`) on parchment bg (`--bg-control` = `#f0e9d8`) | Frequent actions — creating items, asking oracles |
+| **Secondary** | `btn`             | Muted text (`--text-muted` = `#9a886a`), border (`--border-mid` = `#574a32`) on putty bg       | Muted text (`--text-muted` = `#5a4e38`), border (`--border-mid` = `#b0a080`) on parchment bg        | Utility/infrequent — Export, Import, Clear        |
 
 Icon buttons in toolbars use `btn icon-btn` (secondary by default). Add `btn-primary` when the action is frequently used (e.g. Ask oracle on the Communities toolbar).
 
 ### Examples by tab
 
-| Tab | Primary (gold) | Secondary (putty) |
-|-----|---------------|-------------------|
-| Characters | + Character | Import |
-| Foes | + Foe | — |
-| Expeditions | + Journey, + Site | — |
-| Communities | Ask, + Community, + NPC | Export |
-| Adventure | Move, Ask, Roll, Note | — |
-| Session Log | — | Export, Clear |
+| Tab         | Primary (gold)          | Secondary (putty) |
+| ----------- | ----------------------- | ----------------- |
+| Characters  | + Character             | Import            |
+| Foes        | + Foe                   | —                 |
+| Expeditions | + Journey, + Site       | —                 |
+| Communities | Ask, + Community, + NPC | Export            |
+| Adventure   | Move, Ask, Roll, Note   | —                 |
+| Session Log | —                       | Export, Clear     |
 
 > **Rule:** If a button opens a dialog or creates something the user will click many times per session, it should be primary. One-off or data-management actions (export, clear, import) stay secondary.
 
@@ -83,7 +83,7 @@ display: flex;
 align-items: center;
 gap: 8px;
 padding: 8px 12px;
-min-height: 55px;   /* portrait (38px) + padding (16px) + border-bottom (1px) = 55px box-sizing:border-box */
+min-height: 55px; /* portrait (38px) + padding (16px) + border-bottom (1px) = 55px box-sizing:border-box */
 flex-wrap: wrap;
 background: var(--bg-inset);
 border-bottom: 1px solid var(--border);
@@ -96,10 +96,18 @@ When a card is collapsed, its body is hidden (`{#if !collapsed}`). Without remov
 **Fix:** suppress the inner border when collapsed:
 
 ```css
-.char-card.collapsed  .char-header { border-bottom: none; }
-.foe-card.collapsed   .fc-header   { border-bottom: none; }
-.jc-card.collapsed    .jc-header   { border-bottom: none; }
-.sc-card.collapsed    .sc-header   { border-bottom: none; }
+.char-card.collapsed .char-header {
+  border-bottom: none;
+}
+.foe-card.collapsed .fc-header {
+  border-bottom: none;
+}
+.jc-card.collapsed .jc-header {
+  border-bottom: none;
+}
+.sc-card.collapsed .sc-header {
+  border-bottom: none;
+}
 ```
 
 **Required:** The root card `<div>` must bind the collapsed state as a class so the selector fires:
@@ -116,15 +124,15 @@ The global `.btn-icon` style uses `padding: 4px 8px; min-width: 28px` — **not 
 
 ```css
 .xx-header .icon-btn {
-    width: 26px;
-    height: 26px;
-    padding: 4px;
-    flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  padding: 4px;
+  flex-shrink: 0;
 }
 .xx-header .icon-btn :global(svg) {
-    width: 13px;
-    height: 13px;
-    fill: currentColor;
+  width: 13px;
+  height: 13px;
+  fill: currentColor;
 }
 ```
 
@@ -156,21 +164,21 @@ flex-shrink: 0;
 
 ### Colors by Type
 
-| Type                   | Background                                              | Color                         | Notes                        |
-|------------------------|---------------------------------------------------------|-------------------------------|------------------------------|
-| Nature                 | `{FOE_NATURE_COLORS[nature]}22`                         | `{FOE_NATURE_COLORS[nature]}` |                              |
-| Rank/Difficulty        | `{RANK_COLORS[n].bg}22`                                 | `{RANK_COLORS[n].bg}`         |                              |
-| Quantity               | `rgba(255,255,255,0.08)`                                | `var(--text-muted)`           |                              |
-| Harm                   | `rgba(239,68,68,0.10)`                                  | `#ef4444`                     | static                       |
-| Harm (escalating)      | `rgba(239,68,68,0.18)`                                  | `#ef4444`                     | italic, `Harm: N ↑`          |
-| Progress/boxes         | `rgba(59,130,246,0.10)`                                 | `#60a5fa`                     | static                       |
-| Progress (defense up)  | `rgba(96,165,250,0.18)`                                 | `#60a5fa`                     | italic, `Progress: N ↓`      |
-| Journey type           | `rgba(52,211,153,0.15)`                                 | `#34d399`                     |                              |
-| Site type              | `rgba(96,165,250,0.15)`                                 | `#60a5fa`                     |                              |
-| Theme                  | `rgba(168,85,247,0.15)`                                 | `#a855f7`                     |                              |
-| Domain                 | `rgba(251,146,60,0.15)`                                 | `#fb923c`                     |                              |
-| Debility               | `color-mix(in srgb, {color} 12%, transparent)`          | `var(--color-danger)`         |                              |
-| Asset                  | `color-mix(in srgb, {color} 12%, transparent)`          | `ASSET_CAT_COLOR[category]`   |                              |
+| Type                  | Background                                     | Color                         | Notes                   |
+| --------------------- | ---------------------------------------------- | ----------------------------- | ----------------------- |
+| Nature                | `{FOE_NATURE_COLORS[nature]}22`                | `{FOE_NATURE_COLORS[nature]}` |                         |
+| Rank/Difficulty       | `{RANK_COLORS[n].bg}22`                        | `{RANK_COLORS[n].bg}`         |                         |
+| Quantity              | `rgba(255,255,255,0.08)`                       | `var(--text-muted)`           |                         |
+| Harm                  | `rgba(239,68,68,0.10)`                         | `#ef4444`                     | static                  |
+| Harm (escalating)     | `rgba(239,68,68,0.18)`                         | `#ef4444`                     | italic, `Harm: N ↑`     |
+| Progress/boxes        | `rgba(59,130,246,0.10)`                        | `#60a5fa`                     | static                  |
+| Progress (defense up) | `rgba(96,165,250,0.18)`                        | `#60a5fa`                     | italic, `Progress: N ↓` |
+| Journey type          | `rgba(52,211,153,0.15)`                        | `#34d399`                     |                         |
+| Site type             | `rgba(96,165,250,0.15)`                        | `#60a5fa`                     |                         |
+| Theme                 | `rgba(168,85,247,0.15)`                        | `#a855f7`                     |                         |
+| Domain                | `rgba(251,146,60,0.15)`                        | `#fb923c`                     |                         |
+| Debility              | `color-mix(in srgb, {color} 12%, transparent)` | `var(--color-danger)`         |                         |
+| Asset                 | `color-mix(in srgb, {color} 12%, transparent)` | `ASSET_CAT_COLOR[category]`   |                         |
 
 ### Pill Order
 
@@ -189,10 +197,10 @@ Pills live at the **top of the collapsible body**, NOT in the title bar. Title b
 
 ```css
 .xx-pill-strip {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-    align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
 }
 ```
 
@@ -203,7 +211,11 @@ Copy into any component needing difficulty as a pill:
 ```typescript
 import { RANK_COLORS } from '$lib/foeStore.svelte.js';
 const DIFFICULTY_RANK: Record<string, number> = {
-  troublesome: 1, dangerous: 2, formidable: 3, extreme: 4, epic: 5,
+  troublesome: 1,
+  dangerous: 2,
+  formidable: 3,
+  extreme: 4,
+  epic: 5,
 };
 function diffBadgeStyle(difficulty: string): string {
   const rc = RANK_COLORS[DIFFICULTY_RANK[difficulty] ?? 2];
@@ -241,21 +253,22 @@ let filtersOpen = $state(false);
   onclick={() => (filtersOpen = !filtersOpen)}
   aria-expanded={filtersOpen}
 >
-  Filters{#if activeItems.size > 0}&nbsp;<span class="xx-filter-badge">{activeItems.size}</span>{/if}
+  Filters{#if activeItems.size > 0}&nbsp;<span class="xx-filter-badge">{activeItems.size}</span
+    >{/if}
   {filtersOpen ? '▲' : '▼'}
 </button>
 {#if filtersOpen}
-<div class="xx-filter-panel">
-  <div class="xx-filter-chips">
-    {#each items as item}
-      <button
-        class="xx-chip"
-        class:xx-chip--active={activeItems.has(item)}
-        onclick={() => toggleItem(item)}
-      >{item}</button>
-    {/each}
+  <div class="xx-filter-panel">
+    <div class="xx-filter-chips">
+      {#each items as item}
+        <button
+          class="xx-chip"
+          class:xx-chip--active={activeItems.has(item)}
+          onclick={() => toggleItem(item)}>{item}</button
+        >
+      {/each}
+    </div>
   </div>
-</div>
 {/if}
 ```
 
@@ -264,62 +277,86 @@ let filtersOpen = $state(false);
 ```css
 /* Toggle button */
 .xx-filter-toggle {
-    display:        flex;
-    align-items:    center;
-    gap:            6px;
-    font-family:    var(--font-ui);
-    font-size:      0.72rem;
-    font-weight:    600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color:          var(--text-dimmer);
-    background:     transparent;
-    border:         1px solid var(--border);
-    border-radius:  4px;
-    padding:        3px 8px;
-    cursor:         pointer;
-    transition:     background 0.12s, color 0.12s, border-color 0.12s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dimmer);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    color 0.12s,
+    border-color 0.12s;
 }
-.xx-filter-toggle:hover        { color: var(--text); border-color: var(--border-mid); }
-.xx-filter-toggle--active      { color: var(--accent); border-color: var(--accent); }
+.xx-filter-toggle:hover {
+  color: var(--text);
+  border-color: var(--border-mid);
+}
+.xx-filter-toggle--active {
+  color: var(--accent);
+  border-color: var(--accent);
+}
 
 /* Active count badge (inside toggle button) */
 .xx-filter-badge {
-    display:         inline-flex;
-    align-items:     center;
-    justify-content: center;
-    min-width:       16px;
-    height:          16px;
-    padding:         0 4px;
-    border-radius:   8px;
-    background:      var(--accent);
-    color:           var(--bg);
-    font-size:       0.6rem;
-    font-weight:     700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--bg);
+  font-size: 0.6rem;
+  font-weight: 700;
 }
 
 /* Collapsible panel */
-.xx-filter-panel  { padding: 4px 0 2px; }
-.xx-filter-chips  { display: flex; flex-wrap: wrap; gap: 4px; }
+.xx-filter-panel {
+  padding: 4px 0 2px;
+}
+.xx-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
 
 /* Individual chip/tag */
 .xx-chip {
-    font-family:    var(--font-ui);
-    font-size:      0.65rem;
-    font-weight:    600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color:          var(--text-dimmer);
-    background:     transparent;
-    border:         1px solid var(--border);
-    border-radius:  3px;
-    padding:        2px 8px;
-    cursor:         pointer;
-    white-space:    nowrap;
-    transition:     background 0.12s, color 0.12s;
+  font-family: var(--font-ui);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dimmer);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 2px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.12s,
+    color 0.12s;
 }
-.xx-chip:hover     { background: color-mix(in srgb, var(--border) 30%, transparent); color: var(--text); }
-.xx-chip--active   { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); border-color: var(--accent); }
+.xx-chip:hover {
+  background: color-mix(in srgb, var(--border) 30%, transparent);
+  color: var(--text);
+}
+.xx-chip--active {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+  border-color: var(--accent);
+}
 ```
 
 > Chips can use a `--gcolor` CSS variable for per-chip color (e.g. oracle groups). Set `style:--gcolor={color}` on each chip and reference `var(--gcolor, var(--text-dimmer))` for `color` and `var(--gcolor, var(--border))` for border/background mixing.
@@ -335,6 +372,7 @@ Empty tiles in the GlobalContextBar display a placeholder `<img>` icon (loaded v
 Target colour: `--text-muted` ≈ `#96886D`
 
 Filter derivation (applied to a black source image):
+
 1. `invert(1)` — black → white
 2. `brightness(0.59)` — white → mid-gray (150, 150, 150)
 3. `sepia(1)` — gray → warm (203, 180, 141)
@@ -342,10 +380,10 @@ Filter derivation (applied to a black source image):
 
 ```css
 .gc-placeholder-img {
-    filter: invert(1) brightness(0.59) sepia(1) brightness(0.75);
+  filter: invert(1) brightness(0.59) sepia(1) brightness(0.75);
 }
 .gc-tile-btn:hover .gc-placeholder-img {
-    filter: invert(1) brightness(0.59) sepia(1) brightness(0.9);
+  filter: invert(1) brightness(0.59) sepia(1) brightness(0.9);
 }
 ```
 
@@ -355,12 +393,12 @@ Images are dark on a light background — no invert needed. Override restores or
 
 ```css
 .gc-placeholder-img {
-    opacity: 0.45;
-    filter: grayscale(0.45) brightness(0.75);
+  opacity: 0.45;
+  filter: grayscale(0.45) brightness(0.75);
 }
 .gc-tile-btn:hover .gc-placeholder-img {
-    opacity: 0.65;
-    filter: grayscale(0.2) brightness(0.85);
+  opacity: 0.65;
+  filter: grayscale(0.2) brightness(0.85);
 }
 ```
 
@@ -378,20 +416,20 @@ All side labels share the same typography and border — the only difference is 
 
 ```css
 .xx-side-label {
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-    font-family: var(--font-ui);
-    font-size: 0.55rem;
-    font-weight: 800;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--text-dimmer);
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-left: 1px solid var(--border);
-    padding-left: 4px;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-family: var(--font-ui);
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dimmer);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-left: 1px solid var(--border);
+  padding-left: 4px;
 }
 ```
 
@@ -401,16 +439,16 @@ Used when the label sits alongside a compact, fixed-height row (STATS, VITALS, D
 
 ```svelte
 <div class="xx-row-wrapper">
-    <div class="xx-side-label" style="align-self: stretch">STATS</div>
-    <div class="xx-content"><!-- stat tiles --></div>
+  <div class="xx-side-label" style="align-self: stretch">STATS</div>
+  <div class="xx-content"><!-- stat tiles --></div>
 </div>
 ```
 
 ```css
 .xx-row-wrapper {
-    display: flex;
-    align-items: center;  /* or flex-start for multi-line content */
-    gap: 6px;
+  display: flex;
+  align-items: center; /* or flex-start for multi-line content */
+  gap: 6px;
 }
 ```
 
@@ -419,17 +457,15 @@ Used when the label sits alongside a compact, fixed-height row (STATS, VITALS, D
 Used when the label sits alongside a potentially tall container (e.g. the GCB tile area). `align-self: stretch` is still used so the border spans cleanly, but equal `margin` top and bottom prevents it from reaching the outer edges of the container. Set the margin to match the adjacent content area's vertical padding so the border aligns with the content bounds.
 
 ```svelte
-<div class="xx-side-label" style="align-self: stretch; margin: 0.25rem 0">
-    CURRENT SCENARIO
-</div>
+<div class="xx-side-label" style="align-self: stretch; margin: 0.25rem 0">CURRENT SCENARIO</div>
 ```
 
 ```css
 .gc-scenario-heading {
-    /* …base properties… */
-    align-self: stretch;
-    margin: 0.25rem 0;   /* match gc-layout vertical padding — equal top and bottom */
-    padding-left: 4px;   /* border gap only, no top/bottom padding */
+  /* …base properties… */
+  align-self: stretch;
+  margin: 0.25rem 0; /* match gc-layout vertical padding — equal top and bottom */
+  padding-left: 4px; /* border gap only, no top/bottom padding */
 }
 ```
 
@@ -453,13 +489,13 @@ Square tile used for the five Ironsworn stats (Edge, Heart, Iron, Shadow, Wits).
 
 ### SVG Icon Sources
 
-| Stat | File |
-|------|------|
-| Edge | `src/lib/icons/sword-solid-full.svg` |
-| Heart | `src/lib/icons/icon-heart.svg` |
-| Iron | `src/lib/icons/fist.svg` |
-| Shadow | `src/lib/icons/shadow.svg` |
-| Wits | `src/lib/icons/brain.svg` |
+| Stat   | File                                 |
+| ------ | ------------------------------------ |
+| Edge   | `src/lib/icons/sword-solid-full.svg` |
+| Heart  | `src/lib/icons/icon-heart.svg`       |
+| Iron   | `src/lib/icons/fist.svg`             |
+| Shadow | `src/lib/icons/shadow.svg`           |
+| Wits   | `src/lib/icons/brain.svg`            |
 
 All imported as `?raw` and rendered with `{@html icon}`. The `:global(svg)` selector sets `fill: var(--stat-color)` and `width/height: 72%`.
 
@@ -471,68 +507,69 @@ All defined in `apps/web/src/app.css`. Use CSS variables everywhere; never hardc
 
 ### Fonts
 
-| Variable | Value | Use |
-|----------|-------|-----|
-| `--font-display` | `'Cinzel', 'Palatino Linotype', Georgia, serif` | Headings, brand name, card titles |
-| `--font-body` | `'Crimson Pro', 'Palatino Linotype', Georgia, serif` | Body text, asset ability text |
-| `--font-ui` | `'Roboto', system-ui, sans-serif` | Labels, buttons, stats, pills, all UI chrome |
+| Variable         | Value                                                | Use                                          |
+| ---------------- | ---------------------------------------------------- | -------------------------------------------- |
+| `--font-display` | `'Cinzel', 'Palatino Linotype', Georgia, serif`      | Headings, brand name, card titles            |
+| `--font-body`    | `'Crimson Pro', 'Palatino Linotype', Georgia, serif` | Body text, asset ability text                |
+| `--font-ui`      | `'Roboto', system-ui, sans-serif`                    | Labels, buttons, stats, pills, all UI chrome |
 
 ### Text Colors
 
-| Variable | Dark theme | Light/Print theme | Use |
-|----------|-----------|-------------------|-----|
-| `--text` | (body default) | (body default) | Main readable text |
-| `--text-muted` | `#9a886a` | `#5a4e38` | Secondary labels, dimmed controls |
-| `--text-dimmer` | `#6e5e42` | `#8a7860` | Very quiet labels, track readouts |
-| `--text-accent` | `#e8a030` | `#8a4e08` | Brand color — nav logo, links, progress tick strokes, hover highlights |
+| Variable        | Dark theme     | Light/Print theme | Use                                                                    |
+| --------------- | -------------- | ----------------- | ---------------------------------------------------------------------- |
+| `--text`        | (body default) | (body default)    | Main readable text                                                     |
+| `--text-muted`  | `#9a886a`      | `#5a4e38`         | Secondary labels, dimmed controls                                      |
+| `--text-dimmer` | `#6e5e42`      | `#8a7860`         | Very quiet labels, track readouts                                      |
+| `--text-accent` | `#e8a030`      | `#8a4e08`         | Brand color — nav logo, links, progress tick strokes, hover highlights |
 
 ### Background & Border Colors
 
-| Variable | Dark theme | Light/Print theme | Use |
-|----------|-----------|-------------------|-----|
-| `--bg-card` | `#131008` | `#ede6d6` | Card backgrounds |
-| `--bg-inset` | `#0d0b07` | `#f9f4ea` | Inset sections (card headers, inputs) |
-| `--border` | `#3d3425` | `#c8b89a` | Card/section borders |
-| `--border-mid` | `#574a32` | `#b0a080` | Button borders, control separators |
+| Variable       | Dark theme | Light/Print theme | Use                                   |
+| -------------- | ---------- | ----------------- | ------------------------------------- |
+| `--bg-card`    | `#131008`  | `#ede6d6`         | Card backgrounds                      |
+| `--bg-inset`   | `#0d0b07`  | `#f9f4ea`         | Inset sections (card headers, inputs) |
+| `--border`     | `#3d3425`  | `#c8b89a`         | Card/section borders                  |
+| `--border-mid` | `#574a32`  | `#b0a080`         | Button borders, control separators    |
 
 ### Stat Colors
 
-| Variable | Dark theme | Light/Print theme | Stat |
-|----------|-----------|-------------------|------|
-| `--color-edge` | `#5B9CF6` | `#1565C0` | Edge |
-| `--color-heart` | `#F06880` | `#C0184C` | Heart |
-| `--color-iron` | `#94A8BC` | `#3D5A70` | Iron |
-| `--color-shadow` | `#C084FC` | `#7C3AED` | Shadow |
-| `--color-wits` | `#FBBF24` | `#A16207` | Wits |
-| `--color-touched` | `#78DB88` | `#2a8840` | Touched (YRT homebrew) |
+| Variable          | Dark theme | Light/Print theme | Stat                   |
+| ----------------- | ---------- | ----------------- | ---------------------- |
+| `--color-edge`    | `#5B9CF6`  | `#1565C0`         | Edge                   |
+| `--color-heart`   | `#F06880`  | `#C0184C`         | Heart                  |
+| `--color-iron`    | `#94A8BC`  | `#3D5A70`         | Iron                   |
+| `--color-shadow`  | `#C084FC`  | `#7C3AED`         | Shadow                 |
+| `--color-wits`    | `#FBBF24`  | `#A16207`         | Wits                   |
+| `--color-touched` | `#78DB88`  | `#2a8840`         | Touched (YRT homebrew) |
 
 ### Resource Colors
 
-| Variable | Dark theme | Light/Print theme | Resource |
-|----------|-----------|-------------------|----------|
-| `--color-momentum` | `#22D3EE` | `#0891B2` | Momentum |
-| `--color-health` | `#4ADE80` | `#15803D` | Health |
-| `--color-spirit` | `#818CF8` | `#3730A3` | Spirit |
-| `--color-supply` | `#FB923C` | `#C2410C` | Supply |
-| `--color-xp` | `#A3E635` | `#4D7C0F` | XP |
-| `--color-mana` | `#f59e0b` | `#b45309` | Mana (YRT homebrew) |
-| `--color-danger` | `#DD514C` | `#b02828` | Danger/menace (foe harm, menace track) |
+| Variable           | Dark theme | Light/Print theme | Resource                               |
+| ------------------ | ---------- | ----------------- | -------------------------------------- |
+| `--color-momentum` | `#22D3EE`  | `#0891B2`         | Momentum                               |
+| `--color-health`   | `#4ADE80`  | `#15803D`         | Health                                 |
+| `--color-spirit`   | `#818CF8`  | `#3730A3`         | Spirit                                 |
+| `--color-supply`   | `#FB923C`  | `#C2410C`         | Supply                                 |
+| `--color-xp`       | `#A3E635`  | `#4D7C0F`         | XP                                     |
+| `--color-mana`     | `#f59e0b`  | `#b45309`         | Mana (YRT homebrew)                    |
+| `--color-danger`   | `#DD514C`  | `#b02828`         | Danger/menace (foe harm, menace track) |
 
 ### Asset Category Colors
 
 Used in `AssetCard` and GCB asset pills. Maps `AssetCategory` → CSS variable:
 
-| Category | CSS variable |
-|----------|-------------|
-| Combat Talent | `var(--color-iron)` |
-| Path | `var(--color-edge)` |
-| Companion | `var(--color-heart)` |
-| Ritual | `var(--color-mana)` |
-| Touched | `var(--color-touched)` |
+| Category      | CSS variable           |
+| ------------- | ---------------------- |
+| Combat Talent | `var(--color-iron)`    |
+| Path          | `var(--color-edge)`    |
+| Companion     | `var(--color-heart)`   |
+| Ritual        | `var(--color-mana)`    |
+| Touched       | `var(--color-touched)` |
 
 ### Progress Track Strokes
 
 In `ProgressTrack.svelte`:
+
 - **Box border**: `stroke="currentColor"` (inherits `--text-muted` from `.track-box`), `stroke-width="1.5"`
 - **Tick marks**: `stroke="var(--text-accent)"`, `stroke-width="1.5"`
 - **Hover**: `.track-box:hover` changes color to `var(--text-accent)`
@@ -555,10 +592,7 @@ Wraps `ProgressTrack` with the **foe-pattern** layout: a label row
 tally lands flush with the + button.
 
 ```svelte
-<ProgressTrackPanel
-  label="Bonds"
-  bind:value={d.bonds}
-/>
+<ProgressTrackPanel label="Bonds" bind:value={d.bonds} />
 
 <ProgressTrackPanel
   label="Progress"
@@ -621,7 +655,9 @@ delegates behaviour to this helper, so per-area stage-header styling
 remains in the parent.
 
 ```ts
-const nameEdit = new EditableName((restored) => { d.name = restored; });
+const nameEdit = new EditableName((restored) => {
+  d.name = restored;
+});
 ```
 
 ```svelte

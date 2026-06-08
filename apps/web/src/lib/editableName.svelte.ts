@@ -40,8 +40,8 @@ export class EditableName {
 				this.inputEl.select();
 			}
 		});
-		this.commit    = this.commit.bind(this);
-		this.cancel    = this.cancel.bind(this);
+		this.commit = this.commit.bind(this);
+		this.cancel = this.cancel.bind(this);
 		this.onKeydown = this.onKeydown.bind(this);
 	}
 
@@ -50,7 +50,9 @@ export class EditableName {
 		this.editing = true;
 	}
 
-	commit() { this.editing = false; }
+	commit() {
+		this.editing = false;
+	}
 
 	cancel() {
 		this.#restore(this.#before);
@@ -58,7 +60,7 @@ export class EditableName {
 	}
 
 	onKeydown(e: KeyboardEvent) {
-		if (e.key === 'Enter')  this.inputEl?.blur();
+		if (e.key === 'Enter') this.inputEl?.blur();
 		if (e.key === 'Escape') this.cancel();
 	}
 }

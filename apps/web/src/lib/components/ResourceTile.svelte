@@ -19,27 +19,33 @@
 		tooltip = '',
 		onchange,
 	}: {
-		label:        string;
-		value?:       number;
-		color?:       string;
-		min?:         number;
-		max?:         number;
+		label: string;
+		value?: number;
+		color?: string;
+		min?: number;
+		max?: number;
 		/** Disable the + button (e.g. Wounded blocks Health increment). */
 		incDisabled?: boolean;
 		/** Raw SVG string for the background icon. */
-		icon?:        string;
-		tooltip?:     string;
-		onchange?:    (oldVal: number, newVal: number) => void;
+		icon?: string;
+		tooltip?: string;
+		onchange?: (oldVal: number, newVal: number) => void;
 	} = $props();
 
 	function decrement() {
 		const next = Math.max(min, value - 1);
-		if (next !== value) { onchange?.(value, next); value = next; }
+		if (next !== value) {
+			onchange?.(value, next);
+			value = next;
+		}
 	}
 
 	function increment() {
 		const next = Math.min(max, value + 1);
-		if (next !== value) { onchange?.(value, next); value = next; }
+		if (next !== value) {
+			onchange?.(value, next);
+			value = next;
+		}
 	}
 </script>
 
@@ -58,124 +64,127 @@
 			class="res-btn"
 			onclick={decrement}
 			disabled={value <= min}
-			aria-label="Decrease {label}"
-		>−</button>
+			aria-label="Decrease {label}">−</button
+		>
 		<span class="res-value" class:res-value--wide={value > 9}>{value}</span>
 		<button
 			class="res-btn"
 			onclick={increment}
 			disabled={value >= max || incDisabled}
-			aria-label="Increase {label}"
-		>+</button>
+			aria-label="Increase {label}">+</button
+		>
 	</div>
 </div>
 
 <style>
 	.res-tile {
-		position:        relative;
-		width:           80px;
-		display:         flex;
-		flex-direction:  column;
-		align-items:     center;
+		position: relative;
+		width: 80px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
 		justify-content: space-between;
-		padding:         5px 4px 5px;
-		border-radius:   6px;
-		border:          1px solid color-mix(in srgb, var(--res-color) 50%, transparent);
-		background:      color-mix(in srgb, var(--res-color) 8%, var(--bg-card));
-		overflow:        hidden;
-		gap:             3px;
+		padding: 5px 4px 5px;
+		border-radius: 6px;
+		border: 1px solid color-mix(in srgb, var(--res-color) 50%, transparent);
+		background: color-mix(in srgb, var(--res-color) 8%, var(--bg-card));
+		overflow: hidden;
+		gap: 3px;
 	}
 
 	/* Background icon */
 	.res-icon {
-		position:        absolute;
-		inset:           0;
-		display:         flex;
-		align-items:     center;
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
 		justify-content: center;
-		opacity:         0.22;
-		pointer-events:  none;
+		opacity: 0.22;
+		pointer-events: none;
 	}
 
-	:global([data-theme="dark"]) .res-icon {
-		opacity: 0.50;
+	:global([data-theme='dark']) .res-icon {
+		opacity: 0.5;
 	}
 
 	.res-icon :global(svg) {
-		width:  calc(100% - 6px);
+		width: calc(100% - 6px);
 		height: calc(100% - 6px);
-		fill:   var(--res-color);
-		color:  var(--res-color);
+		fill: var(--res-color);
+		color: var(--res-color);
 	}
 
 	/* Name at top */
 	.res-name {
-		font-family:    var(--font-ui);
-		font-size:      0.55rem;
-		font-weight:    900;
+		font-family: var(--font-ui);
+		font-size: 0.55rem;
+		font-weight: 900;
 		text-transform: uppercase;
 		letter-spacing: 0.06em;
-		color:          var(--res-color);
-		position:       relative;
-		z-index:        1;
-		line-height:    1;
+		color: var(--res-color);
+		position: relative;
+		z-index: 1;
+		line-height: 1;
 	}
 
 	/* Control row */
 	.res-row {
-		display:         flex;
-		align-items:     center;
+		display: flex;
+		align-items: center;
 		justify-content: center;
-		gap:             4px;
-		position:        relative;
-		z-index:         1;
-		width:           100%;
+		gap: 4px;
+		position: relative;
+		z-index: 1;
+		width: 100%;
 	}
 
 	/* Large value */
 	.res-value {
-		font-family:          var(--font-ui);
-		font-size:            1.3rem;
-		font-weight:          900;
+		font-family: var(--font-ui);
+		font-size: 1.3rem;
+		font-weight: 900;
 		font-variant-numeric: tabular-nums;
-		color:                var(--res-color);
-		line-height:          1;
-		min-width:            1.4ch;
-		text-align:           center;
+		color: var(--res-color);
+		line-height: 1;
+		min-width: 1.4ch;
+		text-align: center;
 	}
 
 	.res-value--wide {
-		font-size: 1.0rem;
+		font-size: 1rem;
 	}
 
 	/* Same style as gc-prog-btn (progress track buttons) */
 	.res-btn {
-		display:         inline-flex;
-		align-items:     center;
+		display: inline-flex;
+		align-items: center;
 		justify-content: center;
-		font-family:     var(--font-ui);
-		font-size:       0.68rem;
-		font-weight:     600;
-		background:      transparent;
-		border:          1px solid var(--border-mid);
-		border-radius:   3px;
-		padding:         0 6px;
-		height:          22px;
-		cursor:          pointer;
-		color:           var(--text-muted);
-		letter-spacing:  0.02em;
-		transition:      background 0.12s, color 0.12s, border-color 0.12s;
-		flex-shrink:     0;
+		font-family: var(--font-ui);
+		font-size: 0.68rem;
+		font-weight: 600;
+		background: transparent;
+		border: 1px solid var(--border-mid);
+		border-radius: 3px;
+		padding: 0 6px;
+		height: 22px;
+		cursor: pointer;
+		color: var(--text-muted);
+		letter-spacing: 0.02em;
+		transition:
+			background 0.12s,
+			color 0.12s,
+			border-color 0.12s;
+		flex-shrink: 0;
 	}
 
 	.res-btn:hover:not(:disabled) {
-		background:    color-mix(in srgb, var(--res-color) 15%, transparent);
-		color:         var(--res-color);
-		border-color:  var(--res-color);
+		background: color-mix(in srgb, var(--res-color) 15%, transparent);
+		color: var(--res-color);
+		border-color: var(--res-color);
 	}
 
 	.res-btn:disabled {
 		opacity: 0.35;
-		cursor:  not-allowed;
+		cursor: not-allowed;
 	}
 </style>

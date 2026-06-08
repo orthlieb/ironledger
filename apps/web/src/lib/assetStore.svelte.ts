@@ -13,9 +13,9 @@ import { buildGlobalCounterRegistry } from '$lib/globalCounters.js';
 
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
-let _assets      = $state<AssetDefinition[]>([]);
-let _rarities    = $state<RarityDefinition[]>([]);
-let _loading     = $state(false);
+let _assets = $state<AssetDefinition[]>([]);
+let _rarities = $state<RarityDefinition[]>([]);
+let _loading = $state(false);
 let _lastFetched = 0; // epoch ms of last successful fetch
 
 /** Lazy cache: global counter id → canonical CustomFieldDef. Rebuilt
@@ -33,13 +33,13 @@ export async function loadAssets(): Promise<void> {
 		const res = await fetch('/api/catalogue');
 		if (!res.ok) throw new Error(`Catalogue fetch failed: ${res.status}`);
 		const json = (await res.json()) as {
-			assets:   AssetDefinition[];
+			assets: AssetDefinition[];
 			rarities: RarityDefinition[];
 		};
-		_assets             = json.assets;
-		_rarities           = json.rarities ?? [];
-		_lastFetched        = Date.now();
-		_globalCounterDefs  = null;
+		_assets = json.assets;
+		_rarities = json.rarities ?? [];
+		_lastFetched = Date.now();
+		_globalCounterDefs = null;
 	} catch (err) {
 		console.error('[assetStore] Failed to load catalogue:', err);
 	} finally {
@@ -49,10 +49,10 @@ export async function loadAssets(): Promise<void> {
 
 /** Force the store to refetch on next loadAssets() call (useful in dev after API restarts). */
 export function resetAssets(): void {
-	_assets             = [];
-	_rarities           = [];
-	_lastFetched        = 0;
-	_globalCounterDefs  = null;
+	_assets = [];
+	_rarities = [];
+	_lastFetched = 0;
+	_globalCounterDefs = null;
 }
 
 /** All loaded asset definitions (unfiltered — for render-time resolution). */

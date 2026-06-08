@@ -13,10 +13,7 @@ import argon2 from 'argon2';
 import { randomBytes } from 'crypto';
 import { eq, and, isNull } from 'drizzle-orm';
 import { db, withUserContext, adminDb } from '../db/index.js';
-import {
-  users, refreshTokens, authTokens,
-  type User,
-} from '../db/schema.js';
+import { users, refreshTokens, authTokens, type User } from '../db/schema.js';
 import {
   signAccessToken,
   generateRefreshToken,
@@ -26,10 +23,7 @@ import {
   hashToken,
 } from '../lib/tokens.js';
 import { assertPasswordNotPwned } from '../lib/hibp.js';
-import {
-  sendVerificationEmail,
-  sendPasswordResetEmail,
-} from '../lib/mailer.js';
+import { sendVerificationEmail, sendPasswordResetEmail } from '../lib/mailer.js';
 import { getStatus as getMaintenanceStatus } from './maintenanceService.js';
 import { getStatus as getRegistrationLockStatus } from './registrationLockService.js';
 import { checkAndIncrement as checkRegistrationQuota } from './registrationQuotaService.js';
@@ -49,9 +43,9 @@ import { config } from '../config.js';
 // imperceptible to users, but brutal for offline cracking attempts.
 // ---------------------------------------------------------------------------
 export const ARGON2_OPTIONS = {
-  type:        argon2.argon2id,
-  memoryCost:  19456,
-  timeCost:    2,
+  type: argon2.argon2id,
+  memoryCost: 19456,
+  timeCost: 2,
   parallelism: 1,
 };
 
@@ -64,10 +58,7 @@ export const ARGON2_OPTIONS = {
  *
  * Top-level await is fine in ESM; this adds ~50ms to cold start.
  */
-const DUMMY_PASSWORD_HASH = await argon2.hash(
-  randomBytes(32).toString('hex'),
-  ARGON2_OPTIONS,
-);
+const DUMMY_PASSWORD_HASH = await argon2.hash(randomBytes(32).toString('hex'), ARGON2_OPTIONS);
 
 // ---------------------------------------------------------------------------
 // Domain errors — the route layer maps these to HTTP status codes
@@ -89,23 +80,27 @@ export class AuthError extends Error {
 // ---------------------------------------------------------------------------
 
 export interface RegisterInput {
-  email:       string;
-  password:    string;
-  displayName?: string;   // optional — empty/omitted falls back to the email
+  email: string;
+  password: string;
+  displayName?: string; // optional — empty/omitted falls back to the email
 }
 
 export interface AuthResult {
-  user:         Pick<User, 'id' | 'email'>;
-  accessToken:  string;
-  refreshToken: string;    // raw — caller puts this in the HttpOnly cookie
-  familyId:     string;
+  user: Pick<User, 'id' | 'email'>;
+  accessToken: string;
+  refreshToken: string; // raw — caller puts this in the HttpOnly cookie
+  familyId: string;
 }
 
 export async function register(input: RegisterInput): Promise<void> {
   // Block registration during maintenance
   const maint = await getMaintenanceStatus();
   if (maint.enabled) {
-    throw new AuthError('System is under maintenance. Please try again later.', 'MAINTENANCE_MODE', 503);
+    throw new AuthError(
+      'System is under maintenance. Please try again later.',
+      'MAINTENANCE_MODE',
+      503,
+    );
   }
 
   // Block registration when locked by admin
@@ -165,7 +160,7 @@ export async function register(input: RegisterInput): Promise<void> {
   // Display name: use the trimmed input if the user provided one, else the
   // email. Length cap matches the zod schema; trim handles accidental
   // whitespace from paste/autofill.
-  const displayName = (input.displayName?.trim() || email);
+  const displayName = input.displayName?.trim() || email;
 
   // Create the user — use adminDb because there is no user context yet
   // (we're creating the user, so we can't set app.user_id before the INSERT).
@@ -181,9 +176,9 @@ export async function register(input: RegisterInput): Promise<void> {
 
   await withUserContext(newUser.id, async (tx) => {
     await tx.insert(authTokens).values({
-      userId:    newUser.id,
+      userId: newUser.id,
       tokenHash: hash,
-      purpose:   'verify_email',
+      purpose: 'verify_email',
       expiresAt,
     });
   });
@@ -206,31 +201,24 @@ export async function verifyEmail(rawToken: string): Promise<AuthResult> {
   const [token] = await adminDb
     .select()
     .from(authTokens)
-    .where(
-      and(
-        eq(authTokens.tokenHash, tokenHash),
-        eq(authTokens.purpose, 'verify_email'),
-      ),
-    )
+    .where(and(eq(authTokens.tokenHash, tokenHash), eq(authTokens.purpose, 'verify_email')))
     .limit(1);
 
-  if (!token)                          throw new AuthError('Invalid or expired link', 'TOKEN_INVALID', 400);
-  if (token.usedAt)                    throw new AuthError('This link has already been used', 'TOKEN_USED', 400);
-  if (token.expiresAt < new Date())    throw new AuthError('This link has expired', 'TOKEN_EXPIRED', 400);
+  if (!token) throw new AuthError('Invalid or expired link', 'TOKEN_INVALID', 400);
+  if (token.usedAt) throw new AuthError('This link has already been used', 'TOKEN_USED', 400);
+  if (token.expiresAt < new Date())
+    throw new AuthError('This link has expired', 'TOKEN_EXPIRED', 400);
 
   // Mark token used and verify the email in one transaction
   const familyId = generateFamilyId();
-  const refresh   = generateRefreshToken();
+  const refresh = generateRefreshToken();
   const expiresAt = refreshTokenExpiresAt();
 
   let verifiedUser: Pick<User, 'id' | 'email' | 'role'>;
 
   await withUserContext(token.userId, async (tx) => {
     // Mark token used
-    await tx
-      .update(authTokens)
-      .set({ usedAt: new Date() })
-      .where(eq(authTokens.id, token.id));
+    await tx.update(authTokens).set({ usedAt: new Date() }).where(eq(authTokens.id, token.id));
 
     // Verify the email
     const [u] = await tx
@@ -244,17 +232,21 @@ export async function verifyEmail(rawToken: string): Promise<AuthResult> {
 
     // Issue the first refresh token for this session
     await tx.insert(refreshTokens).values({
-      userId:    token.userId,
+      userId: token.userId,
       tokenHash: refresh.hash,
       familyId,
       expiresAt,
     });
   });
 
-  const accessToken = await signAccessToken(verifiedUser!.id, verifiedUser!.email, verifiedUser!.role);
+  const accessToken = await signAccessToken(
+    verifiedUser!.id,
+    verifiedUser!.email,
+    verifiedUser!.role,
+  );
 
   return {
-    user:         verifiedUser!,
+    user: verifiedUser!,
     accessToken,
     refreshToken: refresh.raw,
     familyId,
@@ -266,7 +258,7 @@ export async function verifyEmail(rawToken: string): Promise<AuthResult> {
 // ---------------------------------------------------------------------------
 
 export interface LoginInput {
-  email:    string;
+  email: string;
   password: string;
 }
 
@@ -278,11 +270,7 @@ export async function login(input: LoginInput): Promise<AuthResult> {
   // Always fetch user + hash, even for unknown emails, to keep timing consistent.
   // Use adminDb: this is a pre-auth lookup — no user context exists yet, so the
   // RLS-protected db would return no rows (app.user_id is not set before login).
-  const [user] = await adminDb
-    .select()
-    .from(users)
-    .where(eq(users.email, email))
-    .limit(1);
+  const [user] = await adminDb.select().from(users).where(eq(users.email, email)).limit(1);
 
   // Use a real dummy Argon2id hash for timing consistency when the email
   // isn't in the DB. A malformed string would make verify() fail fast via
@@ -317,7 +305,11 @@ export async function login(input: LoginInput): Promise<AuthResult> {
   }
 
   if (!user.emailVerifiedAt) {
-    throw new AuthError('Please verify your email address before logging in', 'EMAIL_UNVERIFIED', 403);
+    throw new AuthError(
+      'Please verify your email address before logging in',
+      'EMAIL_UNVERIFIED',
+      403,
+    );
   }
 
   // Maintenance mode gate — admins can still log in
@@ -338,28 +330,25 @@ export async function login(input: LoginInput): Promise<AuthResult> {
   }
 
   // Issue tokens
-  const familyId    = generateFamilyId();
-  const refresh     = generateRefreshToken();
-  const expiresAt   = refreshTokenExpiresAt();
+  const familyId = generateFamilyId();
+  const refresh = generateRefreshToken();
+  const expiresAt = refreshTokenExpiresAt();
   const accessToken = await signAccessToken(user.id, user.email, user.role);
 
   await withUserContext(user.id, async (tx) => {
     await tx.insert(refreshTokens).values({
-      userId:    user.id,
+      userId: user.id,
       tokenHash: refresh.hash,
       familyId,
       expiresAt,
     });
 
     // Update last login timestamp
-    await tx
-      .update(users)
-      .set({ lastLoginAt: new Date() })
-      .where(eq(users.id, user.id));
+    await tx.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, user.id));
   });
 
   return {
-    user:         { id: user.id, email: user.email },
+    user: { id: user.id, email: user.email },
     accessToken,
     refreshToken: refresh.raw,
     familyId,
@@ -419,8 +408,8 @@ export async function refresh(rawToken: string): Promise<AuthResult> {
   }
 
   // Rotate: revoke old token, issue new one (same family)
-  const newRefresh  = generateRefreshToken();
-  const expiresAt   = refreshTokenExpiresAt();
+  const newRefresh = generateRefreshToken();
+  const expiresAt = refreshTokenExpiresAt();
   const accessToken = await signAccessToken(user.id, user.email, user.role);
 
   await withUserContext(user.id, async (tx) => {
@@ -432,18 +421,18 @@ export async function refresh(rawToken: string): Promise<AuthResult> {
 
     // Insert the new token (same familyId — keeps the chain intact)
     await tx.insert(refreshTokens).values({
-      userId:    user.id,
+      userId: user.id,
       tokenHash: newRefresh.hash,
-      familyId:  token.familyId,
+      familyId: token.familyId,
       expiresAt,
     });
   });
 
   return {
-    user:         { id: user.id, email: user.email },
+    user: { id: user.id, email: user.email },
     accessToken,
     refreshToken: newRefresh.raw,
-    familyId:     token.familyId,
+    familyId: token.familyId,
   };
 }
 
@@ -476,7 +465,7 @@ export async function logout(rawToken: string, userId: string): Promise<void> {
 export async function forgotPassword(email: string): Promise<void> {
   const normalised = email.toLowerCase().trim();
 
-  if (!adminDb) return;  // silently fail if admin DB not configured
+  if (!adminDb) return; // silently fail if admin DB not configured
 
   // Look up the user — always return success to prevent email enumeration.
   // Use adminDb: pre-auth lookup, no user context set.
@@ -486,15 +475,15 @@ export async function forgotPassword(email: string): Promise<void> {
     .where(eq(users.email, normalised))
     .limit(1);
 
-  if (!user?.emailVerifiedAt) return;  // silently do nothing
+  if (!user?.emailVerifiedAt) return; // silently do nothing
 
   const { raw, hash, expiresAt } = generateAuthToken();
 
   await withUserContext(user.id, async (tx) => {
     await tx.insert(authTokens).values({
-      userId:    user.id,
+      userId: user.id,
       tokenHash: hash,
-      purpose:   'reset_password',
+      purpose: 'reset_password',
       expiresAt,
     });
   });
@@ -506,10 +495,7 @@ export async function forgotPassword(email: string): Promise<void> {
 // resetPassword
 // ---------------------------------------------------------------------------
 
-export async function resetPassword(
-  rawToken: string,
-  newPassword: string,
-): Promise<void> {
+export async function resetPassword(rawToken: string, newPassword: string): Promise<void> {
   const tokenHash = hashToken(rawToken);
 
   if (!adminDb) throw new AuthError('Admin DB not configured', 'CONFIG_ERROR', 500);
@@ -517,17 +503,13 @@ export async function resetPassword(
   const [token] = await adminDb
     .select()
     .from(authTokens)
-    .where(
-      and(
-        eq(authTokens.tokenHash, tokenHash),
-        eq(authTokens.purpose, 'reset_password'),
-      ),
-    )
+    .where(and(eq(authTokens.tokenHash, tokenHash), eq(authTokens.purpose, 'reset_password')))
     .limit(1);
 
-  if (!token)                       throw new AuthError('Invalid or expired link', 'TOKEN_INVALID', 400);
-  if (token.usedAt)                 throw new AuthError('This link has already been used', 'TOKEN_USED', 400);
-  if (token.expiresAt < new Date()) throw new AuthError('This link has expired', 'TOKEN_EXPIRED', 400);
+  if (!token) throw new AuthError('Invalid or expired link', 'TOKEN_INVALID', 400);
+  if (token.usedAt) throw new AuthError('This link has already been used', 'TOKEN_USED', 400);
+  if (token.expiresAt < new Date())
+    throw new AuthError('This link has expired', 'TOKEN_EXPIRED', 400);
 
   // Check new password against breach database
   await assertPasswordNotPwned(newPassword);
@@ -536,27 +518,16 @@ export async function resetPassword(
 
   await withUserContext(token.userId, async (tx) => {
     // Mark token used
-    await tx
-      .update(authTokens)
-      .set({ usedAt: new Date() })
-      .where(eq(authTokens.id, token.id));
+    await tx.update(authTokens).set({ usedAt: new Date() }).where(eq(authTokens.id, token.id));
 
     // Update password
-    await tx
-      .update(users)
-      .set({ passwordHash })
-      .where(eq(users.id, token.userId));
+    await tx.update(users).set({ passwordHash }).where(eq(users.id, token.userId));
 
     // Revoke ALL refresh tokens for this user — forces re-login on all devices.
     // If someone reset the password, it may be because they were compromised.
     await tx
       .update(refreshTokens)
       .set({ revokedAt: new Date() })
-      .where(
-        and(
-          eq(refreshTokens.userId, token.userId),
-          isNull(refreshTokens.revokedAt),
-        ),
-      );
+      .where(and(eq(refreshTokens.userId, token.userId), isNull(refreshTokens.revokedAt)));
   });
 }

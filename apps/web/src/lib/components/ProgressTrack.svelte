@@ -37,9 +37,12 @@
 	} = $props();
 
 	function cycleBoxTick(i: number) {
-		const old  = value;
+		const old = value;
 		const next = cycleBox(value, i);
-		if (next !== old) { onchange?.(old, next); value = next; }
+		if (next !== old) {
+			onchange?.(old, next);
+			value = next;
+		}
 	}
 </script>
 
@@ -50,7 +53,7 @@
 
 	<div class="track-boxes">
 		{#each Array(boxes) as _, i (i)}
-			{@const ticks   = boxTicks(value, i)}
+			{@const ticks = boxTicks(value, i)}
 			{@const fillPct = `${ticks * 25}%`}
 			{@const isDanger = dangerCount > 0 && i < dangerCount}
 			<button
@@ -128,16 +131,16 @@
 		/* Hairline dividers at 25 / 50 / 75 % to mark each tick slot */
 		background: linear-gradient(
 			to right,
-			transparent                              calc(25% - 0.5px),
-			var(--track-inner-bg, var(--bg-card))    calc(25% - 0.5px),
-			var(--track-inner-bg, var(--bg-card))    calc(25% + 0.5px),
-			transparent                              calc(25% + 0.5px) calc(50% - 0.5px),
-			var(--track-inner-bg, var(--bg-card))    calc(50% - 0.5px),
-			var(--track-inner-bg, var(--bg-card))    calc(50% + 0.5px),
-			transparent                              calc(50% + 0.5px) calc(75% - 0.5px),
-			var(--track-inner-bg, var(--bg-card))    calc(75% - 0.5px),
-			var(--track-inner-bg, var(--bg-card))    calc(75% + 0.5px),
-			transparent                              calc(75% + 0.5px)
+			transparent calc(25% - 0.5px),
+			var(--track-inner-bg, var(--bg-card)) calc(25% - 0.5px),
+			var(--track-inner-bg, var(--bg-card)) calc(25% + 0.5px),
+			transparent calc(25% + 0.5px) calc(50% - 0.5px),
+			var(--track-inner-bg, var(--bg-card)) calc(50% - 0.5px),
+			var(--track-inner-bg, var(--bg-card)) calc(50% + 0.5px),
+			transparent calc(50% + 0.5px) calc(75% - 0.5px),
+			var(--track-inner-bg, var(--bg-card)) calc(75% - 0.5px),
+			var(--track-inner-bg, var(--bg-card)) calc(75% + 0.5px),
+			transparent calc(75% + 0.5px)
 		);
 	}
 

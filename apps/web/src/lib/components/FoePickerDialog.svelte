@@ -14,9 +14,18 @@
 
 	import type { FoeDef, FoeQuantity, CatalogueSource } from '$lib/types.js';
 	import {
-		loadFoes, getFoes, getVisibleFoes, getFoeNatures, getVisibleFoeSources,
-		foeSource, effectiveRank as calcEffectiveRank, resolveFoeDescription,
-		RANK_COLORS, FOE_RANKS, FOE_QUANTITIES, FOE_NATURE_COLORS,
+		loadFoes,
+		getFoes,
+		getVisibleFoes,
+		getFoeNatures,
+		getVisibleFoeSources,
+		foeSource,
+		effectiveRank as calcEffectiveRank,
+		resolveFoeDescription,
+		RANK_COLORS,
+		FOE_RANKS,
+		FOE_QUANTITIES,
+		FOE_NATURE_COLORS,
 	} from '$lib/foeStore.svelte.js';
 	import { sourceLabel } from '$lib/expansionStore.svelte.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
@@ -26,7 +35,6 @@
 	import FoeImageCarousel from '$lib/components/FoeImageCarousel.svelte';
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
 	import { foeIcon } from '$lib/iconRegistry.js';
-
 
 	// ---------------------------------------------------------------------------
 	// Props
@@ -43,27 +51,27 @@
 	// ---------------------------------------------------------------------------
 	// Dialog state
 	// ---------------------------------------------------------------------------
-	let dialogEl   = $state<HTMLDialogElement | null>(null);
-	let view       = $state<'picker' | 'confirm'>('picker');
+	let dialogEl = $state<HTMLDialogElement | null>(null);
+	let view = $state<'picker' | 'confirm'>('picker');
 	let confirmFoe = $state<FoeDef | null>(null);
-	let quantity   = $state<FoeQuantity>('solo');
-	let _mode      = $state<'encounter' | 'denizen'>('encounter');
-	let _noBack    = $state(false);
+	let quantity = $state<FoeQuantity>('solo');
+	let _mode = $state<'encounter' | 'denizen'>('encounter');
+	let _noBack = $state(false);
 
-	let search        = $state('');
-	let filtersOpen   = $state(false);
+	let search = $state('');
+	let filtersOpen = $state(false);
 	let activeNatures = $state(new Set<string>());
 	let activeSources = $state(new Set<CatalogueSource>());
-	let activeRanks   = $state(new Set<number>());
+	let activeRanks = $state(new Set<number>());
 
 	// Pickers use getVisibleFoes (expansion-filtered); direct lookups use getFoes.
-	const foes    = $derived(getVisibleFoes());
+	const foes = $derived(getVisibleFoes());
 	const natures = $derived(getFoeNatures());
 	const sources = $derived(getVisibleFoeSources());
 
-	const rankAdj    = $derived(FOE_QUANTITIES.find((q) => q.value === quantity)?.rankAdj ?? 0);
-	const effRank    = $derived(confirmFoe ? calcEffectiveRank(confirmFoe.rank, rankAdj) : 1);
-	const rankInfo   = $derived(FOE_RANKS[effRank]);
+	const rankAdj = $derived(FOE_QUANTITIES.find((q) => q.value === quantity)?.rankAdj ?? 0);
+	const effRank = $derived(confirmFoe ? calcEffectiveRank(confirmFoe.rank, rankAdj) : 1);
+	const rankInfo = $derived(FOE_RANKS[effRank]);
 
 	// ---------------------------------------------------------------------------
 	// Filtering
@@ -71,19 +79,24 @@
 	const filtered = $derived(() => {
 		const q = search.trim().toLowerCase();
 		return foes.filter((f) => {
-			if (activeNatures.size > 0 && !activeNatures.has(f.nature))  return false;
+			if (activeNatures.size > 0 && !activeNatures.has(f.nature)) return false;
 			if (activeSources.size > 0 && !activeSources.has(foeSource(f))) return false;
 			if (activeRanks.size > 0 && !activeRanks.has(f.rank)) return false;
 			if (q) {
-				const nameMatch     = f.name.toLowerCase().includes(q);
-				const featureMatch  = f.features.some((ft) => ft.toLowerCase().includes(q));
+				const nameMatch = f.name.toLowerCase().includes(q);
+				const featureMatch = f.features.some((ft) => ft.toLowerCase().includes(q));
 				if (!nameMatch && !featureMatch) return false;
 			}
 			return true;
 		});
 	});
 
-	const hasActiveFilters = $derived(search.trim() !== '' || activeNatures.size > 0 || activeSources.size > 0 || activeRanks.size > 0);
+	const hasActiveFilters = $derived(
+		search.trim() !== '' ||
+			activeNatures.size > 0 ||
+			activeSources.size > 0 ||
+			activeRanks.size > 0,
+	);
 	const activeFilterCount = $derived(activeNatures.size + activeSources.size + activeRanks.size);
 
 	// ---------------------------------------------------------------------------
@@ -91,44 +104,44 @@
 	// ---------------------------------------------------------------------------
 	export async function open(): Promise<void> {
 		await loadFoes();
-		_mode    = 'encounter';
-		_noBack  = false;
-		view     = 'picker';
-		search   = '';
-		filtersOpen   = false;
+		_mode = 'encounter';
+		_noBack = false;
+		view = 'picker';
+		search = '';
+		filtersOpen = false;
 		activeNatures = new Set();
 		activeSources = new Set();
-		activeRanks   = new Set();
+		activeRanks = new Set();
 		confirmFoe = null;
-		quantity   = 'solo';
+		quantity = 'solo';
 		dialogEl?.showModal();
 	}
 
 	/** Open in denizen-pick mode: clicking a foe returns just the name, no confirm step. */
 	export async function openForDenizen(): Promise<void> {
 		await loadFoes();
-		_mode    = 'denizen';
-		view     = 'picker';
-		search   = '';
-		filtersOpen   = false;
+		_mode = 'denizen';
+		view = 'picker';
+		search = '';
+		filtersOpen = false;
 		activeNatures = new Set();
 		activeSources = new Set();
-		activeRanks   = new Set();
+		activeRanks = new Set();
 		confirmFoe = null;
-		quantity   = 'solo';
+		quantity = 'solo';
 		dialogEl?.showModal();
 	}
 
 	/** Open directly to the confirm view for a foe matched by name (for denizen roll results). */
 	export async function openWithFoe(foeName: string): Promise<void> {
 		await loadFoes();
-		const match = getFoes().find(f => f.name.toLowerCase() === foeName.toLowerCase());
+		const match = getFoes().find((f) => f.name.toLowerCase() === foeName.toLowerCase());
 		if (!match) return;
-		_mode      = 'encounter';
-		_noBack    = true;
-		quantity   = 'solo';
+		_mode = 'encounter';
+		_noBack = true;
+		quantity = 'solo';
 		confirmFoe = match;
-		view       = 'confirm';
+		view = 'confirm';
 		dialogEl?.showModal();
 	}
 
@@ -141,26 +154,29 @@
 	// ---------------------------------------------------------------------------
 	function toggleNature(n: string) {
 		const next = new Set(activeNatures);
-		if (next.has(n)) next.delete(n); else next.add(n);
+		if (next.has(n)) next.delete(n);
+		else next.add(n);
 		activeNatures = next;
 	}
 
 	function toggleSource(s: CatalogueSource) {
 		const next = new Set(activeSources);
-		if (next.has(s)) next.delete(s); else next.add(s);
+		if (next.has(s)) next.delete(s);
+		else next.add(s);
 		activeSources = next;
 	}
 
 	function clearFilters() {
-		search        = '';
+		search = '';
 		activeNatures = new Set();
 		activeSources = new Set();
-		activeRanks   = new Set();
+		activeRanks = new Set();
 	}
 
 	function toggleRank(r: number) {
 		const next = new Set(activeRanks);
-		if (next.has(r)) next.delete(r); else next.add(r);
+		if (next.has(r)) next.delete(r);
+		else next.add(r);
 		activeRanks = next;
 	}
 
@@ -171,8 +187,8 @@
 			return;
 		}
 		confirmFoe = foe;
-		quantity   = 'solo';
-		view       = 'confirm';
+		quantity = 'solo';
+		view = 'confirm';
 	}
 
 	function goBack() {
@@ -182,7 +198,7 @@
 	function confirm() {
 		if (!confirmFoe) return;
 		const qty = quantity;
-		const er  = effRank;
+		const er = effRank;
 		dialogEl?.close();
 		onSelect(confirmFoe, qty, er);
 	}
@@ -205,17 +221,14 @@
 	}
 </script>
 
-<dialog
-	bind:this={dialogEl}
-	class="foe-dialog"
-	aria-label="Foe Picker"
->
-
+<dialog bind:this={dialogEl} class="foe-dialog" aria-label="Foe Picker">
 	<!-- ===== PICKER VIEW ===== -->
 	{#if view === 'picker'}
 		<div class="fd-header" use:draggable>
 			<span class="drag-grip" aria-hidden="true">⠿</span>
-			<span class="fd-title">{headingText(_mode === 'denizen' ? 'Pick a Denizen' : 'Choose a Foe')}</span>
+			<span class="fd-title"
+				>{headingText(_mode === 'denizen' ? 'Pick a Denizen' : 'Choose a Foe')}</span
+			>
 			<button class="fd-close-btn" onclick={close} aria-label="Close">✕</button>
 		</div>
 
@@ -231,9 +244,13 @@
 				<button
 					class="fd-filter-toggle"
 					class:has-filters={activeFilterCount > 0}
-					onclick={() => filtersOpen = !filtersOpen}
+					onclick={() => (filtersOpen = !filtersOpen)}
 					aria-expanded={filtersOpen}
-				>Filters{#if activeFilterCount > 0}&nbsp;<span class="fd-filter-badge">{activeFilterCount}</span>{/if} {filtersOpen ? '▲' : '▼'}</button>
+					>Filters{#if activeFilterCount > 0}&nbsp;<span class="fd-filter-badge"
+							>{activeFilterCount}</span
+						>{/if}
+					{filtersOpen ? '▲' : '▼'}</button
+				>
 			</div>
 
 			{#if filtersOpen}
@@ -247,8 +264,8 @@
 									class="fd-filter-tag"
 									class:active={activeNatures.has(nature)}
 									style="--tag-color: {FOE_NATURE_COLORS[nature]}"
-									onclick={() => toggleNature(nature)}
-								>{nature}</button>
+									onclick={() => toggleNature(nature)}>{nature}</button
+								>
 							{/each}
 						</div>
 					</div>
@@ -260,8 +277,8 @@
 								<button
 									class="fd-filter-tag fd-filter-tag--src"
 									class:active={activeSources.has(src)}
-									onclick={() => toggleSource(src)}
-								>{sourceLabel(src)}</button>
+									onclick={() => toggleSource(src)}>{sourceLabel(src)}</button
+								>
 							{/each}
 						</div>
 					</div>
@@ -275,8 +292,8 @@
 									class="fd-filter-tag fd-filter-tag--rank"
 									class:active={activeRanks.has(Number(rankNum))}
 									style="--tag-bg:{rc.bg}; --tag-text:{rc.text}"
-									onclick={() => toggleRank(Number(rankNum))}
-								>{rankDef.label}</button>
+									onclick={() => toggleRank(Number(rankNum))}>{rankDef.label}</button
+								>
 							{/each}
 						</div>
 					</div>
@@ -285,8 +302,8 @@
 						onclick={clearFilters}
 						disabled={!hasActiveFilters}
 						use:tooltip={'Clear all filters'}
-						aria-label="Clear filters"
-					>{@html clearFiltersSvg}</button>
+						aria-label="Clear filters">{@html clearFiltersSvg}</button
+					>
 				</div>
 			{/if}
 		</div>
@@ -311,17 +328,30 @@
 									class="fd-tile-img"
 									src={imageUrl(foe)}
 									alt={foe.name}
-									onerror={(e) => { (e.currentTarget as HTMLImageElement).src = UNKNOWN_FOE_PORTRAIT; }}
+									onerror={(e) => {
+										(e.currentTarget as HTMLImageElement).src = UNKNOWN_FOE_PORTRAIT;
+									}}
 								/>
 							</div>
 							<div class="fd-tile-body">
 								<span class="fd-tile-name-row">
-									<span class="fd-tile-name-icon" aria-hidden="true" style:color={natureBorderColor(foe.nature)}>{@html foeIcon(foe)}</span>
+									<span
+										class="fd-tile-name-icon"
+										aria-hidden="true"
+										style:color={natureBorderColor(foe.nature)}>{@html foeIcon(foe)}</span
+									>
 									<span class="fd-tile-name">{foe.name}</span>
 								</span>
 								<div class="fd-tile-badges">
-									<span class="fd-badge" style="background: {natureBorderColor(foe.nature)}22; color: {natureBorderColor(foe.nature)}">{foe.nature}</span>
-									<span class="fd-badge fd-badge--rank" style={rankBadgeStyle(foe.rank)}>{FOE_RANKS[foe.rank]?.label ?? foe.rank}</span>
+									<span
+										class="fd-badge"
+										style="background: {natureBorderColor(foe.nature)}22; color: {natureBorderColor(
+											foe.nature,
+										)}">{foe.nature}</span
+									>
+									<span class="fd-badge fd-badge--rank" style={rankBadgeStyle(foe.rank)}
+										>{FOE_RANKS[foe.rank]?.label ?? foe.rank}</span
+									>
 								</div>
 								{#if foe.features.length > 0}
 									<div class="fd-tile-features">
@@ -335,9 +365,9 @@
 			{/if}
 		</div>
 
-	<!-- ===== CONFIRM VIEW ===== -->
+		<!-- ===== CONFIRM VIEW ===== -->
 	{:else if view === 'confirm' && confirmFoe}
-		{@const natureColor  = natureBorderColor(confirmFoe.nature)}
+		{@const natureColor = natureBorderColor(confirmFoe.nature)}
 		{@const baseRankInfo = FOE_RANKS[confirmFoe.rank]}
 		{@const resolvedDesc = resolveFoeDescription(confirmFoe)}
 
@@ -349,11 +379,15 @@
 
 		<!-- Scrollable body -->
 		<div class="fd-confirm-scroll">
-
 			<!-- Top row: portrait + quantity/pills -->
 			<div class="fd-confirm-top">
 				<div class="fc-portrait-wrap">
-					<FoeImageCarousel name={confirmFoe.name} images={confirmFoe.images} alt={confirmFoe.name} class="fc-portrait" />
+					<FoeImageCarousel
+						name={confirmFoe.name}
+						images={confirmFoe.images}
+						alt={confirmFoe.name}
+						class="fc-portrait"
+					/>
 				</div>
 
 				<div class="fd-qty-top">
@@ -374,12 +408,18 @@
 					</fieldset>
 
 					{#if rankInfo}
-						{@const qtyDef = FOE_QUANTITIES.find(q => q.value === quantity)}
+						{@const qtyDef = FOE_QUANTITIES.find((q) => q.value === quantity)}
 						<div class="fd-confirm-pills">
-							<span class="fd-badge" style="background: {natureColor}22; color: {natureColor}">{confirmFoe.nature}</span>
-							<span class="fd-badge fd-badge--rank" style={rankBadgeStyle(effRank)}>{rankInfo.label}</span>
+							<span class="fd-badge" style="background: {natureColor}22; color: {natureColor}"
+								>{confirmFoe.nature}</span
+							>
+							<span class="fd-badge fd-badge--rank" style={rankBadgeStyle(effRank)}
+								>{rankInfo.label}</span
+							>
 							<span class="fd-stat-pill fd-stat-pill--harm">Harm: {rankInfo.harm}</span>
-							<span class="fd-stat-pill fd-stat-pill--progress">Progress: {rankInfo.progressPerHit}</span>
+							<span class="fd-stat-pill fd-stat-pill--progress"
+								>Progress: {rankInfo.progressPerHit}</span
+							>
 							<span class="fd-stat-pill fd-stat-pill--qty">{qtyDef?.label ?? quantity}</span>
 						</div>
 					{/if}
@@ -418,7 +458,6 @@
 					{/if}
 				</div>
 			{/if}
-
 		</div>
 
 		<div class="fd-footer">
@@ -429,7 +468,6 @@
 			<button class="btn btn-primary" onclick={confirm}>Add to Foes</button>
 		</div>
 	{/if}
-
 </dialog>
 
 <style>
@@ -440,7 +478,7 @@
 		border-radius: 8px;
 		background: var(--bg-card);
 		color: var(--text);
-		box-shadow: 0 16px 48px rgba(0,0,0,0.55);
+		box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
 		/* Centre via top/left + transform; `inset: 0; margin: auto` collapses
 		   the dialog to a thin line on iOS Safari when combined with an open-
 		   state `display: flex` container. */
@@ -469,50 +507,52 @@
 
 	/* ── Picker: header — mirrors AssetPicker .picker-header ────────────── */
 	.fd-header {
-		display:         flex;
-		align-items:     center;
-		gap:             8px;
-		padding:         10px 14px;
-		border-bottom:   1px solid var(--border);
-		background:      var(--bg-control);
-		border-radius:   8px 8px 0 0;
-		flex-shrink:     0;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 14px;
+		border-bottom: 1px solid var(--border);
+		background: var(--bg-control);
+		border-radius: 8px 8px 0 0;
+		flex-shrink: 0;
 	}
 
 	.fd-controls {
-		display:        flex;
+		display: flex;
 		flex-direction: column;
-		gap:            6px;
-		padding:        9px 14px 8px;
-		border-bottom:  1px solid var(--border);
-		flex-shrink:    0;
-		background:     var(--bg-card);
+		gap: 6px;
+		padding: 9px 14px 8px;
+		border-bottom: 1px solid var(--border);
+		flex-shrink: 0;
+		background: var(--bg-card);
 	}
 
 	.fd-title {
-		font-family:    var(--font-display);
-		font-size:      calc(0.78rem * var(--font-display-scale));
-		font-weight:    var(--font-display-weight);
-		font-variant:   var(--font-display-variant);
+		font-family: var(--font-display);
+		font-size: calc(0.78rem * var(--font-display-scale));
+		font-weight: var(--font-display-weight);
+		font-variant: var(--font-display-variant);
 		letter-spacing: 0.08em;
 		text-transform: var(--font-display-transform);
-		color:          var(--text-accent);
-		flex:           1;
+		color: var(--text-accent);
+		flex: 1;
 	}
 
 	.fd-close-btn {
-		background:    transparent;
-		border:        none;
-		color:         var(--text-dimmer);
-		font-size:     0.9rem;
-		line-height:   1;
-		cursor:        pointer;
-		padding:       2px 5px;
+		background: transparent;
+		border: none;
+		color: var(--text-dimmer);
+		font-size: 0.9rem;
+		line-height: 1;
+		cursor: pointer;
+		padding: 2px 5px;
 		border-radius: 3px;
-		flex-shrink:   0;
-		font-family:   inherit;
+		flex-shrink: 0;
+		font-family: inherit;
 	}
-	.fd-close-btn:hover { color: var(--text); }
+	.fd-close-btn:hover {
+		color: var(--text);
+	}
 
 	.fd-search-row {
 		display: flex;
@@ -537,25 +577,32 @@
 	}
 
 	.fd-clear-btn {
-		position:      absolute;
-		bottom:        6px;
-		right:         6px;
-		background:    transparent;
-		border:        none;
-		color:         var(--text-dimmer);
-		cursor:        pointer;
-		padding:       3px 4px;
+		position: absolute;
+		bottom: 6px;
+		right: 6px;
+		background: transparent;
+		border: none;
+		color: var(--text-dimmer);
+		cursor: pointer;
+		padding: 3px 4px;
 		border-radius: 3px;
-		display:       flex;
-		align-items:   center;
-		transition:    color 0.12s, opacity 0.12s;
+		display: flex;
+		align-items: center;
+		transition:
+			color 0.12s,
+			opacity 0.12s;
 	}
-	.fd-clear-btn:hover:not(:disabled) { color: var(--text); }
-	.fd-clear-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+	.fd-clear-btn:hover:not(:disabled) {
+		color: var(--text);
+	}
+	.fd-clear-btn:disabled {
+		opacity: 0.25;
+		cursor: not-allowed;
+	}
 	.fd-clear-btn :global(svg) {
-		width:  16px;
+		width: 16px;
 		height: 16px;
-		fill:   currentColor;
+		fill: currentColor;
 	}
 
 	/* ── Filter toggle + panel ──────────────────────────────────────────── */
@@ -572,7 +619,9 @@
 		background: transparent;
 		color: var(--text-dimmer);
 		cursor: pointer;
-		transition: border-color 0.1s, color 0.1s;
+		transition:
+			border-color 0.1s,
+			color 0.1s;
 		display: flex;
 		align-items: center;
 		gap: 4px;
@@ -639,35 +688,44 @@
 	}
 
 	.fd-filter-tag {
-		font-family:    var(--font-ui);
-		font-size:      0.68rem;
-		font-weight:    600;
+		font-family: var(--font-ui);
+		font-size: 0.68rem;
+		font-weight: 600;
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		padding:        3px 8px;
-		border-radius:  12px;
-		border:         1px solid var(--border);
-		background:     transparent;
-		color:          var(--text-dimmer);
-		cursor:         pointer;
-		transition:     background 0.1s, color 0.1s, border-color 0.1s;
+		padding: 3px 8px;
+		border-radius: 12px;
+		border: 1px solid var(--border);
+		background: transparent;
+		color: var(--text-dimmer);
+		cursor: pointer;
+		transition:
+			background 0.1s,
+			color 0.1s,
+			border-color 0.1s;
 	}
 	.fd-tile-name-row {
-		display:     flex;
+		display: flex;
 		align-items: center;
-		gap:         6px;
-		min-width:   0;
+		gap: 6px;
+		min-width: 0;
 	}
 	.fd-tile-name-icon {
-		display:         flex;
-		align-items:     center;
+		display: flex;
+		align-items: center;
 		justify-content: center;
-		width:           16px;
-		height:          16px;
-		flex-shrink:     0;
+		width: 16px;
+		height: 16px;
+		flex-shrink: 0;
 	}
-	.fd-tile-name-icon :global(svg) { width: 100%; height: 100%; fill: currentColor; }
-	.fd-tile-name-icon :global(svg path) { fill: currentColor; }
+	.fd-tile-name-icon :global(svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
+	}
+	.fd-tile-name-icon :global(svg path) {
+		fill: currentColor;
+	}
 	.fd-filter-tag:hover {
 		border-color: var(--tag-color, var(--text-dimmer));
 		color: var(--tag-color, var(--text-dimmer));
@@ -677,14 +735,16 @@
 		border-color: var(--tag-color, #9ca3af);
 		color: var(--tag-color, #9ca3af);
 	}
-	.fd-filter-tag--src { --tag-color: var(--text-muted); }
+	.fd-filter-tag--src {
+		--tag-color: var(--text-muted);
+	}
 
 	/* Rank chiclets — plain outline when inactive (like nature pills);
 	   tinted bg + rank hue text when active (matching tile badges) */
 	.fd-filter-tag--rank.active {
-		background:   color-mix(in srgb, var(--tag-bg) 13%, transparent);
+		background: color-mix(in srgb, var(--tag-bg) 13%, transparent);
 		border-color: color-mix(in srgb, var(--tag-bg) 35%, transparent);
-		color:        var(--tag-bg);
+		color: var(--tag-bg);
 	}
 
 	/* ── Tile grid ──────────────────────────────────────────────────────── */
@@ -709,13 +769,16 @@
 		background: var(--bg-card);
 		cursor: pointer;
 		overflow: hidden;
-		transition: border-color 0.1s, box-shadow 0.1s;
+		transition:
+			border-color 0.1s,
+			box-shadow 0.1s;
 		display: flex;
 		flex-direction: column;
 	}
-	.fd-tile:hover, .fd-tile:focus {
+	.fd-tile:hover,
+	.fd-tile:focus {
 		border-color: var(--nature-color, #9ca3af);
-		box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 		outline: none;
 	}
 
@@ -723,7 +786,7 @@
 		width: 100%;
 		aspect-ratio: 4/3;
 		overflow: hidden;
-		background: rgba(255,255,255,0.04);
+		background: rgba(255, 255, 255, 0.04);
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -785,7 +848,7 @@
 		border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
 	}
 	.fd-badge--rank {
-		background: rgba(255,255,255,0.06);
+		background: rgba(255, 255, 255, 0.06);
 		color: var(--text-muted);
 	}
 
@@ -811,19 +874,23 @@
 
 	/* ── Confirm view: back bar ─────────────────────────────────────── */
 	.fd-back-bar {
-		display:       flex;
-		align-items:   center;
-		gap:           8px;
-		padding:       10px 14px;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 14px;
 		border-bottom: 1px solid var(--border);
-		border-top:    3px solid var(--nature-color, #9ca3af);
-		background:    var(--bg-control);
+		border-top: 3px solid var(--nature-color, #9ca3af);
+		background: var(--bg-control);
 		border-radius: 8px 8px 0 0;
-		flex-shrink:   0;
+		flex-shrink: 0;
 	}
 
-	.fd-back-bar .fd-title { flex: 1; }
-	.fd-back-btn { flex-shrink: 0; }
+	.fd-back-bar .fd-title {
+		flex: 1;
+	}
+	.fd-back-btn {
+		flex-shrink: 0;
+	}
 
 	/* ── Scrollable confirm body ─────────────────────────────────────── */
 	.fd-confirm-scroll {
@@ -866,7 +933,9 @@
 		}
 	}
 
-	.fc-portrait-wrap { width: 100%; }
+	.fc-portrait-wrap {
+		width: 100%;
+	}
 
 	:global(.fc-portrait) {
 		width: 100%;
@@ -955,14 +1024,21 @@
 		cursor: pointer;
 		transition: background 0.1s;
 	}
-	.fd-qty-label:hover { background: rgba(255,255,255,0.05); }
-	.fd-qty-label.selected { background: rgba(255,255,255,0.08); }
+	.fd-qty-label:hover {
+		background: rgba(255, 255, 255, 0.05);
+	}
+	.fd-qty-label.selected {
+		background: rgba(255, 255, 255, 0.08);
+	}
 
-	.fd-qty-label input[type="radio"] { flex-shrink: 0; accent-color: var(--text-accent); }
+	.fd-qty-label input[type='radio'] {
+		flex-shrink: 0;
+		accent-color: var(--text-accent);
+	}
 
 	.fd-qty-name {
 		font-family: var(--font-ui);
-		font-size: 0.80rem;
+		font-size: 0.8rem;
 		font-weight: 600;
 		color: var(--text);
 	}
@@ -985,17 +1061,17 @@
 		border-radius: 10px;
 	}
 	.fd-stat-pill--harm {
-		background: rgba(239,68,68,0.10);
+		background: rgba(239, 68, 68, 0.1);
 		color: #ef4444;
-		border: 1px solid rgba(239,68,68,0.25);
+		border: 1px solid rgba(239, 68, 68, 0.25);
 	}
 	.fd-stat-pill--progress {
-		background: rgba(59,130,246,0.10);
+		background: rgba(59, 130, 246, 0.1);
 		color: #60a5fa;
-		border: 1px solid rgba(59,130,246,0.25);
+		border: 1px solid rgba(59, 130, 246, 0.25);
 	}
 	.fd-stat-pill--qty {
-		background: rgba(255,255,255,0.08);
+		background: rgba(255, 255, 255, 0.08);
 		color: var(--text-muted);
 		border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
 	}

@@ -11,19 +11,19 @@
 
 /** Metadata for action rolls — enables burn-momentum after the fact. */
 export interface RollMeta {
-	moveId:      string;   // to look up outcome HTML from move definition
-	actionScore: number;   // total (die + stat + adds)
-	c1:          number;   // challenge die 1
-	c2:          number;   // challenge die 2
-	charId:      string;   // character who rolled
+	moveId: string; // to look up outcome HTML from move definition
+	actionScore: number; // total (die + stat + adds)
+	c1: number; // challenge die 1
+	c2: number; // challenge die 2
+	charId: string; // character who rolled
 }
 
 export interface LogEntry {
-	id:    string;
+	id: string;
 	title: string;
-	html:  string;
-	ts:    string;
-	note?: string;   // user-authored note attached to this entry
+	html: string;
+	ts: string;
+	note?: string; // user-authored note attached to this entry
 	source?: string; // original markdown source (for editable entries like Notes)
 	roll?: RollMeta; // present only on action roll entries (enables burn momentum)
 }
@@ -34,7 +34,7 @@ export const SESSION_LOG_ID = '__session__';
 // Module-level reactive state: map of charId → entries (newest first).
 // Exported directly so components can read logs[charId] inside $derived
 // for fine-grained Svelte 5 proxy tracking per character.
-export let logs = $state<Record<string, LogEntry[]>>({});
+export const logs = $state<Record<string, LogEntry[]>>({});
 
 // Track which charIds have already been initialised (fetch fired)
 const _initialised = new Set<string>();
@@ -113,19 +113,21 @@ export function appendLog(
 	initLog(charId);
 
 	const entry: LogEntry = {
-		id:   id ?? crypto.randomUUID(),
+		id: id ?? crypto.randomUUID(),
 		title,
 		html,
-		ts:   new Date().toISOString(),
+		ts: new Date().toISOString(),
 		...(source ? { source } : {}),
-		...(roll   ? { roll   } : {}),
+		...(roll ? { roll } : {}),
 	};
 
 	// Optimistic: prepend immediately; rolling cap matches server-side 1000
 	logs[charId] = [entry, ...(logs[charId] ?? [])].slice(0, 1000);
 
 	// Persist to server in background
-	apiPost(entry).catch(() => { /* swallow — optimistic state already shown */ });
+	apiPost(entry).catch(() => {
+		/* swallow — optimistic state already shown */
+	});
 }
 
 // ---------------------------------------------------------------------------
@@ -180,11 +182,7 @@ export function getLog(charId: string): LogEntry[] {
 // ---------------------------------------------------------------------------
 
 /** Set or clear the user note on a single entry. */
-export function updateLogEntryNote(
-	charId: string,
-	entryId: string,
-	note: string,
-): void {
+export function updateLogEntryNote(charId: string, entryId: string, note: string): void {
 	if (!logs[charId]) return;
 
 	const trimmed = note.trim();
@@ -205,11 +203,7 @@ export function updateLogEntryNote(
  * Enrich outcome HTML with entry-id and char-id on interactive links
  * so LogPanel click delegation can identify the entry and character.
  */
-export function enrichOutcomeLinks(
-	html: string,
-	entryId: string,
-	charId: string,
-): string {
+export function enrichOutcomeLinks(html: string, entryId: string, charId: string): string {
 	return html.replace(
 		/<a\s+class="(resource-link|debility-link|progress-link|initiative-link|menace-link|vanquish-foe-link|reset-track-link)"/g,
 		`<a data-entry-id="${entryId}" data-char-id="${charId}" class="$1"`,
@@ -279,10 +273,10 @@ export function drainXpSpend(charId: string): number {
 // applies the mutation inside Svelte's reactive context.
 
 export interface LogAction {
-	charId:   string;
-	type:     'resource' | 'debility' | 'reset-track' | 'set';
-	key:      string;    // resource name, debility name, or track name
-	value:    number;    // delta for resource, 0/1 for debility, ignored for reset-track
+	charId: string;
+	type: 'resource' | 'debility' | 'reset-track' | 'set';
+	key: string; // resource name, debility name, or track name
+	value: number; // delta for resource, 0/1 for debility, ignored for reset-track
 }
 
 let _actionNonce = $state(0);

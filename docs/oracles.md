@@ -52,11 +52,11 @@ The UI sorts oracle tiles by this weight within each group.
 
 ### Groups
 
-| Group | Count | Keys (excerpt) |
-|---|---|---|
-| **Core Ironsworn** | 24 | action, theme, region, location, settlement*, character*, names*, combat*, mystic*, plotTwist, challengeRank, feature*, siteName*, combatEvent |
-| **Delve** | 14 | siteName, trap, monstrosity* (×4), threat* (×9) |
-| **Yrt** | 6 | yrtTouched, touchedCount, touchedFeatures, yrtAnimal, manaBacklash, freeportDenizen |
+| Group              | Count | Keys (excerpt)                                                                                                                                  |
+| ------------------ | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Core Ironsworn** | 24    | action, theme, region, location, settlement*, character*, names*, combat*, mystic*, plotTwist, challengeRank, feature*, siteName\*, combatEvent |
+| **Delve**          | 14    | siteName, trap, monstrosity* (×4), threat* (×9)                                                                                                 |
+| **Yrt**            | 6     | yrtTouched, touchedCount, touchedFeatures, yrtAnimal, manaBacklash, freeportDenizen                                                             |
 
 ---
 
@@ -71,6 +71,7 @@ Most oracles. Single d100 roll → string result.
 ```
 
 **Result HTML:**
+
 ```html
 <div class="roll-line">Roll: d100 → 17</div>
 <div>Result: <strong>Investigate a Threat</strong></div>
@@ -94,10 +95,12 @@ First roll selects a **category**; the category contains a `subtable` for a seco
 ```
 
 **Rolling:**
+
 1. Roll d100 → select category entry
 2. Roll d100 again → select from `entry.value.subtable`
 
 **Result HTML:**
+
 ```html
 <div class="roll-line">Category roll: d100 → 12</div>
 <div><em>A feature of the landscape…</em></div>
@@ -116,6 +119,7 @@ Each entry contains `{ prefix, suffix }`. **Two** independent d100 rolls are mad
 **Rolling:** Roll once for prefix, roll again (independently) for suffix → `"Redfall"`.
 
 **Result HTML:**
+
 ```html
 <div class="roll-line">Prefix roll: d100 → 3 | Suffix roll: d100 → 68</div>
 <div>Settlement name: <strong>Redfall</strong></div>
@@ -130,6 +134,7 @@ A single d100 roll returns **three** parallel name fields for Giants, Varou, and
 ```
 
 **Result HTML:**
+
 ```html
 <div class="roll-line">Roll: d100 → 2</div>
 <div>Giants: Chony | Varou: Vata | Trolls: Rattle</div>
@@ -138,27 +143,37 @@ A single d100 roll returns **three** parallel name fields for Giants, Varou, and
 ### 5. Yrt Touched (`key: "yrtTouched"`) — compound multi-roll
 
 The most complex oracle. A single "roll" actually performs **multiple** sub-rolls:
+
 1. Roll d100 → select Touched class (socialRank, className, description)
 2. Roll d100 on `touchedCount` → number of features
 3. Roll that many unique features from `touchedFeatures` (re-roll duplicates)
 4. Roll d100 on `yrtAnimal` → animal aspect
 
 **Table entry structure:**
+
 ```json
 {
   "topRange": 20,
-  "value": { "socialRank": 2, "className": "Touched", "description": "Has visible characteristics." }
+  "value": {
+    "socialRank": 2,
+    "className": "Touched",
+    "description": "Has visible characteristics."
+  }
 }
 ```
 
 **Result HTML** (multi-line):
+
 ```html
 <div class="roll-line">Class roll: d100 → 12</div>
 <div><strong>Touched</strong> (Social rank 2) — Has visible characteristics.</div>
 <div class="roll-line">Animal roll: d100 → 44</div>
 <div>Animal aspect: Wolf</div>
 <div class="roll-line">Feature count roll: d100 → 55 → 2 features</div>
-<ul><li>Feature A</li><li>Feature B</li></ul>
+<ul>
+  <li>Feature A</li>
+  <li>Feature B</li>
+</ul>
 ```
 
 ### 6. Freeport Denizen (`key: "freeportDenizen"`) — structured object
@@ -169,15 +184,16 @@ Each entry is a structured record for a denizen type.
 {
   "topRange": 11,
   "value": {
-    "type":   "Merchants, traders, brokers",
-    "notes":  "Shops, stalls, warehouses…",
+    "type": "Merchants, traders, brokers",
+    "notes": "Shops, stalls, warehouses…",
     "salary": "80–120 gents",
-    "count":  2000
+    "count": 2000
   }
 }
 ```
 
 **Result HTML:**
+
 ```html
 <div class="roll-line">Roll: d100 → 7</div>
 <div><strong>Merchants, traders, brokers</strong></div>
@@ -191,19 +207,23 @@ Each entry is a structured record for a denizen type.
 
 ```typescript
 function rollFromRangeTable(table: OracleEntry[]): { roll: number; value: unknown } {
-  const roll  = rollD100();                    // 1–100 inclusive
-  let picked  = table[table.length - 1];       // fallback: last entry
+  const roll = rollD100(); // 1–100 inclusive
+  let picked = table[table.length - 1]; // fallback: last entry
   for (const entry of table) {
-    if (roll <= entry.topRange) { picked = entry; break; }
+    if (roll <= entry.topRange) {
+      picked = entry;
+      break;
+    }
   }
   return { roll, value: picked.value };
 }
 ```
 
 **Range label helper** (for table display):
+
 ```typescript
 function rangeLabelForEntry(table: OracleEntry[], index: number): string {
-  const low  = index === 0 ? 1 : table[index - 1].topRange + 1;
+  const low = index === 0 ? 1 : table[index - 1].topRange + 1;
   const high = table[index].topRange;
   return low === high ? `${low}` : `${low}–${high}`;
 }
@@ -215,16 +235,16 @@ function rangeLabelForEntry(table: OracleEntry[], index: number): string {
 
 The detail view shows the full oracle table. Layout varies by entry count and oracle type:
 
-| Condition | Layout |
-|---|---|
-| ≤ 40 entries | 2 columns: d100 \| Result |
-| 41–60 entries | 4 columns: d100 \| Result \| d100 \| Result (side-by-side) |
-| > 60 entries | 6 columns: 3-column side-by-side |
-| `settlementName` | Custom: category (rowspan) + sub-entries in 2 sub-columns |
-| `settlementNameQuick` | Custom: 9 columns (3 groups of d100 \| Prefix \| Suffix) |
-| `namesOther` | Custom: d100 \| Giants \| Varou \| Trolls |
-| `yrtTouched` | Custom: d100 \| Class \| Social Rank \| Description |
-| `freeportDenizen` | Custom: d100 \| Type \| Notes \| Salary \| Count |
+| Condition             | Layout                                                     |
+| --------------------- | ---------------------------------------------------------- |
+| ≤ 40 entries          | 2 columns: d100 \| Result                                  |
+| 41–60 entries         | 4 columns: d100 \| Result \| d100 \| Result (side-by-side) |
+| > 60 entries          | 6 columns: 3-column side-by-side                           |
+| `settlementName`      | Custom: category (rowspan) + sub-entries in 2 sub-columns  |
+| `settlementNameQuick` | Custom: 9 columns (3 groups of d100 \| Prefix \| Suffix)   |
+| `namesOther`          | Custom: d100 \| Giants \| Varou \| Trolls                  |
+| `yrtTouched`          | Custom: d100 \| Class \| Social Rank \| Description        |
+| `freeportDenizen`     | Custom: d100 \| Type \| Notes \| Salary \| Count           |
 
 ---
 
@@ -297,10 +317,10 @@ export function rollOracle(key: string): { roll: number; html: string; title: st
 ```typescript
 // Roll yrtTouched: class + animal + count + unique features
 function rollYrtTouched(): { html: string; roll: number } {
-  const classRes    = rollFromRangeTable(oracleTable('yrtTouched'));
-  const animalRes   = rollFromRangeTable(oracleTable('yrtAnimal'));
-  const countRes    = rollFromRangeTable(oracleTable('touchedCount'));
-  const features    = rollUniqueFeatures(countRes.value as number);
+  const classRes = rollFromRangeTable(oracleTable('yrtTouched'));
+  const animalRes = rollFromRangeTable(oracleTable('yrtAnimal'));
+  const countRes = rollFromRangeTable(oracleTable('touchedCount'));
+  const features = rollUniqueFeatures(countRes.value as number);
   // … build multi-line HTML
 }
 
@@ -311,7 +331,10 @@ function rollUniqueFeatures(count: number): string[] {
   let safety = 0;
   while (out.length < count && safety++ < 1000) {
     const r = rollFromRangeTable(oracleTable('touchedFeatures'));
-    if (!seen.has(r.value as string)) { seen.add(r.value as string); out.push(r.value as string); }
+    if (!seen.has(r.value as string)) {
+      seen.add(r.value as string);
+      out.push(r.value as string);
+    }
   }
   return out;
 }

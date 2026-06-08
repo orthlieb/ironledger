@@ -7,7 +7,21 @@
 	 * Notes are attached per-entry and persist to localStorage.
 	 * Clearing the log requires confirmation via a native dialog (irreversible).
 	 */
-	import { type LogEntry, logs, initLog, clearLog, deleteLogEntry, updateLogEntryNote, updateLogEntryHtml, enrichOutcomeLinks, triggerXpSpend, triggerAction, appendLog, getLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
+	import {
+		type LogEntry,
+		logs,
+		initLog,
+		clearLog,
+		deleteLogEntry,
+		updateLogEntryNote,
+		updateLogEntryHtml,
+		enrichOutcomeLinks,
+		triggerXpSpend,
+		triggerAction,
+		appendLog,
+		getLog,
+		SESSION_LOG_ID,
+	} from '$lib/log.svelte.js';
 	import { OVERFLOW_RULES, FLOOR_OVERFLOW_RULES, BURN_MOMENTUM_TITLE } from '$lib/cascadeRules.js';
 	import type { DiceCtx } from '$lib/diceContext.svelte.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
@@ -16,13 +30,13 @@
 	import { findMove } from '$lib/moveStore.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
 	import { sanitizeLogHtml, sanitizeNoteHtml } from '$lib/sanitize.js';
-	import trashSvg       from '$icons/trash-solid-full.svg?raw';
-	import penSvg         from '$icons/pen-to-square-solid-full.svg?raw';
-	import anglesLeftSvg  from '$icons/angles-left-solid-full.svg?raw';
+	import trashSvg from '$icons/trash-solid-full.svg?raw';
+	import penSvg from '$icons/pen-to-square-solid-full.svg?raw';
+	import anglesLeftSvg from '$icons/angles-left-solid-full.svg?raw';
 	import anglesRightSvg from '$icons/angles-right-solid-full.svg?raw';
-	import broomWideSvg   from '$icons/broom-wide-solid-full.svg?raw';
-	import logIconSvg     from '$icons/log.svg?raw';
-	import ConfirmDialog  from './ConfirmDialog.svelte';
+	import broomWideSvg from '$icons/broom-wide-solid-full.svg?raw';
+	import logIconSvg from '$icons/log.svg?raw';
+	import ConfirmDialog from './ConfirmDialog.svelte';
 
 	// ---------------------------------------------------------------------------
 	// Callback props for interactive log links (Phase 2)
@@ -38,15 +52,15 @@
 		onChangeTheme,
 		onChangeDomain,
 	}: {
-		ctx?:              DiceCtx | null;
-		onMoveLink?:       (moveId: string) => void;
-		onOracleLink?:     (oracleKey: string, stat?: string) => void;
-		onProgressLink?:   (track: string, value: number) => void;
+		ctx?: DiceCtx | null;
+		onMoveLink?: (moveId: string) => void;
+		onOracleLink?: (oracleKey: string, stat?: string) => void;
+		onProgressLink?: (track: string, value: number) => void;
 		onInitiativeLink?: (value: string, charId: string) => void;
-		onMenaceLink?:     (value: number) => void;
-		onVanquishFoe?:    () => void;
-		onChangeTheme?:    (expeditionId: string) => void;
-		onChangeDomain?:   (expeditionId: string) => void;
+		onMenaceLink?: (value: number) => void;
+		onVanquishFoe?: () => void;
+		onChangeTheme?: (expeditionId: string) => void;
+		onChangeDomain?: (expeditionId: string) => void;
 	} = $props();
 
 	// The log is global — no characterId prop needed.
@@ -61,9 +75,9 @@
 	// ---------------------------------------------------------------------------
 	// Pagination
 	// ---------------------------------------------------------------------------
-	const PAGE_SIZE   = 50;
-	let   page        = $state(0);
-	const totalPages  = $derived(Math.max(1, Math.ceil(entries.length / PAGE_SIZE)));
+	const PAGE_SIZE = 50;
+	let page = $state(0);
+	const totalPages = $derived(Math.max(1, Math.ceil(entries.length / PAGE_SIZE)));
 	const pagedEntries = $derived(entries.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE));
 
 	/** Scroll container for the log entries — bound to the .log-entries div. */
@@ -79,14 +93,16 @@
 			_headEntryId = headId;
 			page = 0;
 			// Scroll to top after Svelte renders the new first page.
-			queueMicrotask(() => { if (entriesEl) entriesEl.scrollTop = 0; });
+			queueMicrotask(() => {
+				if (entriesEl) entriesEl.scrollTop = 0;
+			});
 		}
 		if (page >= totalPages) page = Math.max(0, totalPages - 1);
 	});
 
 	// Per-entry editing state (entry id → draft note text)
-	let editingId   = $state<string | null>(null);
-	let draftNote   = $state('');
+	let editingId = $state<string | null>(null);
+	let draftNote = $state('');
 
 	// Clear-log confirmation dialog
 	let clearDialogRef = $state<{ open(): void; close(): void } | null>(null);
@@ -225,7 +241,7 @@
 				const t = (node.textContent ?? '').replace(/\n/g, ' ');
 				if (t.trim()) lines[lines.length - 1] = (lines[lines.length - 1] ?? '') + t;
 			} else if (node.nodeType === Node.ELEMENT_NODE) {
-				const el  = node as HTMLElement;
+				const el = node as HTMLElement;
 				const tag = el.tagName.toLowerCase();
 
 				if (tag === 'ul' || tag === 'ol') {
@@ -251,8 +267,8 @@
 							const inner = (child as HTMLElement).textContent ?? '';
 							if (ct === 'strong' || ct === 'b') inline += `**${inner}**`;
 							else if (ct === 'em' || ct === 'i') inline += `_${inner}_`;
-							else if (ct === 's')               inline += `~~${inner}~~`;
-							else                               inline += inner;
+							else if (ct === 's') inline += `~~${inner}~~`;
+							else inline += inner;
 						}
 					});
 
@@ -262,9 +278,12 @@
 			}
 		}
 
-		lines.push('');            // seed first line
+		lines.push(''); // seed first line
 		tmp.childNodes.forEach((n) => walk(n));
-		return lines.filter((l, i, a) => !(l === '' && a[i - 1] === '')).join('\n').trim();
+		return lines
+			.filter((l, i, a) => !(l === '' && a[i - 1] === ''))
+			.join('\n')
+			.trim();
 	}
 
 	/**
@@ -275,23 +294,22 @@
 		if (entries.length === 0) return null;
 		const now = new Date();
 		const stamp = now.toLocaleString(undefined, {
-			year: 'numeric', month: 'short', day: 'numeric',
-			hour: '2-digit', minute: '2-digit',
+			year: 'numeric',
+			month: 'short',
+			day: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit',
 		});
 
-		const lines: string[] = [
-			'# Session Log',
-			`_Exported ${stamp}_`,
-			'',
-			'---',
-			'',
-		];
+		const lines: string[] = ['# Session Log', `_Exported ${stamp}_`, '', '---', ''];
 
 		// entries are newest-first; export oldest-first
 		[...entries].reverse().forEach((entry) => {
 			const time = new Date(entry.ts).toLocaleString(undefined, {
-				month: 'short', day: 'numeric',
-				hour: '2-digit', minute: '2-digit',
+				month: 'short',
+				day: 'numeric',
+				hour: '2-digit',
+				minute: '2-digit',
 			});
 			lines.push(`## ${entry.title}  —  ${time}`);
 			lines.push('');
@@ -311,18 +329,21 @@
 		const md = extractLogMarkdown();
 		if (!md) return;
 
-		const now    = new Date();
-		const stamp  = `${now.getFullYear()}-`
-			+ String(now.getMonth() + 1).padStart(2, '0') + '-'
-			+ String(now.getDate()).padStart(2, '0') + '_'
-			+ String(now.getHours()).padStart(2, '0')
-			+ String(now.getMinutes()).padStart(2, '0');
+		const now = new Date();
+		const stamp =
+			`${now.getFullYear()}-` +
+			String(now.getMonth() + 1).padStart(2, '0') +
+			'-' +
+			String(now.getDate()).padStart(2, '0') +
+			'_' +
+			String(now.getHours()).padStart(2, '0') +
+			String(now.getMinutes()).padStart(2, '0');
 		const filename = `session-log-${stamp}.md`;
 
 		const blob = new Blob([md], { type: 'text/markdown' });
-		const url  = URL.createObjectURL(blob);
-		const a    = document.createElement('a');
-		a.href     = url;
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
 		a.download = filename;
 		document.body.appendChild(a);
 		a.click();
@@ -358,7 +379,7 @@
 		//    independent and never touch text content at all.
 		const esc = (v: string) => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-		const linkClass = [...link.classList].find(c => c.endsWith('-link'));
+		const linkClass = [...link.classList].find((c) => c.endsWith('-link'));
 		if (!linkClass) return;
 
 		// One lookahead per data-* attribute — order independent.
@@ -370,7 +391,7 @@
 
 		const dataLookaheads = Object.entries(attrs)
 			.map(([camel, val]) => {
-				const attr = camel.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`);
+				const attr = camel.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 				return `(?=[^>]*\\bdata-${esc(attr)}="${esc(val)}")`;
 			})
 			.join('');
@@ -395,11 +416,12 @@
 		const xpLink = target.closest('.xp-cost-link') as HTMLElement | null;
 		if (xpLink && !xpLink.classList.contains('xp-spent')) {
 			e.preventDefault();
-			const cost    = parseInt(xpLink.dataset['cost'] ?? '0', 10);
-			const entryId = xpLink.dataset['entryId']
-			             ?? xpLink.closest('.log-entry')?.getAttribute('data-entry-id')
-			             ?? '';
-			const charId  = xpLink.dataset['charId'] ?? ctx?.charId ?? '';
+			const cost = parseInt(xpLink.dataset['cost'] ?? '0', 10);
+			const entryId =
+				xpLink.dataset['entryId'] ??
+				xpLink.closest('.log-entry')?.getAttribute('data-entry-id') ??
+				'';
+			const charId = xpLink.dataset['charId'] ?? ctx?.charId ?? '';
 			if (!cost || !entryId || !charId) return;
 			const entry = (logs[SESSION_LOG_ID] ?? []).find((ev) => ev.id === entryId);
 			if (entry) {
@@ -418,13 +440,14 @@
 		if (resLink && !resLink.closest('.resource-spent')) {
 			e.preventDefault();
 			const resource = resLink.dataset['resource'] ?? '';
-			const value    = parseInt(resLink.dataset['value'] ?? '', 10);
+			const value = parseInt(resLink.dataset['value'] ?? '', 10);
 			// data-entry-id / data-char-id may be absent if DOMPurify stripped them;
 			// fall back to the parent .log-entry container which is set by Svelte directly.
-			const entryId  = resLink.dataset['entryId']
-			              ?? resLink.closest('.log-entry')?.getAttribute('data-entry-id')
-			              ?? '';
-			const charId   = resLink.dataset['charId'] ?? ctx?.charId ?? '';
+			const entryId =
+				resLink.dataset['entryId'] ??
+				resLink.closest('.log-entry')?.getAttribute('data-entry-id') ??
+				'';
+			const charId = resLink.dataset['charId'] ?? ctx?.charId ?? '';
 			if (!resource || Number.isNaN(value) || !value || !charId) return;
 			markLinkSpent(entryId, resLink);
 			triggerAction({ charId, type: 'resource', key: resource, value });
@@ -432,20 +455,22 @@
 			if (value < 0 && ctx) {
 				const currentVal = (ctx.data as unknown as Record<string, number>)[resource] ?? 0;
 				// Overflow: resource drops below 0 — excess converts to another resource.
-				const overflowRule = OVERFLOW_RULES.find(r => r.resource === resource);
+				const overflowRule = OVERFLOW_RULES.find((r) => r.resource === resource);
 				if (overflowRule) {
 					const newVal = currentVal + value;
 					if (newVal < 0) {
-						const overflow   = Math.abs(newVal);
+						const overflow = Math.abs(newVal);
 						const overflowId = crypto.randomUUID();
 						const html = overflowRule.logHtml({ overflow, charId, entryId: overflowId });
 						appendLog(SESSION_LOG_ID, overflowRule.logTitle, html, overflowId);
 					}
 				}
 				// Floor overflow: resource already at minimum — trigger cascade move.
-				const floorOverflowRule = FLOOR_OVERFLOW_RULES.find(r => r.resource === resource && currentVal <= r.floor);
+				const floorOverflowRule = FLOOR_OVERFLOW_RULES.find(
+					(r) => r.resource === resource && currentVal <= r.floor,
+				);
 				if (floorOverflowRule) {
-					const overflow   = Math.abs(value);
+					const overflow = Math.abs(value);
 					const overflowId = crypto.randomUUID();
 					const html = floorOverflowRule.logHtml({ overflow, charId, entryId: overflowId });
 					appendLog(SESSION_LOG_ID, floorOverflowRule.logTitle, html, overflowId);
@@ -459,11 +484,12 @@
 		if (debLink && !debLink.closest('.resource-spent')) {
 			e.preventDefault();
 			const debility = debLink.dataset['debility'] ?? '';
-			const value    = parseInt(debLink.dataset['value'] ?? '1', 10);
-			const entryId  = debLink.dataset['entryId']
-			              ?? debLink.closest('.log-entry')?.getAttribute('data-entry-id')
-			              ?? '';
-			const charId   = debLink.dataset['charId'] ?? ctx?.charId ?? '';
+			const value = parseInt(debLink.dataset['value'] ?? '1', 10);
+			const entryId =
+				debLink.dataset['entryId'] ??
+				debLink.closest('.log-entry')?.getAttribute('data-entry-id') ??
+				'';
+			const charId = debLink.dataset['charId'] ?? ctx?.charId ?? '';
 			if (!debility || !charId) return;
 			if (entryId) markLinkSpent(entryId, debLink);
 			triggerAction({ charId, type: 'debility', key: debility, value });
@@ -474,10 +500,11 @@
 		const failureLink = target.closest('.failure-link') as HTMLElement | null;
 		if (failureLink && !failureLink.closest('.resource-spent')) {
 			e.preventDefault();
-			const entryId = failureLink.dataset['entryId']
-			             ?? failureLink.closest('.log-entry')?.getAttribute('data-entry-id')
-			             ?? '';
-			const charId  = failureLink.dataset['charId'] ?? ctx?.charId ?? '';
+			const entryId =
+				failureLink.dataset['entryId'] ??
+				failureLink.closest('.log-entry')?.getAttribute('data-entry-id') ??
+				'';
+			const charId = failureLink.dataset['charId'] ?? ctx?.charId ?? '';
 			if (!entryId || !charId) return;
 			markLinkSpent(entryId, failureLink);
 			triggerAction({ charId, type: 'resource', key: 'failures', value: 1 });
@@ -489,13 +516,14 @@
 		if (burnLink && !burnLink.closest('.resource-spent')) {
 			e.preventDefault();
 			const rollEntryId = burnLink.dataset['rollEntryId'] ?? '';
-			const burnEntryId = burnLink.dataset['entryId']
-			                 ?? burnLink.closest('.log-entry')?.getAttribute('data-entry-id')
-			                 ?? '';
-			const charId      = burnLink.dataset['charId'] ?? ctx?.charId ?? '';
+			const burnEntryId =
+				burnLink.dataset['entryId'] ??
+				burnLink.closest('.log-entry')?.getAttribute('data-entry-id') ??
+				'';
+			const charId = burnLink.dataset['charId'] ?? ctx?.charId ?? '';
 			if (!rollEntryId || !burnEntryId || !charId) return;
 			if (!ctx || ctx.charId !== charId || ctx.data.momentum <= 0) return;
-			const rollEntry = getLog(SESSION_LOG_ID).find(e => e.id === rollEntryId);
+			const rollEntry = getLog(SESSION_LOG_ID).find((e) => e.id === rollEntryId);
 			if (!rollEntry) return;
 			markLinkSpent(burnEntryId, burnLink);
 			burnMomentum(rollEntry);
@@ -521,7 +549,7 @@
 		const oracleLink = target.closest('.oracle-link') as HTMLElement | null;
 		if (oracleLink) {
 			e.preventDefault();
-			const oracleKey  = oracleLink.dataset['oracle'] ?? '';
+			const oracleKey = oracleLink.dataset['oracle'] ?? '';
 			const oracleStat = oracleLink.dataset['stat'];
 			onOracleLink?.(oracleKey, oracleStat);
 			return;
@@ -531,11 +559,12 @@
 		const progLink = target.closest('.progress-link') as HTMLElement | null;
 		if (progLink && !progLink.closest('.resource-spent')) {
 			e.preventDefault();
-			const track   = progLink.dataset['track'] ?? '';
-			const value   = parseInt(progLink.dataset['value'] ?? '1', 10);
-			const entryId = progLink.dataset['entryId']
-			             ?? progLink.closest('.log-entry')?.getAttribute('data-entry-id')
-			             ?? '';
+			const track = progLink.dataset['track'] ?? '';
+			const value = parseInt(progLink.dataset['value'] ?? '1', 10);
+			const entryId =
+				progLink.dataset['entryId'] ??
+				progLink.closest('.log-entry')?.getAttribute('data-entry-id') ??
+				'';
 			if (!track || !value) return;
 			if (entryId) markLinkSpent(entryId, progLink);
 			onProgressLink?.(track, value);
@@ -546,13 +575,14 @@
 		const initLink = target.closest('.initiative-link') as HTMLElement | null;
 		if (initLink && !initLink.closest('.resource-spent')) {
 			e.preventDefault();
-			const value   = initLink.dataset['value'] ?? '';
-			const charId  = initLink.dataset['charId'] ?? ctx?.charId ?? '';
+			const value = initLink.dataset['value'] ?? '';
+			const charId = initLink.dataset['charId'] ?? ctx?.charId ?? '';
 			// data-entry-id may be absent if DOMPurify stripped it; fall back to
 			// the parent .log-entry container which is set by Svelte directly.
-			const entryId = initLink.dataset['entryId']
-			             ?? initLink.closest('.log-entry')?.getAttribute('data-entry-id')
-			             ?? '';
+			const entryId =
+				initLink.dataset['entryId'] ??
+				initLink.closest('.log-entry')?.getAttribute('data-entry-id') ??
+				'';
 			if (!value) return;
 			if (entryId) markLinkSpent(entryId, initLink);
 			onInitiativeLink?.(value, charId);
@@ -563,10 +593,11 @@
 		const menaceLink = target.closest('.menace-link') as HTMLElement | null;
 		if (menaceLink && !menaceLink.closest('.resource-spent')) {
 			e.preventDefault();
-			const value   = parseInt(menaceLink.dataset['value'] ?? '1', 10);
-			const entryId = menaceLink.dataset['entryId']
-			             ?? menaceLink.closest('.log-entry')?.getAttribute('data-entry-id')
-			             ?? '';
+			const value = parseInt(menaceLink.dataset['value'] ?? '1', 10);
+			const entryId =
+				menaceLink.dataset['entryId'] ??
+				menaceLink.closest('.log-entry')?.getAttribute('data-entry-id') ??
+				'';
 			if (!value) return;
 			if (entryId) markLinkSpent(entryId, menaceLink);
 			onMenaceLink?.(value);
@@ -577,9 +608,10 @@
 		const vanquishLink = target.closest('.vanquish-foe-link') as HTMLElement | null;
 		if (vanquishLink && !vanquishLink.closest('.resource-spent')) {
 			e.preventDefault();
-			const entryId = vanquishLink.dataset['entryId']
-			             ?? vanquishLink.closest('.log-entry')?.getAttribute('data-entry-id')
-			             ?? '';
+			const entryId =
+				vanquishLink.dataset['entryId'] ??
+				vanquishLink.closest('.log-entry')?.getAttribute('data-entry-id') ??
+				'';
 			if (entryId) markLinkSpent(entryId, vanquishLink);
 			onVanquishFoe?.();
 			return;
@@ -589,11 +621,12 @@
 		const resetLink = target.closest('.reset-track-link') as HTMLElement | null;
 		if (resetLink && !resetLink.closest('.resource-spent')) {
 			e.preventDefault();
-			const track   = resetLink.dataset['track']   ?? '';
-			const entryId = resetLink.dataset['entryId']
-			             ?? resetLink.closest('.log-entry')?.getAttribute('data-entry-id')
-			             ?? '';
-			const charId  = resetLink.dataset['charId'] ?? ctx?.charId ?? '';
+			const track = resetLink.dataset['track'] ?? '';
+			const entryId =
+				resetLink.dataset['entryId'] ??
+				resetLink.closest('.log-entry')?.getAttribute('data-entry-id') ??
+				'';
+			const charId = resetLink.dataset['charId'] ?? ctx?.charId ?? '';
 			if (!track || !charId) return;
 			if (entryId) markLinkSpent(entryId, resetLink);
 			triggerAction({ charId, type: 'reset-track', key: track, value: 0 });
@@ -604,7 +637,7 @@
 		const changeThemeLink = target.closest('.change-theme-link') as HTMLElement | null;
 		if (changeThemeLink && !changeThemeLink.closest('.resource-spent')) {
 			e.preventDefault();
-			const expId   = changeThemeLink.dataset['expeditionId'] ?? '';
+			const expId = changeThemeLink.dataset['expeditionId'] ?? '';
 			const entryId = changeThemeLink.closest('.log-entry')?.getAttribute('data-entry-id') ?? '';
 			if (!expId) return;
 			if (entryId) markLinkSpent(entryId, changeThemeLink);
@@ -616,7 +649,7 @@
 		const changeDomainLink = target.closest('.change-domain-link') as HTMLElement | null;
 		if (changeDomainLink && !changeDomainLink.closest('.resource-spent')) {
 			e.preventDefault();
-			const expId   = changeDomainLink.dataset['expeditionId'] ?? '';
+			const expId = changeDomainLink.dataset['expeditionId'] ?? '';
 			const entryId = changeDomainLink.closest('.log-entry')?.getAttribute('data-entry-id') ?? '';
 			if (!expId) return;
 			if (entryId) markLinkSpent(entryId, changeDomainLink);
@@ -627,10 +660,20 @@
 
 	/** Selector covering all interactive link classes — used for touchend fast-tap. */
 	const LINK_SELECTOR = [
-		'.resource-link', '.move-link', '.oracle-link', '.initiative-link',
-		'.progress-link', '.debility-link', '.menace-link', '.vanquish-foe-link',
-		'.burn-momentum-link', '.xp-cost-link', '.failure-link',
-		'.reset-track-link', '.change-theme-link', '.change-domain-link',
+		'.resource-link',
+		'.move-link',
+		'.oracle-link',
+		'.initiative-link',
+		'.progress-link',
+		'.debility-link',
+		'.menace-link',
+		'.vanquish-foe-link',
+		'.burn-momentum-link',
+		'.xp-cost-link',
+		'.failure-link',
+		'.reset-track-link',
+		'.change-theme-link',
+		'.change-domain-link',
 	].join(', ');
 
 	function handleEntriesTouchStart(e: TouchEvent) {
@@ -657,7 +700,6 @@
 </script>
 
 <div class="log-panel">
-
 	<!-- ── Built-in header: title · pagination · clear ── -->
 	<div class="log-header">
 		<span class="log-title-icon" aria-hidden="true">{@html logIconSvg}</span>
@@ -669,16 +711,16 @@
 				onclick={() => page--}
 				disabled={page === 0}
 				use:tooltip={'Previous page'}
-				aria-label="Previous page"
-			>{@html anglesLeftSvg}</button>
+				aria-label="Previous page">{@html anglesLeftSvg}</button
+			>
 			<span class="pag-label">pg {page + 1}/{totalPages}</span>
 			<button
 				class="pag-btn"
 				onclick={() => page++}
 				disabled={page === totalPages - 1}
 				use:tooltip={'Next page'}
-				aria-label="Next page"
-			>{@html anglesRightSvg}</button>
+				aria-label="Next page">{@html anglesRightSvg}</button
+			>
 		</div>
 
 		<div class="log-header-actions">
@@ -687,24 +729,29 @@
 				onclick={() => clearDialogRef?.open()}
 				use:tooltip={'Clear the log'}
 				aria-label="Clear the log"
-				disabled={entries.length === 0}
-			>{@html broomWideSvg}</button>
+				disabled={entries.length === 0}>{@html broomWideSvg}</button
+			>
 		</div>
 	</div>
 
 	<!-- svelte-ignore a11y_click_events_have_key_events -->
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-	<div class="log-entries" role="log" aria-live="polite" aria-label="Session log"
+	<div
+		class="log-entries"
+		role="log"
+		aria-live="polite"
+		aria-label="Session log"
 		bind:this={entriesEl}
 		tabindex="-1"
 		onclick={handleEntriesClick}
 		ontouchstart={handleEntriesTouchStart}
-		ontouchend={handleEntriesTouchEnd}>
+		ontouchend={handleEntriesTouchEnd}
+	>
 		{#if entries.length === 0}
 			<div class="log-empty">
 				<span class="log-empty-icon" aria-hidden="true">{@html logIconSvg}</span>
-				<span>No entries yet. History waits patiently.<br>It will not wait forever.</span>
+				<span>No entries yet. History waits patiently.<br />It will not wait forever.</span>
 			</div>
 		{:else}
 			{#each pagedEntries as entry (entry.id)}
@@ -718,10 +765,15 @@
 							<button
 								class="entry-btn entry-edit-btn"
 								class:entry-btn-active={editingId === entry.id}
-								onclick={() => editingId === entry.id ? cancelEdit() : startEdit(entry)}
-								use:tooltip={editingId === entry.id ? 'Cancel edit' : entry.title === 'Note' ? 'Edit note' : 'Add/edit note'}
+								onclick={() => (editingId === entry.id ? cancelEdit() : startEdit(entry))}
+								use:tooltip={editingId === entry.id
+									? 'Cancel edit'
+									: entry.title === 'Note'
+										? 'Edit note'
+										: 'Add/edit note'}
 								aria-label={entry.title === 'Note' ? 'Edit this note' : 'Edit note for this entry'}
-							>{@html penSvg}</button>
+								>{@html penSvg}</button
+							>
 
 							<button
 								class="entry-btn entry-delete-btn"
@@ -730,8 +782,8 @@
 									deleteLogEntry(SESSION_LOG_ID, entry.id);
 								}}
 								use:tooltip={'Delete this log entry'}
-								aria-label="Delete log entry"
-							>{@html trashSvg}</button>
+								aria-label="Delete log entry">{@html trashSvg}</button
+							>
 						</div>
 					</div>
 
@@ -774,9 +826,11 @@
 	onconfirm={confirmClear}
 	confirmLabel="Clear Log"
 >
-	<p style="font-family: var(--font-ui); font-size: 0.82rem; color: var(--text-muted); margin: 0; line-height: 1.5;">
-		This will permanently remove all {entries.length} {entries.length === 1 ? 'entry' : 'entries'}.
-		This cannot be undone.
+	<p
+		style="font-family: var(--font-ui); font-size: 0.82rem; color: var(--text-muted); margin: 0; line-height: 1.5;"
+	>
+		This will permanently remove all {entries.length}
+		{entries.length === 1 ? 'entry' : 'entries'}. This cannot be undone.
 	</p>
 </ConfirmDialog>
 
@@ -815,12 +869,12 @@
 	}
 
 	.log-title {
-		font-family:    var(--font-display, 'Cinzel', serif);
-		font-size:      calc(0.82rem * var(--font-display-scale));
-		font-weight:    700;
-		font-variant:   var(--font-display-variant);
+		font-family: var(--font-display, 'Cinzel', serif);
+		font-size: calc(0.82rem * var(--font-display-scale));
+		font-weight: 700;
+		font-variant: var(--font-display-variant);
 		letter-spacing: 0.08em;
-		color:          var(--text-accent);
+		color: var(--text-accent);
 		text-transform: var(--font-display-transform);
 		flex: 1;
 		min-width: 0;
@@ -846,7 +900,9 @@
 		border-radius: 3px;
 		cursor: pointer;
 		color: var(--text-muted);
-		transition: color 0.12s, border-color 0.12s;
+		transition:
+			color 0.12s,
+			border-color 0.12s;
 	}
 	.pag-btn:hover:not(:disabled) {
 		color: var(--text);
@@ -863,15 +919,15 @@
 	}
 
 	.pag-label {
-		font-family:    var(--font-ui);
-		font-size:      0.65rem;
-		font-weight:    600;
+		font-family: var(--font-ui);
+		font-size: 0.65rem;
+		font-weight: 600;
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		color:          var(--text-muted);
-		white-space:    nowrap;
-		min-width:      42px;
-		text-align:     center;
+		color: var(--text-muted);
+		white-space: nowrap;
+		min-width: 42px;
+		text-align: center;
 	}
 
 	.log-header-actions {
@@ -886,7 +942,8 @@
 	   the button's text color in both light and dark themes. */
 	.log-clear-btn {
 		box-sizing: border-box;
-		width: 28px; height: 22px;
+		width: 28px;
+		height: 22px;
 		min-width: 28px;
 		padding: 0;
 		display: inline-flex;
@@ -894,11 +951,14 @@
 		justify-content: center;
 	}
 	.log-clear-btn :global(svg) {
-		width: 14px; height: 14px;
+		width: 14px;
+		height: 14px;
 		fill: currentColor;
 		pointer-events: none;
 	}
-	.log-clear-btn :global(svg) :global(path) { fill: currentColor; }
+	.log-clear-btn :global(svg) :global(path) {
+		fill: currentColor;
+	}
 
 	/* icon-btn is defined in page.svelte's scoped styles, so we redefine
 	   SVG sizing here for the Clear button that lives inside LogPanel. */
@@ -988,7 +1048,6 @@
 		text-overflow: ellipsis;
 	}
 
-
 	/* ---- Hover-reveal action buttons ---- */
 	.entry-actions {
 		display: flex;
@@ -1007,11 +1066,16 @@
 		cursor: pointer;
 		/* Hidden by default — revealed on .log-entry:hover */
 		opacity: 0;
-		transition: opacity 0.15s, color 0.12s, border-color 0.12s;
+		transition:
+			opacity 0.15s,
+			color 0.12s,
+			border-color 0.12s;
 	}
 
 	/* Reveal buttons when hovering the entry */
-	.log-entry:hover .entry-btn { opacity: 1; }
+	.log-entry:hover .entry-btn {
+		opacity: 1;
+	}
 
 	.entry-btn :global(svg) {
 		width: 10px;
@@ -1046,7 +1110,9 @@
 		line-height: 1.4;
 	}
 
-	.entry-body :global(.dialog-only) { display: none; }
+	.entry-body :global(.dialog-only) {
+		display: none;
+	}
 	.entry-body :global(strong) {
 		color: var(--text);
 		font-weight: 600;
@@ -1151,7 +1217,9 @@
 		font-weight: 600;
 		touch-action: manipulation;
 	}
-	.entry-body :global(.failure-link:hover) { opacity: 0.8; }
+	.entry-body :global(.failure-link:hover) {
+		opacity: 0.8;
+	}
 
 	/* Interactive links in move outcomes */
 	.entry-body :global(.resource-link),
@@ -1235,7 +1303,10 @@
 		justify-content: flex-end;
 	}
 
-	.btn-sm { padding: 2px 8px; font-size: 0.68rem; }
+	.btn-sm {
+		padding: 2px 8px;
+		font-size: 0.68rem;
+	}
 
 	.btn-primary {
 		background: var(--text-accent);
@@ -1243,7 +1314,9 @@
 		color: var(--bg-card);
 		font-weight: 600;
 	}
-	.btn-primary:hover { opacity: 0.88; }
+	.btn-primary:hover {
+		opacity: 0.88;
+	}
 
 	/* ---- Saved note display (markdown-rendered) ---- */
 	.entry-note {
@@ -1295,5 +1368,4 @@
 		margin-bottom: 4px;
 		content: '';
 	}
-
 </style>

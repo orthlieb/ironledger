@@ -27,17 +27,14 @@ interface HCaptchaResponse {
  * @param remoteip - The client's IP address (optional but recommended)
  * @throws       If the token is invalid, expired, or already used
  */
-export async function verifyCaptcha(
-  token: string,
-  remoteip?: string,
-): Promise<void> {
+export async function verifyCaptcha(token: string, remoteip?: string): Promise<void> {
   // Skip verification outside of production so local dev and tests work without
   // a real hCaptcha widget or network access to hcaptcha.com.
   if (config.NODE_ENV !== 'production') return;
 
   // Build the form body
   const body = new URLSearchParams({
-    secret:   config.HCAPTCHA_SECRET,
+    secret: config.HCAPTCHA_SECRET,
     response: token,
     ...(remoteip ? { remoteip } : {}),
   });
@@ -46,12 +43,12 @@ export async function verifyCaptcha(
 
   try {
     const res = await fetch(SITEVERIFY_URL, {
-      method:  'POST',
+      method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body:    body.toString(),
-      signal:  AbortSignal.timeout(5000),   // fail fast — don't block the request
+      body: body.toString(),
+      signal: AbortSignal.timeout(5000), // fail fast — don't block the request
     });
-    data = await res.json() as HCaptchaResponse;
+    data = (await res.json()) as HCaptchaResponse;
   } catch (err) {
     // Network error reaching hCaptcha — fail closed (deny the request)
     throw new CaptchaError('CAPTCHA verification service unreachable');

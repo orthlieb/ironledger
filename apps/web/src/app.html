@@ -5,7 +5,12 @@
 
 		<!-- Favicon — SVG for modern browsers, PNG fallback -->
 		<link rel="icon" href="%sveltekit.assets%/favicon.svg?v=2" type="image/svg+xml" />
-		<link rel="icon" href="%sveltekit.assets%/apple-touch-icon.png" sizes="180x180" type="image/png" />
+		<link
+			rel="icon"
+			href="%sveltekit.assets%/apple-touch-icon.png"
+			sizes="180x180"
+			type="image/png"
+		/>
 
 		<!-- iOS home-screen / PWA -->
 		<link rel="apple-touch-icon" href="%sveltekit.assets%/apple-touch-icon.png" />
@@ -24,7 +29,10 @@
 		<meta name="theme-color" content="#111827" />
 
 		<!-- Viewport: cover notches, prevent double-tap zoom -->
-		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+		/>
 		<meta name="description" content="Iron Ledger — Ironsworn character tracker" />
 		<!-- Cinzel + Simonetta (display titles) + Roboto (UI & body) -->
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -46,7 +54,7 @@
 				}
 				var FONT_STACKS = {
 					simonetta: "'Simonetta', 'Palatino Linotype', Georgia, serif",
-					futhark:   "'Segoe UI Historic', 'Noto Sans Runic', 'Apple Symbols', system-ui, sans-serif",
+					futhark: "'Segoe UI Historic', 'Noto Sans Runic', 'Apple Symbols', system-ui, sans-serif",
 				};
 				var f = localStorage.getItem('ironledger:font:display');
 				if (f === 'simonetta' || f === 'futhark') {
@@ -69,12 +77,14 @@
 		<script>
 			(function () {
 				var hasParam = location.search.indexOf('debug=1') !== -1;
-				var sticky   = sessionStorage.getItem('il:debug') === '1';
+				var sticky = sessionStorage.getItem('il:debug') === '1';
 				if (!hasParam && !sticky) return;
 				if (hasParam) sessionStorage.setItem('il:debug', '1');
 				var s = document.createElement('script');
 				s.src = 'https://cdn.jsdelivr.net/npm/eruda';
-				s.onload = function () { window.eruda && window.eruda.init(); };
+				s.onload = function () {
+					window.eruda && window.eruda.init();
+				};
 				document.head.appendChild(s);
 			})();
 		</script>

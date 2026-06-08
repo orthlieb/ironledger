@@ -9,24 +9,24 @@
  */
 
 import { beforeAll, afterAll, vi } from 'vitest';
-import { buildServer, redis }      from '../../src/server.js';
-import type { FastifyInstance }    from 'fastify';
+import { buildServer, redis } from '../../src/server.js';
+import type { FastifyInstance } from 'fastify';
 
 // Mock external services before any import resolves
 vi.mock('../../src/lib/mailer.js', () => ({
-  sendVerificationEmail:  vi.fn().mockResolvedValue(undefined),
+  sendVerificationEmail: vi.fn().mockResolvedValue(undefined),
   sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../../src/lib/captcha.js', () => ({
   verifyCaptcha: vi.fn().mockResolvedValue(undefined),
-  CaptchaError:  class CaptchaError extends Error {},
+  CaptchaError: class CaptchaError extends Error {},
 }));
 
 vi.mock('../../src/lib/hibp.js', () => ({
   assertPasswordNotPwned: vi.fn().mockResolvedValue(undefined),
-  getPwnedCount:          vi.fn().mockResolvedValue(0),
-  PwnedPasswordError:     class PwnedPasswordError extends Error {},
+  getPwnedCount: vi.fn().mockResolvedValue(0),
+  PwnedPasswordError: class PwnedPasswordError extends Error {},
 }));
 
 // Expose the server instance to tests

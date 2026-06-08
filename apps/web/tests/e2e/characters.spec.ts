@@ -8,10 +8,10 @@
 import { test, expect } from '@playwright/test';
 import { resetCharacters } from './helpers/reset';
 
-const CHAR_AREA   = '.home-area--characters';
+const CHAR_AREA = '.home-area--characters';
 const CHAR_HEADER = `${CHAR_AREA} .ca-header`;
-const CHAR_SPINE  = `${CHAR_AREA} .ca-spine`;
-const CHAR_STAGE  = `${CHAR_AREA} .ca-stage`;
+const CHAR_SPINE = `${CHAR_AREA} .ca-spine`;
+const CHAR_STAGE = `${CHAR_AREA} .ca-stage`;
 
 /**
  * Wait for the Characters area to finish its initial load.
@@ -20,7 +20,9 @@ const CHAR_STAGE  = `${CHAR_AREA} .ca-stage`;
  */
 async function waitForCharactersLoaded(page: import('@playwright/test').Page) {
 	await expect(page.locator(`${CHAR_AREA} .ca-loading`)).not.toBeVisible({ timeout: 10_000 });
-	await page.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`).first()
+	await page
+		.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`)
+		.first()
 		.waitFor({ timeout: 10_000, state: 'attached' });
 }
 
@@ -38,7 +40,7 @@ async function switchCharTab(page: import('@playwright/test').Page, label: strin
 async function ensureCharacterSelected(page: import('@playwright/test').Page) {
 	await waitForCharactersLoaded(page);
 	const spines = page.locator(CHAR_SPINE);
-	if (await spines.count() === 0) {
+	if ((await spines.count()) === 0) {
 		await page.locator(`${CHAR_HEADER} button:has-text("+ Character")`).click();
 		await expect(page.locator(CHAR_SPINE)).not.toHaveCount(0, { timeout: 8_000 });
 	}
@@ -51,7 +53,9 @@ async function ensureCharacterSelected(page: import('@playwright/test').Page) {
 }
 
 test.describe('Characters area (v2)', () => {
-	test.beforeAll(async () => { await resetCharacters(); });
+	test.beforeAll(async () => {
+		await resetCharacters();
+	});
 
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/home');
@@ -89,11 +93,14 @@ test.describe('Characters area (v2)', () => {
 		await ensureCharacterSelected(page);
 		await switchCharTab(page, 'Core');
 		// Stats row (5 stat tiles).
-		await expect(page.locator(`${CHAR_AREA} .ca-stats-row .stat-tile`).first())
-			.toBeVisible({ timeout: 3_000 });
+		await expect(page.locator(`${CHAR_AREA} .ca-stats-row .stat-tile`).first()).toBeVisible({
+			timeout: 3_000,
+		});
 		// Vitals — MomentumTile and ResourceTile.
 		await expect(
-			page.locator(`${CHAR_AREA} .ca-vitals-row .mt-tile, ${CHAR_AREA} .ca-vitals-row .res-tile`).first()
+			page
+				.locator(`${CHAR_AREA} .ca-vitals-row .mt-tile, ${CHAR_AREA} .ca-vitals-row .res-tile`)
+				.first(),
 		).toBeVisible({ timeout: 3_000 });
 	});
 
@@ -134,7 +141,7 @@ test.describe('Characters area (v2)', () => {
 
 		// Ensure at least one asset exists.
 		const assetCards = page.locator(`${CHAR_AREA} .ca-asset-card`);
-		if (await assetCards.count() === 0) {
+		if ((await assetCards.count()) === 0) {
 			await page.locator(`${CHAR_HEADER} button:has-text("+ Asset")`).click();
 			await expect(page.locator('dialog.picker-dialog[open]')).toBeVisible({ timeout: 5_000 });
 			await page.locator('dialog.picker-dialog .pick-tile:not(.pick-tile-owned)').first().click();
@@ -170,7 +177,7 @@ test.describe('Characters area (v2)', () => {
 		await ensureCharacterSelected(page);
 		await switchCharTab(page, 'Vows');
 		const vowCards = page.locator(`${CHAR_AREA} .vow-card`);
-		if (await vowCards.count() === 0) {
+		if ((await vowCards.count()) === 0) {
 			await page.locator(`${CHAR_HEADER} button:has-text("+ Vow")`).click();
 			await expect(vowCards).toHaveCount(1, { timeout: 5_000 });
 		}
@@ -188,13 +195,13 @@ test.describe('Characters area (v2)', () => {
 		await switchCharTab(page, 'Vows');
 
 		const vowCards = page.locator(`${CHAR_AREA} .vow-card`);
-		if (await vowCards.count() === 0) {
+		if ((await vowCards.count()) === 0) {
 			await page.locator(`${CHAR_HEADER} button:has-text("+ Vow")`).click();
 			await expect(vowCards).toHaveCount(1, { timeout: 5_000 });
 		}
 		const vow = vowCards.first();
 
-		const display  = vow.locator('.md-notes-display');
+		const display = vow.locator('.md-notes-display');
 		const textarea = vow.locator('.md-notes-input');
 		await expect(display).toBeVisible();
 		await display.click();
@@ -213,16 +220,16 @@ test.describe('Characters area (v2)', () => {
 		await switchCharTab(page, 'Vows');
 
 		const vowCards = page.locator(`${CHAR_AREA} .vow-card`);
-		if (await vowCards.count() === 0) {
+		if ((await vowCards.count()) === 0) {
 			await page.locator(`${CHAR_HEADER} button:has-text("+ Vow")`).click();
 			await expect(vowCards).toHaveCount(1, { timeout: 5_000 });
 		}
 
-		const marker   = `note-persist-${Date.now()}`;
+		const marker = `note-persist-${Date.now()}`;
 		const noteText = `Persisted: ${marker}`;
 
-		const vow      = vowCards.first();
-		const display  = vow.locator('.md-notes-display');
+		const vow = vowCards.first();
+		const display = vow.locator('.md-notes-display');
 		const textarea = vow.locator('.md-notes-input');
 
 		await display.click();
@@ -238,9 +245,11 @@ test.describe('Characters area (v2)', () => {
 		await waitForCharactersLoaded(page);
 		await switchCharTab(page, 'Vows');
 
-		const restoredVow = page.locator(`${CHAR_AREA} .vow-card`, {
-			has: page.locator(`.md-notes-display p:has-text("${marker}")`),
-		}).first();
+		const restoredVow = page
+			.locator(`${CHAR_AREA} .vow-card`, {
+				has: page.locator(`.md-notes-display p:has-text("${marker}")`),
+			})
+			.first();
 		await expect(restoredVow).toBeVisible({ timeout: 8_000 });
 	});
 
@@ -249,12 +258,12 @@ test.describe('Characters area (v2)', () => {
 		await switchCharTab(page, 'Vows');
 
 		const vowCards = page.locator(`${CHAR_AREA} .vow-card`);
-		if (await vowCards.count() === 0) {
+		if ((await vowCards.count()) === 0) {
 			await page.locator(`${CHAR_HEADER} button:has-text("+ Vow")`).click();
 			await expect(vowCards).toHaveCount(1, { timeout: 5_000 });
 		}
-		const vow      = vowCards.first();
-		const display  = vow.locator('.md-notes-display');
+		const vow = vowCards.first();
+		const display = vow.locator('.md-notes-display');
 		const textarea = vow.locator('.md-notes-input');
 
 		const markdown =
@@ -278,7 +287,9 @@ test.describe('Characters area (v2)', () => {
 
 	// ── Portrait ──────────────────────────────────────────────────────────────
 
-	test('clicking the portrait in the Description tab opens a file picker and displays the selected image', async ({ page }) => {
+	test('clicking the portrait in the Description tab opens a file picker and displays the selected image', async ({
+		page,
+	}) => {
 		await ensureCharacterSelected(page);
 		await switchCharTab(page, 'Description');
 
@@ -296,9 +307,7 @@ test.describe('Characters area (v2)', () => {
 
 		// After the FileReader → Image → canvas pipeline the portrait <img> should appear
 		// (replaces the .pu-img--placeholder div).
-		await expect(
-			page.locator(`${CHAR_AREA} img.pu-img`),
-		).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator(`${CHAR_AREA} img.pu-img`)).toBeVisible({ timeout: 5_000 });
 
 		// The src must be a JPEG data URL produced by canvas.toDataURL('image/jpeg', 0.85).
 		const src = await page.locator(`${CHAR_AREA} img.pu-img`).getAttribute('src');

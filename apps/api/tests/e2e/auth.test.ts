@@ -7,8 +7,8 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { adminDb } from '../../src/db/index.js';
-import { users }   from '../../src/db/schema.js';
-import { eq }      from 'drizzle-orm';
+import { users } from '../../src/db/schema.js';
+import { eq } from 'drizzle-orm';
 
 // adminDb bypasses RLS — required for cleanup because the app_user pool
 // has its session GUC app.user_id reset to '' after any withUserContext
@@ -25,8 +25,8 @@ const BASE = '/api/v1/auth';
 
 async function post(path: string, body: unknown, cookies = '') {
   return global.testServer.inject({
-    method:  'POST',
-    url:     BASE + path,
+    method: 'POST',
+    url: BASE + path,
     headers: {
       'content-type': 'application/json',
       ...(cookies ? { cookie: cookies } : {}),
@@ -43,7 +43,7 @@ async function registerAndVerify(email: string, password: string) {
   await post('/register', { email, password, captchaToken: 'test' });
   await new Promise((r) => setTimeout(r, 50));
 
-  const calls    = vi.mocked(sendVerificationEmail).mock.calls;
+  const calls = vi.mocked(sendVerificationEmail).mock.calls;
   const rawToken = calls[calls.length - 1]![1];
 
   const res = await post('/verify-email', { token: rawToken });
@@ -52,9 +52,9 @@ async function registerAndVerify(email: string, password: string) {
   // Extract refresh token cookie
   const setCookie = res.headers['set-cookie'] as string | string[] | undefined;
   const cookieStr = Array.isArray(setCookie)
-    ? setCookie.find((c) => c.startsWith('rt=')) ?? ''
+    ? (setCookie.find((c) => c.startsWith('rt=')) ?? '')
     : (setCookie ?? '');
-  const rt = cookieStr.split(';')[0] ?? '';   // "rt=<value>"
+  const rt = cookieStr.split(';')[0] ?? ''; // "rt=<value>"
 
   return { accessToken: body.accessToken, refreshCookie: rt };
 }
@@ -64,7 +64,7 @@ async function registerAndVerify(email: string, password: string) {
 // ---------------------------------------------------------------------------
 
 describe('POST /register', () => {
-  const email    = 'e2e-register@example.com';
+  const email = 'e2e-register@example.com';
   const password = 'SuperSecurePass!42';
 
   beforeEach(async () => {
@@ -85,14 +85,18 @@ describe('POST /register', () => {
 
   it('returns 400 for an invalid email', async () => {
     const res = await post('/register', {
-      email: 'not-an-email', password, captchaToken: 'test',
+      email: 'not-an-email',
+      password,
+      captchaToken: 'test',
     });
     expect(res.statusCode).toBe(400);
   });
 
   it('returns 400 for a short password', async () => {
     const res = await post('/register', {
-      email, password: 'short', captchaToken: 'test',
+      email,
+      password: 'short',
+      captchaToken: 'test',
     });
     expect(res.statusCode).toBe(400);
   });
@@ -104,7 +108,7 @@ describe('POST /register', () => {
 });
 
 describe('POST /verify-email', () => {
-  const email    = 'e2e-verify@example.com';
+  const email = 'e2e-verify@example.com';
   const password = 'SuperSecurePass!42';
 
   beforeEach(async () => {
@@ -128,7 +132,7 @@ describe('POST /verify-email', () => {
     await post('/register', { email, password, captchaToken: 'test' });
     await new Promise((r) => setTimeout(r, 50));
 
-    const calls    = vi.mocked(sendVerificationEmail).mock.calls;
+    const calls = vi.mocked(sendVerificationEmail).mock.calls;
     const rawToken = calls[calls.length - 1]![1];
 
     await post('/verify-email', { token: rawToken });
@@ -139,7 +143,7 @@ describe('POST /verify-email', () => {
 });
 
 describe('POST /login', () => {
-  const email    = 'e2e-login@example.com';
+  const email = 'e2e-login@example.com';
   const password = 'SuperSecurePass!42';
 
   beforeEach(async () => {
@@ -156,29 +160,39 @@ describe('POST /login', () => {
     expect(body.accessToken).toBeTruthy();
 
     const cookies = res.headers['set-cookie'];
-    expect(Array.isArray(cookies) ? cookies.some((c) => c.startsWith('rt=')) : cookies).toBeTruthy();
+    expect(
+      Array.isArray(cookies) ? cookies.some((c) => c.startsWith('rt=')) : cookies,
+    ).toBeTruthy();
   });
 
   it('returns 401 for wrong password', async () => {
     const res = await post('/login', {
-      email, password: 'WrongPassword!99', captchaToken: 'test',
+      email,
+      password: 'WrongPassword!99',
+      captchaToken: 'test',
     });
     expect(res.statusCode).toBe(401);
   });
 
   it('returns 401 for unknown email', async () => {
     const res = await post('/login', {
-      email: 'nobody@example.com', password, captchaToken: 'test',
+      email: 'nobody@example.com',
+      password,
+      captchaToken: 'test',
     });
     expect(res.statusCode).toBe(401);
   });
 
   it('does not reveal whether the email exists (same error for both)', async () => {
     const wrongPass = await post('/login', {
-      email, password: 'WrongPassword!99', captchaToken: 'test',
+      email,
+      password: 'WrongPassword!99',
+      captchaToken: 'test',
     });
     const unknownEmail = await post('/login', {
-      email: 'nobody@example.com', password, captchaToken: 'test',
+      email: 'nobody@example.com',
+      password,
+      captchaToken: 'test',
     });
 
     expect(wrongPass.statusCode).toBe(unknownEmail.statusCode);
@@ -187,7 +201,7 @@ describe('POST /login', () => {
 });
 
 describe('POST /refresh', () => {
-  const email    = 'e2e-refresh@example.com';
+  const email = 'e2e-refresh@example.com';
   const password = 'SuperSecurePass!42';
 
   beforeEach(async () => {
@@ -198,7 +212,7 @@ describe('POST /refresh', () => {
   it('issues new tokens and rotates the cookie', async () => {
     const { refreshCookie } = await registerAndVerify(email, password);
 
-    const res  = await post('/refresh', {}, refreshCookie);
+    const res = await post('/refresh', {}, refreshCookie);
     expect(res.statusCode).toBe(200);
 
     const body = res.json<{ accessToken: string }>();
@@ -212,7 +226,7 @@ describe('POST /refresh', () => {
 });
 
 describe('POST /logout', () => {
-  const email    = 'e2e-logout@example.com';
+  const email = 'e2e-logout@example.com';
   const password = 'SuperSecurePass!42';
 
   beforeEach(async () => {
@@ -224,12 +238,12 @@ describe('POST /logout', () => {
     const { accessToken, refreshCookie } = await registerAndVerify(email, password);
 
     const res = await global.testServer.inject({
-      method:  'POST',
-      url:     BASE + '/logout',
+      method: 'POST',
+      url: BASE + '/logout',
       headers: {
-        'content-type':  'application/json',
-        'authorization': `Bearer ${accessToken}`,
-        'cookie':        refreshCookie,
+        'content-type': 'application/json',
+        authorization: `Bearer ${accessToken}`,
+        cookie: refreshCookie,
       },
       // Logout takes no body, but content-type is set so we must send
       // valid JSON — our custom parser calls JSON.parse() on the raw body
@@ -241,7 +255,7 @@ describe('POST /logout', () => {
 
     // Cookie should be cleared (maxAge=0 or expires in the past)
     const setCookie = res.headers['set-cookie'];
-    const rtCookie  = Array.isArray(setCookie)
+    const rtCookie = Array.isArray(setCookie)
       ? setCookie.find((c) => c.startsWith('rt='))
       : setCookie;
     expect(rtCookie).toMatch(/max-age=0|expires=.*1970/i);

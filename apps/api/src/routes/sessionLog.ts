@@ -21,7 +21,7 @@ import type { FastifyReply } from 'fastify';
 // ---------------------------------------------------------------------------
 
 const logQuery = z.object({
-  limit:  z.coerce.number().int().min(1).max(500).default(100),
+  limit: z.coerce.number().int().min(1).max(500).default(100),
   before: z.string().optional(),
 });
 
@@ -30,74 +30,93 @@ const entryIdParam = z.object({
 });
 
 const logEntrySchema = z.object({
-  id:     z.string().uuid(),
-  title:  z.string(),
-  html:   z.string(),
-  ts:     z.string(),
-  note:   z.string().optional(),
+  id: z.string().uuid(),
+  title: z.string(),
+  html: z.string(),
+  ts: z.string(),
+  note: z.string().optional(),
   source: z.string().optional(),
-  roll:   z.unknown().optional(),
+  roll: z.unknown().optional(),
 });
 
-const patchEntrySchema = z.object({
-  html:   z.string().optional(),
-  note:   z.string().optional(),
-  source: z.string().optional(),
-}).refine((d) => Object.keys(d).length > 0, { message: 'Patch body must contain at least one field' });
+const patchEntrySchema = z
+  .object({
+    html: z.string().optional(),
+    note: z.string().optional(),
+    source: z.string().optional(),
+  })
+  .refine((d) => Object.keys(d).length > 0, {
+    message: 'Patch body must contain at least one field',
+  });
 
 // ---------------------------------------------------------------------------
 // Routes
 // ---------------------------------------------------------------------------
 
 export const sessionLogRoutes: FastifyPluginAsyncZod = async (server) => {
-
   server.addHook('preHandler', authenticate);
 
   // ── GET /session/log?limit=100&before=<iso> ───────────────────────────────
-  server.get('/', {
-    schema: {
-      querystring: logQuery,
+  server.get(
+    '/',
+    {
+      schema: {
+        querystring: logQuery,
+      },
     },
-  }, async (req, reply) => {
-    const { limit, before } = req.query;
-    const entries = await sl.getLog(req.user!.id, limit, before).catch(handleError(reply));
-    if (!entries || reply.sent) return;
-    return reply.status(200).send(entries);
-  });
+    async (req, reply) => {
+      const { limit, before } = req.query;
+      const entries = await sl.getLog(req.user!.id, limit, before).catch(handleError(reply));
+      if (!entries || reply.sent) return;
+      return reply.status(200).send(entries);
+    },
+  );
 
   // ── POST /session/log ─────────────────────────────────────────────────────
-  server.post('/', {
-    schema: {
-      body: logEntrySchema,
+  server.post(
+    '/',
+    {
+      schema: {
+        body: logEntrySchema,
+      },
     },
-  }, async (req, reply) => {
-    await sl.appendEntry(req.user!.id, req.body).catch(handleError(reply));
-    if (reply.sent) return;
-    return reply.status(201).send({ ok: true });
-  });
+    async (req, reply) => {
+      await sl.appendEntry(req.user!.id, req.body).catch(handleError(reply));
+      if (reply.sent) return;
+      return reply.status(201).send({ ok: true });
+    },
+  );
 
   // ── PATCH /session/log/:entryId ───────────────────────────────────────────
-  server.patch('/:entryId', {
-    schema: {
-      params: entryIdParam,
-      body:   patchEntrySchema,
+  server.patch(
+    '/:entryId',
+    {
+      schema: {
+        params: entryIdParam,
+        body: patchEntrySchema,
+      },
     },
-  }, async (req, reply) => {
-    await sl.updateEntry(req.user!.id, req.params.entryId, req.body).catch(handleError(reply));
-    if (reply.sent) return;
-    return reply.status(200).send({ ok: true });
-  });
+    async (req, reply) => {
+      await sl.updateEntry(req.user!.id, req.params.entryId, req.body).catch(handleError(reply));
+      if (reply.sent) return;
+      return reply.status(200).send({ ok: true });
+    },
+  );
 
   // ── DELETE /session/log/:entryId ──────────────────────────────────────────
-  server.delete('/:entryId', {
-    schema: {
-      params: entryIdParam,
+  server.delete(
+    '/:entryId',
+    {
+      schema: {
+        params: entryIdParam,
+      },
     },
-  }, async (req, reply) => {
-    await sl.deleteEntry(req.user!.id, req.params.entryId).catch(handleError(reply));
-    if (reply.sent) return;
-    return reply.status(204).send();
-  });
+    async (req, reply) => {
+      await sl.deleteEntry(req.user!.id, req.params.entryId).catch(handleError(reply));
+      if (reply.sent) return;
+      return reply.status(204).send();
+    },
+  );
 
   // ── DELETE /session/log (clear all) ──────────────────────────────────────
   server.delete('/', async (req, reply) => {
@@ -116,8 +135,8 @@ function handleError(reply: FastifyReply) {
     console.error('[sessionLogRoutes]', err);
     reply.status(500).send({
       statusCode: 500,
-      error:      'Internal Server Error',
-      message:    'An unexpected error occurred',
+      error: 'Internal Server Error',
+      message: 'An unexpected error occurred',
     });
   };
 }

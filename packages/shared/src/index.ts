@@ -11,8 +11,8 @@
 // ---------------------------------------------------------------------------
 export interface ApiError {
   statusCode: number;
-  error:      string;
-  message:    string;
+  error: string;
+  message: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -20,13 +20,13 @@ export interface ApiError {
 // ---------------------------------------------------------------------------
 
 export interface AuthUser {
-  id:    string;   // UUID
+  id: string; // UUID
   email: string;
-  role:  string;   // 'user' | 'admin'
+  role: string; // 'user' | 'admin'
 }
 
 export interface LoginResponse {
-  user:        AuthUser;
+  user: AuthUser;
   accessToken: string;
   // refresh token travels in an HttpOnly cookie — not in this body
 }
@@ -37,9 +37,9 @@ export interface LoginResponse {
 
 /** Summary returned by GET /characters — no data blob */
 export interface CharacterSummary {
-  id:        string;
-  name:      string;
-  createdAt: string;   // ISO 8601
+  id: string;
+  name: string;
+  createdAt: string; // ISO 8601
   updatedAt: string;
 }
 
@@ -60,9 +60,9 @@ export type CharacterData = Record<string, unknown>;
 // ---------------------------------------------------------------------------
 
 export interface HistoryEntry {
-  id:         string;
-  entryHtml:  string;
-  occurredAt: string;   // ISO 8601
+  id: string;
+  entryHtml: string;
+  occurredAt: string; // ISO 8601
 }
 
 // ---------------------------------------------------------------------------
@@ -71,43 +71,43 @@ export interface HistoryEntry {
 
 /** Asset definition — mirrors the JSON structure in assets_*.json */
 export interface AssetDefinition {
-  id:          string;
-  name:        string;
-  category:    'Combat Talent' | 'Companion' | 'Path' | 'Ritual' | 'Touched';
-  summary?:    string;
-  preamble?:   string;
-  postamble?:  string;
-  abilities:   AssetAbility[];
+  id: string;
+  name: string;
+  category: 'Combat Talent' | 'Companion' | 'Path' | 'Ritual' | 'Touched';
+  summary?: string;
+  preamble?: string;
+  postamble?: string;
+  abilities: AssetAbility[];
   preconditions?: AssetPrecondition[];
-  touchedFeatures?:   boolean;
+  touchedFeatures?: boolean;
   /** Max number of pips in the counter/health tracker. Renders a pip row in the asset card. */
-  counterMax?:   number;
+  counterMax?: number;
   /** Label shown next to the pip row — e.g. "Health", "Doses", "Charges". */
   counterLabel?: string;
   /** CSS colour for filled counter pips — e.g. "#8aab20" for poison green. */
   counterColor?: string;
   /** Canonical icon name for the header badge — maps to an SVG in the icon set.
    *  e.g. "heart", "skull-and-crossbones", "sword", "shield", "eye", "moon". */
-  counterIcon?:  string;
+  counterIcon?: string;
   /** If present, renders one labelled text input per entry (e.g. ["Companion Name"] or ["God's Name", "Stat"]). */
-  nameLabels?:   string[];
+  nameLabels?: string[];
   /** If present, renders mutually-exclusive radio buttons side by side (e.g. Ironclad armor choice). */
-  radioLabels?:  string[];
-  [key: string]: unknown;   // allow future fields without breaking the type
+  radioLabels?: string[];
+  [key: string]: unknown; // allow future fields without breaking the type
 }
 
 export interface AssetAbility {
   enabled: boolean;
-  text:    string;
-  name?:   string;
+  text: string;
+  name?: string;
 }
 
 export interface AssetPrecondition {
-  key:  string;
-  eq?:  number;
+  key: string;
+  eq?: number;
   min?: number;
   max?: number;
-  ne?:  number;
+  ne?: number;
 }
 
 /** Catalogue source / expansion tag. */
@@ -115,20 +115,20 @@ export type CatalogueSource = 'base' | 'delve' | 'yrt';
 
 /** Move definition — mirrors the JSON structure in moves/*.json */
 export interface MoveDefinition {
-  id:             string;
-  name:           string;
-  category:       string;
-  source?:        CatalogueSource;
-  triggerShort:   string;
-  trigger:        string;
-  stats?:         MoveStat[];
-  strong?:        string;
-  weak?:          string;
-  miss?:          string;
-  notes?:         string;
+  id: string;
+  name: string;
+  category: string;
+  source?: CatalogueSource;
+  triggerShort: string;
+  trigger: string;
+  stats?: MoveStat[];
+  strong?: string;
+  weak?: string;
+  miss?: string;
+  notes?: string;
   progressTrack?: string;
   progressSource?: string;
-  spellRoll?:     boolean;
+  spellRoll?: boolean;
   preconditions?: AssetPrecondition[];
   /**
    * Optional log entry title template. Supports placeholders:
@@ -142,7 +142,7 @@ export interface MoveDefinition {
    *   "{character} — {move name} ({stat})"   for action / spell / table rolls
    *   "{character} — {move name}"            for progress and no-roll moves
    */
-  logTitle?:      string;
+  logTitle?: string;
   [key: string]: unknown;
 }
 
@@ -153,12 +153,12 @@ export interface MoveStat {
 
 /** Oracle table definition */
 export interface OracleTable {
-  key:         string;
-  title:       string;
-  source:      CatalogueSource;
+  key: string;
+  title: string;
+  source: CatalogueSource;
   selectLabel: string;
   description?: string;
-  data:        OracleEntry[];
+  data: OracleEntry[];
 }
 
 /**
@@ -171,19 +171,19 @@ export interface OracleTable {
  * foe's original source.
  */
 export interface FoeOverride {
-  present?:  boolean;
+  present?: boolean;
   addendum?: string;
 }
 
 /** One expansion's foe overrides — keyed by foe id. */
 export interface FoeOverridesFile {
-  source:    CatalogueSource;
+  source: CatalogueSource;
   overrides: Record<string, FoeOverride>;
 }
 
 export interface OracleEntry {
   topRange: number;
-  value:    string | Record<string, unknown>;
+  value: string | Record<string, unknown>;
 }
 
 // ---------------------------------------------------------------------------
@@ -194,82 +194,82 @@ export interface OracleEntry {
 export type InviteStatus = 'pending' | 'accepted' | 'revoked' | 'expired';
 
 export interface AdminInvite {
-  id:              string;
-  email:           string;
-  displayName:     string | null;
-  role:            string;           // always 'user' for now — admin invites disallowed
-  invitedBy:       string | null;
-  expiresAt:       string;
-  acceptedAt:      string | null;
-  acceptedUserId:  string | null;
-  revokedAt:       string | null;
-  createdAt:       string;
-  status:          InviteStatus;     // derived server-side
+  id: string;
+  email: string;
+  displayName: string | null;
+  role: string; // always 'user' for now — admin invites disallowed
+  invitedBy: string | null;
+  expiresAt: string;
+  acceptedAt: string | null;
+  acceptedUserId: string | null;
+  revokedAt: string | null;
+  createdAt: string;
+  status: InviteStatus; // derived server-side
 }
 
 /** Admin response after POST /admin/invites — includes the one-time raw URL. */
 export interface CreateInviteResult {
   invite: AdminInvite;
-  url:    string;                    // always returned so admin can copy if mail fails
+  url: string; // always returned so admin can copy if mail fails
 }
 
 /** Public view of an invite, returned by GET /invites/:token. */
 export interface InvitePreview {
-  email:       string;
+  email: string;
   displayName: string | null;
-  expiresAt:   string;
+  expiresAt: string;
 }
 
 /** Body for POST /invites/:token/accept. */
 export interface AcceptInviteInput {
-  password:    string;
-  displayName?: string;              // optional — overrides stored value if given
+  password: string;
+  displayName?: string; // optional — overrides stored value if given
 }
 
 export interface AdminUser {
-  id:              string;
-  email:           string;
-  displayName:     string;
-  role:            string;
-  isActive:        boolean;
-  createdAt:       string;
-  lastLoginAt:     string | null;
-  characterCount:  number;
-  encounterCount:  number;
+  id: string;
+  email: string;
+  displayName: string;
+  role: string;
+  isActive: boolean;
+  createdAt: string;
+  lastLoginAt: string | null;
+  characterCount: number;
+  encounterCount: number;
   expeditionCount: number;
 }
 
 export interface AdminStats {
-  totalUsers:        number;
-  activeUsers7d:     number;
-  activeUsers30d:    number;
-  totalCharacters:   number;
-  totalEncounters:   number;
-  totalExpeditions:  number;
+  totalUsers: number;
+  activeUsers7d: number;
+  activeUsers30d: number;
+  totalCharacters: number;
+  totalEncounters: number;
+  totalExpeditions: number;
   currentlyLoggedIn: number;
 }
 
 export interface TimeseriesBucket {
-  label:       string;
-  timestamp:   string;
-  newUsers:    number;
+  label: string;
+  timestamp: string;
+  newUsers: number;
   activeUsers: number;
-  totalUsers:  number;
+  totalUsers: number;
 }
 
 export interface UserTimeseries {
   timeframe: string;
-  buckets:   TimeseriesBucket[];
+  buckets: TimeseriesBucket[];
 }
 
 export interface AuditEvent {
-  id:         string;
-  adminId:    string | null;
+  id: string;
+  adminId: string | null;
   adminEmail: string | null;
-  eventType:  string;
-  ipAddress:  string | null;
-  metadata:   Record<string, unknown> | null;
-  createdAt:  string;
+  eventType: string;
+  ipAddress: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -277,8 +277,8 @@ export interface AuditEvent {
 // ---------------------------------------------------------------------------
 
 export interface MaintenanceStatus {
-  enabled:    boolean;
-  message:    string | null;
+  enabled: boolean;
+  message: string | null;
   shutdownAt: string | null;
 }
 
@@ -286,7 +286,7 @@ export interface MaintenanceStatus {
 // ---------------------------------------------------------------------------
 
 export interface RegistrationLockStatus {
-  locked:  boolean;
+  locked: boolean;
   message: string | null;
 }
 
@@ -296,14 +296,14 @@ export interface RegistrationLockStatus {
 export type BroadcastSeverity = 'info' | 'warning';
 
 export interface BroadcastStatus {
-  active:   boolean;
-  message:  string | null;
+  active: boolean;
+  message: string | null;
   severity: BroadcastSeverity;
-  postedAt: string | null;   // ISO timestamp — dismissal key
+  postedAt: string | null; // ISO timestamp — dismissal key
 }
 
 // Combined public status — polled by the app shell on an interval.
 export interface SystemStatus {
   maintenance: MaintenanceStatus;
-  broadcast:   BroadcastStatus;
+  broadcast: BroadcastStatus;
 }

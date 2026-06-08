@@ -16,7 +16,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	}
 
 	if (!res.ok) {
-		const body = await res.json().catch(() => ({})) as { message?: string };
+		const body = (await res.json().catch(() => ({}))) as { message?: string };
 		return {
 			token: params.token,
 			error: body.message ?? 'This invitation link is no longer valid.',
@@ -24,15 +24,19 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		};
 	}
 
-	const preview = await res.json() as { email: string; displayName: string | null; expiresAt: string };
+	const preview = (await res.json()) as {
+		email: string;
+		displayName: string | null;
+		expiresAt: string;
+	};
 	return { token: params.token, preview, alreadySignedIn: !!locals.user };
 };
 
 export const actions: Actions = {
 	default: async ({ request, params, cookies }) => {
 		const form = await request.formData();
-		const password    = (form.get('password')    as string | null) ?? '';
-		const confirm     = (form.get('confirm')     as string | null) ?? '';
+		const password = (form.get('password') as string | null) ?? '';
+		const confirm = (form.get('confirm') as string | null) ?? '';
 		const displayName = ((form.get('displayName') as string | null) ?? '').trim();
 
 		if (!password || !confirm) {
@@ -48,7 +52,7 @@ export const actions: Actions = {
 		let res: Response;
 		try {
 			res = await fetch(`${INTERNAL_API_URL}/api/v1/invites/${params.token}/accept`, {
-				method:  'POST',
+				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					password,
@@ -60,7 +64,7 @@ export const actions: Actions = {
 		}
 
 		if (!res.ok) {
-			const body = await res.json().catch(() => ({})) as { message?: string };
+			const body = (await res.json().catch(() => ({}))) as { message?: string };
 			return fail(res.status, {
 				error: body.message ?? 'We could not accept this invitation. It may have expired.',
 				displayName,
@@ -79,20 +83,20 @@ export const actions: Actions = {
 		// 30-day persistence used by login's remember-me path — invitation is
 		// a deliberate act and we want them to stay signed in.
 		cookies.set('access_token', body.accessToken, {
-			path:     '/',
+			path: '/',
 			httpOnly: true,
 			sameSite: 'strict',
-			secure:   process.env.NODE_ENV === 'production',
-			maxAge:   THIRTY_DAYS,
+			secure: process.env.NODE_ENV === 'production',
+			maxAge: THIRTY_DAYS,
 		});
 
 		if (refreshToken) {
 			cookies.set('rt', refreshToken, {
-				path:     '/',
+				path: '/',
 				httpOnly: true,
 				sameSite: 'strict',
-				secure:   process.env.NODE_ENV === 'production',
-				maxAge:   THIRTY_DAYS,
+				secure: process.env.NODE_ENV === 'production',
+				maxAge: THIRTY_DAYS,
 			});
 		}
 

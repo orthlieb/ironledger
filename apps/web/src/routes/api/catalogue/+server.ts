@@ -18,10 +18,10 @@ export const GET: RequestHandler = async ({ request }) => {
 	const headers: Record<string, string> = {
 		'Content-Type': 'application/json',
 	};
-	const cc  = upstream.headers.get('Cache-Control');
+	const cc = upstream.headers.get('Cache-Control');
 	const etag = upstream.headers.get('ETag');
-	if (cc)   headers['Cache-Control'] = cc;
-	if (etag) headers['ETag']          = etag;
+	if (cc) headers['Cache-Control'] = cc;
+	if (etag) headers['ETag'] = etag;
 
 	return new Response(upstream.body, { status: upstream.status, headers });
 };

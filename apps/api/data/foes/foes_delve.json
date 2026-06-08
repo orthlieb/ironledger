@@ -3,34 +3,19 @@
     {
       "id": "delve/atanya",
       "name": "Atanya",
-      "images": [
-        "atanya.webp"
-      ],
+      "images": ["atanya.webp"],
       "rank": 2,
       "nature": "Firstborn",
-      "features": [
-        "Stout forms",
-        "Iridescent skin and dark hair",
-        "Clothed in hides and furs"
-      ],
-      "drives": [
-        "Hunt and fish",
-        "Respect the sea",
-        "Seek out new lands"
-      ],
-      "tactics": [
-        "Strike with spears",
-        "Fight as one, and embody the power of the mighty sea"
-      ],
+      "features": ["Stout forms", "Iridescent skin and dark hair", "Clothed in hides and furs"],
+      "drives": ["Hunt and fish", "Respect the sea", "Seek out new lands"],
+      "tactics": ["Strike with spears", "Fight as one, and embody the power of the mighty sea"],
       "description": "These people of the sea dwell among the Barrier Islands, along the Ragged Coast, and amid the frozen landscapes of the far north. Some live in isolated villages clinging to rugged shores, or as nomads among the icereaches. Others spend their lives aboard finely-crafted vessels called drift-homes. These ships find safe anchorage during the cruelest depths of winter, and return to the sea in calmer months.\n\nThe atanya are a diverse people, but most are well-suited to a life amid the northern climes. They are strong, hardy, and long-lived. Their height and stout forms give them an imposing physical presence, but they are generally good-natured. They have an unnatural sense of the coming weather and an innate understanding of the sea. Some say they once lived in the depths of the ocean, but were cursed by a forsaken god and banished to the world above.",
       "source": "delve"
     },
     {
       "id": "delve/bladewing",
       "name": "Bladewing",
-      "images": [
-        "bladewing.webp"
-      ],
+      "images": ["bladewing.webp"],
       "rank": 2,
       "nature": "Animal",
       "features": [
@@ -38,83 +23,47 @@
         "Elongated jaws with needle-like teeth",
         "Dark, leathery hide"
       ],
-      "drives": [
-        "Take flight under the cover of darkness",
-        "Hunt from above"
-      ],
-      "tactics": [
-        "Glide silently",
-        "Sudden, swift attack"
-      ],
+      "drives": ["Take flight under the cover of darkness", "Hunt from above"],
+      "tactics": ["Glide silently", "Sudden, swift attack"],
       "description": "These carnivorous creatures dwell in caves and ruins, and emerge at night to hunt. They have a lean, angular form, with a wingspan as wide as an Ironlander’s outstretched arms.\n\nThey typically feed on smaller prey, but a pack of hungry bladewings will harass larger victims, diving and slashing in coordinated attacks. During the long nights of winter, swarms of these creatures have descended on Ironlander settlements or unwary travelers.",
       "source": "delve"
     },
     {
       "id": "delve/blighthound",
       "name": "Blighthound",
-      "images": [
-        "blighthound.webp"
-      ],
+      "images": ["blighthound.webp"],
       "rank": 3,
       "nature": "Horror",
-      "features": [
-        "Red eyes",
-        "Lean, hound-like form",
-        "Curved horns"
-      ],
+      "features": ["Red eyes", "Lean, hound-like form", "Curved horns"],
       "drives": [
         "Portend death",
         "Fulfill the prophecy of death",
         "Lair in places where death is near"
       ],
-      "tactics": [
-        "Unearthly howl",
-        "Piercing gaze",
-        "Savage bite"
-      ],
+      "tactics": ["Unearthly howl", "Piercing gaze", "Savage bite"],
       "description": "Blighthounds lurk on blood-soaked battlefields, on the outskirts of settlements destined for famine, or within the dark catacombs of ancient tombs. Drawn to the dead, and foretelling great doom, they are capable predators and grim messengers of death.\n\nThey appear as gaunt, emaciated hounds, often mistaken for starving animals at first glance. Their fiendish form reveals itself in blood-red eyes, sweeping horns, and skin the texture of charred and blistered wood.",
       "source": "delve"
     },
     {
       "id": "delve/blood-thorn",
       "name": "Blood Thorn",
-      "images": [
-        "blood-thorn.webp"
-      ],
+      "images": ["blood-thorn.webp"],
       "rank": 2,
       "nature": "Anomaly",
-      "features": [
-        "Thorn-tipped branches",
-        "Scattered bones, stripped clean",
-        "Large central pod"
-      ],
-      "drives": [
-        "Consume blood",
-        "Proliferate"
-      ],
-      "tactics": [
-        "Lie in wait",
-        "Grasp, entangle, and feed"
-      ],
+      "features": ["Thorn-tipped branches", "Scattered bones, stripped clean", "Large central pod"],
+      "drives": ["Consume blood", "Proliferate"],
+      "tactics": ["Lie in wait", "Grasp, entangle, and feed"],
       "description": "A blood thorn is a malignant, carnivorous plant. It seizes its victims with long, creeping tendrils. Then, it leeches their life through hollow thorns, eventually bleeding them dry.\n\nBlood thorns appear in woodland areas throughout the Ironlands. They are especially common in the Deep Wilds, where they often encircle elf villages. Some suspect they are cultivated by the elves, or share a symbiotic relationship with them.",
       "source": "delve"
     },
     {
       "id": "delve/bog-rot",
       "name": "Bog Rot",
-      "images": [
-        "bog-rot.webp"
-      ],
+      "images": ["bog-rot.webp"],
       "rank": 2,
       "nature": "Horror",
-      "features": [
-        "Mummified flesh",
-        "Shambling gait"
-      ],
-      "drives": [
-        "Rise to seek out the living",
-        "Consign another to death in their place"
-      ],
+      "features": ["Mummified flesh", "Shambling gait"],
+      "drives": ["Rise to seek out the living", "Consign another to death in their place"],
       "tactics": [
         "Emerge from the muddy earth",
         "Seize with grasping hands",
@@ -127,19 +76,14 @@
     {
       "id": "delve/bonehorde",
       "name": "Bonehorde",
-      "images": [
-        "bonehorde.webp"
-      ],
+      "images": ["bonehorde.webp"],
       "rank": 4,
       "nature": "Horror",
       "features": [
         "The bones of many corpses, held together by a dark will",
         "Scurries with a hollow clatter"
       ],
-      "drives": [
-        "Destroy and kill",
-        "Gather new bones"
-      ],
+      "drives": ["Destroy and kill", "Gather new bones"],
       "tactics": [
         "Alter shape",
         "Strike with skeletal appendages",
@@ -152,81 +96,43 @@
     {
       "id": "delve/carrion-newt",
       "name": "Carrion Newt",
-      "images": [
-        "carrion-newt.webp"
-      ],
+      "images": ["carrion-newt.webp"],
       "rank": 3,
       "nature": "Animal",
-      "features": [
-        "Long, sleek body",
-        "Brightly-colored markings",
-        "Serrated teeth"
-      ],
-      "drives": [
-        "Hunt and feed",
-        "Lay eggs within fresh kills"
-      ],
-      "tactics": [
-        "Lurk in the shallows",
-        "Sudden, ferocious attack",
-        "Unyielding bite"
-      ],
+      "features": ["Long, sleek body", "Brightly-colored markings", "Serrated teeth"],
+      "drives": ["Hunt and feed", "Lay eggs within fresh kills"],
+      "tactics": ["Lurk in the shallows", "Sudden, ferocious attack", "Unyielding bite"],
       "description": "These semiaquatic creatures dwell within the freshwater rivers and subterranean waterways of the Ironlands. They have a long, eel-like body, a flat head, and short, claw-tipped legs.\n\nA mature adult grows to the length of a horse. They are ungainly on land, but fast and agile within the water. They prefer to attack landbound prey by lurking along the water’s edge and waiting for an unfortunate animal (or Ironlander) to come near their hiding spot.\n\nCarrion newts lay their eggs within the carcass of their kills. The rotting body nurtures the eggs and feeds the young newts until they burst forth into the world. If you come upon a corpse at the water’s edge—be cautious. It might be filled with dozens of hungry young newts.",
       "source": "delve"
     },
     {
       "id": "delve/cave-lion",
       "name": "Cave Lion",
-      "images": [
-        "cave-lion.webp"
-      ],
+      "images": ["cave-lion.webp"],
       "rank": 3,
       "nature": "Animal",
-      "features": [
-        "Feline grace",
-        "Tawny, striped coat"
-      ],
-      "drives": [
-        "Hunt"
-      ],
-      "tactics": [
-        "Stalk prey",
-        "Leap and bite",
-        "Intimidating roar"
-      ],
+      "features": ["Feline grace", "Tawny, striped coat"],
+      "drives": ["Hunt"],
+      "tactics": ["Stalk prey", "Leap and bite", "Intimidating roar"],
       "description": "Cave lions are sleek, powerful creatures who dwell primarily in the Hinterlands and Tempest Hills. They lair in caverns and other hidden places, emerging to hunt prey such as deer, boar, and rodents. They are typically solitary creatures, but have been seen working together to bring down larger quarry. Even a mammoth is no match for a determined pack of cave lions.",
       "source": "delve"
     },
     {
       "id": "delve/chitter",
       "name": "Chitter",
-      "images": [
-        "chitter.webp"
-      ],
+      "images": ["chitter.webp"],
       "rank": 2,
       "nature": "Beast",
-      "features": [
-        "Chitinous shell",
-        "Snapping mandibles"
-      ],
-      "drives": [
-        "Sniff out food",
-        "Defend the nest"
-      ],
-      "tactics": [
-        "Summon the horde",
-        "Swarm and bite",
-        "Spew putrid vomit"
-      ],
+      "features": ["Chitinous shell", "Snapping mandibles"],
+      "drives": ["Sniff out food", "Defend the nest"],
+      "tactics": ["Summon the horde", "Swarm and bite", "Spew putrid vomit"],
       "description": "Chitters are unnaturally large insects which dwell underground, nesting in subterranean caves, ruins and barrows. They stand half the height of an Ironlander, and move on six segmented legs.\n\nThey are primarily scavengers, using their keen sense of smell to locate and retrieve carcasses above or below ground. Instead of eyes, chitters have three thumb-sized holes in the center of their heads through which they issue a distinctive twittering sound. This call is used to communicate with others of its kind and to help visualize their surroundings—much like bats find their way in darkness.\n\nThey are covered in a rigid shell, and their mandibles are as sharp and destructive as a finely forged blade. They are not necessarily hostile, but will aggressively defend their nests or fight to secure a food source.\n\nAs a last resort, a chitter may attack by spewing the contents of its stomach in a noxious spray, leaving all but the hardiest of Ironlanders temporarily blinded and retching.",
       "source": "delve"
     },
     {
       "id": "delve/circle-of-stones",
       "name": "Circle of Stones",
-      "images": [
-        "circle-of-stones.webp"
-      ],
+      "images": ["circle-of-stones.webp"],
       "rank": 2,
       "nature": "Anomaly",
       "features": [
@@ -234,10 +140,7 @@
         "Whispers of old magic",
         "Visions of hoarded memories"
       ],
-      "drives": [
-        "Preserve age-old secrets",
-        "Seek new knowledge"
-      ],
+      "drives": ["Preserve age-old secrets", "Seek new knowledge"],
       "tactics": [
         "Trap the unwary, and lure the desperate",
         "Extract painful memories",
@@ -249,9 +152,7 @@
     {
       "id": "delve/deep-rat",
       "name": "Deep Rat",
-      "images": [
-        "deep-rat.webp"
-      ],
+      "images": ["deep-rat.webp"],
       "rank": 1,
       "nature": "Animal",
       "features": [
@@ -260,57 +161,31 @@
         "Clawed feet",
         "Jutting incisors"
       ],
-      "drives": [
-        "Dig",
-        "Feed"
-      ],
-      "tactics": [
-        "Undermine paths",
-        "Swarm and bite"
-      ],
+      "drives": ["Dig", "Feed"],
+      "tactics": ["Undermine paths", "Swarm and bite"],
       "description": "These foul, oversized rats have squat bodies and stubby tails. They are essentially blind, but navigate through smell and touch.\n\nDeep rats are constantly collecting food and will eat anything even vaguely edible. They often dwell in caves or subterranean structures, digging compulsively to expand their lair. In those places, they serve as fodder for greater creatures.",
       "source": "delve"
     },
     {
       "id": "delve/glimmer",
       "name": "Glimmer",
-      "images": [
-        "glimmer.webp"
-      ],
+      "images": ["glimmer.webp"],
       "rank": 2,
       "nature": "Anomaly",
-      "features": [
-        "Dancing lights given vague form",
-        "Silent beckoning"
-      ],
-      "drives": [
-        "Illuminate the darkness",
-        "Provide escort along secret paths"
-      ],
-      "tactics": [
-        "Appear to the lost and desperate",
-        "Show the way",
-        "Lead astray"
-      ],
+      "features": ["Dancing lights given vague form", "Silent beckoning"],
+      "drives": ["Illuminate the darkness", "Provide escort along secret paths"],
+      "tactics": ["Appear to the lost and desperate", "Show the way", "Lead astray"],
       "description": "The glimmer are beings of mysterious origin and intent. They are most often encountered as particles of light which coalesce into a luminous humanoid or animal form.\n\nThey are drawn to those who need guidance. For wayward travelers and seekers of hidden things, a glimmer will make a silent offer of passage. Relief from the dangers of the Ironlands or a quick journey to a distant destination is a tempting invitation, but not without its own price.\n\nThe path the glimmer reveals is not wholly of our world. It can descend into the past, or climb into the future. It can wend its way across other lands and through strange realities. These trails are navigated not just by the glimmer, but by ancient, baneful things beyond comprehension.\n\nIf you accept a glimmer’s guidance, steel yourself for the journey. Envision the places and people that give you hope, and you may find yourself among them. But do not be distracted. The temptations and terrors along the way can lead all but the most resolute astray. To be lost along a glimmer’s path is to remain lost—perhaps forever.",
       "source": "delve"
     },
     {
       "id": "delve/gloom",
       "name": "Gloom",
-      "images": [
-        "gloom.webp"
-      ],
+      "images": ["gloom.webp"],
       "rank": 2,
       "nature": "Anomaly",
-      "features": [
-        "Creeping, vaporous murk",
-        "Whispers and illusions"
-      ],
-      "drives": [
-        "Envelop all in shadow",
-        "Feed on fear and despair"
-      ],
+      "features": ["Creeping, vaporous murk", "Whispers and illusions"],
+      "drives": ["Envelop all in shadow", "Feed on fear and despair"],
       "tactics": [
         "Lure with trickery",
         "Snuff out lights",
@@ -323,9 +198,7 @@
     {
       "id": "delve/gnarl",
       "name": "Gnarl",
-      "images": [
-        "gnarl.webp"
-      ],
+      "images": ["gnarl.webp"],
       "rank": 4,
       "nature": "Beast",
       "features": [
@@ -334,24 +207,15 @@
         "Majestic horns",
         "Sorrowful call"
       ],
-      "drives": [
-        "Keep to the woodlands",
-        "Forage"
-      ],
-      "tactics": [
-        "Threatening posture",
-        "Powerful charge",
-        "Stomp"
-      ],
+      "drives": ["Keep to the woodlands", "Forage"],
+      "tactics": ["Threatening posture", "Powerful charge", "Stomp"],
       "description": "Gnarls dwell in woodlands throughout the Ironlands. The tallest of them are nearly the height of towering trees, with a long neck and legs as stout as trunks. Atop their heads are sprays of horns which twist and intertwine like slender branches. They roam the forest alone or in small family groups, feeding on lichen, leaves, and other plants. They are not naturally aggressive, but are mighty foes when threatened.\n\nThe color of a gnarl’s bark-like hide changes through its life, emulating the passage of the seasons. A young gnarl’s hide is the verdant green of spring. As they mature, it transitions to the deeper brown-green of summer, then the burnished amber of fall, and finally the cold gray of winter. To protect itself from potential predators, a gnarl will stand among a copse of trees. It will plant its feet, straighten its back, stretch its neck, and stay perfectly still, blending in with its surroundings.\n\nThe low, resonant call of a gnarl can carry for miles. It is a lonely sound, as evocative and heartrending as the most mournful funeral song.",
       "source": "delve"
     },
     {
       "id": "delve/husk",
       "name": "Husk",
-      "images": [
-        "husk.webp"
-      ],
+      "images": ["husk.webp"],
       "rank": 3,
       "nature": "Ironlander",
       "features": [
@@ -360,10 +224,7 @@
         "Horrifying wail",
         "Become more powerful"
       ],
-      "drives": [
-        "Make others suffer as they have",
-        "Restore their former self"
-      ],
+      "drives": ["Make others suffer as they have", "Restore their former self"],
       "tactics": [
         "Dishearten with a dreadful howl",
         "Lash out with forbidden magic",
@@ -376,40 +237,26 @@
     {
       "id": "delve/iron-wracked-beast",
       "name": "Iron-Wracked Beast",
-      "images": [
-        "iron-wracked-beast.webp"
-      ],
+      "images": ["iron-wracked-beast.webp"],
       "rank": 3,
       "nature": "Beast",
-      "features": [
-        "Flesh corrupted by iron",
-        "Pained howl"
-      ],
+      "features": ["Flesh corrupted by iron", "Pained howl"],
       "drives": [
         "Feed the insatiable hunger",
         "Destroy those who wield iron",
         "Find a release from pain"
       ],
-      "tactics": [
-        "Attack with brutal rage",
-        "Bite and devour"
-      ],
+      "tactics": ["Attack with brutal rage", "Bite and devour"],
       "description": "We don’t know the origin of the Iron Blight, nor do we know its cure. It inflicts creatures of the wilds and transforms their flesh slowly to iron. These pitiful but powerful beasts are scarred by patches of metal flesh within ragged, weeping wounds. The iron is like a parasite, devouring the host as it torments them with unstoppable pain and insatiable hunger. Their howls echo with animalistic agony and the clangor of hammer against anvil.\n\nIn time, the Blight takes too much, and the beast dies while it is still more flesh than iron. We pray a creature never survives beyond that stage. What would it become?",
       "source": "delve"
     },
     {
       "id": "delve/kraken",
       "name": "Kraken",
-      "images": [
-        "kraken.webp"
-      ],
+      "images": ["kraken.webp"],
       "rank": 5,
       "nature": "Beast",
-      "features": [
-        "Gargantuan size",
-        "Grasping tentacles",
-        "Beaked maw"
-      ],
+      "features": ["Gargantuan size", "Grasping tentacles", "Beaked maw"],
       "drives": [
         "Lurk in unfathomable depths",
         "Destroy those who would trespass",
@@ -427,20 +274,11 @@
     {
       "id": "delve/maelstrom",
       "name": "Maelstrom",
-      "images": [
-        "maelstrom.webp"
-      ],
+      "images": ["maelstrom.webp"],
       "rank": 2,
       "nature": "Anomaly",
-      "features": [
-        "Whirling vortex of water",
-        "Fierce currents",
-        "Ghostly screams"
-      ],
-      "drives": [
-        "Engulf victims",
-        "Amass the voices of the lost"
-      ],
+      "features": ["Whirling vortex of water", "Fierce currents", "Ghostly screams"],
+      "drives": ["Engulf victims", "Amass the voices of the lost"],
       "tactics": [
         "Seize with raging, swirling waters",
         "Stun with numbing cold",
@@ -453,69 +291,37 @@
     {
       "id": "delve/merrow",
       "name": "Merrow",
-      "images": [
-        "merrow.webp"
-      ],
+      "images": ["merrow.webp"],
       "rank": 2,
       "nature": "Firstborn",
-      "features": [
-        "Gray scaled skin",
-        "Bulbous eyes",
-        "Webbed claws"
-      ],
-      "drives": [
-        "Blood for the deep gods"
-      ],
-      "tactics": [
-        "Swarm and overwhelm",
-        "Entangle in nets",
-        "Drag back to the depths"
-      ],
+      "features": ["Gray scaled skin", "Bulbous eyes", "Webbed claws"],
+      "drives": ["Blood for the deep gods"],
+      "tactics": ["Swarm and overwhelm", "Entangle in nets", "Drag back to the depths"],
       "description": "These semiaquatic beings dwell within coastal waters, sea caves, and saltwater marshes. They are fierce protectors of their realm, driven by a zealous devotion to their gods. Their eyes are large and glossy black. They have hunched forms and long limbs, and move with deadly grace in watery environments. Their language is a cacophony of clicks, low grunts, and whistles.\n\nThey war against the atanya clans, rarely interact with other firstborn, and are openly hostile to Ironlanders. They emerge from their sunken lairs to swarm over ships or coastal settlements, dragging their victims into the depths. As night falls, the people of seaside villages light their torches, ward their gates, and keep an eye to the waters.",
       "source": "delve"
     },
     {
       "id": "delve/nightmare-spider",
       "name": "Nightmare Spider",
-      "images": [
-        "nightmare-spider.webp"
-      ],
+      "images": ["nightmare-spider.webp"],
       "rank": 2,
       "nature": "Animal",
-      "features": [
-        "Pale, semitransparent body",
-        "Long, skinny legs",
-        "Fangs, dripping with venom"
-      ],
-      "drives": [
-        "Lurk in darkness",
-        "Feed",
-        "Lay eggs"
-      ],
-      "tactics": [
-        "Spin webs",
-        "Drop on prey",
-        "Pierce with venomous fangs"
-      ],
+      "features": ["Pale, semitransparent body", "Long, skinny legs", "Fangs, dripping with venom"],
+      "drives": ["Lurk in darkness", "Feed", "Lay eggs"],
+      "tactics": ["Spin webs", "Drop on prey", "Pierce with venomous fangs"],
       "description": "Nightmare spiders are monstrous creatures which dwell in caves, ruins, thick woods, and other dark places. They have narrow, translucent bodies, three pairs of black eyes, and long, slender legs. They typically feed on bats and rodents, but are opportunistic hunters and attack anything straying into their path or stumbling into their webbing. Their lairs are often strung with large silk egg sacs.\n\nFor smaller animals, the toxic bite of the nightmare spider causes paralysis. For a typical Ironlander, it dulls the senses and induces vivid hallucinations. It is these frightening, dreamlike visions which earn the creature its name.",
       "source": "delve"
     },
     {
       "id": "delve/nightspawn",
       "name": "Nightspawn",
-      "images": [
-        "nightspawn.webp"
-      ],
+      "images": ["nightspawn.webp"],
       "rank": 3,
       "nature": "Beast",
       "features": [
         "Mutated <a class=\"oracle-link\" data-oracle=\"monstrosityPrimaryForm\">form</a>, <a class=\"oracle-link\" data-oracle=\"monstrositySize\">size</a>, <a class=\"oracle-link\" data-oracle=\"monstrosityCharacteristics\">characteristics</a>"
       ],
-      "drives": [
-        "Guard against intruders",
-        "Lurk in the shadows",
-        "Endure beyond memory"
-      ],
+      "drives": ["Guard against intruders", "Lurk in the shadows", "Endure beyond memory"],
       "tactics": [
         "Varied <a class=\"oracle-link\" data-oracle=\"monstrosityAbilities\">ability</a>"
       ],
@@ -525,21 +331,11 @@
     {
       "id": "delve/rhaskar",
       "name": "Rhaskar",
-      "images": [
-        "rhaskar.webp"
-      ],
+      "images": ["rhaskar.webp"],
       "rank": 4,
       "nature": "Beast",
-      "features": [
-        "White fur",
-        "Shark-like head",
-        "Rows of razor-sharp teeth",
-        "Massive claws"
-      ],
-      "drives": [
-        "Protect territory",
-        "Hunt prey in water and on land"
-      ],
+      "features": ["White fur", "Shark-like head", "Rows of razor-sharp teeth", "Massive claws"],
+      "drives": ["Protect territory", "Hunt prey in water and on land"],
       "tactics": [
         "Burst through ice",
         "Rend with savage claws",
@@ -552,20 +348,11 @@
     {
       "id": "delve/shroud-crab",
       "name": "Shroud Crab",
-      "images": [
-        "shroud-crab.webp"
-      ],
+      "images": ["shroud-crab.webp"],
       "rank": 1,
       "nature": "Animal",
-      "features": [
-        "Ridged shell",
-        "Snapping, slashing claws",
-        "Barbed, whiplike tail"
-      ],
-      "drives": [
-        "Lie hidden among rocks and ice",
-        "Feed"
-      ],
+      "features": ["Ridged shell", "Snapping, slashing claws", "Barbed, whiplike tail"],
+      "drives": ["Lie hidden among rocks and ice", "Feed"],
       "tactics": [
         "Mimic surroundings",
         "Leap at unsuspecting prey",
@@ -578,19 +365,11 @@
     {
       "id": "delve/tempest",
       "name": "Tempest",
-      "images": [
-        "tempest.webp"
-      ],
+      "images": ["tempest.webp"],
       "rank": 2,
       "nature": "Anomaly",
-      "features": [
-        "Biting winds",
-        "Stinging ice",
-        "Ghostly voices and shadowy forms"
-      ],
-      "drives": [
-        "Seek warmth, and snuff it out"
-      ],
+      "features": ["Biting winds", "Stinging ice", "Ghostly voices and shadowy forms"],
+      "drives": ["Seek warmth, and snuff it out"],
       "tactics": [
         "Envelop in a wintry cyclone",
         "Batter with icy shards and ferocious winds",
@@ -602,9 +381,7 @@
     {
       "id": "delve/thrall",
       "name": "Thrall",
-      "images": [
-        "thrall.webp"
-      ],
+      "images": ["thrall.webp"],
       "rank": 2,
       "nature": "Horror",
       "features": [
@@ -612,24 +389,15 @@
         "Glimpses of their true nature",
         "A clash of personalities"
       ],
-      "drives": [
-        "Endure beyond death",
-        "Coerce and manipulate",
-        "Stifle the will of the host"
-      ],
-      "tactics": [
-        "Reveal their true self",
-        "Lash out with unnatural strength"
-      ],
+      "drives": ["Endure beyond death", "Coerce and manipulate", "Stifle the will of the host"],
+      "tactics": ["Reveal their true self", "Lash out with unnatural strength"],
       "description": "A thrall is a living person controlled by the will of a powerful undead spirit. The malignant presence can lie dormant for some time, feeding on the suffering of the host and subtly manipulating them to achieve its mysterious and often malevolent ends. Once the host is weakened, the spirit supplants their will entirely.",
       "source": "delve"
     },
     {
       "id": "delve/trog",
       "name": "Trog",
-      "images": [
-        "trog.webp"
-      ],
+      "images": ["trog.webp"],
       "rank": 2,
       "nature": "Animal",
       "features": [
@@ -638,35 +406,19 @@
         "Long claws and sharp teeth",
         "Powerful tail"
       ],
-      "drives": [
-        "Lurk in darkness",
-        "Dig tunnels"
-      ],
-      "tactics": [
-        "Stealthy approach",
-        "Intimidating display",
-        "Pounce",
-        "Bite and thrash"
-      ],
+      "drives": ["Lurk in darkness", "Dig tunnels"],
+      "tactics": ["Stealthy approach", "Intimidating display", "Pounce", "Bite and thrash"],
       "description": "Trogs are warm-blooded reptilian animals. They dwell in the deepest places of the Ironlands, but have moved closer to the surface in recent years. Some suggest a greater threat in those dark domains is driving them toward the surface. Many a barrow or underkeep has been breached by trogs who tunnel into those spaces.\n\nThey are strong and agile, able to run, climb, and swim with equal speed. When they stand on two legs as a display of aggression, they are nearly as tall as an Ironlander. They have a hunched back lined with a ridge of spines, a long snout, and serrated teeth. Their scales glimmer with a colorful, ghostly light. Their bite is as powerful and unyielding as a hammer blow.",
       "source": "delve"
     },
     {
       "id": "delve/wight",
       "name": "Wight",
-      "images": [
-        "wight.webp"
-      ],
+      "images": ["wight.webp"],
       "rank": 3,
       "nature": "Horror",
-      "features": [
-        "Pallid skin and clouded eyes",
-        "Ragged, unhealed wounds",
-        "Iron burial mask"
-      ],
-      "drives": [
-        "Stand in defense"
-      ],
+      "features": ["Pallid skin and clouded eyes", "Ragged, unhealed wounds", "Iron burial mask"],
+      "drives": ["Stand in defense"],
       "tactics": [
         "Skulk in darkness",
         "Resolute assault",
@@ -678,9 +430,7 @@
     {
       "id": "delve/wyrm",
       "name": "Wyrm",
-      "images": [
-        "wyrm.webp"
-      ],
+      "images": ["wyrm.webp"],
       "rank": 5,
       "nature": "Beast",
       "features": [
@@ -690,36 +440,19 @@
         "Scaled skin",
         "Cavernous mouth"
       ],
-      "drives": [
-        "Protect territory",
-        "Kill and feed"
-      ],
-      "tactics": [
-        "Tail smash",
-        "Pin to the ground",
-        "Savage claw and bite"
-      ],
+      "drives": ["Protect territory", "Kill and feed"],
+      "tactics": ["Tail smash", "Pin to the ground", "Savage claw and bite"],
       "description": "Wyrms are massive serpentine creatures. They are kin to the wyverns, but are much larger and wingless. Their lairs are found in deep caves, subterranean vaults, or at the heart of dense forests. They hibernate in those places for weeks or months at a time, waking only to satiate their massive appetites. They are low-slung beasts, with short, thick legs, elongated jaws, and a dense hide.\n\nFiercely territorial, a wyrm is sure to attack any who stray into their domain. It can sense movement through vibration, and its golden eyes can pierce the thickest darkness.",
       "source": "delve"
     },
     {
       "id": "delve/zealot",
       "name": "Zealot",
-      "images": [
-        "zealot.webp"
-      ],
+      "images": ["zealot.webp"],
       "rank": 1,
       "nature": "Ironlander",
-      "features": [
-        "Sickly pallor",
-        "Distant eyes",
-        "Marks of their faith"
-      ],
-      "drives": [
-        "Serve the faith",
-        "Bring others into the fold",
-        "Destroy those who oppose them"
-      ],
+      "features": ["Sickly pallor", "Distant eyes", "Marks of their faith"],
+      "drives": ["Serve the faith", "Bring others into the fold", "Destroy those who oppose them"],
       "tactics": [
         "Entice with trickery or false promises",
         "Use the powers of the faith",

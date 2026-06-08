@@ -13,6 +13,7 @@ During gameplay, players need to jot down observations, reminders, or narrative 
 ## UI
 
 The **Notes** button in the top-level app nav (`+layout.svelte`'s `.app-nav` toolbar — formerly the GlobalContextBar before its v2 removal) opens a centered modal dialog:
+
 - Textarea with placeholder text and markdown hint
 - **Add to Log** button (disabled when empty)
 - Ctrl/Cmd+Enter keyboard shortcut to submit
@@ -27,22 +28,23 @@ Notes appear in the session log as entries with title "Note" and the markdown re
 
 The textarea supports the same markdown as per-entry notes in the log:
 
-| Syntax | Renders As |
-|--------|-----------|
-| `**bold**` | **bold** |
-| `*italic*` or `_italic_` | *italic* |
-| `# Heading` | h3 |
-| `## Heading` | h4 |
-| `### Heading` | h5 |
-| `- item` or `* item` | bullet list |
-| `1. item` | numbered list |
-| blank line | line break |
+| Syntax                   | Renders As    |
+| ------------------------ | ------------- |
+| `**bold**`               | **bold**      |
+| `*italic*` or `_italic_` | _italic_      |
+| `# Heading`              | h3            |
+| `## Heading`             | h4            |
+| `### Heading`            | h5            |
+| `- item` or `* item`     | bullet list   |
+| `1. item`                | numbered list |
+| blank line               | line break    |
 
 ---
 
 ## Architecture
 
 Notes use the existing session log infrastructure — no new stores or API endpoints:
+
 - `renderNote(text)` from `$lib/markdown.js` converts markdown to safe HTML
 - `appendLog(SESSION_LOG_ID, 'Note', html)` from `$lib/log.svelte.js` adds the entry
 - LogPanel renders the entry like any other log entry
@@ -51,11 +53,11 @@ Notes use the existing session log infrastructure — no new stores or API endpo
 
 ## Components
 
-| Component | File | Purpose |
-|-----------|------|---------|
-| NotesDialog | `components/NotesDialog.svelte` | Modal dialog for typing notes |
+| Component        | File                                 | Purpose                                       |
+| ---------------- | ------------------------------------ | --------------------------------------------- |
+| NotesDialog      | `components/NotesDialog.svelte`      | Modal dialog for typing notes                 |
 | GlobalContextBar | `components/GlobalContextBar.svelte` | Notes button triggers `onNotesClick` callback |
-| LogPanel | `components/LogPanel.svelte` | Renders note entries in the session log |
+| LogPanel         | `components/LogPanel.svelte`         | Renders note entries in the session log       |
 
 ## Old App Reference
 

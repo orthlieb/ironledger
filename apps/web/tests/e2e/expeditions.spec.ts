@@ -13,16 +13,18 @@
 import { test, expect } from '@playwright/test';
 import { resetExpeditions, resetFoes } from './helpers/reset';
 
-const EXP_AREA   = '.home-area--expeditions';
+const EXP_AREA = '.home-area--expeditions';
 const EXP_HEADER = `${EXP_AREA} .ea-header`;
-const EXP_SPINE  = `${EXP_AREA} .ea-spine`;
+const EXP_SPINE = `${EXP_AREA} .ea-spine`;
 
-const FOE_AREA   = '.home-area--foes';
-const FOE_SPINE  = `${FOE_AREA} .fa-spine`;
+const FOE_AREA = '.home-area--foes';
+const FOE_SPINE = `${FOE_AREA} .fa-spine`;
 
 async function waitForExpeditionsLoaded(page: import('@playwright/test').Page) {
 	await expect(page.locator(`${EXP_AREA} .ea-loading`)).not.toBeVisible({ timeout: 10_000 });
-	await page.locator(`${EXP_AREA} .ea-empty, ${EXP_AREA} .ea-body`).first()
+	await page
+		.locator(`${EXP_AREA} .ea-empty, ${EXP_AREA} .ea-body`)
+		.first()
 		.waitFor({ timeout: 10_000, state: 'attached' });
 }
 
@@ -36,12 +38,17 @@ async function switchExpTab(page: import('@playwright/test').Page, label: string
  */
 async function ensureJourneySelected(page: import('@playwright/test').Page): Promise<void> {
 	const spines = page.locator(EXP_SPINE);
-	const count  = await spines.count();
+	const count = await spines.count();
 	// Search existing spines for a journey (Core tab shows no theme select).
 	for (let i = 0; i < count; i++) {
 		await spines.nth(i).click();
 		await switchExpTab(page, 'Core');
-		if (!(await page.locator(`${EXP_AREA} select[id^="ea-theme-"]`).isVisible({ timeout: 500 }).catch(() => false))) {
+		if (
+			!(await page
+				.locator(`${EXP_AREA} select[id^="ea-theme-"]`)
+				.isVisible({ timeout: 500 })
+				.catch(() => false))
+		) {
 			return; // this spine is a journey
 		}
 	}
@@ -62,10 +69,10 @@ async function ensureSiteSelected(page: import('@playwright/test').Page): Promis
 	const spines = page.locator(EXP_SPINE);
 
 	// Create a site if the list is empty.
-	if (await spines.count() === 0) {
+	if ((await spines.count()) === 0) {
 		await page.locator(`${EXP_HEADER} button:has-text("+ Site")`).click();
 		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
-		await page.selectOption('dialog.confirm-modal[open] #ns-theme',  { index: 1 });
+		await page.selectOption('dialog.confirm-modal[open] #ns-theme', { index: 1 });
 		await page.selectOption('dialog.confirm-modal[open] #ns-domain', { index: 1 });
 		await page.locator('dialog.confirm-modal[open] button:has-text("Discover Site")').click();
 		await expect(spines).not.toHaveCount(0, { timeout: 5_000 });
@@ -136,7 +143,7 @@ test.describe('Expeditions area (v2)', () => {
 
 	test('can delete a journey', async ({ page }) => {
 		const spines = page.locator(EXP_SPINE);
-		if (await spines.count() === 0) {
+		if ((await spines.count()) === 0) {
 			await page.locator(`${EXP_HEADER} button:has-text("+ Journey")`).click();
 			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
 			await page.locator('dialog.confirm-modal[open] button:has-text("Start Journey")').click();
@@ -168,7 +175,7 @@ test.describe('Expeditions area (v2)', () => {
 		const before = await page.locator(EXP_SPINE).count();
 		await page.locator(`${EXP_HEADER} button:has-text("+ Site")`).click();
 		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
-		await page.selectOption('dialog.confirm-modal[open] #ns-theme',  { index: 1 });
+		await page.selectOption('dialog.confirm-modal[open] #ns-theme', { index: 1 });
 		await page.selectOption('dialog.confirm-modal[open] #ns-domain', { index: 1 });
 		await page.locator('dialog.confirm-modal[open] button:has-text("Discover Site")').click();
 		await expect(page.locator(EXP_SPINE)).not.toHaveCount(before, { timeout: 5_000 });
@@ -176,10 +183,10 @@ test.describe('Expeditions area (v2)', () => {
 
 	test('can delete a site', async ({ page }) => {
 		const spines = page.locator(EXP_SPINE);
-		if (await spines.count() === 0) {
+		if ((await spines.count()) === 0) {
 			await page.locator(`${EXP_HEADER} button:has-text("+ Site")`).click();
 			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
-			await page.selectOption('dialog.confirm-modal[open] #ns-theme',  { index: 1 });
+			await page.selectOption('dialog.confirm-modal[open] #ns-theme', { index: 1 });
 			await page.selectOption('dialog.confirm-modal[open] #ns-domain', { index: 1 });
 			await page.locator('dialog.confirm-modal[open] button:has-text("Discover Site")').click();
 			await expect(spines).not.toHaveCount(0, { timeout: 5_000 });
@@ -201,8 +208,8 @@ test.describe('Expeditions area (v2)', () => {
 		await ensureSiteSelected(page);
 
 		const themeSelect = page.locator(`${EXP_AREA} select[id^="ea-theme-"]`).first();
-		const options     = themeSelect.locator('option');
-		const optCount    = await options.count();
+		const options = themeSelect.locator('option');
+		const optCount = await options.count();
 		// Pick the last option (guaranteed to differ if > 1 option exists).
 		const newVal = (await options.nth(optCount - 1).getAttribute('value')) ?? '';
 		await themeSelect.selectOption(newVal);
@@ -213,7 +220,7 @@ test.describe('Expeditions area (v2)', () => {
 		await ensureSiteSelected(page);
 
 		const themeSelect = page.locator(`${EXP_AREA} select[id^="ea-theme-"]`).first();
-		const diceBtn     = page.locator(`${EXP_AREA} button[aria-label="Random theme"]`);
+		const diceBtn = page.locator(`${EXP_AREA} button[aria-label="Random theme"]`);
 		await expect(diceBtn).toBeVisible({ timeout: 3_000 });
 		await diceBtn.click();
 		// Select should have a non-empty value after randomisation.
@@ -224,8 +231,8 @@ test.describe('Expeditions area (v2)', () => {
 		await ensureSiteSelected(page);
 
 		const domainSelect = page.locator(`${EXP_AREA} select[id^="ea-domain-"]`).first();
-		const options      = domainSelect.locator('option');
-		const optCount     = await options.count();
+		const options = domainSelect.locator('option');
+		const optCount = await options.count();
 		const newVal = (await options.nth(optCount - 1).getAttribute('value')) ?? '';
 		await domainSelect.selectOption(newVal);
 		await expect(domainSelect).toHaveValue(newVal, { timeout: 3_000 });
@@ -235,7 +242,7 @@ test.describe('Expeditions area (v2)', () => {
 		await ensureSiteSelected(page);
 
 		const domainSelect = page.locator(`${EXP_AREA} select[id^="ea-domain-"]`).first();
-		const diceBtn      = page.locator(`${EXP_AREA} button[aria-label="Random domain"]`);
+		const diceBtn = page.locator(`${EXP_AREA} button[aria-label="Random domain"]`);
 		await expect(diceBtn).toBeVisible({ timeout: 3_000 });
 		await diceBtn.click();
 		await expect(domainSelect).not.toHaveValue('', { timeout: 3_000 });
@@ -251,14 +258,17 @@ test.describe('Expeditions area (v2)', () => {
 		await expect(featureSelect).not.toBeDisabled();
 
 		// Pick first non-empty option.
-		const opts  = featureSelect.locator('option');
+		const opts = featureSelect.locator('option');
 		const count = await opts.count();
 		let firstVal = '';
 		for (let i = 0; i < count; i++) {
 			firstVal = (await opts.nth(i).getAttribute('value')) ?? '';
 			if (firstVal) break;
 		}
-		if (!firstVal) { test.skip(true, 'No feature options for this theme+domain'); return; }
+		if (!firstVal) {
+			test.skip(true, 'No feature options for this theme+domain');
+			return;
+		}
 
 		await featureSelect.selectOption(firstVal);
 		await expect(featureSelect).toHaveValue(firstVal, { timeout: 3_000 });
@@ -268,7 +278,7 @@ test.describe('Expeditions area (v2)', () => {
 		await ensureSiteSelected(page);
 
 		const featureSelect = page.locator(`${EXP_AREA} select[id^="ea-feature-"]`).first();
-		const diceBtn       = page.locator(`${EXP_AREA} button[aria-label="Random feature"]`);
+		const diceBtn = page.locator(`${EXP_AREA} button[aria-label="Random feature"]`);
 		await expect(diceBtn).not.toBeDisabled({ timeout: 3_000 });
 		await diceBtn.click();
 		// Wait for the dice animation + async roll to complete: the button re-enables.
@@ -284,14 +294,17 @@ test.describe('Expeditions area (v2)', () => {
 		await expect(dangerSelect).toBeVisible({ timeout: 3_000 });
 		await expect(dangerSelect).not.toBeDisabled();
 
-		const opts  = dangerSelect.locator('option');
+		const opts = dangerSelect.locator('option');
 		const count = await opts.count();
 		let firstVal = '';
 		for (let i = 0; i < count; i++) {
 			firstVal = (await opts.nth(i).getAttribute('value')) ?? '';
 			if (firstVal) break;
 		}
-		if (!firstVal) { test.skip(true, 'No danger options for this theme+domain'); return; }
+		if (!firstVal) {
+			test.skip(true, 'No danger options for this theme+domain');
+			return;
+		}
 
 		await dangerSelect.selectOption(firstVal);
 		await expect(dangerSelect).toHaveValue(firstVal, { timeout: 3_000 });
@@ -301,7 +314,7 @@ test.describe('Expeditions area (v2)', () => {
 		await ensureSiteSelected(page);
 
 		const dangerSelect = page.locator(`${EXP_AREA} select[id^="ea-danger-"]`).first();
-		const diceBtn      = page.locator(`${EXP_AREA} button[aria-label="Random danger"]`);
+		const diceBtn = page.locator(`${EXP_AREA} button[aria-label="Random danger"]`);
 		await expect(diceBtn).not.toBeDisabled({ timeout: 3_000 });
 		await diceBtn.click();
 		await expect(diceBtn).not.toBeDisabled({ timeout: 10_000 });
@@ -325,9 +338,9 @@ test.describe('Expeditions area (v2)', () => {
 		const portraitLabel = page.locator(`${EXP_AREA} .pu-label`);
 		await expect(portraitLabel).toBeVisible({ timeout: 3_000 });
 
-		await page.locator(`${EXP_AREA} .pu-input`).setInputFiles(
-			{ name: 'journey.png', mimeType: 'image/png', buffer: PNG_1X1 },
-		);
+		await page
+			.locator(`${EXP_AREA} .pu-input`)
+			.setInputFiles({ name: 'journey.png', mimeType: 'image/png', buffer: PNG_1X1 });
 
 		// FileReader → Image → canvas pipeline produces a JPEG data URL.
 		// PortraitUploader renders the result as img.pu-img (no .pu-img--placeholder).
@@ -344,9 +357,9 @@ test.describe('Expeditions area (v2)', () => {
 		const portraitLabel = page.locator(`${EXP_AREA} .pu-label`);
 		await expect(portraitLabel).toBeVisible({ timeout: 3_000 });
 
-		await page.locator(`${EXP_AREA} .pu-input`).setInputFiles(
-			{ name: 'site.png', mimeType: 'image/png', buffer: PNG_1X1 },
-		);
+		await page
+			.locator(`${EXP_AREA} .pu-input`)
+			.setInputFiles({ name: 'site.png', mimeType: 'image/png', buffer: PNG_1X1 });
 
 		const portraitImg = page.locator(`${EXP_AREA} img.pu-img:not(.pu-img--placeholder)`);
 		await expect(portraitImg).toBeVisible({ timeout: 5_000 });
@@ -385,7 +398,9 @@ test.describe('Expeditions area (v2)', () => {
 
 	// ── Denizen table — Roll Denizen + Add to Foes ────────────────────────────
 
-	test('site: Roll Denizen button opens the denizen dialog with the foe table', async ({ page }) => {
+	test('site: Roll Denizen button opens the denizen dialog with the foe table', async ({
+		page,
+	}) => {
 		await ensureSiteSelected(page);
 		await switchExpTab(page, 'Denizens');
 
@@ -417,7 +432,9 @@ test.describe('Expeditions area (v2)', () => {
 		await expect(page.locator('dialog.foe-dialog[open]')).not.toBeVisible({ timeout: 5_000 });
 
 		// Read the foe name that was placed in the first slot.
-		const foeName = (await page.locator(`${EXP_AREA} .ea-denizen-input`).first().inputValue()).trim();
+		const foeName = (
+			await page.locator(`${EXP_AREA} .ea-denizen-input`).first().inputValue()
+		).trim();
 		expect(foeName).toBeTruthy();
 
 		// Fill all remaining 11 slots with the same foe name so any roll hits it.

@@ -51,32 +51,32 @@ Each file contains one category of moves:
 
 ### Move Object Fields
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `id` | string | yes | Unique identifier: `move/kebab-case-name` |
-| `name` | string | yes | Display name (e.g., `"Face Danger"`) |
-| `category` | string | yes | Must match the file's top-level `category` |
-| `triggerShort` | string | yes | One-sentence summary shown on the move tile |
-| `trigger` | string (HTML) | yes | Full trigger text with formatting |
-| `triggerPreamble` | string (HTML) | no | Opening phrase before stat options (for multi-stat triggers) |
-| `triggerPostamble` | string (HTML) | no | Closing phrase after stat options |
-| `stats` | array | no | Stat options for rolling (see [Stat Entries](#stat-entries)) |
-| `strong` | string (HTML) | no | Strong hit result text |
-| `weak` | string (HTML) | no | Weak hit result text |
-| `miss` | string (HTML) | no | Miss result text |
-| `strongMatch` | string (HTML) | no | Text shown in the log on a strong hit with matching challenge dice (overrides generic match text) |
-| `weakMatch` | string (HTML) | no | Text shown in the log on a weak hit with matching challenge dice (overrides generic match text) |
-| `missMatch` | string (HTML) | no | Text shown in the log on a miss with matching challenge dice (overrides generic match text) |
-| `notes` | string (HTML) | no | Designer notes and guidance |
-| `preconditions` | array of objects | no | Conditions that must all be met (AND) for the move tile to be enabled. See [Preconditions](#preconditions). |
-| `references` | array of strings | no | Context dropdowns this move's text references (same valid values as `requires`). Unlike `requires`, these don't gate the tile — they inform the dialog/log which context to pull data from. |
-| `table` | array | no | Inline outcome table (see [Inline Tables](#inline-tables)) |
-| `tableType` | string | no | Table variant: `"askOracle"` or `"delveDepths"` |
-| `progressTrack` | string | no | Marks this as a progress move. Value is the track name (`"bonds"`, `"failures"`, `"vows"`, `"journey"`, `"combat"`, `"delve"`). Progress moves skip the d6 action die, ignore momentum, and compare the track score directly against 2d10 challenge dice. Adds are still adjustable and applied on top of the progress score. Track thresholds (e.g., failure track ≥ 6) are encoded via `preconditions`, not hardcoded. |
-| `progressSource` | string | no | For progress moves: identifies which runtime track provides the score. Valid values: `"combat"` (active foe encounter ticks ÷ 4), `"journey"` (active journey expedition ticks ÷ 4), `"delve"` (active site expedition ticks ÷ 4), `"bonds"` (character bonds ticks ÷ 4), `"failures"` (character failures ticks ÷ 4), `"vows"` (placeholder — shows 0 until individual vow routing is implemented). Defaults to `"combat"` if omitted. This field pairs with the `progressContext` prop on `MovesDialog`. |
-| `tableRoll` | boolean | no | If `true`, the move's primary action is rolling this table (no action+challenge roll) |
-| `rarityRoll` | boolean | no | If `true`, the move rolls a single d6 rarity die |
-| `logTitle` | string (template) | no | Template for the session log entry title. Supports placeholder variables: `{character}` (active character name), `{stat}` (stat label used in the roll), `{expedition}` (active expedition/site/journey name), `{foe}` (active foe name), `{move}` (move's literal name). Falls back to `{character} — {move name} ({stat})` or `{character} — {move name}` when omitted. |
+| Field              | Type              | Required | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------------------ | ----------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`               | string            | yes      | Unique identifier: `move/kebab-case-name`                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `name`             | string            | yes      | Display name (e.g., `"Face Danger"`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `category`         | string            | yes      | Must match the file's top-level `category`                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `triggerShort`     | string            | yes      | One-sentence summary shown on the move tile                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `trigger`          | string (HTML)     | yes      | Full trigger text with formatting                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `triggerPreamble`  | string (HTML)     | no       | Opening phrase before stat options (for multi-stat triggers)                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `triggerPostamble` | string (HTML)     | no       | Closing phrase after stat options                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `stats`            | array             | no       | Stat options for rolling (see [Stat Entries](#stat-entries))                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `strong`           | string (HTML)     | no       | Strong hit result text                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `weak`             | string (HTML)     | no       | Weak hit result text                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `miss`             | string (HTML)     | no       | Miss result text                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `strongMatch`      | string (HTML)     | no       | Text shown in the log on a strong hit with matching challenge dice (overrides generic match text)                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `weakMatch`        | string (HTML)     | no       | Text shown in the log on a weak hit with matching challenge dice (overrides generic match text)                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `missMatch`        | string (HTML)     | no       | Text shown in the log on a miss with matching challenge dice (overrides generic match text)                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `notes`            | string (HTML)     | no       | Designer notes and guidance                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `preconditions`    | array of objects  | no       | Conditions that must all be met (AND) for the move tile to be enabled. See [Preconditions](#preconditions).                                                                                                                                                                                                                                                                                                                                                                                                |
+| `references`       | array of strings  | no       | Context dropdowns this move's text references (same valid values as `requires`). Unlike `requires`, these don't gate the tile — they inform the dialog/log which context to pull data from.                                                                                                                                                                                                                                                                                                                |
+| `table`            | array             | no       | Inline outcome table (see [Inline Tables](#inline-tables))                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `tableType`        | string            | no       | Table variant: `"askOracle"` or `"delveDepths"`                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `progressTrack`    | string            | no       | Marks this as a progress move. Value is the track name (`"bonds"`, `"failures"`, `"vows"`, `"journey"`, `"combat"`, `"delve"`). Progress moves skip the d6 action die, ignore momentum, and compare the track score directly against 2d10 challenge dice. Adds are still adjustable and applied on top of the progress score. Track thresholds (e.g., failure track ≥ 6) are encoded via `preconditions`, not hardcoded.                                                                                   |
+| `progressSource`   | string            | no       | For progress moves: identifies which runtime track provides the score. Valid values: `"combat"` (active foe encounter ticks ÷ 4), `"journey"` (active journey expedition ticks ÷ 4), `"delve"` (active site expedition ticks ÷ 4), `"bonds"` (character bonds ticks ÷ 4), `"failures"` (character failures ticks ÷ 4), `"vows"` (placeholder — shows 0 until individual vow routing is implemented). Defaults to `"combat"` if omitted. This field pairs with the `progressContext` prop on `MovesDialog`. |
+| `tableRoll`        | boolean           | no       | If `true`, the move's primary action is rolling this table (no action+challenge roll)                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `rarityRoll`       | boolean           | no       | If `true`, the move rolls a single d6 rarity die                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `logTitle`         | string (template) | no       | Template for the session log entry title. Supports placeholder variables: `{character}` (active character name), `{stat}` (stat label used in the roll), `{expedition}` (active expedition/site/journey name), `{foe}` (active foe name), `{move}` (move's literal name). Falls back to `{character} — {move name} ({stat})` or `{character} — {move name}` when omitted.                                                                                                                                  |
 
 ### Preconditions
 
@@ -84,28 +84,28 @@ The `preconditions` array gates availability in the picker for both moves and as
 
 #### Precondition Object Fields
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `key` | string | yes | The value to check (see key categories below) |
-| `min` | integer | no | Value must be ≥ this (range 1–10) |
-| `max` | integer | no | Value must be ≤ this (range 1–10) |
-| `eq` | integer | no | Value must equal this exactly |
-| `ne` | integer | no | Value must not equal this |
+| Field | Type    | Required | Description                                   |
+| ----- | ------- | -------- | --------------------------------------------- |
+| `key` | string  | yes      | The value to check (see key categories below) |
+| `min` | integer | no       | Value must be ≥ this (range 1–10)             |
+| `max` | integer | no       | Value must be ≤ this (range 1–10)             |
+| `eq`  | integer | no       | Value must equal this exactly                 |
+| `ne`  | integer | no       | Value must not equal this                     |
 
 Multiple operators on one precondition are AND'd (e.g., `min: 2, max: 8` means "between 2 and 8 inclusive").
 
 #### Key Categories
 
-| Category | Valid Keys | Values | Notes |
-|----------|-----------|--------|-------|
-| **Global Selection** | `hasCharacter`, `hasSite`, `hasJourney`, `hasFoe` | `eq: 1` (selected) or `eq: 0` (not selected) | Whether the corresponding dropdown has an active selection |
-| **Character Values** | `momentum`, `health`, `spirit`, `supply`, `mana`, `experience`, `edge`, `heart`, `iron`, `shadow`, `wits` | Numeric, use `min`/`max`/`eq`/`ne` | Direct character stat or resource read |
-| **Progress Tracks** | `bonds`, `failures` | 1–10 (boxes) | Stored as ticks internally; divided by 4 for comparison |
-| **Computed Counts** | `vowCount`, `assetCount`, `companionCount`, `rarityCount` | Numeric | Count of active vows, total assets, companion assets, or assets with a rarity |
-| **Initiative** | `initiative` | 0=none, 1=character, 2=foe | Combat initiative state; use `eq` to gate on who has initiative |
-| **Debilities** | `wounded`, `shaken`, `unprepared`, `encumbered`, `maimed`, `corrupted`, `cursed`, `tormented` | `eq: 0` (off) or `eq: 1` (on) | Boolean debility flags |
-| **Touched** | `touched` | 0=pure, 1=prime, 2=second, 3=third, 4=feral | Numeric scale; use `min`/`max` for thresholds (e.g., `min: 1` = prime or worse) |
-| **Assets** | Any asset name (e.g., `"Ritualist"`) | `eq: 0` (lacks) or `eq: 1` (has) | Checks character's asset list by name |
+| Category             | Valid Keys                                                                                                | Values                                       | Notes                                                                           |
+| -------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------- |
+| **Global Selection** | `hasCharacter`, `hasSite`, `hasJourney`, `hasFoe`                                                         | `eq: 1` (selected) or `eq: 0` (not selected) | Whether the corresponding dropdown has an active selection                      |
+| **Character Values** | `momentum`, `health`, `spirit`, `supply`, `mana`, `experience`, `edge`, `heart`, `iron`, `shadow`, `wits` | Numeric, use `min`/`max`/`eq`/`ne`           | Direct character stat or resource read                                          |
+| **Progress Tracks**  | `bonds`, `failures`                                                                                       | 1–10 (boxes)                                 | Stored as ticks internally; divided by 4 for comparison                         |
+| **Computed Counts**  | `vowCount`, `assetCount`, `companionCount`, `rarityCount`                                                 | Numeric                                      | Count of active vows, total assets, companion assets, or assets with a rarity   |
+| **Initiative**       | `initiative`                                                                                              | 0=none, 1=character, 2=foe                   | Combat initiative state; use `eq` to gate on who has initiative                 |
+| **Debilities**       | `wounded`, `shaken`, `unprepared`, `encumbered`, `maimed`, `corrupted`, `cursed`, `tormented`             | `eq: 0` (off) or `eq: 1` (on)                | Boolean debility flags                                                          |
+| **Touched**          | `touched`                                                                                                 | 0=pure, 1=prime, 2=second, 3=third, 4=feral  | Numeric scale; use `min`/`max` for thresholds (e.g., `min: 1` = prime or worse) |
+| **Assets**           | Any asset name (e.g., `"Ritualist"`)                                                                      | `eq: 0` (lacks) or `eq: 1` (has)             | Checks character's asset list by name                                           |
 
 #### Examples
 
@@ -221,9 +221,9 @@ Link to another move. In the move dialog, clicking opens that move's detail dial
 <a class="move-link" data-id="move/pay-the-price">Pay the Price</a>
 ```
 
-| Attribute | Description |
-|-----------|-------------|
-| `class` | Must be `move-link` |
+| Attribute | Description                                             |
+| --------- | ------------------------------------------------------- |
+| `class`   | Must be `move-link`                                     |
 | `data-id` | The target move's `id` field (e.g., `move/endure-harm`) |
 
 The link text should be the move's display name.
@@ -237,23 +237,23 @@ Link that modifies a character resource. In the log, clicking applies the change
 <a class="resource-link" data-resource="health" data-value="-2">−2 health</a>
 ```
 
-| Attribute | Description |
-|-----------|-------------|
-| `class` | Must be `resource-link` |
+| Attribute       | Description                                                                                                                              |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `class`         | Must be `resource-link`                                                                                                                  |
 | `data-resource` | One of: `momentum`, `health`, `spirit`, `supply`, `bonds`, `failures`, `xp` (plus `mana` in [Yrt](yrt/data-format-yrt.md#mana-resource)) |
-| `data-value` | Signed integer: `+1`, `+2`, `-1`, `-2`, etc. |
+| `data-value`    | Signed integer: `+1`, `+2`, `-1`, `-2`, etc.                                                                                             |
 
 Resources are clamped to their valid ranges:
 
-| Resource | Range | Log Color |
-|----------|-------|-----------|
-| `momentum` | −6 to dynamic max | blue (`#60a5fa`) |
-| `health` | 0–5 | red (`#f87171`) |
-| `spirit` | 0–5 | purple (`#a78bfa`) |
-| `supply` | 0–5 | green (`#34d399`) |
-| `bonds` | 0–40 | blue (`#60a5fa`) |
-| `failures` | 0–40 | red (`#f87171`) |
-| `xp` | 0–30 | yellow (`#facc15`) |
+| Resource   | Range             | Log Color          |
+| ---------- | ----------------- | ------------------ |
+| `momentum` | −6 to dynamic max | blue (`#60a5fa`)   |
+| `health`   | 0–5               | red (`#f87171`)    |
+| `spirit`   | 0–5               | purple (`#a78bfa`) |
+| `supply`   | 0–5               | green (`#34d399`)  |
+| `bonds`    | 0–40              | blue (`#60a5fa`)   |
+| `failures` | 0–40              | red (`#f87171`)    |
+| `xp`       | 0–30              | yellow (`#facc15`) |
 
 See [Yrt extensions](yrt/data-format-yrt.md#mana-resource) for the `mana` resource (0–10, amber `#f59e0b`).
 
@@ -270,11 +270,11 @@ Link that marks or clears a debility. In the log, clicking toggles the debility 
 <a class="debility-link" data-debility="wounded" data-value="0">wounded</a>
 ```
 
-| Attribute | Description |
-|-----------|-------------|
-| `class` | Must be `debility-link` |
+| Attribute       | Description                                                                                           |
+| --------------- | ----------------------------------------------------------------------------------------------------- |
+| `class`         | Must be `debility-link`                                                                               |
 | `data-debility` | One of: `wounded`, `maimed`, `shaken`, `corrupted`, `cursed`, `tormented`, `unprepared`, `encumbered` |
-| `data-value` | `1` to mark the debility, `0` to clear it |
+| `data-value`    | `1` to mark the debility, `0` to clear it                                                             |
 
 #### Progress Links
 
@@ -285,12 +285,13 @@ Link that marks progress on one of the character's progress tracks (vows, bonds,
 <a class="progress-link" data-value="2">Mark progress twice</a>
 ```
 
-| Attribute | Description |
-|-----------|-------------|
-| `class` | Must be `progress-link` |
+| Attribute    | Description                                                                                     |
+| ------------ | ----------------------------------------------------------------------------------------------- |
+| `class`      | Must be `progress-link`                                                                         |
 | `data-value` | Positive integer: number of times to mark progress (usually `1`, `2` for "mark progress twice") |
 
 When clicked in the log, the user selects which track to mark from a popup showing:
+
 - **Vows** — each active (unfulfilled) vow, marking by difficulty-based ticks (VOW_MARK_TICKS)
 - **Bonds** — single track, +1 tick per mark
 - **Failures** — single track, +1 tick per mark
@@ -307,9 +308,9 @@ Link that marks menace progress on a vow's threat track. In the log, clicking op
 <a class="menace-link" data-value="2">Mark menace twice</a>
 ```
 
-| Attribute | Description |
-|-----------|-------------|
-| `class` | Must be `menace-link` |
+| Attribute    | Description                                      |
+| ------------ | ------------------------------------------------ |
+| `class`      | Must be `menace-link`                            |
 | `data-value` | Positive integer: number of times to mark menace |
 
 #### Reset-Track Links
@@ -320,9 +321,9 @@ Link that clears a named progress track to 0 ticks. In the log, clicking zeroes 
 <a class="reset-track-link" data-track="failures">clear all progress</a>
 ```
 
-| Attribute | Description |
-|-----------|-------------|
-| `class` | Must be `reset-track-link` |
+| Attribute    | Description                                                                                                           |
+| ------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `class`      | Must be `reset-track-link`                                                                                            |
 | `data-track` | Name of the character track to reset: `failures`, `bonds`, or any other track stored as a tick count on the character |
 
 After clicking, the link receives strikethrough styling (`.resource-spent`) to prevent double-application. A log entry is appended confirming the old value and the reset to 0.
@@ -338,9 +339,9 @@ Link that sets combat initiative. In the log, clicking sets whether the characte
 <a class="initiative-link" data-value="foe">You are in a bad spot</a>
 ```
 
-| Attribute | Description |
-|-----------|-------------|
-| `class` | Must be `initiative-link` |
+| Attribute    | Description                                                                  |
+| ------------ | ---------------------------------------------------------------------------- |
+| `class`      | Must be `initiative-link`                                                    |
 | `data-value` | Either `"character"` (player has initiative) or `"foe"` (foe has initiative) |
 
 #### Oracle Links
@@ -351,11 +352,11 @@ Link that opens an oracle table. Used in asset ability text and move outcome tex
 <a class="oracle-link" data-oracle="manaBacklash">Mana Backlash Oracle</a>
 ```
 
-| Attribute | Description |
-|-----------|-------------|
-| `class` | Must be `oracle-link` |
-| `data-oracle` | The oracle table's `key` value (e.g., `"manaBacklash"`, `"monstrosityPrimaryForm"`) |
-| `data-stat` | *(Optional)* For multi-stat oracles (e.g. `delveDepths`): the stat column to pre-select and highlight when the oracle opens. Injected dynamically at roll time — **do not hardcode in source JSON**. Valid values: `edge`, `shadow`, `wits`. |
+| Attribute     | Description                                                                                                                                                                                                                                  |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `class`       | Must be `oracle-link`                                                                                                                                                                                                                        |
+| `data-oracle` | The oracle table's `key` value (e.g., `"manaBacklash"`, `"monstrosityPrimaryForm"`)                                                                                                                                                          |
+| `data-stat`   | _(Optional)_ For multi-stat oracles (e.g. `delveDepths`): the stat column to pre-select and highlight when the oracle opens. Injected dynamically at roll time — **do not hardcode in source JSON**. Valid values: `edge`, `shadow`, `wits`. |
 
 **Stat-aware oracle links** are used when a move's outcome depends on which stat was rolled. The move JSON contains a plain oracle-link (no `data-stat`), and `MovesDialog` injects the rolled stat at log-write time:
 
@@ -364,7 +365,10 @@ Link that opens an oracle table. Used in asset ability text and move outcome tex
 Roll on the <a class="oracle-link" data-oracle="delveDepths">Delve the Depths Weak Hit Oracle</a>.
 
 <!-- In the session log after rolling with Edge — data-stat injected by MovesDialog -->
-Roll on the <a class="oracle-link" data-oracle="delveDepths" data-stat="edge">Delve the Depths Weak Hit Oracle</a>.
+Roll on the
+<a class="oracle-link" data-oracle="delveDepths" data-stat="edge"
+  >Delve the Depths Weak Hit Oracle</a
+>.
 ```
 
 When the log link is clicked, `LogPanel` reads `data-stat` and passes it to `OraclesDialog.open(key, undefined, stat)`, which pre-selects the matching column in the table and highlights it.
@@ -378,9 +382,9 @@ A **display-only** placeholder replaced with the actual harm amount when a move 
 <a class="harm-link" data-resource="spirit">-harm spirit</a>
 ```
 
-| Attribute | Description |
-|-----------|-------------|
-| `class` | Must be `harm-link` |
+| Attribute       | Description                                     |
+| --------------- | ----------------------------------------------- |
+| `class`         | Must be `harm-link`                             |
 | `data-resource` | The resource being harmed: `health` or `spirit` |
 
 The link text `-harm {resource}` is a static placeholder; when the move is logged the UI substitutes the actual harm value that was suffered. Clicking this element has no effect.
@@ -406,15 +410,15 @@ This replaces the old `weakRef`/`missRef` system. When a weak hit says "As above
 
 ### Match Text (strongMatch / weakMatch / missMatch)
 
-When both challenge dice show the same number (a *match*), the log appends additional guidance text after the outcome text. Generic defaults are used unless a move provides its own match text via the `strongMatch`, `weakMatch`, or `missMatch` fields.
+When both challenge dice show the same number (a _match_), the log appends additional guidance text after the outcome text. Generic defaults are used unless a move provides its own match text via the `strongMatch`, `weakMatch`, or `missMatch` fields.
 
 **Generic defaults:**
 
-| Outcome | Default match text |
-|---------|-------------------|
+| Outcome    | Default match text                                                                                                    |
+| ---------- | --------------------------------------------------------------------------------------------------------------------- |
 | Strong Hit | "On a match, you may introduce an extraordinary twist, find an unexpected opportunity, or gain a dramatic advantage." |
-| Weak Hit | "On a match, you may introduce an unexpected complication, a surprising turn of events, or a new danger." |
-| Miss | "On a match, you should introduce a dire threat, a devastating revelation, or a catastrophic turn of events." |
+| Weak Hit   | "On a match, you may introduce an unexpected complication, a surprising turn of events, or a new danger."             |
+| Miss       | "On a match, you should introduce a dire threat, a devastating revelation, or a catastrophic turn of events."         |
 
 **Override example:**
 
@@ -437,7 +441,10 @@ Some moves have a `table` array for conditional outcomes (e.g., Endure Harm's mi
 ```json
 {
   "table": [
-    { "topRange": 10, "value": "The harm is mortal. <a class=\"move-link\" data-id=\"move/face-death\">Face Death</a>." },
+    {
+      "topRange": 10,
+      "value": "The harm is mortal. <a class=\"move-link\" data-id=\"move/face-death\">Face Death</a>."
+    },
     { "topRange": 35, "value": "You are unconscious." },
     { "topRange": 100, "value": "You are battered but still standing." }
   ]
@@ -483,14 +490,14 @@ Progress moves roll the track score vs 2d10 (no d6 action die, no stat, no momen
 
 The six progress moves and their sources:
 
-| Move | `progressSource` | Runtime Source |
-|------|-----------------|----------------|
-| End the Fight | `"combat"` | Active foe encounter (ticks ÷ 4) |
-| Reach Your Destination | `"journey"` | Active journey expedition (ticks ÷ 4) |
-| Locate Your Objective | `"delve"` | Active site expedition (ticks ÷ 4) |
-| Fulfill Your Vow | `"vows"` | Placeholder (0) — individual vow routing TBD |
-| Write Your Epilogue | `"bonds"` | Character bonds track (ticks ÷ 4) |
-| Learn From Your Failures | `"failures"` | Character failures track (ticks ÷ 4) |
+| Move                     | `progressSource` | Runtime Source                               |
+| ------------------------ | ---------------- | -------------------------------------------- |
+| End the Fight            | `"combat"`       | Active foe encounter (ticks ÷ 4)             |
+| Reach Your Destination   | `"journey"`      | Active journey expedition (ticks ÷ 4)        |
+| Locate Your Objective    | `"delve"`        | Active site expedition (ticks ÷ 4)           |
+| Fulfill Your Vow         | `"vows"`         | Placeholder (0) — individual vow routing TBD |
+| Write Your Epilogue      | `"bonds"`        | Character bonds track (ticks ÷ 4)            |
+| Learn From Your Failures | `"failures"`     | Character failures track (ticks ÷ 4)         |
 
 Adds are still applied on top of the progress score during the roll.
 
@@ -523,27 +530,27 @@ Each file contains an `assets` array and an optional `rarities` array:
 
 ### Asset Object Fields
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `id` | string | yes | Unique identifier: `category-type/kebab-case-name` (e.g., `combat/archer`) |
-| `name` | string | yes | Display name |
-| `category` | string | yes | One of: `"Combat Talent"`, `"Companion"`, `"Path"`, `"Ritual"` (plus `"Touched"` in [Yrt](yrt/data-format-yrt.md#touched-assets)) |
-| `summary` | string | yes | One-line plain-text summary shown in the picker tile. Preferred over `preamble` for the tile. |
-| `preamble` | string or null | no | Prerequisite or flavour text (e.g., `"If you wield a bow."`) — displayed on the asset card **before** the ability list. Markdown links (`[text](id:...)`) are stripped to plain text at render time. |
-| `postamble` | string or null | no | Explanatory text displayed on the asset card **after** the ability list (e.g., asset-specific constraints, Touched feature-use note) |
-| `preconditions` | array of objects | no | Conditions that must be met to add this asset. Same schema as move [Preconditions](#preconditions). Assets failing preconditions are faded and non-clickable in the picker. |
-| `abilities` | array | yes | Exactly 3 ability objects |
-| `customFields` | CustomFieldDef[] | no | Array of custom input fields rendered in the asset card body. Values stored in `CharacterAsset.customValues` keyed by `field.id`. See [Custom Fields](#custom-fields). |
-| `exclusiveGroup` | string | no | If set, the character may own at most one asset whose `exclusiveGroup` matches this value at a time. Attempting to add a second triggers a user-facing error. Example: `"touched"` (only one Touched variant active at once). |
-| `abilityMaxByField` | object | no | Maps a `customField.id` → option value → maximum number of enabled abilities. Used to gate ability checkboxes based on a dropdown selection. When the player selects a lower level, excess enabled abilities are automatically cleared. Example: `{ "touchedLevel": { "pure": 0, "prime": 1, "second": 2, "third": 3, "feral": 3 } }`. |
+| Field               | Type             | Required | Description                                                                                                                                                                                                                                                                                                                            |
+| ------------------- | ---------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                | string           | yes      | Unique identifier: `category-type/kebab-case-name` (e.g., `combat/archer`)                                                                                                                                                                                                                                                             |
+| `name`              | string           | yes      | Display name                                                                                                                                                                                                                                                                                                                           |
+| `category`          | string           | yes      | One of: `"Combat Talent"`, `"Companion"`, `"Path"`, `"Ritual"` (plus `"Touched"` in [Yrt](yrt/data-format-yrt.md#touched-assets))                                                                                                                                                                                                      |
+| `summary`           | string           | yes      | One-line plain-text summary shown in the picker tile. Preferred over `preamble` for the tile.                                                                                                                                                                                                                                          |
+| `preamble`          | string or null   | no       | Prerequisite or flavour text (e.g., `"If you wield a bow."`) — displayed on the asset card **before** the ability list. Markdown links (`[text](id:...)`) are stripped to plain text at render time.                                                                                                                                   |
+| `postamble`         | string or null   | no       | Explanatory text displayed on the asset card **after** the ability list (e.g., asset-specific constraints, Touched feature-use note)                                                                                                                                                                                                   |
+| `preconditions`     | array of objects | no       | Conditions that must be met to add this asset. Same schema as move [Preconditions](#preconditions). Assets failing preconditions are faded and non-clickable in the picker.                                                                                                                                                            |
+| `abilities`         | array            | yes      | Exactly 3 ability objects                                                                                                                                                                                                                                                                                                              |
+| `customFields`      | CustomFieldDef[] | no       | Array of custom input fields rendered in the asset card body. Values stored in `CharacterAsset.customValues` keyed by `field.id`. See [Custom Fields](#custom-fields).                                                                                                                                                                 |
+| `exclusiveGroup`    | string           | no       | If set, the character may own at most one asset whose `exclusiveGroup` matches this value at a time. Attempting to add a second triggers a user-facing error. Example: `"touched"` (only one Touched variant active at once).                                                                                                          |
+| `abilityMaxByField` | object           | no       | Maps a `customField.id` → option value → maximum number of enabled abilities. Used to gate ability checkboxes based on a dropdown selection. When the player selects a lower level, excess enabled abilities are automatically cleared. Example: `{ "touchedLevel": { "pure": 0, "prime": 1, "second": 2, "third": 3, "feral": 3 } }`. |
 
 Each ability object:
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `enabled` | boolean | yes | `true` if the ability starts checked when the asset is first acquired (see [Auto-Enabled Abilities](#auto-enabled-abilities)) |
-| `text` | string (HTML) | yes | Ability description. Move names that appear in the text are decorated with `<a class="move-link">` tags (see [Move Links in Ability Text](#move-links-in-ability-text)). |
-| `name` | string | no | Named ability (companions only, e.g., `"Scout"`, `"Bonded"`) |
+| Field     | Type          | Required | Description                                                                                                                                                              |
+| --------- | ------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `enabled` | boolean       | yes      | `true` if the ability starts checked when the asset is first acquired (see [Auto-Enabled Abilities](#auto-enabled-abilities))                                            |
+| `text`    | string (HTML) | yes      | Ability description. Move names that appear in the text are decorated with `<a class="move-link">` tags (see [Move Links in Ability Text](#move-links-in-ability-text)). |
+| `name`    | string        | no       | Named ability (companions only, e.g., `"Scout"`, `"Bonded"`)                                                                                                             |
 
 ### Move Links in Ability Text
 
@@ -559,6 +566,7 @@ When you <a class="move-link" data-id="move/secure-an-advantage">Secure an Advan
 ```
 
 **Rules:**
+
 - One `<a class="move-link">` per move reference; the `data-id` is the move's full `id` (e.g., `move/secure-an-advantage`).
 - The link text preserves the original capitalisation from the source text.
 - Matches are whole-name only (word boundaries); partial substrings are never wrapped.
@@ -571,13 +579,13 @@ A companion index file (`asset-move-refs.json`) lists every move ID that each as
 
 When a character acquires an asset, each ability checkbox is pre-set to `ability.enabled`. The convention by category is:
 
-| Category | First ability starts | Other abilities start |
-|----------|---------------------|-----------------------|
-| **Path** | ✓ Enabled | ✗ Unchecked |
-| **Ritual** | ✓ Enabled | ✗ Unchecked |
-| **Combat Talent** | ✓ Enabled | ✗ Unchecked |
-| **Companion** | ✗ Unchecked | ✗ Unchecked |
-| **Touched** (Yrt) | ✓ Enabled | ✗ Unchecked |
+| Category          | First ability starts | Other abilities start |
+| ----------------- | -------------------- | --------------------- |
+| **Path**          | ✓ Enabled            | ✗ Unchecked           |
+| **Ritual**        | ✓ Enabled            | ✗ Unchecked           |
+| **Combat Talent** | ✓ Enabled            | ✗ Unchecked           |
+| **Companion**     | ✗ Unchecked          | ✗ Unchecked           |
+| **Touched** (Yrt) | ✓ Enabled            | ✗ Unchecked           |
 
 Per the Ironsworn printable asset sheet: Paths, Rituals, and Combat Talents include their first ability when acquired (filled circle on the card). Companions start with no abilities pre-enabled — all three must be purchased with 2 XP each.
 
@@ -585,11 +593,11 @@ Per the Ironsworn printable asset sheet: Paths, Rituals, and Combat Talents incl
 
 The UI enforces XP requirements for asset-related actions:
 
-| Action | XP Cost | Gate |
-|--------|---------|------|
-| Acquire a new asset | 3 XP | `+ Asset` button disabled when `xp < 3` |
-| Enable a new ability checkbox | 2 XP | Ability checkbox disabled when `xp < 2` |
-| Unlock a rarity | `rarity.xpCost` XP | Rarity checkbox disabled when `xp < rarity.xpCost` |
+| Action                        | XP Cost            | Gate                                               |
+| ----------------------------- | ------------------ | -------------------------------------------------- |
+| Acquire a new asset           | 3 XP               | `+ Asset` button disabled when `xp < 3`            |
+| Enable a new ability checkbox | 2 XP               | Ability checkbox disabled when `xp < 2`            |
+| Unlock a rarity               | `rarity.xpCost` XP | Rarity checkbox disabled when `xp < rarity.xpCost` |
 
 Disabling a previously-enabled ability has no XP cost (per Ironsworn RAW
 — XP spent is sunk) and is always allowed.
@@ -646,7 +654,7 @@ All asset log entries are titled `{characterName} — Assets` (e.g.,
 - **Asset modified** (mode = edit): `Asset modified: **Name** −N experience`
   (XP link only present when `totalCost > 0`).
 - **Asset removed** (Delete button in edit mode): `Asset removed:
-  **Name** (Category, N marked)` — no XP charge or refund.
+**Name** (Category, N marked)` — no XP charge or refund.
 
 Rarity names are always displayed with the `RARITY:` prefix in the
 asset card UI when expanded; the consolidated log entry shows the
@@ -658,40 +666,40 @@ The `customFields` array on an asset definition declares interactive controls re
 
 #### CustomFieldDef Schema
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `id` | string | yes | Unique key within this asset (e.g. `"health"`, `"armor"`). Used as the key in `customValues`. |
-| `type` | string | yes | One of `"string"`, `"counter"`, `"radio"`, `"dropdown"`, `"switch"` |
-| `label` | string | yes | Human-readable label shown next to the control |
-| `shortLabel` | string | no | Short label used in the Global Context Bar pill (e.g. `"Hawk"` instead of `"Companion Health"`). Defaults to `label` when omitted. `string`-type fields are never shown as GCB pills regardless of this field. |
-| `tooltipLabel` | string | no | Tooltip text shown on hover over the GCB pill. Falls back to the asset's `name` when omitted. Use when the pill text (`shortLabel`) differs from what the tooltip should say (e.g. `shortLabel: "Mana"`, `tooltipLabel: "Conclave Ritual"`). |
-| `position` | `"top"` \| `"bottom"` | no | `"top"` (default) renders before the preamble; `"bottom"` renders after abilities |
-| `default` | string \| number | no | Initial value when the asset is first added |
-| `placeholder` | string | no | Hint text for `string` fields |
-| `maxValue` | number \| number[] | no | `counter` only. Max pip count. Array form maps per-ability: the effective max is the value at the index of the highest enabled ability (e.g. `[3, 6, 6]`) |
-| `icon` | string | no | `counter` only. Canonical icon name shown in the header badge. See [Counter Icons](#counter-icons). |
-| `global` | boolean | no | `counter` only. If `true`, all counter fields with the same `id` share one value across the character (e.g. shared supply). |
-| `options` | CustomFieldOption[] | no | `radio` / `dropdown` only. Each option: `{ id: string, label: string }`. |
+| Field          | Type                  | Required | Description                                                                                                                                                                                                                                  |
+| -------------- | --------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`           | string                | yes      | Unique key within this asset (e.g. `"health"`, `"armor"`). Used as the key in `customValues`.                                                                                                                                                |
+| `type`         | string                | yes      | One of `"string"`, `"counter"`, `"radio"`, `"dropdown"`, `"switch"`                                                                                                                                                                          |
+| `label`        | string                | yes      | Human-readable label shown next to the control                                                                                                                                                                                               |
+| `shortLabel`   | string                | no       | Short label used in the Global Context Bar pill (e.g. `"Hawk"` instead of `"Companion Health"`). Defaults to `label` when omitted. `string`-type fields are never shown as GCB pills regardless of this field.                               |
+| `tooltipLabel` | string                | no       | Tooltip text shown on hover over the GCB pill. Falls back to the asset's `name` when omitted. Use when the pill text (`shortLabel`) differs from what the tooltip should say (e.g. `shortLabel: "Mana"`, `tooltipLabel: "Conclave Ritual"`). |
+| `position`     | `"top"` \| `"bottom"` | no       | `"top"` (default) renders before the preamble; `"bottom"` renders after abilities                                                                                                                                                            |
+| `default`      | string \| number      | no       | Initial value when the asset is first added                                                                                                                                                                                                  |
+| `placeholder`  | string                | no       | Hint text for `string` fields                                                                                                                                                                                                                |
+| `maxValue`     | number \| number[]    | no       | `counter` only. Max pip count. Array form maps per-ability: the effective max is the value at the index of the highest enabled ability (e.g. `[3, 6, 6]`)                                                                                    |
+| `icon`         | string                | no       | `counter` only. Canonical icon name shown in the header badge. See [Counter Icons](#counter-icons).                                                                                                                                          |
+| `global`       | boolean               | no       | `counter` only. If `true`, all counter fields with the same `id` share one value across the character (e.g. shared supply).                                                                                                                  |
+| `options`      | CustomFieldOption[]   | no       | `radio` / `dropdown` only. Each option: `{ id: string, label: string }`.                                                                                                                                                                     |
 
 #### Counter Icons
 
 The `icon` field on a counter `customField` references a canonical short name:
 
-| Name | Description |
-|------|-------------|
-| `heart` | Health / vitality (companions) |
-| `skull-and-crossbones` | Poison / doses |
-| `sword` | Combat charges |
-| `shield` | Defensive charges |
-| `eye` | Ritual / perception |
-| `moon` | Magic / dark ritual |
-| `sun` | Light / radiance |
-| `dice` | Fate / chance |
-| `note` | Knowledge / lore |
-| `sack-dollar` | Wealth (Fortune Hunter) |
-| `mana` | Essence / mana (diamond shape) |
-| `puppet` | Animated constructs (Awakening ritual) |
-| `rock-golem` | Simulacrum constructs (Awakening ritual) |
+| Name                   | Description                              |
+| ---------------------- | ---------------------------------------- |
+| `heart`                | Health / vitality (companions)           |
+| `skull-and-crossbones` | Poison / doses                           |
+| `sword`                | Combat charges                           |
+| `shield`               | Defensive charges                        |
+| `eye`                  | Ritual / perception                      |
+| `moon`                 | Magic / dark ritual                      |
+| `sun`                  | Light / radiance                         |
+| `dice`                 | Fate / chance                            |
+| `note`                 | Knowledge / lore                         |
+| `sack-dollar`          | Wealth (Fortune Hunter)                  |
+| `mana`                 | Essence / mana (diamond shape)           |
+| `puppet`               | Animated constructs (Awakening ritual)   |
+| `rock-golem`           | Simulacrum constructs (Awakening ritual) |
 
 ### Companion Assets
 
@@ -704,7 +712,15 @@ Companions use `customFields` for the companion name and health track:
   "category": "Companion",
   "customFields": [
     { "id": "companion-name", "type": "string", "label": "Companion Name" },
-    { "id": "health", "type": "counter", "label": "Health", "position": "bottom", "maxValue": 3, "default": 3, "icon": "heart" }
+    {
+      "id": "health",
+      "type": "counter",
+      "label": "Health",
+      "position": "bottom",
+      "maxValue": 3,
+      "default": 3,
+      "icon": "heart"
+    }
   ],
   "abilities": [
     { "enabled": false, "name": "Far-seeing", "text": "..." },
@@ -719,16 +735,25 @@ The companion name is stored in `customValues["companion-name"]` and health in `
 ### Assets with Custom Fields — Examples
 
 **Path with counter (Fortune Hunter):**
+
 ```json
 {
   "id": "path/fortune-hunter",
   "customFields": [
-    { "id": "wealth", "type": "counter", "label": "Wealth", "position": "bottom", "maxValue": 5, "icon": "sack-dollar" }
+    {
+      "id": "wealth",
+      "type": "counter",
+      "label": "Wealth",
+      "position": "bottom",
+      "maxValue": 5,
+      "icon": "sack-dollar"
+    }
   ]
 }
 ```
 
 **Path with two name inputs (Devotant):**
+
 ```json
 {
   "id": "path/devotant",
@@ -740,12 +765,16 @@ The companion name is stored in `customValues["companion-name"]` and health in `
 ```
 
 **Combat Talent with radio buttons (Ironclad):**
+
 ```json
 {
   "id": "combat/ironclad",
   "customFields": [
     {
-      "id": "armor", "type": "radio", "label": "Armor", "position": "bottom",
+      "id": "armor",
+      "type": "radio",
+      "label": "Armor",
+      "position": "bottom",
       "options": [
         { "id": "lightly-armored", "label": "Lightly Armored" },
         { "id": "geared-for-war", "label": "Geared for War" }
@@ -756,11 +785,20 @@ The companion name is stored in `customValues["companion-name"]` and health in `
 ```
 
 **Ritual with array counter (Awakening — simulacrum health rises with abilities):**
+
 ```json
 {
   "id": "ritual/awakening",
   "customFields": [
-    { "id": "health", "type": "counter", "label": "Health", "position": "bottom", "maxValue": [3, 6, 6], "default": 3, "icon": "rock-golem" }
+    {
+      "id": "health",
+      "type": "counter",
+      "label": "Health",
+      "position": "bottom",
+      "maxValue": [3, 6, 6],
+      "default": 3,
+      "icon": "rock-golem"
+    }
   ]
 }
 ```
@@ -781,13 +819,13 @@ Rarity enhancements for existing assets:
 }
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | string | Unique identifier: `rarity/kebab-case-name` |
-| `name` | string | Display name |
-| `assetId` | string | The `id` of the asset this rarity enhances |
-| `xpCost` | number | Experience cost to unlock |
-| `description` | string | Narrative description |
+| Field         | Type   | Description                                 |
+| ------------- | ------ | ------------------------------------------- |
+| `id`          | string | Unique identifier: `rarity/kebab-case-name` |
+| `name`        | string | Display name                                |
+| `assetId`     | string | The `id` of the asset this rarity enhances  |
+| `xpCost`      | number | Experience cost to unlock                   |
+| `description` | string | Narrative description                       |
 
 ### Asset Move References (asset-move-refs.json)
 
@@ -809,13 +847,13 @@ A pre-computed index mapping each asset (and each of its abilities) to the set o
 ]
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | string | Asset ID (matches the asset's `id` field) |
-| `abilities` | array | Per-ability move lists (only abilities with ≥ 1 move reference are included) |
-| `abilities[].index` | number | 0-based index of the ability within the asset's `abilities` array |
-| `abilities[].moves` | array of strings | Move IDs referenced in this ability's `text`, in order of appearance |
-| `allMoves` | array of strings | Deduplicated union of all move IDs across all abilities |
+| Field               | Type             | Description                                                                  |
+| ------------------- | ---------------- | ---------------------------------------------------------------------------- |
+| `id`                | string           | Asset ID (matches the asset's `id` field)                                    |
+| `abilities`         | array            | Per-ability move lists (only abilities with ≥ 1 move reference are included) |
+| `abilities[].index` | number           | 0-based index of the ability within the asset's `abilities` array            |
+| `abilities[].moves` | array of strings | Move IDs referenced in this ability's `text`, in order of appearance         |
+| `allMoves`          | array of strings | Deduplicated union of all move IDs across all abilities                      |
 
 **Usage:** The MovesDialog "Relevant Assets" panel reads this index at dialog-open time to find which of the character's enabled abilities mention the currently-selected move, then surfaces those abilities as contextual suggestions without auto-applying any modifier.
 
@@ -845,21 +883,21 @@ Each file is a single oracle table:
 
 ### Oracle Object Fields
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `key` | string | yes | Unique identifier in camelCase (e.g., `"action"`, `"settlementName"`) |
-| `title` | string | yes | Display title |
-| `group` | string | yes | Grouping label (e.g., `"Core Ironsworn"`, `"Delve"`, `"Yrt"`) |
-| `selectLabel` | string | yes | Label for the dropdown selector |
-| `description` | string | no | Guidance text for how to use the oracle |
-| `data` | array | yes | Array of oracle entries |
+| Field         | Type   | Required | Description                                                           |
+| ------------- | ------ | -------- | --------------------------------------------------------------------- |
+| `key`         | string | yes      | Unique identifier in camelCase (e.g., `"action"`, `"settlementName"`) |
+| `title`       | string | yes      | Display title                                                         |
+| `group`       | string | yes      | Grouping label (e.g., `"Core Ironsworn"`, `"Delve"`, `"Yrt"`)         |
+| `selectLabel` | string | yes      | Label for the dropdown selector                                       |
+| `description` | string | no       | Guidance text for how to use the oracle                               |
+| `data`        | array  | yes      | Array of oracle entries                                               |
 
 Each oracle entry:
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `topRange` | number | Upper boundary of the d100 range |
-| `value` | string or object | Result text (string) or structured data (see special types) |
+| Field      | Type             | Description                                                 |
+| ---------- | ---------------- | ----------------------------------------------------------- |
+| `topRange` | number           | Upper boundary of the d100 range                            |
+| `value`    | string or object | Result text (string) or structured data (see special types) |
 
 ### Special Oracle Types
 
@@ -886,18 +924,18 @@ Each file contains a `foes` array:
 
 ### Foe Object Fields
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `id` | string | yes | Unique identifier: `source/kebab-case-name` (e.g., `ironsworn/broken`, `yrt/mana-wraith`) |
-| `name` | string | yes | Display name |
-| `rank` | number | yes | Difficulty rank (1–5, higher = harder) |
-| `nature` | string | yes | Category (e.g., `"Ironlander"`, `"Horror"`, `"Beast"`, `"Creature"`) |
-| `features` | array of strings | yes | 2–5 descriptive physical/behavioral characteristics |
-| `drives` | array of strings | yes | 1–2 motivational drivers |
-| `tactics` | array of strings | yes | 2–4 combat or conflict approaches |
-| `description` | string | yes | Narrative background description |
-| `escalates` | boolean | no | If `true`, this foe's harm escalates during combat rather than being fixed by rank. Surfaces a +/− harm counter on the FoeCard. The current level is stored as `currentHarm` on the encounter record. See [Yrt extensions](yrt/data-format-yrt.md#escalating-harm-yrt-extension). |
-| `escalatesDefense` | boolean | no | If `true`, this foe has a mana shield that absorbs strikes. Defense starts at the rank's progressPerHit cap and erodes toward 1 on each Miss. Surfaces a +/− defense counter on the FoeCard. The current level is stored as `currentDefense` on the encounter record. See [Yrt extensions](yrt/data-format-yrt.md#escalating-defense-yrt-extension). |
+| Field              | Type             | Required | Description                                                                                                                                                                                                                                                                                                                                          |
+| ------------------ | ---------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`               | string           | yes      | Unique identifier: `source/kebab-case-name` (e.g., `ironsworn/broken`, `yrt/mana-wraith`)                                                                                                                                                                                                                                                            |
+| `name`             | string           | yes      | Display name                                                                                                                                                                                                                                                                                                                                         |
+| `rank`             | number           | yes      | Difficulty rank (1–5, higher = harder)                                                                                                                                                                                                                                                                                                               |
+| `nature`           | string           | yes      | Category (e.g., `"Ironlander"`, `"Horror"`, `"Beast"`, `"Creature"`)                                                                                                                                                                                                                                                                                 |
+| `features`         | array of strings | yes      | 2–5 descriptive physical/behavioral characteristics                                                                                                                                                                                                                                                                                                  |
+| `drives`           | array of strings | yes      | 1–2 motivational drivers                                                                                                                                                                                                                                                                                                                             |
+| `tactics`          | array of strings | yes      | 2–4 combat or conflict approaches                                                                                                                                                                                                                                                                                                                    |
+| `description`      | string           | yes      | Narrative background description                                                                                                                                                                                                                                                                                                                     |
+| `escalates`        | boolean          | no       | If `true`, this foe's harm escalates during combat rather than being fixed by rank. Surfaces a +/− harm counter on the FoeCard. The current level is stored as `currentHarm` on the encounter record. See [Yrt extensions](yrt/data-format-yrt.md#escalating-harm-yrt-extension).                                                                    |
+| `escalatesDefense` | boolean          | no       | If `true`, this foe has a mana shield that absorbs strikes. Defense starts at the rank's progressPerHit cap and erodes toward 1 on each Miss. Surfaces a +/− defense counter on the FoeCard. The current level is stored as `currentDefense` on the encounter record. See [Yrt extensions](yrt/data-format-yrt.md#escalating-defense-yrt-extension). |
 
 Foe portraits are stored as images at `images/foes/{id-slug}.png` (matching the foe's id, with `/` replaced by `-`).
 
@@ -905,18 +943,18 @@ Foe portraits are stored as images at `images/foes/{id-slug}.png` (matching the 
 
 A `FoeEncounter` is the runtime record created when a player adds a foe to their active session. It references the catalogue definition by `foeId` and stores the mutable per-session state.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | string | `crypto.randomUUID()` — unique encounter instance ID |
-| `foeId` | string | References a `FoeDef.id` in the catalogue |
-| `quantity` | string | One of `"solo"`, `"pack"`, `"horde"` |
-| `effectiveRank` | number | Rank after quantity adjustment (1–5) |
-| `ticks` | number | Progress track ticks (0–40; 10 boxes × 4 ticks) |
-| `notes` | string | Free-text encounter notes |
-| `customName` | string | Player-assigned name; if `""`, the foe's catalogue `name` is displayed |
-| `vanquished` | boolean | Whether the foe has been defeated |
-| `currentHarm` | number | *(Optional)* Current escalating harm level. Only meaningful when `FoeDef.escalates` is `true`. Defaults to `1` when absent. See [Yrt extensions](yrt/data-format-yrt.md#escalating-harm-yrt-extension). |
-| `currentDefense` | number | *(Optional)* Current escalating defense level. Only meaningful when `FoeDef.escalatesDefense` is `true`. Absent = full cap (`FOE_RANKS[effectiveRank].progressPerHit`). Minimum 1. See [Yrt extensions](yrt/data-format-yrt.md#escalating-defense-yrt-extension). |
+| Field            | Type    | Description                                                                                                                                                                                                                                                       |
+| ---------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`             | string  | `crypto.randomUUID()` — unique encounter instance ID                                                                                                                                                                                                              |
+| `foeId`          | string  | References a `FoeDef.id` in the catalogue                                                                                                                                                                                                                         |
+| `quantity`       | string  | One of `"solo"`, `"pack"`, `"horde"`                                                                                                                                                                                                                              |
+| `effectiveRank`  | number  | Rank after quantity adjustment (1–5)                                                                                                                                                                                                                              |
+| `ticks`          | number  | Progress track ticks (0–40; 10 boxes × 4 ticks)                                                                                                                                                                                                                   |
+| `notes`          | string  | Free-text encounter notes                                                                                                                                                                                                                                         |
+| `customName`     | string  | Player-assigned name; if `""`, the foe's catalogue `name` is displayed                                                                                                                                                                                            |
+| `vanquished`     | boolean | Whether the foe has been defeated                                                                                                                                                                                                                                 |
+| `currentHarm`    | number  | _(Optional)_ Current escalating harm level. Only meaningful when `FoeDef.escalates` is `true`. Defaults to `1` when absent. See [Yrt extensions](yrt/data-format-yrt.md#escalating-harm-yrt-extension).                                                           |
+| `currentDefense` | number  | _(Optional)_ Current escalating defense level. Only meaningful when `FoeDef.escalatesDefense` is `true`. Absent = full cap (`FOE_RANKS[effectiveRank].progressPerHit`). Minimum 1. See [Yrt extensions](yrt/data-format-yrt.md#escalating-defense-yrt-extension). |
 
 ### Foe Overrides (Expansion Extension Mechanism)
 
@@ -943,17 +981,17 @@ File shape:
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `source` | string | yes | Expansion tag (`"base"` / `"delve"` / `"yrt"`) that owns this file |
-| `overrides` | object | yes | Map of foe id → `FoeOverride` |
+| Field       | Type   | Required | Description                                                        |
+| ----------- | ------ | -------- | ------------------------------------------------------------------ |
+| `source`    | string | yes      | Expansion tag (`"base"` / `"delve"` / `"yrt"`) that owns this file |
+| `overrides` | object | yes      | Map of foe id → `FoeOverride`                                      |
 
 Per-foe `FoeOverride`:
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `present` | boolean | no | When `false`, hides the foe from the Foe Picker while this expansion is active. Existing encounters stay visible. |
-| `addendum` | string | no | Prose appended to the foe's description (with a blank line separator) in the Foe Picker confirm view and on FoeCards, while this expansion is active |
+| Field      | Type    | Required | Description                                                                                                                                          |
+| ---------- | ------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `present`  | boolean | no       | When `false`, hides the foe from the Foe Picker while this expansion is active. Existing encounters stay visible.                                    |
+| `addendum` | string  | no       | Prose appended to the foe's description (with a blank line separator) in the Foe Picker confirm view and on FoeCards, while this expansion is active |
 
 **General mechanism:** any expansion may drop a `foes_overrides_<source>.json` file into `data/foes/`. Vetoes are additive — if any active expansion marks `present: false`, the foe is hidden. Addenda from multiple active expansions are concatenated in the order they're loaded.
 
@@ -1001,6 +1039,7 @@ Each entry has `topRange` (d100 boundary, inclusive) and `value` (result text).
 
 **How combined tables work** (per Ironsworn: Delve rules p.6):  
 When rolling features or dangers for a site, the result is assembled from three partial tables:
+
 - **Features**: theme rows (1–20) + domain rows (21–43) + domain rows continue to 100
 - **Dangers**: theme rows (1–30) + domain rows (31–45) + common rows (46–100)
 
@@ -1012,13 +1051,12 @@ The `buildCombinedTable()` function in `delveStore.svelte.ts` assembles these at
 
 All IDs follow a `prefix/kebab-case-name` format for consistency and future localization support:
 
-| Data Type | Format | Examples |
-|-----------|--------|----------|
-| Moves | `move/kebab-case-name` | `move/face-danger`, `move/endure-harm` |
-| Assets | `category/kebab-case-name` | `combat/archer`, `companion/hawk` |
-| Rarities | `rarity/kebab-case-name` | `rarity/hawks-eye-bow` |
-| Foes | `source/kebab-case-name` | `ironsworn/broken`, `yrt/mana-wraith` |
-| Oracles | camelCase `key` field | `action`, `settlementName` |
+| Data Type | Format                     | Examples                               |
+| --------- | -------------------------- | -------------------------------------- |
+| Moves     | `move/kebab-case-name`     | `move/face-danger`, `move/endure-harm` |
+| Assets    | `category/kebab-case-name` | `combat/archer`, `companion/hawk`      |
+| Rarities  | `rarity/kebab-case-name`   | `rarity/hawks-eye-bow`                 |
+| Foes      | `source/kebab-case-name`   | `ironsworn/broken`, `yrt/mana-wraith`  |
+| Oracles   | camelCase `key` field      | `action`, `settlementName`             |
 
 IDs must be unique within their data type and stable across versions (they are referenced by saved game data and cross-references in other JSON files).
-

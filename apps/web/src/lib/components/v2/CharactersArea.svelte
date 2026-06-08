@@ -19,110 +19,133 @@
 	 * clicking one opens the v1 AssetCard in a dismissible dialog.
 	 */
 	import { untrack } from 'svelte';
-	import { getCharacters, isCharacterLoading, createCharacter, deleteCharacter, flushCharacterToApi, persistCharacterNow, setPartySupply } from '$lib/characterStore.svelte.js';
+	import {
+		getCharacters,
+		isCharacterLoading,
+		createCharacter,
+		deleteCharacter,
+		flushCharacterToApi,
+		persistCharacterNow,
+		setPartySupply,
+	} from '$lib/characterStore.svelte.js';
 	import { setActiveDiceCtx } from '$lib/diceContext.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
-	import { findAsset, findRaritiesForAsset, getGlobalCounterDef, isAssetsLoading, getAssets } from '$lib/assetStore.svelte.js';
-	import { isDelveEnabled }                    from '$lib/expansionStore.svelte.js';
-	import { hydrateCharacterInPlace, maxMomentum, momentumReset, computeAssetXpDiff, assetDisplayName } from '$lib/character.js';
+	import {
+		findAsset,
+		findRaritiesForAsset,
+		getGlobalCounterDef,
+		isAssetsLoading,
+		getAssets,
+	} from '$lib/assetStore.svelte.js';
+	import { isDelveEnabled } from '$lib/expansionStore.svelte.js';
+	import {
+		hydrateCharacterInPlace,
+		maxMomentum,
+		momentumReset,
+		computeAssetXpDiff,
+		assetDisplayName,
+	} from '$lib/character.js';
 	import hornedHelmSvg from '$icons/horned-helm.svg?raw';
 	import charactersIconSvg from '$icons/Characters.svg?raw';
 	import type { CharacterData, CharacterAsset } from '$lib/types.js';
-	import AssetCard      from '$lib/components/AssetCard.svelte';
-	import AssetPicker    from '$lib/components/AssetPicker.svelte';
-	import StatControl    from '$lib/components/StatControl.svelte';
-	import ResourceTile   from '$lib/components/ResourceTile.svelte';
-	import MomentumTile   from '$lib/components/MomentumTile.svelte';
+	import AssetCard from '$lib/components/AssetCard.svelte';
+	import AssetPicker from '$lib/components/AssetPicker.svelte';
+	import StatControl from '$lib/components/StatControl.svelte';
+	import ResourceTile from '$lib/components/ResourceTile.svelte';
+	import MomentumTile from '$lib/components/MomentumTile.svelte';
 	import ProgressTrackPanel from '$lib/components/ProgressTrackPanel.svelte';
-	import MarkdownNotes    from '$lib/components/MarkdownNotes.svelte';
+	import MarkdownNotes from '$lib/components/MarkdownNotes.svelte';
 	import PortraitUploader from '$lib/components/PortraitUploader.svelte';
 	import { EditableName } from '$lib/editableName.svelte.js';
 	import { assetIcon, categoryIcon } from '$lib/iconRegistry.js';
-	import ConfirmDialog  from '$lib/components/ConfirmDialog.svelte';
-	import VowCard        from '$lib/components/VowCard.svelte';
+	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import VowCard from '$lib/components/VowCard.svelte';
 	import DebilitiesSection from '$lib/components/DebilitiesSection.svelte';
 	import {
-		appendLog, SESSION_LOG_ID,
-		getXpSpendNonce, drainXpSpend,
-		getActionNonce, drainActions,
+		appendLog,
+		SESSION_LOG_ID,
+		getXpSpendNonce,
+		drainXpSpend,
+		getActionNonce,
+		drainActions,
 		type LogAction,
 	} from '$lib/log.svelte.js';
 	import { FLOOR_RULES, DEBILITY_MOMENTUM_TITLE } from '$lib/cascadeRules.js';
 	import type { Vow } from '$lib/types.js';
-	import iconHealth     from '$icons/icon-health.svg?raw';
-	import iconSpirit     from '$icons/icon-spirit.svg?raw';
-	import iconSupply     from '$icons/icon-supply.svg?raw';
-	import iconStar       from '$icons/star-solid-full.svg?raw';
-	import trashSvg       from '$icons/trash-solid-full.svg?raw';
-	import swordSvg       from '$icons/sword-solid-full.svg?raw';
-	import gemSvg         from '$icons/gem-solid.svg?raw';
+	import iconHealth from '$icons/icon-health.svg?raw';
+	import iconSpirit from '$icons/icon-spirit.svg?raw';
+	import iconSupply from '$icons/icon-supply.svg?raw';
+	import iconStar from '$icons/star-solid-full.svg?raw';
+	import trashSvg from '$icons/trash-solid-full.svg?raw';
+	import swordSvg from '$icons/sword-solid-full.svg?raw';
+	import gemSvg from '$icons/gem-solid.svg?raw';
 	// Counter icons — same map as v1 AssetCard.COUNTER_ICONS. The asset
 	// definition's customField.icon string keys into this map.
-	import iconHeart      from '$icons/icon-heart.svg?raw';
-	import iconSkull      from '$icons/skull-crossbones-solid-full.svg?raw';
-	import iconShield     from '$icons/shield-halved-solid.svg?raw';
-	import iconEye        from '$icons/eye-solid.svg?raw';
-	import iconMoon       from '$icons/moon-solid.svg?raw';
-	import iconSun        from '$icons/sun-solid.svg?raw';
-	import iconDice       from '$icons/dice-d10-light.svg?raw';
-	import iconNote       from '$icons/note-sticky-solid.svg?raw';
+	import iconHeart from '$icons/icon-heart.svg?raw';
+	import iconSkull from '$icons/skull-crossbones-solid-full.svg?raw';
+	import iconShield from '$icons/shield-halved-solid.svg?raw';
+	import iconEye from '$icons/eye-solid.svg?raw';
+	import iconMoon from '$icons/moon-solid.svg?raw';
+	import iconSun from '$icons/sun-solid.svg?raw';
+	import iconDice from '$icons/dice-d10-light.svg?raw';
+	import iconNote from '$icons/note-sticky-solid.svg?raw';
 	import iconSackDollar from '$icons/sack-dollar-solid-full.svg?raw';
-	import iconMana       from '$icons/icon-mana.svg?raw';
-	import iconPuppet     from '$icons/puppet-solid.svg?raw';
-	import iconGolem      from '$icons/rock-golem.svg?raw';
+	import iconMana from '$icons/icon-mana.svg?raw';
+	import iconPuppet from '$icons/puppet-solid.svg?raw';
+	import iconGolem from '$icons/rock-golem.svg?raw';
 	import { headingText } from '$lib/fontStore.svelte.js';
 
 	let { showTitle = true }: { showTitle?: boolean } = $props();
 
 	const COUNTER_ICONS: Record<string, string> = {
-		'heart':                iconHeart,
+		heart: iconHeart,
 		'skull-and-crossbones': iconSkull,
-		'sword':                swordSvg,
-		'shield':               iconShield,
-		'eye':                  iconEye,
-		'moon':                 iconMoon,
-		'sun':                  iconSun,
-		'dice':                 iconDice,
-		'note':                 iconNote,
-		'sack-dollar':          iconSackDollar,
-		'mana':                 iconMana,
-		'puppet':               iconPuppet,
-		'rock-golem':           iconGolem,
+		sword: swordSvg,
+		shield: iconShield,
+		eye: iconEye,
+		moon: iconMoon,
+		sun: iconSun,
+		dice: iconDice,
+		note: iconNote,
+		'sack-dollar': iconSackDollar,
+		mana: iconMana,
+		puppet: iconPuppet,
+		'rock-golem': iconGolem,
 	};
-	import shieldSvg      from '$icons/shield-halved-solid.svg?raw';
+	import shieldSvg from '$icons/shield-halved-solid.svg?raw';
 
 	type CardKey = 'background' | 'core' | 'vows' | 'assets' | 'status';
 	const CARD_LABELS: { key: CardKey; label: string }[] = [
-		{ key: 'core',       label: 'Core' },
+		{ key: 'core', label: 'Core' },
 		{ key: 'background', label: 'Description' },
-		{ key: 'vows',       label: 'Vows' },
-		{ key: 'assets',     label: 'Assets' },
-		{ key: 'status',     label: 'Status' },
+		{ key: 'vows', label: 'Vows' },
+		{ key: 'assets', label: 'Assets' },
+		{ key: 'status', label: 'Status' },
 	];
 
 	/** Category colour for asset tabs — mirrors AssetCard's CAT_COLOR. */
 	const CAT_COLOR: Record<string, string> = {
 		'Combat Talent': 'var(--color-iron)',
-		'Path':          'var(--color-edge)',
-		'Companion':     'var(--color-heart)',
-		'Ritual':        'var(--color-mana)',
-		'Touched':       'var(--color-touched)',
+		Path: 'var(--color-edge)',
+		Companion: 'var(--color-heart)',
+		Ritual: 'var(--color-mana)',
+		Touched: 'var(--color-touched)',
 	};
 
-	let activeCharId  = $state<string | null>(null);
-	let activeCard    = $state<CardKey>('core');
-	let dialogEl      = $state<HTMLDialogElement | null>(null);
-	let pickerOpen    = $state(false);
+	let activeCharId = $state<string | null>(null);
+	let activeCard = $state<CardKey>('core');
+	let dialogEl = $state<HTMLDialogElement | null>(null);
+	let pickerOpen = $state(false);
 
 	// Asset dialog (add + edit modes). Edits accumulate in a local draft so
 	// Cancel/X never mutate the live character. On OK / Add the parent
 	// computes the XP diff vs the snapshot, logs once, and persists.
-	let dialogMode             = $state<'add' | 'edit'>('edit');
-	let dialogDraft            = $state<CharacterAsset | null>(null);
-	let dialogGlobals          = $state<Record<string, string>>({});
+	let dialogMode = $state<'add' | 'edit'>('edit');
+	let dialogDraft = $state<CharacterAsset | null>(null);
+	let dialogGlobals = $state<Record<string, string>>({});
 	let dialogSnapshotAbilities = $state<boolean[]>([]);
-	let dialogSnapshotRarityId  = $state<string | undefined>(undefined);
-	let dialogPurchaseCost      = $state(0);
+	let dialogSnapshotRarityId = $state<string | undefined>(undefined);
+	let dialogPurchaseCost = $state(0);
 
 	// Background card edit state
 	let editingBackground = $state(false);
@@ -137,7 +160,7 @@
 		}
 	});
 	const characters = $derived(getCharacters());
-	const loading    = $derived(isCharacterLoading() || isAssetsLoading());
+	const loading = $derived(isCharacterLoading() || isAssetsLoading());
 
 	// Auto-select the first character once data has loaded.
 	$effect(() => {
@@ -146,7 +169,7 @@
 		}
 	});
 
-	const activeChar = $derived(characters.find(c => c.id === activeCharId));
+	const activeChar = $derived(characters.find((c) => c.id === activeCharId));
 
 	// Hydrate the active character's data IN PLACE the first time it becomes
 	// active — patches missing keys onto the existing $state proxy so
@@ -206,7 +229,11 @@
 	// MovesDialog / DiceRollerDialog read live data from this area's selection.
 	$effect(() => {
 		if (activeChar && activeData) {
-			setActiveDiceCtx({ charId: activeChar.id, charName: activeData.name || 'Unnamed', data: activeData });
+			setActiveDiceCtx({
+				charId: activeChar.id,
+				charName: activeData.name || 'Unnamed',
+				data: activeData,
+			});
 		} else {
 			setActiveDiceCtx(null);
 		}
@@ -217,7 +244,10 @@
 	// the current value resolved against the effective max — accounting for
 	// per-ability-level maxValue arrays. Returns null when the asset has no
 	// counter so the card just shows its category.
-	function assetCounter(asset: CharacterAsset, globalValues?: Record<string, string>): { iconSvg: string; label: string; value: number; max: number } | null {
+	function assetCounter(
+		asset: CharacterAsset,
+		globalValues?: Record<string, string>,
+	): { iconSvg: string; label: string; value: number; max: number } | null {
 		const def = findAsset(asset.assetId);
 		const field = (def?.customFields ?? []).find((f) => f.type === 'counter');
 		if (!def || !field) return null;
@@ -227,8 +257,8 @@
 		const eff = field.global ? (getGlobalCounterDef(field.id) ?? field) : field;
 		if (eff.maxValue === undefined) return null;
 		const store = field.global ? globalValues : asset.customValues;
-		const raw   = store?.[field.id];
-		const dflt  = typeof eff.default === 'number' ? eff.default : 0;
+		const raw = store?.[field.id];
+		const dflt = typeof eff.default === 'number' ? eff.default : 0;
 		const value = raw != null && raw !== '' ? Number(raw) : dflt;
 		let max: number;
 		if (typeof eff.maxValue === 'number') {
@@ -250,7 +280,7 @@
 	 *  to the asset's customValues. */
 	function bumpAssetCounter(asset: CharacterAsset, delta: number) {
 		if (!activeData) return;
-		const def   = findAsset(asset.assetId);
+		const def = findAsset(asset.assetId);
 		const field = (def?.customFields ?? []).find((f) => f.type === 'counter');
 		if (!def || !field) return;
 		const cur = assetCounter(asset, activeData.globalValues);
@@ -261,7 +291,7 @@
 			activeData.globalValues = { ...(activeData.globalValues ?? {}), [field.id]: String(next) };
 		} else {
 			const arr = (activeData.assets ?? []) as CharacterAsset[];
-			activeData.assets = arr.map(a =>
+			activeData.assets = arr.map((a) =>
 				a.assetId === asset.assetId
 					? { ...a, customValues: { ...(a.customValues ?? {}), [field.id]: String(next) } }
 					: a,
@@ -283,8 +313,11 @@
 	// above the new cap).
 	function logDebility(data: CharacterData, label: string, active: boolean) {
 		const name = data.name || 'Unnamed';
-		appendLog(SESSION_LOG_ID, `${name} — Debilities`,
-			`<div>${label}: <strong>${active ? 'Activated' : 'Cleared'}</strong></div>`);
+		appendLog(
+			SESSION_LOG_ID,
+			`${name} — Debilities`,
+			`<div>${label}: <strong>${active ? 'Activated' : 'Cleared'}</strong></div>`,
+		);
 		const cap = maxMomentum(data);
 		if (data.momentum > cap) data.momentum = cap;
 	}
@@ -301,13 +334,16 @@
 		const data = activeData;
 		// Global counters (e.g. mana) live in data.globalValues as numeric strings.
 		if (key === 'mana') {
-			const gv  = data.globalValues ?? {};
+			const gv = data.globalValues ?? {};
 			const old = parseInt(gv['mana'] ?? '0');
 			const next = Math.max(0, Math.min(10, old + delta));
 			if (next !== old) {
 				data.globalValues = { ...gv, mana: String(next) };
-				appendLog(SESSION_LOG_ID, charTitle('Mana'),
-					`<div>Mana: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : ''}${delta})</div>`);
+				appendLog(
+					SESSION_LOG_ID,
+					charTitle('Mana'),
+					`<div>Mana: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : ''}${delta})</div>`,
+				);
 			}
 			return;
 		}
@@ -315,30 +351,44 @@
 		const old = rec[key] ?? 0;
 		let next: number;
 		switch (key) {
-			case 'momentum': next = Math.max(-6, Math.min(maxMomentum(data), old + delta)); break;
+			case 'momentum':
+				next = Math.max(-6, Math.min(maxMomentum(data), old + delta));
+				break;
 			case 'health':
 			case 'spirit':
 			case 'supply':
-			case 'xp':       next = Math.max(0, Math.min(999, old + delta)); break;
+			case 'xp':
+				next = Math.max(0, Math.min(999, old + delta));
+				break;
 			case 'bonds':
-			case 'failures': next = Math.max(0, Math.min(40, old + delta)); break;
-			default:         return;
+			case 'failures':
+				next = Math.max(0, Math.min(40, old + delta));
+				break;
+			default:
+				return;
 		}
 		if (next !== old) {
 			rec[key] = next;
 			const label = key.charAt(0).toUpperCase() + key.slice(1);
-			appendLog(SESSION_LOG_ID, charTitle(label),
-				`<div>${label}: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : ''}${delta})</div>`);
+			appendLog(
+				SESSION_LOG_ID,
+				charTitle(label),
+				`<div>${label}: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : ''}${delta})</div>`,
+			);
 			// Supply is party-wide — broadcast to every character.
 			if (key === 'supply') setPartySupply(next);
 			// Floor cascade — resource just landed at its minimum this change.
 			if (delta < 0) {
 				const charId = activeCharId ?? '';
-				const floorRule = FLOOR_RULES.find(r => r.resource === key && next === r.floor);
+				const floorRule = FLOOR_RULES.find((r) => r.resource === key && next === r.floor);
 				if (floorRule) {
 					const entryId = crypto.randomUUID();
-					appendLog(SESSION_LOG_ID, floorRule.logTitle,
-						floorRule.logHtml({ charId, entryId }), entryId);
+					appendLog(
+						SESSION_LOG_ID,
+						floorRule.logTitle,
+						floorRule.logHtml({ charId, entryId }),
+						entryId,
+					);
 				}
 			}
 		}
@@ -353,17 +403,20 @@
 		if (rec[key] !== active) {
 			rec[key] = active;
 			const label = key.charAt(0).toUpperCase() + key.slice(1);
-			appendLog(SESSION_LOG_ID, charTitle('Debilities'),
-				`<div>${label}: <strong>${active ? 'Marked' : 'Cleared'}</strong></div>`);
+			appendLog(
+				SESSION_LOG_ID,
+				charTitle('Debilities'),
+				`<div>${label}: <strong>${active ? 'Marked' : 'Cleared'}</strong></div>`,
+			);
 			// Cascade — marking a debility lowers the momentum cap.
 			if (active) {
-				const newMax   = maxMomentum(data);
+				const newMax = maxMomentum(data);
 				const resetVal = momentumReset(data);
 				if (data.momentum > newMax) {
 					const cappedFrom = data.momentum;
-					const delta      = newMax - cappedFrom;
-					const entryId    = crypto.randomUUID();
-					const charId     = activeCharId ?? '';
+					const delta = newMax - cappedFrom;
+					const entryId = crypto.randomUUID();
+					const charId = activeCharId ?? '';
 					const html =
 						`<p>Max momentum reduced to <strong>${newMax}</strong>. ` +
 						`<a class="resource-link" data-resource="momentum" data-value="${delta}" ` +
@@ -383,8 +436,11 @@
 		if (old !== 0) {
 			rec[key] = 0;
 			const label = key.charAt(0).toUpperCase() + key.slice(1);
-			appendLog(SESSION_LOG_ID, charTitle(label),
-				`<div>${label} track cleared (${old} ticks → 0)</div>`);
+			appendLog(
+				SESSION_LOG_ID,
+				charTitle(label),
+				`<div>${label} track cleared (${old} ticks → 0)</div>`,
+			);
 		}
 	}
 
@@ -396,12 +452,16 @@
 		if (old !== value) {
 			rec[key] = value;
 			const label = key.charAt(0).toUpperCase() + key.slice(1);
-			const INITIATIVE_NAMES_ACTIVE: Record<number, string> = { 0: 'None', 1: 'Character', 2: 'Foe' };
-			const display = key === 'initiative'
-				? `${INITIATIVE_NAMES_ACTIVE[old] ?? old} → <strong>${INITIATIVE_NAMES_ACTIVE[value] ?? value}</strong>`
-				: `${old} → <strong>${value}</strong>`;
-			appendLog(SESSION_LOG_ID, charTitle(label),
-				`<div>${label}: ${display}</div>`);
+			const INITIATIVE_NAMES_ACTIVE: Record<number, string> = {
+				0: 'None',
+				1: 'Character',
+				2: 'Foe',
+			};
+			const display =
+				key === 'initiative'
+					? `${INITIATIVE_NAMES_ACTIVE[old] ?? old} → <strong>${INITIATIVE_NAMES_ACTIVE[value] ?? value}</strong>`
+					: `${old} → <strong>${value}</strong>`;
+			appendLog(SESSION_LOG_ID, charTitle(label), `<div>${label}: ${display}</div>`);
 		}
 	}
 
@@ -418,16 +478,19 @@
 	): void {
 		const title = (label: string) => `${charName || 'Character'} — ${label}`;
 		if (action.type === 'resource') {
-			const key   = action.key;
+			const key = action.key;
 			const delta = action.value as number;
 			if (key === 'mana') {
-				const gv  = (data.globalValues as Record<string, string>) ?? {};
+				const gv = (data.globalValues as Record<string, string>) ?? {};
 				const old = parseInt(gv['mana'] ?? '0');
 				const next = Math.max(0, Math.min(10, old + delta));
 				if (next !== old) {
 					data.globalValues = { ...gv, mana: String(next) };
-					appendLog(SESSION_LOG_ID, title('Mana'),
-						`<div>Mana: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : ''}${delta})</div>`);
+					appendLog(
+						SESSION_LOG_ID,
+						title('Mana'),
+						`<div>Mana: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : ''}${delta})</div>`,
+					);
 				}
 				return;
 			}
@@ -435,32 +498,51 @@
 			const old = rec[key] ?? 0;
 			let next: number;
 			switch (key) {
-				case 'momentum': next = Math.max(-6, Math.min(maxMomentum(data as unknown as import('$lib/types.js').CharacterData), old + delta)); break;
+				case 'momentum':
+					next = Math.max(
+						-6,
+						Math.min(
+							maxMomentum(data as unknown as import('$lib/types.js').CharacterData),
+							old + delta,
+						),
+					);
+					break;
 				case 'health':
 				case 'spirit':
 				case 'supply':
-				case 'xp':       next = Math.max(0, Math.min(999, old + delta)); break;
+				case 'xp':
+					next = Math.max(0, Math.min(999, old + delta));
+					break;
 				case 'bonds':
-				case 'failures': next = Math.max(0, Math.min(40, old + delta)); break;
-				default: return;
+				case 'failures':
+					next = Math.max(0, Math.min(40, old + delta));
+					break;
+				default:
+					return;
 			}
 			if (next !== old) {
 				rec[key] = next;
 				const label = key.charAt(0).toUpperCase() + key.slice(1);
-				appendLog(SESSION_LOG_ID, title(label),
-					`<div>${label}: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : ''}${delta})</div>`);
+				appendLog(
+					SESSION_LOG_ID,
+					title(label),
+					`<div>${label}: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : ''}${delta})</div>`,
+				);
 				// Supply is party-wide — broadcast to every character.
 				if (key === 'supply') setPartySupply(next);
 			}
 		} else if (action.type === 'debility') {
-			const rec    = data as unknown as Record<string, boolean>;
+			const rec = data as unknown as Record<string, boolean>;
 			if (rec[action.key] === undefined) return;
 			const active = (action.value as number) === 1;
 			if (rec[action.key] !== active) {
 				rec[action.key] = active;
 				const label = action.key.charAt(0).toUpperCase() + action.key.slice(1);
-				appendLog(SESSION_LOG_ID, title('Debilities'),
-					`<div>${label}: <strong>${active ? 'Marked' : 'Cleared'}</strong></div>`);
+				appendLog(
+					SESSION_LOG_ID,
+					title('Debilities'),
+					`<div>${label}: <strong>${active ? 'Marked' : 'Cleared'}</strong></div>`,
+				);
 			}
 		} else if (action.type === 'reset-track') {
 			const rec = data as unknown as Record<string, number>;
@@ -468,21 +550,24 @@
 			if (old !== 0) {
 				rec[action.key] = 0;
 				const label = action.key.charAt(0).toUpperCase() + action.key.slice(1);
-				appendLog(SESSION_LOG_ID, title(label),
-					`<div>${label} track cleared (${old} ticks → 0)</div>`);
+				appendLog(
+					SESSION_LOG_ID,
+					title(label),
+					`<div>${label} track cleared (${old} ticks → 0)</div>`,
+				);
 			}
 		} else if (action.type === 'set') {
-			const rec  = data as unknown as Record<string, number>;
-			const old  = rec[action.key] ?? 0;
+			const rec = data as unknown as Record<string, number>;
+			const old = rec[action.key] ?? 0;
 			const next = action.value as number;
 			if (old !== next) {
 				rec[action.key] = next;
-				const label   = action.key.charAt(0).toUpperCase() + action.key.slice(1);
-				const display = action.key === 'initiative'
-					? `${_INITIATIVE_NAMES[old] ?? old} → <strong>${_INITIATIVE_NAMES[next] ?? next}</strong>`
-					: `${old} → <strong>${next}</strong>`;
-				appendLog(SESSION_LOG_ID, title(label),
-					`<div>${label}: ${display}</div>`);
+				const label = action.key.charAt(0).toUpperCase() + action.key.slice(1);
+				const display =
+					action.key === 'initiative'
+						? `${_INITIATIVE_NAMES[old] ?? old} → <strong>${_INITIATIVE_NAMES[next] ?? next}</strong>`
+						: `${old} → <strong>${next}</strong>`;
+				appendLog(SESSION_LOG_ID, title(label), `<div>${label}: ${display}</div>`);
 			}
 		}
 	}
@@ -497,12 +582,15 @@
 		if (activeData && activeCharId) {
 			const amount = drainXpSpend(activeCharId);
 			if (amount > 0) {
-				const old  = activeData.xp;
+				const old = activeData.xp;
 				const next = Math.max(0, old - amount);
 				if (next !== old) {
 					activeData.xp = next;
-					appendLog(SESSION_LOG_ID, charTitle('Experience'),
-						`<div>XP spent: <strong>−${amount}</strong> (${old} → <strong>${next}</strong>)</div>`);
+					appendLog(
+						SESSION_LOG_ID,
+						charTitle('Experience'),
+						`<div>XP spent: <strong>−${amount}</strong> (${old} → <strong>${next}</strong>)</div>`,
+					);
 				}
 			}
 		}
@@ -512,13 +600,16 @@
 			const amount = drainXpSpend(char.id);
 			if (amount <= 0) continue;
 			const data = $state.snapshot(char.data) as Record<string, unknown>;
-			const old  = (data.xp as number) ?? 0;
+			const old = (data.xp as number) ?? 0;
 			const next = Math.max(0, old - amount);
 			if (next !== old) {
 				data.xp = next;
 				const name = char.name || 'Character';
-				appendLog(SESSION_LOG_ID, `${name} — Experience`,
-					`<div>XP spent: <strong>−${amount}</strong> (${old} → <strong>${next}</strong>)</div>`);
+				appendLog(
+					SESSION_LOG_ID,
+					`${name} — Experience`,
+					`<div>XP spent: <strong>−${amount}</strong> (${old} → <strong>${next}</strong>)</div>`,
+				);
 				persistCharacterNow(char.id, { name: char.name, data });
 			}
 		}
@@ -535,10 +626,10 @@
 		if (activeCharId) {
 			const actions = drainActions(activeCharId);
 			for (const action of actions) {
-				if      (action.type === 'resource')    applyResourceChange(action.key, action.value);
-				else if (action.type === 'debility')    applyDebilityToggle(action.key, action.value);
+				if (action.type === 'resource') applyResourceChange(action.key, action.value);
+				else if (action.type === 'debility') applyDebilityToggle(action.key, action.value);
 				else if (action.type === 'reset-track') applyResetTrack(action.key);
-				else if (action.type === 'set')         applySet(action.key, action.value);
+				else if (action.type === 'set') applySet(action.key, action.value);
 			}
 		}
 		// Non-active characters — drain their queued actions and persist.
@@ -560,15 +651,15 @@
 	function openAssetDialog(id: string, evt: MouseEvent) {
 		if (!activeData) return;
 		const arr = (activeData.assets ?? []) as CharacterAsset[];
-		const live = arr.find(a => a.assetId === id);
+		const live = arr.find((a) => a.assetId === id);
 		if (!live) return;
 
-		dialogMode              = 'edit';
-		dialogDraft             = cloneAsset(live);
-		dialogGlobals           = { ...(activeData.globalValues ?? {}) };
+		dialogMode = 'edit';
+		dialogDraft = cloneAsset(live);
+		dialogGlobals = { ...(activeData.globalValues ?? {}) };
 		dialogSnapshotAbilities = [...live.abilities];
-		dialogSnapshotRarityId  = live.rarityId;
-		dialogPurchaseCost      = 0;
+		dialogSnapshotRarityId = live.rarityId;
+		dialogPurchaseCost = 0;
 
 		showDialogFromOrigin(evt);
 	}
@@ -580,8 +671,8 @@
 		queueMicrotask(() => {
 			if (!dialogEl) return;
 			if (tab) {
-				const offsetX = (tab.left + tab.width / 2) - window.innerWidth / 2;
-				const offsetY = (tab.top + tab.height / 2) - window.innerHeight / 2;
+				const offsetX = tab.left + tab.width / 2 - window.innerWidth / 2;
+				const offsetY = tab.top + tab.height / 2 - window.innerHeight / 2;
 				dialogEl.style.setProperty('--ca-origin-x', `${offsetX}px`);
 				dialogEl.style.setProperty('--ca-origin-y', `${offsetY}px`);
 			}
@@ -591,11 +682,11 @@
 
 	function cloneAsset(a: CharacterAsset): CharacterAsset {
 		return {
-			assetId:       a.assetId,
-			abilities:     [...a.abilities],
-			rarityId:      a.rarityId,
-			selections:    a.selections ? [...a.selections] : undefined,
-			customValues:  a.customValues ? { ...a.customValues } : undefined,
+			assetId: a.assetId,
+			abilities: [...a.abilities],
+			rarityId: a.rarityId,
+			selections: a.selections ? [...a.selections] : undefined,
+			customValues: a.customValues ? { ...a.customValues } : undefined,
 		};
 	}
 
@@ -613,11 +704,11 @@
 		const rarities = findRaritiesForAsset(dialogDraft.assetId);
 		const totalCost = computeAssetXpDiff({
 			snapshotAbilities: dialogSnapshotAbilities,
-			draftAbilities:    dialogDraft.abilities,
-			snapshotRarityId:  dialogSnapshotRarityId,
-			draftRarityId:     dialogDraft.rarityId,
-			rarityXpCost:      (id) => rarities.find(r => r.id === id)?.xpCost ?? 0,
-			purchaseCost:      dialogPurchaseCost,
+			draftAbilities: dialogDraft.abilities,
+			snapshotRarityId: dialogSnapshotRarityId,
+			draftRarityId: dialogDraft.rarityId,
+			rarityXpCost: (id) => rarities.find((r) => r.id === id)?.xpCost ?? 0,
+			purchaseCost: dialogPurchaseCost,
 		});
 
 		// Persist draft → live
@@ -625,19 +716,22 @@
 		if (dialogMode === 'add') {
 			activeData.assets = [...arr, dialogDraft];
 		} else {
-			activeData.assets = arr.map(a => a.assetId === dialogDraft!.assetId ? dialogDraft! : a);
+			activeData.assets = arr.map((a) => (a.assetId === dialogDraft!.assetId ? dialogDraft! : a));
 		}
 		activeData.globalValues = dialogGlobals;
 
 		// Consolidated log entry — only when something costs XP.
 		if (totalCost > 0) {
-			const def     = findAsset(dialogDraft.assetId);
-			const action  = dialogMode === 'add' ? 'added' : 'modified';
+			const def = findAsset(dialogDraft.assetId);
+			const action = dialogMode === 'add' ? 'added' : 'modified';
 			const entryId = crypto.randomUUID();
-			const xpLink  = `<a class="xp-cost-link" data-entry-id="${entryId}" data-cost="${totalCost}" data-char-id="${activeChar.id}" href="#">−${totalCost} experience</a>`;
-			appendLog(SESSION_LOG_ID, charTitle('Assets'),
+			const xpLink = `<a class="xp-cost-link" data-entry-id="${entryId}" data-cost="${totalCost}" data-char-id="${activeChar.id}" href="#">−${totalCost} experience</a>`;
+			appendLog(
+				SESSION_LOG_ID,
+				charTitle('Assets'),
 				`<div>Asset ${action}: <strong>${def?.name ?? dialogDraft.assetId}</strong> ${xpLink}</div>`,
-				entryId);
+				entryId,
+			);
 		}
 
 		closeAssetDialog();
@@ -667,13 +761,16 @@
 	}
 	function confirmRemoveAsset() {
 		if (!activeData || !pendingRemoveAssetId) return;
-		const id  = pendingRemoveAssetId;
+		const id = pendingRemoveAssetId;
 		const arr = (activeData.assets ?? []) as CharacterAsset[];
 		const def = findAsset(id);
-		activeData.assets = arr.filter(a => a.assetId !== id);
+		activeData.assets = arr.filter((a) => a.assetId !== id);
 		if (def) {
-			appendLog(SESSION_LOG_ID, charTitle('Assets'),
-				`<div>Asset removed: <strong>${def.name}</strong> <em>(${def.category})</em></div>`);
+			appendLog(
+				SESSION_LOG_ID,
+				charTitle('Assets'),
+				`<div>Asset removed: <strong>${def.name}</strong> <em>(${def.category})</em></div>`,
+			);
 		}
 		pendingRemoveAssetId = null;
 		closeAssetDialog();
@@ -699,12 +796,15 @@
 		newlyCreatedVowId = newVow.id;
 		// Mirror V1: log the new vow at creation time. Difficulty defaults to
 		// Formidable; the user can change it in the card afterward.
-		appendLog(SESSION_LOG_ID, charTitle('Vow'),
-			`<div>Swore a new iron vow — <strong>Formidable</strong></div>`);
+		appendLog(
+			SESSION_LOG_ID,
+			charTitle('Vow'),
+			`<div>Swore a new iron vow — <strong>Formidable</strong></div>`,
+		);
 	}
 	function removeVow(id: string) {
 		if (!activeData) return;
-		activeData.vows = (activeData.vows ?? []).filter(v => v.id !== id);
+		activeData.vows = (activeData.vows ?? []).filter((v) => v.id !== id);
 	}
 
 	let creatingChar = $state(false);
@@ -727,7 +827,6 @@
 		}
 	}
 
-
 	/** Picker → parent flow. Instead of immediately appending the asset, set
 	 *  up a draft and open the asset dialog in 'add' mode so the user can
 	 *  pre-configure abilities/rarity/counters before committing. The 3-XP
@@ -737,16 +836,16 @@
 		const def = findAsset(assetId);
 		if (!def) return;
 		const arr = (activeData.assets ?? []) as CharacterAsset[];
-		if (arr.some(a => a.assetId === assetId)) return;
+		if (arr.some((a) => a.assetId === assetId)) return;
 
 		// Exclusive group enforcement (mirrors v1 AssetsSection.addAsset):
 		// defence-in-depth for any non-picker entry path. The picker already
 		// disables conflicting tiles up front, so reaching this branch from
 		// the UI shouldn't happen — silent refusal is fine.
 		if (def.exclusiveGroup) {
-			const allDefs  = getAssets();
-			const conflict = arr.find(owned => {
-				const ownedDef = allDefs.find(a => a.id === owned.assetId);
+			const allDefs = getAssets();
+			const conflict = arr.find((owned) => {
+				const ownedDef = allDefs.find((a) => a.id === owned.assetId);
 				return ownedDef?.exclusiveGroup === def.exclusiveGroup;
 			});
 			if (conflict) {
@@ -758,16 +857,16 @@
 		// Construct a draft from definition defaults. The dialog's snapshot is
 		// also the defaults — so newly-flipped-on abilities count as 2 XP each
 		// against the 3-XP asset purchase budget.
-		const defaultAbilities = def.abilities.map(a => a.enabled);
-		dialogMode              = 'add';
-		dialogDraft             = {
+		const defaultAbilities = def.abilities.map((a) => a.enabled);
+		dialogMode = 'add';
+		dialogDraft = {
 			assetId,
 			abilities: [...defaultAbilities],
 		};
-		dialogGlobals           = { ...(activeData.globalValues ?? {}) };
+		dialogGlobals = { ...(activeData.globalValues ?? {}) };
 		dialogSnapshotAbilities = defaultAbilities;
-		dialogSnapshotRarityId  = undefined;
-		dialogPurchaseCost      = 3;
+		dialogSnapshotRarityId = undefined;
+		dialogPurchaseCost = 3;
 		pickerOpen = false;
 		showDialogFromOrigin(null);
 	}
@@ -790,20 +889,20 @@
 				class="btn ca-hdr-btn"
 				onclick={addCharacter}
 				disabled={creatingChar}
-				use:tooltip={'Add character'}
-			>+ Character</button>
+				use:tooltip={'Add character'}>+ Character</button
+			>
 			<button
 				class="btn ca-hdr-btn"
-				onclick={() => { activeCard = 'assets'; pickerOpen = true; }}
+				onclick={() => {
+					activeCard = 'assets';
+					pickerOpen = true;
+				}}
 				disabled={!activeChar}
-				use:tooltip={'Add asset'}
-			>+ Asset</button>
-			<button
-				class="btn ca-hdr-btn"
-				onclick={addVow}
-				disabled={!activeChar}
-				use:tooltip={'Add vow'}
-			>+ Vow</button>
+				use:tooltip={'Add asset'}>+ Asset</button
+			>
+			<button class="btn ca-hdr-btn" onclick={addVow} disabled={!activeChar} use:tooltip={'Add vow'}
+				>+ Vow</button
+			>
 		</div>
 	</header>
 
@@ -812,7 +911,9 @@
 	{:else if characters.length === 0}
 		<div class="ca-empty">
 			<span class="ca-empty-icon" aria-hidden="true">{@html charactersIconSvg}</span>
-			<p class="ca-empty-text">Your saga begins not with a battle, but with a button. Click <strong>+ CHARACTER</strong> to start.</p>
+			<p class="ca-empty-text">
+				Your saga begins not with a battle, but with a button. Click <strong>+ CHARACTER</strong> to start.
+			</p>
 		</div>
 	{:else}
 		<div class="ca-body">
@@ -855,14 +956,15 @@
 							class="ca-stage-name ca-card-name--editable"
 							use:tooltip={'Click to rename'}
 							onclick={() => nameEdit.start(d.name ?? '')}
-						>{headingText(d.name || activeChar.name || 'Unnamed')}</button>
+							>{headingText(d.name || activeChar.name || 'Unnamed')}</button
+						>
 					{/if}
 					<button
 						class="btn btn-icon icon-btn btn-trash ca-stage-delete-btn"
 						onclick={() => deleteDialogRef?.open()}
 						use:tooltip={'Delete character'}
-						aria-label="Delete character"
-					>{@html trashSvg}</button>
+						aria-label="Delete character">{@html trashSvg}</button
+					>
 				</div>
 			{/if}
 			<div class="ca-stage">
@@ -876,8 +978,8 @@
 								class="ca-tab"
 								class:ca-tab--active={activeCard === tab.key}
 								aria-selected={activeCard === tab.key}
-								onclick={() => (activeCard = tab.key)}
-							>{tab.label}</button>
+								onclick={() => (activeCard = tab.key)}>{tab.label}</button
+							>
 						{/each}
 					</div>
 					<!-- Active card content -->
@@ -889,7 +991,9 @@
 								{#if !editingBackground}
 									<PortraitUploader
 										value={d.portrait ?? ''}
-										oninput={(v) => { (activeChar.data as Record<string, unknown>).portrait = v; }}
+										oninput={(v) => {
+											(activeChar.data as Record<string, unknown>).portrait = v;
+										}}
 										placeholderSvg={hornedHelmSvg}
 										alt={`Portrait of ${d.name || activeChar.name}`}
 									/>
@@ -913,21 +1017,27 @@
 										<button
 											class="ca-init-btn"
 											class:ca-init-btn--active={(d.initiative ?? 0) === 0}
-											onclick={() => { d.initiative = 0; }}
-											use:tooltip={'No initiative'}
-										>None</button>
+											onclick={() => {
+												d.initiative = 0;
+											}}
+											use:tooltip={'No initiative'}>None</button
+										>
 										<button
 											class="ca-init-btn ca-init-btn--foe"
 											class:ca-init-btn--active={(d.initiative ?? 0) === 2}
-											onclick={() => { d.initiative = 2; }}
-											use:tooltip={'Foe has initiative'}
-										>{@html shieldSvg}Foe</button>
+											onclick={() => {
+												d.initiative = 2;
+											}}
+											use:tooltip={'Foe has initiative'}>{@html shieldSvg}Foe</button
+										>
 										<button
 											class="ca-init-btn ca-init-btn--you"
 											class:ca-init-btn--active={(d.initiative ?? 0) === 1}
-											onclick={() => { d.initiative = 1; }}
-											use:tooltip={'You have initiative'}
-										>{@html swordSvg}Character</button>
+											onclick={() => {
+												d.initiative = 1;
+											}}
+											use:tooltip={'You have initiative'}>{@html swordSvg}Character</button
+										>
 									</div>
 								</div>
 
@@ -937,23 +1047,33 @@
 									<div class="ca-side-label">Stats</div>
 									<div class="ca-stats-row">
 										<StatControl
-											label="Edge"   bind:value={d.edge}   color="var(--color-edge)"
+											label="Edge"
+											bind:value={d.edge}
+											color="var(--color-edge)"
 											tooltip="Quickness, agility, and prowess in ranged combat"
 										/>
 										<StatControl
-											label="Heart"  bind:value={d.heart}  color="var(--color-heart)"
+											label="Heart"
+											bind:value={d.heart}
+											color="var(--color-heart)"
 											tooltip="Courage, willpower, empathy, sociability, and loyalty"
 										/>
 										<StatControl
-											label="Iron"   bind:value={d.iron}   color="var(--color-iron)"
+											label="Iron"
+											bind:value={d.iron}
+											color="var(--color-iron)"
 											tooltip="Physical strength, endurance, and prowess in close combat"
 										/>
 										<StatControl
-											label="Shadow" bind:value={d.shadow} color="var(--color-shadow)"
+											label="Shadow"
+											bind:value={d.shadow}
+											color="var(--color-shadow)"
 											tooltip="Sneakiness, deceptiveness, and cunning"
 										/>
 										<StatControl
-											label="Wits"   bind:value={d.wits}   color="var(--color-wits)"
+											label="Wits"
+											bind:value={d.wits}
+											color="var(--color-wits)"
 											tooltip="Expertise, knowledge, and observation"
 										/>
 									</div>
@@ -966,48 +1086,47 @@
 								<div class="ca-vitals-wrapper">
 									<div class="ca-side-label">Vitals</div>
 									<div class="ca-vitals-row">
-									<MomentumTile
-										bind:value={d.momentum}
-										resetVal={momentumReset(d)}
-										maxVal={maxMomentum(d)}
-										tooltipText="Your overall advantage or disadvantage on the quest. Build it up through good rolls and smart choices, then burn it at a crucial moment to force a better outcome."
-									/>
-									<ResourceTile
-										label="Health"
-										bind:value={d.health}
-										color="var(--color-health)"
-										max={5}
-										icon={iconHealth}
-										tooltip="Physical condition and readiness"
-									/>
-									<ResourceTile
-										label="Spirit"
-										bind:value={d.spirit}
-										color="var(--color-spirit)"
-										max={5}
-										icon={iconSpirit}
-										tooltip="Mental fortitude and morale"
-									/>
-									<ResourceTile
-										label="Supply"
-										bind:value={d.supply}
-										color="var(--color-supply)"
-										max={5}
-										icon={iconSupply}
-										tooltip="Available provisions and resources"
-										onchange={(_old, next) => setPartySupply(next)}
-									/>
-									<ResourceTile
-										label="Experience"
-										bind:value={d.xp}
-										color="var(--color-xp)"
-										max={30}
-										icon={iconStar}
-										tooltip="Accumulated experience that can be spent on assets and other enhancements."
-									/>
+										<MomentumTile
+											bind:value={d.momentum}
+											resetVal={momentumReset(d)}
+											maxVal={maxMomentum(d)}
+											tooltipText="Your overall advantage or disadvantage on the quest. Build it up through good rolls and smart choices, then burn it at a crucial moment to force a better outcome."
+										/>
+										<ResourceTile
+											label="Health"
+											bind:value={d.health}
+											color="var(--color-health)"
+											max={5}
+											icon={iconHealth}
+											tooltip="Physical condition and readiness"
+										/>
+										<ResourceTile
+											label="Spirit"
+											bind:value={d.spirit}
+											color="var(--color-spirit)"
+											max={5}
+											icon={iconSpirit}
+											tooltip="Mental fortitude and morale"
+										/>
+										<ResourceTile
+											label="Supply"
+											bind:value={d.supply}
+											color="var(--color-supply)"
+											max={5}
+											icon={iconSupply}
+											tooltip="Available provisions and resources"
+											onchange={(_old, next) => setPartySupply(next)}
+										/>
+										<ResourceTile
+											label="Experience"
+											bind:value={d.xp}
+											color="var(--color-xp)"
+											max={30}
+											icon={iconStar}
+											tooltip="Accumulated experience that can be spent on assets and other enhancements."
+										/>
 									</div>
 								</div>
-
 							</div>
 						{:else if activeCard === 'vows'}
 							<div class="ca-card-section">
@@ -1045,37 +1164,53 @@
 													<span class="ca-asset-card-meta">
 														<span class="ca-asset-card-cat">{def?.category ?? ''}</span>
 														{#if a.rarityId}
-															{@const rarity = findRaritiesForAsset(a.assetId).find(r => r.id === a.rarityId)}
+															{@const rarity = findRaritiesForAsset(a.assetId).find(
+																(r) => r.id === a.rarityId,
+															)}
 															<span
 																class="ca-asset-card-rarity"
 																use:tooltip={rarity ? `Rarity: ${rarity.name}` : 'Has rarity'}
 																aria-label={rarity ? `Rarity: ${rarity.name}` : 'Has rarity'}
-															>{@html gemSvg}</span>
+																>{@html gemSvg}</span
+															>
 														{/if}
 													</span>
 													<span class="ca-asset-card-name-row">
-														<span class="ca-asset-card-name-icon" aria-hidden="true">{@html assetIcon(def)}</span>
-														<span class="ca-asset-card-name" class:ca-asset-card-name--custom={display.custom}>{display.text}</span>
+														<span class="ca-asset-card-name-icon" aria-hidden="true"
+															>{@html assetIcon(def)}</span
+														>
+														<span
+															class="ca-asset-card-name"
+															class:ca-asset-card-name--custom={display.custom}>{display.text}</span
+														>
 													</span>
 												</button>
 												{#if counter}
-													<div class="ca-asset-card-tile" style:--res-color={catColor} use:tooltip={`${counter.label}: ${counter.value}/${counter.max}`}>
-														<div class="ca-asset-card-tile-bg" aria-hidden="true">{@html counter.iconSvg}</div>
+													<div
+														class="ca-asset-card-tile"
+														style:--res-color={catColor}
+														use:tooltip={`${counter.label}: ${counter.value}/${counter.max}`}
+													>
+														<div class="ca-asset-card-tile-bg" aria-hidden="true">
+															{@html counter.iconSvg}
+														</div>
 														<span class="ca-asset-card-tile-name">{counter.label}</span>
 														<div class="ca-asset-card-tile-row">
 															<button
 																class="ca-asset-card-tile-btn"
 																onclick={() => bumpAssetCounter(a, -1)}
 																disabled={counter.value <= 0}
-																aria-label="Decrease {counter.label}"
-															>−</button>
-															<span class="ca-asset-card-tile-val">{counter.value}/{counter.max}</span>
+																aria-label="Decrease {counter.label}">−</button
+															>
+															<span class="ca-asset-card-tile-val"
+																>{counter.value}/{counter.max}</span
+															>
 															<button
 																class="ca-asset-card-tile-btn"
 																onclick={() => bumpAssetCounter(a, 1)}
 																disabled={counter.value >= counter.max}
-																aria-label="Increase {counter.label}"
-															>+</button>
+																aria-label="Increase {counter.label}">+</button
+															>
 														</div>
 													</div>
 												{/if}
@@ -1117,7 +1252,6 @@
 							</div>
 						{/if}
 					</div>
-
 				{/if}
 			</div>
 		</div>
@@ -1135,7 +1269,9 @@
 			bind:this={dialogEl}
 			class="ca-asset-dialog"
 			oncancel={closeAssetDialog}
-			onclose={() => { dialogDraft = null; }}
+			onclose={() => {
+				dialogDraft = null;
+			}}
 			onkeydown={(e) => {
 				// Enter = OK/Add (the primary action). Skip when the user is
 				// typing into a textarea (markdown notes), in which case
@@ -1149,7 +1285,10 @@
 				commitAssetDialog();
 			}}
 			onclick={(e) => {
-				if (e.target === dialogEl) { closeAssetDialog(); return; }
+				if (e.target === dialogEl) {
+					closeAssetDialog();
+					return;
+				}
 				// Delegate move-links / oracle-links inside asset abilities to the
 				// layout-level dialogs via a custom DOM event. AssetCard has no
 				// internal handler for these; without this delegation clicking
@@ -1157,16 +1296,22 @@
 				const ml = (e.target as HTMLElement).closest('a.move-link') as HTMLElement | null;
 				if (ml) {
 					e.preventDefault();
-					document.dispatchEvent(new CustomEvent('ironledger:open-move', { detail: { id: ml.dataset['id'] ?? '' } }));
+					document.dispatchEvent(
+						new CustomEvent('ironledger:open-move', { detail: { id: ml.dataset['id'] ?? '' } }),
+					);
 					return;
 				}
 				const ol = (e.target as HTMLElement).closest('a.oracle-link') as HTMLElement | null;
 				if (ol) {
 					e.preventDefault();
-					document.dispatchEvent(new CustomEvent('ironledger:open-oracle', { detail: {
-						key:  ol.dataset['oracle'] ?? '',
-						stat: ol.dataset['stat']   ?? '',
-					}}));
+					document.dispatchEvent(
+						new CustomEvent('ironledger:open-oracle', {
+							detail: {
+								key: ol.dataset['oracle'] ?? '',
+								stat: ol.dataset['stat'] ?? '',
+							},
+						}),
+					);
 					return;
 				}
 			}}
@@ -1194,7 +1339,7 @@
      onAdd appends a new asset entry to the active character (in-memory). -->
 {#if pickerOpen && activeChar && activeData}
 	<AssetPicker
-		ownedIds={((activeData.assets ?? []) as CharacterAsset[]).map(a => a.assetId)}
+		ownedIds={((activeData.assets ?? []) as CharacterAsset[]).map((a) => a.assetId)}
 		characterData={activeData}
 		onAdd={handleAddAsset}
 		onClose={() => (pickerOpen = false)}
@@ -1211,7 +1356,10 @@
 		confirmLabel="Delete"
 		onconfirm={confirmDeleteCharacter}
 	>
-		<p>Permanently delete <strong>{d.name || activeChar.name || 'this character'}</strong>? This cannot be undone.</p>
+		<p>
+			Permanently delete <strong>{d.name || activeChar.name || 'this character'}</strong>? This
+			cannot be undone.
+		</p>
 	</ConfirmDialog>
 {/if}
 
@@ -1227,16 +1375,19 @@
 		oncancel={() => (pendingRemoveAssetId = null)}
 		ondismiss={() => (pendingRemoveAssetId = null)}
 	>
-		<p>Remove <strong>{assetDef?.name ?? 'this asset'}</strong> from <strong>{activeChar.name || 'this character'}</strong>?</p>
+		<p>
+			Remove <strong>{assetDef?.name ?? 'this asset'}</strong> from
+			<strong>{activeChar.name || 'this character'}</strong>?
+		</p>
 	</ConfirmDialog>
 {/if}
 
 <style>
 	.ca-area {
-		display:        flex;
+		display: flex;
 		flex-direction: column;
-		height:         100%;
-		min-height:     0;
+		height: 100%;
+		min-height: 0;
 	}
 
 	/* ── Header ───────────────────────────────────────── */
@@ -1250,23 +1401,29 @@
 		flex-shrink: 0;
 	}
 	.ca-title-icon {
-		display: inline-flex; align-items: center; justify-content: center;
-		width: 18px; height: 18px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 18px;
+		height: 18px;
 		flex-shrink: 0;
 		color: var(--text-accent);
 	}
 	.ca-title-icon :global(svg) {
-		width: 100%; height: 100%;
+		width: 100%;
+		height: 100%;
 		fill: currentColor;
 	}
-	.ca-title-icon :global(svg) :global(path) { fill: currentColor; }
+	.ca-title-icon :global(svg) :global(path) {
+		fill: currentColor;
+	}
 	.ca-title {
-		font-family:    var(--font-display);
-		font-size:      calc(0.82rem * var(--font-display-scale));
-		font-weight:    700;
+		font-family: var(--font-display);
+		font-size: calc(0.82rem * var(--font-display-scale));
+		font-weight: 700;
 		letter-spacing: 0.08em;
 		text-transform: var(--font-display-transform);
-		color:          var(--text-accent);
+		color: var(--text-accent);
 	}
 	/* Toolbar — + Character / + Asset / + Vow / Delete. Delete pinned right. */
 	.ca-header-actions {
@@ -1277,13 +1434,13 @@
 		justify-content: flex-end;
 	}
 	.ca-hdr-btn {
-		font-size:   0.7rem;
-		padding:     3px 9px;
-		min-width:   unset;
+		font-size: 0.7rem;
+		padding: 3px 9px;
+		min-width: unset;
 	}
 	.ca-hdr-btn[disabled] {
 		opacity: 0.4;
-		cursor:  not-allowed;
+		cursor: not-allowed;
 	}
 
 	.ca-loading,
@@ -1327,73 +1484,90 @@
 		flex: 1;
 		min-height: 0;
 	}
-	.ca-spines { grid-row: 1 / span 2; }
-	.ca-stage-header { grid-column: 2; grid-row: 1; }
-	.ca-stage        { grid-column: 2; grid-row: 2; }
+	.ca-spines {
+		grid-row: 1 / span 2;
+	}
+	.ca-stage-header {
+		grid-column: 2;
+		grid-row: 1;
+	}
+	.ca-stage {
+		grid-column: 2;
+		grid-row: 2;
+	}
 
 	/* Stage header row — name on the left, trash icon on the right. Same
 	   background tone as VowCard's .vow-header so the character card and
 	   the vow cards inside it read as the same UI family. */
 	.ca-stage-header {
-		display:        flex;
-		align-items:    center;
-		gap:            6px;
-		padding:        5px 10px;            /* sized so the row's total height matches .ca-header (38px) */
-		background:     var(--bg-control);
-		border:         none;
-		border-bottom:  1px solid var(--border);
-		border-radius:  0;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 5px 10px; /* sized so the row's total height matches .ca-header (38px) */
+		background: var(--bg-control);
+		border: none;
+		border-bottom: 1px solid var(--border);
+		border-radius: 0;
 	}
 	.ca-stage-header > .ca-stage-name,
-	.ca-stage-header > .ca-stage-name-input { flex: 1; margin: 0; }
+	.ca-stage-header > .ca-stage-name-input {
+		flex: 1;
+		margin: 0;
+	}
 	/* Positioning only — visual styling comes from .btn-trash in app.css. */
-	.ca-stage-delete-btn { flex-shrink: 0; }
+	.ca-stage-delete-btn {
+		flex-shrink: 0;
+	}
 
 	/* Persistent character name sits above the tab strip / stage. Sized to
 	   match V1's .char-title (0.82rem × font-display-scale, 0.08em tracking,
 	   default line-height, 2px 6px padding, 1px transparent border). */
 	.ca-stage-name {
-		appearance:     none;
+		appearance: none;
 		-webkit-appearance: none;
-		text-align:     left;
-		background:     transparent;
-		font-family:    var(--font-display);
-		font-size:      calc(0.82rem * var(--font-display-scale));
-		font-weight:    var(--font-display-weight);
-		font-variant:   var(--font-display-variant);
+		text-align: left;
+		background: transparent;
+		font-family: var(--font-display);
+		font-size: calc(0.82rem * var(--font-display-scale));
+		font-weight: var(--font-display-weight);
+		font-variant: var(--font-display-variant);
 		letter-spacing: 0.08em;
 		text-transform: var(--font-display-transform);
-		color:          var(--text-accent);
-		padding:        2px 6px;
-		border:         1px solid transparent;
-		border-radius:  3px;
-		margin:         6px 12px 2px;
-		overflow:       hidden;
-		text-overflow:  ellipsis;
-		white-space:    nowrap;
-		transition:     background 0.12s, border-color 0.12s;
+		color: var(--text-accent);
+		padding: 2px 6px;
+		border: 1px solid transparent;
+		border-radius: 3px;
+		margin: 6px 12px 2px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		transition:
+			background 0.12s,
+			border-color 0.12s;
 	}
 	.ca-stage-name.ca-card-name--editable:hover {
-		background:   var(--bg-hover);
+		background: var(--bg-hover);
 		border-color: var(--border);
 	}
 	.ca-stage-name-input {
-		font-family:    var(--font-display);
-		font-size:      calc(0.82rem * var(--font-display-scale));
-		font-weight:    var(--font-display-weight);
-		font-variant:   var(--font-display-variant);
+		font-family: var(--font-display);
+		font-size: calc(0.82rem * var(--font-display-scale));
+		font-weight: var(--font-display-weight);
+		font-variant: var(--font-display-variant);
 		letter-spacing: 0.08em;
 		text-transform: var(--font-display-transform);
-		color:          var(--text-accent);
-		background:     transparent;
-		border:         1px solid var(--border-mid);
-		border-radius:  3px;
-		padding:        2px 6px;
-		margin:         6px 12px 2px;
-		width:          calc(100% - 24px);
-		outline:        none;
+		color: var(--text-accent);
+		background: transparent;
+		border: 1px solid var(--border-mid);
+		border-radius: 3px;
+		padding: 2px 6px;
+		margin: 6px 12px 2px;
+		width: calc(100% - 24px);
+		outline: none;
 	}
-	.ca-stage-name-input:focus { border-color: var(--text-accent); }
+	.ca-stage-name-input:focus {
+		border-color: var(--text-accent);
+	}
 
 	/* Spine strip — vertical tabs along the LEFT edge of the active card.
 	   V1 tab-btn style applied with `writing-mode: sideways-lr` so the text
@@ -1412,37 +1586,41 @@
 	.ca-spine {
 		all: unset;
 		cursor: pointer;
-		font-family:    var(--font-ui);
-		font-size:      0.72rem;
-		font-weight:    600;
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		font-weight: 600;
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
-		color:          var(--text-dimmer);
-		background:     transparent;
-		border:         none;
-		border-right:   2px solid transparent;   /* underline on the side touching the card */
-		padding:        16px 7px 16px 7px;       /* 7px visual margin on left and right of the rotated text */
-		text-align:     center;
-		writing-mode:   sideways-lr;
+		color: var(--text-dimmer);
+		background: transparent;
+		border: none;
+		border-right: 2px solid transparent; /* underline on the side touching the card */
+		padding: 16px 7px 16px 7px; /* 7px visual margin on left and right of the rotated text */
+		text-align: center;
+		writing-mode: sideways-lr;
 		/* Variable height: share remaining column space equally; clip overflow
 		   so the rotated name uses ellipsis instead of pushing the column. */
-		flex:           1 1 0;
-		min-height:     0;
-		overflow:       hidden;
-		margin-right:   -1px;                    /* overlap the column border so the active accent reads cleanly */
-		transition:     color 0.12s, border-color 0.12s;
+		flex: 1 1 0;
+		min-height: 0;
+		overflow: hidden;
+		margin-right: -1px; /* overlap the column border so the active accent reads cleanly */
+		transition:
+			color 0.12s,
+			border-color 0.12s;
 	}
-	.ca-spine:hover { color: var(--text-muted); }
+	.ca-spine:hover {
+		color: var(--text-muted);
+	}
 	.ca-spine--active {
-		color:              var(--text-accent);
+		color: var(--text-accent);
 		border-right-color: var(--text-accent);
 	}
 	.ca-spine-name {
-		display:       inline-block;
-		max-height:    100%;
-		overflow:      hidden;
+		display: inline-block;
+		max-height: 100%;
+		overflow: hidden;
 		text-overflow: ellipsis;
-		white-space:   nowrap;
+		white-space: nowrap;
 	}
 	/* Stage */
 	.ca-stage {
@@ -1451,7 +1629,7 @@
 		min-height: 0;
 		min-width: 0;
 		overflow: auto;
-		padding: 0;                /* tab strip and card now extend full-width to the spine */
+		padding: 0; /* tab strip and card now extend full-width to the spine */
 		margin: 0;
 	}
 
@@ -1467,27 +1645,31 @@
 	.ca-tab {
 		all: unset;
 		cursor: pointer;
-		font-family:    var(--font-ui);
-		font-size:      0.72rem;
-		font-weight:    600;
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		font-weight: 600;
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
-		color:          var(--text-dimmer);
-		background:     transparent;
-		border:         none;
-		border-bottom:  2px solid transparent;
-		padding:        7px 8px 6px;       /* half of v1's 13/16/11 */
-		white-space:    nowrap;
-		flex-shrink:    0;
-		margin-bottom:  -1px;
-		transition:     color 0.12s, border-color 0.12s;
-		display:        inline-flex;
-		align-items:    center;
-		gap:            0.35rem;
+		color: var(--text-dimmer);
+		background: transparent;
+		border: none;
+		border-bottom: 2px solid transparent;
+		padding: 7px 8px 6px; /* half of v1's 13/16/11 */
+		white-space: nowrap;
+		flex-shrink: 0;
+		margin-bottom: -1px;
+		transition:
+			color 0.12s,
+			border-color 0.12s;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
 	}
-	.ca-tab:hover { color: var(--text-muted); }
+	.ca-tab:hover {
+		color: var(--text-muted);
+	}
 	.ca-tab--active {
-		color:               var(--text-accent);
+		color: var(--text-accent);
 		border-bottom-color: var(--text-accent);
 	}
 
@@ -1499,7 +1681,7 @@
 		background: var(--bg-inset);
 		border: none;
 		border-radius: 0;
-		padding: 0 7px;                   /* no top/bottom padding — sections control their own spacing */
+		padding: 0 7px; /* no top/bottom padding — sections control their own spacing */
 		margin-bottom: 0;
 		overflow: auto;
 		position: relative;
@@ -1520,65 +1702,74 @@
 		cursor: pointer;
 		transition: color 0.12s;
 	}
-	.ca-card-name--editable:hover { color: var(--text); }
+	.ca-card-name--editable:hover {
+		color: var(--text);
+	}
 
 	/* Initiative widget — mirrors V1 .cs-init-section: small toggle group
 	   with three pill buttons (None / Foe / Character). */
 	.ca-init-section {
-		display:     flex;
+		display: flex;
 		align-items: center;
-		gap:         0.5rem;
+		gap: 0.5rem;
 	}
 	.ca-init-label {
-		font-family:    var(--font-ui);
-		font-size:      0.7rem;
-		font-weight:    600;
+		font-family: var(--font-ui);
+		font-size: 0.7rem;
+		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.08em;
-		color:          var(--text-dimmer);
+		color: var(--text-dimmer);
 	}
 	.ca-init-toggle {
-		display:       flex;
-		border:        1px solid var(--border-mid);
+		display: flex;
+		border: 1px solid var(--border-mid);
 		border-radius: 4px;
-		overflow:      hidden;
+		overflow: hidden;
 	}
 	.ca-init-btn {
 		all: unset;
-		display:        inline-flex;
-		align-items:    center;
-		gap:            3px;
-		padding:        2px 7px;
-		font-family:    var(--font-ui);
-		font-size:      0.58rem;
-		font-weight:    600;
+		display: inline-flex;
+		align-items: center;
+		gap: 3px;
+		padding: 2px 7px;
+		font-family: var(--font-ui);
+		font-size: 0.58rem;
+		font-weight: 600;
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
-		color:          var(--text-muted);
-		background:     transparent;
-		border-right:   1px solid var(--border-mid);
-		cursor:         pointer;
-		transition:     background 0.12s, color 0.12s;
+		color: var(--text-muted);
+		background: transparent;
+		border-right: 1px solid var(--border-mid);
+		cursor: pointer;
+		transition:
+			background 0.12s,
+			color 0.12s;
 	}
-	.ca-init-btn:last-child { border-right: none; }
+	.ca-init-btn:last-child {
+		border-right: none;
+	}
 	.ca-init-btn:hover:not(.ca-init-btn--active) {
-		background: rgba(255,255,255,0.05);
-		color:      var(--text-muted);
+		background: rgba(255, 255, 255, 0.05);
+		color: var(--text-muted);
 	}
 	.ca-init-btn :global(svg) {
-		width: 9px; height: 9px; fill: currentColor; flex-shrink: 0;
+		width: 9px;
+		height: 9px;
+		fill: currentColor;
+		flex-shrink: 0;
 	}
 	.ca-init-btn--active {
 		background: var(--text-accent);
-		color:      var(--bg-card);
+		color: var(--bg-card);
 	}
 	.ca-init-btn--you.ca-init-btn--active {
 		background: rgba(52, 211, 153, 0.18);
-		color:      #34d399;
+		color: #34d399;
 	}
 	.ca-init-btn--foe.ca-init-btn--active {
 		background: rgba(239, 68, 68, 0.14);
-		color:      #ef4444;
+		color: #ef4444;
 	}
 
 	/* Stats / Vitals wrappers — wrap each row with a vertical "STATS" /
@@ -1590,29 +1781,29 @@
 		display: flex;
 		align-items: stretch;
 		gap: 8px;
-		border-top: 1px solid #C5B99E;
+		border-top: 1px solid #c5b99e;
 		padding-top: 8px;
 	}
 	.ca-side-label {
-		writing-mode:   vertical-rl;
-		transform:      rotate(180deg);
-		font-family:    var(--font-ui);
-		font-size:      0.55rem;
-		font-weight:    800;
+		writing-mode: vertical-rl;
+		transform: rotate(180deg);
+		font-family: var(--font-ui);
+		font-size: 0.55rem;
+		font-weight: 800;
 		letter-spacing: 0.14em;
 		text-transform: uppercase;
-		color:          var(--text-dimmer);
-		flex-shrink:    0;
-		align-self:     stretch;
-		display:        flex;
-		align-items:    center;
+		color: var(--text-dimmer);
+		flex-shrink: 0;
+		align-self: stretch;
+		display: flex;
+		align-items: center;
 		justify-content: center;
 		/* The element is rotated 180° (writing-mode + transform), so a CSS
 		   `border-left` shows up on the visual RIGHT of the label — between
 		   the label text and the chits to its right. */
-		border-left:    1px solid var(--border);
-		padding-left:   6px;
-		padding-right:  2px;
+		border-left: 1px solid var(--border);
+		padding-left: 6px;
+		padding-right: 2px;
 	}
 
 	/* Chit rows: fixed-width chits packed against the left. */
@@ -1624,18 +1815,24 @@
 		flex-wrap: wrap;
 		flex: 1;
 	}
-	.ca-stats-row > :global(*) { flex: 0 0 auto; }
+	.ca-stats-row > :global(*) {
+		flex: 0 0 auto;
+	}
 
 	.ca-vitals-row {
-		display:         flex;
-		flex-wrap:       wrap;
+		display: flex;
+		flex-wrap: wrap;
 		justify-content: flex-start;
-		align-items:     stretch;
-		gap:             8px;
-		flex:            1;
+		align-items: stretch;
+		gap: 8px;
+		flex: 1;
 	}
-	.ca-vitals-row > :global(*) { flex: 0 0 auto; }
-	.ca-vitals-row > :global(.mt-tile) { width: 168px; }
+	.ca-vitals-row > :global(*) {
+		flex: 0 0 auto;
+	}
+	.ca-vitals-row > :global(.mt-tile) {
+		width: 168px;
+	}
 
 	/* Debilities — Conditions / Banes / Burdens grid above Bonds/Failures.
 	   padding-bottom matches v2 ExpeditionsArea's .ea-pills-row (14px) so the
@@ -1710,11 +1907,13 @@
 		padding: 7px 10px;
 		transition: background 0.12s;
 	}
-	.ca-asset-card-main:hover { background: var(--bg-hover); }
+	.ca-asset-card-main:hover {
+		background: var(--bg-hover);
+	}
 	.ca-asset-card-meta {
-		display:     flex;
+		display: flex;
 		align-items: center;
-		gap:         5px;
+		gap: 5px;
 	}
 	.ca-asset-card-cat {
 		font-family: var(--font-ui);
@@ -1729,45 +1928,57 @@
 	   on the right. Mirrors the Communities / Expeditions stage-icon
 	   pattern. 16-px icon fits the compact chit size. */
 	.ca-asset-card-name-row {
-		display:     flex;
+		display: flex;
 		align-items: center;
-		gap:         6px;
-		min-width:   0;
+		gap: 6px;
+		min-width: 0;
 	}
 	.ca-asset-card-name-icon {
-		display:         flex;
-		align-items:     center;
+		display: flex;
+		align-items: center;
 		justify-content: center;
-		width:           16px;
-		height:          16px;
-		color:           var(--cat-color, var(--text-muted));
-		flex-shrink:     0;
+		width: 16px;
+		height: 16px;
+		color: var(--cat-color, var(--text-muted));
+		flex-shrink: 0;
 	}
-	.ca-asset-card-name-icon :global(svg) { width: 100%; height: 100%; fill: currentColor; }
-	.ca-asset-card-name-icon :global(svg path) { fill: currentColor; }
+	.ca-asset-card-name-icon :global(svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
+	}
+	.ca-asset-card-name-icon :global(svg path) {
+		fill: currentColor;
+	}
 	/* Gem badge — appears in the meta row when the asset has a selected
 	   rarity. Inherits the asset category colour via currentColor on the
 	   SVG fill. */
 	.ca-asset-card-rarity {
-		display:         inline-flex;
-		align-items:     center;
+		display: inline-flex;
+		align-items: center;
 		justify-content: center;
-		width:           12px;
-		height:          12px;
-		color:           var(--cat-color, var(--text-muted));
-		flex-shrink:     0;
+		width: 12px;
+		height: 12px;
+		color: var(--cat-color, var(--text-muted));
+		flex-shrink: 0;
 	}
-	.ca-asset-card-rarity :global(svg) { width: 100%; height: 100%; fill: currentColor; }
-	.ca-asset-card-rarity :global(svg path) { fill: currentColor; }
+	.ca-asset-card-rarity :global(svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
+	}
+	.ca-asset-card-rarity :global(svg path) {
+		fill: currentColor;
+	}
 	.ca-asset-card-name {
-		flex:          1;
-		min-width:     0;
-		font-family:   var(--font-ui);
-		font-size:     0.78rem;
-		color:         var(--text);
-		overflow:      hidden;
+		flex: 1;
+		min-width: 0;
+		font-family: var(--font-ui);
+		font-size: 0.78rem;
+		color: var(--text);
+		overflow: hidden;
 		text-overflow: ellipsis;
-		white-space:   nowrap;
+		white-space: nowrap;
 	}
 	/* User-supplied name (filled in via the asset's "string" custom field —
 	   companion name, specialty, etc.). Italic signals it's not the catalogue
@@ -1781,86 +1992,90 @@
 	   compact. ± buttons mutate the underlying counter directly; counters
 	   don't cost XP so no draft/snapshot is needed. */
 	.ca-asset-card-tile {
-		position:        relative;
-		flex-shrink:     0;
-		width:           84px;
-		display:         flex;
-		flex-direction:  column;
-		align-items:     center;
+		position: relative;
+		flex-shrink: 0;
+		width: 84px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
 		justify-content: space-between;
-		gap:             3px;
-		padding:         5px 4px;
-		border-left:     1px solid color-mix(in srgb, var(--res-color) 30%, var(--border));
-		background:      color-mix(in srgb, var(--res-color) 8%, var(--bg-card));
-		overflow:        hidden;
+		gap: 3px;
+		padding: 5px 4px;
+		border-left: 1px solid color-mix(in srgb, var(--res-color) 30%, var(--border));
+		background: color-mix(in srgb, var(--res-color) 8%, var(--bg-card));
+		overflow: hidden;
 	}
 	.ca-asset-card-tile-bg {
-		position:        absolute;
-		inset:           0;
-		display:         flex;
-		align-items:     center;
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
 		justify-content: center;
-		opacity:         0.18;
-		pointer-events:  none;
+		opacity: 0.18;
+		pointer-events: none;
 	}
-	:global([data-theme="dark"]) .ca-asset-card-tile-bg { opacity: 0.40; }
+	:global([data-theme='dark']) .ca-asset-card-tile-bg {
+		opacity: 0.4;
+	}
 	.ca-asset-card-tile-bg :global(svg) {
-		width:  60%;
+		width: 60%;
 		height: 60%;
-		fill:   var(--res-color);
-		color:  var(--res-color);
+		fill: var(--res-color);
+		color: var(--res-color);
 	}
 	.ca-asset-card-tile-name {
-		font-family:    var(--font-ui);
-		font-size:      0.55rem;
-		font-weight:    900;
+		font-family: var(--font-ui);
+		font-size: 0.55rem;
+		font-weight: 900;
 		text-transform: uppercase;
 		letter-spacing: 0.06em;
-		color:          var(--res-color);
-		line-height:    1;
-		position:       relative;
-		z-index:        1;
+		color: var(--res-color);
+		line-height: 1;
+		position: relative;
+		z-index: 1;
 	}
 	.ca-asset-card-tile-row {
-		display:     flex;
+		display: flex;
 		align-items: center;
-		gap:         3px;
-		position:    relative;
-		z-index:     1;
+		gap: 3px;
+		position: relative;
+		z-index: 1;
 	}
 	.ca-asset-card-tile-btn {
-		background:    transparent;
-		border:        1px solid var(--border-mid);
-		color:         var(--text-muted);
-		cursor:        pointer;
-		padding:       0;
-		width:         18px;
-		height:        18px;
-		font-size:     0.7rem;
-		line-height:   1;
+		background: transparent;
+		border: 1px solid var(--border-mid);
+		color: var(--text-muted);
+		cursor: pointer;
+		padding: 0;
+		width: 18px;
+		height: 18px;
+		font-size: 0.7rem;
+		line-height: 1;
 		border-radius: 3px;
-		display:       inline-flex;
-		align-items:   center;
+		display: inline-flex;
+		align-items: center;
 		justify-content: center;
-		transition:    border-color 0.12s, color 0.12s;
+		transition:
+			border-color 0.12s,
+			color 0.12s;
 	}
 	.ca-asset-card-tile-btn:hover:not(:disabled) {
 		border-color: var(--res-color);
-		color:        var(--res-color);
+		color: var(--res-color);
 	}
 	.ca-asset-card-tile-btn:disabled {
 		opacity: 0.35;
-		cursor:  not-allowed;
+		cursor: not-allowed;
 	}
 	.ca-asset-card-tile-val {
-		font-family:          var(--font-ui);
-		font-size:            0.65rem;
-		font-weight:          800;
-		color:                var(--res-color);
+		font-family: var(--font-ui);
+		font-size: 0.65rem;
+		font-weight: 800;
+		color: var(--res-color);
 		font-variant-numeric: tabular-nums;
-		min-width:            2.6em;
-		text-align:           center;
-		line-height:          1;
+		min-width: 2.6em;
+		text-align: center;
+		line-height: 1;
 	}
 
 	/* ── Asset detail dialog ── transparent shell; the AssetCard inside owns
@@ -1876,15 +2091,15 @@
 		background: transparent;
 		color: var(--text);
 		width: min(640px, calc(100vw - 1rem));
-		max-height: 80vh;                 /* hard cap at 80% of viewport */
-		overflow: hidden;                 /* clip rounded corners */
+		max-height: 80vh; /* hard cap at 80% of viewport */
+		overflow: hidden; /* clip rounded corners */
 		outline: none;
 		position: fixed;
 		top: 50%;
 		left: 50%;
 		margin: 0;
 		transform: translate(-50%, -50%); /* steady-state centering */
-		z-index: 9999;                    /* sit above any in-page stacking contexts */
+		z-index: 9999; /* sit above any in-page stacking contexts */
 	}
 	.ca-asset-dialog::backdrop {
 		background: #00000060;
@@ -1909,7 +2124,11 @@
 	@keyframes ca-asset-open {
 		from {
 			opacity: 0;
-			transform: translate(calc(-50% + var(--ca-origin-x, 0px)), calc(-50% + var(--ca-origin-y, 0px))) scale(0.05);
+			transform: translate(
+					calc(-50% + var(--ca-origin-x, 0px)),
+					calc(-50% + var(--ca-origin-y, 0px))
+				)
+				scale(0.05);
 		}
 		to {
 			opacity: 1;
@@ -1917,8 +2136,12 @@
 		}
 	}
 	@keyframes ca-asset-backdrop-in {
-		from { opacity: 0; }
-		to   { opacity: 1; }
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
 	}
 	/* AssetCard sizes itself to its content; no flex-fill needed. The body
 	   carries the scroll constraint directly. */

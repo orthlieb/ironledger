@@ -8,9 +8,7 @@
 import { env } from '$env/dynamic/private';
 
 /** Base URL of the Fastify API as seen from the SvelteKit server process. */
-export const INTERNAL_API_URL: string =
-	env.INTERNAL_API_URL ?? 'http://localhost:3000';
+export const INTERNAL_API_URL: string = env.INTERNAL_API_URL ?? 'http://localhost:3000';
 
 /** hCaptcha site key — public, safe to send to the browser via page data. */
-export const HCAPTCHA_SITE_KEY: string =
-	env.HCAPTCHA_SITE_KEY ?? '';
+export const HCAPTCHA_SITE_KEY: string = env.HCAPTCHA_SITE_KEY ?? '';

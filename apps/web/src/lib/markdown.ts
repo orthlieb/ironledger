@@ -66,19 +66,27 @@ export function renderNote(text: string): string {
 	for (const rawLine of lines) {
 		const line = rawLine.trimEnd();
 
-		const isBullet  = /^[-*]\s+/.test(line);
+		const isBullet = /^[-*]\s+/.test(line);
 		const isOrdered = /^\d+\.\s+/.test(line);
-		const heading   = line.match(/^(#{1,3})\s+(.*)/);
+		const heading = line.match(/^(#{1,3})\s+(.*)/);
 
 		if (heading) {
 			closeList();
 			const tag = ({ 1: 'h3', 2: 'h4', 3: 'h5' } as Record<number, string>)[heading[1].length];
 			parts.push(`<${tag}>${applyInline(heading[2])}</${tag}>`);
 		} else if (isBullet) {
-			if (listTag !== 'ul') { closeList(); parts.push('<ul>'); listTag = 'ul'; }
+			if (listTag !== 'ul') {
+				closeList();
+				parts.push('<ul>');
+				listTag = 'ul';
+			}
 			parts.push(`<li>${applyInline(line.replace(/^[-*]\s+/, ''))}</li>`);
 		} else if (isOrdered) {
-			if (listTag !== 'ol') { closeList(); parts.push('<ol>'); listTag = 'ol'; }
+			if (listTag !== 'ol') {
+				closeList();
+				parts.push('<ol>');
+				listTag = 'ol';
+			}
 			parts.push(`<li>${applyInline(line.replace(/^\d+\.\s+/, ''))}</li>`);
 		} else if (line === '') {
 			closeList();

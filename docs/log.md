@@ -17,10 +17,10 @@ The log is **ephemeral by default** — it tracks changes made in the current br
 
 The log lives inside the **Adventure** tab in both layouts.
 
-| Viewport | Log position |
-|---|---|
+| Viewport           | Log position                                                                                                                                                                        |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Desktop (≥ 768 px) | Right-hand column of the Adventure tab, side-by-side with the GCB. Drag-to-resize horizontally; split persists in `localStorage['ironledger.adventureSplit']` (25–75%, default 50). |
-| Mobile (< 768 px) | Bottom panel of the Adventure tab, below the GCB. Drag-to-resize vertically; split persists in `localStorage['il:adventure:split:mobile']` (20–95%, default 80% GCB / 20% log). |
+| Mobile (< 768 px)  | Bottom panel of the Adventure tab, below the GCB. Drag-to-resize vertically; split persists in `localStorage['il:adventure:split:mobile']` (20–95%, default 80% GCB / 20% log).     |
 
 The log panel fills `calc(100dvh - 52px)` on desktop so it extends to the bottom of the viewport below the app nav. See [mobile.md § Adventure Split Panel](mobile.md#adventure-split-panel) for the mobile resize implementation.
 
@@ -30,16 +30,16 @@ The log panel fills `calc(100dvh - 52px)` on desktop so it extends to the bottom
 
 Entries in the YRT app are typed and rendered with different icons / colors:
 
-| Type | Icon | Description |
-|---|---|---|
-| `stat` | pencil | Stat value changed |
-| `resource` | arrow | Resource (momentum/health/spirit/supply/mana) changed |
-| `roll` | dice | Move roll result |
-| `vow` | checkmark | Vow progress updated |
-| `bond` | link | Bond ticks updated |
-| `note` | speech bubble | Manual player note |
-| `asset` | card | Asset added / ability toggled |
-| `debility` | warning | Debility flag changed |
+| Type       | Icon          | Description                                           |
+| ---------- | ------------- | ----------------------------------------------------- |
+| `stat`     | pencil        | Stat value changed                                    |
+| `resource` | arrow         | Resource (momentum/health/spirit/supply/mana) changed |
+| `roll`     | dice          | Move roll result                                      |
+| `vow`      | checkmark     | Vow progress updated                                  |
+| `bond`     | link          | Bond ticks updated                                    |
+| `note`     | speech bubble | Manual player note                                    |
+| `asset`    | card          | Asset added / ability toggled                         |
+| `debility` | warning       | Debility flag changed                                 |
 
 Each entry records a **timestamp**, an optional **delta** (old → new value), and a **description** string.
 
@@ -48,37 +48,59 @@ Each entry records a **timestamp**, an optional **delta** (old → new value), a
 ## Svelte Implementation
 
 ### `log.svelte.ts`
+
 ```ts
 // Module-level reactive state: map of charId → entries (newest first)
 export let logs = $state<Record<string, LogEntry[]>>({});
 
-export function initLog(charId: string): void        // Load from localStorage
-export function appendLog(charId: string, title: string, html: string, id?: string, source?: string, roll?: RollMeta): void
-export function updateLogEntryHtml(charId: string, entryId: string, html: string, source?: string): void
-export function deleteLogEntry(charId: string, entryId: string): void
-export function updateLogEntryNote(charId: string, entryId: string, note: string): void
-export function clearLog(charId: string): void
+export function initLog(charId: string): void; // Load from localStorage
+export function appendLog(
+  charId: string,
+  title: string,
+  html: string,
+  id?: string,
+  source?: string,
+  roll?: RollMeta,
+): void;
+export function updateLogEntryHtml(
+  charId: string,
+  entryId: string,
+  html: string,
+  source?: string,
+): void;
+export function deleteLogEntry(charId: string, entryId: string): void;
+export function updateLogEntryNote(charId: string, entryId: string, note: string): void;
+export function clearLog(charId: string): void;
 ```
 
 Entries are stored per-character in localStorage keyed as `il-log:{charId}`, max 500 entries. A special `SESSION_LOG_ID = '__session__'` key is used for the global session log shared by all components.
 
 #### XP Spend Bus
+
 ```ts
-export function getXpSpendNonce(): number      // Read in $effect to subscribe
-export function triggerXpSpend(charId, amount)  // Queue XP spend from LogPanel
-export function drainXpSpend(charId): number    // Consume in CharacterSheet $effect
+export function getXpSpendNonce(): number; // Read in $effect to subscribe
+export function triggerXpSpend(charId, amount); // Queue XP spend from LogPanel
+export function drainXpSpend(charId): number; // Consume in CharacterSheet $effect
 ```
 
 #### Generalized Action Bus
+
 ```ts
-export interface LogAction { charId: string; type: 'resource' | 'debility' | 'reset-track'; key: string; value: number; }
-export function getActionNonce(): number        // Read in $effect to subscribe
-export function triggerAction(action: LogAction) // Queue from LogPanel click handlers
-export function drainActions(charId): LogAction[] // Consume in CharacterSheet $effect
+export interface LogAction {
+  charId: string;
+  type: 'resource' | 'debility' | 'reset-track';
+  key: string;
+  value: number;
+}
+export function getActionNonce(): number; // Read in $effect to subscribe
+export function triggerAction(action: LogAction); // Queue from LogPanel click handlers
+export function drainActions(charId): LogAction[]; // Consume in CharacterSheet $effect
 ```
 
 ### `LogPanel.svelte`
+
 Renders:
+
 - Header bar with "SESSION LOG" title, export-as-markdown button, and clear button.
 - Scrollable `<log role="log">` region listing entries in reverse-chronological order (newest at top).
 - Each entry shows title, timestamp, edit/delete buttons, and rendered HTML content.
@@ -86,17 +108,18 @@ Renders:
 - Empty state: `◊ NO ENTRIES YET.` with sub-text.
 
 #### Interactive Link Click Delegation
+
 LogPanel handles clicks on 7 interactive link types embedded in move outcome HTML via event delegation on the entries container. Links that modify state (resource, debility, progress, initiative, menace) are replaced with strikethrough after clicking. Move-links and oracle-links open their respective dialogs.
 
-| Link type | CSS class | Behavior | After click |
-|-----------|-----------|----------|-------------|
-| Resource | `.resource-link` | Apply ± stat change via action bus | Strikethrough |
-| Move | `.move-link` | Open MovesDialog to that move | No change |
-| Oracle | `.oracle-link` | Open OraclesDialog to that oracle | No change |
-| Progress | `.progress-link` | Mark progress on active track | Strikethrough |
-| Initiative | `.initiative-link` | Set initiative state | Strikethrough |
-| Debility | `.debility-link` | Toggle debility via action bus | Strikethrough |
-| Menace | `.menace-link` | Mark menace on active vow | Strikethrough |
+| Link type   | CSS class           | Behavior                                       | After click   |
+| ----------- | ------------------- | ---------------------------------------------- | ------------- |
+| Resource    | `.resource-link`    | Apply ± stat change via action bus             | Strikethrough |
+| Move        | `.move-link`        | Open MovesDialog to that move                  | No change     |
+| Oracle      | `.oracle-link`      | Open OraclesDialog to that oracle              | No change     |
+| Progress    | `.progress-link`    | Mark progress on active track                  | Strikethrough |
+| Initiative  | `.initiative-link`  | Set initiative state                           | Strikethrough |
+| Debility    | `.debility-link`    | Toggle debility via action bus                 | Strikethrough |
+| Menace      | `.menace-link`      | Mark menace on active vow                      | Strikethrough |
 | Reset Track | `.reset-track-link` | Clear named progress track to 0 via action bus | Strikethrough |
 
 Additionally, LogPanel handles two JS-generated link types not present in move JSON data:
@@ -105,6 +128,7 @@ Additionally, LogPanel handles two JS-generated link types not present in move J
 - **`.xp-cost-link`** — Appears in asset log entries. **One link per add/modify dialog session, not per individual change.** When the user opens the asset dialog (add or edit mode), edits accumulate in a draft; on OK/Add the parent computes the total XP cost (asset purchase cost + 2 × newly-enabled abilities + rarity xpCost, if applicable) and emits one log entry with one xp-cost-link for the cumulative total. Clicking the link deducts that total from the character and strikes through to prevent double-use. If the diff is 0 (e.g. user opened the dialog, toggled an ability on then back off, clicked OK), no log entry is written at all.
 
 #### Cascade Rules
+
 LogPanel also auto-appends additional log entries in response to resource-link clicks when cascade conditions are met:
 
 - **Overflow** (`OVERFLOW_RULES`): health or spirit drops below 0 — a new entry is appended offering to convert the overflow to momentum loss.
@@ -115,6 +139,7 @@ LogPanel also auto-appends additional log entries in response to resource-link c
   - Supply at 0 → "Out of Supply" entry with per-point clickable exchange links (−health / −spirit / −momentum)
 
 CharacterSheet auto-appends entries from **floor rules** (`FLOOR_RULES`) when a resource transitions into its minimum:
+
 - Momentum hits −6 → "Momentum: Desperate" note appended
 - Supply hits 0 → "Supply: Exhausted" note with clickable Unprepared debility link
 
@@ -125,19 +150,30 @@ Callback props: `onMoveLink`, `onOracleLink`, `onProgressLink`, `onInitiativeLin
 ## CSS Structure
 
 The log pane in `+page.svelte`:
+
 ```css
 /* Desktop */
 .log-pane {
-  position: sticky; top: 52px;
+  position: sticky;
+  top: 52px;
   height: calc(100dvh - 52px);
-  align-self: start; overflow: hidden;
-  display: flex; flex-direction: column;
+  align-self: start;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Mobile: hidden by default, shown when log tab active */
-.log-pane { display: none; height: calc(100dvh - 52px - 44px); }
-.page-layout.log-active .log-pane { display: flex; }
-.page-layout.log-active .tab-body  { display: none; }
+.log-pane {
+  display: none;
+  height: calc(100dvh - 52px - 44px);
+}
+.page-layout.log-active .log-pane {
+  display: flex;
+}
+.page-layout.log-active .tab-body {
+  display: none;
+}
 ```
 
 ---
@@ -146,12 +182,12 @@ The log pane in `+page.svelte`:
 
 ```ts
 interface LogEntry {
-  id:      string;   // crypto.randomUUID()
-  title:   string;   // e.g. "Silk Char — Face Danger (Edge)"
-  html:    string;   // rendered HTML content (move outcomes, resource changes, notes)
-  ts:      string;   // ISO 8601 timestamp
-  note?:   string;   // user-authored note attached to this entry
-  source?: string;   // original markdown source (for editable entries like Notes)
-  roll?:   RollMeta; // present on action roll entries — enables burn-momentum after the fact
+  id: string; // crypto.randomUUID()
+  title: string; // e.g. "Silk Char — Face Danger (Edge)"
+  html: string; // rendered HTML content (move outcomes, resource changes, notes)
+  ts: string; // ISO 8601 timestamp
+  note?: string; // user-authored note attached to this entry
+  source?: string; // original markdown source (for editable entries like Notes)
+  roll?: RollMeta; // present on action roll entries — enables burn-momentum after the fact
 }
 ```

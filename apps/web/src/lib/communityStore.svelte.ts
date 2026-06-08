@@ -19,9 +19,9 @@ import type { Community } from '$lib/types.js';
 // ---------------------------------------------------------------------------
 
 let _communities: Community[] = $state([]);
-let _loading                   = $state(false);
-let _loaded                    = false;
-let _saving                    = $state(false);
+let _loading = $state(false);
+let _loaded = false;
+let _saving = $state(false);
 
 // ---------------------------------------------------------------------------
 // Fetch
@@ -41,7 +41,7 @@ export async function loadCommunities(): Promise<void> {
 		// Guard against legacy rows where the JSONB column was persisted as
 		// `{}` instead of `[]` — `?? []` only rescues null/undefined.
 		_communities = Array.isArray(json.communities) ? (json.communities as Community[]) : [];
-		_loaded      = true;
+		_loaded = true;
 	} catch (err) {
 		console.error('[communityStore] Failed to load communities:', err);
 	} finally {
@@ -78,14 +78,14 @@ export async function addCommunity(c: Community): Promise<void> {
 
 /** Replace one community by id and persist. */
 export async function updateCommunity(updated: Community): Promise<void> {
-	_communities = _communities.map((c) => c.id === updated.id ? updated : c);
+	_communities = _communities.map((c) => (c.id === updated.id ? updated : c));
 	await persist();
 }
 
 /** Replace one community by id WITHOUT persisting. Pair with
     persistCommunitiesNow() to debounce rapid text edits. */
 export function updateCommunityLocal(updated: Community): void {
-	_communities = _communities.map((c) => c.id === updated.id ? updated : c);
+	_communities = _communities.map((c) => (c.id === updated.id ? updated : c));
 }
 /** Force a save of the current community list (debounce-friendly partner). */
 export async function persistCommunitiesNow(): Promise<void> {
@@ -107,10 +107,10 @@ async function persist(): Promise<void> {
 	_saving = true;
 	try {
 		const res = await fetch('/api/session/communities', {
-			method:      'PATCH',
+			method: 'PATCH',
 			credentials: 'include',
-			headers:     { 'Content-Type': 'application/json' },
-			body:        JSON.stringify({ communities: _communities }),
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ communities: _communities }),
 		});
 		if (!res.ok) {
 			console.error('[communityStore] Persist failed:', res.status);

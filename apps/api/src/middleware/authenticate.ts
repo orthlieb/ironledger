@@ -25,17 +25,14 @@ import { verifyAccessToken } from '../lib/tokens.js';
 // authenticate — rejects the request if no valid JWT is present
 // ---------------------------------------------------------------------------
 
-export async function authenticate(
-  req:   FastifyRequest,
-  reply: FastifyReply,
-): Promise<void> {
+export async function authenticate(req: FastifyRequest, reply: FastifyReply): Promise<void> {
   const token = extractBearerToken(req);
 
   if (!token) {
     return reply.status(401).send({
       statusCode: 401,
-      error:      'Unauthorized',
-      message:    'Authentication required',
+      error: 'Unauthorized',
+      message: 'Authentication required',
     });
   }
 
@@ -48,17 +45,17 @@ export async function authenticate(
 
     // Attach to request — available in route handlers as req.user
     req.user = {
-      id:    payload.sub,
+      id: payload.sub,
       email: payload.email,
-      role:  payload.role ?? 'user',
+      role: payload.role ?? 'user',
     };
   } catch {
     // Token is invalid, expired, or tampered with.
     // Don't reveal which — all cases return 401.
     return reply.status(401).send({
       statusCode: 401,
-      error:      'Unauthorized',
-      message:    'Invalid or expired token',
+      error: 'Unauthorized',
+      message: 'Invalid or expired token',
     });
   }
 }
@@ -67,10 +64,7 @@ export async function authenticate(
 // optionalAuth — attaches req.user if a valid token is present, silent if not
 // ---------------------------------------------------------------------------
 
-export async function optionalAuth(
-  req:   FastifyRequest,
-  reply: FastifyReply,
-): Promise<void> {
+export async function optionalAuth(req: FastifyRequest, reply: FastifyReply): Promise<void> {
   const token = extractBearerToken(req);
   if (!token) return;
 

@@ -25,22 +25,22 @@ async function adminToken(): Promise<string> {
 	const ctx = await request.newContext({ baseURL: API });
 	const res = await ctx.post('/api/v1/auth/login', {
 		data: {
-			email:        'admin@ironledger.local',
-			password:     'adminpassword123!',
+			email: 'admin@ironledger.local',
+			password: 'adminpassword123!',
 			captchaToken: 'dev-bypass',
 		},
 	});
 	if (!res.ok()) throw new Error(`Admin login failed: ${res.status()} ${await res.text()}`);
-	const body = await res.json() as { accessToken: string };
+	const body = (await res.json()) as { accessToken: string };
 	await ctx.dispose();
 	return body.accessToken;
 }
 
 interface QuotaStatus {
-	daily:     number | null;
+	daily: number | null;
 	usedToday: number;
 	remaining: number | null;
-	resetsAt:  string;
+	resetsAt: string;
 	exhausted: boolean;
 }
 
@@ -50,7 +50,7 @@ async function getQuota(token: string): Promise<QuotaStatus> {
 		headers: { Authorization: `Bearer ${token}` },
 	});
 	if (!res.ok()) throw new Error(`getQuota failed: ${res.status()} ${await res.text()}`);
-	const body = await res.json() as QuotaStatus;
+	const body = (await res.json()) as QuotaStatus;
 	await ctx.dispose();
 	return body;
 }
@@ -59,10 +59,10 @@ async function setQuota(token: string, daily: number | null): Promise<QuotaStatu
 	const ctx = await request.newContext({ baseURL: API });
 	const res = await ctx.put('/api/v1/admin/registration-quota', {
 		headers: { Authorization: `Bearer ${token}` },
-		data:    { daily },
+		data: { daily },
 	});
 	if (!res.ok()) throw new Error(`setQuota failed: ${res.status()} ${await res.text()}`);
-	const body = await res.json() as QuotaStatus;
+	const body = (await res.json()) as QuotaStatus;
 	await ctx.dispose();
 	return body;
 }
@@ -74,7 +74,7 @@ async function deleteUserByEmail(token: string, email: string): Promise<void> {
 			headers: { Authorization: `Bearer ${token}` },
 		});
 		if (!listRes.ok()) return;
-		const users = await listRes.json() as Array<{ id: string; email: string }>;
+		const users = (await listRes.json()) as Array<{ id: string; email: string }>;
 		const target = users.find((u) => u.email === email.toLowerCase());
 		if (target) {
 			await ctx.delete(`/api/v1/admin/users/${target.id}`, {
@@ -109,7 +109,7 @@ test.describe('Registration Daily Quota', () => {
 		await setQuota(token, current.usedToday + 10);
 
 		const email = `e2e-quota-ok-${Date.now()}@ironledger.test`;
-		const pw    = `QuotaOkE2E-${Date.now()}!`;
+		const pw = `QuotaOkE2E-${Date.now()}!`;
 
 		try {
 			await page.context().clearCookies();
@@ -150,8 +150,8 @@ test.describe('Registration Daily Quota', () => {
 			const bumpCtx = await request.newContext({ baseURL: API });
 			await bumpCtx.post('/api/v1/auth/register', {
 				data: {
-					email:        `e2e-quota-bump-${Date.now()}@ironledger.test`,
-					password:     `BumpE2E-${Date.now()}!`,
+					email: `e2e-quota-bump-${Date.now()}@ironledger.test`,
+					password: `BumpE2E-${Date.now()}!`,
 					captchaToken: 'dev-bypass',
 				},
 			});
@@ -175,13 +175,13 @@ test.describe('Registration Daily Quota', () => {
 		const ctx = await request.newContext({ baseURL: API });
 		const postRes = await ctx.post('/api/v1/auth/register', {
 			data: {
-				email:        `e2e-quota-blocked-${Date.now()}@ironledger.test`,
-				password:     `BlockedE2E-${Date.now()}!`,
+				email: `e2e-quota-blocked-${Date.now()}@ironledger.test`,
+				password: `BlockedE2E-${Date.now()}!`,
 				captchaToken: 'dev-bypass',
 			},
 		});
 		expect(postRes.status()).toBe(429);
-		const body = await postRes.json() as { message?: string };
+		const body = (await postRes.json()) as { message?: string };
 		await ctx.dispose();
 		expect(body.message).toMatch(/signups are full|come back tomorrow/i);
 	});
@@ -194,7 +194,7 @@ test.describe('Registration Daily Quota', () => {
 		expect(status.exhausted).toBe(false);
 
 		const email = `e2e-quota-unlimited-${Date.now()}@ironledger.test`;
-		const pw    = `UnlimitedE2E-${Date.now()}!`;
+		const pw = `UnlimitedE2E-${Date.now()}!`;
 
 		try {
 			await page.context().clearCookies();

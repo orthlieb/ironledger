@@ -24,15 +24,14 @@ const CHAR_AREA = '.home-area--characters';
 async function gotoHome(page: import('@playwright/test').Page) {
 	await page.goto('/home');
 	await expect(page.locator(`${CHAR_AREA} .ca-loading`)).not.toBeVisible({ timeout: 12_000 });
-	await page.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`).first()
+	await page
+		.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`)
+		.first()
 		.waitFor({ timeout: 12_000, state: 'attached' });
 }
 
 /** Open Hamburger → Export dialog, select a content option. */
-async function openExportDialog(
-	page: import('@playwright/test').Page,
-	content: string,
-) {
+async function openExportDialog(page: import('@playwright/test').Page, content: string) {
 	await page.locator('.hamburger-btn').click();
 	await page.locator('.menu-item:has-text("Export...")').click();
 	await expect(page.locator('.export-dialog[open]')).toBeVisible();
@@ -47,9 +46,9 @@ async function uploadImport(
 ) {
 	const fileInput = page.locator('input[type="file"][accept=".json,application/json"]');
 	await fileInput.setInputFiles({
-		name:     filename,
+		name: filename,
 		mimeType: 'application/json',
-		buffer:   Buffer.from(JSON.stringify(payload)),
+		buffer: Buffer.from(JSON.stringify(payload)),
 	});
 }
 
@@ -57,8 +56,8 @@ async function uploadImport(
 function makeManifest(type: string, data: unknown, count = 0) {
 	return {
 		manifest: {
-			app:        'Iron Ledger',
-			version:    '1.0.0',
+			app: 'Iron Ledger',
+			version: '1.0.0',
 			exportedAt: new Date().toISOString(),
 			type,
 			count,
@@ -72,7 +71,9 @@ function makeManifest(type: string, data: unknown, count = 0) {
 // Global blank-slate reset (runs once before the first test in this file).
 // ---------------------------------------------------------------------------
 
-test.beforeAll(async () => { await resetAll(); });
+test.beforeAll(async () => {
+	await resetAll();
+});
 
 // Export dialog
 // ---------------------------------------------------------------------------
@@ -86,7 +87,14 @@ test.describe('Export dialog', () => {
 		await openExportDialog(page, 'character');
 		// 'foes' was removed from the export menu in commit 7eff969 — foes now
 		// only ship as part of an Everything export.
-		for (const val of ['character', 'all-characters', 'log', 'communities', 'expeditions', 'everything']) {
+		for (const val of [
+			'character',
+			'all-characters',
+			'log',
+			'communities',
+			'expeditions',
+			'everything',
+		]) {
 			await expect(
 				page.locator(`.export-dialog[open] .ed-select option[value="${val}"]`).first(),
 			).toBeAttached();
@@ -126,7 +134,9 @@ test.describe('Export dialog', () => {
 			page.waitForEvent('download'),
 			page.locator('.export-dialog .btn-primary').click(),
 		]);
-		expect(download.suggestedFilename()).toMatch(/^ironledger-export-\d{4}-\d{2}-\d{2}_\d{4}\.json$/);
+		expect(download.suggestedFilename()).toMatch(
+			/^ironledger-export-\d{4}-\d{2}-\d{2}_\d{4}\.json$/,
+		);
 	});
 
 	test('All Characters JSON export downloads a JSON file', async ({ page }) => {
@@ -159,7 +169,8 @@ test.describe('Export dialog', () => {
 		]);
 		const stream = await download.createReadStream();
 		const chunks: Buffer[] = [];
-		for await (const chunk of stream) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+		for await (const chunk of stream)
+			chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
 		const json = JSON.parse(Buffer.concat(chunks).toString());
 
 		expect(json.manifest).toBeDefined();
@@ -186,15 +197,21 @@ test.describe('Import — happy path', () => {
 	});
 
 	test('imports a valid character JSON without errors', async ({ page }) => {
-		const payload = makeManifest('character', { name: 'Test Pilgrim', data: { edge: 2, heart: 3 } }, 1);
+		const payload = makeManifest(
+			'character',
+			{ name: 'Test Pilgrim', data: { edge: 2, heart: 3 } },
+			1,
+		);
 		await uploadImport(page, payload);
 		await expect(page.locator('.error-bar')).not.toBeVisible({ timeout: 5_000 });
 	});
 
 	test('imports a valid log JSON without errors', async ({ page }) => {
-		const payload = makeManifest('log', [
-			{ title: 'Face Danger', html: '<div>A roll was made.</div>', ts: Date.now(), note: '' },
-		], 1);
+		const payload = makeManifest(
+			'log',
+			[{ title: 'Face Danger', html: '<div>A roll was made.</div>', ts: Date.now(), note: '' }],
+			1,
+		);
 		await uploadImport(page, payload);
 		await expect(page.locator('.error-bar')).not.toBeVisible({ timeout: 5_000 });
 	});
@@ -210,7 +227,11 @@ test.describe('Import — security', () => {
 	});
 
 	test('rejects files over 5 MB with a user-friendly error', async ({ page }) => {
-		const big = { manifest: { type: 'log', app: 'Iron Ledger', version: '1.0.0', exportedAt: '', count: 0 }, data: [], _pad: 'x'.repeat(6 * 1024 * 1024) };
+		const big = {
+			manifest: { type: 'log', app: 'Iron Ledger', version: '1.0.0', exportedAt: '', count: 0 },
+			data: [],
+			_pad: 'x'.repeat(6 * 1024 * 1024),
+		};
 		await uploadImport(page, big, 'huge.json');
 		await expect(page.locator('.error-bar')).toBeVisible({ timeout: 5_000 });
 		await expect(page.locator('.error-bar-msg')).toContainText('too large');
@@ -219,63 +240,92 @@ test.describe('Import — security', () => {
 	test('rejects invalid (non-JSON) files with a user-friendly error', async ({ page }) => {
 		const fileInput = page.locator('input[type="file"][accept=".json,application/json"]');
 		await fileInput.setInputFiles({
-			name:     'bad.json',
+			name: 'bad.json',
 			mimeType: 'application/json',
-			buffer:   Buffer.from('this is not valid json }{'),
+			buffer: Buffer.from('this is not valid json }{'),
 		});
 		await expect(page.locator('.error-bar')).toBeVisible({ timeout: 5_000 });
 		await expect(page.locator('.error-bar-msg')).toContainText('not valid JSON');
 	});
 
 	test('silently drops __proto__ keys — no prototype pollution', async ({ page }) => {
-		const poisoned = makeManifest('character', {
-			name: 'Poison Pilgrim',
-			data: {
-				'__proto__':   { isAdmin: true },
-				'constructor': { name: 'pwned' },
-				edge:          1,
+		const poisoned = makeManifest(
+			'character',
+			{
+				name: 'Poison Pilgrim',
+				data: {
+					__proto__: { isAdmin: true },
+					constructor: { name: 'pwned' },
+					edge: 1,
+				},
 			},
-		}, 1);
+			1,
+		);
 		await uploadImport(page, poisoned);
 		await expect(page.locator('.error-bar')).not.toBeVisible({ timeout: 5_000 });
-		const polluted = await page.evaluate(() => (({} as Record<string,unknown>).isAdmin));
+		const polluted = await page.evaluate(() => (({}) as Record<string, unknown>).isAdmin);
 		expect(polluted).toBeUndefined();
 	});
 
 	test('sanitizes <script> tags in imported log HTML', async ({ page }) => {
-		const payload = makeManifest('log', [{
-			title: 'Malicious Entry',
-			html:  '<div>Safe text</div><script>window.__xss_test = true;</script>',
-			ts:    Date.now(),
-			note:  '',
-		}], 1);
+		const payload = makeManifest(
+			'log',
+			[
+				{
+					title: 'Malicious Entry',
+					html: '<div>Safe text</div><script>window.__xss_test = true;</script>',
+					ts: Date.now(),
+					note: '',
+				},
+			],
+			1,
+		);
 		await uploadImport(page, payload);
 		await expect(page.locator('.error-bar')).not.toBeVisible({ timeout: 5_000 });
-		const xssRan = await page.evaluate(() => (window as unknown as Record<string, unknown>).__xss_test);
+		const xssRan = await page.evaluate(
+			() => (window as unknown as Record<string, unknown>).__xss_test,
+		);
 		expect(xssRan).toBeUndefined();
 	});
 
 	test('sanitizes event-handler attributes in imported log HTML', async ({ page }) => {
-		const payload = makeManifest('log', [{
-			title: 'Handler Entry',
-			html:  '<img src="x" onerror="window.__onerror_test=true;">',
-			ts:    Date.now(),
-			note:  '',
-		}], 1);
+		const payload = makeManifest(
+			'log',
+			[
+				{
+					title: 'Handler Entry',
+					html: '<img src="x" onerror="window.__onerror_test=true;">',
+					ts: Date.now(),
+					note: '',
+				},
+			],
+			1,
+		);
 		await uploadImport(page, payload);
 		await expect(page.locator('.error-bar')).not.toBeVisible({ timeout: 5_000 });
 		await page.waitForTimeout(500);
-		const handlerRan = await page.evaluate(() => (window as unknown as Record<string, unknown>).__onerror_test);
+		const handlerRan = await page.evaluate(
+			() => (window as unknown as Record<string, unknown>).__onerror_test,
+		);
 		expect(handlerRan).toBeUndefined();
 	});
 
 	test('rejects JSON with array exceeding item limit', async ({ page }) => {
-		const payload = makeManifest('log', Array.from({ length: 1001 }, (_, i) => ({
-			title: `Entry ${i}`, html: '<div>x</div>', ts: Date.now(), note: '',
-		})), 1001);
+		const payload = makeManifest(
+			'log',
+			Array.from({ length: 1001 }, (_, i) => ({
+				title: `Entry ${i}`,
+				html: '<div>x</div>',
+				ts: Date.now(),
+				note: '',
+			})),
+			1001,
+		);
 		await uploadImport(page, payload);
 		await expect(page.locator('.error-bar')).toBeVisible({ timeout: 10_000 });
-		await expect(page.locator('.error-bar-msg')).toContainText('too many items', { timeout: 5_000 });
+		await expect(page.locator('.error-bar-msg')).toContainText('too many items', {
+			timeout: 5_000,
+		});
 	});
 
 	test('rejects JSON with excessive nesting depth', async ({ page }) => {
