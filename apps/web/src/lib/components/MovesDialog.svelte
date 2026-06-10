@@ -36,6 +36,7 @@
 	import { playMissScream, preloadMissScream } from '$lib/diceSound.js';
 
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
+	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
 	import diceD6RawSvg from '$icons/dice-d6-light.svg?raw';
 	import diceD10RawSvg from '$icons/dice-d10-light.svg?raw';
 	import { draggable } from '$lib/actions/draggable.js';
@@ -826,13 +827,16 @@
 		<!-- Controls -->
 		<div class="md-controls">
 			<div class="md-search-row">
-				<input
-					class="md-search"
-					type="search"
-					placeholder="Search moves…"
-					bind:value={search}
-					aria-label="Search moves"
-				/>
+				<div class="md-search-field">
+					<span class="md-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
+					<input
+						class="md-search"
+						type="search"
+						placeholder="Search moves…"
+						bind:value={search}
+						aria-label="Search moves"
+					/>
+				</div>
 				<button
 					class="md-filter-toggle"
 					class:md-filter-toggle--active={activeCategories.size > 0}
@@ -1549,6 +1553,28 @@
 		align-items: center;
 		gap: 6px;
 	}
+	.md-search-field {
+		flex: 1;
+		min-width: 0;
+		position: relative;
+		display: flex;
+		align-items: center;
+	}
+	.md-search-icon {
+		position: absolute;
+		left: 8px;
+		width: 13px;
+		height: 13px;
+		display: inline-flex;
+		pointer-events: none;
+		color: var(--text-dimmer);
+	}
+	.md-search-icon :global(svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
+	}
+
 	.md-search {
 		flex: 1;
 		font-family: var(--font-ui);
@@ -1557,7 +1583,7 @@
 		background: var(--bg-inset);
 		border: 1px solid var(--border);
 		border-radius: 4px;
-		padding: 5px 8px;
+		padding: 5px 8px 5px 28px;
 		min-width: 0;
 	}
 	.md-search:focus {
