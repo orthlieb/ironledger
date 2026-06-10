@@ -145,9 +145,13 @@
 				</div>
 			{/if}
 
+			<!-- value + oninput (not bind:value) so a legacy vow with no `notes`
+			     field — undefined — doesn't trip MarkdownNotes' bindable fallback
+			     (props_invalid_value). Matches CommunitiesArea / ExpeditionsArea. -->
 			<MarkdownNotes
 				label="Notes"
-				bind:value={vow.notes}
+				value={vow.notes ?? ''}
+				oninput={(v) => (vow.notes = v)}
 				placeholder="Notes… (**bold**, *italic*, # heading, - list)"
 				rows={3}
 			/>
