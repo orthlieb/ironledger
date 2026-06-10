@@ -9,6 +9,7 @@
 	 */
 	import type { AssetCategory, AssetDefinition, CharacterData } from '$lib/types.js';
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
+	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
 	import { getVisibleAssets, isAssetsLoading, findAsset } from '$lib/assetStore.svelte.js';
 	import { firstPreconditionFailure, type Precondition } from '$lib/preconditions.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
@@ -143,13 +144,16 @@
 	<!-- Search row + filter toggle -->
 	<div class="picker-controls">
 		<div class="ap-search-row">
-			<input
-				class="search-input"
-				type="search"
-				bind:value={search}
-				placeholder="Search by name or description…"
-				aria-label="Search assets"
-			/>
+			<div class="ap-search-field">
+				<span class="ap-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
+				<input
+					class="search-input"
+					type="search"
+					bind:value={search}
+					placeholder="Search by name or description…"
+					aria-label="Search assets"
+				/>
+			</div>
 			<button
 				class="ap-filter-toggle"
 				class:ap-filter-toggle--active={activeCategories.size > 0}
@@ -324,11 +328,33 @@
 		gap: 6px;
 	}
 
+	.ap-search-field {
+		flex: 1;
+		min-width: 0;
+		position: relative;
+		display: flex;
+		align-items: center;
+	}
+	.ap-search-icon {
+		position: absolute;
+		left: 9px;
+		width: 13px;
+		height: 13px;
+		display: inline-flex;
+		pointer-events: none;
+		color: var(--text-dimmer);
+	}
+	.ap-search-icon :global(svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
+	}
+
 	.search-input {
 		flex: 1;
 		font-family: var(--font-ui);
 		font-size: 0.82rem;
-		padding: 5px 9px;
+		padding: 5px 9px 5px 29px;
 		min-width: 0;
 	}
 

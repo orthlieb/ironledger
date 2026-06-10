@@ -34,6 +34,7 @@
 	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '$lib/foePortrait.js';
 	import FoeImageCarousel from '$lib/components/FoeImageCarousel.svelte';
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
+	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
 	import { foeIcon } from '$lib/iconRegistry.js';
 
 	// ---------------------------------------------------------------------------
@@ -234,13 +235,16 @@
 
 		<div class="fd-controls">
 			<div class="fd-search-row">
-				<input
-					type="search"
-					class="fd-search"
-					placeholder="Search by name or feature…"
-					bind:value={search}
-					aria-label="Search foes"
-				/>
+				<div class="fd-search-field">
+					<span class="fd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
+					<input
+						type="search"
+						class="fd-search"
+						placeholder="Search by name or feature…"
+						bind:value={search}
+						aria-label="Search foes"
+					/>
+				</div>
 				<button
 					class="fd-filter-toggle"
 					class:has-filters={activeFilterCount > 0}
@@ -560,11 +564,34 @@
 		align-items: center;
 	}
 
+	.fd-search-field {
+		flex: 1;
+		min-width: 0;
+		position: relative;
+		display: flex;
+		align-items: center;
+	}
+	.fd-search-icon {
+		position: absolute;
+		left: 9px;
+		width: 13px;
+		height: 13px;
+		display: inline-flex;
+		pointer-events: none;
+		color: var(--text-dimmer);
+	}
+	.fd-search-icon :global(svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
+	}
+
 	.fd-search {
 		flex: 1;
+		min-width: 0;
 		font-family: var(--font-ui);
 		font-size: 0.82rem;
-		padding: 5px 10px;
+		padding: 5px 10px 5px 29px;
 		background: var(--bg-inset);
 		border: 1px solid var(--border);
 		border-radius: 4px;
