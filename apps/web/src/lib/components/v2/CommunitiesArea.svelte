@@ -2,8 +2,12 @@
 	/**
 	 * CommunitiesArea (v2 prototype) — combined Communities + NPCs deck.
 	 *
-	 * Spine column lists both entry types interleaved (sorted by createdAt).
-	 * Each entry's spine accent and stage-header LHS band are coloured by type:
+	 * Master-detail: a searchable/filterable rail lists both entry types
+	 * interleaved; selecting one opens its detail in the stage. The rail
+	 * scales to dozens of entries (search + type filter + Added/A–Z sort).
+	 * On narrow widths the two panes collapse to a single-pane drill-down
+	 * (list → detail → back) via the @container query on `.cm-area`.
+	 * Each entry's row accent and stage-header LHS band are coloured by type:
 	 *   community → #D06840 (terracotta)
 	 *   npc       → #C848A8 (orchid)
 	 *
@@ -47,6 +51,8 @@
 	import farmerSvg from '$icons/farmer.svg?raw';
 	import villageIconSvg from '$icons/village.svg?raw';
 	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
+	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
+	import backIconSvg from '$icons/angles-left-solid-full.svg?raw';
 	import { headingText } from '$lib/fontStore.svelte.js';
 
 	let { showTitle = true }: { showTitle?: boolean } = $props();
@@ -75,6 +81,17 @@
 	let activeTab = $state<CmTab>('core');
 	let deleteDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let newlyCreatedId = $state('');
+
+	// Rail controls — search box, type filter, and sort order. These scale the
+	// list to dozens of entries (see displayEntries below).
+	let search = $state('');
+	let kindFilter = $state<'all' | EntryKind>('all');
+	let sortMode = $state<'added' | 'name'>('added');
+
+	// Mobile/narrow drill-down: which pane is showing when the area is too
+	// narrow for two panes (driven by the @container query in the styles).
+	// Selecting an entry pushes to 'detail'; the back button returns to 'list'.
+	let mobilePane = $state<'list' | 'detail'>('list');
 
 	// New-community dialog state
 	let newCommunityDialogRef = $state<{ open(): void; close(): void } | null>(null);
@@ -119,6 +136,26 @@
 		].sort((a, b) => a.createdAt - b.createdAt),
 	);
 
+	/** Rail list — entries after type filter + name search, then sorted. The
+	 *  detail stage always reads from the full `entries`, so filtering the rail
+	 *  never hides the currently-open entry. */
+	const displayEntries = $derived<Entry[]>(
+		entries
+			.filter((e) => kindFilter === 'all' || e.kind === kindFilter)
+			.filter((e) => {
+				const q = search.trim().toLowerCase();
+				return q === '' || (e.data.name ?? '').toLowerCase().includes(q);
+			})
+			.sort((a, b) => {
+				if (sortMode === 'name') {
+					return (a.data.name ?? '').localeCompare(b.data.name ?? '', undefined, {
+						sensitivity: 'base',
+					});
+				}
+				return a.createdAt - b.createdAt;
+			}),
+	);
+
 	$effect(() => {
 		if (!activeEntryId && entries.length > 0) activeEntryId = entries[0].id;
 	});
@@ -131,6 +168,7 @@
 		flushPersist();
 		activeEntryId = id;
 		activeTab = 'core';
+		mobilePane = 'detail';
 		nameEdit.commit();
 		editingNotes = false;
 	}
@@ -319,6 +357,8 @@
 		if (activeEntry.kind === 'community') await removeCommunity(id);
 		else await removeNpc(id);
 		if (activeEntryId === id) activeEntryId = null;
+		// Return to the list on narrow layouts after deleting the open entry.
+		mobilePane = 'list';
 	}
 </script>
 
@@ -347,27 +387,80 @@
 			</p>
 		</div>
 	{:else}
-		<div class="cm-body">
-			<nav class="cm-spines" aria-label="Connections and NPCs">
-				{#each entries as entry (entry.id)}
-					{@const accent = entry.kind === 'npc' ? NPC_COLOR : COMMUNITY_COLOR}
-					<button
-						class="cm-spine"
-						class:cm-spine--active={entry.id === activeEntryId}
-						style="--cm-spine-color: {accent}"
-						onclick={() => selectEntry(entry.id)}
-						use:tooltip={`${entry.data.name} (${entry.kind})`}
-					>
-						<span class="cm-spine-name"
-							>{entry.data.name ||
-								(entry.kind === 'npc' ? 'Unnamed NPC' : 'Unnamed Community')}</span
+		<div class="cm-body" class:cm-body--detail={mobilePane === 'detail'}>
+			<nav class="cm-rail" aria-label="Connections and NPCs">
+				<div class="cm-rail-tools">
+					<div class="cm-search">
+						<span class="cm-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
+						<input
+							class="cm-search-input"
+							type="search"
+							bind:value={search}
+							placeholder="Search connections…"
+							aria-label="Search connections"
+						/>
+					</div>
+					<div class="cm-rail-filters">
+						<div class="cm-chips" role="group" aria-label="Filter by type">
+							<button
+								class="cm-chip"
+								class:cm-chip--active={kindFilter === 'all'}
+								onclick={() => (kindFilter = 'all')}>All</button
+							>
+							<button
+								class="cm-chip"
+								class:cm-chip--active={kindFilter === 'community'}
+								style="--cm-chip-color: {COMMUNITY_COLOR}"
+								onclick={() => (kindFilter = 'community')}>Communities</button
+							>
+							<button
+								class="cm-chip"
+								class:cm-chip--active={kindFilter === 'npc'}
+								style="--cm-chip-color: {NPC_COLOR}"
+								onclick={() => (kindFilter = 'npc')}>NPCs</button
+							>
+						</div>
+						<select class="cm-sort" bind:value={sortMode} aria-label="Sort connections">
+							<option value="added">Added</option>
+							<option value="name">A–Z</option>
+						</select>
+					</div>
+				</div>
+
+				<div class="cm-list" aria-label="Connections">
+					{#each displayEntries as entry (entry.id)}
+						{@const accent = entry.kind === 'npc' ? NPC_COLOR : COMMUNITY_COLOR}
+						<button
+							class="cm-row"
+							class:cm-row--active={entry.id === activeEntryId}
+							style="--cm-row-color: {accent}"
+							aria-current={entry.id === activeEntryId ? 'true' : undefined}
+							onclick={() => selectEntry(entry.id)}
 						>
-					</button>
-				{/each}
+							<span class="cm-row-icon" aria-hidden="true"
+								>{@html entry.kind === 'npc' ? farmerSvg : hutSvg}</span
+							>
+							<span class="cm-row-name"
+								>{entry.data.name ||
+									(entry.kind === 'npc' ? 'Unnamed NPC' : 'Unnamed Community')}</span
+							>
+							<span class="cm-row-badge">{entry.kind === 'npc' ? 'NPC' : 'Community'}</span>
+						</button>
+					{:else}
+						<p class="cm-list-empty">No connections match “{search}”.</p>
+					{/each}
+				</div>
 			</nav>
 
 			{#if activeEntry}
 				<div class="cm-stage-header" style="--cm-nature: {activeColor}">
+					<button
+						class="cm-back-btn"
+						type="button"
+						onclick={() => (mobilePane = 'list')}
+						use:tooltip={'Back to connections'}
+						aria-label="Back to connections list">{@html backIconSvg}</button
+					>
 					<span class="cm-stage-icon" aria-hidden="true"
 						>{@html activeEntry.kind === 'npc' ? farmerSvg : hutSvg}</span
 					>
@@ -710,6 +803,11 @@
 		flex-direction: column;
 		height: 100%;
 		min-height: 0;
+		/* Query container so the list-detail layout can collapse to a
+		   single-pane drill-down whenever the area itself is narrow —
+		   on mobile, or when the desktop column is dragged small. */
+		container-type: inline-size;
+		container-name: cmarea;
 	}
 
 	.cm-header {
@@ -793,13 +891,19 @@
 
 	.cm-body {
 		display: grid;
-		grid-template-columns: 36px 1fr;
+		grid-template-columns: clamp(180px, 32%, 230px) minmax(0, 1fr);
 		grid-template-rows: auto 1fr;
 		flex: 1;
 		min-height: 0;
 	}
-	.cm-spines {
+	.cm-rail {
+		grid-column: 1;
 		grid-row: 1 / span 2;
+		display: flex;
+		flex-direction: column;
+		min-height: 0;
+		border-right: 1px solid var(--border);
+		background: transparent;
 	}
 	.cm-stage-header {
 		grid-column: 2;
@@ -816,52 +920,206 @@
 		flex-direction: column;
 	}
 
-	.cm-spines {
+	/* Rail tools — search, type filter, sort. */
+	.cm-rail-tools {
 		display: flex;
 		flex-direction: column;
-		align-items: stretch;
-		gap: 0;
-		padding: 0;
-		overflow-y: auto;
-		border-right: 1px solid var(--border);
-		background: transparent;
+		gap: 7px;
+		padding: 8px;
+		border-bottom: 1px solid var(--border);
+		flex-shrink: 0;
 	}
-	.cm-spine {
+	.cm-search {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		background: var(--bg-inset);
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		padding: 3px 8px;
+	}
+	.cm-search:focus-within {
+		border-color: var(--text-accent);
+	}
+	.cm-search-icon {
+		display: inline-flex;
+		width: 12px;
+		height: 12px;
+		flex-shrink: 0;
+		color: var(--text-dimmer);
+	}
+	.cm-search-icon :global(svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
+	}
+	.cm-search-input {
+		flex: 1;
+		min-width: 0;
+		font-family: var(--font-ui);
+		font-size: 0.78rem;
+		color: var(--text);
+		background: transparent;
+		border: none;
+		outline: none;
+		padding: 1px 0;
+	}
+	.cm-rail-filters {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+	.cm-chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+		flex: 1;
+		min-width: 0;
+	}
+	.cm-chip {
 		all: unset;
 		cursor: pointer;
 		font-family: var(--font-ui);
-		font-size: 0.72rem;
+		font-size: 0.6rem;
 		font-weight: 600;
-		letter-spacing: 0.06em;
+		letter-spacing: 0.04em;
 		text-transform: uppercase;
 		color: var(--text-dimmer);
 		background: transparent;
-		border: none;
-		border-right: 2px solid transparent;
-		padding: 16px 7px 16px 7px;
-		text-align: center;
-		writing-mode: sideways-lr;
-		flex: 1 1 0;
-		min-height: 0;
-		overflow: hidden;
-		margin-right: -1px;
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		padding: 2px 8px;
+		line-height: 1.4;
+		white-space: nowrap;
 		transition:
 			color 0.12s,
-			border-color 0.12s;
+			border-color 0.12s,
+			background 0.12s;
 	}
-	.cm-spine:hover {
+	.cm-chip:hover {
 		color: var(--text-muted);
 	}
-	.cm-spine--active {
-		color: var(--text-accent);
-		border-right-color: var(--text-accent);
+	.cm-chip--active {
+		color: var(--cm-chip-color, var(--text-accent));
+		border-color: color-mix(in srgb, var(--cm-chip-color, var(--text-accent)) 55%, transparent);
+		background: color-mix(in srgb, var(--cm-chip-color, var(--text-accent)) 14%, transparent);
 	}
-	.cm-spine-name {
-		display: inline-block;
-		max-height: 100%;
+	.cm-sort {
+		font-family: var(--font-ui);
+		font-size: 0.68rem;
+		color: var(--text-muted);
+		background: var(--bg-inset);
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		padding: 2px 4px;
+		flex-shrink: 0;
+		cursor: pointer;
+	}
+
+	/* Rail list — one row per connection. */
+	.cm-list {
+		flex: 1;
+		min-height: 0;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+	}
+	.cm-row {
+		all: unset;
+		box-sizing: border-box;
+		width: 100%;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		cursor: pointer;
+		padding: 8px 9px;
+		border-left: 3px solid transparent;
+		transition:
+			background 0.12s,
+			border-color 0.12s;
+	}
+	.cm-row:hover {
+		background: var(--bg-hover);
+	}
+	.cm-row--active {
+		background: var(--bg-control);
+		border-left-color: var(--cm-row-color, var(--text-accent));
+	}
+	.cm-row-icon {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 15px;
+		height: 15px;
+		flex-shrink: 0;
+		color: var(--cm-row-color, var(--text-muted));
+	}
+	.cm-row-icon :global(svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
+	}
+	.cm-row-name {
+		flex: 1;
+		min-width: 0;
+		font-family: var(--font-ui);
+		font-size: 0.78rem;
+		font-weight: 500;
+		color: var(--text);
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+	.cm-row--active .cm-row-name {
+		color: var(--text-accent);
+	}
+	.cm-row-badge {
+		font-family: var(--font-ui);
+		font-size: 0.55rem;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--cm-row-color, var(--text-dimmer));
+		background: color-mix(in srgb, var(--cm-row-color, var(--text-muted)) 13%, transparent);
+		border-radius: 10px;
+		padding: 2px 6px;
+		line-height: 1;
+		flex-shrink: 0;
+	}
+	.cm-list-empty {
+		margin: 0;
+		padding: 16px 12px;
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		color: var(--text-dimmer);
+		text-align: center;
+	}
+
+	/* Back button — only shown in single-pane drill-down (see @container). */
+	.cm-back-btn {
+		display: none;
+		align-items: center;
+		justify-content: center;
+		width: 22px;
+		height: 22px;
+		padding: 0;
+		flex-shrink: 0;
+		background: transparent;
+		border: none;
+		border-radius: 4px;
+		color: var(--text-muted);
+		cursor: pointer;
+		transition:
+			background 0.12s,
+			color 0.12s;
+	}
+	.cm-back-btn:hover {
+		background: var(--bg-hover);
+		color: var(--text-accent);
+	}
+	.cm-back-btn :global(svg) {
+		width: 15px;
+		height: 15px;
+		fill: currentColor;
 	}
 
 	/* Stage banner — colored band keyed to entry type. */
@@ -1072,5 +1330,38 @@
 		width: 16px;
 		height: 16px;
 		fill: currentColor;
+	}
+
+	/* Narrow layouts — collapse the two panes into a single-pane drill-down:
+	   the rail (list) fills the area; selecting an entry swaps to the detail
+	   stage with a back button. Driven by mobilePane → .cm-body--detail. */
+	@container cmarea (max-width: 540px) {
+		.cm-body {
+			display: flex;
+			flex-direction: column;
+		}
+		.cm-rail {
+			flex: 1;
+			min-height: 0;
+			border-right: none;
+		}
+		.cm-stage-header,
+		.cm-stage {
+			display: none;
+		}
+		.cm-body--detail .cm-rail {
+			display: none;
+		}
+		.cm-body--detail .cm-stage-header {
+			display: flex;
+		}
+		.cm-body--detail .cm-stage {
+			display: flex;
+			flex: 1;
+			min-height: 0;
+		}
+		.cm-back-btn {
+			display: inline-flex;
+		}
 	}
 </style>
