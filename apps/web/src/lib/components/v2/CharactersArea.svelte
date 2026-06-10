@@ -1234,9 +1234,13 @@
 								<div class="ca-tracks-row">
 									<ProgressTrackPanel label="Bonds" bind:value={d.bonds} />
 
+									<!-- value + oninput (not bind:value): bondsFormed/lessonsLearned
+									     are optional, so legacy/imported characters may have them
+									     undefined, which trips MarkdownNotes' bindable fallback. -->
 									<MarkdownNotes
 										label="Bonds Formed"
-										bind:value={d.bondsFormed}
+										value={d.bondsFormed ?? ''}
+										oninput={(v) => (d.bondsFormed = v)}
 										placeholder="Note significant bonds — people, communities, places…"
 									/>
 
@@ -1244,7 +1248,8 @@
 										<ProgressTrackPanel label="Failures" bind:value={d.failures} />
 										<MarkdownNotes
 											label="Lessons Learned"
-											bind:value={d.lessonsLearned}
+											value={d.lessonsLearned ?? ''}
+											oninput={(v) => (d.lessonsLearned = v)}
 											placeholder="What has this character learned from their failures…"
 										/>
 									{/if}
