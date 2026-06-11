@@ -6,7 +6,7 @@
 	 * interleaved; selecting one opens its detail in the stage. The rail
 	 * scales to dozens of entries (search + type filter + Added/A–Z sort).
 	 * On narrow widths the two panes collapse to a single-pane drill-down
-	 * (list → detail → back) via the @container query on `.cm-area`.
+	 * (list → detail → back) via a viewport @media query (≤600px).
 	 * Each entry's row accent and stage-header LHS band are coloured by type:
 	 *   community → #D06840 (terracotta)
 	 *   npc       → #C848A8 (orchid)
@@ -89,7 +89,7 @@
 	let sortMode = $state<'added' | 'name'>('added');
 
 	// Mobile/narrow drill-down: which pane is showing when the area is too
-	// narrow for two panes (driven by the @container query in the styles).
+	// narrow for two panes (driven by the viewport @media query in the styles).
 	// Selecting an entry pushes to 'detail'; the back button returns to 'list'.
 	let mobilePane = $state<'list' | 'detail'>('list');
 
@@ -803,11 +803,6 @@
 		flex-direction: column;
 		height: 100%;
 		min-height: 0;
-		/* Query container so the list-detail layout can collapse to a
-		   single-pane drill-down whenever the area itself is narrow —
-		   on mobile, or when the desktop column is dragged small. */
-		container-type: inline-size;
-		container-name: cmarea;
 	}
 
 	.cm-header {
@@ -1094,7 +1089,7 @@
 		text-align: center;
 	}
 
-	/* Back button — only shown in single-pane drill-down (see @container). */
+	/* Back button — only shown in single-pane drill-down (see @media below). */
 	.cm-back-btn {
 		display: none;
 		align-items: center;
@@ -1332,10 +1327,13 @@
 		fill: currentColor;
 	}
 
-	/* Narrow layouts — collapse the two panes into a single-pane drill-down:
-	   the rail (list) fills the area; selecting an entry swaps to the detail
-	   stage with a back button. Driven by mobilePane → .cm-body--detail. */
-	@container cmarea (max-width: 540px) {
+	/* Mobile (viewport-based, not container) — collapse the two panes into a
+	   single-pane drill-down: the rail (list) fills the area; selecting an
+	   entry swaps to the detail stage with a back button. Keyed to the
+	   viewport (matching the home page's own ≤900px tabbed mode) rather than
+	   the area width, because on desktop the home grid cell can be narrower
+	   than a phone — a container query would wrongly hide the rail there. */
+	@media (max-width: 600px) {
 		.cm-body {
 			display: flex;
 			flex-direction: column;
