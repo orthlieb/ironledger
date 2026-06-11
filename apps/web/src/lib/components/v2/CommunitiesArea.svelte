@@ -52,7 +52,6 @@
 	import villageIconSvg from '$icons/village.svg?raw';
 	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
-	import backIconSvg from '$icons/angles-left-solid-full.svg?raw';
 	import { headingText } from '$lib/fontStore.svelte.js';
 
 	let { showTitle = true }: { showTitle?: boolean } = $props();
@@ -362,8 +361,16 @@
 	}
 </script>
 
-<div class="cm-area">
+<div class="cm-area" class:cm-area--detail={mobilePane === 'detail'}>
 	<header class="cm-header">
+		<!-- Back button — only shown in the mobile single-pane drill-down
+		     (viewport ≤600px and a detail entry is open). Lives on the toolbar
+		     rather than the stage header. -->
+		<button
+			class="btn cm-hdr-btn cm-header-back"
+			type="button"
+			onclick={() => (mobilePane = 'list')}>← Back</button
+		>
 		{#if showTitle}
 			<span class="cm-title-icon" aria-hidden="true">{@html villageIconSvg}</span>
 			<span class="cmt-title">{headingText('Connections')}</span>
@@ -454,13 +461,6 @@
 
 			{#if activeEntry}
 				<div class="cm-stage-header" style="--cm-nature: {activeColor}">
-					<button
-						class="cm-back-btn"
-						type="button"
-						onclick={() => (mobilePane = 'list')}
-						use:tooltip={'Back to connections'}
-						aria-label="Back to connections list">{@html backIconSvg}</button
-					>
 					<span class="cm-stage-icon" aria-hidden="true"
 						>{@html activeEntry.kind === 'npc' ? farmerSvg : hutSvg}</span
 					>
@@ -1089,32 +1089,12 @@
 		text-align: center;
 	}
 
-	/* Back button — only shown in single-pane drill-down (see @media below). */
-	.cm-back-btn {
+	/* Toolbar back button — styled by .btn .cm-hdr-btn (matches the standard
+	   "← Back" buttons elsewhere). Hidden except in the mobile single-pane
+	   drill-down (viewport ≤600px while a detail entry is open; see @media). */
+	.cm-header-back {
 		display: none;
-		align-items: center;
-		justify-content: center;
-		width: 22px;
-		height: 22px;
-		padding: 0;
 		flex-shrink: 0;
-		background: transparent;
-		border: none;
-		border-radius: 4px;
-		color: var(--text-muted);
-		cursor: pointer;
-		transition:
-			background 0.12s,
-			color 0.12s;
-	}
-	.cm-back-btn:hover {
-		background: var(--bg-hover);
-		color: var(--text-accent);
-	}
-	.cm-back-btn :global(svg) {
-		width: 15px;
-		height: 15px;
-		fill: currentColor;
 	}
 
 	/* Stage banner — colored band keyed to entry type. */
@@ -1358,7 +1338,8 @@
 			flex: 1;
 			min-height: 0;
 		}
-		.cm-back-btn {
+		/* Back button appears on the toolbar while viewing a detail entry. */
+		.cm-area--detail .cm-header-back {
 			display: inline-flex;
 		}
 	}
