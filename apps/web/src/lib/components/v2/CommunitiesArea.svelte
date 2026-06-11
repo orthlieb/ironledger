@@ -809,6 +809,7 @@
 		display: flex;
 		align-items: center;
 		gap: 10px;
+		min-height: var(--area-header-height);
 		padding: 6px 12px;
 		border-bottom: 1px solid var(--border);
 		background: var(--bg-control);

@@ -18,6 +18,16 @@
 }
 
 /* --------------------------------------------------------------------------
+   Layout constants (theme-independent)
+   -------------------------------------------------------------------------- */
+:root {
+	/* Shared height for the area/log panel headers (Characters, Foes,
+	   Expeditions, Connections, Log) so they line up across the grid
+	   regardless of which buttons each one contains. */
+	--area-header-height: 38px;
+}
+
+/* --------------------------------------------------------------------------
    Dark tokens (default + explicit dark)
    -------------------------------------------------------------------------- */
 :root,
