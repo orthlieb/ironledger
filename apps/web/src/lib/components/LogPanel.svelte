@@ -847,6 +847,7 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
+		min-height: var(--area-header-height);
 		padding: 6px 12px;
 		background: var(--bg-control);
 		border-bottom: 1px solid var(--border);
