@@ -19,7 +19,7 @@ const CHAR_SPINE = `${CHAR_AREA} .ca-spine`;
 
 const CM_AREA = '.home-area--communities';
 const CM_HEADER = `${CM_AREA} .cm-header`;
-const CM_SPINE = `${CM_AREA} .cm-spine`;
+const CM_ROW = `${CM_AREA} .cm-row`;
 
 const EXP_AREA = '.home-area--expeditions';
 const EXP_HEADER = `${EXP_AREA} .ea-header`;
@@ -136,14 +136,14 @@ test.describe('Tab accessibility — v2 areas', () => {
 
 	test('CommunitiesArea — every tab activates and renders its panel', async ({ page }) => {
 		// Ensure a community exists.
-		if ((await page.locator(CM_SPINE).count()) === 0) {
+		if ((await page.locator(CM_ROW).count()) === 0) {
 			await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click();
 			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 15_000 });
 			await page.locator('dialog.confirm-modal[open] button:has-text("Generate Randomly")').click();
-			await expect(page.locator(CM_SPINE)).not.toHaveCount(0, { timeout: 10_000 });
+			await expect(page.locator(CM_ROW)).not.toHaveCount(0, { timeout: 10_000 });
 		}
 		// Select the first spine.
-		await page.locator(CM_SPINE).first().click();
+		await page.locator(CM_ROW).first().click();
 		await expect(page.locator(`${CM_AREA} .cm-tab`).first()).toBeVisible({ timeout: 5_000 });
 
 		// Core: field rows + notes block.

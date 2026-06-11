@@ -38,7 +38,7 @@ const EXP_SPINE = `${EXP_AREA} .ea-spine`;
 
 const CM_AREA = '.home-area--communities';
 const CM_HEADER = `${CM_AREA} .cm-header`;
-const CM_SPINE = `${CM_AREA} .cm-spine`;
+const CM_ROW = `${CM_AREA} .cm-row`;
 
 // ── Auth helpers ──────────────────────────────────────────────────────────────
 
@@ -204,7 +204,7 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		await page.goto('/home');
 		await waitForCommunitiesArea(page);
 
-		const before = await page.locator(CM_SPINE).count();
+		const before = await page.locator(CM_ROW).count();
 
 		await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click();
 		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
@@ -216,7 +216,7 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		} else {
 			await createManualBtn.click();
 		}
-		await expect(page.locator(CM_SPINE)).not.toHaveCount(before, { timeout: 10_000 });
+		await expect(page.locator(CM_ROW)).not.toHaveCount(before, { timeout: 10_000 });
 
 		await page.waitForTimeout(600);
 
@@ -224,7 +224,7 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		await loginAndGoHome(page);
 		await waitForCommunitiesArea(page);
 
-		await expect(page.locator(CM_SPINE)).toHaveCount(before + 1, { timeout: 8_000 });
+		await expect(page.locator(CM_ROW)).toHaveCount(before + 1, { timeout: 8_000 });
 	});
 
 	// ── 5. Active spine selections survive logout / login ─────────────────────
@@ -272,7 +272,7 @@ test.describe('Data persistence across logout / login (v2)', () => {
 			await expect(page.locator(EXP_SPINE)).not.toHaveCount(0, { timeout: 5_000 });
 		}
 
-		if ((await page.locator(CM_SPINE).count()) === 0) {
+		if ((await page.locator(CM_ROW).count()) === 0) {
 			await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click();
 			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
 			const generateBtn = page.getByRole('button', { name: /generate randomly/i });
@@ -281,7 +281,7 @@ test.describe('Data persistence across logout / login (v2)', () => {
 			} else {
 				await page.getByRole('button', { name: /create manually/i }).click();
 			}
-			await expect(page.locator(CM_SPINE)).not.toHaveCount(0, { timeout: 10_000 });
+			await expect(page.locator(CM_ROW)).not.toHaveCount(0, { timeout: 10_000 });
 		}
 
 		// ── Click the first spine in each area and record its displayed name ───
@@ -289,12 +289,12 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		await page.locator(CHAR_SPINE).first().click();
 		await page.locator(FOE_SPINE).first().click();
 		await page.locator(EXP_SPINE).first().click();
-		await page.locator(CM_SPINE).first().click();
+		await page.locator(CM_ROW).first().click();
 
 		await expect(page.locator(`${CHAR_SPINE}.ca-spine--active`)).toBeVisible({ timeout: 3_000 });
 		await expect(page.locator(`${FOE_SPINE}.fa-spine--active`)).toBeVisible({ timeout: 3_000 });
 		await expect(page.locator(`${EXP_SPINE}.ea-spine--active`)).toBeVisible({ timeout: 3_000 });
-		await expect(page.locator(`${CM_SPINE}.cm-spine--active`)).toBeVisible({ timeout: 3_000 });
+		await expect(page.locator(`${CM_ROW}.cm-row--active`)).toBeVisible({ timeout: 3_000 });
 
 		const activeCharName = (
 			await page.locator(`${CHAR_SPINE}.ca-spine--active .ca-spine-name`).first().textContent()
@@ -306,7 +306,7 @@ test.describe('Data persistence across logout / login (v2)', () => {
 			await page.locator(`${EXP_SPINE}.ea-spine--active .ea-spine-name`).first().textContent()
 		)?.trim();
 		const activeCmName = (
-			await page.locator(`${CM_SPINE}.cm-spine--active .cm-spine-name`).first().textContent()
+			await page.locator(`${CM_ROW}.cm-row--active .cm-row-name`).first().textContent()
 		)?.trim();
 
 		// Allow any debounced saves to flush.
@@ -325,7 +325,7 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		await expect(page.locator(`${CHAR_SPINE}.ca-spine--active`)).toBeVisible({ timeout: 8_000 });
 		await expect(page.locator(`${FOE_SPINE}.fa-spine--active`)).toBeVisible({ timeout: 8_000 });
 		await expect(page.locator(`${EXP_SPINE}.ea-spine--active`)).toBeVisible({ timeout: 8_000 });
-		await expect(page.locator(`${CM_SPINE}.cm-spine--active`)).toBeVisible({ timeout: 8_000 });
+		await expect(page.locator(`${CM_ROW}.cm-row--active`)).toBeVisible({ timeout: 8_000 });
 
 		expect(
 			(
@@ -343,9 +343,7 @@ test.describe('Data persistence across logout / login (v2)', () => {
 			)?.trim(),
 		).toBe(activeExpName);
 		expect(
-			(
-				await page.locator(`${CM_SPINE}.cm-spine--active .cm-spine-name`).first().textContent()
-			)?.trim(),
+			(await page.locator(`${CM_ROW}.cm-row--active .cm-row-name`).first().textContent())?.trim(),
 		).toBe(activeCmName);
 	});
 
@@ -425,7 +423,7 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		await page.goto('/home');
 		await waitForCommunitiesArea(page);
 
-		const spines = page.locator(CM_SPINE);
+		const spines = page.locator(CM_ROW);
 		let count = await spines.count();
 		while (count > 0) {
 			await spines.first().click();
