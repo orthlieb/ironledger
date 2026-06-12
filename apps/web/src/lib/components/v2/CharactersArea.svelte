@@ -150,6 +150,9 @@
 
 	// Background card edit state
 	let editingBackground = $state(false);
+	// Status-tab note edit state (so each can expand to fill while editing)
+	let editingBondsFormed = $state(false);
+	let editingLessonsLearned = $state(false);
 	const nameEdit = new EditableName((restored) => {
 		if (activeData) activeData.name = restored;
 	});
@@ -1236,7 +1239,7 @@
 								{/if}
 							</div>
 						{:else if activeCard === 'status'}
-							<div class="ca-card-section">
+							<div class="ca-card-section ca-status-section">
 								<!-- Debilities — Conditions / Banes / Burdens grid (V1 component). -->
 								<div class="ca-debilities-wrapper">
 									<div class="section-label">Debilities</div>
@@ -1246,28 +1249,38 @@
 									/>
 								</div>
 
-								<!-- Bonds & Failures — V1 progress tracks with ± spinners. -->
+								<!-- Bonds & Failures — V1 progress tracks with ± spinners. The
+								     note fields expand to fill the panel while being edited. -->
 								<div class="ca-tracks-row">
 									<ProgressTrackPanel label="Bonds" bind:value={d.bonds} />
 
 									<!-- value + oninput (not bind:value): bondsFormed/lessonsLearned
 									     are optional, so legacy/imported characters may have them
 									     undefined, which trips MarkdownNotes' bindable fallback. -->
-									<MarkdownNotes
-										label="Bonds Formed"
-										value={d.bondsFormed ?? ''}
-										oninput={(v) => (d.bondsFormed = v)}
-										placeholder="Note significant bonds — people, communities, places…"
-									/>
+									<div class="ca-track-notes" class:ca-track-notes--editing={editingBondsFormed}>
+										<MarkdownNotes
+											label="Bonds Formed"
+											bind:editing={editingBondsFormed}
+											value={d.bondsFormed ?? ''}
+											oninput={(v) => (d.bondsFormed = v)}
+											placeholder="Note significant bonds — people, communities, places…"
+										/>
+									</div>
 
 									{#if isDelveEnabled()}
 										<ProgressTrackPanel label="Failures" bind:value={d.failures} />
-										<MarkdownNotes
-											label="Lessons Learned"
-											value={d.lessonsLearned ?? ''}
-											oninput={(v) => (d.lessonsLearned = v)}
-											placeholder="What has this character learned from their failures…"
-										/>
+										<div
+											class="ca-track-notes"
+											class:ca-track-notes--editing={editingLessonsLearned}
+										>
+											<MarkdownNotes
+												label="Lessons Learned"
+												bind:editing={editingLessonsLearned}
+												value={d.lessonsLearned ?? ''}
+												oninput={(v) => (d.lessonsLearned = v)}
+												placeholder="What has this character learned from their failures…"
+											/>
+										</div>
 									{/if}
 								</div>
 							</div>
@@ -1892,11 +1905,36 @@
 
 	/* Tracks — V1 tracks-row layout: side-by-side Bonds + Failures groups,
 	   each with label · tally on top and progress boxes + ± buttons below. */
+	/* Status tab fills the card so a note being edited can grow to the bottom. */
+	.ca-status-section {
+		height: 100%;
+		min-height: 0;
+	}
 	.ca-tracks-row {
 		display: flex;
 		flex-direction: column;
 		gap: 10px;
 		padding-top: 4px;
+		flex: 1;
+		min-height: 0;
+	}
+	/* A note field grows to fill the remaining track-row space while editing,
+	   with the textarea filling it and the markdown hint pinned at the bottom. */
+	.ca-track-notes--editing {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 0;
+	}
+	.ca-track-notes--editing :global(.md-notes) {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 0;
+	}
+	.ca-track-notes--editing :global(.md-notes-input) {
+		flex: 1;
+		min-height: 0;
 	}
 	/* Vows tab — stack of VowCards. The "+ Vow" action lives in the header
 	   toolbar now, so no per-tab header is needed. */
