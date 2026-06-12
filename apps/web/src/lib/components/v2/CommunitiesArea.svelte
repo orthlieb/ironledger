@@ -105,6 +105,7 @@
 
 	// Inline-edit state
 	let editingNotes = $state(false);
+	let editingCoreNotes = $state(false);
 
 	// Re-entrance guard for dice-button rolls (matches ExpeditionsArea pattern).
 	let rolling = $state(false);
@@ -170,6 +171,7 @@
 		mobilePane = 'detail';
 		nameEdit.commit();
 		editingNotes = false;
+		editingCoreNotes = false;
 	}
 
 	// ── Direct-proxy writes + debounced API flush ─────────────────────────
@@ -263,6 +265,10 @@
 	function setNotes(value: string) {
 		if (activeEntry?.kind === 'community') updateCommunity({ notes: value });
 		else if (activeEntry?.kind === 'npc') updateNpc({ notes: value });
+	}
+	function setSituationalNotes(value: string) {
+		if (activeEntry?.kind === 'community') updateCommunity({ situationalNotes: value });
+		else if (activeEntry?.kind === 'npc') updateNpc({ situationalNotes: value });
 	}
 
 	// ── Add Community / NPC (V1 random-or-manual pattern) ──────────────────
@@ -635,20 +641,19 @@
 								</div>
 							{/if}
 
-							<!-- Notes — same markdown field exposed in the Description tab,
-							     surfaced here for quick access without tab-switching.
-							     Click to edit; blur commits via the standard debounced
-							     persist path (no separate import/export wiring needed —
-							     the `notes` field is already part of the entry). -->
-							<div class="cm-core-notes">
+							<!-- Situational notes — short notes about current conditions,
+							     separate from the long-form Description (notes) field. While
+							     editing, the block grows to fill the rest of the Core panel. -->
+							<div class="cm-core-notes" class:cm-core-notes--editing={editingCoreNotes}>
 								<span class="cm-field-label cm-core-notes-label">Notes</span>
 								<MarkdownNotes
-									value={activeEntry.data.notes ?? ''}
-									oninput={(v) => setNotes(v)}
+									bind:editing={editingCoreNotes}
+									value={activeEntry.data.situationalNotes ?? ''}
+									oninput={(v) => setSituationalNotes(v)}
 									placeholder={activeEntry.kind === 'npc'
-										? 'Description of this NPC…'
-										: 'Description of this community…'}
-									rows={5}
+										? 'Situational notes about this NPC…'
+										: 'Situational notes — conditions, or aspects of the trouble…'}
+									rows={4}
 								/>
 							</div>
 						{:else if activeTab === 'notes'}
@@ -1270,6 +1275,25 @@
 		margin-top: 12px;
 		padding-top: 10px;
 		border-top: 1px solid var(--border);
+	}
+	/* While editing, the situational-notes block grows to fill the rest of the
+	   Core panel (it's a direct flex child of .cm-card); the textarea fills it
+	   with the markdown hint pinned to the bottom. */
+	.cm-core-notes--editing {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 0;
+	}
+	.cm-core-notes--editing :global(.md-notes) {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 0;
+	}
+	.cm-core-notes--editing :global(.md-notes-input) {
+		flex: 1;
+		min-height: 0;
 	}
 	.cm-core-notes-label {
 		display: block;

@@ -422,8 +422,9 @@ export interface Community {
 	location: string;
 	locationDescription: string;
 	trouble: string;
-	notes: string;
-	imageUrl?: string; // base64 JPEG data URL
+	notes: string; // long-form description (Description tab)
+	situationalNotes?: string; // short situational notes — conditions, trouble (Core tab)
+	imageUrl?: string; // base64 image data URL
 	createdAt?: number; // Date.now() on creation
 }
 
@@ -435,8 +436,9 @@ export interface Npc {
 	descriptor: string;
 	relationship: NpcRelationship;
 	location: string;
-	notes: string;
-	imageUrl?: string; // base64 JPEG data URL
+	notes: string; // long-form description (Description tab)
+	situationalNotes?: string; // short situational notes (Core tab)
+	imageUrl?: string; // base64 image data URL
 	createdAt?: number; // Date.now() on creation
 }
 
