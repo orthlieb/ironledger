@@ -369,6 +369,13 @@
 		activeTab = 'core';
 		setTimeout(() => (newlyCreatedId = ''), 0);
 	}
+	/** Generate-randomly path: pick a random theme + domain (keeping the chosen
+	 *  difficulty), then create — mirrors the random NPC / Community flow. */
+	function confirmAddSiteRandom() {
+		newSiteTheme = DELVE_THEMES[Math.floor(Math.random() * DELVE_THEMES.length)];
+		newSiteDomain = DELVE_DOMAINS[Math.floor(Math.random() * DELVE_DOMAINS.length)];
+		void confirmAddSite();
+	}
 
 	async function confirmDeleteExp() {
 		if (!activeExp) return;
@@ -856,16 +863,19 @@
 	</fieldset>
 </ConfirmDialog>
 
-<!-- New Site dialog — V1 pattern: difficulty + theme + domain (both required). -->
+<!-- New Site dialog — pick a difficulty, then either Generate Randomly (random
+     theme + domain) or Create Manually (use the selected theme/domain, both
+     optional — settable later on the Core tab). Mirrors the NPC/Community flow. -->
 <ConfirmDialog
 	bind:this={newSiteDialogRef}
 	title="New Site"
-	confirmLabel="Discover Site"
+	confirmLabel="Generate Randomly"
 	confirmClass="btn-primary"
+	alternateLabel="Create Manually"
 	cancelLabel="Cancel"
 	accentColor={SITE_COLOR}
-	confirmDisabled={!newSiteTheme || !newSiteDomain}
-	onconfirm={confirmAddSite}
+	onconfirm={confirmAddSiteRandom}
+	onalternate={confirmAddSite}
 >
 	<fieldset style="border: none; padding: 0; margin: 0 0 8px;">
 		<legend
@@ -886,7 +896,7 @@
 			<label
 				for="ns-theme"
 				style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); width: 56px; flex-shrink: 0;"
-				>Theme <span style="color: var(--color-danger);">*</span></label
+				>Theme</label
 			>
 			<select
 				id="ns-theme"
@@ -901,7 +911,7 @@
 			<label
 				for="ns-domain"
 				style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); width: 56px; flex-shrink: 0;"
-				>Domain <span style="color: var(--color-danger);">*</span></label
+				>Domain</label
 			>
 			<select
 				id="ns-domain"
@@ -913,13 +923,16 @@
 			</select>
 		</div>
 	</div>
-	{#if !newSiteTheme || !newSiteDomain}
-		<p
-			style="font-family: var(--font-ui); font-size: 0.72rem; color: var(--text-dimmer); margin: 0; font-style: italic;"
-		>
-			Theme and domain are required to discover a site.
-		</p>
-	{/if}
+	<p
+		style="font-family: var(--font-ui); font-size: 0.72rem; color: var(--text-dimmer); margin: 0; font-style: italic;"
+	>
+		{#if !newSiteTheme || !newSiteDomain}
+			Leave theme &amp; domain unset and <strong>Generate Randomly</strong>, or pick them and
+			<strong>Create Manually</strong>. You can change them later on the Core tab.
+		{:else}
+			<strong>Create Manually</strong> uses your picks; <strong>Generate Randomly</strong> rolls new ones.
+		{/if}
+	</p>
 </ConfirmDialog>
 
 {#if activeSite}
