@@ -1,12 +1,25 @@
 /**
- * Crop an uploaded image file to a centred square JPEG data URL, sized
- * down to at most `maxSize × maxSize` (default 512×512) at 0.85 quality.
- * 512 keeps the portrait crisp when opened in the lightbox (up to
- * 80vw/80vh) while staying manageable in the character JSON payload.
+ * Crop an uploaded image file to a centred square data URL, sized down to at
+ * most `maxSize × maxSize` (default 512×512). 512 keeps the portrait crisp
+ * when opened in the lightbox (up to 80vw/80vh) while staying manageable in
+ * the character JSON payload.
+ *
+ * Encoding is chosen to preserve transparency: if the cropped image has any
+ * transparent pixels it is exported as PNG (lossless, keeps the alpha channel
+ * so it renders against the page rather than being flattened onto black);
+ * otherwise it is exported as JPEG at `quality` (much smaller for photos).
  *
  * Shared by the character, expedition, community, and NPC portrait
  * uploaders. Returns a Promise that resolves with the data URL.
  */
+function hasTransparentPixels(ctx: CanvasRenderingContext2D, size: number): boolean {
+	const { data } = ctx.getImageData(0, 0, size, size);
+	for (let i = 3; i < data.length; i += 4) {
+		if (data[i] < 255) return true;
+	}
+	return false;
+}
+
 export function cropImageFile(file: File, maxSize = 512, quality = 0.85): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const reader = new FileReader();
@@ -28,7 +41,12 @@ export function cropImageFile(file: File, maxSize = 512, quality = 0.85): Promis
 				const sx = (img.width - side) / 2;
 				const sy = (img.height - side) / 2;
 				ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
-				resolve(canvas.toDataURL('image/jpeg', quality));
+				// Keep transparency (PNG) when present; otherwise JPEG for size.
+				resolve(
+					hasTransparentPixels(ctx, size)
+						? canvas.toDataURL('image/png')
+						: canvas.toDataURL('image/jpeg', quality),
+				);
 			};
 			img.src = reader.result as string;
 		};
