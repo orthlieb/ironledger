@@ -65,7 +65,7 @@
 		></textarea>
 		<p class="md-notes-hint">
 			Markdown ok — <code>**bold**</code> <code>*italic*</code> <code># heading</code>
-			<code>- list</code>
+			<code>- list</code> <code>1. list</code>
 		</p>
 	{:else}
 		<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
