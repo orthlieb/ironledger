@@ -79,6 +79,7 @@
 	import trashSvg from '$icons/trash-solid-full.svg?raw';
 	import swordSvg from '$icons/sword-solid-full.svg?raw';
 	import gemSvg from '$icons/gem-solid.svg?raw';
+	import linkSvg from '$icons/link-solid-full.svg?raw';
 	// Counter icons — same map as v1 AssetCard.COUNTER_ICONS. The asset
 	// definition's customField.icon string keys into this map.
 	import iconHeart from '$icons/icon-heart.svg?raw';
@@ -1131,7 +1132,13 @@
 						{:else if activeCard === 'vows'}
 							<div class="ca-card-section">
 								{#if (d.vows ?? []).length === 0}
-									<p class="ca-empty-mini">No vows yet — use “+ Vow” in the header.</p>
+									<div class="ca-empty">
+										<span class="ca-empty-icon" aria-hidden="true">{@html linkSvg}</span>
+										<p class="ca-empty-text">
+											You currently have no vows. Do you want to fade into obscurity or perform
+											great deeds? Click <strong>+ VOW</strong> to swear on iron.
+										</p>
+									</div>
 								{:else}
 									<div class="ca-vows-list">
 										{#each d.vows ?? [] as vow, i (vow.id)}
@@ -1147,7 +1154,13 @@
 						{:else if activeCard === 'assets'}
 							<div class="ca-card-section">
 								{#if (d.assets ?? []).length === 0}
-									<p class="ca-empty-mini">No assets yet — use “+ Asset” in the header.</p>
+									<div class="ca-empty">
+										<span class="ca-empty-icon" aria-hidden="true">{@html gemSvg}</span>
+										<p class="ca-empty-text">
+											You currently have no assets. You are either unskilled, destitute, or both.
+											Click <strong>+ ASSET</strong> to prove me wrong.
+										</p>
+									</div>
 								{:else}
 									<div class="ca-asset-grid" aria-label="Assets">
 										{#each d.assets ?? [] as a (a.assetId)}
@@ -1865,11 +1878,36 @@
 		flex-direction: column;
 		gap: 10px;
 	}
-	.ca-empty-mini {
+	/* Tab empty state — icon + witty prompt, mirrors FoesArea/CommunitiesArea. */
+	.ca-empty {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		min-height: 180px;
 		font-family: var(--font-ui);
-		font-size: 0.78rem;
-		color: var(--text-dimmer);
-		font-style: italic;
+		font-size: 0.8rem;
+		color: var(--text-muted);
+		padding: 20px;
+		gap: 12px;
+		text-align: center;
+	}
+	.ca-empty-icon {
+		display: flex;
+		width: 48px;
+		height: 48px;
+		opacity: 0.25;
+	}
+	.ca-empty-icon :global(svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
+	}
+	.ca-empty-text {
+		margin: 0;
+		line-height: 1.5;
+		max-width: 30ch;
 	}
 
 	/* ── Asset tab content — clickable cards in a responsive grid.
