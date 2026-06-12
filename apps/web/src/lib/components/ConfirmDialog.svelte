@@ -18,6 +18,7 @@
 	let {
 		title,
 		accentColor = 'var(--color-danger)',
+		width,
 		confirmLabel = 'Confirm',
 		confirmClass = 'btn-danger',
 		cancelLabel = 'Cancel',
@@ -33,6 +34,8 @@
 	}: {
 		title: string;
 		accentColor?: string;
+		/** Optional dialog width (CSS length, e.g. "420px"). Defaults to 340px. */
+		width?: string;
 		confirmLabel?: string;
 		confirmClass?: string;
 		cancelLabel?: string;
@@ -118,6 +121,7 @@
 	bind:this={dialogEl}
 	class="confirm-modal"
 	style:--accent={accentColor}
+	style:width
 	style:transform="translate(calc(-50% + {dragX}px), calc(-50% + {dragY}px))"
 	oncancel={handleDismiss}
 >
@@ -231,6 +235,7 @@
 
 	.cm-actions {
 		display: flex;
+		flex-wrap: wrap;
 		gap: 6px;
 		margin-top: 4px;
 		justify-content: flex-end;

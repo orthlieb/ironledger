@@ -871,6 +871,7 @@
 <ConfirmDialog
 	bind:this={newSiteDialogRef}
 	title="New Site"
+	width="430px"
 	confirmLabel="Generate Randomly"
 	confirmClass="btn-primary"
 	alternateLabel="Create Manually"
