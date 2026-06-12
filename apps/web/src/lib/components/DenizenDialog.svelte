@@ -283,8 +283,8 @@
 		</div>
 
 		<div class="dd-footer">
-			<button class="btn dd-back-btn" onclick={() => (view = 'table')} style="margin-right: auto"
-				>← Back</button
+			<button class="btn back-btn" onclick={() => (view = 'table')} style="margin-right: auto"
+				>Back</button
 			>
 			<button class="btn" onclick={close}>Cancel</button>
 			{#if rolledFoe}
@@ -348,10 +348,6 @@
 		text-transform: var(--font-display-transform);
 		color: var(--text-accent);
 		flex: 1;
-	}
-
-	.dd-back-btn {
-		flex-shrink: 0;
 	}
 
 	.dd-footer {

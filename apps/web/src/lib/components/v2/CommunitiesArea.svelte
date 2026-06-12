@@ -367,9 +367,9 @@
 		     (viewport ≤600px and a detail entry is open). Lives on the toolbar
 		     rather than the stage header. -->
 		<button
-			class="btn cm-hdr-btn cm-header-back"
+			class="btn cm-hdr-btn back-btn cm-header-back"
 			type="button"
-			onclick={() => (mobilePane = 'list')}>← Back</button
+			onclick={() => (mobilePane = 'list')}>Back</button
 		>
 		{#if showTitle}
 			<span class="cm-title-icon" aria-hidden="true">{@html villageIconSvg}</span>
@@ -1090,12 +1090,12 @@
 		text-align: center;
 	}
 
-	/* Toolbar back button — styled by .btn .cm-hdr-btn (matches the standard
-	   "← Back" buttons elsewhere). Hidden except in the mobile single-pane
-	   drill-down (viewport ≤600px while a detail entry is open; see @media). */
+	/* Toolbar back button — styled by .btn .cm-hdr-btn .back-btn (the shared
+	   "← Back" style). This rule only handles its conditional visibility:
+	   hidden except in the mobile single-pane drill-down (viewport ≤600px
+	   while a detail entry is open; see @media). */
 	.cm-header-back {
 		display: none;
-		flex-shrink: 0;
 	}
 
 	/* Stage banner — colored band keyed to entry type. */

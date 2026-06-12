@@ -466,7 +466,7 @@
 
 		<div class="fd-footer">
 			{#if !_noBack}
-				<button class="btn fd-back-btn" onclick={goBack} style="margin-right: auto">← Back</button>
+				<button class="btn back-btn" onclick={goBack} style="margin-right: auto">Back</button>
 			{/if}
 			<button class="btn" onclick={close}>Cancel</button>
 			<button class="btn btn-primary" onclick={confirm}>Add to Foes</button>
@@ -914,9 +914,6 @@
 
 	.fd-back-bar .fd-title {
 		flex: 1;
-	}
-	.fd-back-btn {
-		flex-shrink: 0;
 	}
 
 	/* ── Scrollable confirm body ─────────────────────────────────────── */
