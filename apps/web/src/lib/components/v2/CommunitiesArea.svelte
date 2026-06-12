@@ -652,7 +652,9 @@
 								/>
 							</div>
 						{:else if activeTab === 'notes'}
-							<div class="cm-notes-section">
+							<div class="cm-notes-section" class:cm-notes-section--editing={editingNotes}>
+								<!-- Portrait floats right and the prose wraps around it; it's
+								     hidden while editing so the textarea fills the whole panel. -->
 								{#if !editingNotes}
 									<PortraitUploader
 										value={activeEntry.data.imageUrl ?? ''}
@@ -1240,6 +1242,24 @@
 	   Force normal block flow here (scoped to this section) so text wraps. */
 	.cm-notes-section :global(.md-notes) {
 		display: block;
+	}
+	/* While editing, the portrait is hidden — let the textarea fill the whole
+	   panel (full width and height of the containing card). */
+	.cm-notes-section--editing {
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+		min-height: 0;
+	}
+	.cm-notes-section--editing :global(.md-notes) {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 0;
+	}
+	.cm-notes-section--editing :global(.md-notes-input) {
+		flex: 1;
+		min-height: 0;
 	}
 
 	/* Core-tab notes block — same `notes` field as the Description tab,

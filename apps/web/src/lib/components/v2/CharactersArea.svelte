@@ -985,9 +985,12 @@
 					<!-- Active card content -->
 					<div class="ca-card" role="tabpanel">
 						{#if activeCard === 'background'}
-							<div class="ca-card-section ca-bg-section">
-								<!-- Portrait — hidden while editing the background so the
-								     textarea gets the full card width. -->
+							<div
+								class="ca-card-section ca-bg-section"
+								class:ca-bg-section--editing={editingBackground}
+							>
+								<!-- Portrait floats right and the prose wraps around it; it's
+								     hidden while editing so the textarea fills the whole panel. -->
 								{#if !editingBackground}
 									<PortraitUploader
 										value={d.portrait ?? ''}
@@ -1697,10 +1700,34 @@
 		flex-direction: column;
 		gap: 8px;
 	}
-	/* Background section — block layout so the floated portrait can wrap text. */
+	/* Background section — portrait floats right; prose wraps around it.
+	   flow-root contains the float; MarkdownNotes is forced to block flow so
+	   the text wraps (it's normally a flex column = its own BFC, which would
+	   sit beside the float instead). */
 	.ca-bg-section {
-		display: block;
+		display: flow-root;
 		position: relative;
+	}
+	.ca-bg-section :global(.md-notes) {
+		display: block;
+	}
+	/* While editing, the portrait is hidden — let the textarea fill the whole
+	   panel (full width and height of the containing card). */
+	.ca-bg-section--editing {
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+		min-height: 0;
+	}
+	.ca-bg-section--editing :global(.md-notes) {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 0;
+	}
+	.ca-bg-section--editing :global(.md-notes-input) {
+		flex: 1;
+		min-height: 0;
 	}
 
 	/* Editable name — click to edit affordances. */
