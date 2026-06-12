@@ -422,6 +422,17 @@ select option {
 	justify-content: center;
 }
 
+/* Standard "← Back" button. Apply alongside `.btn` (e.g. class="btn back-btn")
+   with the bare label as text — the leading arrow is supplied here so every
+   back button across dialogs and panels stays identical. In a flex footer,
+   add `style="margin-right: auto"` to push it away from the primary action. */
+.back-btn {
+	flex-shrink: 0;
+}
+.back-btn::before {
+	content: '←';
+}
+
 /* Trash / delete buttons — apply alongside `.btn .btn-icon`. The icon is
    dimmed in the default state (currentColor at 0.7 opacity, so it picks up
    .btn's text-muted) and turns red on hover. The border and background come

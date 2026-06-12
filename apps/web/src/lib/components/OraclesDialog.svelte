@@ -312,12 +312,12 @@
 		<div class="od-footer">
 			{#if !directLaunch}
 				<button
-					class="btn od-back-btn"
+					class="btn back-btn"
 					onclick={() => {
 						view = 'picker';
 						activeStat = null;
 					}}
-					style="margin-right: auto">← Back</button
+					style="margin-right: auto">Back</button
 				>
 			{/if}
 			<button class="btn btn-secondary od-cancel-btn" onclick={close}>Cancel</button>
@@ -412,10 +412,6 @@
 	}
 	.od-close:hover {
 		color: var(--text);
-	}
-
-	.od-back-btn {
-		flex-shrink: 0;
 	}
 
 	/* ── Controls (search + group tags) ─────────────────────────────────── */
