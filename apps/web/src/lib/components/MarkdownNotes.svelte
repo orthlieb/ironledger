@@ -63,6 +63,10 @@
 			{placeholder}
 			{rows}
 		></textarea>
+		<p class="md-notes-hint">
+			Markdown ok — <code>**bold**</code> <code>*italic*</code> <code># heading</code>
+			<code>- list</code>
+		</p>
 	{:else}
 		<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 		<div
@@ -115,6 +119,29 @@
 	}
 	.md-notes-input:focus {
 		border-color: var(--text-accent);
+	}
+
+	/* Mini-markdown hint shown while editing — flex-shrink:0 so it keeps its
+	   height when the textarea is set to flex-fill its container. */
+	.md-notes-hint {
+		flex-shrink: 0;
+		margin: 0;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 4px 6px;
+		font-family: var(--font-ui);
+		font-size: 0.68rem;
+		color: var(--text-dimmer);
+	}
+	.md-notes-hint code {
+		font-family: var(--font-mono, monospace);
+		font-size: 0.92em;
+		color: var(--text-muted);
+		background: var(--bg-inset);
+		border: 1px solid var(--border);
+		border-radius: 3px;
+		padding: 0 4px;
 	}
 
 	.md-notes-display {
