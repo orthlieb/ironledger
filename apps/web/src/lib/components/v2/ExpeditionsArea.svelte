@@ -615,7 +615,9 @@
 									/>
 								</div>
 							{/if}
-							<div class="ea-desc-section">
+							<div class="ea-desc-section" class:ea-desc-section--editing={editingNotes}>
+								<!-- Portrait floats right and the prose wraps around it; it's
+								     hidden while editing so the textarea fills the whole panel. -->
 								{#if !editingNotes}
 									<PortraitUploader
 										value={activeExp.imageUrl ?? ''}
@@ -1299,9 +1301,32 @@
 		gap: 10px;
 	}
 
-	/* ── Description tab ── portrait floats right; notes wrap. */
+	/* ── Description tab ── portrait floats right; notes wrap around it.
+	   flow-root contains the float; MarkdownNotes is forced to block flow so
+	   the prose wraps (it's normally a flex column = its own BFC). */
 	.ea-desc-section {
+		display: flow-root;
+	}
+	.ea-desc-section :global(.md-notes) {
 		display: block;
+	}
+	/* While editing, the portrait is hidden — let the textarea fill the whole
+	   panel (full width and height of the containing card). */
+	.ea-desc-section--editing {
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+		min-height: 0;
+	}
+	.ea-desc-section--editing :global(.md-notes) {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		min-height: 0;
+	}
+	.ea-desc-section--editing :global(.md-notes-input) {
+		flex: 1;
+		min-height: 0;
 	}
 
 	/* ── Core tab ── pills, difficulty selector, progress, complete. */
