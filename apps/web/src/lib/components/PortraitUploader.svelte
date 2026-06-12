@@ -4,8 +4,8 @@
 	 * around it. Shared by characters, expeditions, communities, and NPCs.
 	 *
 	 *   • Empty (placeholder)  → click opens a file picker; the chosen file
-	 *     is centred-cropped and downscaled to a 256-pixel JPEG via
-	 *     cropImageFile.
+	 *     is centred-cropped and downscaled via cropImageFile (PNG when the
+	 *     image has transparency, otherwise JPEG).
 	 *   • Filled (real image)  → click opens a Lightbox showing the
 	 *     enlarged image (80vw / 80vh, whichever hits first).
 	 *   • A trash button (top-right corner of the image) clears the
@@ -30,7 +30,7 @@
 		alt = '',
 		oninput,
 	}: {
-		/** Current portrait as a JPEG data URL (or empty string). */
+		/** Current portrait as a data URL (PNG or JPEG, or empty string). */
 		value?: string;
 		/** Raw SVG markup shown when no portrait is set. */
 		placeholderSvg: string;
