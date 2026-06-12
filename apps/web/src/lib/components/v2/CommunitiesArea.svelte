@@ -646,8 +646,8 @@
 									value={activeEntry.data.notes ?? ''}
 									oninput={(v) => setNotes(v)}
 									placeholder={activeEntry.kind === 'npc'
-										? 'Notes about this NPC…'
-										: 'Notes about this community…'}
+										? 'Description of this NPC…'
+										: 'Description of this community…'}
 									rows={5}
 								/>
 							</div>
@@ -672,8 +672,8 @@
 									value={activeEntry.data.notes ?? ''}
 									oninput={(v) => setNotes(v)}
 									placeholder={activeEntry.kind === 'npc'
-										? 'Notes about this NPC…'
-										: 'Notes about this community…'}
+										? 'Description of this NPC…'
+										: 'Description of this community…'}
 									rows={6}
 								/>
 							</div>
