@@ -710,10 +710,10 @@
 <ConfirmDialog
 	bind:this={newCommunityDialogRef}
 	title="New Community"
-	confirmLabel="Generate Randomly"
+	confirmLabel="Random"
 	confirmClass="btn-primary"
 	showCancelButton={false}
-	alternateLabel="Create Manually"
+	alternateLabel="Create"
 	accentColor={COMMUNITY_COLOR}
 	onconfirm={() => _commitCommunity(true)}
 	onalternate={() => _commitCommunity(false)}
@@ -772,10 +772,10 @@
 <ConfirmDialog
 	bind:this={newNpcDialogRef}
 	title="New NPC"
-	confirmLabel="Generate Randomly"
+	confirmLabel="Random"
 	confirmClass="btn-primary"
 	showCancelButton={false}
-	alternateLabel="Create Manually"
+	alternateLabel="Create"
 	accentColor={NPC_COLOR}
 	onconfirm={() => _commitNpc(true)}
 	onalternate={() => _commitNpc(false)}
