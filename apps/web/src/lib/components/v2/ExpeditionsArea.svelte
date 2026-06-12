@@ -863,16 +863,15 @@
 	</fieldset>
 </ConfirmDialog>
 
-<!-- New Site dialog — pick a difficulty, then either Generate Randomly (random
-     theme + domain) or Create Manually (use the selected theme/domain, both
-     optional — settable later on the Core tab). Mirrors the NPC/Community flow. -->
+<!-- New Site dialog — pick a difficulty, then either Random (random theme +
+     domain) or Create (use the selected theme/domain, both optional — settable
+     later on the Core tab). Mirrors the NPC/Community flow. -->
 <ConfirmDialog
 	bind:this={newSiteDialogRef}
 	title="New Site"
-	width="430px"
-	confirmLabel="Generate Randomly"
+	confirmLabel="Random"
 	confirmClass="btn-primary"
-	alternateLabel="Create Manually"
+	alternateLabel="Create"
 	cancelLabel="Cancel"
 	accentColor={SITE_COLOR}
 	onconfirm={confirmAddSiteRandom}
@@ -928,10 +927,10 @@
 		style="font-family: var(--font-ui); font-size: 0.72rem; color: var(--text-dimmer); margin: 0; font-style: italic;"
 	>
 		{#if !newSiteTheme || !newSiteDomain}
-			Leave theme &amp; domain unset and <strong>Generate Randomly</strong>, or pick them and
-			<strong>Create Manually</strong>. You can change them later on the Core tab.
+			Leave theme &amp; domain unset and pick <strong>Random</strong>, or choose them and
+			<strong>Create</strong>. You can change them later on the Core tab.
 		{:else}
-			<strong>Create Manually</strong> uses your picks; <strong>Generate Randomly</strong> rolls new ones.
+			<strong>Create</strong> uses your picks; <strong>Random</strong> rolls new ones.
 		{/if}
 	</p>
 </ConfirmDialog>
