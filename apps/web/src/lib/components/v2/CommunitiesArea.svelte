@@ -1230,6 +1230,15 @@
 	}
 
 	.cm-notes-section {
+		/* flow-root contains the right-floated portrait so the section grows
+		   to hold it even when the prose is short. */
+		display: flow-root;
+	}
+	/* Description tab: let the prose wrap around the floated portrait.
+	   MarkdownNotes is normally a flex column — its own block-formatting
+	   context, which would sit beside the float instead of flowing around it.
+	   Force normal block flow here (scoped to this section) so text wraps. */
+	.cm-notes-section :global(.md-notes) {
 		display: block;
 	}
 
