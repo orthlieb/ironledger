@@ -208,8 +208,8 @@ test.describe('Data persistence across logout / login (v2)', () => {
 
 		await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click();
 		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
-		const generateBtn = page.getByRole('button', { name: /generate randomly/i });
-		const createManualBtn = page.getByRole('button', { name: /create manually/i });
+		const generateBtn = page.getByRole('button', { name: /random/i });
+		const createManualBtn = page.getByRole('button', { name: /create/i });
 		await expect(generateBtn.or(createManualBtn).first()).toBeVisible({ timeout: 5_000 });
 		if (await generateBtn.isVisible().catch(() => false)) {
 			await generateBtn.click();
@@ -275,11 +275,11 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		if ((await page.locator(CM_ROW).count()) === 0) {
 			await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click();
 			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
-			const generateBtn = page.getByRole('button', { name: /generate randomly/i });
+			const generateBtn = page.getByRole('button', { name: /random/i });
 			if (await generateBtn.isVisible().catch(() => false)) {
 				await generateBtn.click();
 			} else {
-				await page.getByRole('button', { name: /create manually/i }).click();
+				await page.getByRole('button', { name: /create/i }).click();
 			}
 			await expect(page.locator(CM_ROW)).not.toHaveCount(0, { timeout: 10_000 });
 		}

@@ -105,7 +105,7 @@ test.describe('Tab accessibility — v2 areas', () => {
 			await expect(
 				page
 					.locator(`${CHAR_AREA} .ca-vows-list`)
-					.or(page.locator(`${CHAR_AREA} .ca-empty-mini`, { hasText: /vows/i })),
+					.or(page.locator(`${CHAR_AREA} .ca-empty`, { hasText: /vows/i })),
 			).toBeVisible({ timeout: 3_000 });
 			// Other tabs' content should be gone.
 			await expect(page.locator(`${CHAR_AREA} .ca-stats-row`)).toHaveCount(0);
@@ -119,7 +119,7 @@ test.describe('Tab accessibility — v2 areas', () => {
 			await expect(
 				page
 					.locator(`${CHAR_AREA} .ca-asset-grid`)
-					.or(page.locator(`${CHAR_AREA} .ca-empty-mini`, { hasText: /assets/i })),
+					.or(page.locator(`${CHAR_AREA} .ca-empty`, { hasText: /assets/i })),
 			).toBeVisible({ timeout: 3_000 });
 		}
 

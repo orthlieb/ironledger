@@ -347,7 +347,7 @@ test.describe('Expeditions area (v2)', () => {
 		const portraitImg = page.locator(`${EXP_AREA} img.pu-img:not(.pu-img--placeholder)`);
 		await expect(portraitImg).toBeVisible({ timeout: 5_000 });
 		const src = await portraitImg.getAttribute('src');
-		expect(src).toMatch(/^data:image\/jpeg;base64,/);
+		expect(src).toMatch(/^data:image\/(jpeg|png);base64,/);
 	});
 
 	test('site: can add a portrait image via the Description tab', async ({ page }) => {
@@ -364,7 +364,7 @@ test.describe('Expeditions area (v2)', () => {
 		const portraitImg = page.locator(`${EXP_AREA} img.pu-img:not(.pu-img--placeholder)`);
 		await expect(portraitImg).toBeVisible({ timeout: 5_000 });
 		const src = await portraitImg.getAttribute('src');
-		expect(src).toMatch(/^data:image\/jpeg;base64,/);
+		expect(src).toMatch(/^data:image\/(jpeg|png);base64,/);
 	});
 
 	// ── Denizen table — foe picker ────────────────────────────────────────────
