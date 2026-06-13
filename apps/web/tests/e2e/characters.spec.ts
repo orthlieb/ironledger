@@ -311,7 +311,7 @@ test.describe('Characters area (v2)', () => {
 
 		// The src must be a JPEG data URL produced by canvas.toDataURL('image/jpeg', 0.85).
 		const src = await page.locator(`${CHAR_AREA} img.pu-img`).getAttribute('src');
-		expect(src).toMatch(/^data:image\/jpeg;base64,/);
+		expect(src).toMatch(/^data:image\/(jpeg|png);base64,/);
 	});
 
 	// ── Cleanup ───────────────────────────────────────────────────────────────

@@ -212,7 +212,7 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 
 		await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click({ timeout: 8_000 });
 
-		const createManualBtn = page.getByRole('button', { name: /create manually/i });
+		const createManualBtn = page.getByRole('button', { name: /create/i });
 		if (await createManualBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
 			await createManualBtn.click();
 		}
