@@ -86,7 +86,7 @@ test.describe('Communities area (v2)', () => {
 		const before = await page.locator(CM_ROW).count();
 		await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click();
 		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 15_000 });
-		await page.locator('dialog.confirm-modal[open] button:has-text("Generate Randomly")').click();
+		await page.locator('dialog.confirm-modal[open] button:has-text("Random")').click();
 		await expect(page.locator(CM_ROW)).not.toHaveCount(before, { timeout: 8_000 });
 	});
 
@@ -94,7 +94,7 @@ test.describe('Communities area (v2)', () => {
 		const before = await page.locator(CM_ROW).count();
 		await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click();
 		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 15_000 });
-		await page.locator('dialog.confirm-modal[open] button:has-text("Create Manually")').click();
+		await page.locator('dialog.confirm-modal[open] button:has-text("Create")').click();
 		await expect(page.locator('dialog.confirm-modal[open]')).not.toBeVisible({ timeout: 3_000 });
 		await expect(page.locator(CM_ROW)).toHaveCount(before + 1, { timeout: 5_000 });
 	});
@@ -114,7 +114,7 @@ test.describe('Communities area (v2)', () => {
 		if (existingCommunities === 0) {
 			await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click();
 			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 15_000 });
-			await page.locator('dialog.confirm-modal[open] button:has-text("Generate Randomly")').click();
+			await page.locator('dialog.confirm-modal[open] button:has-text("Random")').click();
 			await expect(page.locator(CM_ROW)).not.toHaveCount(0, { timeout: 8_000 });
 		}
 
@@ -143,7 +143,7 @@ test.describe('Communities area (v2)', () => {
 		const before = await page.locator(CM_ROW).count();
 		await page.locator(`${CM_HEADER} button:has-text("+ NPC")`).click();
 		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 15_000 });
-		await page.locator('dialog.confirm-modal[open] button:has-text("Generate Randomly")').click();
+		await page.locator('dialog.confirm-modal[open] button:has-text("Random")').click();
 		await expect(page.locator(CM_ROW)).not.toHaveCount(before, { timeout: 8_000 });
 	});
 
@@ -151,7 +151,7 @@ test.describe('Communities area (v2)', () => {
 		const before = await page.locator(CM_ROW).count();
 		await page.locator(`${CM_HEADER} button:has-text("+ NPC")`).click();
 		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 15_000 });
-		await page.locator('dialog.confirm-modal[open] button:has-text("Create Manually")').click();
+		await page.locator('dialog.confirm-modal[open] button:has-text("Create")').click();
 		await expect(page.locator('dialog.confirm-modal[open]')).not.toBeVisible({ timeout: 3_000 });
 		await expect(page.locator(CM_ROW)).toHaveCount(before + 1, { timeout: 5_000 });
 	});
@@ -170,7 +170,7 @@ test.describe('Communities area (v2)', () => {
 		if (existingNpcs === 0) {
 			await page.locator(`${CM_HEADER} button:has-text("+ NPC")`).click();
 			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 15_000 });
-			await page.locator('dialog.confirm-modal[open] button:has-text("Generate Randomly")').click();
+			await page.locator('dialog.confirm-modal[open] button:has-text("Random")').click();
 			await expect(page.locator(CM_ROW)).not.toHaveCount(0, { timeout: 8_000 });
 		}
 
