@@ -139,7 +139,7 @@ test.describe('Tab accessibility — v2 areas', () => {
 		if ((await page.locator(CM_ROW).count()) === 0) {
 			await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click();
 			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 15_000 });
-			await page.locator('dialog.confirm-modal[open] button:has-text("Generate Randomly")').click();
+			await page.locator('dialog.confirm-modal[open] button:has-text("Random")').click();
 			await expect(page.locator(CM_ROW)).not.toHaveCount(0, { timeout: 10_000 });
 		}
 		// Select the first spine.
