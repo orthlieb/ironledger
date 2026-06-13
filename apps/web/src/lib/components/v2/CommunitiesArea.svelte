@@ -52,6 +52,9 @@
 	import villageIconSvg from '$icons/village.svg?raw';
 	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
+	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
+	import sortAzSvg from '$icons/arrow-down-a-z-solid-full.svg?raw';
+	import sortAddedSvg from '$icons/calendar-arrow-down-solid-full.svg?raw';
 	import { headingText } from '$lib/fontStore.svelte.js';
 
 	let { showTitle = true }: { showTitle?: boolean } = $props();
@@ -82,10 +85,31 @@
 	let newlyCreatedId = $state('');
 
 	// Rail controls — search box, type filter, and sort order. These scale the
-	// list to dozens of entries (see displayEntries below).
+	// list to dozens of entries (see displayEntries below). Filter + sort
+	// persist per-browser so the rail reopens the way you left it.
+	const FILTER_KEY = 'ironledger:connections:filter';
+	const SORT_KEY = 'ironledger:connections:sort';
+	function readFilter(): 'all' | EntryKind {
+		if (typeof window === 'undefined') return 'all';
+		const v = localStorage.getItem(FILTER_KEY);
+		return v === 'community' || v === 'npc' ? v : 'all';
+	}
+	function readSort(): 'added' | 'name' {
+		if (typeof window === 'undefined') return 'added';
+		return localStorage.getItem(SORT_KEY) === 'name' ? 'name' : 'added';
+	}
 	let search = $state('');
-	let kindFilter = $state<'all' | EntryKind>('all');
-	let sortMode = $state<'added' | 'name'>('added');
+	let kindFilter = $state<'all' | EntryKind>(readFilter());
+	let sortMode = $state<'added' | 'name'>(readSort());
+	let filtersOpen = $state(false);
+	const activeFilterCount = $derived(kindFilter === 'all' ? 0 : 1);
+
+	// Persist filter + sort to localStorage whenever they change.
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		localStorage.setItem(FILTER_KEY, kindFilter);
+		localStorage.setItem(SORT_KEY, sortMode);
+	});
 
 	// Mobile/narrow drill-down: which pane is showing when the area is too
 	// narrow for two panes (driven by the viewport @media query in the styles).
@@ -414,30 +438,62 @@
 						/>
 					</div>
 					<div class="cm-rail-filters">
-						<div class="cm-chips" role="group" aria-label="Filter by type">
+						<button
+							class="cm-filter-toggle"
+							class:has-filters={activeFilterCount > 0}
+							aria-expanded={filtersOpen}
+							onclick={() => (filtersOpen = !filtersOpen)}
+							>Filters{#if activeFilterCount > 0}&nbsp;<span class="cm-filter-badge"
+									>{activeFilterCount}</span
+								>{/if}
+							{filtersOpen ? '▲' : '▼'}</button
+						>
+						<button
+							class="cm-sort-toggle"
+							aria-label={sortMode === 'name'
+								? 'Sorted A–Z. Switch to most recently added.'
+								: 'Sorted by most recently added. Switch to A–Z.'}
+							use:tooltip={sortMode === 'name' ? 'Sorted A–Z' : 'Sorted by recently added'}
+							onclick={() => (sortMode = sortMode === 'name' ? 'added' : 'name')}
+							>{@html sortMode === 'name' ? sortAzSvg : sortAddedSvg}</button
+						>
+					</div>
+					{#if filtersOpen}
+						<div class="cm-filter-panel">
+							<div class="cm-filter-group">
+								<span class="cm-filter-group-label">Type</span>
+								<div class="cm-filter-chips" role="group" aria-label="Filter by type">
+									<button
+										class="cm-filter-tag"
+										class:active={kindFilter === 'all'}
+										aria-pressed={kindFilter === 'all'}
+										onclick={() => (kindFilter = 'all')}>All</button
+									>
+									<button
+										class="cm-filter-tag"
+										class:active={kindFilter === 'community'}
+										aria-pressed={kindFilter === 'community'}
+										style="--tag-color: {COMMUNITY_COLOR}"
+										onclick={() => (kindFilter = 'community')}>Communities</button
+									>
+									<button
+										class="cm-filter-tag"
+										class:active={kindFilter === 'npc'}
+										aria-pressed={kindFilter === 'npc'}
+										style="--tag-color: {NPC_COLOR}"
+										onclick={() => (kindFilter = 'npc')}>NPCs</button
+									>
+								</div>
+							</div>
 							<button
-								class="cm-chip"
-								class:cm-chip--active={kindFilter === 'all'}
-								onclick={() => (kindFilter = 'all')}>All</button
-							>
-							<button
-								class="cm-chip"
-								class:cm-chip--active={kindFilter === 'community'}
-								style="--cm-chip-color: {COMMUNITY_COLOR}"
-								onclick={() => (kindFilter = 'community')}>Communities</button
-							>
-							<button
-								class="cm-chip"
-								class:cm-chip--active={kindFilter === 'npc'}
-								style="--cm-chip-color: {NPC_COLOR}"
-								onclick={() => (kindFilter = 'npc')}>NPCs</button
+								class="cm-clear-btn"
+								onclick={() => (kindFilter = 'all')}
+								disabled={activeFilterCount === 0}
+								use:tooltip={'Clear all filters'}
+								aria-label="Clear filters">{@html clearFiltersSvg}</button
 							>
 						</div>
-						<select class="cm-sort" bind:value={sortMode} aria-label="Sort connections">
-							<option value="added">Added</option>
-							<option value="name">A–Z</option>
-						</select>
-					</div>
+					{/if}
 				</div>
 
 				<div class="cm-list" aria-label="Connections">
@@ -972,51 +1028,159 @@
 		align-items: center;
 		gap: 6px;
 	}
-	.cm-chips {
+	/* Type filter — "Filters ▼" toggle + drop panel, matching the foe picker. */
+	.cm-filter-toggle {
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		font-weight: 600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		padding: 3px 10px;
+		border-radius: 12px;
+		border: 1px solid var(--border);
+		background: transparent;
+		color: var(--text-dimmer);
+		cursor: pointer;
+		transition:
+			border-color 0.1s,
+			color 0.1s;
+		display: flex;
+		align-items: center;
+		gap: 4px;
+	}
+	.cm-filter-toggle:hover,
+	.cm-filter-toggle[aria-expanded='true'] {
+		border-color: var(--text-muted);
+		color: var(--text-muted);
+	}
+	.cm-filter-toggle.has-filters {
+		border-color: var(--focus-ring);
+		color: var(--text);
+	}
+	.cm-filter-badge {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 16px;
+		height: 16px;
+		padding: 0 4px;
+		border-radius: 8px;
+		background: var(--focus-ring);
+		color: var(--bg-card);
+		font-size: 0.65rem;
+		font-weight: 700;
+		line-height: 1;
+	}
+	.cm-filter-panel {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		padding: 8px 32px 8px 10px;
+		background: var(--bg-inset);
+		border: 1px solid var(--border);
+		border-radius: 6px;
+	}
+	.cm-clear-btn {
+		position: absolute;
+		bottom: 6px;
+		right: 6px;
+		background: transparent;
+		border: none;
+		color: var(--text-dimmer);
+		cursor: pointer;
+		padding: 3px 4px;
+		border-radius: 3px;
+		display: flex;
+		align-items: center;
+		transition:
+			color 0.12s,
+			opacity 0.12s;
+	}
+	.cm-clear-btn:hover:not(:disabled) {
+		color: var(--text);
+	}
+	.cm-clear-btn:disabled {
+		opacity: 0.25;
+		cursor: not-allowed;
+	}
+	.cm-clear-btn :global(svg) {
+		width: 16px;
+		height: 16px;
+		fill: currentColor;
+	}
+	.cm-filter-group {
+		display: flex;
+		align-items: baseline;
+		gap: 8px;
+		min-width: 0;
+	}
+	.cm-filter-group-label {
+		font-family: var(--font-ui);
+		font-size: 0.62rem;
+		font-weight: 700;
+		letter-spacing: 0.07em;
+		text-transform: uppercase;
+		color: var(--text-dimmer);
+		flex-shrink: 0;
+		width: 3.5rem;
+	}
+	.cm-filter-chips {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 4px;
 		flex: 1;
-		min-width: 0;
 	}
-	.cm-chip {
-		all: unset;
-		cursor: pointer;
-		font-family: var(--font-ui);
-		font-size: 0.6rem;
-		font-weight: 600;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		color: var(--text-dimmer);
-		background: transparent;
-		border: 1px solid var(--border);
-		border-radius: 10px;
-		padding: 2px 8px;
-		line-height: 1.4;
-		white-space: nowrap;
-		transition:
-			color 0.12s,
-			border-color 0.12s,
-			background 0.12s;
-	}
-	.cm-chip:hover {
-		color: var(--text-muted);
-	}
-	.cm-chip--active {
-		color: var(--cm-chip-color, var(--text-accent));
-		border-color: color-mix(in srgb, var(--cm-chip-color, var(--text-accent)) 55%, transparent);
-		background: color-mix(in srgb, var(--cm-chip-color, var(--text-accent)) 14%, transparent);
-	}
-	.cm-sort {
+	.cm-filter-tag {
 		font-family: var(--font-ui);
 		font-size: 0.68rem;
+		font-weight: 600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		padding: 3px 8px;
+		border-radius: 12px;
+		border: 1px solid var(--border);
+		background: transparent;
+		color: var(--text-dimmer);
+		cursor: pointer;
+		transition:
+			background 0.1s,
+			color 0.1s,
+			border-color 0.1s;
+	}
+	.cm-filter-tag:hover {
+		border-color: var(--tag-color, var(--text-dimmer));
+		color: var(--tag-color, var(--text-dimmer));
+	}
+	.cm-filter-tag.active {
+		background: color-mix(in srgb, var(--tag-color, #9ca3af) 20%, transparent);
+		border-color: var(--tag-color, #9ca3af);
+		color: var(--tag-color, #9ca3af);
+	}
+	/* Sort — single toggle flipping A–Z ⇄ recently added. */
+	.cm-sort-toggle {
+		all: unset;
+		box-sizing: border-box;
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 30px;
+		padding: 5px 0;
+		cursor: pointer;
 		color: var(--text-muted);
 		background: var(--bg-inset);
 		border: 1px solid var(--border);
-		border-radius: 4px;
-		padding: 2px 4px;
-		flex-shrink: 0;
-		cursor: pointer;
+		border-radius: 8px;
+		transition: color 0.12s;
+	}
+	.cm-sort-toggle :global(svg) {
+		width: 15px;
+		height: 15px;
+		fill: currentColor;
+	}
+	.cm-sort-toggle:hover {
+		color: var(--text-accent);
 	}
 
 	/* Rail list — one row per connection. */
