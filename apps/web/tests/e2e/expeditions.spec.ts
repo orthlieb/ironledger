@@ -74,7 +74,7 @@ async function ensureSiteSelected(page: import('@playwright/test').Page): Promis
 		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
 		await page.selectOption('dialog.confirm-modal[open] #ns-theme', { index: 1 });
 		await page.selectOption('dialog.confirm-modal[open] #ns-domain', { index: 1 });
-		await page.locator('dialog.confirm-modal[open] button:has-text("Discover Site")').click();
+		await page.locator('dialog.confirm-modal[open] button:has-text("Create")').click();
 		await expect(spines).not.toHaveCount(0, { timeout: 5_000 });
 	}
 
@@ -177,7 +177,7 @@ test.describe('Expeditions area (v2)', () => {
 		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
 		await page.selectOption('dialog.confirm-modal[open] #ns-theme', { index: 1 });
 		await page.selectOption('dialog.confirm-modal[open] #ns-domain', { index: 1 });
-		await page.locator('dialog.confirm-modal[open] button:has-text("Discover Site")').click();
+		await page.locator('dialog.confirm-modal[open] button:has-text("Create")').click();
 		await expect(page.locator(EXP_SPINE)).not.toHaveCount(before, { timeout: 5_000 });
 	});
 
@@ -188,7 +188,7 @@ test.describe('Expeditions area (v2)', () => {
 			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
 			await page.selectOption('dialog.confirm-modal[open] #ns-theme', { index: 1 });
 			await page.selectOption('dialog.confirm-modal[open] #ns-domain', { index: 1 });
-			await page.locator('dialog.confirm-modal[open] button:has-text("Discover Site")').click();
+			await page.locator('dialog.confirm-modal[open] button:has-text("Create")').click();
 			await expect(spines).not.toHaveCount(0, { timeout: 5_000 });
 		}
 		const countBefore = await spines.count();
