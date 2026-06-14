@@ -28,6 +28,7 @@
 		FOE_NATURE_COLORS,
 	} from '$lib/foeStore.svelte.js';
 	import { sourceLabel } from '$lib/expansionStore.svelte.js';
+	import { rankBadgeStyle } from '$lib/badgeStyles.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { draggable } from '$lib/actions/draggable.js';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
@@ -207,13 +208,6 @@
 
 	function natureBorderColor(nature: string): string {
 		return FOE_NATURE_COLORS[nature as keyof typeof FOE_NATURE_COLORS] ?? '#7A9AB8';
-	}
-
-	function rankBadgeStyle(rank: number): string {
-		const rc = RANK_COLORS[rank];
-		if (!rc) return '';
-		// Muted style matching the nature chiclets: translucent tint + rank hue as text
-		return `background:${rc.bg}22; color:${rc.bg}`;
 	}
 
 	// Grid tiles show just the primary image (index 0) — alternates are
