@@ -26,7 +26,7 @@
 		effectiveRank as calcEffectiveRank,
 	} from '$lib/foeStore.svelte.js';
 	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
-	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
+	import { appendLog } from '$lib/log.svelte.js';
 	import FoeImageCarousel from '$lib/components/FoeImageCarousel.svelte';
 
 	// ---------------------------------------------------------------------------
@@ -105,7 +105,6 @@
 		]);
 
 		appendLog(
-			SESSION_LOG_ID,
 			`Site — ${site?.name || 'Unnamed Site'}`,
 			`<div>Rolled d100: <strong>${rollVal}</strong> → ${cell.label} (${cell.range})${denizenName ? `: <strong>${denizenName}</strong>` : ''}</div>`,
 		);

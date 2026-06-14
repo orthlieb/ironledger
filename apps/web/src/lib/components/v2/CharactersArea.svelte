@@ -63,7 +63,6 @@
 	import DebilitiesSection from '$lib/components/DebilitiesSection.svelte';
 	import {
 		appendLog,
-		SESSION_LOG_ID,
 		getXpSpendNonce,
 		drainXpSpend,
 		getActionNonce,
@@ -318,7 +317,6 @@
 	function logDebility(data: CharacterData, label: string, active: boolean) {
 		const name = data.name || 'Unnamed';
 		appendLog(
-			SESSION_LOG_ID,
 			`${name} — Debilities`,
 			`<div>${label}: <strong>${active ? 'Activated' : 'Cleared'}</strong></div>`,
 		);
@@ -344,7 +342,6 @@
 			if (next !== old) {
 				data.globalValues = { ...gv, mana: String(next) };
 				appendLog(
-					SESSION_LOG_ID,
 					charTitle('Mana'),
 					`<div>Mana: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : ''}${delta})</div>`,
 				);
@@ -375,7 +372,6 @@
 			rec[key] = next;
 			const label = key.charAt(0).toUpperCase() + key.slice(1);
 			appendLog(
-				SESSION_LOG_ID,
 				charTitle(label),
 				`<div>${label}: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : ''}${delta})</div>`,
 			);
@@ -387,12 +383,7 @@
 				const floorRule = FLOOR_RULES.find((r) => r.resource === key && next === r.floor);
 				if (floorRule) {
 					const entryId = crypto.randomUUID();
-					appendLog(
-						SESSION_LOG_ID,
-						floorRule.logTitle,
-						floorRule.logHtml({ charId, entryId }),
-						entryId,
-					);
+					appendLog(floorRule.logTitle, floorRule.logHtml({ charId, entryId }), entryId);
 				}
 			}
 		}
@@ -408,7 +399,6 @@
 			rec[key] = active;
 			const label = key.charAt(0).toUpperCase() + key.slice(1);
 			appendLog(
-				SESSION_LOG_ID,
 				charTitle('Debilities'),
 				`<div>${label}: <strong>${active ? 'Marked' : 'Cleared'}</strong></div>`,
 			);
@@ -427,7 +417,7 @@
 						`data-entry-id="${entryId}" data-char-id="${charId}">` +
 						`Reduce momentum to ${newMax}</a> ` +
 						`(currently ${cappedFrom}). Reset value is now <strong>${resetVal}</strong>.</p>`;
-					appendLog(SESSION_LOG_ID, DEBILITY_MOMENTUM_TITLE, html, entryId);
+					appendLog(DEBILITY_MOMENTUM_TITLE, html, entryId);
 				}
 			}
 		}
@@ -440,11 +430,7 @@
 		if (old !== 0) {
 			rec[key] = 0;
 			const label = key.charAt(0).toUpperCase() + key.slice(1);
-			appendLog(
-				SESSION_LOG_ID,
-				charTitle(label),
-				`<div>${label} track cleared (${old} ticks → 0)</div>`,
-			);
+			appendLog(charTitle(label), `<div>${label} track cleared (${old} ticks → 0)</div>`);
 		}
 	}
 
@@ -465,7 +451,7 @@
 				key === 'initiative'
 					? `${INITIATIVE_NAMES_ACTIVE[old] ?? old} → <strong>${INITIATIVE_NAMES_ACTIVE[value] ?? value}</strong>`
 					: `${old} → <strong>${value}</strong>`;
-			appendLog(SESSION_LOG_ID, charTitle(label), `<div>${label}: ${display}</div>`);
+			appendLog(charTitle(label), `<div>${label}: ${display}</div>`);
 		}
 	}
 
@@ -491,7 +477,6 @@
 				if (next !== old) {
 					data.globalValues = { ...gv, mana: String(next) };
 					appendLog(
-						SESSION_LOG_ID,
 						title('Mana'),
 						`<div>Mana: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : ''}${delta})</div>`,
 					);
@@ -528,7 +513,6 @@
 				rec[key] = next;
 				const label = key.charAt(0).toUpperCase() + key.slice(1);
 				appendLog(
-					SESSION_LOG_ID,
 					title(label),
 					`<div>${label}: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : ''}${delta})</div>`,
 				);
@@ -543,7 +527,6 @@
 				rec[action.key] = active;
 				const label = action.key.charAt(0).toUpperCase() + action.key.slice(1);
 				appendLog(
-					SESSION_LOG_ID,
 					title('Debilities'),
 					`<div>${label}: <strong>${active ? 'Marked' : 'Cleared'}</strong></div>`,
 				);
@@ -554,11 +537,7 @@
 			if (old !== 0) {
 				rec[action.key] = 0;
 				const label = action.key.charAt(0).toUpperCase() + action.key.slice(1);
-				appendLog(
-					SESSION_LOG_ID,
-					title(label),
-					`<div>${label} track cleared (${old} ticks → 0)</div>`,
-				);
+				appendLog(title(label), `<div>${label} track cleared (${old} ticks → 0)</div>`);
 			}
 		} else if (action.type === 'set') {
 			const rec = data as unknown as Record<string, number>;
@@ -571,7 +550,7 @@
 					action.key === 'initiative'
 						? `${_INITIATIVE_NAMES[old] ?? old} → <strong>${_INITIATIVE_NAMES[next] ?? next}</strong>`
 						: `${old} → <strong>${next}</strong>`;
-				appendLog(SESSION_LOG_ID, title(label), `<div>${label}: ${display}</div>`);
+				appendLog(title(label), `<div>${label}: ${display}</div>`);
 			}
 		}
 	}
@@ -591,7 +570,6 @@
 				if (next !== old) {
 					activeData.xp = next;
 					appendLog(
-						SESSION_LOG_ID,
 						charTitle('Experience'),
 						`<div>XP spent: <strong>−${amount}</strong> (${old} → <strong>${next}</strong>)</div>`,
 					);
@@ -610,7 +588,6 @@
 				data.xp = next;
 				const name = char.name || 'Character';
 				appendLog(
-					SESSION_LOG_ID,
 					`${name} — Experience`,
 					`<div>XP spent: <strong>−${amount}</strong> (${old} → <strong>${next}</strong>)</div>`,
 				);
@@ -731,7 +708,6 @@
 			const entryId = crypto.randomUUID();
 			const xpLink = `<a class="xp-cost-link" data-entry-id="${entryId}" data-cost="${totalCost}" data-char-id="${activeChar.id}" href="#">−${totalCost} experience</a>`;
 			appendLog(
-				SESSION_LOG_ID,
 				charTitle('Assets'),
 				`<div>Asset ${action}: <strong>${def?.name ?? dialogDraft.assetId}</strong> ${xpLink}</div>`,
 				entryId,
@@ -771,7 +747,6 @@
 		activeData.assets = arr.filter((a) => a.assetId !== id);
 		if (def) {
 			appendLog(
-				SESSION_LOG_ID,
 				charTitle('Assets'),
 				`<div>Asset removed: <strong>${def.name}</strong> <em>(${def.category})</em></div>`,
 			);
@@ -800,11 +775,7 @@
 		newlyCreatedVowId = newVow.id;
 		// Mirror V1: log the new vow at creation time. Difficulty defaults to
 		// Formidable; the user can change it in the card afterward.
-		appendLog(
-			SESSION_LOG_ID,
-			charTitle('Vow'),
-			`<div>Swore a new iron vow — <strong>Formidable</strong></div>`,
-		);
+		appendLog(charTitle('Vow'), `<div>Swore a new iron vow — <strong>Formidable</strong></div>`);
 	}
 	function removeVow(id: string) {
 		if (!activeData) return;

@@ -3,14 +3,14 @@
 	 * RollToast — Glass popup that surfaces the latest log entry when the
 	 * user is on a tab where the session log is not visible (i.e. not Adventure).
 	 *
-	 * Watches logs[SESSION_LOG_ID][0]. When a new entry arrives and the
+	 * Watches sessionLog.entries[0]. When a new entry arrives and the
 	 * current tab is not 'adventure', it fades in at the bottom of the viewport,
 	 * then auto-dismisses after AUTO_DISMISS_MS. Notes (entries with `source`)
 	 * are suppressed — the user just typed them, no need to echo them back.
 	 */
 
 	import { fly, fade } from 'svelte/transition';
-	import { logs, SESSION_LOG_ID, type LogEntry } from '$lib/log.svelte.js';
+	import { type LogEntry, sessionLog } from '$lib/log.svelte.js';
 	import { sanitizeLogHtml } from '$lib/sanitize.js';
 
 	const AUTO_DISMISS_MS = 6000;
@@ -23,7 +23,7 @@
 	let _timer: ReturnType<typeof setTimeout> | undefined;
 
 	// Derive the latest log entry reactively
-	const latestEntry = $derived((logs[SESSION_LOG_ID] ?? [])[0] ?? null);
+	const latestEntry = $derived(sessionLog.entries[0] ?? null);
 
 	$effect(() => {
 		const entry = latestEntry;

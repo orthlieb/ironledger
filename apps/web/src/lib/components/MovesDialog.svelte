@@ -29,7 +29,7 @@
 		hasRollableStats,
 	} from '$lib/moveStore.svelte.js';
 	import { firstPreconditionFailure } from '$lib/preconditions.js';
-	import { appendLog, enrichOutcomeLinks, SESSION_LOG_ID } from '$lib/log.svelte.js';
+	import { appendLog, enrichOutcomeLinks } from '$lib/log.svelte.js';
 	import { momentumReset } from '$lib/character.js';
 	import { BURN_MOMENTUM_TITLE } from '$lib/cascadeRules.js';
 	import { rollDie, animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
@@ -488,7 +488,7 @@
 			{ sides: 10, value: c2 },
 		]);
 		if (!hits1 && !hits2) void playMissScream();
-		appendLog(SESSION_LOG_ID, resolveTitle(selectedMove, statLabel), html, entryId, undefined, {
+		appendLog(resolveTitle(selectedMove, statLabel), html, entryId, undefined, {
 			moveId: selectedMove.id,
 			actionScore: total,
 			c1,
@@ -520,7 +520,7 @@
 				`data-entry-id="${burnEntryId}">` +
 				`burn momentum (${mom} → reset ${resetVal})` +
 				`</a> to improve this from <em>${currentLabel}</em> to <em>${burnLabel}</em>.</p>`;
-			appendLog(SESSION_LOG_ID, BURN_MOMENTUM_TITLE, burnHtml, burnEntryId);
+			appendLog(BURN_MOMENTUM_TITLE, burnHtml, burnEntryId);
 		}
 
 		rolling = false;
@@ -581,7 +581,7 @@
 			{ sides: 10, value: c2 },
 		]);
 		if (!hits1 && !hits2) void playMissScream();
-		appendLog(SESSION_LOG_ID, resolveTitle(selectedMove), html, entryId);
+		appendLog(resolveTitle(selectedMove), html, entryId);
 
 		rolling = false;
 	}
@@ -645,7 +645,7 @@
 			{ sides: 10, value: c1 },
 		]);
 		if (!hitsDiff && !hitsC1) void playMissScream();
-		appendLog(SESSION_LOG_ID, resolveTitle(selectedMove), html, entryId);
+		appendLog(resolveTitle(selectedMove), html, entryId);
 		rolling = false;
 	}
 
@@ -669,7 +669,6 @@
 			{ sides: 10, value: onesV, color: DIE_WHITE },
 		]);
 		appendLog(
-			SESSION_LOG_ID,
 			selectedMove
 				? resolveTitle(selectedMove)
 				: ctx
@@ -704,7 +703,7 @@
 			{ sides: 10, value: tensV, color: DIE_BLACK },
 			{ sides: 10, value: onesV, color: DIE_WHITE },
 		]);
-		appendLog(SESSION_LOG_ID, resolveTitle(selectedMove), html, entryId);
+		appendLog(resolveTitle(selectedMove), html, entryId);
 		rolling = false;
 	}
 
@@ -776,7 +775,7 @@
 			const entryId = crypto.randomUUID();
 			const enriched = enrichOutcomeLinks(parts.join(''), entryId, ctx.charId);
 			close();
-			appendLog(SESSION_LOG_ID, resolveTitle(selectedMove), enriched, entryId);
+			appendLog(resolveTitle(selectedMove), enriched, entryId);
 			return;
 		}
 
@@ -786,7 +785,7 @@
 		const entryId = crypto.randomUUID();
 		const enriched = enrichOutcomeLinks(logBody, entryId, ctx.charId);
 		close();
-		appendLog(SESSION_LOG_ID, resolveTitle(selectedMove), enriched, entryId);
+		appendLog(resolveTitle(selectedMove), enriched, entryId);
 	}
 
 	// When factor levels change (user explicitly set), sync sum → spellDifficulty.

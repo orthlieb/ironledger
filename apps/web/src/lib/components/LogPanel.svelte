@@ -9,7 +9,6 @@
 	 */
 	import {
 		type LogEntry,
-		logs,
 		initLog,
 		clearLog,
 		deleteLogEntry,
@@ -20,7 +19,7 @@
 		triggerAction,
 		appendLog,
 		getLog,
-		SESSION_LOG_ID,
+		sessionLog,
 	} from '$lib/log.svelte.js';
 	import { OVERFLOW_RULES, FLOOR_OVERFLOW_RULES, BURN_MOMENTUM_TITLE } from '$lib/cascadeRules.js';
 	import type { DiceCtx } from '$lib/diceContext.svelte.js';
@@ -65,12 +64,12 @@
 
 	// The log is global — no characterId prop needed.
 	$effect(() => {
-		initLog(SESSION_LOG_ID);
+		initLog();
 	});
 
-	// Access logs[SESSION_LOG_ID] directly so Svelte 5's proxy records a
+	// Access sessionLog.entries directly so Svelte 5's proxy records a
 	// fine-grained dependency on the session log only.
-	const entries = $derived(logs[SESSION_LOG_ID] ?? []);
+	const entries = $derived(sessionLog.entries);
 
 	// ---------------------------------------------------------------------------
 	// Pagination
@@ -177,7 +176,7 @@
 		const newHtml = prefix + burnLine + newOutcomeLine + outcomeTextHtml;
 
 		// Update log entry and clear roll meta (prevents double-burn)
-		updateLogEntryHtml(SESSION_LOG_ID, entry.id, newHtml, undefined, true);
+		updateLogEntryHtml(entry.id, newHtml, undefined, true);
 
 		// Reset momentum via action bus
 		triggerAction({ charId, type: 'resource', key: 'momentum', value: resetVal - mom });
@@ -204,10 +203,10 @@
 			// Update the main content from markdown source
 			const text = draftNote.trim();
 			if (text) {
-				updateLogEntryHtml(SESSION_LOG_ID, editingId, renderNote(text), text);
+				updateLogEntryHtml(editingId, renderNote(text), text);
 			}
 		} else {
-			updateLogEntryNote(SESSION_LOG_ID, editingId, draftNote);
+			updateLogEntryNote(editingId, draftNote);
 		}
 		editingId = null;
 		draftNote = '';
@@ -219,7 +218,7 @@
 	}
 
 	function confirmClear() {
-		clearLog(SESSION_LOG_ID);
+		clearLog();
 	}
 
 	// ---------------------------------------------------------------------------
@@ -366,7 +365,7 @@
 	// <s class="resource-spent"> in the stored log entry HTML.
 	// ---------------------------------------------------------------------------
 	function markLinkSpent(entryId: string, link: HTMLElement): void {
-		const entry = (logs[SESSION_LOG_ID] ?? []).find((e) => e.id === entryId);
+		const entry = sessionLog.entries.find((e) => e.id === entryId);
 		if (!entry) return;
 
 		// ⚠  Do NOT use link.outerHTML as the regex pattern.
@@ -400,7 +399,7 @@
 			`<a\\b(?=[^>]*\\bclass="${esc(linkClass)}")${dataLookaheads}[^>]*>[\\s\\S]*?<\\/a>`,
 		);
 		const newHtml = entry.html.replace(re, `<s class="resource-spent">${link.textContent}</s>`);
-		updateLogEntryHtml(SESSION_LOG_ID, entryId, newHtml);
+		updateLogEntryHtml(entryId, newHtml);
 	}
 
 	/**
@@ -423,13 +422,13 @@
 				'';
 			const charId = xpLink.dataset['charId'] ?? ctx?.charId ?? '';
 			if (!cost || !entryId || !charId) return;
-			const entry = (logs[SESSION_LOG_ID] ?? []).find((ev) => ev.id === entryId);
+			const entry = sessionLog.entries.find((ev) => ev.id === entryId);
 			if (entry) {
 				const newHtml = entry.html.replace(
 					/<a\b[^>]*class="xp-cost-link"[^>]*>([^<]*)<\/a>/,
 					'<s class="xp-spent">$1</s>',
 				);
-				updateLogEntryHtml(SESSION_LOG_ID, entryId, newHtml);
+				updateLogEntryHtml(entryId, newHtml);
 			}
 			triggerXpSpend(charId, cost);
 			return;
@@ -462,7 +461,7 @@
 						const overflow = Math.abs(newVal);
 						const overflowId = crypto.randomUUID();
 						const html = overflowRule.logHtml({ overflow, charId, entryId: overflowId });
-						appendLog(SESSION_LOG_ID, overflowRule.logTitle, html, overflowId);
+						appendLog(overflowRule.logTitle, html, overflowId);
 					}
 				}
 				// Floor overflow: resource already at minimum — trigger cascade move.
@@ -473,7 +472,7 @@
 					const overflow = Math.abs(value);
 					const overflowId = crypto.randomUUID();
 					const html = floorOverflowRule.logHtml({ overflow, charId, entryId: overflowId });
-					appendLog(SESSION_LOG_ID, floorOverflowRule.logTitle, html, overflowId);
+					appendLog(floorOverflowRule.logTitle, html, overflowId);
 				}
 			}
 			return;
@@ -523,7 +522,7 @@
 			const charId = burnLink.dataset['charId'] ?? ctx?.charId ?? '';
 			if (!rollEntryId || !burnEntryId || !charId) return;
 			if (!ctx || ctx.charId !== charId || ctx.data.momentum <= 0) return;
-			const rollEntry = getLog(SESSION_LOG_ID).find((e) => e.id === rollEntryId);
+			const rollEntry = getLog().find((e) => e.id === rollEntryId);
 			if (!rollEntry) return;
 			markLinkSpent(burnEntryId, burnLink);
 			burnMomentum(rollEntry);
@@ -779,7 +778,7 @@
 								class="entry-btn entry-delete-btn"
 								onclick={() => {
 									if (editingId === entry.id) cancelEdit();
-									deleteLogEntry(SESSION_LOG_ID, entry.id);
+									deleteLogEntry(entry.id);
 								}}
 								use:tooltip={'Delete this log entry'}
 								aria-label="Delete log entry">{@html trashSvg}</button

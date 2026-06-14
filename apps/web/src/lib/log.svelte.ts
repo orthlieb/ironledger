@@ -5,8 +5,9 @@
 // rendering; API calls are fire-and-forget (optimistic). On init the latest
 // 200 entries are fetched from the server.
 //
-// The charId parameter is kept for API compatibility but is always called with
-// SESSION_LOG_ID ('__session__') — the log is global, not per-character.
+// The log is global (one per session), not per-character. Components read the
+// reactive `sessionLog.entries` array directly so Svelte 5's proxy records a
+// fine-grained dependency on it.
 // =============================================================================
 
 /** Metadata for action rolls — enables burn-momentum after the fact. */
@@ -28,16 +29,14 @@ export interface LogEntry {
 	roll?: RollMeta; // present only on action roll entries (enables burn momentum)
 }
 
-/** Fixed key for the single global session log (used by all components). */
-export const SESSION_LOG_ID = '__session__';
+// Module-level reactive state: the single global session log (newest first).
+// Exported as an object wrapper so the `.entries` reassignment stays reactive
+// and components can read `sessionLog.entries` inside $derived for
+// fine-grained Svelte 5 proxy tracking.
+export const sessionLog = $state<{ entries: LogEntry[] }>({ entries: [] });
 
-// Module-level reactive state: map of charId → entries (newest first).
-// Exported directly so components can read logs[charId] inside $derived
-// for fine-grained Svelte 5 proxy tracking per character.
-export const logs = $state<Record<string, LogEntry[]>>({});
-
-// Track which charIds have already been initialised (fetch fired)
-const _initialised = new Set<string>();
+// Whether the initial fetch has already fired (initLog is idempotent).
+let _initialised = false;
 
 // ---------------------------------------------------------------------------
 // API helpers
@@ -75,21 +74,17 @@ async function apiDeleteAll(): Promise<void> {
 // initLog — load the latest entries from the server (idempotent)
 // ---------------------------------------------------------------------------
 
-/** Load stored entries for a log (idempotent — safe to call multiple times). */
-export function initLog(charId: string): void {
+/** Load stored entries from the server (idempotent — safe to call multiple times). */
+export function initLog(): void {
 	if (typeof window === 'undefined') return;
-	if (_initialised.has(charId)) return;
-	_initialised.add(charId);
+	if (_initialised) return;
+	_initialised = true;
 
-	// Set an empty array immediately so the log renders (avoids undefined flash)
-	logs[charId] = logs[charId] ?? [];
-
-	// Fetch latest 200 entries in the background; state updates reactively
+	// Fetch latest 200 entries in the background; state updates reactively.
 	apiGet('?limit=200')
 		.then(async (res) => {
 			if (!res.ok) return; // server error — keep the empty array
-			const entries: LogEntry[] = await res.json();
-			logs[charId] = entries;
+			sessionLog.entries = await res.json();
 		})
 		.catch(() => {
 			// Network error — keep the empty array, log will be blank until reload
@@ -102,7 +97,6 @@ export function initLog(charId: string): void {
 
 /** Append a new entry. Accepts an optional pre-generated id, source markdown, and roll metadata. */
 export function appendLog(
-	charId: string,
 	title: string,
 	html: string,
 	id?: string,
@@ -110,7 +104,7 @@ export function appendLog(
 	roll?: RollMeta,
 ): void {
 	if (typeof window === 'undefined') return;
-	initLog(charId);
+	initLog();
 
 	const entry: LogEntry = {
 		id: id ?? crypto.randomUUID(),
@@ -122,7 +116,7 @@ export function appendLog(
 	};
 
 	// Optimistic: prepend immediately; rolling cap matches server-side 1000
-	logs[charId] = [entry, ...(logs[charId] ?? [])].slice(0, 1000);
+	sessionLog.entries = [entry, ...sessionLog.entries].slice(0, 1000);
 
 	// Persist to server in background
 	apiPost(entry).catch(() => {
@@ -137,17 +131,14 @@ export function appendLog(
 /** Replace the HTML body of an existing log entry. Optionally update source markdown.
  *  Pass clearRoll to remove roll metadata (prevents double-burn). */
 export function updateLogEntryHtml(
-	charId: string,
 	entryId: string,
 	html: string,
 	source?: string,
 	clearRoll?: boolean,
 ): void {
-	if (!logs[charId]) return;
-
 	const patch: Partial<LogEntry> = { html, ...(source !== undefined ? { source } : {}) };
 
-	logs[charId] = logs[charId].map((e) => {
+	sessionLog.entries = sessionLog.entries.map((e) => {
 		if (e.id !== entryId) return e;
 		const updated = { ...e, ...patch };
 		if (clearRoll) delete updated.roll;
@@ -162,9 +153,8 @@ export function updateLogEntryHtml(
 // ---------------------------------------------------------------------------
 
 /** Remove a single entry by id. */
-export function deleteLogEntry(charId: string, entryId: string): void {
-	if (!logs[charId]) return;
-	logs[charId] = logs[charId].filter((e) => e.id !== entryId);
+export function deleteLogEntry(entryId: string): void {
+	sessionLog.entries = sessionLog.entries.filter((e) => e.id !== entryId);
 	apiDelete(entryId).catch(() => {});
 }
 
@@ -172,9 +162,9 @@ export function deleteLogEntry(charId: string, entryId: string): void {
 // getLog — read-only accessor
 // ---------------------------------------------------------------------------
 
-/** Return the current entries array for a log (read-only intent). */
-export function getLog(charId: string): LogEntry[] {
-	return logs[charId] ?? [];
+/** Return the current entries array for the session log (read-only intent). */
+export function getLog(): LogEntry[] {
+	return sessionLog.entries;
 }
 
 // ---------------------------------------------------------------------------
@@ -182,13 +172,11 @@ export function getLog(charId: string): LogEntry[] {
 // ---------------------------------------------------------------------------
 
 /** Set or clear the user note on a single entry. */
-export function updateLogEntryNote(charId: string, entryId: string, note: string): void {
-	if (!logs[charId]) return;
-
+export function updateLogEntryNote(entryId: string, note: string): void {
 	const trimmed = note.trim();
 	const patch: Partial<LogEntry> = { note: trimmed || undefined };
 
-	logs[charId] = logs[charId].map((e) =>
+	sessionLog.entries = sessionLog.entries.map((e) =>
 		e.id === entryId ? { ...e, note: trimmed || undefined } : e,
 	);
 
@@ -214,9 +202,9 @@ export function enrichOutcomeLinks(html: string, entryId: string, charId: string
 // clearLog — optimistic + DELETE all
 // ---------------------------------------------------------------------------
 
-/** Wipe all entries for a character from state and server. */
-export function clearLog(charId: string): void {
-	logs[charId] = [];
+/** Wipe all entries from state and server. */
+export function clearLog(): void {
+	sessionLog.entries = [];
 	apiDeleteAll().catch(() => {});
 }
 

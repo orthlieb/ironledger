@@ -251,7 +251,7 @@ test.describe('Party supply sync (v2)', () => {
 			({ cId, eId }) => {
 				const html = `<div>Resupply: <a class="resource-link" data-resource="supply" data-value="-1" data-entry-id="${eId}" data-char-id="${cId}">−1 supply</a></div>`;
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				(window as any).__testLog?.appendLog('__session__', 'Test — Supply', html, eId);
+				(window as any).__testLog?.appendLog('Test — Supply', html, eId);
 			},
 			{ cId: charId, eId: entryId },
 		);
