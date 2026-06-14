@@ -50,12 +50,12 @@ Each entry records a **timestamp**, an optional **delta** (old → new value), a
 ### `log.svelte.ts`
 
 ```ts
-// Module-level reactive state: map of charId → entries (newest first)
-export let logs = $state<Record<string, LogEntry[]>>({});
+// Module-level reactive state: the single global session log (newest first).
+// Components read `sessionLog.entries` inside $derived for proxy tracking.
+export const sessionLog = $state<{ entries: LogEntry[] }>({ entries: [] });
 
-export function initLog(charId: string): void; // Load from localStorage
+export function initLog(): void; // Fetch latest 200 entries from the server (idempotent)
 export function appendLog(
-  charId: string,
   title: string,
   html: string,
   id?: string,
@@ -63,17 +63,17 @@ export function appendLog(
   roll?: RollMeta,
 ): void;
 export function updateLogEntryHtml(
-  charId: string,
   entryId: string,
   html: string,
   source?: string,
+  clearRoll?: boolean,
 ): void;
-export function deleteLogEntry(charId: string, entryId: string): void;
-export function updateLogEntryNote(charId: string, entryId: string, note: string): void;
-export function clearLog(charId: string): void;
+export function deleteLogEntry(entryId: string): void;
+export function updateLogEntryNote(entryId: string, note: string): void;
+export function clearLog(): void;
 ```
 
-Entries are stored per-character in localStorage keyed as `il-log:{charId}`, max 500 entries. A special `SESSION_LOG_ID = '__session__'` key is used for the global session log shared by all components.
+The log is **global, not per-character** — one DB row per entry (JSONB), server-side, capped at 1000. Local state is optimistic and the source of truth for rendering; API calls are fire-and-forget. (The log functions previously took a `charId` first arg keyed against a per-character map; that was always called with a single `SESSION_LOG_ID` constant and was removed as dead code.) The `charId` on the buses below is unrelated — it's the real character a resource/XP action targets.
 
 #### XP Spend Bus
 

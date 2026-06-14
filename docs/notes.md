@@ -46,7 +46,7 @@ The textarea supports the same markdown as per-entry notes in the log:
 Notes use the existing session log infrastructure — no new stores or API endpoints:
 
 - `renderNote(text)` from `$lib/markdown.js` converts markdown to safe HTML
-- `appendLog(SESSION_LOG_ID, 'Note', html)` from `$lib/log.svelte.js` adds the entry
+- `appendLog('Note', html)` from `$lib/log.svelte.js` adds the entry
 - LogPanel renders the entry like any other log entry
 
 ---
