@@ -39,7 +39,7 @@
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
 	import diceD6RawSvg from '$icons/dice-d6-light.svg?raw';
 	import diceD10RawSvg from '$icons/dice-d10-light.svg?raw';
-	import { draggable } from '$lib/actions/draggable.js';
+	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { loadAssets, findAsset } from '$lib/assetStore.svelte.js';
 	import { getRelevantAbilities } from '$lib/assetMatcherStore.svelte.js';
@@ -817,11 +817,7 @@
 	{#if view === 'picker'}
 		<!-- ── Picker view ────────────────────────────────────────────────────── -->
 
-		<div class="md-header" use:draggable>
-			<span class="drag-grip" aria-hidden="true">⠿</span>
-			<span class="md-title">{headingText('Moves')}</span>
-			<button class="md-close" onclick={close} aria-label="Close">✕</button>
-		</div>
+		<DialogHeader title={headingText('Moves')} onclose={close} />
 
 		<!-- Controls -->
 		<div class="md-controls">
@@ -957,13 +953,13 @@
 	{:else if view === 'detail' && selectedMove}
 		<!-- ── Detail view ───────────────────────────────────────────────────── -->
 
-		<div class="md-header md-header--detail" use:draggable>
-			<span class="drag-grip" aria-hidden="true">⠿</span>
-			<span class="md-title md-title--detail">{selectedMove.name}</span>
-			<span class="md-category-badge" style:--ccolor={catColor(selectedMove.category)}>
-				{selectedMove.category}
-			</span>
-		</div>
+		<DialogHeader title={selectedMove.name} detail>
+			{#snippet trailing()}
+				<span class="md-category-badge" style:--ccolor={catColor(selectedMove.category)}>
+					{selectedMove.category}
+				</span>
+			{/snippet}
+		</DialogHeader>
 
 		<!-- svelte-ignore a11y_click_events_have_key_events -->
 		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -1475,51 +1471,6 @@
 	}
 
 	/* ── Header ─────────────────────────────────────────────────────────── */
-	.md-header {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 10px 14px;
-		border-bottom: 1px solid var(--border);
-		background: var(--bg-control);
-		border-radius: 10px 10px 0 0;
-		flex-shrink: 0;
-	}
-	.md-header--detail {
-		flex-wrap: nowrap;
-	}
-	.md-title {
-		font-family: var(--font-display);
-		font-size: calc(0.78rem * var(--font-display-scale));
-		font-weight: var(--font-display-weight);
-		font-variant: var(--font-display-variant);
-		letter-spacing: 0.08em;
-		text-transform: var(--font-display-transform);
-		color: var(--text-accent);
-		flex: 1;
-	}
-	.md-title--detail {
-		font-size: 0.72rem;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-	.md-close {
-		background: transparent;
-		border: none;
-		color: var(--text-dimmer);
-		cursor: pointer;
-		font-size: 0.9rem;
-		padding: 2px 5px;
-		border-radius: 3px;
-		line-height: 1;
-		font-family: inherit;
-		flex-shrink: 0;
-	}
-	.md-close:hover {
-		color: var(--text);
-	}
-
 	.md-category-badge {
 		font-family: var(--font-ui);
 		font-size: 0.6rem;

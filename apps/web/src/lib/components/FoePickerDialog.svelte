@@ -30,6 +30,7 @@
 	import { sourceLabel } from '$lib/expansionStore.svelte.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { draggable } from '$lib/actions/draggable.js';
+	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '$lib/foePortrait.js';
 	import FoeImageCarousel from '$lib/components/FoeImageCarousel.svelte';
@@ -225,13 +226,11 @@
 <dialog bind:this={dialogEl} class="foe-dialog" aria-label="Foe Picker">
 	<!-- ===== PICKER VIEW ===== -->
 	{#if view === 'picker'}
-		<div class="fd-header" use:draggable>
-			<span class="drag-grip" aria-hidden="true">⠿</span>
-			<span class="fd-title"
-				>{headingText(_mode === 'denizen' ? 'Pick a Denizen' : 'Choose a Foe')}</span
-			>
-			<button class="fd-close-btn" onclick={close} aria-label="Close">✕</button>
-		</div>
+		<DialogHeader
+			title={headingText(_mode === 'denizen' ? 'Pick a Denizen' : 'Choose a Foe')}
+			onclose={close}
+			radius="8px 8px 0 0"
+		/>
 
 		<div class="fd-controls">
 			<div class="fd-search-row">
@@ -510,17 +509,6 @@
 	}
 
 	/* ── Picker: header — mirrors AssetPicker .picker-header ────────────── */
-	.fd-header {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 10px 14px;
-		border-bottom: 1px solid var(--border);
-		background: var(--bg-control);
-		border-radius: 8px 8px 0 0;
-		flex-shrink: 0;
-	}
-
 	.fd-controls {
 		display: flex;
 		flex-direction: column;
@@ -540,22 +528,6 @@
 		text-transform: var(--font-display-transform);
 		color: var(--text-accent);
 		flex: 1;
-	}
-
-	.fd-close-btn {
-		background: transparent;
-		border: none;
-		color: var(--text-dimmer);
-		font-size: 0.9rem;
-		line-height: 1;
-		cursor: pointer;
-		padding: 2px 5px;
-		border-radius: 3px;
-		flex-shrink: 0;
-		font-family: inherit;
-	}
-	.fd-close-btn:hover {
-		color: var(--text);
 	}
 
 	.fd-search-row {

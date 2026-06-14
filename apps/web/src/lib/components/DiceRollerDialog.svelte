@@ -17,7 +17,7 @@
 	import { tooltip } from '$lib/actions/tooltip.js';
 
 	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
-	import { draggable } from '$lib/actions/draggable.js';
+	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import diceD10Svg from '$icons/dice-d10-light.svg?raw';
 
 	// ---------------------------------------------------------------------------
@@ -190,11 +190,7 @@
      ========================================================================= -->
 <dialog bind:this={dialogEl} class="dice-dialog" oncancel={close}>
 	<!-- Header -->
-	<div class="dice-header" use:draggable>
-		<span class="drag-grip" aria-hidden="true">⠿</span>
-		<span class="dice-title">{headingText('Roll Dice')}</span>
-		<button class="dice-close" onclick={close} aria-label="Close">✕</button>
-	</div>
+	<DialogHeader title={headingText('Roll Dice')} onclose={close} />
 
 	<div class="dice-body">
 		<!-- ── Quick Rolls ── -->
@@ -326,39 +322,6 @@
 	}
 
 	/* ── Header ── */
-	.dice-header {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 10px 14px;
-		border-bottom: 1px solid var(--border);
-		background: var(--bg-control);
-		border-radius: 10px 10px 0 0;
-	}
-	.dice-title {
-		font-family: var(--font-display);
-		font-size: calc(0.78rem * var(--font-display-scale));
-		font-weight: var(--font-display-weight);
-		font-variant: var(--font-display-variant);
-		letter-spacing: 0.08em;
-		text-transform: var(--font-display-transform);
-		color: var(--text-accent);
-		flex: 1;
-	}
-	.dice-close {
-		background: transparent;
-		border: none;
-		color: var(--text-dimmer);
-		cursor: pointer;
-		font-size: 0.9rem;
-		padding: 2px 5px;
-		border-radius: 3px;
-		line-height: 1;
-		font-family: inherit;
-	}
-	.dice-close:hover {
-		color: var(--text);
-	}
 
 	/* ── Body ── */
 	.dice-body {

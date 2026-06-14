@@ -28,7 +28,7 @@
 		savedFont,
 		setFontDisplay,
 	} from '$lib/fontStore.svelte.js';
-	import { draggable } from '$lib/actions/draggable.js';
+	import DialogHeader from '$lib/components/DialogHeader.svelte';
 
 	import autoSvg from '$icons/circle-half-stroke-solid.svg?raw';
 	import darkSvg from '$icons/moon-solid.svg?raw';
@@ -135,11 +135,7 @@
      ========================================================================= -->
 <dialog bind:this={dialogEl} class="settings-dialog" oncancel={close}>
 	<!-- Header -->
-	<div class="sd-header" use:draggable>
-		<span class="drag-grip" aria-hidden="true">⠿</span>
-		<span class="sd-title">{headingText('Settings')}</span>
-		<button class="sd-close" onclick={close} aria-label="Close">✕</button>
-	</div>
+	<DialogHeader title={headingText('Settings')} onclose={close} />
 
 	<!-- Body -->
 	<div class="sd-body">
@@ -307,41 +303,6 @@
 	}
 
 	/* ── Header ─────────────────────────────────────────────────────────── */
-	.sd-header {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 10px 14px;
-		border-bottom: 1px solid var(--border);
-		background: var(--bg-control);
-		border-radius: 10px 10px 0 0;
-		flex-shrink: 0;
-	}
-	.sd-title {
-		font-family: var(--font-display);
-		font-size: calc(0.78rem * var(--font-display-scale));
-		font-weight: var(--font-display-weight);
-		font-variant: var(--font-display-variant);
-		letter-spacing: 0.08em;
-		text-transform: var(--font-display-transform);
-		color: var(--text-accent);
-		flex: 1;
-	}
-	.sd-close {
-		background: transparent;
-		border: none;
-		color: var(--text-dimmer);
-		cursor: pointer;
-		font-size: 0.9rem;
-		padding: 2px 5px;
-		border-radius: 3px;
-		line-height: 1;
-		font-family: inherit;
-	}
-	.sd-close:hover {
-		color: var(--text);
-	}
-
 	/* ── Body ────────────────────────────────────────────────────────────── */
 	.sd-body {
 		padding: 16px 14px;
