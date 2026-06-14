@@ -35,7 +35,7 @@
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { loadDelveData, buildCombinedTable } from '$lib/delveStore.svelte.js';
 	import { rollFromRangeTable } from '$lib/oracleStore.svelte.js';
-	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
+	import { appendLog } from '$lib/log.svelte.js';
 	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
 	import { addEncounter } from '$lib/encounterStore.svelte.js';
 	import { onMount } from 'svelte';
@@ -426,7 +426,6 @@
 				resultHtml += ` <a class="change-domain-link" data-expedition-id="${site.id}" href="#">Change Domain ↗</a>`;
 			resultHtml += '</div>';
 			appendLog(
-				SESSION_LOG_ID,
 				`Features: ${site.theme} + ${site.domain}`,
 				`<div class="roll-line">Roll: d100 → ${result.roll}</div>` + resultHtml,
 			);
@@ -461,7 +460,6 @@
 				resultHtml += ` <a class="change-domain-link" data-expedition-id="${site.id}" href="#">Change Domain ↗</a>`;
 			resultHtml += '</div>';
 			appendLog(
-				SESSION_LOG_ID,
 				`Dangers: ${site.theme} + ${site.domain}`,
 				`<div class="roll-line">Roll: d100 → ${result.roll}</div>` + resultHtml,
 			);

@@ -7,7 +7,7 @@
 	 *   ref.open()
 	 */
 
-	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
+	import { appendLog } from '$lib/log.svelte.js';
 	import { draggable } from '$lib/actions/draggable.js';
 	import { renderNote } from '$lib/markdown.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
@@ -41,7 +41,7 @@
 	function addNote() {
 		const text = noteText.trim();
 		if (!text) return;
-		appendLog(SESSION_LOG_ID, 'Note', renderNote(text), undefined, text);
+		appendLog('Note', renderNote(text), undefined, text);
 		noteText = '';
 		dialogEl?.close();
 	}

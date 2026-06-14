@@ -22,7 +22,7 @@
 	import { sourceLabel } from '$lib/expansionStore.svelte.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import type { CatalogueSource } from '$lib/types.js';
-	import { appendLog, enrichOutcomeLinks, SESSION_LOG_ID } from '$lib/log.svelte.js';
+	import { appendLog, enrichOutcomeLinks } from '$lib/log.svelte.js';
 	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
 	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
 
@@ -148,7 +148,7 @@
 		const entryId = crypto.randomUUID();
 		const activeCtx = getActiveDiceCtx();
 		const html = enrichOutcomeLinks(result.html, entryId, activeCtx?.charId ?? '');
-		appendLog(SESSION_LOG_ID, `Oracle: ${result.title}`, html, entryId);
+		appendLog(`Oracle: ${result.title}`, html, entryId);
 		if (fillFn && result.value) fillFn(result.value);
 		rolling = false;
 	}

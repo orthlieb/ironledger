@@ -9,7 +9,7 @@
 	 * All results are appended to the session log.
 	 * 3D dice animation runs via @3d-dice/dice-box-threejs (CDN, lazy-loaded).
 	 */
-	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
+	import { appendLog } from '$lib/log.svelte.js';
 	import { rollDie, rollD100, animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
 	import type { DiceCtx } from '$lib/diceContext.svelte.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
@@ -89,7 +89,7 @@
 		close();
 		await afterClose();
 		await animateDice([{ sides, value: v }]);
-		appendLog(SESSION_LOG_ID, logTitle(label), html);
+		appendLog(logTitle(label), html);
 		rolling = false;
 	}
 
@@ -107,7 +107,7 @@
 			{ sides: 10, value: tensV, color: DIE_BLACK },
 			{ sides: 10, value: onesV, color: DIE_WHITE },
 		]);
-		appendLog(SESSION_LOG_ID, logTitle('d100'), html);
+		appendLog(logTitle('d100'), html);
 		rolling = false;
 	}
 
@@ -169,7 +169,7 @@
 			{ sides: 10, value: c2 },
 		]);
 
-		appendLog(SESSION_LOG_ID, logTitle(statLabel ? `Action (${statLabel})` : 'Action'), html);
+		appendLog(logTitle(statLabel ? `Action (${statLabel})` : 'Action'), html);
 		rolling = false;
 	}
 

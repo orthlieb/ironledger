@@ -241,7 +241,6 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 			({ id }) => {
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				(window as any).__testLog.appendLog(
-					'__session__',
 					'E2E Delve link',
 					`<div>See <a class="move-link" data-id="move/discover-a-site">Discover a Site</a></div>`,
 					id,

@@ -8,8 +8,7 @@
  * locate the mock entry by data-entry-id (via :has()), never by position.
  *
  * Prerequisites (provided by hooks.client.ts):
- *   window.__testLog.appendLog(charId, title, html, id?, source?, roll?)
- *   window.__testLog.SESSION_LOG_ID  === '__session__'
+ *   window.__testLog.appendLog(title, html, id?, source?, roll?)
  *
  * v2 changes: no tabs, no GCB. The active character is whatever spine is
  * `.ca-spine--active` in the Characters area. Resource values are read from
@@ -112,7 +111,7 @@ async function inject(page: Page, title: string, html: string, id: string) {
 	await page.evaluate(
 		({ id, title, html }) => {
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			(window as any).__testLog.appendLog('__session__', title, html, id);
+			(window as any).__testLog.appendLog(title, html, id);
 		},
 		{ id, title, html },
 	);
@@ -440,7 +439,6 @@ test.describe('Log interactive links (injected mock entries)', () => {
 			({ rollId, charId }) => {
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				(window as any).__testLog.appendLog(
-					'__session__',
 					'Strike',
 					'<div class="roll-outcome roll-outcome-miss"><p>Miss — pay the price.</p></div>',
 					rollId,

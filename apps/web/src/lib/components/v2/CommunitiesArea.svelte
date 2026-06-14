@@ -41,7 +41,7 @@
 		findOracle,
 		rollFromRangeTable,
 	} from '$lib/oracleStore.svelte.js';
-	import { appendLog, SESSION_LOG_ID } from '$lib/log.svelte.js';
+	import { appendLog } from '$lib/log.svelte.js';
 	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 
@@ -232,7 +232,6 @@
 				{ sides: 10, value: onesV, color: DIE_WHITE },
 			]);
 			appendLog(
-				SESSION_LOG_ID,
 				result.title,
 				`<div class="roll-line">Roll: d100 → ${result.roll}</div>` +
 					`<div>Result: <strong>${result.value}</strong></div>`,

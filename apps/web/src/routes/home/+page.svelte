@@ -45,7 +45,7 @@
 	import ErrorBar from '$lib/components/ErrorBar.svelte';
 	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
 	import { getActiveFoeId, getActiveExpeditionId } from '$lib/activeContext.svelte.js';
-	import { triggerAction, appendLog, logs, SESSION_LOG_ID } from '$lib/log.svelte.js';
+	import { triggerAction, appendLog, sessionLog } from '$lib/log.svelte.js';
 	import { parseImportJson, sanitizeLogHtml, ImportError } from '$lib/importSanitizer.js';
 	import { zipSync, strToU8 } from 'fflate';
 	import charactersIconSvg from '$icons/Characters.svg?raw';
@@ -365,7 +365,6 @@
 				roll?: unknown;
 			}) {
 				appendLog(
-					SESSION_LOG_ID,
 					String(entry.title ?? ''),
 					sanitizeLogHtml(String(entry.html ?? '')),
 					undefined,
@@ -846,7 +845,7 @@
 	}
 
 	function logToMarkdown(): string {
-		const entries = logs[SESSION_LOG_ID] ?? [];
+		const entries = sessionLog.entries;
 		if (entries.length === 0) return '# Session Log\n\n_No entries._\n';
 		const stamp = new Date().toLocaleString(undefined, {
 			year: 'numeric',
@@ -912,7 +911,7 @@
 			} else {
 				const payload = {
 					characters: chars.map((c) => ({ name: c.name, data: $state.snapshot(c.data) })),
-					log: [...(logs[SESSION_LOG_ID] ?? [])].reverse(),
+					log: [...sessionLog.entries].reverse(),
 					communities: $state.snapshot(communities),
 					npcs: $state.snapshot(npcs),
 					foes: $state.snapshot(encounters),
@@ -921,7 +920,7 @@
 				};
 				const count =
 					chars.length +
-					(logs[SESSION_LOG_ID]?.length ?? 0) +
+					sessionLog.entries.length +
 					communities.length +
 					npcs.length +
 					encounters.length +
@@ -943,7 +942,7 @@
 			exportJson('all-characters', payload, chars.length, `all-characters-${stamp}.json`);
 		} else if (content === 'log') {
 			if (format === 'json') {
-				const entries = [...(logs[SESSION_LOG_ID] ?? [])].reverse();
+				const entries = [...sessionLog.entries].reverse();
 				exportJson('log', entries, entries.length, `session-log-${stamp}.json`);
 			} else downloadFile(`session-log-${stamp}.md`, logToMarkdown(), 'text/markdown');
 		} else if (content === 'communities') {
