@@ -21,9 +21,9 @@
 	} from '$lib/encounterStore.svelte.js';
 	import { setActiveFoeId } from '$lib/activeContext.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
+	import { rankBadgeStyle } from '$lib/badgeStyles.js';
 	import {
 		findFoe,
-		RANK_COLORS,
 		FOE_RANKS,
 		FOE_QUANTITIES,
 		FOE_NATURE_COLORS,
@@ -200,10 +200,6 @@
 		if (activeEnc) update({ ticks: Math.min(40, activeEnc.ticks + value * progressTickVal) });
 	}
 
-	function rankBadgeStyle(rank: number): string {
-		const rc = RANK_COLORS[rank];
-		return rc ? `background:${rc.bg}22; color:${rc.bg}` : '';
-	}
 	function imageUrl(def: FoeDef): string {
 		return foePortraitUrl(def.name, def.images);
 	}

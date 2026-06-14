@@ -29,7 +29,7 @@
 		FoeEncounter,
 	} from '$lib/types.js';
 	import { EXPEDITION_MARK_TICKS, DENIZEN_CELLS, DELVE_THEMES, DELVE_DOMAINS } from '$lib/types.js';
-	import { RANK_COLORS } from '$lib/foeStore.svelte.js';
+	import { difficultyBadgeStyle } from '$lib/badgeStyles.js';
 	import { isDelveEnabled } from '$lib/expansionStore.svelte.js';
 	import { setActiveExpeditionId } from '$lib/activeContext.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
@@ -79,17 +79,6 @@
 		{ value: 'extreme', label: 'Extreme' },
 		{ value: 'epic', label: 'Epic' },
 	];
-	const DIFFICULTY_RANK: Record<string, number> = {
-		troublesome: 1,
-		dangerous: 2,
-		formidable: 3,
-		extreme: 4,
-		epic: 5,
-	};
-	function diffBadgeStyle(d: string): string {
-		const rc = RANK_COLORS[DIFFICULTY_RANK[d] ?? 2];
-		return rc ? `background: ${rc.bg}22; color: ${rc.bg}` : '';
-	}
 
 	let activeExpId = $state<string | null>(null);
 	let activeTab = $state<ExpTab>('core');
@@ -658,7 +647,7 @@
 								{:else}
 									<span class="ea-badge ea-badge--type">Journey</span>
 								{/if}
-								<span class="ea-badge ea-badge--diff" style={diffBadgeStyle(activeExp.difficulty)}>
+								<span class="ea-badge ea-badge--diff" style={difficultyBadgeStyle(activeExp.difficulty)}>
 									{DIFFICULTIES.find((d) => d.value === activeExp.difficulty)?.label ??
 										activeExp.difficulty}
 								</span>

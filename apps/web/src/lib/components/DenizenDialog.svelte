@@ -16,10 +16,10 @@
 	import { DENIZEN_CELLS } from '$lib/types.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
+	import { rankBadgeStyle } from '$lib/badgeStyles.js';
 	import {
 		loadFoes,
 		getFoes,
-		RANK_COLORS,
 		FOE_RANKS,
 		FOE_QUANTITIES,
 		FOE_NATURE_COLORS,
@@ -129,14 +129,6 @@
 		onSelect(rolledFoe, qty, er);
 	}
 
-	// ---------------------------------------------------------------------------
-	// Helpers
-	// ---------------------------------------------------------------------------
-	function rankBadgeStyle(rank: number): string {
-		const rc = RANK_COLORS[rank];
-		if (!rc) return '';
-		return `background:${rc.bg}22; color:${rc.bg}`;
-	}
 </script>
 
 <dialog bind:this={dialogEl} class="denizen-dialog" aria-label="Denizen Table">
