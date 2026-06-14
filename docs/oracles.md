@@ -267,7 +267,7 @@ OraclesDialog
           │  Roll button:
           │    1. Call rollOracle(key) → build result HTML
           │    2. animateDice([d100])  → 3D dice animation (black + white d10s)
-          │    3. appendLog(SESSION_LOG_ID, title, html) → session log entry
+          │    3. appendLog(title, html) → session log entry
           │    4. Close both dialogs
 ```
 
@@ -352,7 +352,7 @@ Oracle rolls follow the same HTML convention as dice rolls:
 <div>Result: <strong>Investigate a Threat</strong></div>
 ```
 
-All entries go to `SESSION_LOG_ID` via `appendLog(SESSION_LOG_ID, title, html)`.
+All entries go to the global session log via `appendLog(title, html)`.
 
 ---
 

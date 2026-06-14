@@ -150,65 +150,60 @@ mechanisms on the foe picker — keep that test passing.
 
 ## Standard dialog title bar style
 
-All draggable dialogs share the same header pattern. Use this as the
-template for any new dialog header:
+All draggable dialogs share the same header (grip ⠿ → title → optional
+close ✕). **Use the `<DialogHeader>` component**
+(`$lib/components/DialogHeader.svelte`) — do not hand-roll the markup/CSS
+again. It is the single source of truth for the pattern; `use:draggable`
+lives inside it.
 
 ```svelte
-<div class="my-header" use:draggable>
-  <span class="drag-grip" aria-hidden="true">⠿</span>
-  <span class="my-title">{headingText('Dialog Title')}</span>
-  <!-- optional close button or back button here -->
-</div>
+<script>
+  import DialogHeader from '$lib/components/DialogHeader.svelte';
+  import { headingText } from '$lib/fontStore.svelte.js';
+</script>
+
+<!-- standard: grip + title + ✕ close -->
+<DialogHeader title={headingText('Dialog Title')} onclose={close} />
+
+<!-- two-view detail: smaller, ellipsized dynamic title (no close) -->
+<DialogHeader title={selectedThing.name} detail />
+
+<!-- match an 8px-radius dialog -->
+<DialogHeader title={headingText('…')} onclose={close} radius="8px 8px 0 0" />
+
+<!-- custom trailing content instead of a close button (e.g. a badge) -->
+<DialogHeader title={selectedMove.name} detail>
+  {#snippet trailing()}
+    <span class="md-category-badge">{selectedMove.category}</span>
+  {/snippet}
+</DialogHeader>
 ```
 
-```css
-.my-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-control);
-  border-radius: 8px 8px 0 0; /* match dialog's border-radius */
-  flex-shrink: 0;
-}
-
-.my-title {
-  font-family: var(--font-display);
-  font-size: calc(0.78rem * var(--font-display-scale));
-  font-weight: var(--font-display-weight);
-  font-variant: var(--font-display-variant);
-  letter-spacing: 0.08em;
-  text-transform: var(--font-display-transform);
-  color: var(--text-accent);
-  flex: 1;
-}
-```
-
-The `.drag-grip` class is global in `app.css` (braille ⠿, `color:
-var(--text-dimmer)`, `opacity: 0.6`). Import the action from
-`$lib/actions/draggable.js`.
-
-**Element order:** gripper → title → close/back button. The title has
-`flex: 1` so it fills available space between the gripper and the button.
+**Props:** `title` (string — apply `headingText()` yourself for static
+labels), `onclose?` (renders the standard ✕; ignored when `trailing` is
+given), `detail?` (smaller ellipsized title for detail views), `radius?`
+(top corners, default `10px 10px 0 0`), `trailing?` (snippet rendered
+after the title). The `.drag-grip` braille glyph is global in `app.css`.
 
 **Two-view dialogs** (list → detail, e.g. OraclesDialog, MovesDialog,
-FoePickerDialog, DenizenDialog) apply `use:draggable` to **both** headers
-so the dialog stays draggable in both views. Place the gripper before the
-Back button in the detail view header.
+DenizenDialog) render one `<DialogHeader>` per view so the dialog stays
+draggable in both.
 
-**Dialogs that are not always inside a `<dialog>` element** (e.g. AssetCard,
-which can also render inline): the `draggable` action is safe to apply
-unconditionally — it does `closest('dialog')` internally and no-ops if not
-inside a dialog.
+**Documented exceptions** (do NOT route through `<DialogHeader>`):
 
-### Checklist when adding a new draggable dialog header
+- **ConfirmDialog** — uses a bespoke centered-`transform` drag
+  (`cm-drag-handle` + `onmousedown` math), not the `draggable` action.
+- **FoePickerDialog** confirm view (`fd-back-bar`) — nature-coloured band.
+- **AssetCard** — inline-capable host, not a plain dialog header.
 
-- [ ] `use:draggable` on the header element (not the dialog itself).
-- [ ] `<span class="drag-grip" aria-hidden="true">⠿</span>` as the first child.
-- [ ] Title uses `calc(0.78rem * var(--font-display-scale))` and `flex: 1`.
-- [ ] Background is `var(--bg-control)` with `border-bottom: 1px solid var(--border)`.
-- [ ] Both views get `use:draggable` if the dialog has two views.
+### Checklist when adding a new dialog header
+
+- [ ] Use `<DialogHeader title={…} onclose={close} />` — don't reimplement
+      the grip/title/close markup or CSS.
+- [ ] Apply `headingText()` to static title labels yourself.
+- [ ] Pass `radius="8px 8px 0 0"` if the dialog's `border-radius` is 8px.
+- [ ] One `<DialogHeader>` per view in two-view dialogs; use `detail` on
+      the detail view.
 
 ## Tooltips — use `use:tooltip`, not the native `title=` attribute
 
