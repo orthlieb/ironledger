@@ -126,6 +126,57 @@ export async function seedCharacter(name = 'Test Character', token?: string): Pr
 	if (!res.ok) throw new Error(`POST /characters failed: ${res.status} ${await res.text()}`);
 }
 
+/**
+ * Seed one community via the session-collections PATCH endpoint (passthrough
+ * array). Returns the created id. Use after resetCommunities() so the
+ * Connections rail has a community to filter on.
+ */
+export async function seedCommunity(name = 'Seed Community', token?: string): Promise<string> {
+	const tok = token ?? (await getTestToken());
+	const id = crypto.randomUUID();
+	const community = {
+		id,
+		name,
+		region: '',
+		location: '',
+		locationDescription: '',
+		trouble: '',
+		notes: '',
+		createdAt: Date.now(),
+	};
+	const res = await fetch(`${API}/session/communities`, {
+		method: 'PATCH',
+		headers: json(tok),
+		body: JSON.stringify({ communities: [community] }),
+	});
+	if (!res.ok) throw new Error(`seed community failed: ${res.status} ${await res.text()}`);
+	return id;
+}
+
+/** Seed one NPC (see seedCommunity). Returns the created id. */
+export async function seedNpc(name = 'Seed NPC', token?: string): Promise<string> {
+	const tok = token ?? (await getTestToken());
+	const id = crypto.randomUUID();
+	const npc = {
+		id,
+		name,
+		role: '',
+		goal: '',
+		descriptor: '',
+		relationship: 'neutral',
+		location: '',
+		notes: '',
+		createdAt: Date.now(),
+	};
+	const res = await fetch(`${API}/session/npcs`, {
+		method: 'PATCH',
+		headers: json(tok),
+		body: JSON.stringify({ npcs: [npc] }),
+	});
+	if (!res.ok) throw new Error(`seed NPC failed: ${res.status} ${await res.text()}`);
+	return id;
+}
+
 // ── Full reset ────────────────────────────────────────────────────────────────
 
 /**
