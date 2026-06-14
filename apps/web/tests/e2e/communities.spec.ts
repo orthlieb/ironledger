@@ -82,7 +82,7 @@ test.describe('Communities area (v2)', () => {
 		await page.keyboard.press('Escape');
 	});
 
-	test('can add a community via Generate Randomly', async ({ page }) => {
+	test('can add a community via Random', async ({ page }) => {
 		const before = await page.locator(CM_ROW).count();
 		await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click();
 		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 15_000 });
@@ -90,7 +90,7 @@ test.describe('Communities area (v2)', () => {
 		await expect(page.locator(CM_ROW)).not.toHaveCount(before, { timeout: 8_000 });
 	});
 
-	test('can add a community via Create Manually', async ({ page }) => {
+	test('can add a community via Create', async ({ page }) => {
 		const before = await page.locator(CM_ROW).count();
 		await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click();
 		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 15_000 });
@@ -139,7 +139,7 @@ test.describe('Communities area (v2)', () => {
 		await page.keyboard.press('Escape');
 	});
 
-	test('can add an NPC via Generate Randomly', async ({ page }) => {
+	test('can add an NPC via Random', async ({ page }) => {
 		const before = await page.locator(CM_ROW).count();
 		await page.locator(`${CM_HEADER} button:has-text("+ NPC")`).click();
 		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 15_000 });
@@ -147,7 +147,7 @@ test.describe('Communities area (v2)', () => {
 		await expect(page.locator(CM_ROW)).not.toHaveCount(before, { timeout: 8_000 });
 	});
 
-	test('can add an NPC via Create Manually', async ({ page }) => {
+	test('can add an NPC via Create', async ({ page }) => {
 		const before = await page.locator(CM_ROW).count();
 		await page.locator(`${CM_HEADER} button:has-text("+ NPC")`).click();
 		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 15_000 });
