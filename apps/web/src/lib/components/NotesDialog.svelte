@@ -8,7 +8,7 @@
 	 */
 
 	import { appendLog } from '$lib/log.svelte.js';
-	import { draggable } from '$lib/actions/draggable.js';
+	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import { renderNote } from '$lib/markdown.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
 
@@ -56,11 +56,7 @@
 
 <dialog bind:this={dialogEl} class="notes-dialog" oncancel={close}>
 	<!-- Header -->
-	<div class="nd-header" use:draggable>
-		<span class="drag-grip" aria-hidden="true">⠿</span>
-		<span class="nd-title">{headingText('Session Note')}</span>
-		<button class="nd-close" onclick={close} aria-label="Close">✕</button>
-	</div>
+	<DialogHeader title={headingText('Session Note')} onclose={close} />
 
 	<!-- Body -->
 	<div class="nd-body">
@@ -110,41 +106,6 @@
 	}
 
 	/* ── Header ─────────────────────────────────────────────────────────── */
-	.nd-header {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 10px 14px;
-		border-bottom: 1px solid var(--border);
-		background: var(--bg-control);
-		border-radius: 10px 10px 0 0;
-		flex-shrink: 0;
-	}
-	.nd-title {
-		font-family: var(--font-display);
-		font-size: calc(0.78rem * var(--font-display-scale));
-		font-weight: var(--font-display-weight);
-		font-variant: var(--font-display-variant);
-		letter-spacing: 0.08em;
-		text-transform: var(--font-display-transform);
-		color: var(--text-accent);
-		flex: 1;
-	}
-	.nd-close {
-		background: transparent;
-		border: none;
-		color: var(--text-dimmer);
-		cursor: pointer;
-		font-size: 0.9rem;
-		padding: 2px 5px;
-		border-radius: 3px;
-		line-height: 1;
-		font-family: inherit;
-		flex-shrink: 0;
-	}
-	.nd-close:hover {
-		color: var(--text);
-	}
 
 	/* ── Body ───────────────────────────────────────────────────────────── */
 	.nd-body {

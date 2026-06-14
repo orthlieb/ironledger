@@ -28,7 +28,7 @@
 
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
-	import { draggable } from '$lib/actions/draggable.js';
+	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import { tooltip } from '$lib/actions/tooltip.js';
 
 	// ---------------------------------------------------------------------------
@@ -177,11 +177,7 @@
 		<!-- ── Picker view ────────────────────────────────────────────────────── -->
 
 		<!-- Header -->
-		<div class="od-header" use:draggable>
-			<span class="drag-grip" aria-hidden="true">⠿</span>
-			<span class="od-title">{headingText('Oracles')}</span>
-			<button class="od-close" onclick={close} aria-label="Close">✕</button>
-		</div>
+		<DialogHeader title={headingText('Oracles')} onclose={close} />
 
 		<!-- Controls -->
 		<div class="od-controls">
@@ -269,10 +265,7 @@
 		<!-- ── Detail view ───────────────────────────────────────────────────── -->
 
 		<!-- Header -->
-		<div class="od-header od-header--detail" use:draggable>
-			<span class="drag-grip" aria-hidden="true">⠿</span>
-			<span class="od-title od-title--detail">{selectedOracle.title}</span>
-		</div>
+		<DialogHeader title={selectedOracle.title} detail />
 
 		<!-- Detail body -->
 		<div class="od-body od-body--detail">
@@ -369,51 +362,6 @@
 	}
 
 	/* ── Header ─────────────────────────────────────────────────────────── */
-	.od-header {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 10px 14px;
-		border-bottom: 1px solid var(--border);
-		background: var(--bg-control);
-		border-radius: 10px 10px 0 0;
-		flex-shrink: 0;
-	}
-	.od-header--detail {
-		flex-wrap: nowrap;
-	}
-	.od-title {
-		font-family: var(--font-display);
-		font-size: calc(0.78rem * var(--font-display-scale));
-		font-weight: var(--font-display-weight);
-		font-variant: var(--font-display-variant);
-		letter-spacing: 0.08em;
-		text-transform: var(--font-display-transform);
-		color: var(--text-accent);
-		flex: 1;
-	}
-	.od-title--detail {
-		font-size: 0.72rem;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-	.od-close {
-		background: transparent;
-		border: none;
-		color: var(--text-dimmer);
-		cursor: pointer;
-		font-size: 0.9rem;
-		padding: 2px 5px;
-		border-radius: 3px;
-		line-height: 1;
-		font-family: inherit;
-		flex-shrink: 0;
-	}
-	.od-close:hover {
-		color: var(--text);
-	}
-
 	/* ── Controls (search + group tags) ─────────────────────────────────── */
 	.od-controls {
 		padding: 8px 14px 6px;

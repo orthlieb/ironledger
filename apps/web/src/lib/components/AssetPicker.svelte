@@ -13,7 +13,7 @@
 	import { getVisibleAssets, isAssetsLoading, findAsset } from '$lib/assetStore.svelte.js';
 	import { firstPreconditionFailure, type Precondition } from '$lib/preconditions.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
-	import { draggable } from '$lib/actions/draggable.js';
+	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { assetIcon } from '$lib/iconRegistry.js';
 
@@ -135,11 +135,7 @@
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <dialog bind:this={dialogEl} class="picker-dialog" oncancel={onClose}>
 	<!-- Header — mirrors OraclesDialog .od-header (draggable, with gripper) -->
-	<div class="picker-header" use:draggable>
-		<span class="drag-grip" aria-hidden="true">⠿</span>
-		<span class="picker-title">{headingText('Choose an Asset')}</span>
-		<button class="close-btn" onclick={onClose} aria-label="Close picker">✕</button>
-	</div>
+	<DialogHeader title={headingText('Choose an Asset')} onclose={onClose} />
 
 	<!-- Search row + filter toggle -->
 	<div class="picker-controls">
@@ -273,44 +269,6 @@
 	}
 
 	/* ---- Header — mirrors OraclesDialog .od-header style ---- */
-	.picker-header {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 10px 14px;
-		border-bottom: 1px solid var(--border);
-		background: var(--bg-control);
-		border-radius: 10px 10px 0 0;
-		flex-shrink: 0;
-	}
-
-	.picker-title {
-		font-family: var(--font-display);
-		font-size: calc(0.78rem * var(--font-display-scale));
-		font-weight: var(--font-display-weight);
-		font-variant: var(--font-display-variant);
-		letter-spacing: 0.08em;
-		text-transform: var(--font-display-transform);
-		color: var(--text-accent);
-		flex: 1;
-	}
-
-	.close-btn {
-		background: transparent;
-		border: none;
-		color: var(--text-dimmer);
-		cursor: pointer;
-		font-size: 0.9rem;
-		line-height: 1;
-		padding: 2px 5px;
-		border-radius: 3px;
-		font-family: var(--font-ui);
-		transition: color 0.12s;
-	}
-	.close-btn:hover {
-		color: var(--text);
-	}
-
 	/* ---- Controls: category tabs + search — pinned, never scrolls ---- */
 	.picker-controls {
 		display: flex;

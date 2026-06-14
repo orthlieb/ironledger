@@ -15,7 +15,7 @@
 	 *   ref.open()
 	 */
 
-	import { draggable } from '$lib/actions/draggable.js';
+	import DialogHeader from '$lib/components/DialogHeader.svelte';
 
 	const BUG_EMAIL = 'bugs@ironledger.org';
 
@@ -139,11 +139,7 @@
 
 <dialog bind:this={dialogEl} class="bug-dialog" onclose={reset} oncancel={() => dialogEl?.close()}>
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="bg-header" use:draggable>
-		<span class="drag-grip" aria-hidden="true">⠿</span>
-		<span class="bg-title">Report a bug</span>
-		<button class="bg-close" onclick={close} aria-label="Close">&times;</button>
-	</div>
+	<DialogHeader title="Report a bug" onclose={close} />
 
 	<div class="bg-body">
 		<p class="bg-intro">
@@ -244,45 +240,6 @@
 	.bug-dialog::backdrop {
 		background: #00000050;
 		backdrop-filter: blur(1px);
-	}
-
-	.bg-header {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 10px 14px 9px;
-		border-bottom: 1px solid var(--border);
-		background: var(--bg-control);
-		border-radius: 8px 8px 0 0;
-		cursor: grab;
-		user-select: none;
-	}
-	.bg-header:active {
-		cursor: grabbing;
-	}
-	.bg-title {
-		flex: 1;
-		font-family: var(--font-display);
-		font-size: calc(0.78rem * var(--font-display-scale));
-		font-weight: var(--font-display-weight);
-		font-variant: var(--font-display-variant);
-		letter-spacing: 0.08em;
-		text-transform: var(--font-display-transform);
-		color: var(--text-accent);
-	}
-	.bg-close {
-		background: none;
-		border: none;
-		color: var(--text-dimmer);
-		font-size: 1.1rem;
-		line-height: 1;
-		padding: 2px 8px;
-		cursor: pointer;
-		border-radius: 3px;
-	}
-	.bg-close:hover {
-		color: var(--text);
-		background: var(--bg-hover);
 	}
 
 	.bg-body {

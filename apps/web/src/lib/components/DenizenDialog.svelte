@@ -15,7 +15,7 @@
 	import type { Site, FoeDef, FoeQuantity } from '$lib/types.js';
 	import { DENIZEN_CELLS } from '$lib/types.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
-	import { draggable } from '$lib/actions/draggable.js';
+	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import {
 		loadFoes,
 		getFoes,
@@ -142,10 +142,7 @@
 <dialog bind:this={dialogEl} class="denizen-dialog" aria-label="Denizen Table">
 	<!-- ===== TABLE VIEW ===== -->
 	{#if view === 'table'}
-		<div class="dd-header" use:draggable>
-			<span class="drag-grip" aria-hidden="true">⠿</span>
-			<span class="dd-title">{headingText('Denizen Table')}</span>
-		</div>
+		<DialogHeader title={headingText('Denizen Table')} radius="8px 8px 0 0" />
 
 		<div class="dd-table-wrap">
 			<table class="dd-table">
@@ -179,12 +176,10 @@
 	{:else if view === 'result'}
 		{@const qtyDef = FOE_QUANTITIES.find((q) => q.value === quantity)}
 
-		<div class="dd-back-bar" use:draggable>
-			<span class="drag-grip" aria-hidden="true">⠿</span>
-			<span class="dd-title"
-				>{headingText(rolledFoe?.name ?? (rolledName || 'Unknown Denizen'))}</span
-			>
-		</div>
+		<DialogHeader
+			title={headingText(rolledFoe?.name ?? (rolledName || 'Unknown Denizen'))}
+			radius="8px 8px 0 0"
+		/>
 
 		<div class="dd-result-scroll">
 			{#if rolledFoe && rankInfo}
@@ -327,27 +322,6 @@
 	}
 
 	/* ── Shared header / footer ────────────────────────────────────── */
-	.dd-header {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 10px 14px;
-		border-bottom: 1px solid var(--border);
-		background: var(--bg-control);
-		border-radius: 8px 8px 0 0;
-		flex-shrink: 0;
-	}
-
-	.dd-title {
-		font-family: var(--font-display);
-		font-size: calc(0.78rem * var(--font-display-scale));
-		font-weight: var(--font-display-weight);
-		font-variant: var(--font-display-variant);
-		letter-spacing: 0.08em;
-		text-transform: var(--font-display-transform);
-		color: var(--text-accent);
-		flex: 1;
-	}
 
 	.dd-footer {
 		display: flex;
@@ -424,20 +398,6 @@
 	}
 
 	/* ── Result view: back bar ─────────────────────────────────────── */
-	.dd-back-bar {
-		display: flex;
-		align-items: center;
-		gap: 0.6rem;
-		padding: 10px 14px;
-		border-bottom: 1px solid var(--border);
-		background: var(--bg-control);
-		border-radius: 8px 8px 0 0;
-		flex-shrink: 0;
-	}
-	.dd-back-bar .dd-title {
-		flex: 1;
-	}
-
 	/* ── Result scroll area ────────────────────────────────────────── */
 	.dd-result-scroll {
 		flex: 1;
