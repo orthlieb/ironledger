@@ -223,6 +223,11 @@
 		if (activeEntry?.kind !== 'community' || rolling) return;
 		rolling = true;
 		try {
+			// Ensure the oracle catalogue is loaded — a user who jumps straight
+			// into a pre-existing community without opening the OraclesDialog or
+			// the new-community flow won't have it yet, and rollOracle would
+			// silently return value='' (unknown oracle key).
+			await loadOracles();
 			const result = rollOracle('settlementTrouble', getOracles());
 			if (!result.value) return;
 			const tensV = Math.floor((result.roll % 100) / 10) || 10;
