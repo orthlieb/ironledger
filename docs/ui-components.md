@@ -30,6 +30,75 @@ Icon buttons in toolbars use `btn icon-btn` (secondary by default). Add `btn-pri
 
 ---
 
+## Inline Roll / Dice Button
+
+Small square button that sits inline with a single-line input or select and triggers an oracle roll (or any randomiser) for that field. Used wherever a labelled field has a "roll me" affordance — site Theme/Domain/Feature/Danger, community Trouble, future per-field random buttons.
+
+**One spec across the app.** When adding a new inline roller, do not invent a new size, radius, or padding — copy this verbatim. The reference implementation is `.ea-dice-btn` in `ExpeditionsArea.svelte:1401` (Feature/Danger/Theme/Domain rolls); `.cm-dice-btn` in `CommunitiesArea.svelte` (Trouble roll) is the same spec under a different name.
+
+### Canonical CSS
+
+```css
+.<area>-dice-btn {
+    all:             unset;
+    cursor:          pointer;
+    box-sizing:      border-box;
+    width:           22px;
+    height:          22px;
+    display:         inline-flex;
+    align-items:     center;
+    justify-content: center;
+    border:          1px solid var(--border-mid);
+    border-radius:   3px;
+    background:      transparent;
+    color:           var(--text-muted);
+    flex-shrink:     0;
+    transition:      color 0.12s, border-color 0.12s, background 0.12s;
+}
+.<area>-dice-btn:hover:not(:disabled) {
+    color:        var(--text-accent);
+    border-color: var(--text-accent);
+}
+.<area>-dice-btn:disabled {
+    opacity:  0.4;
+    cursor:   not-allowed;
+}
+.<area>-dice-btn :global(svg) {
+    width:          12px;
+    height:         12px;
+    fill:           currentColor;
+    pointer-events: none;
+}
+```
+
+### Why 22×22 / 12 svg
+
+22 px matches the height of the adjacent `.<area>-input` (`padding: 3px 8px` + `font-size: 0.78rem` + 1 px border = ~22 px), so the button and the input read as one control on the row. A 12 px svg inside a 22 px button leaves a 5 px halo on each side — the same ratio as the rest of the icon-button family (`btn icon-btn`).
+
+### Markup template
+
+```svelte
+<button
+    class="<area>-dice-btn"
+    type="button"
+    onclick={rollSomething}
+    disabled={rolling}
+    use:tooltip={'Roll <field name> oracle'}
+    aria-label="Roll <field name> oracle"
+>{@html diceD6Svg}</button>
+```
+
+`type="button"` so it doesn't submit any enclosing form. `disabled={rolling}` prevents double-rolls while the d6 animation is in flight. SVG comes from `$icons/dice-d6-light.svg?raw` — never use a unicode die character.
+
+### Checklist when adding a new inline roller
+
+- [ ] CSS values match the canonical block above byte-for-byte.
+- [ ] `disabled` is bound to the per-component `rolling` flag.
+- [ ] `use:tooltip` and `aria-label` carry the same text — the action ("Roll <thing> oracle"), not just "Roll".
+- [ ] `await loadOracles()` is the first line of the handler so the button works on a pre-existing entity that hasn't triggered another oracle load yet.
+
+---
+
 ## Tooltips
 
 **Always use CSS tooltips via `data-tooltip`. Never use the native `title` attribute** — browser `title` tooltips have unpredictable delays, can't be styled, and don't appear in all environments.
