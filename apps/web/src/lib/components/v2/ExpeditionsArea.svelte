@@ -405,6 +405,11 @@
 		if (!activeSite || !expHasThemeAndDomain || rolling) return;
 		rolling = true;
 		try {
+			// onMount fires loadDelveData() but doesn't await it; if the user
+			// picks theme+domain and clicks Random Feature before the fetch
+			// settles, buildCombinedTable returns [] and rollFromRangeTable
+			// crashes on the empty array. Await before reading.
+			await loadDelveData();
 			const site = activeSite;
 			const table = buildCombinedTable(
 				site.theme as DelveTheme,
@@ -439,6 +444,8 @@
 		if (!activeSite || !expHasThemeAndDomain || rolling) return;
 		rolling = true;
 		try {
+			// Same race as rollFeature — see note there.
+			await loadDelveData();
 			const site = activeSite;
 			const table = buildCombinedTable(
 				site.theme as DelveTheme,

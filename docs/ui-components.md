@@ -95,7 +95,7 @@ Small square button that sits inline with a single-line input or select and trig
 - [ ] CSS values match the canonical block above byte-for-byte.
 - [ ] `disabled` is bound to the per-component `rolling` flag.
 - [ ] `use:tooltip` and `aria-label` carry the same text — the action ("Roll <thing> oracle"), not just "Roll".
-- [ ] `await loadOracles()` is the first line of the handler so the button works on a pre-existing entity that hasn't triggered another oracle load yet.
+- [ ] `await load<Store>()` is the first line of the handler — `loadOracles()` for oracle rolls, `loadDelveData()` for theme/domain combined-table rolls, etc. Without it, a user clicking the button before the catalogue fetch settles hits a silent empty-result return (`rollOracle` for the missing-key case) or a crash (`rollFromRangeTable([])` reading `picked.value` on an empty table).
 
 ---
 
