@@ -1500,33 +1500,41 @@
 		align-items: center;
 	}
 
+	/* Square d6 button sitting next to the trouble input. Sized to match the
+	   ea-dice-btn spec used by ExpeditionsArea's feature/danger rolls so
+	   both areas read the same — 22×22, 12 px svg. */
 	.cm-dice-btn {
+		all: unset;
+		cursor: pointer;
+		box-sizing: border-box;
+		width: 22px;
+		height: 22px;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		width: 26px;
-		height: 26px;
-		padding: 0;
-		background: transparent;
 		border: 1px solid var(--border-mid);
-		border-radius: 4px;
+		border-radius: 3px;
+		background: transparent;
 		color: var(--text-muted);
-		cursor: pointer;
 		flex-shrink: 0;
 		transition:
-			background 0.12s,
 			color 0.12s,
-			border-color 0.12s;
+			border-color 0.12s,
+			background 0.12s;
 	}
-	.cm-dice-btn:hover {
-		background: color-mix(in srgb, var(--text-accent) 12%, transparent);
+	.cm-dice-btn:hover:not(:disabled) {
 		color: var(--text-accent);
 		border-color: var(--text-accent);
 	}
+	.cm-dice-btn:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
 	.cm-dice-btn :global(svg) {
-		width: 16px;
-		height: 16px;
+		width: 12px;
+		height: 12px;
 		fill: currentColor;
+		pointer-events: none;
 	}
 
 	/* Mobile (viewport-based, not container) — collapse the two panes into a
