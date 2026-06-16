@@ -1,7 +1,8 @@
 <script lang="ts">
 	/**
 	 * HamburgerMenu — three-bar dropdown in the title bar.
-	 * Items: About, Settings, Import, Export, Sign Out.
+	 * Items: About, Settings, Import, Export, Report a bug, Admin (admins
+	 * only), Sign Out.
 	 *
 	 * Export opens a dialog with content/format selection.
 	 * Export/Import actions are dispatched as CustomEvents on `document`
@@ -9,9 +10,13 @@
 	 */
 
 	let {
+		isAdmin = false,
 		onSettings,
 		onReportBug,
 	}: {
+		/** Show the "Admin…" link. Wired from `data.user.role === 'admin'`
+		 *  in the layout — defaults to false so non-admin renders are clean. */
+		isAdmin?: boolean;
 		onSettings?: () => void;
 		onReportBug?: () => void;
 	} = $props();
@@ -124,6 +129,11 @@
 					close();
 				}}>Report a bug…</button
 			>
+
+			{#if isAdmin}
+				<div class="menu-divider"></div>
+				<a href="/admin" class="menu-item menu-item--link" onclick={close}>Admin…</a>
+			{/if}
 
 			<div class="menu-divider"></div>
 

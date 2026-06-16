@@ -234,6 +234,7 @@
 					</button>
 				</div>
 				<HamburgerMenu
+					isAdmin={data.user?.role === 'admin'}
 					onSettings={() => settingsDialog?.open()}
 					onReportBug={() => bugReportDialog?.open()}
 				/>
