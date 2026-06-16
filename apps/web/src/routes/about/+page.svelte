@@ -7,6 +7,7 @@
 	import noteSvg from '$icons/note-sticky-solid.svg?raw';
 	import villageSvg from '$icons/village.svg?raw';
 	import mobileSvg from '$icons/mobile-screen-solid.svg?raw';
+	import { headingText } from '$lib/fontStore.svelte.js';
 
 	let { data }: { data: { user?: { name?: string } } } = $props();
 
@@ -74,7 +75,7 @@
 <section class="hero">
 	<div class="hero-text">
 		<p class="hero-eyebrow">Forged in JavaScript. Tempered by coffee.</p>
-		<h1 class="hero-title">Iron Ledger</h1>
+		<h1 class="hero-title">{headingText('Iron Ledger')}</h1>
 		<p class="hero-subtitle">
 			The Ironlands are brutal, the dice are fickle, and paper character sheets have a way of
 			disappearing right before a climactic vow. Iron Ledger remembers so you don't have to.
@@ -100,7 +101,7 @@
 <!-- ── What is Iron Ledger ────────────────────────────────────────── -->
 <section class="about-section">
 	<div class="about-section-inner">
-		<h2 class="section-heading">What is Iron Ledger?</h2>
+		<h2 class="section-heading">{headingText('What is Iron Ledger?')}</h2>
 		<div class="about-layout">
 			<div class="about-prose">
 				<p>
@@ -135,14 +136,14 @@
 <!-- ── Features ──────────────────────────────────────────────────── -->
 <section class="features-section">
 	<div class="features-section-inner">
-		<h2 class="section-heading">Everything You Need at the Table (Except Luck)</h2>
+		<h2 class="section-heading">{headingText('Everything You Need at the Table (Except Luck)')}</h2>
 		<div class="feature-grid">
 			{#each features as feat}
 				<div class="feature-card" style="--feat-color: {feat.color}">
 					<div class="feature-icon">
 						{@html feat.icon}
 					</div>
-					<h3 class="feature-title">{feat.title}</h3>
+					<h3 class="feature-title">{headingText(feat.title)}</h3>
 					<p class="feature-body">{feat.body}</p>
 				</div>
 			{/each}
@@ -153,7 +154,7 @@
 <!-- ── App preview ────────────────────────────────────────────────── -->
 <section class="preview-section">
 	<div class="preview-section-inner">
-		<h2 class="section-heading">The Saga at a Glance</h2>
+		<h2 class="section-heading">{headingText('The Saga at a Glance')}</h2>
 		<p class="preview-caption">
 			Everything on one screen. Characters, foes, expeditions, connections, and your session log —
 			always visible, never buried in a menu.
@@ -172,7 +173,7 @@
 <!-- ── Systems ────────────────────────────────────────────────────── -->
 <section class="systems-section">
 	<div class="systems-section-inner">
-		<h2 class="section-heading">Built for These Systems</h2>
+		<h2 class="section-heading">{headingText('Built for These Systems')}</h2>
 		<div class="systems-list">
 			<div class="system-badge">
 				<span class="system-dot" style="background: var(--text-accent)"></span>
