@@ -128,7 +128,6 @@
 		dialogEl?.close();
 		onSelect(rolledFoe, qty, er);
 	}
-
 </script>
 
 <dialog bind:this={dialogEl} class="denizen-dialog" aria-label="Denizen Table">

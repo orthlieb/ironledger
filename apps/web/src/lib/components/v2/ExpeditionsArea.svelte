@@ -647,7 +647,10 @@
 								{:else}
 									<span class="ea-badge ea-badge--type">Journey</span>
 								{/if}
-								<span class="ea-badge ea-badge--diff" style={difficultyBadgeStyle(activeExp.difficulty)}>
+								<span
+									class="ea-badge ea-badge--diff"
+									style={difficultyBadgeStyle(activeExp.difficulty)}
+								>
 									{DIFFICULTIES.find((d) => d.value === activeExp.difficulty)?.label ??
 										activeExp.difficulty}
 								</span>
