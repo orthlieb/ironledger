@@ -25,9 +25,9 @@
 	import type { Community, Npc, Expedition } from '$lib/types.js';
 	import { loadCharacters, getCharacters, createCharacter } from '$lib/characterStore.svelte.js';
 	import { loadEncounters, getEncounters } from '$lib/encounterStore.svelte.js';
-	import { loadExpeditions, getExpeditions, addExpedition } from '$lib/expeditionStore.svelte.js';
-	import { loadCommunities, getCommunities, addCommunity } from '$lib/communityStore.svelte.js';
-	import { loadNpcs, getNpcs, addNpc } from '$lib/npcStore.svelte.js';
+	import { loadExpeditions, getExpeditions, addExpedition, updateExpedition } from '$lib/expeditionStore.svelte.js';
+	import { loadCommunities, getCommunities, addCommunity, updateCommunity } from '$lib/communityStore.svelte.js';
+	import { loadNpcs, getNpcs, addNpc, updateNpc } from '$lib/npcStore.svelte.js';
 	import {
 		loadAssets,
 		getAssets,
@@ -42,6 +42,11 @@
 	import ExpeditionsArea from '$lib/components/v2/ExpeditionsArea.svelte';
 	import CommunitiesArea from '$lib/components/v2/CommunitiesArea.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import ImportCollisionDialog from '$lib/components/ImportCollisionDialog.svelte';
+	import type {
+		CollisionCounts,
+		CollisionStrategy,
+	} from '$lib/components/importCollision.js';
 	import ErrorBar from '$lib/components/ErrorBar.svelte';
 	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
 	import { getActiveFoeId, getActiveExpeditionId } from '$lib/activeContext.svelte.js';
@@ -115,6 +120,9 @@
 	/** Import UI state. */
 	let importInput = $state<HTMLInputElement | null>(null);
 	let importConfirmRef = $state<{ open(): void; close(): void } | null>(null);
+	let importCollisionRef = $state<{
+		open(counts: CollisionCounts): Promise<CollisionStrategy>;
+	} | null>(null);
 	let importError = $state('');
 
 	/** Track mobile breakpoint reactively. */
@@ -373,6 +381,87 @@
 				);
 			}
 
+			// ── ID-collision handling ─────────────────────────────────────
+			// Same-session re-imports of communities / NPCs / expeditions
+			// produced duplicate-id rows whose edits silently ghost-synced
+			// (updateXxx() maps by id and hits every match). Scan the
+			// incoming payload up front, and if anything collides, prompt
+			// the user to pick a single strategy for the whole file:
+			//   'new'     — regenerate ids on the incoming copies, append
+			//   'replace' — overwrite the existing row via updateXxx()
+			//   'skip'    — drop the colliding incoming row entirely
+			//   'cancel'  — abort the whole import
+			// Non-conflicting items always import normally.
+			//
+			// Character collisions intentionally aren't surfaced here:
+			// createCharacter mints a fresh server-assigned id on every
+			// call, so re-imports duplicate by name (annoying but
+			// recoverable) without producing the ghost-sync trap. Logs
+			// always mint fresh entry ids too.
+			const communityIds = new Set(communities.map((c) => c.id));
+			const npcIds = new Set(npcs.map((n) => n.id));
+			const expeditionIds = new Set(expeditions.map((e) => e.id));
+
+			let incomingCommunities: Community[] = [];
+			let incomingNpcs: Npc[] = [];
+			let incomingExpeditions: Expedition[] = [];
+
+			if (parsed.manifest && parsed.data) {
+				const m = parsed.manifest as { type: string };
+				if (m.type === 'communities') {
+					const d = parsed.data as { communities?: Community[]; npcs?: Npc[] };
+					incomingCommunities = d.communities ?? [];
+					incomingNpcs = d.npcs ?? [];
+				} else if (m.type === 'expeditions') {
+					incomingExpeditions = (parsed.data as Expedition[]) ?? [];
+				} else if (m.type === 'everything') {
+					const d = parsed.data as {
+						communities?: Community[];
+						npcs?: Npc[];
+						expeditions?: Expedition[];
+					};
+					incomingCommunities = d.communities ?? [];
+					incomingNpcs = d.npcs ?? [];
+					incomingExpeditions = d.expeditions ?? [];
+				}
+			}
+
+			const collisions = {
+				communities: incomingCommunities.filter((c) => communityIds.has(c.id)).length,
+				npcs: incomingNpcs.filter((n) => npcIds.has(n.id)).length,
+				expeditions: incomingExpeditions.filter((e) => expeditionIds.has(e.id)).length,
+			};
+			const totalCollisions =
+				collisions.communities + collisions.npcs + collisions.expeditions;
+
+			let strategy: CollisionStrategy = 'new';
+			if (totalCollisions > 0) {
+				strategy = (await importCollisionRef?.open(collisions)) ?? 'cancel';
+				if (strategy === 'cancel') {
+					if (importInput) importInput.value = '';
+					return;
+				}
+			}
+
+			/** Apply the chosen collision strategy to one row. Returns true
+			 *  if the caller should still call addXxx(row); false if the
+			 *  collision was handled internally (skip / replace).  */
+			async function applyStrategy<T extends { id: string }>(
+				row: T,
+				existingIds: Set<string>,
+				replace: (updated: T) => Promise<void>,
+			): Promise<boolean> {
+				if (!existingIds.has(row.id)) return true; // no collision — caller appends
+				if (strategy === 'skip') return false;
+				if (strategy === 'new') {
+					row.id = crypto.randomUUID();
+					return true; // caller appends with the new id
+				}
+				// 'replace' — overwrite in place; caller does NOT also append
+				await replace(row);
+				return false;
+			}
+
 			if (parsed.manifest && parsed.data) {
 				const m = parsed.manifest as { type: string };
 				if (m.type === 'character') {
@@ -390,28 +479,35 @@
 					const entries = parsed.data as Array<Record<string, unknown>>;
 					for (const entry of entries) appendSafeLog(entry);
 				} else if (m.type === 'communities') {
-					const d = parsed.data as { communities?: Community[]; npcs?: Npc[] };
-					for (const c of d.communities ?? []) await addCommunity(c);
-					for (const n of d.npcs ?? []) await addNpc(n);
+					for (const c of incomingCommunities) {
+						if (await applyStrategy(c, communityIds, updateCommunity)) await addCommunity(c);
+					}
+					for (const n of incomingNpcs) {
+						if (await applyStrategy(n, npcIds, updateNpc)) await addNpc(n);
+					}
 				} else if (m.type === 'expeditions') {
-					const entries = parsed.data as Expedition[];
-					for (const exp of entries) await addExpedition(exp);
+					for (const exp of incomingExpeditions) {
+						if (await applyStrategy(exp, expeditionIds, updateExpedition)) await addExpedition(exp);
+					}
 				} else if (m.type === 'everything') {
 					const d = parsed.data as {
 						characters?: Array<{ name?: string; data?: Record<string, unknown> }>;
 						log?: Array<Record<string, unknown>>;
-						communities?: Community[];
-						npcs?: Npc[];
-						expeditions?: Expedition[];
 					};
 					for (const entry of d.characters ?? []) {
 						reconcileImportedChar(entry);
 						await createCharacter(entry.name ?? 'Imported Character', entry.data ?? {});
 					}
 					for (const entry of d.log ?? []) appendSafeLog(entry);
-					for (const c of d.communities ?? []) await addCommunity(c);
-					for (const n of d.npcs ?? []) await addNpc(n);
-					for (const exp of d.expeditions ?? []) await addExpedition(exp);
+					for (const c of incomingCommunities) {
+						if (await applyStrategy(c, communityIds, updateCommunity)) await addCommunity(c);
+					}
+					for (const n of incomingNpcs) {
+						if (await applyStrategy(n, npcIds, updateNpc)) await addNpc(n);
+					}
+					for (const exp of incomingExpeditions) {
+						if (await applyStrategy(exp, expeditionIds, updateExpedition)) await addExpedition(exp);
+					}
 				}
 			} else {
 				const entry = reconcileImportedChar(
@@ -1010,6 +1106,11 @@
 		{#if importError}<p style="margin:0; color:var(--color-danger);">{importError}</p>{/if}
 	</div>
 </ConfirmDialog>
+
+<!-- ID-collision prompt — surfaces only when an import's NPC/community/expedition
+     ids clash with the active session. onImportFile awaits its open() promise
+     before routing the import payload through the per-type appenders. -->
+<ImportCollisionDialog bind:this={importCollisionRef} />
 
 <div
 	bind:this={shellEl}
