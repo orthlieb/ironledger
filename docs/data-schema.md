@@ -1,6 +1,8 @@
-# Iron Ledger Data Format Reference
+# Iron Ledger Data Schema Reference
 
-This document describes the JSON data formats used by Iron Ledger for Ironsworn and Delve content. All data lives under `data/` and is injected into `ironledger.html` at build time.
+This document describes the JSON data formats used by Iron Ledger for Ironsworn and Delve **catalogue/content** data (moves, assets, oracles, foes, delve tables). All data lives under `data/` and is injected into `ironledger.html` at build time.
+
+> For the **user-data export/import** JSON (characters, expeditions, connections, the session log, and the "everything" bundle), see [import-schema.md](import-schema.md).
 
 For Yrt homebrew extensions (mana, Touched assets, cantrips, Yrt-specific oracles and foes), see **[yrt/data-format-yrt.md](yrt/data-format-yrt.md)**.
 

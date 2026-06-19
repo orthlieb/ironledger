@@ -155,4 +155,4 @@ These roll types exist in the old app and could be added:
 - **Oracle Roll** — d100 lookup against named range tables
 - **Challenge Roll** — 1d6 + adds vs 2d10 (no stat, used for standalone challenges)
 
-See `docs/data-format.md` for information on vow progress tracks.
+See `docs/data-schema.md` for information on vow progress tracks.

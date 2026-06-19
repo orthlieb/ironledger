@@ -225,26 +225,27 @@ See [docs/deployment.md](docs/deployment.md) for complete IONOS VPS deployment i
 
 Feature docs are in the `docs/` directory:
 
-| Doc                                                         | Description                                                  |
-| ----------------------------------------------------------- | ------------------------------------------------------------ |
-| [admin.md](docs/admin.md)                                   | Admin panel — users, logs, maintenance, registration lock    |
-| [architecture_decisions.md](docs/architecture_decisions.md) | Architecture and design decisions                            |
-| [character-sheet.md](docs/character-sheet.md)               | Character sheet component                                    |
-| [communities.md](docs/communities.md)                       | Communities & NPCs — data model, oracle generation           |
-| [data-format.md](docs/data-format.md)                       | Catalogue data format spec (moves, assets, oracles, foes)    |
-| [deployment.md](docs/deployment.md)                         | IONOS VPS deployment guide                                   |
-| [dice-rolling.md](docs/dice-rolling.md)                     | Dice rolling implementation                                  |
-| [expansion-toggles.md](docs/expansion-toggles.md)           | Delve / YRT expansion toggle system                          |
-| [expeditions.md](docs/expeditions.md)                       | Expeditions system                                           |
-| [foes.md](docs/foes.md)                                     | Foes and encounters                                          |
-| [global-context-bar.md](docs/global-context-bar.md)         | GlobalContextBar tile layout                                 |
-| [log.md](docs/log.md)                                       | Session log with interactive links                           |
-| [mobile.md](docs/mobile.md)                                 | Mobile layout, swipe gestures, and viewport behaviour        |
-| [moves.md](docs/moves.md)                                   | Moves system and dice rolling                                |
-| [notes.md](docs/notes.md)                                   | Notes dialog                                                 |
-| [oracles.md](docs/oracles.md)                               | Oracle tables                                                |
-| [ui-components.md](docs/ui-components.md)                   | Shared UI design specs (cards, pills, tooltips, side labels) |
-| [yrt/data-format-yrt.md](docs/yrt/data-format-yrt.md)       | YRT homebrew data format extensions                          |
+| Doc                                                         | Description                                                              |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------ |
+| [admin.md](docs/admin.md)                                   | Admin panel — users, logs, maintenance, registration lock                |
+| [architecture_decisions.md](docs/architecture_decisions.md) | Architecture and design decisions                                        |
+| [character-sheet.md](docs/character-sheet.md)               | Character sheet component                                                |
+| [communities.md](docs/communities.md)                       | Communities & NPCs — data model, oracle generation                       |
+| [data-schema.md](docs/data-schema.md)                       | Catalogue data format spec (moves, assets, oracles, foes)                |
+| [deployment.md](docs/deployment.md)                         | IONOS VPS deployment guide                                               |
+| [dice-rolling.md](docs/dice-rolling.md)                     | Dice rolling implementation                                              |
+| [expansion-toggles.md](docs/expansion-toggles.md)           | Delve / YRT expansion toggle system                                      |
+| [expeditions.md](docs/expeditions.md)                       | Expeditions system                                                       |
+| [foes.md](docs/foes.md)                                     | Foes and encounters                                                      |
+| [global-context-bar.md](docs/global-context-bar.md)         | GlobalContextBar tile layout                                             |
+| [import-schema.md](docs/import-schema.md)                   | User-data export/import JSON (characters, expeditions, connections, log) |
+| [log.md](docs/log.md)                                       | Session log with interactive links                                       |
+| [mobile.md](docs/mobile.md)                                 | Mobile layout, swipe gestures, and viewport behaviour                    |
+| [moves.md](docs/moves.md)                                   | Moves system and dice rolling                                            |
+| [notes.md](docs/notes.md)                                   | Notes dialog                                                             |
+| [oracles.md](docs/oracles.md)                               | Oracle tables                                                            |
+| [ui-components.md](docs/ui-components.md)                   | Shared UI design specs (cards, pills, tooltips, side labels)             |
+| [yrt/data-format-yrt.md](docs/yrt/data-format-yrt.md)       | YRT homebrew data format extensions                                      |
 
 ## Credits
 
