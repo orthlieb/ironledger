@@ -214,16 +214,20 @@ html[data-theme='light'] {
    behind the dialog.
 
    Height stack:
-     100vh                  → fallback for very old browsers
-     100dvh                 → modern dynamic-viewport units
-     -webkit-fill-available → iOS Safari PWA, which sometimes resolves
-                              100dvh to the area below a *phantom* toolbar
-                              even in standalone mode. -webkit-fill-available
-                              gives us the true visible viewport. */
+     100vh  → fallback for very old browsers
+     100dvh → modern dynamic-viewport units (wins on every supported browser)
+
+   `-webkit-fill-available` is intentionally NOT in this stack. On iOS Safari
+   ≥15.4 (when 100dvh shipped) the fill-available resolves SHORTER than the
+   visual viewport in standalone PWA mode — specifically it excludes the
+   home-indicator safe-area-inset-bottom zone. With it as the last (winning)
+   declaration, body height = ~viewport − 34px, leaving an unstyled strip of
+   page background below body on every route. We rely on 100dvh and let the
+   home indicator overlay the bottom of content (the established design
+   rule for log entries and home-shell). */
 html {
 	height: 100vh;
 	height: 100dvh;
-	height: -webkit-fill-available;
 	overflow: hidden;
 }
 
@@ -235,7 +239,6 @@ body {
 	color: var(--text);
 	height: 100vh;
 	height: 100dvh;
-	height: -webkit-fill-available;
 	overflow: hidden;
 	display: flex;
 	flex-direction: column;
