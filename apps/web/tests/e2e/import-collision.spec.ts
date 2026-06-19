@@ -101,13 +101,11 @@ async function gotoHome(page: Page) {
  *  Import → confirm-modal flow because that's covered by import-export.spec.ts;
  *  here we want to exercise the collision dialog itself. */
 async function importPayload(page: Page, payload: unknown) {
-	await page
-		.locator('input[type="file"][accept=".json,application/json"]')
-		.setInputFiles({
-			name: 'test.json',
-			mimeType: 'application/json',
-			buffer: Buffer.from(JSON.stringify(payload)),
-		});
+	await page.locator('input[type="file"][accept=".json,application/json"]').setInputFiles({
+		name: 'test.json',
+		mimeType: 'application/json',
+		buffer: Buffer.from(JSON.stringify(payload)),
+	});
 }
 
 /** Read current Communities / NPCs / Expeditions through the SvelteKit BFF. */
@@ -162,12 +160,12 @@ test.describe('Import collision dialog', () => {
 			envelope('everything', {
 				characters: [],
 				log: [],
-				communities: [
-					makeCommunity('c-1', 'Skara Brae'),
-					makeCommunity('c-2', 'Westcliff'),
-				],
+				communities: [makeCommunity('c-1', 'Skara Brae'), makeCommunity('c-2', 'Westcliff')],
 				npcs: [makeNpc('n-1', 'Old Vala'), makeNpc('n-2', 'Brokk the Smith')],
-				expeditions: [makeJourney('j-1', 'Road to the Black Spire'), makeSite('s-1', 'The Black Spire')],
+				expeditions: [
+					makeJourney('j-1', 'Road to the Black Spire'),
+					makeSite('s-1', 'The Black Spire'),
+				],
 				foes: [],
 				session: {},
 			}),
@@ -181,12 +179,12 @@ test.describe('Import collision dialog', () => {
 			envelope('everything', {
 				characters: [],
 				log: [],
-				communities: [
-					makeCommunity('c-1', 'Skara Brae'),
-					makeCommunity('c-2', 'Westcliff'),
-				],
+				communities: [makeCommunity('c-1', 'Skara Brae'), makeCommunity('c-2', 'Westcliff')],
 				npcs: [makeNpc('n-1', 'Old Vala'), makeNpc('n-2', 'Brokk the Smith')],
-				expeditions: [makeJourney('j-1', 'Road to the Black Spire'), makeSite('s-1', 'The Black Spire')],
+				expeditions: [
+					makeJourney('j-1', 'Road to the Black Spire'),
+					makeSite('s-1', 'The Black Spire'),
+				],
 				foes: [],
 				session: {},
 			}),
@@ -201,12 +199,15 @@ test.describe('Import collision dialog', () => {
 			'NPCs',
 			'Expeditions',
 		]);
-		await expect(dialog.locator('.icd-group').filter({ hasText: 'Communities' }).locator('.icd-name'))
-			.toHaveText(['Skara Brae', 'Westcliff']);
-		await expect(dialog.locator('.icd-group').filter({ hasText: 'NPCs' }).locator('.icd-name'))
-			.toHaveText(['Old Vala', 'Brokk the Smith']);
-		await expect(dialog.locator('.icd-group').filter({ hasText: 'Expeditions' }).locator('.icd-name'))
-			.toHaveText(['Road to the Black Spire', 'The Black Spire']);
+		await expect(
+			dialog.locator('.icd-group').filter({ hasText: 'Communities' }).locator('.icd-name'),
+		).toHaveText(['Skara Brae', 'Westcliff']);
+		await expect(
+			dialog.locator('.icd-group').filter({ hasText: 'NPCs' }).locator('.icd-name'),
+		).toHaveText(['Old Vala', 'Brokk the Smith']);
+		await expect(
+			dialog.locator('.icd-group').filter({ hasText: 'Expeditions' }).locator('.icd-name'),
+		).toHaveText(['Road to the Black Spire', 'The Black Spire']);
 
 		// Default selection is 'new'.
 		await expect(dialog.locator('input[name="strategy"][value="new"]')).toBeChecked();
@@ -387,7 +388,9 @@ test.describe('Import collision dialog', () => {
 		expect(world.npcs.map((n) => n.name)).toEqual(['Newcomer']);
 	});
 
-	test('singular labels — one colliding row uses "Community" not "Communities"', async ({ page }) => {
+	test('singular labels — one colliding row uses "Community" not "Communities"', async ({
+		page,
+	}) => {
 		await importPayload(
 			page,
 			envelope('communities', {

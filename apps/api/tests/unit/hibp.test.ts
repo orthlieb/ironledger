@@ -60,7 +60,8 @@ describe('getPwnedCount', () => {
       'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
-        text: async () => 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA:1\r\nBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB:2',
+        text: async () =>
+          'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA:1\r\nBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB:2',
       }),
     );
     const count = await getPwnedCount('a-fresh-unbreached-passphrase-9421');

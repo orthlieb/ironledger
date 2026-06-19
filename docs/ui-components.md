@@ -39,35 +39,38 @@ Small square button that sits inline with a single-line input or select and trig
 ### Canonical CSS
 
 ```css
-.<area>-dice-btn {
-    all:             unset;
-    cursor:          pointer;
-    box-sizing:      border-box;
-    width:           22px;
-    height:          22px;
-    display:         inline-flex;
-    align-items:     center;
-    justify-content: center;
-    border:          1px solid var(--border-mid);
-    border-radius:   3px;
-    background:      transparent;
-    color:           var(--text-muted);
-    flex-shrink:     0;
-    transition:      color 0.12s, border-color 0.12s, background 0.12s;
+.<area > -dice-btn {
+  all: unset;
+  cursor: pointer;
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-mid);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition:
+    color 0.12s,
+    border-color 0.12s,
+    background 0.12s;
 }
-.<area>-dice-btn:hover:not(:disabled) {
-    color:        var(--text-accent);
-    border-color: var(--text-accent);
+.<area > -dice-btn:hover:not(:disabled) {
+  color: var(--text-accent);
+  border-color: var(--text-accent);
 }
-.<area>-dice-btn:disabled {
-    opacity:  0.4;
-    cursor:   not-allowed;
+.<area > -dice-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
-.<area>-dice-btn :global(svg) {
-    width:          12px;
-    height:         12px;
-    fill:           currentColor;
-    pointer-events: none;
+.<area > -dice-btn :global(svg) {
+  width: 12px;
+  height: 12px;
+  fill: currentColor;
+  pointer-events: none;
 }
 ```
 
@@ -79,13 +82,13 @@ Small square button that sits inline with a single-line input or select and trig
 
 ```svelte
 <button
-    class="<area>-dice-btn"
-    type="button"
-    onclick={rollSomething}
-    disabled={rolling}
-    use:tooltip={'Roll <field name> oracle'}
-    aria-label="Roll <field name> oracle"
->{@html diceD6Svg}</button>
+  class="<area>-dice-btn"
+  type="button"
+  onclick={rollSomething}
+  disabled={rolling}
+  use:tooltip={'Roll <field name> oracle'}
+  aria-label="Roll <field name> oracle">{@html diceD6Svg}</button
+>
 ```
 
 `type="button"` so it doesn't submit any enclosing form. `disabled={rolling}` prevents double-rolls while the d6 animation is in flight. SVG comes from `$icons/dice-d6-light.svg?raw` — never use a unicode die character.

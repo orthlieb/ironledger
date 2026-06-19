@@ -144,7 +144,9 @@ describe('postBroadcast', () => {
     await new Promise((r) => setTimeout(r, 20)); // guarantee different ms
     const second = await service.postBroadcast('two', 'info', adminId);
     expect(second.postedAt).not.toBe(first.postedAt);
-    expect(new Date(second.postedAt!).getTime()).toBeGreaterThan(new Date(first.postedAt!).getTime());
+    expect(new Date(second.postedAt!).getTime()).toBeGreaterThan(
+      new Date(first.postedAt!).getTime(),
+    );
     expect(await redis.get('broadcast:message')).toBe('two');
   });
 
