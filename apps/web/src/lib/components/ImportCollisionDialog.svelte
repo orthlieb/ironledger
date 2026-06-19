@@ -1,8 +1,13 @@
 <script lang="ts">
 	/**
 	 * ImportCollisionDialog — three-way prompt shown when an import file
-	 * contains entities (communities / NPCs / expeditions) whose IDs already
-	 * exist in the active session.
+	 * contains entities (characters / communities / NPCs / journeys / sites)
+	 * whose NAMES already exist in the active session.
+	 *
+	 * Matching is by lower-cased trimmed name — IDs are deliberately ignored
+	 * so cross-user transfers (export from user A, import to user B) still
+	 * flag duplicates correctly. The user typically thinks "did I already
+	 * have a Brennan?", not "is the UUID the same".
 	 *
 	 * The dialog returns one of four strategies:
 	 *   • 'new'     — regenerate IDs on the incoming copies; both versions
@@ -21,14 +26,23 @@
 	 * Usage:
 	 *   let ref = $state<ReturnType<typeof ImportCollisionDialog> | null>(null);
 	 *   <ImportCollisionDialog bind:this={ref} />
-	 *   const choice = await ref?.open({ communities: 2, npcs: 0, expeditions: 1 });
+	 *   const choice = await ref?.open({
+	 *     characters: ['Brennan'], communities: [], npcs: ['Old Marn'],
+	 *     journeys: [], sites: ['The Black Reach'],
+	 *   });
 	 */
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import type { CollisionItems, CollisionStrategy } from './importCollision.js';
 
 	let dialogEl = $state<HTMLDialogElement | null>(null);
-	let items = $state<CollisionItems>({ communities: [], npcs: [], expeditions: [] });
+	let items = $state<CollisionItems>({
+		characters: [],
+		communities: [],
+		npcs: [],
+		journeys: [],
+		sites: [],
+	});
 	let strategy = $state<Exclude<CollisionStrategy, 'cancel'>>('new');
 	let resolver: ((s: CollisionStrategy) => void) | null = null;
 
@@ -44,6 +58,11 @@
 
 	const groups = $derived.by(() => {
 		const out: { label: string; names: string[] }[] = [];
+		if (items.characters.length > 0)
+			out.push({
+				label: items.characters.length === 1 ? 'Character' : 'Characters',
+				names: items.characters,
+			});
 		if (items.communities.length > 0)
 			out.push({
 				label: items.communities.length === 1 ? 'Community' : 'Communities',
@@ -51,16 +70,25 @@
 			});
 		if (items.npcs.length > 0)
 			out.push({ label: items.npcs.length === 1 ? 'NPC' : 'NPCs', names: items.npcs });
-		if (items.expeditions.length > 0)
+		if (items.journeys.length > 0)
 			out.push({
-				label: items.expeditions.length === 1 ? 'Expedition' : 'Expeditions',
-				names: items.expeditions,
+				label: items.journeys.length === 1 ? 'Journey' : 'Journeys',
+				names: items.journeys,
+			});
+		if (items.sites.length > 0)
+			out.push({
+				label: items.sites.length === 1 ? 'Site' : 'Sites',
+				names: items.sites,
 			});
 		return out;
 	});
 
 	const totalCount = $derived(
-		items.communities.length + items.npcs.length + items.expeditions.length,
+		items.characters.length +
+			items.communities.length +
+			items.npcs.length +
+			items.journeys.length +
+			items.sites.length,
 	);
 
 	function confirm() {
@@ -84,7 +112,7 @@
 		<p class="icd-lead">
 			This import contains
 			<strong>{totalCount} item{totalCount === 1 ? '' : 's'}</strong>
-			whose IDs match entries already in your session:
+			whose names match entries already in your session:
 		</p>
 
 		<dl class="icd-groups">
