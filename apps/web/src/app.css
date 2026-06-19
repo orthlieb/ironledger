@@ -214,17 +214,19 @@ html[data-theme='light'] {
    behind the dialog.
 
    iOS PWA standalone mode (apple-mobile-web-app-status-bar-style:
-   black-translucent) has a long-standing class of bugs where 100vh /
-   100dvh / -webkit-fill-available can each resolve SHORTER than the
-   visual viewport — body sized purely with height fills less than the
-   screen and an unstyled strip of background shows through at the
-   bottom. The robust fix is to anchor body to the viewport corners
-   with position: fixed + inset: 0 so its sizing is independent of
-   viewport-unit resolution quirks. html also gets the app background
-   as a belt-and-braces backstop in case anything paints short. */
+   black-translucent) shifts the document canvas DOWN by safe-area-inset-top
+   so content paints under the translucent status bar. But the canvas height
+   stays 100% of the visible viewport, so the bottom safe-area-inset-top
+   worth of viewport is uncovered — an unstyled strip of background shows
+   through at the bottom of every route. The documented fix is to make html
+   TALLER by safe-area-inset-top so the canvas extends past the visible
+   viewport bottom and the strip is covered. body stays anchored with
+   position:fixed + inset:0 so it always fills its initial containing block
+   (the visible viewport) regardless of viewport-unit resolution quirks. */
 html {
 	height: 100vh;
 	height: 100dvh;
+	min-height: calc(100dvh + env(safe-area-inset-top));
 	overflow: hidden;
 	background: var(--bg-page);
 }
