@@ -44,7 +44,7 @@
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import ImportCollisionDialog from '$lib/components/ImportCollisionDialog.svelte';
 	import type {
-		CollisionCounts,
+		CollisionItems,
 		CollisionStrategy,
 	} from '$lib/components/importCollision.js';
 	import ErrorBar from '$lib/components/ErrorBar.svelte';
@@ -121,7 +121,7 @@
 	let importInput = $state<HTMLInputElement | null>(null);
 	let importConfirmRef = $state<{ open(): void; close(): void } | null>(null);
 	let importCollisionRef = $state<{
-		open(counts: CollisionCounts): Promise<CollisionStrategy>;
+		open(items: CollisionItems): Promise<CollisionStrategy>;
 	} | null>(null);
 	let importError = $state('');
 
@@ -426,13 +426,17 @@
 				}
 			}
 
-			const collisions = {
-				communities: incomingCommunities.filter((c) => communityIds.has(c.id)).length,
-				npcs: incomingNpcs.filter((n) => npcIds.has(n.id)).length,
-				expeditions: incomingExpeditions.filter((e) => expeditionIds.has(e.id)).length,
+			const collisions: CollisionItems = {
+				communities: incomingCommunities
+					.filter((c) => communityIds.has(c.id))
+					.map((c) => c.name ?? ''),
+				npcs: incomingNpcs.filter((n) => npcIds.has(n.id)).map((n) => n.name ?? ''),
+				expeditions: incomingExpeditions
+					.filter((e) => expeditionIds.has(e.id))
+					.map((e) => e.name ?? ''),
 			};
 			const totalCollisions =
-				collisions.communities + collisions.npcs + collisions.expeditions;
+				collisions.communities.length + collisions.npcs.length + collisions.expeditions.length;
 
 			let strategy: CollisionStrategy = 'new';
 			if (totalCollisions > 0) {

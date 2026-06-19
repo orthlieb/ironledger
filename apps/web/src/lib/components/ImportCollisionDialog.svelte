@@ -25,22 +25,43 @@
 	 */
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import { headingText } from '$lib/fontStore.svelte.js';
-	import type { CollisionCounts, CollisionStrategy } from './importCollision.js';
+	import type { CollisionItems, CollisionStrategy } from './importCollision.js';
 
 	let dialogEl = $state<HTMLDialogElement | null>(null);
-	let counts = $state<CollisionCounts>({ communities: 0, npcs: 0, expeditions: 0 });
+	let items = $state<CollisionItems>({ communities: [], npcs: [], expeditions: [] });
 	let strategy = $state<Exclude<CollisionStrategy, 'cancel'>>('new');
 	let resolver: ((s: CollisionStrategy) => void) | null = null;
 
 	/** Show the dialog. Resolves with the user's choice (or 'cancel'). */
-	export function open(c: CollisionCounts): Promise<CollisionStrategy> {
-		counts = c;
+	export function open(i: CollisionItems): Promise<CollisionStrategy> {
+		items = i;
 		strategy = 'new';
 		return new Promise((resolve) => {
 			resolver = resolve;
 			dialogEl?.showModal();
 		});
 	}
+
+	const groups = $derived.by(() => {
+		const out: { label: string; names: string[] }[] = [];
+		if (items.communities.length > 0)
+			out.push({
+				label: items.communities.length === 1 ? 'Community' : 'Communities',
+				names: items.communities,
+			});
+		if (items.npcs.length > 0)
+			out.push({ label: items.npcs.length === 1 ? 'NPC' : 'NPCs', names: items.npcs });
+		if (items.expeditions.length > 0)
+			out.push({
+				label: items.expeditions.length === 1 ? 'Expedition' : 'Expeditions',
+				names: items.expeditions,
+			});
+		return out;
+	});
+
+	const totalCount = $derived(
+		items.communities.length + items.npcs.length + items.expeditions.length,
+	);
 
 	function confirm() {
 		const s = strategy;
@@ -54,16 +75,6 @@
 		resolver?.('cancel');
 		resolver = null;
 	}
-
-	const summary = $derived.by(() => {
-		const parts: string[] = [];
-		if (counts.communities > 0)
-			parts.push(`${counts.communities} Communit${counts.communities === 1 ? 'y' : 'ies'}`);
-		if (counts.npcs > 0) parts.push(`${counts.npcs} NPC${counts.npcs === 1 ? '' : 's'}`);
-		if (counts.expeditions > 0)
-			parts.push(`${counts.expeditions} Expedition${counts.expeditions === 1 ? '' : 's'}`);
-		return parts.join(', ');
-	});
 </script>
 
 <dialog bind:this={dialogEl} class="icd-dialog" oncancel={cancel}>
@@ -71,9 +82,25 @@
 
 	<div class="icd-body">
 		<p class="icd-lead">
-			This import contains <strong>{summary}</strong> whose IDs match items already in your session. What
-			should I do with them?
+			This import contains
+			<strong>{totalCount} item{totalCount === 1 ? '' : 's'}</strong>
+			whose IDs match entries already in your session:
 		</p>
+
+		<dl class="icd-groups">
+			{#each groups as g}
+				<div class="icd-group">
+					<dt class="icd-group-label">{g.label}</dt>
+					<dd class="icd-group-names">
+						{#each g.names as n, i}
+							<span class="icd-name">{n || '(unnamed)'}</span>{#if i < g.names.length - 1},{/if}
+						{/each}
+					</dd>
+				</div>
+			{/each}
+		</dl>
+
+		<p class="icd-prompt">What should I do with them?</p>
 
 		<fieldset class="icd-radio-group">
 			<legend class="visually-hidden">Collision strategy</legend>
@@ -182,12 +209,57 @@
 	}
 
 	.icd-lead {
-		margin: 0 0 12px;
+		margin: 0 0 10px;
 		color: var(--text);
 	}
 	.icd-lead strong {
 		color: var(--text-accent);
 		font-weight: 600;
+	}
+
+	.icd-groups {
+		margin: 0 0 12px;
+		padding: 8px 12px;
+		background: var(--bg-inset);
+		border: 1px solid var(--border);
+		border-radius: 5px;
+		font-size: 0.78rem;
+		max-height: 30vh;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+	}
+	.icd-group {
+		display: grid;
+		grid-template-columns: minmax(86px, max-content) 1fr;
+		gap: 6px 10px;
+		padding: 4px 0;
+	}
+	.icd-group + .icd-group {
+		border-top: 1px solid var(--border);
+	}
+	.icd-group-label {
+		font-weight: 600;
+		color: var(--text-muted);
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		font-size: 0.7rem;
+		margin: 0;
+		padding-top: 2px;
+	}
+	.icd-group-names {
+		margin: 0;
+		color: var(--text);
+		line-height: 1.45;
+		word-break: break-word;
+	}
+	.icd-name + .icd-name {
+		margin-left: 0;
+	}
+
+	.icd-prompt {
+		margin: 0 0 8px;
+		color: var(--text);
+		font-weight: 500;
 	}
 
 	.icd-radio-group {

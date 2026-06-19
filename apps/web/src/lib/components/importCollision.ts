@@ -8,8 +8,15 @@
 
 export type CollisionStrategy = 'new' | 'replace' | 'skip' | 'cancel';
 
-export interface CollisionCounts {
-	communities: number;
-	npcs: number;
-	expeditions: number;
+/**
+ * Names of the colliding incoming rows, grouped by category. Empty arrays
+ * mean "no collisions in this category" — the dialog suppresses any group
+ * with length 0. We pass names instead of counts so the dialog can show
+ * the user *which* entries are about to clash, not just how many.
+ */
+export interface CollisionItems {
+	communities: string[];
+	npcs: string[];
+	expeditions: string[];
 }
+
