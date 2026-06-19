@@ -196,7 +196,7 @@ describe('update', () => {
     expect(err.code).toBe('NOT_FOUND');
   });
 
-  it('cannot update another user\'s character (RLS treats it as not found)', async () => {
+  it("cannot update another user's character (RLS treats it as not found)", async () => {
     const theirs = await character.create(otherUserId, 'Theirs');
     const err = await character
       .update(userId, theirs.id, { name: 'Hijacked' })
@@ -204,10 +204,7 @@ describe('update', () => {
     expect(err.code).toBe('NOT_FOUND');
 
     // And verify the row was not modified.
-    const [row] = await adminDb!
-      .select()
-      .from(characters)
-      .where(eq(characters.id, theirs.id));
+    const [row] = await adminDb!.select().from(characters).where(eq(characters.id, theirs.id));
     expect(row.name).toBe('Theirs');
   });
 });
@@ -233,7 +230,7 @@ describe('remove', () => {
     expect(err.code).toBe('NOT_FOUND');
   });
 
-  it('refuses to delete another user\'s character (RLS)', async () => {
+  it("refuses to delete another user's character (RLS)", async () => {
     const theirs = await character.create(otherUserId, 'Safe');
     const err = await character
       .remove(userId, theirs.id)

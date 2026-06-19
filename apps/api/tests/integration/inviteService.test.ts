@@ -224,9 +224,7 @@ describe('revokeInvite', () => {
   });
 
   it('throws NOT_FOUND for an unknown id', async () => {
-    const err = await invite
-      .revokeInvite('00000000-0000-0000-0000-000000000000')
-      .catch((e) => e);
+    const err = await invite.revokeInvite('00000000-0000-0000-0000-000000000000').catch((e) => e);
     expect(err).toBeInstanceOf(AuthError);
     expect(err.code).toBe('NOT_FOUND');
     expect(err.statusCode).toBe(404);
@@ -434,9 +432,7 @@ describe('acceptInvite', () => {
     });
     await invite.acceptInvite(rawToken, TEST_PASSWORD);
 
-    const err = await invite
-      .acceptInvite(rawToken, TEST_PASSWORD)
-      .catch((e) => e);
+    const err = await invite.acceptInvite(rawToken, TEST_PASSWORD).catch((e) => e);
     expect(err).toBeInstanceOf(AuthError);
     expect(err.code).toBe('TOKEN_USED');
   });
@@ -456,9 +452,7 @@ describe('acceptInvite', () => {
   });
 
   it('throws TOKEN_INVALID on a bogus token', async () => {
-    const err = await invite
-      .acceptInvite('deadbeef'.repeat(8), TEST_PASSWORD)
-      .catch((e) => e);
+    const err = await invite.acceptInvite('deadbeef'.repeat(8), TEST_PASSWORD).catch((e) => e);
     expect(err.code).toBe('TOKEN_INVALID');
   });
 });

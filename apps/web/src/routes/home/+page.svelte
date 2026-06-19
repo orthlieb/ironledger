@@ -25,8 +25,18 @@
 	import type { Community, Npc, Expedition } from '$lib/types.js';
 	import { loadCharacters, getCharacters, createCharacter } from '$lib/characterStore.svelte.js';
 	import { loadEncounters, getEncounters } from '$lib/encounterStore.svelte.js';
-	import { loadExpeditions, getExpeditions, addExpedition, updateExpedition } from '$lib/expeditionStore.svelte.js';
-	import { loadCommunities, getCommunities, addCommunity, updateCommunity } from '$lib/communityStore.svelte.js';
+	import {
+		loadExpeditions,
+		getExpeditions,
+		addExpedition,
+		updateExpedition,
+	} from '$lib/expeditionStore.svelte.js';
+	import {
+		loadCommunities,
+		getCommunities,
+		addCommunity,
+		updateCommunity,
+	} from '$lib/communityStore.svelte.js';
 	import { loadNpcs, getNpcs, addNpc, updateNpc } from '$lib/npcStore.svelte.js';
 	import {
 		loadAssets,
@@ -43,10 +53,7 @@
 	import CommunitiesArea from '$lib/components/v2/CommunitiesArea.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import ImportCollisionDialog from '$lib/components/ImportCollisionDialog.svelte';
-	import type {
-		CollisionItems,
-		CollisionStrategy,
-	} from '$lib/components/importCollision.js';
+	import type { CollisionItems, CollisionStrategy } from '$lib/components/importCollision.js';
 	import ErrorBar from '$lib/components/ErrorBar.svelte';
 	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
 	import { getActiveFoeId, getActiveExpeditionId } from '$lib/activeContext.svelte.js';

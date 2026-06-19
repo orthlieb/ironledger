@@ -112,7 +112,7 @@ describe('appendEntry / getLog', () => {
     expect(rows.map((r) => r.id)).toEqual(['e2', 'e1']);
   });
 
-  it('isolates per-user (RLS): user A cannot see user B\'s entries', async () => {
+  it("isolates per-user (RLS): user A cannot see user B's entries", async () => {
     await log.appendEntry(userId, entry('mine', '2026-01-01T00:00:00Z'));
     await log.appendEntry(otherUserId, entry('theirs', '2026-01-01T00:00:00Z'));
 
@@ -130,10 +130,7 @@ describe('appendEntry / getLog', () => {
 
 describe('updateEntry', () => {
   it('merges the patch into the existing entry JSONB', async () => {
-    await log.appendEntry(
-      userId,
-      entry('e1', '2026-01-01T00:00:00Z', { note: 'original' }),
-    );
+    await log.appendEntry(userId, entry('e1', '2026-01-01T00:00:00Z', { note: 'original' }));
     await log.updateEntry(userId, 'e1', { note: 'edited', source: 'manual' });
 
     const [r] = await log.getLog(userId);
@@ -179,7 +176,7 @@ describe('clearLog', () => {
     expect(await log.getLog(userId)).toEqual([]);
   });
 
-  it('only affects the calling user\'s rows', async () => {
+  it("only affects the calling user's rows", async () => {
     await log.appendEntry(userId, entry('mine', '2026-01-01T00:00:00Z'));
     await log.appendEntry(otherUserId, entry('theirs', '2026-01-01T00:00:00Z'));
 
@@ -203,7 +200,12 @@ describe('rolling cap', () => {
     const rows = Array.from({ length: 1000 }, (_, i) => ({
       userId,
       entryId: `seed-${i.toString().padStart(4, '0')}`,
-      entry: { id: `seed-${i.toString().padStart(4, '0')}`, title: 't', html: 'h', ts: new Date(baseTs + i * 60_000).toISOString() },
+      entry: {
+        id: `seed-${i.toString().padStart(4, '0')}`,
+        title: 't',
+        html: 'h',
+        ts: new Date(baseTs + i * 60_000).toISOString(),
+      },
       occurredAt: new Date(baseTs + i * 60_000),
     }));
     await adminDb!.insert(sessionLogEntries).values(rows);
@@ -215,10 +217,7 @@ describe('rolling cap', () => {
     expect(Number(countBefore)).toBe(1000);
 
     // Append the 1001st entry — far in the future so it's the newest.
-    await log.appendEntry(
-      userId,
-      entry('newest', new Date(baseTs + 9999 * 60_000).toISOString()),
-    );
+    await log.appendEntry(userId, entry('newest', new Date(baseTs + 9999 * 60_000).toISOString()));
 
     const [{ c: countAfter }] = await adminDb!
       .select({ c: count() })

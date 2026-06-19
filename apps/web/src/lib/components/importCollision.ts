@@ -19,4 +19,3 @@ export interface CollisionItems {
 	npcs: string[];
 	expeditions: string[];
 }
-

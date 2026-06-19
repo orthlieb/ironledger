@@ -11,13 +11,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { eq, and, isNull } from 'drizzle-orm';
 import { adminDb } from '../../src/db/index.js';
-import {
-  users,
-  characters,
-  userData,
-  securityEvents,
-  refreshTokens,
-} from '../../src/db/schema.js';
+import { users, characters, userData, securityEvents, refreshTokens } from '../../src/db/schema.js';
 
 if (!adminDb) throw new Error('adminDb is required — set DATABASE_ADMIN_URL');
 
@@ -82,13 +76,10 @@ async function seedCharacter(userId: string, name = 'Test Char') {
 }
 
 async function seedUserData(userId: string, encounters: unknown[], expeditions: unknown[]) {
-  await adminDb!
-    .insert(userData)
-    .values({ userId, encounters, expeditions })
-    .onConflictDoUpdate({
-      target: userData.userId,
-      set: { encounters, expeditions },
-    });
+  await adminDb!.insert(userData).values({ userId, encounters, expeditions }).onConflictDoUpdate({
+    target: userData.userId,
+    set: { encounters, expeditions },
+  });
 }
 
 let rtCounter = 0;
@@ -393,7 +384,9 @@ describe('getAuditLog', () => {
     expect(hits.length).toBeGreaterThanOrEqual(1);
     expect(
       hits.some(
-        (e) => (e.metadata as { targetEmail?: string } | null)?.targetEmail === 'searchable-target@example.com',
+        (e) =>
+          (e.metadata as { targetEmail?: string } | null)?.targetEmail ===
+          'searchable-target@example.com',
       ),
     ).toBe(true);
     expect(
