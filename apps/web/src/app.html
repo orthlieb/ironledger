@@ -19,7 +19,13 @@
 		     kept for older iOS Safari that doesn't recognise the standard name. -->
 		<meta name="mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-capable" content="yes" />
-		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+		<!-- Status bar style intentionally omitted (defaults to "default"). The
+		     "black-translucent" value is deprecated and triggers a class of
+		     layout bugs in iOS PWA standalone mode where the document canvas
+		     shifts under the status bar, leaving an unstyled strip at the
+		     bottom of every route. With the default style, iOS draws the
+		     status bar as its own region above the canvas and no shift occurs.
+		     See https://developer.apple.com/forums/thread/89471 -->
 		<meta name="apple-mobile-web-app-title" content="Iron Ledger" />
 
 		<!-- Web app manifest (Android / Chrome PWA) -->
