@@ -63,10 +63,9 @@ character (below).
 
 `<stamp>` is local time formatted `YYYY-MM-DD_HHmm` (e.g. `2026-06-18_1504`).
 
-`Session Log` and `Everything` also offer a **Markdown** format; the
-`Everything` Markdown export is a `.zip` (`ironledger-export-<stamp>.zip`).
-Markdown is human-readable only and is **not re-importable** — only the JSON
-forms below round-trip.
+This document covers the **JSON** format only — the JSON exports are the
+re-importable form and the contract this doc defines. (A separate
+human-readable Markdown export exists in the UI but is out of scope here.)
 
 ---
 
@@ -202,7 +201,7 @@ entries **newest-first**; the export **reverses** them so the file reads
 
 `LogEntry` fields: `id`, `title`, `html`, `ts` (required); `note`, `source`,
 `roll` (optional). See `apps/web/src/lib/log.svelte.ts`. Each entry's `html` is
-sanitized on import (see [Security](#security--hardening)).
+sanitized on import (see [Import sanitization](#import-sanitization)).
 
 ---
 
@@ -240,17 +239,38 @@ records which entities were active at export time.
 
 ## Import behavior
 
-- **Routing** is by `manifest.type` (see the export-types table).
-- **Characters / log**: always **appended** — characters get fresh ids; log
-  entries are added via the sanitizing `appendSafeLog()`.
-- **Communities / NPCs / expeditions** are id-keyed and may **collide** with
-  existing rows. When any incoming id matches an existing one, the
-  **ImportCollisionDialog** asks for a strategy:
-  - **skip** — keep existing, drop the incoming row;
-  - **new** — assign the incoming row a fresh id and add it as a copy;
-  - **replace** — overwrite the existing row in place;
-  - **cancel** — abort the whole import.
-    Non-colliding rows are always added.
+Import dispatches by `manifest.type` (see the export-types table). How each
+section is applied depends on whether its records are id-keyed:
+
+- **Characters** and **log** entries are always **appended** — never matched
+  against existing data. Characters always receive a fresh id (an import is a
+  copy, never an overwrite); log entries are added via the sanitizing
+  `appendSafeLog()`.
+- **Communities, NPCs, and expeditions** are **id-keyed** and can therefore
+  collide with rows you already have (see below).
+
+### Collision resolution
+
+Communities, NPCs, and expeditions each carry a stable `id`. Before applying
+an import, the incoming rows are compared by `id` against the current data. If
+**any** incoming `id` already exists, the **`ImportCollisionDialog`** opens
+and lists the colliding names, then asks for one strategy that applies to the
+whole import:
+
+| Strategy    | Effect on a **colliding** row                                        | Effect on a **non-colliding** row |
+| ----------- | -------------------------------------------------------------------- | --------------------------------- |
+| **Skip**    | Keep the existing row; drop the incoming one.                        | Added.                            |
+| **New**     | Give the incoming row a fresh `id` and add it as a copy (both kept). | Added.                            |
+| **Replace** | Overwrite the existing row in place (matched by `id`).               | Added.                            |
+| **Cancel**  | Abort the entire import — nothing is changed.                        | Nothing is changed.               |
+
+Non-colliding rows are always added regardless of strategy. When there are no
+collisions at all, the dialog is skipped and every row is simply added (the
+implicit `new` path). The strategy is chosen once and applied uniformly across
+all three id-keyed sections in that import.
+
+Characters and log entries never trigger the collision dialog — they bypass it
+entirely (always appended).
 
 ### Backwards compatibility
 
@@ -260,22 +280,40 @@ This keeps older single-character exports importable.
 
 ---
 
-## Security / hardening
+## Import sanitization
 
-`parseImportJson()` in `importSanitizer.ts` runs before any data is applied:
+Every imported file is run through `parseImportJson()` in `importSanitizer.ts`
+**before any data is applied** — the raw file is never trusted. An uploaded
+JSON file (whatever its `manifest.type`, including a bare character) goes
+through this pipeline:
 
-| Guard               | Limit / behavior                                                                                                    |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| File size           | **5 MB** max (`MAX_BYTES`).                                                                                         |
-| Nesting depth       | **12** levels max (`MAX_DEPTH`).                                                                                    |
-| Array length        | **1000** items max per array (`MAX_ARRAY_ITEMS`).                                                                   |
-| String length       | **200,000** chars max per string field (`MAX_STR_LEN`).                                                             |
-| Prototype pollution | Keys `__proto__`, `constructor`, `prototype` are stripped.                                                          |
-| Log HTML            | `sanitizeLogHtml()` strips `<script>` blocks, `on*=` handlers, and `javascript:` URLs before any entry is rendered. |
+1. **Size check** — reject the file up front if it exceeds the byte limit.
+2. **Parse** — `JSON.parse`; a parse error is reported as a friendly import
+   error, not a crash.
+3. **Recursive sanitize** — walk the entire parsed structure, enforcing the
+   depth / array-length / string-length limits and stripping prototype-
+   pollution keys at every level.
+4. **Log-HTML scrub** — each log entry's `html` is passed through
+   `sanitizeLogHtml()` (and added via `appendSafeLog()`) so no active content
+   can reach the renderer.
 
-Exceeding a limit throws an `ImportError`, which surfaces a user-facing
-message and aborts the import without mutating any state.
+### Limits and filters
 
-The end-to-end behavior here is covered by
+| Guard               | Limit / behavior                                                                                                          |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| File size           | **5 MB** max (`MAX_BYTES`).                                                                                               |
+| Nesting depth       | **12** levels max (`MAX_DEPTH`).                                                                                          |
+| Array length        | **1000** items max per array (`MAX_ARRAY_ITEMS`).                                                                         |
+| String length       | **200,000** chars max per string field (`MAX_STR_LEN`).                                                                   |
+| Prototype pollution | Keys `__proto__`, `constructor`, `prototype` are stripped from every object (the `POISON_KEYS` set).                      |
+| Log HTML            | `sanitizeLogHtml()` strips `<script>` blocks, `on*=` event handlers, and `javascript:` URLs before any entry is rendered. |
+
+Any violated limit throws an `ImportError`. That is caught at the import call
+site, surfaced to the user as a readable message, and **aborts the import with
+no mutation of existing state** — a malformed or hostile file can never
+partially apply.
+
+The end-to-end behavior here (happy-path round-trips, collision strategies,
+and the security limits) is covered by
 [`apps/web/tests/e2e/import-export.spec.ts`](../apps/web/tests/e2e/import-export.spec.ts)
 and [`apps/web/tests/e2e/import-collision.spec.ts`](../apps/web/tests/e2e/import-collision.spec.ts).
