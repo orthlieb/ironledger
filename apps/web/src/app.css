@@ -262,16 +262,13 @@ main.app-main {
 	flex-direction: column;
 }
 
-/* Safe-area fallback + breathing-room padding for routes without an
-   edge-to-edge shell. /home owns the home-shell which carries its own
-   bottom/sides padding so the app surface extends all the way to the
-   viewport edges. Every other route (admin, about, login, …) gets the
-   padding here. The 4rem bottom is visual breathing room beneath
-   natural-flow content; max(...) keeps the iOS home-indicator inset
-   when it's larger. */
+/* Safe-area fallback for routes without an edge-to-edge shell. /home owns
+   the home-shell which carries its own bottom/sides padding so the app
+   surface extends all the way to the viewport edges. Every other route
+   (admin, about, login, …) gets the padding here. */
 main.app-main:not(:has(.home-shell)) {
 	max-width: 1600px;
-	padding-bottom: max(4rem, env(safe-area-inset-bottom));
+	padding-bottom: env(safe-area-inset-bottom);
 	padding-left: env(safe-area-inset-left);
 	padding-right: env(safe-area-inset-right);
 }
