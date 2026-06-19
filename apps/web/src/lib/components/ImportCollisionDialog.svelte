@@ -58,10 +58,10 @@
 	const summary = $derived.by(() => {
 		const parts: string[] = [];
 		if (counts.communities > 0)
-			parts.push(`${counts.communities} communit${counts.communities === 1 ? 'y' : 'ies'}`);
+			parts.push(`${counts.communities} Communit${counts.communities === 1 ? 'y' : 'ies'}`);
 		if (counts.npcs > 0) parts.push(`${counts.npcs} NPC${counts.npcs === 1 ? '' : 's'}`);
 		if (counts.expeditions > 0)
-			parts.push(`${counts.expeditions} expedition${counts.expeditions === 1 ? '' : 's'}`);
+			parts.push(`${counts.expeditions} Expedition${counts.expeditions === 1 ? '' : 's'}`);
 		return parts.join(', ');
 	});
 </script>
