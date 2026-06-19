@@ -57,7 +57,7 @@ The **Delve** and **YRT** [expansion toggles](expansion-toggles.md) filter which
 - Delve off → foes from `foes_delve.json` are hidden in `FoePickerDialog`
 - YRT off → foes from `foes_yrt.json` are hidden, and any `foes_overrides_yrt.json` entries with `present: false` no longer apply to base foes
 
-`findFoe(id)` is **not** filtered — existing `FoeEncounter` records keep resolving regardless of toggle state. See [data-format.md § Foe Overrides](data-format.md#foe-overrides-expansion-extension-mechanism) for how overrides decorate or exclude base foes per active expansion.
+`findFoe(id)` is **not** filtered — existing `FoeEncounter` records keep resolving regardless of toggle state. See [data-schema.md § Foe Overrides](data-schema.md#foe-overrides-expansion-extension-mechanism) for how overrides decorate or exclude base foes per active expansion.
 
 ### Ranks & Mechanics
 

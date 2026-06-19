@@ -760,5 +760,5 @@ quality). Used internally by `PortraitUploader`.
 `getGlobalCounterDef(id)` / `getGlobalCounterIds()` (re-exported by
 `$lib/assetStore.svelte.ts`) provide the canonical definition for
 counter fields declared `global: true`. First declaration wins; later
-mismatches log `console.error`. See `docs/data-format.md` for the
+mismatches log `console.error`. See `docs/data-schema.md` for the
 draft/snapshot model that depends on this.
