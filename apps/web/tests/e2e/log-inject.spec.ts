@@ -339,7 +339,11 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		await entry.locator('a.initiative-link[data-value="character"]').click();
 
 		await switchCharTab(page, 'Core');
-		await expect(page.locator(`${CHAR_AREA} .ca-init-btn--you.ca-init-btn--active`)).toBeVisible({
+		await expect(
+			page.locator(
+				`${CHAR_AREA} .sr[aria-label="Initiative"] .sr-btn[aria-label="You have initiative"][aria-checked="true"]`,
+			),
+		).toBeVisible({
 			timeout: 5_000,
 		});
 	});
@@ -365,7 +369,11 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		await entry.locator('a.initiative-link[data-value="foe"]').click();
 
 		await switchCharTab(page, 'Core');
-		await expect(page.locator(`${CHAR_AREA} .ca-init-btn--foe.ca-init-btn--active`)).toBeVisible({
+		await expect(
+			page.locator(
+				`${CHAR_AREA} .sr[aria-label="Initiative"] .sr-btn[aria-label="Foe has initiative"][aria-checked="true"]`,
+			),
+		).toBeVisible({
 			timeout: 5_000,
 		});
 	});
