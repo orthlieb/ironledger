@@ -304,7 +304,7 @@ through this pipeline:
 | File size           | **5 MB** max (`MAX_BYTES`).                                                                                               |
 | Nesting depth       | **12** levels max (`MAX_DEPTH`).                                                                                          |
 | Array length        | **1000** items max per array (`MAX_ARRAY_ITEMS`).                                                                         |
-| String length       | **200,000** chars max per string field (`MAX_STR_LEN`).                                                                   |
+| String length       | Capped at the file-size limit (`MAX_STR_LEN = MAX_BYTES`, 5 MB) — large enough for inline base64 `data:` image URLs. |
 | Prototype pollution | Keys `__proto__`, `constructor`, `prototype` are stripped from every object (the `POISON_KEYS` set).                      |
 | Log HTML            | `sanitizeLogHtml()` strips `<script>` blocks, `on*=` event handlers, and `javascript:` URLs before any entry is rendered. |
 

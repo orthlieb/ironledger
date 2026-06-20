@@ -30,7 +30,12 @@ export class ImportError extends Error {
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB — enough for any real campaign
 const MAX_DEPTH = 12; // manifest → data → object → field → …
 const MAX_ARRAY_ITEMS = 1000; // generous upper bound
-const MAX_STR_LEN = 200_000; // ~200k chars per string field
+// Matches MAX_BYTES: entity images (NPC/community avatars) are stored inline as
+// base64 `data:` URLs, which routinely exceed any small per-string cap — a
+// single photo is hundreds of KB. The file-size limit already bounds the whole
+// payload, so the per-string guard just forbids a string larger than the
+// largest legal file rather than rejecting a valid image.
+const MAX_STR_LEN = MAX_BYTES;
 
 /** Keys that trigger prototype pollution if assigned to a plain object. */
 const POISON_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
