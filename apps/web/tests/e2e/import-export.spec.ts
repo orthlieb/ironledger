@@ -181,9 +181,10 @@ test.describe('Export dialog', () => {
 		expect(Array.isArray(json.data.log)).toBe(true);
 		expect(Array.isArray(json.data.communities)).toBe(true);
 		expect(Array.isArray(json.data.npcs)).toBe(true);
-		expect(Array.isArray(json.data.foes)).toBe(true);
 		expect(Array.isArray(json.data.expeditions)).toBe(true);
 		expect(json.data.session).toBeDefined();
+		// Foes are transient and Markdown-only — never in the JSON export.
+		expect(json.data.foes).toBeUndefined();
 	});
 });
 

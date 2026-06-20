@@ -17,7 +17,7 @@
  */
 
 import { test, expect, request as playwrightRequest } from '@playwright/test';
-import { resetAll } from './helpers/reset';
+import { resetAll, seedNpc } from './helpers/reset';
 import type { Page } from '@playwright/test';
 
 const API_BASE = 'http://127.0.0.1:3000';
@@ -377,6 +377,108 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		await expect(page.locator('.log-entry').filter({ hasText: uniqueText })).toBeVisible({
 			timeout: 10_000,
 		});
+	});
+
+	// ── 7. Status fields (vanquished / complete / deceased) survive ───────────
+	//
+	// These exercise the shared <SegmentedRadio>: the active segment is read via
+	// its stable aria-label + aria-checked (works whether the label text is shown
+	// or collapsed to icon-only). The toggle writes a boolean on the entity which
+	// must round-trip through the per-entity store → API → DB and back on reload.
+
+	test('foe vanquished status survives logout and login', async ({ page }) => {
+		await page.goto('/home');
+		await waitForFoesArea(page);
+
+		if ((await page.locator(FOE_SPINE).count()) === 0) {
+			await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
+			await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
+			const tile = page.locator('dialog.foe-dialog .fd-tile').first();
+			await expect(tile).toBeVisible({ timeout: 8_000 });
+			await tile.click();
+			await page.locator('dialog.foe-dialog button:has-text("Add to Foes")').click();
+			await expect(page.locator('dialog.foe-dialog[open]')).not.toBeVisible({ timeout: 5_000 });
+			await expect(page.locator(FOE_SPINE)).not.toHaveCount(0, { timeout: 5_000 });
+		}
+
+		await page.locator(FOE_SPINE).first().click();
+		const vanq = page.locator(`${FOE_AREA} .sr[aria-label="Foe status"] .sr-btn[aria-label="Mark vanquished"]`);
+		await expect(vanq).toBeVisible({ timeout: 5_000 });
+		await vanq.click();
+		await expect(vanq).toHaveAttribute('aria-checked', 'true');
+
+		// Wait out the 1.5s edit debounce so the status PATCH flushes before logout.
+		await page.waitForTimeout(2000);
+		await logout(page);
+		await loginAndGoHome(page);
+		await waitForFoesArea(page);
+
+		await page.locator(FOE_SPINE).first().click();
+		await expect(
+			page.locator(`${FOE_AREA} .sr[aria-label="Foe status"] .sr-btn[aria-label="Mark vanquished"]`),
+		).toHaveAttribute('aria-checked', 'true', { timeout: 8_000 });
+	});
+
+	test('expedition complete status survives logout and login', async ({ page }) => {
+		await page.goto('/home');
+		await waitForExpeditionsArea(page);
+
+		if ((await page.locator(EXP_SPINE).count()) === 0) {
+			await page.locator(`${EXP_HEADER} button:has-text("+ Journey")`).click();
+			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
+			await page.locator('dialog.confirm-modal[open] button:has-text("Start Journey")').click();
+			await expect(page.locator(EXP_SPINE)).not.toHaveCount(0, { timeout: 5_000 });
+		}
+
+		await page.locator(EXP_SPINE).first().click();
+		const complete = page.locator(`${EXP_AREA} .sr[aria-label="Expedition status"] .sr-btn[aria-label="Mark complete"]`);
+		await expect(complete).toBeVisible({ timeout: 5_000 });
+		await complete.click();
+		await expect(complete).toHaveAttribute('aria-checked', 'true');
+
+		// Wait out the 1.5s edit debounce so the status PATCH flushes before logout.
+		await page.waitForTimeout(2000);
+		await logout(page);
+		await loginAndGoHome(page);
+		await waitForExpeditionsArea(page);
+
+		await page.locator(EXP_SPINE).first().click();
+		await expect(
+			page.locator(`${EXP_AREA} .sr[aria-label="Expedition status"] .sr-btn[aria-label="Mark complete"]`),
+		).toHaveAttribute('aria-checked', 'true', { timeout: 8_000 });
+	});
+
+	test('NPC deceased status (+ list pill) survives logout and login', async ({ page }) => {
+		await seedNpc('Deceased Persist NPC');
+		await page.goto('/home');
+		await waitForCommunitiesArea(page);
+
+		const npcRow = page.locator(CM_ROW, { hasText: 'Deceased Persist NPC' });
+		await expect(npcRow).toBeVisible({ timeout: 8_000 });
+		await npcRow.click();
+
+		const deceased = page.locator(`${CM_AREA} .sr[aria-label="NPC status"] .sr-btn[aria-label="Mark deceased"]`);
+		await expect(deceased).toBeVisible({ timeout: 5_000 });
+		await deceased.click();
+		await expect(deceased).toHaveAttribute('aria-checked', 'true');
+		// Task 1: the red Deceased pill appears on the list row.
+		await expect(npcRow.locator('.cm-row-deceased')).toBeVisible();
+
+		// Wait out the 1.5s edit debounce so the status PATCH flushes before logout.
+		await page.waitForTimeout(2000);
+		await logout(page);
+		await loginAndGoHome(page);
+		await waitForCommunitiesArea(page);
+
+		const npcRow2 = page.locator(CM_ROW, { hasText: 'Deceased Persist NPC' });
+		await expect(npcRow2).toBeVisible({ timeout: 8_000 });
+		// Pill persisted without needing to open the card.
+		await expect(npcRow2.locator('.cm-row-deceased')).toBeVisible({ timeout: 8_000 });
+		// And the card radio reflects deceased once selected.
+		await npcRow2.click();
+		await expect(
+			page.locator(`${CM_AREA} .sr[aria-label="NPC status"] .sr-btn[aria-label="Mark deceased"]`),
+		).toHaveAttribute('aria-checked', 'true', { timeout: 5_000 });
 	});
 
 	// ── Cleanup ───────────────────────────────────────────────────────────────
