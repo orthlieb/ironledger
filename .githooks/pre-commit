@@ -1,0 +1,19 @@
+#!/bin/sh
+# Auto-format staged files with Prettier before each commit, then re-stage them,
+# so `prettier --check` (format:check) can never fail on a commit.
+#
+# Activated by pointing git at this dir:  git config core.hooksPath .githooks
+# (the root package.json `prepare` script sets this automatically on npm install).
+#
+# Note: this re-stages WHOLE files. If you intentionally stage only part of a
+# file (git add -p / partial staging), commit with `git commit --no-verify` to
+# skip this hook.
+
+files=$(git diff --cached --name-only --diff-filter=ACMR)
+[ -z "$files" ] && exit 0
+
+# --ignore-unknown skips files Prettier can't handle and honors .prettierignore.
+echo "$files" | xargs npx prettier --ignore-unknown --write
+echo "$files" | xargs git add --
+
+exit 0
