@@ -12,6 +12,7 @@ import {
   customType,
   index,
   uniqueIndex,
+  primaryKey,
 } from 'drizzle-orm/pg-core';
 
 /** Drizzle customType for Postgres BYTEA ↔ Node Buffer. */
@@ -188,6 +189,61 @@ export const userEntities = pgTable(
 
 export type UserEntity = typeof userEntities.$inferSelect;
 export type NewUserEntity = typeof userEntities.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// portrait_blobs
+// Content-addressed store for portrait bytes. One row per (user, content hash):
+// uploading the same image twice — common on import — collapses to a single
+// row via ON CONFLICT DO NOTHING, so identical portraits are never duplicated
+// in the store. Bytes are scoped per-user (RLS isolation), so two users with
+// the same picture each keep their own copy. The hash doubles as the HTTP ETag.
+// See migration 0014.
+// ---------------------------------------------------------------------------
+export const portraitBlobs = pgTable(
+  'portrait_blobs',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    hash: text('hash').notNull(), // md5 hex of bytes — the content address + ETag
+    mime: text('mime').notNull(),
+    bytes: bytea('bytes').notNull(),
+    byteLen: integer('byte_len').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.hash] })],
+);
+
+export type PortraitBlob = typeof portraitBlobs.$inferSelect;
+export type NewPortraitBlob = typeof portraitBlobs.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// user_entity_portraits
+// Reference table mapping an entity (kind + client id) to the portrait blob it
+// uses. `kind` is the four session collection kinds plus 'character'. Deleting
+// or replacing a reference GCs the blob once nothing else points at it (see
+// portraitService). Keeps portrait bytes out of the session/character JSON
+// payloads — entities carry only `portraitEtag` (= hash). See migration 0014.
+// ---------------------------------------------------------------------------
+export const userEntityPortraits = pgTable(
+  'user_entity_portraits',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(),
+    entityId: text('entity_id').notNull(),
+    hash: text('hash').notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.kind, t.entityId] }),
+    index('user_entity_portraits_user_hash_idx').on(t.userId, t.hash),
+  ],
+);
+
+export type UserEntityPortrait = typeof userEntityPortraits.$inferSelect;
+export type NewUserEntityPortrait = typeof userEntityPortraits.$inferInsert;
 
 // ---------------------------------------------------------------------------
 // history_entries

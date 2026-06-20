@@ -23,6 +23,7 @@ import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { authenticate } from '../middleware/authenticate.js';
 import * as ud from '../services/userDataService.js';
 import type { EntityKind } from '../services/userDataService.js';
+import * as portraits from '../services/portraitService.js';
 import { isValidImageUrl, assertImageUrls } from '../lib/imageUrl.js';
 import { config } from '../config.js';
 import type { FastifyReply } from 'fastify';
@@ -35,6 +36,7 @@ const kindParams = z.object({ kind: z.string() });
 const kindIdParams = z.object({ kind: z.string(), id: z.string() });
 const entityBody = z.record(z.unknown());
 const replaceBody = z.record(z.unknown()); // { <kind>: Entity[] }
+const portraitBody = z.object({ dataUrl: z.string() });
 
 const patchSessionStateBody = z.object({
   sessionState: z.object({
@@ -190,6 +192,65 @@ export const userDataRoutes: FastifyPluginAsyncZod = async (server) => {
     }
   });
 
+  // ── GET /session/:kind/:id/portrait — raw portrait bytes ───────────────────
+  // Cacheable, revalidated via ETag. Bytes live in the content-addressed blob
+  // store, not the entity JSON, so the /session payload stays image-free.
+  server.get('/:kind/:id/portrait', { schema: { params: kindIdParams } }, async (req, reply) => {
+    const kind = resolveKind(req.params.kind, reply);
+    if (!kind) return;
+    try {
+      const portrait = await portraits.getPortrait(req.user!.id, kind, req.params.id);
+      if (!portrait) {
+        return reply
+          .status(404)
+          .send({ statusCode: 404, error: 'Not Found', message: 'No portrait for this entity' });
+      }
+      if (ifNoneMatchHits(req.headers['if-none-match'], portrait.etag)) {
+        return sendPortraitHeaders(reply, portrait.etag).status(304).send();
+      }
+      return sendPortraitHeaders(reply, portrait.etag)
+        .header('Content-Type', portrait.mime)
+        .status(200)
+        .send(portrait.bytes);
+    } catch (err) {
+      return handleError(reply)(err);
+    }
+  });
+
+  // ── PUT /session/:kind/:id/portrait — store/replace the portrait ───────────
+  server.put(
+    '/:kind/:id/portrait',
+    { schema: { params: kindIdParams, body: portraitBody } },
+    async (req, reply) => {
+      const kind = resolveKind(req.params.kind, reply);
+      if (!kind) return;
+      try {
+        const { etag } = await portraits.putPortrait(
+          req.user!.id,
+          kind,
+          req.params.id,
+          req.body.dataUrl,
+        );
+        return reply.status(200).send({ etag });
+      } catch (err) {
+        if (err instanceof portraits.PortraitError) return badRequest(reply, err.message);
+        return handleError(reply)(err);
+      }
+    },
+  );
+
+  // ── DELETE /session/:kind/:id/portrait — clear the portrait ────────────────
+  server.delete('/:kind/:id/portrait', { schema: { params: kindIdParams } }, async (req, reply) => {
+    const kind = resolveKind(req.params.kind, reply);
+    if (!kind) return;
+    try {
+      await portraits.deletePortrait(req.user!.id, kind, req.params.id);
+      return reply.status(204).send();
+    } catch (err) {
+      return handleError(reply)(err);
+    }
+  });
+
   // ── PATCH /session/state ──────────────────────────────────────────────────
   server.patch(
     '/state',
@@ -211,6 +272,27 @@ export const userDataRoutes: FastifyPluginAsyncZod = async (server) => {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+// Portraits are immutable per ETag (the ETag is the content hash), but we keep
+// them private and force revalidation so a changed/cleared portrait is picked
+// up immediately — the matching ETag then short-circuits to a 304.
+export const PORTRAIT_CACHE_CONTROL = 'private, no-cache';
+
+/** Set the ETag + Cache-Control headers shared by 200 and 304 portrait replies. */
+export function sendPortraitHeaders(reply: FastifyReply, etag: string): FastifyReply {
+  return reply.header('ETag', `"${etag}"`).header('Cache-Control', PORTRAIT_CACHE_CONTROL);
+}
+
+/** True when an If-None-Match header lists the given (unquoted) ETag. Tolerates
+ *  weak validators and the `*` wildcard. */
+export function ifNoneMatchHits(header: string | string[] | undefined, etag: string): boolean {
+  if (!header) return false;
+  const raw = Array.isArray(header) ? header.join(',') : header;
+  return raw
+    .split(',')
+    .map((t) => t.trim().replace(/^W\//, '').replace(/^"|"$/g, ''))
+    .some((t) => t === etag || t === '*');
+}
 
 function handleError(reply: FastifyReply) {
   return (err: unknown) => {

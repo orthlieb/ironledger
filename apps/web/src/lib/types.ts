@@ -112,7 +112,11 @@ export interface Journey {
 	ticks: number; // 0–40 (10 boxes × 4 ticks)
 	notes: string;
 	complete: boolean;
-	imageUrl?: string; // base64 JPEG data URL
+	/** Content hash of the portrait stored in the blob endpoint; '' / absent = none. */
+	portraitEtag?: string;
+	/** @deprecated Inline base64 portrait — legacy/import-only; portraits now live
+	 *  in the blob store and are referenced by portraitEtag. */
+	imageUrl?: string;
 	createdAt?: number; // Date.now() on creation
 }
 
@@ -182,7 +186,11 @@ export interface Site {
 	complete: boolean;
 	currentFeature?: string; // last rolled feature result
 	currentDanger?: string; // last rolled danger result
-	imageUrl?: string; // base64 JPEG data URL
+	/** Content hash of the portrait stored in the blob endpoint; '' / absent = none. */
+	portraitEtag?: string;
+	/** @deprecated Inline base64 portrait — legacy/import-only; portraits now live
+	 *  in the blob store and are referenced by portraitEtag. */
+	imageUrl?: string;
 	createdAt?: number; // Date.now() on creation
 }
 
@@ -220,7 +228,11 @@ export interface CharacterData {
 	// Identity
 	name: string;
 	background: string;
-	portrait?: string; // base64 JPEG data URL
+	/** Content hash of the portrait stored in the blob endpoint; '' / absent = none. */
+	portraitEtag?: string;
+	/** @deprecated Inline base64 portrait — legacy/import-only; portraits now live
+	 *  in the blob store and are referenced by portraitEtag. */
+	portrait?: string;
 
 	// Core stats (1–4, rarely 5)
 	edge: number;
@@ -424,7 +436,11 @@ export interface Community {
 	trouble: string;
 	notes: string; // long-form description (Description tab)
 	situationalNotes?: string; // short situational notes — conditions, trouble (Core tab)
-	imageUrl?: string; // base64 image data URL
+	/** Content hash of the portrait stored in the blob endpoint; '' / absent = none. */
+	portraitEtag?: string;
+	/** @deprecated Inline base64 portrait — legacy/import-only; portraits now live
+	 *  in the blob store and are referenced by portraitEtag. */
+	imageUrl?: string;
 	createdAt?: number; // Date.now() on creation
 }
 
@@ -438,7 +454,11 @@ export interface Npc {
 	location: string;
 	notes: string; // long-form description (Description tab)
 	situationalNotes?: string; // short situational notes (Core tab)
-	imageUrl?: string; // base64 image data URL
+	/** Content hash of the portrait stored in the blob endpoint; '' / absent = none. */
+	portraitEtag?: string;
+	/** @deprecated Inline base64 portrait — legacy/import-only; portraits now live
+	 *  in the blob store and are referenced by portraitEtag. */
+	imageUrl?: string;
 	deceased?: boolean; // alive (default/absent) vs deceased
 	createdAt?: number; // Date.now() on creation
 }

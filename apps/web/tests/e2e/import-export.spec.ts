@@ -338,3 +338,80 @@ test.describe('Import — security', () => {
 		await expect(page.locator('.error-bar-msg')).toContainText('deeply nested');
 	});
 });
+
+// ---------------------------------------------------------------------------
+// Portrait round-trip — export re-embeds the portrait inline; import lifts it
+// back into the content-addressed blob store and references it by portraitEtag.
+// ---------------------------------------------------------------------------
+
+test.describe('Import / Export — portrait round-trip', () => {
+	const CHAR_HEADER = `${CHAR_AREA} .ca-header`;
+	const CHAR_SPINE = `${CHAR_AREA} .ca-spine`;
+	// 1×1 transparent PNG.
+	const TINY_PNG =
+		'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI6QAAAABJRU5ErkJggg==';
+
+	test.beforeAll(async () => {
+		await resetAll();
+	});
+	test.beforeEach(async ({ page }) => {
+		await gotoHome(page);
+	});
+
+	test('a character portrait survives an export → import round-trip via the blob store', async ({
+		page,
+	}) => {
+		// ── Create a character and upload a portrait ──────────────────────────
+		const spines = page.locator(CHAR_SPINE);
+		if ((await spines.count()) === 0) {
+			await page.locator(`${CHAR_HEADER} button:has-text("+ Character")`).click();
+			await expect(spines).not.toHaveCount(0, { timeout: 8_000 });
+		}
+		await expect(page.locator(`${CHAR_AREA} .ca-tab`).first()).toBeVisible({ timeout: 8_000 });
+		await page.locator(`${CHAR_AREA} .ca-tab`, { hasText: /^Description$/i }).click();
+		await page.locator(`${CHAR_AREA} .pu-input`).setInputFiles({
+			name: 'portrait.png',
+			mimeType: 'image/png',
+			buffer: Buffer.from(TINY_PNG, 'base64'),
+		});
+		await expect(page.locator(`${CHAR_AREA} img.pu-img`)).toBeVisible({ timeout: 5_000 });
+		// Let the portrait PUT + the 1500 ms character auto-save settle.
+		await page.waitForTimeout(2_400);
+
+		// ── Export the current character — the portrait must be re-embedded ───
+		await openExportDialog(page, 'character');
+		const [download] = await Promise.all([
+			page.waitForEvent('download'),
+			page.locator('.export-dialog .btn-primary').click(),
+		]);
+		const chunks: Buffer[] = [];
+		for await (const c of await download.createReadStream())
+			chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c));
+		const exported = JSON.parse(Buffer.concat(chunks).toString());
+		// Self-contained: bytes inline under data.portrait, no etag in the file.
+		expect(exported.data.data.portrait).toMatch(/^data:image\/(png|jpeg);base64,/);
+		expect(exported.data.data.portraitEtag).toBeUndefined();
+
+		// ── Re-import under a unique name — portrait must come back from the blob endpoint ──
+		const uniqueName = `Roundtrip ${Date.now()}`;
+		exported.data.name = uniqueName; // outer display name
+		exported.data.data.name = uniqueName; // inner data.name — what the spine renders
+		await uploadImport(page, exported, 'roundtrip.json');
+		await expect(page.locator('.error-bar')).not.toBeVisible({ timeout: 5_000 });
+
+		// Select the freshly imported character and open its Description tab.
+		await page
+			.locator(CHAR_SPINE, { has: page.locator('.ca-spine-name', { hasText: uniqueName }) })
+			.first()
+			.click();
+		await page.locator(`${CHAR_AREA} .ca-tab`, { hasText: /^Description$/i }).click();
+
+		// The portrait renders from the blob endpoint (a URL, NOT an inline data:
+		// URL) — proving the inline base64 was lifted into the blob store and the
+		// entity now references it by etag.
+		const img = page.locator(`${CHAR_AREA} img.pu-img`);
+		await expect(img).toBeVisible({ timeout: 8_000 });
+		const src = await img.getAttribute('src');
+		expect(src).toMatch(/\/api\/characters\/[^/]+\/portrait\?v=/);
+	});
+});

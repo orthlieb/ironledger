@@ -348,7 +348,9 @@
 			importError = '';
 			importInput?.click();
 		} else if (detail.action === 'export' && detail.content && detail.format) {
-			handleExport(detail.content, detail.format);
+			void handleExport(detail.content, detail.format).catch((err) =>
+				console.error('[home] export failed', err),
+			);
 		}
 	}
 
@@ -537,9 +539,65 @@
 
 			async function importChar(entry: ImportableChar): Promise<void> {
 				const reconciled = reconcileImportedChar(entry);
+				const data = (reconciled.data ?? {}) as Record<string, unknown>;
+				reconciled.data = data;
+				// Lift any inline portrait out of the JSON; it goes to the blob store.
+				const inline = takeInlineDataUrl(data, 'portrait');
+				const collided = existingCharByName.has(normaliseName(reconciled.name));
 				if (await applyCharacterStrategy(reconciled)) {
-					await createCharacter(reconciled.name ?? 'Imported Character', reconciled.data ?? {});
+					const created = await createCharacter(reconciled.name ?? 'Imported Character', data);
+					if (inline) {
+						const etag = await uploadPortrait(`/api/characters/${created.id}/portrait`, inline);
+						if (etag) {
+							persistCharacterNow(created.id, {
+								name: created.name,
+								data: { ...(created.data as Record<string, unknown>), portraitEtag: etag },
+							});
+						}
+					}
+				} else if (inline && collided && strategy === 'replace') {
+					// applyCharacterStrategy already overwrote the existing character;
+					// attach the portrait to it and persist the etag.
+					const existingId = existingCharByName.get(normaliseName(reconciled.name));
+					if (existingId) {
+						const etag = await uploadPortrait(`/api/characters/${existingId}/portrait`, inline);
+						if (etag) {
+							persistCharacterNow(existingId, {
+								name: reconciled.name ?? 'Imported Character',
+								data: { ...data, portraitEtag: etag },
+							});
+						}
+					}
 				}
+			}
+
+			/** Import one session-collection row: lift its inline portrait into the
+			 *  blob store, apply the collision strategy, then persist with the
+			 *  resulting portraitEtag. */
+			async function importEntityRow<
+				T extends {
+					id: string;
+					name?: string | null;
+					portraitEtag?: string;
+					imageUrl?: string;
+				},
+			>(
+				row: T,
+				seg: string,
+				existingByName: Map<string, string>,
+				add: (r: T) => Promise<void>,
+				update: (r: T) => Promise<void>,
+			): Promise<void> {
+				const inline = takeInlineDataUrl(row as Record<string, unknown>, 'imageUrl');
+				const collided = existingByName.has(normaliseName(row.name));
+				const append = await applyStrategy(row, existingByName, update);
+				if (!append && collided && strategy === 'skip') return; // skipped — leave existing
+				if (inline) {
+					const etag = await uploadPortrait(`/api/session/${seg}/${row.id}/portrait`, inline);
+					if (etag) row.portraitEtag = etag;
+				}
+				if (append) await add(row);
+				else if (inline && row.portraitEtag) await update(row); // replace: persist etag
 			}
 
 			if (parsed.manifest && parsed.data) {
@@ -550,32 +608,38 @@
 					const entries = parsed.data as Array<Record<string, unknown>>;
 					for (const entry of entries) appendSafeLog(entry);
 				} else if (m.type === 'communities') {
-					for (const c of incomingCommunities) {
-						if (await applyStrategy(c, existingCommunityByName, updateCommunity))
-							await addCommunity(c);
-					}
-					for (const n of incomingNpcs) {
-						if (await applyStrategy(n, existingNpcByName, updateNpc)) await addNpc(n);
-					}
+					for (const c of incomingCommunities)
+						await importEntityRow(
+							c,
+							'communities',
+							existingCommunityByName,
+							addCommunity,
+							updateCommunity,
+						);
+					for (const n of incomingNpcs)
+						await importEntityRow(n, 'npcs', existingNpcByName, addNpc, updateNpc);
 				} else if (m.type === 'expeditions') {
 					for (const exp of incomingExpeditions) {
 						const byName = exp.type === 'site' ? existingSiteByName : existingJourneyByName;
-						if (await applyStrategy(exp, byName, updateExpedition)) await addExpedition(exp);
+						await importEntityRow(exp, 'expeditions', byName, addExpedition, updateExpedition);
 					}
 				} else if (m.type === 'everything') {
 					for (const entry of incomingCharacters) await importChar(entry);
 					const d = parsed.data as { log?: Array<Record<string, unknown>> };
 					for (const entry of d.log ?? []) appendSafeLog(entry);
-					for (const c of incomingCommunities) {
-						if (await applyStrategy(c, existingCommunityByName, updateCommunity))
-							await addCommunity(c);
-					}
-					for (const n of incomingNpcs) {
-						if (await applyStrategy(n, existingNpcByName, updateNpc)) await addNpc(n);
-					}
+					for (const c of incomingCommunities)
+						await importEntityRow(
+							c,
+							'communities',
+							existingCommunityByName,
+							addCommunity,
+							updateCommunity,
+						);
+					for (const n of incomingNpcs)
+						await importEntityRow(n, 'npcs', existingNpcByName, addNpc, updateNpc);
 					for (const exp of incomingExpeditions) {
 						const byName = exp.type === 'site' ? existingSiteByName : existingJourneyByName;
-						if (await applyStrategy(exp, byName, updateExpedition)) await addExpedition(exp);
+						await importEntityRow(exp, 'expeditions', byName, addExpedition, updateExpedition);
 					}
 				}
 			} else {
@@ -639,6 +703,59 @@
 		return bytes;
 	}
 
+	// ── Portrait blob ↔ inline base64 bridges ───────────────────────────────────
+	// Portraits live in the content-addressed blob store, not the entity JSON.
+	// Export re-embeds them inline (the pre-Tier-2 shape) so a single file stays
+	// self-contained and portable; import lifts inline portraits back into the
+	// (deduping) blob store. Old exports that already carry inline portraits flow
+	// through the same import path unchanged.
+
+	/** Fetch a portrait by URL and return it as a base64 data URL ('' on failure). */
+	async function fetchPortraitDataUrl(url: string): Promise<string> {
+		try {
+			const res = await fetch(url, { credentials: 'include' });
+			if (!res.ok) return '';
+			const blob = await res.blob();
+			return await new Promise<string>((resolve, reject) => {
+				const fr = new FileReader();
+				fr.onload = () => resolve(fr.result as string);
+				fr.onerror = () => reject(fr.error);
+				fr.readAsDataURL(blob);
+			});
+		} catch {
+			return '';
+		}
+	}
+
+	/** PUT an inline base64 portrait to an entity's blob endpoint; returns the
+	 *  stored content hash (etag), or '' on failure. */
+	async function uploadPortrait(endpoint: string, dataUrl: string): Promise<string> {
+		try {
+			const res = await fetch(endpoint, {
+				method: 'PUT',
+				credentials: 'include',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ dataUrl }),
+			});
+			if (!res.ok) return '';
+			const { etag } = (await res.json()) as { etag: string };
+			return etag ?? '';
+		} catch {
+			return '';
+		}
+	}
+
+	/** Pull an inline base64 data URL off an object's field and delete it. Returns
+	 *  '' when absent or not a data: URL (https values are left untouched). */
+	function takeInlineDataUrl(obj: Record<string, unknown>, key: string): string {
+		const v = obj[key];
+		if (typeof v === 'string' && v.startsWith('data:')) {
+			delete obj[key];
+			return v;
+		}
+		return '';
+	}
+
 	function slugify(name: string): string {
 		return (name || 'unnamed')
 			.toLowerCase()
@@ -647,7 +764,7 @@
 			.slice(0, 40);
 	}
 
-	function exportMarkdownZip(stamp: string) {
+	async function exportMarkdownZip(stamp: string) {
 		const zipFiles: Record<string, Uint8Array> = {};
 		const usedNames = new Set<string>();
 
@@ -663,6 +780,65 @@
 			return `./${path}`;
 		}
 
+		// Fetch every portrait's bytes up front (concurrently) so the markdown
+		// builders below stay synchronous. Falls back to any legacy inline value.
+		const charPortraits = new Map<string, string>();
+		const commPortraits = new Map<string, string>();
+		const npcPortraits = new Map<string, string>();
+		const expPortraits = new Map<string, string>();
+		async function prefetch<T extends { id: string }>(
+			items: T[],
+			urlFor: (it: T) => string,
+			legacy: (it: T) => string,
+			into: Map<string, string>,
+		) {
+			await Promise.all(
+				items.map(async (it) => {
+					const url = urlFor(it);
+					const du = url ? await fetchPortraitDataUrl(url) : legacy(it);
+					if (du) into.set(it.id, du);
+				}),
+			);
+		}
+		await Promise.all([
+			prefetch(
+				chars,
+				(c) => {
+					const et = (c.data as Record<string, unknown>).portraitEtag as string | undefined;
+					return et ? `/api/characters/${c.id}/portrait?v=${encodeURIComponent(et)}` : '';
+				},
+				(c) => ((c.data as Record<string, unknown>).portrait as string) ?? '',
+				charPortraits,
+			),
+			prefetch(
+				communities,
+				(c) =>
+					c.portraitEtag
+						? `/api/session/communities/${c.id}/portrait?v=${encodeURIComponent(c.portraitEtag)}`
+						: '',
+				(c) => c.imageUrl ?? '',
+				commPortraits,
+			),
+			prefetch(
+				npcs,
+				(n) =>
+					n.portraitEtag
+						? `/api/session/npcs/${n.id}/portrait?v=${encodeURIComponent(n.portraitEtag)}`
+						: '',
+				(n) => n.imageUrl ?? '',
+				npcPortraits,
+			),
+			prefetch(
+				expeditions,
+				(e) =>
+					e.portraitEtag
+						? `/api/session/expeditions/${e.id}/portrait?v=${encodeURIComponent(e.portraitEtag)}`
+						: '',
+				(e) => e.imageUrl ?? '',
+				expPortraits,
+			),
+		]);
+
 		// ── Characters ──────────────────────────────────────────────────
 		if (chars.length) {
 			const lines: string[] = [];
@@ -670,8 +846,9 @@
 				if (idx > 0) lines.push('', '---', '');
 				const d = char.data as Record<string, unknown>;
 				lines.push(`# ${char.name || 'Unnamed Character'}`, '');
-				if (d.portrait) {
-					const src = addImage(d.portrait as string, 'char', char.name);
+				const charDu = charPortraits.get(char.id);
+				if (charDu) {
+					const src = addImage(charDu, 'char', char.name);
 					lines.push(`![Portrait](${src})`, '');
 				}
 				if (d.background) lines.push(`**Background:** ${d.background}`, '');
@@ -773,8 +950,9 @@
 			const lines: string[] = ['# Connections & NPCs', ''];
 			for (const c of communities) {
 				lines.push(`## ${c.name} _(Community)_`);
-				if (c.imageUrl) {
-					const src = addImage(c.imageUrl, 'community', c.name);
+				const commDu = commPortraits.get(c.id);
+				if (commDu) {
+					const src = addImage(commDu, 'community', c.name);
 					lines.push(`![Portrait](${src})`);
 				}
 				if (c.region) lines.push(`**Region:** ${c.region}`);
@@ -786,8 +964,9 @@
 			}
 			for (const n of npcs) {
 				lines.push(`## ${n.name} _(NPC)_`);
-				if (n.imageUrl) {
-					const src = addImage(n.imageUrl, 'npc', n.name);
+				const npcDu = npcPortraits.get(n.id);
+				if (npcDu) {
+					const src = addImage(npcDu, 'npc', n.name);
 					lines.push(`![Portrait](${src})`);
 				}
 				if (n.role) lines.push(`**Role:** ${n.role}`);
@@ -810,8 +989,9 @@
 			for (const exp of expeditions) {
 				const type = exp.type === 'journey' ? 'Journey' : 'Site';
 				lines.push(`## ${exp.name} _(${type})_`);
-				if (exp.imageUrl) {
-					const src = addImage(exp.imageUrl, 'expedition', exp.name);
+				const expDu = expPortraits.get(exp.id);
+				if (expDu) {
+					const src = addImage(expDu, 'expedition', exp.name);
 					lines.push(`![Portrait](${src})`);
 				}
 				if (exp.complete) lines.push(`- **Status:** Complete`);
@@ -934,7 +1114,8 @@
 	function charToMarkdown(char: CharacterFull): string {
 		const d = char.data as Record<string, unknown>;
 		const lines: string[] = [`# ${char.name || 'Unnamed Character'}`, ''];
-		if (d.portrait) lines.push(`_Has portrait photo — see JSON export for image data._`, '');
+		if (d.portraitEtag || d.portrait)
+			lines.push(`_Has portrait photo — see JSON export for image data._`, '');
 		if (d.background) lines.push(`**Background:** ${d.background}`, '');
 		const initiativeLabels: Record<number, string> = {
 			0: 'None',
@@ -1062,7 +1243,8 @@
 		for (const exp of expeditions) {
 			const type = exp.type === 'journey' ? 'Journey' : 'Site';
 			lines.push(`## ${exp.name} _(${type})_`);
-			if (exp.imageUrl) lines.push(`_Has portrait photo — see JSON export for image data._`);
+			if (exp.portraitEtag || exp.imageUrl)
+				lines.push(`_Has portrait photo — see JSON export for image data._`);
 			if (exp.complete) lines.push(`- **Status:** Complete`);
 			lines.push(
 				`- **Difficulty:** ${exp.difficulty.charAt(0).toUpperCase() + exp.difficulty.slice(1)}`,
@@ -1087,18 +1269,56 @@
 		return lines.join('\n').trimEnd();
 	}
 
-	function handleExport(content: string, format: string) {
+	// Build an export-ready character copy with its portrait re-embedded inline
+	// (data.portrait) so the JSON stays self-contained. portraitEtag is dropped
+	// from the exported copy — import re-derives it when it stores the bytes.
+	async function embedCharForExport(c: CharacterFull): Promise<{
+		name: string;
+		data: Record<string, unknown>;
+	}> {
+		const data = $state.snapshot(c.data) as Record<string, unknown>;
+		const et = data.portraitEtag as string | undefined;
+		if (et) {
+			const du = await fetchPortraitDataUrl(
+				`/api/characters/${c.id}/portrait?v=${encodeURIComponent(et)}`,
+			);
+			if (du) data.portrait = du;
+		}
+		delete data.portraitEtag;
+		return { name: c.name, data };
+	}
+
+	// Same for a session-collection entity — re-embeds into imageUrl.
+	async function embedEntityForExport<
+		T extends { id: string; portraitEtag?: string; imageUrl?: string },
+	>(seg: string, e: T): Promise<T> {
+		const out = $state.snapshot(e) as T;
+		if (out.portraitEtag) {
+			const du = await fetchPortraitDataUrl(
+				`/api/session/${seg}/${out.id}/portrait?v=${encodeURIComponent(out.portraitEtag)}`,
+			);
+			if (du) out.imageUrl = du;
+		}
+		delete out.portraitEtag;
+		return out;
+	}
+
+	async function handleExport(content: string, format: string) {
 		const stamp = makeTimestamp();
 		if (content === 'everything') {
 			if (format === 'md') {
-				exportMarkdownZip(stamp);
+				await exportMarkdownZip(stamp);
 			} else {
 				const payload = {
-					characters: chars.map((c) => ({ name: c.name, data: $state.snapshot(c.data) })),
+					characters: await Promise.all(chars.map(embedCharForExport)),
 					log: [...sessionLog.entries].reverse(),
-					communities: $state.snapshot(communities),
-					npcs: $state.snapshot(npcs),
-					expeditions: $state.snapshot(expeditions),
+					communities: await Promise.all(
+						communities.map((c) => embedEntityForExport('communities', c)),
+					),
+					npcs: await Promise.all(npcs.map((n) => embedEntityForExport('npcs', n))),
+					expeditions: await Promise.all(
+						expeditions.map((e) => embedEntityForExport('expeditions', e)),
+					),
 					session: { activeCharId, activeFoeId, activeExpeditionId },
 				};
 				// Foes are intentionally NOT in the JSON: encounters are transient
@@ -1117,14 +1337,9 @@
 			const char = chars.find((c) => c.id === activeCharId);
 			if (!char) return;
 			const safeName = char.name.replace(/[^a-z0-9]/gi, '-').toLowerCase() || 'character';
-			exportJson(
-				'character',
-				{ name: char.name, data: $state.snapshot(char.data) },
-				1,
-				`${safeName}.json`,
-			);
+			exportJson('character', await embedCharForExport(char), 1, `${safeName}.json`);
 		} else if (content === 'all-characters') {
-			const payload = chars.map((c) => ({ name: c.name, data: $state.snapshot(c.data) }));
+			const payload = await Promise.all(chars.map(embedCharForExport));
 			exportJson('all-characters', payload, chars.length, `all-characters-${stamp}.json`);
 		} else if (content === 'log') {
 			if (format === 'json') {
@@ -1134,14 +1349,19 @@
 		} else if (content === 'communities') {
 			exportJson(
 				'communities',
-				{ communities: $state.snapshot(communities), npcs: $state.snapshot(npcs) },
+				{
+					communities: await Promise.all(
+						communities.map((c) => embedEntityForExport('communities', c)),
+					),
+					npcs: await Promise.all(npcs.map((n) => embedEntityForExport('npcs', n))),
+				},
 				communities.length + npcs.length,
 				`communities-${stamp}.json`,
 			);
 		} else if (content === 'expeditions') {
 			exportJson(
 				'expeditions',
-				$state.snapshot(expeditions),
+				await Promise.all(expeditions.map((e) => embedEntityForExport('expeditions', e))),
 				expeditions.length,
 				`expeditions-${stamp}.json`,
 			);

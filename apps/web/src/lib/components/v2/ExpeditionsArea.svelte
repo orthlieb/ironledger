@@ -632,8 +632,9 @@
 								     hidden while editing so the textarea fills the whole panel. -->
 								{#if !editingNotes}
 									<PortraitUploader
-										value={activeExp.imageUrl ?? ''}
-										oninput={(v) => updateExp({ imageUrl: v })}
+										endpoint={`/api/session/expeditions/${activeExp.id}/portrait`}
+										etag={activeExp.portraitEtag ?? ''}
+										oninput={(etag) => updateExp({ portraitEtag: etag })}
 										placeholderSvg={placeholderImg}
 										alt={activeExp.name}
 									/>

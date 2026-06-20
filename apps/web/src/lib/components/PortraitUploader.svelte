@@ -3,21 +3,22 @@
 	 * 170×170 portrait uploader that floats right so adjacent prose wraps
 	 * around it. Shared by characters, expeditions, communities, and NPCs.
 	 *
-	 *   • Empty (placeholder)  → click opens a file picker; the chosen file
-	 *     is centred-cropped and downscaled via cropImageFile (PNG when the
-	 *     image has transparency, otherwise JPEG).
-	 *   • Filled (real image)  → click opens a Lightbox showing the
-	 *     enlarged image (80vw / 80vh, whichever hits first).
-	 *   • A trash button (top-right corner of the image) clears the
-	 *     portrait, returning to the placeholder state.
+	 * Portrait bytes live server-side in the content-addressed blob store, not
+	 * inline in the entity JSON. This component talks to a per-entity portrait
+	 * endpoint (`endpoint`, e.g. `/api/session/communities/<id>/portrait` or
+	 * `/api/characters/<id>/portrait`) and the parent stores only a lightweight
+	 * `etag` reference:
 	 *
-	 * To change a portrait, click the trash first, then click the
-	 * placeholder.
+	 *   • Empty (placeholder)  → click opens a file picker; the chosen file is
+	 *     centred-cropped/downscaled via cropImageFile, PUT to `endpoint`, and
+	 *     the returned etag handed back through `oninput`.
+	 *   • Filled (real image)  → rendered from `endpoint?v=<etag>` (cache-busted
+	 *     by the content hash); click opens a Lightbox with the same source.
+	 *   • A trash button clears the portrait (DELETE `endpoint`, then
+	 *     `oninput('')`).
 	 *
-	 * Supports both binding styles:
-	 *   • `bind:value={...}` — direct two-way binding.
-	 *   • `value={...} oninput={fn}` — for parents whose data lives in a
-	 *     state store updated through an explicit callback.
+	 * After a successful upload the just-cropped data URL is shown immediately
+	 * as a local preview so there's no flash waiting for the round-trip GET.
 	 */
 	import { cropImageFile } from '$lib/imageCrop.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
@@ -25,44 +26,75 @@
 	import trashSvg from '$icons/trash-solid-full.svg?raw';
 
 	let {
-		value = $bindable(''),
+		endpoint,
+		etag = '',
 		placeholderSvg,
 		alt = '',
 		oninput,
 	}: {
-		/** Current portrait as a data URL (PNG or JPEG, or empty string). */
-		value?: string;
+		/** Per-entity portrait resource URL (no query string). */
+		endpoint: string;
+		/** Current portrait content hash; '' when there is no portrait. */
+		etag?: string;
 		/** Raw SVG markup shown when no portrait is set. */
 		placeholderSvg: string;
 		alt?: string;
-		/** Called after a successful crop with the new data URL.
-		 *  Use this when `value` lives in nested state. Passing '' indicates
-		 *  the user clicked the clear button. */
-		oninput?: (newValue: string) => void;
+		/** Called after a successful upload (new etag) or clear (''). */
+		oninput?: (newEtag: string) => void;
 	} = $props();
 
 	let lightboxOpen = $state(false);
+	// Just-cropped data URL, shown immediately after an upload so the image
+	// doesn't flash. Reset whenever the endpoint changes (different entity).
+	let localPreview = $state('');
+	$effect(() => {
+		endpoint; // track
+		localPreview = '';
+	});
+
+	// The image source: local preview wins right after upload, otherwise the
+	// cache-busted endpoint URL. Empty when there's no portrait.
+	const src = $derived(localPreview || (etag ? `${endpoint}?v=${encodeURIComponent(etag)}` : ''));
 
 	async function onFile(e: Event) {
-		const file = (e.target as HTMLInputElement).files?.[0];
-		if (!file) return;
+		const input = e.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file || !endpoint) return;
 		try {
 			const dataUrl = await cropImageFile(file);
-			value = dataUrl;
-			oninput?.(dataUrl);
+			localPreview = dataUrl; // optimistic — show it now
+			const res = await fetch(endpoint, {
+				method: 'PUT',
+				credentials: 'include',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ dataUrl }),
+			});
+			if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+			const { etag: newEtag } = (await res.json()) as { etag: string };
+			oninput?.(newEtag);
 		} catch (err) {
-			console.error('[PortraitUploader] crop failed', err);
+			console.error('[PortraitUploader] upload failed', err);
+			localPreview = ''; // revert so we don't show an unsaved image
+		} finally {
+			input.value = ''; // allow re-selecting the same file
 		}
 	}
 
-	function clear() {
-		value = '';
+	async function clear() {
+		if (!endpoint) return;
+		try {
+			const res = await fetch(endpoint, { method: 'DELETE', credentials: 'include' });
+			if (!res.ok && res.status !== 404) throw new Error(`Delete failed: ${res.status}`);
+		} catch (err) {
+			console.error('[PortraitUploader] clear failed', err);
+		}
+		localPreview = '';
 		oninput?.('');
 	}
 </script>
 
 <div class="pu-wrap">
-	{#if value}
+	{#if src}
 		<!-- Filled state: image is a button that opens the lightbox. -->
 		<button
 			type="button"
@@ -71,7 +103,7 @@
 			use:tooltip={'Click to enlarge'}
 			aria-label="View enlarged portrait"
 		>
-			<img class="pu-img" src={value} {alt} />
+			<img class="pu-img" {src} {alt} loading="lazy" />
 		</button>
 		<button
 			type="button"
@@ -95,8 +127,8 @@
 	{/if}
 </div>
 
-{#if lightboxOpen && value}
-	<Lightbox src={value} {alt} onclose={() => (lightboxOpen = false)} />
+{#if lightboxOpen && src}
+	<Lightbox {src} {alt} onclose={() => (lightboxOpen = false)} />
 {/if}
 
 <style>

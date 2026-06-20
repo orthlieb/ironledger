@@ -969,9 +969,12 @@
 								     hidden while editing so the textarea fills the whole panel. -->
 								{#if !editingBackground}
 									<PortraitUploader
-										value={d.portrait ?? ''}
-										oninput={(v) => {
-											(activeChar.data as Record<string, unknown>).portrait = v;
+										endpoint={`/api/characters/${activeChar.id}/portrait`}
+										etag={(d.portraitEtag as string) ?? ''}
+										oninput={(etag) => {
+											const data = activeChar.data as Record<string, unknown>;
+											data.portraitEtag = etag;
+											delete data.portrait; // drop any legacy inline portrait
 										}}
 										placeholderSvg={hornedHelmSvg}
 										alt={`Portrait of ${d.name || activeChar.name}`}

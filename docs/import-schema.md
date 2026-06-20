@@ -174,11 +174,17 @@ both lists side by side:
 }
 ```
 
-Field lists for `Community` and `Npc` are in `apps/web/src/lib/types.ts`. NPCs
-carry an optional **`deceased?: boolean`** — alive when absent or `false`,
-deceased when `true`. It drives the alive/deceased status toggle on the NPC
-card and the red **Deceased** pill in the Connections list. Communities have no
-equivalent flag.
+Field lists for `Community` and `Npc` are in `apps/web/src/lib/types.ts`. Two
+NPC fields are worth calling out:
+
+- **`deceased?: boolean`** — alive when absent or `false`, deceased when `true`.
+  Drives the alive/deceased status toggle on the NPC card and the red
+  **Deceased** pill in the Connections list. Communities have no equivalent
+  flag.
+- **`portraitEtag?: string`** — references the NPC's portrait held in the blob
+  store (the image's content hash); the portrait is no longer inlined. The
+  legacy **`imageUrl`** base64 data URL is **deprecated** and accepted only for
+  back-compat when importing older exports.
 
 ---
 
@@ -287,6 +293,43 @@ entirely (always appended).
 A file with **no `manifest`/`data` envelope** is accepted as a single
 character — i.e. a bare `{ name, data }` object imports as one new character.
 This keeps older single-character exports importable.
+
+---
+
+## Portraits
+
+Portraits (community / npc / expedition `imageUrl`, character `data.portrait`)
+are **not** stored inline in the live data anymore. The bytes live in a
+content-addressed blob store on the server and the entity carries only a
+lightweight reference:
+
+- **`portraitEtag?: string`** on `Community`, `Npc`, `Journey`, `Site`, and in a
+  character's `data` — the portrait's content hash (md5). The card renders
+  `<img src="/api/.../portrait?v=<etag>">`; an absent/empty value means no
+  portrait.
+- The legacy inline fields (**`imageUrl`** on entities, **`data.portrait`** on
+  characters) are **deprecated**. They are still accepted on import for
+  back-compat, and re-emitted on export (below), but the app never writes them
+  to live storage.
+
+The import/export format stays **self-contained and portable** by bridging
+between the two representations:
+
+- **Export** fetches each portrait's bytes from the blob endpoint and
+  **re-embeds** them as a base64 `data:` URL under the legacy field
+  (`imageUrl` / `data.portrait`), dropping `portraitEtag` from the exported
+  copy. A single export file therefore carries its own images, exactly like a
+  pre-blob-store export.
+- **Import** detects any inline base64 `imageUrl` / `data.portrait`, **uploads**
+  it to the blob store via `PUT /api/session/:kind/:id/portrait` (or
+  `/api/characters/:id/portrait`), sets the entity's `portraitEtag` to the
+  returned hash, and strips the inline field before the row is saved.
+
+Because the blob store is keyed by content hash, importing the same image
+across several entities — or re-importing an export — **stores the bytes once**
+and the duplicates collapse to references. The markdown (`.md` zip) export is
+unaffected in shape: it still writes each portrait as a separate file under
+`images/`, fetching the bytes from the blob endpoint.
 
 ---
 

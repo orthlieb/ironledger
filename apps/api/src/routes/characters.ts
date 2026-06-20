@@ -9,7 +9,9 @@ import { z } from 'zod';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { authenticate } from '../middleware/authenticate.js';
 import * as chars from '../services/characterService.js';
+import * as portraits from '../services/portraitService.js';
 import { isValidImageUrl } from '../lib/imageUrl.js';
+import { sendPortraitHeaders, ifNoneMatchHits } from './userData.js';
 import type { FastifyReply } from 'fastify';
 
 // ---------------------------------------------------------------------------
@@ -34,6 +36,8 @@ const historyBody = z.object({
 const idParam = z.object({
   id: z.string().uuid('Invalid character ID'),
 });
+
+const portraitBody = z.object({ dataUrl: z.string() });
 
 // ---------------------------------------------------------------------------
 // Routes
@@ -169,6 +173,62 @@ export const characterRoutes: FastifyPluginAsyncZod = async (server) => {
       return reply.status(204).send();
     },
   );
+
+  // ── GET /:id/portrait — raw portrait bytes (cacheable, ETag-revalidated) ────
+  // The character's portrait lives in the content-addressed blob store, not in
+  // data.portrait, so the character list payload stays image-free.
+  server.get('/:id/portrait', { schema: { params: idParam } }, async (req, reply) => {
+    try {
+      const portrait = await portraits.getPortrait(req.user!.id, 'character', req.params.id);
+      if (!portrait) {
+        return reply
+          .status(404)
+          .send({ statusCode: 404, error: 'Not Found', message: 'No portrait for this character' });
+      }
+      if (ifNoneMatchHits(req.headers['if-none-match'], portrait.etag)) {
+        return sendPortraitHeaders(reply, portrait.etag).status(304).send();
+      }
+      return sendPortraitHeaders(reply, portrait.etag)
+        .header('Content-Type', portrait.mime)
+        .status(200)
+        .send(portrait.bytes);
+    } catch (err) {
+      return handleError(reply)(err);
+    }
+  });
+
+  // ── PUT /:id/portrait — store/replace the character portrait ───────────────
+  server.put(
+    '/:id/portrait',
+    { schema: { params: idParam, body: portraitBody } },
+    async (req, reply) => {
+      try {
+        const { etag } = await portraits.putPortrait(
+          req.user!.id,
+          'character',
+          req.params.id,
+          req.body.dataUrl,
+        );
+        return reply.status(200).send({ etag });
+      } catch (err) {
+        if (err instanceof portraits.PortraitError) {
+          return reply
+            .status(400)
+            .send({ statusCode: 400, error: 'Bad Request', message: err.message });
+        }
+        return handleError(reply)(err);
+      }
+    },
+  );
+
+  // ── DELETE /:id/portrait — clear the character portrait ────────────────────
+  server.delete('/:id/portrait', { schema: { params: idParam } }, async (req, reply) => {
+    await portraits
+      .deletePortrait(req.user!.id, 'character', req.params.id)
+      .catch(handleError(reply));
+    if (reply.sent) return;
+    return reply.status(204).send();
+  });
 };
 
 // ---------------------------------------------------------------------------

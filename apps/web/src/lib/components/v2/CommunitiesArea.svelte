@@ -752,10 +752,14 @@
 								     hidden while editing so the textarea fills the whole panel. -->
 								{#if !editingNotes}
 									<PortraitUploader
-										value={activeEntry.data.imageUrl ?? ''}
-										oninput={(v) => {
-											if (activeEntry?.kind === 'community') updateCommunity({ imageUrl: v });
-											else if (activeEntry?.kind === 'npc') updateNpc({ imageUrl: v });
+										endpoint={`/api/session/${
+											activeEntry.kind === 'npc' ? 'npcs' : 'communities'
+										}/${activeEntry.data.id}/portrait`}
+										etag={activeEntry.data.portraitEtag ?? ''}
+										oninput={(etag) => {
+											if (activeEntry?.kind === 'community')
+												updateCommunity({ portraitEtag: etag });
+											else if (activeEntry?.kind === 'npc') updateNpc({ portraitEtag: etag });
 										}}
 										placeholderSvg={activeEntry.kind === 'npc' ? farmerSvg : hutSvg}
 										alt={activeEntry.data.name}

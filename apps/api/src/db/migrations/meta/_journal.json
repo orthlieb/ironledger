@@ -92,6 +92,13 @@
       "when": 1776240000000,
       "tag": "0013_user_entities",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1776320000000,
+      "tag": "0014_user_entity_portraits",
+      "breakpoints": true
     }
   ]
 }
