@@ -281,7 +281,7 @@
 		word-break: break-word;
 	}
 	.icd-name + .icd-name {
-		margin-left: 0;
+		margin-left: 0.3em;
 	}
 
 	.icd-prompt {
