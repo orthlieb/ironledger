@@ -56,7 +56,6 @@
 	import FoesArea from '$lib/components/v2/FoesArea.svelte';
 	import ExpeditionsArea from '$lib/components/v2/ExpeditionsArea.svelte';
 	import CommunitiesArea from '$lib/components/v2/CommunitiesArea.svelte';
-	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import ImportCollisionDialog from '$lib/components/ImportCollisionDialog.svelte';
 	import {
 		normaliseName,
@@ -135,7 +134,6 @@
 
 	/** Import UI state. */
 	let importInput = $state<HTMLInputElement | null>(null);
-	let importConfirmRef = $state<{ open(): void; close(): void } | null>(null);
 	let importCollisionRef = $state<{
 		open(items: CollisionItems): Promise<CollisionStrategy>;
 	} | null>(null);
@@ -347,7 +345,8 @@
 			format?: string;
 		};
 		if (detail.action === 'import') {
-			importConfirmRef?.open();
+			importError = '';
+			importInput?.click();
 		} else if (detail.action === 'export' && detail.content && detail.format) {
 			handleExport(detail.content, detail.format);
 		}
@@ -1140,39 +1139,11 @@
 />
 
 <!-- Top-level error bar — shows import failures from sanitization, parsing,
-     or post-parse validation. The same message also appears inside the
-     Import dialog body when that dialog is open. -->
+     or post-parse validation. Selecting Import from the menu opens the file
+     picker directly; any failure surfaces here. -->
 <div class="error-bar-host">
 	<ErrorBar message={importError} onDismiss={() => (importError = '')} />
 </div>
-
-<!-- Import warning dialog -->
-<ConfirmDialog
-	bind:this={importConfirmRef}
-	title="Import Data?"
-	confirmLabel="Choose File…"
-	confirmClass="btn-primary"
-	cancelLabel="Cancel"
-	accentColor="var(--text-accent)"
-	onconfirm={() => importInput?.click()}
->
-	<div
-		style="display:flex; flex-direction:column; gap:8px; font-family:var(--font-ui); font-size:0.8rem; line-height:1.5; color:var(--text-muted);"
-	>
-		<p style="margin:0;">
-			Importing a file will <strong style="color:var(--text);">replace</strong> the matching data in your
-			current session.
-		</p>
-		<p style="margin:0;">
-			Depending on the file type, this may overwrite characters, the session log, expeditions,
-			connections, or all campaign data.
-		</p>
-		<p style="margin:0;">
-			This action cannot be undone. Make sure you have exported a backup if needed.
-		</p>
-		{#if importError}<p style="margin:0; color:var(--color-danger);">{importError}</p>{/if}
-	</div>
-</ConfirmDialog>
 
 <!-- ID-collision prompt — surfaces only when an import's NPC/community/expedition
      ids clash with the active session. onImportFile awaits its open() promise
