@@ -9,6 +9,7 @@ import { z } from 'zod';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { authenticate } from '../middleware/authenticate.js';
 import * as chars from '../services/characterService.js';
+import { isValidImageUrl } from '../lib/imageUrl.js';
 import type { FastifyReply } from 'fastify';
 
 // ---------------------------------------------------------------------------
@@ -58,6 +59,7 @@ export const characterRoutes: FastifyPluginAsyncZod = async (server) => {
       },
     },
     async (req, reply) => {
+      if (rejectBadPortrait(req.body.data, reply)) return;
       const character = await chars
         .create(req.user!.id, req.body.name, req.body.data)
         .catch(handleError(reply));
@@ -91,6 +93,7 @@ export const characterRoutes: FastifyPluginAsyncZod = async (server) => {
       },
     },
     async (req, reply) => {
+      if (rejectBadPortrait(req.body.data, reply)) return;
       const character = await chars
         .update(req.user!.id, req.params.id, req.body)
         .catch(handleError(reply));
@@ -171,6 +174,20 @@ export const characterRoutes: FastifyPluginAsyncZod = async (server) => {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+// The character portrait lives at data.portrait as a base64 image data URL.
+// data is free-form (z.record), so validate the portrait the same way the
+// session collections validate imageUrl. Returns true (and sends a 400) when
+// the portrait is rejected, so the caller can bail.
+function rejectBadPortrait(data: Record<string, unknown> | undefined, reply: FastifyReply): boolean {
+  if (!data || isValidImageUrl(data.portrait)) return false;
+  reply.status(400).send({
+    statusCode: 400,
+    error: 'Bad Request',
+    message: 'data.portrait is not a valid image data URL or https URL (or exceeds size cap)',
+  });
+  return true;
+}
 
 function handleError(reply: FastifyReply) {
   return (err: unknown) => {
