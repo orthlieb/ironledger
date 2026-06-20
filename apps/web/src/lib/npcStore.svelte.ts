@@ -15,6 +15,7 @@
 
 import type { Npc } from '$lib/types.js';
 import { makeEntitySync } from '$lib/entitySync.js';
+import { fetchSession } from '$lib/sessionData.js';
 
 // ---------------------------------------------------------------------------
 // Module-level state
@@ -41,9 +42,7 @@ export async function loadNpcs(): Promise<void> {
 	if (_loaded || _loading) return;
 	_loading = true;
 	try {
-		const res = await fetch('/api/session', { credentials: 'include' });
-		if (!res.ok) throw new Error(`Session fetch failed: ${res.status}`);
-		const json = (await res.json()) as { npcs: unknown };
+		const json = await fetchSession();
 		// Guard against legacy rows where the JSONB column was persisted as
 		// `{}` instead of `[]` — `?? []` only rescues null/undefined.
 		_npcs = Array.isArray(json.npcs) ? (json.npcs as Npc[]) : [];

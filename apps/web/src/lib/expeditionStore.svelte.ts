@@ -15,6 +15,7 @@
 
 import type { Expedition } from '$lib/types.js';
 import { makeEntitySync } from '$lib/entitySync.js';
+import { fetchSession } from '$lib/sessionData.js';
 
 // ---------------------------------------------------------------------------
 // Module-level state
@@ -41,9 +42,7 @@ export async function loadExpeditions(): Promise<void> {
 	if (_loaded || _loading) return;
 	_loading = true;
 	try {
-		const res = await fetch('/api/session', { credentials: 'include' });
-		if (!res.ok) throw new Error(`Session fetch failed: ${res.status}`);
-		const json = (await res.json()) as { expeditions: unknown };
+		const json = await fetchSession();
 		// Guard against legacy rows where the JSONB column was persisted as
 		// `{}` instead of `[]` — `?? []` only rescues null/undefined.
 		_expeditions = Array.isArray(json.expeditions) ? (json.expeditions as Expedition[]) : [];

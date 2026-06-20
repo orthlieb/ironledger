@@ -10,6 +10,8 @@
 //   • saveSessionState(s)   — debounced PATCH on every selection change
 // =============================================================================
 
+import { fetchSession } from '$lib/sessionData.js';
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -49,9 +51,7 @@ let _saveTimer: ReturnType<typeof setTimeout> | null = null;
  */
 export async function loadSessionState(): Promise<SessionState> {
 	try {
-		const res = await fetch('/api/session', { credentials: 'include' });
-		if (!res.ok) throw new Error(`Session fetch failed: ${res.status}`);
-		const json = (await res.json()) as { sessionState?: SessionState };
+		const json = (await fetchSession()) as { sessionState?: SessionState };
 		_loaded = true;
 		return { ...DEFAULT_SESSION_STATE, ...(json.sessionState ?? {}) };
 	} catch (err) {
