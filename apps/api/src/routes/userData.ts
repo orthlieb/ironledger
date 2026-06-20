@@ -179,20 +179,16 @@ export const userDataRoutes: FastifyPluginAsyncZod = async (server) => {
   );
 
   // ── DELETE /session/:kind/:id — delete one entity ──────────────────────────
-  server.delete(
-    '/:kind/:id',
-    { schema: { params: kindIdParams } },
-    async (req, reply) => {
-      const kind = resolveKind(req.params.kind, reply);
-      if (!kind) return;
-      try {
-        await ud.deleteEntity(req.user!.id, kind, req.params.id);
-        return reply.status(204).send();
-      } catch (err) {
-        return handleError(reply)(err);
-      }
-    },
-  );
+  server.delete('/:kind/:id', { schema: { params: kindIdParams } }, async (req, reply) => {
+    const kind = resolveKind(req.params.kind, reply);
+    if (!kind) return;
+    try {
+      await ud.deleteEntity(req.user!.id, kind, req.params.id);
+      return reply.status(204).send();
+    } catch (err) {
+      return handleError(reply)(err);
+    }
+  });
 
   // ── PATCH /session/state ──────────────────────────────────────────────────
   server.patch(

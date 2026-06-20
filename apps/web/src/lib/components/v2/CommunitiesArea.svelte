@@ -566,7 +566,13 @@
 							value={(activeEntry.data as Npc).deceased ? 'deceased' : 'alive'}
 							onchange={(v) => updateNpc({ deceased: v === 'deceased' })}
 							options={[
-								{ value: 'alive', icon: heartPulseSvg, text: 'Alive', label: 'Mark alive', tone: 'go' },
+								{
+									value: 'alive',
+									icon: heartPulseSvg,
+									text: 'Alive',
+									label: 'Mark alive',
+									tone: 'go',
+								},
 								{
 									value: 'deceased',
 									icon: skullSvg,

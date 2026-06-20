@@ -570,7 +570,13 @@
 						value={activeExp.complete ? 'complete' : 'active'}
 						onchange={(v) => updateExp({ complete: v === 'complete' })}
 						options={[
-							{ value: 'active', icon: locationSvg, text: 'Active', label: 'Mark active', tone: 'go' },
+							{
+								value: 'active',
+								icon: locationSvg,
+								text: 'Active',
+								label: 'Mark active',
+								tone: 'go',
+							},
 							{
 								value: 'complete',
 								icon: checkSvg,

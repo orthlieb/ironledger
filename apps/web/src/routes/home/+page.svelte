@@ -850,7 +850,9 @@
 				if (enc.vanquished) lines.push(`- **Status:** Vanquished`);
 				if (def?.nature) lines.push(`- **Nature:** ${def.nature}`);
 				lines.push(`- **Rank:** ${FOE_RANKS[enc.effectiveRank]?.label ?? enc.effectiveRank}`);
-				lines.push(`- **Quantity:** ${enc.quantity.charAt(0).toUpperCase() + enc.quantity.slice(1)}`);
+				lines.push(
+					`- **Quantity:** ${enc.quantity.charAt(0).toUpperCase() + enc.quantity.slice(1)}`,
+				);
 				lines.push(`- **Progress:** ${formatTicks(enc.ticks)}`);
 				if (enc.notes?.trim()) lines.push(``, `**Notes:**`, enc.notes.trim());
 				lines.push('');

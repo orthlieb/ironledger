@@ -52,13 +52,13 @@ character (below).
 
 ### Export types
 
-| `type`           | Export menu item  | `data` shape                                                         | Default filename                 |
-| ---------------- | ----------------- | -------------------------------------------------------------------- | -------------------------------- |
-| `character`      | Current Character | `{ name, data }`                                                     | `<slug-of-name>.json`            |
-| `all-characters` | All Characters    | `Array<{ name, data }>`                                              | `all-characters-<stamp>.json`    |
-| `log`            | Session Log       | `Array<LogEntry>` (oldest-first)                                     | `session-log-<stamp>.json`       |
-| `communities`    | Communities       | `{ communities: Community[], npcs: Npc[] }`                          | `communities-<stamp>.json`       |
-| `expeditions`    | Expeditions       | `Array<Expedition>` (Journey \| Site)                                | `expeditions-<stamp>.json`       |
+| `type`           | Export menu item  | `data` shape                                                                            | Default filename                 |
+| ---------------- | ----------------- | --------------------------------------------------------------------------------------- | -------------------------------- |
+| `character`      | Current Character | `{ name, data }`                                                                        | `<slug-of-name>.json`            |
+| `all-characters` | All Characters    | `Array<{ name, data }>`                                                                 | `all-characters-<stamp>.json`    |
+| `log`            | Session Log       | `Array<LogEntry>` (oldest-first)                                                        | `session-log-<stamp>.json`       |
+| `communities`    | Communities       | `{ communities: Community[], npcs: Npc[] }`                                             | `communities-<stamp>.json`       |
+| `expeditions`    | Expeditions       | `Array<Expedition>` (Journey \| Site)                                                   | `expeditions-<stamp>.json`       |
 | `everything`     | Everything        | `{ characters, log, communities, npcs, expeditions, session }` (foes are Markdown-only) | `ironledger-export-<stamp>.json` |
 
 `<stamp>` is local time formatted `YYYY-MM-DD_HHmm` (e.g. `2026-06-18_1504`).
@@ -314,7 +314,7 @@ through this pipeline:
 | File size           | **5 MB** max (`MAX_BYTES`).                                                                                               |
 | Nesting depth       | **12** levels max (`MAX_DEPTH`).                                                                                          |
 | Array length        | **1000** items max per array (`MAX_ARRAY_ITEMS`).                                                                         |
-| String length       | Capped at the file-size limit (`MAX_STR_LEN = MAX_BYTES`, 5 MB) — large enough for inline base64 `data:` image URLs. |
+| String length       | Capped at the file-size limit (`MAX_STR_LEN = MAX_BYTES`, 5 MB) — large enough for inline base64 `data:` image URLs.      |
 | Prototype pollution | Keys `__proto__`, `constructor`, `prototype` are stripped from every object (the `POISON_KEYS` set).                      |
 | Log HTML            | `sanitizeLogHtml()` strips `<script>` blocks, `on*=` event handlers, and `javascript:` URLs before any entry is rendered. |
 

@@ -402,7 +402,9 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		}
 
 		await page.locator(FOE_SPINE).first().click();
-		const vanq = page.locator(`${FOE_AREA} .sr[aria-label="Foe status"] .sr-btn[aria-label="Mark vanquished"]`);
+		const vanq = page.locator(
+			`${FOE_AREA} .sr[aria-label="Foe status"] .sr-btn[aria-label="Mark vanquished"]`,
+		);
 		await expect(vanq).toBeVisible({ timeout: 5_000 });
 		await vanq.click();
 		await expect(vanq).toHaveAttribute('aria-checked', 'true');
@@ -415,7 +417,9 @@ test.describe('Data persistence across logout / login (v2)', () => {
 
 		await page.locator(FOE_SPINE).first().click();
 		await expect(
-			page.locator(`${FOE_AREA} .sr[aria-label="Foe status"] .sr-btn[aria-label="Mark vanquished"]`),
+			page.locator(
+				`${FOE_AREA} .sr[aria-label="Foe status"] .sr-btn[aria-label="Mark vanquished"]`,
+			),
 		).toHaveAttribute('aria-checked', 'true', { timeout: 8_000 });
 	});
 
@@ -431,7 +435,9 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		}
 
 		await page.locator(EXP_SPINE).first().click();
-		const complete = page.locator(`${EXP_AREA} .sr[aria-label="Expedition status"] .sr-btn[aria-label="Mark complete"]`);
+		const complete = page.locator(
+			`${EXP_AREA} .sr[aria-label="Expedition status"] .sr-btn[aria-label="Mark complete"]`,
+		);
 		await expect(complete).toBeVisible({ timeout: 5_000 });
 		await complete.click();
 		await expect(complete).toHaveAttribute('aria-checked', 'true');
@@ -444,7 +450,9 @@ test.describe('Data persistence across logout / login (v2)', () => {
 
 		await page.locator(EXP_SPINE).first().click();
 		await expect(
-			page.locator(`${EXP_AREA} .sr[aria-label="Expedition status"] .sr-btn[aria-label="Mark complete"]`),
+			page.locator(
+				`${EXP_AREA} .sr[aria-label="Expedition status"] .sr-btn[aria-label="Mark complete"]`,
+			),
 		).toHaveAttribute('aria-checked', 'true', { timeout: 8_000 });
 	});
 
@@ -457,7 +465,9 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		await expect(npcRow).toBeVisible({ timeout: 8_000 });
 		await npcRow.click();
 
-		const deceased = page.locator(`${CM_AREA} .sr[aria-label="NPC status"] .sr-btn[aria-label="Mark deceased"]`);
+		const deceased = page.locator(
+			`${CM_AREA} .sr[aria-label="NPC status"] .sr-btn[aria-label="Mark deceased"]`,
+		);
 		await expect(deceased).toBeVisible({ timeout: 5_000 });
 		await deceased.click();
 		await expect(deceased).toHaveAttribute('aria-checked', 'true');

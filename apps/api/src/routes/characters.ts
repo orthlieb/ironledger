@@ -179,7 +179,10 @@ export const characterRoutes: FastifyPluginAsyncZod = async (server) => {
 // data is free-form (z.record), so validate the portrait the same way the
 // session collections validate imageUrl. Returns true (and sends a 400) when
 // the portrait is rejected, so the caller can bail.
-function rejectBadPortrait(data: Record<string, unknown> | undefined, reply: FastifyReply): boolean {
+function rejectBadPortrait(
+  data: Record<string, unknown> | undefined,
+  reply: FastifyReply,
+): boolean {
   if (!data || isValidImageUrl(data.portrait)) return false;
   reply.status(400).send({
     statusCode: 400,

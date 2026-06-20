@@ -56,11 +56,7 @@
 	}
 </script>
 
-<div
-	class="sr sr--{labels}"
-	role="radiogroup"
-	aria-label={ariaLabel}
->
+<div class="sr sr--{labels}" role="radiogroup" aria-label={ariaLabel}>
 	{#each options as opt (opt.value)}
 		<button
 			type="button"
