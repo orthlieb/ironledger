@@ -8,6 +8,7 @@
 import { withUserContext } from '../db/index.js';
 import { userData } from '../db/schema.js';
 import { sql } from 'drizzle-orm';
+import { randomUUID } from 'node:crypto';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -36,37 +37,123 @@ const DEFAULT_SESSION_STATE: SessionState = {
 };
 
 // ---------------------------------------------------------------------------
-// get — return the user's global data (or defaults if row doesn't exist)
+// Entity kinds — the four session collections, now stored one row per entity
+// in user_entities (see migration 0013). The plural route segment maps to the
+// singular `kind` column value.
+// ---------------------------------------------------------------------------
+
+export type EntityKind = 'encounter' | 'expedition' | 'community' | 'npc';
+
+export const KIND_BY_SEGMENT: Record<string, EntityKind> = {
+  encounters: 'encounter',
+  expeditions: 'expedition',
+  communities: 'community',
+  npcs: 'npc',
+};
+
+/** Read all entities of one kind for a user, in insertion order. */
+async function listKind(
+  tx: Parameters<Parameters<typeof withUserContext>[1]>[0],
+  userId: string,
+  kind: EntityKind,
+): Promise<unknown[]> {
+  const rows = await tx.execute(sql`
+    SELECT entity FROM user_entities
+    WHERE user_id = ${userId}::uuid AND kind = ${kind}
+    ORDER BY seq
+  `);
+  return (rows as unknown as Array<{ entity: unknown }>).map((r) => r.entity);
+}
+
+// ---------------------------------------------------------------------------
+// get — return the user's global data (collections from user_entities, the
+// active-selection state from user_data). Missing rows → empty defaults.
 // ---------------------------------------------------------------------------
 
 export async function get(userId: string): Promise<UserDataPayload> {
-  const rows = await withUserContext(userId, async (tx) => {
-    return tx.select().from(userData).limit(1);
+  return withUserContext(userId, async (tx) => {
+    // Sequential awaits: postgres-js serialises queries on a single
+    // transaction connection, so don't Promise.all these.
+    const encounters = await listKind(tx, userId, 'encounter');
+    const expeditions = await listKind(tx, userId, 'expedition');
+    const communities = await listKind(tx, userId, 'community');
+    const npcs = await listKind(tx, userId, 'npc');
+
+    const stateRows = await tx.select().from(userData).limit(1);
+    const sessionState = (stateRows[0]?.sessionState as SessionState) ?? DEFAULT_SESSION_STATE;
+
+    return { encounters, expeditions, communities, npcs, sessionState };
   });
+}
 
-  if (rows.length === 0) {
-    return {
-      encounters: [],
-      expeditions: [],
-      communities: [],
-      npcs: [],
-      sessionState: DEFAULT_SESSION_STATE,
-    };
-  }
+// ---------------------------------------------------------------------------
+// Per-entity CRUD — one row per entity so a single create/update/delete
+// travels in its own request, independent of collection size.
+// ---------------------------------------------------------------------------
 
-  // JSONB columns can round-trip as `{}` on rows written before the columns
-  // had an array default (or after manual intervention). `?? []` does not
-  // rescue a non-null object, so guard explicitly with Array.isArray.
-  const row = rows[0]!;
-  const asArray = (v: unknown): unknown[] => (Array.isArray(v) ? v : []);
+/** Number of entities of a kind — used to enforce per-user caps on create. */
+export async function countEntities(userId: string, kind: EntityKind): Promise<number> {
+  const rows = await withUserContext(userId, async (tx) =>
+    tx.execute(sql`
+      SELECT count(*)::int AS n FROM user_entities
+      WHERE user_id = ${userId}::uuid AND kind = ${kind}
+    `),
+  );
+  return (rows as unknown as Array<{ n: number }>)[0]?.n ?? 0;
+}
 
-  return {
-    encounters: asArray(row.encounters),
-    expeditions: asArray(row.expeditions),
-    communities: asArray(row.communities),
-    npcs: asArray(row.npcs),
-    sessionState: (row.sessionState as SessionState) ?? DEFAULT_SESSION_STATE,
-  };
+/** Insert or update a single entity (matched by client id within the kind). */
+export async function upsertEntity(
+  userId: string,
+  kind: EntityKind,
+  entityId: string,
+  entity: unknown,
+): Promise<void> {
+  await withUserContext(userId, async (tx) => {
+    await tx.execute(sql`
+      INSERT INTO user_entities (user_id, kind, entity_id, entity)
+      VALUES (${userId}::uuid, ${kind}, ${entityId}, ${JSON.stringify(entity)}::jsonb)
+      ON CONFLICT (user_id, kind, entity_id) DO UPDATE
+        SET entity = EXCLUDED.entity, updated_at = now()
+    `);
+  });
+}
+
+/** Remove a single entity. */
+export async function deleteEntity(
+  userId: string,
+  kind: EntityKind,
+  entityId: string,
+): Promise<void> {
+  await withUserContext(userId, async (tx) => {
+    await tx.execute(sql`
+      DELETE FROM user_entities
+      WHERE user_id = ${userId}::uuid AND kind = ${kind} AND entity_id = ${entityId}
+    `);
+  });
+}
+
+/** Replace the whole collection of a kind in one transaction (delete-all then
+ *  re-insert). Backs the array-style PATCH used by reset/seed/import-replace. */
+export async function replaceEntities(
+  userId: string,
+  kind: EntityKind,
+  items: Array<Record<string, unknown>>,
+): Promise<void> {
+  await withUserContext(userId, async (tx) => {
+    await tx.execute(sql`
+      DELETE FROM user_entities WHERE user_id = ${userId}::uuid AND kind = ${kind}
+    `);
+    for (const item of items) {
+      const entityId = typeof item.id === 'string' && item.id ? item.id : randomUUID();
+      await tx.execute(sql`
+        INSERT INTO user_entities (user_id, kind, entity_id, entity)
+        VALUES (${userId}::uuid, ${kind}, ${entityId}, ${JSON.stringify(item)}::jsonb)
+        ON CONFLICT (user_id, kind, entity_id) DO UPDATE
+          SET entity = EXCLUDED.entity, updated_at = now()
+      `);
+    }
+  });
 }
 
 // ---------------------------------------------------------------------------

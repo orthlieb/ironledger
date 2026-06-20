@@ -82,6 +82,11 @@ module.exports = {
         NODE_ENV: 'production',
         PORT: '3001', // Nginx proxies 443 → 3001
         INTERNAL_API_URL: 'http://localhost:3000',
+        // adapter-node caps request bodies at 512 KB by default. Session saves
+        // are now one entity per request, but a single entity may carry an
+        // inline base64 portrait (capped at ~1.2 MB by the API). Allow 2 MB so
+        // one image entity fits, matching the Fastify bodyLimit.
+        BODY_SIZE_LIMIT: '2M',
       },
     },
   ],

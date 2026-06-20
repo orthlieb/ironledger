@@ -14,6 +14,7 @@
 // =============================================================================
 
 import type { FoeEncounter } from '$lib/types.js';
+import { makeEntitySync } from '$lib/entitySync.js';
 
 // ---------------------------------------------------------------------------
 // Module-level state
@@ -23,6 +24,10 @@ let _encounters: FoeEncounter[] = $state([]);
 let _loading = $state(false);
 let _loaded = false;
 let _saving = $state(false);
+
+// Per-entity sync engine — diffs the live list against the server snapshot and
+// issues one request per changed encounter instead of re-sending the whole list.
+const _sync = makeEntitySync<FoeEncounter>('encounters', () => _encounters, 'encounterStore');
 
 // ---------------------------------------------------------------------------
 // Fetch
@@ -42,6 +47,7 @@ export async function loadEncounters(): Promise<void> {
 		// Guard against legacy rows where the JSONB column was persisted as
 		// `{}` instead of `[]` — `?? []` only rescues null/undefined.
 		_encounters = Array.isArray(json.encounters) ? (json.encounters as FoeEncounter[]) : [];
+		_sync.reset(_encounters);
 		_loaded = true;
 	} catch (err) {
 		console.error('[encounterStore] Failed to load encounters:', err);
@@ -101,20 +107,9 @@ export async function flushEncountersToApi(): Promise<void> {
 // ---------------------------------------------------------------------------
 
 async function persist(): Promise<void> {
-	if (_saving) return; // prevent concurrent saves
 	_saving = true;
 	try {
-		const res = await fetch('/api/session/encounters', {
-			method: 'PATCH',
-			credentials: 'include',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ encounters: _encounters }),
-		});
-		if (!res.ok) {
-			console.error('[encounterStore] Persist failed:', res.status);
-		}
-	} catch (err) {
-		console.error('[encounterStore] Persist error:', err);
+		await _sync.persist();
 	} finally {
 		_saving = false;
 	}

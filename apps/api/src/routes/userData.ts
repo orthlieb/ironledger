@@ -1,12 +1,19 @@
 /**
  * User-data routes — global (non-character) game state.
  *
- * GET   /api/v1/session                    → { encounters, expeditions, communities }
- * PATCH /api/v1/session/encounters         → replace encounters only
- * PATCH /api/v1/session/expeditions        → replace expeditions only
- * PATCH /api/v1/session/communities        → replace communities only
- * PATCH /api/v1/session/npcs               → replace npcs only
- * PATCH /api/v1/session/state              → update active selection state
+ * GET    /api/v1/session                 → { encounters, expeditions, communities, npcs, sessionState }
+ * PATCH  /api/v1/session/state           → update active-selection state
+ *
+ * The four session collections are stored one row per entity (migration 0013).
+ * `:kind` is the plural segment (encounters | expeditions | communities | npcs):
+ *
+ * PATCH  /api/v1/session/:kind           → replace the whole collection (reset/seed/import-replace)
+ * POST   /api/v1/session/:kind           → create one entity
+ * PATCH  /api/v1/session/:kind/:id       → update one entity
+ * DELETE /api/v1/session/:kind/:id       → delete one entity
+ *
+ * Per-entity writes keep each request proportional to a single entity, so an
+ * image-heavy collection no longer has to fit in one body.
  *
  * All routes require authentication.
  */
@@ -15,6 +22,8 @@ import { z } from 'zod';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { authenticate } from '../middleware/authenticate.js';
 import * as ud from '../services/userDataService.js';
+import type { EntityKind } from '../services/userDataService.js';
+import { isValidImageUrl, assertImageUrls } from '../lib/imageUrl.js';
 import { config } from '../config.js';
 import type { FastifyReply } from 'fastify';
 
@@ -22,21 +31,10 @@ import type { FastifyReply } from 'fastify';
 // Schemas
 // ---------------------------------------------------------------------------
 
-const patchEncountersBody = z.object({
-  encounters: z.array(z.record(z.unknown())),
-});
-
-const patchExpeditionsBody = z.object({
-  expeditions: z.array(z.record(z.unknown())),
-});
-
-const patchCommunitiesBody = z.object({
-  communities: z.array(z.record(z.unknown())),
-});
-
-const patchNpcsBody = z.object({
-  npcs: z.array(z.record(z.unknown())),
-});
+const kindParams = z.object({ kind: z.string() });
+const kindIdParams = z.object({ kind: z.string(), id: z.string() });
+const entityBody = z.record(z.unknown());
+const replaceBody = z.record(z.unknown()); // { <kind>: Entity[] }
 
 const patchSessionStateBody = z.object({
   sessionState: z.object({
@@ -48,43 +46,20 @@ const patchSessionStateBody = z.object({
 });
 
 // ---------------------------------------------------------------------------
-// imageUrl validation — narrow the attack surface on Community/NPC portraits
-//
-// The item-level schemas above are z.record(z.unknown()) (free-form to allow
-// the data model to evolve), so the `imageUrl` field is untyped at the schema
-// layer. A malicious client could post javascript:, file://, or massive
-// base64 strings with SVG+<script>. Images are rendered via <img src=...>
-// so script-execution is largely blocked by browsers, but defense-in-depth
-// says we should still refuse anything that isn't a recognised image URL.
-//
-// Accept:
-//   data:image/(png|jpeg|webp|gif);base64,<chars>   up to ~1MB encoded
-//   https://<host>/<path>                           external URL
-// Reject everything else.
+// Per-kind config — caps and which kinds carry portraits worth validating.
 // ---------------------------------------------------------------------------
 
-const MAX_IMAGE_DATA_URL_LEN = 1_200_000; // ~900KB decoded
-const IMAGE_DATA_URL_RE = /^data:image\/(?:png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/;
-const HTTPS_URL_RE = /^https:\/\/[^\s<>"']+$/;
+const LIMIT_BY_KIND: Record<EntityKind, number> = {
+  encounter: config.MAX_ENCOUNTERS_PER_USER,
+  expedition: config.MAX_EXPEDITIONS_PER_USER,
+  community: config.MAX_COMMUNITIES_PER_USER,
+  npc: config.MAX_NPCS_PER_USER,
+};
+const IMAGE_KINDS = new Set<EntityKind>(['expedition', 'community', 'npc']);
 
-function isValidImageUrl(s: unknown): boolean {
-  if (typeof s !== 'string' || s.length === 0) return true; // unset is fine
-  if (s.length > MAX_IMAGE_DATA_URL_LEN) return false;
-  if (IMAGE_DATA_URL_RE.test(s)) return true;
-  if (HTTPS_URL_RE.test(s) && s.length <= 2048) return true;
-  return false;
-}
-
-function assertImageUrls(items: Array<Record<string, unknown>>, kind: string): string | null {
-  for (let i = 0; i < items.length; i++) {
-    const url = items[i]?.imageUrl;
-    if (url === undefined || url === null) continue;
-    if (!isValidImageUrl(url)) {
-      return `${kind}[${i}].imageUrl is not a valid image data URL or https URL (or exceeds size cap)`;
-    }
-  }
-  return null;
-}
+// imageUrl validation for Community/NPC/Expedition portraits lives in the
+// shared lib so character routes can reuse the same rules — see
+// ../lib/imageUrl.js.
 
 // ---------------------------------------------------------------------------
 // Routes
@@ -100,108 +75,122 @@ export const userDataRoutes: FastifyPluginAsyncZod = async (server) => {
     return reply.status(200).send(result);
   });
 
-  // ── PATCH /session/encounters ─────────────────────────────────────────────
+  // ── Shared helpers for the :kind routes ───────────────────────────────────
+  // Map the plural URL segment to a storage kind, 404ing unknown segments.
+  // Returns null (and sends the response) when the segment is unrecognised.
+  function resolveKind(segment: string, reply: FastifyReply): EntityKind | null {
+    const kind = ud.KIND_BY_SEGMENT[segment];
+    if (!kind) {
+      reply.status(404).send({
+        statusCode: 404,
+        error: 'Not Found',
+        message: `Unknown collection '${segment}'`,
+      });
+      return null;
+    }
+    return kind;
+  }
+
+  function badRequest(reply: FastifyReply, message: string) {
+    return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message });
+  }
+
+  // ── PATCH /session/:kind — replace the whole collection ────────────────────
+  // Powers reset (PATCH { kind: [] }), seed, and import-replace flows. The body
+  // is keyed by the plural segment, e.g. { npcs: [...] }.
   server.patch(
-    '/encounters',
-    {
-      schema: {
-        body: patchEncountersBody,
-      },
-    },
+    '/:kind',
+    { schema: { params: kindParams, body: replaceBody } },
     async (req, reply) => {
-      if (req.body.encounters.length > config.MAX_ENCOUNTERS_PER_USER) {
+      const kind = resolveKind(req.params.kind, reply);
+      if (!kind) return;
+      const items = (req.body as Record<string, unknown>)[req.params.kind];
+      if (!Array.isArray(items)) {
+        return badRequest(reply, `Expected { ${req.params.kind}: [...] }`);
+      }
+      if (items.length > LIMIT_BY_KIND[kind]) {
         return reply.status(422).send({
           statusCode: 422,
           error: 'Unprocessable Entity',
-          message: `Encounter limit reached (max ${config.MAX_ENCOUNTERS_PER_USER})`,
+          message: `${kind} limit reached (max ${LIMIT_BY_KIND[kind]})`,
         });
       }
-      const result = await ud
-        .upsert(req.user!.id, { encounters: req.body.encounters })
-        .catch(handleError(reply));
-      if (!result || reply.sent) return;
-      return reply.status(200).send(result);
+      if (IMAGE_KINDS.has(kind)) {
+        const imgErr = assertImageUrls(items as Array<Record<string, unknown>>, req.params.kind);
+        if (imgErr) return badRequest(reply, imgErr);
+      }
+      try {
+        await ud.replaceEntities(req.user!.id, kind, items as Array<Record<string, unknown>>);
+        return reply.status(200).send(await ud.get(req.user!.id));
+      } catch (err) {
+        return handleError(reply)(err);
+      }
     },
   );
 
-  // ── PATCH /session/expeditions ────────────────────────────────────────────
-  server.patch(
-    '/expeditions',
-    {
-      schema: {
-        body: patchExpeditionsBody,
-      },
-    },
+  // ── POST /session/:kind — create one entity ────────────────────────────────
+  server.post(
+    '/:kind',
+    { schema: { params: kindParams, body: entityBody } },
     async (req, reply) => {
-      if (req.body.expeditions.length > config.MAX_EXPEDITIONS_PER_USER) {
-        return reply.status(422).send({
-          statusCode: 422,
-          error: 'Unprocessable Entity',
-          message: `Expedition limit reached (max ${config.MAX_EXPEDITIONS_PER_USER})`,
-        });
+      const kind = resolveKind(req.params.kind, reply);
+      if (!kind) return;
+      const entity = req.body as Record<string, unknown>;
+      const id = typeof entity.id === 'string' && entity.id ? entity.id : null;
+      if (!id) return badRequest(reply, 'Entity must have a non-empty string id');
+      if (IMAGE_KINDS.has(kind) && !isValidImageUrl(entity.imageUrl)) {
+        return badRequest(reply, 'imageUrl is not a valid image data URL or https URL');
       }
-      const imgErr = assertImageUrls(req.body.expeditions, 'expeditions');
-      if (imgErr)
-        return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: imgErr });
-      const result = await ud
-        .upsert(req.user!.id, { expeditions: req.body.expeditions })
-        .catch(handleError(reply));
-      if (!result || reply.sent) return;
-      return reply.status(200).send(result);
+      try {
+        const count = await ud.countEntities(req.user!.id, kind);
+        if (count >= LIMIT_BY_KIND[kind]) {
+          return reply.status(422).send({
+            statusCode: 422,
+            error: 'Unprocessable Entity',
+            message: `${kind} limit reached (max ${LIMIT_BY_KIND[kind]})`,
+          });
+        }
+        await ud.upsertEntity(req.user!.id, kind, id, entity);
+        return reply.status(201).send(entity);
+      } catch (err) {
+        return handleError(reply)(err);
+      }
     },
   );
 
-  // ── PATCH /session/communities ───────────────────────────────────────────
+  // ── PATCH /session/:kind/:id — update one entity ───────────────────────────
   server.patch(
-    '/communities',
-    {
-      schema: {
-        body: patchCommunitiesBody,
-      },
-    },
+    '/:kind/:id',
+    { schema: { params: kindIdParams, body: entityBody } },
     async (req, reply) => {
-      if (req.body.communities.length > config.MAX_COMMUNITIES_PER_USER) {
-        return reply.status(422).send({
-          statusCode: 422,
-          error: 'Unprocessable Entity',
-          message: `Community limit reached (max ${config.MAX_COMMUNITIES_PER_USER})`,
-        });
+      const kind = resolveKind(req.params.kind, reply);
+      if (!kind) return;
+      const entity = req.body as Record<string, unknown>;
+      if (IMAGE_KINDS.has(kind) && !isValidImageUrl(entity.imageUrl)) {
+        return badRequest(reply, 'imageUrl is not a valid image data URL or https URL');
       }
-      const imgErr = assertImageUrls(req.body.communities, 'communities');
-      if (imgErr)
-        return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: imgErr });
-      const result = await ud
-        .upsert(req.user!.id, { communities: req.body.communities })
-        .catch(handleError(reply));
-      if (!result || reply.sent) return;
-      return reply.status(200).send(result);
+      try {
+        await ud.upsertEntity(req.user!.id, kind, req.params.id, entity);
+        return reply.status(200).send(entity);
+      } catch (err) {
+        return handleError(reply)(err);
+      }
     },
   );
 
-  // ── PATCH /session/npcs ──────────────────────────────────────────────────
-  server.patch(
-    '/npcs',
-    {
-      schema: {
-        body: patchNpcsBody,
-      },
-    },
+  // ── DELETE /session/:kind/:id — delete one entity ──────────────────────────
+  server.delete(
+    '/:kind/:id',
+    { schema: { params: kindIdParams } },
     async (req, reply) => {
-      if (req.body.npcs.length > config.MAX_NPCS_PER_USER) {
-        return reply.status(422).send({
-          statusCode: 422,
-          error: 'Unprocessable Entity',
-          message: `NPC limit reached (max ${config.MAX_NPCS_PER_USER})`,
-        });
+      const kind = resolveKind(req.params.kind, reply);
+      if (!kind) return;
+      try {
+        await ud.deleteEntity(req.user!.id, kind, req.params.id);
+        return reply.status(204).send();
+      } catch (err) {
+        return handleError(reply)(err);
       }
-      const imgErr = assertImageUrls(req.body.npcs, 'npcs');
-      if (imgErr)
-        return reply.status(400).send({ statusCode: 400, error: 'Bad Request', message: imgErr });
-      const result = await ud
-        .upsert(req.user!.id, { npcs: req.body.npcs })
-        .catch(handleError(reply));
-      if (!result || reply.sent) return;
-      return reply.status(200).send(result);
     },
   );
 

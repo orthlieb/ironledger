@@ -14,6 +14,7 @@
 // =============================================================================
 
 import type { Expedition } from '$lib/types.js';
+import { makeEntitySync } from '$lib/entitySync.js';
 
 // ---------------------------------------------------------------------------
 // Module-level state
@@ -23,6 +24,10 @@ let _expeditions: Expedition[] = $state([]);
 let _loading = $state(false);
 let _loaded = false;
 let _saving = $state(false);
+
+// Per-entity sync engine — diffs the live list against the server snapshot and
+// issues one request per changed expedition instead of re-sending the whole list.
+const _sync = makeEntitySync<Expedition>('expeditions', () => _expeditions, 'expeditionStore');
 
 // ---------------------------------------------------------------------------
 // Fetch
@@ -42,6 +47,7 @@ export async function loadExpeditions(): Promise<void> {
 		// Guard against legacy rows where the JSONB column was persisted as
 		// `{}` instead of `[]` — `?? []` only rescues null/undefined.
 		_expeditions = Array.isArray(json.expeditions) ? (json.expeditions as Expedition[]) : [];
+		_sync.reset(_expeditions);
 		_loaded = true;
 	} catch (err) {
 		console.error('[expeditionStore] Failed to load expeditions:', err);
@@ -106,20 +112,9 @@ export async function removeExpedition(id: string): Promise<void> {
 // ---------------------------------------------------------------------------
 
 async function persist(): Promise<void> {
-	if (_saving) return; // prevent concurrent saves
 	_saving = true;
 	try {
-		const res = await fetch('/api/session/expeditions', {
-			method: 'PATCH',
-			credentials: 'include',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ expeditions: _expeditions }),
-		});
-		if (!res.ok) {
-			console.error('[expeditionStore] Persist failed:', res.status);
-		}
-	} catch (err) {
-		console.error('[expeditionStore] Persist error:', err);
+		await _sync.persist();
 	} finally {
 		_saving = false;
 	}

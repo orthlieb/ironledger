@@ -8,6 +8,7 @@ import {
   jsonb,
   integer,
   bigint,
+  bigserial,
   customType,
   index,
   uniqueIndex,
@@ -157,6 +158,36 @@ export const sessionLogEntries = pgTable(
 
 export type SessionLogEntry = typeof sessionLogEntries.$inferSelect;
 export type NewSessionLogEntry = typeof sessionLogEntries.$inferInsert;
+
+// ---------------------------------------------------------------------------
+// user_entities
+// One row per session-collection entity (encounter | expedition | community |
+// npc). Replaces the whole-array JSONB columns on user_data so a single entity
+// can be created/updated/deleted per request — see migration 0013. `seq`
+// preserves insertion order within (user, kind).
+// ---------------------------------------------------------------------------
+export const userEntities = pgTable(
+  'user_entities',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(),
+    entityId: text('entity_id').notNull(),
+    entity: jsonb('entity').notNull(),
+    seq: bigserial('seq', { mode: 'number' }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('user_entities_user_kind_entity_idx').on(t.userId, t.kind, t.entityId),
+    index('user_entities_user_kind_seq_idx').on(t.userId, t.kind, t.seq),
+  ],
+);
+
+export type UserEntity = typeof userEntities.$inferSelect;
+export type NewUserEntity = typeof userEntities.$inferInsert;
 
 // ---------------------------------------------------------------------------
 // history_entries
