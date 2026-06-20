@@ -47,9 +47,15 @@
 	// Just-cropped data URL, shown immediately after an upload so the image
 	// doesn't flash. Reset whenever the endpoint changes (different entity).
 	let localPreview = $state('');
+	let previewFor = ''; // the endpoint the current preview belongs to
 	$effect(() => {
-		endpoint; // track
-		localPreview = '';
+		// Drop the optimistic preview when the uploader switches to a different
+		// entity, so a stale image never lingers. Reading `endpoint` in the guard
+		// is what subscribes this effect to it.
+		if (previewFor !== endpoint) {
+			previewFor = endpoint;
+			localPreview = '';
+		}
 	});
 
 	// The image source: local preview wins right after upload, otherwise the
