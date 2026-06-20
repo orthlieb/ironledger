@@ -838,6 +838,26 @@
 			zipFiles['expeditions.md'] = strToU8(lines.join('\n').trimEnd());
 		}
 
+		// ── Foes ─────────────────────────────────────────────────────────
+		// Markdown only: encounters are transient (deleted session to session)
+		// and are deliberately excluded from the JSON export.
+		if (encounters.length) {
+			const lines: string[] = ['# Foes', ''];
+			for (const enc of encounters) {
+				const def = findFoe(enc.foeId);
+				const name = enc.customName?.trim() || def?.name || enc.foeId;
+				lines.push(`## ${name}`);
+				if (enc.vanquished) lines.push(`- **Status:** Vanquished`);
+				if (def?.nature) lines.push(`- **Nature:** ${def.nature}`);
+				lines.push(`- **Rank:** ${FOE_RANKS[enc.effectiveRank]?.label ?? enc.effectiveRank}`);
+				lines.push(`- **Quantity:** ${enc.quantity.charAt(0).toUpperCase() + enc.quantity.slice(1)}`);
+				lines.push(`- **Progress:** ${formatTicks(enc.ticks)}`);
+				if (enc.notes?.trim()) lines.push(``, `**Notes:**`, enc.notes.trim());
+				lines.push('');
+			}
+			zipFiles['foes.md'] = strToU8(lines.join('\n').trimEnd());
+		}
+
 		// ── Session Log ──────────────────────────────────────────────────
 		zipFiles['session-log.md'] = strToU8(logToMarkdown());
 
@@ -1076,16 +1096,18 @@
 					log: [...sessionLog.entries].reverse(),
 					communities: $state.snapshot(communities),
 					npcs: $state.snapshot(npcs),
-					foes: $state.snapshot(encounters),
 					expeditions: $state.snapshot(expeditions),
 					session: { activeCharId, activeFoeId, activeExpeditionId },
 				};
+				// Foes are intentionally NOT in the JSON: encounters are transient
+				// (they vary session to session and are routinely deleted) and import
+				// never restored them. They appear in the Markdown export only — see
+				// foes.md in exportMarkdownZip.
 				const count =
 					chars.length +
 					sessionLog.entries.length +
 					communities.length +
 					npcs.length +
-					encounters.length +
 					expeditions.length;
 				exportJson('everything', payload, count, `ironledger-export-${stamp}.json`);
 			}

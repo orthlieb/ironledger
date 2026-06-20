@@ -59,7 +59,7 @@ character (below).
 | `log`            | Session Log       | `Array<LogEntry>` (oldest-first)                                     | `session-log-<stamp>.json`       |
 | `communities`    | Communities       | `{ communities: Community[], npcs: Npc[] }`                          | `communities-<stamp>.json`       |
 | `expeditions`    | Expeditions       | `Array<Expedition>` (Journey \| Site)                                | `expeditions-<stamp>.json`       |
-| `everything`     | Everything        | `{ characters, log, communities, npcs, foes, expeditions, session }` | `ironledger-export-<stamp>.json` |
+| `everything`     | Everything        | `{ characters, log, communities, npcs, expeditions, session }` (foes are Markdown-only) | `ironledger-export-<stamp>.json` |
 
 `<stamp>` is local time formatted `YYYY-MM-DD_HHmm` (e.g. `2026-06-18_1504`).
 
@@ -160,13 +160,25 @@ both lists side by side:
       }
     ],
     "npcs": [
-      { "id": "…", "name": "Bayara", "role": "", "goal": "", "relationship": "neutral", "...": "…" }
+      {
+        "id": "…",
+        "name": "Bayara",
+        "role": "",
+        "goal": "",
+        "relationship": "neutral",
+        "deceased": false,
+        "...": "…"
+      }
     ]
   }
 }
 ```
 
-Field lists for `Community` and `Npc` are in `apps/web/src/lib/types.ts`.
+Field lists for `Community` and `Npc` are in `apps/web/src/lib/types.ts`. NPCs
+carry an optional **`deceased?: boolean`** — alive when absent or `false`,
+deceased when `true`. It drives the alive/deceased status toggle on the NPC
+card and the red **Deceased** pill in the Connections list. Communities have no
+equivalent flag.
 
 ---
 
@@ -217,23 +229,21 @@ sanitized on import (see [Import sanitization](#import-sanitization)).
     "log": [{ "id": "…", "title": "…", "html": "…", "ts": "…" }],
     "communities": [{ "id": "…", "name": "…" }],
     "npcs": [{ "id": "…", "name": "…" }],
-    "foes": [{ "id": "…", "foeId": "…", "effectiveRank": 3 }],
     "expeditions": [{ "id": "…", "type": "journey" }],
     "session": { "activeCharId": "…", "activeFoeId": "…", "activeExpeditionId": "…" }
   }
 }
 ```
 
-`count` is the sum of `characters + log + communities + npcs + foes +
-expeditions` lengths. `foes` is the list of `FoeEncounter` objects; `session`
-records which entities were active at export time.
+`count` is the sum of `characters + log + communities + npcs + expeditions`
+lengths. `session` records which entities were active at export time (not
+re-applied on import).
 
-> **Round-trip caveat.** The `everything` **export** writes a `foes` array and
-> a `session` object, but the `everything` **import** currently restores only
-> `characters`, `log`, `communities`, `npcs`, and `expeditions` — the `foes`
-> and `session` sections are **not** re-applied. To restore foe encounters,
-> they would need their own import path. (Exported foes are still useful as a
-> record / for manual recovery.)
+> **Foes are Markdown-only.** Foe encounters are transient — they vary from
+> campaign and session to session and are routinely deleted — so they are
+> **excluded from the JSON export** entirely (and were never restored on
+> import). They appear only in the **Markdown** export, as `foes.md` in the
+> `everything` Markdown ZIP, as a human-readable record.
 
 ---
 
