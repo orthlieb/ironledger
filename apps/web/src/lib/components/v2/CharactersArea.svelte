@@ -49,6 +49,7 @@
 	import charactersIconSvg from '$icons/Characters.svg?raw';
 	import type { CharacterData, CharacterAsset } from '$lib/types.js';
 	import AssetCard from '$lib/components/AssetCard.svelte';
+	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
 	import AssetPicker from '$lib/components/AssetPicker.svelte';
 	import StatControl from '$lib/components/StatControl.svelte';
 	import ResourceTile from '$lib/components/ResourceTile.svelte';
@@ -991,32 +992,29 @@
 								     (0 = none, 1 = character, 2 = foe). -->
 								<div class="ca-init-section">
 									<span class="ca-init-label">Initiative</span>
-									<div class="ca-init-toggle" role="group" aria-label="Initiative">
-										<button
-											class="ca-init-btn"
-											class:ca-init-btn--active={(d.initiative ?? 0) === 0}
-											onclick={() => {
-												d.initiative = 0;
-											}}
-											use:tooltip={'No initiative'}>None</button
-										>
-										<button
-											class="ca-init-btn ca-init-btn--foe"
-											class:ca-init-btn--active={(d.initiative ?? 0) === 2}
-											onclick={() => {
-												d.initiative = 2;
-											}}
-											use:tooltip={'Foe has initiative'}>{@html shieldSvg}Foe</button
-										>
-										<button
-											class="ca-init-btn ca-init-btn--you"
-											class:ca-init-btn--active={(d.initiative ?? 0) === 1}
-											onclick={() => {
-												d.initiative = 1;
-											}}
-											use:tooltip={'You have initiative'}>{@html swordSvg}Character</button
-										>
-									</div>
+									<SegmentedRadio
+										ariaLabel="Initiative"
+										labels="always"
+										value={(d.initiative as number) ?? 0}
+										onchange={(v) => (d.initiative = v)}
+										options={[
+											{ value: 0, text: 'None', label: 'No initiative', tone: 'neutral' },
+											{
+												value: 2,
+												icon: shieldSvg,
+												text: 'Foe',
+												label: 'Foe has initiative',
+												tone: 'stop',
+											},
+											{
+												value: 1,
+												icon: swordSvg,
+												text: 'Character',
+												label: 'You have initiative',
+												tone: 'go',
+											},
+										]}
+									/>
 								</div>
 
 								<!-- Stats — same StatControl tiles as v1, with the same color vars and stat-icon mapping.
@@ -1751,56 +1749,8 @@
 		letter-spacing: 0.08em;
 		color: var(--text-dimmer);
 	}
-	.ca-init-toggle {
-		display: flex;
-		border: 1px solid var(--border-mid);
-		border-radius: 4px;
-		overflow: hidden;
-	}
-	.ca-init-btn {
-		all: unset;
-		display: inline-flex;
-		align-items: center;
-		gap: 3px;
-		padding: 2px 7px;
-		font-family: var(--font-ui);
-		font-size: 0.58rem;
-		font-weight: 600;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		color: var(--text-muted);
-		background: transparent;
-		border-right: 1px solid var(--border-mid);
-		cursor: pointer;
-		transition:
-			background 0.12s,
-			color 0.12s;
-	}
-	.ca-init-btn:last-child {
-		border-right: none;
-	}
-	.ca-init-btn:hover:not(.ca-init-btn--active) {
-		background: rgba(255, 255, 255, 0.05);
-		color: var(--text-muted);
-	}
-	.ca-init-btn :global(svg) {
-		width: 9px;
-		height: 9px;
-		fill: currentColor;
-		flex-shrink: 0;
-	}
-	.ca-init-btn--active {
-		background: var(--text-accent);
-		color: var(--bg-card);
-	}
-	.ca-init-btn--you.ca-init-btn--active {
-		background: rgba(52, 211, 153, 0.18);
-		color: #34d399;
-	}
-	.ca-init-btn--foe.ca-init-btn--active {
-		background: rgba(239, 68, 68, 0.14);
-		color: #ef4444;
-	}
+	/* The initiative toggle now uses the shared <SegmentedRadio> (labels="always",
+	   tones none→neutral / foe→stop / character→go), which carries these styles. */
 
 	/* Stats / Vitals wrappers — wrap each row with a vertical "STATS" /
 	   "VITALS" side label on the left, V1-style with a separator. Upper

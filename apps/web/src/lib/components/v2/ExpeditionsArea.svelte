@@ -50,6 +50,7 @@
 	import trashSvg from '$icons/trash-solid-full.svg?raw';
 	import checkSvg from '$icons/circle-check-solid-full.svg?raw';
 	import locationSvg from '$icons/location-dot-solid-full.svg?raw';
+	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
 	import journeyPlaceholderSvg from '$icons/treasure-map.svg?raw';
 	import sitePlaceholderSvg from '$icons/dungeon-gate.svg?raw';
 	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
@@ -379,9 +380,6 @@
 	function handleTrackChange(_o: number, n: number) {
 		updateExp({ ticks: n });
 	}
-	function toggleComplete() {
-		if (activeExp) updateExp({ complete: !activeExp.complete });
-	}
 
 	// ── Site oracle rolls ─────────────────────────────────────────────────
 	// Mirrors v1 GlobalContextBar.gcOpenFeatures / gcOpenDangers / gcRollDenizen.
@@ -566,15 +564,22 @@
 							>{headingText(activeExp.name || 'Unnamed')}</button
 						>
 					{/if}
-					<button
-						class="btn btn-icon icon-btn ea-stage-complete-btn"
-						class:ea-stage-complete-btn--complete={activeExp.complete}
-						onclick={toggleComplete}
-						use:tooltip={activeExp.complete ? 'Mark active' : 'Mark complete'}
-						aria-label={activeExp.complete ? 'Mark active' : 'Mark complete'}
-						aria-pressed={activeExp.complete}
-						>{@html activeExp.complete ? locationSvg : checkSvg}</button
-					>
+					<SegmentedRadio
+						ariaLabel="Expedition status"
+						labels="auto"
+						value={activeExp.complete ? 'complete' : 'active'}
+						onchange={(v) => updateExp({ complete: v === 'complete' })}
+						options={[
+							{ value: 'active', icon: locationSvg, text: 'Active', label: 'Mark active', tone: 'go' },
+							{
+								value: 'complete',
+								icon: checkSvg,
+								text: 'Complete',
+								label: 'Mark complete',
+								tone: 'stop',
+							},
+						]}
+					/>
 					<button
 						class="btn btn-icon icon-btn btn-trash ea-stage-delete-btn"
 						onclick={() => deleteDialogRef?.open()}
@@ -1154,6 +1159,8 @@
 		border: none;
 		border-left: 3px solid var(--ea-nature, var(--text-muted));
 		border-bottom: 1px solid var(--border);
+		/* container for SegmentedRadio's responsive (labels="auto") collapse */
+		container-type: inline-size;
 	}
 	.ea-stage-icon {
 		display: flex;
@@ -1221,40 +1228,6 @@
 	/* Delete: visual comes from .btn-trash in app.css; only positioning here. */
 	.ea-stage-delete-btn {
 		flex-shrink: 0;
-	}
-
-	/* Mark-complete toggle — square icon-only sibling of the delete button.
-	   Icon renders the active-state action: circle-check when not complete
-	   (clicking marks it complete), location-dot when complete (clicking
-	   marks it active again). Green tint when currently marked complete. */
-	.ea-stage-complete-btn {
-		flex-shrink: 0;
-		opacity: 0.7;
-		transition:
-			opacity 0.12s,
-			color 0.12s;
-	}
-	.ea-stage-complete-btn:hover {
-		opacity: 1;
-		color: #e4aa28;
-	}
-	.ea-stage-complete-btn--complete {
-		opacity: 1;
-		color: #e4aa28;
-	}
-
-	/* Lock the mark-complete SVG to a 12px square so non-square FontAwesome
-	   icons (e.g. location-dot 3:4) don't stretch the button. pointer-events
-	   none lets the native `title` tooltip surface over the SVG path. */
-	.ea-stage-complete-btn :global(svg) {
-		width: 12px;
-		height: 12px;
-		flex-shrink: 0;
-		pointer-events: none;
-		fill: currentColor;
-	}
-	.ea-stage-complete-btn :global(svg) :global(path) {
-		fill: currentColor;
 	}
 
 	/* Tabs — V1 tab-btn style. */

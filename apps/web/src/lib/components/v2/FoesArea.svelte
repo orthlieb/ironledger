@@ -41,6 +41,7 @@
 	import trashSvg from '$icons/trash-solid-full.svg?raw';
 	import swordSvg from '$icons/sword-solid-full.svg?raw';
 	import skullSvg from '$icons/skull-crossbones-solid-full.svg?raw';
+	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
 	import foesIconSvg from '$icons/Foes.svg?raw';
 	import { headingText } from '$lib/fontStore.svelte.js';
 
@@ -190,9 +191,6 @@
 	}
 
 	// Vanquish
-	function toggleVanquished() {
-		update({ vanquished: !activeEnc?.vanquished });
-	}
 	export function vanquishActiveFoe() {
 		if (activeEnc && !activeEnc.vanquished) update({ vanquished: true });
 	}
@@ -270,15 +268,22 @@
 							>{headingText(displayName)}</button
 						>
 					{/if}
-					<button
-						class="btn btn-icon icon-btn fa-stage-vanquish-btn"
-						class:fa-stage-vanquish-btn--vanquished={activeEnc.vanquished}
-						onclick={toggleVanquished}
-						use:tooltip={activeEnc.vanquished ? 'Mark active' : 'Mark vanquished'}
-						aria-label={activeEnc.vanquished ? 'Mark active' : 'Mark vanquished'}
-						aria-pressed={activeEnc.vanquished}
-						>{@html activeEnc.vanquished ? swordSvg : skullSvg}</button
-					>
+					<SegmentedRadio
+						ariaLabel="Foe status"
+						labels="auto"
+						value={activeEnc.vanquished ? 'vanquished' : 'active'}
+						onchange={(v) => update({ vanquished: v === 'vanquished' })}
+						options={[
+							{ value: 'active', icon: swordSvg, text: 'Active', label: 'Mark active', tone: 'go' },
+							{
+								value: 'vanquished',
+								icon: skullSvg,
+								text: 'Vanquished',
+								label: 'Mark vanquished',
+								tone: 'stop',
+							},
+						]}
+					/>
 					<button
 						class="btn btn-icon icon-btn btn-trash fa-stage-delete-btn"
 						onclick={() => deleteDialogRef?.open()}
@@ -671,6 +676,8 @@
 		border: none;
 		border-left: 3px solid var(--fa-nature, var(--text-muted));
 		border-bottom: 1px solid var(--border);
+		/* container for SegmentedRadio's responsive (labels="auto") collapse */
+		container-type: inline-size;
 	}
 	.fa-stage-name {
 		appearance: none;
@@ -744,39 +751,6 @@
 	/* Delete: visual comes from .btn-trash in app.css; only positioning here. */
 	.fa-stage-delete-btn {
 		flex-shrink: 0;
-	}
-
-	/* Vanquish toggle — square icon-only button in the title row.
-	   Renders the active-state icon: skull when unvanquished, sword when vanquished.
-	   When vanquished, the sword gets the muted-red color so it reads as "currently
-	   marked vanquished" at a glance. */
-	.fa-stage-vanquish-btn {
-		flex-shrink: 0;
-		opacity: 0.7;
-		transition:
-			opacity 0.12s,
-			color 0.12s;
-	}
-	.fa-stage-vanquish-btn:hover {
-		opacity: 1;
-		color: var(--color-danger);
-	}
-	.fa-stage-vanquish-btn--vanquished {
-		opacity: 1;
-		color: var(--color-danger);
-	}
-
-	/* Lock vanquish-button SVG to a 12px square; pointer-events:none lets the
-	   native `title` tooltip on the button surface over the SVG path. */
-	.fa-stage-vanquish-btn :global(svg) {
-		width: 12px;
-		height: 12px;
-		flex-shrink: 0;
-		pointer-events: none;
-		fill: currentColor;
-	}
-	.fa-stage-vanquish-btn :global(svg) :global(path) {
-		fill: currentColor;
 	}
 
 	/* Card tabs — same V1 tab-btn style as CharactersArea. */

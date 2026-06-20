@@ -439,6 +439,7 @@ export interface Npc {
 	notes: string; // long-form description (Description tab)
 	situationalNotes?: string; // short situational notes (Core tab)
 	imageUrl?: string; // base64 image data URL
+	deceased?: boolean; // alive (default/absent) vs deceased
 	createdAt?: number; // Date.now() on creation
 }
 

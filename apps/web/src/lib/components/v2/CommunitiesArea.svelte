@@ -47,6 +47,9 @@
 
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import trashSvg from '$icons/trash-solid-full.svg?raw';
+	import heartPulseSvg from '$icons/heart-pulse-solid-full.svg?raw';
+	import skullSvg from '$icons/skull-crossbones-solid-full.svg?raw';
+	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
 	import hutSvg from '$icons/hut.svg?raw';
 	import farmerSvg from '$icons/farmer.svg?raw';
 	import villageIconSvg from '$icons/village.svg?raw';
@@ -517,6 +520,9 @@
 								>{entry.data.name ||
 									(entry.kind === 'npc' ? 'Unnamed NPC' : 'Unnamed Community')}</span
 							>
+							{#if entry.kind === 'npc' && entry.data.deceased}
+								<span class="cm-row-deceased">Deceased</span>
+							{/if}
 							<span class="cm-row-badge">{entry.kind === 'npc' ? 'NPC' : 'Community'}</span>
 						</button>
 					{:else}
@@ -552,6 +558,24 @@
 									(activeEntry.kind === 'npc' ? 'Unnamed NPC' : 'Unnamed Community'),
 							)}</button
 						>
+					{/if}
+					{#if activeEntry.kind === 'npc'}
+						<SegmentedRadio
+							ariaLabel="NPC status"
+							labels="auto"
+							value={(activeEntry.data as Npc).deceased ? 'deceased' : 'alive'}
+							onchange={(v) => updateNpc({ deceased: v === 'deceased' })}
+							options={[
+								{ value: 'alive', icon: heartPulseSvg, text: 'Alive', label: 'Mark alive', tone: 'go' },
+								{
+									value: 'deceased',
+									icon: skullSvg,
+									text: 'Deceased',
+									label: 'Mark deceased',
+									tone: 'stop',
+								},
+							]}
+						/>
 					{/if}
 					<button
 						class="btn btn-icon icon-btn btn-trash cm-stage-delete-btn"
@@ -1256,6 +1280,21 @@
 		line-height: 1;
 		flex-shrink: 0;
 	}
+	/* Deceased status pill — red, shown on NPC rows only when deceased. Matches
+	   the SegmentedRadio "stop" tone so the list and the card status agree. */
+	.cm-row-deceased {
+		font-family: var(--font-ui);
+		font-size: 0.55rem;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: #ef4444;
+		background: rgba(239, 68, 68, 0.14);
+		border-radius: 10px;
+		padding: 2px 6px;
+		line-height: 1;
+		flex-shrink: 0;
+	}
 	.cm-list-empty {
 		margin: 0;
 		padding: 16px 12px;
@@ -1280,6 +1319,8 @@
 		gap: 6px;
 		padding: 5px 10px;
 		background: var(--bg-control);
+		/* container for SegmentedRadio's responsive (labels="auto") collapse */
+		container-type: inline-size;
 		border: none;
 		border-left: 3px solid var(--cm-nature, var(--text-muted));
 		border-bottom: 1px solid var(--border);
