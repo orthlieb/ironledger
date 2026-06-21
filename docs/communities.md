@@ -18,7 +18,8 @@ interface Community {
   locationDescription: string;
   trouble: string;
   notes: string; // markdown
-  imageUrl?: string; // base64 JPEG data URL
+  portraitEtag?: string; // content hash; bytes live in the portrait blob store
+  imageUrl?: string; // @deprecated legacy inline base64 — import transport only
   createdAt?: number; // Date.now() on creation
 }
 ```
@@ -36,7 +37,8 @@ interface Npc {
   relationship: 'neutral' | 'bond' | 'foe';
   location: string; // free-form, not an FK to Community.id
   notes: string; // markdown
-  imageUrl?: string;
+  portraitEtag?: string; // content hash; bytes live in the portrait blob store
+  imageUrl?: string; // @deprecated legacy inline base64 — import transport only
   createdAt?: number;
 }
 ```
@@ -122,9 +124,9 @@ Both cards render the `notes` field as **click-to-edit markdown** via `renderNot
 
 ---
 
-## Image Field
+## Portrait Field
 
-`imageUrl` is a base64 JPEG **data URL** stored inline in the JSONB blob. Limits depend on the BFF's body cap (see [architecture_decisions.md](architecture_decisions.md)) — keep portraits small. There is no separate upload endpoint or asset store.
+Portraits are **not** inlined in the entity JSON. The card uploads the cropped image to the content-addressed blob store via `PUT /api/session/{communities|npcs}/:id/portrait`, and the entity stores only `portraitEtag` (the content hash). The card renders `<img src="/api/session/:kind/:id/portrait?v=<etag>">`, which is cacheable and revalidates with an ETag (304). The legacy inline `imageUrl` base64 field is deprecated — accepted on import and re-embedded on export as the round-trip transport only (see [Portraits in import-schema.md](import-schema.md#portraits)).
 
 ---
 

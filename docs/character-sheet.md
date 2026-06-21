@@ -17,7 +17,7 @@ Full character editor rendered in the "Characters" tab of the character detail p
 
 - **Name** — text input, synced to `character.name` (top-level DB column) as well as `data.name`.
 - **Background** — textarea for backstory/notes.
-- **Portrait** — click to upload a JPEG; stored as base64 data URL in `data.portrait`.
+- **Portrait** — click to upload a JPEG; uploaded to the content-addressed blob store via `PUT /api/characters/:id/portrait`. `data.portraitEtag` holds the content hash and the bytes are no longer inlined. See [Portraits in import-schema.md](import-schema.md#portraits).
 
 ### Core Stats (1–4, rarely 5)
 
@@ -96,7 +96,8 @@ Each asset references an `assetId` from the asset catalogue, with per-ability `e
 interface CharacterData {
   name: string;
   background: string;
-  portrait?: string; // base64 JPEG
+  portraitEtag?: string; // content hash; bytes live in the portrait blob store
+  portrait?: string; // @deprecated legacy inline base64 — import transport only
   edge: number;
   heart: number;
   iron: number;
