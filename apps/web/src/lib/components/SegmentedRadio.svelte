@@ -69,7 +69,11 @@
 			onclick={() => select(opt.value)}
 		>
 			{#if opt.icon}<span class="sr-ic">{@html opt.icon}</span>{/if}
-			{#if opt.text && labels !== 'never'}<span class="sr-lbl">{opt.text}</span>{/if}
+			<!-- Always render the label when present; collapse mode (never / auto-
+			     tight) animates it to zero width via CSS rather than removing it,
+			     so the control shrinks smoothly and the adjacent field expands
+			     into the freed space (and back again afterwards). -->
+			{#if opt.text}<span class="sr-lbl">{opt.text}</span>{/if}
 		</button>
 	{/each}
 </div>
@@ -85,7 +89,8 @@
 		all: unset;
 		display: inline-flex;
 		align-items: center;
-		gap: 3px;
+		/* No flex gap here: the icon↔label spacing lives on .sr-lbl's margin so
+		   it can animate to zero alongside the collapsing label. */
 		padding: 2px 7px;
 		font-family: var(--font-ui);
 		font-size: 0.58rem;
@@ -99,7 +104,8 @@
 		box-sizing: border-box;
 		transition:
 			background 0.12s,
-			color 0.12s;
+			color 0.12s,
+			padding 0.2s ease;
 	}
 	.sr-btn:last-child {
 		border-right: none;
@@ -116,9 +122,32 @@
 		height: 9px;
 		fill: currentColor;
 		flex-shrink: 0;
+		transition:
+			width 0.2s ease,
+			height 0.2s ease;
+	}
+	/* The label animates between its natural width and zero (collapse modes
+	   below) so the control shrinks/grows smoothly rather than snapping. */
+	.sr-lbl {
+		display: inline-block;
+		max-width: 6rem;
+		margin-left: 3px;
+		overflow: hidden;
+		white-space: nowrap;
+		opacity: 1;
+		transition:
+			max-width 0.2s ease,
+			opacity 0.2s ease,
+			margin-left 0.2s ease;
 	}
 
-	/* Icon-only modes: a touch larger glyph and balanced padding. */
+	/* Icon-only modes: a touch larger glyph and balanced padding. The label
+	   collapses to zero width (kept in the DOM) so the transition animates. */
+	.sr--never .sr-lbl {
+		max-width: 0;
+		margin-left: 0;
+		opacity: 0;
+	}
 	.sr--never .sr-btn {
 		padding: 3px 6px;
 	}
@@ -145,7 +174,9 @@
 	   query measures the nearest container ancestor (the consuming header). */
 	@container (max-width: 360px) {
 		.sr--auto .sr-lbl {
-			display: none;
+			max-width: 0;
+			margin-left: 0;
+			opacity: 0;
 		}
 		.sr--auto .sr-btn {
 			padding: 3px 6px;
