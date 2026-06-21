@@ -516,7 +516,12 @@
 									(entry.kind === 'npc' ? 'Unnamed NPC' : 'Unnamed Community')}</span
 							>
 							{#if entry.kind === 'npc' && entry.data.deceased}
-								<span class="cm-row-deceased">Deceased</span>
+								<span
+									class="cm-row-deceased"
+									role="img"
+									aria-label="Deceased"
+									use:tooltip={'Deceased'}>{@html skullSvg}</span
+								>
 							{/if}
 							<span class="cm-row-badge">{entry.kind === 'npc' ? 'NPC' : 'Community'}</span>
 						</button>
@@ -1285,20 +1290,24 @@
 		line-height: 1;
 		flex-shrink: 0;
 	}
-	/* Deceased status pill — red, shown on NPC rows only when deceased. Matches
-	   the SegmentedRadio "stop" tone so the list and the card status agree. */
+	/* Deceased status — red skull icon, shown on NPC rows only when deceased.
+	   Matches the SegmentedRadio "stop" tone so the list and card status agree. */
 	.cm-row-deceased {
-		font-family: var(--font-ui);
-		font-size: 0.55rem;
-		font-weight: 600;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
+		display: inline-flex;
+		align-items: center;
+		/* Pill shape matches .cm-row-badge (the NPC/Community badge beside it),
+		   tinted red to read as "deceased"; the skull glyph stands in for text. */
 		color: #ef4444;
-		background: rgba(239, 68, 68, 0.14);
+		background: color-mix(in srgb, #ef4444 13%, transparent);
 		border-radius: 10px;
 		padding: 2px 6px;
 		line-height: 1;
 		flex-shrink: 0;
+	}
+	.cm-row-deceased :global(svg) {
+		width: 9px;
+		height: 9px;
+		fill: currentColor;
 	}
 	.cm-list-empty {
 		margin: 0;
