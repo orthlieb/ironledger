@@ -15,7 +15,7 @@ import { Redis } from 'ioredis';
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 
 import { config } from './config.js';
-import { checkDbHealth, adminDb } from './db/index.js';
+import { adminDb } from './db/index.js';
 import { securityEvents } from './db/schema.js';
 
 import { authRoutes } from './routes/auth.js';

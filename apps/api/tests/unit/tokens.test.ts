@@ -6,7 +6,7 @@
  * the test suite.
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { generateKeyPairSync } from 'crypto';
 import {
   signAccessToken,

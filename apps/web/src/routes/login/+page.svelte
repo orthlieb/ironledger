@@ -34,9 +34,10 @@
 			<p class="hero-caption">{data.tagline}</p>
 		</div>
 
-		{#if (form as any)?.maintenance}
+		{#if (form as { maintenance?: boolean; message?: string })?.maintenance}
 			<div class="maintenance-banner">
-				<strong>Under Construction</strong> — {(form as any).message}
+				<strong>Under Construction</strong> — {(form as { maintenance?: boolean; message?: string })
+					.message}
 			</div>
 		{:else if form?.error}
 			<div class="error-msg">{form.error}</div>

@@ -18,7 +18,6 @@
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import {
 		loadMoves,
-		getMoves,
 		getVisibleMoves,
 		getVisibleMoveCategories,
 		findMove,
@@ -136,9 +135,6 @@
 	// ---------------------------------------------------------------------------
 	// Derived
 	// ---------------------------------------------------------------------------
-	// Detail view / lookups use the unfiltered list (log click-through to a
-	// disabled-expansion move must still render).
-	const allMoves = $derived(getMoves());
 	const moves = $derived(getVisibleMoves());
 	const categories = $derived(getVisibleMoveCategories());
 

@@ -21,7 +21,7 @@
 		getLog,
 		sessionLog,
 	} from '$lib/log.svelte.js';
-	import { OVERFLOW_RULES, FLOOR_OVERFLOW_RULES, BURN_MOMENTUM_TITLE } from '$lib/cascadeRules.js';
+	import { OVERFLOW_RULES, FLOOR_OVERFLOW_RULES } from '$lib/cascadeRules.js';
 	import type { DiceCtx } from '$lib/diceContext.svelte.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { momentumReset } from '$lib/character.js';

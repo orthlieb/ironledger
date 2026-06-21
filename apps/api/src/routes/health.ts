@@ -62,17 +62,6 @@ function statusPage(dbOk: boolean, redisOk: boolean, version: string): string {
     ? `<img src="${imgSrc}" alt="${headline}" style="width:100%;height:auto;display:block;">`
     : '';
 
-  function indicator(ok: boolean, label: string): string {
-    const color = ok ? '#34d399' : '#ef4444';
-    const icon = ok ? '✓' : '✗';
-    return `
-    <div style="display:flex;align-items:center;gap:8px;">
-      <span style="color:${color};font-size:1rem;font-weight:700;">${icon}</span>
-      <span style="font-size:0.78rem;color:#a0a0a0;">${label}</span>
-      <span style="margin-left:auto;font-size:0.72rem;font-weight:600;color:${color};">${ok ? 'OK' : 'ERROR'}</span>
-    </div>`;
-  }
-
   return `<!DOCTYPE html>
 <html lang="en">
 <head>

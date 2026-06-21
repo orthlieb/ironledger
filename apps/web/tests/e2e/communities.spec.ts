@@ -12,7 +12,6 @@ import { resetCommunities } from './helpers/reset';
 const CM_AREA = '.home-area--communities';
 const CM_HEADER = `${CM_AREA} .cm-header`;
 const CM_ROW = `${CM_AREA} .cm-row`;
-const CM_STAGE = `${CM_AREA} .cm-stage`;
 
 async function waitForCommunitiesLoaded(page: import('@playwright/test').Page) {
 	await expect(page.locator(`${CM_AREA} .cm-loading`)).not.toBeVisible({ timeout: 10_000 });

@@ -10,7 +10,6 @@ import { resetFoes } from './helpers/reset';
 const FOE_AREA = '.home-area--foes';
 const FOE_HEADER = `${FOE_AREA} .fa-header`;
 const FOE_SPINE = `${FOE_AREA} .fa-spine`;
-const FOE_STAGE = `${FOE_AREA} .fa-stage`;
 
 async function waitForFoesLoaded(page: import('@playwright/test').Page) {
 	await expect(page.locator(`${FOE_AREA} .fa-loading`)).not.toBeVisible({ timeout: 10_000 });

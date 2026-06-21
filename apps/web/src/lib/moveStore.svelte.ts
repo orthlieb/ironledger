@@ -14,7 +14,6 @@
 // =============================================================================
 
 import type { MoveDefinition } from '@ironledger/shared';
-import type { Precondition } from './preconditions.js';
 import { isSourceEnabled } from './expansionStore.svelte.js';
 
 // ---------------------------------------------------------------------------

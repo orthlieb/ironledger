@@ -49,7 +49,7 @@ export async function verifyCaptcha(token: string, remoteip?: string): Promise<v
       signal: AbortSignal.timeout(5000), // fail fast — don't block the request
     });
     data = (await res.json()) as HCaptchaResponse;
-  } catch (err) {
+  } catch {
     // Network error reaching hCaptcha — fail closed (deny the request)
     throw new CaptchaError('CAPTCHA verification service unreachable');
   }

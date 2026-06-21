@@ -365,7 +365,6 @@
 		<!-- ===== CONFIRM VIEW ===== -->
 	{:else if view === 'confirm' && confirmFoe}
 		{@const natureColor = natureBorderColor(confirmFoe.nature)}
-		{@const baseRankInfo = FOE_RANKS[confirmFoe.rank]}
 		{@const resolvedDesc = resolveFoeDescription(confirmFoe)}
 
 		<!-- Back bar -->

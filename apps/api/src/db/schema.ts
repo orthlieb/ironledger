@@ -7,7 +7,6 @@ import {
   inet,
   jsonb,
   integer,
-  bigint,
   bigserial,
   customType,
   index,

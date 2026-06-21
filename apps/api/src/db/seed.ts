@@ -15,7 +15,6 @@
 import argon2 from 'argon2';
 import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
-import { sql } from 'drizzle-orm';
 import { config } from '../config.js';
 import * as schema from './schema.js';
 

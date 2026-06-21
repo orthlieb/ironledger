@@ -11,7 +11,7 @@
  * v2: only the active character's vitals are visible at a time. To verify
  * sync, we click each spine in turn and read its Supply tile value.
  */
-import { test, expect, type Locator, type Page } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { resetCharacters } from './helpers/reset';
 
 const CHAR_AREA = '.home-area--characters';

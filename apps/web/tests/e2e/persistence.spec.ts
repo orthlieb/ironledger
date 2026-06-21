@@ -108,18 +108,6 @@ async function waitForCommunitiesArea(page: Page) {
 		.waitFor({ timeout: 12_000, state: 'attached' });
 }
 
-// ── Character helpers ─────────────────────────────────────────────────────────
-
-async function ensureCharacterSelected(page: Page): Promise<void> {
-	await waitForCharactersArea(page);
-	if ((await page.locator(CHAR_SPINE).count()) === 0) {
-		await page.locator(`${CHAR_HEADER} button:has-text("+ Character")`).click();
-		await expect(page.locator(CHAR_SPINE)).not.toHaveCount(0, { timeout: 8_000 });
-	}
-	// Wait for the card tabs — proves activeChar AND activeData are populated.
-	await expect(page.locator(`${CHAR_AREA} .ca-tab`).first()).toBeVisible({ timeout: 8_000 });
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Tests
 // ─────────────────────────────────────────────────────────────────────────────

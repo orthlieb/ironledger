@@ -64,7 +64,7 @@ export async function authenticate(req: FastifyRequest, reply: FastifyReply): Pr
 // optionalAuth — attaches req.user if a valid token is present, silent if not
 // ---------------------------------------------------------------------------
 
-export async function optionalAuth(req: FastifyRequest, reply: FastifyReply): Promise<void> {
+export async function optionalAuth(req: FastifyRequest, _reply: FastifyReply): Promise<void> {
   const token = extractBearerToken(req);
   if (!token) return;
 

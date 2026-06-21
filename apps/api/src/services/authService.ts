@@ -12,7 +12,7 @@
 import argon2 from 'argon2';
 import { randomBytes } from 'crypto';
 import { eq, and, isNull } from 'drizzle-orm';
-import { db, withUserContext, adminDb } from '../db/index.js';
+import { withUserContext, adminDb } from '../db/index.js';
 import { users, refreshTokens, authTokens, type User } from '../db/schema.js';
 import {
   signAccessToken,

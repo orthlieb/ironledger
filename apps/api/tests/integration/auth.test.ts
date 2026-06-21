@@ -8,7 +8,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as auth from '../../src/services/authService.js';
 import { adminDb } from '../../src/db/index.js';
-import { users, authTokens, refreshTokens } from '../../src/db/schema.js';
+import { users, authTokens } from '../../src/db/schema.js';
 import { eq } from 'drizzle-orm';
 
 // Tests use adminDb (bypasses RLS) for all setup, cleanup, and verification

@@ -8,7 +8,7 @@
 
 import { eq, and, count } from 'drizzle-orm';
 import { withUserContext } from '../db/index.js';
-import { characters, historyEntries, type Character } from '../db/schema.js';
+import { characters, historyEntries } from '../db/schema.js';
 import { config } from '../config.js';
 
 // ---------------------------------------------------------------------------

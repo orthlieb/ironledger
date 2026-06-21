@@ -48,8 +48,6 @@
 	let {
 		asset = $bindable(),
 		definition,
-		characterId,
-		characterName,
 		characterXp,
 		globalValues = $bindable(),
 		mode,
@@ -63,8 +61,6 @@
 	}: {
 		asset: CharacterAsset;
 		definition: AssetDefinition;
-		characterId: string;
-		characterName: string;
 		characterXp: number;
 		/** Shared counter values for fields with global:true, keyed by field.id.
 		 *  Always a draft copy of character.globalValues — parent commits on OK. */

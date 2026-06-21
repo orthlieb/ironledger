@@ -8,7 +8,7 @@
  *   maintenance:shutdownAt — ISO timestamp when system goes down
  */
 
-import { isNull, eq } from 'drizzle-orm';
+import { isNull } from 'drizzle-orm';
 import { redis } from '../server.js';
 import { adminDb } from '../db/index.js';
 import { refreshTokens, securityEvents } from '../db/schema.js';

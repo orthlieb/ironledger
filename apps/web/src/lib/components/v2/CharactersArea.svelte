@@ -58,7 +58,7 @@
 	import MarkdownNotes from '$lib/components/MarkdownNotes.svelte';
 	import PortraitUploader from '$lib/components/PortraitUploader.svelte';
 	import { EditableName } from '$lib/editableName.svelte.js';
-	import { assetIcon, categoryIcon } from '$lib/iconRegistry.js';
+	import { assetIcon } from '$lib/iconRegistry.js';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import VowCard from '$lib/components/VowCard.svelte';
 	import DebilitiesSection from '$lib/components/DebilitiesSection.svelte';
@@ -1325,8 +1325,6 @@
 			<AssetCard
 				bind:asset={dialogDraft}
 				definition={def}
-				characterId={activeChar.id}
-				characterName={activeChar.name}
 				characterXp={activeData.xp ?? 0}
 				bind:globalValues={dialogGlobals}
 				mode={dialogMode}

@@ -85,7 +85,6 @@
 	let activeEntryId = $state<string | null>(null);
 	let activeTab = $state<CmTab>('core');
 	let deleteDialogRef = $state<{ open(): void; close(): void } | null>(null);
-	let newlyCreatedId = $state('');
 
 	// Rail controls — search box, type filter, and sort order. These scale the
 	// list to dozens of entries (see displayEntries below). Filter + sort
@@ -337,9 +336,7 @@
 		}
 		await addCommunity(c);
 		activeEntryId = c.id;
-		newlyCreatedId = c.id;
 		activeTab = 'core';
-		setTimeout(() => (newlyCreatedId = ''), 0);
 	}
 
 	async function addNewNpc() {
@@ -382,9 +379,7 @@
 		}
 		await addNpc(n);
 		activeEntryId = n.id;
-		newlyCreatedId = n.id;
 		activeTab = 'core';
-		setTimeout(() => (newlyCreatedId = ''), 0);
 	}
 
 	async function confirmDeleteEntry() {

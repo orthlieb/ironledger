@@ -84,7 +84,6 @@
 	let activeExpId = $state<string | null>(null);
 	let activeTab = $state<ExpTab>('core');
 	let deleteDialogRef = $state<{ open(): void; close(): void } | null>(null);
-	let newlyCreatedId = $state('');
 
 	// New-journey / new-site dialog state (mirrors V1 pattern).
 	let newJourneyDialogRef = $state<{ open(): void; close(): void } | null>(null);
@@ -118,9 +117,6 @@
 	});
 
 	const activeExp = $derived(expeditions.find((e) => e.id === activeExpId));
-	const activeJourney = $derived<Journey | null>(
-		activeExp?.type === 'journey' ? (activeExp as Journey) : null,
-	);
 	const activeSite = $derived<Site | null>(activeExp?.type === 'site' ? (activeExp as Site) : null);
 
 	// Publish active expedition id so MovesDialog / preconditions can see it.
@@ -132,15 +128,12 @@
 	function selectExp(id: string) {
 		flushPersist(); // commit pending edit before switching
 		activeExpId = id;
-		const next = expeditions.find((e) => e.id === id);
 		activeTab = 'core';
 		nameEdit.commit();
 		editingNotes = false;
-		editingObjective = false;
 	}
 
 	// Site state
-	let editingObjective = $state(false);
 	let foePickerRef = $state<{
 		open(): Promise<void>;
 		openForDenizen(): Promise<void>;
@@ -151,19 +144,6 @@
 	let changeDomainDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let newThemeValue = $state<string>('');
 	let newDomainValue = $state<string>('');
-
-	function openChangeTheme() {
-		if (activeSite) {
-			newThemeValue = activeSite.theme;
-			changeThemeDialogRef?.open();
-		}
-	}
-	function openChangeDomain() {
-		if (activeSite) {
-			newDomainValue = activeSite.domain;
-			changeDomainDialogRef?.open();
-		}
-	}
 
 	// Exported handlers for LogPanel's change-theme-link / change-domain-link
 	// click delegation. Switch active expedition to the linked one, switch to
@@ -327,9 +307,7 @@
 		};
 		await addExpedition(j);
 		activeExpId = j.id;
-		newlyCreatedId = j.id;
 		activeTab = 'core';
-		setTimeout(() => (newlyCreatedId = ''), 0);
 	}
 
 	function addSite() {
@@ -355,9 +333,7 @@
 		};
 		await addExpedition(s);
 		activeExpId = s.id;
-		newlyCreatedId = s.id;
 		activeTab = 'core';
-		setTimeout(() => (newlyCreatedId = ''), 0);
 	}
 	/** Generate-randomly path: pick a random theme + domain (keeping the chosen
 	 *  difficulty), then create — mirrors the random NPC / Community flow. */
