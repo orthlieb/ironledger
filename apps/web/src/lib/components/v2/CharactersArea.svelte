@@ -118,7 +118,7 @@
 	type CardKey = 'background' | 'core' | 'vows' | 'assets' | 'status';
 	const CARD_LABELS: { key: CardKey; label: string }[] = [
 		{ key: 'core', label: 'Core' },
-		{ key: 'background', label: 'Description' },
+		{ key: 'background', label: 'Background' },
 		{ key: 'vows', label: 'Vows' },
 		{ key: 'assets', label: 'Assets' },
 		{ key: 'status', label: 'Status' },
@@ -984,7 +984,7 @@
 								<MarkdownNotes
 									bind:value={d.background}
 									bind:editing={editingBackground}
-									placeholder="Background, history, or notes…"
+									placeholder="Origin, upbringing, major traits…"
 									rows={6}
 								/>
 							</div>

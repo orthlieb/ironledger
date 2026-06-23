@@ -323,18 +323,22 @@ The fields that accept it:
 
 | Entity                 | Field              | Notes                                                                                                                 |
 | ---------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `Character` (`data`)   | `background`       | Character sheet → background                                                                                          |
+| `Character` (`data`)   | `background`       | Character sheet → Background tab — origin, upbringing, major traits                                                   |
 | `Character` (`data`)   | `bondsFormed`      | Character sheet → Bonds → notes column                                                                                |
 | `Character` (`data`)   | `lessonsLearned`   | Character sheet → Failures → notes column                                                                             |
 | `Vow` (in `data.vows`) | `notes`            | Per-vow notes block                                                                                                   |
-| `Community`            | `notes`            | Long-form description (Description tab)                                                                               |
-| `Community`            | `situationalNotes` | Short situational notes (Core tab)                                                                                    |
-| `Npc`                  | `notes`            | Long-form description (Description tab)                                                                               |
-| `Npc`                  | `situationalNotes` | Short situational notes (Core tab)                                                                                    |
+| `Community`            | `notes`            | Long-form description of the place (Description tab)                                                                  |
+| `Community`            | `situationalNotes` | Conditions / aspects of the current trouble (Core tab)                                                                |
+| `Npc`                  | `notes`            | Background — origin, upbringing, major traits (Background tab)                                                        |
+| `Npc`                  | `situationalNotes` | Actions taken by or things that have happened to this NPC in your story (Core tab)                                    |
 | `Journey`              | `notes`            | Per-journey notes block                                                                                               |
 | `Site`                 | `notes`            | Per-site notes block                                                                                                  |
 | `LogEntry`             | `note`             | Optional per-entry note appended below an entry                                                                       |
 | `LogEntry`             | `source`           | Markdown source for entries created by the Notes dialog (`title === "Note"`); the rendered output is stored in `html` |
+
+> **NPC `descriptor`** is _not_ mini-markdown — it's a one-line plain-text
+> field for the NPC's short physical likeness (e.g. `tall, gaunt, scarred`)
+> rendered on the Core tab.
 
 In a character's `data.assets[].customValues`, any value keyed by a
 `customField` whose `type` is `"markdown"` (see
