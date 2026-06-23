@@ -71,10 +71,6 @@
 	type Entry = CommunityEntry | NpcEntry;
 
 	type CmTab = 'core' | 'notes';
-	const TAB_LABELS: { key: CmTab; label: string }[] = [
-		{ key: 'core', label: 'Core' },
-		{ key: 'notes', label: 'Description' },
-	];
 
 	const RELATIONSHIPS: { value: NpcRelationship; label: string }[] = [
 		{ value: 'bond', label: 'Bond' },
@@ -189,6 +185,15 @@
 	const activeEntry = $derived(entries.find((e) => e.id === activeEntryId));
 	const activeKind = $derived<EntryKind | null>(activeEntry?.kind ?? null);
 	const activeColor = $derived(activeKind === 'npc' ? NPC_COLOR : COMMUNITY_COLOR);
+
+	// The Notes/description tab is labelled "Background" for NPCs (origin,
+	// upbringing, major traits — fits a person) and "Description" for
+	// communities (it describes a place). Same underlying `notes` field
+	// either way.
+	const tabs = $derived<{ key: CmTab; label: string }[]>([
+		{ key: 'core', label: 'Core' },
+		{ key: 'notes', label: activeKind === 'npc' ? 'Background' : 'Description' },
+	]);
 
 	function selectEntry(id: string) {
 		flushPersist();
@@ -594,7 +599,7 @@
 
 				<div class="cm-stage">
 					<div class="cm-tabs" role="tablist">
-						{#each TAB_LABELS as tab (tab.key)}
+						{#each tabs as tab (tab.key)}
 							<button
 								role="tab"
 								class="cm-tab"
@@ -699,7 +704,7 @@
 										type="text"
 										value={n.descriptor}
 										oninput={(e) => updateNpc({ descriptor: (e.target as HTMLInputElement).value })}
-										placeholder="Descriptor…"
+										placeholder="Short likeness — tall, gaunt, scarred…"
 									/>
 								</div>
 								<div class="cm-field-row">
@@ -741,7 +746,7 @@
 									value={activeEntry.data.situationalNotes ?? ''}
 									oninput={(v) => setSituationalNotes(v)}
 									placeholder={activeEntry.kind === 'npc'
-										? 'Situational notes about this NPC…'
+										? 'Actions taken by or things that have happened to this NPC in your story…'
 										: 'Situational notes — conditions, or aspects of the trouble…'}
 									rows={4}
 								/>
@@ -771,7 +776,7 @@
 									value={activeEntry.data.notes ?? ''}
 									oninput={(v) => setNotes(v)}
 									placeholder={activeEntry.kind === 'npc'
-										? 'Description of this NPC…'
+										? 'Origin, upbringing, major traits…'
 										: 'Description of this community…'}
 									rows={6}
 								/>

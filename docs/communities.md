@@ -17,7 +17,8 @@ interface Community {
   location: string;
   locationDescription: string;
   trouble: string;
-  notes: string; // markdown
+  notes: string; // markdown — long-form Description of the place
+  situationalNotes?: string; // markdown — conditions, aspects of the trouble
   portraitEtag?: string; // content hash; bytes live in the portrait blob store
   imageUrl?: string; // @deprecated legacy inline base64 — import transport only
   createdAt?: number; // Date.now() on creation
@@ -33,10 +34,11 @@ interface Npc {
   name: string;
   role: string;
   goal: string;
-  descriptor: string;
+  descriptor: string; // short likeness — tall, gaunt, scarred…
   relationship: 'neutral' | 'bond' | 'foe';
   location: string; // free-form, not an FK to Community.id
-  notes: string; // markdown
+  notes: string; // markdown — Background: origin, upbringing, major traits
+  situationalNotes?: string; // markdown — actions taken by or things that have happened to this NPC in your story
   portraitEtag?: string; // content hash; bytes live in the portrait blob store
   imageUrl?: string; // @deprecated legacy inline base64 — import transport only
   createdAt?: number;
@@ -44,6 +46,22 @@ interface Npc {
 ```
 
 NPCs are not formally linked to a Community — `Npc.location` is a plain string the player fills in. This keeps data entry quick and avoids cascade-on-delete questions.
+
+#### Field semantics (NPC)
+
+The three free-form text fields each have a specific role; keeping the
+distinction makes them useful long-term rather than collapsing into one
+catch-all note:
+
+| Field              | What it's for                                                                                               | Where it shows                                                    |
+| ------------------ | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `descriptor`       | **Short** physical likeness — `tall, gaunt, scarred`. One line, no markdown.                                | Core tab → Descriptor field                                       |
+| `notes`            | **Background** — origin, upbringing, major personality traits. The slow-changing identity of the character. | Core tab → small Background block, full Background tab (markdown) |
+| `situationalNotes` | Running record of campaign-relevant actions and events — what the NPC has done, what has happened to them.  | Core tab → Notes block (markdown)                                 |
+
+Communities share the same `notes` + `situationalNotes` split but with the
+Description / Trouble framing: `notes` is the long-form description of the
+place, `situationalNotes` is conditions and aspects of the current trouble.
 
 ---
 
