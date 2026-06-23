@@ -255,44 +255,92 @@ re-applied on import).
 
 ## Import behavior
 
-Import dispatches by `manifest.type` (see the export-types table). How each
-section is applied depends on whether its records are id-keyed:
-
-- **Characters** and **log** entries are always **appended** — never matched
-  against existing data. Characters always receive a fresh id (an import is a
-  copy, never an overwrite); log entries are added via the sanitizing
-  `appendSafeLog()`.
-- **Communities, NPCs, and expeditions** are **id-keyed** and can therefore
-  collide with rows you already have (see below).
+Import dispatches by `manifest.type` (see the export-types table). Every
+section that carries user-visible rows participates in collision detection
+(see below); only the session log entries are always appended (deduplicated
+internally by entry id).
 
 ### Collision resolution
 
-Communities, NPCs, and expeditions each carry a stable `id`. Before applying
-an import, the incoming rows are compared by `id` against the current data. If
-**any** incoming `id` already exists, the **`ImportCollisionDialog`** opens
-and lists the colliding names, then asks for one strategy that applies to the
-whole import:
+Imports are scanned up front against the current data, **matching by
+lower-cased, trimmed `name`** (not by `id`). Matching by name lets a file
+exported from one user be imported by another — IDs are minted independently
+per user, so an `id`-based match would never fire on a cross-user transfer.
 
-| Strategy    | Effect on a **colliding** row                                        | Effect on a **non-colliding** row |
-| ----------- | -------------------------------------------------------------------- | --------------------------------- |
-| **Skip**    | Keep the existing row; drop the incoming one.                        | Added.                            |
-| **New**     | Give the incoming row a fresh `id` and add it as a copy (both kept). | Added.                            |
-| **Replace** | Overwrite the existing row in place (matched by `id`).               | Added.                            |
-| **Cancel**  | Abort the entire import — nothing is changed.                        | Nothing is changed.               |
+The collision dialog covers five categories:
 
-Non-colliding rows are always added regardless of strategy. When there are no
-collisions at all, the dialog is skipped and every row is simply added (the
-implicit `new` path). The strategy is chosen once and applied uniformly across
-all three id-keyed sections in that import.
+| Category        | Detected against                                      |
+| --------------- | ----------------------------------------------------- |
+| **Characters**  | existing `Character.name`                             |
+| **Communities** | existing `Community.name`                             |
+| **NPCs**        | existing `Npc.name`                                   |
+| **Journeys**    | existing `Expedition.name` where `type === "journey"` |
+| **Sites**       | existing `Expedition.name` where `type === "site"`    |
 
-Characters and log entries never trigger the collision dialog — they bypass it
-entirely (always appended).
+If **any** incoming row's name matches an existing row's name (in the same
+category), the **`ImportCollisionDialog`** opens, lists the colliding names
+grouped by category, and asks for one strategy that applies to every
+collision in the file:
+
+| Strategy    | Effect on a **colliding** row                                                                                                                                          | Effect on a **non-colliding** row |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| **Skip**    | Keep the existing row; drop the incoming one.                                                                                                                          | Added.                            |
+| **New**     | Give the incoming row a fresh `id` and add it as a copy (both kept).                                                                                                   | Added.                            |
+| **Replace** | The existing row's `id` is preserved; its content is overwritten with the incoming payload. (Characters: via `persistCharacterNow`; everything else: via `updateXxx`.) | Added.                            |
+| **Cancel**  | Abort the entire import — nothing is changed.                                                                                                                          | Nothing is changed.               |
+
+Non-colliding rows are always added regardless of strategy. When there are
+no collisions at all, the dialog is skipped and every row is simply added
+(the implicit `new` path). The strategy is chosen once and applied
+uniformly across every category in the file.
+
+Session log entries never trigger the collision dialog — `appendSafeLog()`
+mints a fresh entry id on insert, so re-imported logs append (with their
+existing id; duplicates are ignored by the per-id append guard).
 
 ### Backwards compatibility
 
 A file with **no `manifest`/`data` envelope** is accepted as a single
 character — i.e. a bare `{ name, data }` object imports as one new character.
 This keeps older single-character exports importable.
+
+---
+
+## Mini-markdown fields
+
+A handful of free-form user-authored fields are rendered through Iron
+Ledger's lightweight Markdown renderer (`apps/web/src/lib/markdown.ts`).
+On export the raw Markdown source is stored verbatim in the JSON; on
+import the same source is preserved and the app re-renders it on read.
+**No other field is parsed as Markdown** — string fields like
+`Community.region` or `Npc.role` are treated as literal text.
+
+The supported syntax is documented in [`notes.md`](notes.md#markdown-support):
+`**bold**`, `*italic*` / `_italic_`, `# / ## / ### heading`, `- item` /
+`* item`, `1. item` ordered list, blank line for paragraph break.
+
+The fields that accept it:
+
+| Entity                 | Field              | Notes                                                                                                                 |
+| ---------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `Character` (`data`)   | `background`       | Character sheet → background                                                                                          |
+| `Character` (`data`)   | `bondsFormed`      | Character sheet → Bonds → notes column                                                                                |
+| `Character` (`data`)   | `lessonsLearned`   | Character sheet → Failures → notes column                                                                             |
+| `Vow` (in `data.vows`) | `notes`            | Per-vow notes block                                                                                                   |
+| `Community`            | `notes`            | Long-form description (Description tab)                                                                               |
+| `Community`            | `situationalNotes` | Short situational notes (Core tab)                                                                                    |
+| `Npc`                  | `notes`            | Long-form description (Description tab)                                                                               |
+| `Npc`                  | `situationalNotes` | Short situational notes (Core tab)                                                                                    |
+| `Journey`              | `notes`            | Per-journey notes block                                                                                               |
+| `Site`                 | `notes`            | Per-site notes block                                                                                                  |
+| `LogEntry`             | `note`             | Optional per-entry note appended below an entry                                                                       |
+| `LogEntry`             | `source`           | Markdown source for entries created by the Notes dialog (`title === "Note"`); the rendered output is stored in `html` |
+
+In a character's `data.assets[].customValues`, any value keyed by a
+`customField` whose `type` is `"markdown"` (see
+[data-schema.md → CustomFieldDef](data-schema.md#customfielddef-schema))
+is also rendered as Markdown. The catalogue defines the field type; the
+import format just preserves the stored string.
 
 ---
 
