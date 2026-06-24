@@ -565,6 +565,12 @@ dialog label {
 	filter: brightness(1.15);
 	text-decoration: none;
 }
+/* On /home the brand links to the page you're already on. Keep it visible but
+   inert there so it doesn't invite a dead click: pointer-events:none drops the
+   pointer cursor, the hover brightness, and the (no-op) navigation at once. */
+.nav-brand--current {
+	pointer-events: none;
+}
 
 .nav-links {
 	display: flex;

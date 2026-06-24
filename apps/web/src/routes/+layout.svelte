@@ -186,7 +186,12 @@
 
 {#if data.user}
 	<nav class="app-nav" class:nav--admin={data.user?.role === 'admin'}>
-		<a href="/home" class="nav-brand">
+		<a
+			href="/home"
+			class="nav-brand"
+			class:nav-brand--current={$page.url.pathname === '/home'}
+			aria-current={$page.url.pathname === '/home' ? 'page' : undefined}
+		>
 			<span class="nav-brand-icon" aria-hidden="true">{@html swordSvg}</span>
 			{headingText('Iron Ledger')}
 		</a>
