@@ -86,7 +86,7 @@ export async function resetExpeditions(token?: string): Promise<void> {
 	});
 }
 
-/** Replace both the communities list and the NPC list with empty arrays. */
+/** Replace the communities, NPC, and places lists with empty arrays. */
 export async function resetCommunities(token?: string): Promise<void> {
 	const tok = token ?? (await getTestToken());
 	await Promise.all([
@@ -99,6 +99,11 @@ export async function resetCommunities(token?: string): Promise<void> {
 			method: 'PATCH',
 			headers: json(tok),
 			body: JSON.stringify({ npcs: [] }),
+		}),
+		fetch(`${API}/session/places`, {
+			method: 'PATCH',
+			headers: json(tok),
+			body: JSON.stringify({ places: [] }),
 		}),
 	]);
 }

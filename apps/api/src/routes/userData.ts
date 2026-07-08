@@ -56,8 +56,9 @@ const LIMIT_BY_KIND: Record<EntityKind, number> = {
   expedition: config.MAX_EXPEDITIONS_PER_USER,
   community: config.MAX_COMMUNITIES_PER_USER,
   npc: config.MAX_NPCS_PER_USER,
+  place: config.MAX_PLACES_PER_USER,
 };
-const IMAGE_KINDS = new Set<EntityKind>(['expedition', 'community', 'npc']);
+const IMAGE_KINDS = new Set<EntityKind>(['expedition', 'community', 'npc', 'place']);
 
 // imageUrl validation for Community/NPC/Expedition portraits lives in the
 // shared lib so character routes can reuse the same rules — see

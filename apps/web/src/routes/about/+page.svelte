@@ -50,8 +50,8 @@
 		},
 		{
 			icon: villageSvg,
-			title: 'Connections & NPCs',
-			body: "The Ironlands are not empty. Track the settlements you've found, the people you've met, and the ones who owe you a favour. Oracle-powered random generation for names and locations — or build them by hand, if you're that kind of hero.",
+			title: 'Connections, NPCs & Places',
+			body: "The Ironlands are not empty. Track the settlements you've found, the people you've met, the ones who owe you a favour, and the specific places that anchor your saga — an inn, a shrine, a ruin on the horizon. Oracle-powered random generation for names and locations — or build them by hand, if you're that kind of hero.",
 			color: 'var(--color-health)',
 		},
 		{
@@ -162,7 +162,7 @@
 		<div class="preview-image-wrap">
 			<img
 				src="/ironledger-home.webp"
-				alt="Iron Ledger home screen showing the deck-of-cards layout with character sheet, foes, expeditions, connections, and session log panels"
+				alt="Iron Ledger home screen showing the deck-of-cards layout with character sheet, foes, expeditions, connections (communities, NPCs, and places), and session log panels"
 				class="preview-image"
 			/>
 		</div>

@@ -1,6 +1,14 @@
-# Communities & NPCs
+# Communities, NPCs & Places
 
-Tracks the settlements you've found and the people who inhabit them. Both are oracle-driven where useful, and free-form everywhere else.
+The Connections deck holds three distinct kinds of entry, each capturing a different thing:
+
+- **Community** — a **people** anchored to a location: a settlement, city, town, outpost, castle, nomad band. Named for the group, not the ground under their feet. Hobbiton.
+- **NPC** — an individual person: named, motivated, sometimes bonded, sometimes dangerous. Bilbo.
+- **Place** — a **fixed location** worth remembering, inside a community or somewhere in the surrounding world. An inn, a market stall, a shrine, a ruin, a peak on the horizon. Mt. Doom.
+
+All three are oracle-driven where useful, and free-form everywhere else.
+
+> **Place vs Site**: a Place (a Connection) is a fixed feature you want to remember. A Site is a Delve-mechanic expedition with progress ticks and denizen tables — you delve INTO a Site to explore it. Different concepts, different storage.
 
 ---
 
@@ -63,18 +71,44 @@ Communities share the same `notes` + `situationalNotes` split but with the
 Description / Trouble framing: `notes` is the long-form description of the
 place, `situationalNotes` is conditions and aspects of the current trouble.
 
+### Place
+
+```typescript
+// apps/web/src/lib/types.ts
+interface Place {
+  id: string; // crypto.randomUUID()
+  name: string;
+  region: string;
+  location: string;
+  locationDescription: string;
+  trouble: string; // freeform — no Settlement Trouble oracle here
+  notes: string; // markdown — physical features, atmosphere, notable details
+  situationalNotes?: string; // markdown — events that have happened here, current state
+  portraitEtag?: string; // content hash; bytes live in the portrait blob store
+  imageUrl?: string; // @deprecated legacy inline base64 — import transport only
+  createdAt?: number;
+}
+```
+
+Places share Community's field shape today so the same card renders both. They live in their own entity kind (`user_entities.kind = 'place'`) so future divergence (place-specific fields like `parentCommunityId`, `terrain`, etc.) doesn't require a schema shuffle. The Settlement Trouble oracle is intentionally NOT wired for places — "Trouble" is a freeform text field, since a wayside inn or a peak don't have that kind of settlement-scale trouble concept.
+
+#### When to reach for a Place vs a Community
+
+If the answer to "who lives here?" is a group of people who share a settlement identity, that's a **Community** (name it after the settlement). If the answer is "no-one lives there, but I want to remember it exists", or "it's a specific spot within a larger community", that's a **Place**. A campaign's Whitebridge is a Community; the Silver Fish Tavern inside Whitebridge is a Place; the shadow of the Ravaged Peak on the horizon is a Place.
+
 ---
 
 ## Storage
 
-| Layer        | Detail                                                                                                                        |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| Database     | `user_data.communities` and `user_data.npcs` JSONB columns                                                                    |
-| API (BFF)    | `PATCH /api/session/communities`, `PATCH /api/session/npcs`                                                                   |
-| Client store | `apps/web/src/lib/communityStore.svelte.ts`, `apps/web/src/lib/npcStore.svelte.ts` (module-level `$state`, identical pattern) |
-| Initial load | `loadCommunities()` / `loadNpcs()` hits `GET /api/session` and seeds the store                                                |
+| Layer        | Detail                                                                                                                                                                        |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Database     | `user_entities` rows with `kind IN ('community', 'npc', 'place')` (per-entity storage — one row per record). The CHECK constraint was widened in migration `0015_places.sql`. |
+| API          | `POST/PATCH/DELETE /api/v1/session/:kind/:id` — the generic per-entity CRUD route in `apps/api/src/routes/userData.ts` handles all three kinds via `KIND_BY_SEGMENT`.         |
+| BFF proxy    | `apps/web/src/routes/api/session/[kind]/**` forwards the same shape.                                                                                                          |
+| Client store | `communityStore.svelte.ts`, `npcStore.svelte.ts`, `placeStore.svelte.ts` — each is a thin wrapper around `makeEntitySync(<segment>, …)` from `entitySync.ts`.                 |
+| Initial load | `loadCommunities()` / `loadNpcs()` / `loadPlaces()` all hit the shared `GET /api/session` (via `fetchSession()`) and seed their slice.                                        |
 
-Store API (mirrored across both):
+Store API (mirrored across all three):
 
 ```typescript
 loadCommunities(): Promise<void>;
@@ -84,7 +118,7 @@ updateCommunity(c: Community): Promise<void>;
 removeCommunity(id: string): Promise<void>;
 ```
 
-Mutations are optimistic: the store is updated synchronously, then `persist()` PATCHes the full array to the server. There is no per-record endpoint.
+Substitute `Npc` / `Place` for the same shape on the other two stores. Mutations are optimistic — the store is updated synchronously, then `makeEntitySync.persist()` diffs against the last-known server snapshot and issues one request per changed row.
 
 ---
 

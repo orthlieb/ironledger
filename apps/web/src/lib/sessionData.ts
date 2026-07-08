@@ -17,6 +17,7 @@ export interface SessionPayload {
 	expeditions?: unknown;
 	communities?: unknown;
 	npcs?: unknown;
+	places?: unknown;
 	sessionState?: unknown;
 }
 

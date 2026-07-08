@@ -22,7 +22,7 @@
 	 */
 	import { onMount } from 'svelte';
 	import type { CharacterFull } from '$lib/api.js';
-	import type { Community, Npc, Expedition } from '$lib/types.js';
+	import type { Community, Npc, Expedition, Place } from '$lib/types.js';
 	import {
 		loadCharacters,
 		getCharacters,
@@ -43,6 +43,7 @@
 		updateCommunity,
 	} from '$lib/communityStore.svelte.js';
 	import { loadNpcs, getNpcs, addNpc, updateNpc } from '$lib/npcStore.svelte.js';
+	import { loadPlaces, getPlaces, addPlace, updatePlace } from '$lib/placeStore.svelte.js';
 	import {
 		loadAssets,
 		getAssets,
@@ -128,6 +129,7 @@
 	const expeditions = $derived(getExpeditions());
 	const communities = $derived(getCommunities());
 	const npcs = $derived(getNpcs());
+	const places = $derived(getPlaces());
 	const activeCharId = $derived(activeDiceCtx?.charId ?? '');
 	const activeFoeId = $derived(getActiveFoeId());
 	const activeExpeditionId = $derived(getActiveExpeditionId());
@@ -212,6 +214,7 @@
 			loadExpeditions(),
 			loadCommunities(),
 			loadNpcs(),
+			loadPlaces(),
 		]);
 
 		document.addEventListener('il-menu-action', handleMenuAction);
@@ -424,6 +427,7 @@
 				communities.map((c) => [normaliseName(c.name), c.id]),
 			);
 			const existingNpcByName = new Map(npcs.map((n) => [normaliseName(n.name), n.id]));
+			const existingPlaceByName = new Map(places.map((p) => [normaliseName(p.name), p.id]));
 			const existingJourneyByName = new Map(
 				expeditions.filter((e) => e.type === 'journey').map((e) => [normaliseName(e.name), e.id]),
 			);
@@ -434,6 +438,7 @@
 			let incomingCharacters: ImportableChar[] = [];
 			let incomingCommunities: Community[] = [];
 			let incomingNpcs: Npc[] = [];
+			let incomingPlaces: Place[] = [];
 			let incomingExpeditions: Expedition[] = [];
 
 			if (parsed.manifest && parsed.data) {
@@ -443,9 +448,10 @@
 				} else if (m.type === 'all-characters') {
 					incomingCharacters = (parsed.data as ImportableChar[]) ?? [];
 				} else if (m.type === 'communities') {
-					const d = parsed.data as { communities?: Community[]; npcs?: Npc[] };
+					const d = parsed.data as { communities?: Community[]; npcs?: Npc[]; places?: Place[] };
 					incomingCommunities = d.communities ?? [];
 					incomingNpcs = d.npcs ?? [];
+					incomingPlaces = d.places ?? [];
 				} else if (m.type === 'expeditions') {
 					incomingExpeditions = (parsed.data as Expedition[]) ?? [];
 				} else if (m.type === 'everything') {
@@ -453,11 +459,13 @@
 						characters?: ImportableChar[];
 						communities?: Community[];
 						npcs?: Npc[];
+						places?: Place[];
 						expeditions?: Expedition[];
 					};
 					incomingCharacters = d.characters ?? [];
 					incomingCommunities = d.communities ?? [];
 					incomingNpcs = d.npcs ?? [];
+					incomingPlaces = d.places ?? [];
 					incomingExpeditions = d.expeditions ?? [];
 				}
 			} else {
@@ -474,6 +482,9 @@
 				npcs: incomingNpcs
 					.filter((n) => existingNpcByName.has(normaliseName(n.name)))
 					.map((n) => n.name ?? ''),
+				places: incomingPlaces
+					.filter((p) => existingPlaceByName.has(normaliseName(p.name)))
+					.map((p) => p.name ?? ''),
 				journeys: incomingExpeditions
 					.filter((e) => e.type === 'journey' && existingJourneyByName.has(normaliseName(e.name)))
 					.map((e) => e.name ?? ''),
@@ -485,6 +496,7 @@
 				collisions.characters.length +
 				collisions.communities.length +
 				collisions.npcs.length +
+				collisions.places.length +
 				collisions.journeys.length +
 				collisions.sites.length;
 
@@ -618,6 +630,8 @@
 						);
 					for (const n of incomingNpcs)
 						await importEntityRow(n, 'npcs', existingNpcByName, addNpc, updateNpc);
+					for (const pl of incomingPlaces)
+						await importEntityRow(pl, 'places', existingPlaceByName, addPlace, updatePlace);
 				} else if (m.type === 'expeditions') {
 					for (const exp of incomingExpeditions) {
 						const byName = exp.type === 'site' ? existingSiteByName : existingJourneyByName;
@@ -637,6 +651,8 @@
 						);
 					for (const n of incomingNpcs)
 						await importEntityRow(n, 'npcs', existingNpcByName, addNpc, updateNpc);
+					for (const pl of incomingPlaces)
+						await importEntityRow(pl, 'places', existingPlaceByName, addPlace, updatePlace);
 					for (const exp of incomingExpeditions) {
 						const byName = exp.type === 'site' ? existingSiteByName : existingJourneyByName;
 						await importEntityRow(exp, 'expeditions', byName, addExpedition, updateExpedition);
@@ -1186,6 +1202,7 @@
 						communities.map((c) => embedEntityForExport('communities', c)),
 					),
 					npcs: await Promise.all(npcs.map((n) => embedEntityForExport('npcs', n))),
+					places: await Promise.all(places.map((p) => embedEntityForExport('places', p))),
 					expeditions: await Promise.all(
 						expeditions.map((e) => embedEntityForExport('expeditions', e)),
 					),
@@ -1200,6 +1217,7 @@
 					sessionLog.entries.length +
 					communities.length +
 					npcs.length +
+					places.length +
 					expeditions.length;
 				exportJson('everything', payload, count, `ironledger-export-${stamp}.json`);
 			}
@@ -1224,8 +1242,9 @@
 						communities.map((c) => embedEntityForExport('communities', c)),
 					),
 					npcs: await Promise.all(npcs.map((n) => embedEntityForExport('npcs', n))),
+					places: await Promise.all(places.map((p) => embedEntityForExport('places', p))),
 				},
-				communities.length + npcs.length,
+				communities.length + npcs.length + places.length,
 				`communities-${stamp}.json`,
 			);
 		} else if (content === 'expeditions') {

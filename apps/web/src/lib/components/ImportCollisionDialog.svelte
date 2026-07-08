@@ -40,6 +40,7 @@
 		characters: [],
 		communities: [],
 		npcs: [],
+		places: [],
 		journeys: [],
 		sites: [],
 	});
@@ -70,6 +71,11 @@
 			});
 		if (items.npcs.length > 0)
 			out.push({ label: items.npcs.length === 1 ? 'NPC' : 'NPCs', names: items.npcs });
+		if (items.places.length > 0)
+			out.push({
+				label: items.places.length === 1 ? 'Place' : 'Places',
+				names: items.places,
+			});
 		if (items.journeys.length > 0)
 			out.push({
 				label: items.journeys.length === 1 ? 'Journey' : 'Journeys',
@@ -87,6 +93,7 @@
 		items.characters.length +
 			items.communities.length +
 			items.npcs.length +
+			items.places.length +
 			items.journeys.length +
 			items.sites.length,
 	);
