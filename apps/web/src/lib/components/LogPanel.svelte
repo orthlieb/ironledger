@@ -36,6 +36,8 @@
 	import broomWideSvg from '$icons/broom-wide-solid-full.svg?raw';
 	import logIconSvg from '$icons/log.svg?raw';
 	import ConfirmDialog from './ConfirmDialog.svelte';
+	import StoryDialog from './StoryDialog.svelte';
+	import { isRecording, recordedCount, stopRecording } from '$lib/storyRecorder.svelte.js';
 
 	// ---------------------------------------------------------------------------
 	// Callback props for interactive log links (Phase 2)
@@ -105,6 +107,26 @@
 
 	// Clear-log confirmation dialog
 	let clearDialogRef = $state<{ open(): void; close(): void } | null>(null);
+
+	// Story dialog (setup + generate modes)
+	let storyDialogRef = $state<{
+		openSetup(): void;
+		openGenerate(): void;
+		close(): void;
+	} | null>(null);
+
+	const recordingActive = $derived(isRecording());
+	const recordedN = $derived(recordedCount());
+
+	function handleStoryToggle() {
+		if (recordingActive) {
+			// Capture happens inside StoryDialog.openGenerate(); this is just a stop signal.
+			stopRecording();
+			storyDialogRef?.openGenerate();
+		} else {
+			storyDialogRef?.openSetup();
+		}
+	}
 
 	// Mobile tap-tracking — used by touchend delegation to distinguish taps from scrolls.
 	let _touchStartX = 0;
@@ -724,6 +746,18 @@
 
 		<div class="log-header-actions">
 			<button
+				class="btn story-btn"
+				class:story-btn-recording={recordingActive}
+				onclick={handleStoryToggle}
+				use:tooltip={recordingActive
+					? `Stop recording (${recordedN} ${recordedN === 1 ? 'entry' : 'entries'} captured)`
+					: 'Start recording a section for AI prose'}
+				aria-label={recordingActive ? 'Stop recording' : 'Start recording story'}
+			>
+				<span class="story-dot" aria-hidden="true"></span>
+				<span class="story-btn-label">{recordingActive ? `Stop (${recordedN})` : 'Story'}</span>
+			</button>
+			<button
 				class="btn icon-btn log-clear-btn"
 				onclick={() => clearDialogRef?.open()}
 				use:tooltip={'Clear the log'}
@@ -817,6 +851,9 @@
 		{/if}
 	</div>
 </div>
+
+<!-- Story recording + generation dialog -->
+<StoryDialog bind:this={storyDialogRef} />
 
 <!-- Clear-log confirmation dialog -->
 <ConfirmDialog
@@ -936,6 +973,66 @@
 		gap: 8px;
 		flex-shrink: 0;
 	}
+	/* ── Story recording toggle ──
+	   Idle: subtle chip with a red dot glyph. Recording: red accent + pulse. */
+	.story-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		padding: 3px 8px;
+		height: 22px;
+		background: transparent;
+		border: 1px solid var(--border-mid);
+		border-radius: 3px;
+		font-family: var(--font-ui);
+		font-size: 0.68rem;
+		font-weight: 600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color: var(--text-muted);
+		cursor: pointer;
+		transition:
+			color 0.12s,
+			border-color 0.12s,
+			background 0.12s;
+	}
+	.story-btn:hover {
+		color: var(--text);
+		border-color: var(--text-accent);
+	}
+	.story-dot {
+		display: inline-block;
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		background: var(--color-danger, #ef4444);
+		flex-shrink: 0;
+	}
+	.story-btn-recording {
+		color: var(--color-danger, #ef4444);
+		border-color: var(--color-danger, #ef4444);
+		background: color-mix(in srgb, var(--color-danger, #ef4444) 12%, transparent);
+	}
+	.story-btn-recording .story-dot {
+		animation: story-pulse 1.4s ease-in-out infinite;
+	}
+	@keyframes story-pulse {
+		0%,
+		100% {
+			opacity: 1;
+			transform: scale(1);
+		}
+		50% {
+			opacity: 0.4;
+			transform: scale(0.75);
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.story-btn-recording .story-dot {
+			animation: none;
+		}
+	}
+
 	/* Icon-only "Clear the log" button — square, matches the stage-header
 	   delete buttons (28×22). pointer-events:none on the SVG so the tooltip
 	   surfaces over the broom icon. fill: currentColor so the icon picks up
