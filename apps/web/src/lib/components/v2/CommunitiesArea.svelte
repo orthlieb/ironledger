@@ -487,6 +487,24 @@
 		activeTab = 'core';
 	}
 
+	// ── TEMPORARY: convert a community into a place ──────────────────────────
+	// One-off migration button so users who created a Community when they
+	// really meant a Place (before the Place kind existed) can reclassify
+	// without hand-editing exports. Since Community and Place share the same
+	// field set today, we can snapshot, remove, and re-add without loss.
+	// The new Place gets a fresh id (per-entity storage keys by uuid + kind).
+	// Remove this handler + the button in the header when the reclassification
+	// pass is done.
+	async function convertCommunityToPlace() {
+		if (activeEntry?.kind !== 'community') return;
+		const c = $state.snapshot(activeEntry.data) as Community;
+		const oldId = c.id;
+		const newPlace: Place = { ...c, id: crypto.randomUUID() };
+		await addPlace(newPlace);
+		await removeCommunity(oldId);
+		activeEntryId = newPlace.id;
+	}
+
 	async function confirmDeleteEntry() {
 		if (!activeEntry) return;
 		const id = activeEntry.id;
@@ -691,6 +709,17 @@
 								},
 							]}
 						/>
+					{/if}
+					{#if activeEntry.kind === 'community'}
+						<!-- TEMPORARY reclassification button — see convertCommunityToPlace()
+						     comment. Remove once the pass through existing data is done. -->
+						<button
+							class="btn cm-stage-convert-btn"
+							type="button"
+							onclick={convertCommunityToPlace}
+							use:tooltip={'Convert this community to a place (temporary)'}
+							aria-label="Convert to place">→ Place</button
+						>
 					{/if}
 					<button
 						class="btn btn-icon icon-btn btn-trash cm-stage-delete-btn"
@@ -1590,6 +1619,13 @@
 	/* Delete: visual comes from .btn-trash in app.css; only positioning here. */
 	.cm-stage-delete-btn {
 		flex-shrink: 0;
+	}
+	/* TEMPORARY reclassification button — remove alongside the handler. */
+	.cm-stage-convert-btn {
+		flex-shrink: 0;
+		font-size: 0.7rem;
+		padding: 3px 9px;
+		min-width: unset;
 	}
 
 	.cm-tabs {
