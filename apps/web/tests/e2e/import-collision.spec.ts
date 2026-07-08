@@ -49,6 +49,20 @@ function makeNpc(id: string, name: string, extras: Record<string, unknown> = {})
 	};
 }
 
+/** Bare-bones Place row (mirrors the Community field set). */
+function makePlace(id: string, name: string, extras: Record<string, unknown> = {}) {
+	return {
+		id,
+		name,
+		region: '',
+		location: '',
+		locationDescription: '',
+		trouble: '',
+		notes: '',
+		...extras,
+	};
+}
+
 /** Bare-bones Site (an Expedition discriminator = 'site'). */
 function makeSite(id: string, name: string) {
 	return {
@@ -118,11 +132,13 @@ async function readWorld(page: Page) {
 		const j = (await res.json()) as {
 			communities?: Array<{ id: string; name: string; trouble?: string }>;
 			npcs?: Array<{ id: string; name: string; notes?: string }>;
+			places?: Array<{ id: string; name: string; trouble?: string }>;
 			expeditions?: Array<{ id: string; name: string; type: string }>;
 		};
 		return {
 			communities: j.communities ?? [],
 			npcs: j.npcs ?? [],
+			places: j.places ?? [],
 			expeditions: j.expeditions ?? [],
 		};
 	});
@@ -179,7 +195,7 @@ test.describe('Import collision dialog (name-based)', () => {
 		await expect(page.locator('dialog.icd-dialog[open]')).not.toBeVisible();
 	});
 
-	test('opens and lists colliding rows grouped by category (incl. journeys / sites split)', async ({
+	test('opens and lists colliding rows grouped by category (incl. places + journeys / sites split)', async ({
 		page,
 	}) => {
 		// First import — establishes the rows.
@@ -190,6 +206,7 @@ test.describe('Import collision dialog (name-based)', () => {
 				log: [],
 				communities: [makeCommunity('c-1', 'Skara Brae'), makeCommunity('c-2', 'Westcliff')],
 				npcs: [makeNpc('n-1', 'Old Vala'), makeNpc('n-2', 'Brokk the Smith')],
+				places: [makePlace('p-1', 'The Silver Fish')],
 				expeditions: [
 					makeJourney('j-1', 'Road to the Black Spire'),
 					makeSite('s-1', 'The Black Spire'),
@@ -201,7 +218,8 @@ test.describe('Import collision dialog (name-based)', () => {
 		await page.waitForTimeout(1_800);
 
 		// Second import — same NAMES but fresh ids (simulates a cross-user
-		// transfer). Collision dialog should open and list every category.
+		// transfer). Collision dialog should open and list every category,
+		// including the new Place category.
 		await importPayload(
 			page,
 			envelope('everything', {
@@ -209,9 +227,10 @@ test.describe('Import collision dialog (name-based)', () => {
 				log: [],
 				communities: [makeCommunity('x-1', 'Skara Brae'), makeCommunity('x-2', 'Westcliff')],
 				npcs: [makeNpc('x-3', 'Old Vala'), makeNpc('x-4', 'Brokk the Smith')],
+				places: [makePlace('x-5', 'The Silver Fish')],
 				expeditions: [
-					makeJourney('x-5', 'Road to the Black Spire'),
-					makeSite('x-6', 'The Black Spire'),
+					makeJourney('x-6', 'Road to the Black Spire'),
+					makeSite('x-7', 'The Black Spire'),
 				],
 				foes: [],
 				session: {},
@@ -221,11 +240,12 @@ test.describe('Import collision dialog (name-based)', () => {
 		const dialog = page.locator('dialog.icd-dialog[open]');
 		await expect(dialog).toBeVisible({ timeout: 5_000 });
 
-		// Four category groups — communities, NPCs, journeys, sites — each
-		// rendered with the correct singular/plural label.
+		// Five category groups — communities, NPCs, places, journeys, sites —
+		// each rendered with the correct singular/plural label.
 		await expect(dialog.locator('.icd-group-label')).toHaveText([
 			'Communities',
 			'NPCs',
+			'Place',
 			'Journey',
 			'Site',
 		]);
@@ -235,6 +255,9 @@ test.describe('Import collision dialog (name-based)', () => {
 		await expect(
 			dialog.locator('.icd-group').filter({ hasText: 'NPCs' }).locator('.icd-name'),
 		).toHaveText(['Old Vala', 'Brokk the Smith']);
+		await expect(
+			dialog.locator('.icd-group').filter({ hasText: 'Place' }).locator('.icd-name'),
+		).toHaveText(['The Silver Fish']);
 		await expect(
 			dialog.locator('.icd-group').filter({ hasText: 'Journey' }).locator('.icd-name'),
 		).toHaveText(['Road to the Black Spire']);
@@ -247,6 +270,24 @@ test.describe('Import collision dialog (name-based)', () => {
 
 		await dialog.locator('button:has-text("Cancel import")').click();
 		await expect(dialog).not.toBeVisible();
+	});
+
+	test('a legacy export with no `places` key loads without complaint', async ({ page }) => {
+		// Simulates an older export made before Places existed.
+		await importPayload(
+			page,
+			envelope('communities', {
+				communities: [makeCommunity('c-1', 'Skara Brae')],
+				npcs: [makeNpc('n-1', 'Old Vala')],
+				// Deliberately NO `places` key.
+			}),
+		);
+		await page.waitForTimeout(1_500);
+		await expect(page.locator('dialog.icd-dialog[open]')).not.toBeVisible();
+		const world = await readWorld(page);
+		expect(world.communities).toHaveLength(1);
+		expect(world.npcs).toHaveLength(1);
+		expect(world.places).toHaveLength(0);
 	});
 
 	test('strategy "new" — both versions coexist, ids distinct', async ({ page }) => {

@@ -857,7 +857,7 @@
 									placeholder={activeEntry.kind === 'npc'
 										? 'Actions taken by or things that have happened to this NPC in your story…'
 										: activeEntry.kind === 'place'
-											? 'Situational notes about this place…'
+											? 'Events that have happened here, current state…'
 											: 'Situational notes — conditions, or aspects of the trouble…'}
 									rows={4}
 								/>
@@ -894,7 +894,7 @@
 									placeholder={activeEntry.kind === 'npc'
 										? 'Origin, upbringing, major traits…'
 										: activeEntry.kind === 'place'
-											? 'Description of this place…'
+											? 'Physical features, atmosphere, notable details…'
 											: 'Description of this community…'}
 									rows={6}
 								/>
@@ -1028,10 +1028,10 @@
 <ConfirmDialog
 	bind:this={newPlaceDialogRef}
 	title="New Place"
-	confirmLabel="Generate Randomly"
+	confirmLabel="Random"
 	confirmClass="btn-primary"
 	showCancelButton={false}
-	alternateLabel="Create Manually"
+	alternateLabel="Create"
 	accentColor={PLACE_COLOR}
 	onconfirm={() => _commitPlace(true)}
 	onalternate={() => _commitPlace(false)}

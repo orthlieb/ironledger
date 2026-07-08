@@ -52,14 +52,14 @@ character (below).
 
 ### Export types
 
-| `type`           | Export menu item  | `data` shape                                                                            | Default filename                 |
-| ---------------- | ----------------- | --------------------------------------------------------------------------------------- | -------------------------------- |
-| `character`      | Current Character | `{ name, data }`                                                                        | `<slug-of-name>.json`            |
-| `all-characters` | All Characters    | `Array<{ name, data }>`                                                                 | `all-characters-<stamp>.json`    |
-| `log`            | Session Log       | `Array<LogEntry>` (oldest-first)                                                        | `session-log-<stamp>.json`       |
-| `communities`    | Communities       | `{ communities: Community[], npcs: Npc[] }`                                             | `communities-<stamp>.json`       |
-| `expeditions`    | Expeditions       | `Array<Expedition>` (Journey \| Site)                                                   | `expeditions-<stamp>.json`       |
-| `everything`     | Everything        | `{ characters, log, communities, npcs, expeditions, session }` (foes are Markdown-only) | `ironledger-export-<stamp>.json` |
+| `type`           | Export menu item  | `data` shape                                                                                    | Default filename                 |
+| ---------------- | ----------------- | ----------------------------------------------------------------------------------------------- | -------------------------------- |
+| `character`      | Current Character | `{ name, data }`                                                                                | `<slug-of-name>.json`            |
+| `all-characters` | All Characters    | `Array<{ name, data }>`                                                                         | `all-characters-<stamp>.json`    |
+| `log`            | Session Log       | `Array<LogEntry>` (oldest-first)                                                                | `session-log-<stamp>.json`       |
+| `communities`    | Communities       | `{ communities: Community[], npcs: Npc[], places: Place[] }`                                    | `communities-<stamp>.json`       |
+| `expeditions`    | Expeditions       | `Array<Expedition>` (Journey \| Site)                                                           | `expeditions-<stamp>.json`       |
+| `everything`     | Everything        | `{ characters, log, communities, npcs, places, expeditions, session }` (foes are Markdown-only) | `ironledger-export-<stamp>.json` |
 
 `<stamp>` is local time formatted `YYYY-MM-DD_HHmm` (e.g. `2026-06-18_1504`).
 
@@ -139,14 +139,16 @@ and `Site` interfaces in `apps/web/src/lib/types.ts` for the full field list.
 
 ---
 
-## Connections (communities + NPCs)
+## Connections (communities + NPCs + places)
 
-The **Connections** deck exports under `type: "communities"`. The payload holds
-both lists side by side:
+The **Connections** deck exports under `type: "communities"`. The payload
+holds all three lists side by side. `places` is optional on import so
+older exports (which pre-date the Place entity) still load — a missing
+`places` field is treated as `[]`.
 
 ```json
 {
-  "manifest": { "…": "…", "type": "communities", "count": 3 },
+  "manifest": { "…": "…", "type": "communities", "count": 4 },
   "data": {
     "communities": [
       {
@@ -169,13 +171,31 @@ both lists side by side:
         "deceased": false,
         "...": "…"
       }
+    ],
+    "places": [
+      {
+        "id": "…",
+        "name": "The Silver Fish",
+        "region": "Ragged Coast",
+        "location": "Whitebridge",
+        "locationDescription": "waterfront tavern, second door on the left",
+        "trouble": "",
+        "notes": "",
+        "...": "…"
+      }
     ]
   }
 }
 ```
 
-Field lists for `Community` and `Npc` are in `apps/web/src/lib/types.ts`. Two
-NPC fields are worth calling out:
+Field lists for `Community`, `Npc`, and `Place` are in `apps/web/src/lib/types.ts`.
+A **Community** captures a people bound to a settlement (Hobbiton — a
+Community named for its Hobbits); a **Place** captures a fixed location worth
+remembering, whether inside a community (a specific tavern) or out in the
+world (Mt. Doom). See [communities.md](communities.md) for the full
+distinction.
+
+Two fields are worth calling out:
 
 - **`deceased?: boolean`** — alive when absent or `false`, deceased when `true`.
   Drives the alive/deceased status toggle on the NPC card and the red
@@ -235,14 +255,15 @@ sanitized on import (see [Import sanitization](#import-sanitization)).
     "log": [{ "id": "…", "title": "…", "html": "…", "ts": "…" }],
     "communities": [{ "id": "…", "name": "…" }],
     "npcs": [{ "id": "…", "name": "…" }],
+    "places": [{ "id": "…", "name": "…" }],
     "expeditions": [{ "id": "…", "type": "journey" }],
     "session": { "activeCharId": "…", "activeFoeId": "…", "activeExpeditionId": "…" }
   }
 }
 ```
 
-`count` is the sum of `characters + log + communities + npcs + expeditions`
-lengths. `session` records which entities were active at export time (not
+`count` is the sum of `characters + log + communities + npcs + places + expeditions`
+lengths. `places` is optional on import — legacy exports without it load as `[]`. `session` records which entities were active at export time (not
 re-applied on import).
 
 > **Foes are Markdown-only.** Foe encounters are transient — they vary from
@@ -267,13 +288,14 @@ lower-cased, trimmed `name`** (not by `id`). Matching by name lets a file
 exported from one user be imported by another — IDs are minted independently
 per user, so an `id`-based match would never fire on a cross-user transfer.
 
-The collision dialog covers five categories:
+The collision dialog covers six categories:
 
 | Category        | Detected against                                      |
 | --------------- | ----------------------------------------------------- |
 | **Characters**  | existing `Character.name`                             |
 | **Communities** | existing `Community.name`                             |
 | **NPCs**        | existing `Npc.name`                                   |
+| **Places**      | existing `Place.name`                                 |
 | **Journeys**    | existing `Expedition.name` where `type === "journey"` |
 | **Sites**       | existing `Expedition.name` where `type === "site"`    |
 
@@ -331,6 +353,8 @@ The fields that accept it:
 | `Community`            | `situationalNotes` | Conditions / aspects of the current trouble (Core tab)                                                                |
 | `Npc`                  | `notes`            | Background — origin, upbringing, major traits (Background tab)                                                        |
 | `Npc`                  | `situationalNotes` | Actions taken by or things that have happened to this NPC in your story (Core tab)                                    |
+| `Place`                | `notes`            | Physical features, atmosphere, notable details (Description tab)                                                      |
+| `Place`                | `situationalNotes` | Events that have happened here, current state (Core tab)                                                              |
 | `Journey`              | `notes`            | Per-journey notes block                                                                                               |
 | `Site`                 | `notes`            | Per-site notes block                                                                                                  |
 | `LogEntry`             | `note`             | Optional per-entry note appended below an entry                                                                       |
