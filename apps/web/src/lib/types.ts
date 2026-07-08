@@ -463,6 +463,31 @@ export interface Npc {
 	createdAt?: number; // Date.now() on creation
 }
 
+/**
+ * A Place is a distinct connection type — an inn or market inside a larger
+ * community, or a remote location such as a dire forest or ruin. It's not a
+ * Site (those are Delve-mechanic expeditions with progress tracks). Shares
+ * the Community field set today so the two render in the same card, but is
+ * stored as its own entity kind so future divergence (place-specific fields)
+ * doesn't require a schema shuffle.
+ */
+export interface Place {
+	id: string;
+	name: string;
+	region: string;
+	location: string;
+	locationDescription: string;
+	trouble: string;
+	notes: string; // long-form description (Description tab)
+	situationalNotes?: string; // short situational notes (Core tab)
+	/** Content hash of the portrait stored in the blob endpoint; '' / absent = none. */
+	portraitEtag?: string;
+	/** @deprecated Inline base64 portrait — legacy/import-only; portraits now live
+	 *  in the blob store and are referenced by portraitEtag. */
+	imageUrl?: string;
+	createdAt?: number; // Date.now() on creation
+}
+
 // ---------------------------------------------------------------------------
 
 // Ticks earned per Mark Progress action by difficulty

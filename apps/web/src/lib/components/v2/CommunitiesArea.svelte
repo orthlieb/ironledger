@@ -29,7 +29,8 @@
 		removeCommunity,
 	} from '$lib/communityStore.svelte.js';
 	import { getNpcs, persistNpcsNow, addNpc, removeNpc } from '$lib/npcStore.svelte.js';
-	import type { Community, Npc, NpcRelationship } from '$lib/types.js';
+	import { getPlaces, persistPlacesNow, addPlace, removePlace } from '$lib/placeStore.svelte.js';
+	import type { Community, Npc, Place, NpcRelationship } from '$lib/types.js';
 	import MarkdownNotes from '$lib/components/MarkdownNotes.svelte';
 	import PortraitUploader from '$lib/components/PortraitUploader.svelte';
 	import { EditableName } from '$lib/editableName.svelte.js';
@@ -52,6 +53,7 @@
 	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
 	import hutSvg from '$icons/hut.svg?raw';
 	import farmerSvg from '$icons/farmer.svg?raw';
+	import locationSvg from '$icons/location.svg?raw';
 	import villageIconSvg from '$icons/village.svg?raw';
 	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
@@ -64,11 +66,29 @@
 
 	const COMMUNITY_COLOR = '#D06840';
 	const NPC_COLOR = '#C848A8';
+	const PLACE_COLOR = '#4AA0C8'; // steel blue — distinct from communities + NPCs
 
-	type EntryKind = 'community' | 'npc';
+	type EntryKind = 'community' | 'npc' | 'place';
 	type CommunityEntry = { kind: 'community'; id: string; createdAt: number; data: Community };
 	type NpcEntry = { kind: 'npc'; id: string; createdAt: number; data: Npc };
-	type Entry = CommunityEntry | NpcEntry;
+	type PlaceEntry = { kind: 'place'; id: string; createdAt: number; data: Place };
+	type Entry = CommunityEntry | NpcEntry | PlaceEntry;
+
+	function accentFor(kind: EntryKind): string {
+		if (kind === 'npc') return NPC_COLOR;
+		if (kind === 'place') return PLACE_COLOR;
+		return COMMUNITY_COLOR;
+	}
+	function iconFor(kind: EntryKind): string {
+		if (kind === 'npc') return farmerSvg;
+		if (kind === 'place') return locationSvg;
+		return hutSvg;
+	}
+	function kindLabelSingular(kind: EntryKind): string {
+		if (kind === 'npc') return 'NPC';
+		if (kind === 'place') return 'Place';
+		return 'Community';
+	}
 
 	type CmTab = 'core' | 'notes';
 
@@ -90,7 +110,7 @@
 	function readFilter(): 'all' | EntryKind {
 		if (typeof window === 'undefined') return 'all';
 		const v = localStorage.getItem(FILTER_KEY);
-		return v === 'community' || v === 'npc' ? v : 'all';
+		return v === 'community' || v === 'npc' || v === 'place' ? v : 'all';
 	}
 	function readSort(): 'added' | 'name' {
 		if (typeof window === 'undefined') return 'added';
@@ -125,6 +145,12 @@
 	let _pendingNpc: Npc | null = null;
 	let _pendingNpcNameOracle = $state<string>('namesIronlander');
 
+	// New-Place dialog state
+	let newPlaceDialogRef = $state<{ open(): void; close(): void } | null>(null);
+	let _pendingPlace: Place | null = null;
+	let _pendingPlaceRegionType = $state<'ironlands' | 'yrt'>('ironlands');
+	let _pendingPlaceLocationType = $state<'location' | 'coastalWatersLocation'>('location');
+
 	// Inline-edit state
 	let editingNotes = $state(false);
 	let editingCoreNotes = $state(false);
@@ -134,10 +160,12 @@
 	const nameEdit = new EditableName((restored) => {
 		if (activeEntry?.kind === 'community') updateCommunity({ name: restored });
 		else if (activeEntry?.kind === 'npc') updateNpc({ name: restored });
+		else if (activeEntry?.kind === 'place') updatePlace({ name: restored });
 	});
 
 	const communities = $derived(getCommunities());
 	const npcs = $derived(getNpcs());
+	const places = $derived(getPlaces());
 	const loading = $derived(isCommunityLoading());
 
 	/** Combined list — communities + NPCs, sorted by createdAt (oldest first). */
@@ -154,6 +182,12 @@
 				id: n.id,
 				createdAt: n.createdAt ?? 0,
 				data: n,
+			})),
+			...places.map<PlaceEntry>((pl) => ({
+				kind: 'place',
+				id: pl.id,
+				createdAt: pl.createdAt ?? 0,
+				data: pl,
 			})),
 		].sort((a, b) => a.createdAt - b.createdAt),
 	);
@@ -184,7 +218,7 @@
 
 	const activeEntry = $derived(entries.find((e) => e.id === activeEntryId));
 	const activeKind = $derived<EntryKind | null>(activeEntry?.kind ?? null);
-	const activeColor = $derived(activeKind === 'npc' ? NPC_COLOR : COMMUNITY_COLOR);
+	const activeColor = $derived(activeKind ? accentFor(activeKind) : COMMUNITY_COLOR);
 
 	// The Notes/description tab is labelled "Background" for NPCs (origin,
 	// upbringing, major traits — fits a person) and "Description" for
@@ -221,6 +255,14 @@
 	function updateNpc(patch: Partial<Npc>) {
 		if (activeEntry?.kind !== 'npc') return;
 		Object.assign(activeEntry.data as object, patch);
+	}
+	function updatePlace(patch: Partial<Place>) {
+		if (activeEntry?.kind !== 'place') return;
+		Object.assign(activeEntry.data as object, patch);
+	}
+	function updateCommunityLike(patch: Partial<Community & Place>) {
+		if (activeEntry?.kind === 'community') updateCommunity(patch);
+		else if (activeEntry?.kind === 'place') updatePlace(patch);
 	}
 
 	/** Roll on the Settlement Trouble oracle, animate the d100, log the
@@ -267,7 +309,12 @@
 			const k = _savingKind;
 			_saveTimer = null;
 			_savingKind = null;
-			const p = k === 'npc' ? persistNpcsNow() : persistCommunitiesNow();
+			const p =
+				k === 'npc'
+					? persistNpcsNow()
+					: k === 'place'
+						? persistPlacesNow()
+						: persistCommunitiesNow();
 			p.catch((err) => console.error('[v2] save failed', err));
 		}, 1500);
 		return () => {
@@ -276,7 +323,12 @@
 				const k = _savingKind;
 				_saveTimer = null;
 				_savingKind = null;
-				const p = k === 'npc' ? persistNpcsNow() : persistCommunitiesNow();
+				const p =
+					k === 'npc'
+						? persistNpcsNow()
+						: k === 'place'
+							? persistPlacesNow()
+							: persistCommunitiesNow();
 				p.catch((err) => console.error('[v2] save failed', err));
 			}
 		};
@@ -288,7 +340,12 @@
 			const k = _savingKind;
 			_saveTimer = null;
 			_savingKind = null;
-			const p = k === 'npc' ? persistNpcsNow() : persistCommunitiesNow();
+			const p =
+				k === 'npc'
+					? persistNpcsNow()
+					: k === 'place'
+						? persistPlacesNow()
+						: persistCommunitiesNow();
 			p.catch((err) => console.error('[v2] save failed', err));
 		}
 	}
@@ -296,14 +353,17 @@
 	function setName(value: string) {
 		if (activeEntry?.kind === 'community') updateCommunity({ name: value });
 		else if (activeEntry?.kind === 'npc') updateNpc({ name: value });
+		else if (activeEntry?.kind === 'place') updatePlace({ name: value });
 	}
 	function setNotes(value: string) {
 		if (activeEntry?.kind === 'community') updateCommunity({ notes: value });
 		else if (activeEntry?.kind === 'npc') updateNpc({ notes: value });
+		else if (activeEntry?.kind === 'place') updatePlace({ notes: value });
 	}
 	function setSituationalNotes(value: string) {
 		if (activeEntry?.kind === 'community') updateCommunity({ situationalNotes: value });
 		else if (activeEntry?.kind === 'npc') updateNpc({ situationalNotes: value });
+		else if (activeEntry?.kind === 'place') updatePlace({ situationalNotes: value });
 	}
 
 	// ── Add Community / NPC (V1 random-or-manual pattern) ──────────────────
@@ -387,11 +447,52 @@
 		activeTab = 'core';
 	}
 
+	async function addNewPlace() {
+		_pendingPlace = {
+			id: crypto.randomUUID(),
+			name: 'New Place',
+			region: '',
+			location: '',
+			locationDescription: '',
+			trouble: '',
+			notes: '',
+			createdAt: Date.now(),
+		};
+		await loadOracles();
+		newPlaceDialogRef?.open();
+	}
+
+	async function _commitPlace(random: boolean) {
+		if (!_pendingPlace) return;
+		const pl = _pendingPlace;
+		_pendingPlace = null;
+		if (random) {
+			const oracles = getOracles();
+			// Places don't have their own oracles yet — reuse the settlement ones
+			// so the random flow feels consistent with Communities. Trouble is
+			// intentionally NOT auto-rolled: the Settlement Trouble oracle is
+			// community-specific and doesn't map to inns / forests / ruins.
+			const nameOracle = Math.random() < 0.5 ? 'settlementName' : 'settlementNameQuick';
+			const nameVal = rollOracle(nameOracle, oracles).value;
+			if (nameVal) pl.name = nameVal;
+			pl.region =
+				_pendingPlaceRegionType === 'yrt'
+					? rollOracle('yrtRegion', oracles).value
+					: rollOracle('region', oracles).value;
+			pl.location = rollOracle(_pendingPlaceLocationType, oracles).value;
+			pl.locationDescription = rollOracle('locationDescriptor', oracles).value;
+		}
+		await addPlace(pl);
+		activeEntryId = pl.id;
+		activeTab = 'core';
+	}
+
 	async function confirmDeleteEntry() {
 		if (!activeEntry) return;
 		const id = activeEntry.id;
 		if (activeEntry.kind === 'community') await removeCommunity(id);
-		else await removeNpc(id);
+		else if (activeEntry.kind === 'npc') await removeNpc(id);
+		else await removePlace(id);
 		if (activeEntryId === id) activeEntryId = null;
 		// Return to the list on narrow layouts after deleting the open entry.
 		mobilePane = 'list';
@@ -417,6 +518,8 @@
 				>+ Community</button
 			>
 			<button class="btn cm-hdr-btn" onclick={addNewNpc} use:tooltip={'Add NPC'}>+ NPC</button>
+			<button class="btn cm-hdr-btn" onclick={addNewPlace} use:tooltip={'Add place'}>+ Place</button
+			>
 		</div>
 	</header>
 
@@ -426,8 +529,8 @@
 		<div class="cm-empty">
 			<span class="cm-empty-icon" aria-hidden="true">{@html villageIconSvg}</span>
 			<p class="cm-empty-text">
-				There are people and places to <s>plunder</s> discover. Click <strong>+ COMMUNITY</strong>
-				or <strong>+ NPC</strong> to begin.
+				There are people and places to <s>plunder</s> discover. Click <strong>+ COMMUNITY</strong>,
+				<strong>+ NPC</strong>, or <strong>+ PLACE</strong> to begin.
 			</p>
 		</div>
 	{:else}
@@ -490,6 +593,13 @@
 										style="--tag-color: {NPC_COLOR}"
 										onclick={() => (kindFilter = 'npc')}>NPCs</button
 									>
+									<button
+										class="cm-filter-tag"
+										class:active={kindFilter === 'place'}
+										aria-pressed={kindFilter === 'place'}
+										style="--tag-color: {PLACE_COLOR}"
+										onclick={() => (kindFilter = 'place')}>Places</button
+									>
 								</div>
 							</div>
 							<button
@@ -505,7 +615,7 @@
 
 				<div class="cm-list" aria-label="Connections">
 					{#each displayEntries as entry (entry.id)}
-						{@const accent = entry.kind === 'npc' ? NPC_COLOR : COMMUNITY_COLOR}
+						{@const accent = accentFor(entry.kind)}
 						<button
 							class="cm-row"
 							class:cm-row--active={entry.id === activeEntryId}
@@ -513,12 +623,9 @@
 							aria-current={entry.id === activeEntryId ? 'true' : undefined}
 							onclick={() => selectEntry(entry.id)}
 						>
-							<span class="cm-row-icon" aria-hidden="true"
-								>{@html entry.kind === 'npc' ? farmerSvg : hutSvg}</span
-							>
+							<span class="cm-row-icon" aria-hidden="true">{@html iconFor(entry.kind)}</span>
 							<span class="cm-row-name"
-								>{entry.data.name ||
-									(entry.kind === 'npc' ? 'Unnamed NPC' : 'Unnamed Community')}</span
+								>{entry.data.name || `Unnamed ${kindLabelSingular(entry.kind)}`}</span
 							>
 							{#if entry.kind === 'npc' && entry.data.deceased}
 								<span
@@ -528,7 +635,7 @@
 									use:tooltip={'Deceased'}>{@html skullSvg}</span
 								>
 							{/if}
-							<span class="cm-row-badge">{entry.kind === 'npc' ? 'NPC' : 'Community'}</span>
+							<span class="cm-row-badge">{kindLabelSingular(entry.kind)}</span>
 						</button>
 					{:else}
 						<p class="cm-list-empty">No connections match “{search}”.</p>
@@ -538,16 +645,14 @@
 
 			{#if activeEntry}
 				<div class="cm-stage-header" style="--cm-nature: {activeColor}">
-					<span class="cm-stage-icon" aria-hidden="true"
-						>{@html activeEntry.kind === 'npc' ? farmerSvg : hutSvg}</span
-					>
+					<span class="cm-stage-icon" aria-hidden="true">{@html iconFor(activeEntry.kind)}</span>
 					{#if nameEdit.editing}
 						<input
 							bind:this={nameEdit.inputEl}
 							class="cm-stage-name-input"
 							type="text"
 							value={activeEntry.data.name}
-							placeholder={activeEntry.kind === 'npc' ? 'NPC name…' : 'Community name…'}
+							placeholder={`${kindLabelSingular(activeEntry.kind)} name…`}
 							oninput={(e) => setName((e.target as HTMLInputElement).value)}
 							onblur={nameEdit.commit}
 							onkeydown={nameEdit.onKeydown}
@@ -559,8 +664,7 @@
 							use:tooltip={'Click to rename'}
 							onclick={() => nameEdit.start(activeEntry.data.name)}
 							>{headingText(
-								activeEntry.data.name ||
-									(activeEntry.kind === 'npc' ? 'Unnamed NPC' : 'Unnamed Community'),
+								activeEntry.data.name || `Unnamed ${kindLabelSingular(activeEntry.kind)}`,
 							)}</button
 						>
 					{/if}
@@ -591,8 +695,8 @@
 					<button
 						class="btn btn-icon icon-btn btn-trash cm-stage-delete-btn"
 						onclick={() => deleteDialogRef?.open()}
-						use:tooltip={activeEntry.kind === 'npc' ? 'Delete NPC' : 'Delete community'}
-						aria-label={activeEntry.kind === 'npc' ? 'Delete NPC' : 'Delete community'}
+						use:tooltip={`Delete ${kindLabelSingular(activeEntry.kind).toLowerCase()}`}
+						aria-label={`Delete ${kindLabelSingular(activeEntry.kind).toLowerCase()}`}
 						>{@html trashSvg}</button
 					>
 				</div>
@@ -612,7 +716,7 @@
 
 					<div class="cm-card" role="tabpanel">
 						{#if activeTab === 'core'}
-							{#if activeEntry.kind === 'community'}
+							{#if activeEntry.kind === 'community' || activeEntry.kind === 'place'}
 								{@const c = activeEntry.data}
 								<div class="cm-field-row">
 									<label class="cm-field-label" for="cm-region-{c.id}">Region</label>
@@ -622,7 +726,7 @@
 										type="text"
 										value={c.region}
 										oninput={(e) =>
-											updateCommunity({ region: (e.target as HTMLInputElement).value })}
+											updateCommunityLike({ region: (e.target as HTMLInputElement).value })}
 										placeholder="Region…"
 									/>
 								</div>
@@ -634,7 +738,7 @@
 										type="text"
 										value={c.location}
 										oninput={(e) =>
-											updateCommunity({ location: (e.target as HTMLInputElement).value })}
+											updateCommunityLike({ location: (e.target as HTMLInputElement).value })}
 										placeholder="Location…"
 									/>
 								</div>
@@ -646,7 +750,7 @@
 										type="text"
 										value={c.locationDescription}
 										oninput={(e) =>
-											updateCommunity({
+											updateCommunityLike({
 												locationDescription: (e.target as HTMLInputElement).value,
 											})}
 										placeholder="Location description…"
@@ -660,17 +764,22 @@
 										type="text"
 										value={c.trouble}
 										oninput={(e) =>
-											updateCommunity({ trouble: (e.target as HTMLInputElement).value })}
-										placeholder="Settlement trouble…"
+											updateCommunityLike({ trouble: (e.target as HTMLInputElement).value })}
+										placeholder={activeEntry.kind === 'place' ? 'Trouble…' : 'Settlement trouble…'}
 									/>
-									<button
-										class="cm-dice-btn"
-										type="button"
-										onclick={rollSettlementTrouble}
-										disabled={rolling}
-										use:tooltip={'Roll settlement trouble oracle'}
-										aria-label="Roll settlement trouble oracle">{@html diceD6Svg}</button
-									>
+									{#if activeEntry.kind === 'community'}
+										<!-- Settlement Trouble oracle is community-only; places don't
+										     have their own trouble oracle yet, so the dice button
+										     is hidden for them. -->
+										<button
+											class="cm-dice-btn"
+											type="button"
+											onclick={rollSettlementTrouble}
+											disabled={rolling}
+											use:tooltip={'Roll settlement trouble oracle'}
+											aria-label="Roll settlement trouble oracle">{@html diceD6Svg}</button
+										>
+									{/if}
 								</div>
 							{:else}
 								{@const n = activeEntry.data}
@@ -747,7 +856,9 @@
 									oninput={(v) => setSituationalNotes(v)}
 									placeholder={activeEntry.kind === 'npc'
 										? 'Actions taken by or things that have happened to this NPC in your story…'
-										: 'Situational notes — conditions, or aspects of the trouble…'}
+										: activeEntry.kind === 'place'
+											? 'Situational notes about this place…'
+											: 'Situational notes — conditions, or aspects of the trouble…'}
 									rows={4}
 								/>
 							</div>
@@ -758,15 +869,20 @@
 								{#if !editingNotes}
 									<PortraitUploader
 										endpoint={`/api/session/${
-											activeEntry.kind === 'npc' ? 'npcs' : 'communities'
+											activeEntry.kind === 'npc'
+												? 'npcs'
+												: activeEntry.kind === 'place'
+													? 'places'
+													: 'communities'
 										}/${activeEntry.data.id}/portrait`}
 										etag={activeEntry.data.portraitEtag ?? ''}
 										oninput={(etag) => {
 											if (activeEntry?.kind === 'community')
 												updateCommunity({ portraitEtag: etag });
 											else if (activeEntry?.kind === 'npc') updateNpc({ portraitEtag: etag });
+											else if (activeEntry?.kind === 'place') updatePlace({ portraitEtag: etag });
 										}}
-										placeholderSvg={activeEntry.kind === 'npc' ? farmerSvg : hutSvg}
+										placeholderSvg={iconFor(activeEntry.kind)}
 										alt={activeEntry.data.name}
 									/>
 								{/if}
@@ -777,7 +893,9 @@
 									oninput={(v) => setNotes(v)}
 									placeholder={activeEntry.kind === 'npc'
 										? 'Origin, upbringing, major traits…'
-										: 'Description of this community…'}
+										: activeEntry.kind === 'place'
+											? 'Description of this place…'
+											: 'Description of this community…'}
 									rows={6}
 								/>
 							</div>
@@ -792,14 +910,14 @@
 {#if activeEntry}
 	<ConfirmDialog
 		bind:this={deleteDialogRef}
-		title={activeEntry.kind === 'npc' ? 'Delete NPC' : 'Delete Community'}
+		title={`Delete ${kindLabelSingular(activeEntry.kind)}`}
 		confirmLabel="Delete"
 		onconfirm={confirmDeleteEntry}
 	>
 		<p>
 			Permanently delete <strong
 				>{activeEntry.data.name ||
-					(activeEntry.kind === 'npc' ? 'this NPC' : 'this community')}</strong
+					`this ${kindLabelSingular(activeEntry.kind).toLowerCase()}`}</strong
 			>? This cannot be undone.
 		</p>
 	</ConfirmDialog>
@@ -901,6 +1019,68 @@
 			</label>
 		{/each}
 	</fieldset>
+</ConfirmDialog>
+
+<!-- New Place dialog — mirrors the New Community pattern. Places don't have
+     their own place-specific oracle yet, so random generation reuses the
+     settlement oracles. Trouble is intentionally NOT auto-rolled (settlement
+     trouble doesn't map to inns, forests, ruins, etc). -->
+<ConfirmDialog
+	bind:this={newPlaceDialogRef}
+	title="New Place"
+	confirmLabel="Generate Randomly"
+	confirmClass="btn-primary"
+	showCancelButton={false}
+	alternateLabel="Create Manually"
+	accentColor={PLACE_COLOR}
+	onconfirm={() => _commitPlace(true)}
+	onalternate={() => _commitPlace(false)}
+	ondismiss={() => {
+		_pendingPlace = null;
+	}}
+>
+	<p
+		style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 10px;"
+	>
+		Generate fields randomly using oracles, or create the place manually?
+	</p>
+	<div style="display: flex; gap: 20px; align-items: flex-start;">
+		<fieldset style="border: none; padding: 0; margin: 0;">
+			<legend
+				style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); margin-bottom: 5px;"
+				>Region oracle</legend
+			>
+			<label
+				style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer; margin-bottom: 4px;"
+			>
+				<input type="radio" bind:group={_pendingPlaceRegionType} value="ironlands" /> Ironlands
+			</label>
+			{#if isYrtEnabled()}
+				<label
+					style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer;"
+				>
+					<input type="radio" bind:group={_pendingPlaceRegionType} value="yrt" /> YRT
+				</label>
+			{/if}
+		</fieldset>
+		<fieldset style="border: none; padding: 0; margin: 0;">
+			<legend
+				style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); margin-bottom: 5px;"
+				>Location oracle</legend
+			>
+			<label
+				style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer; margin-bottom: 4px;"
+			>
+				<input type="radio" bind:group={_pendingPlaceLocationType} value="location" /> Inland
+			</label>
+			<label
+				style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer;"
+			>
+				<input type="radio" bind:group={_pendingPlaceLocationType} value="coastalWatersLocation" /> Coastal
+				Waters
+			</label>
+		</fieldset>
+	</div>
 </ConfirmDialog>
 
 <style>

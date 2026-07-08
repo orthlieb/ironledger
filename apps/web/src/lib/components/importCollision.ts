@@ -22,6 +22,7 @@ export interface CollisionItems {
 	characters: string[];
 	communities: string[];
 	npcs: string[];
+	places: string[];
 	journeys: string[];
 	sites: string[];
 }

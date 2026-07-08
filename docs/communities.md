@@ -1,6 +1,8 @@
-# Communities & NPCs
+# Communities, NPCs & Places
 
-Tracks the settlements you've found and the people who inhabit them. Both are oracle-driven where useful, and free-form everywhere else.
+Tracks the settlements you've found, the people who inhabit them, and the individual places (inns, markets, remote sites) that anchor your story. All three are oracle-driven where useful, and free-form everywhere else.
+
+> **Place vs Site**: a Place (a Connection) is a location worth remembering — an inn, a market, a dire forest, a ruin. A Site is a Delve-mechanic expedition with progress ticks + denizen tables. Different concepts, different storage.
 
 ---
 

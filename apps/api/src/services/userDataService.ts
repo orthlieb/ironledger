@@ -26,6 +26,7 @@ export interface UserDataPayload {
   expeditions: unknown[];
   communities: unknown[];
   npcs: unknown[];
+  places: unknown[];
   sessionState: SessionState;
 }
 
@@ -42,13 +43,14 @@ const DEFAULT_SESSION_STATE: SessionState = {
 // singular `kind` column value.
 // ---------------------------------------------------------------------------
 
-export type EntityKind = 'encounter' | 'expedition' | 'community' | 'npc';
+export type EntityKind = 'encounter' | 'expedition' | 'community' | 'npc' | 'place';
 
 export const KIND_BY_SEGMENT: Record<string, EntityKind> = {
   encounters: 'encounter',
   expeditions: 'expedition',
   communities: 'community',
   npcs: 'npc',
+  places: 'place',
 };
 
 /** Read all entities of one kind for a user, in insertion order. */
@@ -78,11 +80,12 @@ export async function get(userId: string): Promise<UserDataPayload> {
     const expeditions = await listKind(tx, userId, 'expedition');
     const communities = await listKind(tx, userId, 'community');
     const npcs = await listKind(tx, userId, 'npc');
+    const places = await listKind(tx, userId, 'place');
 
     const stateRows = await tx.select().from(userData).limit(1);
     const sessionState = (stateRows[0]?.sessionState as SessionState) ?? DEFAULT_SESSION_STATE;
 
-    return { encounters, expeditions, communities, npcs, sessionState };
+    return { encounters, expeditions, communities, npcs, places, sessionState };
   });
 }
 
