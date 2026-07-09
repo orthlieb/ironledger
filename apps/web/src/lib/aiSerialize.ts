@@ -156,3 +156,102 @@ export function serializeLogSection(entries: LogEntry[], doc: Document): string 
 export function estimateTokens(text: string): number {
 	return Math.ceil(text.length / 4);
 }
+
+// =============================================================================
+// Cast & setting preface
+//
+// Optional context prepended to the prompt so the model knows who the player
+// character is and what they're up against, instead of inferring identity from
+// dice rolls. Pure and testable — the caller (StoryDialog) reads the live
+// character/foe from the stores and passes plain data in.
+// =============================================================================
+
+export interface PrefaceCharacter {
+	name: string;
+	background: string;
+}
+
+export interface PrefaceFoe {
+	name: string;
+	nature: string;
+	rank: number;
+	description: string;
+	notes: string;
+}
+
+export interface PrefaceExpedition {
+	name: string;
+	kind: 'journey' | 'site';
+	difficulty: string;
+	/** Site only. */
+	theme?: string;
+	/** Site only. */
+	domain?: string;
+	/** Site only. */
+	objective?: string;
+	notes: string;
+}
+
+/**
+ * Compact one-liner for the preview strip, e.g.
+ * "Beepalache vs Blood Thorn · Blackroot Barrow".
+ */
+export function castSummary(
+	character: PrefaceCharacter | null,
+	foe: PrefaceFoe | null,
+	expedition: PrefaceExpedition | null = null,
+): string {
+	const cast = [character?.name.trim(), foe?.name.trim()].filter(Boolean).join(' vs ');
+	const place = expedition?.name.trim();
+	if (cast && place) return `${cast} · ${place}`;
+	return cast || place || '';
+}
+
+/**
+ * Build the "Cast & setting" markdown block. Returns '' when there is nothing
+ * to say (no character and no foe), so the caller can prepend unconditionally.
+ * Empty background/description/notes lines are omitted.
+ */
+export function buildStoryPreface(
+	character: PrefaceCharacter | null,
+	foe: PrefaceFoe | null,
+	expedition: PrefaceExpedition | null = null,
+): string {
+	const blocks: string[] = [];
+
+	if (character && character.name.trim()) {
+		const lines = [`**${tidy(character.name)}** — the player character.`];
+		if (character.background.trim()) lines.push(tidy(character.background));
+		blocks.push(lines.join('\n'));
+	}
+
+	if (foe && foe.name.trim()) {
+		const meta = [foe.nature.trim(), foe.rank ? `rank ${foe.rank}` : ''].filter(Boolean).join(', ');
+		const heading = meta ? `**${tidy(foe.name)}** — ${meta} foe.` : `**${tidy(foe.name)}** — foe.`;
+		const lines = [heading];
+		if (foe.description.trim()) lines.push(tidy(foe.description));
+		if (foe.notes.trim()) lines.push(tidy(foe.notes));
+		blocks.push(lines.join('\n'));
+	}
+
+	if (expedition && expedition.name.trim()) {
+		const kindWord = expedition.kind === 'site' ? 'site' : 'journey';
+		const diff = expedition.difficulty.trim();
+		const lines = [
+			diff
+				? `**${tidy(expedition.name)}** — ${diff} ${kindWord}.`
+				: `**${tidy(expedition.name)}** — ${kindWord}.`,
+		];
+		const meta = [
+			expedition.theme?.trim() ? `Theme: ${tidy(expedition.theme)}` : '',
+			expedition.domain?.trim() ? `Domain: ${tidy(expedition.domain)}` : '',
+		].filter(Boolean);
+		if (meta.length) lines.push(`${meta.join('. ')}.`);
+		if (expedition.objective?.trim()) lines.push(`Objective: ${tidy(expedition.objective)}`);
+		if (expedition.notes.trim()) lines.push(tidy(expedition.notes));
+		blocks.push(lines.join('\n'));
+	}
+
+	if (blocks.length === 0) return '';
+	return `# Cast & setting\n\n${blocks.join('\n\n')}`;
+}

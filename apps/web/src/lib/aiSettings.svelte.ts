@@ -13,6 +13,7 @@
 const KEY_STORAGE = 'ironledger:ai:apiKey';
 const MODEL_STORAGE = 'ironledger:ai:model';
 const SETUP_STORAGE = 'ironledger:ai:setup';
+const PREFACE_STORAGE = 'ironledger:ai:preface';
 
 export type AIModelId = 'claude-haiku-4-5' | 'claude-sonnet-5' | 'claude-opus-4-8';
 
@@ -42,6 +43,13 @@ function readString(key: string, fallback: string): string {
 	return localStorage.getItem(key) ?? fallback;
 }
 
+function readBool(key: string, fallback: boolean): boolean {
+	if (typeof window === 'undefined') return fallback;
+	const raw = localStorage.getItem(key);
+	if (raw === null) return fallback;
+	return raw === 'true';
+}
+
 function isModelId(v: string | null): v is AIModelId {
 	return v === 'claude-haiku-4-5' || v === 'claude-sonnet-5' || v === 'claude-opus-4-8';
 }
@@ -59,6 +67,9 @@ function readModel(): AIModelId {
 let _apiKey = $state(readString(KEY_STORAGE, ''));
 let _model = $state<AIModelId>(readModel());
 let _setup = $state(readString(SETUP_STORAGE, DEFAULT_SETUP));
+// Whether to prepend the "Cast & setting" preface (character/foe/expedition) to
+// the prompt. Default on; persisted only when turned off.
+let _includePreface = $state(readBool(PREFACE_STORAGE, true));
 
 // ---------------------------------------------------------------------------
 // Getters
@@ -78,6 +89,9 @@ export function getDefaultSetup(): string {
 }
 export function hasApiKey(): boolean {
 	return _apiKey.trim().length > 0;
+}
+export function getIncludePreface(): boolean {
+	return _includePreface;
 }
 
 // ---------------------------------------------------------------------------
@@ -103,6 +117,14 @@ export function setSetup(v: string): void {
 	if (typeof window === 'undefined') return;
 	if (v === DEFAULT_SETUP) localStorage.removeItem(SETUP_STORAGE);
 	else localStorage.setItem(SETUP_STORAGE, v);
+}
+
+export function setIncludePreface(v: boolean): void {
+	_includePreface = v;
+	if (typeof window === 'undefined') return;
+	// Default is true — only persist the non-default (off) state.
+	if (v) localStorage.removeItem(PREFACE_STORAGE);
+	else localStorage.setItem(PREFACE_STORAGE, 'false');
 }
 
 // ---------------------------------------------------------------------------

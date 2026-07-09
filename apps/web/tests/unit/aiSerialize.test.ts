@@ -14,7 +14,39 @@ import {
 	entryBodyToPrompt,
 	serializeLogSection,
 	estimateTokens,
+	buildStoryPreface,
+	castSummary,
+	type PrefaceCharacter,
+	type PrefaceFoe,
+	type PrefaceExpedition,
 } from '../../src/lib/aiSerialize.js';
+
+const CHAR: PrefaceCharacter = {
+	name: 'Beepalache',
+	background: 'A wary tinker of the Deep Wilds.',
+};
+const FOE: PrefaceFoe = {
+	name: 'Blood Thorn',
+	nature: 'anomaly',
+	rank: 2,
+	description: 'A writhing mass of crimson brambles.',
+	notes: 'Guards the shattered spire.',
+};
+const JOURNEY: PrefaceExpedition = {
+	name: 'The Long Road North',
+	kind: 'journey',
+	difficulty: 'dangerous',
+	notes: 'Snowbound passes and bandit tolls.',
+};
+const SITE: PrefaceExpedition = {
+	name: 'Blackroot Barrow',
+	kind: 'site',
+	difficulty: 'formidable',
+	theme: 'Ancient',
+	domain: 'Barrow',
+	objective: 'Recover the sunstone.',
+	notes: 'Cold stone and older silence.',
+};
 
 let doc: Document;
 
@@ -149,5 +181,80 @@ describe('estimateTokens', () => {
 		expect(estimateTokens('')).toBe(0);
 		expect(estimateTokens('abcd')).toBe(1);
 		expect(estimateTokens('a'.repeat(400))).toBe(100);
+	});
+});
+
+describe('buildStoryPreface', () => {
+	it('returns empty string when there is no character and no foe', () => {
+		expect(buildStoryPreface(null, null)).toBe('');
+	});
+
+	it('includes the character name and background', () => {
+		const out = buildStoryPreface(CHAR, null);
+		expect(out).toContain('# Cast & setting');
+		expect(out).toContain('**Beepalache** — the player character.');
+		expect(out).toContain('A wary tinker of the Deep Wilds.');
+	});
+
+	it('includes the foe name, nature, rank, description, and notes', () => {
+		const out = buildStoryPreface(null, FOE);
+		expect(out).toContain('**Blood Thorn** — anomaly, rank 2 foe.');
+		expect(out).toContain('A writhing mass of crimson brambles.');
+		expect(out).toContain('Guards the shattered spire.');
+	});
+
+	it('omits empty background/description/notes lines', () => {
+		const out = buildStoryPreface(
+			{ name: 'Nameless', background: '  ' },
+			{ name: 'Wraith', nature: 'horror', rank: 3, description: '', notes: '' },
+		);
+		expect(out).toBe(
+			'# Cast & setting\n\n**Nameless** — the player character.\n\n**Wraith** — horror, rank 3 foe.',
+		);
+	});
+
+	it('skips a character/foe whose name is blank', () => {
+		expect(buildStoryPreface({ name: '   ', background: 'x' }, null)).toBe('');
+	});
+
+	it('includes a journey with its difficulty and notes', () => {
+		const out = buildStoryPreface(null, null, JOURNEY);
+		expect(out).toContain('**The Long Road North** — dangerous journey.');
+		expect(out).toContain('Snowbound passes and bandit tolls.');
+		expect(out).not.toContain('Theme:');
+		expect(out).not.toContain('Objective:');
+	});
+
+	it('includes a site with theme, domain, objective, and notes', () => {
+		const out = buildStoryPreface(null, null, SITE);
+		expect(out).toContain('**Blackroot Barrow** — formidable site.');
+		expect(out).toContain('Theme: Ancient. Domain: Barrow.');
+		expect(out).toContain('Objective: Recover the sunstone.');
+		expect(out).toContain('Cold stone and older silence.');
+	});
+
+	it('orders character, foe, then expedition', () => {
+		const out = buildStoryPreface(CHAR, FOE, SITE);
+		expect(out.indexOf('Beepalache')).toBeLessThan(out.indexOf('Blood Thorn'));
+		expect(out.indexOf('Blood Thorn')).toBeLessThan(out.indexOf('Blackroot Barrow'));
+	});
+});
+
+describe('castSummary', () => {
+	it('joins character and foe with "vs"', () => {
+		expect(castSummary(CHAR, FOE)).toBe('Beepalache vs Blood Thorn');
+	});
+	it('appends the expedition location with a middot', () => {
+		expect(castSummary(CHAR, FOE, SITE)).toBe('Beepalache vs Blood Thorn · Blackroot Barrow');
+	});
+	it('shows the location alone when there is no cast', () => {
+		expect(castSummary(null, null, JOURNEY)).toBe('The Long Road North');
+	});
+	it('returns whichever side is present alone', () => {
+		expect(castSummary(CHAR, null)).toBe('Beepalache');
+		expect(castSummary(null, FOE)).toBe('Blood Thorn');
+	});
+	it('returns empty string when nothing is present', () => {
+		expect(castSummary(null, null)).toBe('');
 	});
 });
