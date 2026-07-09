@@ -39,17 +39,23 @@
 		estimateTokens,
 		buildStoryPreface,
 		castSummary,
+		sectionText,
+		mentions,
+		referencedCharIds,
+		type PrefaceCharacter,
 		type PrefaceFoe,
 		type PrefaceExpedition,
 	} from '$lib/aiSerialize.js';
 	import { streamStory } from '$lib/aiStream.js';
-	import { appendLog } from '$lib/log.svelte.js';
+	import { appendLog, updateLogEntryHtml } from '$lib/log.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
-	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
-	import { getActiveFoeId, getActiveExpeditionId } from '$lib/activeContext.svelte.js';
+	import type { LogEntry } from '$lib/log.svelte.js';
 	import { getEncounters } from '$lib/encounterStore.svelte.js';
 	import { findFoe, resolveFoeDescription } from '$lib/foeStore.svelte.js';
 	import { getExpeditions } from '$lib/expeditionStore.svelte.js';
+	import { getCharacters } from '$lib/characterStore.svelte.js';
+	import { findAsset } from '$lib/assetStore.svelte.js';
+	import type { CharacterData } from '$lib/types.js';
 
 	let dialogEl = $state<HTMLDialogElement | null>(null);
 	let mode = $state<'setup' | 'generate'>('setup');
@@ -77,6 +83,15 @@
 	let errorMsg = $state('');
 	let capturedCount = $state(0);
 	let castLine = $state('');
+	// Regenerate mode: reuse the same generate UI to re-run an existing Story
+	// entry's stored prompt and replace it in place.
+	let regenerating = $state(false);
+	let regenerateEntryId = $state('');
+	// The exact prompt actually sent (captured at Start) — persisted with the
+	// saved Story entry so it can be regenerated later.
+	let usedSystem = '';
+	let usedUser = '';
+	let usedModel: AIModelId = 'claude-haiku-4-5';
 	let abortCtl: AbortController | null = null;
 	let outputEl = $state<HTMLDivElement | null>(null);
 
@@ -92,38 +107,64 @@
 		dialogEl?.showModal();
 	}
 
-	/** Resolve the live foe (active encounter) into plain preface data, or null. */
-	function activeFoeInfo(): PrefaceFoe | null {
-		const id = getActiveFoeId();
-		if (!id) return null;
-		const enc = getEncounters().find((e) => e.id === id);
-		if (!enc) return null;
-		const def = findFoe(enc.foeId);
-		if (!def) return null;
+	// ── Preface: scan the captured section for referenced entities ──────────
+	// Instead of the single active entity, describe every character/foe/expedition
+	// the section actually mentions. Characters are matched by id (roll.charId +
+	// data-char-id) and by name; foes and expeditions by name in the section text.
+
+	function charToPreface(data: CharacterData): PrefaceCharacter {
 		return {
-			name: enc.customName || def.name,
-			nature: def.nature,
-			rank: enc.effectiveRank,
-			description: resolveFoeDescription(def),
-			notes: enc.notes ?? '',
+			name: data.name,
+			background: data.background,
+			assets: (data.assets ?? []).map((a) => findAsset(a.assetId)?.name ?? '').filter(Boolean),
+			vows: (data.vows ?? []).map((v) => ({
+				name: v.name,
+				difficulty: v.difficulty,
+				threat: v.threat,
+			})),
 		};
 	}
 
-	/** Resolve the active expedition (journey or site) into plain preface data. */
-	function activeExpeditionInfo(): PrefaceExpedition | null {
-		const id = getActiveExpeditionId();
-		if (!id) return null;
-		const exp = getExpeditions().find((e) => e.id === id);
-		if (!exp) return null;
-		return {
-			name: exp.name,
-			kind: exp.type,
-			difficulty: exp.difficulty,
-			theme: exp.type === 'site' ? exp.theme : '',
-			domain: exp.type === 'site' ? exp.domain : '',
-			objective: exp.type === 'site' ? exp.objective : '',
-			notes: exp.notes ?? '',
-		};
+	function scanCharacters(section: LogEntry[], text: string): PrefaceCharacter[] {
+		const ids = new Set(referencedCharIds(section, document));
+		const out: PrefaceCharacter[] = [];
+		for (const c of getCharacters()) {
+			const data = c.data as unknown as CharacterData;
+			if (ids.has(c.id) || mentions(text, data.name)) out.push(charToPreface(data));
+		}
+		return out;
+	}
+
+	function scanFoes(text: string): PrefaceFoe[] {
+		const out: PrefaceFoe[] = [];
+		for (const enc of getEncounters()) {
+			const def = findFoe(enc.foeId);
+			if (!def) continue;
+			const name = enc.customName || def.name;
+			if (!mentions(text, name)) continue;
+			out.push({
+				name,
+				nature: def.nature,
+				rank: enc.effectiveRank,
+				description: resolveFoeDescription(def),
+				notes: enc.notes ?? '',
+			});
+		}
+		return out;
+	}
+
+	function scanExpeditions(text: string): PrefaceExpedition[] {
+		return getExpeditions()
+			.filter((exp) => mentions(text, exp.name))
+			.map((exp) => ({
+				name: exp.name,
+				kind: exp.type,
+				difficulty: exp.difficulty,
+				theme: exp.type === 'site' ? exp.theme : '',
+				domain: exp.type === 'site' ? exp.domain : '',
+				objective: exp.type === 'site' ? exp.objective : '',
+				notes: exp.notes ?? '',
+			}));
 	}
 
 	export function openGenerate() {
@@ -133,17 +174,53 @@
 		setupText = recordingSetup();
 		modelId = recordingModel();
 
-		// Build the optional "Cast & setting" preface (active character + live foe +
-		// expedition) so the model has narrative grounding rather than inferring
-		// identity from rolls. Whether it's actually sent is governed by the toggle.
-		const ctx = getActiveDiceCtx();
-		const character = ctx ? { name: ctx.data.name, background: ctx.data.background } : null;
-		const foe = activeFoeInfo();
-		const expedition = activeExpeditionInfo();
-		castLine = castSummary(character, foe, expedition);
-		prefaceText = buildStoryPreface(character, foe, expedition);
+		// Build the optional "Cast & setting" preface from every entity the captured
+		// section references, so the model has narrative grounding rather than
+		// inferring identity from rolls. Whether it's sent is governed by the toggle.
+		const text = sectionText(section, document);
+		const characters = scanCharacters(section, text);
+		const foes = scanFoes(text);
+		const expeditions = scanExpeditions(text);
+		castLine = castSummary(characters, foes, expeditions);
+		prefaceText = buildStoryPreface(characters, foes, expeditions);
 		logText = serializeLogSection(section, document);
 		includePreface = getIncludePreface();
+
+		regenerating = false;
+		regenerateEntryId = '';
+		output = '';
+		streaming = false;
+		doneStreaming = false;
+		errorMsg = '';
+		dialogEl?.showModal();
+	}
+
+	/**
+	 * Re-run an existing Story entry from its persisted prompt (stored as JSON in
+	 * the entry's `source`). Reuses the generate UI but replaces the entry in
+	 * place on save instead of appending a new one.
+	 */
+	export function openRegenerate(entryId: string, source: string) {
+		let parsed: { system?: string; user?: string; model?: string };
+		try {
+			parsed = JSON.parse(source);
+		} catch {
+			return; // not a regeneratable Story entry
+		}
+		if (!parsed.user) return;
+
+		mode = 'generate';
+		regenerating = true;
+		regenerateEntryId = entryId;
+		setupText = parsed.system ?? '';
+		const known = AI_MODELS.find((m) => m.id === parsed.model);
+		modelId = known ? known.id : getModel();
+		// Feed the stored prompt straight through: no re-scan, no toggle.
+		logText = parsed.user;
+		prefaceText = '';
+		includePreface = false;
+		castLine = '';
+		capturedCount = 0;
 
 		output = '';
 		streaming = false;
@@ -181,6 +258,10 @@
 		errorMsg = '';
 		streaming = true;
 		doneStreaming = false;
+		// Snapshot the exact prompt being sent so Save can persist it for regenerate.
+		usedSystem = setupText;
+		usedUser = promptText;
+		usedModel = modelId;
 		abortCtl = new AbortController();
 		await streamStory({
 			apiKey: getApiKey(),
@@ -221,20 +302,31 @@
 		// renderNote turns the model's light markdown (**bold**, *italic*, lists,
 		// paragraphs) into HTML and HTML-escapes all text, so it's safe to store
 		// and render via {@html}. The log sanitizer keeps the tags it emits.
-		appendLog('Story', renderNote(output));
-		cancelRecording();
+		const html = renderNote(output);
+		// Persist the exact prompt in `source` so the entry can be regenerated later.
+		const source = JSON.stringify({ system: usedSystem, user: usedUser, model: usedModel });
+		if (regenerating) {
+			updateLogEntryHtml(regenerateEntryId, html, source);
+		} else {
+			appendLog('Story', html, undefined, source);
+			cancelRecording();
+		}
 		dialogEl?.close();
 	}
 
 	function handleDiscardAndClose() {
-		cancelRecording();
+		// Regenerate leaves the original entry untouched and must not clear an
+		// unrelated in-progress recording.
+		if (!regenerating) cancelRecording();
 		dialogEl?.close();
 	}
 </script>
 
 <dialog bind:this={dialogEl} class="story-dialog" oncancel={close}>
 	<DialogHeader
-		title={headingText(mode === 'setup' ? 'Start Story' : 'Generate Story')}
+		title={headingText(
+			mode === 'setup' ? 'Start Story' : regenerating ? 'Regenerate Story' : 'Generate Story',
+		)}
 		onclose={close}
 	/>
 
@@ -270,8 +362,12 @@
 		{:else}
 			<div class="sd-preview">
 				<div>
-					<strong>{capturedCount}</strong>
-					{capturedCount === 1 ? 'entry' : 'entries'} captured, ≈ {promptTokens} input tokens.
+					{#if regenerating}
+						Regenerating from the saved prompt, ≈ {promptTokens} input tokens.
+					{:else}
+						<strong>{capturedCount}</strong>
+						{capturedCount === 1 ? 'entry' : 'entries'} captured, ≈ {promptTokens} input tokens.
+					{/if}
 				</div>
 				<div class="sd-hint">Model: <strong>{modelId}</strong></div>
 				{#if prefaceText}
