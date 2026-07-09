@@ -75,9 +75,21 @@
 	// Detail view state
 	let selectedStat = $state('');
 	let adds = $state(0);
+	// Endure Harm/Stress: the amount of harm/stress suffered. Defaults to the
+	// active foe's rank when a move is opened, but is editable so the player can
+	// set it "as appropriate to the situation" (a fall, a trap, no foe at all).
+	let harmValue = $state(1);
 	// Declared here (before progressValue, rollStatusHtml, isOracleRollMove, oracleTable)
 	// so all derived values that reference it are in TDZ-safe order.
 	const selectedMove = $derived(selectedId ? (findMove(selectedId) ?? null) : null);
+	const isEndureMove = $derived(
+		selectedMove?.id === 'move/endure-harm' || selectedMove?.id === 'move/endure-stress',
+	);
+	// The harm value that drives the harm-links: the editable input for Endure
+	// Harm/Stress, otherwise the active foe's rank.
+	const effectiveHarm = $derived(isEndureMove ? harmValue : pctx.foeHarm);
+	// Label + resource for the harm stepper (harm→health, stress→spirit).
+	const harmWord = $derived(selectedMove?.id === 'move/endure-stress' ? 'Stress' : 'Harm');
 	const progressValue = $derived.by(() => {
 		const src = selectedMove?.progressSource ?? 'combat';
 		const ticks = progressContext[src] ?? 0;
@@ -362,27 +374,27 @@
 		if (!html) return '';
 		return resolveHarmLinks(html, {
 			moveId: selectedMove?.id,
-			foeHarm: pctx.foeHarm,
+			foeHarm: effectiveHarm,
 			curHealth: resourceValue('health'),
 			curSpirit: resourceValue('spirit'),
 		});
 	}
 
-	// Trigger text, with Endure Harm/Stress harm-links resolved to the foe's rank
+	// Trigger text, with Endure Harm/Stress harm-links resolved to the harm value
 	// (plus the momentum-overflow split). Clicking a resolved link in the trigger
-	// applies the harm (see handleDetailClick). Snapshotted via untrack so it does
-	// NOT recompute as the character's health/spirit change — otherwise applying
-	// the harm would immediately re-split the still-visible trigger and wipe the
-	// struck-through marks. It recomputes only when the selected move changes.
+	// applies the harm (see handleDetailClick). Recomputes when the move or the
+	// harm input changes, but reads health/spirit via untrack so applying the harm
+	// doesn't re-split the still-visible trigger and wipe the struck-through marks.
 	const resolvedTriggerHtml = $derived.by(() => {
 		const m = selectedMove;
 		if (!m) return '';
 		const raw = ((m as Record<string, unknown>).triggerPreamble as string) ?? m.trigger;
 		if (m.id !== 'move/endure-harm' && m.id !== 'move/endure-stress') return raw;
+		const harm = effectiveHarm; // tracked — recompute when the player edits the amount
 		return untrack(() =>
 			resolveHarmLinks(raw, {
 				moveId: m.id,
-				foeHarm: pctx.foeHarm,
+				foeHarm: harm,
 				curHealth: resourceValue('health'),
 				curSpirit: resourceValue('spirit'),
 			}),
@@ -399,6 +411,8 @@
 		if (moveId) {
 			selectedId = moveId;
 			view = 'detail';
+			if (moveId === 'move/endure-harm' || moveId === 'move/endure-stress')
+				harmValue = pctx.foeHarm ?? 1;
 		} else {
 			view = 'picker';
 			selectedId = null;
@@ -432,6 +446,7 @@
 		selectedOddsIdx = 2;
 		factorLevels = {};
 		factorsManuallySet = false;
+		if (m.id === 'move/endure-harm' || m.id === 'move/endure-stress') harmValue = pctx.foeHarm ?? 1;
 		// Auto-select first stat
 		if (m.stats && m.stats.length > 0) {
 			selectedStat = m.stats[0].stat;
@@ -558,7 +573,7 @@
 		if (outcomeHtml) {
 			outcomeHtml = resolveHarmLinks(outcomeHtml, {
 				moveId: selectedMove.id,
-				foeHarm: pctx.foeHarm,
+				foeHarm: effectiveHarm,
 				curHealth: resourceValue('health'),
 				curSpirit: resourceValue('spirit'),
 			});
@@ -679,7 +694,7 @@
 		if (outcomeHtml) {
 			outcomeHtml = resolveHarmLinks(outcomeHtml, {
 				moveId: selectedMove.id,
-				foeHarm: pctx.foeHarm,
+				foeHarm: effectiveHarm,
 				curHealth: resourceValue('health'),
 				curSpirit: resourceValue('spirit'),
 			});
@@ -739,7 +754,7 @@
 		if (outcomeHtml) {
 			outcomeHtml = resolveHarmLinks(outcomeHtml, {
 				moveId: selectedMove.id,
-				foeHarm: pctx.foeHarm,
+				foeHarm: effectiveHarm,
 				curHealth: resourceValue('health'),
 				curSpirit: resourceValue('spirit'),
 			});
@@ -1086,6 +1101,28 @@
 				<div class="md-trigger">
 					{@html resolvedTriggerHtml}
 				</div>
+
+				<!-- Endure Harm/Stress: how much harm/stress this blow deals. Defaults to
+				     the foe's rank; editable for "as appropriate to the situation". -->
+				{#if isEndureMove}
+					<div class="md-harm-row">
+						<span class="md-harm-label">{harmWord}</span>
+						<button
+							class="md-adj"
+							onclick={() => (harmValue = Math.max(1, harmValue - 1))}
+							disabled={harmValue <= 1}
+							aria-label="Decrease {harmWord.toLowerCase()}">−</button
+						>
+						<span class="md-harm-val">{harmValue}</span>
+						<button
+							class="md-adj"
+							onclick={() => (harmValue = Math.min(10, harmValue + 1))}
+							disabled={harmValue >= 10}
+							aria-label="Increase {harmWord.toLowerCase()}">+</button
+						>
+						<span class="md-harm-hint">foe's rank, or as appropriate</span>
+					</div>
+				{/if}
 
 				<!-- ── Standard action move ── -->
 				{#if hasRollableStats(selectedMove)}
@@ -2075,6 +2112,38 @@
 	}
 	.md-adds-val.negative {
 		color: var(--color-danger);
+	}
+
+	/* ── Endure Harm/Stress amount stepper ───────────────────────────────── */
+	.md-harm-row {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		margin: 8px 0 2px;
+	}
+	.md-harm-label {
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--text-muted);
+	}
+	.md-harm-val {
+		min-width: 22px;
+		text-align: center;
+		font-family: var(--font-ui);
+		font-size: 0.95rem;
+		font-weight: 700;
+		font-variant-numeric: tabular-nums;
+		color: var(--color-danger);
+	}
+	.md-harm-hint {
+		font-family: var(--font-ui);
+		font-size: 0.66rem;
+		font-style: italic;
+		color: var(--text-dimmer);
+		margin-left: 2px;
 	}
 
 	/* ── Progress row ────────────────────────────────────────────────────── */
