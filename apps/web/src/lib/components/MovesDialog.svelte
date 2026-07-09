@@ -28,7 +28,8 @@
 		hasRollableStats,
 	} from '$lib/moveStore.svelte.js';
 	import { firstPreconditionFailure } from '$lib/preconditions.js';
-	import { appendLog, enrichOutcomeLinks } from '$lib/log.svelte.js';
+	import { appendLog, enrichOutcomeLinks, triggerAction } from '$lib/log.svelte.js';
+	import { untrack } from 'svelte';
 	import { momentumReset } from '$lib/character.js';
 	import { BURN_MOMENTUM_TITLE } from '$lib/cascadeRules.js';
 	import { rollDie, animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
@@ -206,6 +207,12 @@
 		return ((ctx.data as unknown as Record<string, unknown>)[stat] as number) ?? 0;
 	}
 
+	/** Current numeric value of a character resource, or undefined if no ctx. */
+	function resourceValue(key: string): number | undefined {
+		if (!ctx) return undefined;
+		return ((ctx.data as unknown as Record<string, unknown>)[key] as number) ?? 0;
+	}
+
 	// ---------------------------------------------------------------------------
 	// Precondition check
 	// ---------------------------------------------------------------------------
@@ -277,31 +284,102 @@
 	// Resolve <a class="harm-link"> placeholders.
 	// ctx.moveId + ctx.foeHarm present (Endure Harm/Stress) → real resource-link.
 	// Otherwise → move-link so the player can navigate to the appropriate suffer move.
-	function resolveHarmLinks(html: string, ctx?: { moveId?: string; foeHarm?: number }): string {
+	function resolveHarmLinks(
+		html: string,
+		ctx?: { moveId?: string; foeHarm?: number; curHealth?: number; curSpirit?: number },
+	): string {
 		const harm = ctx?.foeHarm ?? 1;
 		const moveId = ctx?.moveId ?? '';
+
+		// Endure Harm/Stress: suffer -harm to the resource; per the move, if that
+		// would drop it below 0 the remainder converts to -momentum. When the
+		// current value is known and smaller than the harm, split the single
+		// harm-link into a resource link (down to exactly 0) plus a momentum link
+		// for the overflow. Because the resource link lands the value at exactly 0
+		// (not below), the LogPanel overflow cascade won't double-fire the momentum.
+		// Nothing is applied until the player clicks each link.
+		function harmSplit(resource: 'health' | 'spirit', curVal?: number): string {
+			if (curVal !== undefined && harm > curVal) {
+				const overflow = harm - curVal;
+				const resLink =
+					curVal > 0
+						? `<a class="resource-link" data-resource="${resource}" data-value="-${curVal}">-${curVal} ${resource}</a> and `
+						: '';
+				return (
+					resLink +
+					`<a class="resource-link" data-resource="momentum" data-value="-${overflow}">-${overflow} momentum</a>` +
+					` <span class="harm-note">(overflow)</span>`
+				);
+			}
+			return `<a class="resource-link" data-resource="${resource}" data-value="-${harm}">-${harm} ${resource}</a>`;
+		}
+
 		// Health harm-links: known foe → clickable resource-link; no foe → plain placeholder text.
 		html = html.replace(
 			/<a class="harm-link" data-resource="health">-harm health<\/a>/g,
 			moveId === 'move/endure-harm' && ctx?.foeHarm !== undefined
-				? `<a class="resource-link" data-resource="health" data-value="-${harm}">-${harm} health</a>`
+				? harmSplit('health', ctx.curHealth)
 				: '<span class="harm-note">-harm health</span>',
 		);
 		// Spirit harm-links: known foe → clickable resource-link; no foe → plain placeholder text.
 		html = html.replace(
 			/<a class="harm-link" data-resource="spirit">-harm spirit<\/a>/g,
 			moveId === 'move/endure-stress' && ctx?.foeHarm !== undefined
-				? `<a class="resource-link" data-resource="spirit" data-value="-${harm}">-${harm} spirit</a>`
+				? harmSplit('spirit', ctx.curSpirit)
 				: '<span class="harm-note">-harm spirit</span>',
 		);
+
+		// Endure Harm/Stress miss text carries a conditional debility clause:
+		// "If you are at 0 <resource>, you must mark <X> or <Y> … or roll on the
+		// <oracle>." When the current value is known, resolve that conditional: if
+		// this blow will floor the resource to 0 (harm >= current), state it
+		// affirmatively; if it won't, drop the clause so the player isn't offered an
+		// action that doesn't apply. With no character context, leave it generic.
+		if (moveId === 'move/endure-harm' || moveId === 'move/endure-stress') {
+			html = html.replace(
+				/ ?If you are at 0 (health|spirit), you must mark ([\s\S]*?oracle<\/a>\.)/,
+				(match, resource, rest) => {
+					const curVal = resource === 'health' ? ctx?.curHealth : ctx?.curSpirit;
+					if (curVal === undefined) return match; // no character → keep generic wording
+					if (harm >= curVal) return ` You are at 0 ${resource} — you must mark ${rest}`;
+					return ''; // blow won't reach 0 → clause doesn't apply
+				},
+			);
+		}
 		return html;
 	}
 
 	// Resolve harm links for display in the dialog outcome preview.
 	function displayHtml(html: string | undefined): string {
 		if (!html) return '';
-		return resolveHarmLinks(html, { moveId: selectedMove?.id, foeHarm: pctx.foeHarm });
+		return resolveHarmLinks(html, {
+			moveId: selectedMove?.id,
+			foeHarm: pctx.foeHarm,
+			curHealth: resourceValue('health'),
+			curSpirit: resourceValue('spirit'),
+		});
 	}
+
+	// Trigger text, with Endure Harm/Stress harm-links resolved to the foe's rank
+	// (plus the momentum-overflow split). Clicking a resolved link in the trigger
+	// applies the harm (see handleDetailClick). Snapshotted via untrack so it does
+	// NOT recompute as the character's health/spirit change — otherwise applying
+	// the harm would immediately re-split the still-visible trigger and wipe the
+	// struck-through marks. It recomputes only when the selected move changes.
+	const resolvedTriggerHtml = $derived.by(() => {
+		const m = selectedMove;
+		if (!m) return '';
+		const raw = ((m as Record<string, unknown>).triggerPreamble as string) ?? m.trigger;
+		if (m.id !== 'move/endure-harm' && m.id !== 'move/endure-stress') return raw;
+		return untrack(() =>
+			resolveHarmLinks(raw, {
+				moveId: m.id,
+				foeHarm: pctx.foeHarm,
+				curHealth: resourceValue('health'),
+				curSpirit: resourceValue('spirit'),
+			}),
+		);
+	});
 
 	// ---------------------------------------------------------------------------
 	// Public API
@@ -358,15 +436,36 @@
 		view = 'picker';
 	}
 
-	/** Click delegation for move-link navigation inside detail view. */
+	/** Click delegation inside the detail view: trigger harm links + move-link nav. */
 	function handleDetailClick(e: MouseEvent) {
-		const link = (e.target as HTMLElement).closest('.move-link') as HTMLElement | null;
+		const target = e.target as HTMLElement;
+
+		// Trigger harm links (Endure Harm/Stress): apply the resource change on
+		// click. Scoped to `.md-trigger` so outcome previews stay read-only — those
+		// are committed by rolling, then clicked in the log. The link is struck so
+		// it can't be applied twice (the trigger HTML is snapshotted, so this
+		// mutation survives — see resolvedTriggerHtml).
+		const resLink = target.closest('.resource-link') as HTMLElement | null;
+		if (resLink && resLink.closest('.md-trigger') && !resLink.closest('s') && ctx) {
+			e.preventDefault();
+			const resource = resLink.dataset['resource'] ?? '';
+			const value = parseInt(resLink.dataset['value'] ?? '', 10);
+			if (!resource || Number.isNaN(value) || !value) return;
+			triggerAction({ charId: ctx.charId, type: 'resource', key: resource, value });
+			const struck = document.createElement('s');
+			struck.className = 'resource-spent';
+			struck.textContent = resLink.textContent;
+			resLink.replaceWith(struck);
+			return;
+		}
+
+		const link = target.closest('.move-link') as HTMLElement | null;
 		if (!link) return;
 		e.preventDefault();
 		const moveId = link.dataset['id'];
 		if (moveId) {
-			const target = findMove(moveId);
-			if (target) selectMove(target);
+			const targetMove = findMove(moveId);
+			if (targetMove) selectMove(targetMove);
 		}
 	}
 
@@ -452,6 +551,8 @@
 			outcomeHtml = resolveHarmLinks(outcomeHtml, {
 				moveId: selectedMove.id,
 				foeHarm: pctx.foeHarm,
+				curHealth: resourceValue('health'),
+				curSpirit: resourceValue('spirit'),
 			});
 			// Delve the Depths weak hit: inject the rolled stat into the oracle-link so
 			// clicking it opens the oracle with the correct column pre-selected.
@@ -564,6 +665,8 @@
 			outcomeHtml = resolveHarmLinks(outcomeHtml, {
 				moveId: selectedMove.id,
 				foeHarm: pctx.foeHarm,
+				curHealth: resourceValue('health'),
+				curSpirit: resourceValue('spirit'),
 			});
 			if (charId) outcomeHtml = enrichOutcomeLinks(outcomeHtml, entryId, charId);
 			parts.push(`<div class="move-outcome">${outcomeHtml}</div>`);
@@ -622,6 +725,8 @@
 			outcomeHtml = resolveHarmLinks(outcomeHtml, {
 				moveId: selectedMove.id,
 				foeHarm: pctx.foeHarm,
+				curHealth: resourceValue('health'),
+				curSpirit: resourceValue('spirit'),
 			});
 			bodyHtml += `<div class="move-outcome">${outcomeHtml}</div>`;
 		}
@@ -964,8 +1069,7 @@
 			<div class="md-detail-scroll">
 				<!-- Trigger text -->
 				<div class="md-trigger">
-					{@html ((selectedMove as Record<string, unknown>).triggerPreamble as string) ??
-						selectedMove.trigger}
+					{@html resolvedTriggerHtml}
 				</div>
 
 				<!-- ── Standard action move ── -->
