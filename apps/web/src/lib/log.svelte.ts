@@ -17,6 +17,11 @@ export interface RollMeta {
 	c1: number; // challenge die 1
 	c2: number; // challenge die 2
 	charId: string; // character who rolled
+	/** Active foe encounter id — set on moves whose title references {foe} (combat).
+	 *  Lets the story preface scan match foes exactly instead of by name. */
+	foeId?: string;
+	/** Active expedition id — set on moves whose title references {expedition}. */
+	expeditionId?: string;
 }
 
 export interface LogEntry {

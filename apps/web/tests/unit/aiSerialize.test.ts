@@ -19,6 +19,8 @@ import {
 	sectionText,
 	mentions,
 	referencedCharIds,
+	referencedRollIds,
+	parseStorySource,
 	type PrefaceCharacter,
 	type PrefaceFoe,
 	type PrefaceExpedition,
@@ -331,5 +333,51 @@ describe('referencedCharIds', () => {
 		];
 		const ids = referencedCharIds(entries, doc);
 		expect(ids.sort()).toEqual(['char-A', 'char-B']);
+	});
+});
+
+describe('referencedRollIds', () => {
+	it('collects distinct foe/expedition ids from roll metadata', () => {
+		const entries: LogEntry[] = [
+			{
+				id: '1',
+				title: 'Clash',
+				html: '<p>hit</p>',
+				ts: new Date().toISOString(),
+				roll: { moveId: 'move/clash', actionScore: 7, c1: 8, c2: 2, charId: 'c', foeId: 'foe-1' },
+			},
+			{
+				id: '2',
+				title: 'Undertake a Journey',
+				html: '<p>onward</p>',
+				ts: new Date().toISOString(),
+				roll: {
+					moveId: 'move/undertake-a-journey',
+					actionScore: 6,
+					c1: 4,
+					c2: 9,
+					charId: 'c',
+					expeditionId: 'exp-1',
+				},
+			},
+			// a plain roll with neither id — contributes nothing
+			rollEntry('Face Danger', '<p>ok</p>', 'c'),
+		];
+		expect(referencedRollIds(entries, 'foeId')).toEqual(['foe-1']);
+		expect(referencedRollIds(entries, 'expeditionId')).toEqual(['exp-1']);
+	});
+});
+
+describe('parseStorySource', () => {
+	it('parses a tagged story payload', () => {
+		const src = JSON.stringify({ kind: 'story', user: 'prompt', model: 'm', md: '**hi**' });
+		expect(parseStorySource(src)).toMatchObject({ kind: 'story', user: 'prompt', md: '**hi**' });
+	});
+	it('rejects null, plain markdown (a Note), and non-story JSON', () => {
+		expect(parseStorySource(null)).toBeNull();
+		expect(parseStorySource(undefined)).toBeNull();
+		expect(parseStorySource('# a note\n- item')).toBeNull();
+		expect(parseStorySource(JSON.stringify({ kind: 'note', user: 'x' }))).toBeNull();
+		expect(parseStorySource(JSON.stringify({ kind: 'story' }))).toBeNull(); // no user
 	});
 });

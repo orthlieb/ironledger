@@ -28,6 +28,7 @@
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { findMove } from '$lib/moveStore.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
+	import { parseStorySource } from '$lib/aiSerialize.js';
 	import { sanitizeLogHtml, sanitizeNoteHtml } from '$lib/sanitize.js';
 	import trashSvg from '$icons/trash-solid-full.svg?raw';
 	import penSvg from '$icons/pen-to-square-solid-full.svg?raw';
@@ -796,7 +797,7 @@
 
 						<!-- Action buttons — opacity 0, revealed on .log-entry:hover -->
 						<div class="entry-actions">
-							{#if entry.title === 'Story' && entry.source}
+							{#if parseStorySource(entry.source)}
 								<button
 									class="entry-btn entry-regen-btn"
 									onclick={() => storyDialogRef?.openRegenerate(entry.id, entry.source ?? '')}

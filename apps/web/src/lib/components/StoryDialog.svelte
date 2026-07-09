@@ -42,6 +42,8 @@
 		sectionText,
 		mentions,
 		referencedCharIds,
+		referencedRollIds,
+		parseStorySource,
 		type PrefaceCharacter,
 		type PrefaceFoe,
 		type PrefaceExpedition,
@@ -83,6 +85,7 @@
 	let errorMsg = $state('');
 	let capturedCount = $state(0);
 	let castLine = $state('');
+	let storyTitle = $state(''); // user-chosen log-entry title for a new story
 	// Regenerate mode: reuse the same generate UI to re-run an existing Story
 	// entry's stored prompt and replace it in place.
 	let regenerating = $state(false);
@@ -135,13 +138,14 @@
 		return out;
 	}
 
-	function scanFoes(text: string): PrefaceFoe[] {
+	function scanFoes(section: LogEntry[], text: string): PrefaceFoe[] {
+		const ids = new Set(referencedRollIds(section, 'foeId'));
 		const out: PrefaceFoe[] = [];
 		for (const enc of getEncounters()) {
 			const def = findFoe(enc.foeId);
 			if (!def) continue;
 			const name = enc.customName || def.name;
-			if (!mentions(text, name)) continue;
+			if (!ids.has(enc.id) && !mentions(text, name)) continue;
 			out.push({
 				name,
 				nature: def.nature,
@@ -153,9 +157,10 @@
 		return out;
 	}
 
-	function scanExpeditions(text: string): PrefaceExpedition[] {
+	function scanExpeditions(section: LogEntry[], text: string): PrefaceExpedition[] {
+		const ids = new Set(referencedRollIds(section, 'expeditionId'));
 		return getExpeditions()
-			.filter((exp) => mentions(text, exp.name))
+			.filter((exp) => ids.has(exp.id) || mentions(text, exp.name))
 			.map((exp) => ({
 				name: exp.name,
 				kind: exp.type,
@@ -179,12 +184,13 @@
 		// inferring identity from rolls. Whether it's sent is governed by the toggle.
 		const text = sectionText(section, document);
 		const characters = scanCharacters(section, text);
-		const foes = scanFoes(text);
-		const expeditions = scanExpeditions(text);
+		const foes = scanFoes(section, text);
+		const expeditions = scanExpeditions(section, text);
 		castLine = castSummary(characters, foes, expeditions);
 		prefaceText = buildStoryPreface(characters, foes, expeditions);
 		logText = serializeLogSection(section, document);
 		includePreface = getIncludePreface();
+		storyTitle = castLine || 'Story';
 
 		regenerating = false;
 		regenerateEntryId = '';
@@ -201,13 +207,8 @@
 	 * place on save instead of appending a new one.
 	 */
 	export function openRegenerate(entryId: string, source: string) {
-		let parsed: { system?: string; user?: string; model?: string };
-		try {
-			parsed = JSON.parse(source);
-		} catch {
-			return; // not a regeneratable Story entry
-		}
-		if (!parsed.user) return;
+		const parsed = parseStorySource(source);
+		if (!parsed) return; // not a regeneratable Story entry
 
 		mode = 'generate';
 		regenerating = true;
@@ -303,12 +304,20 @@
 		// paragraphs) into HTML and HTML-escapes all text, so it's safe to store
 		// and render via {@html}. The log sanitizer keeps the tags it emits.
 		const html = renderNote(output);
-		// Persist the exact prompt in `source` so the entry can be regenerated later.
-		const source = JSON.stringify({ system: usedSystem, user: usedUser, model: usedModel });
+		// Persist the prompt (for Regenerate) and the raw markdown (for Export) in
+		// `source`, tagged so the entry is identifiable regardless of its title.
+		const source = JSON.stringify({
+			kind: 'story',
+			system: usedSystem,
+			user: usedUser,
+			model: usedModel,
+			md: output,
+		});
 		if (regenerating) {
+			// Keep the existing entry's title; just refresh the body and payload.
 			updateLogEntryHtml(regenerateEntryId, html, source);
 		} else {
-			appendLog('Story', html, undefined, source);
+			appendLog(storyTitle.trim() || 'Story', html, undefined, source);
 			cancelRecording();
 		}
 		dialogEl?.close();
@@ -384,6 +393,14 @@
 					</label>
 				{/if}
 			</div>
+
+			{#if !regenerating}
+				<label class="sd-field">
+					<span class="sd-label">Title</span>
+					<input class="sd-input" type="text" placeholder="Story title…" bind:value={storyTitle} />
+					<span class="sd-hint sd-hint-tight">Shown as the log entry's heading.</span>
+				</label>
+			{/if}
 
 			<div class="sd-output-wrap">
 				<div class="sd-output" bind:this={outputEl} aria-live="polite">

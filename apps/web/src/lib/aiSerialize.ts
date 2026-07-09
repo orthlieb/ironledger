@@ -246,6 +246,20 @@ export function mentions(sectionLower: string, name: string): boolean {
 }
 
 /**
+ * Distinct values of a roll-metadata id field across a section — used for
+ * exact foe/expedition matching (`roll.foeId` / `roll.expeditionId`), which
+ * combat and journey/delve action rolls now record.
+ */
+export function referencedRollIds(entries: LogEntry[], field: 'foeId' | 'expeditionId'): string[] {
+	const ids = new Set<string>();
+	for (const e of entries) {
+		const v = e.roll?.[field];
+		if (v) ids.add(v);
+	}
+	return [...ids];
+}
+
+/**
  * Character ids referenced in a section — from roll metadata (`roll.charId`)
  * and any `data-char-id` attributes on interactive links. These are exact ids,
  * so they're more reliable than name matching for the player characters.
@@ -262,6 +276,34 @@ export function referencedCharIds(entries: LogEntry[], doc: Document): string[] 
 		});
 	}
 	return [...ids];
+}
+
+// ---------------------------------------------------------------------------
+// Story entry payload — stored as JSON in a Story log entry's `source`. Carries
+// the exact prompt (for Regenerate) and the raw markdown (for Export). The
+// `kind` discriminator is how a Story entry is identified regardless of its
+// user-chosen title.
+// ---------------------------------------------------------------------------
+
+export interface StorySource {
+	kind: 'story';
+	system?: string;
+	user: string;
+	model?: string;
+	/** Raw markdown the model produced — used for the markdown export. */
+	md?: string;
+}
+
+/** Parse a log entry's `source` as a Story payload, or null if it isn't one. */
+export function parseStorySource(source: string | null | undefined): StorySource | null {
+	if (!source) return null;
+	try {
+		const p = JSON.parse(source);
+		if (p && p.kind === 'story' && typeof p.user === 'string') return p as StorySource;
+	} catch {
+		/* not JSON → not a story */
+	}
+	return null;
 }
 
 // ---------------------------------------------------------------------------
