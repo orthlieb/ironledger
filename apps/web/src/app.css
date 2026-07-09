@@ -763,6 +763,14 @@ dialog label {
 	font-style: italic;
 }
 
+/* Disabled rule link — canonical move text is kept verbatim, but the action it
+   describes doesn't apply right now (e.g. an Endure Harm miss clause when the
+   blow won't bring you to 0), so the link is rendered as inert, muted text. */
+.rule-disabled {
+	color: var(--text-dimmer);
+	cursor: default;
+}
+
 /* ── Global CSS Tooltips ───────────────────────────────────────────────────── */
 /* Usage: add data-tooltip="text" to any element. Add .tooltip-down to flip direction. */
 [data-tooltip] {

@@ -299,11 +299,14 @@
 		// (not below), the LogPanel overflow cascade won't double-fire the momentum.
 		// Nothing is applied until the player clicks each link.
 		function harmSplit(resource: 'health' | 'spirit', curVal?: number): string {
+			// Canonical wording: you suffer "harm" (to health) / "stress" (to spirit),
+			// not "-health"/"-spirit". The link still applies -health/-spirit on click.
+			const harmWord = resource === 'health' ? 'harm' : 'stress';
 			if (curVal !== undefined && harm > curVal) {
 				const overflow = harm - curVal;
 				const resLink =
 					curVal > 0
-						? `<a class="resource-link" data-resource="${resource}" data-value="-${curVal}">-${curVal} ${resource}</a> and `
+						? `<a class="resource-link" data-resource="${resource}" data-value="-${curVal}">${curVal} ${harmWord}</a> and `
 						: '';
 				return (
 					resLink +
@@ -311,7 +314,7 @@
 					` <span class="harm-note">(overflow)</span>`
 				);
 			}
-			return `<a class="resource-link" data-resource="${resource}" data-value="-${harm}">-${harm} ${resource}</a>`;
+			return `<a class="resource-link" data-resource="${resource}" data-value="-${harm}">${harm} ${harmWord}</a>`;
 		}
 
 		// Health harm-links: known foe → clickable resource-link; no foe → plain placeholder text.
@@ -329,20 +332,24 @@
 				: '<span class="harm-note">-harm spirit</span>',
 		);
 
-		// Endure Harm/Stress miss text carries a conditional debility clause:
-		// "If you are at 0 <resource>, you must mark <X> or <Y> … or roll on the
-		// <oracle>." When the current value is known, resolve that conditional: if
-		// this blow will floor the resource to 0 (harm >= current), state it
-		// affirmatively; if it won't, drop the clause so the player isn't offered an
-		// action that doesn't apply. With no character context, leave it generic.
+		// Endure Harm/Stress miss text carries a debility clause: "If you are at 0
+		// <resource>, you must mark <X> or <Y> … or roll on the <oracle>." Rules text
+		// is canon, so it always renders verbatim — but when we KNOW this blow won't
+		// bring the resource to 0 (foe rank < current), the mark/oracle actions don't
+		// apply, so their links are disabled (rendered as inert text). When the clause
+		// applies, or the outcome can't be determined (no foe/character), links stay live.
 		if (moveId === 'move/endure-harm' || moveId === 'move/endure-stress') {
 			html = html.replace(
-				/ ?If you are at 0 (health|spirit), you must mark ([\s\S]*?oracle<\/a>\.)/,
-				(match, resource, rest) => {
+				/If you are at 0 (health|spirit), you must mark [\s\S]*?oracle<\/a>\./,
+				(clause, resource) => {
 					const curVal = resource === 'health' ? ctx?.curHealth : ctx?.curSpirit;
-					if (curVal === undefined) return match; // no character → keep generic wording
-					if (harm >= curVal) return ` You are at 0 ${resource} — you must mark ${rest}`;
-					return ''; // blow won't reach 0 → clause doesn't apply
+					const survives =
+						ctx?.foeHarm !== undefined && curVal !== undefined && ctx.foeHarm < curVal;
+					if (!survives) return clause; // clause applies, or can't tell → links live
+					return clause.replace(
+						/<a class="[^"]*-link"[^>]*>([\s\S]*?)<\/a>/g,
+						'<span class="rule-disabled">$1</span>',
+					);
 				},
 			);
 		}
