@@ -299,11 +299,14 @@
 		// (not below), the LogPanel overflow cascade won't double-fire the momentum.
 		// Nothing is applied until the player clicks each link.
 		function harmSplit(resource: 'health' | 'spirit', curVal?: number): string {
+			// Canonical wording: you suffer "harm" (to health) / "stress" (to spirit),
+			// not "-health"/"-spirit". The link still applies -health/-spirit on click.
+			const harmWord = resource === 'health' ? 'harm' : 'stress';
 			if (curVal !== undefined && harm > curVal) {
 				const overflow = harm - curVal;
 				const resLink =
 					curVal > 0
-						? `<a class="resource-link" data-resource="${resource}" data-value="-${curVal}">-${curVal} ${resource}</a> and `
+						? `<a class="resource-link" data-resource="${resource}" data-value="-${curVal}">${curVal} ${harmWord}</a> and `
 						: '';
 				return (
 					resLink +
@@ -311,7 +314,7 @@
 					` <span class="harm-note">(overflow)</span>`
 				);
 			}
-			return `<a class="resource-link" data-resource="${resource}" data-value="-${harm}">-${harm} ${resource}</a>`;
+			return `<a class="resource-link" data-resource="${resource}" data-value="-${harm}">${harm} ${harmWord}</a>`;
 		}
 
 		// Health harm-links: known foe → clickable resource-link; no foe → plain placeholder text.
