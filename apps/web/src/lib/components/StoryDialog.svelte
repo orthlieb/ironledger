@@ -44,6 +44,7 @@
 	} from '$lib/aiSerialize.js';
 	import { streamStory } from '$lib/aiStream.js';
 	import { appendLog } from '$lib/log.svelte.js';
+	import { renderNote } from '$lib/markdown.js';
 	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
 	import { getActiveFoeId, getActiveExpeditionId } from '$lib/activeContext.svelte.js';
 	import { getEncounters } from '$lib/encounterStore.svelte.js';
@@ -68,6 +69,9 @@
 	);
 	const promptTokens = $derived(estimateTokens(promptText));
 	let output = $state('');
+	// Light markdown rendered to HTML for the live preview — matches what
+	// Save to Log stores. renderNote HTML-escapes all text, so {@html} is safe.
+	const renderedOutput = $derived(renderNote(output));
 	let streaming = $state(false);
 	let doneStreaming = $state(false);
 	let errorMsg = $state('');
@@ -214,12 +218,10 @@
 	}
 
 	function handleSaveToLog() {
-		const paragraphs = output
-			.split(/\n{2,}/)
-			.map((p) => p.trim())
-			.filter(Boolean);
-		const html = paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join('');
-		appendLog('Story', html);
+		// renderNote turns the model's light markdown (**bold**, *italic*, lists,
+		// paragraphs) into HTML and HTML-escapes all text, so it's safe to store
+		// and render via {@html}. The log sanitizer keeps the tags it emits.
+		appendLog('Story', renderNote(output));
 		cancelRecording();
 		dialogEl?.close();
 	}
@@ -227,10 +229,6 @@
 	function handleDiscardAndClose() {
 		cancelRecording();
 		dialogEl?.close();
-	}
-
-	function escapeHtml(s: string): string {
-		return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 	}
 </script>
 
@@ -294,7 +292,7 @@
 			<div class="sd-output-wrap">
 				<div class="sd-output" bind:this={outputEl} aria-live="polite">
 					{#if output}
-						{output}
+						{@html renderedOutput}
 					{:else if streaming}
 						<span class="sd-placeholder">Waiting for first tokens…</span>
 					{:else}
@@ -454,7 +452,20 @@
 		max-height: 40vh;
 		overflow-y: auto;
 		overscroll-behavior: contain;
-		white-space: pre-wrap;
+	}
+	/* Rendered light-markdown prose (matches the saved Story log entry).
+	   renderNote separates blocks with <br>, and the global reset zeroes
+	   margins — so we only indent lists and style the inline marks here. */
+	.sd-output :global(strong) {
+		color: var(--text);
+		font-weight: 600;
+	}
+	.sd-output :global(em) {
+		font-style: italic;
+	}
+	.sd-output :global(ul),
+	.sd-output :global(ol) {
+		padding-left: 1.25em;
 	}
 	.sd-placeholder {
 		color: var(--text-dimmer);
