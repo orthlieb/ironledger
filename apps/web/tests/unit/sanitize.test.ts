@@ -56,6 +56,11 @@ describe('LOG_TAGS allowlist', () => {
 	for (const tag of ['a', 'span', 'div', 'p', 'br', 'strong', 'em', 'ul', 'ol', 'li']) {
 		expectTag(tag);
 	}
+	// h3–h5: renderNote emits these for markdown headings (# / ## / ###) in
+	// AI story entries — see sanitizeLogHtml survival test in Tier 2.
+	for (const tag of ['h3', 'h4', 'h5']) {
+		expectTag(tag);
+	}
 	// <s> written by markLinkSpent after a link is clicked
 	expectTag('s');
 });
@@ -177,6 +182,14 @@ describe('sanitizeLogHtml — XSS / injection is blocked', () => {
 		expect(out).toContain('<div>');
 		expect(out).toContain('<strong>');
 		expect(out).toContain('Hello');
+	});
+
+	it('preserves h3–h5 heading tags (renderNote markdown headings in stories)', () => {
+		const html = `<h3>The Barrow</h3><h4>Descent</h4><h5>The Silence</h5>`;
+		const out = sanitizeLogHtml(html);
+		expect(out).toContain('<h3>The Barrow</h3>');
+		expect(out).toContain('<h4>Descent</h4>');
+		expect(out).toContain('<h5>The Silence</h5>');
 	});
 
 	it('strips unknown tags but keeps their text', () => {

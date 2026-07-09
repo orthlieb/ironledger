@@ -36,6 +36,9 @@ export const LOG_TAGS = [
 	'ul',
 	'ol',
 	'li',
+	'h3', // renderNote emits <h3>/<h4>/<h5> for # / ## / ### — used by AI story
+	'h4', //   entries (and any markdown note surfaced in the log). Without these
+	'h5', //   the heading text would survive but flatten to a plain line.
 	's', // <s class="resource-spent"> / <s class="xp-spent"> — written by markLinkSpent
 ];
 
