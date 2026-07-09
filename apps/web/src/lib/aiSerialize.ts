@@ -166,9 +166,19 @@ export function estimateTokens(text: string): number {
 // character/foe from the stores and passes plain data in.
 // =============================================================================
 
+export interface PrefaceVow {
+	name: string;
+	difficulty: string;
+	/** What the vow is sworn against / to do. */
+	threat: string;
+}
+
 export interface PrefaceCharacter {
 	name: string;
 	background: string;
+	/** Resolved asset names (e.g. "Swordmaster", "Ritualist"). */
+	assets: string[];
+	vows: PrefaceVow[];
 }
 
 export interface PrefaceFoe {
@@ -192,66 +202,196 @@ export interface PrefaceExpedition {
 	notes: string;
 }
 
+// ---------------------------------------------------------------------------
+// Section scanning — which entities does the captured log actually reference?
+// The caller passes candidate entities from the stores; these helpers decide
+// which are mentioned so the preface only describes what appears in the story.
+// ---------------------------------------------------------------------------
+
+/**
+ * Flatten a log section (titles + visible body text + notes) into one
+ * lowercased blob for name-mention scanning. `doc` is injected for testability.
+ */
+export function sectionText(entries: LogEntry[], doc: Document): string {
+	const parts: string[] = [];
+	for (const e of entries) {
+		parts.push(e.title ?? '');
+		const tmp = doc.createElement('div');
+		tmp.innerHTML = e.html ?? '';
+		parts.push(tmp.textContent ?? '');
+		if (e.note) parts.push(e.note);
+	}
+	return parts.join(' \n ').toLowerCase();
+}
+
+/**
+ * True if `name` appears in the already-lowercased section text as a
+ * word-bounded, case-insensitive match. Names under 2 chars are ignored
+ * (too noisy to match reliably).
+ */
+export function mentions(sectionLower: string, name: string): boolean {
+	const n = name.trim().toLowerCase();
+	if (n.length < 2) return false;
+	let from = 0;
+	for (;;) {
+		const idx = sectionLower.indexOf(n, from);
+		if (idx === -1) return false;
+		const before = sectionLower[idx - 1];
+		const after = sectionLower[idx + n.length];
+		const okBefore = before === undefined || !/[a-z0-9]/.test(before);
+		const okAfter = after === undefined || !/[a-z0-9]/.test(after);
+		if (okBefore && okAfter) return true;
+		from = idx + 1;
+	}
+}
+
+/**
+ * Distinct values of a roll-metadata id field across a section — used for
+ * exact foe/expedition matching (`roll.foeId` / `roll.expeditionId`), which
+ * combat and journey/delve action rolls now record.
+ */
+export function referencedRollIds(entries: LogEntry[], field: 'foeId' | 'expeditionId'): string[] {
+	const ids = new Set<string>();
+	for (const e of entries) {
+		const v = e.roll?.[field];
+		if (v) ids.add(v);
+	}
+	return [...ids];
+}
+
+/**
+ * Character ids referenced in a section — from roll metadata (`roll.charId`)
+ * and any `data-char-id` attributes on interactive links. These are exact ids,
+ * so they're more reliable than name matching for the player characters.
+ */
+export function referencedCharIds(entries: LogEntry[], doc: Document): string[] {
+	const ids = new Set<string>();
+	for (const e of entries) {
+		if (e.roll?.charId) ids.add(e.roll.charId);
+		const tmp = doc.createElement('div');
+		tmp.innerHTML = e.html ?? '';
+		tmp.querySelectorAll('[data-char-id]').forEach((el) => {
+			const id = el.getAttribute('data-char-id');
+			if (id) ids.add(id);
+		});
+	}
+	return [...ids];
+}
+
+// ---------------------------------------------------------------------------
+// Story entry payload — stored as JSON in a Story log entry's `source`. Carries
+// the exact prompt (for Regenerate) and the raw markdown (for Export). The
+// `kind` discriminator is how a Story entry is identified regardless of its
+// user-chosen title.
+// ---------------------------------------------------------------------------
+
+export interface StorySource {
+	kind: 'story';
+	system?: string;
+	user: string;
+	model?: string;
+	/** Raw markdown the model produced — used for the markdown export. */
+	md?: string;
+}
+
+/** Parse a log entry's `source` as a Story payload, or null if it isn't one. */
+export function parseStorySource(source: string | null | undefined): StorySource | null {
+	if (!source) return null;
+	try {
+		const p = JSON.parse(source);
+		if (p && p.kind === 'story' && typeof p.user === 'string') return p as StorySource;
+	} catch {
+		/* not JSON → not a story */
+	}
+	return null;
+}
+
+// ---------------------------------------------------------------------------
+// Preface rendering
+// ---------------------------------------------------------------------------
+
+function characterBlock(c: PrefaceCharacter): string {
+	const lines = [`**${tidy(c.name)}** — player character.`];
+	if (c.background.trim()) lines.push(tidy(c.background));
+	const assets = c.assets.map((a) => tidy(a)).filter(Boolean);
+	if (assets.length) lines.push(`Assets: ${assets.join(', ')}.`);
+	const vows = c.vows
+		.filter((v) => v.name.trim())
+		.map((v) => {
+			const bits = [v.difficulty.trim(), v.threat.trim() ? `against ${tidy(v.threat)}` : '']
+				.filter(Boolean)
+				.join(', ');
+			return bits ? `${tidy(v.name)} (${bits})` : tidy(v.name);
+		});
+	if (vows.length) lines.push(`Vows: ${vows.join('; ')}.`);
+	return lines.join('\n');
+}
+
+function foeBlock(f: PrefaceFoe): string {
+	const meta = [f.nature.trim(), f.rank ? `rank ${f.rank}` : ''].filter(Boolean).join(', ');
+	const lines = [meta ? `**${tidy(f.name)}** — ${meta} foe.` : `**${tidy(f.name)}** — foe.`];
+	if (f.description.trim()) lines.push(tidy(f.description));
+	if (f.notes.trim()) lines.push(tidy(f.notes));
+	return lines.join('\n');
+}
+
+function expeditionBlock(e: PrefaceExpedition): string {
+	const kindWord = e.kind === 'site' ? 'site' : 'journey';
+	const diff = e.difficulty.trim();
+	const lines = [
+		diff ? `**${tidy(e.name)}** — ${diff} ${kindWord}.` : `**${tidy(e.name)}** — ${kindWord}.`,
+	];
+	const meta = [
+		e.theme?.trim() ? `Theme: ${tidy(e.theme)}` : '',
+		e.domain?.trim() ? `Domain: ${tidy(e.domain)}` : '',
+	].filter(Boolean);
+	if (meta.length) lines.push(`${meta.join('. ')}.`);
+	if (e.objective?.trim()) lines.push(`Objective: ${tidy(e.objective)}`);
+	if (e.notes.trim()) lines.push(tidy(e.notes));
+	return lines.join('\n');
+}
+
 /**
  * Compact one-liner for the preview strip, e.g.
  * "Beepalache vs Blood Thorn · Blackroot Barrow".
  */
 export function castSummary(
-	character: PrefaceCharacter | null,
-	foe: PrefaceFoe | null,
-	expedition: PrefaceExpedition | null = null,
+	characters: PrefaceCharacter[],
+	foes: PrefaceFoe[],
+	expeditions: PrefaceExpedition[],
 ): string {
-	const cast = [character?.name.trim(), foe?.name.trim()].filter(Boolean).join(' vs ');
-	const place = expedition?.name.trim();
+	const chars = characters
+		.map((c) => c.name.trim())
+		.filter(Boolean)
+		.join(', ');
+	const foeNames = foes
+		.map((f) => f.name.trim())
+		.filter(Boolean)
+		.join(', ');
+	const cast = [chars, foeNames].filter(Boolean).join(' vs ');
+	const place = expeditions
+		.map((e) => e.name.trim())
+		.filter(Boolean)
+		.join(', ');
 	if (cast && place) return `${cast} · ${place}`;
 	return cast || place || '';
 }
 
 /**
- * Build the "Cast & setting" markdown block. Returns '' when there is nothing
- * to say (no character and no foe), so the caller can prepend unconditionally.
- * Empty background/description/notes lines are omitted.
+ * Build the "Cast & setting" markdown block from every referenced entity.
+ * Returns '' when there is nothing to describe, so the caller can prepend
+ * unconditionally. Blocks are ordered characters → foes → expeditions.
  */
 export function buildStoryPreface(
-	character: PrefaceCharacter | null,
-	foe: PrefaceFoe | null,
-	expedition: PrefaceExpedition | null = null,
+	characters: PrefaceCharacter[],
+	foes: PrefaceFoe[],
+	expeditions: PrefaceExpedition[],
 ): string {
-	const blocks: string[] = [];
-
-	if (character && character.name.trim()) {
-		const lines = [`**${tidy(character.name)}** — the player character.`];
-		if (character.background.trim()) lines.push(tidy(character.background));
-		blocks.push(lines.join('\n'));
-	}
-
-	if (foe && foe.name.trim()) {
-		const meta = [foe.nature.trim(), foe.rank ? `rank ${foe.rank}` : ''].filter(Boolean).join(', ');
-		const heading = meta ? `**${tidy(foe.name)}** — ${meta} foe.` : `**${tidy(foe.name)}** — foe.`;
-		const lines = [heading];
-		if (foe.description.trim()) lines.push(tidy(foe.description));
-		if (foe.notes.trim()) lines.push(tidy(foe.notes));
-		blocks.push(lines.join('\n'));
-	}
-
-	if (expedition && expedition.name.trim()) {
-		const kindWord = expedition.kind === 'site' ? 'site' : 'journey';
-		const diff = expedition.difficulty.trim();
-		const lines = [
-			diff
-				? `**${tidy(expedition.name)}** — ${diff} ${kindWord}.`
-				: `**${tidy(expedition.name)}** — ${kindWord}.`,
-		];
-		const meta = [
-			expedition.theme?.trim() ? `Theme: ${tidy(expedition.theme)}` : '',
-			expedition.domain?.trim() ? `Domain: ${tidy(expedition.domain)}` : '',
-		].filter(Boolean);
-		if (meta.length) lines.push(`${meta.join('. ')}.`);
-		if (expedition.objective?.trim()) lines.push(`Objective: ${tidy(expedition.objective)}`);
-		if (expedition.notes.trim()) lines.push(tidy(expedition.notes));
-		blocks.push(lines.join('\n'));
-	}
-
+	const blocks: string[] = [
+		...characters.filter((c) => c.name.trim()).map(characterBlock),
+		...foes.filter((f) => f.name.trim()).map(foeBlock),
+		...expeditions.filter((e) => e.name.trim()).map(expeditionBlock),
+	];
 	if (blocks.length === 0) return '';
 	return `# Cast & setting\n\n${blocks.join('\n\n')}`;
 }

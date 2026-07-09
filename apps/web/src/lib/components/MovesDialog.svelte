@@ -29,6 +29,7 @@
 	} from '$lib/moveStore.svelte.js';
 	import { firstPreconditionFailure } from '$lib/preconditions.js';
 	import { appendLog, enrichOutcomeLinks, triggerAction } from '$lib/log.svelte.js';
+	import { getActiveFoeId, getActiveExpeditionId } from '$lib/activeContext.svelte.js';
 	import { untrack } from 'svelte';
 	import { momentumReset } from '$lib/character.js';
 	import { BURN_MOMENTUM_TITLE } from '$lib/cascadeRules.js';
@@ -592,12 +593,19 @@
 			{ sides: 10, value: c2 },
 		]);
 		if (!hits1 && !hits2) void playMissScream();
+		// Tag the active foe/expedition id when this move's title references it, so
+		// the story preface scan can match those entities exactly (not just by name).
+		const titleTpl = selectedMove.logTitle ?? '';
+		const foeId = titleTpl.includes('{foe}') ? getActiveFoeId() : '';
+		const expeditionId = titleTpl.includes('{expedition}') ? getActiveExpeditionId() : '';
 		appendLog(resolveTitle(selectedMove, statLabel), html, entryId, undefined, {
 			moveId: selectedMove.id,
 			actionScore: total,
 			c1,
 			c2,
 			charId: ctx.charId,
+			...(foeId ? { foeId } : {}),
+			...(expeditionId ? { expeditionId } : {}),
 		});
 
 		// Burn momentum suggestion: auto-append a clickable log entry when burn would improve outcome.

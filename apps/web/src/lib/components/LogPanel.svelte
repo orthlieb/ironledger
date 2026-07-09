@@ -28,6 +28,7 @@
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { findMove } from '$lib/moveStore.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
+	import { parseStorySource } from '$lib/aiSerialize.js';
 	import { sanitizeLogHtml, sanitizeNoteHtml } from '$lib/sanitize.js';
 	import trashSvg from '$icons/trash-solid-full.svg?raw';
 	import penSvg from '$icons/pen-to-square-solid-full.svg?raw';
@@ -112,6 +113,7 @@
 	let storyDialogRef = $state<{
 		openSetup(): void;
 		openGenerate(): void;
+		openRegenerate(entryId: string, source: string): void;
 		close(): void;
 	} | null>(null);
 
@@ -795,6 +797,14 @@
 
 						<!-- Action buttons — opacity 0, revealed on .log-entry:hover -->
 						<div class="entry-actions">
+							{#if parseStorySource(entry.source)}
+								<button
+									class="entry-btn entry-regen-btn"
+									onclick={() => storyDialogRef?.openRegenerate(entry.id, entry.source ?? '')}
+									use:tooltip={'Regenerate this story'}
+									aria-label="Regenerate this story">⟳</button
+								>
+							{/if}
 							<button
 								class="entry-btn entry-edit-btn"
 								class:entry-btn-active={editingId === entry.id}
@@ -1188,6 +1198,18 @@
 		color: var(--text-accent);
 		border-color: var(--text-accent);
 		opacity: 1 !important;
+	}
+
+	/* Story regenerate — ⟳ glyph, sized to match the 10px SVG icon buttons */
+	.entry-regen-btn {
+		color: var(--text-dimmer);
+		font-size: 11px;
+		line-height: 1;
+		font-weight: 700;
+	}
+	.entry-regen-btn:hover {
+		color: var(--text-accent);
+		border-color: var(--text-accent);
 	}
 
 	.entry-delete-btn {

@@ -163,13 +163,16 @@
 				class="ed-select"
 				bind:value={exportContent}
 				onchange={() => {
-					if (exportContent !== 'everything' && exportContent !== 'log') exportFormat = 'json';
+					// Stories are markdown-only; everything else that isn't log/everything is JSON.
+					if (exportContent === 'stories') exportFormat = 'md';
+					else if (exportContent !== 'everything' && exportContent !== 'log') exportFormat = 'json';
 				}}
 			>
 				<option value="everything">Everything</option>
 				<option value="character">Current Character</option>
 				<option value="all-characters">All Characters</option>
 				<option value="log">Session Log</option>
+				<option value="stories">Stories</option>
 				<option value="communities">Connections</option>
 				<option value="expeditions">Expeditions</option>
 			</select>

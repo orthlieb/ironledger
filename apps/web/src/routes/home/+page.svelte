@@ -67,6 +67,7 @@
 	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
 	import { getActiveFoeId, getActiveExpeditionId } from '$lib/activeContext.svelte.js';
 	import { triggerAction, appendLog, sessionLog } from '$lib/log.svelte.js';
+	import { parseStorySource } from '$lib/aiSerialize.js';
 	import { parseImportJson, sanitizeLogHtml, ImportError } from '$lib/importSanitizer.js';
 	import { zipSync, strToU8 } from 'fflate';
 	import charactersIconSvg from '$icons/Characters.svg?raw';
@@ -1155,6 +1156,32 @@
 		return lines.join('\n').trimEnd();
 	}
 
+	/** Markdown of every AI-generated Story entry (title + its raw prose). */
+	function storiesToMarkdown(): string {
+		const stories = [...sessionLog.entries]
+			.reverse()
+			.map((e) => ({ entry: e, story: parseStorySource(e.source) }))
+			.filter(
+				(x): x is { entry: (typeof x)['entry']; story: NonNullable<(typeof x)['story']> } =>
+					x.story !== null,
+			);
+		if (stories.length === 0) return '# Stories\n\n_No stories yet._\n';
+		const stamp = new Date().toLocaleString(undefined, {
+			year: 'numeric',
+			month: 'short',
+			day: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit',
+		});
+		const lines = ['# Stories', `_Exported ${stamp}_`, '', '---', ''];
+		stories.forEach(({ entry, story }) => {
+			// Prefer the exact markdown the model produced; fall back to the rendered HTML.
+			const body = story.md?.trim() || htmlToMd(entry.html);
+			lines.push(`## ${entry.title}`, '', body, '', '---', '');
+		});
+		return lines.join('\n').trimEnd() + '\n';
+	}
+
 	// Build an export-ready character copy with its portrait re-embedded inline
 	// (data.portrait) so the JSON stays self-contained. portraitEtag is dropped
 	// from the exported copy — import re-derives it when it stores the bytes.
@@ -1234,6 +1261,8 @@
 				const entries = [...sessionLog.entries].reverse();
 				exportJson('log', entries, entries.length, `session-log-${stamp}.json`);
 			} else downloadFile(`session-log-${stamp}.md`, logToMarkdown(), 'text/markdown');
+		} else if (content === 'stories') {
+			downloadFile(`stories-${stamp}.md`, storiesToMarkdown(), 'text/markdown');
 		} else if (content === 'communities') {
 			exportJson(
 				'communities',
