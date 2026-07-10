@@ -13,8 +13,8 @@ import { authenticate } from '../middleware/authenticate.js';
 import * as ai from '../services/aiConfigService.js';
 import { streamProvider, testProvider } from '../services/aiProvider.js';
 
-const providerParam = z.object({ provider: z.enum(['claude', 'chatgpt']) });
-const activeBody = z.object({ provider: z.enum(['none', 'claude', 'chatgpt']) });
+const providerParam = z.object({ provider: z.enum(['claude', 'chatgpt', 'gemini']) });
+const activeBody = z.object({ provider: z.enum(['none', 'claude', 'chatgpt', 'gemini']) });
 const providerConfigBody = z.object({
   model: z.string().min(1).max(100),
   setup: z.string().max(8000),

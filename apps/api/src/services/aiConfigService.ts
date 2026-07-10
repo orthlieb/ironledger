@@ -9,12 +9,18 @@ import { sql } from 'drizzle-orm';
 import { config } from '../config.js';
 import { encryptSecret, decryptSecret } from './aiCrypto.js';
 
-export type AiProvider = 'claude' | 'chatgpt';
-export const AI_PROVIDERS: AiProvider[] = ['claude', 'chatgpt'];
+export type AiProvider = 'claude' | 'chatgpt' | 'gemini';
+export const AI_PROVIDERS: AiProvider[] = ['claude', 'chatgpt', 'gemini'];
+
+/** Narrow an arbitrary string (e.g. a DB value) to a known provider. */
+export function isAiProvider(v: unknown): v is AiProvider {
+  return v === 'claude' || v === 'chatgpt' || v === 'gemini';
+}
 
 export const DEFAULT_MODEL: Record<AiProvider, string> = {
   claude: 'claude-haiku-4-5',
   chatgpt: 'gpt-4o-mini',
+  gemini: 'gemini-2.0-flash',
 };
 
 /** The encryption secret, or throw a clear error if the feature is unconfigured. */
@@ -57,10 +63,11 @@ export async function getConfig(userId: string): Promise<AiConfigView> {
   const providers: Record<AiProvider, ProviderConfigView> = {
     claude: { model: null, setup: null, hasKey: false },
     chatgpt: { model: null, setup: null, hasKey: false },
+    gemini: { model: null, setup: null, hasKey: false },
   };
   let activeProvider: AiProvider | null = null;
   for (const r of rows) {
-    if (r.provider !== 'claude' && r.provider !== 'chatgpt') continue;
+    if (!isAiProvider(r.provider)) continue;
     providers[r.provider] = { model: r.model, setup: r.setup, hasKey: !!r.key_ciphertext };
     if (r.active) activeProvider = r.provider;
   }
@@ -166,7 +173,7 @@ export async function getActiveForGeneration(userId: string): Promise<ActiveAiCo
 
   const r = rows[0];
   if (!r || !r.key_ciphertext || !r.key_iv || !r.key_tag) return null;
-  if (r.provider !== 'claude' && r.provider !== 'chatgpt') return null;
+  if (!isAiProvider(r.provider)) return null;
 
   const apiKey = decryptSecret(
     { ciphertext: r.key_ciphertext, iv: r.key_iv, tag: r.key_tag },

@@ -8,8 +8,8 @@ normalized text back.
 
 ## Flow
 
-1. **Choose a companion** (Settings → AI Companion): pick None / Claude / ChatGPT.
-   The selection is persisted server-side (`PUT /api/ai/active`).
+1. **Choose a companion** (Settings → AI Companion): pick None / Claude / ChatGPT
+   / Gemini. The selection is persisted server-side (`PUT /api/ai/active`).
 2. **Configure it** (Settings → Configure…): a per-provider dialog for the API
    key, model, and setup instructions. The key is encrypted at rest and never
    returned to the client (the config view only reports `hasKey`). **Test** sends
@@ -40,7 +40,7 @@ normalized text back.
 | `lib/aiSerialize.ts`                   | Log → prompt text, entity scan, preface, `parseStorySource` (pure/testable)    |
 | `lib/aiStream.ts`                      | Client SSE reader for `/api/ai/generate` (unified `{text}`/`{done}`/`{error}`) |
 | `lib/components/StoryDialog.svelte`    | Setup / generate / regenerate UI + orchestration + editable output box         |
-| `lib/components/SettingsDialog.svelte` | AI Companion selector (None / Claude / ChatGPT)                                |
+| `lib/components/SettingsDialog.svelte` | AI Companion selector (None / Claude / ChatGPT / Gemini)                       |
 | `lib/components/AiConfigDialog.svelte` | Per-provider key / model / setup / Test dialog                                 |
 | `lib/components/LogPanel.svelte`       | ● Story toggle, ⟳ regenerate button                                            |
 | `routes/api/ai/[...path]/+server.ts`   | BFF proxy → Fastify `/api/v1/ai/*` (streams the generate SSE through)          |
@@ -48,13 +48,14 @@ normalized text back.
 
 ### API (`apps/api`)
 
-| File                               | Responsibility                                                                                      |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `services/aiCrypto.ts`             | AES-256-GCM encrypt/decrypt (key derived from `AI_KEY_ENC_SECRET`)                                  |
-| `services/aiConfigService.ts`      | Per-provider config CRUD; encrypts keys; decrypts only for test/generation                          |
-| `services/aiProvider.ts`           | Server-side provider calls + normalized text stream (Claude; others follow)                         |
-| `routes/ai.ts`                     | `GET /config`, `PUT /active`, `PUT /provider/:p`, `DELETE …/key`, `POST /test/:p`, `POST /generate` |
-| `db/migrations/0016_ai_config.sql` | `ai_config` table (RLS, one-active-per-user index), keys stored as ciphertext                       |
+| File                                      | Responsibility                                                                                      |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `services/aiCrypto.ts`                    | AES-256-GCM encrypt/decrypt (key derived from `AI_KEY_ENC_SECRET`)                                  |
+| `services/aiConfigService.ts`             | Per-provider config CRUD; encrypts keys; decrypts only for test/generation                          |
+| `services/aiProvider.ts`                  | Server-side provider calls + normalized text stream (Claude, ChatGPT, Gemini)                       |
+| `routes/ai.ts`                            | `GET /config`, `PUT /active`, `PUT /provider/:p`, `DELETE …/key`, `POST /test/:p`, `POST /generate` |
+| `db/migrations/0016_ai_config.sql`        | `ai_config` table (RLS, one-active-per-user index), keys stored as ciphertext                       |
+| `db/migrations/0017_ai_config_gemini.sql` | Widen the provider CHECK constraint to allow `gemini`                                               |
 
 ## Preface — "Cast & setting"
 

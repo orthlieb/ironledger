@@ -7,11 +7,12 @@
 // thing still kept client-side is the "include preface" UI toggle (not a secret).
 // =============================================================================
 
-export type AiProvider = 'claude' | 'chatgpt';
-export const AI_PROVIDERS: AiProvider[] = ['claude', 'chatgpt'];
+export type AiProvider = 'claude' | 'chatgpt' | 'gemini';
+export const AI_PROVIDERS: AiProvider[] = ['claude', 'chatgpt', 'gemini'];
 export const PROVIDER_LABEL: Record<AiProvider, string> = {
 	claude: 'Claude',
 	chatgpt: 'ChatGPT',
+	gemini: 'Gemini',
 };
 
 /** Per-provider key placeholder + where-to-get-a-key help (shown in the config dialog). */
@@ -27,6 +28,10 @@ export const PROVIDER_HELP: Record<AiProvider, ProviderHelp> = {
 	chatgpt: {
 		placeholder: 'sk-…',
 		help: 'Create a key at platform.openai.com/api-keys. It starts with “sk-”.',
+	},
+	gemini: {
+		placeholder: 'AIza…',
+		help: 'Create a key at aistudio.google.com/apikey. It usually starts with “AIza”.',
 	},
 };
 
@@ -47,11 +52,16 @@ export const MODELS: Record<AiProvider, ModelOption[]> = {
 		{ id: 'gpt-4o-mini', label: 'GPT-4o mini', tagline: 'cheap, fast' },
 		{ id: 'gpt-4o', label: 'GPT-4o', tagline: 'balanced prose' },
 	],
+	gemini: [
+		{ id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', tagline: 'cheap, fast' },
+		{ id: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro', tagline: 'higher quality' },
+	],
 };
 
 export const DEFAULT_MODEL: Record<AiProvider, string> = {
 	claude: 'claude-haiku-4-5',
 	chatgpt: 'gpt-4o-mini',
+	gemini: 'gemini-2.0-flash',
 };
 
 export const DEFAULT_SETUP =

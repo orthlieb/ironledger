@@ -18,7 +18,11 @@ async function proxy(
 	if (!locals.accessToken) throw error(401, 'Not authenticated');
 
 	const headers: Record<string, string> = { Authorization: `Bearer ${locals.accessToken}` };
-	const body = method === 'GET' || method === 'DELETE' ? undefined : await request.text();
+	// Only forward a JSON content-type when there's an actual body. A body-less
+	// POST (e.g. /test/:provider) must NOT claim application/json — Fastify would
+	// reject the empty payload as "Invalid JSON body".
+	const raw = method === 'GET' || method === 'DELETE' ? '' : await request.text();
+	const body = raw.length > 0 ? raw : undefined;
 	if (body !== undefined) headers['Content-Type'] = 'application/json';
 
 	const res = await fetch(`${INTERNAL_API_URL}/api/v1/ai/${params.path}`, {
