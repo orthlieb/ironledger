@@ -160,6 +160,32 @@ export type SessionLogEntry = typeof sessionLogEntries.$inferSelect;
 export type NewSessionLogEntry = typeof sessionLogEntries.$inferInsert;
 
 // ---------------------------------------------------------------------------
+// ai_config
+// Per-provider AI companion config, one row per (user, provider). The provider
+// API key is stored encrypted at rest (ciphertext/iv/tag); at most one provider
+// is `active` per user (none = the "None" companion). See migration 0016.
+// ---------------------------------------------------------------------------
+export const aiConfig = pgTable(
+  'ai_config',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    provider: text('provider').notNull(),
+    keyCiphertext: text('key_ciphertext'),
+    keyIv: text('key_iv'),
+    keyTag: text('key_tag'),
+    model: text('model'),
+    setup: text('setup'),
+    active: boolean('active').notNull().default(false),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.provider] })],
+);
+
+export type AiConfigRow = typeof aiConfig.$inferSelect;
+
+// ---------------------------------------------------------------------------
 // user_entities
 // One row per session-collection entity (encounter | expedition | community |
 // npc). Replaces the whole-array JSONB columns on user_data so a single entity
