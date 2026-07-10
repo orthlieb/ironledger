@@ -10,19 +10,15 @@
 // not including) the marker — i.e. everything prepended since. A null marker
 // means the log was empty at start; the whole log is captured.
 //
-// The per-recording setup text is stored here so the instructions dialog
-// (start) and the generation dialog (stop) can share it. Editing it doesn't
-// touch the global default in aiSettings.
+// The setup instructions + model now live server-side (per provider), so the
+// recorder only tracks the marker.
 // =============================================================================
 
 import type { LogEntry } from './log.svelte.js';
 import { sessionLog } from './log.svelte.js';
-import type { AIModelId } from './aiSettings.svelte.js';
 
 let _recording = $state(false);
 let _markerId = $state<string | null>(null);
-let _setup = $state('');
-let _model = $state<AIModelId>('claude-haiku-4-5');
 
 // ---------------------------------------------------------------------------
 // Getters
@@ -30,12 +26,6 @@ let _model = $state<AIModelId>('claude-haiku-4-5');
 
 export function isRecording(): boolean {
 	return _recording;
-}
-export function recordingSetup(): string {
-	return _setup;
-}
-export function recordingModel(): AIModelId {
-	return _model;
 }
 
 /** Live count of entries captured since recording began (reactive). */
@@ -52,9 +42,7 @@ export function recordedCount(): number {
 // ---------------------------------------------------------------------------
 
 /** Begin recording. Captures the current top-of-log id as the marker. */
-export function beginRecording(setup: string, model: AIModelId): void {
-	_setup = setup;
-	_model = model;
+export function beginRecording(): void {
 	_markerId = sessionLog.entries[0]?.id ?? null;
 	_recording = true;
 }
@@ -78,5 +66,4 @@ export function stopRecording(): LogEntry[] {
 export function cancelRecording(): void {
 	_recording = false;
 	_markerId = null;
-	_setup = '';
 }

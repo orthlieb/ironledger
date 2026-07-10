@@ -262,10 +262,12 @@ entities exactly instead of by name.
 - **Note entries** (`title === "Note"`) — the raw Markdown the user typed; the
   rendered output is stored in `html`.
 - **Story entries** (AI-generated prose) — a JSON string
-  `{ "kind": "story", "system", "user", "model", "md" }` holding the exact
-  prompt (so the entry can be regenerated) and the raw Markdown (so it can be
-  exported). Story entries are identified by this payload, not by their title,
-  so a user-chosen title still works.
+  `{ "kind": "story", "user", "md" }` holding the exact user prompt (so the entry
+  can be regenerated against the active companion) and the raw Markdown (so it can
+  be exported). The system prompt and model are **not** stored — they come from
+  the current server-side provider config at regeneration time. Story entries are
+  identified by this payload, not by their title, so a user-chosen title still
+  works.
 
 ---
 
@@ -369,22 +371,22 @@ The supported syntax is documented in [`notes.md`](notes.md#markdown-support):
 
 The fields that accept it:
 
-| Entity                 | Field              | Notes                                                                                                                                                                    |
-| ---------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `Character` (`data`)   | `background`       | Character sheet → Background tab — origin, upbringing, major traits                                                                                                      |
-| `Character` (`data`)   | `bondsFormed`      | Character sheet → Bonds → notes column                                                                                                                                   |
-| `Character` (`data`)   | `lessonsLearned`   | Character sheet → Failures → notes column                                                                                                                                |
-| `Vow` (in `data.vows`) | `notes`            | Per-vow notes block                                                                                                                                                      |
-| `Community`            | `notes`            | Long-form description of the place (Description tab)                                                                                                                     |
-| `Community`            | `situationalNotes` | Conditions / aspects of the current trouble (Core tab)                                                                                                                   |
-| `Npc`                  | `notes`            | Background — origin, upbringing, major traits (Background tab)                                                                                                           |
-| `Npc`                  | `situationalNotes` | Actions taken by or things that have happened to this NPC in your story (Core tab)                                                                                       |
-| `Place`                | `notes`            | Physical features, atmosphere, notable details (Description tab)                                                                                                         |
-| `Place`                | `situationalNotes` | Events that have happened here, current state (Core tab)                                                                                                                 |
-| `Journey`              | `notes`            | Per-journey notes block                                                                                                                                                  |
-| `Site`                 | `notes`            | Per-site notes block                                                                                                                                                     |
-| `LogEntry`             | `note`             | Optional per-entry note appended below an entry                                                                                                                          |
-| `LogEntry`             | `source`           | Note entries: Markdown source (rendered output in `html`). Story entries: a JSON story payload (`{kind:"story", system, user, model, md}`) — see the Session Log section |
+| Entity                 | Field              | Notes                                                                                                                                                     |
+| ---------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Character` (`data`)   | `background`       | Character sheet → Background tab — origin, upbringing, major traits                                                                                       |
+| `Character` (`data`)   | `bondsFormed`      | Character sheet → Bonds → notes column                                                                                                                    |
+| `Character` (`data`)   | `lessonsLearned`   | Character sheet → Failures → notes column                                                                                                                 |
+| `Vow` (in `data.vows`) | `notes`            | Per-vow notes block                                                                                                                                       |
+| `Community`            | `notes`            | Long-form description of the place (Description tab)                                                                                                      |
+| `Community`            | `situationalNotes` | Conditions / aspects of the current trouble (Core tab)                                                                                                    |
+| `Npc`                  | `notes`            | Background — origin, upbringing, major traits (Background tab)                                                                                            |
+| `Npc`                  | `situationalNotes` | Actions taken by or things that have happened to this NPC in your story (Core tab)                                                                        |
+| `Place`                | `notes`            | Physical features, atmosphere, notable details (Description tab)                                                                                          |
+| `Place`                | `situationalNotes` | Events that have happened here, current state (Core tab)                                                                                                  |
+| `Journey`              | `notes`            | Per-journey notes block                                                                                                                                   |
+| `Site`                 | `notes`            | Per-site notes block                                                                                                                                      |
+| `LogEntry`             | `note`             | Optional per-entry note appended below an entry                                                                                                           |
+| `LogEntry`             | `source`           | Note entries: Markdown source (rendered output in `html`). Story entries: a JSON story payload (`{kind:"story", user, md}`) — see the Session Log section |
 
 > **NPC `descriptor`** is _not_ mini-markdown — it's a one-line plain-text
 > field for the NPC's short physical likeness (e.g. `tall, gaunt, scarred`)

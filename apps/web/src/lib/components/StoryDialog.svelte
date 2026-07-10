@@ -18,22 +18,14 @@
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import {
-		AI_MODELS,
-		type AIModelId,
-		getApiKey,
-		getModel,
-		getSetup,
-		hasApiKey,
 		getIncludePreface,
 		setIncludePreface,
+		hasActiveCompanion,
+		getActiveProvider,
+		PROVIDER_LABEL,
+		loadAiConfig,
 	} from '$lib/aiSettings.svelte.js';
-	import {
-		beginRecording,
-		captureSection,
-		cancelRecording,
-		recordingModel,
-		recordingSetup,
-	} from '$lib/storyRecorder.svelte.js';
+	import { beginRecording, captureSection, cancelRecording } from '$lib/storyRecorder.svelte.js';
 	import {
 		serializeLogSection,
 		estimateTokens,
@@ -62,10 +54,6 @@
 	let dialogEl = $state<HTMLDialogElement | null>(null);
 	let mode = $state<'setup' | 'generate'>('setup');
 
-	// setup mode
-	let setupText = $state('');
-	let modelId = $state<AIModelId>('claude-haiku-4-5');
-
 	// generate mode
 	let prefaceText = $state(''); // "Cast & setting" block ('' if no context)
 	let logText = $state(''); // serialized captured log section
@@ -82,6 +70,7 @@
 	const renderedOutput = $derived(renderNote(output));
 	let streaming = $state(false);
 	let doneStreaming = $state(false);
+	let editingOutput = $state(false); // after streaming, let the user tweak the prose
 	let errorMsg = $state('');
 	let capturedCount = $state(0);
 	let castLine = $state('');
@@ -90,11 +79,15 @@
 	// entry's stored prompt and replace it in place.
 	let regenerating = $state(false);
 	let regenerateEntryId = $state('');
-	// The exact prompt actually sent (captured at Start) — persisted with the
-	// saved Story entry so it can be regenerated later.
-	let usedSystem = '';
+	// The exact user prompt sent (captured at Start) — persisted with the saved
+	// Story entry so it can be regenerated later.
 	let usedUser = '';
-	let usedModel: AIModelId = 'claude-haiku-4-5';
+	// Which companion is active — the key/model/setup live server-side now.
+	const companionReady = $derived(hasActiveCompanion());
+	const companionLabel = $derived.by(() => {
+		const p = getActiveProvider();
+		return p ? PROVIDER_LABEL[p] : 'None';
+	});
 	let abortCtl: AbortController | null = null;
 	let outputEl = $state<HTMLDivElement | null>(null);
 
@@ -104,9 +97,8 @@
 
 	export function openSetup() {
 		mode = 'setup';
-		setupText = getSetup();
-		modelId = getModel();
 		errorMsg = '';
+		loadAiConfig();
 		dialogEl?.showModal();
 	}
 
@@ -174,10 +166,9 @@
 
 	export function openGenerate() {
 		mode = 'generate';
+		loadAiConfig();
 		const section = captureSection();
 		capturedCount = section.length;
-		setupText = recordingSetup();
-		modelId = recordingModel();
 
 		// Build the optional "Cast & setting" preface from every entity the captured
 		// section references, so the model has narrative grounding rather than
@@ -197,6 +188,7 @@
 		output = '';
 		streaming = false;
 		doneStreaming = false;
+		editingOutput = false;
 		errorMsg = '';
 		dialogEl?.showModal();
 	}
@@ -211,12 +203,11 @@
 		if (!parsed) return; // not a regeneratable Story entry
 
 		mode = 'generate';
+		loadAiConfig();
 		regenerating = true;
 		regenerateEntryId = entryId;
-		setupText = parsed.system ?? '';
-		const known = AI_MODELS.find((m) => m.id === parsed.model);
-		modelId = known ? known.id : getModel();
-		// Feed the stored prompt straight through: no re-scan, no toggle.
+		// Feed the stored prompt straight through: no re-scan, no toggle. The
+		// active provider's setup/model are used.
 		logText = parsed.user;
 		prefaceText = '';
 		includePreface = false;
@@ -226,6 +217,7 @@
 		output = '';
 		streaming = false;
 		doneStreaming = false;
+		editingOutput = false;
 		errorMsg = '';
 		dialogEl?.showModal();
 	}
@@ -237,7 +229,7 @@
 
 	// ── Setup actions ──────────────────────────────────────────────────────
 	function handleBegin() {
-		beginRecording(setupText, modelId);
+		beginRecording();
 		dialogEl?.close();
 	}
 
@@ -247,8 +239,8 @@
 
 	// ── Generate actions ───────────────────────────────────────────────────
 	async function handleStart() {
-		if (!hasApiKey()) {
-			errorMsg = 'No API key configured. Add one in Settings.';
+		if (!companionReady) {
+			errorMsg = 'No AI companion configured. Choose one in Settings.';
 			return;
 		}
 		if (!promptText.trim()) {
@@ -259,15 +251,11 @@
 		errorMsg = '';
 		streaming = true;
 		doneStreaming = false;
+		editingOutput = false;
 		// Snapshot the exact prompt being sent so Save can persist it for regenerate.
-		usedSystem = setupText;
 		usedUser = promptText;
-		usedModel = modelId;
 		abortCtl = new AbortController();
 		await streamStory({
-			apiKey: getApiKey(),
-			model: modelId,
-			system: setupText,
 			user: promptText,
 			signal: abortCtl.signal,
 			onText: (acc) => {
@@ -308,9 +296,7 @@
 		// `source`, tagged so the entry is identifiable regardless of its title.
 		const source = JSON.stringify({
 			kind: 'story',
-			system: usedSystem,
 			user: usedUser,
-			model: usedModel,
 			md: output,
 		});
 		if (regenerating) {
@@ -347,27 +333,14 @@
 				> becomes the section.
 			</div>
 
-			<label class="sd-field">
-				<span class="sd-label">Setup Instructions</span>
-				<textarea
-					class="sd-input sd-setup"
-					rows="5"
-					placeholder="Tone, POV, tense…"
-					bind:value={setupText}
-				></textarea>
-				<span class="sd-hint sd-hint-tight">
-					Prefilled from Settings. Editing here does not change the default.
-				</span>
-			</label>
-
-			<label class="sd-field">
-				<span class="sd-label">Model</span>
-				<select class="sd-input" bind:value={modelId}>
-					{#each AI_MODELS as m (m.id)}
-						<option value={m.id}>{m.label} — {m.tagline}</option>
-					{/each}
-				</select>
-			</label>
+			<div class="sd-preview">
+				<div class="sd-hint">Companion: <strong>{companionLabel}</strong></div>
+				{#if !companionReady}
+					<div class="sd-hint sd-hint-tight">
+						Choose an AI companion and add a key in Settings to generate a story.
+					</div>
+				{/if}
+			</div>
 		{:else}
 			<div class="sd-preview">
 				<div>
@@ -378,7 +351,7 @@
 						{capturedCount === 1 ? 'entry' : 'entries'} captured, ≈ {promptTokens} input tokens.
 					{/if}
 				</div>
-				<div class="sd-hint">Model: <strong>{modelId}</strong></div>
+				<div class="sd-hint">Companion: <strong>{companionLabel}</strong></div>
 				{#if prefaceText}
 					<label class="sd-toggle">
 						<input
@@ -403,15 +376,32 @@
 			{/if}
 
 			<div class="sd-output-wrap">
-				<div class="sd-output" bind:this={outputEl} aria-live="polite">
-					{#if output}
-						{@html renderedOutput}
-					{:else if streaming}
-						<span class="sd-placeholder">Waiting for first tokens…</span>
-					{:else}
-						<span class="sd-placeholder">Press Start to generate.</span>
-					{/if}
-				</div>
+				{#if doneStreaming && output && editingOutput}
+					<textarea
+						class="sd-output sd-output-edit"
+						bind:value={output}
+						aria-label="Edit generated prose"
+					></textarea>
+				{:else}
+					<div class="sd-output" bind:this={outputEl} aria-live="polite">
+						{#if output}
+							{@html renderedOutput}
+						{:else if streaming}
+							<span class="sd-placeholder">Waiting for first tokens…</span>
+						{:else}
+							<span class="sd-placeholder">Press Start to generate.</span>
+						{/if}
+					</div>
+				{/if}
+				{#if doneStreaming && output}
+					<button
+						class="sd-edit-toggle"
+						type="button"
+						onclick={() => (editingOutput = !editingOutput)}
+					>
+						{editingOutput ? 'Preview' : 'Edit'}
+					</button>
+				{/if}
 			</div>
 
 			{#if errorMsg}
@@ -502,11 +492,6 @@
 		outline: none;
 		border-color: var(--text-accent);
 	}
-	.sd-setup {
-		resize: vertical;
-		min-height: 72px;
-		line-height: 1.4;
-	}
 	.sd-hint {
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
@@ -551,6 +536,7 @@
 	}
 
 	.sd-output-wrap {
+		position: relative;
 		border: 1px solid var(--border-mid);
 		border-radius: 4px;
 		background: var(--bg-control);
@@ -565,6 +551,38 @@
 		max-height: 40vh;
 		overflow-y: auto;
 		overscroll-behavior: contain;
+	}
+	/* Editable raw-markdown view — same footprint as the rendered box. */
+	textarea.sd-output-edit {
+		display: block;
+		width: 100%;
+		box-sizing: border-box;
+		border: none;
+		background: transparent;
+		resize: vertical;
+		white-space: pre-wrap;
+	}
+	textarea.sd-output-edit:focus {
+		outline: none;
+	}
+	.sd-edit-toggle {
+		position: absolute;
+		top: 6px;
+		right: 6px;
+		padding: 2px 8px;
+		font-family: var(--font-ui);
+		font-size: 0.66rem;
+		font-weight: 600;
+		letter-spacing: 0.03em;
+		color: var(--text-muted);
+		background: var(--bg-inset);
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+		cursor: pointer;
+	}
+	.sd-edit-toggle:hover {
+		color: var(--text);
+		border-color: var(--text-accent);
 	}
 	/* Rendered light-markdown prose (matches the saved Story log entry).
 	   renderNote separates blocks with <br>, and the global reset zeroes
