@@ -331,8 +331,6 @@
 		display: flex;
 		justify-content: flex-end;
 		gap: 6px;
-		padding: 10px 14px;
-		border-top: 1px solid var(--border);
-		background: var(--bg-inset);
+		padding: 0 14px 14px;
 	}
 </style>
