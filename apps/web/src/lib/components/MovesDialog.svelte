@@ -79,6 +79,10 @@
 	// active foe's rank when a move is opened, but is editable so the player can
 	// set it "as appropriate to the situation" (a fall, a trap, no foe at all).
 	let harmValue = $state(1);
+	// Whether the Apply button has already committed this harm to the character
+	// (locks the amount and the button to prevent a double-apply). Reset when the
+	// move is (re)opened.
+	let harmApplied = $state(false);
 	// Declared here (before progressValue, rollStatusHtml, isOracleRollMove, oracleTable)
 	// so all derived values that reference it are in TDZ-safe order.
 	const selectedMove = $derived(selectedId ? (findMove(selectedId) ?? null) : null);
@@ -306,28 +310,23 @@
 
 		// Endure Harm/Stress: suffer -harm to the resource; per the move, if that
 		// would drop it below 0 the remainder converts to -momentum. When the
-		// current value is known and smaller than the harm, split the single
-		// harm-link into a resource link (down to exactly 0) plus a momentum link
-		// for the overflow. Because the resource link lands the value at exactly 0
-		// (not below), the LogPanel overflow cascade won't double-fire the momentum.
-		// Nothing is applied until the player clicks each link.
+		// current value is known and smaller than the harm, split the display into
+		// the resource amount (down to exactly 0) plus the momentum overflow. This
+		// is descriptive text only — the Apply button commits it (see applyHarm).
 		function harmSplit(resource: 'health' | 'spirit', curVal?: number): string {
-			// Canonical wording: you suffer "harm" (to health) / "stress" (to spirit),
-			// not "-health"/"-spirit". The link still applies -health/-spirit on click.
+			// Canonical wording: you suffer "harm" (to health) / "stress" (to spirit).
 			const harmWord = resource === 'health' ? 'harm' : 'stress';
 			if (curVal !== undefined && harm > curVal) {
 				const overflow = harm - curVal;
-				const resLink =
-					curVal > 0
-						? `<a class="resource-link" data-resource="${resource}" data-value="-${curVal}">${curVal} ${harmWord}</a> and `
-						: '';
+				const resPart =
+					curVal > 0 ? `<span class="harm-amount">${curVal} ${harmWord}</span> and ` : '';
 				return (
-					resLink +
-					`<a class="resource-link" data-resource="momentum" data-value="-${overflow}">-${overflow} momentum</a>` +
+					resPart +
+					`<span class="harm-amount">-${overflow} momentum</span>` +
 					` <span class="harm-note">(overflow)</span>`
 				);
 			}
-			return `<a class="resource-link" data-resource="${resource}" data-value="-${harm}">${harm} ${harmWord}</a>`;
+			return `<span class="harm-amount">${harm} ${harmWord}</span>`;
 		}
 
 		// Health harm-links: known foe → clickable resource-link; no foe → plain placeholder text.
@@ -401,6 +400,24 @@
 		);
 	});
 
+	/**
+	 * Apply the Endure Harm/Stress amount to the character: reduce health (harm)
+	 * or spirit (stress) down to 0, overflowing the remainder to momentum — per
+	 * the move's trigger. Locks afterwards to prevent a double-apply.
+	 */
+	function applyHarm() {
+		if (!ctx || harmApplied || !isEndureMove) return;
+		const resource = selectedMove?.id === 'move/endure-stress' ? 'spirit' : 'health';
+		const curVal = resourceValue(resource) ?? 0;
+		const resourceLoss = Math.min(harmValue, curVal);
+		const overflow = Math.max(0, harmValue - curVal);
+		if (resourceLoss > 0)
+			triggerAction({ charId: ctx.charId, type: 'resource', key: resource, value: -resourceLoss });
+		if (overflow > 0)
+			triggerAction({ charId: ctx.charId, type: 'resource', key: 'momentum', value: -overflow });
+		harmApplied = true;
+	}
+
 	// ---------------------------------------------------------------------------
 	// Public API
 	// ---------------------------------------------------------------------------
@@ -411,8 +428,10 @@
 		if (moveId) {
 			selectedId = moveId;
 			view = 'detail';
-			if (moveId === 'move/endure-harm' || moveId === 'move/endure-stress')
+			if (moveId === 'move/endure-harm' || moveId === 'move/endure-stress') {
 				harmValue = pctx.foeHarm ?? 1;
+				harmApplied = false;
+			}
 		} else {
 			view = 'picker';
 			selectedId = null;
@@ -446,7 +465,10 @@
 		selectedOddsIdx = 2;
 		factorLevels = {};
 		factorsManuallySet = false;
-		if (m.id === 'move/endure-harm' || m.id === 'move/endure-stress') harmValue = pctx.foeHarm ?? 1;
+		if (m.id === 'move/endure-harm' || m.id === 'move/endure-stress') {
+			harmValue = pctx.foeHarm ?? 1;
+			harmApplied = false;
+		}
 		// Auto-select first stat
 		if (m.stats && m.stats.length > 0) {
 			selectedStat = m.stats[0].stat;
@@ -1098,28 +1120,40 @@
 			<!-- ── Scrollable read area ── -->
 			<div class="md-detail-scroll">
 				<!-- Trigger text -->
-				<div class="md-trigger">
+				<div class="md-trigger" class:applied={isEndureMove && harmApplied}>
 					{@html resolvedTriggerHtml}
 				</div>
 
 				<!-- Endure Harm/Stress: how much harm/stress this blow deals. Defaults to
-				     the foe's rank; editable for "as appropriate to the situation". -->
+				     the foe's rank; editable for "as appropriate to the situation". The
+				     Apply button commits it to the character; then roll. -->
 				{#if isEndureMove}
 					<div class="md-harm-row">
 						<span class="md-harm-label">{harmWord}</span>
 						<button
 							class="md-adj"
 							onclick={() => (harmValue = Math.max(1, harmValue - 1))}
-							disabled={harmValue <= 1}
+							disabled={harmValue <= 1 || harmApplied}
 							aria-label="Decrease {harmWord.toLowerCase()}">−</button
 						>
 						<span class="md-harm-val">{harmValue}</span>
 						<button
 							class="md-adj"
 							onclick={() => (harmValue = Math.min(10, harmValue + 1))}
-							disabled={harmValue >= 10}
+							disabled={harmValue >= 10 || harmApplied}
 							aria-label="Increase {harmWord.toLowerCase()}">+</button
 						>
+						<button
+							class="md-harm-apply"
+							class:applied={harmApplied}
+							onclick={applyHarm}
+							disabled={harmApplied || !ctx}
+							use:tooltip={harmApplied
+								? 'Harm applied'
+								: `Apply ${harmValue} ${harmWord.toLowerCase()} to the character`}
+						>
+							{harmApplied ? 'Applied ✓' : 'Apply'}
+						</button>
 						<span class="md-harm-hint">foe's rank, or as appropriate</span>
 					</div>
 				{/if}
@@ -2144,6 +2178,43 @@
 		font-style: italic;
 		color: var(--text-dimmer);
 		margin-left: 2px;
+	}
+	.md-harm-apply {
+		padding: 3px 10px;
+		border: 1px solid var(--color-danger);
+		border-radius: 3px;
+		background: var(--bg-control);
+		color: var(--color-danger);
+		font-family: var(--font-ui);
+		font-size: 0.68rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		cursor: pointer;
+		white-space: nowrap;
+	}
+	.md-harm-apply:not(:disabled):hover {
+		background: var(--bg-hover);
+	}
+	.md-harm-apply.applied {
+		border-color: var(--border);
+		color: var(--color-success);
+	}
+	.md-harm-apply:disabled {
+		cursor: default;
+		opacity: 0.85;
+	}
+
+	/* Endure Harm/Stress damage amounts in the trigger — descriptive (the Apply
+	   button commits them), struck once applied. */
+	.md-trigger :global(.harm-amount) {
+		color: var(--color-danger);
+		font-weight: 600;
+	}
+	.md-trigger.applied :global(.harm-amount) {
+		color: var(--text-dimmer);
+		font-weight: 400;
+		text-decoration: line-through;
 	}
 
 	/* ── Progress row ────────────────────────────────────────────────────── */
