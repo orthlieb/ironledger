@@ -1,37 +1,63 @@
 # AI Story Generation
 
-Turns a slice of the session log into narrative prose via the Claude API,
-directly from the browser. Opt-in, per-browser API key, no server involvement.
+Turns a slice of the session log into narrative prose via an AI storyteller.
+Opt-in. The API key lives **server-side, encrypted at rest** — the browser never
+holds a provider key or calls a provider directly; it POSTs the prompt to our own
+`/api/ai/generate`, which looks up the active provider + decrypted key and streams
+normalized text back.
 
 ## Flow
 
-1. **Configure** (Settings → Claude AI): API key, model, setup instructions,
-   and an "include cast & setting" default. Stored in `localStorage`.
-2. **Record** (Log toolbar → ● Story → Begin Recording): drops a marker at the
+1. **Choose a storyteller** (Settings → AI Storyteller): pick None / Claude /
+   ChatGPT / Gemini. The selection is persisted server-side (`PUT /api/ai/active`).
+2. **Configure it** (Settings → Configure…): a per-provider dialog for the API
+   key and model. The key is encrypted at rest and never returned to the client
+   (the config view only reports `hasKey`). **Test** sends a 1-token request
+   server-side to validate the key. The **Setup Instructions** (the system
+   prompt) are a single global preference in the main Settings — shared across
+   storytellers, not per-provider — stored client-side in `localStorage`.
+3. **Record** (Log toolbar → ● Story → Begin Recording): drops a marker at the
    current top of the log. Every entry prepended until ■ Stop becomes the
    section.
-3. **Generate** (■ Stop opens the dialog): the captured section is serialized to
+4. **Generate** (■ Stop opens the dialog): the captured section is serialized to
    prompt text, an optional preface is prepended, and the prompt is streamed to
-   Claude. Live markdown preview.
-4. **Save to Log**: the prose is stored as a Story log entry (rendered markdown
+   the active storyteller via `/api/ai/generate`. Live markdown preview.
+5. **Edit** (after streaming): toggle **Edit** on the output box to tweak the raw
+   markdown before saving; **Preview** flips back to the rendered view.
+6. **Save to Log**: the prose is stored as a Story log entry (rendered markdown
    in `html`, plus a payload in `source` — see below). You can name it first.
-5. **Regenerate** (⟳ on a Story entry): re-runs the stored prompt and replaces
-   the entry in place.
-6. **Export** (Hamburger → Export → Stories): writes all story entries' prose to
+7. **Regenerate** (⟳ on a Story entry): re-runs the stored prompt against the
+   active storyteller and replaces the entry in place.
+8. **Export** (Hamburger → Export → Stories): writes all story entries' prose to
    `stories-<stamp>.md`.
 
 ## Files
 
-| File                                   | Responsibility                                                              |
-| -------------------------------------- | --------------------------------------------------------------------------- |
-| `lib/aiSettings.svelte.ts`             | Key / model / setup / `includePreface` store + `testApiKey()`               |
-| `lib/storyRecorder.svelte.ts`          | Recording state, marker, `captureSection()`                                 |
-| `lib/aiSerialize.ts`                   | Log → prompt text, entity scan, preface, `parseStorySource` (pure/testable) |
-| `lib/aiStream.ts`                      | SSE reader for the Anthropic Messages API + `AbortController`               |
-| `lib/components/StoryDialog.svelte`    | Setup / generate / regenerate UI + orchestration                            |
-| `lib/components/SettingsDialog.svelte` | Claude AI settings section                                                  |
-| `lib/components/LogPanel.svelte`       | ● Story toggle, ⟳ regenerate button                                         |
-| `routes/home/+page.svelte`             | `storiesToMarkdown()` + the Stories export                                  |
+### Web (`apps/web`)
+
+| File                                   | Responsibility                                                                                        |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `lib/aiSettings.svelte.ts`             | Server-config cache (providers, active, `hasKey`); mutations; global `setup` + `includePreface` prefs |
+| `lib/storyRecorder.svelte.ts`          | Recording state, marker, `captureSection()`                                                           |
+| `lib/aiSerialize.ts`                   | Log → prompt text, entity scan, preface, `parseStorySource` (pure/testable)                           |
+| `lib/aiStream.ts`                      | Client SSE reader for `/api/ai/generate` (unified `{text}`/`{done}`/`{error}`)                        |
+| `lib/components/StoryDialog.svelte`    | Setup / generate / regenerate UI + orchestration + editable output box                                |
+| `lib/components/SettingsDialog.svelte` | AI Storyteller selector (None / Claude / ChatGPT / Gemini) + global Setup Instructions                |
+| `lib/components/AiConfigDialog.svelte` | Per-provider key / model / Test dialog                                                                |
+| `lib/components/LogPanel.svelte`       | ● Story toggle, ⟳ regenerate button                                                                   |
+| `routes/api/ai/[...path]/+server.ts`   | BFF proxy → Fastify `/api/v1/ai/*` (streams the generate SSE through)                                 |
+| `routes/home/+page.svelte`             | `storiesToMarkdown()` + the Stories export                                                            |
+
+### API (`apps/api`)
+
+| File                                      | Responsibility                                                                                      |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `services/aiCrypto.ts`                    | AES-256-GCM encrypt/decrypt (key derived from `AI_KEY_ENC_SECRET`)                                  |
+| `services/aiConfigService.ts`             | Per-provider config CRUD; encrypts keys; decrypts only for test/generation                          |
+| `services/aiProvider.ts`                  | Server-side provider calls + normalized text stream (Claude, ChatGPT, Gemini)                       |
+| `routes/ai.ts`                            | `GET /config`, `PUT /active`, `PUT /provider/:p`, `DELETE …/key`, `POST /test/:p`, `POST /generate` |
+| `db/migrations/0016_ai_config.sql`        | `ai_config` table (RLS, one-active-per-user index), keys stored as ciphertext                       |
+| `db/migrations/0017_ai_config_gemini.sql` | Widen the provider CHECK constraint to allow `gemini`                                               |
 
 ## Preface — "Cast & setting"
 
@@ -56,29 +82,40 @@ A Story entry is identified by a JSON payload in `source` (not by its title, so
 a user-chosen title works):
 
 ```json
-{ "kind": "story", "system": "…", "user": "…", "model": "claude-…", "md": "…" }
+{ "kind": "story", "user": "…", "md": "…" }
 ```
 
-- `system` / `user` / `model` — the exact prompt, so **Regenerate** re-runs it.
+- `user` — the exact user prompt sent (preface + serialized events), so
+  **Regenerate** replays it verbatim against the active storyteller. The system
+  prompt and model are **not** stored here — the model comes from the active
+  provider's server-side config and the system prompt from the global client-side
+  Setup Instructions, both read fresh at (re)generation time.
 - `md` — the raw markdown the model produced, so **Export** is lossless.
 
 `parseStorySource(source)` returns this (or `null`) and is the single gate for
 the ⟳ button and the stories export. See also `docs/import-schema.md`.
 
-## Provider & security notes
+## Security notes
 
-- Direct browser → `api.anthropic.com` works because we send
-  `anthropic-dangerous-direct-browser-access: true`. Adding OpenAI would hit
-  CORS and needs a server proxy — see the discussion in git history.
-- The API key lives in `localStorage`: any code with execution on the origin can
-  read it. Acceptable for a single-user creative tool; a server-side proxy is
-  the v2 hardening path.
+- **Keys are server-side, encrypted at rest** (AES-256-GCM). The encryption key
+  is derived from the `AI_KEY_ENC_SECRET` env var. This must be set in prod for
+  AI to work; **rotating it invalidates all stored provider keys** (users must
+  re-enter them). It is optional at boot — the app runs without AI until a key is
+  configured.
+- "Encrypted at rest" is **not** zero-knowledge: the server decrypts the key to
+  call the provider. It protects against DB-dump exposure, not a compromised app
+  server.
+- Calling providers server-side also sidesteps the browser CORS restrictions that
+  block OpenAI/Gemini from direct browser calls.
 
 ## Tests
 
-- **Unit** (`tests/unit/aiSerialize.test.ts`): serializer, scan helpers,
+- **Unit** (`apps/api/tests/unit/aiCrypto.test.ts`): encrypt/decrypt round-trip,
+  ciphertext hides plaintext, unique IV, wrong-secret / tamper rejection.
+- **Unit** (`apps/web/tests/unit/aiSerialize.test.ts`): serializer, scan helpers,
   preface, `parseStorySource`.
-- **E2E** (`tests/e2e/story.spec.ts`): the Anthropic endpoint is mocked with
-  `page.route()` + a canned SSE body; story entries are injected via
-  `window.__testLog.appendLog`. Covers the regenerate gate, regenerate
-  replace-in-place, record → name → generate → save, and the Stories export.
+- **E2E** (`apps/web/tests/e2e/story.spec.ts`): `/api/ai/config` and
+  `/api/ai/generate` are mocked with `page.route()` + a canned unified SSE body;
+  story entries are injected via `window.__testLog.appendLog`. Covers the
+  regenerate gate, regenerate replace-in-place, record → name → generate → edit →
+  save (including the editable output box), and the Stories export.

@@ -1,9 +1,11 @@
 /**
- * story.spec.ts — AI story generation flow (mocked Anthropic stream).
+ * story.spec.ts — AI story generation flow (mocked server stream).
  *
- * The Anthropic Messages endpoint is intercepted with page.route() and
- * fulfilled with a canned SSE body, so no API key or network is needed. Story
- * log entries are injected directly via window.__testLog.appendLog (exposed by
+ * Generation now runs through our own /api/ai/generate BFF proxy (the browser
+ * never talks to a provider). Both /api/ai/config (so a companion looks
+ * configured) and /api/ai/generate (the canned prose stream) are intercepted
+ * with page.route(), so no key or network is needed. Story log entries are
+ * injected directly via window.__testLog.appendLog (exposed by
  * hooks.client.ts) — appendLog(title, html, id?, source?, roll?) — to test the
  * regenerate affordance and the stories markdown export without generating.
  *
@@ -14,23 +16,34 @@ import { test, expect, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { resetAll, resetLog } from './helpers/reset';
 
-const AI_KEY = 'sk-ant-e2e-test-key';
 const PROSE_A = '**Beepalache** crept forward.\n\nThe *Blood Thorn* stirred and did not wake.';
 const PROSE_B = 'A *quieter* telling: she simply walked away.';
 
-/** Build an SSE body the aiStream reader understands (text_delta frames). */
+/** Build the unified SSE body streamStory reads: a text frame then a done frame. */
 function sseBody(text: string): string {
-	const delta = `data: ${JSON.stringify({
-		type: 'content_block_delta',
-		delta: { type: 'text_delta', text },
-	})}\n\n`;
-	const stop = `data: ${JSON.stringify({ type: 'message_stop' })}\n\n`;
-	return delta + stop;
+	return `data: ${JSON.stringify({ text })}\n\n` + `data: ${JSON.stringify({ done: true })}\n\n`;
 }
 
-/** Intercept the Anthropic endpoint and stream back `text`. */
-async function mockAnthropic(page: Page, text: string) {
-	await page.route('https://api.anthropic.com/v1/messages', (route) =>
+/** Make a companion look configured so the client-side generation gate passes. */
+async function mockAiConfig(page: Page) {
+	await page.route('**/api/ai/config', (route) =>
+		route.fulfill({
+			status: 200,
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({
+				activeProvider: 'claude',
+				providers: {
+					claude: { model: 'claude-haiku-4-5', setup: 'sys', hasKey: true },
+					chatgpt: { model: null, setup: null, hasKey: false },
+				},
+			}),
+		}),
+	);
+}
+
+/** Intercept the server generate proxy and stream back `text`. */
+async function mockGenerate(page: Page, text: string) {
+	await page.route('**/api/ai/generate', (route) =>
 		route.fulfill({
 			status: 200,
 			headers: { 'content-type': 'text/event-stream' },
@@ -41,7 +54,7 @@ async function mockAnthropic(page: Page, text: string) {
 
 /** A Story entry's `source` payload. */
 function storySource(user: string, md: string): string {
-	return JSON.stringify({ kind: 'story', system: 'sys', user, model: 'claude-haiku-4-5', md });
+	return JSON.stringify({ kind: 'story', user, md });
 }
 
 async function inject(
@@ -64,9 +77,9 @@ async function inject(
 const entryById = (page: Page, id: string) => page.locator(`.log-entry[data-entry-id="${id}"]`);
 const storyBtn = (page: Page) => page.locator('.story-btn');
 
-/** Load /home with the AI key pre-seeded (read at module init) and the log clean. */
+/** Load /home with a companion mocked as configured and the log clean. */
 async function goToHome(page: Page) {
-	await page.addInitScript((key) => localStorage.setItem('ironledger:ai:apiKey', key), AI_KEY);
+	await mockAiConfig(page);
 	await page.goto('/home');
 	await expect(storyBtn(page)).toBeVisible({ timeout: 12_000 });
 }
@@ -103,7 +116,7 @@ test.describe('AI story generation', () => {
 			'story-2',
 			storySource('# What happened\n\nShe crept in.', '**The first telling.**'),
 		);
-		await mockAnthropic(page, PROSE_B);
+		await mockGenerate(page, PROSE_B);
 
 		await entryById(page, 'story-2').locator('.entry-regen-btn').click();
 		const dialog = page.locator('dialog.story-dialog');
@@ -120,7 +133,7 @@ test.describe('AI story generation', () => {
 	});
 
 	test('record → name → generate → save writes a titled Story entry', async ({ page }) => {
-		await mockAnthropic(page, PROSE_A);
+		await mockGenerate(page, PROSE_A);
 
 		await storyBtn(page).click(); // opens setup
 		const dialog = page.locator('dialog.story-dialog');
@@ -134,11 +147,18 @@ test.describe('AI story generation', () => {
 		await dialog.locator('input[placeholder="Story title…"]').fill('The Fall of Blackroot');
 		await dialog.locator('button:has-text("Start")').click();
 		await expect(dialog.locator('.sd-output strong')).toHaveText('Beepalache', { timeout: 8_000 });
+
+		// Editable output box: tweak the generated prose before saving.
+		await dialog.locator('.sd-edit-toggle').click();
+		const edit = dialog.locator('textarea.sd-output-edit');
+		await expect(edit).toBeVisible();
+		await edit.fill('**Beepalache** crept forward, then *turned back*.');
 		await dialog.locator('button:has-text("Save to Log")').click();
 
 		const named = page.locator('.log-entry', { hasText: 'The Fall of Blackroot' });
 		await expect(named).toHaveCount(1);
 		await expect(named.locator('.entry-body strong')).toHaveText('Beepalache');
+		await expect(named.locator('.entry-body em')).toHaveText('turned back'); // the edit persisted
 		await expect(named.locator('.entry-regen-btn')).toHaveCount(1); // has a payload
 	});
 
