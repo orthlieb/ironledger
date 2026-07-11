@@ -36,6 +36,8 @@
 		providerView,
 		loadAiConfig,
 		setActiveProvider,
+		getSetup,
+		setSetup,
 	} from '$lib/aiSettings.svelte.js';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import AiConfigDialog from '$lib/components/AiConfigDialog.svelte';
@@ -125,6 +127,8 @@
 	// ---------------------------------------------------------------------------
 	let activeProvider = $state<AiProvider | null>(null);
 	let aiConfigRef = $state<{ openFor(p: AiProvider): void } | null>(null);
+	// Setup instructions are a single global system prompt (not per-provider).
+	let aiSetup = $state('');
 
 	async function chooseProvider(p: AiProvider | 'none') {
 		activeProvider = p === 'none' ? null : p;
@@ -135,6 +139,10 @@
 	}
 	function openProviderConfig(p: AiProvider) {
 		aiConfigRef?.openFor(p);
+	}
+	function applyAiSetup(v: string) {
+		aiSetup = v;
+		setSetup(v);
 	}
 
 	// ---------------------------------------------------------------------------
@@ -150,6 +158,7 @@
 		delveOn = isDelveEnabled();
 		yrtOn = isYrtEnabled();
 		fontDisplay = savedFont();
+		aiSetup = getSetup();
 		activeProvider = getActiveProvider();
 		loadAiConfig(true).then(() => {
 			activeProvider = getActiveProvider();
@@ -350,6 +359,20 @@
 					Add an API key to generate stories with {PROVIDER_LABEL[ap]}.
 				</div>
 			{/if}
+
+			<div class="sd-setup-field">
+				<span class="sd-label">Setup Instructions</span>
+				<textarea
+					class="sd-setup-input"
+					rows="4"
+					placeholder="Tone, POV, tense, character voice…"
+					value={aiSetup}
+					oninput={(e) => applyAiSetup((e.currentTarget as HTMLTextAreaElement).value)}
+				></textarea>
+				<span class="sd-hint sd-hint-tight">
+					The system prompt sent for every story — shared across companions.
+				</span>
+			</div>
 		{:else}
 			<div class="sd-hint sd-hint-tight">Pick a companion to turn session logs into prose.</div>
 		{/if}
@@ -503,5 +526,29 @@
 	}
 	.sd-hint-tight {
 		margin-top: 2px;
+	}
+
+	.sd-setup-field {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+	.sd-setup-input {
+		width: 100%;
+		box-sizing: border-box;
+		padding: 5px 8px;
+		background: var(--bg-control);
+		color: var(--text);
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+		font-family: var(--font-ui);
+		font-size: 0.78rem;
+		line-height: 1.4;
+		resize: vertical;
+		min-height: 60px;
+	}
+	.sd-setup-input:focus {
+		outline: none;
+		border-color: var(--text-accent);
 	}
 </style>

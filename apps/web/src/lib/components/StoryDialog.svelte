@@ -22,6 +22,7 @@
 		setIncludePreface,
 		hasActiveCompanion,
 		getActiveProvider,
+		getSetup,
 		PROVIDER_LABEL,
 		loadAiConfig,
 	} from '$lib/aiSettings.svelte.js';
@@ -257,6 +258,7 @@
 		abortCtl = new AbortController();
 		await streamStory({
 			user: promptText,
+			system: getSetup(),
 			signal: abortCtl.signal,
 			onText: (acc) => {
 				output = acc;

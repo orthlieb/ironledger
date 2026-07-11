@@ -20,7 +20,6 @@
 		PROVIDER_HELP,
 		MODELS,
 		DEFAULT_MODEL,
-		DEFAULT_SETUP,
 		providerView,
 		loadAiConfig,
 		saveProviderConfig,
@@ -35,7 +34,6 @@
 	let keyVisible = $state(false);
 	let hasStoredKey = $state(false);
 	let model = $state('');
-	let setup = $state('');
 	let testState = $state<'idle' | 'testing' | 'ok' | 'error'>('idle');
 	let testMessage = $state('');
 	let saveState = $state<'idle' | 'saving' | 'saved'>('idle');
@@ -55,7 +53,6 @@
 		const view = providerView(p);
 		hasStoredKey = view.hasKey;
 		model = view.model ?? DEFAULT_MODEL[p];
-		setup = view.setup ?? DEFAULT_SETUP;
 		dialogEl?.showModal();
 	}
 
@@ -69,7 +66,6 @@
 		// Persist the entered key first so the server can test it.
 		await saveProviderConfig(provider, {
 			model,
-			setup,
 			...(keyInput.trim() ? { key: keyInput.trim() } : {}),
 		});
 		if (keyInput.trim()) {
@@ -90,7 +86,6 @@
 		saveState = 'saving';
 		await saveProviderConfig(provider, {
 			model,
-			setup,
 			...(keyInput.trim() ? { key: keyInput.trim() } : {}),
 		});
 		if (keyInput.trim()) {
@@ -177,17 +172,6 @@
 				{/each}
 			</select>
 		</div>
-
-		<div class="ac-field">
-			<span class="ac-label">Setup Instructions</span>
-			<textarea
-				class="ac-input ac-setup"
-				rows="4"
-				placeholder="Tone, POV, tense, character voice…"
-				bind:value={setup}
-			></textarea>
-			<div class="ac-hint ac-hint-tight">Sent as the system prompt for every story.</div>
-		</div>
 	</div>
 
 	<div class="ac-footer">
@@ -260,11 +244,6 @@
 	.ac-input:focus {
 		outline: none;
 		border-color: var(--text-accent);
-	}
-	.ac-setup {
-		resize: vertical;
-		min-height: 72px;
-		line-height: 1.4;
 	}
 	.ac-key-row {
 		display: flex;

@@ -76,7 +76,6 @@ export const DEFAULT_SETUP =
 
 export interface ProviderConfigView {
 	model: string | null;
-	setup: string | null;
 	hasKey: boolean;
 }
 export interface AiConfigView {
@@ -107,7 +106,7 @@ export function getActiveProvider(): AiProvider | null {
 	return _config?.activeProvider ?? null;
 }
 export function providerView(provider: AiProvider): ProviderConfigView {
-	return _config?.providers[provider] ?? { model: null, setup: null, hasKey: false };
+	return _config?.providers[provider] ?? { model: null, hasKey: false };
 }
 /** True when a companion is selected and has a key — story generation is available. */
 export function hasActiveCompanion(): boolean {
@@ -130,7 +129,7 @@ export async function setActiveProvider(provider: AiProvider | 'none'): Promise<
 
 export async function saveProviderConfig(
 	provider: AiProvider,
-	patch: { model: string; setup: string; key?: string },
+	patch: { model: string; key?: string },
 ): Promise<void> {
 	await fetch(`/api/ai/provider/${provider}`, {
 		method: 'PUT',
@@ -155,6 +154,33 @@ export async function testProviderKey(
 	} catch (err) {
 		return { ok: false, message: err instanceof Error ? err.message : 'Test failed.' };
 	}
+}
+
+// ---------------------------------------------------------------------------
+// Setup instructions — a global client-side UI preference (not a secret, and
+// not per-provider): the system prompt sent for every story, whichever
+// companion is active.
+// ---------------------------------------------------------------------------
+
+const SETUP_STORAGE = 'ironledger:ai:setup';
+
+function readSetup(): string {
+	if (typeof window === 'undefined') return DEFAULT_SETUP;
+	const raw = localStorage.getItem(SETUP_STORAGE);
+	return raw === null ? DEFAULT_SETUP : raw;
+}
+
+let _setup = $state(readSetup());
+
+export function getSetup(): string {
+	return _setup;
+}
+export function setSetup(v: string): void {
+	_setup = v;
+	if (typeof window === 'undefined') return;
+	// Empty or default → clear the override so DEFAULT_SETUP tracks future edits.
+	if (v === '' || v === DEFAULT_SETUP) localStorage.removeItem(SETUP_STORAGE);
+	else localStorage.setItem(SETUP_STORAGE, v);
 }
 
 // ---------------------------------------------------------------------------

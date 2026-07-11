@@ -17,7 +17,6 @@ const providerParam = z.object({ provider: z.enum(['claude', 'chatgpt', 'gemini'
 const activeBody = z.object({ provider: z.enum(['none', 'claude', 'chatgpt', 'gemini']) });
 const providerConfigBody = z.object({
   model: z.string().min(1).max(100),
-  setup: z.string().max(8000),
   // Omit to keep the existing key; empty string is treated as "keep".
   key: z.string().max(1000).optional(),
 });

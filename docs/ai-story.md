@@ -11,9 +11,11 @@ normalized text back.
 1. **Choose a companion** (Settings → AI Companion): pick None / Claude / ChatGPT
    / Gemini. The selection is persisted server-side (`PUT /api/ai/active`).
 2. **Configure it** (Settings → Configure…): a per-provider dialog for the API
-   key, model, and setup instructions. The key is encrypted at rest and never
-   returned to the client (the config view only reports `hasKey`). **Test** sends
-   a 1-token request server-side to validate the key.
+   key and model. The key is encrypted at rest and never returned to the client
+   (the config view only reports `hasKey`). **Test** sends a 1-token request
+   server-side to validate the key. The **Setup Instructions** (the system
+   prompt) are a single global preference in the main Settings — shared across
+   companions, not per-provider — stored client-side in `localStorage`.
 3. **Record** (Log toolbar → ● Story → Begin Recording): drops a marker at the
    current top of the log. Every entry prepended until ■ Stop becomes the
    section.
@@ -33,18 +35,18 @@ normalized text back.
 
 ### Web (`apps/web`)
 
-| File                                   | Responsibility                                                                 |
-| -------------------------------------- | ------------------------------------------------------------------------------ |
-| `lib/aiSettings.svelte.ts`             | Server-config cache (providers, active, `hasKey`); mutations; `includePreface` |
-| `lib/storyRecorder.svelte.ts`          | Recording state, marker, `captureSection()`                                    |
-| `lib/aiSerialize.ts`                   | Log → prompt text, entity scan, preface, `parseStorySource` (pure/testable)    |
-| `lib/aiStream.ts`                      | Client SSE reader for `/api/ai/generate` (unified `{text}`/`{done}`/`{error}`) |
-| `lib/components/StoryDialog.svelte`    | Setup / generate / regenerate UI + orchestration + editable output box         |
-| `lib/components/SettingsDialog.svelte` | AI Companion selector (None / Claude / ChatGPT / Gemini)                       |
-| `lib/components/AiConfigDialog.svelte` | Per-provider key / model / setup / Test dialog                                 |
-| `lib/components/LogPanel.svelte`       | ● Story toggle, ⟳ regenerate button                                            |
-| `routes/api/ai/[...path]/+server.ts`   | BFF proxy → Fastify `/api/v1/ai/*` (streams the generate SSE through)          |
-| `routes/home/+page.svelte`             | `storiesToMarkdown()` + the Stories export                                     |
+| File                                   | Responsibility                                                                                        |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `lib/aiSettings.svelte.ts`             | Server-config cache (providers, active, `hasKey`); mutations; global `setup` + `includePreface` prefs |
+| `lib/storyRecorder.svelte.ts`          | Recording state, marker, `captureSection()`                                                           |
+| `lib/aiSerialize.ts`                   | Log → prompt text, entity scan, preface, `parseStorySource` (pure/testable)                           |
+| `lib/aiStream.ts`                      | Client SSE reader for `/api/ai/generate` (unified `{text}`/`{done}`/`{error}`)                        |
+| `lib/components/StoryDialog.svelte`    | Setup / generate / regenerate UI + orchestration + editable output box                                |
+| `lib/components/SettingsDialog.svelte` | AI Companion selector (None / Claude / ChatGPT / Gemini) + global Setup Instructions                  |
+| `lib/components/AiConfigDialog.svelte` | Per-provider key / model / Test dialog                                                                |
+| `lib/components/LogPanel.svelte`       | ● Story toggle, ⟳ regenerate button                                                                   |
+| `routes/api/ai/[...path]/+server.ts`   | BFF proxy → Fastify `/api/v1/ai/*` (streams the generate SSE through)                                 |
+| `routes/home/+page.svelte`             | `storiesToMarkdown()` + the Stories export                                                            |
 
 ### API (`apps/api`)
 
@@ -85,8 +87,9 @@ a user-chosen title works):
 
 - `user` — the exact user prompt sent (preface + serialized events), so
   **Regenerate** replays it verbatim against the active companion. The system
-  prompt and model are **not** stored here — they come from the current
-  server-side provider config at regeneration time.
+  prompt and model are **not** stored here — the model comes from the active
+  provider's server-side config and the system prompt from the global client-side
+  Setup Instructions, both read fresh at (re)generation time.
 - `md` — the raw markdown the model produced, so **Export** is lossless.
 
 `parseStorySource(source)` returns this (or `null`) and is the single gate for

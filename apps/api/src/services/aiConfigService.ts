@@ -33,7 +33,6 @@ function encSecret(): string {
 
 export interface ProviderConfigView {
   model: string | null;
-  setup: string | null;
   hasKey: boolean;
 }
 export interface AiConfigView {
@@ -55,30 +54,30 @@ interface Row {
 export async function getConfig(userId: string): Promise<AiConfigView> {
   const rows = (await withUserContext(userId, (tx) =>
     tx.execute(sql`
-      SELECT provider, model, setup, active, key_ciphertext
+      SELECT provider, model, active, key_ciphertext
       FROM ai_config WHERE user_id = ${userId}::uuid
     `),
   )) as unknown as Row[];
 
   const providers: Record<AiProvider, ProviderConfigView> = {
-    claude: { model: null, setup: null, hasKey: false },
-    chatgpt: { model: null, setup: null, hasKey: false },
-    gemini: { model: null, setup: null, hasKey: false },
+    claude: { model: null, hasKey: false },
+    chatgpt: { model: null, hasKey: false },
+    gemini: { model: null, hasKey: false },
   };
   let activeProvider: AiProvider | null = null;
   for (const r of rows) {
     if (!isAiProvider(r.provider)) continue;
-    providers[r.provider] = { model: r.model, setup: r.setup, hasKey: !!r.key_ciphertext };
+    providers[r.provider] = { model: r.model, hasKey: !!r.key_ciphertext };
     if (r.active) activeProvider = r.provider;
   }
   return { activeProvider, providers };
 }
 
-/** Set model/setup (and optionally the key) for one provider. */
+/** Set the model (and optionally the key) for one provider. */
 export async function setProviderConfig(
   userId: string,
   provider: AiProvider,
-  patch: { model: string; setup: string; key?: string },
+  patch: { model: string; key?: string },
 ): Promise<void> {
   const enc =
     patch.key !== undefined && patch.key !== '' ? encryptSecret(patch.key, encSecret()) : null;
@@ -86,19 +85,19 @@ export async function setProviderConfig(
   await withUserContext(userId, async (tx) => {
     if (enc) {
       await tx.execute(sql`
-        INSERT INTO ai_config (user_id, provider, model, setup, key_ciphertext, key_iv, key_tag, updated_at)
-        VALUES (${userId}::uuid, ${provider}, ${patch.model}, ${patch.setup}, ${enc.ciphertext}, ${enc.iv}, ${enc.tag}, now())
+        INSERT INTO ai_config (user_id, provider, model, key_ciphertext, key_iv, key_tag, updated_at)
+        VALUES (${userId}::uuid, ${provider}, ${patch.model}, ${enc.ciphertext}, ${enc.iv}, ${enc.tag}, now())
         ON CONFLICT (user_id, provider) DO UPDATE SET
-          model = EXCLUDED.model, setup = EXCLUDED.setup,
+          model = EXCLUDED.model,
           key_ciphertext = EXCLUDED.key_ciphertext, key_iv = EXCLUDED.key_iv, key_tag = EXCLUDED.key_tag,
           updated_at = now()
       `);
     } else {
       await tx.execute(sql`
-        INSERT INTO ai_config (user_id, provider, model, setup, updated_at)
-        VALUES (${userId}::uuid, ${provider}, ${patch.model}, ${patch.setup}, now())
+        INSERT INTO ai_config (user_id, provider, model, updated_at)
+        VALUES (${userId}::uuid, ${provider}, ${patch.model}, now())
         ON CONFLICT (user_id, provider) DO UPDATE SET
-          model = EXCLUDED.model, setup = EXCLUDED.setup, updated_at = now()
+          model = EXCLUDED.model, updated_at = now()
       `);
     }
   });
