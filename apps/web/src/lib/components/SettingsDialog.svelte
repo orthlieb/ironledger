@@ -122,7 +122,7 @@
 	}
 
 	// ---------------------------------------------------------------------------
-	// AI Companion — pick the active provider; keys/models live server-side and
+	// AI Storyteller — pick the active provider; keys/models live server-side and
 	// are edited in the per-provider AiConfigDialog.
 	// ---------------------------------------------------------------------------
 	let activeProvider = $state<AiProvider | null>(null);
@@ -314,12 +314,12 @@
 			</div>
 		</div>
 
-		<!-- ─── AI Companion ─── -->
-		<div class="sd-section-heading">AI Companion</div>
+		<!-- ─── AI Storyteller ─── -->
+		<div class="sd-section-heading">AI Storyteller</div>
 
 		<div class="sd-row">
-			<span class="sd-label">Companion</span>
-			<div class="sd-seg" role="group" aria-label="AI companion">
+			<span class="sd-label">Storyteller</span>
+			<div class="sd-seg" role="group" aria-label="AI storyteller">
 				<button
 					class="sd-seg-btn"
 					class:active={activeProvider === null}
@@ -370,11 +370,11 @@
 					oninput={(e) => applyAiSetup((e.currentTarget as HTMLTextAreaElement).value)}
 				></textarea>
 				<span class="sd-hint sd-hint-tight">
-					The system prompt sent for every story — shared across companions.
+					The system prompt sent for every story, whichever storyteller is active.
 				</span>
 			</div>
 		{:else}
-			<div class="sd-hint sd-hint-tight">Pick a companion to turn session logs into prose.</div>
+			<div class="sd-hint sd-hint-tight">Pick a storyteller to turn session logs into prose.</div>
 		{/if}
 	</div>
 </dialog>

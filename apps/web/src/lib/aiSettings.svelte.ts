@@ -1,5 +1,5 @@
 // =============================================================================
-// Iron Ledger — AI companion settings (server-backed)
+// Iron Ledger — AI storyteller settings (server-backed)
 //
 // Provider config (key/model/setup) now lives on the server with the API key
 // encrypted at rest; this store is a reactive client cache of the server config
@@ -108,8 +108,8 @@ export function getActiveProvider(): AiProvider | null {
 export function providerView(provider: AiProvider): ProviderConfigView {
 	return _config?.providers[provider] ?? { model: null, hasKey: false };
 }
-/** True when a companion is selected and has a key — story generation is available. */
-export function hasActiveCompanion(): boolean {
+/** True when a storyteller is selected and has a key — story generation is available. */
+export function hasActiveStoryteller(): boolean {
 	const p = _config?.activeProvider;
 	return !!p && !!_config?.providers[p]?.hasKey;
 }
@@ -159,7 +159,7 @@ export async function testProviderKey(
 // ---------------------------------------------------------------------------
 // Setup instructions — a global client-side UI preference (not a secret, and
 // not per-provider): the system prompt sent for every story, whichever
-// companion is active.
+// storyteller is active.
 // ---------------------------------------------------------------------------
 
 const SETUP_STORAGE = 'ironledger:ai:setup';

@@ -1,6 +1,6 @@
 <script lang="ts">
 	/**
-	 * AiConfigDialog — per-provider AI companion configuration.
+	 * AiConfigDialog — per-provider AI storyteller configuration.
 	 *
 	 * Opened from SettingsDialog for a single provider (Claude / ChatGPT). Holds
 	 * the API key (encrypted at rest server-side), model, and setup instructions.

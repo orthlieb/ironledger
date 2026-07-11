@@ -1,6 +1,6 @@
 # AI Story Generation
 
-Turns a slice of the session log into narrative prose via an AI companion.
+Turns a slice of the session log into narrative prose via an AI storyteller.
 Opt-in. The API key lives **server-side, encrypted at rest** — the browser never
 holds a provider key or calls a provider directly; it POSTs the prompt to our own
 `/api/ai/generate`, which looks up the active provider + decrypted key and streams
@@ -8,26 +8,26 @@ normalized text back.
 
 ## Flow
 
-1. **Choose a companion** (Settings → AI Companion): pick None / Claude / ChatGPT
-   / Gemini. The selection is persisted server-side (`PUT /api/ai/active`).
+1. **Choose a storyteller** (Settings → AI Storyteller): pick None / Claude /
+   ChatGPT / Gemini. The selection is persisted server-side (`PUT /api/ai/active`).
 2. **Configure it** (Settings → Configure…): a per-provider dialog for the API
    key and model. The key is encrypted at rest and never returned to the client
    (the config view only reports `hasKey`). **Test** sends a 1-token request
    server-side to validate the key. The **Setup Instructions** (the system
    prompt) are a single global preference in the main Settings — shared across
-   companions, not per-provider — stored client-side in `localStorage`.
+   storytellers, not per-provider — stored client-side in `localStorage`.
 3. **Record** (Log toolbar → ● Story → Begin Recording): drops a marker at the
    current top of the log. Every entry prepended until ■ Stop becomes the
    section.
 4. **Generate** (■ Stop opens the dialog): the captured section is serialized to
    prompt text, an optional preface is prepended, and the prompt is streamed to
-   the active companion via `/api/ai/generate`. Live markdown preview.
+   the active storyteller via `/api/ai/generate`. Live markdown preview.
 5. **Edit** (after streaming): toggle **Edit** on the output box to tweak the raw
    markdown before saving; **Preview** flips back to the rendered view.
 6. **Save to Log**: the prose is stored as a Story log entry (rendered markdown
    in `html`, plus a payload in `source` — see below). You can name it first.
 7. **Regenerate** (⟳ on a Story entry): re-runs the stored prompt against the
-   active companion and replaces the entry in place.
+   active storyteller and replaces the entry in place.
 8. **Export** (Hamburger → Export → Stories): writes all story entries' prose to
    `stories-<stamp>.md`.
 
@@ -42,7 +42,7 @@ normalized text back.
 | `lib/aiSerialize.ts`                   | Log → prompt text, entity scan, preface, `parseStorySource` (pure/testable)                           |
 | `lib/aiStream.ts`                      | Client SSE reader for `/api/ai/generate` (unified `{text}`/`{done}`/`{error}`)                        |
 | `lib/components/StoryDialog.svelte`    | Setup / generate / regenerate UI + orchestration + editable output box                                |
-| `lib/components/SettingsDialog.svelte` | AI Companion selector (None / Claude / ChatGPT / Gemini) + global Setup Instructions                  |
+| `lib/components/SettingsDialog.svelte` | AI Storyteller selector (None / Claude / ChatGPT / Gemini) + global Setup Instructions                |
 | `lib/components/AiConfigDialog.svelte` | Per-provider key / model / Test dialog                                                                |
 | `lib/components/LogPanel.svelte`       | ● Story toggle, ⟳ regenerate button                                                                   |
 | `routes/api/ai/[...path]/+server.ts`   | BFF proxy → Fastify `/api/v1/ai/*` (streams the generate SSE through)                                 |
@@ -86,7 +86,7 @@ a user-chosen title works):
 ```
 
 - `user` — the exact user prompt sent (preface + serialized events), so
-  **Regenerate** replays it verbatim against the active companion. The system
+  **Regenerate** replays it verbatim against the active storyteller. The system
   prompt and model are **not** stored here — the model comes from the active
   provider's server-side config and the system prompt from the global client-side
   Setup Instructions, both read fresh at (re)generation time.

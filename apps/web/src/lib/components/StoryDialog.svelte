@@ -20,7 +20,7 @@
 	import {
 		getIncludePreface,
 		setIncludePreface,
-		hasActiveCompanion,
+		hasActiveStoryteller,
 		getActiveProvider,
 		getSetup,
 		PROVIDER_LABEL,
@@ -83,9 +83,9 @@
 	// The exact user prompt sent (captured at Start) — persisted with the saved
 	// Story entry so it can be regenerated later.
 	let usedUser = '';
-	// Which companion is active — the key/model/setup live server-side now.
-	const companionReady = $derived(hasActiveCompanion());
-	const companionLabel = $derived.by(() => {
+	// Which storyteller is active — the key/model live server-side now.
+	const storytellerReady = $derived(hasActiveStoryteller());
+	const storytellerLabel = $derived.by(() => {
 		const p = getActiveProvider();
 		return p ? PROVIDER_LABEL[p] : 'None';
 	});
@@ -240,8 +240,8 @@
 
 	// ── Generate actions ───────────────────────────────────────────────────
 	async function handleStart() {
-		if (!companionReady) {
-			errorMsg = 'No AI companion configured. Choose one in Settings.';
+		if (!storytellerReady) {
+			errorMsg = 'No AI storyteller configured. Choose one in Settings.';
 			return;
 		}
 		if (!promptText.trim()) {
@@ -336,10 +336,10 @@
 			</div>
 
 			<div class="sd-preview">
-				<div class="sd-hint">Companion: <strong>{companionLabel}</strong></div>
-				{#if !companionReady}
+				<div class="sd-hint">Storyteller: <strong>{storytellerLabel}</strong></div>
+				{#if !storytellerReady}
 					<div class="sd-hint sd-hint-tight">
-						Choose an AI companion and add a key in Settings to generate a story.
+						Choose an AI storyteller and add a key in Settings to generate a story.
 					</div>
 				{/if}
 			</div>
@@ -353,7 +353,7 @@
 						{capturedCount === 1 ? 'entry' : 'entries'} captured, ≈ {promptTokens} input tokens.
 					{/if}
 				</div>
-				<div class="sd-hint">Companion: <strong>{companionLabel}</strong></div>
+				<div class="sd-hint">Storyteller: <strong>{storytellerLabel}</strong></div>
 				{#if prefaceText}
 					<label class="sd-toggle">
 						<input
