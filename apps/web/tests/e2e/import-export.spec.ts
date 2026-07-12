@@ -368,7 +368,7 @@ test.describe('Import / Export — portrait round-trip', () => {
 			await expect(spines).not.toHaveCount(0, { timeout: 8_000 });
 		}
 		await expect(page.locator(`${CHAR_AREA} .ca-tab`).first()).toBeVisible({ timeout: 8_000 });
-		await page.locator(`${CHAR_AREA} .ca-tab`, { hasText: /^Description$/i }).click();
+		await page.locator(`${CHAR_AREA} .ca-tab`, { hasText: /^Background$/i }).click();
 		await page.locator(`${CHAR_AREA} .pu-input`).setInputFiles({
 			name: 'portrait.png',
 			mimeType: 'image/png',
@@ -399,12 +399,12 @@ test.describe('Import / Export — portrait round-trip', () => {
 		await uploadImport(page, exported, 'roundtrip.json');
 		await expect(page.locator('.error-bar')).not.toBeVisible({ timeout: 5_000 });
 
-		// Select the freshly imported character and open its Description tab.
+		// Select the freshly imported character and open its Background tab.
 		await page
 			.locator(CHAR_SPINE, { has: page.locator('.ca-spine-name', { hasText: uniqueName }) })
 			.first()
 			.click();
-		await page.locator(`${CHAR_AREA} .ca-tab`, { hasText: /^Description$/i }).click();
+		await page.locator(`${CHAR_AREA} .ca-tab`, { hasText: /^Background$/i }).click();
 
 		// The portrait renders from the blob endpoint (a URL, NOT an inline data:
 		// URL) — proving the inline base64 was lifted into the blob store and the

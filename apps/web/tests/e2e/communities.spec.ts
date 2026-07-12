@@ -3,7 +3,7 @@
  *
  * v2 layout: the Communities area shares the bottom-right cell with NPCs in a
  * single combined deck. Each entry is a .cm-row in the same nav list — kind
- * is distinguished by the stage delete-button's aria-label ("Delete NPC" vs
+ * is distinguished by the stage delete-button's aria-label ("Delete npc" vs
  * "Delete community").
  */
 import { test, expect } from '@playwright/test';
@@ -35,7 +35,7 @@ async function countByKind(
 		await rows.nth(i).click();
 		const aria =
 			(await page.locator(`${CM_AREA} .cm-stage-delete-btn`).getAttribute('aria-label')) ?? '';
-		if (kind === 'npc' && aria === 'Delete NPC') matched++;
+		if (kind === 'npc' && aria === 'Delete npc') matched++;
 		else if (kind === 'community' && aria === 'Delete community') matched++;
 	}
 	return matched;
@@ -49,7 +49,7 @@ async function selectRowOfKind(page: import('@playwright/test').Page, kind: 'npc
 		await rows.nth(i).click();
 		const aria =
 			(await page.locator(`${CM_AREA} .cm-stage-delete-btn`).getAttribute('aria-label')) ?? '';
-		if (kind === 'npc' && aria === 'Delete NPC') return rows.nth(i);
+		if (kind === 'npc' && aria === 'Delete npc') return rows.nth(i);
 		if (kind === 'community' && aria === 'Delete community') return rows.nth(i);
 	}
 	return null;

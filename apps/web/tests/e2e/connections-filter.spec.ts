@@ -63,7 +63,7 @@ test.describe('Connections rail — filter, sort & persistence (v2)', () => {
 		await waitForSeededRows(page);
 	});
 
-	test('Filters panel toggles open and shows the three Type chips', async ({ page }) => {
+	test('Filters panel toggles open and shows the four Type chips', async ({ page }) => {
 		await expect(page.locator(FILTER_PANEL)).toHaveCount(0); // closed by default
 		await page.locator(FILTER_TOGGLE).click();
 		await expect(page.locator(FILTER_PANEL)).toBeVisible();
@@ -71,6 +71,7 @@ test.describe('Connections rail — filter, sort & persistence (v2)', () => {
 			'All',
 			'Communities',
 			'NPCs',
+			'Places',
 		]);
 	});
 

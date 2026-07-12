@@ -216,9 +216,12 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		if (await createManualBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
 			await createManualBtn.click();
 		}
-		const yrtRadio = page.locator('input[type="radio"][value="yrt"]');
+		// Scope radios to the OPEN dialog — the sibling New Place dialog is in the
+		// DOM but closed, and its own ironlands radio would otherwise be counted too.
+		const openDialog = page.locator('dialog.confirm-modal[open]');
+		const yrtRadio = openDialog.locator('input[type="radio"][value="yrt"]');
 		await expect(yrtRadio).toHaveCount(0);
-		await expect(page.locator('input[type="radio"][value="ironlands"]')).toHaveCount(1, {
+		await expect(openDialog.locator('input[type="radio"][value="ironlands"]')).toHaveCount(1, {
 			timeout: 3_000,
 		});
 		await page.keyboard.press('Escape');
