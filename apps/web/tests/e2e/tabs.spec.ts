@@ -88,10 +88,10 @@ test.describe('Tab accessibility — v2 areas', () => {
 			`${CHAR_AREA} .ca-stats-row`,
 		);
 
-		// Description: background section with portrait uploader.
+		// Background: background section with portrait uploader.
 		await expectTabActivates(
 			page,
-			`${CHAR_AREA} .ca-tab:has-text("Description")`,
+			`${CHAR_AREA} .ca-tab:has-text("Background")`,
 			'ca-tab--active',
 			`${CHAR_AREA} .ca-bg-section`,
 		);

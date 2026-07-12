@@ -27,7 +27,7 @@ async function waitForCharactersLoaded(page: import('@playwright/test').Page) {
 }
 
 /**
- * Switch to a specific Characters sub-tab (Core / Description / Vows / Assets / Status).
+ * Switch to a specific Characters sub-tab (Core / Background / Vows / Assets / Status).
  */
 async function switchCharTab(page: import('@playwright/test').Page, label: string) {
 	await page.locator(`${CHAR_AREA} .ca-tab`, { hasText: new RegExp(`^${label}$`, 'i') }).click();
@@ -287,11 +287,11 @@ test.describe('Characters area (v2)', () => {
 
 	// ── Portrait ──────────────────────────────────────────────────────────────
 
-	test('clicking the portrait in the Description tab opens a file picker and displays the selected image', async ({
+	test('clicking the portrait in the Background tab opens a file picker and displays the selected image', async ({
 		page,
 	}) => {
 		await ensureCharacterSelected(page);
-		await switchCharTab(page, 'Description');
+		await switchCharTab(page, 'Background');
 
 		const portraitLabel = page.locator(`${CHAR_AREA} .pu-label`);
 		await expect(portraitLabel).toBeVisible({ timeout: 3_000 });
