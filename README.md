@@ -67,6 +67,8 @@ cp .env.example .env
 # Edit .env — generate JWT keys with:
 #   openssl genrsa -out private.pem 2048
 #   openssl rsa -in private.pem -pubout -out public.pem
+# (Optional) enable the AI Storyteller — generate AI_KEY_ENC_SECRET with:
+#   node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 
 # 4. Run database migrations
 npm run migrate
@@ -169,6 +171,14 @@ findings are surfaced as warnings, not errors, so they don't block CI.
   - **Floor**: supply hits 0 → "Supply: Exhausted" with Unprepared debility link; momentum hits −6 → note appended
   - **Floor overflow**: resource already at minimum → "Face a Setback", "Face Death", "Face Desolation", or "Out of Supply" entries with per-point clickable exchange links
 - Export includes timestamps for each entry
+
+### AI Storyteller
+
+- Turn a recorded slice of the session log into narrative prose (Claude, ChatGPT, or Gemini)
+- **Keys server-side, encrypted at rest** (AES-256-GCM); the browser never holds a provider key or calls a provider directly — it streams through a `/api/ai/generate` proxy
+- Per-provider key/model in Settings; a single **global Setup Instructions** system prompt shared across storytellers
+- Editable output box (tweak the prose before saving), regenerate-in-place on story entries, and a Markdown **Stories** export
+- Requires the `AI_KEY_ENC_SECRET` env var; opt-in, off until a key is configured. See [docs/ai-story.md](docs/ai-story.md)
 
 ### Initiative Tracking
 

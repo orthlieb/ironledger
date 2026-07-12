@@ -142,6 +142,12 @@ EMAIL_FROM=noreply@yourdomain.com
 
 HCAPTCHA_SECRET=your_hcaptcha_secret
 
+# AI Storyteller — encrypts stored provider API keys at rest (AES-256-GCM).
+# Optional at boot, but REQUIRED to use the AI Storyteller feature. Generate with:
+#   node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+# WARNING: rotating this invalidates every stored provider key (users re-enter them).
+AI_KEY_ENC_SECRET=your_generated_secret
+
 INTERNAL_API_URL=http://localhost:3000
 WEB_URL=https://yourdomain.com
 ```
@@ -374,6 +380,7 @@ curl https://yourdomain.com/health
 - [x] DDoS protection (IONOS built-in)
 - [x] Block `.env`, `.git`, `.sql` via Nginx
 - [x] Redis bound to localhost only
+- [x] AI provider API keys encrypted at rest (AES-256-GCM via `AI_KEY_ENC_SECRET`)
 
 ---
 

@@ -64,7 +64,9 @@ export const DEFAULT_MODEL: Record<AiProvider, string> = {
 	gemini: 'gemini-2.0-flash',
 };
 
-export const DEFAULT_SETUP =
+// The default system prompt — only used internally as the fallback for the
+// global setup preference below.
+const DEFAULT_SETUP =
 	'Rewrite the following session log as prose in third-person past tense. ' +
 	'Match the tone of Ironsworn fiction — grim, weighty, sparing with adjectives. ' +
 	'Keep character names and place names exactly as written. ' +
@@ -99,9 +101,6 @@ export async function loadAiConfig(force = false): Promise<void> {
 	}
 }
 
-export function getAiConfig(): AiConfigView | null {
-	return _config;
-}
 export function getActiveProvider(): AiProvider | null {
 	return _config?.activeProvider ?? null;
 }

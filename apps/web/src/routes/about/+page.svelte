@@ -7,6 +7,7 @@
 	import noteSvg from '$icons/note-sticky-solid.svg?raw';
 	import villageSvg from '$icons/village.svg?raw';
 	import mobileSvg from '$icons/mobile-screen-solid.svg?raw';
+	import penSvg from '$icons/pen-to-square-solid-full.svg?raw';
 	import { headingText } from '$lib/fontStore.svelte.js';
 
 	let { data }: { data: { user?: { name?: string } } } = $props();
@@ -49,6 +50,12 @@
 			color: 'var(--color-momentum)',
 		},
 		{
+			icon: penSvg,
+			title: 'AI Storyteller',
+			body: "Hand a slice of your session log to Claude, ChatGPT, or Gemini and get back grim, weighty prose worthy of the Ironlands — your catastrophic misses immortalised as saga. Bring your own API key; it's encrypted on the server and never touches the browser. Edit before you commit it to the log, because even the machines need a second draft.",
+			color: 'var(--color-mana)',
+		},
+		{
 			icon: villageSvg,
 			title: 'Connections, NPCs & Places',
 			body: "The Ironlands are not empty. Track the settlements you've found, the people you've met, the ones who owe you a favour, and the specific places that anchor your saga — an inn, a shrine, a ruin on the horizon. Oracle-powered random generation for names and locations — or build them by hand, if you're that kind of hero.",
@@ -67,7 +74,7 @@
 	<title>Iron Ledger</title>
 	<meta
 		name="description"
-		content="Iron Ledger is a digital companion app for Ironsworn — manage characters, foes, expeditions, moves, oracles, and session logs in one place."
+		content="Iron Ledger is a digital companion app for Ironsworn — manage characters, foes, expeditions, moves, oracles, session logs, and AI-written sagas in one place."
 	/>
 </svelte:head>
 

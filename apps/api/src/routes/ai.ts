@@ -1,5 +1,5 @@
 /**
- * AI companion routes (/api/v1/ai).
+ * AI storyteller routes (/api/v1/ai).
  *
  * Per-provider config is stored server-side with the API key encrypted at rest;
  * keys are never returned to the client. Generation runs server-side and
@@ -36,7 +36,7 @@ export const aiRoutes: FastifyPluginAsyncZod = async (server) => {
     return reply.status(200).send(view);
   });
 
-  // ── PUT /ai/active — select None / Claude / ChatGPT ────────────────────────
+  // ── PUT /ai/active — select None / Claude / ChatGPT / Gemini ───────────────
   server.put('/active', { schema: { body: activeBody } }, async (req, reply) => {
     const provider = req.body.provider === 'none' ? null : req.body.provider;
     await ai.setActiveProvider(req.user!.id, provider).catch(handleError(reply));
@@ -44,7 +44,7 @@ export const aiRoutes: FastifyPluginAsyncZod = async (server) => {
     return reply.status(200).send({ ok: true });
   });
 
-  // ── PUT /ai/provider/:provider — set model/setup (+ optional key) ──────────
+  // ── PUT /ai/provider/:provider — set model (+ optional key) ────────────────
   server.put(
     '/provider/:provider',
     { schema: { params: providerParam, body: providerConfigBody } },
@@ -85,7 +85,7 @@ export const aiRoutes: FastifyPluginAsyncZod = async (server) => {
     const active = await ai.getActiveForGeneration(req.user!.id).catch(handleError(reply));
     if (reply.sent) return;
     if (!active) {
-      return reply.status(400).send({ error: 'No AI companion is configured with a key.' });
+      return reply.status(400).send({ error: 'No AI storyteller is configured with a key.' });
     }
 
     // Stream a normalized SSE of { text } deltas, then { done } or { error }.
@@ -104,7 +104,8 @@ export const aiRoutes: FastifyPluginAsyncZod = async (server) => {
       const gen = streamProvider(active.provider, {
         apiKey: active.apiKey,
         model: active.model,
-        system: req.body.system ?? active.setup,
+        // The system prompt is a client-side global preference sent per request.
+        system: req.body.system ?? '',
         user: req.body.user,
         signal: ac.signal,
         maxTokens: req.body.maxTokens,
