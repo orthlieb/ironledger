@@ -84,10 +84,9 @@ outcome:
 - **Miss + match** → a dangerous turn (serious complication / new threat).
 - **Weak hit + match** → no note (no special rule in core Ironsworn).
 
-The helper is shared by all four roll sites (DiceRollerDialog, MovesDialog action
-
-- progress rolls, and LogPanel's burn-momentum re-roll) so the text is defined
-  once. Unit test: `tests/unit/rollMatch.test.ts`.
+The helper is shared by all four roll sites (DiceRollerDialog, MovesDialog's
+action and progress rolls, and LogPanel's burn-momentum re-roll) so the text is
+defined once. Unit test: `tests/unit/rollMatch.test.ts`.
 
 **Session log title:** `Action (Heart)` (or whichever stat was chosen).
 
