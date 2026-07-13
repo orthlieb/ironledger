@@ -52,7 +52,7 @@
 		{
 			icon: penSvg,
 			title: 'AI Storyteller',
-			body: "Hand a slice of your session log to Claude, ChatGPT, or Gemini and get back grim, weighty prose worthy of the Ironlands — your catastrophic misses immortalised as saga. Bring your own API key; it's encrypted on the server and never touches the browser. Edit before you commit it to the log, because even the machines need a second draft.",
+			body: 'Hand a slice of your session log to Claude, ChatGPT, or Gemini and get back grim, weighty prose worthy of the Ironlands — your catastrophic misses immortalised as saga. Bring your own API key, and edit the tale before you commit it to the log — even the machines need a second draft.',
 			color: 'var(--color-mana)',
 		},
 		{
