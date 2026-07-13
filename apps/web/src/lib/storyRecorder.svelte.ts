@@ -10,15 +10,54 @@
 // not including) the marker — i.e. everything prepended since. A null marker
 // means the log was empty at start; the whole log is captured.
 //
-// The setup instructions + model now live server-side (per provider), so the
-// recorder only tracks the marker.
+// The recording (whether active + its marker) is persisted to localStorage so a
+// mid-recording page reload or session timeout doesn't lose the start point —
+// the log is global and re-fetched on reload, and entry ids are stable, so the
+// restored marker still points at the right spot. The setup instructions + model
+// live elsewhere, so the recorder only tracks the marker.
 // =============================================================================
 
 import type { LogEntry } from './log.svelte.js';
 import { sessionLog } from './log.svelte.js';
 
-let _recording = $state(false);
-let _markerId = $state<string | null>(null);
+const RECORDING_STORAGE = 'ironledger:ai:recording';
+
+interface RecordingState {
+	recording: boolean;
+	markerId: string | null;
+}
+
+function readRecording(): RecordingState {
+	if (typeof window === 'undefined') return { recording: false, markerId: null };
+	try {
+		const raw = localStorage.getItem(RECORDING_STORAGE);
+		if (!raw) return { recording: false, markerId: null };
+		const p = JSON.parse(raw) as Partial<RecordingState>;
+		return {
+			recording: !!p.recording,
+			markerId: typeof p.markerId === 'string' ? p.markerId : null,
+		};
+	} catch {
+		return { recording: false, markerId: null };
+	}
+}
+
+/** Persist while recording; clear the key otherwise. */
+function persistRecording(): void {
+	if (typeof window === 'undefined') return;
+	if (_recording) {
+		localStorage.setItem(
+			RECORDING_STORAGE,
+			JSON.stringify({ recording: true, markerId: _markerId }),
+		);
+	} else {
+		localStorage.removeItem(RECORDING_STORAGE);
+	}
+}
+
+const _initial = readRecording();
+let _recording = $state(_initial.recording);
+let _markerId = $state<string | null>(_initial.markerId);
 
 // ---------------------------------------------------------------------------
 // Getters
@@ -45,6 +84,7 @@ export function recordedCount(): number {
 export function beginRecording(): void {
 	_markerId = sessionLog.entries[0]?.id ?? null;
 	_recording = true;
+	persistRecording();
 }
 
 /** Return the captured slice (newest-first, matching sessionLog storage). */
@@ -55,10 +95,11 @@ export function captureSection(): LogEntry[] {
 	return sessionLog.entries.slice(0, idx);
 }
 
-/** Stop recording and return the captured section (does not reset state). */
+/** Stop recording and return the captured section (does not reset the marker). */
 export function stopRecording(): LogEntry[] {
 	const section = captureSection();
 	_recording = false;
+	persistRecording();
 	return section;
 }
 
@@ -66,4 +107,5 @@ export function stopRecording(): LogEntry[] {
 export function cancelRecording(): void {
 	_recording = false;
 	_markerId = null;
+	persistRecording();
 }

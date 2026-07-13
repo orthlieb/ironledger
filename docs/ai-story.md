@@ -14,11 +14,18 @@ normalized text back.
    key and model. The key is encrypted at rest and never returned to the client
    (the config view only reports `hasKey`). **Test** sends a 1-token request
    server-side to validate the key. The **Setup Instructions** (the system
-   prompt) are a single global preference in the main Settings — shared across
-   storytellers, not per-provider — stored client-side in `localStorage`.
+   prompt) are a single global preference — shared across storytellers, not
+   per-provider — stored client-side in `localStorage`. The global default is
+   edited in the main Settings. The Generate/Regenerate dialog also shows the
+   Setup Instructions, seeded from that default, but edits there are a
+   **per-story tweak** that applies to just that generation and never write back
+   to the global default.
 3. **Record** (Log toolbar → ● Story → Begin Recording): drops a marker at the
    current top of the log. Every entry prepended until ■ Stop becomes the
-   section.
+   section. The recording (active flag + marker id) is persisted to
+   `localStorage`, so a mid-recording reload or session timeout keeps the start
+   point — the marker id survives because the log is global and re-fetched, and
+   entry ids are stable.
 4. **Generate** (■ Stop opens the dialog): the captured section is serialized to
    prompt text, an optional preface is prepended, and the prompt is streamed to
    the active storyteller via `/api/ai/generate`. Live markdown preview.
@@ -38,10 +45,10 @@ normalized text back.
 | File                                   | Responsibility                                                                                        |
 | -------------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | `lib/aiSettings.svelte.ts`             | Server-config cache (providers, active, `hasKey`); mutations; global `setup` + `includePreface` prefs |
-| `lib/storyRecorder.svelte.ts`          | Recording state, marker, `captureSection()`                                                           |
+| `lib/storyRecorder.svelte.ts`          | Recording state, marker, `captureSection()` — persisted to `localStorage` (survives reload/logout)    |
 | `lib/aiSerialize.ts`                   | Log → prompt text, entity scan, preface, `parseStorySource` (pure/testable)                           |
 | `lib/aiStream.ts`                      | Client SSE reader for `/api/ai/generate` (unified `{text}`/`{done}`/`{error}`)                        |
-| `lib/components/StoryDialog.svelte`    | Setup / generate / regenerate UI + orchestration + editable output box                                |
+| `lib/components/StoryDialog.svelte`    | Setup / generate / regenerate UI + orchestration + editable output box + per-story setup-prompt tweak |
 | `lib/components/SettingsDialog.svelte` | AI Storyteller selector (None / Claude / ChatGPT / Gemini) + global Setup Instructions                |
 | `lib/components/AiConfigDialog.svelte` | Per-provider key / model / Test dialog                                                                |
 | `lib/components/LogPanel.svelte`       | ● Story toggle, ⟳ regenerate button                                                                   |

@@ -59,6 +59,11 @@
 	let prefaceText = $state(''); // "Cast & setting" block ('' if no context)
 	let logText = $state(''); // serialized captured log section
 	let includePreface = $state(true); // toggle — persisted in aiSettings
+	// Editable setup instructions (the system prompt) for THIS generation. Seeded
+	// from the global preference each time the generate dialog opens; edits are a
+	// per-story tweak and never write back to the global default (change that in
+	// Settings). Sent as `system` on Start.
+	let setupText = $state('');
 	// Final prompt = optional preface + the events. Reacts to the toggle so the
 	// token estimate and Start payload update live when the checkbox flips.
 	const promptText = $derived(
@@ -167,6 +172,7 @@
 
 	export function openGenerate() {
 		mode = 'generate';
+		setupText = getSetup();
 		loadAiConfig();
 		const section = captureSection();
 		capturedCount = section.length;
@@ -204,6 +210,7 @@
 		if (!parsed) return; // not a regeneratable Story entry
 
 		mode = 'generate';
+		setupText = getSetup();
 		loadAiConfig();
 		regenerating = true;
 		regenerateEntryId = entryId;
@@ -258,7 +265,7 @@
 		abortCtl = new AbortController();
 		await streamStory({
 			user: promptText,
-			system: getSetup(),
+			system: setupText,
 			signal: abortCtl.signal,
 			onText: (acc) => {
 				output = acc;
@@ -327,6 +334,21 @@
 		onclose={close}
 	/>
 
+	{#snippet setupField()}
+		<label class="sd-field">
+			<span class="sd-label">Setup Instructions</span>
+			<textarea
+				class="sd-input sd-setup"
+				rows="4"
+				placeholder="Tone, POV, tense, character voice…"
+				bind:value={setupText}
+			></textarea>
+			<span class="sd-hint sd-hint-tight">
+				Seeded from your Settings default; changes apply to this story only.
+			</span>
+		</label>
+	{/snippet}
+
 	<div class="sd-body">
 		{#if mode === 'setup'}
 			<div class="sd-hint">
@@ -376,6 +398,8 @@
 					<span class="sd-hint sd-hint-tight">Shown as the log entry's heading.</span>
 				</label>
 			{/if}
+
+			{@render setupField()}
 
 			<div class="sd-output-wrap">
 				{#if doneStreaming && output && editingOutput}
@@ -493,6 +517,11 @@
 	.sd-input:focus {
 		outline: none;
 		border-color: var(--text-accent);
+	}
+	.sd-setup {
+		resize: vertical;
+		min-height: 60px;
+		line-height: 1.4;
 	}
 	.sd-hint {
 		font-family: var(--font-ui);
