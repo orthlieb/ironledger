@@ -16,6 +16,7 @@
 	import type { DiceCtx } from '$lib/diceContext.svelte.js';
 	import type { PreconditionContext } from '$lib/preconditions.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
+	import { matchNoteHtml } from '$lib/rollMatch.js';
 	import {
 		loadMoves,
 		getVisibleMoves,
@@ -590,6 +591,7 @@
 				`<strong>${outcomeLabel(hits1, hits2)}</strong>${matchSpan}` +
 				`</div>`,
 		);
+		parts.push(matchNoteHtml(hits1, hits2, isMatch));
 
 		let outcomeHtml = getOutcomeHtml(selectedMove, hits1, hits2);
 		if (outcomeHtml) {
@@ -711,6 +713,7 @@
 				`<strong>${outcomeLabel(hits1, hits2)}</strong>${matchSpan}` +
 				`</div>`,
 		);
+		parts.push(matchNoteHtml(hits1, hits2, isMatch));
 
 		let outcomeHtml = getOutcomeHtml(selectedMove, hits1, hits2);
 		if (outcomeHtml) {
