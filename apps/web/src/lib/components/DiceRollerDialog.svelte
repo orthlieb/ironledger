@@ -10,6 +10,7 @@
 	 * 3D dice animation runs via @3d-dice/dice-box-threejs (CDN, lazy-loaded).
 	 */
 	import { appendLog } from '$lib/log.svelte.js';
+	import { matchNoteHtml } from '$lib/rollMatch.js';
 	import { rollDie, rollD100, animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
 	import type { DiceCtx } from '$lib/diceContext.svelte.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
@@ -158,6 +159,7 @@
 				`<strong>${outcomeLabel(hits1, hits2)}</strong>${matchSpan}` +
 				`</div>`,
 		);
+		parts.push(matchNoteHtml(hits1, hits2, isMatch));
 
 		const html = parts.join('');
 

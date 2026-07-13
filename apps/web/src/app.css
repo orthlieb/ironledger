@@ -762,6 +762,15 @@ dialog label {
 	color: var(--text-accent);
 	font-style: italic;
 }
+/* Explanatory note for a matched-dice twist (strong hit / miss only). */
+.roll-match-note {
+	font-family: var(--font-ui);
+	font-size: 0.72rem;
+	color: var(--text-muted);
+	font-style: italic;
+	line-height: 1.4;
+	margin-top: 2px;
+}
 
 /* Disabled rule link — canonical move text is kept verbatim, but the action it
    describes doesn't apply right now (e.g. an Endure Harm miss clause when the

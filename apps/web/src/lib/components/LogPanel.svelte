@@ -24,6 +24,7 @@
 	import { OVERFLOW_RULES, FLOOR_OVERFLOW_RULES } from '$lib/cascadeRules.js';
 	import type { DiceCtx } from '$lib/diceContext.svelte.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
+	import { matchNoteHtml } from '$lib/rollMatch.js';
 	import { momentumReset } from '$lib/character.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { findMove } from '$lib/moveStore.svelte.js';
@@ -175,7 +176,8 @@
 		const newOutcomeLine =
 			`<div class="${outcomeClass(newHits1, newHits2)}">` +
 			`<strong>${outcomeLabel(newHits1, newHits2)}</strong>${matchSpan}` +
-			`</div>`;
+			`</div>` +
+			matchNoteHtml(newHits1, newHits2, isMatch);
 
 		// New outcome text from move definition
 		const move = findMove(moveId);

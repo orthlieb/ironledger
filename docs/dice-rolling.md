@@ -69,7 +69,25 @@ The core Ironsworn resolution mechanic: **1d6 + stat + adds vs 2d10**.
   <strong>Strong Hit</strong>
   <span class="roll-match">with a match!</span>
 </div>
+<div class="roll-match-note">
+  A positive twist: beyond the clear success, something unexpected and good happens. Envision it, or
+  Ask the Oracle.
+</div>
 ```
+
+**Matched-dice note:** In Ironsworn a match only carries special meaning on a
+**strong hit** or a **miss** — it signals a twist. `matchNoteHtml()`
+(`$lib/rollMatch.ts`) appends an explanatory `.roll-match-note` line after the
+outcome:
+
+- **Strong hit + match** → a positive twist (unexpected opportunity / broader effect).
+- **Miss + match** → a dangerous turn (serious complication / new threat).
+- **Weak hit + match** → no note (no special rule in core Ironsworn).
+
+The helper is shared by all four roll sites (DiceRollerDialog, MovesDialog action
+
+- progress rolls, and LogPanel's burn-momentum re-roll) so the text is defined
+  once. Unit test: `tests/unit/rollMatch.test.ts`.
 
 **Session log title:** `Action (Heart)` (or whichever stat was chosen).
 
@@ -88,6 +106,7 @@ These classes are defined globally in `app.css` so they work both in the DiceRol
 | `.roll-outcome-weak`   | Weak Hit text (amber)             |
 | `.roll-outcome-miss`   | Miss text (red)                   |
 | `.roll-match`          | "with a match!" tag (accent)      |
+| `.roll-match-note`     | Matched-dice twist note (muted)   |
 
 ---
 
