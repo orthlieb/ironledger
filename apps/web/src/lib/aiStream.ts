@@ -40,6 +40,13 @@ export async function streamStory(opts: StreamOptions): Promise<void> {
 		});
 
 		if (!res.ok || !res.body) {
+			// A 401 means the whole session lapsed (the access token expired and the
+			// silent refresh failed) — not an AI-specific failure. Give a clear
+			// re-login message instead of the raw "Not authenticated".
+			if (res.status === 401) {
+				onError?.('Your session has expired. Please sign in again, then retry.');
+				return;
+			}
 			let msg = `HTTP ${res.status}`;
 			try {
 				const body = (await res.json()) as { error?: string; message?: string };
