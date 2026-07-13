@@ -161,9 +161,10 @@ export type NewSessionLogEntry = typeof sessionLogEntries.$inferInsert;
 
 // ---------------------------------------------------------------------------
 // ai_config
-// Per-provider AI companion config, one row per (user, provider). The provider
+// Per-provider AI storyteller config, one row per (user, provider). The provider
 // API key is stored encrypted at rest (ciphertext/iv/tag); at most one provider
-// is `active` per user (none = the "None" companion). See migration 0016.
+// is `active` per user (none = the "None" storyteller). The system prompt is a
+// client-side global preference, not stored here. See migrations 0016–0018.
 // ---------------------------------------------------------------------------
 export const aiConfig = pgTable(
   'ai_config',
@@ -176,7 +177,6 @@ export const aiConfig = pgTable(
     keyIv: text('key_iv'),
     keyTag: text('key_tag'),
     model: text('model'),
-    setup: text('setup'),
     active: boolean('active').notNull().default(false),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

@@ -1,8 +1,8 @@
 /**
- * AI companion config service — per-provider settings, one row per
+ * AI storyteller config service — per-provider settings, one row per
  * (user, provider). Provider API keys are stored encrypted at rest and never
  * returned to clients (the config view exposes only `hasKey`). At most one
- * provider is active per user; none active = the "None" companion.
+ * provider is active per user; none active = the "None" storyteller.
  */
 import { withUserContext } from '../db/index.js';
 import { sql } from 'drizzle-orm';
@@ -26,7 +26,7 @@ export const DEFAULT_MODEL: Record<AiProvider, string> = {
 /** The encryption secret, or throw a clear error if the feature is unconfigured. */
 function encSecret(): string {
   if (!config.AI_KEY_ENC_SECRET) {
-    throw new Error('AI_KEY_ENC_SECRET is not configured — AI companions are unavailable.');
+    throw new Error('AI_KEY_ENC_SECRET is not configured — AI storytellers are unavailable.');
   }
   return config.AI_KEY_ENC_SECRET;
 }
@@ -43,7 +43,6 @@ export interface AiConfigView {
 interface Row {
   provider: AiProvider;
   model: string | null;
-  setup: string | null;
   active: boolean;
   key_ciphertext: string | null;
   key_iv: string | null;
@@ -103,7 +102,7 @@ export async function setProviderConfig(
   });
 }
 
-/** Select the active companion (or `null` for None). */
+/** Select the active storyteller (or `null` for None). */
 export async function setActiveProvider(
   userId: string,
   provider: AiProvider | null,
@@ -121,7 +120,7 @@ export async function setActiveProvider(
   });
 }
 
-/** Clear the stored key for a provider (leaves model/setup). */
+/** Clear the stored key for a provider (leaves the model). */
 export async function clearProviderKey(userId: string, provider: AiProvider): Promise<void> {
   await withUserContext(userId, (tx) =>
     tx.execute(sql`
@@ -155,7 +154,6 @@ export interface ActiveAiConfig {
   provider: AiProvider;
   apiKey: string;
   model: string;
-  setup: string;
 }
 
 /**
@@ -165,7 +163,7 @@ export interface ActiveAiConfig {
 export async function getActiveForGeneration(userId: string): Promise<ActiveAiConfig | null> {
   const rows = (await withUserContext(userId, (tx) =>
     tx.execute(sql`
-      SELECT provider, model, setup, key_ciphertext, key_iv, key_tag
+      SELECT provider, model, key_ciphertext, key_iv, key_tag
       FROM ai_config WHERE user_id = ${userId}::uuid AND active = true LIMIT 1
     `),
   )) as unknown as Row[];
@@ -182,6 +180,5 @@ export async function getActiveForGeneration(userId: string): Promise<ActiveAiCo
     provider: r.provider,
     apiKey,
     model: r.model ?? DEFAULT_MODEL[r.provider],
-    setup: r.setup ?? '',
   };
 }

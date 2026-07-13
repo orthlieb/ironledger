@@ -50,14 +50,15 @@ normalized text back.
 
 ### API (`apps/api`)
 
-| File                                      | Responsibility                                                                                      |
-| ----------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `services/aiCrypto.ts`                    | AES-256-GCM encrypt/decrypt (key derived from `AI_KEY_ENC_SECRET`)                                  |
-| `services/aiConfigService.ts`             | Per-provider config CRUD; encrypts keys; decrypts only for test/generation                          |
-| `services/aiProvider.ts`                  | Server-side provider calls + normalized text stream (Claude, ChatGPT, Gemini)                       |
-| `routes/ai.ts`                            | `GET /config`, `PUT /active`, `PUT /provider/:p`, `DELETE …/key`, `POST /test/:p`, `POST /generate` |
-| `db/migrations/0016_ai_config.sql`        | `ai_config` table (RLS, one-active-per-user index), keys stored as ciphertext                       |
-| `db/migrations/0017_ai_config_gemini.sql` | Widen the provider CHECK constraint to allow `gemini`                                               |
+| File                                          | Responsibility                                                                                      |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `services/aiCrypto.ts`                        | AES-256-GCM encrypt/decrypt (key derived from `AI_KEY_ENC_SECRET`)                                  |
+| `services/aiConfigService.ts`                 | Per-provider config CRUD; encrypts keys; decrypts only for test/generation                          |
+| `services/aiProvider.ts`                      | Server-side provider calls + normalized text stream (Claude, ChatGPT, Gemini)                       |
+| `routes/ai.ts`                                | `GET /config`, `PUT /active`, `PUT /provider/:p`, `DELETE …/key`, `POST /test/:p`, `POST /generate` |
+| `db/migrations/0016_ai_config.sql`            | `ai_config` table (RLS, one-active-per-user index), keys stored as ciphertext                       |
+| `db/migrations/0017_ai_config_gemini.sql`     | Widen the provider CHECK constraint to allow `gemini`                                               |
+| `db/migrations/0018_ai_config_drop_setup.sql` | Drop the vestigial `setup` column (system prompt is now a client-side pref)                         |
 
 ## Preface — "Cast & setting"
 

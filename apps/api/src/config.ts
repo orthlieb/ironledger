@@ -43,10 +43,10 @@ const schema = z.object({
   // ── HaveIBeenPwned ────────────────────────────────────────────────────────
   HIBP_API_KEY: z.string().optional(),
 
-  // ── AI companion ──────────────────────────────────────────────────────────
+  // ── AI storyteller ──────────────────────────────────────────────────────────
   // Secret used to derive the AES-256-GCM key that encrypts users' provider
   // API keys at rest. High-entropy; rotate carefully (rotation re-encrypts).
-  // Optional: only required to use the (opt-in) AI companion feature — deploys
+  // Optional: only required to use the (opt-in) AI storyteller feature — deploys
   // that don't use it needn't set it. AI operations throw clearly if it's unset.
   AI_KEY_ENC_SECRET: z.string().min(16).optional(),
 

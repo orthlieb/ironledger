@@ -34,6 +34,7 @@ Each entry explains **what** was chosen, **why** it was chosen, and
 23. [Audit Trail](#23-audit-trail)
 24. [v2 Deck-of-Cards UI Layout](#24-v2-deck-of-cards-ui-layout)
 25. [E2E Testing Strategy: Idempotent Suites](#25-e2e-testing-strategy-idempotent-suites)
+26. [AI Storyteller — Server-Side Encrypted Keys](#26-ai-storyteller--server-side-encrypted-keys)
 
 ---
 
@@ -625,6 +626,44 @@ Fastify rejects body-less requests with a JSON content-type as 400. Separate
 **Test user credentials:** `test@ironledger.local` / `IronLedgerTest2024!`
 with `captchaToken: 'dev-bypass'`. Separate from the dev user
 (`dev@ironledger.local`) so test runs never pollute dev data.
+
+---
+
+## 26. AI Storyteller — Server-Side Encrypted Keys
+
+**Decision:** The optional AI Storyteller (turn a session-log slice into prose)
+keeps each user's provider API key **on the server, encrypted at rest**, and
+runs generation server-side. The browser never holds a key or calls a provider
+directly — it POSTs the prompt to `/api/ai/generate`, which decrypts the key,
+calls the active provider (Claude / ChatGPT / Gemini), and streams a normalized
+SSE (`{text}` / `{done}` / `{error}`) back. Config lives in the `ai_config`
+table (one row per user+provider, RLS-isolated, one `active` per user).
+
+**Why:**
+
+- **Don't ship keys to the client.** The prior design stored the key in the
+  browser's `localStorage`, readable by any script on the origin. Server-side
+  storage removes that exposure.
+- **CORS.** OpenAI and Gemini block direct browser calls; a server-side caller
+  sidesteps this without per-provider proxy hacks.
+- **Encrypt at rest** (AES-256-GCM, key derived from the `AI_KEY_ENC_SECRET`
+  env var via SHA-256) so a DB dump doesn't leak plaintext keys. This is **not**
+  zero-knowledge — the server must decrypt to call the provider — but it raises
+  the bar against at-rest exposure.
+
+**How:**
+
+- `aiCrypto.ts` — pure AES-256-GCM encrypt/decrypt (ciphertext/iv/tag, base64).
+- `aiConfigService.ts` — CRUD; the settings view exposes only `hasKey`, never
+  the key. `aiProvider.ts` — one `streamProvider` dispatcher + `testProvider`
+  per provider.
+- Migrations `0016` (table), `0017` (allow `gemini`), `0018` (drop the initial
+  per-provider `setup` column — the system prompt became a single global
+  client-side preference).
+
+**Deployment note:** `AI_KEY_ENC_SECRET` is optional at boot (the app runs
+without AI) but **required to use the feature**; rotating it invalidates every
+stored provider key. See [ai-story.md](ai-story.md) for the full feature spec.
 
 ---
 
