@@ -158,7 +158,16 @@ async function* streamGemini(p: StreamParams): AsyncGenerator<string> {
     body: JSON.stringify({
       ...(p.system ? { systemInstruction: { parts: [{ text: p.system }] } } : {}),
       contents: [{ role: 'user', parts: [{ text: p.user }] }],
-      generationConfig: { maxOutputTokens: p.maxTokens ?? 4000 },
+      generationConfig: {
+        maxOutputTokens: p.maxTokens ?? 4000,
+        // Disable thinking mode. On 2.5-generation models (which is what the
+        // -latest aliases point at) thinking is on by default, and its tokens
+        // are drawn from maxOutputTokens — so a big enough thinking phase
+        // exhausts the budget before any user-visible text is produced, and
+        // the stream closes with zero deltas. `thinkingBudget: 0` disables it;
+        // 2.0-era models silently ignore the field.
+        thinkingConfig: { thinkingBudget: 0 },
+      },
     }),
   });
   if (!res.ok) {
