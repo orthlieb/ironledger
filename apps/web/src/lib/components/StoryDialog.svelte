@@ -96,6 +96,11 @@
 	});
 	let abortCtl: AbortController | null = null;
 	let outputEl = $state<HTMLDivElement | null>(null);
+	// Diagnostic pane — populated with wire-level info from the server so we can
+	// see why a story might come back empty. Enable with the checkbox on the
+	// generate view. Temporary while we chase the Gemini "no output" bug.
+	let debugOn = $state(false);
+	let debugLog = $state<string[]>([]);
 
 	function autoScroll() {
 		if (outputEl) outputEl.scrollTop = outputEl.scrollHeight;
@@ -197,6 +202,7 @@
 		doneStreaming = false;
 		editingOutput = false;
 		errorMsg = '';
+		debugLog = [];
 		dialogEl?.showModal();
 	}
 
@@ -227,6 +233,7 @@
 		doneStreaming = false;
 		editingOutput = false;
 		errorMsg = '';
+		debugLog = [];
 		dialogEl?.showModal();
 	}
 
@@ -263,13 +270,18 @@
 		// Snapshot the exact prompt being sent so Save can persist it for regenerate.
 		usedUser = promptText;
 		abortCtl = new AbortController();
+		if (debugOn) debugLog = [];
 		await streamStory({
 			user: promptText,
 			system: setupText,
 			signal: abortCtl.signal,
+			debug: debugOn,
 			onText: (acc) => {
 				output = acc;
 				queueMicrotask(autoScroll);
+			},
+			onDebug: (msg) => {
+				debugLog = [...debugLog, msg];
 			},
 			onDone: (acc) => {
 				output = acc;
@@ -432,6 +444,16 @@
 
 			{#if errorMsg}
 				<div class="sd-error">{errorMsg}</div>
+			{/if}
+
+			<!-- Diagnostic pane — temporary while we chase the Gemini "no output"
+			     bug. Toggle on, click Start, and the server's wire-level info
+			     shows up in the pane below. -->
+			<label class="sd-debug-toggle">
+				<input type="checkbox" bind:checked={debugOn} /> Debug
+			</label>
+			{#if debugOn && debugLog.length > 0}
+				<pre class="sd-debug-log">{debugLog.join('\n')}</pre>
 			{/if}
 		{/if}
 	</div>
@@ -637,6 +659,32 @@
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		color: var(--color-danger, #ef4444);
+	}
+
+	.sd-debug-toggle {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-family: var(--font-ui);
+		font-size: 0.7rem;
+		color: var(--text-muted);
+		cursor: pointer;
+	}
+	.sd-debug-log {
+		font-family: var(--font-mono, 'Roboto Mono', ui-monospace, monospace);
+		font-size: 0.68rem;
+		line-height: 1.4;
+		color: var(--text-muted);
+		background: var(--bg-inset);
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+		padding: 6px 8px;
+		max-height: 20vh;
+		overflow: auto;
+		overscroll-behavior: contain;
+		white-space: pre-wrap;
+		word-break: break-all;
+		margin: 0;
 	}
 
 	.sd-footer {
