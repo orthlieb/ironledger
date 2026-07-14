@@ -15,7 +15,7 @@ afterEach(() => vi.unstubAllGlobals());
 describe('testProvider — error surfacing', () => {
   it('reports success on a 200', async () => {
     stubFetch(200, {});
-    expect(await testProvider('gemini', 'k', 'gemini-2.5-flash')).toEqual({ ok: true });
+    expect(await testProvider('gemini', 'k', 'gemini-flash-latest')).toEqual({ ok: true });
   });
 
   it('surfaces the provider message on a 404 (bad/unavailable model)', async () => {
@@ -36,13 +36,19 @@ describe('testProvider — error surfacing', () => {
   it('surfaces the provider message on a 400 (e.g. invalid key)', async () => {
     const message = 'API key not valid. Please pass a valid API key.';
     stubFetch(400, { error: { message } });
-    expect(await testProvider('gemini', 'bad', 'gemini-2.5-flash')).toEqual({ ok: false, message });
+    expect(await testProvider('gemini', 'bad', 'gemini-flash-latest')).toEqual({
+      ok: false,
+      message,
+    });
   });
 
   it('surfaces the provider message on a 429 (e.g. depleted credits, not just rate-limit)', async () => {
     const message = 'Your prepayment credits are depleted. Please go to AI Studio to add billing.';
     stubFetch(429, { error: { code: 429, message } });
-    expect(await testProvider('gemini', 'k', 'gemini-2.5-flash')).toEqual({ ok: false, message });
+    expect(await testProvider('gemini', 'k', 'gemini-flash-latest')).toEqual({
+      ok: false,
+      message,
+    });
   });
 
   it('falls back to a friendly message for a bodyless 401', async () => {

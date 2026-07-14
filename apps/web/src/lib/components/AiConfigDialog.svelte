@@ -19,7 +19,6 @@
 		PROVIDER_LABEL,
 		PROVIDER_HELP,
 		MODELS,
-		DEFAULT_MODEL,
 		providerView,
 		loadAiConfig,
 		saveProviderConfig,
@@ -41,6 +40,8 @@
 	const label = $derived(PROVIDER_LABEL[provider]);
 	const help = $derived(PROVIDER_HELP[provider]);
 	const models = $derived(MODELS[provider]);
+	/** True once a valid model from the current provider's list is picked. */
+	const modelPicked = $derived(!!model && models.some((m) => m.id === model));
 
 	export async function openFor(p: AiProvider) {
 		provider = p;
@@ -52,7 +53,10 @@
 		await loadAiConfig(true);
 		const view = providerView(p);
 		hasStoredKey = view.hasKey;
-		model = view.model ?? DEFAULT_MODEL[p];
+		// If the stored model is still in the provider's list, keep it.
+		// Otherwise clear it so the user is forced to pick — happens when a
+		// user's saved model gets retired (e.g. Gemini 2.0 → gemini-flash-latest).
+		model = view.model && MODELS[p].some((m) => m.id === view.model) ? view.model : '';
 		dialogEl?.showModal();
 	}
 
@@ -138,7 +142,8 @@
 					class="ac-key-btn"
 					type="button"
 					onclick={handleTest}
-					disabled={testState === 'testing' || (!keyInput.trim() && !hasStoredKey)}
+					disabled={testState === 'testing' || !modelPicked || (!keyInput.trim() && !hasStoredKey)}
+					title={!modelPicked ? 'Pick a model first' : undefined}
 				>
 					{testState === 'testing' ? 'Testing…' : 'Test'}
 				</button>
@@ -166,17 +171,25 @@
 
 		<div class="ac-field">
 			<span class="ac-label">Model</span>
-			<select class="ac-input" bind:value={model}>
+			<select class="ac-input" bind:value={model} required>
+				<option value="" disabled>Select a model…</option>
 				{#each models as m (m.id)}
 					<option value={m.id}>{m.label} — {m.tagline}</option>
 				{/each}
 			</select>
+			{#if !modelPicked}
+				<span class="ac-hint ac-hint-tight">A model must be picked to save or test.</span>
+			{/if}
 		</div>
 	</div>
 
 	<div class="ac-footer">
 		<button class="btn" onclick={close}>Cancel</button>
-		<button class="btn btn-primary" onclick={handleSave} disabled={saveState === 'saving'}>
+		<button
+			class="btn btn-primary"
+			onclick={handleSave}
+			disabled={saveState === 'saving' || !modelPicked}
+		>
 			{saveState === 'saving' ? 'Saving…' : 'Save'}
 		</button>
 	</div>
