@@ -38,9 +38,12 @@
 		setActiveProvider,
 		getSetup,
 		setSetup,
+		getAiDebug,
+		setAiDebug,
 	} from '$lib/aiSettings.svelte.js';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import AiConfigDialog from '$lib/components/AiConfigDialog.svelte';
+	import { page } from '$app/state';
 
 	import autoSvg from '$icons/circle-half-stroke-solid.svg?raw';
 	import darkSvg from '$icons/moon-solid.svg?raw';
@@ -146,6 +149,18 @@
 	}
 
 	// ---------------------------------------------------------------------------
+	// AI Debug — admin-only toggle. Surfaces the wire-level diagnostic pane in
+	// the Story dialog so an admin can diagnose provider issues in production
+	// without pushing a code change.
+	// ---------------------------------------------------------------------------
+	const isAdmin = $derived(page.data?.user?.role === 'admin');
+	let aiDebug = $state(false);
+	function applyAiDebug(v: boolean) {
+		aiDebug = v;
+		setAiDebug(v);
+	}
+
+	// ---------------------------------------------------------------------------
 	// Dialog
 	// ---------------------------------------------------------------------------
 	let dialogEl = $state<HTMLDialogElement | null>(null);
@@ -159,6 +174,7 @@
 		yrtOn = isYrtEnabled();
 		fontDisplay = savedFont();
 		aiSetup = getSetup();
+		aiDebug = getAiDebug();
 		activeProvider = getActiveProvider();
 		loadAiConfig(true).then(() => {
 			activeProvider = getActiveProvider();
@@ -373,6 +389,29 @@
 					The system prompt sent for every story, whichever storyteller is active.
 				</span>
 			</div>
+
+			{#if isAdmin}
+				<div class="sd-row">
+					<span class="sd-label">AI Debug</span>
+					<div class="sd-seg" role="group" aria-label="AI wire-level diagnostic pane">
+						<button
+							class="sd-seg-btn"
+							class:active={aiDebug}
+							onclick={() => applyAiDebug(true)}
+							aria-pressed={aiDebug}
+							data-tooltip="Surface a Debug checkbox in the Story dialog that logs raw provider frames"
+							>On</button
+						>
+						<button
+							class="sd-seg-btn"
+							class:active={!aiDebug}
+							onclick={() => applyAiDebug(false)}
+							aria-pressed={!aiDebug}
+							data-tooltip="Hide the Debug pane">Off</button
+						>
+					</div>
+				</div>
+			{/if}
 		{:else}
 			<div class="sd-hint sd-hint-tight">Pick a storyteller to turn session logs into prose.</div>
 		{/if}

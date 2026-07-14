@@ -202,3 +202,24 @@ export function setIncludePreface(v: boolean): void {
 	if (v) localStorage.removeItem(PREFACE_STORAGE);
 	else localStorage.setItem(PREFACE_STORAGE, 'false');
 }
+
+// ---------------------------------------------------------------------------
+// AI Debug toggle — surfaces the wire-level diagnostic pane in the Story
+// dialog. Gated behind an admin-only Settings row (so end users never see
+// it) but persisted per-browser so an admin can turn it on for their own
+// session to diagnose problems in production without a code change.
+// ---------------------------------------------------------------------------
+
+const DEBUG_STORAGE = 'ironledger:ai:debug';
+
+let _aiDebug = $state(readBool(DEBUG_STORAGE, false));
+
+export function getAiDebug(): boolean {
+	return _aiDebug;
+}
+export function setAiDebug(v: boolean): void {
+	_aiDebug = v;
+	if (typeof window === 'undefined') return;
+	if (v) localStorage.setItem(DEBUG_STORAGE, 'true');
+	else localStorage.removeItem(DEBUG_STORAGE);
+}
