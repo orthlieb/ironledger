@@ -35,7 +35,10 @@ async function* readSse(
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
-    buffer += decoder.decode(value, { stream: true });
+    // Normalize CRLF → LF. Gemini's SSE frames terminate in \r\n\r\n; if we
+    // only look for \n\n we skip every frame because \r sits between the two
+    // \n bytes. Claude and OpenAI already use LF so this is a no-op for them.
+    buffer += decoder.decode(value, { stream: true }).replace(/\r/g, '');
     let sep: number;
     while ((sep = buffer.indexOf('\n\n')) !== -1) {
       const frame = buffer.slice(0, sep);
