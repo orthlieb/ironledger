@@ -198,21 +198,27 @@ export function streamProvider(provider: AiProvider, p: StreamParams): AsyncGene
 
 type TestResult = { ok: true } | { ok: false; message: string };
 
-function classifyStatus(status: number, body400?: string): TestResult {
-  if (status === 401 || status === 403)
-    return { ok: false, message: `Key rejected (${status}). Check the value.` };
-  if (status === 429) return { ok: false, message: 'Rate-limited (429). Try again shortly.' };
-  if (status === 400) return { ok: false, message: body400 ?? 'Bad request (400).' };
-  return { ok: false, message: `HTTP ${status}.` };
-}
-
-async function body400Message(res: Response): Promise<string> {
+/** Best-effort provider error message from a failed response body (read once). */
+async function providerErrorMessage(res: Response): Promise<string | undefined> {
   try {
     const body = (await res.json()) as { error?: { message?: string } };
-    return body.error?.message ?? 'Bad request (400).';
+    return body.error?.message;
   } catch {
-    return 'Bad request (400).';
+    return undefined;
   }
+}
+
+function classifyStatus(status: number, detail?: string): TestResult {
+  // The provider's own message is the most accurate — invalid key, model not
+  // found for this key, credits depleted, quota exceeded, etc. Prefer it, and
+  // fall back to a friendly per-status message only when the body has none.
+  if (detail) return { ok: false, message: detail };
+  if (status === 401 || status === 403)
+    return { ok: false, message: `Key rejected (${status}). Check the value.` };
+  if (status === 429) return { ok: false, message: 'Rate-limited or out of quota (429).' };
+  if (status === 404) return { ok: false, message: 'Model not found (404). Check the model name.' };
+  if (status === 400) return { ok: false, message: 'Bad request (400).' };
+  return { ok: false, message: `HTTP ${status}.` };
 }
 
 export async function testProvider(
@@ -232,7 +238,7 @@ export async function testProvider(
         body: JSON.stringify({ model, max_tokens: 1, messages: [{ role: 'user', content: 'hi' }] }),
       });
       if (res.ok) return { ok: true };
-      return classifyStatus(res.status, res.status === 400 ? await body400Message(res) : undefined);
+      return classifyStatus(res.status, await providerErrorMessage(res));
     }
 
     if (provider === 'chatgpt') {
@@ -246,7 +252,7 @@ export async function testProvider(
         }),
       });
       if (res.ok) return { ok: true };
-      return classifyStatus(res.status, res.status === 400 ? await body400Message(res) : undefined);
+      return classifyStatus(res.status, await providerErrorMessage(res));
     }
 
     // gemini
@@ -259,7 +265,7 @@ export async function testProvider(
       }),
     });
     if (res.ok) return { ok: true };
-    return classifyStatus(res.status, res.status === 400 ? await body400Message(res) : undefined);
+    return classifyStatus(res.status, await providerErrorMessage(res));
   } catch (err) {
     return { ok: false, message: err instanceof Error ? err.message : 'Network error.' };
   }

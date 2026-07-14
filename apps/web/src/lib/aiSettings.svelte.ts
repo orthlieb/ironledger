@@ -53,15 +53,16 @@ export const MODELS: Record<AiProvider, ModelOption[]> = {
 		{ id: 'gpt-4o', label: 'GPT-4o', tagline: 'balanced prose' },
 	],
 	gemini: [
-		{ id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', tagline: 'cheap, fast' },
-		{ id: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro', tagline: 'higher quality' },
+		{ id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', tagline: 'cheap, fast' },
+		{ id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', tagline: 'higher quality' },
+		{ id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', tagline: 'previous gen' },
 	],
 };
 
 export const DEFAULT_MODEL: Record<AiProvider, string> = {
 	claude: 'claude-haiku-4-5',
 	chatgpt: 'gpt-4o-mini',
-	gemini: 'gemini-2.0-flash',
+	gemini: 'gemini-2.5-flash',
 };
 
 // The default system prompt — only used internally as the fallback for the
