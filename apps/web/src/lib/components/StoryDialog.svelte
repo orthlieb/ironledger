@@ -7,7 +7,8 @@
 	 *                  review/edit the setup instructions and model, then
 	 *                  Begin Recording (marker set on the log).
 	 *   • 'generate' — opened when the user hits ■ Stop Story. Streams the
-	 *                  prose from Claude, offers Copy / Save to Log / Discard.
+	 *                  prose from Claude, offers Try Again / Copy / Save to Log.
+	 *                  ✕ / Escape discards (recording is cleared on close).
 	 *
 	 * External API:
 	 *   ref.openSetup()      → mode = 'setup'
@@ -23,6 +24,7 @@
 		hasActiveStoryteller,
 		getActiveProvider,
 		getSetup,
+		getAiDebug,
 		PROVIDER_LABEL,
 		loadAiConfig,
 	} from '$lib/aiSettings.svelte.js';
@@ -96,9 +98,11 @@
 	});
 	let abortCtl: AbortController | null = null;
 	let outputEl = $state<HTMLDivElement | null>(null);
-	// Diagnostic pane — populated with wire-level info from the server so we can
-	// see why a story might come back empty. Enable with the checkbox on the
-	// generate view. Temporary while we chase the Gemini "no output" bug.
+	// Diagnostic pane — wire-level info from the server, gated behind an admin-
+	// only Settings toggle so end users never see it. `debugEnabled` mirrors the
+	// admin flag (set on open); `debugOn` is the per-generation checkbox the
+	// admin actually ticks.
+	let debugEnabled = $state(false);
 	let debugOn = $state(false);
 	let debugLog = $state<string[]>([]);
 
@@ -202,6 +206,8 @@
 		doneStreaming = false;
 		editingOutput = false;
 		errorMsg = '';
+		debugEnabled = getAiDebug();
+		debugOn = false;
 		debugLog = [];
 		dialogEl?.showModal();
 	}
@@ -233,12 +239,18 @@
 		doneStreaming = false;
 		editingOutput = false;
 		errorMsg = '';
+		debugEnabled = getAiDebug();
+		debugOn = false;
 		debugLog = [];
 		dialogEl?.showModal();
 	}
 
 	export function close() {
 		if (streaming) abortCtl?.abort();
+		// ✕ / Escape in fresh-generate mode should discard the recording (the
+		// user chose not to save). Regenerate has no active recording, and setup
+		// mode's marker isn't set yet.
+		if (mode === 'generate' && !regenerating) cancelRecording();
 		dialogEl?.close();
 	}
 
@@ -330,11 +342,18 @@
 		dialogEl?.close();
 	}
 
-	function handleDiscardAndClose() {
-		// Regenerate leaves the original entry untouched and must not clear an
-		// unrelated in-progress recording.
-		if (!regenerating) cancelRecording();
-		dialogEl?.close();
+	/**
+	 * Re-run generation over the same input without closing the dialog. Lets
+	 * the user iterate on prose (both fresh generate and regenerate) until
+	 * they're happy, at which point they Save to Log or ✕ out.
+	 */
+	function handleTryAgain() {
+		output = '';
+		doneStreaming = false;
+		editingOutput = false;
+		errorMsg = '';
+		// keep debugOn as-is; handleStart resets debugLog per run
+		handleStart();
 	}
 </script>
 
@@ -446,14 +465,16 @@
 				<div class="sd-error">{errorMsg}</div>
 			{/if}
 
-			<!-- Diagnostic pane — temporary while we chase the Gemini "no output"
-			     bug. Toggle on, click Start, and the server's wire-level info
-			     shows up in the pane below. -->
-			<label class="sd-debug-toggle">
-				<input type="checkbox" bind:checked={debugOn} /> Debug
-			</label>
-			{#if debugOn && debugLog.length > 0}
-				<pre class="sd-debug-log">{debugLog.join('\n')}</pre>
+			<!-- Diagnostic pane — gated behind the admin-only AI Debug setting so
+			     end users never see it. Toggle on, click Start, and the server's
+			     wire-level info shows up in the pane below. -->
+			{#if debugEnabled}
+				<label class="sd-debug-toggle">
+					<input type="checkbox" bind:checked={debugOn} /> Debug
+				</label>
+				{#if debugOn && debugLog.length > 0}
+					<pre class="sd-debug-log">{debugLog.join('\n')}</pre>
+				{/if}
 			{/if}
 		{/if}
 	</div>
@@ -465,11 +486,18 @@
 		{:else if streaming}
 			<button class="btn btn-danger" onclick={handleStop}>Stop</button>
 		{:else if doneStreaming}
-			<button class="btn" onclick={handleDiscardAndClose}>Discard</button>
+			<button
+				class="btn"
+				onclick={handleTryAgain}
+				disabled={!promptText.trim()}
+				title={regenerating ? 'Regenerate again' : 'Generate again'}
+				>{regenerating ? 'Regenerate' : 'Try Again'}</button
+			>
 			<button class="btn" onclick={handleCopy}>Copy</button>
-			<button class="btn btn-primary" onclick={handleSaveToLog}>Save to Log</button>
+			<button class="btn btn-primary" onclick={handleSaveToLog}
+				>{regenerating ? 'Save' : 'Save to Log'}</button
+			>
 		{:else}
-			<button class="btn" onclick={handleDiscardAndClose}>Discard</button>
 			<button class="btn btn-primary" onclick={handleStart} disabled={!promptText.trim()}
 				>Start</button
 			>
