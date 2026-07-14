@@ -202,6 +202,7 @@
 		doneStreaming = false;
 		editingOutput = false;
 		errorMsg = '';
+		debugLog = [];
 		dialogEl?.showModal();
 	}
 
@@ -232,6 +233,7 @@
 		doneStreaming = false;
 		editingOutput = false;
 		errorMsg = '';
+		debugLog = [];
 		dialogEl?.showModal();
 	}
 
