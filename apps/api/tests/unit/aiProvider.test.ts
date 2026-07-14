@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { testProvider } from '../../src/services/aiProvider.js';
+import { testProvider, streamProvider } from '../../src/services/aiProvider.js';
 
 /** Build a fake fetch that returns one canned Response. */
 function stubFetch(status: number, body: unknown) {
@@ -56,5 +56,65 @@ describe('testProvider — error surfacing', () => {
     const result = await testProvider('chatgpt', 'bad', 'gpt-4o-mini');
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.message).toMatch(/key rejected/i);
+  });
+});
+
+/**
+ * Build a fake fetch that returns a streaming Response whose body emits the
+ * given raw chunks (as strings). Used to drive streamProvider through the
+ * real SSE parser with controlled wire bytes.
+ */
+function stubStreamingFetch(chunks: string[]) {
+  const enc = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      for (const c of chunks) controller.enqueue(enc.encode(c));
+      controller.close();
+    },
+  });
+  const res = new Response(stream, {
+    status: 200,
+    headers: { 'content-type': 'text/event-stream' },
+  });
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(res));
+}
+
+describe('streamProvider — SSE line-ending handling', () => {
+  it('gemini: parses CRLF-terminated SSE frames (regression: \\r\\n\\r\\n was skipped)', async () => {
+    // Gemini terminates frames with \r\n\r\n, not \n\n. If readSse only looks
+    // for \n\n it silently drops every frame — the original bug behind #75.
+    stubStreamingFetch([
+      'data: {"candidates":[{"content":{"parts":[{"text":"Hello"}],"role":"model"},"index":0}]}\r\n\r\n',
+      'data: {"candidates":[{"content":{"parts":[{"text":", world"}],"role":"model"},"index":0}]}\r\n\r\n',
+    ]);
+    const out: string[] = [];
+    for await (const chunk of streamProvider('gemini', {
+      apiKey: 'k',
+      model: 'gemini-flash-latest',
+      system: '',
+      user: 'hi',
+      signal: new AbortController().signal,
+    })) {
+      out.push(chunk);
+    }
+    expect(out.join('')).toBe('Hello, world');
+  });
+
+  it('claude: parses LF-terminated SSE frames (unaffected by the CRLF fix)', async () => {
+    stubStreamingFetch([
+      'data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"Once"}}\n\n',
+      'data: {"type":"content_block_delta","delta":{"type":"text_delta","text":" upon"}}\n\n',
+    ]);
+    const out: string[] = [];
+    for await (const chunk of streamProvider('claude', {
+      apiKey: 'k',
+      model: 'claude-haiku-4-5',
+      system: '',
+      user: 'hi',
+      signal: new AbortController().signal,
+    })) {
+      out.push(chunk);
+    }
+    expect(out.join('')).toBe('Once upon');
   });
 });
