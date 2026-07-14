@@ -20,7 +20,7 @@ export function isAiProvider(v: unknown): v is AiProvider {
 export const DEFAULT_MODEL: Record<AiProvider, string> = {
   claude: 'claude-haiku-4-5',
   chatgpt: 'gpt-4o-mini',
-  gemini: 'gemini-2.0-flash',
+  gemini: 'gemini-2.5-flash',
 };
 
 /** The encryption secret, or throw a clear error if the feature is unconfigured. */
