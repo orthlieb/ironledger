@@ -52,7 +52,11 @@
 		await loadAiConfig(true);
 		const view = providerView(p);
 		hasStoredKey = view.hasKey;
-		model = view.model ?? DEFAULT_MODEL[p];
+		// Fall back to the default when the stored model is no longer offered
+		// (e.g. a provider retired it) — otherwise the <select> shows nothing
+		// selected but keeps sending the stale id, which fails as "model not found".
+		const stored = view.model;
+		model = MODELS[p].some((m) => m.id === stored) ? stored! : DEFAULT_MODEL[p];
 		dialogEl?.showModal();
 	}
 
