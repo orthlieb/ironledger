@@ -24,6 +24,10 @@ const generateBody = z.object({
   user: z.string().min(1).max(400_000),
   system: z.string().max(20_000).optional(),
   maxTokens: z.number().int().min(1).max(8000).optional(),
+  // When true, the provider emits wire-level diagnostic strings that are
+  // relayed to the client as {debug:string} SSE frames. Never leaks the key or
+  // prompt — only response shape / finishReason / status info.
+  debug: z.boolean().optional(),
 });
 
 export const aiRoutes: FastifyPluginAsyncZod = async (server) => {
@@ -109,6 +113,13 @@ export const aiRoutes: FastifyPluginAsyncZod = async (server) => {
         user: req.body.user,
         signal: ac.signal,
         maxTokens: req.body.maxTokens,
+        ...(req.body.debug
+          ? {
+              onDebug: (msg: string) => {
+                raw.write(`data: ${JSON.stringify({ debug: msg })}\n\n`);
+              },
+            }
+          : {}),
       });
       for await (const chunk of gen) {
         if (chunk) raw.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);

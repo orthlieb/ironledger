@@ -19,12 +19,16 @@ export interface StreamOptions {
 	onDone?: (accumulated: string) => void;
 	/** Called if generation errors. */
 	onError?: (message: string) => void;
+	/** When true, ask the server to emit wire-level diagnostic frames. */
+	debug?: boolean;
+	/** Called for each debug frame from the server (only fires when debug:true). */
+	onDebug?: (msg: string) => void;
 	maxTokens?: number;
 }
 
 /** Stream a story from the server. Resolves when the stream finishes or aborts. */
 export async function streamStory(opts: StreamOptions): Promise<void> {
-	const { user, system, signal, onText, onDone, onError, maxTokens } = opts;
+	const { user, system, signal, onText, onDone, onError, onDebug, debug, maxTokens } = opts;
 
 	let accumulated = '';
 	try {
@@ -36,6 +40,7 @@ export async function streamStory(opts: StreamOptions): Promise<void> {
 				user,
 				...(system !== undefined ? { system } : {}),
 				...(maxTokens ? { maxTokens } : {}),
+				...(debug ? { debug: true } : {}),
 			}),
 		});
 
@@ -77,7 +82,7 @@ export async function streamStory(opts: StreamOptions): Promise<void> {
 				const data = dataLine.slice(5).trim();
 				if (!data) continue;
 
-				let payload: { text?: string; done?: boolean; error?: string };
+				let payload: { text?: string; done?: boolean; error?: string; debug?: string };
 				try {
 					payload = JSON.parse(data);
 				} catch {
@@ -86,6 +91,8 @@ export async function streamStory(opts: StreamOptions): Promise<void> {
 				if (typeof payload.text === 'string') {
 					accumulated += payload.text;
 					onText(accumulated, payload.text);
+				} else if (typeof payload.debug === 'string') {
+					onDebug?.(payload.debug);
 				} else if (payload.error) {
 					onError?.(payload.error);
 					return;
