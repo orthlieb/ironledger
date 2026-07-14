@@ -165,14 +165,13 @@ async function* streamGemini(p: StreamParams): AsyncGenerator<string> {
       ...(p.system ? { systemInstruction: { parts: [{ text: p.system }] } } : {}),
       contents: [{ role: 'user', parts: [{ text: p.user }] }],
       generationConfig: {
-        maxOutputTokens: p.maxTokens ?? 4000,
-        // Disable thinking mode. On 2.5-generation models (which is what the
-        // -latest aliases point at) thinking is on by default, and its tokens
-        // are drawn from maxOutputTokens — so a big enough thinking phase
-        // exhausts the budget before any user-visible text is produced, and
-        // the stream closes with zero deltas. `thinkingBudget: 0` disables it;
-        // 2.0-era models silently ignore the field.
-        thinkingConfig: { thinkingBudget: 0 },
+        // 2.5-generation models have thinking on by default and draw its
+        // tokens from maxOutputTokens. Give the budget plenty of headroom so
+        // thinking + output both fit comfortably — earlier we tried disabling
+        // thinking with thinkingBudget:0 and Gemini responded by opening an
+        // empty SSE stream (200 text/event-stream, 0 frames), so we let the
+        // model decide its own thinking budget instead.
+        maxOutputTokens: p.maxTokens ?? 8000,
       },
     }),
   });
@@ -202,8 +201,35 @@ async function* streamGemini(p: StreamParams): AsyncGenerator<string> {
   let textEmitted = 0;
   let lastFinishReason = '';
   let promptBlockReason = '';
+  // Raw-byte diagnostic: when Gemini opens a 200 stream and closes it with
+  // no frames, our frame parser is silent. Peek the first few chunks so
+  // debug output shows what actually came off the wire — SSE, NDJSON, empty.
+  let rawChunks = 0;
+  let rawTotalBytes = 0;
+  const rawSample: string[] = [];
+  const rawTap = new TransformStream<Uint8Array, Uint8Array>({
+    transform(chunk, controller) {
+      rawChunks++;
+      rawTotalBytes += chunk.byteLength;
+      if (rawChunks <= 3) {
+        const decoder = new TextDecoder();
+        rawSample.push(decoder.decode(chunk).slice(0, 400));
+      }
+      controller.enqueue(chunk);
+    },
+    flush() {
+      dbg?.(
+        `raw stream: chunks=${rawChunks} bytes=${rawTotalBytes}` +
+          (rawSample.length ? ` first=${JSON.stringify(rawSample[0])}` : ''),
+      );
+    },
+  });
+  const tapped = new Response(res.body?.pipeThrough(rawTap) ?? null, {
+    headers: res.headers,
+    status: res.status,
+  });
 
-  for await (const chunk of readSse(res, (data) => {
+  for await (const chunk of readSse(tapped, (data) => {
     framesSeen++;
     if (framesSeen <= 3) dbg?.(`frame#${framesSeen}: ${data.slice(0, 600)}`);
     let payload: {
