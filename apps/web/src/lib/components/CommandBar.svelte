@@ -14,7 +14,7 @@
 	 */
 
 	import type { Command, CommandName } from '$lib/commandBar.js';
-	import { COMMAND_NAMES, parseCommand, fuzzyPick } from '$lib/commandBar.js';
+	import { COMMAND_NAMES, parseCommand, fuzzyPick, prefixPick } from '$lib/commandBar.js';
 	import { appendLog } from '$lib/log.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
 	import { getCharacters } from '$lib/characterStore.svelte.js';
@@ -87,16 +87,18 @@
 				}));
 			}
 			case 'move': {
+				// Prefix-only match on move names: /move e → moves starting with E.
 				const q = parsed.name;
-				return fuzzyPick(getVisibleMoves(), (m) => m.name, q, 8).map((m) => ({
+				return prefixPick(getVisibleMoves(), (m) => m.name, q, 12).map((m) => ({
 					label: m.name,
 					hint: m.category ?? '',
 					apply: `/move ${m.name}`,
 				}));
 			}
 			case 'char': {
+				// Prefix-only: character names are short and starts-with is intuitive.
 				const q = parsed.name;
-				return fuzzyPick(
+				return prefixPick(
 					getCharacters(),
 					(c) => (c.data as unknown as CharacterData).name || 'Unnamed',
 					q,
@@ -108,7 +110,7 @@
 			}
 			case 'foe': {
 				const q = parsed.name;
-				return fuzzyPick(
+				return prefixPick(
 					getEncounters(),
 					(e) => e.customName || findFoe(e.foeId)?.name || '',
 					q,
@@ -205,13 +207,17 @@
 		}
 	}
 
-	// ── Name resolution: prefer exact/prefix match, fall back to fuzzy ────
+	// ── Name resolution: prefer exact-id, then prefix, then fuzzy ─────────
 	function resolveMove(query: string) {
 		const list = getVisibleMoves();
 		const q = query.toLowerCase().replace(/\s+/g, '-');
 		const byId = list.find((m) => m.id === q || m.id === `move/${q}`);
 		if (byId) return byId;
-		return fuzzyPick(list, (m) => m.name, query, 1)[0] ?? null;
+		return (
+			prefixPick(list, (m) => m.name, query, 1)[0] ??
+			fuzzyPick(list, (m) => m.name, query, 1)[0] ??
+			null
+		);
 	}
 	function resolveOracle(query: string) {
 		const list = getVisibleOracles();
@@ -222,22 +228,36 @@
 	}
 	function resolveCharacter(query: string) {
 		const list = getCharacters();
-		return (
-			fuzzyPick(list, (c) => (c.data as unknown as CharacterData).name || 'Unnamed', query, 1)[0] ??
-			null
-		);
+		const label = (c: (typeof list)[number]) =>
+			(c.data as unknown as CharacterData).name || 'Unnamed';
+		return prefixPick(list, label, query, 1)[0] ?? fuzzyPick(list, label, query, 1)[0] ?? null;
 	}
 	function resolveFoe(query: string) {
 		const list = getEncounters();
-		return (
-			fuzzyPick(list, (e) => e.customName || findFoe(e.foeId)?.name || '', query, 1)[0] ?? null
-		);
+		const label = (e: (typeof list)[number]) => e.customName || findFoe(e.foeId)?.name || '';
+		return prefixPick(list, label, query, 1)[0] ?? fuzzyPick(list, label, query, 1)[0] ?? null;
 	}
 
 	// ── Input handlers ────────────────────────────────────────────────────
+	// True for commands whose argument is a name that autocomplete is picking
+	// from a list. On Enter for these, we prefer the *highlighted* suggestion
+	// over whatever raw text is in the input — so "/move e ↵" fires the
+	// currently-highlighted move (default: first result) instead of trying to
+	// dispatch the literal string "e".
+	const NAME_KINDS = new Set(['oracle', 'move', 'char', 'foe']);
+
 	function handleSubmit() {
 		const cmd = parsed;
 		if (!cmd) return;
+		if (NAME_KINDS.has(cmd.kind) && suggestions.length > 0) {
+			const picked = parseCommand(suggestions[suggestionIdx].apply);
+			if (picked) {
+				dispatch(picked);
+				input = '';
+				suggestionIdx = 0;
+				return;
+			}
+		}
 		dispatch(cmd);
 		input = '';
 		suggestionIdx = 0;
@@ -300,7 +320,7 @@
 		'<ul>' +
 		'<li><code>/note &lt;text&gt;</code> — same as bare prose</li>' +
 		'<li><code>/oracle &lt;table&gt;</code> — roll an oracle (e.g. <code>/oracle place</code>)</li>' +
-		'<li><code>/move &lt;name&gt; [+&lt;stat&gt;]</code> — roll a move (e.g. <code>/move face-danger +heart</code>)</li>' +
+		'<li><code>/move &lt;name&gt;</code> — open a move (e.g. <code>/move face</code> → Face Danger)</li>' +
 		'<li><code>/char &lt;name&gt;</code> — set the active character</li>' +
 		'<li><code>/foe &lt;name&gt;</code> — set the active foe</li>' +
 		'<li><code>/help</code> — this list</li>' +
@@ -353,7 +373,7 @@
 			onkeydown={handleKeydown}
 			type="text"
 			class="cb-input"
-			placeholder="type a note, or /move face-danger …    (Tab to complete, ? for help)"
+			placeholder="type a note, or /move face …    (Tab to complete, ? for help)"
 			autocomplete="off"
 			spellcheck="true"
 			aria-label="Command bar"
