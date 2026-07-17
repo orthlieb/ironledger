@@ -29,6 +29,7 @@
 		setPartySupply,
 	} from '$lib/characterStore.svelte.js';
 	import { setActiveDiceCtx } from '$lib/diceContext.svelte.js';
+	import { getActiveCharacterId, setActiveCharacterId } from '$lib/activeContext.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import {
 		findAsset,
@@ -170,6 +171,22 @@
 	$effect(() => {
 		if (!activeCharId && characters.length > 0) {
 			activeCharId = characters[0].id;
+		}
+	});
+
+	// Two-way sync with the module-level active-character id in activeContext
+	// so external code (the /home command bar, deep links, …) can request a
+	// character switch by id. Direction-A: our local selection publishes out.
+	// Direction-B: an external write pulls our local selection to match.
+	$effect(() => {
+		if (activeCharId && activeCharId !== getActiveCharacterId()) {
+			setActiveCharacterId(activeCharId);
+		}
+	});
+	$effect(() => {
+		const wanted = getActiveCharacterId();
+		if (wanted && wanted !== activeCharId && characters.some((c) => c.id === wanted)) {
+			activeCharId = wanted;
 		}
 	});
 

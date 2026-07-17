@@ -53,6 +53,7 @@
 	import { reconcileGlobalValues } from '$lib/character.js';
 	import { loadFoes, findFoe, FOE_RANKS } from '$lib/foeStore.svelte.js';
 	import LogPanel from '$lib/components/LogPanel.svelte';
+	import CommandBar from '$lib/components/CommandBar.svelte';
 	import CharactersArea from '$lib/components/v2/CharactersArea.svelte';
 	import FoesArea from '$lib/components/v2/FoesArea.svelte';
 	import ExpeditionsArea from '$lib/components/v2/ExpeditionsArea.svelte';
@@ -1466,6 +1467,7 @@
 			onChangeTheme={(id) => expAreaRef?.openChangeThemeForExp(id)}
 			onChangeDomain={(id) => expAreaRef?.openChangeDomainForExp(id)}
 		/>
+		<CommandBar />
 	</aside>
 </div>
 
@@ -1653,6 +1655,12 @@
 		overflow: hidden;
 		display: flex;
 		flex-direction: column;
+	}
+	/* Let LogPanel expand into the aside; CommandBar sits under it at natural
+	   size (it sets flex-shrink: 0 itself). */
+	.home-log :global(.log-panel) {
+		flex: 1;
+		min-height: 0;
 	}
 
 	/* Mobile-only elements — hidden on desktop */
