@@ -20,6 +20,7 @@
 		addEncounter,
 	} from '$lib/encounterStore.svelte.js';
 	import { setActiveFoeId } from '$lib/activeContext.svelte.js';
+	import { appendLog } from '$lib/log.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { rankBadgeStyle } from '$lib/badgeStyles.js';
 	import {
@@ -190,12 +191,42 @@
 		update({ ticks: next });
 	}
 
+	/**
+	 * Active foe name for log entries — mirror CharactersArea.charTitle so the
+	 * log formatting for "took harm" reads the same on both sides.
+	 */
+	function foeTitle(suffix: string): string {
+		const enc = activeEnc;
+		if (!enc) return suffix;
+		const def = findFoe(enc.foeId);
+		const name = enc.customName?.trim() || def?.name || enc.foeId;
+		return `${name} — ${suffix}`;
+	}
+
 	// Vanquish
 	export function vanquishActiveFoe() {
-		if (activeEnc && !activeEnc.vanquished) update({ vanquished: true });
+		if (!activeEnc || activeEnc.vanquished) return;
+		update({ vanquished: true });
+		appendLog(foeTitle('Vanquished'), `<div><strong>Vanquished.</strong></div>`);
 	}
+
+	// Menace / combat-progress from a log-entry link. Value is in progress
+	// boxes (positive = harm dealt); each box is progressTickVal ticks
+	// (usually 4 — softer for stronger foes). Log the change in the same
+	// shape CharactersArea's applyResourceChange does for character harm.
 	export function applyMenace(value: number) {
-		if (activeEnc) update({ ticks: Math.min(40, activeEnc.ticks + value * progressTickVal) });
+		if (!activeEnc || !value) return;
+		const oldTicks = activeEnc.ticks;
+		const nextTicks = Math.max(0, Math.min(40, oldTicks + value * progressTickVal));
+		if (nextTicks === oldTicks) return;
+		update({ ticks: nextTicks });
+		const oldBoxes = Math.floor(oldTicks / progressTickVal);
+		const nextBoxes = Math.floor(nextTicks / progressTickVal);
+		const sign = value > 0 ? '+' : '';
+		appendLog(
+			foeTitle('Progress'),
+			`<div>Progress: ${oldBoxes} → <strong>${nextBoxes}</strong> boxes (${sign}${value})</div>`,
+		);
 	}
 
 	function imageUrl(def: FoeDef): string {
