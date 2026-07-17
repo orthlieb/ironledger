@@ -158,8 +158,10 @@
 	</div>
 	<div class="ed-body">
 		<div class="ed-field">
-			<span class="ed-label">Content</span>
+			<label class="ed-label" for="export-content">Content</label>
 			<select
+				id="export-content"
+				name="content"
 				class="ed-select"
 				bind:value={exportContent}
 				onchange={() => {
