@@ -7,8 +7,10 @@
 	 * for the commands that take a name argument.
 	 *
 	 * External dispatch — reuses the CustomEvent bus /home already wires:
-	 *   ironledger:open-move   { id }             → MovesDialog opens preselected
-	 *   ironledger:open-oracle { key, stat? }     → OraclesDialog opens preselected
+	 *   ironledger:open-move    { id }             → MovesDialog opens preselected
+	 *   ironledger:open-oracle  { key, stat? }     → OraclesDialog opens preselected
+	 *   ironledger:story-record ()                 → LogPanel opens Story setup
+	 *   ironledger:story-stop   ()                 → LogPanel stops + opens generate
 	 *
 	 * Character/foe switching is handled locally via the active-context stores.
 	 */
@@ -22,6 +24,7 @@
 	import { findFoe } from '$lib/foeStore.svelte.js';
 	import { getVisibleMoves, loadMoves } from '$lib/moveStore.svelte.js';
 	import { getVisibleOracles, loadOracles } from '$lib/oracleStore.svelte.js';
+	import { isRecording } from '$lib/storyRecorder.svelte.js';
 	import {
 		getActiveCharacterId,
 		setActiveCharacterId,
@@ -200,6 +203,10 @@
 				return 'switch active character';
 			case 'foe':
 				return 'switch active foe';
+			case 'record':
+				return 'start AI story recording';
+			case 'stop':
+				return 'stop recording + generate';
 		}
 	}
 
@@ -259,6 +266,27 @@
 				setActiveFoeId(e.id);
 				const nm = e.customName || findFoe(e.foeId)?.name || 'foe';
 				setStatus(`Active foe → ${nm}.`, 'info');
+				break;
+			}
+			case 'record': {
+				// Dispatch through LogPanel so the toolbar's ● Story button and the
+				// module-level `isRecording()` stay the single source of truth for
+				// recording state.
+				if (isRecording()) {
+					setStatus('Already recording. Type /stop to end.', 'error');
+					return;
+				}
+				document.dispatchEvent(new CustomEvent('ironledger:story-record'));
+				setStatus('Opened Story setup — confirm to begin recording.', 'info');
+				break;
+			}
+			case 'stop': {
+				if (!isRecording()) {
+					setStatus('Not recording — type /record to start.', 'error');
+					return;
+				}
+				document.dispatchEvent(new CustomEvent('ironledger:story-stop'));
+				setStatus('Stopped recording — opened Story generate.', 'info');
 				break;
 			}
 			case 'error': {
@@ -387,6 +415,8 @@
 		'<li><code>/move &lt;name&gt;</code> — open a move (e.g. <code>/move face</code> → Face Danger)</li>' +
 		'<li><code>/char &lt;name&gt;</code> — set the active character</li>' +
 		'<li><code>/foe &lt;name&gt;</code> — set the active foe</li>' +
+		'<li><code>/record</code> — start AI story recording</li>' +
+		'<li><code>/stop</code> — stop recording &amp; open the generate dialog</li>' +
 		'<li><code>/help</code> — this list</li>' +
 		'</ul>' +
 		'<div>Tab completes the highlighted suggestion; ↑/↓ moves through them; Escape clears.</div>';

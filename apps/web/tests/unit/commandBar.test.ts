@@ -66,6 +66,16 @@ describe('parseCommand', () => {
 		expect(parseCommand('/foe Blood Thorn')).toEqual({ kind: 'foe', name: 'Blood Thorn' });
 	});
 
+	it('parses /record and /stop with no args', () => {
+		expect(parseCommand('/record')).toEqual({ kind: 'record' });
+		expect(parseCommand('/stop')).toEqual({ kind: 'stop' });
+	});
+
+	it('ignores any trailing args on /record and /stop', () => {
+		expect(parseCommand('/record now')).toEqual({ kind: 'record' });
+		expect(parseCommand('/stop please')).toEqual({ kind: 'stop' });
+	});
+
 	it('rejects an unknown verb', () => {
 		const c = parseCommand('/pillage');
 		expect(c?.kind).toBe('error');

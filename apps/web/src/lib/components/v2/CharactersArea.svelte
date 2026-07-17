@@ -176,16 +176,29 @@
 
 	// Two-way sync with the module-level active-character id in activeContext
 	// so external code (the /home command bar, deep links, …) can request a
-	// character switch by id. Direction-A: our local selection publishes out.
-	// Direction-B: an external write pulls our local selection to match.
+	// character switch by id.
+	//
+	// The tricky bit: each half must only track ONE side. If Effect A tracked
+	// both `activeCharId` and `getActiveCharacterId()`, then an external
+	// setActiveCharacterId(newId) would re-fire Effect A, see activeCharId
+	// (still the old local value) !== newId, and write the STALE local id back
+	// — undoing the external change. `untrack` on the comparison read fixes it.
 	$effect(() => {
-		if (activeCharId && activeCharId !== getActiveCharacterId()) {
+		// Direction A: our local selection publishes out. Deps: activeCharId only.
+		if (activeCharId && activeCharId !== untrack(() => getActiveCharacterId())) {
 			setActiveCharacterId(activeCharId);
 		}
 	});
 	$effect(() => {
+		// Direction B: an external write pulls our local selection to match.
+		// Deps: getActiveCharacterId() only (via read). `characters` is also
+		// tracked so a store hydration after the external write catches up.
 		const wanted = getActiveCharacterId();
-		if (wanted && wanted !== activeCharId && characters.some((c) => c.id === wanted)) {
+		if (
+			wanted &&
+			wanted !== untrack(() => activeCharId) &&
+			characters.some((c) => c.id === wanted)
+		) {
 			activeCharId = wanted;
 		}
 	});
