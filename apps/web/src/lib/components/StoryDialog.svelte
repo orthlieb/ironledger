@@ -28,7 +28,7 @@
 		PROVIDER_LABEL,
 		loadAiConfig,
 	} from '$lib/aiSettings.svelte.js';
-	import { sectionEntries, clearEnd } from '$lib/sectionStore.svelte.js';
+	import { sectionEntries, clearSection } from '$lib/sectionStore.svelte.js';
 	import {
 		serializeLogSection,
 		estimateTokens,
@@ -315,9 +315,9 @@
 			updateLogEntryHtml(regenerateEntryId, html, source);
 		} else {
 			appendLog(storyTitle.trim() || 'Story', html, undefined, source);
-			// Clear only the end marker — keep the start so the next generation
-			// automatically continues from here as new entries land.
-			clearEnd();
+			// Drop both markers — the section has been consumed. The user pins
+			// a new ▲ whenever they want to start the next section.
+			clearSection();
 		}
 		dialogEl?.close();
 	}

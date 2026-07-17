@@ -147,19 +147,10 @@ export function toggleEnd(entryId: string): void {
 	setEnd(_endId === entryId ? null : entryId);
 }
 
-/** Drop both markers — no section. */
+/** Drop both markers — no section. Called after a successful Save to Log
+ *  so the user starts fresh: pin a new ▲ when they want the next section. */
 export function clearSection(): void {
 	_startId = null;
-	_endId = null;
-	persist();
-}
-
-/**
- * Clear only the end marker while keeping start. Called after a successful
- * Save to Log so the "continue" behavior is free: the section immediately
- * re-extends to the current top of log for the next generation.
- */
-export function clearEnd(): void {
 	_endId = null;
 	persist();
 }
