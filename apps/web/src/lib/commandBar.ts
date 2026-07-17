@@ -12,9 +12,9 @@
 //   /move <name>                  → { kind: 'move', name }
 //   /char <name>                  → { kind: 'char', name }
 //   /foe <name>                   → { kind: 'foe', name }
-//   /record                       → { kind: 'record' }
-//   /stop                         → { kind: 'stop' }
-//   /continue                     → { kind: 'continue' }
+//   /start                        → { kind: 'start' }    pin ▲ on the newest entry
+//   /end                          → { kind: 'end' }      pin ▼ on the newest entry
+//   /story                        → { kind: 'story' }    open Generate on the section
 // =============================================================================
 
 export type Command =
@@ -24,9 +24,9 @@ export type Command =
 	| { kind: 'move'; name: string }
 	| { kind: 'char'; name: string }
 	| { kind: 'foe'; name: string }
-	| { kind: 'record' }
-	| { kind: 'stop' }
-	| { kind: 'continue' }
+	| { kind: 'start' }
+	| { kind: 'end' }
+	| { kind: 'story' }
 	| { kind: 'error'; message: string };
 
 /** Set of leading slugs that route to slash-commands. Keep in sync with parseCommand. */
@@ -37,9 +37,9 @@ export const COMMAND_NAMES = [
 	'move',
 	'char',
 	'foe',
-	'record',
-	'stop',
-	'continue',
+	'start',
+	'end',
+	'story',
 ] as const;
 export type CommandName = (typeof COMMAND_NAMES)[number];
 
@@ -80,12 +80,12 @@ export function parseCommand(input: string): Command | null {
 		case 'foe':
 			if (!args) return { kind: 'error', message: '/foe needs a name.' };
 			return { kind: 'foe', name: args };
-		case 'record':
-			return { kind: 'record' };
-		case 'stop':
-			return { kind: 'stop' };
-		case 'continue':
-			return { kind: 'continue' };
+		case 'start':
+			return { kind: 'start' };
+		case 'end':
+			return { kind: 'end' };
+		case 'story':
+			return { kind: 'story' };
 		default:
 			return { kind: 'error', message: `Unknown command: /${verb}. Type /help for a list.` };
 	}

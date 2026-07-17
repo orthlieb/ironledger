@@ -9,8 +9,11 @@
  * hooks.client.ts) — appendLog(title, html, id?, source?, roll?) — to test the
  * regenerate affordance and the stories markdown export without generating.
  *
- * Covers: the regenerate-button gate (parseStorySource), record → name →
- * generate → save, regenerate replace-in-place, and the Stories md export.
+ * Covers: the regenerate-button gate (parseStorySource), section-marker →
+ * name → generate → save, regenerate replace-in-place, and the Stories md
+ * export. The ▲ / ▼ per-entry marker buttons are hover-revealed; tests reach
+ * around that by calling window.__testSection.setStart / setEnd (exposed by
+ * hooks.client.ts).
  */
 import { test, expect, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
@@ -74,6 +77,20 @@ async function inject(
 	);
 }
 
+async function setStart(page: Page, entryId: string) {
+	await page.evaluate((id) => {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		(window as any).__testSection.setStart(id);
+	}, entryId);
+}
+
+async function clearSection(page: Page) {
+	await page.evaluate(() => {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		(window as any).__testSection.clearSection();
+	});
+}
+
 const entryById = (page: Page, id: string) => page.locator(`.log-entry[data-entry-id="${id}"]`);
 const storyBtn = (page: Page) => page.locator('.story-btn');
 
@@ -92,6 +109,8 @@ test.describe('AI story generation', () => {
 	test.beforeEach(async ({ page }) => {
 		await resetLog();
 		await goToHome(page);
+		// Section markers persist to localStorage; each test starts clean.
+		await clearSection(page);
 	});
 
 	test('regenerate button appears only on entries with a story payload', async ({ page }) => {
@@ -132,17 +151,21 @@ test.describe('AI story generation', () => {
 		await expect(page.locator('.log-entry')).toHaveCount(1); // no duplicate appended
 	});
 
-	test('record → name → generate → save writes a titled Story entry', async ({ page }) => {
+	test('mark section → name → generate → save writes a titled Story entry', async ({ page }) => {
 		await mockGenerate(page, PROSE_A);
 
-		await storyBtn(page).click(); // opens setup
+		// The Generate button is disabled without a section pinned.
+		await expect(storyBtn(page)).toBeDisabled();
+
+		// Inject an entry and pin ▲ start on it — the section is open, growing.
+		await inject(page, 'A deed', '<p>She acted.</p>', 'rec-1');
+		await setStart(page, 'rec-1');
+		await expect(entryById(page, 'rec-1')).toHaveClass(/log-entry-in-section/);
+		await expect(storyBtn(page)).toBeEnabled();
+		await expect(storyBtn(page)).toContainText('Generate');
+
+		await storyBtn(page).click(); // opens generate on the section
 		const dialog = page.locator('dialog.story-dialog');
-		await dialog.locator('button:has-text("Begin Recording")').click();
-		await expect(storyBtn(page)).toContainText('Stop');
-
-		await inject(page, 'A deed', '<p>She acted.</p>', 'rec-1'); // captured
-
-		await storyBtn(page).click(); // Stop → generate
 		await expect(dialog).toBeVisible();
 		await dialog.locator('input[placeholder="Story title…"]').fill('The Fall of Blackroot');
 		await dialog.locator('button:has-text("Start")').click();

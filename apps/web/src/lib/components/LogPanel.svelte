@@ -40,12 +40,17 @@
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import StoryDialog from './StoryDialog.svelte';
 	import {
-		isRecording,
-		recordedCount,
-		stopRecording,
-		continueRecording,
-		canContinue,
-	} from '$lib/storyRecorder.svelte.js';
+		getStartId,
+		getEndId,
+		hasSection,
+		sectionCount,
+		isEntryInSection,
+		toggleStart,
+		toggleEnd,
+		clearSection,
+	} from '$lib/sectionStore.svelte.js';
+	import caretUpSvg from '$icons/caret-large-up-solid.svg?raw';
+	import caretDownSvg from '$icons/caret-large-down-solid.svg?raw';
 
 	// ---------------------------------------------------------------------------
 	// Callback props for interactive log links (Phase 2)
@@ -116,63 +121,32 @@
 	// Clear-log confirmation dialog
 	let clearDialogRef = $state<{ open(): void; close(): void } | null>(null);
 
-	// Story dialog (setup + generate modes)
+	// Story dialog — single generate view, open() reads the current section
+	// from sectionStore. openRegenerate() re-runs an existing Story entry.
 	let storyDialogRef = $state<{
-		openSetup(): void;
-		openGenerate(): void;
+		open(): void;
 		openRegenerate(entryId: string, source: string): void;
 		close(): void;
 	} | null>(null);
 
-	const recordingActive = $derived(isRecording());
-	const recordedN = $derived(recordedCount());
-	// True when we can seamlessly resume the previous recording: we're not
-	// currently recording AND the log hasn't gained a new entry since we
-	// stopped. Any prepend to sessionLog flips this false and the toolbar
-	// button reverts to ● Story (new recording).
-	const canResume = $derived(canContinue());
+	const sectionActive = $derived(hasSection());
+	const sectionN = $derived(sectionCount());
+	const sectionStartId = $derived(getStartId());
+	const sectionEndId = $derived(getEndId());
 
-	function handleStoryToggle() {
-		if (recordingActive) {
-			// Capture happens inside StoryDialog.openGenerate(); this is just a stop signal.
-			stopRecording();
-			storyDialogRef?.openGenerate();
-		} else if (canResume) {
-			// Silent resume — no dialog. Setup was chosen at first /record; the
-			// same marker + same setup carry through until the next Stop.
-			continueRecording();
-		} else {
-			storyDialogRef?.openSetup();
-		}
+	function openStory() {
+		storyDialogRef?.open();
 	}
 
-	// Bus listeners: CommandBar's /record and /stop route through here so the
-	// toolbar's ● Story button (which reads isRecording()) stays the single
-	// source of truth. Guards ignore mismatched state — /record while already
-	// recording, or /stop while not — the CommandBar already surfaces that as
-	// an inline status message.
+	// Bus listener: /story from the CommandBar opens the generate dialog on
+	// the current section. Guarded so it silently no-ops if no start marker
+	// is set — the CommandBar already surfaces that as an inline error.
 	$effect(() => {
-		const onRecord = () => {
-			if (isRecording()) return;
-			storyDialogRef?.openSetup();
+		const onStory = () => {
+			if (hasSection()) storyDialogRef?.open();
 		};
-		const onStop = () => {
-			if (!isRecording()) return;
-			stopRecording();
-			storyDialogRef?.openGenerate();
-		};
-		const onContinue = () => {
-			if (isRecording() || !canContinue()) return;
-			continueRecording();
-		};
-		document.addEventListener('ironledger:story-record', onRecord);
-		document.addEventListener('ironledger:story-stop', onStop);
-		document.addEventListener('ironledger:story-continue', onContinue);
-		return () => {
-			document.removeEventListener('ironledger:story-record', onRecord);
-			document.removeEventListener('ironledger:story-stop', onStop);
-			document.removeEventListener('ironledger:story-continue', onContinue);
-		};
+		document.addEventListener('ironledger:story-generate', onStory);
+		return () => document.removeEventListener('ironledger:story-generate', onStory);
 	});
 
 	// Mobile tap-tracking — used by touchend delegation to distinguish taps from scrolls.
@@ -787,24 +761,17 @@
 		<div class="log-header-actions">
 			<button
 				class="btn story-btn"
-				class:story-btn-recording={recordingActive}
-				class:story-btn-resume={!recordingActive && canResume}
-				onclick={handleStoryToggle}
-				use:tooltip={recordingActive
-					? `Stop recording (${recordedN} ${recordedN === 1 ? 'entry' : 'entries'} captured)`
-					: canResume
-						? 'Continue the previous recording (no new entries since Stop)'
-						: 'Start recording a section for AI prose'}
-				aria-label={recordingActive
-					? 'Stop recording'
-					: canResume
-						? 'Continue recording'
-						: 'Start recording story'}
+				class:story-btn-active={sectionActive}
+				onclick={openStory}
+				disabled={!sectionActive}
+				use:tooltip={sectionActive
+					? sectionEndId === null
+						? `Generate story (${sectionN} ${sectionN === 1 ? 'entry' : 'entries'}, open selection)`
+						: `Generate story (${sectionN} ${sectionN === 1 ? 'entry' : 'entries'} selected)`
+					: 'Mark a start (▲) on a log entry to begin a story selection'}
+				aria-label={sectionActive ? 'Generate story from selection' : 'Generate story'}
 			>
-				<span class="story-dot" aria-hidden="true"></span>
-				<span class="story-btn-label"
-					>{recordingActive ? `Stop (${recordedN})` : canResume ? 'Continue' : 'Story'}</span
-				>
+				<span class="story-btn-label">{sectionActive ? `Generate (${sectionN})` : 'Story'}</span>
 			</button>
 			<button
 				class="btn icon-btn log-clear-btn"
@@ -837,13 +804,44 @@
 			</div>
 		{:else}
 			{#each pagedEntries as entry (entry.id)}
-				<div class="log-entry" data-entry-id={entry.id}>
+				<div
+					class="log-entry"
+					class:log-entry-in-section={isEntryInSection(entry.id)}
+					class:log-entry-section-start={entry.id === sectionStartId}
+					class:log-entry-section-end={entry.id === sectionEndId}
+					data-entry-id={entry.id}
+				>
 					<!-- Header row: title, time, and hover-reveal action buttons -->
 					<div class="entry-header">
 						<span class="entry-title">{entry.title}</span>
 
 						<!-- Action buttons — opacity 0, revealed on .log-entry:hover -->
 						<div class="entry-actions">
+							<button
+								class="entry-btn entry-marker-btn"
+								class:entry-btn-active={entry.id === sectionStartId}
+								onclick={() => toggleStart(entry.id)}
+								use:tooltip={entry.id === sectionStartId
+									? 'Clear start marker'
+									: 'Mark as section start (oldest included entry)'}
+								aria-label={entry.id === sectionStartId
+									? 'Clear start marker'
+									: 'Mark as section start'}
+								aria-pressed={entry.id === sectionStartId}>{@html caretUpSvg}</button
+							>
+							<button
+								class="entry-btn entry-marker-btn"
+								class:entry-btn-active={entry.id === sectionEndId}
+								onclick={() => toggleEnd(entry.id)}
+								disabled={sectionStartId === null || entry.id === sectionStartId}
+								use:tooltip={sectionStartId === null
+									? 'Mark a start (▲) first'
+									: entry.id === sectionEndId
+										? 'Clear end marker (section becomes open-ended)'
+										: 'Mark as section end (newest included entry)'}
+								aria-label={entry.id === sectionEndId ? 'Clear end marker' : 'Mark as section end'}
+								aria-pressed={entry.id === sectionEndId}>{@html caretDownSvg}</button
+							>
 							{#if parseStorySource(entry.source)}
 								<button
 									class="entry-btn entry-regen-btn"
@@ -907,6 +905,27 @@
 			{/each}
 		{/if}
 	</div>
+
+	{#if sectionActive}
+		<div class="section-strip" role="status" aria-live="polite">
+			<span class="section-strip-count">
+				<span class="section-strip-icon" aria-hidden="true">{@html caretUpSvg}</span>
+				<strong>{sectionN}</strong>
+				{sectionN === 1 ? 'entry' : 'entries'}
+				{sectionEndId === null ? '· growing' : ''}
+			</span>
+			<div class="section-strip-actions">
+				<button
+					class="btn btn-sm section-strip-generate"
+					onclick={openStory}
+					use:tooltip={'Generate a story from the selected section'}>Generate</button
+				>
+				<button class="btn btn-sm" onclick={clearSection} use:tooltip={'Clear both section markers'}
+					>Clear</button
+				>
+			</div>
+		</div>
+	{/if}
 </div>
 
 <!-- Story recording + generation dialog -->
@@ -1030,8 +1049,8 @@
 		gap: 8px;
 		flex-shrink: 0;
 	}
-	/* ── Story recording toggle ──
-	   Idle: subtle chip with a red dot glyph. Recording: red accent + pulse. */
+	/* ── Story generate button ──
+	   Idle (no selection): dimmed chip. Active (section pinned): accent-tinted. */
 	.story-btn {
 		display: inline-flex;
 		align-items: center;
@@ -1053,49 +1072,18 @@
 			border-color 0.12s,
 			background 0.12s;
 	}
-	.story-btn:hover {
+	.story-btn:hover:not(:disabled) {
 		color: var(--text);
 		border-color: var(--text-accent);
 	}
-	.story-dot {
-		display: inline-block;
-		width: 7px;
-		height: 7px;
-		border-radius: 50%;
-		background: var(--color-danger, #ef4444);
-		flex-shrink: 0;
+	.story-btn:disabled {
+		opacity: 0.5;
+		cursor: default;
 	}
-	.story-btn-resume {
+	.story-btn-active {
 		color: var(--text-accent);
 		border-color: var(--text-accent);
 		background: color-mix(in srgb, var(--text-accent) 12%, transparent);
-	}
-	.story-btn-resume .story-dot {
-		background: var(--text-accent);
-	}
-	.story-btn-recording {
-		color: var(--color-danger, #ef4444);
-		border-color: var(--color-danger, #ef4444);
-		background: color-mix(in srgb, var(--color-danger, #ef4444) 12%, transparent);
-	}
-	.story-btn-recording .story-dot {
-		animation: story-pulse 1.4s ease-in-out infinite;
-	}
-	@keyframes story-pulse {
-		0%,
-		100% {
-			opacity: 1;
-			transform: scale(1);
-		}
-		50% {
-			opacity: 0.4;
-			transform: scale(0.75);
-		}
-	}
-	@media (prefers-reduced-motion: reduce) {
-		.story-btn-recording .story-dot {
-			animation: none;
-		}
 	}
 
 	/* Icon-only "Clear the log" button — square, matches the stage-header
@@ -1265,6 +1253,26 @@
 	.entry-regen-btn:hover {
 		color: var(--text-accent);
 		border-color: var(--text-accent);
+	}
+
+	/* Section marker buttons (▲ start, ▼ end). Active state is styled by
+	   the shared .entry-btn-active rule below. */
+	.entry-marker-btn {
+		color: var(--text-dimmer);
+	}
+	.entry-marker-btn:hover:not(:disabled) {
+		color: var(--text-accent);
+		border-color: var(--text-accent);
+	}
+	.entry-marker-btn:disabled {
+		opacity: 0.25;
+		cursor: default;
+	}
+	/* Keep marker buttons visible when they're the active start/end even if
+	   the row isn't hovered — otherwise it's easy to forget where the
+	   markers are pinned. */
+	.log-entry .entry-marker-btn.entry-btn-active {
+		opacity: 1;
 	}
 
 	.entry-delete-btn {
@@ -1541,5 +1549,64 @@
 		display: block;
 		margin-bottom: 4px;
 		content: '';
+	}
+
+	/* ── Section highlighting ── */
+	.log-entry-in-section {
+		background: color-mix(in srgb, var(--text-accent) 6%, transparent);
+		box-shadow: inset 3px 0 0 0 var(--text-accent);
+	}
+	.log-entry-in-section.log-entry-section-start,
+	.log-entry-in-section.log-entry-section-end {
+		background: color-mix(in srgb, var(--text-accent) 12%, transparent);
+	}
+
+	/* ── Floating section strip ── */
+	.section-strip {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		padding: 6px 12px;
+		background: color-mix(in srgb, var(--text-accent) 8%, var(--bg-control));
+		border-top: 1px solid var(--text-accent);
+		flex-shrink: 0;
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		color: var(--text);
+	}
+	.section-strip-count {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		color: var(--text-muted);
+	}
+	.section-strip-count strong {
+		color: var(--text);
+		font-weight: 700;
+	}
+	.section-strip-icon {
+		display: inline-flex;
+		width: 10px;
+		height: 10px;
+		color: var(--text-accent);
+	}
+	.section-strip-icon :global(svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
+	}
+	.section-strip-actions {
+		display: flex;
+		gap: 4px;
+	}
+	.section-strip-generate {
+		background: var(--text-accent);
+		border-color: var(--text-accent);
+		color: var(--bg-card);
+		font-weight: 600;
+	}
+	.section-strip-generate:hover {
+		opacity: 0.88;
 	}
 </style>
