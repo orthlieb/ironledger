@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { parseCommand, fuzzyScore, fuzzyPick } from '../../src/lib/commandBar.js';
+import { parseCommand, fuzzyScore, fuzzyPick, prefixPick } from '../../src/lib/commandBar.js';
 
 describe('parseCommand', () => {
 	it('returns null on empty / whitespace-only input', () => {
@@ -50,19 +50,11 @@ describe('parseCommand', () => {
 		});
 	});
 
-	it('parses trailing +<stat> on /move', () => {
+	it('/move does not special-case a trailing +stat (treated as part of the name)', () => {
+		// v1 dropped stat parsing — MovesDialog handles stat picking after open.
 		expect(parseCommand('/move face danger +heart')).toEqual({
 			kind: 'move',
-			name: 'face danger',
-			stat: 'heart',
-		});
-	});
-
-	it('lowercases the stat', () => {
-		expect(parseCommand('/move compel +IRON')).toEqual({
-			kind: 'move',
-			name: 'compel',
-			stat: 'iron',
+			name: 'face danger +heart',
 		});
 	});
 
@@ -127,5 +119,48 @@ describe('fuzzyPick', () => {
 	it('respects the limit', () => {
 		const out = fuzzyPick(moves, (m) => m, 'e', 2);
 		expect(out).toHaveLength(2);
+	});
+});
+
+describe('prefixPick', () => {
+	const moves = [
+		'Face Danger',
+		'Secure an Advantage',
+		'Compel',
+		'Endure Harm',
+		'Endure Stress',
+		'Enter the Fray',
+	];
+
+	it('returns only items whose label starts with the query', () => {
+		const out = prefixPick(moves, (m) => m, 'e');
+		expect(out).toEqual(['Endure Harm', 'Endure Stress', 'Enter the Fray']);
+	});
+
+	it('is case-insensitive', () => {
+		expect(prefixPick(moves, (m) => m, 'END')).toEqual(['Endure Harm', 'Endure Stress']);
+	});
+
+	it('excludes items that only contain the query mid-word (substring)', () => {
+		// "Face Danger" contains 'e' but does not START with it — must not appear.
+		const out = prefixPick(moves, (m) => m, 'e');
+		expect(out).not.toContain('Face Danger');
+		expect(out).not.toContain('Secure an Advantage');
+	});
+
+	it('returns all items (capped) on an empty query', () => {
+		expect(prefixPick(moves, (m) => m, '', 3)).toEqual(moves.slice(0, 3));
+	});
+
+	it('sorts matches alphabetically', () => {
+		expect(prefixPick(moves, (m) => m, 'en')).toEqual([
+			'Endure Harm',
+			'Endure Stress',
+			'Enter the Fray',
+		]);
+	});
+
+	it('respects the limit', () => {
+		expect(prefixPick(moves, (m) => m, 'e', 2)).toHaveLength(2);
 	});
 });

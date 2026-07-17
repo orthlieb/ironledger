@@ -9,7 +9,7 @@
 //   /note <text>                  → { kind: 'note', text }
 //   /help                         → { kind: 'help' }
 //   /oracle <table>               → { kind: 'oracle', key }
-//   /move <name> [+<stat>]        → { kind: 'move', name, stat? }
+//   /move <name>                  → { kind: 'move', name }
 //   /char <name>                  → { kind: 'char', name }
 //   /foe <name>                   → { kind: 'foe', name }
 // =============================================================================
@@ -18,7 +18,7 @@ export type Command =
 	| { kind: 'note'; text: string }
 	| { kind: 'help' }
 	| { kind: 'oracle'; key: string }
-	| { kind: 'move'; name: string; stat?: string }
+	| { kind: 'move'; name: string }
 	| { kind: 'char'; name: string }
 	| { kind: 'foe'; name: string }
 	| { kind: 'error'; message: string };
@@ -55,19 +55,9 @@ export function parseCommand(input: string): Command | null {
 		case 'oracle':
 			if (!args) return { kind: 'error', message: '/oracle needs a table name.' };
 			return { kind: 'oracle', key: args };
-		case 'move': {
+		case 'move':
 			if (!args) return { kind: 'error', message: '/move needs a move name.' };
-			// Split off an optional trailing +<stat> chunk.
-			const statMatch = args.match(/\s\+(\w+)\s*$/);
-			if (statMatch) {
-				return {
-					kind: 'move',
-					name: args.slice(0, statMatch.index).trim(),
-					stat: statMatch[1].toLowerCase(),
-				};
-			}
 			return { kind: 'move', name: args };
-		}
 		case 'char':
 			if (!args) return { kind: 'error', message: '/char needs a name.' };
 			return { kind: 'char', name: args };
@@ -114,4 +104,21 @@ export function fuzzyPick<T>(items: T[], label: (t: T) => string, query: string,
 		.sort((a, b) => b.s - a.s)
 		.slice(0, limit)
 		.map((r) => r.it);
+}
+
+/**
+ * Case-insensitive prefix filter — items whose label starts with `query`,
+ * alphabetized. Empty query returns everything (up to limit).
+ *
+ * Used for /move (and other name-argument commands) where "starts with"
+ * feels more natural than substring / sub-sequence matching: `/move e`
+ * should list moves that begin with E, not everything containing an e.
+ */
+export function prefixPick<T>(items: T[], label: (t: T) => string, query: string, limit = 8): T[] {
+	if (!query) return items.slice(0, limit);
+	const q = query.toLowerCase();
+	return items
+		.filter((it) => label(it).toLowerCase().startsWith(q))
+		.sort((a, b) => label(a).localeCompare(label(b)))
+		.slice(0, limit);
 }
