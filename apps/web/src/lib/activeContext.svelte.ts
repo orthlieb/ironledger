@@ -12,6 +12,10 @@
 
 let _activeFoeId = $state<string>('');
 let _activeExpeditionId = $state<string>('');
+// Character selection lives here alongside foe/expedition so external code
+// (the /home command bar, external navigation) can request a switch by id.
+// CharactersArea keeps its local selection in sync with this via $effect.
+let _activeCharacterId = $state<string>('');
 
 export function getActiveFoeId(): string {
 	return _activeFoeId;
@@ -19,10 +23,16 @@ export function getActiveFoeId(): string {
 export function getActiveExpeditionId(): string {
 	return _activeExpeditionId;
 }
+export function getActiveCharacterId(): string {
+	return _activeCharacterId;
+}
 
 export function setActiveFoeId(id: string): void {
 	_activeFoeId = id;
 }
 export function setActiveExpeditionId(id: string): void {
 	_activeExpeditionId = id;
+}
+export function setActiveCharacterId(id: string): void {
+	_activeCharacterId = id;
 }
