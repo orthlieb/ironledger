@@ -131,6 +131,29 @@
 		}
 	}
 
+	// Bus listeners: CommandBar's /record and /stop route through here so the
+	// toolbar's ● Story button (which reads isRecording()) stays the single
+	// source of truth. Guards ignore mismatched state — /record while already
+	// recording, or /stop while not — the CommandBar already surfaces that as
+	// an inline status message.
+	$effect(() => {
+		const onRecord = () => {
+			if (isRecording()) return;
+			storyDialogRef?.openSetup();
+		};
+		const onStop = () => {
+			if (!isRecording()) return;
+			stopRecording();
+			storyDialogRef?.openGenerate();
+		};
+		document.addEventListener('ironledger:story-record', onRecord);
+		document.addEventListener('ironledger:story-stop', onStop);
+		return () => {
+			document.removeEventListener('ironledger:story-record', onRecord);
+			document.removeEventListener('ironledger:story-stop', onStop);
+		};
+	});
+
 	// Mobile tap-tracking — used by touchend delegation to distinguish taps from scrolls.
 	let _touchStartX = 0;
 	let _touchStartY = 0;
