@@ -20,8 +20,8 @@
 	import { getCharacters } from '$lib/characterStore.svelte.js';
 	import { getEncounters } from '$lib/encounterStore.svelte.js';
 	import { findFoe } from '$lib/foeStore.svelte.js';
-	import { getVisibleMoves } from '$lib/moveStore.svelte.js';
-	import { getVisibleOracles } from '$lib/oracleStore.svelte.js';
+	import { getVisibleMoves, loadMoves } from '$lib/moveStore.svelte.js';
+	import { getVisibleOracles, loadOracles } from '$lib/oracleStore.svelte.js';
 	import {
 		getActiveCharacterId,
 		setActiveCharacterId,
@@ -33,6 +33,15 @@
 	let input = $state('');
 	let inputEl = $state<HTMLInputElement | null>(null);
 	let statusMsg = $state('');
+
+	// The move + oracle catalogues are normally lazy-loaded by MovesDialog /
+	// OraclesDialog on their first open. That's too late for us — /move e ↵
+	// against an empty list would show nothing. Both load* fns are idempotent,
+	// so preloading here is safe and cheap.
+	$effect(() => {
+		loadMoves();
+		loadOracles();
+	});
 	let statusKind = $state<'info' | 'error'>('info');
 	let suggestionIdx = $state(0);
 
