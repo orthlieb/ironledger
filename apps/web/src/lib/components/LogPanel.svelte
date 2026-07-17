@@ -39,7 +39,13 @@
 	import logIconSvg from '$icons/log.svg?raw';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import StoryDialog from './StoryDialog.svelte';
-	import { isRecording, recordedCount, stopRecording } from '$lib/storyRecorder.svelte.js';
+	import {
+		isRecording,
+		recordedCount,
+		stopRecording,
+		continueRecording,
+		canContinue,
+	} from '$lib/storyRecorder.svelte.js';
 
 	// ---------------------------------------------------------------------------
 	// Callback props for interactive log links (Phase 2)
@@ -120,12 +126,21 @@
 
 	const recordingActive = $derived(isRecording());
 	const recordedN = $derived(recordedCount());
+	// True when we can seamlessly resume the previous recording: we're not
+	// currently recording AND the log hasn't gained a new entry since we
+	// stopped. Any prepend to sessionLog flips this false and the toolbar
+	// button reverts to ● Story (new recording).
+	const canResume = $derived(canContinue());
 
 	function handleStoryToggle() {
 		if (recordingActive) {
 			// Capture happens inside StoryDialog.openGenerate(); this is just a stop signal.
 			stopRecording();
 			storyDialogRef?.openGenerate();
+		} else if (canResume) {
+			// Silent resume — no dialog. Setup was chosen at first /record; the
+			// same marker + same setup carry through until the next Stop.
+			continueRecording();
 		} else {
 			storyDialogRef?.openSetup();
 		}
@@ -146,11 +161,17 @@
 			stopRecording();
 			storyDialogRef?.openGenerate();
 		};
+		const onContinue = () => {
+			if (isRecording() || !canContinue()) return;
+			continueRecording();
+		};
 		document.addEventListener('ironledger:story-record', onRecord);
 		document.addEventListener('ironledger:story-stop', onStop);
+		document.addEventListener('ironledger:story-continue', onContinue);
 		return () => {
 			document.removeEventListener('ironledger:story-record', onRecord);
 			document.removeEventListener('ironledger:story-stop', onStop);
+			document.removeEventListener('ironledger:story-continue', onContinue);
 		};
 	});
 
@@ -775,14 +796,23 @@
 			<button
 				class="btn story-btn"
 				class:story-btn-recording={recordingActive}
+				class:story-btn-resume={!recordingActive && canResume}
 				onclick={handleStoryToggle}
 				use:tooltip={recordingActive
 					? `Stop recording (${recordedN} ${recordedN === 1 ? 'entry' : 'entries'} captured)`
-					: 'Start recording a section for AI prose'}
-				aria-label={recordingActive ? 'Stop recording' : 'Start recording story'}
+					: canResume
+						? 'Continue the previous recording (no new entries since Stop)'
+						: 'Start recording a section for AI prose'}
+				aria-label={recordingActive
+					? 'Stop recording'
+					: canResume
+						? 'Continue recording'
+						: 'Start recording story'}
 			>
 				<span class="story-dot" aria-hidden="true"></span>
-				<span class="story-btn-label">{recordingActive ? `Stop (${recordedN})` : 'Story'}</span>
+				<span class="story-btn-label"
+					>{recordingActive ? `Stop (${recordedN})` : canResume ? 'Continue' : 'Story'}</span
+				>
 			</button>
 			<button
 				class="btn icon-btn log-clear-btn"
@@ -1042,6 +1072,14 @@
 		border-radius: 50%;
 		background: var(--color-danger, #ef4444);
 		flex-shrink: 0;
+	}
+	.story-btn-resume {
+		color: var(--text-accent);
+		border-color: var(--text-accent);
+		background: color-mix(in srgb, var(--text-accent) 12%, transparent);
+	}
+	.story-btn-resume .story-dot {
+		background: var(--text-accent);
 	}
 	.story-btn-recording {
 		color: var(--color-danger, #ef4444);
