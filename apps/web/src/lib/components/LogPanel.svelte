@@ -257,26 +257,18 @@
 	// ---------------------------------------------------------------------------
 
 	function startEdit(entry: LogEntry) {
+		// Only Note entries are editable — the pen button is gated to them.
+		if (entry.title !== 'Note' || entry.source == null) return;
 		editingId = entry.id;
-		// For Note entries, edit the main content source; for others, edit the sub-note
-		if (entry.title === 'Note' && entry.source != null) {
-			draftNote = entry.source;
-		} else {
-			draftNote = entry.note ?? '';
-		}
+		draftNote = entry.source;
 	}
 
 	function saveEdit() {
 		if (!editingId) return;
 		const entry = entries.find((e) => e.id === editingId);
 		if (entry?.title === 'Note' && entry.source != null) {
-			// Update the main content from markdown source
 			const text = draftNote.trim();
-			if (text) {
-				updateLogEntryHtml(editingId, renderNote(text), text);
-			}
-		} else {
-			updateLogEntryNote(editingId, draftNote);
+			if (text) updateLogEntryHtml(editingId, renderNote(text), text);
 		}
 		editingId = null;
 		draftNote = '';
@@ -860,18 +852,15 @@
 									aria-label="Regenerate this story">⟳</button
 								>
 							{/if}
-							<button
-								class="entry-btn entry-edit-btn"
-								class:entry-btn-active={editingId === entry.id}
-								onclick={() => (editingId === entry.id ? cancelEdit() : startEdit(entry))}
-								use:tooltip={editingId === entry.id
-									? 'Cancel edit'
-									: entry.title === 'Note'
-										? 'Edit note'
-										: 'Add/edit note'}
-								aria-label={entry.title === 'Note' ? 'Edit this note' : 'Edit note for this entry'}
-								>{@html penSvg}</button
-							>
+							{#if entry.title === 'Note'}
+								<button
+									class="entry-btn entry-edit-btn"
+									class:entry-btn-active={editingId === entry.id}
+									onclick={() => (editingId === entry.id ? cancelEdit() : startEdit(entry))}
+									use:tooltip={editingId === entry.id ? 'Cancel edit' : 'Edit note'}
+									aria-label="Edit this note">{@html penSvg}</button
+								>
+							{/if}
 
 							<button
 								class="entry-btn entry-delete-btn"
@@ -885,18 +874,18 @@
 						</div>
 					</div>
 
-					<!-- Entry body — hidden when editing a Note entry (textarea replaces it) -->
-					{#if !(editingId === entry.id && entry.title === 'Note' && entry.source != null)}
+					<!-- Entry body — hidden when editing a Note (textarea replaces it) -->
+					{#if !(editingId === entry.id && entry.title === 'Note')}
 						<div class="entry-body">{@html sanitizeLogHtml(entry.html)}</div>
 					{/if}
 
-					<!-- Inline editor: for Note entries edits main content; for others edits sub-note -->
-					{#if editingId === entry.id}
+					<!-- Inline editor (Note entries only). -->
+					{#if editingId === entry.id && entry.title === 'Note'}
 						<div class="entry-edit">
 							<textarea
 								class="note-input"
-								rows={entry.title === 'Note' ? 6 : 3}
-								placeholder={entry.title === 'Note' ? 'Edit your note…' : 'Add a note…'}
+								rows="6"
+								placeholder="Edit your note…"
 								bind:value={draftNote}
 								onkeydown={(e) => {
 									if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) saveEdit();
@@ -909,6 +898,9 @@
 							</div>
 						</div>
 					{:else if entry.note}
+						<!-- Legacy sub-note (persisted before add-note-to-move was removed).
+						     Still rendered so the history isn't lost; the entry can be deleted
+						     via the trash button to remove it. -->
 						<div class="entry-note">{@html sanitizeNoteHtml(renderNote(entry.note))}</div>
 					{/if}
 				</div>
