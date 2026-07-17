@@ -7,25 +7,27 @@
 	 * for the commands that take a name argument.
 	 *
 	 * External dispatch — reuses the CustomEvent bus /home already wires:
-	 *   ironledger:open-move    { id }             → MovesDialog opens preselected
-	 *   ironledger:open-oracle  { key, stat? }     → OraclesDialog opens preselected
-	 *   ironledger:story-record   ()               → LogPanel opens Story setup
-	 *   ironledger:story-stop     ()               → LogPanel stops + opens generate
-	 *   ironledger:story-continue ()               → LogPanel resumes the same recording
+	 *   ironledger:open-move       { id }         → MovesDialog opens preselected
+	 *   ironledger:open-oracle     { key, stat? } → OraclesDialog opens preselected
+	 *   ironledger:story-generate  ()             → LogPanel opens the Story dialog
+	 *                                               on the current section markers.
+	 *
+	 * /start and /end mutate sectionStore directly (no bus needed — it's a
+	 * client-side reactive store).
 	 *
 	 * Character/foe switching is handled locally via the active-context stores.
 	 */
 
 	import type { Command, CommandName } from '$lib/commandBar.js';
 	import { COMMAND_NAMES, parseCommand, fuzzyPick, prefixPick } from '$lib/commandBar.js';
-	import { appendLog } from '$lib/log.svelte.js';
+	import { appendLog, sessionLog } from '$lib/log.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
 	import { getCharacters } from '$lib/characterStore.svelte.js';
 	import { getEncounters } from '$lib/encounterStore.svelte.js';
 	import { findFoe } from '$lib/foeStore.svelte.js';
 	import { getVisibleMoves, loadMoves } from '$lib/moveStore.svelte.js';
 	import { getVisibleOracles, loadOracles } from '$lib/oracleStore.svelte.js';
-	import { isRecording, canContinue } from '$lib/storyRecorder.svelte.js';
+	import { getStartId, getEndId, hasSection, setStart, setEnd } from '$lib/sectionStore.svelte.js';
 	import {
 		getActiveCharacterId,
 		setActiveCharacterId,
@@ -204,12 +206,12 @@
 				return 'switch active character';
 			case 'foe':
 				return 'switch active foe';
-			case 'record':
-				return 'start AI story recording';
-			case 'stop':
-				return 'stop recording + generate';
-			case 'continue':
-				return 'resume the previous recording';
+			case 'start':
+				return 'pin ▲ start marker on the newest entry';
+			case 'end':
+				return 'pin ▼ end marker on the newest entry';
+			case 'story':
+				return 'generate a story from the section';
 		}
 	}
 
@@ -271,49 +273,59 @@
 				setStatus(`Active foe → ${nm}.`, 'info');
 				break;
 			}
-			case 'record': {
-				// Dispatch through LogPanel so the toolbar's ● Story button and
-				// the module-level `isRecording()` stay the single source of truth.
-				// Smart-detect: right after a stop with no new log entries, /record
-				// resumes the same recording (same as pressing the toolbar button).
-				if (isRecording()) {
-					setStatus('Already recording. Type /stop to end.', 'error');
+			case 'start': {
+				// Pin the ▲ start marker on the current top-of-log (newest) entry.
+				// The section is open-ended by default: as new entries arrive they
+				// automatically join the selection, until the user runs /end or
+				// clicks ▼ on a specific entry.
+				const top = sessionLog.entries[0];
+				if (!top) {
+					setStatus('No log entries yet — nothing to mark.', 'error');
 					return;
 				}
-				if (canContinue()) {
-					document.dispatchEvent(new CustomEvent('ironledger:story-continue'));
-					setStatus('Continued the previous recording.', 'info');
-					break;
-				}
-				document.dispatchEvent(new CustomEvent('ironledger:story-record'));
-				setStatus('Opened Story setup — confirm to begin recording.', 'info');
+				setStart(top.id);
+				setStatus(`▲ Start pinned on "${top.title}" — section is open, growing.`, 'info');
 				break;
 			}
-			case 'continue': {
-				// Explicit continue — errors when we can't, instead of falling
-				// through to a fresh recording like /record does.
-				if (isRecording()) {
-					setStatus('Already recording. Type /stop to end.', 'error');
+			case 'end': {
+				// Pin the ▼ end marker on the current top-of-log (newest) entry.
+				// Needs a start marker first — the section semantics don't allow
+				// a bare end.
+				if (!hasSection()) {
+					setStatus('Pin a start (/start) before pinning an end.', 'error');
 					return;
 				}
-				if (!canContinue()) {
+				const top = sessionLog.entries[0];
+				if (!top) {
+					setStatus('No log entries yet — nothing to mark.', 'error');
+					return;
+				}
+				if (top.id === getStartId()) {
 					setStatus(
-						'Nothing to continue — new log entries have arrived since the last stop. Use /record to start fresh.',
+						'End would be the same entry as the start — that would leave nothing between them.',
 						'error',
 					);
 					return;
 				}
-				document.dispatchEvent(new CustomEvent('ironledger:story-continue'));
-				setStatus('Continued the previous recording.', 'info');
+				setEnd(top.id);
+				setStatus(
+					`▼ End pinned on "${top.title}" — section closed. Type /story to generate.`,
+					'info',
+				);
 				break;
 			}
-			case 'stop': {
-				if (!isRecording()) {
-					setStatus('Not recording — type /record to start.', 'error');
+			case 'story': {
+				if (!hasSection()) {
+					setStatus('No section marked. Pin a start (/start) on an entry, then /story.', 'error');
 					return;
 				}
-				document.dispatchEvent(new CustomEvent('ironledger:story-stop'));
-				setStatus('Stopped recording — opened Story generate.', 'info');
+				document.dispatchEvent(new CustomEvent('ironledger:story-generate'));
+				setStatus(
+					getEndId() === null
+						? 'Generating story from the open section (▲ to now).'
+						: 'Generating story from the marked section (▲ to ▼).',
+					'info',
+				);
 				break;
 			}
 			case 'error': {
@@ -442,12 +454,12 @@
 		'<li><code>/move &lt;name&gt;</code> — open a move (e.g. <code>/move face</code> → Face Danger)</li>' +
 		'<li><code>/char &lt;name&gt;</code> — set the active character</li>' +
 		'<li><code>/foe &lt;name&gt;</code> — set the active foe</li>' +
-		'<li><code>/record</code> — start AI story recording (resumes the last one if no entries have arrived since /stop)</li>' +
-		'<li><code>/stop</code> — stop recording &amp; open the generate dialog</li>' +
-		'<li><code>/continue</code> — explicit resume of the last recording (fails if new entries have arrived)</li>' +
+		'<li><code>/start</code> — pin the ▲ start marker on the newest entry (open, growing selection)</li>' +
+		'<li><code>/end</code> — pin the ▼ end marker on the newest entry (closes the selection)</li>' +
+		'<li><code>/story</code> — open the generate dialog on the current section</li>' +
 		'<li><code>/help</code> — this list</li>' +
 		'</ul>' +
-		'<div>Tab completes the highlighted suggestion; ↑/↓ moves through them; Escape clears.</div>';
+		'<div>Or use the ▲/▼ buttons on any log entry to place markers directly. Tab completes the highlighted suggestion; ↑/↓ moves through them; Escape clears.</div>';
 </script>
 
 <div class="cb">

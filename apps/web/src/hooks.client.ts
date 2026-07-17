@@ -1,4 +1,5 @@
 import { appendLog, enrichOutcomeLinks } from '$lib/log.svelte.js';
+import { setStart, setEnd, clearSection } from '$lib/sectionStore.svelte.js';
 
 // Expose log helpers on window so Playwright E2E tests can inject mock log
 // entries against the production build (vite preview), not just dev mode.
@@ -8,3 +9,7 @@ import { appendLog, enrichOutcomeLinks } from '$lib/log.svelte.js';
 // rather than `import.meta.env.DEV` (which is hard-false after `vite build`).
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).__testLog = { appendLog, enrichOutcomeLinks };
+// Section markers — Playwright uses these to skip the hover-reveal on the
+// per-entry ▲ / ▼ buttons.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(window as any).__testSection = { setStart, setEnd, clearSection };

@@ -66,16 +66,22 @@ describe('parseCommand', () => {
 		expect(parseCommand('/foe Blood Thorn')).toEqual({ kind: 'foe', name: 'Blood Thorn' });
 	});
 
-	it('parses /record, /stop, /continue with no args', () => {
-		expect(parseCommand('/record')).toEqual({ kind: 'record' });
-		expect(parseCommand('/stop')).toEqual({ kind: 'stop' });
-		expect(parseCommand('/continue')).toEqual({ kind: 'continue' });
+	it('parses /start, /end, /story with no args', () => {
+		expect(parseCommand('/start')).toEqual({ kind: 'start' });
+		expect(parseCommand('/end')).toEqual({ kind: 'end' });
+		expect(parseCommand('/story')).toEqual({ kind: 'story' });
 	});
 
-	it('ignores any trailing args on /record, /stop, /continue', () => {
-		expect(parseCommand('/record now')).toEqual({ kind: 'record' });
-		expect(parseCommand('/stop please')).toEqual({ kind: 'stop' });
-		expect(parseCommand('/continue please')).toEqual({ kind: 'continue' });
+	it('ignores any trailing args on /start, /end, /story', () => {
+		expect(parseCommand('/start now')).toEqual({ kind: 'start' });
+		expect(parseCommand('/end please')).toEqual({ kind: 'end' });
+		expect(parseCommand('/story me a tale')).toEqual({ kind: 'story' });
+	});
+
+	it('no longer parses /record, /stop, /continue — they became unknown verbs', () => {
+		expect(parseCommand('/record')?.kind).toBe('error');
+		expect(parseCommand('/stop')?.kind).toBe('error');
+		expect(parseCommand('/continue')?.kind).toBe('error');
 	});
 
 	it('rejects an unknown verb', () => {
