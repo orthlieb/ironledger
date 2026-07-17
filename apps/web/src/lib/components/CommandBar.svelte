@@ -27,7 +27,14 @@
 		setActiveCharacterId,
 		getActiveFoeId,
 		setActiveFoeId,
+		getActiveExpeditionId,
 	} from '$lib/activeContext.svelte.js';
+	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
+	import { firstPreconditionFailure } from '$lib/preconditions.js';
+	import type { PreconditionContext, Precondition } from '$lib/preconditions.js';
+	import { getExpeditions } from '$lib/expeditionStore.svelte.js';
+	import { FOE_RANKS } from '$lib/foeStore.svelte.js';
+	import type { MoveDefinition } from '@ironledger/shared';
 	import type { CharacterData } from '$lib/types.js';
 
 	let input = $state('');
@@ -63,6 +70,48 @@
 		return { name: enc.customName || def?.name || 'Foe' };
 	});
 
+	// Build the same precondition context /home passes to MovesDialog so we
+	// can filter the /move autocomplete to only moves that are possible right
+	// now. Mirrors +layout.svelte's `preconditionCtx` deliberately — two
+	// consumers isn't enough to justify a shared helper yet.
+	const preconditionCtx = $derived.by<PreconditionContext>(() => {
+		const activeDiceCtx = getActiveDiceCtx();
+		const foeId = getActiveFoeId();
+		const expId = getActiveExpeditionId();
+		const encs = getEncounters();
+		const exps = getExpeditions();
+		const enc = foeId ? encs.find((e) => e.id === foeId) : undefined;
+		const exp = expId ? exps.find((e) => e.id === expId) : undefined;
+		const foeDef = enc ? findFoe(enc.foeId) : undefined;
+		const foeName = enc ? enc.customName?.trim() || foeDef?.name || enc.foeId : undefined;
+		return {
+			hasCharacter: !!activeDiceCtx,
+			hasFoe: !!enc,
+			hasJourney: exp?.type === 'journey',
+			hasSite: exp?.type === 'site',
+			expeditionName: exp?.name,
+			foeName,
+			initiative: activeDiceCtx?.data?.initiative,
+			foeHarm: enc ? FOE_RANKS[enc.effectiveRank]?.harm : undefined,
+		};
+	});
+
+	/**
+	 * True when a move satisfies its preconditions in the current context.
+	 * Matches MovesDialog's `moveFailReason` semantics: with no character,
+	 * moves that have any precondition are unavailable; with a character,
+	 * preconditions are evaluated against the character + spine ctx.
+	 */
+	function isMoveAvailable(m: MoveDefinition): boolean {
+		const ctx = getActiveDiceCtx();
+		if (!ctx) return !m.preconditions?.length;
+		return !firstPreconditionFailure(
+			m.preconditions as Precondition[] | undefined,
+			ctx.data,
+			preconditionCtx,
+		);
+	}
+
 	// ── Autocomplete: derive the current suggestion pool from what's typed ──
 	interface Suggestion {
 		label: string;
@@ -96,9 +145,12 @@
 				}));
 			}
 			case 'move': {
-				// Prefix-only match on move names: /move e → moves starting with E.
+				// Prefix-only match on move names, filtered to moves that are
+				// actually possible in the current context (matches the "hide
+				// unavailable" behavior of MovesDialog).
 				const q = parsed.name;
-				return prefixPick(getVisibleMoves(), (m) => m.name, q, 12).map((m) => ({
+				const available = getVisibleMoves().filter(isMoveAvailable);
+				return prefixPick(available, (m) => m.name, q, 12).map((m) => ({
 					label: m.name,
 					hint: m.category ?? '',
 					apply: `/move ${m.name}`,
@@ -217,8 +269,11 @@
 	}
 
 	// ── Name resolution: prefer exact-id, then prefix, then fuzzy ─────────
+	// Restricted to available moves so `/move f ↵` with no character selected
+	// doesn't silently open Face Danger — it says "no move matches" instead,
+	// matching the (empty) suggestion list.
 	function resolveMove(query: string) {
-		const list = getVisibleMoves();
+		const list = getVisibleMoves().filter(isMoveAvailable);
 		const q = query.toLowerCase().replace(/\s+/g, '-');
 		const byId = list.find((m) => m.id === q || m.id === `move/${q}`);
 		if (byId) return byId;

@@ -198,6 +198,12 @@ function ensureDiceBox(): Promise<void> {
 			// (the library's `loadSounds()` pipeline hangs `_diceBox.initialize`
 			// there), so iPhone never tries to load audio and never hangs.
 			const wantSounds = isDiceSoundEnabled();
+			// On desktop the overlay is large and default-sized dice read as
+			// tiny. Bump the library's die scale 1.5× when the viewport is
+			// clearly a desktop. Mobile keeps the default (100) — dice are
+			// already visually large relative to a phone screen.
+			const desktop =
+				typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
 			_diceBox = new Lib('#il-dice-overlay', {
 				assetPath: DICE_ASSET_CDN,
 				sounds: wantSounds,
@@ -210,6 +216,7 @@ function ensureDiceBox(): Promise<void> {
 				strength: 1,
 				iterationLimit: 500,
 				theme_customColorset: DIE_RED,
+				scale: desktop ? 150 : 100,
 			});
 			await _diceBox.initialize();
 			// Hide the shadow-catching ground plane after initialisation.
