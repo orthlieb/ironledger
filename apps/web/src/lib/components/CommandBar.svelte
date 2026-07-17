@@ -9,8 +9,9 @@
 	 * External dispatch — reuses the CustomEvent bus /home already wires:
 	 *   ironledger:open-move    { id }             → MovesDialog opens preselected
 	 *   ironledger:open-oracle  { key, stat? }     → OraclesDialog opens preselected
-	 *   ironledger:story-record ()                 → LogPanel opens Story setup
-	 *   ironledger:story-stop   ()                 → LogPanel stops + opens generate
+	 *   ironledger:story-record   ()               → LogPanel opens Story setup
+	 *   ironledger:story-stop     ()               → LogPanel stops + opens generate
+	 *   ironledger:story-continue ()               → LogPanel resumes the same recording
 	 *
 	 * Character/foe switching is handled locally via the active-context stores.
 	 */
@@ -24,7 +25,7 @@
 	import { findFoe } from '$lib/foeStore.svelte.js';
 	import { getVisibleMoves, loadMoves } from '$lib/moveStore.svelte.js';
 	import { getVisibleOracles, loadOracles } from '$lib/oracleStore.svelte.js';
-	import { isRecording } from '$lib/storyRecorder.svelte.js';
+	import { isRecording, canContinue } from '$lib/storyRecorder.svelte.js';
 	import {
 		getActiveCharacterId,
 		setActiveCharacterId,
@@ -207,6 +208,8 @@
 				return 'start AI story recording';
 			case 'stop':
 				return 'stop recording + generate';
+			case 'continue':
+				return 'resume the previous recording';
 		}
 	}
 
@@ -269,15 +272,39 @@
 				break;
 			}
 			case 'record': {
-				// Dispatch through LogPanel so the toolbar's ● Story button and the
-				// module-level `isRecording()` stay the single source of truth for
-				// recording state.
+				// Dispatch through LogPanel so the toolbar's ● Story button and
+				// the module-level `isRecording()` stay the single source of truth.
+				// Smart-detect: right after a stop with no new log entries, /record
+				// resumes the same recording (same as pressing the toolbar button).
 				if (isRecording()) {
 					setStatus('Already recording. Type /stop to end.', 'error');
 					return;
 				}
+				if (canContinue()) {
+					document.dispatchEvent(new CustomEvent('ironledger:story-continue'));
+					setStatus('Continued the previous recording.', 'info');
+					break;
+				}
 				document.dispatchEvent(new CustomEvent('ironledger:story-record'));
 				setStatus('Opened Story setup — confirm to begin recording.', 'info');
+				break;
+			}
+			case 'continue': {
+				// Explicit continue — errors when we can't, instead of falling
+				// through to a fresh recording like /record does.
+				if (isRecording()) {
+					setStatus('Already recording. Type /stop to end.', 'error');
+					return;
+				}
+				if (!canContinue()) {
+					setStatus(
+						'Nothing to continue — new log entries have arrived since the last stop. Use /record to start fresh.',
+						'error',
+					);
+					return;
+				}
+				document.dispatchEvent(new CustomEvent('ironledger:story-continue'));
+				setStatus('Continued the previous recording.', 'info');
 				break;
 			}
 			case 'stop': {
@@ -415,8 +442,9 @@
 		'<li><code>/move &lt;name&gt;</code> — open a move (e.g. <code>/move face</code> → Face Danger)</li>' +
 		'<li><code>/char &lt;name&gt;</code> — set the active character</li>' +
 		'<li><code>/foe &lt;name&gt;</code> — set the active foe</li>' +
-		'<li><code>/record</code> — start AI story recording</li>' +
+		'<li><code>/record</code> — start AI story recording (resumes the last one if no entries have arrived since /stop)</li>' +
 		'<li><code>/stop</code> — stop recording &amp; open the generate dialog</li>' +
+		'<li><code>/continue</code> — explicit resume of the last recording (fails if new entries have arrived)</li>' +
 		'<li><code>/help</code> — this list</li>' +
 		'</ul>' +
 		'<div>Tab completes the highlighted suggestion; ↑/↓ moves through them; Escape clears.</div>';

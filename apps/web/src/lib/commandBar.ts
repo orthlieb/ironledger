@@ -14,6 +14,7 @@
 //   /foe <name>                   → { kind: 'foe', name }
 //   /record                       → { kind: 'record' }
 //   /stop                         → { kind: 'stop' }
+//   /continue                     → { kind: 'continue' }
 // =============================================================================
 
 export type Command =
@@ -25,6 +26,7 @@ export type Command =
 	| { kind: 'foe'; name: string }
 	| { kind: 'record' }
 	| { kind: 'stop' }
+	| { kind: 'continue' }
 	| { kind: 'error'; message: string };
 
 /** Set of leading slugs that route to slash-commands. Keep in sync with parseCommand. */
@@ -37,6 +39,7 @@ export const COMMAND_NAMES = [
 	'foe',
 	'record',
 	'stop',
+	'continue',
 ] as const;
 export type CommandName = (typeof COMMAND_NAMES)[number];
 
@@ -81,6 +84,8 @@ export function parseCommand(input: string): Command | null {
 			return { kind: 'record' };
 		case 'stop':
 			return { kind: 'stop' };
+		case 'continue':
+			return { kind: 'continue' };
 		default:
 			return { kind: 'error', message: `Unknown command: /${verb}. Type /help for a list.` };
 	}
