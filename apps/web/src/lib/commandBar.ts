@@ -35,6 +35,21 @@
 //     who: none | foe | character (exact match, case-insensitive)
 //     Applies to the active character via a new action-bus type so the log
 //     line reads "Initiative → foe" (not "Initiative: 0 → 2 (+2)").
+//
+// Overloaded verbs — /foe and /exp accept multiple argument shapes; the first
+// non-space token decides the mode:
+//   /foe                          → { kind: 'help', focus: 'foe' } (grammar help)
+//   /foe <name>                   → { kind: 'foe', name }
+//   /foe <op> [n]                 → { kind: 'foe-progress', op, value }
+//   /foe vanquish                 → { kind: 'foe-vanquish' }
+//   /exp                          → { kind: 'help', focus: 'exp' }
+//   /exp <name>                   → { kind: 'exp', name }
+//   /exp <op> [n]                 → { kind: 'exp-progress', op, value }
+//
+// Progress operators (+ / - / =) work on **boxes**, not ticks — the applier
+// converts to ticks using the foe rank (or expedition difficulty). `= n`
+// requires the active foe / expedition; the delta to reach n boxes is
+// computed against the current box count at dispatch time.
 // =============================================================================
 
 /** Canonical vital keys — same strings the action bus / character data use. */
@@ -81,11 +96,15 @@ export function initiativeToNumber(v: InitiativeValue): 0 | 1 | 2 {
 
 export type Command =
 	| { kind: 'note'; text: string }
-	| { kind: 'help' }
+	| { kind: 'help'; focus?: string }
 	| { kind: 'oracle'; key: string }
 	| { kind: 'move'; name: string }
 	| { kind: 'char'; name: string }
 	| { kind: 'foe'; name: string }
+	| { kind: 'foe-progress'; op: '+' | '-' | '='; value: number }
+	| { kind: 'foe-vanquish' }
+	| { kind: 'exp'; name: string }
+	| { kind: 'exp-progress'; op: '+' | '-' | '='; value: number }
 	| { kind: 'start' }
 	| { kind: 'end' }
 	| { kind: 'story' }
@@ -111,6 +130,7 @@ export const COMMAND_NAMES = [
 	'bonds',
 	'failures',
 	'initiative',
+	'exp',
 ] as const;
 export type CommandName = (typeof COMMAND_NAMES)[number];
 
@@ -195,9 +215,34 @@ export function parseCommand(input: string): Command | null {
 		case 'char':
 			if (!args) return { kind: 'error', message: '/char needs a name.' };
 			return { kind: 'char', name: args };
-		case 'foe':
-			if (!args) return { kind: 'error', message: '/foe needs a name.' };
-			return { kind: 'foe', name: args };
+		case 'foe': {
+			// Empty args → open the help dialog focused on /foe so the user sees
+			// the full overloaded grammar rather than an inline one-liner error.
+			if (!args) return { kind: 'help', focus: 'foe' };
+			const trimmed = args.trim();
+			// Subcommand: vanquish. Case-insensitive; guaranteed unambiguous —
+			// foes cannot be named "vanquish" per repo policy.
+			if (/^vanquish$/i.test(trimmed)) return { kind: 'foe-vanquish' };
+			// Operator: +, -, = → progress on the active foe (rank-aware).
+			if (/^[+\-=]/.test(trimmed)) {
+				const parsed = parseVitalOp(trimmed.replace(/\s+/g, ' '));
+				if ('kind' in parsed) return parsed;
+				return { kind: 'foe-progress', op: parsed.op, value: parsed.value };
+			}
+			// Otherwise: set active foe by name (existing behavior).
+			return { kind: 'foe', name: trimmed };
+		}
+		case 'exp': {
+			// Same overload pattern as /foe, minus the vanquish subcommand.
+			if (!args) return { kind: 'help', focus: 'exp' };
+			const trimmed = args.trim();
+			if (/^[+\-=]/.test(trimmed)) {
+				const parsed = parseVitalOp(trimmed.replace(/\s+/g, ' '));
+				if ('kind' in parsed) return parsed;
+				return { kind: 'exp-progress', op: parsed.op, value: parsed.value };
+			}
+			return { kind: 'exp', name: trimmed };
+		}
 		case 'start':
 			return { kind: 'start' };
 		case 'end':

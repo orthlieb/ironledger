@@ -227,6 +227,62 @@ describe('parseCommand /vital', () => {
 	});
 });
 
+describe('parseCommand /foe overloads', () => {
+	it('/foe <name> still sets the active foe (existing behavior)', () => {
+		expect(parseCommand('/foe Blood Thorn')).toEqual({ kind: 'foe', name: 'Blood Thorn' });
+	});
+	it('/foe with no args opens help focused on foe', () => {
+		expect(parseCommand('/foe')).toEqual({ kind: 'help', focus: 'foe' });
+	});
+	it('/foe vanquish parses as the subcommand', () => {
+		expect(parseCommand('/foe vanquish')).toEqual({ kind: 'foe-vanquish' });
+	});
+	it('/foe vanquish is case-insensitive', () => {
+		expect(parseCommand('/foe VANQUISH')).toEqual({ kind: 'foe-vanquish' });
+		expect(parseCommand('/foe Vanquish')).toEqual({ kind: 'foe-vanquish' });
+	});
+	it('/foe +2 parses as progress delta (boxes)', () => {
+		expect(parseCommand('/foe +2')).toEqual({ kind: 'foe-progress', op: '+', value: 2 });
+	});
+	it('/foe - defaults to -1 box', () => {
+		expect(parseCommand('/foe -')).toEqual({ kind: 'foe-progress', op: '-', value: 1 });
+	});
+	it('/foe = 4 sets absolute box count', () => {
+		expect(parseCommand('/foe = 4')).toEqual({ kind: 'foe-progress', op: '=', value: 4 });
+	});
+	it('/foe = with no value errors', () => {
+		const c = parseCommand('/foe =');
+		expect(c?.kind).toBe('error');
+	});
+	it('/foe vanquished (past tense) is NOT the subcommand — falls through to name', () => {
+		expect(parseCommand('/foe vanquished')).toEqual({ kind: 'foe', name: 'vanquished' });
+	});
+});
+
+describe('parseCommand /exp overloads', () => {
+	it('/exp <name> sets active expedition', () => {
+		expect(parseCommand('/exp Night Watch')).toEqual({ kind: 'exp', name: 'Night Watch' });
+	});
+	it('/exp with no args opens help focused on exp', () => {
+		expect(parseCommand('/exp')).toEqual({ kind: 'help', focus: 'exp' });
+	});
+	it('/exp +3 parses as progress delta (marks)', () => {
+		expect(parseCommand('/exp +3')).toEqual({ kind: 'exp-progress', op: '+', value: 3 });
+	});
+	it('/exp = 5 sets absolute mark count', () => {
+		expect(parseCommand('/exp = 5')).toEqual({ kind: 'exp-progress', op: '=', value: 5 });
+	});
+	it('/exp - defaults to -1 mark', () => {
+		expect(parseCommand('/exp -')).toEqual({ kind: 'exp-progress', op: '-', value: 1 });
+	});
+	it('/exp has no vanquish subcommand — falls through to name', () => {
+		expect(parseCommand('/exp vanquish')).toEqual({ kind: 'exp', name: 'vanquish' });
+	});
+	it('/exp jammed op parses (=12)', () => {
+		expect(parseCommand('/exp =12')).toEqual({ kind: 'exp-progress', op: '=', value: 12 });
+	});
+});
+
 describe('parseCommand /bonds and /failures', () => {
 	it('parses /bonds +2', () => {
 		expect(parseCommand('/bonds +2')).toEqual({

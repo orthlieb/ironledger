@@ -45,6 +45,7 @@
 		getActiveFoeId,
 		setActiveFoeId,
 		getActiveExpeditionId,
+		setActiveExpeditionId,
 	} from '$lib/activeContext.svelte.js';
 	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
 	import { firstPreconditionFailure } from '$lib/preconditions.js';
@@ -58,7 +59,7 @@
 	let input = $state('');
 	let inputEl = $state<HTMLInputElement | null>(null);
 	let statusMsg = $state('');
-	let helpDialogRef = $state<{ open(): void; close(): void } | null>(null);
+	let helpDialogRef = $state<{ open(focus?: string): void; close(): void } | null>(null);
 
 	// The move + oracle catalogues are normally lazy-loaded by MovesDialog /
 	// OraclesDialog on their first open. That's too late for us — /move e ↵
@@ -274,7 +275,7 @@
 			}
 			case 'foe': {
 				const q = parsed.name;
-				return prefixPick(
+				const foes = prefixPick(
 					getEncounters(),
 					(e) => e.customName || findFoe(e.foeId)?.name || '',
 					q,
@@ -283,6 +284,40 @@
 					const n = e.customName || findFoe(e.foeId)?.name || '';
 					return { label: n, hint: '', apply: `/foe ${n}` };
 				});
+				// When a foe is active, offer the overloaded actions too — the
+				// parser will only route to them on exact match, but the strip
+				// shows the discoverable tokens for anyone who typed /foe partial.
+				if (getActiveFoeId()) {
+					const specials: Suggestion[] = [
+						{ label: '+', hint: 'tick progress +1 box', apply: '/foe +' },
+						{ label: '-', hint: 'tick progress -1 box', apply: '/foe -' },
+						{ label: '=', hint: 'set progress to N boxes', apply: '/foe = ' },
+						{
+							label: 'vanquish',
+							hint: 'mark the active foe vanquished',
+							apply: '/foe vanquish',
+						},
+					].filter((s) => !q || s.label.toLowerCase().startsWith(q.toLowerCase()));
+					return [...specials, ...foes];
+				}
+				return foes;
+			}
+			case 'exp': {
+				const q = parsed.name;
+				const exps = prefixPick(getExpeditions(), (e) => e.name || '', q, 8).map((e) => ({
+					label: e.name || '',
+					hint: e.type,
+					apply: `/exp ${e.name}`,
+				}));
+				if (getActiveExpeditionId()) {
+					const specials: Suggestion[] = [
+						{ label: '+', hint: 'tick progress +1 mark', apply: '/exp +' },
+						{ label: '-', hint: 'tick progress -1 mark', apply: '/exp -' },
+						{ label: '=', hint: 'set progress to N marks', apply: '/exp = ' },
+					].filter((s) => !q || s.label.toLowerCase().startsWith(q.toLowerCase()));
+					return [...specials, ...exps];
+				}
+				return exps;
 			}
 			default:
 				return [];
@@ -302,7 +337,9 @@
 			case 'char':
 				return 'switch active character';
 			case 'foe':
-				return 'switch active foe';
+				return 'active foe: set / tick progress / vanquish';
+			case 'exp':
+				return 'active expedition: set / tick progress';
 			case 'start':
 				return 'pin ▲ start marker on the newest entry';
 			case 'end':
@@ -331,7 +368,7 @@
 				break;
 			}
 			case 'help': {
-				helpDialogRef?.open();
+				helpDialogRef?.open(cmd.focus);
 				break;
 			}
 			case 'oracle': {
@@ -377,6 +414,65 @@
 				setActiveFoeId(e.id);
 				const nm = e.customName || findFoe(e.foeId)?.name || 'foe';
 				setStatus(`Active foe → ${nm}.`, 'info');
+				break;
+			}
+			case 'foe-progress': {
+				if (!getActiveFoeId()) {
+					setStatus('/foe +/-/= needs an active foe. Type /foe <name> first.', 'error');
+					return;
+				}
+				// FoesArea's applyMenace / setMenace do the rank-aware tick
+				// conversion + log line. We forward the op + value through a
+				// CustomEvent; +page.svelte holds the ref and calls the right
+				// method.
+				document.dispatchEvent(
+					new CustomEvent('ironledger:foe-progress', {
+						detail: { op: cmd.op, value: cmd.value },
+					}),
+				);
+				setStatus(
+					cmd.op === '='
+						? `Foe progress set to ${cmd.value} boxes.`
+						: `Foe progress ${cmd.op}${cmd.value} box${cmd.value === 1 ? '' : 'es'}.`,
+					'info',
+				);
+				break;
+			}
+			case 'foe-vanquish': {
+				if (!getActiveFoeId()) {
+					setStatus('/foe vanquish needs an active foe.', 'error');
+					return;
+				}
+				document.dispatchEvent(new CustomEvent('ironledger:foe-vanquish'));
+				setStatus('Vanquished the active foe.', 'info');
+				break;
+			}
+			case 'exp': {
+				const e = resolveExpedition(cmd.name);
+				if (!e) {
+					setStatus(`No expedition matches "${cmd.name}".`, 'error');
+					return;
+				}
+				setActiveExpeditionId(e.id);
+				setStatus(`Active expedition → ${e.name}.`, 'info');
+				break;
+			}
+			case 'exp-progress': {
+				if (!getActiveExpeditionId()) {
+					setStatus('/exp +/-/= needs an active expedition. Type /exp <name> first.', 'error');
+					return;
+				}
+				document.dispatchEvent(
+					new CustomEvent('ironledger:exp-progress', {
+						detail: { op: cmd.op, value: cmd.value },
+					}),
+				);
+				setStatus(
+					cmd.op === '='
+						? `Expedition progress set to ${cmd.value} marks.`
+						: `Expedition progress ${cmd.op}${cmd.value} mark${cmd.value === 1 ? '' : 's'}.`,
+					'info',
+				);
 				break;
 			}
 			case 'start': {
@@ -551,6 +647,11 @@
 		const label = (e: (typeof list)[number]) => e.customName || findFoe(e.foeId)?.name || '';
 		return prefixPick(list, label, query, 1)[0] ?? fuzzyPick(list, label, query, 1)[0] ?? null;
 	}
+	function resolveExpedition(query: string) {
+		const list = getExpeditions();
+		const label = (e: (typeof list)[number]) => e.name || '';
+		return prefixPick(list, label, query, 1)[0] ?? fuzzyPick(list, label, query, 1)[0] ?? null;
+	}
 
 	// ── Input handlers ────────────────────────────────────────────────────
 	// True for commands whose argument is a name that autocomplete is picking
@@ -558,7 +659,7 @@
 	// over whatever raw text is in the input — so "/move e ↵" fires the
 	// currently-highlighted move (default: first result) instead of trying to
 	// dispatch the literal string "e".
-	const NAME_KINDS = new Set(['oracle', 'move', 'char', 'foe']);
+	const NAME_KINDS = new Set(['oracle', 'move', 'char', 'foe', 'exp']);
 
 	function handleSubmit() {
 		const cmd = parsed;
