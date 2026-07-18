@@ -27,6 +27,7 @@
 		VITAL_RESOURCE_ALIASES,
 		DEBILITY_NAMES,
 		DEBILITY_STATES,
+		NUMERIC_OPS,
 	} from '$lib/commandBar.js';
 	import { appendLog, sessionLog, triggerAction } from '$lib/log.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
@@ -161,6 +162,40 @@
 				apply: `/vital ${r} `,
 			}));
 		}
+		// /vital operator completion — after a valid resource is picked.
+		const vitalOpMatch = raw.match(/^\/vital\s+([a-z]+)\s+([+\-=]?)$/i);
+		if (vitalOpMatch) {
+			const rname = vitalOpMatch[1].toLowerCase();
+			if ((VITAL_RESOURCE_ALIASES as unknown as string[]).includes(rname)) {
+				const q = vitalOpMatch[2];
+				return prefixPick(NUMERIC_OPS as unknown as string[], (o) => o, q, 3).map((op) => ({
+					label: op,
+					hint:
+						op === '+'
+							? 'delta up (default 1)'
+							: op === '-'
+								? 'delta down (default 1)'
+								: 'set absolute',
+					apply: `/vital ${rname} ${op}${op === '=' ? ' ' : ''}`,
+				}));
+			}
+		}
+		// /bonds and /failures operator completion — same op set.
+		const trackOpMatch = raw.match(/^\/(bonds|failures)\s+([+\-=]?)$/i);
+		if (trackOpMatch) {
+			const trackVerb = trackOpMatch[1].toLowerCase();
+			const q = trackOpMatch[2];
+			return prefixPick(NUMERIC_OPS as unknown as string[], (o) => o, q, 3).map((op) => ({
+				label: op,
+				hint:
+					op === '+'
+						? 'delta up (default 1)'
+						: op === '-'
+							? 'delta down (default 1)'
+							: 'set absolute',
+				apply: `/${trackVerb} ${op}${op === '=' ? ' ' : ''}`,
+			}));
+		}
 		// /debility name completion — before the state is typed.
 		const debilityNameMatch = raw.match(/^\/debility\s+([a-z]*)$/i);
 		if (debilityNameMatch) {
@@ -261,6 +296,10 @@
 				return 'adjust a vital on the active character';
 			case 'debility':
 				return 'set a debility on/off/toggle';
+			case 'bonds':
+				return 'edit the bonds track (0..40)';
+			case 'failures':
+				return 'edit the failures track (0..40)';
 		}
 	}
 
@@ -393,6 +432,22 @@
 					const delta = cmd.op === '+' ? cmd.value : -cmd.value;
 					triggerAction({ charId, type: 'resource', key: cmd.resource, value: delta });
 					setStatus(`${label} ${delta > 0 ? '+' : ''}${delta}.`, 'info');
+				}
+				break;
+			}
+			case 'track': {
+				const charId = getActiveCharacterId();
+				if (!charId) {
+					setStatus(`/${cmd.name} needs an active character. Type /char <name> first.`, 'error');
+					return;
+				}
+				if (cmd.op === '=') {
+					triggerAction({ charId, type: 'set', key: cmd.name, value: cmd.value });
+					setStatus(`${cmd.name} set to ${cmd.value}.`, 'info');
+				} else {
+					const delta = cmd.op === '+' ? cmd.value : -cmd.value;
+					triggerAction({ charId, type: 'resource', key: cmd.name, value: delta });
+					setStatus(`${cmd.name} ${delta > 0 ? '+' : ''}${delta}.`, 'info');
 				}
 				break;
 			}

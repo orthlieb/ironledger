@@ -27,6 +27,10 @@
 //     state: on | off | toggle (required — no default)
 //     Applies to the active character via the debility action bus. Toggle is
 //     resolved at dispatch time against the character's current value.
+//   /bonds <op> [n]               → { kind: 'track', name: 'bonds', op, value }
+//   /failures <op> [n]            → { kind: 'track', name: 'failures', op, value }
+//     Same operator semantics as /vital (reuses parseVitalOp). Track values
+//     are clamped 0..40 by the resource applier.
 // =============================================================================
 
 /** Canonical vital keys — same strings the action bus / character data use. */
@@ -52,6 +56,12 @@ export type DebilityName = (typeof DEBILITY_NAMES)[number];
 export const DEBILITY_STATES = ['on', 'off', 'toggle'] as const;
 export type DebilityState = (typeof DEBILITY_STATES)[number];
 
+/** Progress-track names editable by /bonds and /failures. */
+export type TrackName = 'bonds' | 'failures';
+
+/** Operators offered by autocomplete for /vital / /bonds / /failures. */
+export const NUMERIC_OPS = ['+', '-', '='] as const;
+
 export type Command =
 	| { kind: 'note'; text: string }
 	| { kind: 'help' }
@@ -64,6 +74,7 @@ export type Command =
 	| { kind: 'story' }
 	| { kind: 'vital'; resource: VitalResource; op: '+' | '-' | '='; value: number }
 	| { kind: 'debility'; name: DebilityName; state: DebilityState }
+	| { kind: 'track'; name: TrackName; op: '+' | '-' | '='; value: number }
 	| { kind: 'error'; message: string };
 
 /** Set of leading slugs that route to slash-commands. Keep in sync with parseCommand. */
@@ -79,6 +90,8 @@ export const COMMAND_NAMES = [
 	'story',
 	'vital',
 	'debility',
+	'bonds',
+	'failures',
 ] as const;
 export type CommandName = (typeof COMMAND_NAMES)[number];
 
@@ -172,6 +185,20 @@ export function parseCommand(input: string): Command | null {
 			return { kind: 'end' };
 		case 'story':
 			return { kind: 'story' };
+		case 'bonds':
+		case 'failures': {
+			// Shared body — both are 0..40 tracks driven by the same op grammar.
+			const trackName = verb as TrackName;
+			if (!args) {
+				return {
+					kind: 'error',
+					message: `/${trackName} needs an operator (+, -, or =).`,
+				};
+			}
+			const parsed = parseVitalOp(args.replace(/\s+/g, ' ').trim());
+			if ('kind' in parsed) return parsed;
+			return { kind: 'track', name: trackName, op: parsed.op, value: parsed.value };
+		}
 		case 'debility': {
 			if (!args) {
 				return {

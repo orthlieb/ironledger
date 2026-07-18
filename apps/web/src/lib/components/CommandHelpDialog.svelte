@@ -46,6 +46,14 @@
 			hint: 'Mark a debility on the active character. name: wounded / shaken / unprepared / encumbered / maimed / corrupted / cursed / tormented. state: on / off / toggle (required, no default). Examples: /debility wounded on, /debility shaken toggle.',
 		},
 		{
+			syntax: '/bonds <op> [n]',
+			hint: 'Edit the bonds track on the active character (0..40). Same operator grammar as /vital: + / - default n=1, = requires an explicit n. Examples: /bonds +, /bonds = 8.',
+		},
+		{
+			syntax: '/failures <op> [n]',
+			hint: 'Edit the failures track on the active character (0..40). Same operator grammar as /vital. Examples: /failures +, /failures = 0.',
+		},
+		{
 			syntax: '/start',
 			hint: 'Pin the ▲ start marker on the newest log entry (open, growing selection).',
 		},

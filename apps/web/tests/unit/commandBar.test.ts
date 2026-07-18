@@ -226,6 +226,70 @@ describe('parseCommand /vital', () => {
 	});
 });
 
+describe('parseCommand /bonds and /failures', () => {
+	it('parses /bonds +2', () => {
+		expect(parseCommand('/bonds +2')).toEqual({
+			kind: 'track',
+			name: 'bonds',
+			op: '+',
+			value: 2,
+		});
+	});
+	it('parses /failures -1', () => {
+		expect(parseCommand('/failures -1')).toEqual({
+			kind: 'track',
+			name: 'failures',
+			op: '-',
+			value: 1,
+		});
+	});
+	it('parses /bonds = 12', () => {
+		expect(parseCommand('/bonds = 12')).toEqual({
+			kind: 'track',
+			name: 'bonds',
+			op: '=',
+			value: 12,
+		});
+	});
+	it('/bonds = 0 is valid (explicit clear)', () => {
+		expect(parseCommand('/bonds = 0')).toEqual({
+			kind: 'track',
+			name: 'bonds',
+			op: '=',
+			value: 0,
+		});
+	});
+	it('/bonds + defaults to +1', () => {
+		expect(parseCommand('/bonds +')).toEqual({
+			kind: 'track',
+			name: 'bonds',
+			op: '+',
+			value: 1,
+		});
+	});
+	it('/bonds = with no value is an error', () => {
+		const c = parseCommand('/bonds =');
+		expect(c?.kind).toBe('error');
+		if (c?.kind === 'error') expect(c.message).toMatch(/needs a value/);
+	});
+	it('/bonds with no operator is an error', () => {
+		const c = parseCommand('/bonds');
+		expect(c?.kind).toBe('error');
+	});
+	it('/failures rejects a negative delta on +/-', () => {
+		const c = parseCommand('/failures + -2');
+		expect(c?.kind).toBe('error');
+	});
+	it('/failures = -3 parses (applier clamps to 0)', () => {
+		expect(parseCommand('/failures = -3')).toEqual({
+			kind: 'track',
+			name: 'failures',
+			op: '=',
+			value: -3,
+		});
+	});
+});
+
 describe('parseCommand /debility', () => {
 	it('parses <name> on', () => {
 		expect(parseCommand('/debility wounded on')).toEqual({
