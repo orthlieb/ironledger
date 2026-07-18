@@ -90,9 +90,6 @@ export type TrackName = 'bonds' | 'failures';
  *  These accept `=` (absolute set); /char, /foe, /exp deliberately do not. */
 export const NUMERIC_OPS = ['+', '-', '='] as const;
 
-/** Operators offered by autocomplete for the delta-only overloaded verbs. */
-export const DELTA_OPS = ['+', '-'] as const;
-
 /**
  * Parse the `<op> [n]` tail for a delta-only overload (/char, /foe, /exp).
  * Same shape as parseVitalOp but rejects `=`: an absolute set is available on

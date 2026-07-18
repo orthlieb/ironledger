@@ -31,8 +31,6 @@
 		INITIATIVE_VALUES,
 		initiativeToNumber,
 	} from '$lib/commandBar.js';
-	// Delta-only ops for overloaded verb tokens (/char, /foe, /exp — no `=`).
-	const DELTA_TOKENS = ['+', '-'] as const;
 	import { appendLog, sessionLog, triggerAction } from '$lib/log.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
 	import { getCharacters } from '$lib/characterStore.svelte.js';
