@@ -6,6 +6,7 @@ import { describe, it, expect } from 'vitest';
 import {
 	parseCommand,
 	parseVitalOp,
+	initiativeToNumber,
 	fuzzyScore,
 	fuzzyPick,
 	prefixPick,
@@ -382,6 +383,50 @@ describe('parseCommand /debility', () => {
 	it('errors when extra tokens are present', () => {
 		const c = parseCommand('/debility wounded on now');
 		expect(c?.kind).toBe('error');
+	});
+});
+
+describe('parseCommand /initiative', () => {
+	it('parses none / character / foe', () => {
+		expect(parseCommand('/initiative none')).toEqual({ kind: 'initiative', who: 'none' });
+		expect(parseCommand('/initiative character')).toEqual({
+			kind: 'initiative',
+			who: 'character',
+		});
+		expect(parseCommand('/initiative foe')).toEqual({ kind: 'initiative', who: 'foe' });
+	});
+	it('is case-insensitive', () => {
+		expect(parseCommand('/initiative FOE')).toEqual({ kind: 'initiative', who: 'foe' });
+		expect(parseCommand('/INITIATIVE Character')).toEqual({
+			kind: 'initiative',
+			who: 'character',
+		});
+	});
+	it('errors on missing value', () => {
+		const c = parseCommand('/initiative');
+		expect(c?.kind).toBe('error');
+	});
+	it('errors on unknown value — no numeric aliases', () => {
+		const c = parseCommand('/initiative 1');
+		expect(c?.kind).toBe('error');
+		if (c?.kind === 'error') expect(c.message).toMatch(/none \/ character \/ foe/);
+	});
+	it('errors on aliases we do not accept', () => {
+		expect(parseCommand('/initiative char')?.kind).toBe('error');
+		expect(parseCommand('/initiative me')?.kind).toBe('error');
+		expect(parseCommand('/initiative you')?.kind).toBe('error');
+	});
+	it('errors on extra tokens', () => {
+		const c = parseCommand('/initiative foe now');
+		expect(c?.kind).toBe('error');
+	});
+});
+
+describe('initiativeToNumber', () => {
+	it('maps to the on-disk enum', () => {
+		expect(initiativeToNumber('none')).toBe(0);
+		expect(initiativeToNumber('character')).toBe(1);
+		expect(initiativeToNumber('foe')).toBe(2);
 	});
 });
 

@@ -31,6 +31,10 @@
 //   /failures <op> [n]            → { kind: 'track', name: 'failures', op, value }
 //     Same operator semantics as /vital (reuses parseVitalOp). Track values
 //     are clamped 0..40 by the resource applier.
+//   /initiative <who>             → { kind: 'initiative', who }
+//     who: none | foe | character (exact match, case-insensitive)
+//     Applies to the active character via a new action-bus type so the log
+//     line reads "Initiative → foe" (not "Initiative: 0 → 2 (+2)").
 // =============================================================================
 
 /** Canonical vital keys — same strings the action bus / character data use. */
@@ -62,6 +66,19 @@ export type TrackName = 'bonds' | 'failures';
 /** Operators offered by autocomplete for /vital / /bonds / /failures. */
 export const NUMERIC_OPS = ['+', '-', '='] as const;
 
+/** Initiative values accepted by /initiative. Order matters — it drives the
+ *  autocomplete strip and matches the enum encoded on CharacterData.initiative
+ *  (0 = none, 1 = character, 2 = foe). */
+export const INITIATIVE_VALUES = ['none', 'character', 'foe'] as const;
+export type InitiativeValue = (typeof INITIATIVE_VALUES)[number];
+
+/** Map an InitiativeValue to the on-disk numeric enum. */
+export function initiativeToNumber(v: InitiativeValue): 0 | 1 | 2 {
+	if (v === 'none') return 0;
+	if (v === 'character') return 1;
+	return 2;
+}
+
 export type Command =
 	| { kind: 'note'; text: string }
 	| { kind: 'help' }
@@ -75,6 +92,7 @@ export type Command =
 	| { kind: 'vital'; resource: VitalResource; op: '+' | '-' | '='; value: number }
 	| { kind: 'debility'; name: DebilityName; state: DebilityState }
 	| { kind: 'track'; name: TrackName; op: '+' | '-' | '='; value: number }
+	| { kind: 'initiative'; who: InitiativeValue }
 	| { kind: 'error'; message: string };
 
 /** Set of leading slugs that route to slash-commands. Keep in sync with parseCommand. */
@@ -92,6 +110,7 @@ export const COMMAND_NAMES = [
 	'debility',
 	'bonds',
 	'failures',
+	'initiative',
 ] as const;
 export type CommandName = (typeof COMMAND_NAMES)[number];
 
@@ -185,6 +204,29 @@ export function parseCommand(input: string): Command | null {
 			return { kind: 'end' };
 		case 'story':
 			return { kind: 'story' };
+		case 'initiative': {
+			if (!args) {
+				return {
+					kind: 'error',
+					message: '/initiative needs a value: none, character, or foe.',
+				};
+			}
+			// Single token — reject anything with a space in the args (extras).
+			if (/\s/.test(args)) {
+				return {
+					kind: 'error',
+					message: '/initiative takes a single value: none, character, or foe.',
+				};
+			}
+			const who = args.toLowerCase();
+			if (!INITIATIVE_VALUES.includes(who as InitiativeValue)) {
+				return {
+					kind: 'error',
+					message: `/initiative doesn't recognise "${args}". Use none / character / foe.`,
+				};
+			}
+			return { kind: 'initiative', who: who as InitiativeValue };
+		}
 		case 'bonds':
 		case 'failures': {
 			// Shared body — both are 0..40 tracks driven by the same op grammar.

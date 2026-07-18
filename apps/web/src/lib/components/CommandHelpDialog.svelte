@@ -54,6 +54,10 @@
 			hint: 'Edit the failures track on the active character (0..40). Same operator grammar as /vital. Examples: /failures +, /failures = 0.',
 		},
 		{
+			syntax: '/initiative <who>',
+			hint: 'Set combat initiative on the active character. who: none / character / foe. Examples: /initiative foe, /initiative character.',
+		},
+		{
 			syntax: '/start',
 			hint: 'Pin the ▲ start marker on the newest log entry (open, growing selection).',
 		},

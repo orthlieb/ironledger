@@ -28,6 +28,8 @@
 		DEBILITY_NAMES,
 		DEBILITY_STATES,
 		NUMERIC_OPS,
+		INITIATIVE_VALUES,
+		initiativeToNumber,
 	} from '$lib/commandBar.js';
 	import { appendLog, sessionLog, triggerAction } from '$lib/log.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
@@ -196,6 +198,21 @@
 				apply: `/${trackVerb} ${op}${op === '=' ? ' ' : ''}`,
 			}));
 		}
+		// /initiative value completion — three fixed enums, prefix-filtered.
+		const initMatch = raw.match(/^\/initiative\s+([a-z]*)$/i);
+		if (initMatch) {
+			const q = initMatch[1];
+			return prefixPick(INITIATIVE_VALUES as unknown as string[], (v) => v, q, 3).map((v) => ({
+				label: v,
+				hint:
+					v === 'none'
+						? 'neither side holds it'
+						: v === 'character'
+							? 'you hold initiative'
+							: 'the foe holds initiative',
+				apply: `/initiative ${v}`,
+			}));
+		}
 		// /debility name completion — before the state is typed.
 		const debilityNameMatch = raw.match(/^\/debility\s+([a-z]*)$/i);
 		if (debilityNameMatch) {
@@ -300,6 +317,8 @@
 				return 'edit the bonds track (0..40)';
 			case 'failures':
 				return 'edit the failures track (0..40)';
+			case 'initiative':
+				return 'set combat initiative';
 		}
 	}
 
@@ -433,6 +452,21 @@
 					triggerAction({ charId, type: 'resource', key: cmd.resource, value: delta });
 					setStatus(`${label} ${delta > 0 ? '+' : ''}${delta}.`, 'info');
 				}
+				break;
+			}
+			case 'initiative': {
+				const charId = getActiveCharacterId();
+				if (!charId) {
+					setStatus('/initiative needs an active character. Type /char <name> first.', 'error');
+					return;
+				}
+				triggerAction({
+					charId,
+					type: 'initiative',
+					key: 'initiative',
+					value: initiativeToNumber(cmd.who),
+				});
+				setStatus(`Initiative → ${cmd.who}.`, 'info');
 				break;
 			}
 			case 'track': {

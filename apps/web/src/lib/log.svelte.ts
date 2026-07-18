@@ -267,9 +267,12 @@ export function drainXpSpend(charId: string): number {
 
 export interface LogAction {
 	charId: string;
-	type: 'resource' | 'debility' | 'reset-track' | 'set';
-	key: string; // resource name, debility name, or track name
-	value: number; // delta for resource, 0/1 for debility, ignored for reset-track
+	type: 'resource' | 'debility' | 'reset-track' | 'set' | 'initiative';
+	/** Resource name, debility name, track name; unused for `initiative`. */
+	key: string;
+	/** Delta for `resource`, 0/1 for `debility`, ignored for `reset-track`,
+	 *  absolute value for `set`, 0|1|2 (none|character|foe) for `initiative`. */
+	value: number;
 }
 
 let _actionNonce = $state(0);
