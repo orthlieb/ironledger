@@ -61,7 +61,7 @@
 		{
 			verb: 'char',
 			syntax: '/char <op> [n]',
-			hint: 'Take harm (-) or heal (+) on the active character. Applies to health, clamped 0..5. n defaults to 1. Examples: /char - (take 1 harm), /char -2, /char +. Absolute health set: /vital health = N.',
+			hint: 'Take harm (-) or heal (+) on the active character. Applies to health, clamped 0..5. Bare /char - takes the active foe’s rank harm (troublesome=1 … epic=5) when a foe is set — otherwise 1. Explicit /char -N ignores the foe. Bare /char + heals 1. Absolute health set: /vital health = N.',
 		},
 		{
 			verb: 'foe',

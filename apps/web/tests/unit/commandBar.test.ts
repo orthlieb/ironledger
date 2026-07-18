@@ -296,14 +296,37 @@ describe('parseCommand /char overloads', () => {
 	it('/char <name> still sets the active character', () => {
 		expect(parseCommand('/char Beepalache')).toEqual({ kind: 'char', name: 'Beepalache' });
 	});
-	it('/char -2 parses as harm (delta down on health)', () => {
-		expect(parseCommand('/char -2')).toEqual({ kind: 'char-harm', op: '-', value: 2 });
+	it('/char -2 parses as harm (delta down on health, explicit value)', () => {
+		expect(parseCommand('/char -2')).toEqual({
+			kind: 'char-harm',
+			op: '-',
+			value: 2,
+			defaulted: false,
+		});
 	});
-	it('/char + defaults to +1 (heal 1)', () => {
-		expect(parseCommand('/char +')).toEqual({ kind: 'char-harm', op: '+', value: 1 });
+	it('/char + defaults to +1 with defaulted=true', () => {
+		expect(parseCommand('/char +')).toEqual({
+			kind: 'char-harm',
+			op: '+',
+			value: 1,
+			defaulted: true,
+		});
 	});
-	it('/char - defaults to -1 (take 1 harm)', () => {
-		expect(parseCommand('/char -')).toEqual({ kind: 'char-harm', op: '-', value: 1 });
+	it('/char - defaults to -1 with defaulted=true (dispatch may swap in foe rank)', () => {
+		expect(parseCommand('/char -')).toEqual({
+			kind: 'char-harm',
+			op: '-',
+			value: 1,
+			defaulted: true,
+		});
+	});
+	it('explicit /char -1 is NOT flagged as defaulted', () => {
+		expect(parseCommand('/char -1')).toEqual({
+			kind: 'char-harm',
+			op: '-',
+			value: 1,
+			defaulted: false,
+		});
 	});
 	it('/char = N is rejected — use /vital health = N for absolute set', () => {
 		const c = parseCommand('/char = 3');

@@ -138,7 +138,15 @@ export type Command =
 	| { kind: 'oracle'; key: string }
 	| { kind: 'move'; name: string }
 	| { kind: 'char'; name: string }
-	| { kind: 'char-harm'; op: '+' | '-'; value: number }
+	| {
+			kind: 'char-harm';
+			op: '+' | '-';
+			value: number;
+			/** True when the user typed `/char -` (or `+`) with no explicit
+			 *  number, so the default 1 was filled in. Dispatch swaps this for
+			 *  the active foe's rank harm on `-` when a foe is set. */
+			defaulted: boolean;
+	  }
 	| { kind: 'foe'; name: string }
 	| { kind: 'foe-progress'; op: '+' | '-'; value: number }
 	| { kind: 'foe-vanquish' }
@@ -258,9 +266,13 @@ export function parseCommand(input: string): Command | null {
 			if (!args) return { kind: 'help', focus: 'char' };
 			const trimmed = args.trim();
 			if (/^[+\-=]/.test(trimmed)) {
-				const parsed = parseDeltaOp(trimmed.replace(/\s+/g, ' '));
+				const compact = trimmed.replace(/\s+/g, ' ');
+				// Bare `+` or `-` means no explicit value — dispatch swaps in the
+				// active foe's rank harm on `-` before applying.
+				const defaulted = /^[+-]$/.test(compact);
+				const parsed = parseDeltaOp(compact);
 				if ('kind' in parsed) return parsed;
-				return { kind: 'char-harm', op: parsed.op, value: parsed.value };
+				return { kind: 'char-harm', op: parsed.op, value: parsed.value, defaulted };
 			}
 			return { kind: 'char', name: trimmed };
 		}

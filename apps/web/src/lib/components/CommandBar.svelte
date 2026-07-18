@@ -274,9 +274,16 @@
 				});
 				// When a character is active, offer the harm/heal tokens too.
 				if (getActiveCharacterId()) {
+					// Bare `/char -` takes the active foe's rank harm when a foe
+					// is set — surface that in the hint so nobody's surprised.
+					const foeId = getActiveFoeId();
+					const foeEnc = foeId ? getEncounters().find((e) => e.id === foeId) : undefined;
+					const foeRankHarm = foeEnc ? (FOE_RANKS[foeEnc.effectiveRank]?.harm ?? 0) : 0;
+					const harmHint =
+						foeRankHarm > 0 ? `take ${foeRankHarm} harm (active foe rank)` : 'take 1 harm';
 					const specials: Suggestion[] = [
 						{ label: '+', hint: 'heal +1 health', apply: '/char +' },
-						{ label: '-', hint: 'take 1 harm', apply: '/char -' },
+						{ label: '-', hint: harmHint, apply: '/char -' },
 					].filter((s) => !q || s.label.toLowerCase().startsWith(q.toLowerCase()));
 					return [...specials, ...chars];
 				}
@@ -420,10 +427,34 @@
 				}
 				// Value on /char is harm — always applied to health. Applier
 				// clamps 0..5 and appends the log line. `+` heals, `-` harms.
-				const delta = cmd.op === '+' ? cmd.value : -cmd.value;
+				//
+				// On bare `/char -` (no explicit value), take the active foe's
+				// rank harm instead of 1 — the most common combat action becomes
+				// a single keystroke sequence. Explicit values (`/char -2`) win.
+				// `/char +` bare stays at 1 — healing has no rank derivation.
+				let n = cmd.value;
+				let usedFoeRank = false;
+				if (cmd.op === '-' && cmd.defaulted) {
+					const foeId = getActiveFoeId();
+					if (foeId) {
+						const enc = getEncounters().find((e) => e.id === foeId);
+						if (enc) {
+							const rankHarm = FOE_RANKS[enc.effectiveRank]?.harm;
+							if (rankHarm && rankHarm > 0) {
+								n = rankHarm;
+								usedFoeRank = true;
+							}
+						}
+					}
+				}
+				const delta = cmd.op === '+' ? n : -n;
 				triggerAction({ charId, type: 'resource', key: 'health', value: delta });
 				setStatus(
-					cmd.op === '+' ? `Healed ${cmd.value} health.` : `Took ${cmd.value} harm.`,
+					cmd.op === '+'
+						? `Healed ${n} health.`
+						: usedFoeRank
+							? `Took ${n} harm (active foe rank).`
+							: `Took ${n} harm.`,
 					'info',
 				);
 				break;
