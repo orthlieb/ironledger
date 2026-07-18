@@ -191,3 +191,89 @@ interface LogEntry {
   roll?: RollMeta; // present on action roll entries — enables burn-momentum after the fact
 }
 ```
+
+---
+
+## Story Sections (▲ / ▼ Markers)
+
+A section is a contiguous slice of the log the user selects for AI-story
+generation. It's defined by **two markers** pinned to log-entry ids:
+
+- **▲ start** — the **oldest** entry included (bottom of the selection, since
+  the log renders newest-first).
+- **▼ end** — the **newest** entry included. **`null` means "top of log, live"**:
+  the section stays open and grows as new entries land.
+
+Marker state lives in `apps/web/src/lib/sectionStore.svelte.ts` — module-level
+`$state` persisted to `localStorage['ironledger:ai:section']` so a reload
+keeps the selection. Markers are **client-side UI state only**, not part of
+the log data model — they aren't included in the JSON export (see
+[import-schema.md § Session log](import-schema.md#session-log)).
+
+### Semantics
+
+| `startId` | `endId` | Section is…                                                         |
+| --------- | ------- | ------------------------------------------------------------------- |
+| `null`    | —       | Empty — nothing to generate. The Generate button is disabled.       |
+| set       | `null`  | **Open**: growing forward from `startId` to the current top of log. |
+| set       | set     | **Closed**: fixed range `[startId … endId]`, inclusive.             |
+
+Setting a new `startId` clears the old `endId` — the section is reset around
+the new pin. Setting an `endId` before a `startId` is a no-op.
+
+### Placing markers
+
+Three surfaces write to the store; all funnel through `toggleStart`/
+`toggleEnd` / `setStart` / `setEnd`:
+
+1. **Per-entry ▲ / ▼ hover buttons** on the entry-actions row (Font Awesome
+   `caret-large-up-solid` / `caret-large-down-solid`). Hover-revealed like
+   Edit / Delete; the active marker stays visible even without hover so the
+   user can see where the pins are. The ▼ button is disabled until a ▲ is
+   set (a bare end has no meaning).
+2. **Command bar** — see [`docs/global-context-bar.md`](global-context-bar.md)
+   for the surface, and `apps/web/src/lib/commandBar.ts` for the parser. Three
+   verbs mutate the store:
+   - `/start` — pin ▲ on the current newest entry (opens an open, growing
+     section).
+   - `/end` — pin ▼ on the current newest entry (closes the section).
+   - `/story` — dispatch `ironledger:story-generate`, which LogPanel handles
+     by opening the Story dialog on the current section. No-ops with a status
+     message when nothing is pinned.
+3. **Toolbar Generate button + floating strip** at the bottom of the log —
+   both call `storyDialogRef?.open()` on the current section, which reads
+   `sectionEntries()`. The strip also has a **Clear** button that calls
+   `clearSection()`.
+
+After a successful **Save to Log**, `clearSection()` drops both markers —
+the section has been consumed. The user pins a fresh ▲ for the next one.
+
+### Highlight rendering
+
+Entries inside the section get:
+
+- `.log-entry-in-section` — 6% accent-tint background, 3px inset accent
+  left-border.
+- `.log-entry-section-start` / `.log-entry-section-end` — extra 6% accent
+  bump on top of the tint so the pinned entries visibly cap the range.
+
+The `isEntryInSection(id)` helper in `sectionStore` is what LogPanel uses to
+compute the classes — it walks entry positions each render (no caching), so
+the highlight follows entry deletion, log-clear, or a reordered log without
+manual invalidation.
+
+### Mobile
+
+The whole selection surface is CSS-hidden below `768px` (matches
+[`mobile.md`](mobile.md)'s canonical breakpoint). Hover-revealed marker
+buttons are awkward on touch, and the log gets only ~20% of the viewport on
+mobile Adventure (per the split-panel default). The underlying `sectionStore`
+state is untouched; a section pinned on desktop stays highlighted (read-only)
+if the user switches to mobile.
+
+### End-to-end flow
+
+See [`docs/ai-story.md`](ai-story.md) for the full AI-story flow (provider
+config, preface, prompt shape, and the Regenerate / Export paths). This
+section covers just the log-panel selection mechanics; the story-generation
+itself is one dialog downstream.
