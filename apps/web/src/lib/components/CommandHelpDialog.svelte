@@ -18,35 +18,117 @@
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 
 	let dialogEl = $state<HTMLDialogElement | null>(null);
+	/** Verb to highlight and scroll into view — set by open(focus). Cleared
+	 *  automatically after ~2.5s so a re-open without focus is unhighlighted. */
+	let focusedVerb = $state<string | null>(null);
 
-	export function open() {
+	export function open(focus?: string) {
+		focusedVerb = focus ?? null;
 		dialogEl?.showModal();
+		if (focus) {
+			// Wait for the dialog to paint before scrolling into view.
+			queueMicrotask(() => {
+				const el = dialogEl?.querySelector(`[data-row-verb="${focus}"]`) as HTMLElement | null;
+				el?.scrollIntoView({ behavior: 'auto', block: 'center' });
+			});
+			// Fade the highlight after a moment so re-opens without focus don't
+			// look mysteriously pre-selected.
+			setTimeout(() => {
+				if (focusedVerb === focus) focusedVerb = null;
+			}, 2500);
+		}
 	}
 	export function close() {
 		dialogEl?.close();
 	}
 
 	interface Row {
+		/** Stable id used by open(focus) to scroll a specific row into view. */
+		verb: string;
 		syntax: string;
 		hint: string;
 	}
 	const COMMANDS: Row[] = [
-		{ syntax: '<text>', hint: 'Bare prose is added to the log as a Note.' },
-		{ syntax: '/note <text>', hint: 'Same as bare prose.' },
-		{ syntax: '/oracle <table>', hint: 'Roll an oracle (e.g. /oracle place).' },
-		{ syntax: '/move <name>', hint: 'Open a move (e.g. /move face → Face Danger).' },
-		{ syntax: '/char <name>', hint: 'Set the active character.' },
-		{ syntax: '/foe <name>', hint: 'Set the active foe.' },
+		{ verb: 'note', syntax: '<text>', hint: 'Bare prose is added to the log as a Note.' },
+		{ verb: 'note', syntax: '/note <text>', hint: 'Same as bare prose.' },
+		{ verb: 'oracle', syntax: '/oracle <table>', hint: 'Roll an oracle (e.g. /oracle place).' },
 		{
+			verb: 'move',
+			syntax: '/move <name>',
+			hint: 'Open a move (e.g. /move face → Face Danger).',
+		},
+		{ verb: 'char', syntax: '/char <name>', hint: 'Set the active character.' },
+		{
+			verb: 'char',
+			syntax: '/char <op> [n]',
+			hint: 'Take harm (-) or heal (+) on the active character. Applies to health, clamped 0..5. Bare /char - takes the active foe’s rank harm (troublesome=1 … epic=5) when a foe is set — otherwise 1. Explicit /char -N ignores the foe. Bare /char + heals 1. Absolute health set: /vital health = N.',
+		},
+		{
+			verb: 'foe',
+			syntax: '/foe <name>',
+			hint: 'Set the active foe.',
+		},
+		{
+			verb: 'foe',
+			syntax: '/foe <op> [n]',
+			hint: 'Advance the active foe’s combat progress by n boxes (rank-aware ticks). + / - only; no = (ticks vs boxes would be ambiguous). Examples: /foe + (1 box), /foe +2, /foe -.',
+		},
+		{
+			verb: 'foe',
+			syntax: '/foe vanquish',
+			hint: 'Mark the active foe as vanquished. Does not delete the encounter.',
+		},
+		{
+			verb: 'exp',
+			syntax: '/exp <name>',
+			hint: 'Set the active expedition (journey or site).',
+		},
+		{
+			verb: 'exp',
+			syntax: '/exp <op> [n]',
+			hint: 'Advance the active expedition by n progress marks (difficulty-aware ticks). + / - only. Examples: /exp +, /exp -2.',
+		},
+		{
+			verb: 'vital',
+			syntax: '/vital <res> <op> [n]',
+			hint: 'Adjust a vital on the active character. res: momentum / health / spirit / supply / experience (xp). op: + (delta up), - (delta down), = (set absolute). n defaults to 1 for +/-, is required for =. Examples: /vital momentum +2, /vital health -3, /vital experience = 12.',
+		},
+		{
+			verb: 'debility',
+			syntax: '/debility <name> <state>',
+			hint: 'Mark a debility on the active character. name: wounded / shaken / unprepared / encumbered / maimed / corrupted / cursed / tormented. state: on / off / toggle (required, no default). Examples: /debility wounded on, /debility shaken toggle.',
+		},
+		{
+			verb: 'bonds',
+			syntax: '/bonds <op> [n]',
+			hint: 'Edit the bonds track on the active character (0..40). Same operator grammar as /vital: + / - default n=1, = requires an explicit n. Examples: /bonds +, /bonds = 8.',
+		},
+		{
+			verb: 'failures',
+			syntax: '/failures <op> [n]',
+			hint: 'Edit the failures track on the active character (0..40). Same operator grammar as /vital. Examples: /failures +, /failures = 0.',
+		},
+		{
+			verb: 'initiative',
+			syntax: '/initiative <who>',
+			hint: 'Set combat initiative on the active character. who: none / character / foe. Examples: /initiative foe, /initiative character.',
+		},
+		{
+			verb: 'start',
 			syntax: '/start',
 			hint: 'Pin the ▲ start marker on the newest log entry (open, growing selection).',
 		},
 		{
+			verb: 'end',
 			syntax: '/end',
 			hint: 'Pin the ▼ end marker on the newest log entry (closes the selection).',
 		},
-		{ syntax: '/story', hint: 'Open the AI-story generate dialog on the current section.' },
-		{ syntax: '/help', hint: 'This cheat-sheet.' },
+		{
+			verb: 'story',
+			syntax: '/story',
+			hint: 'Open the AI-story generate dialog on the current section.',
+		},
+		{ verb: 'help', syntax: '/help', hint: 'This cheat-sheet.' },
 	];
 </script>
 
@@ -62,7 +144,7 @@
 
 		<ul class="ch-list">
 			{#each COMMANDS as cmd}
-				<li class="ch-row">
+				<li class="ch-row" class:ch-row-focused={focusedVerb === cmd.verb} data-row-verb={cmd.verb}>
 					<code class="ch-syntax">{cmd.syntax}</code>
 					<span class="ch-hint">{cmd.hint}</span>
 				</li>
@@ -149,6 +231,10 @@
 	}
 	.ch-row:nth-child(odd) {
 		background: color-mix(in srgb, var(--text-accent) 4%, transparent);
+	}
+	.ch-row-focused {
+		background: color-mix(in srgb, var(--text-accent) 20%, transparent) !important;
+		box-shadow: inset 3px 0 0 0 var(--text-accent);
 	}
 	.ch-syntax {
 		font-family: var(--font-mono, 'Roboto Mono', ui-monospace, monospace);

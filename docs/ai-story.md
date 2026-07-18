@@ -21,8 +21,8 @@ normalized text back.
    **per-story tweak** that applies to just that generation and never write back
    to the global default.
 3. **Mark a section** (hover a log entry → ▲ / ▼, or type `/start` / `/end` in
-   the command bar): two markers define the section — ▲ pins the oldest entry
-   included, ▼ pins the newest. Semantics:
+   the [command bar](command-bar.md)): two markers define the section — ▲ pins
+   the oldest entry included, ▼ pins the newest. Semantics:
    - **Only ▲ set**: the section is open — it grows as new entries land at the
      top of the log (equivalent to the old "record forward" behavior).
    - **Both ▲ and ▼ set**: the section is a fixed range between them, inclusive.

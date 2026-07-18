@@ -220,7 +220,33 @@
 		]);
 
 		document.addEventListener('il-menu-action', handleMenuAction);
-		return () => document.removeEventListener('il-menu-action', handleMenuAction);
+
+		// Command-bar bus: /foe +N/-N, /foe vanquish, /exp +N/-N. CommandBar
+		// dispatches these as CustomEvents so it doesn't need to hold refs to
+		// the sheet areas — this route already does. FoesArea / ExpeditionsArea
+		// handle the rank/difficulty tick conversion + log-line writing inside
+		// their apply methods, so we just forward the signed box/mark count.
+		const onFoeProgress = (e: Event) => {
+			const d = (e as CustomEvent<{ boxes: number }>).detail;
+			if (!d) return;
+			foeAreaRef?.applyMenace(d.boxes);
+		};
+		const onFoeVanquish = () => foeAreaRef?.vanquishActiveFoe();
+		const onExpProgress = (e: Event) => {
+			const d = (e as CustomEvent<{ marks: number }>).detail;
+			if (!d) return;
+			expAreaRef?.applyProgress(d.marks);
+		};
+		document.addEventListener('ironledger:foe-progress', onFoeProgress);
+		document.addEventListener('ironledger:foe-vanquish', onFoeVanquish);
+		document.addEventListener('ironledger:exp-progress', onExpProgress);
+
+		return () => {
+			document.removeEventListener('il-menu-action', handleMenuAction);
+			document.removeEventListener('ironledger:foe-progress', onFoeProgress);
+			document.removeEventListener('ironledger:foe-vanquish', onFoeVanquish);
+			document.removeEventListener('ironledger:exp-progress', onExpProgress);
+		};
 	});
 
 	/** Desktop horizontal resize (log width). */

@@ -19,8 +19,19 @@
 	 */
 
 	import type { Command, CommandName } from '$lib/commandBar.js';
-	import { COMMAND_NAMES, parseCommand, fuzzyPick, prefixPick } from '$lib/commandBar.js';
-	import { appendLog, sessionLog } from '$lib/log.svelte.js';
+	import {
+		COMMAND_NAMES,
+		parseCommand,
+		fuzzyPick,
+		prefixPick,
+		VITAL_RESOURCE_ALIASES,
+		DEBILITY_NAMES,
+		DEBILITY_STATES,
+		NUMERIC_OPS,
+		INITIATIVE_VALUES,
+		initiativeToNumber,
+	} from '$lib/commandBar.js';
+	import { appendLog, sessionLog, triggerAction } from '$lib/log.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
 	import { getCharacters } from '$lib/characterStore.svelte.js';
 	import { getEncounters } from '$lib/encounterStore.svelte.js';
@@ -34,6 +45,7 @@
 		getActiveFoeId,
 		setActiveFoeId,
 		getActiveExpeditionId,
+		setActiveExpeditionId,
 	} from '$lib/activeContext.svelte.js';
 	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
 	import { firstPreconditionFailure } from '$lib/preconditions.js';
@@ -47,7 +59,7 @@
 	let input = $state('');
 	let inputEl = $state<HTMLInputElement | null>(null);
 	let statusMsg = $state('');
-	let helpDialogRef = $state<{ open(): void; close(): void } | null>(null);
+	let helpDialogRef = $state<{ open(focus?: string): void; close(): void } | null>(null);
 
 	// The move + oracle catalogues are normally lazy-loaded by MovesDialog /
 	// OraclesDialog on their first open. That's too late for us — /move e ↵
@@ -141,6 +153,90 @@
 				apply: `/${n} `,
 			}));
 		}
+		// /vital resource-name completion — kicks in on any partial input after
+		// the verb, before the parser is happy. Show resource aliases whose name
+		// prefixes the second token (empty query lists all).
+		const vitalMatch = raw.match(/^\/vital\s+([a-z]*)$/i);
+		if (vitalMatch) {
+			const q = vitalMatch[1];
+			return prefixPick(VITAL_RESOURCE_ALIASES as unknown as string[], (r) => r, q, 8).map((r) => ({
+				label: r,
+				hint: r === 'xp' ? 'alias for experience' : '',
+				apply: `/vital ${r} `,
+			}));
+		}
+		// /vital operator completion — after a valid resource is picked.
+		const vitalOpMatch = raw.match(/^\/vital\s+([a-z]+)\s+([+\-=]?)$/i);
+		if (vitalOpMatch) {
+			const rname = vitalOpMatch[1].toLowerCase();
+			if ((VITAL_RESOURCE_ALIASES as unknown as string[]).includes(rname)) {
+				const q = vitalOpMatch[2];
+				return prefixPick(NUMERIC_OPS as unknown as string[], (o) => o, q, 3).map((op) => ({
+					label: op,
+					hint:
+						op === '+'
+							? 'delta up (default 1)'
+							: op === '-'
+								? 'delta down (default 1)'
+								: 'set absolute',
+					apply: `/vital ${rname} ${op}${op === '=' ? ' ' : ''}`,
+				}));
+			}
+		}
+		// /bonds and /failures operator completion — same op set.
+		const trackOpMatch = raw.match(/^\/(bonds|failures)\s+([+\-=]?)$/i);
+		if (trackOpMatch) {
+			const trackVerb = trackOpMatch[1].toLowerCase();
+			const q = trackOpMatch[2];
+			return prefixPick(NUMERIC_OPS as unknown as string[], (o) => o, q, 3).map((op) => ({
+				label: op,
+				hint:
+					op === '+'
+						? 'delta up (default 1)'
+						: op === '-'
+							? 'delta down (default 1)'
+							: 'set absolute',
+				apply: `/${trackVerb} ${op}${op === '=' ? ' ' : ''}`,
+			}));
+		}
+		// /initiative value completion — three fixed enums, prefix-filtered.
+		const initMatch = raw.match(/^\/initiative\s+([a-z]*)$/i);
+		if (initMatch) {
+			const q = initMatch[1];
+			return prefixPick(INITIATIVE_VALUES as unknown as string[], (v) => v, q, 3).map((v) => ({
+				label: v,
+				hint:
+					v === 'none'
+						? 'neither side holds it'
+						: v === 'character'
+							? 'you hold initiative'
+							: 'the foe holds initiative',
+				apply: `/initiative ${v}`,
+			}));
+		}
+		// /debility name completion — before the state is typed.
+		const debilityNameMatch = raw.match(/^\/debility\s+([a-z]*)$/i);
+		if (debilityNameMatch) {
+			const q = debilityNameMatch[1];
+			return prefixPick(DEBILITY_NAMES as unknown as string[], (n) => n, q, 8).map((n) => ({
+				label: n,
+				hint: '',
+				apply: `/debility ${n} `,
+			}));
+		}
+		// /debility state completion — after a valid name.
+		const debilityStateMatch = raw.match(/^\/debility\s+([a-z]+)\s+([a-z]*)$/i);
+		if (debilityStateMatch) {
+			const name = debilityStateMatch[1].toLowerCase();
+			if (DEBILITY_NAMES.includes(name as (typeof DEBILITY_NAMES)[number])) {
+				const q = debilityStateMatch[2];
+				return prefixPick(DEBILITY_STATES as unknown as string[], (s) => s, q, 8).map((s) => ({
+					label: s,
+					hint: s === 'toggle' ? 'flip current value' : `mark ${s}`,
+					apply: `/debility ${name} ${s}`,
+				}));
+			}
+		}
 		// Verb complete: what's the argument being typed?
 		if (!parsed || parsed.kind === 'error') return [];
 		switch (parsed.kind) {
@@ -167,7 +263,7 @@
 			case 'char': {
 				// Prefix-only: character names are short and starts-with is intuitive.
 				const q = parsed.name;
-				return prefixPick(
+				const chars = prefixPick(
 					getCharacters(),
 					(c) => (c.data as unknown as CharacterData).name || 'Unnamed',
 					q,
@@ -176,10 +272,26 @@
 					const n = (c.data as unknown as CharacterData).name || 'Unnamed';
 					return { label: n, hint: '', apply: `/char ${n}` };
 				});
+				// When a character is active, offer the harm/heal tokens too.
+				if (getActiveCharacterId()) {
+					// Bare `/char -` takes the active foe's rank harm when a foe
+					// is set — surface that in the hint so nobody's surprised.
+					const foeId = getActiveFoeId();
+					const foeEnc = foeId ? getEncounters().find((e) => e.id === foeId) : undefined;
+					const foeRankHarm = foeEnc ? (FOE_RANKS[foeEnc.effectiveRank]?.harm ?? 0) : 0;
+					const harmHint =
+						foeRankHarm > 0 ? `take ${foeRankHarm} harm (active foe rank)` : 'take 1 harm';
+					const specials: Suggestion[] = [
+						{ label: '+', hint: 'heal +1 health', apply: '/char +' },
+						{ label: '-', hint: harmHint, apply: '/char -' },
+					].filter((s) => !q || s.label.toLowerCase().startsWith(q.toLowerCase()));
+					return [...specials, ...chars];
+				}
+				return chars;
 			}
 			case 'foe': {
 				const q = parsed.name;
-				return prefixPick(
+				const foes = prefixPick(
 					getEncounters(),
 					(e) => e.customName || findFoe(e.foeId)?.name || '',
 					q,
@@ -188,6 +300,38 @@
 					const n = e.customName || findFoe(e.foeId)?.name || '';
 					return { label: n, hint: '', apply: `/foe ${n}` };
 				});
+				// When a foe is active, offer the overloaded actions too — the
+				// parser will only route to them on exact match, but the strip
+				// shows the discoverable tokens for anyone who typed /foe partial.
+				if (getActiveFoeId()) {
+					const specials: Suggestion[] = [
+						{ label: '+', hint: 'tick progress +1 box', apply: '/foe +' },
+						{ label: '-', hint: 'tick progress -1 box', apply: '/foe -' },
+						{
+							label: 'vanquish',
+							hint: 'mark the active foe vanquished',
+							apply: '/foe vanquish',
+						},
+					].filter((s) => !q || s.label.toLowerCase().startsWith(q.toLowerCase()));
+					return [...specials, ...foes];
+				}
+				return foes;
+			}
+			case 'exp': {
+				const q = parsed.name;
+				const exps = prefixPick(getExpeditions(), (e) => e.name || '', q, 8).map((e) => ({
+					label: e.name || '',
+					hint: e.type,
+					apply: `/exp ${e.name}`,
+				}));
+				if (getActiveExpeditionId()) {
+					const specials: Suggestion[] = [
+						{ label: '+', hint: 'tick progress +1 mark', apply: '/exp +' },
+						{ label: '-', hint: 'tick progress -1 mark', apply: '/exp -' },
+					].filter((s) => !q || s.label.toLowerCase().startsWith(q.toLowerCase()));
+					return [...specials, ...exps];
+				}
+				return exps;
 			}
 			default:
 				return [];
@@ -205,15 +349,27 @@
 			case 'move':
 				return 'roll a move';
 			case 'char':
-				return 'switch active character';
+				return 'active character: set / take harm / heal';
 			case 'foe':
-				return 'switch active foe';
+				return 'active foe: set / tick progress / vanquish';
+			case 'exp':
+				return 'active expedition: set / tick progress';
 			case 'start':
 				return 'pin ▲ start marker on the newest entry';
 			case 'end':
 				return 'pin ▼ end marker on the newest entry';
 			case 'story':
 				return 'generate a story from the section';
+			case 'vital':
+				return 'adjust a vital on the active character';
+			case 'debility':
+				return 'set a debility on/off/toggle';
+			case 'bonds':
+				return 'edit the bonds track (0..40)';
+			case 'failures':
+				return 'edit the failures track (0..40)';
+			case 'initiative':
+				return 'set combat initiative';
 		}
 	}
 
@@ -226,7 +382,7 @@
 				break;
 			}
 			case 'help': {
-				helpDialogRef?.open();
+				helpDialogRef?.open(cmd.focus);
 				break;
 			}
 			case 'oracle': {
@@ -263,6 +419,46 @@
 				setStatus(`Active character → ${(c.data as unknown as CharacterData).name}.`, 'info');
 				break;
 			}
+			case 'char-harm': {
+				const charId = getActiveCharacterId();
+				if (!charId) {
+					setStatus('/char +/- needs an active character. Type /char <name> first.', 'error');
+					return;
+				}
+				// Value on /char is harm — always applied to health. Applier
+				// clamps 0..5 and appends the log line. `+` heals, `-` harms.
+				//
+				// On bare `/char -` (no explicit value), take the active foe's
+				// rank harm instead of 1 — the most common combat action becomes
+				// a single keystroke sequence. Explicit values (`/char -2`) win.
+				// `/char +` bare stays at 1 — healing has no rank derivation.
+				let n = cmd.value;
+				let usedFoeRank = false;
+				if (cmd.op === '-' && cmd.defaulted) {
+					const foeId = getActiveFoeId();
+					if (foeId) {
+						const enc = getEncounters().find((e) => e.id === foeId);
+						if (enc) {
+							const rankHarm = FOE_RANKS[enc.effectiveRank]?.harm;
+							if (rankHarm && rankHarm > 0) {
+								n = rankHarm;
+								usedFoeRank = true;
+							}
+						}
+					}
+				}
+				const delta = cmd.op === '+' ? n : -n;
+				triggerAction({ charId, type: 'resource', key: 'health', value: delta });
+				setStatus(
+					cmd.op === '+'
+						? `Healed ${n} health.`
+						: usedFoeRank
+							? `Took ${n} harm (active foe rank).`
+							: `Took ${n} harm.`,
+					'info',
+				);
+				break;
+			}
 			case 'foe': {
 				const e = resolveFoe(cmd.name);
 				if (!e) {
@@ -272,6 +468,55 @@
 				setActiveFoeId(e.id);
 				const nm = e.customName || findFoe(e.foeId)?.name || 'foe';
 				setStatus(`Active foe → ${nm}.`, 'info');
+				break;
+			}
+			case 'foe-progress': {
+				if (!getActiveFoeId()) {
+					setStatus('/foe +/- needs an active foe. Type /foe <name> first.', 'error');
+					return;
+				}
+				// FoesArea.applyMenace does the rank-aware tick conversion + log
+				// line. We forward a signed box count through a CustomEvent;
+				// +page.svelte holds the ref and calls the method.
+				const signedBoxes = cmd.op === '+' ? cmd.value : -cmd.value;
+				document.dispatchEvent(
+					new CustomEvent('ironledger:foe-progress', { detail: { boxes: signedBoxes } }),
+				);
+				setStatus(`Foe progress ${cmd.op}${cmd.value} box${cmd.value === 1 ? '' : 'es'}.`, 'info');
+				break;
+			}
+			case 'foe-vanquish': {
+				if (!getActiveFoeId()) {
+					setStatus('/foe vanquish needs an active foe.', 'error');
+					return;
+				}
+				document.dispatchEvent(new CustomEvent('ironledger:foe-vanquish'));
+				setStatus('Vanquished the active foe.', 'info');
+				break;
+			}
+			case 'exp': {
+				const e = resolveExpedition(cmd.name);
+				if (!e) {
+					setStatus(`No expedition matches "${cmd.name}".`, 'error');
+					return;
+				}
+				setActiveExpeditionId(e.id);
+				setStatus(`Active expedition → ${e.name}.`, 'info');
+				break;
+			}
+			case 'exp-progress': {
+				if (!getActiveExpeditionId()) {
+					setStatus('/exp +/- needs an active expedition. Type /exp <name> first.', 'error');
+					return;
+				}
+				const signedMarks = cmd.op === '+' ? cmd.value : -cmd.value;
+				document.dispatchEvent(
+					new CustomEvent('ironledger:exp-progress', { detail: { marks: signedMarks } }),
+				);
+				setStatus(
+					`Expedition progress ${cmd.op}${cmd.value} mark${cmd.value === 1 ? '' : 's'}.`,
+					'info',
+				);
 				break;
 			}
 			case 'start': {
@@ -329,6 +574,83 @@
 				);
 				break;
 			}
+			case 'vital': {
+				const charId = getActiveCharacterId();
+				if (!charId) {
+					setStatus('/vital needs an active character. Type /char <name> first.', 'error');
+					return;
+				}
+				// resource + set actions both drain in CharactersArea, which auto-
+				// appends the log line ("Momentum: 2 → 4 (+2)") — nothing to log
+				// here beyond the status pill.
+				const label = cmd.resource === 'xp' ? 'experience' : cmd.resource;
+				if (cmd.op === '=') {
+					triggerAction({ charId, type: 'set', key: cmd.resource, value: cmd.value });
+					setStatus(`${label} set to ${cmd.value}.`, 'info');
+				} else {
+					const delta = cmd.op === '+' ? cmd.value : -cmd.value;
+					triggerAction({ charId, type: 'resource', key: cmd.resource, value: delta });
+					setStatus(`${label} ${delta > 0 ? '+' : ''}${delta}.`, 'info');
+				}
+				break;
+			}
+			case 'initiative': {
+				const charId = getActiveCharacterId();
+				if (!charId) {
+					setStatus('/initiative needs an active character. Type /char <name> first.', 'error');
+					return;
+				}
+				triggerAction({
+					charId,
+					type: 'initiative',
+					key: 'initiative',
+					value: initiativeToNumber(cmd.who),
+				});
+				setStatus(`Initiative → ${cmd.who}.`, 'info');
+				break;
+			}
+			case 'track': {
+				const charId = getActiveCharacterId();
+				if (!charId) {
+					setStatus(`/${cmd.name} needs an active character. Type /char <name> first.`, 'error');
+					return;
+				}
+				if (cmd.op === '=') {
+					triggerAction({ charId, type: 'set', key: cmd.name, value: cmd.value });
+					setStatus(`${cmd.name} set to ${cmd.value}.`, 'info');
+				} else {
+					const delta = cmd.op === '+' ? cmd.value : -cmd.value;
+					triggerAction({ charId, type: 'resource', key: cmd.name, value: delta });
+					setStatus(`${cmd.name} ${delta > 0 ? '+' : ''}${delta}.`, 'info');
+				}
+				break;
+			}
+			case 'debility': {
+				const charId = getActiveCharacterId();
+				if (!charId) {
+					setStatus('/debility needs an active character. Type /char <name> first.', 'error');
+					return;
+				}
+				// `toggle` is resolved here against the character's current value;
+				// the action bus itself only knows on/off (1/0). Reading through the
+				// character store keeps this reactive-safe — no direct data mutation.
+				let target: boolean;
+				if (cmd.state === 'toggle') {
+					const char = getCharacters().find((c) => c.id === charId);
+					if (!char) {
+						setStatus(`/debility couldn't find the active character.`, 'error');
+						return;
+					}
+					const currently = (char.data as unknown as Record<string, boolean>)[cmd.name];
+					target = !currently;
+				} else {
+					target = cmd.state === 'on';
+				}
+				triggerAction({ charId, type: 'debility', key: cmd.name, value: target ? 1 : 0 });
+				const nameLabel = cmd.name.charAt(0).toUpperCase() + cmd.name.slice(1);
+				setStatus(`${nameLabel} ${target ? 'marked' : 'cleared'}.`, 'info');
+				break;
+			}
 			case 'error': {
 				setStatus(cmd.message, 'error');
 				break;
@@ -369,6 +691,11 @@
 		const label = (e: (typeof list)[number]) => e.customName || findFoe(e.foeId)?.name || '';
 		return prefixPick(list, label, query, 1)[0] ?? fuzzyPick(list, label, query, 1)[0] ?? null;
 	}
+	function resolveExpedition(query: string) {
+		const list = getExpeditions();
+		const label = (e: (typeof list)[number]) => e.name || '';
+		return prefixPick(list, label, query, 1)[0] ?? fuzzyPick(list, label, query, 1)[0] ?? null;
+	}
 
 	// ── Input handlers ────────────────────────────────────────────────────
 	// True for commands whose argument is a name that autocomplete is picking
@@ -376,7 +703,7 @@
 	// over whatever raw text is in the input — so "/move e ↵" fires the
 	// currently-highlighted move (default: first result) instead of trying to
 	// dispatch the literal string "e".
-	const NAME_KINDS = new Set(['oracle', 'move', 'char', 'foe']);
+	const NAME_KINDS = new Set(['oracle', 'move', 'char', 'foe', 'exp']);
 
 	function handleSubmit() {
 		const cmd = parsed;
