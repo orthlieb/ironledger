@@ -226,6 +226,101 @@ describe('parseCommand /vital', () => {
 	});
 });
 
+describe('parseCommand /debility', () => {
+	it('parses <name> on', () => {
+		expect(parseCommand('/debility wounded on')).toEqual({
+			kind: 'debility',
+			name: 'wounded',
+			state: 'on',
+		});
+	});
+	it('parses <name> off', () => {
+		expect(parseCommand('/debility shaken off')).toEqual({
+			kind: 'debility',
+			name: 'shaken',
+			state: 'off',
+		});
+	});
+	it('parses <name> toggle', () => {
+		expect(parseCommand('/debility encumbered toggle')).toEqual({
+			kind: 'debility',
+			name: 'encumbered',
+			state: 'toggle',
+		});
+	});
+
+	it('is case-insensitive on both name and state', () => {
+		expect(parseCommand('/debility WOUNDED ON')).toEqual({
+			kind: 'debility',
+			name: 'wounded',
+			state: 'on',
+		});
+		expect(parseCommand('/DEBILITY tormented Toggle')).toEqual({
+			kind: 'debility',
+			name: 'tormented',
+			state: 'toggle',
+		});
+	});
+
+	it('accepts all eight canonical debilities', () => {
+		const names = [
+			'wounded',
+			'shaken',
+			'unprepared',
+			'encumbered',
+			'maimed',
+			'corrupted',
+			'cursed',
+			'tormented',
+		];
+		for (const n of names) {
+			expect(parseCommand(`/debility ${n} on`)).toEqual({
+				kind: 'debility',
+				name: n,
+				state: 'on',
+			});
+		}
+	});
+
+	it('rejects prefix matches — parser is strict, autocomplete assists', () => {
+		const c = parseCommand('/debility wo on');
+		expect(c?.kind).toBe('error');
+		if (c?.kind === 'error') expect(c.message).toMatch(/doesn't recognise "wo"/);
+	});
+
+	it('errors on missing state — no default', () => {
+		const c = parseCommand('/debility wounded');
+		expect(c?.kind).toBe('error');
+	});
+
+	it('errors on missing args entirely', () => {
+		const c = parseCommand('/debility');
+		expect(c?.kind).toBe('error');
+	});
+
+	it('errors on unknown debility name', () => {
+		const c = parseCommand('/debility hangnail on');
+		expect(c?.kind).toBe('error');
+		if (c?.kind === 'error') expect(c.message).toMatch(/hangnail/);
+	});
+
+	it('errors on unknown state token', () => {
+		const c = parseCommand('/debility wounded maybe');
+		expect(c?.kind).toBe('error');
+		if (c?.kind === 'error') expect(c.message).toMatch(/on, off, toggle/);
+	});
+
+	it('errors on numeric state (1/0 not accepted)', () => {
+		const c = parseCommand('/debility wounded 1');
+		expect(c?.kind).toBe('error');
+	});
+
+	it('errors when extra tokens are present', () => {
+		const c = parseCommand('/debility wounded on now');
+		expect(c?.kind).toBe('error');
+	});
+});
+
 describe('parseVitalOp', () => {
 	it('spaced form', () => {
 		expect(parseVitalOp('+ 2')).toEqual({ op: '+', value: 2 });

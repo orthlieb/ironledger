@@ -42,6 +42,10 @@
 			hint: 'Adjust a vital on the active character. res: momentum / health / spirit / supply / experience (xp). op: + (delta up), - (delta down), = (set absolute). n defaults to 1 for +/-, is required for =. Examples: /vital momentum +2, /vital health -3, /vital experience = 12.',
 		},
 		{
+			syntax: '/debility <name> <state>',
+			hint: 'Mark a debility on the active character. name: wounded / shaken / unprepared / encumbered / maimed / corrupted / cursed / tormented. state: on / off / toggle (required, no default). Examples: /debility wounded on, /debility shaken toggle.',
+		},
+		{
 			syntax: '/start',
 			hint: 'Pin the ▲ start marker on the newest log entry (open, growing selection).',
 		},

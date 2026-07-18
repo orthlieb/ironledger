@@ -21,10 +21,36 @@
 //     n:    integer; defaults to 1 for +/-; required for = (negatives allowed).
 //     Applies to the active character. Delegates to the resource / set action
 //     bus so the existing per-character clamps + auto-log flow it through.
+//   /debility <name> <state>      → { kind: 'debility', name, state }
+//     name:  wounded | shaken | unprepared | encumbered | maimed | corrupted
+//            | cursed | tormented (exact match, case-insensitive — no prefix)
+//     state: on | off | toggle (required — no default)
+//     Applies to the active character via the debility action bus. Toggle is
+//     resolved at dispatch time against the character's current value.
 // =============================================================================
 
 /** Canonical vital keys — same strings the action bus / character data use. */
 export type VitalResource = 'momentum' | 'health' | 'spirit' | 'supply' | 'xp';
+
+/** Canonical debility keys — same strings the action bus / character data use.
+ *  Kept in sync with DEBILITY_KEYS in preconditions.ts and the boolean fields
+ *  on CharacterData in types.ts. Order is display-order (conditions → banes →
+ *  burdens) — autocomplete shows them in this order. */
+export const DEBILITY_NAMES = [
+	'wounded',
+	'shaken',
+	'unprepared',
+	'encumbered',
+	'maimed',
+	'corrupted',
+	'cursed',
+	'tormented',
+] as const;
+export type DebilityName = (typeof DEBILITY_NAMES)[number];
+
+/** Debility state tokens accepted by /debility. */
+export const DEBILITY_STATES = ['on', 'off', 'toggle'] as const;
+export type DebilityState = (typeof DEBILITY_STATES)[number];
 
 export type Command =
 	| { kind: 'note'; text: string }
@@ -37,6 +63,7 @@ export type Command =
 	| { kind: 'end' }
 	| { kind: 'story' }
 	| { kind: 'vital'; resource: VitalResource; op: '+' | '-' | '='; value: number }
+	| { kind: 'debility'; name: DebilityName; state: DebilityState }
 	| { kind: 'error'; message: string };
 
 /** Set of leading slugs that route to slash-commands. Keep in sync with parseCommand. */
@@ -51,6 +78,7 @@ export const COMMAND_NAMES = [
 	'end',
 	'story',
 	'vital',
+	'debility',
 ] as const;
 export type CommandName = (typeof COMMAND_NAMES)[number];
 
@@ -144,6 +172,40 @@ export function parseCommand(input: string): Command | null {
 			return { kind: 'end' };
 		case 'story':
 			return { kind: 'story' };
+		case 'debility': {
+			if (!args) {
+				return {
+					kind: 'error',
+					message: '/debility needs a name and a state (e.g. /debility wounded on).',
+				};
+			}
+			const parts = args.split(/\s+/);
+			if (parts.length !== 2) {
+				return {
+					kind: 'error',
+					message: '/debility takes exactly two args: a name and a state (on / off / toggle).',
+				};
+			}
+			const name = parts[0].toLowerCase();
+			const state = parts[1].toLowerCase();
+			if (!DEBILITY_NAMES.includes(name as DebilityName)) {
+				return {
+					kind: 'error',
+					message: `/debility doesn't recognise "${parts[0]}". Use one of: ${DEBILITY_NAMES.join(', ')}.`,
+				};
+			}
+			if (!DEBILITY_STATES.includes(state as DebilityState)) {
+				return {
+					kind: 'error',
+					message: `/debility state must be one of: on, off, toggle.`,
+				};
+			}
+			return {
+				kind: 'debility',
+				name: name as DebilityName,
+				state: state as DebilityState,
+			};
+		}
 		case 'vital': {
 			if (!args) {
 				return {

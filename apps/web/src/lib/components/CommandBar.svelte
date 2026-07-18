@@ -25,6 +25,8 @@
 		fuzzyPick,
 		prefixPick,
 		VITAL_RESOURCE_ALIASES,
+		DEBILITY_NAMES,
+		DEBILITY_STATES,
 	} from '$lib/commandBar.js';
 	import { appendLog, sessionLog, triggerAction } from '$lib/log.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
@@ -159,6 +161,29 @@
 				apply: `/vital ${r} `,
 			}));
 		}
+		// /debility name completion — before the state is typed.
+		const debilityNameMatch = raw.match(/^\/debility\s+([a-z]*)$/i);
+		if (debilityNameMatch) {
+			const q = debilityNameMatch[1];
+			return prefixPick(DEBILITY_NAMES as unknown as string[], (n) => n, q, 8).map((n) => ({
+				label: n,
+				hint: '',
+				apply: `/debility ${n} `,
+			}));
+		}
+		// /debility state completion — after a valid name.
+		const debilityStateMatch = raw.match(/^\/debility\s+([a-z]+)\s+([a-z]*)$/i);
+		if (debilityStateMatch) {
+			const name = debilityStateMatch[1].toLowerCase();
+			if (DEBILITY_NAMES.includes(name as (typeof DEBILITY_NAMES)[number])) {
+				const q = debilityStateMatch[2];
+				return prefixPick(DEBILITY_STATES as unknown as string[], (s) => s, q, 8).map((s) => ({
+					label: s,
+					hint: s === 'toggle' ? 'flip current value' : `mark ${s}`,
+					apply: `/debility ${name} ${s}`,
+				}));
+			}
+		}
 		// Verb complete: what's the argument being typed?
 		if (!parsed || parsed.kind === 'error') return [];
 		switch (parsed.kind) {
@@ -234,6 +259,8 @@
 				return 'generate a story from the section';
 			case 'vital':
 				return 'adjust a vital on the active character';
+			case 'debility':
+				return 'set a debility on/off/toggle';
 		}
 	}
 
@@ -367,6 +394,32 @@
 					triggerAction({ charId, type: 'resource', key: cmd.resource, value: delta });
 					setStatus(`${label} ${delta > 0 ? '+' : ''}${delta}.`, 'info');
 				}
+				break;
+			}
+			case 'debility': {
+				const charId = getActiveCharacterId();
+				if (!charId) {
+					setStatus('/debility needs an active character. Type /char <name> first.', 'error');
+					return;
+				}
+				// `toggle` is resolved here against the character's current value;
+				// the action bus itself only knows on/off (1/0). Reading through the
+				// character store keeps this reactive-safe — no direct data mutation.
+				let target: boolean;
+				if (cmd.state === 'toggle') {
+					const char = getCharacters().find((c) => c.id === charId);
+					if (!char) {
+						setStatus(`/debility couldn't find the active character.`, 'error');
+						return;
+					}
+					const currently = (char.data as unknown as Record<string, boolean>)[cmd.name];
+					target = !currently;
+				} else {
+					target = cmd.state === 'on';
+				}
+				triggerAction({ charId, type: 'debility', key: cmd.name, value: target ? 1 : 0 });
+				const nameLabel = cmd.name.charAt(0).toUpperCase() + cmd.name.slice(1);
+				setStatus(`${nameLabel} ${target ? 'marked' : 'cleared'}.`, 'info');
 				break;
 			}
 			case 'error': {
