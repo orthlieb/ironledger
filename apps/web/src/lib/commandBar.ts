@@ -15,7 +15,16 @@
 //   /start                        → { kind: 'start' }    pin ▲ on the newest entry
 //   /end                          → { kind: 'end' }      pin ▼ on the newest entry
 //   /story                        → { kind: 'story' }    open Generate on the section
+//   /vital <res> <op> [n]         → { kind: 'vital', resource, op, value }
+//     res:  momentum | health | spirit | supply | xp | experience (xp alias)
+//     op:   + | - | =
+//     n:    integer; defaults to 1 for +/-; required for = (negatives allowed).
+//     Applies to the active character. Delegates to the resource / set action
+//     bus so the existing per-character clamps + auto-log flow it through.
 // =============================================================================
+
+/** Canonical vital keys — same strings the action bus / character data use. */
+export type VitalResource = 'momentum' | 'health' | 'spirit' | 'supply' | 'xp';
 
 export type Command =
 	| { kind: 'note'; text: string }
@@ -27,6 +36,7 @@ export type Command =
 	| { kind: 'start' }
 	| { kind: 'end' }
 	| { kind: 'story' }
+	| { kind: 'vital'; resource: VitalResource; op: '+' | '-' | '='; value: number }
 	| { kind: 'error'; message: string };
 
 /** Set of leading slugs that route to slash-commands. Keep in sync with parseCommand. */
@@ -40,8 +50,56 @@ export const COMMAND_NAMES = [
 	'start',
 	'end',
 	'story',
+	'vital',
 ] as const;
 export type CommandName = (typeof COMMAND_NAMES)[number];
+
+/** Vital resource labels shown in autocomplete / help. `experience` is an
+ *  alias for `xp` — both parse identically; the internal key is always `xp`. */
+export const VITAL_RESOURCE_ALIASES = [
+	'momentum',
+	'health',
+	'spirit',
+	'supply',
+	'experience',
+	'xp',
+] as const;
+
+function normalizeVitalResource(raw: string): VitalResource | null {
+	const r = raw.toLowerCase();
+	if (r === 'experience' || r === 'xp') return 'xp';
+	if (r === 'momentum' || r === 'health' || r === 'spirit' || r === 'supply') return r;
+	return null;
+}
+
+/**
+ * Parse the `<op> [n]` tail of a /vital command. Accepts both spaced and
+ * attached forms: `+ 2`, `+2`, `-3`, `= 12`, `=-3`, or a bare `+` / `-`
+ * (defaults to 1). `=` on its own is an error — silent zeroing is a footgun.
+ * `+`/`-` may not carry a negative value (would negate itself); `=` may.
+ */
+export function parseVitalOp(
+	tail: string,
+): { op: '+' | '-' | '='; value: number } | { kind: 'error'; message: string } {
+	const m = tail.match(/^([+\-=])\s*(-?\d+)?$/);
+	if (!m) {
+		return { kind: 'error', message: '/vital needs an operator (+, -, or =) and a value.' };
+	}
+	const op = m[1] as '+' | '-' | '=';
+	const rawN = m[2];
+	if (op === '=') {
+		if (rawN === undefined) {
+			return { kind: 'error', message: '/vital = needs a value (e.g. /vital xp = 12).' };
+		}
+		return { op, value: parseInt(rawN, 10) };
+	}
+	// + / - : default to 1, disallow explicit negatives (would flip the op).
+	const n = rawN === undefined ? 1 : parseInt(rawN, 10);
+	if (n < 0) {
+		return { kind: 'error', message: `Use ${op === '+' ? '-' : '+'} for negative deltas.` };
+	}
+	return { op, value: n };
+}
 
 /**
  * Parse a raw input line. Returns a Command or an { kind: 'error' } for
@@ -86,6 +144,40 @@ export function parseCommand(input: string): Command | null {
 			return { kind: 'end' };
 		case 'story':
 			return { kind: 'story' };
+		case 'vital': {
+			if (!args) {
+				return {
+					kind: 'error',
+					message: '/vital needs a resource and an operator (e.g. /vital momentum +2).',
+				};
+			}
+			// Resource is always alphabetic; split on the first non-alpha char so
+			// jammed forms parse too (e.g. `/vital momentum+2`, `/vital xp=12`).
+			const m = args.match(/^([a-z]+)\s*(.*)$/i);
+			if (!m) {
+				return {
+					kind: 'error',
+					message: '/vital needs a resource name (e.g. momentum, health, xp).',
+				};
+			}
+			const resource = normalizeVitalResource(m[1]);
+			if (!resource) {
+				return {
+					kind: 'error',
+					message: `/vital doesn't recognise "${m[1]}". Try momentum / health / spirit / supply / experience.`,
+				};
+			}
+			const tail = m[2].trim();
+			if (!tail) {
+				return {
+					kind: 'error',
+					message: '/vital needs an operator (+, -, or =) after the resource.',
+				};
+			}
+			const parsed = parseVitalOp(tail);
+			if ('kind' in parsed) return parsed;
+			return { kind: 'vital', resource, op: parsed.op, value: parsed.value };
+		}
 		default:
 			return { kind: 'error', message: `Unknown command: /${verb}. Type /help for a list.` };
 	}

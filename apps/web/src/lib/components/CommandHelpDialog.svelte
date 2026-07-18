@@ -38,6 +38,10 @@
 		{ syntax: '/char <name>', hint: 'Set the active character.' },
 		{ syntax: '/foe <name>', hint: 'Set the active foe.' },
 		{
+			syntax: '/vital <res> <op> [n]',
+			hint: 'Adjust a vital on the active character. res: momentum / health / spirit / supply / experience (xp). op: + (delta up), - (delta down), = (set absolute). n defaults to 1 for +/-, is required for =. Examples: /vital momentum +2, /vital health -3, /vital experience = 12.',
+		},
+		{
 			syntax: '/start',
 			hint: 'Pin the ▲ start marker on the newest log entry (open, growing selection).',
 		},

@@ -19,8 +19,14 @@
 	 */
 
 	import type { Command, CommandName } from '$lib/commandBar.js';
-	import { COMMAND_NAMES, parseCommand, fuzzyPick, prefixPick } from '$lib/commandBar.js';
-	import { appendLog, sessionLog } from '$lib/log.svelte.js';
+	import {
+		COMMAND_NAMES,
+		parseCommand,
+		fuzzyPick,
+		prefixPick,
+		VITAL_RESOURCE_ALIASES,
+	} from '$lib/commandBar.js';
+	import { appendLog, sessionLog, triggerAction } from '$lib/log.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
 	import { getCharacters } from '$lib/characterStore.svelte.js';
 	import { getEncounters } from '$lib/encounterStore.svelte.js';
@@ -141,6 +147,18 @@
 				apply: `/${n} `,
 			}));
 		}
+		// /vital resource-name completion — kicks in on any partial input after
+		// the verb, before the parser is happy. Show resource aliases whose name
+		// prefixes the second token (empty query lists all).
+		const vitalMatch = raw.match(/^\/vital\s+([a-z]*)$/i);
+		if (vitalMatch) {
+			const q = vitalMatch[1];
+			return prefixPick(VITAL_RESOURCE_ALIASES as unknown as string[], (r) => r, q, 8).map((r) => ({
+				label: r,
+				hint: r === 'xp' ? 'alias for experience' : '',
+				apply: `/vital ${r} `,
+			}));
+		}
 		// Verb complete: what's the argument being typed?
 		if (!parsed || parsed.kind === 'error') return [];
 		switch (parsed.kind) {
@@ -214,6 +232,8 @@
 				return 'pin ▼ end marker on the newest entry';
 			case 'story':
 				return 'generate a story from the section';
+			case 'vital':
+				return 'adjust a vital on the active character';
 		}
 	}
 
@@ -327,6 +347,26 @@
 						: 'Generating story from the marked section (▲ to ▼).',
 					'info',
 				);
+				break;
+			}
+			case 'vital': {
+				const charId = getActiveCharacterId();
+				if (!charId) {
+					setStatus('/vital needs an active character. Type /char <name> first.', 'error');
+					return;
+				}
+				// resource + set actions both drain in CharactersArea, which auto-
+				// appends the log line ("Momentum: 2 → 4 (+2)") — nothing to log
+				// here beyond the status pill.
+				const label = cmd.resource === 'xp' ? 'experience' : cmd.resource;
+				if (cmd.op === '=') {
+					triggerAction({ charId, type: 'set', key: cmd.resource, value: cmd.value });
+					setStatus(`${label} set to ${cmd.value}.`, 'info');
+				} else {
+					const delta = cmd.op === '+' ? cmd.value : -cmd.value;
+					triggerAction({ charId, type: 'resource', key: cmd.resource, value: delta });
+					setStatus(`${label} ${delta > 0 ? '+' : ''}${delta}.`, 'info');
+				}
 				break;
 			}
 			case 'error': {

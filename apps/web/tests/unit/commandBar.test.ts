@@ -3,7 +3,13 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { parseCommand, fuzzyScore, fuzzyPick, prefixPick } from '../../src/lib/commandBar.js';
+import {
+	parseCommand,
+	parseVitalOp,
+	fuzzyScore,
+	fuzzyPick,
+	prefixPick,
+} from '../../src/lib/commandBar.js';
 
 describe('parseCommand', () => {
 	it('returns null on empty / whitespace-only input', () => {
@@ -92,6 +98,155 @@ describe('parseCommand', () => {
 
 	it('lowercases the verb but not the args', () => {
 		expect(parseCommand('/CHAR Porcius')).toEqual({ kind: 'char', name: 'Porcius' });
+	});
+});
+
+describe('parseCommand /vital', () => {
+	it('parses spaced delta form', () => {
+		expect(parseCommand('/vital momentum + 2')).toEqual({
+			kind: 'vital',
+			resource: 'momentum',
+			op: '+',
+			value: 2,
+		});
+		expect(parseCommand('/vital health - 3')).toEqual({
+			kind: 'vital',
+			resource: 'health',
+			op: '-',
+			value: 3,
+		});
+	});
+
+	it('parses jammed forms — sign attached to number and/or resource', () => {
+		expect(parseCommand('/vital momentum +2')).toEqual({
+			kind: 'vital',
+			resource: 'momentum',
+			op: '+',
+			value: 2,
+		});
+		expect(parseCommand('/vital health-3')).toEqual({
+			kind: 'vital',
+			resource: 'health',
+			op: '-',
+			value: 3,
+		});
+		expect(parseCommand('/vital xp=12')).toEqual({
+			kind: 'vital',
+			resource: 'xp',
+			op: '=',
+			value: 12,
+		});
+	});
+
+	it('bare + / - defaults value to 1', () => {
+		expect(parseCommand('/vital momentum +')).toEqual({
+			kind: 'vital',
+			resource: 'momentum',
+			op: '+',
+			value: 1,
+		});
+		expect(parseCommand('/vital spirit -')).toEqual({
+			kind: 'vital',
+			resource: 'spirit',
+			op: '-',
+			value: 1,
+		});
+	});
+
+	it('experience is an alias for xp — both normalize to key "xp"', () => {
+		expect(parseCommand('/vital experience +5')).toEqual({
+			kind: 'vital',
+			resource: 'xp',
+			op: '+',
+			value: 5,
+		});
+		expect(parseCommand('/vital xp +5')).toEqual({
+			kind: 'vital',
+			resource: 'xp',
+			op: '+',
+			value: 5,
+		});
+	});
+
+	it('= accepts negative values (for momentum)', () => {
+		expect(parseCommand('/vital momentum = -3')).toEqual({
+			kind: 'vital',
+			resource: 'momentum',
+			op: '=',
+			value: -3,
+		});
+		expect(parseCommand('/vital momentum =-3')).toEqual({
+			kind: 'vital',
+			resource: 'momentum',
+			op: '=',
+			value: -3,
+		});
+	});
+
+	it('= without a value is an error', () => {
+		const c = parseCommand('/vital health =');
+		expect(c?.kind).toBe('error');
+		if (c?.kind === 'error') expect(c.message).toMatch(/= needs a value/);
+	});
+
+	it('+ / - reject explicit negative values (would flip the sign)', () => {
+		const c = parseCommand('/vital momentum + -2');
+		expect(c?.kind).toBe('error');
+		if (c?.kind === 'error') expect(c.message).toMatch(/negative deltas/);
+	});
+
+	it('errors on missing resource', () => {
+		const c = parseCommand('/vital');
+		expect(c?.kind).toBe('error');
+	});
+
+	it('errors on unknown resource — mana is not a vital', () => {
+		const c = parseCommand('/vital mana +2');
+		expect(c?.kind).toBe('error');
+		if (c?.kind === 'error') expect(c.message).toMatch(/mana/i);
+	});
+
+	it('errors on missing operator', () => {
+		const c = parseCommand('/vital momentum');
+		expect(c?.kind).toBe('error');
+	});
+
+	it('errors on garbage operator', () => {
+		const c = parseCommand('/vital momentum ??');
+		expect(c?.kind).toBe('error');
+	});
+
+	it('is case-insensitive on resource name', () => {
+		expect(parseCommand('/vital MOMENTUM +2')).toEqual({
+			kind: 'vital',
+			resource: 'momentum',
+			op: '+',
+			value: 2,
+		});
+	});
+});
+
+describe('parseVitalOp', () => {
+	it('spaced form', () => {
+		expect(parseVitalOp('+ 2')).toEqual({ op: '+', value: 2 });
+	});
+	it('attached form', () => {
+		expect(parseVitalOp('+2')).toEqual({ op: '+', value: 2 });
+	});
+	it('bare op defaults to 1', () => {
+		expect(parseVitalOp('+')).toEqual({ op: '+', value: 1 });
+		expect(parseVitalOp('-')).toEqual({ op: '-', value: 1 });
+	});
+	it('= requires a value', () => {
+		const r = parseVitalOp('=');
+		expect('kind' in r).toBe(true);
+	});
+	it('= permits negative values', () => {
+		expect(parseVitalOp('= -3')).toEqual({ op: '=', value: -3 });
+	});
+	it('+ / - reject negative values', () => {
+		const r = parseVitalOp('+ -2');
+		expect('kind' in r).toBe(true);
 	});
 });
 
