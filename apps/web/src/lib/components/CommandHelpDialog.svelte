@@ -59,6 +59,11 @@
 		},
 		{ verb: 'char', syntax: '/char <name>', hint: 'Set the active character.' },
 		{
+			verb: 'char',
+			syntax: '/char <op> [n]',
+			hint: 'Take harm (-) or heal (+) on the active character. Applies to health, clamped 0..5. n defaults to 1. Examples: /char - (take 1 harm), /char -2, /char +. Absolute health set: /vital health = N.',
+		},
+		{
 			verb: 'foe',
 			syntax: '/foe <name>',
 			hint: 'Set the active foe.',
@@ -66,7 +71,7 @@
 		{
 			verb: 'foe',
 			syntax: '/foe <op> [n]',
-			hint: 'Advance the active foe’s combat progress by n boxes (rank-aware). + / - default n=1; = requires a value. Examples: /foe +, /foe +2, /foe = 4.',
+			hint: 'Advance the active foe’s combat progress by n boxes (rank-aware ticks). + / - only; no = (ticks vs boxes would be ambiguous). Examples: /foe + (1 box), /foe +2, /foe -.',
 		},
 		{
 			verb: 'foe',
@@ -81,7 +86,7 @@
 		{
 			verb: 'exp',
 			syntax: '/exp <op> [n]',
-			hint: 'Advance the active expedition by n progress marks (difficulty-aware ticks). Examples: /exp +, /exp = 5.',
+			hint: 'Advance the active expedition by n progress marks (difficulty-aware ticks). + / - only. Examples: /exp +, /exp -2.',
 		},
 		{
 			verb: 'vital',

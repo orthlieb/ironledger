@@ -6,6 +6,7 @@ import { describe, it, expect } from 'vitest';
 import {
 	parseCommand,
 	parseVitalOp,
+	parseDeltaOp,
 	initiativeToNumber,
 	fuzzyScore,
 	fuzzyPick,
@@ -67,6 +68,10 @@ describe('parseCommand', () => {
 
 	it('parses /char <name>', () => {
 		expect(parseCommand('/char Porcius')).toEqual({ kind: 'char', name: 'Porcius' });
+	});
+
+	it('parses /char with no args as help focused on char', () => {
+		expect(parseCommand('/char')).toEqual({ kind: 'help', focus: 'char' });
 	});
 
 	it('parses /foe <name>', () => {
@@ -247,10 +252,12 @@ describe('parseCommand /foe overloads', () => {
 	it('/foe - defaults to -1 box', () => {
 		expect(parseCommand('/foe -')).toEqual({ kind: 'foe-progress', op: '-', value: 1 });
 	});
-	it('/foe = 4 sets absolute box count', () => {
-		expect(parseCommand('/foe = 4')).toEqual({ kind: 'foe-progress', op: '=', value: 4 });
+	it('/foe = N rejects — no absolute set on progress', () => {
+		const c = parseCommand('/foe = 4');
+		expect(c?.kind).toBe('error');
+		if (c?.kind === 'error') expect(c.message).toMatch(/= is not supported/);
 	});
-	it('/foe = with no value errors', () => {
+	it('/foe = with no value also rejects', () => {
 		const c = parseCommand('/foe =');
 		expect(c?.kind).toBe('error');
 	});
@@ -269,8 +276,10 @@ describe('parseCommand /exp overloads', () => {
 	it('/exp +3 parses as progress delta (marks)', () => {
 		expect(parseCommand('/exp +3')).toEqual({ kind: 'exp-progress', op: '+', value: 3 });
 	});
-	it('/exp = 5 sets absolute mark count', () => {
-		expect(parseCommand('/exp = 5')).toEqual({ kind: 'exp-progress', op: '=', value: 5 });
+	it('/exp = N rejects — no absolute set on progress', () => {
+		const c = parseCommand('/exp = 5');
+		expect(c?.kind).toBe('error');
+		if (c?.kind === 'error') expect(c.message).toMatch(/= is not supported/);
 	});
 	it('/exp - defaults to -1 mark', () => {
 		expect(parseCommand('/exp -')).toEqual({ kind: 'exp-progress', op: '-', value: 1 });
@@ -278,8 +287,53 @@ describe('parseCommand /exp overloads', () => {
 	it('/exp has no vanquish subcommand — falls through to name', () => {
 		expect(parseCommand('/exp vanquish')).toEqual({ kind: 'exp', name: 'vanquish' });
 	});
-	it('/exp jammed op parses (=12)', () => {
-		expect(parseCommand('/exp =12')).toEqual({ kind: 'exp-progress', op: '=', value: 12 });
+	it('/exp jammed op parses (+2 no space)', () => {
+		expect(parseCommand('/exp +2')).toEqual({ kind: 'exp-progress', op: '+', value: 2 });
+	});
+});
+
+describe('parseCommand /char overloads', () => {
+	it('/char <name> still sets the active character', () => {
+		expect(parseCommand('/char Beepalache')).toEqual({ kind: 'char', name: 'Beepalache' });
+	});
+	it('/char -2 parses as harm (delta down on health)', () => {
+		expect(parseCommand('/char -2')).toEqual({ kind: 'char-harm', op: '-', value: 2 });
+	});
+	it('/char + defaults to +1 (heal 1)', () => {
+		expect(parseCommand('/char +')).toEqual({ kind: 'char-harm', op: '+', value: 1 });
+	});
+	it('/char - defaults to -1 (take 1 harm)', () => {
+		expect(parseCommand('/char -')).toEqual({ kind: 'char-harm', op: '-', value: 1 });
+	});
+	it('/char = N is rejected — use /vital health = N for absolute set', () => {
+		const c = parseCommand('/char = 3');
+		expect(c?.kind).toBe('error');
+		if (c?.kind === 'error') expect(c.message).toMatch(/= is not supported/);
+	});
+	it('/char with a numeric-like name still parses as name (no ambiguity)', () => {
+		// Not really practical — but the parser only routes to op if the first
+		// char is +/-/=. Anything else is a name.
+		expect(parseCommand('/char Vault2')).toEqual({ kind: 'char', name: 'Vault2' });
+	});
+});
+
+describe('parseDeltaOp', () => {
+	it('accepts + and - with defaults', () => {
+		expect(parseDeltaOp('+')).toEqual({ op: '+', value: 1 });
+		expect(parseDeltaOp('-')).toEqual({ op: '-', value: 1 });
+	});
+	it('accepts +N and -N', () => {
+		expect(parseDeltaOp('+3')).toEqual({ op: '+', value: 3 });
+		expect(parseDeltaOp('- 5')).toEqual({ op: '-', value: 5 });
+	});
+	it('rejects = with an explicit "use + or -" pointer', () => {
+		const r = parseDeltaOp('= 4');
+		expect('kind' in r).toBe(true);
+		if ('kind' in r) expect(r.message).toMatch(/use \+ or -/);
+	});
+	it('rejects explicit negative deltas on + / -', () => {
+		const r = parseDeltaOp('+ -2');
+		expect('kind' in r).toBe(true);
 	});
 });
 

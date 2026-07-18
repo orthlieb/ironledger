@@ -113,7 +113,6 @@
 		openChangeThemeForExp(expId: string): void;
 		openChangeDomainForExp(expId: string): void;
 		applyProgress(marks: number): void;
-		setProgress(marks: number): void;
 	} | null>(null);
 
 	/** Ref to FoesArea — forwards vanquish / menace from log links. */
@@ -121,7 +120,6 @@
 		selectFoe(id: string): void;
 		vanquishActiveFoe(): void;
 		applyMenace(value: number): void;
-		setMenace(boxes: number): void;
 	} | null>(null);
 
 	/** Active dice context — provides charId + data for LogPanel's link handlers. */
@@ -223,23 +221,21 @@
 
 		document.addEventListener('il-menu-action', handleMenuAction);
 
-		// Command-bar bus: /foe +N /-N /=N, /foe vanquish, /exp +N /-N /=N.
-		// CommandBar dispatches these as CustomEvents so it doesn't need to hold
-		// refs to the sheet areas — this route already does. FoesArea /
-		// ExpeditionsArea handle the rank-aware tick conversion + log-line
-		// writing inside their apply/set methods.
+		// Command-bar bus: /foe +N/-N, /foe vanquish, /exp +N/-N. CommandBar
+		// dispatches these as CustomEvents so it doesn't need to hold refs to
+		// the sheet areas — this route already does. FoesArea / ExpeditionsArea
+		// handle the rank/difficulty tick conversion + log-line writing inside
+		// their apply methods, so we just forward the signed box/mark count.
 		const onFoeProgress = (e: Event) => {
-			const d = (e as CustomEvent<{ op: '+' | '-' | '='; value: number }>).detail;
+			const d = (e as CustomEvent<{ boxes: number }>).detail;
 			if (!d) return;
-			if (d.op === '=') foeAreaRef?.setMenace(d.value);
-			else foeAreaRef?.applyMenace(d.op === '+' ? d.value : -d.value);
+			foeAreaRef?.applyMenace(d.boxes);
 		};
 		const onFoeVanquish = () => foeAreaRef?.vanquishActiveFoe();
 		const onExpProgress = (e: Event) => {
-			const d = (e as CustomEvent<{ op: '+' | '-' | '='; value: number }>).detail;
+			const d = (e as CustomEvent<{ marks: number }>).detail;
 			if (!d) return;
-			if (d.op === '=') expAreaRef?.setProgress(d.value);
-			else expAreaRef?.applyProgress(d.op === '+' ? d.value : -d.value);
+			expAreaRef?.applyProgress(d.marks);
 		};
 		document.addEventListener('ironledger:foe-progress', onFoeProgress);
 		document.addEventListener('ironledger:foe-vanquish', onFoeVanquish);

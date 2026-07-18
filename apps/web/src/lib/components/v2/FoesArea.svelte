@@ -229,17 +229,6 @@
 		);
 	}
 
-	// Absolute-set companion to applyMenace — computes the delta needed to
-	// reach `boxes` and reuses applyMenace so the log line and ticks-per-box
-	// conversion stay in one place. Command-bar `/foe = N` calls this.
-	export function setMenace(boxes: number) {
-		if (!activeEnc) return;
-		const currentBoxes = Math.floor(activeEnc.ticks / progressTickVal);
-		const delta = boxes - currentBoxes;
-		if (delta === 0) return;
-		applyMenace(delta);
-	}
-
 	function imageUrl(def: FoeDef): string {
 		return foePortraitUrl(def.name, def.images);
 	}

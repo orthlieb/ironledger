@@ -36,9 +36,12 @@
 //     Applies to the active character via a new action-bus type so the log
 //     line reads "Initiative → foe" (not "Initiative: 0 → 2 (+2)").
 //
-// Overloaded verbs — /foe and /exp accept multiple argument shapes; the first
-// non-space token decides the mode:
-//   /foe                          → { kind: 'help', focus: 'foe' } (grammar help)
+// Overloaded verbs — /char, /foe, /exp accept multiple argument shapes; the
+// first non-space token decides the mode:
+//   /char                         → { kind: 'help', focus: 'char' }
+//   /char <name>                  → { kind: 'char', name }
+//   /char <op> [n]                → { kind: 'char-harm', op, value }
+//   /foe                          → { kind: 'help', focus: 'foe' }
 //   /foe <name>                   → { kind: 'foe', name }
 //   /foe <op> [n]                 → { kind: 'foe-progress', op, value }
 //   /foe vanquish                 → { kind: 'foe-vanquish' }
@@ -46,10 +49,15 @@
 //   /exp <name>                   → { kind: 'exp', name }
 //   /exp <op> [n]                 → { kind: 'exp-progress', op, value }
 //
-// Progress operators (+ / - / =) work on **boxes**, not ticks — the applier
-// converts to ticks using the foe rank (or expedition difficulty). `= n`
-// requires the active foe / expedition; the delta to reach n boxes is
-// computed against the current box count at dispatch time.
+// Operators accepted on the overloaded verbs are + and - only; `=` is
+// deliberately absent — the ticks-vs-boxes semantics for foe/exp progress
+// makes `=N` ambiguous ("set to N ticks? N boxes?"), and consistency wins
+// over cleverness. For an absolute health set use /vital health = N.
+//
+// Progress operators for /foe and /exp are rank-aware: n counts **boxes**
+// (foes) or **marks** (expeditions); the applier multiplies by ticksPerBox
+// based on the encounter rank / expedition difficulty. /char <op> is flat
+// on the health field (character health has no rank system).
 // =============================================================================
 
 /** Canonical vital keys — same strings the action bus / character data use. */
@@ -78,8 +86,41 @@ export type DebilityState = (typeof DEBILITY_STATES)[number];
 /** Progress-track names editable by /bonds and /failures. */
 export type TrackName = 'bonds' | 'failures';
 
-/** Operators offered by autocomplete for /vital / /bonds / /failures. */
+/** Operators offered by autocomplete for /vital / /bonds / /failures.
+ *  These accept `=` (absolute set); /char, /foe, /exp deliberately do not. */
 export const NUMERIC_OPS = ['+', '-', '='] as const;
+
+/** Operators offered by autocomplete for the delta-only overloaded verbs. */
+export const DELTA_OPS = ['+', '-'] as const;
+
+/**
+ * Parse the `<op> [n]` tail for a delta-only overload (/char, /foe, /exp).
+ * Same shape as parseVitalOp but rejects `=`: an absolute set is available on
+ * /vital (health, xp) and would be ambiguous on foe/exp progress (boxes vs
+ * ticks). Errors surface an explicit "use + or -" so users don't hunt for `=`.
+ */
+export function parseDeltaOp(
+	tail: string,
+): { op: '+' | '-'; value: number } | { kind: 'error'; message: string } {
+	const m = tail.match(/^([+\-=])\s*(-?\d+)?$/);
+	if (!m) {
+		return { kind: 'error', message: 'Need an operator (+ or -) and a value.' };
+	}
+	const op = m[1];
+	if (op === '=') {
+		return {
+			kind: 'error',
+			message:
+				'= is not supported here — use + or -. For an absolute health set, use /vital health = N.',
+		};
+	}
+	const rawN = m[2];
+	const n = rawN === undefined ? 1 : parseInt(rawN, 10);
+	if (n < 0) {
+		return { kind: 'error', message: `Use ${op === '+' ? '-' : '+'} for negative deltas.` };
+	}
+	return { op: op as '+' | '-', value: n };
+}
 
 /** Initiative values accepted by /initiative. Order matters — it drives the
  *  autocomplete strip and matches the enum encoded on CharacterData.initiative
@@ -100,11 +141,12 @@ export type Command =
 	| { kind: 'oracle'; key: string }
 	| { kind: 'move'; name: string }
 	| { kind: 'char'; name: string }
+	| { kind: 'char-harm'; op: '+' | '-'; value: number }
 	| { kind: 'foe'; name: string }
-	| { kind: 'foe-progress'; op: '+' | '-' | '='; value: number }
+	| { kind: 'foe-progress'; op: '+' | '-'; value: number }
 	| { kind: 'foe-vanquish' }
 	| { kind: 'exp'; name: string }
-	| { kind: 'exp-progress'; op: '+' | '-' | '='; value: number }
+	| { kind: 'exp-progress'; op: '+' | '-'; value: number }
 	| { kind: 'start' }
 	| { kind: 'end' }
 	| { kind: 'story' }
@@ -212,9 +254,19 @@ export function parseCommand(input: string): Command | null {
 		case 'move':
 			if (!args) return { kind: 'error', message: '/move needs a move name.' };
 			return { kind: 'move', name: args };
-		case 'char':
-			if (!args) return { kind: 'error', message: '/char needs a name.' };
-			return { kind: 'char', name: args };
+		case 'char': {
+			// Overload matches /foe and /exp: empty → help, +/- → char-harm on
+			// health, anything else → name (set active). No `=` — for absolute
+			// health use /vital health = N.
+			if (!args) return { kind: 'help', focus: 'char' };
+			const trimmed = args.trim();
+			if (/^[+\-=]/.test(trimmed)) {
+				const parsed = parseDeltaOp(trimmed.replace(/\s+/g, ' '));
+				if ('kind' in parsed) return parsed;
+				return { kind: 'char-harm', op: parsed.op, value: parsed.value };
+			}
+			return { kind: 'char', name: trimmed };
+		}
 		case 'foe': {
 			// Empty args → open the help dialog focused on /foe so the user sees
 			// the full overloaded grammar rather than an inline one-liner error.
@@ -223,9 +275,9 @@ export function parseCommand(input: string): Command | null {
 			// Subcommand: vanquish. Case-insensitive; guaranteed unambiguous —
 			// foes cannot be named "vanquish" per repo policy.
 			if (/^vanquish$/i.test(trimmed)) return { kind: 'foe-vanquish' };
-			// Operator: +, -, = → progress on the active foe (rank-aware).
+			// Operator: + or - → progress on the active foe (rank-aware).
 			if (/^[+\-=]/.test(trimmed)) {
-				const parsed = parseVitalOp(trimmed.replace(/\s+/g, ' '));
+				const parsed = parseDeltaOp(trimmed.replace(/\s+/g, ' '));
 				if ('kind' in parsed) return parsed;
 				return { kind: 'foe-progress', op: parsed.op, value: parsed.value };
 			}
@@ -237,7 +289,7 @@ export function parseCommand(input: string): Command | null {
 			if (!args) return { kind: 'help', focus: 'exp' };
 			const trimmed = args.trim();
 			if (/^[+\-=]/.test(trimmed)) {
-				const parsed = parseVitalOp(trimmed.replace(/\s+/g, ' '));
+				const parsed = parseDeltaOp(trimmed.replace(/\s+/g, ' '));
 				if ('kind' in parsed) return parsed;
 				return { kind: 'exp-progress', op: parsed.op, value: parsed.value };
 			}

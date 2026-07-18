@@ -31,6 +31,8 @@
 		INITIATIVE_VALUES,
 		initiativeToNumber,
 	} from '$lib/commandBar.js';
+	// Delta-only ops for overloaded verb tokens (/char, /foe, /exp — no `=`).
+	const DELTA_TOKENS = ['+', '-'] as const;
 	import { appendLog, sessionLog, triggerAction } from '$lib/log.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
 	import { getCharacters } from '$lib/characterStore.svelte.js';
@@ -263,7 +265,7 @@
 			case 'char': {
 				// Prefix-only: character names are short and starts-with is intuitive.
 				const q = parsed.name;
-				return prefixPick(
+				const chars = prefixPick(
 					getCharacters(),
 					(c) => (c.data as unknown as CharacterData).name || 'Unnamed',
 					q,
@@ -272,6 +274,15 @@
 					const n = (c.data as unknown as CharacterData).name || 'Unnamed';
 					return { label: n, hint: '', apply: `/char ${n}` };
 				});
+				// When a character is active, offer the harm/heal tokens too.
+				if (getActiveCharacterId()) {
+					const specials: Suggestion[] = [
+						{ label: '+', hint: 'heal +1 health', apply: '/char +' },
+						{ label: '-', hint: 'take 1 harm', apply: '/char -' },
+					].filter((s) => !q || s.label.toLowerCase().startsWith(q.toLowerCase()));
+					return [...specials, ...chars];
+				}
+				return chars;
 			}
 			case 'foe': {
 				const q = parsed.name;
@@ -291,7 +302,6 @@
 					const specials: Suggestion[] = [
 						{ label: '+', hint: 'tick progress +1 box', apply: '/foe +' },
 						{ label: '-', hint: 'tick progress -1 box', apply: '/foe -' },
-						{ label: '=', hint: 'set progress to N boxes', apply: '/foe = ' },
 						{
 							label: 'vanquish',
 							hint: 'mark the active foe vanquished',
@@ -313,7 +323,6 @@
 					const specials: Suggestion[] = [
 						{ label: '+', hint: 'tick progress +1 mark', apply: '/exp +' },
 						{ label: '-', hint: 'tick progress -1 mark', apply: '/exp -' },
-						{ label: '=', hint: 'set progress to N marks', apply: '/exp = ' },
 					].filter((s) => !q || s.label.toLowerCase().startsWith(q.toLowerCase()));
 					return [...specials, ...exps];
 				}
@@ -335,7 +344,7 @@
 			case 'move':
 				return 'roll a move';
 			case 'char':
-				return 'switch active character';
+				return 'active character: set / take harm / heal';
 			case 'foe':
 				return 'active foe: set / tick progress / vanquish';
 			case 'exp':
@@ -405,6 +414,22 @@
 				setStatus(`Active character → ${(c.data as unknown as CharacterData).name}.`, 'info');
 				break;
 			}
+			case 'char-harm': {
+				const charId = getActiveCharacterId();
+				if (!charId) {
+					setStatus('/char +/- needs an active character. Type /char <name> first.', 'error');
+					return;
+				}
+				// Value on /char is harm — always applied to health. Applier
+				// clamps 0..5 and appends the log line. `+` heals, `-` harms.
+				const delta = cmd.op === '+' ? cmd.value : -cmd.value;
+				triggerAction({ charId, type: 'resource', key: 'health', value: delta });
+				setStatus(
+					cmd.op === '+' ? `Healed ${cmd.value} health.` : `Took ${cmd.value} harm.`,
+					'info',
+				);
+				break;
+			}
 			case 'foe': {
 				const e = resolveFoe(cmd.name);
 				if (!e) {
@@ -418,24 +443,17 @@
 			}
 			case 'foe-progress': {
 				if (!getActiveFoeId()) {
-					setStatus('/foe +/-/= needs an active foe. Type /foe <name> first.', 'error');
+					setStatus('/foe +/- needs an active foe. Type /foe <name> first.', 'error');
 					return;
 				}
-				// FoesArea's applyMenace / setMenace do the rank-aware tick
-				// conversion + log line. We forward the op + value through a
-				// CustomEvent; +page.svelte holds the ref and calls the right
-				// method.
+				// FoesArea.applyMenace does the rank-aware tick conversion + log
+				// line. We forward a signed box count through a CustomEvent;
+				// +page.svelte holds the ref and calls the method.
+				const signedBoxes = cmd.op === '+' ? cmd.value : -cmd.value;
 				document.dispatchEvent(
-					new CustomEvent('ironledger:foe-progress', {
-						detail: { op: cmd.op, value: cmd.value },
-					}),
+					new CustomEvent('ironledger:foe-progress', { detail: { boxes: signedBoxes } }),
 				);
-				setStatus(
-					cmd.op === '='
-						? `Foe progress set to ${cmd.value} boxes.`
-						: `Foe progress ${cmd.op}${cmd.value} box${cmd.value === 1 ? '' : 'es'}.`,
-					'info',
-				);
+				setStatus(`Foe progress ${cmd.op}${cmd.value} box${cmd.value === 1 ? '' : 'es'}.`, 'info');
 				break;
 			}
 			case 'foe-vanquish': {
@@ -459,18 +477,15 @@
 			}
 			case 'exp-progress': {
 				if (!getActiveExpeditionId()) {
-					setStatus('/exp +/-/= needs an active expedition. Type /exp <name> first.', 'error');
+					setStatus('/exp +/- needs an active expedition. Type /exp <name> first.', 'error');
 					return;
 				}
+				const signedMarks = cmd.op === '+' ? cmd.value : -cmd.value;
 				document.dispatchEvent(
-					new CustomEvent('ironledger:exp-progress', {
-						detail: { op: cmd.op, value: cmd.value },
-					}),
+					new CustomEvent('ironledger:exp-progress', { detail: { marks: signedMarks } }),
 				);
 				setStatus(
-					cmd.op === '='
-						? `Expedition progress set to ${cmd.value} marks.`
-						: `Expedition progress ${cmd.op}${cmd.value} mark${cmd.value === 1 ? '' : 's'}.`,
+					`Expedition progress ${cmd.op}${cmd.value} mark${cmd.value === 1 ? '' : 's'}.`,
 					'info',
 				);
 				break;

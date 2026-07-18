@@ -155,17 +155,6 @@
 	export function applyProgress(marks: number) {
 		if (activeExp) updateExp({ ticks: Math.min(40, activeExp.ticks + marks * markTicks) });
 	}
-	/** Absolute-set companion to applyProgress — reaches `marks` boxes on the
-	 *  active expedition, computed as a delta so applyProgress's ticks-per-mark
-	 *  math is the single source of truth. Command-bar `/exp = N` calls this. */
-	export function setProgress(marks: number) {
-		if (!activeExp) return;
-		if (markTicks <= 0) return;
-		const currentMarks = Math.floor(activeExp.ticks / markTicks);
-		const delta = marks - currentMarks;
-		if (delta === 0) return;
-		applyProgress(delta);
-	}
 
 	export function openChangeThemeForExp(expId: string) {
 		flushPersist();
