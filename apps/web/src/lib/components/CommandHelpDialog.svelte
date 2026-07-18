@@ -1,0 +1,188 @@
+<script lang="ts">
+	/**
+	 * CommandHelpDialog — cheat-sheet for the command bar.
+	 *
+	 * Replaces the earlier /help behavior that appended a "Command help" entry
+	 * to the log (which cluttered the log and burnt an entry every time). Now
+	 * /help and the ? button open this dialog; the log is untouched.
+	 *
+	 * The command reference (verb, arg shape, tagline) lives here — one row per
+	 * command. Keep it in sync with parseCommand() in $lib/commandBar.ts.
+	 *
+	 * Follows CLAUDE.md's iOS-safe dialog rules: `vh` (not `dvh`), centred via
+	 * `top:50%+transform`, no `display:flex` on the dialog itself, `max-height`
+	 * on the scrollable body with `overscroll-behavior: contain`.
+	 */
+
+	import { headingText } from '$lib/fontStore.svelte.js';
+	import DialogHeader from '$lib/components/DialogHeader.svelte';
+
+	let dialogEl = $state<HTMLDialogElement | null>(null);
+
+	export function open() {
+		dialogEl?.showModal();
+	}
+	export function close() {
+		dialogEl?.close();
+	}
+
+	interface Row {
+		syntax: string;
+		hint: string;
+	}
+	const COMMANDS: Row[] = [
+		{ syntax: '<text>', hint: 'Bare prose is added to the log as a Note.' },
+		{ syntax: '/note <text>', hint: 'Same as bare prose.' },
+		{ syntax: '/oracle <table>', hint: 'Roll an oracle (e.g. /oracle place).' },
+		{ syntax: '/move <name>', hint: 'Open a move (e.g. /move face → Face Danger).' },
+		{ syntax: '/char <name>', hint: 'Set the active character.' },
+		{ syntax: '/foe <name>', hint: 'Set the active foe.' },
+		{
+			syntax: '/start',
+			hint: 'Pin the ▲ start marker on the newest log entry (open, growing selection).',
+		},
+		{
+			syntax: '/end',
+			hint: 'Pin the ▼ end marker on the newest log entry (closes the selection).',
+		},
+		{ syntax: '/story', hint: 'Open the AI-story generate dialog on the current section.' },
+		{ syntax: '/help', hint: 'This cheat-sheet.' },
+	];
+</script>
+
+<dialog bind:this={dialogEl} class="ch-dialog" oncancel={close}>
+	<DialogHeader title={headingText('Command Bar')} onclose={close} />
+
+	<div class="ch-body">
+		<p class="ch-intro">
+			The bar at the bottom of Home takes prose or a slash-command. Autocomplete floats above the
+			input; <kbd>Tab</kbd> completes the highlighted suggestion, <kbd>↑</kbd>/<kbd>↓</kbd> move
+			through them, <kbd>Esc</kbd> clears the input.
+		</p>
+
+		<ul class="ch-list">
+			{#each COMMANDS as cmd}
+				<li class="ch-row">
+					<code class="ch-syntax">{cmd.syntax}</code>
+					<span class="ch-hint">{cmd.hint}</span>
+				</li>
+			{/each}
+		</ul>
+
+		<p class="ch-footnote">
+			Log entries also carry hover-revealed <span class="ch-marker">▲</span> /
+			<span class="ch-marker">▼</span> buttons — click them to pin section markers directly without typing
+			a command. The AI-story selection surface is hidden on mobile.
+		</p>
+	</div>
+
+	<div class="ch-footer">
+		<button class="btn" type="button" onclick={close}>Close</button>
+	</div>
+</dialog>
+
+<style>
+	.ch-dialog {
+		border: none;
+		padding: 0;
+		border-radius: 10px;
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		margin: 0;
+		transform: translate(-50%, -50%);
+		width: min(480px, calc(100vw - 2rem));
+		max-height: 82vh;
+		overflow: hidden;
+		background: var(--bg-card);
+		color: var(--text);
+		box-shadow:
+			0 16px 48px #00000070,
+			0 0 0 1px var(--border-mid);
+		outline: none;
+	}
+	.ch-dialog::backdrop {
+		background: #00000060;
+		backdrop-filter: blur(1px);
+	}
+
+	.ch-body {
+		padding: 14px;
+		max-height: calc(82vh - 6rem);
+		overflow-y: auto;
+		overscroll-behavior: contain;
+	}
+
+	.ch-intro {
+		font-family: var(--font-ui);
+		font-size: 0.82rem;
+		line-height: 1.5;
+		color: var(--text-muted);
+		margin: 0 0 12px;
+	}
+	.ch-intro kbd {
+		display: inline-block;
+		padding: 0 5px;
+		font-family: var(--font-mono, 'Roboto Mono', ui-monospace, monospace);
+		font-size: 0.72rem;
+		color: var(--text);
+		background: var(--bg-inset);
+		border: 1px solid var(--border-mid);
+		border-radius: 3px;
+	}
+
+	.ch-list {
+		list-style: none;
+		margin: 0 0 14px;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+	.ch-row {
+		display: grid;
+		grid-template-columns: minmax(130px, max-content) 1fr;
+		gap: 10px;
+		padding: 5px 7px;
+		border-radius: 4px;
+		align-items: baseline;
+	}
+	.ch-row:nth-child(odd) {
+		background: color-mix(in srgb, var(--text-accent) 4%, transparent);
+	}
+	.ch-syntax {
+		font-family: var(--font-mono, 'Roboto Mono', ui-monospace, monospace);
+		font-size: 0.78rem;
+		font-weight: 600;
+		color: var(--text-accent);
+		white-space: nowrap;
+	}
+	.ch-hint {
+		font-family: var(--font-ui);
+		font-size: 0.78rem;
+		line-height: 1.45;
+		color: var(--text-muted);
+	}
+
+	.ch-footnote {
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		line-height: 1.5;
+		color: var(--text-dimmer);
+		margin: 0;
+		padding-top: 8px;
+		border-top: 1px solid var(--border);
+	}
+	.ch-marker {
+		color: var(--text-accent);
+		font-weight: 700;
+	}
+
+	.ch-footer {
+		display: flex;
+		justify-content: flex-end;
+		padding: 10px 14px;
+		border-top: 1px solid var(--border);
+		background: var(--bg-inset);
+	}
+</style>

@@ -1613,10 +1613,12 @@
 	/* ── Mobile: hide the whole story-selection surface.
 	   The AI story flow is a desktop-only convenience — the ▲/▼ marker
 	   buttons are hover-revealed and awkward to hit on touch, and the
-	   Generate/floating-strip UI eats scarce mobile chrome. The underlying
-	   sectionStore state still works, so a section pinned on desktop can
-	   be viewed here (its highlight stays) but not mutated. ── */
-	@media (max-width: 600px) {
+	   Generate/floating-strip UI eats scarce mobile chrome (Adventure
+	   split defaults the log to just 20% of the viewport). Uses the
+	   canonical mobile breakpoint documented in mobile.md. The underlying
+	   sectionStore state still works, so a section pinned on desktop is
+	   still highlighted here (read-only) but can't be mutated. ── */
+	@media (max-width: 767px) {
 		.story-btn,
 		.entry-marker-btn,
 		.section-strip {

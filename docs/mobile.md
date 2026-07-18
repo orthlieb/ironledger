@@ -115,6 +115,28 @@ On Surface-Duo-class screens (540 px inner width in portrait), labels don't fit 
 
 ---
 
+## AI Story Selection — Desktop Only
+
+The whole story-selection surface in the log — the per-entry ▲ / ▼ marker
+buttons, the toolbar Generate button, and the floating strip at the bottom —
+is hidden below the canonical `768px` breakpoint. The rationale:
+
+- The ▲ / ▼ buttons are hover-revealed (opacity 0 → 1 on `.log-entry:hover`),
+  which is fine on desktop but produces phantom targets on touch — either you
+  can't see them, or they leak into the tap area of another entry.
+- The log gets ~20% of the viewport by default under
+  [Adventure Split](#adventure-split-panel); the toolbar Generate button and
+  the floating strip would each steal a whole row of that budget.
+- AI story generation is a between-session-write-up feature, not something
+  you reach for mid-scene from a phone.
+
+The `sectionStore` state is not gated — a section pinned from desktop stays
+highlighted (read-only) if the user pops the phone open later. See
+[log.md § Story sections](log.md#story-sections-----markers) and
+[ai-story.md](ai-story.md) for the full flow.
+
+---
+
 ## Passkeys
 
 Mobile is the primary target for passkey sign-in — a single tap hands off to the OS biometric sheet (Face ID / Touch ID on iOS, fingerprint / face unlock on Android) and returns an authenticated session without the user typing anything. Implementation is shared with desktop; there is no mobile-specific code path.

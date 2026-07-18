@@ -42,10 +42,12 @@
 	import { FOE_RANKS } from '$lib/foeStore.svelte.js';
 	import type { MoveDefinition } from '@ironledger/shared';
 	import type { CharacterData } from '$lib/types.js';
+	import CommandHelpDialog from './CommandHelpDialog.svelte';
 
 	let input = $state('');
 	let inputEl = $state<HTMLInputElement | null>(null);
 	let statusMsg = $state('');
+	let helpDialogRef = $state<{ open(): void; close(): void } | null>(null);
 
 	// The move + oracle catalogues are normally lazy-loaded by MovesDialog /
 	// OraclesDialog on their first open. That's too late for us — /move e ↵
@@ -224,8 +226,7 @@
 				break;
 			}
 			case 'help': {
-				appendLog('Command help', HELP_HTML);
-				setStatus('Command list appended to the log.', 'info');
+				helpDialogRef?.open();
 				break;
 			}
 			case 'oracle': {
@@ -445,21 +446,6 @@
 			}, 2500);
 		}
 	}
-
-	const HELP_HTML =
-		'<div><strong>Command bar</strong> — type prose to add a note, or one of:</div>' +
-		'<ul>' +
-		'<li><code>/note &lt;text&gt;</code> — same as bare prose</li>' +
-		'<li><code>/oracle &lt;table&gt;</code> — roll an oracle (e.g. <code>/oracle place</code>)</li>' +
-		'<li><code>/move &lt;name&gt;</code> — open a move (e.g. <code>/move face</code> → Face Danger)</li>' +
-		'<li><code>/char &lt;name&gt;</code> — set the active character</li>' +
-		'<li><code>/foe &lt;name&gt;</code> — set the active foe</li>' +
-		'<li><code>/start</code> — pin the ▲ start marker on the newest entry (open, growing selection)</li>' +
-		'<li><code>/end</code> — pin the ▼ end marker on the newest entry (closes the selection)</li>' +
-		'<li><code>/story</code> — open the generate dialog on the current section</li>' +
-		'<li><code>/help</code> — this list</li>' +
-		'</ul>' +
-		'<div>Or use the ▲/▼ buttons on any log entry to place markers directly. Tab completes the highlighted suggestion; ↑/↓ moves through them; Escape clears.</div>';
 </script>
 
 <div class="cb">
@@ -507,7 +493,7 @@
 			onkeydown={handleKeydown}
 			type="text"
 			class="cb-input"
-			placeholder="type a note, or /move face …    (Tab to complete, ? for help)"
+			placeholder="Type a note, or hit / for commands, tab to complete."
 			autocomplete="off"
 			spellcheck="true"
 			aria-label="Command bar"
@@ -517,12 +503,12 @@
 			type="button"
 			title="Show command help"
 			aria-label="Show command help"
-			onclick={() => {
-				dispatch({ kind: 'help' });
-			}}>?</button
+			onclick={() => helpDialogRef?.open()}>?</button
 		>
 	</div>
 </div>
+
+<CommandHelpDialog bind:this={helpDialogRef} />
 
 <style>
 	.cb {

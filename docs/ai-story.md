@@ -36,10 +36,21 @@ normalized text back.
    markdown before saving; **Preview** flips back to the rendered view.
 6. **Save to Log**: the prose is stored as a Story log entry (rendered markdown
    in `html`, plus a payload in `source` — see below). You can name it first.
+   Both markers are cleared on save — the section is consumed, and the user
+   pins a fresh ▲ whenever they want to start the next one.
 7. **Regenerate** (⟳ on a Story entry): re-runs the stored prompt against the
-   active storyteller and replaces the entry in place.
+   active storyteller and replaces the entry in place. Markers are not touched
+   by regenerate (there's no new section to consume).
 8. **Export** (Hamburger → Export → Stories): writes all story entries' prose to
    `stories-<stamp>.md`.
+
+> **Mobile.** The whole selection surface (▲ / ▼ marker buttons, the Generate
+> button, and the floating strip) is hidden below `768px` (`mobile.md`'s
+> canonical breakpoint) — hover-revealed marker buttons are awkward on touch
+> and the log gets only 20% of the viewport by default (Adventure Split). The
+> underlying `sectionStore` state is untouched, so if the user pins a section
+> on desktop and then flips to mobile, the entries stay highlighted (read-only)
+> but can't be mutated until they're back on a wider screen.
 
 ## Files
 
@@ -127,6 +138,8 @@ the ⟳ button and the stories export. See also `docs/import-schema.md`.
   preface, `parseStorySource`.
 - **E2E** (`apps/web/tests/e2e/story.spec.ts`): `/api/ai/config` and
   `/api/ai/generate` are mocked with `page.route()` + a canned unified SSE body;
-  story entries are injected via `window.__testLog.appendLog`. Covers the
-  regenerate gate, regenerate replace-in-place, record → name → generate → edit →
-  save (including the editable output box), and the Stories export.
+  story entries are injected via `window.__testLog.appendLog` and section
+  markers are set via `window.__testSection.setStart` (both exposed by
+  `hooks.client.ts`) to skip the hover-reveal on the ▲ button. Covers the
+  regenerate gate, regenerate replace-in-place, mark section → name → generate
+  → edit → save (including the editable output box), and the Stories export.
