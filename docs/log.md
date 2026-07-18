@@ -277,3 +277,25 @@ See [`docs/ai-story.md`](ai-story.md) for the full AI-story flow (provider
 config, preface, prompt shape, and the Regenerate / Export paths). This
 section covers just the log-panel selection mechanics; the story-generation
 itself is one dialog downstream.
+
+---
+
+## Command Bar
+
+The always-visible strip at the bottom of `/home` writes into the same log
+and drives the same buses documented above. Full reference (all 14 verbs,
+overloaded grammar for `/char`/`/foe`/`/exp`, autocomplete behavior, regex
+grammar reference, dispatch map) lives in
+[`command-bar.md`](command-bar.md). In short:
+
+- **Prose** → Note.
+- **`/vital`, `/debility`, `/bonds`, `/failures`, `/initiative`, `/char + / -`**
+  → dispatch through the LogAction bus above; CharactersArea's drain effect
+  applies the mutation and appends the log entry.
+- **`/foe + / -`, `/foe vanquish`, `/exp + / -`** → dispatch as
+  `ironledger:foe-progress` / `foe-vanquish` / `exp-progress` CustomEvents;
+  `+page.svelte` forwards to `FoesArea.applyMenace` /
+  `vanquishActiveFoe` / `ExpeditionsArea.applyProgress`. Progress is
+  rank-aware (foes) / difficulty-aware (expeditions).
+- **`/start`, `/end`, `/story`** → mutate `sectionStore` directly (see
+  above).
