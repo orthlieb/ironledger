@@ -79,6 +79,11 @@
 			hint: 'Mark the active foe as vanquished. Does not delete the encounter.',
 		},
 		{
+			verb: 'foe',
+			syntax: '/foe active',
+			hint: 'Reactivate a previously-vanquished active foe (opposite of vanquish). No-ops if the foe is already active.',
+		},
+		{
 			verb: 'exp',
 			syntax: '/exp <name>',
 			hint: 'Set the active expedition (journey or site).',

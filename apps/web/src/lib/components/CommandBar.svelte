@@ -142,10 +142,99 @@
 
 	const parsed = $derived(parseCommand(input));
 
+	// Store-arg suggestion builders — extracted so we can invoke them from the
+	// regex-driven arg-completion block below, which fires whether or not the
+	// parser produced a happy result (e.g. `/foe ` with no arg parses as
+	// help-focus, but we still want the autocomplete strip populated).
+	function buildOracleSuggestions(q: string): Suggestion[] {
+		return fuzzyPick(getVisibleOracles(), (o) => o.title, q, 8).map((o) => ({
+			label: o.title,
+			hint: o.key,
+			apply: `/oracle ${o.key}`,
+		}));
+	}
+	function buildMoveSuggestions(q: string): Suggestion[] {
+		const available = getVisibleMoves().filter(isMoveAvailable);
+		return prefixPick(available, (m) => m.name, q, 12).map((m) => ({
+			label: m.name,
+			hint: m.category ?? '',
+			apply: `/move ${m.name}`,
+		}));
+	}
+	function buildCharSuggestions(q: string): Suggestion[] {
+		const chars = prefixPick(
+			getCharacters(),
+			(c) => (c.data as unknown as CharacterData).name || 'Unnamed',
+			q,
+			8,
+		).map((c) => {
+			const n = (c.data as unknown as CharacterData).name || 'Unnamed';
+			return { label: n, hint: '', apply: `/char ${n}` };
+		});
+		if (getActiveCharacterId()) {
+			const foeId = getActiveFoeId();
+			const foeEnc = foeId ? getEncounters().find((e) => e.id === foeId) : undefined;
+			const foeRankHarm = foeEnc ? (FOE_RANKS[foeEnc.effectiveRank]?.harm ?? 0) : 0;
+			const harmHint =
+				foeRankHarm > 0 ? `take ${foeRankHarm} harm (active foe rank)` : 'take 1 harm';
+			const specials: Suggestion[] = [
+				{ label: '+', hint: 'heal +1 health', apply: '/char +' },
+				{ label: '-', hint: harmHint, apply: '/char -' },
+			].filter((s) => !q || s.label.toLowerCase().startsWith(q.toLowerCase()));
+			return [...specials, ...chars];
+		}
+		return chars;
+	}
+	function buildFoeSuggestions(q: string): Suggestion[] {
+		const foes = prefixPick(
+			getEncounters(),
+			(e) => e.customName || findFoe(e.foeId)?.name || '',
+			q,
+			8,
+		).map((e) => {
+			const n = e.customName || findFoe(e.foeId)?.name || '';
+			return { label: n, hint: '', apply: `/foe ${n}` };
+		});
+		if (getActiveFoeId()) {
+			// `active` and `vanquish` are opposite subcommands; both appear in
+			// the strip so the user can flip either direction with one keystroke
+			// sequence. The action itself no-ops if the target state already
+			// matches — the fallback keeps the strip predictable across states.
+			const specials: Suggestion[] = [
+				{ label: '+', hint: 'tick progress +1 box', apply: '/foe +' },
+				{ label: '-', hint: 'tick progress -1 box', apply: '/foe -' },
+				{ label: 'vanquish', hint: 'mark the active foe vanquished', apply: '/foe vanquish' },
+				{ label: 'active', hint: 'reactivate a vanquished foe', apply: '/foe active' },
+			].filter((s) => !q || s.label.toLowerCase().startsWith(q.toLowerCase()));
+			return [...specials, ...foes];
+		}
+		return foes;
+	}
+	function buildExpSuggestions(q: string): Suggestion[] {
+		const exps = prefixPick(getExpeditions(), (e) => e.name || '', q, 8).map((e) => ({
+			label: e.name || '',
+			hint: e.type,
+			apply: `/exp ${e.name}`,
+		}));
+		if (getActiveExpeditionId()) {
+			const specials: Suggestion[] = [
+				{ label: '+', hint: 'tick progress +1 mark', apply: '/exp +' },
+				{ label: '-', hint: 'tick progress -1 mark', apply: '/exp -' },
+			].filter((s) => !q || s.label.toLowerCase().startsWith(q.toLowerCase()));
+			return [...specials, ...exps];
+		}
+		return exps;
+	}
+
 	const suggestions = $derived.by<Suggestion[]>(() => {
-		const raw = input.trim();
+		// trimStart (not trim) — preserve trailing spaces so `/vital ` (right
+		// after the user tab-completes the verb) still has the space the arg
+		// regexes need to match. Without this, `raw.match(/^\/vital\s+([a-z]*)$/)`
+		// fails on an empty arg and autocomplete stays dark until the user
+		// starts typing.
+		const raw = input.trimStart();
 		if (!raw.startsWith('/')) return [];
-		// Still typing the verb — suggest commands.
+		// Still typing the verb — no space means no arg started.
 		if (!raw.includes(' ')) {
 			const q = raw.slice(1).toLowerCase();
 			return fuzzyPick(COMMAND_NAMES as unknown as string[], (n) => n, q, 8).map((n) => ({
@@ -253,105 +342,21 @@
 				}));
 			}
 		}
-		// Verb complete: what's the argument being typed?
-		if (!parsed || parsed.kind === 'error') return [];
-		switch (parsed.kind) {
-			case 'oracle': {
-				const q = parsed.key;
-				return fuzzyPick(getVisibleOracles(), (o) => o.title, q, 8).map((o) => ({
-					label: o.title,
-					hint: o.key,
-					apply: `/oracle ${o.key}`,
-				}));
-			}
-			case 'move': {
-				// Prefix-only match on move names, filtered to moves that are
-				// actually possible in the current context (matches the "hide
-				// unavailable" behavior of MovesDialog).
-				const q = parsed.name;
-				const available = getVisibleMoves().filter(isMoveAvailable);
-				return prefixPick(available, (m) => m.name, q, 12).map((m) => ({
-					label: m.name,
-					hint: m.category ?? '',
-					apply: `/move ${m.name}`,
-				}));
-			}
-			case 'char': {
-				// Prefix-only: character names are short and starts-with is intuitive.
-				const q = parsed.name;
-				const chars = prefixPick(
-					getCharacters(),
-					(c) => (c.data as unknown as CharacterData).name || 'Unnamed',
-					q,
-					8,
-				).map((c) => {
-					const n = (c.data as unknown as CharacterData).name || 'Unnamed';
-					return { label: n, hint: '', apply: `/char ${n}` };
-				});
-				// When a character is active, offer the harm/heal tokens too.
-				if (getActiveCharacterId()) {
-					// Bare `/char -` takes the active foe's rank harm when a foe
-					// is set — surface that in the hint so nobody's surprised.
-					const foeId = getActiveFoeId();
-					const foeEnc = foeId ? getEncounters().find((e) => e.id === foeId) : undefined;
-					const foeRankHarm = foeEnc ? (FOE_RANKS[foeEnc.effectiveRank]?.harm ?? 0) : 0;
-					const harmHint =
-						foeRankHarm > 0 ? `take ${foeRankHarm} harm (active foe rank)` : 'take 1 harm';
-					const specials: Suggestion[] = [
-						{ label: '+', hint: 'heal +1 health', apply: '/char +' },
-						{ label: '-', hint: harmHint, apply: '/char -' },
-					].filter((s) => !q || s.label.toLowerCase().startsWith(q.toLowerCase()));
-					return [...specials, ...chars];
-				}
-				return chars;
-			}
-			case 'foe': {
-				const q = parsed.name;
-				const foes = prefixPick(
-					getEncounters(),
-					(e) => e.customName || findFoe(e.foeId)?.name || '',
-					q,
-					8,
-				).map((e) => {
-					const n = e.customName || findFoe(e.foeId)?.name || '';
-					return { label: n, hint: '', apply: `/foe ${n}` };
-				});
-				// When a foe is active, offer the overloaded actions too — the
-				// parser will only route to them on exact match, but the strip
-				// shows the discoverable tokens for anyone who typed /foe partial.
-				if (getActiveFoeId()) {
-					const specials: Suggestion[] = [
-						{ label: '+', hint: 'tick progress +1 box', apply: '/foe +' },
-						{ label: '-', hint: 'tick progress -1 box', apply: '/foe -' },
-						{
-							label: 'vanquish',
-							hint: 'mark the active foe vanquished',
-							apply: '/foe vanquish',
-						},
-					].filter((s) => !q || s.label.toLowerCase().startsWith(q.toLowerCase()));
-					return [...specials, ...foes];
-				}
-				return foes;
-			}
-			case 'exp': {
-				const q = parsed.name;
-				const exps = prefixPick(getExpeditions(), (e) => e.name || '', q, 8).map((e) => ({
-					label: e.name || '',
-					hint: e.type,
-					apply: `/exp ${e.name}`,
-				}));
-				if (getActiveExpeditionId()) {
-					const specials: Suggestion[] = [
-						{ label: '+', hint: 'tick progress +1 mark', apply: '/exp +' },
-						{ label: '-', hint: 'tick progress -1 mark', apply: '/exp -' },
-					].filter((s) => !q || s.label.toLowerCase().startsWith(q.toLowerCase()));
-					return [...specials, ...exps];
-				}
-				return exps;
-			}
-			default:
-				return [];
-		}
+		// Store-driven arg completion for /oracle, /move, /char, /foe, /exp.
+		// Regex-driven (not parser-driven) so autocomplete lights up immediately
+		// after the user tab-completes the verb — the parser would return
+		// help-focus or error for an empty arg and the switch used to skip.
+		const oracleArg = raw.match(/^\/oracle\s+(.*)$/i);
+		if (oracleArg) return buildOracleSuggestions(oracleArg[1].trim());
+		const moveArg = raw.match(/^\/move\s+(.*)$/i);
+		if (moveArg) return buildMoveSuggestions(moveArg[1].trim());
+		const charArg = raw.match(/^\/char\s+(.*)$/i);
+		if (charArg) return buildCharSuggestions(charArg[1].trim());
+		const foeArg = raw.match(/^\/foe\s+(.*)$/i);
+		if (foeArg) return buildFoeSuggestions(foeArg[1].trim());
+		const expArg = raw.match(/^\/exp\s+(.*)$/i);
+		if (expArg) return buildExpSuggestions(expArg[1].trim());
+		return [];
 	});
 
 	function verbHint(v: CommandName): string {
@@ -510,6 +515,15 @@
 				}
 				document.dispatchEvent(new CustomEvent('ironledger:foe-vanquish'));
 				setStatus('Vanquished the active foe.', 'info');
+				break;
+			}
+			case 'foe-reactivate': {
+				if (!getActiveFoeId()) {
+					setStatus('/foe active needs an active foe.', 'error');
+					return;
+				}
+				document.dispatchEvent(new CustomEvent('ironledger:foe-reactivate'));
+				setStatus('Reactivated the foe.', 'info');
 				break;
 			}
 			case 'exp': {

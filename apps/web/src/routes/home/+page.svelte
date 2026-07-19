@@ -119,6 +119,7 @@
 	let foeAreaRef = $state<{
 		selectFoe(id: string): void;
 		vanquishActiveFoe(): void;
+		reactivateActiveFoe(): void;
 		applyMenace(value: number): void;
 	} | null>(null);
 
@@ -232,6 +233,7 @@
 			foeAreaRef?.applyMenace(d.boxes);
 		};
 		const onFoeVanquish = () => foeAreaRef?.vanquishActiveFoe();
+		const onFoeReactivate = () => foeAreaRef?.reactivateActiveFoe();
 		const onExpProgress = (e: Event) => {
 			const d = (e as CustomEvent<{ marks: number }>).detail;
 			if (!d) return;
@@ -239,12 +241,14 @@
 		};
 		document.addEventListener('ironledger:foe-progress', onFoeProgress);
 		document.addEventListener('ironledger:foe-vanquish', onFoeVanquish);
+		document.addEventListener('ironledger:foe-reactivate', onFoeReactivate);
 		document.addEventListener('ironledger:exp-progress', onExpProgress);
 
 		return () => {
 			document.removeEventListener('il-menu-action', handleMenuAction);
 			document.removeEventListener('ironledger:foe-progress', onFoeProgress);
 			document.removeEventListener('ironledger:foe-vanquish', onFoeVanquish);
+			document.removeEventListener('ironledger:foe-reactivate', onFoeReactivate);
 			document.removeEventListener('ironledger:exp-progress', onExpProgress);
 		};
 	});

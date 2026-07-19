@@ -251,6 +251,16 @@ describe('parseCommand /foe overloads', () => {
 		expect(parseCommand('/foe VANQUISH')).toEqual({ kind: 'foe-vanquish' });
 		expect(parseCommand('/foe Vanquish')).toEqual({ kind: 'foe-vanquish' });
 	});
+	it('/foe active parses as the reactivate subcommand (opposite of vanquish)', () => {
+		expect(parseCommand('/foe active')).toEqual({ kind: 'foe-reactivate' });
+	});
+	it('/foe active is case-insensitive', () => {
+		expect(parseCommand('/foe ACTIVE')).toEqual({ kind: 'foe-reactivate' });
+		expect(parseCommand('/foe Active')).toEqual({ kind: 'foe-reactivate' });
+	});
+	it('/foe activated (extra letters) falls through to name — subcommand is exact match', () => {
+		expect(parseCommand('/foe activated')).toEqual({ kind: 'foe', name: 'activated' });
+	});
 	it('/foe +2 parses as progress delta (boxes)', () => {
 		expect(parseCommand('/foe +2')).toEqual({ kind: 'foe-progress', op: '+', value: 2 });
 	});

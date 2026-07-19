@@ -67,6 +67,7 @@ dialog scrolled to and highlighting the verb's row.
 | `/foe + [n]`    | Advance combat progress by `n` boxes. **Rank-aware** — `n` counts progress boxes; the FoesArea applier expands to `n × ticksPerBox(rank)`. |
 | `/foe - [n]`    | Reduce combat progress by `n` boxes.                                                                                                       |
 | `/foe vanquish` | Mark active foe vanquished. Does not delete the encounter.                                                                                 |
+| `/foe active`   | Reactivate a previously-vanquished active foe (inverse of `vanquish`). No-op if the foe is already active.                                 |
 
 **`/exp`** — active expedition
 
@@ -170,6 +171,7 @@ parsing is case-insensitive on the verb + enum tokens.
 
 /foe$                                             # help focus=foe
 /foe\s+vanquish\s*$                               # vanquish subcommand
+/foe\s+active\s*$                                 # reactivate (un-vanquish) subcommand
 /foe\s+(?<op>[+\-])\s*(?<n>\d+)?$                 # foe-progress (boxes)
 /foe\s+(?<name>[^+\-=\s].*?)\s*$                  # set active
 
