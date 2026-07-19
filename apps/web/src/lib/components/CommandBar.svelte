@@ -33,6 +33,7 @@
 	} from '$lib/commandBar.js';
 	import { appendLog, sessionLog, triggerAction } from '$lib/log.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
+	import { rollDie, animateDice, type DiceSpec } from '$lib/dice.js';
 	import { getCharacters } from '$lib/characterStore.svelte.js';
 	import { getEncounters } from '$lib/encounterStore.svelte.js';
 	import { findFoe } from '$lib/foeStore.svelte.js';
@@ -214,6 +215,21 @@
 				apply: `/initiative ${v}`,
 			}));
 		}
+		// /roll — offer Ironsworn preset patterns when the arg slot is empty
+		// or being typed. Prefix-filter against whatever the user has already
+		// entered so `/roll 2` narrows to presets starting with 2.
+		const rollMatch = raw.match(/^\/roll(\s+([^\s]*))?$/i);
+		if (rollMatch) {
+			const q = (rollMatch[2] ?? '').toLowerCase();
+			const presets: Suggestion[] = [
+				{ label: '2d10 1d6', hint: 'action roll (challenge + action)', apply: '/roll 2d10 1d6' },
+				{ label: '2d10', hint: 'challenge dice', apply: '/roll 2d10' },
+				{ label: '1d6', hint: 'action die', apply: '/roll 1d6' },
+				{ label: '1d100', hint: 'oracle', apply: '/roll 1d100' },
+				{ label: '1d6+2', hint: 'action die + adds', apply: '/roll 1d6+2' },
+			];
+			return presets.filter((p) => !q || p.label.toLowerCase().startsWith(q));
+		}
 		// /debility name completion — before the state is typed.
 		const debilityNameMatch = raw.match(/^\/debility\s+([a-z]*)$/i);
 		if (debilityNameMatch) {
@@ -370,6 +386,8 @@
 				return 'edit the failures track (0..40)';
 			case 'initiative':
 				return 'set combat initiative';
+			case 'roll':
+				return 'roll dice — e.g. 2d10 1d6+2';
 		}
 	}
 
@@ -592,6 +610,49 @@
 					triggerAction({ charId, type: 'resource', key: cmd.resource, value: delta });
 					setStatus(`${label} ${delta > 0 ? '+' : ''}${delta}.`, 'info');
 				}
+				break;
+			}
+			case 'roll': {
+				// Freeform dice roll — no active-context requirement. Each group is
+				// rolled with the same CSPRNG the move dialog uses, then flattened
+				// into a single DiceSpec[] so the 3D animation shows every die
+				// grouped by (sides, color). animateDice no-ops when the user's
+				// dice3d preference is off, so no branching needed here.
+				const rolled = cmd.groups.map((g) => {
+					const values: number[] = [];
+					for (let i = 0; i < g.n; i++) values.push(rollDie(g.sides));
+					const sum = values.reduce((a, b) => a + b, 0) + g.modifier;
+					return { g, values, sum };
+				});
+				const dice: DiceSpec[] = rolled.flatMap(({ g, values }) =>
+					values.map((v) => ({ sides: g.sides, value: v })),
+				);
+				// Fire-and-forget — the log line lands immediately; animation
+				// runs in the overlay behind everything else.
+				void animateDice(dice);
+				// Build the log body: one row per group + Total when > 1 group.
+				// Widths are locked with a monospace-ish alignment via the roll-line
+				// class (same font stack as move rolls, keeps digits column-aligned).
+				const rows = rolled
+					.map(({ g, values, sum }) => {
+						const mod =
+							g.modifier === 0 ? '' : g.modifier > 0 ? ` +${g.modifier}` : ` ${g.modifier}`;
+						return `<div class="roll-line">${g.raw}: [${values.join(', ')}]${mod} = <strong>${sum}</strong></div>`;
+					})
+					.join('');
+				const grandTotal = rolled.reduce((a, r) => a + r.sum, 0);
+				const totalRow =
+					rolled.length > 1
+						? `<div class="roll-line"><strong>Total:</strong> ${grandTotal}</div>`
+						: '';
+				const label = cmd.groups.map((g) => g.raw).join(' ');
+				appendLog(`Roll — ${label}`, rows + totalRow);
+				setStatus(
+					rolled.length === 1
+						? `Rolled ${label} → ${rolled[0].sum}.`
+						: `Rolled ${label} → total ${grandTotal}.`,
+					'info',
+				);
 				break;
 			}
 			case 'initiative': {

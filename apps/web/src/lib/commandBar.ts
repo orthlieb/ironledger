@@ -35,6 +35,17 @@
 //     who: none | foe | character (exact match, case-insensitive)
 //     Applies to the active character via a new action-bus type so the log
 //     line reads "Initiative → foe" (not "Initiative: 0 → 2 (+2)").
+//   /roll <group>+                → { kind: 'roll', groups }
+//     Each group: [n]d<sides>[±k]  where
+//       n     — 1..10, defaults to 1 when omitted (e.g. `d100` = `1d100`)
+//       sides — one of 4 | 6 | 8 | 10 | 12 | 20 | 100 (dice-box-threejs set)
+//       k     — -99..99, optional modifier applied to that group's sum
+//     Up to 4 groups per /roll; whitespace-separated. All groups roll and
+//     animate together, and the log entry shows each group with its own
+//     rolled values + sum. Drives the 3D dice animation when the user's
+//     `dice3d` preference is on. Examples:
+//       /roll 2d10 1d6+2           full Ironsworn action roll
+//       /roll d100                 oracle
 //
 // Overloaded verbs — /char, /foe, /exp accept multiple argument shapes; the
 // first non-space token decides the mode:
@@ -125,6 +136,43 @@ export function parseDeltaOp(
 export const INITIATIVE_VALUES = ['none', 'character', 'foe'] as const;
 export type InitiativeValue = (typeof INITIATIVE_VALUES)[number];
 
+/** Die sides supported by /roll (subset of what @3d-dice/dice-box-threejs
+ *  renders). Any other side count is a parser error. */
+export const ROLL_DIE_SIDES = [4, 6, 8, 10, 12, 20, 100] as const;
+export type RollDieSides = (typeof ROLL_DIE_SIDES)[number];
+
+/** Per-group limits — n dice with an optional flat modifier. */
+export const ROLL_MAX_N = 10;
+export const ROLL_MAX_MODIFIER = 99;
+/** Groups per /roll (a full Ironsworn action roll is 2, leave headroom). */
+export const ROLL_MAX_GROUPS = 4;
+
+/** One die-notation term inside a /roll command — e.g. `2d10` or `1d6+2`. */
+export interface RollGroup {
+	n: number;
+	sides: RollDieSides;
+	/** Signed flat modifier applied to the group's sum (0 when omitted). */
+	modifier: number;
+	/** Original textual form ("2d10", "1d6+2") for log-line / status echoes. */
+	raw: string;
+}
+
+/**
+ * Parse a single die-notation group. Returns null on malformed input; caller
+ * turns null into an error message with the raw form for context.
+ */
+export function parseRollGroup(raw: string): RollGroup | null {
+	const m = raw.match(/^(?<n>\d+)?d(?<sides>\d+)(?<mod>[+-]\d+)?$/i);
+	if (!m || !m.groups) return null;
+	const n = m.groups.n === undefined ? 1 : parseInt(m.groups.n, 10);
+	const sides = parseInt(m.groups.sides, 10);
+	const modifier = m.groups.mod ? parseInt(m.groups.mod, 10) : 0;
+	if (!Number.isFinite(n) || n < 1 || n > ROLL_MAX_N) return null;
+	if (!(ROLL_DIE_SIDES as readonly number[]).includes(sides)) return null;
+	if (Math.abs(modifier) > ROLL_MAX_MODIFIER) return null;
+	return { n, sides: sides as RollDieSides, modifier, raw };
+}
+
 /** Map an InitiativeValue to the on-disk numeric enum. */
 export function initiativeToNumber(v: InitiativeValue): 0 | 1 | 2 {
 	if (v === 'none') return 0;
@@ -159,6 +207,7 @@ export type Command =
 	| { kind: 'debility'; name: DebilityName; state: DebilityState }
 	| { kind: 'track'; name: TrackName; op: '+' | '-' | '='; value: number }
 	| { kind: 'initiative'; who: InitiativeValue }
+	| { kind: 'roll'; groups: RollGroup[] }
 	| { kind: 'error'; message: string };
 
 /** Set of leading slugs that route to slash-commands. Keep in sync with parseCommand. */
@@ -178,6 +227,7 @@ export const COMMAND_NAMES = [
 	'failures',
 	'initiative',
 	'exp',
+	'roll',
 ] as const;
 export type CommandName = (typeof COMMAND_NAMES)[number];
 
@@ -310,6 +360,33 @@ export function parseCommand(input: string): Command | null {
 			return { kind: 'end' };
 		case 'story':
 			return { kind: 'story' };
+		case 'roll': {
+			if (!args) {
+				return {
+					kind: 'error',
+					message: '/roll needs at least one dice group (e.g. /roll 2d10 1d6+2).',
+				};
+			}
+			const rawGroups = args.split(/\s+/).filter(Boolean);
+			if (rawGroups.length > ROLL_MAX_GROUPS) {
+				return {
+					kind: 'error',
+					message: `/roll accepts at most ${ROLL_MAX_GROUPS} groups.`,
+				};
+			}
+			const groups: RollGroup[] = [];
+			for (const g of rawGroups) {
+				const parsed = parseRollGroup(g);
+				if (!parsed) {
+					return {
+						kind: 'error',
+						message: `/roll can't parse "${g}". Expected forms: 2d10, d100, 1d6+2. Sides must be one of ${ROLL_DIE_SIDES.join(', ')}, n ≤ ${ROLL_MAX_N}, |modifier| ≤ ${ROLL_MAX_MODIFIER}.`,
+					};
+				}
+				groups.push(parsed);
+			}
+			return { kind: 'roll', groups };
+		}
 		case 'initiative': {
 			if (!args) {
 				return {
