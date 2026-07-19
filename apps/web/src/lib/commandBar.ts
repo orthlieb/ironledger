@@ -56,9 +56,12 @@
 //   /foe <name>                   → { kind: 'foe', name }
 //   /foe <op> [n]                 → { kind: 'foe-progress', op, value }
 //   /foe vanquish                 → { kind: 'foe-vanquish' }
+//   /foe active                   → { kind: 'foe-reactivate' } (un-vanquish)
 //   /exp                          → { kind: 'help', focus: 'exp' }
 //   /exp <name>                   → { kind: 'exp', name }
 //   /exp <op> [n]                 → { kind: 'exp-progress', op, value }
+//   /exp complete                 → { kind: 'exp-complete' }
+//   /exp active                   → { kind: 'exp-reactivate' } (un-complete)
 //
 // Operators accepted on the overloaded verbs are + and - only; `=` is
 // deliberately absent — the ticks-vs-boxes semantics for foe/exp progress
@@ -198,8 +201,11 @@ export type Command =
 	| { kind: 'foe'; name: string }
 	| { kind: 'foe-progress'; op: '+' | '-'; value: number }
 	| { kind: 'foe-vanquish' }
+	| { kind: 'foe-reactivate' }
 	| { kind: 'exp'; name: string }
 	| { kind: 'exp-progress'; op: '+' | '-'; value: number }
+	| { kind: 'exp-complete' }
+	| { kind: 'exp-reactivate' }
 	| { kind: 'start' }
 	| { kind: 'end' }
 	| { kind: 'story' }
@@ -331,9 +337,13 @@ export function parseCommand(input: string): Command | null {
 			// the full overloaded grammar rather than an inline one-liner error.
 			if (!args) return { kind: 'help', focus: 'foe' };
 			const trimmed = args.trim();
-			// Subcommand: vanquish. Case-insensitive; guaranteed unambiguous —
-			// foes cannot be named "vanquish" per repo policy.
+			// Subcommand: vanquish / active. Case-insensitive; guaranteed
+			// unambiguous — foes cannot be named "vanquish" or "active" per
+			// repo policy. `active` is the un-vanquish inverse: marks a
+			// previously-vanquished foe live again without needing to remove
+			// and recreate it.
 			if (/^vanquish$/i.test(trimmed)) return { kind: 'foe-vanquish' };
+			if (/^active$/i.test(trimmed)) return { kind: 'foe-reactivate' };
 			// Operator: + or - → progress on the active foe (rank-aware).
 			if (/^[+\-=]/.test(trimmed)) {
 				const parsed = parseDeltaOp(trimmed.replace(/\s+/g, ' '));
@@ -344,9 +354,13 @@ export function parseCommand(input: string): Command | null {
 			return { kind: 'foe', name: trimmed };
 		}
 		case 'exp': {
-			// Same overload pattern as /foe, minus the vanquish subcommand.
+			// Overload mirrors /foe: empty → help, `complete` / `active` are
+			// subcommand pair (equivalents of /foe vanquish / active), +/-
+			// tick progress, anything else is a name.
 			if (!args) return { kind: 'help', focus: 'exp' };
 			const trimmed = args.trim();
+			if (/^complete$/i.test(trimmed)) return { kind: 'exp-complete' };
+			if (/^active$/i.test(trimmed)) return { kind: 'exp-reactivate' };
 			if (/^[+\-=]/.test(trimmed)) {
 				const parsed = parseDeltaOp(trimmed.replace(/\s+/g, ' '));
 				if ('kind' in parsed) return parsed;

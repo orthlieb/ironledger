@@ -210,6 +210,15 @@
 		appendLog(foeTitle('Vanquished'), `<div><strong>Vanquished.</strong></div>`);
 	}
 
+	// Un-vanquish — mark a previously-vanquished foe live again. Sibling to
+	// vanquishActiveFoe; both no-op silently when the target state already
+	// matches so the caller doesn't have to check first.
+	export function reactivateActiveFoe() {
+		if (!activeEnc || !activeEnc.vanquished) return;
+		update({ vanquished: false });
+		appendLog(foeTitle('Reactivated'), `<div><strong>Reactivated.</strong></div>`);
+	}
+
 	// Menace / combat-progress from a log-entry link. Value is in progress
 	// boxes (positive = harm dealt); each box is progressTickVal ticks
 	// (usually 4 — softer for stronger foes). Log the change in the same

@@ -113,12 +113,15 @@
 		openChangeThemeForExp(expId: string): void;
 		openChangeDomainForExp(expId: string): void;
 		applyProgress(marks: number): void;
+		completeActiveExpedition(): void;
+		reactivateActiveExpedition(): void;
 	} | null>(null);
 
 	/** Ref to FoesArea — forwards vanquish / menace from log links. */
 	let foeAreaRef = $state<{
 		selectFoe(id: string): void;
 		vanquishActiveFoe(): void;
+		reactivateActiveFoe(): void;
 		applyMenace(value: number): void;
 	} | null>(null);
 
@@ -232,20 +235,29 @@
 			foeAreaRef?.applyMenace(d.boxes);
 		};
 		const onFoeVanquish = () => foeAreaRef?.vanquishActiveFoe();
+		const onFoeReactivate = () => foeAreaRef?.reactivateActiveFoe();
 		const onExpProgress = (e: Event) => {
 			const d = (e as CustomEvent<{ marks: number }>).detail;
 			if (!d) return;
 			expAreaRef?.applyProgress(d.marks);
 		};
+		const onExpComplete = () => expAreaRef?.completeActiveExpedition();
+		const onExpReactivate = () => expAreaRef?.reactivateActiveExpedition();
 		document.addEventListener('ironledger:foe-progress', onFoeProgress);
 		document.addEventListener('ironledger:foe-vanquish', onFoeVanquish);
+		document.addEventListener('ironledger:foe-reactivate', onFoeReactivate);
 		document.addEventListener('ironledger:exp-progress', onExpProgress);
+		document.addEventListener('ironledger:exp-complete', onExpComplete);
+		document.addEventListener('ironledger:exp-reactivate', onExpReactivate);
 
 		return () => {
 			document.removeEventListener('il-menu-action', handleMenuAction);
 			document.removeEventListener('ironledger:foe-progress', onFoeProgress);
 			document.removeEventListener('ironledger:foe-vanquish', onFoeVanquish);
+			document.removeEventListener('ironledger:foe-reactivate', onFoeReactivate);
 			document.removeEventListener('ironledger:exp-progress', onExpProgress);
+			document.removeEventListener('ironledger:exp-complete', onExpComplete);
+			document.removeEventListener('ironledger:exp-reactivate', onExpReactivate);
 		};
 	});
 
