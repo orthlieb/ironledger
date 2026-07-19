@@ -142,7 +142,10 @@ test.describe('AI story generation', () => {
 		await expect(dialog).toBeVisible();
 		await dialog.locator('button:has-text("Start")').click();
 		await expect(dialog.locator('.sd-output em')).toHaveText('quieter', { timeout: 8_000 });
-		await dialog.locator('button:has-text("Save to Log")').click();
+		// Regenerate mode's save button reads just "Save" (fresh-generate mode
+		// still says "Save to Log"). Use an exact role selector so a future
+		// button whose label contains "Save" doesn't accidentally match.
+		await dialog.getByRole('button', { name: 'Save', exact: true }).click();
 
 		// Same entry id, new body — replace in place.
 		const body = entryById(page, 'story-2').locator('.entry-body');
