@@ -88,13 +88,31 @@ returns an explicit "= is not supported here — use + or -" error.
 All require an active character; error message points at `/char <name>` if
 none.
 
-| Syntax                     | Effect                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/vital <res> <op> [n]`    | Adjust a vital. `res` = `momentum` \| `health` \| `spirit` \| `supply` \| `xp` \| `experience` (alias for xp). `op` = `+` \| `-` \| `=`. `n` defaults to 1 for `+/-`; is **required** for `=` (bare `=` errors). Negatives allowed on `=` (permitted where the field allows, e.g. momentum's -6 floor). Delegates to the existing resource/set action bus so the per-field clamps and auto-log lines flow through unchanged. |
-| `/debility <name> <state>` | Mark a debility. `name` is one of the eight canonical debilities: `wounded`, `shaken`, `unprepared`, `encumbered`, `maimed`, `corrupted`, `cursed`, `tormented`. `state` = `on` \| `off` \| `toggle` (**required** — no default). `toggle` is resolved at dispatch time by reading the character's current value; the action bus itself only knows on/off.                                                                   |
-| `/bonds <op> [n]`          | Edit the bonds track (0..40). Same operator grammar as `/vital`.                                                                                                                                                                                                                                                                                                                                                             |
-| `/failures <op> [n]`       | Edit the failures track (0..40). Same operator grammar as `/vital`.                                                                                                                                                                                                                                                                                                                                                          |
-| `/initiative <who>`        | Set combat initiative. `who` = `none` \| `character` \| `foe`. No numeric aliases (`/initiative 1` errors); no shortcuts (`char`, `me`, `you` all errored). Uses the `initiative` action-bus type, which clamps to 0..2 defensively and emits the log line `"Initiative: None → Character"`.                                                                                                                                 |
+| Syntax                     | Effect                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/vital <name> <op> [n]`   | Adjust a vital. `name` = `momentum` \| `health` \| `spirit` \| `supply` \| `xp` \| `experience` (alias for xp). `op` = `+` \| `-` \| `=`. `n` defaults to 1 for `+/-`; is **required** for `=` (bare `=` errors). Negatives allowed on `=` (permitted where the field allows, e.g. momentum's -6 floor). Delegates to the existing resource/set action bus so the per-field clamps and auto-log lines flow through unchanged. |
+| `/debility <name> <state>` | Mark a debility. `name` is one of the eight canonical debilities: `wounded`, `shaken`, `unprepared`, `encumbered`, `maimed`, `corrupted`, `cursed`, `tormented`. `state` = `on` \| `off` \| `toggle` (**required** — no default). `toggle` is resolved at dispatch time by reading the character's current value; the action bus itself only knows on/off.                                                                    |
+| `/bonds <op> [n]`          | Edit the bonds track (0..40). Same operator grammar as `/vital`.                                                                                                                                                                                                                                                                                                                                                              |
+| `/failures <op> [n]`       | Edit the failures track (0..40). Same operator grammar as `/vital`.                                                                                                                                                                                                                                                                                                                                                           |
+| `/initiative <who>`        | Set combat initiative. `who` = `none` \| `character` \| `foe`. No numeric aliases (`/initiative 1` errors); no shortcuts (`char`, `me`, `you` all errored). Uses the `initiative` action-bus type, which clamps to 0..2 defensively and emits the log line `"Initiative: None → Character"`.                                                                                                                                  |
+
+### Freeform dice
+
+| Syntax           | Effect                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/roll <group>+` | Roll one or more dice groups. Each group is `[n]d<sides>[±k]`: `n` defaults to 1, `sides` is one of `4 \| 6 \| 8 \| 10 \| 12 \| 20 \| 100` (what `@3d-dice/dice-box-threejs` supports), `k` is an optional flat modifier. Up to `ROLL_MAX_GROUPS` (4) groups per `/roll`; `n ≤ ROLL_MAX_N` (10), \|k\| ≤ `ROLL_MAX_MODIFIER` (99). Drives the 3D dice animation when the `dice3d` preference is on; otherwise just logs. Each group's rolled values + sum land in a `"Roll — 2d10 1d6+2"` log entry, with a `Total` row when there's more than one group. No active-context requirement — the roll is freeform, unlike `/move` which needs a character. |
+
+Examples:
+
+```
+/roll 2d10 1d6+2      # full action roll: challenge + action die + adds
+/roll d100            # oracle
+/roll 3d6+1 2d8-2     # two independent groups, each with its own sum
+```
+
+Autocomplete on `/roll ` offers presets for the common Ironsworn shapes
+(`2d10 1d6`, `2d10`, `1d6`, `1d100`, `1d6+2`), prefix-filtered by what's
+been typed.
 
 ### AI story sections
 
@@ -127,13 +145,23 @@ parsing is case-insensitive on the verb + enum tokens.
 /initiative\s+(?<who>none|character|foe)$
 
 # ── vital (accepts =) ──
-/vital\s+(?<res>momentum|health|spirit|supply|xp|experience)\s*(?<op>[+\-=])\s*(?<n>-?\d+)?$
+/vital\s+(?<name>momentum|health|spirit|supply|xp|experience)\s*(?<op>[+\-=])\s*(?<n>-?\d+)?$
 
 # ── debility ──
 /debility\s+(?<name>wounded|shaken|unprepared|encumbered|maimed|corrupted|cursed|tormented)\s+(?<state>on|off|toggle)$
 
 # ── flat tracks (accept =) ──
 /(?<track>bonds|failures)\s*(?<op>[+\-=])\s*(?<n>-?\d+)?$
+
+# ── freeform dice ──
+# One group per whitespace-separated token; 1..4 groups per command.
+# Each group: [n]d<sides>[±k]
+#   n ∈ 1..10, defaults to 1 when omitted
+#   sides ∈ {4, 6, 8, 10, 12, 20, 100}   (dice-box-threejs set)
+#   k ∈ -99..99, optional
+/roll\s+(?<groups>((\d+)?d(\d+)([+\-]\d+)?\s*)+)$
+# Per-group inner pattern (parseRollGroup consumes this):
+#   ^(?<n>\d+)?d(?<sides>\d+)(?<mod>[+\-]\d+)?$
 
 # ── overloaded verbs — order matters: subcommand → op → name ──
 /char$                                            # help focus=char

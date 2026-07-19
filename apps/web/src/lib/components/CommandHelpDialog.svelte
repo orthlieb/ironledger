@@ -90,8 +90,8 @@
 		},
 		{
 			verb: 'vital',
-			syntax: '/vital <res> <op> [n]',
-			hint: 'Adjust a vital on the active character. res: momentum / health / spirit / supply / experience (xp). op: + (delta up), - (delta down), = (set absolute). n defaults to 1 for +/-, is required for =. Examples: /vital momentum +2, /vital health -3, /vital experience = 12.',
+			syntax: '/vital <name> <op> [n]',
+			hint: 'Adjust a vital on the active character. name: momentum / health / spirit / supply / experience (xp). op: + (delta up), - (delta down), = (set absolute). n defaults to 1 for +/-, is required for =. Examples: /vital momentum +2, /vital health -3, /vital experience = 12.',
 		},
 		{
 			verb: 'debility',
@@ -128,7 +128,11 @@
 			syntax: '/story',
 			hint: 'Open the AI-story generate dialog on the current section.',
 		},
-		{ verb: 'help', syntax: '/help', hint: 'This cheat-sheet.' },
+		{
+			verb: 'roll',
+			syntax: '/roll <group>+',
+			hint: 'Roll dice. A group is [n]d<sides>[±k]: n defaults to 1, sides ∈ {4, 6, 8, 10, 12, 20, 100}, k is an optional flat modifier. Up to 4 groups per /roll. Drives the 3D dice animation if enabled. Examples: /roll 2d10 1d6+2 (action roll), /roll d100 (oracle), /roll 3d6.',
+		},
 	];
 </script>
 

@@ -7,10 +7,15 @@ import {
 	parseCommand,
 	parseVitalOp,
 	parseDeltaOp,
+	parseRollGroup,
 	initiativeToNumber,
 	fuzzyScore,
 	fuzzyPick,
 	prefixPick,
+	ROLL_DIE_SIDES,
+	ROLL_MAX_N,
+	ROLL_MAX_MODIFIER,
+	ROLL_MAX_GROUPS,
 } from '../../src/lib/commandBar.js';
 
 describe('parseCommand', () => {
@@ -560,6 +565,103 @@ describe('initiativeToNumber', () => {
 		expect(initiativeToNumber('none')).toBe(0);
 		expect(initiativeToNumber('character')).toBe(1);
 		expect(initiativeToNumber('foe')).toBe(2);
+	});
+});
+
+describe('parseCommand /roll', () => {
+	it('parses a single group', () => {
+		expect(parseCommand('/roll 2d10')).toEqual({
+			kind: 'roll',
+			groups: [{ n: 2, sides: 10, modifier: 0, raw: '2d10' }],
+		});
+	});
+	it('implicit n=1 (d100 = 1d100)', () => {
+		expect(parseCommand('/roll d100')).toEqual({
+			kind: 'roll',
+			groups: [{ n: 1, sides: 100, modifier: 0, raw: 'd100' }],
+		});
+	});
+	it('positive modifier', () => {
+		expect(parseCommand('/roll 1d6+2')).toEqual({
+			kind: 'roll',
+			groups: [{ n: 1, sides: 6, modifier: 2, raw: '1d6+2' }],
+		});
+	});
+	it('negative modifier', () => {
+		expect(parseCommand('/roll 2d10-1')).toEqual({
+			kind: 'roll',
+			groups: [{ n: 2, sides: 10, modifier: -1, raw: '2d10-1' }],
+		});
+	});
+	it('multiple groups — full action roll', () => {
+		expect(parseCommand('/roll 2d10 1d6+2')).toEqual({
+			kind: 'roll',
+			groups: [
+				{ n: 2, sides: 10, modifier: 0, raw: '2d10' },
+				{ n: 1, sides: 6, modifier: 2, raw: '1d6+2' },
+			],
+		});
+	});
+	it('is case-insensitive on the D separator', () => {
+		expect(parseCommand('/roll 2D10')).toEqual({
+			kind: 'roll',
+			groups: [{ n: 2, sides: 10, modifier: 0, raw: '2D10' }],
+		});
+	});
+	it('errors on empty args', () => {
+		const c = parseCommand('/roll');
+		expect(c?.kind).toBe('error');
+	});
+	it('errors on unsupported sides (d7 not in dice library)', () => {
+		const c = parseCommand('/roll 1d7');
+		expect(c?.kind).toBe('error');
+		if (c?.kind === 'error') expect(c.message).toMatch(/1d7/);
+	});
+	it('errors when n exceeds ROLL_MAX_N', () => {
+		const c = parseCommand(`/roll ${ROLL_MAX_N + 1}d6`);
+		expect(c?.kind).toBe('error');
+	});
+	it('errors when modifier exceeds ROLL_MAX_MODIFIER', () => {
+		const c = parseCommand(`/roll 1d6+${ROLL_MAX_MODIFIER + 1}`);
+		expect(c?.kind).toBe('error');
+	});
+	it('errors when more than ROLL_MAX_GROUPS groups are given', () => {
+		const many = Array(ROLL_MAX_GROUPS + 1)
+			.fill('1d6')
+			.join(' ');
+		const c = parseCommand(`/roll ${many}`);
+		expect(c?.kind).toBe('error');
+		if (c?.kind === 'error') expect(c.message).toMatch(/at most/);
+	});
+	it('errors on garbage in a group ("2xd10")', () => {
+		const c = parseCommand('/roll 2xd10');
+		expect(c?.kind).toBe('error');
+	});
+	it('rejects double-signed modifiers (1d6++2)', () => {
+		const c = parseCommand('/roll 1d6++2');
+		expect(c?.kind).toBe('error');
+	});
+	it('rejects a stray unit (1d)', () => {
+		const c = parseCommand('/roll 1d');
+		expect(c?.kind).toBe('error');
+	});
+});
+
+describe('parseRollGroup helper', () => {
+	it('produces the same shape as the parser', () => {
+		expect(parseRollGroup('3d20')).toEqual({ n: 3, sides: 20, modifier: 0, raw: '3d20' });
+	});
+	it('returns null on malformed input', () => {
+		expect(parseRollGroup('abc')).toBeNull();
+		expect(parseRollGroup('1d6-')).toBeNull();
+		expect(parseRollGroup('')).toBeNull();
+	});
+	it('rejects side counts outside the supported set', () => {
+		expect(parseRollGroup('1d13')).toBeNull();
+		expect(parseRollGroup('1d1')).toBeNull();
+		for (const s of ROLL_DIE_SIDES) {
+			expect(parseRollGroup(`1d${s}`)).not.toBeNull();
+		}
 	});
 });
 
