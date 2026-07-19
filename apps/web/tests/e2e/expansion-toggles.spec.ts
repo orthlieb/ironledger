@@ -212,13 +212,17 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 
 		await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click({ timeout: 8_000 });
 
-		const createManualBtn = page.getByRole('button', { name: /create/i });
-		if (await createManualBtn.isVisible({ timeout: 3_000 }).catch(() => false)) {
-			await createManualBtn.click();
-		}
-		// Scope radios to the OPEN dialog — the sibling New Place dialog is in the
-		// DOM but closed, and its own ironlands radio would otherwise be counted too.
+		// The New Community dialog opens with the region radios visible — one
+		// stage, no picker in front of it. Earlier revisions of this test
+		// clicked an intermediate "Create" button; that flow no longer exists
+		// (the dialog's own "Create" alt-button commits + closes it, which
+		// would wipe the radios we're about to assert on).
+		//
+		// Scope radios to the OPEN dialog — the sibling New Place dialog is in
+		// the DOM but closed, and its own ironlands radio would otherwise be
+		// counted too.
 		const openDialog = page.locator('dialog.confirm-modal[open]');
+		await expect(openDialog).toBeVisible({ timeout: 8_000 });
 		const yrtRadio = openDialog.locator('input[type="radio"][value="yrt"]');
 		await expect(yrtRadio).toHaveCount(0);
 		await expect(openDialog.locator('input[type="radio"][value="ironlands"]')).toHaveCount(1, {
