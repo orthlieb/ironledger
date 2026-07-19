@@ -217,9 +217,18 @@
 			apply: `/exp ${e.name}`,
 		}));
 		if (getActiveExpeditionId()) {
+			// `complete` / `active` are the /foe vanquish/active analogs.
+			// Both appear in the strip regardless of current completion state
+			// — the action itself no-ops if the target state already matches.
 			const specials: Suggestion[] = [
 				{ label: '+', hint: 'tick progress +1 mark', apply: '/exp +' },
 				{ label: '-', hint: 'tick progress -1 mark', apply: '/exp -' },
+				{ label: 'complete', hint: 'mark the expedition complete', apply: '/exp complete' },
+				{
+					label: 'active',
+					hint: 'reactivate a completed expedition',
+					apply: '/exp active',
+				},
 			].filter((s) => !q || s.label.toLowerCase().startsWith(q.toLowerCase()));
 			return [...specials, ...exps];
 		}
@@ -549,6 +558,24 @@
 					`Expedition progress ${cmd.op}${cmd.value} mark${cmd.value === 1 ? '' : 's'}.`,
 					'info',
 				);
+				break;
+			}
+			case 'exp-complete': {
+				if (!getActiveExpeditionId()) {
+					setStatus('/exp complete needs an active expedition.', 'error');
+					return;
+				}
+				document.dispatchEvent(new CustomEvent('ironledger:exp-complete'));
+				setStatus('Completed the expedition.', 'info');
+				break;
+			}
+			case 'exp-reactivate': {
+				if (!getActiveExpeditionId()) {
+					setStatus('/exp active needs an active expedition.', 'error');
+					return;
+				}
+				document.dispatchEvent(new CustomEvent('ironledger:exp-reactivate'));
+				setStatus('Reactivated the expedition.', 'info');
 				break;
 			}
 			case 'start': {

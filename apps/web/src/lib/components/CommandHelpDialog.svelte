@@ -94,6 +94,16 @@
 			hint: 'Advance the active expedition by n progress marks (difficulty-aware ticks). + / - only. Examples: /exp +, /exp -2.',
 		},
 		{
+			verb: 'exp',
+			syntax: '/exp complete',
+			hint: 'Mark the active expedition complete (analog to /foe vanquish). Preserves ticks, notes, and the expedition id.',
+		},
+		{
+			verb: 'exp',
+			syntax: '/exp active',
+			hint: 'Reactivate a previously-completed expedition (inverse of /exp complete). No-op if the expedition is already active.',
+		},
+		{
 			verb: 'vital',
 			syntax: '/vital <name> <op> [n]',
 			hint: 'Adjust a vital on the active character. name: momentum / health / spirit / supply / experience (xp). op: + (delta up), - (delta down), = (set absolute). n defaults to 1 for +/-, is required for =. Examples: /vital momentum +2, /vital health -3, /vital experience = 12.',

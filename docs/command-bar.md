@@ -71,12 +71,14 @@ dialog scrolled to and highlighting the verb's row.
 
 **`/exp`** — active expedition
 
-| Syntax        | Effect                                                                                                      |
-| ------------- | ----------------------------------------------------------------------------------------------------------- |
-| `/exp`        | Help focused on `exp`.                                                                                      |
-| `/exp <name>` | Set active expedition (journey or site).                                                                    |
-| `/exp + [n]`  | Advance by `n` marks. Difficulty-aware — ExpeditionsArea multiplies by `EXPEDITION_MARK_TICKS[difficulty]`. |
-| `/exp - [n]`  | Reduce by `n` marks.                                                                                        |
+| Syntax          | Effect                                                                                                           |
+| --------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `/exp`          | Help focused on `exp`.                                                                                           |
+| `/exp <name>`   | Set active expedition (journey or site).                                                                         |
+| `/exp + [n]`    | Advance by `n` marks. Difficulty-aware — ExpeditionsArea multiplies by `EXPEDITION_MARK_TICKS[difficulty]`.      |
+| `/exp - [n]`    | Reduce by `n` marks.                                                                                             |
+| `/exp complete` | Mark the active expedition complete. Analog to `/foe vanquish` — preserves ticks, notes, and the id.             |
+| `/exp active`   | Reactivate a previously-completed expedition (inverse of `complete`). No-op if the expedition is already active. |
 
 `=` is deliberately absent on `/char`, `/foe`, `/exp` — the ticks-vs-boxes
 semantics on foe/exp progress made `=N` ambiguous ("N ticks or N boxes?"),
@@ -176,6 +178,8 @@ parsing is case-insensitive on the verb + enum tokens.
 /foe\s+(?<name>[^+\-=\s].*?)\s*$                  # set active
 
 /exp$                                             # help focus=exp
+/exp\s+complete\s*$                               # complete subcommand
+/exp\s+active\s*$                                 # reactivate (un-complete) subcommand
 /exp\s+(?<op>[+\-])\s*(?<n>\d+)?$                 # exp-progress (marks)
 /exp\s+(?<name>[^+\-=\s].*?)\s*$                  # set active
 ```

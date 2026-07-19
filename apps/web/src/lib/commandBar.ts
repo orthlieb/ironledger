@@ -60,6 +60,8 @@
 //   /exp                          → { kind: 'help', focus: 'exp' }
 //   /exp <name>                   → { kind: 'exp', name }
 //   /exp <op> [n]                 → { kind: 'exp-progress', op, value }
+//   /exp complete                 → { kind: 'exp-complete' }
+//   /exp active                   → { kind: 'exp-reactivate' } (un-complete)
 //
 // Operators accepted on the overloaded verbs are + and - only; `=` is
 // deliberately absent — the ticks-vs-boxes semantics for foe/exp progress
@@ -202,6 +204,8 @@ export type Command =
 	| { kind: 'foe-reactivate' }
 	| { kind: 'exp'; name: string }
 	| { kind: 'exp-progress'; op: '+' | '-'; value: number }
+	| { kind: 'exp-complete' }
+	| { kind: 'exp-reactivate' }
 	| { kind: 'start' }
 	| { kind: 'end' }
 	| { kind: 'story' }
@@ -350,9 +354,13 @@ export function parseCommand(input: string): Command | null {
 			return { kind: 'foe', name: trimmed };
 		}
 		case 'exp': {
-			// Same overload pattern as /foe, minus the vanquish subcommand.
+			// Overload mirrors /foe: empty → help, `complete` / `active` are
+			// subcommand pair (equivalents of /foe vanquish / active), +/-
+			// tick progress, anything else is a name.
 			if (!args) return { kind: 'help', focus: 'exp' };
 			const trimmed = args.trim();
+			if (/^complete$/i.test(trimmed)) return { kind: 'exp-complete' };
+			if (/^active$/i.test(trimmed)) return { kind: 'exp-reactivate' };
 			if (/^[+\-=]/.test(trimmed)) {
 				const parsed = parseDeltaOp(trimmed.replace(/\s+/g, ' '));
 				if ('kind' in parsed) return parsed;

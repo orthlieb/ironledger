@@ -155,6 +155,22 @@
 	export function applyProgress(marks: number) {
 		if (activeExp) updateExp({ ticks: Math.min(40, activeExp.ticks + marks * markTicks) });
 	}
+	/** Mark the active expedition complete. Sibling to /foe vanquish — no-op
+	 *  if already complete. */
+	export function completeActiveExpedition() {
+		if (!activeExp || activeExp.complete) return;
+		const name = activeExp.name || 'Expedition';
+		updateExp({ complete: true });
+		appendLog(`${name} — Completed`, `<div><strong>Completed.</strong></div>`);
+	}
+	/** Reactivate a completed expedition. Sibling to /foe active — no-op if
+	 *  already active. */
+	export function reactivateActiveExpedition() {
+		if (!activeExp || !activeExp.complete) return;
+		const name = activeExp.name || 'Expedition';
+		updateExp({ complete: false });
+		appendLog(`${name} — Reactivated`, `<div><strong>Reactivated.</strong></div>`);
+	}
 
 	export function openChangeThemeForExp(expId: string) {
 		flushPersist();

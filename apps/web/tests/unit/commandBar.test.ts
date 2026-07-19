@@ -302,6 +302,19 @@ describe('parseCommand /exp overloads', () => {
 	it('/exp has no vanquish subcommand — falls through to name', () => {
 		expect(parseCommand('/exp vanquish')).toEqual({ kind: 'exp', name: 'vanquish' });
 	});
+	it('/exp complete parses as the complete subcommand', () => {
+		expect(parseCommand('/exp complete')).toEqual({ kind: 'exp-complete' });
+	});
+	it('/exp active parses as the reactivate subcommand (opposite of complete)', () => {
+		expect(parseCommand('/exp active')).toEqual({ kind: 'exp-reactivate' });
+	});
+	it('/exp complete/active are case-insensitive', () => {
+		expect(parseCommand('/exp COMPLETE')).toEqual({ kind: 'exp-complete' });
+		expect(parseCommand('/exp Active')).toEqual({ kind: 'exp-reactivate' });
+	});
+	it('/exp completed (past tense) falls through to name — subcommand is exact match', () => {
+		expect(parseCommand('/exp completed')).toEqual({ kind: 'exp', name: 'completed' });
+	});
 	it('/exp jammed op parses (+2 no space)', () => {
 		expect(parseCommand('/exp +2')).toEqual({ kind: 'exp-progress', op: '+', value: 2 });
 	});
