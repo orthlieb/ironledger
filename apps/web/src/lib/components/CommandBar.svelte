@@ -147,10 +147,15 @@
 	// parser produced a happy result (e.g. `/foe ` with no arg parses as
 	// help-focus, but we still want the autocomplete strip populated).
 	function buildOracleSuggestions(q: string): Suggestion[] {
+		// Apply the readable title (matches /move, /char, /foe, /exp — every
+		// name-arg verb autocompletes to the human-readable name, never the
+		// compound key). resolveOracle in the dispatcher already handles both
+		// key- and title-based lookup via a fuzzy fallback, so /oracle "Elf
+		// Names" resolves the same table as /oracle namesElf did.
 		return fuzzyPick(getVisibleOracles(), (o) => o.title, q, 8).map((o) => ({
 			label: o.title,
-			hint: o.key,
-			apply: `/oracle ${o.key}`,
+			hint: o.source,
+			apply: `/oracle ${o.title}`,
 		}));
 	}
 	function buildMoveSuggestions(q: string): Suggestion[] {
@@ -988,7 +993,7 @@
 		flex: 1;
 		min-width: 0;
 		padding: 6px 10px;
-		font-family: var(--font-mono, ui-monospace, monospace);
+		font-family: var(--font-ui);
 		font-size: 0.85rem;
 		background: var(--bg-control);
 		color: var(--text);
