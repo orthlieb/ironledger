@@ -988,7 +988,7 @@
 		flex: 1;
 		min-width: 0;
 		padding: 6px 10px;
-		font-family: var(--font-mono, ui-monospace, monospace);
+		font-family: var(--font-ui);
 		font-size: 0.85rem;
 		background: var(--bg-control);
 		color: var(--text);
