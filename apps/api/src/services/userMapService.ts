@@ -48,7 +48,9 @@ export async function getMap(userId: string): Promise<UserMap> {
       WHERE user_id = ${userId}::uuid
       LIMIT 1
     `);
-    const row = rows.rows?.[0] ?? rows[0];
+    // drizzle-orm's postgres-js driver returns a RowList that IS the array
+    // — no `.rows` wrapper (that's the pg driver's shape). Index directly.
+    const row = rows[0];
     if (!row) return EMPTY;
     return {
       markers: Array.isArray(row.markers) ? row.markers : [],
