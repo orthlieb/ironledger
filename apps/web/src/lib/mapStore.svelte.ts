@@ -1,47 +1,71 @@
 // =============================================================================
 // Iron Ledger — Campaign map state (Svelte 5 module-level $state)
 //
-// One map per user, painted onto a 20×15 pointy-top hex grid. Data is a
-// sparse array of {q, r, terrain} — unpainted cells simply aren't in the
-// list, keeping the payload tiny for even a fully-explored map (~5 KB).
+// Tier 1a pivot: annotate an uploaded map image on a hex grid overlay.
+// Storage shape:
+//   { backgroundDataUrl, markers: MapMarker[], updatedAt }
 //
-// Persisted to localStorage['ironledger:map'] on every mutation. No debounce
-// yet — painting is a discrete click, not a drag stream, so per-click
-// writes are cheap and worst-case (paint every cell) is <1 KB. If we add
-// drag-paint later, the write path should debounce.
+// The old Tier 1 shape stored a `cells: HexCell[]` array of painted
+// terrains — a completely different data model. That data is *reset on
+// first load* under the new shape: any existing 'ironledger:map' payload
+// missing the marker key is treated as an empty map. Migration is
+// intentional (Tier 1 shipped moments before the pivot; near-zero users
+// are affected) but readMap() is explicit about it so the behaviour is
+// grep-findable.
 //
-// Reactive readers use the fine-grained proxy tracking Svelte 5 exposes:
-// components read `mapState.cells` inside `$derived` and re-render only
-// when the array actually mutates.
+// Persistence is per-mutation to localStorage. The background image is
+// base64 in the same JSON — kept under MAP_IMAGE_MAX_STORED_BYTES by the
+// downscaling step in MapDialog before it ever reaches the store.
 // =============================================================================
 
-import type { Terrain } from './mapConstants.js';
+import type { MarkerIcon } from './mapConstants.js';
 
 const STORAGE_KEY = 'ironledger:map';
 
-export interface HexCell {
+export interface MapMarker {
+	/** Stable id — crypto.randomUUID() when the marker is created. Used as
+	 *  the key in {#each} blocks and by the marker editor to look up the
+	 *  row it's editing. */
+	id: string;
 	q: number;
 	r: number;
-	terrain: Terrain;
+	label: string;
+	icon: MarkerIcon;
+	/** Optional link to a first-class entity from the connections deck.
+	 *  Format: "kind:id" (e.g. "place:abc123"). Rendered as a click-through
+	 *  in later tiers; stored for future use here. */
+	entityId?: string;
 }
 
 interface MapPayload {
-	cells: HexCell[];
+	/** Base64 image data URL for the background layer; '' when no image is
+	 *  set. Whole-string blob so the whole map round-trips through a single
+	 *  localStorage read/write. */
+	backgroundDataUrl: string;
+	markers: MapMarker[];
 	updatedAt: number;
 }
 
 function readMap(): MapPayload {
-	if (typeof window === 'undefined') return { cells: [], updatedAt: 0 };
+	if (typeof window === 'undefined') {
+		return { backgroundDataUrl: '', markers: [], updatedAt: 0 };
+	}
 	try {
 		const raw = localStorage.getItem(STORAGE_KEY);
-		if (!raw) return { cells: [], updatedAt: 0 };
+		if (!raw) return { backgroundDataUrl: '', markers: [], updatedAt: 0 };
 		const p = JSON.parse(raw) as Partial<MapPayload>;
+		// Explicitly reject Tier 1 payloads (which had `cells` and no
+		// `markers`). Discarding them is fine — Tier 1 shipped moments
+		// before this pivot, so the migration path is documented and
+		// deliberate.
+		if (!('markers' in p)) return { backgroundDataUrl: '', markers: [], updatedAt: 0 };
 		return {
-			cells: Array.isArray(p.cells) ? (p.cells as HexCell[]) : [],
+			backgroundDataUrl: typeof p.backgroundDataUrl === 'string' ? p.backgroundDataUrl : '',
+			markers: Array.isArray(p.markers) ? (p.markers as MapMarker[]) : [],
 			updatedAt: typeof p.updatedAt === 'number' ? p.updatedAt : 0,
 		};
 	} catch {
-		return { cells: [], updatedAt: 0 };
+		return { backgroundDataUrl: '', markers: [], updatedAt: 0 };
 	}
 }
 
@@ -49,13 +73,18 @@ function persist(): void {
 	if (typeof window === 'undefined') return;
 	localStorage.setItem(
 		STORAGE_KEY,
-		JSON.stringify({ cells: mapState.cells, updatedAt: Date.now() }),
+		JSON.stringify({
+			backgroundDataUrl: mapState.backgroundDataUrl,
+			markers: mapState.markers,
+			updatedAt: Date.now(),
+		}),
 	);
 }
 
 const _initial = readMap();
 export const mapState = $state<MapPayload>({
-	cells: _initial.cells,
+	backgroundDataUrl: _initial.backgroundDataUrl,
+	markers: _initial.markers,
 	updatedAt: _initial.updatedAt,
 });
 
@@ -63,45 +92,68 @@ export const mapState = $state<MapPayload>({
 // Readers
 // ---------------------------------------------------------------------------
 
-/** Terrain at (q, r), or null if the cell is unpainted. Linear scan is
- *  intentional — 250 cells × 250 render iterations is <1 ms on desktop and
- *  keeps the mutation path simple. Swap for a Map lookup if perf bites. */
-export function terrainAt(q: number, r: number): Terrain | null {
-	const c = mapState.cells.find((cell) => cell.q === q && cell.r === r);
-	return c?.terrain ?? null;
+/** Every marker pinned to (q, r). Multiple markers per hex are permitted
+ *  — game-mechanically a hex can hold a settlement AND an encounter — but
+ *  the icon picker will only spawn one at a time; overloading is a Tier 2
+ *  concern. Linear scan is fine at Tier-1a scale. */
+export function markersAt(q: number, r: number): MapMarker[] {
+	return mapState.markers.filter((m) => m.q === q && m.r === r);
 }
 
-/** True when any cell has been painted — used to gate the "Clear" button. */
-export function hasAnyCells(): boolean {
-	return mapState.cells.length > 0;
+/** True when any marker or background has been set — used to gate the
+ *  "Clear map" button. */
+export function hasAnyContent(): boolean {
+	return mapState.markers.length > 0 || mapState.backgroundDataUrl !== '';
 }
 
 // ---------------------------------------------------------------------------
 // Mutations
 // ---------------------------------------------------------------------------
 
-/**
- * Paint (or erase) a hex. Passing `null` for terrain removes the cell from
- * the sparse array — matching the "erase back to unpainted" semantics the
- * eraser tool needs. In-place updates keep the store array's identity
- * stable so Svelte's proxy tracking triggers component-scoped re-renders
- * rather than a full remount.
- */
-export function paintHex(q: number, r: number, terrain: Terrain | null): void {
-	const idx = mapState.cells.findIndex((c) => c.q === q && c.r === r);
-	if (terrain === null) {
-		if (idx >= 0) mapState.cells.splice(idx, 1);
-	} else if (idx >= 0) {
-		mapState.cells[idx] = { q, r, terrain };
-	} else {
-		mapState.cells.push({ q, r, terrain });
-	}
+/** Replace the background image with a fresh data URL. Pass '' to clear.
+ *  Caller (MapDialog) is responsible for downscaling + quality checks
+ *  before hand-off — the store just persists whatever it's given. */
+export function setBackground(dataUrl: string): void {
+	mapState.backgroundDataUrl = dataUrl;
 	persist();
 }
 
-/** Wipe the map. Callers should confirm with the user first — this is the
- *  only destructive operation in the store. */
+/** Add a new marker. Returns the assigned id so the caller can select it
+ *  for immediate editing. */
+export function addMarker(input: {
+	q: number;
+	r: number;
+	label: string;
+	icon: MarkerIcon;
+	entityId?: string;
+}): string {
+	const id = crypto.randomUUID();
+	mapState.markers.push({ id, ...input });
+	persist();
+	return id;
+}
+
+/** Update an existing marker in place — mutates the array element by
+ *  reference so Svelte's proxy triggers a targeted re-render. */
+export function updateMarker(id: string, patch: Partial<Omit<MapMarker, 'id'>>): void {
+	const idx = mapState.markers.findIndex((m) => m.id === id);
+	if (idx < 0) return;
+	mapState.markers[idx] = { ...mapState.markers[idx], ...patch };
+	persist();
+}
+
+/** Remove a marker by id. No-op if the id doesn't exist. */
+export function removeMarker(id: string): void {
+	const idx = mapState.markers.findIndex((m) => m.id === id);
+	if (idx < 0) return;
+	mapState.markers.splice(idx, 1);
+	persist();
+}
+
+/** Wipe everything — background image + all markers. Callers should
+ *  confirm with the user first. */
 export function clearMap(): void {
-	mapState.cells = [];
+	mapState.backgroundDataUrl = '';
+	mapState.markers = [];
 	persist();
 }

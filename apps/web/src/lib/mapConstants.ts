@@ -1,70 +1,70 @@
 // =============================================================================
 // Iron Ledger — Campaign map constants
 //
-// One map per user, painted onto a bounded pointy-top hex grid stored in
-// localStorage. Terrain enum is intentionally tight — 10 tiles cover every
-// Ironsworn region (Havens through Shattered Wastes) plus a fog cell for
-// "we know a hex is here but haven't identified it." Overlays (river, road,
-// settlement, ruin) belong in the marker layer, not this fill palette;
-// splitting them out avoids the "does a river hex mean the whole hex is
-// river" ambiguity that adds a tile pays for.
+// Tier 1a scope: annotate an uploaded map image on a hex grid overlay. One
+// map per user (background image + marker list) stored in localStorage.
+// No terrain painting — the background image IS the terrain. Markers are
+// hex-pinned annotations (label + icon + optional entity link).
 //
-// Growing the enum is a data-migration event — every user's localStorage
-// carries terrain names as strings. Adding a new value is safe; renaming or
-// removing one breaks existing maps.
+// Icon set intentionally small (8 slugs) and drawn from the existing icon
+// vocabulary in $icons/ so the palette lives in the same visual family as
+// the rest of the sheet. Growing the enum is a data-migration event:
+// icon slugs are on-disk strings inside every user's localStorage.
 // =============================================================================
 
-/** Canonical terrain slugs, in palette display order. Order matches the
- *  Ironsworn region cardinality (settled → wild → extreme → water → fog). */
-export const TERRAINS = [
-	'plains',
-	'forest',
-	'hills',
-	'mountains',
-	'marsh',
-	'wastes',
-	'snow',
-	'coast',
-	'sea',
-	'unknown',
-] as const;
-export type Terrain = (typeof TERRAINS)[number];
-
-/** Fill colours for each terrain. Chosen for legibility against both light
- *  and dark themes and to be distinguishable at ~22px hex radius. */
-export const TERRAIN_COLORS: Record<Terrain, string> = {
-	plains: '#a3c66a',
-	forest: '#3f7d3f',
-	hills: '#8a9f5a',
-	mountains: '#6b5d54',
-	marsh: '#5a8878',
-	wastes: '#c0a878',
-	snow: '#d5e1eb',
-	coast: '#e8d69a',
-	sea: '#4a8fbf',
-	unknown: '#8a8580',
-};
-
-/** Human-readable labels for tooltips + a11y. Not shown on the hex itself. */
-export const TERRAIN_LABELS: Record<Terrain, string> = {
-	plains: 'Plains',
-	forest: 'Forest',
-	hills: 'Hills',
-	mountains: 'Mountains',
-	marsh: 'Marsh',
-	wastes: 'Wastes',
-	snow: 'Snow / Ice',
-	coast: 'Coast',
-	sea: 'Sea',
-	unknown: 'Unknown',
-};
-
-/** Bounded rectangle — 20 columns × 15 rows = ~300 hexes actually rendered
- *  (fewer after offset-row shift trims edges). Big enough for a regional
- *  Ironlands map, small enough to fit at readable hex size on a laptop. */
+/** Bounded rectangle for the hex grid overlay. 20×15 = 300 cells — same as
+ *  the paint-only Tier 1 iteration. Fits at readable hex size on a laptop
+ *  and gives a regional Ironlands map room to breathe. */
 export const MAP_COLS = 20;
 export const MAP_ROWS = 15;
 
-/** Pointy-top hex radius in SVG user units (centre to corner). Chosen to
- *  give the full grid an aspect ratio close to 16:10 in the viewport. */
+/** Pointy-top hex radius in SVG user units (centre to corner). Combined
+ *  with MAP_COLS/ROWS this gives the map its 16:10-ish canvas aspect
+ *  before the background image is fitted. */
 export const HEX_SIZE = 22;
+
+/** Marker icon vocabulary — one slug per pin type. Each maps to an SVG file
+ *  under $icons/ (loaded via ?raw imports in MapDialog). Ordered by
+ *  frequency-of-use so the picker's first row is the common cases. */
+export const MARKER_ICONS = [
+	'settlement',
+	'hamlet',
+	'ruin',
+	'encounter',
+	'danger',
+	'quest',
+	'poi',
+	'marker',
+] as const;
+export type MarkerIcon = (typeof MARKER_ICONS)[number];
+
+/** Human-readable labels for the icon picker + a11y. */
+export const MARKER_ICON_LABELS: Record<MarkerIcon, string> = {
+	settlement: 'Settlement',
+	hamlet: 'Hamlet',
+	ruin: 'Ruin',
+	encounter: 'Encounter',
+	danger: 'Danger',
+	quest: 'Quest',
+	poi: 'Point of Interest',
+	marker: 'Marker',
+};
+
+/** Downscale target for uploaded background images. Anything larger on its
+ *  longest side is resized before we base64-encode into localStorage.
+ *  2000px is high enough for a full-screen hex map on a 4K display and
+ *  low enough to keep the JPEG under 500 KB at 0.85 quality. */
+export const MAP_IMAGE_MAX_DIMENSION = 2000;
+
+/** JPEG quality for the downscaled image. Ironsworn maps tend to be
+ *  drawn line-art or watercolour — 0.85 is virtually lossless for those. */
+export const MAP_IMAGE_QUALITY = 0.85;
+
+/** Safety cap on the pre-downscale upload — reject anything larger than
+ *  20 MB before we even try to decode it. 4K photos rarely exceed this. */
+export const MAP_IMAGE_MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
+
+/** Post-downscale cap on the stored data URL. Chrome's localStorage quota
+ *  is ~5 MB across all keys; we reserve half for the map + a generous
+ *  budget for other Iron Ledger state. */
+export const MAP_IMAGE_MAX_STORED_BYTES = 2 * 1024 * 1024;
