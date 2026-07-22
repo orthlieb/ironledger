@@ -26,7 +26,26 @@ git remote get-url origin                # extract owner/repo
   commit or stash first; do not auto-commit.
 - The branch has zero commits ahead of `origin/main` — nothing to ship.
 
-## 2. Push and open the PR
+## 2. Lint
+
+Run `pnpm lint` from the repo root and refuse to continue if it exits
+non-zero. CI runs the same command, so a local failure is a guaranteed
+CI failure — better to catch it here than after a PR is open.
+
+```bash
+pnpm lint
+```
+
+**On failure:** stop. Report the lint output verbatim, ask the user
+whether to fix it (default) or ship anyway. If they say ship anyway,
+that's an explicit override — otherwise do not proceed. Do NOT
+auto-run `pnpm lint --fix` without permission; the fixes might touch
+files the user didn't intend to commit in this PR.
+
+**On warnings only:** proceed. CI treats warnings as informational
+unless someone flips `--max-warnings=0` in the lint script.
+
+## 3. Push and open the PR
 
 Push first (so the PR can be created against the remote ref):
 
@@ -55,10 +74,10 @@ Then create the PR via `mcp__github__create_pull_request`. Use:
 
 Save the returned PR number.
 
-## 3. Squash-merge
+## 4. Squash-merge
 
 Call `mcp__github__merge_pull_request` with:
-- `owner`, `repo`, `pullNumber` from step 2.
+- `owner`, `repo`, `pullNumber` from step 3.
 - `merge_method`: `"squash"`.
 - `commit_title`: same as the PR title.
 - `commit_message`: empty (the squash message will use the PR body).
@@ -66,7 +85,7 @@ Call `mcp__github__merge_pull_request` with:
 If the merge call fails (status conflict, required checks pending, etc.),
 report the failure verbatim. Do **not** try to force-merge or skip checks.
 
-## 4. Local cleanup
+## 5. Local cleanup
 
 After a successful merge:
 
@@ -89,7 +108,7 @@ Requests). If you see the remote branch still exists after merge, run:
 git push origin --delete <branch>
 ```
 
-## 5. Report
+## 6. Report
 
 End with a one-line summary: PR number, merge SHA on main, branch name
 that was shipped. Example:

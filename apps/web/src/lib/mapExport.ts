@@ -150,7 +150,7 @@ export async function exportMapPng(svgEl: SVGSVGElement, showLabels: boolean): P
 	// can drawImage it. Explicit width/height on the SVG source tells the
 	// image loader what size to rasterise at.
 	const viewBox = clone.getAttribute('viewBox');
-	let scale = 2;
+	const scale = 2;
 	let widthPx = 1600;
 	let heightPx = 1000;
 	if (viewBox) {
