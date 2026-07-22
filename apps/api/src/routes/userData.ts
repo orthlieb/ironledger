@@ -24,6 +24,8 @@ import { authenticate } from '../middleware/authenticate.js';
 import * as ud from '../services/userDataService.js';
 import type { EntityKind } from '../services/userDataService.js';
 import * as portraits from '../services/portraitService.js';
+import * as maps from '../services/userMapService.js';
+import { MAP_ENTITY_ID } from '../services/portraitService.js';
 import { isValidImageUrl, assertImageUrls } from '../lib/imageUrl.js';
 import { config } from '../config.js';
 import type { FastifyReply } from 'fastify';
@@ -37,6 +39,16 @@ const kindIdParams = z.object({ kind: z.string(), id: z.string() });
 const entityBody = z.record(z.unknown());
 const replaceBody = z.record(z.unknown()); // { <kind>: Entity[] }
 const portraitBody = z.object({ dataUrl: z.string() });
+
+const mapMarkerSchema = z.object({
+  id: z.string(),
+  q: z.number().int(),
+  r: z.number().int(),
+  label: z.string().max(120),
+  icon: z.string().max(32),
+  entityId: z.string().max(200).optional(),
+});
+const putMarkersBody = z.object({ markers: z.array(mapMarkerSchema).max(500) });
 
 const patchSessionStateBody = z.object({
   sessionState: z.object({
@@ -246,6 +258,88 @@ export const userDataRoutes: FastifyPluginAsyncZod = async (server) => {
     if (!kind) return;
     try {
       await portraits.deletePortrait(req.user!.id, kind, req.params.id);
+      return reply.status(204).send();
+    } catch (err) {
+      return handleError(reply)(err);
+    }
+  });
+
+  // ── Campaign map — persisted per-user, reuses portrait blob store for the
+  //    background image. See docs/campaign-map.md for the shape.
+  // GET    /session/map                → { markers, backgroundHash, updatedAt }
+  // PUT    /session/map/markers        → replace the markers array wholesale
+  // GET    /session/map/background     → raw image bytes (ETag revalidated)
+  // PUT    /session/map/background     → { dataUrl } → { hash }
+  // DELETE /session/map/background     → clear the background pointer
+  // DELETE /session/map                → clear markers + background
+  server.get('/map', async (req, reply) => {
+    try {
+      const m = await maps.getMap(req.user!.id);
+      return reply.status(200).send(m);
+    } catch (err) {
+      return handleError(reply)(err);
+    }
+  });
+
+  server.put('/map/markers', { schema: { body: putMarkersBody } }, async (req, reply) => {
+    try {
+      const m = await maps.putMarkers(req.user!.id, req.body.markers);
+      return reply.status(200).send(m);
+    } catch (err) {
+      return handleError(reply)(err);
+    }
+  });
+
+  server.get('/map/background', async (req, reply) => {
+    try {
+      const portrait = await portraits.getPortrait(req.user!.id, 'map', MAP_ENTITY_ID);
+      if (!portrait) {
+        return reply
+          .status(404)
+          .send({ statusCode: 404, error: 'Not Found', message: 'No background image set' });
+      }
+      if (ifNoneMatchHits(req.headers['if-none-match'], portrait.etag)) {
+        return sendPortraitHeaders(reply, portrait.etag).status(304).send();
+      }
+      return sendPortraitHeaders(reply, portrait.etag)
+        .header('Content-Type', portrait.mime)
+        .status(200)
+        .send(portrait.bytes);
+    } catch (err) {
+      return handleError(reply)(err);
+    }
+  });
+
+  server.put('/map/background', { schema: { body: portraitBody } }, async (req, reply) => {
+    try {
+      const { etag } = await portraits.putPortrait(
+        req.user!.id,
+        'map',
+        MAP_ENTITY_ID,
+        req.body.dataUrl,
+      );
+      await maps.setBackgroundHash(req.user!.id, etag);
+      return reply.status(200).send({ hash: etag });
+    } catch (err) {
+      if (err instanceof portraits.PortraitError) return badRequest(reply, err.message);
+      return handleError(reply)(err);
+    }
+  });
+
+  server.delete('/map/background', async (req, reply) => {
+    try {
+      await portraits.deletePortrait(req.user!.id, 'map', MAP_ENTITY_ID);
+      await maps.setBackgroundHash(req.user!.id, null);
+      return reply.status(204).send();
+    } catch (err) {
+      return handleError(reply)(err);
+    }
+  });
+
+  server.delete('/map', async (req, reply) => {
+    try {
+      await portraits.deletePortrait(req.user!.id, 'map', MAP_ENTITY_ID);
+      await maps.clearMap(req.user!.id);
       return reply.status(204).send();
     } catch (err) {
       return handleError(reply)(err);

@@ -1,26 +1,30 @@
 // =============================================================================
 // Iron Ledger — Campaign map state (Svelte 5 module-level $state)
 //
-// Tier 1a pivot: annotate an uploaded map image on a hex grid overlay.
-// Storage shape:
-//   { backgroundDataUrl, markers: MapMarker[], updatedAt }
+// Server-backed. Replaces the earlier localStorage store. Rationale:
+// storing the map on the server means it syncs across the user's devices
+// and survives a browser wipe — the two loss modes the localStorage
+// version routinely hit.
 //
-// The old Tier 1 shape stored a `cells: HexCell[]` array of painted
-// terrains — a completely different data model. That data is *reset on
-// first load* under the new shape: any existing 'ironledger:map' payload
-// missing the marker key is treated as an empty map. Migration is
-// intentional (Tier 1 shipped moments before the pivot; near-zero users
-// are affected) but readMap() is explicit about it so the behaviour is
-// grep-findable.
+// Shape lives at /api/session/map (see docs/campaign-map.md). The
+// background image lives in the portrait blob store, referenced by hash
+// and served at /api/session/map/background — the client renders it via
+// an <image href="/api/session/map/background?v={hash}"> so browser
+// caching + ETag revalidation come for free.
 //
-// Persistence is per-mutation to localStorage. The background image is
-// base64 in the same JSON — kept under MAP_IMAGE_MAX_STORED_BYTES by the
-// downscaling step in MapDialog before it ever reaches the store.
+// Mutations are optimistic: the local proxy updates immediately for a
+// responsive UI, then a PUT fires. On PUT failure we surface a status
+// and mark the store dirty (Tier 1a: minimal error UX; a proper retry
+// queue is Tier 2 if the failure mode ever matters in practice).
+//
+// Old localStorage payloads at 'ironledger:map' are removed on init so
+// they don't confuse anyone digging through devtools. No migration to
+// the server: Tier 1/1a were both browser-only pre-releases.
 // =============================================================================
 
 import type { MarkerIcon } from './mapConstants.js';
 
-const STORAGE_KEY = 'ironledger:map';
+const LEGACY_STORAGE_KEY = 'ironledger:map';
 
 export interface MapMarker {
 	/** Stable id — crypto.randomUUID() when the marker is created. Used as
@@ -32,94 +36,105 @@ export interface MapMarker {
 	label: string;
 	icon: MarkerIcon;
 	/** Optional link to a first-class entity from the connections deck.
-	 *  Format: "kind:id" (e.g. "place:abc123"). Rendered as a click-through
-	 *  in later tiers; stored for future use here. */
+	 *  Format: "kind:id" (e.g. "place:abc123"). Stored for Tier 2's
+	 *  click-through UX; unused in Tier 1a. */
 	entityId?: string;
 }
 
-interface MapPayload {
-	/** Base64 image data URL for the background layer; '' when no image is
-	 *  set. Whole-string blob so the whole map round-trips through a single
-	 *  localStorage read/write. */
-	backgroundDataUrl: string;
+interface MapState {
+	loaded: boolean;
+	loading: boolean;
+	error: string;
 	markers: MapMarker[];
-	updatedAt: number;
+	/** md5 hash of the background image, or '' when no image is set.
+	 *  Doubles as the cache-buster in the <image href="…?v={hash}"> URL. */
+	backgroundHash: string;
 }
 
-function readMap(): MapPayload {
-	if (typeof window === 'undefined') {
-		return { backgroundDataUrl: '', markers: [], updatedAt: 0 };
-	}
-	try {
-		const raw = localStorage.getItem(STORAGE_KEY);
-		if (!raw) return { backgroundDataUrl: '', markers: [], updatedAt: 0 };
-		const p = JSON.parse(raw) as Partial<MapPayload>;
-		// Explicitly reject Tier 1 payloads (which had `cells` and no
-		// `markers`). Discarding them is fine — Tier 1 shipped moments
-		// before this pivot, so the migration path is documented and
-		// deliberate.
-		if (!('markers' in p)) return { backgroundDataUrl: '', markers: [], updatedAt: 0 };
-		return {
-			backgroundDataUrl: typeof p.backgroundDataUrl === 'string' ? p.backgroundDataUrl : '',
-			markers: Array.isArray(p.markers) ? (p.markers as MapMarker[]) : [],
-			updatedAt: typeof p.updatedAt === 'number' ? p.updatedAt : 0,
-		};
-	} catch {
-		return { backgroundDataUrl: '', markers: [], updatedAt: 0 };
-	}
-}
-
-function persist(): void {
-	if (typeof window === 'undefined') return;
-	localStorage.setItem(
-		STORAGE_KEY,
-		JSON.stringify({
-			backgroundDataUrl: mapState.backgroundDataUrl,
-			markers: mapState.markers,
-			updatedAt: Date.now(),
-		}),
-	);
-}
-
-const _initial = readMap();
-export const mapState = $state<MapPayload>({
-	backgroundDataUrl: _initial.backgroundDataUrl,
-	markers: _initial.markers,
-	updatedAt: _initial.updatedAt,
+export const mapState = $state<MapState>({
+	loaded: false,
+	loading: false,
+	error: '',
+	markers: [],
+	backgroundHash: '',
 });
+
+/** URL for the background image or '' when there's no image. Includes the
+ *  hash as a cache-buster so <img> reloads when the background changes.
+ *  Reactive on `mapState.backgroundHash`; MapDialog binds `href` to this. */
+export function backgroundUrl(): string {
+	if (!mapState.backgroundHash) return '';
+	return `/api/session/map/background?v=${encodeURIComponent(mapState.backgroundHash)}`;
+}
+
+// ---------------------------------------------------------------------------
+// Init — fetch the map on first dialog open. Idempotent.
+// ---------------------------------------------------------------------------
+
+let _initPromise: Promise<void> | null = null;
+
+export function initMap(): Promise<void> {
+	if (mapState.loaded) return Promise.resolve();
+	if (_initPromise) return _initPromise;
+	_initPromise = (async () => {
+		mapState.loading = true;
+		mapState.error = '';
+		try {
+			const res = await fetch('/api/session/map');
+			if (!res.ok) throw new Error(`Server returned ${res.status}`);
+			const body = (await res.json()) as {
+				markers?: MapMarker[];
+				backgroundHash?: string | null;
+			};
+			mapState.markers = Array.isArray(body.markers) ? body.markers : [];
+			mapState.backgroundHash = body.backgroundHash ?? '';
+			mapState.loaded = true;
+			// Sweep the legacy localStorage payload — the old browser-only
+			// map is fully superseded by the server round-trip.
+			if (typeof window !== 'undefined') localStorage.removeItem(LEGACY_STORAGE_KEY);
+		} catch (err) {
+			mapState.error = err instanceof Error ? err.message : 'Failed to load map';
+		} finally {
+			mapState.loading = false;
+			_initPromise = null;
+		}
+	})();
+	return _initPromise;
+}
 
 // ---------------------------------------------------------------------------
 // Readers
 // ---------------------------------------------------------------------------
 
-/** Every marker pinned to (q, r). Multiple markers per hex are permitted
- *  — game-mechanically a hex can hold a settlement AND an encounter — but
- *  the icon picker will only spawn one at a time; overloading is a Tier 2
- *  concern. Linear scan is fine at Tier-1a scale. */
 export function markersAt(q: number, r: number): MapMarker[] {
 	return mapState.markers.filter((m) => m.q === q && m.r === r);
 }
 
-/** True when any marker or background has been set — used to gate the
- *  "Clear map" button. */
 export function hasAnyContent(): boolean {
-	return mapState.markers.length > 0 || mapState.backgroundDataUrl !== '';
+	return mapState.markers.length > 0 || mapState.backgroundHash !== '';
 }
 
 // ---------------------------------------------------------------------------
-// Mutations
+// Mutations — optimistic local update, PUT to server, revert on error.
 // ---------------------------------------------------------------------------
 
-/** Replace the background image with a fresh data URL. Pass '' to clear.
- *  Caller (MapDialog) is responsible for downscaling + quality checks
- *  before hand-off — the store just persists whatever it's given. */
-export function setBackground(dataUrl: string): void {
-	mapState.backgroundDataUrl = dataUrl;
-	persist();
+async function persistMarkers(): Promise<void> {
+	try {
+		const res = await fetch('/api/session/map/markers', {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ markers: mapState.markers }),
+		});
+		if (!res.ok) throw new Error(`Server returned ${res.status}`);
+		mapState.error = '';
+	} catch (err) {
+		mapState.error = err instanceof Error ? err.message : 'Failed to save markers';
+	}
 }
 
-/** Add a new marker. Returns the assigned id so the caller can select it
- *  for immediate editing. */
+/** Add a new marker. Returns the assigned id so callers can select it for
+ *  immediate editing. Optimistic — id is minted client-side and the array
+ *  is updated before the PUT fires. */
 export function addMarker(input: {
 	q: number;
 	r: number;
@@ -129,31 +144,54 @@ export function addMarker(input: {
 }): string {
 	const id = crypto.randomUUID();
 	mapState.markers.push({ id, ...input });
-	persist();
+	void persistMarkers();
 	return id;
 }
 
-/** Update an existing marker in place — mutates the array element by
- *  reference so Svelte's proxy triggers a targeted re-render. */
 export function updateMarker(id: string, patch: Partial<Omit<MapMarker, 'id'>>): void {
 	const idx = mapState.markers.findIndex((m) => m.id === id);
 	if (idx < 0) return;
 	mapState.markers[idx] = { ...mapState.markers[idx], ...patch };
-	persist();
+	void persistMarkers();
 }
 
-/** Remove a marker by id. No-op if the id doesn't exist. */
 export function removeMarker(id: string): void {
 	const idx = mapState.markers.findIndex((m) => m.id === id);
 	if (idx < 0) return;
 	mapState.markers.splice(idx, 1);
-	persist();
+	void persistMarkers();
 }
 
-/** Wipe everything — background image + all markers. Callers should
- *  confirm with the user first. */
-export function clearMap(): void {
-	mapState.backgroundDataUrl = '';
+/** Upload a fresh background image. `dataUrl` is a `data:image/…;base64,…`
+ *  string (produced by mapImage.downscaleImage). Server responds with the
+ *  content hash which we adopt as the new backgroundHash. */
+export async function setBackground(dataUrl: string): Promise<void> {
+	try {
+		const res = await fetch('/api/session/map/background', {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ dataUrl }),
+		});
+		if (!res.ok) throw new Error(`Server returned ${res.status}`);
+		const body = (await res.json()) as { hash?: string };
+		if (body.hash) mapState.backgroundHash = body.hash;
+		mapState.error = '';
+	} catch (err) {
+		mapState.error = err instanceof Error ? err.message : 'Failed to upload image';
+	}
+}
+
+/** Wipe the entire map — background + markers. Callers should confirm
+ *  before invoking. */
+export async function clearMap(): Promise<void> {
+	// Optimistic — clear locally first, then hit the server.
 	mapState.markers = [];
-	persist();
+	mapState.backgroundHash = '';
+	try {
+		const res = await fetch('/api/session/map', { method: 'DELETE' });
+		if (!res.ok) throw new Error(`Server returned ${res.status}`);
+		mapState.error = '';
+	} catch (err) {
+		mapState.error = err instanceof Error ? err.message : 'Failed to clear map';
+	}
 }

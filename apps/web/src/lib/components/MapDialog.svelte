@@ -26,7 +26,7 @@
 	import DialogHeader from './DialogHeader.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import { tooltip } from '$lib/actions/tooltip.js';
-	import { MAP_COLS, MAP_ROWS, MARKER_ICONS, MARKER_ICON_LABELS } from '$lib/mapConstants.js';
+	import { MARKER_ICONS, MARKER_ICON_LABELS } from '$lib/mapConstants.js';
 	import type { MarkerIcon } from '$lib/mapConstants.js';
 	import { axialToPx, hexPolygonPoints, allCells, mapViewBox } from '$lib/mapGeometry.js';
 	import {
@@ -38,9 +38,11 @@
 		setBackground,
 		clearMap,
 		hasAnyContent,
+		initMap,
+		backgroundUrl,
 	} from '$lib/mapStore.svelte.js';
-	import type { MapMarker } from '$lib/mapStore.svelte.js';
 	import { downscaleImage, MapImageError } from '$lib/mapImage.js';
+	import { exportMapPng, exportMapJson } from '$lib/mapExport.js';
 
 	// Icon svgs — imported as raw text so we can inline them in the SVG.
 	import iconSettlement from '$icons/village.svg?raw';
@@ -83,10 +85,27 @@
 	let editing = $state<EditingState | null>(null);
 
 	export function open() {
+		// Fetch the map on first open (idempotent). Non-blocking — the
+		// dialog opens immediately, contents fade in as they arrive.
+		void initMap();
 		dialogEl?.showModal();
 	}
 	export function close() {
 		dialogEl?.close();
+	}
+
+	let svgEl = $state<SVGSVGElement | null>(null);
+
+	function handleExportPng() {
+		if (!svgEl) return;
+		void exportMapPng(svgEl, showLabels);
+	}
+	function handleExportJson() {
+		exportMapJson({
+			markers: mapState.markers,
+			backgroundHash: mapState.backgroundHash,
+			backgroundUrl: backgroundUrl(),
+		});
 	}
 
 	const cells = [...allCells()];
@@ -169,6 +188,20 @@
 		<div class="mp-tools">
 			<span class="mp-count">{markerCount} marker{markerCount === 1 ? '' : 's'}</span>
 			<button
+				class="mp-btn"
+				onclick={handleExportPng}
+				disabled={!hasAnyContent()}
+				use:tooltip={'Download a PNG snapshot of the map with the grid + markers baked in'}
+				>Export PNG</button
+			>
+			<button
+				class="mp-btn"
+				onclick={handleExportJson}
+				disabled={!hasAnyContent()}
+				use:tooltip={'Download the marker list + a link to the background image as JSON'}
+				>Export JSON</button
+			>
+			<button
 				class="mp-btn mp-btn-danger"
 				onclick={() => clearDialogRef?.open()}
 				disabled={!hasAnyContent()}
@@ -191,11 +224,12 @@
 	<div class="mp-body">
 		<div class="mp-canvas">
 			<svg
+				bind:this={svgEl}
 				viewBox="{vb.x} {vb.y} {vb.w} {vb.h}"
 				preserveAspectRatio="xMidYMid meet"
 				aria-label="Campaign map"
 			>
-				{#if mapState.backgroundDataUrl}
+				{#if mapState.backgroundHash}
 					<!-- Background image — fitted to the same bounds as the hex
 					     grid, aspect ratio preserved via xMidYMid meet. -->
 					<image
@@ -203,7 +237,7 @@
 						y={vb.y}
 						width={vb.w}
 						height={vb.h}
-						href={mapState.backgroundDataUrl}
+						href={backgroundUrl()}
 						preserveAspectRatio="xMidYMid meet"
 						aria-hidden="true"
 					/>
