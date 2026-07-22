@@ -12,7 +12,6 @@
 		initLog,
 		clearLog,
 		deleteLogEntry,
-		updateLogEntryNote,
 		updateLogEntryHtml,
 		enrichOutcomeLinks,
 		triggerXpSpend,
