@@ -184,18 +184,34 @@ bytes in `portrait_blobs`.
 
 ## Rendering
 
-Three SVG layers stacked in draw order inside a single `<svg>` (bound
-to `svgEl` so the PNG exporter can serialise it):
+The image is the star: it fills the canvas with a half-hex margin on
+every side and the hex grid scales to match.
 
-1. **Background `<image href="/api/session/map/background?v={hash}">`**
-   — served by the API, aspect-fit inside the same bounds as the hex
-   grid via `preserveAspectRatio="xMidYMid meet"`. Browser caches
-   forever thanks to the ETag; the `?v={hash}` cache-busts on upload.
-2. **Hex grid overlay** — every cell is one `<polygon>` with transparent
-   fill and a translucent stroke. Click handler opens the marker editor.
-3. **Marker layer** — for each marker: raw icon SVG (fill overridden to
-   `var(--text)` with a drop-shadow so it stays readable over busy
-   backgrounds) plus an optional paint-order-stroked `<text>` label.
+- **`dynamicHexSize`** — computed reactively from the canvas pixel
+  dimensions so a `MAP_COLS × MAP_ROWS` hex grid plus a half-hex
+  border fits exactly. `HEX_SIZE = min(pxW / ((MAP_COLS+1)·√3),
+pxH / ((MAP_ROWS+1)·1.5))`; the axis with slack picks up a wider
+  margin. Marker alignment survives every resize because both the
+  image and `axialToPx()` scale with the same value.
+- **viewBox = 0 0 pxW pxH** (pixel-space). One SVG user unit = one
+  CSS pixel; `preserveAspectRatio="none"` since there's nothing to
+  preserve.
+- **Layers**, drawn in order inside the single `<svg>`:
+  1. **Background `<image>`** — centered, sized
+     `MAP_COLS × MAP_ROWS` hexes at the current dynamic size,
+     `preserveAspectRatio="xMidYMid meet"` so the image itself
+     never distorts.
+  2. **Hex grid + marker group** — wrapped in a
+     `<g transform="translate(hexOffset.x, hexOffset.y)">` so axial
+     `(0, 0)` lands one half-hex inset from the image's top-left
+     corner. Cells cover the full viewBox (including negative axial
+     coords for the margin ring). Polygons + markers use
+     `axialToPx(q, r, dynamicHexSize)` and `hexPolygonPoints(x, y,
+dynamicHexSize)`.
+  3. **Marker icons** — colored fill wrapped in a `<g
+paint-order="stroke" stroke="white">` for the white halo the
+     labels use. `ICON_SIZE` scales with the hex size so markers
+     always sit comfortably inside their cell.
 
 ## Interaction
 
