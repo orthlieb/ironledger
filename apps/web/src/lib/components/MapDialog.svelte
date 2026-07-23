@@ -43,6 +43,7 @@
 	} from '$lib/mapStore.svelte.js';
 	import { downscaleImage, MapImageError } from '$lib/mapImage.js';
 	import { exportMapPng, exportMapJson } from '$lib/mapExport.js';
+	import { getLinkableEntities, resolveEntity } from '$lib/mapEntityLinks.js';
 
 	// Icon svgs — imported as raw text so we can inline them in the SVG.
 	import iconSettlement from '$icons/village.svg?raw';
@@ -81,6 +82,10 @@
 		r: number;
 		label: string;
 		icon: MarkerIcon;
+		/** Selected value for the entity-link `<select>`: '' for "no link",
+		 *  otherwise "kind:id" per formatEntityId. Held separately from the
+		 *  saved marker so cancel doesn't leak the change back. */
+		entityId: string;
 	}
 	let editing = $state<EditingState | null>(null);
 
@@ -112,7 +117,7 @@
 	const vb = mapViewBox();
 	const markerCount = $derived(mapState.markers.length);
 
-	function onHexClick(q: number, r: number) {
+	function openEditorForHex(q: number, r: number) {
 		// If a marker exists on the hex, edit the first one; else create.
 		const existing = markersAt(q, r)[0];
 		if (existing) {
@@ -122,19 +127,49 @@
 				r: existing.r,
 				label: existing.label,
 				icon: existing.icon,
+				entityId: existing.entityId ?? '',
 			};
 		} else {
-			editing = { id: null, q, r, label: '', icon: 'marker' };
+			editing = { id: null, q, r, label: '', icon: 'marker', entityId: '' };
 		}
+	}
+
+	/**
+	 * Hex click. Bare click on a linked marker navigates to that entity and
+	 * closes the map. Shift+click always opens the editor — a modifier
+	 * lets the user edit a linked marker without triggering the jump.
+	 * Bare click on an unlinked hex opens the editor (create or edit).
+	 */
+	function onHexClick(q: number, r: number, ev: MouseEvent) {
+		const existing = markersAt(q, r)[0];
+		const link = existing ? resolveEntity(existing.entityId) : null;
+		if (existing && link && !ev.shiftKey) {
+			document.dispatchEvent(
+				new CustomEvent('ironledger:focus-entity', {
+					detail: { kind: link.kind, id: link.id },
+				}),
+			);
+			close();
+			return;
+		}
+		openEditorForHex(q, r);
 	}
 
 	function commitEditing() {
 		if (!editing) return;
-		const label = editing.label.trim();
+		let label = editing.label.trim();
+		const entityId = editing.entityId || undefined;
+		// Auto-fill label from the linked entity's name when the user
+		// left it blank — cheap ergonomic win, and matches the
+		// "annotation follows the entity" mental model.
+		if (!label && entityId) {
+			const link = resolveEntity(entityId);
+			if (link) label = link.name;
+		}
 		if (editing.id !== null) {
-			updateMarker(editing.id, { label, icon: editing.icon });
+			updateMarker(editing.id, { label, icon: editing.icon, entityId });
 		} else {
-			addMarker({ q: editing.q, r: editing.r, label, icon: editing.icon });
+			addMarker({ q: editing.q, r: editing.r, label, icon: editing.icon, entityId });
 		}
 		editing = null;
 	}
@@ -253,7 +288,7 @@
 					<polygon
 						class="mp-hex"
 						points={hexPolygonPoints(px.x, px.y)}
-						onclick={() => onHexClick(q, r)}
+						onclick={(ev) => onHexClick(q, r, ev)}
 						role="button"
 						tabindex="-1"
 						aria-label={`Hex ${q}, ${r}`}
@@ -290,13 +325,33 @@
 					<input
 						class="mp-input"
 						type="text"
-						placeholder="e.g. Driftwood"
+						placeholder={editing.entityId ? '(leave blank to use entity name)' : 'e.g. Driftwood'}
 						bind:value={editing.label}
 						onkeydown={(e) => {
 							if (e.key === 'Enter') commitEditing();
 							if (e.key === 'Escape') cancelEditing();
 						}}
 					/>
+				</label>
+
+				<label class="mp-field">
+					<span class="mp-field-label">Link to entity</span>
+					<select class="mp-input" bind:value={editing.entityId}>
+						<option value="">— none —</option>
+						{#each getLinkableEntities() as e}
+							<option value="{e.kind}:{e.id}">{e.kindPrefix} {e.kindLabel}: {e.name}</option>
+						{/each}
+					</select>
+					{#if editing.entityId && !resolveEntity(editing.entityId)}
+						<span class="mp-field-hint mp-field-hint-warn">
+							Linked entity was deleted — pick a new one or clear the link.
+						</span>
+					{:else if editing.entityId}
+						<span class="mp-field-hint"
+							>Bare-click this marker on the map to jump to the entity. Shift-click always opens the
+							editor.</span
+						>
+					{/if}
 				</label>
 
 				<div class="mp-field">
@@ -467,6 +522,15 @@
 		stroke: var(--text-accent);
 		stroke-width: 1.5;
 	}
+	/* Clicking a role="button" polygon makes it :focus (Chrome/Firefox draw
+	   the default outline as a bright rectangle inscribed around the SVG
+	   node — the polygon's bounding box, not the hex path). Suppress it;
+	   the hover-stroke already gives adequate feedback, and hex maps are
+	   pointer-driven — no keyboard navigation to preserve here. */
+	.mp-hex:focus,
+	.mp-hex:focus-visible {
+		outline: none;
+	}
 
 	/* Marker icon inherits currentColor via the fill rewrite in the
 	   {@html} interpolation above; keep a stroke around each icon so it
@@ -520,6 +584,15 @@
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
 		color: var(--text-dimmer);
+	}
+	.mp-field-hint {
+		font-family: var(--font-ui);
+		font-size: 0.7rem;
+		color: var(--text-dimmer);
+		line-height: 1.4;
+	}
+	.mp-field-hint-warn {
+		color: var(--color-danger, #ef4444);
 	}
 	.mp-input {
 		width: 100%;

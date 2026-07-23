@@ -16,6 +16,7 @@ same infra the entity portraits already use.
 | `lib/mapImage.ts`                              | `downscaleImage(file)` — canvas-based resize + JPEG re-encode.                                 |
 | `lib/mapStore.svelte.ts`                       | `$state` cache backed by `/api/session/map` — `initMap` fetches, mutations PUT optimistically. |
 | `lib/mapExport.ts`                             | `exportMapPng` + `exportMapJson` — snapshot download flows.                                    |
+| `lib/mapEntityLinks.ts`                        | Enumerate + resolve linkable entities (community / place / journey / site); parse `"kind:id"`. |
 | `lib/components/MapDialog.svelte`              | Three-layer SVG (image / grid / markers) + toolbar + inline marker editor + export buttons.    |
 | `lib/components/v2/ExpeditionsArea.svelte`     | Header "Map" button that opens the dialog.                                                     |
 | `routes/api/session/map/+server.ts`            | BFF proxy for GET / DELETE map.                                                                |
@@ -197,17 +198,79 @@ The SVG scales down to fit; hex-tap targets remain useable at ~22px
 radius on phone. The inline marker editor collapses under the canvas,
 so on portrait phones the flow becomes tap-hex → scroll to editor.
 
+## Entity-linked markers (Tier 2a)
+
+A marker's `entityId` can point at a first-class entity from the rest
+of the app. Format: `"kind:id"` where `kind` is one of `community` /
+`place` / `journey` / `site` (NPCs and Foes are deliberately out —
+NPCs live at communities/places, Foes are transient).
+
+### Editor
+
+The marker editor's **Link to entity** dropdown lists every community
+
+- place + journey + site, sorted kind-first then alphabetical, with a
+  small glyph prefix (`◈` community / `●` place / `↗` journey / `▲`
+  site). Selecting `— none —` clears the link.
+
+**Auto-fill label**: on Save, if the label is empty and a link is
+set, the marker adopts the linked entity's name. Explicit label edits
+are never overwritten.
+
+**Icon stays independent** — the annotator's choice, not the entity's
+kind. A settlement can be flagged `danger` if it's a hostile town.
+
+### Click semantics
+
+- **Bare click** on a linked marker → close the map + focus the linked
+  entity in its natural area. On mobile the tab switches to
+  Expeditions or Connections as appropriate; on desktop both areas
+  are visible in the deck so only the entity focus fires.
+- **Shift+click** on a linked marker → open the editor. Always
+  available so linked markers can still be edited.
+- **Click** on an unlinked marker (or an empty hex) → open the
+  editor (matches Tier 1a).
+
+### Broken links
+
+When the linked entity is deleted, `resolveEntity(entityId)` returns
+null. The marker stays on the map (label + icon intact) and the
+editor shows a red **"Linked entity was deleted"** hint prompting the
+user to pick a replacement or clear the link. Bare-clicking a broken-
+link marker opens the editor (no target to jump to).
+
+### Cross-component wiring
+
+MapDialog dispatches `ironledger:focus-entity` with `{ kind, id }`.
+Three listeners handle it:
+
+- `/home/+page.svelte` — switches `mobileTab` (only when on mobile).
+- `CommunitiesArea` — matches `community` / `place` / `npc`, sets
+  `activeEntryId`, clears the type filter if it would hide the target.
+- `ExpeditionsArea` — matches `journey` / `site`, sets `activeExpId`.
+
+Each area owns its own focus response, so adding a new linkable
+entity kind later is a two-file change: extend `mapEntityLinks.ts`
+enum + add a listener in the target area.
+
 ## Growth path
 
-Tier 2 (planned):
+Tier 2b (planned):
+
+- **Bidirectional** — Community / Place / Site / Journey cards show
+  a `📍 On map at (q, r)` indicator with click-through back to the
+  map. Client-side derived index from `mapState.markers` grouped by
+  `entityId`.
+
+Tier 2c (planned):
 
 - **JSON import** — pair the JSON export with an importer that
   re-uploads the image via `PUT /session/map/background` and swaps in
   the fresh hash. Bundle this into the top-level "Everything"
   export/import.
-- **Entity link** on markers — dropdown resolving Places / Sites /
-  Communities / NPCs from the connections deck. Click-through from a
-  marker to the linked entity.
+
+Tier 2 nice-to-haves:
+
 - **Multiple markers per hex** in the UI — a picker when clicking a
   hex that already has one.
 - **Region tint layer** — translucent colour overlay for faction /
