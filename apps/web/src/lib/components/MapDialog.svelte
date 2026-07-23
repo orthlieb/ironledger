@@ -43,8 +43,8 @@
 		MAP_ICON_LIST,
 		type MapIcon,
 	} from '$lib/generated/mapIconManifest.js';
-	import { axialToPx, hexPolygonPoints, allCells, mapViewBox } from '$lib/mapGeometry.js';
-	import { HEX_SIZE } from '$lib/mapConstants.js';
+	import { axialToPx, hexPolygonPoints, allCells } from '$lib/mapGeometry.js';
+	import { HEX_SIZE, MAP_COLS, MAP_ROWS } from '$lib/mapConstants.js';
 	import {
 		mapState,
 		markersAt,
@@ -131,17 +131,52 @@
 		// Pointy-top hex spacing in pixels at HEX_SIZE.
 		const hexW = Math.sqrt(3) * HEX_SIZE;
 		const hexH = 1.5 * HEX_SIZE;
-		// Subtract one hex of padding (mapViewBox adds a hexW/hexH margin on
-		// each side) so the visible edge lands on a full hex, not a half.
-		const usableW = Math.max(hexW * 2, canvasPxW - hexW * 2);
-		const usableH = Math.max(hexH * 2, canvasPxH - hexH * 2);
-		const cols = Math.max(6, Math.round(usableW / hexW));
-		const rows = Math.max(4, Math.round(usableH / hexH));
+		// Round up: we'd rather overfill (slice clips a sliver at the edge)
+		// than underfill (leaving a bare band before the first row of hexes).
+		const cols = Math.max(6, Math.ceil(canvasPxW / hexW) + 1);
+		const rows = Math.max(4, Math.ceil(canvasPxH / hexH) + 1);
 		return { cols, rows };
 	});
 
 	const cells = $derived([...allCells(gridDims.cols, gridDims.rows)]);
-	const vb = $derived(mapViewBox(gridDims.cols, gridDims.rows, HEX_SIZE));
+
+	/**
+	 * viewBox that hugs the grid — no outer padding. `mapViewBox` adds a
+	 * one-hex margin on every side; we deliberately override to 0 so the
+	 * combination of `preserveAspectRatio="…slice"` + this viewBox fills
+	 * the entire canvas with drawn hexes (no bare band around the edge).
+	 * The `-HEX_SIZE` offsets on x/y let the top row's top vertex peek in
+	 * from above so row 0 doesn't render as half a hex.
+	 */
+	const vb = $derived.by(() => {
+		const hexW = Math.sqrt(3) * HEX_SIZE;
+		return {
+			x: -hexW / 2,
+			y: -HEX_SIZE,
+			w: gridDims.cols * hexW,
+			h: gridDims.rows * 1.5 * HEX_SIZE + HEX_SIZE / 2,
+		};
+	});
+
+	/**
+	 * Background image rectangle. Pinned to a canonical MAP_COLS × MAP_ROWS
+	 * area centered on the axial origin — CRITICAL for marker alignment.
+	 * The outer `vb` grows/shrinks with the container aspect and device,
+	 * but the image bounds stay put, so a marker at axial `(q, r)` always
+	 * lands on the same feature of the image regardless of dialog size or
+	 * whether the user is on desktop or mobile. Extra hexes surround the
+	 * image; the image itself never scales relative to the grid.
+	 */
+	const imageBounds = (() => {
+		const hexW = Math.sqrt(3) * HEX_SIZE;
+		const hexH = 1.5 * HEX_SIZE;
+		return {
+			x: -hexW / 2,
+			y: -HEX_SIZE,
+			w: MAP_COLS * hexW,
+			h: MAP_ROWS * hexH + HEX_SIZE / 2,
+		};
+	})();
 	const markerCount = $derived(mapState.markers.length);
 
 	/**
@@ -430,18 +465,33 @@
 
 	<div class="mp-body">
 		<div class="mp-canvas" bind:this={canvasEl}>
+			<!--
+				`slice` (not `meet`) on the outer SVG: the ResizeObserver-driven
+				gridDims produce a viewBox that's ~within a hex of the container
+				aspect, but not byte-perfect. `meet` would render the sliver
+				difference as a cream letterbox strip; `slice` scales to fill
+				and clips only the hex-margin overflow (which is intentional
+				padding anyway). Hexes now truly cover the whole canvas.
+				The inner <image> keeps `meet` so the map itself never distorts.
+			-->
 			<svg
 				bind:this={svgEl}
 				viewBox="{vb.x} {vb.y} {vb.w} {vb.h}"
-				preserveAspectRatio="xMidYMid meet"
+				preserveAspectRatio="xMidYMid slice"
 				aria-label="Campaign map"
 			>
 				{#if mapState.backgroundHash}
+					<!--
+						Fixed bounds (imageBounds — never depends on gridDims) so
+						a marker's (q, r) position stays put over the same map
+						feature no matter how the dialog resizes or which device
+						the user opens it on. The outer vb changes; this doesn't.
+					-->
 					<image
-						x={vb.x}
-						y={vb.y}
-						width={vb.w}
-						height={vb.h}
+						x={imageBounds.x}
+						y={imageBounds.y}
+						width={imageBounds.w}
+						height={imageBounds.h}
 						href={backgroundUrl()}
 						preserveAspectRatio="xMidYMid meet"
 						aria-hidden="true"
@@ -780,7 +830,9 @@
 		box-sizing: border-box;
 		overflow: hidden;
 		overscroll-behavior: contain;
-		padding: 8px 14px 14px;
+		/* No padding — the SVG runs edge-to-edge so hexes cover the whole
+		   canvas. `<svg preserveAspectRatio="…slice">` handles the aspect
+		   mismatch by clipping the outer hex-margin instead of letterboxing. */
 		background: var(--bg-inset);
 	}
 	.mp-canvas svg {
