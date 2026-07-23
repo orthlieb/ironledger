@@ -1,16 +1,19 @@
 // =============================================================================
 // Iron Ledger — Campaign map constants
 //
-// Tier 1a scope: annotate an uploaded map image on a hex grid overlay. One
-// map per user (background image + marker list) stored in localStorage.
-// No terrain painting — the background image IS the terrain. Markers are
-// hex-pinned annotations (label + icon + optional entity link).
+// Annotate an uploaded map image on a hex grid overlay. One map per user
+// (background image + marker list) stored server-side. The background image
+// IS the terrain — no painting. Markers are hex-pinned annotations
+// (label + icon + color + optional entity link).
 //
-// Icon set intentionally small (8 slugs) and drawn from the existing icon
-// vocabulary in $icons/ so the palette lives in the same visual family as
-// the rest of the sheet. Growing the enum is a data-migration event:
-// icon slugs are on-disk strings inside every user's localStorage.
+// Icons come from apps/web/static/map/<category>/<slug>.svg, indexed at
+// build time into src/lib/generated/mapIconManifest.ts (see the Vite
+// plugin in vite.config.ts). Marker.icon stores the composite manifest
+// key "<category>/<slug>". Old bare-slug values still resolve via the
+// fallback in resolveMapIcon().
 // =============================================================================
+
+import { MAP_ICONS, MAP_ICON_LIST, type MapIcon } from './generated/mapIconManifest.js';
 
 /** Bounded rectangle for the hex grid overlay. 20×15 = 300 cells — same as
  *  the paint-only Tier 1 iteration. Fits at readable hex size on a laptop
@@ -23,32 +26,50 @@ export const MAP_ROWS = 15;
  *  before the background image is fitted. */
 export const HEX_SIZE = 22;
 
-/** Marker icon vocabulary — one slug per pin type. Each maps to an SVG file
- *  under $icons/ (loaded via ?raw imports in MapDialog). Ordered by
- *  frequency-of-use so the picker's first row is the common cases. */
-export const MARKER_ICONS = [
-	'settlement',
-	'hamlet',
-	'ruin',
-	'encounter',
-	'danger',
-	'quest',
-	'poi',
-	'marker',
-] as const;
-export type MarkerIcon = (typeof MARKER_ICONS)[number];
+/** Default icon assigned to a newly-placed marker. Falls back to any
+ *  available manifest entry so tests + first-run don't crash if the
+ *  preferred slug is missing. */
+export const DEFAULT_MARKER_ICON: string =
+	MAP_ICONS['travel/marker']?.slug != null
+		? 'travel/marker'
+		: MAP_ICON_LIST[0]?.category != null
+			? `${MAP_ICON_LIST[0].category}/${MAP_ICON_LIST[0].slug}`
+			: 'misc/marker';
 
-/** Human-readable labels for the icon picker + a11y. */
-export const MARKER_ICON_LABELS: Record<MarkerIcon, string> = {
-	settlement: 'Settlement',
-	hamlet: 'Hamlet',
-	ruin: 'Ruin',
-	encounter: 'Encounter',
-	danger: 'Danger',
-	quest: 'Quest',
-	poi: 'Point of Interest',
-	marker: 'Marker',
-};
+/** Default marker color — same warm amber the rest of the sheet uses for
+ *  accent chrome. Users override per-marker via the toolbar's color input. */
+export const DEFAULT_MARKER_COLOR = '#f4b93b';
+
+/** Preset color swatches surfaced next to the native picker. Twelve hues
+ *  that read on both light and dark backgrounds and against common map
+ *  parchment/ink palettes. */
+export const MARKER_COLOR_PRESETS: string[] = [
+	'#f4b93b', // amber
+	'#ef4444', // red
+	'#f97316', // orange
+	'#eab308', // gold
+	'#22c55e', // green
+	'#14b8a6', // teal
+	'#3b82f6', // blue
+	'#a855f7', // purple
+	'#ec4899', // pink
+	'#ffffff', // white
+	'#94a3b8', // slate
+	'#111827', // ink
+];
+
+/**
+ * Resolve a Marker.icon reference against the build-time manifest. Accepts
+ * the canonical `<category>/<slug>` form and, as a fallback for legacy data,
+ * a bare slug (returns the first manifest entry that matches). Returns
+ * `undefined` when nothing matches — callers substitute a default glyph.
+ */
+export function resolveMapIcon(ref: string | undefined | null): MapIcon | undefined {
+	if (!ref) return undefined;
+	const hit = MAP_ICONS[ref];
+	if (hit) return hit;
+	return MAP_ICON_LIST.find((i) => i.slug === ref);
+}
 
 /** Downscale target for uploaded background images. Anything larger on its
  *  longest side is resized before we base64-encode into localStorage.
