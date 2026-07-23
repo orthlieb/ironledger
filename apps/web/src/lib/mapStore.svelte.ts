@@ -61,6 +61,12 @@ export interface MapServerSettings {
 		perHex?: number;
 		segments?: number;
 	};
+	view?: {
+		/** Zoom multiplier applied to the SVG's intrinsic size.
+		 *  1.0 = fit-to-canvas (the pre-zoom baseline); 2.0 = 2× the
+		 *  fit-to-canvas render, panning enabled via canvas overflow. */
+		zoom?: number;
+	};
 }
 
 interface MapState {

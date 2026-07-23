@@ -33,12 +33,22 @@ export interface MapSettings {
 		 *  markers can be placed on an "invisible" grid. */
 		visible: boolean;
 	};
+	pan: {
+		/** Fraction of the scrollable area (`scrollLeft / (scrollWidth -
+		 *  clientWidth)`), in `[0, 1]`. Stored as a fraction so a
+		 *  different-sized canvas on the same device still restores to
+		 *  roughly the same spot. Ignored when the canvas isn't
+		 *  scrollable (zoom = 1.0). */
+		fx: number;
+		fy: number;
+	};
 }
 
 const DEFAULTS: MapSettings = {
 	scale: { enabled: false, unit: 'miles', perHex: 5, segments: 4 },
 	border: { enabled: false },
 	hexes: { visible: true },
+	pan: { fx: 0.5, fy: 0.5 },
 };
 
 /** Deep-clone the defaults so users can't accidentally mutate the shared
@@ -48,6 +58,7 @@ function freshDefaults(): MapSettings {
 		scale: { ...DEFAULTS.scale },
 		border: { ...DEFAULTS.border },
 		hexes: { ...DEFAULTS.hexes },
+		pan: { ...DEFAULTS.pan },
 	};
 }
 
@@ -61,6 +72,7 @@ function load(): MapSettings {
 			scale: { ...DEFAULTS.scale, ...(parsed.scale ?? {}) },
 			border: { ...DEFAULTS.border, ...(parsed.border ?? {}) },
 			hexes: { ...DEFAULTS.hexes, ...(parsed.hexes ?? {}) },
+			pan: { ...DEFAULTS.pan, ...(parsed.pan ?? {}) },
 		};
 	} catch {
 		return freshDefaults();
