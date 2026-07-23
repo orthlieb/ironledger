@@ -46,6 +46,23 @@ export interface MapMarker {
 	entityId?: string;
 }
 
+/** Server-persisted per-map settings — things that describe the MAP
+ *  itself (not the current viewer's device preferences). Scale in
+ *  particular is intrinsic to the map: 5 miles per hex on the GM's
+ *  laptop is 5 miles per hex on their phone.
+ *
+ *  Kept typed as a partial so the client can add fields without a
+ *  migration — the server just stores whatever JSONB blob it's
+ *  handed and returns it verbatim on read. */
+export interface MapServerSettings {
+	scale?: {
+		enabled?: boolean;
+		unit?: 'miles' | 'km';
+		perHex?: number;
+		segments?: number;
+	};
+}
+
 interface MapState {
 	loaded: boolean;
 	loading: boolean;
@@ -54,6 +71,9 @@ interface MapState {
 	/** md5 hash of the background image, or '' when no image is set.
 	 *  Doubles as the cache-buster in the <image href="…?v={hash}"> URL. */
 	backgroundHash: string;
+	/** Per-map settings persisted server-side (see MapServerSettings).
+	 *  Free-form JSONB blob owned by the client. */
+	settings: MapServerSettings;
 }
 
 export const mapState = $state<MapState>({
@@ -62,6 +82,7 @@ export const mapState = $state<MapState>({
 	error: '',
 	markers: [],
 	backgroundHash: '',
+	settings: {},
 });
 
 /** URL for the background image or '' when there's no image. Includes the
@@ -90,9 +111,11 @@ export function initMap(): Promise<void> {
 			const body = (await res.json()) as {
 				markers?: MapMarker[];
 				backgroundHash?: string | null;
+				settings?: MapServerSettings | null;
 			};
 			mapState.markers = Array.isArray(body.markers) ? body.markers : [];
 			mapState.backgroundHash = body.backgroundHash ?? '';
+			mapState.settings = body.settings && typeof body.settings === 'object' ? body.settings : {};
 			mapState.loaded = true;
 			// Sweep the legacy localStorage payload — the old browser-only
 			// map is fully superseded by the server round-trip.
@@ -208,4 +231,21 @@ export async function clearMap(): Promise<void> {
 export async function clearMarkers(): Promise<void> {
 	mapState.markers = [];
 	await persistMarkers();
+}
+
+/** Persist the current per-map settings blob. Optimistic — the local
+ *  copy is authoritative, PUT fires in the background. Errors surface
+ *  through mapState.error. */
+export async function persistSettings(): Promise<void> {
+	try {
+		const res = await fetch('/api/session/map/settings', {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ settings: mapState.settings }),
+		});
+		if (!res.ok) throw new Error(`Server returned ${res.status}`);
+		mapState.error = '';
+	} catch (err) {
+		mapState.error = err instanceof Error ? err.message : 'Failed to save map settings';
+	}
 }

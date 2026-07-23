@@ -50,6 +50,12 @@ const mapMarkerSchema = z.object({
 });
 const putMarkersBody = z.object({ markers: z.array(mapMarkerSchema).max(500) });
 
+/** Free-form settings blob; the client owns the shape. Small size cap so
+ *  a bug can't wedge megabytes of JSON into the row. */
+const putMapSettingsBody = z.object({
+  settings: z.record(z.unknown()),
+});
+
 const patchSessionStateBody = z.object({
   sessionState: z.object({
     charId: z.string(),
@@ -266,8 +272,9 @@ export const userDataRoutes: FastifyPluginAsyncZod = async (server) => {
 
   // ── Campaign map — persisted per-user, reuses portrait blob store for the
   //    background image. See docs/campaign-map.md for the shape.
-  // GET    /session/map                → { markers, backgroundHash, updatedAt }
+  // GET    /session/map                → { markers, backgroundHash, settings, updatedAt }
   // PUT    /session/map/markers        → replace the markers array wholesale
+  // PUT    /session/map/settings       → replace the settings blob wholesale
   // GET    /session/map/background     → raw image bytes (ETag revalidated)
   // PUT    /session/map/background     → { dataUrl } → { hash }
   // DELETE /session/map/background     → clear the background pointer
@@ -284,6 +291,15 @@ export const userDataRoutes: FastifyPluginAsyncZod = async (server) => {
   server.put('/map/markers', { schema: { body: putMarkersBody } }, async (req, reply) => {
     try {
       const m = await maps.putMarkers(req.user!.id, req.body.markers);
+      return reply.status(200).send(m);
+    } catch (err) {
+      return handleError(reply)(err);
+    }
+  });
+
+  server.put('/map/settings', { schema: { body: putMapSettingsBody } }, async (req, reply) => {
+    try {
+      const m = await maps.setSettings(req.user!.id, req.body.settings);
       return reply.status(200).send(m);
     } catch (err) {
       return handleError(reply)(err);
