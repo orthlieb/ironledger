@@ -2,6 +2,7 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 import { readFileSync } from 'fs';
 import { execSync } from 'child_process';
+import { generate as generateMapIcons } from './scripts/build-map-icons.mjs';
 
 const { version } = JSON.parse(readFileSync('package.json', 'utf-8')) as { version: string };
 
@@ -15,8 +16,36 @@ const buildDate = (() => {
 	}
 })();
 
+/**
+ * Regenerates src/lib/generated/mapIconManifest.ts from static/map/**\/*.svg
+ * on every build and on any file change under static/map/ in dev. The
+ * generator is a no-op when the manifest is already current, so we can
+ * cheaply re-run it from a chokidar handler.
+ */
+function mapIconManifestPlugin() {
+	return {
+		name: 'ironledger:map-icon-manifest',
+		buildStart() {
+			generateMapIcons();
+		},
+		configureServer(server: {
+			watcher: { add: (p: string) => void; on: (evt: string, cb: (p: string) => void) => void };
+		}) {
+			server.watcher.add('static/map');
+			const onChange = (path: string) => {
+				if (!/[\\/]static[\\/]map[\\/]/.test(path)) return;
+				if (!path.toLowerCase().endsWith('.svg')) return;
+				generateMapIcons();
+			};
+			server.watcher.on('add', onChange);
+			server.watcher.on('unlink', onChange);
+			server.watcher.on('change', onChange);
+		},
+	};
+}
+
 export default defineConfig({
-	plugins: [sveltekit()],
+	plugins: [mapIconManifestPlugin(), sveltekit()],
 	server: {
 		port: 5173,
 		fs: {

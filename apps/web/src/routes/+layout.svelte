@@ -23,6 +23,7 @@
 	import iconDice from '$icons/dice-d10-light.svg?raw';
 	import iconNotes from '$icons/note-sticky-solid.svg?raw';
 	import { preloadDice } from '$lib/dice';
+	import { setAiDebug } from '$lib/aiSettings.svelte.js';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 	import { headingText } from '$lib/fontStore.svelte.js';
@@ -156,6 +157,15 @@
 			// ignore — don't break the app if the status endpoint is down
 		}
 	}
+
+	// AI Debug bootstrap — an admin sends a user a link like `?debug=ai` to
+	// turn on the wire-level pane in that browser; `?debug=off` clears it.
+	// Persisted in localStorage so it survives navigation without the param.
+	$effect(() => {
+		const flag = $page.url.searchParams.get('debug');
+		if (flag === 'ai') setAiDebug(true);
+		else if (flag === 'off') setAiDebug(false);
+	});
 
 	$effect(() => {
 		// Preload 3D dice library and WebGL context in the background so the

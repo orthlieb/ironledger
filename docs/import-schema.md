@@ -269,6 +269,13 @@ entities exactly instead of by name.
   identified by this payload, not by their title, so a user-chosen title still
   works.
 
+> **Story section markers are not part of the export.** The ▲ / ▼ marker ids
+> that define a live story-selection (see
+> [log.md § Story sections](log.md#story-sections-----markers)) are UI state
+> stored in `localStorage['ironledger:ai:section']`, not on the log entries. A
+> selection pinned in one browser doesn't cross-import with the log — a
+> re-imported log arrives with no markers set, ready for a fresh selection.
+
 ---
 
 ## Everything

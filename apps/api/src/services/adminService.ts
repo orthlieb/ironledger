@@ -422,7 +422,13 @@ type Timeframe = '1hr' | '1day' | '7day' | '30day';
 export async function getUserTimeseries(timeframe: Timeframe): Promise<UserTimeseries> {
   const db = requireAdminDb();
 
-  const now = new Date();
+  // Push the window end 1 ms past `Date.now()` so a user whose createdAt lands
+  // in the exact same millisecond as this query is still counted in the last
+  // bucket. Without this the half-open `[start, end)` filter drops the row
+  // (Postgres stores timestamps at microsecond precision so a fresh row can
+  // even be *after* JS's ms `now`). Deterministic bug: adminService integration
+  // test's "counts a user as new in the bucket their createdAt falls in".
+  const now = new Date(Date.now() + 1);
   let bucketCount: number;
   let bucketMs: number;
 

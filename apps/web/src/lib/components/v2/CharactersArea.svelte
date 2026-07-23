@@ -29,6 +29,7 @@
 		setPartySupply,
 	} from '$lib/characterStore.svelte.js';
 	import { setActiveDiceCtx } from '$lib/diceContext.svelte.js';
+	import { getActiveCharacterId, setActiveCharacterId } from '$lib/activeContext.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import {
 		findAsset,
@@ -170,6 +171,35 @@
 	$effect(() => {
 		if (!activeCharId && characters.length > 0) {
 			activeCharId = characters[0].id;
+		}
+	});
+
+	// Two-way sync with the module-level active-character id in activeContext
+	// so external code (the /home command bar, deep links, …) can request a
+	// character switch by id.
+	//
+	// The tricky bit: each half must only track ONE side. If Effect A tracked
+	// both `activeCharId` and `getActiveCharacterId()`, then an external
+	// setActiveCharacterId(newId) would re-fire Effect A, see activeCharId
+	// (still the old local value) !== newId, and write the STALE local id back
+	// — undoing the external change. `untrack` on the comparison read fixes it.
+	$effect(() => {
+		// Direction A: our local selection publishes out. Deps: activeCharId only.
+		if (activeCharId && activeCharId !== untrack(() => getActiveCharacterId())) {
+			setActiveCharacterId(activeCharId);
+		}
+	});
+	$effect(() => {
+		// Direction B: an external write pulls our local selection to match.
+		// Deps: getActiveCharacterId() only (via read). `characters` is also
+		// tracked so a store hydration after the external write catches up.
+		const wanted = getActiveCharacterId();
+		if (
+			wanted &&
+			wanted !== untrack(() => activeCharId) &&
+			characters.some((c) => c.id === wanted)
+		) {
+			activeCharId = wanted;
 		}
 	});
 
@@ -456,6 +486,25 @@
 		}
 	}
 
+	// Dedicated initiative applier — enforces the 0|1|2 enum at the action-bus
+	// edge so a bad value from a caller can't corrupt the field. The log line
+	// is the same shape applySet(key='initiative') emits, so switching between
+	// the two produces indistinguishable history.
+	const INITIATIVE_LABELS: Record<number, string> = { 0: 'None', 1: 'Character', 2: 'Foe' };
+	function applyInitiative(value: number) {
+		if (!activeData) return;
+		if (value !== 0 && value !== 1 && value !== 2) return;
+		const rec = activeData as unknown as Record<string, number>;
+		const old = rec.initiative ?? 0;
+		if (old !== value) {
+			rec.initiative = value;
+			appendLog(
+				charTitle('Initiative'),
+				`<div>Initiative: ${INITIATIVE_LABELS[old] ?? old} → <strong>${INITIATIVE_LABELS[value]}</strong></div>`,
+			);
+		}
+	}
+
 	// Apply a LogAction to an arbitrary character's plain data object.
 	// Used for non-active characters whose actions can't go through the
 	// activeData fast path. Cascades (floor rules, debility momentum cap,
@@ -553,6 +602,18 @@
 						: `${old} → <strong>${next}</strong>`;
 				appendLog(title(label), `<div>${label}: ${display}</div>`);
 			}
+		} else if (action.type === 'initiative') {
+			const next = action.value;
+			if (next !== 0 && next !== 1 && next !== 2) return;
+			const rec = data as unknown as Record<string, number>;
+			const old = rec.initiative ?? 0;
+			if (old !== next) {
+				rec.initiative = next;
+				appendLog(
+					title('Initiative'),
+					`<div>Initiative: ${_INITIATIVE_NAMES[old] ?? old} → <strong>${_INITIATIVE_NAMES[next]}</strong></div>`,
+				);
+			}
 		}
 	}
 
@@ -612,6 +673,7 @@
 				else if (action.type === 'debility') applyDebilityToggle(action.key, action.value);
 				else if (action.type === 'reset-track') applyResetTrack(action.key);
 				else if (action.type === 'set') applySet(action.key, action.value);
+				else if (action.type === 'initiative') applyInitiative(action.value);
 			}
 		}
 		// Non-active characters — drain their queued actions and persist.

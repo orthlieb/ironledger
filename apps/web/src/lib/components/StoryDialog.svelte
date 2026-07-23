@@ -2,17 +2,18 @@
 	/**
 	 * StoryDialog — AI prose generation flow.
 	 *
-	 * Two modes on the same dialog shell:
-	 *   • 'setup'    — opened when the user hits ● Start Story. Lets them
-	 *                  review/edit the setup instructions and model, then
-	 *                  Begin Recording (marker set on the log).
-	 *   • 'generate' — opened when the user hits ■ Stop Story. Streams the
-	 *                  prose from Claude, offers Copy / Save to Log / Discard.
+	 * Opened on the current log section (defined by two markers in sectionStore,
+	 * ⟦ start and ⟧ end). No more setup mode — the setup textarea lives at the
+	 * top of the same view, prefilled from Settings, editable per-generation.
+	 * Streams prose from the active provider, offers Try Again / Copy / Save to
+	 * Log. On save, the end marker is cleared so the section continues to
+	 * accumulate new entries for the next generation.
 	 *
 	 * External API:
-	 *   ref.openSetup()      → mode = 'setup'
-	 *   ref.openGenerate()   → mode = 'generate' (uses the captured section
-	 *                          from storyRecorder)
+	 *   ref.open()            → open on the current section
+	 *   ref.openRegenerate(id, source)
+	 *                         → re-run an existing Story entry from its stored
+	 *                           prompt, replacing the body in place
 	 */
 
 	import { headingText } from '$lib/fontStore.svelte.js';
@@ -23,10 +24,11 @@
 		hasActiveStoryteller,
 		getActiveProvider,
 		getSetup,
+		getAiDebug,
 		PROVIDER_LABEL,
 		loadAiConfig,
 	} from '$lib/aiSettings.svelte.js';
-	import { beginRecording, captureSection, cancelRecording } from '$lib/storyRecorder.svelte.js';
+	import { sectionEntries, clearSection } from '$lib/sectionStore.svelte.js';
 	import {
 		serializeLogSection,
 		estimateTokens,
@@ -53,7 +55,6 @@
 	import type { CharacterData } from '$lib/types.js';
 
 	let dialogEl = $state<HTMLDialogElement | null>(null);
-	let mode = $state<'setup' | 'generate'>('setup');
 
 	// generate mode
 	let prefaceText = $state(''); // "Cast & setting" block ('' if no context)
@@ -96,15 +97,49 @@
 	});
 	let abortCtl: AbortController | null = null;
 	let outputEl = $state<HTMLDivElement | null>(null);
+	// Diagnostic pane — wire-level info from the server, gated behind an admin-
+	// only Settings toggle so end users never see it. `debugEnabled` mirrors the
+	// admin flag (set on open); `debugOn` is the per-generation checkbox the
+	// admin actually ticks.
+	let debugEnabled = $state(false);
+	let debugOn = $state(false);
+	let debugLog = $state<string[]>([]);
 
 	function autoScroll() {
 		if (outputEl) outputEl.scrollTop = outputEl.scrollHeight;
 	}
 
-	export function openSetup() {
-		mode = 'setup';
-		errorMsg = '';
+	/** Open on the current section (defined by ⟦/⟧ markers in sectionStore). */
+	export function open() {
+		setupText = getSetup();
 		loadAiConfig();
+		const section = sectionEntries();
+		capturedCount = section.length;
+
+		// Build the optional "Cast & setting" preface from every entity the
+		// section references, so the model has narrative grounding rather than
+		// inferring identity from rolls. Whether it's sent is governed by the
+		// toggle.
+		const text = sectionText(section, document);
+		const characters = scanCharacters(section, text);
+		const foes = scanFoes(section, text);
+		const expeditions = scanExpeditions(section, text);
+		castLine = castSummary(characters, foes, expeditions);
+		prefaceText = buildStoryPreface(characters, foes, expeditions);
+		logText = serializeLogSection(section, document);
+		includePreface = getIncludePreface();
+		storyTitle = castLine || 'Story';
+
+		regenerating = false;
+		regenerateEntryId = '';
+		output = '';
+		streaming = false;
+		doneStreaming = false;
+		editingOutput = false;
+		errorMsg = '';
+		debugEnabled = getAiDebug();
+		debugOn = false;
+		debugLog = [];
 		dialogEl?.showModal();
 	}
 
@@ -170,36 +205,6 @@
 			}));
 	}
 
-	export function openGenerate() {
-		mode = 'generate';
-		setupText = getSetup();
-		loadAiConfig();
-		const section = captureSection();
-		capturedCount = section.length;
-
-		// Build the optional "Cast & setting" preface from every entity the captured
-		// section references, so the model has narrative grounding rather than
-		// inferring identity from rolls. Whether it's sent is governed by the toggle.
-		const text = sectionText(section, document);
-		const characters = scanCharacters(section, text);
-		const foes = scanFoes(section, text);
-		const expeditions = scanExpeditions(section, text);
-		castLine = castSummary(characters, foes, expeditions);
-		prefaceText = buildStoryPreface(characters, foes, expeditions);
-		logText = serializeLogSection(section, document);
-		includePreface = getIncludePreface();
-		storyTitle = castLine || 'Story';
-
-		regenerating = false;
-		regenerateEntryId = '';
-		output = '';
-		streaming = false;
-		doneStreaming = false;
-		editingOutput = false;
-		errorMsg = '';
-		dialogEl?.showModal();
-	}
-
 	/**
 	 * Re-run an existing Story entry from its persisted prompt (stored as JSON in
 	 * the entry's `source`). Reuses the generate UI but replaces the entry in
@@ -209,7 +214,6 @@
 		const parsed = parseStorySource(source);
 		if (!parsed) return; // not a regeneratable Story entry
 
-		mode = 'generate';
 		setupText = getSetup();
 		loadAiConfig();
 		regenerating = true;
@@ -227,21 +231,14 @@
 		doneStreaming = false;
 		editingOutput = false;
 		errorMsg = '';
+		debugEnabled = getAiDebug();
+		debugOn = false;
+		debugLog = [];
 		dialogEl?.showModal();
 	}
 
 	export function close() {
 		if (streaming) abortCtl?.abort();
-		dialogEl?.close();
-	}
-
-	// ── Setup actions ──────────────────────────────────────────────────────
-	function handleBegin() {
-		beginRecording();
-		dialogEl?.close();
-	}
-
-	function handleCancelSetup() {
 		dialogEl?.close();
 	}
 
@@ -263,13 +260,18 @@
 		// Snapshot the exact prompt being sent so Save can persist it for regenerate.
 		usedUser = promptText;
 		abortCtl = new AbortController();
+		if (debugOn) debugLog = [];
 		await streamStory({
 			user: promptText,
 			system: setupText,
 			signal: abortCtl.signal,
+			debug: debugOn,
 			onText: (acc) => {
 				output = acc;
 				queueMicrotask(autoScroll);
+			},
+			onDebug: (msg) => {
+				debugLog = [...debugLog, msg];
 			},
 			onDone: (acc) => {
 				output = acc;
@@ -313,24 +315,31 @@
 			updateLogEntryHtml(regenerateEntryId, html, source);
 		} else {
 			appendLog(storyTitle.trim() || 'Story', html, undefined, source);
-			cancelRecording();
+			// Drop both markers — the section has been consumed. The user pins
+			// a new ▲ whenever they want to start the next section.
+			clearSection();
 		}
 		dialogEl?.close();
 	}
 
-	function handleDiscardAndClose() {
-		// Regenerate leaves the original entry untouched and must not clear an
-		// unrelated in-progress recording.
-		if (!regenerating) cancelRecording();
-		dialogEl?.close();
+	/**
+	 * Re-run generation over the same input without closing the dialog. Lets
+	 * the user iterate on prose (both fresh generate and regenerate) until
+	 * they're happy, at which point they Save to Log or ✕ out.
+	 */
+	function handleTryAgain() {
+		output = '';
+		doneStreaming = false;
+		editingOutput = false;
+		errorMsg = '';
+		// keep debugOn as-is; handleStart resets debugLog per run
+		handleStart();
 	}
 </script>
 
 <dialog bind:this={dialogEl} class="story-dialog" oncancel={close}>
 	<DialogHeader
-		title={headingText(
-			mode === 'setup' ? 'Start Story' : regenerating ? 'Regenerate Story' : 'Generate Story',
-		)}
+		title={headingText(regenerating ? 'Regenerate Story' : 'Generate Story')}
 		onclose={close}
 	/>
 
@@ -350,104 +359,103 @@
 	{/snippet}
 
 	<div class="sd-body">
-		{#if mode === 'setup'}
-			<div class="sd-hint">
-				Starting recording marks the current top of the log. Every entry from now until <strong
-					>Stop</strong
-				> becomes the section.
-			</div>
-
-			<div class="sd-preview">
-				<div class="sd-hint">Storyteller: <strong>{storytellerLabel}</strong></div>
-				{#if !storytellerReady}
-					<div class="sd-hint sd-hint-tight">
-						Choose an AI storyteller and add a key in Settings to generate a story.
-					</div>
+		<div class="sd-preview">
+			<div>
+				{#if regenerating}
+					Regenerating from the saved prompt, ≈ {promptTokens} input tokens.
+				{:else}
+					<strong>{capturedCount}</strong>
+					{capturedCount === 1 ? 'entry' : 'entries'} captured, ≈ {promptTokens} input tokens.
 				{/if}
 			</div>
-		{:else}
-			<div class="sd-preview">
-				<div>
-					{#if regenerating}
-						Regenerating from the saved prompt, ≈ {promptTokens} input tokens.
-					{:else}
-						<strong>{capturedCount}</strong>
-						{capturedCount === 1 ? 'entry' : 'entries'} captured, ≈ {promptTokens} input tokens.
-					{/if}
-				</div>
-				<div class="sd-hint">Storyteller: <strong>{storytellerLabel}</strong></div>
-				{#if prefaceText}
-					<label class="sd-toggle">
-						<input
-							type="checkbox"
-							bind:checked={includePreface}
-							onchange={() => setIncludePreface(includePreface)}
-						/>
-						<span
-							>Include cast &amp; setting{#if castLine}:
-								<strong>{castLine}</strong>{/if}</span
-						>
-					</label>
-				{/if}
-			</div>
-
-			{#if !regenerating}
-				<label class="sd-field">
-					<span class="sd-label">Title</span>
-					<input class="sd-input" type="text" placeholder="Story title…" bind:value={storyTitle} />
-					<span class="sd-hint sd-hint-tight">Shown as the log entry's heading.</span>
+			<div class="sd-hint">Storyteller: <strong>{storytellerLabel}</strong></div>
+			{#if prefaceText}
+				<label class="sd-toggle">
+					<input
+						type="checkbox"
+						bind:checked={includePreface}
+						onchange={() => setIncludePreface(includePreface)}
+					/>
+					<span
+						>Include cast &amp; setting{#if castLine}:
+							<strong>{castLine}</strong>{/if}</span
+					>
 				</label>
 			{/if}
+		</div>
 
-			{@render setupField()}
+		{#if !regenerating}
+			<label class="sd-field">
+				<span class="sd-label">Title</span>
+				<input class="sd-input" type="text" placeholder="Story title…" bind:value={storyTitle} />
+				<span class="sd-hint sd-hint-tight">Shown as the log entry's heading.</span>
+			</label>
+		{/if}
 
-			<div class="sd-output-wrap">
-				{#if doneStreaming && output && editingOutput}
-					<textarea
-						class="sd-output sd-output-edit"
-						bind:value={output}
-						aria-label="Edit generated prose"
-					></textarea>
-				{:else}
-					<div class="sd-output" bind:this={outputEl} aria-live="polite">
-						{#if output}
-							{@html renderedOutput}
-						{:else if streaming}
-							<span class="sd-placeholder">Waiting for first tokens…</span>
-						{:else}
-							<span class="sd-placeholder">Press Start to generate.</span>
-						{/if}
-					</div>
-				{/if}
-				{#if doneStreaming && output}
-					<button
-						class="sd-edit-toggle"
-						type="button"
-						onclick={() => (editingOutput = !editingOutput)}
-					>
-						{editingOutput ? 'Preview' : 'Edit'}
-					</button>
-				{/if}
-			</div>
+		{@render setupField()}
 
-			{#if errorMsg}
-				<div class="sd-error">{errorMsg}</div>
+		<div class="sd-output-wrap">
+			{#if doneStreaming && output && editingOutput}
+				<textarea
+					class="sd-output sd-output-edit"
+					bind:value={output}
+					aria-label="Edit generated prose"
+				></textarea>
+			{:else}
+				<div class="sd-output" bind:this={outputEl} aria-live="polite">
+					{#if output}
+						{@html renderedOutput}
+					{:else if streaming}
+						<span class="sd-placeholder">Waiting for first tokens…</span>
+					{:else}
+						<span class="sd-placeholder">Press Start to generate.</span>
+					{/if}
+				</div>
+			{/if}
+			{#if doneStreaming && output}
+				<button
+					class="sd-edit-toggle"
+					type="button"
+					onclick={() => (editingOutput = !editingOutput)}
+				>
+					{editingOutput ? 'Preview' : 'Edit'}
+				</button>
+			{/if}
+		</div>
+
+		{#if errorMsg}
+			<div class="sd-error">{errorMsg}</div>
+		{/if}
+
+		<!-- Diagnostic pane — gated behind the admin-only AI Debug setting so
+			     end users never see it. Toggle on, click Start, and the server's
+			     wire-level info shows up in the pane below. -->
+		{#if debugEnabled}
+			<label class="sd-debug-toggle">
+				<input type="checkbox" bind:checked={debugOn} /> Debug
+			</label>
+			{#if debugOn && debugLog.length > 0}
+				<pre class="sd-debug-log">{debugLog.join('\n')}</pre>
 			{/if}
 		{/if}
 	</div>
 
 	<div class="sd-footer">
-		{#if mode === 'setup'}
-			<button class="btn" onclick={handleCancelSetup}>Cancel</button>
-			<button class="btn btn-primary" onclick={handleBegin}>Begin Recording</button>
-		{:else if streaming}
+		{#if streaming}
 			<button class="btn btn-danger" onclick={handleStop}>Stop</button>
 		{:else if doneStreaming}
-			<button class="btn" onclick={handleDiscardAndClose}>Discard</button>
+			<button
+				class="btn"
+				onclick={handleTryAgain}
+				disabled={!promptText.trim()}
+				title={regenerating ? 'Regenerate again' : 'Generate again'}
+				>{regenerating ? 'Regenerate' : 'Try Again'}</button
+			>
 			<button class="btn" onclick={handleCopy}>Copy</button>
-			<button class="btn btn-primary" onclick={handleSaveToLog}>Save to Log</button>
+			<button class="btn btn-primary" onclick={handleSaveToLog}
+				>{regenerating ? 'Save' : 'Save to Log'}</button
+			>
 		{:else}
-			<button class="btn" onclick={handleDiscardAndClose}>Discard</button>
 			<button class="btn btn-primary" onclick={handleStart} disabled={!promptText.trim()}
 				>Start</button
 			>
@@ -637,6 +645,32 @@
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		color: var(--color-danger, #ef4444);
+	}
+
+	.sd-debug-toggle {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		font-family: var(--font-ui);
+		font-size: 0.7rem;
+		color: var(--text-muted);
+		cursor: pointer;
+	}
+	.sd-debug-log {
+		font-family: var(--font-mono, 'Roboto Mono', ui-monospace, monospace);
+		font-size: 0.68rem;
+		line-height: 1.4;
+		color: var(--text-muted);
+		background: var(--bg-inset);
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+		padding: 6px 8px;
+		max-height: 20vh;
+		overflow: auto;
+		overscroll-behavior: contain;
+		white-space: pre-wrap;
+		word-break: break-all;
+		margin: 0;
 	}
 
 	.sd-footer {

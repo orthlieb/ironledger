@@ -53,16 +53,11 @@ export const MODELS: Record<AiProvider, ModelOption[]> = {
 		{ id: 'gpt-4o', label: 'GPT-4o', tagline: 'balanced prose' },
 	],
 	gemini: [
-		{ id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', tagline: 'cheap, fast' },
-		{ id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', tagline: 'higher quality' },
-		{ id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', tagline: 'previous gen' },
+		// Google auto-updates the `-latest` aliases as they retire specific
+		// versions, so we don't have to chase model IDs when they change.
+		{ id: 'gemini-flash-latest', label: 'Gemini Flash (latest)', tagline: 'cheap, fast' },
+		{ id: 'gemini-pro-latest', label: 'Gemini Pro (latest)', tagline: 'higher quality' },
 	],
-};
-
-export const DEFAULT_MODEL: Record<AiProvider, string> = {
-	claude: 'claude-haiku-4-5',
-	chatgpt: 'gpt-4o-mini',
-	gemini: 'gemini-2.5-flash',
 };
 
 // The default system prompt — only used internally as the fallback for the
@@ -206,4 +201,25 @@ export function setIncludePreface(v: boolean): void {
 	if (typeof window === 'undefined') return;
 	if (v) localStorage.removeItem(PREFACE_STORAGE);
 	else localStorage.setItem(PREFACE_STORAGE, 'false');
+}
+
+// ---------------------------------------------------------------------------
+// AI Debug toggle — surfaces the wire-level diagnostic pane in the Story
+// dialog. Gated behind an admin-only Settings row (so end users never see
+// it) but persisted per-browser so an admin can turn it on for their own
+// session to diagnose problems in production without a code change.
+// ---------------------------------------------------------------------------
+
+const DEBUG_STORAGE = 'ironledger:ai:debug';
+
+let _aiDebug = $state(readBool(DEBUG_STORAGE, false));
+
+export function getAiDebug(): boolean {
+	return _aiDebug;
+}
+export function setAiDebug(v: boolean): void {
+	_aiDebug = v;
+	if (typeof window === 'undefined') return;
+	if (v) localStorage.setItem(DEBUG_STORAGE, 'true');
+	else localStorage.removeItem(DEBUG_STORAGE);
 }

@@ -20,23 +20,37 @@ normalized text back.
    Setup Instructions, seeded from that default, but edits there are a
    **per-story tweak** that applies to just that generation and never write back
    to the global default.
-3. **Record** (Log toolbar → ● Story → Begin Recording): drops a marker at the
-   current top of the log. Every entry prepended until ■ Stop becomes the
-   section. The recording (active flag + marker id) is persisted to
-   `localStorage`, so a mid-recording reload or session timeout keeps the start
-   point — the marker id survives because the log is global and re-fetched, and
-   entry ids are stable.
-4. **Generate** (■ Stop opens the dialog): the captured section is serialized to
-   prompt text, an optional preface is prepended, and the prompt is streamed to
-   the active storyteller via `/api/ai/generate`. Live markdown preview.
+3. **Mark a section** (hover a log entry → ▲ / ▼, or type `/start` / `/end` in
+   the [command bar](command-bar.md)): two markers define the section — ▲ pins
+   the oldest entry included, ▼ pins the newest. Semantics:
+   - **Only ▲ set**: the section is open — it grows as new entries land at the
+     top of the log (equivalent to the old "record forward" behavior).
+   - **Both ▲ and ▼ set**: the section is a fixed range between them, inclusive.
+     The two marker ids are persisted to `localStorage` so a reload keeps the
+     selection.
+4. **Generate** (Log toolbar → Generate, or the floating strip at the bottom of
+   the log, or `/story`): the captured section is serialized to prompt text, an
+   optional preface is prepended, and the prompt is streamed to the active
+   storyteller via `/api/ai/generate`. Live markdown preview.
 5. **Edit** (after streaming): toggle **Edit** on the output box to tweak the raw
    markdown before saving; **Preview** flips back to the rendered view.
 6. **Save to Log**: the prose is stored as a Story log entry (rendered markdown
    in `html`, plus a payload in `source` — see below). You can name it first.
+   Both markers are cleared on save — the section is consumed, and the user
+   pins a fresh ▲ whenever they want to start the next one.
 7. **Regenerate** (⟳ on a Story entry): re-runs the stored prompt against the
-   active storyteller and replaces the entry in place.
+   active storyteller and replaces the entry in place. Markers are not touched
+   by regenerate (there's no new section to consume).
 8. **Export** (Hamburger → Export → Stories): writes all story entries' prose to
    `stories-<stamp>.md`.
+
+> **Mobile.** The whole selection surface (▲ / ▼ marker buttons, the Generate
+> button, and the floating strip) is hidden below `768px` (`mobile.md`'s
+> canonical breakpoint) — hover-revealed marker buttons are awkward on touch
+> and the log gets only 20% of the viewport by default (Adventure Split). The
+> underlying `sectionStore` state is untouched, so if the user pins a section
+> on desktop and then flips to mobile, the entries stay highlighted (read-only)
+> but can't be mutated until they're back on a wider screen.
 
 ## Files
 
@@ -45,13 +59,13 @@ normalized text back.
 | File                                   | Responsibility                                                                                        |
 | -------------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | `lib/aiSettings.svelte.ts`             | Server-config cache (providers, active, `hasKey`); mutations; global `setup` + `includePreface` prefs |
-| `lib/storyRecorder.svelte.ts`          | Recording state, marker, `captureSection()` — persisted to `localStorage` (survives reload/logout)    |
+| `lib/sectionStore.svelte.ts`           | Two-marker section state (▲ start id / ▼ end id); `sectionEntries()`, `toggleStart/End`, persisted    |
 | `lib/aiSerialize.ts`                   | Log → prompt text, entity scan, preface, `parseStorySource` (pure/testable)                           |
 | `lib/aiStream.ts`                      | Client SSE reader for `/api/ai/generate` (unified `{text}`/`{done}`/`{error}`)                        |
-| `lib/components/StoryDialog.svelte`    | Setup / generate / regenerate UI + orchestration + editable output box + per-story setup-prompt tweak |
+| `lib/components/StoryDialog.svelte`    | Generate / regenerate UI + orchestration + editable output box + per-story setup-prompt tweak         |
 | `lib/components/SettingsDialog.svelte` | AI Storyteller selector (None / Claude / ChatGPT / Gemini) + global Setup Instructions                |
 | `lib/components/AiConfigDialog.svelte` | Per-provider key / model / Test dialog                                                                |
-| `lib/components/LogPanel.svelte`       | ● Story toggle, ⟳ regenerate button                                                                   |
+| `lib/components/LogPanel.svelte`       | ▲ / ▼ per-entry marker buttons, section highlight, Generate button + floating strip, ⟳ regenerate     |
 | `routes/api/ai/[...path]/+server.ts`   | BFF proxy → Fastify `/api/v1/ai/*` (streams the generate SSE through)                                 |
 | `routes/home/+page.svelte`             | `storiesToMarkdown()` + the Stories export                                                            |
 
@@ -69,7 +83,7 @@ normalized text back.
 
 ## Preface — "Cast & setting"
 
-`StoryDialog.openGenerate()` scans the captured section for referenced entities
+`StoryDialog.open()` scans the current section for referenced entities
 and prepends a curated (narrative, not mechanical) preface so the model isn't
 inferring identity from dice rolls. Governed by the include toggle.
 
@@ -124,6 +138,8 @@ the ⟳ button and the stories export. See also `docs/import-schema.md`.
   preface, `parseStorySource`.
 - **E2E** (`apps/web/tests/e2e/story.spec.ts`): `/api/ai/config` and
   `/api/ai/generate` are mocked with `page.route()` + a canned unified SSE body;
-  story entries are injected via `window.__testLog.appendLog`. Covers the
-  regenerate gate, regenerate replace-in-place, record → name → generate → edit →
-  save (including the editable output box), and the Stories export.
+  story entries are injected via `window.__testLog.appendLog` and section
+  markers are set via `window.__testSection.setStart` (both exposed by
+  `hooks.client.ts`) to skip the hover-reveal on the ▲ button. Covers the
+  regenerate gate, regenerate replace-in-place, mark section → name → generate
+  → edit → save (including the editable output box), and the Stories export.

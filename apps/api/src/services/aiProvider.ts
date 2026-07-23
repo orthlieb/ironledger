@@ -13,6 +13,10 @@ export interface StreamParams {
   user: string;
   signal: AbortSignal;
   maxTokens?: number;
+  /** Optional diagnostic sink — providers call this with wire-level info the
+   *  route relays to the client as {debug:string} SSE frames. Only used when
+   *  the request body sets debug:true (a temporary switch until Gemini works). */
+  onDebug?: (msg: string) => void;
 }
 
 /**
@@ -31,7 +35,10 @@ async function* readSse(
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
-    buffer += decoder.decode(value, { stream: true });
+    // Normalize CRLF → LF. Gemini's SSE frames terminate in \r\n\r\n; if we
+    // only look for \n\n we skip every frame because \r sits between the two
+    // \n bytes. Claude and OpenAI already use LF so this is a no-op for them.
+    buffer += decoder.decode(value, { stream: true }).replace(/\r/g, '');
     let sep: number;
     while ((sep = buffer.indexOf('\n\n')) !== -1) {
       const frame = buffer.slice(0, sep);
@@ -148,6 +155,8 @@ const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 async function* streamGemini(p: StreamParams): AsyncGenerator<string> {
   const url = `${GEMINI_BASE}/${encodeURIComponent(p.model)}:streamGenerateContent?alt=sse`;
+  const dbg = p.onDebug;
+  dbg?.(`model=${p.model} maxTokens=${p.maxTokens ?? 4000}`);
   const res = await fetch(url, {
     method: 'POST',
     signal: p.signal,
@@ -158,28 +167,128 @@ async function* streamGemini(p: StreamParams): AsyncGenerator<string> {
     body: JSON.stringify({
       ...(p.system ? { systemInstruction: { parts: [{ text: p.system }] } } : {}),
       contents: [{ role: 'user', parts: [{ text: p.user }] }],
-      generationConfig: { maxOutputTokens: p.maxTokens ?? 4000 },
+      generationConfig: {
+        // 2.5-generation models have thinking on by default and draw its
+        // tokens from maxOutputTokens. Give the budget plenty of headroom so
+        // thinking + output both fit comfortably — earlier we tried disabling
+        // thinking with thinkingBudget:0 and Gemini responded by opening an
+        // empty SSE stream (200 text/event-stream, 0 frames), so we let the
+        // model decide its own thinking budget instead.
+        maxOutputTokens: p.maxTokens ?? 8000,
+      },
     }),
   });
+  dbg?.(`http ${res.status} ${res.headers.get('content-type') ?? ''}`);
   if (!res.ok) {
-    throw await errorFromResponse(
-      res,
-      (b) => (b as { error?: { message?: string } })?.error?.message,
-    );
+    // Read the body once so we can echo it to debug AND raise a useful error.
+    let bodyText = '';
+    try {
+      bodyText = await res.text();
+    } catch {
+      /* ignore */
+    }
+    dbg?.(`error body: ${bodyText.slice(0, 800)}`);
+    let msg = `HTTP ${res.status}`;
+    try {
+      const j = JSON.parse(bodyText) as { error?: { message?: string } };
+      if (j.error?.message) msg = j.error.message;
+    } catch {
+      /* keep msg */
+    }
+    throw new Error(msg);
   }
-  yield* readSse(res, (data) => {
+
+  // Track fin state so we can raise a helpful error when the stream ends with
+  // no text (safety filter, MAX_TOKENS exhaustion, blocked prompt, etc.).
+  let framesSeen = 0;
+  let textEmitted = 0;
+  let lastFinishReason = '';
+  let promptBlockReason = '';
+  // Raw-byte diagnostic: when Gemini opens a 200 stream and closes it with
+  // no frames, our frame parser is silent. Peek the first few chunks so
+  // debug output shows what actually came off the wire — SSE, NDJSON, empty.
+  let rawChunks = 0;
+  let rawTotalBytes = 0;
+  const rawSample: string[] = [];
+  const rawTap = new TransformStream<Uint8Array, Uint8Array>({
+    transform(chunk, controller) {
+      rawChunks++;
+      rawTotalBytes += chunk.byteLength;
+      if (rawChunks <= 3) {
+        const decoder = new TextDecoder();
+        rawSample.push(decoder.decode(chunk).slice(0, 400));
+      }
+      controller.enqueue(chunk);
+    },
+    flush() {
+      dbg?.(
+        `raw stream: chunks=${rawChunks} bytes=${rawTotalBytes}` +
+          (rawSample.length ? ` first=${JSON.stringify(rawSample[0])}` : ''),
+      );
+    },
+  });
+  const tapped = new Response(res.body?.pipeThrough(rawTap) ?? null, {
+    headers: res.headers,
+    status: res.status,
+  });
+
+  for await (const chunk of readSse(tapped, (data) => {
+    framesSeen++;
+    if (framesSeen <= 3) dbg?.(`frame#${framesSeen}: ${data.slice(0, 600)}`);
     let payload: {
-      candidates?: { content?: { parts?: { text?: string }[] } }[];
+      candidates?: {
+        content?: { parts?: { text?: string }[] };
+        finishReason?: string;
+        safetyRatings?: unknown;
+      }[];
+      promptFeedback?: { blockReason?: string };
       error?: { message?: string };
     };
     try {
       payload = JSON.parse(data);
-    } catch {
+    } catch (e) {
+      dbg?.(`parse error: ${(e as Error).message} on: ${data.slice(0, 200)}`);
       return null;
     }
     if (payload.error?.message) throw new Error(payload.error.message);
-    return payload.candidates?.[0]?.content?.parts?.map((x) => x.text ?? '').join('') || null;
-  });
+    if (payload.promptFeedback?.blockReason) {
+      promptBlockReason = payload.promptFeedback.blockReason;
+      dbg?.(`promptFeedback.blockReason=${promptBlockReason}`);
+    }
+    const cand = payload.candidates?.[0];
+    if (cand?.finishReason) {
+      lastFinishReason = cand.finishReason;
+      dbg?.(`finishReason=${lastFinishReason}`);
+    }
+    const text = cand?.content?.parts?.map((x) => x.text ?? '').join('') || null;
+    if (text) dbg?.(`+text ${text.length}c: ${text.slice(0, 120).replace(/\n/g, '\\n')}`);
+    return text;
+  })) {
+    textEmitted += chunk.length;
+    yield chunk;
+  }
+  dbg?.(
+    `stream end: frames=${framesSeen} textChars=${textEmitted} finish=${lastFinishReason || '(none)'}`,
+  );
+  if (textEmitted === 0) {
+    if (promptBlockReason) {
+      throw new Error(`Gemini blocked the prompt: ${promptBlockReason}.`);
+    }
+    if (lastFinishReason && lastFinishReason !== 'STOP') {
+      throw new Error(
+        `Gemini stopped with finishReason=${lastFinishReason} and produced no text. ` +
+          (lastFinishReason === 'SAFETY'
+            ? 'The safety filter rejected the response.'
+            : lastFinishReason === 'MAX_TOKENS'
+              ? 'Raise maxTokens or shorten the prompt.'
+              : ''),
+      );
+    }
+    if (framesSeen === 0) throw new Error('Gemini closed the stream with no data.');
+    throw new Error(
+      `Gemini returned ${framesSeen} frame(s) but no text (finish=${lastFinishReason || 'none'}).`,
+    );
+  }
 }
 
 /** Dispatch to the right provider's streaming generator. */

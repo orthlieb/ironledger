@@ -47,6 +47,7 @@
 	import FoePickerDialog from '$lib/components/FoePickerDialog.svelte';
 	import DenizenDialog from '$lib/components/DenizenDialog.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import MapDialog from '$lib/components/MapDialog.svelte';
 	import trashSvg from '$icons/trash-solid-full.svg?raw';
 	import checkSvg from '$icons/circle-check-solid-full.svg?raw';
 	import locationSvg from '$icons/location-dot-solid-full.svg?raw';
@@ -82,12 +83,28 @@
 	];
 
 	let activeExpId = $state<string | null>(null);
+
+	// Cross-component focus signal from the campaign map (or elsewhere) —
+	// {kind, id} where kind is journey or site. Sets the active expedition
+	// so the click-through from a map marker lands on the linked row.
+	$effect(() => {
+		const onFocus = (e: Event) => {
+			const d = (e as CustomEvent<{ kind: string; id: string }>).detail;
+			if (!d) return;
+			if (d.kind !== 'journey' && d.kind !== 'site') return;
+			activeExpId = d.id;
+			activeTab = 'core';
+		};
+		document.addEventListener('ironledger:focus-entity', onFocus);
+		return () => document.removeEventListener('ironledger:focus-entity', onFocus);
+	});
 	let activeTab = $state<ExpTab>('core');
 	let deleteDialogRef = $state<{ open(): void; close(): void } | null>(null);
 
 	// New-journey / new-site dialog state (mirrors V1 pattern).
 	let newJourneyDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let newSiteDialogRef = $state<{ open(): void; close(): void } | null>(null);
+	let mapDialogRef = $state<{ open(): void; close(): void } | null>(null);
 
 	// Site oracle roll state — gate concurrent rolls so the dice animation
 	// can complete before the next roll fires.
@@ -154,6 +171,22 @@
 	/** Mark progress on the active expedition. `marks` = number of progress marks (each worth markTicks ticks). */
 	export function applyProgress(marks: number) {
 		if (activeExp) updateExp({ ticks: Math.min(40, activeExp.ticks + marks * markTicks) });
+	}
+	/** Mark the active expedition complete. Sibling to /foe vanquish — no-op
+	 *  if already complete. */
+	export function completeActiveExpedition() {
+		if (!activeExp || activeExp.complete) return;
+		const name = activeExp.name || 'Expedition';
+		updateExp({ complete: true });
+		appendLog(`${name} — Completed`, `<div><strong>Completed.</strong></div>`);
+	}
+	/** Reactivate a completed expedition. Sibling to /foe active — no-op if
+	 *  already active. */
+	export function reactivateActiveExpedition() {
+		if (!activeExp || !activeExp.complete) return;
+		const name = activeExp.name || 'Expedition';
+		updateExp({ complete: false });
+		appendLog(`${name} — Reactivated`, `<div><strong>Reactivated.</strong></div>`);
 	}
 
 	export function openChangeThemeForExp(expId: string) {
@@ -477,6 +510,11 @@
 			<span class="ea-title">{headingText('Expeditions')}</span>
 		{/if}
 		<div class="ea-header-actions">
+			<button
+				class="btn ea-hdr-btn"
+				onclick={() => mapDialogRef?.open()}
+				use:tooltip={'Open the campaign map — paint terrain on a hex grid'}>Map</button
+			>
 			<button class="btn ea-hdr-btn" onclick={addJourney} use:tooltip={'Add journey'}
 				>+ Journey</button
 			>
@@ -963,6 +1001,10 @@
 		</div>
 	</ConfirmDialog>
 {/if}
+
+<!-- Campaign map — SVG pointy-top hex grid, painted terrain, one per user.
+     Opened from the "Map" button in the header above. -->
+<MapDialog bind:this={mapDialogRef} />
 
 <style>
 	.ea-area {
