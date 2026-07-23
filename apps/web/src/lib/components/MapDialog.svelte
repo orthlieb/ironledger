@@ -916,11 +916,14 @@
 	}
 
 	.mp-body {
-		/* Fixed height (not max-height) so the canvas has a determined size
-		   for the ResizeObserver + `<svg height:100%>` to work against. The
-		   dialog itself caps at 88vh — this fills whatever remains once the
-		   two toolbars are laid out. */
-		height: calc(88vh - 8rem);
+		/* 16:9 aspect matches a 4K (3840 × 2160) background image, so a
+		   4K upload drops in with zero letterbox. Body width tracks the
+		   dialog; height is derived. `max-height` still caps the total
+		   dialog well inside the CLAUDE.md 88vh iOS-safe budget so on a
+		   short viewport the body clamps rather than overflowing. */
+		width: 100%;
+		aspect-ratio: 16 / 9;
+		max-height: calc(88vh - 8rem);
 		overflow: hidden;
 	}
 	.mp-canvas {
