@@ -201,3 +201,11 @@ export async function clearMap(): Promise<void> {
 		mapState.error = err instanceof Error ? err.message : 'Failed to clear map';
 	}
 }
+
+/** Wipe every marker but keep the background image. Useful for resetting
+ *  legacy marker data (bare-slug `icon` values that predate the manifest)
+ *  without losing the uploaded map. Callers should confirm before invoking. */
+export async function clearMarkers(): Promise<void> {
+	mapState.markers = [];
+	await persistMarkers();
+}
