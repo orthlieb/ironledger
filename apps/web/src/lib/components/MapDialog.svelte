@@ -53,6 +53,7 @@
 		removeMarker,
 		setBackground,
 		clearMap,
+		clearMarkers,
 		hasAnyContent,
 		initMap,
 		backgroundUrl,
@@ -63,6 +64,7 @@
 
 	let dialogEl = $state<HTMLDialogElement | null>(null);
 	let clearDialogRef = $state<{ open(): void; close(): void } | null>(null);
+	let clearMarkersDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let iconDialogEl = $state<HTMLDialogElement | null>(null);
 	let fileInputEl = $state<HTMLInputElement | null>(null);
 	let showLabels = $state(true);
@@ -317,6 +319,21 @@
 	 *  Sits comfortably inside a hex without spilling into neighbours. */
 	const ICON_SIZE = 20;
 
+	/**
+	 * White stroke width in the source icon's viewBox units, computed so
+	 * the halo lands at a consistent ~1.6 px on screen no matter whether
+	 * the icon's viewBox is `0 0 24 24` or `0 0 640 640`. Paired with
+	 * `paint-order="stroke"` on the wrapping <g>, this gives every icon
+	 * the same white outline the marker labels use — readable over busy
+	 * background maps at any icon color.
+	 */
+	function iconStrokeWidth(viewBox: string): number {
+		const parts = viewBox.split(/\s+/).map(Number);
+		const w = parts[2] || 24;
+		const h = parts[3] || 24;
+		return Math.min(w, h) * 0.08;
+	}
+
 	// Derive the selected marker's icon record + color for the toolbar so
 	// the icon button always shows the current preview.
 	const selectedIcon = $derived(selectedMarker ? resolveMapIcon(selectedMarker.icon) : undefined);
@@ -352,6 +369,12 @@
 				disabled={!hasAnyContent()}
 				use:tooltip={'Download the marker list + a link to the background image as JSON'}
 				>Export JSON</button
+			>
+			<button
+				class="mp-btn mp-btn-danger"
+				onclick={() => clearMarkersDialogRef?.open()}
+				disabled={markerCount === 0}
+				use:tooltip={'Delete every marker (keeps the background image)'}>Clear markers</button
 			>
 			<button
 				class="mp-btn mp-btn-danger"
@@ -530,12 +553,34 @@
 								height={ICON_SIZE}
 								viewBox={ic.viewBox}
 							>
-								<g fill={color}>{@html ic.inner}</g>
+								<!--
+									paint-order="stroke" draws the white halo first,
+									fill on top — same trick the marker label text
+									uses (paint-order: stroke fill; stroke: var(--bg-card))
+									so the icon stays readable over any background map.
+									Stroke width computed per viewBox for a consistent
+									~1.6 px halo on screen at every icon.
+								-->
+								<g
+									fill={color}
+									stroke="#fff"
+									stroke-width={iconStrokeWidth(ic.viewBox)}
+									stroke-linejoin="round"
+									paint-order="stroke"
+								>
+									{@html ic.inner}
+								</g>
 							</svg>
 						{:else}
-							<!-- Unknown icon slug — draw a solid dot so the marker
-							     stays visible even after an icon deletion. -->
-							<circle r={ICON_SIZE / 2 - 2} fill={color} />
+							<!-- Unknown icon slug — draw a solid dot with a matching
+							     white halo so it reads over the map. -->
+							<circle
+								r={ICON_SIZE / 2 - 2}
+								fill={color}
+								stroke="#fff"
+								stroke-width="1.5"
+								paint-order="stroke"
+							/>
 						{/if}
 						{#if showLabels && m.label}
 							<text class="mp-marker-label" y={ICON_SIZE / 2 + 10}>{m.label}</text>
@@ -593,6 +638,20 @@
 		style="font-family: var(--font-ui); font-size: 0.82rem; color: var(--text-muted); margin: 0; line-height: 1.5;"
 	>
 		This will remove the background image and every marker on the map. This can't be undone.
+	</p>
+</ConfirmDialog>
+
+<ConfirmDialog
+	bind:this={clearMarkersDialogRef}
+	title="Clear All Markers?"
+	confirmLabel="Clear Markers"
+	onconfirm={clearMarkers}
+>
+	<p
+		style="font-family: var(--font-ui); font-size: 0.82rem; color: var(--text-muted); margin: 0; line-height: 1.5;"
+	>
+		This will remove every marker on the map. The background image will be kept. This can't be
+		undone.
 	</p>
 </ConfirmDialog>
 
