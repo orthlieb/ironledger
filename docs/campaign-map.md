@@ -184,18 +184,34 @@ bytes in `portrait_blobs`.
 
 ## Rendering
 
-Three SVG layers stacked in draw order inside a single `<svg>` (bound
-to `svgEl` so the PNG exporter can serialise it):
+The image is the star: it fills the canvas with a half-hex margin on
+every side and the hex grid scales to match.
 
-1. **Background `<image href="/api/session/map/background?v={hash}">`**
-   — served by the API, aspect-fit inside the same bounds as the hex
-   grid via `preserveAspectRatio="xMidYMid meet"`. Browser caches
-   forever thanks to the ETag; the `?v={hash}` cache-busts on upload.
-2. **Hex grid overlay** — every cell is one `<polygon>` with transparent
-   fill and a translucent stroke. Click handler opens the marker editor.
-3. **Marker layer** — for each marker: raw icon SVG (fill overridden to
-   `var(--text)` with a drop-shadow so it stays readable over busy
-   backgrounds) plus an optional paint-order-stroked `<text>` label.
+- **`dynamicHexSize`** — computed reactively from the canvas pixel
+  dimensions so a `MAP_COLS × MAP_ROWS` hex grid plus a half-hex
+  border fits exactly. `HEX_SIZE = min(pxW / ((MAP_COLS+1)·√3),
+pxH / ((MAP_ROWS+1)·1.5))`; the axis with slack picks up a wider
+  margin. Marker alignment survives every resize because both the
+  image and `axialToPx()` scale with the same value.
+- **viewBox = 0 0 pxW pxH** (pixel-space). One SVG user unit = one
+  CSS pixel; `preserveAspectRatio="none"` since there's nothing to
+  preserve.
+- **Layers**, drawn in order inside the single `<svg>`:
+  1. **Background `<image>`** — centered, sized
+     `MAP_COLS × MAP_ROWS` hexes at the current dynamic size,
+     `preserveAspectRatio="xMidYMid meet"` so the image itself
+     never distorts.
+  2. **Hex grid + marker group** — wrapped in a
+     `<g transform="translate(hexOffset.x, hexOffset.y)">` so axial
+     `(0, 0)` lands one half-hex inset from the image's top-left
+     corner. Cells cover the full viewBox (including negative axial
+     coords for the margin ring). Polygons + markers use
+     `axialToPx(q, r, dynamicHexSize)` and `hexPolygonPoints(x, y,
+dynamicHexSize)`.
+  3. **Marker icons** — colored fill wrapped in a `<g
+paint-order="stroke" stroke="white">` for the white halo the
+     labels use. `ICON_SIZE` scales with the hex size so markers
+     always sit comfortably inside their cell.
 
 ## Interaction
 
@@ -354,7 +370,54 @@ Tier 3:
 - **Fill / Path tools** — flood-fill regions with tint, draw roads and
   rivers as overlays.
 - **Fog of war** — paint over explored/unexplored regions.
-- **Multiple maps per campaign** — dropdown selector.
+- **Multiple maps + regions** — see the design note below.
+
+### Design note — multiple maps + regions
+
+A GM juggling a world map, a settlement map, and a dungeon map wants
+more than one canvas. Two orthogonal concerns:
+
+**Multiple maps (per user).** The bigger data-model shift.
+
+- Server: swap `user_maps` (1:1 with user, `PRIMARY KEY user_id`) for
+  a `maps` table keyed by its own id, with `user_id`, `name`,
+  `sort_order`, `background_hash`, `markers`, `updated_at`. Add a
+  `user_settings.active_map_id` pointer so the dialog knows which
+  one to open by default.
+- HTTP: `/session/map*` routes get a `mapId` path segment
+  (`/session/maps/:id/markers`, `/session/maps/:id/background`, etc.)
+  plus a `GET /session/maps` list and a `POST /session/maps` create.
+- Client: promote `mapState` from a single `$state` object to a
+  keyed cache (`Map<mapId, MapState>`), fetched lazily. Dialog
+  header grows a picker chip row (name + drag-reorder) and a
+  "+ New map" button that prompts for a name.
+- Marker coords stay per-map, so no cross-map coord drift.
+- Migration: existing single-map rows become the first map named
+  "Campaign Map"; `active_map_id` points at it. One-shot on next
+  `initMap()`.
+
+**Regions (per map).** Additive on top of whichever map model
+lands.
+
+- Two possible shapes:
+  1. A `regions: Region[]` array on each map — `{ id, name, tint,
+hexes: {q,r}[] }`. Renders as a translucent polygon overlay
+     computed from the hex-union. Simple, self-contained.
+  2. A first-class entity kind (`region`) in the connections deck,
+     linkable from markers via `entityId` the same way communities
+     are today. Enables cross-map region references, region → NPC
+     links, etc. — more powerful but much wider blast radius.
+- Recommend shape (1) first; promote to (2) only if regions want
+  to sprout their own metadata (dominions, factions, etc.).
+- UX: a "Region" toggle in the toolbar switches hex clicks from
+  "place marker" to "add to region"; a small region palette on
+  the left lists names + tints. Region hexes render as a colored
+  overlay with `mix-blend-mode: multiply` so the map still reads
+  through.
+
+Ship order I'd propose: multi-map first (unblocks the most
+common GM ask), regions second, region-as-entity third only if
+demand emerges.
 
 ## Tests
 

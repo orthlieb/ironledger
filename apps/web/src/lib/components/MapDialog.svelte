@@ -43,8 +43,8 @@
 		MAP_ICON_LIST,
 		type MapIcon,
 	} from '$lib/generated/mapIconManifest.js';
-	import { axialToPx, hexPolygonPoints, allCells } from '$lib/mapGeometry.js';
-	import { HEX_SIZE, MAP_COLS, MAP_ROWS } from '$lib/mapConstants.js';
+	import { axialToPx, hexPolygonPoints } from '$lib/mapGeometry.js';
+	import { MAP_COLS, MAP_ROWS } from '$lib/mapConstants.js';
 	import {
 		mapState,
 		markersAt,
@@ -103,15 +103,17 @@
 	}
 
 	/**
-	 * Grid dimensions track the canvas viewport so hexes cover the whole
-	 * visible area at any dialog size. HEX_SIZE stays fixed — the cell
-	 * COUNT grows/shrinks to fill. Reasonable initial guesses cover the
-	 * first paint before the ResizeObserver has fired.
+	 * Sizing model: the background image is the star. We fix its aspect
+	 * to a canonical MAP_COLS × MAP_ROWS at the current dynamic hex size,
+	 * then scale that hex size so the image fills the canvas with at
+	 * least a half-hex margin on every side. Whichever axis has extra
+	 * space beyond the minimum gets more margin — either way the hex
+	 * grid fills the entire canvas.
 	 *
-	 * Markers reference absolute (q, r) coordinates independent of grid
-	 * bounds, so shrinking the grid never hides a marker (it just becomes
-	 * unclickable via a hex — the marker itself still renders at its
-	 * axial pixel position).
+	 * Marker alignment: `axialToPx(q, r, dynamicHexSize)` uses the same
+	 * hex size the image scales to, so a marker at axial (3, 2) always
+	 * lands on the same pixel of the image regardless of dialog size or
+	 * device.
 	 */
 	let canvasPxW = $state(800);
 	let canvasPxH = $state(560);
@@ -129,56 +131,91 @@
 		return () => ro.disconnect();
 	});
 
-	const gridDims = $derived.by(() => {
-		// Pointy-top hex spacing in pixels at HEX_SIZE.
-		const hexW = Math.sqrt(3) * HEX_SIZE;
-		const hexH = 1.5 * HEX_SIZE;
-		// Round up: we'd rather overfill (slice clips a sliver at the edge)
-		// than underfill (leaving a bare band before the first row of hexes).
-		const cols = Math.max(6, Math.ceil(canvasPxW / hexW) + 1);
-		const rows = Math.max(4, Math.ceil(canvasPxH / hexH) + 1);
-		return { cols, rows };
+	/**
+	 * Dynamic hex size in SVG user units (= canvas pixels since viewBox
+	 * is pixel-space). Chosen so a MAP_COLS × MAP_ROWS hex grid plus a
+	 * half-hex margin on every side fits the canvas — max size while
+	 * respecting the minimum border.
+	 *
+	 * Solve for s in:
+	 *   canvasPxW ≥ (MAP_COLS + 1) · √3 · s  →  s ≤ pxW / ((MAP_COLS+1)√3)
+	 *   canvasPxH ≥ (MAP_ROWS + 1) · 1.5 · s →  s ≤ pxH / ((MAP_ROWS+1)·1.5)
+	 * Take the min so both constraints hold; the other axis has extra.
+	 */
+	const dynamicHexSize = $derived.by(() => {
+		const sW = canvasPxW / (Math.sqrt(3) * (MAP_COLS + 1));
+		const sH = canvasPxH / (1.5 * (MAP_ROWS + 1));
+		return Math.max(1, Math.min(sW, sH));
 	});
 
-	const cells = $derived([...allCells(gridDims.cols, gridDims.rows)]);
+	/**
+	 * viewBox is pixel-space matching the canvas — 1:1 mapping between
+	 * SVG user units and CSS pixels. No aspect-ratio letterbox because
+	 * viewBox == canvas exactly on every resize.
+	 */
+	const vb = $derived({ x: 0, y: 0, w: canvasPxW, h: canvasPxH });
 
 	/**
-	 * viewBox that hugs the grid — no outer padding. `mapViewBox` adds a
-	 * one-hex margin on every side; we deliberately override to 0 so the
-	 * combination of `preserveAspectRatio="…slice"` + this viewBox fills
-	 * the entire canvas with drawn hexes (no bare band around the edge).
-	 * The `-HEX_SIZE` offsets on x/y let the top row's top vertex peek in
-	 * from above so row 0 doesn't render as half a hex.
+	 * Background image rectangle, centered in the canvas. Its size is
+	 * `MAP_COLS × MAP_ROWS` hexes at the current dynamic hex size, so a
+	 * marker at axial (q, r) is always at the same fraction of the image
+	 * regardless of dialog size — image scales with the hexes.
 	 */
-	const vb = $derived.by(() => {
-		const hexW = Math.sqrt(3) * HEX_SIZE;
+	const imageBounds = $derived.by(() => {
+		const s = dynamicHexSize;
+		const w = MAP_COLS * Math.sqrt(3) * s;
+		const h = MAP_ROWS * 1.5 * s;
 		return {
-			x: -hexW / 2,
-			y: -HEX_SIZE,
-			w: gridDims.cols * hexW,
-			h: gridDims.rows * 1.5 * HEX_SIZE + HEX_SIZE / 2,
+			x: (canvasPxW - w) / 2,
+			y: (canvasPxH - h) / 2,
+			w,
+			h,
 		};
 	});
 
 	/**
-	 * Background image rectangle. Pinned to a canonical MAP_COLS × MAP_ROWS
-	 * area centered on the axial origin — CRITICAL for marker alignment.
-	 * The outer `vb` grows/shrinks with the container aspect and device,
-	 * but the image bounds stay put, so a marker at axial `(q, r)` always
-	 * lands on the same feature of the image regardless of dialog size or
-	 * whether the user is on desktop or mobile. Extra hexes surround the
-	 * image; the image itself never scales relative to the grid.
+	 * Pixel offset applied to the hex grid group so axial (0, 0) — the
+	 * pixel that axialToPx(0, 0) reports as (0, 0) — lands one-half-hex
+	 * inset from the image's top-left corner. Every marker's axial
+	 * position then falls on the image at the same fraction, no matter
+	 * how the canvas resizes.
 	 */
-	const imageBounds = (() => {
-		const hexW = Math.sqrt(3) * HEX_SIZE;
-		const hexH = 1.5 * HEX_SIZE;
+	const hexOffset = $derived.by(() => {
+		const s = dynamicHexSize;
 		return {
-			x: -hexW / 2,
-			y: -HEX_SIZE,
-			w: MAP_COLS * hexW,
-			h: MAP_ROWS * hexH + HEX_SIZE / 2,
+			x: imageBounds.x + (Math.sqrt(3) * s) / 2,
+			y: imageBounds.y + s,
 		};
-	})();
+	});
+
+	/**
+	 * Enough cells to cover the entire viewBox — including negative
+	 * axial coords for the margin around the image. `allCells` starts
+	 * at (0, 0) so we can't reuse it; iterate a computed range instead
+	 * with the same per-row q-offset that keeps rectangle sides straight.
+	 */
+	const cells = $derived.by(() => {
+		const s = dynamicHexSize;
+		const hexW = Math.sqrt(3) * s;
+		const hexH = 1.5 * s;
+		// Extra rings of hexes to cover the image-to-canvas margin area
+		// (image is centered, so both sides need equal border coverage).
+		const marginCols = Math.ceil(imageBounds.x / hexW) + 1;
+		const marginRows = Math.ceil(imageBounds.y / hexH) + 1;
+		const colStart = -marginCols;
+		const colEnd = MAP_COLS + marginCols;
+		const rowStart = -marginRows;
+		const rowEnd = MAP_ROWS + marginRows;
+		const out: { q: number; r: number }[] = [];
+		for (let r = rowStart; r < rowEnd; r++) {
+			const offset = Math.floor(r / 2);
+			for (let q = colStart - offset; q < colEnd - offset; q++) {
+				out.push({ q, r });
+			}
+		}
+		return out;
+	});
+
 	const markerCount = $derived(mapState.markers.length);
 
 	/**
@@ -315,9 +352,11 @@
 		fileInputEl?.click();
 	}
 
-	/** Cached icon size in SVG user units — pixel size the icon renders at.
-	 *  Sits comfortably inside a hex without spilling into neighbours. */
-	const ICON_SIZE = 20;
+	/** Icon size in SVG user units — scales with the dynamic hex so the
+	 *  icon always sits comfortably inside a hex without spilling into
+	 *  neighbours. ~91% of hex radius keeps the same visual weight as the
+	 *  old fixed 20-unit icon at HEX_SIZE=22. */
+	const ICON_SIZE = $derived(dynamicHexSize * (20 / 22));
 
 	/**
 	 * White stroke width in the source icon's viewBox units, computed so
@@ -489,18 +528,16 @@
 	<div class="mp-body">
 		<div class="mp-canvas" bind:this={canvasEl}>
 			<!--
-				`slice` (not `meet`) on the outer SVG: the ResizeObserver-driven
-				gridDims produce a viewBox that's ~within a hex of the container
-				aspect, but not byte-perfect. `meet` would render the sliver
-				difference as a cream letterbox strip; `slice` scales to fill
-				and clips only the hex-margin overflow (which is intentional
-				padding anyway). Hexes now truly cover the whole canvas.
-				The inner <image> keeps `meet` so the map itself never distorts.
+				viewBox is pixel-space matching the canvas exactly (updated
+				reactively from the ResizeObserver). 1 user unit = 1 CSS
+				pixel, so there's nothing for preserveAspectRatio to do —
+				the dynamicHexSize handles the "image fills, grid follows"
+				layout in pixel space directly.
 			-->
 			<svg
 				bind:this={svgEl}
 				viewBox="{vb.x} {vb.y} {vb.w} {vb.h}"
-				preserveAspectRatio="xMidYMid slice"
+				preserveAspectRatio="none"
 				aria-label="Campaign map"
 			>
 				{#if mapState.backgroundHash}
@@ -522,71 +559,74 @@
 					/>
 				{/if}
 
-				{#each cells as { q, r } (`${q},${r}`)}
-					{@const px = axialToPx(q, r)}
-					<!-- svelte-ignore a11y_click_events_have_key_events -->
-					<polygon
-						class="mp-hex"
-						points={hexPolygonPoints(px.x, px.y)}
-						onclick={(ev) => onHexClick(q, r, ev)}
-						role="button"
-						tabindex="-1"
-						aria-label={`Hex ${q}, ${r}`}
-					></polygon>
-				{/each}
+				<!--
+					Hex + marker group translated so axial (0, 0) lands on the
+					image's first hex — image and hexes scale together via
+					dynamicHexSize, so marker positions stay aligned with map
+					features at any dialog size.
+				-->
+				<g transform="translate({hexOffset.x} {hexOffset.y})">
+					{#each cells as { q, r } (`${q},${r}`)}
+						{@const px = axialToPx(q, r, dynamicHexSize)}
+						<!-- svelte-ignore a11y_click_events_have_key_events -->
+						<polygon
+							class="mp-hex"
+							points={hexPolygonPoints(px.x, px.y, dynamicHexSize)}
+							onclick={(ev) => onHexClick(q, r, ev)}
+							role="button"
+							tabindex="-1"
+							aria-label={`Hex ${q}, ${r}`}
+						></polygon>
+					{/each}
 
-				{#each mapState.markers as m (m.id)}
-					{@const px = axialToPx(m.q, m.r)}
-					{@const ic = resolveMapIcon(m.icon)}
-					{@const color = m.color || DEFAULT_MARKER_COLOR}
-					<g
-						class="mp-marker"
-						class:mp-marker-selected={m.id === selectedMarkerId}
-						transform="translate({px.x} {px.y})"
-					>
-						{#if ic}
-							<svg
-								class="mp-marker-icon"
-								x={-ICON_SIZE / 2}
-								y={-ICON_SIZE / 2}
-								width={ICON_SIZE}
-								height={ICON_SIZE}
-								viewBox={ic.viewBox}
-							>
-								<!--
-									paint-order="stroke" draws the white halo first,
-									fill on top — same trick the marker label text
-									uses (paint-order: stroke fill; stroke: var(--bg-card))
-									so the icon stays readable over any background map.
-									Stroke width computed per viewBox for a consistent
-									~1.6 px halo on screen at every icon.
-								-->
-								<g
+					{#each mapState.markers as m (m.id)}
+						{@const px = axialToPx(m.q, m.r, dynamicHexSize)}
+						{@const ic = resolveMapIcon(m.icon)}
+						{@const color = m.color || DEFAULT_MARKER_COLOR}
+						<g
+							class="mp-marker"
+							class:mp-marker-selected={m.id === selectedMarkerId}
+							transform="translate({px.x} {px.y})"
+						>
+							{#if ic}
+								<svg
+									class="mp-marker-icon"
+									x={-ICON_SIZE / 2}
+									y={-ICON_SIZE / 2}
+									width={ICON_SIZE}
+									height={ICON_SIZE}
+									viewBox={ic.viewBox}
+								>
+									<!--
+										paint-order="stroke" draws the white halo first,
+										fill on top — same trick the marker label text uses
+										so the icon stays readable over any background map.
+									-->
+									<g
+										fill={color}
+										stroke="#fff"
+										stroke-width={iconStrokeWidth(ic.viewBox)}
+										stroke-linejoin="round"
+										paint-order="stroke"
+									>
+										{@html ic.inner}
+									</g>
+								</svg>
+							{:else}
+								<circle
+									r={ICON_SIZE / 2 - 2}
 									fill={color}
 									stroke="#fff"
-									stroke-width={iconStrokeWidth(ic.viewBox)}
-									stroke-linejoin="round"
+									stroke-width="1.5"
 									paint-order="stroke"
-								>
-									{@html ic.inner}
-								</g>
-							</svg>
-						{:else}
-							<!-- Unknown icon slug — draw a solid dot with a matching
-							     white halo so it reads over the map. -->
-							<circle
-								r={ICON_SIZE / 2 - 2}
-								fill={color}
-								stroke="#fff"
-								stroke-width="1.5"
-								paint-order="stroke"
-							/>
-						{/if}
-						{#if showLabels && m.label}
-							<text class="mp-marker-label" y={ICON_SIZE / 2 + 10}>{m.label}</text>
-						{/if}
-					</g>
-				{/each}
+								/>
+							{/if}
+							{#if showLabels && m.label}
+								<text class="mp-marker-label" y={ICON_SIZE / 2 + 10}>{m.label}</text>
+							{/if}
+						</g>
+					{/each}
+				</g>
 			</svg>
 		</div>
 	</div>
