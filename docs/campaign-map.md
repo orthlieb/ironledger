@@ -354,7 +354,54 @@ Tier 3:
 - **Fill / Path tools** — flood-fill regions with tint, draw roads and
   rivers as overlays.
 - **Fog of war** — paint over explored/unexplored regions.
-- **Multiple maps per campaign** — dropdown selector.
+- **Multiple maps + regions** — see the design note below.
+
+### Design note — multiple maps + regions
+
+A GM juggling a world map, a settlement map, and a dungeon map wants
+more than one canvas. Two orthogonal concerns:
+
+**Multiple maps (per user).** The bigger data-model shift.
+
+- Server: swap `user_maps` (1:1 with user, `PRIMARY KEY user_id`) for
+  a `maps` table keyed by its own id, with `user_id`, `name`,
+  `sort_order`, `background_hash`, `markers`, `updated_at`. Add a
+  `user_settings.active_map_id` pointer so the dialog knows which
+  one to open by default.
+- HTTP: `/session/map*` routes get a `mapId` path segment
+  (`/session/maps/:id/markers`, `/session/maps/:id/background`, etc.)
+  plus a `GET /session/maps` list and a `POST /session/maps` create.
+- Client: promote `mapState` from a single `$state` object to a
+  keyed cache (`Map<mapId, MapState>`), fetched lazily. Dialog
+  header grows a picker chip row (name + drag-reorder) and a
+  "+ New map" button that prompts for a name.
+- Marker coords stay per-map, so no cross-map coord drift.
+- Migration: existing single-map rows become the first map named
+  "Campaign Map"; `active_map_id` points at it. One-shot on next
+  `initMap()`.
+
+**Regions (per map).** Additive on top of whichever map model
+lands.
+
+- Two possible shapes:
+  1. A `regions: Region[]` array on each map — `{ id, name, tint,
+hexes: {q,r}[] }`. Renders as a translucent polygon overlay
+     computed from the hex-union. Simple, self-contained.
+  2. A first-class entity kind (`region`) in the connections deck,
+     linkable from markers via `entityId` the same way communities
+     are today. Enables cross-map region references, region → NPC
+     links, etc. — more powerful but much wider blast radius.
+- Recommend shape (1) first; promote to (2) only if regions want
+  to sprout their own metadata (dominions, factions, etc.).
+- UX: a "Region" toggle in the toolbar switches hex clicks from
+  "place marker" to "add to region"; a small region palette on
+  the left lists names + tints. Region hexes render as a colored
+  overlay with `mix-blend-mode: multiply` so the map still reads
+  through.
+
+Ship order I'd propose: multi-map first (unblocks the most
+common GM ask), regions second, region-as-entity third only if
+demand emerges.
 
 ## Tests
 
