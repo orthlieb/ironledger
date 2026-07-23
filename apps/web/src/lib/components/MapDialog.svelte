@@ -31,6 +31,9 @@
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import DialogHeader from './DialogHeader.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
+	import MapOptionsDialog from './MapOptionsDialog.svelte';
+	import { mapSettings, persistMapSettings } from '$lib/mapSettingsStore.svelte.js';
+	import iconTrashSvg from '$icons/trash-solid-full.svg?raw';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import {
 		DEFAULT_MARKER_COLOR,
@@ -65,6 +68,7 @@
 	let dialogEl = $state<HTMLDialogElement | null>(null);
 	let clearDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let clearMarkersDialogRef = $state<{ open(): void; close(): void } | null>(null);
+	let optionsDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let iconDialogEl = $state<HTMLDialogElement | null>(null);
 	let fileInputEl = $state<HTMLInputElement | null>(null);
 	let showLabels = $state(true);
@@ -219,6 +223,59 @@
 	const markerCount = $derived(mapState.markers.length);
 
 	/**
+	 * Scale + border overlay geometry — computed in pixel-space (viewBox
+	 * matches the canvas 1:1) so both stay locked to the visible view at
+	 * any dialog size. Border segments are aligned to hex column/row
+	 * boundaries per the user's spec: the pattern rolls in step with the
+	 * hex grid, not the canvas edge.
+	 */
+	const overlayGeom = $derived.by(() => {
+		const s = dynamicHexSize;
+		const hexW = Math.sqrt(3) * s;
+		const hexH = 1.5 * s;
+		const bT = Math.max(6, Math.round(s * 0.35)); // border thickness in px
+
+		// Left vertex of q=0 hex on row 0 — anchor point for horizontal tiling.
+		const xAnchor = hexOffset.x - hexW / 2;
+		// Top vertex of r=0 hex — anchor for vertical tiling.
+		const yAnchor = hexOffset.y - s;
+		const xStart = (((xAnchor % hexW) + hexW) % hexW) - hexW; // ∈ [-hexW, 0)
+		const yStart = (((yAnchor % hexH) + hexH) % hexH) - hexH;
+		const xCount = Math.ceil((canvasPxW - xStart) / hexW) + 1;
+		const yCount = Math.ceil((canvasPxH - yStart) / hexH) + 1;
+
+		// Scale bar geometry — bottom-left, above the border row.
+		const sb = mapState.settings.scale ?? {};
+		const sbEnabled = sb.enabled === true;
+		const sbSegments = sb.segments ?? 4;
+		const sbPerHex = sb.perHex ?? 5;
+		const sbUnit = sb.unit ?? 'miles';
+		const sbSegW = hexW;
+		const sbTotalW = sbSegments * sbSegW;
+		const sbH = Math.max(5, Math.round(s * 0.3));
+		const sbBottomMargin = 24 + bT;
+		const sbLeftMargin = 20 + bT;
+		return {
+			hexW,
+			hexH,
+			bT,
+			xStart,
+			yStart,
+			xCount,
+			yCount,
+			sbEnabled,
+			sbSegments,
+			sbPerHex,
+			sbUnit,
+			sbSegW,
+			sbTotalW,
+			sbH,
+			sbX: sbLeftMargin,
+			sbY: canvasPxH - sbBottomMargin - sbH,
+		};
+	});
+
+	/**
 	 * Hex click. Bare click on a linked marker jumps to that entity and
 	 * closes the map. Shift+click always selects for editing — a modifier
 	 * lets the user edit a linked marker without triggering the jump.
@@ -348,6 +405,11 @@
 		}
 	}
 
+	function onHexToggle(e: Event) {
+		mapSettings.hexes.visible = (e.target as HTMLInputElement).checked;
+		persistMapSettings();
+	}
+
 	function triggerUpload() {
 		fileInputEl?.click();
 	}
@@ -392,6 +454,15 @@
 			<label class="mp-toggle" use:tooltip={'Show or hide marker labels'}>
 				<input type="checkbox" bind:checked={showLabels} /> Names
 			</label>
+			<label class="mp-toggle" use:tooltip={'Show or hide the hex grid outlines'}>
+				<input type="checkbox" checked={mapSettings.hexes.visible} onchange={onHexToggle} /> Hexes
+			</label>
+			<button
+				class="mp-btn"
+				onclick={() => optionsDialogRef?.open()}
+				use:tooltip={'Map options — scale + border'}
+				aria-label="Map options">Options</button
+			>
 		</div>
 		<div class="mp-tools">
 			<span class="mp-count">{markerCount} marker{markerCount === 1 ? '' : 's'}</span>
@@ -496,10 +567,10 @@
 				{/each}
 			</select>
 			<button
-				class="mp-btn mp-btn-danger"
+				class="mp-btn mp-btn-danger mp-btn-icon"
 				onclick={deleteSelected}
 				use:tooltip={'Delete this marker'}
-				aria-label="Delete marker">Delete</button
+				aria-label="Delete marker">{@html iconTrashSvg}</button
 			>
 			<button
 				class="mp-btn"
@@ -566,18 +637,20 @@
 					features at any dialog size.
 				-->
 				<g transform="translate({hexOffset.x} {hexOffset.y})">
-					{#each cells as { q, r } (`${q},${r}`)}
-						{@const px = axialToPx(q, r, dynamicHexSize)}
-						<!-- svelte-ignore a11y_click_events_have_key_events -->
-						<polygon
-							class="mp-hex"
-							points={hexPolygonPoints(px.x, px.y, dynamicHexSize)}
-							onclick={(ev) => onHexClick(q, r, ev)}
-							role="button"
-							tabindex="-1"
-							aria-label={`Hex ${q}, ${r}`}
-						></polygon>
-					{/each}
+					<g class="mp-hex-layer" class:mp-hex-layer-hidden={!mapSettings.hexes.visible}>
+						{#each cells as { q, r } (`${q},${r}`)}
+							{@const px = axialToPx(q, r, dynamicHexSize)}
+							<!-- svelte-ignore a11y_click_events_have_key_events -->
+							<polygon
+								class="mp-hex"
+								points={hexPolygonPoints(px.x, px.y, dynamicHexSize)}
+								onclick={(ev) => onHexClick(q, r, ev)}
+								role="button"
+								tabindex="-1"
+								aria-label={`Hex ${q}, ${r}`}
+							></polygon>
+						{/each}
+					</g>
 
 					{#each mapState.markers as m (m.id)}
 						{@const px = axialToPx(m.q, m.r, dynamicHexSize)}
@@ -627,10 +700,100 @@
 						</g>
 					{/each}
 				</g>
+				<!--
+					Checkered border — locked to the visible view (canvas edges),
+					aligned to hex column/row starts so segments tile in step
+					with the underlying grid.
+				-->
+				{#if mapSettings.border.enabled}
+					<g class="mp-border" aria-hidden="true">
+						{#each Array(overlayGeom.xCount) as _, i (`bt-${i}`)}
+							<rect
+								x={overlayGeom.xStart + i * overlayGeom.hexW}
+								y="0"
+								width={overlayGeom.hexW}
+								height={overlayGeom.bT}
+								fill={i % 2 === 0 ? '#111' : '#fff'}
+								stroke="#111"
+								stroke-width="0.5"
+							/>
+						{/each}
+						{#each Array(overlayGeom.xCount) as _, i (`bb-${i}`)}
+							<rect
+								x={overlayGeom.xStart + i * overlayGeom.hexW}
+								y={canvasPxH - overlayGeom.bT}
+								width={overlayGeom.hexW}
+								height={overlayGeom.bT}
+								fill={i % 2 === 0 ? '#fff' : '#111'}
+								stroke="#111"
+								stroke-width="0.5"
+							/>
+						{/each}
+						{#each Array(overlayGeom.yCount) as _, i (`bl-${i}`)}
+							<rect
+								x="0"
+								y={overlayGeom.yStart + i * overlayGeom.hexH}
+								width={overlayGeom.bT}
+								height={overlayGeom.hexH}
+								fill={i % 2 === 0 ? '#111' : '#fff'}
+								stroke="#111"
+								stroke-width="0.5"
+							/>
+						{/each}
+						{#each Array(overlayGeom.yCount) as _, i (`br-${i}`)}
+							<rect
+								x={canvasPxW - overlayGeom.bT}
+								y={overlayGeom.yStart + i * overlayGeom.hexH}
+								width={overlayGeom.bT}
+								height={overlayGeom.hexH}
+								fill={i % 2 === 0 ? '#fff' : '#111'}
+								stroke="#111"
+								stroke-width="0.5"
+							/>
+						{/each}
+					</g>
+				{/if}
+
+				<!--
+					Scale bar — one segment = one hex width, positioned
+					bottom-left inside the border.
+				-->
+				{#if overlayGeom.sbEnabled}
+					<g
+						class="mp-scale"
+						transform="translate({overlayGeom.sbX} {overlayGeom.sbY})"
+						aria-hidden="true"
+					>
+						{#each Array(overlayGeom.sbSegments) as _, i (`ss-${i}`)}
+							<rect
+								x={i * overlayGeom.sbSegW}
+								y="0"
+								width={overlayGeom.sbSegW}
+								height={overlayGeom.sbH}
+								fill={i % 2 === 0 ? '#111' : '#fff'}
+								stroke="#111"
+								stroke-width="0.75"
+							/>
+						{/each}
+						{#each Array(overlayGeom.sbSegments + 1) as _, i (`st-${i}`)}
+							<text class="mp-scale-tick" x={i * overlayGeom.sbSegW} y={-4} text-anchor="middle"
+								>{i * overlayGeom.sbPerHex}</text
+							>
+						{/each}
+						<text
+							class="mp-scale-unit"
+							x={overlayGeom.sbTotalW / 2}
+							y={overlayGeom.sbH + 12}
+							text-anchor="middle">{overlayGeom.sbUnit === 'miles' ? 'MILES' : 'KM'}</text
+						>
+					</g>
+				{/if}
 			</svg>
 		</div>
 	</div>
 </dialog>
+
+<MapOptionsDialog bind:this={optionsDialogRef} />
 
 <!--
 	Icon picker — nested modal that lists every manifest icon grouped by
@@ -773,6 +936,22 @@
 	.mp-btn:disabled {
 		opacity: 0.4;
 		cursor: default;
+	}
+	/* Icon-only button variant — trash-can Delete in the selection
+	   toolbar. Matches the height of the other .mp-btn buttons so the
+	   toolbar row aligns cleanly. */
+	.mp-btn-icon {
+		padding: 4px 8px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+	.mp-btn-icon :global(svg) {
+		width: 14px;
+		height: 14px;
+	}
+	.mp-btn-icon :global(svg path) {
+		fill: currentColor;
 	}
 	.mp-btn-danger:not(:disabled):hover {
 		color: var(--color-danger, #ef4444);
@@ -954,6 +1133,45 @@
 	.mp-hex:hover {
 		stroke: var(--text-accent);
 		stroke-width: 1.5;
+	}
+	/* "Show hex grid" toggle off — outlines vanish but hexes stay
+	   clickable (pointer-events still on), and hover still highlights
+	   so marker-placement remains discoverable. */
+	.mp-hex-layer-hidden .mp-hex {
+		stroke: transparent;
+	}
+	.mp-hex-layer-hidden .mp-hex:hover {
+		stroke: var(--text-accent);
+	}
+
+	/* Scale bar overlay — parchment-style black-and-white with a soft
+	   drop-shadow so it reads over both light and dark map images. */
+	.mp-scale-tick {
+		font-family: var(--font-ui);
+		font-size: 9px;
+		font-weight: 600;
+		fill: #111;
+		paint-order: stroke fill;
+		stroke: #fff;
+		stroke-width: 2.5px;
+		stroke-linejoin: round;
+	}
+	.mp-scale-unit {
+		font-family: var(--font-ui);
+		font-size: 8px;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		fill: #111;
+		paint-order: stroke fill;
+		stroke: #fff;
+		stroke-width: 2.5px;
+		stroke-linejoin: round;
+	}
+	:global(.mp-scale rect) {
+		filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
+	}
+	:global(.mp-border rect) {
+		shape-rendering: crispEdges;
 	}
 	/* Suppress the default focus rectangle browsers draw around a
 	   role="button" polygon after click — the hover-stroke already

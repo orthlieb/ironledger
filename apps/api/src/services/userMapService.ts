@@ -24,15 +24,27 @@ export interface MapMarker {
   entityId?: string;
 }
 
+/** Free-form per-map settings JSONB. Client owns the shape (see
+ *  `apps/web/src/lib/mapStore.svelte.ts::MapServerSettings`). Kept typed as
+ *  `Record<string, unknown>` here so the server doesn't couple to the
+ *  client's evolving shape. */
+export type MapSettingsBlob = Record<string, unknown>;
+
 export interface UserMap {
   markers: MapMarker[];
   /** md5 hash of the background image bytes, or null when no image is set.
    *  Client uses this as the cache-buster in <img src=".../background?v=hash">. */
   backgroundHash: string | null;
+  settings: MapSettingsBlob;
   updatedAt: string; // ISO
 }
 
-const EMPTY: UserMap = { markers: [], backgroundHash: null, updatedAt: new Date(0).toISOString() };
+const EMPTY: UserMap = {
+  markers: [],
+  backgroundHash: null,
+  settings: {},
+  updatedAt: new Date(0).toISOString(),
+};
 
 /** Fetch the caller's map. Returns EMPTY when the user has no row yet — GETs
  *  never 404 for the map endpoint, matching how getSessionState behaves. */
@@ -41,9 +53,10 @@ export async function getMap(userId: string): Promise<UserMap> {
     const rows = await tx.execute<{
       markers: MapMarker[];
       background_hash: string | null;
+      settings: MapSettingsBlob | null;
       updated_at: Date;
     }>(sql`
-      SELECT markers, background_hash, updated_at
+      SELECT markers, background_hash, settings, updated_at
       FROM user_maps
       WHERE user_id = ${userId}::uuid
       LIMIT 1
@@ -55,8 +68,24 @@ export async function getMap(userId: string): Promise<UserMap> {
     return {
       markers: Array.isArray(row.markers) ? row.markers : [],
       backgroundHash: row.background_hash,
+      settings: row.settings && typeof row.settings === 'object' ? row.settings : {},
       updatedAt: new Date(row.updated_at).toISOString(),
     };
+  });
+}
+
+/** Replace the settings blob wholesale. Client always sends its full
+ *  desired settings object; the server stores it verbatim so the schema
+ *  can evolve without server code changes. Upserts the row if missing. */
+export async function setSettings(userId: string, settings: MapSettingsBlob): Promise<UserMap> {
+  return withUserContext(userId, async (tx) => {
+    await tx.execute(sql`
+      INSERT INTO user_maps (user_id, settings, updated_at)
+      VALUES (${userId}::uuid, ${JSON.stringify(settings)}::jsonb, now())
+      ON CONFLICT (user_id) DO UPDATE
+        SET settings = EXCLUDED.settings, updated_at = now()
+    `);
+    return getMap(userId);
   });
 }
 
