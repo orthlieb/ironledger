@@ -26,28 +26,43 @@ export const MAP_ROWS = 15;
  *  before the background image is fitted. */
 export const HEX_SIZE = 22;
 
-/** Default icon assigned to a newly-placed marker. Falls back to any
- *  available manifest entry so tests + first-run don't crash if the
- *  preferred slug is missing. */
+/** Default icon assigned to a newly-placed marker. A solid dot inside a
+ *  ring — the map-annotation convention for "a spot" that reads at any
+ *  size. Falls back to any available manifest entry so tests + first-run
+ *  don't crash if the preferred slug is missing. */
 export const DEFAULT_MARKER_ICON: string =
-	MAP_ICONS['travel/marker']?.slug != null
-		? 'travel/marker'
-		: MAP_ICON_LIST[0]?.category != null
-			? `${MAP_ICON_LIST[0].category}/${MAP_ICON_LIST[0].slug}`
-			: 'misc/marker';
+	MAP_ICONS['position/circle-dot-solid']?.slug != null
+		? 'position/circle-dot-solid'
+		: MAP_ICONS['travel/marker']?.slug != null
+			? 'travel/marker'
+			: MAP_ICON_LIST[0]?.category != null
+				? `${MAP_ICON_LIST[0].category}/${MAP_ICON_LIST[0].slug}`
+				: 'misc/marker';
 
-/** Default marker color — same warm amber the rest of the sheet uses for
- *  accent chrome. Users override per-marker via the toolbar's color input. */
-export const DEFAULT_MARKER_COLOR = '#f4b93b';
+/** Default marker color — black. Reads on any lightly-tinted terrain
+ *  (parchment, watercolor, greens/blues) and matches the ink of most
+ *  hand-drawn map labels. Users override per-marker. */
+export const DEFAULT_MARKER_COLOR = '#000000';
 
-/** Preset color swatches surfaced next to the native picker. Twelve hues
- *  that read on both light and dark backgrounds and against common map
- *  parchment/ink palettes. */
+/** Preset color swatches surfaced next to the native picker. Thirteen
+ *  hues chosen for map-annotation legibility:
+ *
+ *  - Black leads the row because it's the default (and readable on any
+ *    lightly-tinted terrain).
+ *  - The middle nine are the Tailwind `-500` shades of amber, red,
+ *    orange, gold, green, teal, blue, purple, pink — evenly spread
+ *    around the wheel, engineered by Tailwind for AA-contrast against
+ *    both light and dark surfaces, and vivid enough to read over a
+ *    busy watercolor background.
+ *  - White + slate + ink cover the neutral end: white for dark maps,
+ *    slate for a muted secondary, ink as a softer alternative to pure
+ *    black on light parchment. */
 export const MARKER_COLOR_PRESETS: string[] = [
-	'#f4b93b', // amber
+	'#000000', // black (default)
 	'#ef4444', // red
 	'#f97316', // orange
 	'#eab308', // gold
+	'#f4b93b', // amber
 	'#22c55e', // green
 	'#14b8a6', // teal
 	'#3b82f6', // blue
