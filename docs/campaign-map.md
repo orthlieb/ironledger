@@ -11,12 +11,16 @@ same infra the entity portraits already use.
 
 | File                                           | Responsibility                                                                                 |
 | ---------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `lib/mapConstants.ts`                          | Grid dimensions, hex radius, marker icon enum + labels, image size caps.                       |
+| `lib/mapConstants.ts`                          | Grid dimensions, hex radius, marker defaults, color presets, `resolveMapIcon` slug lookup.     |
 | `lib/mapGeometry.ts`                           | Pure geometry: axial↔pixel, neighbours, polygon points, cell iteration, viewBox. No Svelte.    |
 | `lib/mapImage.ts`                              | `downscaleImage(file)` — canvas-based resize + JPEG re-encode.                                 |
 | `lib/mapStore.svelte.ts`                       | `$state` cache backed by `/api/session/map` — `initMap` fetches, mutations PUT optimistically. |
 | `lib/mapExport.ts`                             | `exportMapPng` + `exportMapJson` — snapshot download flows.                                    |
-| `lib/components/MapDialog.svelte`              | Three-layer SVG (image / grid / markers) + toolbar + inline marker editor + export buttons.    |
+| `lib/mapEntityLinks.ts`                        | Enumerate + resolve linkable entities (community / place / journey / site); parse `"kind:id"`. |
+| `lib/generated/mapIconManifest.ts`             | **Auto-generated** icon manifest — do not hand-edit. Rebuilt by the Vite plugin.               |
+| `scripts/build-map-icons.mjs`                  | Scans `static/map/**/*.svg` → `mapIconManifest.ts` (kebab→Title Case, fill-stripping).         |
+| `static/map/<category>/<slug>.svg`             | Icon source files. First subfolder = category; kebab-case filename = slug + display label.     |
+| `lib/components/MapDialog.svelte`              | Three-layer SVG + top-level file toolbar + persistent selection toolbar + icon-picker dialog.  |
 | `lib/components/v2/ExpeditionsArea.svelte`     | Header "Map" button that opens the dialog.                                                     |
 | `routes/api/session/map/+server.ts`            | BFF proxy for GET / DELETE map.                                                                |
 | `routes/api/session/map/markers/+server.ts`    | BFF proxy for PUT markers.                                                                     |
@@ -52,8 +56,23 @@ Client shape (fetched from `GET /api/session/map`):
 ```json
 {
   "markers": [
-    { "id": "e2f7…", "q": 3, "r": 2, "label": "Driftwood", "icon": "settlement" },
-    { "id": "b115…", "q": 6, "r": 4, "label": "Blood Thorn", "icon": "danger" }
+    {
+      "id": "e2f7…",
+      "q": 3,
+      "r": 2,
+      "label": "Driftwood",
+      "icon": "settlement/village",
+      "color": "#22c55e"
+    },
+    {
+      "id": "b115…",
+      "q": 6,
+      "r": 4,
+      "label": "Blood Thorn",
+      "icon": "danger/skull-crossbones",
+      "color": "#ef4444",
+      "entityId": "place:abc123"
+    }
   ],
   "backgroundHash": "9c1a…",
   "updatedAt": "2026-01-15T12:00:00.000Z"
@@ -61,8 +80,13 @@ Client shape (fetched from `GET /api/session/map`):
 ```
 
 - **`markers`** — flat array. Multiple markers per `(q, r)` are permitted
-  at the store level. Tier 1a UI edits the first hit; a marker picker
-  is Tier 2.
+  at the store level. UI edits the first hit; a marker picker is Tier 2.
+- **`icon`** — canonical form is `"<category>/<slug>"` matching a manifest
+  entry (see below). Legacy bare-slug values (`"settlement"`) still
+  resolve via `resolveMapIcon` — first exact match, then any category
+  containing that slug.
+- **`color`** — optional CSS color for the icon fill. Absent = fall back
+  to `DEFAULT_MARKER_COLOR`.
 - **`backgroundHash`** — content hash for cache-busting. Empty string
   when no background is set. Client's `<image href>` becomes
   `/api/session/map/background?v={hash}`.
@@ -92,22 +116,54 @@ inside `withUserContext` so RLS confines each user to their own rows.
 
 ## Marker icons
 
-Eight slugs, drawn from the existing `$icons/` vocabulary:
+Icons are file-driven. Drop SVGs into
+`apps/web/static/map/<category>/<slug>.svg` and they show up in the
+picker automatically:
 
-| Slug         | Label             | Icon                              |
-| ------------ | ----------------- | --------------------------------- |
-| `settlement` | Settlement        | `village.svg`                     |
-| `hamlet`     | Hamlet            | `hut.svg`                         |
-| `ruin`       | Ruin              | `dungeon-gate.svg`                |
-| `encounter`  | Encounter         | `sword.svg`                       |
-| `danger`     | Danger            | `skull-crossbones-solid-full.svg` |
-| `quest`      | Quest             | `treasure-map.svg`                |
-| `poi`        | Point of Interest | `star-solid-full.svg`             |
-| `marker`     | Marker (generic)  | `location-dot-solid-full.svg`     |
+- **Category** — the first subfolder segment. Files at the top level
+  fall into an implicit `misc` bucket.
+- **Slug** — the filename without extension. Kebab-case is expected
+  (`hanging-spider`).
+- **Display label** — auto-generated Title Case from the slug
+  (`hanging-spider` → `Hanging Spider`).
+- **Category label** — Title Case of the folder name.
+- **Colorability** — during manifest generation the SVG's inner content
+  is stripped of hardcoded `fill="…"` / `style="fill:…"` so the wrapper
+  `<g fill={color}>` at render time controls the color. `fill="none"`
+  is preserved so outline-only paths stay uncoloured.
 
-Growing the enum is a data-migration event — slugs are on-disk strings
-in the `user_maps.markers` JSONB. **Adding** a new value is safe;
-**renaming or removing** one breaks existing markers.
+### Build pipeline
+
+`scripts/build-map-icons.mjs`:
+
+1. Walks `static/map/` recursively.
+2. For each SVG, extracts `viewBox` + inner markup, strips fills.
+3. Writes `src/lib/generated/mapIconManifest.ts` — the app's source of
+   truth for `MAP_ICONS` (keyed by `"<category>/<slug>"`),
+   `MAP_ICON_LIST`, and `MAP_ICON_CATEGORIES`.
+
+The Vite plugin in `apps/web/vite.config.ts` regenerates on every
+`vite dev`/`vite build` **and** on any `.svg` change under
+`static/map/` while dev is running. The generator is a no-op when the
+manifest would be byte-for-byte identical, so it's cheap to re-run.
+The generated file is committed so svelte-check and tests can run
+without executing Vite.
+
+### Data compatibility
+
+Marker `icon` values are strings — no compile-time enum. `resolveMapIcon`
+handles both the canonical `"<category>/<slug>"` form and legacy bare
+slugs. Removing an icon file only affects markers that still reference
+that slug; those render a fallback dot in the marker's color instead of
+crashing.
+
+### Color
+
+Every marker also carries an optional `color` (any CSS color).
+`mapConstants.MARKER_COLOR_PRESETS` seeds the toolbar's swatch strip
+(12 hues that read on both light and dark backgrounds); users can pick
+any color via the native `<input type="color">` sitting next to the
+strip.
 
 ## Image ingest
 
@@ -143,22 +199,34 @@ to `svgEl` so the PNG exporter can serialise it):
 
 ## Interaction
 
+The dialog stacks two toolbars above the map canvas: a file/export
+toolbar and a persistent **selection toolbar** that switches state
+depending on whether a marker is selected.
+
 - **Upload image** — file picker opens for `image/*`; downscale + PUT
   in one step. Errors show in a red banner just under the toolbar.
 - **Names toggle** — global show/hide of marker labels (icons always
   render).
-- **Click a hex** — opens the inline marker editor at the bottom of
-  the dialog. New markers default to `icon: 'marker'` and an empty
-  label. Editor fields: label (text), icon (grid of 8). Enter saves,
-  Esc cancels.
-- **Delete** (editor, when editing an existing marker) — removes it.
+- **Click a hex** — creates a marker with the default icon + color
+  (or selects an existing one). The selection toolbar switches to
+  its editable state: label input, icon button (opens picker),
+  color input + preset strip, entity-link dropdown, Delete, Done.
+  Every change auto-saves through `updateMarker()` — no Save/Cancel.
+- **Click "Change icon…"** — opens a nested picker dialog listing
+  every manifest icon grouped by category with a search filter.
+  Previews render at the marker's current color so the swatch matches
+  what you'll see on the map.
+- **Color** — the native picker button + a strip of preset swatches.
+  Changing a swatch or picker value applies immediately.
+- **Done** — clears the selection so the toolbar shows the hint
+  again; the marker persists.
+- **Delete** — removes the marker (server-side) and clears the selection.
 - **Export PNG** — rasterises the current SVG (image + grid + markers +
   labels) to a 2× viewBox PNG (typically ~1600×1000) and downloads it.
   Honors the current Names toggle.
 - **Export JSON** — writes a `{ manifest, data: { markers,
 backgroundHash, backgroundUrl } }` envelope for backup or transfer.
-  Full round-trip import (re-uploading the image on a different
-  account) is a Tier 2 concern.
+  Full round-trip import is a Tier 2c concern.
 - **Clear map** — wipes background + markers server-side via a
   ConfirmDialog. Disabled when the map is already empty.
 
@@ -194,20 +262,86 @@ The dialog is `width: min(960px, calc(100vw - 2rem))` and `max-height:
 88vh` per the CLAUDE.md iOS-safe dialog rules (`vh` not `dvh`, centred
 via `top: 50% + transform`, no `display: flex` on the dialog element).
 The SVG scales down to fit; hex-tap targets remain useable at ~22px
-radius on phone. The inline marker editor collapses under the canvas,
-so on portrait phones the flow becomes tap-hex → scroll to editor.
+radius on phone. The selection toolbar wraps at narrow widths — the
+label input takes the full row and the icon/color/entity controls
+sit on the next row so nothing gets clipped. The icon-picker dialog
+uses the CLAUDE.md content-sized pattern (`max-height` + inner scroll)
+so the grid scrolls independently of the parent dialog.
+
+## Entity-linked markers (Tier 2a)
+
+A marker's `entityId` can point at a first-class entity from the rest
+of the app. Format: `"kind:id"` where `kind` is one of `community` /
+`place` / `journey` / `site` (NPCs and Foes are deliberately out —
+NPCs live at communities/places, Foes are transient).
+
+### Editor
+
+The selection toolbar's **entity dropdown** lists every community +
+place + journey + site, sorted kind-first then alphabetical, with a
+small glyph prefix (`◈` community / `●` place / `↗` journey / `▲`
+site). Selecting `— No link —` clears the link.
+
+**Auto-fill label**: on selecting a link when the label is empty, the
+marker adopts the linked entity's name. Explicit label edits are never
+overwritten.
+
+**Icon + color stay independent** — the annotator's choice, not the
+entity's kind. A settlement can be flagged as a red `danger/skull` if
+it's a hostile town.
+
+### Click semantics
+
+- **Bare click** on a linked marker → close the map + focus the linked
+  entity in its natural area. On mobile the tab switches to
+  Expeditions or Connections as appropriate; on desktop both areas
+  are visible in the deck so only the entity focus fires.
+- **Shift+click** on a linked marker → open the editor. Always
+  available so linked markers can still be edited.
+- **Click** on an unlinked marker (or an empty hex) → open the
+  editor (matches Tier 1a).
+
+### Broken links
+
+When the linked entity is deleted, `resolveEntity(entityId)` returns
+null. The marker stays on the map (label + icon + color intact) and
+the selection toolbar shows a red **"Linked entity was deleted"**
+banner prompting the user to pick a replacement or clear the link.
+Bare-clicking a broken-link marker just selects it (no target to
+jump to).
+
+### Cross-component wiring
+
+MapDialog dispatches `ironledger:focus-entity` with `{ kind, id }`.
+Three listeners handle it:
+
+- `/home/+page.svelte` — switches `mobileTab` (only when on mobile).
+- `CommunitiesArea` — matches `community` / `place` / `npc`, sets
+  `activeEntryId`, clears the type filter if it would hide the target.
+- `ExpeditionsArea` — matches `journey` / `site`, sets `activeExpId`.
+
+Each area owns its own focus response, so adding a new linkable
+entity kind later is a two-file change: extend `mapEntityLinks.ts`
+enum + add a listener in the target area.
 
 ## Growth path
 
-Tier 2 (planned):
+Tier 2b (planned):
+
+- **Bidirectional** — Community / Place / Site / Journey cards show
+  a `📍 On map at (q, r)` indicator with click-through back to the
+  map. Client-side derived index from `mapState.markers` grouped by
+  `entityId`.
+
+Tier 2c (planned):
 
 - **JSON import** — pair the JSON export with an importer that
   re-uploads the image via `PUT /session/map/background` and swaps in
   the fresh hash. Bundle this into the top-level "Everything"
   export/import.
-- **Entity link** on markers — dropdown resolving Places / Sites /
-  Communities / NPCs from the connections deck. Click-through from a
-  marker to the linked entity.
+
+Tier 2 nice-to-haves:
+
 - **Multiple markers per hex** in the UI — a picker when clicking a
   hex that already has one.
 - **Region tint layer** — translucent colour overlay for faction /

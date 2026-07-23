@@ -243,12 +243,26 @@
 		};
 		const onExpComplete = () => expAreaRef?.completeActiveExpedition();
 		const onExpReactivate = () => expAreaRef?.reactivateActiveExpedition();
+
+		// Map-marker click-through: focus an entity from the campaign map by
+		// switching the mobile tab (desktop shows everything already) and
+		// letting the relevant area's own listener set its active entry.
+		const onFocusEntity = (e: Event) => {
+			const d = (e as CustomEvent<{ kind: string; id: string }>).detail;
+			if (!d) return;
+			if (!isMobile) return; // desktop deck has every area visible; nothing to switch
+			if (d.kind === 'journey' || d.kind === 'site') mobileTab = 'expeditions';
+			else if (d.kind === 'community' || d.kind === 'place' || d.kind === 'npc')
+				mobileTab = 'communities';
+		};
+
 		document.addEventListener('ironledger:foe-progress', onFoeProgress);
 		document.addEventListener('ironledger:foe-vanquish', onFoeVanquish);
 		document.addEventListener('ironledger:foe-reactivate', onFoeReactivate);
 		document.addEventListener('ironledger:exp-progress', onExpProgress);
 		document.addEventListener('ironledger:exp-complete', onExpComplete);
 		document.addEventListener('ironledger:exp-reactivate', onExpReactivate);
+		document.addEventListener('ironledger:focus-entity', onFocusEntity);
 
 		return () => {
 			document.removeEventListener('il-menu-action', handleMenuAction);
@@ -258,6 +272,7 @@
 			document.removeEventListener('ironledger:exp-progress', onExpProgress);
 			document.removeEventListener('ironledger:exp-complete', onExpComplete);
 			document.removeEventListener('ironledger:exp-reactivate', onExpReactivate);
+			document.removeEventListener('ironledger:focus-entity', onFocusEntity);
 		};
 	});
 
