@@ -44,6 +44,7 @@
 		type MapIcon,
 	} from '$lib/generated/mapIconManifest.js';
 	import { axialToPx, hexPolygonPoints, allCells, mapViewBox } from '$lib/mapGeometry.js';
+	import { HEX_SIZE } from '$lib/mapConstants.js';
 	import {
 		mapState,
 		markersAt,
@@ -85,6 +86,7 @@
 	}
 
 	let svgEl = $state<SVGSVGElement | null>(null);
+	let canvasEl = $state<HTMLDivElement | null>(null);
 
 	function handleExportPng() {
 		if (!svgEl) return;
@@ -98,8 +100,48 @@
 		});
 	}
 
-	const cells = [...allCells()];
-	const vb = mapViewBox();
+	/**
+	 * Grid dimensions track the canvas viewport so hexes cover the whole
+	 * visible area at any dialog size. HEX_SIZE stays fixed — the cell
+	 * COUNT grows/shrinks to fill. Reasonable initial guesses cover the
+	 * first paint before the ResizeObserver has fired.
+	 *
+	 * Markers reference absolute (q, r) coordinates independent of grid
+	 * bounds, so shrinking the grid never hides a marker (it just becomes
+	 * unclickable via a hex — the marker itself still renders at its
+	 * axial pixel position).
+	 */
+	let canvasPxW = $state(800);
+	let canvasPxH = $state(560);
+
+	$effect(() => {
+		if (!canvasEl) return;
+		const ro = new ResizeObserver((entries) => {
+			for (const e of entries) {
+				const r = e.contentRect;
+				if (r.width > 0) canvasPxW = r.width;
+				if (r.height > 0) canvasPxH = r.height;
+			}
+		});
+		ro.observe(canvasEl);
+		return () => ro.disconnect();
+	});
+
+	const gridDims = $derived.by(() => {
+		// Pointy-top hex spacing in pixels at HEX_SIZE.
+		const hexW = Math.sqrt(3) * HEX_SIZE;
+		const hexH = 1.5 * HEX_SIZE;
+		// Subtract one hex of padding (mapViewBox adds a hexW/hexH margin on
+		// each side) so the visible edge lands on a full hex, not a half.
+		const usableW = Math.max(hexW * 2, canvasPxW - hexW * 2);
+		const usableH = Math.max(hexH * 2, canvasPxH - hexH * 2);
+		const cols = Math.max(6, Math.round(usableW / hexW));
+		const rows = Math.max(4, Math.round(usableH / hexH));
+		return { cols, rows };
+	});
+
+	const cells = $derived([...allCells(gridDims.cols, gridDims.rows)]);
+	const vb = $derived(mapViewBox(gridDims.cols, gridDims.rows, HEX_SIZE));
 	const markerCount = $derived(mapState.markers.length);
 
 	/**
@@ -387,7 +429,7 @@
 	{/if}
 
 	<div class="mp-body">
-		<div class="mp-canvas">
+		<div class="mp-canvas" bind:this={canvasEl}>
 			<svg
 				bind:this={svgEl}
 				viewBox="{vb.x} {vb.y} {vb.w} {vb.h}"
@@ -725,11 +767,18 @@
 	}
 
 	.mp-body {
-		max-height: calc(88vh - 8rem);
+		/* Fixed height (not max-height) so the canvas has a determined size
+		   for the ResizeObserver + `<svg height:100%>` to work against. The
+		   dialog itself caps at 88vh — this fills whatever remains once the
+		   two toolbars are laid out. */
+		height: calc(88vh - 8rem);
 		overflow: hidden;
 	}
 	.mp-canvas {
-		overflow: auto;
+		width: 100%;
+		height: 100%;
+		box-sizing: border-box;
+		overflow: hidden;
 		overscroll-behavior: contain;
 		padding: 8px 14px 14px;
 		background: var(--bg-inset);
@@ -737,7 +786,7 @@
 	.mp-canvas svg {
 		display: block;
 		width: 100%;
-		height: auto;
+		height: 100%;
 		user-select: none;
 	}
 
