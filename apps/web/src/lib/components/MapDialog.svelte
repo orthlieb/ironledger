@@ -231,7 +231,9 @@
 			>
 				{#if mapState.backgroundHash}
 					<!-- Background image — fitted to the same bounds as the hex
-					     grid, aspect ratio preserved via xMidYMid meet. -->
+					     grid, aspect ratio preserved via xMidYMid meet. onerror
+					     self-heals a stale local hash whose bytes the server can't
+					     serve, so we don't render a broken <image> on every re-render. -->
 					<image
 						x={vb.x}
 						y={vb.y}
@@ -240,6 +242,7 @@
 						href={backgroundUrl()}
 						preserveAspectRatio="xMidYMid meet"
 						aria-hidden="true"
+						onerror={() => (mapState.backgroundHash = '')}
 					/>
 				{/if}
 
