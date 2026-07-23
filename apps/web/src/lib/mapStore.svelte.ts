@@ -22,8 +22,6 @@
 // the server: Tier 1/1a were both browser-only pre-releases.
 // =============================================================================
 
-import type { MarkerIcon } from './mapConstants.js';
-
 const LEGACY_STORAGE_KEY = 'ironledger:map';
 
 export interface MapMarker {
@@ -34,10 +32,17 @@ export interface MapMarker {
 	q: number;
 	r: number;
 	label: string;
-	icon: MarkerIcon;
+	/** Manifest key of the icon: "<category>/<slug>", e.g. "places/settlement".
+	 *  Legacy markers may hold a bare slug (e.g. "settlement"); the render
+	 *  path falls back to a slug-only lookup for backwards compat. */
+	icon: string;
+	/** CSS color for the icon fill. Any valid CSS color. Optional so
+	 *  existing pre-color markers still parse; the render path falls
+	 *  back to a default. */
+	color?: string;
 	/** Optional link to a first-class entity from the connections deck.
-	 *  Format: "kind:id" (e.g. "place:abc123"). Stored for Tier 2's
-	 *  click-through UX; unused in Tier 1a. */
+	 *  Format: "kind:id" (e.g. "place:abc123"). Bare-click on a linked
+	 *  marker jumps to the entity in the sheet. */
 	entityId?: string;
 }
 
@@ -139,7 +144,8 @@ export function addMarker(input: {
 	q: number;
 	r: number;
 	label: string;
-	icon: MarkerIcon;
+	icon: string;
+	color?: string;
 	entityId?: string;
 }): string {
 	const id = crypto.randomUUID();
@@ -194,4 +200,12 @@ export async function clearMap(): Promise<void> {
 	} catch (err) {
 		mapState.error = err instanceof Error ? err.message : 'Failed to clear map';
 	}
+}
+
+/** Wipe every marker but keep the background image. Useful for resetting
+ *  legacy marker data (bare-slug `icon` values that predate the manifest)
+ *  without losing the uploaded map. Callers should confirm before invoking. */
+export async function clearMarkers(): Promise<void> {
+	mapState.markers = [];
+	await persistMarkers();
 }

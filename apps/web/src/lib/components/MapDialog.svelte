@@ -1,21 +1,27 @@
 <script lang="ts">
 	/**
-	 * MapDialog — Tier 1a annotate-a-map surface.
+	 * MapDialog — annotate an uploaded map with hex-pinned markers.
 	 *
 	 * A user-uploaded background image sits under a translucent hex grid.
-	 * Clicking a hex opens the inline marker editor to add or update a
-	 * label + icon + optional entity link. Multiple markers per hex are
-	 * allowed at the data-model level; the UI shows them stacked at the
-	 * hex centre in Tier 1a and can be split into a picker later.
+	 * Clicking a hex places a marker (or selects the existing one) and the
+	 * selection toolbar at the top switches to edit its label, icon, color
+	 * and optional entity link. Every field auto-saves through the shared
+	 * `updateMarker()` optimistic pipeline — no explicit Save/Cancel.
 	 *
 	 * Layout: three SVG layers stacked in <svg> render order:
 	 *   1. background <image> (fit preserving aspect ratio via
-	 *      preserveAspectRatio="xMidYMid meet"; letterbox transparent
-	 *      hexes fall onto the dialog's own background colour).
+	 *      preserveAspectRatio="xMidYMid meet"; letterbox falls onto the
+	 *      dialog's own background colour).
 	 *   2. hex grid — every cell is one <polygon>, translucent stroke, no
-	 *      fill. Click handler on the polygon opens the marker editor.
-	 *   3. marker layer — icon + optional label, positioned at the hex
-	 *      centre.
+	 *      fill. Click handler opens or selects a marker.
+	 *   3. marker layer — icon (colored fill) + optional label, positioned
+	 *      at the hex centre.
+	 *
+	 * Icon vocabulary comes from apps/web/static/map/<category>/<slug>.svg,
+	 * indexed at build time into $lib/generated/mapIconManifest. See
+	 * scripts/build-map-icons.mjs and vite.config.ts. New markers get the
+	 * default icon+color; users override via the selection toolbar's
+	 * "Change icon…" nested picker dialog.
 	 *
 	 * Follows CLAUDE.md's iOS-safe dialog rules: `vh` (not `dvh`), centred
 	 * via top:50%+transform, no `display: flex` on the dialog itself,
@@ -26,9 +32,19 @@
 	import DialogHeader from './DialogHeader.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import { tooltip } from '$lib/actions/tooltip.js';
-	import { MARKER_ICONS, MARKER_ICON_LABELS } from '$lib/mapConstants.js';
-	import type { MarkerIcon } from '$lib/mapConstants.js';
-	import { axialToPx, hexPolygonPoints, allCells, mapViewBox } from '$lib/mapGeometry.js';
+	import {
+		DEFAULT_MARKER_COLOR,
+		DEFAULT_MARKER_ICON,
+		MARKER_COLOR_PRESETS,
+		resolveMapIcon,
+	} from '$lib/mapConstants.js';
+	import {
+		MAP_ICON_CATEGORIES,
+		MAP_ICON_LIST,
+		type MapIcon,
+	} from '$lib/generated/mapIconManifest.js';
+	import { axialToPx, hexPolygonPoints } from '$lib/mapGeometry.js';
+	import { MAP_COLS, MAP_ROWS } from '$lib/mapConstants.js';
 	import {
 		mapState,
 		markersAt,
@@ -37,56 +53,33 @@
 		removeMarker,
 		setBackground,
 		clearMap,
+		clearMarkers,
 		hasAnyContent,
 		initMap,
 		backgroundUrl,
 	} from '$lib/mapStore.svelte.js';
 	import { downscaleImage, MapImageError } from '$lib/mapImage.js';
 	import { exportMapPng, exportMapJson } from '$lib/mapExport.js';
-
-	// Icon svgs — imported as raw text so we can inline them in the SVG.
-	import iconSettlement from '$icons/village.svg?raw';
-	import iconHamlet from '$icons/hut.svg?raw';
-	import iconRuin from '$icons/dungeon-gate.svg?raw';
-	import iconEncounter from '$icons/sword.svg?raw';
-	import iconDanger from '$icons/skull-crossbones-solid-full.svg?raw';
-	import iconQuest from '$icons/treasure-map.svg?raw';
-	import iconPoi from '$icons/star-solid-full.svg?raw';
-	import iconMarker from '$icons/location-dot-solid-full.svg?raw';
-
-	/** SVG source for each marker icon slug — kept alongside the icon enum
-	 *  so a compiler catches a missing entry. */
-	const ICON_SVG: Record<MarkerIcon, string> = {
-		settlement: iconSettlement,
-		hamlet: iconHamlet,
-		ruin: iconRuin,
-		encounter: iconEncounter,
-		danger: iconDanger,
-		quest: iconQuest,
-		poi: iconPoi,
-		marker: iconMarker,
-	};
+	import { getLinkableEntities, resolveEntity } from '$lib/mapEntityLinks.js';
 
 	let dialogEl = $state<HTMLDialogElement | null>(null);
 	let clearDialogRef = $state<{ open(): void; close(): void } | null>(null);
+	let clearMarkersDialogRef = $state<{ open(): void; close(): void } | null>(null);
+	let iconDialogEl = $state<HTMLDialogElement | null>(null);
 	let fileInputEl = $state<HTMLInputElement | null>(null);
 	let showLabels = $state(true);
 	let uploadError = $state('');
+	let iconSearch = $state('');
 
-	// The marker being edited (or created) via the inline editor panel.
-	// `editing = null` means the editor is closed.
-	interface EditingState {
-		id: string | null; // null while creating; set to existing id when editing
-		q: number;
-		r: number;
-		label: string;
-		icon: MarkerIcon;
-	}
-	let editing = $state<EditingState | null>(null);
+	/** Id of the selected marker (null = nothing selected). Deriving the
+	 *  live marker record from the store keeps every field auto-current
+	 *  even if another surface mutates the array. */
+	let selectedMarkerId = $state<string | null>(null);
+	const selectedMarker = $derived(
+		selectedMarkerId ? (mapState.markers.find((m) => m.id === selectedMarkerId) ?? null) : null,
+	);
 
 	export function open() {
-		// Fetch the map on first open (idempotent). Non-blocking — the
-		// dialog opens immediately, contents fade in as they arrive.
 		void initMap();
 		dialogEl?.showModal();
 	}
@@ -95,6 +88,7 @@
 	}
 
 	let svgEl = $state<SVGSVGElement | null>(null);
+	let canvasEl = $state<HTMLDivElement | null>(null);
 
 	function handleExportPng() {
 		if (!svgEl) return;
@@ -108,50 +102,242 @@
 		});
 	}
 
-	const cells = [...allCells()];
-	const vb = mapViewBox();
+	/**
+	 * Sizing model: the background image is the star. We fix its aspect
+	 * to a canonical MAP_COLS × MAP_ROWS at the current dynamic hex size,
+	 * then scale that hex size so the image fills the canvas with at
+	 * least a half-hex margin on every side. Whichever axis has extra
+	 * space beyond the minimum gets more margin — either way the hex
+	 * grid fills the entire canvas.
+	 *
+	 * Marker alignment: `axialToPx(q, r, dynamicHexSize)` uses the same
+	 * hex size the image scales to, so a marker at axial (3, 2) always
+	 * lands on the same pixel of the image regardless of dialog size or
+	 * device.
+	 */
+	let canvasPxW = $state(800);
+	let canvasPxH = $state(560);
+
+	$effect(() => {
+		if (!canvasEl) return;
+		const ro = new ResizeObserver((entries) => {
+			for (const e of entries) {
+				const r = e.contentRect;
+				if (r.width > 0) canvasPxW = r.width;
+				if (r.height > 0) canvasPxH = r.height;
+			}
+		});
+		ro.observe(canvasEl);
+		return () => ro.disconnect();
+	});
+
+	/**
+	 * Dynamic hex size in SVG user units (= canvas pixels since viewBox
+	 * is pixel-space). Chosen so a MAP_COLS × MAP_ROWS hex grid plus a
+	 * half-hex margin on every side fits the canvas — max size while
+	 * respecting the minimum border.
+	 *
+	 * Solve for s in:
+	 *   canvasPxW ≥ (MAP_COLS + 1) · √3 · s  →  s ≤ pxW / ((MAP_COLS+1)√3)
+	 *   canvasPxH ≥ (MAP_ROWS + 1) · 1.5 · s →  s ≤ pxH / ((MAP_ROWS+1)·1.5)
+	 * Take the min so both constraints hold; the other axis has extra.
+	 */
+	const dynamicHexSize = $derived.by(() => {
+		const sW = canvasPxW / (Math.sqrt(3) * (MAP_COLS + 1));
+		const sH = canvasPxH / (1.5 * (MAP_ROWS + 1));
+		return Math.max(1, Math.min(sW, sH));
+	});
+
+	/**
+	 * viewBox is pixel-space matching the canvas — 1:1 mapping between
+	 * SVG user units and CSS pixels. No aspect-ratio letterbox because
+	 * viewBox == canvas exactly on every resize.
+	 */
+	const vb = $derived({ x: 0, y: 0, w: canvasPxW, h: canvasPxH });
+
+	/**
+	 * Background image rectangle, centered in the canvas. Its size is
+	 * `MAP_COLS × MAP_ROWS` hexes at the current dynamic hex size, so a
+	 * marker at axial (q, r) is always at the same fraction of the image
+	 * regardless of dialog size — image scales with the hexes.
+	 */
+	const imageBounds = $derived.by(() => {
+		const s = dynamicHexSize;
+		const w = MAP_COLS * Math.sqrt(3) * s;
+		const h = MAP_ROWS * 1.5 * s;
+		return {
+			x: (canvasPxW - w) / 2,
+			y: (canvasPxH - h) / 2,
+			w,
+			h,
+		};
+	});
+
+	/**
+	 * Pixel offset applied to the hex grid group so axial (0, 0) — the
+	 * pixel that axialToPx(0, 0) reports as (0, 0) — lands one-half-hex
+	 * inset from the image's top-left corner. Every marker's axial
+	 * position then falls on the image at the same fraction, no matter
+	 * how the canvas resizes.
+	 */
+	const hexOffset = $derived.by(() => {
+		const s = dynamicHexSize;
+		return {
+			x: imageBounds.x + (Math.sqrt(3) * s) / 2,
+			y: imageBounds.y + s,
+		};
+	});
+
+	/**
+	 * Enough cells to cover the entire viewBox — including negative
+	 * axial coords for the margin around the image. `allCells` starts
+	 * at (0, 0) so we can't reuse it; iterate a computed range instead
+	 * with the same per-row q-offset that keeps rectangle sides straight.
+	 */
+	const cells = $derived.by(() => {
+		const s = dynamicHexSize;
+		const hexW = Math.sqrt(3) * s;
+		const hexH = 1.5 * s;
+		// Extra rings of hexes to cover the image-to-canvas margin area
+		// (image is centered, so both sides need equal border coverage).
+		const marginCols = Math.ceil(imageBounds.x / hexW) + 1;
+		const marginRows = Math.ceil(imageBounds.y / hexH) + 1;
+		const colStart = -marginCols;
+		const colEnd = MAP_COLS + marginCols;
+		const rowStart = -marginRows;
+		const rowEnd = MAP_ROWS + marginRows;
+		const out: { q: number; r: number }[] = [];
+		for (let r = rowStart; r < rowEnd; r++) {
+			const offset = Math.floor(r / 2);
+			for (let q = colStart - offset; q < colEnd - offset; q++) {
+				out.push({ q, r });
+			}
+		}
+		return out;
+	});
+
 	const markerCount = $derived(mapState.markers.length);
 
-	function onHexClick(q: number, r: number) {
-		// If a marker exists on the hex, edit the first one; else create.
+	/**
+	 * Hex click. Bare click on a linked marker jumps to that entity and
+	 * closes the map. Shift+click always selects for editing — a modifier
+	 * lets the user edit a linked marker without triggering the jump.
+	 * Bare click on an unlinked hex either selects the existing marker or
+	 * creates one and selects it.
+	 */
+	function onHexClick(q: number, r: number, ev: MouseEvent) {
 		const existing = markersAt(q, r)[0];
+		if (existing && !ev.shiftKey) {
+			const link = resolveEntity(existing.entityId);
+			if (link) {
+				document.dispatchEvent(
+					new CustomEvent('ironledger:focus-entity', {
+						detail: { kind: link.kind, id: link.id },
+					}),
+				);
+				close();
+				return;
+			}
+		}
 		if (existing) {
-			editing = {
-				id: existing.id,
-				q: existing.q,
-				r: existing.r,
-				label: existing.label,
-				icon: existing.icon,
-			};
+			selectedMarkerId = existing.id;
 		} else {
-			editing = { id: null, q, r, label: '', icon: 'marker' };
+			const id = addMarker({
+				q,
+				r,
+				label: '',
+				icon: DEFAULT_MARKER_ICON,
+				color: DEFAULT_MARKER_COLOR,
+			});
+			selectedMarkerId = id;
 		}
 	}
 
-	function commitEditing() {
-		if (!editing) return;
-		const label = editing.label.trim();
-		if (editing.id !== null) {
-			updateMarker(editing.id, { label, icon: editing.icon });
-		} else {
-			addMarker({ q: editing.q, r: editing.r, label, icon: editing.icon });
+	function clearSelection() {
+		selectedMarkerId = null;
+	}
+
+	function onLabelInput(e: Event) {
+		if (!selectedMarker) return;
+		updateMarker(selectedMarker.id, { label: (e.target as HTMLInputElement).value });
+	}
+
+	function onColorInput(e: Event) {
+		if (!selectedMarker) return;
+		updateMarker(selectedMarker.id, { color: (e.target as HTMLInputElement).value });
+	}
+
+	function pickPreset(color: string) {
+		if (!selectedMarker) return;
+		updateMarker(selectedMarker.id, { color });
+	}
+
+	function onEntityChange(e: Event) {
+		if (!selectedMarker) return;
+		const v = (e.target as HTMLSelectElement).value;
+		const patch: { entityId?: string; label?: string } = { entityId: v || undefined };
+		// Auto-fill label from the linked entity's name when the current
+		// label is blank — matches the "annotation follows the entity"
+		// mental model without stomping on a name the user typed.
+		if (v && !selectedMarker.label.trim()) {
+			const link = resolveEntity(v);
+			if (link) patch.label = link.name;
 		}
-		editing = null;
+		updateMarker(selectedMarker.id, patch);
 	}
 
-	function cancelEditing() {
-		editing = null;
+	function deleteSelected() {
+		if (!selectedMarker) return;
+		removeMarker(selectedMarker.id);
+		selectedMarkerId = null;
 	}
 
-	function deleteEditing() {
-		if (editing?.id) removeMarker(editing.id);
-		editing = null;
+	function openIconPicker() {
+		if (!selectedMarker) return;
+		iconSearch = '';
+		iconDialogEl?.showModal();
 	}
+	function closeIconPicker() {
+		iconDialogEl?.close();
+	}
+	function pickIcon(key: string) {
+		if (!selectedMarker) {
+			closeIconPicker();
+			return;
+		}
+		updateMarker(selectedMarker.id, { icon: key });
+		closeIconPicker();
+	}
+
+	function iconKey(i: MapIcon): string {
+		return `${i.category}/${i.slug}`;
+	}
+
+	const filteredIcons = $derived.by<Record<string, MapIcon[]>>(() => {
+		const q = iconSearch.trim().toLowerCase();
+		const grouped: Record<string, MapIcon[]> = {};
+		for (const cat of MAP_ICON_CATEGORIES) grouped[cat] = [];
+		for (const i of MAP_ICON_LIST) {
+			if (
+				q &&
+				!i.slug.toLowerCase().includes(q) &&
+				!i.label.toLowerCase().includes(q) &&
+				!i.category.toLowerCase().includes(q)
+			) {
+				continue;
+			}
+			grouped[i.category]?.push(i);
+		}
+		// Drop empty categories so the picker doesn't render headers with
+		// nothing under them when a search filter is on.
+		for (const cat of Object.keys(grouped)) if (grouped[cat].length === 0) delete grouped[cat];
+		return grouped;
+	});
 
 	async function handleFileChosen(e: Event) {
 		const input = e.target as HTMLInputElement;
 		const file = input.files?.[0];
-		input.value = ''; // reset so the same file can be re-picked
+		input.value = '';
 		if (!file) return;
 		uploadError = '';
 		try {
@@ -166,9 +352,31 @@
 		fileInputEl?.click();
 	}
 
-	// Cached icon size in SVG user units — pixel size the icon renders at.
-	// Sits comfortably inside a hex without spilling into neighbours.
-	const ICON_SIZE = 20;
+	/** Icon size in SVG user units — scales with the dynamic hex so the
+	 *  icon always sits comfortably inside a hex without spilling into
+	 *  neighbours. ~91% of hex radius keeps the same visual weight as the
+	 *  old fixed 20-unit icon at HEX_SIZE=22. */
+	const ICON_SIZE = $derived(dynamicHexSize * (20 / 22));
+
+	/**
+	 * White stroke width in the source icon's viewBox units, computed so
+	 * the halo lands at a consistent ~1.6 px on screen no matter whether
+	 * the icon's viewBox is `0 0 24 24` or `0 0 640 640`. Paired with
+	 * `paint-order="stroke"` on the wrapping <g>, this gives every icon
+	 * the same white outline the marker labels use — readable over busy
+	 * background maps at any icon color.
+	 */
+	function iconStrokeWidth(viewBox: string): number {
+		const parts = viewBox.split(/\s+/).map(Number);
+		const w = parts[2] || 24;
+		const h = parts[3] || 24;
+		return Math.min(w, h) * 0.08;
+	}
+
+	// Derive the selected marker's icon record + color for the toolbar so
+	// the icon button always shows the current preview.
+	const selectedIcon = $derived(selectedMarker ? resolveMapIcon(selectedMarker.icon) : undefined);
+	const selectedColor = $derived(selectedMarker?.color || DEFAULT_MARKER_COLOR);
 </script>
 
 <dialog bind:this={dialogEl} class="mp-dialog" oncancel={close}>
@@ -203,6 +411,12 @@
 			>
 			<button
 				class="mp-btn mp-btn-danger"
+				onclick={() => clearMarkersDialogRef?.open()}
+				disabled={markerCount === 0}
+				use:tooltip={'Delete every marker (keeps the background image)'}>Clear markers</button
+			>
+			<button
+				class="mp-btn mp-btn-danger"
 				onclick={() => clearDialogRef?.open()}
 				disabled={!hasAnyContent()}
 				use:tooltip={'Clear the background and every marker'}>Clear map</button
@@ -217,28 +431,127 @@
 		/>
 	</div>
 
+	<!--
+		Selection toolbar. Sits above the map so it never scrolls off. Renders
+		a hint when nothing is selected; switches to the marker's editable
+		fields on click. Every input auto-saves via updateMarker() so there
+		is no Save/Cancel — the marker is the working copy.
+	-->
+	<div class="mp-sel-toolbar" class:mp-sel-empty={!selectedMarker}>
+		{#if selectedMarker && selectedIcon}
+			<span class="mp-sel-coord" title="Hex ({selectedMarker.q}, {selectedMarker.r})"
+				>({selectedMarker.q},{selectedMarker.r})</span
+			>
+			<input
+				class="mp-sel-name"
+				type="text"
+				placeholder="Marker name…"
+				value={selectedMarker.label}
+				oninput={onLabelInput}
+				use:tooltip={'Name shown under the icon on the map'}
+			/>
+			<button
+				class="mp-sel-icon-btn"
+				onclick={openIconPicker}
+				use:tooltip={'Change icon'}
+				aria-label="Change icon"
+			>
+				<svg viewBox={selectedIcon.viewBox} aria-hidden="true">
+					<g fill={selectedColor}>{@html selectedIcon.inner}</g>
+				</svg>
+				<span class="mp-sel-icon-label">{selectedIcon.label}</span>
+			</button>
+			<div class="mp-sel-color-group">
+				<input
+					class="mp-sel-color"
+					type="color"
+					value={selectedColor}
+					oninput={onColorInput}
+					use:tooltip={'Icon color'}
+					aria-label="Icon color"
+				/>
+				<div class="mp-sel-presets" role="group" aria-label="Preset colors">
+					{#each MARKER_COLOR_PRESETS as c}
+						<button
+							class="mp-sel-preset"
+							class:mp-sel-preset-selected={selectedColor.toLowerCase() === c.toLowerCase()}
+							style="background:{c}"
+							onclick={() => pickPreset(c)}
+							use:tooltip={c}
+							aria-label={c}
+						></button>
+					{/each}
+				</div>
+			</div>
+			<select
+				class="mp-sel-entity"
+				value={selectedMarker.entityId ?? ''}
+				onchange={onEntityChange}
+				use:tooltip={'Optional link to a Community, Place, Journey or Site'}
+				aria-label="Link to entity"
+			>
+				<option value="">— No link —</option>
+				{#each getLinkableEntities() as e}
+					<option value="{e.kind}:{e.id}">{e.kindPrefix} {e.kindLabel}: {e.name}</option>
+				{/each}
+			</select>
+			<button
+				class="mp-btn mp-btn-danger"
+				onclick={deleteSelected}
+				use:tooltip={'Delete this marker'}
+				aria-label="Delete marker">Delete</button
+			>
+			<button
+				class="mp-btn"
+				onclick={clearSelection}
+				use:tooltip={'Deselect and close the editor'}
+				aria-label="Close editor">Done</button
+			>
+		{:else}
+			<span class="mp-sel-hint"
+				>Click a hex to place or edit a marker. Shift-click a linked marker to edit instead of
+				jumping.</span
+			>
+		{/if}
+	</div>
+
 	{#if uploadError}
 		<div class="mp-error">{uploadError}</div>
 	{/if}
 
+	{#if selectedMarker && selectedMarker.entityId && !resolveEntity(selectedMarker.entityId)}
+		<div class="mp-warn">
+			Linked entity was deleted — pick a new one from the dropdown or clear the link.
+		</div>
+	{/if}
+
 	<div class="mp-body">
-		<div class="mp-canvas">
+		<div class="mp-canvas" bind:this={canvasEl}>
+			<!--
+				viewBox is pixel-space matching the canvas exactly (updated
+				reactively from the ResizeObserver). 1 user unit = 1 CSS
+				pixel, so there's nothing for preserveAspectRatio to do —
+				the dynamicHexSize handles the "image fills, grid follows"
+				layout in pixel space directly.
+			-->
 			<svg
 				bind:this={svgEl}
 				viewBox="{vb.x} {vb.y} {vb.w} {vb.h}"
-				preserveAspectRatio="xMidYMid meet"
+				preserveAspectRatio="none"
 				aria-label="Campaign map"
 			>
 				{#if mapState.backgroundHash}
-					<!-- Background image — fitted to the same bounds as the hex
-					     grid, aspect ratio preserved via xMidYMid meet. onerror
-					     self-heals a stale local hash whose bytes the server can't
-					     serve, so we don't render a broken <image> on every re-render. -->
+					<!--
+						Fixed bounds (imageBounds — never depends on gridDims) so
+						a marker's (q, r) position stays put over the same map
+						feature no matter how the dialog resizes or which device
+						the user opens it on. The outer vb changes; this doesn't.
+					-->
 					<image
-						x={vb.x}
-						y={vb.y}
-						width={vb.w}
-						height={vb.h}
+						x={imageBounds.x}
+						y={imageBounds.y}
+						width={imageBounds.w}
+						height={imageBounds.h}
 						href={backgroundUrl()}
 						preserveAspectRatio="xMidYMid meet"
 						aria-hidden="true"
@@ -246,85 +559,111 @@
 					/>
 				{/if}
 
-				<!-- Hex grid overlay. -->
-				{#each cells as { q, r } (`${q},${r}`)}
-					{@const px = axialToPx(q, r)}
-					<!-- svelte-ignore a11y_click_events_have_key_events -->
-					<polygon
-						class="mp-hex"
-						points={hexPolygonPoints(px.x, px.y)}
-						onclick={() => onHexClick(q, r)}
-						role="button"
-						tabindex="-1"
-						aria-label={`Hex ${q}, ${r}`}
-					></polygon>
-				{/each}
+				<!--
+					Hex + marker group translated so axial (0, 0) lands on the
+					image's first hex — image and hexes scale together via
+					dynamicHexSize, so marker positions stay aligned with map
+					features at any dialog size.
+				-->
+				<g transform="translate({hexOffset.x} {hexOffset.y})">
+					{#each cells as { q, r } (`${q},${r}`)}
+						{@const px = axialToPx(q, r, dynamicHexSize)}
+						<!-- svelte-ignore a11y_click_events_have_key_events -->
+						<polygon
+							class="mp-hex"
+							points={hexPolygonPoints(px.x, px.y, dynamicHexSize)}
+							onclick={(ev) => onHexClick(q, r, ev)}
+							role="button"
+							tabindex="-1"
+							aria-label={`Hex ${q}, ${r}`}
+						></polygon>
+					{/each}
 
-				<!-- Marker layer — icon centred on the hex, optional label
-				     below. Rendered last so it sits above the grid. -->
-				{#each mapState.markers as m (m.id)}
-					{@const px = axialToPx(m.q, m.r)}
-					<g class="mp-marker" transform="translate({px.x} {px.y})">
-						<g class="mp-marker-icon" transform="translate({-ICON_SIZE / 2} {-ICON_SIZE / 2})"
-							>{@html ICON_SVG[m.icon]
-								.replace('<svg', `<svg width="${ICON_SIZE}" height="${ICON_SIZE}"`)
-								.replace(/<path/g, '<path fill="var(--text)"')}</g
+					{#each mapState.markers as m (m.id)}
+						{@const px = axialToPx(m.q, m.r, dynamicHexSize)}
+						{@const ic = resolveMapIcon(m.icon)}
+						{@const color = m.color || DEFAULT_MARKER_COLOR}
+						<g
+							class="mp-marker"
+							class:mp-marker-selected={m.id === selectedMarkerId}
+							transform="translate({px.x} {px.y})"
 						>
-						{#if showLabels && m.label}
-							<text class="mp-marker-label" y={ICON_SIZE / 2 + 10}>{m.label}</text>
-						{/if}
-					</g>
-				{/each}
+							{#if ic}
+								<svg
+									class="mp-marker-icon"
+									x={-ICON_SIZE / 2}
+									y={-ICON_SIZE / 2}
+									width={ICON_SIZE}
+									height={ICON_SIZE}
+									viewBox={ic.viewBox}
+								>
+									<!--
+										paint-order="stroke" draws the white halo first,
+										fill on top — same trick the marker label text uses
+										so the icon stays readable over any background map.
+									-->
+									<g
+										fill={color}
+										stroke="#fff"
+										stroke-width={iconStrokeWidth(ic.viewBox)}
+										stroke-linejoin="round"
+										paint-order="stroke"
+									>
+										{@html ic.inner}
+									</g>
+								</svg>
+							{:else}
+								<circle
+									r={ICON_SIZE / 2 - 2}
+									fill={color}
+									stroke="#fff"
+									stroke-width="1.5"
+									paint-order="stroke"
+								/>
+							{/if}
+							{#if showLabels && m.label}
+								<text class="mp-marker-label" y={ICON_SIZE / 2 + 10}>{m.label}</text>
+							{/if}
+						</g>
+					{/each}
+				</g>
 			</svg>
 		</div>
+	</div>
+</dialog>
 
-		{#if editing}
-			<div class="mp-editor" role="region" aria-label="Marker editor">
-				<div class="mp-editor-header">
-					<strong>{editing.id ? 'Edit marker' : 'New marker'}</strong>
-					<span class="mp-editor-coord">at ({editing.q}, {editing.r})</span>
-				</div>
-
-				<label class="mp-field">
-					<span class="mp-field-label">Label</span>
-					<input
-						class="mp-input"
-						type="text"
-						placeholder="e.g. Driftwood"
-						bind:value={editing.label}
-						onkeydown={(e) => {
-							if (e.key === 'Enter') commitEditing();
-							if (e.key === 'Escape') cancelEditing();
-						}}
-					/>
-				</label>
-
-				<div class="mp-field">
-					<span class="mp-field-label">Icon</span>
-					<div class="mp-icon-picker">
-						{#each MARKER_ICONS as icon}
-							<button
-								class="mp-icon-swatch"
-								class:mp-icon-swatch-selected={editing.icon === icon}
-								onclick={() => (editing!.icon = icon)}
-								use:tooltip={MARKER_ICON_LABELS[icon]}
-								aria-label={MARKER_ICON_LABELS[icon]}
-								aria-pressed={editing.icon === icon}>{@html ICON_SVG[icon]}</button
-							>
-						{/each}
-					</div>
-				</div>
-
-				<div class="mp-editor-footer">
-					{#if editing.id}
-						<button class="mp-btn mp-btn-danger" onclick={deleteEditing}>Delete</button>
-					{/if}
-					<div class="mp-editor-footer-right">
-						<button class="mp-btn" onclick={cancelEditing}>Cancel</button>
-						<button class="mp-btn mp-btn-primary" onclick={commitEditing}>Save</button>
-					</div>
-				</div>
+<!--
+	Icon picker — nested modal that lists every manifest icon grouped by
+	category with a search filter. Live-color-previews using the currently-
+	selected marker's color so users can see what they'll get.
+-->
+<dialog bind:this={iconDialogEl} class="mp-icon-dialog" oncancel={closeIconPicker}>
+	<DialogHeader title={headingText('Choose Icon')} onclose={closeIconPicker} radius="8px 8px 0 0" />
+	<div class="mp-icon-search-row">
+		<input class="mp-icon-search" type="text" placeholder="Search icons…" bind:value={iconSearch} />
+	</div>
+	<div class="mp-icon-body">
+		{#each Object.keys(filteredIcons) as cat (cat)}
+			<div class="mp-icon-cat-label">{filteredIcons[cat][0].categoryLabel}</div>
+			<div class="mp-icon-grid">
+				{#each filteredIcons[cat] as ic (iconKey(ic))}
+					{@const key = iconKey(ic)}
+					<button
+						class="mp-icon-tile"
+						class:mp-icon-tile-selected={selectedMarker?.icon === key}
+						onclick={() => pickIcon(key)}
+						use:tooltip={ic.label}
+						aria-label={ic.label}
+					>
+						<svg viewBox={ic.viewBox} aria-hidden="true">
+							<g fill={selectedColor}>{@html ic.inner}</g>
+						</svg>
+					</button>
+				{/each}
 			</div>
+		{/each}
+		{#if Object.keys(filteredIcons).length === 0}
+			<p class="mp-icon-empty">No icons match "{iconSearch}".</p>
 		{/if}
 	</div>
 </dialog>
@@ -339,6 +678,20 @@
 		style="font-family: var(--font-ui); font-size: 0.82rem; color: var(--text-muted); margin: 0; line-height: 1.5;"
 	>
 		This will remove the background image and every marker on the map. This can't be undone.
+	</p>
+</ConfirmDialog>
+
+<ConfirmDialog
+	bind:this={clearMarkersDialogRef}
+	title="Clear All Markers?"
+	confirmLabel="Clear Markers"
+	onconfirm={clearMarkers}
+>
+	<p
+		style="font-family: var(--font-ui); font-size: 0.82rem; color: var(--text-muted); margin: 0; line-height: 1.5;"
+	>
+		This will remove every marker on the map. The background image will be kept. This can't be
+		undone.
 	</p>
 </ConfirmDialog>
 
@@ -421,14 +774,130 @@
 		opacity: 0.4;
 		cursor: default;
 	}
-	.mp-btn-primary {
-		background: var(--text-accent);
-		color: var(--bg-card);
-		border-color: var(--text-accent);
-	}
 	.mp-btn-danger:not(:disabled):hover {
 		color: var(--color-danger, #ef4444);
 		border-color: var(--color-danger, #ef4444);
+	}
+
+	/* Selection toolbar — sits below the file/export toolbar. Shows a hint
+	   when empty; the marker's editable fields when a marker is selected.
+	   Wraps at narrow widths so mobile still fits every control. */
+	.mp-sel-toolbar {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 8px 14px;
+		background: var(--bg-card);
+		border-bottom: 1px solid var(--border);
+		flex-wrap: wrap;
+		font-family: var(--font-ui);
+		font-size: 0.75rem;
+	}
+	.mp-sel-empty {
+		color: var(--text-dimmer);
+	}
+	.mp-sel-hint {
+		font-style: italic;
+	}
+	.mp-sel-coord {
+		font-family: var(--font-mono, ui-monospace, monospace);
+		font-size: 0.7rem;
+		color: var(--text-dimmer);
+		background: var(--bg-inset);
+		padding: 2px 6px;
+		border-radius: 3px;
+	}
+	.mp-sel-name {
+		flex: 1 1 140px;
+		min-width: 100px;
+		padding: 5px 8px;
+		font-family: var(--font-ui);
+		font-size: 0.82rem;
+		color: var(--text);
+		background: var(--bg-control);
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+	}
+	.mp-sel-name:focus {
+		outline: none;
+		border-color: var(--text-accent);
+	}
+	.mp-sel-icon-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 3px 8px 3px 4px;
+		background: var(--bg-control);
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+		cursor: pointer;
+		color: var(--text);
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		max-width: 180px;
+	}
+	.mp-sel-icon-btn:hover {
+		border-color: var(--text-accent);
+	}
+	.mp-sel-icon-btn svg {
+		width: 22px;
+		height: 22px;
+		flex-shrink: 0;
+	}
+	.mp-sel-icon-label {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.mp-sel-color-group {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+	}
+	.mp-sel-color {
+		width: 28px;
+		height: 28px;
+		padding: 0;
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+		background: transparent;
+		cursor: pointer;
+	}
+	.mp-sel-color::-webkit-color-swatch-wrapper {
+		padding: 2px;
+	}
+	.mp-sel-color::-webkit-color-swatch {
+		border: none;
+		border-radius: 2px;
+	}
+	.mp-sel-presets {
+		display: inline-flex;
+		gap: 3px;
+	}
+	.mp-sel-preset {
+		width: 16px;
+		height: 16px;
+		padding: 0;
+		border: 1px solid var(--border);
+		border-radius: 3px;
+		cursor: pointer;
+	}
+	.mp-sel-preset:hover {
+		transform: scale(1.15);
+	}
+	.mp-sel-preset-selected {
+		outline: 2px solid var(--text-accent);
+		outline-offset: 1px;
+	}
+	.mp-sel-entity {
+		padding: 4px 6px;
+		font-family: var(--font-ui);
+		font-size: 0.75rem;
+		color: var(--text);
+		background: var(--bg-control);
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+		max-width: 180px;
 	}
 
 	.mp-error {
@@ -438,21 +907,37 @@
 		padding: 4px 14px;
 		background: color-mix(in srgb, var(--color-danger, #ef4444) 8%, transparent);
 	}
+	.mp-warn {
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		color: var(--color-danger, #ef4444);
+		padding: 4px 14px;
+		background: color-mix(in srgb, var(--color-danger, #ef4444) 8%, transparent);
+	}
 
 	.mp-body {
-		max-height: calc(88vh - 6rem);
+		/* Fixed height (not max-height) so the canvas has a determined size
+		   for the ResizeObserver + `<svg height:100%>` to work against. The
+		   dialog itself caps at 88vh — this fills whatever remains once the
+		   two toolbars are laid out. */
+		height: calc(88vh - 8rem);
 		overflow: hidden;
 	}
 	.mp-canvas {
-		overflow: auto;
+		width: 100%;
+		height: 100%;
+		box-sizing: border-box;
+		overflow: hidden;
 		overscroll-behavior: contain;
-		padding: 8px 14px 14px;
+		/* No padding — the SVG runs edge-to-edge so hexes cover the whole
+		   canvas. `<svg preserveAspectRatio="…slice">` handles the aspect
+		   mismatch by clipping the outer hex-margin instead of letterboxing. */
 		background: var(--bg-inset);
 	}
 	.mp-canvas svg {
 		display: block;
 		width: 100%;
-		height: auto;
+		height: 100%;
 		user-select: none;
 	}
 
@@ -467,15 +952,22 @@
 		stroke: var(--text-accent);
 		stroke-width: 1.5;
 	}
-
-	/* Marker icon inherits currentColor via the fill rewrite in the
-	   {@html} interpolation above; keep a stroke around each icon so it
-	   stays readable over busy backgrounds. */
-	:global(.mp-marker-icon svg) {
-		filter: drop-shadow(0 0 1.5px rgba(0, 0, 0, 0.85));
+	/* Suppress the default focus rectangle browsers draw around a
+	   role="button" polygon after click — the hover-stroke already
+	   provides adequate feedback, and hex maps are pointer-driven. */
+	.mp-hex:focus,
+	.mp-hex:focus-visible {
+		outline: none;
 	}
-	:global(.mp-marker-icon path) {
-		fill: var(--text);
+
+	.mp-marker {
+		pointer-events: none;
+	}
+	.mp-marker-selected {
+		filter: drop-shadow(0 0 3px var(--text-accent));
+	}
+	:global(.mp-marker-icon) {
+		overflow: visible;
 	}
 	.mp-marker-label {
 		font-family: var(--font-ui);
@@ -489,95 +981,100 @@
 		stroke-linejoin: round;
 	}
 
-	.mp-editor {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-		padding: 10px 14px 14px;
-		border-top: 1px solid var(--border);
+	/* Icon picker dialog. Uses the CLAUDE.md content-sized pattern:
+	   no display:flex on the dialog, max-height on the scrollable body. */
+	.mp-icon-dialog {
+		border: none;
+		padding: 0;
+		border-radius: 8px;
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		margin: 0;
+		transform: translate(-50%, -50%);
+		width: min(720px, calc(100vw - 2rem));
+		max-height: 82vh;
+		overflow: hidden;
 		background: var(--bg-card);
+		color: var(--text);
+		box-shadow:
+			0 16px 48px #00000070,
+			0 0 0 1px var(--border-mid);
+		outline: none;
 	}
-	.mp-editor-header {
-		display: flex;
-		align-items: baseline;
-		gap: 8px;
-		font-family: var(--font-ui);
-		font-size: 0.82rem;
+	.mp-icon-dialog::backdrop {
+		background: #00000060;
 	}
-	.mp-editor-coord {
-		font-size: 0.68rem;
-		color: var(--text-dimmer);
+	.mp-icon-search-row {
+		padding: 8px 14px;
+		background: var(--bg-inset);
+		border-bottom: 1px solid var(--border);
 	}
-	.mp-field {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-	}
-	.mp-field-label {
-		font-family: var(--font-ui);
-		font-size: 0.65rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		color: var(--text-dimmer);
-	}
-	.mp-input {
+	.mp-icon-search {
 		width: 100%;
 		box-sizing: border-box;
-		padding: 5px 8px;
+		padding: 6px 10px;
 		font-family: var(--font-ui);
-		font-size: 0.82rem;
+		font-size: 0.85rem;
 		color: var(--text);
 		background: var(--bg-control);
 		border: 1px solid var(--border-mid);
 		border-radius: 4px;
 	}
-	.mp-input:focus {
+	.mp-icon-search:focus {
 		outline: none;
 		border-color: var(--text-accent);
 	}
-
-	.mp-icon-picker {
-		display: flex;
-		gap: 4px;
-		flex-wrap: wrap;
+	.mp-icon-body {
+		max-height: calc(82vh - 8rem);
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		padding: 8px 14px 14px;
 	}
-	.mp-icon-swatch {
-		width: 32px;
-		height: 32px;
-		padding: 4px;
+	.mp-icon-cat-label {
+		font-family: var(--font-ui);
+		font-size: 0.68rem;
+		font-weight: 700;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--text-dimmer);
+		margin: 12px 0 6px;
+	}
+	.mp-icon-cat-label:first-child {
+		margin-top: 0;
+	}
+	.mp-icon-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+		gap: 4px;
+	}
+	.mp-icon-tile {
+		aspect-ratio: 1 / 1;
+		padding: 6px;
 		background: var(--bg-control);
-		border: 2px solid transparent;
+		border: 1px solid var(--border);
 		border-radius: 4px;
 		cursor: pointer;
-		color: var(--text);
-		box-shadow: 0 0 0 1px var(--border);
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 	}
-	.mp-icon-swatch :global(svg) {
-		width: 18px;
-		height: 18px;
-	}
-	.mp-icon-swatch :global(path) {
-		fill: currentColor;
-	}
-	.mp-icon-swatch:hover {
-		color: var(--text-accent);
-	}
-	.mp-icon-swatch-selected {
+	.mp-icon-tile:hover {
 		border-color: var(--text-accent);
 	}
-
-	.mp-editor-footer {
-		display: flex;
-		justify-content: space-between;
-		gap: 6px;
+	.mp-icon-tile-selected {
+		border-color: var(--text-accent);
+		background: color-mix(in srgb, var(--text-accent) 12%, var(--bg-control));
 	}
-	.mp-editor-footer-right {
-		display: flex;
-		gap: 6px;
-		margin-left: auto;
+	.mp-icon-tile svg {
+		width: 100%;
+		height: 100%;
+	}
+	.mp-icon-empty {
+		font-family: var(--font-ui);
+		font-size: 0.85rem;
+		color: var(--text-dimmer);
+		text-align: center;
+		padding: 24px 0;
 	}
 </style>

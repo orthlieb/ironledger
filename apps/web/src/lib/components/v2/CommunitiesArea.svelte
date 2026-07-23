@@ -102,6 +102,25 @@
 	let activeTab = $state<CmTab>('core');
 	let deleteDialogRef = $state<{ open(): void; close(): void } | null>(null);
 
+	// Cross-component focus signal — the campaign map (or anywhere else) can
+	// dispatch `ironledger:focus-entity` with {kind, id} and any matching
+	// area listens for its own kinds. Here we handle community / place / npc.
+	// Filter clearing avoids the awkward case where the target is hidden by
+	// the current type filter — otherwise the click-through appears to no-op.
+	$effect(() => {
+		const onFocus = (e: Event) => {
+			const d = (e as CustomEvent<{ kind: string; id: string }>).detail;
+			if (!d) return;
+			if (d.kind !== 'community' && d.kind !== 'place' && d.kind !== 'npc') return;
+			// Un-filter if the current filter would hide the target.
+			if (kindFilter !== 'all' && kindFilter !== d.kind) kindFilter = 'all';
+			activeEntryId = d.id;
+			activeTab = 'core';
+		};
+		document.addEventListener('ironledger:focus-entity', onFocus);
+		return () => document.removeEventListener('ironledger:focus-entity', onFocus);
+	});
+
 	// Rail controls — search box, type filter, and sort order. These scale the
 	// list to dozens of entries (see displayEntries below). Filter + sort
 	// persist per-browser so the rail reopens the way you left it.

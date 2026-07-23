@@ -83,6 +83,21 @@
 	];
 
 	let activeExpId = $state<string | null>(null);
+
+	// Cross-component focus signal from the campaign map (or elsewhere) —
+	// {kind, id} where kind is journey or site. Sets the active expedition
+	// so the click-through from a map marker lands on the linked row.
+	$effect(() => {
+		const onFocus = (e: Event) => {
+			const d = (e as CustomEvent<{ kind: string; id: string }>).detail;
+			if (!d) return;
+			if (d.kind !== 'journey' && d.kind !== 'site') return;
+			activeExpId = d.id;
+			activeTab = 'core';
+		};
+		document.addEventListener('ironledger:focus-entity', onFocus);
+		return () => document.removeEventListener('ironledger:focus-entity', onFocus);
+	});
 	let activeTab = $state<ExpTab>('core');
 	let deleteDialogRef = $state<{ open(): void; close(): void } | null>(null);
 
