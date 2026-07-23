@@ -60,6 +60,7 @@
 		hasAnyContent,
 		initMap,
 		backgroundUrl,
+		persistSettings,
 	} from '$lib/mapStore.svelte.js';
 	import { downscaleImage, MapImageError } from '$lib/mapImage.js';
 	import { exportMapPng, exportMapJson } from '$lib/mapExport.js';
@@ -221,6 +222,140 @@
 	});
 
 	const markerCount = $derived(mapState.markers.length);
+
+	// ─── Zoom + pan ────────────────────────────────────────────────────────────
+	// The SVG's viewBox is fixed at canvas dimensions; zoom scales its
+	// rendered pixel size and the canvas div's `overflow: auto` handles
+	// the pan. Zoom multiplier persists server-side (per map); scroll
+	// position persists in localStorage (per device — a portrait phone
+	// and a landscape desktop don't want to share a scroll offset).
+	const MIN_ZOOM = 0.5;
+	const MAX_ZOOM = 4;
+	function clampZoom(z: number): number {
+		return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z));
+	}
+
+	let zoom = $state(1);
+
+	/** SVG rendered pixel size — canvas dims × zoom. viewBox stays
+	 *  0 0 canvasPxW canvasPxH so a zoom = 2 SVG renders internally at 2×
+	 *  its viewBox, visually enlarging everything (hexes, image, markers,
+	 *  scale bar, border) in lockstep. */
+	const svgWidth = $derived(canvasPxW * zoom);
+	const svgHeight = $derived(canvasPxH * zoom);
+
+	/** Load the server's saved zoom once on init, then never again. */
+	let hydratedZoom = false;
+	$effect(() => {
+		if (hydratedZoom) return;
+		if (!mapState.loaded) return;
+		const saved = mapState.settings.view?.zoom;
+		if (typeof saved === 'number' && saved > 0) zoom = clampZoom(saved);
+		hydratedZoom = true;
+	});
+
+	/** Restore the local pan fraction once the SVG has grown big enough to
+	 *  be scrollable. Runs at most once per dialog open. */
+	let restoredPan = false;
+	$effect(() => {
+		if (restoredPan) return;
+		if (!canvasEl) return;
+		if (!mapState.loaded) return;
+		const maxX = canvasEl.scrollWidth - canvasEl.clientWidth;
+		const maxY = canvasEl.scrollHeight - canvasEl.clientHeight;
+		if (maxX <= 0 && maxY <= 0) return; // not scrollable yet
+		canvasEl.scrollLeft = Math.max(0, maxX) * (mapSettings.pan.fx ?? 0.5);
+		canvasEl.scrollTop = Math.max(0, maxY) * (mapSettings.pan.fy ?? 0.5);
+		restoredPan = true;
+	});
+
+	let zoomSaveTimer: ReturnType<typeof setTimeout> | null = null;
+	function saveZoomSoon() {
+		if (zoomSaveTimer) clearTimeout(zoomSaveTimer);
+		zoomSaveTimer = setTimeout(() => {
+			mapState.settings.view = { ...(mapState.settings.view ?? {}), zoom };
+			void persistSettings();
+		}, 400);
+	}
+
+	let panSaveTimer: ReturnType<typeof setTimeout> | null = null;
+	function savePanSoon() {
+		if (panSaveTimer) clearTimeout(panSaveTimer);
+		panSaveTimer = setTimeout(() => {
+			if (!canvasEl) return;
+			const maxX = canvasEl.scrollWidth - canvasEl.clientWidth;
+			const maxY = canvasEl.scrollHeight - canvasEl.clientHeight;
+			mapSettings.pan.fx = maxX > 0 ? canvasEl.scrollLeft / maxX : 0.5;
+			mapSettings.pan.fy = maxY > 0 ? canvasEl.scrollTop / maxY : 0.5;
+			persistMapSettings();
+		}, 300);
+	}
+
+	function onScroll() {
+		if (!restoredPan) return; // don't stomp the restored value with the pre-restore 0/0
+		savePanSoon();
+	}
+
+	/**
+	 * Zoom to a specific point (in canvas viewport coords). Adjusts scroll
+	 * so that the world-space pixel under the anchor stays under the anchor
+	 * after the zoom — the standard "zoom to cursor" behavior.
+	 */
+	function zoomAround(newZoom: number, anchorX: number, anchorY: number) {
+		const nz = clampZoom(newZoom);
+		if (nz === zoom || !canvasEl) return;
+		const worldX = canvasEl.scrollLeft + anchorX;
+		const worldY = canvasEl.scrollTop + anchorY;
+		const scale = nz / zoom;
+		zoom = nz;
+		saveZoomSoon();
+		requestAnimationFrame(() => {
+			if (!canvasEl) return;
+			canvasEl.scrollLeft = worldX * scale - anchorX;
+			canvasEl.scrollTop = worldY * scale - anchorY;
+			savePanSoon();
+		});
+	}
+
+	function zoomCentered(newZoom: number) {
+		if (!canvasEl) {
+			zoom = clampZoom(newZoom);
+			saveZoomSoon();
+			return;
+		}
+		zoomAround(newZoom, canvasEl.clientWidth / 2, canvasEl.clientHeight / 2);
+	}
+
+	function onWheel(e: WheelEvent) {
+		// Ctrl/Cmd + wheel = zoom-to-cursor. Bare wheel scrolls the canvas
+		// naturally via `overflow: auto` — no handling needed here.
+		if (!e.ctrlKey && !e.metaKey) return;
+		e.preventDefault();
+		if (!canvasEl) return;
+		const rect = canvasEl.getBoundingClientRect();
+		const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+		zoomAround(zoom * factor, e.clientX - rect.left, e.clientY - rect.top);
+	}
+
+	function zoomIn() {
+		zoomCentered(zoom * 1.25);
+	}
+	function zoomOut() {
+		zoomCentered(zoom / 1.25);
+	}
+	function zoomFit() {
+		// "Fit" = zoom 1 (canvas exactly holds the SVG viewBox). Also
+		// re-centers by resetting the fraction to (0.5, 0.5).
+		zoomCentered(1);
+		requestAnimationFrame(() => {
+			if (!canvasEl) return;
+			const maxX = canvasEl.scrollWidth - canvasEl.clientWidth;
+			const maxY = canvasEl.scrollHeight - canvasEl.clientHeight;
+			canvasEl.scrollLeft = Math.max(0, maxX) / 2;
+			canvasEl.scrollTop = Math.max(0, maxY) / 2;
+			savePanSoon();
+		});
+	}
 
 	/**
 	 * Scale + border overlay geometry — computed in pixel-space (viewBox
@@ -463,6 +598,32 @@
 				use:tooltip={'Map options — scale + border'}
 				aria-label="Map options">Options</button
 			>
+			<div class="mp-zoom" role="group" aria-label="Zoom controls">
+				<button
+					class="mp-btn mp-zoom-btn"
+					onclick={zoomOut}
+					disabled={zoom <= MIN_ZOOM}
+					use:tooltip={'Zoom out (Ctrl/Cmd + wheel)'}
+					aria-label="Zoom out">−</button
+				>
+				<span class="mp-zoom-label" use:tooltip={'Current zoom level. Click Fit to reset.'}
+					>{Math.round(zoom * 100)}%</span
+				>
+				<button
+					class="mp-btn mp-zoom-btn"
+					onclick={zoomIn}
+					disabled={zoom >= MAX_ZOOM}
+					use:tooltip={'Zoom in (Ctrl/Cmd + wheel)'}
+					aria-label="Zoom in">+</button
+				>
+				<button
+					class="mp-btn"
+					onclick={zoomFit}
+					disabled={zoom === 1}
+					use:tooltip={'Fit map to view (100%)'}
+					aria-label="Fit to view">Fit</button
+				>
+			</div>
 		</div>
 		<div class="mp-tools">
 			<span class="mp-count">{markerCount} marker{markerCount === 1 ? '' : 's'}</span>
@@ -597,16 +758,19 @@
 	{/if}
 
 	<div class="mp-body">
-		<div class="mp-canvas" bind:this={canvasEl}>
+		<div class="mp-canvas" bind:this={canvasEl} onwheel={onWheel} onscroll={onScroll}>
 			<!--
 				viewBox is pixel-space matching the canvas exactly (updated
-				reactively from the ResizeObserver). 1 user unit = 1 CSS
-				pixel, so there's nothing for preserveAspectRatio to do —
-				the dynamicHexSize handles the "image fills, grid follows"
-				layout in pixel space directly.
+				reactively from the ResizeObserver). SVG's rendered width/
+				height = canvasPxW/H × zoom, so when zoom > 1 the SVG grows
+				past the canvas and .mp-canvas's overflow: auto handles the
+				pan. All internal geometry (hexes, image, markers, scale
+				bar, border) is unchanged — the browser scales it.
 			-->
 			<svg
 				bind:this={svgEl}
+				width={svgWidth}
+				height={svgHeight}
 				viewBox="{vb.x} {vb.y} {vb.w} {vb.h}"
 				preserveAspectRatio="none"
 				aria-label="Campaign map"
@@ -953,6 +1117,29 @@
 	.mp-btn-icon :global(svg path) {
 		fill: currentColor;
 	}
+	/* Zoom control chip — minus + percentage + plus + fit, laid out
+	   inline so the toolbar row stays a single band on desktop. */
+	.mp-zoom {
+		display: inline-flex;
+		align-items: center;
+		gap: 2px;
+	}
+	.mp-zoom-btn {
+		padding: 4px 8px;
+		font-size: 0.85rem;
+		font-weight: 700;
+		min-width: 26px;
+		text-transform: none;
+	}
+	.mp-zoom-label {
+		font-family: var(--font-mono, ui-monospace, monospace);
+		font-size: 0.7rem;
+		color: var(--text-muted);
+		min-width: 44px;
+		text-align: center;
+		user-select: none;
+	}
+
 	.mp-btn-danger:not(:disabled):hover {
 		color: var(--color-danger, #ef4444);
 		border-color: var(--color-danger, #ef4444);
@@ -1109,18 +1296,21 @@
 		width: 100%;
 		height: 100%;
 		box-sizing: border-box;
-		overflow: hidden;
+		/* Pan lives here: overflow: auto lets the browser handle scrolling
+		   when the SVG (rendered at canvasPxW/H × zoom) is bigger than the
+		   canvas. At zoom = 1 the two match exactly, no scrollbars. */
+		overflow: auto;
 		overscroll-behavior: contain;
-		/* No padding — the SVG runs edge-to-edge so hexes cover the whole
-		   canvas. `<svg preserveAspectRatio="…slice">` handles the aspect
-		   mismatch by clipping the outer hex-margin instead of letterboxing. */
 		background: var(--bg-inset);
+		/* Native pinch on trackpads triggers ctrl+wheel — we handle that
+		   in onWheel. `touch-action: none` would break bare-wheel pan
+		   which the browser handles for free, so leave it default. */
 	}
 	.mp-canvas svg {
 		display: block;
-		width: 100%;
-		height: 100%;
 		user-select: none;
+		/* SVG's own width/height attributes drive the size — CSS shouldn't
+		   stretch it or the zoom math goes sideways. */
 	}
 
 	.mp-hex {
