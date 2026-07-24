@@ -1,11 +1,11 @@
 // =============================================================================
 // Iron Ledger — Import Sanitizer
 //
-// Validates and sanitizes untrusted JSON from imported files before any of it
-// is sent to the API or rendered in the UI. Accepts both a plain JSON file
-// and a `.zip` export produced by `exportZip()` — the zip is decompressed
-// and its `images/*` entries are reassembled into inline `imageUrl` data
-// URLs before the same sanitiser pass runs.
+// Validates and sanitizes untrusted data from an imported `.zip` bundle
+// (produced by `exportZip()`) before any of it is sent to the API or
+// rendered in the UI. The zip is decompressed, its `images/*` entries
+// are reassembled into inline data URLs on the corresponding entity
+// records, then a full sanitiser pass runs on the reconstituted JSON.
 //
 // Threat model:
 //   • Prototype pollution  — __proto__ / constructor / prototype keys stripped
@@ -50,29 +50,12 @@ const POISON_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 // Public API
 // ---------------------------------------------------------------------------
 
-/**
- * Parse and sanitize a raw import file string.
- * Throws `ImportError` for any user-facing problem (bad JSON, too large, etc.).
- * Returns the sanitized value — always safe to pass to the API or render.
- */
-export function parseImportJson(text: string): unknown {
-	if (text.length > MAX_BYTES) {
-		throw new ImportError(`File is too large (max ${MAX_BYTES / 1024 / 1024} MB).`);
-	}
-	let parsed: unknown;
-	try {
-		parsed = JSON.parse(text);
-	} catch {
-		throw new ImportError('File is not valid JSON.');
-	}
-	return sanitize(parsed, 0);
-}
-
 // ---------------------------------------------------------------------------
-// Zip import — decompresses an `.zip` produced by `exportZip()` and
-// reassembles `portraitFile: 'images/…'` references back into inline
-// `imageUrl: 'data:image/jpeg;base64,…'` values, so the rest of the
-// import flow can treat it identically to a legacy JSON file.
+// Zip import — decompresses a `.zip` produced by `exportZip()` and
+// reassembles `imageUrlFile` / `portraitFile` references back into inline
+// `imageUrl` / `portrait` data URLs. The result is a plain
+// `{ manifest, data }` envelope the rest of the import flow can walk
+// like the pre-zip-era JSON exports.
 // ---------------------------------------------------------------------------
 
 /** File names the exporter puts at the top of the zip — read in this
@@ -98,9 +81,10 @@ interface ZipManifest {
 	body?: string;
 }
 
-/** Parse a raw `.zip` byte payload from the file input. Behaves exactly
- *  like `parseImportJson` on the reassembled JSON body — same size
- *  guard, same sanitiser pass. */
+/** Parse a raw `.zip` byte payload from the file input. Returns the
+ *  reassembled + sanitised `{ manifest, data }` envelope. Throws
+ *  `ImportError` for any user-facing problem (invalid archive, missing
+ *  manifest, oversized body, zip bomb, etc.). */
 export function parseImportZip(bytes: Uint8Array): unknown {
 	if (bytes.length > MAX_BYTES) {
 		throw new ImportError(`File is too large (max ${MAX_BYTES / 1024 / 1024} MB).`);
