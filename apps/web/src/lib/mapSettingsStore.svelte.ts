@@ -2,10 +2,11 @@
 // Iron Ledger — Map view settings (localStorage-backed)
 //
 // Per-device display preferences for the campaign map: scale-bar toggle +
-// unit + distance-per-hex, and checkered-border toggle. Deliberately
-// separate from `mapStore` (which is server-backed marker data) because
-// these are cosmetic/local — moving them server-side is a follow-up if
-// users start wanting cross-device parity.
+// unit + distance-per-cell, grid visibility + opacity, label visibility,
+// and restored pan fraction. Deliberately separate from `mapStore`
+// (which is server-backed marker data) because these are cosmetic/local
+// — moving them server-side is a follow-up if users start wanting
+// cross-device parity.
 // =============================================================================
 
 const STORAGE_KEY = 'ironledger:mapSettings';
@@ -18,17 +19,20 @@ export interface MapSettings {
 		enabled: boolean;
 		/** Distance label unit. */
 		unit: ScaleUnit;
-		/** Real-world distance one hex represents (e.g. `5` = 5 miles/km). */
+		/** Real-world distance one base grid cell represents at 100% zoom.
+		 *  Stored server-side under `mapState.settings.scale.perHex` for
+		 *  backwards compat with the pre-square-grid data — the name still
+		 *  reads correctly for the current model. */
 		perHex: number;
 		/** Number of segments in the scale bar (e.g. `4` = 5 tick marks). */
 		segments: number;
 	};
-	hexes: {
-		/** Show the translucent hex grid overlay. Hexes stay clickable
-		 *  either way — the flag just controls the stroke visibility so
-		 *  markers can be placed on an "invisible" grid. */
+	grid: {
+		/** Show the translucent grid overlay. Clicks still place markers
+		 *  either way — the flag just controls line visibility so markers
+		 *  can be placed on an "invisible" grid. */
 		visible: boolean;
-		/** Hex stroke opacity in `[0, 1]`. Default 0.5 = subtly visible
+		/** Grid stroke opacity in `[0, 1]`. Default 0.5 = subtly visible
 		 *  over any background; users tune per-map preference. */
 		opacity: number;
 	};
@@ -51,7 +55,7 @@ export interface MapSettings {
 
 const DEFAULTS: MapSettings = {
 	scale: { enabled: false, unit: 'miles', perHex: 5, segments: 4 },
-	hexes: { visible: true, opacity: 0.5 },
+	grid: { visible: true, opacity: 0.5 },
 	labels: { visible: true },
 	pan: { fx: 0.5, fy: 0.5 },
 };
@@ -61,10 +65,21 @@ const DEFAULTS: MapSettings = {
 function freshDefaults(): MapSettings {
 	return {
 		scale: { ...DEFAULTS.scale },
-		hexes: { ...DEFAULTS.hexes },
+		grid: { ...DEFAULTS.grid },
 		labels: { ...DEFAULTS.labels },
 		pan: { ...DEFAULTS.pan },
 	};
+}
+
+/** Legacy shape carried the same fields under `hexes`. Accept either key
+ *  so a user with an existing localStorage entry keeps their preference
+ *  through the square-grid rename. */
+interface LegacyMapSettings {
+	scale?: Partial<MapSettings['scale']>;
+	grid?: Partial<MapSettings['grid']>;
+	hexes?: Partial<MapSettings['grid']>;
+	labels?: Partial<MapSettings['labels']>;
+	pan?: Partial<MapSettings['pan']>;
 }
 
 function load(): MapSettings {
@@ -72,10 +87,10 @@ function load(): MapSettings {
 	try {
 		const raw = localStorage.getItem(STORAGE_KEY);
 		if (!raw) return freshDefaults();
-		const parsed = JSON.parse(raw) as Partial<MapSettings>;
+		const parsed = JSON.parse(raw) as LegacyMapSettings;
 		return {
 			scale: { ...DEFAULTS.scale, ...(parsed.scale ?? {}) },
-			hexes: { ...DEFAULTS.hexes, ...(parsed.hexes ?? {}) },
+			grid: { ...DEFAULTS.grid, ...(parsed.hexes ?? {}), ...(parsed.grid ?? {}) },
 			labels: { ...DEFAULTS.labels, ...(parsed.labels ?? {}) },
 			pan: { ...DEFAULTS.pan, ...(parsed.pan ?? {}) },
 		};

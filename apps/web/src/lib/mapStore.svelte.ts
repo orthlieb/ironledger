@@ -33,8 +33,12 @@ export interface MapMarker {
 	 *  the key in {#each} blocks and by the marker editor to look up the
 	 *  row it's editing. */
 	id: string;
-	q: number;
-	r: number;
+	/** Fractional world-unit coordinates. `x ∈ [0, cols]`, `y ∈ [0, rows]`.
+	 *  Zoom in on the map to place markers at sub-cell precision — the
+	 *  placement flow snaps to the deepest visible sub-grid intersection
+	 *  at the current zoom. */
+	x: number;
+	y: number;
 	label: string;
 	/** Manifest key of the icon: "<category>/<slug>", e.g. "places/settlement".
 	 *  Legacy markers may hold a bare slug (e.g. "settlement"); the render
@@ -67,6 +71,11 @@ export interface MapServerSettings {
 		 *  overflow. */
 		zoom?: number;
 	};
+	/** Canvas aspect ratio (width / height) for this map. Set to the
+	 *  background image's aspect when a background is uploaded so the
+	 *  map view fits the image without letterbox. Defaults to
+	 *  DEFAULT_MAP_ASPECT (16:9) for fresh maps. */
+	aspect?: number;
 }
 
 /** Ownership metadata — Phase 3 will attach maps to first-class entities
@@ -228,22 +237,46 @@ export function initMap(): Promise<void> {
 	return _initPromise;
 }
 
+/** Drop legacy hex-coord markers on load. When we cut over from axial
+ *  (q, r) to fractional (x, y), any existing marker rows without valid
+ *  `x`/`y` numbers would render at (0, 0) and pile up in the top-left.
+ *  We're pre-1.0 with no external users, so it's cleaner to wipe them
+ *  than to run a lossy geometric conversion. */
+function isValidMarker(m: unknown): m is MapMarker {
+	if (!m || typeof m !== 'object') return false;
+	const r = m as Record<string, unknown>;
+	return (
+		typeof r.id === 'string' &&
+		typeof r.x === 'number' &&
+		Number.isFinite(r.x) &&
+		typeof r.y === 'number' &&
+		Number.isFinite(r.y) &&
+		typeof r.label === 'string' &&
+		typeof r.icon === 'string'
+	);
+}
+
 async function loadMapInto(mapId: string): Promise<void> {
 	const res = await fetch(`/api/session/maps/${mapId}`);
 	if (!res.ok) throw new Error(`Server returned ${res.status}`);
 	const body = (await res.json()) as {
 		id?: string;
 		name?: string;
-		markers?: MapMarker[];
+		markers?: unknown[];
 		backgroundHash?: string | null;
 		settings?: MapServerSettings | null;
 	};
 	mapState.activeId = body.id ?? mapId;
 	mapState.name = body.name ?? 'Untitled Map';
-	mapState.markers = Array.isArray(body.markers) ? body.markers : [];
+	const raw = Array.isArray(body.markers) ? body.markers : [];
+	const kept = raw.filter(isValidMarker);
+	mapState.markers = kept;
 	mapState.backgroundHash = body.backgroundHash ?? '';
 	mapState.settings = body.settings && typeof body.settings === 'object' ? body.settings : {};
 	mapState.loaded = true;
+	// If we dropped legacy (q, r)-only markers, persist the pruned list
+	// so the server catches up and we don't re-drop them on every load.
+	if (kept.length !== raw.length) void persistMarkers();
 }
 
 /** Switch to a different map. Fetches its full detail, updates the
@@ -355,8 +388,16 @@ export async function deleteMap(mapId: string): Promise<void> {
 // Readers
 // ---------------------------------------------------------------------------
 
-export function markersAt(q: number, r: number): MapMarker[] {
-	return mapState.markers.filter((m) => m.q === q && m.r === r);
+/** Markers that snap to the same sub-cell as `(x, y)` at the given zoom.
+ *  Grid subdivision at zoom 2 means half-cells, zoom 4 means quarter-
+ *  cells; two markers are "at the same cell" when they land on the same
+ *  intersection under the current snap resolution. */
+export function markersAt(x: number, y: number, zoom = 1): MapMarker[] {
+	const step = 1 / Math.pow(2, Math.max(0, Math.floor(Math.log2(Math.max(1, zoom)))));
+	const sx = Math.round(x / step) * step;
+	const sy = Math.round(y / step) * step;
+	const eps = step / 2;
+	return mapState.markers.filter((m) => Math.abs(m.x - sx) < eps && Math.abs(m.y - sy) < eps);
 }
 
 export function hasAnyContent(): boolean {
@@ -386,8 +427,8 @@ async function persistMarkers(): Promise<void> {
  *  immediate editing. Optimistic — id is minted client-side and the array
  *  is updated before the PUT fires. */
 export function addMarker(input: {
-	q: number;
-	r: number;
+	x: number;
+	y: number;
 	label: string;
 	icon: string;
 	color?: string;
@@ -406,6 +447,31 @@ export function updateMarker(id: string, patch: Partial<Omit<MapMarker, 'id'>>):
 	void persistMarkers();
 }
 
+/** Duplicate a marker in-place — same label / icon / color / entity link,
+ *  offset by `+dx, +dy` world units so the copy is visible next to the
+ *  original. Callers pass the current grid bounds so the offset can be
+ *  clamped inside them; a copy that would spill past the edge just sits
+ *  at the boundary. Returns the new marker's id, or null when the
+ *  source id doesn't exist. */
+export function duplicateMarker(
+	id: string,
+	bounds: { cols: number; rows: number },
+	offset = { dx: 0.5, dy: 0.5 },
+): string | null {
+	const src = mapState.markers.find((m) => m.id === id);
+	if (!src) return null;
+	const nx = Math.max(0, Math.min(bounds.cols, src.x + offset.dx));
+	const ny = Math.max(0, Math.min(bounds.rows, src.y + offset.dy));
+	return addMarker({
+		x: nx,
+		y: ny,
+		label: src.label,
+		icon: src.icon,
+		color: src.color,
+		entityId: src.entityId,
+	});
+}
+
 export function removeMarker(id: string): void {
 	const idx = mapState.markers.findIndex((m) => m.id === id);
 	if (idx < 0) return;
@@ -413,9 +479,12 @@ export function removeMarker(id: string): void {
 	void persistMarkers();
 }
 
-/** Upload a fresh background image for the active map. `dataUrl` is a
- *  `data:image/…;base64,…` string (produced by mapImage.downscaleImage). */
-export async function setBackground(dataUrl: string): Promise<void> {
+/** Upload a fresh background image for the active map. Accepts the
+ *  optional aspect ratio (width / height) so the map's canvas can adapt
+ *  to whatever shape the user just uploaded — portrait, square,
+ *  ultrawide — without letterbox. `dataUrl` is produced by
+ *  `mapImage.downscaleImage`, which also returns the aspect. */
+export async function setBackground(dataUrl: string, aspect?: number): Promise<void> {
 	if (!mapState.activeId) return;
 	try {
 		const res = await fetch(`/api/session/maps/${mapState.activeId}/background`, {
@@ -427,6 +496,15 @@ export async function setBackground(dataUrl: string): Promise<void> {
 		const body = (await res.json()) as { hash?: string };
 		if (body.hash) mapState.backgroundHash = body.hash;
 		mapState.error = '';
+		// If a fresh aspect was measured, persist it alongside the hash so
+		// the canvas fits the image on the next render — and on every
+		// subsequent load from any device.
+		if (typeof aspect === 'number' && Number.isFinite(aspect) && aspect > 0) {
+			if (mapState.settings.aspect !== aspect) {
+				mapState.settings.aspect = aspect;
+				void persistSettings();
+			}
+		}
 	} catch (err) {
 		mapState.error = err instanceof Error ? err.message : 'Failed to upload image';
 	}

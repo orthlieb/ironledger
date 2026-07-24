@@ -16,10 +16,13 @@ import { withUserContext } from '../db/index.js';
 
 export interface MapMarker {
   id: string;
-  q: number;
-  r: number;
+  /** Fractional world-unit coordinates on the square grid.
+   *  See apps/web/src/lib/mapStore.svelte.ts::MapMarker for the client type. */
+  x: number;
+  y: number;
   label: string;
   icon: string;
+  color?: string;
   entityId?: string;
 }
 

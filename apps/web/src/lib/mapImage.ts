@@ -62,13 +62,25 @@ function loadFileToImage(file: File): Promise<HTMLImageElement> {
 	});
 }
 
+export interface DownscaledImage {
+	/** `data:image/jpeg;base64,…` URL ready for setBackground(). */
+	dataUrl: string;
+	/** Post-scale width in pixels. */
+	width: number;
+	/** Post-scale height in pixels. */
+	height: number;
+	/** width / height. Convenience for callers that want the aspect ratio
+	 *  to store per-map, so the canvas can adapt. */
+	aspect: number;
+}
+
 /**
  * Downscale an image so its longest side is at most MAP_IMAGE_MAX_DIMENSION,
- * then re-encode as JPEG at MAP_IMAGE_QUALITY. Returns a `data:image/jpeg`
- * URL. If the image is already smaller than the cap, it's still re-encoded
- * so we always end up with predictable JPEG bytes.
+ * then re-encode as JPEG at MAP_IMAGE_QUALITY. Returns the data URL plus
+ * the post-scale dimensions + aspect ratio — callers use the aspect to
+ * shape the map's canvas to fit the image without letterbox.
  */
-export async function downscaleImage(file: File): Promise<string> {
+export async function downscaleImage(file: File): Promise<DownscaledImage> {
 	const img = await loadFileToImage(file);
 	const longest = Math.max(img.width, img.height);
 	const scale = Math.min(1, MAP_IMAGE_MAX_DIMENSION / longest);
@@ -91,5 +103,5 @@ export async function downscaleImage(file: File): Promise<string> {
 			`Image is still too large after scaling (${(bytes / 1024 / 1024).toFixed(1)} MB). Please crop or use a lower-resolution source.`,
 		);
 	}
-	return dataUrl;
+	return { dataUrl, width: w, height: h, aspect: w / h };
 }

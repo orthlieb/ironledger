@@ -41,10 +41,13 @@ const portraitBody = z.object({ dataUrl: z.string() });
 
 const mapMarkerSchema = z.object({
   id: z.string(),
-  q: z.number().int(),
-  r: z.number().int(),
+  // World-unit fractional coordinates on the square grid. See
+  // apps/web/src/lib/mapStore.svelte.ts::MapMarker for the client-side type.
+  x: z.number(),
+  y: z.number(),
   label: z.string().max(120),
   icon: z.string().max(32),
+  color: z.string().max(64).optional(),
   entityId: z.string().max(200).optional(),
 });
 const putMarkersBody = z.object({ markers: z.array(mapMarkerSchema).max(500) });

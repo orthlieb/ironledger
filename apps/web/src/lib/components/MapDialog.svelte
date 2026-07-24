@@ -1,27 +1,44 @@
 <script lang="ts">
 	/**
-	 * MapDialog — annotate an uploaded map with hex-pinned markers.
+	 * MapDialog — annotate an uploaded map with grid-pinned markers.
 	 *
-	 * A user-uploaded background image sits under a translucent hex grid.
-	 * Clicking a hex places a marker (or selects the existing one) and the
-	 * selection toolbar at the top switches to edit its label, icon, color
-	 * and optional entity link. Every field auto-saves through the shared
-	 * `updateMarker()` optimistic pipeline — no explicit Save/Cancel.
+	 * A user-uploaded background image sits under a translucent square
+	 * grid. Clicking on the grid places a marker (or selects the existing
+	 * one) and the selection toolbar at the top switches to edit its
+	 * label, icon, color and optional entity link. Every field auto-saves
+	 * through the shared `updateMarker()` optimistic pipeline — no
+	 * explicit Save/Cancel.
 	 *
-	 * Layout: three SVG layers stacked in <svg> render order:
-	 *   1. background <image> (fit preserving aspect ratio via
-	 *      preserveAspectRatio="xMidYMid meet"; letterbox falls onto the
-	 *      dialog's own background colour).
-	 *   2. hex grid — every cell is one <polygon>, translucent stroke, no
-	 *      fill. Click handler opens or selects a marker.
-	 *   3. marker layer — icon (colored fill) + optional label, positioned
-	 *      at the hex centre.
+	 * Coord system: fractional world units. viewBox is `0 0 cols rows`
+	 * where each cell is 1×1 unit. Marker positions are floats in
+	 * `[0, cols] × [0, rows]`. Zoom subdivides the grid by power-of-2
+	 * octaves — at 200% each cell splits 2×2 (0.5 spacing), at 400% it's
+	 * 4×4 (0.25) — and placement snaps to the deepest visible
+	 * intersection at the current zoom.
+	 *
+	 * Grid + canvas shape: each map stores its aspect ratio in
+	 * `settings.aspect`; `gridDimsForAspect()` derives cols × rows to hit
+	 * ~200 total cells at whatever shape, and the canvas body sets its
+	 * `aspect-ratio` inline from the grid's actual ratio so cells render
+	 * exactly square regardless of the source image's proportions.
+	 *
+	 * Layout: three SVG layers inside a single `<svg>`:
+	 *   1. background `<image>` filling the whole viewBox (no letterbox —
+	 *      the canvas aspect matches the grid exactly).
+	 *   2. grid lines — major (integer) + minor (sub-octave) with
+	 *      `vector-effect="non-scaling-stroke"` so strokes stay a fixed
+	 *      screen weight at any zoom.
+	 *   3. click-capture `<rect>` — invisible, catches every pointer
+	 *      event and forwards it to `onGridClick` (which snaps + routes
+	 *      to place/select).
+	 *   4. marker layer — icon (colored fill) + optional label, positioned
+	 *      at fractional `(m.x, m.y)`. Markers themselves are
+	 *      `pointer-events: none`; hits are resolved via `markersAt()`.
 	 *
 	 * Icon vocabulary comes from apps/web/static/map/<category>/<slug>.svg,
-	 * indexed at build time into $lib/generated/mapIconManifest. See
-	 * scripts/build-map-icons.mjs and vite.config.ts. New markers get the
-	 * default icon+color; users override via the selection toolbar's
-	 * "Change icon…" nested picker dialog.
+	 * indexed at build time into $lib/generated/mapIconManifest. New
+	 * markers get the default icon+color; users override via the
+	 * selection toolbar's "Change icon…" nested picker dialog.
 	 *
 	 * Follows CLAUDE.md's iOS-safe dialog rules: `vh` (not `dvh`), centred
 	 * via top:50%+transform, no `display: flex` on the dialog itself,
@@ -36,18 +53,21 @@
 	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import {
+		DEFAULT_MAP_ASPECT,
 		DEFAULT_MARKER_COLOR,
 		DEFAULT_MARKER_ICON,
 		MARKER_COLOR_PRESETS,
+		gridDimsForAspect,
 		resolveMapIcon,
+		snapResolutionForZoom,
+		subGridOctaveForZoom,
 	} from '$lib/mapConstants.js';
 	import {
 		MAP_ICON_CATEGORIES,
 		MAP_ICON_LIST,
 		type MapIcon,
 	} from '$lib/generated/mapIconManifest.js';
-	import { axialToPx, hexPolygonPoints } from '$lib/mapGeometry.js';
-	import { MAP_COLS, MAP_ROWS } from '$lib/mapConstants.js';
+	import { gridLineOffsets, isMajorLine, snapCoord } from '$lib/mapGeometry.js';
 	import {
 		mapState,
 		mapListState,
@@ -55,12 +75,14 @@
 		addMarker,
 		updateMarker,
 		removeMarker,
+		duplicateMarker,
 		setBackground,
 		initMap,
 		backgroundUrl,
 		persistSettings,
 		switchMap,
 		createMap,
+		type MapMarker,
 	} from '$lib/mapStore.svelte.js';
 	import { downscaleImage, MapImageError } from '$lib/mapImage.js';
 	import { exportMapPng, exportMapJson } from '$lib/mapExport.js';
@@ -155,19 +177,18 @@
 		return () => document.removeEventListener('ironledger:export-map', handler);
 	});
 
-	/**
-	 * Sizing model: the background image is the star. We fix its aspect
-	 * to a canonical MAP_COLS × MAP_ROWS at the current dynamic hex size,
-	 * then scale that hex size so the image fills the canvas with at
-	 * least a half-hex margin on every side. Whichever axis has extra
-	 * space beyond the minimum gets more margin — either way the hex
-	 * grid fills the entire canvas.
-	 *
-	 * Marker alignment: `axialToPx(q, r, dynamicHexSize)` uses the same
-	 * hex size the image scales to, so a marker at axial (3, 2) always
-	 * lands on the same pixel of the image regardless of dialog size or
-	 * device.
-	 */
+	// ─── Grid dims (from the map's aspect) ─────────────────────────────────────
+	// The map stores its own aspect ratio in settings.aspect; we derive
+	// grid dims from that so a portrait map gets tall-and-narrow cells and
+	// a wide map gets short-and-wide. The canvas body's aspect-ratio is
+	// bound to the grid's actual ratio (cols/rows), so cells render
+	// perfectly square regardless of the source image's exact aspect.
+	const mapAspect = $derived(mapState.settings.aspect ?? DEFAULT_MAP_ASPECT);
+	const gridDims = $derived(gridDimsForAspect(mapAspect));
+
+	// ─── Canvas pixel sizing ───────────────────────────────────────────────────
+	// ResizeObserver keeps canvas dims live so the overlay SVG (scale bar)
+	// stays locked to the visible view at any dialog size.
 	let canvasPxW = $state(800);
 	let canvasPxH = $state(560);
 
@@ -184,116 +205,27 @@
 		return () => ro.disconnect();
 	});
 
-	/**
-	 * Dynamic hex size in SVG user units (= canvas pixels since viewBox
-	 * is pixel-space). Chosen so a MAP_COLS × MAP_ROWS hex grid fills the
-	 * canvas edge-to-edge — no reserved margin. Grid aspect (20×13 ≈
-	 * 16:9) matches the canvas's aspect-ratio: 16/9, so both constraints
-	 * bind at essentially the same value and image + hexes fill the
-	 * whole canvas with no side bands.
-	 *
-	 * Solve for s in:
-	 *   canvasPxW ≥ MAP_COLS · √3 · s  →  s ≤ pxW / (MAP_COLS · √3)
-	 *   canvasPxH ≥ MAP_ROWS · 1.5 · s →  s ≤ pxH / (MAP_ROWS · 1.5)
-	 * Take the min so both constraints hold; the other axis has extra.
-	 */
-	const dynamicHexSize = $derived.by(() => {
-		const sW = canvasPxW / (Math.sqrt(3) * MAP_COLS);
-		const sH = canvasPxH / (1.5 * MAP_ROWS);
-		return Math.max(1, Math.min(sW, sH));
-	});
-
-	/**
-	 * viewBox is pixel-space matching the canvas — 1:1 mapping between
-	 * SVG user units and CSS pixels. No aspect-ratio letterbox because
-	 * viewBox == canvas exactly on every resize.
-	 */
-	const vb = $derived({ x: 0, y: 0, w: canvasPxW, h: canvasPxH });
-
-	/**
-	 * Background image rectangle, centered in the canvas. Its size is
-	 * `MAP_COLS × MAP_ROWS` hexes at the current dynamic hex size, so a
-	 * marker at axial (q, r) is always at the same fraction of the image
-	 * regardless of dialog size — image scales with the hexes.
-	 */
-	const imageBounds = $derived.by(() => {
-		const s = dynamicHexSize;
-		const w = MAP_COLS * Math.sqrt(3) * s;
-		const h = MAP_ROWS * 1.5 * s;
-		return {
-			x: (canvasPxW - w) / 2,
-			y: (canvasPxH - h) / 2,
-			w,
-			h,
-		};
-	});
-
-	/**
-	 * Pixel offset applied to the hex grid group so axial (0, 0) — the
-	 * pixel that axialToPx(0, 0) reports as (0, 0) — lands one-half-hex
-	 * inset from the image's top-left corner. Every marker's axial
-	 * position then falls on the image at the same fraction, no matter
-	 * how the canvas resizes.
-	 */
-	const hexOffset = $derived.by(() => {
-		const s = dynamicHexSize;
-		return {
-			x: imageBounds.x + (Math.sqrt(3) * s) / 2,
-			y: imageBounds.y + s,
-		};
-	});
-
-	/**
-	 * Enough cells to cover the entire viewBox — including negative
-	 * axial coords for the margin around the image. `allCells` starts
-	 * at (0, 0) so we can't reuse it; iterate a computed range instead
-	 * with the same per-row q-offset that keeps rectangle sides straight.
-	 */
-	const cells = $derived.by(() => {
-		const s = dynamicHexSize;
-		const hexW = Math.sqrt(3) * s;
-		const hexH = 1.5 * s;
-		// Extra rings of hexes to cover the image-to-canvas margin area
-		// (image is centered, so both sides need equal border coverage).
-		const marginCols = Math.ceil(imageBounds.x / hexW) + 1;
-		const marginRows = Math.ceil(imageBounds.y / hexH) + 1;
-		const colStart = -marginCols;
-		const colEnd = MAP_COLS + marginCols;
-		const rowStart = -marginRows;
-		const rowEnd = MAP_ROWS + marginRows;
-		const out: { q: number; r: number }[] = [];
-		for (let r = rowStart; r < rowEnd; r++) {
-			const offset = Math.floor(r / 2);
-			for (let q = colStart - offset; q < colEnd - offset; q++) {
-				out.push({ q, r });
-			}
-		}
-		return out;
-	});
-
-	const markerCount = $derived(mapState.markers.length);
-
 	// ─── Zoom + pan ────────────────────────────────────────────────────────────
-	// The SVG's viewBox is fixed at canvas dimensions; zoom scales its
-	// rendered pixel size and the canvas div's `overflow: auto` handles
-	// the pan. Zoom multiplier persists server-side (per map); scroll
-	// position persists in localStorage (per device — a portrait phone
-	// and a landscape desktop don't want to share a scroll offset).
-	/** Minimum zoom is 1.0 (fit-to-canvas) — zooming out beyond that
-	 *  would shrink the map inside the canvas with no useful gain, so
-	 *  the toolbar's `−` and Ctrl+wheel both cap here. */
+	// The SVG's viewBox is fixed at world units (0 0 cols rows); zoom
+	// scales its rendered pixel size and the canvas div's `overflow: auto`
+	// handles the pan. Zoom multiplier persists server-side (per map);
+	// scroll position persists in localStorage (per device).
 	const MIN_ZOOM = 1;
-	const MAX_ZOOM = 4;
+	const MAX_ZOOM = 8;
 	function clampZoom(z: number): number {
 		return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z));
 	}
 
 	let zoom = $state(1);
 
+	/** Visible sub-grid octave at the current zoom. 0 at zoom 1 (base
+	 *  grid only), 1 at zoom 2 (half-cells appear), 2 at zoom 4, etc. */
+	const subOctave = $derived(subGridOctaveForZoom(zoom));
+
 	/** SVG rendered pixel size — canvas dims × zoom. viewBox stays
-	 *  0 0 canvasPxW canvasPxH so a zoom = 2 SVG renders internally at 2×
-	 *  its viewBox, visually enlarging everything (hexes, image, markers,
-	 *  scale bar, border) in lockstep. */
+	 *  0 0 cols rows so at zoom = 2 the SVG renders internally at 2× its
+	 *  viewBox, visually enlarging everything (image, grid, markers,
+	 *  scale bar) in lockstep. */
 	const svgWidth = $derived(canvasPxW * zoom);
 	const svgHeight = $derived(canvasPxH * zoom);
 
@@ -481,34 +413,37 @@
 		});
 	}
 
+	// ─── Grid line geometry (major + minor at the current octave) ──────────────
+	// Recomputed reactively so zooming past the next power-of-two adds a
+	// finer sub-grid on the fly.
+	const vLines = $derived([...gridLineOffsets(gridDims.cols, subOctave)]);
+	const hLines = $derived([...gridLineOffsets(gridDims.rows, subOctave)]);
+
+	// ─── Scale bar overlay ─────────────────────────────────────────────────────
 	/**
-	 * Scale bar overlay geometry — computed in pixel-space (viewBox
-	 * matches the canvas 1:1) so it stays locked to the visible view at
-	 * any dialog size.
+	 * Scale bar overlay geometry — computed in pixel-space (overlay SVG
+	 * viewBox matches the canvas 1:1) so it stays locked to the visible
+	 * view at any dialog size.
 	 *
-	 * The bar is a constant pixel size (one segment = one hex width at
-	 * zoom 1). At other zoom levels, the underlying hexes render bigger
-	 * or smaller than the bar, so the tick labels re-scale to keep the
-	 * ruler honest — the same real-world distance always maps to the
-	 * same on-screen length. `perHex` is defined at zoom 1, so effective
-	 * miles per segment at the current zoom is `perHex / zoom`.
+	 * One segment = one base cell width at zoom 1. At other zoom levels,
+	 * the underlying grid renders bigger/smaller than the bar, so the
+	 * tick labels re-scale to keep the ruler honest — the same real-world
+	 * distance always maps to the same on-screen length. `perHex` is
+	 * defined at zoom 1, so effective distance per segment at the current
+	 * zoom is `perHex / zoom`.
 	 */
 	const overlayGeom = $derived.by(() => {
-		const s = dynamicHexSize;
-		const hexW = Math.sqrt(3) * s;
+		const cellW = canvasPxW / gridDims.cols;
 
 		const sb = mapState.settings.scale ?? {};
 		const sbEnabled = sb.enabled === true;
 		const sbSegments = sb.segments ?? 4;
-		const sbPerHexAtZoom1 = sb.perHex ?? 5;
-		/** Distance one segment represents in the CURRENT view. `zoom`
-		 *  magnifies the hex on screen, which compresses the world-distance
-		 *  each fixed-pixel segment covers. */
-		const sbPerSegment = sbPerHexAtZoom1 / zoom;
+		const sbPerCellAtZoom1 = sb.perHex ?? 5;
+		const sbPerSegment = sbPerCellAtZoom1 / zoom;
 		const sbUnit = sb.unit ?? 'miles';
-		const sbSegW = hexW;
+		const sbSegW = cellW;
 		const sbTotalW = sbSegments * sbSegW;
-		const sbH = Math.max(5, Math.round(s * 0.3));
+		const sbH = Math.max(5, Math.round(cellW * 0.3));
 		const sbBottomMargin = 24;
 		const sbLeftMargin = 20;
 		return {
@@ -533,11 +468,14 @@
 		return n.toFixed(n < 1 ? 2 : 1);
 	}
 
+	const markerCount = $derived(mapState.markers.length);
+
+	// ─── Placing mode + selection ──────────────────────────────────────────────
 	/**
 	 * "Placing mode": armed by the toolbar "+ Add" button. The very next
-	 * hex click drops a fresh marker at that hex and selects it. Clicks
-	 * on empty hexes outside placing mode do nothing — no more accidental
-	 * markers from a stray tap.
+	 * grid click drops a fresh marker at that intersection and selects it.
+	 * Clicks on empty grid outside placing mode do nothing — no more
+	 * accidental markers from a stray tap.
 	 */
 	let placingMode = $state(false);
 
@@ -550,12 +488,37 @@
 	let longPressTimer: ReturnType<typeof setTimeout> | null = null;
 	let longPressFired = false;
 
+	/** Convert a pointer event's client coords into world-unit coords via
+	 *  the SVG's screen CTM. Works regardless of zoom, pan, or SVG
+	 *  scaling — the browser gives us the exact transform. */
+	function eventToWorld(e: PointerEvent | MouseEvent): { x: number; y: number } {
+		if (!svgEl) return { x: 0, y: 0 };
+		const pt = svgEl.createSVGPoint();
+		pt.x = e.clientX;
+		pt.y = e.clientY;
+		const ctm = svgEl.getScreenCTM();
+		if (!ctm) return { x: 0, y: 0 };
+		const world = pt.matrixTransform(ctm.inverse());
+		return { x: world.x, y: world.y };
+	}
+
+	/** Snap world coords to the deepest visible sub-grid intersection and
+	 *  clamp to the map bounds so a click at the edge doesn't produce an
+	 *  out-of-range marker. */
+	function snapAndClamp(coord: { x: number; y: number }): { x: number; y: number } {
+		const s = snapCoord(coord, zoom);
+		return {
+			x: Math.max(0, Math.min(gridDims.cols, s.x)),
+			y: Math.max(0, Math.min(gridDims.rows, s.y)),
+		};
+	}
+
 	/** Select or jump for an existing marker. `forceEdit` bypasses the
 	 *  entity-link jump and always opens the editor (used by shift-click,
-	 *  long-press, and placing-mode clicks on occupied hexes). */
-	function activateExisting(q: number, r: number, forceEdit: boolean) {
-		const existing = markersAt(q, r)[0];
-		if (!existing) return;
+	 *  long-press, and placing-mode clicks on occupied intersections). */
+	function activateExisting(x: number, y: number, forceEdit: boolean): boolean {
+		const existing = markersAt(x, y, zoom)[0];
+		if (!existing) return false;
 		if (!forceEdit) {
 			const link = resolveEntity(existing.entityId);
 			if (link) {
@@ -565,16 +528,17 @@
 					}),
 				);
 				close();
-				return;
+				return true;
 			}
 		}
 		selectedMarkerId = existing.id;
+		return true;
 	}
 
-	function placeAt(q: number, r: number) {
+	function placeAt(x: number, y: number) {
 		const id = addMarker({
-			q,
-			r,
+			x,
+			y,
 			label: '',
 			icon: DEFAULT_MARKER_ICON,
 			color: DEFAULT_MARKER_COLOR,
@@ -583,53 +547,196 @@
 		placingMode = false;
 	}
 
+	// ─── Drag-to-move + pile-up popover ────────────────────────────────────────
 	/**
-	 * Hex click. Behaviour depends on state:
-	 *  • Placing mode on + empty hex → place marker + select it.
-	 *  • Placing mode on + occupied hex → cancel placing, select existing.
+	 * Drag state. Populated on pointerdown when a marker sits at the
+	 * click's snap point; upgraded to a live drag once the pointer has
+	 * moved past `DRAG_THRESHOLD_PX`. Coords are world units; the marker's
+	 * visual `x, y` is overridden by `snapCoord(liveX, liveY, zoom)` while
+	 * dragging so the icon jumps between snap intersections as the user
+	 * moves — feels tactile and previews exactly where the drop will land.
+	 */
+	interface DragState {
+		id: string;
+		startClientX: number;
+		startClientY: number;
+		liveX: number;
+		liveY: number;
+		moved: boolean;
+	}
+	let dragState = $state<DragState | null>(null);
+	const DRAG_THRESHOLD_PX = 6;
+
+	/** Set to true briefly after a drag ends so the pointerup-then-click
+	 *  cascade doesn't re-route the drop through onGridClick. Cleared on
+	 *  the next tick. */
+	let dragJustEnded = false;
+
+	/**
+	 * Pile-up popover — surfaces when a click lands on a snap point with
+	 * more than one marker (common at low zoom where sub-cell placements
+	 * from a deeper octave collapse onto the same base cell). Anchored at
+	 * the click's viewport coords via `left/top` in a fixed-positioned
+	 * div; a full-viewport backdrop dismisses on outside click.
+	 */
+	interface PilePicker {
+		markers: MapMarker[];
+		screenX: number;
+		screenY: number;
+	}
+	let pilePicker = $state<PilePicker | null>(null);
+	function closePilePicker() {
+		pilePicker = null;
+	}
+	function openPilePicker(markers: MapMarker[], ev: MouseEvent) {
+		pilePicker = { markers, screenX: ev.clientX, screenY: ev.clientY };
+	}
+	function choosePileMarker(m: MapMarker) {
+		closePilePicker();
+		// Same routing as a normal marker click: linked → jump; else → select.
+		const link = resolveEntity(m.entityId);
+		if (link) {
+			document.dispatchEvent(
+				new CustomEvent('ironledger:focus-entity', {
+					detail: { kind: link.kind, id: link.id },
+				}),
+			);
+			close();
+			return;
+		}
+		selectedMarkerId = m.id;
+	}
+
+	/**
+	 * Grid click. Behaviour depends on state:
+	 *  • Placing mode on + empty spot → place marker + select it.
+	 *  • Placing mode on + occupied spot → cancel placing, select existing.
+	 *  • Snap point with >1 markers → open pile-up popover to disambiguate.
 	 *  • Existing marker w/ link + bare click → jump to entity.
 	 *  • Existing marker w/ shift-click → open editor.
-	 *  • Empty hex outside placing mode → nothing (user must hit "+ Add").
+	 *  • Empty spot outside placing mode → nothing (user must hit "+ Add").
 	 *
-	 * Long-press on touch (see onHexPointerDown) sets `longPressFired`,
-	 * which we honor by skipping the click — the long-press already
-	 * opened the editor.
+	 * Long-press on touch (see onGridPointerDown) sets `longPressFired`;
+	 * a completed drag (see onGridPointerUp) sets `dragJustEnded`. Either
+	 * flag makes this a no-op so the follow-up click doesn't re-route the
+	 * gesture we already handled.
 	 */
-	function onHexClick(q: number, r: number, ev: MouseEvent) {
+	function onGridClick(ev: MouseEvent) {
+		if (dragJustEnded) {
+			dragJustEnded = false;
+			return;
+		}
 		if (longPressFired) {
 			longPressFired = false;
 			return;
 		}
-		const existing = markersAt(q, r)[0];
+		const { x, y } = snapAndClamp(eventToWorld(ev));
+		const hits = markersAt(x, y, zoom);
 		if (placingMode) {
-			if (existing) {
-				selectedMarkerId = existing.id;
+			if (hits.length === 1) {
+				selectedMarkerId = hits[0].id;
+				placingMode = false;
+			} else if (hits.length > 1) {
+				openPilePicker(hits, ev);
 				placingMode = false;
 			} else {
-				placeAt(q, r);
+				placeAt(x, y);
 			}
 			return;
 		}
-		if (!existing) return;
-		activateExisting(q, r, ev.shiftKey);
+		if (hits.length === 0) return;
+		if (hits.length > 1) {
+			openPilePicker(hits, ev);
+			return;
+		}
+		activateExisting(x, y, ev.shiftKey);
 	}
 
-	function onHexPointerDown(q: number, r: number, e: PointerEvent) {
-		if (e.pointerType === 'mouse') return; // mouse uses click + shift-click
-		longPressFired = false;
-		if (longPressTimer) clearTimeout(longPressTimer);
-		longPressTimer = setTimeout(() => {
-			longPressFired = true;
-			longPressTimer = null;
-			activateExisting(q, r, true);
-		}, LONG_PRESS_MS);
+	function onGridPointerDown(e: PointerEvent) {
+		// Long-press timer for touch (opens editor even on a linked marker).
+		if (e.pointerType !== 'mouse') {
+			longPressFired = false;
+			if (longPressTimer) clearTimeout(longPressTimer);
+			const { x, y } = snapAndClamp(eventToWorld(e));
+			longPressTimer = setTimeout(() => {
+				longPressFired = true;
+				longPressTimer = null;
+				// Cancel any pending drag intent — long-press wins.
+				dragState = null;
+				activateExisting(x, y, true);
+			}, LONG_PRESS_MS);
+		}
+		// Drag intent — arm if there's a marker at this snap point. We
+		// only *commit* to dragging once the pointer moves past the
+		// threshold, so a static tap still routes as a normal click.
+		const { x, y } = snapAndClamp(eventToWorld(e));
+		const hit = markersAt(x, y, zoom)[0];
+		if (!hit) return;
+		try {
+			(e.currentTarget as SVGRectElement).setPointerCapture(e.pointerId);
+		} catch {
+			// setPointerCapture can throw on stale targets; drag still works
+			// via the pointer-move listener, just without capture.
+		}
+		dragState = {
+			id: hit.id,
+			startClientX: e.clientX,
+			startClientY: e.clientY,
+			liveX: hit.x,
+			liveY: hit.y,
+			moved: false,
+		};
 	}
+
+	function onGridPointerMove(e: PointerEvent) {
+		if (!dragState) return;
+		const dxPx = e.clientX - dragState.startClientX;
+		const dyPx = e.clientY - dragState.startClientY;
+		if (!dragState.moved && Math.hypot(dxPx, dyPx) > DRAG_THRESHOLD_PX) {
+			dragState.moved = true;
+			cancelLongPress();
+		}
+		if (dragState.moved) {
+			const w = eventToWorld(e);
+			dragState.liveX = w.x;
+			dragState.liveY = w.y;
+		}
+	}
+
+	function onGridPointerUp(e: PointerEvent) {
+		cancelLongPress();
+		if (!dragState) return;
+		const state = dragState;
+		dragState = null;
+		try {
+			(e.currentTarget as SVGRectElement).releasePointerCapture(e.pointerId);
+		} catch {
+			// Best-effort — capture may have already been released.
+		}
+		if (!state.moved) return; // static tap — let onGridClick handle it
+		const snapped = snapAndClamp({ x: state.liveX, y: state.liveY });
+		updateMarker(state.id, { x: snapped.x, y: snapped.y });
+		selectedMarkerId = state.id;
+		// Suppress the click event that fires right after pointerup.
+		dragJustEnded = true;
+		setTimeout(() => {
+			dragJustEnded = false;
+		}, 0);
+	}
+
 	function cancelLongPress() {
 		if (longPressTimer) {
 			clearTimeout(longPressTimer);
 			longPressTimer = null;
 		}
 	}
+
+	/** Snapped preview position for the marker currently being dragged.
+	 *  Used both to render the icon at its drop-target intersection and
+	 *  to draw a small crosshair at the same spot. */
+	const dragPreview = $derived(
+		dragState?.moved ? snapAndClamp({ x: dragState.liveX, y: dragState.liveY }) : null,
+	);
 
 	function toggleAdd() {
 		placingMode = !placingMode;
@@ -677,6 +784,52 @@
 		removeMarker(selectedMarker.id);
 		selectedMarkerId = null;
 	}
+
+	/** Duplicate the selected marker at +0.5, +0.5 world units and select
+	 *  the copy so the user can drag or edit it immediately. Bound to the
+	 *  selection toolbar button and Cmd/Ctrl+D. */
+	function duplicateSelected() {
+		if (!selectedMarker) return;
+		const newId = duplicateMarker(selectedMarker.id, gridDims);
+		if (newId) selectedMarkerId = newId;
+	}
+
+	/** Cmd/Ctrl+D global shortcut for Duplicate — matches every other
+	 *  "copy this thing" flow in the app. Only fires when the dialog is
+	 *  open and a marker is selected, so it doesn't compete with browser
+	 *  bookmark shortcuts on unrelated pages. Escape closes the pile-up
+	 *  popover before it reaches the native <dialog> cancel handler. */
+	$effect(() => {
+		const handler = (ev: KeyboardEvent) => {
+			if (!dialogEl?.open) return;
+			if (ev.key === 'Escape' && pilePicker) {
+				ev.preventDefault();
+				ev.stopPropagation();
+				closePilePicker();
+				return;
+			}
+			if (ev.key !== 'd' && ev.key !== 'D') return;
+			if (!(ev.metaKey || ev.ctrlKey)) return;
+			if (!selectedMarker) return;
+			// Skip when a text input has focus — the user is probably
+			// typing, not trying to duplicate.
+			const target = ev.target as HTMLElement | null;
+			if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+			ev.preventDefault();
+			duplicateSelected();
+		};
+		window.addEventListener('keydown', handler, true);
+		return () => window.removeEventListener('keydown', handler, true);
+	});
+
+	/** Close the pile picker if the active map switches out from under it
+	 *  — its markers would no longer belong to what's on screen. Reading
+	 *  `mapState.activeId` into a local subscribes this effect to it. */
+	$effect(() => {
+		const _activeId = mapState.activeId;
+		void _activeId;
+		if (pilePicker) closePilePicker();
+	});
 
 	function openIconPicker() {
 		if (!selectedMarker) return;
@@ -727,8 +880,8 @@
 		if (!file) return;
 		uploadError = '';
 		try {
-			const dataUrl = await downscaleImage(file);
-			setBackground(dataUrl);
+			const result = await downscaleImage(file);
+			setBackground(result.dataUrl, result.aspect);
 		} catch (err) {
 			uploadError = err instanceof MapImageError ? err.message : 'Failed to load image.';
 		}
@@ -738,15 +891,15 @@
 		fileInputEl?.click();
 	}
 
-	/** Icon size in SVG user units — scales with the dynamic hex so the
-	 *  icon always sits comfortably inside a hex without spilling into
-	 *  neighbours. ~91% of hex radius keeps the same visual weight as the
-	 *  old fixed 20-unit icon at HEX_SIZE=22. */
-	const ICON_SIZE = $derived(dynamicHexSize * (20 / 22));
+	/** Icon size in world units — 0.75 of a cell so the icon sits
+	 *  comfortably inside its cell without spilling into neighbours.
+	 *  Zooms with the map (icons are part of the annotation, so it makes
+	 *  sense for them to grow when the user zooms in on detail). */
+	const ICON_SIZE = 0.75;
 
 	/**
 	 * White stroke width in the source icon's viewBox units, computed so
-	 * the halo lands at a consistent ~1.6 px on screen no matter whether
+	 * the halo lands at a consistent visual weight regardless of whether
 	 * the icon's viewBox is `0 0 24 24` or `0 0 640 640`. Paired with
 	 * `paint-order="stroke"` on the wrapping <g>, this gives every icon
 	 * the same white outline the marker labels use — readable over busy
@@ -763,6 +916,18 @@
 	// the icon button always shows the current preview.
 	const selectedIcon = $derived(selectedMarker ? resolveMapIcon(selectedMarker.icon) : undefined);
 	const selectedColor = $derived(selectedMarker?.color || DEFAULT_MARKER_COLOR);
+
+	/** Format a fractional world coord for the selection toolbar's coord
+	 *  display. Integer at base grid, else up to 2 decimal places so
+	 *  sub-cell precision reads cleanly. */
+	function fmtCoord(v: number): string {
+		if (Number.isInteger(v)) return String(v);
+		return v.toFixed(2);
+	}
+
+	/** Snap resolution at the current zoom — surfaced in the toolbar hint
+	 *  so users know the granularity they're placing at. */
+	const snapRes = $derived(snapResolutionForZoom(zoom));
 </script>
 
 <dialog bind:this={dialogEl} class="mp-dialog" oncancel={close}>
@@ -822,8 +987,8 @@
 				class:mp-btn-add-active={placingMode}
 				onclick={toggleAdd}
 				use:tooltip={placingMode
-					? 'Click a hex to place the marker (or click Add again to cancel)'
-					: 'Add a marker — then click the hex to place it'}
+					? 'Click the map to place the marker (or click Add again to cancel)'
+					: 'Add a marker — then click the map to place it'}
 				aria-pressed={placingMode}
 				aria-label="Add marker">+ Add</button
 			>
@@ -859,7 +1024,7 @@
 			<button
 				class="mp-btn mp-btn-icon mp-btn-gear"
 				onclick={() => optionsDialogRef?.open()}
-				use:tooltip={'Map options — names, hex grid, scale bar, danger zone'}
+				use:tooltip={'Map options — names, grid, scale bar, danger zone'}
 				aria-label="Map options">{@html iconGearSvg}</button
 			>
 		</div>
@@ -880,8 +1045,8 @@
 	-->
 	<div class="mp-sel-toolbar" class:mp-sel-empty={!selectedMarker}>
 		{#if selectedMarker && selectedIcon}
-			<span class="mp-sel-coord" title="Hex ({selectedMarker.q}, {selectedMarker.r})"
-				>({selectedMarker.q},{selectedMarker.r})</span
+			<span class="mp-sel-coord" title="Position ({selectedMarker.x}, {selectedMarker.y})"
+				>({fmtCoord(selectedMarker.x)}, {fmtCoord(selectedMarker.y)})</span
 			>
 			<input
 				class="mp-sel-name"
@@ -937,6 +1102,12 @@
 				{/each}
 			</select>
 			<button
+				class="mp-btn"
+				onclick={duplicateSelected}
+				use:tooltip={'Duplicate this marker (Cmd/Ctrl + D)'}
+				aria-label="Duplicate marker">Duplicate</button
+			>
+			<button
 				class="mp-btn mp-btn-danger mp-btn-icon"
 				onclick={deleteSelected}
 				use:tooltip={'Delete this marker'}
@@ -949,7 +1120,11 @@
 				aria-label="Close editor">Done</button
 			>
 		{:else if placingMode}
-			<span class="mp-sel-hint mp-sel-hint-active">Click a hex to place a marker.</span>
+			<span class="mp-sel-hint mp-sel-hint-active"
+				>Click the map to place a marker. Snap {snapRes === 1
+					? 'to cells'
+					: `to 1/${1 / snapRes}-cell`} — zoom in for finer placement.</span
+			>
 			<button
 				class="mp-btn"
 				onclick={cancelPlacing}
@@ -957,8 +1132,8 @@
 			>
 		{:else}
 			<span class="mp-sel-hint"
-				>Hit <strong>+ Add</strong> then click a hex to place a marker. Tap a linked marker to jump; shift-click
-				(desktop) or long-press (touch) to edit instead.</span
+				>Hit <strong>+ Add</strong> then click the map to place a marker. Tap a linked marker to jump;
+				shift-click (desktop) or long-press (touch) to edit instead.</span
 			>
 		{/if}
 	</div>
@@ -973,133 +1148,173 @@
 		</div>
 	{/if}
 
-	<div class="mp-body">
+	<div class="mp-body" style="aspect-ratio: {gridDims.cols} / {gridDims.rows}">
 		<!-- Wheel listener is attached manually with `passive: false` in a
 		     $effect above so trackpad-pinch (ctrl+wheel) is preventable. -->
 		<div class="mp-canvas" bind:this={canvasEl} onscroll={onScroll}>
 			<!--
-				viewBox is pixel-space matching the canvas exactly (updated
-				reactively from the ResizeObserver). SVG's rendered width/
-				height = canvasPxW/H × zoom, so when zoom > 1 the SVG grows
-				past the canvas and .mp-canvas's overflow: auto handles the
-				pan. All internal geometry (hexes, image, markers, scale
-				bar, border) is unchanged — the browser scales it.
+				viewBox is world-unit space (0 0 cols rows). SVG rendered
+				width/height = canvasPxW/H × zoom, so when zoom > 1 the SVG
+				grows past the canvas and .mp-canvas's overflow: auto handles
+				the pan. Canvas body's aspect-ratio matches gridDims exactly,
+				so cells render perfectly square with no letterbox at zoom 1.
 			-->
 			<svg
 				bind:this={svgEl}
 				width={svgWidth}
 				height={svgHeight}
-				viewBox="{vb.x} {vb.y} {vb.w} {vb.h}"
+				viewBox="0 0 {gridDims.cols} {gridDims.rows}"
 				preserveAspectRatio="none"
 				aria-label="Campaign map"
 			>
 				{#if mapState.backgroundHash}
-					<!--
-						Fixed bounds (imageBounds — never depends on gridDims) so
-						a marker's (q, r) position stays put over the same map
-						feature no matter how the dialog resizes or which device
-						the user opens it on. The outer vb changes; this doesn't.
-					-->
 					<image
-						x={imageBounds.x}
-						y={imageBounds.y}
-						width={imageBounds.w}
-						height={imageBounds.h}
+						x="0"
+						y="0"
+						width={gridDims.cols}
+						height={gridDims.rows}
 						href={backgroundUrl()}
-						preserveAspectRatio="xMidYMid meet"
+						preserveAspectRatio="none"
 						aria-hidden="true"
 						onerror={() => (mapState.backgroundHash = '')}
 					/>
 				{/if}
 
 				<!--
-					Hex + marker group translated so axial (0, 0) lands on the
-					image's first hex — image and hexes scale together via
-					dynamicHexSize, so marker positions stay aligned with map
-					features at any dialog size.
+					Grid lines. Major = integer offsets (base cells); minor =
+					sub-octave subdivisions revealed by zoom. Non-scaling
+					stroke keeps them a consistent screen weight at any zoom.
 				-->
-				<g transform="translate({hexOffset.x} {hexOffset.y})">
-					<g
-						class="mp-hex-layer"
-						class:mp-hex-layer-hidden={!mapSettings.hexes.visible}
-						stroke-opacity={mapSettings.hexes.opacity}
-					>
-						{#each cells as { q, r } (`${q},${r}`)}
-							{@const px = axialToPx(q, r, dynamicHexSize)}
-							<!-- svelte-ignore a11y_click_events_have_key_events -->
-							<polygon
-								class="mp-hex"
-								points={hexPolygonPoints(px.x, px.y, dynamicHexSize)}
-								onclick={(ev) => onHexClick(q, r, ev)}
-								onpointerdown={(ev) => onHexPointerDown(q, r, ev)}
-								onpointerup={cancelLongPress}
-								onpointercancel={cancelLongPress}
-								onpointermove={cancelLongPress}
-								role="button"
-								tabindex="-1"
-								aria-label={`Hex ${q}, ${r}`}
-							></polygon>
-						{/each}
-					</g>
-
-					{#each mapState.markers as m (m.id)}
-						{@const px = axialToPx(m.q, m.r, dynamicHexSize)}
-						{@const ic = resolveMapIcon(m.icon)}
-						{@const color = m.color || DEFAULT_MARKER_COLOR}
-						<g
-							class="mp-marker"
-							class:mp-marker-selected={m.id === selectedMarkerId}
-							transform="translate({px.x} {px.y})"
-						>
-							{#if ic}
-								<svg
-									class="mp-marker-icon"
-									x={-ICON_SIZE / 2}
-									y={-ICON_SIZE / 2}
-									width={ICON_SIZE}
-									height={ICON_SIZE}
-									viewBox={ic.viewBox}
-								>
-									<!--
-										paint-order="stroke" draws the white halo first,
-										fill on top — same trick the marker label text uses
-										so the icon stays readable over any background map.
-									-->
-									<g
-										fill={color}
-										stroke="#fff"
-										stroke-width={iconStrokeWidth(ic.viewBox)}
-										stroke-linejoin="round"
-										paint-order="stroke"
-									>
-										{@html ic.inner}
-									</g>
-								</svg>
-							{:else}
-								<circle
-									r={ICON_SIZE / 2 - 2}
-									fill={color}
-									stroke="#fff"
-									stroke-width="1.5"
-									paint-order="stroke"
-								/>
-							{/if}
-							{#if showLabels && m.label}
-								<text class="mp-marker-label" y={ICON_SIZE / 2 + 10}>{m.label}</text>
-							{/if}
-						</g>
+				<g
+					class="mp-grid-layer"
+					class:mp-grid-layer-hidden={!mapSettings.grid.visible}
+					stroke-opacity={mapSettings.grid.opacity}
+				>
+					{#each vLines as x (`v-${x}`)}
+						<line
+							class="mp-grid-line"
+							class:mp-grid-major={isMajorLine(x)}
+							x1={x}
+							y1={0}
+							x2={x}
+							y2={gridDims.rows}
+							vector-effect="non-scaling-stroke"
+						/>
+					{/each}
+					{#each hLines as y (`h-${y}`)}
+						<line
+							class="mp-grid-line"
+							class:mp-grid-major={isMajorLine(y)}
+							x1={0}
+							y1={y}
+							x2={gridDims.cols}
+							y2={y}
+							vector-effect="non-scaling-stroke"
+						/>
 					{/each}
 				</g>
+
+				<!--
+					Single invisible click-capture rect covering the whole
+					viewBox. onGridClick unprojects the event to world coords,
+					snaps, and routes to place/select. Kept below the marker
+					layer but markers themselves are pointer-events: none —
+					marker hits are resolved via markersAt() on the snapped
+					point, so a marker-adjacent click still selects it.
+					pointermove/pointerup here also drive drag-to-move:
+					pointerdown arms a drag intent when a marker is at the
+					snap point, and pointermove past the threshold engages
+					it (see onGridPointerDown).
+				-->
+				<!-- svelte-ignore a11y_click_events_have_key_events -->
+				<!-- svelte-ignore a11y_no_static_element_interactions -->
+				<rect
+					class="mp-grid-capture"
+					x="0"
+					y="0"
+					width={gridDims.cols}
+					height={gridDims.rows}
+					fill="transparent"
+					onclick={onGridClick}
+					onpointerdown={onGridPointerDown}
+					onpointermove={onGridPointerMove}
+					onpointerup={onGridPointerUp}
+					onpointercancel={onGridPointerUp}
+				/>
+
+				<!-- Drag preview crosshair — a small ring at the intersection
+				     the current drag will drop onto. Pure hint; markers'
+				     translate() already jumps them to this point live. -->
+				{#if dragPreview}
+					<circle
+						class="mp-drag-snap"
+						cx={dragPreview.x}
+						cy={dragPreview.y}
+						r="0.18"
+						vector-effect="non-scaling-stroke"
+					/>
+				{/if}
+
+				{#each mapState.markers as m (m.id)}
+					{@const ic = resolveMapIcon(m.icon)}
+					{@const color = m.color || DEFAULT_MARKER_COLOR}
+					{@const isDragging = dragState?.id === m.id && dragState.moved && dragPreview !== null}
+					{@const mx = isDragging && dragPreview ? dragPreview.x : m.x}
+					{@const my = isDragging && dragPreview ? dragPreview.y : m.y}
+					<g
+						class="mp-marker"
+						class:mp-marker-selected={m.id === selectedMarkerId}
+						class:mp-marker-dragging={isDragging}
+						transform="translate({mx} {my})"
+					>
+						{#if ic}
+							<svg
+								class="mp-marker-icon"
+								x={-ICON_SIZE / 2}
+								y={-ICON_SIZE / 2}
+								width={ICON_SIZE}
+								height={ICON_SIZE}
+								viewBox={ic.viewBox}
+							>
+								<!--
+									paint-order="stroke" draws the white halo first,
+									fill on top — same trick the marker label text uses
+									so the icon stays readable over any background map.
+								-->
+								<g
+									fill={color}
+									stroke="#fff"
+									stroke-width={iconStrokeWidth(ic.viewBox)}
+									stroke-linejoin="round"
+									paint-order="stroke"
+								>
+									{@html ic.inner}
+								</g>
+							</svg>
+						{:else}
+							<circle
+								r={ICON_SIZE / 2 - 0.04}
+								fill={color}
+								stroke="#fff"
+								stroke-width="0.04"
+								paint-order="stroke"
+							/>
+						{/if}
+						{#if showLabels && m.label}
+							<text class="mp-marker-label" y={ICON_SIZE / 2 + 0.32}>{m.label}</text>
+						{/if}
+					</g>
+				{/each}
 			</svg>
 		</div>
 
 		<!--
 			Overlay SVG — floats above the canvas at fixed pixel dimensions
-			(canvasPxW × canvasPxH) so the checkered border and scale bar
-			stay visible + constant-sized while the user pans and zooms the
-			map underneath. Positioned absolute over .mp-canvas via
-			.mp-overlay-svg CSS; pointer-events: none passes clicks through
-			to the hex grid below.
+			(canvasPxW × canvasPxH) so the scale bar stays visible +
+			constant-sized while the user pans and zooms the map underneath.
+			Positioned absolute over .mp-canvas via .mp-overlay-svg CSS;
+			pointer-events: none passes clicks through to the click-capture
+			rect below.
 		-->
 		<svg
 			class="mp-overlay-svg"
@@ -1139,6 +1354,54 @@
 </dialog>
 
 <MapOptionsDialog bind:this={optionsDialogRef} />
+
+<!--
+	Pile-up picker — surfaces when a click resolves to a snap point with
+	more than one marker (common at low zoom, where sub-cell placements
+	from a deeper octave collapse onto the same base cell). Fixed-
+	positioned at the click's viewport coords; backdrop covers the whole
+	viewport so an outside click dismisses. Rendered in the app root (not
+	inside the <dialog>) via a portal-style fixed layer.
+-->
+{#if pilePicker}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div class="mp-pile-backdrop" onclick={closePilePicker}></div>
+	<ul
+		class="mp-pile-menu"
+		role="listbox"
+		aria-label="Markers here"
+		style="left: {pilePicker.screenX}px; top: {pilePicker.screenY + 8}px"
+	>
+		<li class="mp-pile-header">{pilePicker.markers.length} markers here</li>
+		{#each pilePicker.markers as m (m.id)}
+			{@const ic = resolveMapIcon(m.icon)}
+			{@const link = resolveEntity(m.entityId)}
+			<li>
+				<button
+					class="mp-pile-item"
+					onclick={() => choosePileMarker(m)}
+					aria-label={m.label || '(no name)'}
+				>
+					{#if ic}
+						<svg class="mp-pile-icon" viewBox={ic.viewBox} aria-hidden="true">
+							<g fill={m.color || DEFAULT_MARKER_COLOR}>{@html ic.inner}</g>
+						</svg>
+					{:else}
+						<span class="mp-pile-icon-fallback" style="background:{m.color || DEFAULT_MARKER_COLOR}"
+						></span>
+					{/if}
+					<span class="mp-pile-label">{m.label || '(no name)'}</span>
+					{#if link}
+						<span class="mp-pile-link" title="Linked to {link.kindLabel}: {link.name}"
+							>{link.kindPrefix}</span
+						>
+					{/if}
+				</button>
+			</li>
+		{/each}
+	</ul>
+{/if}
 
 <!--
 	Icon picker — nested modal that lists every manifest icon grouped by
@@ -1242,11 +1505,6 @@
 		opacity: 0.4;
 		cursor: default;
 	}
-	/* Icon-only button variant — trash-can Delete in the selection
-	   toolbar. Matches the height of the other .mp-btn buttons so the
-	   toolbar row aligns cleanly. */
-	/* + Add button styling. Active state = placing mode is armed, so it
-	   snaps to the accent color to make the state obvious. */
 	/* Map picker chip — dropdown showing all user's maps + "+ New map…".
 	   Absolute-positioned menu with a click-outside backdrop, kept fully
 	   inside the dialog so it plays nice with the <dialog> top layer. */
@@ -1337,8 +1595,9 @@
 		border-color: var(--text-accent) !important;
 	}
 	/* Placing mode = crosshair over the canvas so users know the next
-	   click will land a marker. */
-	:global(body:has(button.mp-btn-add-active) .mp-canvas .mp-hex) {
+	   click will land a marker. Targets the click-capture rect since
+	   that's what receives the pointer. */
+	:global(body:has(button.mp-btn-add-active) .mp-canvas .mp-grid-capture) {
 		cursor: crosshair;
 	}
 
@@ -1528,23 +1787,22 @@
 	}
 
 	.mp-body {
-		/* 16:9 aspect matches a 4K (3840 × 2160) background image, so a
-		   4K upload drops in with zero letterbox. Body width tracks the
-		   dialog; height is derived. `max-height` still caps the total
-		   dialog well inside the CLAUDE.md 88vh iOS-safe budget so on a
-		   short viewport the body clamps rather than overflowing.
-		   `position: relative` establishes the containing block for the
-		   .mp-overlay-svg absolutely-positioned overlay. */
+		/* aspect-ratio is set inline from gridDims (cols/rows) so cells
+		   render perfectly square regardless of the source image's exact
+		   proportions. `max-height` caps the total dialog well inside the
+		   CLAUDE.md 88vh iOS-safe budget so on a short viewport the body
+		   clamps rather than overflowing. `position: relative` establishes
+		   the containing block for the .mp-overlay-svg absolutely-
+		   positioned overlay. */
 		position: relative;
 		width: 100%;
-		aspect-ratio: 16 / 9;
 		max-height: calc(88vh - 8rem);
 		overflow: hidden;
 	}
 	/* Overlay SVG — floats above .mp-canvas at fixed canvas-pixel
-	   dimensions so the border + scale-bar stay put while the map pans
-	   and zooms underneath. pointer-events: none so clicks pass through
-	   to the hex grid. */
+	   dimensions so the scale bar stays put while the map pans and zooms
+	   underneath. pointer-events: none so clicks pass through to the
+	   click-capture rect. */
 	.mp-overlay-svg {
 		position: absolute;
 		inset: 0;
@@ -1573,36 +1831,26 @@
 		   stretch it or the zoom math goes sideways. */
 	}
 
-	.mp-hex {
-		fill: transparent;
-		/* Fully-opaque stroke color; effective visibility is controlled
-		   by `stroke-opacity` on the parent `.mp-hex-layer` group (bound
-		   to `mapSettings.hexes.opacity`, default 0.5). That way the
-		   options-dialog opacity slider maps directly to visible
-		   transparency without a baked-in multiplier. */
+	/* Grid line strokes — minor (sub-cell subdivisions) render a hair
+	   thinner than major (base cells) so users can tell them apart at a
+	   glance without the minor lines dominating. Non-scaling stroke on
+	   the elements themselves keeps both weights consistent across zoom. */
+	.mp-grid-line {
 		stroke: var(--text);
-		stroke-width: 0.8;
-		cursor: pointer;
-		transition:
-			stroke 0.08s,
-			stroke-opacity 0.08s;
+		stroke-width: 0.6;
+		fill: none;
 	}
-	.mp-hex:hover {
-		/* Hover always at full opacity + accent color, ignoring the
-		   layer's stroke-opacity so the highlight stays bright. */
-		stroke: var(--text-accent);
-		stroke-opacity: 1;
-		stroke-width: 1.5;
+	.mp-grid-major {
+		stroke-width: 1.2;
 	}
-	/* "Show hex grid" toggle off — outlines vanish but hexes stay
-	   clickable (pointer-events still on), and hover still highlights
-	   so marker-placement remains discoverable. */
-	.mp-hex-layer-hidden .mp-hex {
+	/* "Show grid" toggle off — lines vanish but clicks still land on
+	   the underlying grid. */
+	.mp-grid-layer-hidden .mp-grid-line {
 		stroke: transparent;
 	}
-	.mp-hex-layer-hidden .mp-hex:hover {
-		stroke: var(--text-accent);
-		stroke-opacity: 1;
+
+	.mp-grid-capture {
+		cursor: pointer;
 	}
 
 	/* Scale bar overlay — parchment-style black-and-white with a soft
@@ -1631,13 +1879,6 @@
 	:global(.mp-scale rect) {
 		filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
 	}
-	/* Suppress the default focus rectangle browsers draw around a
-	   role="button" polygon after click — the hover-stroke already
-	   provides adequate feedback, and hex maps are pointer-driven. */
-	.mp-hex:focus,
-	.mp-hex:focus-visible {
-		outline: none;
-	}
 
 	.mp-marker {
 		pointer-events: none;
@@ -1645,19 +1886,116 @@
 	.mp-marker-selected {
 		filter: drop-shadow(0 0 3px var(--text-accent));
 	}
+	.mp-marker-dragging {
+		opacity: 0.85;
+	}
+	.mp-drag-snap {
+		fill: none;
+		stroke: var(--text-accent);
+		stroke-width: 2;
+		pointer-events: none;
+	}
+	/* Cursor cue for markers under the pointer (only when not in placing
+	   mode, since placing has its own crosshair cue). Since the grid-
+	   capture rect is what receives the pointer, we can't target markers
+	   directly for hover cursor — but a `grab` cursor over the whole
+	   canvas would be misleading. Leave the default `pointer` on the
+	   capture rect and rely on the drag threshold to feel discoverable. */
 	:global(.mp-marker-icon) {
 		overflow: visible;
 	}
 	.mp-marker-label {
+		/* Font size + stroke width are in world units — 0.24 unit ≈ a
+		   quarter cell, so labels stay readable at zoom 1 and grow
+		   proportionally as the user zooms in. */
 		font-family: var(--font-ui);
-		font-size: 8px;
+		font-size: 0.24px;
 		font-weight: 600;
 		text-anchor: middle;
 		fill: var(--text);
 		paint-order: stroke fill;
 		stroke: var(--bg-card);
-		stroke-width: 3px;
+		stroke-width: 0.08px;
 		stroke-linejoin: round;
+	}
+
+	/* Pile-up picker — fixed-positioned floating menu that appears when a
+	   snap point holds more than one marker. z-index sits above the
+	   <dialog>'s top-layer chrome so it renders over the map + toolbars
+	   without being clipped by the dialog's overflow: hidden. */
+	.mp-pile-backdrop {
+		position: fixed;
+		inset: 0;
+		z-index: 40;
+		background: transparent;
+	}
+	.mp-pile-menu {
+		position: fixed;
+		z-index: 41;
+		min-width: 200px;
+		max-width: 320px;
+		max-height: 60vh;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		list-style: none;
+		margin: 0;
+		padding: 4px 0;
+		background: var(--bg-card);
+		color: var(--text);
+		border: 1px solid var(--border-mid);
+		border-radius: 6px;
+		box-shadow: 0 8px 24px #00000060;
+		font-family: var(--font-ui);
+		font-size: 0.85rem;
+	}
+	.mp-pile-header {
+		padding: 4px 12px 6px;
+		font-size: 0.68rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		color: var(--text-dimmer);
+		border-bottom: 1px solid var(--border);
+		margin-bottom: 4px;
+	}
+	.mp-pile-item {
+		width: 100%;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 6px 12px;
+		background: none;
+		border: none;
+		text-align: left;
+		color: var(--text);
+		cursor: pointer;
+		font-family: inherit;
+		font-size: inherit;
+	}
+	.mp-pile-item:hover {
+		background: var(--bg-control);
+	}
+	.mp-pile-icon {
+		width: 20px;
+		height: 20px;
+		flex-shrink: 0;
+	}
+	.mp-pile-icon-fallback {
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		border: 1px solid #fff;
+		flex-shrink: 0;
+	}
+	.mp-pile-label {
+		flex: 1;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.mp-pile-link {
+		color: var(--text-accent);
+		font-size: 0.9rem;
 	}
 
 	/* Icon picker dialog. Uses the CLAUDE.md content-sized pattern:
