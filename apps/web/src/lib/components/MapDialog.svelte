@@ -784,18 +784,50 @@
 		updateMarker(selectedMarker.id, { color });
 	}
 
-	function onEntityChange(e: Event) {
+	// ─── Entity-link picker (searchable) ───────────────────────────────────────
+	// The dropdown of every community / place / journey / site got noisy
+	// as users pile them up. Replaced the native <select> with a
+	// combobox-style picker: a trigger chip that opens a floating panel
+	// with a search field + filtered list. Same UX pattern as the
+	// Connections rail search.
+	let entityPickerOpen = $state(false);
+	let entitySearch = $state('');
+
+	function openEntityPicker() {
+		entitySearch = '';
+		entityPickerOpen = true;
+	}
+	function closeEntityPicker() {
+		entityPickerOpen = false;
+	}
+
+	/** Filtered link candidates for the picker. Matches on name / kind
+	 *  label / kind slug so both "Driftwood" and "community" hit. */
+	const filteredEntities = $derived.by(() => {
+		const q = entitySearch.trim().toLowerCase();
+		const all = getLinkableEntities();
+		if (!q) return all;
+		return all.filter(
+			(e) =>
+				e.name.toLowerCase().includes(q) ||
+				e.kindLabel.toLowerCase().includes(q) ||
+				e.kind.toLowerCase().includes(q),
+		);
+	});
+
+	/** Commit an entity-link choice. `value` is "" to clear or
+	 *  "kind:id" to link. Same auto-fill-label behaviour as the old
+	 *  onEntityChange — if the marker has no label yet, adopt the
+	 *  linked entity's name. */
+	function pickEntity(value: string) {
 		if (!selectedMarker) return;
-		const v = (e.target as HTMLSelectElement).value;
-		const patch: { entityId?: string; label?: string } = { entityId: v || undefined };
-		// Auto-fill label from the linked entity's name when the current
-		// label is blank — matches the "annotation follows the entity"
-		// mental model without stomping on a name the user typed.
-		if (v && !selectedMarker.label.trim()) {
-			const link = resolveEntity(v);
+		const patch: { entityId?: string; label?: string } = { entityId: value || undefined };
+		if (value && !selectedMarker.label.trim()) {
+			const link = resolveEntity(value);
 			if (link) patch.label = link.name;
 		}
 		updateMarker(selectedMarker.id, patch);
+		closeEntityPicker();
 	}
 
 	function deleteSelected() {
@@ -892,6 +924,12 @@
 				ev.preventDefault();
 				ev.stopPropagation();
 				closePilePicker();
+				return;
+			}
+			if (ev.key === 'Escape' && entityPickerOpen) {
+				ev.preventDefault();
+				ev.stopPropagation();
+				closeEntityPicker();
 				return;
 			}
 			if (!(ev.metaKey || ev.ctrlKey)) return;
@@ -1147,7 +1185,7 @@
 		is no Save/Cancel — the marker is the working copy.
 	-->
 	<div class="mp-sel-toolbar" class:mp-sel-empty={!selectedMarker}>
-		{#if selectedMarker && selectedIcon}
+		{#if selectedMarker}
 			<span class="mp-sel-coord" title="Position ({selectedMarker.x}, {selectedMarker.y})"
 				>({fmtCoord(selectedMarker.x)}, {fmtCoord(selectedMarker.y)})</span
 			>
@@ -1157,7 +1195,7 @@
 				placeholder="Marker name…"
 				value={selectedMarker.label}
 				oninput={onLabelInput}
-				use:tooltip={'Name shown under the icon on the map'}
+				use:tooltip={'Name shown under the icon (or centred on the point when no icon is chosen)'}
 			/>
 			<button
 				class="mp-sel-icon-btn"
@@ -1165,10 +1203,15 @@
 				use:tooltip={'Change icon'}
 				aria-label="Change icon"
 			>
-				<svg viewBox={selectedIcon.viewBox} aria-hidden="true">
-					<g fill={selectedColor}>{@html selectedIcon.inner}</g>
-				</svg>
-				<span class="mp-sel-icon-label">{selectedIcon.label}</span>
+				{#if selectedIcon}
+					<svg viewBox={selectedIcon.viewBox} aria-hidden="true">
+						<g fill={selectedColor}>{@html selectedIcon.inner}</g>
+					</svg>
+					<span class="mp-sel-icon-label">{selectedIcon.label}</span>
+				{:else}
+					<span class="mp-sel-icon-none" aria-hidden="true">Aa</span>
+					<span class="mp-sel-icon-label">No icon</span>
+				{/if}
 			</button>
 			<div class="mp-sel-color-group">
 				<input
@@ -1192,18 +1235,70 @@
 					{/each}
 				</div>
 			</div>
-			<select
-				class="mp-sel-entity"
-				value={selectedMarker.entityId ?? ''}
-				onchange={onEntityChange}
-				use:tooltip={'Optional link to a Community, Place, Journey or Site'}
-				aria-label="Link to entity"
-			>
-				<option value="">— No link —</option>
-				{#each getLinkableEntities() as e}
-					<option value="{e.kind}:{e.id}">{e.kindPrefix} {e.kindLabel}: {e.name}</option>
-				{/each}
-			</select>
+			{@const currentLink = resolveEntity(selectedMarker.entityId)}
+			<div class="mp-sel-entity">
+				<button
+					class="mp-sel-entity-btn"
+					onclick={openEntityPicker}
+					aria-haspopup="listbox"
+					aria-expanded={entityPickerOpen}
+					use:tooltip={'Link to a Community, Place, Journey or Site'}
+				>
+					<span class="mp-sel-entity-label">
+						{#if selectedMarker.entityId && currentLink}
+							<span class="mp-sel-entity-prefix" aria-hidden="true">{currentLink.kindPrefix}</span
+							>{currentLink.name}
+						{:else if selectedMarker.entityId}
+							Broken link
+						{:else}
+							— No link —
+						{/if}
+					</span>
+					<span class="mp-picker-caret" aria-hidden="true">▾</span>
+				</button>
+				{#if entityPickerOpen}
+					<!-- svelte-ignore a11y_click_events_have_key_events -->
+					<div class="mp-picker-backdrop" role="presentation" onclick={closeEntityPicker}></div>
+					<div class="mp-entity-menu" role="listbox" aria-label="Link to entity">
+						<div class="mp-entity-search-row">
+							<!-- svelte-ignore a11y_autofocus -->
+							<input
+								class="mp-entity-search"
+								type="search"
+								placeholder="Search connections…"
+								bind:value={entitySearch}
+								autofocus
+							/>
+						</div>
+						<div class="mp-entity-list">
+							<button
+								class="mp-entity-item mp-entity-item--none"
+								class:mp-entity-item--active={!selectedMarker.entityId}
+								onclick={() => pickEntity('')}
+								role="option"
+								aria-selected={!selectedMarker.entityId}>— No link —</button
+							>
+							{#each filteredEntities as e (`${e.kind}:${e.id}`)}
+								{@const val = `${e.kind}:${e.id}`}
+								<button
+									class="mp-entity-item"
+									class:mp-entity-item--active={selectedMarker.entityId === val}
+									onclick={() => pickEntity(val)}
+									role="option"
+									aria-selected={selectedMarker.entityId === val}
+								>
+									<span class="mp-entity-prefix" aria-hidden="true">{e.kindPrefix}</span>
+									<span class="mp-entity-name">{e.name}</span>
+									<span class="mp-entity-kind">{e.kindLabel}</span>
+								</button>
+							{/each}
+							{#if filteredEntities.length === 0}
+								<p class="mp-entity-empty">No matches for "{entitySearch}".</p>
+							{/if}
+						</div>
+					</div>
+				{/if}
+			</div>
 			<button
 				class="mp-btn"
 				onclick={duplicateSelected}
@@ -1377,13 +1472,22 @@
 					{@const isDragging = dragState?.id === m.id && dragState.moved && dragPreview !== null}
 					{@const mx = isDragging && dragPreview ? dragPreview.x : m.x}
 					{@const my = isDragging && dragPreview ? dragPreview.y : m.y}
+					{@const hasIcon = m.icon !== ''}
+					<!--
+						`scale(1/zoom)` keeps the whole marker (icon + label +
+						strokes) a constant on-screen size regardless of zoom —
+						children keep their world-unit sizes; the scale absorbs
+						the zoom. When no icon is chosen (`m.icon === ''`) the
+						label centres both axes on the point instead of hanging
+						below where the icon would be.
+					-->
 					<g
 						class="mp-marker"
 						class:mp-marker-selected={m.id === selectedMarkerId}
 						class:mp-marker-dragging={isDragging}
-						transform="translate({mx} {my})"
+						transform="translate({mx} {my}) scale({1 / zoom})"
 					>
-						{#if ic}
+						{#if hasIcon && ic}
 							<svg
 								class="mp-marker-icon"
 								x={-ICON_SIZE / 2}
@@ -1407,7 +1511,9 @@
 									{@html ic.inner}
 								</g>
 							</svg>
-						{:else}
+						{:else if hasIcon}
+							<!-- Legacy/broken slug: fall back to a plain dot so
+							     the marker doesn't vanish. -->
 							<circle
 								r={ICON_SIZE / 2 - 0.04}
 								fill={color}
@@ -1417,7 +1523,13 @@
 							/>
 						{/if}
 						{#if showLabels && m.label}
-							<text class="mp-marker-label" y={ICON_SIZE / 2 + 0.32}>{m.label}</text>
+							{#if hasIcon}
+								<text class="mp-marker-label" y={ICON_SIZE / 2 + 0.32}>{m.label}</text>
+							{:else}
+								<text class="mp-marker-label mp-marker-label--centered" fill={color} y="0"
+									>{m.label}</text
+								>
+							{/if}
 						{/if}
 					</g>
 				{/each}
@@ -1530,6 +1642,20 @@
 		<input class="mp-icon-search" type="text" placeholder="Search icons…" bind:value={iconSearch} />
 	</div>
 	<div class="mp-icon-body">
+		<!-- "No icon" tile always at the top — clicking it clears the
+		     marker's icon so only the label renders (centred on the point). -->
+		<div class="mp-icon-cat-label">Label only</div>
+		<div class="mp-icon-grid">
+			<button
+				class="mp-icon-tile mp-icon-tile--none"
+				class:mp-icon-tile-selected={selectedMarker?.icon === ''}
+				onclick={() => pickIcon('')}
+				use:tooltip={'Show only the label — no icon, centred on the point'}
+				aria-label="No icon"
+			>
+				<span class="mp-icon-none-glyph" aria-hidden="true">Aa</span>
+			</button>
+		</div>
 		{#each Object.keys(filteredIcons) as cat (cat)}
 			<div class="mp-icon-cat-label">{filteredIcons[cat][0].categoryLabel}</div>
 			<div class="mp-icon-grid">
@@ -1876,15 +2002,125 @@
 		outline: 2px solid var(--text-accent);
 		outline-offset: 1px;
 	}
+	/* Entity-link picker — a combobox chip: a trigger button showing
+	   the currently-linked entity, and a floating popover with search +
+	   filtered list. Same UX pattern as the map-picker chip. */
 	.mp-sel-entity {
-		padding: 4px 6px;
+		position: relative;
+	}
+	.mp-sel-entity-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 4px 8px;
 		font-family: var(--font-ui);
 		font-size: 0.75rem;
 		color: var(--text);
 		background: var(--bg-control);
 		border: 1px solid var(--border-mid);
 		border-radius: 4px;
-		max-width: 180px;
+		cursor: pointer;
+		max-width: 200px;
+	}
+	.mp-sel-entity-btn:hover {
+		border-color: var(--text-accent);
+	}
+	.mp-sel-entity-label {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.mp-sel-entity-prefix {
+		color: var(--text-accent);
+		margin-right: 4px;
+	}
+	.mp-entity-menu {
+		position: absolute;
+		top: calc(100% + 4px);
+		left: 0;
+		z-index: 25;
+		width: min(320px, 80vw);
+		max-height: 55vh;
+		display: flex;
+		flex-direction: column;
+		background: var(--bg-card);
+		border: 1px solid var(--border-mid);
+		border-radius: 6px;
+		box-shadow: 0 8px 24px #00000060;
+		overflow: hidden;
+	}
+	.mp-entity-search-row {
+		padding: 6px 8px;
+		background: var(--bg-inset);
+		border-bottom: 1px solid var(--border);
+	}
+	.mp-entity-search {
+		width: 100%;
+		box-sizing: border-box;
+		padding: 4px 8px;
+		font-family: var(--font-ui);
+		font-size: 0.82rem;
+		color: var(--text);
+		background: var(--bg-control);
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+	}
+	.mp-entity-search:focus {
+		outline: none;
+		border-color: var(--text-accent);
+	}
+	.mp-entity-list {
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		padding: 4px 0;
+	}
+	.mp-entity-item {
+		width: 100%;
+		display: flex;
+		align-items: baseline;
+		gap: 6px;
+		padding: 5px 12px;
+		background: none;
+		border: none;
+		text-align: left;
+		font-family: var(--font-ui);
+		font-size: 0.82rem;
+		color: var(--text);
+		cursor: pointer;
+	}
+	.mp-entity-item:hover {
+		background: var(--bg-control);
+	}
+	.mp-entity-item--active {
+		background: color-mix(in srgb, var(--text-accent) 12%, var(--bg-control));
+		font-weight: 600;
+	}
+	.mp-entity-item--none {
+		color: var(--text-dimmer);
+		font-style: italic;
+	}
+	.mp-entity-prefix {
+		color: var(--text-accent);
+		flex-shrink: 0;
+	}
+	.mp-entity-name {
+		flex: 1;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.mp-entity-kind {
+		color: var(--text-dimmer);
+		font-size: 0.72rem;
+		flex-shrink: 0;
+	}
+	.mp-entity-empty {
+		font-family: var(--font-ui);
+		font-size: 0.82rem;
+		color: var(--text-dimmer);
+		text-align: center;
+		padding: 16px 0;
+		margin: 0;
 	}
 
 	.mp-error {
@@ -2021,9 +2257,9 @@
 		overflow: visible;
 	}
 	.mp-marker-label {
-		/* Font size + stroke width are in world units — 0.24 unit ≈ a
-		   quarter cell, so labels stay readable at zoom 1 and grow
-		   proportionally as the user zooms in. */
+		/* Font size + stroke width are in world units at zoom 1. The
+		   parent `<g>` applies `scale(1/zoom)`, which cancels the zoom
+		   so labels render at a constant screen size at any zoom level. */
 		font-family: var(--font-ui);
 		font-size: 0.24px;
 		font-weight: 600;
@@ -2033,6 +2269,46 @@
 		stroke: var(--bg-card);
 		stroke-width: 0.08px;
 		stroke-linejoin: round;
+	}
+	/* Label-only markers (no icon chosen) centre both axes on the point
+	   instead of sitting below where the icon would be. Colour picks up
+	   the marker's `color` via inline `fill` so the label reads as the
+	   annotation, not as generic body text. */
+	.mp-marker-label--centered {
+		dominant-baseline: central;
+	}
+
+	/* Selection toolbar's icon-button "No icon" placeholder — a small
+	   two-letter glyph in the marker's colour that stands in for the
+	   icon preview when the marker is a label-only pin. */
+	.mp-sel-icon-none {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 22px;
+		height: 22px;
+		flex-shrink: 0;
+		font-family: var(--font-ui);
+		font-size: 0.75rem;
+		font-weight: 700;
+		color: var(--text);
+		background: var(--bg-inset);
+		border: 1px dashed var(--border-mid);
+		border-radius: 4px;
+	}
+
+	/* Icon-picker "No icon" tile — same footprint as a regular tile but
+	   shows the "Aa" placeholder glyph so the choice is obvious in the
+	   grid. */
+	.mp-icon-tile--none {
+		background: var(--bg-inset);
+		border-style: dashed;
+	}
+	.mp-icon-none-glyph {
+		font-family: var(--font-ui);
+		font-size: 0.95rem;
+		font-weight: 700;
+		color: var(--text-muted);
 	}
 
 	/* Pile-up picker — fixed-positioned floating menu that appears when a
