@@ -1185,7 +1185,7 @@
 		is no Save/Cancel — the marker is the working copy.
 	-->
 	<div class="mp-sel-toolbar" class:mp-sel-empty={!selectedMarker}>
-		{#if selectedMarker && selectedIcon}
+		{#if selectedMarker}
 			<span class="mp-sel-coord" title="Position ({selectedMarker.x}, {selectedMarker.y})"
 				>({fmtCoord(selectedMarker.x)}, {fmtCoord(selectedMarker.y)})</span
 			>
@@ -1195,7 +1195,7 @@
 				placeholder="Marker name…"
 				value={selectedMarker.label}
 				oninput={onLabelInput}
-				use:tooltip={'Name shown under the icon on the map'}
+				use:tooltip={'Name shown under the icon (or centred on the point when no icon is chosen)'}
 			/>
 			<button
 				class="mp-sel-icon-btn"
@@ -1203,10 +1203,15 @@
 				use:tooltip={'Change icon'}
 				aria-label="Change icon"
 			>
-				<svg viewBox={selectedIcon.viewBox} aria-hidden="true">
-					<g fill={selectedColor}>{@html selectedIcon.inner}</g>
-				</svg>
-				<span class="mp-sel-icon-label">{selectedIcon.label}</span>
+				{#if selectedIcon}
+					<svg viewBox={selectedIcon.viewBox} aria-hidden="true">
+						<g fill={selectedColor}>{@html selectedIcon.inner}</g>
+					</svg>
+					<span class="mp-sel-icon-label">{selectedIcon.label}</span>
+				{:else}
+					<span class="mp-sel-icon-none" aria-hidden="true">Aa</span>
+					<span class="mp-sel-icon-label">No icon</span>
+				{/if}
 			</button>
 			<div class="mp-sel-color-group">
 				<input
@@ -1467,13 +1472,22 @@
 					{@const isDragging = dragState?.id === m.id && dragState.moved && dragPreview !== null}
 					{@const mx = isDragging && dragPreview ? dragPreview.x : m.x}
 					{@const my = isDragging && dragPreview ? dragPreview.y : m.y}
+					{@const hasIcon = m.icon !== ''}
+					<!--
+						`scale(1/zoom)` keeps the whole marker (icon + label +
+						strokes) a constant on-screen size regardless of zoom —
+						children keep their world-unit sizes; the scale absorbs
+						the zoom. When no icon is chosen (`m.icon === ''`) the
+						label centres both axes on the point instead of hanging
+						below where the icon would be.
+					-->
 					<g
 						class="mp-marker"
 						class:mp-marker-selected={m.id === selectedMarkerId}
 						class:mp-marker-dragging={isDragging}
-						transform="translate({mx} {my})"
+						transform="translate({mx} {my}) scale({1 / zoom})"
 					>
-						{#if ic}
+						{#if hasIcon && ic}
 							<svg
 								class="mp-marker-icon"
 								x={-ICON_SIZE / 2}
@@ -1497,7 +1511,9 @@
 									{@html ic.inner}
 								</g>
 							</svg>
-						{:else}
+						{:else if hasIcon}
+							<!-- Legacy/broken slug: fall back to a plain dot so
+							     the marker doesn't vanish. -->
 							<circle
 								r={ICON_SIZE / 2 - 0.04}
 								fill={color}
@@ -1507,7 +1523,13 @@
 							/>
 						{/if}
 						{#if showLabels && m.label}
-							<text class="mp-marker-label" y={ICON_SIZE / 2 + 0.32}>{m.label}</text>
+							{#if hasIcon}
+								<text class="mp-marker-label" y={ICON_SIZE / 2 + 0.32}>{m.label}</text>
+							{:else}
+								<text class="mp-marker-label mp-marker-label--centered" fill={color} y="0"
+									>{m.label}</text
+								>
+							{/if}
 						{/if}
 					</g>
 				{/each}
@@ -1620,6 +1642,20 @@
 		<input class="mp-icon-search" type="text" placeholder="Search icons…" bind:value={iconSearch} />
 	</div>
 	<div class="mp-icon-body">
+		<!-- "No icon" tile always at the top — clicking it clears the
+		     marker's icon so only the label renders (centred on the point). -->
+		<div class="mp-icon-cat-label">Label only</div>
+		<div class="mp-icon-grid">
+			<button
+				class="mp-icon-tile mp-icon-tile--none"
+				class:mp-icon-tile-selected={selectedMarker?.icon === ''}
+				onclick={() => pickIcon('')}
+				use:tooltip={'Show only the label — no icon, centred on the point'}
+				aria-label="No icon"
+			>
+				<span class="mp-icon-none-glyph" aria-hidden="true">Aa</span>
+			</button>
+		</div>
 		{#each Object.keys(filteredIcons) as cat (cat)}
 			<div class="mp-icon-cat-label">{filteredIcons[cat][0].categoryLabel}</div>
 			<div class="mp-icon-grid">
@@ -2221,9 +2257,9 @@
 		overflow: visible;
 	}
 	.mp-marker-label {
-		/* Font size + stroke width are in world units — 0.24 unit ≈ a
-		   quarter cell, so labels stay readable at zoom 1 and grow
-		   proportionally as the user zooms in. */
+		/* Font size + stroke width are in world units at zoom 1. The
+		   parent `<g>` applies `scale(1/zoom)`, which cancels the zoom
+		   so labels render at a constant screen size at any zoom level. */
 		font-family: var(--font-ui);
 		font-size: 0.24px;
 		font-weight: 600;
@@ -2233,6 +2269,46 @@
 		stroke: var(--bg-card);
 		stroke-width: 0.08px;
 		stroke-linejoin: round;
+	}
+	/* Label-only markers (no icon chosen) centre both axes on the point
+	   instead of sitting below where the icon would be. Colour picks up
+	   the marker's `color` via inline `fill` so the label reads as the
+	   annotation, not as generic body text. */
+	.mp-marker-label--centered {
+		dominant-baseline: central;
+	}
+
+	/* Selection toolbar's icon-button "No icon" placeholder — a small
+	   two-letter glyph in the marker's colour that stands in for the
+	   icon preview when the marker is a label-only pin. */
+	.mp-sel-icon-none {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 22px;
+		height: 22px;
+		flex-shrink: 0;
+		font-family: var(--font-ui);
+		font-size: 0.75rem;
+		font-weight: 700;
+		color: var(--text);
+		background: var(--bg-inset);
+		border: 1px dashed var(--border-mid);
+		border-radius: 4px;
+	}
+
+	/* Icon-picker "No icon" tile — same footprint as a regular tile but
+	   shows the "Aa" placeholder glyph so the choice is obvious in the
+	   grid. */
+	.mp-icon-tile--none {
+		background: var(--bg-inset);
+		border-style: dashed;
+	}
+	.mp-icon-none-glyph {
+		font-family: var(--font-ui);
+		font-size: 0.95rem;
+		font-weight: 700;
+		color: var(--text-muted);
 	}
 
 	/* Pile-up picker — fixed-positioned floating menu that appears when a
