@@ -23,10 +23,6 @@ export interface MapSettings {
 		/** Number of segments in the scale bar (e.g. `4` = 5 tick marks). */
 		segments: number;
 	};
-	border: {
-		/** Show the checkered border around the visible view. */
-		enabled: boolean;
-	};
 	hexes: {
 		/** Show the translucent hex grid overlay. Hexes stay clickable
 		 *  either way — the flag just controls the stroke visibility so
@@ -55,7 +51,6 @@ export interface MapSettings {
 
 const DEFAULTS: MapSettings = {
 	scale: { enabled: false, unit: 'miles', perHex: 5, segments: 4 },
-	border: { enabled: false },
 	hexes: { visible: true, opacity: 0.5 },
 	labels: { visible: true },
 	pan: { fx: 0.5, fy: 0.5 },
@@ -66,7 +61,6 @@ const DEFAULTS: MapSettings = {
 function freshDefaults(): MapSettings {
 	return {
 		scale: { ...DEFAULTS.scale },
-		border: { ...DEFAULTS.border },
 		hexes: { ...DEFAULTS.hexes },
 		labels: { ...DEFAULTS.labels },
 		pan: { ...DEFAULTS.pan },
@@ -81,7 +75,6 @@ function load(): MapSettings {
 		const parsed = JSON.parse(raw) as Partial<MapSettings>;
 		return {
 			scale: { ...DEFAULTS.scale, ...(parsed.scale ?? {}) },
-			border: { ...DEFAULTS.border, ...(parsed.border ?? {}) },
 			hexes: { ...DEFAULTS.hexes, ...(parsed.hexes ?? {}) },
 			labels: { ...DEFAULTS.labels, ...(parsed.labels ?? {}) },
 			pan: { ...DEFAULTS.pan, ...(parsed.pan ?? {}) },

@@ -144,18 +144,20 @@
 
 	/**
 	 * Dynamic hex size in SVG user units (= canvas pixels since viewBox
-	 * is pixel-space). Chosen so a MAP_COLS × MAP_ROWS hex grid plus a
-	 * half-hex margin on every side fits the canvas — max size while
-	 * respecting the minimum border.
+	 * is pixel-space). Chosen so a MAP_COLS × MAP_ROWS hex grid fills the
+	 * canvas edge-to-edge — no reserved margin. Grid aspect (20×13 ≈
+	 * 16:9) matches the canvas's aspect-ratio: 16/9, so both constraints
+	 * bind at essentially the same value and image + hexes fill the
+	 * whole canvas with no side bands.
 	 *
 	 * Solve for s in:
-	 *   canvasPxW ≥ (MAP_COLS + 1) · √3 · s  →  s ≤ pxW / ((MAP_COLS+1)√3)
-	 *   canvasPxH ≥ (MAP_ROWS + 1) · 1.5 · s →  s ≤ pxH / ((MAP_ROWS+1)·1.5)
+	 *   canvasPxW ≥ MAP_COLS · √3 · s  →  s ≤ pxW / (MAP_COLS · √3)
+	 *   canvasPxH ≥ MAP_ROWS · 1.5 · s →  s ≤ pxH / (MAP_ROWS · 1.5)
 	 * Take the min so both constraints hold; the other axis has extra.
 	 */
 	const dynamicHexSize = $derived.by(() => {
-		const sW = canvasPxW / (Math.sqrt(3) * (MAP_COLS + 1));
-		const sH = canvasPxH / (1.5 * (MAP_ROWS + 1));
+		const sW = canvasPxW / (Math.sqrt(3) * MAP_COLS);
+		const sH = canvasPxH / (1.5 * MAP_ROWS);
 		return Math.max(1, Math.min(sW, sH));
 	});
 
@@ -363,6 +365,60 @@
 		return () => el.removeEventListener('wheel', handler);
 	});
 
+	// ─── Mobile pinch-zoom ─────────────────────────────────────────────────────
+	// Two-finger touch on iOS/Android maps directly to zoom-around-midpoint.
+	// Also cancels any pending long-press timer (a second finger = pinch, not
+	// a tap-and-hold). Listeners attached with passive: false so we can call
+	// preventDefault and stop the browser from page-zooming.
+	let pinchStartDist = 0;
+	let pinchStartZoom = 1;
+	let pinchCenterX = 0;
+	let pinchCenterY = 0;
+
+	function distBetween(t1: Touch, t2: Touch): number {
+		return Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+	}
+
+	function onTouchStart(e: TouchEvent) {
+		if (e.touches.length !== 2 || !canvasEl) return;
+		e.preventDefault();
+		cancelLongPress();
+		const [t1, t2] = [e.touches[0], e.touches[1]];
+		pinchStartDist = distBetween(t1, t2);
+		pinchStartZoom = zoom;
+		const rect = canvasEl.getBoundingClientRect();
+		pinchCenterX = (t1.clientX + t2.clientX) / 2 - rect.left;
+		pinchCenterY = (t1.clientY + t2.clientY) / 2 - rect.top;
+	}
+	function onTouchMove(e: TouchEvent) {
+		if (e.touches.length !== 2 || pinchStartDist <= 0) return;
+		e.preventDefault();
+		const [t1, t2] = [e.touches[0], e.touches[1]];
+		const currentDist = distBetween(t1, t2);
+		if (currentDist <= 0) return;
+		const factor = currentDist / pinchStartDist;
+		zoomAround(pinchStartZoom * factor, pinchCenterX, pinchCenterY);
+	}
+	function onTouchEnd() {
+		pinchStartDist = 0;
+	}
+
+	$effect(() => {
+		if (!canvasEl) return;
+		const el = canvasEl;
+		const opts = { passive: false } as const;
+		el.addEventListener('touchstart', onTouchStart, opts);
+		el.addEventListener('touchmove', onTouchMove, opts);
+		el.addEventListener('touchend', onTouchEnd);
+		el.addEventListener('touchcancel', onTouchEnd);
+		return () => {
+			el.removeEventListener('touchstart', onTouchStart);
+			el.removeEventListener('touchmove', onTouchMove);
+			el.removeEventListener('touchend', onTouchEnd);
+			el.removeEventListener('touchcancel', onTouchEnd);
+		};
+	});
+
 	function zoomIn() {
 		zoomCentered(zoom * 1.25);
 	}
@@ -384,28 +440,14 @@
 	}
 
 	/**
-	 * Scale + border overlay geometry — computed in pixel-space (viewBox
-	 * matches the canvas 1:1) so both stay locked to the visible view at
-	 * any dialog size. Border segments are aligned to hex column/row
-	 * boundaries per the user's spec: the pattern rolls in step with the
-	 * hex grid, not the canvas edge.
+	 * Scale bar overlay geometry — computed in pixel-space (viewBox
+	 * matches the canvas 1:1) so it stays locked to the visible view at
+	 * any dialog size. One segment = one hex width at zoom 1.
 	 */
 	const overlayGeom = $derived.by(() => {
 		const s = dynamicHexSize;
 		const hexW = Math.sqrt(3) * s;
-		const hexH = 1.5 * s;
-		const bT = Math.max(6, Math.round(s * 0.35)); // border thickness in px
 
-		// Left vertex of q=0 hex on row 0 — anchor point for horizontal tiling.
-		const xAnchor = hexOffset.x - hexW / 2;
-		// Top vertex of r=0 hex — anchor for vertical tiling.
-		const yAnchor = hexOffset.y - s;
-		const xStart = (((xAnchor % hexW) + hexW) % hexW) - hexW; // ∈ [-hexW, 0)
-		const yStart = (((yAnchor % hexH) + hexH) % hexH) - hexH;
-		const xCount = Math.ceil((canvasPxW - xStart) / hexW) + 1;
-		const yCount = Math.ceil((canvasPxH - yStart) / hexH) + 1;
-
-		// Scale bar geometry — bottom-left, above the border row.
 		const sb = mapState.settings.scale ?? {};
 		const sbEnabled = sb.enabled === true;
 		const sbSegments = sb.segments ?? 4;
@@ -414,16 +456,9 @@
 		const sbSegW = hexW;
 		const sbTotalW = sbSegments * sbSegW;
 		const sbH = Math.max(5, Math.round(s * 0.3));
-		const sbBottomMargin = 24 + bT;
-		const sbLeftMargin = 20 + bT;
+		const sbBottomMargin = 24;
+		const sbLeftMargin = 20;
 		return {
-			hexW,
-			hexH,
-			bT,
-			xStart,
-			yStart,
-			xCount,
-			yCount,
 			sbEnabled,
 			sbSegments,
 			sbPerHex,
@@ -437,15 +472,29 @@
 	});
 
 	/**
-	 * Hex click. Bare click on a linked marker jumps to that entity and
-	 * closes the map. Shift+click always selects for editing — a modifier
-	 * lets the user edit a linked marker without triggering the jump.
-	 * Bare click on an unlinked hex either selects the existing marker or
-	 * creates one and selects it.
+	 * "Placing mode": armed by the toolbar "+ Add" button. The very next
+	 * hex click drops a fresh marker at that hex and selects it. Clicks
+	 * on empty hexes outside placing mode do nothing — no more accidental
+	 * markers from a stray tap.
 	 */
-	function onHexClick(q: number, r: number, ev: MouseEvent) {
+	let placingMode = $state(false);
+
+	/**
+	 * Long-press tracking for touch input. On mobile we can't shift-click,
+	 * so a long-press on a linked marker forces the editor open instead of
+	 * jumping to the entity — the touch equivalent of shift-click.
+	 */
+	const LONG_PRESS_MS = 500;
+	let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+	let longPressFired = false;
+
+	/** Select or jump for an existing marker. `forceEdit` bypasses the
+	 *  entity-link jump and always opens the editor (used by shift-click,
+	 *  long-press, and placing-mode clicks on occupied hexes). */
+	function activateExisting(q: number, r: number, forceEdit: boolean) {
 		const existing = markersAt(q, r)[0];
-		if (existing && !ev.shiftKey) {
+		if (!existing) return;
+		if (!forceEdit) {
 			const link = resolveEntity(existing.entityId);
 			if (link) {
 				document.dispatchEvent(
@@ -457,18 +506,75 @@
 				return;
 			}
 		}
-		if (existing) {
-			selectedMarkerId = existing.id;
-		} else {
-			const id = addMarker({
-				q,
-				r,
-				label: '',
-				icon: DEFAULT_MARKER_ICON,
-				color: DEFAULT_MARKER_COLOR,
-			});
-			selectedMarkerId = id;
+		selectedMarkerId = existing.id;
+	}
+
+	function placeAt(q: number, r: number) {
+		const id = addMarker({
+			q,
+			r,
+			label: '',
+			icon: DEFAULT_MARKER_ICON,
+			color: DEFAULT_MARKER_COLOR,
+		});
+		selectedMarkerId = id;
+		placingMode = false;
+	}
+
+	/**
+	 * Hex click. Behaviour depends on state:
+	 *  • Placing mode on + empty hex → place marker + select it.
+	 *  • Placing mode on + occupied hex → cancel placing, select existing.
+	 *  • Existing marker w/ link + bare click → jump to entity.
+	 *  • Existing marker w/ shift-click → open editor.
+	 *  • Empty hex outside placing mode → nothing (user must hit "+ Add").
+	 *
+	 * Long-press on touch (see onHexPointerDown) sets `longPressFired`,
+	 * which we honor by skipping the click — the long-press already
+	 * opened the editor.
+	 */
+	function onHexClick(q: number, r: number, ev: MouseEvent) {
+		if (longPressFired) {
+			longPressFired = false;
+			return;
 		}
+		const existing = markersAt(q, r)[0];
+		if (placingMode) {
+			if (existing) {
+				selectedMarkerId = existing.id;
+				placingMode = false;
+			} else {
+				placeAt(q, r);
+			}
+			return;
+		}
+		if (!existing) return;
+		activateExisting(q, r, ev.shiftKey);
+	}
+
+	function onHexPointerDown(q: number, r: number, e: PointerEvent) {
+		if (e.pointerType === 'mouse') return; // mouse uses click + shift-click
+		longPressFired = false;
+		if (longPressTimer) clearTimeout(longPressTimer);
+		longPressTimer = setTimeout(() => {
+			longPressFired = true;
+			longPressTimer = null;
+			activateExisting(q, r, true);
+		}, LONG_PRESS_MS);
+	}
+	function cancelLongPress() {
+		if (longPressTimer) {
+			clearTimeout(longPressTimer);
+			longPressTimer = null;
+		}
+	}
+
+	function toggleAdd() {
+		placingMode = !placingMode;
+		if (placingMode) selectedMarkerId = null;
+	}
+	function cancelPlacing() {
+		placingMode = false;
 	}
 
 	function clearSelection() {
@@ -606,6 +712,16 @@
 				class="mp-btn"
 				onclick={triggerUpload}
 				use:tooltip={'Upload a background image (JPEG or PNG, ≤20 MB)'}>Upload image</button
+			>
+			<button
+				class="mp-btn mp-btn-add"
+				class:mp-btn-add-active={placingMode}
+				onclick={toggleAdd}
+				use:tooltip={placingMode
+					? 'Click a hex to place the marker (or click Add again to cancel)'
+					: 'Add a marker — then click the hex to place it'}
+				aria-pressed={placingMode}
+				aria-label="Add marker">+ Add</button
 			>
 			<div class="mp-zoom" role="group" aria-label="Zoom controls">
 				<button
@@ -754,10 +870,17 @@
 				use:tooltip={'Deselect and close the editor'}
 				aria-label="Close editor">Done</button
 			>
+		{:else if placingMode}
+			<span class="mp-sel-hint mp-sel-hint-active">Click a hex to place a marker.</span>
+			<button
+				class="mp-btn"
+				onclick={cancelPlacing}
+				use:tooltip={'Exit placing mode without adding a marker'}>Cancel</button
+			>
 		{:else}
 			<span class="mp-sel-hint"
-				>Click a hex to place or edit a marker. Shift-click a linked marker to edit instead of
-				jumping.</span
+				>Hit <strong>+ Add</strong> then click a hex to place a marker. Tap a linked marker to jump; shift-click
+				(desktop) or long-press (touch) to edit instead.</span
 			>
 		{/if}
 	</div>
@@ -830,6 +953,10 @@
 								class="mp-hex"
 								points={hexPolygonPoints(px.x, px.y, dynamicHexSize)}
 								onclick={(ev) => onHexClick(q, r, ev)}
+								onpointerdown={(ev) => onHexPointerDown(q, r, ev)}
+								onpointerup={cancelLongPress}
+								onpointercancel={cancelLongPress}
+								onpointermove={cancelLongPress}
 								role="button"
 								tabindex="-1"
 								aria-label={`Hex ${q}, ${r}`}
@@ -885,96 +1012,51 @@
 						</g>
 					{/each}
 				</g>
-				<!--
-					Checkered border — locked to the visible view (canvas edges),
-					aligned to hex column/row starts so segments tile in step
-					with the underlying grid.
-				-->
-				{#if mapSettings.border.enabled}
-					<g class="mp-border" aria-hidden="true">
-						{#each Array(overlayGeom.xCount) as _, i (`bt-${i}`)}
-							<rect
-								x={overlayGeom.xStart + i * overlayGeom.hexW}
-								y="0"
-								width={overlayGeom.hexW}
-								height={overlayGeom.bT}
-								fill={i % 2 === 0 ? '#111' : '#fff'}
-								stroke="#111"
-								stroke-width="0.5"
-							/>
-						{/each}
-						{#each Array(overlayGeom.xCount) as _, i (`bb-${i}`)}
-							<rect
-								x={overlayGeom.xStart + i * overlayGeom.hexW}
-								y={canvasPxH - overlayGeom.bT}
-								width={overlayGeom.hexW}
-								height={overlayGeom.bT}
-								fill={i % 2 === 0 ? '#fff' : '#111'}
-								stroke="#111"
-								stroke-width="0.5"
-							/>
-						{/each}
-						{#each Array(overlayGeom.yCount) as _, i (`bl-${i}`)}
-							<rect
-								x="0"
-								y={overlayGeom.yStart + i * overlayGeom.hexH}
-								width={overlayGeom.bT}
-								height={overlayGeom.hexH}
-								fill={i % 2 === 0 ? '#111' : '#fff'}
-								stroke="#111"
-								stroke-width="0.5"
-							/>
-						{/each}
-						{#each Array(overlayGeom.yCount) as _, i (`br-${i}`)}
-							<rect
-								x={canvasPxW - overlayGeom.bT}
-								y={overlayGeom.yStart + i * overlayGeom.hexH}
-								width={overlayGeom.bT}
-								height={overlayGeom.hexH}
-								fill={i % 2 === 0 ? '#fff' : '#111'}
-								stroke="#111"
-								stroke-width="0.5"
-							/>
-						{/each}
-					</g>
-				{/if}
-
-				<!--
-					Scale bar — one segment = one hex width, positioned
-					bottom-left inside the border.
-				-->
-				{#if overlayGeom.sbEnabled}
-					<g
-						class="mp-scale"
-						transform="translate({overlayGeom.sbX} {overlayGeom.sbY})"
-						aria-hidden="true"
-					>
-						{#each Array(overlayGeom.sbSegments) as _, i (`ss-${i}`)}
-							<rect
-								x={i * overlayGeom.sbSegW}
-								y="0"
-								width={overlayGeom.sbSegW}
-								height={overlayGeom.sbH}
-								fill={i % 2 === 0 ? '#111' : '#fff'}
-								stroke="#111"
-								stroke-width="0.75"
-							/>
-						{/each}
-						{#each Array(overlayGeom.sbSegments + 1) as _, i (`st-${i}`)}
-							<text class="mp-scale-tick" x={i * overlayGeom.sbSegW} y={-4} text-anchor="middle"
-								>{i * overlayGeom.sbPerHex}</text
-							>
-						{/each}
-						<text
-							class="mp-scale-unit"
-							x={overlayGeom.sbTotalW / 2}
-							y={overlayGeom.sbH + 12}
-							text-anchor="middle">{overlayGeom.sbUnit === 'miles' ? 'MILES' : 'KM'}</text
-						>
-					</g>
-				{/if}
 			</svg>
 		</div>
+
+		<!--
+			Overlay SVG — floats above the canvas at fixed pixel dimensions
+			(canvasPxW × canvasPxH) so the checkered border and scale bar
+			stay visible + constant-sized while the user pans and zooms the
+			map underneath. Positioned absolute over .mp-canvas via
+			.mp-overlay-svg CSS; pointer-events: none passes clicks through
+			to the hex grid below.
+		-->
+		<svg
+			class="mp-overlay-svg"
+			width={canvasPxW}
+			height={canvasPxH}
+			viewBox="0 0 {canvasPxW} {canvasPxH}"
+			aria-hidden="true"
+		>
+			{#if overlayGeom.sbEnabled}
+				<g class="mp-scale" transform="translate({overlayGeom.sbX} {overlayGeom.sbY})">
+					{#each Array(overlayGeom.sbSegments) as _, i (`ss-${i}`)}
+						<rect
+							x={i * overlayGeom.sbSegW}
+							y="0"
+							width={overlayGeom.sbSegW}
+							height={overlayGeom.sbH}
+							fill={i % 2 === 0 ? '#111' : '#fff'}
+							stroke="#111"
+							stroke-width="0.75"
+						/>
+					{/each}
+					{#each Array(overlayGeom.sbSegments + 1) as _, i (`st-${i}`)}
+						<text class="mp-scale-tick" x={i * overlayGeom.sbSegW} y={-4} text-anchor="middle"
+							>{i * overlayGeom.sbPerHex}</text
+						>
+					{/each}
+					<text
+						class="mp-scale-unit"
+						x={overlayGeom.sbTotalW / 2}
+						y={overlayGeom.sbH + 12}
+						text-anchor="middle">{overlayGeom.sbUnit === 'miles' ? 'MILES' : 'KM'}</text
+					>
+				</g>
+			{/if}
+		</svg>
 	</div>
 </dialog>
 
@@ -1112,6 +1194,27 @@
 	/* Icon-only button variant — trash-can Delete in the selection
 	   toolbar. Matches the height of the other .mp-btn buttons so the
 	   toolbar row aligns cleanly. */
+	/* + Add button styling. Active state = placing mode is armed, so it
+	   snaps to the accent color to make the state obvious. */
+	.mp-btn-add-active {
+		background: var(--text-accent) !important;
+		color: var(--bg-card) !important;
+		border-color: var(--text-accent) !important;
+	}
+	/* Placing mode = crosshair over the canvas so users know the next
+	   click will land a marker. */
+	:global(body:has(button.mp-btn-add-active) .mp-canvas .mp-hex) {
+		cursor: crosshair;
+	}
+
+	/* Selection-toolbar hint gets a slightly warmer treatment when
+	   placing mode is armed, matching the Add button's active state. */
+	.mp-sel-hint-active {
+		color: var(--text);
+		font-weight: 600;
+		font-style: normal;
+	}
+
 	.mp-btn-icon {
 		padding: 4px 8px;
 		display: inline-flex;
@@ -1294,11 +1397,25 @@
 		   4K upload drops in with zero letterbox. Body width tracks the
 		   dialog; height is derived. `max-height` still caps the total
 		   dialog well inside the CLAUDE.md 88vh iOS-safe budget so on a
-		   short viewport the body clamps rather than overflowing. */
+		   short viewport the body clamps rather than overflowing.
+		   `position: relative` establishes the containing block for the
+		   .mp-overlay-svg absolutely-positioned overlay. */
+		position: relative;
 		width: 100%;
 		aspect-ratio: 16 / 9;
 		max-height: calc(88vh - 8rem);
 		overflow: hidden;
+	}
+	/* Overlay SVG — floats above .mp-canvas at fixed canvas-pixel
+	   dimensions so the border + scale-bar stay put while the map pans
+	   and zooms underneath. pointer-events: none so clicks pass through
+	   to the hex grid. */
+	.mp-overlay-svg {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		pointer-events: none;
 	}
 	.mp-canvas {
 		width: 100%;
@@ -1378,9 +1495,6 @@
 	}
 	:global(.mp-scale rect) {
 		filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
-	}
-	:global(.mp-border rect) {
-		shape-rendering: crispEdges;
 	}
 	/* Suppress the default focus rectangle browsers draw around a
 	   role="button" polygon after click — the hover-stroke already
