@@ -365,6 +365,60 @@
 		return () => el.removeEventListener('wheel', handler);
 	});
 
+	// ─── Mobile pinch-zoom ─────────────────────────────────────────────────────
+	// Two-finger touch on iOS/Android maps directly to zoom-around-midpoint.
+	// Also cancels any pending long-press timer (a second finger = pinch, not
+	// a tap-and-hold). Listeners attached with passive: false so we can call
+	// preventDefault and stop the browser from page-zooming.
+	let pinchStartDist = 0;
+	let pinchStartZoom = 1;
+	let pinchCenterX = 0;
+	let pinchCenterY = 0;
+
+	function distBetween(t1: Touch, t2: Touch): number {
+		return Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+	}
+
+	function onTouchStart(e: TouchEvent) {
+		if (e.touches.length !== 2 || !canvasEl) return;
+		e.preventDefault();
+		cancelLongPress();
+		const [t1, t2] = [e.touches[0], e.touches[1]];
+		pinchStartDist = distBetween(t1, t2);
+		pinchStartZoom = zoom;
+		const rect = canvasEl.getBoundingClientRect();
+		pinchCenterX = (t1.clientX + t2.clientX) / 2 - rect.left;
+		pinchCenterY = (t1.clientY + t2.clientY) / 2 - rect.top;
+	}
+	function onTouchMove(e: TouchEvent) {
+		if (e.touches.length !== 2 || pinchStartDist <= 0) return;
+		e.preventDefault();
+		const [t1, t2] = [e.touches[0], e.touches[1]];
+		const currentDist = distBetween(t1, t2);
+		if (currentDist <= 0) return;
+		const factor = currentDist / pinchStartDist;
+		zoomAround(pinchStartZoom * factor, pinchCenterX, pinchCenterY);
+	}
+	function onTouchEnd() {
+		pinchStartDist = 0;
+	}
+
+	$effect(() => {
+		if (!canvasEl) return;
+		const el = canvasEl;
+		const opts = { passive: false } as const;
+		el.addEventListener('touchstart', onTouchStart, opts);
+		el.addEventListener('touchmove', onTouchMove, opts);
+		el.addEventListener('touchend', onTouchEnd);
+		el.addEventListener('touchcancel', onTouchEnd);
+		return () => {
+			el.removeEventListener('touchstart', onTouchStart);
+			el.removeEventListener('touchmove', onTouchMove);
+			el.removeEventListener('touchend', onTouchEnd);
+			el.removeEventListener('touchcancel', onTouchEnd);
+		};
+	});
+
 	function zoomIn() {
 		zoomCentered(zoom * 1.25);
 	}
@@ -418,15 +472,29 @@
 	});
 
 	/**
-	 * Hex click. Bare click on a linked marker jumps to that entity and
-	 * closes the map. Shift+click always selects for editing — a modifier
-	 * lets the user edit a linked marker without triggering the jump.
-	 * Bare click on an unlinked hex either selects the existing marker or
-	 * creates one and selects it.
+	 * "Placing mode": armed by the toolbar "+ Add" button. The very next
+	 * hex click drops a fresh marker at that hex and selects it. Clicks
+	 * on empty hexes outside placing mode do nothing — no more accidental
+	 * markers from a stray tap.
 	 */
-	function onHexClick(q: number, r: number, ev: MouseEvent) {
+	let placingMode = $state(false);
+
+	/**
+	 * Long-press tracking for touch input. On mobile we can't shift-click,
+	 * so a long-press on a linked marker forces the editor open instead of
+	 * jumping to the entity — the touch equivalent of shift-click.
+	 */
+	const LONG_PRESS_MS = 500;
+	let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+	let longPressFired = false;
+
+	/** Select or jump for an existing marker. `forceEdit` bypasses the
+	 *  entity-link jump and always opens the editor (used by shift-click,
+	 *  long-press, and placing-mode clicks on occupied hexes). */
+	function activateExisting(q: number, r: number, forceEdit: boolean) {
 		const existing = markersAt(q, r)[0];
-		if (existing && !ev.shiftKey) {
+		if (!existing) return;
+		if (!forceEdit) {
 			const link = resolveEntity(existing.entityId);
 			if (link) {
 				document.dispatchEvent(
@@ -438,18 +506,75 @@
 				return;
 			}
 		}
-		if (existing) {
-			selectedMarkerId = existing.id;
-		} else {
-			const id = addMarker({
-				q,
-				r,
-				label: '',
-				icon: DEFAULT_MARKER_ICON,
-				color: DEFAULT_MARKER_COLOR,
-			});
-			selectedMarkerId = id;
+		selectedMarkerId = existing.id;
+	}
+
+	function placeAt(q: number, r: number) {
+		const id = addMarker({
+			q,
+			r,
+			label: '',
+			icon: DEFAULT_MARKER_ICON,
+			color: DEFAULT_MARKER_COLOR,
+		});
+		selectedMarkerId = id;
+		placingMode = false;
+	}
+
+	/**
+	 * Hex click. Behaviour depends on state:
+	 *  • Placing mode on + empty hex → place marker + select it.
+	 *  • Placing mode on + occupied hex → cancel placing, select existing.
+	 *  • Existing marker w/ link + bare click → jump to entity.
+	 *  • Existing marker w/ shift-click → open editor.
+	 *  • Empty hex outside placing mode → nothing (user must hit "+ Add").
+	 *
+	 * Long-press on touch (see onHexPointerDown) sets `longPressFired`,
+	 * which we honor by skipping the click — the long-press already
+	 * opened the editor.
+	 */
+	function onHexClick(q: number, r: number, ev: MouseEvent) {
+		if (longPressFired) {
+			longPressFired = false;
+			return;
 		}
+		const existing = markersAt(q, r)[0];
+		if (placingMode) {
+			if (existing) {
+				selectedMarkerId = existing.id;
+				placingMode = false;
+			} else {
+				placeAt(q, r);
+			}
+			return;
+		}
+		if (!existing) return;
+		activateExisting(q, r, ev.shiftKey);
+	}
+
+	function onHexPointerDown(q: number, r: number, e: PointerEvent) {
+		if (e.pointerType === 'mouse') return; // mouse uses click + shift-click
+		longPressFired = false;
+		if (longPressTimer) clearTimeout(longPressTimer);
+		longPressTimer = setTimeout(() => {
+			longPressFired = true;
+			longPressTimer = null;
+			activateExisting(q, r, true);
+		}, LONG_PRESS_MS);
+	}
+	function cancelLongPress() {
+		if (longPressTimer) {
+			clearTimeout(longPressTimer);
+			longPressTimer = null;
+		}
+	}
+
+	function toggleAdd() {
+		placingMode = !placingMode;
+		if (placingMode) selectedMarkerId = null;
+	}
+	function cancelPlacing() {
+		placingMode = false;
 	}
 
 	function clearSelection() {
@@ -587,6 +712,16 @@
 				class="mp-btn"
 				onclick={triggerUpload}
 				use:tooltip={'Upload a background image (JPEG or PNG, ≤20 MB)'}>Upload image</button
+			>
+			<button
+				class="mp-btn mp-btn-add"
+				class:mp-btn-add-active={placingMode}
+				onclick={toggleAdd}
+				use:tooltip={placingMode
+					? 'Click a hex to place the marker (or click Add again to cancel)'
+					: 'Add a marker — then click the hex to place it'}
+				aria-pressed={placingMode}
+				aria-label="Add marker">+ Add</button
 			>
 			<div class="mp-zoom" role="group" aria-label="Zoom controls">
 				<button
@@ -735,10 +870,17 @@
 				use:tooltip={'Deselect and close the editor'}
 				aria-label="Close editor">Done</button
 			>
+		{:else if placingMode}
+			<span class="mp-sel-hint mp-sel-hint-active">Click a hex to place a marker.</span>
+			<button
+				class="mp-btn"
+				onclick={cancelPlacing}
+				use:tooltip={'Exit placing mode without adding a marker'}>Cancel</button
+			>
 		{:else}
 			<span class="mp-sel-hint"
-				>Click a hex to place or edit a marker. Shift-click a linked marker to edit instead of
-				jumping.</span
+				>Hit <strong>+ Add</strong> then click a hex to place a marker. Tap a linked marker to jump; shift-click
+				(desktop) or long-press (touch) to edit instead.</span
 			>
 		{/if}
 	</div>
@@ -811,6 +953,10 @@
 								class="mp-hex"
 								points={hexPolygonPoints(px.x, px.y, dynamicHexSize)}
 								onclick={(ev) => onHexClick(q, r, ev)}
+								onpointerdown={(ev) => onHexPointerDown(q, r, ev)}
+								onpointerup={cancelLongPress}
+								onpointercancel={cancelLongPress}
+								onpointermove={cancelLongPress}
 								role="button"
 								tabindex="-1"
 								aria-label={`Hex ${q}, ${r}`}
@@ -1048,6 +1194,27 @@
 	/* Icon-only button variant — trash-can Delete in the selection
 	   toolbar. Matches the height of the other .mp-btn buttons so the
 	   toolbar row aligns cleanly. */
+	/* + Add button styling. Active state = placing mode is armed, so it
+	   snaps to the accent color to make the state obvious. */
+	.mp-btn-add-active {
+		background: var(--text-accent) !important;
+		color: var(--bg-card) !important;
+		border-color: var(--text-accent) !important;
+	}
+	/* Placing mode = crosshair over the canvas so users know the next
+	   click will land a marker. */
+	:global(body:has(button.mp-btn-add-active) .mp-canvas .mp-hex) {
+		cursor: crosshair;
+	}
+
+	/* Selection-toolbar hint gets a slightly warmer treatment when
+	   placing mode is armed, matching the Add button's active state. */
+	.mp-sel-hint-active {
+		color: var(--text);
+		font-weight: 600;
+		font-style: normal;
+	}
+
 	.mp-btn-icon {
 		padding: 4px 8px;
 		display: inline-flex;
