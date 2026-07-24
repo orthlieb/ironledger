@@ -69,7 +69,12 @@
 	import { getActiveFoeId, getActiveExpeditionId } from '$lib/activeContext.svelte.js';
 	import { triggerAction, appendLog, sessionLog } from '$lib/log.svelte.js';
 	import { parseStorySource } from '$lib/aiSerialize.js';
-	import { parseImportJson, sanitizeLogHtml, ImportError } from '$lib/importSanitizer.js';
+	import {
+		parseImportJson,
+		parseImportZip,
+		sanitizeLogHtml,
+		ImportError,
+	} from '$lib/importSanitizer.js';
 	import { zipSync, strToU8 } from 'fflate';
 	import { buildMapZipEntries } from '$lib/mapExport.js';
 	import charactersIconSvg from '$icons/Characters.svg?raw';
@@ -414,13 +419,24 @@
 	}
 
 	// ── Import ───────────────────────────────────────────────────────────────
+	// Accepts either a legacy `.json` file or a `.zip` produced by
+	// `exportZip()`. Zip decompression + portrait reassembly happens in
+	// `parseImportZip` so the rest of the flow sees the same
+	// `{ manifest, data }` shape regardless of input format.
 	async function onImportFile(e: Event) {
 		const file = (e.target as HTMLInputElement).files?.[0];
 		if (!file) return;
 		importError = '';
 		try {
-			const text = await file.text();
-			const parsed = parseImportJson(text) as Record<string, unknown>;
+			const isZip =
+				file.type === 'application/zip' ||
+				file.type === 'application/x-zip-compressed' ||
+				file.name.toLowerCase().endsWith('.zip');
+			const parsed = (
+				isZip
+					? parseImportZip(new Uint8Array(await file.arrayBuffer()))
+					: parseImportJson(await file.text())
+			) as Record<string, unknown>;
 
 			// Reconcile imported globalValues against the current catalogue
 			// (drops unknown counter ids, clamps to canonical maxValue, drops
@@ -765,6 +781,98 @@
 			data: payload,
 		};
 		downloadFile(filename, JSON.stringify(wrapper, null, 2), 'application/json');
+	}
+
+	// ── Zip export ──────────────────────────────────────────────────────────
+	// Same envelope shape as `exportJson`, but wraps as a zip:
+	//   manifest.json      { app, version, exportedAt, type, count, body }
+	//   <type>.json        the payload, with any inline portrait data URLs
+	//                      swapped for `imageUrlFile` / `portraitFile`
+	//                      references pointing at ...
+	//   images/portrait-N.<ext>   ...these raw image bytes.
+	// Zip over JSON so multi-megabyte portraits don't pay the ~33 %
+	// base64 tax; matches the pattern the "Everything" markdown export
+	// and the per-map export already use.
+
+	/** Canonical body filename for a given export type — matches the
+	 *  candidates the sanitizer's `parseImportZip` scans. */
+	function bodyFilenameForType(type: string): string {
+		if (type === 'all-characters') return 'characters.json';
+		return `${type}.json`;
+	}
+
+	/** Extract every inline data URL under `imageUrl` / `portrait` field
+	 *  names, save the bytes into the accumulating `images` map, and
+	 *  return a copy of `value` with those fields replaced by
+	 *  `imageUrlFile` / `portraitFile` references. The reassembler on
+	 *  import (see `importSanitizer.reassemblePortraits`) reverses the
+	 *  mapping. */
+	function extractPortraits(
+		value: unknown,
+		images: Record<string, Uint8Array>,
+		counter: { n: number },
+	): unknown {
+		if (value === null || typeof value !== 'object') return value;
+		if (Array.isArray(value)) {
+			return value.map((v) => extractPortraits(v, images, counter));
+		}
+		const obj = value as Record<string, unknown>;
+		const out: Record<string, unknown> = {};
+		for (const [k, v] of Object.entries(obj)) {
+			const refKey = k === 'imageUrl' ? 'imageUrlFile' : k === 'portrait' ? 'portraitFile' : null;
+			if (refKey && typeof v === 'string' && v.startsWith('data:')) {
+				const match = /^data:([^;,]+);base64,/.exec(v);
+				if (match) {
+					const mime = match[1];
+					const bytes = b64ToU8(v);
+					const ext =
+						mime === 'image/png'
+							? 'png'
+							: mime === 'image/webp'
+								? 'webp'
+								: mime === 'image/gif'
+									? 'gif'
+									: 'jpg';
+					counter.n++;
+					const path = `images/portrait-${counter.n}.${ext}`;
+					images[path] = bytes;
+					out[refKey] = path;
+					continue;
+				}
+			}
+			out[k] = extractPortraits(v, images, counter);
+		}
+		return out;
+	}
+
+	async function exportZip(type: string, payload: unknown, count: number, filename: string) {
+		const images: Record<string, Uint8Array> = {};
+		const counter = { n: 0 };
+		const body = extractPortraits(payload, images, counter);
+		const bodyName = bodyFilenameForType(type);
+		const manifest = {
+			app: 'Iron Ledger',
+			version: '1.0.0',
+			exportedAt: new Date().toISOString(),
+			type,
+			count,
+			body: bodyName,
+		};
+		const files: Record<string, Uint8Array> = {
+			'manifest.json': strToU8(JSON.stringify(manifest, null, 2)),
+			[bodyName]: strToU8(JSON.stringify(body, null, 2)),
+			...images,
+		};
+		const zipped = zipSync(files, { level: 6 });
+		const blob = new Blob([zipped], { type: 'application/zip' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		a.download = filename;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
 	}
 
 	function b64ToU8(dataUrl: string): Uint8Array {
@@ -1365,16 +1473,16 @@
 					npcs.length +
 					places.length +
 					expeditions.length;
-				exportJson('everything', payload, count, `ironledger-export-${stamp}.json`);
+				await exportZip('everything', payload, count, `ironledger-export-${stamp}.zip`);
 			}
 		} else if (content === 'character') {
 			const char = chars.find((c) => c.id === activeCharId);
 			if (!char) return;
 			const safeName = char.name.replace(/[^a-z0-9]/gi, '-').toLowerCase() || 'character';
-			exportJson('character', await embedCharForExport(char), 1, `${safeName}.json`);
+			await exportZip('character', await embedCharForExport(char), 1, `${safeName}.zip`);
 		} else if (content === 'all-characters') {
 			const payload = await Promise.all(chars.map(embedCharForExport));
-			exportJson('all-characters', payload, chars.length, `all-characters-${stamp}.json`);
+			await exportZip('all-characters', payload, chars.length, `all-characters-${stamp}.zip`);
 		} else if (content === 'log') {
 			if (format === 'json') {
 				const entries = [...sessionLog.entries].reverse();
@@ -1383,7 +1491,7 @@
 		} else if (content === 'stories') {
 			downloadFile(`stories-${stamp}.md`, storiesToMarkdown(), 'text/markdown');
 		} else if (content === 'communities') {
-			exportJson(
+			await exportZip(
 				'communities',
 				{
 					communities: await Promise.all(
@@ -1393,14 +1501,14 @@
 					places: await Promise.all(places.map((p) => embedEntityForExport('places', p))),
 				},
 				communities.length + npcs.length + places.length,
-				`communities-${stamp}.json`,
+				`communities-${stamp}.zip`,
 			);
 		} else if (content === 'expeditions') {
-			exportJson(
+			await exportZip(
 				'expeditions',
 				await Promise.all(expeditions.map((e) => embedEntityForExport('expeditions', e))),
 				expeditions.length,
-				`expeditions-${stamp}.json`,
+				`expeditions-${stamp}.zip`,
 			);
 		} else if (content === 'map') {
 			// Route to MapDialog — it owns the SVG element PNG rasterisation
@@ -1414,11 +1522,13 @@
 	<title>Iron Ledger</title>
 </svelte:head>
 
-<!-- Hidden file input for JSON import -->
+<!-- Hidden file input — accepts both legacy `.json` and the new `.zip`
+     bundles produced by `exportZip()`. Import sniffs the file type
+     and delegates to `parseImportZip` or `parseImportJson`. -->
 <input
 	bind:this={importInput}
 	type="file"
-	accept=".json,application/json"
+	accept=".json,application/json,.zip,application/zip"
 	style="display: none"
 	onchange={onImportFile}
 />
