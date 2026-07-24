@@ -24,7 +24,12 @@
 	let open = $state(false);
 	let exportDialogEl = $state<HTMLDialogElement | null>(null);
 	let exportContent = $state('everything');
-	let exportFormat = $state('json');
+	// Default for "Everything" is the zip bundle (portraits packed as
+	// raw JPEGs alongside the JSON body). Per-entity content types
+	// (character / all-characters / communities / expeditions) also
+	// emit a zip — they don't render a format select, but their
+	// implicit `exportFormat` flows through as `zip`.
+	let exportFormat = $state('zip');
 
 	let exportDragX = $state(0);
 	let exportDragY = $state(0);
@@ -165,11 +170,14 @@
 				class="ed-select"
 				bind:value={exportContent}
 				onchange={() => {
-					// Stories are markdown-only. Map defaults to PNG. Everything
-					// else that isn't log/everything/map is JSON.
+					// Stories are markdown-only. Log is JSON-or-Markdown. Map
+					// defaults to PNG. Everything defaults to Zip. Per-entity
+					// content types (character / all-characters / communities /
+					// expeditions) always emit a zip — no format select shown.
 					if (exportContent === 'stories') exportFormat = 'md';
 					else if (exportContent === 'map') exportFormat = 'png';
-					else if (exportContent !== 'everything' && exportContent !== 'log') exportFormat = 'json';
+					else if (exportContent === 'log') exportFormat = 'json';
+					else exportFormat = 'zip';
 				}}
 			>
 				<option value="everything">Everything</option>
@@ -182,7 +190,23 @@
 				<option value="map">Campaign Map</option>
 			</select>
 		</div>
-		{#if exportContent === 'everything' || exportContent === 'log'}
+		{#if exportContent === 'everything'}
+			<div class="ed-field">
+				<span class="ed-label">Format</span>
+				<div class="ed-seg" role="group">
+					<button
+						class="ed-seg-btn"
+						class:active={exportFormat === 'zip'}
+						onclick={() => (exportFormat = 'zip')}>Zip</button
+					>
+					<button
+						class="ed-seg-btn"
+						class:active={exportFormat === 'md'}
+						onclick={() => (exportFormat = 'md')}>Markdown</button
+					>
+				</div>
+			</div>
+		{:else if exportContent === 'log'}
 			<div class="ed-field">
 				<span class="ed-label">Format</span>
 				<div class="ed-seg" role="group">
