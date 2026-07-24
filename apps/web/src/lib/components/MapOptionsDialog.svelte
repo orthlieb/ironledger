@@ -6,9 +6,9 @@
 	 * Two persistence backends:
 	 *   • Scale bar (enabled + unit + perHex + segments) → `mapState.settings.scale`,
 	 *     persisted server-side via `persistSettings()`. Scale is a property
-	 *     of the map itself (5 miles per hex on desktop is 5 miles per hex
+	 *     of the map itself (5 miles per cell on desktop is 5 miles per cell
 	 *     on mobile) so it travels across devices.
-	 *   • Names + hex-grid visibility + hex opacity → `mapSettings`
+	 *   • Names + grid visibility + grid opacity → `mapSettings`
 	 *     (localStorage). Per-device display preferences.
 	 *
 	 * Every field auto-commits the moment it changes — no Save button.
@@ -86,14 +86,14 @@
 		if (Number.isFinite(v) && v >= 1 && v <= 20) patchScale({ segments: v });
 	}
 
-	function onHexesVisible(e: Event) {
-		mapSettings.hexes.visible = (e.target as HTMLInputElement).checked;
+	function onGridVisible(e: Event) {
+		mapSettings.grid.visible = (e.target as HTMLInputElement).checked;
 		persistMapSettings();
 	}
-	function onHexesOpacity(e: Event) {
+	function onGridOpacity(e: Event) {
 		const v = Number((e.target as HTMLInputElement).value);
 		if (Number.isFinite(v) && v >= 0 && v <= 100) {
-			mapSettings.hexes.opacity = v / 100;
+			mapSettings.grid.opacity = v / 100;
 			persistMapSettings();
 		}
 	}
@@ -130,17 +130,16 @@
 
 		<section class="mo-section">
 			<label class="mo-toggle">
-				<input type="checkbox" checked={mapSettings.hexes.visible} onchange={onHexesVisible} />
-				<span class="mo-toggle-label">Show hex grid</span>
+				<input type="checkbox" checked={mapSettings.grid.visible} onchange={onGridVisible} />
+				<span class="mo-toggle-label">Show grid</span>
 			</label>
 			<p class="mo-hint">
-				Hides the hex outlines. Clicks still place markers on the underlying grid. This device only.
+				Hides the grid lines. Clicks still place markers on the underlying grid. This device only.
 			</p>
 
-			<div class="mo-fields" class:mo-fields-disabled={!mapSettings.hexes.visible}>
+			<div class="mo-fields" class:mo-fields-disabled={!mapSettings.grid.visible}>
 				<label class="mo-field">
-					<span class="mo-field-label"
-						>Opacity — {Math.round(mapSettings.hexes.opacity * 100)}%</span
+					<span class="mo-field-label">Opacity — {Math.round(mapSettings.grid.opacity * 100)}%</span
 					>
 					<input
 						class="mo-slider"
@@ -148,9 +147,9 @@
 						min="0"
 						max="100"
 						step="5"
-						value={Math.round(mapSettings.hexes.opacity * 100)}
-						oninput={onHexesOpacity}
-						disabled={!mapSettings.hexes.visible}
+						value={Math.round(mapSettings.grid.opacity * 100)}
+						oninput={onGridOpacity}
+						disabled={!mapSettings.grid.visible}
 					/>
 				</label>
 			</div>
@@ -183,7 +182,7 @@
 				</div>
 
 				<label class="mo-field mo-field-narrow">
-					<span class="mo-field-label">Per hex</span>
+					<span class="mo-field-label">Per cell</span>
 					<input
 						class="mo-input"
 						type="number"
