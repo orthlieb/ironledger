@@ -141,6 +141,13 @@
       "when": 1782800000000,
       "tag": "0020_user_map_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1782900000000,
+      "tag": "0021_maps",
+      "breakpoints": true
     }
   ]
 }

@@ -50,6 +50,7 @@
 	import { MAP_COLS, MAP_ROWS } from '$lib/mapConstants.js';
 	import {
 		mapState,
+		mapListState,
 		markersAt,
 		addMarker,
 		updateMarker,
@@ -58,6 +59,8 @@
 		initMap,
 		backgroundUrl,
 		persistSettings,
+		switchMap,
+		createMap,
 	} from '$lib/mapStore.svelte.js';
 	import { downscaleImage, MapImageError } from '$lib/mapImage.js';
 	import { exportMapPng, exportMapJson } from '$lib/mapExport.js';
@@ -69,6 +72,32 @@
 	let fileInputEl = $state<HTMLInputElement | null>(null);
 	let uploadError = $state('');
 	let iconSearch = $state('');
+
+	// Map picker chip state — dropdown of the user's maps + a "+ New" affordance.
+	let pickerOpen = $state(false);
+	function togglePicker() {
+		pickerOpen = !pickerOpen;
+	}
+	function closePicker() {
+		pickerOpen = false;
+	}
+	async function pickMap(id: string) {
+		closePicker();
+		if (id === mapState.activeId) return;
+		selectedMarkerId = null;
+		await switchMap(id);
+	}
+	async function pickNewMap() {
+		closePicker();
+		const name = window.prompt('Name for the new map:', 'Untitled Map');
+		if (name == null) return; // cancelled
+		selectedMarkerId = null;
+		try {
+			await createMap({ name: name.trim() || 'Untitled Map' });
+		} catch (err) {
+			mapState.error = err instanceof Error ? err.message : 'Failed to create map';
+		}
+	}
 
 	/** Legacy alias — `showLabels` was a local `$state` until labels moved
 	 *  into `mapSettings`. Retained as a `$derived` so the exportMapPng
@@ -741,6 +770,48 @@
 
 	<div class="mp-toolbar">
 		<div class="mp-tools">
+			<div class="mp-picker">
+				<button
+					class="mp-btn mp-picker-btn"
+					onclick={togglePicker}
+					aria-haspopup="listbox"
+					aria-expanded={pickerOpen}
+					use:tooltip={'Switch, create, or manage maps'}
+				>
+					<span class="mp-picker-label">{mapState.name || 'Map'}</span>
+					<span class="mp-picker-caret" aria-hidden="true">▾</span>
+				</button>
+				{#if pickerOpen}
+					<!-- svelte-ignore a11y_click_events_have_key_events -->
+					<div class="mp-picker-backdrop" role="presentation" onclick={closePicker}></div>
+					<ul class="mp-picker-menu" role="listbox">
+						{#each mapListState.maps as m (m.id)}
+							<li>
+								<button
+									class="mp-picker-item"
+									class:mp-picker-item-active={m.id === mapState.activeId}
+									onclick={() => pickMap(m.id)}
+									role="option"
+									aria-selected={m.id === mapState.activeId}
+								>
+									<span class="mp-picker-check">
+										{m.id === mapState.activeId ? '✓' : ''}
+									</span>
+									<span class="mp-picker-name">{m.name}</span>
+								</button>
+							</li>
+						{/each}
+						{#if mapListState.maps.length > 0}
+							<li class="mp-picker-sep" aria-hidden="true"></li>
+						{/if}
+						<li>
+							<button class="mp-picker-item mp-picker-item-action" onclick={pickNewMap}
+								>+ New map…</button
+							>
+						</li>
+					</ul>
+				{/if}
+			</div>
 			<button
 				class="mp-btn"
 				onclick={triggerUpload}
@@ -1176,6 +1247,90 @@
 	   toolbar row aligns cleanly. */
 	/* + Add button styling. Active state = placing mode is armed, so it
 	   snaps to the accent color to make the state obvious. */
+	/* Map picker chip — dropdown showing all user's maps + "+ New map…".
+	   Absolute-positioned menu with a click-outside backdrop, kept fully
+	   inside the dialog so it plays nice with the <dialog> top layer. */
+	.mp-picker {
+		position: relative;
+	}
+	.mp-picker-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		text-transform: none;
+		max-width: 220px;
+	}
+	.mp-picker-label {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.mp-picker-caret {
+		font-size: 0.7rem;
+		opacity: 0.7;
+	}
+	.mp-picker-backdrop {
+		position: fixed;
+		inset: 0;
+		z-index: 20;
+	}
+	.mp-picker-menu {
+		position: absolute;
+		top: calc(100% + 4px);
+		left: 0;
+		z-index: 21;
+		min-width: 200px;
+		max-width: 320px;
+		max-height: 50vh;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		list-style: none;
+		margin: 0;
+		padding: 4px 0;
+		background: var(--bg-card);
+		border: 1px solid var(--border-mid);
+		border-radius: 6px;
+		box-shadow: 0 8px 24px #00000060;
+	}
+	.mp-picker-item {
+		width: 100%;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 6px 12px;
+		background: none;
+		border: none;
+		text-align: left;
+		font-family: var(--font-ui);
+		font-size: 0.85rem;
+		color: var(--text);
+		cursor: pointer;
+	}
+	.mp-picker-item:hover {
+		background: var(--bg-control);
+	}
+	.mp-picker-item-active {
+		font-weight: 600;
+	}
+	.mp-picker-check {
+		width: 12px;
+		color: var(--text-accent);
+	}
+	.mp-picker-name {
+		flex: 1;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.mp-picker-item-action {
+		color: var(--text-accent);
+	}
+	.mp-picker-sep {
+		height: 1px;
+		background: var(--border);
+		margin: 4px 0;
+	}
+
 	.mp-btn-add-active {
 		background: var(--text-accent) !important;
 		color: var(--bg-card) !important;

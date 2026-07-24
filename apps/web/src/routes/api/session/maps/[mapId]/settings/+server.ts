@@ -1,7 +1,7 @@
 /**
- * SvelteKit BFF proxy for /api/session/map/markers
+ * SvelteKit BFF proxy for /api/session/maps/:mapId/settings
  *
- * PUT → forward to Fastify PUT /api/v1/session/map/markers
+ * PUT → Fastify PUT /api/v1/session/maps/:mapId/settings
  */
 import type { RequestHandler } from './$types';
 import { error } from '@sveltejs/kit';
@@ -12,9 +12,9 @@ function authHeader(locals: App.Locals): Record<string, string> {
 	return { Authorization: `Bearer ${locals.accessToken}` };
 }
 
-export const PUT: RequestHandler = async ({ locals, request }) => {
+export const PUT: RequestHandler = async ({ locals, params, request }) => {
 	const body = await request.text();
-	const res = await fetch(`${INTERNAL_API_URL}/api/v1/session/map/markers`, {
+	const res = await fetch(`${INTERNAL_API_URL}/api/v1/session/maps/${params.mapId}/settings`, {
 		method: 'PUT',
 		headers: {
 			...authHeader(locals),

@@ -19,6 +19,10 @@ export interface SessionState {
   foeId: string;
   expeditionId: string;
   activeTab?: string;
+  /** Currently-open map id from the Campaign Map dialog. Server-owned
+   *  so the same map opens on every device. Null/absent = "open the
+   *  first map" fallback. */
+  activeMapId?: string | null;
 }
 
 export interface UserDataPayload {
