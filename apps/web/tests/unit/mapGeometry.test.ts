@@ -97,8 +97,9 @@ describe('hexPolygonPoints', () => {
 describe('allCells', () => {
 	it('yields cols × rows cells with default dimensions', () => {
 		const cells = [...allCells()];
-		// MAP_COLS × MAP_ROWS = 20 × 15 = 300
-		expect(cells).toHaveLength(300);
+		// MAP_COLS × MAP_ROWS = 20 × 13 = 260 (grid sized for a 16:9
+		// background image, e.g. 4K = 3840×2160)
+		expect(cells).toHaveLength(260);
 	});
 	it('honors custom dimensions', () => {
 		expect([...allCells(4, 3)]).toHaveLength(12);

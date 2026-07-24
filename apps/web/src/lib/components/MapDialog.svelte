@@ -229,7 +229,10 @@
 	// the pan. Zoom multiplier persists server-side (per map); scroll
 	// position persists in localStorage (per device — a portrait phone
 	// and a landscape desktop don't want to share a scroll offset).
-	const MIN_ZOOM = 0.5;
+	/** Minimum zoom is 1.0 (fit-to-canvas) — zooming out beyond that
+	 *  would shrink the map inside the canvas with no useful gain, so
+	 *  the toolbar's `−` and Ctrl+wheel both cap here. */
+	const MIN_ZOOM = 1;
 	const MAX_ZOOM = 4;
 	function clampZoom(z: number): number {
 		return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z));
@@ -327,8 +330,10 @@
 	}
 
 	function onWheel(e: WheelEvent) {
-		// Ctrl/Cmd + wheel = zoom-to-cursor. Bare wheel scrolls the canvas
-		// naturally via `overflow: auto` — no handling needed here.
+		// Ctrl/Cmd + wheel = zoom-to-cursor. Trackpad pinch on macOS/Windows
+		// synthesises the exact same event (ctrlKey=true + wheel), so this
+		// path also drives pinch-zoom on trackpads. Bare wheel scrolls the
+		// canvas natively via `overflow: auto` and is left alone.
 		if (!e.ctrlKey && !e.metaKey) return;
 		e.preventDefault();
 		if (!canvasEl) return;
@@ -336,6 +341,21 @@
 		const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
 		zoomAround(zoom * factor, e.clientX - rect.left, e.clientY - rect.top);
 	}
+
+	/**
+	 * Wheel + trackpad-pinch handler attachment. Svelte's `onwheel={…}`
+	 * shorthand adds a passive listener, and browsers ignore `preventDefault`
+	 * on passive wheel events — including the ctrl+wheel events synthesised
+	 * by trackpad pinch. Attach manually with `passive: false` so pinch
+	 * lands on us instead of the browser's page-zoom.
+	 */
+	$effect(() => {
+		if (!canvasEl) return;
+		const el = canvasEl;
+		const handler = (ev: WheelEvent) => onWheel(ev);
+		el.addEventListener('wheel', handler, { passive: false });
+		return () => el.removeEventListener('wheel', handler);
+	});
 
 	function zoomIn() {
 		zoomCentered(zoom * 1.25);
@@ -758,7 +778,9 @@
 	{/if}
 
 	<div class="mp-body">
-		<div class="mp-canvas" bind:this={canvasEl} onwheel={onWheel} onscroll={onScroll}>
+		<!-- Wheel listener is attached manually with `passive: false` in a
+		     $effect above so trackpad-pinch (ctrl+wheel) is preventable. -->
+		<div class="mp-canvas" bind:this={canvasEl} onscroll={onScroll}>
 			<!--
 				viewBox is pixel-space matching the canvas exactly (updated
 				reactively from the ResizeObserver). SVG's rendered width/
