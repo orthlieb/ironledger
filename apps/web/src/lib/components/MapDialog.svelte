@@ -34,6 +34,7 @@
 	import MapOptionsDialog from './MapOptionsDialog.svelte';
 	import { mapSettings, persistMapSettings } from '$lib/mapSettingsStore.svelte.js';
 	import iconTrashSvg from '$icons/trash-solid-full.svg?raw';
+	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import {
 		DEFAULT_MARKER_COLOR,
@@ -72,9 +73,14 @@
 	let optionsDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let iconDialogEl = $state<HTMLDialogElement | null>(null);
 	let fileInputEl = $state<HTMLInputElement | null>(null);
-	let showLabels = $state(true);
 	let uploadError = $state('');
 	let iconSearch = $state('');
+
+	/** Legacy alias — `showLabels` was a local `$state` until labels moved
+	 *  into `mapSettings`. Retained as a `$derived` so the exportMapPng
+	 *  argument and the marker-label template guard both keep reading
+	 *  `showLabels` without churn. */
+	const showLabels = $derived(mapSettings.labels.visible);
 
 	/** Id of the selected marker (null = nothing selected). Deriving the
 	 *  live marker record from the store keeps every field auto-current
@@ -560,11 +566,6 @@
 		}
 	}
 
-	function onHexToggle(e: Event) {
-		mapSettings.hexes.visible = (e.target as HTMLInputElement).checked;
-		persistMapSettings();
-	}
-
 	function triggerUpload() {
 		fileInputEl?.click();
 	}
@@ -605,18 +606,6 @@
 				class="mp-btn"
 				onclick={triggerUpload}
 				use:tooltip={'Upload a background image (JPEG or PNG, ≤20 MB)'}>Upload image</button
-			>
-			<label class="mp-toggle" use:tooltip={'Show or hide marker labels'}>
-				<input type="checkbox" bind:checked={showLabels} /> Names
-			</label>
-			<label class="mp-toggle" use:tooltip={'Show or hide the hex grid outlines'}>
-				<input type="checkbox" checked={mapSettings.hexes.visible} onchange={onHexToggle} /> Hexes
-			</label>
-			<button
-				class="mp-btn"
-				onclick={() => optionsDialogRef?.open()}
-				use:tooltip={'Map options — scale + border'}
-				aria-label="Map options">Options</button
 			>
 			<div class="mp-zoom" role="group" aria-label="Zoom controls">
 				<button
@@ -672,6 +661,12 @@
 				onclick={() => clearDialogRef?.open()}
 				disabled={!hasAnyContent()}
 				use:tooltip={'Clear the background and every marker'}>Clear map</button
+			>
+			<button
+				class="mp-btn mp-btn-icon mp-btn-gear"
+				onclick={() => optionsDialogRef?.open()}
+				use:tooltip={'Map options — names, hex grid, border, scale bar'}
+				aria-label="Map options">{@html iconGearSvg}</button
 			>
 		</div>
 		<input
@@ -823,7 +818,11 @@
 					features at any dialog size.
 				-->
 				<g transform="translate({hexOffset.x} {hexOffset.y})">
-					<g class="mp-hex-layer" class:mp-hex-layer-hidden={!mapSettings.hexes.visible}>
+					<g
+						class="mp-hex-layer"
+						class:mp-hex-layer-hidden={!mapSettings.hexes.visible}
+						stroke-opacity={mapSettings.hexes.opacity}
+					>
 						{#each cells as { q, r } (`${q},${r}`)}
 							{@const px = axialToPx(q, r, dynamicHexSize)}
 							<!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -1089,19 +1088,6 @@
 		font-size: 0.72rem;
 		color: var(--text-muted);
 	}
-	.mp-toggle {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		font-family: var(--font-ui);
-		font-size: 0.72rem;
-		color: var(--text-muted);
-		cursor: pointer;
-	}
-	.mp-toggle input {
-		accent-color: var(--text-accent);
-	}
-
 	.mp-btn {
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
@@ -1337,13 +1323,23 @@
 
 	.mp-hex {
 		fill: transparent;
-		stroke: color-mix(in srgb, var(--text) 30%, transparent);
+		/* Fully-opaque stroke color; effective visibility is controlled
+		   by `stroke-opacity` on the parent `.mp-hex-layer` group (bound
+		   to `mapSettings.hexes.opacity`, default 0.5). That way the
+		   options-dialog opacity slider maps directly to visible
+		   transparency without a baked-in multiplier. */
+		stroke: var(--text);
 		stroke-width: 0.8;
 		cursor: pointer;
-		transition: stroke 0.08s;
+		transition:
+			stroke 0.08s,
+			stroke-opacity 0.08s;
 	}
 	.mp-hex:hover {
+		/* Hover always at full opacity + accent color, ignoring the
+		   layer's stroke-opacity so the highlight stays bright. */
 		stroke: var(--text-accent);
+		stroke-opacity: 1;
 		stroke-width: 1.5;
 	}
 	/* "Show hex grid" toggle off — outlines vanish but hexes stay
@@ -1354,6 +1350,7 @@
 	}
 	.mp-hex-layer-hidden .mp-hex:hover {
 		stroke: var(--text-accent);
+		stroke-opacity: 1;
 	}
 
 	/* Scale bar overlay — parchment-style black-and-white with a soft
