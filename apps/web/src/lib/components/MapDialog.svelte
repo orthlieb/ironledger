@@ -455,7 +455,14 @@
 	/**
 	 * Scale bar overlay geometry — computed in pixel-space (viewBox
 	 * matches the canvas 1:1) so it stays locked to the visible view at
-	 * any dialog size. One segment = one hex width at zoom 1.
+	 * any dialog size.
+	 *
+	 * The bar is a constant pixel size (one segment = one hex width at
+	 * zoom 1). At other zoom levels, the underlying hexes render bigger
+	 * or smaller than the bar, so the tick labels re-scale to keep the
+	 * ruler honest — the same real-world distance always maps to the
+	 * same on-screen length. `perHex` is defined at zoom 1, so effective
+	 * miles per segment at the current zoom is `perHex / zoom`.
 	 */
 	const overlayGeom = $derived.by(() => {
 		const s = dynamicHexSize;
@@ -464,7 +471,11 @@
 		const sb = mapState.settings.scale ?? {};
 		const sbEnabled = sb.enabled === true;
 		const sbSegments = sb.segments ?? 4;
-		const sbPerHex = sb.perHex ?? 5;
+		const sbPerHexAtZoom1 = sb.perHex ?? 5;
+		/** Distance one segment represents in the CURRENT view. `zoom`
+		 *  magnifies the hex on screen, which compresses the world-distance
+		 *  each fixed-pixel segment covers. */
+		const sbPerSegment = sbPerHexAtZoom1 / zoom;
 		const sbUnit = sb.unit ?? 'miles';
 		const sbSegW = hexW;
 		const sbTotalW = sbSegments * sbSegW;
@@ -474,7 +485,7 @@
 		return {
 			sbEnabled,
 			sbSegments,
-			sbPerHex,
+			sbPerSegment,
 			sbUnit,
 			sbSegW,
 			sbTotalW,
@@ -483,6 +494,15 @@
 			sbY: canvasPxH - sbBottomMargin - sbH,
 		};
 	});
+
+	/** Format a scale-bar tick — integer when it happens to be one, up to
+	 *  2 decimal places otherwise so fractional distances (post-zoom) still
+	 *  read cleanly. */
+	function formatScaleTick(n: number): string {
+		if (n === 0) return '0';
+		if (Number.isInteger(n)) return String(n);
+		return n.toFixed(n < 1 ? 2 : 1);
+	}
 
 	/**
 	 * "Placing mode": armed by the toolbar "+ Add" button. The very next
@@ -1032,7 +1052,7 @@
 					{/each}
 					{#each Array(overlayGeom.sbSegments + 1) as _, i (`st-${i}`)}
 						<text class="mp-scale-tick" x={i * overlayGeom.sbSegW} y={-4} text-anchor="middle"
-							>{i * overlayGeom.sbPerHex}</text
+							>{formatScaleTick(i * overlayGeom.sbPerSegment)}</text
 						>
 					{/each}
 					<text
