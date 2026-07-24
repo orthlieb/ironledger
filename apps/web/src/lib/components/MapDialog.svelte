@@ -823,9 +823,11 @@
 	});
 
 	/** Close the pile picker if the active map switches out from under it
-	 *  — its markers would no longer belong to what's on screen. */
+	 *  — its markers would no longer belong to what's on screen. Reading
+	 *  `mapState.activeId` into a local subscribes this effect to it. */
 	$effect(() => {
-		mapState.activeId;
+		const _activeId = mapState.activeId;
+		void _activeId;
 		if (pilePicker) closePilePicker();
 	});
 
