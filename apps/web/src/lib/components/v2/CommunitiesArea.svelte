@@ -606,17 +606,17 @@
 		<div class="cm-body" class:cm-body--detail={mobilePane === 'detail'}>
 			<nav class="cm-rail" aria-label="Connections and NPCs">
 				<div class="cm-rail-tools">
-					<div class="cm-search">
-						<span class="cm-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
-						<input
-							class="cm-search-input"
-							type="search"
-							bind:value={search}
-							placeholder="Search connections…"
-							aria-label="Search connections"
-						/>
-					</div>
-					<div class="cm-rail-filters">
+					<div class="cm-rail-topline">
+						<div class="cm-search">
+							<span class="cm-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
+							<input
+								class="cm-search-input"
+								type="search"
+								bind:value={search}
+								placeholder="Search connections…"
+								aria-label="Search connections"
+							/>
+						</div>
 						<button
 							class="cm-filter-toggle"
 							class:has-filters={activeFilterCount > 0}
@@ -1392,10 +1392,19 @@
 		outline: none;
 		padding: 1px 0;
 	}
-	.cm-rail-filters {
+	/* Search + Filters + Sort on one row. Search takes the flexible slack
+	   so the two chips on the right stay a fixed size and don't jump
+	   around as the user types. Wraps to a second line on very narrow
+	   viewports (~<260 px) where the three side by side would overflow. */
+	.cm-rail-topline {
 		display: flex;
 		align-items: center;
 		gap: 6px;
+		flex-wrap: wrap;
+	}
+	.cm-rail-topline .cm-search {
+		flex: 1 1 120px;
+		min-width: 0;
 	}
 	/* Type filter — "Filters ▼" toggle + drop panel, matching the foe picker. */
 	.cm-filter-toggle {
