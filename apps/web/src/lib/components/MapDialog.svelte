@@ -144,18 +144,20 @@
 
 	/**
 	 * Dynamic hex size in SVG user units (= canvas pixels since viewBox
-	 * is pixel-space). Chosen so a MAP_COLS × MAP_ROWS hex grid plus a
-	 * half-hex margin on every side fits the canvas — max size while
-	 * respecting the minimum border.
+	 * is pixel-space). Chosen so a MAP_COLS × MAP_ROWS hex grid fills the
+	 * canvas edge-to-edge — no reserved margin. Grid aspect (20×13 ≈
+	 * 16:9) matches the canvas's aspect-ratio: 16/9, so both constraints
+	 * bind at essentially the same value and image + hexes fill the
+	 * whole canvas with no side bands.
 	 *
 	 * Solve for s in:
-	 *   canvasPxW ≥ (MAP_COLS + 1) · √3 · s  →  s ≤ pxW / ((MAP_COLS+1)√3)
-	 *   canvasPxH ≥ (MAP_ROWS + 1) · 1.5 · s →  s ≤ pxH / ((MAP_ROWS+1)·1.5)
+	 *   canvasPxW ≥ MAP_COLS · √3 · s  →  s ≤ pxW / (MAP_COLS · √3)
+	 *   canvasPxH ≥ MAP_ROWS · 1.5 · s →  s ≤ pxH / (MAP_ROWS · 1.5)
 	 * Take the min so both constraints hold; the other axis has extra.
 	 */
 	const dynamicHexSize = $derived.by(() => {
-		const sW = canvasPxW / (Math.sqrt(3) * (MAP_COLS + 1));
-		const sH = canvasPxH / (1.5 * (MAP_ROWS + 1));
+		const sW = canvasPxW / (Math.sqrt(3) * MAP_COLS);
+		const sH = canvasPxH / (1.5 * MAP_ROWS);
 		return Math.max(1, Math.min(sW, sH));
 	});
 
@@ -885,96 +887,100 @@
 						</g>
 					{/each}
 				</g>
-				<!--
-					Checkered border — locked to the visible view (canvas edges),
-					aligned to hex column/row starts so segments tile in step
-					with the underlying grid.
-				-->
-				{#if mapSettings.border.enabled}
-					<g class="mp-border" aria-hidden="true">
-						{#each Array(overlayGeom.xCount) as _, i (`bt-${i}`)}
-							<rect
-								x={overlayGeom.xStart + i * overlayGeom.hexW}
-								y="0"
-								width={overlayGeom.hexW}
-								height={overlayGeom.bT}
-								fill={i % 2 === 0 ? '#111' : '#fff'}
-								stroke="#111"
-								stroke-width="0.5"
-							/>
-						{/each}
-						{#each Array(overlayGeom.xCount) as _, i (`bb-${i}`)}
-							<rect
-								x={overlayGeom.xStart + i * overlayGeom.hexW}
-								y={canvasPxH - overlayGeom.bT}
-								width={overlayGeom.hexW}
-								height={overlayGeom.bT}
-								fill={i % 2 === 0 ? '#fff' : '#111'}
-								stroke="#111"
-								stroke-width="0.5"
-							/>
-						{/each}
-						{#each Array(overlayGeom.yCount) as _, i (`bl-${i}`)}
-							<rect
-								x="0"
-								y={overlayGeom.yStart + i * overlayGeom.hexH}
-								width={overlayGeom.bT}
-								height={overlayGeom.hexH}
-								fill={i % 2 === 0 ? '#111' : '#fff'}
-								stroke="#111"
-								stroke-width="0.5"
-							/>
-						{/each}
-						{#each Array(overlayGeom.yCount) as _, i (`br-${i}`)}
-							<rect
-								x={canvasPxW - overlayGeom.bT}
-								y={overlayGeom.yStart + i * overlayGeom.hexH}
-								width={overlayGeom.bT}
-								height={overlayGeom.hexH}
-								fill={i % 2 === 0 ? '#fff' : '#111'}
-								stroke="#111"
-								stroke-width="0.5"
-							/>
-						{/each}
-					</g>
-				{/if}
-
-				<!--
-					Scale bar — one segment = one hex width, positioned
-					bottom-left inside the border.
-				-->
-				{#if overlayGeom.sbEnabled}
-					<g
-						class="mp-scale"
-						transform="translate({overlayGeom.sbX} {overlayGeom.sbY})"
-						aria-hidden="true"
-					>
-						{#each Array(overlayGeom.sbSegments) as _, i (`ss-${i}`)}
-							<rect
-								x={i * overlayGeom.sbSegW}
-								y="0"
-								width={overlayGeom.sbSegW}
-								height={overlayGeom.sbH}
-								fill={i % 2 === 0 ? '#111' : '#fff'}
-								stroke="#111"
-								stroke-width="0.75"
-							/>
-						{/each}
-						{#each Array(overlayGeom.sbSegments + 1) as _, i (`st-${i}`)}
-							<text class="mp-scale-tick" x={i * overlayGeom.sbSegW} y={-4} text-anchor="middle"
-								>{i * overlayGeom.sbPerHex}</text
-							>
-						{/each}
-						<text
-							class="mp-scale-unit"
-							x={overlayGeom.sbTotalW / 2}
-							y={overlayGeom.sbH + 12}
-							text-anchor="middle">{overlayGeom.sbUnit === 'miles' ? 'MILES' : 'KM'}</text
-						>
-					</g>
-				{/if}
 			</svg>
 		</div>
+
+		<!--
+			Overlay SVG — floats above the canvas at fixed pixel dimensions
+			(canvasPxW × canvasPxH) so the checkered border and scale bar
+			stay visible + constant-sized while the user pans and zooms the
+			map underneath. Positioned absolute over .mp-canvas via
+			.mp-overlay-svg CSS; pointer-events: none passes clicks through
+			to the hex grid below.
+		-->
+		<svg
+			class="mp-overlay-svg"
+			width={canvasPxW}
+			height={canvasPxH}
+			viewBox="0 0 {canvasPxW} {canvasPxH}"
+			aria-hidden="true"
+		>
+			{#if mapSettings.border.enabled}
+				<g class="mp-border">
+					{#each Array(overlayGeom.xCount) as _, i (`bt-${i}`)}
+						<rect
+							x={overlayGeom.xStart + i * overlayGeom.hexW}
+							y="0"
+							width={overlayGeom.hexW}
+							height={overlayGeom.bT}
+							fill={i % 2 === 0 ? '#111' : '#fff'}
+							stroke="#111"
+							stroke-width="0.5"
+						/>
+					{/each}
+					{#each Array(overlayGeom.xCount) as _, i (`bb-${i}`)}
+						<rect
+							x={overlayGeom.xStart + i * overlayGeom.hexW}
+							y={canvasPxH - overlayGeom.bT}
+							width={overlayGeom.hexW}
+							height={overlayGeom.bT}
+							fill={i % 2 === 0 ? '#fff' : '#111'}
+							stroke="#111"
+							stroke-width="0.5"
+						/>
+					{/each}
+					{#each Array(overlayGeom.yCount) as _, i (`bl-${i}`)}
+						<rect
+							x="0"
+							y={overlayGeom.yStart + i * overlayGeom.hexH}
+							width={overlayGeom.bT}
+							height={overlayGeom.hexH}
+							fill={i % 2 === 0 ? '#111' : '#fff'}
+							stroke="#111"
+							stroke-width="0.5"
+						/>
+					{/each}
+					{#each Array(overlayGeom.yCount) as _, i (`br-${i}`)}
+						<rect
+							x={canvasPxW - overlayGeom.bT}
+							y={overlayGeom.yStart + i * overlayGeom.hexH}
+							width={overlayGeom.bT}
+							height={overlayGeom.hexH}
+							fill={i % 2 === 0 ? '#fff' : '#111'}
+							stroke="#111"
+							stroke-width="0.5"
+						/>
+					{/each}
+				</g>
+			{/if}
+
+			{#if overlayGeom.sbEnabled}
+				<g class="mp-scale" transform="translate({overlayGeom.sbX} {overlayGeom.sbY})">
+					{#each Array(overlayGeom.sbSegments) as _, i (`ss-${i}`)}
+						<rect
+							x={i * overlayGeom.sbSegW}
+							y="0"
+							width={overlayGeom.sbSegW}
+							height={overlayGeom.sbH}
+							fill={i % 2 === 0 ? '#111' : '#fff'}
+							stroke="#111"
+							stroke-width="0.75"
+						/>
+					{/each}
+					{#each Array(overlayGeom.sbSegments + 1) as _, i (`st-${i}`)}
+						<text class="mp-scale-tick" x={i * overlayGeom.sbSegW} y={-4} text-anchor="middle"
+							>{i * overlayGeom.sbPerHex}</text
+						>
+					{/each}
+					<text
+						class="mp-scale-unit"
+						x={overlayGeom.sbTotalW / 2}
+						y={overlayGeom.sbH + 12}
+						text-anchor="middle">{overlayGeom.sbUnit === 'miles' ? 'MILES' : 'KM'}</text
+					>
+				</g>
+			{/if}
+		</svg>
 	</div>
 </dialog>
 
@@ -1294,11 +1300,25 @@
 		   4K upload drops in with zero letterbox. Body width tracks the
 		   dialog; height is derived. `max-height` still caps the total
 		   dialog well inside the CLAUDE.md 88vh iOS-safe budget so on a
-		   short viewport the body clamps rather than overflowing. */
+		   short viewport the body clamps rather than overflowing.
+		   `position: relative` establishes the containing block for the
+		   .mp-overlay-svg absolutely-positioned overlay. */
+		position: relative;
 		width: 100%;
 		aspect-ratio: 16 / 9;
 		max-height: calc(88vh - 8rem);
 		overflow: hidden;
+	}
+	/* Overlay SVG — floats above .mp-canvas at fixed canvas-pixel
+	   dimensions so the border + scale-bar stay put while the map pans
+	   and zooms underneath. pointer-events: none so clicks pass through
+	   to the hex grid. */
+	.mp-overlay-svg {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		pointer-events: none;
 	}
 	.mp-canvas {
 		width: 100%;
