@@ -21,10 +21,19 @@
 
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import DialogHeader from './DialogHeader.svelte';
+	import ConfirmDialog from './ConfirmDialog.svelte';
 	import { mapSettings, persistMapSettings } from '$lib/mapSettingsStore.svelte.js';
-	import { mapState, persistSettings } from '$lib/mapStore.svelte.js';
+	import {
+		mapState,
+		persistSettings,
+		clearMap,
+		clearMarkers,
+		hasAnyContent,
+	} from '$lib/mapStore.svelte.js';
 
 	let dialogEl = $state<HTMLDialogElement | null>(null);
+	let clearMarkersDialogRef = $state<{ open(): void; close(): void } | null>(null);
+	let clearMapDialogRef = $state<{ open(): void; close(): void } | null>(null);
 
 	export function open() {
 		dialogEl?.showModal();
@@ -32,6 +41,8 @@
 	export function close() {
 		dialogEl?.close();
 	}
+
+	const markerCount = $derived(mapState.markers.length);
 
 	// Scale defaults live here so a fresh map (no server value yet) still
 	// shows sensible defaults in the form.
@@ -124,7 +135,7 @@
 			</label>
 			<p class="mo-hint">Distance scale drawn in the bottom-left. Saved with the map.</p>
 
-			<div class="mo-fields" class:mo-fields-disabled={!scaleEnabled}>
+			<div class="mo-fields mo-fields-row" class:mo-fields-disabled={!scaleEnabled}>
 				<div class="mo-field">
 					<span class="mo-field-label">Unit</span>
 					<div class="mo-unit-group" role="group" aria-label="Scale unit">
@@ -143,10 +154,8 @@
 					</div>
 				</div>
 
-				<label class="mo-field">
-					<span class="mo-field-label">
-						{scaleUnit === 'miles' ? 'Miles' : 'Km'} per hex
-					</span>
+				<label class="mo-field mo-field-narrow">
+					<span class="mo-field-label">Per hex</span>
 					<input
 						class="mo-input"
 						type="number"
@@ -158,7 +167,7 @@
 					/>
 				</label>
 
-				<label class="mo-field">
+				<label class="mo-field mo-field-narrow">
 					<span class="mo-field-label">Segments</span>
 					<input
 						class="mo-input"
@@ -173,8 +182,55 @@
 				</label>
 			</div>
 		</section>
+
+		<section class="mo-section mo-section-danger">
+			<div class="mo-danger-header">Danger zone</div>
+			<div class="mo-danger-row">
+				<button
+					class="mo-danger-btn"
+					onclick={() => clearMarkersDialogRef?.open()}
+					disabled={markerCount === 0}>Clear all markers</button
+				>
+				<span class="mo-hint">Removes every marker. Keeps the background image.</span>
+			</div>
+			<div class="mo-danger-row">
+				<button
+					class="mo-danger-btn"
+					onclick={() => clearMapDialogRef?.open()}
+					disabled={!hasAnyContent()}>Clear the whole map</button
+				>
+				<span class="mo-hint">Removes the background image + every marker.</span>
+			</div>
+		</section>
 	</div>
 </dialog>
+
+<ConfirmDialog
+	bind:this={clearMarkersDialogRef}
+	title="Clear All Markers?"
+	confirmLabel="Clear Markers"
+	onconfirm={clearMarkers}
+>
+	<p
+		style="font-family: var(--font-ui); font-size: 0.82rem; color: var(--text-muted); margin: 0; line-height: 1.5;"
+	>
+		This will remove every marker on the map. The background image will be kept. This can't be
+		undone.
+	</p>
+</ConfirmDialog>
+
+<ConfirmDialog
+	bind:this={clearMapDialogRef}
+	title="Clear Campaign Map?"
+	confirmLabel="Clear Map"
+	onconfirm={clearMap}
+>
+	<p
+		style="font-family: var(--font-ui); font-size: 0.82rem; color: var(--text-muted); margin: 0; line-height: 1.5;"
+	>
+		This will remove the background image and every marker on the map. This can't be undone.
+	</p>
+</ConfirmDialog>
 
 <style>
 	.mo-dialog {
@@ -244,6 +300,15 @@
 		padding-left: 26px;
 		margin-top: 8px;
 	}
+	/* Horizontal row variant — scale unit / per-hex / segments sit
+	   side-by-side rather than stacked. Wraps on narrow widths so the
+	   inputs stay readable on mobile. */
+	.mo-fields-row {
+		flex-direction: row;
+		flex-wrap: wrap;
+		align-items: flex-end;
+		gap: 12px;
+	}
 	.mo-fields-disabled {
 		opacity: 0.5;
 	}
@@ -251,6 +316,57 @@
 		display: flex;
 		flex-direction: column;
 		gap: 4px;
+	}
+	.mo-field-narrow .mo-input {
+		max-width: 80px;
+	}
+
+	/* Danger zone — clear markers + clear map, styled clearly destructive
+	   with a top divider so they don't get accidentally clicked. */
+	.mo-section-danger {
+		border-top: 1px solid var(--border);
+		padding-top: 14px;
+		margin-top: 4px;
+	}
+	.mo-danger-header {
+		font-family: var(--font-ui);
+		font-size: 0.68rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--color-danger, #ef4444);
+	}
+	.mo-danger-row {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		flex-wrap: wrap;
+	}
+	.mo-danger-row .mo-hint {
+		margin: 0;
+		padding: 0;
+		font-style: normal;
+	}
+	.mo-danger-btn {
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		padding: 5px 12px;
+		background: var(--bg-control);
+		color: var(--color-danger, #ef4444);
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+		cursor: pointer;
+		white-space: nowrap;
+	}
+	.mo-danger-btn:hover:not(:disabled) {
+		border-color: var(--color-danger, #ef4444);
+	}
+	.mo-danger-btn:disabled {
+		opacity: 0.4;
+		cursor: default;
 	}
 	.mo-field-label {
 		font-family: var(--font-ui);

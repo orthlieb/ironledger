@@ -1337,6 +1337,10 @@
 				expeditions.length,
 				`expeditions-${stamp}.json`,
 			);
+		} else if (content === 'map') {
+			// Route to MapDialog — it owns the SVG element PNG rasterisation
+			// needs, and the marker/settings state for the JSON envelope.
+			document.dispatchEvent(new CustomEvent('ironledger:export-map', { detail: { format } }));
 		}
 	}
 </script>
