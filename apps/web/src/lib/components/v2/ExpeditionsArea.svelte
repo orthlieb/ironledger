@@ -48,6 +48,14 @@
 	import DenizenDialog from '$lib/components/DenizenDialog.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import MapDialog from '$lib/components/MapDialog.svelte';
+	import {
+		entityMarkerIndexState,
+		loadEntityMarkerIndex,
+		markersForEntity,
+		openMapForOwner,
+		type EntityMarkerRef,
+	} from '$lib/mapStore.svelte.js';
+	import { formatEntityId } from '$lib/mapEntityLinks.js';
 	import trashSvg from '$icons/trash-solid-full.svg?raw';
 	import checkSvg from '$icons/circle-check-solid-full.svg?raw';
 	import locationSvg from '$icons/location-dot-solid-full.svg?raw';
@@ -84,6 +92,13 @@
 
 	let activeExpId = $state<string | null>(null);
 
+	// Load the cross-map entity marker index once so the "📍 On map at"
+	// back-ref chip renders as soon as the first expedition is opened.
+	// No-op if already loaded (idempotent + de-duped).
+	$effect(() => {
+		void loadEntityMarkerIndex();
+	});
+
 	// Cross-component focus signal from the campaign map (or elsewhere) —
 	// {kind, id} where kind is journey or site. Sets the active expedition
 	// so the click-through from a map marker lands on the linked row.
@@ -104,7 +119,10 @@
 	// New-journey / new-site dialog state (mirrors V1 pattern).
 	let newJourneyDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let newSiteDialogRef = $state<{ open(): void; close(): void } | null>(null);
-	let mapDialogRef = $state<{ open(): void; close(): void } | null>(null);
+	let mapDialogRef = $state<{
+		open(target?: { mapId?: string; markerId?: string }): void;
+		close(): void;
+	} | null>(null);
 
 	// Site oracle roll state — gate concurrent rolls so the dice animation
 	// can complete before the next roll fires.
@@ -135,6 +153,34 @@
 
 	const activeExp = $derived(expeditions.find((e) => e.id === activeExpId));
 	const activeSite = $derived<Site | null>(activeExp?.type === 'site' ? (activeExp as Site) : null);
+
+	/** Back-references for the active expedition, if any. Empty until the
+	 *  index has loaded. Re-derived when either the index or the active
+	 *  entity changes. */
+	const activeExpMarkers = $derived.by<EntityMarkerRef[]>(() => {
+		if (!activeExp) return [];
+		void entityMarkerIndexState.index; // subscribe
+		return markersForEntity(formatEntityId(activeExp.type, activeExp.id));
+	});
+
+	/** Open the entity's owned map (creating it if this is the first
+	 *  time). Used by the "Map" button in the stage header. */
+	async function openOwnedMap() {
+		if (!activeExp) return;
+		await openMapForOwner(activeExp.type, activeExp.id, activeExp.name || 'Untitled');
+		mapDialogRef?.open();
+	}
+
+	/** Jump the dialog directly to a marker back-reference — used by the
+	 *  chips under the stage header. */
+	function jumpToMarker(ref: EntityMarkerRef) {
+		mapDialogRef?.open({ mapId: ref.mapId, markerId: ref.markerId });
+	}
+
+	/** Short "(x, y)" for chip labels — integers stay integer, else 2dp. */
+	function fmtCoord(v: number): string {
+		return Number.isInteger(v) ? String(v) : v.toFixed(2);
+	}
 
 	// Publish active expedition id so MovesDialog / preconditions can see it.
 	$effect(() => {
@@ -601,12 +647,37 @@
 						]}
 					/>
 					<button
+						class="btn ea-stage-map-btn"
+						onclick={openOwnedMap}
+						use:tooltip={'Open the map for this ' + activeExp.type}
+						aria-label="Open map">Map</button
+					>
+					<button
 						class="btn btn-icon icon-btn btn-trash ea-stage-delete-btn"
 						onclick={() => deleteDialogRef?.open()}
 						use:tooltip={'Delete expedition'}
 						aria-label="Delete expedition">{@html trashSvg}</button
 					>
 				</div>
+
+				{#if activeExpMarkers.length > 0}
+					<!-- Back-ref chip strip. One chip per marker across all maps that
+					     reference this expedition; click jumps to that marker. -->
+					<div class="ea-mapref-row" aria-label="On the campaign map">
+						<span class="ea-mapref-label" aria-hidden="true">📍 On map:</span>
+						{#each activeExpMarkers as ref (ref.markerId)}
+							<button
+								class="ea-mapref-chip"
+								onclick={() => jumpToMarker(ref)}
+								use:tooltip={`Jump to "${ref.label || '(unlabeled)'}" on ${ref.mapName}`}
+								aria-label={`Jump to marker on ${ref.mapName}`}
+							>
+								<span class="ea-mapref-name">{ref.mapName}</span>
+								<span class="ea-mapref-coord">({fmtCoord(ref.x)}, {fmtCoord(ref.y)})</span>
+							</button>
+						{/each}
+					</div>
+				{/if}
 
 				<div class="ea-stage" class:ea-stage--complete={activeExp.complete}>
 					<!-- Card tab strip — Journey: Description/Core, Site: Notes/Core/Denizens. -->
@@ -1253,6 +1324,58 @@
 	/* Delete: visual comes from .btn-trash in app.css; only positioning here. */
 	.ea-stage-delete-btn {
 		flex-shrink: 0;
+	}
+	.ea-stage-map-btn {
+		flex-shrink: 0;
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		padding: 4px 12px;
+	}
+
+	/* Back-reference chip strip below the header. One chip per marker on
+	   any map that references this expedition; click jumps into the map
+	   dialog at that marker. Wraps at narrow widths. */
+	.ea-mapref-row {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 6px;
+		padding: 4px 12px 6px;
+		background: var(--bg-inset);
+		border-bottom: 1px solid var(--border);
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+	}
+	.ea-mapref-label {
+		color: var(--text-dimmer);
+		margin-right: 4px;
+	}
+	.ea-mapref-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 2px 8px;
+		background: var(--bg-control);
+		border: 1px solid var(--border-mid);
+		border-radius: 12px;
+		font-family: inherit;
+		font-size: inherit;
+		color: var(--text);
+		cursor: pointer;
+	}
+	.ea-mapref-chip:hover {
+		border-color: var(--text-accent);
+		color: var(--text-accent);
+	}
+	.ea-mapref-name {
+		font-weight: 600;
+	}
+	.ea-mapref-coord {
+		font-family: var(--font-mono, ui-monospace, monospace);
+		color: var(--text-dimmer);
 	}
 
 	/* Tabs — V1 tab-btn style. */

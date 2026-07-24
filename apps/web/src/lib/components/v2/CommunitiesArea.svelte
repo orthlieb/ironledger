@@ -47,6 +47,15 @@
 	import { tooltip } from '$lib/actions/tooltip.js';
 
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import MapDialog from '$lib/components/MapDialog.svelte';
+	import {
+		entityMarkerIndexState,
+		loadEntityMarkerIndex,
+		markersForEntity,
+		openMapForOwner,
+		type EntityMarkerRef,
+	} from '$lib/mapStore.svelte.js';
+	import { formatEntityId } from '$lib/mapEntityLinks.js';
 	import trashSvg from '$icons/trash-solid-full.svg?raw';
 	import heartPulseSvg from '$icons/heart-pulse-solid-full.svg?raw';
 	import skullSvg from '$icons/skull-crossbones-solid-full.svg?raw';
@@ -238,6 +247,47 @@
 	const activeEntry = $derived(entries.find((e) => e.id === activeEntryId));
 	const activeKind = $derived<EntryKind | null>(activeEntry?.kind ?? null);
 	const activeColor = $derived(activeKind ? accentFor(activeKind) : COMMUNITY_COLOR);
+
+	// Map integration: only communities and places can own a map or be
+	// linked from a marker; NPCs are explicitly excluded by mapEntityLinks.
+	let mapDialogRef = $state<{
+		open(target?: { mapId?: string; markerId?: string }): void;
+		close(): void;
+	} | null>(null);
+
+	$effect(() => {
+		void loadEntityMarkerIndex();
+	});
+
+	/** True when the active entry is map-owner-eligible (community or place). */
+	const activeIsMapOwner = $derived(activeKind === 'community' || activeKind === 'place');
+
+	/** Back-references for the active entry, if any. Empty until index loads. */
+	const activeEntryMarkers = $derived.by<EntityMarkerRef[]>(() => {
+		if (!activeEntry || !activeIsMapOwner) return [];
+		void entityMarkerIndexState.index; // subscribe
+		return markersForEntity(
+			formatEntityId(activeEntry.kind as 'community' | 'place', activeEntry.data.id),
+		);
+	});
+
+	async function openOwnedMap() {
+		if (!activeEntry || !activeIsMapOwner) return;
+		await openMapForOwner(
+			activeEntry.kind as 'community' | 'place',
+			activeEntry.data.id,
+			activeEntry.data.name || 'Untitled',
+		);
+		mapDialogRef?.open();
+	}
+
+	function jumpToMarker(ref: EntityMarkerRef) {
+		mapDialogRef?.open({ mapId: ref.mapId, markerId: ref.markerId });
+	}
+
+	function fmtCoord(v: number): string {
+		return Number.isInteger(v) ? String(v) : v.toFixed(2);
+	}
 
 	// The Notes/description tab is labelled "Background" for NPCs (origin,
 	// upbringing, major traits — fits a person) and "Description" for
@@ -711,6 +761,14 @@
 							]}
 						/>
 					{/if}
+					{#if activeIsMapOwner}
+						<button
+							class="btn cm-stage-map-btn"
+							onclick={openOwnedMap}
+							use:tooltip={`Open the map for this ${kindLabelSingular(activeEntry.kind).toLowerCase()}`}
+							aria-label="Open map">Map</button
+						>
+					{/if}
 					<button
 						class="btn btn-icon icon-btn btn-trash cm-stage-delete-btn"
 						onclick={() => deleteDialogRef?.open()}
@@ -719,6 +777,25 @@
 						>{@html trashSvg}</button
 					>
 				</div>
+
+				{#if activeEntryMarkers.length > 0}
+					<!-- Back-ref chip strip. One chip per marker on any map that
+					     links to this community/place; click jumps to the marker. -->
+					<div class="cm-mapref-row" aria-label="On the campaign map">
+						<span class="cm-mapref-label" aria-hidden="true">📍 On map:</span>
+						{#each activeEntryMarkers as ref (ref.markerId)}
+							<button
+								class="cm-mapref-chip"
+								onclick={() => jumpToMarker(ref)}
+								use:tooltip={`Jump to "${ref.label || '(unlabeled)'}" on ${ref.mapName}`}
+								aria-label={`Jump to marker on ${ref.mapName}`}
+							>
+								<span class="cm-mapref-name">{ref.mapName}</span>
+								<span class="cm-mapref-coord">({fmtCoord(ref.x)}, {fmtCoord(ref.y)})</span>
+							</button>
+						{/each}
+					</div>
+				{/if}
 
 				<div class="cm-stage">
 					<div class="cm-tabs" role="tablist">
@@ -1102,12 +1179,62 @@
 	</div>
 </ConfirmDialog>
 
+<MapDialog bind:this={mapDialogRef} />
+
 <style>
 	.cm-area {
 		display: flex;
 		flex-direction: column;
 		height: 100%;
 		min-height: 0;
+	}
+	.cm-stage-map-btn {
+		flex-shrink: 0;
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		padding: 4px 12px;
+	}
+	.cm-mapref-row {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 6px;
+		padding: 4px 12px 6px;
+		background: var(--bg-inset);
+		border-bottom: 1px solid var(--border);
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+	}
+	.cm-mapref-label {
+		color: var(--text-dimmer);
+		margin-right: 4px;
+	}
+	.cm-mapref-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 2px 8px;
+		background: var(--bg-control);
+		border: 1px solid var(--border-mid);
+		border-radius: 12px;
+		font-family: inherit;
+		font-size: inherit;
+		color: var(--text);
+		cursor: pointer;
+	}
+	.cm-mapref-chip:hover {
+		border-color: var(--text-accent);
+		color: var(--text-accent);
+	}
+	.cm-mapref-name {
+		font-weight: 600;
+	}
+	.cm-mapref-coord {
+		font-family: var(--font-mono, ui-monospace, monospace);
+		color: var(--text-dimmer);
 	}
 
 	.cm-header {
