@@ -68,12 +68,70 @@
 		mapSettings.hexes.visible = (e.target as HTMLInputElement).checked;
 		persistMapSettings();
 	}
+	function onHexesOpacity(e: Event) {
+		const v = Number((e.target as HTMLInputElement).value);
+		if (Number.isFinite(v) && v >= 0 && v <= 100) {
+			mapSettings.hexes.opacity = v / 100;
+			persistMapSettings();
+		}
+	}
+	function onLabelsVisible(e: Event) {
+		mapSettings.labels.visible = (e.target as HTMLInputElement).checked;
+		persistMapSettings();
+	}
 </script>
 
 <dialog bind:this={dialogEl} class="mo-dialog" oncancel={close}>
 	<DialogHeader title={headingText('Map Options')} onclose={close} radius="8px 8px 0 0" />
 
 	<div class="mo-body">
+		<section class="mo-section">
+			<label class="mo-toggle">
+				<input type="checkbox" checked={mapSettings.labels.visible} onchange={onLabelsVisible} />
+				<span class="mo-toggle-label">Show names</span>
+			</label>
+			<p class="mo-hint">Text label beneath each marker. This device only.</p>
+		</section>
+
+		<section class="mo-section">
+			<label class="mo-toggle">
+				<input type="checkbox" checked={mapSettings.hexes.visible} onchange={onHexesVisible} />
+				<span class="mo-toggle-label">Show hex grid</span>
+			</label>
+			<p class="mo-hint">
+				Hides the hex outlines. Clicks still place markers on the underlying grid. This device only.
+			</p>
+
+			<div class="mo-fields" class:mo-fields-disabled={!mapSettings.hexes.visible}>
+				<label class="mo-field">
+					<span class="mo-field-label"
+						>Opacity — {Math.round(mapSettings.hexes.opacity * 100)}%</span
+					>
+					<input
+						class="mo-slider"
+						type="range"
+						min="0"
+						max="100"
+						step="5"
+						value={Math.round(mapSettings.hexes.opacity * 100)}
+						oninput={onHexesOpacity}
+						disabled={!mapSettings.hexes.visible}
+					/>
+				</label>
+			</div>
+		</section>
+
+		<section class="mo-section">
+			<label class="mo-toggle">
+				<input type="checkbox" checked={mapSettings.border.enabled} onchange={onBorderEnabled} />
+				<span class="mo-toggle-label">Checkered border</span>
+			</label>
+			<p class="mo-hint">
+				Narrow black/white checker ring around the visible view — one segment per hex. This device
+				only.
+			</p>
+		</section>
+
 		<section class="mo-section">
 			<label class="mo-toggle">
 				<input type="checkbox" checked={scaleEnabled} onchange={onScaleEnabled} />
@@ -129,27 +187,6 @@
 					/>
 				</label>
 			</div>
-		</section>
-
-		<section class="mo-section">
-			<label class="mo-toggle">
-				<input type="checkbox" checked={mapSettings.border.enabled} onchange={onBorderEnabled} />
-				<span class="mo-toggle-label">Checkered border</span>
-			</label>
-			<p class="mo-hint">
-				Narrow black/white checker ring around the visible view — one segment per hex. This device
-				only.
-			</p>
-		</section>
-
-		<section class="mo-section">
-			<label class="mo-toggle">
-				<input type="checkbox" checked={mapSettings.hexes.visible} onchange={onHexesVisible} />
-				<span class="mo-toggle-label">Show hex grid</span>
-			</label>
-			<p class="mo-hint">
-				Hides the hex outlines. Clicks still place markers on the underlying grid. This device only.
-			</p>
 		</section>
 	</div>
 </dialog>
@@ -247,6 +284,11 @@
 		border: 1px solid var(--border-mid);
 		border-radius: 4px;
 		max-width: 120px;
+	}
+	.mo-slider {
+		width: 100%;
+		max-width: 240px;
+		accent-color: var(--text-accent);
 	}
 	.mo-input:focus {
 		outline: none;

@@ -15,11 +15,12 @@
 
 import { MAP_ICONS, MAP_ICON_LIST, type MapIcon } from './generated/mapIconManifest.js';
 
-/** Bounded rectangle for the hex grid overlay. 20×15 = 300 cells — same as
- *  the paint-only Tier 1 iteration. Fits at readable hex size on a laptop
- *  and gives a regional Ironlands map room to breathe. */
+/** Bounded rectangle for the hex grid overlay. 20 × 13 = 260 cells —
+ *  aspect ratio (COLS · √3) / (ROWS · 1.5) ≈ 1.776, matching 16:9 =
+ *  1.778 basically exactly. That means a 4K (3840 × 2160) background
+ *  image drops into the canvas with essentially zero letterbox. */
 export const MAP_COLS = 20;
-export const MAP_ROWS = 15;
+export const MAP_ROWS = 13;
 
 /** Pointy-top hex radius in SVG user units (centre to corner). Combined
  *  with MAP_COLS/ROWS this gives the map its 16:10-ish canvas aspect

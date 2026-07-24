@@ -32,6 +32,15 @@ export interface MapSettings {
 		 *  either way — the flag just controls the stroke visibility so
 		 *  markers can be placed on an "invisible" grid. */
 		visible: boolean;
+		/** Hex stroke opacity in `[0, 1]`. Default 0.5 = subtly visible
+		 *  over any background; users tune per-map preference. */
+		opacity: number;
+	};
+	labels: {
+		/** Show the text label under each marker. Purely a display
+		 *  preference — the labels are always stored, this just hides
+		 *  them at render time. */
+		visible: boolean;
 	};
 	pan: {
 		/** Fraction of the scrollable area (`scrollLeft / (scrollWidth -
@@ -47,7 +56,8 @@ export interface MapSettings {
 const DEFAULTS: MapSettings = {
 	scale: { enabled: false, unit: 'miles', perHex: 5, segments: 4 },
 	border: { enabled: false },
-	hexes: { visible: true },
+	hexes: { visible: true, opacity: 0.5 },
+	labels: { visible: true },
 	pan: { fx: 0.5, fy: 0.5 },
 };
 
@@ -58,6 +68,7 @@ function freshDefaults(): MapSettings {
 		scale: { ...DEFAULTS.scale },
 		border: { ...DEFAULTS.border },
 		hexes: { ...DEFAULTS.hexes },
+		labels: { ...DEFAULTS.labels },
 		pan: { ...DEFAULTS.pan },
 	};
 }
@@ -72,6 +83,7 @@ function load(): MapSettings {
 			scale: { ...DEFAULTS.scale, ...(parsed.scale ?? {}) },
 			border: { ...DEFAULTS.border, ...(parsed.border ?? {}) },
 			hexes: { ...DEFAULTS.hexes, ...(parsed.hexes ?? {}) },
+			labels: { ...DEFAULTS.labels, ...(parsed.labels ?? {}) },
 			pan: { ...DEFAULTS.pan, ...(parsed.pan ?? {}) },
 		};
 	} catch {

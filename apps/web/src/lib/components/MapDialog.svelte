@@ -34,6 +34,7 @@
 	import MapOptionsDialog from './MapOptionsDialog.svelte';
 	import { mapSettings, persistMapSettings } from '$lib/mapSettingsStore.svelte.js';
 	import iconTrashSvg from '$icons/trash-solid-full.svg?raw';
+	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import {
 		DEFAULT_MARKER_COLOR,
@@ -72,9 +73,14 @@
 	let optionsDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let iconDialogEl = $state<HTMLDialogElement | null>(null);
 	let fileInputEl = $state<HTMLInputElement | null>(null);
-	let showLabels = $state(true);
 	let uploadError = $state('');
 	let iconSearch = $state('');
+
+	/** Legacy alias — `showLabels` was a local `$state` until labels moved
+	 *  into `mapSettings`. Retained as a `$derived` so the exportMapPng
+	 *  argument and the marker-label template guard both keep reading
+	 *  `showLabels` without churn. */
+	const showLabels = $derived(mapSettings.labels.visible);
 
 	/** Id of the selected marker (null = nothing selected). Deriving the
 	 *  live marker record from the store keeps every field auto-current
@@ -229,7 +235,10 @@
 	// the pan. Zoom multiplier persists server-side (per map); scroll
 	// position persists in localStorage (per device — a portrait phone
 	// and a landscape desktop don't want to share a scroll offset).
-	const MIN_ZOOM = 0.5;
+	/** Minimum zoom is 1.0 (fit-to-canvas) — zooming out beyond that
+	 *  would shrink the map inside the canvas with no useful gain, so
+	 *  the toolbar's `−` and Ctrl+wheel both cap here. */
+	const MIN_ZOOM = 1;
 	const MAX_ZOOM = 4;
 	function clampZoom(z: number): number {
 		return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z));
@@ -327,8 +336,10 @@
 	}
 
 	function onWheel(e: WheelEvent) {
-		// Ctrl/Cmd + wheel = zoom-to-cursor. Bare wheel scrolls the canvas
-		// naturally via `overflow: auto` — no handling needed here.
+		// Ctrl/Cmd + wheel = zoom-to-cursor. Trackpad pinch on macOS/Windows
+		// synthesises the exact same event (ctrlKey=true + wheel), so this
+		// path also drives pinch-zoom on trackpads. Bare wheel scrolls the
+		// canvas natively via `overflow: auto` and is left alone.
 		if (!e.ctrlKey && !e.metaKey) return;
 		e.preventDefault();
 		if (!canvasEl) return;
@@ -336,6 +347,21 @@
 		const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
 		zoomAround(zoom * factor, e.clientX - rect.left, e.clientY - rect.top);
 	}
+
+	/**
+	 * Wheel + trackpad-pinch handler attachment. Svelte's `onwheel={…}`
+	 * shorthand adds a passive listener, and browsers ignore `preventDefault`
+	 * on passive wheel events — including the ctrl+wheel events synthesised
+	 * by trackpad pinch. Attach manually with `passive: false` so pinch
+	 * lands on us instead of the browser's page-zoom.
+	 */
+	$effect(() => {
+		if (!canvasEl) return;
+		const el = canvasEl;
+		const handler = (ev: WheelEvent) => onWheel(ev);
+		el.addEventListener('wheel', handler, { passive: false });
+		return () => el.removeEventListener('wheel', handler);
+	});
 
 	function zoomIn() {
 		zoomCentered(zoom * 1.25);
@@ -540,11 +566,6 @@
 		}
 	}
 
-	function onHexToggle(e: Event) {
-		mapSettings.hexes.visible = (e.target as HTMLInputElement).checked;
-		persistMapSettings();
-	}
-
 	function triggerUpload() {
 		fileInputEl?.click();
 	}
@@ -585,18 +606,6 @@
 				class="mp-btn"
 				onclick={triggerUpload}
 				use:tooltip={'Upload a background image (JPEG or PNG, ≤20 MB)'}>Upload image</button
-			>
-			<label class="mp-toggle" use:tooltip={'Show or hide marker labels'}>
-				<input type="checkbox" bind:checked={showLabels} /> Names
-			</label>
-			<label class="mp-toggle" use:tooltip={'Show or hide the hex grid outlines'}>
-				<input type="checkbox" checked={mapSettings.hexes.visible} onchange={onHexToggle} /> Hexes
-			</label>
-			<button
-				class="mp-btn"
-				onclick={() => optionsDialogRef?.open()}
-				use:tooltip={'Map options — scale + border'}
-				aria-label="Map options">Options</button
 			>
 			<div class="mp-zoom" role="group" aria-label="Zoom controls">
 				<button
@@ -652,6 +661,12 @@
 				onclick={() => clearDialogRef?.open()}
 				disabled={!hasAnyContent()}
 				use:tooltip={'Clear the background and every marker'}>Clear map</button
+			>
+			<button
+				class="mp-btn mp-btn-icon mp-btn-gear"
+				onclick={() => optionsDialogRef?.open()}
+				use:tooltip={'Map options — names, hex grid, border, scale bar'}
+				aria-label="Map options">{@html iconGearSvg}</button
 			>
 		</div>
 		<input
@@ -758,7 +773,9 @@
 	{/if}
 
 	<div class="mp-body">
-		<div class="mp-canvas" bind:this={canvasEl} onwheel={onWheel} onscroll={onScroll}>
+		<!-- Wheel listener is attached manually with `passive: false` in a
+		     $effect above so trackpad-pinch (ctrl+wheel) is preventable. -->
+		<div class="mp-canvas" bind:this={canvasEl} onscroll={onScroll}>
 			<!--
 				viewBox is pixel-space matching the canvas exactly (updated
 				reactively from the ResizeObserver). SVG's rendered width/
@@ -801,7 +818,11 @@
 					features at any dialog size.
 				-->
 				<g transform="translate({hexOffset.x} {hexOffset.y})">
-					<g class="mp-hex-layer" class:mp-hex-layer-hidden={!mapSettings.hexes.visible}>
+					<g
+						class="mp-hex-layer"
+						class:mp-hex-layer-hidden={!mapSettings.hexes.visible}
+						stroke-opacity={mapSettings.hexes.opacity}
+					>
 						{#each cells as { q, r } (`${q},${r}`)}
 							{@const px = axialToPx(q, r, dynamicHexSize)}
 							<!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -1067,19 +1088,6 @@
 		font-size: 0.72rem;
 		color: var(--text-muted);
 	}
-	.mp-toggle {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		font-family: var(--font-ui);
-		font-size: 0.72rem;
-		color: var(--text-muted);
-		cursor: pointer;
-	}
-	.mp-toggle input {
-		accent-color: var(--text-accent);
-	}
-
 	.mp-btn {
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
@@ -1315,13 +1323,23 @@
 
 	.mp-hex {
 		fill: transparent;
-		stroke: color-mix(in srgb, var(--text) 30%, transparent);
+		/* Fully-opaque stroke color; effective visibility is controlled
+		   by `stroke-opacity` on the parent `.mp-hex-layer` group (bound
+		   to `mapSettings.hexes.opacity`, default 0.5). That way the
+		   options-dialog opacity slider maps directly to visible
+		   transparency without a baked-in multiplier. */
+		stroke: var(--text);
 		stroke-width: 0.8;
 		cursor: pointer;
-		transition: stroke 0.08s;
+		transition:
+			stroke 0.08s,
+			stroke-opacity 0.08s;
 	}
 	.mp-hex:hover {
+		/* Hover always at full opacity + accent color, ignoring the
+		   layer's stroke-opacity so the highlight stays bright. */
 		stroke: var(--text-accent);
+		stroke-opacity: 1;
 		stroke-width: 1.5;
 	}
 	/* "Show hex grid" toggle off — outlines vanish but hexes stay
@@ -1332,6 +1350,7 @@
 	}
 	.mp-hex-layer-hidden .mp-hex:hover {
 		stroke: var(--text-accent);
+		stroke-opacity: 1;
 	}
 
 	/* Scale bar overlay — parchment-style black-and-white with a soft
