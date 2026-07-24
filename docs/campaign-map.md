@@ -393,6 +393,35 @@ concern if the failure mode ever matters in practice.
 
 ## Exports
 
+### Zip round-trip (`.zip`)
+
+`exportMapZip({ name, markers, settings, backgroundUrl })` and
+`importMapZip(file)` — a single map's data as a `fflate`-built zip.
+Layout:
+
+```
+map-<slugified-name>-<stamp>.zip
+├── manifest.json     { app: 'Iron Ledger', version, exportedAt, type: 'map' }
+├── map.json          { name, markers, settings }
+└── background.jpg    raw image bytes (only when a background is set)
+```
+
+Zip over inlined JSON because the background image is typically
+200-500 kB and base64 inflates that by ~33 %; raw bytes in a zip
+stay compact and match the `.zip` pattern the "Everything" export
+already uses. The importer is available via the map picker chip's
+**⬇ Import map…** row and via the hamburger-menu Export dialog's
+**Zip** format (which is now the successor to the old JSON format).
+
+The importer creates a fresh map (never overwrites), regenerates
+marker ids to avoid collisions on re-import, and uploads the bytes
+via the existing `PUT /session/maps/:id/background` endpoint.
+
+`exportMapZip()` and `importMapZip()` throw `MapImportError` with a
+user-readable message on any validation failure — bad envelope,
+wrong type, malformed JSON, etc. The Import affordance surfaces
+these in the same red banner as background-upload errors.
+
 ### PNG snapshot
 
 `exportMapPng(svgEl, showLabels)`:
@@ -404,12 +433,28 @@ concern if the failure mode ever matters in practice.
 4. Serialise, wrap in a data URL, load into an `Image`, `drawImage`
    onto a canvas at 2× viewBox scale, `toBlob('image/png')`, download.
 
-### JSON envelope
+### Everything zip
 
-`exportMapJson({ markers, backgroundHash, backgroundUrl })` writes a
-manifest-wrapped payload matching the existing "Everything" export
-shape. The `backgroundUrl` field is informational; a full round-trip
-importer would need to re-upload the image bytes (Tier 2).
+The app-wide "Everything" export (`routes/home/+page.svelte`) now
+folds every map in as a subdirectory:
+
+```
+ironledger-export-<stamp>.zip
+├── characters.md
+├── connections.md
+├── expeditions.md
+├── foes.md
+├── session-log.md
+├── maps.md                       ← summary table of all maps
+├── maps/<mapId>/manifest.json
+├── maps/<mapId>/map.json
+├── maps/<mapId>/background.jpg   ← only if a background is set
+└── images/<prefix>-<slug>.jpg    ← existing portrait files
+```
+
+Each map's `maps/<mapId>/*` payload is produced by the same
+`buildMapZipEntries()` helper the per-map exporter uses, so both
+paths ship the same bytes for the same map.
 
 ## Mobile
 

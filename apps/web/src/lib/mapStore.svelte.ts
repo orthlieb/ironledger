@@ -622,6 +622,15 @@ export async function clearMarkers(): Promise<void> {
 	await persistMarkers();
 }
 
+/** Replace the active map's markers wholesale — used by the zip
+ *  importer to avoid firing one PUT per marker. Ids get regenerated so
+ *  a re-import against the same account doesn't collide with markers
+ *  from an earlier import. */
+export async function replaceMarkers(markers: Array<Omit<MapMarker, 'id'>>): Promise<void> {
+	mapState.markers = markers.map((m) => ({ id: crypto.randomUUID(), ...m }));
+	await persistMarkers();
+}
+
 /** Persist the active map's settings blob. Optimistic — the local copy
  *  is authoritative, PUT fires in the background. */
 export async function persistSettings(): Promise<void> {

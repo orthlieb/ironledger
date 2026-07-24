@@ -88,7 +88,7 @@
 		type MapMarker,
 	} from '$lib/mapStore.svelte.js';
 	import { downscaleImage, MapImageError } from '$lib/mapImage.js';
-	import { exportMapPng, exportMapJson } from '$lib/mapExport.js';
+	import { exportMapPng, exportMapZip, importMapZip, MapImportError } from '$lib/mapExport.js';
 	import { getLinkableEntities, resolveEntity } from '$lib/mapEntityLinks.js';
 
 	let dialogEl = $state<HTMLDialogElement | null>(null);
@@ -121,6 +121,31 @@
 			await createMap({ name: name.trim() || 'Untitled Map' });
 		} catch (err) {
 			mapState.error = err instanceof Error ? err.message : 'Failed to create map';
+		}
+	}
+
+	// Import — hidden file input driven by the "Import map…" picker
+	// menu item. Accepts an `exportMapZip()` bundle; creates a new map,
+	// pulls in markers + settings, and uploads the background image
+	// bytes if the zip carried one.
+	let importFileEl = $state<HTMLInputElement | null>(null);
+	function pickImportMap() {
+		closePicker();
+		importFileEl?.click();
+	}
+	async function handleImportFile(e: Event) {
+		const input = e.target as HTMLInputElement;
+		const file = input.files?.[0];
+		input.value = ''; // let the same file be re-picked later
+		if (!file) return;
+		mapState.error = '';
+		try {
+			selectedMarkerId = null;
+			await importMapZip(file);
+		} catch (err) {
+			mapState.error =
+				err instanceof MapImportError ? err.message : 'Import failed — see the browser console.';
+			if (!(err instanceof MapImportError)) console.error('[MapDialog] import failed:', err);
 		}
 	}
 
@@ -167,10 +192,11 @@
 		if (!svgEl) return;
 		void exportMapPng(svgEl, showLabels);
 	}
-	function handleExportJson() {
-		exportMapJson({
+	function handleExportZip() {
+		void exportMapZip({
+			name: mapState.name || 'Untitled Map',
 			markers: mapState.markers,
-			backgroundHash: mapState.backgroundHash,
+			settings: mapState.settings,
 			backgroundUrl: backgroundUrl(),
 		});
 	}
@@ -180,14 +206,15 @@
 	 * Map exports through here so the user doesn't have to open the map
 	 * to grab a snapshot. Loads the map state on demand (initMap is
 	 * idempotent) so the export works even if the dialog has never been
-	 * opened in this session.
+	 * opened in this session. The `format: 'json'` alias is kept so
+	 * older menu builds still resolve to a zip.
 	 */
 	$effect(() => {
 		const handler = (e: Event) => {
 			const format = (e as CustomEvent<{ format?: string }>).detail?.format;
 			void initMap().then(() => {
 				if (format === 'png') handleExportPng();
-				else if (format === 'json') handleExportJson();
+				else if (format === 'zip' || format === 'json') handleExportZip();
 			});
 		};
 		document.addEventListener('ironledger:export-map', handler);
@@ -1068,8 +1095,20 @@
 								>+ New map…</button
 							>
 						</li>
+						<li>
+							<button class="mp-picker-item mp-picker-item-action" onclick={pickImportMap}
+								>⬇ Import map…</button
+							>
+						</li>
 					</ul>
 				{/if}
+				<input
+					bind:this={importFileEl}
+					type="file"
+					accept=".zip,application/zip"
+					hidden
+					onchange={handleImportFile}
+				/>
 			</div>
 			<button
 				class="mp-btn"

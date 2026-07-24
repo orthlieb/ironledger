@@ -1,26 +1,41 @@
 // =============================================================================
-// Iron Ledger — Campaign map exports
+// Iron Ledger — Campaign map exports + imports
 //
-// Two flavours, both triggered from MapDialog's toolbar:
+// Two flavours of round-trippable export, both triggered from MapDialog's
+// toolbar (or the hamburger-menu Export dialog):
 //
 //   • PNG snapshot — rasterises the currently-rendered SVG (background +
 //     grid + markers + labels) to a PNG and triggers a browser download.
 //     The image is baked in — the resulting file is fully self-contained
 //     and can be shared, printed, or dropped into session notes.
+//     One-way (no re-import).
 //
-//   • JSON round-trip — writes a small JSON envelope with the marker list
-//     and a note pointing at the background image endpoint. Useful for
-//     back-up or cross-account transfer; full round-trip import is a
-//     Tier 2 concern (needs upload + hash-remap on the receiving side).
+//   • Zip bundle — a `.zip` containing the map's metadata + marker list
+//     as JSON alongside the raw background image bytes. Round-trippable
+//     via `importMapZip()`. Chosen over inlined JSON to avoid the ~33 %
+//     base64 inflation on the (typically ~500 kB) background image and
+//     to match the "Everything" export pattern already used elsewhere
+//     in the app.
 //
 // SVG-to-PNG works via the standard <img src="data:image/svg+xml,..."> →
 // canvas.drawImage pipeline. The tricky part is that the background
-// image is a *remote* href (/api/session/map/background) — the SVG image
-// element loads it asynchronously and the canvas won't draw a broken
-// image, so we resolve the background to a data URL before serialisation.
+// image is a *remote* href (/api/session/maps/:id/background) — the SVG
+// image element loads it asynchronously and the canvas won't draw a
+// broken image, so we resolve the background to a data URL before
+// serialisation.
 // =============================================================================
 
-import type { MapMarker } from './mapStore.svelte.js';
+import { zipSync, unzipSync, strToU8, strFromU8 } from 'fflate';
+import {
+	createMap,
+	mapState,
+	persistSettings,
+	replaceMarkers,
+	setBackground,
+	switchMap,
+	type MapMarker,
+	type MapServerSettings,
+} from './mapStore.svelte.js';
 
 /** Suggested filename stamp: 'YYYY-MM-DD_HHmm'. */
 function stamp(): string {
@@ -40,57 +55,219 @@ function download(blob: Blob, filename: string): void {
 	URL.revokeObjectURL(url);
 }
 
+/** Slugify a name for safe filenames — letters/digits/hyphens only.
+ *  Falls back to `map` when the input is empty after cleaning. */
+function slugify(s: string): string {
+	const cleaned = s
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/^-+|-+$/g, '');
+	return cleaned || 'map';
+}
+
 // ---------------------------------------------------------------------------
-// JSON export
+// Zip export
 // ---------------------------------------------------------------------------
+
+/** Envelope written to `manifest.json` inside every export zip. Import
+ *  reads `type` to reject non-map bundles. */
+export interface MapZipManifest {
+	app: 'Iron Ledger';
+	version: '1.0.0';
+	exportedAt: string;
+	type: 'map';
+}
+
+/** Body of `map.json` — the map's user-facing metadata + payload. The
+ *  background image lives in a sibling `background.jpg` file, not
+ *  inlined here, so the JSON stays small and diffable. */
+export interface MapZipBody {
+	name: string;
+	markers: MapMarker[];
+	settings: MapServerSettings;
+}
+
+/** Fetch the background URL as raw bytes. Returns `null` when there's
+ *  no background or the fetch fails — the caller just omits the file
+ *  from the zip in that case. Used by both per-map export and the
+ *  "Everything" bundle. */
+async function fetchBackgroundBytes(url: string): Promise<Uint8Array | null> {
+	if (!url) return null;
+	try {
+		const res = await fetch(url);
+		if (!res.ok) return null;
+		return new Uint8Array(await res.arrayBuffer());
+	} catch {
+		return null;
+	}
+}
 
 /**
- * Envelope for the JSON export. Mirrors the "Everything" export shape at
- * the top level so we can move this into that bundle later without
- * reshaping the payload.
+ * Build the file entries for a single map's zip export — used both by
+ * per-map export (wrapped as a standalone .zip) and by the "Everything"
+ * bundle (nested under `maps/<mapId>/…`). Returns a `Record<path, bytes>`
+ * that fflate consumes directly.
  */
-export interface MapJsonEnvelope {
-	manifest: {
-		app: 'Iron Ledger';
-		version: '1.0.0';
-		exportedAt: string;
-		type: 'map';
+export async function buildMapZipEntries(input: {
+	name: string;
+	markers: MapMarker[];
+	settings: MapServerSettings;
+	backgroundUrl: string;
+}): Promise<Record<string, Uint8Array>> {
+	const manifest: MapZipManifest = {
+		app: 'Iron Ledger',
+		version: '1.0.0',
+		exportedAt: new Date().toISOString(),
+		type: 'map',
 	};
-	data: {
-		markers: MapMarker[];
-		/** Server-side hash of the background image (empty when unset). */
-		backgroundHash: string;
-		/** Fully-qualified URL of the background — informational for humans
-		 *  reading the export. Full round-trip import needs to re-upload
-		 *  the image bytes; that's a Tier 2 concern. */
-		backgroundUrl: string;
+	const body: MapZipBody = {
+		name: input.name,
+		markers: input.markers,
+		settings: input.settings,
 	};
+	const files: Record<string, Uint8Array> = {
+		'manifest.json': strToU8(JSON.stringify(manifest, null, 2)),
+		'map.json': strToU8(JSON.stringify(body, null, 2)),
+	};
+	const bg = await fetchBackgroundBytes(input.backgroundUrl);
+	if (bg) files['background.jpg'] = bg;
+	return files;
 }
 
-export function exportMapJson(input: {
+/**
+ * Export a single map as a downloadable .zip. Filename includes the
+ * slugified map name so a user with many maps can tell them apart in
+ * their Downloads folder.
+ */
+export async function exportMapZip(input: {
+	name: string;
 	markers: MapMarker[];
-	backgroundHash: string;
+	settings: MapServerSettings;
 	backgroundUrl: string;
-}): void {
-	const env: MapJsonEnvelope = {
-		manifest: {
-			app: 'Iron Ledger',
-			version: '1.0.0',
-			exportedAt: new Date().toISOString(),
-			type: 'map',
-		},
-		data: {
-			markers: input.markers,
-			backgroundHash: input.backgroundHash,
-			backgroundUrl: input.backgroundUrl,
-		},
-	};
-	const blob = new Blob([JSON.stringify(env, null, 2)], { type: 'application/json' });
-	download(blob, `campaign-map-${stamp()}.json`);
+}): Promise<void> {
+	const files = await buildMapZipEntries(input);
+	const zipped = zipSync(files, { level: 6 });
+	const blob = new Blob([zipped], { type: 'application/zip' });
+	download(blob, `map-${slugify(input.name)}-${stamp()}.zip`);
 }
 
 // ---------------------------------------------------------------------------
-// PNG export
+// Zip import
+// ---------------------------------------------------------------------------
+
+export class MapImportError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = 'MapImportError';
+	}
+}
+
+/** Convert raw bytes into a `data:image/jpeg;base64,…` URL — the shape
+ *  `setBackground()` (and the PUT endpoint behind it) expects. */
+function bytesToJpegDataUrl(bytes: Uint8Array): string {
+	let binary = '';
+	const chunk = 0x8000;
+	for (let i = 0; i < bytes.length; i += chunk) {
+		binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+	}
+	return `data:image/jpeg;base64,${btoa(binary)}`;
+}
+
+/**
+ * Import a `.zip` produced by `exportMapZip()`. Creates a fresh map on
+ * the server (does not overwrite an existing map), populates markers +
+ * settings, and uploads the background image if one was in the zip.
+ *
+ * The new map's id is returned so callers can jump to it. Throws
+ * `MapImportError` with a user-readable message on any validation
+ * failure — bad envelope, wrong type, malformed markers, etc.
+ */
+export async function importMapZip(file: File): Promise<string> {
+	if (!file) throw new MapImportError('No file selected.');
+	let buf: ArrayBuffer;
+	try {
+		buf = await file.arrayBuffer();
+	} catch {
+		throw new MapImportError('Could not read the file.');
+	}
+	let entries: Record<string, Uint8Array>;
+	try {
+		entries = unzipSync(new Uint8Array(buf));
+	} catch {
+		throw new MapImportError('Not a valid .zip archive.');
+	}
+
+	// Manifest + type gate — reject cross-app zips or empty bundles.
+	const manifestBytes = entries['manifest.json'];
+	if (!manifestBytes)
+		throw new MapImportError('Missing manifest.json — is this an Iron Ledger map export?');
+	let manifest: MapZipManifest;
+	try {
+		manifest = JSON.parse(strFromU8(manifestBytes)) as MapZipManifest;
+	} catch {
+		throw new MapImportError('manifest.json is not valid JSON.');
+	}
+	if (manifest.type !== 'map') {
+		throw new MapImportError(`This is a ${manifest.type ?? 'unknown'} export, not a map.`);
+	}
+
+	// Body — name / markers / settings.
+	const bodyBytes = entries['map.json'];
+	if (!bodyBytes) throw new MapImportError('Missing map.json inside the zip.');
+	let body: MapZipBody;
+	try {
+		body = JSON.parse(strFromU8(bodyBytes)) as MapZipBody;
+	} catch {
+		throw new MapImportError('map.json is not valid JSON.');
+	}
+	const name = typeof body.name === 'string' && body.name.trim() ? body.name : 'Imported Map';
+	const markers = Array.isArray(body.markers) ? body.markers : [];
+	const settings = body.settings && typeof body.settings === 'object' ? body.settings : {};
+
+	// Provision a fresh map on the server + activate it. createMap()
+	// already hydrates mapState.activeId + name to the new map, so
+	// subsequent replaceMarkers / setBackground / persistSettings hit
+	// the right row.
+	const summary = await createMap({ name });
+	if (mapState.activeId !== summary.id) await switchMap(summary.id);
+
+	// Push markers in a single PUT (replaceMarkers regenerates ids so a
+	// re-import against the same account doesn't collide).
+	const cleanMarkers = markers
+		.filter((m) => m && typeof m.x === 'number' && typeof m.y === 'number')
+		.map((m) => ({
+			x: m.x,
+			y: m.y,
+			label: typeof m.label === 'string' ? m.label : '',
+			icon: typeof m.icon === 'string' ? m.icon : '',
+			color: typeof m.color === 'string' ? m.color : undefined,
+			entityId: typeof m.entityId === 'string' ? m.entityId : undefined,
+		}));
+	await replaceMarkers(cleanMarkers);
+
+	// Merge settings (aspect / scale / view) so the imported map opens
+	// the same way it was exported. Persist immediately so a page
+	// reload sees the imported settings, not the fresh-map defaults.
+	mapState.settings = { ...mapState.settings, ...settings };
+	await persistSettings();
+
+	// Background bytes are optional — a map with no background uploaded
+	// simply won't have a `background.jpg` entry. setBackground also
+	// re-patches settings.aspect if we pass one, which is fine.
+	const bg = entries['background.jpg'];
+	if (bg && bg.length > 0) {
+		const aspect =
+			typeof settings.aspect === 'number' && Number.isFinite(settings.aspect) && settings.aspect > 0
+				? settings.aspect
+				: undefined;
+		await setBackground(bytesToJpegDataUrl(bg), aspect);
+	}
+
+	return summary.id;
+}
+
+// ---------------------------------------------------------------------------
+// PNG export (unchanged)
 // ---------------------------------------------------------------------------
 
 /**
