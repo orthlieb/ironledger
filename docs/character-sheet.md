@@ -83,7 +83,7 @@ Each asset references an `assetId` from the asset catalogue, with per-ability `e
 | ------------------------- | ----------------------------------------------------------------------------- |
 | Collapse ▼/▶              | Hides/shows the full sheet body                                               |
 | Portrait                  | Click to upload; eye-slash button to remove                                   |
-| Export (file-export icon) | Downloads `{name}.json` with the character's full data                        |
+| Export (file-export icon) | Downloads `{name}.zip` — the character's full data + portrait bytes           |
 | Delete (trash icon)       | Triggers delete confirmation; calls `onDelete` prop to submit the hidden form |
 
 ---
