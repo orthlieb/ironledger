@@ -71,6 +71,7 @@
 	import { parseStorySource } from '$lib/aiSerialize.js';
 	import { parseImportJson, sanitizeLogHtml, ImportError } from '$lib/importSanitizer.js';
 	import { zipSync, strToU8 } from 'fflate';
+	import { buildMapZipEntries } from '$lib/mapExport.js';
 	import charactersIconSvg from '$icons/Characters.svg?raw';
 	import foesIconSvg from '$icons/Foes.svg?raw';
 	import expeditionsIconSvg from '$icons/Expeditions.svg?raw';
@@ -1109,6 +1110,70 @@
 				lines.push('');
 			}
 			zipFiles['foes.md'] = strToU8(lines.join('\n').trimEnd());
+		}
+
+		// ── Campaign Maps ────────────────────────────────────────────────
+		// Each map contributes a `maps/<mapId>/` folder with the same
+		// per-map zip contents `exportMapZip()` produces (manifest.json
+		// + map.json + optional background.jpg). A tiny top-level
+		// `maps.md` lists them with relative links so a human can
+		// navigate the bundle without unzipping into an editor first.
+		try {
+			const mapListRes = await fetch('/api/session/maps');
+			if (mapListRes.ok) {
+				const listBody = (await mapListRes.json()) as {
+					maps?: Array<{ id: string; name: string; updatedAt: string }>;
+				};
+				const maps = Array.isArray(listBody.maps) ? listBody.maps : [];
+				const mapsMdLines: string[] = [];
+				if (maps.length) {
+					mapsMdLines.push('# Campaign Maps', '');
+				}
+				for (const summary of maps) {
+					const detailRes = await fetch(`/api/session/maps/${summary.id}`);
+					if (!detailRes.ok) continue;
+					const detail = (await detailRes.json()) as {
+						id: string;
+						name: string;
+						markers: Array<Record<string, unknown>>;
+						backgroundHash: string | null;
+						settings: Record<string, unknown>;
+					};
+					const bgUrl = detail.backgroundHash
+						? `/api/session/maps/${detail.id}/background?v=${encodeURIComponent(
+								detail.backgroundHash,
+							)}`
+						: '';
+					const entries = await buildMapZipEntries({
+						name: detail.name,
+						// eslint-disable-next-line @typescript-eslint/no-explicit-any
+						markers: detail.markers as any,
+						// eslint-disable-next-line @typescript-eslint/no-explicit-any
+						settings: detail.settings as any,
+						backgroundUrl: bgUrl,
+					});
+					const dir = `maps/${detail.id}`;
+					for (const [path, bytes] of Object.entries(entries)) {
+						zipFiles[`${dir}/${path}`] = bytes;
+					}
+					mapsMdLines.push(`## ${detail.name || 'Untitled Map'}`);
+					mapsMdLines.push(
+						`- Markers: ${Array.isArray(detail.markers) ? detail.markers.length : 0}`,
+					);
+					mapsMdLines.push(`- [Data](./${dir}/map.json)`);
+					if (entries['background.jpg']) {
+						mapsMdLines.push(`- ![Background](./${dir}/background.jpg)`);
+					}
+					mapsMdLines.push('');
+				}
+				if (mapsMdLines.length > 0) {
+					zipFiles['maps.md'] = strToU8(mapsMdLines.join('\n').trimEnd());
+				}
+			}
+		} catch {
+			// Best-effort — a failed maps fetch doesn't block the rest of
+			// the bundle. The user still gets characters / connections /
+			// expeditions / log; maps just missing from this snapshot.
 		}
 
 		// ── Session Log ──────────────────────────────────────────────────

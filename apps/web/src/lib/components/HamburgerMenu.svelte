@@ -209,8 +209,8 @@
 					>
 					<button
 						class="ed-seg-btn"
-						class:active={exportFormat === 'json'}
-						onclick={() => (exportFormat = 'json')}>JSON</button
+						class:active={exportFormat === 'zip'}
+						onclick={() => (exportFormat = 'zip')}>Zip</button
 					>
 				</div>
 			</div>
