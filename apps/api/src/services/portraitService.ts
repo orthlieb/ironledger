@@ -26,14 +26,9 @@ import type { EntityKind } from './userDataService.js';
 
 // 'character' joins the four session-collection kinds — character portraits use
 // the same store, keyed by the character's uuid as entity_id. 'map' reuses the
-// same store for the single per-user campaign map background; its entity_id
-// is fixed at MAP_ENTITY_ID (see below) since there's only one map per user.
+// same store for campaign-map background images; entity_id is the map's uuid
+// so multiple maps per user coexist without collisions (see migration 0021).
 export type PortraitKind = EntityKind | 'character' | 'map';
-
-/** Fixed entity_id for the per-user campaign map background. Reuses
- *  user_entity_portraits (which requires a non-null entity_id) even though
- *  the map is a singleton — one row per (user_id, 'map', 'MAP'). */
-export const MAP_ENTITY_ID = 'MAP';
 
 export interface Portrait {
   mime: string;

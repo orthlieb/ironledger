@@ -1,25 +1,29 @@
 // =============================================================================
-// Iron Ledger — Campaign map state (Svelte 5 module-level $state)
+// Iron Ledger — Campaign maps state (Svelte 5 module-level $state)
 //
-// Server-backed. Replaces the earlier localStorage store. Rationale:
-// storing the map on the server means it syncs across the user's devices
-// and survives a browser wipe — the two loss modes the localStorage
-// version routinely hit.
+// Multi-map foundation (Phase 1): users can have many maps and switch
+// between them via the dialog's map picker. Each map is server-persisted
+// (markers + background_hash pointer + settings + name); the active map
+// id lives in `SessionState.activeMapId` so the same map opens on every
+// device.
 //
-// Shape lives at /api/session/map (see docs/campaign-map.md). The
-// background image lives in the portrait blob store, referenced by hash
-// and served at /api/session/map/background — the client renders it via
-// an <image href="/api/session/map/background?v={hash}"> so browser
-// caching + ETag revalidation come for free.
+// Data shape:
+//   /api/session/maps                  → { maps: MapSummary[] }
+//   /api/session/maps/:mapId           → UserMap (markers + bg + settings)
+//   /api/session/maps/:mapId/markers   → PUT { markers }
+//   /api/session/maps/:mapId/settings  → PUT { settings }
+//   /api/session/maps/:mapId/background → GET bytes / PUT { dataUrl } / DELETE
 //
-// Mutations are optimistic: the local proxy updates immediately for a
-// responsive UI, then a PUT fires. On PUT failure we surface a status
-// and mark the store dirty (Tier 1a: minimal error UX; a proper retry
-// queue is Tier 2 if the failure mode ever matters in practice).
+// This module keeps three pieces of reactive state:
+//   • `mapListState.maps` — summary rows (id + name + sort_order + owner)
+//   • `activeMapId` — the currently-open map's id
+//   • `mapState` — the full detail (markers, bg, settings) for the active map
 //
-// Old localStorage payloads at 'ironledger:map' are removed on init so
-// they don't confuse anyone digging through devtools. No migration to
-// the server: Tier 1/1a were both browser-only pre-releases.
+// Mutations are optimistic: local proxy updates first, PUT fires, on
+// failure the error surfaces via `mapState.error`.
+//
+// Old localStorage payloads at 'ironledger:map' are removed on first
+// init so they don't confuse anyone digging through devtools.
 // =============================================================================
 
 const LEGACY_STORAGE_KEY = 'ironledger:map';
@@ -49,11 +53,7 @@ export interface MapMarker {
 /** Server-persisted per-map settings — things that describe the MAP
  *  itself (not the current viewer's device preferences). Scale in
  *  particular is intrinsic to the map: 5 miles per hex on the GM's
- *  laptop is 5 miles per hex on their phone.
- *
- *  Kept typed as a partial so the client can add fields without a
- *  migration — the server just stores whatever JSONB blob it's
- *  handed and returns it verbatim on read. */
+ *  laptop is 5 miles per hex on their phone. Free-form JSONB blob. */
 export interface MapServerSettings {
 	scale?: {
 		enabled?: boolean;
@@ -62,78 +62,293 @@ export interface MapServerSettings {
 		segments?: number;
 	};
 	view?: {
-		/** Zoom multiplier applied to the SVG's intrinsic size.
-		 *  1.0 = fit-to-canvas (the pre-zoom baseline); 2.0 = 2× the
-		 *  fit-to-canvas render, panning enabled via canvas overflow. */
+		/** Zoom multiplier applied to the SVG's intrinsic size. 1.0 =
+		 *  fit-to-canvas; 2.0 = 2× render, panning enabled via canvas
+		 *  overflow. */
 		zoom?: number;
 	};
+}
+
+/** Ownership metadata — Phase 3 will attach maps to first-class entities
+ *  via (ownerKind, ownerId). Null = standalone/regional map. */
+export type MapOwnerKind = 'community' | 'place' | 'journey' | 'site';
+
+export interface MapSummary {
+	id: string;
+	name: string;
+	sortOrder: number;
+	ownerKind: MapOwnerKind | null;
+	ownerId: string | null;
+	updatedAt: string;
+}
+
+interface MapListState {
+	loaded: boolean;
+	loading: boolean;
+	error: string;
+	maps: MapSummary[];
 }
 
 interface MapState {
 	loaded: boolean;
 	loading: boolean;
 	error: string;
+	/** The active map's id — mirrors `SessionState.activeMapId` on the
+	 *  server. `''` before init or when the user has no maps yet. */
+	activeId: string;
+	name: string;
 	markers: MapMarker[];
 	/** md5 hash of the background image, or '' when no image is set.
 	 *  Doubles as the cache-buster in the <image href="…?v={hash}"> URL. */
 	backgroundHash: string;
-	/** Per-map settings persisted server-side (see MapServerSettings).
-	 *  Free-form JSONB blob owned by the client. */
+	/** Per-map settings persisted server-side (see MapServerSettings). */
 	settings: MapServerSettings;
 }
+
+export const mapListState = $state<MapListState>({
+	loaded: false,
+	loading: false,
+	error: '',
+	maps: [],
+});
 
 export const mapState = $state<MapState>({
 	loaded: false,
 	loading: false,
 	error: '',
+	activeId: '',
+	name: '',
 	markers: [],
 	backgroundHash: '',
 	settings: {},
 });
 
-/** URL for the background image or '' when there's no image. Includes the
- *  hash as a cache-buster so <img> reloads when the background changes.
- *  Reactive on `mapState.backgroundHash`; MapDialog binds `href` to this. */
+/** URL for the active map's background image or '' when there's no
+ *  image or no active map. Includes the hash as a cache-buster so
+ *  `<img>` reloads when the background changes. */
 export function backgroundUrl(): string {
-	if (!mapState.backgroundHash) return '';
-	return `/api/session/map/background?v=${encodeURIComponent(mapState.backgroundHash)}`;
+	if (!mapState.activeId || !mapState.backgroundHash) return '';
+	return `/api/session/maps/${mapState.activeId}/background?v=${encodeURIComponent(mapState.backgroundHash)}`;
 }
 
 // ---------------------------------------------------------------------------
-// Init — fetch the map on first dialog open. Idempotent.
+// Session-state bridge — the active map id lives on the server so the
+// same map opens on every device. We fetch it via /api/session/state,
+// which the home page also uses for charId/foeId/expeditionId. Keeping
+// this bridge local avoids threading yet another shared store through
+// the map subsystem.
+// ---------------------------------------------------------------------------
+
+interface SessionStatePartial {
+	charId: string;
+	foeId: string;
+	expeditionId: string;
+	activeTab?: string;
+	activeMapId?: string | null;
+}
+
+async function fetchActiveMapIdFromSession(): Promise<string | null> {
+	try {
+		const res = await fetch('/api/session/state');
+		if (!res.ok) return null;
+		const body = (await res.json()) as { sessionState?: SessionStatePartial };
+		return body.sessionState?.activeMapId ?? null;
+	} catch {
+		return null;
+	}
+}
+
+async function persistActiveMapIdToSession(activeMapId: string): Promise<void> {
+	// Fetch current session state so we don't clobber unrelated fields
+	// (charId, foeId, expeditionId, activeTab).
+	try {
+		const cur = await fetch('/api/session/state').then((r) => (r.ok ? r.json() : null));
+		const s: SessionStatePartial = cur?.sessionState ?? {
+			charId: '',
+			foeId: '',
+			expeditionId: '',
+		};
+		s.activeMapId = activeMapId;
+		await fetch('/api/session/state', {
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ sessionState: s }),
+		});
+	} catch {
+		// Best-effort; a failed active-map save just means the next load
+		// falls back to "first map in the list".
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Init — fetch the map list + the active map on first dialog open. Idempotent.
 // ---------------------------------------------------------------------------
 
 let _initPromise: Promise<void> | null = null;
 
 export function initMap(): Promise<void> {
-	if (mapState.loaded) return Promise.resolve();
+	if (mapListState.loaded && mapState.loaded) return Promise.resolve();
 	if (_initPromise) return _initPromise;
 	_initPromise = (async () => {
+		mapListState.loading = true;
+		mapListState.error = '';
 		mapState.loading = true;
 		mapState.error = '';
 		try {
-			const res = await fetch('/api/session/map');
-			if (!res.ok) throw new Error(`Server returned ${res.status}`);
-			const body = (await res.json()) as {
-				markers?: MapMarker[];
-				backgroundHash?: string | null;
-				settings?: MapServerSettings | null;
-			};
-			mapState.markers = Array.isArray(body.markers) ? body.markers : [];
-			mapState.backgroundHash = body.backgroundHash ?? '';
-			mapState.settings = body.settings && typeof body.settings === 'object' ? body.settings : {};
-			mapState.loaded = true;
-			// Sweep the legacy localStorage payload — the old browser-only
-			// map is fully superseded by the server round-trip.
+			const [listRes, activeId] = await Promise.all([
+				fetch('/api/session/maps'),
+				fetchActiveMapIdFromSession(),
+			]);
+			if (!listRes.ok) throw new Error(`Server returned ${listRes.status}`);
+			const listBody = (await listRes.json()) as { maps?: MapSummary[] };
+			mapListState.maps = Array.isArray(listBody.maps) ? listBody.maps : [];
+			mapListState.loaded = true;
+
+			// Pick the map to open: server's active-map preference if it still
+			// exists, otherwise the first entry, otherwise create a brand new
+			// "Regional Map" so a fresh user has something to click into.
+			let target = mapListState.maps.find((m) => m.id === activeId) ?? mapListState.maps[0];
+			if (!target) {
+				const created = await createMap({ name: 'Regional Map' });
+				target = created;
+			}
+			await loadMapInto(target.id);
+			// Sweep the legacy localStorage payload.
 			if (typeof window !== 'undefined') localStorage.removeItem(LEGACY_STORAGE_KEY);
 		} catch (err) {
-			mapState.error = err instanceof Error ? err.message : 'Failed to load map';
+			const msg = err instanceof Error ? err.message : 'Failed to load maps';
+			mapListState.error = msg;
+			mapState.error = msg;
 		} finally {
+			mapListState.loading = false;
 			mapState.loading = false;
 			_initPromise = null;
 		}
 	})();
 	return _initPromise;
+}
+
+async function loadMapInto(mapId: string): Promise<void> {
+	const res = await fetch(`/api/session/maps/${mapId}`);
+	if (!res.ok) throw new Error(`Server returned ${res.status}`);
+	const body = (await res.json()) as {
+		id?: string;
+		name?: string;
+		markers?: MapMarker[];
+		backgroundHash?: string | null;
+		settings?: MapServerSettings | null;
+	};
+	mapState.activeId = body.id ?? mapId;
+	mapState.name = body.name ?? 'Untitled Map';
+	mapState.markers = Array.isArray(body.markers) ? body.markers : [];
+	mapState.backgroundHash = body.backgroundHash ?? '';
+	mapState.settings = body.settings && typeof body.settings === 'object' ? body.settings : {};
+	mapState.loaded = true;
+}
+
+/** Switch to a different map. Fetches its full detail, updates the
+ *  active-map preference server-side, and refreshes `mapState`. */
+export async function switchMap(mapId: string): Promise<void> {
+	if (mapId === mapState.activeId) return;
+	mapState.loading = true;
+	mapState.error = '';
+	try {
+		await loadMapInto(mapId);
+		void persistActiveMapIdToSession(mapId);
+	} catch (err) {
+		mapState.error = err instanceof Error ? err.message : 'Failed to load map';
+	} finally {
+		mapState.loading = false;
+	}
+}
+
+/** Create a new map + switch to it. Returns the summary of the new map
+ *  so the picker can highlight it. */
+export async function createMap(input: {
+	name?: string;
+	ownerKind?: MapOwnerKind | null;
+	ownerId?: string | null;
+}): Promise<MapSummary> {
+	const res = await fetch('/api/session/maps', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify(input),
+	});
+	if (!res.ok) throw new Error(`Server returned ${res.status}`);
+	const created = (await res.json()) as MapSummary & {
+		markers?: MapMarker[];
+		backgroundHash?: string | null;
+		settings?: MapServerSettings | null;
+	};
+	// Prepend to the list so it shows up right away in the picker; the
+	// sort_order server-side is `max + 1`, so it lands at the end on next
+	// reload — that's fine.
+	mapListState.maps = [
+		...mapListState.maps,
+		{
+			id: created.id,
+			name: created.name,
+			sortOrder: created.sortOrder,
+			ownerKind: created.ownerKind,
+			ownerId: created.ownerId,
+			updatedAt: created.updatedAt,
+		},
+	];
+	// The POST response includes the full detail — populate mapState
+	// directly instead of a second GET.
+	mapState.activeId = created.id;
+	mapState.name = created.name;
+	mapState.markers = Array.isArray(created.markers) ? created.markers : [];
+	mapState.backgroundHash = created.backgroundHash ?? '';
+	mapState.settings = created.settings ?? {};
+	mapState.loaded = true;
+	void persistActiveMapIdToSession(created.id);
+	return {
+		id: created.id,
+		name: created.name,
+		sortOrder: created.sortOrder,
+		ownerKind: created.ownerKind,
+		ownerId: created.ownerId,
+		updatedAt: created.updatedAt,
+	};
+}
+
+/** Rename an existing map. Updates the list + mapState.name if it's the
+ *  active map. */
+export async function renameMap(mapId: string, name: string): Promise<void> {
+	try {
+		const res = await fetch(`/api/session/maps/${mapId}`, {
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ name }),
+		});
+		if (!res.ok) throw new Error(`Server returned ${res.status}`);
+		const idx = mapListState.maps.findIndex((m) => m.id === mapId);
+		if (idx >= 0) mapListState.maps[idx] = { ...mapListState.maps[idx], name };
+		if (mapId === mapState.activeId) mapState.name = name;
+	} catch (err) {
+		mapState.error = err instanceof Error ? err.message : 'Failed to rename map';
+	}
+}
+
+/** Delete a map. If it was the active map, switches to the first
+ *  remaining map (or creates a new Regional Map if the list is empty). */
+export async function deleteMap(mapId: string): Promise<void> {
+	try {
+		const res = await fetch(`/api/session/maps/${mapId}`, { method: 'DELETE' });
+		if (!res.ok) throw new Error(`Server returned ${res.status}`);
+		mapListState.maps = mapListState.maps.filter((m) => m.id !== mapId);
+		if (mapId === mapState.activeId) {
+			const next = mapListState.maps[0];
+			if (next) {
+				await switchMap(next.id);
+			} else {
+				await createMap({ name: 'Regional Map' });
+			}
+		}
+	} catch (err) {
+		mapState.error = err instanceof Error ? err.message : 'Failed to delete map';
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -149,12 +364,13 @@ export function hasAnyContent(): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Mutations — optimistic local update, PUT to server, revert on error.
+// Mutations for the active map — optimistic local update, PUT to server.
 // ---------------------------------------------------------------------------
 
 async function persistMarkers(): Promise<void> {
+	if (!mapState.activeId) return;
 	try {
-		const res = await fetch('/api/session/map/markers', {
+		const res = await fetch(`/api/session/maps/${mapState.activeId}/markers`, {
 			method: 'PUT',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ markers: mapState.markers }),
@@ -197,12 +413,12 @@ export function removeMarker(id: string): void {
 	void persistMarkers();
 }
 
-/** Upload a fresh background image. `dataUrl` is a `data:image/…;base64,…`
- *  string (produced by mapImage.downscaleImage). Server responds with the
- *  content hash which we adopt as the new backgroundHash. */
+/** Upload a fresh background image for the active map. `dataUrl` is a
+ *  `data:image/…;base64,…` string (produced by mapImage.downscaleImage). */
 export async function setBackground(dataUrl: string): Promise<void> {
+	if (!mapState.activeId) return;
 	try {
-		const res = await fetch('/api/session/map/background', {
+		const res = await fetch(`/api/session/maps/${mapState.activeId}/background`, {
 			method: 'PUT',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ dataUrl }),
@@ -216,15 +432,22 @@ export async function setBackground(dataUrl: string): Promise<void> {
 	}
 }
 
-/** Wipe the entire map — background + markers. Callers should confirm
- *  before invoking. */
+/** Wipe the active map's contents — background + markers. The map row
+ *  itself stays; use deleteMap to remove the whole map. */
 export async function clearMap(): Promise<void> {
-	// Optimistic — clear locally first, then hit the server.
+	if (!mapState.activeId) return;
+	// Optimistic — clear locally first.
 	mapState.markers = [];
 	mapState.backgroundHash = '';
 	try {
-		const res = await fetch('/api/session/map', { method: 'DELETE' });
-		if (!res.ok) throw new Error(`Server returned ${res.status}`);
+		await Promise.all([
+			fetch(`/api/session/maps/${mapState.activeId}/background`, { method: 'DELETE' }),
+			fetch(`/api/session/maps/${mapState.activeId}/markers`, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ markers: [] }),
+			}),
+		]);
 		mapState.error = '';
 	} catch (err) {
 		mapState.error = err instanceof Error ? err.message : 'Failed to clear map';
@@ -233,18 +456,18 @@ export async function clearMap(): Promise<void> {
 
 /** Wipe every marker but keep the background image. Useful for resetting
  *  legacy marker data (bare-slug `icon` values that predate the manifest)
- *  without losing the uploaded map. Callers should confirm before invoking. */
+ *  without losing the uploaded map. */
 export async function clearMarkers(): Promise<void> {
 	mapState.markers = [];
 	await persistMarkers();
 }
 
-/** Persist the current per-map settings blob. Optimistic — the local
- *  copy is authoritative, PUT fires in the background. Errors surface
- *  through mapState.error. */
+/** Persist the active map's settings blob. Optimistic — the local copy
+ *  is authoritative, PUT fires in the background. */
 export async function persistSettings(): Promise<void> {
+	if (!mapState.activeId) return;
 	try {
-		const res = await fetch('/api/session/map/settings', {
+		const res = await fetch(`/api/session/maps/${mapState.activeId}/settings`, {
 			method: 'PUT',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ settings: mapState.settings }),

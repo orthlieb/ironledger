@@ -25,15 +25,30 @@
 	import { mapSettings, persistMapSettings } from '$lib/mapSettingsStore.svelte.js';
 	import {
 		mapState,
+		mapListState,
 		persistSettings,
 		clearMap,
 		clearMarkers,
+		renameMap,
+		deleteMap,
 		hasAnyContent,
 	} from '$lib/mapStore.svelte.js';
 
 	let dialogEl = $state<HTMLDialogElement | null>(null);
 	let clearMarkersDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let clearMapDialogRef = $state<{ open(): void; close(): void } | null>(null);
+	let deleteMapDialogRef = $state<{ open(): void; close(): void } | null>(null);
+
+	function onRename(e: Event) {
+		const v = (e.target as HTMLInputElement).value.trim();
+		if (v && v !== mapState.name && mapState.activeId) {
+			void renameMap(mapState.activeId, v);
+		}
+	}
+	async function onDeleteMap() {
+		if (mapState.activeId) await deleteMap(mapState.activeId);
+	}
+	const canDeleteMap = $derived(mapListState.maps.length > 1);
 
 	export function open() {
 		dialogEl?.showModal();
@@ -92,6 +107,19 @@
 	<DialogHeader title={headingText('Map Options')} onclose={close} radius="8px 8px 0 0" />
 
 	<div class="mo-body">
+		<section class="mo-section">
+			<label class="mo-field">
+				<span class="mo-field-label">Map name</span>
+				<input
+					class="mo-input mo-input-wide"
+					type="text"
+					value={mapState.name}
+					onchange={onRename}
+				/>
+			</label>
+			<p class="mo-hint">Saved with the map — visible in the picker.</p>
+		</section>
+
 		<section class="mo-section">
 			<label class="mo-toggle">
 				<input type="checkbox" checked={mapSettings.labels.visible} onchange={onLabelsVisible} />
@@ -201,6 +229,18 @@
 				>
 				<span class="mo-hint">Removes the background image + every marker.</span>
 			</div>
+			<div class="mo-danger-row">
+				<button
+					class="mo-danger-btn"
+					onclick={() => deleteMapDialogRef?.open()}
+					disabled={!canDeleteMap}>Delete this map</button
+				>
+				<span class="mo-hint">
+					{canDeleteMap
+						? 'Removes this map entirely and switches to another.'
+						: "Can't delete your only map — create another first."}
+				</span>
+			</div>
 		</section>
 	</div>
 </dialog>
@@ -229,6 +269,20 @@
 		style="font-family: var(--font-ui); font-size: 0.82rem; color: var(--text-muted); margin: 0; line-height: 1.5;"
 	>
 		This will remove the background image and every marker on the map. This can't be undone.
+	</p>
+</ConfirmDialog>
+
+<ConfirmDialog
+	bind:this={deleteMapDialogRef}
+	title="Delete this map?"
+	confirmLabel="Delete Map"
+	onconfirm={onDeleteMap}
+>
+	<p
+		style="font-family: var(--font-ui); font-size: 0.82rem; color: var(--text-muted); margin: 0; line-height: 1.5;"
+	>
+		This deletes <strong>{mapState.name}</strong> entirely — background, markers, and settings. You'll
+		be switched to another map. This can't be undone.
 	</p>
 </ConfirmDialog>
 
@@ -316,6 +370,10 @@
 		display: flex;
 		flex-direction: column;
 		gap: 4px;
+	}
+	.mo-input-wide {
+		max-width: 100%;
+		width: 100%;
 	}
 	.mo-field-narrow .mo-input {
 		max-width: 80px;

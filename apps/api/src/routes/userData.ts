@@ -25,7 +25,6 @@ import * as ud from '../services/userDataService.js';
 import type { EntityKind } from '../services/userDataService.js';
 import * as portraits from '../services/portraitService.js';
 import * as maps from '../services/userMapService.js';
-import { MAP_ENTITY_ID } from '../services/portraitService.js';
 import { isValidImageUrl, assertImageUrls } from '../lib/imageUrl.js';
 import { config } from '../config.js';
 import type { FastifyReply } from 'fastify';
@@ -56,12 +55,26 @@ const putMapSettingsBody = z.object({
   settings: z.record(z.unknown()),
 });
 
+const mapIdParams = z.object({ mapId: z.string().uuid() });
+
+const createMapBody = z.object({
+  name: z.string().max(120).optional(),
+  ownerKind: z.enum(['community', 'place', 'journey', 'site']).nullish(),
+  ownerId: z.string().max(200).nullish(),
+});
+
+const updateMapBody = z.object({
+  name: z.string().max(120).optional(),
+  sortOrder: z.number().int().optional(),
+});
+
 const patchSessionStateBody = z.object({
   sessionState: z.object({
     charId: z.string(),
     foeId: z.string(),
     expeditionId: z.string(),
     activeTab: z.string().optional(),
+    activeMapId: z.string().nullish(),
   }),
 });
 
@@ -270,45 +283,131 @@ export const userDataRoutes: FastifyPluginAsyncZod = async (server) => {
     }
   });
 
-  // ── Campaign map — persisted per-user, reuses portrait blob store for the
-  //    background image. See docs/campaign-map.md for the shape.
-  // GET    /session/map                → { markers, backgroundHash, settings, updatedAt }
-  // PUT    /session/map/markers        → replace the markers array wholesale
-  // PUT    /session/map/settings       → replace the settings blob wholesale
-  // GET    /session/map/background     → raw image bytes (ETag revalidated)
-  // PUT    /session/map/background     → { dataUrl } → { hash }
-  // DELETE /session/map/background     → clear the background pointer
-  // DELETE /session/map                → clear markers + background
-  server.get('/map', async (req, reply) => {
+  // ── Campaign maps — persisted per-user; each map's background image lives
+  //    in the portrait blob store keyed by (kind='map', entity_id=<mapId>).
+  //    See docs/campaign-map.md for the shape.
+  //
+  // GET    /session/maps                        → summary list of maps
+  // POST   /session/maps                        → create a new map
+  // GET    /session/maps/:mapId                 → full map (markers, bg, settings)
+  // PATCH  /session/maps/:mapId                 → update name / sort_order
+  // DELETE /session/maps/:mapId                 → delete a map entirely
+  // PUT    /session/maps/:mapId/markers         → replace markers
+  // PUT    /session/maps/:mapId/settings        → replace settings blob
+  // GET    /session/maps/:mapId/background      → raw image bytes (ETag revalidated)
+  // PUT    /session/maps/:mapId/background      → upload { dataUrl } → { hash }
+  // DELETE /session/maps/:mapId/background      → clear background pointer
+
+  server.get('/maps', async (req, reply) => {
     try {
-      const m = await maps.getMap(req.user!.id);
+      const rows = await maps.listMaps(req.user!.id);
+      return reply.status(200).send({ maps: rows });
+    } catch (err) {
+      return handleError(reply)(err);
+    }
+  });
+
+  server.post('/maps', { schema: { body: createMapBody } }, async (req, reply) => {
+    try {
+      const count = await maps.countMaps(req.user!.id);
+      if (count >= maps.MAX_MAPS_PER_USER) {
+        return reply.status(422).send({
+          statusCode: 422,
+          error: 'Unprocessable Entity',
+          message: `Map limit reached (max ${maps.MAX_MAPS_PER_USER})`,
+        });
+      }
+      const m = await maps.createMap(req.user!.id, {
+        name: req.body.name,
+        ownerKind: req.body.ownerKind ?? null,
+        ownerId: req.body.ownerId ?? null,
+      });
+      return reply.status(201).send(m);
+    } catch (err) {
+      return handleError(reply)(err);
+    }
+  });
+
+  server.get('/maps/:mapId', { schema: { params: mapIdParams } }, async (req, reply) => {
+    try {
+      const m = await maps.getMap(req.user!.id, req.params.mapId);
+      if (!m)
+        return reply
+          .status(404)
+          .send({ statusCode: 404, error: 'Not Found', message: 'Map not found' });
       return reply.status(200).send(m);
     } catch (err) {
       return handleError(reply)(err);
     }
   });
 
-  server.put('/map/markers', { schema: { body: putMarkersBody } }, async (req, reply) => {
+  server.patch(
+    '/maps/:mapId',
+    { schema: { params: mapIdParams, body: updateMapBody } },
+    async (req, reply) => {
+      try {
+        const m = await maps.updateMap(req.user!.id, req.params.mapId, req.body);
+        if (!m)
+          return reply
+            .status(404)
+            .send({ statusCode: 404, error: 'Not Found', message: 'Map not found' });
+        return reply.status(200).send(m);
+      } catch (err) {
+        return handleError(reply)(err);
+      }
+    },
+  );
+
+  server.delete('/maps/:mapId', { schema: { params: mapIdParams } }, async (req, reply) => {
     try {
-      const m = await maps.putMarkers(req.user!.id, req.body.markers);
-      return reply.status(200).send(m);
+      // Delete the map row and its background portrait pointer. The
+      // portrait blob itself is content-addressed + potentially shared
+      // across maps, so we don't GC it here.
+      await portraits.deletePortrait(req.user!.id, 'map', req.params.mapId);
+      await maps.deleteMap(req.user!.id, req.params.mapId);
+      return reply.status(204).send();
     } catch (err) {
       return handleError(reply)(err);
     }
   });
 
-  server.put('/map/settings', { schema: { body: putMapSettingsBody } }, async (req, reply) => {
-    try {
-      const m = await maps.setSettings(req.user!.id, req.body.settings);
-      return reply.status(200).send(m);
-    } catch (err) {
-      return handleError(reply)(err);
-    }
-  });
+  server.put(
+    '/maps/:mapId/markers',
+    { schema: { params: mapIdParams, body: putMarkersBody } },
+    async (req, reply) => {
+      try {
+        const m = await maps.putMarkers(req.user!.id, req.params.mapId, req.body.markers);
+        if (!m)
+          return reply
+            .status(404)
+            .send({ statusCode: 404, error: 'Not Found', message: 'Map not found' });
+        return reply.status(200).send(m);
+      } catch (err) {
+        return handleError(reply)(err);
+      }
+    },
+  );
 
-  server.get('/map/background', async (req, reply) => {
+  server.put(
+    '/maps/:mapId/settings',
+    { schema: { params: mapIdParams, body: putMapSettingsBody } },
+    async (req, reply) => {
+      try {
+        const m = await maps.setSettings(req.user!.id, req.params.mapId, req.body.settings);
+        if (!m)
+          return reply
+            .status(404)
+            .send({ statusCode: 404, error: 'Not Found', message: 'Map not found' });
+        return reply.status(200).send(m);
+      } catch (err) {
+        return handleError(reply)(err);
+      }
+    },
+  );
+
+  server.get('/maps/:mapId/background', { schema: { params: mapIdParams } }, async (req, reply) => {
     try {
-      const portrait = await portraits.getPortrait(req.user!.id, 'map', MAP_ENTITY_ID);
+      const portrait = await portraits.getPortrait(req.user!.id, 'map', req.params.mapId);
       if (!portrait) {
         return reply
           .status(404)
@@ -326,41 +425,39 @@ export const userDataRoutes: FastifyPluginAsyncZod = async (server) => {
     }
   });
 
-  server.put('/map/background', { schema: { body: portraitBody } }, async (req, reply) => {
-    try {
-      const { etag } = await portraits.putPortrait(
-        req.user!.id,
-        'map',
-        MAP_ENTITY_ID,
-        req.body.dataUrl,
-      );
-      await maps.setBackgroundHash(req.user!.id, etag);
-      return reply.status(200).send({ hash: etag });
-    } catch (err) {
-      if (err instanceof portraits.PortraitError) return badRequest(reply, err.message);
-      return handleError(reply)(err);
-    }
-  });
+  server.put(
+    '/maps/:mapId/background',
+    { schema: { params: mapIdParams, body: portraitBody } },
+    async (req, reply) => {
+      try {
+        const { etag } = await portraits.putPortrait(
+          req.user!.id,
+          'map',
+          req.params.mapId,
+          req.body.dataUrl,
+        );
+        await maps.setBackgroundHash(req.user!.id, req.params.mapId, etag);
+        return reply.status(200).send({ hash: etag });
+      } catch (err) {
+        if (err instanceof portraits.PortraitError) return badRequest(reply, err.message);
+        return handleError(reply)(err);
+      }
+    },
+  );
 
-  server.delete('/map/background', async (req, reply) => {
-    try {
-      await portraits.deletePortrait(req.user!.id, 'map', MAP_ENTITY_ID);
-      await maps.setBackgroundHash(req.user!.id, null);
-      return reply.status(204).send();
-    } catch (err) {
-      return handleError(reply)(err);
-    }
-  });
-
-  server.delete('/map', async (req, reply) => {
-    try {
-      await portraits.deletePortrait(req.user!.id, 'map', MAP_ENTITY_ID);
-      await maps.clearMap(req.user!.id);
-      return reply.status(204).send();
-    } catch (err) {
-      return handleError(reply)(err);
-    }
-  });
+  server.delete(
+    '/maps/:mapId/background',
+    { schema: { params: mapIdParams } },
+    async (req, reply) => {
+      try {
+        await portraits.deletePortrait(req.user!.id, 'map', req.params.mapId);
+        await maps.setBackgroundHash(req.user!.id, req.params.mapId, null);
+        return reply.status(204).send();
+      } catch (err) {
+        return handleError(reply)(err);
+      }
+    },
+  );
 
   // ── PATCH /session/state ──────────────────────────────────────────────────
   server.patch(

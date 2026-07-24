@@ -1,57 +1,84 @@
-# Campaign Map
+# Campaign Maps
 
 A map-annotation surface — upload your own map image, drop labelled icons
-on hexes. Lives one click behind the **Map** button in the Expeditions
-tab header. **Server-backed** — everything syncs across devices via the
-same infra the entity portraits already use.
+on hexes. Users can have many maps and switch between them via the
+dialog's map picker. Lives one click behind the **Map** button in the
+Expeditions tab header. **Server-backed** — everything syncs across
+devices via the same infra the entity portraits already use.
 
 ## Files
 
 ### Web (`apps/web`)
 
-| File                                           | Responsibility                                                                                 |
-| ---------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `lib/mapConstants.ts`                          | Grid dimensions, hex radius, marker defaults, color presets, `resolveMapIcon` slug lookup.     |
-| `lib/mapGeometry.ts`                           | Pure geometry: axial↔pixel, neighbours, polygon points, cell iteration, viewBox. No Svelte.    |
-| `lib/mapImage.ts`                              | `downscaleImage(file)` — canvas-based resize + JPEG re-encode.                                 |
-| `lib/mapStore.svelte.ts`                       | `$state` cache backed by `/api/session/map` — `initMap` fetches, mutations PUT optimistically. |
-| `lib/mapExport.ts`                             | `exportMapPng` + `exportMapJson` — snapshot download flows.                                    |
-| `lib/mapEntityLinks.ts`                        | Enumerate + resolve linkable entities (community / place / journey / site); parse `"kind:id"`. |
-| `lib/generated/mapIconManifest.ts`             | **Auto-generated** icon manifest — do not hand-edit. Rebuilt by the Vite plugin.               |
-| `scripts/build-map-icons.mjs`                  | Scans `static/map/**/*.svg` → `mapIconManifest.ts` (kebab→Title Case, fill-stripping).         |
-| `static/map/<category>/<slug>.svg`             | Icon source files. First subfolder = category; kebab-case filename = slug + display label.     |
-| `lib/components/MapDialog.svelte`              | Three-layer SVG + top-level file toolbar + persistent selection toolbar + icon-picker dialog.  |
-| `lib/components/v2/ExpeditionsArea.svelte`     | Header "Map" button that opens the dialog.                                                     |
-| `routes/api/session/map/+server.ts`            | BFF proxy for GET / DELETE map.                                                                |
-| `routes/api/session/map/markers/+server.ts`    | BFF proxy for PUT markers.                                                                     |
-| `routes/api/session/map/background/+server.ts` | BFF proxy for GET (bytes + ETag) / PUT / DELETE background.                                    |
-| `tests/unit/mapGeometry.test.ts`               | Unit tests for the geometry helpers.                                                           |
+| File                                                    | Responsibility                                                                                     |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `lib/mapConstants.ts`                                   | Grid dimensions, hex radius, marker defaults, color presets, `resolveMapIcon` slug lookup.         |
+| `lib/mapGeometry.ts`                                    | Pure geometry: axial↔pixel, neighbours, polygon points, cell iteration, viewBox. No Svelte.        |
+| `lib/mapImage.ts`                                       | `downscaleImage(file)` — canvas-based resize + JPEG re-encode.                                     |
+| `lib/mapStore.svelte.ts`                                | `$state` list + active-map cache backed by `/api/session/maps*`; switch/create/rename/delete/CRUD. |
+| `lib/mapExport.ts`                                      | `exportMapPng` + `exportMapJson` — snapshot download flows.                                        |
+| `lib/mapEntityLinks.ts`                                 | Enumerate + resolve linkable entities (community / place / journey / site); parse `"kind:id"`.     |
+| `lib/generated/mapIconManifest.ts`                      | **Auto-generated** icon manifest — do not hand-edit. Rebuilt by the Vite plugin.                   |
+| `scripts/build-map-icons.mjs`                           | Scans `static/map/**/*.svg` → `mapIconManifest.ts` (kebab→Title Case, fill-stripping).             |
+| `static/map/<category>/<slug>.svg`                      | Icon source files. First subfolder = category; kebab-case filename = slug + display label.         |
+| `lib/components/MapDialog.svelte`                       | Map picker + file toolbar + selection toolbar + icon-picker dialog + SVG canvas.                   |
+| `lib/components/MapOptionsDialog.svelte`                | Name / display prefs / scale bar / danger-zone (clear + delete).                                   |
+| `lib/components/v2/ExpeditionsArea.svelte`              | Header "Map" button that opens the dialog.                                                         |
+| `routes/api/session/maps/+server.ts`                    | BFF: GET (list) / POST (create).                                                                   |
+| `routes/api/session/maps/[mapId]/+server.ts`            | BFF: GET (detail) / PATCH (rename+reorder) / DELETE.                                               |
+| `routes/api/session/maps/[mapId]/markers/+server.ts`    | BFF: PUT markers.                                                                                  |
+| `routes/api/session/maps/[mapId]/settings/+server.ts`   | BFF: PUT settings.                                                                                 |
+| `routes/api/session/maps/[mapId]/background/+server.ts` | BFF: GET bytes (ETag) / PUT / DELETE.                                                              |
+| `tests/unit/mapGeometry.test.ts`                        | Unit tests for the geometry helpers.                                                               |
 
 ### API (`apps/api`)
 
-| File                               | Responsibility                                                                                          |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `db/migrations/0019_user_maps.sql` | New `user_maps` table + widens `user_entity_portraits.kind` CHECK to allow `'map'`.                     |
-| `services/portraitService.ts`      | Extends `PortraitKind` to include `'map'`; exports `MAP_ENTITY_ID` (fixed synthetic id).                |
-| `services/userMapService.ts`       | `getMap` / `putMarkers` / `setBackgroundHash` / `clearMap`. Wraps `user_maps` inside `withUserContext`. |
-| `routes/userData.ts`               | Six new `/session/map*` routes.                                                                         |
+| File                                    | Responsibility                                                                                      |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `db/migrations/0019_user_maps.sql`      | Original single-map table (superseded by 0021).                                                     |
+| `db/migrations/0020_user_map_settings…` | Added `settings` JSONB to `user_maps` (superseded by 0021).                                         |
+| `db/migrations/0021_maps.sql`           | `maps` table (many per user); migrates existing single map → "Regional Map"; drops `user_maps`.     |
+| `services/portraitService.ts`           | Extends `PortraitKind` to include `'map'`; entity_id is now the map's uuid (was a fixed `'MAP'`).   |
+| `services/userMapService.ts`            | `listMaps` / `createMap` / `getMap` / `updateMap` / `deleteMap` + markers / bg / settings mutators. |
+| `services/userDataService.ts`           | `SessionState.activeMapId` — server-persisted pointer so the same map opens on every device.        |
+| `routes/userData.ts`                    | `/session/maps` + `/session/maps/:mapId/*` routes replacing the old `/session/map*`.                |
 
 ## Data model
 
-Server table `user_maps` (see migration 0019):
+Server table `maps` (see migration 0021):
 
 ```
-user_id           UUID       PRIMARY KEY  REFERENCES users(id)
-markers           JSONB      DEFAULT '[]'
-background_hash   TEXT       NULL         -- md5 of the background bytes (portrait_blobs.hash)
-updated_at        TIMESTAMPTZ
+id                UUID        PK          DEFAULT gen_random_uuid()
+user_id           UUID        NOT NULL    REFERENCES users(id) ON DELETE CASCADE
+name              TEXT        NOT NULL    DEFAULT 'Untitled Map'
+sort_order        INT         NOT NULL    DEFAULT 0
+owner_kind        TEXT        NULL        -- Phase 3: 'community' | 'place' | 'journey' | 'site'
+owner_id          TEXT        NULL        -- Phase 3: entity id this map is attached to
+markers           JSONB       NOT NULL    DEFAULT '[]'
+background_hash   TEXT        NULL                    -- md5 of the background bytes (portrait_blobs.hash)
+settings          JSONB       NOT NULL    DEFAULT '{}'
+updated_at        TIMESTAMPTZ NOT NULL    DEFAULT now()
+
+UNIQUE (user_id, owner_kind, owner_id)   -- one map per entity per user
+INDEX ON (user_id, sort_order)
 ```
 
 The image bytes live in `portrait_blobs` (dedupe by md5 within a user);
-the pointer + client-side reference lives on `user_maps.background_hash`
-and the row `(user_id, 'map', 'MAP')` in `user_entity_portraits`.
+the pointer + client-side reference lives on `maps.background_hash` and
+the row `(user_id, 'map', <mapId>)` in `user_entity_portraits`. Each map
+gets its own portrait row keyed by the map's uuid — multiple maps per
+user coexist without collisions.
 
-Client shape (fetched from `GET /api/session/map`):
+**Active map.** `user_data.session_state.activeMapId` holds the map the
+user last opened. Server-owned so the same map opens on every device.
+When it's null / missing / points at a deleted map, the client falls
+back to the first map in the list, creating a fresh "Regional Map" if
+the user has none.
+
+**Cap.** `MAX_MAPS_PER_USER = 50` — pragmatic guardrail against a
+runaway loop or accidental spam. Well above any real GM's needs.
+
+Client shape (fetched from `GET /api/session/maps/:mapId`):
 
 ```json
 {
@@ -89,7 +116,7 @@ Client shape (fetched from `GET /api/session/map`):
   to `DEFAULT_MARKER_COLOR`.
 - **`backgroundHash`** — content hash for cache-busting. Empty string
   when no background is set. Client's `<image href>` becomes
-  `/api/session/map/background?v={hash}`.
+  `/api/session/maps/{mapId}/background?v={hash}`.
 - **Axial coordinates** (`q`, `r`) — pointy-top, per [Red Blob Games](https://www.redblobgames.com/grids/hexagons/).
 
 The old `localStorage['ironledger:map']` payloads (Tier 1 painted terrain
@@ -99,20 +126,27 @@ has real data to migrate.
 
 ## HTTP surface
 
-Fastify routes under `/api/v1/session/map`, mirrored 1:1 by SvelteKit
-BFF proxies at `/api/session/map`:
+Fastify routes under `/api/v1/session/maps*`, mirrored 1:1 by SvelteKit
+BFF proxies at `/api/session/maps*`:
 
-| Method | Path                      | Behaviour                                                                                     |
-| ------ | ------------------------- | --------------------------------------------------------------------------------------------- |
-| GET    | `/session/map`            | Returns `{ markers, backgroundHash, updatedAt }`. Empty payload when the user has no row yet. |
-| PUT    | `/session/map/markers`    | Replace markers wholesale. Body: `{ markers: MapMarker[] }`. Returns the new server state.    |
-| GET    | `/session/map/background` | Raw image bytes with ETag; 304 revalidation supported.                                        |
-| PUT    | `/session/map/background` | Upload a fresh image. Body: `{ dataUrl }` (base64 data URL). Returns `{ hash }`.              |
-| DELETE | `/session/map/background` | Clear the background image + null the `background_hash` pointer.                              |
-| DELETE | `/session/map`            | Full wipe — markers cleared + background removed.                                             |
+| Method | Path                              | Behaviour                                                              |
+| ------ | --------------------------------- | ---------------------------------------------------------------------- |
+| GET    | `/session/maps`                   | List summaries: `{ maps: MapSummary[] }`.                              |
+| POST   | `/session/maps`                   | Create a map: body `{ name?, ownerKind?, ownerId? }`. Returns UserMap. |
+| GET    | `/session/maps/:mapId`            | Full detail: `{ id, name, markers, backgroundHash, settings, … }`.     |
+| PATCH  | `/session/maps/:mapId`            | Rename / reorder: body `{ name?, sortOrder? }`. Returns UserMap.       |
+| DELETE | `/session/maps/:mapId`            | Delete the map + its portrait pointer.                                 |
+| PUT    | `/session/maps/:mapId/markers`    | Replace markers: body `{ markers: MapMarker[] }`.                      |
+| PUT    | `/session/maps/:mapId/settings`   | Replace settings: body `{ settings: {…} }`.                            |
+| GET    | `/session/maps/:mapId/background` | Raw image bytes with ETag; 304 revalidation supported.                 |
+| PUT    | `/session/maps/:mapId/background` | Upload a fresh image: body `{ dataUrl }`. Returns `{ hash }`.          |
+| DELETE | `/session/maps/:mapId/background` | Clear the background image + null the pointer.                         |
 
 All routes require authentication (`authenticate` preHandler) and run
 inside `withUserContext` so RLS confines each user to their own rows.
+
+The active-map pointer is stored in `SessionState` and updated via the
+existing `PATCH /session/state` route — no dedicated endpoint.
 
 ## Marker icons
 
