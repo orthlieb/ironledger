@@ -386,28 +386,14 @@
 	}
 
 	/**
-	 * Scale + border overlay geometry — computed in pixel-space (viewBox
-	 * matches the canvas 1:1) so both stay locked to the visible view at
-	 * any dialog size. Border segments are aligned to hex column/row
-	 * boundaries per the user's spec: the pattern rolls in step with the
-	 * hex grid, not the canvas edge.
+	 * Scale bar overlay geometry — computed in pixel-space (viewBox
+	 * matches the canvas 1:1) so it stays locked to the visible view at
+	 * any dialog size. One segment = one hex width at zoom 1.
 	 */
 	const overlayGeom = $derived.by(() => {
 		const s = dynamicHexSize;
 		const hexW = Math.sqrt(3) * s;
-		const hexH = 1.5 * s;
-		const bT = Math.max(6, Math.round(s * 0.35)); // border thickness in px
 
-		// Left vertex of q=0 hex on row 0 — anchor point for horizontal tiling.
-		const xAnchor = hexOffset.x - hexW / 2;
-		// Top vertex of r=0 hex — anchor for vertical tiling.
-		const yAnchor = hexOffset.y - s;
-		const xStart = (((xAnchor % hexW) + hexW) % hexW) - hexW; // ∈ [-hexW, 0)
-		const yStart = (((yAnchor % hexH) + hexH) % hexH) - hexH;
-		const xCount = Math.ceil((canvasPxW - xStart) / hexW) + 1;
-		const yCount = Math.ceil((canvasPxH - yStart) / hexH) + 1;
-
-		// Scale bar geometry — bottom-left, above the border row.
 		const sb = mapState.settings.scale ?? {};
 		const sbEnabled = sb.enabled === true;
 		const sbSegments = sb.segments ?? 4;
@@ -416,16 +402,9 @@
 		const sbSegW = hexW;
 		const sbTotalW = sbSegments * sbSegW;
 		const sbH = Math.max(5, Math.round(s * 0.3));
-		const sbBottomMargin = 24 + bT;
-		const sbLeftMargin = 20 + bT;
+		const sbBottomMargin = 24;
+		const sbLeftMargin = 20;
 		return {
-			hexW,
-			hexH,
-			bT,
-			xStart,
-			yStart,
-			xCount,
-			yCount,
 			sbEnabled,
 			sbSegments,
 			sbPerHex,
@@ -905,55 +884,6 @@
 			viewBox="0 0 {canvasPxW} {canvasPxH}"
 			aria-hidden="true"
 		>
-			{#if mapSettings.border.enabled}
-				<g class="mp-border">
-					{#each Array(overlayGeom.xCount) as _, i (`bt-${i}`)}
-						<rect
-							x={overlayGeom.xStart + i * overlayGeom.hexW}
-							y="0"
-							width={overlayGeom.hexW}
-							height={overlayGeom.bT}
-							fill={i % 2 === 0 ? '#111' : '#fff'}
-							stroke="#111"
-							stroke-width="0.5"
-						/>
-					{/each}
-					{#each Array(overlayGeom.xCount) as _, i (`bb-${i}`)}
-						<rect
-							x={overlayGeom.xStart + i * overlayGeom.hexW}
-							y={canvasPxH - overlayGeom.bT}
-							width={overlayGeom.hexW}
-							height={overlayGeom.bT}
-							fill={i % 2 === 0 ? '#fff' : '#111'}
-							stroke="#111"
-							stroke-width="0.5"
-						/>
-					{/each}
-					{#each Array(overlayGeom.yCount) as _, i (`bl-${i}`)}
-						<rect
-							x="0"
-							y={overlayGeom.yStart + i * overlayGeom.hexH}
-							width={overlayGeom.bT}
-							height={overlayGeom.hexH}
-							fill={i % 2 === 0 ? '#111' : '#fff'}
-							stroke="#111"
-							stroke-width="0.5"
-						/>
-					{/each}
-					{#each Array(overlayGeom.yCount) as _, i (`br-${i}`)}
-						<rect
-							x={canvasPxW - overlayGeom.bT}
-							y={overlayGeom.yStart + i * overlayGeom.hexH}
-							width={overlayGeom.bT}
-							height={overlayGeom.hexH}
-							fill={i % 2 === 0 ? '#fff' : '#111'}
-							stroke="#111"
-							stroke-width="0.5"
-						/>
-					{/each}
-				</g>
-			{/if}
-
 			{#if overlayGeom.sbEnabled}
 				<g class="mp-scale" transform="translate({overlayGeom.sbX} {overlayGeom.sbY})">
 					{#each Array(overlayGeom.sbSegments) as _, i (`ss-${i}`)}
@@ -1398,9 +1328,6 @@
 	}
 	:global(.mp-scale rect) {
 		filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
-	}
-	:global(.mp-border rect) {
-		shape-rendering: crispEdges;
 	}
 	/* Suppress the default focus rectangle browsers draw around a
 	   role="button" polygon after click — the hover-stroke already

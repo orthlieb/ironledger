@@ -8,8 +8,8 @@
 	 *     persisted server-side via `persistSettings()`. Scale is a property
 	 *     of the map itself (5 miles per hex on desktop is 5 miles per hex
 	 *     on mobile) so it travels across devices.
-	 *   • Checkered border + hex-grid visibility → `mapSettings` (localStorage).
-	 *     Per-device display preferences.
+	 *   • Names + hex-grid visibility + hex opacity → `mapSettings`
+	 *     (localStorage). Per-device display preferences.
 	 *
 	 * Every field auto-commits the moment it changes — no Save button.
 	 *
@@ -60,10 +60,6 @@
 		if (Number.isFinite(v) && v >= 1 && v <= 20) patchScale({ segments: v });
 	}
 
-	function onBorderEnabled(e: Event) {
-		mapSettings.border.enabled = (e.target as HTMLInputElement).checked;
-		persistMapSettings();
-	}
 	function onHexesVisible(e: Event) {
 		mapSettings.hexes.visible = (e.target as HTMLInputElement).checked;
 		persistMapSettings();
@@ -119,17 +115,6 @@
 					/>
 				</label>
 			</div>
-		</section>
-
-		<section class="mo-section">
-			<label class="mo-toggle">
-				<input type="checkbox" checked={mapSettings.border.enabled} onchange={onBorderEnabled} />
-				<span class="mo-toggle-label">Checkered border</span>
-			</label>
-			<p class="mo-hint">
-				Narrow black/white checker ring around the visible view — one segment per hex. This device
-				only.
-			</p>
 		</section>
 
 		<section class="mo-section">
