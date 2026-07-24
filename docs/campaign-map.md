@@ -307,8 +307,22 @@ depending on whether a marker is selected.
   deepest visible sub-grid intersection at the current zoom and drops
   a marker there. The selection toolbar switches to its editable state:
   label input, icon button (opens picker), color input + preset strip,
-  entity-link dropdown, Delete, Done. Every change auto-saves through
-  `updateMarker()` — no Save/Cancel.
+  entity-link dropdown, Duplicate, Delete, Done. Every change auto-saves
+  through `updateMarker()` — no Save/Cancel.
+- **Drag a marker** — pointerdown on a marker + move past ~6px engages
+  drag; the icon snaps live between visible sub-grid intersections so
+  the drop lands exactly where the preview is. Pointerup saves via
+  `updateMarker()`. Static tap still routes as click; long-press (touch)
+  still forces the editor open — drag threshold and long-press timer
+  race, first to fire wins.
+- **Duplicate** — clones the selected marker at `+0.5, +0.5` world units
+  (clamped to the map bounds) and selects the copy. Toolbar button or
+  Cmd/Ctrl+D.
+- **Pile-up popover** — when a click resolves to a snap point with more
+  than one marker (common at low zoom, where sub-cell placements
+  collapse), a small floating menu lists each marker (icon + label + a
+  glyph if it's linked to an entity). Click one to select or jump.
+  Outside click or Escape closes.
 - **Click "Change icon…"** — opens a nested picker dialog listing
   every manifest icon grouped by category with a search filter.
   Previews render at the marker's current color so the swatch matches

@@ -447,6 +447,31 @@ export function updateMarker(id: string, patch: Partial<Omit<MapMarker, 'id'>>):
 	void persistMarkers();
 }
 
+/** Duplicate a marker in-place — same label / icon / color / entity link,
+ *  offset by `+dx, +dy` world units so the copy is visible next to the
+ *  original. Callers pass the current grid bounds so the offset can be
+ *  clamped inside them; a copy that would spill past the edge just sits
+ *  at the boundary. Returns the new marker's id, or null when the
+ *  source id doesn't exist. */
+export function duplicateMarker(
+	id: string,
+	bounds: { cols: number; rows: number },
+	offset = { dx: 0.5, dy: 0.5 },
+): string | null {
+	const src = mapState.markers.find((m) => m.id === id);
+	if (!src) return null;
+	const nx = Math.max(0, Math.min(bounds.cols, src.x + offset.dx));
+	const ny = Math.max(0, Math.min(bounds.rows, src.y + offset.dy));
+	return addMarker({
+		x: nx,
+		y: ny,
+		label: src.label,
+		icon: src.icon,
+		color: src.color,
+		entityId: src.entityId,
+	});
+}
+
 export function removeMarker(id: string): void {
 	const idx = mapState.markers.findIndex((m) => m.id === id);
 	if (idx < 0) return;

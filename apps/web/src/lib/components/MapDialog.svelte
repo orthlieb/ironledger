@@ -75,12 +75,14 @@
 		addMarker,
 		updateMarker,
 		removeMarker,
+		duplicateMarker,
 		setBackground,
 		initMap,
 		backgroundUrl,
 		persistSettings,
 		switchMap,
 		createMap,
+		type MapMarker,
 	} from '$lib/mapStore.svelte.js';
 	import { downscaleImage, MapImageError } from '$lib/mapImage.js';
 	import { exportMapPng, exportMapJson } from '$lib/mapExport.js';
@@ -545,58 +547,196 @@
 		placingMode = false;
 	}
 
+	// ─── Drag-to-move + pile-up popover ────────────────────────────────────────
+	/**
+	 * Drag state. Populated on pointerdown when a marker sits at the
+	 * click's snap point; upgraded to a live drag once the pointer has
+	 * moved past `DRAG_THRESHOLD_PX`. Coords are world units; the marker's
+	 * visual `x, y` is overridden by `snapCoord(liveX, liveY, zoom)` while
+	 * dragging so the icon jumps between snap intersections as the user
+	 * moves — feels tactile and previews exactly where the drop will land.
+	 */
+	interface DragState {
+		id: string;
+		startClientX: number;
+		startClientY: number;
+		liveX: number;
+		liveY: number;
+		moved: boolean;
+	}
+	let dragState = $state<DragState | null>(null);
+	const DRAG_THRESHOLD_PX = 6;
+
+	/** Set to true briefly after a drag ends so the pointerup-then-click
+	 *  cascade doesn't re-route the drop through onGridClick. Cleared on
+	 *  the next tick. */
+	let dragJustEnded = false;
+
+	/**
+	 * Pile-up popover — surfaces when a click lands on a snap point with
+	 * more than one marker (common at low zoom where sub-cell placements
+	 * from a deeper octave collapse onto the same base cell). Anchored at
+	 * the click's viewport coords via `left/top` in a fixed-positioned
+	 * div; a full-viewport backdrop dismisses on outside click.
+	 */
+	interface PilePicker {
+		markers: MapMarker[];
+		screenX: number;
+		screenY: number;
+	}
+	let pilePicker = $state<PilePicker | null>(null);
+	function closePilePicker() {
+		pilePicker = null;
+	}
+	function openPilePicker(markers: MapMarker[], ev: MouseEvent) {
+		pilePicker = { markers, screenX: ev.clientX, screenY: ev.clientY };
+	}
+	function choosePileMarker(m: MapMarker) {
+		closePilePicker();
+		// Same routing as a normal marker click: linked → jump; else → select.
+		const link = resolveEntity(m.entityId);
+		if (link) {
+			document.dispatchEvent(
+				new CustomEvent('ironledger:focus-entity', {
+					detail: { kind: link.kind, id: link.id },
+				}),
+			);
+			close();
+			return;
+		}
+		selectedMarkerId = m.id;
+	}
+
 	/**
 	 * Grid click. Behaviour depends on state:
 	 *  • Placing mode on + empty spot → place marker + select it.
 	 *  • Placing mode on + occupied spot → cancel placing, select existing.
+	 *  • Snap point with >1 markers → open pile-up popover to disambiguate.
 	 *  • Existing marker w/ link + bare click → jump to entity.
 	 *  • Existing marker w/ shift-click → open editor.
 	 *  • Empty spot outside placing mode → nothing (user must hit "+ Add").
 	 *
-	 * Long-press on touch (see onGridPointerDown) sets `longPressFired`,
-	 * which we honor by skipping the click — the long-press already
-	 * opened the editor.
+	 * Long-press on touch (see onGridPointerDown) sets `longPressFired`;
+	 * a completed drag (see onGridPointerUp) sets `dragJustEnded`. Either
+	 * flag makes this a no-op so the follow-up click doesn't re-route the
+	 * gesture we already handled.
 	 */
 	function onGridClick(ev: MouseEvent) {
+		if (dragJustEnded) {
+			dragJustEnded = false;
+			return;
+		}
 		if (longPressFired) {
 			longPressFired = false;
 			return;
 		}
 		const { x, y } = snapAndClamp(eventToWorld(ev));
-		const existing = markersAt(x, y, zoom)[0];
+		const hits = markersAt(x, y, zoom);
 		if (placingMode) {
-			if (existing) {
-				selectedMarkerId = existing.id;
+			if (hits.length === 1) {
+				selectedMarkerId = hits[0].id;
+				placingMode = false;
+			} else if (hits.length > 1) {
+				openPilePicker(hits, ev);
 				placingMode = false;
 			} else {
 				placeAt(x, y);
 			}
 			return;
 		}
-		if (!existing) return;
+		if (hits.length === 0) return;
+		if (hits.length > 1) {
+			openPilePicker(hits, ev);
+			return;
+		}
 		activateExisting(x, y, ev.shiftKey);
 	}
 
 	function onGridPointerDown(e: PointerEvent) {
-		if (e.pointerType === 'mouse') return; // mouse uses click + shift-click
-		longPressFired = false;
-		if (longPressTimer) clearTimeout(longPressTimer);
+		// Long-press timer for touch (opens editor even on a linked marker).
+		if (e.pointerType !== 'mouse') {
+			longPressFired = false;
+			if (longPressTimer) clearTimeout(longPressTimer);
+			const { x, y } = snapAndClamp(eventToWorld(e));
+			longPressTimer = setTimeout(() => {
+				longPressFired = true;
+				longPressTimer = null;
+				// Cancel any pending drag intent — long-press wins.
+				dragState = null;
+				activateExisting(x, y, true);
+			}, LONG_PRESS_MS);
+		}
+		// Drag intent — arm if there's a marker at this snap point. We
+		// only *commit* to dragging once the pointer moves past the
+		// threshold, so a static tap still routes as a normal click.
 		const { x, y } = snapAndClamp(eventToWorld(e));
-		longPressTimer = setTimeout(() => {
-			longPressFired = true;
-			longPressTimer = null;
-			// Only opens the editor when there's actually a marker at the
-			// long-press point; on empty ground it's a no-op (matches
-			// mouse: no bare-click marker creation outside placing mode).
-			activateExisting(x, y, true);
-		}, LONG_PRESS_MS);
+		const hit = markersAt(x, y, zoom)[0];
+		if (!hit) return;
+		try {
+			(e.currentTarget as SVGRectElement).setPointerCapture(e.pointerId);
+		} catch {
+			// setPointerCapture can throw on stale targets; drag still works
+			// via the pointer-move listener, just without capture.
+		}
+		dragState = {
+			id: hit.id,
+			startClientX: e.clientX,
+			startClientY: e.clientY,
+			liveX: hit.x,
+			liveY: hit.y,
+			moved: false,
+		};
 	}
+
+	function onGridPointerMove(e: PointerEvent) {
+		if (!dragState) return;
+		const dxPx = e.clientX - dragState.startClientX;
+		const dyPx = e.clientY - dragState.startClientY;
+		if (!dragState.moved && Math.hypot(dxPx, dyPx) > DRAG_THRESHOLD_PX) {
+			dragState.moved = true;
+			cancelLongPress();
+		}
+		if (dragState.moved) {
+			const w = eventToWorld(e);
+			dragState.liveX = w.x;
+			dragState.liveY = w.y;
+		}
+	}
+
+	function onGridPointerUp(e: PointerEvent) {
+		cancelLongPress();
+		if (!dragState) return;
+		const state = dragState;
+		dragState = null;
+		try {
+			(e.currentTarget as SVGRectElement).releasePointerCapture(e.pointerId);
+		} catch {
+			// Best-effort — capture may have already been released.
+		}
+		if (!state.moved) return; // static tap — let onGridClick handle it
+		const snapped = snapAndClamp({ x: state.liveX, y: state.liveY });
+		updateMarker(state.id, { x: snapped.x, y: snapped.y });
+		selectedMarkerId = state.id;
+		// Suppress the click event that fires right after pointerup.
+		dragJustEnded = true;
+		setTimeout(() => {
+			dragJustEnded = false;
+		}, 0);
+	}
+
 	function cancelLongPress() {
 		if (longPressTimer) {
 			clearTimeout(longPressTimer);
 			longPressTimer = null;
 		}
 	}
+
+	/** Snapped preview position for the marker currently being dragged.
+	 *  Used both to render the icon at its drop-target intersection and
+	 *  to draw a small crosshair at the same spot. */
+	const dragPreview = $derived(
+		dragState?.moved ? snapAndClamp({ x: dragState.liveX, y: dragState.liveY }) : null,
+	);
 
 	function toggleAdd() {
 		placingMode = !placingMode;
@@ -644,6 +784,50 @@
 		removeMarker(selectedMarker.id);
 		selectedMarkerId = null;
 	}
+
+	/** Duplicate the selected marker at +0.5, +0.5 world units and select
+	 *  the copy so the user can drag or edit it immediately. Bound to the
+	 *  selection toolbar button and Cmd/Ctrl+D. */
+	function duplicateSelected() {
+		if (!selectedMarker) return;
+		const newId = duplicateMarker(selectedMarker.id, gridDims);
+		if (newId) selectedMarkerId = newId;
+	}
+
+	/** Cmd/Ctrl+D global shortcut for Duplicate — matches every other
+	 *  "copy this thing" flow in the app. Only fires when the dialog is
+	 *  open and a marker is selected, so it doesn't compete with browser
+	 *  bookmark shortcuts on unrelated pages. Escape closes the pile-up
+	 *  popover before it reaches the native <dialog> cancel handler. */
+	$effect(() => {
+		const handler = (ev: KeyboardEvent) => {
+			if (!dialogEl?.open) return;
+			if (ev.key === 'Escape' && pilePicker) {
+				ev.preventDefault();
+				ev.stopPropagation();
+				closePilePicker();
+				return;
+			}
+			if (ev.key !== 'd' && ev.key !== 'D') return;
+			if (!(ev.metaKey || ev.ctrlKey)) return;
+			if (!selectedMarker) return;
+			// Skip when a text input has focus — the user is probably
+			// typing, not trying to duplicate.
+			const target = ev.target as HTMLElement | null;
+			if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+			ev.preventDefault();
+			duplicateSelected();
+		};
+		window.addEventListener('keydown', handler, true);
+		return () => window.removeEventListener('keydown', handler, true);
+	});
+
+	/** Close the pile picker if the active map switches out from under it
+	 *  — its markers would no longer belong to what's on screen. */
+	$effect(() => {
+		mapState.activeId;
+		if (pilePicker) closePilePicker();
+	});
 
 	function openIconPicker() {
 		if (!selectedMarker) return;
@@ -916,6 +1100,12 @@
 				{/each}
 			</select>
 			<button
+				class="mp-btn"
+				onclick={duplicateSelected}
+				use:tooltip={'Duplicate this marker (Cmd/Ctrl + D)'}
+				aria-label="Duplicate marker">Duplicate</button
+			>
+			<button
 				class="mp-btn mp-btn-danger mp-btn-icon"
 				onclick={deleteSelected}
 				use:tooltip={'Delete this marker'}
@@ -1029,6 +1219,10 @@
 					layer but markers themselves are pointer-events: none —
 					marker hits are resolved via markersAt() on the snapped
 					point, so a marker-adjacent click still selects it.
+					pointermove/pointerup here also drive drag-to-move:
+					pointerdown arms a drag intent when a marker is at the
+					snap point, and pointermove past the threshold engages
+					it (see onGridPointerDown).
 				-->
 				<!-- svelte-ignore a11y_click_events_have_key_events -->
 				<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -1041,18 +1235,35 @@
 					fill="transparent"
 					onclick={onGridClick}
 					onpointerdown={onGridPointerDown}
-					onpointerup={cancelLongPress}
-					onpointercancel={cancelLongPress}
-					onpointermove={cancelLongPress}
+					onpointermove={onGridPointerMove}
+					onpointerup={onGridPointerUp}
+					onpointercancel={onGridPointerUp}
 				/>
+
+				<!-- Drag preview crosshair — a small ring at the intersection
+				     the current drag will drop onto. Pure hint; markers'
+				     translate() already jumps them to this point live. -->
+				{#if dragPreview}
+					<circle
+						class="mp-drag-snap"
+						cx={dragPreview.x}
+						cy={dragPreview.y}
+						r="0.18"
+						vector-effect="non-scaling-stroke"
+					/>
+				{/if}
 
 				{#each mapState.markers as m (m.id)}
 					{@const ic = resolveMapIcon(m.icon)}
 					{@const color = m.color || DEFAULT_MARKER_COLOR}
+					{@const isDragging = dragState?.id === m.id && dragState.moved && dragPreview !== null}
+					{@const mx = isDragging && dragPreview ? dragPreview.x : m.x}
+					{@const my = isDragging && dragPreview ? dragPreview.y : m.y}
 					<g
 						class="mp-marker"
 						class:mp-marker-selected={m.id === selectedMarkerId}
-						transform="translate({m.x} {m.y})"
+						class:mp-marker-dragging={isDragging}
+						transform="translate({mx} {my})"
 					>
 						{#if ic}
 							<svg
@@ -1141,6 +1352,54 @@
 </dialog>
 
 <MapOptionsDialog bind:this={optionsDialogRef} />
+
+<!--
+	Pile-up picker — surfaces when a click resolves to a snap point with
+	more than one marker (common at low zoom, where sub-cell placements
+	from a deeper octave collapse onto the same base cell). Fixed-
+	positioned at the click's viewport coords; backdrop covers the whole
+	viewport so an outside click dismisses. Rendered in the app root (not
+	inside the <dialog>) via a portal-style fixed layer.
+-->
+{#if pilePicker}
+	<!-- svelte-ignore a11y_click_events_have_key_events -->
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div class="mp-pile-backdrop" onclick={closePilePicker}></div>
+	<ul
+		class="mp-pile-menu"
+		role="listbox"
+		aria-label="Markers here"
+		style="left: {pilePicker.screenX}px; top: {pilePicker.screenY + 8}px"
+	>
+		<li class="mp-pile-header">{pilePicker.markers.length} markers here</li>
+		{#each pilePicker.markers as m (m.id)}
+			{@const ic = resolveMapIcon(m.icon)}
+			{@const link = resolveEntity(m.entityId)}
+			<li>
+				<button
+					class="mp-pile-item"
+					onclick={() => choosePileMarker(m)}
+					aria-label={m.label || '(no name)'}
+				>
+					{#if ic}
+						<svg class="mp-pile-icon" viewBox={ic.viewBox} aria-hidden="true">
+							<g fill={m.color || DEFAULT_MARKER_COLOR}>{@html ic.inner}</g>
+						</svg>
+					{:else}
+						<span class="mp-pile-icon-fallback" style="background:{m.color || DEFAULT_MARKER_COLOR}"
+						></span>
+					{/if}
+					<span class="mp-pile-label">{m.label || '(no name)'}</span>
+					{#if link}
+						<span class="mp-pile-link" title="Linked to {link.kindLabel}: {link.name}"
+							>{link.kindPrefix}</span
+						>
+					{/if}
+				</button>
+			</li>
+		{/each}
+	</ul>
+{/if}
 
 <!--
 	Icon picker — nested modal that lists every manifest icon grouped by
@@ -1625,6 +1884,21 @@
 	.mp-marker-selected {
 		filter: drop-shadow(0 0 3px var(--text-accent));
 	}
+	.mp-marker-dragging {
+		opacity: 0.85;
+	}
+	.mp-drag-snap {
+		fill: none;
+		stroke: var(--text-accent);
+		stroke-width: 2;
+		pointer-events: none;
+	}
+	/* Cursor cue for markers under the pointer (only when not in placing
+	   mode, since placing has its own crosshair cue). Since the grid-
+	   capture rect is what receives the pointer, we can't target markers
+	   directly for hover cursor — but a `grab` cursor over the whole
+	   canvas would be misleading. Leave the default `pointer` on the
+	   capture rect and rely on the drag threshold to feel discoverable. */
 	:global(.mp-marker-icon) {
 		overflow: visible;
 	}
@@ -1641,6 +1915,85 @@
 		stroke: var(--bg-card);
 		stroke-width: 0.08px;
 		stroke-linejoin: round;
+	}
+
+	/* Pile-up picker — fixed-positioned floating menu that appears when a
+	   snap point holds more than one marker. z-index sits above the
+	   <dialog>'s top-layer chrome so it renders over the map + toolbars
+	   without being clipped by the dialog's overflow: hidden. */
+	.mp-pile-backdrop {
+		position: fixed;
+		inset: 0;
+		z-index: 40;
+		background: transparent;
+	}
+	.mp-pile-menu {
+		position: fixed;
+		z-index: 41;
+		min-width: 200px;
+		max-width: 320px;
+		max-height: 60vh;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		list-style: none;
+		margin: 0;
+		padding: 4px 0;
+		background: var(--bg-card);
+		color: var(--text);
+		border: 1px solid var(--border-mid);
+		border-radius: 6px;
+		box-shadow: 0 8px 24px #00000060;
+		font-family: var(--font-ui);
+		font-size: 0.85rem;
+	}
+	.mp-pile-header {
+		padding: 4px 12px 6px;
+		font-size: 0.68rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		color: var(--text-dimmer);
+		border-bottom: 1px solid var(--border);
+		margin-bottom: 4px;
+	}
+	.mp-pile-item {
+		width: 100%;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 6px 12px;
+		background: none;
+		border: none;
+		text-align: left;
+		color: var(--text);
+		cursor: pointer;
+		font-family: inherit;
+		font-size: inherit;
+	}
+	.mp-pile-item:hover {
+		background: var(--bg-control);
+	}
+	.mp-pile-icon {
+		width: 20px;
+		height: 20px;
+		flex-shrink: 0;
+	}
+	.mp-pile-icon-fallback {
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		border: 1px solid #fff;
+		flex-shrink: 0;
+	}
+	.mp-pile-label {
+		flex: 1;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.mp-pile-link {
+		color: var(--text-accent);
+		font-size: 0.9rem;
 	}
 
 	/* Icon picker dialog. Uses the CLAUDE.md content-sized pattern:
