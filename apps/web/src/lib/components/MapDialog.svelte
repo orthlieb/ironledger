@@ -30,7 +30,6 @@
 
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import DialogHeader from './DialogHeader.svelte';
-	import ConfirmDialog from './ConfirmDialog.svelte';
 	import MapOptionsDialog from './MapOptionsDialog.svelte';
 	import { mapSettings, persistMapSettings } from '$lib/mapSettingsStore.svelte.js';
 	import iconTrashSvg from '$icons/trash-solid-full.svg?raw';
@@ -56,9 +55,6 @@
 		updateMarker,
 		removeMarker,
 		setBackground,
-		clearMap,
-		clearMarkers,
-		hasAnyContent,
 		initMap,
 		backgroundUrl,
 		persistSettings,
@@ -68,8 +64,6 @@
 	import { getLinkableEntities, resolveEntity } from '$lib/mapEntityLinks.js';
 
 	let dialogEl = $state<HTMLDialogElement | null>(null);
-	let clearDialogRef = $state<{ open(): void; close(): void } | null>(null);
-	let clearMarkersDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let optionsDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let iconDialogEl = $state<HTMLDialogElement | null>(null);
 	let fileInputEl = $state<HTMLInputElement | null>(null);
@@ -112,6 +106,25 @@
 			backgroundUrl: backgroundUrl(),
 		});
 	}
+
+	/**
+	 * External export bridge — the hamburger menu's Export dialog routes
+	 * Map exports through here so the user doesn't have to open the map
+	 * to grab a snapshot. Loads the map state on demand (initMap is
+	 * idempotent) so the export works even if the dialog has never been
+	 * opened in this session.
+	 */
+	$effect(() => {
+		const handler = (e: Event) => {
+			const format = (e as CustomEvent<{ format?: string }>).detail?.format;
+			void initMap().then(() => {
+				if (format === 'png') handleExportPng();
+				else if (format === 'json') handleExportJson();
+			});
+		};
+		document.addEventListener('ironledger:export-map', handler);
+		return () => document.removeEventListener('ironledger:export-map', handler);
+	});
 
 	/**
 	 * Sizing model: the background image is the star. We fix its aspect
@@ -753,35 +766,9 @@
 		<div class="mp-tools">
 			<span class="mp-count">{markerCount} marker{markerCount === 1 ? '' : 's'}</span>
 			<button
-				class="mp-btn"
-				onclick={handleExportPng}
-				disabled={!hasAnyContent()}
-				use:tooltip={'Download a PNG snapshot of the map with the grid + markers baked in'}
-				>Export PNG</button
-			>
-			<button
-				class="mp-btn"
-				onclick={handleExportJson}
-				disabled={!hasAnyContent()}
-				use:tooltip={'Download the marker list + a link to the background image as JSON'}
-				>Export JSON</button
-			>
-			<button
-				class="mp-btn mp-btn-danger"
-				onclick={() => clearMarkersDialogRef?.open()}
-				disabled={markerCount === 0}
-				use:tooltip={'Delete every marker (keeps the background image)'}>Clear markers</button
-			>
-			<button
-				class="mp-btn mp-btn-danger"
-				onclick={() => clearDialogRef?.open()}
-				disabled={!hasAnyContent()}
-				use:tooltip={'Clear the background and every marker'}>Clear map</button
-			>
-			<button
 				class="mp-btn mp-btn-icon mp-btn-gear"
 				onclick={() => optionsDialogRef?.open()}
-				use:tooltip={'Map options — names, hex grid, border, scale bar'}
+				use:tooltip={'Map options — names, hex grid, scale bar, danger zone'}
 				aria-label="Map options">{@html iconGearSvg}</button
 			>
 		</div>
@@ -1097,33 +1084,6 @@
 		{/if}
 	</div>
 </dialog>
-
-<ConfirmDialog
-	bind:this={clearDialogRef}
-	title="Clear Campaign Map?"
-	confirmLabel="Clear Map"
-	onconfirm={clearMap}
->
-	<p
-		style="font-family: var(--font-ui); font-size: 0.82rem; color: var(--text-muted); margin: 0; line-height: 1.5;"
-	>
-		This will remove the background image and every marker on the map. This can't be undone.
-	</p>
-</ConfirmDialog>
-
-<ConfirmDialog
-	bind:this={clearMarkersDialogRef}
-	title="Clear All Markers?"
-	confirmLabel="Clear Markers"
-	onconfirm={clearMarkers}
->
-	<p
-		style="font-family: var(--font-ui); font-size: 0.82rem; color: var(--text-muted); margin: 0; line-height: 1.5;"
-	>
-		This will remove every marker on the map. The background image will be kept. This can't be
-		undone.
-	</p>
-</ConfirmDialog>
 
 <style>
 	.mp-dialog {

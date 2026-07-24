@@ -165,8 +165,10 @@
 				class="ed-select"
 				bind:value={exportContent}
 				onchange={() => {
-					// Stories are markdown-only; everything else that isn't log/everything is JSON.
+					// Stories are markdown-only. Map defaults to PNG. Everything
+					// else that isn't log/everything/map is JSON.
 					if (exportContent === 'stories') exportFormat = 'md';
+					else if (exportContent === 'map') exportFormat = 'png';
 					else if (exportContent !== 'everything' && exportContent !== 'log') exportFormat = 'json';
 				}}
 			>
@@ -177,6 +179,7 @@
 				<option value="stories">Stories</option>
 				<option value="communities">Connections</option>
 				<option value="expeditions">Expeditions</option>
+				<option value="map">Campaign Map</option>
 			</select>
 		</div>
 		{#if exportContent === 'everything' || exportContent === 'log'}
@@ -192,6 +195,22 @@
 						class="ed-seg-btn"
 						class:active={exportFormat === 'md'}
 						onclick={() => (exportFormat = 'md')}>Markdown</button
+					>
+				</div>
+			</div>
+		{:else if exportContent === 'map'}
+			<div class="ed-field">
+				<span class="ed-label">Format</span>
+				<div class="ed-seg" role="group">
+					<button
+						class="ed-seg-btn"
+						class:active={exportFormat === 'png'}
+						onclick={() => (exportFormat = 'png')}>PNG</button
+					>
+					<button
+						class="ed-seg-btn"
+						class:active={exportFormat === 'json'}
+						onclick={() => (exportFormat = 'json')}>JSON</button
 					>
 				</div>
 			</div>
