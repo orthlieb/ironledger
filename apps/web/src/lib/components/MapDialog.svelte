@@ -82,6 +82,9 @@
 		persistSettings,
 		switchMap,
 		createMap,
+		clipboardState,
+		copyMarkerToClipboard,
+		pasteMarkerFromClipboard,
 		type MapMarker,
 	} from '$lib/mapStore.svelte.js';
 	import { downscaleImage, MapImageError } from '$lib/mapImage.js';
@@ -135,9 +138,23 @@
 		selectedMarkerId ? (mapState.markers.find((m) => m.id === selectedMarkerId) ?? null) : null,
 	);
 
-	export function open() {
-		void initMap();
+	/** Open the dialog. Optional `target` lets callers jump directly to a
+	 *  specific map + marker — used by back-reference chips on entity
+	 *  cards and by the "Open Map" button on entity-owned maps. If
+	 *  `target.mapId` isn't the active map, `switchMap()` runs first;
+	 *  if `target.markerId` is set, the marker becomes the selection.
+	 *  All async work fires after `showModal()` so the dialog paints
+	 *  immediately with whatever's currently loaded. */
+	export function open(target?: { mapId?: string; markerId?: string }) {
 		dialogEl?.showModal();
+		void initMap().then(async () => {
+			if (target?.mapId && target.mapId !== mapState.activeId) {
+				await switchMap(target.mapId);
+			}
+			if (target?.markerId) {
+				selectedMarkerId = target.markerId;
+			}
+		});
 	}
 	export function close() {
 		dialogEl?.close();
@@ -689,6 +706,8 @@
 	}
 
 	function onGridPointerMove(e: PointerEvent) {
+		// Track mouse hover for paste-at-cursor, regardless of drag state.
+		onGridHover(e);
 		if (!dragState) return;
 		const dxPx = e.clientX - dragState.startClientX;
 		const dyPx = e.clientY - dragState.startClientY;
@@ -794,11 +813,78 @@
 		if (newId) selectedMarkerId = newId;
 	}
 
-	/** Cmd/Ctrl+D global shortcut for Duplicate — matches every other
-	 *  "copy this thing" flow in the app. Only fires when the dialog is
-	 *  open and a marker is selected, so it doesn't compete with browser
-	 *  bookmark shortcuts on unrelated pages. Escape closes the pile-up
-	 *  popover before it reaches the native <dialog> cancel handler. */
+	// ─── Cut / Copy / Paste ────────────────────────────────────────────────────
+	// `lastHoverWorld` remembers the last mouse position over the map so
+	// pasting via keyboard shortcut can drop the marker at a meaningful
+	// spot (mouse-relative) instead of always at the map center.
+	let lastHoverWorld = $state<{ x: number; y: number } | null>(null);
+
+	function cutSelected() {
+		if (!selectedMarker) return;
+		copyMarkerToClipboard(selectedMarker);
+		removeMarker(selectedMarker.id);
+		selectedMarkerId = null;
+	}
+
+	function copySelected() {
+		if (!selectedMarker) return;
+		copyMarkerToClipboard(selectedMarker);
+	}
+
+	/** Paste target policy: last mouse-hover position on the map if we
+	 *  have one, else the visual center of the canvas viewport
+	 *  (projected through the SVG's CTM inverse so pan + zoom are
+	 *  respected). Falls back to grid center as a last resort — this
+	 *  path only fires on keyboard-only sessions with no cursor tracking. */
+	function pasteTarget(): { x: number; y: number } {
+		if (lastHoverWorld) return lastHoverWorld;
+		if (canvasEl && svgEl) {
+			const rect = canvasEl.getBoundingClientRect();
+			const pt = svgEl.createSVGPoint();
+			pt.x = rect.left + rect.width / 2;
+			pt.y = rect.top + rect.height / 2;
+			const ctm = svgEl.getScreenCTM();
+			if (ctm) {
+				const w = pt.matrixTransform(ctm.inverse());
+				return { x: w.x, y: w.y };
+			}
+		}
+		return { x: gridDims.cols / 2, y: gridDims.rows / 2 };
+	}
+
+	function pasteMarker() {
+		if (!clipboardState.marker) return;
+		const snapped = snapAndClamp(pasteTarget());
+		const newId = pasteMarkerFromClipboard({
+			x: snapped.x,
+			y: snapped.y,
+			bounds: gridDims,
+		});
+		if (newId) selectedMarkerId = newId;
+	}
+
+	/** Track hover position on the map so paste-at-cursor works. Mouse
+	 *  only — touch has no persistent hover state and would just yield
+	 *  a stale position from wherever the last touch ended. */
+	function onGridHover(e: PointerEvent) {
+		if (e.pointerType !== 'mouse') return;
+		lastHoverWorld = eventToWorld(e);
+	}
+	function onGridHoverLeave() {
+		lastHoverWorld = null;
+	}
+
+	/** Keyboard shortcut router. Fires only when the dialog is open and
+	 *  the focus isn't inside a text input (so typing "d" in the label
+	 *  field doesn't trigger Duplicate). Escape closes the pile-up
+	 *  popover before it reaches the native <dialog> cancel handler.
+	 *
+	 *  Shortcuts:
+	 *   • Cmd/Ctrl+X → Cut selected marker
+	 *   • Cmd/Ctrl+C → Copy selected marker
+	 *   • Cmd/Ctrl+V → Paste marker at last hover (or map center)
+	 *   • Cmd/Ctrl+D → Duplicate selected marker (+0.5, +0.5)
+	 */
 	$effect(() => {
 		const handler = (ev: KeyboardEvent) => {
 			if (!dialogEl?.open) return;
@@ -808,15 +894,23 @@
 				closePilePicker();
 				return;
 			}
-			if (ev.key !== 'd' && ev.key !== 'D') return;
 			if (!(ev.metaKey || ev.ctrlKey)) return;
-			if (!selectedMarker) return;
-			// Skip when a text input has focus — the user is probably
-			// typing, not trying to duplicate.
 			const target = ev.target as HTMLElement | null;
 			if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
-			ev.preventDefault();
-			duplicateSelected();
+			const key = ev.key.toLowerCase();
+			if (key === 'd' && selectedMarker) {
+				ev.preventDefault();
+				duplicateSelected();
+			} else if (key === 'x' && selectedMarker) {
+				ev.preventDefault();
+				cutSelected();
+			} else if (key === 'c' && selectedMarker) {
+				ev.preventDefault();
+				copySelected();
+			} else if (key === 'v' && clipboardState.marker) {
+				ev.preventDefault();
+				pasteMarker();
+			}
 		};
 		window.addEventListener('keydown', handler, true);
 		return () => window.removeEventListener('keydown', handler, true);
@@ -992,6 +1086,15 @@
 				aria-pressed={placingMode}
 				aria-label="Add marker">+ Add</button
 			>
+			<button
+				class="mp-btn"
+				onclick={pasteMarker}
+				disabled={!clipboardState.marker}
+				use:tooltip={clipboardState.marker
+					? `Paste "${clipboardState.marker.label || '(no name)'}" at cursor (Cmd/Ctrl + V)`
+					: 'Paste — clipboard is empty. Cut or Copy a marker first.'}
+				aria-label="Paste marker">Paste</button
+			>
 			<div class="mp-zoom" role="group" aria-label="Zoom controls">
 				<button
 					class="mp-btn mp-zoom-btn"
@@ -1106,6 +1209,18 @@
 				onclick={duplicateSelected}
 				use:tooltip={'Duplicate this marker (Cmd/Ctrl + D)'}
 				aria-label="Duplicate marker">Duplicate</button
+			>
+			<button
+				class="mp-btn"
+				onclick={copySelected}
+				use:tooltip={'Copy to clipboard (Cmd/Ctrl + C) — paste on any map'}
+				aria-label="Copy marker">Copy</button
+			>
+			<button
+				class="mp-btn"
+				onclick={cutSelected}
+				use:tooltip={'Cut to clipboard (Cmd/Ctrl + X) — deletes + copies'}
+				aria-label="Cut marker">Cut</button
 			>
 			<button
 				class="mp-btn mp-btn-danger mp-btn-icon"
@@ -1240,6 +1355,7 @@
 					onpointermove={onGridPointerMove}
 					onpointerup={onGridPointerUp}
 					onpointercancel={onGridPointerUp}
+					onpointerleave={onGridHoverLeave}
 				/>
 
 				<!-- Drag preview crosshair — a small ring at the intersection

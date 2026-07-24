@@ -47,6 +47,8 @@ proportions (a very slight uniform stretch on the image is invisible).
 | `lib/components/MapOptionsDialog.svelte`                | Name / display prefs / scale bar / danger-zone (clear + delete).                                   |
 | `lib/components/v2/ExpeditionsArea.svelte`              | Header "Map" button that opens the dialog.                                                         |
 | `routes/api/session/maps/+server.ts`                    | BFF: GET (list) / POST (create).                                                                   |
+| `routes/api/session/maps/entity-markers/+server.ts`     | BFF: GET cross-map `{entityId → refs}` index for entity-card back-references.                      |
+| `routes/api/session/maps/for-owner/+server.ts`          | BFF: GET get-or-create the map owned by a first-class entity.                                      |
 | `routes/api/session/maps/[mapId]/+server.ts`            | BFF: GET (detail) / PATCH (rename+reorder) / DELETE.                                               |
 | `routes/api/session/maps/[mapId]/markers/+server.ts`    | BFF: PUT markers.                                                                                  |
 | `routes/api/session/maps/[mapId]/settings/+server.ts`   | BFF: PUT settings.                                                                                 |
@@ -170,18 +172,20 @@ clean reset.
 Fastify routes under `/api/v1/session/maps*`, mirrored 1:1 by SvelteKit
 BFF proxies at `/api/session/maps*`:
 
-| Method | Path                              | Behaviour                                                              |
-| ------ | --------------------------------- | ---------------------------------------------------------------------- |
-| GET    | `/session/maps`                   | List summaries: `{ maps: MapSummary[] }`.                              |
-| POST   | `/session/maps`                   | Create a map: body `{ name?, ownerKind?, ownerId? }`. Returns UserMap. |
-| GET    | `/session/maps/:mapId`            | Full detail: `{ id, name, markers, backgroundHash, settings, … }`.     |
-| PATCH  | `/session/maps/:mapId`            | Rename / reorder: body `{ name?, sortOrder? }`. Returns UserMap.       |
-| DELETE | `/session/maps/:mapId`            | Delete the map + its portrait pointer.                                 |
-| PUT    | `/session/maps/:mapId/markers`    | Replace markers: body `{ markers: MapMarker[] }`.                      |
-| PUT    | `/session/maps/:mapId/settings`   | Replace settings: body `{ settings: {…} }`.                            |
-| GET    | `/session/maps/:mapId/background` | Raw image bytes with ETag; 304 revalidation supported.                 |
-| PUT    | `/session/maps/:mapId/background` | Upload a fresh image: body `{ dataUrl }`. Returns `{ hash }`.          |
-| DELETE | `/session/maps/:mapId/background` | Clear the background image + null the pointer.                         |
+| Method | Path                                      | Behaviour                                                              |
+| ------ | ----------------------------------------- | ---------------------------------------------------------------------- |
+| GET    | `/session/maps`                           | List summaries: `{ maps: MapSummary[] }`.                              |
+| GET    | `/session/maps/entity-markers`            | `{ index: { entityId → EntityMarkerRef[] } }` — cross-map back-refs.   |
+| GET    | `/session/maps/for-owner?kind=&id=&name=` | Get-or-create the map owned by an entity. Returns full UserMap.        |
+| POST   | `/session/maps`                           | Create a map: body `{ name?, ownerKind?, ownerId? }`. Returns UserMap. |
+| GET    | `/session/maps/:mapId`                    | Full detail: `{ id, name, markers, backgroundHash, settings, … }`.     |
+| PATCH  | `/session/maps/:mapId`                    | Rename / reorder: body `{ name?, sortOrder? }`. Returns UserMap.       |
+| DELETE | `/session/maps/:mapId`                    | Delete the map + its portrait pointer.                                 |
+| PUT    | `/session/maps/:mapId/markers`            | Replace markers: body `{ markers: MapMarker[] }`.                      |
+| PUT    | `/session/maps/:mapId/settings`           | Replace settings: body `{ settings: {…} }`.                            |
+| GET    | `/session/maps/:mapId/background`         | Raw image bytes with ETag; 304 revalidation supported.                 |
+| PUT    | `/session/maps/:mapId/background`         | Upload a fresh image: body `{ dataUrl }`. Returns `{ hash }`.          |
+| DELETE | `/session/maps/:mapId/background`         | Clear the background image + null the pointer.                         |
 
 All routes require authentication (`authenticate` preHandler) and run
 inside `withUserContext` so RLS confines each user to their own rows.
@@ -323,6 +327,46 @@ depending on whether a marker is selected.
   collapse), a small floating menu lists each marker (icon + label + a
   glyph if it's linked to an entity). Click one to select or jump.
   Outside click or Escape closes.
+- **Cut / Copy / Paste** — Cmd/Ctrl+X, C, V (plus toolbar buttons).
+  Clipboard is a single in-memory slot, so paste works across maps —
+  copy on one map, switch, paste on another. Paste target is the last
+  mouse-hover position on the map, falling back to the visual center.
+  Cut = copy + delete; the marker's label / icon / color / entity link
+  ride along.
+
+## Entity ↔ map integration (Phase 2)
+
+Two coupled directions:
+
+**Marker → entity (Tier 2a, already shipped).** A marker's `entityId`
+can point at a Community / Place / Journey / Site. Bare-click jumps to
+that entity in its area; shift-click (or long-press on touch) opens
+the marker editor instead.
+
+**Entity → marker (Phase 2, new).** Each entity card renders a
+"📍 On map: {Map name} ({x}, {y})" chip strip below its header for
+every marker across every map that references it. Click a chip →
+`MapDialog.open({ mapId, markerId })` switches to that map and selects
+the marker in one step.
+
+The chip strip is powered by a cross-map index — `GET
+/session/maps/entity-markers` returns `{ entityId → [refs] }` in a
+single scan of the user's maps. The client caches it in
+`entityMarkerIndexState`, loads lazily on first entity-card render, and
+refreshes automatically after any local marker mutation (add / remove
+/ link change) via `refreshEntityMarkerIndex()`.
+
+**Entity-owned maps (Phase 3, new).** Each Community, Place, Journey,
+and Site can own its own map — `maps.owner_kind` + `maps.owner_id`
+were reserved on the schema back in migration 0021 and are wired now.
+Each entity card grows a **Map** button in the header that calls
+`openMapForOwner(kind, id, name)`. That helper hits `GET
+/session/maps/for-owner?kind=&id=&name=`, which is a **get-or-create**:
+first hit creates a fresh map named `${entityName} — Map` and pins its
+`(owner_kind, owner_id)`; subsequent hits return the same map. The
+UNIQUE `(user_id, owner_kind, owner_id)` constraint keeps this
+1:1-per-user.
+
 - **Click "Change icon…"** — opens a nested picker dialog listing
   every manifest icon grouped by category with a search filter.
   Previews render at the marker's current color so the swatch matches

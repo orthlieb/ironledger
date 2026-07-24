@@ -78,9 +78,23 @@ export interface MapServerSettings {
 	aspect?: number;
 }
 
-/** Ownership metadata — Phase 3 will attach maps to first-class entities
+/** Ownership metadata — Phase 3 attaches maps to first-class entities
  *  via (ownerKind, ownerId). Null = standalone/regional map. */
 export type MapOwnerKind = 'community' | 'place' | 'journey' | 'site';
+
+/** One entity → marker back-reference, mirrored from the server's
+ *  `EntityMarkerRef`. */
+export interface EntityMarkerRef {
+	entityId: string;
+	markerId: string;
+	mapId: string;
+	mapName: string;
+	x: number;
+	y: number;
+	label: string;
+	icon: string;
+	color?: string;
+}
 
 export interface MapSummary {
 	id: string;
@@ -119,6 +133,21 @@ export const mapListState = $state<MapListState>({
 	loading: false,
 	error: '',
 	maps: [],
+});
+
+interface EntityMarkerIndexState {
+	loaded: boolean;
+	loading: boolean;
+	/** `entityId → [refs]`. Cross-map, so every entity card can render
+	 *  its "📍 On map at (x, y)" chip without loading each map's
+	 *  markers. */
+	index: Record<string, EntityMarkerRef[]>;
+}
+
+export const entityMarkerIndexState = $state<EntityMarkerIndexState>({
+	loaded: false,
+	loading: false,
+	index: {},
 });
 
 export const mapState = $state<MapState>({
@@ -418,6 +447,11 @@ async function persistMarkers(): Promise<void> {
 		});
 		if (!res.ok) throw new Error(`Server returned ${res.status}`);
 		mapState.error = '';
+		// Any marker mutation may have changed entity → marker
+		// back-references (add/remove/link change); refresh the index
+		// so entity cards' "📍 On map at (x, y)" chips stay live. Only
+		// fires if the index has been loaded once — no eager fetch.
+		if (entityMarkerIndexState.loaded) refreshEntityMarkerIndex();
 	} catch (err) {
 		mapState.error = err instanceof Error ? err.message : 'Failed to save markers';
 	}
@@ -477,6 +511,54 @@ export function removeMarker(id: string): void {
 	if (idx < 0) return;
 	mapState.markers.splice(idx, 1);
 	void persistMarkers();
+}
+
+// ---------------------------------------------------------------------------
+// Marker clipboard — a single-slot in-memory buffer that survives map
+// switches but not page reloads. Enables cut/copy/paste between maps.
+// ---------------------------------------------------------------------------
+
+/** What's stored in the clipboard — everything except the id and
+ *  position (which get regenerated on paste). Kept as a plain object
+ *  snapshot so the source marker can be deleted/edited without
+ *  affecting the pending paste. */
+export type ClipboardMarker = Omit<MapMarker, 'id' | 'x' | 'y'>;
+
+/** Reactive clipboard slot. `null` = nothing to paste. Wrapped in an
+ *  object so consumers can `$derive(clipboardState.marker)` and pick
+ *  up updates. */
+export const clipboardState = $state<{ marker: ClipboardMarker | null }>({ marker: null });
+
+/** Snapshot a marker into the clipboard. Called by Cut and Copy alike;
+ *  Cut then follows up with removeMarker. */
+export function copyMarkerToClipboard(m: MapMarker): void {
+	clipboardState.marker = {
+		label: m.label,
+		icon: m.icon,
+		color: m.color,
+		entityId: m.entityId,
+	};
+}
+
+/** Paste the clipboard into the active map at `(x, y)`, clamped to
+ *  `bounds`. Returns the new marker's id, or null when the clipboard
+ *  is empty. Does not clear the clipboard — same buffer can be pasted
+ *  many times (e.g. dotting a road across several maps). */
+export function pasteMarkerFromClipboard(input: {
+	x: number;
+	y: number;
+	bounds: { cols: number; rows: number };
+}): string | null {
+	const src = clipboardState.marker;
+	if (!src) return null;
+	return addMarker({
+		x: Math.max(0, Math.min(input.bounds.cols, input.x)),
+		y: Math.max(0, Math.min(input.bounds.rows, input.y)),
+		label: src.label,
+		icon: src.icon,
+		color: src.color,
+		entityId: src.entityId,
+	});
 }
 
 /** Upload a fresh background image for the active map. Accepts the
@@ -554,5 +636,111 @@ export async function persistSettings(): Promise<void> {
 		mapState.error = '';
 	} catch (err) {
 		mapState.error = err instanceof Error ? err.message : 'Failed to save map settings';
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Cross-map entity marker index — powers "📍 On map at (x, y)" chips on
+// entity cards. Loaded lazily on first access + refreshed after any local
+// marker mutation.
+// ---------------------------------------------------------------------------
+
+let _indexLoadPromise: Promise<void> | null = null;
+
+/** Fetch (or refetch) the cross-map entity marker index. Idempotent —
+ *  concurrent callers get the same in-flight promise. Fails silently:
+ *  a stale index is better than crashing an entity card. */
+export function loadEntityMarkerIndex(force = false): Promise<void> {
+	if (entityMarkerIndexState.loaded && !force) return Promise.resolve();
+	if (_indexLoadPromise) return _indexLoadPromise;
+	entityMarkerIndexState.loading = true;
+	_indexLoadPromise = (async () => {
+		try {
+			const res = await fetch('/api/session/maps/entity-markers');
+			if (!res.ok) throw new Error(`Server returned ${res.status}`);
+			const body = (await res.json()) as { index?: Record<string, EntityMarkerRef[]> };
+			entityMarkerIndexState.index = body.index && typeof body.index === 'object' ? body.index : {};
+			entityMarkerIndexState.loaded = true;
+		} catch {
+			// swallow — leave last-known-good index in place
+		} finally {
+			entityMarkerIndexState.loading = false;
+			_indexLoadPromise = null;
+		}
+	})();
+	return _indexLoadPromise;
+}
+
+/** Rebuild the index in the background — call after any local marker
+ *  mutation so cards don't display stale positions. Debounced via the
+ *  in-flight promise guard in `loadEntityMarkerIndex`. */
+export function refreshEntityMarkerIndex(): void {
+	void loadEntityMarkerIndex(true);
+}
+
+/** Read a subset of the index for one entity. Returns [] when the index
+ *  isn't loaded yet — the caller can trigger a load and re-render. */
+export function markersForEntity(entityId: string): EntityMarkerRef[] {
+	return entityMarkerIndexState.index[entityId] ?? [];
+}
+
+// ---------------------------------------------------------------------------
+// Map-per-entity — open (or create) the map owned by a first-class entity.
+// ---------------------------------------------------------------------------
+
+/** Get-or-create the map for `(ownerKind, ownerId)` and switch to it.
+ *  Called by the "Open Map" button on entity cards. Returns the map's
+ *  id, or null on failure. */
+export async function openMapForOwner(
+	ownerKind: MapOwnerKind,
+	ownerId: string,
+	entityName: string,
+): Promise<string | null> {
+	try {
+		const qs = new URLSearchParams({
+			kind: ownerKind,
+			id: ownerId,
+			name: `${entityName} — Map`,
+		});
+		const res = await fetch(`/api/session/maps/for-owner?${qs.toString()}`);
+		if (!res.ok) throw new Error(`Server returned ${res.status}`);
+		const detail = (await res.json()) as {
+			id: string;
+			name: string;
+			markers?: MapMarker[];
+			backgroundHash?: string | null;
+			settings?: MapServerSettings | null;
+			sortOrder: number;
+			ownerKind: MapOwnerKind | null;
+			ownerId: string | null;
+			updatedAt: string;
+		};
+		// Hydrate mapState directly and register in the list if new so the
+		// picker chip shows it immediately.
+		mapState.activeId = detail.id;
+		mapState.name = detail.name;
+		mapState.markers = Array.isArray(detail.markers) ? detail.markers : [];
+		mapState.backgroundHash = detail.backgroundHash ?? '';
+		mapState.settings =
+			detail.settings && typeof detail.settings === 'object' ? detail.settings : {};
+		mapState.loaded = true;
+		if (!mapListState.maps.some((m) => m.id === detail.id)) {
+			mapListState.maps = [
+				...mapListState.maps,
+				{
+					id: detail.id,
+					name: detail.name,
+					sortOrder: detail.sortOrder,
+					ownerKind: detail.ownerKind,
+					ownerId: detail.ownerId,
+					updatedAt: detail.updatedAt,
+				},
+			];
+		}
+		void persistActiveMapIdToSession(detail.id);
+		return detail.id;
+	} catch (err) {
+		mapState.error = err instanceof Error ? err.message : 'Failed to open entity map';
+		return null;
 	}
 }
