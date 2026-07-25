@@ -519,8 +519,6 @@
 		return n.toFixed(n < 1 ? 2 : 1);
 	}
 
-	const markerCount = $derived(mapState.markers.length);
-
 	// ─── Placing mode + selection ──────────────────────────────────────────────
 	/**
 	 * "Placing mode": armed by the toolbar "+ Add" button. The very next
@@ -1124,7 +1122,6 @@
 			</div>
 		</div>
 		<div class="mp-tools">
-			<span class="mp-count">{markerCount} marker{markerCount === 1 ? '' : 's'}</span>
 			<button
 				class="mp-btn mp-btn-icon mp-btn-gear"
 				onclick={() => optionsDialogRef?.open()}
@@ -1747,11 +1744,6 @@
 		display: flex;
 		gap: 8px;
 		align-items: center;
-	}
-	.mp-count {
-		font-family: var(--font-ui);
-		font-size: 0.72rem;
-		color: var(--text-muted);
 	}
 	.mp-btn {
 		font-family: var(--font-ui);
