@@ -1710,8 +1710,13 @@
 		   shrink to `min-*` or grow up to the full viewport. */
 		width: min(960px, calc(100vw - 2rem));
 		height: min(720px, 88vh);
-		min-width: 480px;
-		min-height: 360px;
+		/* `min-*` used to be flat 480×360, which on a narrow phone
+		   (~390 vw) forced the dialog past the viewport edge and cut
+		   off the right side of the toolbar + map. Clamp the floor to
+		   whatever the viewport can actually hold so mobile shrinks
+		   naturally, and only enforce the ergonomic minimum on desktop. */
+		min-width: min(480px, calc(100vw - 2rem));
+		min-height: min(360px, 88vh);
 		max-width: calc(100vw - 2rem);
 		max-height: 95vh;
 		resize: both;
