@@ -510,13 +510,13 @@
 		};
 	});
 
-	/** Format a scale-bar tick — integer when it happens to be one, up to
-	 *  2 decimal places otherwise so fractional distances (post-zoom) still
-	 *  read cleanly. */
+	/** Format a scale-bar tick — always a whole number. Zoom levels
+	 *  that fall on fractional distances (e.g. 1.25 mi at 400 %) round
+	 *  UP so the tick label errs on the side of "at least this far",
+	 *  matching how GMs eyeball ranges on a paper map. */
 	function formatScaleTick(n: number): string {
 		if (n === 0) return '0';
-		if (Number.isInteger(n)) return String(n);
-		return n.toFixed(n < 1 ? 2 : 1);
+		return String(Math.ceil(n));
 	}
 
 	const markerCount = $derived(mapState.markers.length);
