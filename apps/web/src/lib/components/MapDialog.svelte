@@ -940,18 +940,21 @@
 	// ─── Entity-link picker (searchable) ───────────────────────────────────────
 	// The dropdown of every community / place / journey / site got noisy
 	// as users pile them up. Replaced the native <select> with a
-	// combobox-style picker: a trigger chip that opens a floating panel
-	// with a search field + filtered list. Same UX pattern as the
-	// Connections rail search.
+	// combobox picker — now a nested <dialog> (was an absolutely-
+	// positioned popover, but that got clipped by the map dialog's
+	// `overflow: hidden`). Same content: search field + filtered list.
+	let entityDialogEl = $state<HTMLDialogElement | null>(null);
 	let entityPickerOpen = $state(false);
 	let entitySearch = $state('');
 
 	function openEntityPicker() {
 		entitySearch = '';
 		entityPickerOpen = true;
+		entityDialogEl?.showModal();
 	}
 	function closeEntityPicker() {
 		entityPickerOpen = false;
+		entityDialogEl?.close();
 	}
 
 	/** Filtered link candidates for the picker. Matches on name / kind
@@ -999,9 +1002,12 @@
 		selectedSquare = null;
 	}
 
-	/** Keyboard shortcut router. Only handles Escape — closes floating
-	 *  pickers (pile-up, entity-link) before the native <dialog> cancel
-	 *  handler would close the whole map. */
+	/** Keyboard shortcut router. Only handles Escape for the pile
+	 *  picker — a non-dialog floating menu that would otherwise be
+	 *  bypassed and let Escape close the whole map. The entity-link
+	 *  picker is a nested `<dialog>` now, so its native Escape handler
+	 *  (wired via `oncancel`) closes it before Escape can reach the
+	 *  parent. */
 	$effect(() => {
 		const handler = (ev: KeyboardEvent) => {
 			if (!dialogEl?.open) return;
@@ -1009,12 +1015,6 @@
 				ev.preventDefault();
 				ev.stopPropagation();
 				closePilePicker();
-				return;
-			}
-			if (ev.key === 'Escape' && entityPickerOpen) {
-				ev.preventDefault();
-				ev.stopPropagation();
-				closeEntityPicker();
 				return;
 			}
 		};
@@ -1327,48 +1327,6 @@
 					</span>
 					<span class="mp-picker-caret" aria-hidden="true">▾</span>
 				</button>
-				{#if entityPickerOpen}
-					<!-- svelte-ignore a11y_click_events_have_key_events -->
-					<div class="mp-picker-backdrop" role="presentation" onclick={closeEntityPicker}></div>
-					<div class="mp-entity-menu" role="listbox" aria-label="Link to entity">
-						<div class="mp-entity-search-row">
-							<!-- svelte-ignore a11y_autofocus -->
-							<input
-								class="mp-entity-search"
-								type="search"
-								placeholder="Search connections…"
-								bind:value={entitySearch}
-								autofocus
-							/>
-						</div>
-						<div class="mp-entity-list">
-							<button
-								class="mp-entity-item mp-entity-item--none"
-								class:mp-entity-item--active={!selectedMarker.entityId}
-								onclick={() => pickEntity('')}
-								role="option"
-								aria-selected={!selectedMarker.entityId}>— No link —</button
-							>
-							{#each filteredEntities as e (`${e.kind}:${e.id}`)}
-								{@const val = `${e.kind}:${e.id}`}
-								<button
-									class="mp-entity-item"
-									class:mp-entity-item--active={selectedMarker.entityId === val}
-									onclick={() => pickEntity(val)}
-									role="option"
-									aria-selected={selectedMarker.entityId === val}
-								>
-									<span class="mp-entity-prefix" aria-hidden="true">{e.kindPrefix}</span>
-									<span class="mp-entity-name">{e.name}</span>
-									<span class="mp-entity-kind">{e.kindLabel}</span>
-								</button>
-							{/each}
-							{#if filteredEntities.length === 0}
-								<p class="mp-entity-empty">No matches for "{entitySearch}".</p>
-							{/if}
-						</div>
-					</div>
-				{/if}
 			</div>
 			<button
 				class="mp-btn mp-btn-danger mp-btn-icon"
@@ -1797,6 +1755,64 @@
 	</div>
 </dialog>
 
+<!--
+	Entity-link picker — nested modal that lists every linkable
+	community / place / journey / site with a live search filter. Was
+	an inline popover but got clipped by the map dialog's `overflow:
+	hidden`; a native <dialog> renders in the browser top layer and
+	escapes cleanly. Follows CLAUDE.md's content-sized pattern: no
+	`display: flex` on the dialog, `max-height` on the scrollable body,
+	`overscroll-behavior: contain` on the same body.
+-->
+<dialog
+	bind:this={entityDialogEl}
+	class="mp-entity-dialog"
+	oncancel={closeEntityPicker}
+	onclose={() => (entityPickerOpen = false)}
+>
+	<DialogHeader
+		title={headingText('Link Marker')}
+		onclose={closeEntityPicker}
+		radius="8px 8px 0 0"
+	/>
+	<div class="mp-entity-search-row">
+		<!-- svelte-ignore a11y_autofocus -->
+		<input
+			class="mp-entity-search"
+			type="search"
+			placeholder="Search connections…"
+			bind:value={entitySearch}
+			autofocus
+		/>
+	</div>
+	<div class="mp-entity-body" role="listbox" aria-label="Link to entity">
+		<button
+			class="mp-entity-item mp-entity-item--none"
+			class:mp-entity-item--active={!selectedMarker?.entityId}
+			onclick={() => pickEntity('')}
+			role="option"
+			aria-selected={!selectedMarker?.entityId}>— No link —</button
+		>
+		{#each filteredEntities as e (`${e.kind}:${e.id}`)}
+			{@const val = `${e.kind}:${e.id}`}
+			<button
+				class="mp-entity-item"
+				class:mp-entity-item--active={selectedMarker?.entityId === val}
+				onclick={() => pickEntity(val)}
+				role="option"
+				aria-selected={selectedMarker?.entityId === val}
+			>
+				<span class="mp-entity-prefix" aria-hidden="true">{e.kindPrefix}</span>
+				<span class="mp-entity-name">{e.name}</span>
+				<span class="mp-entity-kind">{e.kindLabel}</span>
+			</button>
+		{/each}
+		{#if filteredEntities.length === 0}
+			<p class="mp-entity-empty">No matches for "{entitySearch}".</p>
+		{/if}
+	</div>
+</dialog>
+
 <style>
 	.mp-dialog {
 		border: none;
@@ -2194,11 +2210,10 @@
 		color: var(--text-dimmer);
 		line-height: 1;
 	}
-	/* Entity-link picker — a combobox chip: a trigger button showing
-	   the currently-linked entity, and a floating popover with search +
-	   filtered list. Same UX pattern as the map-picker chip. */
+	/* Entity-link chip in the selection toolbar — trigger only; the
+	   picker itself is a nested <dialog> (see .mp-entity-dialog). */
 	.mp-sel-entity {
-		position: relative;
+		display: inline-flex;
 	}
 	.mp-sel-entity-btn {
 		/* Wider than before — the preset-swatch strip was retired so
@@ -2230,20 +2245,36 @@
 		color: var(--text-accent);
 		margin-right: 4px;
 	}
-	.mp-entity-menu {
-		position: absolute;
-		top: calc(100% + 4px);
-		left: 0;
-		z-index: 25;
-		width: min(320px, 80vw);
-		max-height: 55vh;
-		display: flex;
-		flex-direction: column;
-		background: var(--bg-card);
-		border: 1px solid var(--border-mid);
-		border-radius: 6px;
-		box-shadow: 0 8px 24px #00000060;
+	/* Entity-link picker dialog. Content-sized per CLAUDE.md rule 3B
+	   (no display:flex on the dialog; max-height on the scrollable
+	   body). Centred via top/left/transform per rule 2. */
+	.mp-entity-dialog {
+		border: none;
+		padding: 0;
+		border-radius: 8px;
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		margin: 0;
+		transform: translate(-50%, -50%);
+		width: min(360px, calc(100vw - 2rem));
+		max-height: 82vh;
 		overflow: hidden;
+		background: var(--bg-card);
+		color: var(--text);
+		box-shadow:
+			0 16px 48px #00000070,
+			0 0 0 1px var(--border-mid);
+		outline: none;
+	}
+	.mp-entity-dialog::backdrop {
+		background: #00000060;
+	}
+	.mp-entity-body {
+		max-height: calc(82vh - 8rem);
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		padding: 4px 0;
 	}
 	.mp-entity-search-row {
 		padding: 6px 8px;
@@ -2264,11 +2295,6 @@
 	.mp-entity-search:focus {
 		outline: none;
 		border-color: var(--text-accent);
-	}
-	.mp-entity-list {
-		overflow-y: auto;
-		overscroll-behavior: contain;
-		padding: 4px 0;
 	}
 	.mp-entity-item {
 		width: 100%;
