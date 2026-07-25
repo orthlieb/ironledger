@@ -24,6 +24,8 @@ export interface MapMarker {
   icon: string;
   color?: string;
   entityId?: string;
+  /** Rotation in degrees, clockwise. Optional — omitted markers render at 0°. */
+  angle?: number;
 }
 
 /** Free-form per-map settings JSONB. Client owns the shape (see

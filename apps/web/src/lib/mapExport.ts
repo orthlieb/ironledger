@@ -242,6 +242,7 @@ export async function importMapZip(file: File): Promise<string> {
 			icon: typeof m.icon === 'string' ? m.icon : '',
 			color: typeof m.color === 'string' ? m.color : undefined,
 			entityId: typeof m.entityId === 'string' ? m.entityId : undefined,
+			angle: typeof m.angle === 'number' && Number.isFinite(m.angle) ? m.angle : undefined,
 		}));
 	await replaceMarkers(cleanMarkers);
 

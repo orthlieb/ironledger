@@ -832,6 +832,27 @@
 		updateMarker(selectedMarker.id, { color: (e.target as HTMLInputElement).value });
 	}
 
+	/** Normalise a rotation to `[0, 360)` for display + storage. `undefined`
+	 *  → 0 (default rotation for legacy markers). Non-finite → 0 so a stray
+	 *  NaN doesn't invalidate the SVG transform. */
+	function normalizeAngle(a: number | undefined): number {
+		if (typeof a !== 'number' || !Number.isFinite(a)) return 0;
+		const n = a % 360;
+		return n < 0 ? n + 360 : n;
+	}
+
+	/** Selection-toolbar angle input handler. Coerces the raw string via
+	 *  parseFloat + normalises so wraps (say, typing 370) land at 10°. */
+	function onAngleInput(e: Event) {
+		if (!selectedMarker) return;
+		const raw = (e.target as HTMLInputElement).value;
+		const n = parseFloat(raw);
+		updateMarker(selectedMarker.id, { angle: Number.isFinite(n) ? normalizeAngle(n) : 0 });
+	}
+
+	/** Angle currently displayed in the spinner — always in `[0, 360)`. */
+	const selectedAngle = $derived(normalizeAngle(selectedMarker?.angle));
+
 	// ─── Entity-link picker (searchable) ───────────────────────────────────────
 	// The dropdown of every community / place / journey / site got noisy
 	// as users pile them up. Replaced the native <select> with a
@@ -1167,6 +1188,24 @@
 				use:tooltip={'Icon color — click to open the color picker'}
 				aria-label="Icon color"
 			/>
+			<!-- Angle spinner — native number input keeps the OS-provided
+			     up/down step arrows. Range 0-359 with wraparound handled by
+			     onAngleInput so typing 370 lands at 10. Uses degree symbol
+			     as the label so a narrow toolbar still fits. -->
+			<label class="mp-sel-angle" use:tooltip={'Rotation in degrees (0 = up, clockwise)'}>
+				<span class="mp-sel-angle-glyph" aria-hidden="true">∠</span>
+				<input
+					class="mp-sel-angle-input"
+					type="number"
+					min="0"
+					max="359"
+					step="15"
+					value={selectedAngle}
+					oninput={onAngleInput}
+					aria-label="Marker rotation in degrees"
+				/>
+				<span class="mp-sel-angle-unit" aria-hidden="true">°</span>
+			</label>
 			{@const currentLink = resolveEntity(selectedMarker.entityId)}
 			<div class="mp-sel-entity">
 				<button
@@ -1423,6 +1462,7 @@
 					{@const my = isDragging && dragPreview ? dragPreview.y : m.y}
 					{@const hasIcon = m.icon !== ''}
 					{@const isSelected = m.id === selectedMarkerId}
+					{@const rot = normalizeAngle(m.angle)}
 					{#if isSelected}
 						<!-- Selection outline — the sub-cell the marker snaps into
 						     at the current zoom (1 unit at 100%, ½ at 200%, ¼ at
@@ -1453,7 +1493,7 @@
 						class="mp-marker"
 						class:mp-marker-selected={isSelected}
 						class:mp-marker-dragging={isDragging}
-						transform="translate({mx} {my}) scale({1 / zoom})"
+						transform="translate({mx} {my}) scale({1 / zoom}) rotate({rot})"
 					>
 						{#if hasIcon && ic}
 							<svg
@@ -1943,6 +1983,47 @@
 	.mp-sel-color::-webkit-color-swatch {
 		border: none;
 		border-radius: 2px;
+	}
+	/* Angle spinner — mirrors the color chip's footprint. Native <input
+	   type="number"> keeps the OS's up/down step controls, which give the
+	   spinner behaviour the request calls for. Custom width so 3 digits
+	   fit without eating the toolbar. */
+	.mp-sel-angle {
+		display: inline-flex;
+		align-items: center;
+		gap: 3px;
+		padding: 2px 4px 2px 6px;
+		background: var(--bg-control);
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		color: var(--text-muted);
+	}
+	.mp-sel-angle:focus-within {
+		border-color: var(--text-accent);
+	}
+	.mp-sel-angle-glyph {
+		font-weight: 700;
+		color: var(--text-dimmer);
+		line-height: 1;
+	}
+	.mp-sel-angle-input {
+		width: 3.2em;
+		padding: 3px 0 3px 4px;
+		border: none;
+		background: transparent;
+		color: var(--text);
+		font-family: inherit;
+		font-size: 0.82rem;
+		text-align: right;
+	}
+	.mp-sel-angle-input:focus {
+		outline: none;
+	}
+	.mp-sel-angle-unit {
+		color: var(--text-dimmer);
+		line-height: 1;
 	}
 	/* Entity-link picker — a combobox chip: a trigger button showing
 	   the currently-linked entity, and a floating popover with search +
