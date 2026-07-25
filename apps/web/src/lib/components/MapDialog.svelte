@@ -1554,10 +1554,18 @@
 						{/if}
 						{#if showLabels && m.label}
 							{#if hasIcon}
-								<text class="mp-marker-label" y={ICON_SIZE / 2 + 0.32}>{m.label}</text>
+								<text
+									class="mp-marker-label"
+									fill={color}
+									vector-effect="non-scaling-stroke"
+									y={ICON_SIZE / 2 + 0.32}>{m.label}</text
+								>
 							{:else}
-								<text class="mp-marker-label mp-marker-label--centered" fill={color} y="0"
-									>{m.label}</text
+								<text
+									class="mp-marker-label mp-marker-label--centered"
+									fill={color}
+									vector-effect="non-scaling-stroke"
+									y="0">{m.label}</text
 								>
 							{/if}
 						{/if}
@@ -2370,23 +2378,25 @@
 		overflow: visible;
 	}
 	.mp-marker-label {
-		/* Font size + stroke width are in world units at zoom 1. The
-		   parent `<g>` applies `scale(1/zoom)`, which cancels the zoom
-		   so labels render at a constant screen size at any zoom level. */
+		/* Font size is in world units at zoom 1. The parent `<g>` applies
+		   `scale(1/zoom)`, which cancels the zoom so labels render at a
+		   constant screen size at any zoom level. Fill is set inline to
+		   the marker's colour so the label reads as the annotation, not
+		   as generic body text. Stroke uses `vector-effect: non-scaling-
+		   stroke` (set on the element) so `1` translates to 1 device
+		   pixel regardless of the marker group's scale — a crisp 1 px
+		   white halo over any background. */
 		font-family: var(--font-ui);
 		font-size: 0.24px;
 		font-weight: 600;
 		text-anchor: middle;
-		fill: var(--text);
 		paint-order: stroke fill;
-		stroke: var(--bg-card);
-		stroke-width: 0.08px;
+		stroke: #fff;
+		stroke-width: 1;
 		stroke-linejoin: round;
 	}
 	/* Label-only markers (no icon chosen) centre both axes on the point
-	   instead of sitting below where the icon would be. Colour picks up
-	   the marker's `color` via inline `fill` so the label reads as the
-	   annotation, not as generic body text. */
+	   instead of sitting below where the icon would be. */
 	.mp-marker-label--centered {
 		dominant-baseline: central;
 	}
