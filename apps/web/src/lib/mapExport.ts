@@ -293,22 +293,49 @@ async function urlToDataUrl(url: string): Promise<string> {
  * Rasterise the live map SVG to a PNG download. `showLabels` is passed
  * through so the export honours the current label-visibility toggle —
  * users usually want the same view they're looking at, not with labels
- * suddenly on/off. Baked scale of 2× the viewBox gives ~1600px PNGs
- * that print cleanly at letter size.
+ * suddenly on/off.
+ *
+ * Sizing: match the background image's natural pixel dimensions so
+ * the exported PNG is the same size + aspect ratio the user originally
+ * uploaded (post-downscale — everything above `MAP_IMAGE_MAX_DIMENSION`
+ * gets shrunk on upload). Without a background image we fall back to a
+ * `FALLBACK_LONG_EDGE_PX`-long-edge PNG sized from the viewBox aspect,
+ * since the viewBox itself is world units (~20 × 11) and a naïve
+ * `viewBox × 2` scale would produce a postage-stamp file.
  */
+const FALLBACK_LONG_EDGE_PX = 2000;
+
+/** Load the given data URL into an Image and return its natural size,
+ *  or null if it doesn't decode. Used to size the PNG to the source
+ *  background's dimensions. */
+async function measureImage(dataUrl: string): Promise<{ w: number; h: number } | null> {
+	try {
+		return await new Promise<{ w: number; h: number } | null>((resolve) => {
+			const img = new Image();
+			img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+			img.onerror = () => resolve(null);
+			img.src = dataUrl;
+		});
+	} catch {
+		return null;
+	}
+}
+
 export async function exportMapPng(svgEl: SVGSVGElement, showLabels: boolean): Promise<void> {
 	// Clone so we don't mutate the live DOM.
 	const clone = svgEl.cloneNode(true) as SVGSVGElement;
 
 	// If there's a background <image href="…">, resolve it to a data URL
-	// so the serialised SVG carries the pixels inline.
+	// so the serialised SVG carries the pixels inline. Remember the
+	// resolved bytes so we can measure them for output sizing.
+	let bgDataUrl = '';
 	const bgImage = clone.querySelector('image');
 	if (bgImage) {
 		const href = bgImage.getAttribute('href') ?? bgImage.getAttribute('xlink:href');
 		if (href) {
 			try {
-				const dataUrl = await urlToDataUrl(href);
-				bgImage.setAttribute('href', dataUrl);
+				bgDataUrl = await urlToDataUrl(href);
+				bgImage.setAttribute('href', bgDataUrl);
 			} catch {
 				// Continue with a blank background if the fetch fails; the
 				// user still gets a usable grid + markers PNG rather than
@@ -323,18 +350,27 @@ export async function exportMapPng(svgEl: SVGSVGElement, showLabels: boolean): P
 		clone.querySelectorAll('text').forEach((el) => el.remove());
 	}
 
-	// Serialise + wrap in a data URL, then load into an <img> so canvas
-	// can drawImage it. Explicit width/height on the SVG source tells the
-	// image loader what size to rasterise at.
+	// Sizing: prefer the background image's actual pixel dimensions so
+	// the PNG is the same size + aspect the user uploaded. Fallback:
+	// scale from the viewBox aspect to a fixed long-edge target so
+	// backgroundless exports still look reasonable.
 	const viewBox = clone.getAttribute('viewBox');
-	const scale = 2;
-	let widthPx = 1600;
-	let heightPx = 1000;
-	if (viewBox) {
+	let widthPx = FALLBACK_LONG_EDGE_PX;
+	let heightPx = Math.round(FALLBACK_LONG_EDGE_PX * 0.5625); // fallback 16:9
+	const bgSize = bgDataUrl ? await measureImage(bgDataUrl) : null;
+	if (bgSize && bgSize.w > 0 && bgSize.h > 0) {
+		widthPx = bgSize.w;
+		heightPx = bgSize.h;
+	} else if (viewBox) {
 		const [, , w, h] = viewBox.split(/\s+/).map(Number);
 		if (w && h) {
-			widthPx = Math.round(w * scale);
-			heightPx = Math.round(h * scale);
+			if (w >= h) {
+				widthPx = FALLBACK_LONG_EDGE_PX;
+				heightPx = Math.round((h / w) * FALLBACK_LONG_EDGE_PX);
+			} else {
+				heightPx = FALLBACK_LONG_EDGE_PX;
+				widthPx = Math.round((w / h) * FALLBACK_LONG_EDGE_PX);
+			}
 		}
 	}
 	clone.setAttribute('width', String(widthPx));
