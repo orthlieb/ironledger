@@ -49,6 +49,9 @@ const mapMarkerSchema = z.object({
   icon: z.string().max(32),
   color: z.string().max(64).optional(),
   entityId: z.string().max(200).optional(),
+  // Rotation in degrees, clockwise. Clamped to a wide range so a bug
+  // upstream can't wedge NaN/Infinity into the JSONB row.
+  angle: z.number().finite().min(-3600).max(3600).optional(),
 });
 const putMarkersBody = z.object({ markers: z.array(mapMarkerSchema).max(500) });
 

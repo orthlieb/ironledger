@@ -52,6 +52,10 @@ export interface MapMarker {
 	 *  Format: "kind:id" (e.g. "place:abc123"). Bare-click on a linked
 	 *  marker jumps to the entity in the sheet. */
 	entityId?: string;
+	/** Rotation applied to the marker (icon + label) in degrees, clockwise
+	 *  around the marker's anchor point. Optional so pre-rotation markers
+	 *  still parse; the render path treats undefined as 0°. */
+	angle?: number;
 }
 
 /** Server-persisted per-map settings — things that describe the MAP
@@ -470,6 +474,7 @@ export function addMarker(input: {
 	icon: string;
 	color?: string;
 	entityId?: string;
+	angle?: number;
 }): string {
 	const id = crypto.randomUUID();
 	mapState.markers.push({ id, ...input });
