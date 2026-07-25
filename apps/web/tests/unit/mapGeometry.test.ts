@@ -48,14 +48,17 @@ describe('subGridStep', () => {
 });
 
 describe('snapCoord', () => {
-	it('snaps to base grid at zoom 1', () => {
-		expect(snapCoord({ x: 3.7, y: 2.2 }, 1)).toEqual({ x: 4, y: 2 });
+	// Cell-centre snap: marker for a click at (3.7, 2.2) lands in the
+	// cell whose corners are (3, 2)-(4, 3), so the snapped position is
+	// its centre (3.5, 2.5) — one half-cell in from each corner.
+	it('snaps to cell centres at zoom 1', () => {
+		expect(snapCoord({ x: 3.7, y: 2.2 }, 1)).toEqual({ x: 3.5, y: 2.5 });
 	});
-	it('snaps to half-cell at zoom 2', () => {
-		expect(snapCoord({ x: 3.7, y: 2.2 }, 2)).toEqual({ x: 3.5, y: 2 });
+	it('snaps to half-cell centres at zoom 2', () => {
+		expect(snapCoord({ x: 3.7, y: 2.2 }, 2)).toEqual({ x: 3.75, y: 2.25 });
 	});
-	it('snaps to quarter-cell at zoom 4', () => {
-		expect(snapCoord({ x: 3.7, y: 2.2 }, 4)).toEqual({ x: 3.75, y: 2.25 });
+	it('snaps to quarter-cell centres at zoom 4', () => {
+		expect(snapCoord({ x: 3.7, y: 2.2 }, 4)).toEqual({ x: 3.625, y: 2.125 });
 	});
 });
 

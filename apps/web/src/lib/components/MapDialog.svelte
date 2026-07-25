@@ -1659,8 +1659,22 @@
 		left: 50%;
 		margin: 0;
 		transform: translate(-50%, -50%);
+		/* Move + resize:
+		   • Drag the header (see `use:draggable` on DialogHeader) — the
+		     action sets inline left/top + `transform: none`, so the box
+		     anchors to its top-left corner for subsequent gestures.
+		   • Drag the bottom-right corner (CSS `resize: both`) — width
+		     and height clamp between the min/max below. `overflow: hidden`
+		     is required for `resize` to render the drag handle.
+		   Initial size still matches the pre-resize default; users can
+		   shrink to `min-*` or grow up to the full viewport. */
 		width: min(960px, calc(100vw - 2rem));
-		max-height: 88vh;
+		height: min(720px, 88vh);
+		min-width: 480px;
+		min-height: 360px;
+		max-width: calc(100vw - 2rem);
+		max-height: 95vh;
+		resize: both;
 		overflow: hidden;
 		background: var(--bg-card);
 		color: var(--text);
