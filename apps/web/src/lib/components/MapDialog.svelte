@@ -51,6 +51,8 @@
 	import { mapSettings, persistMapSettings } from '$lib/mapSettingsStore.svelte.js';
 	import iconTrashSvg from '$icons/trash-solid-full.svg?raw';
 	import iconExpandSvg from '$icons/expand-solid-full.svg?raw';
+	import iconZoomInSvg from '$icons/magnifying-glass-plus-solid-full.svg?raw';
+	import iconZoomOutSvg from '$icons/magnifying-glass-minus-solid-full.svg?raw';
 	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import {
@@ -258,7 +260,7 @@
 	// handles the pan. Zoom multiplier persists server-side (per map);
 	// scroll position persists in localStorage (per device).
 	const MIN_ZOOM = 1;
-	const MAX_ZOOM = 8;
+	const MAX_ZOOM = 4;
 	function clampZoom(z: number): number {
 		return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z));
 	}
@@ -1078,21 +1080,18 @@
 			>
 			<div class="mp-zoom" role="group" aria-label="Zoom controls">
 				<button
-					class="mp-btn mp-zoom-btn"
+					class="mp-btn mp-btn-icon"
 					onclick={zoomOut}
 					disabled={zoom <= MIN_ZOOM}
-					use:tooltip={'Zoom out (Ctrl/Cmd + wheel)'}
-					aria-label="Zoom out">−</button
-				>
-				<span class="mp-zoom-label" use:tooltip={'Current zoom level. Click Fit to reset.'}
-					>{Math.round(zoom * 100)}%</span
+					use:tooltip={`Zoom out (Ctrl/Cmd + wheel) — currently ${Math.round(zoom * 100)}%`}
+					aria-label="Zoom out">{@html iconZoomOutSvg}</button
 				>
 				<button
-					class="mp-btn mp-zoom-btn"
+					class="mp-btn mp-btn-icon"
 					onclick={zoomIn}
 					disabled={zoom >= MAX_ZOOM}
-					use:tooltip={'Zoom in (Ctrl/Cmd + wheel)'}
-					aria-label="Zoom in">+</button
+					use:tooltip={`Zoom in (Ctrl/Cmd + wheel) — currently ${Math.round(zoom * 100)}%`}
+					aria-label="Zoom in">{@html iconZoomInSvg}</button
 				>
 				<button
 					class="mp-btn mp-btn-icon"
@@ -1840,22 +1839,6 @@
 		align-items: center;
 		gap: 2px;
 	}
-	.mp-zoom-btn {
-		padding: 4px 8px;
-		font-size: 0.85rem;
-		font-weight: 700;
-		min-width: 26px;
-		text-transform: none;
-	}
-	.mp-zoom-label {
-		font-family: var(--font-mono, ui-monospace, monospace);
-		font-size: 0.7rem;
-		color: var(--text-muted);
-		min-width: 44px;
-		text-align: center;
-		user-select: none;
-	}
-
 	.mp-btn-danger:not(:disabled):hover {
 		color: var(--color-danger, #ef4444);
 		border-color: var(--color-danger, #ef4444);
