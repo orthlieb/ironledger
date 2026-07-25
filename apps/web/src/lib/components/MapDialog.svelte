@@ -510,13 +510,11 @@
 		};
 	});
 
-	/** Format a scale-bar tick — integer when it happens to be one, up to
-	 *  2 decimal places otherwise so fractional distances (post-zoom) still
-	 *  read cleanly. */
+	/** Format a scale-bar tick — always nearest integer. Fractional
+	 *  distances (post-zoom) round to whole numbers so the ruler stays
+	 *  legible in the narrow overlay space. */
 	function formatScaleTick(n: number): string {
-		if (n === 0) return '0';
-		if (Number.isInteger(n)) return String(n);
-		return n.toFixed(n < 1 ? 2 : 1);
+		return String(Math.round(n));
 	}
 
 	// ─── Placing mode + selection ──────────────────────────────────────────────
@@ -850,6 +848,15 @@
 
 	/** Angle currently displayed in the spinner — always in `[0, 360)`. */
 	const selectedAngle = $derived(normalizeAngle(selectedMarker?.angle));
+
+	/** Step the marker's angle by ±15°. iOS Safari doesn't render the
+	 *  native number-input spinner arrows, so we surface explicit +/−
+	 *  buttons next to the text — otherwise touch users can only edit
+	 *  the angle by typing. */
+	function stepAngle(delta: number) {
+		if (!selectedMarker) return;
+		updateMarker(selectedMarker.id, { angle: normalizeAngle(selectedAngle + delta) });
+	}
 
 	// ─── Entity-link picker (searchable) ───────────────────────────────────────
 	// The dropdown of every community / place / journey / site got noisy
@@ -1185,24 +1192,42 @@
 				use:tooltip={'Icon color — click to open the color picker'}
 				aria-label="Icon color"
 			/>
-			<!-- Angle spinner — native number input keeps the OS-provided
-			     up/down step arrows. Range 0-359 with wraparound handled by
-			     onAngleInput so typing 370 lands at 10. Uses degree symbol
+			<!-- Angle spinner — explicit − / + buttons flank the number
+			     input because iOS Safari doesn't render the native
+			     <input type="number"> step arrows, so touch users would
+			     otherwise be stuck typing. Bare wheel/keyboard step still
+			     works on desktop via the input itself. Uses degree symbol
 			     as the label so a narrow toolbar still fits. -->
-			<label class="mp-sel-angle" use:tooltip={'Rotation in degrees (0 = up, clockwise)'}>
-				<span class="mp-sel-angle-glyph" aria-hidden="true">∠</span>
-				<input
-					class="mp-sel-angle-input"
-					type="number"
-					min="0"
-					max="359"
-					step="15"
-					value={selectedAngle}
-					oninput={onAngleInput}
-					aria-label="Marker rotation in degrees"
-				/>
-				<span class="mp-sel-angle-unit" aria-hidden="true">°</span>
-			</label>
+			<div class="mp-sel-angle" role="group" aria-label="Marker rotation">
+				<button
+					type="button"
+					class="mp-sel-angle-step"
+					onclick={() => stepAngle(-15)}
+					use:tooltip={'Rotate 15° counter-clockwise'}
+					aria-label="Rotate counter-clockwise">−</button
+				>
+				<label class="mp-sel-angle-field" use:tooltip={'Rotation in degrees (0 = up, clockwise)'}>
+					<span class="mp-sel-angle-glyph" aria-hidden="true">∠</span>
+					<input
+						class="mp-sel-angle-input"
+						type="number"
+						min="0"
+						max="359"
+						step="15"
+						value={selectedAngle}
+						oninput={onAngleInput}
+						aria-label="Marker rotation in degrees"
+					/>
+					<span class="mp-sel-angle-unit" aria-hidden="true">°</span>
+				</label>
+				<button
+					type="button"
+					class="mp-sel-angle-step"
+					onclick={() => stepAngle(15)}
+					use:tooltip={'Rotate 15° clockwise'}
+					aria-label="Rotate clockwise">+</button
+				>
+			</div>
 			{@const currentLink = resolveEntity(selectedMarker.entityId)}
 			<div class="mp-sel-entity">
 				<button
@@ -1725,6 +1750,20 @@
 			0 0 0 1px var(--border-mid);
 		outline: none;
 	}
+	/* Mobile: drop the fixed dialog height and let it hug its content.
+	   The map body is aspect-driven (`mp-body` sizes to the picture),
+	   so a fixed 720px dialog on a phone left a huge dead parchment
+	   band below the map. `height: auto` + `min-height: auto` collapse
+	   the chrome around what's actually rendering — the dialog no
+	   longer looks half-empty on portrait phones. Resize is disabled
+	   because there's no cursor to drag the corner handle. */
+	@media (max-width: 640px) {
+		.mp-dialog {
+			height: auto;
+			min-height: auto;
+			resize: none;
+		}
+	}
 	.mp-dialog::backdrop {
 		background: #00000060;
 		backdrop-filter: blur(1px);
@@ -1981,24 +2020,52 @@
 		border: none;
 		border-radius: 2px;
 	}
-	/* Angle spinner — mirrors the color chip's footprint. Native <input
-	   type="number"> keeps the OS's up/down step controls, which give the
-	   spinner behaviour the request calls for. Custom width so 3 digits
-	   fit without eating the toolbar. */
+	/* Angle spinner — inline `−  ∠ nnn°  +` cluster. iOS Safari drops
+	   the native <input type="number"> step arrows, so explicit step
+	   buttons flank the numeric field to keep the spinner reachable on
+	   touch. Whole group behaves as one segmented control. */
 	.mp-sel-angle {
+		display: inline-flex;
+		align-items: stretch;
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+		background: var(--bg-control);
+		overflow: hidden;
+	}
+	.mp-sel-angle:focus-within {
+		border-color: var(--text-accent);
+	}
+	.mp-sel-angle-step {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 22px;
+		padding: 0;
+		border: none;
+		background: transparent;
+		color: var(--text-muted);
+		font-family: var(--font-ui);
+		font-size: 0.95rem;
+		font-weight: 700;
+		line-height: 1;
+		cursor: pointer;
+	}
+	.mp-sel-angle-step:hover {
+		background: color-mix(in srgb, var(--text-accent) 12%, transparent);
+		color: var(--text);
+	}
+	.mp-sel-angle-step:active {
+		background: color-mix(in srgb, var(--text-accent) 22%, transparent);
+	}
+	.mp-sel-angle-field {
 		display: inline-flex;
 		align-items: center;
 		gap: 3px;
 		padding: 2px 4px 2px 6px;
-		background: var(--bg-control);
-		border: 1px solid var(--border-mid);
-		border-radius: 4px;
+		border-inline: 1px solid var(--border);
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		color: var(--text-muted);
-	}
-	.mp-sel-angle:focus-within {
-		border-color: var(--text-accent);
 	}
 	.mp-sel-angle-glyph {
 		font-weight: 700;
@@ -2006,7 +2073,7 @@
 		line-height: 1;
 	}
 	.mp-sel-angle-input {
-		width: 3.2em;
+		width: 2.8em;
 		padding: 3px 0 3px 4px;
 		border: none;
 		background: transparent;
@@ -2017,6 +2084,17 @@
 	}
 	.mp-sel-angle-input:focus {
 		outline: none;
+	}
+	/* Hide the native step arrows — the surrounding buttons replace
+	   them so we don't need a second, browser-styled pair. */
+	.mp-sel-angle-input::-webkit-outer-spin-button,
+	.mp-sel-angle-input::-webkit-inner-spin-button {
+		-webkit-appearance: none;
+		margin: 0;
+	}
+	.mp-sel-angle-input {
+		-moz-appearance: textfield;
+		appearance: textfield;
 	}
 	.mp-sel-angle-unit {
 		color: var(--text-dimmer);
