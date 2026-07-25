@@ -207,7 +207,7 @@ generation. It's defined by **two markers** pinned to log-entry ids:
 Marker state lives in `apps/web/src/lib/sectionStore.svelte.ts` — module-level
 `$state` persisted to `localStorage['ironledger:ai:section']` so a reload
 keeps the selection. Markers are **client-side UI state only**, not part of
-the log data model — they aren't included in the JSON export (see
+the log data model — they aren't included in the export bundle (see
 [import-schema.md § Session log](import-schema.md#session-log)).
 
 ### Semantics

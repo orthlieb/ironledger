@@ -1,10 +1,10 @@
 # Iron Ledger Import / Export Schema
 
-This document describes the JSON files that Iron Ledger produces from the
-**Hamburger → Export…** dialog and accepts via **Hamburger → Import…**. It
-covers the export of **characters**, **expeditions**, **connections**
-(communities + NPCs), the **session log**, and the combined **everything**
-bundle.
+This document describes the **`.zip` archives** Iron Ledger produces
+from the **Hamburger → Export…** dialog and accepts via
+**Hamburger → Import…**. It covers the export of **characters**,
+**expeditions**, **connections** (communities + NPCs + places), the
+**session log**, and the combined **everything** bundle.
 
 > This is the **user-data** format. For the read-only **catalogue/content**
 > data (moves, assets, oracles, foes, delve tables) shipped under `data/`,
@@ -12,16 +12,33 @@ bundle.
 
 The export/import logic lives in
 [`apps/web/src/routes/home/+page.svelte`](../apps/web/src/routes/home/+page.svelte);
-the import hardening lives in
+the import hardening + zip decompression lives in
 [`apps/web/src/lib/importSanitizer.ts`](../apps/web/src/lib/importSanitizer.ts).
 
 ---
 
-## The envelope
+## The bundle
 
-Every JSON export (except a bare single-character file — see
-[Backwards compatibility](#backwards-compatibility)) is a wrapper object with
-two top-level keys:
+Every export (except the **Session Log JSON** — no images, so it stays a
+plain `.json` file — and the **Markdown** flavours) is a `.zip` with
+three top-level entries:
+
+```
+<content>-<stamp>.zip
+├── manifest.json      { app, version, exportedAt, type, count, body }
+├── <type>.json        the payload — same JSON envelope this doc describes
+└── images/            portraits pulled out as raw JPEG/PNG bytes
+    ├── portrait-1.jpg
+    └── portrait-2.png
+```
+
+Zip over inlined JSON because portraits (typically 200–500 kB per image)
+would otherwise pay a ~33 % base64 tax if inlined into the JSON body.
+Raw bytes packed alongside stay compact and match the "Everything"
+Markdown export's layout.
+
+**Inside the zip, `<type>.json` is a wrapper object with two top-level
+keys** — same shape you'd expect if this were a single JSON file:
 
 ```json
 {
@@ -36,38 +53,42 @@ two top-level keys:
 }
 ```
 
+The manifest inside `<type>.json` mirrors the top-level `manifest.json`
+file — they're kept identical so a tool that only reads the body still
+sees the same envelope.
+
 ### Manifest fields
 
-| Field        | Type   | Notes                                                                         |
-| ------------ | ------ | ----------------------------------------------------------------------------- |
-| `app`        | string | Always `"Iron Ledger"`.                                                       |
-| `version`    | string | Export-format version. Currently the literal `"1.0.0"` (not the app version). |
-| `exportedAt` | string | ISO-8601 timestamp (`new Date().toISOString()`).                              |
-| `type`       | string | Selects how `data` is shaped and routed on import (see table below).          |
-| `count`      | number | Item count — informational only; import does not rely on it.                  |
+| Field        | Type   | Notes                                                                                                            |
+| ------------ | ------ | ---------------------------------------------------------------------------------------------------------------- |
+| `app`        | string | Always `"Iron Ledger"`.                                                                                          |
+| `version`    | string | Export-format version. Currently the literal `"1.0.0"` (not the app version).                                    |
+| `exportedAt` | string | ISO-8601 timestamp (`new Date().toISOString()`).                                                                 |
+| `type`       | string | Selects how `data` is shaped and routed on import (see table below).                                             |
+| `count`      | number | Item count — informational only; import does not rely on it.                                                     |
+| `body`       | string | Optional. Points at the body filename inside the zip when it's not one of the standard `<type>.json` candidates. |
 
-Import dispatches **solely on `manifest.type`**. If `manifest` and `data` are
-both present, the type is honored; otherwise the file is treated as a bare
-character (below).
+Import dispatches **solely on `manifest.type`**.
 
 ### Export types
 
-| `type`           | Export menu item  | `data` shape                                                                                    | Default filename                 |
-| ---------------- | ----------------- | ----------------------------------------------------------------------------------------------- | -------------------------------- |
-| `character`      | Current Character | `{ name, data }`                                                                                | `<slug-of-name>.json`            |
-| `all-characters` | All Characters    | `Array<{ name, data }>`                                                                         | `all-characters-<stamp>.json`    |
-| `log`            | Session Log       | `Array<LogEntry>` (oldest-first)                                                                | `session-log-<stamp>.json`       |
-| `communities`    | Communities       | `{ communities: Community[], npcs: Npc[], places: Place[] }`                                    | `communities-<stamp>.json`       |
-| `expeditions`    | Expeditions       | `Array<Expedition>` (Journey \| Site)                                                           | `expeditions-<stamp>.json`       |
-| `everything`     | Everything        | `{ characters, log, communities, npcs, places, expeditions, session }` (foes are Markdown-only) | `ironledger-export-<stamp>.json` |
+| `type`           | Export menu item  | `data` shape                                                                                    | Body filename           | Zip filename                    |
+| ---------------- | ----------------- | ----------------------------------------------------------------------------------------------- | ----------------------- | ------------------------------- |
+| `character`      | Current Character | `{ name, data }`                                                                                | `character.json`        | `<slug-of-name>.zip`            |
+| `all-characters` | All Characters    | `Array<{ name, data }>`                                                                         | `characters.json`       | `all-characters-<stamp>.zip`    |
+| `communities`    | Connections       | `{ communities: Community[], npcs: Npc[], places: Place[] }`                                    | `communities.json`      | `communities-<stamp>.zip`       |
+| `expeditions`    | Expeditions       | `Array<Expedition>` (Journey \| Site)                                                           | `expeditions.json`      | `expeditions-<stamp>.zip`       |
+| `everything`     | Everything        | `{ characters, log, communities, npcs, places, expeditions, session }` (foes are Markdown-only) | `everything.json`       | `ironledger-export-<stamp>.zip` |
+| `log`            | Session Log       | `Array<LogEntry>` (oldest-first)                                                                | _(no zip — plain JSON)_ | `session-log-<stamp>.json`      |
 
 `<stamp>` is local time formatted `YYYY-MM-DD_HHmm` (e.g. `2026-06-18_1504`).
 
-This document covers the **JSON** format only — the JSON exports are the
-re-importable form and the contract this doc defines. Separate human-readable
-**Markdown** exports exist in the UI (Session Log, Everything-as-zip, and
-**Stories** — the AI-generated prose entries only, `stories-<stamp>.md`); these
-are one-way (not re-importable) and out of scope here.
+This document covers the **zip / JSON body** format only — the zip
+exports are the re-importable form and the contract this doc defines.
+Separate human-readable **Markdown** exports exist in the UI (Session
+Log, Everything-as-zip, and **Stories** — the AI-generated prose entries
+only, `stories-<stamp>.md`); these are one-way (not re-importable) and
+out of scope here.
 
 ---
 
@@ -357,9 +378,11 @@ existing id; duplicates are ignored by the per-id append guard).
 
 ### Backwards compatibility
 
-A file with **no `manifest`/`data` envelope** is accepted as a single
-character — i.e. a bare `{ name, data }` object imports as one new character.
-This keeps older single-character exports importable.
+**No JSON-file import.** Only `.zip` archives are accepted. Older
+plain-`.json` exports (from before the zip switchover) no longer
+import; anyone with such a file can re-export from the previous
+session or hand-wrap the JSON into a
+`{ manifest.json + <type>.json + images/ }` zip.
 
 ---
 
@@ -410,7 +433,7 @@ import format just preserves the stored string.
 ## Portraits
 
 Portraits (community / npc / expedition `imageUrl`, character `data.portrait`)
-are **not** stored inline in the live data anymore. The bytes live in a
+are **not** stored inline in the live data. The bytes live in a
 content-addressed blob store on the server and the entity carries only a
 lightweight reference:
 
@@ -418,59 +441,90 @@ lightweight reference:
   character's `data` — the portrait's content hash (md5). The card renders
   `<img src="/api/.../portrait?v=<etag>">`; an absent/empty value means no
   portrait.
-- The legacy inline fields (**`imageUrl`** on entities, **`data.portrait`** on
-  characters) are **deprecated**. They are still accepted on import for
-  back-compat, and re-emitted on export (below), but the app never writes them
-  to live storage.
 
-The import/export format stays **self-contained and portable** by bridging
-between the two representations:
+The zip export/import format is **self-contained and portable** by
+extracting portraits as raw files inside the zip:
 
-- **Export** fetches each portrait's bytes from the blob endpoint and
-  **re-embeds** them as a base64 `data:` URL under the legacy field
-  (`imageUrl` / `data.portrait`), dropping `portraitEtag` from the exported
-  copy. A single export file therefore carries its own images, exactly like a
-  pre-blob-store export.
-- **Import** detects any inline base64 `imageUrl` / `data.portrait`, **uploads**
-  it to the blob store via `PUT /api/session/:kind/:id/portrait` (or
-  `/api/characters/:id/portrait`), sets the entity's `portraitEtag` to the
-  returned hash, and strips the inline field before the row is saved.
+- **Export.** For each entity that has a portrait, `exportZip()` fetches
+  the raw bytes from the blob endpoint and writes them to
+  `images/portrait-N.<ext>` inside the zip (extension preserved via MIME
+  sniff, so PNG stays PNG). The corresponding entity field in the
+  `<type>.json` body carries a **file reference** — `imageUrlFile` for
+  community / npc / place / expedition rows, `portraitFile` inside a
+  character's `data` — instead of a base64 data URL. `portraitEtag` is
+  dropped from the exported copy.
+
+  ```json
+  {
+    "id": "abc123",
+    "name": "Driftwood",
+    "imageUrlFile": "images/portrait-1.jpg"
+  }
+  ```
+
+- **Import.** `parseImportZip()` walks the reassembled body, resolves
+  each `imageUrlFile` / `portraitFile` reference to its bytes in
+  `images/`, encodes them as a `data:image/…;base64,…` URL, and writes
+  them back onto the entity under the original field
+  (`imageUrl` / `data.portrait`). The rest of the import flow then
+  uploads that inline data URL to the blob store via
+  `PUT /api/session/:kind/:id/portrait` (or `/api/characters/:id/portrait`),
+  sets the entity's `portraitEtag` to the returned hash, and strips
+  the inline field before the row is saved. A file reference that
+  doesn't resolve is silently dropped — the entity just imports
+  without a portrait, matching the pre-zip behaviour when a data-URL
+  fetch returned empty.
 
 Because the blob store is keyed by content hash, importing the same image
 across several entities — or re-importing an export — **stores the bytes once**
 and the duplicates collapse to references. The markdown (`.md` zip) export is
-unaffected in shape: it still writes each portrait as a separate file under
+unaffected in shape: it also writes each portrait as a separate file under
 `images/`, fetching the bytes from the blob endpoint.
 
 ---
 
 ## Import sanitization
 
-Every imported file is run through `parseImportJson()` in `importSanitizer.ts`
-**before any data is applied** — the raw file is never trusted. An uploaded
-JSON file (whatever its `manifest.type`, including a bare character) goes
+Every imported file is run through `parseImportZip()` in
+`importSanitizer.ts` **before any data is applied** — the raw file is
+never trusted. An uploaded `.zip` (whatever its `manifest.type`) goes
 through this pipeline:
 
-1. **Size check** — reject the file up front if it exceeds the byte limit.
-2. **Parse** — `JSON.parse`; a parse error is reported as a friendly import
-   error, not a crash.
-3. **Recursive sanitize** — walk the entire parsed structure, enforcing the
-   depth / array-length / string-length limits and stripping prototype-
-   pollution keys at every level.
-4. **Log-HTML scrub** — each log entry's `html` is passed through
-   `sanitizeLogHtml()` (and added via `appendSafeLog()`) so no active content
-   can reach the renderer.
+1. **Outer size check** — reject the `.zip` up front if the raw byte
+   payload exceeds the file-size limit.
+2. **Decompress** — `fflate.unzipSync`. A malformed archive is reported
+   as a friendly import error, not a crash. Total decompressed size is
+   also capped (`MAX_BYTES × 4`) so a zip bomb — small compressed size,
+   enormous unpacked payload — is rejected.
+3. **Locate the body** — read `manifest.json` (must exist and be valid
+   JSON), find the body file (`manifest.body` pointer or the first
+   match in the standard candidate list), and enforce the same size
+   cap on the body itself.
+4. **Parse + reassemble portraits** — `JSON.parse` the body, then walk
+   it swapping each `imageUrlFile` / `portraitFile` reference for the
+   inline `imageUrl` / `portrait` data URL rebuilt from the zip's
+   `images/*` entries.
+5. **Recursive sanitize** — walk the reassembled structure, enforcing
+   the depth / array-length / string-length limits and stripping
+   prototype-pollution keys at every level. The result is the
+   `{ manifest, data }` envelope the rest of the import flow consumes.
+6. **Log-HTML scrub** — each log entry's `html` is passed through
+   `sanitizeLogHtml()` (and added via `appendSafeLog()`) so no active
+   content can reach the renderer.
 
 ### Limits and filters
 
-| Guard               | Limit / behavior                                                                                                          |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| File size           | **5 MB** max (`MAX_BYTES`).                                                                                               |
-| Nesting depth       | **12** levels max (`MAX_DEPTH`).                                                                                          |
-| Array length        | **1000** items max per array (`MAX_ARRAY_ITEMS`).                                                                         |
-| String length       | Capped at the file-size limit (`MAX_STR_LEN = MAX_BYTES`, 5 MB) — large enough for inline base64 `data:` image URLs.      |
-| Prototype pollution | Keys `__proto__`, `constructor`, `prototype` are stripped from every object (the `POISON_KEYS` set).                      |
-| Log HTML            | `sanitizeLogHtml()` strips `<script>` blocks, `on*=` event handlers, and `javascript:` URLs before any entry is rendered. |
+| Guard                   | Limit / behavior                                                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Outer file size         | **5 MB** max (`MAX_BYTES`) on the raw `.zip` bytes.                                                                       |
+| Total decompressed size | **20 MB** max (`MAX_BYTES × 4`) — zip-bomb guard.                                                                         |
+| Body file size          | **5 MB** max (`MAX_BYTES`) on the unpacked `<type>.json`.                                                                 |
+| Nesting depth           | **12** levels max (`MAX_DEPTH`).                                                                                          |
+| Array length            | **1000** items max per array (`MAX_ARRAY_ITEMS`).                                                                         |
+| String length           | Capped at the file-size limit (`MAX_STR_LEN = MAX_BYTES`, 5 MB) — large enough for a single re-embedded portrait.         |
+| Prototype pollution     | Keys `__proto__`, `constructor`, `prototype` are stripped from every object (the `POISON_KEYS` set).                      |
+| Missing portrait file   | Silently dropped — the entity imports without a portrait rather than aborting the whole zip.                              |
+| Log HTML                | `sanitizeLogHtml()` strips `<script>` blocks, `on*=` event handlers, and `javascript:` URLs before any entry is rendered. |
 
 Any violated limit throws an `ImportError`. That is caught at the import call
 site, surfaced to the user as a readable message, and **aborts the import with

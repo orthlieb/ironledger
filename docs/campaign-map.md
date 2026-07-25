@@ -529,20 +529,6 @@ enum + add a listener in the target area.
 
 ## Growth path
 
-Tier 2b (planned):
-
-- **Bidirectional** — Community / Place / Site / Journey cards show
-  a `📍 On map at (q, r)` indicator with click-through back to the
-  map. Client-side derived index from `mapState.markers` grouped by
-  `entityId`.
-
-Tier 2c (planned):
-
-- **JSON import** — pair the JSON export with an importer that
-  re-uploads the image via `PUT /session/map/background` and swaps in
-  the fresh hash. Bundle this into the top-level "Everything"
-  export/import.
-
 Tier 2 nice-to-haves:
 
 - **Multiple markers per intersection** in the UI — a picker when the

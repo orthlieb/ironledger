@@ -69,12 +69,7 @@
 	import { getActiveFoeId, getActiveExpeditionId } from '$lib/activeContext.svelte.js';
 	import { triggerAction, appendLog, sessionLog } from '$lib/log.svelte.js';
 	import { parseStorySource } from '$lib/aiSerialize.js';
-	import {
-		parseImportJson,
-		parseImportZip,
-		sanitizeLogHtml,
-		ImportError,
-	} from '$lib/importSanitizer.js';
+	import { parseImportZip, sanitizeLogHtml, ImportError } from '$lib/importSanitizer.js';
 	import { zipSync, strToU8 } from 'fflate';
 	import { buildMapZipEntries } from '$lib/mapExport.js';
 	import charactersIconSvg from '$icons/Characters.svg?raw';
@@ -419,24 +414,19 @@
 	}
 
 	// ── Import ───────────────────────────────────────────────────────────────
-	// Accepts either a legacy `.json` file or a `.zip` produced by
-	// `exportZip()`. Zip decompression + portrait reassembly happens in
-	// `parseImportZip` so the rest of the flow sees the same
-	// `{ manifest, data }` shape regardless of input format.
+	// Accepts only the `.zip` bundles produced by `exportZip()`. Legacy
+	// bare-JSON exports are no longer supported — anyone with an older
+	// file can re-export from the previous session or hand-wrap the JSON
+	// into a `{ manifest.json + <type>.json + images/ }` zip.
 	async function onImportFile(e: Event) {
 		const file = (e.target as HTMLInputElement).files?.[0];
 		if (!file) return;
 		importError = '';
 		try {
-			const isZip =
-				file.type === 'application/zip' ||
-				file.type === 'application/x-zip-compressed' ||
-				file.name.toLowerCase().endsWith('.zip');
-			const parsed = (
-				isZip
-					? parseImportZip(new Uint8Array(await file.arrayBuffer()))
-					: parseImportJson(await file.text())
-			) as Record<string, unknown>;
+			const parsed = parseImportZip(new Uint8Array(await file.arrayBuffer())) as Record<
+				string,
+				unknown
+			>;
 
 			// Reconcile imported globalValues against the current catalogue
 			// (drops unknown counter ids, clamps to canonical maxValue, drops
@@ -1522,13 +1512,13 @@
 	<title>Iron Ledger</title>
 </svelte:head>
 
-<!-- Hidden file input — accepts both legacy `.json` and the new `.zip`
-     bundles produced by `exportZip()`. Import sniffs the file type
-     and delegates to `parseImportZip` or `parseImportJson`. -->
+<!-- Hidden file input — accepts only the `.zip` bundles produced by
+     `exportZip()`. Legacy bare-JSON imports were dropped when the
+     export format switched to zip. -->
 <input
 	bind:this={importInput}
 	type="file"
-	accept=".json,application/json,.zip,application/zip"
+	accept=".zip,application/zip"
 	style="display: none"
 	onchange={onImportFile}
 />
