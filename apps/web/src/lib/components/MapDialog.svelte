@@ -1397,7 +1397,18 @@
 		</div>
 	{/if}
 
-	<div class="mp-body" style="aspect-ratio: {gridDims.cols} / {gridDims.rows}">
+	<!-- Body width is `min(100%, max-height × aspect)` — computed so
+	     the aspect-ratio always drives one dimension, even when the
+	     other has already hit its max. Without this a portrait map
+	     (aspect < 1) would fill the parent width horizontally and
+	     clamp height at max-height, producing a squashed non-square
+	     grid because CSS `aspect-ratio` is ignored when both axes are
+	     already constrained. `margin-inline: auto` re-centers the
+	     narrowed body inside the dialog. -->
+	<div
+		class="mp-body"
+		style="aspect-ratio: {gridDims.cols} / {gridDims.rows}; width: min(100%, calc((88vh - 8rem) * {gridDims.cols} / {gridDims.rows}));"
+	>
 		<!-- Wheel listener is attached manually with `passive: false` in a
 		     $effect above so trackpad-pinch (ctrl+wheel) is preventable. -->
 		<div class="mp-canvas" bind:this={canvasEl} onscroll={onScroll}>
@@ -2178,16 +2189,18 @@
 	}
 
 	.mp-body {
-		/* aspect-ratio is set inline from gridDims (cols/rows) so cells
-		   render perfectly square regardless of the source image's exact
-		   proportions. `max-height` caps the total dialog well inside the
+		/* aspect-ratio + width are set inline from gridDims so cells
+		   render perfectly square whether the map is landscape or
+		   portrait. `max-height` caps the total dialog well inside the
 		   CLAUDE.md 88vh iOS-safe budget so on a short viewport the body
-		   clamps rather than overflowing. `position: relative` establishes
-		   the containing block for the .mp-overlay-svg absolutely-
-		   positioned overlay. */
+		   clamps rather than overflowing. `margin-inline: auto` centres
+		   a narrowed portrait body inside the dialog's fixed width.
+		   `position: relative` establishes the containing block for the
+		   .mp-overlay-svg absolutely-positioned overlay. */
 		position: relative;
-		width: 100%;
+		max-width: 100%;
 		max-height: calc(88vh - 8rem);
+		margin-inline: auto;
 		overflow: hidden;
 	}
 	/* Overlay SVG — floats above .mp-canvas at fixed canvas-pixel
