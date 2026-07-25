@@ -20,10 +20,22 @@ export interface GridCoord {
 }
 
 /** Snap a world coordinate to the nearest sub-grid intersection at the
- *  given step (world units between adjacent snap lines). */
+ *  given step (world units between adjacent snap lines). Used for
+ *  rendering grid lines; markers themselves snap to cell CENTERS via
+ *  `snapToCellCenter`. */
 export function snapToStep(v: number, step: number): number {
 	if (step <= 0) return v;
 	return Math.round(v / step) * step;
+}
+
+/** Snap a world coordinate to the CENTER of the cell containing it
+ *  at the given cell size. Cell centers sit at `s/2, 3s/2, 5s/2, …`
+ *  — one half-step in from each corner intersection — so a marker
+ *  placed via `snapCoord` visually lands INSIDE a cell rather than on
+ *  the grid crossing where four cells meet. */
+export function snapToCellCenter(v: number, cellSize: number): number {
+	if (cellSize <= 0) return v;
+	return Math.floor(v / cellSize) * cellSize + cellSize / 2;
 }
 
 /** World-unit distance between adjacent sub-grid lines at a given zoom.
@@ -32,12 +44,13 @@ export function subGridStep(zoom: number): number {
 	return 1 / Math.pow(2, subGridOctaveForZoom(zoom));
 }
 
-/** Snap a marker's `(x, y)` to the current zoom's sub-grid — call after
- *  every placement so markers land on a clean intersection users can
- *  eyeball. */
+/** Snap a marker's `(x, y)` to the CENTER of the sub-cell containing
+ *  it at the current zoom. Cell-centered so the visible marker icon
+ *  sits inside the cell (and the selection outline wraps that cell)
+ *  instead of straddling the intersection where four cells meet. */
 export function snapCoord(coord: GridCoord, zoom: number): GridCoord {
 	const step = subGridStep(zoom);
-	return { x: snapToStep(coord.x, step), y: snapToStep(coord.y, step) };
+	return { x: snapToCellCenter(coord.x, step), y: snapToCellCenter(coord.y, step) };
 }
 
 /** Yield every world-unit x-coordinate that a vertical grid line falls

@@ -422,9 +422,12 @@ export async function deleteMap(mapId: string): Promise<void> {
  *  cells; two markers are "at the same cell" when they land on the same
  *  intersection under the current snap resolution. */
 export function markersAt(x: number, y: number, zoom = 1): MapMarker[] {
+	// Cell-centre snap: markers live at (cellIndex + 0.5) × cellSize on
+	// each axis, not at intersections. Compute the containing cell for
+	// the query point and match markers within a half-cell tolerance.
 	const step = 1 / Math.pow(2, Math.max(0, Math.floor(Math.log2(Math.max(1, zoom)))));
-	const sx = Math.round(x / step) * step;
-	const sy = Math.round(y / step) * step;
+	const sx = Math.floor(x / step) * step + step / 2;
+	const sy = Math.floor(y / step) * step + step / 2;
 	const eps = step / 2;
 	return mapState.markers.filter((m) => Math.abs(m.x - sx) < eps && Math.abs(m.y - sy) < eps);
 }
