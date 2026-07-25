@@ -1523,6 +1523,25 @@
 					{@const mx = isDragging && dragPreview ? dragPreview.x : m.x}
 					{@const my = isDragging && dragPreview ? dragPreview.y : m.y}
 					{@const hasIcon = m.icon !== ''}
+					{@const isSelected = m.id === selectedMarkerId}
+					{#if isSelected}
+						<!-- Selection outline — the sub-cell the marker snaps into
+						     at the current zoom (1 unit at 100%, ½ at 200%, ¼ at
+						     400%, …). Drawn in world coords so it sits on top of
+						     the grid where the marker actually lives; the icon's
+						     scale(1/zoom) group is separate so shrinking the icon
+						     doesn't also shrink the highlight. `non-scaling-stroke`
+						     keeps the outline a fixed screen weight at any zoom. -->
+						{@const cell = snapResolutionForZoom(zoom)}
+						<rect
+							class="mp-marker-selection"
+							x={mx - cell / 2}
+							y={my - cell / 2}
+							width={cell}
+							height={cell}
+							vector-effect="non-scaling-stroke"
+						/>
+					{/if}
 					<!--
 						`scale(1/zoom)` keeps the whole marker (icon + label +
 						strokes) a constant on-screen size regardless of zoom —
@@ -1533,7 +1552,7 @@
 					-->
 					<g
 						class="mp-marker"
-						class:mp-marker-selected={m.id === selectedMarkerId}
+						class:mp-marker-selected={isSelected}
 						class:mp-marker-dragging={isDragging}
 						transform="translate({mx} {my}) scale({1 / zoom})"
 					>
@@ -2289,6 +2308,15 @@
 	}
 	.mp-marker-selected {
 		filter: drop-shadow(0 0 3px var(--text-accent));
+	}
+	/* Selection outline — a bright square around the snap-cell the
+	   selected marker sits in. Sizes with the sub-grid at current zoom
+	   so it always matches the granularity the user is placing at. */
+	.mp-marker-selection {
+		fill: none;
+		stroke: var(--text-accent);
+		stroke-width: 2;
+		pointer-events: none;
 	}
 	.mp-marker-dragging {
 		opacity: 0.85;
