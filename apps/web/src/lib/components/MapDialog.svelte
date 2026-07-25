@@ -88,6 +88,12 @@
 	import { downscaleImage, MapImageError } from '$lib/mapImage.js';
 	import { exportMapPng, exportMapZip } from '$lib/mapExport.js';
 	import { getLinkableEntities, resolveEntity } from '$lib/mapEntityLinks.js';
+	// @simonwep/pickr — MIT, dep-free, framework-agnostic colour picker.
+	// Replaces the native <input type="color"> whose macOS chrome is
+	// jarring and eats a lot of screen. The Nano theme is the smallest
+	// build (~4 KB CSS) and matches our toolbar footprint.
+	import Pickr from '@simonwep/pickr';
+	import '@simonwep/pickr/dist/themes/nano.min.css';
 
 	// Module-level guard so only one <MapDialog /> instance in the page
 	// registers the `ironledger:export-map` listener at a time — matters
@@ -823,10 +829,83 @@
 		updateMarker(selectedMarker.id, { label: (e.target as HTMLInputElement).value });
 	}
 
-	function onColorInput(e: Event) {
-		if (!selectedMarker) return;
-		updateMarker(selectedMarker.id, { color: (e.target as HTMLInputElement).value });
+	// ─── Pickr (marker colour) ─────────────────────────────────────────────
+	// Pickr is instantiated once per selection-toolbar mount. Two
+	// $effects: one to create/tear down when the anchor element comes
+	// and goes, one to sync the widget's colour when a different
+	// marker is selected (silent: true so it doesn't fire our own
+	// change handler and cause a feedback loop).
+	let pickrAnchor = $state<HTMLDivElement | null>(null);
+	let pickr: Pickr | null = null;
+
+	/** Seven-char `#rrggbb` (no alpha) — Pickr's HEXA output ends `ff`
+	 *  for the fully-opaque colours we always store; trim so the round
+	 *  trip against `<input type="color">` compatible fields stays
+	 *  clean. */
+	function normalizeHex(color: string): string {
+		return color.startsWith('#') ? color.slice(0, 7).toLowerCase() : color;
 	}
+
+	$effect(() => {
+		if (!pickrAnchor || !dialogEl) return;
+		const anchor = pickrAnchor;
+		const instance = Pickr.create({
+			el: anchor,
+			// Anchor the popover INSIDE the dialog. Native <dialog>
+			// lives in the browser top layer, so a Pickr appended to
+			// document.body renders beneath it and clicks pass through.
+			// Attaching inside the dialog keeps the popover in the same
+			// top-layer scope.
+			container: dialogEl,
+			theme: 'nano',
+			default: selectedColor,
+			// Pickr's built-in swatch row — same eight tabletop-friendly
+			// hues the old preset strip carried before the native input
+			// took over. Keeps common picks one tap away without opening
+			// the wheel.
+			swatches: [
+				'#e63946',
+				'#f4a261',
+				'#e9c46a',
+				'#2a9d8f',
+				'#457b9d',
+				'#8e44ad',
+				'#111111',
+				'#f1faee',
+			],
+			components: {
+				preview: true,
+				opacity: false,
+				hue: true,
+				interaction: {
+					hex: true,
+					input: true,
+					clear: false,
+					save: false,
+				},
+			},
+		});
+		instance.on('change', (c: ReturnType<Pickr['getColor']>) => {
+			if (!selectedMarker) return;
+			updateMarker(selectedMarker.id, { color: normalizeHex(c.toHEXA().toString()) });
+		});
+		pickr = instance;
+		return () => {
+			instance.destroyAndRemove();
+			if (pickr === instance) pickr = null;
+		};
+	});
+
+	// Sync widget → selection when the picked marker (or another
+	// surface) changes its colour behind our back. Uses setColor
+	// silent so we don't feed the change back through updateMarker.
+	$effect(() => {
+		const c = selectedColor;
+		const p = pickr;
+		if (!p) return;
+		const cur = normalizeHex(p.getColor()?.toHEXA().toString() ?? '');
+		if (cur !== c.toLowerCase()) p.setColor(c, true);
+	});
 
 	/** Normalise a rotation to `[0, 360)` for display + storage. `undefined`
 	 *  → 0 (default rotation for legacy markers). Non-finite → 0 so a stray
@@ -1180,18 +1259,17 @@
 					<span class="mp-sel-icon-label">No icon</span>
 				{/if}
 			</button>
-			<!-- Native color picker only — the preset-swatch strip took up
-			     a lot of horizontal space that reads better as the entity
-			     link chip. Native picker opens the OS colour dialog on
-			     click, which covers every preset and more. -->
-			<input
+			<!-- Pickr colour widget — the native macOS/Windows `<input
+			     type="color">` opens a heavy OS dialog that eats the
+			     screen. Pickr is a self-contained JS wheel + swatches
+			     that lives in-page. The `<div>` is a stub anchor;
+			     Pickr replaces it with its own button chip that shows
+			     the current colour and pops the wheel on click. -->
+			<div
 				class="mp-sel-color"
-				type="color"
-				value={selectedColor}
-				oninput={onColorInput}
-				use:tooltip={'Icon color — click to open the color picker'}
-				aria-label="Icon color"
-			/>
+				bind:this={pickrAnchor}
+				use:tooltip={'Icon colour — click to open the picker'}
+			></div>
 			<!-- Angle spinner — explicit − / + buttons flank the number
 			     input because iOS Safari doesn't render the native
 			     <input type="number"> step arrows, so touch users would
@@ -2012,21 +2090,29 @@
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
-	.mp-sel-color {
-		width: 28px;
-		height: 28px;
-		padding: 0;
+	/* Pickr colour widget. Pickr replaces the anchor `<div>` with its
+	   own `.pickr` chip (a small round swatch button) + a floating
+	   `.pcr-app` popover. We just need to constrain the chip so it
+	   sits inside the toolbar row like the old native chip did — the
+	   popover then anchors itself to the chip and floats free. */
+	.mp-sel-color :global(.pickr) {
+		display: inline-flex;
+	}
+	.mp-sel-color :global(.pickr .pcr-button) {
+		width: 24px;
+		height: 24px;
 		border: 1px solid var(--border-mid);
 		border-radius: 4px;
-		background: transparent;
-		cursor: pointer;
 	}
-	.mp-sel-color::-webkit-color-swatch-wrapper {
-		padding: 2px;
+	.mp-sel-color :global(.pickr .pcr-button:focus) {
+		outline: 1px solid var(--text-accent);
+		outline-offset: 1px;
+		box-shadow: none;
 	}
-	.mp-sel-color::-webkit-color-swatch {
-		border: none;
-		border-radius: 2px;
+	/* Popover floats above the dialog's other chrome via a high
+	   z-index so it isn't clipped by the toolbar's own row. */
+	:global(.pcr-app) {
+		z-index: 60;
 	}
 	/* Angle spinner — inline `−  ∠ nnn°  +` cluster. iOS Safari drops
 	   the native <input type="number"> step arrows, so explicit step
