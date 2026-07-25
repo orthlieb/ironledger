@@ -50,6 +50,7 @@
 	import MapOptionsDialog from './MapOptionsDialog.svelte';
 	import { mapSettings, persistMapSettings } from '$lib/mapSettingsStore.svelte.js';
 	import iconTrashSvg from '$icons/trash-solid-full.svg?raw';
+	import iconExpandSvg from '$icons/expand-solid-full.svg?raw';
 	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import {
@@ -1094,11 +1095,11 @@
 					aria-label="Zoom in">+</button
 				>
 				<button
-					class="mp-btn"
+					class="mp-btn mp-btn-icon"
 					onclick={zoomFit}
 					disabled={zoom === 1}
 					use:tooltip={'Fit map to view (100%)'}
-					aria-label="Fit to view">Fit</button
+					aria-label="Fit to view">{@html iconExpandSvg}</button
 				>
 			</div>
 		</div>
