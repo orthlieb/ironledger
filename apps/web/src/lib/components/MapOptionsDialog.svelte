@@ -27,16 +27,20 @@
 		mapState,
 		mapListState,
 		persistSettings,
-		clearMap,
 		clearMarkers,
 		renameMap,
 		deleteMap,
-		hasAnyContent,
 	} from '$lib/mapStore.svelte.js';
+
+	interface Props {
+		/** Fires when the user clicks "Replace background image…". Wired
+		 *  by MapDialog to trigger its own hidden background file input. */
+		onReplaceBackground?: () => void;
+	}
+	let { onReplaceBackground }: Props = $props();
 
 	let dialogEl = $state<HTMLDialogElement | null>(null);
 	let clearMarkersDialogRef = $state<{ open(): void; close(): void } | null>(null);
-	let clearMapDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let deleteMapDialogRef = $state<{ open(): void; close(): void } | null>(null);
 
 	function onRename(e: Event) {
@@ -117,7 +121,6 @@
 					onchange={onRename}
 				/>
 			</label>
-			<p class="mo-hint">Saved with the map — visible in the picker.</p>
 		</section>
 
 		<section class="mo-section">
@@ -215,18 +218,22 @@
 			<div class="mo-danger-row">
 				<button
 					class="mo-danger-btn"
-					onclick={() => clearMarkersDialogRef?.open()}
-					disabled={markerCount === 0}>Clear all markers</button
+					onclick={() => onReplaceBackground?.()}
+					disabled={!onReplaceBackground}>Replace image…</button
 				>
-				<span class="mo-hint">Removes every marker. Keeps the background image.</span>
+				<span class="mo-hint">
+					Uploads a fresh image and keeps every marker where it is. <strong
+						>Use an image with the same framing and aspect ratio</strong
+					> — otherwise markers will shift relative to the new background.
+				</span>
 			</div>
 			<div class="mo-danger-row">
 				<button
 					class="mo-danger-btn"
-					onclick={() => clearMapDialogRef?.open()}
-					disabled={!hasAnyContent()}>Clear the whole map</button
+					onclick={() => clearMarkersDialogRef?.open()}
+					disabled={markerCount === 0}>Clear all markers</button
 				>
-				<span class="mo-hint">Removes the background image + every marker.</span>
+				<span class="mo-hint">Removes every marker. Keeps the background image.</span>
 			</div>
 			<div class="mo-danger-row">
 				<button
@@ -255,19 +262,6 @@
 	>
 		This will remove every marker on the map. The background image will be kept. This can't be
 		undone.
-	</p>
-</ConfirmDialog>
-
-<ConfirmDialog
-	bind:this={clearMapDialogRef}
-	title="Clear Campaign Map?"
-	confirmLabel="Clear Map"
-	onconfirm={clearMap}
->
-	<p
-		style="font-family: var(--font-ui); font-size: 0.82rem; color: var(--text-muted); margin: 0; line-height: 1.5;"
-	>
-		This will remove the background image and every marker on the map. This can't be undone.
 	</p>
 </ConfirmDialog>
 

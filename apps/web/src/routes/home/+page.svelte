@@ -70,8 +70,27 @@
 	import { triggerAction, appendLog, sessionLog } from '$lib/log.svelte.js';
 	import { parseStorySource } from '$lib/aiSerialize.js';
 	import { parseImportZip, sanitizeLogHtml, ImportError } from '$lib/importSanitizer.js';
-	import { zipSync, strToU8 } from 'fflate';
-	import { buildMapZipEntries } from '$lib/mapExport.js';
+	import { zipSync, strToU8, unzipSync, strFromU8 } from 'fflate';
+	import { buildMapZipEntries, importMapZip } from '$lib/mapExport.js';
+
+	/** Peek a zip's manifest.json to see if this is a per-map bundle.
+	 *  Cheap enough (only unzips into an entries dict + parses one small
+	 *  entry) that we can do it before delegating to either
+	 *  `importMapZip` (map bundle) or `parseImportZip` (everything /
+	 *  per-entity bundle). Returns false on any decompression / parse
+	 *  error — the main pipeline will produce a proper user-facing error
+	 *  message. */
+	async function isMapZip(bytes: Uint8Array): Promise<boolean> {
+		try {
+			const entries = unzipSync(bytes);
+			const mBytes = entries['manifest.json'];
+			if (!mBytes) return false;
+			const m = JSON.parse(strFromU8(mBytes)) as { type?: string };
+			return m.type === 'map';
+		} catch {
+			return false;
+		}
+	}
 	import charactersIconSvg from '$icons/Characters.svg?raw';
 	import foesIconSvg from '$icons/Foes.svg?raw';
 	import expeditionsIconSvg from '$icons/Expeditions.svg?raw';
@@ -423,10 +442,16 @@
 		if (!file) return;
 		importError = '';
 		try {
-			const parsed = parseImportZip(new Uint8Array(await file.arrayBuffer())) as Record<
-				string,
-				unknown
-			>;
+			const bytes = new Uint8Array(await file.arrayBuffer());
+			// Map zips are a different beast (manifest.type === 'map',
+			// background.jpg at the top level rather than under images/),
+			// so they get their own importer. Peek the manifest before
+			// running the full parseImportZip pipeline.
+			if (await isMapZip(bytes)) {
+				await importMapZip(file);
+				return;
+			}
+			const parsed = parseImportZip(bytes) as Record<string, unknown>;
 
 			// Reconcile imported globalValues against the current catalogue
 			// (drops unknown counter ids, clamps to canonical maxValue, drops

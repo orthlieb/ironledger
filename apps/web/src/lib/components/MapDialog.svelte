@@ -56,7 +56,6 @@
 		DEFAULT_MAP_ASPECT,
 		DEFAULT_MARKER_COLOR,
 		DEFAULT_MARKER_ICON,
-		MARKER_COLOR_PRESETS,
 		gridDimsForAspect,
 		resolveMapIcon,
 		snapResolutionForZoom,
@@ -75,21 +74,25 @@
 		addMarker,
 		updateMarker,
 		removeMarker,
-		duplicateMarker,
 		setBackground,
 		initMap,
 		backgroundUrl,
 		persistSettings,
 		switchMap,
 		createMap,
-		clipboardState,
-		copyMarkerToClipboard,
-		pasteMarkerFromClipboard,
 		type MapMarker,
 	} from '$lib/mapStore.svelte.js';
 	import { downscaleImage, MapImageError } from '$lib/mapImage.js';
-	import { exportMapPng, exportMapZip, importMapZip, MapImportError } from '$lib/mapExport.js';
+	import { exportMapPng, exportMapZip } from '$lib/mapExport.js';
 	import { getLinkableEntities, resolveEntity } from '$lib/mapEntityLinks.js';
+
+	// Module-level guard so only one <MapDialog /> instance in the page
+	// registers the `ironledger:export-map` listener at a time — matters
+	// because both ExpeditionsArea and CommunitiesArea mount their own
+	// MapDialog for the entity-owned map button (Phase 3 wiring). Without
+	// this the hamburger's "Export" would run the listener twice and the
+	// user would get two PNGs downloaded per click.
+	const _exportClaim: { owner: unknown } = { owner: null };
 
 	let dialogEl = $state<HTMLDialogElement | null>(null);
 	let optionsDialogRef = $state<{ open(): void; close(): void } | null>(null);
@@ -119,34 +122,20 @@
 		selectedMarkerId = null;
 		try {
 			await createMap({ name: name.trim() || 'Untitled Map' });
+			// Chain into the background upload — the standalone Upload
+			// button was removed; picking a map + its image is now one
+			// gesture. setTimeout so the picker menu closes before the
+			// file picker opens (some browsers otherwise steal focus).
+			setTimeout(() => fileInputEl?.click(), 0);
 		} catch (err) {
 			mapState.error = err instanceof Error ? err.message : 'Failed to create map';
 		}
 	}
 
-	// Import — hidden file input driven by the "Import map…" picker
-	// menu item. Accepts an `exportMapZip()` bundle; creates a new map,
-	// pulls in markers + settings, and uploads the background image
-	// bytes if the zip carried one.
-	let importFileEl = $state<HTMLInputElement | null>(null);
-	function pickImportMap() {
-		closePicker();
-		importFileEl?.click();
-	}
-	async function handleImportFile(e: Event) {
-		const input = e.target as HTMLInputElement;
-		const file = input.files?.[0];
-		input.value = ''; // let the same file be re-picked later
-		if (!file) return;
-		mapState.error = '';
-		try {
-			selectedMarkerId = null;
-			await importMapZip(file);
-		} catch (err) {
-			mapState.error =
-				err instanceof MapImportError ? err.message : 'Import failed — see the browser console.';
-			if (!(err instanceof MapImportError)) console.error('[MapDialog] import failed:', err);
-		}
+	/** Called by MapOptionsDialog's "Replace background image…" button
+	 *  to trigger the shared background file input. */
+	function triggerBackgroundUpload() {
+		fileInputEl?.click();
 	}
 
 	/** Legacy alias — `showLabels` was a local `$state` until labels moved
@@ -208,18 +197,31 @@
 	 * idempotent) so the export works even if the dialog has never been
 	 * opened in this session. The `format: 'json'` alias is kept so
 	 * older menu builds still resolve to a zip.
+	 *
+	 * MapDialog is mounted twice on the home page (once each by
+	 * ExpeditionsArea + CommunitiesArea for the entity-owned map
+	 * buttons). Without the module-level `_exportClaim` guard both
+	 * instances would run this handler on every export click and the
+	 * user would get two PNGs downloaded for one click.
 	 */
 	$effect(() => {
-		const handler = (e: Event) => {
-			const format = (e as CustomEvent<{ format?: string }>).detail?.format;
-			void initMap().then(() => {
-				if (format === 'png') handleExportPng();
-				else if (format === 'zip' || format === 'json') handleExportZip();
-			});
-		};
+		if (_exportClaim.owner !== null) return; // another MapDialog already listening
+		_exportClaim.owner = handleExportEvent;
+		const handler = (e: Event) => handleExportEvent(e);
 		document.addEventListener('ironledger:export-map', handler);
-		return () => document.removeEventListener('ironledger:export-map', handler);
+		return () => {
+			document.removeEventListener('ironledger:export-map', handler);
+			_exportClaim.owner = null;
+		};
 	});
+
+	function handleExportEvent(e: Event) {
+		const format = (e as CustomEvent<{ format?: string }>).detail?.format;
+		void initMap().then(() => {
+			if (format === 'png') handleExportPng();
+			else if (format === 'zip' || format === 'json') handleExportZip();
+		});
+	}
 
 	// ─── Grid dims (from the map's aspect) ─────────────────────────────────────
 	// The map stores its own aspect ratio in settings.aspect; we derive
@@ -487,7 +489,9 @@
 		const sbUnit = sb.unit ?? 'miles';
 		const sbSegW = cellW;
 		const sbTotalW = sbSegments * sbSegW;
-		const sbH = Math.max(5, Math.round(cellW * 0.3));
+		// Slim bar (~half the old height) — reads clearly at a glance
+		// but stops covering marker labels near the bottom edge.
+		const sbH = Math.max(3, Math.round(cellW * 0.15));
 		const sbBottomMargin = 24;
 		const sbLeftMargin = 20;
 		return {
@@ -589,6 +593,7 @@
 		});
 		selectedMarkerId = id;
 		placingMode = false;
+		clearSquareSelection();
 	}
 
 	// ─── Drag-to-move + pile-up popover ────────────────────────────────────────
@@ -658,7 +663,9 @@
 	 *  • Snap point with >1 markers → open pile-up popover to disambiguate.
 	 *  • Existing marker w/ link + bare click → jump to entity.
 	 *  • Existing marker w/ shift-click → open editor.
-	 *  • Empty spot outside placing mode → nothing (user must hit "+ Add").
+	 *  • Empty spot outside placing mode → highlight it as `selectedSquare`
+	 *    so the "+ Marker" button knows where to drop the next pin without
+	 *    the user needing to re-tap.
 	 *
 	 * Long-press on touch (see onGridPointerDown) sets `longPressFired`;
 	 * a completed drag (see onGridPointerUp) sets `dragJustEnded`. Either
@@ -679,21 +686,31 @@
 		if (placingMode) {
 			if (hits.length === 1) {
 				selectedMarkerId = hits[0].id;
-				placingMode = false;
+				clearSquareSelection();
 			} else if (hits.length > 1) {
 				openPilePicker(hits, ev);
-				placingMode = false;
+				clearSquareSelection();
 			} else {
 				placeAt(x, y);
 			}
+			placingMode = false;
 			return;
 		}
-		if (hits.length === 0) return;
 		if (hits.length > 1) {
 			openPilePicker(hits, ev);
+			clearSquareSelection();
 			return;
 		}
-		activateExisting(x, y, ev.shiftKey);
+		if (hits.length === 1) {
+			activateExisting(x, y, ev.shiftKey);
+			clearSquareSelection();
+			return;
+		}
+		// Empty grid click: highlight the snap point as the target for
+		// the next "+ Marker" press. Clear any marker selection so the
+		// toolbar switches back to its hint state.
+		selectedSquare = { x, y };
+		selectedMarkerId = null;
 	}
 
 	function onGridPointerDown(e: PointerEvent) {
@@ -733,8 +750,6 @@
 	}
 
 	function onGridPointerMove(e: PointerEvent) {
-		// Track mouse hover for paste-at-cursor, regardless of drag state.
-		onGridHover(e);
 		if (!dragState) return;
 		const dxPx = e.clientX - dragState.startClientX;
 		const dyPx = e.clientY - dragState.startClientY;
@@ -784,7 +799,15 @@
 		dragState?.moved ? snapAndClamp({ x: dragState.liveX, y: dragState.liveY }) : null,
 	);
 
-	function toggleAdd() {
+	/** "+ Marker" button. If a square is already selected (user tapped
+	 *  an empty snap point), drop the marker there immediately — no
+	 *  placing-mode dance required. Otherwise fall through to placing
+	 *  mode as a fallback for users who prefer the button-first flow. */
+	function addMarkerAction() {
+		if (selectedSquare) {
+			placeAt(selectedSquare.x, selectedSquare.y);
+			return;
+		}
 		placingMode = !placingMode;
 		if (placingMode) selectedMarkerId = null;
 	}
@@ -804,11 +827,6 @@
 	function onColorInput(e: Event) {
 		if (!selectedMarker) return;
 		updateMarker(selectedMarker.id, { color: (e.target as HTMLInputElement).value });
-	}
-
-	function pickPreset(color: string) {
-		if (!selectedMarker) return;
-		updateMarker(selectedMarker.id, { color });
 	}
 
 	// ─── Entity-link picker (searchable) ───────────────────────────────────────
@@ -863,87 +881,19 @@
 		selectedMarkerId = null;
 	}
 
-	/** Duplicate the selected marker at +0.5, +0.5 world units and select
-	 *  the copy so the user can drag or edit it immediately. Bound to the
-	 *  selection toolbar button and Cmd/Ctrl+D. */
-	function duplicateSelected() {
-		if (!selectedMarker) return;
-		const newId = duplicateMarker(selectedMarker.id, gridDims);
-		if (newId) selectedMarkerId = newId;
+	// ─── Selected square — a snap point the user tapped without a marker
+	//     on it. Rendered with the same outline the selected marker uses;
+	//     acts as the target for "+ Marker" so the button doesn't need to
+	//     explain where the new marker lands. Cleared on marker click,
+	//     map switch, or after a marker is placed. ─────────────────────
+	let selectedSquare = $state<{ x: number; y: number } | null>(null);
+	function clearSquareSelection() {
+		selectedSquare = null;
 	}
 
-	// ─── Cut / Copy / Paste ────────────────────────────────────────────────────
-	// `lastHoverWorld` remembers the last mouse position over the map so
-	// pasting via keyboard shortcut can drop the marker at a meaningful
-	// spot (mouse-relative) instead of always at the map center.
-	let lastHoverWorld = $state<{ x: number; y: number } | null>(null);
-
-	function cutSelected() {
-		if (!selectedMarker) return;
-		copyMarkerToClipboard(selectedMarker);
-		removeMarker(selectedMarker.id);
-		selectedMarkerId = null;
-	}
-
-	function copySelected() {
-		if (!selectedMarker) return;
-		copyMarkerToClipboard(selectedMarker);
-	}
-
-	/** Paste target policy: last mouse-hover position on the map if we
-	 *  have one, else the visual center of the canvas viewport
-	 *  (projected through the SVG's CTM inverse so pan + zoom are
-	 *  respected). Falls back to grid center as a last resort — this
-	 *  path only fires on keyboard-only sessions with no cursor tracking. */
-	function pasteTarget(): { x: number; y: number } {
-		if (lastHoverWorld) return lastHoverWorld;
-		if (canvasEl && svgEl) {
-			const rect = canvasEl.getBoundingClientRect();
-			const pt = svgEl.createSVGPoint();
-			pt.x = rect.left + rect.width / 2;
-			pt.y = rect.top + rect.height / 2;
-			const ctm = svgEl.getScreenCTM();
-			if (ctm) {
-				const w = pt.matrixTransform(ctm.inverse());
-				return { x: w.x, y: w.y };
-			}
-		}
-		return { x: gridDims.cols / 2, y: gridDims.rows / 2 };
-	}
-
-	function pasteMarker() {
-		if (!clipboardState.marker) return;
-		const snapped = snapAndClamp(pasteTarget());
-		const newId = pasteMarkerFromClipboard({
-			x: snapped.x,
-			y: snapped.y,
-			bounds: gridDims,
-		});
-		if (newId) selectedMarkerId = newId;
-	}
-
-	/** Track hover position on the map so paste-at-cursor works. Mouse
-	 *  only — touch has no persistent hover state and would just yield
-	 *  a stale position from wherever the last touch ended. */
-	function onGridHover(e: PointerEvent) {
-		if (e.pointerType !== 'mouse') return;
-		lastHoverWorld = eventToWorld(e);
-	}
-	function onGridHoverLeave() {
-		lastHoverWorld = null;
-	}
-
-	/** Keyboard shortcut router. Fires only when the dialog is open and
-	 *  the focus isn't inside a text input (so typing "d" in the label
-	 *  field doesn't trigger Duplicate). Escape closes the pile-up
-	 *  popover before it reaches the native <dialog> cancel handler.
-	 *
-	 *  Shortcuts:
-	 *   • Cmd/Ctrl+X → Cut selected marker
-	 *   • Cmd/Ctrl+C → Copy selected marker
-	 *   • Cmd/Ctrl+V → Paste marker at last hover (or map center)
-	 *   • Cmd/Ctrl+D → Duplicate selected marker (+0.5, +0.5)
-	 */
+	/** Keyboard shortcut router. Only handles Escape — closes floating
+	 *  pickers (pile-up, entity-link) before the native <dialog> cancel
+	 *  handler would close the whole map. */
 	$effect(() => {
 		const handler = (ev: KeyboardEvent) => {
 			if (!dialogEl?.open) return;
@@ -958,23 +908,6 @@
 				ev.stopPropagation();
 				closeEntityPicker();
 				return;
-			}
-			if (!(ev.metaKey || ev.ctrlKey)) return;
-			const target = ev.target as HTMLElement | null;
-			if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
-			const key = ev.key.toLowerCase();
-			if (key === 'd' && selectedMarker) {
-				ev.preventDefault();
-				duplicateSelected();
-			} else if (key === 'x' && selectedMarker) {
-				ev.preventDefault();
-				cutSelected();
-			} else if (key === 'c' && selectedMarker) {
-				ev.preventDefault();
-				copySelected();
-			} else if (key === 'v' && clipboardState.marker) {
-				ev.preventDefault();
-				pasteMarker();
 			}
 		};
 		window.addEventListener('keydown', handler, true);
@@ -1044,10 +977,6 @@
 		} catch (err) {
 			uploadError = err instanceof MapImageError ? err.message : 'Failed to load image.';
 		}
-	}
-
-	function triggerUpload() {
-		fileInputEl?.click();
 	}
 
 	/** Icon size in world units — 0.75 of a cell so the icon sits
@@ -1133,44 +1062,18 @@
 								>+ New map…</button
 							>
 						</li>
-						<li>
-							<button class="mp-picker-item mp-picker-item-action" onclick={pickImportMap}
-								>⬇ Import map…</button
-							>
-						</li>
 					</ul>
 				{/if}
-				<input
-					bind:this={importFileEl}
-					type="file"
-					accept=".zip,application/zip"
-					hidden
-					onchange={handleImportFile}
-				/>
 			</div>
-			<button
-				class="mp-btn"
-				onclick={triggerUpload}
-				use:tooltip={'Upload a background image (JPEG or PNG, ≤20 MB)'}>Upload image</button
-			>
 			<button
 				class="mp-btn mp-btn-add"
 				class:mp-btn-add-active={placingMode}
-				onclick={toggleAdd}
-				use:tooltip={placingMode
-					? 'Click the map to place the marker (or click Add again to cancel)'
-					: 'Add a marker — then click the map to place it'}
+				onclick={addMarkerAction}
+				use:tooltip={selectedSquare
+					? 'Add a marker on the selected square'
+					: 'Add a marker — click a square first, or click this then a square'}
 				aria-pressed={placingMode}
-				aria-label="Add marker">+ Add</button
-			>
-			<button
-				class="mp-btn"
-				onclick={pasteMarker}
-				disabled={!clipboardState.marker}
-				use:tooltip={clipboardState.marker
-					? `Paste "${clipboardState.marker.label || '(no name)'}" at cursor (Cmd/Ctrl + V)`
-					: 'Paste — clipboard is empty. Cut or Copy a marker first.'}
-				aria-label="Paste marker">Paste</button
+				aria-label="Add marker">+ Marker</button
 			>
 			<div class="mp-zoom" role="group" aria-label="Zoom controls">
 				<button
@@ -1252,28 +1155,18 @@
 					<span class="mp-sel-icon-label">No icon</span>
 				{/if}
 			</button>
-			<div class="mp-sel-color-group">
-				<input
-					class="mp-sel-color"
-					type="color"
-					value={selectedColor}
-					oninput={onColorInput}
-					use:tooltip={'Icon color'}
-					aria-label="Icon color"
-				/>
-				<div class="mp-sel-presets" role="group" aria-label="Preset colors">
-					{#each MARKER_COLOR_PRESETS as c}
-						<button
-							class="mp-sel-preset"
-							class:mp-sel-preset-selected={selectedColor.toLowerCase() === c.toLowerCase()}
-							style="background:{c}"
-							onclick={() => pickPreset(c)}
-							use:tooltip={c}
-							aria-label={c}
-						></button>
-					{/each}
-				</div>
-			</div>
+			<!-- Native color picker only — the preset-swatch strip took up
+			     a lot of horizontal space that reads better as the entity
+			     link chip. Native picker opens the OS colour dialog on
+			     click, which covers every preset and more. -->
+			<input
+				class="mp-sel-color"
+				type="color"
+				value={selectedColor}
+				oninput={onColorInput}
+				use:tooltip={'Icon color — click to open the color picker'}
+				aria-label="Icon color"
+			/>
 			{@const currentLink = resolveEntity(selectedMarker.entityId)}
 			<div class="mp-sel-entity">
 				<button
@@ -1339,24 +1232,6 @@
 				{/if}
 			</div>
 			<button
-				class="mp-btn"
-				onclick={duplicateSelected}
-				use:tooltip={'Duplicate this marker (Cmd/Ctrl + D)'}
-				aria-label="Duplicate marker">Duplicate</button
-			>
-			<button
-				class="mp-btn"
-				onclick={copySelected}
-				use:tooltip={'Copy to clipboard (Cmd/Ctrl + C) — paste on any map'}
-				aria-label="Copy marker">Copy</button
-			>
-			<button
-				class="mp-btn"
-				onclick={cutSelected}
-				use:tooltip={'Cut to clipboard (Cmd/Ctrl + X) — deletes + copies'}
-				aria-label="Cut marker">Cut</button
-			>
-			<button
 				class="mp-btn mp-btn-danger mp-btn-icon"
 				onclick={deleteSelected}
 				use:tooltip={'Delete this marker'}
@@ -1379,11 +1254,20 @@
 				onclick={cancelPlacing}
 				use:tooltip={'Exit placing mode without adding a marker'}>Cancel</button
 			>
-		{:else}
-			<span class="mp-sel-hint"
-				>Hit <strong>+ Add</strong> then click the map to place a marker. Tap a linked marker to jump;
-				shift-click (desktop) or long-press (touch) to edit instead.</span
+		{:else if selectedSquare}
+			<span class="mp-sel-hint mp-sel-hint-active">
+				Square selected — hit <strong>+ Marker</strong> to drop a marker here.
+			</span>
+			<button
+				class="mp-btn"
+				onclick={clearSquareSelection}
+				use:tooltip={'Clear the selected square'}>Cancel</button
 			>
+		{:else}
+			<span class="mp-sel-hint">
+				Click a square, then <strong>+ Marker</strong>. Tap a linked marker to jump; shift-click
+				(desktop) or long-press (touch) to edit instead.
+			</span>
 		{/if}
 	</div>
 
@@ -1500,7 +1384,6 @@
 					onpointermove={onGridPointerMove}
 					onpointerup={onGridPointerUp}
 					onpointercancel={onGridPointerUp}
-					onpointerleave={onGridHoverLeave}
 				/>
 
 				<!-- Drag preview crosshair — a small ring at the intersection
@@ -1512,6 +1395,22 @@
 						cx={dragPreview.x}
 						cy={dragPreview.y}
 						r="0.18"
+						vector-effect="non-scaling-stroke"
+					/>
+				{/if}
+
+				<!-- Selected empty square — the click-first target for
+				     "+ Marker" (and the same visual language a selected
+				     marker uses). Rendered before markers so any marker
+				     placed at the same spot draws on top. -->
+				{#if selectedSquare}
+					{@const cell = snapResolutionForZoom(zoom)}
+					<rect
+						class="mp-marker-selection"
+						x={selectedSquare.x - cell / 2}
+						y={selectedSquare.y - cell / 2}
+						width={cell}
+						height={cell}
 						vector-effect="non-scaling-stroke"
 					/>
 				{/if}
@@ -1650,7 +1549,7 @@
 	</div>
 </dialog>
 
-<MapOptionsDialog bind:this={optionsDialogRef} />
+<MapOptionsDialog bind:this={optionsDialogRef} onReplaceBackground={triggerBackgroundUpload} />
 
 <!--
 	Pile-up picker — surfaces when a click resolves to a snap point with
@@ -2031,11 +1930,6 @@
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
-	.mp-sel-color-group {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-	}
 	.mp-sel-color {
 		width: 28px;
 		height: 28px;
@@ -2052,25 +1946,6 @@
 		border: none;
 		border-radius: 2px;
 	}
-	.mp-sel-presets {
-		display: inline-flex;
-		gap: 3px;
-	}
-	.mp-sel-preset {
-		width: 16px;
-		height: 16px;
-		padding: 0;
-		border: 1px solid var(--border);
-		border-radius: 3px;
-		cursor: pointer;
-	}
-	.mp-sel-preset:hover {
-		transform: scale(1.15);
-	}
-	.mp-sel-preset-selected {
-		outline: 2px solid var(--text-accent);
-		outline-offset: 1px;
-	}
 	/* Entity-link picker — a combobox chip: a trigger button showing
 	   the currently-linked entity, and a floating popover with search +
 	   filtered list. Same UX pattern as the map-picker chip. */
@@ -2078,6 +1953,8 @@
 		position: relative;
 	}
 	.mp-sel-entity-btn {
+		/* Wider than before — the preset-swatch strip was retired so
+		   there's room for a longer entity name here. */
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
@@ -2089,7 +1966,9 @@
 		border: 1px solid var(--border-mid);
 		border-radius: 4px;
 		cursor: pointer;
-		max-width: 200px;
+		flex: 1 1 200px;
+		min-width: 160px;
+		max-width: 340px;
 	}
 	.mp-sel-entity-btn:hover {
 		border-color: var(--text-accent);

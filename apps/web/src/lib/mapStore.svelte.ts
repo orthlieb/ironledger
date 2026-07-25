@@ -481,84 +481,11 @@ export function updateMarker(id: string, patch: Partial<Omit<MapMarker, 'id'>>):
 	void persistMarkers();
 }
 
-/** Duplicate a marker in-place — same label / icon / color / entity link,
- *  offset by `+dx, +dy` world units so the copy is visible next to the
- *  original. Callers pass the current grid bounds so the offset can be
- *  clamped inside them; a copy that would spill past the edge just sits
- *  at the boundary. Returns the new marker's id, or null when the
- *  source id doesn't exist. */
-export function duplicateMarker(
-	id: string,
-	bounds: { cols: number; rows: number },
-	offset = { dx: 0.5, dy: 0.5 },
-): string | null {
-	const src = mapState.markers.find((m) => m.id === id);
-	if (!src) return null;
-	const nx = Math.max(0, Math.min(bounds.cols, src.x + offset.dx));
-	const ny = Math.max(0, Math.min(bounds.rows, src.y + offset.dy));
-	return addMarker({
-		x: nx,
-		y: ny,
-		label: src.label,
-		icon: src.icon,
-		color: src.color,
-		entityId: src.entityId,
-	});
-}
-
 export function removeMarker(id: string): void {
 	const idx = mapState.markers.findIndex((m) => m.id === id);
 	if (idx < 0) return;
 	mapState.markers.splice(idx, 1);
 	void persistMarkers();
-}
-
-// ---------------------------------------------------------------------------
-// Marker clipboard — a single-slot in-memory buffer that survives map
-// switches but not page reloads. Enables cut/copy/paste between maps.
-// ---------------------------------------------------------------------------
-
-/** What's stored in the clipboard — everything except the id and
- *  position (which get regenerated on paste). Kept as a plain object
- *  snapshot so the source marker can be deleted/edited without
- *  affecting the pending paste. */
-export type ClipboardMarker = Omit<MapMarker, 'id' | 'x' | 'y'>;
-
-/** Reactive clipboard slot. `null` = nothing to paste. Wrapped in an
- *  object so consumers can `$derive(clipboardState.marker)` and pick
- *  up updates. */
-export const clipboardState = $state<{ marker: ClipboardMarker | null }>({ marker: null });
-
-/** Snapshot a marker into the clipboard. Called by Cut and Copy alike;
- *  Cut then follows up with removeMarker. */
-export function copyMarkerToClipboard(m: MapMarker): void {
-	clipboardState.marker = {
-		label: m.label,
-		icon: m.icon,
-		color: m.color,
-		entityId: m.entityId,
-	};
-}
-
-/** Paste the clipboard into the active map at `(x, y)`, clamped to
- *  `bounds`. Returns the new marker's id, or null when the clipboard
- *  is empty. Does not clear the clipboard — same buffer can be pasted
- *  many times (e.g. dotting a road across several maps). */
-export function pasteMarkerFromClipboard(input: {
-	x: number;
-	y: number;
-	bounds: { cols: number; rows: number };
-}): string | null {
-	const src = clipboardState.marker;
-	if (!src) return null;
-	return addMarker({
-		x: Math.max(0, Math.min(input.bounds.cols, input.x)),
-		y: Math.max(0, Math.min(input.bounds.rows, input.y)),
-		label: src.label,
-		icon: src.icon,
-		color: src.color,
-		entityId: src.entityId,
-	});
 }
 
 /** Upload a fresh background image for the active map. Accepts the
