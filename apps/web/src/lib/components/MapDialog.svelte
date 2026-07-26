@@ -1164,21 +1164,6 @@
 	 *  sense for them to grow when the user zooms in on detail). */
 	const ICON_SIZE = 0.75;
 
-	/**
-	 * White stroke width in the source icon's viewBox units, computed so
-	 * the halo lands at a consistent visual weight regardless of whether
-	 * the icon's viewBox is `0 0 24 24` or `0 0 640 640`. Paired with
-	 * `paint-order="stroke"` on the wrapping <g>, this gives every icon
-	 * the same white outline the marker labels use — readable over busy
-	 * background maps at any icon color.
-	 */
-	function iconStrokeWidth(viewBox: string): number {
-		const parts = viewBox.split(/\s+/).map(Number);
-		const w = parts[2] || 24;
-		const h = parts[3] || 24;
-		return Math.min(w, h) * 0.08;
-	}
-
 	// Derive the selected marker's icon record + color for the toolbar so
 	// the icon button always shows the current preview.
 	const selectedIcon = $derived(selectedMarker ? resolveMapIcon(selectedMarker.icon) : undefined);
@@ -1662,26 +1647,33 @@
 									paint-order="stroke" draws the white halo first,
 									fill on top — same trick the marker label text uses
 									so the icon stays readable over any background map.
+									`vector-effect="non-scaling-stroke"` (inherited by
+									the child paths) pins the halo to 1 device pixel
+									regardless of zoom or icon viewBox scale, matching
+									the label halo.
 								-->
 								<g
 									fill={color}
 									stroke="#fff"
-									stroke-width={iconStrokeWidth(ic.viewBox)}
+									stroke-width="1"
 									stroke-linejoin="round"
 									paint-order="stroke"
+									vector-effect="non-scaling-stroke"
 								>
 									{@html ic.inner}
 								</g>
 							</svg>
 						{:else if hasIcon}
 							<!-- Legacy/broken slug: fall back to a plain dot so
-							     the marker doesn't vanish. -->
+							     the marker doesn't vanish. Non-scaling stroke +
+							     stroke-width 1 for the same 1 px halo everywhere. -->
 							<circle
 								r={ICON_SIZE / 2 - 0.04}
 								fill={color}
 								stroke="#fff"
-								stroke-width="0.04"
+								stroke-width="1"
 								paint-order="stroke"
+								vector-effect="non-scaling-stroke"
 							/>
 						{/if}
 						{#if m.label}
