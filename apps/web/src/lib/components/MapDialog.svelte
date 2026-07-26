@@ -2455,7 +2455,13 @@
 		margin: 0;
 		transform: translate(-50%, -50%);
 		width: min(360px, calc(100vw - 2rem));
-		max-height: 82vh;
+		/* Fixed height rather than max-height — as the user narrows
+		   the list by typing, we don't want the dialog to shrink and
+		   re-centre on every keystroke ("dialog jitters as I type"
+		   feedback). Height caps at 82vh so tall lists on tall
+		   viewports don't push off the edge; short viewports use
+		   `min()` to keep it in bounds. */
+		height: min(500px, 82vh);
 		overflow: hidden;
 		background: var(--bg-card);
 		color: var(--text);
@@ -2468,7 +2474,11 @@
 		background: #00000060;
 	}
 	.mp-entity-body {
-		max-height: calc(82vh - 8rem);
+		/* Fill whatever the dialog gives us after chrome — `flex` on
+		   dialogs is a footgun (see CLAUDE.md dialog rule 3), so lean
+		   on explicit math: dialog is fixed height, chrome (header +
+		   search row) is ~5rem, body eats the rest and scrolls. */
+		height: calc(min(500px, 82vh) - 5rem);
 		overflow-y: auto;
 		overscroll-behavior: contain;
 		padding: 4px 0;

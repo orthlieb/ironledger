@@ -67,7 +67,6 @@
 	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
 	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
-	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
 	import { headingText } from '$lib/fontStore.svelte.js';
 
 	let { showTitle = true }: { showTitle?: boolean } = $props();
@@ -117,8 +116,6 @@
 			const d = (e as CustomEvent<{ kind: string; id: string }>).detail;
 			if (!d) return;
 			if (d.kind !== 'community' && d.kind !== 'place' && d.kind !== 'npc') return;
-			// Un-filter if the current filter would hide the target.
-			if (kindFilter !== 'all' && kindFilter !== d.kind) kindFilter = 'all';
 			activeEntryId = d.id;
 			activeTab = 'core';
 		};
@@ -126,25 +123,11 @@
 		return () => document.removeEventListener('ironledger:focus-entity', onFocus);
 	});
 
-	// Rail controls — search + type filter. Sort is always A-Z now
-	// (was a toggle; retired for parity with the Link Marker picker
-	// and because Added order was rarely useful in a rail this long).
-	// Filter persists per-browser so the rail reopens the way you left it.
-	const FILTER_KEY = 'ironledger:connections:filter';
-	function readFilter(): 'all' | EntryKind {
-		if (typeof window === 'undefined') return 'all';
-		const v = localStorage.getItem(FILTER_KEY);
-		return v === 'community' || v === 'npc' || v === 'place' ? v : 'all';
-	}
+	// Rail control — search only. Sort is always A-Z; the kind
+	// filter was retired (search alone handles the "find a
+	// Community" case and the filter panel was a heavy addition
+	// for what a substring match already does).
 	let search = $state('');
-	let kindFilter = $state<'all' | EntryKind>(readFilter());
-	let filtersOpen = $state(false);
-	const activeFilterCount = $derived(kindFilter === 'all' ? 0 : 1);
-
-	$effect(() => {
-		if (typeof window === 'undefined') return;
-		localStorage.setItem(FILTER_KEY, kindFilter);
-	});
 
 	// Mobile/narrow drill-down: which pane is showing when the area is too
 	// narrow for two panes (driven by the viewport @media query in the styles).
@@ -209,12 +192,11 @@
 		].sort((a, b) => a.createdAt - b.createdAt),
 	);
 
-	/** Rail list — entries after type filter + name search, then sorted. The
-	 *  detail stage always reads from the full `entries`, so filtering the rail
+	/** Rail list — entries after name search, then A-Z sorted. The
+	 *  detail stage always reads from the full `entries`, so search
 	 *  never hides the currently-open entry. */
 	const displayEntries = $derived<Entry[]>(
 		entries
-			.filter((e) => kindFilter === 'all' || e.kind === kindFilter)
 			.filter((e) => {
 				const q = search.trim().toLowerCase();
 				return q === '' || (e.data.name ?? '').toLowerCase().includes(q);
@@ -641,60 +623,7 @@
 								aria-label="Search connections"
 							/>
 						</div>
-						<button
-							class="cm-filter-toggle"
-							class:has-filters={activeFilterCount > 0}
-							aria-expanded={filtersOpen}
-							onclick={() => (filtersOpen = !filtersOpen)}
-							>Filters{#if activeFilterCount > 0}&nbsp;<span class="cm-filter-badge"
-									>{activeFilterCount}</span
-								>{/if}
-							{filtersOpen ? '▲' : '▼'}</button
-						>
 					</div>
-					{#if filtersOpen}
-						<div class="cm-filter-panel">
-							<div class="cm-filter-group">
-								<span class="cm-filter-group-label">Type</span>
-								<div class="cm-filter-chips" role="group" aria-label="Filter by type">
-									<button
-										class="cm-filter-tag"
-										class:active={kindFilter === 'all'}
-										aria-pressed={kindFilter === 'all'}
-										onclick={() => (kindFilter = 'all')}>All</button
-									>
-									<button
-										class="cm-filter-tag"
-										class:active={kindFilter === 'community'}
-										aria-pressed={kindFilter === 'community'}
-										style="--tag-color: {COMMUNITY_COLOR}"
-										onclick={() => (kindFilter = 'community')}>Communities</button
-									>
-									<button
-										class="cm-filter-tag"
-										class:active={kindFilter === 'npc'}
-										aria-pressed={kindFilter === 'npc'}
-										style="--tag-color: {NPC_COLOR}"
-										onclick={() => (kindFilter = 'npc')}>NPCs</button
-									>
-									<button
-										class="cm-filter-tag"
-										class:active={kindFilter === 'place'}
-										aria-pressed={kindFilter === 'place'}
-										style="--tag-color: {PLACE_COLOR}"
-										onclick={() => (kindFilter = 'place')}>Places</button
-									>
-								</div>
-							</div>
-							<button
-								class="cm-clear-btn"
-								onclick={() => (kindFilter = 'all')}
-								disabled={activeFilterCount === 0}
-								use:tooltip={'Clear all filters'}
-								aria-label="Clear filters">{@html clearFiltersSvg}</button
-							>
-						</div>
-					{/if}
 				</div>
 
 				<div class="cm-list" aria-label="Connections">
@@ -1443,135 +1372,6 @@
 	.cm-rail-topline .cm-search {
 		flex: 1 1 120px;
 		min-width: 0;
-	}
-	/* Type filter — "Filters ▼" toggle + drop panel, matching the foe picker. */
-	.cm-filter-toggle {
-		font-family: var(--font-ui);
-		font-size: 0.72rem;
-		font-weight: 600;
-		letter-spacing: 0.05em;
-		text-transform: uppercase;
-		padding: 3px 10px;
-		border-radius: 12px;
-		border: 1px solid var(--border);
-		background: transparent;
-		color: var(--text-dimmer);
-		cursor: pointer;
-		transition:
-			border-color 0.1s,
-			color 0.1s;
-		display: flex;
-		align-items: center;
-		gap: 4px;
-	}
-	.cm-filter-toggle:hover,
-	.cm-filter-toggle[aria-expanded='true'] {
-		border-color: var(--text-muted);
-		color: var(--text-muted);
-	}
-	.cm-filter-toggle.has-filters {
-		border-color: var(--focus-ring);
-		color: var(--text);
-	}
-	.cm-filter-badge {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		min-width: 16px;
-		height: 16px;
-		padding: 0 4px;
-		border-radius: 8px;
-		background: var(--focus-ring);
-		color: var(--bg-card);
-		font-size: 0.65rem;
-		font-weight: 700;
-		line-height: 1;
-	}
-	.cm-filter-panel {
-		position: relative;
-		display: flex;
-		flex-direction: column;
-		gap: 6px;
-		padding: 8px 32px 8px 10px;
-		background: var(--bg-inset);
-		border: 1px solid var(--border);
-		border-radius: 6px;
-	}
-	.cm-clear-btn {
-		position: absolute;
-		bottom: 6px;
-		right: 6px;
-		background: transparent;
-		border: none;
-		color: var(--text-dimmer);
-		cursor: pointer;
-		padding: 3px 4px;
-		border-radius: 3px;
-		display: flex;
-		align-items: center;
-		transition:
-			color 0.12s,
-			opacity 0.12s;
-	}
-	.cm-clear-btn:hover:not(:disabled) {
-		color: var(--text);
-	}
-	.cm-clear-btn:disabled {
-		opacity: 0.25;
-		cursor: not-allowed;
-	}
-	.cm-clear-btn :global(svg) {
-		width: 16px;
-		height: 16px;
-		fill: currentColor;
-	}
-	.cm-filter-group {
-		display: flex;
-		align-items: baseline;
-		gap: 8px;
-		min-width: 0;
-	}
-	.cm-filter-group-label {
-		font-family: var(--font-ui);
-		font-size: 0.62rem;
-		font-weight: 700;
-		letter-spacing: 0.07em;
-		text-transform: uppercase;
-		color: var(--text-dimmer);
-		flex-shrink: 0;
-		width: 3.5rem;
-	}
-	.cm-filter-chips {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 4px;
-		flex: 1;
-	}
-	.cm-filter-tag {
-		font-family: var(--font-ui);
-		font-size: 0.68rem;
-		font-weight: 600;
-		letter-spacing: 0.05em;
-		text-transform: uppercase;
-		padding: 3px 8px;
-		border-radius: 12px;
-		border: 1px solid var(--border);
-		background: transparent;
-		color: var(--text-dimmer);
-		cursor: pointer;
-		transition:
-			background 0.1s,
-			color 0.1s,
-			border-color 0.1s;
-	}
-	.cm-filter-tag:hover {
-		border-color: var(--tag-color, var(--text-dimmer));
-		color: var(--tag-color, var(--text-dimmer));
-	}
-	.cm-filter-tag.active {
-		background: color-mix(in srgb, var(--tag-color, #9ca3af) 20%, transparent);
-		border-color: var(--tag-color, #9ca3af);
-		color: var(--tag-color, #9ca3af);
 	}
 	/* Rail list — one row per connection. */
 	.cm-list {
