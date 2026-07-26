@@ -189,18 +189,15 @@
 	// ─── Background image async loading ──────────────────────────────
 	// Backgrounds can be several MB; the browser fetches them off the
 	// main thread, but until the <image> paints the map surface sits
-	// empty. Track a per-URL "loaded" flag so the placeholder shows
-	// only while the real image is on the wire.
-	let backgroundLoaded = $state(false);
-	$effect(() => {
-		// Re-arm the flag whenever the map (or its background hash)
-		// changes. Reading `backgroundUrl()` here subscribes this effect
-		// to both `activeId` and `backgroundHash`, the two inputs that
-		// actually flip the URL.
-		const _bg = backgroundUrl();
-		void _bg;
-		backgroundLoaded = false;
-	});
+	// empty. Track which URL has finished loading and compare it to
+	// the current URL — deriving the "loaded" flag avoids the race
+	// where a `$effect` that resets a boolean fires *after* the
+	// image's cached `onload` and stomps it back to false.
+	let loadedBackgroundUrl = $state('');
+	const currentBackgroundUrl = $derived(backgroundUrl());
+	const backgroundLoaded = $derived(
+		!!currentBackgroundUrl && loadedBackgroundUrl === currentBackgroundUrl,
+	);
 
 	function handleExportPng() {
 		if (!svgEl) return;
@@ -1454,10 +1451,10 @@
 						y="0"
 						width={gridDims.cols}
 						height={gridDims.rows}
-						href={backgroundUrl()}
+						href={currentBackgroundUrl}
 						preserveAspectRatio="none"
 						aria-hidden="true"
-						onload={() => (backgroundLoaded = true)}
+						onload={() => (loadedBackgroundUrl = currentBackgroundUrl)}
 						onerror={() => (mapState.backgroundHash = '')}
 					/>
 				{/if}
