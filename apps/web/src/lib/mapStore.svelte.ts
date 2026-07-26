@@ -238,33 +238,44 @@ export function initMap(): Promise<void> {
 	_initPromise = (async () => {
 		mapListState.loading = true;
 		mapListState.error = '';
-		mapState.loading = true;
-		mapState.error = '';
+		if (!mapState.loaded) {
+			mapState.loading = true;
+			mapState.error = '';
+		}
 		try {
-			const [listRes, activeId] = await Promise.all([
-				fetch('/api/session/maps'),
-				fetchActiveMapIdFromSession(),
-			]);
+			// Fetch the list unconditionally — even if `mapState` was pre-
+			// hydrated (openMapForOwner from an entity's "+ Map" button),
+			// the picker still needs the full list. Only touch mapState if
+			// it hasn't already been populated, otherwise we'd stomp a
+			// caller-preloaded map with whatever the server's saved
+			// activeMapId points at.
+			const listReq = fetch('/api/session/maps');
+			const activeIdReq = mapState.loaded
+				? Promise.resolve<string | null>(null)
+				: fetchActiveMapIdFromSession();
+			const [listRes, activeId] = await Promise.all([listReq, activeIdReq]);
 			if (!listRes.ok) throw new Error(`Server returned ${listRes.status}`);
 			const listBody = (await listRes.json()) as { maps?: MapSummary[] };
 			mapListState.maps = Array.isArray(listBody.maps) ? listBody.maps : [];
 			mapListState.loaded = true;
 
-			// Pick the map to open: server's active-map preference if it still
-			// exists, otherwise the first entry, otherwise create a brand new
-			// "Regional Map" so a fresh user has something to click into.
-			let target = mapListState.maps.find((m) => m.id === activeId) ?? mapListState.maps[0];
-			if (!target) {
-				const created = await createMap({ name: 'Regional Map' });
-				target = created;
+			if (!mapState.loaded) {
+				// Pick the map to open: server's active-map preference if it still
+				// exists, otherwise the first entry, otherwise create a brand new
+				// "Regional Map" so a fresh user has something to click into.
+				let target = mapListState.maps.find((m) => m.id === activeId) ?? mapListState.maps[0];
+				if (!target) {
+					const created = await createMap({ name: 'Regional Map' });
+					target = created;
+				}
+				await loadMapInto(target.id);
 			}
-			await loadMapInto(target.id);
 			// Sweep the legacy localStorage payload.
 			if (typeof window !== 'undefined') localStorage.removeItem(LEGACY_STORAGE_KEY);
 		} catch (err) {
 			const msg = err instanceof Error ? err.message : 'Failed to load maps';
 			mapListState.error = msg;
-			mapState.error = msg;
+			if (!mapState.loaded) mapState.error = msg;
 		} finally {
 			mapListState.loading = false;
 			mapState.loading = false;

@@ -166,10 +166,14 @@
 	 *  cards and by the "Open Map" button on entity-owned maps. If
 	 *  `target.mapId` isn't the active map, `switchMap()` runs first;
 	 *  if `target.markerId` is set, the marker becomes the selection.
-	 *  `promptUpload` immediately triggers the background file picker
-	 *  after loading — used by an entity's "+ Map" affordance to chain
-	 *  create → upload into one gesture. All async work fires after
-	 *  `showModal()` so the dialog paints immediately. */
+	 *  All async work fires after `showModal()` so the dialog paints
+	 *  immediately with whatever's currently loaded.
+	 *
+	 *  Empty maps (no background yet) surface an in-canvas
+	 *  "Add background image" CTA — a programmatic `fileInputEl.click()`
+	 *  after async awaits gets swallowed by iOS Safari because it isn't
+	 *  a user-gesture-scoped click. `promptUpload` on the target is
+	 *  accepted but ignored; the CTA is always available. */
 	export function open(target?: { mapId?: string; markerId?: string; promptUpload?: boolean }) {
 		dialogEl?.showModal();
 		void initMap().then(async () => {
@@ -178,15 +182,6 @@
 			}
 			if (target?.markerId) {
 				selectedMarkerId = target.markerId;
-			}
-			// Prompt for a background upload only if the caller asked AND
-			// the map really has none — the button that flips this on is
-			// only shown when the map is empty, but the store may have
-			// hydrated a background between the click and the async open.
-			if (target?.promptUpload && !mapState.backgroundHash) {
-				// setTimeout so the modal's showModal focus dance settles
-				// before the OS file picker steals it.
-				setTimeout(() => fileInputEl?.click(), 0);
 			}
 		});
 	}
@@ -1701,6 +1696,22 @@
 				</g>
 			{/if}
 		</svg>
+
+		<!-- Empty-map call-to-action. Rendered when the active map has no
+		     background yet — a big centred button the user clicks to pick
+		     a picture. Kept as an HTML overlay (not SVG) so the click
+		     stays a real user gesture; `<input type=file>.click()` fired
+		     from anything else (setTimeout, promise callback, etc.) gets
+		     swallowed on iOS Safari. -->
+		{#if mapState.loaded && !mapState.backgroundHash}
+			<div class="mp-empty-cta">
+				<button class="mp-empty-cta-btn" onclick={triggerBackgroundUpload}>
+					<span class="mp-empty-cta-plus" aria-hidden="true">+</span>
+					<span class="mp-empty-cta-label">Add background image</span>
+				</button>
+				<p class="mp-empty-cta-hint">Pick a map picture to paint over — jpg / png, any aspect.</p>
+			</div>
+		{/if}
 	</div>
 </dialog>
 
@@ -2434,6 +2445,54 @@
 		width: 100%;
 		height: 100%;
 		pointer-events: none;
+	}
+	/* Empty-map CTA. Absolutely-positioned overlay that fills the
+	   canvas area and stacks a big "Add background image" button + a
+	   small hint. Auto-hides when a background loads because the
+	   `{#if}` guard drops the element from the DOM. */
+	.mp-empty-cta {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 12px;
+		padding: 24px;
+		text-align: center;
+		pointer-events: none;
+	}
+	.mp-empty-cta-btn {
+		pointer-events: auto;
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		padding: 14px 22px;
+		font-family: var(--font-ui);
+		font-size: 0.95rem;
+		font-weight: 600;
+		letter-spacing: 0.03em;
+		color: var(--bg-card);
+		background: var(--text-accent);
+		border: 1px solid var(--text-accent);
+		border-radius: 6px;
+		cursor: pointer;
+		box-shadow: 0 6px 18px #00000040;
+	}
+	.mp-empty-cta-btn:hover,
+	.mp-empty-cta-btn:focus-visible {
+		filter: brightness(1.08);
+		outline: none;
+	}
+	.mp-empty-cta-plus {
+		font-size: 1.3rem;
+		line-height: 1;
+	}
+	.mp-empty-cta-hint {
+		margin: 0;
+		font-family: var(--font-ui);
+		font-size: 0.75rem;
+		color: var(--text-muted);
 	}
 	.mp-canvas {
 		width: 100%;
