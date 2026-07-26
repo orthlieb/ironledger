@@ -277,46 +277,71 @@
 		return () => ro.disconnect();
 	});
 
-	// Dialog aspect is now enforced purely by CSS: `.mp-dialog {
-	// height: auto; resize: horizontal }` lets the browser wrap the
-	// content, `.mp-body` sizes to its inline `aspect-ratio`, and the
-	// dialog height follows. Simpler, no ResizeObserver feedback
-	// loops, no jitter, no crashes when the map body is temporarily
-	// zero-height mid-switch.
+	// ─── Dialog sizing: aspect-preserving "contain" fit ─────────────
+	// Dialog is fixed-size (not user-resizable), computed each frame
+	// from three inputs: the image aspect (gridDims cols × rows), the
+	// live chrome height AHH (title + toolbar + selection toolbar +
+	// optional banners), and the viewport. Fit the image inside an
+	// 80% × VW × 80% × VH box using the classic contain formula:
 	//
-	// Chrome above the map body (title + toolbar + selection toolbar
-	// + optional error banner) varies with wrapping and with whether
-	// a marker is selected. A fixed CSS buffer of 8rem was too small
-	// on the desktop layout — the toolbar row + sel-toolbar row + hint
-	// text add up to ~140+ px, more than 8rem, so the map body's
-	// max-height cap was set too generously and the body overflowed
-	// (clipped by dialog `overflow: hidden`). Measure it live and
-	// expose it as `--mp-chrome-h`.
+	//     MAX_IW = 0.8 × VW
+	//     MAX_IH = max(0, 0.8 × VH − AHH)
+	//     scale  = min(MAX_IW / PW, MAX_IH / PH)
+	//     IW     = PW × scale
+	//     IH     = PH × scale
+	//     DW = IW,  DH = IH + AHH
+	//
+	// No feedback loop: writing DW/DH changes body dims (via `.mp-body
+	// { width: 100%; aspect-ratio: PW/PH }`) but not AHH — the chrome
+	// height is set by the toolbar contents, which don't reflow when
+	// the body resizes. Recomputes on: mapAspect change, dialog
+	// ResizeObserver (toolbar wraps, selection state), window resize
+	// (includes device rotation on mobile — `resize` fires on
+	// orientation change).
 	$effect(() => {
 		if (!dialogEl) return;
+		if (typeof window === 'undefined') return;
 		const el = dialogEl;
+		const pw = gridDims.cols;
+		const ph = gridDims.rows;
+		if (pw <= 0 || ph <= 0) return;
+
 		let raf: number | null = null;
 		const settle = () => {
 			raf = null;
 			const bodyEl = el.querySelector('.mp-body') as HTMLElement | null;
 			if (!bodyEl) return;
-			// `offsetTop` = distance from dialog's content-top to the map
-			// body — i.e. the height of every chrome element stacked
-			// above it. No feedback loop: our writes go to
-			// `--mp-chrome-h` which affects the body's max-height, and
-			// the body's height doesn't feed back into `offsetTop`.
-			const chromeH = bodyEl.offsetTop;
-			if (chromeH < 0) return;
-			el.style.setProperty('--mp-chrome-h', `${chromeH}px`);
+			const ahh = bodyEl.offsetTop;
+			if (ahh < 0) return;
+			const maxIW = 0.8 * window.innerWidth;
+			const maxIH = Math.max(0, 0.8 * window.innerHeight - ahh);
+			if (maxIW <= 0 || maxIH <= 0) return;
+			const scale = Math.min(maxIW / pw, maxIH / ph);
+			const iw = Math.max(1, pw * scale);
+			const ih = Math.max(1, ph * scale);
+			const dw = Math.round(iw);
+			const dh = Math.round(ih + ahh);
+			if (Math.abs(dw - el.clientWidth) < 1 && Math.abs(dh - el.clientHeight) < 1) return;
+			el.style.width = `${dw}px`;
+			el.style.height = `${dh}px`;
 		};
-		settle();
-		const ro = new ResizeObserver(() => {
+
+		const schedule = () => {
 			if (raf !== null) return;
 			raf = requestAnimationFrame(settle);
-		});
+		};
+		schedule();
+		const ro = new ResizeObserver(schedule);
 		ro.observe(el);
+		window.addEventListener('resize', schedule);
+		// Belt and braces — some mobile browsers emit
+		// `orientationchange` before finishing the URL-bar reflow, so
+		// listen to both.
+		window.addEventListener('orientationchange', schedule);
 		return () => {
 			ro.disconnect();
+			window.removeEventListener('resize', schedule);
+			window.removeEventListener('orientationchange', schedule);
 			if (raf !== null) cancelAnimationFrame(raf);
 		};
 	});
@@ -1164,21 +1189,6 @@
 	 *  sense for them to grow when the user zooms in on detail). */
 	const ICON_SIZE = 0.75;
 
-	/**
-	 * White stroke width in the source icon's viewBox units, computed so
-	 * the halo lands at a consistent visual weight regardless of whether
-	 * the icon's viewBox is `0 0 24 24` or `0 0 640 640`. Paired with
-	 * `paint-order="stroke"` on the wrapping <g>, this gives every icon
-	 * the same white outline the marker labels use — readable over busy
-	 * background maps at any icon color.
-	 */
-	function iconStrokeWidth(viewBox: string): number {
-		const parts = viewBox.split(/\s+/).map(Number);
-		const w = parts[2] || 24;
-		const h = parts[3] || 24;
-		return Math.min(w, h) * 0.08;
-	}
-
 	// Derive the selected marker's icon record + color for the toolbar so
 	// the icon button always shows the current preview.
 	const selectedIcon = $derived(selectedMarker ? resolveMapIcon(selectedMarker.icon) : undefined);
@@ -1449,18 +1459,12 @@
 		</div>
 	{/if}
 
-	<!-- Body width is `min(100%, max-height × aspect)` — computed so
-	     the aspect-ratio always drives one dimension, even when the
-	     other has already hit its max. Without this a portrait map
-	     (aspect < 1) would fill the parent width horizontally and
-	     clamp height at max-height, producing a squashed non-square
-	     grid because CSS `aspect-ratio` is ignored when both axes are
-	     already constrained. `margin-inline: auto` re-centers the
-	     narrowed body inside the dialog. -->
-	<div
-		class="mp-body"
-		style="aspect-ratio: {gridDims.cols} / {gridDims.rows}; width: min(100%, calc((95vh - var(--mp-chrome-h, 8rem)) * {gridDims.cols} / {gridDims.rows}));"
-	>
+	<!-- Body fills the dialog width; the JS sizing effect above
+	     already picked the dialog dims so `IW = dialog width` and
+	     `IH = dialog height − AHH`. `aspect-ratio` on the body is
+	     redundant but harmless — it keeps square grid cells even if
+	     a race briefly leaves the dialog un-sized. -->
+	<div class="mp-body" style="aspect-ratio: {gridDims.cols} / {gridDims.rows};">
 		<!-- Wheel listener is attached manually with `passive: false` in a
 		     $effect above so trackpad-pinch (ctrl+wheel) is preventable. -->
 		<div class="mp-canvas" bind:this={canvasEl} onscroll={onScroll}>
@@ -1662,26 +1666,33 @@
 									paint-order="stroke" draws the white halo first,
 									fill on top — same trick the marker label text uses
 									so the icon stays readable over any background map.
+									`vector-effect="non-scaling-stroke"` (inherited by
+									the child paths) pins the halo to 1 device pixel
+									regardless of zoom or icon viewBox scale, matching
+									the label halo.
 								-->
 								<g
 									fill={color}
 									stroke="#fff"
-									stroke-width={iconStrokeWidth(ic.viewBox)}
+									stroke-width="1"
 									stroke-linejoin="round"
 									paint-order="stroke"
+									vector-effect="non-scaling-stroke"
 								>
 									{@html ic.inner}
 								</g>
 							</svg>
 						{:else if hasIcon}
 							<!-- Legacy/broken slug: fall back to a plain dot so
-							     the marker doesn't vanish. -->
+							     the marker doesn't vanish. Non-scaling stroke +
+							     stroke-width 1 for the same 1 px halo everywhere. -->
 							<circle
 								r={ICON_SIZE / 2 - 0.04}
 								fill={color}
 								stroke="#fff"
-								stroke-width="0.04"
+								stroke-width="1"
 								paint-order="stroke"
+								vector-effect="non-scaling-stroke"
 							/>
 						{/if}
 						{#if m.label}
@@ -1935,22 +1946,15 @@
 		left: 50%;
 		margin: 0;
 		transform: translate(-50%, -50%);
-		/* Move + resize:
-		   • Drag the header (see `use:draggable` on DialogHeader) — the
-		     action sets inline left/top + `transform: none`, so the box
-		     anchors to its top-left corner for subsequent gestures.
-		   • Drag the right edge (CSS `resize: horizontal`) to change
-		     width. Height is `auto` so the dialog wraps its content:
-		     `.mp-body` sizes to its inline `aspect-ratio` and the
-		     dialog height follows. This locks the visual aspect
-		     without a JS ResizeObserver (whose feedback loops caused
-		     jitter and a "forces back to portrait" bug). */
-		width: min(960px, calc(100vw - 2rem));
-		height: auto;
-		min-width: min(480px, calc(100vw - 2rem));
-		max-width: calc(100vw - 2rem);
-		max-height: 95vh;
-		resize: horizontal;
+		/* Width + height are set from JavaScript per frame via the
+		   "contain" fit above (aspect-preserving, respects live chrome
+		   height, caps at 80vw × 80vh, handles device rotation).
+		   The `max-width` / `max-height` here are a safety net for
+		   the first paint before the effect fires — the JS values
+		   supersede them. Dialog is NOT user-resizable; the sizing
+		   is fully deterministic from image aspect + AHH + viewport. */
+		max-width: 80vw;
+		max-height: 80vh;
 		overflow: hidden;
 		background: var(--bg-card);
 		color: var(--text);
@@ -1958,13 +1962,6 @@
 			0 16px 48px #00000070,
 			0 0 0 1px var(--border-mid);
 		outline: none;
-	}
-	/* Mobile: disable resize; the dialog already hugs its content and
-	   there's no cursor to grab a handle. */
-	@media (max-width: 640px) {
-		.mp-dialog {
-			resize: none;
-		}
 	}
 	.mp-dialog::backdrop {
 		background: #00000060;
@@ -2461,23 +2458,14 @@
 	}
 
 	.mp-body {
-		/* aspect-ratio + width are set inline from gridDims so cells
-		   render perfectly square whether the map is landscape or
-		   portrait. `max-height` caps the total dialog well inside the
-		   CLAUDE.md 88vh iOS-safe budget so on a short viewport the body
-		   clamps rather than overflowing. `margin-inline: auto` centres
-		   a narrowed portrait body inside the dialog's fixed width.
-		   `position: relative` establishes the containing block for the
-		   .mp-overlay-svg absolutely-positioned overlay. */
+		/* The dialog's JS sizing effect makes `dialog.width = IW` and
+		   `dialog.height = IH + AHH`, so the body just fills the width
+		   and derives its own height via `aspect-ratio`. No max-height
+		   / no width formula needed — the dialog dims are already the
+		   right shape. `position: relative` establishes the containing
+		   block for the .mp-overlay-svg absolutely-positioned overlay. */
 		position: relative;
-		max-width: 100%;
-		/* `--mp-chrome-h` is measured live by MapDialog's chrome
-		   observer — it's the actual pixel height of everything above
-		   the map body (title + toolbar + selection toolbar + any
-		   error banner). Falling back to 8rem for the first frame
-		   before the observer fires. */
-		max-height: calc(95vh - var(--mp-chrome-h, 8rem));
-		margin-inline: auto;
+		width: 100%;
 		overflow: hidden;
 	}
 	/* Overlay SVG — floats above .mp-canvas at fixed canvas-pixel
