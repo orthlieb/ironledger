@@ -57,15 +57,11 @@
 	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
 	import iconSortAzSvg from '$icons/arrow-down-a-z-solid-full.svg?raw';
 	import iconSortAddedSvg from '$icons/calendar-arrow-down-solid-full.svg?raw';
-	// Entity-kind icons + accents — mirrored from CommunitiesArea +
-	// ExpeditionsArea so the Link Marker picker matches the same
-	// visual vocabulary users already know from the Connections /
-	// Expeditions rails.
-	import kindCommunitySvg from '$icons/hut.svg?raw';
-	import kindPlaceSvg from '$icons/location.svg?raw';
-	import kindJourneySvg from '$icons/treasure-map.svg?raw';
-	import kindSiteSvg from '$icons/dungeon-gate.svg?raw';
 	import type { EntityLinkKind } from '$lib/mapEntityLinks.js';
+	// Shared kind metadata (colour, icon, label). Same source of truth
+	// the Connections rail + Expeditions spines will read from once
+	// they're updated, so accents and glyphs stay in lockstep.
+	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import {
 		DEFAULT_MAP_ASPECT,
@@ -1083,20 +1079,16 @@
 		localStorage.setItem(ENTITY_KIND_FILTER_KEY, entityKindFilter);
 	});
 
-	// Kind → icon + accent colour. Mirrored from CommunitiesArea +
-	// ExpeditionsArea so the picker rows look like the source rails.
-	const KIND_META: Record<EntityLinkKind, { icon: string; color: string; label: string }> = {
-		community: { icon: kindCommunitySvg, color: '#D06840', label: 'Community' },
-		place: { icon: kindPlaceSvg, color: '#4AA0C8', label: 'Place' },
-		journey: { icon: kindJourneySvg, color: '#E4AA28', label: 'Journey' },
-		site: { icon: kindSiteSvg, color: '#4472D0', label: 'Site' },
-	};
+	// Alias for the linkable subset — the picker doesn't offer NPCs.
+	// The metadata for community/place/journey/site is looked up
+	// straight from `ENTITY_KIND_META` at each render site.
+	const KIND_META = ENTITY_KIND_META;
 	const KIND_FILTER_OPTIONS: Array<{ value: 'all' | EntityLinkKind; label: string }> = [
 		{ value: 'all', label: 'All' },
-		{ value: 'community', label: 'Communities' },
-		{ value: 'place', label: 'Places' },
-		{ value: 'journey', label: 'Journeys' },
-		{ value: 'site', label: 'Sites' },
+		{ value: 'community', label: ENTITY_KIND_META.community.labelPlural },
+		{ value: 'place', label: ENTITY_KIND_META.place.labelPlural },
+		{ value: 'journey', label: ENTITY_KIND_META.journey.labelPlural },
+		{ value: 'site', label: ENTITY_KIND_META.site.labelPlural },
 	];
 
 	function openEntityPicker() {

@@ -63,10 +63,8 @@
 	import heartPulseSvg from '$icons/heart-pulse-solid-full.svg?raw';
 	import skullSvg from '$icons/skull-crossbones-solid-full.svg?raw';
 	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
-	import hutSvg from '$icons/hut.svg?raw';
-	import farmerSvg from '$icons/farmer.svg?raw';
-	import locationSvg from '$icons/location.svg?raw';
 	import villageIconSvg from '$icons/village.svg?raw';
+	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
 	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
@@ -76,9 +74,12 @@
 
 	let { showTitle = true }: { showTitle?: boolean } = $props();
 
-	const COMMUNITY_COLOR = '#D06840';
-	const NPC_COLOR = '#C848A8';
-	const PLACE_COLOR = '#4AA0C8'; // steel blue — distinct from communities + NPCs
+	// Colours + icons + labels come from the shared kind-meta module
+	// so a rename or a colour tweak only happens once. Local wrappers
+	// keep the `kind: EntryKind` signature the rail markup uses.
+	const COMMUNITY_COLOR = ENTITY_KIND_META.community.color;
+	const NPC_COLOR = ENTITY_KIND_META.npc.color;
+	const PLACE_COLOR = ENTITY_KIND_META.place.color;
 
 	type EntryKind = 'community' | 'npc' | 'place';
 	type CommunityEntry = { kind: 'community'; id: string; createdAt: number; data: Community };
@@ -87,19 +88,13 @@
 	type Entry = CommunityEntry | NpcEntry | PlaceEntry;
 
 	function accentFor(kind: EntryKind): string {
-		if (kind === 'npc') return NPC_COLOR;
-		if (kind === 'place') return PLACE_COLOR;
-		return COMMUNITY_COLOR;
+		return ENTITY_KIND_META[kind].color;
 	}
 	function iconFor(kind: EntryKind): string {
-		if (kind === 'npc') return farmerSvg;
-		if (kind === 'place') return locationSvg;
-		return hutSvg;
+		return ENTITY_KIND_META[kind].icon;
 	}
 	function kindLabelSingular(kind: EntryKind): string {
-		if (kind === 'npc') return 'NPC';
-		if (kind === 'place') return 'Place';
-		return 'Community';
+		return ENTITY_KIND_META[kind].label;
 	}
 
 	type CmTab = 'core' | 'notes';

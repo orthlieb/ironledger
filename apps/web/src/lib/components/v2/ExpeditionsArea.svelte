@@ -63,16 +63,20 @@
 	import checkSvg from '$icons/circle-check-solid-full.svg?raw';
 	import locationSvg from '$icons/location-dot-solid-full.svg?raw';
 	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
-	import journeyPlaceholderSvg from '$icons/treasure-map.svg?raw';
-	import sitePlaceholderSvg from '$icons/dungeon-gate.svg?raw';
+	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
+	const journeyPlaceholderSvg = ENTITY_KIND_META.journey.icon;
+	const sitePlaceholderSvg = ENTITY_KIND_META.site.icon;
 	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
 	import expeditionsIconSvg from '$icons/Expeditions.svg?raw';
 	import { headingText } from '$lib/fontStore.svelte.js';
 
 	let { showTitle = true }: { showTitle?: boolean } = $props();
 
-	const JOURNEY_COLOR = '#E4AA28';
-	const SITE_COLOR = '#4472D0';
+	// Colours + icons come from the shared kind-meta module — same
+	// source of truth CommunitiesArea and the map's Link Marker picker
+	// read from, so a tweak lands everywhere at once.
+	const JOURNEY_COLOR = ENTITY_KIND_META.journey.color;
+	const SITE_COLOR = ENTITY_KIND_META.site.color;
 
 	type ExpTab = 'description' | 'notes' | 'core' | 'denizens';
 	const JOURNEY_TAB_LABELS: { key: ExpTab; label: string }[] = [
