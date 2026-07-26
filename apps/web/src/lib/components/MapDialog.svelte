@@ -1234,7 +1234,7 @@
 	 *  comfortably inside its cell without spilling into neighbours.
 	 *  Zooms with the map (icons are part of the annotation, so it makes
 	 *  sense for them to grow when the user zooms in on detail). */
-	const ICON_SIZE = 0.5625;
+	const ICON_SIZE = 0.421875;
 
 	// Derive the selected marker's icon record + color for the toolbar so
 	// the icon button always shows the current preview.
@@ -1756,7 +1756,7 @@
 									class="mp-marker-label"
 									fill={color}
 									vector-effect="non-scaling-stroke"
-									y={ICON_SIZE / 2 + 0.24}>{m.label}</text
+									y={ICON_SIZE / 2 + 0.18}>{m.label}</text
 								>
 							{:else}
 								<text
@@ -2508,27 +2508,38 @@
 		background: var(--bg-inset);
 		border-bottom: 1px solid var(--border);
 	}
+	/* Kind filter chips — same style as the Connections rail's
+	   `.cm-filter-tag` so the two filter surfaces read as siblings.
+	   Outlined by default; 20% tint of the kind's accent when active,
+	   with border + text matching the accent. */
 	.mp-entity-kind-chip {
 		display: inline-flex;
 		align-items: center;
 		gap: 4px;
-		padding: 3px 8px;
-		background: var(--bg-control);
-		color: var(--text-muted);
-		border: 1px solid var(--border-mid);
-		border-radius: 10px;
 		font-family: var(--font-ui);
-		font-size: 0.7rem;
+		font-size: 0.68rem;
+		font-weight: 600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		padding: 3px 8px;
+		border-radius: 12px;
+		border: 1px solid var(--border);
+		background: transparent;
+		color: var(--text-dimmer);
 		cursor: pointer;
+		transition:
+			background 0.1s,
+			color 0.1s,
+			border-color 0.1s;
 	}
 	.mp-entity-kind-chip:hover {
-		color: var(--text);
-		border-color: var(--kind-color, var(--text-accent));
+		border-color: var(--kind-color, var(--text-dimmer));
+		color: var(--kind-color, var(--text-dimmer));
 	}
 	.mp-entity-kind-chip--active {
-		color: #fff;
-		background: var(--kind-color, var(--text-accent));
-		border-color: var(--kind-color, var(--text-accent));
+		background: color-mix(in srgb, var(--kind-color, #9ca3af) 20%, transparent);
+		border-color: var(--kind-color, #9ca3af);
+		color: var(--kind-color, #9ca3af);
 	}
 	.mp-entity-kind-chip-icon {
 		display: inline-flex;

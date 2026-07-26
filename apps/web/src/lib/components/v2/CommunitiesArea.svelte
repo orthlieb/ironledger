@@ -1548,21 +1548,17 @@
 		gap: 4px;
 		flex: 1;
 	}
-	/* Filter chips: outlined by default, filled with the kind's
-	   accent when active. Same visual language as the Link Marker
-	   picker's kind chips (see `.mp-entity-kind-chip`) so the two
-	   filter surfaces read as siblings. */
 	.cm-filter-tag {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
 		font-family: var(--font-ui);
-		font-size: 0.7rem;
+		font-size: 0.68rem;
+		font-weight: 600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
 		padding: 3px 8px;
-		border-radius: 10px;
-		border: 1px solid var(--border-mid);
-		background: var(--bg-control);
-		color: var(--text-muted);
+		border-radius: 12px;
+		border: 1px solid var(--border);
+		background: transparent;
+		color: var(--text-dimmer);
 		cursor: pointer;
 		transition:
 			background 0.1s,
@@ -1570,13 +1566,13 @@
 			border-color 0.1s;
 	}
 	.cm-filter-tag:hover {
-		color: var(--text);
-		border-color: var(--tag-color, var(--text-accent));
+		border-color: var(--tag-color, var(--text-dimmer));
+		color: var(--tag-color, var(--text-dimmer));
 	}
 	.cm-filter-tag.active {
-		color: #fff;
-		background: var(--tag-color, var(--text-accent));
-		border-color: var(--tag-color, var(--text-accent));
+		background: color-mix(in srgb, var(--tag-color, #9ca3af) 20%, transparent);
+		border-color: var(--tag-color, #9ca3af);
+		color: var(--tag-color, #9ca3af);
 	}
 	/* Rail list — one row per connection. */
 	.cm-list {
