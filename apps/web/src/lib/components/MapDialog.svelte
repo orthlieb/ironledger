@@ -88,6 +88,12 @@
 	import { downscaleImage, MapImageError } from '$lib/mapImage.js';
 	import { exportMapPng, exportMapZip } from '$lib/mapExport.js';
 	import { getLinkableEntities, resolveEntity } from '$lib/mapEntityLinks.js';
+	// @simonwep/pickr — MIT, dep-free, framework-agnostic colour picker.
+	// Replaces the native <input type="color"> whose macOS chrome is
+	// jarring and eats a lot of screen. The Nano theme is the smallest
+	// build (~4 KB CSS) and matches our toolbar footprint.
+	import Pickr from '@simonwep/pickr';
+	import '@simonwep/pickr/dist/themes/nano.min.css';
 
 	// Module-level guard so only one <MapDialog /> instance in the page
 	// registers the `ironledger:export-map` listener at a time — matters
@@ -823,10 +829,83 @@
 		updateMarker(selectedMarker.id, { label: (e.target as HTMLInputElement).value });
 	}
 
-	function onColorInput(e: Event) {
-		if (!selectedMarker) return;
-		updateMarker(selectedMarker.id, { color: (e.target as HTMLInputElement).value });
+	// ─── Pickr (marker colour) ─────────────────────────────────────────────
+	// Pickr is instantiated once per selection-toolbar mount. Two
+	// $effects: one to create/tear down when the anchor element comes
+	// and goes, one to sync the widget's colour when a different
+	// marker is selected (silent: true so it doesn't fire our own
+	// change handler and cause a feedback loop).
+	let pickrAnchor = $state<HTMLDivElement | null>(null);
+	let pickr: Pickr | null = null;
+
+	/** Seven-char `#rrggbb` (no alpha) — Pickr's HEXA output ends `ff`
+	 *  for the fully-opaque colours we always store; trim so the round
+	 *  trip against `<input type="color">` compatible fields stays
+	 *  clean. */
+	function normalizeHex(color: string): string {
+		return color.startsWith('#') ? color.slice(0, 7).toLowerCase() : color;
 	}
+
+	$effect(() => {
+		if (!pickrAnchor || !dialogEl) return;
+		const anchor = pickrAnchor;
+		const instance = Pickr.create({
+			el: anchor,
+			// Anchor the popover INSIDE the dialog. Native <dialog>
+			// lives in the browser top layer, so a Pickr appended to
+			// document.body renders beneath it and clicks pass through.
+			// Attaching inside the dialog keeps the popover in the same
+			// top-layer scope.
+			container: dialogEl,
+			theme: 'nano',
+			default: selectedColor,
+			// Pickr's built-in swatch row — same eight tabletop-friendly
+			// hues the old preset strip carried before the native input
+			// took over. Keeps common picks one tap away without opening
+			// the wheel.
+			swatches: [
+				'#e63946',
+				'#f4a261',
+				'#e9c46a',
+				'#2a9d8f',
+				'#457b9d',
+				'#8e44ad',
+				'#111111',
+				'#f1faee',
+			],
+			components: {
+				preview: true,
+				opacity: false,
+				hue: true,
+				interaction: {
+					hex: true,
+					input: true,
+					clear: false,
+					save: false,
+				},
+			},
+		});
+		instance.on('change', (c: ReturnType<Pickr['getColor']>) => {
+			if (!selectedMarker) return;
+			updateMarker(selectedMarker.id, { color: normalizeHex(c.toHEXA().toString()) });
+		});
+		pickr = instance;
+		return () => {
+			instance.destroyAndRemove();
+			if (pickr === instance) pickr = null;
+		};
+	});
+
+	// Sync widget → selection when the picked marker (or another
+	// surface) changes its colour behind our back. Uses setColor
+	// silent so we don't feed the change back through updateMarker.
+	$effect(() => {
+		const c = selectedColor;
+		const p = pickr;
+		if (!p) return;
+		const cur = normalizeHex(p.getColor()?.toHEXA().toString() ?? '');
+		if (cur !== c.toLowerCase()) p.setColor(c, true);
+	});
 
 	/** Normalise a rotation to `[0, 360)` for display + storage. `undefined`
 	 *  → 0 (default rotation for legacy markers). Non-finite → 0 so a stray
@@ -861,18 +940,21 @@
 	// ─── Entity-link picker (searchable) ───────────────────────────────────────
 	// The dropdown of every community / place / journey / site got noisy
 	// as users pile them up. Replaced the native <select> with a
-	// combobox-style picker: a trigger chip that opens a floating panel
-	// with a search field + filtered list. Same UX pattern as the
-	// Connections rail search.
+	// combobox picker — now a nested <dialog> (was an absolutely-
+	// positioned popover, but that got clipped by the map dialog's
+	// `overflow: hidden`). Same content: search field + filtered list.
+	let entityDialogEl = $state<HTMLDialogElement | null>(null);
 	let entityPickerOpen = $state(false);
 	let entitySearch = $state('');
 
 	function openEntityPicker() {
 		entitySearch = '';
 		entityPickerOpen = true;
+		entityDialogEl?.showModal();
 	}
 	function closeEntityPicker() {
 		entityPickerOpen = false;
+		entityDialogEl?.close();
 	}
 
 	/** Filtered link candidates for the picker. Matches on name / kind
@@ -920,9 +1002,12 @@
 		selectedSquare = null;
 	}
 
-	/** Keyboard shortcut router. Only handles Escape — closes floating
-	 *  pickers (pile-up, entity-link) before the native <dialog> cancel
-	 *  handler would close the whole map. */
+	/** Keyboard shortcut router. Only handles Escape for the pile
+	 *  picker — a non-dialog floating menu that would otherwise be
+	 *  bypassed and let Escape close the whole map. The entity-link
+	 *  picker is a nested `<dialog>` now, so its native Escape handler
+	 *  (wired via `oncancel`) closes it before Escape can reach the
+	 *  parent. */
 	$effect(() => {
 		const handler = (ev: KeyboardEvent) => {
 			if (!dialogEl?.open) return;
@@ -930,12 +1015,6 @@
 				ev.preventDefault();
 				ev.stopPropagation();
 				closePilePicker();
-				return;
-			}
-			if (ev.key === 'Escape' && entityPickerOpen) {
-				ev.preventDefault();
-				ev.stopPropagation();
-				closeEntityPicker();
 				return;
 			}
 		};
@@ -1180,18 +1259,17 @@
 					<span class="mp-sel-icon-label">No icon</span>
 				{/if}
 			</button>
-			<!-- Native color picker only — the preset-swatch strip took up
-			     a lot of horizontal space that reads better as the entity
-			     link chip. Native picker opens the OS colour dialog on
-			     click, which covers every preset and more. -->
-			<input
+			<!-- Pickr colour widget — the native macOS/Windows `<input
+			     type="color">` opens a heavy OS dialog that eats the
+			     screen. Pickr is a self-contained JS wheel + swatches
+			     that lives in-page. The `<div>` is a stub anchor;
+			     Pickr replaces it with its own button chip that shows
+			     the current colour and pops the wheel on click. -->
+			<div
 				class="mp-sel-color"
-				type="color"
-				value={selectedColor}
-				oninput={onColorInput}
-				use:tooltip={'Icon color — click to open the color picker'}
-				aria-label="Icon color"
-			/>
+				bind:this={pickrAnchor}
+				use:tooltip={'Icon colour — click to open the picker'}
+			></div>
 			<!-- Angle spinner — explicit − / + buttons flank the number
 			     input because iOS Safari doesn't render the native
 			     <input type="number"> step arrows, so touch users would
@@ -1249,48 +1327,6 @@
 					</span>
 					<span class="mp-picker-caret" aria-hidden="true">▾</span>
 				</button>
-				{#if entityPickerOpen}
-					<!-- svelte-ignore a11y_click_events_have_key_events -->
-					<div class="mp-picker-backdrop" role="presentation" onclick={closeEntityPicker}></div>
-					<div class="mp-entity-menu" role="listbox" aria-label="Link to entity">
-						<div class="mp-entity-search-row">
-							<!-- svelte-ignore a11y_autofocus -->
-							<input
-								class="mp-entity-search"
-								type="search"
-								placeholder="Search connections…"
-								bind:value={entitySearch}
-								autofocus
-							/>
-						</div>
-						<div class="mp-entity-list">
-							<button
-								class="mp-entity-item mp-entity-item--none"
-								class:mp-entity-item--active={!selectedMarker.entityId}
-								onclick={() => pickEntity('')}
-								role="option"
-								aria-selected={!selectedMarker.entityId}>— No link —</button
-							>
-							{#each filteredEntities as e (`${e.kind}:${e.id}`)}
-								{@const val = `${e.kind}:${e.id}`}
-								<button
-									class="mp-entity-item"
-									class:mp-entity-item--active={selectedMarker.entityId === val}
-									onclick={() => pickEntity(val)}
-									role="option"
-									aria-selected={selectedMarker.entityId === val}
-								>
-									<span class="mp-entity-prefix" aria-hidden="true">{e.kindPrefix}</span>
-									<span class="mp-entity-name">{e.name}</span>
-									<span class="mp-entity-kind">{e.kindLabel}</span>
-								</button>
-							{/each}
-							{#if filteredEntities.length === 0}
-								<p class="mp-entity-empty">No matches for "{entitySearch}".</p>
-							{/if}
-						</div>
-					</div>
-				{/if}
 			</div>
 			<button
 				class="mp-btn mp-btn-danger mp-btn-icon"
@@ -1719,6 +1755,64 @@
 	</div>
 </dialog>
 
+<!--
+	Entity-link picker — nested modal that lists every linkable
+	community / place / journey / site with a live search filter. Was
+	an inline popover but got clipped by the map dialog's `overflow:
+	hidden`; a native <dialog> renders in the browser top layer and
+	escapes cleanly. Follows CLAUDE.md's content-sized pattern: no
+	`display: flex` on the dialog, `max-height` on the scrollable body,
+	`overscroll-behavior: contain` on the same body.
+-->
+<dialog
+	bind:this={entityDialogEl}
+	class="mp-entity-dialog"
+	oncancel={closeEntityPicker}
+	onclose={() => (entityPickerOpen = false)}
+>
+	<DialogHeader
+		title={headingText('Link Marker')}
+		onclose={closeEntityPicker}
+		radius="8px 8px 0 0"
+	/>
+	<div class="mp-entity-search-row">
+		<!-- svelte-ignore a11y_autofocus -->
+		<input
+			class="mp-entity-search"
+			type="search"
+			placeholder="Search connections…"
+			bind:value={entitySearch}
+			autofocus
+		/>
+	</div>
+	<div class="mp-entity-body" role="listbox" aria-label="Link to entity">
+		<button
+			class="mp-entity-item mp-entity-item--none"
+			class:mp-entity-item--active={!selectedMarker?.entityId}
+			onclick={() => pickEntity('')}
+			role="option"
+			aria-selected={!selectedMarker?.entityId}>— No link —</button
+		>
+		{#each filteredEntities as e (`${e.kind}:${e.id}`)}
+			{@const val = `${e.kind}:${e.id}`}
+			<button
+				class="mp-entity-item"
+				class:mp-entity-item--active={selectedMarker?.entityId === val}
+				onclick={() => pickEntity(val)}
+				role="option"
+				aria-selected={selectedMarker?.entityId === val}
+			>
+				<span class="mp-entity-prefix" aria-hidden="true">{e.kindPrefix}</span>
+				<span class="mp-entity-name">{e.name}</span>
+				<span class="mp-entity-kind">{e.kindLabel}</span>
+			</button>
+		{/each}
+		{#if filteredEntities.length === 0}
+			<p class="mp-entity-empty">No matches for "{entitySearch}".</p>
+		{/if}
+	</div>
+</dialog>
+
 <style>
 	.mp-dialog {
 		border: none;
@@ -2012,21 +2106,29 @@
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
-	.mp-sel-color {
-		width: 28px;
-		height: 28px;
-		padding: 0;
+	/* Pickr colour widget. Pickr replaces the anchor `<div>` with its
+	   own `.pickr` chip (a small round swatch button) + a floating
+	   `.pcr-app` popover. We just need to constrain the chip so it
+	   sits inside the toolbar row like the old native chip did — the
+	   popover then anchors itself to the chip and floats free. */
+	.mp-sel-color :global(.pickr) {
+		display: inline-flex;
+	}
+	.mp-sel-color :global(.pickr .pcr-button) {
+		width: 24px;
+		height: 24px;
 		border: 1px solid var(--border-mid);
 		border-radius: 4px;
-		background: transparent;
-		cursor: pointer;
 	}
-	.mp-sel-color::-webkit-color-swatch-wrapper {
-		padding: 2px;
+	.mp-sel-color :global(.pickr .pcr-button:focus) {
+		outline: 1px solid var(--text-accent);
+		outline-offset: 1px;
+		box-shadow: none;
 	}
-	.mp-sel-color::-webkit-color-swatch {
-		border: none;
-		border-radius: 2px;
+	/* Popover floats above the dialog's other chrome via a high
+	   z-index so it isn't clipped by the toolbar's own row. */
+	:global(.pcr-app) {
+		z-index: 60;
 	}
 	/* Angle spinner — inline `−  ∠ nnn°  +` cluster. iOS Safari drops
 	   the native <input type="number"> step arrows, so explicit step
@@ -2108,11 +2210,10 @@
 		color: var(--text-dimmer);
 		line-height: 1;
 	}
-	/* Entity-link picker — a combobox chip: a trigger button showing
-	   the currently-linked entity, and a floating popover with search +
-	   filtered list. Same UX pattern as the map-picker chip. */
+	/* Entity-link chip in the selection toolbar — trigger only; the
+	   picker itself is a nested <dialog> (see .mp-entity-dialog). */
 	.mp-sel-entity {
-		position: relative;
+		display: inline-flex;
 	}
 	.mp-sel-entity-btn {
 		/* Wider than before — the preset-swatch strip was retired so
@@ -2144,20 +2245,36 @@
 		color: var(--text-accent);
 		margin-right: 4px;
 	}
-	.mp-entity-menu {
-		position: absolute;
-		top: calc(100% + 4px);
-		left: 0;
-		z-index: 25;
-		width: min(320px, 80vw);
-		max-height: 55vh;
-		display: flex;
-		flex-direction: column;
-		background: var(--bg-card);
-		border: 1px solid var(--border-mid);
-		border-radius: 6px;
-		box-shadow: 0 8px 24px #00000060;
+	/* Entity-link picker dialog. Content-sized per CLAUDE.md rule 3B
+	   (no display:flex on the dialog; max-height on the scrollable
+	   body). Centred via top/left/transform per rule 2. */
+	.mp-entity-dialog {
+		border: none;
+		padding: 0;
+		border-radius: 8px;
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		margin: 0;
+		transform: translate(-50%, -50%);
+		width: min(360px, calc(100vw - 2rem));
+		max-height: 82vh;
 		overflow: hidden;
+		background: var(--bg-card);
+		color: var(--text);
+		box-shadow:
+			0 16px 48px #00000070,
+			0 0 0 1px var(--border-mid);
+		outline: none;
+	}
+	.mp-entity-dialog::backdrop {
+		background: #00000060;
+	}
+	.mp-entity-body {
+		max-height: calc(82vh - 8rem);
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		padding: 4px 0;
 	}
 	.mp-entity-search-row {
 		padding: 6px 8px;
@@ -2178,11 +2295,6 @@
 	.mp-entity-search:focus {
 		outline: none;
 		border-color: var(--text-accent);
-	}
-	.mp-entity-list {
-		overflow-y: auto;
-		overscroll-behavior: contain;
-		padding: 4px 0;
 	}
 	.mp-entity-item {
 		width: 100%;
