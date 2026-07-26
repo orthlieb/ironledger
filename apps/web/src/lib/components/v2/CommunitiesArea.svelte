@@ -834,25 +834,6 @@
 					>
 				</div>
 
-				{#if activeEntryMarkers.length > 0}
-					<!-- Back-ref chip strip. One chip per marker on any map that
-					     links to this community/place; click jumps to the marker. -->
-					<div class="cm-mapref-row" aria-label="On the campaign map">
-						<span class="cm-mapref-label" aria-hidden="true">📍 On map:</span>
-						{#each activeEntryMarkers as ref (ref.markerId)}
-							<button
-								class="cm-mapref-chip"
-								onclick={() => jumpToMarker(ref)}
-								use:tooltip={`Jump to "${ref.label || '(unlabeled)'}" on ${ref.mapName}`}
-								aria-label={`Jump to marker on ${ref.mapName}`}
-							>
-								<span class="cm-mapref-name">{ref.mapName}</span>
-								<span class="cm-mapref-coord">({fmtCoord(ref.x)}, {fmtCoord(ref.y)})</span>
-							</button>
-						{/each}
-					</div>
-				{/if}
-
 				<div class="cm-stage">
 					<div class="cm-tabs" role="tablist">
 						{#each tabs as tab (tab.key)}
@@ -907,6 +888,30 @@
 											})}
 										placeholder="Location description…"
 									/>
+								</div>
+								<!-- Map field: one chip per marker referencing this
+								     community/place. Multi-map is supported natively —
+								     the store returns refs across all maps, chips wrap
+								     onto new rows via flex-wrap. Coord (x, y) lives in
+								     the tooltip; chip text is the map name only. -->
+								<div class="cm-field-row cm-field-row--map">
+									<span class="cm-field-label">Map</span>
+									<div class="cm-mapref-chips">
+										{#if activeEntryMarkers.length === 0}
+											<span class="cm-mapref-empty">Not on any map</span>
+										{:else}
+											{#each activeEntryMarkers as ref (ref.markerId)}
+												<button
+													class="cm-mapref-chip"
+													onclick={() => jumpToMarker(ref)}
+													use:tooltip={`Jump to "${ref.label || '(unlabeled)'}" on ${ref.mapName} — (${fmtCoord(ref.x)}, ${fmtCoord(ref.y)})`}
+													aria-label={`Jump to marker on ${ref.mapName}`}
+												>
+													<span class="cm-mapref-name">{ref.mapName}</span>
+												</button>
+											{/each}
+										{/if}
+									</div>
 								</div>
 								<div class="cm-field-row cm-field-row--trouble">
 									<label class="cm-field-label" for="cm-trouble-{c.id}">Trouble</label>
@@ -1253,33 +1258,38 @@
 		text-transform: uppercase;
 		padding: 4px 12px;
 	}
-	.cm-mapref-row {
+	/* Map field — the chip strip lives inside a `.cm-field-row` in
+	   the Core tab now (previously a header-level band). One chip per
+	   marker referencing this community/place; hover surfaces the
+	   marker label + coordinates. Multi-map users get multiple chips
+	   that wrap onto new rows via `flex-wrap`. */
+	.cm-mapref-chips {
+		flex: 1 1 auto;
 		display: flex;
-		align-items: center;
 		flex-wrap: wrap;
 		gap: 6px;
-		padding: 4px 12px 6px;
-		background: var(--bg-inset);
-		border-bottom: 1px solid var(--border);
-		font-family: var(--font-ui);
-		font-size: 0.72rem;
+		align-items: center;
 	}
-	.cm-mapref-label {
+	.cm-mapref-empty {
+		font-family: var(--font-ui);
+		font-size: 0.75rem;
+		font-style: italic;
 		color: var(--text-dimmer);
-		margin-right: 4px;
 	}
 	.cm-mapref-chip {
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		padding: 2px 8px;
+		padding: 2px 10px;
 		background: var(--bg-control);
 		border: 1px solid var(--border-mid);
 		border-radius: 12px;
-		font-family: inherit;
-		font-size: inherit;
+		font-family: var(--font-ui);
+		font-size: 0.75rem;
 		color: var(--text);
 		cursor: pointer;
+		max-width: 100%;
+		white-space: nowrap;
 	}
 	.cm-mapref-chip:hover {
 		border-color: var(--text-accent);
@@ -1287,10 +1297,9 @@
 	}
 	.cm-mapref-name {
 		font-weight: 600;
-	}
-	.cm-mapref-coord {
-		font-family: var(--font-mono, ui-monospace, monospace);
-		color: var(--text-dimmer);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		max-width: 12rem;
 	}
 
 	.cm-header {
