@@ -277,90 +277,12 @@
 		return () => ro.disconnect();
 	});
 
-	// ─── Aspect-lock the dialog to the map ────────────────────────────
-	// The map body is aspect-driven, so any drift in the dialog's
-	// aspect leaves a dead parchment band along one edge. Observe the
-	// dialog + its map body: chrome height = dialog.clientHeight -
-	// body.clientHeight. The desired dialog height for a given width
-	// is `(width / mapAspect) + chromeH` — the map body fits its
-	// aspect exactly, and the chrome (title + toolbars + hint) sits
-	// on top with its natural height.
-	//
-	// Skipped on narrow viewports (mobile) — the media query already
-	// sets `height: auto; resize: none` there; enforcing an explicit
-	// height would clip the map body when the toolbar wraps.
-	$effect(() => {
-		if (!dialogEl) return;
-		if (typeof window === 'undefined') return;
-		if (window.matchMedia('(max-width: 640px)').matches) return;
-		// Re-run whenever the map's aspect changes (e.g. switching between
-		// a portrait and landscape map inside the same dialog).
-		const desiredAspect = mapAspect;
-		const el = dialogEl;
-		let lastW = 0;
-		let lastH = 0;
-		let raf: number | null = null;
-
-		const settle = () => {
-			raf = null;
-			const bodyEl = el.querySelector('.mp-body') as HTMLElement | null;
-			if (!bodyEl) return;
-			const w = el.clientWidth;
-			const h = el.clientHeight;
-			if (w <= 0 || h <= 0) return;
-			const chromeH = h - bodyEl.clientHeight;
-			if (chromeH < 0) return;
-
-			// Which axis did the user just push? Bigger delta wins.
-			const dw = Math.abs(w - lastW);
-			const dh = Math.abs(h - lastH);
-			const useWidthAsAuthority = lastW === 0 || dw >= dh;
-			let newW: number;
-			let newH: number;
-			if (useWidthAsAuthority) {
-				newW = w;
-				newH = w / desiredAspect + chromeH;
-			} else {
-				const bodyH = Math.max(0, h - chromeH);
-				newW = bodyH * desiredAspect;
-				newH = h;
-			}
-
-			// Clamp to viewport. When we clamp one axis, re-derive the
-			// other so the aspect (of the *body*, not the whole dialog)
-			// stays locked.
-			const maxW = window.innerWidth - 32; // matches `max-width: calc(100vw - 2rem)`
-			const maxH = window.innerHeight * 0.95;
-			if (newW > maxW) {
-				newW = maxW;
-				newH = newW / desiredAspect + chromeH;
-			}
-			if (newH > maxH) {
-				newH = maxH;
-				newW = Math.max(0, newH - chromeH) * desiredAspect;
-			}
-
-			if (Math.abs(newW - w) < 1 && Math.abs(newH - h) < 1) {
-				lastW = newW;
-				lastH = newH;
-				return;
-			}
-			lastW = newW;
-			lastH = newH;
-			el.style.width = `${newW}px`;
-			el.style.height = `${newH}px`;
-		};
-
-		const ro = new ResizeObserver(() => {
-			if (raf !== null) return;
-			raf = requestAnimationFrame(settle);
-		});
-		ro.observe(el);
-		return () => {
-			ro.disconnect();
-			if (raf !== null) cancelAnimationFrame(raf);
-		};
-	});
+	// Dialog aspect is now enforced purely by CSS: `.mp-dialog {
+	// height: auto; resize: horizontal }` lets the browser wrap the
+	// content, `.mp-body` sizes to its inline `aspect-ratio`, and the
+	// dialog height follows. Simpler, no ResizeObserver feedback
+	// loops, no jitter, no crashes when the map body is temporarily
+	// zero-height mid-switch.
 
 	// ─── Zoom + pan ────────────────────────────────────────────────────────────
 	// The SVG's viewBox is fixed at world units (0 0 cols rows); zoom
@@ -993,7 +915,17 @@
 		});
 		pickr = instance;
 		return () => {
-			instance.destroyAndRemove();
+			// Pickr's teardown races with pending tap/pointer events on
+			// its internal wheel: `_tapstop` / `_tapmove` fire from
+			// document-level listeners after `destroyAndRemove()` has
+			// nulled the instance's internal color/emitter, throwing
+			// "Cannot read properties of null". Swallow — the picker is
+			// gone either way. The user just closed the toolbar.
+			try {
+				instance.destroyAndRemove();
+			} catch {
+				/* known Pickr teardown race */
+			}
 			if (pickr === instance) pickr = null;
 		};
 	});
@@ -1970,23 +1902,18 @@
 		   • Drag the header (see `use:draggable` on DialogHeader) — the
 		     action sets inline left/top + `transform: none`, so the box
 		     anchors to its top-left corner for subsequent gestures.
-		   • Drag the bottom-right corner (CSS `resize: both`) — width
-		     and height clamp between the min/max below. `overflow: hidden`
-		     is required for `resize` to render the drag handle.
-		   Initial size still matches the pre-resize default; users can
-		   shrink to `min-*` or grow up to the full viewport. */
+		   • Drag the right edge (CSS `resize: horizontal`) to change
+		     width. Height is `auto` so the dialog wraps its content:
+		     `.mp-body` sizes to its inline `aspect-ratio` and the
+		     dialog height follows. This locks the visual aspect
+		     without a JS ResizeObserver (whose feedback loops caused
+		     jitter and a "forces back to portrait" bug). */
 		width: min(960px, calc(100vw - 2rem));
-		height: min(720px, 88vh);
-		/* `min-*` used to be flat 480×360, which on a narrow phone
-		   (~390 vw) forced the dialog past the viewport edge and cut
-		   off the right side of the toolbar + map. Clamp the floor to
-		   whatever the viewport can actually hold so mobile shrinks
-		   naturally, and only enforce the ergonomic minimum on desktop. */
+		height: auto;
 		min-width: min(480px, calc(100vw - 2rem));
-		min-height: min(360px, 88vh);
 		max-width: calc(100vw - 2rem);
 		max-height: 95vh;
-		resize: both;
+		resize: horizontal;
 		overflow: hidden;
 		background: var(--bg-card);
 		color: var(--text);
@@ -1995,17 +1922,10 @@
 			0 0 0 1px var(--border-mid);
 		outline: none;
 	}
-	/* Mobile: drop the fixed dialog height and let it hug its content.
-	   The map body is aspect-driven (`mp-body` sizes to the picture),
-	   so a fixed 720px dialog on a phone left a huge dead parchment
-	   band below the map. `height: auto` + `min-height: auto` collapse
-	   the chrome around what's actually rendering — the dialog no
-	   longer looks half-empty on portrait phones. Resize is disabled
-	   because there's no cursor to drag the corner handle. */
+	/* Mobile: disable resize; the dialog already hugs its content and
+	   there's no cursor to grab a handle. */
 	@media (max-width: 640px) {
 		.mp-dialog {
-			height: auto;
-			min-height: auto;
 			resize: none;
 		}
 	}
