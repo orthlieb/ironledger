@@ -55,8 +55,6 @@
 	import iconZoomInSvg from '$icons/magnifying-glass-plus-solid-full.svg?raw';
 	import iconZoomOutSvg from '$icons/magnifying-glass-minus-solid-full.svg?raw';
 	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
-	import iconSortAzSvg from '$icons/arrow-down-a-z-solid-full.svg?raw';
-	import iconSortAddedSvg from '$icons/calendar-arrow-down-solid-full.svg?raw';
 	import type { EntityLinkKind } from '$lib/mapEntityLinks.js';
 	// Shared kind metadata (colour, icon, label). Same source of truth
 	// the Connections rail + Expeditions spines will read from once
@@ -1058,24 +1056,18 @@
 	let entityDialogEl = $state<HTMLDialogElement | null>(null);
 	let entityPickerOpen = $state(false);
 	let entitySearch = $state('');
-	// Sort mode for the entity-link picker. Mirrors the Connections
-	// rail's A-Z vs Added sort, persisted per-device.
-	const ENTITY_SORT_KEY = 'ironledger:mapEntityPicker:sort';
+	// Kind filter for the picker — search + filter, always A-Z (no
+	// sort toggle: the list is short enough that alphabetical wins
+	// every time). Persisted per-device.
 	const ENTITY_KIND_FILTER_KEY = 'ironledger:mapEntityPicker:kind';
-	function readEntitySort(): 'added' | 'name' {
-		if (typeof window === 'undefined') return 'added';
-		return localStorage.getItem(ENTITY_SORT_KEY) === 'name' ? 'name' : 'added';
-	}
 	function readEntityKindFilter(): 'all' | EntityLinkKind {
 		if (typeof window === 'undefined') return 'all';
 		const v = localStorage.getItem(ENTITY_KIND_FILTER_KEY);
 		return v === 'community' || v === 'place' || v === 'journey' || v === 'site' ? v : 'all';
 	}
-	let entitySort = $state<'added' | 'name'>(readEntitySort());
 	let entityKindFilter = $state<'all' | EntityLinkKind>(readEntityKindFilter());
 	$effect(() => {
 		if (typeof window === 'undefined') return;
-		localStorage.setItem(ENTITY_SORT_KEY, entitySort);
 		localStorage.setItem(ENTITY_KIND_FILTER_KEY, entityKindFilter);
 	});
 
@@ -1101,10 +1093,10 @@
 		entityDialogEl?.close();
 	}
 
-	/** Filtered + sorted link candidates for the picker. Matches on
-	 *  name / kind label / kind slug so both "Driftwood" and
-	 *  "community" hit. `entitySort` is the same A-Z ↔ Added toggle
-	 *  the Connections rail uses. */
+	/** Filter → search → alphabetical sort. Matches on name / kind
+	 *  label / kind slug so both "Driftwood" and "community" hit.
+	 *  Sort is always A-Z — the list is short enough that Added
+	 *  order isn't a useful distinction. */
 	const filteredEntities = $derived.by(() => {
 		const q = entitySearch.trim().toLowerCase();
 		const all = getLinkableEntities();
@@ -1118,11 +1110,7 @@
 					e.kind.toLowerCase().includes(q),
 			);
 		}
-		if (entitySort === 'name') {
-			filtered.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
-		}
-		// `added` order = whatever `getLinkableEntities()` returns
-		// (which walks the stores in insertion order).
+		filtered.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
 		return filtered;
 	});
 
@@ -1457,7 +1445,14 @@
 				>
 					<span class="mp-sel-entity-label">
 						{#if selectedMarker.entityId && currentLink}
-							<span class="mp-sel-entity-prefix" aria-hidden="true">{currentLink.kindPrefix}</span
+							<!-- Use the same kind icon the picker dialog rows show
+							     — was a text dingbat (◈ / ● / ↗ / ▲), replaced
+							     for visual continuity with the picker + rail. -->
+							<span
+								class="mp-sel-entity-icon"
+								aria-hidden="true"
+								style="--kind-color: {ENTITY_KIND_META[currentLink.kind].color}"
+								>{@html ENTITY_KIND_META[currentLink.kind].icon}</span
 							>{currentLink.name}
 						{:else if selectedMarker.entityId}
 							Broken link
@@ -1967,20 +1962,6 @@
 			bind:value={entitySearch}
 			autofocus
 		/>
-		<!-- Sort toggle — same A-Z ↔ Added swap as the Connections
-		     rail. Clicking flips between the two modes; the active
-		     icon reflects the current mode. -->
-		<button
-			type="button"
-			class="mp-entity-sort-btn"
-			onclick={() => (entitySort = entitySort === 'name' ? 'added' : 'name')}
-			use:tooltip={entitySort === 'name'
-				? 'Sorted A-Z — click for Added order'
-				: 'Sorted by Added — click for A-Z'}
-			aria-label={entitySort === 'name' ? 'Sorted A-Z' : 'Sorted by Added'}
-		>
-			{@html entitySort === 'name' ? iconSortAzSvg : iconSortAddedSvg}
-		</button>
 	</div>
 	<!-- Kind filter chips — same "All / Communities / Places / …"
 	     scheme the Connections rail uses. Selection persists per-
@@ -2439,10 +2420,27 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
 	}
-	.mp-sel-entity-prefix {
-		color: var(--text-accent);
-		margin-right: 4px;
+	/* Kind icon for the currently-linked entity — same SVG the picker
+	   row uses. Coloured via `--kind-color` set inline from
+	   `ENTITY_KIND_META`. */
+	.mp-sel-entity-icon {
+		flex-shrink: 0;
+		display: inline-flex;
+		width: 16px;
+		height: 16px;
+		color: var(--kind-color, var(--text-accent));
+	}
+	.mp-sel-entity-icon :global(svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
+	}
+	.mp-sel-entity-icon :global(svg path) {
+		fill: currentColor;
 	}
 	/* Entity-link picker dialog. Content-sized per CLAUDE.md rule 3B
 	   (no display:flex on the dialog; max-height on the scrollable
@@ -2497,31 +2495,6 @@
 	.mp-entity-search:focus {
 		outline: none;
 		border-color: var(--text-accent);
-	}
-	.mp-entity-sort-btn {
-		flex: 0 0 auto;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 28px;
-		height: 28px;
-		padding: 0;
-		background: var(--bg-control);
-		color: var(--text-muted);
-		border: 1px solid var(--border-mid);
-		border-radius: 4px;
-		cursor: pointer;
-	}
-	.mp-entity-sort-btn:hover {
-		color: var(--text);
-		border-color: var(--text-accent);
-	}
-	.mp-entity-sort-btn :global(svg) {
-		width: 14px;
-		height: 14px;
-	}
-	.mp-entity-sort-btn :global(svg path) {
-		fill: currentColor;
 	}
 	/* Kind filter chip row — sits below the search input.
 	   Chips mirror the Connections rail: outlined by default, filled
@@ -2855,6 +2828,16 @@
 	   capture rect and rely on the drag threshold to feel discoverable. */
 	:global(.mp-marker-icon) {
 		overflow: visible;
+	}
+	/* `vector-effect` is NOT inherited per the SVG spec, so setting it
+	   on the wrapping <g> doesn't reach the child <path> elements
+	   pulled in via `{@html ic.inner}`. Force it on every descendant
+	   here so the icon halo renders at 2 device pixels — same weight
+	   as the label halo. Without this the stroke was being interpreted
+	   in the icon's local viewBox coords (~2/640 of an icon unit,
+	   invisible). */
+	:global(.mp-marker-icon *) {
+		vector-effect: non-scaling-stroke;
 	}
 	.mp-marker-label {
 		/* Font size is in world units at zoom 1. The parent `<g>` applies
