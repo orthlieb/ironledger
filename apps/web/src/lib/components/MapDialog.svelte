@@ -45,6 +45,7 @@
 	 * max-height on the scrollable body with overscroll-behavior: contain.
 	 */
 
+	import { untrack } from 'svelte';
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import DialogHeader from './DialogHeader.svelte';
 	import MapOptionsDialog from './MapOptionsDialog.svelte';
@@ -54,6 +55,8 @@
 	import iconZoomInSvg from '$icons/magnifying-glass-plus-solid-full.svg?raw';
 	import iconZoomOutSvg from '$icons/magnifying-glass-minus-solid-full.svg?raw';
 	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
+	import iconSortAzSvg from '$icons/arrow-down-a-z-solid-full.svg?raw';
+	import iconSortAddedSvg from '$icons/calendar-arrow-down-solid-full.svg?raw';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import {
 		DEFAULT_MAP_ASPECT,
@@ -935,6 +938,14 @@
 	$effect(() => {
 		if (!pickrAnchor || !dialogEl) return;
 		const anchor = pickrAnchor;
+		// `untrack` the initial color read so this effect ONLY re-runs
+		// when the anchor element (or the parent dialog) actually
+		// changes. Without it, every colour edit fed `selectedColor`
+		// back into the effect, which destroyed + recreated the
+		// picker mid-use — the "picker went poof after I picked a
+		// colour" bug. External colour syncs go through the second
+		// `$effect` below via `pickr.setColor(c, true)`.
+		const initialColor = untrack(() => selectedColor);
 		const instance = Pickr.create({
 			el: anchor,
 			// Anchor the popover INSIDE the dialog. Native <dialog>
@@ -944,7 +955,7 @@
 			// top-layer scope.
 			container: dialogEl,
 			theme: 'nano',
-			default: selectedColor,
+			default: initialColor,
 			// Pickr's built-in swatch row — same eight tabletop-friendly
 			// hues the old preset strip carried before the native input
 			// took over. Keeps common picks one tap away without opening
@@ -1042,6 +1053,18 @@
 	let entityDialogEl = $state<HTMLDialogElement | null>(null);
 	let entityPickerOpen = $state(false);
 	let entitySearch = $state('');
+	// Sort mode for the entity-link picker. Mirrors the Connections
+	// rail's A-Z vs Added sort, persisted per-device.
+	const ENTITY_SORT_KEY = 'ironledger:mapEntityPicker:sort';
+	function readEntitySort(): 'added' | 'name' {
+		if (typeof window === 'undefined') return 'added';
+		return localStorage.getItem(ENTITY_SORT_KEY) === 'name' ? 'name' : 'added';
+	}
+	let entitySort = $state<'added' | 'name'>(readEntitySort());
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		localStorage.setItem(ENTITY_SORT_KEY, entitySort);
+	});
 
 	function openEntityPicker() {
 		entitySearch = '';
@@ -1053,18 +1076,28 @@
 		entityDialogEl?.close();
 	}
 
-	/** Filtered link candidates for the picker. Matches on name / kind
-	 *  label / kind slug so both "Driftwood" and "community" hit. */
+	/** Filtered + sorted link candidates for the picker. Matches on
+	 *  name / kind label / kind slug so both "Driftwood" and
+	 *  "community" hit. `entitySort` is the same A-Z ↔ Added toggle
+	 *  the Connections rail uses. */
 	const filteredEntities = $derived.by(() => {
 		const q = entitySearch.trim().toLowerCase();
 		const all = getLinkableEntities();
-		if (!q) return all;
-		return all.filter(
-			(e) =>
-				e.name.toLowerCase().includes(q) ||
-				e.kindLabel.toLowerCase().includes(q) ||
-				e.kind.toLowerCase().includes(q),
-		);
+		const filtered =
+			q === ''
+				? all.slice()
+				: all.filter(
+						(e) =>
+							e.name.toLowerCase().includes(q) ||
+							e.kindLabel.toLowerCase().includes(q) ||
+							e.kind.toLowerCase().includes(q),
+					);
+		if (entitySort === 'name') {
+			filtered.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+		}
+		// `added` order = whatever `getLinkableEntities()` returns
+		// (which walks the stores in insertion order).
+		return filtered;
 	});
 
 	/** Commit an entity-link choice. `value` is "" to clear or
@@ -1908,6 +1941,20 @@
 			bind:value={entitySearch}
 			autofocus
 		/>
+		<!-- Sort toggle — same A-Z ↔ Added swap as the Connections
+		     rail. Clicking flips between the two modes; the active
+		     icon reflects the current mode. -->
+		<button
+			type="button"
+			class="mp-entity-sort-btn"
+			onclick={() => (entitySort = entitySort === 'name' ? 'added' : 'name')}
+			use:tooltip={entitySort === 'name'
+				? 'Sorted A-Z — click for Added order'
+				: 'Sorted by Added — click for A-Z'}
+			aria-label={entitySort === 'name' ? 'Sorted A-Z' : 'Sorted by Added'}
+		>
+			{@html entitySort === 'name' ? iconSortAzSvg : iconSortAddedSvg}
+		</button>
 	</div>
 	<div class="mp-entity-body" role="listbox" aria-label="Link to entity">
 		<button
@@ -2163,8 +2210,12 @@
 		border-radius: 3px;
 	}
 	.mp-sel-name {
-		flex: 1 1 140px;
-		min-width: 100px;
+		/* Was `flex: 1 1 140px; min-width: 100px` — greedy. The name
+		   is often short (single word or two) so it doesn't need the
+		   lion's share of the row; the entity link chip below gets
+		   the slack instead. */
+		flex: 0 1 120px;
+		min-width: 80px;
 		padding: 5px 8px;
 		font-family: var(--font-ui);
 		font-size: 0.82rem;
@@ -2314,8 +2365,9 @@
 		display: inline-flex;
 	}
 	.mp-sel-entity-btn {
-		/* Wider than before — the preset-swatch strip was retired so
-		   there's room for a longer entity name here. */
+		/* Location chip is the visual anchor of the row — it eats the
+		   flex slack the name field gave up so long entity names read
+		   without truncating. */
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
@@ -2327,9 +2379,9 @@
 		border: 1px solid var(--border-mid);
 		border-radius: 4px;
 		cursor: pointer;
-		flex: 1 1 200px;
-		min-width: 160px;
-		max-width: 340px;
+		flex: 1 1 240px;
+		min-width: 180px;
+		max-width: 420px;
 	}
 	.mp-sel-entity-btn:hover {
 		border-color: var(--text-accent);
@@ -2375,12 +2427,15 @@
 		padding: 4px 0;
 	}
 	.mp-entity-search-row {
+		display: flex;
+		align-items: center;
+		gap: 6px;
 		padding: 6px 8px;
 		background: var(--bg-inset);
 		border-bottom: 1px solid var(--border);
 	}
 	.mp-entity-search {
-		width: 100%;
+		flex: 1 1 auto;
 		box-sizing: border-box;
 		padding: 4px 8px;
 		font-family: var(--font-ui);
@@ -2393,6 +2448,31 @@
 	.mp-entity-search:focus {
 		outline: none;
 		border-color: var(--text-accent);
+	}
+	.mp-entity-sort-btn {
+		flex: 0 0 auto;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		padding: 0;
+		background: var(--bg-control);
+		color: var(--text-muted);
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+		cursor: pointer;
+	}
+	.mp-entity-sort-btn:hover {
+		color: var(--text);
+		border-color: var(--text-accent);
+	}
+	.mp-entity-sort-btn :global(svg) {
+		width: 14px;
+		height: 14px;
+	}
+	.mp-entity-sort-btn :global(svg path) {
+		fill: currentColor;
 	}
 	.mp-entity-item {
 		width: 100%;
