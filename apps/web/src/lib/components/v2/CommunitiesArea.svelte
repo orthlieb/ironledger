@@ -54,8 +54,10 @@
 		mapListState,
 		markersForEntity,
 		openMapForOwner,
+		setBackground,
 		type EntityMarkerRef,
 	} from '$lib/mapStore.svelte.js';
+	import { downscaleImage, MapImageError } from '$lib/mapImage.js';
 	import { formatEntityId } from '$lib/mapEntityLinks.js';
 	import trashSvg from '$icons/trash-solid-full.svg?raw';
 	import heartPulseSvg from '$icons/heart-pulse-solid-full.svg?raw';
@@ -287,13 +289,37 @@
 
 	async function openOwnedMap() {
 		if (!activeEntry || !activeIsMapOwner) return;
-		const emptyBefore = activeEntryMapEmpty;
 		const mapId = await openMapForOwner(
 			activeEntry.kind as 'community' | 'place',
 			activeEntry.data.id,
 			activeEntry.data.name || 'Untitled',
 		);
-		mapDialogRef?.open({ mapId: mapId ?? undefined, promptUpload: emptyBefore });
+		mapDialogRef?.open({ mapId: mapId ?? undefined });
+	}
+
+	/** "+ Map" variant — the button is a `<label>` wrapping a hidden
+	 *  file input, so tapping it opens the OS file picker as part of
+	 *  the tap's native user gesture (essential on iOS Safari). */
+	async function handleAddMapWithFile(e: Event) {
+		if (!activeEntry || !activeIsMapOwner) return;
+		const input = e.target as HTMLInputElement;
+		const file = input.files?.[0];
+		input.value = '';
+		if (!file) return;
+		try {
+			const mapId = await openMapForOwner(
+				activeEntry.kind as 'community' | 'place',
+				activeEntry.data.id,
+				activeEntry.data.name || 'Untitled',
+			);
+			if (!mapId) return;
+			const result = await downscaleImage(file);
+			await setBackground(result.dataUrl, result.aspect);
+			mapDialogRef?.open({ mapId });
+		} catch (err) {
+			if (err instanceof MapImageError) console.warn('Add map image failed:', err.message);
+			else console.error('Add map failed', err);
+		}
 	}
 
 	function jumpToMarker(ref: EntityMarkerRef) {
@@ -777,15 +803,27 @@
 						/>
 					{/if}
 					{#if activeIsMapOwner}
-						<button
-							class="btn cm-stage-map-btn"
-							onclick={openOwnedMap}
-							use:tooltip={activeEntryMapEmpty
-								? `Add a background image to this ${kindLabelSingular(activeEntry.kind).toLowerCase()}’s map`
-								: `Open the map for this ${kindLabelSingular(activeEntry.kind).toLowerCase()}`}
-							aria-label={activeEntryMapEmpty ? 'Add map' : 'Open map'}
-							>{activeEntryMapEmpty ? '+ Map' : 'Map'}</button
-						>
+						{#if activeEntryMapEmpty}
+							<!-- <label> around a hidden <input type="file"> — iOS
+							     Safari refuses `input.click()` calls after any
+							     `await`; the picker must open from the tap's
+							     native user gesture. -->
+							<label
+								class="btn cm-stage-map-btn"
+								use:tooltip={`Add a background image to this ${kindLabelSingular(activeEntry.kind).toLowerCase()}’s map`}
+								aria-label="Add map"
+							>
+								+ Map
+								<input type="file" accept="image/*" hidden onchange={handleAddMapWithFile} />
+							</label>
+						{:else}
+							<button
+								class="btn cm-stage-map-btn"
+								onclick={openOwnedMap}
+								use:tooltip={`Open the map for this ${kindLabelSingular(activeEntry.kind).toLowerCase()}`}
+								aria-label="Open map">Map</button
+							>
+						{/if}
 					{/if}
 					<button
 						class="btn btn-icon icon-btn btn-trash cm-stage-delete-btn"

@@ -147,11 +147,9 @@
 		fileInputEl?.click();
 	}
 
-	/** Legacy alias — `showLabels` was a local `$state` until labels moved
-	 *  into `mapSettings`. Retained as a `$derived` so the exportMapPng
-	 *  argument and the marker-label template guard both keep reading
-	 *  `showLabels` without churn. */
-	const showLabels = $derived(mapSettings.labels.visible);
+	// Marker labels are always rendered — the "Show names" toggle was
+	// retired; the labels are the marker's primary annotation and
+	// hiding them left users with an unreadable board of icons.
 
 	/** Id of the selected marker (null = nothing selected). Deriving the
 	 *  live marker record from the store keeps every field auto-current
@@ -207,7 +205,7 @@
 
 	function handleExportPng() {
 		if (!svgEl) return;
-		void exportMapPng(svgEl, showLabels);
+		void exportMapPng(svgEl);
 	}
 	function handleExportZip() {
 		void exportMapZip({
@@ -280,15 +278,21 @@
 	});
 
 	// ─── Aspect-lock the dialog to the map ────────────────────────────
-	// CSS `resize: both` lets the user drag width and height
-	// independently, but the map body is aspect-driven — so any drift
-	// left a dead parchment band along one edge. Observe the dialog's
-	// size and snap whichever dimension the user *didn't* drive back
-	// onto the map's aspect. Guarded against feedback: we track the
-	// last authored size and skip if the incoming dimensions already
-	// match (within 1 px).
+	// The map body is aspect-driven, so any drift in the dialog's
+	// aspect leaves a dead parchment band along one edge. Observe the
+	// dialog + its map body: chrome height = dialog.clientHeight -
+	// body.clientHeight. The desired dialog height for a given width
+	// is `(width / mapAspect) + chromeH` — the map body fits its
+	// aspect exactly, and the chrome (title + toolbars + hint) sits
+	// on top with its natural height.
+	//
+	// Skipped on narrow viewports (mobile) — the media query already
+	// sets `height: auto; resize: none` there; enforcing an explicit
+	// height would clip the map body when the toolbar wraps.
 	$effect(() => {
 		if (!dialogEl) return;
+		if (typeof window === 'undefined') return;
+		if (window.matchMedia('(max-width: 640px)').matches) return;
 		// Re-run whenever the map's aspect changes (e.g. switching between
 		// a portrait and landscape map inside the same dialog).
 		const desiredAspect = mapAspect;
@@ -297,48 +301,50 @@
 		let lastH = 0;
 		let raf: number | null = null;
 
-		const clampToViewport = (w: number, h: number): [number, number] => {
-			const maxW = window.innerWidth - 32; // parity with `max-width: calc(100vw - 2rem)`
-			const maxH = window.innerHeight * 0.95;
-			if (w > maxW) {
-				w = maxW;
-				h = w / desiredAspect;
-			}
-			if (h > maxH) {
-				h = maxH;
-				w = h * desiredAspect;
-			}
-			return [w, h];
-		};
-
 		const settle = () => {
 			raf = null;
+			const bodyEl = el.querySelector('.mp-body') as HTMLElement | null;
+			if (!bodyEl) return;
 			const w = el.clientWidth;
 			const h = el.clientHeight;
 			if (w <= 0 || h <= 0) return;
-			// Already on-aspect + unchanged → nothing to do.
-			const current = w / h;
-			const drift = Math.abs(current - desiredAspect);
-			if (drift < 0.005 && Math.abs(w - lastW) < 1 && Math.abs(h - lastH) < 1) return;
-			// Which dimension did the user just push? Bigger delta wins.
+			const chromeH = h - bodyEl.clientHeight;
+			if (chromeH < 0) return;
+
+			// Which axis did the user just push? Bigger delta wins.
 			const dw = Math.abs(w - lastW);
 			const dh = Math.abs(h - lastH);
+			const useWidthAsAuthority = lastW === 0 || dw >= dh;
 			let newW: number;
 			let newH: number;
-			if (lastW === 0 && lastH === 0) {
-				// First observation — pick height as authority so we
-				// preserve the initial visible height and just narrow the
-				// dialog to match aspect.
-				newH = h;
-				newW = h * desiredAspect;
-			} else if (dw >= dh) {
+			if (useWidthAsAuthority) {
 				newW = w;
-				newH = w / desiredAspect;
+				newH = w / desiredAspect + chromeH;
 			} else {
+				const bodyH = Math.max(0, h - chromeH);
+				newW = bodyH * desiredAspect;
 				newH = h;
-				newW = h * desiredAspect;
 			}
-			[newW, newH] = clampToViewport(newW, newH);
+
+			// Clamp to viewport. When we clamp one axis, re-derive the
+			// other so the aspect (of the *body*, not the whole dialog)
+			// stays locked.
+			const maxW = window.innerWidth - 32; // matches `max-width: calc(100vw - 2rem)`
+			const maxH = window.innerHeight * 0.95;
+			if (newW > maxW) {
+				newW = maxW;
+				newH = newW / desiredAspect + chromeH;
+			}
+			if (newH > maxH) {
+				newH = maxH;
+				newW = Math.max(0, newH - chromeH) * desiredAspect;
+			}
+
+			if (Math.abs(newW - w) < 1 && Math.abs(newH - h) < 1) {
+				lastW = newW;
+				lastH = newH;
+				return;
+			}
 			lastW = newW;
 			lastH = newH;
 			el.style.width = `${newW}px`;
@@ -1709,7 +1715,7 @@
 								paint-order="stroke"
 							/>
 						{/if}
-						{#if showLabels && m.label}
+						{#if m.label}
 							{#if hasIcon}
 								<text
 									class="mp-marker-label"

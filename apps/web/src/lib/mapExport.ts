@@ -291,10 +291,8 @@ async function urlToDataUrl(url: string): Promise<string> {
 }
 
 /**
- * Rasterise the live map SVG to a PNG download. `showLabels` is passed
- * through so the export honours the current label-visibility toggle —
- * users usually want the same view they're looking at, not with labels
- * suddenly on/off.
+ * Rasterise the live map SVG to a PNG download. Marker labels are
+ * always kept — the "Show names" toggle was retired.
  *
  * Sizing: match the background image's natural pixel dimensions so
  * the exported PNG is the same size + aspect ratio the user originally
@@ -322,7 +320,7 @@ async function measureImage(dataUrl: string): Promise<{ w: number; h: number } |
 	}
 }
 
-export async function exportMapPng(svgEl: SVGSVGElement, showLabels: boolean): Promise<void> {
+export async function exportMapPng(svgEl: SVGSVGElement): Promise<void> {
 	// Clone so we don't mutate the live DOM.
 	const clone = svgEl.cloneNode(true) as SVGSVGElement;
 
@@ -356,12 +354,6 @@ export async function exportMapPng(svgEl: SVGSVGElement, showLabels: boolean): P
 	clone
 		.querySelectorAll('.mp-bg-placeholder, .mp-bg-placeholder-text')
 		.forEach((el) => el.remove());
-
-	// Optionally strip label <text> elements so the PNG matches the
-	// current UI toggle state. Icons always render.
-	if (!showLabels) {
-		clone.querySelectorAll('text').forEach((el) => el.remove());
-	}
 
 	// Sizing: prefer the background image's actual pixel dimensions so
 	// the PNG is the same size + aspect the user uploaded. Fallback:
