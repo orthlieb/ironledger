@@ -719,7 +719,6 @@
 									use:tooltip={'Deceased'}>{@html skullSvg}</span
 								>
 							{/if}
-							<span class="cm-row-badge">{kindLabelSingular(entry.kind)}</span>
 						</button>
 					{:else}
 						<p class="cm-list-empty">No connections match “{search}”.</p>
@@ -1629,19 +1628,6 @@
 	}
 	.cm-row--active .cm-row-name {
 		color: var(--text-accent);
-	}
-	.cm-row-badge {
-		font-family: var(--font-ui);
-		font-size: 0.55rem;
-		font-weight: 600;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		color: var(--cm-row-color, var(--text-dimmer));
-		background: color-mix(in srgb, var(--cm-row-color, var(--text-muted)) 13%, transparent);
-		border-radius: 10px;
-		padding: 2px 6px;
-		line-height: 1;
-		flex-shrink: 0;
 	}
 	/* Deceased status — red skull icon, shown on NPC rows only when deceased.
 	   Matches the SegmentedRadio "stop" tone so the list and card status agree. */
