@@ -1187,7 +1187,7 @@
 	 *  comfortably inside its cell without spilling into neighbours.
 	 *  Zooms with the map (icons are part of the annotation, so it makes
 	 *  sense for them to grow when the user zooms in on detail). */
-	const ICON_SIZE = 0.75;
+	const ICON_SIZE = 0.5625;
 
 	// Derive the selected marker's icon record + color for the toolbar so
 	// the icon button always shows the current preview.
@@ -1667,14 +1667,15 @@
 									fill on top — same trick the marker label text uses
 									so the icon stays readable over any background map.
 									`vector-effect="non-scaling-stroke"` (inherited by
-									the child paths) pins the halo to 1 device pixel
+									the child paths) pins the halo to 2 device pixels
 									regardless of zoom or icon viewBox scale, matching
-									the label halo.
+									the label halo. 2 px reads more crisply than 1 px
+									against complex map backgrounds.
 								-->
 								<g
 									fill={color}
 									stroke="#fff"
-									stroke-width="1"
+									stroke-width="2"
 									stroke-linejoin="round"
 									paint-order="stroke"
 									vector-effect="non-scaling-stroke"
@@ -1685,12 +1686,12 @@
 						{:else if hasIcon}
 							<!-- Legacy/broken slug: fall back to a plain dot so
 							     the marker doesn't vanish. Non-scaling stroke +
-							     stroke-width 1 for the same 1 px halo everywhere. -->
+							     stroke-width 2 for the same halo weight everywhere. -->
 							<circle
 								r={ICON_SIZE / 2 - 0.04}
 								fill={color}
 								stroke="#fff"
-								stroke-width="1"
+								stroke-width="2"
 								paint-order="stroke"
 								vector-effect="non-scaling-stroke"
 							/>
@@ -1701,7 +1702,7 @@
 									class="mp-marker-label"
 									fill={color}
 									vector-effect="non-scaling-stroke"
-									y={ICON_SIZE / 2 + 0.32}>{m.label}</text
+									y={ICON_SIZE / 2 + 0.24}>{m.label}</text
 								>
 							{:else}
 								<text
@@ -2658,16 +2659,16 @@
 		   constant screen size at any zoom level. Fill is set inline to
 		   the marker's colour so the label reads as the annotation, not
 		   as generic body text. Stroke uses `vector-effect: non-scaling-
-		   stroke` (set on the element) so `1` translates to 1 device
-		   pixel regardless of the marker group's scale — a crisp 1 px
-		   white halo over any background. */
+		   stroke` (set on the element) so `2` translates to 2 device
+		   pixels — a crisp white halo that traces cleanly against a
+		   busy background map. */
 		font-family: var(--font-ui);
 		font-size: 0.24px;
 		font-weight: 600;
 		text-anchor: middle;
 		paint-order: stroke fill;
 		stroke: #fff;
-		stroke-width: 1;
+		stroke-width: 2;
 		stroke-linejoin: round;
 	}
 	/* Label-only markers (no icon chosen) centre both axes on the point
