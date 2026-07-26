@@ -107,6 +107,10 @@ export interface MapSummary {
 	ownerKind: MapOwnerKind | null;
 	ownerId: string | null;
 	updatedAt: string;
+	/** md5 hash of the background image bytes, or '' when no image is
+	 *  set. Surfaced on the summary so an entity's Map button can read
+	 *  "+ Map" vs "Map" without pulling the full map. */
+	backgroundHash: string;
 }
 
 interface MapListState {
@@ -358,6 +362,7 @@ export async function createMap(input: {
 			ownerKind: created.ownerKind,
 			ownerId: created.ownerId,
 			updatedAt: created.updatedAt,
+			backgroundHash: created.backgroundHash ?? '',
 		},
 	];
 	// The POST response includes the full detail — populate mapState
@@ -376,6 +381,7 @@ export async function createMap(input: {
 		ownerKind: created.ownerKind,
 		ownerId: created.ownerId,
 		updatedAt: created.updatedAt,
+		backgroundHash: created.backgroundHash ?? '',
 	};
 }
 
@@ -511,7 +517,15 @@ export async function setBackground(dataUrl: string, aspect?: number): Promise<v
 		});
 		if (!res.ok) throw new Error(`Server returned ${res.status}`);
 		const body = (await res.json()) as { hash?: string };
-		if (body.hash) mapState.backgroundHash = body.hash;
+		if (body.hash) {
+			mapState.backgroundHash = body.hash;
+			// Mirror onto the summary so an entity's Map button flips
+			// from "+ Map" to "Map" the moment the upload lands.
+			const activeId = mapState.activeId;
+			mapListState.maps = mapListState.maps.map((m) =>
+				m.id === activeId ? { ...m, backgroundHash: body.hash ?? '' } : m,
+			);
+		}
 		mapState.error = '';
 		// If a fresh aspect was measured, persist it alongside the hash so
 		// the canvas fits the image on the next render — and on every
@@ -678,8 +692,15 @@ export async function openMapForOwner(
 					ownerKind: detail.ownerKind,
 					ownerId: detail.ownerId,
 					updatedAt: detail.updatedAt,
+					backgroundHash: detail.backgroundHash ?? '',
 				},
 			];
+		} else {
+			// Refresh the cached backgroundHash so the caller's "+ Map" vs
+			// "Map" affordance flips as soon as a background upload lands.
+			mapListState.maps = mapListState.maps.map((m) =>
+				m.id === detail.id ? { ...m, backgroundHash: detail.backgroundHash ?? '' } : m,
+			);
 		}
 		void persistActiveMapIdToSession(detail.id);
 		return detail.id;

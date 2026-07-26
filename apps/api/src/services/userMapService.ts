@@ -43,13 +43,15 @@ export interface MapSummary {
   ownerKind: string | null;
   ownerId: string | null;
   updatedAt: string; // ISO
+  /** md5 hash of the background image bytes, or null when no image is set.
+   *  Surfaced on the summary so the client can render a "+ MAP" affordance
+   *  (vs. "MAP") without fetching the full map payload. */
+  backgroundHash: string | null;
 }
 
 /** Full map payload — summary fields plus markers/backgroundHash/settings. */
 export interface UserMap extends MapSummary {
   markers: MapMarker[];
-  /** md5 hash of the background image bytes, or null when no image is set. */
-  backgroundHash: string | null;
   settings: MapSettingsBlob;
 }
 
@@ -90,6 +92,7 @@ function rowToSummary(row: MapRow): MapSummary {
     ownerKind: row.owner_kind,
     ownerId: row.owner_id,
     updatedAt: new Date(row.updated_at).toISOString(),
+    backgroundHash: row.background_hash,
   };
 }
 

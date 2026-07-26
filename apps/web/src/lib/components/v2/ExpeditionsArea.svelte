@@ -51,6 +51,7 @@
 	import {
 		entityMarkerIndexState,
 		loadEntityMarkerIndex,
+		mapListState,
 		markersForEntity,
 		openMapForOwner,
 		type EntityMarkerRef,
@@ -120,7 +121,7 @@
 	let newJourneyDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let newSiteDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let mapDialogRef = $state<{
-		open(target?: { mapId?: string; markerId?: string }): void;
+		open(target?: { mapId?: string; markerId?: string; promptUpload?: boolean }): void;
 		close(): void;
 	} | null>(null);
 
@@ -163,12 +164,28 @@
 		return markersForEntity(formatEntityId(activeExp.type, activeExp.id));
 	});
 
+	/** The (possibly-not-yet-created) map summary for the active
+	 *  expedition, looked up by (ownerKind, ownerId). Undefined until
+	 *  either the summary list loads or the map is get-or-created. */
+	const activeExpMap = $derived.by(() => {
+		if (!activeExp) return undefined;
+		return mapListState.maps.find(
+			(m) => m.ownerKind === activeExp.type && m.ownerId === activeExp.id,
+		);
+	});
+	/** True when the entity's map has no background image (or the map
+	 *  doesn't exist at all yet). Drives the "+ Map" vs "Map" button. */
+	const activeExpMapEmpty = $derived(!activeExpMap || !activeExpMap.backgroundHash);
+
 	/** Open the entity's owned map (creating it if this is the first
-	 *  time). Used by the "Map" button in the stage header. */
+	 *  time). Used by the "Map" / "+ Map" button in the stage header —
+	 *  the "+ Map" variant also fires the background file picker on
+	 *  open so create → upload is one gesture. */
 	async function openOwnedMap() {
 		if (!activeExp) return;
-		await openMapForOwner(activeExp.type, activeExp.id, activeExp.name || 'Untitled');
-		mapDialogRef?.open();
+		const emptyBefore = activeExpMapEmpty;
+		const mapId = await openMapForOwner(activeExp.type, activeExp.id, activeExp.name || 'Untitled');
+		mapDialogRef?.open({ mapId: mapId ?? undefined, promptUpload: emptyBefore });
 	}
 
 	/** Jump the dialog directly to a marker back-reference — used by the
@@ -649,8 +666,11 @@
 					<button
 						class="btn ea-stage-map-btn"
 						onclick={openOwnedMap}
-						use:tooltip={'Open the map for this ' + activeExp.type}
-						aria-label="Open map">Map</button
+						use:tooltip={activeExpMapEmpty
+							? 'Add a background image to this ' + activeExp.type + '’s map'
+							: 'Open the map for this ' + activeExp.type}
+						aria-label={activeExpMapEmpty ? 'Add map' : 'Open map'}
+						>{activeExpMapEmpty ? '+ Map' : 'Map'}</button
 					>
 					<button
 						class="btn btn-icon icon-btn btn-trash ea-stage-delete-btn"
@@ -1365,6 +1385,12 @@
 		font-size: inherit;
 		color: var(--text);
 		cursor: pointer;
+		/* Chip breaks to a new row via the parent's flex-wrap; its own
+		   contents (map name + coord) stay on a single line so a long
+		   name doesn't turn one chip into a two-line stack. Long names
+		   ellipsize. */
+		max-width: 100%;
+		white-space: nowrap;
 	}
 	.ea-mapref-chip:hover {
 		border-color: var(--text-accent);
@@ -1372,10 +1398,15 @@
 	}
 	.ea-mapref-name {
 		font-weight: 600;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		max-width: 12rem;
 	}
 	.ea-mapref-coord {
 		font-family: var(--font-mono, ui-monospace, monospace);
 		color: var(--text-dimmer);
+		white-space: nowrap;
 	}
 
 	/* Tabs — V1 tab-btn style. */

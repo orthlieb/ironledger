@@ -166,9 +166,11 @@
 	 *  cards and by the "Open Map" button on entity-owned maps. If
 	 *  `target.mapId` isn't the active map, `switchMap()` runs first;
 	 *  if `target.markerId` is set, the marker becomes the selection.
-	 *  All async work fires after `showModal()` so the dialog paints
-	 *  immediately with whatever's currently loaded. */
-	export function open(target?: { mapId?: string; markerId?: string }) {
+	 *  `promptUpload` immediately triggers the background file picker
+	 *  after loading — used by an entity's "+ Map" affordance to chain
+	 *  create → upload into one gesture. All async work fires after
+	 *  `showModal()` so the dialog paints immediately. */
+	export function open(target?: { mapId?: string; markerId?: string; promptUpload?: boolean }) {
 		dialogEl?.showModal();
 		void initMap().then(async () => {
 			if (target?.mapId && target.mapId !== mapState.activeId) {
@@ -176,6 +178,15 @@
 			}
 			if (target?.markerId) {
 				selectedMarkerId = target.markerId;
+			}
+			// Prompt for a background upload only if the caller asked AND
+			// the map really has none — the button that flips this on is
+			// only shown when the map is empty, but the store may have
+			// hydrated a background between the click and the async open.
+			if (target?.promptUpload && !mapState.backgroundHash) {
+				// setTimeout so the modal's showModal focus dance settles
+				// before the OS file picker steals it.
+				setTimeout(() => fileInputEl?.click(), 0);
 			}
 		});
 	}
