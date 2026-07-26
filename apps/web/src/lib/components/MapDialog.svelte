@@ -279,6 +279,83 @@
 		return () => ro.disconnect();
 	});
 
+	// ─── Aspect-lock the dialog to the map ────────────────────────────
+	// CSS `resize: both` lets the user drag width and height
+	// independently, but the map body is aspect-driven — so any drift
+	// left a dead parchment band along one edge. Observe the dialog's
+	// size and snap whichever dimension the user *didn't* drive back
+	// onto the map's aspect. Guarded against feedback: we track the
+	// last authored size and skip if the incoming dimensions already
+	// match (within 1 px).
+	$effect(() => {
+		if (!dialogEl) return;
+		// Re-run whenever the map's aspect changes (e.g. switching between
+		// a portrait and landscape map inside the same dialog).
+		const desiredAspect = mapAspect;
+		const el = dialogEl;
+		let lastW = 0;
+		let lastH = 0;
+		let raf: number | null = null;
+
+		const clampToViewport = (w: number, h: number): [number, number] => {
+			const maxW = window.innerWidth - 32; // parity with `max-width: calc(100vw - 2rem)`
+			const maxH = window.innerHeight * 0.95;
+			if (w > maxW) {
+				w = maxW;
+				h = w / desiredAspect;
+			}
+			if (h > maxH) {
+				h = maxH;
+				w = h * desiredAspect;
+			}
+			return [w, h];
+		};
+
+		const settle = () => {
+			raf = null;
+			const w = el.clientWidth;
+			const h = el.clientHeight;
+			if (w <= 0 || h <= 0) return;
+			// Already on-aspect + unchanged → nothing to do.
+			const current = w / h;
+			const drift = Math.abs(current - desiredAspect);
+			if (drift < 0.005 && Math.abs(w - lastW) < 1 && Math.abs(h - lastH) < 1) return;
+			// Which dimension did the user just push? Bigger delta wins.
+			const dw = Math.abs(w - lastW);
+			const dh = Math.abs(h - lastH);
+			let newW: number;
+			let newH: number;
+			if (lastW === 0 && lastH === 0) {
+				// First observation — pick height as authority so we
+				// preserve the initial visible height and just narrow the
+				// dialog to match aspect.
+				newH = h;
+				newW = h * desiredAspect;
+			} else if (dw >= dh) {
+				newW = w;
+				newH = w / desiredAspect;
+			} else {
+				newH = h;
+				newW = h * desiredAspect;
+			}
+			[newW, newH] = clampToViewport(newW, newH);
+			lastW = newW;
+			lastH = newH;
+			el.style.width = `${newW}px`;
+			el.style.height = `${newH}px`;
+		};
+
+		const ro = new ResizeObserver(() => {
+			if (raf !== null) return;
+			raf = requestAnimationFrame(settle);
+		});
+		ro.observe(el);
+		return () => {
+			ro.disconnect();
+			if (raf !== null) cancelAnimationFrame(raf);
+		};
+	});
+
 	// ─── Zoom + pan ────────────────────────────────────────────────────────────
 	// The SVG's viewBox is fixed at world units (0 0 cols rows); zoom
 	// scales its rendered pixel size and the canvas div's `overflow: auto`
