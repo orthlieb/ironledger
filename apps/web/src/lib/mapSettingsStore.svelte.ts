@@ -36,12 +36,6 @@ export interface MapSettings {
 		 *  over any background; users tune per-map preference. */
 		opacity: number;
 	};
-	labels: {
-		/** Show the text label under each marker. Purely a display
-		 *  preference — the labels are always stored, this just hides
-		 *  them at render time. */
-		visible: boolean;
-	};
 	pan: {
 		/** Fraction of the scrollable area (`scrollLeft / (scrollWidth -
 		 *  clientWidth)`), in `[0, 1]`. Stored as a fraction so a
@@ -56,7 +50,6 @@ export interface MapSettings {
 const DEFAULTS: MapSettings = {
 	scale: { enabled: false, unit: 'miles', perHex: 5, segments: 4 },
 	grid: { visible: true, opacity: 0.5 },
-	labels: { visible: true },
 	pan: { fx: 0.5, fy: 0.5 },
 };
 
@@ -66,19 +59,19 @@ function freshDefaults(): MapSettings {
 	return {
 		scale: { ...DEFAULTS.scale },
 		grid: { ...DEFAULTS.grid },
-		labels: { ...DEFAULTS.labels },
 		pan: { ...DEFAULTS.pan },
 	};
 }
 
-/** Legacy shape carried the same fields under `hexes`. Accept either key
- *  so a user with an existing localStorage entry keeps their preference
- *  through the square-grid rename. */
+/** Legacy shape carried the same fields under `hexes`, and previously
+ *  had a per-device `labels.visible` toggle (now always on). Accept
+ *  either legacy key so a stored preference keeps loading through the
+ *  square-grid + always-show-labels renames. */
 interface LegacyMapSettings {
 	scale?: Partial<MapSettings['scale']>;
 	grid?: Partial<MapSettings['grid']>;
 	hexes?: Partial<MapSettings['grid']>;
-	labels?: Partial<MapSettings['labels']>;
+	labels?: unknown;
 	pan?: Partial<MapSettings['pan']>;
 }
 
@@ -91,7 +84,6 @@ function load(): MapSettings {
 		return {
 			scale: { ...DEFAULTS.scale, ...(parsed.scale ?? {}) },
 			grid: { ...DEFAULTS.grid, ...(parsed.hexes ?? {}), ...(parsed.grid ?? {}) },
-			labels: { ...DEFAULTS.labels, ...(parsed.labels ?? {}) },
 			pan: { ...DEFAULTS.pan, ...(parsed.pan ?? {}) },
 		};
 	} catch {

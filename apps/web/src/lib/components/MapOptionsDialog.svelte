@@ -101,10 +101,6 @@
 			persistMapSettings();
 		}
 	}
-	function onLabelsVisible(e: Event) {
-		mapSettings.labels.visible = (e.target as HTMLInputElement).checked;
-		persistMapSettings();
-	}
 </script>
 
 <dialog bind:this={dialogEl} class="mo-dialog" oncancel={close}>
@@ -121,14 +117,6 @@
 					onchange={onRename}
 				/>
 			</label>
-		</section>
-
-		<section class="mo-section">
-			<label class="mo-toggle">
-				<input type="checkbox" checked={mapSettings.labels.visible} onchange={onLabelsVisible} />
-				<span class="mo-toggle-label">Show names</span>
-			</label>
-			<p class="mo-hint">Text label beneath each marker. This device only.</p>
 		</section>
 
 		<section class="mo-section">

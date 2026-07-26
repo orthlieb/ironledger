@@ -147,11 +147,9 @@
 		fileInputEl?.click();
 	}
 
-	/** Legacy alias — `showLabels` was a local `$state` until labels moved
-	 *  into `mapSettings`. Retained as a `$derived` so the exportMapPng
-	 *  argument and the marker-label template guard both keep reading
-	 *  `showLabels` without churn. */
-	const showLabels = $derived(mapSettings.labels.visible);
+	// Marker labels are always rendered — the "Show names" toggle was
+	// retired; the labels are the marker's primary annotation and
+	// hiding them left users with an unreadable board of icons.
 
 	/** Id of the selected marker (null = nothing selected). Deriving the
 	 *  live marker record from the store keeps every field auto-current
@@ -207,7 +205,7 @@
 
 	function handleExportPng() {
 		if (!svgEl) return;
-		void exportMapPng(svgEl, showLabels);
+		void exportMapPng(svgEl);
 	}
 	function handleExportZip() {
 		void exportMapZip({
@@ -1717,7 +1715,7 @@
 								paint-order="stroke"
 							/>
 						{/if}
-						{#if showLabels && m.label}
+						{#if m.label}
 							{#if hasIcon}
 								<text
 									class="mp-marker-label"
