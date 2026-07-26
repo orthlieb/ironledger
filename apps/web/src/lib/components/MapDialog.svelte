@@ -186,6 +186,19 @@
 	let svgEl = $state<SVGSVGElement | null>(null);
 	let canvasEl = $state<HTMLDivElement | null>(null);
 
+	// ─── Background image async loading ──────────────────────────────
+	// Backgrounds can be several MB; the browser fetches them off the
+	// main thread, but until the <image> paints the map surface sits
+	// empty. Track which URL has finished loading and compare it to
+	// the current URL — deriving the "loaded" flag avoids the race
+	// where a `$effect` that resets a boolean fires *after* the
+	// image's cached `onload` and stomps it back to false.
+	let loadedBackgroundUrl = $state('');
+	const currentBackgroundUrl = $derived(backgroundUrl());
+	const backgroundLoaded = $derived(
+		!!currentBackgroundUrl && loadedBackgroundUrl === currentBackgroundUrl,
+	);
+
 	function handleExportPng() {
 		if (!svgEl) return;
 		void exportMapPng(svgEl, showLabels);
@@ -1409,14 +1422,39 @@
 				aria-label="Campaign map"
 			>
 				{#if mapState.backgroundHash}
+					<!-- Placeholder surface: a faint parchment fill + centred
+					     "Loading map…" label that shows while the (possibly
+					     multi-MB) background bytes are in flight. The real
+					     `<image>` renders on top with `opacity: 0` until its
+					     `onload` fires, then swaps in — the placeholder
+					     stays underneath and is simply covered. -->
+					{#if !backgroundLoaded}
+						<rect
+							class="mp-bg-placeholder"
+							x="0"
+							y="0"
+							width={gridDims.cols}
+							height={gridDims.rows}
+						/>
+						<text
+							class="mp-bg-placeholder-text"
+							x={gridDims.cols / 2}
+							y={gridDims.rows / 2}
+							text-anchor="middle"
+							dominant-baseline="central">Loading map…</text
+						>
+					{/if}
 					<image
+						class="mp-bg-image"
+						class:mp-bg-image-loaded={backgroundLoaded}
 						x="0"
 						y="0"
 						width={gridDims.cols}
 						height={gridDims.rows}
-						href={backgroundUrl()}
+						href={currentBackgroundUrl}
 						preserveAspectRatio="none"
 						aria-hidden="true"
+						onload={() => (loadedBackgroundUrl = currentBackgroundUrl)}
 						onerror={() => (mapState.backgroundHash = '')}
 					/>
 				{/if}
@@ -2405,6 +2443,28 @@
 		user-select: none;
 		/* SVG's own width/height attributes drive the size — CSS shouldn't
 		   stretch it or the zoom math goes sideways. */
+	}
+
+	/* Background image + placeholder. The placeholder rect + label
+	   show while the real <image> is on the wire; the image is
+	   rendered on top with opacity 0, then eased in to 1 by
+	   `.mp-bg-image-loaded` once its native `onload` fires. */
+	.mp-bg-placeholder {
+		fill: color-mix(in srgb, var(--bg-inset) 88%, var(--text));
+	}
+	.mp-bg-placeholder-text {
+		font-family: var(--font-ui);
+		font-size: 0.4px;
+		font-weight: 600;
+		fill: var(--text-dimmer);
+		font-style: italic;
+	}
+	.mp-bg-image {
+		opacity: 0;
+		transition: opacity 180ms ease-out;
+	}
+	.mp-bg-image-loaded {
+		opacity: 1;
 	}
 
 	/* Grid line strokes — minor (sub-cell subdivisions) render a hair
