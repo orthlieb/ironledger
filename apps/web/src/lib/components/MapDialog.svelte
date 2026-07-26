@@ -57,6 +57,15 @@
 	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
 	import iconSortAzSvg from '$icons/arrow-down-a-z-solid-full.svg?raw';
 	import iconSortAddedSvg from '$icons/calendar-arrow-down-solid-full.svg?raw';
+	// Entity-kind icons + accents — mirrored from CommunitiesArea +
+	// ExpeditionsArea so the Link Marker picker matches the same
+	// visual vocabulary users already know from the Connections /
+	// Expeditions rails.
+	import kindCommunitySvg from '$icons/hut.svg?raw';
+	import kindPlaceSvg from '$icons/location.svg?raw';
+	import kindJourneySvg from '$icons/treasure-map.svg?raw';
+	import kindSiteSvg from '$icons/dungeon-gate.svg?raw';
+	import type { EntityLinkKind } from '$lib/mapEntityLinks.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import {
 		DEFAULT_MAP_ASPECT,
@@ -1056,15 +1065,39 @@
 	// Sort mode for the entity-link picker. Mirrors the Connections
 	// rail's A-Z vs Added sort, persisted per-device.
 	const ENTITY_SORT_KEY = 'ironledger:mapEntityPicker:sort';
+	const ENTITY_KIND_FILTER_KEY = 'ironledger:mapEntityPicker:kind';
 	function readEntitySort(): 'added' | 'name' {
 		if (typeof window === 'undefined') return 'added';
 		return localStorage.getItem(ENTITY_SORT_KEY) === 'name' ? 'name' : 'added';
 	}
+	function readEntityKindFilter(): 'all' | EntityLinkKind {
+		if (typeof window === 'undefined') return 'all';
+		const v = localStorage.getItem(ENTITY_KIND_FILTER_KEY);
+		return v === 'community' || v === 'place' || v === 'journey' || v === 'site' ? v : 'all';
+	}
 	let entitySort = $state<'added' | 'name'>(readEntitySort());
+	let entityKindFilter = $state<'all' | EntityLinkKind>(readEntityKindFilter());
 	$effect(() => {
 		if (typeof window === 'undefined') return;
 		localStorage.setItem(ENTITY_SORT_KEY, entitySort);
+		localStorage.setItem(ENTITY_KIND_FILTER_KEY, entityKindFilter);
 	});
+
+	// Kind → icon + accent colour. Mirrored from CommunitiesArea +
+	// ExpeditionsArea so the picker rows look like the source rails.
+	const KIND_META: Record<EntityLinkKind, { icon: string; color: string; label: string }> = {
+		community: { icon: kindCommunitySvg, color: '#D06840', label: 'Community' },
+		place: { icon: kindPlaceSvg, color: '#4AA0C8', label: 'Place' },
+		journey: { icon: kindJourneySvg, color: '#E4AA28', label: 'Journey' },
+		site: { icon: kindSiteSvg, color: '#4472D0', label: 'Site' },
+	};
+	const KIND_FILTER_OPTIONS: Array<{ value: 'all' | EntityLinkKind; label: string }> = [
+		{ value: 'all', label: 'All' },
+		{ value: 'community', label: 'Communities' },
+		{ value: 'place', label: 'Places' },
+		{ value: 'journey', label: 'Journeys' },
+		{ value: 'site', label: 'Sites' },
+	];
 
 	function openEntityPicker() {
 		entitySearch = '';
@@ -1083,15 +1116,16 @@
 	const filteredEntities = $derived.by(() => {
 		const q = entitySearch.trim().toLowerCase();
 		const all = getLinkableEntities();
-		const filtered =
-			q === ''
-				? all.slice()
-				: all.filter(
-						(e) =>
-							e.name.toLowerCase().includes(q) ||
-							e.kindLabel.toLowerCase().includes(q) ||
-							e.kind.toLowerCase().includes(q),
-					);
+		let filtered =
+			entityKindFilter === 'all' ? all.slice() : all.filter((e) => e.kind === entityKindFilter);
+		if (q !== '') {
+			filtered = filtered.filter(
+				(e) =>
+					e.name.toLowerCase().includes(q) ||
+					e.kindLabel.toLowerCase().includes(q) ||
+					e.kind.toLowerCase().includes(q),
+			);
+		}
 		if (entitySort === 'name') {
 			filtered.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
 		}
@@ -1956,6 +1990,27 @@
 			{@html entitySort === 'name' ? iconSortAzSvg : iconSortAddedSvg}
 		</button>
 	</div>
+	<!-- Kind filter chips — same "All / Communities / Places / …"
+	     scheme the Connections rail uses. Selection persists per-
+	     device via `entityKindFilter`. -->
+	<div class="mp-entity-kind-row" role="group" aria-label="Filter by kind">
+		{#each KIND_FILTER_OPTIONS as opt (opt.value)}
+			<button
+				type="button"
+				class="mp-entity-kind-chip"
+				class:mp-entity-kind-chip--active={entityKindFilter === opt.value}
+				style={opt.value === 'all' ? '' : `--kind-color: ${KIND_META[opt.value].color}`}
+				onclick={() => (entityKindFilter = opt.value)}
+			>
+				{#if opt.value !== 'all'}
+					<span class="mp-entity-kind-chip-icon" aria-hidden="true"
+						>{@html KIND_META[opt.value].icon}</span
+					>
+				{/if}
+				<span class="mp-entity-kind-chip-label">{opt.label}</span>
+			</button>
+		{/each}
+	</div>
 	<div class="mp-entity-body" role="listbox" aria-label="Link to entity">
 		<button
 			class="mp-entity-item mp-entity-item--none"
@@ -1966,16 +2021,18 @@
 		>
 		{#each filteredEntities as e (`${e.kind}:${e.id}`)}
 			{@const val = `${e.kind}:${e.id}`}
+			{@const meta = KIND_META[e.kind]}
 			<button
-				class="mp-entity-item"
+				class="mp-entity-item mp-entity-item--row"
 				class:mp-entity-item--active={selectedMarker?.entityId === val}
+				style="--kind-color: {meta.color}"
 				onclick={() => pickEntity(val)}
 				role="option"
 				aria-selected={selectedMarker?.entityId === val}
 			>
-				<span class="mp-entity-prefix" aria-hidden="true">{e.kindPrefix}</span>
+				<span class="mp-entity-item-icon" aria-hidden="true">{@html meta.icon}</span>
 				<span class="mp-entity-name">{e.name}</span>
-				<span class="mp-entity-kind">{e.kindLabel}</span>
+				<span class="mp-entity-kind">{meta.label}</span>
 			</button>
 		{/each}
 		{#if filteredEntities.length === 0}
@@ -2474,12 +2531,64 @@
 	.mp-entity-sort-btn :global(svg path) {
 		fill: currentColor;
 	}
+	/* Kind filter chip row — sits below the search input.
+	   Chips mirror the Connections rail: outlined by default, filled
+	   with the kind's accent colour when active. `--kind-color` is
+	   set inline per kind. */
+	.mp-entity-kind-row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+		padding: 6px 8px;
+		background: var(--bg-inset);
+		border-bottom: 1px solid var(--border);
+	}
+	.mp-entity-kind-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 3px 8px;
+		background: var(--bg-control);
+		color: var(--text-muted);
+		border: 1px solid var(--border-mid);
+		border-radius: 10px;
+		font-family: var(--font-ui);
+		font-size: 0.7rem;
+		cursor: pointer;
+	}
+	.mp-entity-kind-chip:hover {
+		color: var(--text);
+		border-color: var(--kind-color, var(--text-accent));
+	}
+	.mp-entity-kind-chip--active {
+		color: #fff;
+		background: var(--kind-color, var(--text-accent));
+		border-color: var(--kind-color, var(--text-accent));
+	}
+	.mp-entity-kind-chip-icon {
+		display: inline-flex;
+		width: 14px;
+		height: 14px;
+	}
+	.mp-entity-kind-chip-icon :global(svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
+	}
+	.mp-entity-kind-chip-icon :global(svg path) {
+		fill: currentColor;
+	}
+
+	/* Entity picker rows — laid out like the Connections rail's
+	   `.cm-row`: kind icon on the left, entity name in the middle,
+	   kind badge on the right, and a 3-px left accent bar in the
+	   kind's colour so users can scan by kind at a glance. */
 	.mp-entity-item {
 		width: 100%;
 		display: flex;
-		align-items: baseline;
-		gap: 6px;
-		padding: 5px 12px;
+		align-items: center;
+		gap: 8px;
+		padding: 6px 12px;
 		background: none;
 		border: none;
 		text-align: left;
@@ -2487,21 +2596,37 @@
 		font-size: 0.82rem;
 		color: var(--text);
 		cursor: pointer;
+		position: relative;
+	}
+	.mp-entity-item--row {
+		border-left: 3px solid var(--kind-color, var(--border-mid));
+		padding-left: 9px;
 	}
 	.mp-entity-item:hover {
 		background: var(--bg-control);
 	}
 	.mp-entity-item--active {
-		background: color-mix(in srgb, var(--text-accent) 12%, var(--bg-control));
+		background: color-mix(in srgb, var(--kind-color, var(--text-accent)) 14%, var(--bg-control));
 		font-weight: 600;
 	}
 	.mp-entity-item--none {
 		color: var(--text-dimmer);
 		font-style: italic;
 	}
-	.mp-entity-prefix {
-		color: var(--text-accent);
+	.mp-entity-item-icon {
+		display: inline-flex;
+		width: 20px;
+		height: 20px;
 		flex-shrink: 0;
+		color: var(--kind-color, var(--text-accent));
+	}
+	.mp-entity-item-icon :global(svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
+	}
+	.mp-entity-item-icon :global(svg path) {
+		fill: currentColor;
 	}
 	.mp-entity-name {
 		flex: 1;
@@ -2510,9 +2635,15 @@
 		white-space: nowrap;
 	}
 	.mp-entity-kind {
-		color: var(--text-dimmer);
-		font-size: 0.72rem;
 		flex-shrink: 0;
+		padding: 2px 8px;
+		border-radius: 10px;
+		background: color-mix(in srgb, var(--kind-color, var(--text-dimmer)) 18%, transparent);
+		color: var(--kind-color, var(--text-dimmer));
+		font-size: 0.65rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
 	}
 	.mp-entity-empty {
 		font-family: var(--font-ui);
