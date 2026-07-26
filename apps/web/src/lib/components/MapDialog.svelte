@@ -55,7 +55,7 @@
 	import iconZoomInSvg from '$icons/magnifying-glass-plus-solid-full.svg?raw';
 	import iconZoomOutSvg from '$icons/magnifying-glass-minus-solid-full.svg?raw';
 	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
-	import type { EntityLinkKind } from '$lib/mapEntityLinks.js';
+	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
 	// Shared kind metadata (colour, icon, label). Same source of truth
 	// the Connections rail + Expeditions spines will read from once
 	// they're updated, so accents and glyphs stay in lockstep.
@@ -1056,32 +1056,10 @@
 	let entityDialogEl = $state<HTMLDialogElement | null>(null);
 	let entityPickerOpen = $state(false);
 	let entitySearch = $state('');
-	// Kind filter for the picker — search + filter, always A-Z (no
-	// sort toggle: the list is short enough that alphabetical wins
-	// every time). Persisted per-device.
-	const ENTITY_KIND_FILTER_KEY = 'ironledger:mapEntityPicker:kind';
-	function readEntityKindFilter(): 'all' | EntityLinkKind {
-		if (typeof window === 'undefined') return 'all';
-		const v = localStorage.getItem(ENTITY_KIND_FILTER_KEY);
-		return v === 'community' || v === 'place' || v === 'journey' || v === 'site' ? v : 'all';
-	}
-	let entityKindFilter = $state<'all' | EntityLinkKind>(readEntityKindFilter());
-	$effect(() => {
-		if (typeof window === 'undefined') return;
-		localStorage.setItem(ENTITY_KIND_FILTER_KEY, entityKindFilter);
-	});
-
-	// Alias for the linkable subset — the picker doesn't offer NPCs.
-	// The metadata for community/place/journey/site is looked up
-	// straight from `ENTITY_KIND_META` at each render site.
+	// Alias so the shared kind metadata (community / place / journey /
+	// site — NPCs aren't linkable from a marker) reads locally with a
+	// short name at each render site.
 	const KIND_META = ENTITY_KIND_META;
-	const KIND_FILTER_OPTIONS: Array<{ value: 'all' | EntityLinkKind; label: string }> = [
-		{ value: 'all', label: 'All' },
-		{ value: 'community', label: ENTITY_KIND_META.community.labelPlural },
-		{ value: 'place', label: ENTITY_KIND_META.place.labelPlural },
-		{ value: 'journey', label: ENTITY_KIND_META.journey.labelPlural },
-		{ value: 'site', label: ENTITY_KIND_META.site.labelPlural },
-	];
 
 	function openEntityPicker() {
 		entitySearch = '';
@@ -1100,16 +1078,15 @@
 	const filteredEntities = $derived.by(() => {
 		const q = entitySearch.trim().toLowerCase();
 		const all = getLinkableEntities();
-		let filtered =
-			entityKindFilter === 'all' ? all.slice() : all.filter((e) => e.kind === entityKindFilter);
-		if (q !== '') {
-			filtered = filtered.filter(
-				(e) =>
-					e.name.toLowerCase().includes(q) ||
-					e.kindLabel.toLowerCase().includes(q) ||
-					e.kind.toLowerCase().includes(q),
-			);
-		}
+		const filtered =
+			q === ''
+				? all.slice()
+				: all.filter(
+						(e) =>
+							e.name.toLowerCase().includes(q) ||
+							e.kindLabel.toLowerCase().includes(q) ||
+							e.kind.toLowerCase().includes(q),
+					);
 		filtered.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
 		return filtered;
 	});
@@ -1234,7 +1211,7 @@
 	 *  comfortably inside its cell without spilling into neighbours.
 	 *  Zooms with the map (icons are part of the annotation, so it makes
 	 *  sense for them to grow when the user zooms in on detail). */
-	const ICON_SIZE = 0.5625;
+	const ICON_SIZE = 0.421875;
 
 	// Derive the selected marker's icon record + color for the toolbar so
 	// the icon button always shows the current preview.
@@ -1261,14 +1238,14 @@
 		<div class="mp-tools">
 			<div class="mp-picker">
 				<button
-					class="mp-btn mp-picker-btn"
+					class="mp-combobox mp-picker-btn"
 					onclick={togglePicker}
 					aria-haspopup="listbox"
 					aria-expanded={pickerOpen}
 					use:tooltip={'Switch, create, or manage maps'}
 				>
-					<span class="mp-picker-label">{mapState.name || 'Map'}</span>
-					<span class="mp-picker-caret" aria-hidden="true">▾</span>
+					<span class="mp-combobox-value">{mapState.name || 'Map'}</span>
+					<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
 				</button>
 				{#if pickerOpen}
 					<!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -1437,13 +1414,13 @@
 			{@const currentLink = resolveEntity(selectedMarker.entityId)}
 			<div class="mp-sel-entity">
 				<button
-					class="mp-sel-entity-btn"
+					class="mp-combobox mp-sel-entity-btn"
 					onclick={openEntityPicker}
 					aria-haspopup="listbox"
 					aria-expanded={entityPickerOpen}
 					use:tooltip={'Link to a Community, Place, Journey or Site'}
 				>
-					<span class="mp-sel-entity-label">
+					<span class="mp-combobox-value">
 						{#if selectedMarker.entityId && currentLink}
 							<!-- Use the same kind icon the picker dialog rows show
 							     — was a text dingbat (◈ / ● / ↗ / ▲), replaced
@@ -1460,7 +1437,7 @@
 							— No link —
 						{/if}
 					</span>
-					<span class="mp-picker-caret" aria-hidden="true">▾</span>
+					<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
 				</button>
 			</div>
 			<button
@@ -1756,7 +1733,7 @@
 									class="mp-marker-label"
 									fill={color}
 									vector-effect="non-scaling-stroke"
-									y={ICON_SIZE / 2 + 0.24}>{m.label}</text
+									y={ICON_SIZE / 2 + 0.18}>{m.label}</text
 								>
 							{:else}
 								<text
@@ -1963,49 +1940,46 @@
 			autofocus
 		/>
 	</div>
-	<!-- Kind filter chips — same "All / Communities / Places / …"
-	     scheme the Connections rail uses. Selection persists per-
-	     device via `entityKindFilter`. -->
-	<div class="mp-entity-kind-row" role="group" aria-label="Filter by kind">
-		{#each KIND_FILTER_OPTIONS as opt (opt.value)}
-			<button
-				type="button"
-				class="mp-entity-kind-chip"
-				class:mp-entity-kind-chip--active={entityKindFilter === opt.value}
-				style={opt.value === 'all' ? '' : `--kind-color: ${KIND_META[opt.value].color}`}
-				onclick={() => (entityKindFilter = opt.value)}
-			>
-				{#if opt.value !== 'all'}
-					<span class="mp-entity-kind-chip-icon" aria-hidden="true"
-						>{@html KIND_META[opt.value].icon}</span
-					>
-				{/if}
-				<span class="mp-entity-kind-chip-label">{opt.label}</span>
-			</button>
-		{/each}
-	</div>
 	<div class="mp-entity-body" role="listbox" aria-label="Link to entity">
 		<button
 			class="mp-entity-item mp-entity-item--none"
 			class:mp-entity-item--active={!selectedMarker?.entityId}
 			onclick={() => pickEntity('')}
 			role="option"
-			aria-selected={!selectedMarker?.entityId}>— No link —</button
+			aria-selected={!selectedMarker?.entityId}
 		>
+			<span class="mp-entity-name">— No link —</span>
+			{#if !selectedMarker?.entityId}
+				<span class="mp-entity-check" aria-hidden="true">
+					<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5"
+						><polyline points="4 11 8 15 16 6" stroke-linecap="round" stroke-linejoin="round"
+						></polyline></svg
+					>
+				</span>
+			{/if}
+		</button>
 		{#each filteredEntities as e (`${e.kind}:${e.id}`)}
 			{@const val = `${e.kind}:${e.id}`}
 			{@const meta = KIND_META[e.kind]}
+			{@const isSel = selectedMarker?.entityId === val}
 			<button
 				class="mp-entity-item mp-entity-item--row"
-				class:mp-entity-item--active={selectedMarker?.entityId === val}
+				class:mp-entity-item--active={isSel}
 				style="--kind-color: {meta.color}"
 				onclick={() => pickEntity(val)}
 				role="option"
-				aria-selected={selectedMarker?.entityId === val}
+				aria-selected={isSel}
 			>
 				<span class="mp-entity-item-icon" aria-hidden="true">{@html meta.icon}</span>
 				<span class="mp-entity-name">{e.name}</span>
-				<span class="mp-entity-kind">{meta.label}</span>
+				{#if isSel}
+					<span class="mp-entity-check" aria-hidden="true">
+						<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5"
+							><polyline points="4 11 8 15 16 6" stroke-linecap="round" stroke-linejoin="round"
+							></polyline></svg
+						>
+					</span>
+				{/if}
 			</button>
 		{/each}
 		{#if filteredEntities.length === 0}
@@ -2088,21 +2062,68 @@
 	.mp-picker {
 		position: relative;
 	}
-	.mp-picker-btn {
+	/* Combobox pattern — shared by the map selector and the marker's
+	   entity-link picker. Renders as a proper form control: bordered
+	   box with the current value on the left and a chevron SVG on the
+	   right. Brown-antique theme via the existing surface tokens
+	   (`--bg-control`, `--border-mid`, `--text-accent`). */
+	.mp-combobox {
 		display: inline-flex;
 		align-items: center;
-		gap: 6px;
+		gap: 8px;
+		padding: 5px 6px 5px 10px;
+		background: var(--bg-control);
+		color: var(--text);
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+		font-family: var(--font-ui);
+		font-size: 0.82rem;
+		font-weight: 500;
+		letter-spacing: 0;
 		text-transform: none;
-		max-width: 220px;
+		cursor: pointer;
+		min-height: 30px;
+		transition: border-color 0.12s;
 	}
-	.mp-picker-label {
+	.mp-combobox:hover:not(:disabled),
+	.mp-combobox:focus-visible {
+		border-color: var(--text-accent);
+		outline: none;
+	}
+	.mp-combobox[aria-expanded='true'] {
+		border-color: var(--text-accent);
+		box-shadow: inset 0 -2px 0 0 var(--text-accent);
+	}
+	.mp-combobox-value {
+		flex: 1 1 auto;
+		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
 	}
-	.mp-picker-caret {
-		font-size: 0.7rem;
-		opacity: 0.7;
+	.mp-combobox-caret {
+		flex-shrink: 0;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 20px;
+		height: 20px;
+		color: var(--text-muted);
+	}
+	.mp-combobox-caret :global(svg) {
+		width: 12px;
+		height: 12px;
+		fill: currentColor;
+	}
+	.mp-combobox-caret :global(svg path) {
+		fill: currentColor;
+	}
+
+	.mp-picker-btn {
+		max-width: 240px;
 	}
 	.mp-picker-backdrop {
 		position: fixed;
@@ -2395,34 +2416,13 @@
 		display: inline-flex;
 	}
 	.mp-sel-entity-btn {
-		/* Location chip is the visual anchor of the row — it eats the
-		   flex slack the name field gave up so long entity names read
-		   without truncating. */
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		padding: 4px 8px;
-		font-family: var(--font-ui);
-		font-size: 0.75rem;
-		color: var(--text);
-		background: var(--bg-control);
-		border: 1px solid var(--border-mid);
-		border-radius: 4px;
-		cursor: pointer;
+		/* Location combobox is the visual anchor of the row — it eats
+		   the flex slack the name field gave up so long entity names
+		   read without truncating. Base combobox look comes from
+		   `.mp-combobox`; only sizing overrides live here. */
 		flex: 1 1 240px;
 		min-width: 180px;
 		max-width: 420px;
-	}
-	.mp-sel-entity-btn:hover {
-		border-color: var(--text-accent);
-	}
-	.mp-sel-entity-label {
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
 	}
 	/* Kind icon for the currently-linked entity — same SVG the picker
 	   row uses. Coloured via `--kind-color` set inline from
@@ -2496,58 +2496,10 @@
 		outline: none;
 		border-color: var(--text-accent);
 	}
-	/* Kind filter chip row — sits below the search input.
-	   Chips mirror the Connections rail: outlined by default, filled
-	   with the kind's accent colour when active. `--kind-color` is
-	   set inline per kind. */
-	.mp-entity-kind-row {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 4px;
-		padding: 6px 8px;
-		background: var(--bg-inset);
-		border-bottom: 1px solid var(--border);
-	}
-	.mp-entity-kind-chip {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		padding: 3px 8px;
-		background: var(--bg-control);
-		color: var(--text-muted);
-		border: 1px solid var(--border-mid);
-		border-radius: 10px;
-		font-family: var(--font-ui);
-		font-size: 0.7rem;
-		cursor: pointer;
-	}
-	.mp-entity-kind-chip:hover {
-		color: var(--text);
-		border-color: var(--kind-color, var(--text-accent));
-	}
-	.mp-entity-kind-chip--active {
-		color: #fff;
-		background: var(--kind-color, var(--text-accent));
-		border-color: var(--kind-color, var(--text-accent));
-	}
-	.mp-entity-kind-chip-icon {
-		display: inline-flex;
-		width: 14px;
-		height: 14px;
-	}
-	.mp-entity-kind-chip-icon :global(svg) {
-		width: 100%;
-		height: 100%;
-		fill: currentColor;
-	}
-	.mp-entity-kind-chip-icon :global(svg path) {
-		fill: currentColor;
-	}
-
-	/* Entity picker rows — laid out like the Connections rail's
-	   `.cm-row`: kind icon on the left, entity name in the middle,
-	   kind badge on the right, and a 3-px left accent bar in the
-	   kind's colour so users can scan by kind at a glance. */
+	/* Entity picker rows — shadcn-svelte Command palette pattern:
+	   icon left, name middle, checkmark right when selected. No
+	   left accent bar, no right-side kind pill. Icon colour cues
+	   the kind quietly, keeping the row scannable and uniform. */
 	.mp-entity-item {
 		width: 100%;
 		display: flex;
@@ -2558,21 +2510,15 @@
 		border: none;
 		text-align: left;
 		font-family: var(--font-ui);
-		font-size: 0.82rem;
+		font-size: 0.85rem;
 		color: var(--text);
 		cursor: pointer;
-		position: relative;
-	}
-	.mp-entity-item--row {
-		border-left: 3px solid var(--kind-color, var(--border-mid));
-		padding-left: 9px;
 	}
 	.mp-entity-item:hover {
-		background: var(--bg-control);
+		background: color-mix(in srgb, var(--text) 6%, transparent);
 	}
 	.mp-entity-item--active {
-		background: color-mix(in srgb, var(--kind-color, var(--text-accent)) 14%, var(--bg-control));
-		font-weight: 600;
+		background: color-mix(in srgb, var(--text-accent) 10%, transparent);
 	}
 	.mp-entity-item--none {
 		color: var(--text-dimmer);
@@ -2580,8 +2526,8 @@
 	}
 	.mp-entity-item-icon {
 		display: inline-flex;
-		width: 20px;
-		height: 20px;
+		width: 18px;
+		height: 18px;
 		flex-shrink: 0;
 		color: var(--kind-color, var(--text-accent));
 	}
@@ -2599,16 +2545,18 @@
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
-	.mp-entity-kind {
+	.mp-entity-check {
 		flex-shrink: 0;
-		padding: 2px 8px;
-		border-radius: 10px;
-		background: color-mix(in srgb, var(--kind-color, var(--text-dimmer)) 18%, transparent);
-		color: var(--kind-color, var(--text-dimmer));
-		font-size: 0.65rem;
-		font-weight: 700;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 18px;
+		height: 18px;
+		color: var(--text-accent);
+	}
+	.mp-entity-check svg {
+		width: 100%;
+		height: 100%;
 	}
 	.mp-entity-empty {
 		font-family: var(--font-ui);

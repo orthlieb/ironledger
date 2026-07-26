@@ -68,8 +68,6 @@
 	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
-	import sortAzSvg from '$icons/arrow-down-a-z-solid-full.svg?raw';
-	import sortAddedSvg from '$icons/calendar-arrow-down-solid-full.svg?raw';
 	import { headingText } from '$lib/fontStore.svelte.js';
 
 	let { showTitle = true }: { showTitle?: boolean } = $props();
@@ -128,31 +126,24 @@
 		return () => document.removeEventListener('ironledger:focus-entity', onFocus);
 	});
 
-	// Rail controls — search box, type filter, and sort order. These scale the
-	// list to dozens of entries (see displayEntries below). Filter + sort
-	// persist per-browser so the rail reopens the way you left it.
+	// Rail controls — search + type filter. Sort is always A-Z now
+	// (was a toggle; retired for parity with the Link Marker picker
+	// and because Added order was rarely useful in a rail this long).
+	// Filter persists per-browser so the rail reopens the way you left it.
 	const FILTER_KEY = 'ironledger:connections:filter';
-	const SORT_KEY = 'ironledger:connections:sort';
 	function readFilter(): 'all' | EntryKind {
 		if (typeof window === 'undefined') return 'all';
 		const v = localStorage.getItem(FILTER_KEY);
 		return v === 'community' || v === 'npc' || v === 'place' ? v : 'all';
 	}
-	function readSort(): 'added' | 'name' {
-		if (typeof window === 'undefined') return 'added';
-		return localStorage.getItem(SORT_KEY) === 'name' ? 'name' : 'added';
-	}
 	let search = $state('');
 	let kindFilter = $state<'all' | EntryKind>(readFilter());
-	let sortMode = $state<'added' | 'name'>(readSort());
 	let filtersOpen = $state(false);
 	const activeFilterCount = $derived(kindFilter === 'all' ? 0 : 1);
 
-	// Persist filter + sort to localStorage whenever they change.
 	$effect(() => {
 		if (typeof window === 'undefined') return;
 		localStorage.setItem(FILTER_KEY, kindFilter);
-		localStorage.setItem(SORT_KEY, sortMode);
 	});
 
 	// Mobile/narrow drill-down: which pane is showing when the area is too
@@ -228,14 +219,11 @@
 				const q = search.trim().toLowerCase();
 				return q === '' || (e.data.name ?? '').toLowerCase().includes(q);
 			})
-			.sort((a, b) => {
-				if (sortMode === 'name') {
-					return (a.data.name ?? '').localeCompare(b.data.name ?? '', undefined, {
-						sensitivity: 'base',
-					});
-				}
-				return a.createdAt - b.createdAt;
-			}),
+			.sort((a, b) =>
+				(a.data.name ?? '').localeCompare(b.data.name ?? '', undefined, {
+					sensitivity: 'base',
+				}),
+			),
 	);
 
 	$effect(() => {
@@ -663,15 +651,6 @@
 								>{/if}
 							{filtersOpen ? '▲' : '▼'}</button
 						>
-						<button
-							class="cm-sort-toggle"
-							aria-label={sortMode === 'name'
-								? 'Sorted A–Z. Switch to most recently added.'
-								: 'Sorted by most recently added. Switch to A–Z.'}
-							use:tooltip={sortMode === 'name' ? 'Sorted A–Z' : 'Sorted by recently added'}
-							onclick={() => (sortMode = sortMode === 'name' ? 'added' : 'name')}
-							>{@html sortMode === 'name' ? sortAzSvg : sortAddedSvg}</button
-						>
 					</div>
 					{#if filtersOpen}
 						<div class="cm-filter-panel">
@@ -740,7 +719,6 @@
 									use:tooltip={'Deceased'}>{@html skullSvg}</span
 								>
 							{/if}
-							<span class="cm-row-badge">{kindLabelSingular(entry.kind)}</span>
 						</button>
 					{:else}
 						<p class="cm-list-empty">No connections match “{search}”.</p>
@@ -1595,32 +1573,6 @@
 		border-color: var(--tag-color, #9ca3af);
 		color: var(--tag-color, #9ca3af);
 	}
-	/* Sort — single toggle flipping A–Z ⇄ recently added. */
-	.cm-sort-toggle {
-		all: unset;
-		box-sizing: border-box;
-		flex-shrink: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 30px;
-		padding: 5px 0;
-		cursor: pointer;
-		color: var(--text-muted);
-		background: var(--bg-inset);
-		border: 1px solid var(--border);
-		border-radius: 8px;
-		transition: color 0.12s;
-	}
-	.cm-sort-toggle :global(svg) {
-		width: 15px;
-		height: 15px;
-		fill: currentColor;
-	}
-	.cm-sort-toggle:hover {
-		color: var(--text-accent);
-	}
-
 	/* Rail list — one row per connection. */
 	.cm-list {
 		flex: 1;
@@ -1676,19 +1628,6 @@
 	}
 	.cm-row--active .cm-row-name {
 		color: var(--text-accent);
-	}
-	.cm-row-badge {
-		font-family: var(--font-ui);
-		font-size: 0.55rem;
-		font-weight: 600;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		color: var(--cm-row-color, var(--text-dimmer));
-		background: color-mix(in srgb, var(--cm-row-color, var(--text-muted)) 13%, transparent);
-		border-radius: 10px;
-		padding: 2px 6px;
-		line-height: 1;
-		flex-shrink: 0;
 	}
 	/* Deceased status — red skull icon, shown on NPC rows only when deceased.
 	   Matches the SegmentedRadio "stop" tone so the list and card status agree. */
