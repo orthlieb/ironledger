@@ -167,8 +167,14 @@
 	 *  `target.mapId` isn't the active map, `switchMap()` runs first;
 	 *  if `target.markerId` is set, the marker becomes the selection.
 	 *  All async work fires after `showModal()` so the dialog paints
-	 *  immediately with whatever's currently loaded. */
-	export function open(target?: { mapId?: string; markerId?: string }) {
+	 *  immediately with whatever's currently loaded.
+	 *
+	 *  Empty maps (no background yet) surface an in-canvas
+	 *  "Add background image" CTA — a programmatic `fileInputEl.click()`
+	 *  after async awaits gets swallowed by iOS Safari because it isn't
+	 *  a user-gesture-scoped click. `promptUpload` on the target is
+	 *  accepted but ignored; the CTA is always available. */
+	export function open(target?: { mapId?: string; markerId?: string; promptUpload?: boolean }) {
 		dialogEl?.showModal();
 		void initMap().then(async () => {
 			if (target?.mapId && target.mapId !== mapState.activeId) {
@@ -271,6 +277,83 @@
 		});
 		ro.observe(canvasEl);
 		return () => ro.disconnect();
+	});
+
+	// ─── Aspect-lock the dialog to the map ────────────────────────────
+	// CSS `resize: both` lets the user drag width and height
+	// independently, but the map body is aspect-driven — so any drift
+	// left a dead parchment band along one edge. Observe the dialog's
+	// size and snap whichever dimension the user *didn't* drive back
+	// onto the map's aspect. Guarded against feedback: we track the
+	// last authored size and skip if the incoming dimensions already
+	// match (within 1 px).
+	$effect(() => {
+		if (!dialogEl) return;
+		// Re-run whenever the map's aspect changes (e.g. switching between
+		// a portrait and landscape map inside the same dialog).
+		const desiredAspect = mapAspect;
+		const el = dialogEl;
+		let lastW = 0;
+		let lastH = 0;
+		let raf: number | null = null;
+
+		const clampToViewport = (w: number, h: number): [number, number] => {
+			const maxW = window.innerWidth - 32; // parity with `max-width: calc(100vw - 2rem)`
+			const maxH = window.innerHeight * 0.95;
+			if (w > maxW) {
+				w = maxW;
+				h = w / desiredAspect;
+			}
+			if (h > maxH) {
+				h = maxH;
+				w = h * desiredAspect;
+			}
+			return [w, h];
+		};
+
+		const settle = () => {
+			raf = null;
+			const w = el.clientWidth;
+			const h = el.clientHeight;
+			if (w <= 0 || h <= 0) return;
+			// Already on-aspect + unchanged → nothing to do.
+			const current = w / h;
+			const drift = Math.abs(current - desiredAspect);
+			if (drift < 0.005 && Math.abs(w - lastW) < 1 && Math.abs(h - lastH) < 1) return;
+			// Which dimension did the user just push? Bigger delta wins.
+			const dw = Math.abs(w - lastW);
+			const dh = Math.abs(h - lastH);
+			let newW: number;
+			let newH: number;
+			if (lastW === 0 && lastH === 0) {
+				// First observation — pick height as authority so we
+				// preserve the initial visible height and just narrow the
+				// dialog to match aspect.
+				newH = h;
+				newW = h * desiredAspect;
+			} else if (dw >= dh) {
+				newW = w;
+				newH = w / desiredAspect;
+			} else {
+				newH = h;
+				newW = h * desiredAspect;
+			}
+			[newW, newH] = clampToViewport(newW, newH);
+			lastW = newW;
+			lastH = newH;
+			el.style.width = `${newW}px`;
+			el.style.height = `${newH}px`;
+		};
+
+		const ro = new ResizeObserver(() => {
+			if (raf !== null) return;
+			raf = requestAnimationFrame(settle);
+		});
+		ro.observe(el);
+		return () => {
+			ro.disconnect();
+			if (raf !== null) cancelAnimationFrame(raf);
+		};
 	});
 
 	// ─── Zoom + pan ────────────────────────────────────────────────────────────
@@ -1690,6 +1773,22 @@
 				</g>
 			{/if}
 		</svg>
+
+		<!-- Empty-map call-to-action. Rendered when the active map has no
+		     background yet — a big centred button the user clicks to pick
+		     a picture. Kept as an HTML overlay (not SVG) so the click
+		     stays a real user gesture; `<input type=file>.click()` fired
+		     from anything else (setTimeout, promise callback, etc.) gets
+		     swallowed on iOS Safari. -->
+		{#if mapState.loaded && !mapState.backgroundHash}
+			<div class="mp-empty-cta">
+				<button class="mp-empty-cta-btn" onclick={triggerBackgroundUpload}>
+					<span class="mp-empty-cta-plus" aria-hidden="true">+</span>
+					<span class="mp-empty-cta-label">Add background image</span>
+				</button>
+				<p class="mp-empty-cta-hint">Pick a map picture to paint over — jpg / png, any aspect.</p>
+			</div>
+		{/if}
 	</div>
 </dialog>
 
@@ -2423,6 +2522,54 @@
 		width: 100%;
 		height: 100%;
 		pointer-events: none;
+	}
+	/* Empty-map CTA. Absolutely-positioned overlay that fills the
+	   canvas area and stacks a big "Add background image" button + a
+	   small hint. Auto-hides when a background loads because the
+	   `{#if}` guard drops the element from the DOM. */
+	.mp-empty-cta {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 12px;
+		padding: 24px;
+		text-align: center;
+		pointer-events: none;
+	}
+	.mp-empty-cta-btn {
+		pointer-events: auto;
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		padding: 14px 22px;
+		font-family: var(--font-ui);
+		font-size: 0.95rem;
+		font-weight: 600;
+		letter-spacing: 0.03em;
+		color: var(--bg-card);
+		background: var(--text-accent);
+		border: 1px solid var(--text-accent);
+		border-radius: 6px;
+		cursor: pointer;
+		box-shadow: 0 6px 18px #00000040;
+	}
+	.mp-empty-cta-btn:hover,
+	.mp-empty-cta-btn:focus-visible {
+		filter: brightness(1.08);
+		outline: none;
+	}
+	.mp-empty-cta-plus {
+		font-size: 1.3rem;
+		line-height: 1;
+	}
+	.mp-empty-cta-hint {
+		margin: 0;
+		font-family: var(--font-ui);
+		font-size: 0.75rem;
+		color: var(--text-muted);
 	}
 	.mp-canvas {
 		width: 100%;

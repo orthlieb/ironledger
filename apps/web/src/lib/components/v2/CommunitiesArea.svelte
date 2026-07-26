@@ -51,6 +51,7 @@
 	import {
 		entityMarkerIndexState,
 		loadEntityMarkerIndex,
+		mapListState,
 		markersForEntity,
 		openMapForOwner,
 		type EntityMarkerRef,
@@ -251,7 +252,7 @@
 	// Map integration: only communities and places can own a map or be
 	// linked from a marker; NPCs are explicitly excluded by mapEntityLinks.
 	let mapDialogRef = $state<{
-		open(target?: { mapId?: string; markerId?: string }): void;
+		open(target?: { mapId?: string; markerId?: string; promptUpload?: boolean }): void;
 		close(): void;
 	} | null>(null);
 
@@ -271,14 +272,28 @@
 		);
 	});
 
+	/** The (possibly-not-yet-created) map summary for the active
+	 *  community/place, looked up by (ownerKind, ownerId). Undefined
+	 *  until either the summary list loads or the map is get-or-created. */
+	const activeEntryMap = $derived.by(() => {
+		if (!activeEntry || !activeIsMapOwner) return undefined;
+		return mapListState.maps.find(
+			(m) => m.ownerKind === activeEntry.kind && m.ownerId === activeEntry.data.id,
+		);
+	});
+	/** True when the entity's map has no background image (or the map
+	 *  doesn't exist at all yet). Drives the "+ Map" vs "Map" button. */
+	const activeEntryMapEmpty = $derived(!activeEntryMap || !activeEntryMap.backgroundHash);
+
 	async function openOwnedMap() {
 		if (!activeEntry || !activeIsMapOwner) return;
-		await openMapForOwner(
+		const emptyBefore = activeEntryMapEmpty;
+		const mapId = await openMapForOwner(
 			activeEntry.kind as 'community' | 'place',
 			activeEntry.data.id,
 			activeEntry.data.name || 'Untitled',
 		);
-		mapDialogRef?.open();
+		mapDialogRef?.open({ mapId: mapId ?? undefined, promptUpload: emptyBefore });
 	}
 
 	function jumpToMarker(ref: EntityMarkerRef) {
@@ -765,8 +780,11 @@
 						<button
 							class="btn cm-stage-map-btn"
 							onclick={openOwnedMap}
-							use:tooltip={`Open the map for this ${kindLabelSingular(activeEntry.kind).toLowerCase()}`}
-							aria-label="Open map">Map</button
+							use:tooltip={activeEntryMapEmpty
+								? `Add a background image to this ${kindLabelSingular(activeEntry.kind).toLowerCase()}’s map`
+								: `Open the map for this ${kindLabelSingular(activeEntry.kind).toLowerCase()}`}
+							aria-label={activeEntryMapEmpty ? 'Add map' : 'Open map'}
+							>{activeEntryMapEmpty ? '+ Map' : 'Map'}</button
 						>
 					{/if}
 					<button
