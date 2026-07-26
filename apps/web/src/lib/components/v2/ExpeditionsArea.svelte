@@ -54,8 +54,10 @@
 		mapListState,
 		markersForEntity,
 		openMapForOwner,
+		setBackground,
 		type EntityMarkerRef,
 	} from '$lib/mapStore.svelte.js';
+	import { downscaleImage, MapImageError } from '$lib/mapImage.js';
 	import { formatEntityId } from '$lib/mapEntityLinks.js';
 	import trashSvg from '$icons/trash-solid-full.svg?raw';
 	import checkSvg from '$icons/circle-check-solid-full.svg?raw';
@@ -177,15 +179,40 @@
 	 *  doesn't exist at all yet). Drives the "+ Map" vs "Map" button. */
 	const activeExpMapEmpty = $derived(!activeExpMap || !activeExpMap.backgroundHash);
 
-	/** Open the entity's owned map (creating it if this is the first
-	 *  time). Used by the "Map" / "+ Map" button in the stage header —
-	 *  the "+ Map" variant also fires the background file picker on
-	 *  open so create → upload is one gesture. */
+	/** Open the entity's existing map — the "Map" button variant when
+	 *  the owner already has a background uploaded. */
 	async function openOwnedMap() {
 		if (!activeExp) return;
-		const emptyBefore = activeExpMapEmpty;
 		const mapId = await openMapForOwner(activeExp.type, activeExp.id, activeExp.name || 'Untitled');
-		mapDialogRef?.open({ mapId: mapId ?? undefined, promptUpload: emptyBefore });
+		mapDialogRef?.open({ mapId: mapId ?? undefined });
+	}
+
+	/** "+ Map" variant — the button is a `<label>` wrapping a hidden
+	 *  file input, so tapping it opens the OS file picker as part of
+	 *  the tap's native user gesture (essential on iOS Safari, which
+	 *  refuses `input.click()` calls issued from JS after any `await`).
+	 *  Once the user picks a file we get-or-create the map, upload the
+	 *  image, and open the dialog to show the result. */
+	async function handleAddMapWithFile(e: Event) {
+		if (!activeExp) return;
+		const input = e.target as HTMLInputElement;
+		const file = input.files?.[0];
+		input.value = '';
+		if (!file) return;
+		try {
+			const mapId = await openMapForOwner(
+				activeExp.type,
+				activeExp.id,
+				activeExp.name || 'Untitled',
+			);
+			if (!mapId) return;
+			const result = await downscaleImage(file);
+			await setBackground(result.dataUrl, result.aspect);
+			mapDialogRef?.open({ mapId });
+		} catch (err) {
+			if (err instanceof MapImageError) console.warn('Add map image failed:', err.message);
+			else console.error('Add map failed', err);
+		}
 	}
 
 	/** Jump the dialog directly to a marker back-reference — used by the
@@ -663,15 +690,27 @@
 							},
 						]}
 					/>
-					<button
-						class="btn ea-stage-map-btn"
-						onclick={openOwnedMap}
-						use:tooltip={activeExpMapEmpty
-							? 'Add a background image to this ' + activeExp.type + '’s map'
-							: 'Open the map for this ' + activeExp.type}
-						aria-label={activeExpMapEmpty ? 'Add map' : 'Open map'}
-						>{activeExpMapEmpty ? '+ Map' : 'Map'}</button
-					>
+					{#if activeExpMapEmpty}
+						<!-- <label> around a hidden <input type="file"> — iOS
+						     Safari refuses `input.click()` calls issued from JS
+						     after any `await`, so the file picker must fire
+						     from the tap's native user gesture. -->
+						<label
+							class="btn ea-stage-map-btn"
+							use:tooltip={'Add a background image to this ' + activeExp.type + '’s map'}
+							aria-label="Add map"
+						>
+							+ Map
+							<input type="file" accept="image/*" hidden onchange={handleAddMapWithFile} />
+						</label>
+					{:else}
+						<button
+							class="btn ea-stage-map-btn"
+							onclick={openOwnedMap}
+							use:tooltip={'Open the map for this ' + activeExp.type}
+							aria-label="Open map">Map</button
+						>
+					{/if}
 					<button
 						class="btn btn-icon icon-btn btn-trash ea-stage-delete-btn"
 						onclick={() => deleteDialogRef?.open()}
