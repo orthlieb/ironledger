@@ -51,6 +51,21 @@
 	}
 	async function onDeleteMap() {
 		if (mapState.activeId) await deleteMap(mapState.activeId);
+		// Auto-dismiss: the map the user was configuring is gone;
+		// nothing left to configure.
+		close();
+	}
+	async function onClearMarkers() {
+		await clearMarkers();
+		// Auto-dismiss so the user sees their now-empty map instead
+		// of the settings sheet still covering it.
+		close();
+	}
+	function onReplaceBackgroundClicked() {
+		onReplaceBackground?.();
+		// The parent dialog will handle the file picker; close settings
+		// so the user isn't blocked when the picker returns.
+		close();
 	}
 	const canDeleteMap = $derived(mapListState.maps.length > 1);
 
@@ -206,7 +221,7 @@
 			<div class="mo-danger-row">
 				<button
 					class="mo-danger-btn"
-					onclick={() => onReplaceBackground?.()}
+					onclick={onReplaceBackgroundClicked}
 					disabled={!onReplaceBackground}>Replace image…</button
 				>
 				<span class="mo-hint">
@@ -243,7 +258,7 @@
 	bind:this={clearMarkersDialogRef}
 	title="Clear All Markers?"
 	confirmLabel="Clear Markers"
-	onconfirm={clearMarkers}
+	onconfirm={onClearMarkers}
 >
 	<p
 		style="font-family: var(--font-ui); font-size: 0.82rem; color: var(--text-muted); margin: 0; line-height: 1.5;"

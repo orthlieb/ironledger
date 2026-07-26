@@ -283,6 +283,43 @@
 	// dialog height follows. Simpler, no ResizeObserver feedback
 	// loops, no jitter, no crashes when the map body is temporarily
 	// zero-height mid-switch.
+	//
+	// Chrome above the map body (title + toolbar + selection toolbar
+	// + optional error banner) varies with wrapping and with whether
+	// a marker is selected. A fixed CSS buffer of 8rem was too small
+	// on the desktop layout — the toolbar row + sel-toolbar row + hint
+	// text add up to ~140+ px, more than 8rem, so the map body's
+	// max-height cap was set too generously and the body overflowed
+	// (clipped by dialog `overflow: hidden`). Measure it live and
+	// expose it as `--mp-chrome-h`.
+	$effect(() => {
+		if (!dialogEl) return;
+		const el = dialogEl;
+		let raf: number | null = null;
+		const settle = () => {
+			raf = null;
+			const bodyEl = el.querySelector('.mp-body') as HTMLElement | null;
+			if (!bodyEl) return;
+			// `offsetTop` = distance from dialog's content-top to the map
+			// body — i.e. the height of every chrome element stacked
+			// above it. No feedback loop: our writes go to
+			// `--mp-chrome-h` which affects the body's max-height, and
+			// the body's height doesn't feed back into `offsetTop`.
+			const chromeH = bodyEl.offsetTop;
+			if (chromeH < 0) return;
+			el.style.setProperty('--mp-chrome-h', `${chromeH}px`);
+		};
+		settle();
+		const ro = new ResizeObserver(() => {
+			if (raf !== null) return;
+			raf = requestAnimationFrame(settle);
+		});
+		ro.observe(el);
+		return () => {
+			ro.disconnect();
+			if (raf !== null) cancelAnimationFrame(raf);
+		};
+	});
 
 	// ─── Zoom + pan ────────────────────────────────────────────────────────────
 	// The SVG's viewBox is fixed at world units (0 0 cols rows); zoom
@@ -1422,7 +1459,7 @@
 	     narrowed body inside the dialog. -->
 	<div
 		class="mp-body"
-		style="aspect-ratio: {gridDims.cols} / {gridDims.rows}; width: min(100%, calc((88vh - 8rem) * {gridDims.cols} / {gridDims.rows}));"
+		style="aspect-ratio: {gridDims.cols} / {gridDims.rows}; width: min(100%, calc((95vh - var(--mp-chrome-h, 8rem)) * {gridDims.cols} / {gridDims.rows}));"
 	>
 		<!-- Wheel listener is attached manually with `passive: false` in a
 		     $effect above so trackpad-pinch (ctrl+wheel) is preventable. -->
@@ -2434,7 +2471,12 @@
 		   .mp-overlay-svg absolutely-positioned overlay. */
 		position: relative;
 		max-width: 100%;
-		max-height: calc(88vh - 8rem);
+		/* `--mp-chrome-h` is measured live by MapDialog's chrome
+		   observer — it's the actual pixel height of everything above
+		   the map body (title + toolbar + selection toolbar + any
+		   error banner). Falling back to 8rem for the first frame
+		   before the observer fires. */
+		max-height: calc(95vh - var(--mp-chrome-h, 8rem));
 		margin-inline: auto;
 		overflow: hidden;
 	}

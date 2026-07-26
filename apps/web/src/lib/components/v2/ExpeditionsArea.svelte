@@ -719,25 +719,6 @@
 					>
 				</div>
 
-				{#if activeExpMarkers.length > 0}
-					<!-- Back-ref chip strip. One chip per marker across all maps that
-					     reference this expedition; click jumps to that marker. -->
-					<div class="ea-mapref-row" aria-label="On the campaign map">
-						<span class="ea-mapref-label" aria-hidden="true">📍 On map:</span>
-						{#each activeExpMarkers as ref (ref.markerId)}
-							<button
-								class="ea-mapref-chip"
-								onclick={() => jumpToMarker(ref)}
-								use:tooltip={`Jump to "${ref.label || '(unlabeled)'}" on ${ref.mapName}`}
-								aria-label={`Jump to marker on ${ref.mapName}`}
-							>
-								<span class="ea-mapref-name">{ref.mapName}</span>
-								<span class="ea-mapref-coord">({fmtCoord(ref.x)}, {fmtCoord(ref.y)})</span>
-							</button>
-						{/each}
-					</div>
-				{/if}
-
 				<div class="ea-stage" class:ea-stage--complete={activeExp.complete}>
 					<!-- Card tab strip — Journey: Description/Core, Site: Notes/Core/Denizens. -->
 					<div class="ea-tabs" role="tablist">
@@ -919,6 +900,31 @@
 									showStep
 									onchange={handleTrackChange}
 								/>
+							</div>
+
+							<!-- Map field: one chip per marker referencing this
+							     expedition. Multi-map is supported — the store
+							     returns refs across every map, chips wrap onto
+							     new rows via flex-wrap. Coord (x, y) lives in
+							     the tooltip; chip text is the map name only. -->
+							<div class="ea-section ea-mapref-section">
+								<span class="ea-mapref-label">Map</span>
+								<div class="ea-mapref-chips">
+									{#if activeExpMarkers.length === 0}
+										<span class="ea-mapref-empty">Not on any map</span>
+									{:else}
+										{#each activeExpMarkers as ref (ref.markerId)}
+											<button
+												class="ea-mapref-chip"
+												onclick={() => jumpToMarker(ref)}
+												use:tooltip={`Jump to "${ref.label || '(unlabeled)'}" on ${ref.mapName} — (${fmtCoord(ref.x)}, ${fmtCoord(ref.y)})`}
+												aria-label={`Jump to marker on ${ref.mapName}`}
+											>
+												<span class="ea-mapref-name">{ref.mapName}</span>
+											</button>
+										{/each}
+									{/if}
+								</div>
 							</div>
 
 							<!-- ── Denizens — 12-cell d100 grid, foe picker per row. ── -->
@@ -1394,40 +1400,51 @@
 		padding: 4px 12px;
 	}
 
-	/* Back-reference chip strip below the header. One chip per marker on
-	   any map that references this expedition; click jumps into the map
-	   dialog at that marker. Wraps at narrow widths. */
-	.ea-mapref-row {
+	/* Map field — a labelled section below the Progress Track in the
+	   Core tab. One chip per marker referencing this expedition;
+	   click jumps into the map dialog at that marker. Hover surfaces
+	   the marker label + coordinates. Multi-map users get multiple
+	   chips that wrap onto new rows via `flex-wrap`. */
+	.ea-mapref-section {
 		display: flex;
-		align-items: center;
-		flex-wrap: wrap;
-		gap: 6px;
-		padding: 4px 12px 6px;
-		background: var(--bg-inset);
-		border-bottom: 1px solid var(--border);
-		font-family: var(--font-ui);
-		font-size: 0.72rem;
+		align-items: flex-start;
+		gap: 12px;
 	}
 	.ea-mapref-label {
+		flex: 0 0 auto;
+		padding-top: 4px;
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		font-weight: 700;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
 		color: var(--text-dimmer);
-		margin-right: 4px;
+	}
+	.ea-mapref-chips {
+		flex: 1 1 auto;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+		align-items: center;
+	}
+	.ea-mapref-empty {
+		font-family: var(--font-ui);
+		font-size: 0.75rem;
+		font-style: italic;
+		color: var(--text-dimmer);
 	}
 	.ea-mapref-chip {
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		padding: 2px 8px;
+		padding: 2px 10px;
 		background: var(--bg-control);
 		border: 1px solid var(--border-mid);
 		border-radius: 12px;
-		font-family: inherit;
-		font-size: inherit;
+		font-family: var(--font-ui);
+		font-size: 0.75rem;
 		color: var(--text);
 		cursor: pointer;
-		/* Chip breaks to a new row via the parent's flex-wrap; its own
-		   contents (map name + coord) stay on a single line so a long
-		   name doesn't turn one chip into a two-line stack. Long names
-		   ellipsize. */
 		max-width: 100%;
 		white-space: nowrap;
 	}
@@ -1437,15 +1454,9 @@
 	}
 	.ea-mapref-name {
 		font-weight: 600;
-		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		max-width: 12rem;
-	}
-	.ea-mapref-coord {
-		font-family: var(--font-mono, ui-monospace, monospace);
-		color: var(--text-dimmer);
-		white-space: nowrap;
 	}
 
 	/* Tabs — V1 tab-btn style. */
