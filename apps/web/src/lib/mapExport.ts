@@ -343,7 +343,19 @@ export async function exportMapPng(svgEl: SVGSVGElement, showLabels: boolean): P
 				// a hard failure.
 			}
 		}
+		// Force full opacity — the live UI keeps `<image>` at opacity 0
+		// until its native `onload` fires (async loading UX). The export
+		// pipeline just resolved the bytes itself, so the exported PNG
+		// must render the image regardless of the runtime flag.
+		bgImage.setAttribute('opacity', '1');
 	}
+
+	// Strip the transient "Loading map…" placeholder rect + text —
+	// they only exist to fill the surface while the real background is
+	// on the wire, and shouldn't appear in the export.
+	clone
+		.querySelectorAll('.mp-bg-placeholder, .mp-bg-placeholder-text')
+		.forEach((el) => el.remove());
 
 	// Optionally strip label <text> elements so the PNG matches the
 	// current UI toggle state. Icons always render.
