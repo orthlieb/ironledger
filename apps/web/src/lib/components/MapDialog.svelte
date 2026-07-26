@@ -55,6 +55,7 @@
 	import iconZoomInSvg from '$icons/magnifying-glass-plus-solid-full.svg?raw';
 	import iconZoomOutSvg from '$icons/magnifying-glass-minus-solid-full.svg?raw';
 	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
+	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
 	import type { EntityLinkKind } from '$lib/mapEntityLinks.js';
 	// Shared kind metadata (colour, icon, label). Same source of truth
 	// the Connections rail + Expeditions spines will read from once
@@ -1261,14 +1262,14 @@
 		<div class="mp-tools">
 			<div class="mp-picker">
 				<button
-					class="mp-btn mp-picker-btn"
+					class="mp-combobox mp-picker-btn"
 					onclick={togglePicker}
 					aria-haspopup="listbox"
 					aria-expanded={pickerOpen}
 					use:tooltip={'Switch, create, or manage maps'}
 				>
-					<span class="mp-picker-label">{mapState.name || 'Map'}</span>
-					<span class="mp-picker-caret" aria-hidden="true">▾</span>
+					<span class="mp-combobox-value">{mapState.name || 'Map'}</span>
+					<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
 				</button>
 				{#if pickerOpen}
 					<!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -1437,13 +1438,13 @@
 			{@const currentLink = resolveEntity(selectedMarker.entityId)}
 			<div class="mp-sel-entity">
 				<button
-					class="mp-sel-entity-btn"
+					class="mp-combobox mp-sel-entity-btn"
 					onclick={openEntityPicker}
 					aria-haspopup="listbox"
 					aria-expanded={entityPickerOpen}
 					use:tooltip={'Link to a Community, Place, Journey or Site'}
 				>
-					<span class="mp-sel-entity-label">
+					<span class="mp-combobox-value">
 						{#if selectedMarker.entityId && currentLink}
 							<!-- Use the same kind icon the picker dialog rows show
 							     — was a text dingbat (◈ / ● / ↗ / ▲), replaced
@@ -1460,7 +1461,7 @@
 							— No link —
 						{/if}
 					</span>
-					<span class="mp-picker-caret" aria-hidden="true">▾</span>
+					<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
 				</button>
 			</div>
 			<button
@@ -2088,21 +2089,68 @@
 	.mp-picker {
 		position: relative;
 	}
-	.mp-picker-btn {
+	/* Combobox pattern — shared by the map selector and the marker's
+	   entity-link picker. Renders as a proper form control: bordered
+	   box with the current value on the left and a chevron SVG on the
+	   right. Brown-antique theme via the existing surface tokens
+	   (`--bg-control`, `--border-mid`, `--text-accent`). */
+	.mp-combobox {
 		display: inline-flex;
 		align-items: center;
-		gap: 6px;
+		gap: 8px;
+		padding: 5px 6px 5px 10px;
+		background: var(--bg-control);
+		color: var(--text);
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+		font-family: var(--font-ui);
+		font-size: 0.82rem;
+		font-weight: 500;
+		letter-spacing: 0;
 		text-transform: none;
-		max-width: 220px;
+		cursor: pointer;
+		min-height: 30px;
+		transition: border-color 0.12s;
 	}
-	.mp-picker-label {
+	.mp-combobox:hover:not(:disabled),
+	.mp-combobox:focus-visible {
+		border-color: var(--text-accent);
+		outline: none;
+	}
+	.mp-combobox[aria-expanded='true'] {
+		border-color: var(--text-accent);
+		box-shadow: inset 0 -2px 0 0 var(--text-accent);
+	}
+	.mp-combobox-value {
+		flex: 1 1 auto;
+		min-width: 0;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
 	}
-	.mp-picker-caret {
-		font-size: 0.7rem;
-		opacity: 0.7;
+	.mp-combobox-caret {
+		flex-shrink: 0;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 20px;
+		height: 20px;
+		color: var(--text-muted);
+	}
+	.mp-combobox-caret :global(svg) {
+		width: 12px;
+		height: 12px;
+		fill: currentColor;
+	}
+	.mp-combobox-caret :global(svg path) {
+		fill: currentColor;
+	}
+
+	.mp-picker-btn {
+		max-width: 240px;
 	}
 	.mp-picker-backdrop {
 		position: fixed;
@@ -2395,34 +2443,13 @@
 		display: inline-flex;
 	}
 	.mp-sel-entity-btn {
-		/* Location chip is the visual anchor of the row — it eats the
-		   flex slack the name field gave up so long entity names read
-		   without truncating. */
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		padding: 4px 8px;
-		font-family: var(--font-ui);
-		font-size: 0.75rem;
-		color: var(--text);
-		background: var(--bg-control);
-		border: 1px solid var(--border-mid);
-		border-radius: 4px;
-		cursor: pointer;
+		/* Location combobox is the visual anchor of the row — it eats
+		   the flex slack the name field gave up so long entity names
+		   read without truncating. Base combobox look comes from
+		   `.mp-combobox`; only sizing overrides live here. */
 		flex: 1 1 240px;
 		min-width: 180px;
 		max-width: 420px;
-	}
-	.mp-sel-entity-btn:hover {
-		border-color: var(--text-accent);
-	}
-	.mp-sel-entity-label {
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
 	}
 	/* Kind icon for the currently-linked entity — same SVG the picker
 	   row uses. Coloured via `--kind-color` set inline from
