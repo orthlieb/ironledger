@@ -9,11 +9,12 @@
 	 * Usage:
 	 *   <Lightbox src="/foes/wolf.webp" alt="Wolf" onclose={() => open = false} />
 	 *
-	 * Renders nothing on its own — the parent gates with {#if open}. Native
-	 * <dialog> in the top layer, so it sits above any other dialog or modal
-	 * (per CLAUDE.md app-level scroll architecture).
+	 * bits-ui Dialog under the hood — Portal + Overlay + Content. Backdrop
+	 * click closes via Overlay's click handler; Escape via Dialog.Root's
+	 * onOpenChange.
 	 */
 	import { tooltip } from '$lib/actions/tooltip.js';
+	import { Dialog } from 'bits-ui';
 
 	let {
 		src,
@@ -25,52 +26,56 @@
 		onclose: () => void;
 	} = $props();
 
-	let dialogEl = $state<HTMLDialogElement | null>(null);
-	$effect(() => {
-		if (dialogEl) dialogEl.showModal();
-	});
-
-	// Click on the backdrop (outside the image) closes. The image itself
-	// stops propagation so taps on it don't dismiss accidentally.
-	function onBackdropClick(e: MouseEvent) {
-		if (e.target === dialogEl) onclose();
-	}
+	// bits-ui expects a bound `open` state; parent gates render with `{#if open}`
+	// so we simply seed to `true` and route any close (Escape, backdrop) back
+	// through `onclose`.
+	let dialogOpen = $state(true);
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<dialog bind:this={dialogEl} class="lightbox" oncancel={onclose} onclick={onBackdropClick}>
-	<img class="lb-img" {src} {alt} onclick={(e) => e.stopPropagation()} />
-	<button type="button" class="lb-close" onclick={onclose} use:tooltip={'Close'} aria-label="Close"
-		>✕</button
-	>
-</dialog>
+<Dialog.Root
+	bind:open={dialogOpen}
+	onOpenChange={(next) => {
+		if (!next) onclose();
+	}}
+>
+	<Dialog.Portal>
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+		<Dialog.Overlay class="lb-overlay" onclick={onclose} />
+		<Dialog.Content class="lightbox">
+			<img class="lb-img" {src} {alt} />
+			<button
+				type="button"
+				class="lb-close"
+				onclick={onclose}
+				use:tooltip={'Close'}
+				aria-label="Close">✕</button
+			>
+		</Dialog.Content>
+	</Dialog.Portal>
+</Dialog.Root>
 
 <style>
-	/* Per CLAUDE.md iOS Safari rules:
-	   - center via top/left + transform (never inset:0 + margin:auto)
-	   - sizing in vh/vw, never dvh
-	   - no display:flex chain that collapses to 0 */
-	.lightbox {
+	/* bits-ui portals Content + Overlay to <body>, so scope every rule
+	   globally — Svelte's CSS pruning can't see through the portal. */
+	:global(.lb-overlay) {
+		position: fixed;
+		inset: 0;
+		background: #000000c0;
+		backdrop-filter: blur(2px);
+		z-index: 80;
+	}
+	:global(.lightbox) {
 		position: fixed;
 		top: 50%;
 		left: 50%;
 		transform: translate(-50%, -50%);
-		margin: 0;
-		padding: 0;
-		border: none;
 		background: transparent;
-		overflow: visible;
-		overscroll-behavior: contain;
-		max-width: none;
-		max-height: none;
-	}
-	.lightbox::backdrop {
-		background: #000000c0;
-		backdrop-filter: blur(2px);
+		outline: none;
+		z-index: 81;
 	}
 
-	.lb-img {
+	:global(.lb-img) {
 		display: block;
 		max-width: 80vw;
 		max-height: 80vh;
@@ -81,7 +86,7 @@
 		box-shadow: 0 18px 60px #00000080;
 	}
 
-	.lb-close {
+	:global(.lb-close) {
 		position: absolute;
 		top: -14px;
 		right: -14px;
@@ -103,12 +108,12 @@
 			color 0.12s,
 			border-color 0.12s;
 	}
-	.lb-close:hover {
+	:global(.lb-close:hover) {
 		background: var(--bg-hover);
 		color: var(--text-accent);
 		border-color: var(--text-accent);
 	}
-	.lb-close:focus-visible {
+	:global(.lb-close:focus-visible) {
 		outline: 2px solid var(--text-accent);
 		outline-offset: 2px;
 	}

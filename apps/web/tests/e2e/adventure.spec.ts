@@ -68,21 +68,21 @@ test.describe('Adventure-action dialogs (v2)', () => {
 
 	test('Move button (1st action) opens moves dialog', async ({ page }) => {
 		await page.locator(`${APP_NAV} .act-btn`).first().click();
-		await expect(page.locator('.moves-dialog[open]')).toBeVisible({ timeout: 3_000 });
+		await expect(page.locator('.moves-dialog')).toBeVisible({ timeout: 3_000 });
 		await page.keyboard.press('Escape');
-		await expect(page.locator('.moves-dialog[open]')).not.toBeVisible();
+		await expect(page.locator('.moves-dialog')).not.toBeVisible();
 	});
 
 	test('can browse move tiles in the picker', async ({ page }) => {
 		await page.locator(`${APP_NAV} .act-btn`).first().click();
-		await expect(page.locator('.moves-dialog[open]')).toBeVisible({ timeout: 3_000 });
+		await expect(page.locator('.moves-dialog')).toBeVisible({ timeout: 3_000 });
 		await expect(page.locator('.moves-dialog .md-tile').first()).toBeVisible({ timeout: 5_000 });
 		await page.keyboard.press('Escape');
 	});
 
 	test('clicking a move tile shows its detail view with Roll button', async ({ page }) => {
 		await page.locator(`${APP_NAV} .act-btn`).first().click();
-		await expect(page.locator('.moves-dialog[open]')).toBeVisible({ timeout: 3_000 });
+		await expect(page.locator('.moves-dialog')).toBeVisible({ timeout: 3_000 });
 		await page.locator('.moves-dialog .md-tile').first().click();
 		await expect(page.locator('.moves-dialog .md-body--detail')).toBeVisible({ timeout: 3_000 });
 		await expect(

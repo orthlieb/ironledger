@@ -76,7 +76,7 @@ function settingsToggleButton(page: Page, label: string, state: 'On' | 'Off') {
 /** Open the Moves dialog via the global app-nav button. */
 async function openMovesDialog(page: Page): Promise<void> {
 	await page.locator(`${APP_NAV} .act-btn`, { hasText: 'Move' }).first().click();
-	await expect(page.locator('dialog.moves-dialog[open]')).toBeVisible({ timeout: 8_000 });
+	await expect(page.locator('.moves-dialog')).toBeVisible({ timeout: 8_000 });
 }
 
 /** Open the Oracles dialog via the global app-nav button. */
@@ -221,7 +221,7 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		// Scope radios to the OPEN dialog — the sibling New Place dialog is in
 		// the DOM but closed, and its own ironlands radio would otherwise be
 		// counted too.
-		const openDialog = page.locator('dialog.confirm-modal[open]');
+		const openDialog = page.locator('.confirm-modal');
 		await expect(openDialog).toBeVisible({ timeout: 8_000 });
 		const yrtRadio = openDialog.locator('input[type="radio"][value="yrt"]');
 		await expect(yrtRadio).toHaveCount(0);
@@ -260,7 +260,7 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		await expect(link).toBeVisible({ timeout: 5_000 });
 		await link.click();
 
-		await expect(page.locator('dialog.moves-dialog[open]')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.moves-dialog')).toBeVisible({ timeout: 5_000 });
 		await expect(
 			page
 				.locator('dialog.moves-dialog')
