@@ -2377,11 +2377,11 @@
 		align-items: center;
 		justify-content: center;
 	}
-	:global(.mp-btn-icon :global(svg)) {
+	:global(.mp-btn-icon svg) {
 		width: 14px;
 		height: 14px;
 	}
-	:global(.mp-btn-icon :global(svg path)) {
+	:global(.mp-btn-icon svg path) {
 		fill: currentColor;
 	}
 	/* Zoom control chip — minus + percentage + plus + fit, laid out
@@ -2475,16 +2475,16 @@
 	   `.pcr-app` popover. We just need to constrain the chip so it
 	   sits inside the toolbar row like the old native chip did — the
 	   popover then anchors itself to the chip and floats free. */
-	:global(.mp-sel-color :global(.pickr)) {
+	:global(.mp-sel-color .pickr) {
 		display: inline-flex;
 	}
-	:global(.mp-sel-color :global(.pickr .pcr-button)) {
+	:global(.mp-sel-color .pickr .pcr-button) {
 		width: 24px;
 		height: 24px;
 		border: 1px solid var(--border-mid);
 		border-radius: 4px;
 	}
-	:global(.mp-sel-color :global(.pickr .pcr-button:focus)) {
+	:global(.mp-sel-color .pickr .pcr-button:focus) {
 		outline: 1px solid var(--text-accent);
 		outline-offset: 1px;
 		box-shadow: none;
@@ -2592,12 +2592,12 @@
 		height: 16px;
 		color: var(--kind-color, var(--text-accent));
 	}
-	:global(.mp-sel-entity-icon :global(svg)) {
+	:global(.mp-sel-entity-icon svg) {
 		width: 100%;
 		height: 100%;
 		fill: currentColor;
 	}
-	:global(.mp-sel-entity-icon :global(svg path)) {
+	:global(.mp-sel-entity-icon svg path) {
 		fill: currentColor;
 	}
 
@@ -3013,7 +3013,7 @@
 		pointer-events: none;
 		color: var(--text-dimmer);
 	}
-	:global(.mp-icon-search-icon :global(svg)) {
+	:global(.mp-icon-search-icon svg) {
 		width: 100%;
 		height: 100%;
 		fill: currentColor;

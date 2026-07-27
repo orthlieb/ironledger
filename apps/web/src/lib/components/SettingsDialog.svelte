@@ -483,7 +483,7 @@
 		align-items: center;
 		line-height: 0;
 	}
-	:global(.sd-seg-icon :global(svg)) {
+	:global(.sd-seg-icon svg) {
 		width: 11px;
 		height: 11px;
 		fill: currentColor;

@@ -659,15 +659,15 @@
 	/* Rendered light-markdown prose (matches the saved Story log entry).
 	   renderNote separates blocks with <br>, and the global reset zeroes
 	   margins — so we only indent lists and style the inline marks here. */
-	:global(.stry-output :global(strong)) {
+	:global(.stry-output strong) {
 		color: var(--text);
 		font-weight: 600;
 	}
-	:global(.stry-output :global(em)) {
+	:global(.stry-output em) {
 		font-style: italic;
 	}
 	.stry-output :global(ul),
-	:global(.stry-output :global(ol)) {
+	:global(.stry-output ol) {
 		padding-left: 1.25em;
 	}
 	:global(.stry-placeholder) {

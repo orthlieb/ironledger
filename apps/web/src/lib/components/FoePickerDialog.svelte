@@ -558,7 +558,7 @@
 		pointer-events: none;
 		color: var(--text-dimmer);
 	}
-	:global(:global(.fd-search-icon svg)) {
+	:global(.fd-search-icon svg) {
 		width: 100%;
 		height: 100%;
 		fill: currentColor;
@@ -604,7 +604,7 @@
 		opacity: 0.25;
 		cursor: not-allowed;
 	}
-	:global(.fd-clear-btn :global(svg)) {
+	:global(.fd-clear-btn svg) {
 		width: 16px;
 		height: 16px;
 		fill: currentColor;
@@ -723,12 +723,12 @@
 		height: 16px;
 		flex-shrink: 0;
 	}
-	:global(.fd-tile-name-icon :global(svg)) {
+	:global(.fd-tile-name-icon svg) {
 		width: 100%;
 		height: 100%;
 		fill: currentColor;
 	}
-	:global(.fd-tile-name-icon :global(svg path)) {
+	:global(.fd-tile-name-icon svg path) {
 		fill: currentColor;
 	}
 	:global(.fd-filter-tag:hover) {
