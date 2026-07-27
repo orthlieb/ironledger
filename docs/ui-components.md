@@ -854,51 +854,71 @@ one-off.
 
 ### Combobox pattern (search-first pickers)
 
-For any pick-from-a-list-with-typeahead, use bits-ui `Combobox`:
+For any pick-from-a-list-with-typeahead — the shadcn-svelte
+combobox shape — use bits-ui **`Popover` + `Command`**. The
+trigger is a text-field-styled `<button>` that shows the current
+value (or a placeholder) and a chevron; clicking opens a popover
+with its own search `<input>` at the top and a filtered list
+below.
 
 ```svelte
-<Combobox.Root type="single" bind:value bind:open onValueChange={onPick}>
-  <div class="mp-combobox">
-    <Combobox.Input class="mp-combobox-input" placeholder="…" />
-    <Combobox.Trigger class="mp-combobox-caret">▾</Combobox.Trigger>
-  </div>
-  <Combobox.Portal to={dialogEl ?? undefined}>
-    <Combobox.Content class="mp-link-popover" sideOffset={4} align="start">
-      <Combobox.Viewport class="mp-link-list">
-        {#each items as it}
-          <Combobox.Item value={it.id} label={it.name} class="mp-link-item">
-            {#snippet children({ selected })}
-              {it.name}
-              {#if selected}<check-svg />{/if}
-            {/snippet}
-          </Combobox.Item>
-        {/each}
-      </Combobox.Viewport>
-    </Combobox.Content>
-  </Combobox.Portal>
-</Combobox.Root>
+<Popover.Root bind:open>
+  <Popover.Trigger class="mp-combobox {extraClass}" aria-label="…">
+    {#if current}
+      <span class="mp-combobox-value">{current.name}</span>
+    {:else}
+      <span class="mp-combobox-value mp-combobox-value--placeholder">— Select —</span>
+    {/if}
+    <span class="mp-combobox-caret" aria-hidden="true">{@html caretDownSvg}</span>
+  </Popover.Trigger>
+  <Popover.Portal to={dialogEl ?? undefined}>
+    <Popover.Content class="mp-cmd-popover" sideOffset={4} align="start" collisionPadding={8}>
+      <Command.Root class="mp-cmd">
+        <div class="mp-cmd-search-row">
+          <span class="mp-cmd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
+          <Command.Input class="mp-cmd-search" placeholder="Search…" />
+        </div>
+        <Command.List class="mp-cmd-list">
+          <Command.Empty class="mp-cmd-empty">No results.</Command.Empty>
+          {#each items as it}
+            <Command.Item class="mp-cmd-item" value={it.name} onSelect={() => pick(it)}>
+              <span class="mp-cmd-check"
+                >{#if selected(it)}<check-svg />{/if}</span
+              >
+              <span class="mp-cmd-item-name">{it.name}</span>
+            </Command.Item>
+          {/each}
+        </Command.List>
+      </Command.Root>
+    </Popover.Content>
+  </Popover.Portal>
+</Popover.Root>
 ```
 
 Notes:
 
-- **Wrapper `<div class="mp-combobox">` around the Input + Trigger** gives you
-  a form-control shell. Input + caret sit inside; add prefix icons
-  before the input as siblings.
-- **Filtering is automatic** — bits-ui matches `label` (case-insensitive
-  substring) and hides non-matching items via `data-hidden`. Don't
-  reimplement the filter unless you need custom scoring.
-- **`snippet children({ selected, highlighted })`** on `Combobox.Item`
-  gets you the state for showing a checkmark, styling the
-  highlighted row, etc. `data-selected` and `data-highlighted`
-  attributes on the rendered element let you style via CSS
-  instead.
-- Sort items yourself before passing to the `{#each}` — bits-ui
-  won't sort.
+- **Trigger is a `<button>`, not an `<input>`** — the visible field is
+  a shell that opens the popover. All typing happens inside the
+  popover's `Command.Input`. This is the shape most designers
+  reach for; it also avoids the global `input:focus` box-shadow
+  bleeding through the trigger.
+- **`Command.Item value={…}` is what the search filters against** —
+  usually the item's user-facing name. `onSelect` fires when the
+  item is picked. Selection state (checkmark) is tracked in your
+  own store; there's no `bind:value` on the Command.
+- **`Command.Empty`** renders when the list is empty after
+  filtering — Command handles this automatically.
+- **`Command.Separator`** for a divider before a footer action row
+  (e.g. "+ New map…" at the bottom of the map switcher).
+- Sort items yourself before passing to the `{#each}` — Command
+  filters but does not sort. Reserve one CSS prefix per surface —
+  the two comboboxes in `MapDialog` (map switcher and marker link
+  picker) share `.mp-cmd-*` on purpose so they look identical.
 
-**Do not** wrap `Popover + Command` when a real `Combobox` works
-— it's a two-step click-then-type flow with no typeahead in the
-trigger. Reserve Popover+Command for a Command-palette style
-where the trigger isn't a text input.
+**When to use bits-ui `Combobox` instead** — only when you
+specifically want the trigger to _be_ the input (search-as-you-
+type without a separate popover input). That's a different
+interaction pattern; the shadcn shape above is the default.
 
 ### AlertDialog pattern (confirmations)
 
@@ -954,11 +974,11 @@ consumer of a shared dialog primitive is migrated, keep them.
 Reserve class prefixes so it's obvious at a glance which
 primitive a class belongs to:
 
-| Prefix          | Primitive                | Example use                                    |
-| --------------- | ------------------------ | ---------------------------------------------- |
-| `cm-*`          | `AlertDialog` (Confirm)  | `.cm-overlay`, `.cm-header`, `.cm-actions`     |
-| `mp-combobox-*` | `Combobox` trigger shell | `.mp-combobox`, `.mp-combobox-input`, `-caret` |
-| `mp-link-*`     | `Combobox` popover body  | `.mp-link-popover`, `.mp-link-list`, `-item`   |
+| Prefix          | Primitive                        | Example use                                         |
+| --------------- | -------------------------------- | --------------------------------------------------- |
+| `cm-*`          | `AlertDialog` (Confirm)          | `.cm-overlay`, `.cm-header`, `.cm-actions`          |
+| `mp-combobox-*` | `Popover.Trigger` combobox shell | `.mp-combobox`, `.mp-combobox-value`, `-caret`      |
+| `mp-cmd-*`      | `Popover + Command` popover body | `.mp-cmd-popover`, `.mp-cmd-search`, `.mp-cmd-item` |
 
 New primitives get a fresh prefix keyed to their surface — pick
 one that's short and searchable. Don't stack unrelated bits-ui
