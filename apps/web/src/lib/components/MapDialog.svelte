@@ -1230,14 +1230,6 @@
 	const selectedIcon = $derived(selectedMarker ? resolveMapIcon(selectedMarker.icon) : undefined);
 	const selectedColor = $derived(selectedMarker?.color || DEFAULT_MARKER_COLOR);
 
-	/** Format a fractional world coord for the selection toolbar's coord
-	 *  display. Integer at base grid, else up to 2 decimal places so
-	 *  sub-cell precision reads cleanly. */
-	function fmtCoord(v: number): string {
-		if (Number.isInteger(v)) return String(v);
-		return v.toFixed(2);
-	}
-
 	/** Snap resolution at the current zoom — surfaced in the toolbar hint
 	 *  so users know the granularity they're placing at. */
 	const snapRes = $derived(snapResolutionForZoom(zoom));
@@ -1322,9 +1314,9 @@
 						onclick={addMarkerAction}
 						use:tooltip={selectedSquare
 							? 'Add a marker on the selected square'
-							: 'Add a marker — click a square first, or click this then a square'}
+							: 'Click a square, then + Marker. Tap a linked marker to jump; shift-click (desktop) or long-press (touch) to edit instead.'}
 						aria-pressed={placingMode}
-						aria-label="Add marker">+ Marker</button
+						aria-label="Add marker">+ Marker</button
 					>
 					<div class="mp-zoom" role="group" aria-label="Zoom controls">
 						<button
@@ -1368,165 +1360,143 @@
 			</div>
 
 			<!--
-		Selection toolbar. Sits above the map so it never scrolls off. Renders
-		a hint when nothing is selected; switches to the marker's editable
-		fields on click. Every input auto-saves via updateMarker() so there
-		is no Save/Cancel — the marker is the working copy.
+		Selection toolbar. Sits above the map so it never scrolls off, but
+		only renders when there's something to do — a marker is selected /
+		just created (editable fields), placing mode is on ("click the map
+		to place a marker" + Cancel), or a square is selected ("hit +
+		Marker to drop here" + Cancel). The idle-state "how to use" hint
+		lives on the + Marker button's tooltip so the toolbar band doesn't
+		steal vertical space on mobile.
 	-->
-			<div class="mp-sel-toolbar" class:mp-sel-empty={!selectedMarker}>
-				{#if selectedMarker}
-					<span class="mp-sel-coord" title="Position ({selectedMarker.x}, {selectedMarker.y})"
-						>({fmtCoord(selectedMarker.x)}, {fmtCoord(selectedMarker.y)})</span
-					>
-					<input
-						class="mp-sel-name"
-						type="text"
-						placeholder="Marker name…"
-						value={selectedMarker.label}
-						oninput={onLabelInput}
-						use:tooltip={'Name shown under the icon (or centred on the point when no icon is chosen)'}
-					/>
-					<button
-						class="mp-sel-icon-btn"
-						onclick={openIconPicker}
-						use:tooltip={'Change icon'}
-						aria-label="Change icon"
-					>
-						{#if selectedIcon}
-							<svg viewBox={selectedIcon.viewBox} aria-hidden="true">
-								<g fill={selectedColor}>{@html selectedIcon.inner}</g>
-							</svg>
-							<span class="mp-sel-icon-label">{selectedIcon.label}</span>
-						{:else}
-							<span class="mp-sel-icon-none" aria-hidden="true">Aa</span>
-							<span class="mp-sel-icon-label">No icon</span>
-						{/if}
-					</button>
-					<!-- Pickr colour widget — the native macOS/Windows `<input
+			{#if selectedMarker || placingMode || selectedSquare}
+				<div class="mp-sel-toolbar">
+					{#if selectedMarker}
+						<input
+							class="mp-sel-name"
+							type="text"
+							placeholder="Marker name…"
+							value={selectedMarker.label}
+							oninput={onLabelInput}
+							use:tooltip={'Name shown under the icon (or centred on the point when no icon is chosen)'}
+						/>
+						<button
+							class="mp-sel-icon-btn"
+							onclick={openIconPicker}
+							use:tooltip={'Change icon'}
+							aria-label="Change icon"
+						>
+							{#if selectedIcon}
+								<svg viewBox={selectedIcon.viewBox} aria-hidden="true">
+									<g fill={selectedColor}>{@html selectedIcon.inner}</g>
+								</svg>
+								<span class="mp-sel-icon-label">{selectedIcon.label}</span>
+							{:else}
+								<span class="mp-sel-icon-none" aria-hidden="true">Aa</span>
+								<span class="mp-sel-icon-label">No icon</span>
+							{/if}
+						</button>
+						<!-- Pickr colour widget — the native macOS/Windows `<input
 			     type="color">` opens a heavy OS dialog that eats the
 			     screen. Pickr is a self-contained JS wheel + swatches
 			     that lives in-page. The `<div>` is a stub anchor;
 			     Pickr replaces it with its own button chip that shows
 			     the current colour and pops the wheel on click. -->
-					<div
-						class="mp-sel-color"
-						bind:this={pickrAnchor}
-						use:tooltip={'Icon colour — click to open the picker'}
-					></div>
-					<!-- Angle spinner — explicit − / + buttons flank the number
+						<div
+							class="mp-sel-color"
+							bind:this={pickrAnchor}
+							use:tooltip={'Icon colour — click to open the picker'}
+						></div>
+						<!-- Angle spinner — explicit − / + buttons flank the number
 			     input because iOS Safari doesn't render the native
 			     <input type="number"> step arrows, so touch users would
 			     otherwise be stuck typing. Bare wheel/keyboard step still
 			     works on desktop via the input itself. Uses degree symbol
 			     as the label so a narrow toolbar still fits. -->
-					<div class="mp-sel-angle" role="group" aria-label="Marker rotation">
-						<button
-							type="button"
-							class="mp-sel-angle-step"
-							onclick={() => stepAngle(-15)}
-							use:tooltip={'Rotate 15° counter-clockwise'}
-							aria-label="Rotate counter-clockwise">−</button
-						>
-						<label
-							class="mp-sel-angle-field"
-							use:tooltip={'Rotation in degrees (0 = up, clockwise)'}
-						>
-							<span class="mp-sel-angle-glyph" aria-hidden="true">∠</span>
-							<input
-								class="mp-sel-angle-input"
-								type="number"
-								min="0"
-								max="359"
-								step="15"
-								value={selectedAngle}
-								oninput={onAngleInput}
-								aria-label="Marker rotation in degrees"
-							/>
-							<span class="mp-sel-angle-unit" aria-hidden="true">°</span>
-						</label>
-						<button
-							type="button"
-							class="mp-sel-angle-step"
-							onclick={() => stepAngle(15)}
-							use:tooltip={'Rotate 15° clockwise'}
-							aria-label="Rotate clockwise">+</button
-						>
-					</div>
-					{@const currentLink = resolveEntity(selectedMarker.entityId)}
-					<!-- Shadcn-style combobox: trigger is a button styled as a
+						<div class="mp-sel-angle" role="group" aria-label="Marker rotation">
+							<button
+								type="button"
+								class="mp-sel-angle-step"
+								onclick={() => stepAngle(-15)}
+								use:tooltip={'Rotate 15° counter-clockwise'}
+								aria-label="Rotate counter-clockwise">−</button
+							>
+							<label
+								class="mp-sel-angle-field"
+								use:tooltip={'Rotation in degrees (0 = up, clockwise)'}
+							>
+								<span class="mp-sel-angle-glyph" aria-hidden="true">∠</span>
+								<input
+									class="mp-sel-angle-input"
+									type="number"
+									min="0"
+									max="359"
+									step="15"
+									value={selectedAngle}
+									oninput={onAngleInput}
+									aria-label="Marker rotation in degrees"
+								/>
+								<span class="mp-sel-angle-unit" aria-hidden="true">°</span>
+							</label>
+							<button
+								type="button"
+								class="mp-sel-angle-step"
+								onclick={() => stepAngle(15)}
+								use:tooltip={'Rotate 15° clockwise'}
+								aria-label="Rotate clockwise">+</button
+							>
+						</div>
+						{@const currentLink = resolveEntity(selectedMarker.entityId)}
+						<!-- Shadcn-style combobox: trigger is a button styled as a
 			     text field, popover contains its own search input +
 			     filtered list. Kind icon of the linked entity floats
 			     as a prefix inside the trigger. -->
-					<Popover.Root bind:open={entityPickerOpen}>
-						<Popover.Trigger
-							class="mp-combobox mp-sel-entity-btn"
-							aria-label="Link marker to a connection"
-						>
-							{#if selectedMarker.entityId && currentLink}
-								<span
-									class="mp-sel-entity-icon"
-									aria-hidden="true"
-									style="--kind-color: {ENTITY_KIND_META[currentLink.kind].color}"
-									>{@html ENTITY_KIND_META[currentLink.kind].icon}</span
-								>
-								<span class="mp-combobox-value">{currentLink.name}</span>
-							{:else if selectedMarker.entityId}
-								<span class="mp-combobox-value mp-combobox-value--placeholder">Broken link</span>
-							{:else}
-								<span class="mp-combobox-value mp-combobox-value--placeholder">— No link —</span>
-							{/if}
-							<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
-						</Popover.Trigger>
-						<Popover.Portal>
-							<Popover.Content
-								class="mp-cmd-popover"
-								sideOffset={4}
-								align="start"
-								collisionPadding={8}
+						<Popover.Root bind:open={entityPickerOpen}>
+							<Popover.Trigger
+								class="mp-combobox mp-sel-entity-btn"
+								aria-label="Link marker to a connection"
 							>
-								<Command.Root class="mp-cmd">
-									<div class="mp-cmd-search-row">
-										<span class="mp-cmd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
-										<Command.Input
-											class="mp-cmd-search"
-											placeholder="Search connections…"
-											autofocus
-										/>
-									</div>
-									<Command.List class="mp-cmd-list">
-										<Command.Empty class="mp-cmd-empty">No matching connections.</Command.Empty>
-										<Command.Item
-											class="mp-cmd-item"
-											value="No link"
-											onSelect={() => pickEntity('')}
-										>
-											<span class="mp-cmd-check" aria-hidden="true">
-												{#if !selectedMarker.entityId}
-													<svg
-														viewBox="0 0 20 20"
-														fill="none"
-														stroke="currentColor"
-														stroke-width="2.5"
-														><polyline
-															points="4 11 8 15 16 6"
-															stroke-linecap="round"
-															stroke-linejoin="round"
-														></polyline></svg
-													>
-												{/if}
-											</span>
-											<span class="mp-cmd-item-name mp-cmd-item-name--muted">— No link —</span>
-										</Command.Item>
-										{#each sortedLinkableEntities as e (`${e.kind}:${e.id}`)}
-											{@const val = `${e.kind}:${e.id}`}
-											{@const meta = KIND_META[e.kind]}
+								{#if selectedMarker.entityId && currentLink}
+									<span
+										class="mp-sel-entity-icon"
+										aria-hidden="true"
+										style="--kind-color: {ENTITY_KIND_META[currentLink.kind].color}"
+										>{@html ENTITY_KIND_META[currentLink.kind].icon}</span
+									>
+									<span class="mp-combobox-value">{currentLink.name}</span>
+								{:else if selectedMarker.entityId}
+									<span class="mp-combobox-value mp-combobox-value--placeholder">Broken link</span>
+								{:else}
+									<span class="mp-combobox-value mp-combobox-value--placeholder">— No link —</span>
+								{/if}
+								<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
+							</Popover.Trigger>
+							<Popover.Portal>
+								<Popover.Content
+									class="mp-cmd-popover"
+									sideOffset={4}
+									align="start"
+									collisionPadding={8}
+								>
+									<Command.Root class="mp-cmd">
+										<div class="mp-cmd-search-row">
+											<span class="mp-cmd-search-icon" aria-hidden="true"
+												>{@html searchIconSvg}</span
+											>
+											<Command.Input
+												class="mp-cmd-search"
+												placeholder="Search connections…"
+												autofocus
+											/>
+										</div>
+										<Command.List class="mp-cmd-list">
+											<Command.Empty class="mp-cmd-empty">No matching connections.</Command.Empty>
 											<Command.Item
 												class="mp-cmd-item"
-												value={e.name}
-												onSelect={() => pickEntity(val)}
+												value="No link"
+												onSelect={() => pickEntity('')}
 											>
 												<span class="mp-cmd-check" aria-hidden="true">
-													{#if selectedMarker.entityId === val}
+													{#if !selectedMarker.entityId}
 														<svg
 															viewBox="0 0 20 20"
 															fill="none"
@@ -1540,58 +1510,79 @@
 														>
 													{/if}
 												</span>
-												<span
-													class="mp-cmd-item-icon"
-													aria-hidden="true"
-													style="--kind-color: {meta.color}">{@html meta.icon}</span
-												>
-												<span class="mp-cmd-item-name">{e.name}</span>
+												<span class="mp-cmd-item-name mp-cmd-item-name--muted">— No link —</span>
 											</Command.Item>
-										{/each}
-									</Command.List>
-								</Command.Root>
-							</Popover.Content>
-						</Popover.Portal>
-					</Popover.Root>
-					<button
-						class="mp-btn mp-btn-danger mp-btn-icon"
-						onclick={deleteSelected}
-						use:tooltip={'Delete this marker'}
-						aria-label="Delete marker">{@html iconTrashSvg}</button
-					>
-					<button
-						class="mp-btn"
-						onclick={clearSelection}
-						use:tooltip={'Deselect and close the editor'}
-						aria-label="Close editor">Done</button
-					>
-				{:else if placingMode}
-					<span class="mp-sel-hint mp-sel-hint-active"
-						>Click the map to place a marker. Snap {snapRes === 1
-							? 'to cells'
-							: `to 1/${1 / snapRes}-cell`} — zoom in for finer placement.</span
-					>
-					<button
-						class="mp-btn"
-						onclick={cancelPlacing}
-						use:tooltip={'Exit placing mode without adding a marker'}>Cancel</button
-					>
-				{:else if selectedSquare}
-					<span class="mp-sel-hint mp-sel-hint-active">
-						Square selected — hit <strong>+ Marker</strong> to drop a marker here.
-					</span>
-					<button
-						class="mp-btn"
-						onclick={clearSquareSelection}
-						use:tooltip={'Clear the selected square'}>Cancel</button
-					>
-				{:else}
-					<span class="mp-sel-hint">
-						Click a square, then <strong>+ Marker</strong>. Tap a linked marker to jump; shift-click
-						(desktop) or long-press (touch) to edit instead.
-					</span>
-				{/if}
-			</div>
+											{#each sortedLinkableEntities as e (`${e.kind}:${e.id}`)}
+												{@const val = `${e.kind}:${e.id}`}
+												{@const meta = KIND_META[e.kind]}
+												<Command.Item
+													class="mp-cmd-item"
+													value={e.name}
+													onSelect={() => pickEntity(val)}
+												>
+													<span class="mp-cmd-check" aria-hidden="true">
+														{#if selectedMarker.entityId === val}
+															<svg
+																viewBox="0 0 20 20"
+																fill="none"
+																stroke="currentColor"
+																stroke-width="2.5"
+																><polyline
+																	points="4 11 8 15 16 6"
+																	stroke-linecap="round"
+																	stroke-linejoin="round"
+																></polyline></svg
+															>
+														{/if}
+													</span>
+													<span
+														class="mp-cmd-item-icon"
+														aria-hidden="true"
+														style="--kind-color: {meta.color}">{@html meta.icon}</span
+													>
+													<span class="mp-cmd-item-name">{e.name}</span>
+												</Command.Item>
+											{/each}
+										</Command.List>
+									</Command.Root>
+								</Popover.Content>
+							</Popover.Portal>
+						</Popover.Root>
+						<button
+							class="mp-btn mp-btn-danger mp-btn-icon"
+							onclick={deleteSelected}
+							use:tooltip={'Delete this marker'}
+							aria-label="Delete marker">{@html iconTrashSvg}</button
+						>
+						<button
+							class="mp-btn"
+							onclick={clearSelection}
+							use:tooltip={'Deselect and close the editor'}
+							aria-label="Close editor">Done</button
+						>
+					{:else if placingMode}
+						<span class="mp-sel-hint mp-sel-hint-active"
+							>Click the map to place a marker. Snap {snapRes === 1
+								? 'to cells'
+								: `to 1/${1 / snapRes}-cell`} — zoom in for finer placement.</span
+						>
+						<button
+							class="mp-btn"
+							onclick={cancelPlacing}
+							use:tooltip={'Exit placing mode without adding a marker'}>Cancel</button
+						>
+					{:else if selectedSquare}
+						<span class="mp-sel-hint mp-sel-hint-active">
+							Square selected — hit <strong>+ Marker</strong> to drop a marker here.
+						</span>
+						<button
+							class="mp-btn"
+							onclick={clearSquareSelection}
+							use:tooltip={'Clear the selected square'}>Cancel</button
+						>
+					{/if}
+				</div>
+			{/if}
 
 			{#if uploadError}
 				<div class="mp-error">{uploadError}</div>
@@ -2410,19 +2401,8 @@
 		font-family: var(--font-ui);
 		font-size: 0.75rem;
 	}
-	:global(.mp-sel-empty) {
-		color: var(--text-dimmer);
-	}
 	:global(.mp-sel-hint) {
 		font-style: italic;
-	}
-	:global(.mp-sel-coord) {
-		font-family: var(--font-mono, ui-monospace, monospace);
-		font-size: 0.7rem;
-		color: var(--text-dimmer);
-		background: var(--bg-inset);
-		padding: 2px 6px;
-		border-radius: 3px;
 	}
 	:global(.mp-sel-name) {
 		/* Was `flex: 1 1 140px; min-width: 100px` — greedy. The name
