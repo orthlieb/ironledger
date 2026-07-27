@@ -184,10 +184,6 @@
 					typing a command. The AI-story selection surface is hidden on mobile.
 				</p>
 			</div>
-
-			<div class="ch-footer">
-				<button class="btn" type="button" onclick={close}>Close</button>
-			</div>
 		</Dialog.Content>
 	</Dialog.Portal>
 </Dialog.Root>
@@ -295,13 +291,5 @@
 	:global(.ch-marker) {
 		color: var(--text-accent);
 		font-weight: 700;
-	}
-
-	:global(.ch-footer) {
-		display: flex;
-		justify-content: flex-end;
-		padding: 10px 14px;
-		border-top: 1px solid var(--border);
-		background: var(--bg-inset);
 	}
 </style>
