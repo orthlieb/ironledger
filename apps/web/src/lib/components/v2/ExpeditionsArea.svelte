@@ -353,14 +353,19 @@
 		return out;
 	});
 
-	// Theme/Domain randomize — just pick a random entry from the master list.
+	// Theme/Domain randomize — just pick a random entry from the master
+	// list. Guard on `rolling` (same flag Feature/Danger use) so clicks
+	// during an in-flight d100 animation are ignored — the buttons are
+	// also `disabled={rolling}`, but keyboard Space/Enter can still
+	// fire before Svelte reflects the disabled attribute on some
+	// browsers.
 	function randomizeTheme() {
-		if (!activeSite) return;
+		if (!activeSite || rolling) return;
 		const v = DELVE_THEMES[Math.floor(Math.random() * DELVE_THEMES.length)];
 		updateExp({ theme: v as Site['theme'] });
 	}
 	function randomizeDomain() {
-		if (!activeSite) return;
+		if (!activeSite || rolling) return;
 		const v = DELVE_DOMAINS[Math.floor(Math.random() * DELVE_DOMAINS.length)];
 		updateExp({ domain: v as Site['domain'] });
 	}
@@ -818,6 +823,7 @@
 									<button
 										class="btn btn-icon ea-dice-btn"
 										onclick={randomizeTheme}
+										disabled={rolling}
 										use:tooltip={'Pick a random theme'}
 										aria-label="Random theme">{@html diceD6Svg}</button
 									>
@@ -834,6 +840,7 @@
 									<button
 										class="btn btn-icon ea-dice-btn"
 										onclick={randomizeDomain}
+										disabled={rolling}
 										use:tooltip={'Pick a random domain'}
 										aria-label="Random domain">{@html diceD6Svg}</button
 									>
