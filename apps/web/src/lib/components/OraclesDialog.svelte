@@ -185,12 +185,15 @@
 			<div class="od-search-row">
 				<div class="od-search-field">
 					<span class="od-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
+					<!-- svelte-ignore a11y_autofocus — modal context, caret belongs
+					     on the search field the moment it opens. -->
 					<input
 						class="od-search"
 						type="search"
 						placeholder="Search oracles…"
 						bind:value={search}
 						aria-label="Search oracles"
+						autofocus
 					/>
 				</div>
 				<!-- Source filter toggle -->

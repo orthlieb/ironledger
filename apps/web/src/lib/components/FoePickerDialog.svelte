@@ -230,12 +230,15 @@
 			<div class="fd-search-row">
 				<div class="fd-search-field">
 					<span class="fd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
+					<!-- svelte-ignore a11y_autofocus — inside a modal, the whole
+					     point is that the search field grabs the caret on open. -->
 					<input
 						type="search"
 						class="fd-search"
 						placeholder="Search by name or feature…"
 						bind:value={search}
 						aria-label="Search foes"
+						autofocus
 					/>
 				</div>
 				<button

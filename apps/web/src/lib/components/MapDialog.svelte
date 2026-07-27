@@ -1925,7 +1925,15 @@
 <dialog bind:this={iconDialogEl} class="mp-icon-dialog" oncancel={closeIconPicker}>
 	<DialogHeader title={headingText('Choose Icon')} onclose={closeIconPicker} radius="8px 8px 0 0" />
 	<div class="mp-icon-search-row">
-		<input class="mp-icon-search" type="text" placeholder="Search icons…" bind:value={iconSearch} />
+		<!-- svelte-ignore a11y_autofocus — modal context, caret belongs
+		     on the search field the moment the icon picker opens. -->
+		<input
+			class="mp-icon-search"
+			type="text"
+			placeholder="Search icons…"
+			bind:value={iconSearch}
+			autofocus
+		/>
 	</div>
 	<div class="mp-icon-body">
 		<!-- "No icon" tile always at the top — clicking it clears the

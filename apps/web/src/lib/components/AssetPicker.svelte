@@ -142,12 +142,15 @@
 		<div class="ap-search-row">
 			<div class="ap-search-field">
 				<span class="ap-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
+				<!-- svelte-ignore a11y_autofocus — modal context, caret belongs
+				     on the search field the moment it opens. -->
 				<input
 					class="search-input"
 					type="search"
 					bind:value={search}
 					placeholder="Search by name or description…"
 					aria-label="Search assets"
+					autofocus
 				/>
 			</div>
 			<button
