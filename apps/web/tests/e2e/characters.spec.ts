@@ -109,7 +109,7 @@ test.describe('Characters area (v2)', () => {
 	test('+ Asset button opens asset picker dialog', async ({ page }) => {
 		await ensureCharacterSelected(page);
 		await page.locator(`${CHAR_HEADER} button:has-text("+ Asset")`).click();
-		await expect(page.locator('dialog.picker-dialog[open]')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.picker-dialog')).toBeVisible({ timeout: 5_000 });
 		await page.keyboard.press('Escape');
 	});
 
@@ -122,16 +122,16 @@ test.describe('Characters area (v2)', () => {
 		const assetsBefore = await assetCards.count();
 
 		await page.locator(`${CHAR_HEADER} button:has-text("+ Asset")`).click();
-		await expect(page.locator('dialog.picker-dialog[open]')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.picker-dialog')).toBeVisible({ timeout: 5_000 });
 		// Pick a tile that isn't already owned.
 		const tile = page.locator('dialog.picker-dialog .pick-tile:not(.pick-tile-owned)').first();
 		await expect(tile).toBeVisible({ timeout: 5_000 });
 		await tile.click();
 		// Editable AssetCard opens in add mode — click "Add" in its footer.
-		await expect(page.locator('dialog.ca-asset-dialog[open]')).toBeVisible({ timeout: 5_000 });
-		await page.locator('dialog.ca-asset-dialog[open] .asset-footer .btn-primary').click();
-		await expect(page.locator('dialog.ca-asset-dialog[open]')).not.toBeVisible({ timeout: 5_000 });
-		await expect(page.locator('dialog.picker-dialog[open]')).not.toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.ca-asset-dialog')).toBeVisible({ timeout: 5_000 });
+		await page.locator('.ca-asset-dialog .asset-footer .btn-primary').click();
+		await expect(page.locator('.ca-asset-dialog')).not.toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.picker-dialog')).not.toBeVisible({ timeout: 5_000 });
 		await expect(assetCards).not.toHaveCount(assetsBefore, { timeout: 5_000 });
 	});
 
@@ -143,20 +143,20 @@ test.describe('Characters area (v2)', () => {
 		const assetCards = page.locator(`${CHAR_AREA} .ca-asset-card`);
 		if ((await assetCards.count()) === 0) {
 			await page.locator(`${CHAR_HEADER} button:has-text("+ Asset")`).click();
-			await expect(page.locator('dialog.picker-dialog[open]')).toBeVisible({ timeout: 5_000 });
+			await expect(page.locator('.picker-dialog')).toBeVisible({ timeout: 5_000 });
 			await page.locator('dialog.picker-dialog .pick-tile:not(.pick-tile-owned)').first().click();
 			// AssetCard opens in add mode — click Add to commit.
-			await expect(page.locator('dialog.ca-asset-dialog[open]')).toBeVisible({ timeout: 5_000 });
-			await page.locator('dialog.ca-asset-dialog[open] .asset-footer .btn-primary').click();
-			await expect(page.locator('dialog.picker-dialog[open]')).not.toBeVisible({ timeout: 5_000 });
+			await expect(page.locator('.ca-asset-dialog')).toBeVisible({ timeout: 5_000 });
+			await page.locator('.ca-asset-dialog .asset-footer .btn-primary').click();
+			await expect(page.locator('.picker-dialog')).not.toBeVisible({ timeout: 5_000 });
 			await expect(assetCards).not.toHaveCount(0, { timeout: 5_000 });
 		}
 		const countBefore = await assetCards.count();
 
 		// Click the asset chit's main button → opens the asset dialog → click Delete.
 		await assetCards.first().locator('.ca-asset-card-main').click();
-		await expect(page.locator('dialog.ca-asset-dialog[open]')).toBeVisible({ timeout: 3_000 });
-		await page.locator('dialog.ca-asset-dialog[open] .asset-footer .btn-danger').click();
+		await expect(page.locator('.ca-asset-dialog')).toBeVisible({ timeout: 3_000 });
+		await page.locator('.ca-asset-dialog .asset-footer .btn-danger').click();
 		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 3_000 });
 		await page.locator('.confirm-modal button.btn-danger').click();
 		await expect(assetCards).toHaveCount(countBefore - 1, { timeout: 5_000 });

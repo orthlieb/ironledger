@@ -13,6 +13,7 @@
 	import { getVisibleAssets, isAssetsLoading, findAsset } from '$lib/assetStore.svelte.js';
 	import { firstPreconditionFailure, type Precondition } from '$lib/preconditions.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
+	import { Dialog } from 'bits-ui';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { assetIcon } from '$lib/iconRegistry.js';
@@ -46,11 +47,12 @@
 	let activeCategories = $state(new Set<AssetCategory>());
 	let filtersOpen = $state(false);
 	let search = $state('');
-	let dialogEl = $state<HTMLDialogElement | null>(null);
-
-	$effect(() => {
-		if (dialogEl) dialogEl.showModal();
-	});
+	// bits-ui Dialog open flag — parent gates render with `{#if picking}`
+	// so we seed `true` and route any close (Escape, backdrop, X) back
+	// through `onClose`. Search field gets focus on open per the
+	// CLAUDE.md dialog focus rule.
+	let dialogOpen = $state(true);
+	let searchInputEl = $state<HTMLInputElement | null>(null);
 
 	// ---------------------------------------------------------------------------
 	// Precondition checking
@@ -133,147 +135,162 @@
      Main picker dialog — fixed height so it never bounces while filtering
      ====================================================================== -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<dialog bind:this={dialogEl} class="picker-dialog" oncancel={onClose}>
-	<!-- Header — mirrors OraclesDialog .od-header (draggable, with gripper) -->
-	<DialogHeader title={headingText('Choose an Asset')} onclose={onClose} />
+<Dialog.Root
+	bind:open={dialogOpen}
+	onOpenChange={(next) => {
+		if (!next) onClose();
+	}}
+>
+	<Dialog.Portal>
+		<Dialog.Overlay class="picker-overlay" />
+		<Dialog.Content
+			class="picker-dialog"
+			onOpenAutoFocus={(e) => {
+				e.preventDefault();
+				setTimeout(() => searchInputEl?.focus(), 0);
+			}}
+		>
+			<!-- Header — mirrors OraclesDialog .od-header (draggable, with gripper) -->
+			<DialogHeader title={headingText('Choose an Asset')} onclose={onClose} />
 
-	<!-- Search row + filter toggle -->
-	<div class="picker-controls">
-		<div class="ap-search-row">
-			<div class="ap-search-field">
-				<span class="ap-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
-				<!-- svelte-ignore a11y_autofocus — modal context, caret belongs
-				     on the search field the moment it opens. -->
-				<input
-					class="search-input"
-					type="search"
-					bind:value={search}
-					placeholder="Search by name or description…"
-					aria-label="Search assets"
-					autofocus
-				/>
-			</div>
-			<button
-				class="ap-filter-toggle"
-				class:ap-filter-toggle--active={activeCategories.size > 0}
-				onclick={() => (filtersOpen = !filtersOpen)}
-				aria-expanded={filtersOpen}
-				>Filters{#if activeCategories.size > 0}&nbsp;<span class="ap-filter-badge"
-						>{activeCategories.size}</span
-					>{/if}
-				{filtersOpen ? '▲' : '▼'}</button
-			>
-		</div>
-		{#if filtersOpen}
-			<div class="ap-filter-panel">
-				<div class="ap-filter-chips">
-					{#each visibleCategories as cat}
-						<button
-							class="ap-filter-tag"
-							class:active={activeCategories.has(cat)}
-							style="--tag-color: {CAT_COLOR[cat]}"
-							onclick={() => toggleCategory(cat)}>{cat}</button
-						>
-					{/each}
-				</div>
-				<button
-					class="ap-clear-btn"
-					onclick={clearFilters}
-					disabled={!hasActiveFilters}
-					use:tooltip={'Clear all filters'}
-					aria-label="Clear filters">{@html clearFiltersSvg}</button
-				>
-			</div>
-		{/if}
-	</div>
-
-	<!-- Scrollable body — only this part scrolls -->
-	<div class="picker-body">
-		{#if isAssetsLoading()}
-			<p class="picker-hint">Loading catalogue…</p>
-		{:else if filtered.length === 0}
-			<p class="picker-hint">No assets match your search.</p>
-		{:else}
-			<div class="pick-grid">
-				{#each filtered as asset (asset.id)}
-					{@const owned = ownedIds.includes(asset.id)}
-					{@const blocked = preconditionFailure(asset) ?? exclusiveGroupConflict(asset)}
-					{@const catColor = CAT_COLOR[asset.category] ?? 'var(--text-muted)'}
-					<!-- svelte-ignore a11y_no_static_element_interactions -->
-					<div
-						class="pick-tile"
-						class:pick-tile-owned={owned}
-						class:pick-tile-blocked={!!blocked && !owned}
-						style:--tile-color={catColor}
-						use:tooltip={blocked && !owned ? blocked : ''}
-						onclick={() => {
-							if (!owned && !blocked) tryAdd(asset);
-						}}
-						onkeydown={(e) => {
-							if ((e.key === 'Enter' || e.key === ' ') && !owned && !blocked) tryAdd(asset);
-						}}
-						tabindex={owned || !!blocked ? -1 : 0}
-						role="button"
-						aria-disabled={owned || !!blocked}
-					>
-						<div class="tile-name-row">
-							<span class="tile-name-icon" aria-hidden="true" style:color={catColor}
-								>{@html assetIcon(asset)}</span
-							>
-							<span class="tile-name">{asset.name}</span>
-							<span class="tile-badge" style:background={catColor}>{asset.category}</span>
-						</div>
-
-						{#if asset.summary}
-							<div class="tile-desc">{stripMdLinks(asset.summary)}</div>
-						{:else if asset.preamble}
-							<div class="tile-desc">{stripMdLinks(asset.preamble)}</div>
-						{/if}
-
-						{#if owned}
-							<div class="tile-acquired">Acquired</div>
-						{/if}
+			<!-- Search row + filter toggle -->
+			<div class="picker-controls">
+				<div class="ap-search-row">
+					<div class="ap-search-field">
+						<span class="ap-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
+						<input
+							bind:this={searchInputEl}
+							class="search-input"
+							type="search"
+							bind:value={search}
+							placeholder="Search by name or description…"
+							aria-label="Search assets"
+						/>
 					</div>
-				{/each}
+					<button
+						class="ap-filter-toggle"
+						class:ap-filter-toggle--active={activeCategories.size > 0}
+						onclick={() => (filtersOpen = !filtersOpen)}
+						aria-expanded={filtersOpen}
+						>Filters{#if activeCategories.size > 0}&nbsp;<span class="ap-filter-badge"
+								>{activeCategories.size}</span
+							>{/if}
+						{filtersOpen ? '▲' : '▼'}</button
+					>
+				</div>
+				{#if filtersOpen}
+					<div class="ap-filter-panel">
+						<div class="ap-filter-chips">
+							{#each visibleCategories as cat}
+								<button
+									class="ap-filter-tag"
+									class:active={activeCategories.has(cat)}
+									style="--tag-color: {CAT_COLOR[cat]}"
+									onclick={() => toggleCategory(cat)}>{cat}</button
+								>
+							{/each}
+						</div>
+						<button
+							class="ap-clear-btn"
+							onclick={clearFilters}
+							disabled={!hasActiveFilters}
+							use:tooltip={'Clear all filters'}
+							aria-label="Clear filters">{@html clearFiltersSvg}</button
+						>
+					</div>
+				{/if}
 			</div>
-		{/if}
-	</div>
-</dialog>
+
+			<!-- Scrollable body — only this part scrolls -->
+			<div class="picker-body">
+				{#if isAssetsLoading()}
+					<p class="picker-hint">Loading catalogue…</p>
+				{:else if filtered.length === 0}
+					<p class="picker-hint">No assets match your search.</p>
+				{:else}
+					<div class="pick-grid">
+						{#each filtered as asset (asset.id)}
+							{@const owned = ownedIds.includes(asset.id)}
+							{@const blocked = preconditionFailure(asset) ?? exclusiveGroupConflict(asset)}
+							{@const catColor = CAT_COLOR[asset.category] ?? 'var(--text-muted)'}
+							<!-- svelte-ignore a11y_no_static_element_interactions -->
+							<div
+								class="pick-tile"
+								class:pick-tile-owned={owned}
+								class:pick-tile-blocked={!!blocked && !owned}
+								style:--tile-color={catColor}
+								use:tooltip={blocked && !owned ? blocked : ''}
+								onclick={() => {
+									if (!owned && !blocked) tryAdd(asset);
+								}}
+								onkeydown={(e) => {
+									if ((e.key === 'Enter' || e.key === ' ') && !owned && !blocked) tryAdd(asset);
+								}}
+								tabindex={owned || !!blocked ? -1 : 0}
+								role="button"
+								aria-disabled={owned || !!blocked}
+							>
+								<div class="tile-name-row">
+									<span class="tile-name-icon" aria-hidden="true" style:color={catColor}
+										>{@html assetIcon(asset)}</span
+									>
+									<span class="tile-name">{asset.name}</span>
+									<span class="tile-badge" style:background={catColor}>{asset.category}</span>
+								</div>
+
+								{#if asset.summary}
+									<div class="tile-desc">{stripMdLinks(asset.summary)}</div>
+								{:else if asset.preamble}
+									<div class="tile-desc">{stripMdLinks(asset.preamble)}</div>
+								{/if}
+
+								{#if owned}
+									<div class="tile-acquired">Acquired</div>
+								{/if}
+							</div>
+						{/each}
+					</div>
+				{/if}
+			</div>
+		</Dialog.Content>
+	</Dialog.Portal>
+</Dialog.Root>
 
 <style>
 	/* ================================================================
-	   Main picker dialog — fixed height, never resizes
+	   Main picker dialog — bits-ui Dialog, fixed height, never resizes.
+	   Portals Content + Overlay to <body>; scope everything globally.
+	   Overlay 80 / content 81 matches the modal z-index tier.
 	   ================================================================ */
-	.picker-dialog {
-		border: none;
-		padding: 0;
-		border-radius: 8px;
-		background: var(--bg-card);
-		color: var(--text);
-		width: min(760px, calc(100vw - 2rem));
-		/* Fixed height — content scrolls inside, dialog never bounces */
-		height: min(82vh, 720px);
+	:global(.picker-overlay) {
+		position: fixed;
+		inset: 0;
+		background: #00000055;
+		backdrop-filter: blur(2px);
+		z-index: 80;
+	}
+	:global(.picker-dialog) {
 		display: flex;
 		flex-direction: column;
-		box-shadow:
-			0 16px 48px #00000070,
-			0 0 0 1px var(--border-mid);
 		position: fixed;
 		top: 50%;
 		left: 50%;
 		transform: translate(-50%, -50%);
+		width: min(760px, calc(100vw - 2rem));
+		height: min(82vh, 720px);
+		background: var(--bg-card);
+		color: var(--text);
+		border-radius: 8px;
+		box-shadow:
+			0 16px 48px #00000070,
+			0 0 0 1px var(--border-mid);
 		outline: none;
 		overflow: hidden;
+		z-index: 81;
 	}
 
-	.picker-dialog::backdrop {
-		background: #00000055;
-		backdrop-filter: blur(2px);
-	}
-
-	/* ---- Header — mirrors OraclesDialog .od-header style ---- */
 	/* ---- Controls: category tabs + search — pinned, never scrolls ---- */
-	.picker-controls {
+	:global(.picker-controls) {
 		display: flex;
 		flex-direction: column;
 		gap: 6px;
@@ -283,20 +300,20 @@
 		background: var(--bg-card);
 	}
 
-	.ap-search-row {
+	:global(.ap-search-row) {
 		display: flex;
 		align-items: center;
 		gap: 6px;
 	}
 
-	.ap-search-field {
+	:global(.ap-search-field) {
 		flex: 1;
 		min-width: 0;
 		position: relative;
 		display: flex;
 		align-items: center;
 	}
-	.ap-search-icon {
+	:global(.ap-search-icon) {
 		position: absolute;
 		left: 9px;
 		width: 13px;
@@ -305,13 +322,13 @@
 		pointer-events: none;
 		color: var(--text-dimmer);
 	}
-	.ap-search-icon :global(svg) {
+	:global(.ap-search-icon :global(svg)) {
 		width: 100%;
 		height: 100%;
 		fill: currentColor;
 	}
 
-	.search-input {
+	:global(.search-input) {
 		flex: 1;
 		font-family: var(--font-ui);
 		font-size: 0.82rem;
@@ -319,7 +336,7 @@
 		min-width: 0;
 	}
 
-	.ap-filter-toggle {
+	:global(.ap-filter-toggle) {
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		font-weight: 600;
@@ -339,16 +356,16 @@
 		gap: 4px;
 		flex-shrink: 0;
 	}
-	.ap-filter-toggle:hover {
+	:global(.ap-filter-toggle:hover) {
 		color: var(--text);
 		border-color: var(--border-mid);
 	}
-	.ap-filter-toggle--active {
+	:global(.ap-filter-toggle--active) {
 		color: var(--accent);
 		border-color: var(--accent);
 	}
 
-	.ap-filter-badge {
+	:global(.ap-filter-badge) {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
@@ -361,20 +378,20 @@
 		border-radius: 50%;
 	}
 
-	.ap-filter-panel {
+	:global(.ap-filter-panel) {
 		position: relative;
 		padding: 6px 8px;
 		background: var(--bg-inset);
 		border: 1px solid var(--border);
 		border-radius: 6px;
 	}
-	.ap-filter-chips {
+	:global(.ap-filter-chips) {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 4px;
 		padding-right: 26px;
 	}
-	.ap-filter-tag {
+	:global(.ap-filter-tag) {
 		font-family: var(--font-ui);
 		font-size: 0.6rem;
 		font-weight: 600;
@@ -391,14 +408,14 @@
 			background 0.12s,
 			color 0.12s;
 	}
-	.ap-filter-tag:hover {
+	:global(.ap-filter-tag:hover) {
 		background: color-mix(in srgb, var(--tag-color, var(--border)) 12%, transparent);
 	}
-	.ap-filter-tag.active {
+	:global(.ap-filter-tag.active) {
 		background: color-mix(in srgb, var(--tag-color, var(--border)) 18%, transparent);
 		border-color: var(--tag-color, var(--border));
 	}
-	.ap-clear-btn {
+	:global(.ap-clear-btn) {
 		position: absolute;
 		bottom: 6px;
 		right: 6px;
@@ -414,21 +431,21 @@
 			color 0.12s,
 			opacity 0.12s;
 	}
-	.ap-clear-btn:hover:not(:disabled) {
+	:global(.ap-clear-btn:hover:not(:disabled)) {
 		color: var(--text);
 	}
-	.ap-clear-btn:disabled {
+	:global(.ap-clear-btn:disabled) {
 		opacity: 0.25;
 		cursor: not-allowed;
 	}
-	.ap-clear-btn :global(svg) {
+	:global(.ap-clear-btn :global(svg)) {
 		width: 16px;
 		height: 16px;
 		fill: currentColor;
 	}
 
 	/* ---- Scrollable body ---- */
-	.picker-body {
+	:global(.picker-body) {
 		overflow-y: auto;
 		overscroll-behavior: contain;
 		padding: 12px 16px;
@@ -436,7 +453,7 @@
 		min-height: 0;
 	}
 
-	.picker-hint {
+	:global(.picker-hint) {
 		font-family: var(--font-ui);
 		font-size: 0.8rem;
 		color: var(--text-dimmer);
@@ -486,13 +503,13 @@
 
 	/* Category badge — coloured pill, absolute top-right */
 	/* Name row — icon, name (grows to fill), badge anchored to the right. */
-	.tile-name-row {
+	:global(.tile-name-row) {
 		display: flex;
 		align-items: center;
 		gap: 6px;
 		min-width: 0;
 	}
-	.tile-name-icon {
+	:global(.tile-name-icon) {
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -500,16 +517,16 @@
 		height: 16px;
 		flex-shrink: 0;
 	}
-	.tile-name-icon :global(svg) {
+	:global(.tile-name-icon :global(svg)) {
 		width: 100%;
 		height: 100%;
 		fill: currentColor;
 	}
-	.tile-name-icon :global(svg path) {
+	:global(.tile-name-icon :global(svg path)) {
 		fill: currentColor;
 	}
 
-	.tile-name {
+	:global(.tile-name) {
 		flex: 1;
 		min-width: 0;
 		font-family: var(--font-ui);
@@ -520,7 +537,7 @@
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
-	.tile-badge {
+	:global(.tile-badge) {
 		flex-shrink: 0;
 		font-family: var(--font-ui);
 		font-size: 0.58rem;
@@ -534,7 +551,7 @@
 		line-height: 1.3;
 	}
 
-	.tile-desc {
+	:global(.tile-desc) {
 		font-family: var(--font-ui);
 		font-size: 0.71rem;
 		color: var(--text-muted);
@@ -543,7 +560,7 @@
 		flex: 1;
 	}
 
-	.tile-acquired {
+	:global(.tile-acquired) {
 		font-family: var(--font-ui);
 		font-size: 0.65rem;
 		font-weight: 600;
