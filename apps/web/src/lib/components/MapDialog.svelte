@@ -56,6 +56,7 @@
 	import iconZoomOutSvg from '$icons/magnifying-glass-minus-solid-full.svg?raw';
 	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
 	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
+	import { Popover, Command } from 'bits-ui';
 	// Shared kind metadata (colour, icon, label). Same source of truth
 	// the Connections rail + Expeditions spines will read from once
 	// they're updated, so accents and glyphs stay in lockstep.
@@ -1050,46 +1051,25 @@
 	// ─── Entity-link picker (searchable) ───────────────────────────────────────
 	// The dropdown of every community / place / journey / site got noisy
 	// as users pile them up. Replaced the native <select> with a
-	// combobox picker — now a nested <dialog> (was an absolutely-
-	// positioned popover, but that got clipped by the map dialog's
-	// `overflow: hidden`). Same content: search field + filtered list.
-	let entityDialogEl = $state<HTMLDialogElement | null>(null);
+	// Marker link picker — bits-ui Popover + Command combobox
+	// (shadcn-svelte pattern). Bits-ui handles the search, keyboard
+	// nav, and focus trap; we just supply the sorted item list. The
+	// popover portals into `dialogEl` so it renders on top of the
+	// map dialog's own top-layer instead of behind it.
 	let entityPickerOpen = $state(false);
-	let entitySearch = $state('');
 	// Alias so the shared kind metadata (community / place / journey /
 	// site — NPCs aren't linkable from a marker) reads locally with a
 	// short name at each render site.
 	const KIND_META = ENTITY_KIND_META;
 
-	function openEntityPicker() {
-		entitySearch = '';
-		entityPickerOpen = true;
-		entityDialogEl?.showModal();
-	}
-	function closeEntityPicker() {
-		entityPickerOpen = false;
-		entityDialogEl?.close();
-	}
-
-	/** Filter → search → alphabetical sort. Matches on name / kind
-	 *  label / kind slug so both "Driftwood" and "community" hit.
-	 *  Sort is always A-Z — the list is short enough that Added
-	 *  order isn't a useful distinction. */
-	const filteredEntities = $derived.by(() => {
-		const q = entitySearch.trim().toLowerCase();
-		const all = getLinkableEntities();
-		const filtered =
-			q === ''
-				? all.slice()
-				: all.filter(
-						(e) =>
-							e.name.toLowerCase().includes(q) ||
-							e.kindLabel.toLowerCase().includes(q) ||
-							e.kind.toLowerCase().includes(q),
-					);
-		filtered.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
-		return filtered;
-	});
+	/** Linkable entities sorted A-Z for stable presentation. Command
+	 *  will filter this list by input text via each Item's `value`
+	 *  (textContent) match, so we don't do our own substring filter. */
+	const sortedLinkableEntities = $derived(
+		getLinkableEntities()
+			.slice()
+			.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
+	);
 
 	/** Commit an entity-link choice. `value` is "" to clear or
 	 *  "kind:id" to link. Same auto-fill-label behaviour as the old
@@ -1103,7 +1083,7 @@
 			if (link) patch.label = link.name;
 		}
 		updateMarker(selectedMarker.id, patch);
-		closeEntityPicker();
+		entityPickerOpen = false;
 	}
 
 	function deleteSelected() {
@@ -1412,19 +1392,13 @@
 				>
 			</div>
 			{@const currentLink = resolveEntity(selectedMarker.entityId)}
-			<div class="mp-sel-entity">
-				<button
+			<Popover.Root bind:open={entityPickerOpen}>
+				<Popover.Trigger
 					class="mp-combobox mp-sel-entity-btn"
-					onclick={openEntityPicker}
-					aria-haspopup="listbox"
-					aria-expanded={entityPickerOpen}
-					use:tooltip={'Link to a Community, Place, Journey or Site'}
+					aria-label="Link marker to a connection"
 				>
 					<span class="mp-combobox-value">
 						{#if selectedMarker.entityId && currentLink}
-							<!-- Use the same kind icon the picker dialog rows show
-							     — was a text dingbat (◈ / ● / ↗ / ▲), replaced
-							     for visual continuity with the picker + rail. -->
 							<span
 								class="mp-sel-entity-icon"
 								aria-hidden="true"
@@ -1438,8 +1412,79 @@
 						{/if}
 					</span>
 					<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
-				</button>
-			</div>
+				</Popover.Trigger>
+				<!-- Portal into the map dialog so the popover renders on top
+				     of the dialog's own top layer instead of behind it. -->
+				<Popover.Portal to={dialogEl ?? undefined}>
+					<Popover.Content
+						class="mp-link-popover"
+						sideOffset={4}
+						align="start"
+						collisionPadding={8}
+					>
+						<Command.Root class="mp-link-command" label="Link marker to a connection">
+							<div class="mp-link-search-row">
+								<Command.Input class="mp-link-search" placeholder="Search connections…" autofocus />
+							</div>
+							<Command.List class="mp-link-list">
+								<Command.Empty class="mp-link-empty">No matches.</Command.Empty>
+								<Command.Item
+									class="mp-link-item mp-link-item--none"
+									value="__none__"
+									keywords={['no link', 'clear', 'none']}
+									onSelect={() => pickEntity('')}
+								>
+									<span class="mp-link-item-name">— No link —</span>
+									{#if !selectedMarker.entityId}
+										<span class="mp-link-check" aria-hidden="true">
+											<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5"
+												><polyline
+													points="4 11 8 15 16 6"
+													stroke-linecap="round"
+													stroke-linejoin="round"
+												></polyline></svg
+											>
+										</span>
+									{/if}
+								</Command.Item>
+								{#each sortedLinkableEntities as e (`${e.kind}:${e.id}`)}
+									{@const val = `${e.kind}:${e.id}`}
+									{@const meta = KIND_META[e.kind]}
+									{@const isSel = selectedMarker.entityId === val}
+									<Command.Item
+										class="mp-link-item"
+										value={val}
+										keywords={[e.name, meta.label]}
+										onSelect={() => pickEntity(val)}
+									>
+										<span
+											class="mp-link-item-icon"
+											aria-hidden="true"
+											style="--kind-color: {meta.color}">{@html meta.icon}</span
+										>
+										<span class="mp-link-item-name">{e.name}</span>
+										{#if isSel}
+											<span class="mp-link-check" aria-hidden="true">
+												<svg
+													viewBox="0 0 20 20"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="2.5"
+													><polyline
+														points="4 11 8 15 16 6"
+														stroke-linecap="round"
+														stroke-linejoin="round"
+													></polyline></svg
+												>
+											</span>
+										{/if}
+									</Command.Item>
+								{/each}
+							</Command.List>
+						</Command.Root>
+					</Popover.Content>
+				</Popover.Portal>
+			</Popover.Root>
 			<button
 				class="mp-btn mp-btn-danger mp-btn-icon"
 				onclick={deleteSelected}
@@ -1910,84 +1955,6 @@
 	</div>
 </dialog>
 
-<!--
-	Entity-link picker — nested modal that lists every linkable
-	community / place / journey / site with a live search filter. Was
-	an inline popover but got clipped by the map dialog's `overflow:
-	hidden`; a native <dialog> renders in the browser top layer and
-	escapes cleanly. Follows CLAUDE.md's content-sized pattern: no
-	`display: flex` on the dialog, `max-height` on the scrollable body,
-	`overscroll-behavior: contain` on the same body.
--->
-<dialog
-	bind:this={entityDialogEl}
-	class="mp-entity-dialog"
-	oncancel={closeEntityPicker}
-	onclose={() => (entityPickerOpen = false)}
->
-	<DialogHeader
-		title={headingText('Link Marker')}
-		onclose={closeEntityPicker}
-		radius="8px 8px 0 0"
-	/>
-	<div class="mp-entity-search-row">
-		<!-- svelte-ignore a11y_autofocus -->
-		<input
-			class="mp-entity-search"
-			type="search"
-			placeholder="Search connections…"
-			bind:value={entitySearch}
-			autofocus
-		/>
-	</div>
-	<div class="mp-entity-body" role="listbox" aria-label="Link to entity">
-		<button
-			class="mp-entity-item mp-entity-item--none"
-			class:mp-entity-item--active={!selectedMarker?.entityId}
-			onclick={() => pickEntity('')}
-			role="option"
-			aria-selected={!selectedMarker?.entityId}
-		>
-			<span class="mp-entity-name">— No link —</span>
-			{#if !selectedMarker?.entityId}
-				<span class="mp-entity-check" aria-hidden="true">
-					<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5"
-						><polyline points="4 11 8 15 16 6" stroke-linecap="round" stroke-linejoin="round"
-						></polyline></svg
-					>
-				</span>
-			{/if}
-		</button>
-		{#each filteredEntities as e (`${e.kind}:${e.id}`)}
-			{@const val = `${e.kind}:${e.id}`}
-			{@const meta = KIND_META[e.kind]}
-			{@const isSel = selectedMarker?.entityId === val}
-			<button
-				class="mp-entity-item mp-entity-item--row"
-				class:mp-entity-item--active={isSel}
-				style="--kind-color: {meta.color}"
-				onclick={() => pickEntity(val)}
-				role="option"
-				aria-selected={isSel}
-			>
-				<span class="mp-entity-item-icon" aria-hidden="true">{@html meta.icon}</span>
-				<span class="mp-entity-name">{e.name}</span>
-				{#if isSel}
-					<span class="mp-entity-check" aria-hidden="true">
-						<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5"
-							><polyline points="4 11 8 15 16 6" stroke-linecap="round" stroke-linejoin="round"
-							></polyline></svg
-						>
-					</span>
-				{/if}
-			</button>
-		{/each}
-		{#if filteredEntities.length === 0}
-			<p class="mp-entity-empty">No matches for "{entitySearch}".</p>
-		{/if}
-	</div>
-</dialog>
-
 <style>
 	.mp-dialog {
 		border: none;
@@ -2410,16 +2377,10 @@
 		color: var(--text-dimmer);
 		line-height: 1;
 	}
-	/* Entity-link chip in the selection toolbar — trigger only; the
-	   picker itself is a nested <dialog> (see .mp-entity-dialog). */
-	.mp-sel-entity {
-		display: inline-flex;
-	}
-	.mp-sel-entity-btn {
-		/* Location combobox is the visual anchor of the row — it eats
-		   the flex slack the name field gave up so long entity names
-		   read without truncating. Base combobox look comes from
-		   `.mp-combobox`; only sizing overrides live here. */
+	/* Passed to a bits-ui `Popover.Trigger` (renders as a plain
+	   `<button>`), so scope with `:global(...)` — Svelte's CSS pruning
+	   can't see class names threaded through a foreign component. */
+	:global(.mp-sel-entity-btn) {
 		flex: 1 1 240px;
 		min-width: 180px;
 		max-width: 420px;
@@ -2442,129 +2403,124 @@
 	.mp-sel-entity-icon :global(svg path) {
 		fill: currentColor;
 	}
-	/* Entity-link picker dialog. Content-sized per CLAUDE.md rule 3B
-	   (no display:flex on the dialog; max-height on the scrollable
-	   body). Centred via top/left/transform per rule 2. */
-	.mp-entity-dialog {
-		border: none;
-		padding: 0;
-		border-radius: 8px;
-		position: fixed;
-		top: 50%;
-		left: 50%;
-		margin: 0;
-		transform: translate(-50%, -50%);
-		width: min(360px, calc(100vw - 2rem));
-		max-height: 82vh;
-		overflow: hidden;
+
+	/* Link marker picker — bits-ui Popover + Command combobox.
+	   Bits-ui portals the Content into `dialogEl` (the parent map
+	   dialog) so the popover renders on top of the map dialog's
+	   top layer. The panel is fixed-height for a stable footprint
+	   as the user types (Command hides non-matching items via
+	   display: none, so the list count changes but the panel
+	   doesn't shrink).
+	   All bits-ui parts render as generic wrappers; we drive the
+	   look with these `.mp-link-*` classes passed in via `class=`. */
+	:global(.mp-link-popover) {
+		width: min(320px, calc(100vw - 2rem));
 		background: var(--bg-card);
 		color: var(--text);
-		box-shadow:
-			0 16px 48px #00000070,
-			0 0 0 1px var(--border-mid);
+		border: 1px solid var(--border-mid);
+		border-radius: 8px;
+		box-shadow: 0 16px 48px #00000070;
+		z-index: 60;
 		outline: none;
 	}
-	.mp-entity-dialog::backdrop {
-		background: #00000060;
-	}
-	.mp-entity-body {
-		max-height: calc(82vh - 8rem);
-		overflow-y: auto;
-		overscroll-behavior: contain;
-		padding: 4px 0;
-	}
-	.mp-entity-search-row {
+	:global(.mp-link-command) {
 		display: flex;
-		align-items: center;
-		gap: 6px;
-		padding: 6px 8px;
+		flex-direction: column;
+		height: min(420px, 70vh);
+	}
+	:global(.mp-link-search-row) {
+		flex: 0 0 auto;
+		padding: 8px;
 		background: var(--bg-inset);
 		border-bottom: 1px solid var(--border);
 	}
-	.mp-entity-search {
-		flex: 1 1 auto;
+	:global(.mp-link-search) {
+		width: 100%;
 		box-sizing: border-box;
-		padding: 4px 8px;
+		padding: 6px 10px;
 		font-family: var(--font-ui);
-		font-size: 0.82rem;
+		font-size: 0.85rem;
 		color: var(--text);
 		background: var(--bg-control);
 		border: 1px solid var(--border-mid);
 		border-radius: 4px;
 	}
-	.mp-entity-search:focus {
+	:global(.mp-link-search:focus) {
 		outline: none;
 		border-color: var(--text-accent);
 	}
-	/* Entity picker rows — shadcn-svelte Command palette pattern:
-	   icon left, name middle, checkmark right when selected. No
-	   left accent bar, no right-side kind pill. Icon colour cues
-	   the kind quietly, keeping the row scannable and uniform. */
-	.mp-entity-item {
-		width: 100%;
+	:global(.mp-link-list) {
+		flex: 1 1 auto;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		padding: 4px 0;
+	}
+	:global(.mp-link-empty) {
+		padding: 24px 12px;
+		text-align: center;
+		font-family: var(--font-ui);
+		font-size: 0.82rem;
+		color: var(--text-dimmer);
+	}
+	:global(.mp-link-item) {
 		display: flex;
 		align-items: center;
-		gap: 8px;
+		gap: 10px;
 		padding: 6px 12px;
-		background: none;
-		border: none;
-		text-align: left;
 		font-family: var(--font-ui);
 		font-size: 0.85rem;
 		color: var(--text);
 		cursor: pointer;
+		user-select: none;
 	}
-	.mp-entity-item:hover {
+	/* bits-ui Command sets these `data-*` on the highlighted item
+	   (keyboard nav) and the currently-selected one — same visual
+	   shape as pointer hover. */
+	:global(.mp-link-item[data-selected='true']),
+	:global(.mp-link-item:hover) {
 		background: color-mix(in srgb, var(--text) 6%, transparent);
 	}
-	.mp-entity-item--active {
-		background: color-mix(in srgb, var(--text-accent) 10%, transparent);
+	:global(.mp-link-item[aria-disabled='true']) {
+		opacity: 0.5;
+		cursor: default;
 	}
-	.mp-entity-item--none {
+	:global(.mp-link-item--none) {
 		color: var(--text-dimmer);
 		font-style: italic;
 	}
-	.mp-entity-item-icon {
+	:global(.mp-link-item-icon) {
 		display: inline-flex;
 		width: 18px;
 		height: 18px;
 		flex-shrink: 0;
 		color: var(--kind-color, var(--text-accent));
 	}
-	.mp-entity-item-icon :global(svg) {
+	:global(.mp-link-item-icon svg) {
 		width: 100%;
 		height: 100%;
 		fill: currentColor;
 	}
-	.mp-entity-item-icon :global(svg path) {
+	:global(.mp-link-item-icon svg path) {
 		fill: currentColor;
 	}
-	.mp-entity-name {
+	:global(.mp-link-item-name) {
 		flex: 1;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
-	.mp-entity-check {
+	:global(.mp-link-check) {
 		flex-shrink: 0;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		width: 18px;
-		height: 18px;
+		width: 16px;
+		height: 16px;
 		color: var(--text-accent);
 	}
-	.mp-entity-check svg {
+	:global(.mp-link-check svg) {
 		width: 100%;
 		height: 100%;
-	}
-	.mp-entity-empty {
-		font-family: var(--font-ui);
-		font-size: 0.82rem;
-		color: var(--text-dimmer);
-		text-align: center;
-		padding: 16px 0;
-		margin: 0;
 	}
 
 	.mp-error {

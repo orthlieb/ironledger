@@ -22,6 +22,7 @@
 		"@ironledger/shared": "*",
 		"@simonwep/pickr": "^1.10.0",
 		"@sveltejs/kit": "^2.55.0",
+		"bits-ui": "^2.18.1",
 		"fflate": "^0.8.3",
 		"isomorphic-dompurify": "^2.36.0",
 		"svelte": "^5.0.0"
