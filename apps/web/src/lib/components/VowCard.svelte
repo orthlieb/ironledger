@@ -5,6 +5,7 @@
 	import MarkdownNotes from './MarkdownNotes.svelte';
 	import { EditableName } from '$lib/editableName.svelte.js';
 	import ConfirmDialog from './ConfirmDialog.svelte';
+	import Select from './Select.svelte';
 	import trashSvg from '$icons/trash-solid.svg?raw';
 	import { isDelveEnabled } from '$lib/expansionStore.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
@@ -110,11 +111,12 @@
 			<div class="vow-extras">
 				<label class="vow-extra">
 					<span>Rank</span>
-					<select class="vow-difficulty" bind:value={vow.difficulty} aria-label="Vow difficulty">
-						{#each DIFFICULTIES as d (d.value)}
-							<option value={d.value}>{d.label}</option>
-						{/each}
-					</select>
+					<Select
+						class="vow-difficulty"
+						bind:value={vow.difficulty}
+						ariaLabel="Vow difficulty"
+						options={DIFFICULTIES}
+					/>
 				</label>
 			</div>
 
@@ -258,11 +260,14 @@
 		padding: 2px 6px;
 	}
 
-	.vow-difficulty {
+	/* Threaded through `<Select>` onto its bits-ui Trigger, so scope
+	   with :global. Tweaks the shared `.bui-select-trigger` down to
+	   the rank chip's compact font/padding. */
+	:global(.vow-difficulty) {
 		flex-shrink: 0;
-		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		padding: 3px 6px;
+		min-height: 0;
 	}
 
 	/* Forsake / trash button uses the shared .btn-trash styling from app.css.

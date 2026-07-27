@@ -191,8 +191,9 @@ draggable in both.
 
 **Documented exceptions** (do NOT route through `<DialogHeader>`):
 
-- **ConfirmDialog** — uses a bespoke centered-`transform` drag
-  (`cm-drag-handle` + `onmousedown` math), not the `draggable` action.
+- **ConfirmDialog** — bits-ui `AlertDialog`; its own accent-tinted
+  `.cm-header` + `AlertDialog.Title` bar is the header, no grip. Not
+  draggable (the pre-migration bespoke drag was retired).
 - **FoePickerDialog** confirm view (`fd-back-bar`) — nature-coloured band.
 - **AssetCard** — inline-capable host, not a plain dialog header.
 
@@ -241,3 +242,46 @@ attributes):
 to `use:tooltip`, add `aria-label="..."` with the same text. The native
 `title` attribute doubles as the accessible name for icon buttons; the
 action does not.
+
+## Prefer bits-ui primitives over native controls
+
+For any new UI that needs a select, combobox, popover, dropdown menu,
+tooltip host, dialog, alert dialog, tabs, accordion, or other overlay/
+picker primitive, **use bits-ui** (or the shared wrapper the app has
+already built on top of it) — not the native HTML control. Uniform
+chrome across desktop and mobile is worth more than the native picker;
+the app has a full house-style visual system on bits-ui and every new
+native control drifts from it.
+
+Concretely:
+
+- `<select>` → `<Select>` (`$lib/components/Select.svelte` — bits-ui
+  `Select` inside). See `docs/ui-components.md` → "Simple dropdown
+  fields — `<Select>` wrapper".
+- Searchable pickers → bits-ui `Popover + Command` (the shadcn shape;
+  `.mp-combobox` trigger + `.mp-cmd-*` popover body). See
+  `docs/ui-components.md` → "Combobox pattern".
+- Confirmations → bits-ui `AlertDialog` via `<ConfirmDialog>`; other
+  modals → bits-ui `Dialog`. Don't hand-roll a `<dialog>` for new
+  work.
+- Hover hints → `use:tooltip` (see the section above), not native
+  `title=`.
+- Toolbar dropdowns / kebab menus → bits-ui `DropdownMenu`.
+- Native `<input type="color">` / `<input type="date">` etc. — reach
+  for the shared widget the app already uses (`Pickr` for colour;
+  ask before introducing a new one).
+
+Native controls remain fine for plain form fields with no picker
+UI attached: `<input type="text|number|checkbox|radio|range>`,
+`<textarea>`, and `<button>`. When in doubt, look for an existing
+bits-ui-based component or wrapper first; if none exists and the
+control is worth sharing, build a small wrapper in
+`$lib/components/` (see `Select.svelte` as the template — one
+`:global(.foo-*)` block, a docstring in prose without embedded
+`<TagName>` syntax so Svelte's script tokenizer doesn't choke).
+
+Explicit **exceptions**, where a native control stays: a `<select>`
+whose whole job is a native-first mobile experience (a full-screen
+picker wheel on iOS the custom popover can't match) — flag the
+choice in a comment above the element so a later refactor knows to
+skip it.

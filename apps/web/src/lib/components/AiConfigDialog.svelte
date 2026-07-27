@@ -14,6 +14,7 @@
 
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
+	import Select from '$lib/components/Select.svelte';
 	import {
 		type AiProvider,
 		PROVIDER_LABEL,
@@ -171,12 +172,14 @@
 
 		<div class="ac-field">
 			<span class="ac-label">Model</span>
-			<select class="ac-input" bind:value={model} required>
-				<option value="" disabled>Select a model…</option>
-				{#each models as m (m.id)}
-					<option value={m.id}>{m.label} — {m.tagline}</option>
-				{/each}
-			</select>
+			<Select
+				class="ac-select"
+				bind:value={model}
+				required
+				placeholder="Select a model…"
+				portalTo={dialogEl ?? undefined}
+				options={models.map((m) => ({ value: m.id, label: `${m.label} — ${m.tagline}` }))}
+			/>
 			{#if !modelPicked}
 				<span class="ac-hint ac-hint-tight">A model must be picked to save or test.</span>
 			{/if}
@@ -257,6 +260,12 @@
 	.ac-input:focus {
 		outline: none;
 		border-color: var(--text-accent);
+	}
+	/* Threaded to bits-ui via `<Select class="ac-select">` so the
+	   base look comes from `.bui-select-trigger`; this override just
+	   fills the field width like the surrounding `.ac-input` fields. */
+	:global(.ac-select) {
+		width: 100%;
 	}
 	.ac-key-row {
 		display: flex;

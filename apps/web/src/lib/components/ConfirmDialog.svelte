@@ -2,8 +2,15 @@
 	/**
 	 * ConfirmDialog — reusable modal confirmation dialog.
 	 *
-	 * Matches the forsake-vow dialog pattern: centered, draggable, color-tinted
-	 * with a danger (or custom) accent color.
+	 * Backed by bits-ui `AlertDialog` (Escape + focus trap + focus
+	 * return + backdrop layer all handled by the library). Public
+	 * API is unchanged from the native-`<dialog>` version so
+	 * callers still `bind:this={ref}` and call `ref?.open()`.
+	 *
+	 * Draggability from the old version is retired — small confirm
+	 * dialogs rarely need repositioning and bits-ui doesn't own
+	 * drag. If a specific caller needs it back, use a custom
+	 * `Dialog` there instead.
 	 *
 	 * Usage:
 	 *   let ref = $state<ReturnType<typeof ConfirmDialog> | null>(null);
@@ -13,6 +20,7 @@
 	 *   ref?.open();
 	 */
 	import type { Snippet } from 'svelte';
+	import { AlertDialog } from 'bits-ui';
 	import { headingText } from '$lib/fontStore.svelte.js';
 
 	let {
@@ -30,6 +38,7 @@
 		oncancel,
 		ondismiss,
 		onalternate,
+		portalTo,
 		children,
 	}: {
 		title: string;
@@ -48,153 +57,140 @@
 		/** Called when the dialog is dismissed via ✕ or Escape — falls back to oncancel if not provided. */
 		ondismiss?: () => void;
 		onalternate?: () => void;
+		/** Portal target. Defaults to `document.body`; pass a parent
+		 *  native `<dialog>` element when this confirm is invoked from
+		 *  inside one, so it doesn't render behind that dialog's top
+		 *  layer. */
+		portalTo?: Element | string;
 		children?: Snippet;
 	} = $props();
 
-	let dialogEl = $state<HTMLDialogElement | null>(null);
-	let dragX = $state(0);
-	let dragY = $state(0);
+	let open = $state(false);
+	// Tracks how the dialog closed. bits-ui doesn't distinguish
+	// Cancel-button close from Escape/outside close — we watch the
+	// `open → false` transition and, if no explicit intent was
+	// recorded, treat it as a dismiss.
+	let _closeIntent: 'confirm' | 'cancel' | 'alternate' | 'dismiss' | null = null;
 
-	let _dragging = false;
-	let _startMouseX = 0;
-	let _startMouseY = 0;
-	let _startDragX = 0;
-	let _startDragY = 0;
-
-	export function open() {
-		dragX = 0;
-		dragY = 0;
-		dialogEl?.showModal();
+	function openMethod() {
+		_closeIntent = null;
+		open = true;
 	}
-
-	export function close() {
-		dialogEl?.close();
+	function closeMethod() {
+		open = false;
 	}
+	export { openMethod as open, closeMethod as close };
 
 	function handleConfirm() {
-		dialogEl?.close();
+		_closeIntent = 'confirm';
+		open = false;
 		onconfirm();
 	}
-
 	function handleCancel() {
-		dialogEl?.close();
+		_closeIntent = 'cancel';
+		open = false;
 		oncancel?.();
 	}
-
+	function handleAlternate() {
+		_closeIntent = 'alternate';
+		open = false;
+		onalternate?.();
+	}
 	function handleDismiss() {
-		dialogEl?.close();
+		_closeIntent = 'dismiss';
+		open = false;
 		if (ondismiss) ondismiss();
 		else oncancel?.();
 	}
 
-	function handleAlternate() {
-		dialogEl?.close();
-		onalternate?.();
-	}
-
-	function startDrag(e: MouseEvent) {
-		_dragging = true;
-		_startMouseX = e.clientX;
-		_startMouseY = e.clientY;
-		_startDragX = dragX;
-		_startDragY = dragY;
-		e.preventDefault();
-		window.addEventListener('mousemove', onDragMove);
-		window.addEventListener('mouseup', onDragEnd);
-	}
-
-	function onDragMove(e: MouseEvent) {
-		if (!_dragging) return;
-		dragX = _startDragX + (e.clientX - _startMouseX);
-		dragY = _startDragY + (e.clientY - _startMouseY);
-	}
-
-	function onDragEnd() {
-		_dragging = false;
-		window.removeEventListener('mousemove', onDragMove);
-		window.removeEventListener('mouseup', onDragEnd);
+	function onOpenChange(next: boolean) {
+		if (!next && _closeIntent === null) {
+			if (ondismiss) ondismiss();
+			else oncancel?.();
+		}
+		open = next;
 	}
 </script>
 
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<dialog
-	bind:this={dialogEl}
-	class="confirm-modal"
-	style:--accent={accentColor}
-	style:width
-	style:transform="translate(calc(-50% + {dragX}px), calc(-50% + {dragY}px))"
-	oncancel={handleDismiss}
->
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="cm-drag-handle" onmousedown={startDrag}>
-		<span class="drag-grip" aria-hidden="true">⠿</span>
-		<span class="cm-title">{headingText(title)}</span>
-		{#if !showCancelButton}
-			<button
-				class="cm-close-btn"
-				onclick={handleDismiss}
-				onmousedown={(e) => e.stopPropagation()}
-				aria-label="Close">✕</button
-			>
-		{/if}
-	</div>
-	<div class="cm-body">
-		{@render children?.()}
-		<div class="cm-actions">
-			{#if showCancelButton}
-				<button class="btn" onclick={handleCancel}>{cancelLabel}</button>
-			{/if}
-			{#if alternateLabel}
-				<button class="btn {alternateClass}" onclick={handleAlternate}>{alternateLabel}</button>
-			{/if}
-			<button class="btn {confirmClass}" onclick={handleConfirm} disabled={confirmDisabled}
-				>{confirmLabel}</button
-			>
-		</div>
-	</div>
-</dialog>
+<AlertDialog.Root bind:open {onOpenChange}>
+	<AlertDialog.Portal to={portalTo}>
+		<AlertDialog.Overlay class="cm-overlay" />
+		<AlertDialog.Content
+			class="confirm-modal"
+			style="--accent: {accentColor}{width ? `; width: ${width}` : ''}"
+		>
+			<div class="cm-header">
+				<AlertDialog.Title class="cm-title">{headingText(title)}</AlertDialog.Title>
+				{#if !showCancelButton}
+					<button class="cm-close-btn" type="button" onclick={handleDismiss} aria-label="Close"
+						>✕</button
+					>
+				{/if}
+			</div>
+			<div class="cm-body">
+				{@render children?.()}
+				<div class="cm-actions">
+					{#if showCancelButton}
+						<AlertDialog.Cancel class="btn" onclick={handleCancel}>{cancelLabel}</AlertDialog.Cancel
+						>
+					{/if}
+					{#if alternateLabel}
+						<button class="btn {alternateClass}" type="button" onclick={handleAlternate}
+							>{alternateLabel}</button
+						>
+					{/if}
+					<AlertDialog.Action
+						class="btn {confirmClass}"
+						onclick={handleConfirm}
+						disabled={confirmDisabled}>{confirmLabel}</AlertDialog.Action
+					>
+				</div>
+			</div>
+		</AlertDialog.Content>
+	</AlertDialog.Portal>
+</AlertDialog.Root>
 
 <style>
-	.confirm-modal {
-		border: none;
-		padding: 0;
-		border-radius: 8px;
+	/* Classes are threaded through bits-ui components, so scope with
+	   :global(...) — Svelte's CSS pruning can't see class names
+	   passed to a foreign component's rendered root. */
+	:global(.cm-overlay) {
+		position: fixed;
+		inset: 0;
+		background: #00000050;
+		backdrop-filter: blur(1px);
+		z-index: 80;
+	}
+	:global(.confirm-modal) {
 		position: fixed;
 		top: 50%;
 		left: 50%;
+		transform: translate(-50%, -50%);
 		width: 340px;
 		max-width: calc(100vw - 2rem);
+		border: none;
+		border-radius: 8px;
 		background: color-mix(in srgb, var(--accent) 6%, var(--bg-card));
 		color: var(--text);
 		box-shadow:
 			0 12px 40px #00000060,
 			0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
 		outline: none;
-		margin: 0;
+		z-index: 81;
 	}
 
-	.confirm-modal::backdrop {
-		background: #00000050;
-		backdrop-filter: blur(1px);
-	}
-
-	/* ---- Drag handle / title bar ---- */
-	.cm-drag-handle {
+	/* Header (title + optional ✕) */
+	:global(.confirm-modal .cm-header) {
 		display: flex;
 		align-items: center;
 		gap: 8px;
 		padding: 10px 14px 9px;
 		border-bottom: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
-		cursor: grab;
 		user-select: none;
 		border-radius: 8px 8px 0 0;
 		background: color-mix(in srgb, var(--accent) 10%, var(--bg-card));
 	}
-	.cm-drag-handle:active {
-		cursor: grabbing;
-	}
-
-	.cm-title {
+	:global(.confirm-modal .cm-title) {
 		font-family: var(--font-display);
 		font-size: calc(0.78rem * var(--font-display-scale));
 		font-weight: var(--font-display-weight);
@@ -203,9 +199,9 @@
 		text-transform: var(--font-display-transform);
 		color: var(--accent);
 		flex: 1;
+		margin: 0;
 	}
-
-	.cm-close-btn {
+	:global(.confirm-modal .cm-close-btn) {
 		all: unset;
 		cursor: pointer;
 		line-height: 1;
@@ -219,21 +215,20 @@
 			opacity 0.15s,
 			background 0.15s;
 	}
-	.cm-close-btn:hover {
+	:global(.confirm-modal .cm-close-btn:hover) {
 		opacity: 1;
 		background: color-mix(in srgb, var(--accent) 15%, transparent);
 		color: var(--accent);
 	}
 
-	/* ---- Body ---- */
-	.cm-body {
+	/* Body */
+	:global(.confirm-modal .cm-body) {
 		padding: 12px 14px;
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
 	}
-
-	.cm-actions {
+	:global(.confirm-modal .cm-actions) {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 6px;

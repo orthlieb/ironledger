@@ -9,6 +9,8 @@
 	 * so the home page can handle them with access to character data.
 	 */
 
+	import Select from './Select.svelte';
+
 	let {
 		isAdmin = false,
 		onSettings,
@@ -164,31 +166,32 @@
 	<div class="ed-body">
 		<div class="ed-field">
 			<label class="ed-label" for="export-content">Content</label>
-			<select
+			<Select
 				id="export-content"
-				name="content"
 				class="ed-select"
 				bind:value={exportContent}
-				onchange={() => {
+				portalTo={exportDialogEl ?? undefined}
+				options={[
+					{ value: 'everything', label: 'Everything' },
+					{ value: 'character', label: 'Current Character' },
+					{ value: 'all-characters', label: 'All Characters' },
+					{ value: 'log', label: 'Session Log' },
+					{ value: 'stories', label: 'Stories' },
+					{ value: 'communities', label: 'Connections' },
+					{ value: 'expeditions', label: 'Expeditions' },
+					{ value: 'map', label: 'Campaign Map' },
+				]}
+				onchange={(v) => {
 					// Stories are markdown-only. Log is JSON-or-Markdown. Map
 					// defaults to PNG. Everything defaults to Zip. Per-entity
 					// content types (character / all-characters / communities /
 					// expeditions) always emit a zip — no format select shown.
-					if (exportContent === 'stories') exportFormat = 'md';
-					else if (exportContent === 'map') exportFormat = 'png';
-					else if (exportContent === 'log') exportFormat = 'json';
+					if (v === 'stories') exportFormat = 'md';
+					else if (v === 'map') exportFormat = 'png';
+					else if (v === 'log') exportFormat = 'json';
 					else exportFormat = 'zip';
 				}}
-			>
-				<option value="everything">Everything</option>
-				<option value="character">Current Character</option>
-				<option value="all-characters">All Characters</option>
-				<option value="log">Session Log</option>
-				<option value="stories">Stories</option>
-				<option value="communities">Connections</option>
-				<option value="expeditions">Expeditions</option>
-				<option value="map">Campaign Map</option>
-			</select>
+			/>
 		</div>
 		{#if exportContent === 'everything'}
 			<div class="ed-field">
@@ -412,16 +415,14 @@
 		color: var(--text-muted);
 		min-width: 58px;
 	}
-	.ed-select {
+	/* Passed to `<Select>` and threaded onto the bits-ui Trigger.
+	   Base look comes from `.bui-select-trigger`; this override
+	   just makes the trigger flex-fill inside `.ed-field`. */
+	:global(.ed-select) {
 		flex: 1;
-		font-family: var(--font-ui);
+		min-width: 0;
 		font-size: 0.75rem;
 		padding: 5px 8px;
-		border: 1px solid var(--border-mid);
-		border-radius: 4px;
-		background: var(--bg-control);
-		color: var(--text);
-		cursor: pointer;
 	}
 
 	.ed-seg {
