@@ -2,23 +2,33 @@
  * Svelte action that makes a dialog draggable by its header.
  * Apply to the dialog's header element: `use:draggable`
  *
- * The action finds the closest parent <dialog> and enables drag-to-move.
- * Position resets to CSS defaults each time the dialog opens.
+ * The action finds the closest parent dialog surface — either a native
+ * `<dialog>` element or any bits-ui-style container marked
+ * `role="dialog"` (both `Dialog.Content` and `AlertDialog.Content`
+ * render with that role) — and enables drag-to-move. Position resets
+ * to CSS defaults each time a native dialog opens; bits-ui dialogs
+ * unmount their Content on close, so the fresh mount is the reset.
  */
 export function draggable(headerEl: HTMLElement) {
-	const dialogOrNull = headerEl.closest('dialog') as HTMLDialogElement | null;
+	const dialogOrNull = headerEl.closest('dialog, [role="dialog"]') as HTMLElement | null;
 	if (!dialogOrNull) return;
-	// Capture as a non-null typed variable so closures see HTMLDialogElement, not HTMLDialogElement | null
-	const dialog: HTMLDialogElement = dialogOrNull;
+	// Capture as a non-null typed variable so the closures below see
+	// HTMLElement, not HTMLElement | null.
+	const dialog: HTMLElement = dialogOrNull;
 
 	let startX = 0;
 	let startY = 0;
 	let origLeft = 0;
 	let origTop = 0;
 
-	// Reset inline position overrides when dialog opens so CSS defaults apply
+	// Reset inline position overrides when the dialog transitions to open
+	// so CSS defaults apply. Only meaningful for native `<dialog>` (which
+	// toggles the `open` attribute) — for bits-ui `Dialog.Content`, the
+	// element unmounts when closed, so on re-open it's already a fresh
+	// node with no inline styles and the mutation callback simply never
+	// fires (the attribute never appears).
 	const observer = new MutationObserver(() => {
-		if (dialog.open) {
+		if (dialog instanceof HTMLDialogElement && dialog.open) {
 			dialog.style.removeProperty('left');
 			dialog.style.removeProperty('top');
 			dialog.style.removeProperty('transform');
