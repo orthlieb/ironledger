@@ -173,8 +173,8 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		const before = await page.locator(EXP_SPINE).count();
 
 		await page.locator(`${EXP_HEADER} button:has-text("+ Journey")`).click();
-		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
-		await page.locator('dialog.confirm-modal[open] button:has-text("Start Journey")').click();
+		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
+		await page.locator('.confirm-modal button:has-text("Start Journey")').click();
 		await expect(page.locator(EXP_SPINE)).toHaveCount(before + 1, { timeout: 5_000 });
 
 		await page.waitForTimeout(600);
@@ -195,7 +195,7 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		const before = await page.locator(CM_ROW).count();
 
 		await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click();
-		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
 		const generateBtn = page.getByRole('button', { name: /random/i });
 		const createManualBtn = page.getByRole('button', { name: /create/i });
 		await expect(generateBtn.or(createManualBtn).first()).toBeVisible({ timeout: 5_000 });
@@ -255,14 +255,14 @@ test.describe('Data persistence across logout / login (v2)', () => {
 
 		if ((await page.locator(EXP_SPINE).count()) === 0) {
 			await page.locator(`${EXP_HEADER} button:has-text("+ Journey")`).click();
-			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
-			await page.locator('dialog.confirm-modal[open] button:has-text("Start Journey")').click();
+			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
+			await page.locator('.confirm-modal button:has-text("Start Journey")').click();
 			await expect(page.locator(EXP_SPINE)).not.toHaveCount(0, { timeout: 5_000 });
 		}
 
 		if ((await page.locator(CM_ROW).count()) === 0) {
 			await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click();
-			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
+			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
 			const generateBtn = page.getByRole('button', { name: /random/i });
 			if (await generateBtn.isVisible().catch(() => false)) {
 				await generateBtn.click();
@@ -417,8 +417,8 @@ test.describe('Data persistence across logout / login (v2)', () => {
 
 		if ((await page.locator(EXP_SPINE).count()) === 0) {
 			await page.locator(`${EXP_HEADER} button:has-text("+ Journey")`).click();
-			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
-			await page.locator('dialog.confirm-modal[open] button:has-text("Start Journey")').click();
+			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
+			await page.locator('.confirm-modal button:has-text("Start Journey")').click();
 			await expect(page.locator(EXP_SPINE)).not.toHaveCount(0, { timeout: 5_000 });
 		}
 
@@ -492,7 +492,7 @@ test.describe('Data persistence across logout / login (v2)', () => {
 			const delBtn = page.locator(`${FOE_AREA} .fa-stage-delete-btn`).first();
 			await expect(delBtn).toBeVisible({ timeout: 3_000 });
 			await delBtn.click();
-			const confirmBtn = page.locator('dialog.confirm-modal[open] button.btn-danger');
+			const confirmBtn = page.locator('.confirm-modal button.btn-danger');
 			await expect(confirmBtn).toBeVisible({ timeout: 3_000 });
 			await confirmBtn.click();
 			count--;
@@ -511,7 +511,7 @@ test.describe('Data persistence across logout / login (v2)', () => {
 			const delBtn = page.locator(`${EXP_AREA} .ea-stage-delete-btn`).first();
 			await expect(delBtn).toBeVisible({ timeout: 3_000 });
 			await delBtn.click();
-			const confirmBtn = page.locator('dialog.confirm-modal[open] button.btn-danger');
+			const confirmBtn = page.locator('.confirm-modal button.btn-danger');
 			await expect(confirmBtn).toBeVisible({ timeout: 3_000 });
 			await confirmBtn.click();
 			count--;
@@ -530,7 +530,7 @@ test.describe('Data persistence across logout / login (v2)', () => {
 			const delBtn = page.locator(`${CM_AREA} .cm-stage-delete-btn`).first();
 			if (!(await delBtn.isVisible({ timeout: 2_000 }).catch(() => false))) break;
 			await delBtn.click();
-			const confirmBtn = page.locator('dialog.confirm-modal[open] button.btn-danger');
+			const confirmBtn = page.locator('.confirm-modal button.btn-danger');
 			await expect(confirmBtn).toBeVisible({ timeout: 3_000 });
 			await confirmBtn.click();
 			count--;

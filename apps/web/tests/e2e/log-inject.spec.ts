@@ -100,8 +100,8 @@ async function ensureFoeExists(page: Page) {
 async function ensureExpeditionExists(page: Page) {
 	if ((await page.locator(EXP_SPINE).count()) === 0) {
 		await page.locator(`${EXP_HEADER} button:has-text("+ Journey")`).click();
-		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
-		await page.locator('dialog.confirm-modal[open] button:has-text("Start Journey")').click();
+		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
+		await page.locator('.confirm-modal button:has-text("Start Journey")').click();
 		await expect(page.locator(EXP_SPINE)).not.toHaveCount(0, { timeout: 5_000 });
 	}
 }
@@ -495,7 +495,7 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		const entry = entryById(page, id);
 		await expect(entry.locator('a.move-link')).toBeVisible({ timeout: 3_000 });
 		await entry.locator('a.move-link').click();
-		await expect(page.locator('.moves-dialog[open]')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.moves-dialog')).toBeVisible({ timeout: 5_000 });
 		await page.keyboard.press('Escape');
 	});
 
@@ -535,10 +535,10 @@ test.describe('Log interactive links (injected mock entries)', () => {
 			const delBtn = page.locator(`${FOE_AREA} .fa-stage-delete-btn`).first();
 			await expect(delBtn).toBeVisible({ timeout: 3_000 });
 			await delBtn.click();
-			await expect(page.locator('dialog.confirm-modal[open] button.btn-danger')).toBeVisible({
+			await expect(page.locator('.confirm-modal button.btn-danger')).toBeVisible({
 				timeout: 3_000,
 			});
-			await page.locator('dialog.confirm-modal[open] button.btn-danger').click();
+			await page.locator('.confirm-modal button.btn-danger').click();
 			foeCount--;
 			if (foeCount > 0) await expect(foeSpines).toHaveCount(foeCount, { timeout: 5_000 });
 		}
@@ -551,10 +551,10 @@ test.describe('Log interactive links (injected mock entries)', () => {
 			const delBtn = page.locator(`${EXP_AREA} .ea-stage-delete-btn`).first();
 			await expect(delBtn).toBeVisible({ timeout: 3_000 });
 			await delBtn.click();
-			await expect(page.locator('dialog.confirm-modal[open] button.btn-danger')).toBeVisible({
+			await expect(page.locator('.confirm-modal button.btn-danger')).toBeVisible({
 				timeout: 3_000,
 			});
-			await page.locator('dialog.confirm-modal[open] button.btn-danger').click();
+			await page.locator('.confirm-modal button.btn-danger').click();
 			expCount--;
 			if (expCount > 0) await expect(expSpines).toHaveCount(expCount, { timeout: 5_000 });
 		}
@@ -567,8 +567,8 @@ test.describe('Log interactive links (injected mock entries)', () => {
 			const delBtn = page.locator(`${CHAR_AREA} .ca-stage-delete-btn`).first();
 			await expect(delBtn).toBeVisible({ timeout: 3_000 });
 			await delBtn.click();
-			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 3_000 });
-			await page.locator('dialog.confirm-modal[open] button.btn-danger').click();
+			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 3_000 });
+			await page.locator('.confirm-modal button.btn-danger').click();
 			charCount--;
 			if (charCount > 0) {
 				await expect(charSpines).toHaveCount(charCount, { timeout: 5_000 });

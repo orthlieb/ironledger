@@ -54,8 +54,8 @@ async function ensureJourneySelected(page: import('@playwright/test').Page): Pro
 	}
 	// None found — create one.
 	await page.locator(`${EXP_HEADER} button:has-text("+ Journey")`).click();
-	await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
-	await page.locator('dialog.confirm-modal[open] button:has-text("Start Journey")').click();
+	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
+	await page.locator('.confirm-modal button:has-text("Start Journey")').click();
 	await expect(spines).not.toHaveCount(count, { timeout: 5_000 });
 	await spines.last().click();
 }
@@ -71,10 +71,10 @@ async function ensureSiteSelected(page: import('@playwright/test').Page): Promis
 	// Create a site if the list is empty.
 	if ((await spines.count()) === 0) {
 		await page.locator(`${EXP_HEADER} button:has-text("+ Site")`).click();
-		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
-		await page.selectOption('dialog.confirm-modal[open] #ns-theme', { index: 1 });
-		await page.selectOption('dialog.confirm-modal[open] #ns-domain', { index: 1 });
-		await page.locator('dialog.confirm-modal[open] button:has-text("Create")').click();
+		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
+		await page.selectOption('.confirm-modal #ns-theme', { index: 1 });
+		await page.selectOption('.confirm-modal #ns-domain', { index: 1 });
+		await page.locator('.confirm-modal button:has-text("Create")').click();
 		await expect(spines).not.toHaveCount(0, { timeout: 5_000 });
 	}
 
@@ -128,16 +128,16 @@ test.describe('Expeditions area (v2)', () => {
 
 	test('clicking + Journey opens the new-journey dialog', async ({ page }) => {
 		await page.locator(`${EXP_HEADER} button:has-text("+ Journey")`).click();
-		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
-		await expect(page.locator('dialog.confirm-modal[open] .cm-title')).toContainText('New Journey');
+		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.confirm-modal .cm-title')).toContainText('New Journey');
 		await page.keyboard.press('Escape');
 	});
 
 	test('can add a journey', async ({ page }) => {
 		const before = await page.locator(EXP_SPINE).count();
 		await page.locator(`${EXP_HEADER} button:has-text("+ Journey")`).click();
-		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
-		await page.locator('dialog.confirm-modal[open] button:has-text("Start Journey")').click();
+		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
+		await page.locator('.confirm-modal button:has-text("Start Journey")').click();
 		await expect(page.locator(EXP_SPINE)).not.toHaveCount(before, { timeout: 5_000 });
 	});
 
@@ -145,8 +145,8 @@ test.describe('Expeditions area (v2)', () => {
 		const spines = page.locator(EXP_SPINE);
 		if ((await spines.count()) === 0) {
 			await page.locator(`${EXP_HEADER} button:has-text("+ Journey")`).click();
-			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
-			await page.locator('dialog.confirm-modal[open] button:has-text("Start Journey")').click();
+			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
+			await page.locator('.confirm-modal button:has-text("Start Journey")').click();
 			await expect(spines).not.toHaveCount(0, { timeout: 5_000 });
 		}
 		const countBefore = await spines.count();
@@ -154,7 +154,7 @@ test.describe('Expeditions area (v2)', () => {
 		const deleteBtn = page.locator(`${EXP_AREA} .ea-stage-delete-btn`).first();
 		await expect(deleteBtn).toBeVisible({ timeout: 3_000 });
 		await deleteBtn.click();
-		const confirmBtn = page.locator('dialog.confirm-modal[open] button.btn-danger');
+		const confirmBtn = page.locator('.confirm-modal button.btn-danger');
 		await expect(confirmBtn).toBeVisible({ timeout: 5_000 });
 		await confirmBtn.click();
 		await expect(spines).toHaveCount(countBefore - 1, { timeout: 5_000 });
@@ -164,20 +164,20 @@ test.describe('Expeditions area (v2)', () => {
 
 	test('clicking + Site opens the new-site dialog', async ({ page }) => {
 		await page.locator(`${EXP_HEADER} button:has-text("+ Site")`).click();
-		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
-		await expect(page.locator('dialog.confirm-modal[open] .cm-title')).toContainText('New Site');
-		await expect(page.locator('dialog.confirm-modal[open] #ns-theme')).toBeVisible();
-		await expect(page.locator('dialog.confirm-modal[open] #ns-domain')).toBeVisible();
+		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.confirm-modal .cm-title')).toContainText('New Site');
+		await expect(page.locator('.confirm-modal #ns-theme')).toBeVisible();
+		await expect(page.locator('.confirm-modal #ns-domain')).toBeVisible();
 		await page.keyboard.press('Escape');
 	});
 
 	test('can add a site', async ({ page }) => {
 		const before = await page.locator(EXP_SPINE).count();
 		await page.locator(`${EXP_HEADER} button:has-text("+ Site")`).click();
-		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
-		await page.selectOption('dialog.confirm-modal[open] #ns-theme', { index: 1 });
-		await page.selectOption('dialog.confirm-modal[open] #ns-domain', { index: 1 });
-		await page.locator('dialog.confirm-modal[open] button:has-text("Create")').click();
+		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
+		await page.selectOption('.confirm-modal #ns-theme', { index: 1 });
+		await page.selectOption('.confirm-modal #ns-domain', { index: 1 });
+		await page.locator('.confirm-modal button:has-text("Create")').click();
 		await expect(page.locator(EXP_SPINE)).not.toHaveCount(before, { timeout: 5_000 });
 	});
 
@@ -185,10 +185,10 @@ test.describe('Expeditions area (v2)', () => {
 		const spines = page.locator(EXP_SPINE);
 		if ((await spines.count()) === 0) {
 			await page.locator(`${EXP_HEADER} button:has-text("+ Site")`).click();
-			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 5_000 });
-			await page.selectOption('dialog.confirm-modal[open] #ns-theme', { index: 1 });
-			await page.selectOption('dialog.confirm-modal[open] #ns-domain', { index: 1 });
-			await page.locator('dialog.confirm-modal[open] button:has-text("Create")').click();
+			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
+			await page.selectOption('.confirm-modal #ns-theme', { index: 1 });
+			await page.selectOption('.confirm-modal #ns-domain', { index: 1 });
+			await page.locator('.confirm-modal button:has-text("Create")').click();
 			await expect(spines).not.toHaveCount(0, { timeout: 5_000 });
 		}
 		const countBefore = await spines.count();
@@ -196,7 +196,7 @@ test.describe('Expeditions area (v2)', () => {
 		const deleteBtn = page.locator(`${EXP_AREA} .ea-stage-delete-btn`).first();
 		await expect(deleteBtn).toBeVisible({ timeout: 3_000 });
 		await deleteBtn.click();
-		const confirmBtn = page.locator('dialog.confirm-modal[open] button.btn-danger');
+		const confirmBtn = page.locator('.confirm-modal button.btn-danger');
 		await expect(confirmBtn).toBeVisible({ timeout: 5_000 });
 		await confirmBtn.click();
 		await expect(spines).toHaveCount(countBefore - 1, { timeout: 5_000 });
@@ -477,7 +477,7 @@ test.describe('Expeditions area (v2)', () => {
 			const deleteBtn = page.locator(`${EXP_AREA} .ea-stage-delete-btn`).first();
 			await expect(deleteBtn).toBeVisible({ timeout: 3_000 });
 			await deleteBtn.click();
-			const confirmBtn = page.locator('dialog.confirm-modal[open] button.btn-danger');
+			const confirmBtn = page.locator('.confirm-modal button.btn-danger');
 			await expect(confirmBtn).toBeVisible({ timeout: 3_000 });
 			await confirmBtn.click();
 			count--;

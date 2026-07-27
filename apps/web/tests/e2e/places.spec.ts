@@ -75,34 +75,34 @@ test.describe('Places (v2)', () => {
 
 	test('clicking + Place opens the New Place dialog', async ({ page }) => {
 		await page.locator(`${CM_HEADER} button:has-text("+ Place")`).click();
-		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 15_000 });
-		await expect(page.locator('dialog.confirm-modal[open] .cm-title')).toContainText('New Place');
+		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 15_000 });
+		await expect(page.locator('.confirm-modal .cm-title')).toContainText('New Place');
 		await page.keyboard.press('Escape');
 	});
 
 	test('can add a place via Random', async ({ page }) => {
 		const before = await page.locator(CM_ROW).count();
 		await page.locator(`${CM_HEADER} button:has-text("+ Place")`).click();
-		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 15_000 });
-		await page.locator('dialog.confirm-modal[open] button:has-text("Random")').click();
+		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 15_000 });
+		await page.locator('.confirm-modal button:has-text("Random")').click();
 		await expect(page.locator(CM_ROW)).not.toHaveCount(before, { timeout: 8_000 });
 	});
 
 	test('can add a place via Create', async ({ page }) => {
 		const before = await page.locator(CM_ROW).count();
 		await page.locator(`${CM_HEADER} button:has-text("+ Place")`).click();
-		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 15_000 });
-		await page.locator('dialog.confirm-modal[open] button:has-text("Create")').click();
-		await expect(page.locator('dialog.confirm-modal[open]')).not.toBeVisible({ timeout: 3_000 });
+		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 15_000 });
+		await page.locator('.confirm-modal button:has-text("Create")').click();
+		await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 3_000 });
 		await expect(page.locator(CM_ROW)).toHaveCount(before + 1, { timeout: 5_000 });
 	});
 
 	test('Escape closes the New Place dialog without creating', async ({ page }) => {
 		const before = await page.locator(CM_ROW).count();
 		await page.locator(`${CM_HEADER} button:has-text("+ Place")`).click();
-		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 15_000 });
+		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 15_000 });
 		await page.keyboard.press('Escape');
-		await expect(page.locator('dialog.confirm-modal[open]')).not.toBeVisible({ timeout: 3_000 });
+		await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 3_000 });
 		await expect(page.locator(CM_ROW)).toHaveCount(before);
 	});
 
@@ -111,9 +111,9 @@ test.describe('Places (v2)', () => {
 		const existingPlaces = await countByKind(page, 'place');
 		if (existingPlaces === 0) {
 			await page.locator(`${CM_HEADER} button:has-text("+ Place")`).click();
-			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 15_000 });
-			await page.locator('dialog.confirm-modal[open] button:has-text("Random")').click();
-			await expect(page.locator('dialog.confirm-modal[open]')).not.toBeVisible({ timeout: 5_000 });
+			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 15_000 });
+			await page.locator('.confirm-modal button:has-text("Random")').click();
+			await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
 		}
 		const target = await selectRowOfKind(page, 'place');
 		expect(target).not.toBeNull();
@@ -126,9 +126,9 @@ test.describe('Places (v2)', () => {
 		const existingPlaces = await countByKind(page, 'place');
 		if (existingPlaces === 0) {
 			await page.locator(`${CM_HEADER} button:has-text("+ Place")`).click();
-			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 15_000 });
-			await page.locator('dialog.confirm-modal[open] button:has-text("Create")').click();
-			await expect(page.locator('dialog.confirm-modal[open]')).not.toBeVisible({ timeout: 3_000 });
+			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 15_000 });
+			await page.locator('.confirm-modal button:has-text("Create")').click();
+			await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 3_000 });
 		}
 		const target = await selectRowOfKind(page, 'place');
 		expect(target).not.toBeNull();
@@ -142,16 +142,16 @@ test.describe('Places (v2)', () => {
 		const existingPlaces = await countByKind(page, 'place');
 		if (existingPlaces === 0) {
 			await page.locator(`${CM_HEADER} button:has-text("+ Place")`).click();
-			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 15_000 });
-			await page.locator('dialog.confirm-modal[open] button:has-text("Create")').click();
-			await expect(page.locator('dialog.confirm-modal[open]')).not.toBeVisible({ timeout: 3_000 });
+			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 15_000 });
+			await page.locator('.confirm-modal button:has-text("Create")').click();
+			await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 3_000 });
 		}
 		const existingCommunities = await countByKind(page, 'community');
 		if (existingCommunities === 0) {
 			await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click();
-			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 15_000 });
-			await page.locator('dialog.confirm-modal[open] button:has-text("Create")').click();
-			await expect(page.locator('dialog.confirm-modal[open]')).not.toBeVisible({ timeout: 3_000 });
+			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 15_000 });
+			await page.locator('.confirm-modal button:has-text("Create")').click();
+			await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 3_000 });
 		}
 
 		// Open the filter panel and click Places.
@@ -174,16 +174,16 @@ test.describe('Places (v2)', () => {
 		const existingPlaces = await countByKind(page, 'place');
 		if (existingPlaces === 0) {
 			await page.locator(`${CM_HEADER} button:has-text("+ Place")`).click();
-			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 15_000 });
-			await page.locator('dialog.confirm-modal[open] button:has-text("Random")').click();
-			await expect(page.locator('dialog.confirm-modal[open]')).not.toBeVisible({ timeout: 5_000 });
+			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 15_000 });
+			await page.locator('.confirm-modal button:has-text("Random")').click();
+			await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
 		}
 		const rowBefore = await page.locator(CM_ROW).count();
 		const target = await selectRowOfKind(page, 'place');
 		expect(target).not.toBeNull();
 
 		await page.locator(`${CM_AREA} .cm-stage-delete-btn`).click();
-		const confirmBtn = page.locator('dialog.confirm-modal[open] button.btn-danger');
+		const confirmBtn = page.locator('.confirm-modal button.btn-danger');
 		await expect(confirmBtn).toBeVisible({ timeout: 3_000 });
 		await confirmBtn.click();
 		await expect(page.locator(CM_ROW)).toHaveCount(rowBefore - 1, { timeout: 5_000 });

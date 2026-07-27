@@ -99,7 +99,7 @@ test.describe('Foes area (v2)', () => {
 		const deleteBtn = page.locator(`${FOE_AREA} .fa-stage-delete-btn`).first();
 		await expect(deleteBtn).toBeVisible({ timeout: 3_000 });
 		await deleteBtn.click();
-		const confirmBtn = page.locator('dialog.confirm-modal[open] button.btn-danger');
+		const confirmBtn = page.locator('.confirm-modal button.btn-danger');
 		await expect(confirmBtn).toBeVisible({ timeout: 3_000 });
 		await confirmBtn.click();
 		await expect(spines).toHaveCount(countBefore - 1, { timeout: 5_000 });
@@ -115,7 +115,7 @@ test.describe('Foes area (v2)', () => {
 			const deleteBtn = page.locator(`${FOE_AREA} .fa-stage-delete-btn`).first();
 			await expect(deleteBtn).toBeVisible({ timeout: 3_000 });
 			await deleteBtn.click();
-			const confirmBtn = page.locator('dialog.confirm-modal[open] button.btn-danger');
+			const confirmBtn = page.locator('.confirm-modal button.btn-danger');
 			await expect(confirmBtn).toBeVisible({ timeout: 3_000 });
 			await confirmBtn.click();
 			count--;

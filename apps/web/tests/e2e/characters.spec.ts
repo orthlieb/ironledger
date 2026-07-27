@@ -157,8 +157,8 @@ test.describe('Characters area (v2)', () => {
 		await assetCards.first().locator('.ca-asset-card-main').click();
 		await expect(page.locator('dialog.ca-asset-dialog[open]')).toBeVisible({ timeout: 3_000 });
 		await page.locator('dialog.ca-asset-dialog[open] .asset-footer .btn-danger').click();
-		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 3_000 });
-		await page.locator('dialog.confirm-modal[open] button.btn-danger').click();
+		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 3_000 });
+		await page.locator('.confirm-modal button.btn-danger').click();
 		await expect(assetCards).toHaveCount(countBefore - 1, { timeout: 5_000 });
 	});
 
@@ -183,8 +183,8 @@ test.describe('Characters area (v2)', () => {
 		}
 		const vowsBefore = await vowCards.count();
 		await vowCards.first().locator('.btn-trash').click();
-		await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 3_000 });
-		await page.locator('dialog.confirm-modal[open] button.btn-danger').click();
+		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 3_000 });
+		await page.locator('.confirm-modal button.btn-danger').click();
 		await expect(vowCards).toHaveCount(vowsBefore - 1, { timeout: 5_000 });
 	});
 
@@ -324,8 +324,8 @@ test.describe('Characters area (v2)', () => {
 			const deleteBtn = page.locator(`${CHAR_AREA} .ca-stage-delete-btn`).first();
 			await expect(deleteBtn).toBeVisible({ timeout: 3_000 });
 			await deleteBtn.click();
-			await expect(page.locator('dialog.confirm-modal[open]')).toBeVisible({ timeout: 3_000 });
-			await page.locator('dialog.confirm-modal[open] button.btn-danger').click();
+			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 3_000 });
+			await page.locator('.confirm-modal button.btn-danger').click();
 			count--;
 			if (count > 0) {
 				await expect(spines).toHaveCount(count, { timeout: 5_000 });
