@@ -29,6 +29,9 @@
 	} from '$lib/aiSettings.svelte.js';
 
 	let dialogOpen = $state(false);
+	// First composer field — CLAUDE.md dialog focus rule targets the
+	// API key input (the primary reason to open this dialog).
+	let keyInputEl = $state<HTMLInputElement | null>(null);
 	let provider = $state<AiProvider>('claude');
 
 	let keyInput = $state(''); // new key to save ('' = keep existing)
@@ -114,7 +117,13 @@
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
 		<Dialog.Overlay class="ac-overlay" />
-		<Dialog.Content class="ac-dialog">
+		<Dialog.Content
+			class="ac-dialog"
+			onOpenAutoFocus={(e) => {
+				e.preventDefault();
+				setTimeout(() => keyInputEl?.focus(), 0);
+			}}
+		>
 			<DialogHeader title={headingText(`${label} Setup`)} onclose={close} />
 
 			<div class="ac-body">
@@ -124,6 +133,7 @@
 					<span class="ac-label">API Key</span>
 					<div class="ac-key-row">
 						<input
+							bind:this={keyInputEl}
 							class="ac-input ac-key-input"
 							type={keyVisible ? 'text' : 'password'}
 							autocomplete="off"

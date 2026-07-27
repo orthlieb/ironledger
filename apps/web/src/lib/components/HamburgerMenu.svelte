@@ -28,6 +28,9 @@
 	} = $props();
 
 	let exportDialogOpen = $state(false);
+	// Primary default button for the CLAUDE.md dialog focus rule —
+	// caret lands on Export on open (no search field here).
+	let exportBtnEl = $state<HTMLButtonElement | null>(null);
 	// Hidden form the "Sign Out" item programmatically submits so the
 	// POST + CSRF flow that /logout expects still runs — bits-ui menu
 	// items don't render as <form> submitters themselves.
@@ -119,7 +122,13 @@
 <Dialog.Root bind:open={exportDialogOpen}>
 	<Dialog.Portal>
 		<Dialog.Overlay class="export-overlay" />
-		<Dialog.Content class="export-dialog">
+		<Dialog.Content
+			class="export-dialog"
+			onOpenAutoFocus={(e) => {
+				e.preventDefault();
+				setTimeout(() => exportBtnEl?.focus(), 0);
+			}}
+		>
 			<DialogHeader title={headingText('Export')} radius="8px 8px 0 0" />
 			<div class="ed-body">
 				<div class="ed-field">
@@ -136,7 +145,7 @@
 							{ value: 'stories', label: 'Stories' },
 							{ value: 'communities', label: 'Connections' },
 							{ value: 'expeditions', label: 'Expeditions' },
-							{ value: 'map', label: 'Active Map' },
+							{ value: 'map', label: 'All Maps' },
 						]}
 						onchange={(v) => {
 							// Stories are markdown-only. Log is JSON-or-Markdown. Map
@@ -202,7 +211,7 @@
 			</div>
 			<div class="ed-footer">
 				<button class="btn" onclick={() => (exportDialogOpen = false)}>Cancel</button>
-				<button class="btn btn-primary" onclick={doExport}>Export</button>
+				<button bind:this={exportBtnEl} class="btn btn-primary" onclick={doExport}>Export</button>
 			</div>
 		</Dialog.Content>
 	</Dialog.Portal>
