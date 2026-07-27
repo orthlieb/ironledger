@@ -2087,8 +2087,10 @@
 	:global(.mp-combobox-input::placeholder) {
 		color: var(--text-dimmer);
 	}
-	.mp-combobox-caret,
-	:global(button.mp-combobox-caret) {
+	/* `.mp-combobox-caret` lands on a `<span>` (map picker) OR a
+	   `<button>` (Combobox.Trigger); scope globally so the same CSS
+	   covers both. */
+	:global(.mp-combobox-caret) {
 		flex-shrink: 0;
 		display: inline-flex;
 		align-items: center;
@@ -2106,14 +2108,12 @@
 		background: color-mix(in srgb, var(--text) 8%, transparent);
 		color: var(--text);
 	}
-	.mp-combobox-caret :global(svg),
-	:global(button.mp-combobox-caret svg) {
+	:global(.mp-combobox-caret svg) {
 		width: 12px;
 		height: 12px;
 		fill: currentColor;
 	}
-	.mp-combobox-caret :global(svg path),
-	:global(button.mp-combobox-caret svg path) {
+	:global(.mp-combobox-caret svg path) {
 		fill: currentColor;
 	}
 
@@ -2405,10 +2405,10 @@
 		color: var(--text-dimmer);
 		line-height: 1;
 	}
-	/* Passed to a bits-ui `Popover.Trigger` (renders as a plain
-	   `<button>`), so scope with `:global(...)` — Svelte's CSS pruning
-	   can't see class names threaded through a foreign component. */
-	:global(.mp-sel-entity-btn) {
+	/* Sizing override for the marker link Combobox wrapper — base
+	   look comes from `.mp-combobox`. Applied to a plain `<div>`
+	   so plain-scoped class works (no bits-ui component in between). */
+	.mp-sel-entity-btn {
 		flex: 1 1 240px;
 		min-width: 180px;
 		max-width: 420px;
