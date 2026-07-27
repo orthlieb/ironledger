@@ -69,6 +69,11 @@
 	// (portal, overlay, Escape, focus trap). The `open()` / `close()`
 	// public methods just flip this.
 	let dialogOpen = $state(false);
+	// Ref to the picker view's search input so `onOpenAutoFocus` can
+	// land the caret there when the dialog opens in picker mode. The
+	// default focus-trap otherwise lands on the DialogHeader's ✕
+	// button — the first tabbable descendant.
+	let searchInputEl = $state<HTMLInputElement | null>(null);
 	let view = $state<'picker' | 'detail'>('picker');
 	let selectedId = $state<string | null>(null);
 	let search = $state('');
@@ -977,7 +982,20 @@
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
 		<Dialog.Overlay class="md-overlay" />
-		<Dialog.Content class="moves-dialog">
+		<Dialog.Content
+			class="moves-dialog"
+			onOpenAutoFocus={(e) => {
+				// bits-ui's default focus-trap lands on the first tabbable
+				// descendant — the DialogHeader's ✕ button. In picker view
+				// jump straight to the search input so the user can start
+				// typing immediately. Detail view keeps default behavior
+				// (focus lands on the Back button, which is fine there).
+				if (view === 'picker') {
+					e.preventDefault();
+					searchInputEl?.focus();
+				}
+			}}
+		>
 			{#if view === 'picker'}
 				<!-- ── Picker view ────────────────────────────────────────────────────── -->
 
@@ -989,6 +1007,7 @@
 						<div class="md-search-field">
 							<span class="md-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
 							<input
+								bind:this={searchInputEl}
 								class="md-search"
 								type="search"
 								placeholder="Search moves…"
