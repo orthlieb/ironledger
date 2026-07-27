@@ -1151,14 +1151,14 @@
 		height: 100%;
 		min-height: 0;
 	}
-	/* Height-matched with .cm-stage-delete-btn below — see that block's
-	   note for why. `line-height: 1` collapses the text baseline so the
-	   button's total height is driven by `min-height`, not the
-	   inherited `line-height: 1.5` on 0.72rem text. */
+	/* Height-match the neighbouring trash button. The trash btn renders
+	   at ~22px (12px SVG + 4+4 padding + 1+1 border via
+	   `.btn.btn-icon.btn-trash`), while `.btn`'s inherited
+	   `line-height: 1.5` on `0.72rem` would puff the map btn to ~27px.
+	   `line-height: 1` collapses the text baseline and `min-height:
+	   22px` pins the final height to the trash btn's natural size. */
 	.cm-stage-map-btn {
 		flex-shrink: 0;
-		min-height: 28px;
-		box-sizing: border-box;
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		font-weight: 600;
@@ -1166,6 +1166,8 @@
 		text-transform: uppercase;
 		padding: 4px 12px;
 		line-height: 1;
+		min-height: 22px;
+		box-sizing: border-box;
 	}
 	/* Map field — the chip strip lives inside a `.cm-field-row` in
 	   the Core tab now (previously a header-level band). One chip per
@@ -1548,17 +1550,9 @@
 	.cm-stage-name-input:focus {
 		border-color: var(--text-accent);
 	}
-	/* Delete: visual comes from .btn-trash in app.css. Pin to the same
-	   28px height (matches `.btn-icon`'s `min-width`, so the trash btn
-	   ends up a 28×28 icon square) so it sits on the same baseline as
-	   the neighbouring `.cm-stage-map-btn`. Without this, the map
-	   btn's inherited `line-height: 1.5` on 0.72rem text renders ~27px
-	   while the trash btn's 12px SVG content renders ~22px — a
-	   noticeable ~5px mismatch in the header row. */
+	/* Delete: visual comes from .btn-trash in app.css; only positioning here. */
 	.cm-stage-delete-btn {
 		flex-shrink: 0;
-		min-height: 28px;
-		box-sizing: border-box;
 	}
 
 	.cm-tabs {
