@@ -41,6 +41,7 @@
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
 	import diceD6RawSvg from '$icons/dice-d6-light.svg?raw';
 	import diceD10RawSvg from '$icons/dice-d10-light.svg?raw';
+	import { Dialog } from 'bits-ui';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { loadAssets, findAsset } from '$lib/assetStore.svelte.js';
@@ -64,7 +65,10 @@
 	// ---------------------------------------------------------------------------
 	// Internal state
 	// ---------------------------------------------------------------------------
-	let dialogEl = $state<HTMLDialogElement | null>(null);
+	// bits-ui Dialog open flag — the primitive owns everything else
+	// (portal, overlay, Escape, focus trap). The `open()` / `close()`
+	// public methods just flip this.
+	let dialogOpen = $state(false);
 	let view = $state<'picker' | 'detail'>('picker');
 	let selectedId = $state<string | null>(null);
 	let search = $state('');
@@ -447,11 +451,11 @@
 		factorsManuallySet = false;
 		loadMoves();
 		loadAssets();
-		dialogEl?.showModal();
+		dialogOpen = true;
 	}
 
 	export function close() {
-		dialogEl?.close();
+		dialogOpen = false;
 	}
 
 	// ---------------------------------------------------------------------------
@@ -967,674 +971,691 @@
 </script>
 
 <!-- =========================================================================
-     Dialog
+     Dialog — bits-ui Dialog primitive. Portals into `document.body`,
+     manages Escape / focus trap / body scroll lock automatically.
      ========================================================================= -->
-<dialog bind:this={dialogEl} class="moves-dialog" oncancel={close}>
-	{#if view === 'picker'}
-		<!-- ── Picker view ────────────────────────────────────────────────────── -->
+<Dialog.Root bind:open={dialogOpen}>
+	<Dialog.Portal>
+		<Dialog.Overlay class="md-overlay" />
+		<Dialog.Content class="moves-dialog">
+			{#if view === 'picker'}
+				<!-- ── Picker view ────────────────────────────────────────────────────── -->
 
-		<DialogHeader title={headingText('Moves')} onclose={close} />
+				<DialogHeader title={headingText('Moves')} onclose={close} />
 
-		<!-- Controls -->
-		<div class="md-controls">
-			<div class="md-search-row">
-				<div class="md-search-field">
-					<span class="md-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
-					<input
-						class="md-search"
-						type="search"
-						placeholder="Search moves…"
-						bind:value={search}
-						aria-label="Search moves"
-					/>
-				</div>
-				<button
-					class="md-filter-toggle"
-					class:md-filter-toggle--active={activeCategories.size > 0}
-					onclick={() => (filtersOpen = !filtersOpen)}
-					aria-expanded={filtersOpen}
-					>Filters{#if activeCategories.size > 0}&nbsp;<span class="md-filter-badge"
-							>{activeCategories.size}</span
-						>{/if}
-					{filtersOpen ? '▲' : '▼'}</button
-				>
-				<button
-					class="md-hide-disabled-btn"
-					class:md-hide-disabled-btn--active={hideDisabled}
-					use:tooltip={hideDisabled ? 'Show all moves' : 'Hide unavailable moves'}
-					onclick={() => (hideDisabled = !hideDisabled)}
-					aria-label={hideDisabled ? 'Show all moves' : 'Hide unavailable moves'}
-				>
-					{#if hideDisabled}
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="16"
-							height="16"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							><path
-								d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"
-							/><path
-								d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"
-							/><line x1="1" y1="1" x2="23" y2="23" /><path
-								d="M14.12 14.12a3 3 0 1 1-4.24-4.24"
-							/></svg
+				<!-- Controls -->
+				<div class="md-controls">
+					<div class="md-search-row">
+						<div class="md-search-field">
+							<span class="md-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
+							<input
+								class="md-search"
+								type="search"
+								placeholder="Search moves…"
+								bind:value={search}
+								aria-label="Search moves"
+							/>
+						</div>
+						<button
+							class="md-filter-toggle"
+							class:md-filter-toggle--active={activeCategories.size > 0}
+							onclick={() => (filtersOpen = !filtersOpen)}
+							aria-expanded={filtersOpen}
+							>Filters{#if activeCategories.size > 0}&nbsp;<span class="md-filter-badge"
+									>{activeCategories.size}</span
+								>{/if}
+							{filtersOpen ? '▲' : '▼'}</button
 						>
-					{:else}
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="16"
-							height="16"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle
-								cx="12"
-								cy="12"
-								r="3"
-							/></svg
+						<button
+							class="md-hide-disabled-btn"
+							class:md-hide-disabled-btn--active={hideDisabled}
+							use:tooltip={hideDisabled ? 'Show all moves' : 'Hide unavailable moves'}
+							onclick={() => (hideDisabled = !hideDisabled)}
+							aria-label={hideDisabled ? 'Show all moves' : 'Hide unavailable moves'}
 						>
-					{/if}
-				</button>
-			</div>
-
-			{#if filtersOpen}
-				<div class="md-filter-panel">
-					<div class="md-filter-chips">
-						{#each categories as cat (cat)}
-							<button
-								class="md-cat-tag"
-								class:md-cat-tag--active={activeCategories.has(cat)}
-								style:--ccolor={catColor(cat)}
-								onclick={() => toggleCategory(cat)}>{cat}</button
-							>
-						{/each}
+							{#if hideDisabled}
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									width="16"
+									height="16"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									><path
+										d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"
+									/><path
+										d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"
+									/><line x1="1" y1="1" x2="23" y2="23" /><path
+										d="M14.12 14.12a3 3 0 1 1-4.24-4.24"
+									/></svg
+								>
+							{:else}
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									width="16"
+									height="16"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle
+										cx="12"
+										cy="12"
+										r="3"
+									/></svg
+								>
+							{/if}
+						</button>
 					</div>
-					<button
-						class="md-clear-btn"
-						use:tooltip={'Clear all filters'}
-						onclick={clearFilters}
-						disabled={activeCategories.size === 0}
-						aria-label="Clear all filters">{@html clearFiltersSvg}</button
-					>
-				</div>
-			{/if}
-		</div>
 
-		<!-- Tile grid grouped by category -->
-		<div class="md-body">
-			{#if moves.length === 0}
-				<div class="md-loading">Loading moves…</div>
-			{:else}
-				{@const list = filteredMoves()}
-				{#if list.length === 0}
-					<div class="md-empty">No moves match.</div>
-				{:else}
-					{#each categories as cat (cat)}
-						{@const catMoves = movesByCategory(cat)}
-						{#if catMoves.length > 0}
-							<div class="md-category-header" style:--ccolor={catColor(cat)}>{cat}</div>
-							<div class="md-grid">
-								{#each catMoves as move (move.id)}
-									{@const fail = moveFailReason(move)}
+					{#if filtersOpen}
+						<div class="md-filter-panel">
+							<div class="md-filter-chips">
+								{#each categories as cat (cat)}
 									<button
-										class="md-tile"
-										class:md-tile--dimmed={!!fail}
-										style:--tcolor={catColor(move.category)}
-										use:tooltip={{ text: fail ?? move.triggerShort }}
-										onclick={() => {
-											if (!fail) selectMove(move);
-										}}
+										class="md-cat-tag"
+										class:md-cat-tag--active={activeCategories.has(cat)}
+										style:--ccolor={catColor(cat)}
+										onclick={() => toggleCategory(cat)}>{cat}</button
 									>
-										<div class="md-tile-stripe"></div>
-										<div class="md-tile-body">
-											<div class="md-tile-name">{move.name}</div>
-											<div class="md-tile-desc">{move.triggerShort}</div>
+								{/each}
+							</div>
+							<button
+								class="md-clear-btn"
+								use:tooltip={'Clear all filters'}
+								onclick={clearFilters}
+								disabled={activeCategories.size === 0}
+								aria-label="Clear all filters">{@html clearFiltersSvg}</button
+							>
+						</div>
+					{/if}
+				</div>
+
+				<!-- Tile grid grouped by category -->
+				<div class="md-body">
+					{#if moves.length === 0}
+						<div class="md-loading">Loading moves…</div>
+					{:else}
+						{@const list = filteredMoves()}
+						{#if list.length === 0}
+							<div class="md-empty">No moves match.</div>
+						{:else}
+							{#each categories as cat (cat)}
+								{@const catMoves = movesByCategory(cat)}
+								{#if catMoves.length > 0}
+									<div class="md-category-header" style:--ccolor={catColor(cat)}>{cat}</div>
+									<div class="md-grid">
+										{#each catMoves as move (move.id)}
+											{@const fail = moveFailReason(move)}
+											<button
+												class="md-tile"
+												class:md-tile--dimmed={!!fail}
+												style:--tcolor={catColor(move.category)}
+												use:tooltip={{ text: fail ?? move.triggerShort }}
+												onclick={() => {
+													if (!fail) selectMove(move);
+												}}
+											>
+												<div class="md-tile-stripe"></div>
+												<div class="md-tile-body">
+													<div class="md-tile-name">{move.name}</div>
+													<div class="md-tile-desc">{move.triggerShort}</div>
+												</div>
+											</button>
+										{/each}
+									</div>
+								{/if}
+							{/each}
+						{/if}
+					{/if}
+				</div>
+			{:else if view === 'detail' && selectedMove}
+				<!-- ── Detail view ───────────────────────────────────────────────────── -->
+
+				<DialogHeader title={selectedMove.name} detail>
+					{#snippet trailing()}
+						<span class="md-category-badge" style:--ccolor={catColor(selectedMove.category)}>
+							{selectedMove.category}
+						</span>
+					{/snippet}
+				</DialogHeader>
+
+				<!-- svelte-ignore a11y_click_events_have_key_events -->
+				<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+				<div class="md-body md-body--detail" role="region" onclick={handleDetailClick}>
+					<!-- ── Scrollable read area ── -->
+					<div class="md-detail-scroll">
+						<!-- Trigger text -->
+						<div class="md-trigger" class:applied={isEndureMove && harmApplied}>
+							{@html resolvedTriggerHtml}
+						</div>
+
+						<!-- Endure Harm/Stress: how much harm/stress this blow deals. Defaults to
+				     the foe's rank; editable for "as appropriate to the situation". The
+				     Apply button commits it to the character; then roll. -->
+						{#if isEndureMove}
+							<div class="md-harm-row">
+								<span class="md-harm-label">{harmWord}</span>
+								<button
+									class="md-adj"
+									onclick={() => (harmValue = Math.max(1, harmValue - 1))}
+									disabled={harmValue <= 1 || harmApplied}
+									aria-label="Decrease {harmWord.toLowerCase()}">−</button
+								>
+								<span class="md-harm-val">{harmValue}</span>
+								<button
+									class="md-adj"
+									onclick={() => (harmValue = Math.min(10, harmValue + 1))}
+									disabled={harmValue >= 10 || harmApplied}
+									aria-label="Increase {harmWord.toLowerCase()}">+</button
+								>
+								<button
+									class="md-harm-apply"
+									class:applied={harmApplied}
+									onclick={applyHarm}
+									disabled={harmApplied || !ctx}
+									use:tooltip={harmApplied
+										? 'Harm applied'
+										: `Apply ${harmValue} ${harmWord.toLowerCase()} to the character`}
+								>
+									{harmApplied ? 'Applied ✓' : 'Apply'}
+								</button>
+								<span class="md-harm-hint">foe's rank, or as appropriate</span>
+							</div>
+						{/if}
+
+						<!-- ── Standard action move ── -->
+						{#if hasRollableStats(selectedMove)}
+							<!-- Stat picker -->
+							{#if selectedMove.stats && selectedMove.stats.length > 0}
+								<div class="md-stat-list">
+									{#each selectedMove.stats as s (s.stat)}
+										<button
+											class="md-stat-row-btn"
+											class:selected={selectedStat === s.stat}
+											style:--scolor={statColor(s.stat)}
+											onclick={() => (selectedStat = s.stat)}
+											disabled={rolling || !ctx}
+										>
+											<span class="md-stat-check" aria-hidden="true"
+												>{selectedStat === s.stat ? '✔' : ''}</span
+											>
+											<span class="md-sdesc">{s.desc}</span>
+											<span class="md-stat-chip" style:--scolor={statColor(s.stat)}>
+												<span class="md-sname">{s.stat}</span>
+												<span class="md-sval">+{statValue(s.stat)}</span>
+											</span>
+										</button>
+									{/each}
+								</div>
+							{/if}
+							<!-- Outcomes -->
+							{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
+								<div class="md-outcomes">
+									{#if selectedMove.strong}
+										<div
+											class="md-outcome-section"
+											style:--outcome-color="var(--color-success, #34d399)"
+										>
+											<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
+											<div class="md-outcome-text">{@html displayHtml(selectedMove.strong)}</div>
 										</div>
+									{/if}
+									{#if selectedMove.weak}
+										<div
+											class="md-outcome-section"
+											style:--outcome-color="var(--color-momentum, #60a5fa)"
+										>
+											<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
+											<div class="md-outcome-text">{@html displayHtml(selectedMove.weak)}</div>
+										</div>
+									{/if}
+									{#if selectedMove.miss}
+										<div
+											class="md-outcome-section"
+											style:--outcome-color="var(--color-danger, #ef4444)"
+										>
+											<div class="md-outcome-label md-outcome-miss">Miss</div>
+											<div class="md-outcome-text">{@html displayHtml(selectedMove.miss)}</div>
+										</div>
+									{/if}
+								</div>
+							{/if}
+
+							<!-- ── Spell roll move ── -->
+						{:else if isSpellRollMove(selectedMove)}
+							{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
+								<div class="md-outcomes">
+									{#if selectedMove.strong}
+										<div
+											class="md-outcome-section"
+											style:--outcome-color="var(--color-success, #34d399)"
+										>
+											<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
+											<div class="md-outcome-text">{@html displayHtml(selectedMove.strong)}</div>
+										</div>
+									{/if}
+									{#if selectedMove.weak}
+										<div
+											class="md-outcome-section"
+											style:--outcome-color="var(--color-momentum, #60a5fa)"
+										>
+											<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
+											<div class="md-outcome-text">{@html displayHtml(selectedMove.weak)}</div>
+										</div>
+									{/if}
+									{#if selectedMove.miss}
+										<div
+											class="md-outcome-section"
+											style:--outcome-color="var(--color-danger, #ef4444)"
+										>
+											<div class="md-outcome-label md-outcome-miss">Miss</div>
+											<div class="md-outcome-text">{@html displayHtml(selectedMove.miss)}</div>
+										</div>
+									{/if}
+								</div>
+							{/if}
+							<!-- Difficulty factors collapsible -->
+							{#if pctx.ritualAssets && pctx.ritualAssets.length > 0}
+								<details class="md-factors">
+									<summary class="md-factors-summary">
+										Difficulty Factors
+										{#if factorsManuallySet}
+											<span class="md-factors-total">= {spellDifficulty}</span>
+										{/if}
+									</summary>
+									{#each pctx.ritualAssets as ritual (ritual.id)}
+										{#if pctx.ritualAssets.length > 1}
+											<div class="md-factors-ritual-name">{ritual.name}</div>
+										{/if}
+										{#each ritual.inspectionFactors as factor (factor.key)}
+											{@const levelKey = `${ritual.id}|${factor.key}`}
+											{@const currentLevel = factorLevels[levelKey] ?? 0}
+											<div class="md-factor">
+												<div class="md-factor-header">
+													<span class="md-factor-name">{factor.name}</span>
+													<div class="md-factor-levels">
+														{#each [0, 1, 2] as lvl}
+															<button
+																class="md-factor-lvl"
+																class:active={currentLevel === lvl}
+																onclick={() => setFactorLevel(ritual.id, factor.key, lvl)}
+																>{lvl}</button
+															>
+														{/each}
+													</div>
+												</div>
+												<div class="md-factor-desc">{factor.levels[currentLevel]}</div>
+											</div>
+										{/each}
+									{/each}
+								</details>
+							{/if}
+
+							<!-- ── Progress move ── -->
+						{:else if isProgressMove(selectedMove)}
+							{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
+								<div class="md-outcomes">
+									{#if selectedMove.strong}
+										<div
+											class="md-outcome-section"
+											style:--outcome-color="var(--color-success, #34d399)"
+										>
+											<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
+											<div class="md-outcome-text">{@html displayHtml(selectedMove.strong)}</div>
+										</div>
+									{/if}
+									{#if selectedMove.weak}
+										<div
+											class="md-outcome-section"
+											style:--outcome-color="var(--color-momentum, #60a5fa)"
+										>
+											<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
+											<div class="md-outcome-text">{@html displayHtml(selectedMove.weak)}</div>
+										</div>
+									{/if}
+									{#if selectedMove.miss}
+										<div
+											class="md-outcome-section"
+											style:--outcome-color="var(--color-danger, #ef4444)"
+										>
+											<div class="md-outcome-label md-outcome-miss">Miss</div>
+											<div class="md-outcome-text">{@html displayHtml(selectedMove.miss)}</div>
+										</div>
+									{/if}
+								</div>
+							{/if}
+
+							<!-- ── Ask the Oracle ── -->
+						{:else if isOracleRollMove}
+							<div class="md-stat-list">
+								{#each oracleTable as entry, i (entry.value.odds)}
+									<button
+										class="md-stat-row-btn"
+										class:selected={selectedOddsIdx === i}
+										style="--scolor: var(--color-accent, #f59e0b)"
+										onclick={() => (selectedOddsIdx = i)}
+									>
+										<span class="md-stat-check" aria-hidden="true"
+											>{selectedOddsIdx === i ? '\u2714' : ''}</span
+										>
+										<span class="md-sdesc">{entry.value.odds}</span>
+										<span class="md-oracle-threshold">{entry.value.threshold}</span>
 									</button>
 								{/each}
 							</div>
+
+							<!-- ── Table-roll move ── -->
+						{:else if isTableRollMove(selectedMove)}
+							{@const tableEntries =
+								((selectedMove as Record<string, unknown>)['table'] as Array<{
+									topRange: number;
+									value: string;
+								}>) ?? []}
+							{#if tableEntries.length > 0}
+								<div class="md-table-list">
+									{#each tableEntries as entry, i (entry.topRange)}
+										{@const prevTop = i === 0 ? 0 : tableEntries[i - 1].topRange}
+										{@const rangeLabel =
+											prevTop + 1 === entry.topRange
+												? `${entry.topRange}`
+												: `${prevTop + 1}\u2013${entry.topRange}`}
+										<div class="md-table-row">
+											<span class="md-table-range">{rangeLabel}</span>
+											<span class="md-table-value">{@html displayHtml(entry.value)}</span>
+										</div>
+									{/each}
+								</div>
+							{/if}
+
+							<!-- ── No-roll move ── -->
+						{:else if isNoRollMove(selectedMove)}
+							{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
+								<div class="md-outcomes">
+									{#if selectedMove.strong}
+										<div
+											class="md-outcome-section"
+											style:--outcome-color="var(--color-success, #34d399)"
+										>
+											<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
+											<div class="md-outcome-text">{@html displayHtml(selectedMove.strong)}</div>
+										</div>
+									{/if}
+									{#if selectedMove.weak}
+										<div
+											class="md-outcome-section"
+											style:--outcome-color="var(--color-momentum, #60a5fa)"
+										>
+											<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
+											<div class="md-outcome-text">{@html displayHtml(selectedMove.weak)}</div>
+										</div>
+									{/if}
+									{#if selectedMove.miss}
+										<div
+											class="md-outcome-section"
+											style:--outcome-color="var(--color-danger, #ef4444)"
+										>
+											<div class="md-outcome-label md-outcome-miss">Miss</div>
+											<div class="md-outcome-text">{@html displayHtml(selectedMove.miss)}</div>
+										</div>
+									{/if}
+								</div>
+							{/if}
 						{/if}
-					{/each}
-				{/if}
-			{/if}
-		</div>
-	{:else if view === 'detail' && selectedMove}
-		<!-- ── Detail view ───────────────────────────────────────────────────── -->
 
-		<DialogHeader title={selectedMove.name} detail>
-			{#snippet trailing()}
-				<span class="md-category-badge" style:--ccolor={catColor(selectedMove.category)}>
-					{selectedMove.category}
-				</span>
-			{/snippet}
-		</DialogHeader>
-
-		<!-- svelte-ignore a11y_click_events_have_key_events -->
-		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-		<div class="md-body md-body--detail" role="region" onclick={handleDetailClick}>
-			<!-- ── Scrollable read area ── -->
-			<div class="md-detail-scroll">
-				<!-- Trigger text -->
-				<div class="md-trigger" class:applied={isEndureMove && harmApplied}>
-					{@html resolvedTriggerHtml}
-				</div>
-
-				<!-- Endure Harm/Stress: how much harm/stress this blow deals. Defaults to
-				     the foe's rank; editable for "as appropriate to the situation". The
-				     Apply button commits it to the character; then roll. -->
-				{#if isEndureMove}
-					<div class="md-harm-row">
-						<span class="md-harm-label">{harmWord}</span>
-						<button
-							class="md-adj"
-							onclick={() => (harmValue = Math.max(1, harmValue - 1))}
-							disabled={harmValue <= 1 || harmApplied}
-							aria-label="Decrease {harmWord.toLowerCase()}">−</button
-						>
-						<span class="md-harm-val">{harmValue}</span>
-						<button
-							class="md-adj"
-							onclick={() => (harmValue = Math.min(10, harmValue + 1))}
-							disabled={harmValue >= 10 || harmApplied}
-							aria-label="Increase {harmWord.toLowerCase()}">+</button
-						>
-						<button
-							class="md-harm-apply"
-							class:applied={harmApplied}
-							onclick={applyHarm}
-							disabled={harmApplied || !ctx}
-							use:tooltip={harmApplied
-								? 'Harm applied'
-								: `Apply ${harmValue} ${harmWord.toLowerCase()} to the character`}
-						>
-							{harmApplied ? 'Applied ✓' : 'Apply'}
-						</button>
-						<span class="md-harm-hint">foe's rank, or as appropriate</span>
+						<!-- Notes -->
+						{#if selectedMove.notes}
+							<div class="md-notes">
+								<div class="md-notes-text">{@html selectedMove.notes}</div>
+							</div>
+						{/if}
 					</div>
-				{/if}
+					<!-- end md-detail-scroll -->
 
-				<!-- ── Standard action move ── -->
-				{#if hasRollableStats(selectedMove)}
-					<!-- Stat picker -->
-					{#if selectedMove.stats && selectedMove.stats.length > 0}
-						<div class="md-stat-list">
-							{#each selectedMove.stats as s (s.stat)}
+					<!-- ── Sticky action footer ── -->
+					<div class="md-detail-footer">
+						<!-- Relevant Assets -->
+						{#if ctx && relevantAbilities.length > 0}
+							<div class="md-relevant-assets">
+								<span class="md-relevant-label">Relevant Assets</span>
+								<div class="md-relevant-tags">
+									{#each relevantAbilities as ra (`${ra.assetId}-${ra.abilityIndex}`)}
+										<div
+											class="md-relevant-tag"
+											use:tooltip={{ text: stripHtml(ra.abilityText), placement: 'above' }}
+										>
+											<span class="md-relevant-check">✓</span>
+											{ra.assetName} #{ra.abilityIndex + 1}
+										</div>
+									{/each}
+								</div>
+							</div>
+						{/if}
+
+						<!-- Debility Warnings -->
+						{#if ctx && debilityWarnings.length > 0}
+							<div class="md-debility-bar">
+								<span class="md-debility-label">Debilities</span>
+								<div class="md-debility-tags">
+									{#each debilityWarnings as w (w.key)}
+										<div
+											class="md-debility-tag"
+											use:tooltip={{ text: w.penalty, placement: 'above' }}
+										>
+											{w.label}
+										</div>
+									{/each}
+								</div>
+							</div>
+						{/if}
+
+						{#if hasRollableStats(selectedMove)}
+							{@const fail = moveFailReason(selectedMove)}
+							<div class="md-footer-top">
+								<div class="md-adds-row">
+									<span class="md-adds-label">Adds</span>
+									<button
+										class="md-adj"
+										onclick={() => (adds = Math.max(-5, adds - 1))}
+										disabled={rolling || !ctx || adds <= -5}
+										aria-label="Decrease adds">−</button
+									>
+									<span class="md-adds-val" class:positive={adds > 0} class:negative={adds < 0}
+										>{adds >= 0 ? '+' : ''}{adds}</span
+									>
+									<button
+										class="md-adj"
+										onclick={() => (adds = Math.min(5, adds + 1))}
+										disabled={rolling || !ctx || adds >= 5}
+										aria-label="Increase adds">+</button
+									>
+								</div>
+								<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
+							</div>
+							<div class="md-footer-btns">
+								<button class="btn back-btn" onclick={backToPicker} style="margin-right: auto"
+									>Back</button
+								>
+								<button class="btn" onclick={close}>Cancel</button>
+								<span use:tooltip={{ text: fail ?? '' }} style="display: inline-flex;">
+									<button
+										class="btn btn-primary md-roll-btn"
+										onclick={doActionRoll}
+										disabled={rolling || !ctx || !!fail}
+									>
+										{rolling ? 'Rolling…' : 'Roll Move'}
+									</button>
+								</span>
+							</div>
+						{:else if isSpellRollMove(selectedMove)}
+							<div class="md-footer-top">
+								<div class="md-adds-row">
+									<span class="md-adds-label">Adds</span>
+									<button
+										class="md-adj"
+										onclick={() => (adds = Math.max(-5, adds - 1))}
+										disabled={rolling || !ctx || adds <= -5}
+										aria-label="Decrease adds">−</button
+									>
+									<span class="md-adds-val" class:positive={adds > 0} class:negative={adds < 0}
+										>{adds >= 0 ? '+' : ''}{adds}</span
+									>
+									<button
+										class="md-adj"
+										onclick={() => (adds = Math.min(5, adds + 1))}
+										disabled={rolling || !ctx || adds >= 5}
+										aria-label="Increase adds">+</button
+									>
+									<span class="md-adds-label md-adds-label--gap">Mana</span>
+									<button
+										class="md-adj"
+										onclick={() => (manaCommit = Math.max(0, manaCommit - 1))}
+										disabled={rolling || manaCommit <= 0}
+										aria-label="Decrease mana">−</button
+									>
+									<span class="md-adds-val" class:positive={manaCommit > 0}>{manaCommit}</span>
+									<button
+										class="md-adj"
+										onclick={() =>
+											(manaCommit = Math.min(
+												parseInt(ctx?.data?.globalValues?.['mana'] ?? '0'),
+												manaCommit + 1,
+											))}
+										disabled={rolling ||
+											manaCommit >= parseInt(ctx?.data?.globalValues?.['mana'] ?? '0')}
+										aria-label="Increase mana">+</button
+									>
+									<span class="md-adds-label md-adds-label--gap">Difficulty</span>
+									<button
+										class="md-adj"
+										onclick={() => (spellDifficulty = Math.max(1, spellDifficulty - 1))}
+										disabled={rolling || spellDifficulty <= 1}
+										aria-label="Decrease difficulty">−</button
+									>
+									<span class="md-adds-val">{spellDifficulty}</span>
+									<button
+										class="md-adj"
+										onclick={() => (spellDifficulty = Math.min(10, spellDifficulty + 1))}
+										disabled={rolling || spellDifficulty >= 10}
+										aria-label="Increase difficulty">+</button
+									>
+								</div>
+								<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
+							</div>
+							<div class="md-footer-btns">
+								<button class="btn back-btn" onclick={backToPicker} style="margin-right: auto"
+									>Back</button
+								>
+								<button class="btn" onclick={close}>Cancel</button>
 								<button
-									class="md-stat-row-btn"
-									class:selected={selectedStat === s.stat}
-									style:--scolor={statColor(s.stat)}
-									onclick={() => (selectedStat = s.stat)}
+									class="btn btn-primary md-roll-btn md-roll-btn--spell"
+									onclick={doSpellRoll}
 									disabled={rolling || !ctx}
 								>
-									<span class="md-stat-check" aria-hidden="true"
-										>{selectedStat === s.stat ? '✔' : ''}</span
-									>
-									<span class="md-sdesc">{s.desc}</span>
-									<span class="md-stat-chip" style:--scolor={statColor(s.stat)}>
-										<span class="md-sname">{s.stat}</span>
-										<span class="md-sval">+{statValue(s.stat)}</span>
-									</span>
+									{rolling ? 'Rolling…' : 'Roll Move'}
 								</button>
-							{/each}
-						</div>
-					{/if}
-					<!-- Outcomes -->
-					{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
-						<div class="md-outcomes">
-							{#if selectedMove.strong}
-								<div
-									class="md-outcome-section"
-									style:--outcome-color="var(--color-success, #34d399)"
-								>
-									<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
-									<div class="md-outcome-text">{@html displayHtml(selectedMove.strong)}</div>
+							</div>
+						{:else if isProgressMove(selectedMove)}
+							<div class="md-footer-top">
+								<div class="md-adds-row">
+									<span class="md-adds-label">Adds</span>
+									<button
+										class="md-adj"
+										onclick={() => (adds = Math.max(-5, adds - 1))}
+										disabled={rolling || adds <= -5}
+										aria-label="Decrease adds">−</button
+									>
+									<span class="md-adds-val" class:positive={adds > 0} class:negative={adds < 0}
+										>{adds >= 0 ? '+' : ''}{adds}</span
+									>
+									<button
+										class="md-adj"
+										onclick={() => (adds = Math.min(5, adds + 1))}
+										disabled={rolling || adds >= 5}
+										aria-label="Increase adds">+</button
+									>
 								</div>
-							{/if}
-							{#if selectedMove.weak}
-								<div
-									class="md-outcome-section"
-									style:--outcome-color="var(--color-momentum, #60a5fa)"
+								<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
+							</div>
+							<div class="md-footer-btns">
+								<button class="btn back-btn" onclick={backToPicker} style="margin-right: auto"
+									>Back</button
 								>
-									<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
-									<div class="md-outcome-text">{@html displayHtml(selectedMove.weak)}</div>
-								</div>
-							{/if}
-							{#if selectedMove.miss}
-								<div
-									class="md-outcome-section"
-									style:--outcome-color="var(--color-danger, #ef4444)"
+								<button class="btn" onclick={close}>Cancel</button>
+								<button
+									class="btn btn-primary md-roll-btn"
+									onclick={doProgressRoll}
+									disabled={rolling}
 								>
-									<div class="md-outcome-label md-outcome-miss">Miss</div>
-									<div class="md-outcome-text">{@html displayHtml(selectedMove.miss)}</div>
-								</div>
-							{/if}
-						</div>
-					{/if}
-
-					<!-- ── Spell roll move ── -->
-				{:else if isSpellRollMove(selectedMove)}
-					{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
-						<div class="md-outcomes">
-							{#if selectedMove.strong}
-								<div
-									class="md-outcome-section"
-									style:--outcome-color="var(--color-success, #34d399)"
+									{rolling ? 'Rolling…' : 'Roll Move'}
+								</button>
+							</div>
+						{:else if isOracleRollMove}
+							<div class="md-footer-btns">
+								<button class="btn back-btn" onclick={backToPicker}>Back</button>
+								<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
+								<button class="btn" onclick={close}>Cancel</button>
+								<button class="btn btn-primary md-roll-btn" onclick={doAskOracle} disabled={rolling}
+									>{rolling ? 'Rolling…' : 'Roll Move'}</button
 								>
-									<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
-									<div class="md-outcome-text">{@html displayHtml(selectedMove.strong)}</div>
-								</div>
-							{/if}
-							{#if selectedMove.weak}
-								<div
-									class="md-outcome-section"
-									style:--outcome-color="var(--color-momentum, #60a5fa)"
+							</div>
+						{:else if isTableRollMove(selectedMove)}
+							<div class="md-footer-btns">
+								<button class="btn back-btn" onclick={backToPicker}>Back</button>
+								<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
+								<button class="btn" onclick={close}>Cancel</button>
+								<button
+									class="btn btn-primary md-roll-btn"
+									onclick={doTableRoll}
+									disabled={rolling || !ctx}>{rolling ? 'Rolling…' : 'Roll Move'}</button
 								>
-									<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
-									<div class="md-outcome-text">{@html displayHtml(selectedMove.weak)}</div>
-								</div>
-							{/if}
-							{#if selectedMove.miss}
-								<div
-									class="md-outcome-section"
-									style:--outcome-color="var(--color-danger, #ef4444)"
+							</div>
+						{:else if isNoRollMove(selectedMove)}
+							<div class="md-footer-btns">
+								<button class="btn back-btn" onclick={backToPicker} style="margin-right: auto"
+									>Back</button
 								>
-									<div class="md-outcome-label md-outcome-miss">Miss</div>
-									<div class="md-outcome-text">{@html displayHtml(selectedMove.miss)}</div>
-								</div>
-							{/if}
-						</div>
-					{/if}
-					<!-- Difficulty factors collapsible -->
-					{#if pctx.ritualAssets && pctx.ritualAssets.length > 0}
-						<details class="md-factors">
-							<summary class="md-factors-summary">
-								Difficulty Factors
-								{#if factorsManuallySet}
-									<span class="md-factors-total">= {spellDifficulty}</span>
+								{#if selectedMove['logBody'] || selectedMove.id === 'move/take-a-hiatus'}
+									<button
+										class="btn btn-primary md-roll-btn md-roll-btn--full"
+										onclick={doApplyNoRollMove}>Use Move</button
+									>
 								{/if}
-							</summary>
-							{#each pctx.ritualAssets as ritual (ritual.id)}
-								{#if pctx.ritualAssets.length > 1}
-									<div class="md-factors-ritual-name">{ritual.name}</div>
-								{/if}
-								{#each ritual.inspectionFactors as factor (factor.key)}
-									{@const levelKey = `${ritual.id}|${factor.key}`}
-									{@const currentLevel = factorLevels[levelKey] ?? 0}
-									<div class="md-factor">
-										<div class="md-factor-header">
-											<span class="md-factor-name">{factor.name}</span>
-											<div class="md-factor-levels">
-												{#each [0, 1, 2] as lvl}
-													<button
-														class="md-factor-lvl"
-														class:active={currentLevel === lvl}
-														onclick={() => setFactorLevel(ritual.id, factor.key, lvl)}>{lvl}</button
-													>
-												{/each}
-											</div>
-										</div>
-										<div class="md-factor-desc">{factor.levels[currentLevel]}</div>
-									</div>
-								{/each}
-							{/each}
-						</details>
-					{/if}
-
-					<!-- ── Progress move ── -->
-				{:else if isProgressMove(selectedMove)}
-					{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
-						<div class="md-outcomes">
-							{#if selectedMove.strong}
-								<div
-									class="md-outcome-section"
-									style:--outcome-color="var(--color-success, #34d399)"
+								<button class="btn" onclick={close}>Cancel</button>
+							</div>
+						{:else}
+							<div class="md-footer-btns">
+								<button class="btn back-btn" onclick={backToPicker} style="margin-right: auto"
+									>Back</button
 								>
-									<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
-									<div class="md-outcome-text">{@html displayHtml(selectedMove.strong)}</div>
-								</div>
-							{/if}
-							{#if selectedMove.weak}
-								<div
-									class="md-outcome-section"
-									style:--outcome-color="var(--color-momentum, #60a5fa)"
-								>
-									<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
-									<div class="md-outcome-text">{@html displayHtml(selectedMove.weak)}</div>
-								</div>
-							{/if}
-							{#if selectedMove.miss}
-								<div
-									class="md-outcome-section"
-									style:--outcome-color="var(--color-danger, #ef4444)"
-								>
-									<div class="md-outcome-label md-outcome-miss">Miss</div>
-									<div class="md-outcome-text">{@html displayHtml(selectedMove.miss)}</div>
-								</div>
-							{/if}
-						</div>
-					{/if}
-
-					<!-- ── Ask the Oracle ── -->
-				{:else if isOracleRollMove}
-					<div class="md-stat-list">
-						{#each oracleTable as entry, i (entry.value.odds)}
-							<button
-								class="md-stat-row-btn"
-								class:selected={selectedOddsIdx === i}
-								style="--scolor: var(--color-accent, #f59e0b)"
-								onclick={() => (selectedOddsIdx = i)}
-							>
-								<span class="md-stat-check" aria-hidden="true"
-									>{selectedOddsIdx === i ? '\u2714' : ''}</span
-								>
-								<span class="md-sdesc">{entry.value.odds}</span>
-								<span class="md-oracle-threshold">{entry.value.threshold}</span>
-							</button>
-						{/each}
-					</div>
-
-					<!-- ── Table-roll move ── -->
-				{:else if isTableRollMove(selectedMove)}
-					{@const tableEntries =
-						((selectedMove as Record<string, unknown>)['table'] as Array<{
-							topRange: number;
-							value: string;
-						}>) ?? []}
-					{#if tableEntries.length > 0}
-						<div class="md-table-list">
-							{#each tableEntries as entry, i (entry.topRange)}
-								{@const prevTop = i === 0 ? 0 : tableEntries[i - 1].topRange}
-								{@const rangeLabel =
-									prevTop + 1 === entry.topRange
-										? `${entry.topRange}`
-										: `${prevTop + 1}\u2013${entry.topRange}`}
-								<div class="md-table-row">
-									<span class="md-table-range">{rangeLabel}</span>
-									<span class="md-table-value">{@html displayHtml(entry.value)}</span>
-								</div>
-							{/each}
-						</div>
-					{/if}
-
-					<!-- ── No-roll move ── -->
-				{:else if isNoRollMove(selectedMove)}
-					{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
-						<div class="md-outcomes">
-							{#if selectedMove.strong}
-								<div
-									class="md-outcome-section"
-									style:--outcome-color="var(--color-success, #34d399)"
-								>
-									<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
-									<div class="md-outcome-text">{@html displayHtml(selectedMove.strong)}</div>
-								</div>
-							{/if}
-							{#if selectedMove.weak}
-								<div
-									class="md-outcome-section"
-									style:--outcome-color="var(--color-momentum, #60a5fa)"
-								>
-									<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
-									<div class="md-outcome-text">{@html displayHtml(selectedMove.weak)}</div>
-								</div>
-							{/if}
-							{#if selectedMove.miss}
-								<div
-									class="md-outcome-section"
-									style:--outcome-color="var(--color-danger, #ef4444)"
-								>
-									<div class="md-outcome-label md-outcome-miss">Miss</div>
-									<div class="md-outcome-text">{@html displayHtml(selectedMove.miss)}</div>
-								</div>
-							{/if}
-						</div>
-					{/if}
-				{/if}
-
-				<!-- Notes -->
-				{#if selectedMove.notes}
-					<div class="md-notes">
-						<div class="md-notes-text">{@html selectedMove.notes}</div>
-					</div>
-				{/if}
-			</div>
-			<!-- end md-detail-scroll -->
-
-			<!-- ── Sticky action footer ── -->
-			<div class="md-detail-footer">
-				<!-- Relevant Assets -->
-				{#if ctx && relevantAbilities.length > 0}
-					<div class="md-relevant-assets">
-						<span class="md-relevant-label">Relevant Assets</span>
-						<div class="md-relevant-tags">
-							{#each relevantAbilities as ra (`${ra.assetId}-${ra.abilityIndex}`)}
-								<div
-									class="md-relevant-tag"
-									use:tooltip={{ text: stripHtml(ra.abilityText), placement: 'above' }}
-								>
-									<span class="md-relevant-check">✓</span>
-									{ra.assetName} #{ra.abilityIndex + 1}
-								</div>
-							{/each}
-						</div>
-					</div>
-				{/if}
-
-				<!-- Debility Warnings -->
-				{#if ctx && debilityWarnings.length > 0}
-					<div class="md-debility-bar">
-						<span class="md-debility-label">Debilities</span>
-						<div class="md-debility-tags">
-							{#each debilityWarnings as w (w.key)}
-								<div class="md-debility-tag" use:tooltip={{ text: w.penalty, placement: 'above' }}>
-									{w.label}
-								</div>
-							{/each}
-						</div>
-					</div>
-				{/if}
-
-				{#if hasRollableStats(selectedMove)}
-					{@const fail = moveFailReason(selectedMove)}
-					<div class="md-footer-top">
-						<div class="md-adds-row">
-							<span class="md-adds-label">Adds</span>
-							<button
-								class="md-adj"
-								onclick={() => (adds = Math.max(-5, adds - 1))}
-								disabled={rolling || !ctx || adds <= -5}
-								aria-label="Decrease adds">−</button
-							>
-							<span class="md-adds-val" class:positive={adds > 0} class:negative={adds < 0}
-								>{adds >= 0 ? '+' : ''}{adds}</span
-							>
-							<button
-								class="md-adj"
-								onclick={() => (adds = Math.min(5, adds + 1))}
-								disabled={rolling || !ctx || adds >= 5}
-								aria-label="Increase adds">+</button
-							>
-						</div>
-						<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
-					</div>
-					<div class="md-footer-btns">
-						<button class="btn back-btn" onclick={backToPicker} style="margin-right: auto"
-							>Back</button
-						>
-						<button class="btn" onclick={close}>Cancel</button>
-						<span use:tooltip={{ text: fail ?? '' }} style="display: inline-flex;">
-							<button
-								class="btn btn-primary md-roll-btn"
-								onclick={doActionRoll}
-								disabled={rolling || !ctx || !!fail}
-							>
-								{rolling ? 'Rolling…' : 'Roll Move'}
-							</button>
-						</span>
-					</div>
-				{:else if isSpellRollMove(selectedMove)}
-					<div class="md-footer-top">
-						<div class="md-adds-row">
-							<span class="md-adds-label">Adds</span>
-							<button
-								class="md-adj"
-								onclick={() => (adds = Math.max(-5, adds - 1))}
-								disabled={rolling || !ctx || adds <= -5}
-								aria-label="Decrease adds">−</button
-							>
-							<span class="md-adds-val" class:positive={adds > 0} class:negative={adds < 0}
-								>{adds >= 0 ? '+' : ''}{adds}</span
-							>
-							<button
-								class="md-adj"
-								onclick={() => (adds = Math.min(5, adds + 1))}
-								disabled={rolling || !ctx || adds >= 5}
-								aria-label="Increase adds">+</button
-							>
-							<span class="md-adds-label md-adds-label--gap">Mana</span>
-							<button
-								class="md-adj"
-								onclick={() => (manaCommit = Math.max(0, manaCommit - 1))}
-								disabled={rolling || manaCommit <= 0}
-								aria-label="Decrease mana">−</button
-							>
-							<span class="md-adds-val" class:positive={manaCommit > 0}>{manaCommit}</span>
-							<button
-								class="md-adj"
-								onclick={() =>
-									(manaCommit = Math.min(
-										parseInt(ctx?.data?.globalValues?.['mana'] ?? '0'),
-										manaCommit + 1,
-									))}
-								disabled={rolling ||
-									manaCommit >= parseInt(ctx?.data?.globalValues?.['mana'] ?? '0')}
-								aria-label="Increase mana">+</button
-							>
-							<span class="md-adds-label md-adds-label--gap">Difficulty</span>
-							<button
-								class="md-adj"
-								onclick={() => (spellDifficulty = Math.max(1, spellDifficulty - 1))}
-								disabled={rolling || spellDifficulty <= 1}
-								aria-label="Decrease difficulty">−</button
-							>
-							<span class="md-adds-val">{spellDifficulty}</span>
-							<button
-								class="md-adj"
-								onclick={() => (spellDifficulty = Math.min(10, spellDifficulty + 1))}
-								disabled={rolling || spellDifficulty >= 10}
-								aria-label="Increase difficulty">+</button
-							>
-						</div>
-						<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
-					</div>
-					<div class="md-footer-btns">
-						<button class="btn back-btn" onclick={backToPicker} style="margin-right: auto"
-							>Back</button
-						>
-						<button class="btn" onclick={close}>Cancel</button>
-						<button
-							class="btn btn-primary md-roll-btn md-roll-btn--spell"
-							onclick={doSpellRoll}
-							disabled={rolling || !ctx}
-						>
-							{rolling ? 'Rolling…' : 'Roll Move'}
-						</button>
-					</div>
-				{:else if isProgressMove(selectedMove)}
-					<div class="md-footer-top">
-						<div class="md-adds-row">
-							<span class="md-adds-label">Adds</span>
-							<button
-								class="md-adj"
-								onclick={() => (adds = Math.max(-5, adds - 1))}
-								disabled={rolling || adds <= -5}
-								aria-label="Decrease adds">−</button
-							>
-							<span class="md-adds-val" class:positive={adds > 0} class:negative={adds < 0}
-								>{adds >= 0 ? '+' : ''}{adds}</span
-							>
-							<button
-								class="md-adj"
-								onclick={() => (adds = Math.min(5, adds + 1))}
-								disabled={rolling || adds >= 5}
-								aria-label="Increase adds">+</button
-							>
-						</div>
-						<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
-					</div>
-					<div class="md-footer-btns">
-						<button class="btn back-btn" onclick={backToPicker} style="margin-right: auto"
-							>Back</button
-						>
-						<button class="btn" onclick={close}>Cancel</button>
-						<button class="btn btn-primary md-roll-btn" onclick={doProgressRoll} disabled={rolling}>
-							{rolling ? 'Rolling…' : 'Roll Move'}
-						</button>
-					</div>
-				{:else if isOracleRollMove}
-					<div class="md-footer-btns">
-						<button class="btn back-btn" onclick={backToPicker}>Back</button>
-						<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
-						<button class="btn" onclick={close}>Cancel</button>
-						<button class="btn btn-primary md-roll-btn" onclick={doAskOracle} disabled={rolling}
-							>{rolling ? 'Rolling…' : 'Roll Move'}</button
-						>
-					</div>
-				{:else if isTableRollMove(selectedMove)}
-					<div class="md-footer-btns">
-						<button class="btn back-btn" onclick={backToPicker}>Back</button>
-						<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
-						<button class="btn" onclick={close}>Cancel</button>
-						<button
-							class="btn btn-primary md-roll-btn"
-							onclick={doTableRoll}
-							disabled={rolling || !ctx}>{rolling ? 'Rolling…' : 'Roll Move'}</button
-						>
-					</div>
-				{:else if isNoRollMove(selectedMove)}
-					<div class="md-footer-btns">
-						<button class="btn back-btn" onclick={backToPicker} style="margin-right: auto"
-							>Back</button
-						>
-						{#if selectedMove['logBody'] || selectedMove.id === 'move/take-a-hiatus'}
-							<button
-								class="btn btn-primary md-roll-btn md-roll-btn--full"
-								onclick={doApplyNoRollMove}>Use Move</button
-							>
+								<button class="btn" onclick={close}>Cancel</button>
+							</div>
 						{/if}
-						<button class="btn" onclick={close}>Cancel</button>
 					</div>
-				{:else}
-					<div class="md-footer-btns">
-						<button class="btn back-btn" onclick={backToPicker} style="margin-right: auto"
-							>Back</button
-						>
-						<button class="btn" onclick={close}>Cancel</button>
-					</div>
-				{/if}
-			</div>
-			<!-- end md-detail-footer -->
-		</div>
-	{/if}
-</dialog>
+					<!-- end md-detail-footer -->
+				</div>
+			{/if}
+		</Dialog.Content>
+	</Dialog.Portal>
+</Dialog.Root>
 
 <style>
-	/* ── Dialog shell ────────────────────────────────────────────────────── */
-	.moves-dialog {
-		border: none;
-		padding: 0;
-		border-radius: 10px;
+	/* ── Dialog shell — bits-ui Dialog.Content ────────────────────────────
+	   Portalled to <body>, so the class passes through the component
+	   boundary and has to be scoped globally. The shell is a plain
+	   position:fixed div (not top-layer), which unblocks a few things
+	   the old native <dialog> couldn't do — `dvh` is fine here, and
+	   inner popovers no longer need `portalTo={dialogEl}` since
+	   there's no top-layer to escape from. */
+	:global(.moves-dialog) {
+		display: flex;
+		flex-direction: column;
 		position: fixed;
-		/* vh (not dvh): iOS Safari reports dvh as 0 for top-layer dialogs,
-		   collapsing `top` and the height cap to zero. */
 		top: 8vh;
 		left: 50%;
 		transform: translateX(-50%);
@@ -1644,19 +1665,20 @@
 		height: min(84vh, 720px);
 		background: var(--bg-card);
 		color: var(--text);
+		border-radius: 10px;
 		box-shadow:
 			0 16px 48px #00000070,
 			0 0 0 1px var(--border-mid);
 		outline: none;
 		overflow: hidden;
+		z-index: 81;
 	}
-	.moves-dialog[open] {
-		display: flex;
-		flex-direction: column;
-	}
-	.moves-dialog::backdrop {
+	:global(.md-overlay) {
+		position: fixed;
+		inset: 0;
 		background: #00000060;
 		backdrop-filter: blur(1px);
+		z-index: 80;
 	}
 
 	/* ── Header ─────────────────────────────────────────────────────────── */
