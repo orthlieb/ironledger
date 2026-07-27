@@ -762,3 +762,204 @@ quality). Used internally by `PortraitUploader`.
 counter fields declared `global: true`. First declaration wins; later
 mismatches log `console.error`. See `docs/data-schema.md` for the
 draft/snapshot model that depends on this.
+
+---
+
+## bits-ui — Controls Library
+
+We're incrementally migrating hand-rolled dialogs, dropdowns, and
+pickers to [`bits-ui`](https://bits-ui.com/) primitives (Svelte 5
+headless — no built-in styling, we own every pixel). Started with
+the marker link picker (`Combobox`) and `ConfirmDialog`
+(`AlertDialog`). The plan is documented in the session log; the
+rules below apply to any new bits-ui integration.
+
+### Why bits-ui
+
+Keyboard nav, focus trap, focus return, correct ARIA roles,
+portalling, positioning middleware — all correct-by-construction.
+Every hand-rolled dropdown / dialog in this repo was slowly
+reinventing the same wheels. Adopt bits-ui for anything with an
+equivalent primitive; keep custom code only where the library has
+no answer (colour picker → Pickr, uploader, the SVG map, dice
+animations, `DialogHeader` grip + drag).
+
+### Class scoping — always `:global(…)` for classes on bits-ui components
+
+bits-ui components own their DOM subtree. Svelte's CSS pruning
+can't see class names threaded through a foreign component's
+render, so scoped selectors get compiled out with an "unused
+selector" warning. **Rule:** any class passed via `class="…"` to a
+bits-ui component must be styled with `:global(.classname)`, not
+`.classname`.
+
+```svelte
+<AlertDialog.Content class="confirm-modal">…</AlertDialog.Content>
+```
+
+```css
+/* Correct */
+:global(.confirm-modal) { … }
+
+/* Wrong — will get pruned */
+.confirm-modal { … }
+```
+
+Descendant selectors on the same class also need `:global`:
+`:global(.confirm-modal .cm-body)`, not `:global(.confirm-modal)
+.cm-body`.
+
+Classes that land on a **plain HTML element you wrote** (a `<div>`
+wrapper around bits-ui parts, for example) stay in normal scope —
+Svelte's pruning sees them. Only cross the `:global` boundary at
+the bits-ui component itself.
+
+### Portals — pick the target deliberately
+
+Any bits-ui primitive with a `Portal` (Dialog, AlertDialog,
+Combobox, Popover, DropdownMenu, …) defaults to
+`document.body`. That's fine at the app root, but a **portal to
+body renders below any parent native `<dialog>` in the top
+layer**. If the primitive lives inside a still-native dialog,
+pass `to={parentDialogEl}` so the portalled content ends up in
+the same top-layer scope:
+
+```svelte
+<Popover.Portal to={dialogEl ?? undefined}>…</Popover.Portal>
+```
+
+Every bits-ui primitive we build inside `MapDialog` currently
+portals into `dialogEl` (the map's native `<dialog>` ref) for
+exactly this reason. Once `MapDialog` itself migrates to
+`Dialog`, the portal target can go back to body.
+
+Expose a `portalTo?: Element | string` prop on reusable
+components (see `ConfirmDialog`) so a caller inside a native
+dialog can override.
+
+### Overlay / z-index budget
+
+Portalled bits-ui content is a plain `<div>` (not top-layer). We
+reserve **z-index 80+** for it so it wins over the app chrome:
+
+| Layer           | z-index | Notes                                    |
+| --------------- | ------- | ---------------------------------------- |
+| Modal overlay   | `80`    | `.cm-overlay`, other alert-dialog scrims |
+| Modal content   | `81`    | `.confirm-modal`, dialog body            |
+| Popover/tooltip | `60`    | `.mp-link-popover`, floating menus       |
+| App chrome      | `< 20`  | Toolbars, sidebar                        |
+
+Keep new bits-ui surfaces inside this budget; don't invent a `999`
+one-off.
+
+### Combobox pattern (search-first pickers)
+
+For any pick-from-a-list-with-typeahead, use bits-ui `Combobox`:
+
+```svelte
+<Combobox.Root type="single" bind:value bind:open onValueChange={onPick}>
+  <div class="mp-combobox">
+    <Combobox.Input class="mp-combobox-input" placeholder="…" />
+    <Combobox.Trigger class="mp-combobox-caret">▾</Combobox.Trigger>
+  </div>
+  <Combobox.Portal to={dialogEl ?? undefined}>
+    <Combobox.Content class="mp-link-popover" sideOffset={4} align="start">
+      <Combobox.Viewport class="mp-link-list">
+        {#each items as it}
+          <Combobox.Item value={it.id} label={it.name} class="mp-link-item">
+            {#snippet children({ selected })}
+              {it.name}
+              {#if selected}<check-svg />{/if}
+            {/snippet}
+          </Combobox.Item>
+        {/each}
+      </Combobox.Viewport>
+    </Combobox.Content>
+  </Combobox.Portal>
+</Combobox.Root>
+```
+
+Notes:
+
+- **Wrapper `<div class="mp-combobox">` around the Input + Trigger** gives you
+  a form-control shell. Input + caret sit inside; add prefix icons
+  before the input as siblings.
+- **Filtering is automatic** — bits-ui matches `label` (case-insensitive
+  substring) and hides non-matching items via `data-hidden`. Don't
+  reimplement the filter unless you need custom scoring.
+- **`snippet children({ selected, highlighted })`** on `Combobox.Item`
+  gets you the state for showing a checkmark, styling the
+  highlighted row, etc. `data-selected` and `data-highlighted`
+  attributes on the rendered element let you style via CSS
+  instead.
+- Sort items yourself before passing to the `{#each}` — bits-ui
+  won't sort.
+
+**Do not** wrap `Popover + Command` when a real `Combobox` works
+— it's a two-step click-then-type flow with no typeahead in the
+trigger. Reserve Popover+Command for a Command-palette style
+where the trigger isn't a text input.
+
+### AlertDialog pattern (confirmations)
+
+For destructive-action confirmations use `AlertDialog` (blocks
+outside-click; Escape still closes):
+
+```svelte
+<AlertDialog.Root bind:open onOpenChange={…}>
+  <AlertDialog.Portal to={portalTo}>
+    <AlertDialog.Overlay class="cm-overlay" />
+    <AlertDialog.Content class="confirm-modal" style="--accent: …">
+      <div class="cm-header">
+        <AlertDialog.Title class="cm-title">…</AlertDialog.Title>
+      </div>
+      <div class="cm-body">
+        {@render children?.()}
+        <div class="cm-actions">
+          <AlertDialog.Cancel class="btn" onclick={handleCancel}>Cancel</AlertDialog.Cancel>
+          <AlertDialog.Action class="btn btn-danger" onclick={handleConfirm}>Delete</AlertDialog.Action>
+        </div>
+      </div>
+    </AlertDialog.Content>
+  </AlertDialog.Portal>
+</AlertDialog.Root>
+```
+
+Notes:
+
+- Use `AlertDialog` when the user must respond (delete /
+  overwrite / discard). Use plain `Dialog` for informational or
+  editable panels where clicking outside should close.
+- `AlertDialog.Cancel` and `AlertDialog.Action` both close the
+  dialog on click and carry the right ARIA semantics — always
+  prefer them over a bare `<button onclick={close}>`.
+- If you need to distinguish "cancel via button" from
+  "cancel via Escape / outside click", track intent in a local
+  state variable and read it inside `onOpenChange` (see
+  `ConfirmDialog._closeIntent`).
+
+### CLAUDE.md dialog rules — apply where?
+
+The iOS-safe `<dialog>` rules in [`CLAUDE.md`](../CLAUDE.md) (no
+`dvh`, no `inset:0; margin:auto`, no `flex 1; min-height:0` chain
+on the dialog element) apply **only to native `<dialog>`
+elements**. bits-ui `Dialog` / `AlertDialog` render as
+`position: fixed` divs and don't hit any of those iOS Safari
+footguns. When migrating a native dialog to bits-ui you can
+retire the workarounds those rules imposed — but until every
+consumer of a shared dialog primitive is migrated, keep them.
+
+### Component naming conventions
+
+Reserve class prefixes so it's obvious at a glance which
+primitive a class belongs to:
+
+| Prefix          | Primitive                | Example use                                    |
+| --------------- | ------------------------ | ---------------------------------------------- |
+| `cm-*`          | `AlertDialog` (Confirm)  | `.cm-overlay`, `.cm-header`, `.cm-actions`     |
+| `mp-combobox-*` | `Combobox` trigger shell | `.mp-combobox`, `.mp-combobox-input`, `-caret` |
+| `mp-link-*`     | `Combobox` popover body  | `.mp-link-popover`, `.mp-link-list`, `-item`   |
+
+New primitives get a fresh prefix keyed to their surface — pick
+one that's short and searchable. Don't stack unrelated bits-ui
+controls under the same prefix.
