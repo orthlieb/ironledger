@@ -1244,7 +1244,7 @@
 						<Command.Root class="mp-cmd">
 							<div class="mp-cmd-search-row">
 								<span class="mp-cmd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
-								<Command.Input class="mp-cmd-search" placeholder="Search maps…" />
+								<Command.Input class="mp-cmd-search" placeholder="Search maps…" autofocus />
 							</div>
 							<Command.List class="mp-cmd-list">
 								<Command.Empty class="mp-cmd-empty">No matching maps.</Command.Empty>
@@ -1447,7 +1447,7 @@
 						<Command.Root class="mp-cmd">
 							<div class="mp-cmd-search-row">
 								<span class="mp-cmd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
-								<Command.Input class="mp-cmd-search" placeholder="Search connections…" />
+								<Command.Input class="mp-cmd-search" placeholder="Search connections…" autofocus />
 							</div>
 							<Command.List class="mp-cmd-list">
 								<Command.Empty class="mp-cmd-empty">No matching connections.</Command.Empty>
