@@ -170,13 +170,15 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 	test('Delve off: Delve foes hidden from Foe picker', async ({ page }) => {
 		await setExpansionsViaStorage(page, { delve: false });
 		await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
-		await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 8_000 });
-		await expect(
-			page.locator('dialog.foe-dialog[open] .fd-tile-name', { hasText: /^Bladewing$/ }),
-		).toHaveCount(0, { timeout: 3_000 });
-		await expect(
-			page.locator('dialog.foe-dialog[open] .fd-tile-name', { hasText: /^Basilisk$/ }),
-		).toHaveCount(1, { timeout: 3_000 });
+		await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 8_000 });
+		await expect(page.locator('.foe-dialog .fd-tile-name', { hasText: /^Bladewing$/ })).toHaveCount(
+			0,
+			{ timeout: 3_000 },
+		);
+		await expect(page.locator('.foe-dialog .fd-tile-name', { hasText: /^Basilisk$/ })).toHaveCount(
+			1,
+			{ timeout: 3_000 },
+		);
 		await page.keyboard.press('Escape');
 	});
 

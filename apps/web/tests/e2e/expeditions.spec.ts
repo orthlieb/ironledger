@@ -379,17 +379,17 @@ test.describe('Expeditions area (v2)', () => {
 		await pickBtn.click();
 
 		// FoePickerDialog opens in denizen mode.
-		await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 5_000 });
 
 		// Click the first foe tile. Scope to [open] because FoePickerDialog is
 		// rendered twice on the page (FoesArea + ExpeditionsArea); only the
 		// open one is interactable.
-		const firstTile = page.locator('dialog.foe-dialog[open] .fd-tile').first();
+		const firstTile = page.locator('.foe-dialog .fd-tile').first();
 		await expect(firstTile).toBeVisible({ timeout: 8_000 });
 		await firstTile.click();
 
 		// Dialog closes immediately in denizen mode (no confirm step).
-		await expect(page.locator('dialog.foe-dialog[open]')).not.toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.foe-dialog')).not.toBeVisible({ timeout: 5_000 });
 
 		// The first denizen input should now contain the foe's name.
 		const foeName = await page.locator(`${EXP_AREA} .ea-denizen-input`).first().inputValue();
@@ -425,11 +425,11 @@ test.describe('Expeditions area (v2)', () => {
 		const pickBtn = page.locator(`${EXP_AREA} .ea-denizen-pick-btn`).first();
 		await expect(pickBtn).toBeVisible({ timeout: 3_000 });
 		await pickBtn.click();
-		await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
-		const firstTile = page.locator('dialog.foe-dialog[open] .fd-tile').first();
+		await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 5_000 });
+		const firstTile = page.locator('.foe-dialog .fd-tile').first();
 		await expect(firstTile).toBeVisible({ timeout: 8_000 });
 		await firstTile.click();
-		await expect(page.locator('dialog.foe-dialog[open]')).not.toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.foe-dialog')).not.toBeVisible({ timeout: 5_000 });
 
 		// Read the foe name that was placed in the first slot.
 		const foeName = (

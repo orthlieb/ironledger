@@ -25,13 +25,13 @@ async function waitForFoesLoaded(page: import('@playwright/test').Page) {
  * 2. Click "Add to Foes" → closes dialog
  */
 async function addFoeFromPicker(page: import('@playwright/test').Page) {
-	const foeTile = page.locator('dialog.foe-dialog .fd-tile').first();
+	const foeTile = page.locator('.foe-dialog .fd-tile').first();
 	await expect(foeTile).toBeVisible({ timeout: 8_000 });
 	await foeTile.click();
-	const addBtn = page.locator('dialog.foe-dialog button:has-text("Add to Foes")');
+	const addBtn = page.locator('.foe-dialog button:has-text("Add to Foes")');
 	await expect(addBtn).toBeVisible({ timeout: 3_000 });
 	await addBtn.click();
-	await expect(page.locator('dialog.foe-dialog[open]')).not.toBeVisible({ timeout: 5_000 });
+	await expect(page.locator('.foe-dialog')).not.toBeVisible({ timeout: 5_000 });
 }
 
 test.describe('Foes area (v2)', () => {
@@ -50,14 +50,14 @@ test.describe('Foes area (v2)', () => {
 
 	test('clicking + Foe opens foe picker dialog', async ({ page }) => {
 		await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
-		await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 5_000 });
 		await page.keyboard.press('Escape');
 	});
 
 	test('can add a foe from the picker', async ({ page }) => {
 		const before = await page.locator(FOE_SPINE).count();
 		await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
-		await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 5_000 });
 		await addFoeFromPicker(page);
 		await expect(page.locator(FOE_SPINE)).not.toHaveCount(before, { timeout: 5_000 });
 	});
@@ -66,7 +66,7 @@ test.describe('Foes area (v2)', () => {
 		const spines = page.locator(FOE_SPINE);
 		if ((await spines.count()) === 0) {
 			await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
-			await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
+			await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 5_000 });
 			await addFoeFromPicker(page);
 			await expect(spines).not.toHaveCount(0, { timeout: 5_000 });
 		}
@@ -78,7 +78,7 @@ test.describe('Foes area (v2)', () => {
 		const spines = page.locator(FOE_SPINE);
 		if ((await spines.count()) === 0) {
 			await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
-			await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
+			await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 5_000 });
 			await addFoeFromPicker(page);
 			await expect(spines).not.toHaveCount(0, { timeout: 5_000 });
 		}
@@ -90,7 +90,7 @@ test.describe('Foes area (v2)', () => {
 		const spines = page.locator(FOE_SPINE);
 		if ((await spines.count()) === 0) {
 			await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
-			await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
+			await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 5_000 });
 			await addFoeFromPicker(page);
 			await expect(spines).not.toHaveCount(0, { timeout: 5_000 });
 		}

@@ -203,12 +203,12 @@ test.describe('Tab accessibility — v2 areas', () => {
 		// Ensure a foe encounter exists.
 		if ((await page.locator(FOE_SPINE).count()) === 0) {
 			await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
-			await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 8_000 });
+			await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 8_000 });
 			// Click first available foe tile.
-			await page.locator('dialog.foe-dialog .fd-tile').first().click();
+			await page.locator('.foe-dialog .fd-tile').first().click();
 			// Then confirm "Add to Foes".
-			await page.locator('dialog.foe-dialog button:has-text("Add to Foes")').click();
-			await expect(page.locator('dialog.foe-dialog[open]')).not.toBeVisible({ timeout: 5_000 });
+			await page.locator('.foe-dialog button:has-text("Add to Foes")').click();
+			await expect(page.locator('.foe-dialog')).not.toBeVisible({ timeout: 5_000 });
 			await expect(page.locator(FOE_SPINE)).not.toHaveCount(0, { timeout: 8_000 });
 		}
 		// Select the first foe.
