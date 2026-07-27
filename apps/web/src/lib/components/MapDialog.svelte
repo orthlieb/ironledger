@@ -2115,7 +2115,11 @@
 		border: 1px solid var(--border-mid);
 		border-radius: 8px;
 		box-shadow: 0 16px 48px #00000070;
-		z-index: 60;
+		/* 90 — same rule as `.bui-select-content` (see z-index budget
+		   in docs/ui-components.md): popovers must beat bits-ui modal
+		   content (81) so they still show if opened from inside a
+		   ConfirmDialog / AlertDialog. */
+		z-index: 90;
 		outline: none;
 		overflow: hidden;
 	}

@@ -842,12 +842,19 @@ dialog can override.
 Portalled bits-ui content is a plain `<div>` (not top-layer). We
 reserve **z-index 80+** for it so it wins over the app chrome:
 
-| Layer           | z-index | Notes                                    |
-| --------------- | ------- | ---------------------------------------- |
-| Modal overlay   | `80`    | `.cm-overlay`, other alert-dialog scrims |
-| Modal content   | `81`    | `.confirm-modal`, dialog body            |
-| Popover/tooltip | `60`    | `.mp-link-popover`, floating menus       |
-| App chrome      | `< 20`  | Toolbars, sidebar                        |
+| Layer          | z-index | Notes                                                               |
+| -------------- | ------- | ------------------------------------------------------------------- |
+| Popover / menu | `90`    | `.bui-select-content`, `.mp-cmd-popover`, `.hm-menu` — must beat 81 |
+| Modal content  | `81`    | `.confirm-modal`, dialog body                                       |
+| Modal overlay  | `80`    | `.cm-overlay`, other alert-dialog scrims                            |
+| App chrome     | `< 20`  | Toolbars, sidebar                                                   |
+
+Popovers / menus sit **above** modal content on purpose: a
+`<Select>`, combobox, or `DropdownMenu` opened from inside a
+`ConfirmDialog` / `AlertDialog` still needs to render on top
+of the dialog itself. The trigger is inside the modal, so the
+popover almost always is too — z-index 60 would put it behind
+the dialog it was launched from.
 
 Keep new bits-ui surfaces inside this budget; don't invent a `999`
 one-off.

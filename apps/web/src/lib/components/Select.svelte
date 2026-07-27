@@ -158,7 +158,11 @@
 		border: 1px solid var(--border-mid);
 		border-radius: 6px;
 		box-shadow: 0 12px 32px #00000060;
-		z-index: 60;
+		/* 90 — popovers/menus must sit above bits-ui modal content
+		   (z-index 81) so a Select opened from inside a ConfirmDialog
+		   isn't covered by the dialog itself. See the z-index budget
+		   in docs/ui-components.md. */
+		z-index: 90;
 		outline: none;
 	}
 	:global(.bui-select-item) {
