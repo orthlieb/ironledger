@@ -1187,11 +1187,24 @@
 		}
 	}
 
-	/** Icon size in world units — 0.75 of a cell so the icon sits
-	 *  comfortably inside its cell without spilling into neighbours.
-	 *  Zooms with the map (icons are part of the annotation, so it makes
-	 *  sense for them to grow when the user zooms in on detail). */
-	const ICON_SIZE = 0.421875;
+	/** Icon size in world units. Doubles on mobile so markers stay
+	 *  legible for touch — the default (~0.42 world units) reads
+	 *  fine at desktop pointer resolution but is too small when the
+	 *  whole map is inside a phone-width viewport. Text follows via
+	 *  `.mp-marker-label` in the mobile media block below. */
+	let isMobileViewport = $state(false);
+	$effect(() => {
+		if (typeof window === 'undefined') return;
+		const mq = window.matchMedia('(max-width: 640px)');
+		const sync = () => (isMobileViewport = mq.matches);
+		sync();
+		mq.addEventListener('change', sync);
+		return () => mq.removeEventListener('change', sync);
+	});
+	const ICON_SIZE = $derived(isMobileViewport ? 0.84375 : 0.421875);
+	/** Vertical gap between the icon's bottom and the label's baseline,
+	 *  in world units. Scales with the icon so proportions stay stable. */
+	const LABEL_GAP = $derived(isMobileViewport ? 0.36 : 0.18);
 
 	// Derive the selected marker's icon record + color for the toolbar so
 	// the icon button always shows the current preview.
@@ -1771,7 +1784,7 @@
 									class="mp-marker-label"
 									fill={color}
 									vector-effect="non-scaling-stroke"
-									y={ICON_SIZE / 2 + 0.18}>{m.label}</text
+									y={ICON_SIZE / 2 + LABEL_GAP}>{m.label}</text
 								>
 							{:else}
 								<text
@@ -2755,6 +2768,14 @@
 		stroke: #fff;
 		stroke-width: 2;
 		stroke-linejoin: round;
+	}
+	/* Doubled on mobile so labels stay legible when the whole map
+	   is inside a phone-width viewport. Matches the ICON_SIZE
+	   doubling in the marker render loop. */
+	@media (max-width: 640px) {
+		.mp-marker-label {
+			font-size: 0.48px;
+		}
 	}
 	/* Label-only markers (no icon chosen) centre both axes on the point
 	   instead of sitting below where the icon would be. */
