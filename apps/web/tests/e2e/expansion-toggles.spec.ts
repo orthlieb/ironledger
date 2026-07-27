@@ -82,7 +82,7 @@ async function openMovesDialog(page: Page): Promise<void> {
 /** Open the Oracles dialog via the global app-nav button. */
 async function openOraclesDialog(page: Page): Promise<void> {
 	await page.locator(`${APP_NAV} .act-btn`, { hasText: 'Ask' }).first().click();
-	await expect(page.locator('dialog.oracles-dialog[open]')).toBeVisible({ timeout: 8_000 });
+	await expect(page.locator('dialog.oracles-dialog')).toBeVisible({ timeout: 8_000 });
 }
 
 async function waitForHome(page: Page): Promise<void> {

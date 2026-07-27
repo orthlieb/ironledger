@@ -113,21 +113,21 @@ test.describe('Adventure-action dialogs (v2)', () => {
 
 	test('Ask button (2nd action) opens oracles dialog', async ({ page }) => {
 		await page.locator(`${APP_NAV} .act-btn`).nth(1).click();
-		await expect(page.locator('.oracles-dialog[open]')).toBeVisible({ timeout: 3_000 });
+		await expect(page.locator('.oracles-dialog')).toBeVisible({ timeout: 3_000 });
 		await page.keyboard.press('Escape');
 	});
 
 	test('clicking an oracle tile adds a result to the log', async ({ page }) => {
 		const countBefore = await page.locator('.log-entry').count();
 		await page.locator(`${APP_NAV} .act-btn`).nth(1).click();
-		await expect(page.locator('.oracles-dialog[open]')).toBeVisible({ timeout: 3_000 });
+		await expect(page.locator('.oracles-dialog')).toBeVisible({ timeout: 3_000 });
 		const firstTile = page.locator('.oracles-dialog .od-tile').first();
 		await expect(firstTile).toBeVisible({ timeout: 5_000 });
 		await firstTile.click();
 		const rollBtn = page.locator('.oracles-dialog button.od-roll-btn');
 		await expect(rollBtn).toBeVisible({ timeout: 3_000 });
 		await rollBtn.click();
-		await expect(page.locator('.oracles-dialog[open]')).not.toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.oracles-dialog')).not.toBeVisible({ timeout: 5_000 });
 		await expect(page.locator('.log-entry')).not.toHaveCount(countBefore, { timeout: 5_000 });
 	});
 
