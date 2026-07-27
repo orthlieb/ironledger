@@ -438,12 +438,12 @@
 						? `Your current level only allows ${_cap} ${_cap === 1 ? 'ability' : 'abilities'} — increase your touched level to unlock more`
 						: ''}
 				>
-					<input
-						type="checkbox"
+					<Checkbox
+						bare
 						class="ability-check"
 						checked={asset.abilities[i]}
 						disabled={_atCap}
-						onchange={() => toggleAbility(i)}
+						onCheckedChange={() => toggleAbility(i)}
 					/>
 					<div class="ability-text">
 						{#if ab.name}
@@ -478,12 +478,12 @@
 								class:selection-known={known}
 								class:selection-disabled={disabled}
 							>
-								<input
-									type="checkbox"
+								<Checkbox
+									bare
 									class="selection-check"
 									checked={known}
 									{disabled}
-									onchange={() => {
+									onCheckedChange={() => {
 										if (!disabled) toggleSelection(item.key);
 									}}
 								/>
@@ -723,12 +723,12 @@
 						class:rarity-label--locked={ownsAnother}
 						use:tooltip={ownsAnother ? 'Uncheck the current rarity first' : ''}
 					>
-						<input
-							type="checkbox"
+						<Checkbox
+							bare
 							class="rarity-check"
 							checked={isChecked}
 							{disabled}
-							onchange={() => {
+							onCheckedChange={() => {
 								if (disabled) return;
 								asset.rarityId = isChecked ? undefined : rarity.id;
 							}}
@@ -991,13 +991,10 @@
 		cursor: not-allowed;
 	}
 
-	.ability-check {
+	:global(.ability-check) {
 		margin-top: 2px;
 		flex-shrink: 0;
-		accent-color: var(--asset-color, var(--text-accent));
-		width: 13px;
-		height: 13px;
-		pointer-events: none;
+		--bui-check-color: var(--asset-color, var(--text-accent));
 	}
 
 	.ability-text {
@@ -1450,13 +1447,10 @@
 		cursor: not-allowed;
 	}
 
-	.selection-check {
+	:global(.selection-check) {
 		margin-top: 2px;
 		flex-shrink: 0;
-		accent-color: var(--color-mana);
-		width: 12px;
-		height: 12px;
-		pointer-events: none;
+		--bui-check-color: var(--color-mana);
 	}
 
 	.selection-line {
@@ -1501,12 +1495,8 @@
 		cursor: not-allowed;
 	}
 
-	.rarity-check {
+	:global(.rarity-check) {
 		flex-shrink: 0;
-		accent-color: var(--text-accent);
-		width: 13px;
-		height: 13px;
-		pointer-events: none;
 	}
 
 	.rarity-name {

@@ -30,6 +30,7 @@
 		value,
 		ariaLabel,
 		variant = 'default',
+		bare = false,
 		class: cls = '',
 		onCheckedChange,
 		children,
@@ -41,6 +42,10 @@
 		value?: string;
 		ariaLabel?: string;
 		variant?: 'default' | 'switch';
+		/** Skip the outer `<label>` wrapper. Use when the checkbox is
+		 *  already sitting inside a parent `<label>` (or bespoke row
+		 *  chrome) — nesting `<label>`s is invalid HTML. */
+		bare?: boolean;
 		class?: string;
 		onCheckedChange?: (v: boolean) => void;
 		children?: Snippet;
@@ -52,10 +57,7 @@
 	}
 </script>
 
-<label
-	class="bui-check-row {variant === 'switch' ? 'bui-check-row--switch' : ''} {cls}"
-	class:bui-check-row--disabled={disabled}
->
+{#snippet primitive()}
 	<BitsCheckbox.Root
 		{id}
 		{name}
@@ -64,7 +66,7 @@
 		{disabled}
 		aria-label={ariaLabel}
 		onCheckedChange={handleChange}
-		class={variant === 'switch' ? 'bui-switch' : 'bui-check'}
+		class={variant === 'switch' ? `bui-switch ${bare ? cls : ''}` : `bui-check ${bare ? cls : ''}`}
 	>
 		{#snippet children({ checked: c })}
 			{#if variant === 'switch'}
@@ -88,10 +90,21 @@
 			{/if}
 		{/snippet}
 	</BitsCheckbox.Root>
-	{#if children}
-		<span class="bui-check-label">{@render children()}</span>
-	{/if}
-</label>
+{/snippet}
+
+{#if bare}
+	{@render primitive()}
+{:else}
+	<label
+		class="bui-check-row {variant === 'switch' ? 'bui-check-row--switch' : ''} {cls}"
+		class:bui-check-row--disabled={disabled}
+	>
+		{@render primitive()}
+		{#if children}
+			<span class="bui-check-label">{@render children()}</span>
+		{/if}
+	</label>
+{/if}
 
 <style>
 	/* bits-ui Checkbox renders a plain <button>; owned chrome lives on the
@@ -136,8 +149,8 @@
 		outline-offset: 1px;
 	}
 	:global(.bui-check[data-state='checked']) {
-		background: var(--text-accent);
-		border-color: var(--text-accent);
+		background: var(--bui-check-color, var(--text-accent));
+		border-color: var(--bui-check-color, var(--text-accent));
 		color: var(--bg-card);
 	}
 	:global(.bui-check:disabled) {
