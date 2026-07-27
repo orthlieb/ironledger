@@ -1015,12 +1015,13 @@ consumer of a shared dialog primitive is migrated, keep them.
 Reserve class prefixes so it's obvious at a glance which
 primitive a class belongs to:
 
-| Prefix          | Primitive                        | Example use                                                      |
-| --------------- | -------------------------------- | ---------------------------------------------------------------- |
-| `cm-*`          | `AlertDialog` (Confirm)          | `.cm-overlay`, `.cm-header`, `.cm-actions`                       |
-| `mp-combobox-*` | `Popover.Trigger` combobox shell | `.mp-combobox`, `.mp-combobox-value`, `-caret`                   |
-| `mp-cmd-*`      | `Popover + Command` popover body | `.mp-cmd-popover`, `.mp-cmd-search`, `.mp-cmd-item`              |
-| `bui-select-*`  | `<Select>` wrapper (bits-ui)     | `.bui-select-trigger`, `.bui-select-content`, `.bui-select-item` |
+| Prefix          | Primitive                            | Example use                                                      |
+| --------------- | ------------------------------------ | ---------------------------------------------------------------- |
+| `cm-*`          | `AlertDialog` (Confirm)              | `.cm-overlay`, `.cm-header`, `.cm-actions`                       |
+| `mp-combobox-*` | `Popover.Trigger` combobox shell     | `.mp-combobox`, `.mp-combobox-value`, `-caret`                   |
+| `mp-cmd-*`      | `Popover + Command` popover body     | `.mp-cmd-popover`, `.mp-cmd-search`, `.mp-cmd-item`              |
+| `bui-select-*`  | `<Select>` wrapper (bits-ui)         | `.bui-select-trigger`, `.bui-select-content`, `.bui-select-item` |
+| `hm-*`          | `DropdownMenu` (title-bar hamburger) | `.hm-menu`, `.hm-item`, `.hm-sep`, `.hm-item--danger`            |
 
 New primitives get a fresh prefix keyed to their surface — pick
 one that's short and searchable. Don't stack unrelated bits-ui

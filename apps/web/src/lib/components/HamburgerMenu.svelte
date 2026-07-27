@@ -4,12 +4,14 @@
 	 * Items: About, Settings, Import, Export, Report a bug, Admin (admins
 	 * only), Sign Out.
 	 *
-	 * Export opens a dialog with content/format selection.
-	 * Export/Import actions are dispatched as CustomEvents on `document`
-	 * so the home page can handle them with access to character data.
+	 * The dropdown itself is bits-ui DropdownMenu; the Export item opens
+	 * a separate native dialog with content/format selection. Export /
+	 * Import actions are dispatched as CustomEvents on document so the
+	 * home page can handle them with access to character data.
 	 */
 
 	import Select from './Select.svelte';
+	import { DropdownMenu } from 'bits-ui';
 
 	let {
 		isAdmin = false,
@@ -23,8 +25,11 @@
 		onReportBug?: () => void;
 	} = $props();
 
-	let open = $state(false);
 	let exportDialogEl = $state<HTMLDialogElement | null>(null);
+	// Hidden form the "Sign Out" item programmatically submits so the
+	// POST + CSRF flow that /logout expects still runs — bits-ui menu
+	// items don't render as <form> submitters themselves.
+	let logoutFormEl = $state<HTMLFormElement | null>(null);
 	let exportContent = $state('everything');
 	// Default for "Everything" is the zip bundle (portraits packed as
 	// raw JPEGs alongside the JSON body). Per-entity content types
@@ -64,22 +69,17 @@
 		window.removeEventListener('mouseup', onExportDragEnd);
 	}
 
-	function toggle() {
-		open = !open;
-	}
-	function close() {
-		open = false;
-	}
-
 	function dispatch(action: string, detail: Record<string, string> = {}) {
 		document.dispatchEvent(new CustomEvent('il-menu-action', { detail: { action, ...detail } }));
 	}
 
 	function openExportDialog() {
-		close();
 		exportDragX = 0;
 		exportDragY = 0;
-		exportDialogEl?.showModal();
+		// setTimeout so bits-ui finishes its own close-and-return-focus
+		// cycle before we open the dialog — otherwise the dialog opens
+		// and the trigger tries to steal focus back on the same tick.
+		setTimeout(() => exportDialogEl?.showModal(), 0);
 	}
 
 	function doExport() {
@@ -88,68 +88,60 @@
 	}
 </script>
 
-<svelte:window
-	onclick={(e) => {
-		if (open && !(e.target as HTMLElement).closest('.hamburger-menu')) close();
-	}}
-/>
-
-<div class="hamburger-menu">
-	<button class="hamburger-btn" onclick={toggle} aria-label="Menu" aria-expanded={open}>
+<DropdownMenu.Root>
+	<DropdownMenu.Trigger class="hamburger-btn" aria-label="Menu">
 		<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
 			<rect y="2" width="16" height="2" rx="1" fill="currentColor" />
 			<rect y="7" width="16" height="2" rx="1" fill="currentColor" />
 			<rect y="12" width="16" height="2" rx="1" fill="currentColor" />
 		</svg>
-	</button>
+	</DropdownMenu.Trigger>
+	<DropdownMenu.Portal>
+		<DropdownMenu.Content class="hm-menu" sideOffset={4} align="end">
+			<DropdownMenu.Item>
+				{#snippet child({ props })}
+					<a {...props} href="/about" class="hm-item">About</a>
+				{/snippet}
+			</DropdownMenu.Item>
+			<DropdownMenu.Item class="hm-item" onSelect={() => onSettings?.()}>
+				Settings…
+			</DropdownMenu.Item>
 
-	{#if open}
-		<div class="menu-dropdown">
-			<a href="/about" class="menu-item menu-item--link" onclick={close}>About</a>
+			<DropdownMenu.Separator class="hm-sep" />
 
-			<button
-				class="menu-item"
-				onclick={() => {
-					onSettings?.();
-					close();
-				}}>Settings…</button
-			>
+			<DropdownMenu.Item class="hm-item" onSelect={() => dispatch('import')}>
+				Import…
+			</DropdownMenu.Item>
+			<DropdownMenu.Item class="hm-item" onSelect={openExportDialog}>Export…</DropdownMenu.Item>
 
-			<div class="menu-divider"></div>
+			<DropdownMenu.Separator class="hm-sep" />
 
-			<button
-				class="menu-item"
-				onclick={() => {
-					close();
-					dispatch('import');
-				}}>Import...</button
-			>
-
-			<button class="menu-item" onclick={openExportDialog}>Export...</button>
-
-			<div class="menu-divider"></div>
-
-			<button
-				class="menu-item"
-				onclick={() => {
-					onReportBug?.();
-					close();
-				}}>Report a bug…</button
-			>
+			<DropdownMenu.Item class="hm-item" onSelect={() => onReportBug?.()}>
+				Report a bug…
+			</DropdownMenu.Item>
 
 			{#if isAdmin}
-				<div class="menu-divider"></div>
-				<a href="/admin" class="menu-item menu-item--link" onclick={close}>Admin…</a>
+				<DropdownMenu.Separator class="hm-sep" />
+				<DropdownMenu.Item>
+					{#snippet child({ props })}
+						<a {...props} href="/admin" class="hm-item">Admin…</a>
+					{/snippet}
+				</DropdownMenu.Item>
 			{/if}
 
-			<div class="menu-divider"></div>
+			<DropdownMenu.Separator class="hm-sep" />
 
-			<form method="POST" action="/logout" class="menu-form">
-				<button type="submit" class="menu-item menu-item--danger">Sign Out</button>
-			</form>
-		</div>
-	{/if}
-</div>
+			<DropdownMenu.Item
+				class="hm-item hm-item--danger"
+				onSelect={() => logoutFormEl?.requestSubmit()}
+			>
+				Sign Out
+			</DropdownMenu.Item>
+		</DropdownMenu.Content>
+	</DropdownMenu.Portal>
+</DropdownMenu.Root>
+
+<form bind:this={logoutFormEl} method="POST" action="/logout" class="hm-logout-form"></form>
 
 <!-- Export dialog -->
 <dialog
@@ -250,11 +242,12 @@
 </dialog>
 
 <style>
-	.hamburger-menu {
-		position: relative;
-	}
-
-	.hamburger-btn {
+	/* Every selector below has to be `:global()` — bits-ui
+	   DropdownMenu components own their DOM roots, and the Trigger
+	   Portals its Content out of this component's slot, so Svelte's
+	   CSS pruning can't see any of them. `hm-*` prefix mirrors the
+	   naming in docs/ui-components.md. */
+	:global(.hamburger-btn) {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
@@ -269,15 +262,13 @@
 			color 0.15s,
 			border-color 0.15s;
 	}
-	.hamburger-btn:hover {
+	:global(.hamburger-btn:hover),
+	:global(.hamburger-btn[data-state='open']) {
 		color: var(--text-accent);
 		border-color: var(--border-mid);
 	}
 
-	.menu-dropdown {
-		position: absolute;
-		top: calc(100% + 4px);
-		right: 0;
+	:global(.hm-menu) {
 		min-width: 160px;
 		background: var(--bg-card);
 		border: 1px solid var(--border-mid);
@@ -285,64 +276,57 @@
 		box-shadow: 0 8px 24px #00000060;
 		padding: 4px 0;
 		z-index: 1000;
-		display: flex;
-		flex-direction: column;
+		outline: none;
 	}
 
-	.menu-item {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		width: 100%;
-		padding: 7px 14px;
-		background: none;
-		border: none;
-		font-family: var(--font-ui);
-		font-size: 0.78rem;
-		color: var(--text-muted);
-		cursor: pointer;
-		text-align: left;
-		text-decoration: none;
-		transition:
-			background 0.1s,
-			color 0.1s;
-	}
-	.menu-item:hover {
-		background: var(--bg-hover);
-		color: var(--text);
-	}
-	.menu-item--link {
+	:global(.hm-item) {
 		display: block;
 		width: 100%;
 		box-sizing: border-box;
+		padding: 7px 14px;
 		font-family: var(--font-ui);
 		font-size: 0.78rem;
 		font-weight: 400;
 		letter-spacing: normal;
 		text-transform: none;
 		color: var(--text-muted);
+		background: none;
+		border: none;
+		text-align: left;
+		text-decoration: none;
+		cursor: pointer;
+		user-select: none;
+		outline: none;
+		transition:
+			background 0.1s,
+			color 0.1s;
 	}
-	.menu-item--link:hover {
+	/* bits-ui sets data-highlighted on the item under keyboard focus
+	   or pointer hover — same visual either way. */
+	:global(.hm-item[data-highlighted]),
+	:global(.hm-item:hover) {
 		background: var(--bg-hover);
 		color: var(--text);
 		text-decoration: none;
 		filter: none;
 	}
-	.menu-item--danger {
+	:global(.hm-item--danger) {
 		color: var(--color-danger);
 	}
-	.menu-item--danger:hover {
+	:global(.hm-item--danger[data-highlighted]),
+	:global(.hm-item--danger:hover) {
 		background: color-mix(in srgb, var(--color-danger) 10%, var(--bg-card));
+		color: var(--color-danger);
 	}
 
-	.menu-divider {
+	:global(.hm-sep) {
 		height: 1px;
 		background: var(--border);
 		margin: 4px 8px;
 	}
 
-	.menu-form {
-		display: contents;
+	.hm-logout-form {
+		display: none;
 	}
 
 	/* ── Export dialog ── */
