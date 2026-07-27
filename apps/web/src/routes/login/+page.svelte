@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { ActionData, PageData } from './$types';
 	import PasswordInput from '$lib/components/PasswordInput.svelte';
+	import Checkbox from '$lib/components/Checkbox.svelte';
 	import swordSvg from '$icons/sharp-axe.svg?raw';
 	import { browser } from '$app/environment';
 
@@ -64,10 +65,7 @@
 				{/if}
 			</div>
 
-			<label class="remember-me-row">
-				<input type="checkbox" name="rememberMe" />
-				<span>Remember me</span>
-			</label>
+			<Checkbox class="remember-me-row" name="rememberMe" value="on">Remember me</Checkbox>
 
 			<button type="submit" class="btn btn-primary">Sign In</button>
 		</form>
@@ -131,7 +129,7 @@
 		text-align: center;
 	}
 
-	.remember-me-row {
+	:global(.remember-me-row) {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
@@ -140,13 +138,6 @@
 		color: var(--text-muted);
 		cursor: pointer;
 		user-select: none;
-	}
-
-	.remember-me-row input[type='checkbox'] {
-		width: 14px;
-		height: 14px;
-		accent-color: var(--text-accent);
-		cursor: pointer;
 	}
 
 	.forgot-link {

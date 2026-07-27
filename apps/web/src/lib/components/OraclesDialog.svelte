@@ -412,7 +412,7 @@
 		pointer-events: none;
 		color: var(--text-dimmer);
 	}
-	:global(.od-search-icon :global(svg)) {
+	:global(.od-search-icon svg) {
 		width: 100%;
 		height: 100%;
 		fill: currentColor;
@@ -458,7 +458,7 @@
 		opacity: 0.25;
 		cursor: not-allowed;
 	}
-	:global(.od-clear-btn :global(svg)) {
+	:global(.od-clear-btn svg) {
 		width: 16px;
 		height: 16px;
 		fill: currentColor;
@@ -636,13 +636,13 @@
 	:global(.od-table-wrap) {
 		overflow-x: auto;
 	}
-	:global(.od-table-wrap :global(.oracle-table)) {
+	:global(.od-table-wrap .oracle-table) {
 		width: 100%;
 		border-collapse: collapse;
 		font-family: var(--font-ui);
 		font-size: 0.7rem;
 	}
-	:global(.od-table-wrap :global(.oracle-table th)) {
+	:global(.od-table-wrap .oracle-table th) {
 		background: var(--bg-control);
 		color: var(--text-dimmer);
 		font-weight: 700;
@@ -654,27 +654,27 @@
 		white-space: nowrap;
 		text-align: left;
 	}
-	:global(.od-table-wrap :global(.oracle-table td)) {
+	:global(.od-table-wrap .oracle-table td) {
 		padding: 4px 8px;
 		border-bottom: 1px solid var(--border);
 		color: var(--text);
 		vertical-align: top;
 	}
-	:global(.od-table-wrap :global(.oracle-table tr:last-child td)) {
+	:global(.od-table-wrap .oracle-table tr:last-child td) {
 		border-bottom: none;
 	}
-	:global(.od-table-wrap :global(.oracle-table tr:hover td)) {
+	:global(.od-table-wrap .oracle-table tr:hover td) {
 		background: var(--bg-hover);
 	}
 	/* Active stat column highlight (delveDepths oracle) — color driven by --active-col-color */
-	:global(.od-table-wrap :global(.oracle-table .col-active)) {
+	:global(.od-table-wrap .oracle-table .col-active) {
 		background: color-mix(in srgb, var(--active-col-color, var(--text-accent)) 8%, transparent);
 		color: var(--active-col-color, var(--text-accent)) !important;
 		font-weight: 600;
 	}
 
 	/* Range column — monospaced, no wrap */
-	:global(.od-table-wrap :global(.oracle-table td:first-child)) {
+	:global(.od-table-wrap .oracle-table td:first-child) {
 		font-variant-numeric: tabular-nums;
 		color: var(--text-dimmer);
 		white-space: nowrap;
@@ -682,7 +682,7 @@
 	}
 	/* settlementName category cells */
 	.od-table-wrap :global(.oracle-cat-range),
-	:global(.od-table-wrap :global(.oracle-cat-desc)) {
+	:global(.od-table-wrap .oracle-cat-desc) {
 		background: color-mix(in srgb, var(--text-accent) 5%, transparent);
 		font-style: italic;
 		color: var(--text-muted) !important;

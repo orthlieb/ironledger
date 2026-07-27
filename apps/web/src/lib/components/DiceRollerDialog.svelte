@@ -391,7 +391,7 @@
 	:global(.quick-btn:hover:not(:disabled) .qicon) {
 		color: var(--text-accent);
 	}
-	:global(.qicon :global(svg)) {
+	:global(.qicon svg) {
 		width: 22px;
 		height: 22px;
 		fill: currentColor;
@@ -534,14 +534,14 @@
 	:global(.qicon-d100) {
 		gap: 3px;
 	}
-	:global(.qicon-d100 :global(svg)) {
+	:global(.qicon-d100 svg) {
 		width: 17px;
 		height: 17px;
 	}
-	:global(.d100-dark :global(svg)) {
+	:global(.d100-dark svg) {
 		fill: #7b4f2e;
 	}
-	:global(.d100-light :global(svg)) {
+	:global(.d100-light svg) {
 		fill: #c4895e;
 	}
 	:global(.quick-btn:hover:not(:disabled) .d100-dark :global(svg)) {

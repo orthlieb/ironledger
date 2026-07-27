@@ -19,6 +19,7 @@
 	import type { LayoutData } from '../$types';
 	import ErrorBar from '$lib/components/ErrorBar.svelte';
 	import { tooltip } from '$lib/actions/tooltip.js';
+	import { RadioGroup, Tabs } from 'bits-ui';
 
 	let { data }: { data: LayoutData } = $props();
 
@@ -731,44 +732,27 @@
 		</div>
 
 		<!-- Tab bar -->
-		<nav class="tab-bar" aria-label="Admin tabs">
-			<div class="tab-group" role="tablist">
-				<button
-					class="tab-btn"
-					class:active={activeTab === 'users'}
-					role="tab"
-					aria-selected={activeTab === 'users'}
-					onclick={() => (activeTab = 'users')}>Users</button
-				>
-				<button
-					class="tab-btn"
-					class:active={activeTab === 'invites'}
-					role="tab"
-					aria-selected={activeTab === 'invites'}
-					onclick={() => (activeTab = 'invites')}>Invites</button
-				>
-				<button
-					class="tab-btn"
-					class:active={activeTab === 'logs'}
-					role="tab"
-					aria-selected={activeTab === 'logs'}
-					onclick={() => (activeTab = 'logs')}>Logs</button
-				>
-				<button
-					class="tab-btn"
-					class:active={activeTab === 'tools'}
-					role="tab"
-					aria-selected={activeTab === 'tools'}
-					onclick={() => {
-						activeTab = 'tools';
-						void refreshMaintStatus();
-						void refreshRegLockStatus();
-						void refreshBroadcastStatus();
-						void refreshQuotaStatus();
-					}}>Tools</button
-				>
-			</div>
-		</nav>
+		<Tabs.Root
+			value={activeTab}
+			onValueChange={(v) => {
+				activeTab = v as typeof activeTab;
+				if (v === 'tools') {
+					void refreshMaintStatus();
+					void refreshRegLockStatus();
+					void refreshBroadcastStatus();
+					void refreshQuotaStatus();
+				}
+			}}
+		>
+			<nav class="tab-bar" aria-label="Admin tabs">
+				<Tabs.List class="tab-group">
+					<Tabs.Trigger value="users" class="tab-btn">Users</Tabs.Trigger>
+					<Tabs.Trigger value="invites" class="tab-btn">Invites</Tabs.Trigger>
+					<Tabs.Trigger value="logs" class="tab-btn">Logs</Tabs.Trigger>
+					<Tabs.Trigger value="tools" class="tab-btn">Tools</Tabs.Trigger>
+				</Tabs.List>
+			</nav>
+		</Tabs.Root>
 
 		<!-- Tab body -->
 		<div class="tab-body">
@@ -1239,17 +1223,26 @@
 						</p>
 
 						<div class="tools-tile-form">
-							<div class="tools-tile-severity">
+							<RadioGroup.Root
+								class="tools-tile-severity"
+								value={quotaMode}
+								onValueChange={(v) => (quotaMode = v as typeof quotaMode)}
+								aria-label="Signup quota mode"
+							>
 								<span class="tools-tile-field-label">Mode</span>
 								<label class="severity-opt">
-									<input type="radio" bind:group={quotaMode} value="unlimited" />
+									<RadioGroup.Item value="unlimited" class="severity-radio">
+										<span class="severity-radio-dot"></span>
+									</RadioGroup.Item>
 									<span>Unlimited</span>
 								</label>
 								<label class="severity-opt">
-									<input type="radio" bind:group={quotaMode} value="capped" />
+									<RadioGroup.Item value="capped" class="severity-radio">
+										<span class="severity-radio-dot"></span>
+									</RadioGroup.Item>
 									<span>Capped</span>
 								</label>
-							</div>
+							</RadioGroup.Root>
 							{#if quotaMode === 'capped'}
 								<label class="tools-tile-field tools-tile-field--narrow">
 									<span>New signups per UTC day</span>
@@ -1312,17 +1305,26 @@
 									placeholder="e.g. Foe images regenerating tonight 10–11pm UTC."
 								/>
 							</label>
-							<div class="tools-tile-severity">
+							<RadioGroup.Root
+								class="tools-tile-severity"
+								value={broadcastSeverity}
+								onValueChange={(v) => (broadcastSeverity = v as BroadcastSeverity)}
+								aria-label="Broadcast severity"
+							>
 								<span class="tools-tile-field-label">Severity</span>
 								<label class="severity-opt">
-									<input type="radio" bind:group={broadcastSeverity} value="info" />
+									<RadioGroup.Item value="info" class="severity-radio">
+										<span class="severity-radio-dot"></span>
+									</RadioGroup.Item>
 									<span>Info</span>
 								</label>
 								<label class="severity-opt">
-									<input type="radio" bind:group={broadcastSeverity} value="warning" />
+									<RadioGroup.Item value="warning" class="severity-radio">
+										<span class="severity-radio-dot"></span>
+									</RadioGroup.Item>
 									<span>Warning</span>
 								</label>
-							</div>
+							</RadioGroup.Root>
 						</div>
 						<div class="tools-tile-actions">
 							<button
@@ -1791,7 +1793,8 @@
 	.tab-btn:hover {
 		color: var(--text-muted);
 	}
-	.tab-btn.active {
+	.tab-btn.active,
+	:global(.tab-btn[data-state='active']) {
 		color: var(--text-accent);
 		border-bottom-color: var(--text-accent);
 	}
@@ -2486,7 +2489,34 @@
 		color: var(--text-muted);
 		cursor: pointer;
 	}
-	.severity-opt input {
-		margin: 0;
+	:global(.severity-radio) {
+		flex-shrink: 0;
+		width: 14px;
+		height: 14px;
+		padding: 0;
+		background: var(--bg-control);
+		border: 1px solid var(--border-mid);
+		border-radius: 999px;
+		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+	:global(.severity-radio:focus-visible) {
+		outline: 2px solid var(--text-accent);
+		outline-offset: 1px;
+	}
+	:global(.severity-radio[data-state='checked']) {
+		border-color: var(--text-accent);
+	}
+	:global(.severity-radio-dot) {
+		width: 7px;
+		height: 7px;
+		border-radius: 999px;
+		background: var(--text-accent);
+		opacity: 0;
+	}
+	:global(.severity-radio[data-state='checked'] .severity-radio-dot) {
+		opacity: 1;
 	}
 </style>

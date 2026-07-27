@@ -14,6 +14,8 @@
 	import { draggable } from '$lib/actions/draggable.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import Select from '$lib/components/Select.svelte';
+	import Checkbox from '$lib/components/Checkbox.svelte';
+	import { RadioGroup } from 'bits-ui';
 
 	import iconHeart from '$icons/icon-heart.svg?raw';
 	import iconSkull from '$icons/skull-crossbones-solid-full.svg?raw';
@@ -381,19 +383,17 @@
 					/>
 				</label>
 			{:else if field.type === 'switch'}
-				<label class="cf-switch">
-					<input
-						type="checkbox"
-						class="cf-switch-input"
-						checked={asset.customValues?.[field.id] === '1'}
-						onchange={() => {
-							if (!asset.customValues) asset.customValues = {};
-							asset.customValues[field.id] = asset.customValues[field.id] === '1' ? '0' : '1';
-						}}
-					/>
-					<span class="cf-switch-track"><span class="cf-switch-knob"></span></span>
+				<Checkbox
+					class="cf-switch"
+					variant="switch"
+					checked={asset.customValues?.[field.id] === '1'}
+					onCheckedChange={(v) => {
+						if (!asset.customValues) asset.customValues = {};
+						asset.customValues[field.id] = v ? '1' : '0';
+					}}
+				>
 					<span class="cf-switch-label">{field.label}</span>
-				</label>
+				</Checkbox>
 			{/if}
 		{/each}
 
@@ -438,12 +438,12 @@
 						? `Your current level only allows ${_cap} ${_cap === 1 ? 'ability' : 'abilities'} — increase your touched level to unlock more`
 						: ''}
 				>
-					<input
-						type="checkbox"
+					<Checkbox
+						bare
 						class="ability-check"
 						checked={asset.abilities[i]}
 						disabled={_atCap}
-						onchange={() => toggleAbility(i)}
+						onCheckedChange={() => toggleAbility(i)}
 					/>
 					<div class="ability-text">
 						{#if ab.name}
@@ -478,12 +478,12 @@
 								class:selection-known={known}
 								class:selection-disabled={disabled}
 							>
-								<input
-									type="checkbox"
+								<Checkbox
+									bare
 									class="selection-check"
 									checked={known}
 									{disabled}
-									onchange={() => {
+									onCheckedChange={() => {
 										if (!disabled) toggleSelection(item.key);
 									}}
 								/>
@@ -593,22 +593,24 @@
 					<span class="health-label">{curVal}/{maxVal}</span>
 				</div>
 			{:else if field.type === 'radio' && field.options}
-				<div class="radio-row">
+				<RadioGroup.Root
+					class="radio-row"
+					value={asset.customValues?.[field.id] ?? String(field.default ?? '')}
+					onValueChange={(v) => {
+						if (!asset.customValues) asset.customValues = {};
+						asset.customValues[field.id] = v;
+					}}
+					aria-label={field.label}
+				>
 					{#each field.options as opt}
 						<label class="radio-option">
-							<input
-								type="radio"
-								name="radio-{asset.assetId}-{field.id}"
-								checked={(asset.customValues?.[field.id] ?? String(field.default ?? '')) === opt.id}
-								oninput={() => {
-									if (!asset.customValues) asset.customValues = {};
-									asset.customValues[field.id] = opt.id;
-								}}
-							/>
+							<RadioGroup.Item value={opt.id} class="radio-option-btn">
+								<span class="radio-option-dot"></span>
+							</RadioGroup.Item>
 							<span>{opt.label}</span>
 						</label>
 					{/each}
-				</div>
+				</RadioGroup.Root>
 			{:else if field.type === 'string'}
 				<label class="companion-name-label">
 					<span class="companion-field-label">{field.label}</span>
@@ -654,19 +656,17 @@
 					/>
 				</label>
 			{:else if field.type === 'switch'}
-				<label class="cf-switch">
-					<input
-						type="checkbox"
-						class="cf-switch-input"
-						checked={asset.customValues?.[field.id] === '1'}
-						onchange={() => {
-							if (!asset.customValues) asset.customValues = {};
-							asset.customValues[field.id] = asset.customValues[field.id] === '1' ? '0' : '1';
-						}}
-					/>
-					<span class="cf-switch-track"><span class="cf-switch-knob"></span></span>
+				<Checkbox
+					class="cf-switch"
+					variant="switch"
+					checked={asset.customValues?.[field.id] === '1'}
+					onCheckedChange={(v) => {
+						if (!asset.customValues) asset.customValues = {};
+						asset.customValues[field.id] = v ? '1' : '0';
+					}}
+				>
 					<span class="cf-switch-label">{field.label}</span>
-				</label>
+				</Checkbox>
 			{:else if field.type === 'markdown'}
 				{@const editing = editingNotesFieldId === field.id}
 				{@const value = asset.customValues?.[field.id] ?? ''}
@@ -723,12 +723,12 @@
 						class:rarity-label--locked={ownsAnother}
 						use:tooltip={ownsAnother ? 'Uncheck the current rarity first' : ''}
 					>
-						<input
-							type="checkbox"
+						<Checkbox
+							bare
 							class="rarity-check"
 							checked={isChecked}
 							{disabled}
-							onchange={() => {
+							onCheckedChange={() => {
 								if (disabled) return;
 								asset.rarityId = isChecked ? undefined : rarity.id;
 							}}
@@ -991,13 +991,10 @@
 		cursor: not-allowed;
 	}
 
-	.ability-check {
+	:global(.ability-check) {
 		margin-top: 2px;
 		flex-shrink: 0;
-		accent-color: var(--asset-color, var(--text-accent));
-		width: 13px;
-		height: 13px;
-		pointer-events: none;
+		--bui-check-color: var(--asset-color, var(--text-accent));
 	}
 
 	.ability-text {
@@ -1278,7 +1275,7 @@
 		min-height: 0;
 	}
 
-	.radio-row {
+	:global(.radio-row) {
 		display: flex;
 		gap: 12px;
 		margin-top: 4px;
@@ -1294,9 +1291,35 @@
 		white-space: nowrap;
 	}
 
-	.radio-option input[type='radio'] {
-		accent-color: var(--color-accent);
+	:global(.radio-option-btn) {
+		flex-shrink: 0;
+		width: 14px;
+		height: 14px;
+		padding: 0;
+		background: var(--bg-control);
+		border: 1px solid var(--border-mid);
+		border-radius: 999px;
 		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+	:global(.radio-option-btn:focus-visible) {
+		outline: 2px solid var(--color-accent);
+		outline-offset: 1px;
+	}
+	:global(.radio-option-btn[data-state='checked']) {
+		border-color: var(--color-accent);
+	}
+	:global(.radio-option-dot) {
+		width: 7px;
+		height: 7px;
+		border-radius: 999px;
+		background: var(--color-accent);
+		opacity: 0;
+	}
+	:global(.radio-option-btn[data-state='checked'] .radio-option-dot) {
+		opacity: 1;
 	}
 
 	.counter-row {
@@ -1424,13 +1447,10 @@
 		cursor: not-allowed;
 	}
 
-	.selection-check {
+	:global(.selection-check) {
 		margin-top: 2px;
 		flex-shrink: 0;
-		accent-color: var(--color-mana);
-		width: 12px;
-		height: 12px;
-		pointer-events: none;
+		--bui-check-color: var(--color-mana);
 	}
 
 	.selection-line {
@@ -1475,12 +1495,8 @@
 		cursor: not-allowed;
 	}
 
-	.rarity-check {
+	:global(.rarity-check) {
 		flex-shrink: 0;
-		accent-color: var(--text-accent);
-		width: 13px;
-		height: 13px;
-		pointer-events: none;
 	}
 
 	.rarity-name {
@@ -1518,58 +1534,9 @@
 		padding-top: 7px;
 	}
 
-	/* ---- Custom field switch (boolean toggle, same style as DebilitiesSection) ---- */
-	.cf-switch {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		cursor: pointer;
-		user-select: none;
-	}
-
-	.cf-switch-input {
-		position: absolute;
-		opacity: 0;
-		width: 0;
-		height: 0;
-		pointer-events: none;
-	}
-
-	.cf-switch-track {
-		position: relative;
-		width: 28px;
-		height: 15px;
-		border-radius: 8px;
-		background: var(--bg-inset);
-		border: 1px solid var(--border);
-		flex-shrink: 0;
-		transition:
-			background 0.2s,
-			border-color 0.2s;
-	}
-
-	.cf-switch-knob {
-		position: absolute;
-		top: 2px;
-		left: 2px;
-		width: 9px;
-		height: 9px;
-		border-radius: 50%;
-		background: var(--text-dimmer);
-		transition:
-			left 0.2s,
-			background 0.2s;
-	}
-
-	.cf-switch:has(.cf-switch-input:checked) .cf-switch-track {
-		background: color-mix(in srgb, var(--text-accent) 20%, transparent);
-		border-color: var(--text-accent);
-	}
-	.cf-switch:has(.cf-switch-input:checked) .cf-switch-knob {
-		left: 15px;
-		background: var(--text-accent);
-	}
-
+	/* Custom-field switch — uses the shared bits-ui-based Checkbox
+	   `variant="switch"`. The `.cf-switch` class only adjusts label
+	   colour/size; the track + knob chrome comes from `.bui-switch*`. */
 	.cf-switch-label {
 		font-family: var(--font-ui);
 		font-size: 0.75rem;

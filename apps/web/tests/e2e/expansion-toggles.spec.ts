@@ -225,9 +225,9 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		// counted too.
 		const openDialog = page.locator('.confirm-modal');
 		await expect(openDialog).toBeVisible({ timeout: 8_000 });
-		const yrtRadio = openDialog.locator('input[type="radio"][value="yrt"]');
+		const yrtRadio = openDialog.locator('[role="radio"][data-value="yrt"]');
 		await expect(yrtRadio).toHaveCount(0);
-		await expect(openDialog.locator('input[type="radio"][value="ironlands"]')).toHaveCount(1, {
+		await expect(openDialog.locator('[role="radio"][data-value="ironlands"]')).toHaveCount(1, {
 			timeout: 3_000,
 		});
 		await page.keyboard.press('Escape');

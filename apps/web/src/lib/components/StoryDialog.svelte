@@ -19,6 +19,7 @@
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { Dialog } from 'bits-ui';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
+	import Checkbox from '$lib/components/Checkbox.svelte';
 	import {
 		getIncludePreface,
 		setIncludePreface,
@@ -386,17 +387,14 @@
 					</div>
 					<div class="stry-hint">Storyteller: <strong>{storytellerLabel}</strong></div>
 					{#if prefaceText}
-						<label class="stry-toggle">
-							<input
-								type="checkbox"
-								bind:checked={includePreface}
-								onchange={() => setIncludePreface(includePreface)}
-							/>
-							<span
-								>Include cast &amp; setting{#if castLine}:
-									<strong>{castLine}</strong>{/if}</span
-							>
-						</label>
+						<Checkbox
+							class="stry-toggle"
+							bind:checked={includePreface}
+							onCheckedChange={(v) => setIncludePreface(v)}
+						>
+							Include cast &amp; setting{#if castLine}:
+								<strong>{castLine}</strong>{/if}
+						</Checkbox>
 					{/if}
 				</div>
 
@@ -452,9 +450,7 @@
 			     end users never see it. Toggle on, click Start, and the server's
 			     wire-level info shows up in the pane below. -->
 				{#if debugEnabled}
-					<label class="stry-debug-toggle">
-						<input type="checkbox" bind:checked={debugOn} /> Debug
-					</label>
+					<Checkbox class="stry-debug-toggle" bind:checked={debugOn}>Debug</Checkbox>
 					{#if debugOn && debugLog.length > 0}
 						<pre class="stry-debug-log">{debugLog.join('\n')}</pre>
 					{/if}
@@ -659,15 +655,15 @@
 	/* Rendered light-markdown prose (matches the saved Story log entry).
 	   renderNote separates blocks with <br>, and the global reset zeroes
 	   margins — so we only indent lists and style the inline marks here. */
-	:global(.stry-output :global(strong)) {
+	:global(.stry-output strong) {
 		color: var(--text);
 		font-weight: 600;
 	}
-	:global(.stry-output :global(em)) {
+	:global(.stry-output em) {
 		font-style: italic;
 	}
 	.stry-output :global(ul),
-	:global(.stry-output :global(ol)) {
+	:global(.stry-output ol) {
 		padding-left: 1.25em;
 	}
 	:global(.stry-placeholder) {

@@ -21,6 +21,7 @@
 	import { Dialog } from 'bits-ui';
 	import DialogHeader from './DialogHeader.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
+	import Checkbox from './Checkbox.svelte';
 	import { mapSettings, persistMapSettings } from '$lib/mapSettingsStore.svelte.js';
 	import {
 		mapState,
@@ -89,8 +90,8 @@
 		void persistSettings();
 	}
 
-	function onScaleEnabled(e: Event) {
-		patchScale({ enabled: (e.target as HTMLInputElement).checked });
+	function onScaleEnabled(v: boolean) {
+		patchScale({ enabled: v });
 	}
 	function onScaleUnit(unit: 'miles' | 'km') {
 		patchScale({ unit });
@@ -104,8 +105,8 @@
 		if (Number.isFinite(v) && v >= 1 && v <= 20) patchScale({ segments: v });
 	}
 
-	function onGridVisible(e: Event) {
-		mapSettings.grid.visible = (e.target as HTMLInputElement).checked;
+	function onGridVisible(v: boolean) {
+		mapSettings.grid.visible = v;
 		persistMapSettings();
 	}
 	function onGridOpacity(e: Event) {
@@ -137,10 +138,13 @@
 				</section>
 
 				<section class="mo-section">
-					<label class="mo-toggle">
-						<input type="checkbox" checked={mapSettings.grid.visible} onchange={onGridVisible} />
+					<Checkbox
+						class="mo-toggle"
+						checked={mapSettings.grid.visible}
+						onCheckedChange={onGridVisible}
+					>
 						<span class="mo-toggle-label">Show grid</span>
-					</label>
+					</Checkbox>
 					<p class="mo-hint">
 						Hides the grid lines. Clicks still place markers on the underlying grid. This device
 						only.
@@ -166,10 +170,9 @@
 				</section>
 
 				<section class="mo-section">
-					<label class="mo-toggle">
-						<input type="checkbox" checked={scaleEnabled} onchange={onScaleEnabled} />
+					<Checkbox class="mo-toggle" checked={scaleEnabled} onCheckedChange={onScaleEnabled}>
 						<span class="mo-toggle-label">Scale bar</span>
-					</label>
+					</Checkbox>
 					<p class="mo-hint">Distance scale drawn in the bottom-left. Saved with the map.</p>
 
 					<div class="mo-fields mo-fields-row" class:mo-fields-disabled={!scaleEnabled}>

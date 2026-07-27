@@ -322,7 +322,7 @@
 		pointer-events: none;
 		color: var(--text-dimmer);
 	}
-	:global(.ap-search-icon :global(svg)) {
+	:global(.ap-search-icon svg) {
 		width: 100%;
 		height: 100%;
 		fill: currentColor;
@@ -438,7 +438,7 @@
 		opacity: 0.25;
 		cursor: not-allowed;
 	}
-	:global(.ap-clear-btn :global(svg)) {
+	:global(.ap-clear-btn svg) {
 		width: 16px;
 		height: 16px;
 		fill: currentColor;
@@ -517,12 +517,12 @@
 		height: 16px;
 		flex-shrink: 0;
 	}
-	:global(.tile-name-icon :global(svg)) {
+	:global(.tile-name-icon svg) {
 		width: 100%;
 		height: 100%;
 		fill: currentColor;
 	}
-	:global(.tile-name-icon :global(svg path)) {
+	:global(.tile-name-icon svg path) {
 		fill: currentColor;
 	}
 

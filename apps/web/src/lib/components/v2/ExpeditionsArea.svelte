@@ -64,6 +64,7 @@
 	import checkSvg from '$icons/circle-check-solid-full.svg?raw';
 	import locationSvg from '$icons/location-dot-solid-full.svg?raw';
 	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
+	import { RadioGroup, Tabs } from 'bits-ui';
 	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
 	const journeyPlaceholderSvg = ENTITY_KIND_META.journey.icon;
 	const sitePlaceholderSvg = ENTITY_KIND_META.site.icon;
@@ -730,18 +731,17 @@
 				</div>
 
 				<div class="ea-stage" class:ea-stage--complete={activeExp.complete}>
-					<!-- Card tab strip — Journey: Description/Core, Site: Notes/Core/Denizens. -->
-					<div class="ea-tabs" role="tablist">
-						{#each tabLabels as tab (tab.key)}
-							<button
-								role="tab"
-								class="ea-tab"
-								class:ea-tab--active={activeTab === tab.key}
-								aria-selected={activeTab === tab.key}
-								onclick={() => (activeTab = tab.key)}>{tab.label}</button
-							>
-						{/each}
-					</div>
+					<Tabs.Root
+						value={activeTab}
+						onValueChange={(v) => (activeTab = v as ExpTab)}
+						class="ea-tabs-root"
+					>
+						<Tabs.List class="ea-tabs">
+							{#each tabLabels as tab (tab.key)}
+								<Tabs.Trigger value={tab.key} class="ea-tab">{tab.label}</Tabs.Trigger>
+							{/each}
+						</Tabs.List>
+					</Tabs.Root>
 
 					<div class="ea-card" role="tabpanel">
 						<!-- ── Description / Notes — portrait floats right, prose wraps.
@@ -1016,20 +1016,22 @@
 	accentColor={JOURNEY_COLOR}
 	onconfirm={confirmAddJourney}
 >
-	<fieldset style="border: none; padding: 0; margin: 0 0 4px;">
-		<legend
-			style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); margin-bottom: 5px;"
-			>Difficulty</legend
-		>
+	<RadioGroup.Root
+		class="v2-radio-group"
+		value={newJourneyDifficulty}
+		onValueChange={(v) => (newJourneyDifficulty = v as VowDifficulty)}
+		aria-label="Difficulty"
+	>
+		<span class="v2-radio-legend">Difficulty</span>
 		{#each DIFFICULTIES as opt}
-			<label
-				style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer; margin-bottom: 3px;"
-			>
-				<input type="radio" bind:group={newJourneyDifficulty} value={opt.value} />
+			<label class="v2-radio-label">
+				<RadioGroup.Item value={opt.value} class="v2-radio-btn">
+					<span class="v2-radio-dot"></span>
+				</RadioGroup.Item>
 				{opt.label}
 			</label>
 		{/each}
-	</fieldset>
+	</RadioGroup.Root>
 </ConfirmDialog>
 
 <!-- New Site dialog — pick a difficulty, then either Random (random theme +
@@ -1046,20 +1048,23 @@
 	onconfirm={confirmAddSiteRandom}
 	onalternate={confirmAddSite}
 >
-	<fieldset style="border: none; padding: 0; margin: 0 0 8px;">
-		<legend
-			style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); margin-bottom: 5px;"
-			>Difficulty</legend
-		>
+	<RadioGroup.Root
+		class="v2-radio-group"
+		value={newSiteDifficulty}
+		onValueChange={(v) => (newSiteDifficulty = v as VowDifficulty)}
+		aria-label="Difficulty"
+		style="margin-bottom: 8px;"
+	>
+		<span class="v2-radio-legend">Difficulty</span>
 		{#each DIFFICULTIES as opt}
-			<label
-				style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer; margin-bottom: 3px;"
-			>
-				<input type="radio" bind:group={newSiteDifficulty} value={opt.value} />
+			<label class="v2-radio-label">
+				<RadioGroup.Item value={opt.value} class="v2-radio-btn">
+					<span class="v2-radio-dot"></span>
+				</RadioGroup.Item>
 				{opt.label}
 			</label>
 		{/each}
-	</fieldset>
+	</RadioGroup.Root>
 	<div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px;">
 		<div style="display: flex; align-items: center; gap: 8px;">
 			<label
@@ -1483,14 +1488,14 @@
 	}
 
 	/* Tabs — V1 tab-btn style. */
-	.ea-tabs {
+	:global(.ea-tabs) {
 		display: flex;
 		align-items: stretch;
 		gap: 0;
 		margin-bottom: 8px;
 		border-bottom: 1px solid var(--border);
 	}
-	.ea-tab {
+	:global(.ea-tab) {
 		all: unset;
 		cursor: pointer;
 		font-family: var(--font-ui);
@@ -1513,10 +1518,10 @@
 		align-items: center;
 		gap: 0.35rem;
 	}
-	.ea-tab:hover {
+	:global(.ea-tab:hover) {
 		color: var(--text-muted);
 	}
-	.ea-tab--active {
+	:global(.ea-tab[data-state='active']) {
 		color: var(--text-accent);
 		border-bottom-color: var(--text-accent);
 	}
