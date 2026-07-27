@@ -8,6 +8,7 @@
 	 */
 
 	import { appendLog } from '$lib/log.svelte.js';
+	import { Dialog } from 'bits-ui';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import { renderNote } from '$lib/markdown.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
@@ -15,7 +16,8 @@
 	// ---------------------------------------------------------------------------
 	// Internal state
 	// ---------------------------------------------------------------------------
-	let dialogEl = $state<HTMLDialogElement | null>(null);
+	let dialogOpen = $state(false);
+	let textareaEl = $state<HTMLTextAreaElement | null>(null);
 	let noteText = $state('');
 
 	const hasContent = $derived(noteText.trim().length > 0);
@@ -25,14 +27,11 @@
 	// ---------------------------------------------------------------------------
 	export function open() {
 		noteText = '';
-		dialogEl?.showModal();
-		requestAnimationFrame(() => {
-			dialogEl?.querySelector('textarea')?.focus();
-		});
+		dialogOpen = true;
 	}
 
 	export function close() {
-		dialogEl?.close();
+		dialogOpen = false;
 	}
 
 	// ---------------------------------------------------------------------------
@@ -43,7 +42,7 @@
 		if (!text) return;
 		appendLog('Note', renderNote(text), undefined, text);
 		noteText = '';
-		dialogEl?.close();
+		dialogOpen = false;
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
@@ -54,36 +53,58 @@
 	}
 </script>
 
-<dialog bind:this={dialogEl} class="notes-dialog" oncancel={close}>
-	<!-- Header -->
-	<DialogHeader title={headingText('Session Note')} onclose={close} />
-
-	<!-- Body -->
-	<div class="nd-body">
-		<textarea
-			class="nd-textarea"
-			placeholder="Type a note to insert into the log…"
-			bind:value={noteText}
-			onkeydown={handleKeydown}
-			rows="6"
-		></textarea>
-		<div class="nd-hint">Supports **bold**, *italic*, # headings, - lists. Ctrl+Enter to add.</div>
-	</div>
-
-	<!-- Footer -->
-	<div class="nd-footer">
-		<button class="btn btn-primary nd-add-btn" onclick={addNote} disabled={!hasContent}
-			>Add to Log</button
+<Dialog.Root bind:open={dialogOpen}>
+	<Dialog.Portal>
+		<Dialog.Overlay class="nd-overlay" />
+		<Dialog.Content
+			class="notes-dialog"
+			onOpenAutoFocus={(e) => {
+				// Focus the textarea directly instead of the header's ✕
+				// close button (bits-ui's default first-tabbable behavior).
+				e.preventDefault();
+				textareaEl?.focus();
+			}}
 		>
-	</div>
-</dialog>
+			<DialogHeader title={headingText('Session Note')} onclose={close} />
+
+			<div class="nd-body">
+				<textarea
+					bind:this={textareaEl}
+					class="nd-textarea"
+					placeholder="Type a note to insert into the log…"
+					bind:value={noteText}
+					onkeydown={handleKeydown}
+					rows="6"
+				></textarea>
+				<div class="nd-hint">
+					Supports **bold**, *italic*, # headings, - lists. Ctrl+Enter to add.
+				</div>
+			</div>
+
+			<div class="nd-footer">
+				<button class="btn btn-primary nd-add-btn" onclick={addNote} disabled={!hasContent}
+					>Add to Log</button
+				>
+			</div>
+		</Dialog.Content>
+	</Dialog.Portal>
+</Dialog.Root>
 
 <style>
-	/* ── Dialog shell ────────────────────────────────────────────────────── */
-	.notes-dialog {
-		border: none;
-		padding: 0;
-		border-radius: 10px;
+	/* bits-ui portals Content + Overlay to <body>, so every selector
+	   below needs :global() — Svelte's CSS pruning can't see through
+	   the portal. Overlay 80 / content 81 matches the modal z-index
+	   tier documented in ui-components.md. */
+	:global(.nd-overlay) {
+		position: fixed;
+		inset: 0;
+		background: #00000060;
+		backdrop-filter: blur(1px);
+		z-index: 80;
+	}
+	:global(.notes-dialog) {
+		display: flex;
+		flex-direction: column;
 		position: fixed;
 		top: 50%;
 		left: 50%;
@@ -91,30 +112,21 @@
 		width: min(480px, calc(100vw - 2rem));
 		background: var(--bg-card);
 		color: var(--text);
+		border-radius: 10px;
 		box-shadow:
 			0 16px 48px #00000070,
 			0 0 0 1px var(--border-mid);
 		outline: none;
-	}
-	.notes-dialog[open] {
-		display: flex;
-		flex-direction: column;
-	}
-	.notes-dialog::backdrop {
-		background: #00000060;
-		backdrop-filter: blur(1px);
+		z-index: 81;
 	}
 
-	/* ── Header ─────────────────────────────────────────────────────────── */
-
-	/* ── Body ───────────────────────────────────────────────────────────── */
-	.nd-body {
+	:global(.nd-body) {
 		padding: 12px 14px;
 		display: flex;
 		flex-direction: column;
 		gap: 6px;
 	}
-	.nd-textarea {
+	:global(.nd-textarea) {
 		width: 100%;
 		font-family: var(--font-ui);
 		font-size: 0.82rem;
@@ -127,31 +139,30 @@
 		min-height: 100px;
 		line-height: 1.5;
 	}
-	.nd-textarea:focus {
+	:global(.nd-textarea:focus) {
 		outline: none;
 		border-color: var(--focus-ring);
 		box-shadow: 0 0 0 2px var(--accent-glow);
 	}
-	.nd-textarea::placeholder {
+	:global(.nd-textarea::placeholder) {
 		color: var(--text-dimmer);
 		font-style: italic;
 	}
-	.nd-hint {
+	:global(.nd-hint) {
 		font-family: var(--font-ui);
 		font-size: 0.65rem;
 		color: var(--text-dimmer);
 		font-style: italic;
 	}
 
-	/* ── Footer ─────────────────────────────────────────────────────────── */
-	.nd-footer {
+	:global(.nd-footer) {
 		border-top: 1px solid var(--border);
 		padding: 10px 14px;
 		flex-shrink: 0;
 		display: flex;
 		justify-content: flex-end;
 	}
-	.nd-add-btn {
+	:global(.nd-add-btn) {
 		padding: 8px 20px;
 		font-size: 0.8rem;
 		justify-content: center;

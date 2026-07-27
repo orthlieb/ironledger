@@ -13,13 +13,12 @@
 	 *
 	 * Every field auto-commits the moment it changes — no Save button.
 	 *
-	 * Follows CLAUDE.md's iOS-safe dialog rules: `vh` (not `dvh`),
-	 * centred via top:50%+transform, no `display: flex` on the dialog
-	 * element, `max-height` on the scrollable body with
-	 * `overscroll-behavior: contain`.
+	 * bits-ui Dialog — nested inside MapDialog. `.mo-dialog` z-index sits
+	 * one tier above the outer `.mp-dialog` so it renders on top.
 	 */
 
 	import { headingText } from '$lib/fontStore.svelte.js';
+	import { Dialog } from 'bits-ui';
 	import DialogHeader from './DialogHeader.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import { mapSettings, persistMapSettings } from '$lib/mapSettingsStore.svelte.js';
@@ -39,7 +38,7 @@
 	}
 	let { onReplaceBackground }: Props = $props();
 
-	let dialogEl = $state<HTMLDialogElement | null>(null);
+	let dialogOpen = $state(false);
 	let clearMarkersDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let deleteMapDialogRef = $state<{ open(): void; close(): void } | null>(null);
 
@@ -70,10 +69,10 @@
 	const canDeleteMap = $derived(mapListState.maps.length > 1);
 
 	export function open() {
-		dialogEl?.showModal();
+		dialogOpen = true;
 	}
 	export function close() {
-		dialogEl?.close();
+		dialogOpen = false;
 	}
 
 	const markerCount = $derived(mapState.markers.length);
@@ -118,141 +117,148 @@
 	}
 </script>
 
-<dialog bind:this={dialogEl} class="mo-dialog" oncancel={close}>
-	<DialogHeader title={headingText('Map Options')} onclose={close} radius="8px 8px 0 0" />
+<Dialog.Root bind:open={dialogOpen}>
+	<Dialog.Portal>
+		<Dialog.Overlay class="mo-overlay" />
+		<Dialog.Content class="mo-dialog">
+			<DialogHeader title={headingText('Map Options')} onclose={close} radius="8px 8px 0 0" />
 
-	<div class="mo-body">
-		<section class="mo-section">
-			<label class="mo-field">
-				<span class="mo-field-label">Map name</span>
-				<input
-					class="mo-input mo-input-wide"
-					type="text"
-					value={mapState.name}
-					onchange={onRename}
-				/>
-			</label>
-		</section>
+			<div class="mo-body">
+				<section class="mo-section">
+					<label class="mo-field">
+						<span class="mo-field-label">Map name</span>
+						<input
+							class="mo-input mo-input-wide"
+							type="text"
+							value={mapState.name}
+							onchange={onRename}
+						/>
+					</label>
+				</section>
 
-		<section class="mo-section">
-			<label class="mo-toggle">
-				<input type="checkbox" checked={mapSettings.grid.visible} onchange={onGridVisible} />
-				<span class="mo-toggle-label">Show grid</span>
-			</label>
-			<p class="mo-hint">
-				Hides the grid lines. Clicks still place markers on the underlying grid. This device only.
-			</p>
+				<section class="mo-section">
+					<label class="mo-toggle">
+						<input type="checkbox" checked={mapSettings.grid.visible} onchange={onGridVisible} />
+						<span class="mo-toggle-label">Show grid</span>
+					</label>
+					<p class="mo-hint">
+						Hides the grid lines. Clicks still place markers on the underlying grid. This device
+						only.
+					</p>
 
-			<div class="mo-fields" class:mo-fields-disabled={!mapSettings.grid.visible}>
-				<label class="mo-field">
-					<span class="mo-field-label">Opacity — {Math.round(mapSettings.grid.opacity * 100)}%</span
-					>
-					<input
-						class="mo-slider"
-						type="range"
-						min="0"
-						max="100"
-						step="5"
-						value={Math.round(mapSettings.grid.opacity * 100)}
-						oninput={onGridOpacity}
-						disabled={!mapSettings.grid.visible}
-					/>
-				</label>
-			</div>
-		</section>
-
-		<section class="mo-section">
-			<label class="mo-toggle">
-				<input type="checkbox" checked={scaleEnabled} onchange={onScaleEnabled} />
-				<span class="mo-toggle-label">Scale bar</span>
-			</label>
-			<p class="mo-hint">Distance scale drawn in the bottom-left. Saved with the map.</p>
-
-			<div class="mo-fields mo-fields-row" class:mo-fields-disabled={!scaleEnabled}>
-				<div class="mo-field">
-					<span class="mo-field-label">Unit</span>
-					<div class="mo-unit-group" role="group" aria-label="Scale unit">
-						<button
-							class="mo-unit"
-							class:mo-unit-selected={scaleUnit === 'miles'}
-							onclick={() => onScaleUnit('miles')}
-							disabled={!scaleEnabled}>Miles</button
-						>
-						<button
-							class="mo-unit"
-							class:mo-unit-selected={scaleUnit === 'km'}
-							onclick={() => onScaleUnit('km')}
-							disabled={!scaleEnabled}>Km</button
-						>
+					<div class="mo-fields" class:mo-fields-disabled={!mapSettings.grid.visible}>
+						<label class="mo-field">
+							<span class="mo-field-label"
+								>Opacity — {Math.round(mapSettings.grid.opacity * 100)}%</span
+							>
+							<input
+								class="mo-slider"
+								type="range"
+								min="0"
+								max="100"
+								step="5"
+								value={Math.round(mapSettings.grid.opacity * 100)}
+								oninput={onGridOpacity}
+								disabled={!mapSettings.grid.visible}
+							/>
+						</label>
 					</div>
-				</div>
+				</section>
 
-				<label class="mo-field mo-field-narrow">
-					<span class="mo-field-label">Per cell</span>
-					<input
-						class="mo-input"
-						type="number"
-						min="0.1"
-						step="0.1"
-						value={scalePerHex}
-						oninput={onScalePerHex}
-						disabled={!scaleEnabled}
-					/>
-				</label>
+				<section class="mo-section">
+					<label class="mo-toggle">
+						<input type="checkbox" checked={scaleEnabled} onchange={onScaleEnabled} />
+						<span class="mo-toggle-label">Scale bar</span>
+					</label>
+					<p class="mo-hint">Distance scale drawn in the bottom-left. Saved with the map.</p>
 
-				<label class="mo-field mo-field-narrow">
-					<span class="mo-field-label">Segments</span>
-					<input
-						class="mo-input"
-						type="number"
-						min="1"
-						max="20"
-						step="1"
-						value={scaleSegments}
-						oninput={onScaleSegments}
-						disabled={!scaleEnabled}
-					/>
-				</label>
-			</div>
-		</section>
+					<div class="mo-fields mo-fields-row" class:mo-fields-disabled={!scaleEnabled}>
+						<div class="mo-field">
+							<span class="mo-field-label">Unit</span>
+							<div class="mo-unit-group" role="group" aria-label="Scale unit">
+								<button
+									class="mo-unit"
+									class:mo-unit-selected={scaleUnit === 'miles'}
+									onclick={() => onScaleUnit('miles')}
+									disabled={!scaleEnabled}>Miles</button
+								>
+								<button
+									class="mo-unit"
+									class:mo-unit-selected={scaleUnit === 'km'}
+									onclick={() => onScaleUnit('km')}
+									disabled={!scaleEnabled}>Km</button
+								>
+							</div>
+						</div>
 
-		<section class="mo-section mo-section-danger">
-			<div class="mo-danger-header">Danger zone</div>
-			<div class="mo-danger-row">
-				<button
-					class="mo-danger-btn"
-					onclick={onReplaceBackgroundClicked}
-					disabled={!onReplaceBackground}>Replace image…</button
-				>
-				<span class="mo-hint">
-					Uploads a fresh image and keeps every marker where it is. <strong
-						>Use an image with the same framing and aspect ratio</strong
-					> — otherwise markers will shift relative to the new background.
-				</span>
+						<label class="mo-field mo-field-narrow">
+							<span class="mo-field-label">Per cell</span>
+							<input
+								class="mo-input"
+								type="number"
+								min="0.1"
+								step="0.1"
+								value={scalePerHex}
+								oninput={onScalePerHex}
+								disabled={!scaleEnabled}
+							/>
+						</label>
+
+						<label class="mo-field mo-field-narrow">
+							<span class="mo-field-label">Segments</span>
+							<input
+								class="mo-input"
+								type="number"
+								min="1"
+								max="20"
+								step="1"
+								value={scaleSegments}
+								oninput={onScaleSegments}
+								disabled={!scaleEnabled}
+							/>
+						</label>
+					</div>
+				</section>
+
+				<section class="mo-section mo-section-danger">
+					<div class="mo-danger-header">Danger zone</div>
+					<div class="mo-danger-row">
+						<button
+							class="mo-danger-btn"
+							onclick={onReplaceBackgroundClicked}
+							disabled={!onReplaceBackground}>Replace image…</button
+						>
+						<span class="mo-hint">
+							Uploads a fresh image and keeps every marker where it is. <strong
+								>Use an image with the same framing and aspect ratio</strong
+							> — otherwise markers will shift relative to the new background.
+						</span>
+					</div>
+					<div class="mo-danger-row">
+						<button
+							class="mo-danger-btn"
+							onclick={() => clearMarkersDialogRef?.open()}
+							disabled={markerCount === 0}>Clear all markers</button
+						>
+						<span class="mo-hint">Removes every marker. Keeps the background image.</span>
+					</div>
+					<div class="mo-danger-row">
+						<button
+							class="mo-danger-btn"
+							onclick={() => deleteMapDialogRef?.open()}
+							disabled={!canDeleteMap}>Delete this map</button
+						>
+						<span class="mo-hint">
+							{canDeleteMap
+								? 'Removes this map entirely and switches to another.'
+								: "Can't delete your only map — create another first."}
+						</span>
+					</div>
+				</section>
 			</div>
-			<div class="mo-danger-row">
-				<button
-					class="mo-danger-btn"
-					onclick={() => clearMarkersDialogRef?.open()}
-					disabled={markerCount === 0}>Clear all markers</button
-				>
-				<span class="mo-hint">Removes every marker. Keeps the background image.</span>
-			</div>
-			<div class="mo-danger-row">
-				<button
-					class="mo-danger-btn"
-					onclick={() => deleteMapDialogRef?.open()}
-					disabled={!canDeleteMap}>Delete this map</button
-				>
-				<span class="mo-hint">
-					{canDeleteMap
-						? 'Removes this map entirely and switches to another.'
-						: "Can't delete your only map — create another first."}
-				</span>
-			</div>
-		</section>
-	</div>
-</dialog>
+		</Dialog.Content>
+	</Dialog.Portal>
+</Dialog.Root>
 
 <ConfirmDialog
 	bind:this={clearMarkersDialogRef}
@@ -283,29 +289,34 @@
 </ConfirmDialog>
 
 <style>
-	.mo-dialog {
-		border: none;
-		padding: 0;
-		border-radius: 8px;
+	/* Nested inside MapDialog (which is also on bits-ui Dialog now).
+	   MapDialog uses overlay 80 / content 81; this dialog needs to
+	   render above it, so overlay 82 / content 83 puts it one tier
+	   higher without breaking the modal budget for anything else. */
+	:global(.mo-overlay) {
+		position: fixed;
+		inset: 0;
+		background: #00000060;
+		z-index: 82;
+	}
+	:global(.mo-dialog) {
 		position: fixed;
 		top: 50%;
 		left: 50%;
-		margin: 0;
 		transform: translate(-50%, -50%);
 		width: min(440px, calc(100vw - 2rem));
 		max-height: 82vh;
 		overflow: hidden;
 		background: var(--bg-card);
 		color: var(--text);
+		border-radius: 8px;
 		box-shadow:
 			0 16px 48px #00000070,
 			0 0 0 1px var(--border-mid);
 		outline: none;
+		z-index: 83;
 	}
-	.mo-dialog::backdrop {
-		background: #00000060;
-	}
-	.mo-body {
+	:global(.mo-body) {
 		max-height: calc(82vh - 4rem);
 		overflow-y: auto;
 		overscroll-behavior: contain;
@@ -314,12 +325,12 @@
 		flex-direction: column;
 		gap: 18px;
 	}
-	.mo-section {
+	:global(.mo-section) {
 		display: flex;
 		flex-direction: column;
 		gap: 6px;
 	}
-	.mo-toggle {
+	:global(.mo-toggle) {
 		display: inline-flex;
 		align-items: center;
 		gap: 8px;
@@ -328,22 +339,22 @@
 		color: var(--text);
 		cursor: pointer;
 	}
-	.mo-toggle input {
+	:global(.mo-toggle input) {
 		accent-color: var(--text-accent);
 		width: 18px;
 		height: 18px;
 	}
-	.mo-toggle-label {
+	:global(.mo-toggle-label) {
 		font-weight: 600;
 	}
-	.mo-hint {
+	:global(.mo-hint) {
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		color: var(--text-dimmer);
 		margin: 0 0 0 26px;
 		line-height: 1.4;
 	}
-	.mo-fields {
+	:global(.mo-fields) {
 		display: flex;
 		flex-direction: column;
 		gap: 10px;
@@ -353,36 +364,36 @@
 	/* Horizontal row variant — scale unit / per-hex / segments sit
 	   side-by-side rather than stacked. Wraps on narrow widths so the
 	   inputs stay readable on mobile. */
-	.mo-fields-row {
+	:global(.mo-fields-row) {
 		flex-direction: row;
 		flex-wrap: wrap;
 		align-items: flex-end;
 		gap: 12px;
 	}
-	.mo-fields-disabled {
+	:global(.mo-fields-disabled) {
 		opacity: 0.5;
 	}
-	.mo-field {
+	:global(.mo-field) {
 		display: flex;
 		flex-direction: column;
 		gap: 4px;
 	}
-	.mo-input-wide {
+	:global(.mo-input-wide) {
 		max-width: 100%;
 		width: 100%;
 	}
-	.mo-field-narrow .mo-input {
+	:global(.mo-field-narrow .mo-input) {
 		max-width: 80px;
 	}
 
 	/* Danger zone — clear markers + clear map, styled clearly destructive
 	   with a top divider so they don't get accidentally clicked. */
-	.mo-section-danger {
+	:global(.mo-section-danger) {
 		border-top: 1px solid var(--border);
 		padding-top: 14px;
 		margin-top: 4px;
 	}
-	.mo-danger-header {
+	:global(.mo-danger-header) {
 		font-family: var(--font-ui);
 		font-size: 0.68rem;
 		font-weight: 700;
@@ -390,18 +401,18 @@
 		letter-spacing: 0.08em;
 		color: var(--color-danger, #ef4444);
 	}
-	.mo-danger-row {
+	:global(.mo-danger-row) {
 		display: flex;
 		align-items: center;
 		gap: 10px;
 		flex-wrap: wrap;
 	}
-	.mo-danger-row .mo-hint {
+	:global(.mo-danger-row .mo-hint) {
 		margin: 0;
 		padding: 0;
 		font-style: normal;
 	}
-	.mo-danger-btn {
+	:global(.mo-danger-btn) {
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		font-weight: 600;
@@ -415,14 +426,14 @@
 		cursor: pointer;
 		white-space: nowrap;
 	}
-	.mo-danger-btn:hover:not(:disabled) {
+	:global(.mo-danger-btn:hover:not(:disabled)) {
 		border-color: var(--color-danger, #ef4444);
 	}
-	.mo-danger-btn:disabled {
+	:global(.mo-danger-btn:disabled) {
 		opacity: 0.4;
 		cursor: default;
 	}
-	.mo-field-label {
+	:global(.mo-field-label) {
 		font-family: var(--font-ui);
 		font-size: 0.68rem;
 		font-weight: 600;
@@ -430,7 +441,7 @@
 		letter-spacing: 0.05em;
 		color: var(--text-dimmer);
 	}
-	.mo-input {
+	:global(.mo-input) {
 		padding: 5px 8px;
 		font-family: var(--font-ui);
 		font-size: 0.85rem;
@@ -440,20 +451,20 @@
 		border-radius: 4px;
 		max-width: 120px;
 	}
-	.mo-slider {
+	:global(.mo-slider) {
 		width: 100%;
 		max-width: 240px;
 		accent-color: var(--text-accent);
 	}
-	.mo-input:focus {
+	:global(.mo-input:focus) {
 		outline: none;
 		border-color: var(--text-accent);
 	}
-	.mo-unit-group {
+	:global(.mo-unit-group) {
 		display: inline-flex;
 		gap: 6px;
 	}
-	.mo-unit {
+	:global(.mo-unit) {
 		padding: 4px 12px;
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
@@ -466,16 +477,16 @@
 		border-radius: 4px;
 		cursor: pointer;
 	}
-	.mo-unit:hover:not(:disabled) {
+	:global(.mo-unit:hover:not(:disabled)) {
 		color: var(--text);
 		border-color: var(--text-accent);
 	}
-	.mo-unit-selected {
+	:global(.mo-unit-selected) {
 		background: var(--text-accent) !important;
 		color: var(--bg-card) !important;
 		border-color: var(--text-accent) !important;
 	}
-	.mo-unit:disabled {
+	:global(.mo-unit:disabled) {
 		cursor: not-allowed;
 	}
 </style>

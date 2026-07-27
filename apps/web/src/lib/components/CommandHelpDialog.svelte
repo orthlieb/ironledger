@@ -9,26 +9,27 @@
 	 * The command reference (verb, arg shape, tagline) lives here — one row per
 	 * command. Keep it in sync with parseCommand() in $lib/commandBar.ts.
 	 *
-	 * Follows CLAUDE.md's iOS-safe dialog rules: `vh` (not `dvh`), centred via
-	 * `top:50%+transform`, no `display:flex` on the dialog itself, `max-height`
-	 * on the scrollable body with `overscroll-behavior: contain`.
+	 * bits-ui Dialog under the hood — Portal + Overlay + Content. Escape /
+	 * focus trap / body scroll-lock all handled by the primitive.
 	 */
 
 	import { headingText } from '$lib/fontStore.svelte.js';
+	import { Dialog } from 'bits-ui';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 
-	let dialogEl = $state<HTMLDialogElement | null>(null);
+	let dialogOpen = $state(false);
+	let contentEl = $state<HTMLElement | null>(null);
 	/** Verb to highlight and scroll into view — set by open(focus). Cleared
 	 *  automatically after ~2.5s so a re-open without focus is unhighlighted. */
 	let focusedVerb = $state<string | null>(null);
 
 	export function open(focus?: string) {
 		focusedVerb = focus ?? null;
-		dialogEl?.showModal();
+		dialogOpen = true;
 		if (focus) {
 			// Wait for the dialog to paint before scrolling into view.
 			queueMicrotask(() => {
-				const el = dialogEl?.querySelector(`[data-row-verb="${focus}"]`) as HTMLElement | null;
+				const el = contentEl?.querySelector(`[data-row-verb="${focus}"]`) as HTMLElement | null;
 				el?.scrollIntoView({ behavior: 'auto', block: 'center' });
 			});
 			// Fade the highlight after a moment so re-opens without focus don't
@@ -39,7 +40,7 @@
 		}
 	}
 	export function close() {
-		dialogEl?.close();
+		dialogOpen = false;
 	}
 
 	interface Row {
@@ -151,77 +152,90 @@
 	];
 </script>
 
-<dialog bind:this={dialogEl} class="ch-dialog" oncancel={close}>
-	<DialogHeader title={headingText('Command Bar')} onclose={close} />
+<Dialog.Root bind:open={dialogOpen}>
+	<Dialog.Portal>
+		<Dialog.Overlay class="ch-overlay" />
+		<Dialog.Content bind:ref={contentEl} class="ch-dialog">
+			<DialogHeader title={headingText('Command Bar')} onclose={close} />
 
-	<div class="ch-body">
-		<p class="ch-intro">
-			The bar at the bottom of Home takes prose or a slash-command. Autocomplete floats above the
-			input; <kbd>Tab</kbd> completes the highlighted suggestion, <kbd>↑</kbd>/<kbd>↓</kbd> move
-			through them, <kbd>Esc</kbd> clears the input.
-		</p>
+			<div class="ch-body">
+				<p class="ch-intro">
+					The bar at the bottom of Home takes prose or a slash-command. Autocomplete floats above
+					the input; <kbd>Tab</kbd> completes the highlighted suggestion, <kbd>↑</kbd>/<kbd>↓</kbd>
+					move through them, <kbd>Esc</kbd> clears the input.
+				</p>
 
-		<ul class="ch-list">
-			{#each COMMANDS as cmd}
-				<li class="ch-row" class:ch-row-focused={focusedVerb === cmd.verb} data-row-verb={cmd.verb}>
-					<code class="ch-syntax">{cmd.syntax}</code>
-					<span class="ch-hint">{cmd.hint}</span>
-				</li>
-			{/each}
-		</ul>
+				<ul class="ch-list">
+					{#each COMMANDS as cmd}
+						<li
+							class="ch-row"
+							class:ch-row-focused={focusedVerb === cmd.verb}
+							data-row-verb={cmd.verb}
+						>
+							<code class="ch-syntax">{cmd.syntax}</code>
+							<span class="ch-hint">{cmd.hint}</span>
+						</li>
+					{/each}
+				</ul>
 
-		<p class="ch-footnote">
-			Log entries also carry hover-revealed <span class="ch-marker">▲</span> /
-			<span class="ch-marker">▼</span> buttons — click them to pin section markers directly without typing
-			a command. The AI-story selection surface is hidden on mobile.
-		</p>
-	</div>
+				<p class="ch-footnote">
+					Log entries also carry hover-revealed <span class="ch-marker">▲</span> /
+					<span class="ch-marker">▼</span> buttons — click them to pin section markers directly without
+					typing a command. The AI-story selection surface is hidden on mobile.
+				</p>
+			</div>
 
-	<div class="ch-footer">
-		<button class="btn" type="button" onclick={close}>Close</button>
-	</div>
-</dialog>
+			<div class="ch-footer">
+				<button class="btn" type="button" onclick={close}>Close</button>
+			</div>
+		</Dialog.Content>
+	</Dialog.Portal>
+</Dialog.Root>
 
 <style>
-	.ch-dialog {
-		border: none;
-		padding: 0;
-		border-radius: 10px;
+	/* bits-ui portals Content + Overlay to <body> — scope everything
+	   globally so Svelte's CSS pruning can see through the portal.
+	   Overlay 80 / content 81 matches the modal z-index tier. */
+	:global(.ch-overlay) {
+		position: fixed;
+		inset: 0;
+		background: #00000060;
+		backdrop-filter: blur(1px);
+		z-index: 80;
+	}
+	:global(.ch-dialog) {
 		position: fixed;
 		top: 50%;
 		left: 50%;
-		margin: 0;
 		transform: translate(-50%, -50%);
 		width: min(480px, calc(100vw - 2rem));
 		max-height: 82vh;
 		overflow: hidden;
 		background: var(--bg-card);
 		color: var(--text);
+		border-radius: 10px;
 		box-shadow:
 			0 16px 48px #00000070,
 			0 0 0 1px var(--border-mid);
 		outline: none;
-	}
-	.ch-dialog::backdrop {
-		background: #00000060;
-		backdrop-filter: blur(1px);
+		z-index: 81;
 	}
 
-	.ch-body {
+	:global(.ch-body) {
 		padding: 14px;
 		max-height: calc(82vh - 6rem);
 		overflow-y: auto;
 		overscroll-behavior: contain;
 	}
 
-	.ch-intro {
+	:global(.ch-intro) {
 		font-family: var(--font-ui);
 		font-size: 0.82rem;
 		line-height: 1.5;
 		color: var(--text-muted);
 		margin: 0 0 12px;
 	}
-	.ch-intro kbd {
+	:global(.ch-intro kbd) {
 		display: inline-block;
 		padding: 0 5px;
 		font-family: var(--font-mono, 'Roboto Mono', ui-monospace, monospace);
@@ -232,7 +246,7 @@
 		border-radius: 3px;
 	}
 
-	.ch-list {
+	:global(.ch-list) {
 		list-style: none;
 		margin: 0 0 14px;
 		padding: 0;
@@ -240,7 +254,7 @@
 		flex-direction: column;
 		gap: 6px;
 	}
-	.ch-row {
+	:global(.ch-row) {
 		display: grid;
 		grid-template-columns: minmax(130px, max-content) 1fr;
 		gap: 10px;
@@ -248,28 +262,28 @@
 		border-radius: 4px;
 		align-items: baseline;
 	}
-	.ch-row:nth-child(odd) {
+	:global(.ch-row:nth-child(odd)) {
 		background: color-mix(in srgb, var(--text-accent) 4%, transparent);
 	}
-	.ch-row-focused {
+	:global(.ch-row-focused) {
 		background: color-mix(in srgb, var(--text-accent) 20%, transparent) !important;
 		box-shadow: inset 3px 0 0 0 var(--text-accent);
 	}
-	.ch-syntax {
+	:global(.ch-syntax) {
 		font-family: var(--font-mono, 'Roboto Mono', ui-monospace, monospace);
 		font-size: 0.78rem;
 		font-weight: 600;
 		color: var(--text-accent);
 		white-space: nowrap;
 	}
-	.ch-hint {
+	:global(.ch-hint) {
 		font-family: var(--font-ui);
 		font-size: 0.78rem;
 		line-height: 1.45;
 		color: var(--text-muted);
 	}
 
-	.ch-footnote {
+	:global(.ch-footnote) {
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		line-height: 1.5;
@@ -278,12 +292,12 @@
 		padding-top: 8px;
 		border-top: 1px solid var(--border);
 	}
-	.ch-marker {
+	:global(.ch-marker) {
 		color: var(--text-accent);
 		font-weight: 700;
 	}
 
-	.ch-footer {
+	:global(.ch-footer) {
 		display: flex;
 		justify-content: flex-end;
 		padding: 10px 14px;

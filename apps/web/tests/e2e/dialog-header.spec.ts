@@ -22,8 +22,12 @@ test.describe('DialogHeader', () => {
 		await page.goto('/home');
 
 		// Open the Roll Dice dialog (a single-view <DialogHeader> dialog).
+		// DialogHeader's `use:draggable` works on both native `<dialog>` and
+		// bits-ui `Dialog.Content` (a div with role="dialog"), so target
+		// the specific dialog class instead of the tag — this stays green as
+		// more dialogs migrate.
 		await page.locator('.act-btn').filter({ hasText: 'Roll' }).first().click();
-		const dialog = page.locator('dialog[open]');
+		const dialog = page.locator('.dice-dialog');
 		await expect(dialog).toBeVisible({ timeout: 10_000 });
 		const header = dialog.locator('.dh-header');
 		await expect(header).toBeVisible();

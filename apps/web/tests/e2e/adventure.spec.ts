@@ -95,7 +95,7 @@ test.describe('Adventure-action dialogs (v2)', () => {
 
 	test('Roll button (3rd action) opens dice dialog', async ({ page }) => {
 		await page.locator(`${APP_NAV} .act-btn`).nth(2).click();
-		await expect(page.locator('.dice-dialog[open]')).toBeVisible({ timeout: 3_000 });
+		await expect(page.locator('.dice-dialog')).toBeVisible({ timeout: 3_000 });
 		await page.keyboard.press('Escape');
 	});
 
@@ -103,7 +103,7 @@ test.describe('Adventure-action dialogs (v2)', () => {
 		// Count entries before — works whether the log starts empty or has prior entries.
 		const countBefore = await page.locator('.log-entry').count();
 		await page.locator(`${APP_NAV} .act-btn`).nth(2).click();
-		await expect(page.locator('.dice-dialog[open]')).toBeVisible({ timeout: 3_000 });
+		await expect(page.locator('.dice-dialog')).toBeVisible({ timeout: 3_000 });
 		await page.locator('.dice-dialog .quick-btn').first().click();
 		await expect(page.locator('.log-entry')).not.toHaveCount(countBefore, { timeout: 7_000 });
 		await page.keyboard.press('Escape');
@@ -135,16 +135,16 @@ test.describe('Adventure-action dialogs (v2)', () => {
 
 	test('Note button (4th action) opens notes dialog', async ({ page }) => {
 		await page.locator(`${APP_NAV} .act-btn`).nth(3).click();
-		await expect(page.locator('.notes-dialog[open]')).toBeVisible({ timeout: 3_000 });
+		await expect(page.locator('.notes-dialog')).toBeVisible({ timeout: 3_000 });
 		await page.keyboard.press('Escape');
 	});
 
 	test('adding a note creates a log entry', async ({ page }) => {
 		await page.locator(`${APP_NAV} .act-btn`).nth(3).click();
-		await expect(page.locator('.notes-dialog[open]')).toBeVisible({ timeout: 3_000 });
+		await expect(page.locator('.notes-dialog')).toBeVisible({ timeout: 3_000 });
 		await page.locator('.notes-dialog .nd-textarea').fill('E2E test note');
 		await page.locator('.notes-dialog .nd-add-btn').click();
-		await expect(page.locator('.notes-dialog[open]')).not.toBeVisible({ timeout: 3_000 });
+		await expect(page.locator('.notes-dialog')).not.toBeVisible({ timeout: 3_000 });
 		// Verify the note text appears in the newest log entry (log is newest-first).
 		await expect(page.locator('.log-entry').first()).toContainText('E2E test note', {
 			timeout: 5_000,
