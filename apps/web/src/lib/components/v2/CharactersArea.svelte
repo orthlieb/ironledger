@@ -60,7 +60,7 @@
 	import PortraitUploader from '$lib/components/PortraitUploader.svelte';
 	import { EditableName } from '$lib/editableName.svelte.js';
 	import { assetIcon } from '$lib/iconRegistry.js';
-	import { Dialog } from 'bits-ui';
+	import { Dialog, Tabs } from 'bits-ui';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import VowCard from '$lib/components/VowCard.svelte';
 	import DebilitiesSection from '$lib/components/DebilitiesSection.svelte';
@@ -1011,17 +1011,17 @@
 				{#if activeChar && activeData}
 					{@const d = activeData}
 					<!-- Card tab strip -->
-					<div class="ca-tabs" role="tablist">
-						{#each CARD_LABELS as tab (tab.key)}
-							<button
-								role="tab"
-								class="ca-tab"
-								class:ca-tab--active={activeCard === tab.key}
-								aria-selected={activeCard === tab.key}
-								onclick={() => (activeCard = tab.key)}>{tab.label}</button
-							>
-						{/each}
-					</div>
+					<Tabs.Root
+						value={activeCard}
+						onValueChange={(v) => (activeCard = v as CardKey)}
+						class="ca-tabs-root"
+					>
+						<Tabs.List class="ca-tabs">
+							{#each CARD_LABELS as tab (tab.key)}
+								<Tabs.Trigger value={tab.key} class="ca-tab">{tab.label}</Tabs.Trigger>
+							{/each}
+						</Tabs.List>
+					</Tabs.Root>
 					<!-- Active card content -->
 					<div class="ca-card" role="tabpanel">
 						{#if activeCard === 'background'}
@@ -1710,14 +1710,14 @@
 
 	/* Card tabs (Background / Core / Vows) — V1 tab-btn style: flat,
 	   underlined, transparent background. */
-	.ca-tabs {
+	:global(.ca-tabs) {
 		display: flex;
 		align-items: stretch;
 		gap: 0;
 		margin-bottom: 8px;
 		border-bottom: 1px solid var(--border);
 	}
-	.ca-tab {
+	:global(.ca-tab) {
 		all: unset;
 		cursor: pointer;
 		font-family: var(--font-ui);
@@ -1740,10 +1740,10 @@
 		align-items: center;
 		gap: 0.35rem;
 	}
-	.ca-tab:hover {
+	:global(.ca-tab:hover) {
 		color: var(--text-muted);
 	}
-	.ca-tab--active {
+	:global(.ca-tab[data-state='active']) {
 		color: var(--text-accent);
 		border-bottom-color: var(--text-accent);
 	}

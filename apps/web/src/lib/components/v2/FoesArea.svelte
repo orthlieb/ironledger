@@ -43,6 +43,7 @@
 	import swordSvg from '$icons/sword-solid-full.svg?raw';
 	import skullSvg from '$icons/skull-crossbones-solid-full.svg?raw';
 	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
+	import { Tabs } from 'bits-ui';
 	import foesIconSvg from '$icons/Foes.svg?raw';
 	import { headingText } from '$lib/fontStore.svelte.js';
 
@@ -333,18 +334,17 @@
 				</div>
 
 				<div class="fa-stage" class:fa-stage--vanquished={activeEnc.vanquished}>
-					<!-- Card tab strip — Description / Core -->
-					<div class="fa-tabs" role="tablist">
-						{#each TAB_LABELS as tab (tab.key)}
-							<button
-								role="tab"
-								class="fa-tab"
-								class:fa-tab--active={activeTab === tab.key}
-								aria-selected={activeTab === tab.key}
-								onclick={() => (activeTab = tab.key)}>{tab.label}</button
-							>
-						{/each}
-					</div>
+					<Tabs.Root
+						value={activeTab}
+						onValueChange={(v) => (activeTab = v as FoeTab)}
+						class="fa-tabs-root"
+					>
+						<Tabs.List class="fa-tabs">
+							{#each TAB_LABELS as tab (tab.key)}
+								<Tabs.Trigger value={tab.key} class="fa-tab">{tab.label}</Tabs.Trigger>
+							{/each}
+						</Tabs.List>
+					</Tabs.Root>
 
 					<div class="fa-card" role="tabpanel" style="--fa-nature: {natureColor}">
 						{#if activeTab === 'description'}
@@ -794,14 +794,14 @@
 	}
 
 	/* Card tabs — same V1 tab-btn style as CharactersArea. */
-	.fa-tabs {
+	:global(.fa-tabs) {
 		display: flex;
 		align-items: stretch;
 		gap: 0;
 		margin-bottom: 8px;
 		border-bottom: 1px solid var(--border);
 	}
-	.fa-tab {
+	:global(.fa-tab) {
 		all: unset;
 		cursor: pointer;
 		font-family: var(--font-ui);
@@ -824,10 +824,10 @@
 		align-items: center;
 		gap: 0.35rem;
 	}
-	.fa-tab:hover {
+	:global(.fa-tab:hover) {
 		color: var(--text-muted);
 	}
-	.fa-tab--active {
+	:global(.fa-tab[data-state='active']) {
 		color: var(--text-accent);
 		border-bottom-color: var(--text-accent);
 	}

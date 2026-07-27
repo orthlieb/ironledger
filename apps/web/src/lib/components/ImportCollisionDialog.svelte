@@ -31,7 +31,7 @@
 	 *     journeys: [], sites: ['The Black Reach'],
 	 *   });
 	 */
-	import { Dialog } from 'bits-ui';
+	import { Dialog, RadioGroup } from 'bits-ui';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import type { CollisionItems, CollisionStrategy } from './importCollision.js';
@@ -152,17 +152,16 @@
 
 				<p class="icd-prompt">What should I do with them?</p>
 
-				<fieldset class="icd-radio-group">
-					<legend class="visually-hidden">Collision strategy</legend>
-
+				<RadioGroup.Root
+					class="icd-radio-group"
+					value={strategy}
+					onValueChange={(v) => (strategy = v as Exclude<CollisionStrategy, 'cancel'>)}
+					aria-label="Collision strategy"
+				>
 					<label class="icd-radio">
-						<input
-							type="radio"
-							name="strategy"
-							value="new"
-							checked={strategy === 'new'}
-							onchange={() => (strategy = 'new')}
-						/>
+						<RadioGroup.Item value="new" class="icd-radio-btn">
+							<span class="icd-radio-dot"></span>
+						</RadioGroup.Item>
 						<span class="icd-radio-body">
 							<span class="icd-radio-title">Import as new (keep both)</span>
 							<span class="icd-radio-help">
@@ -173,13 +172,9 @@
 					</label>
 
 					<label class="icd-radio">
-						<input
-							type="radio"
-							name="strategy"
-							value="replace"
-							checked={strategy === 'replace'}
-							onchange={() => (strategy = 'replace')}
-						/>
+						<RadioGroup.Item value="replace" class="icd-radio-btn">
+							<span class="icd-radio-dot"></span>
+						</RadioGroup.Item>
 						<span class="icd-radio-body">
 							<span class="icd-radio-title">Replace existing</span>
 							<span class="icd-radio-help">
@@ -190,13 +185,9 @@
 					</label>
 
 					<label class="icd-radio">
-						<input
-							type="radio"
-							name="strategy"
-							value="skip"
-							checked={strategy === 'skip'}
-							onchange={() => (strategy = 'skip')}
-						/>
+						<RadioGroup.Item value="skip" class="icd-radio-btn">
+							<span class="icd-radio-dot"></span>
+						</RadioGroup.Item>
 						<span class="icd-radio-body">
 							<span class="icd-radio-title">Skip these</span>
 							<span class="icd-radio-help">
@@ -204,7 +195,7 @@
 							</span>
 						</span>
 					</label>
-				</fieldset>
+				</RadioGroup.Root>
 
 				<p class="icd-note">
 					Non-conflicting items in the file still import normally regardless of the choice above.
@@ -339,11 +330,38 @@
 		background: var(--bg-hover);
 		border-color: var(--border-mid);
 	}
-	:global(.icd-radio input[type='radio']) {
+	:global(.icd-radio-btn) {
 		margin: 2px 0 0;
-		accent-color: var(--text-accent);
+		width: 14px;
+		height: 14px;
+		padding: 0;
+		background: var(--bg-control);
+		border: 1px solid var(--border-mid);
+		border-radius: 999px;
+		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
 	}
-	:global(.icd-radio:has(input:checked)) {
+	:global(.icd-radio-btn:focus-visible) {
+		outline: 2px solid var(--text-accent);
+		outline-offset: 1px;
+	}
+	:global(.icd-radio-btn[data-state='checked']) {
+		border-color: var(--text-accent);
+	}
+	:global(.icd-radio-dot) {
+		width: 7px;
+		height: 7px;
+		border-radius: 999px;
+		background: var(--text-accent);
+		opacity: 0;
+		transition: opacity 0.12s;
+	}
+	:global(.icd-radio-btn[data-state='checked'] .icd-radio-dot) {
+		opacity: 1;
+	}
+	:global(.icd-radio:has(.icd-radio-btn[data-state='checked'])) {
 		border-color: var(--text-accent);
 		background: color-mix(in srgb, var(--text-accent) 7%, transparent);
 	}
@@ -376,17 +394,5 @@
 		padding: 10px 18px 14px;
 		border-top: 1px solid var(--border);
 		background: var(--bg-card);
-	}
-
-	.visually-hidden {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		padding: 0;
-		margin: -1px;
-		overflow: hidden;
-		clip: rect(0 0 0 0);
-		white-space: nowrap;
-		border: 0;
 	}
 </style>

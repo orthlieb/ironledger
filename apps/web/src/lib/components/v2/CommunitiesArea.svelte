@@ -36,6 +36,7 @@
 	import PortraitUploader from '$lib/components/PortraitUploader.svelte';
 	import { EditableName } from '$lib/editableName.svelte.js';
 	import { isYrtEnabled } from '$lib/expansionStore.svelte.js';
+	import { RadioGroup, Tabs } from 'bits-ui';
 	import {
 		loadOracles,
 		getOracles,
@@ -738,17 +739,17 @@
 				</div>
 
 				<div class="cm-stage">
-					<div class="cm-tabs" role="tablist">
-						{#each tabs as tab (tab.key)}
-							<button
-								role="tab"
-								class="cm-tab"
-								class:cm-tab--active={activeTab === tab.key}
-								aria-selected={activeTab === tab.key}
-								onclick={() => (activeTab = tab.key)}>{tab.label}</button
-							>
-						{/each}
-					</div>
+					<Tabs.Root
+						value={activeTab}
+						onValueChange={(v) => (activeTab = v as CmTab)}
+						class="cm-tabs-root"
+					>
+						<Tabs.List class="cm-tabs">
+							{#each tabs as tab (tab.key)}
+								<Tabs.Trigger value={tab.key} class="cm-tab">{tab.label}</Tabs.Trigger>
+							{/each}
+						</Tabs.List>
+					</Tabs.Root>
 
 					<div class="cm-card" role="tabpanel">
 						{#if activeTab === 'core'}
@@ -997,45 +998,46 @@
 	>
 		Generate fields randomly using oracles, or create the community manually?
 	</p>
-	<div style="display: flex; gap: 20px; align-items: flex-start;">
-		<fieldset style="border: none; padding: 0; margin: 0;">
-			<legend
-				style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); margin-bottom: 5px;"
-				>Region oracle</legend
-			>
-			<label
-				style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer; margin-bottom: 4px;"
-			>
-				<input type="radio" bind:group={_pendingCommunityRegionType} value="ironlands" /> Ironlands
+	<div class="v2-radio-row">
+		<RadioGroup.Root
+			class="v2-radio-group"
+			value={_pendingCommunityRegionType}
+			onValueChange={(v) => (_pendingCommunityRegionType = v as typeof _pendingCommunityRegionType)}
+			aria-label="Region oracle"
+		>
+			<span class="v2-radio-legend">Region oracle</span>
+			<label class="v2-radio-label">
+				<RadioGroup.Item value="ironlands" class="v2-radio-btn">
+					<span class="v2-radio-dot"></span>
+				</RadioGroup.Item> Ironlands
 			</label>
 			{#if isYrtEnabled()}
-				<label
-					style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer;"
-				>
-					<input type="radio" bind:group={_pendingCommunityRegionType} value="yrt" /> YRT
+				<label class="v2-radio-label">
+					<RadioGroup.Item value="yrt" class="v2-radio-btn">
+						<span class="v2-radio-dot"></span>
+					</RadioGroup.Item> YRT
 				</label>
 			{/if}
-		</fieldset>
-		<fieldset style="border: none; padding: 0; margin: 0;">
-			<legend
-				style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); margin-bottom: 5px;"
-				>Location oracle</legend
-			>
-			<label
-				style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer; margin-bottom: 4px;"
-			>
-				<input type="radio" bind:group={_pendingCommunityLocationType} value="location" /> Inland
+		</RadioGroup.Root>
+		<RadioGroup.Root
+			class="v2-radio-group"
+			value={_pendingCommunityLocationType}
+			onValueChange={(v) =>
+				(_pendingCommunityLocationType = v as typeof _pendingCommunityLocationType)}
+			aria-label="Location oracle"
+		>
+			<span class="v2-radio-legend">Location oracle</span>
+			<label class="v2-radio-label">
+				<RadioGroup.Item value="location" class="v2-radio-btn">
+					<span class="v2-radio-dot"></span>
+				</RadioGroup.Item> Inland
 			</label>
-			<label
-				style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer;"
-			>
-				<input
-					type="radio"
-					bind:group={_pendingCommunityLocationType}
-					value="coastalWatersLocation"
-				/> Coastal Waters
+			<label class="v2-radio-label">
+				<RadioGroup.Item value="coastalWatersLocation" class="v2-radio-btn">
+					<span class="v2-radio-dot"></span>
+				</RadioGroup.Item> Coastal Waters
 			</label>
-		</fieldset>
+		</RadioGroup.Root>
 	</div>
 </ConfirmDialog>
 
@@ -1059,20 +1061,22 @@
 	>
 		Generate fields randomly using oracles, or create the NPC manually?
 	</p>
-	<fieldset style="border: none; padding: 0; margin: 0 0 4px;">
-		<legend
-			style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); margin-bottom: 5px;"
-			>Name oracle</legend
-		>
+	<RadioGroup.Root
+		class="v2-radio-group"
+		value={_pendingNpcNameOracle}
+		onValueChange={(v) => (_pendingNpcNameOracle = v as typeof _pendingNpcNameOracle)}
+		aria-label="Name oracle"
+	>
+		<span class="v2-radio-legend">Name oracle</span>
 		{#each [{ value: 'namesIronlander', label: 'Ironlander' }, { value: 'namesIronlander2', label: 'Ironlander 2' }, { value: 'namesElf', label: 'Elf' }, { value: 'namesOther_giants', label: 'Giants' }, { value: 'namesOther_varou', label: 'Varou' }, { value: 'namesOther_trolls', label: 'Trolls' }] as opt}
-			<label
-				style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer; margin-bottom: 3px;"
-			>
-				<input type="radio" bind:group={_pendingNpcNameOracle} value={opt.value} />
+			<label class="v2-radio-label">
+				<RadioGroup.Item value={opt.value} class="v2-radio-btn">
+					<span class="v2-radio-dot"></span>
+				</RadioGroup.Item>
 				{opt.label}
 			</label>
 		{/each}
-	</fieldset>
+	</RadioGroup.Root>
 </ConfirmDialog>
 
 <!-- New Place dialog — mirrors the New Community pattern. Places don't have
@@ -1098,42 +1102,45 @@
 	>
 		Generate fields randomly using oracles, or create the place manually?
 	</p>
-	<div style="display: flex; gap: 20px; align-items: flex-start;">
-		<fieldset style="border: none; padding: 0; margin: 0;">
-			<legend
-				style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); margin-bottom: 5px;"
-				>Region oracle</legend
-			>
-			<label
-				style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer; margin-bottom: 4px;"
-			>
-				<input type="radio" bind:group={_pendingPlaceRegionType} value="ironlands" /> Ironlands
+	<div class="v2-radio-row">
+		<RadioGroup.Root
+			class="v2-radio-group"
+			value={_pendingPlaceRegionType}
+			onValueChange={(v) => (_pendingPlaceRegionType = v as typeof _pendingPlaceRegionType)}
+			aria-label="Region oracle"
+		>
+			<span class="v2-radio-legend">Region oracle</span>
+			<label class="v2-radio-label">
+				<RadioGroup.Item value="ironlands" class="v2-radio-btn">
+					<span class="v2-radio-dot"></span>
+				</RadioGroup.Item> Ironlands
 			</label>
 			{#if isYrtEnabled()}
-				<label
-					style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer;"
-				>
-					<input type="radio" bind:group={_pendingPlaceRegionType} value="yrt" /> YRT
+				<label class="v2-radio-label">
+					<RadioGroup.Item value="yrt" class="v2-radio-btn">
+						<span class="v2-radio-dot"></span>
+					</RadioGroup.Item> YRT
 				</label>
 			{/if}
-		</fieldset>
-		<fieldset style="border: none; padding: 0; margin: 0;">
-			<legend
-				style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); margin-bottom: 5px;"
-				>Location oracle</legend
-			>
-			<label
-				style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer; margin-bottom: 4px;"
-			>
-				<input type="radio" bind:group={_pendingPlaceLocationType} value="location" /> Inland
+		</RadioGroup.Root>
+		<RadioGroup.Root
+			class="v2-radio-group"
+			value={_pendingPlaceLocationType}
+			onValueChange={(v) => (_pendingPlaceLocationType = v as typeof _pendingPlaceLocationType)}
+			aria-label="Location oracle"
+		>
+			<span class="v2-radio-legend">Location oracle</span>
+			<label class="v2-radio-label">
+				<RadioGroup.Item value="location" class="v2-radio-btn">
+					<span class="v2-radio-dot"></span>
+				</RadioGroup.Item> Inland
 			</label>
-			<label
-				style="display: flex; align-items: center; gap: 6px; font-family: var(--font-ui); font-size: 0.78rem; color: var(--text); cursor: pointer;"
-			>
-				<input type="radio" bind:group={_pendingPlaceLocationType} value="coastalWatersLocation" /> Coastal
-				Waters
+			<label class="v2-radio-label">
+				<RadioGroup.Item value="coastalWatersLocation" class="v2-radio-btn">
+					<span class="v2-radio-dot"></span>
+				</RadioGroup.Item> Coastal Waters
 			</label>
-		</fieldset>
+		</RadioGroup.Root>
 	</div>
 </ConfirmDialog>
 
@@ -1550,14 +1557,14 @@
 		flex-shrink: 0;
 	}
 
-	.cm-tabs {
+	:global(.cm-tabs) {
 		display: flex;
 		align-items: stretch;
 		gap: 0;
 		margin-bottom: 8px;
 		border-bottom: 1px solid var(--border);
 	}
-	.cm-tab {
+	:global(.cm-tab) {
 		all: unset;
 		cursor: pointer;
 		font-family: var(--font-ui);
@@ -1580,10 +1587,10 @@
 		align-items: center;
 		gap: 0.35rem;
 	}
-	.cm-tab:hover {
+	:global(.cm-tab:hover) {
 		color: var(--text-muted);
 	}
-	.cm-tab--active {
+	:global(.cm-tab[data-state='active']) {
 		color: var(--text-accent);
 		border-bottom-color: var(--text-accent);
 	}

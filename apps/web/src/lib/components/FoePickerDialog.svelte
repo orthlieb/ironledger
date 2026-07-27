@@ -31,7 +31,7 @@
 	import { rankBadgeStyle } from '$lib/badgeStyles.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { draggable } from '$lib/actions/draggable.js';
-	import { Dialog } from 'bits-ui';
+	import { Dialog, RadioGroup } from 'bits-ui';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '$lib/foePortrait.js';
@@ -404,21 +404,22 @@
 						</div>
 
 						<div class="fd-qty-top">
-							<fieldset class="fd-quantity-group">
-								<legend class="fd-quantity-legend">Quantity</legend>
+							<RadioGroup.Root
+								class="fd-quantity-group"
+								value={quantity}
+								onValueChange={(v) => (quantity = v as typeof quantity)}
+								aria-label="Quantity"
+							>
+								<span class="fd-quantity-legend">Quantity</span>
 								{#each FOE_QUANTITIES as qty}
 									<label class="fd-qty-label" class:selected={quantity === qty.value}>
-										<input
-											type="radio"
-											name="foe-quantity"
-											value={qty.value}
-											checked={quantity === qty.value}
-											onchange={() => (quantity = qty.value)}
-										/>
+										<RadioGroup.Item value={qty.value} class="fd-qty-radio">
+											<span class="fd-qty-radio-dot"></span>
+										</RadioGroup.Item>
 										<span class="fd-qty-name">{qty.label}</span>
 									</label>
 								{/each}
-							</fieldset>
+							</RadioGroup.Root>
 
 							{#if rankInfo}
 								{@const qtyDef = FOE_QUANTITIES.find((q) => q.value === quantity)}
@@ -1033,9 +1034,35 @@
 		background: rgba(255, 255, 255, 0.08);
 	}
 
-	:global(.fd-qty-label input[type='radio']) {
+	:global(.fd-qty-radio) {
 		flex-shrink: 0;
-		accent-color: var(--text-accent);
+		width: 14px;
+		height: 14px;
+		padding: 0;
+		background: var(--bg-control);
+		border: 1px solid var(--border-mid);
+		border-radius: 999px;
+		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+	:global(.fd-qty-radio:focus-visible) {
+		outline: 2px solid var(--text-accent);
+		outline-offset: 1px;
+	}
+	:global(.fd-qty-radio[data-state='checked']) {
+		border-color: var(--text-accent);
+	}
+	:global(.fd-qty-radio-dot) {
+		width: 7px;
+		height: 7px;
+		border-radius: 999px;
+		background: var(--text-accent);
+		opacity: 0;
+	}
+	:global(.fd-qty-radio[data-state='checked'] .fd-qty-radio-dot) {
+		opacity: 1;
 	}
 
 	:global(.fd-qty-name) {

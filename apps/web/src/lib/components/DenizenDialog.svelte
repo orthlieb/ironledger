@@ -15,7 +15,7 @@
 	import type { Site, FoeDef, FoeQuantity } from '$lib/types.js';
 	import { DENIZEN_CELLS } from '$lib/types.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
-	import { Dialog } from 'bits-ui';
+	import { Dialog, RadioGroup } from 'bits-ui';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import { rankBadgeStyle } from '$lib/badgeStyles.js';
 	import {
@@ -203,21 +203,22 @@
 							</div>
 
 							<div class="dd-qty-section">
-								<fieldset class="dd-quantity-group">
-									<legend class="dd-quantity-legend">Quantity</legend>
+								<RadioGroup.Root
+									class="dd-quantity-group"
+									value={quantity}
+									onValueChange={(v) => (quantity = v as typeof quantity)}
+									aria-label="Quantity"
+								>
+									<span class="dd-quantity-legend">Quantity</span>
 									{#each FOE_QUANTITIES as qty}
 										<label class="dd-qty-label" class:selected={quantity === qty.value}>
-											<input
-												type="radio"
-												name="denizen-quantity"
-												value={qty.value}
-												checked={quantity === qty.value}
-												onchange={() => (quantity = qty.value)}
-											/>
+											<RadioGroup.Item value={qty.value} class="dd-qty-radio">
+												<span class="dd-qty-radio-dot"></span>
+											</RadioGroup.Item>
 											<span class="dd-qty-name">{qty.label}</span>
 										</label>
 									{/each}
-								</fieldset>
+								</RadioGroup.Root>
 
 								<div class="dd-pills">
 									<span class="dd-badge" style="background: {natureColor}22; color: {natureColor}"
@@ -491,9 +492,35 @@
 	:global(.dd-qty-label.selected) {
 		background: rgba(255, 255, 255, 0.08);
 	}
-	:global(.dd-qty-label input[type='radio']) {
+	:global(.dd-qty-radio) {
 		flex-shrink: 0;
-		accent-color: var(--text-accent);
+		width: 14px;
+		height: 14px;
+		padding: 0;
+		background: var(--bg-control);
+		border: 1px solid var(--border-mid);
+		border-radius: 999px;
+		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+	:global(.dd-qty-radio:focus-visible) {
+		outline: 2px solid var(--text-accent);
+		outline-offset: 1px;
+	}
+	:global(.dd-qty-radio[data-state='checked']) {
+		border-color: var(--text-accent);
+	}
+	:global(.dd-qty-radio-dot) {
+		width: 7px;
+		height: 7px;
+		border-radius: 999px;
+		background: var(--text-accent);
+		opacity: 0;
+	}
+	:global(.dd-qty-radio[data-state='checked'] .dd-qty-radio-dot) {
+		opacity: 1;
 	}
 
 	:global(.dd-qty-name) {

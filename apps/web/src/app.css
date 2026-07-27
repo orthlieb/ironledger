@@ -867,3 +867,69 @@ dialog label {
 		transform: translateY(0);
 	}
 }
+
+/* ── Shared v2 radio-group chrome ─────────────────────────────────────
+   Used by the New Community / New NPC / New Place / New Journey /
+   New Site dialog forms. Hosted inside bits-ui ConfirmDialog which
+   portals to <body>, so styles must be global. */
+.v2-radio-row {
+	display: flex;
+	gap: 20px;
+	align-items: flex-start;
+}
+.v2-radio-group {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	border: none;
+	padding: 0;
+	margin: 0;
+}
+.v2-radio-legend {
+	font-family: var(--font-ui);
+	font-size: 0.65rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--text-dimmer);
+	margin-bottom: 3px;
+}
+.v2-radio-label {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-family: var(--font-ui);
+	font-size: 0.78rem;
+	color: var(--text);
+	cursor: pointer;
+}
+.v2-radio-btn {
+	flex-shrink: 0;
+	width: 14px;
+	height: 14px;
+	padding: 0;
+	background: var(--bg-control);
+	border: 1px solid var(--border-mid);
+	border-radius: 999px;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+.v2-radio-btn:focus-visible {
+	outline: 2px solid var(--text-accent);
+	outline-offset: 1px;
+}
+.v2-radio-btn[data-state='checked'] {
+	border-color: var(--text-accent);
+}
+.v2-radio-dot {
+	width: 7px;
+	height: 7px;
+	border-radius: 999px;
+	background: var(--text-accent);
+	opacity: 0;
+}
+.v2-radio-btn[data-state='checked'] .v2-radio-dot {
+	opacity: 1;
+}
