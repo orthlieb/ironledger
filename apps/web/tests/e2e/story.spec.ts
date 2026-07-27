@@ -138,10 +138,10 @@ test.describe('AI story generation', () => {
 		await mockGenerate(page, PROSE_B);
 
 		await entryById(page, 'story-2').locator('.entry-regen-btn').click();
-		const dialog = page.locator('dialog.story-dialog');
+		const dialog = page.locator('.story-dialog');
 		await expect(dialog).toBeVisible();
 		await dialog.locator('button:has-text("Start")').click();
-		await expect(dialog.locator('.sd-output em')).toHaveText('quieter', { timeout: 8_000 });
+		await expect(dialog.locator('.stry-output em')).toHaveText('quieter', { timeout: 8_000 });
 		// Regenerate mode's save button reads just "Save" (fresh-generate mode
 		// still says "Save to Log"). Use an exact role selector so a future
 		// button whose label contains "Save" doesn't accidentally match.
@@ -168,15 +168,17 @@ test.describe('AI story generation', () => {
 		await expect(storyBtn(page)).toContainText('Generate');
 
 		await storyBtn(page).click(); // opens generate on the section
-		const dialog = page.locator('dialog.story-dialog');
+		const dialog = page.locator('.story-dialog');
 		await expect(dialog).toBeVisible();
 		await dialog.locator('input[placeholder="Story title…"]').fill('The Fall of Blackroot');
 		await dialog.locator('button:has-text("Start")').click();
-		await expect(dialog.locator('.sd-output strong')).toHaveText('Beepalache', { timeout: 8_000 });
+		await expect(dialog.locator('.stry-output strong')).toHaveText('Beepalache', {
+			timeout: 8_000,
+		});
 
 		// Editable output box: tweak the generated prose before saving.
-		await dialog.locator('.sd-edit-toggle').click();
-		const edit = dialog.locator('textarea.sd-output-edit');
+		await dialog.locator('.stry-edit-toggle').click();
+		const edit = dialog.locator('textarea.stry-output-edit');
 		await expect(edit).toBeVisible();
 		await edit.fill('**Beepalache** crept forward, then *turned back*.');
 		await dialog.locator('button:has-text("Save to Log")').click();
@@ -207,7 +209,7 @@ test.describe('AI story generation', () => {
 
 		await page.locator('button[aria-label="Menu"]').click();
 		await page.locator('button.menu-item:has-text("Export...")').click();
-		const dialog = page.locator('dialog.export-dialog');
+		const dialog = page.locator('.export-dialog');
 		await expect(dialog).toBeVisible();
 		await dialog.locator('.ed-select').selectOption('stories');
 

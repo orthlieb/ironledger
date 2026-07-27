@@ -408,10 +408,10 @@ test.describe('Expeditions area (v2)', () => {
 		await expect(rollBtn).toBeVisible({ timeout: 3_000 });
 		await rollBtn.click();
 
-		await expect(page.locator('dialog.denizen-dialog[open]')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.denizen-dialog')).toBeVisible({ timeout: 5_000 });
 		// Table view should be visible with the d100 roll button.
-		await expect(page.locator('dialog.denizen-dialog .dd-table')).toBeVisible();
-		await expect(page.locator('dialog.denizen-dialog button:has-text("Roll d100")')).toBeVisible();
+		await expect(page.locator('.denizen-dialog .dd-table')).toBeVisible();
+		await expect(page.locator('.denizen-dialog button:has-text("Roll d100")')).toBeVisible();
 
 		await page.keyboard.press('Escape');
 	});
@@ -450,20 +450,20 @@ test.describe('Expeditions area (v2)', () => {
 		// Click Roll Denizen → dialog opens.
 		const rollBtn = page.locator(`${EXP_AREA} button:has-text("Roll Denizen")`);
 		await rollBtn.click();
-		await expect(page.locator('dialog.denizen-dialog[open]')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.denizen-dialog')).toBeVisible({ timeout: 5_000 });
 
 		// Click Roll d100 → transitions to result view.
-		await page.locator('dialog.denizen-dialog button:has-text("Roll d100")').click();
+		await page.locator('.denizen-dialog button:has-text("Roll d100")').click();
 		// Wait for result view (Add to Foes or Cancel in footer).
-		await expect(page.locator('dialog.denizen-dialog .dd-footer')).toBeVisible({ timeout: 10_000 });
+		await expect(page.locator('.denizen-dialog .dd-footer')).toBeVisible({ timeout: 10_000 });
 
 		// "Add to Foes" should be present because all slots held a catalogue foe.
-		const addBtn = page.locator('dialog.denizen-dialog button:has-text("Add to Foes")');
+		const addBtn = page.locator('.denizen-dialog button:has-text("Add to Foes")');
 		await expect(addBtn).toBeVisible({ timeout: 5_000 });
 		await addBtn.click();
 
 		// Dialog closes and a new foe spine appears in the Foes area.
-		await expect(page.locator('dialog.denizen-dialog[open]')).not.toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.denizen-dialog')).not.toBeVisible({ timeout: 5_000 });
 		await expect(page.locator(FOE_SPINE)).not.toHaveCount(foesBefore, { timeout: 5_000 });
 	});
 

@@ -282,26 +282,6 @@ body:not(:has(.app-nav)) main.app-main {
 	padding-top: env(safe-area-inset-top);
 }
 
-/* Lock the page scroll while any modal <dialog> is open. Native showModal()
-   disables pointer interaction with the page behind, but mobile Safari still
-   lets touch-drags scroll inner scroll containers through the backdrop.
-   html/body are already overflow: hidden, but <main> can scroll on routes
-   with overflowing content — lock it too so dialog scrolls never reach it. */
-body:has(dialog[open]) main.app-main {
-	overflow: hidden;
-}
-
-/* Stop scroll chaining at every open <dialog>. The body lock above freezes
-   the document, but inner scroll containers in the area stages (.fa-stage,
-   .ca-stage, etc.) still scroll because they're independent scroll roots.
-   Per-body `overscroll-behavior: contain` only catches chains started inside
-   that body; a wheel/touch on the dialog's header, footer, or short
-   non-scrolling content falls past it and into the page below. Containing
-   on the dialog itself blocks the chain regardless of where it began. */
-dialog[open] {
-	overscroll-behavior: contain;
-}
-
 a {
 	color: var(--text-accent);
 	text-decoration: none;
