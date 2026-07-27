@@ -39,7 +39,7 @@
 		getSetup,
 		setSetup,
 	} from '$lib/aiSettings.svelte.js';
-	import { Dialog } from 'bits-ui';
+	import { Dialog, ToggleGroup } from 'bits-ui';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import AiConfigDialog from '$lib/components/AiConfigDialog.svelte';
 
@@ -186,69 +186,71 @@
 				<!-- Theme -->
 				<div class="sd-row">
 					<span class="sd-label">Theme</span>
-					<div class="sd-seg" role="group" aria-label="Color theme">
+					<ToggleGroup.Root
+						type="single"
+						value={theme}
+						onValueChange={(v) => v && applyTheme(v as Theme)}
+						class="sd-seg"
+						aria-label="Color theme"
+					>
 						{#each THEME_MODES as mode (mode.value)}
-							<button
-								class="sd-seg-btn"
-								class:active={theme === mode.value}
-								onclick={() => applyTheme(mode.value)}
-								data-tooltip={mode.title}
-								aria-pressed={theme === mode.value}
-							>
+							<ToggleGroup.Item value={mode.value} class="sd-seg-btn" data-tooltip={mode.title}>
 								<span class="sd-seg-icon">{@html mode.icon}</span>
 								{mode.label}
-							</button>
+							</ToggleGroup.Item>
 						{/each}
-					</div>
+					</ToggleGroup.Root>
 				</div>
 
 				<!-- Heading Font -->
 				<div class="sd-row">
 					<span class="sd-label">Heading Font</span>
-					<div class="sd-seg" role="group" aria-label="Heading font">
-						<button
+					<ToggleGroup.Root
+						type="single"
+						value={fontDisplay}
+						onValueChange={(v) => v && applyFont(v as FontDisplay)}
+						class="sd-seg"
+						aria-label="Heading font"
+					>
+						<ToggleGroup.Item
+							value="cinzel"
 							class="sd-seg-btn"
-							class:active={fontDisplay === 'cinzel'}
-							onclick={() => applyFont('cinzel')}
-							aria-pressed={fontDisplay === 'cinzel'}
-							data-tooltip="Gravestone — engraved titling serif (default)">Gravestone</button
+							data-tooltip="Gravestone — engraved titling serif (default)"
+							>Gravestone</ToggleGroup.Item
 						>
-						<button
+						<ToggleGroup.Item
+							value="simonetta"
 							class="sd-seg-btn"
-							class:active={fontDisplay === 'simonetta'}
-							onclick={() => applyFont('simonetta')}
-							aria-pressed={fontDisplay === 'simonetta'}
-							data-tooltip="Grimoire — calligraphic all-caps serif">Grimoire</button
+							data-tooltip="Grimoire — calligraphic all-caps serif">Grimoire</ToggleGroup.Item
 						>
-						<button
+						<ToggleGroup.Item
+							value="futhark"
 							class="sd-seg-btn"
-							class:active={fontDisplay === 'futhark'}
-							onclick={() => applyFont('futhark')}
-							aria-pressed={fontDisplay === 'futhark'}
-							data-tooltip="Futhark — transliterate names to Elder Futhark runes">ᚠᚢᚦᚨᚱᚲ</button
+							data-tooltip="Futhark — transliterate names to Elder Futhark runes"
+							>ᚠᚢᚦᚨᚱᚲ</ToggleGroup.Item
 						>
-					</div>
+					</ToggleGroup.Root>
 				</div>
 
 				<!-- 3D Dice -->
 				<div class="sd-row">
 					<span class="sd-label">3D Dice</span>
-					<div class="sd-seg" role="group" aria-label="3D dice animation">
-						<button
-							class="sd-seg-btn"
-							class:active={dice3d}
-							onclick={() => applyDice3d(true)}
-							aria-pressed={dice3d}
-							data-tooltip="Animate dice rolls in 3D">On</button
+					<ToggleGroup.Root
+						type="single"
+						value={dice3d ? 'on' : 'off'}
+						onValueChange={(v) => v && applyDice3d(v === 'on')}
+						class="sd-seg"
+						aria-label="3D dice animation"
+					>
+						<ToggleGroup.Item value="on" class="sd-seg-btn" data-tooltip="Animate dice rolls in 3D"
+							>On</ToggleGroup.Item
 						>
-						<button
+						<ToggleGroup.Item
+							value="off"
 							class="sd-seg-btn"
-							class:active={!dice3d}
-							onclick={() => applyDice3d(false)}
-							aria-pressed={!dice3d}
-							data-tooltip="Skip 3D animation, show result immediately">Off</button
+							data-tooltip="Skip 3D animation, show result immediately">Off</ToggleGroup.Item
 						>
-					</div>
+					</ToggleGroup.Root>
 				</div>
 
 				<!-- Dice Sound — hidden on iOS Safari, where the library's sound
@@ -256,65 +258,71 @@
 				{#if isDiceSoundSupported()}
 					<div class="sd-row">
 						<span class="sd-label">Dice Sound</span>
-						<div class="sd-seg" role="group" aria-label="Dice rattle sound">
-							<button
+						<ToggleGroup.Root
+							type="single"
+							value={diceSound ? 'on' : 'off'}
+							onValueChange={(v) => v && applyDiceSound(v === 'on')}
+							class="sd-seg"
+							aria-label="Dice rattle sound"
+						>
+							<ToggleGroup.Item
+								value="on"
 								class="sd-seg-btn"
-								class:active={diceSound}
-								onclick={() => applyDiceSound(true)}
-								aria-pressed={diceSound}
-								data-tooltip="Play a dice rattle while the dice roll">On</button
+								data-tooltip="Play a dice rattle while the dice roll">On</ToggleGroup.Item
 							>
-							<button
-								class="sd-seg-btn"
-								class:active={!diceSound}
-								onclick={() => applyDiceSound(false)}
-								aria-pressed={!diceSound}
-								data-tooltip="Roll silently">Off</button
+							<ToggleGroup.Item value="off" class="sd-seg-btn" data-tooltip="Roll silently"
+								>Off</ToggleGroup.Item
 							>
-						</div>
+						</ToggleGroup.Root>
 					</div>
 				{/if}
 
 				<!-- Delve expansion -->
 				<div class="sd-row">
 					<span class="sd-label">Delve</span>
-					<div class="sd-seg" role="group" aria-label="Delve expansion">
-						<button
+					<ToggleGroup.Root
+						type="single"
+						value={delveOn ? 'on' : 'off'}
+						onValueChange={(v) => v && applyDelve(v === 'on')}
+						class="sd-seg"
+						aria-label="Delve expansion"
+					>
+						<ToggleGroup.Item
+							value="on"
 							class="sd-seg-btn"
-							class:active={delveOn}
-							onclick={() => applyDelve(true)}
-							aria-pressed={delveOn}
-							data-tooltip="Show Delve moves, oracles, foes, assets">On</button
+							data-tooltip="Show Delve moves, oracles, foes, assets">On</ToggleGroup.Item
 						>
-						<button
+						<ToggleGroup.Item
+							value="off"
 							class="sd-seg-btn"
-							class:active={!delveOn}
-							onclick={() => applyDelve(false)}
-							aria-pressed={!delveOn}
-							data-tooltip="Hide Delve content from pickers (existing data preserved)">Off</button
+							data-tooltip="Hide Delve content from pickers (existing data preserved)"
+							>Off</ToggleGroup.Item
 						>
-					</div>
+					</ToggleGroup.Root>
 				</div>
 
 				<!-- YRT expansion -->
 				<div class="sd-row">
 					<span class="sd-label">YRT</span>
-					<div class="sd-seg" role="group" aria-label="YRT expansion">
-						<button
+					<ToggleGroup.Root
+						type="single"
+						value={yrtOn ? 'on' : 'off'}
+						onValueChange={(v) => v && applyYrt(v === 'on')}
+						class="sd-seg"
+						aria-label="YRT expansion"
+					>
+						<ToggleGroup.Item
+							value="on"
 							class="sd-seg-btn"
-							class:active={yrtOn}
-							onclick={() => applyYrt(true)}
-							aria-pressed={yrtOn}
-							data-tooltip="Show YRT moves, oracles, foes, assets">On</button
+							data-tooltip="Show YRT moves, oracles, foes, assets">On</ToggleGroup.Item
 						>
-						<button
+						<ToggleGroup.Item
+							value="off"
 							class="sd-seg-btn"
-							class:active={!yrtOn}
-							onclick={() => applyYrt(false)}
-							aria-pressed={!yrtOn}
-							data-tooltip="Hide YRT content from pickers (existing data preserved)">Off</button
+							data-tooltip="Hide YRT content from pickers (existing data preserved)"
+							>Off</ToggleGroup.Item
 						>
-					</div>
+					</ToggleGroup.Root>
 				</div>
 
 				<!-- ─── AI Storyteller ─── -->
@@ -322,24 +330,18 @@
 
 				<div class="sd-row">
 					<span class="sd-label">Storyteller</span>
-					<div class="sd-seg" role="group" aria-label="AI storyteller">
-						<button
-							class="sd-seg-btn"
-							class:active={activeProvider === null}
-							type="button"
-							aria-pressed={activeProvider === null}
-							onclick={() => chooseProvider('none')}>None</button
-						>
+					<ToggleGroup.Root
+						type="single"
+						value={activeProvider ?? 'none'}
+						onValueChange={(v) => v && chooseProvider(v as AiProvider | 'none')}
+						class="sd-seg"
+						aria-label="AI storyteller"
+					>
+						<ToggleGroup.Item value="none" class="sd-seg-btn">None</ToggleGroup.Item>
 						{#each AI_PROVIDERS as p (p)}
-							<button
-								class="sd-seg-btn"
-								class:active={activeProvider === p}
-								type="button"
-								aria-pressed={activeProvider === p}
-								onclick={() => chooseProvider(p)}>{PROVIDER_LABEL[p]}</button
-							>
+							<ToggleGroup.Item value={p} class="sd-seg-btn">{PROVIDER_LABEL[p]}</ToggleGroup.Item>
 						{/each}
-					</div>
+					</ToggleGroup.Root>
 				</div>
 
 				{#if activeProvider}
@@ -467,11 +469,11 @@
 	:global(.sd-seg-btn:last-child) {
 		border-right: none;
 	}
-	:global(.sd-seg-btn:hover:not(.active)) {
+	:global(.sd-seg-btn:hover:not([data-state='on'])) {
 		background: var(--bg-hover);
 		color: var(--text-muted);
 	}
-	:global(.sd-seg-btn.active) {
+	:global(.sd-seg-btn[data-state='on']) {
 		background: var(--bg-hover);
 		color: var(--text-accent);
 		font-weight: 600;

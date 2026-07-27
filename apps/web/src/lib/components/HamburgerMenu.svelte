@@ -11,7 +11,7 @@
 	 */
 
 	import Select from './Select.svelte';
-	import { Dialog, DropdownMenu } from 'bits-ui';
+	import { Dialog, DropdownMenu, ToggleGroup } from 'bits-ui';
 	import DialogHeader from './DialogHeader.svelte';
 	import { headingText } from '$lib/fontStore.svelte.js';
 
@@ -162,50 +162,50 @@
 				{#if exportContent === 'everything'}
 					<div class="ed-field">
 						<span class="ed-label">Format</span>
-						<div class="ed-seg" role="group">
-							<button
-								class="ed-seg-btn"
-								class:active={exportFormat === 'zip'}
-								onclick={() => (exportFormat = 'zip')}>Zip</button
-							>
-							<button
-								class="ed-seg-btn"
-								class:active={exportFormat === 'md'}
-								onclick={() => (exportFormat = 'md')}>Markdown</button
-							>
-						</div>
+						<ToggleGroup.Root
+							type="single"
+							value={exportFormat}
+							onValueChange={(v) => {
+								if (v) exportFormat = v;
+							}}
+							class="ed-seg"
+							aria-label="Export format"
+						>
+							<ToggleGroup.Item value="zip" class="ed-seg-btn">Zip</ToggleGroup.Item>
+							<ToggleGroup.Item value="md" class="ed-seg-btn">Markdown</ToggleGroup.Item>
+						</ToggleGroup.Root>
 					</div>
 				{:else if exportContent === 'log'}
 					<div class="ed-field">
 						<span class="ed-label">Format</span>
-						<div class="ed-seg" role="group">
-							<button
-								class="ed-seg-btn"
-								class:active={exportFormat === 'json'}
-								onclick={() => (exportFormat = 'json')}>JSON</button
-							>
-							<button
-								class="ed-seg-btn"
-								class:active={exportFormat === 'md'}
-								onclick={() => (exportFormat = 'md')}>Markdown</button
-							>
-						</div>
+						<ToggleGroup.Root
+							type="single"
+							value={exportFormat}
+							onValueChange={(v) => {
+								if (v) exportFormat = v;
+							}}
+							class="ed-seg"
+							aria-label="Export format"
+						>
+							<ToggleGroup.Item value="json" class="ed-seg-btn">JSON</ToggleGroup.Item>
+							<ToggleGroup.Item value="md" class="ed-seg-btn">Markdown</ToggleGroup.Item>
+						</ToggleGroup.Root>
 					</div>
 				{:else if exportContent === 'map'}
 					<div class="ed-field">
 						<span class="ed-label">Format</span>
-						<div class="ed-seg" role="group">
-							<button
-								class="ed-seg-btn"
-								class:active={exportFormat === 'png'}
-								onclick={() => (exportFormat = 'png')}>PNG</button
-							>
-							<button
-								class="ed-seg-btn"
-								class:active={exportFormat === 'zip'}
-								onclick={() => (exportFormat = 'zip')}>Zip</button
-							>
-						</div>
+						<ToggleGroup.Root
+							type="single"
+							value={exportFormat}
+							onValueChange={(v) => {
+								if (v) exportFormat = v;
+							}}
+							class="ed-seg"
+							aria-label="Export format"
+						>
+							<ToggleGroup.Item value="png" class="ed-seg-btn">PNG</ToggleGroup.Item>
+							<ToggleGroup.Item value="zip" class="ed-seg-btn">Zip</ToggleGroup.Item>
+						</ToggleGroup.Root>
 					</div>
 				{/if}
 			</div>
@@ -390,11 +390,11 @@
 	:global(.ed-seg-btn:last-child) {
 		border-right: none;
 	}
-	:global(.ed-seg-btn:hover:not(.active)) {
+	:global(.ed-seg-btn:hover:not([data-state='on'])) {
 		background: var(--bg-hover);
 		color: var(--text-muted);
 	}
-	:global(.ed-seg-btn.active) {
+	:global(.ed-seg-btn[data-state='on']) {
 		background: var(--bg-hover);
 		color: var(--text-accent);
 		font-weight: 600;
