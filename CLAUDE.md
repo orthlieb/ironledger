@@ -285,3 +285,47 @@ whose whole job is a native-first mobile experience (a full-screen
 picker wheel on iOS the custom popover can't match) — flag the
 choice in a comment above the element so a later refactor knows to
 skip it.
+
+## Dialog focus rule
+
+When any modal dialog opens, the caret must land somewhere the
+user can immediately act — never on the header ✕ close button
+(which is what bits-ui defaults to, since ✕ is the first
+tabbable descendant).
+
+Order of preference:
+
+1. **Search field** — if the dialog has a search / filter input
+   as its primary purpose (MovesDialog, OraclesDialog,
+   FoePickerDialog, AssetPicker, MapDialog's icon picker),
+   focus that input on open. Users are opening the dialog to
+   find something.
+2. **Primary composer field** — if the dialog's whole point is
+   composing text (NotesDialog textarea, BugReportDialog form,
+   StoryDialog prompt), focus the first meaningful text control.
+3. **Primary default button** — otherwise focus the affirmative
+   / go button (Roll, Start, Save, Confirm). The one the user is
+   probably about to press.
+4. **Fallback** — genuinely no primary target (a pure settings
+   sheet, a static reference dialog like CommandHelpDialog):
+   let bits-ui do its default. Don't force focus onto ✕.
+
+For bits-ui `Dialog.Content` / `AlertDialog.Content`, wire it
+through `onOpenAutoFocus`:
+
+```svelte
+<Dialog.Content
+  onOpenAutoFocus={(e) => {
+    e.preventDefault();
+    // setTimeout(0) so bits-ui finishes its own focus routine +
+    // any conditional-mount subtree paints before we grab focus.
+    setTimeout(() => targetEl?.focus(), 0);
+  }}
+>
+```
+
+For still-native `<dialog>` elements (until they migrate to
+bits-ui), use HTML `autofocus` on the target input. It fires on
+first mount only, so if the dialog persists across opens (like
+MapDialog's icon picker), also bind a ref and call `.focus()`
+inside the `showModal()` call site.

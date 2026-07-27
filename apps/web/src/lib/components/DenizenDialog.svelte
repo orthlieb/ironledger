@@ -43,6 +43,9 @@
 	// State
 	// ---------------------------------------------------------------------------
 	let dialogOpen = $state(false);
+	// Focus target for the CLAUDE.md dialog focus rule — Roll is the
+	// primary default action on the table view (no search field).
+	let rollBtnEl = $state<HTMLButtonElement | null>(null);
 	let view = $state<'table' | 'result'>('table');
 	let rolling = $state(false);
 	let rolledIndex = $state(-1);
@@ -134,7 +137,17 @@
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
 		<Dialog.Overlay class="denizen-overlay" />
-		<Dialog.Content class="denizen-dialog" aria-label="Denizen Table">
+		<Dialog.Content
+			class="denizen-dialog"
+			aria-label="Denizen Table"
+			onOpenAutoFocus={(e) => {
+				// In table view, focus the primary Roll button. Result view
+				// gets bits-ui's default (usually the Back button).
+				if (view !== 'table') return;
+				e.preventDefault();
+				setTimeout(() => rollBtnEl?.focus(), 0);
+			}}
+		>
 			<!-- ===== TABLE VIEW ===== -->
 			{#if view === 'table'}
 				<DialogHeader title={headingText('Denizen Table')} radius="8px 8px 0 0" />
@@ -162,7 +175,7 @@
 
 				<div class="dd-footer">
 					<button class="btn" onclick={close}>Cancel</button>
-					<button class="btn btn-primary" onclick={roll} disabled={rolling}>
+					<button bind:this={rollBtnEl} class="btn btn-primary" onclick={roll} disabled={rolling}>
 						{rolling ? 'Rolling…' : 'Roll d100'}
 					</button>
 				</div>

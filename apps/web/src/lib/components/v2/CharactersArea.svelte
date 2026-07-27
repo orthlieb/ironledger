@@ -60,6 +60,7 @@
 	import PortraitUploader from '$lib/components/PortraitUploader.svelte';
 	import { EditableName } from '$lib/editableName.svelte.js';
 	import { assetIcon } from '$lib/iconRegistry.js';
+	import { Dialog } from 'bits-ui';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import VowCard from '$lib/components/VowCard.svelte';
 	import DebilitiesSection from '$lib/components/DebilitiesSection.svelte';
@@ -136,7 +137,8 @@
 
 	let activeCharId = $state<string | null>(null);
 	let activeCard = $state<CardKey>('core');
-	let dialogEl = $state<HTMLDialogElement | null>(null);
+	let dialogOpen = $state(false);
+	let dialogEl = $state<HTMLElement | null>(null);
 	let pickerOpen = $state(false);
 
 	// Asset dialog (add + edit modes). Edits accumulate in a local draft so
@@ -712,15 +714,15 @@
 	 *  from that point (set via CSS custom properties on dialogEl). */
 	function showDialogFromOrigin(evt: MouseEvent | null) {
 		const tab = (evt?.currentTarget as HTMLElement | null)?.getBoundingClientRect();
+		// Open bits-ui Dialog first; wait one microtask so Content mounts,
+		// then stamp the scale-fade origin custom properties on it.
+		dialogOpen = true;
 		queueMicrotask(() => {
-			if (!dialogEl) return;
-			if (tab) {
-				const offsetX = tab.left + tab.width / 2 - window.innerWidth / 2;
-				const offsetY = tab.top + tab.height / 2 - window.innerHeight / 2;
-				dialogEl.style.setProperty('--ca-origin-x', `${offsetX}px`);
-				dialogEl.style.setProperty('--ca-origin-y', `${offsetY}px`);
-			}
-			dialogEl.showModal();
+			if (!dialogEl || !tab) return;
+			const offsetX = tab.left + tab.width / 2 - window.innerWidth / 2;
+			const offsetY = tab.top + tab.height / 2 - window.innerHeight / 2;
+			dialogEl.style.setProperty('--ca-origin-x', `${offsetX}px`);
+			dialogEl.style.setProperty('--ca-origin-y', `${offsetY}px`);
 		});
 	}
 
@@ -736,7 +738,7 @@
 
 	/** Cancel/X — discard the draft. Live character was never touched. */
 	function closeAssetDialog() {
-		dialogEl?.close();
+		dialogOpen = false;
 		dialogDraft = null;
 	}
 
@@ -1333,71 +1335,77 @@
 	{@const def = findAsset(dialogDraft.assetId)}
 	{#if def}
 		<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
-		<dialog
-			bind:this={dialogEl}
-			class="ca-asset-dialog"
-			oncancel={closeAssetDialog}
-			onclose={() => {
-				dialogDraft = null;
-			}}
-			onkeydown={(e) => {
-				// Enter = OK/Add (the primary action). Skip when the user is
-				// typing into a textarea (markdown notes), in which case
-				// Enter should insert a newline. Buttons handle their own
-				// Enter via the default activation behaviour.
-				if (e.key !== 'Enter') return;
-				const t = e.target as HTMLElement | null;
-				if (t?.tagName === 'TEXTAREA') return;
-				if (t?.tagName === 'BUTTON') return;
-				e.preventDefault();
-				commitAssetDialog();
-			}}
-			onclick={(e) => {
-				if (e.target === dialogEl) {
-					closeAssetDialog();
-					return;
-				}
-				// Delegate move-links / oracle-links inside asset abilities to the
-				// layout-level dialogs via a custom DOM event. AssetCard has no
-				// internal handler for these; without this delegation clicking
-				// e.g. "Face Danger" inside an ability text is a no-op.
-				const ml = (e.target as HTMLElement).closest('a.move-link') as HTMLElement | null;
-				if (ml) {
-					e.preventDefault();
-					document.dispatchEvent(
-						new CustomEvent('ironledger:open-move', { detail: { id: ml.dataset['id'] ?? '' } }),
-					);
-					return;
-				}
-				const ol = (e.target as HTMLElement).closest('a.oracle-link') as HTMLElement | null;
-				if (ol) {
-					e.preventDefault();
-					document.dispatchEvent(
-						new CustomEvent('ironledger:open-oracle', {
-							detail: {
-								key: ol.dataset['oracle'] ?? '',
-								stat: ol.dataset['stat'] ?? '',
-							},
-						}),
-					);
-					return;
+		<Dialog.Root
+			bind:open={dialogOpen}
+			onOpenChange={(next) => {
+				if (!next) {
+					dialogDraft = null;
 				}
 			}}
 		>
-			<AssetCard
-				bind:asset={dialogDraft}
-				definition={def}
-				characterXp={activeData.xp ?? 0}
-				bind:globalValues={dialogGlobals}
-				mode={dialogMode}
-				snapshotAbilities={dialogSnapshotAbilities}
-				snapshotRarityId={dialogSnapshotRarityId}
-				purchaseCost={dialogPurchaseCost}
-				onRemove={() => dialogDraft && openRemoveAssetConfirm(dialogDraft.assetId)}
-				onCommit={commitAssetDialog}
-				onClose={closeAssetDialog}
-			/>
-		</dialog>
+			<Dialog.Portal>
+				<Dialog.Overlay class="ca-asset-overlay" onclick={closeAssetDialog} />
+				<Dialog.Content
+					bind:ref={dialogEl}
+					class="ca-asset-dialog"
+					onkeydown={(e) => {
+						// Enter = OK/Add (the primary action). Skip when the user is
+						// typing into a textarea (markdown notes), in which case
+						// Enter should insert a newline. Buttons handle their own
+						// Enter via the default activation behaviour.
+						if (e.key !== 'Enter') return;
+						const t = e.target as HTMLElement | null;
+						if (t?.tagName === 'TEXTAREA') return;
+						if (t?.tagName === 'BUTTON') return;
+						e.preventDefault();
+						commitAssetDialog();
+					}}
+					onclick={(e) => {
+						// Delegate move-links / oracle-links inside asset abilities to
+						// the layout-level dialogs via a custom DOM event. AssetCard
+						// has no internal handler for these; without this delegation
+						// clicking e.g. "Face Danger" inside an ability text is a no-op.
+						const ml = (e.target as HTMLElement).closest('a.move-link') as HTMLElement | null;
+						if (ml) {
+							e.preventDefault();
+							document.dispatchEvent(
+								new CustomEvent('ironledger:open-move', {
+									detail: { id: ml.dataset['id'] ?? '' },
+								}),
+							);
+							return;
+						}
+						const ol = (e.target as HTMLElement).closest('a.oracle-link') as HTMLElement | null;
+						if (ol) {
+							e.preventDefault();
+							document.dispatchEvent(
+								new CustomEvent('ironledger:open-oracle', {
+									detail: {
+										key: ol.dataset['oracle'] ?? '',
+										stat: ol.dataset['stat'] ?? '',
+									},
+								}),
+							);
+							return;
+						}
+					}}
+				>
+					<AssetCard
+						bind:asset={dialogDraft}
+						definition={def}
+						characterXp={activeData.xp ?? 0}
+						bind:globalValues={dialogGlobals}
+						mode={dialogMode}
+						snapshotAbilities={dialogSnapshotAbilities}
+						snapshotRarityId={dialogSnapshotRarityId}
+						purchaseCost={dialogPurchaseCost}
+						onRemove={() => dialogDraft && openRemoveAssetConfirm(dialogDraft.assetId)}
+						onCommit={commitAssetDialog}
+						onClose={closeAssetDialog}
+					/>
+				</Dialog.Content>
+			</Dialog.Portal>
+		</Dialog.Root>
 	{/if}
 {/if}
 
@@ -2178,40 +2186,30 @@
 	   is delegated to the .asset-body with a viewport-relative max-height.
 	   This avoids a flex chain (`display: flex` + `min-height: 0` children)
 	   that collapsed the dialog to a thin line on iOS Safari. */
-	.ca-asset-dialog {
-		border: none;
-		padding: 0;
+	/* bits-ui portals Content + Overlay to <body>; scope everything
+	   globally. Overlay 80 / content 81 matches the modal z-index tier. */
+	:global(.ca-asset-overlay) {
+		position: fixed;
+		inset: 0;
+		background: #00000060;
+		backdrop-filter: blur(1px);
+		animation: ca-asset-backdrop-in 0.5s ease-out;
+		z-index: 80;
+	}
+	:global(.ca-asset-dialog) {
 		background: transparent;
 		color: var(--text);
 		width: min(640px, calc(100vw - 1rem));
-		max-height: 80vh; /* hard cap at 80% of viewport */
-		overflow: hidden; /* clip rounded corners */
+		max-height: 80vh;
+		overflow: hidden;
 		outline: none;
 		position: fixed;
 		top: 50%;
 		left: 50%;
-		margin: 0;
-		transform: translate(-50%, -50%); /* steady-state centering */
-		z-index: 9999; /* sit above any in-page stacking contexts */
-	}
-	.ca-asset-dialog::backdrop {
-		background: #00000060;
-		backdrop-filter: blur(1px);
-		animation: ca-asset-backdrop-in 0.5s ease-out;
-	}
-	/* Ensure every open dialog (asset dialog, asset picker, etc.) sits above
-	   the rest of the v2 UI. Native modal dialogs are in the top layer, but
-	   non-modal dialogs and stacked contexts can still cause z conflicts. */
-	:global(dialog[open]) {
-		z-index: 9999;
-	}
-	:global(dialog::backdrop) {
-		z-index: 9998;
-	}
-	/* Grow the dialog from the clicked asset tab's centre to viewport centre.
-	   --ca-origin-x / --ca-origin-y are set inline by openAssetDialog() based
-	   on the click target's bounding rect. */
-	.ca-asset-dialog[open] {
+		transform: translate(-50%, -50%);
+		z-index: 81;
+		/* Scale-fade in from the clicked asset tab's centre. Origin CSS
+		   custom properties are stamped inline by showDialogFromOrigin(). */
 		animation: ca-asset-open 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 	}
 	@keyframes ca-asset-open {
@@ -2238,15 +2236,15 @@
 	}
 	/* AssetCard sizes itself to its content; no flex-fill needed. The body
 	   carries the scroll constraint directly. */
-	.ca-asset-dialog :global(.asset-card) {
+	:global(.ca-asset-dialog .asset-card) {
 		width: 100%;
 	}
-	.ca-asset-dialog :global(.asset-header) {
+	:global(.ca-asset-dialog .asset-header) {
 		position: sticky;
 		top: 0;
 		z-index: 1;
 	}
-	.ca-asset-dialog :global(.asset-body) {
+	:global(.ca-asset-dialog .asset-body) {
 		/* Cap the body's height so it scrolls internally when an asset is
 		   tall (e.g. Difficulty Factors expanded). Leaves ~3rem each for the
 		   sticky header and the Cancel/Delete footer — the dialog's own
@@ -2260,7 +2258,7 @@
 	/* asset-body is itself a flex column. Without flex-shrink: 0 on its
 	   children, sections with overflow: hidden (e.g. .factors-section) get
 	   squashed by the flex algorithm to fit the available space. */
-	.ca-asset-dialog :global(.asset-body > *) {
+	:global(.ca-asset-dialog .asset-body > *) {
 		flex-shrink: 0;
 	}
 </style>

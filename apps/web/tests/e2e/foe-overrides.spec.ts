@@ -114,7 +114,7 @@ async function stubFoesEndpoint(page: Page): Promise<void> {
  *  foes.spec.ts doesn't see this because it never reloads. */
 async function openFoePicker(page: Page): Promise<void> {
 	const addBtn = page.locator(`${FOE_HEADER} button:has-text("+ Foe")`);
-	const dialog = page.locator('dialog.foe-dialog[open]');
+	const dialog = page.locator('.foe-dialog');
 	await addBtn.click({ timeout: 8_000 });
 	try {
 		await expect(dialog).toBeVisible({ timeout: 2_000 });
@@ -141,10 +141,10 @@ test.describe('Foe overrides — expansion exclusion + addendum', () => {
 	test('YRT on: excluded foe is hidden from the picker', async ({ page }) => {
 		await openFoePicker(page);
 		await expect(
-			page.locator('dialog.foe-dialog[open] .fd-tile-name', { hasText: BASE_FOE_A.name }),
+			page.locator('.foe-dialog .fd-tile-name', { hasText: BASE_FOE_A.name }),
 		).toHaveCount(0, { timeout: 5_000 });
 		await expect(
-			page.locator('dialog.foe-dialog[open] .fd-tile-name', { hasText: BASE_FOE_B.name }),
+			page.locator('.foe-dialog .fd-tile-name', { hasText: BASE_FOE_B.name }),
 		).toHaveCount(1, { timeout: 5_000 });
 		await page.keyboard.press('Escape');
 	});
@@ -156,7 +156,7 @@ test.describe('Foe overrides — expansion exclusion + addendum', () => {
 
 		await openFoePicker(page);
 		await expect(
-			page.locator('dialog.foe-dialog[open] .fd-tile-name', { hasText: BASE_FOE_A.name }),
+			page.locator('.foe-dialog .fd-tile-name', { hasText: BASE_FOE_A.name }),
 		).toHaveCount(1, { timeout: 5_000 });
 		await page.keyboard.press('Escape');
 	});
@@ -164,13 +164,13 @@ test.describe('Foe overrides — expansion exclusion + addendum', () => {
 	test('YRT on: addendum is appended to the foe description', async ({ page }) => {
 		await openFoePicker(page);
 		await page
-			.locator('dialog.foe-dialog[open] .fd-tile', {
+			.locator('.foe-dialog .fd-tile', {
 				has: page.locator('.fd-tile-name', { hasText: BASE_FOE_B.name }),
 			})
 			.first()
 			.click();
 
-		const desc = page.locator('dialog.foe-dialog[open] .fc-desc');
+		const desc = page.locator('.foe-dialog .fc-desc');
 		await expect(desc).toBeVisible({ timeout: 5_000 });
 		await expect(desc).toContainText(BASE_FOE_B.description);
 		await expect(desc).toContainText(YRT_ADDENDUM);
@@ -184,13 +184,13 @@ test.describe('Foe overrides — expansion exclusion + addendum', () => {
 
 		await openFoePicker(page);
 		await page
-			.locator('dialog.foe-dialog[open] .fd-tile', {
+			.locator('.foe-dialog .fd-tile', {
 				has: page.locator('.fd-tile-name', { hasText: BASE_FOE_B.name }),
 			})
 			.first()
 			.click();
 
-		const desc = page.locator('dialog.foe-dialog[open] .fc-desc');
+		const desc = page.locator('.foe-dialog .fc-desc');
 		await expect(desc).toBeVisible({ timeout: 5_000 });
 		await expect(desc).toContainText(BASE_FOE_B.description);
 		await expect(desc).not.toContainText(YRT_ADDENDUM);

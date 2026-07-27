@@ -23,6 +23,9 @@
 	let { user }: { user?: { email?: string; displayName?: string } | null } = $props();
 
 	let dialogOpen = $state(false);
+	// First composer field — the CLAUDE.md dialog focus rule targets
+	// the "what were you trying to do" textarea on open.
+	let doingEl = $state<HTMLTextAreaElement | null>(null);
 
 	// Form state
 	let doing = $state('');
@@ -146,7 +149,13 @@
 >
 	<Dialog.Portal>
 		<Dialog.Overlay class="bug-overlay" />
-		<Dialog.Content class="bug-dialog">
+		<Dialog.Content
+			class="bug-dialog"
+			onOpenAutoFocus={(e) => {
+				e.preventDefault();
+				setTimeout(() => doingEl?.focus(), 0);
+			}}
+		>
 			<!-- svelte-ignore a11y_no_static_element_interactions -->
 			<DialogHeader title="Report a bug" onclose={close} />
 
@@ -159,6 +168,7 @@
 				<label class="bg-field">
 					<span>What were you trying to do?</span>
 					<textarea
+						bind:this={doingEl}
 						rows="2"
 						bind:value={doing}
 						placeholder="e.g. Roll Face Danger from the moves dialog."

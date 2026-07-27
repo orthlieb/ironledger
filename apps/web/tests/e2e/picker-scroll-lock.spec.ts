@@ -39,7 +39,7 @@ test.beforeEach(async ({ page }) => {
 
 test('main scroll is locked while foe picker dialog is open', async ({ page }) => {
 	await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
-	await expect(page.locator('.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
+	await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 5_000 });
 	const mainOverflow = await page.evaluate(
 		() => getComputedStyle(document.querySelector('main.app-main')!).overflowY,
 	);
@@ -48,9 +48,9 @@ test('main scroll is locked while foe picker dialog is open', async ({ page }) =
 
 test('main scroll is restored after foe picker dialog closes', async ({ page }) => {
 	await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
-	await expect(page.locator('.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
+	await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 5_000 });
 	await page.keyboard.press('Escape');
-	await expect(page.locator('.foe-dialog[open]')).not.toBeVisible();
+	await expect(page.locator('.foe-dialog')).not.toBeVisible();
 	const mainOverflow = await page.evaluate(
 		() => getComputedStyle(document.querySelector('main.app-main')!).overflowY,
 	);
@@ -59,7 +59,7 @@ test('main scroll is restored after foe picker dialog closes', async ({ page }) 
 
 test('open dialog declares overscroll containment', async ({ page }) => {
 	await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
-	const dialog = page.locator('.foe-dialog[open]');
+	const dialog = page.locator('.foe-dialog');
 	await expect(dialog).toBeVisible();
 	const behavior = await dialog.evaluate((el) => getComputedStyle(el).overscrollBehavior);
 	expect(behavior).toContain('contain');
@@ -69,7 +69,7 @@ test('dialog body uses overscroll-behavior: contain', async ({ page }) => {
 	await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
 	// Scope to [open] — FoePickerDialog is rendered twice on the page
 	// (FoesArea + ExpeditionsArea), so the unscoped selector is ambiguous.
-	const wrap = page.locator('.foe-dialog[open] .fd-grid-wrap');
+	const wrap = page.locator('.foe-dialog .fd-grid-wrap');
 	await expect(wrap).toBeVisible();
 	const behavior = await wrap.evaluate((el) => getComputedStyle(el).overscrollBehavior);
 	expect(behavior).toContain('contain');

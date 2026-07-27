@@ -31,6 +31,7 @@
 	import { rankBadgeStyle } from '$lib/badgeStyles.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { draggable } from '$lib/actions/draggable.js';
+	import { Dialog } from 'bits-ui';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '$lib/foePortrait.js';
@@ -54,7 +55,9 @@
 	// ---------------------------------------------------------------------------
 	// Dialog state
 	// ---------------------------------------------------------------------------
-	let dialogEl = $state<HTMLDialogElement | null>(null);
+	let dialogOpen = $state(false);
+	// Search input ref for the CLAUDE.md dialog focus rule.
+	let searchInputEl = $state<HTMLInputElement | null>(null);
 	let view = $state<'picker' | 'confirm'>('picker');
 	let confirmFoe = $state<FoeDef | null>(null);
 	let quantity = $state<FoeQuantity>('solo');
@@ -117,7 +120,7 @@
 		activeRanks = new Set();
 		confirmFoe = null;
 		quantity = 'solo';
-		dialogEl?.showModal();
+		dialogOpen = true;
 	}
 
 	/** Open in denizen-pick mode: clicking a foe returns just the name, no confirm step. */
@@ -132,7 +135,7 @@
 		activeRanks = new Set();
 		confirmFoe = null;
 		quantity = 'solo';
-		dialogEl?.showModal();
+		dialogOpen = true;
 	}
 
 	/** Open directly to the confirm view for a foe matched by name (for denizen roll results). */
@@ -145,11 +148,11 @@
 		quantity = 'solo';
 		confirmFoe = match;
 		view = 'confirm';
-		dialogEl?.showModal();
+		dialogOpen = true;
 	}
 
 	export function close(): void {
-		dialogEl?.close();
+		dialogOpen = false;
 	}
 
 	// ---------------------------------------------------------------------------
@@ -185,7 +188,7 @@
 
 	function selectFoe(foe: FoeDef) {
 		if (_mode === 'denizen') {
-			dialogEl?.close();
+			dialogOpen = false;
 			onDenizenPick?.(foe.name);
 			return;
 		}
@@ -202,7 +205,7 @@
 		if (!confirmFoe) return;
 		const qty = quantity;
 		const er = effRank;
-		dialogEl?.close();
+		dialogOpen = false;
 		onSelect(confirmFoe, qty, er);
 	}
 
@@ -217,295 +220,302 @@
 	}
 </script>
 
-<dialog bind:this={dialogEl} class="foe-dialog" aria-label="Foe Picker">
-	<!-- ===== PICKER VIEW ===== -->
-	{#if view === 'picker'}
-		<DialogHeader
-			title={headingText(_mode === 'denizen' ? 'Pick a Denizen' : 'Choose a Foe')}
-			onclose={close}
-			radius="8px 8px 0 0"
-		/>
+<Dialog.Root bind:open={dialogOpen}>
+	<Dialog.Portal>
+		<Dialog.Overlay class="foe-overlay" />
+		<Dialog.Content
+			class="foe-dialog"
+			aria-label="Foe Picker"
+			onOpenAutoFocus={(e) => {
+				// Picker view: focus the search input (CLAUDE.md focus rule).
+				// Confirm view: bits-ui default (Back / Add — either is fine).
+				if (view !== 'picker') return;
+				e.preventDefault();
+				setTimeout(() => searchInputEl?.focus(), 0);
+			}}
+		>
+			<!-- ===== PICKER VIEW ===== -->
+			{#if view === 'picker'}
+				<DialogHeader
+					title={headingText(_mode === 'denizen' ? 'Pick a Denizen' : 'Choose a Foe')}
+					onclose={close}
+					radius="8px 8px 0 0"
+				/>
 
-		<div class="fd-controls">
-			<div class="fd-search-row">
-				<div class="fd-search-field">
-					<span class="fd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
-					<!-- svelte-ignore a11y_autofocus — inside a modal, the whole
-					     point is that the search field grabs the caret on open. -->
-					<input
-						type="search"
-						class="fd-search"
-						placeholder="Search by name or feature…"
-						bind:value={search}
-						aria-label="Search foes"
-						autofocus
-					/>
-				</div>
-				<button
-					class="fd-filter-toggle"
-					class:has-filters={activeFilterCount > 0}
-					onclick={() => (filtersOpen = !filtersOpen)}
-					aria-expanded={filtersOpen}
-					>Filters{#if activeFilterCount > 0}&nbsp;<span class="fd-filter-badge"
-							>{activeFilterCount}</span
-						>{/if}
-					{filtersOpen ? '▲' : '▼'}</button
-				>
-			</div>
-
-			{#if filtersOpen}
-				<div class="fd-filter-panel">
-					<!-- Nature -->
-					<div class="fd-filter-group">
-						<span class="fd-filter-group-label">Nature</span>
-						<div class="fd-filter-chips">
-							{#each natures as nature}
-								<button
-									class="fd-filter-tag"
-									class:active={activeNatures.has(nature)}
-									style="--tag-color: {FOE_NATURE_COLORS[nature]}"
-									onclick={() => toggleNature(nature)}>{nature}</button
-								>
-							{/each}
+				<div class="fd-controls">
+					<div class="fd-search-row">
+						<div class="fd-search-field">
+							<span class="fd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
+							<input
+								bind:this={searchInputEl}
+								type="search"
+								class="fd-search"
+								placeholder="Search by name or feature…"
+								bind:value={search}
+								aria-label="Search foes"
+							/>
 						</div>
-					</div>
-					<!-- Source -->
-					<div class="fd-filter-group">
-						<span class="fd-filter-group-label">Source</span>
-						<div class="fd-filter-chips">
-							{#each sources as src}
-								<button
-									class="fd-filter-tag fd-filter-tag--src"
-									class:active={activeSources.has(src)}
-									onclick={() => toggleSource(src)}>{sourceLabel(src)}</button
-								>
-							{/each}
-						</div>
-					</div>
-					<!-- Rank -->
-					<div class="fd-filter-group">
-						<span class="fd-filter-group-label">Rank</span>
-						<div class="fd-filter-chips">
-							{#each Object.entries(FOE_RANKS) as [rankNum, rankDef]}
-								{@const rc = RANK_COLORS[Number(rankNum)]}
-								<button
-									class="fd-filter-tag fd-filter-tag--rank"
-									class:active={activeRanks.has(Number(rankNum))}
-									style="--tag-bg:{rc.bg}; --tag-text:{rc.text}"
-									onclick={() => toggleRank(Number(rankNum))}>{rankDef.label}</button
-								>
-							{/each}
-						</div>
-					</div>
-					<button
-						class="fd-clear-btn"
-						onclick={clearFilters}
-						disabled={!hasActiveFilters}
-						use:tooltip={'Clear all filters'}
-						aria-label="Clear filters">{@html clearFiltersSvg}</button
-					>
-				</div>
-			{/if}
-		</div>
-
-		<div class="fd-grid-wrap">
-			{#if filtered().length === 0}
-				<div class="fd-empty">No foes match your filters.</div>
-			{:else}
-				<div class="fd-grid">
-					{#each filtered() as foe (foe.id)}
-						<!-- svelte-ignore a11y_interactive_supports_focus -->
-						<div
-							class="fd-tile"
-							role="button"
-							style="--nature-color: {natureBorderColor(foe.nature)}"
-							onclick={() => selectFoe(foe)}
-							onkeydown={(e) => e.key === 'Enter' && selectFoe(foe)}
-							tabindex="0"
+						<button
+							class="fd-filter-toggle"
+							class:has-filters={activeFilterCount > 0}
+							onclick={() => (filtersOpen = !filtersOpen)}
+							aria-expanded={filtersOpen}
+							>Filters{#if activeFilterCount > 0}&nbsp;<span class="fd-filter-badge"
+									>{activeFilterCount}</span
+								>{/if}
+							{filtersOpen ? '▲' : '▼'}</button
 						>
-							<div class="fd-tile-img-wrap">
-								<img
-									class="fd-tile-img"
-									src={imageUrl(foe)}
-									alt={foe.name}
-									onerror={(e) => {
-										(e.currentTarget as HTMLImageElement).src = UNKNOWN_FOE_PORTRAIT;
-									}}
-								/>
-							</div>
-							<div class="fd-tile-body">
-								<span class="fd-tile-name-row">
-									<span
-										class="fd-tile-name-icon"
-										aria-hidden="true"
-										style:color={natureBorderColor(foe.nature)}>{@html foeIcon(foe)}</span
-									>
-									<span class="fd-tile-name">{foe.name}</span>
-								</span>
-								<div class="fd-tile-badges">
-									<span
-										class="fd-badge"
-										style="background: {natureBorderColor(foe.nature)}22; color: {natureBorderColor(
-											foe.nature,
-										)}">{foe.nature}</span
-									>
-									<span class="fd-badge fd-badge--rank" style={rankBadgeStyle(foe.rank)}
-										>{FOE_RANKS[foe.rank]?.label ?? foe.rank}</span
-									>
+					</div>
+
+					{#if filtersOpen}
+						<div class="fd-filter-panel">
+							<!-- Nature -->
+							<div class="fd-filter-group">
+								<span class="fd-filter-group-label">Nature</span>
+								<div class="fd-filter-chips">
+									{#each natures as nature}
+										<button
+											class="fd-filter-tag"
+											class:active={activeNatures.has(nature)}
+											style="--tag-color: {FOE_NATURE_COLORS[nature]}"
+											onclick={() => toggleNature(nature)}>{nature}</button
+										>
+									{/each}
 								</div>
-								{#if foe.features.length > 0}
-									<div class="fd-tile-features">
-										{foe.features.slice(0, 3).join(' · ')}
-									</div>
-								{/if}
 							</div>
+							<!-- Source -->
+							<div class="fd-filter-group">
+								<span class="fd-filter-group-label">Source</span>
+								<div class="fd-filter-chips">
+									{#each sources as src}
+										<button
+											class="fd-filter-tag fd-filter-tag--src"
+											class:active={activeSources.has(src)}
+											onclick={() => toggleSource(src)}>{sourceLabel(src)}</button
+										>
+									{/each}
+								</div>
+							</div>
+							<!-- Rank -->
+							<div class="fd-filter-group">
+								<span class="fd-filter-group-label">Rank</span>
+								<div class="fd-filter-chips">
+									{#each Object.entries(FOE_RANKS) as [rankNum, rankDef]}
+										{@const rc = RANK_COLORS[Number(rankNum)]}
+										<button
+											class="fd-filter-tag fd-filter-tag--rank"
+											class:active={activeRanks.has(Number(rankNum))}
+											style="--tag-bg:{rc.bg}; --tag-text:{rc.text}"
+											onclick={() => toggleRank(Number(rankNum))}>{rankDef.label}</button
+										>
+									{/each}
+								</div>
+							</div>
+							<button
+								class="fd-clear-btn"
+								onclick={clearFilters}
+								disabled={!hasActiveFilters}
+								use:tooltip={'Clear all filters'}
+								aria-label="Clear filters">{@html clearFiltersSvg}</button
+							>
 						</div>
-					{/each}
+					{/if}
+				</div>
+
+				<div class="fd-grid-wrap">
+					{#if filtered().length === 0}
+						<div class="fd-empty">No foes match your filters.</div>
+					{:else}
+						<div class="fd-grid">
+							{#each filtered() as foe (foe.id)}
+								<!-- svelte-ignore a11y_interactive_supports_focus -->
+								<div
+									class="fd-tile"
+									role="button"
+									style="--nature-color: {natureBorderColor(foe.nature)}"
+									onclick={() => selectFoe(foe)}
+									onkeydown={(e) => e.key === 'Enter' && selectFoe(foe)}
+									tabindex="0"
+								>
+									<div class="fd-tile-img-wrap">
+										<img
+											class="fd-tile-img"
+											src={imageUrl(foe)}
+											alt={foe.name}
+											onerror={(e) => {
+												(e.currentTarget as HTMLImageElement).src = UNKNOWN_FOE_PORTRAIT;
+											}}
+										/>
+									</div>
+									<div class="fd-tile-body">
+										<span class="fd-tile-name-row">
+											<span
+												class="fd-tile-name-icon"
+												aria-hidden="true"
+												style:color={natureBorderColor(foe.nature)}>{@html foeIcon(foe)}</span
+											>
+											<span class="fd-tile-name">{foe.name}</span>
+										</span>
+										<div class="fd-tile-badges">
+											<span
+												class="fd-badge"
+												style="background: {natureBorderColor(
+													foe.nature,
+												)}22; color: {natureBorderColor(foe.nature)}">{foe.nature}</span
+											>
+											<span class="fd-badge fd-badge--rank" style={rankBadgeStyle(foe.rank)}
+												>{FOE_RANKS[foe.rank]?.label ?? foe.rank}</span
+											>
+										</div>
+										{#if foe.features.length > 0}
+											<div class="fd-tile-features">
+												{foe.features.slice(0, 3).join(' · ')}
+											</div>
+										{/if}
+									</div>
+								</div>
+							{/each}
+						</div>
+					{/if}
+				</div>
+
+				<!-- ===== CONFIRM VIEW ===== -->
+			{:else if view === 'confirm' && confirmFoe}
+				{@const natureColor = natureBorderColor(confirmFoe.nature)}
+				{@const resolvedDesc = resolveFoeDescription(confirmFoe)}
+
+				<!-- Back bar -->
+				<div class="fd-back-bar" style="--nature-color: {natureColor}" use:draggable>
+					<span class="drag-grip" aria-hidden="true">⠿</span>
+					<span class="fd-title">{headingText(confirmFoe.name)}</span>
+				</div>
+
+				<!-- Scrollable body -->
+				<div class="fd-confirm-scroll">
+					<!-- Top row: portrait + quantity/pills -->
+					<div class="fd-confirm-top">
+						<div class="fc-portrait-wrap">
+							<FoeImageCarousel
+								name={confirmFoe.name}
+								images={confirmFoe.images}
+								alt={confirmFoe.name}
+								class="fc-portrait"
+							/>
+						</div>
+
+						<div class="fd-qty-top">
+							<fieldset class="fd-quantity-group">
+								<legend class="fd-quantity-legend">Quantity</legend>
+								{#each FOE_QUANTITIES as qty}
+									<label class="fd-qty-label" class:selected={quantity === qty.value}>
+										<input
+											type="radio"
+											name="foe-quantity"
+											value={qty.value}
+											checked={quantity === qty.value}
+											onchange={() => (quantity = qty.value)}
+										/>
+										<span class="fd-qty-name">{qty.label}</span>
+									</label>
+								{/each}
+							</fieldset>
+
+							{#if rankInfo}
+								{@const qtyDef = FOE_QUANTITIES.find((q) => q.value === quantity)}
+								<div class="fd-confirm-pills">
+									<span class="fd-badge" style="background: {natureColor}22; color: {natureColor}"
+										>{confirmFoe.nature}</span
+									>
+									<span class="fd-badge fd-badge--rank" style={rankBadgeStyle(effRank)}
+										>{rankInfo.label}</span
+									>
+									<span class="fd-stat-pill fd-stat-pill--harm">Harm: {rankInfo.harm}</span>
+									<span class="fd-stat-pill fd-stat-pill--progress"
+										>Progress: {rankInfo.progressPerHit}</span
+									>
+									<span class="fd-stat-pill fd-stat-pill--qty">{qtyDef?.label ?? quantity}</span>
+								</div>
+							{/if}
+						</div>
+					</div>
+
+					<!-- Bottom: description + features/drives/tactics, always full width -->
+					{#if resolvedDesc || confirmFoe.features.length > 0 || confirmFoe.drives.length > 0 || confirmFoe.tactics.length > 0}
+						<div class="fd-confirm-bottom">
+							{#if resolvedDesc}
+								<p class="fc-desc" style="white-space: pre-line">{resolvedDesc}</p>
+							{/if}
+							{#if confirmFoe.features.length > 0}
+								<div class="fc-section">
+									<span class="fc-section-label">Features</span>
+									<ul class="fc-list">
+										{#each confirmFoe.features as feat}<li>{feat}</li>{/each}
+									</ul>
+								</div>
+							{/if}
+							{#if confirmFoe.drives.length > 0}
+								<div class="fc-section">
+									<span class="fc-section-label">Drives</span>
+									<ul class="fc-list">
+										{#each confirmFoe.drives as d}<li>{d}</li>{/each}
+									</ul>
+								</div>
+							{/if}
+							{#if confirmFoe.tactics.length > 0}
+								<div class="fc-section">
+									<span class="fc-section-label">Tactics</span>
+									<ul class="fc-list">
+										{#each confirmFoe.tactics as t}<li>{t}</li>{/each}
+									</ul>
+								</div>
+							{/if}
+						</div>
+					{/if}
+				</div>
+
+				<div class="fd-footer">
+					{#if !_noBack}
+						<button class="btn back-btn" onclick={goBack} style="margin-right: auto">Back</button>
+					{/if}
+					<button class="btn" onclick={close}>Cancel</button>
+					<button class="btn btn-primary" onclick={confirm}>Add to Foes</button>
 				</div>
 			{/if}
-		</div>
-
-		<!-- ===== CONFIRM VIEW ===== -->
-	{:else if view === 'confirm' && confirmFoe}
-		{@const natureColor = natureBorderColor(confirmFoe.nature)}
-		{@const resolvedDesc = resolveFoeDescription(confirmFoe)}
-
-		<!-- Back bar -->
-		<div class="fd-back-bar" style="--nature-color: {natureColor}" use:draggable>
-			<span class="drag-grip" aria-hidden="true">⠿</span>
-			<span class="fd-title">{headingText(confirmFoe.name)}</span>
-		</div>
-
-		<!-- Scrollable body -->
-		<div class="fd-confirm-scroll">
-			<!-- Top row: portrait + quantity/pills -->
-			<div class="fd-confirm-top">
-				<div class="fc-portrait-wrap">
-					<FoeImageCarousel
-						name={confirmFoe.name}
-						images={confirmFoe.images}
-						alt={confirmFoe.name}
-						class="fc-portrait"
-					/>
-				</div>
-
-				<div class="fd-qty-top">
-					<fieldset class="fd-quantity-group">
-						<legend class="fd-quantity-legend">Quantity</legend>
-						{#each FOE_QUANTITIES as qty}
-							<label class="fd-qty-label" class:selected={quantity === qty.value}>
-								<input
-									type="radio"
-									name="foe-quantity"
-									value={qty.value}
-									checked={quantity === qty.value}
-									onchange={() => (quantity = qty.value)}
-								/>
-								<span class="fd-qty-name">{qty.label}</span>
-							</label>
-						{/each}
-					</fieldset>
-
-					{#if rankInfo}
-						{@const qtyDef = FOE_QUANTITIES.find((q) => q.value === quantity)}
-						<div class="fd-confirm-pills">
-							<span class="fd-badge" style="background: {natureColor}22; color: {natureColor}"
-								>{confirmFoe.nature}</span
-							>
-							<span class="fd-badge fd-badge--rank" style={rankBadgeStyle(effRank)}
-								>{rankInfo.label}</span
-							>
-							<span class="fd-stat-pill fd-stat-pill--harm">Harm: {rankInfo.harm}</span>
-							<span class="fd-stat-pill fd-stat-pill--progress"
-								>Progress: {rankInfo.progressPerHit}</span
-							>
-							<span class="fd-stat-pill fd-stat-pill--qty">{qtyDef?.label ?? quantity}</span>
-						</div>
-					{/if}
-				</div>
-			</div>
-
-			<!-- Bottom: description + features/drives/tactics, always full width -->
-			{#if resolvedDesc || confirmFoe.features.length > 0 || confirmFoe.drives.length > 0 || confirmFoe.tactics.length > 0}
-				<div class="fd-confirm-bottom">
-					{#if resolvedDesc}
-						<p class="fc-desc" style="white-space: pre-line">{resolvedDesc}</p>
-					{/if}
-					{#if confirmFoe.features.length > 0}
-						<div class="fc-section">
-							<span class="fc-section-label">Features</span>
-							<ul class="fc-list">
-								{#each confirmFoe.features as feat}<li>{feat}</li>{/each}
-							</ul>
-						</div>
-					{/if}
-					{#if confirmFoe.drives.length > 0}
-						<div class="fc-section">
-							<span class="fc-section-label">Drives</span>
-							<ul class="fc-list">
-								{#each confirmFoe.drives as d}<li>{d}</li>{/each}
-							</ul>
-						</div>
-					{/if}
-					{#if confirmFoe.tactics.length > 0}
-						<div class="fc-section">
-							<span class="fc-section-label">Tactics</span>
-							<ul class="fc-list">
-								{#each confirmFoe.tactics as t}<li>{t}</li>{/each}
-							</ul>
-						</div>
-					{/if}
-				</div>
-			{/if}
-		</div>
-
-		<div class="fd-footer">
-			{#if !_noBack}
-				<button class="btn back-btn" onclick={goBack} style="margin-right: auto">Back</button>
-			{/if}
-			<button class="btn" onclick={close}>Cancel</button>
-			<button class="btn btn-primary" onclick={confirm}>Add to Foes</button>
-		</div>
-	{/if}
-</dialog>
+		</Dialog.Content>
+	</Dialog.Portal>
+</Dialog.Root>
 
 <style>
-	/* ── Dialog shell ───────────────────────────────────────────────────── */
-	.foe-dialog {
-		padding: 0;
-		border: 1px solid var(--border);
-		border-radius: 8px;
-		background: var(--bg-card);
-		color: var(--text);
-		box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
-		/* Centre via top/left + transform; `inset: 0; margin: auto` collapses
-		   the dialog to a thin line on iOS Safari when combined with an open-
-		   state `display: flex` container. */
+	/* bits-ui portals Content + Overlay to <body>; scope everything
+	   globally. Overlay 80 / content 81 matches the modal z-index tier. */
+	:global(.foe-overlay) {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.6);
+		backdrop-filter: blur(2px);
+		z-index: 80;
+	}
+	:global(.foe-dialog) {
+		display: flex;
+		flex-direction: column;
 		position: fixed;
 		top: 50%;
 		left: 50%;
-		margin: 0;
 		transform: translate(-50%, -50%);
 		width: min(640px, calc(100vw - 1rem));
-		/* Definite height — fit-content + max-height collapses the flex:1 body
-		   to near-zero on mobile (dialog only shows header + search bar). vh
-		   (not dvh) for broader iOS Safari reliability. */
 		height: min(85vh, 720px);
+		background: var(--bg-card);
+		color: var(--text);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
 		overflow: hidden;
-	}
-
-	.foe-dialog[open] {
-		display: flex;
-		flex-direction: column;
-	}
-
-	.foe-dialog::backdrop {
-		background: rgba(0, 0, 0, 0.6);
-		backdrop-filter: blur(2px);
+		outline: none;
+		z-index: 81;
 	}
 
 	/* ── Picker: header — mirrors AssetPicker .picker-header ────────────── */
-	.fd-controls {
+	:global(.fd-controls) {
 		display: flex;
 		flex-direction: column;
 		gap: 6px;
@@ -515,7 +525,7 @@
 		background: var(--bg-card);
 	}
 
-	.fd-title {
+	:global(.fd-title) {
 		font-family: var(--font-display);
 		font-size: calc(0.78rem * var(--font-display-scale));
 		font-weight: var(--font-display-weight);
@@ -526,20 +536,20 @@
 		flex: 1;
 	}
 
-	.fd-search-row {
+	:global(.fd-search-row) {
 		display: flex;
 		gap: 6px;
 		align-items: center;
 	}
 
-	.fd-search-field {
+	:global(.fd-search-field) {
 		flex: 1;
 		min-width: 0;
 		position: relative;
 		display: flex;
 		align-items: center;
 	}
-	.fd-search-icon {
+	:global(.fd-search-icon) {
 		position: absolute;
 		left: 9px;
 		width: 13px;
@@ -548,13 +558,13 @@
 		pointer-events: none;
 		color: var(--text-dimmer);
 	}
-	.fd-search-icon :global(svg) {
+	:global(:global(.fd-search-icon svg)) {
 		width: 100%;
 		height: 100%;
 		fill: currentColor;
 	}
 
-	.fd-search {
+	:global(.fd-search) {
 		flex: 1;
 		min-width: 0;
 		font-family: var(--font-ui);
@@ -565,13 +575,13 @@
 		border-radius: 4px;
 		color: var(--text);
 	}
-	.fd-search:focus {
+	:global(.fd-search:focus) {
 		outline: none;
 		border-color: var(--focus-ring);
 		box-shadow: 0 0 0 2px var(--accent-glow);
 	}
 
-	.fd-clear-btn {
+	:global(.fd-clear-btn) {
 		position: absolute;
 		bottom: 6px;
 		right: 6px;
@@ -587,14 +597,14 @@
 			color 0.12s,
 			opacity 0.12s;
 	}
-	.fd-clear-btn:hover:not(:disabled) {
+	:global(.fd-clear-btn:hover:not(:disabled)) {
 		color: var(--text);
 	}
-	.fd-clear-btn:disabled {
+	:global(.fd-clear-btn:disabled) {
 		opacity: 0.25;
 		cursor: not-allowed;
 	}
-	.fd-clear-btn :global(svg) {
+	:global(.fd-clear-btn :global(svg)) {
 		width: 16px;
 		height: 16px;
 		fill: currentColor;
@@ -602,7 +612,7 @@
 
 	/* ── Filter toggle + panel ──────────────────────────────────────────── */
 
-	.fd-filter-toggle {
+	:global(.fd-filter-toggle) {
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		font-weight: 600;
@@ -622,16 +632,16 @@
 		gap: 4px;
 	}
 	.fd-filter-toggle:hover,
-	.fd-filter-toggle[aria-expanded='true'] {
+	:global(.fd-filter-toggle[aria-expanded='true']) {
 		border-color: var(--text-muted);
 		color: var(--text-muted);
 	}
-	.fd-filter-toggle.has-filters {
+	:global(.fd-filter-toggle.has-filters) {
 		border-color: var(--focus-ring);
 		color: var(--text);
 	}
 
-	.fd-filter-badge {
+	:global(.fd-filter-badge) {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
@@ -646,7 +656,7 @@
 		line-height: 1;
 	}
 
-	.fd-filter-panel {
+	:global(.fd-filter-panel) {
 		position: relative;
 		display: flex;
 		flex-direction: column;
@@ -657,14 +667,14 @@
 		border-radius: 6px;
 	}
 
-	.fd-filter-group {
+	:global(.fd-filter-group) {
 		display: flex;
 		align-items: baseline;
 		gap: 8px;
 		min-width: 0;
 	}
 
-	.fd-filter-group-label {
+	:global(.fd-filter-group-label) {
 		font-family: var(--font-ui);
 		font-size: 0.62rem;
 		font-weight: 700;
@@ -675,14 +685,14 @@
 		width: 3.5rem;
 	}
 
-	.fd-filter-chips {
+	:global(.fd-filter-chips) {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 4px;
 		flex: 1;
 	}
 
-	.fd-filter-tag {
+	:global(.fd-filter-tag) {
 		font-family: var(--font-ui);
 		font-size: 0.68rem;
 		font-weight: 600;
@@ -699,13 +709,13 @@
 			color 0.1s,
 			border-color 0.1s;
 	}
-	.fd-tile-name-row {
+	:global(.fd-tile-name-row) {
 		display: flex;
 		align-items: center;
 		gap: 6px;
 		min-width: 0;
 	}
-	.fd-tile-name-icon {
+	:global(.fd-tile-name-icon) {
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -713,37 +723,37 @@
 		height: 16px;
 		flex-shrink: 0;
 	}
-	.fd-tile-name-icon :global(svg) {
+	:global(.fd-tile-name-icon :global(svg)) {
 		width: 100%;
 		height: 100%;
 		fill: currentColor;
 	}
-	.fd-tile-name-icon :global(svg path) {
+	:global(.fd-tile-name-icon :global(svg path)) {
 		fill: currentColor;
 	}
-	.fd-filter-tag:hover {
+	:global(.fd-filter-tag:hover) {
 		border-color: var(--tag-color, var(--text-dimmer));
 		color: var(--tag-color, var(--text-dimmer));
 	}
-	.fd-filter-tag.active {
+	:global(.fd-filter-tag.active) {
 		background: color-mix(in srgb, var(--tag-color, #9ca3af) 20%, transparent);
 		border-color: var(--tag-color, #9ca3af);
 		color: var(--tag-color, #9ca3af);
 	}
-	.fd-filter-tag--src {
+	:global(.fd-filter-tag--src) {
 		--tag-color: var(--text-muted);
 	}
 
 	/* Rank chiclets — plain outline when inactive (like nature pills);
 	   tinted bg + rank hue text when active (matching tile badges) */
-	.fd-filter-tag--rank.active {
+	:global(.fd-filter-tag--rank.active) {
 		background: color-mix(in srgb, var(--tag-bg) 13%, transparent);
 		border-color: color-mix(in srgb, var(--tag-bg) 35%, transparent);
 		color: var(--tag-bg);
 	}
 
 	/* ── Tile grid ──────────────────────────────────────────────────────── */
-	.fd-grid-wrap {
+	:global(.fd-grid-wrap) {
 		flex: 1;
 		overflow-y: auto;
 		overscroll-behavior: contain;
@@ -751,13 +761,13 @@
 		padding: 0.75rem 1rem;
 	}
 
-	.fd-grid {
+	:global(.fd-grid) {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
 		gap: 8px;
 	}
 
-	.fd-tile {
+	:global(.fd-tile) {
 		border: 1px solid var(--border);
 		border-left: 4px solid var(--nature-color, #9ca3af);
 		border-radius: 5px;
@@ -771,13 +781,13 @@
 		flex-direction: column;
 	}
 	.fd-tile:hover,
-	.fd-tile:focus {
+	:global(.fd-tile:focus) {
 		border-color: var(--nature-color, #9ca3af);
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 		outline: none;
 	}
 
-	.fd-tile-img-wrap {
+	:global(.fd-tile-img-wrap) {
 		width: 100%;
 		aspect-ratio: 4/3;
 		overflow: hidden;
@@ -787,20 +797,20 @@
 		justify-content: center;
 	}
 
-	.fd-tile-img {
+	:global(.fd-tile-img) {
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
 	}
 
-	.fd-tile-body {
+	:global(.fd-tile-body) {
 		padding: 6px 8px 8px;
 		display: flex;
 		flex-direction: column;
 		gap: 4px;
 	}
 
-	.fd-tile-name {
+	:global(.fd-tile-name) {
 		font-family: var(--font-display);
 		font-size: calc(0.78rem * var(--font-display-scale));
 		font-weight: var(--font-display-weight);
@@ -814,13 +824,13 @@
 		overflow: hidden;
 	}
 
-	.fd-tile-badges {
+	:global(.fd-tile-badges) {
 		display: flex;
 		gap: 4px;
 		flex-wrap: wrap;
 	}
 
-	.fd-tile-features {
+	:global(.fd-tile-features) {
 		font-family: var(--font-ui);
 		font-size: 0.64rem;
 		color: var(--text-dimmer);
@@ -832,7 +842,7 @@
 	}
 
 	/* ── Badges ─────────────────────────────────────────────────────────── */
-	.fd-badge {
+	:global(.fd-badge) {
 		font-family: var(--font-ui);
 		font-size: 0.6rem;
 		font-weight: 600;
@@ -842,13 +852,13 @@
 		border-radius: 10px;
 		border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
 	}
-	.fd-badge--rank {
+	:global(.fd-badge--rank) {
 		background: rgba(255, 255, 255, 0.06);
 		color: var(--text-muted);
 	}
 
 	/* ── Empty state ────────────────────────────────────────────────────── */
-	.fd-empty {
+	:global(.fd-empty) {
 		text-align: center;
 		padding: 3rem 1rem;
 		font-family: var(--font-ui);
@@ -858,7 +868,7 @@
 	}
 
 	/* ── Footer ─────────────────────────────────────────────────────────── */
-	.fd-footer {
+	:global(.fd-footer) {
 		display: flex;
 		justify-content: flex-end;
 		gap: 8px;
@@ -868,7 +878,7 @@
 	}
 
 	/* ── Confirm view: back bar ─────────────────────────────────────── */
-	.fd-back-bar {
+	:global(.fd-back-bar) {
 		display: flex;
 		align-items: center;
 		gap: 8px;
@@ -880,12 +890,12 @@
 		flex-shrink: 0;
 	}
 
-	.fd-back-bar .fd-title {
+	:global(.fd-back-bar .fd-title) {
 		flex: 1;
 	}
 
 	/* ── Scrollable confirm body ─────────────────────────────────────── */
-	.fd-confirm-scroll {
+	:global(.fd-confirm-scroll) {
 		flex: 1;
 		overflow-y: auto;
 		overscroll-behavior: contain;
@@ -897,14 +907,14 @@
 	}
 
 	/* ── Confirm scroll contents ────────────────────────────────────── */
-	.fd-confirm-scroll {
+	:global(.fd-confirm-scroll) {
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
 	}
 
 	/* Top row: single column on mobile, two columns on desktop */
-	.fd-confirm-top {
+	:global(.fd-confirm-top) {
 		display: flex;
 		flex-direction: column;
 		gap: 0.65rem;
@@ -939,7 +949,7 @@
 	}
 
 	/* Bottom section: always full width */
-	.fd-confirm-bottom {
+	:global(.fd-confirm-bottom) {
 		display: flex;
 		flex-direction: column;
 		gap: 0.65rem;
@@ -982,7 +992,7 @@
 		margin-bottom: 1px;
 	}
 
-	.fd-qty-top {
+	:global(.fd-qty-top) {
 		display: flex;
 		flex-direction: column;
 		gap: 0.6rem;
@@ -990,14 +1000,14 @@
 	}
 
 	/* ── Quantity selector ──────────────────────────────────────────────── */
-	.fd-quantity-group {
+	:global(.fd-quantity-group) {
 		border: 1px solid var(--border);
 		border-radius: 6px;
 		padding: 0.35rem 0.6rem 0.5rem;
 		margin: 0;
 	}
 
-	.fd-quantity-legend {
+	:global(.fd-quantity-legend) {
 		font-family: var(--font-ui);
 		font-size: 0.65rem;
 		font-weight: 600;
@@ -1007,7 +1017,7 @@
 		padding: 0 4px;
 	}
 
-	.fd-qty-label {
+	:global(.fd-qty-label) {
 		display: flex;
 		align-items: center;
 		gap: 6px;
@@ -1016,19 +1026,19 @@
 		cursor: pointer;
 		transition: background 0.1s;
 	}
-	.fd-qty-label:hover {
+	:global(.fd-qty-label:hover) {
 		background: rgba(255, 255, 255, 0.05);
 	}
-	.fd-qty-label.selected {
+	:global(.fd-qty-label.selected) {
 		background: rgba(255, 255, 255, 0.08);
 	}
 
-	.fd-qty-label input[type='radio'] {
+	:global(.fd-qty-label input[type='radio']) {
 		flex-shrink: 0;
 		accent-color: var(--text-accent);
 	}
 
-	.fd-qty-name {
+	:global(.fd-qty-name) {
 		font-family: var(--font-ui);
 		font-size: 0.8rem;
 		font-weight: 600;
@@ -1036,14 +1046,14 @@
 	}
 
 	/* ── Confirm pills row (below quantity group) ────────────────────────── */
-	.fd-confirm-pills {
+	:global(.fd-confirm-pills) {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 6px;
 		align-items: center;
 	}
 
-	.fd-stat-pill {
+	:global(.fd-stat-pill) {
 		font-family: var(--font-ui);
 		font-size: 0.6rem;
 		font-weight: 600;
@@ -1052,17 +1062,17 @@
 		padding: 2px 7px;
 		border-radius: 10px;
 	}
-	.fd-stat-pill--harm {
+	:global(.fd-stat-pill--harm) {
 		background: rgba(239, 68, 68, 0.1);
 		color: #ef4444;
 		border: 1px solid rgba(239, 68, 68, 0.25);
 	}
-	.fd-stat-pill--progress {
+	:global(.fd-stat-pill--progress) {
 		background: rgba(59, 130, 246, 0.1);
 		color: #60a5fa;
 		border: 1px solid rgba(59, 130, 246, 0.25);
 	}
-	.fd-stat-pill--qty {
+	:global(.fd-stat-pill--qty) {
 		background: rgba(255, 255, 255, 0.08);
 		color: var(--text-muted);
 		border: 1px solid color-mix(in srgb, currentColor 35%, transparent);

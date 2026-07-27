@@ -56,6 +56,10 @@
 	import type { CharacterData } from '$lib/types.js';
 
 	let dialogOpen = $state(false);
+	// Bound so `onOpenAutoFocus` can land the caret on the primary
+	// Start button per the CLAUDE.md dialog focus rule (no search field
+	// here; Start is the affirmative default).
+	let startBtnEl = $state<HTMLButtonElement | null>(null);
 
 	// generate mode
 	let prefaceText = $state(''); // "Cast & setting" block ('' if no context)
@@ -358,7 +362,13 @@
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
 		<Dialog.Overlay class="story-overlay" />
-		<Dialog.Content class="story-dialog">
+		<Dialog.Content
+			class="story-dialog"
+			onOpenAutoFocus={(e) => {
+				e.preventDefault();
+				setTimeout(() => startBtnEl?.focus(), 0);
+			}}
+		>
 			<DialogHeader
 				title={headingText(regenerating ? 'Regenerate Story' : 'Generate Story')}
 				onclose={close}
@@ -467,8 +477,11 @@
 						>{regenerating ? 'Save' : 'Save to Log'}</button
 					>
 				{:else}
-					<button class="btn btn-primary" onclick={handleStart} disabled={!promptText.trim()}
-						>Start</button
+					<button
+						bind:this={startBtnEl}
+						class="btn btn-primary"
+						onclick={handleStart}
+						disabled={!promptText.trim()}>Start</button
 					>
 				{/if}
 			</div>

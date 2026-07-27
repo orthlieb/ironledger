@@ -1526,9 +1526,71 @@
 				`expeditions-${stamp}.zip`,
 			);
 		} else if (content === 'map') {
-			// Route to MapDialog — it owns the SVG element PNG rasterisation
-			// needs, and the marker/settings state for the JSON envelope.
-			document.dispatchEvent(new CustomEvent('ironledger:export-map', { detail: { format } }));
+			// PNG stays "active map only" — one PNG per file is the sane
+			// interpretation and the map dialog owns the SVG element.
+			// Route through MapDialog for that case.
+			if (format === 'png') {
+				document.dispatchEvent(new CustomEvent('ironledger:export-map', { detail: { format } }));
+				return;
+			}
+			// Zip → bundle EVERY map into a single archive. Each map lands
+			// under `maps/<mapId>/` with the same manifest.json + map.json
+			// + optional background.jpg that `exportMapZip()` produces for
+			// a single map, plus a top-level `maps.md` index. Matches the
+			// "Everything → Markdown" bundling loop.
+			const mapListRes = await fetch('/api/session/maps');
+			if (!mapListRes.ok) return;
+			const listBody = (await mapListRes.json()) as {
+				maps?: Array<{ id: string; name: string; updatedAt: string }>;
+			};
+			const mapsList = Array.isArray(listBody.maps) ? listBody.maps : [];
+			const zipFiles: Record<string, Uint8Array> = {};
+			const mapsMdLines: string[] = ['# Campaign Maps', ''];
+			for (const summary of mapsList) {
+				const detailRes = await fetch(`/api/session/maps/${summary.id}`);
+				if (!detailRes.ok) continue;
+				const detail = (await detailRes.json()) as {
+					id: string;
+					name: string;
+					markers: Array<Record<string, unknown>>;
+					backgroundHash: string | null;
+					settings: Record<string, unknown>;
+				};
+				const bgUrl = detail.backgroundHash
+					? `/api/session/maps/${detail.id}/background?v=${encodeURIComponent(detail.backgroundHash)}`
+					: '';
+				const entries = await buildMapZipEntries({
+					name: detail.name,
+					// eslint-disable-next-line @typescript-eslint/no-explicit-any
+					markers: detail.markers as any,
+					// eslint-disable-next-line @typescript-eslint/no-explicit-any
+					settings: detail.settings as any,
+					backgroundUrl: bgUrl,
+				});
+				const dir = `maps/${detail.id}`;
+				for (const [path, bytes] of Object.entries(entries)) {
+					zipFiles[`${dir}/${path}`] = bytes;
+				}
+				mapsMdLines.push(`## ${detail.name || 'Untitled Map'}`);
+				mapsMdLines.push(`- Markers: ${Array.isArray(detail.markers) ? detail.markers.length : 0}`);
+				mapsMdLines.push(`- [Data](./${dir}/map.json)`);
+				if (entries['background.jpg']) {
+					mapsMdLines.push(`- ![Background](./${dir}/background.jpg)`);
+				}
+				mapsMdLines.push('');
+			}
+			zipFiles['manifest.json'] = strToU8(
+				JSON.stringify({ type: 'all-maps', count: mapsList.length }, null, 2),
+			);
+			zipFiles['maps.md'] = strToU8(mapsMdLines.join('\n').trimEnd());
+			const bytes = zipSync(zipFiles);
+			const blob = new Blob([bytes as BlobPart], { type: 'application/zip' });
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = `maps-${stamp}.zip`;
+			a.click();
+			URL.revokeObjectURL(url);
 		}
 	}
 </script>

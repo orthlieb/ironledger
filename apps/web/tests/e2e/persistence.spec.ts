@@ -145,14 +145,14 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		const before = await page.locator(FOE_SPINE).count();
 
 		await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
-		await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
-		const foeTile = page.locator('dialog.foe-dialog .fd-tile').first();
+		await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 5_000 });
+		const foeTile = page.locator('.foe-dialog .fd-tile').first();
 		await expect(foeTile).toBeVisible({ timeout: 8_000 });
 		await foeTile.click();
-		const addBtn = page.locator('dialog.foe-dialog button:has-text("Add to Foes")');
+		const addBtn = page.locator('.foe-dialog button:has-text("Add to Foes")');
 		await expect(addBtn).toBeVisible({ timeout: 3_000 });
 		await addBtn.click();
-		await expect(page.locator('dialog.foe-dialog[open]')).not.toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.foe-dialog')).not.toBeVisible({ timeout: 5_000 });
 		await expect(page.locator(FOE_SPINE)).toHaveCount(before + 1, { timeout: 5_000 });
 
 		await page.waitForTimeout(600);
@@ -240,16 +240,16 @@ test.describe('Data persistence across logout / login (v2)', () => {
 
 		if ((await page.locator(FOE_SPINE).count()) === 0) {
 			await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
-			await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
-			await expect(page.locator('dialog.foe-dialog .fd-tile').first()).toBeVisible({
+			await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 5_000 });
+			await expect(page.locator('.foe-dialog .fd-tile').first()).toBeVisible({
 				timeout: 8_000,
 			});
-			await page.locator('dialog.foe-dialog .fd-tile').first().click();
-			await expect(page.locator('dialog.foe-dialog button:has-text("Add to Foes")')).toBeVisible({
+			await page.locator('.foe-dialog .fd-tile').first().click();
+			await expect(page.locator('.foe-dialog button:has-text("Add to Foes")')).toBeVisible({
 				timeout: 3_000,
 			});
-			await page.locator('dialog.foe-dialog button:has-text("Add to Foes")').click();
-			await expect(page.locator('dialog.foe-dialog[open]')).not.toBeVisible({ timeout: 5_000 });
+			await page.locator('.foe-dialog button:has-text("Add to Foes")').click();
+			await expect(page.locator('.foe-dialog')).not.toBeVisible({ timeout: 5_000 });
 			await expect(page.locator(FOE_SPINE)).not.toHaveCount(0, { timeout: 5_000 });
 		}
 
@@ -380,12 +380,12 @@ test.describe('Data persistence across logout / login (v2)', () => {
 
 		if ((await page.locator(FOE_SPINE).count()) === 0) {
 			await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
-			await expect(page.locator('dialog.foe-dialog[open]')).toBeVisible({ timeout: 5_000 });
-			const tile = page.locator('dialog.foe-dialog .fd-tile').first();
+			await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 5_000 });
+			const tile = page.locator('.foe-dialog .fd-tile').first();
 			await expect(tile).toBeVisible({ timeout: 8_000 });
 			await tile.click();
-			await page.locator('dialog.foe-dialog button:has-text("Add to Foes")').click();
-			await expect(page.locator('dialog.foe-dialog[open]')).not.toBeVisible({ timeout: 5_000 });
+			await page.locator('.foe-dialog button:has-text("Add to Foes")').click();
+			await expect(page.locator('.foe-dialog')).not.toBeVisible({ timeout: 5_000 });
 			await expect(page.locator(FOE_SPINE)).not.toHaveCount(0, { timeout: 5_000 });
 		}
 
