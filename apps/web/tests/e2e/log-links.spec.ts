@@ -38,10 +38,10 @@ test('can add a note to a log entry and it persists', async ({ page }) => {
 
 	// Add a note via the global app-nav NOTE button.
 	await page.locator('.app-nav .act-btn').nth(3).click();
-	await expect(page.locator('.notes-dialog[open]')).toBeVisible({ timeout: 3_000 });
+	await expect(page.locator('.notes-dialog')).toBeVisible({ timeout: 3_000 });
 	await page.locator('.notes-dialog .nd-textarea').fill('Initial note content');
 	await page.locator('.notes-dialog .nd-add-btn').click();
-	await expect(page.locator('.notes-dialog[open]')).not.toBeVisible({ timeout: 3_000 });
+	await expect(page.locator('.notes-dialog')).not.toBeVisible({ timeout: 3_000 });
 	await expect(page.locator('.log-entry').first()).toBeVisible({ timeout: 5_000 });
 
 	// Click the edit (pen) icon on the latest entry.

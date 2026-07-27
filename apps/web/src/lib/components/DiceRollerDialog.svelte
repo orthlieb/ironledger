@@ -18,6 +18,7 @@
 	import { tooltip } from '$lib/actions/tooltip.js';
 
 	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
+	import { Dialog } from 'bits-ui';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import diceD10Svg from '$icons/dice-d10-light.svg?raw';
 
@@ -52,7 +53,7 @@
 	// ---------------------------------------------------------------------------
 	// Component state
 	// ---------------------------------------------------------------------------
-	let dialogEl = $state<HTMLDialogElement | null>(null);
+	let dialogOpen = $state(false);
 	let selectedStat = $state<StatKey | null>(null);
 	let adds = $state(0);
 	let rolling = $state(false);
@@ -179,133 +180,147 @@
 	// Public API (accessed via bind:this)
 	// ---------------------------------------------------------------------------
 	export function open() {
-		dialogEl?.showModal();
+		dialogOpen = true;
 	}
 
 	export function close() {
-		dialogEl?.close();
+		dialogOpen = false;
 	}
 </script>
 
 <!-- =========================================================================
-     Dialog
+     Dialog — bits-ui Dialog: portalled, escape-aware, focus-trapped.
      ========================================================================= -->
-<dialog bind:this={dialogEl} class="dice-dialog" oncancel={close}>
-	<!-- Header -->
-	<DialogHeader title={headingText('Roll Dice')} onclose={close} />
+<Dialog.Root bind:open={dialogOpen}>
+	<Dialog.Portal>
+		<Dialog.Overlay class="dice-overlay" />
+		<Dialog.Content class="dice-dialog">
+			<DialogHeader title={headingText('Roll Dice')} onclose={close} />
 
-	<div class="dice-body">
-		<!-- ── Quick Rolls ── -->
-		<section>
-			<div class="section-label">Quick Roll</div>
-			<div class="quick-row">
-				<button
-					class="quick-btn"
-					onclick={() => quickRoll(6, 'd6')}
-					disabled={rolling}
-					use:tooltip={'Roll d6'}
-				>
-					<span class="qicon">{@html diceD6Svg}</span>
-					<span class="qdie">d6</span>
-				</button>
-				<button
-					class="quick-btn"
-					onclick={() => quickRoll(10, 'd10')}
-					disabled={rolling}
-					use:tooltip={'Roll d10'}
-				>
-					<span class="qicon">{@html diceD10Svg}</span>
-					<span class="qdie">d10</span>
-				</button>
-				<button
-					class="quick-btn"
-					onclick={quickRollD100}
-					disabled={rolling}
-					use:tooltip={'Roll d100'}
-				>
-					<span class="qicon qicon-d100">
-						<span class="d100-dark">{@html diceD10Svg}</span>
-						<span class="d100-light">{@html diceD10Svg}</span>
-					</span>
-					<span class="qdie">d100</span>
-				</button>
-			</div>
-		</section>
+			<div class="dice-body">
+				<!-- ── Quick Rolls ── -->
+				<section>
+					<div class="section-label">Quick Roll</div>
+					<div class="quick-row">
+						<button
+							class="quick-btn"
+							onclick={() => quickRoll(6, 'd6')}
+							disabled={rolling}
+							use:tooltip={'Roll d6'}
+						>
+							<span class="qicon">{@html diceD6Svg}</span>
+							<span class="qdie">d6</span>
+						</button>
+						<button
+							class="quick-btn"
+							onclick={() => quickRoll(10, 'd10')}
+							disabled={rolling}
+							use:tooltip={'Roll d10'}
+						>
+							<span class="qicon">{@html diceD10Svg}</span>
+							<span class="qdie">d10</span>
+						</button>
+						<button
+							class="quick-btn"
+							onclick={quickRollD100}
+							disabled={rolling}
+							use:tooltip={'Roll d100'}
+						>
+							<span class="qicon qicon-d100">
+								<span class="d100-dark">{@html diceD10Svg}</span>
+								<span class="d100-light">{@html diceD10Svg}</span>
+							</span>
+							<span class="qdie">d100</span>
+						</button>
+					</div>
+				</section>
 
-		<hr class="dice-rule" />
+				<hr class="dice-rule" />
 
-		<!-- ── Action Roll ── -->
-		<section class="action-section">
-			<div class="section-label">
-				Action Roll <span class="formula-hint">1d6 + stat + adds vs 2d10</span>
-			</div>
+				<!-- ── Action Roll ── -->
+				<section class="action-section">
+					<div class="section-label">
+						Action Roll <span class="formula-hint">1d6 + stat + adds vs 2d10</span>
+					</div>
 
-			<!-- Stat selector -->
-			<div class="stat-row">
-				{#each STATS as s (s.key)}
-					<button
-						class="stat-btn"
-						class:selected={selectedStat === s.key}
-						style:--scolor={s.color}
-						onclick={() => (selectedStat = selectedStat === s.key ? null : s.key)}
-						disabled={rolling || !ctx}
-						use:tooltip={`${s.label}: ${ctx ? ctx.data[s.key] : '—'}`}
-					>
-						<span class="sname">{s.label}</span>
-						<span class="sval">{ctx ? `+${ctx.data[s.key]}` : '—'}</span>
-					</button>
-				{/each}
-			</div>
-
-			<!-- Active debility warnings -->
-			{#if debilityWarnings.length > 0}
-				<div class="drd-debility-bar">
-					<span class="drd-debility-label">Debilities</span>
-					<div class="drd-debility-tags">
-						{#each debilityWarnings as w (w.key)}
-							<div class="drd-debility-tag" use:tooltip={{ text: w.penalty, placement: 'above' }}>
-								{w.label}
-							</div>
+					<!-- Stat selector -->
+					<div class="stat-row">
+						{#each STATS as s (s.key)}
+							<button
+								class="stat-btn"
+								class:selected={selectedStat === s.key}
+								style:--scolor={s.color}
+								onclick={() => (selectedStat = selectedStat === s.key ? null : s.key)}
+								disabled={rolling || !ctx}
+								use:tooltip={`${s.label}: ${ctx ? ctx.data[s.key] : '—'}`}
+							>
+								<span class="sname">{s.label}</span>
+								<span class="sval">{ctx ? `+${ctx.data[s.key]}` : '—'}</span>
+							</button>
 						{/each}
 					</div>
-				</div>
-			{/if}
 
-			<!-- Adds + Roll (side by side) -->
-			<div class="adds-roll-row">
-				<div class="adds-row">
-					<span class="adds-label">Adds</span>
-					<button
-						class="adj"
-						onclick={() => (adds = Math.max(-5, adds - 1))}
-						disabled={rolling || !ctx || adds <= -5}
-						aria-label="Decrease adds">−</button
-					>
-					<span class="adds-val" class:positive={adds > 0} class:negative={adds < 0}
-						>{adds >= 0 ? '+' : ''}{adds}</span
-					>
-					<button
-						class="adj"
-						onclick={() => (adds = Math.min(5, adds + 1))}
-						disabled={rolling || !ctx || adds >= 5}
-						aria-label="Increase adds">+</button
-					>
-				</div>
+					<!-- Active debility warnings -->
+					{#if debilityWarnings.length > 0}
+						<div class="drd-debility-bar">
+							<span class="drd-debility-label">Debilities</span>
+							<div class="drd-debility-tags">
+								{#each debilityWarnings as w (w.key)}
+									<div
+										class="drd-debility-tag"
+										use:tooltip={{ text: w.penalty, placement: 'above' }}
+									>
+										{w.label}
+									</div>
+								{/each}
+							</div>
+						</div>
+					{/if}
 
-				<button class="btn btn-primary roll-btn" onclick={actionRoll} disabled={rolling || !ctx}
-					>{rolling ? 'Rolling…' : 'Roll Action'}</button
-				>
+					<!-- Adds + Roll (side by side) -->
+					<div class="adds-roll-row">
+						<div class="adds-row">
+							<span class="adds-label">Adds</span>
+							<button
+								class="adj"
+								onclick={() => (adds = Math.max(-5, adds - 1))}
+								disabled={rolling || !ctx || adds <= -5}
+								aria-label="Decrease adds">−</button
+							>
+							<span class="adds-val" class:positive={adds > 0} class:negative={adds < 0}
+								>{adds >= 0 ? '+' : ''}{adds}</span
+							>
+							<button
+								class="adj"
+								onclick={() => (adds = Math.min(5, adds + 1))}
+								disabled={rolling || !ctx || adds >= 5}
+								aria-label="Increase adds">+</button
+							>
+						</div>
+
+						<button class="btn btn-primary roll-btn" onclick={actionRoll} disabled={rolling || !ctx}
+							>{rolling ? 'Rolling…' : 'Roll Action'}</button
+						>
+					</div>
+				</section>
 			</div>
-		</section>
-	</div>
-</dialog>
+		</Dialog.Content>
+	</Dialog.Portal>
+</Dialog.Root>
 
 <style>
-	/* ── Dialog shell ── */
-	.dice-dialog {
-		border: none;
-		padding: 0;
-		border-radius: 10px;
+	/* bits-ui portals Content + Overlay to <body> — scope everything
+	   globally. Overlay 80 / content 81 matches the modal z-index tier. */
+	:global(.dice-overlay) {
+		position: fixed;
+		inset: 0;
+		background: #00000060;
+		backdrop-filter: blur(1px);
+		z-index: 80;
+	}
+	:global(.dice-dialog) {
+		display: flex;
+		flex-direction: column;
 		position: fixed;
 		top: 50%;
 		left: 50%;
@@ -313,20 +328,18 @@
 		width: min(400px, calc(100vw - 2rem));
 		background: var(--bg-card);
 		color: var(--text);
+		border-radius: 10px;
 		box-shadow:
 			0 16px 48px #00000070,
 			0 0 0 1px var(--border-mid);
 		outline: none;
-	}
-	.dice-dialog::backdrop {
-		background: #00000060;
-		backdrop-filter: blur(1px);
+		z-index: 81;
 	}
 
 	/* ── Header ── */
 
 	/* ── Body ── */
-	.dice-body {
+	:global(.dice-body) {
 		padding: 12px 14px;
 		display: flex;
 		flex-direction: column;
@@ -334,12 +347,12 @@
 	}
 
 	/* ── Quick rolls ── */
-	.quick-row {
+	:global(.quick-row) {
 		display: flex;
 		gap: 6px;
 		margin-top: 6px;
 	}
-	.quick-btn {
+	:global(.quick-btn) {
 		flex: 1;
 		display: flex;
 		flex-direction: row;
@@ -358,27 +371,27 @@
 			border-color 0.12s,
 			color 0.12s;
 	}
-	.quick-btn:hover:not(:disabled) {
+	:global(.quick-btn:hover:not(:disabled)) {
 		background: var(--bg-hover);
 		border-color: var(--border-mid);
 		color: var(--text-accent);
 	}
-	.quick-btn:disabled {
+	:global(.quick-btn:disabled) {
 		opacity: 0.4;
 		cursor: not-allowed;
 	}
 
-	.qicon {
+	:global(.qicon) {
 		display: flex;
 		align-items: center;
 		gap: 2px;
 		color: var(--text-muted);
 		transition: color 0.12s;
 	}
-	.quick-btn:hover:not(:disabled) .qicon {
+	:global(.quick-btn:hover:not(:disabled) .qicon) {
 		color: var(--text-accent);
 	}
-	.qicon :global(svg) {
+	:global(.qicon :global(svg)) {
 		width: 22px;
 		height: 22px;
 		fill: currentColor;
@@ -391,14 +404,14 @@
 	}
 
 	/* ── Divider ── */
-	.dice-rule {
+	:global(.dice-rule) {
 		border: none;
 		border-top: 1px solid var(--border);
 		margin: 0;
 	}
 
 	/* ── Action roll ── */
-	.action-section {
+	:global(.action-section) {
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
@@ -416,11 +429,11 @@
 	}
 
 	/* Stat buttons */
-	.stat-row {
+	:global(.stat-row) {
 		display: flex;
 		gap: 4px;
 	}
-	.stat-btn {
+	:global(.stat-btn) {
 		flex: 1;
 		display: flex;
 		flex-direction: column;
@@ -438,16 +451,16 @@
 			border-color 0.12s,
 			color 0.12s;
 	}
-	.stat-btn:hover:not(:disabled):not(.selected) {
+	:global(.stat-btn:hover:not(:disabled):not(.selected)) {
 		background: var(--bg-hover);
 		border-color: var(--border-mid);
 	}
-	.stat-btn.selected {
+	:global(.stat-btn.selected) {
 		background: color-mix(in srgb, var(--scolor) 12%, var(--bg-control));
 		border-color: var(--scolor);
 		color: var(--scolor);
 	}
-	.stat-btn:disabled {
+	:global(.stat-btn:disabled) {
 		opacity: 0.4;
 		cursor: not-allowed;
 	}
@@ -465,12 +478,12 @@
 	}
 
 	/* Adds row */
-	.adds-row {
+	:global(.adds-row) {
 		display: flex;
 		align-items: center;
 		gap: 6px;
 	}
-	.adds-label {
+	:global(.adds-label) {
 		font-family: var(--font-ui);
 		font-size: 0.75rem;
 		color: var(--text-muted);
@@ -501,7 +514,7 @@
 		border-color: var(--border-mid);
 	}
 
-	.adds-val {
+	:global(.adds-val) {
 		min-width: 28px;
 		text-align: center;
 		font-family: var(--font-ui);
@@ -510,41 +523,41 @@
 		font-variant-numeric: tabular-nums;
 		color: var(--text);
 	}
-	.adds-val.positive {
+	:global(.adds-val.positive) {
 		color: var(--color-success);
 	}
-	.adds-val.negative {
+	:global(.adds-val.negative) {
 		color: var(--color-danger);
 	}
 
 	/* d100 = two coloured d10s */
-	.qicon-d100 {
+	:global(.qicon-d100) {
 		gap: 3px;
 	}
-	.qicon-d100 :global(svg) {
+	:global(.qicon-d100 :global(svg)) {
 		width: 17px;
 		height: 17px;
 	}
-	.d100-dark :global(svg) {
+	:global(.d100-dark :global(svg)) {
 		fill: #7b4f2e;
 	}
-	.d100-light :global(svg) {
+	:global(.d100-light :global(svg)) {
 		fill: #c4895e;
 	}
-	.quick-btn:hover:not(:disabled) .d100-dark :global(svg) {
+	:global(.quick-btn:hover:not(:disabled) .d100-dark :global(svg)) {
 		fill: #9e6640;
 	}
-	.quick-btn:hover:not(:disabled) .d100-light :global(svg) {
+	:global(.quick-btn:hover:not(:disabled) .d100-light :global(svg)) {
 		fill: #dba878;
 	}
 
 	/* Adds + roll side by side */
-	.adds-roll-row {
+	:global(.adds-roll-row) {
 		display: flex;
 		align-items: center;
 		gap: 8px;
 	}
-	.roll-btn {
+	:global(.roll-btn) {
 		margin-left: auto;
 		padding: 5px 16px;
 		white-space: nowrap;

@@ -348,10 +348,10 @@ test.describe('Data persistence across logout / login (v2)', () => {
 			.getByRole('button', { name: /^note$/i })
 			.first()
 			.click();
-		await expect(page.locator('.notes-dialog[open]')).toBeVisible({ timeout: 3_000 });
+		await expect(page.locator('.notes-dialog')).toBeVisible({ timeout: 3_000 });
 		await page.locator('.notes-dialog .nd-textarea').fill(uniqueText);
 		await page.locator('.notes-dialog .nd-add-btn').click();
-		await expect(page.locator('.notes-dialog[open]')).not.toBeVisible({ timeout: 3_000 });
+		await expect(page.locator('.notes-dialog')).not.toBeVisible({ timeout: 3_000 });
 
 		await expect(page.locator('.log-entry').filter({ hasText: uniqueText })).toBeVisible({
 			timeout: 5_000,
