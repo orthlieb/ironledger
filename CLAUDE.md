@@ -191,8 +191,9 @@ draggable in both.
 
 **Documented exceptions** (do NOT route through `<DialogHeader>`):
 
-- **ConfirmDialog** — uses a bespoke centered-`transform` drag
-  (`cm-drag-handle` + `onmousedown` math), not the `draggable` action.
+- **ConfirmDialog** — bits-ui `AlertDialog`; its own accent-tinted
+  `.cm-header` + `AlertDialog.Title` bar is the header, no grip. Not
+  draggable (the pre-migration bespoke drag was retired).
 - **FoePickerDialog** confirm view (`fd-back-bar`) — nature-coloured band.
 - **AssetCard** — inline-capable host, not a plain dialog header.
 

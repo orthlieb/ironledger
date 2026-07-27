@@ -13,6 +13,7 @@
 	import { renderNote } from '$lib/markdown.js';
 	import { draggable } from '$lib/actions/draggable.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
+	import Select from '$lib/components/Select.svelte';
 
 	import iconHeart from '$icons/icon-heart.svg?raw';
 	import iconSkull from '$icons/skull-crossbones-solid-full.svg?raw';
@@ -352,16 +353,17 @@
 			{:else if field.type === 'dropdown' && field.options}
 				<label class="companion-name-label">
 					<span class="companion-field-label">{field.label}</span>
-					<select
-						class="companion-name-input"
+					<Select
+						class="companion-select"
 						value={asset.customValues?.[field.id] ?? String(field.default ?? '')}
-						onchange={(e) => {
+						options={field.options.map((opt) => ({ value: opt.id, label: opt.label }))}
+						onchange={(v) => {
 							if (!asset.customValues) asset.customValues = {};
-							asset.customValues[field.id] = e.currentTarget.value;
+							asset.customValues[field.id] = v;
 							// Enforce level cap: clear abilities beyond the new max
 							const abmf = definition.abilityMaxByField;
 							if (abmf && field.id in abmf) {
-								const newMax = abmf[field.id]![e.currentTarget.value] ?? Infinity;
+								const newMax = abmf[field.id]![v] ?? Infinity;
 								const cur = [...asset.abilities];
 								let enabled = 0;
 								for (let idx = 0; idx < cur.length; idx++) {
@@ -376,11 +378,7 @@
 								asset.abilities = cur;
 							}
 						}}
-					>
-						{#each field.options as opt}
-							<option value={opt.id}>{opt.label}</option>
-						{/each}
-					</select>
+					/>
 				</label>
 			{:else if field.type === 'switch'}
 				<label class="cf-switch">
@@ -628,16 +626,17 @@
 			{:else if field.type === 'dropdown' && field.options}
 				<label class="companion-name-label">
 					<span class="companion-field-label">{field.label}</span>
-					<select
-						class="companion-name-input"
+					<Select
+						class="companion-select"
 						value={asset.customValues?.[field.id] ?? String(field.default ?? '')}
-						onchange={(e) => {
+						options={field.options.map((opt) => ({ value: opt.id, label: opt.label }))}
+						onchange={(v) => {
 							if (!asset.customValues) asset.customValues = {};
-							asset.customValues[field.id] = e.currentTarget.value;
+							asset.customValues[field.id] = v;
 							// Enforce level cap: clear abilities beyond the new max
 							const abmf = definition.abilityMaxByField;
 							if (abmf && field.id in abmf) {
-								const newMax = abmf[field.id]![e.currentTarget.value] ?? Infinity;
+								const newMax = abmf[field.id]![v] ?? Infinity;
 								const cur = [...asset.abilities];
 								let enabled = 0;
 								for (let idx = 0; idx < cur.length; idx++) {
@@ -652,11 +651,7 @@
 								asset.abilities = cur;
 							}
 						}}
-					>
-						{#each field.options as opt}
-							<option value={opt.id}>{opt.label}</option>
-						{/each}
-					</select>
+					/>
 				</label>
 			{:else if field.type === 'switch'}
 				<label class="cf-switch">
@@ -1271,6 +1266,16 @@
 		font-family: var(--font-ui);
 		font-size: 0.82rem;
 		padding: 3px 7px;
+	}
+	/* Dropdown asset field — threaded through `<Select class="companion-select">`
+	   onto the bits-ui Trigger, so scope globally. Base look from
+	   `.bui-select-trigger`; override matches sibling
+	   `<input class="companion-name-input">` sizing. */
+	:global(.companion-select) {
+		flex: 1;
+		font-size: 0.82rem;
+		padding: 3px 7px;
+		min-height: 0;
 	}
 
 	.radio-row {

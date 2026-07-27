@@ -31,6 +31,7 @@
 	import { getNpcs, persistNpcsNow, addNpc, removeNpc } from '$lib/npcStore.svelte.js';
 	import { getPlaces, persistPlacesNow, addPlace, removePlace } from '$lib/placeStore.svelte.js';
 	import type { Community, Npc, Place, NpcRelationship } from '$lib/types.js';
+	import Select from '$lib/components/Select.svelte';
 	import MarkdownNotes from '$lib/components/MarkdownNotes.svelte';
 	import PortraitUploader from '$lib/components/PortraitUploader.svelte';
 	import { EditableName } from '$lib/editableName.svelte.js';
@@ -877,19 +878,13 @@
 								</div>
 								<div class="cm-field-row">
 									<label class="cm-field-label" for="cm-rel-{n.id}">Relationship</label>
-									<select
+									<Select
 										id="cm-rel-{n.id}"
-										class="cm-input"
+										class="cm-select"
 										value={n.relationship}
-										onchange={(e) =>
-											updateNpc({
-												relationship: (e.target as HTMLSelectElement).value as NpcRelationship,
-											})}
-									>
-										{#each RELATIONSHIPS as r}
-											<option value={r.value}>{r.label}</option>
-										{/each}
-									</select>
+										options={RELATIONSHIPS}
+										onchange={(v) => updateNpc({ relationship: v })}
+									/>
 								</div>
 								<div class="cm-field-row">
 									<label class="cm-field-label" for="cm-loc-{n.id}">Location</label>
@@ -1697,6 +1692,16 @@
 	}
 	.cm-input:focus {
 		border-color: var(--text-accent);
+	}
+	/* Threaded to bits-ui via `<Select class="cm-select">` so scope
+	   globally. Base look from `.bui-select-trigger`; override just
+	   makes the trigger flex-fill inside `.cm-field-row` like the
+	   sibling `<input class="cm-input">` fields. */
+	:global(.cm-select) {
+		flex: 1;
+		font-size: 0.78rem;
+		padding: 3px 8px;
+		min-height: 0;
 	}
 
 	.cm-field-row--trouble {

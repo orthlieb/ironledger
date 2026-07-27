@@ -920,6 +920,47 @@ specifically want the trigger to _be_ the input (search-as-you-
 type without a separate popover input). That's a different
 interaction pattern; the shadcn shape above is the default.
 
+### Simple dropdown fields — `<Select>` wrapper
+
+For a plain form-field dropdown (a native `<select>` you'd
+otherwise reach for), use the shared
+`$lib/components/Select.svelte` wrapper — bits-ui `Select`
+underneath, uniform trigger + popover chrome across the app.
+Every native `<select>` in the app was migrated to this in the
+same pass that introduced the Popover + Command combobox above;
+new field selects should go through `<Select>` unless the option
+count is high enough that typeahead search is worth the combobox.
+
+```svelte
+<Select
+  bind:value={difficulty}
+  ariaLabel="Vow difficulty"
+  options={[
+    { value: 'troublesome', label: 'Troublesome' },
+    { value: 'dangerous', label: 'Dangerous' },
+    { value: 'formidable', label: 'Formidable' },
+  ]}
+/>
+```
+
+Notes:
+
+- **Generic over its value type** — `<script generics="T extends string">`,
+  so `value` and each option's `value` type-check against a
+  string-literal union (like `VowDifficulty`) without casts.
+- **`bind:value` is the usual channel**; `onchange` is available
+  when you need side-effects on the new value (a callback that
+  can't be expressed as a reactive `$effect`).
+- **Portal target** — pass `portalTo={dialogEl ?? undefined}` when
+  the select lives inside a native `<dialog>` so the popover
+  renders on top of that dialog's top layer instead of behind
+  it. Same rule as the combobox.
+- **Base trigger styling comes from `.bui-select-trigger`** (in
+  `Select.svelte`, `:global`). Site-specific tweaks pass an
+  extra class (e.g. `class="ea-select"`) that also has to be
+  `:global(...)` in the caller's stylesheet — Svelte's CSS
+  pruning can't see through the component boundary.
+
 ### AlertDialog pattern (confirmations)
 
 For destructive-action confirmations use `AlertDialog` (blocks
@@ -974,11 +1015,12 @@ consumer of a shared dialog primitive is migrated, keep them.
 Reserve class prefixes so it's obvious at a glance which
 primitive a class belongs to:
 
-| Prefix          | Primitive                        | Example use                                         |
-| --------------- | -------------------------------- | --------------------------------------------------- |
-| `cm-*`          | `AlertDialog` (Confirm)          | `.cm-overlay`, `.cm-header`, `.cm-actions`          |
-| `mp-combobox-*` | `Popover.Trigger` combobox shell | `.mp-combobox`, `.mp-combobox-value`, `-caret`      |
-| `mp-cmd-*`      | `Popover + Command` popover body | `.mp-cmd-popover`, `.mp-cmd-search`, `.mp-cmd-item` |
+| Prefix          | Primitive                        | Example use                                                      |
+| --------------- | -------------------------------- | ---------------------------------------------------------------- |
+| `cm-*`          | `AlertDialog` (Confirm)          | `.cm-overlay`, `.cm-header`, `.cm-actions`                       |
+| `mp-combobox-*` | `Popover.Trigger` combobox shell | `.mp-combobox`, `.mp-combobox-value`, `-caret`                   |
+| `mp-cmd-*`      | `Popover + Command` popover body | `.mp-cmd-popover`, `.mp-cmd-search`, `.mp-cmd-item`              |
+| `bui-select-*`  | `<Select>` wrapper (bits-ui)     | `.bui-select-trigger`, `.bui-select-content`, `.bui-select-item` |
 
 New primitives get a fresh prefix keyed to their surface — pick
 one that's short and searchable. Don't stack unrelated bits-ui

@@ -29,6 +29,7 @@
 		FoeEncounter,
 	} from '$lib/types.js';
 	import { EXPEDITION_MARK_TICKS, DENIZEN_CELLS, DELVE_THEMES, DELVE_DOMAINS } from '$lib/types.js';
+	import Select from '$lib/components/Select.svelte';
 	import { difficultyBadgeStyle } from '$lib/badgeStyles.js';
 	import { isDelveEnabled } from '$lib/expansionStore.svelte.js';
 	import { setActiveExpeditionId } from '$lib/activeContext.svelte.js';
@@ -807,15 +808,13 @@
 								     emit Change-Theme/Domain links). -->
 								<div class="ea-field-row">
 									<label class="ea-field-label" for="ea-theme-{activeSite.id}">Theme</label>
-									<select
+									<Select
 										id="ea-theme-{activeSite.id}"
-										class="ea-input"
+										class="ea-select"
 										value={activeSite.theme}
-										onchange={(e) =>
-											updateExp({ theme: (e.target as HTMLSelectElement).value as Site['theme'] })}
-									>
-										{#each DELVE_THEMES as t}<option value={t}>{t}</option>{/each}
-									</select>
+										options={DELVE_THEMES.map((t) => ({ value: t, label: t }))}
+										onchange={(v) => updateExp({ theme: v as Site['theme'] })}
+									/>
 									<button
 										class="btn btn-icon ea-dice-btn"
 										onclick={randomizeTheme}
@@ -825,17 +824,13 @@
 								</div>
 								<div class="ea-field-row">
 									<label class="ea-field-label" for="ea-domain-{activeSite.id}">Domain</label>
-									<select
+									<Select
 										id="ea-domain-{activeSite.id}"
-										class="ea-input"
+										class="ea-select"
 										value={activeSite.domain}
-										onchange={(e) =>
-											updateExp({
-												domain: (e.target as HTMLSelectElement).value as Site['domain'],
-											})}
-									>
-										{#each DELVE_DOMAINS as d}<option value={d}>{d}</option>{/each}
-									</select>
+										options={DELVE_DOMAINS.map((d) => ({ value: d, label: d }))}
+										onchange={(v) => updateExp({ domain: v as Site['domain'] })}
+									/>
 									<button
 										class="btn btn-icon ea-dice-btn"
 										onclick={randomizeDomain}
@@ -845,17 +840,18 @@
 								</div>
 								<div class="ea-field-row">
 									<label class="ea-field-label" for="ea-feature-{activeSite.id}">Feature</label>
-									<select
+									<Select
 										id="ea-feature-{activeSite.id}"
-										class="ea-input"
+										class="ea-select"
 										value={activeSite.currentFeature ?? ''}
-										onchange={(e) =>
-											updateExp({ currentFeature: (e.target as HTMLSelectElement).value })}
 										disabled={!expHasThemeAndDomain}
-									>
-										<option value=""></option>
-										{#each featureOptions as f}<option value={f}>{f}</option>{/each}
-									</select>
+										placeholder="—"
+										options={[
+											{ value: '', label: '—' },
+											...featureOptions.map((f) => ({ value: f, label: f })),
+										]}
+										onchange={(v) => updateExp({ currentFeature: v })}
+									/>
 									<button
 										class="btn btn-icon ea-dice-btn"
 										onclick={rollFeature}
@@ -868,17 +864,18 @@
 								</div>
 								<div class="ea-field-row">
 									<label class="ea-field-label" for="ea-danger-{activeSite.id}">Danger</label>
-									<select
+									<Select
 										id="ea-danger-{activeSite.id}"
-										class="ea-input"
+										class="ea-select"
 										value={activeSite.currentDanger ?? ''}
-										onchange={(e) =>
-											updateExp({ currentDanger: (e.target as HTMLSelectElement).value })}
 										disabled={!expHasThemeAndDomain}
-									>
-										<option value=""></option>
-										{#each dangerOptions as d}<option value={d}>{d}</option>{/each}
-									</select>
+										placeholder="—"
+										options={[
+											{ value: '', label: '—' },
+											...dangerOptions.map((d) => ({ value: d, label: d })),
+										]}
+										onchange={(v) => updateExp({ currentDanger: v })}
+									/>
 									<button
 										class="btn btn-icon ea-dice-btn"
 										onclick={rollDanger}
@@ -1063,14 +1060,13 @@
 				style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); width: 56px; flex-shrink: 0;"
 				>Theme</label
 			>
-			<select
+			<Select
 				id="ns-theme"
-				style="flex: 1; font-family: var(--font-ui); font-size: 0.75rem; background: var(--bg-control); border: 1px solid var(--border); border-radius: 4px; color: var(--text); padding: 3px 6px; outline: none;"
+				class="ea-ns-select"
 				bind:value={newSiteTheme}
-			>
-				<option value="" disabled>Select a theme…</option>
-				{#each DELVE_THEMES as t (t)}<option value={t}>{t}</option>{/each}
-			</select>
+				placeholder="Select a theme…"
+				options={DELVE_THEMES.map((t) => ({ value: t, label: t }))}
+			/>
 		</div>
 		<div style="display: flex; align-items: center; gap: 8px;">
 			<label
@@ -1078,14 +1074,13 @@
 				style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); width: 56px; flex-shrink: 0;"
 				>Domain</label
 			>
-			<select
+			<Select
 				id="ns-domain"
-				style="flex: 1; font-family: var(--font-ui); font-size: 0.75rem; background: var(--bg-control); border: 1px solid var(--border); border-radius: 4px; color: var(--text); padding: 3px 6px; outline: none;"
+				class="ea-ns-select"
 				bind:value={newSiteDomain}
-			>
-				<option value="" disabled>Select a domain…</option>
-				{#each DELVE_DOMAINS as d (d)}<option value={d}>{d}</option>{/each}
-			</select>
+				placeholder="Select a domain…"
+				options={DELVE_DOMAINS.map((d) => ({ value: d, label: d }))}
+			/>
 		</div>
 	</div>
 	<p
@@ -1112,12 +1107,16 @@
 				style="font-family: var(--font-ui); font-size: 0.75rem; color: var(--text-muted);"
 				for="ea-theme-{activeSite.id}">Theme</label
 			>
-			<select id="ea-theme-{activeSite.id}" class="ea-select" bind:value={newThemeValue}>
-				<option value="">— None —</option>
-				{#each DELVE_THEMES as t}
-					<option value={t}>{t}</option>
-				{/each}
-			</select>
+			<Select
+				id="ea-theme-{activeSite.id}"
+				class="ea-select"
+				bind:value={newThemeValue}
+				placeholder="— None —"
+				options={[
+					{ value: '', label: '— None —' },
+					...DELVE_THEMES.map((t) => ({ value: t, label: t })),
+				]}
+			/>
 		</div>
 	</ConfirmDialog>
 
@@ -1132,12 +1131,16 @@
 				style="font-family: var(--font-ui); font-size: 0.75rem; color: var(--text-muted);"
 				for="ea-domain-{activeSite.id}">Domain</label
 			>
-			<select id="ea-domain-{activeSite.id}" class="ea-select" bind:value={newDomainValue}>
-				<option value="">— None —</option>
-				{#each DELVE_DOMAINS as d}
-					<option value={d}>{d}</option>
-				{/each}
-			</select>
+			<Select
+				id="ea-domain-{activeSite.id}"
+				class="ea-select"
+				bind:value={newDomainValue}
+				placeholder="— None —"
+				options={[
+					{ value: '', label: '— None —' },
+					...DELVE_DOMAINS.map((d) => ({ value: d, label: d })),
+				]}
+			/>
 		</div>
 	</ConfirmDialog>
 {/if}
@@ -1751,15 +1754,28 @@
 		color: var(--text-dimmer);
 		min-width: 80px;
 	}
-	.ea-select {
-		font-family: var(--font-ui);
+	/* Threaded to bits-ui via `<Select class="ea-select">` (Change-
+	   Theme / Change-Domain dialogs) and `<Select class="ea-select">`
+	   inside `.ea-field-row` (inline Theme/Domain/Feature/Danger on
+	   the Core tab). Passes through the component so scope globally.
+	   Base look from `.bui-select-trigger`. */
+	:global(.ea-select) {
+		width: 100%;
 		font-size: 0.78rem;
-		color: var(--text);
-		background: var(--bg-control);
-		border: 1px solid var(--border);
-		border-radius: 4px;
+		padding: 3px 8px;
+		min-height: 0;
+	}
+	:global(.ea-field-row .ea-select) {
+		flex: 1;
+		width: auto;
+	}
+	/* New-site theme/domain selects (inside +Site ConfirmDialog).
+	   Flex-fills next to the ns-* label. */
+	:global(.ea-ns-select) {
+		flex: 1;
+		font-size: 0.75rem;
 		padding: 3px 6px;
-		outline: none;
+		min-height: 0;
 	}
 
 	.ea-section {
