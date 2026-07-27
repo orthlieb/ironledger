@@ -1390,18 +1390,26 @@
 	.ea-stage-name-input:focus {
 		border-color: var(--text-accent);
 	}
-	/* Delete: visual comes from .btn-trash in app.css; only positioning here. */
-	.ea-stage-delete-btn {
-		flex-shrink: 0;
-	}
+	/* Delete + Map buttons: pin both to the same 28px height (matching
+	   `.btn-icon`'s `min-width` — the trash button is effectively a
+	   28×28 icon square) so the two sit on the same baseline in the
+	   stage header row. Without this, the map btn's inherited
+	   `line-height: 1.5` on 0.72rem text renders ~27px, but the trash
+	   btn's tighter 12px SVG content renders ~22px — a ~5px mismatch. */
+	.ea-stage-delete-btn,
 	.ea-stage-map-btn {
 		flex-shrink: 0;
+		min-height: 28px;
+		box-sizing: border-box;
+	}
+	.ea-stage-map-btn {
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		font-weight: 600;
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
 		padding: 4px 12px;
+		line-height: 1;
 	}
 
 	/* Map field — a labelled section below the Progress Track in the
