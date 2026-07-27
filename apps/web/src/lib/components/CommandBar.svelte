@@ -36,7 +36,8 @@
 	import { rollDie, animateDice, type DiceSpec } from '$lib/dice.js';
 	import { getCharacters } from '$lib/characterStore.svelte.js';
 	import { getEncounters } from '$lib/encounterStore.svelte.js';
-	import { findFoe } from '$lib/foeStore.svelte.js';
+	import { findFoe, FOE_NATURE_COLORS } from '$lib/foeStore.svelte.js';
+	import { tooltip } from '$lib/actions/tooltip.js';
 	import { getVisibleMoves, loadMoves } from '$lib/moveStore.svelte.js';
 	import { getVisibleOracles, loadOracles } from '$lib/oracleStore.svelte.js';
 	import { getStartId, getEndId, hasSection, setStart, setEnd } from '$lib/sectionStore.svelte.js';
@@ -88,7 +89,8 @@
 		const enc = getEncounters().find((e) => e.id === id);
 		if (!enc) return null;
 		const def = findFoe(enc.foeId);
-		return { name: enc.customName || def?.name || 'Foe' };
+		const natureColor = def ? (FOE_NATURE_COLORS[def.nature] ?? '#7A9AB8') : '#7A9AB8';
+		return { name: enc.customName || def?.name || 'Foe', natureColor };
 	});
 
 	// Build the same precondition context /home passes to MovesDialog so we
@@ -885,10 +887,14 @@
 <div class="cb">
 	<div class="cb-context" aria-label="Active context">
 		{#if activeCharName}
-			<span class="cb-chip cb-chip-char" title="Active character">👤 {activeCharName}</span>
+			<span class="cb-chip cb-chip-char" use:tooltip={'Active character'}>{activeCharName}</span>
 		{/if}
 		{#if activeFoe}
-			<span class="cb-chip cb-chip-foe" title="Active foe">⚔ {activeFoe.name}</span>
+			<span
+				class="cb-chip"
+				style="background: {activeFoe.natureColor}22; color: {activeFoe.natureColor}"
+				use:tooltip={'Active foe'}>{activeFoe.name}</span
+			>
 		{/if}
 	</div>
 
@@ -950,33 +956,38 @@
 		flex-direction: column;
 		gap: 4px;
 		padding: 6px 10px 8px;
-		background: var(--bg-inset);
+		background: var(--bg-card);
 		border-top: 1px solid var(--border);
 		position: relative;
 		flex-shrink: 0;
 	}
 	.cb-context {
 		display: flex;
-		gap: 6px;
+		gap: 5px;
 		flex-wrap: wrap;
+		align-items: center;
 		min-height: 18px;
 	}
+	/* Canonical pill (docs/ui-components.md § Canonical Pill / Badge Style):
+	   uppercase, 0.6rem, currentColor-tinted border, no icons. Foe pill
+	   gets its nature color inline; character pill uses the accent color
+	   with the same translucent-tint pattern. */
 	.cb-chip {
 		font-family: var(--font-ui);
-		font-size: 0.68rem;
+		font-size: 0.6rem;
 		font-weight: 600;
-		padding: 2px 8px;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		padding: 2px 7px;
 		border-radius: 10px;
-		background: var(--bg-control);
-		border: 1px solid var(--border-mid);
-		color: var(--text-muted);
+		border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+		line-height: 1;
 		white-space: nowrap;
+		flex-shrink: 0;
 	}
 	.cb-chip-char {
+		background: color-mix(in srgb, var(--text-accent) 12%, transparent);
 		color: var(--text-accent);
-	}
-	.cb-chip-foe {
-		color: var(--color-danger, #ef4444);
 	}
 	.cb-row {
 		display: flex;
@@ -995,7 +1006,7 @@
 		padding: 6px 10px;
 		font-family: var(--font-ui);
 		font-size: 0.85rem;
-		background: var(--bg-control);
+		background: var(--bg-inset);
 		color: var(--text);
 		border: 1px solid var(--border-mid);
 		border-radius: 4px;
