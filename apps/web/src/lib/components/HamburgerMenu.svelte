@@ -136,7 +136,7 @@
 							{ value: 'stories', label: 'Stories' },
 							{ value: 'communities', label: 'Connections' },
 							{ value: 'expeditions', label: 'Expeditions' },
-							{ value: 'map', label: 'Campaign Map' },
+							{ value: 'map', label: 'Active Map' },
 						]}
 						onchange={(v) => {
 							// Stories are markdown-only. Log is JSON-or-Markdown. Map

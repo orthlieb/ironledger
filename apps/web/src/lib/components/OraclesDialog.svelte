@@ -182,10 +182,13 @@
 			onOpenAutoFocus={(e) => {
 				// In picker view, jump the caret straight to the search
 				// input; detail view keeps default focus (Back/Roll button).
-				if (view === 'picker') {
-					e.preventDefault();
-					searchInputEl?.focus();
-				}
+				// setTimeout so bits-ui's own focus-move + the {#if view === 'picker'}
+				// subtree mount have both settled before we grab focus. Without
+				// this the ref may still be null and focus lands on the ✕
+				// button instead.
+				if (view !== 'picker') return;
+				e.preventDefault();
+				setTimeout(() => searchInputEl?.focus(), 0);
 			}}
 		>
 			{#if view === 'picker'}
