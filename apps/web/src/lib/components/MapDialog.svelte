@@ -56,7 +56,7 @@
 	import iconZoomOutSvg from '$icons/magnifying-glass-minus-solid-full.svg?raw';
 	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
 	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
-	import { Popover, Command } from 'bits-ui';
+	import { Dialog, Popover, Command } from 'bits-ui';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
 	// Shared kind metadata (colour, icon, label). Same source of truth
 	// the Connections rail + Expeditions spines will read from once
@@ -111,9 +111,20 @@
 	// user would get two PNGs downloaded per click.
 	const _exportClaim: { owner: unknown } = { owner: null };
 
-	let dialogEl = $state<HTMLDialogElement | null>(null);
+	// bits-ui Dialog open flag + Content ref. The ref is needed for:
+	//   - the sizing $effect (ResizeObserver + inline style.width/height)
+	//   - Pickr's `container` option (colour-picker popover anchor)
+	//   - the keyboard handler's "is the dialog actually open?" guard
+	// bits-ui exposes `bind:ref` on `Dialog.Content` for exactly this.
+	let dialogOpen = $state(false);
+	let dialogEl = $state<HTMLElement | null>(null);
 	let optionsDialogRef = $state<{ open(): void; close(): void } | null>(null);
-	let iconDialogEl = $state<HTMLDialogElement | null>(null);
+	// Icon-picker sub-dialog — bits-ui Dialog too. `iconSearchInputEl`
+	// is refocused explicitly on every open (autofocus attribute only
+	// fires on first mount, but bits-ui Content unmounts on close so
+	// each re-open is a fresh mount — kept the explicit focus anyway
+	// for defence in depth).
+	let iconDialogOpen = $state(false);
 	// Bound to the icon picker's search input so `openIconPicker` can
 	// focus it explicitly on every open. HTML `autofocus` on the input
 	// alone only fires the first time the input mounts — this dialog
@@ -184,7 +195,7 @@
 	 *  a user-gesture-scoped click. `promptUpload` on the target is
 	 *  accepted but ignored; the CTA is always available. */
 	export function open(target?: { mapId?: string; markerId?: string; promptUpload?: boolean }) {
-		dialogEl?.showModal();
+		dialogOpen = true;
 		void initMap().then(async () => {
 			if (target?.mapId && target.mapId !== mapState.activeId) {
 				await switchMap(target.mapId);
@@ -195,7 +206,7 @@
 		});
 	}
 	export function close() {
-		dialogEl?.close();
+		dialogOpen = false;
 	}
 
 	let svgEl = $state<SVGSVGElement | null>(null);
@@ -1115,7 +1126,7 @@
 	 *  parent. */
 	$effect(() => {
 		const handler = (ev: KeyboardEvent) => {
-			if (!dialogEl?.open) return;
+			if (!dialogOpen) return;
 			if (ev.key === 'Escape' && pilePicker) {
 				ev.preventDefault();
 				ev.stopPropagation();
@@ -1139,13 +1150,13 @@
 	function openIconPicker() {
 		if (!selectedMarker) return;
 		iconSearch = '';
-		iconDialogEl?.showModal();
-		// requestAnimationFrame — showModal() moves focus itself; wait
-		// one frame so our explicit focus wins.
-		requestAnimationFrame(() => iconSearchInputEl?.focus());
+		iconDialogOpen = true;
+		// Focus lands on the search input via `onOpenAutoFocus` on
+		// Dialog.Content — no manual rAF needed now that bits-ui
+		// unmounts/remounts Content on each open.
 	}
 	function closeIconPicker() {
-		iconDialogEl?.close();
+		iconDialogOpen = false;
 	}
 	function pickIcon(key: string) {
 		if (!selectedMarker) {
@@ -1232,427 +1243,463 @@
 	const snapRes = $derived(snapResolutionForZoom(zoom));
 </script>
 
-<dialog bind:this={dialogEl} class="mp-dialog" oncancel={close}>
-	<DialogHeader title={headingText('Campaign Map')} onclose={close} />
+<Dialog.Root bind:open={dialogOpen}>
+	<Dialog.Portal>
+		<Dialog.Overlay class="mp-overlay" />
+		<Dialog.Content bind:ref={dialogEl} class="mp-dialog">
+			<DialogHeader title={headingText('Campaign Map')} onclose={close} />
 
-	<div class="mp-toolbar">
-		<div class="mp-tools">
-			<!-- Map switcher — shadcn-style combobox (Popover + Command).
+			<div class="mp-toolbar">
+				<div class="mp-tools">
+					<!-- Map switcher — shadcn-style combobox (Popover + Command).
 			     Same visual + interaction as the marker link picker so
 			     the two chips on the dialog stay consistent. -->
-			<Popover.Root bind:open={mapPickerOpen}>
-				<Popover.Trigger
-					class="mp-combobox mp-picker-btn"
-					aria-label="Switch, create, or manage maps"
-				>
-					<span class="mp-combobox-value">{mapState.name || 'Map'}</span>
-					<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
-				</Popover.Trigger>
-				<Popover.Portal to={dialogEl ?? undefined}>
-					<Popover.Content class="mp-cmd-popover" sideOffset={4} align="start" collisionPadding={8}>
-						<Command.Root class="mp-cmd">
-							<div class="mp-cmd-search-row">
-								<span class="mp-cmd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
-								<Command.Input class="mp-cmd-search" placeholder="Search maps…" autofocus />
-							</div>
-							<Command.List class="mp-cmd-list">
-								<Command.Empty class="mp-cmd-empty">No matching maps.</Command.Empty>
-								{#each mapListState.maps as m (m.id)}
-									<Command.Item class="mp-cmd-item" value={m.name} onSelect={() => pickMap(m.id)}>
-										<span class="mp-cmd-check" aria-hidden="true">
-											{#if m.id === mapState.activeId}
-												<svg
-													viewBox="0 0 20 20"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2.5"
-													><polyline
-														points="4 11 8 15 16 6"
-														stroke-linecap="round"
-														stroke-linejoin="round"
-													></polyline></svg
-												>
-											{/if}
-										</span>
-										<span class="mp-cmd-item-name">{m.name}</span>
-									</Command.Item>
-								{/each}
-								{#if mapListState.maps.length > 0}
-									<Command.Separator class="mp-cmd-sep" />
-								{/if}
-								<Command.Item
-									class="mp-cmd-item mp-cmd-item--action"
-									value="+ New map"
-									onSelect={pickNewMap}
-								>
-									<span class="mp-cmd-check" aria-hidden="true"></span>
-									<span class="mp-cmd-item-name">+ New map…</span>
-								</Command.Item>
-							</Command.List>
-						</Command.Root>
-					</Popover.Content>
-				</Popover.Portal>
-			</Popover.Root>
-			<button
-				class="mp-btn mp-btn-add"
-				class:mp-btn-add-active={placingMode}
-				onclick={addMarkerAction}
-				use:tooltip={selectedSquare
-					? 'Add a marker on the selected square'
-					: 'Add a marker — click a square first, or click this then a square'}
-				aria-pressed={placingMode}
-				aria-label="Add marker">+ Marker</button
-			>
-			<div class="mp-zoom" role="group" aria-label="Zoom controls">
-				<button
-					class="mp-btn mp-btn-icon"
-					onclick={zoomOut}
-					disabled={zoom <= MIN_ZOOM}
-					use:tooltip={`Zoom out (Ctrl/Cmd + wheel) — currently ${Math.round(zoom * 100)}%`}
-					aria-label="Zoom out">{@html iconZoomOutSvg}</button
-				>
-				<button
-					class="mp-btn mp-btn-icon"
-					onclick={zoomIn}
-					disabled={zoom >= MAX_ZOOM}
-					use:tooltip={`Zoom in (Ctrl/Cmd + wheel) — currently ${Math.round(zoom * 100)}%`}
-					aria-label="Zoom in">{@html iconZoomInSvg}</button
-				>
-				<button
-					class="mp-btn mp-btn-icon"
-					onclick={zoomFit}
-					disabled={zoom === 1}
-					use:tooltip={'Fit map to view (100%)'}
-					aria-label="Fit to view">{@html iconExpandSvg}</button
-				>
+					<Popover.Root bind:open={mapPickerOpen}>
+						<Popover.Trigger
+							class="mp-combobox mp-picker-btn"
+							aria-label="Switch, create, or manage maps"
+						>
+							<span class="mp-combobox-value">{mapState.name || 'Map'}</span>
+							<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
+						</Popover.Trigger>
+						<Popover.Portal>
+							<Popover.Content
+								class="mp-cmd-popover"
+								sideOffset={4}
+								align="start"
+								collisionPadding={8}
+							>
+								<Command.Root class="mp-cmd">
+									<div class="mp-cmd-search-row">
+										<span class="mp-cmd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
+										<Command.Input class="mp-cmd-search" placeholder="Search maps…" autofocus />
+									</div>
+									<Command.List class="mp-cmd-list">
+										<Command.Empty class="mp-cmd-empty">No matching maps.</Command.Empty>
+										{#each mapListState.maps as m (m.id)}
+											<Command.Item
+												class="mp-cmd-item"
+												value={m.name}
+												onSelect={() => pickMap(m.id)}
+											>
+												<span class="mp-cmd-check" aria-hidden="true">
+													{#if m.id === mapState.activeId}
+														<svg
+															viewBox="0 0 20 20"
+															fill="none"
+															stroke="currentColor"
+															stroke-width="2.5"
+															><polyline
+																points="4 11 8 15 16 6"
+																stroke-linecap="round"
+																stroke-linejoin="round"
+															></polyline></svg
+														>
+													{/if}
+												</span>
+												<span class="mp-cmd-item-name">{m.name}</span>
+											</Command.Item>
+										{/each}
+										{#if mapListState.maps.length > 0}
+											<Command.Separator class="mp-cmd-sep" />
+										{/if}
+										<Command.Item
+											class="mp-cmd-item mp-cmd-item--action"
+											value="+ New map"
+											onSelect={pickNewMap}
+										>
+											<span class="mp-cmd-check" aria-hidden="true"></span>
+											<span class="mp-cmd-item-name">+ New map…</span>
+										</Command.Item>
+									</Command.List>
+								</Command.Root>
+							</Popover.Content>
+						</Popover.Portal>
+					</Popover.Root>
+					<button
+						class="mp-btn mp-btn-add"
+						class:mp-btn-add-active={placingMode}
+						onclick={addMarkerAction}
+						use:tooltip={selectedSquare
+							? 'Add a marker on the selected square'
+							: 'Add a marker — click a square first, or click this then a square'}
+						aria-pressed={placingMode}
+						aria-label="Add marker">+ Marker</button
+					>
+					<div class="mp-zoom" role="group" aria-label="Zoom controls">
+						<button
+							class="mp-btn mp-btn-icon"
+							onclick={zoomOut}
+							disabled={zoom <= MIN_ZOOM}
+							use:tooltip={`Zoom out (Ctrl/Cmd + wheel) — currently ${Math.round(zoom * 100)}%`}
+							aria-label="Zoom out">{@html iconZoomOutSvg}</button
+						>
+						<button
+							class="mp-btn mp-btn-icon"
+							onclick={zoomIn}
+							disabled={zoom >= MAX_ZOOM}
+							use:tooltip={`Zoom in (Ctrl/Cmd + wheel) — currently ${Math.round(zoom * 100)}%`}
+							aria-label="Zoom in">{@html iconZoomInSvg}</button
+						>
+						<button
+							class="mp-btn mp-btn-icon"
+							onclick={zoomFit}
+							disabled={zoom === 1}
+							use:tooltip={'Fit map to view (100%)'}
+							aria-label="Fit to view">{@html iconExpandSvg}</button
+						>
+					</div>
+				</div>
+				<div class="mp-tools">
+					<button
+						class="mp-btn mp-btn-icon mp-btn-gear"
+						onclick={() => optionsDialogRef?.open()}
+						use:tooltip={'Map options — names, grid, scale bar, danger zone'}
+						aria-label="Map options">{@html iconGearSvg}</button
+					>
+				</div>
+				<input
+					bind:this={fileInputEl}
+					type="file"
+					accept="image/*"
+					hidden
+					onchange={handleFileChosen}
+				/>
 			</div>
-		</div>
-		<div class="mp-tools">
-			<button
-				class="mp-btn mp-btn-icon mp-btn-gear"
-				onclick={() => optionsDialogRef?.open()}
-				use:tooltip={'Map options — names, grid, scale bar, danger zone'}
-				aria-label="Map options">{@html iconGearSvg}</button
-			>
-		</div>
-		<input
-			bind:this={fileInputEl}
-			type="file"
-			accept="image/*"
-			hidden
-			onchange={handleFileChosen}
-		/>
-	</div>
 
-	<!--
+			<!--
 		Selection toolbar. Sits above the map so it never scrolls off. Renders
 		a hint when nothing is selected; switches to the marker's editable
 		fields on click. Every input auto-saves via updateMarker() so there
 		is no Save/Cancel — the marker is the working copy.
 	-->
-	<div class="mp-sel-toolbar" class:mp-sel-empty={!selectedMarker}>
-		{#if selectedMarker}
-			<span class="mp-sel-coord" title="Position ({selectedMarker.x}, {selectedMarker.y})"
-				>({fmtCoord(selectedMarker.x)}, {fmtCoord(selectedMarker.y)})</span
-			>
-			<input
-				class="mp-sel-name"
-				type="text"
-				placeholder="Marker name…"
-				value={selectedMarker.label}
-				oninput={onLabelInput}
-				use:tooltip={'Name shown under the icon (or centred on the point when no icon is chosen)'}
-			/>
-			<button
-				class="mp-sel-icon-btn"
-				onclick={openIconPicker}
-				use:tooltip={'Change icon'}
-				aria-label="Change icon"
-			>
-				{#if selectedIcon}
-					<svg viewBox={selectedIcon.viewBox} aria-hidden="true">
-						<g fill={selectedColor}>{@html selectedIcon.inner}</g>
-					</svg>
-					<span class="mp-sel-icon-label">{selectedIcon.label}</span>
-				{:else}
-					<span class="mp-sel-icon-none" aria-hidden="true">Aa</span>
-					<span class="mp-sel-icon-label">No icon</span>
-				{/if}
-			</button>
-			<!-- Pickr colour widget — the native macOS/Windows `<input
+			<div class="mp-sel-toolbar" class:mp-sel-empty={!selectedMarker}>
+				{#if selectedMarker}
+					<span class="mp-sel-coord" title="Position ({selectedMarker.x}, {selectedMarker.y})"
+						>({fmtCoord(selectedMarker.x)}, {fmtCoord(selectedMarker.y)})</span
+					>
+					<input
+						class="mp-sel-name"
+						type="text"
+						placeholder="Marker name…"
+						value={selectedMarker.label}
+						oninput={onLabelInput}
+						use:tooltip={'Name shown under the icon (or centred on the point when no icon is chosen)'}
+					/>
+					<button
+						class="mp-sel-icon-btn"
+						onclick={openIconPicker}
+						use:tooltip={'Change icon'}
+						aria-label="Change icon"
+					>
+						{#if selectedIcon}
+							<svg viewBox={selectedIcon.viewBox} aria-hidden="true">
+								<g fill={selectedColor}>{@html selectedIcon.inner}</g>
+							</svg>
+							<span class="mp-sel-icon-label">{selectedIcon.label}</span>
+						{:else}
+							<span class="mp-sel-icon-none" aria-hidden="true">Aa</span>
+							<span class="mp-sel-icon-label">No icon</span>
+						{/if}
+					</button>
+					<!-- Pickr colour widget — the native macOS/Windows `<input
 			     type="color">` opens a heavy OS dialog that eats the
 			     screen. Pickr is a self-contained JS wheel + swatches
 			     that lives in-page. The `<div>` is a stub anchor;
 			     Pickr replaces it with its own button chip that shows
 			     the current colour and pops the wheel on click. -->
-			<div
-				class="mp-sel-color"
-				bind:this={pickrAnchor}
-				use:tooltip={'Icon colour — click to open the picker'}
-			></div>
-			<!-- Angle spinner — explicit − / + buttons flank the number
+					<div
+						class="mp-sel-color"
+						bind:this={pickrAnchor}
+						use:tooltip={'Icon colour — click to open the picker'}
+					></div>
+					<!-- Angle spinner — explicit − / + buttons flank the number
 			     input because iOS Safari doesn't render the native
 			     <input type="number"> step arrows, so touch users would
 			     otherwise be stuck typing. Bare wheel/keyboard step still
 			     works on desktop via the input itself. Uses degree symbol
 			     as the label so a narrow toolbar still fits. -->
-			<div class="mp-sel-angle" role="group" aria-label="Marker rotation">
-				<button
-					type="button"
-					class="mp-sel-angle-step"
-					onclick={() => stepAngle(-15)}
-					use:tooltip={'Rotate 15° counter-clockwise'}
-					aria-label="Rotate counter-clockwise">−</button
-				>
-				<label class="mp-sel-angle-field" use:tooltip={'Rotation in degrees (0 = up, clockwise)'}>
-					<span class="mp-sel-angle-glyph" aria-hidden="true">∠</span>
-					<input
-						class="mp-sel-angle-input"
-						type="number"
-						min="0"
-						max="359"
-						step="15"
-						value={selectedAngle}
-						oninput={onAngleInput}
-						aria-label="Marker rotation in degrees"
-					/>
-					<span class="mp-sel-angle-unit" aria-hidden="true">°</span>
-				</label>
-				<button
-					type="button"
-					class="mp-sel-angle-step"
-					onclick={() => stepAngle(15)}
-					use:tooltip={'Rotate 15° clockwise'}
-					aria-label="Rotate clockwise">+</button
-				>
-			</div>
-			{@const currentLink = resolveEntity(selectedMarker.entityId)}
-			<!-- Shadcn-style combobox: trigger is a button styled as a
+					<div class="mp-sel-angle" role="group" aria-label="Marker rotation">
+						<button
+							type="button"
+							class="mp-sel-angle-step"
+							onclick={() => stepAngle(-15)}
+							use:tooltip={'Rotate 15° counter-clockwise'}
+							aria-label="Rotate counter-clockwise">−</button
+						>
+						<label
+							class="mp-sel-angle-field"
+							use:tooltip={'Rotation in degrees (0 = up, clockwise)'}
+						>
+							<span class="mp-sel-angle-glyph" aria-hidden="true">∠</span>
+							<input
+								class="mp-sel-angle-input"
+								type="number"
+								min="0"
+								max="359"
+								step="15"
+								value={selectedAngle}
+								oninput={onAngleInput}
+								aria-label="Marker rotation in degrees"
+							/>
+							<span class="mp-sel-angle-unit" aria-hidden="true">°</span>
+						</label>
+						<button
+							type="button"
+							class="mp-sel-angle-step"
+							onclick={() => stepAngle(15)}
+							use:tooltip={'Rotate 15° clockwise'}
+							aria-label="Rotate clockwise">+</button
+						>
+					</div>
+					{@const currentLink = resolveEntity(selectedMarker.entityId)}
+					<!-- Shadcn-style combobox: trigger is a button styled as a
 			     text field, popover contains its own search input +
 			     filtered list. Kind icon of the linked entity floats
 			     as a prefix inside the trigger. -->
-			<Popover.Root bind:open={entityPickerOpen}>
-				<Popover.Trigger
-					class="mp-combobox mp-sel-entity-btn"
-					aria-label="Link marker to a connection"
-				>
-					{#if selectedMarker.entityId && currentLink}
-						<span
-							class="mp-sel-entity-icon"
-							aria-hidden="true"
-							style="--kind-color: {ENTITY_KIND_META[currentLink.kind].color}"
-							>{@html ENTITY_KIND_META[currentLink.kind].icon}</span
+					<Popover.Root bind:open={entityPickerOpen}>
+						<Popover.Trigger
+							class="mp-combobox mp-sel-entity-btn"
+							aria-label="Link marker to a connection"
 						>
-						<span class="mp-combobox-value">{currentLink.name}</span>
-					{:else if selectedMarker.entityId}
-						<span class="mp-combobox-value mp-combobox-value--placeholder">Broken link</span>
-					{:else}
-						<span class="mp-combobox-value mp-combobox-value--placeholder">— No link —</span>
-					{/if}
-					<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
-				</Popover.Trigger>
-				<Popover.Portal to={dialogEl ?? undefined}>
-					<Popover.Content class="mp-cmd-popover" sideOffset={4} align="start" collisionPadding={8}>
-						<Command.Root class="mp-cmd">
-							<div class="mp-cmd-search-row">
-								<span class="mp-cmd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
-								<Command.Input class="mp-cmd-search" placeholder="Search connections…" autofocus />
-							</div>
-							<Command.List class="mp-cmd-list">
-								<Command.Empty class="mp-cmd-empty">No matching connections.</Command.Empty>
-								<Command.Item class="mp-cmd-item" value="No link" onSelect={() => pickEntity('')}>
-									<span class="mp-cmd-check" aria-hidden="true">
-										{#if !selectedMarker.entityId}
-											<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5"
-												><polyline
-													points="4 11 8 15 16 6"
-													stroke-linecap="round"
-													stroke-linejoin="round"
-												></polyline></svg
-											>
-										{/if}
-									</span>
-									<span class="mp-cmd-item-name mp-cmd-item-name--muted">— No link —</span>
-								</Command.Item>
-								{#each sortedLinkableEntities as e (`${e.kind}:${e.id}`)}
-									{@const val = `${e.kind}:${e.id}`}
-									{@const meta = KIND_META[e.kind]}
-									<Command.Item class="mp-cmd-item" value={e.name} onSelect={() => pickEntity(val)}>
-										<span class="mp-cmd-check" aria-hidden="true">
-											{#if selectedMarker.entityId === val}
-												<svg
-													viewBox="0 0 20 20"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2.5"
-													><polyline
-														points="4 11 8 15 16 6"
-														stroke-linecap="round"
-														stroke-linejoin="round"
-													></polyline></svg
-												>
-											{/if}
-										</span>
-										<span
-											class="mp-cmd-item-icon"
-											aria-hidden="true"
-											style="--kind-color: {meta.color}">{@html meta.icon}</span
+							{#if selectedMarker.entityId && currentLink}
+								<span
+									class="mp-sel-entity-icon"
+									aria-hidden="true"
+									style="--kind-color: {ENTITY_KIND_META[currentLink.kind].color}"
+									>{@html ENTITY_KIND_META[currentLink.kind].icon}</span
+								>
+								<span class="mp-combobox-value">{currentLink.name}</span>
+							{:else if selectedMarker.entityId}
+								<span class="mp-combobox-value mp-combobox-value--placeholder">Broken link</span>
+							{:else}
+								<span class="mp-combobox-value mp-combobox-value--placeholder">— No link —</span>
+							{/if}
+							<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
+						</Popover.Trigger>
+						<Popover.Portal>
+							<Popover.Content
+								class="mp-cmd-popover"
+								sideOffset={4}
+								align="start"
+								collisionPadding={8}
+							>
+								<Command.Root class="mp-cmd">
+									<div class="mp-cmd-search-row">
+										<span class="mp-cmd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
+										<Command.Input
+											class="mp-cmd-search"
+											placeholder="Search connections…"
+											autofocus
+										/>
+									</div>
+									<Command.List class="mp-cmd-list">
+										<Command.Empty class="mp-cmd-empty">No matching connections.</Command.Empty>
+										<Command.Item
+											class="mp-cmd-item"
+											value="No link"
+											onSelect={() => pickEntity('')}
 										>
-										<span class="mp-cmd-item-name">{e.name}</span>
-									</Command.Item>
-								{/each}
-							</Command.List>
-						</Command.Root>
-					</Popover.Content>
-				</Popover.Portal>
-			</Popover.Root>
-			<button
-				class="mp-btn mp-btn-danger mp-btn-icon"
-				onclick={deleteSelected}
-				use:tooltip={'Delete this marker'}
-				aria-label="Delete marker">{@html iconTrashSvg}</button
-			>
-			<button
-				class="mp-btn"
-				onclick={clearSelection}
-				use:tooltip={'Deselect and close the editor'}
-				aria-label="Close editor">Done</button
-			>
-		{:else if placingMode}
-			<span class="mp-sel-hint mp-sel-hint-active"
-				>Click the map to place a marker. Snap {snapRes === 1
-					? 'to cells'
-					: `to 1/${1 / snapRes}-cell`} — zoom in for finer placement.</span
-			>
-			<button
-				class="mp-btn"
-				onclick={cancelPlacing}
-				use:tooltip={'Exit placing mode without adding a marker'}>Cancel</button
-			>
-		{:else if selectedSquare}
-			<span class="mp-sel-hint mp-sel-hint-active">
-				Square selected — hit <strong>+ Marker</strong> to drop a marker here.
-			</span>
-			<button
-				class="mp-btn"
-				onclick={clearSquareSelection}
-				use:tooltip={'Clear the selected square'}>Cancel</button
-			>
-		{:else}
-			<span class="mp-sel-hint">
-				Click a square, then <strong>+ Marker</strong>. Tap a linked marker to jump; shift-click
-				(desktop) or long-press (touch) to edit instead.
-			</span>
-		{/if}
-	</div>
+											<span class="mp-cmd-check" aria-hidden="true">
+												{#if !selectedMarker.entityId}
+													<svg
+														viewBox="0 0 20 20"
+														fill="none"
+														stroke="currentColor"
+														stroke-width="2.5"
+														><polyline
+															points="4 11 8 15 16 6"
+															stroke-linecap="round"
+															stroke-linejoin="round"
+														></polyline></svg
+													>
+												{/if}
+											</span>
+											<span class="mp-cmd-item-name mp-cmd-item-name--muted">— No link —</span>
+										</Command.Item>
+										{#each sortedLinkableEntities as e (`${e.kind}:${e.id}`)}
+											{@const val = `${e.kind}:${e.id}`}
+											{@const meta = KIND_META[e.kind]}
+											<Command.Item
+												class="mp-cmd-item"
+												value={e.name}
+												onSelect={() => pickEntity(val)}
+											>
+												<span class="mp-cmd-check" aria-hidden="true">
+													{#if selectedMarker.entityId === val}
+														<svg
+															viewBox="0 0 20 20"
+															fill="none"
+															stroke="currentColor"
+															stroke-width="2.5"
+															><polyline
+																points="4 11 8 15 16 6"
+																stroke-linecap="round"
+																stroke-linejoin="round"
+															></polyline></svg
+														>
+													{/if}
+												</span>
+												<span
+													class="mp-cmd-item-icon"
+													aria-hidden="true"
+													style="--kind-color: {meta.color}">{@html meta.icon}</span
+												>
+												<span class="mp-cmd-item-name">{e.name}</span>
+											</Command.Item>
+										{/each}
+									</Command.List>
+								</Command.Root>
+							</Popover.Content>
+						</Popover.Portal>
+					</Popover.Root>
+					<button
+						class="mp-btn mp-btn-danger mp-btn-icon"
+						onclick={deleteSelected}
+						use:tooltip={'Delete this marker'}
+						aria-label="Delete marker">{@html iconTrashSvg}</button
+					>
+					<button
+						class="mp-btn"
+						onclick={clearSelection}
+						use:tooltip={'Deselect and close the editor'}
+						aria-label="Close editor">Done</button
+					>
+				{:else if placingMode}
+					<span class="mp-sel-hint mp-sel-hint-active"
+						>Click the map to place a marker. Snap {snapRes === 1
+							? 'to cells'
+							: `to 1/${1 / snapRes}-cell`} — zoom in for finer placement.</span
+					>
+					<button
+						class="mp-btn"
+						onclick={cancelPlacing}
+						use:tooltip={'Exit placing mode without adding a marker'}>Cancel</button
+					>
+				{:else if selectedSquare}
+					<span class="mp-sel-hint mp-sel-hint-active">
+						Square selected — hit <strong>+ Marker</strong> to drop a marker here.
+					</span>
+					<button
+						class="mp-btn"
+						onclick={clearSquareSelection}
+						use:tooltip={'Clear the selected square'}>Cancel</button
+					>
+				{:else}
+					<span class="mp-sel-hint">
+						Click a square, then <strong>+ Marker</strong>. Tap a linked marker to jump; shift-click
+						(desktop) or long-press (touch) to edit instead.
+					</span>
+				{/if}
+			</div>
 
-	{#if uploadError}
-		<div class="mp-error">{uploadError}</div>
-	{/if}
+			{#if uploadError}
+				<div class="mp-error">{uploadError}</div>
+			{/if}
 
-	{#if selectedMarker && selectedMarker.entityId && !resolveEntity(selectedMarker.entityId)}
-		<div class="mp-warn">
-			Linked entity was deleted — pick a new one from the dropdown or clear the link.
-		</div>
-	{/if}
+			{#if selectedMarker && selectedMarker.entityId && !resolveEntity(selectedMarker.entityId)}
+				<div class="mp-warn">
+					Linked entity was deleted — pick a new one from the dropdown or clear the link.
+				</div>
+			{/if}
 
-	<!-- Body fills the dialog width; the JS sizing effect above
+			<!-- Body fills the dialog width; the JS sizing effect above
 	     already picked the dialog dims so `IW = dialog width` and
 	     `IH = dialog height − AHH`. `aspect-ratio` on the body is
 	     redundant but harmless — it keeps square grid cells even if
 	     a race briefly leaves the dialog un-sized. -->
-	<div class="mp-body" style="aspect-ratio: {gridDims.cols} / {gridDims.rows};">
-		<!-- Wheel listener is attached manually with `passive: false` in a
+			<div class="mp-body" style="aspect-ratio: {gridDims.cols} / {gridDims.rows};">
+				<!-- Wheel listener is attached manually with `passive: false` in a
 		     $effect above so trackpad-pinch (ctrl+wheel) is preventable. -->
-		<div class="mp-canvas" bind:this={canvasEl} onscroll={onScroll}>
-			<!--
+				<div class="mp-canvas" bind:this={canvasEl} onscroll={onScroll}>
+					<!--
 				viewBox is world-unit space (0 0 cols rows). SVG rendered
 				width/height = canvasPxW/H × zoom, so when zoom > 1 the SVG
 				grows past the canvas and .mp-canvas's overflow: auto handles
 				the pan. Canvas body's aspect-ratio matches gridDims exactly,
 				so cells render perfectly square with no letterbox at zoom 1.
 			-->
-			<svg
-				bind:this={svgEl}
-				width={svgWidth}
-				height={svgHeight}
-				viewBox="0 0 {gridDims.cols} {gridDims.rows}"
-				preserveAspectRatio="none"
-				aria-label="Campaign map"
-			>
-				{#if mapState.backgroundHash}
-					<!-- Placeholder surface: a faint parchment fill + centred
+					<svg
+						bind:this={svgEl}
+						width={svgWidth}
+						height={svgHeight}
+						viewBox="0 0 {gridDims.cols} {gridDims.rows}"
+						preserveAspectRatio="none"
+						aria-label="Campaign map"
+					>
+						{#if mapState.backgroundHash}
+							<!-- Placeholder surface: a faint parchment fill + centred
 					     "Loading map…" label that shows while the (possibly
 					     multi-MB) background bytes are in flight. The real
 					     `<image>` renders on top with `opacity: 0` until its
 					     `onload` fires, then swaps in — the placeholder
 					     stays underneath and is simply covered. -->
-					{#if !backgroundLoaded}
-						<rect
-							class="mp-bg-placeholder"
-							x="0"
-							y="0"
-							width={gridDims.cols}
-							height={gridDims.rows}
-						/>
-						<text
-							class="mp-bg-placeholder-text"
-							x={gridDims.cols / 2}
-							y={gridDims.rows / 2}
-							text-anchor="middle"
-							dominant-baseline="central">Loading map…</text
-						>
-					{/if}
-					<image
-						class="mp-bg-image"
-						class:mp-bg-image-loaded={backgroundLoaded}
-						x="0"
-						y="0"
-						width={gridDims.cols}
-						height={gridDims.rows}
-						href={currentBackgroundUrl}
-						preserveAspectRatio="none"
-						aria-hidden="true"
-						onload={() => (loadedBackgroundUrl = currentBackgroundUrl)}
-						onerror={() => (mapState.backgroundHash = '')}
-					/>
-				{/if}
+							{#if !backgroundLoaded}
+								<rect
+									class="mp-bg-placeholder"
+									x="0"
+									y="0"
+									width={gridDims.cols}
+									height={gridDims.rows}
+								/>
+								<text
+									class="mp-bg-placeholder-text"
+									x={gridDims.cols / 2}
+									y={gridDims.rows / 2}
+									text-anchor="middle"
+									dominant-baseline="central">Loading map…</text
+								>
+							{/if}
+							<image
+								class="mp-bg-image"
+								class:mp-bg-image-loaded={backgroundLoaded}
+								x="0"
+								y="0"
+								width={gridDims.cols}
+								height={gridDims.rows}
+								href={currentBackgroundUrl}
+								preserveAspectRatio="none"
+								aria-hidden="true"
+								onload={() => (loadedBackgroundUrl = currentBackgroundUrl)}
+								onerror={() => (mapState.backgroundHash = '')}
+							/>
+						{/if}
 
-				<!--
+						<!--
 					Grid lines. Major = integer offsets (base cells); minor =
 					sub-octave subdivisions revealed by zoom. Non-scaling
 					stroke keeps them a consistent screen weight at any zoom.
 				-->
-				<g
-					class="mp-grid-layer"
-					class:mp-grid-layer-hidden={!mapSettings.grid.visible}
-					stroke-opacity={mapSettings.grid.opacity}
-				>
-					{#each vLines as x (`v-${x}`)}
-						<line
-							class="mp-grid-line"
-							class:mp-grid-major={isMajorLine(x)}
-							x1={x}
-							y1={0}
-							x2={x}
-							y2={gridDims.rows}
-							vector-effect="non-scaling-stroke"
-						/>
-					{/each}
-					{#each hLines as y (`h-${y}`)}
-						<line
-							class="mp-grid-line"
-							class:mp-grid-major={isMajorLine(y)}
-							x1={0}
-							y1={y}
-							x2={gridDims.cols}
-							y2={y}
-							vector-effect="non-scaling-stroke"
-						/>
-					{/each}
-				</g>
+						<g
+							class="mp-grid-layer"
+							class:mp-grid-layer-hidden={!mapSettings.grid.visible}
+							stroke-opacity={mapSettings.grid.opacity}
+						>
+							{#each vLines as x (`v-${x}`)}
+								<line
+									class="mp-grid-line"
+									class:mp-grid-major={isMajorLine(x)}
+									x1={x}
+									y1={0}
+									x2={x}
+									y2={gridDims.rows}
+									vector-effect="non-scaling-stroke"
+								/>
+							{/each}
+							{#each hLines as y (`h-${y}`)}
+								<line
+									class="mp-grid-line"
+									class:mp-grid-major={isMajorLine(y)}
+									x1={0}
+									y1={y}
+									x2={gridDims.cols}
+									y2={y}
+									vector-effect="non-scaling-stroke"
+								/>
+							{/each}
+						</g>
 
-				<!--
+						<!--
 					Single invisible click-capture rect covering the whole
 					viewBox. onGridClick unprojects the event to world coords,
 					snaps, and routes to place/select. Kept below the marker
@@ -1664,79 +1711,80 @@
 					snap point, and pointermove past the threshold engages
 					it (see onGridPointerDown).
 				-->
-				<!-- svelte-ignore a11y_click_events_have_key_events -->
-				<!-- svelte-ignore a11y_no_static_element_interactions -->
-				<rect
-					class="mp-grid-capture"
-					x="0"
-					y="0"
-					width={gridDims.cols}
-					height={gridDims.rows}
-					fill="transparent"
-					onclick={onGridClick}
-					onpointerdown={onGridPointerDown}
-					onpointermove={onGridPointerMove}
-					onpointerup={onGridPointerUp}
-					onpointercancel={onGridPointerUp}
-				/>
+						<!-- svelte-ignore a11y_click_events_have_key_events -->
+						<!-- svelte-ignore a11y_no_static_element_interactions -->
+						<rect
+							class="mp-grid-capture"
+							x="0"
+							y="0"
+							width={gridDims.cols}
+							height={gridDims.rows}
+							fill="transparent"
+							onclick={onGridClick}
+							onpointerdown={onGridPointerDown}
+							onpointermove={onGridPointerMove}
+							onpointerup={onGridPointerUp}
+							onpointercancel={onGridPointerUp}
+						/>
 
-				<!-- Drag preview crosshair — a small ring at the intersection
+						<!-- Drag preview crosshair — a small ring at the intersection
 				     the current drag will drop onto. Pure hint; markers'
 				     translate() already jumps them to this point live. -->
-				{#if dragPreview}
-					<circle
-						class="mp-drag-snap"
-						cx={dragPreview.x}
-						cy={dragPreview.y}
-						r="0.18"
-						vector-effect="non-scaling-stroke"
-					/>
-				{/if}
+						{#if dragPreview}
+							<circle
+								class="mp-drag-snap"
+								cx={dragPreview.x}
+								cy={dragPreview.y}
+								r="0.18"
+								vector-effect="non-scaling-stroke"
+							/>
+						{/if}
 
-				<!-- Selected empty square — the click-first target for
+						<!-- Selected empty square — the click-first target for
 				     "+ Marker" (and the same visual language a selected
 				     marker uses). Rendered before markers so any marker
 				     placed at the same spot draws on top. -->
-				{#if selectedSquare}
-					{@const cell = snapResolutionForZoom(zoom)}
-					<rect
-						class="mp-marker-selection"
-						x={selectedSquare.x - cell / 2}
-						y={selectedSquare.y - cell / 2}
-						width={cell}
-						height={cell}
-						vector-effect="non-scaling-stroke"
-					/>
-				{/if}
+						{#if selectedSquare}
+							{@const cell = snapResolutionForZoom(zoom)}
+							<rect
+								class="mp-marker-selection"
+								x={selectedSquare.x - cell / 2}
+								y={selectedSquare.y - cell / 2}
+								width={cell}
+								height={cell}
+								vector-effect="non-scaling-stroke"
+							/>
+						{/if}
 
-				{#each mapState.markers as m (m.id)}
-					{@const ic = resolveMapIcon(m.icon)}
-					{@const color = m.color || DEFAULT_MARKER_COLOR}
-					{@const isDragging = dragState?.id === m.id && dragState.moved && dragPreview !== null}
-					{@const mx = isDragging && dragPreview ? dragPreview.x : m.x}
-					{@const my = isDragging && dragPreview ? dragPreview.y : m.y}
-					{@const hasIcon = m.icon !== ''}
-					{@const isSelected = m.id === selectedMarkerId}
-					{@const rot = normalizeAngle(m.angle)}
-					{#if isSelected}
-						<!-- Selection outline — the sub-cell the marker snaps into
+						{#each mapState.markers as m (m.id)}
+							{@const ic = resolveMapIcon(m.icon)}
+							{@const color = m.color || DEFAULT_MARKER_COLOR}
+							{@const isDragging =
+								dragState?.id === m.id && dragState.moved && dragPreview !== null}
+							{@const mx = isDragging && dragPreview ? dragPreview.x : m.x}
+							{@const my = isDragging && dragPreview ? dragPreview.y : m.y}
+							{@const hasIcon = m.icon !== ''}
+							{@const isSelected = m.id === selectedMarkerId}
+							{@const rot = normalizeAngle(m.angle)}
+							{#if isSelected}
+								<!-- Selection outline — the sub-cell the marker snaps into
 						     at the current zoom (1 unit at 100%, ½ at 200%, ¼ at
 						     400%, …). Drawn in world coords so it sits on top of
 						     the grid where the marker actually lives; the icon's
 						     scale(1/zoom) group is separate so shrinking the icon
 						     doesn't also shrink the highlight. `non-scaling-stroke`
 						     keeps the outline a fixed screen weight at any zoom. -->
-						{@const cell = snapResolutionForZoom(zoom)}
-						<rect
-							class="mp-marker-selection"
-							x={mx - cell / 2}
-							y={my - cell / 2}
-							width={cell}
-							height={cell}
-							vector-effect="non-scaling-stroke"
-						/>
-					{/if}
-					<!--
+								{@const cell = snapResolutionForZoom(zoom)}
+								<rect
+									class="mp-marker-selection"
+									x={mx - cell / 2}
+									y={my - cell / 2}
+									width={cell}
+									height={cell}
+									vector-effect="non-scaling-stroke"
+								/>
+							{/if}
+							<!--
 						`scale(1/zoom)` keeps the whole marker (icon + label +
 						strokes) a constant on-screen size regardless of zoom —
 						children keep their world-unit sizes; the scale absorbs
@@ -1744,22 +1792,22 @@
 						label centres both axes on the point instead of hanging
 						below where the icon would be.
 					-->
-					<g
-						class="mp-marker"
-						class:mp-marker-selected={isSelected}
-						class:mp-marker-dragging={isDragging}
-						transform="translate({mx} {my}) scale({1 / zoom}) rotate({rot})"
-					>
-						{#if hasIcon && ic}
-							<svg
-								class="mp-marker-icon"
-								x={-ICON_SIZE / 2}
-								y={-ICON_SIZE / 2}
-								width={ICON_SIZE}
-								height={ICON_SIZE}
-								viewBox={ic.viewBox}
+							<g
+								class="mp-marker"
+								class:mp-marker-selected={isSelected}
+								class:mp-marker-dragging={isDragging}
+								transform="translate({mx} {my}) scale({1 / zoom}) rotate({rot})"
 							>
-								<!--
+								{#if hasIcon && ic}
+									<svg
+										class="mp-marker-icon"
+										x={-ICON_SIZE / 2}
+										y={-ICON_SIZE / 2}
+										width={ICON_SIZE}
+										height={ICON_SIZE}
+										viewBox={ic.viewBox}
+									>
+										<!--
 									paint-order="stroke" draws the white halo first,
 									fill on top — same trick the marker label text uses
 									so the icon stays readable over any background map.
@@ -1769,53 +1817,53 @@
 									the label halo. 2 px reads more crisply than 1 px
 									against complex map backgrounds.
 								-->
-								<g
-									fill={color}
-									stroke="#fff"
-									stroke-width="2"
-									stroke-linejoin="round"
-									paint-order="stroke"
-									vector-effect="non-scaling-stroke"
-								>
-									{@html ic.inner}
-								</g>
-							</svg>
-						{:else if hasIcon}
-							<!-- Legacy/broken slug: fall back to a plain dot so
+										<g
+											fill={color}
+											stroke="#fff"
+											stroke-width="2"
+											stroke-linejoin="round"
+											paint-order="stroke"
+											vector-effect="non-scaling-stroke"
+										>
+											{@html ic.inner}
+										</g>
+									</svg>
+								{:else if hasIcon}
+									<!-- Legacy/broken slug: fall back to a plain dot so
 							     the marker doesn't vanish. Non-scaling stroke +
 							     stroke-width 2 for the same halo weight everywhere. -->
-							<circle
-								r={ICON_SIZE / 2 - 0.04}
-								fill={color}
-								stroke="#fff"
-								stroke-width="2"
-								paint-order="stroke"
-								vector-effect="non-scaling-stroke"
-							/>
-						{/if}
-						{#if m.label}
-							{#if hasIcon}
-								<text
-									class="mp-marker-label"
-									fill={color}
-									vector-effect="non-scaling-stroke"
-									y={ICON_SIZE / 2 + LABEL_GAP}>{m.label}</text
-								>
-							{:else}
-								<text
-									class="mp-marker-label mp-marker-label--centered"
-									fill={color}
-									vector-effect="non-scaling-stroke"
-									y="0">{m.label}</text
-								>
-							{/if}
-						{/if}
-					</g>
-				{/each}
-			</svg>
-		</div>
+									<circle
+										r={ICON_SIZE / 2 - 0.04}
+										fill={color}
+										stroke="#fff"
+										stroke-width="2"
+										paint-order="stroke"
+										vector-effect="non-scaling-stroke"
+									/>
+								{/if}
+								{#if m.label}
+									{#if hasIcon}
+										<text
+											class="mp-marker-label"
+											fill={color}
+											vector-effect="non-scaling-stroke"
+											y={ICON_SIZE / 2 + LABEL_GAP}>{m.label}</text
+										>
+									{:else}
+										<text
+											class="mp-marker-label mp-marker-label--centered"
+											fill={color}
+											vector-effect="non-scaling-stroke"
+											y="0">{m.label}</text
+										>
+									{/if}
+								{/if}
+							</g>
+						{/each}
+					</svg>
+				</div>
 
-		<!--
+				<!--
 			Overlay SVG — floats above the canvas at fixed pixel dimensions
 			(canvasPxW × canvasPxH) so the scale bar stays visible +
 			constant-sized while the user pans and zooms the map underneath.
@@ -1823,58 +1871,62 @@
 			pointer-events: none passes clicks through to the click-capture
 			rect below.
 		-->
-		<svg
-			class="mp-overlay-svg"
-			width={canvasPxW}
-			height={canvasPxH}
-			viewBox="0 0 {canvasPxW} {canvasPxH}"
-			aria-hidden="true"
-		>
-			{#if overlayGeom.sbEnabled}
-				<g class="mp-scale" transform="translate({overlayGeom.sbX} {overlayGeom.sbY})">
-					{#each Array(overlayGeom.sbSegments) as _, i (`ss-${i}`)}
-						<rect
-							x={i * overlayGeom.sbSegW}
-							y="0"
-							width={overlayGeom.sbSegW}
-							height={overlayGeom.sbH}
-							fill={i % 2 === 0 ? '#111' : '#fff'}
-							stroke="#111"
-							stroke-width="0.75"
-						/>
-					{/each}
-					{#each Array(overlayGeom.sbSegments + 1) as _, i (`st-${i}`)}
-						<text class="mp-scale-tick" x={i * overlayGeom.sbSegW} y={-4} text-anchor="middle"
-							>{formatScaleTick(i * overlayGeom.sbPerSegment)}</text
-						>
-					{/each}
-					<text
-						class="mp-scale-unit"
-						x={overlayGeom.sbTotalW / 2}
-						y={overlayGeom.sbH + 12}
-						text-anchor="middle">{overlayGeom.sbUnit === 'miles' ? 'MILES' : 'KM'}</text
-					>
-				</g>
-			{/if}
-		</svg>
+				<svg
+					class="mp-overlay-svg"
+					width={canvasPxW}
+					height={canvasPxH}
+					viewBox="0 0 {canvasPxW} {canvasPxH}"
+					aria-hidden="true"
+				>
+					{#if overlayGeom.sbEnabled}
+						<g class="mp-scale" transform="translate({overlayGeom.sbX} {overlayGeom.sbY})">
+							{#each Array(overlayGeom.sbSegments) as _, i (`ss-${i}`)}
+								<rect
+									x={i * overlayGeom.sbSegW}
+									y="0"
+									width={overlayGeom.sbSegW}
+									height={overlayGeom.sbH}
+									fill={i % 2 === 0 ? '#111' : '#fff'}
+									stroke="#111"
+									stroke-width="0.75"
+								/>
+							{/each}
+							{#each Array(overlayGeom.sbSegments + 1) as _, i (`st-${i}`)}
+								<text class="mp-scale-tick" x={i * overlayGeom.sbSegW} y={-4} text-anchor="middle"
+									>{formatScaleTick(i * overlayGeom.sbPerSegment)}</text
+								>
+							{/each}
+							<text
+								class="mp-scale-unit"
+								x={overlayGeom.sbTotalW / 2}
+								y={overlayGeom.sbH + 12}
+								text-anchor="middle">{overlayGeom.sbUnit === 'miles' ? 'MILES' : 'KM'}</text
+							>
+						</g>
+					{/if}
+				</svg>
 
-		<!-- Empty-map call-to-action. Rendered when the active map has no
+				<!-- Empty-map call-to-action. Rendered when the active map has no
 		     background yet — a big centred button the user clicks to pick
 		     a picture. Kept as an HTML overlay (not SVG) so the click
 		     stays a real user gesture; `<input type=file>.click()` fired
 		     from anything else (setTimeout, promise callback, etc.) gets
 		     swallowed on iOS Safari. -->
-		{#if mapState.loaded && !mapState.backgroundHash}
-			<div class="mp-empty-cta">
-				<button class="mp-empty-cta-btn" onclick={triggerBackgroundUpload}>
-					<span class="mp-empty-cta-plus" aria-hidden="true">+</span>
-					<span class="mp-empty-cta-label">Add background image</span>
-				</button>
-				<p class="mp-empty-cta-hint">Pick a map picture to paint over — jpg / png, any aspect.</p>
+				{#if mapState.loaded && !mapState.backgroundHash}
+					<div class="mp-empty-cta">
+						<button class="mp-empty-cta-btn" onclick={triggerBackgroundUpload}>
+							<span class="mp-empty-cta-plus" aria-hidden="true">+</span>
+							<span class="mp-empty-cta-label">Add background image</span>
+						</button>
+						<p class="mp-empty-cta-hint">
+							Pick a map picture to paint over — jpg / png, any aspect.
+						</p>
+					</div>
+				{/if}
 			</div>
-		{/if}
-	</div>
-</dialog>
+		</Dialog.Content>
+	</Dialog.Portal>
+</Dialog.Root>
 
 <MapOptionsDialog bind:this={optionsDialogRef} onReplaceBackground={triggerBackgroundUpload} />
 
@@ -1931,94 +1983,114 @@
 	category with a search filter. Live-color-previews using the currently-
 	selected marker's color so users can see what they'll get.
 -->
-<dialog bind:this={iconDialogEl} class="mp-icon-dialog" oncancel={closeIconPicker}>
-	<DialogHeader title={headingText('Choose Icon')} onclose={closeIconPicker} radius="8px 8px 0 0" />
-	<div class="mp-icon-search-row">
-		<div class="mp-icon-search-field">
-			<span class="mp-icon-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
-			<input
-				bind:this={iconSearchInputEl}
-				class="mp-icon-search"
-				type="search"
-				placeholder="Search icons…"
-				bind:value={iconSearch}
-				aria-label="Search icons"
+<Dialog.Root bind:open={iconDialogOpen}>
+	<Dialog.Portal>
+		<Dialog.Overlay class="mp-icon-overlay" />
+		<Dialog.Content
+			class="mp-icon-dialog"
+			onOpenAutoFocus={(e) => {
+				// Focus the search input on open (CLAUDE.md focus rule).
+				e.preventDefault();
+				setTimeout(() => iconSearchInputEl?.focus(), 0);
+			}}
+		>
+			<DialogHeader
+				title={headingText('Choose Icon')}
+				onclose={closeIconPicker}
+				radius="8px 8px 0 0"
 			/>
-		</div>
-	</div>
-	<div class="mp-icon-body">
-		<!-- "No icon" tile always at the top — clicking it clears the
-		     marker's icon so only the label renders (centred on the point). -->
-		<div class="mp-icon-cat-label">Label only</div>
-		<div class="mp-icon-grid">
-			<button
-				class="mp-icon-tile mp-icon-tile--none"
-				class:mp-icon-tile-selected={selectedMarker?.icon === ''}
-				onclick={() => pickIcon('')}
-				use:tooltip={'Show only the label — no icon, centred on the point'}
-				aria-label="No icon"
-			>
-				<span class="mp-icon-none-glyph" aria-hidden="true">Aa</span>
-			</button>
-		</div>
-		{#each Object.keys(filteredIcons) as cat (cat)}
-			<div class="mp-icon-cat-label">{filteredIcons[cat][0].categoryLabel}</div>
-			<div class="mp-icon-grid">
-				{#each filteredIcons[cat] as ic (iconKey(ic))}
-					{@const key = iconKey(ic)}
-					<button
-						class="mp-icon-tile"
-						class:mp-icon-tile-selected={selectedMarker?.icon === key}
-						onclick={() => pickIcon(key)}
-						use:tooltip={ic.label}
-						aria-label={ic.label}
-					>
-						<svg viewBox={ic.viewBox} aria-hidden="true">
-							<g fill={selectedColor}>{@html ic.inner}</g>
-						</svg>
-					</button>
-				{/each}
+			<div class="mp-icon-search-row">
+				<div class="mp-icon-search-field">
+					<span class="mp-icon-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
+					<input
+						bind:this={iconSearchInputEl}
+						class="mp-icon-search"
+						type="search"
+						placeholder="Search icons…"
+						bind:value={iconSearch}
+						aria-label="Search icons"
+					/>
+				</div>
 			</div>
-		{/each}
-		{#if Object.keys(filteredIcons).length === 0}
-			<p class="mp-icon-empty">No icons match "{iconSearch}".</p>
-		{/if}
-	</div>
-</dialog>
+			<div class="mp-icon-body">
+				<!-- "No icon" tile always at the top — clicking it clears the
+		     marker's icon so only the label renders (centred on the point). -->
+				<div class="mp-icon-cat-label">Label only</div>
+				<div class="mp-icon-grid">
+					<button
+						class="mp-icon-tile mp-icon-tile--none"
+						class:mp-icon-tile-selected={selectedMarker?.icon === ''}
+						onclick={() => pickIcon('')}
+						use:tooltip={'Show only the label — no icon, centred on the point'}
+						aria-label="No icon"
+					>
+						<span class="mp-icon-none-glyph" aria-hidden="true">Aa</span>
+					</button>
+				</div>
+				{#each Object.keys(filteredIcons) as cat (cat)}
+					<div class="mp-icon-cat-label">{filteredIcons[cat][0].categoryLabel}</div>
+					<div class="mp-icon-grid">
+						{#each filteredIcons[cat] as ic (iconKey(ic))}
+							{@const key = iconKey(ic)}
+							<button
+								class="mp-icon-tile"
+								class:mp-icon-tile-selected={selectedMarker?.icon === key}
+								onclick={() => pickIcon(key)}
+								use:tooltip={ic.label}
+								aria-label={ic.label}
+							>
+								<svg viewBox={ic.viewBox} aria-hidden="true">
+									<g fill={selectedColor}>{@html ic.inner}</g>
+								</svg>
+							</button>
+						{/each}
+					</div>
+				{/each}
+				{#if Object.keys(filteredIcons).length === 0}
+					<p class="mp-icon-empty">No icons match "{iconSearch}".</p>
+				{/if}
+			</div>
+		</Dialog.Content>
+	</Dialog.Portal>
+</Dialog.Root>
 
 <style>
-	.mp-dialog {
-		border: none;
-		padding: 0;
-		border-radius: 10px;
+	/* bits-ui portals Content + Overlay to <body>; scope everything
+	   globally. Overlay 80 / content 81 matches the modal z-index tier. */
+	:global(.mp-overlay) {
+		position: fixed;
+		inset: 0;
+		background: #00000060;
+		backdrop-filter: blur(1px);
+		z-index: 80;
+	}
+	:global(.mp-dialog) {
+		display: flex;
+		flex-direction: column;
 		position: fixed;
 		top: 50%;
 		left: 50%;
-		margin: 0;
 		transform: translate(-50%, -50%);
 		/* Width + height are set from JavaScript per frame via the
-		   "contain" fit above (aspect-preserving, respects live chrome
+		   "contain" fit (aspect-preserving, respects live chrome
 		   height, caps at 80vw × 80vh, handles device rotation).
 		   The `max-width` / `max-height` here are a safety net for
 		   the first paint before the effect fires — the JS values
-		   supersede them. Dialog is NOT user-resizable; the sizing
-		   is fully deterministic from image aspect + AHH + viewport. */
+		   supersede them. */
 		max-width: 80vw;
 		max-height: 80vh;
 		overflow: hidden;
 		background: var(--bg-card);
 		color: var(--text);
+		border-radius: 10px;
 		box-shadow:
 			0 16px 48px #00000070,
 			0 0 0 1px var(--border-mid);
 		outline: none;
-	}
-	.mp-dialog::backdrop {
-		background: #00000060;
-		backdrop-filter: blur(1px);
+		z-index: 81;
 	}
 
-	.mp-toolbar {
+	:global(.mp-toolbar) {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
@@ -2028,12 +2100,12 @@
 		border-bottom: 1px solid var(--border);
 		flex-wrap: wrap;
 	}
-	.mp-tools {
+	:global(.mp-tools) {
 		display: flex;
 		gap: 8px;
 		align-items: center;
 	}
-	.mp-btn {
+	:global(.mp-btn) {
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		font-weight: 600;
@@ -2046,11 +2118,11 @@
 		border-radius: 4px;
 		cursor: pointer;
 	}
-	.mp-btn:hover:not(:disabled) {
+	:global(.mp-btn:hover:not(:disabled)) {
 		color: var(--text);
 		border-color: var(--text-accent);
 	}
-	.mp-btn:disabled {
+	:global(.mp-btn:disabled) {
 		opacity: 0.4;
 		cursor: default;
 	}
@@ -2279,7 +2351,7 @@
 		margin: 4px 0;
 	}
 
-	.mp-btn-add-active {
+	:global(.mp-btn-add-active) {
 		background: var(--text-accent) !important;
 		color: var(--bg-card) !important;
 		border-color: var(--text-accent) !important;
@@ -2293,33 +2365,33 @@
 
 	/* Selection-toolbar hint gets a slightly warmer treatment when
 	   placing mode is armed, matching the Add button's active state. */
-	.mp-sel-hint-active {
+	:global(.mp-sel-hint-active) {
 		color: var(--text);
 		font-weight: 600;
 		font-style: normal;
 	}
 
-	.mp-btn-icon {
+	:global(.mp-btn-icon) {
 		padding: 4px 8px;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 	}
-	.mp-btn-icon :global(svg) {
+	:global(.mp-btn-icon :global(svg)) {
 		width: 14px;
 		height: 14px;
 	}
-	.mp-btn-icon :global(svg path) {
+	:global(.mp-btn-icon :global(svg path)) {
 		fill: currentColor;
 	}
 	/* Zoom control chip — minus + percentage + plus + fit, laid out
 	   inline so the toolbar row stays a single band on desktop. */
-	.mp-zoom {
+	:global(.mp-zoom) {
 		display: inline-flex;
 		align-items: center;
 		gap: 2px;
 	}
-	.mp-btn-danger:not(:disabled):hover {
+	:global(.mp-btn-danger:not(:disabled):hover) {
 		color: var(--color-danger, #ef4444);
 		border-color: var(--color-danger, #ef4444);
 	}
@@ -2327,7 +2399,7 @@
 	/* Selection toolbar — sits below the file/export toolbar. Shows a hint
 	   when empty; the marker's editable fields when a marker is selected.
 	   Wraps at narrow widths so mobile still fits every control. */
-	.mp-sel-toolbar {
+	:global(.mp-sel-toolbar) {
 		display: flex;
 		align-items: center;
 		gap: 8px;
@@ -2338,13 +2410,13 @@
 		font-family: var(--font-ui);
 		font-size: 0.75rem;
 	}
-	.mp-sel-empty {
+	:global(.mp-sel-empty) {
 		color: var(--text-dimmer);
 	}
-	.mp-sel-hint {
+	:global(.mp-sel-hint) {
 		font-style: italic;
 	}
-	.mp-sel-coord {
+	:global(.mp-sel-coord) {
 		font-family: var(--font-mono, ui-monospace, monospace);
 		font-size: 0.7rem;
 		color: var(--text-dimmer);
@@ -2352,7 +2424,7 @@
 		padding: 2px 6px;
 		border-radius: 3px;
 	}
-	.mp-sel-name {
+	:global(.mp-sel-name) {
 		/* Was `flex: 1 1 140px; min-width: 100px` — greedy. The name
 		   is often short (single word or two) so it doesn't need the
 		   lion's share of the row; the entity link chip below gets
@@ -2367,11 +2439,11 @@
 		border: 1px solid var(--border-mid);
 		border-radius: 4px;
 	}
-	.mp-sel-name:focus {
+	:global(.mp-sel-name:focus) {
 		outline: none;
 		border-color: var(--text-accent);
 	}
-	.mp-sel-icon-btn {
+	:global(.mp-sel-icon-btn) {
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
@@ -2385,15 +2457,15 @@
 		font-size: 0.72rem;
 		max-width: 180px;
 	}
-	.mp-sel-icon-btn:hover {
+	:global(.mp-sel-icon-btn:hover) {
 		border-color: var(--text-accent);
 	}
-	.mp-sel-icon-btn svg {
+	:global(.mp-sel-icon-btn svg) {
 		width: 22px;
 		height: 22px;
 		flex-shrink: 0;
 	}
-	.mp-sel-icon-label {
+	:global(.mp-sel-icon-label) {
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
@@ -2403,16 +2475,16 @@
 	   `.pcr-app` popover. We just need to constrain the chip so it
 	   sits inside the toolbar row like the old native chip did — the
 	   popover then anchors itself to the chip and floats free. */
-	.mp-sel-color :global(.pickr) {
+	:global(.mp-sel-color :global(.pickr)) {
 		display: inline-flex;
 	}
-	.mp-sel-color :global(.pickr .pcr-button) {
+	:global(.mp-sel-color :global(.pickr .pcr-button)) {
 		width: 24px;
 		height: 24px;
 		border: 1px solid var(--border-mid);
 		border-radius: 4px;
 	}
-	.mp-sel-color :global(.pickr .pcr-button:focus) {
+	:global(.mp-sel-color :global(.pickr .pcr-button:focus)) {
 		outline: 1px solid var(--text-accent);
 		outline-offset: 1px;
 		box-shadow: none;
@@ -2426,7 +2498,7 @@
 	   the native <input type="number"> step arrows, so explicit step
 	   buttons flank the numeric field to keep the spinner reachable on
 	   touch. Whole group behaves as one segmented control. */
-	.mp-sel-angle {
+	:global(.mp-sel-angle) {
 		display: inline-flex;
 		align-items: stretch;
 		border: 1px solid var(--border-mid);
@@ -2434,10 +2506,10 @@
 		background: var(--bg-control);
 		overflow: hidden;
 	}
-	.mp-sel-angle:focus-within {
+	:global(.mp-sel-angle:focus-within) {
 		border-color: var(--text-accent);
 	}
-	.mp-sel-angle-step {
+	:global(.mp-sel-angle-step) {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
@@ -2452,14 +2524,14 @@
 		line-height: 1;
 		cursor: pointer;
 	}
-	.mp-sel-angle-step:hover {
+	:global(.mp-sel-angle-step:hover) {
 		background: color-mix(in srgb, var(--text-accent) 12%, transparent);
 		color: var(--text);
 	}
-	.mp-sel-angle-step:active {
+	:global(.mp-sel-angle-step:active) {
 		background: color-mix(in srgb, var(--text-accent) 22%, transparent);
 	}
-	.mp-sel-angle-field {
+	:global(.mp-sel-angle-field) {
 		display: inline-flex;
 		align-items: center;
 		gap: 3px;
@@ -2469,12 +2541,12 @@
 		font-size: 0.72rem;
 		color: var(--text-muted);
 	}
-	.mp-sel-angle-glyph {
+	:global(.mp-sel-angle-glyph) {
 		font-weight: 700;
 		color: var(--text-dimmer);
 		line-height: 1;
 	}
-	.mp-sel-angle-input {
+	:global(.mp-sel-angle-input) {
 		width: 2.8em;
 		padding: 3px 0 3px 4px;
 		border: none;
@@ -2484,21 +2556,21 @@
 		font-size: 0.82rem;
 		text-align: right;
 	}
-	.mp-sel-angle-input:focus {
+	:global(.mp-sel-angle-input:focus) {
 		outline: none;
 	}
 	/* Hide the native step arrows — the surrounding buttons replace
 	   them so we don't need a second, browser-styled pair. */
 	.mp-sel-angle-input::-webkit-outer-spin-button,
-	.mp-sel-angle-input::-webkit-inner-spin-button {
+	:global(.mp-sel-angle-input::-webkit-inner-spin-button) {
 		-webkit-appearance: none;
 		margin: 0;
 	}
-	.mp-sel-angle-input {
+	:global(.mp-sel-angle-input) {
 		-moz-appearance: textfield;
 		appearance: textfield;
 	}
-	.mp-sel-angle-unit {
+	:global(.mp-sel-angle-unit) {
 		color: var(--text-dimmer);
 		line-height: 1;
 	}
@@ -2513,30 +2585,30 @@
 	/* Kind icon for the currently-linked entity — same SVG the picker
 	   row uses. Coloured via `--kind-color` set inline from
 	   `ENTITY_KIND_META`. */
-	.mp-sel-entity-icon {
+	:global(.mp-sel-entity-icon) {
 		flex-shrink: 0;
 		display: inline-flex;
 		width: 16px;
 		height: 16px;
 		color: var(--kind-color, var(--text-accent));
 	}
-	.mp-sel-entity-icon :global(svg) {
+	:global(.mp-sel-entity-icon :global(svg)) {
 		width: 100%;
 		height: 100%;
 		fill: currentColor;
 	}
-	.mp-sel-entity-icon :global(svg path) {
+	:global(.mp-sel-entity-icon :global(svg path)) {
 		fill: currentColor;
 	}
 
-	.mp-error {
+	:global(.mp-error) {
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		color: var(--color-danger, #ef4444);
 		padding: 4px 14px;
 		background: color-mix(in srgb, var(--color-danger, #ef4444) 8%, transparent);
 	}
-	.mp-warn {
+	:global(.mp-warn) {
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		color: var(--color-danger, #ef4444);
@@ -2544,7 +2616,7 @@
 		background: color-mix(in srgb, var(--color-danger, #ef4444) 8%, transparent);
 	}
 
-	.mp-body {
+	:global(.mp-body) {
 		/* The dialog's JS sizing effect makes `dialog.width = IW` and
 		   `dialog.height = IH + AHH`, so the body just fills the width
 		   and derives its own height via `aspect-ratio`. No max-height
@@ -2559,7 +2631,7 @@
 	   dimensions so the scale bar stays put while the map pans and zooms
 	   underneath. pointer-events: none so clicks pass through to the
 	   click-capture rect. */
-	.mp-overlay-svg {
+	:global(.mp-overlay-svg) {
 		position: absolute;
 		inset: 0;
 		width: 100%;
@@ -2570,7 +2642,7 @@
 	   canvas area and stacks a big "Add background image" button + a
 	   small hint. Auto-hides when a background loads because the
 	   `{#if}` guard drops the element from the DOM. */
-	.mp-empty-cta {
+	:global(.mp-empty-cta) {
 		position: absolute;
 		inset: 0;
 		display: flex;
@@ -2582,7 +2654,7 @@
 		text-align: center;
 		pointer-events: none;
 	}
-	.mp-empty-cta-btn {
+	:global(.mp-empty-cta-btn) {
 		pointer-events: auto;
 		display: inline-flex;
 		align-items: center;
@@ -2600,21 +2672,21 @@
 		box-shadow: 0 6px 18px #00000040;
 	}
 	.mp-empty-cta-btn:hover,
-	.mp-empty-cta-btn:focus-visible {
+	:global(.mp-empty-cta-btn:focus-visible) {
 		filter: brightness(1.08);
 		outline: none;
 	}
-	.mp-empty-cta-plus {
+	:global(.mp-empty-cta-plus) {
 		font-size: 1.3rem;
 		line-height: 1;
 	}
-	.mp-empty-cta-hint {
+	:global(.mp-empty-cta-hint) {
 		margin: 0;
 		font-family: var(--font-ui);
 		font-size: 0.75rem;
 		color: var(--text-muted);
 	}
-	.mp-canvas {
+	:global(.mp-canvas) {
 		width: 100%;
 		height: 100%;
 		box-sizing: border-box;
@@ -2628,7 +2700,7 @@
 		   in onWheel. `touch-action: none` would break bare-wheel pan
 		   which the browser handles for free, so leave it default. */
 	}
-	.mp-canvas svg {
+	:global(.mp-canvas svg) {
 		display: block;
 		user-select: none;
 		/* SVG's own width/height attributes drive the size — CSS shouldn't
@@ -2639,21 +2711,21 @@
 	   show while the real <image> is on the wire; the image is
 	   rendered on top with opacity 0, then eased in to 1 by
 	   `.mp-bg-image-loaded` once its native `onload` fires. */
-	.mp-bg-placeholder {
+	:global(.mp-bg-placeholder) {
 		fill: color-mix(in srgb, var(--bg-inset) 88%, var(--text));
 	}
-	.mp-bg-placeholder-text {
+	:global(.mp-bg-placeholder-text) {
 		font-family: var(--font-ui);
 		font-size: 0.4px;
 		font-weight: 600;
 		fill: var(--text-dimmer);
 		font-style: italic;
 	}
-	.mp-bg-image {
+	:global(.mp-bg-image) {
 		opacity: 0;
 		transition: opacity 180ms ease-out;
 	}
-	.mp-bg-image-loaded {
+	:global(.mp-bg-image-loaded) {
 		opacity: 1;
 	}
 
@@ -2661,27 +2733,27 @@
 	   thinner than major (base cells) so users can tell them apart at a
 	   glance without the minor lines dominating. Non-scaling stroke on
 	   the elements themselves keeps both weights consistent across zoom. */
-	.mp-grid-line {
+	:global(.mp-grid-line) {
 		stroke: var(--text);
 		stroke-width: 0.6;
 		fill: none;
 	}
-	.mp-grid-major {
+	:global(.mp-grid-major) {
 		stroke-width: 1.2;
 	}
 	/* "Show grid" toggle off — lines vanish but clicks still land on
 	   the underlying grid. */
-	.mp-grid-layer-hidden .mp-grid-line {
+	:global(.mp-grid-layer-hidden .mp-grid-line) {
 		stroke: transparent;
 	}
 
-	.mp-grid-capture {
+	:global(.mp-grid-capture) {
 		cursor: pointer;
 	}
 
 	/* Scale bar overlay — parchment-style black-and-white with a soft
 	   drop-shadow so it reads over both light and dark map images. */
-	.mp-scale-tick {
+	:global(.mp-scale-tick) {
 		font-family: var(--font-ui);
 		font-size: 9px;
 		font-weight: 600;
@@ -2691,7 +2763,7 @@
 		stroke-width: 2.5px;
 		stroke-linejoin: round;
 	}
-	.mp-scale-unit {
+	:global(.mp-scale-unit) {
 		font-family: var(--font-ui);
 		font-size: 8px;
 		font-weight: 700;
@@ -2706,25 +2778,25 @@
 		filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
 	}
 
-	.mp-marker {
+	:global(.mp-marker) {
 		pointer-events: none;
 	}
-	.mp-marker-selected {
+	:global(.mp-marker-selected) {
 		filter: drop-shadow(0 0 3px var(--text-accent));
 	}
 	/* Selection outline — a bright square around the snap-cell the
 	   selected marker sits in. Sizes with the sub-grid at current zoom
 	   so it always matches the granularity the user is placing at. */
-	.mp-marker-selection {
+	:global(.mp-marker-selection) {
 		fill: none;
 		stroke: var(--text-accent);
 		stroke-width: 2;
 		pointer-events: none;
 	}
-	.mp-marker-dragging {
+	:global(.mp-marker-dragging) {
 		opacity: 0.85;
 	}
-	.mp-drag-snap {
+	:global(.mp-drag-snap) {
 		fill: none;
 		stroke: var(--text-accent);
 		stroke-width: 2;
@@ -2749,7 +2821,7 @@
 	:global(.mp-marker-icon *) {
 		vector-effect: non-scaling-stroke;
 	}
-	.mp-marker-label {
+	:global(.mp-marker-label) {
 		/* Font size is in world units at zoom 1. The parent `<g>` applies
 		   `scale(1/zoom)`, which cancels the zoom so labels render at a
 		   constant screen size at any zoom level. Fill is set inline to
@@ -2777,14 +2849,14 @@
 	}
 	/* Label-only markers (no icon chosen) centre both axes on the point
 	   instead of sitting below where the icon would be. */
-	.mp-marker-label--centered {
+	:global(.mp-marker-label--centered) {
 		dominant-baseline: central;
 	}
 
 	/* Selection toolbar's icon-button "No icon" placeholder — a small
 	   two-letter glyph in the marker's colour that stands in for the
 	   icon preview when the marker is a label-only pin. */
-	.mp-sel-icon-none {
+	:global(.mp-sel-icon-none) {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
@@ -2803,11 +2875,11 @@
 	/* Icon-picker "No icon" tile — same footprint as a regular tile but
 	   shows the "Aa" placeholder glyph so the choice is obvious in the
 	   grid. */
-	.mp-icon-tile--none {
+	:global(.mp-icon-tile--none) {
 		background: var(--bg-inset);
 		border-style: dashed;
 	}
-	.mp-icon-none-glyph {
+	:global(.mp-icon-none-glyph) {
 		font-family: var(--font-ui);
 		font-size: 0.95rem;
 		font-weight: 700;
@@ -2818,13 +2890,13 @@
 	   snap point holds more than one marker. z-index sits above the
 	   <dialog>'s top-layer chrome so it renders over the map + toolbars
 	   without being clipped by the dialog's overflow: hidden. */
-	.mp-pile-backdrop {
+	:global(.mp-pile-backdrop) {
 		position: fixed;
 		inset: 0;
 		z-index: 40;
 		background: transparent;
 	}
-	.mp-pile-menu {
+	:global(.mp-pile-menu) {
 		position: fixed;
 		z-index: 41;
 		min-width: 200px;
@@ -2843,7 +2915,7 @@
 		font-family: var(--font-ui);
 		font-size: 0.85rem;
 	}
-	.mp-pile-header {
+	:global(.mp-pile-header) {
 		padding: 4px 12px 6px;
 		font-size: 0.68rem;
 		font-weight: 700;
@@ -2853,7 +2925,7 @@
 		border-bottom: 1px solid var(--border);
 		margin-bottom: 4px;
 	}
-	.mp-pile-item {
+	:global(.mp-pile-item) {
 		width: 100%;
 		display: flex;
 		align-items: center;
@@ -2867,70 +2939,72 @@
 		font-family: inherit;
 		font-size: inherit;
 	}
-	.mp-pile-item:hover {
+	:global(.mp-pile-item:hover) {
 		background: var(--bg-control);
 	}
-	.mp-pile-icon {
+	:global(.mp-pile-icon) {
 		width: 20px;
 		height: 20px;
 		flex-shrink: 0;
 	}
-	.mp-pile-icon-fallback {
+	:global(.mp-pile-icon-fallback) {
 		width: 12px;
 		height: 12px;
 		border-radius: 50%;
 		border: 1px solid #fff;
 		flex-shrink: 0;
 	}
-	.mp-pile-label {
+	:global(.mp-pile-label) {
 		flex: 1;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
-	.mp-pile-link {
+	:global(.mp-pile-link) {
 		color: var(--text-accent);
 		font-size: 0.9rem;
 	}
 
-	/* Icon picker dialog. Uses the CLAUDE.md content-sized pattern:
-	   no display:flex on the dialog, max-height on the scrollable body. */
-	.mp-icon-dialog {
-		border: none;
-		padding: 0;
-		border-radius: 8px;
+	/* Icon picker sub-dialog — nested inside MapDialog. Overlay 82 /
+	   content 83 sits one tier above the outer map dialog (80/81) so
+	   it renders on top without breaking the shared modal budget. */
+	:global(.mp-icon-overlay) {
+		position: fixed;
+		inset: 0;
+		background: #00000060;
+		z-index: 82;
+	}
+	:global(.mp-icon-dialog) {
 		position: fixed;
 		top: 50%;
 		left: 50%;
-		margin: 0;
 		transform: translate(-50%, -50%);
 		width: min(720px, calc(100vw - 2rem));
 		max-height: 82vh;
 		overflow: hidden;
 		background: var(--bg-card);
 		color: var(--text);
+		border-radius: 8px;
 		box-shadow:
 			0 16px 48px #00000070,
 			0 0 0 1px var(--border-mid);
 		outline: none;
-	}
-	.mp-icon-dialog::backdrop {
-		background: #00000060;
+		z-index: 83;
 	}
 	/* Search row modelled on FoePickerDialog's `.fd-search-*` — a
 	   .field wrapper positions the magnifying-glass icon absolutely
 	   over the left-inset padding of the input. */
-	.mp-icon-search-row {
+	:global(.mp-icon-search-row) {
 		padding: 8px 14px;
 		background: var(--bg-inset);
 		border-bottom: 1px solid var(--border);
 	}
-	.mp-icon-search-field {
+	:global(.mp-icon-search-field) {
 		position: relative;
 		display: flex;
 		align-items: center;
 	}
-	.mp-icon-search-icon {
+	:global(.mp-icon-search-icon) {
 		position: absolute;
 		left: 9px;
 		width: 13px;
@@ -2939,12 +3013,12 @@
 		pointer-events: none;
 		color: var(--text-dimmer);
 	}
-	.mp-icon-search-icon :global(svg) {
+	:global(.mp-icon-search-icon :global(svg)) {
 		width: 100%;
 		height: 100%;
 		fill: currentColor;
 	}
-	.mp-icon-search {
+	:global(.mp-icon-search) {
 		flex: 1;
 		min-width: 0;
 		box-sizing: border-box;
@@ -2956,18 +3030,18 @@
 		border: 1px solid var(--border);
 		border-radius: 4px;
 	}
-	.mp-icon-search:focus {
+	:global(.mp-icon-search:focus) {
 		outline: none;
 		border-color: var(--focus-ring);
 		box-shadow: 0 0 0 2px var(--accent-glow);
 	}
-	.mp-icon-body {
+	:global(.mp-icon-body) {
 		max-height: calc(82vh - 8rem);
 		overflow-y: auto;
 		overscroll-behavior: contain;
 		padding: 8px 14px 14px;
 	}
-	.mp-icon-cat-label {
+	:global(.mp-icon-cat-label) {
 		font-family: var(--font-ui);
 		font-size: 0.68rem;
 		font-weight: 700;
@@ -2976,15 +3050,15 @@
 		color: var(--text-dimmer);
 		margin: 12px 0 6px;
 	}
-	.mp-icon-cat-label:first-child {
+	:global(.mp-icon-cat-label:first-child) {
 		margin-top: 0;
 	}
-	.mp-icon-grid {
+	:global(.mp-icon-grid) {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
 		gap: 4px;
 	}
-	.mp-icon-tile {
+	:global(.mp-icon-tile) {
 		aspect-ratio: 1 / 1;
 		padding: 6px;
 		background: var(--bg-control);
@@ -2995,18 +3069,18 @@
 		align-items: center;
 		justify-content: center;
 	}
-	.mp-icon-tile:hover {
+	:global(.mp-icon-tile:hover) {
 		border-color: var(--text-accent);
 	}
-	.mp-icon-tile-selected {
+	:global(.mp-icon-tile-selected) {
 		border-color: var(--text-accent);
 		background: color-mix(in srgb, var(--text-accent) 12%, var(--bg-control));
 	}
-	.mp-icon-tile svg {
+	:global(.mp-icon-tile svg) {
 		width: 100%;
 		height: 100%;
 	}
-	.mp-icon-empty {
+	:global(.mp-icon-empty) {
 		font-family: var(--font-ui);
 		font-size: 0.85rem;
 		color: var(--text-dimmer);

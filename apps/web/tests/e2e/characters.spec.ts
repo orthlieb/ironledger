@@ -124,7 +124,7 @@ test.describe('Characters area (v2)', () => {
 		await page.locator(`${CHAR_HEADER} button:has-text("+ Asset")`).click();
 		await expect(page.locator('.picker-dialog')).toBeVisible({ timeout: 5_000 });
 		// Pick a tile that isn't already owned.
-		const tile = page.locator('dialog.picker-dialog .pick-tile:not(.pick-tile-owned)').first();
+		const tile = page.locator('.picker-dialog .pick-tile:not(.pick-tile-owned)').first();
 		await expect(tile).toBeVisible({ timeout: 5_000 });
 		await tile.click();
 		// Editable AssetCard opens in add mode — click "Add" in its footer.
@@ -144,7 +144,7 @@ test.describe('Characters area (v2)', () => {
 		if ((await assetCards.count()) === 0) {
 			await page.locator(`${CHAR_HEADER} button:has-text("+ Asset")`).click();
 			await expect(page.locator('.picker-dialog')).toBeVisible({ timeout: 5_000 });
-			await page.locator('dialog.picker-dialog .pick-tile:not(.pick-tile-owned)').first().click();
+			await page.locator('.picker-dialog .pick-tile:not(.pick-tile-owned)').first().click();
 			// AssetCard opens in add mode — click Add to commit.
 			await expect(page.locator('.ca-asset-dialog')).toBeVisible({ timeout: 5_000 });
 			await page.locator('.ca-asset-dialog .asset-footer .btn-primary').click();

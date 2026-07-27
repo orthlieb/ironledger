@@ -62,7 +62,7 @@ async function openSettings(page: Page): Promise<void> {
 	await page.locator('.hamburger-btn').click();
 	await page.locator('.menu-dropdown').waitFor({ state: 'visible', timeout: 3_000 });
 	await page.locator('.menu-item', { hasText: /settings/i }).click();
-	await expect(page.locator('dialog.settings-dialog[open]')).toBeVisible({ timeout: 3_000 });
+	await expect(page.locator('.settings-dialog')).toBeVisible({ timeout: 3_000 });
 }
 
 function settingsToggleButton(page: Page, label: string, state: 'On' | 'Off') {
@@ -82,7 +82,7 @@ async function openMovesDialog(page: Page): Promise<void> {
 /** Open the Oracles dialog via the global app-nav button. */
 async function openOraclesDialog(page: Page): Promise<void> {
 	await page.locator(`${APP_NAV} .act-btn`, { hasText: 'Ask' }).first().click();
-	await expect(page.locator('dialog.oracles-dialog')).toBeVisible({ timeout: 8_000 });
+	await expect(page.locator('.oracles-dialog')).toBeVisible({ timeout: 8_000 });
 }
 
 async function waitForHome(page: Page): Promise<void> {
@@ -265,7 +265,7 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		await expect(page.locator('.moves-dialog')).toBeVisible({ timeout: 5_000 });
 		await expect(
 			page
-				.locator('dialog.moves-dialog')
+				.locator('.moves-dialog')
 				.getByText(/Discover a Site/i)
 				.first(),
 		).toBeVisible({ timeout: 5_000 });

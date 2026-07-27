@@ -34,7 +34,7 @@ async function gotoHome(page: import('@playwright/test').Page) {
 async function openExportDialog(page: import('@playwright/test').Page, content: string) {
 	await page.locator('.hamburger-btn').click();
 	await page.locator('.menu-item:has-text("Export...")').click();
-	await expect(page.locator('.export-dialog[open]')).toBeVisible();
+	await expect(page.locator('.export-dialog')).toBeVisible();
 	await page.locator('.ed-select').selectOption(content);
 }
 
@@ -96,7 +96,7 @@ test.describe('Export dialog', () => {
 			'everything',
 		]) {
 			await expect(
-				page.locator(`.export-dialog[open] .ed-select option[value="${val}"]`).first(),
+				page.locator(`.export-dialog .ed-select option[value="${val}"]`).first(),
 			).toBeAttached();
 		}
 	});
@@ -125,7 +125,7 @@ test.describe('Export dialog', () => {
 	test('Cancel closes the dialog without exporting', async ({ page }) => {
 		await openExportDialog(page, 'everything');
 		await page.locator('.export-dialog .ed-footer .btn:not(.btn-primary)').click();
-		await expect(page.locator('.export-dialog[open]')).not.toBeVisible();
+		await expect(page.locator('.export-dialog')).not.toBeVisible();
 	});
 
 	test('Everything export downloads a JSON file with correct name pattern', async ({ page }) => {

@@ -165,7 +165,7 @@ test.describe('Import collision dialog (name-based)', () => {
 			}),
 		);
 		await page.waitForTimeout(1_500);
-		await expect(page.locator('dialog.icd-dialog[open]')).not.toBeVisible();
+		await expect(page.locator('.icd-dialog')).not.toBeVisible();
 		const world = await readWorld(page);
 		expect(world.communities).toHaveLength(1);
 		expect(world.npcs).toHaveLength(1);
@@ -192,7 +192,7 @@ test.describe('Import collision dialog (name-based)', () => {
 			}),
 		);
 		await page.waitForTimeout(1_500);
-		await expect(page.locator('dialog.icd-dialog[open]')).not.toBeVisible();
+		await expect(page.locator('.icd-dialog')).not.toBeVisible();
 	});
 
 	test('opens and lists colliding rows grouped by category (incl. places + journeys / sites split)', async ({
@@ -237,7 +237,7 @@ test.describe('Import collision dialog (name-based)', () => {
 			}),
 		);
 
-		const dialog = page.locator('dialog.icd-dialog[open]');
+		const dialog = page.locator('.icd-dialog');
 		await expect(dialog).toBeVisible({ timeout: 5_000 });
 
 		// Five category groups — communities, NPCs, places, journeys, sites —
@@ -283,7 +283,7 @@ test.describe('Import collision dialog (name-based)', () => {
 			}),
 		);
 		await page.waitForTimeout(1_500);
-		await expect(page.locator('dialog.icd-dialog[open]')).not.toBeVisible();
+		await expect(page.locator('.icd-dialog')).not.toBeVisible();
 		const world = await readWorld(page);
 		expect(world.communities).toHaveLength(1);
 		expect(world.npcs).toHaveLength(1);
@@ -309,7 +309,7 @@ test.describe('Import collision dialog (name-based)', () => {
 				npcs: [makeNpc('x-2', 'Old Vala', { notes: 'mentor' })],
 			}),
 		);
-		const dialog = page.locator('dialog.icd-dialog[open]');
+		const dialog = page.locator('.icd-dialog');
 		await expect(dialog).toBeVisible({ timeout: 5_000 });
 		await dialog.locator('input[name="strategy"][value="new"]').check();
 		await dialog.locator('button.btn-primary').click();
@@ -344,7 +344,7 @@ test.describe('Import collision dialog (name-based)', () => {
 				npcs: [],
 			}),
 		);
-		const dialog = page.locator('dialog.icd-dialog[open]');
+		const dialog = page.locator('.icd-dialog');
 		await expect(dialog).toBeVisible({ timeout: 5_000 });
 		await dialog.locator('input[name="strategy"][value="replace"]').check();
 		await dialog.locator('button.btn-primary').click();
@@ -377,7 +377,7 @@ test.describe('Import collision dialog (name-based)', () => {
 				npcs: [makeNpc('x-2', 'Old Vala', { notes: 'Should not land' })],
 			}),
 		);
-		const dialog = page.locator('dialog.icd-dialog[open]');
+		const dialog = page.locator('.icd-dialog');
 		await expect(dialog).toBeVisible({ timeout: 5_000 });
 		await dialog.locator('input[name="strategy"][value="skip"]').check();
 		await dialog.locator('button.btn-primary').click();
@@ -414,7 +414,7 @@ test.describe('Import collision dialog (name-based)', () => {
 				npcs: [makeNpc('x-3', 'Brokk the Smith')], // ditto
 			}),
 		);
-		const dialog = page.locator('dialog.icd-dialog[open]');
+		const dialog = page.locator('.icd-dialog');
 		await expect(dialog).toBeVisible({ timeout: 5_000 });
 		await dialog.locator('button:has-text("Cancel import")').click();
 		await expect(dialog).not.toBeVisible();
@@ -444,7 +444,7 @@ test.describe('Import collision dialog (name-based)', () => {
 				npcs: [makeNpc('x-3', 'Newcomer')],
 			}),
 		);
-		const dialog = page.locator('dialog.icd-dialog[open]');
+		const dialog = page.locator('.icd-dialog');
 		await expect(dialog).toBeVisible({ timeout: 5_000 });
 
 		// Only the one colliding name is listed.
@@ -482,7 +482,7 @@ test.describe('Import collision dialog (name-based)', () => {
 				npcs: [],
 			}),
 		);
-		const dialog = page.locator('dialog.icd-dialog[open]');
+		const dialog = page.locator('.icd-dialog');
 		await expect(dialog).toBeVisible({ timeout: 5_000 });
 		await expect(dialog.locator('.icd-group-label')).toHaveText(['Community']);
 		await dialog.locator('button:has-text("Cancel import")').click();
@@ -507,7 +507,7 @@ test.describe('Import collision dialog (name-based)', () => {
 				npcs: [],
 			}),
 		);
-		const dialog = page.locator('dialog.icd-dialog[open]');
+		const dialog = page.locator('.icd-dialog');
 		await expect(dialog).toBeVisible({ timeout: 5_000 });
 		await expect(dialog.locator('.icd-name')).toHaveText(['  skara brae  ']);
 		await dialog.locator('button:has-text("Cancel import")').click();
