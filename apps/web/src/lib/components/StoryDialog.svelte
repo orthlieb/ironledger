@@ -17,6 +17,7 @@
 	 */
 
 	import { headingText } from '$lib/fontStore.svelte.js';
+	import { Dialog } from 'bits-ui';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import {
 		getIncludePreface,
@@ -54,7 +55,7 @@
 	import { findAsset } from '$lib/assetStore.svelte.js';
 	import type { CharacterData } from '$lib/types.js';
 
-	let dialogEl = $state<HTMLDialogElement | null>(null);
+	let dialogOpen = $state(false);
 
 	// generate mode
 	let prefaceText = $state(''); // "Cast & setting" block ('' if no context)
@@ -140,7 +141,7 @@
 		debugEnabled = getAiDebug();
 		debugOn = false;
 		debugLog = [];
-		dialogEl?.showModal();
+		dialogOpen = true;
 	}
 
 	// ── Preface: scan the captured section for referenced entities ──────────
@@ -234,12 +235,12 @@
 		debugEnabled = getAiDebug();
 		debugOn = false;
 		debugLog = [];
-		dialogEl?.showModal();
+		dialogOpen = true;
 	}
 
 	export function close() {
 		if (streaming) abortCtl?.abort();
-		dialogEl?.close();
+		dialogOpen = false;
 	}
 
 	// ── Generate actions ───────────────────────────────────────────────────
@@ -319,7 +320,7 @@
 			// a new ▲ whenever they want to start the next section.
 			clearSection();
 		}
-		dialogEl?.close();
+		dialogOpen = false;
 	}
 
 	/**
@@ -337,158 +338,177 @@
 	}
 </script>
 
-<dialog bind:this={dialogEl} class="story-dialog" oncancel={close}>
-	<DialogHeader
-		title={headingText(regenerating ? 'Regenerate Story' : 'Generate Story')}
-		onclose={close}
-	/>
+<!-- Snippet defined at top level (not inside Dialog.Content, which
+     interprets any inner snippet as a named slot on the component). -->
+{#snippet setupField()}
+	<label class="stry-field">
+		<span class="stry-label">Setup Instructions</span>
+		<textarea
+			class="stry-input stry-setup"
+			rows="4"
+			placeholder="Tone, POV, tense, character voice…"
+			bind:value={setupText}
+		></textarea>
+		<span class="stry-hint stry-hint-tight">
+			Seeded from your Settings default; changes apply to this story only.
+		</span>
+	</label>
+{/snippet}
 
-	{#snippet setupField()}
-		<label class="sd-field">
-			<span class="sd-label">Setup Instructions</span>
-			<textarea
-				class="sd-input sd-setup"
-				rows="4"
-				placeholder="Tone, POV, tense, character voice…"
-				bind:value={setupText}
-			></textarea>
-			<span class="sd-hint sd-hint-tight">
-				Seeded from your Settings default; changes apply to this story only.
-			</span>
-		</label>
-	{/snippet}
+<Dialog.Root bind:open={dialogOpen}>
+	<Dialog.Portal>
+		<Dialog.Overlay class="story-overlay" />
+		<Dialog.Content class="story-dialog">
+			<DialogHeader
+				title={headingText(regenerating ? 'Regenerate Story' : 'Generate Story')}
+				onclose={close}
+			/>
 
-	<div class="sd-body">
-		<div class="sd-preview">
-			<div>
-				{#if regenerating}
-					Regenerating from the saved prompt, ≈ {promptTokens} input tokens.
-				{:else}
-					<strong>{capturedCount}</strong>
-					{capturedCount === 1 ? 'entry' : 'entries'} captured, ≈ {promptTokens} input tokens.
-				{/if}
-			</div>
-			<div class="sd-hint">Storyteller: <strong>{storytellerLabel}</strong></div>
-			{#if prefaceText}
-				<label class="sd-toggle">
-					<input
-						type="checkbox"
-						bind:checked={includePreface}
-						onchange={() => setIncludePreface(includePreface)}
-					/>
-					<span
-						>Include cast &amp; setting{#if castLine}:
-							<strong>{castLine}</strong>{/if}</span
-					>
-				</label>
-			{/if}
-		</div>
-
-		{#if !regenerating}
-			<label class="sd-field">
-				<span class="sd-label">Title</span>
-				<input class="sd-input" type="text" placeholder="Story title…" bind:value={storyTitle} />
-				<span class="sd-hint sd-hint-tight">Shown as the log entry's heading.</span>
-			</label>
-		{/if}
-
-		{@render setupField()}
-
-		<div class="sd-output-wrap">
-			{#if doneStreaming && output && editingOutput}
-				<textarea
-					class="sd-output sd-output-edit"
-					bind:value={output}
-					aria-label="Edit generated prose"
-				></textarea>
-			{:else}
-				<div class="sd-output" bind:this={outputEl} aria-live="polite">
-					{#if output}
-						{@html renderedOutput}
-					{:else if streaming}
-						<span class="sd-placeholder">Waiting for first tokens…</span>
-					{:else}
-						<span class="sd-placeholder">Press Start to generate.</span>
+			<div class="stry-body">
+				<div class="stry-preview">
+					<div>
+						{#if regenerating}
+							Regenerating from the saved prompt, ≈ {promptTokens} input tokens.
+						{:else}
+							<strong>{capturedCount}</strong>
+							{capturedCount === 1 ? 'entry' : 'entries'} captured, ≈ {promptTokens} input tokens.
+						{/if}
+					</div>
+					<div class="stry-hint">Storyteller: <strong>{storytellerLabel}</strong></div>
+					{#if prefaceText}
+						<label class="stry-toggle">
+							<input
+								type="checkbox"
+								bind:checked={includePreface}
+								onchange={() => setIncludePreface(includePreface)}
+							/>
+							<span
+								>Include cast &amp; setting{#if castLine}:
+									<strong>{castLine}</strong>{/if}</span
+							>
+						</label>
 					{/if}
 				</div>
-			{/if}
-			{#if doneStreaming && output}
-				<button
-					class="sd-edit-toggle"
-					type="button"
-					onclick={() => (editingOutput = !editingOutput)}
-				>
-					{editingOutput ? 'Preview' : 'Edit'}
-				</button>
-			{/if}
-		</div>
 
-		{#if errorMsg}
-			<div class="sd-error">{errorMsg}</div>
-		{/if}
+				{#if !regenerating}
+					<label class="stry-field">
+						<span class="stry-label">Title</span>
+						<input
+							class="stry-input"
+							type="text"
+							placeholder="Story title…"
+							bind:value={storyTitle}
+						/>
+						<span class="stry-hint stry-hint-tight">Shown as the log entry's heading.</span>
+					</label>
+				{/if}
 
-		<!-- Diagnostic pane — gated behind the admin-only AI Debug setting so
+				{@render setupField()}
+
+				<div class="stry-output-wrap">
+					{#if doneStreaming && output && editingOutput}
+						<textarea
+							class="stry-output stry-output-edit"
+							bind:value={output}
+							aria-label="Edit generated prose"
+						></textarea>
+					{:else}
+						<div class="stry-output" bind:this={outputEl} aria-live="polite">
+							{#if output}
+								{@html renderedOutput}
+							{:else if streaming}
+								<span class="stry-placeholder">Waiting for first tokens…</span>
+							{:else}
+								<span class="stry-placeholder">Press Start to generate.</span>
+							{/if}
+						</div>
+					{/if}
+					{#if doneStreaming && output}
+						<button
+							class="stry-edit-toggle"
+							type="button"
+							onclick={() => (editingOutput = !editingOutput)}
+						>
+							{editingOutput ? 'Preview' : 'Edit'}
+						</button>
+					{/if}
+				</div>
+
+				{#if errorMsg}
+					<div class="stry-error">{errorMsg}</div>
+				{/if}
+
+				<!-- Diagnostic pane — gated behind the admin-only AI Debug setting so
 			     end users never see it. Toggle on, click Start, and the server's
 			     wire-level info shows up in the pane below. -->
-		{#if debugEnabled}
-			<label class="sd-debug-toggle">
-				<input type="checkbox" bind:checked={debugOn} /> Debug
-			</label>
-			{#if debugOn && debugLog.length > 0}
-				<pre class="sd-debug-log">{debugLog.join('\n')}</pre>
-			{/if}
-		{/if}
-	</div>
+				{#if debugEnabled}
+					<label class="stry-debug-toggle">
+						<input type="checkbox" bind:checked={debugOn} /> Debug
+					</label>
+					{#if debugOn && debugLog.length > 0}
+						<pre class="stry-debug-log">{debugLog.join('\n')}</pre>
+					{/if}
+				{/if}
+			</div>
 
-	<div class="sd-footer">
-		{#if streaming}
-			<button class="btn btn-danger" onclick={handleStop}>Stop</button>
-		{:else if doneStreaming}
-			<button
-				class="btn"
-				onclick={handleTryAgain}
-				disabled={!promptText.trim()}
-				title={regenerating ? 'Regenerate again' : 'Generate again'}
-				>{regenerating ? 'Regenerate' : 'Try Again'}</button
-			>
-			<button class="btn" onclick={handleCopy}>Copy</button>
-			<button class="btn btn-primary" onclick={handleSaveToLog}
-				>{regenerating ? 'Save' : 'Save to Log'}</button
-			>
-		{:else}
-			<button class="btn btn-primary" onclick={handleStart} disabled={!promptText.trim()}
-				>Start</button
-			>
-		{/if}
-	</div>
-</dialog>
+			<div class="stry-footer">
+				{#if streaming}
+					<button class="btn btn-danger" onclick={handleStop}>Stop</button>
+				{:else if doneStreaming}
+					<button
+						class="btn"
+						onclick={handleTryAgain}
+						disabled={!promptText.trim()}
+						title={regenerating ? 'Regenerate again' : 'Generate again'}
+						>{regenerating ? 'Regenerate' : 'Try Again'}</button
+					>
+					<button class="btn" onclick={handleCopy}>Copy</button>
+					<button class="btn btn-primary" onclick={handleSaveToLog}
+						>{regenerating ? 'Save' : 'Save to Log'}</button
+					>
+				{:else}
+					<button class="btn btn-primary" onclick={handleStart} disabled={!promptText.trim()}
+						>Start</button
+					>
+				{/if}
+			</div>
+		</Dialog.Content>
+	</Dialog.Portal>
+</Dialog.Root>
 
 <style>
-	.story-dialog {
-		border: none;
-		padding: 0;
-		border-radius: 10px;
+	/* bits-ui portals Content + Overlay to <body>; scope everything
+	   globally. Overlay 80 / content 81 matches the modal z-index tier.
+	   Class prefix is `.stry-*` (not `.sd-*`) to avoid colliding with
+	   SettingsDialog's global `.sd-*` selectors. */
+	:global(.story-overlay) {
+		position: fixed;
+		inset: 0;
+		background: #00000060;
+		backdrop-filter: blur(1px);
+		z-index: 80;
+	}
+	:global(.story-dialog) {
+		display: flex;
+		flex-direction: column;
 		position: fixed;
 		top: 50%;
 		left: 50%;
-		margin: 0;
 		transform: translate(-50%, -50%);
 		width: min(520px, calc(100vw - 2rem));
 		max-height: 82vh;
 		overflow: hidden;
 		background: var(--bg-card);
 		color: var(--text);
+		border-radius: 10px;
 		box-shadow:
 			0 16px 48px #00000070,
 			0 0 0 1px var(--border-mid);
 		outline: none;
-	}
-	.story-dialog::backdrop {
-		background: #00000060;
-		backdrop-filter: blur(1px);
+		z-index: 81;
 	}
 
-	.sd-body {
+	:global(.stry-body) {
 		padding: 14px;
 		display: flex;
 		flex-direction: column;
@@ -498,12 +518,12 @@
 		overscroll-behavior: contain;
 	}
 
-	.sd-field {
+	:global(.stry-field) {
 		display: flex;
 		flex-direction: column;
 		gap: 4px;
 	}
-	.sd-label {
+	:global(.stry-label) {
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		font-weight: 600;
@@ -511,7 +531,7 @@
 		text-transform: uppercase;
 		color: var(--text-muted);
 	}
-	.sd-input {
+	:global(.stry-input) {
 		width: 100%;
 		box-sizing: border-box;
 		padding: 5px 8px;
@@ -522,27 +542,27 @@
 		font-family: var(--font-ui);
 		font-size: 0.82rem;
 	}
-	.sd-input:focus {
+	:global(.stry-input:focus) {
 		outline: none;
 		border-color: var(--text-accent);
 	}
-	.sd-setup {
+	:global(.stry-setup) {
 		resize: vertical;
 		min-height: 60px;
 		line-height: 1.4;
 	}
-	.sd-hint {
+	:global(.stry-hint) {
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		color: var(--text-muted);
 		line-height: 1.4;
 	}
-	.sd-hint-tight {
+	:global(.stry-hint-tight) {
 		font-size: 0.66rem;
 		color: var(--text-dimmer);
 	}
 
-	.sd-preview {
+	:global(.stry-preview) {
 		font-family: var(--font-ui);
 		font-size: 0.78rem;
 		color: var(--text);
@@ -553,7 +573,7 @@
 		flex-direction: column;
 		gap: 2px;
 	}
-	.sd-toggle {
+	:global(.stry-toggle) {
 		display: flex;
 		align-items: flex-start;
 		gap: 6px;
@@ -564,23 +584,23 @@
 		line-height: 1.4;
 		cursor: pointer;
 	}
-	.sd-toggle input {
+	:global(.stry-toggle input) {
 		margin-top: 1px;
 		flex-shrink: 0;
 		accent-color: var(--text-accent);
 		cursor: pointer;
 	}
-	.sd-toggle strong {
+	:global(.stry-toggle strong) {
 		color: var(--text);
 	}
 
-	.sd-output-wrap {
+	:global(.stry-output-wrap) {
 		position: relative;
 		border: 1px solid var(--border-mid);
 		border-radius: 4px;
 		background: var(--bg-control);
 	}
-	.sd-output {
+	:global(.stry-output) {
 		padding: 10px 12px;
 		font-family: var(--font-ui);
 		font-size: 0.86rem;
@@ -592,7 +612,7 @@
 		overscroll-behavior: contain;
 	}
 	/* Editable raw-markdown view — same footprint as the rendered box. */
-	textarea.sd-output-edit {
+	textarea.stry-output-edit {
 		display: block;
 		width: 100%;
 		box-sizing: border-box;
@@ -601,10 +621,10 @@
 		resize: vertical;
 		white-space: pre-wrap;
 	}
-	textarea.sd-output-edit:focus {
+	textarea.stry-output-edit:focus {
 		outline: none;
 	}
-	.sd-edit-toggle {
+	:global(.stry-edit-toggle) {
 		position: absolute;
 		top: 6px;
 		right: 6px;
@@ -619,35 +639,35 @@
 		border-radius: 4px;
 		cursor: pointer;
 	}
-	.sd-edit-toggle:hover {
+	:global(.stry-edit-toggle:hover) {
 		color: var(--text);
 		border-color: var(--text-accent);
 	}
 	/* Rendered light-markdown prose (matches the saved Story log entry).
 	   renderNote separates blocks with <br>, and the global reset zeroes
 	   margins — so we only indent lists and style the inline marks here. */
-	.sd-output :global(strong) {
+	:global(.stry-output :global(strong)) {
 		color: var(--text);
 		font-weight: 600;
 	}
-	.sd-output :global(em) {
+	:global(.stry-output :global(em)) {
 		font-style: italic;
 	}
-	.sd-output :global(ul),
-	.sd-output :global(ol) {
+	.stry-output :global(ul),
+	:global(.stry-output :global(ol)) {
 		padding-left: 1.25em;
 	}
-	.sd-placeholder {
+	:global(.stry-placeholder) {
 		color: var(--text-dimmer);
 		font-style: italic;
 	}
-	.sd-error {
+	:global(.stry-error) {
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		color: var(--color-danger, #ef4444);
 	}
 
-	.sd-debug-toggle {
+	:global(.stry-debug-toggle) {
 		display: flex;
 		align-items: center;
 		gap: 6px;
@@ -656,7 +676,7 @@
 		color: var(--text-muted);
 		cursor: pointer;
 	}
-	.sd-debug-log {
+	:global(.stry-debug-log) {
 		font-family: var(--font-mono, 'Roboto Mono', ui-monospace, monospace);
 		font-size: 0.68rem;
 		line-height: 1.4;
@@ -673,7 +693,7 @@
 		margin: 0;
 	}
 
-	.sd-footer {
+	:global(.stry-footer) {
 		display: flex;
 		justify-content: flex-end;
 		gap: 6px;

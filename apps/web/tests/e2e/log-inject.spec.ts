@@ -517,7 +517,7 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		const entry = entryById(page, id);
 		await expect(entry.locator('a.oracle-link')).toBeVisible({ timeout: 3_000 });
 		await entry.locator('a.oracle-link').click();
-		await expect(page.locator('.oracles-dialog[open]')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.oracles-dialog')).toBeVisible({ timeout: 5_000 });
 		await page.keyboard.press('Escape');
 	});
 

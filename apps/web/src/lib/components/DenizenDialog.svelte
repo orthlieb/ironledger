@@ -15,6 +15,7 @@
 	import type { Site, FoeDef, FoeQuantity } from '$lib/types.js';
 	import { DENIZEN_CELLS } from '$lib/types.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
+	import { Dialog } from 'bits-ui';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import { rankBadgeStyle } from '$lib/badgeStyles.js';
 	import {
@@ -41,7 +42,7 @@
 	// ---------------------------------------------------------------------------
 	// State
 	// ---------------------------------------------------------------------------
-	let dialogEl = $state<HTMLDialogElement | null>(null);
+	let dialogOpen = $state(false);
 	let view = $state<'table' | 'result'>('table');
 	let rolling = $state(false);
 	let rolledIndex = $state(-1);
@@ -75,11 +76,11 @@
 		rolling = false;
 		rolledIndex = -1;
 		quantity = 'solo';
-		dialogEl?.showModal();
+		dialogOpen = true;
 	}
 
 	export function close(): void {
-		dialogEl?.close();
+		dialogOpen = false;
 	}
 
 	// ---------------------------------------------------------------------------
@@ -95,7 +96,7 @@
 		const denizenName = site?.denizens[idx] ?? '';
 
 		// Close dialog so dice animation is visible
-		dialogEl?.close();
+		dialogOpen = false;
 
 		const tensV = Math.floor((rollVal % 100) / 10) || 10;
 		const onesV = rollVal % 10 || 10;
@@ -115,7 +116,7 @@
 		view = 'result';
 
 		// Reopen dialog to show result
-		dialogEl?.showModal();
+		dialogOpen = true;
 	}
 
 	// ---------------------------------------------------------------------------
@@ -125,196 +126,197 @@
 		if (!rolledFoe) return;
 		const qty = quantity;
 		const er = effRank;
-		dialogEl?.close();
+		dialogOpen = false;
 		onSelect(rolledFoe, qty, er);
 	}
 </script>
 
-<dialog bind:this={dialogEl} class="denizen-dialog" aria-label="Denizen Table">
-	<!-- ===== TABLE VIEW ===== -->
-	{#if view === 'table'}
-		<DialogHeader title={headingText('Denizen Table')} radius="8px 8px 0 0" />
+<Dialog.Root bind:open={dialogOpen}>
+	<Dialog.Portal>
+		<Dialog.Overlay class="denizen-overlay" />
+		<Dialog.Content class="denizen-dialog" aria-label="Denizen Table">
+			<!-- ===== TABLE VIEW ===== -->
+			{#if view === 'table'}
+				<DialogHeader title={headingText('Denizen Table')} radius="8px 8px 0 0" />
 
-		<div class="dd-table-wrap">
-			<table class="dd-table">
-				<thead>
-					<tr>
-						<th>d100</th>
-						<th>Frequency</th>
-						<th>Foe</th>
-					</tr>
-				</thead>
-				<tbody>
-					{#each DENIZEN_CELLS as cell, i}
-						<tr class:dd-row-rolled={rolledIndex === i}>
-							<td class="dd-range">{cell.range}</td>
-							<td class="dd-freq">{cell.label}</td>
-							<td class="dd-foe-name">{site?.denizens[i] || '—'}</td>
-						</tr>
-					{/each}
-				</tbody>
-			</table>
-		</div>
-
-		<div class="dd-footer">
-			<button class="btn" onclick={close}>Cancel</button>
-			<button class="btn btn-primary" onclick={roll} disabled={rolling}>
-				{rolling ? 'Rolling…' : 'Roll d100'}
-			</button>
-		</div>
-
-		<!-- ===== RESULT VIEW ===== -->
-	{:else if view === 'result'}
-		{@const qtyDef = FOE_QUANTITIES.find((q) => q.value === quantity)}
-
-		<DialogHeader
-			title={headingText(rolledFoe?.name ?? (rolledName || 'Unknown Denizen'))}
-			radius="8px 8px 0 0"
-		/>
-
-		<div class="dd-result-scroll">
-			{#if rolledFoe && rankInfo}
-				<!-- Top row: portrait + quantity/pills -->
-				<div class="dd-confirm-top">
-					<div class="dd-portrait-wrap">
-						<FoeImageCarousel
-							name={rolledFoe.name}
-							images={rolledFoe.images}
-							alt={rolledFoe.name}
-							class="dd-portrait"
-						/>
-					</div>
-
-					<div class="dd-qty-section">
-						<fieldset class="dd-quantity-group">
-							<legend class="dd-quantity-legend">Quantity</legend>
-							{#each FOE_QUANTITIES as qty}
-								<label class="dd-qty-label" class:selected={quantity === qty.value}>
-									<input
-										type="radio"
-										name="denizen-quantity"
-										value={qty.value}
-										checked={quantity === qty.value}
-										onchange={() => (quantity = qty.value)}
-									/>
-									<span class="dd-qty-name">{qty.label}</span>
-								</label>
+				<div class="dd-table-wrap">
+					<table class="dd-table">
+						<thead>
+							<tr>
+								<th>d100</th>
+								<th>Frequency</th>
+								<th>Foe</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each DENIZEN_CELLS as cell, i}
+								<tr class:dd-row-rolled={rolledIndex === i}>
+									<td class="dd-range">{cell.range}</td>
+									<td class="dd-freq">{cell.label}</td>
+									<td class="dd-foe-name">{site?.denizens[i] || '—'}</td>
+								</tr>
 							{/each}
-						</fieldset>
+						</tbody>
+					</table>
+				</div>
 
-						<div class="dd-pills">
-							<span class="dd-badge" style="background: {natureColor}22; color: {natureColor}"
-								>{rolledFoe.nature}</span
-							>
-							<span class="dd-badge dd-badge--rank" style={rankBadgeStyle(effRank)}
-								>{rankInfo.label}</span
-							>
-							<span class="dd-stat-pill dd-stat-pill--harm">Harm: {rankInfo.harm}</span>
-							<span class="dd-stat-pill dd-stat-pill--progress"
-								>Progress: {rankInfo.progressPerHit}</span
-							>
-							<span class="dd-stat-pill dd-stat-pill--qty">{qtyDef?.label ?? quantity}</span>
+				<div class="dd-footer">
+					<button class="btn" onclick={close}>Cancel</button>
+					<button class="btn btn-primary" onclick={roll} disabled={rolling}>
+						{rolling ? 'Rolling…' : 'Roll d100'}
+					</button>
+				</div>
+
+				<!-- ===== RESULT VIEW ===== -->
+			{:else if view === 'result'}
+				{@const qtyDef = FOE_QUANTITIES.find((q) => q.value === quantity)}
+
+				<DialogHeader
+					title={headingText(rolledFoe?.name ?? (rolledName || 'Unknown Denizen'))}
+					radius="8px 8px 0 0"
+				/>
+
+				<div class="dd-result-scroll">
+					{#if rolledFoe && rankInfo}
+						<!-- Top row: portrait + quantity/pills -->
+						<div class="dd-confirm-top">
+							<div class="dd-portrait-wrap">
+								<FoeImageCarousel
+									name={rolledFoe.name}
+									images={rolledFoe.images}
+									alt={rolledFoe.name}
+									class="dd-portrait"
+								/>
+							</div>
+
+							<div class="dd-qty-section">
+								<fieldset class="dd-quantity-group">
+									<legend class="dd-quantity-legend">Quantity</legend>
+									{#each FOE_QUANTITIES as qty}
+										<label class="dd-qty-label" class:selected={quantity === qty.value}>
+											<input
+												type="radio"
+												name="denizen-quantity"
+												value={qty.value}
+												checked={quantity === qty.value}
+												onchange={() => (quantity = qty.value)}
+											/>
+											<span class="dd-qty-name">{qty.label}</span>
+										</label>
+									{/each}
+								</fieldset>
+
+								<div class="dd-pills">
+									<span class="dd-badge" style="background: {natureColor}22; color: {natureColor}"
+										>{rolledFoe.nature}</span
+									>
+									<span class="dd-badge dd-badge--rank" style={rankBadgeStyle(effRank)}
+										>{rankInfo.label}</span
+									>
+									<span class="dd-stat-pill dd-stat-pill--harm">Harm: {rankInfo.harm}</span>
+									<span class="dd-stat-pill dd-stat-pill--progress"
+										>Progress: {rankInfo.progressPerHit}</span
+									>
+									<span class="dd-stat-pill dd-stat-pill--qty">{qtyDef?.label ?? quantity}</span>
+								</div>
+							</div>
 						</div>
-					</div>
-				</div>
 
-				<!-- Bottom: description + features/drives/tactics, full width -->
-				{#if rolledFoe.description || rolledFoe.features.length > 0 || rolledFoe.drives.length > 0 || rolledFoe.tactics.length > 0}
-					<div class="dd-confirm-bottom">
-						{#if rolledFoe.description}
-							<p class="dd-desc">{rolledFoe.description}</p>
-						{/if}
-						{#if rolledFoe.features.length > 0}
-							<div class="dd-section">
-								<span class="dd-section-label">Features</span>
-								<ul class="dd-list">
-									{#each rolledFoe.features as feat}<li>{feat}</li>{/each}
-								</ul>
+						<!-- Bottom: description + features/drives/tactics, full width -->
+						{#if rolledFoe.description || rolledFoe.features.length > 0 || rolledFoe.drives.length > 0 || rolledFoe.tactics.length > 0}
+							<div class="dd-confirm-bottom">
+								{#if rolledFoe.description}
+									<p class="dd-desc">{rolledFoe.description}</p>
+								{/if}
+								{#if rolledFoe.features.length > 0}
+									<div class="dd-section">
+										<span class="dd-section-label">Features</span>
+										<ul class="dd-list">
+											{#each rolledFoe.features as feat}<li>{feat}</li>{/each}
+										</ul>
+									</div>
+								{/if}
+								{#if rolledFoe.drives.length > 0}
+									<div class="dd-section">
+										<span class="dd-section-label">Drives</span>
+										<ul class="dd-list">
+											{#each rolledFoe.drives as d}<li>{d}</li>{/each}
+										</ul>
+									</div>
+								{/if}
+								{#if rolledFoe.tactics.length > 0}
+									<div class="dd-section">
+										<span class="dd-section-label">Tactics</span>
+										<ul class="dd-list">
+											{#each rolledFoe.tactics as t}<li>{t}</li>{/each}
+										</ul>
+									</div>
+								{/if}
 							</div>
 						{/if}
-						{#if rolledFoe.drives.length > 0}
-							<div class="dd-section">
-								<span class="dd-section-label">Drives</span>
-								<ul class="dd-list">
-									{#each rolledFoe.drives as d}<li>{d}</li>{/each}
-								</ul>
-							</div>
-						{/if}
-						{#if rolledFoe.tactics.length > 0}
-							<div class="dd-section">
-								<span class="dd-section-label">Tactics</span>
-								<ul class="dd-list">
-									{#each rolledFoe.tactics as t}<li>{t}</li>{/each}
-								</ul>
-							</div>
-						{/if}
-					</div>
-				{/if}
-			{:else}
-				<!-- No matching foe — show roll info only -->
-				<div class="dd-no-foe">
-					{#if rolledCell}
-						<p class="dd-no-foe-roll">
-							Rolled <strong>{rolledCell.range}</strong> — {rolledCell.label}
-						</p>
-					{/if}
-					{#if rolledName}
-						<p class="dd-no-foe-name">"{rolledName}" is not in the foe catalogue.</p>
 					{:else}
-						<p class="dd-no-foe-name">No denizen assigned for this range.</p>
+						<!-- No matching foe — show roll info only -->
+						<div class="dd-no-foe">
+							{#if rolledCell}
+								<p class="dd-no-foe-roll">
+									Rolled <strong>{rolledCell.range}</strong> — {rolledCell.label}
+								</p>
+							{/if}
+							{#if rolledName}
+								<p class="dd-no-foe-name">"{rolledName}" is not in the foe catalogue.</p>
+							{:else}
+								<p class="dd-no-foe-name">No denizen assigned for this range.</p>
+							{/if}
+						</div>
+					{/if}
+				</div>
+
+				<div class="dd-footer">
+					<button class="btn back-btn" onclick={() => (view = 'table')} style="margin-right: auto"
+						>Back</button
+					>
+					<button class="btn" onclick={close}>Cancel</button>
+					{#if rolledFoe}
+						<button class="btn btn-primary" onclick={confirm}>Add to Foes</button>
 					{/if}
 				</div>
 			{/if}
-		</div>
-
-		<div class="dd-footer">
-			<button class="btn back-btn" onclick={() => (view = 'table')} style="margin-right: auto"
-				>Back</button
-			>
-			<button class="btn" onclick={close}>Cancel</button>
-			{#if rolledFoe}
-				<button class="btn btn-primary" onclick={confirm}>Add to Foes</button>
-			{/if}
-		</div>
-	{/if}
-</dialog>
+		</Dialog.Content>
+	</Dialog.Portal>
+</Dialog.Root>
 
 <style>
-	/* ── Dialog shell ──────────────────────────────────────────────── */
-	.denizen-dialog {
-		padding: 0;
-		border: 1px solid var(--border);
-		border-radius: 8px;
-		background: var(--bg-card);
-		color: var(--text);
-		box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
-		/* Centre via top/left + transform; `inset: 0; margin: auto` collapses
-		   the dialog to a thin line on iOS Safari when combined with an open-
-		   state `display: flex` container. */
+	/* bits-ui portals Content + Overlay to <body>; scope everything
+	   globally. Overlay 80 / content 81 matches the modal z-index tier. */
+	:global(.denizen-overlay) {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.6);
+		backdrop-filter: blur(2px);
+		z-index: 80;
+	}
+	:global(.denizen-dialog) {
+		display: flex;
+		flex-direction: column;
 		position: fixed;
 		top: 50%;
 		left: 50%;
-		margin: 0;
 		transform: translate(-50%, -50%);
 		width: min(640px, calc(100vw - 1rem));
-		/* Definite height — fit-content + max-height collapses the flex:1 body
-		   to near-zero on mobile (dialog only shows header + footer). vh (not
-		   dvh) for broader iOS Safari reliability. */
 		height: min(85vh, 720px);
+		background: var(--bg-card);
+		color: var(--text);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
 		overflow: hidden;
-	}
-	.denizen-dialog[open] {
-		display: flex;
-		flex-direction: column;
-	}
-	.denizen-dialog::backdrop {
-		background: rgba(0, 0, 0, 0.6);
-		backdrop-filter: blur(2px);
+		outline: none;
+		z-index: 81;
 	}
 
 	/* ── Shared header / footer ────────────────────────────────────── */
 
-	.dd-footer {
+	:global(.dd-footer) {
 		display: flex;
 		justify-content: flex-end;
 		gap: 8px;
@@ -324,21 +326,21 @@
 	}
 
 	/* ── Table view ────────────────────────────────────────────────── */
-	.dd-table-wrap {
+	:global(.dd-table-wrap) {
 		flex: 1;
 		overflow-y: auto;
 		overscroll-behavior: contain;
 		min-height: 0;
 	}
 
-	.dd-table {
+	:global(.dd-table) {
 		width: 100%;
 		border-collapse: collapse;
 		font-family: var(--font-ui);
 		font-size: 0.78rem;
 	}
 
-	.dd-table th {
+	:global(.dd-table th) {
 		position: sticky;
 		top: 0;
 		background: var(--bg-inset);
@@ -354,35 +356,35 @@
 		z-index: 1;
 	}
 
-	.dd-table td {
+	:global(.dd-table td) {
 		padding: 6px 12px;
 		border-bottom: 1px solid var(--border);
 		color: var(--text);
 		vertical-align: middle;
 	}
 
-	.dd-range {
+	:global(.dd-range) {
 		font-variant-numeric: tabular-nums;
 		color: var(--text-dimmer);
 		white-space: nowrap;
 		width: 4rem;
 	}
 
-	.dd-freq {
+	:global(.dd-freq) {
 		color: var(--text-muted);
 		white-space: nowrap;
 		width: 8rem;
 	}
 
-	.dd-foe-name {
+	:global(.dd-foe-name) {
 		color: var(--text);
 	}
 
-	.dd-table tbody tr:hover td {
+	:global(.dd-table tbody tr:hover td) {
 		background: var(--bg-hover);
 	}
 
-	.dd-row-rolled td {
+	:global(.dd-row-rolled td) {
 		background: color-mix(in srgb, var(--text-accent) 12%, transparent) !important;
 		color: var(--text-accent);
 		font-weight: 600;
@@ -390,7 +392,7 @@
 
 	/* ── Result view: back bar ─────────────────────────────────────── */
 	/* ── Result scroll area ────────────────────────────────────────── */
-	.dd-result-scroll {
+	:global(.dd-result-scroll) {
 		flex: 1;
 		overflow-y: auto;
 		overscroll-behavior: contain;
@@ -402,7 +404,7 @@
 	}
 
 	/* ── Top row: portrait + quantity/pills ────────────────────────── */
-	.dd-confirm-top {
+	:global(.dd-confirm-top) {
 		display: flex;
 		flex-direction: column;
 		gap: 0.65rem;
@@ -423,7 +425,7 @@
 		}
 	}
 
-	.dd-portrait-wrap {
+	:global(.dd-portrait-wrap) {
 		width: 100%;
 	}
 
@@ -436,7 +438,7 @@
 		display: block;
 	}
 
-	.dd-qty-section {
+	:global(.dd-qty-section) {
 		display: flex;
 		flex-direction: column;
 		gap: 0.6rem;
@@ -444,14 +446,14 @@
 	}
 
 	/* ── Quantity fieldset ─────────────────────────────────────────── */
-	.dd-quantity-group {
+	:global(.dd-quantity-group) {
 		border: 1px solid var(--border);
 		border-radius: 6px;
 		padding: 0.35rem 0.6rem 0.5rem;
 		margin: 0;
 	}
 
-	.dd-quantity-legend {
+	:global(.dd-quantity-legend) {
 		font-family: var(--font-ui);
 		font-size: 0.65rem;
 		font-weight: 600;
@@ -461,7 +463,7 @@
 		padding: 0 4px;
 	}
 
-	.dd-qty-label {
+	:global(.dd-qty-label) {
 		display: flex;
 		align-items: center;
 		gap: 6px;
@@ -470,18 +472,18 @@
 		cursor: pointer;
 		transition: background 0.1s;
 	}
-	.dd-qty-label:hover {
+	:global(.dd-qty-label:hover) {
 		background: rgba(255, 255, 255, 0.05);
 	}
-	.dd-qty-label.selected {
+	:global(.dd-qty-label.selected) {
 		background: rgba(255, 255, 255, 0.08);
 	}
-	.dd-qty-label input[type='radio'] {
+	:global(.dd-qty-label input[type='radio']) {
 		flex-shrink: 0;
 		accent-color: var(--text-accent);
 	}
 
-	.dd-qty-name {
+	:global(.dd-qty-name) {
 		font-family: var(--font-ui);
 		font-size: 0.8rem;
 		font-weight: 600;
@@ -489,14 +491,14 @@
 	}
 
 	/* ── Pills ─────────────────────────────────────────────────────── */
-	.dd-pills {
+	:global(.dd-pills) {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 6px;
 		align-items: center;
 	}
 
-	.dd-badge {
+	:global(.dd-badge) {
 		font-family: var(--font-ui);
 		font-size: 0.6rem;
 		font-weight: 600;
@@ -507,12 +509,12 @@
 		border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
 		white-space: nowrap;
 	}
-	.dd-badge--rank {
+	:global(.dd-badge--rank) {
 		background: rgba(255, 255, 255, 0.06);
 		color: var(--text-muted);
 	}
 
-	.dd-stat-pill {
+	:global(.dd-stat-pill) {
 		font-family: var(--font-ui);
 		font-size: 0.6rem;
 		font-weight: 600;
@@ -522,30 +524,30 @@
 		border-radius: 10px;
 		white-space: nowrap;
 	}
-	.dd-stat-pill--harm {
+	:global(.dd-stat-pill--harm) {
 		background: rgba(239, 68, 68, 0.1);
 		color: #ef4444;
 		border: 1px solid rgba(239, 68, 68, 0.25);
 	}
-	.dd-stat-pill--progress {
+	:global(.dd-stat-pill--progress) {
 		background: rgba(59, 130, 246, 0.1);
 		color: #60a5fa;
 		border: 1px solid rgba(59, 130, 246, 0.25);
 	}
-	.dd-stat-pill--qty {
+	:global(.dd-stat-pill--qty) {
 		background: rgba(255, 255, 255, 0.08);
 		color: var(--text-muted);
 		border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
 	}
 
 	/* ── Bottom: description + sections ───────────────────────────── */
-	.dd-confirm-bottom {
+	:global(.dd-confirm-bottom) {
 		display: flex;
 		flex-direction: column;
 		gap: 0.65rem;
 	}
 
-	.dd-desc {
+	:global(.dd-desc) {
 		font-family: var(--font-ui);
 		font-size: 0.78rem;
 		line-height: 1.55;
@@ -553,13 +555,13 @@
 		margin: 0;
 	}
 
-	.dd-section {
+	:global(.dd-section) {
 		display: flex;
 		flex-direction: column;
 		gap: 4px;
 	}
 
-	.dd-section-label {
+	:global(.dd-section-label) {
 		font-family: var(--font-ui);
 		font-size: 0.65rem;
 		font-weight: 600;
@@ -568,12 +570,12 @@
 		color: var(--text-dimmer);
 	}
 
-	.dd-list {
+	:global(.dd-list) {
 		margin: 0;
 		padding-left: 1.2em;
 		list-style: disc;
 	}
-	.dd-list li {
+	:global(.dd-list li) {
 		font-family: var(--font-ui);
 		font-size: 0.78rem;
 		color: var(--text-muted);
@@ -581,7 +583,7 @@
 	}
 
 	/* ── No-foe fallback ───────────────────────────────────────────── */
-	.dd-no-foe {
+	:global(.dd-no-foe) {
 		display: flex;
 		flex-direction: column;
 		gap: 0.5rem;
@@ -589,14 +591,14 @@
 		text-align: center;
 	}
 
-	.dd-no-foe-roll {
+	:global(.dd-no-foe-roll) {
 		font-family: var(--font-ui);
 		font-size: 0.9rem;
 		color: var(--text);
 		margin: 0;
 	}
 
-	.dd-no-foe-name {
+	:global(.dd-no-foe-name) {
 		font-family: var(--font-ui);
 		font-size: 0.78rem;
 		font-style: italic;

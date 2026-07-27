@@ -28,13 +28,15 @@
 
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
+	import { Dialog } from 'bits-ui';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import { tooltip } from '$lib/actions/tooltip.js';
 
 	// ---------------------------------------------------------------------------
 	// Internal state
 	// ---------------------------------------------------------------------------
-	let dialogEl = $state<HTMLDialogElement | null>(null);
+	let dialogOpen = $state(false);
+	let searchInputEl = $state<HTMLInputElement | null>(null);
 	let view = $state<'picker' | 'detail'>('picker');
 	let selectedKey = $state<string | null>(null);
 	let search = $state('');
@@ -109,14 +111,14 @@
 		search = '';
 		activeSources = new Set();
 		loadOracles(); // idempotent — fetches once per session
-		dialogEl?.showModal();
+		dialogOpen = true;
 	}
 
 	export function close() {
 		_onFill = null;
 		activeStat = null;
 		selectedDelveStat = 'edge';
-		dialogEl?.close();
+		dialogOpen = false;
 	}
 
 	// ---------------------------------------------------------------------------
@@ -170,200 +172,214 @@
 </script>
 
 <!-- =========================================================================
-     Dialog
+     Dialog — bits-ui Dialog: portalled, escape-aware, focus-trapped.
      ========================================================================= -->
-<dialog bind:this={dialogEl} class="oracles-dialog" oncancel={close}>
-	{#if view === 'picker'}
-		<!-- ── Picker view ────────────────────────────────────────────────────── -->
+<Dialog.Root bind:open={dialogOpen}>
+	<Dialog.Portal>
+		<Dialog.Overlay class="oracles-overlay" />
+		<Dialog.Content
+			class="oracles-dialog"
+			onOpenAutoFocus={(e) => {
+				// In picker view, jump the caret straight to the search
+				// input; detail view keeps default focus (Back/Roll button).
+				if (view === 'picker') {
+					e.preventDefault();
+					searchInputEl?.focus();
+				}
+			}}
+		>
+			{#if view === 'picker'}
+				<!-- ── Picker view ────────────────────────────────────────────────────── -->
 
-		<!-- Header -->
-		<DialogHeader title={headingText('Oracles')} onclose={close} />
+				<!-- Header -->
+				<DialogHeader title={headingText('Oracles')} onclose={close} />
 
-		<!-- Controls -->
-		<div class="od-controls">
-			<!-- Search row -->
-			<div class="od-search-row">
-				<div class="od-search-field">
-					<span class="od-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
-					<input
-						class="od-search"
-						type="search"
-						placeholder="Search oracles…"
-						bind:value={search}
-						aria-label="Search oracles"
-					/>
-				</div>
-				<!-- Source filter toggle -->
-				<button
-					class="od-filter-toggle"
-					class:od-filter-toggle--active={activeSources.size > 0}
-					onclick={() => (filtersOpen = !filtersOpen)}
-					aria-expanded={filtersOpen}
-				>
-					Filters{#if activeSources.size > 0}&nbsp;<span class="od-filter-badge"
-							>{activeSources.size}</span
-						>{/if}
-					{filtersOpen ? '▲' : '▼'}
-				</button>
-			</div>
-			{#if filtersOpen}
-				<div class="od-filter-panel">
-					<div class="od-filter-chips">
-						{#each sources as src (src)}
-							<button
-								class="od-group-tag"
-								class:od-group-tag--active={activeSources.has(src)}
-								style:--gcolor={sourceColor(src)}
-								onclick={() => toggleSource(src)}>{sourceLabel(src)}</button
-							>
-						{/each}
+				<!-- Controls -->
+				<div class="od-controls">
+					<!-- Search row -->
+					<div class="od-search-row">
+						<div class="od-search-field">
+							<span class="od-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
+							<input
+								bind:this={searchInputEl}
+								class="od-search"
+								type="search"
+								placeholder="Search oracles…"
+								bind:value={search}
+								aria-label="Search oracles"
+							/>
+						</div>
+						<!-- Source filter toggle -->
+						<button
+							class="od-filter-toggle"
+							class:od-filter-toggle--active={activeSources.size > 0}
+							onclick={() => (filtersOpen = !filtersOpen)}
+							aria-expanded={filtersOpen}
+						>
+							Filters{#if activeSources.size > 0}&nbsp;<span class="od-filter-badge"
+									>{activeSources.size}</span
+								>{/if}
+							{filtersOpen ? '▲' : '▼'}
+						</button>
 					</div>
+					{#if filtersOpen}
+						<div class="od-filter-panel">
+							<div class="od-filter-chips">
+								{#each sources as src (src)}
+									<button
+										class="od-group-tag"
+										class:od-group-tag--active={activeSources.has(src)}
+										style:--gcolor={sourceColor(src)}
+										onclick={() => toggleSource(src)}>{sourceLabel(src)}</button
+									>
+								{/each}
+							</div>
+							<button
+								class="od-clear-btn"
+								use:tooltip={'Clear all filters'}
+								onclick={clearFilters}
+								disabled={activeSources.size === 0}
+								aria-label="Clear all filters">{@html clearFiltersSvg}</button
+							>
+						</div>
+					{/if}
+				</div>
+
+				<!-- Tile grid -->
+				<div class="od-body">
+					{#if allOracles.length === 0}
+						<div class="od-loading">Loading oracles…</div>
+					{:else}
+						{@const list = filteredOracles()}
+						{#if list.length === 0}
+							<div class="od-empty">No oracles match.</div>
+						{:else}
+							<div class="od-grid">
+								{#each list as oracle (oracle.key)}
+									<button
+										class="od-tile"
+										style:--tcolor={sourceColor(oracle.source)}
+										onclick={() => {
+											selectedKey = oracle.key;
+											view = 'detail';
+										}}
+									>
+										<div class="od-tile-stripe"></div>
+										<div class="od-tile-body">
+											<div class="od-tile-name">{oracle.title}</div>
+											{#if oracle.description}
+												<div class="od-tile-desc">{oracle.description}</div>
+											{/if}
+										</div>
+									</button>
+								{/each}
+							</div>
+						{/if}
+					{/if}
+				</div>
+			{:else if view === 'detail' && selectedOracle}
+				<!-- ── Detail view ───────────────────────────────────────────────────── -->
+
+				<!-- Header -->
+				<DialogHeader title={selectedOracle.title} detail />
+
+				<!-- Detail body -->
+				<div class="od-body od-body--detail">
+					{#if selectedOracle.description}
+						<p class="od-detail-desc">{selectedOracle.description}</p>
+					{/if}
+
+					{#if selectedOracle.tableType === 'delveDepths'}
+						<div class="od-delve-stat-picker">
+							{#each [['edge', 'Edge', 'var(--color-edge)'], ['shadow', 'Shadow', 'var(--color-shadow)'], ['wits', 'Wits', 'var(--color-wits)']] as [s, label, color] (s)}
+								<button
+									class="od-delve-stat-btn"
+									class:od-delve-stat-btn--active={selectedDelveStat === s}
+									style:--stat-color={color}
+									onclick={() => {
+										selectedDelveStat = s;
+										activeStat = s;
+									}}>{label}</button
+								>
+							{/each}
+						</div>
+					{/if}
+
+					<div
+						class="od-table-wrap"
+						style:--active-col-color={activeStat
+							? `var(--color-${activeStat})`
+							: 'var(--text-accent)'}
+					>
+						{@html buildTableHtml(
+							selectedOracle.key,
+							selectedOracle.data,
+							activeStat ? { activeStat } : undefined,
+						)}
+					</div>
+				</div>
+
+				<!-- Roll footer -->
+				<div class="od-footer">
+					{#if !directLaunch}
+						<button
+							class="btn back-btn"
+							onclick={() => {
+								view = 'picker';
+								activeStat = null;
+							}}
+							style="margin-right: auto">Back</button
+						>
+					{/if}
+					<button class="btn btn-secondary od-cancel-btn" onclick={close}>Cancel</button>
 					<button
-						class="od-clear-btn"
-						use:tooltip={'Clear all filters'}
-						onclick={clearFilters}
-						disabled={activeSources.size === 0}
-						aria-label="Clear all filters">{@html clearFiltersSvg}</button
+						class="btn btn-primary od-roll-btn"
+						onclick={() => doRoll(selectedOracle!.key)}
+						disabled={rolling}>{rolling ? 'Rolling…' : 'Roll'}</button
 					>
 				</div>
 			{/if}
-		</div>
-
-		<!-- Tile grid -->
-		<div class="od-body">
-			{#if allOracles.length === 0}
-				<div class="od-loading">Loading oracles…</div>
-			{:else}
-				{@const list = filteredOracles()}
-				{#if list.length === 0}
-					<div class="od-empty">No oracles match.</div>
-				{:else}
-					<div class="od-grid">
-						{#each list as oracle (oracle.key)}
-							<button
-								class="od-tile"
-								style:--tcolor={sourceColor(oracle.source)}
-								onclick={() => {
-									selectedKey = oracle.key;
-									view = 'detail';
-								}}
-							>
-								<div class="od-tile-stripe"></div>
-								<div class="od-tile-body">
-									<div class="od-tile-name">{oracle.title}</div>
-									{#if oracle.description}
-										<div class="od-tile-desc">{oracle.description}</div>
-									{/if}
-								</div>
-							</button>
-						{/each}
-					</div>
-				{/if}
-			{/if}
-		</div>
-	{:else if view === 'detail' && selectedOracle}
-		<!-- ── Detail view ───────────────────────────────────────────────────── -->
-
-		<!-- Header -->
-		<DialogHeader title={selectedOracle.title} detail />
-
-		<!-- Detail body -->
-		<div class="od-body od-body--detail">
-			{#if selectedOracle.description}
-				<p class="od-detail-desc">{selectedOracle.description}</p>
-			{/if}
-
-			{#if selectedOracle.tableType === 'delveDepths'}
-				<div class="od-delve-stat-picker">
-					{#each [['edge', 'Edge', 'var(--color-edge)'], ['shadow', 'Shadow', 'var(--color-shadow)'], ['wits', 'Wits', 'var(--color-wits)']] as [s, label, color] (s)}
-						<button
-							class="od-delve-stat-btn"
-							class:od-delve-stat-btn--active={selectedDelveStat === s}
-							style:--stat-color={color}
-							onclick={() => {
-								selectedDelveStat = s;
-								activeStat = s;
-							}}>{label}</button
-						>
-					{/each}
-				</div>
-			{/if}
-
-			<div
-				class="od-table-wrap"
-				style:--active-col-color={activeStat ? `var(--color-${activeStat})` : 'var(--text-accent)'}
-			>
-				{@html buildTableHtml(
-					selectedOracle.key,
-					selectedOracle.data,
-					activeStat ? { activeStat } : undefined,
-				)}
-			</div>
-		</div>
-
-		<!-- Roll footer -->
-		<div class="od-footer">
-			{#if !directLaunch}
-				<button
-					class="btn back-btn"
-					onclick={() => {
-						view = 'picker';
-						activeStat = null;
-					}}
-					style="margin-right: auto">Back</button
-				>
-			{/if}
-			<button class="btn btn-secondary od-cancel-btn" onclick={close}>Cancel</button>
-			<button
-				class="btn btn-primary od-roll-btn"
-				onclick={() => doRoll(selectedOracle!.key)}
-				disabled={rolling}>{rolling ? 'Rolling…' : 'Roll'}</button
-			>
-		</div>
-	{/if}
-</dialog>
+		</Dialog.Content>
+	</Dialog.Portal>
+</Dialog.Root>
 
 <style>
-	/* ── Dialog shell ────────────────────────────────────────────────────── */
-	.oracles-dialog {
-		border: none;
-		padding: 0;
-		border-radius: 10px;
+	/* bits-ui portals Content + Overlay to <body>; scope everything
+	   globally. Overlay 80 / content 81 matches the modal z-index tier. */
+	:global(.oracles-overlay) {
 		position: fixed;
-		/* Anchor to a fixed top — prevents the dialog "dancing" when the tile
-		   grid shrinks as filters are applied. true vertical centering
-		   (top:50% / translateY(-50%)) shifts the box as height changes.
-		   vh (not dvh): iOS Safari reports dvh as 0 for top-layer dialogs,
-		   collapsing `top` and the height cap to zero. */
+		inset: 0;
+		background: #00000060;
+		backdrop-filter: blur(1px);
+		z-index: 80;
+	}
+	:global(.oracles-dialog) {
+		display: flex;
+		flex-direction: column;
+		position: fixed;
+		/* Anchor to a fixed top — prevents the dialog "dancing" when
+		   the tile grid shrinks as filters are applied. Definite height
+		   below because fit-content + max-height collapses the flex:1
+		   body to near-zero on mobile. */
 		top: 8vh;
 		left: 50%;
 		transform: translateX(-50%);
 		width: min(640px, calc(100vw - 1rem));
-		/* Definite height — fit-content + max-height collapses the flex:1 body
-		   to near-zero on mobile (dialog only shows header + search bar). */
 		height: min(84vh, 720px);
 		background: var(--bg-card);
 		color: var(--text);
+		border-radius: 10px;
 		box-shadow:
 			0 16px 48px #00000070,
 			0 0 0 1px var(--border-mid);
 		outline: none;
 		overflow: hidden;
-	}
-	/* Flex layout only when the dialog is actually open — prevents display:flex
-	   from overriding the browser's display:none on a closed <dialog>. */
-	.oracles-dialog[open] {
-		display: flex;
-		flex-direction: column;
-	}
-	.oracles-dialog::backdrop {
-		background: #00000060;
-		backdrop-filter: blur(1px);
+		z-index: 81;
 	}
 
 	/* ── Header ─────────────────────────────────────────────────────────── */
 	/* ── Controls (search + group tags) ─────────────────────────────────── */
-	.od-controls {
+	:global(.od-controls) {
 		padding: 8px 14px 6px;
 		border-bottom: 1px solid var(--border);
 		flex-shrink: 0;
@@ -372,19 +388,19 @@
 		gap: 6px;
 	}
 
-	.od-search-row {
+	:global(.od-search-row) {
 		display: flex;
 		align-items: center;
 		gap: 6px;
 	}
-	.od-search-field {
+	:global(.od-search-field) {
 		flex: 1;
 		min-width: 0;
 		position: relative;
 		display: flex;
 		align-items: center;
 	}
-	.od-search-icon {
+	:global(.od-search-icon) {
 		position: absolute;
 		left: 8px;
 		width: 13px;
@@ -393,13 +409,13 @@
 		pointer-events: none;
 		color: var(--text-dimmer);
 	}
-	.od-search-icon :global(svg) {
+	:global(.od-search-icon :global(svg)) {
 		width: 100%;
 		height: 100%;
 		fill: currentColor;
 	}
 
-	.od-search {
+	:global(.od-search) {
 		flex: 1;
 		font-family: var(--font-ui);
 		font-size: 0.78rem;
@@ -410,13 +426,13 @@
 		padding: 5px 8px 5px 28px;
 		min-width: 0;
 	}
-	.od-search:focus {
+	:global(.od-search:focus) {
 		outline: none;
 		border-color: var(--focus-ring);
 		box-shadow: 0 0 0 2px var(--accent-glow);
 	}
 
-	.od-clear-btn {
+	:global(.od-clear-btn) {
 		position: absolute;
 		bottom: 6px;
 		right: 6px;
@@ -432,20 +448,20 @@
 			color 0.12s,
 			opacity 0.12s;
 	}
-	.od-clear-btn:hover:not(:disabled) {
+	:global(.od-clear-btn:hover:not(:disabled)) {
 		color: var(--text);
 	}
-	.od-clear-btn:disabled {
+	:global(.od-clear-btn:disabled) {
 		opacity: 0.25;
 		cursor: not-allowed;
 	}
-	.od-clear-btn :global(svg) {
+	:global(.od-clear-btn :global(svg)) {
 		width: 16px;
 		height: 16px;
 		fill: currentColor;
 	}
 
-	.od-filter-toggle {
+	:global(.od-filter-toggle) {
 		display: flex;
 		align-items: center;
 		gap: 4px;
@@ -464,15 +480,15 @@
 			border-color 0.1s,
 			color 0.1s;
 	}
-	.od-filter-toggle:hover {
+	:global(.od-filter-toggle:hover) {
 		color: var(--text);
 		border-color: var(--border-mid);
 	}
-	.od-filter-toggle--active {
+	:global(.od-filter-toggle--active) {
 		color: var(--accent);
 		border-color: var(--accent);
 	}
-	.od-filter-badge {
+	:global(.od-filter-badge) {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
@@ -485,20 +501,20 @@
 		font-size: 0.6rem;
 		font-weight: 700;
 	}
-	.od-filter-panel {
+	:global(.od-filter-panel) {
 		position: relative;
 		padding: 6px 8px;
 		background: var(--bg-inset);
 		border: 1px solid var(--border);
 		border-radius: 6px;
 	}
-	.od-filter-chips {
+	:global(.od-filter-chips) {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 4px;
 		padding-right: 26px;
 	}
-	.od-group-tag {
+	:global(.od-group-tag) {
 		font-family: var(--font-ui);
 		font-size: 0.65rem;
 		font-weight: 600;
@@ -515,30 +531,30 @@
 			background 0.12s,
 			color 0.12s;
 	}
-	.od-group-tag:hover {
+	:global(.od-group-tag:hover) {
 		background: color-mix(in srgb, var(--gcolor, var(--border)) 12%, transparent);
 	}
-	.od-group-tag--active {
+	:global(.od-group-tag--active) {
 		background: color-mix(in srgb, var(--gcolor, var(--border)) 18%, transparent);
 		border-color: var(--gcolor, var(--border));
 	}
 
 	/* ── Scrollable body ─────────────────────────────────────────────────── */
-	.od-body {
+	:global(.od-body) {
 		flex: 1;
 		overflow-y: auto;
 		overscroll-behavior: contain;
 		padding: 10px 14px;
 		min-height: 0;
 	}
-	.od-body--detail {
+	:global(.od-body--detail) {
 		display: flex;
 		flex-direction: column;
 		gap: 10px;
 	}
 
 	.od-loading,
-	.od-empty {
+	:global(.od-empty) {
 		font-family: var(--font-ui);
 		font-size: 0.78rem;
 		color: var(--text-dimmer);
@@ -547,12 +563,12 @@
 	}
 
 	/* ── Tile grid ───────────────────────────────────────────────────────── */
-	.od-grid {
+	:global(.od-grid) {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
 		gap: 8px;
 	}
-	.od-tile {
+	:global(.od-tile) {
 		display: flex;
 		flex-direction: row;
 		align-items: stretch;
@@ -569,27 +585,27 @@
 			background 0.12s,
 			border-color 0.12s;
 	}
-	.od-tile:hover {
+	:global(.od-tile:hover) {
 		background: var(--bg-hover);
 		border-color: var(--tcolor, var(--border-mid));
 	}
-	.od-tile-stripe {
+	:global(.od-tile-stripe) {
 		width: 4px;
 		flex-shrink: 0;
 		background: var(--tcolor, var(--text-accent));
 	}
-	.od-tile-body {
+	:global(.od-tile-body) {
 		padding: 6px 8px;
 		flex: 1;
 		min-width: 0;
 	}
-	.od-tile-name {
+	:global(.od-tile-name) {
 		font-size: 0.7rem;
 		font-weight: 700;
 		line-height: 1.3;
 		color: var(--text);
 	}
-	.od-tile-desc {
+	:global(.od-tile-desc) {
 		font-size: 0.6rem;
 		line-height: 1.4;
 		color: var(--text-dimmer);
@@ -603,7 +619,7 @@
 	}
 
 	/* ── Detail view ─────────────────────────────────────────────────────── */
-	.od-detail-desc {
+	:global(.od-detail-desc) {
 		font-family: var(--font-ui);
 		font-size: 0.75rem;
 		font-style: italic;
@@ -614,16 +630,16 @@
 		border-bottom: 1px solid var(--border);
 	}
 
-	.od-table-wrap {
+	:global(.od-table-wrap) {
 		overflow-x: auto;
 	}
-	.od-table-wrap :global(.oracle-table) {
+	:global(.od-table-wrap :global(.oracle-table)) {
 		width: 100%;
 		border-collapse: collapse;
 		font-family: var(--font-ui);
 		font-size: 0.7rem;
 	}
-	.od-table-wrap :global(.oracle-table th) {
+	:global(.od-table-wrap :global(.oracle-table th)) {
 		background: var(--bg-control);
 		color: var(--text-dimmer);
 		font-weight: 700;
@@ -635,27 +651,27 @@
 		white-space: nowrap;
 		text-align: left;
 	}
-	.od-table-wrap :global(.oracle-table td) {
+	:global(.od-table-wrap :global(.oracle-table td)) {
 		padding: 4px 8px;
 		border-bottom: 1px solid var(--border);
 		color: var(--text);
 		vertical-align: top;
 	}
-	.od-table-wrap :global(.oracle-table tr:last-child td) {
+	:global(.od-table-wrap :global(.oracle-table tr:last-child td)) {
 		border-bottom: none;
 	}
-	.od-table-wrap :global(.oracle-table tr:hover td) {
+	:global(.od-table-wrap :global(.oracle-table tr:hover td)) {
 		background: var(--bg-hover);
 	}
 	/* Active stat column highlight (delveDepths oracle) — color driven by --active-col-color */
-	.od-table-wrap :global(.oracle-table .col-active) {
+	:global(.od-table-wrap :global(.oracle-table .col-active)) {
 		background: color-mix(in srgb, var(--active-col-color, var(--text-accent)) 8%, transparent);
 		color: var(--active-col-color, var(--text-accent)) !important;
 		font-weight: 600;
 	}
 
 	/* Range column — monospaced, no wrap */
-	.od-table-wrap :global(.oracle-table td:first-child) {
+	:global(.od-table-wrap :global(.oracle-table td:first-child)) {
 		font-variant-numeric: tabular-nums;
 		color: var(--text-dimmer);
 		white-space: nowrap;
@@ -663,20 +679,20 @@
 	}
 	/* settlementName category cells */
 	.od-table-wrap :global(.oracle-cat-range),
-	.od-table-wrap :global(.oracle-cat-desc) {
+	:global(.od-table-wrap :global(.oracle-cat-desc)) {
 		background: color-mix(in srgb, var(--text-accent) 5%, transparent);
 		font-style: italic;
 		color: var(--text-muted) !important;
 	}
 
 	/* ── Delve the Depths stat picker ───────────────────────────────────── */
-	.od-delve-stat-picker {
+	:global(.od-delve-stat-picker) {
 		display: flex;
 		gap: 6px;
 		padding: 8px 0 4px;
 		flex-shrink: 0;
 	}
-	.od-delve-stat-btn {
+	:global(.od-delve-stat-btn) {
 		font-family: var(--font-ui);
 		font-size: 0.7rem;
 		font-weight: 600;
@@ -693,19 +709,19 @@
 			color 0.12s,
 			border-color 0.12s;
 	}
-	.od-delve-stat-btn:hover {
+	:global(.od-delve-stat-btn:hover) {
 		background: color-mix(in srgb, var(--stat-color, var(--text-accent)) 10%, transparent);
 		border-color: var(--stat-color, var(--text-accent));
 		color: var(--stat-color, var(--text-accent));
 	}
-	.od-delve-stat-btn--active {
+	:global(.od-delve-stat-btn--active) {
 		background: color-mix(in srgb, var(--stat-color, var(--text-accent)) 15%, transparent);
 		border-color: var(--stat-color, var(--text-accent));
 		color: var(--stat-color, var(--text-accent));
 	}
 
 	/* ── Roll footer ─────────────────────────────────────────────────────── */
-	.od-footer {
+	:global(.od-footer) {
 		border-top: 1px solid var(--border);
 		padding: 10px 14px;
 		flex-shrink: 0;
@@ -713,11 +729,11 @@
 		justify-content: flex-end;
 		gap: 8px;
 	}
-	.od-cancel-btn {
+	:global(.od-cancel-btn) {
 		padding: 6px 16px;
 		font-size: 0.78rem;
 	}
-	.od-roll-btn {
+	:global(.od-roll-btn) {
 		padding: 5px 20px;
 		justify-content: center;
 	}

@@ -39,6 +39,7 @@
 		getSetup,
 		setSetup,
 	} from '$lib/aiSettings.svelte.js';
+	import { Dialog } from 'bits-ui';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import AiConfigDialog from '$lib/components/AiConfigDialog.svelte';
 
@@ -148,7 +149,7 @@
 	// ---------------------------------------------------------------------------
 	// Dialog
 	// ---------------------------------------------------------------------------
-	let dialogEl = $state<HTMLDialogElement | null>(null);
+	let dialogOpen = $state(false);
 
 	export function open() {
 		// Re-sync with localStorage each time the dialog opens.
@@ -163,230 +164,243 @@
 		loadAiConfig(true).then(() => {
 			activeProvider = getActiveProvider();
 		});
-		dialogEl?.showModal();
+		dialogOpen = true;
 	}
 
 	export function close() {
-		dialogEl?.close();
+		dialogOpen = false;
 	}
 </script>
 
 <!-- =========================================================================
-     Dialog
+     Dialog — bits-ui Dialog: portal + overlay + focus trap.
      ========================================================================= -->
-<dialog bind:this={dialogEl} class="settings-dialog" oncancel={close}>
-	<!-- Header -->
-	<DialogHeader title={headingText('Settings')} onclose={close} />
+<Dialog.Root bind:open={dialogOpen}>
+	<Dialog.Portal>
+		<Dialog.Overlay class="settings-overlay" />
+		<Dialog.Content class="settings-dialog">
+			<DialogHeader title={headingText('Settings')} onclose={close} />
 
-	<!-- Body -->
-	<div class="sd-body">
-		<!-- Theme -->
-		<div class="sd-row">
-			<span class="sd-label">Theme</span>
-			<div class="sd-seg" role="group" aria-label="Color theme">
-				{#each THEME_MODES as mode (mode.value)}
-					<button
-						class="sd-seg-btn"
-						class:active={theme === mode.value}
-						onclick={() => applyTheme(mode.value)}
-						data-tooltip={mode.title}
-						aria-pressed={theme === mode.value}
-					>
-						<span class="sd-seg-icon">{@html mode.icon}</span>
-						{mode.label}
-					</button>
-				{/each}
-			</div>
-		</div>
+			<!-- Body -->
+			<div class="sd-body">
+				<!-- Theme -->
+				<div class="sd-row">
+					<span class="sd-label">Theme</span>
+					<div class="sd-seg" role="group" aria-label="Color theme">
+						{#each THEME_MODES as mode (mode.value)}
+							<button
+								class="sd-seg-btn"
+								class:active={theme === mode.value}
+								onclick={() => applyTheme(mode.value)}
+								data-tooltip={mode.title}
+								aria-pressed={theme === mode.value}
+							>
+								<span class="sd-seg-icon">{@html mode.icon}</span>
+								{mode.label}
+							</button>
+						{/each}
+					</div>
+				</div>
 
-		<!-- Heading Font -->
-		<div class="sd-row">
-			<span class="sd-label">Heading Font</span>
-			<div class="sd-seg" role="group" aria-label="Heading font">
-				<button
-					class="sd-seg-btn"
-					class:active={fontDisplay === 'cinzel'}
-					onclick={() => applyFont('cinzel')}
-					aria-pressed={fontDisplay === 'cinzel'}
-					data-tooltip="Gravestone — engraved titling serif (default)">Gravestone</button
-				>
-				<button
-					class="sd-seg-btn"
-					class:active={fontDisplay === 'simonetta'}
-					onclick={() => applyFont('simonetta')}
-					aria-pressed={fontDisplay === 'simonetta'}
-					data-tooltip="Grimoire — calligraphic all-caps serif">Grimoire</button
-				>
-				<button
-					class="sd-seg-btn"
-					class:active={fontDisplay === 'futhark'}
-					onclick={() => applyFont('futhark')}
-					aria-pressed={fontDisplay === 'futhark'}
-					data-tooltip="Futhark — transliterate names to Elder Futhark runes">ᚠᚢᚦᚨᚱᚲ</button
-				>
-			</div>
-		</div>
+				<!-- Heading Font -->
+				<div class="sd-row">
+					<span class="sd-label">Heading Font</span>
+					<div class="sd-seg" role="group" aria-label="Heading font">
+						<button
+							class="sd-seg-btn"
+							class:active={fontDisplay === 'cinzel'}
+							onclick={() => applyFont('cinzel')}
+							aria-pressed={fontDisplay === 'cinzel'}
+							data-tooltip="Gravestone — engraved titling serif (default)">Gravestone</button
+						>
+						<button
+							class="sd-seg-btn"
+							class:active={fontDisplay === 'simonetta'}
+							onclick={() => applyFont('simonetta')}
+							aria-pressed={fontDisplay === 'simonetta'}
+							data-tooltip="Grimoire — calligraphic all-caps serif">Grimoire</button
+						>
+						<button
+							class="sd-seg-btn"
+							class:active={fontDisplay === 'futhark'}
+							onclick={() => applyFont('futhark')}
+							aria-pressed={fontDisplay === 'futhark'}
+							data-tooltip="Futhark — transliterate names to Elder Futhark runes">ᚠᚢᚦᚨᚱᚲ</button
+						>
+					</div>
+				</div>
 
-		<!-- 3D Dice -->
-		<div class="sd-row">
-			<span class="sd-label">3D Dice</span>
-			<div class="sd-seg" role="group" aria-label="3D dice animation">
-				<button
-					class="sd-seg-btn"
-					class:active={dice3d}
-					onclick={() => applyDice3d(true)}
-					aria-pressed={dice3d}
-					data-tooltip="Animate dice rolls in 3D">On</button
-				>
-				<button
-					class="sd-seg-btn"
-					class:active={!dice3d}
-					onclick={() => applyDice3d(false)}
-					aria-pressed={!dice3d}
-					data-tooltip="Skip 3D animation, show result immediately">Off</button
-				>
-			</div>
-		</div>
+				<!-- 3D Dice -->
+				<div class="sd-row">
+					<span class="sd-label">3D Dice</span>
+					<div class="sd-seg" role="group" aria-label="3D dice animation">
+						<button
+							class="sd-seg-btn"
+							class:active={dice3d}
+							onclick={() => applyDice3d(true)}
+							aria-pressed={dice3d}
+							data-tooltip="Animate dice rolls in 3D">On</button
+						>
+						<button
+							class="sd-seg-btn"
+							class:active={!dice3d}
+							onclick={() => applyDice3d(false)}
+							aria-pressed={!dice3d}
+							data-tooltip="Skip 3D animation, show result immediately">Off</button
+						>
+					</div>
+				</div>
 
-		<!-- Dice Sound — hidden on iOS Safari, where the library's sound
+				<!-- Dice Sound — hidden on iOS Safari, where the library's sound
 		     preload pipeline hangs `_diceBox.initialize()`. -->
-		{#if isDiceSoundSupported()}
-			<div class="sd-row">
-				<span class="sd-label">Dice Sound</span>
-				<div class="sd-seg" role="group" aria-label="Dice rattle sound">
-					<button
-						class="sd-seg-btn"
-						class:active={diceSound}
-						onclick={() => applyDiceSound(true)}
-						aria-pressed={diceSound}
-						data-tooltip="Play a dice rattle while the dice roll">On</button
-					>
-					<button
-						class="sd-seg-btn"
-						class:active={!diceSound}
-						onclick={() => applyDiceSound(false)}
-						aria-pressed={!diceSound}
-						data-tooltip="Roll silently">Off</button
-					>
+				{#if isDiceSoundSupported()}
+					<div class="sd-row">
+						<span class="sd-label">Dice Sound</span>
+						<div class="sd-seg" role="group" aria-label="Dice rattle sound">
+							<button
+								class="sd-seg-btn"
+								class:active={diceSound}
+								onclick={() => applyDiceSound(true)}
+								aria-pressed={diceSound}
+								data-tooltip="Play a dice rattle while the dice roll">On</button
+							>
+							<button
+								class="sd-seg-btn"
+								class:active={!diceSound}
+								onclick={() => applyDiceSound(false)}
+								aria-pressed={!diceSound}
+								data-tooltip="Roll silently">Off</button
+							>
+						</div>
+					</div>
+				{/if}
+
+				<!-- Delve expansion -->
+				<div class="sd-row">
+					<span class="sd-label">Delve</span>
+					<div class="sd-seg" role="group" aria-label="Delve expansion">
+						<button
+							class="sd-seg-btn"
+							class:active={delveOn}
+							onclick={() => applyDelve(true)}
+							aria-pressed={delveOn}
+							data-tooltip="Show Delve moves, oracles, foes, assets">On</button
+						>
+						<button
+							class="sd-seg-btn"
+							class:active={!delveOn}
+							onclick={() => applyDelve(false)}
+							aria-pressed={!delveOn}
+							data-tooltip="Hide Delve content from pickers (existing data preserved)">Off</button
+						>
+					</div>
 				</div>
-			</div>
-		{/if}
 
-		<!-- Delve expansion -->
-		<div class="sd-row">
-			<span class="sd-label">Delve</span>
-			<div class="sd-seg" role="group" aria-label="Delve expansion">
-				<button
-					class="sd-seg-btn"
-					class:active={delveOn}
-					onclick={() => applyDelve(true)}
-					aria-pressed={delveOn}
-					data-tooltip="Show Delve moves, oracles, foes, assets">On</button
-				>
-				<button
-					class="sd-seg-btn"
-					class:active={!delveOn}
-					onclick={() => applyDelve(false)}
-					aria-pressed={!delveOn}
-					data-tooltip="Hide Delve content from pickers (existing data preserved)">Off</button
-				>
-			</div>
-		</div>
+				<!-- YRT expansion -->
+				<div class="sd-row">
+					<span class="sd-label">YRT</span>
+					<div class="sd-seg" role="group" aria-label="YRT expansion">
+						<button
+							class="sd-seg-btn"
+							class:active={yrtOn}
+							onclick={() => applyYrt(true)}
+							aria-pressed={yrtOn}
+							data-tooltip="Show YRT moves, oracles, foes, assets">On</button
+						>
+						<button
+							class="sd-seg-btn"
+							class:active={!yrtOn}
+							onclick={() => applyYrt(false)}
+							aria-pressed={!yrtOn}
+							data-tooltip="Hide YRT content from pickers (existing data preserved)">Off</button
+						>
+					</div>
+				</div>
 
-		<!-- YRT expansion -->
-		<div class="sd-row">
-			<span class="sd-label">YRT</span>
-			<div class="sd-seg" role="group" aria-label="YRT expansion">
-				<button
-					class="sd-seg-btn"
-					class:active={yrtOn}
-					onclick={() => applyYrt(true)}
-					aria-pressed={yrtOn}
-					data-tooltip="Show YRT moves, oracles, foes, assets">On</button
-				>
-				<button
-					class="sd-seg-btn"
-					class:active={!yrtOn}
-					onclick={() => applyYrt(false)}
-					aria-pressed={!yrtOn}
-					data-tooltip="Hide YRT content from pickers (existing data preserved)">Off</button
-				>
-			</div>
-		</div>
+				<!-- ─── AI Storyteller ─── -->
+				<div class="sd-section-heading">AI Storyteller</div>
 
-		<!-- ─── AI Storyteller ─── -->
-		<div class="sd-section-heading">AI Storyteller</div>
+				<div class="sd-row">
+					<span class="sd-label">Storyteller</span>
+					<div class="sd-seg" role="group" aria-label="AI storyteller">
+						<button
+							class="sd-seg-btn"
+							class:active={activeProvider === null}
+							type="button"
+							aria-pressed={activeProvider === null}
+							onclick={() => chooseProvider('none')}>None</button
+						>
+						{#each AI_PROVIDERS as p (p)}
+							<button
+								class="sd-seg-btn"
+								class:active={activeProvider === p}
+								type="button"
+								aria-pressed={activeProvider === p}
+								onclick={() => chooseProvider(p)}>{PROVIDER_LABEL[p]}</button
+							>
+						{/each}
+					</div>
+				</div>
 
-		<div class="sd-row">
-			<span class="sd-label">Storyteller</span>
-			<div class="sd-seg" role="group" aria-label="AI storyteller">
-				<button
-					class="sd-seg-btn"
-					class:active={activeProvider === null}
-					type="button"
-					aria-pressed={activeProvider === null}
-					onclick={() => chooseProvider('none')}>None</button
-				>
-				{#each AI_PROVIDERS as p (p)}
-					<button
-						class="sd-seg-btn"
-						class:active={activeProvider === p}
-						type="button"
-						aria-pressed={activeProvider === p}
-						onclick={() => chooseProvider(p)}>{PROVIDER_LABEL[p]}</button
-					>
-				{/each}
-			</div>
-		</div>
-
-		{#if activeProvider}
-			{@const ap = activeProvider}
-			<div class="sd-row">
-				<span class="sd-label">
-					{PROVIDER_LABEL[ap]}
-					{#if providerHasKey(ap)}
-						<span class="sd-key-ok">· key set</span>
-					{:else}
-						<span class="sd-key-missing">· no key</span>
+				{#if activeProvider}
+					{@const ap = activeProvider}
+					<div class="sd-row">
+						<span class="sd-label">
+							{PROVIDER_LABEL[ap]}
+							{#if providerHasKey(ap)}
+								<span class="sd-key-ok">· key set</span>
+							{:else}
+								<span class="sd-key-missing">· no key</span>
+							{/if}
+						</span>
+						<button class="sd-key-btn" type="button" onclick={() => openProviderConfig(ap)}>
+							Configure…
+						</button>
+					</div>
+					{#if !providerHasKey(ap)}
+						<div class="sd-hint sd-hint-tight">
+							Add an API key to generate stories with {PROVIDER_LABEL[ap]}.
+						</div>
 					{/if}
-				</span>
-				<button class="sd-key-btn" type="button" onclick={() => openProviderConfig(ap)}>
-					Configure…
-				</button>
-			</div>
-			{#if !providerHasKey(ap)}
-				<div class="sd-hint sd-hint-tight">
-					Add an API key to generate stories with {PROVIDER_LABEL[ap]}.
-				</div>
-			{/if}
 
-			<div class="sd-setup-field">
-				<span class="sd-label">Setup Instructions</span>
-				<textarea
-					class="sd-setup-input"
-					rows="4"
-					placeholder="Tone, POV, tense, character voice…"
-					value={aiSetup}
-					oninput={(e) => applyAiSetup((e.currentTarget as HTMLTextAreaElement).value)}
-				></textarea>
-				<span class="sd-hint sd-hint-tight">
-					The system prompt sent for every story, whichever storyteller is active.
-				</span>
+					<div class="sd-setup-field">
+						<span class="sd-label">Setup Instructions</span>
+						<textarea
+							class="sd-setup-input"
+							rows="4"
+							placeholder="Tone, POV, tense, character voice…"
+							value={aiSetup}
+							oninput={(e) => applyAiSetup((e.currentTarget as HTMLTextAreaElement).value)}
+						></textarea>
+						<span class="sd-hint sd-hint-tight">
+							The system prompt sent for every story, whichever storyteller is active.
+						</span>
+					</div>
+				{:else}
+					<div class="sd-hint sd-hint-tight">
+						Pick a storyteller to turn session logs into prose.
+					</div>
+				{/if}
 			</div>
-		{:else}
-			<div class="sd-hint sd-hint-tight">Pick a storyteller to turn session logs into prose.</div>
-		{/if}
-	</div>
-</dialog>
+		</Dialog.Content>
+	</Dialog.Portal>
+</Dialog.Root>
 
 <AiConfigDialog bind:this={aiConfigRef} />
 
 <style>
-	/* ── Dialog shell ────────────────────────────────────────────────────── */
-	.settings-dialog {
-		border: none;
-		padding: 0;
-		border-radius: 10px;
+	/* bits-ui portals Content + Overlay to <body>; scope everything
+	   globally. Overlay 80 / content 81 matches the modal z-index tier. */
+	:global(.settings-overlay) {
+		position: fixed;
+		inset: 0;
+		background: #00000060;
+		backdrop-filter: blur(1px);
+		z-index: 80;
+	}
+	:global(.settings-dialog) {
+		display: flex;
+		flex-direction: column;
 		position: fixed;
 		top: 50%;
 		left: 50%;
@@ -394,23 +408,17 @@
 		width: min(360px, calc(100vw - 2rem));
 		background: var(--bg-card);
 		color: var(--text);
+		border-radius: 10px;
 		box-shadow:
 			0 16px 48px #00000070,
 			0 0 0 1px var(--border-mid);
 		outline: none;
-	}
-	.settings-dialog[open] {
-		display: flex;
-		flex-direction: column;
-	}
-	.settings-dialog::backdrop {
-		background: #00000060;
-		backdrop-filter: blur(1px);
+		z-index: 81;
 	}
 
 	/* ── Header ─────────────────────────────────────────────────────────── */
 	/* ── Body ────────────────────────────────────────────────────────────── */
-	.sd-body {
+	:global(.sd-body) {
 		padding: 16px 14px;
 		display: flex;
 		flex-direction: column;
@@ -418,12 +426,12 @@
 	}
 
 	/* ── Setting row ─────────────────────────────────────────────────────── */
-	.sd-row {
+	:global(.sd-row) {
 		display: flex;
 		align-items: center;
 		gap: 12px;
 	}
-	.sd-label {
+	:global(.sd-label) {
 		font-family: var(--font-ui);
 		font-size: 0.73rem;
 		font-weight: 600;
@@ -432,13 +440,13 @@
 	}
 
 	/* ── Segmented control ───────────────────────────────────────────────── */
-	.sd-seg {
+	:global(.sd-seg) {
 		display: flex;
 		border: 1px solid var(--border-mid);
 		border-radius: 5px;
 		overflow: hidden;
 	}
-	.sd-seg-btn {
+	:global(.sd-seg-btn) {
 		display: flex;
 		align-items: center;
 		gap: 5px;
@@ -456,31 +464,31 @@
 			color 0.12s;
 		white-space: nowrap;
 	}
-	.sd-seg-btn:last-child {
+	:global(.sd-seg-btn:last-child) {
 		border-right: none;
 	}
-	.sd-seg-btn:hover:not(.active) {
+	:global(.sd-seg-btn:hover:not(.active)) {
 		background: var(--bg-hover);
 		color: var(--text-muted);
 	}
-	.sd-seg-btn.active {
+	:global(.sd-seg-btn.active) {
 		background: var(--bg-hover);
 		color: var(--text-accent);
 		font-weight: 600;
 	}
-	.sd-seg-icon {
+	:global(.sd-seg-icon) {
 		display: flex;
 		align-items: center;
 		line-height: 0;
 	}
-	.sd-seg-icon :global(svg) {
+	:global(.sd-seg-icon :global(svg)) {
 		width: 11px;
 		height: 11px;
 		fill: currentColor;
 	}
 
 	/* ── Claude AI section ──────────────────────────────────────────────── */
-	.sd-section-heading {
+	:global(.sd-section-heading) {
 		font-family: var(--font-display, 'Cinzel', serif);
 		font-size: 0.78rem;
 		font-weight: 700;
@@ -492,7 +500,7 @@
 		border-top: 1px solid var(--border);
 	}
 
-	.sd-key-btn {
+	:global(.sd-key-btn) {
 		padding: 5px 8px;
 		background: var(--bg-control);
 		border: 1px solid var(--border-mid);
@@ -504,36 +512,36 @@
 		cursor: pointer;
 		white-space: nowrap;
 	}
-	.sd-key-btn:hover:not(:disabled) {
+	:global(.sd-key-btn:hover:not(:disabled)) {
 		color: var(--text);
 		border-color: var(--text-accent);
 	}
 
-	.sd-key-ok {
+	:global(.sd-key-ok) {
 		color: var(--color-success, #34d399);
 		font-weight: 600;
 	}
-	.sd-key-missing {
+	:global(.sd-key-missing) {
 		color: var(--text-dimmer);
 		font-weight: 600;
 	}
 
-	.sd-hint {
+	:global(.sd-hint) {
 		font-family: var(--font-ui);
 		font-size: 0.68rem;
 		color: var(--text-dimmer);
 		line-height: 1.4;
 	}
-	.sd-hint-tight {
+	:global(.sd-hint-tight) {
 		margin-top: 2px;
 	}
 
-	.sd-setup-field {
+	:global(.sd-setup-field) {
 		display: flex;
 		flex-direction: column;
 		gap: 4px;
 	}
-	.sd-setup-input {
+	:global(.sd-setup-input) {
 		width: 100%;
 		box-sizing: border-box;
 		padding: 5px 8px;
@@ -547,7 +555,7 @@
 		resize: vertical;
 		min-height: 60px;
 	}
-	.sd-setup-input:focus {
+	:global(.sd-setup-input:focus) {
 		outline: none;
 		border-color: var(--text-accent);
 	}

@@ -114,6 +114,12 @@
 	let dialogEl = $state<HTMLDialogElement | null>(null);
 	let optionsDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let iconDialogEl = $state<HTMLDialogElement | null>(null);
+	// Bound to the icon picker's search input so `openIconPicker` can
+	// focus it explicitly on every open. HTML `autofocus` on the input
+	// alone only fires the first time the input mounts — this dialog
+	// stays in the DOM across opens (unlike bits-ui Content), so we
+	// re-focus manually.
+	let iconSearchInputEl = $state<HTMLInputElement | null>(null);
 	let fileInputEl = $state<HTMLInputElement | null>(null);
 	let uploadError = $state('');
 	let iconSearch = $state('');
@@ -1134,6 +1140,9 @@
 		if (!selectedMarker) return;
 		iconSearch = '';
 		iconDialogEl?.showModal();
+		// requestAnimationFrame — showModal() moves focus itself; wait
+		// one frame so our explicit focus wins.
+		requestAnimationFrame(() => iconSearchInputEl?.focus());
 	}
 	function closeIconPicker() {
 		iconDialogEl?.close();
@@ -1925,7 +1934,17 @@
 <dialog bind:this={iconDialogEl} class="mp-icon-dialog" oncancel={closeIconPicker}>
 	<DialogHeader title={headingText('Choose Icon')} onclose={closeIconPicker} radius="8px 8px 0 0" />
 	<div class="mp-icon-search-row">
-		<input class="mp-icon-search" type="text" placeholder="Search icons…" bind:value={iconSearch} />
+		<div class="mp-icon-search-field">
+			<span class="mp-icon-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
+			<input
+				bind:this={iconSearchInputEl}
+				class="mp-icon-search"
+				type="search"
+				placeholder="Search icons…"
+				bind:value={iconSearch}
+				aria-label="Search icons"
+			/>
+		</div>
 	</div>
 	<div class="mp-icon-body">
 		<!-- "No icon" tile always at the top — clicking it clears the
@@ -2898,25 +2917,49 @@
 	.mp-icon-dialog::backdrop {
 		background: #00000060;
 	}
+	/* Search row modelled on FoePickerDialog's `.fd-search-*` — a
+	   .field wrapper positions the magnifying-glass icon absolutely
+	   over the left-inset padding of the input. */
 	.mp-icon-search-row {
 		padding: 8px 14px;
 		background: var(--bg-inset);
 		border-bottom: 1px solid var(--border);
 	}
-	.mp-icon-search {
+	.mp-icon-search-field {
+		position: relative;
+		display: flex;
+		align-items: center;
+	}
+	.mp-icon-search-icon {
+		position: absolute;
+		left: 9px;
+		width: 13px;
+		height: 13px;
+		display: inline-flex;
+		pointer-events: none;
+		color: var(--text-dimmer);
+	}
+	.mp-icon-search-icon :global(svg) {
 		width: 100%;
+		height: 100%;
+		fill: currentColor;
+	}
+	.mp-icon-search {
+		flex: 1;
+		min-width: 0;
 		box-sizing: border-box;
-		padding: 6px 10px;
+		padding: 5px 10px 5px 29px;
 		font-family: var(--font-ui);
 		font-size: 0.85rem;
 		color: var(--text);
-		background: var(--bg-control);
-		border: 1px solid var(--border-mid);
+		background: var(--bg-inset);
+		border: 1px solid var(--border);
 		border-radius: 4px;
 	}
 	.mp-icon-search:focus {
 		outline: none;
-		border-color: var(--text-accent);
+		border-color: var(--focus-ring);
+		box-shadow: 0 0 0 2px var(--accent-glow);
 	}
 	.mp-icon-body {
 		max-height: calc(82vh - 8rem);
