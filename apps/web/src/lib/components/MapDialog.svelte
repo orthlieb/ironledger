@@ -2084,18 +2084,31 @@
 		gap: 6px;
 		padding: 2px 0;
 	}
-	/* Bits-ui Combobox.Input renders a real `<input>`; strip its
-	   default browser chrome so it inherits the wrapper's look. */
+	/* Bits-ui Combobox.Input renders a real `<input>`, which inherits
+	   app.css's global input styling (border, padding, radius, and
+	   the `:focus` `box-shadow` accent-glow). Reset every bit of
+	   that chrome so the wrapper's border is the only visible
+	   frame — otherwise the inner input's rounded focus ring reads
+	   as a pill floating inside the field. Also strip WebKit's
+	   iOS-Safari rounded chrome. */
 	:global(.mp-combobox-input) {
 		flex: 1 1 auto;
 		min-width: 0;
 		padding: 2px 0;
 		background: transparent;
 		border: none;
+		border-radius: 0;
 		outline: none;
+		box-shadow: none;
+		-webkit-appearance: none;
+		appearance: none;
 		color: var(--text);
 		font: inherit;
 		text-overflow: ellipsis;
+	}
+	:global(.mp-combobox-input:focus) {
+		outline: none;
+		box-shadow: none;
 	}
 	:global(.mp-combobox-input::placeholder) {
 		color: var(--text-dimmer);
