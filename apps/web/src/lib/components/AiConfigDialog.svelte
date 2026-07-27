@@ -13,6 +13,7 @@
 	 */
 
 	import { headingText } from '$lib/fontStore.svelte.js';
+	import { Dialog } from 'bits-ui';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import Select from '$lib/components/Select.svelte';
 	import {
@@ -27,7 +28,7 @@
 		testProviderKey,
 	} from '$lib/aiSettings.svelte.js';
 
-	let dialogEl = $state<HTMLDialogElement | null>(null);
+	let dialogOpen = $state(false);
 	let provider = $state<AiProvider>('claude');
 
 	let keyInput = $state(''); // new key to save ('' = keep existing)
@@ -58,11 +59,11 @@
 		// Otherwise clear it so the user is forced to pick — happens when a
 		// user's saved model gets retired (e.g. Gemini 2.0 → gemini-flash-latest).
 		model = view.model && MODELS[p].some((m) => m.id === view.model) ? view.model : '';
-		dialogEl?.showModal();
+		dialogOpen = true;
 	}
 
 	export function close() {
-		dialogEl?.close();
+		dialogOpen = false;
 	}
 
 	async function handleTest() {
@@ -98,7 +99,7 @@
 			keyInput = '';
 		}
 		saveState = 'saved';
-		dialogEl?.close();
+		dialogOpen = false;
 	}
 
 	async function handleClearKey() {
@@ -110,120 +111,133 @@
 	}
 </script>
 
-<dialog bind:this={dialogEl} class="ac-dialog" oncancel={close}>
-	<DialogHeader title={headingText(`${label} Setup`)} onclose={close} />
+<Dialog.Root bind:open={dialogOpen}>
+	<Dialog.Portal>
+		<Dialog.Overlay class="ac-overlay" />
+		<Dialog.Content class="ac-dialog">
+			<DialogHeader title={headingText(`${label} Setup`)} onclose={close} />
 
-	<div class="ac-body">
-		<div class="ac-hint">{help.help}</div>
+			<div class="ac-body">
+				<div class="ac-hint">{help.help}</div>
 
-		<div class="ac-field">
-			<span class="ac-label">API Key</span>
-			<div class="ac-key-row">
-				<input
-					class="ac-input ac-key-input"
-					type={keyVisible ? 'text' : 'password'}
-					autocomplete="off"
-					spellcheck="false"
-					placeholder={hasStoredKey ? '•••••• (stored — leave blank to keep)' : help.placeholder}
-					bind:value={keyInput}
-					oninput={() => {
-						testState = 'idle';
-						testMessage = '';
-					}}
-				/>
+				<div class="ac-field">
+					<span class="ac-label">API Key</span>
+					<div class="ac-key-row">
+						<input
+							class="ac-input ac-key-input"
+							type={keyVisible ? 'text' : 'password'}
+							autocomplete="off"
+							spellcheck="false"
+							placeholder={hasStoredKey
+								? '•••••• (stored — leave blank to keep)'
+								: help.placeholder}
+							bind:value={keyInput}
+							oninput={() => {
+								testState = 'idle';
+								testMessage = '';
+							}}
+						/>
+						<button
+							class="ac-key-btn"
+							type="button"
+							onclick={() => (keyVisible = !keyVisible)}
+							aria-label={keyVisible ? 'Hide key' : 'Show key'}
+						>
+							{keyVisible ? 'Hide' : 'Show'}
+						</button>
+						<button
+							class="ac-key-btn"
+							type="button"
+							onclick={handleTest}
+							disabled={testState === 'testing' ||
+								!modelPicked ||
+								(!keyInput.trim() && !hasStoredKey)}
+							title={!modelPicked ? 'Pick a model first' : undefined}
+						>
+							{testState === 'testing' ? 'Testing…' : 'Test'}
+						</button>
+					</div>
+					{#if hasStoredKey}
+						<button class="ac-clear-btn" type="button" onclick={handleClearKey}>
+							Remove stored key
+						</button>
+					{/if}
+				</div>
+
+				{#if testMessage}
+					<div
+						class="ac-test-msg"
+						class:ac-test-ok={testState === 'ok'}
+						class:ac-test-err={testState === 'error'}
+					>
+						{testMessage}
+					</div>
+				{/if}
+
+				<div class="ac-hint ac-hint-tight">
+					Stored encrypted on the server; never sent back to your browser.
+				</div>
+
+				<div class="ac-field">
+					<span class="ac-label">Model</span>
+					<Select
+						class="ac-select"
+						bind:value={model}
+						required
+						placeholder="Select a model…"
+						options={models.map((m) => ({ value: m.id, label: `${m.label} — ${m.tagline}` }))}
+					/>
+					{#if !modelPicked}
+						<span class="ac-hint ac-hint-tight">A model must be picked to save or test.</span>
+					{/if}
+				</div>
+			</div>
+
+			<div class="ac-footer">
+				<button class="btn" onclick={close}>Cancel</button>
 				<button
-					class="ac-key-btn"
-					type="button"
-					onclick={() => (keyVisible = !keyVisible)}
-					aria-label={keyVisible ? 'Hide key' : 'Show key'}
+					class="btn btn-primary"
+					onclick={handleSave}
+					disabled={saveState === 'saving' || !modelPicked}
 				>
-					{keyVisible ? 'Hide' : 'Show'}
-				</button>
-				<button
-					class="ac-key-btn"
-					type="button"
-					onclick={handleTest}
-					disabled={testState === 'testing' || !modelPicked || (!keyInput.trim() && !hasStoredKey)}
-					title={!modelPicked ? 'Pick a model first' : undefined}
-				>
-					{testState === 'testing' ? 'Testing…' : 'Test'}
+					{saveState === 'saving' ? 'Saving…' : 'Save'}
 				</button>
 			</div>
-			{#if hasStoredKey}
-				<button class="ac-clear-btn" type="button" onclick={handleClearKey}>
-					Remove stored key
-				</button>
-			{/if}
-		</div>
-
-		{#if testMessage}
-			<div
-				class="ac-test-msg"
-				class:ac-test-ok={testState === 'ok'}
-				class:ac-test-err={testState === 'error'}
-			>
-				{testMessage}
-			</div>
-		{/if}
-
-		<div class="ac-hint ac-hint-tight">
-			Stored encrypted on the server; never sent back to your browser.
-		</div>
-
-		<div class="ac-field">
-			<span class="ac-label">Model</span>
-			<Select
-				class="ac-select"
-				bind:value={model}
-				required
-				placeholder="Select a model…"
-				portalTo={dialogEl ?? undefined}
-				options={models.map((m) => ({ value: m.id, label: `${m.label} — ${m.tagline}` }))}
-			/>
-			{#if !modelPicked}
-				<span class="ac-hint ac-hint-tight">A model must be picked to save or test.</span>
-			{/if}
-		</div>
-	</div>
-
-	<div class="ac-footer">
-		<button class="btn" onclick={close}>Cancel</button>
-		<button
-			class="btn btn-primary"
-			onclick={handleSave}
-			disabled={saveState === 'saving' || !modelPicked}
-		>
-			{saveState === 'saving' ? 'Saving…' : 'Save'}
-		</button>
-	</div>
-</dialog>
+		</Dialog.Content>
+	</Dialog.Portal>
+</Dialog.Root>
 
 <style>
-	.ac-dialog {
-		border: none;
-		padding: 0;
-		border-radius: 10px;
+	/* bits-ui portals Content + Overlay to <body> — scope everything
+	   globally. Overlay 80 / content 81 matches the modal z-index tier. */
+	:global(.ac-overlay) {
+		position: fixed;
+		inset: 0;
+		background: #00000060;
+		backdrop-filter: blur(1px);
+		z-index: 80;
+	}
+	:global(.ac-dialog) {
+		display: flex;
+		flex-direction: column;
 		position: fixed;
 		top: 50%;
 		left: 50%;
-		margin: 0;
 		transform: translate(-50%, -50%);
 		width: min(380px, calc(100vw - 2rem));
 		max-height: 82vh;
 		overflow: hidden;
 		background: var(--bg-card);
 		color: var(--text);
+		border-radius: 10px;
 		box-shadow:
 			0 16px 48px #00000070,
 			0 0 0 1px var(--border-mid);
 		outline: none;
-	}
-	.ac-dialog::backdrop {
-		background: #00000060;
-		backdrop-filter: blur(1px);
+		z-index: 81;
 	}
 
-	.ac-body {
+	:global(.ac-body) {
 		padding: 14px;
 		display: flex;
 		flex-direction: column;
@@ -233,12 +247,12 @@
 		overscroll-behavior: contain;
 	}
 
-	.ac-field {
+	:global(.ac-field) {
 		display: flex;
 		flex-direction: column;
 		gap: 4px;
 	}
-	.ac-label {
+	:global(.ac-label) {
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		font-weight: 600;
@@ -246,7 +260,7 @@
 		text-transform: uppercase;
 		color: var(--text-muted);
 	}
-	.ac-input {
+	:global(.ac-input) {
 		width: 100%;
 		box-sizing: border-box;
 		padding: 5px 8px;
@@ -257,7 +271,7 @@
 		font-family: var(--font-ui);
 		font-size: 0.82rem;
 	}
-	.ac-input:focus {
+	:global(.ac-input:focus) {
 		outline: none;
 		border-color: var(--text-accent);
 	}
@@ -267,15 +281,15 @@
 	:global(.ac-select) {
 		width: 100%;
 	}
-	.ac-key-row {
+	:global(.ac-key-row) {
 		display: flex;
 		gap: 6px;
 	}
-	.ac-key-input {
+	:global(.ac-key-input) {
 		flex: 1;
 		min-width: 0;
 	}
-	.ac-key-btn {
+	:global(.ac-key-btn) {
 		flex-shrink: 0;
 		padding: 5px 10px;
 		font-family: var(--font-ui);
@@ -287,15 +301,15 @@
 		border-radius: 4px;
 		cursor: pointer;
 	}
-	.ac-key-btn:hover:not(:disabled) {
+	:global(.ac-key-btn:hover:not(:disabled)) {
 		color: var(--text);
 		border-color: var(--text-accent);
 	}
-	.ac-key-btn:disabled {
+	:global(.ac-key-btn:disabled) {
 		opacity: 0.5;
 		cursor: default;
 	}
-	.ac-clear-btn {
+	:global(.ac-clear-btn) {
 		align-self: flex-start;
 		margin-top: 2px;
 		padding: 0;
@@ -307,28 +321,28 @@
 		cursor: pointer;
 		text-decoration: underline;
 	}
-	.ac-hint {
+	:global(.ac-hint) {
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		color: var(--text-muted);
 		line-height: 1.4;
 	}
-	.ac-hint-tight {
+	:global(.ac-hint-tight) {
 		font-size: 0.66rem;
 		color: var(--text-dimmer);
 	}
-	.ac-test-msg {
+	:global(.ac-test-msg) {
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 	}
-	.ac-test-ok {
+	:global(.ac-test-ok) {
 		color: var(--color-success, #4ade80);
 	}
-	.ac-test-err {
+	:global(.ac-test-err) {
 		color: var(--color-danger, #ef4444);
 	}
 
-	.ac-footer {
+	:global(.ac-footer) {
 		display: flex;
 		justify-content: flex-end;
 		gap: 6px;

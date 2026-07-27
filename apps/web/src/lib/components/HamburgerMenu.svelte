@@ -11,7 +11,9 @@
 	 */
 
 	import Select from './Select.svelte';
-	import { DropdownMenu } from 'bits-ui';
+	import { Dialog, DropdownMenu } from 'bits-ui';
+	import DialogHeader from './DialogHeader.svelte';
+	import { headingText } from '$lib/fontStore.svelte.js';
 
 	let {
 		isAdmin = false,
@@ -25,7 +27,7 @@
 		onReportBug?: () => void;
 	} = $props();
 
-	let exportDialogEl = $state<HTMLDialogElement | null>(null);
+	let exportDialogOpen = $state(false);
 	// Hidden form the "Sign Out" item programmatically submits so the
 	// POST + CSRF flow that /logout expects still runs — bits-ui menu
 	// items don't render as <form> submitters themselves.
@@ -38,53 +40,20 @@
 	// implicit `exportFormat` flows through as `zip`.
 	let exportFormat = $state('zip');
 
-	let exportDragX = $state(0);
-	let exportDragY = $state(0);
-	let _exportDragging = false;
-	let _exportStartMouseX = 0;
-	let _exportStartMouseY = 0;
-	let _exportStartDragX = 0;
-	let _exportStartDragY = 0;
-
-	function startExportDrag(e: MouseEvent) {
-		_exportDragging = true;
-		_exportStartMouseX = e.clientX;
-		_exportStartMouseY = e.clientY;
-		_exportStartDragX = exportDragX;
-		_exportStartDragY = exportDragY;
-		e.preventDefault();
-		window.addEventListener('mousemove', onExportDragMove);
-		window.addEventListener('mouseup', onExportDragEnd);
-	}
-
-	function onExportDragMove(e: MouseEvent) {
-		if (!_exportDragging) return;
-		exportDragX = _exportStartDragX + (e.clientX - _exportStartMouseX);
-		exportDragY = _exportStartDragY + (e.clientY - _exportStartMouseY);
-	}
-
-	function onExportDragEnd() {
-		_exportDragging = false;
-		window.removeEventListener('mousemove', onExportDragMove);
-		window.removeEventListener('mouseup', onExportDragEnd);
-	}
-
 	function dispatch(action: string, detail: Record<string, string> = {}) {
 		document.dispatchEvent(new CustomEvent('il-menu-action', { detail: { action, ...detail } }));
 	}
 
 	function openExportDialog() {
-		exportDragX = 0;
-		exportDragY = 0;
 		// setTimeout so bits-ui finishes its own close-and-return-focus
 		// cycle before we open the dialog — otherwise the dialog opens
 		// and the trigger tries to steal focus back on the same tick.
-		setTimeout(() => exportDialogEl?.showModal(), 0);
+		setTimeout(() => (exportDialogOpen = true), 0);
 	}
 
 	function doExport() {
 		dispatch('export', { content: exportContent, format: exportFormat });
-		exportDialogEl?.close();
+		exportDialogOpen = false;
 	}
 </script>
 
@@ -143,103 +112,101 @@
 
 <form bind:this={logoutFormEl} method="POST" action="/logout" class="hm-logout-form"></form>
 
-<!-- Export dialog -->
-<dialog
-	bind:this={exportDialogEl}
-	class="export-dialog"
-	style:transform="translate(calc(-50% + {exportDragX}px), calc(-50% + {exportDragY}px))"
-	oncancel={() => exportDialogEl?.close()}
->
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="ed-header" onmousedown={startExportDrag}>
-		<span class="drag-grip" aria-hidden="true">⠿</span>
-		<span class="ed-title">Export</span>
-	</div>
-	<div class="ed-body">
-		<div class="ed-field">
-			<label class="ed-label" for="export-content">Content</label>
-			<Select
-				id="export-content"
-				class="ed-select"
-				bind:value={exportContent}
-				portalTo={exportDialogEl ?? undefined}
-				options={[
-					{ value: 'everything', label: 'Everything' },
-					{ value: 'character', label: 'Current Character' },
-					{ value: 'all-characters', label: 'All Characters' },
-					{ value: 'log', label: 'Session Log' },
-					{ value: 'stories', label: 'Stories' },
-					{ value: 'communities', label: 'Connections' },
-					{ value: 'expeditions', label: 'Expeditions' },
-					{ value: 'map', label: 'Campaign Map' },
-				]}
-				onchange={(v) => {
-					// Stories are markdown-only. Log is JSON-or-Markdown. Map
-					// defaults to PNG. Everything defaults to Zip. Per-entity
-					// content types (character / all-characters / communities /
-					// expeditions) always emit a zip — no format select shown.
-					if (v === 'stories') exportFormat = 'md';
-					else if (v === 'map') exportFormat = 'png';
-					else if (v === 'log') exportFormat = 'json';
-					else exportFormat = 'zip';
-				}}
-			/>
-		</div>
-		{#if exportContent === 'everything'}
-			<div class="ed-field">
-				<span class="ed-label">Format</span>
-				<div class="ed-seg" role="group">
-					<button
-						class="ed-seg-btn"
-						class:active={exportFormat === 'zip'}
-						onclick={() => (exportFormat = 'zip')}>Zip</button
-					>
-					<button
-						class="ed-seg-btn"
-						class:active={exportFormat === 'md'}
-						onclick={() => (exportFormat = 'md')}>Markdown</button
-					>
+<!-- Export dialog — bits-ui Dialog. Drag comes from DialogHeader's
+     `use:draggable`, which targets `dialog, [role="dialog"]` (see
+     $lib/actions/draggable.ts), so the manual mousedown math the
+     old native <dialog> carried is gone. -->
+<Dialog.Root bind:open={exportDialogOpen}>
+	<Dialog.Portal>
+		<Dialog.Overlay class="export-overlay" />
+		<Dialog.Content class="export-dialog">
+			<DialogHeader title={headingText('Export')} radius="8px 8px 0 0" />
+			<div class="ed-body">
+				<div class="ed-field">
+					<label class="ed-label" for="export-content">Content</label>
+					<Select
+						id="export-content"
+						class="ed-select"
+						bind:value={exportContent}
+						options={[
+							{ value: 'everything', label: 'Everything' },
+							{ value: 'character', label: 'Current Character' },
+							{ value: 'all-characters', label: 'All Characters' },
+							{ value: 'log', label: 'Session Log' },
+							{ value: 'stories', label: 'Stories' },
+							{ value: 'communities', label: 'Connections' },
+							{ value: 'expeditions', label: 'Expeditions' },
+							{ value: 'map', label: 'Campaign Map' },
+						]}
+						onchange={(v) => {
+							// Stories are markdown-only. Log is JSON-or-Markdown. Map
+							// defaults to PNG. Everything defaults to Zip. Per-entity
+							// content types (character / all-characters / communities /
+							// expeditions) always emit a zip — no format select shown.
+							if (v === 'stories') exportFormat = 'md';
+							else if (v === 'map') exportFormat = 'png';
+							else if (v === 'log') exportFormat = 'json';
+							else exportFormat = 'zip';
+						}}
+					/>
 				</div>
+				{#if exportContent === 'everything'}
+					<div class="ed-field">
+						<span class="ed-label">Format</span>
+						<div class="ed-seg" role="group">
+							<button
+								class="ed-seg-btn"
+								class:active={exportFormat === 'zip'}
+								onclick={() => (exportFormat = 'zip')}>Zip</button
+							>
+							<button
+								class="ed-seg-btn"
+								class:active={exportFormat === 'md'}
+								onclick={() => (exportFormat = 'md')}>Markdown</button
+							>
+						</div>
+					</div>
+				{:else if exportContent === 'log'}
+					<div class="ed-field">
+						<span class="ed-label">Format</span>
+						<div class="ed-seg" role="group">
+							<button
+								class="ed-seg-btn"
+								class:active={exportFormat === 'json'}
+								onclick={() => (exportFormat = 'json')}>JSON</button
+							>
+							<button
+								class="ed-seg-btn"
+								class:active={exportFormat === 'md'}
+								onclick={() => (exportFormat = 'md')}>Markdown</button
+							>
+						</div>
+					</div>
+				{:else if exportContent === 'map'}
+					<div class="ed-field">
+						<span class="ed-label">Format</span>
+						<div class="ed-seg" role="group">
+							<button
+								class="ed-seg-btn"
+								class:active={exportFormat === 'png'}
+								onclick={() => (exportFormat = 'png')}>PNG</button
+							>
+							<button
+								class="ed-seg-btn"
+								class:active={exportFormat === 'zip'}
+								onclick={() => (exportFormat = 'zip')}>Zip</button
+							>
+						</div>
+					</div>
+				{/if}
 			</div>
-		{:else if exportContent === 'log'}
-			<div class="ed-field">
-				<span class="ed-label">Format</span>
-				<div class="ed-seg" role="group">
-					<button
-						class="ed-seg-btn"
-						class:active={exportFormat === 'json'}
-						onclick={() => (exportFormat = 'json')}>JSON</button
-					>
-					<button
-						class="ed-seg-btn"
-						class:active={exportFormat === 'md'}
-						onclick={() => (exportFormat = 'md')}>Markdown</button
-					>
-				</div>
+			<div class="ed-footer">
+				<button class="btn" onclick={() => (exportDialogOpen = false)}>Cancel</button>
+				<button class="btn btn-primary" onclick={doExport}>Export</button>
 			</div>
-		{:else if exportContent === 'map'}
-			<div class="ed-field">
-				<span class="ed-label">Format</span>
-				<div class="ed-seg" role="group">
-					<button
-						class="ed-seg-btn"
-						class:active={exportFormat === 'png'}
-						onclick={() => (exportFormat = 'png')}>PNG</button
-					>
-					<button
-						class="ed-seg-btn"
-						class:active={exportFormat === 'zip'}
-						onclick={() => (exportFormat = 'zip')}>Zip</button
-					>
-				</div>
-			</div>
-		{/if}
-	</div>
-	<div class="ed-footer">
-		<button class="btn" onclick={() => exportDialogEl?.close()}>Cancel</button>
-		<button class="btn btn-primary" onclick={doExport}>Export</button>
-	</div>
-</dialog>
+		</Dialog.Content>
+	</Dialog.Portal>
+</Dialog.Root>
 
 <style>
 	/* Every selector below has to be `:global()` — bits-ui
@@ -330,10 +297,24 @@
 	}
 
 	/* ── Export dialog ── */
-	.export-dialog {
-		border: none;
-		padding: 0;
-		border-radius: 8px;
+	/* bits-ui portals Content + Overlay to <body>; scope everything
+	   globally. Overlay 80 / content 81 matches the modal z-index
+	   tier — critically, dropping the old `transform: translate(-50%,
+	   -50%)` off the dialog itself removes the `position: fixed`
+	   containing-block trap that was clipping the Content select's
+	   popover inside the dialog. Popover now portals to <body> at
+	   z-index 90 and floats free. Header uses <DialogHeader>, so
+	   the old `.ed-header` hand-rolled drag styles are gone. */
+	:global(.export-overlay) {
+		position: fixed;
+		inset: 0;
+		background: #00000050;
+		backdrop-filter: blur(1px);
+		z-index: 80;
+	}
+	:global(.export-dialog) {
+		display: flex;
+		flex-direction: column;
 		position: fixed;
 		top: 50%;
 		left: 50%;
@@ -341,58 +322,26 @@
 		width: min(320px, calc(100vw - 2rem));
 		background: var(--bg-card);
 		color: var(--text);
+		border-radius: 8px;
 		box-shadow:
 			0 12px 40px #00000060,
 			0 0 0 1px var(--border-mid);
 		outline: none;
-	}
-	.export-dialog[open] {
-		display: flex;
-		flex-direction: column;
-	}
-	.export-dialog::backdrop {
-		background: #00000050;
-		backdrop-filter: blur(1px);
+		z-index: 81;
 	}
 
-	.ed-header {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 10px 14px 9px;
-		border-bottom: 1px solid var(--border);
-		background: var(--bg-control);
-		border-radius: 8px 8px 0 0;
-		cursor: grab;
-		user-select: none;
-	}
-	.ed-header:active {
-		cursor: grabbing;
-	}
-
-	.ed-title {
-		font-family: var(--font-display);
-		font-size: calc(0.78rem * var(--font-display-scale));
-		font-weight: var(--font-display-weight);
-		font-variant: var(--font-display-variant);
-		letter-spacing: 0.08em;
-		text-transform: var(--font-display-transform);
-		color: var(--text-accent);
-		flex: 1;
-	}
-
-	.ed-body {
+	:global(.ed-body) {
 		padding: 16px 14px;
 		display: flex;
 		flex-direction: column;
 		gap: 14px;
 	}
-	.ed-field {
+	:global(.ed-field) {
 		display: flex;
 		align-items: center;
 		gap: 12px;
 	}
-	.ed-label {
+	:global(.ed-label) {
 		font-family: var(--font-ui);
 		font-size: 0.73rem;
 		font-weight: 600;
@@ -409,13 +358,13 @@
 		padding: 5px 8px;
 	}
 
-	.ed-seg {
+	:global(.ed-seg) {
 		display: flex;
 		border: 1px solid var(--border-mid);
 		border-radius: 5px;
 		overflow: hidden;
 	}
-	.ed-seg-btn {
+	:global(.ed-seg-btn) {
 		padding: 5px 14px;
 		background: var(--bg-control);
 		border: none;
@@ -429,20 +378,20 @@
 			background 0.12s,
 			color 0.12s;
 	}
-	.ed-seg-btn:last-child {
+	:global(.ed-seg-btn:last-child) {
 		border-right: none;
 	}
-	.ed-seg-btn:hover:not(.active) {
+	:global(.ed-seg-btn:hover:not(.active)) {
 		background: var(--bg-hover);
 		color: var(--text-muted);
 	}
-	.ed-seg-btn.active {
+	:global(.ed-seg-btn.active) {
 		background: var(--bg-hover);
 		color: var(--text-accent);
 		font-weight: 600;
 	}
 
-	.ed-footer {
+	:global(.ed-footer) {
 		display: flex;
 		gap: 6px;
 		justify-content: flex-end;
