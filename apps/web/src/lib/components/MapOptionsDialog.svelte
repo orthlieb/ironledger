@@ -129,6 +129,8 @@
 					<label class="mo-field">
 						<span class="mo-field-label">Map name</span>
 						<input
+							id="mo-map-name"
+							name="mo-map-name"
 							class="mo-input mo-input-wide"
 							type="text"
 							value={mapState.name}
@@ -156,6 +158,8 @@
 								>Opacity — {Math.round(mapSettings.grid.opacity * 100)}%</span
 							>
 							<input
+								id="mo-grid-opacity"
+								name="mo-grid-opacity"
 								class="mo-slider"
 								type="range"
 								min="0"
@@ -197,6 +201,8 @@
 						<label class="mo-field mo-field-narrow">
 							<span class="mo-field-label">Per cell</span>
 							<input
+								id="mo-scale-per-cell"
+								name="mo-scale-per-cell"
 								class="mo-input"
 								type="number"
 								min="0.1"
@@ -210,6 +216,8 @@
 						<label class="mo-field mo-field-narrow">
 							<span class="mo-field-label">Segments</span>
 							<input
+								id="mo-scale-segments"
+								name="mo-scale-segments"
 								class="mo-input"
 								type="number"
 								min="1"
@@ -307,6 +315,7 @@
 		top: 50%;
 		left: 50%;
 		transform: translate(-50%, -50%);
+		/* Mobile bump handled by the media query below. */
 		width: min(440px, calc(100vw - 2rem));
 		max-height: 82vh;
 		overflow: hidden;
@@ -327,6 +336,15 @@
 		display: flex;
 		flex-direction: column;
 		gap: 18px;
+	}
+	@media (max-width: 640px) {
+		:global(.mo-dialog) {
+			width: 90vw;
+			max-height: 90vh;
+		}
+		:global(.mo-body) {
+			max-height: calc(90vh - 4rem);
+		}
 	}
 	:global(.mo-section) {
 		display: flex;
@@ -381,8 +399,12 @@
 		flex-direction: column;
 		gap: 4px;
 	}
-	:global(.mo-input-wide) {
-		max-width: 100%;
+	/* `.mo-input` sets a shared max-width: 120px cap further down the
+	   sheet; this needs equal-or-greater specificity to lift it, so
+	   scope it as `.mo-input.mo-input-wide` instead of the bare
+	   `.mo-input-wide` we used to have. */
+	:global(.mo-input.mo-input-wide) {
+		max-width: none;
 		width: 100%;
 	}
 	:global(.mo-field-narrow .mo-input) {

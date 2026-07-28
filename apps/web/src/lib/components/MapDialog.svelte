@@ -56,6 +56,14 @@
 	import iconZoomOutSvg from '$icons/magnifying-glass-minus-solid-full.svg?raw';
 	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
 	import iconAngleSvg from '$icons/angle-solid-full.svg?raw';
+	import iconPaletteSvg from '$icons/palette-solid-full.svg?raw';
+
+	/** Strip the outer `<svg>` wrapper + FontAwesome licence comment so
+	 *  the palette icon's paths can be re-wrapped in our own `<svg>`
+	 *  with the halo `<g>` cascade applied. Runs once at module load. */
+	const paletteInner = iconPaletteSvg
+		.replace(/<svg\b[^>]*>|<\/svg>/g, '')
+		.replace(/<!--[\s\S]*?-->/g, '');
 	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
 	import { Dialog, Popover, Command } from 'bits-ui';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
@@ -290,11 +298,34 @@
 	$effect(() => {
 		if (!canvasEl) return;
 		const ro = new ResizeObserver((entries) => {
+			if (!canvasEl) return;
+			// Capture the pan fraction BEFORE canvasPxW/H change. When
+			// the sel-toolbar band pops in/out (square-selected, placing
+			// hint) the canvas shrinks/grows by the toolbar's height,
+			// which re-derives svgWidth/svgHeight. Without a restore
+			// step the raw scrollLeft/scrollTop point at a different
+			// spot in the (now differently-sized) SVG and the viewport
+			// visibly jumps — reported as "map position changed after
+			// cancelling a square selection".
+			const oldMaxX = Math.max(0, canvasEl.scrollWidth - canvasEl.clientWidth);
+			const oldMaxY = Math.max(0, canvasEl.scrollHeight - canvasEl.clientHeight);
+			const fx = oldMaxX > 0 ? canvasEl.scrollLeft / oldMaxX : 0.5;
+			const fy = oldMaxY > 0 ? canvasEl.scrollTop / oldMaxY : 0.5;
 			for (const e of entries) {
 				const r = e.contentRect;
 				if (r.width > 0) canvasPxW = r.width;
 				if (r.height > 0) canvasPxH = r.height;
 			}
+			// Restore pan after the SVG reflows to its new pixel size.
+			// RAF is enough — Svelte flushes state → derived → DOM in
+			// the microtask cycle before the next frame.
+			requestAnimationFrame(() => {
+				if (!canvasEl) return;
+				const newMaxX = Math.max(0, canvasEl.scrollWidth - canvasEl.clientWidth);
+				const newMaxY = Math.max(0, canvasEl.scrollHeight - canvasEl.clientHeight);
+				canvasEl.scrollLeft = newMaxX * fx;
+				canvasEl.scrollTop = newMaxY * fy;
+			});
 		});
 		ro.observe(canvasEl);
 		return () => ro.disconnect();
@@ -336,8 +367,14 @@
 			if (!bodyEl) return;
 			const ahh = bodyEl.offsetTop;
 			if (ahh < 0) return;
-			const maxIW = 0.8 * window.innerWidth;
-			const maxIH = Math.max(0, 0.8 * window.innerHeight - ahh);
+			// Give phone-width viewports more room — a fixed-aspect map at
+			// 80vw × 80vh leaves too much bezel around it on a 400 px
+			// wide screen. Desktop keeps 80 % so the dialog isn't
+			// aggressively edge-to-edge on very large monitors.
+			const isMobile = window.innerWidth <= 640;
+			const fraction = isMobile ? 0.9 : 0.8;
+			const maxIW = fraction * window.innerWidth;
+			const maxIH = Math.max(0, fraction * window.innerHeight - ahh);
 			if (maxIW <= 0 || maxIH <= 0) return;
 			const scale = Math.min(maxIW / pw, maxIH / ph);
 			const iw = Math.max(1, pw * scale);
@@ -929,18 +966,13 @@
 		placingMode = false;
 	}
 
-	function onLabelInput(e: Event) {
-		if (!selectedMarker) return;
-		updateMarker(selectedMarker.id, { label: (e.target as HTMLInputElement).value });
-	}
-
 	// ─── Pickr (marker colour) ─────────────────────────────────────────────
 	// Pickr is instantiated once per selection-toolbar mount. Two
 	// $effects: one to create/tear down when the anchor element comes
 	// and goes, one to sync the widget's colour when a different
 	// marker is selected (silent: true so it doesn't fire our own
 	// change handler and cause a feedback loop).
-	let pickrAnchor = $state<HTMLDivElement | null>(null);
+	let pickrAnchor = $state<HTMLButtonElement | null>(null);
 	let pickr: Pickr | null = null;
 
 	/** Seven-char `#rrggbb` (no alpha) — Pickr's HEXA output ends `ff`
@@ -954,8 +986,17 @@
 	$effect(() => {
 		if (!pickrAnchor || !dialogEl) return;
 		const anchor = pickrAnchor;
+		// The colour button now lives inside the marker properties
+		// dialog (z-index 83), which sits above the outer MapDialog
+		// (81). Pickr must portal into the props dialog's own
+		// stacking context — anchor it to dialogEl (the outer dialog)
+		// and Pickr's `.pcr-app` popover renders BEHIND the props
+		// dialog and appears invisible. Fall back to dialogEl if the
+		// props dialog element hasn't mounted yet (defensive; the
+		// button lives inside it, so it should always be present).
+		const container = propsDialogEl ?? dialogEl;
 		// `untrack` the initial color read so this effect ONLY re-runs
-		// when the anchor element (or the parent dialog) actually
+		// when the anchor element (or the parent container) actually
 		// changes. Without it, every colour edit fed `selectedColor`
 		// back into the effect, which destroyed + recreated the
 		// picker mid-use — the "picker went poof after I picked a
@@ -964,12 +1005,13 @@
 		const initialColor = untrack(() => selectedColor);
 		const instance = Pickr.create({
 			el: anchor,
-			// Anchor the popover INSIDE the dialog. Native <dialog>
-			// lives in the browser top layer, so a Pickr appended to
-			// document.body renders beneath it and clicks pass through.
-			// Attaching inside the dialog keeps the popover in the same
-			// top-layer scope.
-			container: dialogEl,
+			container,
+			// Use our own `<button>` (with the palette icon coloured by
+			// selectedColor) as the trigger instead of Pickr's default
+			// round swatch chip. Pickr skips its own button chrome and
+			// treats the anchor element as the button, so it opens the
+			// popover on click and keeps `--pcr-color` off our element.
+			useAsButton: true,
 			theme: 'nano',
 			default: initialColor,
 			// Pickr's built-in swatch row — same eight tabletop-friendly
@@ -999,8 +1041,22 @@
 			},
 		});
 		instance.on('change', (c: ReturnType<Pickr['getColor']>) => {
-			if (!selectedMarker) return;
-			updateMarker(selectedMarker.id, { color: normalizeHex(c.toHEXA().toString()) });
+			// Explicit-commit form: write to the draft, not to the marker.
+			// The marker sees the new colour only when OK is pressed.
+			if (!draft) return;
+			draft.color = normalizeHex(c.toHEXA().toString());
+			// Pickr only refreshes the trigger chip's `--pcr-color` inside
+			// applyColor(), which normally fires on Save. We removed the
+			// Save button (save: false), so nudge applyColor() ourselves
+			// on every live change — otherwise the chip keeps showing
+			// the previous colour while the marker icon has already moved
+			// on. Guarded with a try/catch because applyColor emits 'save'
+			// which some Pickr versions choke on when save UI is disabled.
+			try {
+				instance.applyColor(true);
+			} catch {
+				/* known: applyColor's save-emit path when save:false */
+			}
 		});
 		pickr = instance;
 		return () => {
@@ -1019,13 +1075,13 @@
 		};
 	});
 
-	// Sync widget → selection when the picked marker (or another
-	// surface) changes its colour behind our back. Uses setColor
-	// silent so we don't feed the change back through updateMarker.
+	// Sync widget → draft-colour when the picked marker changes or a
+	// fresh snapshot lands (new marker selected). silent:true so
+	// setColor doesn't re-fire our 'change' handler and stomp itself.
 	$effect(() => {
-		const c = selectedColor;
+		const c = draft?.color;
 		const p = pickr;
-		if (!p) return;
+		if (!p || !c) return;
 		const cur = normalizeHex(p.getColor()?.toHEXA().toString() ?? '');
 		if (cur !== c.toLowerCase()) p.setColor(c, true);
 	});
@@ -1039,26 +1095,10 @@
 		return n < 0 ? n + 360 : n;
 	}
 
-	/** Selection-toolbar angle input handler. Coerces the raw string via
-	 *  parseFloat + normalises so wraps (say, typing 370) land at 10°. */
-	function onAngleInput(e: Event) {
-		if (!selectedMarker) return;
-		const raw = (e.target as HTMLInputElement).value;
-		const n = parseFloat(raw);
-		updateMarker(selectedMarker.id, { angle: Number.isFinite(n) ? normalizeAngle(n) : 0 });
-	}
-
-	/** Angle currently displayed in the spinner — always in `[0, 360)`. */
+	/** Angle currently displayed in the spinner — always in `[0, 360)`.
+	 *  Kept as a plain derived because the draft-aware `draftAngle`
+	 *  derived below falls back to this when no draft exists yet. */
 	const selectedAngle = $derived(normalizeAngle(selectedMarker?.angle));
-
-	/** Step the marker's angle by ±15°. iOS Safari doesn't render the
-	 *  native number-input spinner arrows, so we surface explicit +/−
-	 *  buttons next to the text — otherwise touch users can only edit
-	 *  the angle by typing. */
-	function stepAngle(delta: number) {
-		if (!selectedMarker) return;
-		updateMarker(selectedMarker.id, { angle: normalizeAngle(selectedAngle + delta) });
-	}
 
 	// ─── Entity-link picker (searchable) ───────────────────────────────────────
 	// Marker link picker — bits-ui Popover + Command (shadcn-svelte
@@ -1070,6 +1110,24 @@
 	// popover portals into `dialogEl` so it renders on top of the
 	// map dialog's own top-layer instead of behind it.
 	let entityPickerOpen = $state(false);
+
+	// Marker properties dialog — opens when a marker is selected (via
+	// tap, shift-click, long-press, or just-created), closes back to
+	// the map when the user hits ✕ or Escape. Replaces the old
+	// always-visible `.mp-sel-toolbar` band that ate two rows on
+	// mobile whenever a marker was live. Sync is one-way via effect:
+	// `selectedMarkerId` non-null → dialog open; user closing the
+	// dialog clears `selectedMarkerId` via onOpenChange.
+	let propsDialogOpen = $state(false);
+	// Ref to the props dialog Content — needed as the Pickr popover's
+	// `container` so Pickr's own portal renders INSIDE the props
+	// dialog's stacking context (z-index 83) rather than the outer
+	// MapDialog's (81). Without this the colour wheel would open
+	// behind the props dialog and appear invisible.
+	let propsDialogEl = $state<HTMLElement | null>(null);
+	$effect(() => {
+		propsDialogOpen = selectedMarkerId !== null;
+	});
 	// Alias so the shared kind metadata (community / place / journey /
 	// site — NPCs aren't linkable from a marker) reads locally with a
 	// short name at each render site.
@@ -1083,21 +1141,6 @@
 			.slice()
 			.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
 	);
-
-	/** Commit an entity-link choice. `value` is "" to clear or
-	 *  "kind:id" to link. Same auto-fill-label behaviour as the old
-	 *  onEntityChange — if the marker has no label yet, adopt the
-	 *  linked entity's name. */
-	function pickEntity(value: string) {
-		if (!selectedMarker) return;
-		const patch: { entityId?: string; label?: string } = { entityId: value || undefined };
-		if (value && !selectedMarker.label.trim()) {
-			const link = resolveEntity(value);
-			if (link) patch.label = link.name;
-		}
-		updateMarker(selectedMarker.id, patch);
-		entityPickerOpen = false;
-	}
 
 	function deleteSelected() {
 		if (!selectedMarker) return;
@@ -1154,14 +1197,6 @@
 	}
 	function closeIconPicker() {
 		iconDialogOpen = false;
-	}
-	function pickIcon(key: string) {
-		if (!selectedMarker) {
-			closeIconPicker();
-			return;
-		}
-		updateMarker(selectedMarker.id, { icon: key });
-		closeIconPicker();
 	}
 
 	function iconKey(i: MapIcon): string {
@@ -1227,6 +1262,111 @@
 	const selectedIcon = $derived(selectedMarker ? resolveMapIcon(selectedMarker.icon) : undefined);
 	const selectedColor = $derived(selectedMarker?.color || DEFAULT_MARKER_COLOR);
 
+	// ─── Marker properties dialog — working draft ──────────────────────
+	// The properties dialog is an explicit-commit form: fields write
+	// here, OK writes the draft to the marker via `updateMarker`,
+	// Cancel / ✕ / Escape discard the draft and leave the marker
+	// untouched. For a newly-placed marker that means the marker
+	// exists at the drop point but reverts to its default
+	// `{label:'', icon:null, color: DEFAULT_MARKER_COLOR, angle:0}`
+	// state; for an existing marker it reverts to whatever it held
+	// before the dialog opened. Snapshot fires only when the selected
+	// marker's id CHANGES (via the effect below tracking
+	// `selectedMarkerId`) so mid-flight edits don't get stomped by
+	// unrelated store re-derivations.
+	type MarkerDraft = {
+		label: string;
+		icon: string | null;
+		color: string;
+		angle: number;
+		entityId: string;
+	};
+	let draft = $state<MarkerDraft | null>(null);
+	$effect(() => {
+		const id = selectedMarkerId;
+		if (id === null) {
+			propsDialogOpen = false;
+			draft = null;
+			return;
+		}
+		const m = untrack(() => selectedMarker);
+		if (!m) return;
+		draft = {
+			label: m.label ?? '',
+			icon: m.icon ?? null,
+			color: m.color ?? DEFAULT_MARKER_COLOR,
+			angle: normalizeAngle(m.angle),
+			entityId: m.entityId ?? '',
+		};
+		propsDialogOpen = true;
+	});
+
+	/** Draft-aware previews for the marker-editor UI. Fall back to the
+	 *  live selectedMarker readings pre-snapshot so the first paint
+	 *  after selection isn't blank. */
+	const draftIcon = $derived(draft ? resolveMapIcon(draft.icon ?? undefined) : selectedIcon);
+	const draftColor = $derived(draft?.color ?? selectedColor);
+	const draftAngle = $derived(draft ? normalizeAngle(draft.angle) : selectedAngle);
+	const draftLinkedEntity = $derived(draft ? resolveEntity(draft.entityId) : null);
+
+	function onDraftLabelInput(e: Event) {
+		if (!draft) return;
+		draft.label = (e.target as HTMLInputElement).value;
+	}
+	function onDraftAngleInput(e: Event) {
+		if (!draft) return;
+		const raw = (e.target as HTMLInputElement).value;
+		const n = parseFloat(raw);
+		draft.angle = Number.isFinite(n) ? normalizeAngle(n) : 0;
+	}
+	function stepDraftAngle(delta: number) {
+		if (!draft) return;
+		draft.angle = normalizeAngle(draft.angle + delta);
+	}
+	function pickDraftEntity(value: string) {
+		if (!draft) return;
+		draft.entityId = value;
+		// Auto-fill label from the picked entity when the draft still
+		// has an empty name — same convenience the old direct-commit
+		// handler offered.
+		if (value && !draft.label.trim()) {
+			const link = resolveEntity(value);
+			if (link) draft.label = link.name;
+		}
+		entityPickerOpen = false;
+	}
+	function pickDraftIcon(key: string) {
+		if (!draft) {
+			closeIconPicker();
+			return;
+		}
+		draft.icon = key;
+		closeIconPicker();
+	}
+
+	/** OK — commit the draft to the marker and close the dialog. */
+	function commitDraft() {
+		if (!draft || !selectedMarker) {
+			propsDialogOpen = false;
+			return;
+		}
+		updateMarker(selectedMarker.id, {
+			label: draft.label,
+			icon: draft.icon ?? undefined,
+			color: draft.color,
+			angle: draft.angle,
+			entityId: draft.entityId || undefined,
+		});
+		propsDialogOpen = false;
+	}
+
+	/** Cancel — close the dialog without touching the marker. The
+	 *  effect above clears the draft when `selectedMarkerId` returns
+	 *  to null (which onOpenChange triggers). */
+	function cancelDraft() {
+		propsDialogOpen = false;
+	}
+
 	/** Snap resolution at the current zoom — surfaced in the toolbar hint
 	 *  so users know the granularity they're placing at. */
 	const snapRes = $derived(snapResolutionForZoom(zoom));
@@ -1236,7 +1376,7 @@
 	<Dialog.Portal>
 		<Dialog.Overlay class="mp-overlay" />
 		<Dialog.Content bind:ref={dialogEl} class="mp-dialog">
-			<DialogHeader title={headingText('Campaign Map')} onclose={close} />
+			<DialogHeader title={headingText('Edit Map')} onclose={close} />
 
 			<div class="mp-toolbar">
 				<div class="mp-tools mp-tools-map">
@@ -1350,6 +1490,8 @@
 					>
 				</div>
 				<input
+					id="mp-file-input"
+					name="mp-file-input"
 					bind:this={fileInputEl}
 					type="file"
 					accept="image/*"
@@ -1367,208 +1509,9 @@
 		lives on the + Marker button's tooltip so the toolbar band doesn't
 		steal vertical space on mobile.
 	-->
-			{#if selectedMarker || placingMode || selectedSquare}
+			{#if placingMode || selectedSquare}
 				<div class="mp-sel-toolbar">
-					{#if selectedMarker}
-						<input
-							class="mp-sel-name"
-							type="text"
-							placeholder="Marker name…"
-							value={selectedMarker.label}
-							oninput={onLabelInput}
-							use:tooltip={'Name shown under the icon (or centred on the point when no icon is chosen)'}
-						/>
-						<button
-							class="mp-sel-icon-btn"
-							onclick={openIconPicker}
-							use:tooltip={selectedIcon
-								? `Change icon (currently ${selectedIcon.label})`
-								: 'Change icon (currently label-only)'}
-							aria-label="Change icon"
-						>
-							{#if selectedIcon}
-								<!-- Same 2-device-pixel white halo the map markers use so
-						     a light icon colour still reads against dark
-						     `--bg-control`. `paint-order="stroke"` puts the halo
-						     behind the fill; `vector-effect="non-scaling-stroke"`
-						     pins the width to display pixels regardless of the
-						     icon's own viewBox scale. -->
-								<svg viewBox={selectedIcon.viewBox} aria-hidden="true">
-									<g
-										fill={selectedColor}
-										stroke="#fff"
-										stroke-width="2"
-										stroke-linejoin="round"
-										paint-order="stroke"
-										vector-effect="non-scaling-stroke"
-									>
-										{@html selectedIcon.inner}
-									</g>
-								</svg>
-							{:else}
-								<span class="mp-sel-icon-none" aria-hidden="true">Aa</span>
-							{/if}
-						</button>
-						<!-- Pickr colour widget — the native macOS/Windows `<input
-			     type="color">` opens a heavy OS dialog that eats the
-			     screen. Pickr is a self-contained JS wheel + swatches
-			     that lives in-page. The `<div>` is a stub anchor;
-			     Pickr replaces it with its own button chip that shows
-			     the current colour and pops the wheel on click. -->
-						<div
-							class="mp-sel-color"
-							bind:this={pickrAnchor}
-							use:tooltip={'Icon colour — click to open the picker'}
-						></div>
-						<!-- Angle spinner — explicit − / + buttons flank the number
-			     input because iOS Safari doesn't render the native
-			     <input type="number"> step arrows, so touch users would
-			     otherwise be stuck typing. Bare wheel/keyboard step still
-			     works on desktop via the input itself. Uses degree symbol
-			     as the label so a narrow toolbar still fits. -->
-						<div class="mp-sel-angle" role="group" aria-label="Marker rotation">
-							<button
-								type="button"
-								class="mp-sel-angle-step"
-								onclick={() => stepAngle(-15)}
-								use:tooltip={'Rotate 15° counter-clockwise'}
-								aria-label="Rotate counter-clockwise">−</button
-							>
-							<label
-								class="mp-sel-angle-field"
-								use:tooltip={'Rotation in degrees (0 = up, clockwise)'}
-							>
-								<span class="mp-sel-angle-glyph" aria-hidden="true">{@html iconAngleSvg}</span>
-								<input
-									class="mp-sel-angle-input"
-									type="number"
-									min="0"
-									max="359"
-									step="15"
-									value={selectedAngle}
-									oninput={onAngleInput}
-									aria-label="Marker rotation in degrees"
-								/>
-								<span class="mp-sel-angle-unit" aria-hidden="true">°</span>
-							</label>
-							<button
-								type="button"
-								class="mp-sel-angle-step"
-								onclick={() => stepAngle(15)}
-								use:tooltip={'Rotate 15° clockwise'}
-								aria-label="Rotate clockwise">+</button
-							>
-						</div>
-						{@const currentLink = resolveEntity(selectedMarker.entityId)}
-						<!-- Shadcn-style combobox: trigger is a button styled as a
-			     text field, popover contains its own search input +
-			     filtered list. Kind icon of the linked entity floats
-			     as a prefix inside the trigger. -->
-						<Popover.Root bind:open={entityPickerOpen}>
-							<Popover.Trigger
-								class="mp-combobox mp-sel-entity-btn"
-								aria-label="Link marker to a connection"
-							>
-								{#if selectedMarker.entityId && currentLink}
-									<span
-										class="mp-sel-entity-icon"
-										aria-hidden="true"
-										style="--kind-color: {ENTITY_KIND_META[currentLink.kind].color}"
-										>{@html ENTITY_KIND_META[currentLink.kind].icon}</span
-									>
-									<span class="mp-combobox-value">{currentLink.name}</span>
-								{:else if selectedMarker.entityId}
-									<span class="mp-combobox-value mp-combobox-value--placeholder">Broken link</span>
-								{:else}
-									<span class="mp-combobox-value mp-combobox-value--placeholder">— No link —</span>
-								{/if}
-								<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
-							</Popover.Trigger>
-							<Popover.Portal>
-								<Popover.Content
-									class="mp-cmd-popover"
-									sideOffset={4}
-									align="start"
-									collisionPadding={8}
-								>
-									<Command.Root class="mp-cmd">
-										<div class="mp-cmd-search-row">
-											<span class="mp-cmd-search-icon" aria-hidden="true"
-												>{@html searchIconSvg}</span
-											>
-											<Command.Input
-												class="mp-cmd-search"
-												placeholder="Search connections…"
-												autofocus
-											/>
-										</div>
-										<Command.List class="mp-cmd-list">
-											<Command.Empty class="mp-cmd-empty">No matching connections.</Command.Empty>
-											<Command.Item
-												class="mp-cmd-item"
-												value="No link"
-												onSelect={() => pickEntity('')}
-											>
-												<span class="mp-cmd-check" aria-hidden="true">
-													{#if !selectedMarker.entityId}
-														<svg
-															viewBox="0 0 20 20"
-															fill="none"
-															stroke="currentColor"
-															stroke-width="2.5"
-															><polyline
-																points="4 11 8 15 16 6"
-																stroke-linecap="round"
-																stroke-linejoin="round"
-															></polyline></svg
-														>
-													{/if}
-												</span>
-												<span class="mp-cmd-item-name mp-cmd-item-name--muted">— No link —</span>
-											</Command.Item>
-											{#each sortedLinkableEntities as e (`${e.kind}:${e.id}`)}
-												{@const val = `${e.kind}:${e.id}`}
-												{@const meta = KIND_META[e.kind]}
-												<Command.Item
-													class="mp-cmd-item"
-													value={e.name}
-													onSelect={() => pickEntity(val)}
-												>
-													<span class="mp-cmd-check" aria-hidden="true">
-														{#if selectedMarker.entityId === val}
-															<svg
-																viewBox="0 0 20 20"
-																fill="none"
-																stroke="currentColor"
-																stroke-width="2.5"
-																><polyline
-																	points="4 11 8 15 16 6"
-																	stroke-linecap="round"
-																	stroke-linejoin="round"
-																></polyline></svg
-															>
-														{/if}
-													</span>
-													<span
-														class="mp-cmd-item-icon"
-														aria-hidden="true"
-														style="--kind-color: {meta.color}">{@html meta.icon}</span
-													>
-													<span class="mp-cmd-item-name">{e.name}</span>
-												</Command.Item>
-											{/each}
-										</Command.List>
-									</Command.Root>
-								</Popover.Content>
-							</Popover.Portal>
-						</Popover.Root>
-						<button
-							class="mp-btn mp-btn-danger mp-btn-icon"
-							onclick={deleteSelected}
-							use:tooltip={'Delete this marker'}
-							aria-label="Delete marker">{@html iconTrashSvg}</button
-						>
-					{:else if placingMode}
+					{#if placingMode}
 						<span class="mp-sel-hint mp-sel-hint-active"
 							>Click the map to place a marker. Snap {snapRes === 1
 								? 'to cells'
@@ -1978,6 +1921,244 @@
 {/if}
 
 <!--
+	Marker properties dialog. Nested inside MapDialog so it shares the
+	same modal top-layer (overlay z-index 82 / content 83, matching the
+	icon picker). Opens when the user selects a marker (tap, shift-click,
+	long-press, or after placing a new one); closing the dialog clears
+	the selection. Explicit-commit form: fields write to a `draft`
+	snapshot, OK commits the draft to the marker via `updateMarker()`,
+	Cancel / ✕ / Escape discard the draft and leave the marker
+	untouched (a newly-placed marker keeps its default empty state).
+	Delete removes the marker outright.
+-->
+{#if selectedMarker && draft}
+	<Dialog.Root
+		bind:open={propsDialogOpen}
+		onOpenChange={(next) => {
+			if (!next) selectedMarkerId = null;
+		}}
+	>
+		<Dialog.Portal>
+			<Dialog.Overlay class="mp-props-overlay" />
+			<Dialog.Content bind:ref={propsDialogEl} class="mp-props-dialog">
+				<DialogHeader
+					title={headingText('Edit Marker')}
+					onclose={cancelDraft}
+					radius="8px 8px 0 0"
+				/>
+				<div class="mp-props-body">
+					<label class="mp-props-field">
+						<span class="mp-props-label">Name</span>
+						<input
+							id="mp-props-name"
+							name="mp-props-name"
+							class="mp-props-input"
+							type="text"
+							placeholder="Marker name…"
+							value={draft.label}
+							oninput={onDraftLabelInput}
+						/>
+					</label>
+
+					<div class="mp-props-row">
+						<label class="mp-props-field mp-props-field--icon">
+							<span class="mp-props-label">Icon</span>
+							<button class="mp-sel-icon-btn" onclick={openIconPicker} aria-label="Change icon">
+								{#if draftIcon}
+									<svg viewBox={draftIcon.viewBox} aria-hidden="true">
+										<g
+											fill={draftColor}
+											stroke="#fff"
+											stroke-width="2"
+											stroke-linejoin="round"
+											paint-order="stroke"
+											vector-effect="non-scaling-stroke"
+										>
+											{@html draftIcon.inner}
+										</g>
+									</svg>
+								{:else}
+									<span class="mp-sel-icon-none" aria-hidden="true">Aa</span>
+								{/if}
+							</button>
+						</label>
+
+						<label class="mp-props-field mp-props-field--color">
+							<span class="mp-props-label">Colour</span>
+							<button
+								type="button"
+								class="mp-sel-color-btn"
+								style="color: {draftColor}"
+								bind:this={pickrAnchor}
+								aria-label="Icon colour"
+							>
+								<svg viewBox="0 0 640 640" aria-hidden="true">
+									<g
+										fill="currentColor"
+										stroke="#fff"
+										stroke-width="2"
+										stroke-linejoin="round"
+										paint-order="stroke"
+										vector-effect="non-scaling-stroke"
+									>
+										{@html paletteInner}
+									</g>
+								</svg>
+							</button>
+						</label>
+
+						<label class="mp-props-field mp-props-field--angle">
+							<span class="mp-props-label">Angle</span>
+							<div class="mp-sel-angle" role="group" aria-label="Marker rotation">
+								<button
+									type="button"
+									class="mp-sel-angle-step"
+									onclick={() => stepDraftAngle(-15)}
+									aria-label="Rotate counter-clockwise">−</button
+								>
+								<span class="mp-sel-angle-field">
+									<span class="mp-sel-angle-glyph" aria-hidden="true">{@html iconAngleSvg}</span>
+									<input
+										id="mp-props-angle"
+										name="mp-props-angle"
+										class="mp-sel-angle-input"
+										type="number"
+										min="0"
+										max="359"
+										step="15"
+										value={draftAngle}
+										oninput={onDraftAngleInput}
+										aria-label="Marker rotation in degrees"
+									/>
+									<span class="mp-sel-angle-unit" aria-hidden="true">°</span>
+								</span>
+								<button
+									type="button"
+									class="mp-sel-angle-step"
+									onclick={() => stepDraftAngle(15)}
+									aria-label="Rotate clockwise">+</button
+								>
+							</div>
+						</label>
+					</div>
+
+					<label class="mp-props-field">
+						<span class="mp-props-label">Link to</span>
+						<Popover.Root bind:open={entityPickerOpen}>
+							<Popover.Trigger
+								class="mp-combobox mp-sel-entity-btn"
+								aria-label="Link marker to a connection"
+							>
+								{#if draft.entityId && draftLinkedEntity}
+									<span
+										class="mp-sel-entity-icon"
+										aria-hidden="true"
+										style="--kind-color: {ENTITY_KIND_META[draftLinkedEntity.kind].color}"
+										>{@html ENTITY_KIND_META[draftLinkedEntity.kind].icon}</span
+									>
+									<span class="mp-combobox-value">{draftLinkedEntity.name}</span>
+								{:else if draft.entityId}
+									<span class="mp-combobox-value mp-combobox-value--placeholder">Broken link</span>
+								{:else}
+									<span class="mp-combobox-value mp-combobox-value--placeholder">— No link —</span>
+								{/if}
+								<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
+							</Popover.Trigger>
+							<Popover.Portal>
+								<Popover.Content
+									class="mp-cmd-popover"
+									sideOffset={4}
+									align="start"
+									collisionPadding={8}
+								>
+									<Command.Root class="mp-cmd">
+										<div class="mp-cmd-search-row">
+											<span class="mp-cmd-search-icon" aria-hidden="true"
+												>{@html searchIconSvg}</span
+											>
+											<Command.Input
+												class="mp-cmd-search"
+												placeholder="Search connections…"
+												autofocus
+											/>
+										</div>
+										<Command.List class="mp-cmd-list">
+											<Command.Empty class="mp-cmd-empty">No matching connections.</Command.Empty>
+											<Command.Item
+												class="mp-cmd-item"
+												value="No link"
+												onSelect={() => pickDraftEntity('')}
+											>
+												<span class="mp-cmd-check" aria-hidden="true">
+													{#if !draft.entityId}
+														<svg
+															viewBox="0 0 20 20"
+															fill="none"
+															stroke="currentColor"
+															stroke-width="2.5"
+															><polyline
+																points="4 11 8 15 16 6"
+																stroke-linecap="round"
+																stroke-linejoin="round"
+															></polyline></svg
+														>
+													{/if}
+												</span>
+												<span class="mp-cmd-item-name mp-cmd-item-name--muted">— No link —</span>
+											</Command.Item>
+											{#each sortedLinkableEntities as e (`${e.kind}:${e.id}`)}
+												{@const val = `${e.kind}:${e.id}`}
+												{@const meta = KIND_META[e.kind]}
+												<Command.Item
+													class="mp-cmd-item"
+													value={e.name}
+													onSelect={() => pickDraftEntity(val)}
+												>
+													<span class="mp-cmd-check" aria-hidden="true">
+														{#if draft.entityId === val}
+															<svg
+																viewBox="0 0 20 20"
+																fill="none"
+																stroke="currentColor"
+																stroke-width="2.5"
+																><polyline
+																	points="4 11 8 15 16 6"
+																	stroke-linecap="round"
+																	stroke-linejoin="round"
+																></polyline></svg
+															>
+														{/if}
+													</span>
+													<span
+														class="mp-cmd-item-icon"
+														aria-hidden="true"
+														style="--kind-color: {meta.color}">{@html meta.icon}</span
+													>
+													<span class="mp-cmd-item-name">{e.name}</span>
+												</Command.Item>
+											{/each}
+										</Command.List>
+									</Command.Root>
+								</Popover.Content>
+							</Popover.Portal>
+						</Popover.Root>
+					</label>
+				</div>
+				<div class="mp-props-footer">
+					<button class="mp-btn mp-btn-danger" onclick={deleteSelected} aria-label="Delete marker">
+						{@html iconTrashSvg}
+						<span>Delete</span>
+					</button>
+					<div class="mp-props-footer-spacer"></div>
+					<button class="mp-btn" onclick={cancelDraft}>Cancel</button>
+					<button class="mp-btn mp-btn-primary" onclick={commitDraft}>OK</button>
+				</div>
+			</Dialog.Content>
+		</Dialog.Portal>
+	</Dialog.Root>
+{/if}
+
+<!--
 	Icon picker — nested modal that lists every manifest icon grouped by
 	category with a search filter. Live-color-previews using the currently-
 	selected marker's color so users can see what they'll get.
@@ -2002,6 +2183,8 @@
 				<div class="mp-icon-search-field">
 					<span class="mp-icon-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
 					<input
+						id="mp-icon-search"
+						name="mp-icon-search"
 						bind:this={iconSearchInputEl}
 						class="mp-icon-search"
 						type="search"
@@ -2018,8 +2201,8 @@
 				<div class="mp-icon-grid">
 					<button
 						class="mp-icon-tile mp-icon-tile--none"
-						class:mp-icon-tile-selected={selectedMarker?.icon === ''}
-						onclick={() => pickIcon('')}
+						class:mp-icon-tile-selected={draft?.icon === '' || draft?.icon === null}
+						onclick={() => pickDraftIcon('')}
 						use:tooltip={'Show only the label — no icon, centred on the point'}
 						aria-label="No icon"
 					>
@@ -2033,8 +2216,8 @@
 							{@const key = iconKey(ic)}
 							<button
 								class="mp-icon-tile"
-								class:mp-icon-tile-selected={selectedMarker?.icon === key}
-								onclick={() => pickIcon(key)}
+								class:mp-icon-tile-selected={draft?.icon === key}
+								onclick={() => pickDraftIcon(key)}
 								use:tooltip={ic.label}
 								aria-label={ic.label}
 							>
@@ -2072,10 +2255,11 @@
 		transform: translate(-50%, -50%);
 		/* Width + height are set from JavaScript per frame via the
 		   "contain" fit (aspect-preserving, respects live chrome
-		   height, caps at 80vw × 80vh, handles device rotation).
-		   The `max-width` / `max-height` here are a safety net for
-		   the first paint before the effect fires — the JS values
-		   supersede them. */
+		   height, handles device rotation). The `max-width` /
+		   `max-height` here are a safety net for the first paint
+		   before the effect fires — the JS values supersede them.
+		   Desktop caps at 80 %; mobile bumps to 90 % via the media
+		   query further down + the JS `isMobile` branch. */
 		max-width: 80vw;
 		max-height: 80vh;
 		overflow: hidden;
@@ -2087,6 +2271,14 @@
 			0 0 0 1px var(--border-mid);
 		outline: none;
 		z-index: 81;
+	}
+	@media (max-width: 640px) {
+		/* Lift the CSS safety-net so the JS `isMobile → fraction 0.9`
+		   sizing isn't clamped back to 80vw × 80vh mid-frame. */
+		:global(.mp-dialog) {
+			max-width: 90vw;
+			max-height: 90vh;
+		}
 	}
 
 	/* On desktop the picker + action cluster sit on the same row,
@@ -2125,10 +2317,6 @@
 		:global(.mp-sel-name) {
 			flex: 1 1 100%;
 		}
-		:global(.mp-sel-entity-btn) {
-			flex: 1 1 100%;
-			max-width: none;
-		}
 	}
 	:global(.mp-btn) {
 		font-family: var(--font-ui);
@@ -2150,6 +2338,19 @@
 	:global(.mp-btn:disabled) {
 		opacity: 0.4;
 		cursor: default;
+	}
+	/* Affirmative variant for OK / commit buttons — tinted the same
+	   accent as the app's global `.btn-primary`. Used in the marker
+	   properties dialog footer. */
+	:global(.mp-btn-primary) {
+		background: var(--text-accent);
+		color: var(--bg-card);
+		border-color: var(--text-accent);
+	}
+	:global(.mp-btn-primary:hover:not(:disabled)) {
+		background: color-mix(in srgb, var(--text-accent) 85%, var(--text));
+		color: var(--bg-card);
+		border-color: var(--text-accent);
 	}
 	/* Combobox trigger shell — a text-field-shaped `<button>` (bits-ui
 	   Popover.Trigger) containing an optional prefix icon, a value/
@@ -2216,6 +2417,15 @@
 
 	:global(.mp-picker-btn) {
 		max-width: 240px;
+	}
+	@media (max-width: 640px) {
+		/* Row 1 already spans the toolbar on mobile via `.mp-tools-map
+		   { flex: 1 1 100% }`; drop the desktop 240 px cap so the map
+		   picker fills that row instead of hugging the left edge. */
+		:global(.mp-picker-btn) {
+			max-width: none;
+			width: 100%;
+		}
 	}
 
 	/* Shadcn-style combobox popover (Popover.Content + Command inside).
@@ -2476,24 +2686,33 @@
 		height: 22px;
 		flex-shrink: 0;
 	}
-	/* Pickr colour widget. Pickr replaces the anchor `<div>` with its
-	   own `.pickr` chip (a small round swatch button) + a floating
-	   `.pcr-app` popover. We just need to constrain the chip so it
-	   sits inside the toolbar row like the old native chip did — the
-	   popover then anchors itself to the chip and floats free. */
-	:global(.mp-sel-color .pickr) {
+	/* Colour picker trigger — a real `<button>` styled to match the
+	   neighbouring `.mp-sel-icon-btn`. Pickr runs in `useAsButton`
+	   mode so this element IS its trigger; Pickr just floats the
+	   `.pcr-app` popover next to it on click. The palette SVG inside
+	   picks up the selected colour via `currentColor` and the same
+	   2-device-pixel white halo the map markers use, so light hues
+	   read on dark backgrounds and dark hues read on light. */
+	:global(.mp-sel-color-btn) {
 		display: inline-flex;
-	}
-	:global(.mp-sel-color .pickr .pcr-button) {
-		width: 24px;
-		height: 24px;
+		align-items: center;
+		justify-content: center;
+		padding: 3px 6px;
+		background: var(--bg-control);
 		border: 1px solid var(--border-mid);
 		border-radius: 4px;
+		cursor: pointer;
 	}
-	:global(.mp-sel-color .pickr .pcr-button:focus) {
+	:global(.mp-sel-color-btn:hover) {
+		border-color: var(--text-accent);
+	}
+	:global(.mp-sel-color-btn:focus-visible) {
 		outline: 1px solid var(--text-accent);
 		outline-offset: 1px;
-		box-shadow: none;
+	}
+	:global(.mp-sel-color-btn svg) {
+		width: 22px;
+		height: 22px;
 	}
 	/* Popover floats above the dialog's other chrome via a high
 	   z-index so it isn't clipped by the toolbar's own row. */
@@ -2519,7 +2738,7 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		width: 18px;
+		width: 13px;
 		padding: 0;
 		border: none;
 		background: transparent;
@@ -2590,9 +2809,12 @@
 	   look comes from `.mp-combobox`. Passes through bits-ui
 	   Popover.Trigger, so scope with `:global()`. */
 	:global(.mp-sel-entity-btn) {
-		flex: 1 1 240px;
-		min-width: 180px;
-		max-width: 420px;
+		/* Combobox trigger sits inside `.mp-props-field` (flex column):
+		   default `align-items: stretch` gives it full width and the
+		   min-height from `.mp-combobox` handles the vertical rhythm.
+		   Explicit width so the inline-flex Popover.Trigger fills the
+		   field on both mobile and desktop. */
+		width: 100%;
 	}
 	/* Kind icon for the currently-linked entity — same SVG the picker
 	   row uses. Coloured via `--kind-color` set inline from
@@ -2983,20 +3205,126 @@
 		font-size: 0.9rem;
 	}
 
-	/* Icon picker sub-dialog — nested inside MapDialog. Overlay 82 /
-	   content 83 sits one tier above the outer map dialog (80/81) so
-	   it renders on top without breaking the shared modal budget. */
-	:global(.mp-icon-overlay) {
+	/* Marker properties dialog. Same modal tier as the icon picker
+	   (overlay 82 / content 83) so it sits above the outer MapDialog
+	   without breaking the app's shared z-index budget. Layout is
+	   vertical: header, form body, destructive-action footer. */
+	:global(.mp-props-overlay) {
 		position: fixed;
 		inset: 0;
 		background: #00000060;
 		z-index: 82;
+	}
+	:global(.mp-props-dialog) {
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		width: min(460px, calc(100vw - 2rem));
+		max-height: 82vh;
+		display: flex;
+		flex-direction: column;
+		background: var(--bg-card);
+		color: var(--text);
+		border-radius: 8px;
+		box-shadow:
+			0 16px 48px #00000070,
+			0 0 0 1px var(--border-mid);
+		outline: none;
+		z-index: 83;
+		overflow: hidden;
+	}
+	:global(.mp-props-body) {
+		padding: 12px 14px;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+	}
+	:global(.mp-props-field) {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		min-width: 0;
+	}
+	:global(.mp-props-label) {
+		font-family: var(--font-ui);
+		font-size: 0.66rem;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--text-dimmer);
+	}
+	:global(.mp-props-input) {
+		padding: 6px 8px;
+		font-family: var(--font-ui);
+		font-size: 0.9rem;
+		color: var(--text);
+		background: var(--bg-control);
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+	}
+	:global(.mp-props-input:focus) {
+		outline: none;
+		border-color: var(--text-accent);
+	}
+	:global(.mp-props-row) {
+		display: flex;
+		gap: 12px;
+		flex-wrap: wrap;
+		align-items: flex-end;
+	}
+	:global(.mp-props-field--icon),
+	:global(.mp-props-field--color),
+	:global(.mp-props-field--angle) {
+		flex: 0 0 auto;
+	}
+	:global(.mp-props-footer) {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 14px;
+		border-top: 1px solid var(--border);
+		background: var(--bg-inset);
+	}
+	:global(.mp-props-footer-spacer) {
+		flex: 1 1 auto;
+	}
+	:global(.mp-props-footer .mp-btn-danger) {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+	}
+	:global(.mp-props-footer .mp-btn-danger svg) {
+		width: 14px;
+		height: 14px;
+	}
+	@media (max-width: 640px) {
+		:global(.mp-props-dialog) {
+			width: 90vw;
+			max-height: 90vh;
+		}
+	}
+
+	/* Icon picker sub-dialog — nested inside MapDialog. Overlay 84 /
+	   content 85 sits ABOVE the marker-properties dialog (82/83) so
+	   the icon grid stacks correctly when opened from the props
+	   dialog's Icon button. Still one tier above nothing else in
+	   the app so the shared modal budget stays intact. */
+	:global(.mp-icon-overlay) {
+		position: fixed;
+		inset: 0;
+		background: #00000060;
+		z-index: 84;
 	}
 	:global(.mp-icon-dialog) {
 		position: fixed;
 		top: 50%;
 		left: 50%;
 		transform: translate(-50%, -50%);
+		/* Match the outer MapDialog's mobile-bounds policy: 90 % of
+		   the viewport on phone widths, 720 px capped on desktop. */
 		width: min(720px, calc(100vw - 2rem));
 		max-height: 82vh;
 		overflow: hidden;
@@ -3007,7 +3335,7 @@
 			0 16px 48px #00000070,
 			0 0 0 1px var(--border-mid);
 		outline: none;
-		z-index: 83;
+		z-index: 85;
 	}
 	/* Search row modelled on FoePickerDialog's `.fd-search-*` — a
 	   .field wrapper positions the magnifying-glass icon absolutely
@@ -3063,6 +3391,17 @@
 		overflow-y: auto;
 		overscroll-behavior: contain;
 		padding: 8px 14px 14px;
+	}
+	@media (max-width: 640px) {
+		/* Give the picker room on phones — 90 % of the viewport,
+		   matching the outer MapDialog's mobile bounds. */
+		:global(.mp-icon-dialog) {
+			width: 90vw;
+			max-height: 90vh;
+		}
+		:global(.mp-icon-body) {
+			height: calc(90vh - 8rem);
+		}
 	}
 	:global(.mp-icon-cat-label) {
 		font-family: var(--font-ui);
