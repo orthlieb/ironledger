@@ -3032,7 +3032,12 @@
 		box-shadow: 0 0 0 2px var(--accent-glow);
 	}
 	:global(.mp-icon-body) {
-		max-height: calc(82vh - 8rem);
+		/* Fixed height (not max-height) so the body doesn't shrink as
+		   the user types and the filtered icon list gets shorter — the
+		   dialog is centred via translate(-50%, -50%), and any height
+		   change would rock the whole panel up/down around the viewport
+		   centre. Leftover space just becomes empty scroll runway. */
+		height: calc(82vh - 8rem);
 		overflow-y: auto;
 		overscroll-behavior: contain;
 		padding: 8px 14px 14px;
