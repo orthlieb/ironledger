@@ -855,20 +855,33 @@
 		activeData.vows = (activeData.vows ?? []).filter((v) => v.id !== id);
 	}
 
+	// ── New-character dialog ──────────────────────────────────────────────
+	// + Character (empty state) and "+ New character…" (combobox) both go
+	// through the same one-field dialog so users name the character up
+	// front instead of having to open the gear afterwards.
 	let creatingChar = $state(false);
-	async function addCharacter() {
+	let newCharDialogRef = $state<{ open(): void; close(): void } | null>(null);
+	let newCharName = $state('');
+
+	function addCharacter() {
+		// Reset the input each time — never carry a stale draft across opens.
+		newCharName = '';
+		newCharDialogRef?.open();
+	}
+
+	async function _commitNewCharacter() {
 		if (creatingChar) return;
+		const nameToUse = newCharName.trim() || 'New Character';
 		creatingChar = true;
 		try {
-			const newChar = await createCharacter();
+			const newChar = await createCharacter(nameToUse);
 			activeCharId = newChar.id;
 			activeCard = 'core';
-			// Rename is behind the header gear icon (CharacterOptionsDialog);
-			// no more drop-into-rename affordance on create.
 		} catch (err) {
-			console.error('[v2] addCharacter failed', err);
+			console.error('[v2] createCharacter failed', err);
 		} finally {
 			creatingChar = false;
+			newCharName = '';
 		}
 	}
 
@@ -1007,7 +1020,16 @@
 				</Popover.Root>
 
 				<!-- Per-character add buttons — icon-only to save header width.
-					 Gem = asset; link = vow (same glyphs used inside the panel). -->
+					 Link = vow; gem = asset. Vow first (left) because it's the
+					 more common per-character action. Same glyphs used inline
+					 in the panel below. -->
+				<button
+					class="btn btn-icon icon-btn ca-hdr-icon-btn"
+					onclick={addVow}
+					use:tooltip={'Add Vow'}
+					aria-label="Add Vow"
+					><span class="ca-hdr-icon-plus" aria-hidden="true">+</span>{@html linkSvg}</button
+				>
 				<button
 					class="btn btn-icon icon-btn ca-hdr-icon-btn"
 					onclick={() => {
@@ -1017,13 +1039,6 @@
 					use:tooltip={'Add Asset'}
 					aria-label="Add Asset"
 					><span class="ca-hdr-icon-plus" aria-hidden="true">+</span>{@html gemSvg}</button
-				>
-				<button
-					class="btn btn-icon icon-btn ca-hdr-icon-btn"
-					onclick={addVow}
-					use:tooltip={'Add Vow'}
-					aria-label="Add Vow"
-					><span class="ca-hdr-icon-plus" aria-hidden="true">+</span>{@html linkSvg}</button
 				>
 
 				<!-- Character options (gear) — opens CharacterOptionsDialog,
@@ -1462,6 +1477,44 @@
 		onClose={() => (pickerOpen = false)}
 	/>
 {/if}
+
+<!-- New Character dialog — opens from the empty-state "+ Character"
+     button and the combobox "+ New character…" action. Users name the
+     character up front so the header combobox trigger reads sensibly
+     right after creation. Empty name falls back to "New Character". -->
+<ConfirmDialog
+	bind:this={newCharDialogRef}
+	title="New Character"
+	confirmLabel="Create"
+	confirmClass="btn-primary"
+	accentColor="var(--text-accent)"
+	onconfirm={_commitNewCharacter}
+	oncancel={() => {
+		newCharName = '';
+	}}
+	ondismiss={() => {
+		newCharName = '';
+	}}
+>
+	<label class="co-field">
+		<span class="co-field-label">Character name</span>
+		<!-- svelte-ignore a11y_autofocus -->
+		<input
+			class="co-input"
+			type="text"
+			bind:value={newCharName}
+			placeholder="New Character"
+			autofocus
+			onkeydown={(e) => {
+				if (e.key === 'Enter') {
+					e.preventDefault();
+					newCharDialogRef?.close();
+					void _commitNewCharacter();
+				}
+			}}
+		/>
+	</label>
+</ConfirmDialog>
 
 <!-- Character options — gear icon in the header opens this. Rename +
      delete both live behind it, matching MapOptionsDialog's pattern. -->
