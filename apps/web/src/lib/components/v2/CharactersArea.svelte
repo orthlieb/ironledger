@@ -60,7 +60,9 @@
 	import PortraitUploader from '$lib/components/PortraitUploader.svelte';
 	import { EditableName } from '$lib/editableName.svelte.js';
 	import { assetIcon } from '$lib/iconRegistry.js';
-	import { Dialog, Tabs } from 'bits-ui';
+	import { Dialog, Popover, Command, Tabs } from 'bits-ui';
+	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
+	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import VowCard from '$lib/components/VowCard.svelte';
 	import DebilitiesSection from '$lib/components/DebilitiesSection.svelte';
@@ -206,6 +208,22 @@
 	});
 
 	const activeChar = $derived(characters.find((c) => c.id === activeCharId));
+
+	/** Displayable name for a spine — prefer live `data.name` (renames are
+	 *  reactive) with the row's stored `name` as a fallback. */
+	function charDisplayName(c: (typeof characters)[number]): string {
+		const dn = (c.data as Record<string, unknown> | undefined)?.name as string | undefined;
+		return (dn && dn.trim()) || c.name || 'Unnamed';
+	}
+
+	/** Popover list ordered A→Z. Sort at render-time; Command doesn't sort. */
+	const sortedCharacters = $derived(
+		characters.slice().sort((a, b) => charDisplayName(a).localeCompare(charDisplayName(b))),
+	);
+
+	/** Combobox open state — bound so item handlers can close the popover
+	 *  before dispatching (mirror of Foes area). */
+	let charPickerOpen = $state(false);
 
 	// Hydrate the active character's data IN PLACE the first time it becomes
 	// active — patches missing keys onto the existing $state proxy so
@@ -912,7 +930,7 @@
 	}
 </script>
 
-<div class="ca-area">
+<div class="ca-area" data-char-count={characters.length}>
 	<!-- Header -->
 	<header class="ca-header">
 		{#if showTitle}
@@ -920,29 +938,107 @@
 			<span class="ca-title">{headingText('Characters')}</span>
 		{/if}
 
-		<!-- Toolbar actions — apply to the active character. + Asset / + Vow
-		     are disabled when there's no character. Delete lives next to the
-		     character name (not here) so it's unambiguous which character it
-		     targets and isn't confused with vow deletion. -->
+		<!-- Toolbar actions. Empty state falls back to a plain "+ Character"
+		     button; once there is at least one character the combobox becomes
+		     the switcher (with "+ New character" inside), and the trash + per-
+		     character add-buttons live on the right. -->
 		<div class="ca-header-actions">
-			<button
-				class="btn ca-hdr-btn"
-				onclick={addCharacter}
-				disabled={creatingChar}
-				use:tooltip={'Add character'}>+ Character</button
-			>
-			<button
-				class="btn ca-hdr-btn"
-				onclick={() => {
-					activeCard = 'assets';
-					pickerOpen = true;
-				}}
-				disabled={!activeChar}
-				use:tooltip={'Add asset'}>+ Asset</button
-			>
-			<button class="btn ca-hdr-btn" onclick={addVow} disabled={!activeChar} use:tooltip={'Add vow'}
-				>+ Vow</button
-			>
+			{#if characters.length === 0}
+				<button
+					class="btn ca-hdr-btn"
+					onclick={addCharacter}
+					disabled={creatingChar}
+					use:tooltip={'Add character'}>+ Character</button
+				>
+			{:else if activeChar && activeData}
+				<!-- Character switcher (Popover + Command). Trigger reads live
+					 data.name (reactive) so renames in the stage below propagate
+					 here without extra plumbing. -->
+				<Popover.Root bind:open={charPickerOpen}>
+					<Popover.Trigger class="mp-combobox ca-hdr-combobox" aria-label="Switch or add character">
+						<span class="mp-combobox-value">{charDisplayName(activeChar)}</span>
+						<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
+					</Popover.Trigger>
+					<Popover.Portal>
+						<Popover.Content
+							class="mp-cmd-popover"
+							sideOffset={4}
+							align="start"
+							collisionPadding={8}
+						>
+							<Command.Root class="mp-cmd">
+								<div class="mp-cmd-search-row">
+									<span class="mp-cmd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
+									<Command.Input class="mp-cmd-search" placeholder="Search characters…" autofocus />
+								</div>
+								<Command.List class="mp-cmd-list">
+									<Command.Empty class="mp-cmd-empty">No matching characters.</Command.Empty>
+									{#each sortedCharacters as ch (ch.id)}
+										{@const n = charDisplayName(ch)}
+										<Command.Item
+											class="mp-cmd-item"
+											value={n}
+											onSelect={() => {
+												selectChar(ch.id);
+												charPickerOpen = false;
+											}}
+										>
+											<span class="mp-cmd-check" aria-hidden="true">
+												{#if ch.id === activeCharId}
+													<svg
+														viewBox="0 0 20 20"
+														fill="none"
+														stroke="currentColor"
+														stroke-width="2.5"
+														><polyline
+															points="4 11 8 15 16 6"
+															stroke-linecap="round"
+															stroke-linejoin="round"
+														></polyline></svg
+													>
+												{/if}
+											</span>
+											<span class="mp-cmd-item-name">{n}</span>
+										</Command.Item>
+									{/each}
+									<Command.Separator class="mp-cmd-sep" />
+									<Command.Item
+										class="mp-cmd-item mp-cmd-item--action"
+										value="+ New character"
+										onSelect={() => {
+											charPickerOpen = false;
+											void addCharacter();
+										}}
+									>
+										<span class="mp-cmd-check" aria-hidden="true"></span>
+										<span class="mp-cmd-item-name">+ New character…</span>
+									</Command.Item>
+								</Command.List>
+							</Command.Root>
+						</Popover.Content>
+					</Popover.Portal>
+				</Popover.Root>
+
+				<!-- Delete-character trash (moved from the stage-header). -->
+				<button
+					class="btn btn-icon icon-btn btn-trash ca-hdr-delete-btn"
+					onclick={() => deleteDialogRef?.open()}
+					use:tooltip={'Delete character'}
+					aria-label="Delete character">{@html trashSvg}</button
+				>
+
+				<!-- Per-character add buttons. + Asset opens the picker on the
+					 Assets tab; + Vow appends a blank vow. -->
+				<button
+					class="btn ca-hdr-btn"
+					onclick={() => {
+						activeCard = 'assets';
+						pickerOpen = true;
+					}}
+					use:tooltip={'Add asset'}>+ Asset</button
+				>
+				<button class="btn ca-hdr-btn" onclick={addVow} use:tooltip={'Add vow'}>+ Vow</button>
+			{/if}
 		</div>
 	</header>
 
@@ -957,22 +1053,6 @@
 		</div>
 	{:else}
 		<div class="ca-body">
-			<!-- Spine strip (left). Add-character moved to the header toolbar. -->
-			<nav class="ca-spines" aria-label="Character decks">
-				{#each characters as char (char.id)}
-					{@const cn = ((char.data as Record<string, unknown>)?.name as string) || char.name}
-					<button
-						class="ca-spine"
-						class:ca-spine--active={char.id === activeCharId}
-						data-char-id={char.id}
-						onclick={() => selectChar(char.id)}
-						use:tooltip={cn}
-					>
-						<span class="ca-spine-name">{cn}</span>
-					</button>
-				{/each}
-			</nav>
-
 			<!-- Active deck stage (right) -->
 			{#if activeChar && activeData}
 				{@const d = activeData}
@@ -999,12 +1079,6 @@
 							>{headingText(d.name || activeChar.name || 'Unnamed')}</button
 						>
 					{/if}
-					<button
-						class="btn btn-icon icon-btn btn-trash ca-stage-delete-btn"
-						onclick={() => deleteDialogRef?.open()}
-						use:tooltip={'Delete character'}
-						aria-label="Delete character">{@html trashSvg}</button
-					>
 				</div>
 			{/if}
 			<div class="ca-stage">
@@ -1551,24 +1625,12 @@
 		max-width: 26ch;
 	}
 
-	/* ── Body: spines + (name header + stage) ─────────── */
+	/* ── Body: name header + stage (spine strip retired). ─────────── */
 	.ca-body {
-		display: grid;
-		grid-template-columns: 36px 1fr;
-		grid-template-rows: auto 1fr;
+		display: flex;
+		flex-direction: column;
 		flex: 1;
 		min-height: 0;
-	}
-	.ca-spines {
-		grid-row: 1 / span 2;
-	}
-	.ca-stage-header {
-		grid-column: 2;
-		grid-row: 1;
-	}
-	.ca-stage {
-		grid-column: 2;
-		grid-row: 2;
 	}
 
 	/* Stage header row — name on the left, trash icon on the right. Same
@@ -1588,10 +1650,6 @@
 	.ca-stage-header > .ca-stage-name-input {
 		flex: 1;
 		margin: 0;
-	}
-	/* Positioning only — visual styling comes from .btn-trash in app.css. */
-	.ca-stage-delete-btn {
-		flex-shrink: 0;
 	}
 
 	/* Persistent character name sits above the tab strip / stage. Sized to
@@ -1644,59 +1702,6 @@
 		border-color: var(--text-accent);
 	}
 
-	/* Spine strip — vertical tabs along the LEFT edge of the active card.
-	   V1 tab-btn style applied with `writing-mode: sideways-lr` so the text
-	   reads bottom-to-top; the active indicator is the right border (the
-	   side touching the card content). */
-	.ca-spines {
-		display: flex;
-		flex-direction: column;
-		align-items: stretch;
-		gap: 0;
-		padding: 0;
-		overflow-y: auto;
-		border-right: 1px solid var(--border);
-		background: transparent;
-	}
-	.ca-spine {
-		all: unset;
-		cursor: pointer;
-		font-family: var(--font-ui);
-		font-size: 0.72rem;
-		font-weight: 600;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--text-dimmer);
-		background: transparent;
-		border: none;
-		border-right: 2px solid transparent; /* underline on the side touching the card */
-		padding: 16px 7px 16px 7px; /* 7px visual margin on left and right of the rotated text */
-		text-align: center;
-		writing-mode: sideways-lr;
-		/* Variable height: share remaining column space equally; clip overflow
-		   so the rotated name uses ellipsis instead of pushing the column. */
-		flex: 1 1 0;
-		min-height: 0;
-		overflow: hidden;
-		margin-right: -1px; /* overlap the column border so the active accent reads cleanly */
-		transition:
-			color 0.12s,
-			border-color 0.12s;
-	}
-	.ca-spine:hover {
-		color: var(--text-muted);
-	}
-	.ca-spine--active {
-		color: var(--text-accent);
-		border-right-color: var(--text-accent);
-	}
-	.ca-spine-name {
-		display: inline-block;
-		max-height: 100%;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
 	/* Stage */
 	.ca-stage {
 		display: flex;
@@ -1706,6 +1711,16 @@
 		overflow: auto;
 		padding: 0; /* tab strip and card now extend full-width to the spine */
 		margin: 0;
+	}
+
+	/* Header combobox trigger — takes flex slack so long character names
+	   truncate before pushing the trash + Asset/Vow buttons off-screen. */
+	:global(.ca-hdr-combobox) {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
+	.ca-hdr-delete-btn {
+		flex-shrink: 0;
 	}
 
 	/* Card tabs (Background / Core / Vows) — V1 tab-btn style: flat,
