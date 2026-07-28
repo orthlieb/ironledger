@@ -13,6 +13,7 @@
 import { test, expect } from '@playwright/test';
 import { resetExpeditions, resetFoes } from './helpers/reset';
 import { pickBitsUiOption, getBitsUiSelectLabel, bitsUiOptionCount } from './helpers/bits-ui';
+import { getFoeCount } from './helpers/foes';
 
 // Site fields (theme / domain / feature / danger) went from native
 // `<select>` to the shared bits-ui `<Select>` wrapper. The `id` still
@@ -25,9 +26,6 @@ import { pickBitsUiOption, getBitsUiSelectLabel, bitsUiOptionCount } from './hel
 const EXP_AREA = '.home-area--expeditions';
 const EXP_HEADER = `${EXP_AREA} .ea-header`;
 const EXP_SPINE = `${EXP_AREA} .ea-spine`;
-
-const FOE_AREA = '.home-area--foes';
-const FOE_SPINE = `${FOE_AREA} .fa-spine`;
 
 async function waitForExpeditionsLoaded(page: import('@playwright/test').Page) {
 	await expect(page.locator(`${EXP_AREA} .ea-loading`)).not.toBeVisible({ timeout: 10_000 });
@@ -455,7 +453,7 @@ test.describe('Expeditions area (v2)', () => {
 		}
 
 		// Record how many foes are currently in the Foes area.
-		const foesBefore = await page.locator(FOE_SPINE).count();
+		const foesBefore = await getFoeCount(page);
 
 		// Click Roll Denizen → dialog opens.
 		const rollBtn = page.locator(`${EXP_AREA} button:has-text("Roll Denizen")`);
@@ -472,9 +470,9 @@ test.describe('Expeditions area (v2)', () => {
 		await expect(addBtn).toBeVisible({ timeout: 5_000 });
 		await addBtn.click();
 
-		// Dialog closes and a new foe spine appears in the Foes area.
+		// Dialog closes and the Foes area's encounter count ticks up.
 		await expect(page.locator('.denizen-dialog')).not.toBeVisible({ timeout: 5_000 });
-		await expect(page.locator(FOE_SPINE)).not.toHaveCount(foesBefore, { timeout: 5_000 });
+		await expect.poll(() => getFoeCount(page), { timeout: 5_000 }).toBeGreaterThan(foesBefore);
 	});
 
 	// ── Cleanup ───────────────────────────────────────────────────────────────

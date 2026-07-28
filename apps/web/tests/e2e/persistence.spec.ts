@@ -18,6 +18,7 @@
 
 import { test, expect, request as playwrightRequest } from '@playwright/test';
 import { resetAll, seedNpc } from './helpers/reset';
+import { getFoeCount, getActiveFoeName, deleteActiveFoe } from './helpers/foes';
 import type { Page } from '@playwright/test';
 
 const API_BASE = 'http://127.0.0.1:3000';
@@ -30,7 +31,6 @@ const CHAR_SPINE = `${CHAR_AREA} .ca-spine`;
 
 const FOE_AREA = '.home-area--foes';
 const FOE_HEADER = `${FOE_AREA} .fa-header`;
-const FOE_SPINE = `${FOE_AREA} .fa-spine`;
 
 const EXP_AREA = '.home-area--expeditions';
 const EXP_HEADER = `${EXP_AREA} .ea-header`;
@@ -142,7 +142,7 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		await page.goto('/home');
 		await waitForFoesArea(page);
 
-		const before = await page.locator(FOE_SPINE).count();
+		const before = await getFoeCount(page);
 
 		await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
 		await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 5_000 });
@@ -153,7 +153,7 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		await expect(addBtn).toBeVisible({ timeout: 3_000 });
 		await addBtn.click();
 		await expect(page.locator('.foe-dialog')).not.toBeVisible({ timeout: 5_000 });
-		await expect(page.locator(FOE_SPINE)).toHaveCount(before + 1, { timeout: 5_000 });
+		await expect.poll(() => getFoeCount(page), { timeout: 5_000 }).toBe(before + 1);
 
 		await page.waitForTimeout(600);
 
@@ -161,7 +161,7 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		await loginAndGoHome(page);
 		await waitForFoesArea(page);
 
-		await expect(page.locator(FOE_SPINE)).toHaveCount(before + 1, { timeout: 8_000 });
+		await expect.poll(() => getFoeCount(page), { timeout: 8_000 }).toBe(before + 1);
 	});
 
 	// ── 3. Expeditions ────────────────────────────────────────────────────────
@@ -238,7 +238,7 @@ test.describe('Data persistence across logout / login (v2)', () => {
 			await expect(page.locator(CHAR_SPINE)).not.toHaveCount(0, { timeout: 8_000 });
 		}
 
-		if ((await page.locator(FOE_SPINE).count()) === 0) {
+		if ((await getFoeCount(page)) === 0) {
 			await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
 			await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 5_000 });
 			await expect(page.locator('.foe-dialog .fd-tile').first()).toBeVisible({
@@ -250,7 +250,7 @@ test.describe('Data persistence across logout / login (v2)', () => {
 			});
 			await page.locator('.foe-dialog button:has-text("Add to Foes")').click();
 			await expect(page.locator('.foe-dialog')).not.toBeVisible({ timeout: 5_000 });
-			await expect(page.locator(FOE_SPINE)).not.toHaveCount(0, { timeout: 5_000 });
+			await expect.poll(() => getFoeCount(page), { timeout: 5_000 }).toBeGreaterThan(0);
 		}
 
 		if ((await page.locator(EXP_SPINE).count()) === 0) {
@@ -275,21 +275,20 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		// ── Click the first spine in each area and record its displayed name ───
 
 		await page.locator(CHAR_SPINE).first().click();
-		await page.locator(FOE_SPINE).first().click();
+		// Foes no longer has a spine strip — the FoesArea auto-selects the
+		// first encounter on load, so we just read its name from the header
+		// combobox trigger instead of clicking anything.
 		await page.locator(EXP_SPINE).first().click();
 		await page.locator(CM_ROW).first().click();
 
 		await expect(page.locator(`${CHAR_SPINE}.ca-spine--active`)).toBeVisible({ timeout: 3_000 });
-		await expect(page.locator(`${FOE_SPINE}.fa-spine--active`)).toBeVisible({ timeout: 3_000 });
 		await expect(page.locator(`${EXP_SPINE}.ea-spine--active`)).toBeVisible({ timeout: 3_000 });
 		await expect(page.locator(`${CM_ROW}.cm-row--active`)).toBeVisible({ timeout: 3_000 });
 
 		const activeCharName = (
 			await page.locator(`${CHAR_SPINE}.ca-spine--active .ca-spine-name`).first().textContent()
 		)?.trim();
-		const activeFoeName = (
-			await page.locator(`${FOE_SPINE}.fa-spine--active .fa-spine-name`).first().textContent()
-		)?.trim();
+		const activeFoeName = await getActiveFoeName(page);
 		const activeExpName = (
 			await page.locator(`${EXP_SPINE}.ea-spine--active .ea-spine-name`).first().textContent()
 		)?.trim();
@@ -311,7 +310,6 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		// ── Verify the same first items are auto-selected ──────────────────────
 
 		await expect(page.locator(`${CHAR_SPINE}.ca-spine--active`)).toBeVisible({ timeout: 8_000 });
-		await expect(page.locator(`${FOE_SPINE}.fa-spine--active`)).toBeVisible({ timeout: 8_000 });
 		await expect(page.locator(`${EXP_SPINE}.ea-spine--active`)).toBeVisible({ timeout: 8_000 });
 		await expect(page.locator(`${CM_ROW}.cm-row--active`)).toBeVisible({ timeout: 8_000 });
 
@@ -320,11 +318,7 @@ test.describe('Data persistence across logout / login (v2)', () => {
 				await page.locator(`${CHAR_SPINE}.ca-spine--active .ca-spine-name`).first().textContent()
 			)?.trim(),
 		).toBe(activeCharName);
-		expect(
-			(
-				await page.locator(`${FOE_SPINE}.fa-spine--active .fa-spine-name`).first().textContent()
-			)?.trim(),
-		).toBe(activeFoeName);
+		expect(await getActiveFoeName(page)).toBe(activeFoeName);
 		expect(
 			(
 				await page.locator(`${EXP_SPINE}.ea-spine--active .ea-spine-name`).first().textContent()
@@ -378,7 +372,7 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		await page.goto('/home');
 		await waitForFoesArea(page);
 
-		if ((await page.locator(FOE_SPINE).count()) === 0) {
+		if ((await getFoeCount(page)) === 0) {
 			await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
 			await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 5_000 });
 			const tile = page.locator('.foe-dialog .fd-tile').first();
@@ -386,10 +380,10 @@ test.describe('Data persistence across logout / login (v2)', () => {
 			await tile.click();
 			await page.locator('.foe-dialog button:has-text("Add to Foes")').click();
 			await expect(page.locator('.foe-dialog')).not.toBeVisible({ timeout: 5_000 });
-			await expect(page.locator(FOE_SPINE)).not.toHaveCount(0, { timeout: 5_000 });
+			await expect.poll(() => getFoeCount(page), { timeout: 5_000 }).toBeGreaterThan(0);
 		}
 
-		await page.locator(FOE_SPINE).first().click();
+		// FoesArea auto-selects an active foe on load; no explicit click needed.
 		const vanq = page.locator(
 			`${FOE_AREA} .sr[aria-label="Foe status"] .sr-btn[aria-label="Mark vanquished"]`,
 		);
@@ -403,7 +397,6 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		await loginAndGoHome(page);
 		await waitForFoesArea(page);
 
-		await page.locator(FOE_SPINE).first().click();
 		await expect(
 			page.locator(
 				`${FOE_AREA} .sr[aria-label="Foe status"] .sr-btn[aria-label="Mark vanquished"]`,
@@ -485,18 +478,8 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		await page.goto('/home');
 		await waitForFoesArea(page);
 
-		const spines = page.locator(FOE_SPINE);
-		let count = await spines.count();
-		while (count > 0) {
-			await spines.first().click();
-			const delBtn = page.locator(`${FOE_AREA} .fa-stage-delete-btn`).first();
-			await expect(delBtn).toBeVisible({ timeout: 3_000 });
-			await delBtn.click();
-			const confirmBtn = page.locator('.confirm-modal button.btn-danger');
-			await expect(confirmBtn).toBeVisible({ timeout: 3_000 });
-			await confirmBtn.click();
-			count--;
-			if (count > 0) await expect(spines).toHaveCount(count, { timeout: 5_000 });
+		while ((await getFoeCount(page)) > 0) {
+			await deleteActiveFoe(page);
 		}
 	});
 
