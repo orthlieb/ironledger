@@ -381,8 +381,12 @@
 		flex-direction: column;
 		gap: 4px;
 	}
-	:global(.mo-input-wide) {
-		max-width: 100%;
+	/* `.mo-input` sets a shared max-width: 120px cap further down the
+	   sheet; this needs equal-or-greater specificity to lift it, so
+	   scope it as `.mo-input.mo-input-wide` instead of the bare
+	   `.mo-input-wide` we used to have. */
+	:global(.mo-input.mo-input-wide) {
+		max-width: none;
 		width: 100%;
 	}
 	:global(.mo-field-narrow .mo-input) {
