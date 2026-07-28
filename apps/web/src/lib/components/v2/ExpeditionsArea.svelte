@@ -44,10 +44,10 @@
 	import ProgressTrackPanel from '$lib/components/ProgressTrackPanel.svelte';
 	import MarkdownNotes from '$lib/components/MarkdownNotes.svelte';
 	import PortraitUploader from '$lib/components/PortraitUploader.svelte';
-	import { EditableName } from '$lib/editableName.svelte.js';
 	import FoePickerDialog from '$lib/components/FoePickerDialog.svelte';
 	import DenizenDialog from '$lib/components/DenizenDialog.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import ExpeditionOptionsDialog from '$lib/components/ExpeditionOptionsDialog.svelte';
 	import MapDialog from '$lib/components/MapDialog.svelte';
 	import {
 		entityMarkerIndexState,
@@ -60,11 +60,13 @@
 	} from '$lib/mapStore.svelte.js';
 	import { downscaleImage, MapImageError } from '$lib/mapImage.js';
 	import { formatEntityId } from '$lib/mapEntityLinks.js';
-	import trashSvg from '$icons/trash-solid-full.svg?raw';
+	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
+	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
+	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
 	import checkSvg from '$icons/circle-check-solid-full.svg?raw';
 	import locationSvg from '$icons/location-dot-solid-full.svg?raw';
 	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
-	import { RadioGroup, Tabs } from 'bits-ui';
+	import { RadioGroup, Tabs, Popover, Command } from 'bits-ui';
 	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
 	const journeyPlaceholderSvg = ENTITY_KIND_META.journey.icon;
 	const sitePlaceholderSvg = ENTITY_KIND_META.site.icon;
@@ -128,6 +130,8 @@
 	// New-journey / new-site dialog state (mirrors V1 pattern).
 	let newJourneyDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let newSiteDialogRef = $state<{ open(): void; close(): void } | null>(null);
+	let expPickerOpen = $state(false);
+	let expOptionsRef = $state<{ open(): void; close(): void } | null>(null);
 	let mapDialogRef = $state<{
 		open(target?: { mapId?: string; markerId?: string; promptUpload?: boolean }): void;
 		close(): void;
@@ -146,12 +150,11 @@
 	let newSiteDifficulty = $state<VowDifficulty>('dangerous');
 	let newSiteTheme = $state<string>('');
 	let newSiteDomain = $state<string>('');
+	let newJourneyName = $state<string>('');
+	let newSiteName = $state<string>('');
 
 	// Inline-edit state for journeys
 	let editingNotes = $state(false);
-	const nameEdit = new EditableName((restored) => {
-		if (activeExp) updateExp({ name: restored });
-	});
 
 	const expeditions = $derived(getExpeditions());
 	const loading = $derived(isExpeditionLoading());
@@ -162,6 +165,17 @@
 
 	const activeExp = $derived(expeditions.find((e) => e.id === activeExpId));
 	const activeSite = $derived<Site | null>(activeExp?.type === 'site' ? (activeExp as Site) : null);
+
+	/** Display name for a spine / combobox — never blank so the popover
+	 *  and the trigger have something to render. */
+	function expDisplayName(e: Expedition): string {
+		return (e.name || `Unnamed ${e.type === 'site' ? 'Site' : 'Journey'}`).trim();
+	}
+
+	/** Popover list sorted A→Z. Command doesn't sort — pre-sort here. */
+	const sortedExpeditions = $derived(
+		expeditions.slice().sort((a, b) => expDisplayName(a).localeCompare(expDisplayName(b))),
+	);
 
 	/** Back-references for the active expedition, if any. Empty until the
 	 *  index has loaded. Re-derived when either the index or the active
@@ -242,7 +256,6 @@
 		flushPersist(); // commit pending edit before switching
 		activeExpId = id;
 		activeTab = 'core';
-		nameEdit.commit();
 		editingNotes = false;
 	}
 
@@ -426,13 +439,14 @@
 
 	function addJourney() {
 		newJourneyDifficulty = 'dangerous';
+		newJourneyName = '';
 		newJourneyDialogRef?.open();
 	}
 	async function confirmAddJourney() {
 		const j: Journey = {
 			id: crypto.randomUUID(),
 			type: 'journey',
-			name: 'New Journey',
+			name: newJourneyName.trim() || 'New Journey',
 			difficulty: newJourneyDifficulty,
 			ticks: 0,
 			notes: '',
@@ -448,13 +462,14 @@
 		newSiteDifficulty = 'dangerous';
 		newSiteTheme = '';
 		newSiteDomain = '';
+		newSiteName = '';
 		newSiteDialogRef?.open();
 	}
 	async function confirmAddSite() {
 		const s: Site = {
 			id: crypto.randomUUID(),
 			type: 'site',
-			name: 'New Site',
+			name: newSiteName.trim() || 'New Site',
 			objective: '',
 			notes: '',
 			theme: newSiteTheme as Site['theme'],
@@ -610,17 +625,118 @@
 			<span class="ea-title-icon" aria-hidden="true">{@html expeditionsIconSvg}</span>
 			<span class="ea-title">{headingText('Expeditions')}</span>
 		{/if}
-		<div class="ea-header-actions">
+		<div class="ea-header-actions" data-exp-count={expeditions.length}>
 			<button
 				class="btn ea-hdr-btn"
 				onclick={() => mapDialogRef?.open()}
 				use:tooltip={'Open the campaign map — paint terrain on a hex grid'}>Map</button
 			>
-			<button class="btn ea-hdr-btn" onclick={addJourney} use:tooltip={'Add journey'}
-				>+ Journey</button
-			>
-			{#if isDelveEnabled()}
-				<button class="btn ea-hdr-btn" onclick={addSite} use:tooltip={'Add site'}>+ Site</button>
+			{#if expeditions.length === 0}
+				<button class="btn ea-hdr-btn" onclick={addJourney} use:tooltip={'Add journey'}
+					>+ Journey</button
+				>
+				{#if isDelveEnabled()}
+					<button class="btn ea-hdr-btn" onclick={addSite} use:tooltip={'Add site'}>+ Site</button>
+				{/if}
+			{:else if activeExp}
+				<Popover.Root bind:open={expPickerOpen}>
+					<Popover.Trigger
+						class="mp-combobox ea-hdr-combobox"
+						aria-label="Switch or add expedition"
+					>
+						<span class="mp-combobox-value">{expDisplayName(activeExp)}</span>
+						<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
+					</Popover.Trigger>
+					<Popover.Portal>
+						<Popover.Content
+							class="mp-cmd-popover"
+							sideOffset={4}
+							align="start"
+							collisionPadding={8}
+						>
+							<Command.Root class="mp-cmd">
+								<div class="mp-cmd-search-row">
+									<span class="mp-cmd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
+									<Command.Input
+										class="mp-cmd-search"
+										placeholder="Search expeditions…"
+										autofocus
+									/>
+								</div>
+								<Command.List class="mp-cmd-list">
+									<Command.Empty class="mp-cmd-empty">No matching expeditions.</Command.Empty>
+									{#each sortedExpeditions as exp (exp.id)}
+										{@const n = expDisplayName(exp)}
+										{@const typeIcon =
+											exp.type === 'site' ? sitePlaceholderSvg : journeyPlaceholderSvg}
+										{@const typeColor = exp.type === 'site' ? SITE_COLOR : JOURNEY_COLOR}
+										<Command.Item
+											class="mp-cmd-item"
+											value={n}
+											onSelect={() => {
+												selectExp(exp.id);
+												expPickerOpen = false;
+											}}
+										>
+											<span class="mp-cmd-check" aria-hidden="true">
+												{#if exp.id === activeExpId}
+													<svg
+														viewBox="0 0 20 20"
+														fill="none"
+														stroke="currentColor"
+														stroke-width="2.5"
+														><polyline
+															points="4 11 8 15 16 6"
+															stroke-linecap="round"
+															stroke-linejoin="round"
+														></polyline></svg
+													>
+												{/if}
+											</span>
+											<span
+												class="mp-cmd-item-icon ea-cmd-type-icon"
+												style="color: {typeColor}"
+												aria-hidden="true">{@html typeIcon}</span
+											>
+											<span class="mp-cmd-item-name">{n}</span>
+										</Command.Item>
+									{/each}
+									<Command.Separator class="mp-cmd-sep" />
+									<Command.Item
+										class="mp-cmd-item mp-cmd-item--action"
+										value="+ New Journey"
+										onSelect={() => {
+											expPickerOpen = false;
+											addJourney();
+										}}
+									>
+										<span class="mp-cmd-check" aria-hidden="true"></span>
+										<span class="mp-cmd-item-name">+ New Journey…</span>
+									</Command.Item>
+									{#if isDelveEnabled()}
+										<Command.Item
+											class="mp-cmd-item mp-cmd-item--action"
+											value="+ New Site"
+											onSelect={() => {
+												expPickerOpen = false;
+												addSite();
+											}}
+										>
+											<span class="mp-cmd-check" aria-hidden="true"></span>
+											<span class="mp-cmd-item-name">+ New Site…</span>
+										</Command.Item>
+									{/if}
+								</Command.List>
+							</Command.Root>
+						</Popover.Content>
+					</Popover.Portal>
+				</Popover.Root>
+				<button
+					class="btn btn-icon icon-btn ea-hdr-settings-btn"
+					onclick={() => expOptionsRef?.open()}
+					use:tooltip={activeExp.type === 'site' ? 'Site options' : 'Journey options'}
+					aria-label="Expedition options">{@html iconGearSvg}</button
+				>
 			{/if}
 		</div>
 	</header>
@@ -637,51 +753,14 @@
 		</div>
 	{:else}
 		<div class="ea-body">
-			<nav class="ea-spines" aria-label="Expedition list">
-				{#each expeditions as exp (exp.id)}
-					{@const typeColor = exp.type === 'site' ? SITE_COLOR : JOURNEY_COLOR}
-					<button
-						class="ea-spine"
-						class:ea-spine--active={exp.id === activeExpId}
-						style="--ea-spine-color: {typeColor}"
-						onclick={() => selectExp(exp.id)}
-						use:tooltip={`${exp.name} (${exp.type})`}
-					>
-						<span class="ea-spine-name"
-							>{exp.name || 'Unnamed ' + (exp.type === 'site' ? 'Site' : 'Journey')}</span
-						>
-					</button>
-				{/each}
-			</nav>
-
 			{#if activeExp}
-				<!-- Name + delete header — coloured band on the LHS keyed to type
-				     (green = journey, blue = site). -->
+				<!-- Slim stage-header — icon + status + per-expedition map btn.
+				     Rename and delete moved to the header gear. -->
 				<div class="ea-stage-header" style="--ea-nature: {activeColor}">
 					<span class="ea-stage-icon" aria-hidden="true">{@html placeholderImg}</span>
-					{#if nameEdit.editing}
-						<input
-							bind:this={nameEdit.inputEl}
-							class="ea-stage-name-input"
-							type="text"
-							value={activeExp.name}
-							placeholder={activeExp.type === 'site' ? 'Site name…' : 'Journey name…'}
-							oninput={(e) => updateExp({ name: (e.target as HTMLInputElement).value })}
-							onblur={nameEdit.commit}
-							onkeydown={nameEdit.onKeydown}
-						/>
-					{:else}
-						<button
-							type="button"
-							class="ea-stage-name ea-stage-name--editable"
-							use:tooltip={'Click to rename'}
-							onclick={() => nameEdit.start(activeExp.name)}
-							>{headingText(activeExp.name || 'Unnamed')}</button
-						>
-					{/if}
 					<SegmentedRadio
 						ariaLabel="Expedition status"
-						labels={nameEdit.editing ? 'never' : 'auto'}
+						labels="auto"
 						value={activeExp.complete ? 'complete' : 'active'}
 						onchange={(v) => updateExp({ complete: v === 'complete' })}
 						options={[
@@ -722,12 +801,6 @@
 							aria-label="Open map">Map</button
 						>
 					{/if}
-					<button
-						class="btn btn-icon icon-btn btn-trash ea-stage-delete-btn"
-						onclick={() => deleteDialogRef?.open()}
-						use:tooltip={'Delete expedition'}
-						aria-label="Delete expedition">{@html trashSvg}</button
-					>
 				</div>
 
 				<div class="ea-stage" class:ea-stage--complete={activeExp.complete}>
@@ -1016,6 +1089,10 @@
 	accentColor={JOURNEY_COLOR}
 	onconfirm={confirmAddJourney}
 >
+	<label class="co-field" style="margin-bottom: 10px;">
+		<span class="co-field-label">Journey name</span>
+		<input class="co-input" type="text" bind:value={newJourneyName} placeholder="New Journey" />
+	</label>
 	<RadioGroup.Root
 		class="v2-radio-group"
 		value={newJourneyDifficulty}
@@ -1048,6 +1125,10 @@
 	onconfirm={confirmAddSiteRandom}
 	onalternate={confirmAddSite}
 >
+	<label class="co-field" style="margin-bottom: 10px;">
+		<span class="co-field-label">Site name</span>
+		<input class="co-input" type="text" bind:value={newSiteName} placeholder="New Site" />
+	</label>
 	<RadioGroup.Root
 		class="v2-radio-group"
 		value={newSiteDifficulty}
@@ -1106,6 +1187,18 @@
 		{/if}
 	</p>
 </ConfirmDialog>
+
+<!-- Expedition options — gear icon in the header opens this. Rename +
+     delete both live behind it, matching CharacterOptionsDialog. -->
+{#if activeExp}
+	<ExpeditionOptionsDialog
+		bind:this={expOptionsRef}
+		name={activeExp.name || ''}
+		kind={activeExp.type}
+		oncommit={(next) => updateExp({ name: next })}
+		ondelete={confirmDeleteExp}
+	/>
+{/if}
 
 {#if activeSite}
 	<ConfirmDialog
@@ -1249,84 +1342,24 @@
 		max-width: 26ch;
 	}
 
+	/* Body: stage-header + stage stack. Spine strip retired. */
 	.ea-body {
-		display: grid;
-		grid-template-columns: 36px 1fr;
-		grid-template-rows: auto 1fr;
+		display: flex;
+		flex-direction: column;
 		flex: 1;
 		min-height: 0;
 	}
-	.ea-spines {
-		grid-row: 1 / span 2;
-	}
-	.ea-stage-header {
-		grid-column: 2;
-		grid-row: 1;
-	}
 	.ea-stage {
-		grid-column: 2;
-		grid-row: 2;
-		padding: 0 12px 10px 0;
+		padding: 0 12px 10px 12px;
 		min-height: 0;
 		min-width: 0;
+		flex: 1;
 		overflow: auto;
 		display: flex;
 		flex-direction: column;
 	}
 	.ea-stage--complete .ea-card {
 		opacity: 0.7;
-	}
-
-	/* Spine strip — type-color accent on active. */
-	.ea-spines {
-		display: flex;
-		flex-direction: column;
-		align-items: stretch;
-		gap: 0;
-		padding: 0;
-		overflow-y: auto;
-		border-right: 1px solid var(--border);
-		background: transparent;
-	}
-	.ea-spine {
-		all: unset;
-		cursor: pointer;
-		font-family: var(--font-ui);
-		font-size: 0.72rem;
-		font-weight: 600;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--text-dimmer);
-		background: transparent;
-		border: none;
-		border-right: 2px solid transparent;
-		padding: 16px 7px 16px 7px;
-		text-align: center;
-		writing-mode: sideways-lr;
-		flex: 1 1 0;
-		min-height: 0;
-		overflow: hidden;
-		margin-right: -1px;
-		transition:
-			color 0.12s,
-			border-color 0.12s;
-	}
-	.ea-spine:hover {
-		color: var(--text-muted);
-	}
-	/* Active spine uses the same amber accent as Characters/Foes spines —
-	   the type colour (journey/site) lives on the stage header's LHS band,
-	   not on the spine itself. */
-	.ea-spine--active {
-		color: var(--text-accent);
-		border-right-color: var(--text-accent);
-	}
-	.ea-spine-name {
-		display: inline-block;
-		max-height: 100%;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
 	}
 
 	/* Stage name banner — coloured band on the LHS keyed to type. */
@@ -1355,59 +1388,6 @@
 		width: 100%;
 		height: 100%;
 		fill: currentColor;
-	}
-	.ea-stage-name {
-		appearance: none;
-		-webkit-appearance: none;
-		text-align: left;
-		background: transparent;
-		flex: 1;
-		margin: 0;
-		font-family: var(--font-display);
-		font-size: calc(0.82rem * var(--font-display-scale));
-		font-weight: var(--font-display-weight);
-		font-variant: var(--font-display-variant);
-		letter-spacing: 0.08em;
-		text-transform: var(--font-display-transform);
-		color: var(--text-accent);
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-	.ea-stage-name--editable {
-		cursor: pointer;
-		padding: 2px 6px;
-		border: 1px solid transparent;
-		border-radius: 3px;
-		transition:
-			background 0.12s,
-			border-color 0.12s;
-	}
-	.ea-stage-name--editable:hover {
-		background: var(--bg-hover);
-		border-color: var(--border);
-	}
-	.ea-stage-name-input {
-		flex: 1;
-		font-family: var(--font-display);
-		font-size: calc(0.82rem * var(--font-display-scale));
-		font-weight: var(--font-display-weight);
-		font-variant: var(--font-display-variant);
-		letter-spacing: 0.08em;
-		text-transform: var(--font-display-transform);
-		color: var(--text-accent);
-		background: transparent;
-		border: 1px solid var(--border-mid);
-		border-radius: 3px;
-		padding: 2px 6px;
-		outline: none;
-	}
-	.ea-stage-name-input:focus {
-		border-color: var(--text-accent);
-	}
-	/* Delete: visual comes from .btn-trash in app.css; only positioning here. */
-	.ea-stage-delete-btn {
-		flex-shrink: 0;
 	}
 	/* Height-match the neighbouring trash button. The trash btn renders
 	   at ~22px (12px SVG + 4+4 padding + 1+1 border via
@@ -1485,6 +1465,30 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		max-width: 12rem;
+	}
+
+	/* Header gear + combobox. */
+	:global(.ea-hdr-settings-btn) {
+		flex-shrink: 0;
+	}
+	:global(.ea-hdr-settings-btn svg) {
+		width: 13px;
+		height: 13px;
+		fill: currentColor;
+	}
+	:global(.ea-hdr-settings-btn svg path) {
+		fill: currentColor;
+	}
+	:global(.ea-hdr-combobox) {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
+	/* Type-icon glyph inside the popover items. */
+	:global(.ea-cmd-type-icon svg) {
+		fill: currentColor;
+	}
+	:global(.ea-cmd-type-icon svg path) {
+		fill: currentColor;
 	}
 
 	/* Tabs — V1 tab-btn style. */
