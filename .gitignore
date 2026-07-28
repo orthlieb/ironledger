@@ -52,3 +52,4 @@ ecosystem.config.cjs
 create-admin.ts
 .obsidian/
 /.claude/worktrees
+apps/web/src/lib/generated/mapIconManifest.ts
