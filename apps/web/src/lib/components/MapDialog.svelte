@@ -1386,8 +1386,23 @@
 							aria-label="Change icon"
 						>
 							{#if selectedIcon}
+								<!-- Same 2-device-pixel white halo the map markers use so
+						     a light icon colour still reads against dark
+						     `--bg-control`. `paint-order="stroke"` puts the halo
+						     behind the fill; `vector-effect="non-scaling-stroke"`
+						     pins the width to display pixels regardless of the
+						     icon's own viewBox scale. -->
 								<svg viewBox={selectedIcon.viewBox} aria-hidden="true">
-									<g fill={selectedColor}>{@html selectedIcon.inner}</g>
+									<g
+										fill={selectedColor}
+										stroke="#fff"
+										stroke-width="2"
+										stroke-linejoin="round"
+										paint-order="stroke"
+										vector-effect="non-scaling-stroke"
+									>
+										{@html selectedIcon.inner}
+									</g>
 								</svg>
 							{:else}
 								<span class="mp-sel-icon-none" aria-hidden="true">Aa</span>
@@ -2503,7 +2518,7 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		width: 22px;
+		width: 18px;
 		padding: 0;
 		border: none;
 		background: transparent;
@@ -2537,8 +2552,8 @@
 		line-height: 1;
 	}
 	:global(.mp-sel-angle-input) {
-		width: 2.8em;
-		padding: 3px 0 3px 4px;
+		width: 2.2em;
+		padding: 3px 0 3px 2px;
 		border: none;
 		background: transparent;
 		color: var(--text);
