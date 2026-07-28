@@ -124,6 +124,15 @@
 		document.addEventListener('ironledger:focus-entity', onFocus);
 		return () => document.removeEventListener('ironledger:focus-entity', onFocus);
 	});
+
+	// Global "open the campaign map" — dispatched by the app-nav's Map
+	// button in the layout, so users can reach the map from any page /
+	// panel without the button crowding the Expeditions header.
+	$effect(() => {
+		const onOpen = () => mapDialogRef?.open();
+		document.addEventListener('ironledger:open-campaign-map', onOpen);
+		return () => document.removeEventListener('ironledger:open-campaign-map', onOpen);
+	});
 	let activeTab = $state<ExpTab>('core');
 	let deleteDialogRef = $state<{ open(): void; close(): void } | null>(null);
 
@@ -626,111 +635,95 @@
 			<span class="ea-title">{headingText('Expeditions')}</span>
 		{/if}
 		<div class="ea-header-actions" data-exp-count={expeditions.length}>
-			<button
-				class="btn ea-hdr-btn"
-				onclick={() => mapDialogRef?.open()}
-				use:tooltip={'Open the campaign map — paint terrain on a hex grid'}>Map</button
-			>
-			{#if expeditions.length === 0}
-				<button class="btn ea-hdr-btn" onclick={addJourney} use:tooltip={'Add journey'}
-					>+ Journey</button
-				>
-				{#if isDelveEnabled()}
-					<button class="btn ea-hdr-btn" onclick={addSite} use:tooltip={'Add site'}>+ Site</button>
-				{/if}
-			{:else if activeExp}
-				<Popover.Root bind:open={expPickerOpen}>
-					<Popover.Trigger
-						class="mp-combobox ea-hdr-combobox"
-						aria-label="Switch or add expedition"
-					>
-						<span class="mp-combobox-value">{expDisplayName(activeExp)}</span>
-						<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
-					</Popover.Trigger>
-					<Popover.Portal>
-						<Popover.Content
-							class="mp-cmd-popover"
-							sideOffset={4}
-							align="start"
-							collisionPadding={8}
-						>
-							<Command.Root class="mp-cmd">
-								<div class="mp-cmd-search-row">
-									<span class="mp-cmd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
-									<Command.Input
-										class="mp-cmd-search"
-										placeholder="Search expeditions…"
-										autofocus
-									/>
-								</div>
-								<Command.List class="mp-cmd-list">
-									<Command.Empty class="mp-cmd-empty">No matching expeditions.</Command.Empty>
-									{#each sortedExpeditions as exp (exp.id)}
-										{@const n = expDisplayName(exp)}
-										{@const typeIcon =
-											exp.type === 'site' ? sitePlaceholderSvg : journeyPlaceholderSvg}
-										{@const typeColor = exp.type === 'site' ? SITE_COLOR : JOURNEY_COLOR}
-										<Command.Item
-											class="mp-cmd-item"
-											value={n}
-											onSelect={() => {
-												selectExp(exp.id);
-												expPickerOpen = false;
-											}}
+			<!-- Always show the switcher — even when the list is empty. Trigger
+			     reads the active expedition name; when empty it renders a
+			     muted placeholder, and the popover surfaces "+ New Journey…"
+			     / "+ New Site…" as the only actions. Campaign map moved to
+			     the app-nav (Map button next to Move). -->
+			<Popover.Root bind:open={expPickerOpen}>
+				<Popover.Trigger class="mp-combobox ea-hdr-combobox" aria-label="Switch or add expedition">
+					{#if activeExp}<span class="mp-combobox-value">{expDisplayName(activeExp)}</span
+						>{:else}<span class="mp-combobox-value mp-combobox-value--placeholder"
+							>— No expeditions yet —</span
+						>{/if}
+					<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
+				</Popover.Trigger>
+				<Popover.Portal>
+					<Popover.Content class="mp-cmd-popover" sideOffset={4} align="start" collisionPadding={8}>
+						<Command.Root class="mp-cmd">
+							<div class="mp-cmd-search-row">
+								<span class="mp-cmd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
+								<Command.Input class="mp-cmd-search" placeholder="Search expeditions…" autofocus />
+							</div>
+							<Command.List class="mp-cmd-list">
+								<Command.Empty class="mp-cmd-empty">No matching expeditions.</Command.Empty>
+								{#each sortedExpeditions as exp (exp.id)}
+									{@const n = expDisplayName(exp)}
+									{@const typeIcon =
+										exp.type === 'site' ? sitePlaceholderSvg : journeyPlaceholderSvg}
+									{@const typeColor = exp.type === 'site' ? SITE_COLOR : JOURNEY_COLOR}
+									<Command.Item
+										class="mp-cmd-item"
+										value={n}
+										onSelect={() => {
+											selectExp(exp.id);
+											expPickerOpen = false;
+										}}
+									>
+										<span class="mp-cmd-check" aria-hidden="true">
+											{#if exp.id === activeExpId}
+												<svg
+													viewBox="0 0 20 20"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="2.5"
+													><polyline
+														points="4 11 8 15 16 6"
+														stroke-linecap="round"
+														stroke-linejoin="round"
+													></polyline></svg
+												>
+											{/if}
+										</span>
+										<span
+											class="mp-cmd-item-icon ea-cmd-type-icon"
+											style="color: {typeColor}"
+											aria-hidden="true">{@html typeIcon}</span
 										>
-											<span class="mp-cmd-check" aria-hidden="true">
-												{#if exp.id === activeExpId}
-													<svg
-														viewBox="0 0 20 20"
-														fill="none"
-														stroke="currentColor"
-														stroke-width="2.5"
-														><polyline
-															points="4 11 8 15 16 6"
-															stroke-linecap="round"
-															stroke-linejoin="round"
-														></polyline></svg
-													>
-												{/if}
-											</span>
-											<span
-												class="mp-cmd-item-icon ea-cmd-type-icon"
-												style="color: {typeColor}"
-												aria-hidden="true">{@html typeIcon}</span
-											>
-											<span class="mp-cmd-item-name">{n}</span>
-										</Command.Item>
-									{/each}
-									<Command.Separator class="mp-cmd-sep" />
+										<span class="mp-cmd-item-name">{n}</span>
+									</Command.Item>
+								{/each}
+								<Command.Separator class="mp-cmd-sep" />
+								<Command.Item
+									class="mp-cmd-item mp-cmd-item--action"
+									value="+ New Journey"
+									onSelect={() => {
+										expPickerOpen = false;
+										addJourney();
+									}}
+								>
+									<span class="mp-cmd-check" aria-hidden="true"></span>
+									<span class="mp-cmd-item-name">+ New Journey…</span>
+								</Command.Item>
+								{#if isDelveEnabled()}
 									<Command.Item
 										class="mp-cmd-item mp-cmd-item--action"
-										value="+ New Journey"
+										value="+ New Site"
 										onSelect={() => {
 											expPickerOpen = false;
-											addJourney();
+											addSite();
 										}}
 									>
 										<span class="mp-cmd-check" aria-hidden="true"></span>
-										<span class="mp-cmd-item-name">+ New Journey…</span>
+										<span class="mp-cmd-item-name">+ New Site…</span>
 									</Command.Item>
-									{#if isDelveEnabled()}
-										<Command.Item
-											class="mp-cmd-item mp-cmd-item--action"
-											value="+ New Site"
-											onSelect={() => {
-												expPickerOpen = false;
-												addSite();
-											}}
-										>
-											<span class="mp-cmd-check" aria-hidden="true"></span>
-											<span class="mp-cmd-item-name">+ New Site…</span>
-										</Command.Item>
-									{/if}
-								</Command.List>
-							</Command.Root>
-						</Popover.Content>
-					</Popover.Portal>
-				</Popover.Root>
+								{/if}
+							</Command.List>
+						</Command.Root>
+					</Popover.Content>
+				</Popover.Portal>
+			</Popover.Root>
+			{#if activeExp}
 				<button
 					class="btn btn-icon icon-btn ea-hdr-settings-btn"
 					onclick={() => expOptionsRef?.open()}
@@ -747,8 +740,8 @@
 		<div class="ea-empty">
 			<span class="ea-empty-icon" aria-hidden="true">{@html expeditionsIconSvg}</span>
 			<p class="ea-empty-text">
-				You seem to be a homebody. Click <strong>+ JOURNEY</strong> or <strong>+ SITE</strong> to take
-				your first step.
+				You seem to be a homebody. Pick <strong>+ New Journey…</strong> or
+				<strong>+ New Site…</strong> from the switcher above to take your first step.
 			</p>
 		</div>
 	{:else}
@@ -1303,11 +1296,6 @@
 		gap: 6px;
 		flex: 1;
 		justify-content: flex-end;
-	}
-	.ea-hdr-btn {
-		font-size: 0.7rem;
-		padding: 3px 9px;
-		min-width: unset;
 	}
 
 	.ea-loading,

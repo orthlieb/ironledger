@@ -942,83 +942,78 @@
 		     button; once there is at least one character the combobox becomes
 		     the switcher (with "+ New character" inside), and the trash + per-
 		     character add-buttons live on the right. -->
-		<div class="ca-header-actions">
-			{#if characters.length === 0}
-				<button
-					class="btn ca-hdr-btn"
-					onclick={addCharacter}
-					disabled={creatingChar}
-					use:tooltip={'Add character'}>+ Character</button
-				>
-			{:else if activeChar && activeData}
-				<!-- Character switcher (Popover + Command). Trigger reads live
+		<div class="ca-header-actions" data-char-count={characters.length}>
+			<!-- Always show the switcher — even when the list is empty. Trigger
+			     reads the active name; when empty a muted placeholder reads
+			     "— No characters yet —", and the popover surfaces
+			     "+ New character…" as the only action. -->
+			<!-- Character switcher (Popover + Command). Trigger reads live
 					 data.name (reactive) so renames in the stage below propagate
 					 here without extra plumbing. -->
-				<Popover.Root bind:open={charPickerOpen}>
-					<Popover.Trigger class="mp-combobox ca-hdr-combobox" aria-label="Switch or add character">
-						<span class="mp-combobox-value">{charDisplayName(activeChar)}</span>
-						<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
-					</Popover.Trigger>
-					<Popover.Portal>
-						<Popover.Content
-							class="mp-cmd-popover"
-							sideOffset={4}
-							align="start"
-							collisionPadding={8}
-						>
-							<Command.Root class="mp-cmd">
-								<div class="mp-cmd-search-row">
-									<span class="mp-cmd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
-									<Command.Input class="mp-cmd-search" placeholder="Search characters…" autofocus />
-								</div>
-								<Command.List class="mp-cmd-list">
-									<Command.Empty class="mp-cmd-empty">No matching characters.</Command.Empty>
-									{#each sortedCharacters as ch (ch.id)}
-										{@const n = charDisplayName(ch)}
-										<Command.Item
-											class="mp-cmd-item"
-											value={n}
-											onSelect={() => {
-												selectChar(ch.id);
-												charPickerOpen = false;
-											}}
-										>
-											<span class="mp-cmd-check" aria-hidden="true">
-												{#if ch.id === activeCharId}
-													<svg
-														viewBox="0 0 20 20"
-														fill="none"
-														stroke="currentColor"
-														stroke-width="2.5"
-														><polyline
-															points="4 11 8 15 16 6"
-															stroke-linecap="round"
-															stroke-linejoin="round"
-														></polyline></svg
-													>
-												{/if}
-											</span>
-											<span class="mp-cmd-item-name">{n}</span>
-										</Command.Item>
-									{/each}
-									<Command.Separator class="mp-cmd-sep" />
+			<Popover.Root bind:open={charPickerOpen}>
+				<Popover.Trigger class="mp-combobox ca-hdr-combobox" aria-label="Switch or add character">
+					{#if activeChar}<span class="mp-combobox-value">{charDisplayName(activeChar)}</span
+						>{:else}<span class="mp-combobox-value mp-combobox-value--placeholder"
+							>— No characters yet —</span
+						>{/if}
+					<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
+				</Popover.Trigger>
+				<Popover.Portal>
+					<Popover.Content class="mp-cmd-popover" sideOffset={4} align="start" collisionPadding={8}>
+						<Command.Root class="mp-cmd">
+							<div class="mp-cmd-search-row">
+								<span class="mp-cmd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
+								<Command.Input class="mp-cmd-search" placeholder="Search characters…" autofocus />
+							</div>
+							<Command.List class="mp-cmd-list">
+								<Command.Empty class="mp-cmd-empty">No matching characters.</Command.Empty>
+								{#each sortedCharacters as ch (ch.id)}
+									{@const n = charDisplayName(ch)}
 									<Command.Item
-										class="mp-cmd-item mp-cmd-item--action"
-										value="+ New character"
+										class="mp-cmd-item"
+										value={n}
 										onSelect={() => {
+											selectChar(ch.id);
 											charPickerOpen = false;
-											void addCharacter();
 										}}
 									>
-										<span class="mp-cmd-check" aria-hidden="true"></span>
-										<span class="mp-cmd-item-name">+ New character…</span>
+										<span class="mp-cmd-check" aria-hidden="true">
+											{#if ch.id === activeCharId}
+												<svg
+													viewBox="0 0 20 20"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="2.5"
+													><polyline
+														points="4 11 8 15 16 6"
+														stroke-linecap="round"
+														stroke-linejoin="round"
+													></polyline></svg
+												>
+											{/if}
+										</span>
+										<span class="mp-cmd-item-name">{n}</span>
 									</Command.Item>
-								</Command.List>
-							</Command.Root>
-						</Popover.Content>
-					</Popover.Portal>
-				</Popover.Root>
+								{/each}
+								<Command.Separator class="mp-cmd-sep" />
+								<Command.Item
+									class="mp-cmd-item mp-cmd-item--action"
+									value="+ New character"
+									onSelect={() => {
+										charPickerOpen = false;
+										void addCharacter();
+									}}
+								>
+									<span class="mp-cmd-check" aria-hidden="true"></span>
+									<span class="mp-cmd-item-name">+ New character…</span>
+								</Command.Item>
+							</Command.List>
+						</Command.Root>
+					</Popover.Content>
+				</Popover.Portal>
+			</Popover.Root>
 
+			{#if activeChar && activeData}
 				<!-- Per-character add buttons — icon-only to save header width.
 					 Link = vow; gem = asset. Vow first (left) because it's the
 					 more common per-character action. Same glyphs used inline
@@ -1060,7 +1055,8 @@
 		<div class="ca-empty">
 			<span class="ca-empty-icon" aria-hidden="true">{@html charactersIconSvg}</span>
 			<p class="ca-empty-text">
-				Your saga begins not with a battle, but with a button. Click <strong>+ CHARACTER</strong> to start.
+				Your saga begins not with a battle, but with a button. Pick
+				<strong>+ New character…</strong> from the switcher above to start.
 			</p>
 		</div>
 	{:else}
@@ -1601,16 +1597,6 @@
 		flex: 1;
 		justify-content: flex-end;
 	}
-	.ca-hdr-btn {
-		font-size: 0.7rem;
-		padding: 3px 9px;
-		min-width: unset;
-	}
-	.ca-hdr-btn[disabled] {
-		opacity: 0.4;
-		cursor: not-allowed;
-	}
-
 	.ca-loading,
 	.ca-empty {
 		flex: 1;
