@@ -55,6 +55,7 @@
 	import iconZoomInSvg from '$icons/magnifying-glass-plus-solid-full.svg?raw';
 	import iconZoomOutSvg from '$icons/magnifying-glass-minus-solid-full.svg?raw';
 	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
+	import iconAngleSvg from '$icons/angle-solid-full.svg?raw';
 	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
 	import { Dialog, Popover, Command } from 'bits-ui';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
@@ -1437,7 +1438,7 @@
 								class="mp-sel-angle-field"
 								use:tooltip={'Rotation in degrees (0 = up, clockwise)'}
 							>
-								<span class="mp-sel-angle-glyph" aria-hidden="true">∠</span>
+								<span class="mp-sel-angle-glyph" aria-hidden="true">{@html iconAngleSvg}</span>
 								<input
 									class="mp-sel-angle-input"
 									type="number"
@@ -2547,9 +2548,15 @@
 		color: var(--text-muted);
 	}
 	:global(.mp-sel-angle-glyph) {
-		font-weight: 700;
+		display: inline-flex;
+		align-items: center;
 		color: var(--text-dimmer);
 		line-height: 1;
+	}
+	:global(.mp-sel-angle-glyph svg) {
+		width: 12px;
+		height: 12px;
+		fill: currentColor;
 	}
 	:global(.mp-sel-angle-input) {
 		width: 2.2em;
