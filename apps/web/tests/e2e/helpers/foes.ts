@@ -14,11 +14,11 @@ const FOE_COMBOBOX = `${FOE_AREA} .fa-hdr-combobox`;
 const FOE_DELETE = `${FOE_AREA} .fa-hdr-delete-btn`;
 
 /** Total number of foe encounters (active + vanquished). Read from the
- *  `data-foe-count` attribute the FoesArea root exposes for exactly this
- *  purpose — no need to open the popover just to count. */
+ *  `data-foe-count` attribute the FoesArea `.fa-area` root exposes for
+ *  exactly this purpose — no need to open the popover just to count. */
 export async function getFoeCount(page: Page): Promise<number> {
-	const attr = await page.locator(FOE_AREA).first().getAttribute('data-foe-count');
-	return attr ? Number(attr) : 0;
+	const attr = await page.locator(`${FOE_AREA} .fa-area`).first().getAttribute('data-foe-count');
+	return attr !== null ? Number(attr) : 0;
 }
 
 /** Active foe name — the text shown inside the combobox trigger. Returns
