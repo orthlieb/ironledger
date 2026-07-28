@@ -315,6 +315,7 @@
 		top: 50%;
 		left: 50%;
 		transform: translate(-50%, -50%);
+		/* Mobile bump handled by the media query below. */
 		width: min(440px, calc(100vw - 2rem));
 		max-height: 82vh;
 		overflow: hidden;
@@ -335,6 +336,15 @@
 		display: flex;
 		flex-direction: column;
 		gap: 18px;
+	}
+	@media (max-width: 640px) {
+		:global(.mo-dialog) {
+			width: 90vw;
+			max-height: 90vh;
+		}
+		:global(.mo-body) {
+			max-height: calc(90vh - 4rem);
+		}
 	}
 	:global(.mo-section) {
 		display: flex;
