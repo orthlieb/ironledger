@@ -56,6 +56,14 @@
 	import iconZoomOutSvg from '$icons/magnifying-glass-minus-solid-full.svg?raw';
 	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
 	import iconAngleSvg from '$icons/angle-solid-full.svg?raw';
+	import iconPaletteSvg from '$icons/palette-solid-full.svg?raw';
+
+	/** Strip the outer `<svg>` wrapper + FontAwesome licence comment so
+	 *  the palette icon's paths can be re-wrapped in our own `<svg>`
+	 *  with the halo `<g>` cascade applied. Runs once at module load. */
+	const paletteInner = iconPaletteSvg
+		.replace(/<svg\b[^>]*>|<\/svg>/g, '')
+		.replace(/<!--[\s\S]*?-->/g, '');
 	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
 	import { Dialog, Popover, Command } from 'bits-ui';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
@@ -940,7 +948,7 @@
 	// and goes, one to sync the widget's colour when a different
 	// marker is selected (silent: true so it doesn't fire our own
 	// change handler and cause a feedback loop).
-	let pickrAnchor = $state<HTMLDivElement | null>(null);
+	let pickrAnchor = $state<HTMLButtonElement | null>(null);
 	let pickr: Pickr | null = null;
 
 	/** Seven-char `#rrggbb` (no alpha) — Pickr's HEXA output ends `ff`
@@ -970,6 +978,12 @@
 			// Attaching inside the dialog keeps the popover in the same
 			// top-layer scope.
 			container: dialogEl,
+			// Use our own `<button>` (with the palette icon coloured by
+			// selectedColor) as the trigger instead of Pickr's default
+			// round swatch chip. Pickr skips its own button chrome and
+			// treats the anchor element as the button, so it opens the
+			// popover on click and keeps `--pcr-color` off our element.
+			useAsButton: true,
 			theme: 'nano',
 			default: initialColor,
 			// Pickr's built-in swatch row — same eight tabletop-friendly
@@ -1001,6 +1015,18 @@
 		instance.on('change', (c: ReturnType<Pickr['getColor']>) => {
 			if (!selectedMarker) return;
 			updateMarker(selectedMarker.id, { color: normalizeHex(c.toHEXA().toString()) });
+			// Pickr only refreshes the trigger chip's `--pcr-color` inside
+			// applyColor(), which normally fires on Save. We removed the
+			// Save button (save: false), so nudge applyColor() ourselves
+			// on every live change — otherwise the chip keeps showing
+			// the previous colour while the marker icon has already moved
+			// on. Guarded with a try/catch because applyColor emits 'save'
+			// which some Pickr versions choke on when save UI is disabled.
+			try {
+				instance.applyColor(true);
+			} catch {
+				/* known: applyColor's save-emit path when save:false */
+			}
 		});
 		pickr = instance;
 		return () => {
@@ -1236,7 +1262,7 @@
 	<Dialog.Portal>
 		<Dialog.Overlay class="mp-overlay" />
 		<Dialog.Content bind:ref={dialogEl} class="mp-dialog">
-			<DialogHeader title={headingText('Campaign Map')} onclose={close} />
+			<DialogHeader title={headingText('Edit Map')} onclose={close} />
 
 			<div class="mp-toolbar">
 				<div class="mp-tools mp-tools-map">
@@ -1412,14 +1438,32 @@
 						<!-- Pickr colour widget — the native macOS/Windows `<input
 			     type="color">` opens a heavy OS dialog that eats the
 			     screen. Pickr is a self-contained JS wheel + swatches
-			     that lives in-page. The `<div>` is a stub anchor;
-			     Pickr replaces it with its own button chip that shows
-			     the current colour and pops the wheel on click. -->
-						<div
-							class="mp-sel-color"
+			     that lives in-page. We render our own button (palette
+			     icon coloured by the picked colour, with the same
+			     white halo the marker icons use) and pass
+			     `useAsButton: true` so Pickr uses it as the trigger
+			     directly instead of injecting its own round swatch. -->
+						<button
+							type="button"
+							class="mp-sel-color-btn"
+							style="color: {selectedColor}"
 							bind:this={pickrAnchor}
 							use:tooltip={'Icon colour — click to open the picker'}
-						></div>
+							aria-label="Icon colour"
+						>
+							<svg viewBox="0 0 640 640" aria-hidden="true">
+								<g
+									fill="currentColor"
+									stroke="#fff"
+									stroke-width="2"
+									stroke-linejoin="round"
+									paint-order="stroke"
+									vector-effect="non-scaling-stroke"
+								>
+									{@html paletteInner}
+								</g>
+							</svg>
+						</button>
 						<!-- Angle spinner — explicit − / + buttons flank the number
 			     input because iOS Safari doesn't render the native
 			     <input type="number"> step arrows, so touch users would
@@ -2476,24 +2520,33 @@
 		height: 22px;
 		flex-shrink: 0;
 	}
-	/* Pickr colour widget. Pickr replaces the anchor `<div>` with its
-	   own `.pickr` chip (a small round swatch button) + a floating
-	   `.pcr-app` popover. We just need to constrain the chip so it
-	   sits inside the toolbar row like the old native chip did — the
-	   popover then anchors itself to the chip and floats free. */
-	:global(.mp-sel-color .pickr) {
+	/* Colour picker trigger — a real `<button>` styled to match the
+	   neighbouring `.mp-sel-icon-btn`. Pickr runs in `useAsButton`
+	   mode so this element IS its trigger; Pickr just floats the
+	   `.pcr-app` popover next to it on click. The palette SVG inside
+	   picks up the selected colour via `currentColor` and the same
+	   2-device-pixel white halo the map markers use, so light hues
+	   read on dark backgrounds and dark hues read on light. */
+	:global(.mp-sel-color-btn) {
 		display: inline-flex;
-	}
-	:global(.mp-sel-color .pickr .pcr-button) {
-		width: 24px;
-		height: 24px;
+		align-items: center;
+		justify-content: center;
+		padding: 3px 6px;
+		background: var(--bg-control);
 		border: 1px solid var(--border-mid);
 		border-radius: 4px;
+		cursor: pointer;
 	}
-	:global(.mp-sel-color .pickr .pcr-button:focus) {
+	:global(.mp-sel-color-btn:hover) {
+		border-color: var(--text-accent);
+	}
+	:global(.mp-sel-color-btn:focus-visible) {
 		outline: 1px solid var(--text-accent);
 		outline-offset: 1px;
-		box-shadow: none;
+	}
+	:global(.mp-sel-color-btn svg) {
+		width: 22px;
+		height: 22px;
 	}
 	/* Popover floats above the dialog's other chrome via a high
 	   z-index so it isn't clipped by the toolbar's own row. */
@@ -2519,7 +2572,7 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		width: 18px;
+		width: 13px;
 		padding: 0;
 		border: none;
 		background: transparent;
