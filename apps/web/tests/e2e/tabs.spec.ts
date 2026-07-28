@@ -10,7 +10,6 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 import { resetAll } from './helpers/reset';
-import { getFoeCount } from './helpers/foes';
 
 // ── Area constants ───────────────────────────────────────────────────────────
 
@@ -28,6 +27,7 @@ const EXP_SPINE = `${EXP_AREA} .ea-spine`;
 
 const FOE_AREA = '.home-area--foes';
 const FOE_HEADER = `${FOE_AREA} .fa-header`;
+const FOE_SPINE = `${FOE_AREA} .fa-spine`;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -200,16 +200,19 @@ test.describe('Tab accessibility — v2 areas', () => {
 	// ── Foes area ────────────────────────────────────────────────────────────
 
 	test('FoesArea — every tab activates and renders its panel', async ({ page }) => {
-		// Ensure a foe encounter exists. FoesArea auto-selects the first
-		// one on load; no separate spine click is needed anymore.
-		if ((await getFoeCount(page)) === 0) {
+		// Ensure a foe encounter exists.
+		if ((await page.locator(FOE_SPINE).count()) === 0) {
 			await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
 			await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 8_000 });
+			// Click first available foe tile.
 			await page.locator('.foe-dialog .fd-tile').first().click();
+			// Then confirm "Add to Foes".
 			await page.locator('.foe-dialog button:has-text("Add to Foes")').click();
 			await expect(page.locator('.foe-dialog')).not.toBeVisible({ timeout: 5_000 });
-			await expect.poll(() => getFoeCount(page), { timeout: 8_000 }).toBeGreaterThan(0);
+			await expect(page.locator(FOE_SPINE)).not.toHaveCount(0, { timeout: 8_000 });
 		}
+		// Select the first foe.
+		await page.locator(FOE_SPINE).first().click();
 		await expect(page.locator(`${FOE_AREA} .fa-tab`).first()).toBeVisible({ timeout: 5_000 });
 
 		// Core: pills row.
