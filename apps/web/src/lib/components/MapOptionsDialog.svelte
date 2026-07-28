@@ -129,6 +129,8 @@
 					<label class="mo-field">
 						<span class="mo-field-label">Map name</span>
 						<input
+							id="mo-map-name"
+							name="mo-map-name"
 							class="mo-input mo-input-wide"
 							type="text"
 							value={mapState.name}
@@ -156,6 +158,8 @@
 								>Opacity — {Math.round(mapSettings.grid.opacity * 100)}%</span
 							>
 							<input
+								id="mo-grid-opacity"
+								name="mo-grid-opacity"
 								class="mo-slider"
 								type="range"
 								min="0"
@@ -197,6 +201,8 @@
 						<label class="mo-field mo-field-narrow">
 							<span class="mo-field-label">Per cell</span>
 							<input
+								id="mo-scale-per-cell"
+								name="mo-scale-per-cell"
 								class="mo-input"
 								type="number"
 								min="0.1"
@@ -210,6 +216,8 @@
 						<label class="mo-field mo-field-narrow">
 							<span class="mo-field-label">Segments</span>
 							<input
+								id="mo-scale-segments"
+								name="mo-scale-segments"
 								class="mo-input"
 								type="number"
 								min="1"

@@ -46,6 +46,13 @@
 	let focusValue = 0;
 
 	const icon = $derived(STAT_ICONS[label] ?? '');
+
+	// Per-instance stable id so the field has a `name` for autofill /
+	// accessibility tooling ("A form field has neither an id nor a name"
+	// Chrome DevTools warning). Not tied to any real form submission —
+	// StatControl writes straight to bound state — but the DOM still
+	// needs the attr for scoring + screen-reader stability.
+	const inputId = `stat-${label.toLowerCase()}-${crypto.randomUUID().slice(0, 8)}`;
 </script>
 
 <div class="stat-tile" style:--stat-color={color} use:tooltipAction={tooltip}>
@@ -54,6 +61,8 @@
 	<input
 		type="number"
 		class="stat-value-input"
+		id={inputId}
+		name={inputId}
 		bind:value
 		{min}
 		{max}

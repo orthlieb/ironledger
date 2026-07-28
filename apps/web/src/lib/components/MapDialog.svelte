@@ -1376,6 +1376,8 @@
 					>
 				</div>
 				<input
+					id="mp-file-input"
+					name="mp-file-input"
 					bind:this={fileInputEl}
 					type="file"
 					accept="image/*"
@@ -1397,6 +1399,8 @@
 				<div class="mp-sel-toolbar">
 					{#if selectedMarker}
 						<input
+							id="mp-sel-name"
+							name="mp-sel-name"
 							class="mp-sel-name"
 							type="text"
 							placeholder="Marker name…"
@@ -1484,6 +1488,8 @@
 							>
 								<span class="mp-sel-angle-glyph" aria-hidden="true">{@html iconAngleSvg}</span>
 								<input
+									id="mp-sel-angle"
+									name="mp-sel-angle"
 									class="mp-sel-angle-input"
 									type="number"
 									min="0"
@@ -2046,6 +2052,8 @@
 				<div class="mp-icon-search-field">
 					<span class="mp-icon-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
 					<input
+						id="mp-icon-search"
+						name="mp-icon-search"
 						bind:this={iconSearchInputEl}
 						class="mp-icon-search"
 						type="search"
