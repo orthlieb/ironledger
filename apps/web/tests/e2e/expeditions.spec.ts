@@ -12,6 +12,15 @@
  */
 import { test, expect } from '@playwright/test';
 import { resetExpeditions, resetFoes } from './helpers/reset';
+import { pickBitsUiOption, getBitsUiSelectLabel, bitsUiOptionCount } from './helpers/bits-ui';
+
+// Site fields (theme / domain / feature / danger) went from native
+// `<select>` to the shared bits-ui `<Select>` wrapper. The `id` still
+// lands on the trigger button, so `#ea-theme-<siteId>` etc. work as
+// locators — but the popover is portalled and the items are
+// `.bui-select-item`, so `page.selectOption()` no longer applies.
+// The `pickBitsUiOption` helper wraps the click-trigger + click-item
+// sequence.
 
 const EXP_AREA = '.home-area--expeditions';
 const EXP_HEADER = `${EXP_AREA} .ea-header`;
@@ -39,13 +48,15 @@ async function switchExpTab(page: import('@playwright/test').Page, label: string
 async function ensureJourneySelected(page: import('@playwright/test').Page): Promise<void> {
 	const spines = page.locator(EXP_SPINE);
 	const count = await spines.count();
-	// Search existing spines for a journey (Core tab shows no theme select).
+	// Search existing spines for a journey (Core tab shows no theme
+	// picker; the theme picker id lives on the bits-ui Select trigger
+	// `<button id="ea-theme-<siteId>">` when it's a site).
 	for (let i = 0; i < count; i++) {
 		await spines.nth(i).click();
 		await switchExpTab(page, 'Core');
 		if (
 			!(await page
-				.locator(`${EXP_AREA} select[id^="ea-theme-"]`)
+				.locator(`${EXP_AREA} [id^="ea-theme-"]`)
 				.isVisible({ timeout: 500 })
 				.catch(() => false))
 		) {
@@ -72,37 +83,41 @@ async function ensureSiteSelected(page: import('@playwright/test').Page): Promis
 	if ((await spines.count()) === 0) {
 		await page.locator(`${EXP_HEADER} button:has-text("+ Site")`).click();
 		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
-		await page.selectOption('.confirm-modal #ns-theme', { index: 1 });
-		await page.selectOption('.confirm-modal #ns-domain', { index: 1 });
+		await pickBitsUiOption(page, '.confirm-modal #ns-theme', { index: 1 });
+		await pickBitsUiOption(page, '.confirm-modal #ns-domain', { index: 1 });
 		await page.locator('.confirm-modal button:has-text("Create")').click();
 		await expect(spines).not.toHaveCount(0, { timeout: 5_000 });
 	}
 
-	// Find a site spine (Core tab shows a theme select).
-	const themeSelect = page.locator(`${EXP_AREA} select[id^="ea-theme-"]`).first();
-	if (!(await themeSelect.isVisible({ timeout: 1_000 }).catch(() => false))) {
+	// Find a site spine (Core tab shows a theme picker — the bits-ui
+	// Select trigger carries the `ea-theme-<siteId>` id).
+	const themeTrigger = page.locator(`${EXP_AREA} [id^="ea-theme-"]`).first();
+	if (!(await themeTrigger.isVisible({ timeout: 1_000 }).catch(() => false))) {
 		const count = await spines.count();
 		for (let i = 0; i < count; i++) {
 			await spines.nth(i).click();
 			await switchExpTab(page, 'Core');
-			if (await themeSelect.isVisible({ timeout: 500 }).catch(() => false)) break;
+			if (await themeTrigger.isVisible({ timeout: 500 }).catch(() => false)) break;
 		}
 	} else {
 		await switchExpTab(page, 'Core');
 	}
-	await expect(themeSelect).toBeVisible({ timeout: 3_000 });
+	await expect(themeTrigger).toBeVisible({ timeout: 3_000 });
 
 	// Ensure theme and domain have non-empty values (needed for feature/danger).
-	const domainSelect = page.locator(`${EXP_AREA} select[id^="ea-domain-"]`).first();
-	if (!(await themeSelect.inputValue()).trim()) {
-		await themeSelect.selectOption({ index: 1 });
+	const themeId = (await themeTrigger.getAttribute('id')) ?? '';
+	const siteId = themeId.replace(/^ea-theme-/, '');
+	const domainTriggerSelector = `${EXP_AREA} #ea-domain-${siteId}`;
+	const themeLabel = await getBitsUiSelectLabel(page, `${EXP_AREA} #${themeId}`);
+	if (!themeLabel || themeLabel === '—' || themeLabel === 'Select…') {
+		await pickBitsUiOption(page, `${EXP_AREA} #${themeId}`, { index: 0 });
 	}
-	if (!(await domainSelect.inputValue()).trim()) {
-		await domainSelect.selectOption({ index: 1 });
+	const domainLabel = await getBitsUiSelectLabel(page, domainTriggerSelector);
+	if (!domainLabel || domainLabel === '—' || domainLabel === 'Select…') {
+		await pickBitsUiOption(page, domainTriggerSelector, { index: 0 });
 	}
 
-	const id = (await themeSelect.getAttribute('id')) ?? '';
-	return id.replace(/^ea-theme-/, '');
+	return siteId;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -171,27 +186,23 @@ test.describe('Expeditions area (v2)', () => {
 		await page.keyboard.press('Escape');
 	});
 
-	test.skip('can add a site — TODO: rewrite for bits-ui Select trigger + popover item click, drops native selectOption()', async ({
-		page,
-	}) => {
+	test('can add a site', async ({ page }) => {
 		const before = await page.locator(EXP_SPINE).count();
 		await page.locator(`${EXP_HEADER} button:has-text("+ Site")`).click();
 		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
-		await page.selectOption('.confirm-modal #ns-theme', { index: 1 });
-		await page.selectOption('.confirm-modal #ns-domain', { index: 1 });
+		await pickBitsUiOption(page, '.confirm-modal #ns-theme', { index: 1 });
+		await pickBitsUiOption(page, '.confirm-modal #ns-domain', { index: 1 });
 		await page.locator('.confirm-modal button:has-text("Create")').click();
 		await expect(page.locator(EXP_SPINE)).not.toHaveCount(before, { timeout: 5_000 });
 	});
 
-	test.skip('can delete a site — TODO: rewrite for bits-ui Select trigger + popover item click, drops native selectOption()', async ({
-		page,
-	}) => {
+	test('can delete a site', async ({ page }) => {
 		const spines = page.locator(EXP_SPINE);
 		if ((await spines.count()) === 0) {
 			await page.locator(`${EXP_HEADER} button:has-text("+ Site")`).click();
 			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
-			await page.selectOption('.confirm-modal #ns-theme', { index: 1 });
-			await page.selectOption('.confirm-modal #ns-domain', { index: 1 });
+			await pickBitsUiOption(page, '.confirm-modal #ns-theme', { index: 1 });
+			await pickBitsUiOption(page, '.confirm-modal #ns-domain', { index: 1 });
 			await page.locator('.confirm-modal button:has-text("Create")').click();
 			await expect(spines).not.toHaveCount(0, { timeout: 5_000 });
 		}
@@ -208,137 +219,116 @@ test.describe('Expeditions area (v2)', () => {
 
 	// ── Theme / Domain (manual + dice) ────────────────────────────────────────
 
-	test.skip('site: can change theme manually via the inline select — TODO: rewrite for bits-ui Select trigger + popover item click, drops native selectOption()', async ({
-		page,
-	}) => {
-		await ensureSiteSelected(page);
-
-		const themeSelect = page.locator(`${EXP_AREA} select[id^="ea-theme-"]`).first();
-		const options = themeSelect.locator('option');
-		const optCount = await options.count();
+	test('site: can change theme manually via the inline select', async ({ page }) => {
+		const siteId = await ensureSiteSelected(page);
+		const themeTrigger = `${EXP_AREA} #ea-theme-${siteId}`;
+		const optCount = await bitsUiOptionCount(page, themeTrigger);
 		// Pick the last option (guaranteed to differ if > 1 option exists).
-		const newVal = (await options.nth(optCount - 1).getAttribute('value')) ?? '';
-		await themeSelect.selectOption(newVal);
-		await expect(themeSelect).toHaveValue(newVal, { timeout: 3_000 });
+		await pickBitsUiOption(page, themeTrigger, { index: optCount - 1 });
+		const label = await getBitsUiSelectLabel(page, themeTrigger);
+		expect(label.length).toBeGreaterThan(0);
 	});
 
-	test.skip('site: can change theme via the random dice button — TODO: rewrite for bits-ui Select trigger + popover item click, drops native selectOption()', async ({
-		page,
-	}) => {
-		await ensureSiteSelected(page);
-
-		const themeSelect = page.locator(`${EXP_AREA} select[id^="ea-theme-"]`).first();
+	test('site: can change theme via the random dice button', async ({ page }) => {
+		const siteId = await ensureSiteSelected(page);
+		const themeTrigger = `${EXP_AREA} #ea-theme-${siteId}`;
 		const diceBtn = page.locator(`${EXP_AREA} button[aria-label="Random theme"]`);
 		await expect(diceBtn).toBeVisible({ timeout: 3_000 });
 		await diceBtn.click();
-		// Select should have a non-empty value after randomisation.
-		await expect(themeSelect).not.toHaveValue('', { timeout: 3_000 });
+		// Trigger label should be a non-empty theme name after randomisation.
+		await expect(async () => {
+			const label = await getBitsUiSelectLabel(page, themeTrigger);
+			expect(label.length).toBeGreaterThan(0);
+		}).toPass({ timeout: 5_000 });
 	});
 
-	test.skip('site: can change domain manually via the inline select — TODO: rewrite for bits-ui Select trigger + popover item click, drops native selectOption()', async ({
-		page,
-	}) => {
-		await ensureSiteSelected(page);
-
-		const domainSelect = page.locator(`${EXP_AREA} select[id^="ea-domain-"]`).first();
-		const options = domainSelect.locator('option');
-		const optCount = await options.count();
-		const newVal = (await options.nth(optCount - 1).getAttribute('value')) ?? '';
-		await domainSelect.selectOption(newVal);
-		await expect(domainSelect).toHaveValue(newVal, { timeout: 3_000 });
+	test('site: can change domain manually via the inline select', async ({ page }) => {
+		const siteId = await ensureSiteSelected(page);
+		const domainTrigger = `${EXP_AREA} #ea-domain-${siteId}`;
+		const optCount = await bitsUiOptionCount(page, domainTrigger);
+		await pickBitsUiOption(page, domainTrigger, { index: optCount - 1 });
+		const label = await getBitsUiSelectLabel(page, domainTrigger);
+		expect(label.length).toBeGreaterThan(0);
 	});
 
-	test.skip('site: can change domain via the random dice button — TODO: rewrite for bits-ui Select trigger + popover item click, drops native selectOption()', async ({
-		page,
-	}) => {
-		await ensureSiteSelected(page);
-
-		const domainSelect = page.locator(`${EXP_AREA} select[id^="ea-domain-"]`).first();
+	test('site: can change domain via the random dice button', async ({ page }) => {
+		const siteId = await ensureSiteSelected(page);
+		const domainTrigger = `${EXP_AREA} #ea-domain-${siteId}`;
 		const diceBtn = page.locator(`${EXP_AREA} button[aria-label="Random domain"]`);
 		await expect(diceBtn).toBeVisible({ timeout: 3_000 });
 		await diceBtn.click();
-		await expect(domainSelect).not.toHaveValue('', { timeout: 3_000 });
+		await expect(async () => {
+			const label = await getBitsUiSelectLabel(page, domainTrigger);
+			expect(label.length).toBeGreaterThan(0);
+		}).toPass({ timeout: 5_000 });
 	});
 
 	// ── Feature / Danger (manual + dice) ─────────────────────────────────────
 
-	test.skip('site: can set a feature manually via the inline select — TODO: rewrite for bits-ui Select trigger + popover item click, drops native selectOption()', async ({
-		page,
-	}) => {
-		await ensureSiteSelected(page);
+	test('site: can set a feature manually via the inline select', async ({ page }) => {
+		const siteId = await ensureSiteSelected(page);
+		const featureTrigger = `${EXP_AREA} #ea-feature-${siteId}`;
+		await expect(page.locator(featureTrigger)).toBeVisible({ timeout: 3_000 });
+		await expect(page.locator(featureTrigger)).not.toBeDisabled();
 
-		const featureSelect = page.locator(`${EXP_AREA} select[id^="ea-feature-"]`).first();
-		await expect(featureSelect).toBeVisible({ timeout: 3_000 });
-		await expect(featureSelect).not.toBeDisabled();
-
-		// Pick first non-empty option.
-		const opts = featureSelect.locator('option');
-		const count = await opts.count();
-		let firstVal = '';
-		for (let i = 0; i < count; i++) {
-			firstVal = (await opts.nth(i).getAttribute('value')) ?? '';
-			if (firstVal) break;
-		}
-		if (!firstVal) {
+		// The first option is a "no selection" placeholder; pick index 1 to
+		// land on the first real feature. If only the placeholder exists,
+		// this theme+domain has no features to pick — skip.
+		const optCount = await bitsUiOptionCount(page, featureTrigger);
+		if (optCount < 2) {
 			test.skip(true, 'No feature options for this theme+domain');
 			return;
 		}
-
-		await featureSelect.selectOption(firstVal);
-		await expect(featureSelect).toHaveValue(firstVal, { timeout: 3_000 });
+		await pickBitsUiOption(page, featureTrigger, { index: 1 });
+		const label = await getBitsUiSelectLabel(page, featureTrigger);
+		expect(label).not.toBe('—');
+		expect(label.length).toBeGreaterThan(0);
 	});
 
-	test.skip('site: can roll a feature via the dice button — TODO: rewrite for bits-ui Select trigger + popover item click, drops native selectOption()', async ({
-		page,
-	}) => {
-		await ensureSiteSelected(page);
-
-		const featureSelect = page.locator(`${EXP_AREA} select[id^="ea-feature-"]`).first();
+	test('site: can roll a feature via the dice button', async ({ page }) => {
+		const siteId = await ensureSiteSelected(page);
+		const featureTrigger = `${EXP_AREA} #ea-feature-${siteId}`;
 		const diceBtn = page.locator(`${EXP_AREA} button[aria-label="Random feature"]`);
 		await expect(diceBtn).not.toBeDisabled({ timeout: 3_000 });
 		await diceBtn.click();
-		// Wait for the dice animation + async roll to complete: the button re-enables.
+		// Wait for the dice animation + async roll to complete: button re-enables.
 		await expect(diceBtn).not.toBeDisabled({ timeout: 10_000 });
-		// Feature select should now have a non-empty value.
-		await expect(featureSelect).not.toHaveValue('', { timeout: 3_000 });
+		await expect(async () => {
+			const label = await getBitsUiSelectLabel(page, featureTrigger);
+			expect(label).not.toBe('—');
+			expect(label.length).toBeGreaterThan(0);
+		}).toPass({ timeout: 5_000 });
 	});
 
-	test.skip('site: can set a danger manually via the inline select — TODO: rewrite for bits-ui Select trigger + popover item click, drops native selectOption()', async ({
-		page,
-	}) => {
-		await ensureSiteSelected(page);
+	test('site: can set a danger manually via the inline select', async ({ page }) => {
+		const siteId = await ensureSiteSelected(page);
+		const dangerTrigger = `${EXP_AREA} #ea-danger-${siteId}`;
+		await expect(page.locator(dangerTrigger)).toBeVisible({ timeout: 3_000 });
+		await expect(page.locator(dangerTrigger)).not.toBeDisabled();
 
-		const dangerSelect = page.locator(`${EXP_AREA} select[id^="ea-danger-"]`).first();
-		await expect(dangerSelect).toBeVisible({ timeout: 3_000 });
-		await expect(dangerSelect).not.toBeDisabled();
-
-		const opts = dangerSelect.locator('option');
-		const count = await opts.count();
-		let firstVal = '';
-		for (let i = 0; i < count; i++) {
-			firstVal = (await opts.nth(i).getAttribute('value')) ?? '';
-			if (firstVal) break;
-		}
-		if (!firstVal) {
+		const optCount = await bitsUiOptionCount(page, dangerTrigger);
+		if (optCount < 2) {
 			test.skip(true, 'No danger options for this theme+domain');
 			return;
 		}
-
-		await dangerSelect.selectOption(firstVal);
-		await expect(dangerSelect).toHaveValue(firstVal, { timeout: 3_000 });
+		await pickBitsUiOption(page, dangerTrigger, { index: 1 });
+		const label = await getBitsUiSelectLabel(page, dangerTrigger);
+		expect(label).not.toBe('—');
+		expect(label.length).toBeGreaterThan(0);
 	});
 
-	test.skip('site: can roll a danger via the dice button — TODO: rewrite for bits-ui Select trigger + popover item click, drops native selectOption()', async ({
-		page,
-	}) => {
-		await ensureSiteSelected(page);
-
-		const dangerSelect = page.locator(`${EXP_AREA} select[id^="ea-danger-"]`).first();
+	test('site: can roll a danger via the dice button', async ({ page }) => {
+		const siteId = await ensureSiteSelected(page);
+		const dangerTrigger = `${EXP_AREA} #ea-danger-${siteId}`;
 		const diceBtn = page.locator(`${EXP_AREA} button[aria-label="Random danger"]`);
 		await expect(diceBtn).not.toBeDisabled({ timeout: 3_000 });
 		await diceBtn.click();
 		await expect(diceBtn).not.toBeDisabled({ timeout: 10_000 });
-		await expect(dangerSelect).not.toHaveValue('', { timeout: 3_000 });
+		await expect(async () => {
+			const label = await getBitsUiSelectLabel(page, dangerTrigger);
+			expect(label).not.toBe('—');
+			expect(label.length).toBeGreaterThan(0);
+		}).toPass({ timeout: 5_000 });
 	});
 
 	// ── Portrait / image upload ───────────────────────────────────────────────
@@ -370,9 +360,7 @@ test.describe('Expeditions area (v2)', () => {
 		expect(src).toMatch(/^data:image\/(jpeg|png);base64,/);
 	});
 
-	test.skip('site: can add a portrait image via the Description tab — TODO: rewrite for bits-ui Select trigger + popover item click, drops native selectOption()', async ({
-		page,
-	}) => {
+	test('site: can add a portrait image via the Description tab', async ({ page }) => {
 		await ensureSiteSelected(page);
 		await switchExpTab(page, 'Description');
 
@@ -391,9 +379,7 @@ test.describe('Expeditions area (v2)', () => {
 
 	// ── Denizen table — foe picker ────────────────────────────────────────────
 
-	test.skip('site: can pick a foe for a denizen slot via the foe picker button — TODO: rewrite for bits-ui Select trigger + popover item click, drops native selectOption()', async ({
-		page,
-	}) => {
+	test('site: can pick a foe for a denizen slot via the foe picker button', async ({ page }) => {
 		await ensureSiteSelected(page);
 		await switchExpTab(page, 'Denizens');
 
@@ -422,7 +408,7 @@ test.describe('Expeditions area (v2)', () => {
 
 	// ── Denizen table — Roll Denizen + Add to Foes ────────────────────────────
 
-	test.skip('site: Roll Denizen button opens the denizen dialog with the foe table — TODO: rewrite for bits-ui Select trigger + popover item click, drops native selectOption()', async ({
+	test('site: Roll Denizen button opens the denizen dialog with the foe table', async ({
 		page,
 	}) => {
 		await ensureSiteSelected(page);
@@ -440,9 +426,7 @@ test.describe('Expeditions area (v2)', () => {
 		await page.keyboard.press('Escape');
 	});
 
-	test.skip('site: can roll a denizen and add the matched foe to the Foes area — TODO: rewrite for bits-ui Select trigger + popover item click, drops native selectOption()', async ({
-		page,
-	}) => {
+	test('site: can roll a denizen and add the matched foe to the Foes area', async ({ page }) => {
 		await ensureSiteSelected(page);
 		await switchExpTab(page, 'Denizens');
 

@@ -135,9 +135,7 @@ test.describe('Characters area (v2)', () => {
 		await expect(assetCards).not.toHaveCount(assetsBefore, { timeout: 5_000 });
 	});
 
-	test.skip('can remove an asset via the asset dialog — TODO: diagnose 30 s timeout post bits-ui migration', async ({
-		page,
-	}) => {
+	test('can remove an asset via the asset dialog', async ({ page }) => {
 		await ensureCharacterSelected(page);
 		await switchCharTab(page, 'Assets');
 
@@ -155,12 +153,18 @@ test.describe('Characters area (v2)', () => {
 		}
 		const countBefore = await assetCards.count();
 
-		// Click the asset chit's main button → opens the asset dialog → click Delete.
+		// Click the asset chit's main button → opens the asset dialog → click
+		// Delete. The confirm dialog is a bits-ui AlertDialog nested inside
+		// the outer asset dialog; both portal to body so `.confirm-modal`
+		// (the AlertDialog.Content class) resolves via `.last()` in case the
+		// asset dialog's own `.confirm-modal`-adjacent scoped class ever
+		// tangles the query.
 		await assetCards.first().locator('.ca-asset-card-main').click();
-		await expect(page.locator('.ca-asset-dialog')).toBeVisible({ timeout: 3_000 });
+		await expect(page.locator('.ca-asset-dialog')).toBeVisible({ timeout: 5_000 });
 		await page.locator('.ca-asset-dialog .asset-footer .btn-danger').click();
-		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 3_000 });
-		await page.locator('.confirm-modal button.btn-danger').click();
+		const confirm = page.locator('.confirm-modal').last();
+		await expect(confirm).toBeVisible({ timeout: 5_000 });
+		await confirm.locator('button.btn-danger').click();
 		await expect(assetCards).toHaveCount(countBefore - 1, { timeout: 5_000 });
 	});
 
