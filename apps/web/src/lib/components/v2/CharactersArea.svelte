@@ -58,12 +58,12 @@
 	import ProgressTrackPanel from '$lib/components/ProgressTrackPanel.svelte';
 	import MarkdownNotes from '$lib/components/MarkdownNotes.svelte';
 	import PortraitUploader from '$lib/components/PortraitUploader.svelte';
-	import { EditableName } from '$lib/editableName.svelte.js';
 	import { assetIcon } from '$lib/iconRegistry.js';
 	import { Dialog, Popover, Command, Tabs } from 'bits-ui';
 	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import CharacterOptionsDialog from '$lib/components/CharacterOptionsDialog.svelte';
 	import VowCard from '$lib/components/VowCard.svelte';
 	import DebilitiesSection from '$lib/components/DebilitiesSection.svelte';
 	import {
@@ -80,7 +80,7 @@
 	import iconSpirit from '$icons/icon-spirit.svg?raw';
 	import iconSupply from '$icons/icon-supply.svg?raw';
 	import iconStar from '$icons/star-solid-full.svg?raw';
-	import trashSvg from '$icons/trash-solid-full.svg?raw';
+	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
 	import swordSvg from '$icons/sword-solid-full.svg?raw';
 	import gemSvg from '$icons/gem-solid.svg?raw';
 	import linkSvg from '$icons/link-solid-full.svg?raw';
@@ -158,16 +158,6 @@
 	// Status-tab note edit state (so each can expand to fill while editing)
 	let editingBondsFormed = $state(false);
 	let editingLessonsLearned = $state(false);
-	const nameEdit = new EditableName((restored) => {
-		if (activeData) activeData.name = restored;
-	});
-	// Scroll the rename input into view when entering edit mode on a
-	// character whose card has been scrolled off-screen.
-	$effect(() => {
-		if (nameEdit.editing && nameEdit.inputEl) {
-			nameEdit.inputEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-		}
-	});
 	const characters = $derived(getCharacters());
 	const loading = $derived(isCharacterLoading() || isAssetsLoading());
 
@@ -800,7 +790,7 @@
 		closeAssetDialog();
 	}
 
-	let deleteDialogRef = $state<{ open(): void; close(): void } | null>(null);
+	let characterOptionsRef = $state<{ open(): void; close(): void } | null>(null);
 	async function confirmDeleteCharacter() {
 		if (!activeChar) return;
 		const id = activeChar.id;
@@ -873,11 +863,8 @@
 			const newChar = await createCharacter();
 			activeCharId = newChar.id;
 			activeCard = 'core';
-			// Drop straight into rename mode so the user can name the new
-			// character without an extra click. Reading the default name from
-			// newChar directly because activeData ($derived) won't reflect
-			// the just-set activeCharId synchronously.
-			nameEdit.start((newChar.data as { name?: string })?.name ?? newChar.name ?? '');
+			// Rename is behind the header gear icon (CharacterOptionsDialog);
+			// no more drop-into-rename affordance on create.
 		} catch (err) {
 			console.error('[v2] addCharacter failed', err);
 		} finally {
@@ -1019,25 +1006,35 @@
 					</Popover.Portal>
 				</Popover.Root>
 
-				<!-- Delete-character trash (moved from the stage-header). -->
+				<!-- Character options (gear) — opens CharacterOptionsDialog,
+					 which hosts rename + delete. Matches the map's gear pattern
+					 so low-frequency actions don't crowd the header row. -->
 				<button
-					class="btn btn-icon icon-btn btn-trash ca-hdr-delete-btn"
-					onclick={() => deleteDialogRef?.open()}
-					use:tooltip={'Delete character'}
-					aria-label="Delete character">{@html trashSvg}</button
+					class="btn btn-icon icon-btn ca-hdr-settings-btn"
+					onclick={() => characterOptionsRef?.open()}
+					use:tooltip={'Character options'}
+					aria-label="Character options">{@html iconGearSvg}</button
 				>
 
-				<!-- Per-character add buttons. + Asset opens the picker on the
-					 Assets tab; + Vow appends a blank vow. -->
+				<!-- Per-character add buttons — icon-only to save header width.
+					 Gem = asset; link = vow (same glyphs used inside the panel). -->
 				<button
-					class="btn ca-hdr-btn"
+					class="btn btn-icon icon-btn ca-hdr-icon-btn"
 					onclick={() => {
 						activeCard = 'assets';
 						pickerOpen = true;
 					}}
-					use:tooltip={'Add asset'}>+ Asset</button
+					use:tooltip={'Add Asset'}
+					aria-label="Add Asset"
+					><span class="ca-hdr-icon-plus" aria-hidden="true">+</span>{@html gemSvg}</button
 				>
-				<button class="btn ca-hdr-btn" onclick={addVow} use:tooltip={'Add vow'}>+ Vow</button>
+				<button
+					class="btn btn-icon icon-btn ca-hdr-icon-btn"
+					onclick={addVow}
+					use:tooltip={'Add Vow'}
+					aria-label="Add Vow"
+					><span class="ca-hdr-icon-plus" aria-hidden="true">+</span>{@html linkSvg}</button
+				>
 			{/if}
 		</div>
 	</header>
@@ -1053,34 +1050,6 @@
 		</div>
 	{:else}
 		<div class="ca-body">
-			<!-- Active deck stage (right) -->
-			{#if activeChar && activeData}
-				{@const d = activeData}
-				<!-- Character name + actions row sits ABOVE the stage so it's
-				     visible on every tab. Name: click to rename / Enter / Escape.
-				     Trash button to the right opens the V1 ConfirmDialog. -->
-				<div class="ca-stage-header">
-					{#if nameEdit.editing}
-						<input
-							bind:this={nameEdit.inputEl}
-							class="ca-stage-name-input"
-							type="text"
-							bind:value={d.name}
-							placeholder="Character name"
-							onblur={nameEdit.commit}
-							onkeydown={nameEdit.onKeydown}
-						/>
-					{:else}
-						<button
-							type="button"
-							class="ca-stage-name ca-card-name--editable"
-							use:tooltip={'Click to rename'}
-							onclick={() => nameEdit.start(d.name ?? '')}
-							>{headingText(d.name || activeChar.name || 'Unnamed')}</button
-						>
-					{/if}
-				</div>
-			{/if}
 			<div class="ca-stage">
 				{#if activeChar && activeData}
 					{@const d = activeData}
@@ -1494,21 +1463,18 @@
 	/>
 {/if}
 
-<!-- Delete-character confirmation — matches V1's pattern: red accent,
-     "Delete" confirm label, message names the active character. -->
+<!-- Character options — gear icon in the header opens this. Rename +
+     delete both live behind it, matching MapOptionsDialog's pattern. -->
 {#if activeChar && activeData}
 	{@const d = activeData}
-	<ConfirmDialog
-		bind:this={deleteDialogRef}
-		title="Delete Character"
-		confirmLabel="Delete"
-		onconfirm={confirmDeleteCharacter}
-	>
-		<p>
-			Permanently delete <strong>{d.name || activeChar.name || 'this character'}</strong>? This
-			cannot be undone.
-		</p>
-	</ConfirmDialog>
+	<CharacterOptionsDialog
+		bind:this={characterOptionsRef}
+		name={d.name || activeChar.name || ''}
+		oncommit={(next) => {
+			if (activeData) activeData.name = next;
+		}}
+		ondelete={confirmDeleteCharacter}
+	/>
 {/if}
 
 <!-- Remove-asset confirmation — opens from the asset dialog's trash icon,
@@ -1517,14 +1483,14 @@
 	{@const assetDef = pendingRemoveAssetId ? findAsset(pendingRemoveAssetId) : undefined}
 	<ConfirmDialog
 		bind:this={removeAssetDialogRef}
-		title="Remove Asset"
-		confirmLabel="Remove"
+		title="Delete Asset"
+		confirmLabel="Delete Asset"
 		onconfirm={confirmRemoveAsset}
 		oncancel={() => (pendingRemoveAssetId = null)}
 		ondismiss={() => (pendingRemoveAssetId = null)}
 	>
 		<p>
-			Remove <strong>{assetDef?.name ?? 'this asset'}</strong> from
+			Delete <strong>{assetDef?.name ?? 'this asset'}</strong> from
 			<strong>{activeChar.name || 'this character'}</strong>?
 		</p>
 	</ConfirmDialog>
@@ -1633,75 +1599,6 @@
 		min-height: 0;
 	}
 
-	/* Stage header row — name on the left, trash icon on the right. Same
-	   background tone as VowCard's .vow-header so the character card and
-	   the vow cards inside it read as the same UI family. */
-	.ca-stage-header {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-		padding: 5px 10px; /* sized so the row's total height matches .ca-header (38px) */
-		background: var(--bg-control);
-		border: none;
-		border-bottom: 1px solid var(--border);
-		border-radius: 0;
-	}
-	.ca-stage-header > .ca-stage-name,
-	.ca-stage-header > .ca-stage-name-input {
-		flex: 1;
-		margin: 0;
-	}
-
-	/* Persistent character name sits above the tab strip / stage. Sized to
-	   match V1's .char-title (0.82rem × font-display-scale, 0.08em tracking,
-	   default line-height, 2px 6px padding, 1px transparent border). */
-	.ca-stage-name {
-		appearance: none;
-		-webkit-appearance: none;
-		text-align: left;
-		background: transparent;
-		font-family: var(--font-display);
-		font-size: calc(0.82rem * var(--font-display-scale));
-		font-weight: var(--font-display-weight);
-		font-variant: var(--font-display-variant);
-		letter-spacing: 0.08em;
-		text-transform: var(--font-display-transform);
-		color: var(--text-accent);
-		padding: 2px 6px;
-		border: 1px solid transparent;
-		border-radius: 3px;
-		margin: 6px 12px 2px;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-		transition:
-			background 0.12s,
-			border-color 0.12s;
-	}
-	.ca-stage-name.ca-card-name--editable:hover {
-		background: var(--bg-hover);
-		border-color: var(--border);
-	}
-	.ca-stage-name-input {
-		font-family: var(--font-display);
-		font-size: calc(0.82rem * var(--font-display-scale));
-		font-weight: var(--font-display-weight);
-		font-variant: var(--font-display-variant);
-		letter-spacing: 0.08em;
-		text-transform: var(--font-display-transform);
-		color: var(--text-accent);
-		background: transparent;
-		border: 1px solid var(--border-mid);
-		border-radius: 3px;
-		padding: 2px 6px;
-		margin: 6px 12px 2px;
-		width: calc(100% - 24px);
-		outline: none;
-	}
-	.ca-stage-name-input:focus {
-		border-color: var(--text-accent);
-	}
-
 	/* Stage */
 	.ca-stage {
 		display: flex;
@@ -1719,8 +1616,44 @@
 		flex: 1 1 auto;
 		min-width: 0;
 	}
-	.ca-hdr-delete-btn {
+
+	/* Icon-only header buttons — the plus glyph sits inline with the
+	   category glyph (gem / link / gear) to fit them into ~28px each.
+	   Raw ?raw SVGs have no intrinsic width, so nail one down here or
+	   they collapse to zero inside the flex row. */
+	:global(.ca-hdr-icon-btn) {
+		display: inline-flex;
+		align-items: center;
+		gap: 3px;
+		padding: 4px 6px;
+		min-width: 0;
+	}
+	:global(.ca-hdr-icon-btn svg) {
+		width: 12px;
+		height: 12px;
+		fill: currentColor;
 		flex-shrink: 0;
+	}
+	:global(.ca-hdr-icon-btn svg path) {
+		fill: currentColor;
+	}
+	:global(.ca-hdr-icon-plus) {
+		font-family: var(--font-ui);
+		font-size: 0.85rem;
+		font-weight: 700;
+		line-height: 1;
+		color: currentColor;
+	}
+	:global(.ca-hdr-settings-btn) {
+		flex-shrink: 0;
+	}
+	:global(.ca-hdr-settings-btn svg) {
+		width: 13px;
+		height: 13px;
+		fill: currentColor;
+	}
+	:global(.ca-hdr-settings-btn svg path) {
+		fill: currentColor;
 	}
 
 	/* Card tabs (Background / Core / Vows) — V1 tab-btn style: flat,
@@ -1809,15 +1742,6 @@
 	.ca-bg-section--editing :global(.md-notes-input) {
 		flex: 1;
 		min-height: 0;
-	}
-
-	/* Editable name — click to edit affordances. */
-	.ca-card-name--editable {
-		cursor: pointer;
-		transition: color 0.12s;
-	}
-	.ca-card-name--editable:hover {
-		color: var(--text);
 	}
 
 	/* Initiative widget — mirrors V1 .cs-init-section: small toggle group
