@@ -59,9 +59,12 @@ async function setExpansionsViaStorage(
 }
 
 async function openSettings(page: Page): Promise<void> {
+	// HamburgerMenu is a bits-ui DropdownMenu — Content portals with class
+	// `.hm-menu`, items with `.hm-item`. The Trigger keeps its `.hamburger-btn`
+	// class from before the migration.
 	await page.locator('.hamburger-btn').click();
-	await page.locator('.menu-dropdown').waitFor({ state: 'visible', timeout: 3_000 });
-	await page.locator('.menu-item', { hasText: /settings/i }).click();
+	await page.locator('.hm-menu').waitFor({ state: 'visible', timeout: 3_000 });
+	await page.locator('.hm-item', { hasText: /settings/i }).click();
 	await expect(page.locator('.settings-dialog')).toBeVisible({ timeout: 3_000 });
 }
 

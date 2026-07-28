@@ -287,8 +287,14 @@ test.describe('Import collision dialog (name-based)', () => {
 			dialog.locator('.icd-group').filter({ hasText: 'Site' }).locator('.icd-name'),
 		).toHaveText(['The Black Spire']);
 
-		// Default selection is 'new'.
-		await expect(dialog.locator('input[name="strategy"][value="new"]')).toBeChecked();
+		// Default selection is 'new'. The RadioGroup was migrated to bits-ui
+		// (`RadioGroup.Item` renders `<button role="radio" data-value="X"
+		// data-state="checked|unchecked">`), so scope by data-value and read
+		// data-state instead of the retired `<input name="strategy">`.
+		await expect(dialog.locator('[role="radio"][data-value="new"]')).toHaveAttribute(
+			'data-state',
+			'checked',
+		);
 
 		await dialog.locator('button:has-text("Cancel import")').click();
 		await expect(dialog).not.toBeVisible();
@@ -333,7 +339,7 @@ test.describe('Import collision dialog (name-based)', () => {
 		);
 		const dialog = page.locator('.icd-dialog');
 		await expect(dialog).toBeVisible({ timeout: 5_000 });
-		await dialog.locator('input[name="strategy"][value="new"]').check();
+		await dialog.locator('[role="radio"][data-value="new"]').click();
 		await dialog.locator('button.btn-primary').click();
 		await expect(dialog).not.toBeVisible();
 		await page.waitForTimeout(1_800);
@@ -368,7 +374,7 @@ test.describe('Import collision dialog (name-based)', () => {
 		);
 		const dialog = page.locator('.icd-dialog');
 		await expect(dialog).toBeVisible({ timeout: 5_000 });
-		await dialog.locator('input[name="strategy"][value="replace"]').check();
+		await dialog.locator('[role="radio"][data-value="replace"]').click();
 		await dialog.locator('button.btn-primary').click();
 		await expect(dialog).not.toBeVisible();
 		await page.waitForTimeout(1_800);
@@ -401,7 +407,7 @@ test.describe('Import collision dialog (name-based)', () => {
 		);
 		const dialog = page.locator('.icd-dialog');
 		await expect(dialog).toBeVisible({ timeout: 5_000 });
-		await dialog.locator('input[name="strategy"][value="skip"]').check();
+		await dialog.locator('[role="radio"][data-value="skip"]').click();
 		await dialog.locator('button.btn-primary').click();
 		await expect(dialog).not.toBeVisible();
 		await page.waitForTimeout(1_800);
@@ -474,7 +480,7 @@ test.describe('Import collision dialog (name-based)', () => {
 		// NPCs section is hidden because nothing collides there.
 		await expect(dialog.locator('.icd-group').filter({ hasText: 'NPC' })).toHaveCount(0);
 
-		await dialog.locator('input[name="strategy"][value="skip"]').check();
+		await dialog.locator('[role="radio"][data-value="skip"]').click();
 		await dialog.locator('button.btn-primary').click();
 		await page.waitForTimeout(1_800);
 
