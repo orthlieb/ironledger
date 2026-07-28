@@ -1006,16 +1006,6 @@
 					</Popover.Portal>
 				</Popover.Root>
 
-				<!-- Character options (gear) — opens CharacterOptionsDialog,
-					 which hosts rename + delete. Matches the map's gear pattern
-					 so low-frequency actions don't crowd the header row. -->
-				<button
-					class="btn btn-icon icon-btn ca-hdr-settings-btn"
-					onclick={() => characterOptionsRef?.open()}
-					use:tooltip={'Character options'}
-					aria-label="Character options">{@html iconGearSvg}</button
-				>
-
 				<!-- Per-character add buttons — icon-only to save header width.
 					 Gem = asset; link = vow (same glyphs used inside the panel). -->
 				<button
@@ -1034,6 +1024,16 @@
 					use:tooltip={'Add Vow'}
 					aria-label="Add Vow"
 					><span class="ca-hdr-icon-plus" aria-hidden="true">+</span>{@html linkSvg}</button
+				>
+
+				<!-- Character options (gear) — opens CharacterOptionsDialog,
+					 which hosts rename + delete. Matches the map's gear pattern
+					 so low-frequency actions don't crowd the header row. -->
+				<button
+					class="btn btn-icon icon-btn ca-hdr-settings-btn"
+					onclick={() => characterOptionsRef?.open()}
+					use:tooltip={'Character options'}
+					aria-label="Character options">{@html iconGearSvg}</button
 				>
 			{/if}
 		</div>
