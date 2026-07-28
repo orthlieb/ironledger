@@ -148,17 +148,29 @@ test.describe('Characters area (v2)', () => {
 			// AssetCard opens in add mode — click Add to commit.
 			await expect(page.locator('.ca-asset-dialog')).toBeVisible({ timeout: 5_000 });
 			await page.locator('.ca-asset-dialog .asset-footer .btn-primary').click();
+			// Wait for BOTH overlays to finish closing before proceeding — the
+			// next step immediately opens the same `.ca-asset-dialog` again in
+			// edit mode, and Playwright's actionability check will otherwise
+			// race against the still-fading add-mode overlay.
+			await expect(page.locator('.ca-asset-dialog')).not.toBeVisible({ timeout: 5_000 });
 			await expect(page.locator('.picker-dialog')).not.toBeVisible({ timeout: 5_000 });
 			await expect(assetCards).not.toHaveCount(0, { timeout: 5_000 });
 		}
 		const countBefore = await assetCards.count();
 
-		// Click the asset chit's main button → opens the asset dialog → click Delete.
+		// Click the asset chit's main button → opens the asset dialog → click
+		// Delete. The confirm dialog is a bits-ui AlertDialog nested inside
+		// the outer asset dialog; both portal to body so `.confirm-modal`
+		// (the AlertDialog.Content class) resolves via `.last()` in case the
+		// asset dialog's own `.confirm-modal`-adjacent scoped class ever
+		// tangles the query.
 		await assetCards.first().locator('.ca-asset-card-main').click();
-		await expect(page.locator('.ca-asset-dialog')).toBeVisible({ timeout: 3_000 });
-		await page.locator('.ca-asset-dialog .asset-footer .btn-danger').click();
-		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 3_000 });
-		await page.locator('.confirm-modal button.btn-danger').click();
+		const assetDialog = page.locator('.ca-asset-dialog').last();
+		await expect(assetDialog).toBeVisible({ timeout: 5_000 });
+		await assetDialog.getByRole('button', { name: /^Delete/ }).click();
+		const confirm = page.locator('.confirm-modal').last();
+		await expect(confirm).toBeVisible({ timeout: 5_000 });
+		await confirm.getByRole('button', { name: /^Remove$/ }).click();
 		await expect(assetCards).toHaveCount(countBefore - 1, { timeout: 5_000 });
 	});
 

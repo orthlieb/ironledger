@@ -59,9 +59,12 @@ async function setExpansionsViaStorage(
 }
 
 async function openSettings(page: Page): Promise<void> {
+	// HamburgerMenu is a bits-ui DropdownMenu — Content portals with class
+	// `.hm-menu`, items with `.hm-item`. The Trigger keeps its `.hamburger-btn`
+	// class from before the migration.
 	await page.locator('.hamburger-btn').click();
-	await page.locator('.menu-dropdown').waitFor({ state: 'visible', timeout: 3_000 });
-	await page.locator('.menu-item', { hasText: /settings/i }).click();
+	await page.locator('.hm-menu').waitFor({ state: 'visible', timeout: 3_000 });
+	await page.locator('.hm-item', { hasText: /settings/i }).click();
 	await expect(page.locator('.settings-dialog')).toBeVisible({ timeout: 3_000 });
 }
 
@@ -113,8 +116,8 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 
 	test('both expansions default to ON', async ({ page }) => {
 		await openSettings(page);
-		await expect(settingsToggleButton(page, 'Delve', 'On')).toHaveClass(/\bactive\b/);
-		await expect(settingsToggleButton(page, 'YRT', 'On')).toHaveClass(/\bactive\b/);
+		await expect(settingsToggleButton(page, 'Delve', 'On')).toHaveAttribute('data-state', 'on');
+		await expect(settingsToggleButton(page, 'YRT', 'On')).toHaveAttribute('data-state', 'on');
 	});
 
 	test('default: Delve moves appear in Moves dialog', async ({ page }) => {
@@ -283,8 +286,8 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		await waitForHome(page);
 
 		await openSettings(page);
-		await expect(settingsToggleButton(page, 'Delve', 'Off')).toHaveClass(/\bactive\b/);
-		await expect(settingsToggleButton(page, 'YRT', 'Off')).toHaveClass(/\bactive\b/);
+		await expect(settingsToggleButton(page, 'Delve', 'Off')).toHaveAttribute('data-state', 'on');
+		await expect(settingsToggleButton(page, 'YRT', 'Off')).toHaveAttribute('data-state', 'on');
 	});
 
 	// ── 6. Re-enable restores visibility ──────────────────────────────────────

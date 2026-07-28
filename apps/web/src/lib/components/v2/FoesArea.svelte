@@ -34,16 +34,16 @@
 	import type { FoeEncounter, FoeDef, FoeQuantity } from '$lib/types.js';
 
 	import ProgressTrackPanel from '$lib/components/ProgressTrackPanel.svelte';
-	import { EditableName } from '$lib/editableName.svelte.js';
-	import { foeIcon } from '$lib/iconRegistry.js';
 	import FoePickerDialog from '$lib/components/FoePickerDialog.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import Lightbox from '$lib/components/Lightbox.svelte';
 	import trashSvg from '$icons/trash-solid-full.svg?raw';
 	import swordSvg from '$icons/sword-solid-full.svg?raw';
 	import skullSvg from '$icons/skull-crossbones-solid-full.svg?raw';
+	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
+	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
 	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
-	import { Tabs } from 'bits-ui';
+	import { Popover, Command, Tabs } from 'bits-ui';
 	import foesIconSvg from '$icons/Foes.svg?raw';
 	import { headingText } from '$lib/fontStore.svelte.js';
 
@@ -61,9 +61,11 @@
 	let deleteDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let imgVisible = $state(true);
 	let lightboxOpen = $state(false);
-	const nameEdit = new EditableName((restored) => {
-		if (activeEnc) update({ customName: restored });
-	});
+	// Combobox open state — bits-ui Popover binds it so we can close the
+	// popover imperatively from an item's onSelect handler (both a foe
+	// switch and the "+ New foe…" action need to close it before doing
+	// their work).
+	let foePickerOpen = $state(false);
 
 	const encounters = $derived(getEncounters());
 	const loading = $derived(isEncounterLoading());
@@ -84,7 +86,6 @@
 		activeFoeId = id;
 		activeTab = 'core';
 		imgVisible = true;
-		nameEdit.commit();
 	}
 
 	async function handleFoeSelected(foeDef: FoeDef, quantity: FoeQuantity, effectiveRank: number) {
@@ -244,16 +245,113 @@
 	}
 </script>
 
-<div class="fa-area">
+<div class="fa-area" data-foe-count={encounters.length}>
 	<header class="fa-header">
 		{#if showTitle}
 			<span class="fa-title-icon" aria-hidden="true">{@html foesIconSvg}</span>
 			<span class="fa-title">{headingText('Foes')}</span>
 		{/if}
 		<div class="fa-header-actions">
-			<button class="btn fa-hdr-btn" onclick={() => foePickerRef?.open()} use:tooltip={'Add foe'}
-				>+ Foe</button
-			>
+			{#if encounters.length === 0}
+				<!-- Empty state: fall back to a plain "+ Foe" button so the
+					 empty screen has something to click. The combobox needs
+					 at least one existing encounter to make sense. -->
+				<button class="btn fa-hdr-btn" onclick={() => foePickerRef?.open()} use:tooltip={'Add foe'}
+					>+ Foe</button
+				>
+			{:else if activeEnc}
+				<!-- Foe switcher (Popover + Command). Same class prefix as
+					 MapDialog's map switcher so the two comboboxes look
+					 identical (see docs/ui-components.md). -->
+				<Popover.Root bind:open={foePickerOpen}>
+					<Popover.Trigger class="mp-combobox fa-hdr-combobox" aria-label="Switch or add foe">
+						<span class="mp-combobox-value">{displayName}</span>
+						<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
+					</Popover.Trigger>
+					<Popover.Portal>
+						<Popover.Content
+							class="mp-cmd-popover"
+							sideOffset={4}
+							align="start"
+							collisionPadding={8}
+						>
+							<Command.Root class="mp-cmd">
+								<div class="mp-cmd-search-row">
+									<span class="mp-cmd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
+									<Command.Input class="mp-cmd-search" placeholder="Search foes…" autofocus />
+								</div>
+								<Command.List class="mp-cmd-list">
+									<Command.Empty class="mp-cmd-empty">No matching foes.</Command.Empty>
+									{#each encounters as enc (enc.id)}
+										{@const def = findFoe(enc.foeId)}
+										{@const n = enc.customName?.trim() || def?.name || enc.foeId}
+										<Command.Item
+											class="mp-cmd-item"
+											value={n}
+											onSelect={() => {
+												selectFoe(enc.id);
+												foePickerOpen = false;
+											}}
+										>
+											<span class="mp-cmd-check" aria-hidden="true">
+												{#if enc.id === activeFoeId}
+													<svg
+														viewBox="0 0 20 20"
+														fill="none"
+														stroke="currentColor"
+														stroke-width="2.5"
+														><polyline
+															points="4 11 8 15 16 6"
+															stroke-linecap="round"
+															stroke-linejoin="round"
+														></polyline></svg
+													>
+												{/if}
+											</span>
+											<span class="mp-cmd-item-name">{n}</span>
+										</Command.Item>
+									{/each}
+									<Command.Separator class="mp-cmd-sep" />
+									<Command.Item
+										class="mp-cmd-item mp-cmd-item--action"
+										value="+ New foe"
+										onSelect={() => {
+											foePickerOpen = false;
+											void foePickerRef?.open();
+										}}
+									>
+										<span class="mp-cmd-check" aria-hidden="true"></span>
+										<span class="mp-cmd-item-name">+ New foe…</span>
+									</Command.Item>
+								</Command.List>
+							</Command.Root>
+						</Popover.Content>
+					</Popover.Portal>
+				</Popover.Root>
+
+				<SegmentedRadio
+					ariaLabel="Foe status"
+					labels="auto"
+					value={activeEnc.vanquished ? 'vanquished' : 'active'}
+					onchange={(v) => update({ vanquished: v === 'vanquished' })}
+					options={[
+						{ value: 'active', icon: swordSvg, text: 'Active', label: 'Mark active', tone: 'go' },
+						{
+							value: 'vanquished',
+							icon: skullSvg,
+							text: 'Vanquished',
+							label: 'Mark vanquished',
+							tone: 'stop',
+						},
+					]}
+				/>
+				<button
+					class="btn btn-icon icon-btn btn-trash fa-hdr-delete-btn"
+					onclick={() => deleteDialogRef?.open()}
+					use:tooltip={'Delete foe'}
+					aria-label="Delete foe">{@html trashSvg}</button
+				>
+			{/if}
 		</div>
 	</header>
 
@@ -268,71 +366,7 @@
 		</div>
 	{:else}
 		<div class="fa-body">
-			<nav class="fa-spines" aria-label="Foe encounters">
-				{#each encounters as enc (enc.id)}
-					{@const def = findFoe(enc.foeId)}
-					{@const n = enc.customName?.trim() || def?.name || enc.foeId}
-					<button
-						class="fa-spine"
-						class:fa-spine--active={enc.id === activeFoeId}
-						onclick={() => selectFoe(enc.id)}
-						use:tooltip={n}
-					>
-						<span class="fa-spine-name">{n}</span>
-					</button>
-				{/each}
-			</nav>
-
 			{#if activeEnc}
-				<!-- Foe name + delete header — mirrors CharactersArea's stage header.
-				     Carries the same --fa-nature so the coloured band is continuous
-				     from the header all the way down the card's left side. -->
-				<div class="fa-stage-header" style="--fa-nature: {natureColor}">
-					<span class="fa-stage-name-icon" aria-hidden="true">{@html foeIcon(activeDef)}</span>
-					{#if nameEdit.editing}
-						<input
-							bind:this={nameEdit.inputEl}
-							class="fa-stage-name-input"
-							type="text"
-							value={activeEnc.customName ?? ''}
-							placeholder={activeDef?.name ?? activeEnc.foeId}
-							oninput={(e) => update({ customName: (e.target as HTMLInputElement).value })}
-							onblur={nameEdit.commit}
-							onkeydown={nameEdit.onKeydown}
-						/>
-					{:else}
-						<button
-							type="button"
-							class="fa-stage-name fa-stage-name--editable"
-							use:tooltip={'Click to rename'}
-							onclick={() => nameEdit.start(activeEnc.customName ?? '')}
-							>{headingText(displayName)}</button
-						>
-					{/if}
-					<SegmentedRadio
-						ariaLabel="Foe status"
-						labels={nameEdit.editing ? 'never' : 'auto'}
-						value={activeEnc.vanquished ? 'vanquished' : 'active'}
-						onchange={(v) => update({ vanquished: v === 'vanquished' })}
-						options={[
-							{ value: 'active', icon: swordSvg, text: 'Active', label: 'Mark active', tone: 'go' },
-							{
-								value: 'vanquished',
-								icon: skullSvg,
-								text: 'Vanquished',
-								label: 'Mark vanquished',
-								tone: 'stop',
-							},
-						]}
-					/>
-					<button
-						class="btn btn-icon icon-btn btn-trash fa-stage-delete-btn"
-						onclick={() => deleteDialogRef?.open()}
-						use:tooltip={'Delete foe'}
-						aria-label="Delete foe">{@html trashSvg}</button
-					>
-				</div>
-
 				<div class="fa-stage" class:fa-stage--vanquished={activeEnc.vanquished}>
 					<Tabs.Root
 						value={activeTab}
@@ -624,173 +658,42 @@
 		max-width: 26ch;
 	}
 
-	/* Body grid: spines (col 1, spans both rows) + name banner (row 1, col 2)
-	   + stage (row 2, col 2). */
+	/* Body: single column now that the spine strip is gone (foe switcher
+	   moved into the header combobox). Stage fills the whole area. */
 	.fa-body {
-		display: grid;
-		grid-template-columns: 36px 1fr;
-		grid-template-rows: auto 1fr;
+		display: flex;
+		flex-direction: column;
 		flex: 1;
 		min-height: 0;
 	}
-	.fa-spines {
-		grid-row: 1 / span 2;
-	}
-	.fa-stage-header {
-		grid-column: 2;
-		grid-row: 1;
-	}
 	.fa-stage {
-		grid-column: 2;
-		grid-row: 2;
-		padding: 0 12px 10px 0;
+		padding: 0 12px 10px 12px;
 		min-height: 0;
 		min-width: 0;
+		flex: 1;
 		overflow: auto;
 		display: flex;
 		flex-direction: column;
-	}
-
-	/* Spine strip */
-	.fa-spines {
-		display: flex;
-		flex-direction: column;
-		align-items: stretch;
-		gap: 0;
-		padding: 0;
-		overflow-y: auto;
-		border-right: 1px solid var(--border);
-		background: transparent;
-	}
-	.fa-spine {
-		all: unset;
-		cursor: pointer;
-		font-family: var(--font-ui);
-		font-size: 0.72rem;
-		font-weight: 600;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--text-dimmer);
-		background: transparent;
-		border: none;
-		border-right: 2px solid transparent;
-		padding: 16px 7px 16px 7px;
-		text-align: center;
-		writing-mode: sideways-lr;
-		flex: 1 1 0;
-		min-height: 0;
-		overflow: hidden;
-		margin-right: -1px;
-		transition:
-			color 0.12s,
-			border-color 0.12s;
-	}
-	.fa-spine:hover {
-		color: var(--text-muted);
-	}
-	.fa-spine--active {
-		color: var(--text-accent);
-		border-right-color: var(--text-accent);
-	}
-	.fa-spine-name {
-		display: inline-block;
-		max-height: 100%;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
 	}
 
 	.fa-stage--vanquished .fa-card {
 		opacity: 0.6;
 	}
 
-	/* Stage banner — name + trash, matches CharactersArea ca-stage-header.
-	   Picks up the same --fa-nature accent so the coloured band runs
-	   continuously down the LHS from the header into the card below. */
-	.fa-stage-header {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-		padding: 5px 10px;
-		background: var(--bg-control);
-		border: none;
-		border-left: 3px solid var(--fa-nature, var(--text-muted));
-		border-bottom: 1px solid var(--border);
-		/* container for SegmentedRadio's responsive (labels="auto") collapse */
+	/* Combobox trigger inside the header — takes the flex slack so long
+	   foe names truncate before pushing the toggle + delete off-screen. */
+	:global(.fa-hdr-combobox) {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
+	/* Header delete button — visual comes from .btn-trash in app.css. */
+	.fa-hdr-delete-btn {
+		flex-shrink: 0;
+	}
+	/* Header contains a SegmentedRadio that opts into `labels="auto"`;
+	   the responsive collapse depends on an inline-size container ancestor. */
+	.fa-header-actions {
 		container-type: inline-size;
-	}
-	.fa-stage-name {
-		appearance: none;
-		-webkit-appearance: none;
-		text-align: left;
-		background: transparent;
-		flex: 1;
-		margin: 0;
-		font-family: var(--font-display);
-		font-size: calc(0.82rem * var(--font-display-scale));
-		font-weight: var(--font-display-weight);
-		font-variant: var(--font-display-variant);
-		letter-spacing: 0.08em;
-		text-transform: var(--font-display-transform);
-		color: var(--text-accent);
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-	.fa-stage-name--editable {
-		cursor: pointer;
-		padding: 2px 6px;
-		border: 1px solid transparent;
-		border-radius: 3px;
-		transition:
-			background 0.12s,
-			border-color 0.12s;
-	}
-	/* Nature icon — sits to the left of the foe name in the stage header,
-	   matching the Communities / Expeditions stage-icon pattern (fixed
-	   18-px size; sibling of the name element, not inside it). */
-	.fa-stage-name-icon {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 18px;
-		height: 18px;
-		color: var(--fa-nature, var(--text-muted));
-		flex-shrink: 0;
-	}
-	.fa-stage-name-icon :global(svg) {
-		width: 100%;
-		height: 100%;
-		fill: currentColor;
-	}
-	.fa-stage-name-icon :global(svg path) {
-		fill: currentColor;
-	}
-	.fa-stage-name--editable:hover {
-		background: var(--bg-hover);
-		border-color: var(--border);
-	}
-	.fa-stage-name-input {
-		flex: 1;
-		font-family: var(--font-display);
-		font-size: calc(0.82rem * var(--font-display-scale));
-		font-weight: var(--font-display-weight);
-		font-variant: var(--font-display-variant);
-		letter-spacing: 0.08em;
-		text-transform: var(--font-display-transform);
-		color: var(--text-accent);
-		background: transparent;
-		border: 1px solid var(--border-mid);
-		border-radius: 3px;
-		padding: 2px 6px;
-		outline: none;
-	}
-	.fa-stage-name-input:focus {
-		border-color: var(--text-accent);
-	}
-	/* Delete: visual comes from .btn-trash in app.css; only positioning here. */
-	.fa-stage-delete-btn {
-		flex-shrink: 0;
 	}
 
 	/* Card tabs — same V1 tab-btn style as CharactersArea. */

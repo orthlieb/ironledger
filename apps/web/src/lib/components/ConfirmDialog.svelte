@@ -154,12 +154,18 @@
 	/* Classes are threaded through bits-ui components, so scope with
 	   :global(...) — Svelte's CSS pruning can't see class names
 	   passed to a foreign component's rendered root. */
+	/* Overlay + content sit ONE tier above the standard 80/81 modal tier
+	 * so a Confirm opened from inside another modal (e.g. the asset
+	 * dialog's "Delete Asset" confirm) reliably stacks on top instead of
+	 * relying on portal DOM-append order. Popovers and menus (at 90+)
+	 * still win, which is correct — a picker opened from inside a
+	 * confirm dialog must beat the confirm. */
 	:global(.cm-overlay) {
 		position: fixed;
 		inset: 0;
 		background: #00000050;
 		backdrop-filter: blur(1px);
-		z-index: 80;
+		z-index: 82;
 	}
 	:global(.confirm-modal) {
 		position: fixed;
@@ -176,7 +182,7 @@
 			0 12px 40px #00000060,
 			0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
 		outline: none;
-		z-index: 81;
+		z-index: 83;
 	}
 
 	/* Header (title + optional ✕) */

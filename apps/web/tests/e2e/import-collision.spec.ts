@@ -16,6 +16,7 @@
  * Sites), and must not appear at all when the file has no collisions.
  */
 import { test, expect, type Page } from '@playwright/test';
+import { zipSync, strToU8 } from 'fflate';
 import { resetAll } from './helpers/reset';
 
 // ── Test fixtures ────────────────────────────────────────────────────────────
@@ -89,18 +90,36 @@ function makeJourney(id: string, name: string) {
 	};
 }
 
-/** Wrap a payload in the manifest envelope the importer expects. */
-function envelope(type: string, data: unknown) {
-	return {
-		manifest: {
-			app: 'Iron Ledger',
-			version: '1.0.0',
-			exportedAt: new Date().toISOString(),
-			type,
-			count: 0,
-		},
-		data,
+/** Tag a payload with the manifest `type` the importer switches on
+ *  (`communities`, `everything`, …). The returned tuple is unpacked
+ *  by `importPayload` and packed into a real `.zip` via `zipEnvelope`
+ *  right before it hits the file input. Kept as a helper so the test
+ *  bodies read as declaratively as they did with the pre-zip JSON
+ *  envelope. */
+type Envelope = readonly [type: string, data: unknown];
+function envelope(type: string, data: unknown): Envelope {
+	return [type, data];
+}
+
+/** Build a `.zip` bundle in the shape `parseImportZip` accepts:
+ *  a top-level `manifest.json` + a body file at `everything.json`
+ *  (the first name in `BODY_CANDIDATES`). Legacy bare-JSON imports
+ *  were retired when the export format switched to zip, so every
+ *  test fixture now travels through the same zip pipeline the
+ *  real exporter produces. */
+function zipEnvelope(type: string, data: unknown): Buffer {
+	const manifest = {
+		app: 'Iron Ledger',
+		version: '1.0.0',
+		exportedAt: '2024-01-01T00:00:00.000Z',
+		type,
+		count: 0,
 	};
+	const bytes = zipSync({
+		'manifest.json': strToU8(JSON.stringify(manifest)),
+		'everything.json': strToU8(JSON.stringify(data)),
+	});
+	return Buffer.from(bytes);
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -116,12 +135,15 @@ async function gotoHome(page: Page) {
 		.waitFor({ timeout: 12_000, state: 'attached' });
 }
 
-/** Push a payload through the import file input. */
-async function importPayload(page: Page, payload: unknown) {
-	await page.locator('input[type="file"][accept=".json,application/json"]').setInputFiles({
-		name: 'test.json',
-		mimeType: 'application/json',
-		buffer: Buffer.from(JSON.stringify(payload)),
+/** Push a tagged payload through the hidden `<input type="file">` on
+ *  the home page. The tuple is packed into a real `.zip` archive
+ *  (manifest + body) before it hits the input — the importer only
+ *  accepts `.zip` bundles now. */
+async function importPayload(page: Page, [type, data]: Envelope) {
+	await page.locator('input[type="file"][accept=".zip,application/zip"]').setInputFiles({
+		name: 'test.zip',
+		mimeType: 'application/zip',
+		buffer: zipEnvelope(type, data),
 	});
 }
 
@@ -265,8 +287,14 @@ test.describe('Import collision dialog (name-based)', () => {
 			dialog.locator('.icd-group').filter({ hasText: 'Site' }).locator('.icd-name'),
 		).toHaveText(['The Black Spire']);
 
-		// Default selection is 'new'.
-		await expect(dialog.locator('input[name="strategy"][value="new"]')).toBeChecked();
+		// Default selection is 'new'. The RadioGroup was migrated to bits-ui
+		// (`RadioGroup.Item` renders `<button role="radio" data-value="X"
+		// data-state="checked|unchecked">`), so scope by data-value and read
+		// data-state instead of the retired `<input name="strategy">`.
+		await expect(dialog.locator('[role="radio"][data-value="new"]')).toHaveAttribute(
+			'data-state',
+			'checked',
+		);
 
 		await dialog.locator('button:has-text("Cancel import")').click();
 		await expect(dialog).not.toBeVisible();
@@ -311,7 +339,7 @@ test.describe('Import collision dialog (name-based)', () => {
 		);
 		const dialog = page.locator('.icd-dialog');
 		await expect(dialog).toBeVisible({ timeout: 5_000 });
-		await dialog.locator('input[name="strategy"][value="new"]').check();
+		await dialog.locator('[role="radio"][data-value="new"]').click();
 		await dialog.locator('button.btn-primary').click();
 		await expect(dialog).not.toBeVisible();
 		await page.waitForTimeout(1_800);
@@ -346,7 +374,7 @@ test.describe('Import collision dialog (name-based)', () => {
 		);
 		const dialog = page.locator('.icd-dialog');
 		await expect(dialog).toBeVisible({ timeout: 5_000 });
-		await dialog.locator('input[name="strategy"][value="replace"]').check();
+		await dialog.locator('[role="radio"][data-value="replace"]').click();
 		await dialog.locator('button.btn-primary').click();
 		await expect(dialog).not.toBeVisible();
 		await page.waitForTimeout(1_800);
@@ -379,7 +407,7 @@ test.describe('Import collision dialog (name-based)', () => {
 		);
 		const dialog = page.locator('.icd-dialog');
 		await expect(dialog).toBeVisible({ timeout: 5_000 });
-		await dialog.locator('input[name="strategy"][value="skip"]').check();
+		await dialog.locator('[role="radio"][data-value="skip"]').click();
 		await dialog.locator('button.btn-primary').click();
 		await expect(dialog).not.toBeVisible();
 		await page.waitForTimeout(1_800);
@@ -452,7 +480,7 @@ test.describe('Import collision dialog (name-based)', () => {
 		// NPCs section is hidden because nothing collides there.
 		await expect(dialog.locator('.icd-group').filter({ hasText: 'NPC' })).toHaveCount(0);
 
-		await dialog.locator('input[name="strategy"][value="skip"]').check();
+		await dialog.locator('[role="radio"][data-value="skip"]').click();
 		await dialog.locator('button.btn-primary').click();
 		await page.waitForTimeout(1_800);
 

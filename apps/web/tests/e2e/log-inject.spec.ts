@@ -16,13 +16,13 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 import { resetAll } from './helpers/reset';
+import { getFoeCount, deleteActiveFoe } from './helpers/foes';
 
 const CHAR_AREA = '.home-area--characters';
 const CHAR_HEADER = `${CHAR_AREA} .ca-header`;
 const CHAR_SPINE = `${CHAR_AREA} .ca-spine`;
 const FOE_AREA = '.home-area--foes';
 const FOE_HEADER = `${FOE_AREA} .fa-header`;
-const FOE_SPINE = `${FOE_AREA} .fa-spine`;
 const EXP_AREA = '.home-area--expeditions';
 const EXP_HEADER = `${EXP_AREA} .ea-header`;
 const EXP_SPINE = `${EXP_AREA} .ea-spine`;
@@ -80,20 +80,19 @@ async function getActiveCharId(page: Page): Promise<string> {
 	return id ?? '';
 }
 
-/** Ensure a foe exists; in v2 the foes area always auto-selects the first foe. */
+/** Ensure a foe exists; the FoesArea auto-selects it on add. */
 async function ensureFoeExists(page: Page) {
-	if ((await page.locator(FOE_SPINE).count()) === 0) {
-		await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
-		await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 5_000 });
-		const foeTile = page.locator('.foe-dialog .fd-tile').first();
-		await expect(foeTile).toBeVisible({ timeout: 8_000 });
-		await foeTile.click();
-		await expect(page.locator('.foe-dialog button:has-text("Add to Foes")')).toBeVisible({
-			timeout: 3_000,
-		});
-		await page.locator('.foe-dialog button:has-text("Add to Foes")').click();
-		await expect(page.locator(FOE_SPINE)).not.toHaveCount(0, { timeout: 5_000 });
-	}
+	if ((await getFoeCount(page)) > 0) return;
+	await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
+	await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 5_000 });
+	const foeTile = page.locator('.foe-dialog .fd-tile').first();
+	await expect(foeTile).toBeVisible({ timeout: 8_000 });
+	await foeTile.click();
+	await expect(page.locator('.foe-dialog button:has-text("Add to Foes")')).toBeVisible({
+		timeout: 3_000,
+	});
+	await page.locator('.foe-dialog button:has-text("Add to Foes")').click();
+	await expect.poll(() => getFoeCount(page), { timeout: 5_000 }).toBeGreaterThan(0);
 }
 
 /** Ensure an expedition (journey) exists. */
@@ -527,20 +526,10 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		await page.goto('/home');
 		await waitForCharactersArea(page);
 
-		// Foes
-		const foeSpines = page.locator(FOE_SPINE);
-		let foeCount = await foeSpines.count();
-		while (foeCount > 0) {
-			await foeSpines.first().click();
-			const delBtn = page.locator(`${FOE_AREA} .fa-stage-delete-btn`).first();
-			await expect(delBtn).toBeVisible({ timeout: 3_000 });
-			await delBtn.click();
-			await expect(page.locator('.confirm-modal button.btn-danger')).toBeVisible({
-				timeout: 3_000,
-			});
-			await page.locator('.confirm-modal button.btn-danger').click();
-			foeCount--;
-			if (foeCount > 0) await expect(foeSpines).toHaveCount(foeCount, { timeout: 5_000 });
+		// Foes — combobox always surfaces one active foe; delete it, next
+		// one auto-activates, repeat until empty.
+		while ((await getFoeCount(page)) > 0) {
+			await deleteActiveFoe(page);
 		}
 
 		// Expeditions
