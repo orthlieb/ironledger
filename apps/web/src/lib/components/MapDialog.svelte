@@ -928,10 +928,6 @@
 		placingMode = false;
 	}
 
-	function clearSelection() {
-		selectedMarkerId = null;
-	}
-
 	function onLabelInput(e: Event) {
 		if (!selectedMarker) return;
 		updateMarker(selectedMarker.id, { label: (e.target as HTMLInputElement).value });
@@ -1242,10 +1238,12 @@
 			<DialogHeader title={headingText('Campaign Map')} onclose={close} />
 
 			<div class="mp-toolbar">
-				<div class="mp-tools">
+				<div class="mp-tools mp-tools-map">
 					<!-- Map switcher — shadcn-style combobox (Popover + Command).
 			     Same visual + interaction as the marker link picker so
-			     the two chips on the dialog stay consistent. -->
+			     the two chips on the dialog stay consistent. Sits alone on
+			     the first row so long map names never crowd out the zoom
+			     controls at phone widths. -->
 					<Popover.Root bind:open={mapPickerOpen}>
 						<Popover.Trigger
 							class="mp-combobox mp-picker-btn"
@@ -1308,6 +1306,8 @@
 							</Popover.Content>
 						</Popover.Portal>
 					</Popover.Root>
+				</div>
+				<div class="mp-tools mp-tools-actions">
 					<button
 						class="mp-btn mp-btn-add"
 						class:mp-btn-add-active={placingMode}
@@ -1341,8 +1341,6 @@
 							aria-label="Fit to view">{@html iconExpandSvg}</button
 						>
 					</div>
-				</div>
-				<div class="mp-tools">
 					<button
 						class="mp-btn mp-btn-icon mp-btn-gear"
 						onclick={() => optionsDialogRef?.open()}
@@ -1382,17 +1380,17 @@
 						<button
 							class="mp-sel-icon-btn"
 							onclick={openIconPicker}
-							use:tooltip={'Change icon'}
+							use:tooltip={selectedIcon
+								? `Change icon (currently ${selectedIcon.label})`
+								: 'Change icon (currently label-only)'}
 							aria-label="Change icon"
 						>
 							{#if selectedIcon}
 								<svg viewBox={selectedIcon.viewBox} aria-hidden="true">
 									<g fill={selectedColor}>{@html selectedIcon.inner}</g>
 								</svg>
-								<span class="mp-sel-icon-label">{selectedIcon.label}</span>
 							{:else}
 								<span class="mp-sel-icon-none" aria-hidden="true">Aa</span>
-								<span class="mp-sel-icon-label">No icon</span>
 							{/if}
 						</button>
 						<!-- Pickr colour widget — the native macOS/Windows `<input
@@ -1553,12 +1551,6 @@
 							onclick={deleteSelected}
 							use:tooltip={'Delete this marker'}
 							aria-label="Delete marker">{@html iconTrashSvg}</button
-						>
-						<button
-							class="mp-btn"
-							onclick={clearSelection}
-							use:tooltip={'Deselect and close the editor'}
-							aria-label="Close editor">Done</button
 						>
 					{:else if placingMode}
 						<span class="mp-sel-hint mp-sel-hint-active"
@@ -2081,6 +2073,12 @@
 		z-index: 81;
 	}
 
+	/* On desktop the picker + action cluster sit on the same row,
+	   pushed apart by justify-content: space-between (the gear on the
+	   far right, matching the pre-mobile-tighten layout). On phone
+	   widths the picker's cluster wraps first because it's given
+	   `flex-basis: 100%` in the @media block below — long map names
+	   can't shove the zoom cluster off-screen anymore. */
 	:global(.mp-toolbar) {
 		display: flex;
 		justify-content: space-between;
@@ -2095,6 +2093,26 @@
 		display: flex;
 		gap: 8px;
 		align-items: center;
+		flex-wrap: wrap;
+	}
+	@media (max-width: 640px) {
+		/* Row 1: map picker only. Row 2: + Marker + zoom cluster + gear. */
+		:global(.mp-tools-map) {
+			flex: 1 1 100%;
+		}
+		:global(.mp-tools-actions) {
+			flex: 1 1 100%;
+		}
+		/* Selection toolbar: name on its own row, icon/color/angle/delete
+		   on row 2, entity link on row 3. Prevents the link picker from
+		   truncating the name field or vice-versa. */
+		:global(.mp-sel-name) {
+			flex: 1 1 100%;
+		}
+		:global(.mp-sel-entity-btn) {
+			flex: 1 1 100%;
+			max-width: none;
+		}
 	}
 	:global(.mp-btn) {
 		font-family: var(--font-ui);
@@ -2426,16 +2444,13 @@
 	:global(.mp-sel-icon-btn) {
 		display: inline-flex;
 		align-items: center;
-		gap: 6px;
-		padding: 3px 8px 3px 4px;
+		justify-content: center;
+		padding: 3px 6px;
 		background: var(--bg-control);
 		border: 1px solid var(--border-mid);
 		border-radius: 4px;
 		cursor: pointer;
 		color: var(--text);
-		font-family: var(--font-ui);
-		font-size: 0.72rem;
-		max-width: 180px;
 	}
 	:global(.mp-sel-icon-btn:hover) {
 		border-color: var(--text-accent);
@@ -2444,11 +2459,6 @@
 		width: 22px;
 		height: 22px;
 		flex-shrink: 0;
-	}
-	:global(.mp-sel-icon-label) {
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
 	}
 	/* Pickr colour widget. Pickr replaces the anchor `<div>` with its
 	   own `.pickr` chip (a small round swatch button) + a floating
@@ -2676,9 +2686,15 @@
 		overflow: auto;
 		overscroll-behavior: contain;
 		background: var(--bg-inset);
-		/* Native pinch on trackpads triggers ctrl+wheel — we handle that
-		   in onWheel. `touch-action: none` would break bare-wheel pan
-		   which the browser handles for free, so leave it default. */
+		/* On touch: allow single-finger pan (the browser scrolls this
+		   overflow: auto container natively — cheap + free), but reject
+		   two-finger pinch so our own onTouchStart/onTouchMove can
+		   claim it. Without `pan-x pan-y` iOS Safari commits pinch to
+		   its own page-zoom gesture before the touchstart listener's
+		   preventDefault() can veto, and the JS pinch-zoom never fires.
+		   Wheel events are unaffected by touch-action so trackpad
+		   ctrl+wheel + bare-wheel pan both still work. */
+		touch-action: pan-x pan-y;
 	}
 	:global(.mp-canvas svg) {
 		display: block;
