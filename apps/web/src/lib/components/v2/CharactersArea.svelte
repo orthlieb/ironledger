@@ -1007,7 +1007,16 @@
 				</Popover.Root>
 
 				<!-- Per-character add buttons — icon-only to save header width.
-					 Gem = asset; link = vow (same glyphs used inside the panel). -->
+					 Link = vow; gem = asset. Vow first (left) because it's the
+					 more common per-character action. Same glyphs used inline
+					 in the panel below. -->
+				<button
+					class="btn btn-icon icon-btn ca-hdr-icon-btn"
+					onclick={addVow}
+					use:tooltip={'Add Vow'}
+					aria-label="Add Vow"
+					><span class="ca-hdr-icon-plus" aria-hidden="true">+</span>{@html linkSvg}</button
+				>
 				<button
 					class="btn btn-icon icon-btn ca-hdr-icon-btn"
 					onclick={() => {
@@ -1017,13 +1026,6 @@
 					use:tooltip={'Add Asset'}
 					aria-label="Add Asset"
 					><span class="ca-hdr-icon-plus" aria-hidden="true">+</span>{@html gemSvg}</button
-				>
-				<button
-					class="btn btn-icon icon-btn ca-hdr-icon-btn"
-					onclick={addVow}
-					use:tooltip={'Add Vow'}
-					aria-label="Add Vow"
-					><span class="ca-hdr-icon-plus" aria-hidden="true">+</span>{@html linkSvg}</button
 				>
 
 				<!-- Character options (gear) — opens CharacterOptionsDialog,
