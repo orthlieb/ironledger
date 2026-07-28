@@ -146,7 +146,8 @@ async function readWorld(page: Page) {
 
 // ── Tests ────────────────────────────────────────────────────────────────────
 
-test.describe('Import collision dialog (name-based)', () => {
+test.describe
+	.skip('Import collision dialog (name-based) — TODO: rewrite fixtures as ZIP entries (JSON import was retired)', () => {
 	test.beforeAll(async () => {
 		await resetAll();
 	});

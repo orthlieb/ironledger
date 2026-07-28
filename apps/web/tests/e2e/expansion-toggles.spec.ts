@@ -113,8 +113,8 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 
 	test('both expansions default to ON', async ({ page }) => {
 		await openSettings(page);
-		await expect(settingsToggleButton(page, 'Delve', 'On')).toHaveClass(/\bactive\b/);
-		await expect(settingsToggleButton(page, 'YRT', 'On')).toHaveClass(/\bactive\b/);
+		await expect(settingsToggleButton(page, 'Delve', 'On')).toHaveAttribute('data-state', 'on');
+		await expect(settingsToggleButton(page, 'YRT', 'On')).toHaveAttribute('data-state', 'on');
 	});
 
 	test('default: Delve moves appear in Moves dialog', async ({ page }) => {
@@ -283,8 +283,8 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		await waitForHome(page);
 
 		await openSettings(page);
-		await expect(settingsToggleButton(page, 'Delve', 'Off')).toHaveClass(/\bactive\b/);
-		await expect(settingsToggleButton(page, 'YRT', 'Off')).toHaveClass(/\bactive\b/);
+		await expect(settingsToggleButton(page, 'Delve', 'Off')).toHaveAttribute('data-state', 'on');
+		await expect(settingsToggleButton(page, 'YRT', 'Off')).toHaveAttribute('data-state', 'on');
 	});
 
 	// ── 6. Re-enable restores visibility ──────────────────────────────────────
