@@ -55,6 +55,7 @@
 	import iconZoomInSvg from '$icons/magnifying-glass-plus-solid-full.svg?raw';
 	import iconZoomOutSvg from '$icons/magnifying-glass-minus-solid-full.svg?raw';
 	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
+	import iconAngleSvg from '$icons/angle-solid-full.svg?raw';
 	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
 	import { Dialog, Popover, Command } from 'bits-ui';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
@@ -1386,8 +1387,23 @@
 							aria-label="Change icon"
 						>
 							{#if selectedIcon}
+								<!-- Same 2-device-pixel white halo the map markers use so
+						     a light icon colour still reads against dark
+						     `--bg-control`. `paint-order="stroke"` puts the halo
+						     behind the fill; `vector-effect="non-scaling-stroke"`
+						     pins the width to display pixels regardless of the
+						     icon's own viewBox scale. -->
 								<svg viewBox={selectedIcon.viewBox} aria-hidden="true">
-									<g fill={selectedColor}>{@html selectedIcon.inner}</g>
+									<g
+										fill={selectedColor}
+										stroke="#fff"
+										stroke-width="2"
+										stroke-linejoin="round"
+										paint-order="stroke"
+										vector-effect="non-scaling-stroke"
+									>
+										{@html selectedIcon.inner}
+									</g>
 								</svg>
 							{:else}
 								<span class="mp-sel-icon-none" aria-hidden="true">Aa</span>
@@ -1422,7 +1438,7 @@
 								class="mp-sel-angle-field"
 								use:tooltip={'Rotation in degrees (0 = up, clockwise)'}
 							>
-								<span class="mp-sel-angle-glyph" aria-hidden="true">∠</span>
+								<span class="mp-sel-angle-glyph" aria-hidden="true">{@html iconAngleSvg}</span>
 								<input
 									class="mp-sel-angle-input"
 									type="number"
@@ -2503,7 +2519,7 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		width: 22px;
+		width: 18px;
 		padding: 0;
 		border: none;
 		background: transparent;
@@ -2532,13 +2548,19 @@
 		color: var(--text-muted);
 	}
 	:global(.mp-sel-angle-glyph) {
-		font-weight: 700;
+		display: inline-flex;
+		align-items: center;
 		color: var(--text-dimmer);
 		line-height: 1;
 	}
+	:global(.mp-sel-angle-glyph svg) {
+		width: 12px;
+		height: 12px;
+		fill: currentColor;
+	}
 	:global(.mp-sel-angle-input) {
-		width: 2.8em;
-		padding: 3px 0 3px 4px;
+		width: 2.2em;
+		padding: 3px 0 3px 2px;
 		border: none;
 		background: transparent;
 		color: var(--text);
