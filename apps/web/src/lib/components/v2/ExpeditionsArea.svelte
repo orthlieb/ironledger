@@ -46,6 +46,7 @@
 	import FoePickerDialog from '$lib/components/FoePickerDialog.svelte';
 	import DenizenDialog from '$lib/components/DenizenDialog.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import Checkbox from '$lib/components/Checkbox.svelte';
 	import ExpeditionOptionsDialog from '$lib/components/ExpeditionOptionsDialog.svelte';
 	import MapDialog from '$lib/components/MapDialog.svelte';
 	import {
@@ -157,8 +158,10 @@
 	});
 	let newJourneyDifficulty = $state<VowDifficulty>('dangerous');
 	let newSiteDifficulty = $state<VowDifficulty>('dangerous');
-	let newSiteTheme = $state<string>('');
-	let newSiteDomain = $state<string>('');
+	// New Site dialog stays lean — name + difficulty + a checklist of
+	// what to randomize on Create. Theme/domain are edited on the sheet.
+	let newSiteRollTheme = $state(true);
+	let newSiteRollDomain = $state(true);
 	let newJourneyName = $state<string>('');
 	let newSiteName = $state<string>('');
 
@@ -469,20 +472,24 @@
 
 	function addSite() {
 		newSiteDifficulty = 'dangerous';
-		newSiteTheme = '';
-		newSiteDomain = '';
 		newSiteName = '';
 		newSiteDialogRef?.open();
 	}
 	async function confirmAddSite() {
+		const theme = newSiteRollTheme
+			? DELVE_THEMES[Math.floor(Math.random() * DELVE_THEMES.length)]
+			: '';
+		const domain = newSiteRollDomain
+			? DELVE_DOMAINS[Math.floor(Math.random() * DELVE_DOMAINS.length)]
+			: '';
 		const s: Site = {
 			id: crypto.randomUUID(),
 			type: 'site',
 			name: newSiteName.trim() || 'New Site',
 			objective: '',
 			notes: '',
-			theme: newSiteTheme as Site['theme'],
-			domain: newSiteDomain as Site['domain'],
+			theme: theme as Site['theme'],
+			domain: domain as Site['domain'],
 			difficulty: newSiteDifficulty,
 			ticks: 0,
 			denizens: Array(12).fill(''),
@@ -492,15 +499,6 @@
 		await addExpedition(s);
 		activeExpId = s.id;
 		activeTab = 'core';
-	}
-	/** Roll a random theme / domain for the New Site dialog — wired to
-	 *  the d6 buttons next to each dropdown (mirrors the Core-tab pattern
-	 *  and the Journey has no equivalent). */
-	function randomizeNewSiteTheme() {
-		newSiteTheme = DELVE_THEMES[Math.floor(Math.random() * DELVE_THEMES.length)];
-	}
-	function randomizeNewSiteDomain() {
-		newSiteDomain = DELVE_DOMAINS[Math.floor(Math.random() * DELVE_DOMAINS.length)];
 	}
 
 	async function confirmDeleteExp() {
@@ -1082,16 +1080,15 @@
 	</div>
 </ConfirmDialog>
 
-<!-- New Site dialog — name + difficulty + theme + domain up front.
-     Each of theme / domain has a d6 button that rolls a random value
-     from the delve catalogue (same pattern as the Core-tab combos).
-     Create stays disabled until name, theme, and domain are all set. -->
+<!-- New Site dialog — name + difficulty + an "Also randomize" checklist
+     for Theme / Domain. Create only requires a name; theme + domain are
+     rolled from the delve catalogue on commit when checked. -->
 <ConfirmDialog
 	bind:this={newSiteDialogRef}
 	title="New Site"
 	confirmLabel="Create"
 	confirmClass="btn-primary"
-	confirmDisabled={!newSiteName.trim() || !newSiteTheme || !newSiteDomain}
+	confirmDisabled={!newSiteName.trim()}
 	cancelLabel="Cancel"
 	accentColor={SITE_COLOR}
 	onconfirm={confirmAddSite}
@@ -1108,39 +1105,24 @@
 			bind:value={newSiteDifficulty}
 			options={DIFFICULTIES}
 		/>
-		<span class="ns-spacer" aria-hidden="true"></span>
+	</div>
 
-		<label class="ns-label" for="ns-theme">Theme</label>
-		<Select
-			id="ns-theme"
-			class="ea-ns-select"
-			bind:value={newSiteTheme}
-			placeholder="Select a theme…"
-			options={DELVE_THEMES.map((t) => ({ value: t, label: t }))}
-		/>
-		<button
-			class="btn btn-icon ea-dice-btn"
-			type="button"
-			onclick={randomizeNewSiteTheme}
-			use:tooltip={'Pick a random theme'}
-			aria-label="Random theme">{@html diceD6Svg}</button
+	<div class="nn-randomize">
+		<span class="nn-randomize-label">Also randomize</span>
+		<Checkbox
+			class="nn-check"
+			checked={newSiteRollTheme}
+			onCheckedChange={(v) => (newSiteRollTheme = !!v)}
 		>
-
-		<label class="ns-label" for="ns-domain">Domain</label>
-		<Select
-			id="ns-domain"
-			class="ea-ns-select"
-			bind:value={newSiteDomain}
-			placeholder="Select a domain…"
-			options={DELVE_DOMAINS.map((d) => ({ value: d, label: d }))}
-		/>
-		<button
-			class="btn btn-icon ea-dice-btn"
-			type="button"
-			onclick={randomizeNewSiteDomain}
-			use:tooltip={'Pick a random domain'}
-			aria-label="Random domain">{@html diceD6Svg}</button
+			<span class="nn-check-label">Theme</span>
+		</Checkbox>
+		<Checkbox
+			class="nn-check"
+			checked={newSiteRollDomain}
+			onCheckedChange={(v) => (newSiteRollDomain = !!v)}
 		>
+			<span class="nn-check-label">Domain</span>
+		</Checkbox>
 	</div>
 </ConfirmDialog>
 
