@@ -66,7 +66,7 @@
 	import locationSvg from '$icons/location-dot-solid-full.svg?raw';
 	import iconMapSvg from '$icons/treasure-map.svg?raw';
 	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
-	import { RadioGroup, Tabs, Popover, Command } from 'bits-ui';
+	import { Tabs, Popover, Command } from 'bits-ui';
 	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
 	const journeyPlaceholderSvg = ENTITY_KIND_META.journey.icon;
 	const sitePlaceholderSvg = ENTITY_KIND_META.site.icon;
@@ -1056,7 +1056,7 @@
      FoesArea.handleFoeSelected. -->
 <DenizenDialog bind:this={denizenDialogRef} onSelect={handleDenizenSelected} />
 
-<!-- New Journey dialog — V1 pattern: pick difficulty, then create. -->
+<!-- New Journey dialog — name + difficulty (defaults to Dangerous). -->
 <ConfirmDialog
 	bind:this={newJourneyDialogRef}
 	title="New Journey"
@@ -1071,22 +1071,15 @@
 		<span class="co-field-label">Journey name</span>
 		<input class="co-input" type="text" bind:value={newJourneyName} placeholder="New Journey" />
 	</label>
-	<RadioGroup.Root
-		class="v2-radio-group"
-		value={newJourneyDifficulty}
-		onValueChange={(v) => (newJourneyDifficulty = v as VowDifficulty)}
-		aria-label="Difficulty"
-	>
-		<span class="v2-radio-legend">Difficulty</span>
-		{#each DIFFICULTIES as opt}
-			<label class="v2-radio-label">
-				<RadioGroup.Item value={opt.value} class="v2-radio-btn">
-					<span class="v2-radio-dot"></span>
-				</RadioGroup.Item>
-				{opt.label}
-			</label>
-		{/each}
-	</RadioGroup.Root>
+	<div class="ns-grid">
+		<label class="ns-label" for="nj-difficulty">Difficulty</label>
+		<Select
+			id="nj-difficulty"
+			class="ea-ns-select"
+			bind:value={newJourneyDifficulty}
+			options={DIFFICULTIES}
+		/>
+	</div>
 </ConfirmDialog>
 
 <!-- New Site dialog — name + difficulty + theme + domain up front.
