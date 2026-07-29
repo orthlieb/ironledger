@@ -37,7 +37,6 @@
 	import { loadDelveData, buildCombinedTable } from '$lib/delveStore.svelte.js';
 	import { rollFromRangeTable } from '$lib/oracleStore.svelte.js';
 	import { appendLog } from '$lib/log.svelte.js';
-	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
 	import { addEncounter } from '$lib/encounterStore.svelte.js';
 	import { onMount } from 'svelte';
 
@@ -540,12 +539,6 @@
 				'features',
 			);
 			const result = rollFromRangeTable(table);
-			const tensV = Math.floor((result.roll % 100) / 10) || 10;
-			const onesV = result.roll % 10 || 10;
-			await animateDice([
-				{ sides: 10, value: tensV, color: DIE_BLACK },
-				{ sides: 10, value: onesV, color: DIE_WHITE },
-			]);
 			const valueStr = typeof result.value === 'string' ? result.value : String(result.value);
 			let resultHtml = `<div>Result: <strong>${valueStr}</strong>`;
 			if (result.roll === 99)
@@ -576,12 +569,6 @@
 				'dangers',
 			);
 			const result = rollFromRangeTable(table);
-			const tensV = Math.floor((result.roll % 100) / 10) || 10;
-			const onesV = result.roll % 10 || 10;
-			await animateDice([
-				{ sides: 10, value: tensV, color: DIE_BLACK },
-				{ sides: 10, value: onesV, color: DIE_WHITE },
-			]);
 			const valueStr = typeof result.value === 'string' ? result.value : String(result.value);
 			let resultHtml = `<div>Result: <strong>${valueStr}</strong>`;
 			if (result.roll === 99)

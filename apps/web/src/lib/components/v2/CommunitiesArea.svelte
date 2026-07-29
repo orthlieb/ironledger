@@ -44,7 +44,6 @@
 		rollFromRangeTable,
 	} from '$lib/oracleStore.svelte.js';
 	import { appendLog } from '$lib/log.svelte.js';
-	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
@@ -340,12 +339,6 @@
 			await loadOracles();
 			const result = rollOracle('settlementTrouble', getOracles());
 			if (!result.value) return;
-			const tensV = Math.floor((result.roll % 100) / 10) || 10;
-			const onesV = result.roll % 10 || 10;
-			await animateDice([
-				{ sides: 10, value: tensV, color: DIE_BLACK },
-				{ sides: 10, value: onesV, color: DIE_WHITE },
-			]);
 			appendLog(
 				result.title,
 				`<div class="roll-line">Roll: d100 → ${result.roll}</div>` +
