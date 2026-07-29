@@ -1033,7 +1033,7 @@
 	<ConfirmDialog
 		bind:this={deleteDialogRef}
 		title={activeExp.type === 'site' ? 'Delete Site' : 'Delete Journey'}
-		confirmLabel="Delete"
+		confirmLabel="DELETE"
 		onconfirm={confirmDeleteExp}
 	>
 		<p>

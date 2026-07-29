@@ -1534,7 +1534,7 @@
 	<ConfirmDialog
 		bind:this={removeAssetDialogRef}
 		title="Delete Asset"
-		confirmLabel="Delete Asset"
+		confirmLabel="DELETE"
 		onconfirm={confirmRemoveAsset}
 		oncancel={() => (pendingRemoveAssetId = null)}
 		ondismiss={() => (pendingRemoveAssetId = null)}
