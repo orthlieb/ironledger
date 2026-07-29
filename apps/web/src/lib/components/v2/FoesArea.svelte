@@ -35,9 +35,9 @@
 
 	import ProgressTrackPanel from '$lib/components/ProgressTrackPanel.svelte';
 	import FoePickerDialog from '$lib/components/FoePickerDialog.svelte';
-	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import FoeOptionsDialog from '$lib/components/FoeOptionsDialog.svelte';
 	import Lightbox from '$lib/components/Lightbox.svelte';
-	import trashSvg from '$icons/trash-solid-full.svg?raw';
+	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
 	import swordSvg from '$icons/sword-solid-full.svg?raw';
 	import skullSvg from '$icons/skull-crossbones-solid-full.svg?raw';
 	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
@@ -58,7 +58,7 @@
 	let activeFoeId = $state<string | null>(null);
 	let activeTab = $state<FoeTab>('core');
 	let foePickerRef = $state<{ open(): Promise<void>; close(): void } | null>(null);
-	let deleteDialogRef = $state<{ open(): void; close(): void } | null>(null);
+	let foeOptionsRef = $state<{ open(): void; close(): void } | null>(null);
 	let imgVisible = $state(true);
 	let lightboxOpen = $state(false);
 	// Combobox open state — bits-ui Popover binds it so we can close the
@@ -340,10 +340,10 @@
 					]}
 				/>
 				<button
-					class="btn btn-icon icon-btn btn-trash fa-hdr-delete-btn"
-					onclick={() => deleteDialogRef?.open()}
-					use:tooltip={'Delete foe'}
-					aria-label="Delete foe">{@html trashSvg}</button
+					class="btn btn-icon icon-btn fa-hdr-settings-btn"
+					onclick={() => foeOptionsRef?.open()}
+					use:tooltip={'Foe options'}
+					aria-label="Foe options">{@html iconGearSvg}</button
 				>
 			{/if}
 		</div>
@@ -557,14 +557,13 @@
 <FoePickerDialog bind:this={foePickerRef} onSelect={handleFoeSelected} />
 
 {#if activeEnc}
-	<ConfirmDialog
-		bind:this={deleteDialogRef}
-		title="Delete Foe"
-		confirmLabel="Delete"
-		onconfirm={confirmDeleteFoe}
-	>
-		<p>Permanently delete <strong>{displayName}</strong>? This cannot be undone.</p>
-	</ConfirmDialog>
+	<FoeOptionsDialog
+		bind:this={foeOptionsRef}
+		name={activeEnc.customName ?? ''}
+		defName={activeDef?.name ?? ''}
+		oncommit={(next) => update({ customName: next })}
+		ondelete={confirmDeleteFoe}
+	/>
 {/if}
 
 <style>
@@ -585,6 +584,14 @@
 		border-bottom: 1px solid var(--border);
 		background: var(--bg-control);
 		flex-shrink: 0;
+		/* Named container so the title label hides when the panel narrows. */
+		container-type: inline-size;
+		container-name: area-header;
+	}
+	@container area-header (max-width: 320px) {
+		.fa-title {
+			display: none;
+		}
 	}
 	.fa-title-icon {
 		display: inline-flex;
@@ -683,9 +690,18 @@
 		flex: 1 1 auto;
 		min-width: 0;
 	}
-	/* Header delete button — visual comes from .btn-trash in app.css. */
-	.fa-hdr-delete-btn {
+	/* Header gear button — sizes the svg to match its siblings across
+	   Chars/Exp/Connections. */
+	:global(.fa-hdr-settings-btn) {
 		flex-shrink: 0;
+	}
+	:global(.fa-hdr-settings-btn svg) {
+		width: 13px;
+		height: 13px;
+		fill: currentColor;
+	}
+	:global(.fa-hdr-settings-btn svg path) {
+		fill: currentColor;
 	}
 	/* Header contains a SegmentedRadio that opts into `labels="auto"`;
 	   the responsive collapse depends on an inline-size container ancestor. */

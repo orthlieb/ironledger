@@ -1222,6 +1222,14 @@
 		border-bottom: 1px solid var(--border);
 		background: var(--bg-control);
 		flex-shrink: 0;
+		/* Named container so the title label hides when the panel narrows. */
+		container-type: inline-size;
+		container-name: area-header;
+	}
+	@container area-header (max-width: 320px) {
+		.cmt-title {
+			display: none;
+		}
 	}
 	.cm-title-icon {
 		display: inline-flex;
