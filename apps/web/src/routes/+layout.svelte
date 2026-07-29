@@ -19,6 +19,7 @@
 	import type { PreconditionContext } from '$lib/preconditions.js';
 	import swordSvg from '$icons/sharp-axe.svg?raw';
 	import iconMoves from '$icons/person-running-solid.svg?raw';
+	import iconMap from '$icons/treasure-map.svg?raw';
 	import iconOracles from '$icons/crystal-ball.svg?raw';
 	import iconDice from '$icons/dice-d10-light.svg?raw';
 	import iconNotes from '$icons/note-sticky-solid.svg?raw';
@@ -225,6 +226,18 @@
 						use:tooltip={'Browse and roll moves'}
 					>
 						<span class="act-icon">{@html iconMoves}</span><span class="act-label">Move</span>
+					</button>
+					<!-- Campaign map — opens the last-active map in a modal. Sits
+					     next to Move because "look at the map" is an at-the-table
+					     action, not a per-panel setting. Dispatches a global event
+					     rather than importing MapDialog here; ExpeditionsArea
+					     already owns the ref and listens for the event. -->
+					<button
+						class="btn btn-primary act-btn"
+						onclick={() => document.dispatchEvent(new CustomEvent('ironledger:open-campaign-map'))}
+						use:tooltip={'Open the campaign map'}
+					>
+						<span class="act-icon">{@html iconMap}</span><span class="act-label">Map</span>
 					</button>
 					<button
 						class="btn btn-primary act-btn"

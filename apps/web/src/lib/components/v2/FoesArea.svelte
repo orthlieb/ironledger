@@ -252,83 +252,77 @@
 			<span class="fa-title">{headingText('Foes')}</span>
 		{/if}
 		<div class="fa-header-actions">
-			{#if encounters.length === 0}
-				<!-- Empty state: fall back to a plain "+ Foe" button so the
-					 empty screen has something to click. The combobox needs
-					 at least one existing encounter to make sense. -->
-				<button class="btn fa-hdr-btn" onclick={() => foePickerRef?.open()} use:tooltip={'Add foe'}
-					>+ Foe</button
-				>
-			{:else if activeEnc}
-				<!-- Foe switcher (Popover + Command). Same class prefix as
+			<!-- Always show the switcher — even when the list is empty. Trigger
+			     reads the active foe's name; when empty a muted placeholder
+			     reads "— No foes yet —", and the popover surfaces
+			     "+ New foe…" as the only action. -->
+			<!-- Foe switcher (Popover + Command). Same class prefix as
 					 MapDialog's map switcher so the two comboboxes look
 					 identical (see docs/ui-components.md). -->
-				<Popover.Root bind:open={foePickerOpen}>
-					<Popover.Trigger class="mp-combobox fa-hdr-combobox" aria-label="Switch or add foe">
-						<span class="mp-combobox-value">{displayName}</span>
-						<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
-					</Popover.Trigger>
-					<Popover.Portal>
-						<Popover.Content
-							class="mp-cmd-popover"
-							sideOffset={4}
-							align="start"
-							collisionPadding={8}
-						>
-							<Command.Root class="mp-cmd">
-								<div class="mp-cmd-search-row">
-									<span class="mp-cmd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
-									<Command.Input class="mp-cmd-search" placeholder="Search foes…" autofocus />
-								</div>
-								<Command.List class="mp-cmd-list">
-									<Command.Empty class="mp-cmd-empty">No matching foes.</Command.Empty>
-									{#each encounters as enc (enc.id)}
-										{@const def = findFoe(enc.foeId)}
-										{@const n = enc.customName?.trim() || def?.name || enc.foeId}
-										<Command.Item
-											class="mp-cmd-item"
-											value={n}
-											onSelect={() => {
-												selectFoe(enc.id);
-												foePickerOpen = false;
-											}}
-										>
-											<span class="mp-cmd-check" aria-hidden="true">
-												{#if enc.id === activeFoeId}
-													<svg
-														viewBox="0 0 20 20"
-														fill="none"
-														stroke="currentColor"
-														stroke-width="2.5"
-														><polyline
-															points="4 11 8 15 16 6"
-															stroke-linecap="round"
-															stroke-linejoin="round"
-														></polyline></svg
-													>
-												{/if}
-											</span>
-											<span class="mp-cmd-item-name">{n}</span>
-										</Command.Item>
-									{/each}
-									<Command.Separator class="mp-cmd-sep" />
+			<Popover.Root bind:open={foePickerOpen}>
+				<Popover.Trigger class="mp-combobox fa-hdr-combobox" aria-label="Switch or add foe">
+					{#if activeEnc}<span class="mp-combobox-value">{displayName}</span>{:else}<span
+							class="mp-combobox-value mp-combobox-value--placeholder">— No foes yet —</span
+						>{/if}
+					<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
+				</Popover.Trigger>
+				<Popover.Portal>
+					<Popover.Content class="mp-cmd-popover" sideOffset={4} align="start" collisionPadding={8}>
+						<Command.Root class="mp-cmd">
+							<div class="mp-cmd-search-row">
+								<span class="mp-cmd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
+								<Command.Input class="mp-cmd-search" placeholder="Search foes…" autofocus />
+							</div>
+							<Command.List class="mp-cmd-list">
+								<Command.Empty class="mp-cmd-empty">No matching foes.</Command.Empty>
+								{#each encounters as enc (enc.id)}
+									{@const def = findFoe(enc.foeId)}
+									{@const n = enc.customName?.trim() || def?.name || enc.foeId}
 									<Command.Item
-										class="mp-cmd-item mp-cmd-item--action"
-										value="+ New foe"
+										class="mp-cmd-item"
+										value={n}
 										onSelect={() => {
+											selectFoe(enc.id);
 											foePickerOpen = false;
-											void foePickerRef?.open();
 										}}
 									>
-										<span class="mp-cmd-check" aria-hidden="true"></span>
-										<span class="mp-cmd-item-name">+ New foe…</span>
+										<span class="mp-cmd-check" aria-hidden="true">
+											{#if enc.id === activeFoeId}
+												<svg
+													viewBox="0 0 20 20"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="2.5"
+													><polyline
+														points="4 11 8 15 16 6"
+														stroke-linecap="round"
+														stroke-linejoin="round"
+													></polyline></svg
+												>
+											{/if}
+										</span>
+										<span class="mp-cmd-item-name">{n}</span>
 									</Command.Item>
-								</Command.List>
-							</Command.Root>
-						</Popover.Content>
-					</Popover.Portal>
-				</Popover.Root>
+								{/each}
+								<Command.Separator class="mp-cmd-sep" />
+								<Command.Item
+									class="mp-cmd-item mp-cmd-item--action"
+									value="+ New foe"
+									onSelect={() => {
+										foePickerOpen = false;
+										void foePickerRef?.open();
+									}}
+								>
+									<span class="mp-cmd-check" aria-hidden="true"></span>
+									<span class="mp-cmd-item-name">+ New foe…</span>
+								</Command.Item>
+							</Command.List>
+						</Command.Root>
+					</Popover.Content>
+				</Popover.Portal>
+			</Popover.Root>
 
+			{#if activeEnc}
 				<SegmentedRadio
 					ariaLabel="Foe status"
 					labels="auto"
@@ -361,7 +355,8 @@
 		<div class="fa-empty">
 			<span class="fa-empty-icon" aria-hidden="true">{@html foesIconSvg}</span>
 			<p class="fa-empty-text">
-				Nothing currently wants you dead. Disappointing. Click <strong>+ FOE</strong> to dance with fate.
+				Nothing currently wants you dead. Disappointing. Pick
+				<strong>+ New foe…</strong> from the switcher above to dance with fate.
 			</p>
 		</div>
 	{:else}
@@ -618,11 +613,6 @@
 		gap: 6px;
 		flex: 1;
 		justify-content: flex-end;
-	}
-	.fa-hdr-btn {
-		font-size: 0.7rem;
-		padding: 3px 9px;
-		min-width: unset;
 	}
 
 	.fa-loading,
