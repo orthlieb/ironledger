@@ -662,6 +662,49 @@
 				</Popover.Portal>
 			</Popover.Root>
 			{#if activeEntry}
+				{#if activeEntry.kind === 'npc'}
+					<SegmentedRadio
+						ariaLabel="NPC status"
+						labels="auto"
+						value={(activeEntry.data as Npc).deceased ? 'deceased' : 'alive'}
+						onchange={(v) => updateNpc({ deceased: v === 'deceased' })}
+						options={[
+							{
+								value: 'alive',
+								icon: heartPulseSvg,
+								text: 'Alive',
+								label: 'Mark alive',
+								tone: 'go',
+							},
+							{
+								value: 'deceased',
+								icon: skullSvg,
+								text: 'Deceased',
+								label: 'Mark deceased',
+								tone: 'stop',
+							},
+						]}
+					/>
+				{/if}
+				{#if activeIsMapOwner}
+					{#if activeEntryMapEmpty}
+						<label
+							class="btn cm-stage-map-btn"
+							use:tooltip={`Add a background image to this ${kindLabelSingular(activeEntry.kind).toLowerCase()}’s map`}
+							aria-label="Add map"
+						>
+							+ Map
+							<input type="file" accept="image/*" hidden onchange={handleAddMapWithFile} />
+						</label>
+					{:else}
+						<button
+							class="btn cm-stage-map-btn"
+							onclick={openOwnedMap}
+							use:tooltip={`Open the map for this ${kindLabelSingular(activeEntry.kind).toLowerCase()}`}
+							aria-label="Open map">Map</button
+						>
+					{/if}
+				{/if}
 				<button
 					class="btn btn-icon icon-btn cm-hdr-settings-btn"
 					onclick={() => entryOptionsRef?.open()}
@@ -686,58 +729,7 @@
 	{:else}
 		<div class="cm-body">
 			{#if activeEntry}
-				<div class="cm-stage-header" style="--cm-nature: {activeColor}">
-					<span class="cm-stage-icon" aria-hidden="true">{@html iconFor(activeEntry.kind)}</span>
-					{#if activeEntry.kind === 'npc'}
-						<SegmentedRadio
-							ariaLabel="NPC status"
-							labels="auto"
-							value={(activeEntry.data as Npc).deceased ? 'deceased' : 'alive'}
-							onchange={(v) => updateNpc({ deceased: v === 'deceased' })}
-							options={[
-								{
-									value: 'alive',
-									icon: heartPulseSvg,
-									text: 'Alive',
-									label: 'Mark alive',
-									tone: 'go',
-								},
-								{
-									value: 'deceased',
-									icon: skullSvg,
-									text: 'Deceased',
-									label: 'Mark deceased',
-									tone: 'stop',
-								},
-							]}
-						/>
-					{/if}
-					{#if activeIsMapOwner}
-						{#if activeEntryMapEmpty}
-							<!-- <label> around a hidden <input type="file"> — iOS
-							     Safari refuses `input.click()` calls after any
-							     `await`; the picker must open from the tap's
-							     native user gesture. -->
-							<label
-								class="btn cm-stage-map-btn"
-								use:tooltip={`Add a background image to this ${kindLabelSingular(activeEntry.kind).toLowerCase()}’s map`}
-								aria-label="Add map"
-							>
-								+ Map
-								<input type="file" accept="image/*" hidden onchange={handleAddMapWithFile} />
-							</label>
-						{:else}
-							<button
-								class="btn cm-stage-map-btn"
-								onclick={openOwnedMap}
-								use:tooltip={`Open the map for this ${kindLabelSingular(activeEntry.kind).toLowerCase()}`}
-								aria-label="Open map">Map</button
-							>
-						{/if}
-					{/if}
-				</div>
-
-				<div class="cm-stage">
+				<div class="cm-stage" style="--cm-nature: {activeColor}">
 					<Tabs.Root
 						value={activeTab}
 						onValueChange={(v) => (activeTab = v as CmTab)}
@@ -1265,6 +1257,8 @@
 		gap: 6px;
 		flex: 1;
 		justify-content: flex-end;
+		/* container for SegmentedRadio's responsive (labels="auto") collapse */
+		container-type: inline-size;
 	}
 
 	.cm-loading,
@@ -1300,25 +1294,19 @@
 	}
 
 	.cm-body {
-		display: grid;
-		grid-template-columns: clamp(180px, 32%, 230px) minmax(0, 1fr);
-		grid-template-rows: auto 1fr;
+		display: flex;
+		flex-direction: column;
 		flex: 1;
 		min-height: 0;
 	}
-	.cm-stage-header {
-		grid-column: 2;
-		grid-row: 1;
-	}
 	.cm-stage {
-		grid-column: 2;
-		grid-row: 2;
-		padding: 0 12px 10px 0;
+		padding: 0 12px 10px 12px;
 		min-height: 0;
 		min-width: 0;
 		overflow: auto;
 		display: flex;
 		flex-direction: column;
+		flex: 1;
 	}
 
 	/* Rail tools — search, type filter, sort. */
@@ -1334,35 +1322,6 @@
 	   "← Back" style). This rule only handles its conditional visibility:
 	   hidden except in the mobile single-pane drill-down (viewport ≤600px
 	   while a detail entry is open; see @media). */
-
-	/* Stage banner — colored band keyed to entry type. */
-	.cm-stage-header {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-		padding: 5px 10px;
-		background: var(--bg-control);
-		/* container for SegmentedRadio's responsive (labels="auto") collapse */
-		container-type: inline-size;
-		border: none;
-		border-left: 3px solid var(--cm-nature, var(--text-muted));
-		border-bottom: 1px solid var(--border);
-	}
-	.cm-stage-icon {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 18px;
-		height: 18px;
-		flex-shrink: 0;
-		color: var(--cm-nature, var(--text-muted));
-	}
-	.cm-stage-icon :global(svg) {
-		width: 100%;
-		height: 100%;
-		fill: currentColor;
-	}
-	/* Delete: visual comes from .btn-trash in app.css; only positioning here. */
 
 	:global(.cm-tabs) {
 		display: flex;
@@ -1407,6 +1366,7 @@
 		min-height: 200px;
 		background: var(--bg-inset);
 		border: none;
+		border-left: 3px solid var(--cm-nature, var(--text-muted));
 		border-radius: 0;
 		padding: 7px;
 		overflow: auto;
