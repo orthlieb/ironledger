@@ -716,7 +716,7 @@
 			{#if activeExp}
 				<SegmentedRadio
 					ariaLabel="Expedition status"
-					labels="auto"
+					labels="never"
 					value={activeExp.complete ? 'complete' : 'active'}
 					onchange={(v) => updateExp({ complete: v === 'complete' })}
 					options={[

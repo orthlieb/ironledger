@@ -659,7 +659,7 @@
 				{#if activeEntry.kind === 'npc'}
 					<SegmentedRadio
 						ariaLabel="NPC status"
-						labels="auto"
+						labels="never"
 						value={(activeEntry.data as Npc).deceased ? 'deceased' : 'alive'}
 						onchange={(v) => updateNpc({ deceased: v === 'deceased' })}
 						options={[

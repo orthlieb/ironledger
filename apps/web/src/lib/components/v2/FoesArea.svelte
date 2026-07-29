@@ -337,7 +337,7 @@
 			{#if activeEnc}
 				<SegmentedRadio
 					ariaLabel="Foe status"
-					labels="auto"
+					labels="never"
 					value={activeEnc.vanquished ? 'vanquished' : 'active'}
 					onchange={(v) => update({ vanquished: v === 'vanquished' })}
 					options={[
