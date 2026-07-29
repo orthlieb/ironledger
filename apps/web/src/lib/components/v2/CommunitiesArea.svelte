@@ -35,7 +35,7 @@
 	import MarkdownNotes from '$lib/components/MarkdownNotes.svelte';
 	import PortraitUploader from '$lib/components/PortraitUploader.svelte';
 	import { isYrtEnabled } from '$lib/expansionStore.svelte.js';
-	import { Popover, Command, RadioGroup, Tabs } from 'bits-ui';
+	import { Popover, Command, Tabs } from 'bits-ui';
 	import {
 		loadOracles,
 		getOracles,
@@ -47,6 +47,7 @@
 	import { tooltip } from '$lib/actions/tooltip.js';
 
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import Checkbox from '$lib/components/Checkbox.svelte';
 	import ConnectionOptionsDialog from '$lib/components/ConnectionOptionsDialog.svelte';
 	import MapDialog from '$lib/components/MapDialog.svelte';
 	import {
@@ -125,22 +126,55 @@
 		return () => document.removeEventListener('ironledger:focus-entity', onFocus);
 	});
 
-	// New-community dialog state
+	// New-community dialog state. Region + Location are oracle pickers
+	// (which oracle to roll from); the checkboxes control which of the
+	// "flavour" fields — Location / Description / Trouble — actually
+	// roll on Create. Region always rolls from its selected oracle.
 	let newCommunityDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let _pendingCommunity: Community | null = null;
 	let _pendingCommunityRegionType = $state<'ironlands' | 'yrt'>('ironlands');
 	let _pendingCommunityLocationType = $state<'location' | 'coastalWatersLocation'>('location');
+	let newCommunityRollLocation = $state(true);
+	let newCommunityRollDescription = $state(true);
+	let newCommunityRollTrouble = $state(true);
 
-	// New-NPC dialog state
+	// New-NPC dialog state — the dialog stays minimal: just a Name + Oracle
+	// picker + a checklist of what to randomize on Create. The user lands on
+	// the sheet and edits every other field there, so we don't recreate the
+	// edit surface up front.
 	let newNpcDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let _pendingNpc: Npc | null = null;
 	let _pendingNpcNameOracle = $state<string>('namesIronlander');
+	let newNpcRollRole = $state(true);
+	let newNpcRollGoal = $state(true);
+	let newNpcRollDescriptor = $state(true);
+	/** YRT: rolls the compound `yrtTouched` oracle (class + animal aspect +
+	 *  N features) and prepends the result into the NPC's background/notes.
+	 *  No schema change — everything lives in the notes prose. */
+	let newNpcRollTouched = $state(false);
+	const NPC_NAME_ORACLES: { value: string; label: string }[] = [
+		{ value: 'namesIronlander', label: 'Ironlander' },
+		{ value: 'namesIronlander2', label: 'Ironlander 2' },
+		{ value: 'namesElf', label: 'Elf' },
+		{ value: 'namesOther_giants', label: 'Giants' },
+		{ value: 'namesOther_varou', label: 'Varou' },
+		{ value: 'namesOther_trolls', label: 'Trolls' },
+	];
 
-	// New-Place dialog state
+	// New-Place dialog state — same shape as Community. Location Oracle
+	// gains the YRT "City / Town Location" option (in-settlement POIs
+	// like Marketplace / Docks / Warehouse) when the expansion is on.
+	// Trouble reuses the settlement-trouble oracle — off by default
+	// since it's a settlement-flavoured table; opt in when it fits.
 	let newPlaceDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let _pendingPlace: Place | null = null;
 	let _pendingPlaceRegionType = $state<'ironlands' | 'yrt'>('ironlands');
-	let _pendingPlaceLocationType = $state<'location' | 'coastalWatersLocation'>('location');
+	let _pendingPlaceLocationType = $state<
+		'location' | 'coastalWatersLocation' | 'yrtCityTownLocation'
+	>('location');
+	let newPlaceRollLocation = $state(true);
+	let newPlaceRollDescription = $state(true);
+	let newPlaceRollTrouble = $state(false);
 
 	// Combobox switcher + gear-options refs (mirrors Chars/Foes/Exp).
 	let entryPickerOpen = $state(false);
@@ -433,23 +467,30 @@
 		newCommunityDialogRef?.open();
 	}
 
-	async function _commitCommunity(random: boolean) {
+	/** Roll a settlement name off one of the two name oracles (50/50) and
+	 *  drop it into the New Community draft — wired to the name d6. */
+	function rollNewCommunityName() {
+		const oracles = getOracles();
+		const oracle = Math.random() < 0.5 ? 'settlementName' : 'settlementNameQuick';
+		const v = rollOracle(oracle, oracles).value;
+		if (v) newCommunityName = v;
+	}
+
+	async function _commitCommunity() {
 		if (!_pendingCommunity) return;
 		const c = _pendingCommunity;
 		_pendingCommunity = null;
-		if (random) {
-			const oracles = getOracles();
-			const nameOracle = Math.random() < 0.5 ? 'settlementName' : 'settlementNameQuick';
-			const nameVal = rollOracle(nameOracle, oracles).value;
-			if (nameVal) c.name = nameVal;
-			c.region =
-				_pendingCommunityRegionType === 'yrt'
-					? rollOracle('yrtRegion', oracles).value
-					: rollOracle('region', oracles).value;
-			c.location = rollOracle(_pendingCommunityLocationType, oracles).value;
-			c.locationDescription = rollOracle('locationDescriptor', oracles).value;
-			c.trouble = rollOracle('settlementTrouble', oracles).value;
-		}
+		const oracles = getOracles();
+		// Region always rolls from the selected Region Oracle.
+		c.region =
+			_pendingCommunityRegionType === 'yrt'
+				? rollOracle('yrtRegion', oracles).value
+				: rollOracle('region', oracles).value;
+		if (newCommunityRollLocation)
+			c.location = rollOracle(_pendingCommunityLocationType, oracles).value ?? '';
+		if (newCommunityRollDescription)
+			c.locationDescription = rollOracle('locationDescriptor', oracles).value ?? '';
+		if (newCommunityRollTrouble) c.trouble = rollOracle('settlementTrouble', oracles).value ?? '';
 		if (newCommunityName.trim()) c.name = newCommunityName.trim();
 		await addCommunity(c);
 		activeEntryId = c.id;
@@ -469,33 +510,63 @@
 			createdAt: Date.now(),
 		};
 		newNpcName = '';
+		newNpcRollTouched = false; // opt-in; the others stay checked from last open
 		await loadOracles();
 		newNpcDialogRef?.open();
 	}
 
-	async function _commitNpc(random: boolean) {
+	/** Roll a name off the selected oracle and drop it into the form. The
+	 *  `namesOther_*` variants share one oracle whose value is a per-lineage
+	 *  bag; the suffix selects which entry to lift. */
+	function rollNpcNameField() {
+		if (_pendingNpcNameOracle.startsWith('namesOther_')) {
+			const o = findOracle('namesOther');
+			if (!o) return;
+			const r = rollFromRangeTable(o.data);
+			const v = r.value as { giants: string; varou: string; trolls: string };
+			const sub = _pendingNpcNameOracle.split('_')[1] as keyof typeof v;
+			newNpcName = v[sub] ?? '';
+			return;
+		}
+		const o = findOracle(_pendingNpcNameOracle);
+		if (o) newNpcName = (rollFromRangeTable(o.data).value as string) ?? '';
+		else newNpcName = rollOracle(_pendingNpcNameOracle, getOracles()).value ?? '';
+	}
+
+	/** Convert the log-flavoured html the compound oracles emit into a
+	 *  markdown paragraph fit for the NPC's notes field. Drops the
+	 *  `<div class="roll-line">…</div>` d100 chatter, keeps the labelled
+	 *  lines, and turns `<li>` into `- ` bullets. */
+	function htmlToNotesMd(html: string): string {
+		return html
+			.replace(/<div class="roll-line">[\s\S]*?<\/div>/g, '')
+			.replace(/<strong>(.*?)<\/strong>/g, '**$1**')
+			.replace(/<em>(.*?)<\/em>/g, '_$1_')
+			.replace(/<li>(.*?)<\/li>/g, '- $1\n')
+			.replace(/<\/div>|<br\s*\/?>/g, '\n')
+			.replace(/<\/?(?:div|ul|ol|p)[^>]*>/g, '')
+			.replace(/\n{3,}/g, '\n\n')
+			.split('\n')
+			.map((s) => s.trimEnd())
+			.filter((s, i, a) => !(s === '' && a[i - 1] === ''))
+			.join('\n')
+			.trim();
+	}
+
+	async function _commitNpc() {
 		if (!_pendingNpc) return;
 		const n = _pendingNpc;
 		_pendingNpc = null;
-		if (random) {
-			const oracles = getOracles();
-			n.role = rollOracle('characterRole', oracles).value;
-			n.goal = rollOracle('characterGoal', oracles).value;
-			n.descriptor = rollOracle('characterDescriptor', oracles).value;
-			if (_pendingNpcNameOracle.startsWith('namesOther_')) {
-				const o = findOracle('namesOther');
-				if (o) {
-					const r = rollFromRangeTable(o.data);
-					const v = r.value as { giants: string; varou: string; trolls: string };
-					const sub = _pendingNpcNameOracle.split('_')[1] as keyof typeof v;
-					n.name = v[sub];
-				}
-			} else {
-				const o = findOracle(_pendingNpcNameOracle);
-				if (o) n.name = rollFromRangeTable(o.data).value as string;
-			}
-		}
 		if (newNpcName.trim()) n.name = newNpcName.trim();
+		const oracles = getOracles();
+		if (newNpcRollRole) n.role = rollOracle('characterRole', oracles).value ?? '';
+		if (newNpcRollGoal) n.goal = rollOracle('characterGoal', oracles).value ?? '';
+		if (newNpcRollDescriptor) n.descriptor = rollOracle('characterDescriptor', oracles).value ?? '';
+		if (newNpcRollTouched && isYrtEnabled()) {
+			const res = rollOracle('yrtTouched', oracles);
+			const md = htmlToNotesMd(res.html ?? '');
+			if (md) n.notes = `**Touched**\n\n${md}${n.notes ? `\n\n${n.notes}` : ''}`;
+		}
 		await addNpc(n);
 		activeEntryId = n.id;
 		activeTab = 'core';
@@ -517,26 +588,30 @@
 		newPlaceDialogRef?.open();
 	}
 
-	async function _commitPlace(random: boolean) {
+	/** Places don't have their own name oracle yet — reuse the settlement
+	 *  ones so the d6 gives something reasonable. */
+	function rollNewPlaceName() {
+		const oracles = getOracles();
+		const oracle = Math.random() < 0.5 ? 'settlementName' : 'settlementNameQuick';
+		const v = rollOracle(oracle, oracles).value;
+		if (v) newPlaceName = v;
+	}
+
+	async function _commitPlace() {
 		if (!_pendingPlace) return;
 		const pl = _pendingPlace;
 		_pendingPlace = null;
-		if (random) {
-			const oracles = getOracles();
-			// Places don't have their own oracles yet — reuse the settlement ones
-			// so the random flow feels consistent with Communities. Trouble is
-			// intentionally NOT auto-rolled: the Settlement Trouble oracle is
-			// community-specific and doesn't map to inns / forests / ruins.
-			const nameOracle = Math.random() < 0.5 ? 'settlementName' : 'settlementNameQuick';
-			const nameVal = rollOracle(nameOracle, oracles).value;
-			if (nameVal) pl.name = nameVal;
-			pl.region =
-				_pendingPlaceRegionType === 'yrt'
-					? rollOracle('yrtRegion', oracles).value
-					: rollOracle('region', oracles).value;
-			pl.location = rollOracle(_pendingPlaceLocationType, oracles).value;
-			pl.locationDescription = rollOracle('locationDescriptor', oracles).value;
-		}
+		const oracles = getOracles();
+		pl.region =
+			_pendingPlaceRegionType === 'yrt'
+				? rollOracle('yrtRegion', oracles).value
+				: rollOracle('region', oracles).value;
+		if (newPlaceRollLocation)
+			pl.location = rollOracle(_pendingPlaceLocationType, oracles).value ?? '';
+		if (newPlaceRollDescription)
+			pl.locationDescription = rollOracle('locationDescriptor', oracles).value ?? '';
+		if (newPlaceRollTrouble) pl.trouble = rollOracle('settlementTrouble', oracles).value ?? '';
+		if (newPlaceName.trim()) pl.name = newPlaceName.trim();
 		await addPlace(pl);
 		activeEntryId = pl.id;
 		activeTab = 'core';
@@ -659,7 +734,7 @@
 				{#if activeEntry.kind === 'npc'}
 					<SegmentedRadio
 						ariaLabel="NPC status"
-						labels="auto"
+						labels="never"
 						value={(activeEntry.data as Npc).deceased ? 'deceased' : 'alive'}
 						onchange={(v) => updateNpc({ deceased: v === 'deceased' })}
 						options={[
@@ -958,113 +1033,170 @@
 	/>
 {/if}
 
-<!-- New Community dialog — V1 pattern. -->
+<!-- New Community dialog — name + region-oracle + location-oracle, then
+     "Also randomize" checkboxes for Location / Description / Trouble.
+     Region always rolls from the picked oracle on Create; the other
+     three roll only when checked. Create needs a name. -->
 <ConfirmDialog
 	bind:this={newCommunityDialogRef}
 	title="New Community"
-	confirmLabel="Random"
+	confirmLabel="Create"
 	confirmClass="btn-primary"
-	showCancelButton={false}
-	alternateLabel="Create"
+	confirmDisabled={!newCommunityName.trim()}
+	cancelLabel="Cancel"
 	accentColor={COMMUNITY_COLOR}
-	onconfirm={() => _commitCommunity(true)}
-	onalternate={() => _commitCommunity(false)}
+	onconfirm={_commitCommunity}
 	ondismiss={() => {
 		_pendingCommunity = null;
 	}}
 >
-	<label class="co-field" style="margin-bottom: 10px;">
-		<span class="co-field-label">Community name</span>
-		<input class="co-input" type="text" bind:value={newCommunityName} placeholder="New Community" />
-	</label>
-	<p
-		style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 10px;"
-	>
-		Generate fields randomly using oracles, or create the community manually?
-	</p>
-	<div class="v2-radio-row">
-		<RadioGroup.Root
-			class="v2-radio-group"
-			value={_pendingCommunityRegionType}
-			onValueChange={(v) => (_pendingCommunityRegionType = v as typeof _pendingCommunityRegionType)}
-			aria-label="Region oracle"
+	<div class="ns-grid">
+		<label class="ns-label" for="nc-name">Name</label>
+		<input
+			id="nc-name"
+			class="co-input"
+			type="text"
+			bind:value={newCommunityName}
+			placeholder="Community name"
+		/>
+		<button
+			class="btn btn-icon ea-dice-btn"
+			type="button"
+			onclick={rollNewCommunityName}
+			use:tooltip={'Roll a settlement name'}
+			aria-label="Random name">{@html diceD6Svg}</button
 		>
-			<span class="v2-radio-legend">Region oracle</span>
-			<label class="v2-radio-label">
-				<RadioGroup.Item value="ironlands" class="v2-radio-btn">
-					<span class="v2-radio-dot"></span>
-				</RadioGroup.Item> Ironlands
-			</label>
-			{#if isYrtEnabled()}
-				<label class="v2-radio-label">
-					<RadioGroup.Item value="yrt" class="v2-radio-btn">
-						<span class="v2-radio-dot"></span>
-					</RadioGroup.Item> YRT
-				</label>
-			{/if}
-		</RadioGroup.Root>
-		<RadioGroup.Root
-			class="v2-radio-group"
-			value={_pendingCommunityLocationType}
-			onValueChange={(v) =>
-				(_pendingCommunityLocationType = v as typeof _pendingCommunityLocationType)}
-			aria-label="Location oracle"
+
+		<label class="ns-label" for="nc-region">Region Oracle</label>
+		<Select
+			id="nc-region"
+			class="ea-ns-select"
+			bind:value={_pendingCommunityRegionType}
+			options={isYrtEnabled()
+				? [
+						{ value: 'ironlands', label: 'Ironlands' },
+						{ value: 'yrt', label: 'YRT' },
+					]
+				: [{ value: 'ironlands', label: 'Ironlands' }]}
+		/>
+		<span class="ns-spacer" aria-hidden="true"></span>
+
+		<label class="ns-label" for="nc-loc">Location Oracle</label>
+		<Select
+			id="nc-loc"
+			class="ea-ns-select"
+			bind:value={_pendingCommunityLocationType}
+			options={[
+				{ value: 'location', label: 'Inland' },
+				{ value: 'coastalWatersLocation', label: 'Coastal Waters' },
+			]}
+		/>
+		<span class="ns-spacer" aria-hidden="true"></span>
+	</div>
+
+	<div class="nn-randomize">
+		<span class="nn-randomize-label">Also randomize</span>
+		<Checkbox
+			class="nn-check"
+			checked={newCommunityRollLocation}
+			onCheckedChange={(v) => (newCommunityRollLocation = !!v)}
 		>
-			<span class="v2-radio-legend">Location oracle</span>
-			<label class="v2-radio-label">
-				<RadioGroup.Item value="location" class="v2-radio-btn">
-					<span class="v2-radio-dot"></span>
-				</RadioGroup.Item> Inland
-			</label>
-			<label class="v2-radio-label">
-				<RadioGroup.Item value="coastalWatersLocation" class="v2-radio-btn">
-					<span class="v2-radio-dot"></span>
-				</RadioGroup.Item> Coastal Waters
-			</label>
-		</RadioGroup.Root>
+			<span class="nn-check-label">Location</span>
+		</Checkbox>
+		<Checkbox
+			class="nn-check"
+			checked={newCommunityRollDescription}
+			onCheckedChange={(v) => (newCommunityRollDescription = !!v)}
+		>
+			<span class="nn-check-label">Description</span>
+		</Checkbox>
+		<Checkbox
+			class="nn-check"
+			checked={newCommunityRollTrouble}
+			onCheckedChange={(v) => (newCommunityRollTrouble = !!v)}
+		>
+			<span class="nn-check-label">Trouble</span>
+		</Checkbox>
 	</div>
 </ConfirmDialog>
 
-<!-- New NPC dialog — V1 pattern with name-oracle selector. -->
+<!-- New NPC dialog — minimal: Name + Oracle picker (with name d6),
+     then an "Also randomize" checklist that rolls role / goal /
+     descriptor on Create. YRT-only Touched checkbox rolls the compound
+     class/aspect/features and prepends the outcome into Notes. -->
 <ConfirmDialog
 	bind:this={newNpcDialogRef}
 	title="New NPC"
-	confirmLabel="Random"
+	confirmLabel="Create"
 	confirmClass="btn-primary"
-	showCancelButton={false}
-	alternateLabel="Create"
+	confirmDisabled={!newNpcName.trim()}
+	cancelLabel="Cancel"
 	accentColor={NPC_COLOR}
-	onconfirm={() => _commitNpc(true)}
-	onalternate={() => _commitNpc(false)}
+	onconfirm={_commitNpc}
 	ondismiss={() => {
 		_pendingNpc = null;
 	}}
 >
-	<label class="co-field" style="margin-bottom: 10px;">
-		<span class="co-field-label">NPC name</span>
-		<input class="co-input" type="text" bind:value={newNpcName} placeholder="New NPC" />
-	</label>
-	<p
-		style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 8px;"
-	>
-		Generate fields randomly using oracles, or create the NPC manually?
-	</p>
-	<RadioGroup.Root
-		class="v2-radio-group"
-		value={_pendingNpcNameOracle}
-		onValueChange={(v) => (_pendingNpcNameOracle = v as typeof _pendingNpcNameOracle)}
-		aria-label="Name oracle"
-	>
-		<span class="v2-radio-legend">Name oracle</span>
-		{#each [{ value: 'namesIronlander', label: 'Ironlander' }, { value: 'namesIronlander2', label: 'Ironlander 2' }, { value: 'namesElf', label: 'Elf' }, { value: 'namesOther_giants', label: 'Giants' }, { value: 'namesOther_varou', label: 'Varou' }, { value: 'namesOther_trolls', label: 'Trolls' }] as opt}
-			<label class="v2-radio-label">
-				<RadioGroup.Item value={opt.value} class="v2-radio-btn">
-					<span class="v2-radio-dot"></span>
-				</RadioGroup.Item>
-				{opt.label}
-			</label>
-		{/each}
-	</RadioGroup.Root>
+	<div class="ns-grid">
+		<label class="ns-label" for="nn-name">Name</label>
+		<input
+			id="nn-name"
+			class="co-input"
+			type="text"
+			bind:value={newNpcName}
+			placeholder="NPC name"
+		/>
+		<button
+			class="btn btn-icon ea-dice-btn"
+			type="button"
+			onclick={rollNpcNameField}
+			use:tooltip={'Roll a name from the selected oracle'}
+			aria-label="Random name">{@html diceD6Svg}</button
+		>
+
+		<label class="ns-label" for="nn-oracle">Oracle</label>
+		<Select
+			id="nn-oracle"
+			class="ea-ns-select"
+			bind:value={_pendingNpcNameOracle}
+			options={NPC_NAME_ORACLES}
+		/>
+		<span class="ns-spacer" aria-hidden="true"></span>
+	</div>
+
+	<div class="nn-randomize">
+		<span class="nn-randomize-label">Also randomize</span>
+		<Checkbox
+			class="nn-check"
+			checked={newNpcRollRole}
+			onCheckedChange={(v) => (newNpcRollRole = !!v)}
+		>
+			<span class="nn-check-label">Role</span>
+		</Checkbox>
+		<Checkbox
+			class="nn-check"
+			checked={newNpcRollGoal}
+			onCheckedChange={(v) => (newNpcRollGoal = !!v)}
+		>
+			<span class="nn-check-label">Goal</span>
+		</Checkbox>
+		<Checkbox
+			class="nn-check"
+			checked={newNpcRollDescriptor}
+			onCheckedChange={(v) => (newNpcRollDescriptor = !!v)}
+		>
+			<span class="nn-check-label">Descriptor</span>
+		</Checkbox>
+		{#if isYrtEnabled()}
+			<Checkbox
+				class="nn-check"
+				checked={newNpcRollTouched}
+				onCheckedChange={(v) => (newNpcRollTouched = !!v)}
+			>
+				<span class="nn-check-label">Touched (class + aspect + features → background)</span>
+			</Checkbox>
+		{/if}
+	</div>
 </ConfirmDialog>
 
 <!-- New Place dialog — mirrors the New Community pattern. Places don't have
@@ -1074,65 +1206,89 @@
 <ConfirmDialog
 	bind:this={newPlaceDialogRef}
 	title="New Place"
-	confirmLabel="Random"
+	confirmLabel="Create"
 	confirmClass="btn-primary"
-	showCancelButton={false}
-	alternateLabel="Create"
+	confirmDisabled={!newPlaceName.trim()}
+	cancelLabel="Cancel"
 	accentColor={PLACE_COLOR}
-	onconfirm={() => _commitPlace(true)}
-	onalternate={() => _commitPlace(false)}
+	onconfirm={_commitPlace}
 	ondismiss={() => {
 		_pendingPlace = null;
 	}}
 >
-	<label class="co-field" style="margin-bottom: 10px;">
-		<span class="co-field-label">Place name</span>
-		<input class="co-input" type="text" bind:value={newPlaceName} placeholder="New Place" />
-	</label>
-	<p
-		style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 10px;"
-	>
-		Generate fields randomly using oracles, or create the place manually?
-	</p>
-	<div class="v2-radio-row">
-		<RadioGroup.Root
-			class="v2-radio-group"
-			value={_pendingPlaceRegionType}
-			onValueChange={(v) => (_pendingPlaceRegionType = v as typeof _pendingPlaceRegionType)}
-			aria-label="Region oracle"
+	<div class="ns-grid">
+		<label class="ns-label" for="np-name">Name</label>
+		<input
+			id="np-name"
+			class="co-input"
+			type="text"
+			bind:value={newPlaceName}
+			placeholder="Place name"
+		/>
+		<button
+			class="btn btn-icon ea-dice-btn"
+			type="button"
+			onclick={rollNewPlaceName}
+			use:tooltip={'Roll a settlement name'}
+			aria-label="Random name">{@html diceD6Svg}</button
 		>
-			<span class="v2-radio-legend">Region oracle</span>
-			<label class="v2-radio-label">
-				<RadioGroup.Item value="ironlands" class="v2-radio-btn">
-					<span class="v2-radio-dot"></span>
-				</RadioGroup.Item> Ironlands
-			</label>
-			{#if isYrtEnabled()}
-				<label class="v2-radio-label">
-					<RadioGroup.Item value="yrt" class="v2-radio-btn">
-						<span class="v2-radio-dot"></span>
-					</RadioGroup.Item> YRT
-				</label>
-			{/if}
-		</RadioGroup.Root>
-		<RadioGroup.Root
-			class="v2-radio-group"
-			value={_pendingPlaceLocationType}
-			onValueChange={(v) => (_pendingPlaceLocationType = v as typeof _pendingPlaceLocationType)}
-			aria-label="Location oracle"
+
+		<label class="ns-label" for="np-region">Region Oracle</label>
+		<Select
+			id="np-region"
+			class="ea-ns-select"
+			bind:value={_pendingPlaceRegionType}
+			options={isYrtEnabled()
+				? [
+						{ value: 'ironlands', label: 'Ironlands' },
+						{ value: 'yrt', label: 'YRT' },
+					]
+				: [{ value: 'ironlands', label: 'Ironlands' }]}
+		/>
+		<span class="ns-spacer" aria-hidden="true"></span>
+
+		<label class="ns-label" for="np-loc">Location Oracle</label>
+		<Select
+			id="np-loc"
+			class="ea-ns-select"
+			bind:value={_pendingPlaceLocationType}
+			options={isYrtEnabled()
+				? [
+						{ value: 'location', label: 'Inland' },
+						{ value: 'coastalWatersLocation', label: 'Coastal Waters' },
+						{ value: 'yrtCityTownLocation', label: 'City / Town' },
+					]
+				: [
+						{ value: 'location', label: 'Inland' },
+						{ value: 'coastalWatersLocation', label: 'Coastal Waters' },
+					]}
+		/>
+		<span class="ns-spacer" aria-hidden="true"></span>
+	</div>
+
+	<div class="nn-randomize">
+		<span class="nn-randomize-label">Also randomize</span>
+		<Checkbox
+			class="nn-check"
+			checked={newPlaceRollLocation}
+			onCheckedChange={(v) => (newPlaceRollLocation = !!v)}
 		>
-			<span class="v2-radio-legend">Location oracle</span>
-			<label class="v2-radio-label">
-				<RadioGroup.Item value="location" class="v2-radio-btn">
-					<span class="v2-radio-dot"></span>
-				</RadioGroup.Item> Inland
-			</label>
-			<label class="v2-radio-label">
-				<RadioGroup.Item value="coastalWatersLocation" class="v2-radio-btn">
-					<span class="v2-radio-dot"></span>
-				</RadioGroup.Item> Coastal Waters
-			</label>
-		</RadioGroup.Root>
+			<span class="nn-check-label">Location</span>
+		</Checkbox>
+		<Checkbox
+			class="nn-check"
+			checked={newPlaceRollDescription}
+			onCheckedChange={(v) => (newPlaceRollDescription = !!v)}
+		>
+			<span class="nn-check-label">Description</span>
+		</Checkbox>
+		<Checkbox
+			class="nn-check"
+			checked={newPlaceRollTrouble}
+			onCheckedChange={(v) => (newPlaceRollTrouble = !!v)}
+		>
+			<span class="nn-check-label">Trouble</span>
+		</Checkbox>
 	</div>
 </ConfirmDialog>
 
@@ -1543,5 +1699,31 @@
 	}
 	:global(.cm-cmd-type-icon svg path) {
 		fill: currentColor;
+	}
+
+	/* "Also randomize" checklist inside the New * dialogs — one column,
+	   compact spacing. Shared with the Site + NPC + Community + Place
+	   dialogs so all four read the same. */
+	:global(.nn-randomize) {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		margin-top: 10px;
+		padding-top: 8px;
+		border-top: 1px solid var(--border);
+	}
+	:global(.nn-randomize-label) {
+		font-family: var(--font-ui);
+		font-size: 0.65rem;
+		font-weight: 600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color: var(--text-dimmer);
+		margin-bottom: 2px;
+	}
+	:global(.nn-check-label) {
+		font-family: var(--font-ui);
+		font-size: 0.78rem;
+		color: var(--text);
 	}
 </style>
