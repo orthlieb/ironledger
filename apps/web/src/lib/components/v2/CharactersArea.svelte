@@ -1569,7 +1569,7 @@
 		container-type: inline-size;
 		container-name: area-header;
 	}
-	@container area-header (max-width: 320px) {
+	@container area-header (max-width: 420px) {
 		.ca-title {
 			display: none;
 		}
