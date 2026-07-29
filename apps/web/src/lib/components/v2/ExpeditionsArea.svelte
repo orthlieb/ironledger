@@ -1070,8 +1070,9 @@
 <ConfirmDialog
 	bind:this={newJourneyDialogRef}
 	title="New Journey"
-	confirmLabel="Start Journey"
+	confirmLabel="Create"
 	confirmClass="btn-primary"
+	confirmDisabled={!newJourneyName.trim()}
 	cancelLabel="Cancel"
 	accentColor={JOURNEY_COLOR}
 	onconfirm={confirmAddJourney}
