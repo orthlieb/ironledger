@@ -161,15 +161,20 @@
 		{ value: 'namesOther_trolls', label: 'Trolls' },
 	];
 
-	// New-Place dialog state — same shape as Community minus the
-	// settlement-specific trouble oracle (places don't have their own
-	// trouble table yet, so it's user-authored on the sheet).
+	// New-Place dialog state — same shape as Community. Location Oracle
+	// gains the YRT "City / Town Location" option (in-settlement POIs
+	// like Marketplace / Docks / Warehouse) when the expansion is on.
+	// Trouble reuses the settlement-trouble oracle — off by default
+	// since it's a settlement-flavoured table; opt in when it fits.
 	let newPlaceDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let _pendingPlace: Place | null = null;
 	let _pendingPlaceRegionType = $state<'ironlands' | 'yrt'>('ironlands');
-	let _pendingPlaceLocationType = $state<'location' | 'coastalWatersLocation'>('location');
+	let _pendingPlaceLocationType = $state<
+		'location' | 'coastalWatersLocation' | 'yrtCityTownLocation'
+	>('location');
 	let newPlaceRollLocation = $state(true);
 	let newPlaceRollDescription = $state(true);
+	let newPlaceRollTrouble = $state(false);
 
 	// Combobox switcher + gear-options refs (mirrors Chars/Foes/Exp).
 	let entryPickerOpen = $state(false);
@@ -605,6 +610,7 @@
 			pl.location = rollOracle(_pendingPlaceLocationType, oracles).value ?? '';
 		if (newPlaceRollDescription)
 			pl.locationDescription = rollOracle('locationDescriptor', oracles).value ?? '';
+		if (newPlaceRollTrouble) pl.trouble = rollOracle('settlementTrouble', oracles).value ?? '';
 		if (newPlaceName.trim()) pl.name = newPlaceName.trim();
 		await addPlace(pl);
 		activeEntryId = pl.id;
@@ -1246,10 +1252,16 @@
 			id="np-loc"
 			class="ea-ns-select"
 			bind:value={_pendingPlaceLocationType}
-			options={[
-				{ value: 'location', label: 'Inland' },
-				{ value: 'coastalWatersLocation', label: 'Coastal Waters' },
-			]}
+			options={isYrtEnabled()
+				? [
+						{ value: 'location', label: 'Inland' },
+						{ value: 'coastalWatersLocation', label: 'Coastal Waters' },
+						{ value: 'yrtCityTownLocation', label: 'City / Town' },
+					]
+				: [
+						{ value: 'location', label: 'Inland' },
+						{ value: 'coastalWatersLocation', label: 'Coastal Waters' },
+					]}
 		/>
 		<span class="ns-spacer" aria-hidden="true"></span>
 	</div>
@@ -1269,6 +1281,13 @@
 			onCheckedChange={(v) => (newPlaceRollDescription = !!v)}
 		>
 			<span class="nn-check-label">Description</span>
+		</Checkbox>
+		<Checkbox
+			class="nn-check"
+			checked={newPlaceRollTrouble}
+			onCheckedChange={(v) => (newPlaceRollTrouble = !!v)}
+		>
+			<span class="nn-check-label">Trouble</span>
 		</Checkbox>
 	</div>
 </ConfirmDialog>

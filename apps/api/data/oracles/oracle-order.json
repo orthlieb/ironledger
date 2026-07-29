@@ -4,6 +4,7 @@
   "region": 2,
   "location": 3,
   "coastalWatersLocation": 3.5,
+  "yrtCityTownLocation": 3.75,
   "locationDescriptor": 4,
   "settlementName": 4.25,
   "settlementNameQuick": 4.5,

@@ -67,6 +67,7 @@ const ORACLE_KEY_SOURCE_FALLBACK: Record<string, CatalogueSource> = {
 	yrtAnimal: 'yrt',
 	yrtRegion: 'yrt',
 	yrtTouched: 'yrt',
+	yrtCityTownLocation: 'yrt',
 	touchedFeatures: 'yrt',
 	manaBacklash: 'yrt',
 	freeportDenizen: 'yrt',
