@@ -1483,6 +1483,7 @@
 	title="New Character"
 	confirmLabel="Create"
 	confirmClass="btn-primary"
+	confirmDisabled={!newCharName.trim()}
 	accentColor="var(--text-accent)"
 	onconfirm={_commitNewCharacter}
 	oncancel={() => {

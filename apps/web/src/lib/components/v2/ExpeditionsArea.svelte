@@ -493,12 +493,14 @@
 		activeExpId = s.id;
 		activeTab = 'core';
 	}
-	/** Generate-randomly path: pick a random theme + domain (keeping the chosen
-	 *  difficulty), then create — mirrors the random NPC / Community flow. */
-	function confirmAddSiteRandom() {
+	/** Roll a random theme / domain for the New Site dialog — wired to
+	 *  the d6 buttons next to each dropdown (mirrors the Core-tab pattern
+	 *  and the Journey has no equivalent). */
+	function randomizeNewSiteTheme() {
 		newSiteTheme = DELVE_THEMES[Math.floor(Math.random() * DELVE_THEMES.length)];
+	}
+	function randomizeNewSiteDomain() {
 		newSiteDomain = DELVE_DOMAINS[Math.floor(Math.random() * DELVE_DOMAINS.length)];
-		void confirmAddSite();
 	}
 
 	async function confirmDeleteExp() {
@@ -1070,8 +1072,9 @@
 <ConfirmDialog
 	bind:this={newJourneyDialogRef}
 	title="New Journey"
-	confirmLabel="Start Journey"
+	confirmLabel="Create"
 	confirmClass="btn-primary"
+	confirmDisabled={!newJourneyName.trim()}
 	cancelLabel="Cancel"
 	accentColor={JOURNEY_COLOR}
 	onconfirm={confirmAddJourney}
@@ -1098,81 +1101,66 @@
 	</RadioGroup.Root>
 </ConfirmDialog>
 
-<!-- New Site dialog — pick a difficulty, then either Random (random theme +
-     domain) or Create (use the selected theme/domain, both optional — settable
-     later on the Core tab). Mirrors the NPC/Community flow. -->
+<!-- New Site dialog — name + difficulty + theme + domain up front.
+     Each of theme / domain has a d6 button that rolls a random value
+     from the delve catalogue (same pattern as the Core-tab combos).
+     Create stays disabled until name, theme, and domain are all set. -->
 <ConfirmDialog
 	bind:this={newSiteDialogRef}
 	title="New Site"
-	confirmLabel="Random"
+	confirmLabel="Create"
 	confirmClass="btn-primary"
-	alternateLabel="Create"
+	confirmDisabled={!newSiteName.trim() || !newSiteTheme || !newSiteDomain}
 	cancelLabel="Cancel"
 	accentColor={SITE_COLOR}
-	onconfirm={confirmAddSiteRandom}
-	onalternate={confirmAddSite}
+	onconfirm={confirmAddSite}
 >
 	<label class="co-field" style="margin-bottom: 10px;">
 		<span class="co-field-label">Site name</span>
 		<input class="co-input" type="text" bind:value={newSiteName} placeholder="New Site" />
 	</label>
-	<RadioGroup.Root
-		class="v2-radio-group"
-		value={newSiteDifficulty}
-		onValueChange={(v) => (newSiteDifficulty = v as VowDifficulty)}
-		aria-label="Difficulty"
-		style="margin-bottom: 8px;"
-	>
-		<span class="v2-radio-legend">Difficulty</span>
-		{#each DIFFICULTIES as opt}
-			<label class="v2-radio-label">
-				<RadioGroup.Item value={opt.value} class="v2-radio-btn">
-					<span class="v2-radio-dot"></span>
-				</RadioGroup.Item>
-				{opt.label}
-			</label>
-		{/each}
-	</RadioGroup.Root>
-	<div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px;">
-		<div style="display: flex; align-items: center; gap: 8px;">
-			<label
-				for="ns-theme"
-				style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); width: 56px; flex-shrink: 0;"
-				>Theme</label
-			>
-			<Select
-				id="ns-theme"
-				class="ea-ns-select"
-				bind:value={newSiteTheme}
-				placeholder="Select a theme…"
-				options={DELVE_THEMES.map((t) => ({ value: t, label: t }))}
-			/>
-		</div>
-		<div style="display: flex; align-items: center; gap: 8px;">
-			<label
-				for="ns-domain"
-				style="font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dimmer); width: 56px; flex-shrink: 0;"
-				>Domain</label
-			>
-			<Select
-				id="ns-domain"
-				class="ea-ns-select"
-				bind:value={newSiteDomain}
-				placeholder="Select a domain…"
-				options={DELVE_DOMAINS.map((d) => ({ value: d, label: d }))}
-			/>
-		</div>
+	<div class="ns-grid">
+		<label class="ns-label" for="ns-difficulty">Difficulty</label>
+		<Select
+			id="ns-difficulty"
+			class="ea-ns-select"
+			bind:value={newSiteDifficulty}
+			options={DIFFICULTIES}
+		/>
+		<span class="ns-spacer" aria-hidden="true"></span>
+
+		<label class="ns-label" for="ns-theme">Theme</label>
+		<Select
+			id="ns-theme"
+			class="ea-ns-select"
+			bind:value={newSiteTheme}
+			placeholder="Select a theme…"
+			options={DELVE_THEMES.map((t) => ({ value: t, label: t }))}
+		/>
+		<button
+			class="btn btn-icon ea-dice-btn"
+			type="button"
+			onclick={randomizeNewSiteTheme}
+			use:tooltip={'Pick a random theme'}
+			aria-label="Random theme">{@html diceD6Svg}</button
+		>
+
+		<label class="ns-label" for="ns-domain">Domain</label>
+		<Select
+			id="ns-domain"
+			class="ea-ns-select"
+			bind:value={newSiteDomain}
+			placeholder="Select a domain…"
+			options={DELVE_DOMAINS.map((d) => ({ value: d, label: d }))}
+		/>
+		<button
+			class="btn btn-icon ea-dice-btn"
+			type="button"
+			onclick={randomizeNewSiteDomain}
+			use:tooltip={'Pick a random domain'}
+			aria-label="Random domain">{@html diceD6Svg}</button
+		>
 	</div>
-	<p
-		style="font-family: var(--font-ui); font-size: 0.72rem; color: var(--text-dimmer); margin: 0; font-style: italic;"
-	>
-		{#if !newSiteTheme || !newSiteDomain}
-			Leave theme &amp; domain unset and pick <strong>Random</strong>, or choose them and
-			<strong>Create</strong>. You can change them later on the Core tab.
-		{:else}
-			<strong>Create</strong> uses your picks; <strong>Random</strong> rolls new ones.
-		{/if}
-	</p>
 </ConfirmDialog>
 
 <!-- Expedition options — gear icon in the header opens this. Rename +
@@ -1765,5 +1753,28 @@
 		display: flex;
 		flex-direction: column;
 		gap: 4px;
+	}
+
+	/* New Site dialog form grid — label | select | dice-btn rows. The
+	   difficulty row uses a spacer where the dice button would go so
+	   the three rows line up. */
+	:global(.ns-grid) {
+		display: grid;
+		grid-template-columns: 56px 1fr auto;
+		gap: 6px 8px;
+		align-items: center;
+		margin: 0 0 4px;
+	}
+	:global(.ns-label) {
+		font-family: var(--font-ui);
+		font-size: 0.65rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: var(--text-dimmer);
+	}
+	:global(.ns-spacer) {
+		display: block;
+		width: 22px;
 	}
 </style>
