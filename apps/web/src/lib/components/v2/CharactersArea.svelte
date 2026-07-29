@@ -1675,7 +1675,7 @@
 		align-items: center;
 		gap: 3px;
 		padding: 4px 6px;
-		min-width: 0;
+		flex-shrink: 0;
 	}
 	:global(.ca-hdr-icon-btn svg) {
 		width: 12px;
