@@ -135,6 +135,20 @@
 	let newNpcDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let _pendingNpc: Npc | null = null;
 	let _pendingNpcNameOracle = $state<string>('namesIronlander');
+	// Per-field drafts — the New NPC dialog surfaces Role / Goal / Descriptor
+	// alongside Name, each with its own d6 randomize. All optional at commit
+	// time; Create only gates on Name.
+	let newNpcRole = $state<string>('');
+	let newNpcGoal = $state<string>('');
+	let newNpcDescriptor = $state<string>('');
+	const NPC_NAME_ORACLES: { value: string; label: string }[] = [
+		{ value: 'namesIronlander', label: 'Ironlander' },
+		{ value: 'namesIronlander2', label: 'Ironlander 2' },
+		{ value: 'namesElf', label: 'Elf' },
+		{ value: 'namesOther_giants', label: 'Giants' },
+		{ value: 'namesOther_varou', label: 'Varou' },
+		{ value: 'namesOther_trolls', label: 'Trolls' },
+	];
 
 	// New-Place dialog state
 	let newPlaceDialogRef = $state<{ open(): void; close(): void } | null>(null);
@@ -469,33 +483,49 @@
 			createdAt: Date.now(),
 		};
 		newNpcName = '';
+		newNpcRole = '';
+		newNpcGoal = '';
+		newNpcDescriptor = '';
 		await loadOracles();
 		newNpcDialogRef?.open();
 	}
 
-	async function _commitNpc(random: boolean) {
+	/** Roll a name off the selected oracle and drop it into the form. The
+	 *  `namesOther_*` variants share one oracle whose value is a per-lineage
+	 *  bag; the suffix selects which entry to lift. */
+	function rollNpcNameField() {
+		const oracles = getOracles();
+		if (_pendingNpcNameOracle.startsWith('namesOther_')) {
+			const o = findOracle('namesOther');
+			if (!o) return;
+			const r = rollFromRangeTable(o.data);
+			const v = r.value as { giants: string; varou: string; trolls: string };
+			const sub = _pendingNpcNameOracle.split('_')[1] as keyof typeof v;
+			newNpcName = v[sub] ?? '';
+			return;
+		}
+		const o = findOracle(_pendingNpcNameOracle);
+		if (o) newNpcName = (rollFromRangeTable(o.data).value as string) ?? '';
+		else newNpcName = rollOracle(_pendingNpcNameOracle, oracles).value ?? '';
+	}
+	function rollNpcRoleField() {
+		newNpcRole = rollOracle('characterRole', getOracles()).value ?? '';
+	}
+	function rollNpcGoalField() {
+		newNpcGoal = rollOracle('characterGoal', getOracles()).value ?? '';
+	}
+	function rollNpcDescriptorField() {
+		newNpcDescriptor = rollOracle('characterDescriptor', getOracles()).value ?? '';
+	}
+
+	async function _commitNpc() {
 		if (!_pendingNpc) return;
 		const n = _pendingNpc;
 		_pendingNpc = null;
-		if (random) {
-			const oracles = getOracles();
-			n.role = rollOracle('characterRole', oracles).value;
-			n.goal = rollOracle('characterGoal', oracles).value;
-			n.descriptor = rollOracle('characterDescriptor', oracles).value;
-			if (_pendingNpcNameOracle.startsWith('namesOther_')) {
-				const o = findOracle('namesOther');
-				if (o) {
-					const r = rollFromRangeTable(o.data);
-					const v = r.value as { giants: string; varou: string; trolls: string };
-					const sub = _pendingNpcNameOracle.split('_')[1] as keyof typeof v;
-					n.name = v[sub];
-				}
-			} else {
-				const o = findOracle(_pendingNpcNameOracle);
-				if (o) n.name = rollFromRangeTable(o.data).value as string;
-			}
-		}
 		if (newNpcName.trim()) n.name = newNpcName.trim();
+		if (newNpcRole.trim()) n.role = newNpcRole.trim();
+		if (newNpcGoal.trim()) n.goal = newNpcGoal.trim();
+		if (newNpcDescriptor.trim()) n.descriptor = newNpcDescriptor.trim();
 		await addNpc(n);
 		activeEntryId = n.id;
 		activeTab = 'core';
@@ -1025,46 +1055,85 @@
 	</div>
 </ConfirmDialog>
 
-<!-- New NPC dialog — V1 pattern with name-oracle selector. -->
+<!-- New NPC dialog — name + role + goal + descriptor, each with a d6
+     randomizer. Name oracle is a dropdown (default Ironlander) that
+     drives which name-table the d6 rolls from. Create only requires
+     a name. -->
 <ConfirmDialog
 	bind:this={newNpcDialogRef}
 	title="New NPC"
-	confirmLabel="Random"
+	confirmLabel="Create"
 	confirmClass="btn-primary"
-	showCancelButton={false}
-	alternateLabel="Create"
+	confirmDisabled={!newNpcName.trim()}
+	cancelLabel="Cancel"
 	accentColor={NPC_COLOR}
-	onconfirm={() => _commitNpc(true)}
-	onalternate={() => _commitNpc(false)}
+	onconfirm={_commitNpc}
 	ondismiss={() => {
 		_pendingNpc = null;
 	}}
 >
-	<label class="co-field" style="margin-bottom: 10px;">
-		<span class="co-field-label">NPC name</span>
-		<input class="co-input" type="text" bind:value={newNpcName} placeholder="New NPC" />
-	</label>
-	<p
-		style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 8px;"
-	>
-		Generate fields randomly using oracles, or create the NPC manually?
-	</p>
-	<RadioGroup.Root
-		class="v2-radio-group"
-		value={_pendingNpcNameOracle}
-		onValueChange={(v) => (_pendingNpcNameOracle = v as typeof _pendingNpcNameOracle)}
-		aria-label="Name oracle"
-	>
-		<span class="v2-radio-legend">Name oracle</span>
-		{#each [{ value: 'namesIronlander', label: 'Ironlander' }, { value: 'namesIronlander2', label: 'Ironlander 2' }, { value: 'namesElf', label: 'Elf' }, { value: 'namesOther_giants', label: 'Giants' }, { value: 'namesOther_varou', label: 'Varou' }, { value: 'namesOther_trolls', label: 'Trolls' }] as opt}
-			<label class="v2-radio-label">
-				<RadioGroup.Item value={opt.value} class="v2-radio-btn">
-					<span class="v2-radio-dot"></span>
-				</RadioGroup.Item>
-				{opt.label}
-			</label>
-		{/each}
-	</RadioGroup.Root>
+	<div class="ns-grid">
+		<label class="ns-label" for="nn-name">Name</label>
+		<input
+			id="nn-name"
+			class="co-input"
+			type="text"
+			bind:value={newNpcName}
+			placeholder="NPC name"
+		/>
+		<button
+			class="btn btn-icon ea-dice-btn"
+			type="button"
+			onclick={rollNpcNameField}
+			use:tooltip={'Roll a name from the selected oracle'}
+			aria-label="Random name">{@html diceD6Svg}</button
+		>
+
+		<label class="ns-label" for="nn-oracle">Oracle</label>
+		<Select
+			id="nn-oracle"
+			class="ea-ns-select"
+			bind:value={_pendingNpcNameOracle}
+			options={NPC_NAME_ORACLES}
+		/>
+		<span class="ns-spacer" aria-hidden="true"></span>
+
+		<label class="ns-label" for="nn-role">Role</label>
+		<input id="nn-role" class="co-input" type="text" bind:value={newNpcRole} placeholder="Role" />
+		<button
+			class="btn btn-icon ea-dice-btn"
+			type="button"
+			onclick={rollNpcRoleField}
+			use:tooltip={'Roll a character role'}
+			aria-label="Random role">{@html diceD6Svg}</button
+		>
+
+		<label class="ns-label" for="nn-goal">Goal</label>
+		<input id="nn-goal" class="co-input" type="text" bind:value={newNpcGoal} placeholder="Goal" />
+		<button
+			class="btn btn-icon ea-dice-btn"
+			type="button"
+			onclick={rollNpcGoalField}
+			use:tooltip={'Roll a character goal'}
+			aria-label="Random goal">{@html diceD6Svg}</button
+		>
+
+		<label class="ns-label" for="nn-desc">Descriptor</label>
+		<input
+			id="nn-desc"
+			class="co-input"
+			type="text"
+			bind:value={newNpcDescriptor}
+			placeholder="Descriptor"
+		/>
+		<button
+			class="btn btn-icon ea-dice-btn"
+			type="button"
+			onclick={rollNpcDescriptorField}
+			use:tooltip={'Roll a character descriptor'}
+			aria-label="Random descriptor">{@html diceD6Svg}</button
+		>
+	</div>
 </ConfirmDialog>
 
 <!-- New Place dialog — mirrors the New Community pattern. Places don't have
