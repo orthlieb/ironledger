@@ -103,8 +103,13 @@
 	const MIN_MOB_LOG = 80;
 	const MAX_MOB_LOG_FRAC = 0.7;
 	const COL1_WIDTH_KEY = 'il:home:col1Width';
-	const CHAR_HEIGHT_KEY = 'il:home:charHeight';
-	const EXPED_HEIGHT_KEY = 'il:home:expedHeight';
+	// Both columns share ONE row-split height so the horizontal divider
+	// between Characters/Foes stays aligned with the one between
+	// Expeditions/Connections. Older exports used separate `charHeight`
+	// / `expedHeight` keys — read the first available one as fallback.
+	const ROW_HEIGHT_KEY = 'il:home:rowHeight';
+	const LEGACY_CHAR_HEIGHT_KEY = 'il:home:charHeight';
+	const LEGACY_EXPED_HEIGHT_KEY = 'il:home:expedHeight';
 	const MIN_COL = 200;
 	const MIN_AREA = 80;
 
@@ -120,11 +125,11 @@
 	let mobDragging = $state(false);
 	let isMobile = $state(false);
 	let col1Width = $state<number | null>(null);
-	let charHeight = $state<number | null>(null);
-	let expedHeight = $state<number | null>(null);
+	/** Shared row-split height (px) — locks the horizontal divider between
+	 *  Characters/Foes to the one between Expeditions/Connections. */
+	let rowHeight = $state<number | null>(null);
 	let colDragging = $state(false);
-	let charDragging = $state(false);
-	let expedDragging = $state(false);
+	let rowDragging = $state(false);
 	let charFoeColEl = $state<HTMLDivElement | null>(null);
 	let expCommColEl = $state<HTMLDivElement | null>(null);
 
@@ -205,30 +210,23 @@
 			col1Width = Math.max(MIN_COL, Math.round(availW / 2));
 		}
 
-		// Desktop row splits (chars/foes and expeditions/communities)
-		const savedChar = Number(localStorage.getItem(CHAR_HEIGHT_KEY));
-		const savedExped = Number(localStorage.getItem(EXPED_HEIGHT_KEY));
-		// Read the actual col heights while the grid is still at 1fr/1fr fallback
-		const charFoeH = charFoeColEl?.offsetHeight ?? Math.round(window.innerHeight * 0.8);
-		const expCommH = expCommColEl?.offsetHeight ?? charFoeH;
-		if (
-			Number.isFinite(savedChar) &&
-			savedChar >= MIN_AREA &&
-			savedChar <= charFoeH - 6 - MIN_AREA
-		) {
-			charHeight = savedChar;
-		} else {
-			charHeight = Math.max(MIN_AREA, Math.round((charFoeH - 6) / 2));
-		}
-		if (
-			Number.isFinite(savedExped) &&
-			savedExped >= MIN_AREA &&
-			savedExped <= expCommH - 6 - MIN_AREA
-		) {
-			expedHeight = savedExped;
-		} else {
-			expedHeight = Math.max(MIN_AREA, Math.round((expCommH - 6) / 2));
-		}
+		// Desktop row split — one shared value drives both columns so their
+		// horizontal dividers stay in lock-step. Prefer the new key; fall
+		// back to whichever legacy per-column key the user had persisted so
+		// a returning user doesn't get a fresh 50/50 split.
+		const savedRow = Number(localStorage.getItem(ROW_HEIGHT_KEY));
+		const legacyChar = Number(localStorage.getItem(LEGACY_CHAR_HEIGHT_KEY));
+		const legacyExped = Number(localStorage.getItem(LEGACY_EXPED_HEIGHT_KEY));
+		const colH =
+			charFoeColEl?.offsetHeight ??
+			expCommColEl?.offsetHeight ??
+			Math.round(window.innerHeight * 0.8);
+		const upperMax = colH - 6 - MIN_AREA;
+		const inBounds = (n: number) => Number.isFinite(n) && n >= MIN_AREA && n <= upperMax;
+		if (inBounds(savedRow)) rowHeight = savedRow;
+		else if (inBounds(legacyChar)) rowHeight = legacyChar;
+		else if (inBounds(legacyExped)) rowHeight = legacyExped;
+		else rowHeight = Math.max(MIN_AREA, Math.round((colH - 6) / 2));
 
 		// Fire-and-forget — stores update reactively when each resolves
 		Promise.all([
@@ -369,47 +367,26 @@
 		window.addEventListener('mouseup', onUp);
 	}
 
-	/** Desktop row split — chars / foes within the left column. */
-	function startCharResize(e: MouseEvent) {
+	/** Desktop row split — dragging either handle updates the single shared
+	 *  `rowHeight`, so the chars/foes divider and the expeditions/
+	 *  connections divider stay locked. */
+	function startRowResize(e: MouseEvent) {
 		e.preventDefault();
-		charDragging = true;
+		rowDragging = true;
 		const startY = e.clientY;
-		const startH = charHeight ?? 0;
+		const startH = rowHeight ?? 0;
 
 		const onMove = (ev: MouseEvent) => {
-			const colH = charFoeColEl?.offsetHeight ?? 600;
+			const colH = charFoeColEl?.offsetHeight ?? expCommColEl?.offsetHeight ?? 600;
 			const maxH = colH - 6 - MIN_AREA;
 			const next = Math.max(MIN_AREA, Math.min(maxH, startH + (ev.clientY - startY)));
-			charHeight = next;
+			rowHeight = next;
 		};
 		const onUp = () => {
-			charDragging = false;
+			rowDragging = false;
 			window.removeEventListener('mousemove', onMove);
 			window.removeEventListener('mouseup', onUp);
-			if (charHeight !== null) localStorage.setItem(CHAR_HEIGHT_KEY, String(charHeight));
-		};
-		window.addEventListener('mousemove', onMove);
-		window.addEventListener('mouseup', onUp);
-	}
-
-	/** Desktop row split — expeditions / communities within the right column. */
-	function startExpedResize(e: MouseEvent) {
-		e.preventDefault();
-		expedDragging = true;
-		const startY = e.clientY;
-		const startH = expedHeight ?? 0;
-
-		const onMove = (ev: MouseEvent) => {
-			const colH = expCommColEl?.offsetHeight ?? 600;
-			const maxH = colH - 6 - MIN_AREA;
-			const next = Math.max(MIN_AREA, Math.min(maxH, startH + (ev.clientY - startY)));
-			expedHeight = next;
-		};
-		const onUp = () => {
-			expedDragging = false;
-			window.removeEventListener('mousemove', onMove);
-			window.removeEventListener('mouseup', onUp);
-			if (expedHeight !== null) localStorage.setItem(EXPED_HEIGHT_KEY, String(expedHeight));
+			if (rowHeight !== null) localStorage.setItem(ROW_HEIGHT_KEY, String(rowHeight));
 		};
 		window.addEventListener('mousemove', onMove);
 		window.addEventListener('mouseup', onUp);
@@ -1628,13 +1605,11 @@
 	class:home-shell--dragging={dragging}
 	class:home-shell--mob-dragging={mobDragging}
 	class:home-shell--col-dragging={colDragging}
-	class:home-shell--char-dragging={charDragging}
-	class:home-shell--exped-dragging={expedDragging}
+	class:home-shell--row-dragging={rowDragging}
 	style:--log-width="{logWidth}px"
 	style:--mob-log-height="{mobLogHeight}px"
 	style:--col1-width={col1Width !== null ? col1Width + 'px' : undefined}
-	style:--char-height={charHeight !== null ? charHeight + 'px' : undefined}
-	style:--exped-height={expedHeight !== null ? expedHeight + 'px' : undefined}
+	style:--row-height={rowHeight !== null ? rowHeight + 'px' : undefined}
 >
 	<!-- Mobile tab bar (hidden on desktop via CSS) -->
 	<nav class="mob-tabbar">
@@ -1679,7 +1654,7 @@
 			role="separator"
 			aria-label="Resize characters and foes"
 			aria-orientation="horizontal"
-			onmousedown={startCharResize}
+			onmousedown={startRowResize}
 		></div>
 		<section class="home-area home-area--foes" class:mob-hidden={mobileTab !== 'foes'}>
 			<FoesArea bind:this={foeAreaRef} showTitle={!isMobile} />
@@ -1710,7 +1685,7 @@
 			role="separator"
 			aria-label="Resize expeditions and connections"
 			aria-orientation="horizontal"
-			onmousedown={startExpedResize}
+			onmousedown={startRowResize}
 		></div>
 		<section
 			class="home-area home-area--communities"
@@ -1841,13 +1816,11 @@
 	.home-shell--col-dragging * {
 		pointer-events: none;
 	}
-	.home-shell--char-dragging,
-	.home-shell--exped-dragging {
+	.home-shell--row-dragging {
 		cursor: row-resize;
 		user-select: none;
 	}
-	.home-shell--char-dragging *,
-	.home-shell--exped-dragging * {
+	.home-shell--row-dragging * {
 		pointer-events: none;
 	}
 
@@ -1926,24 +1899,19 @@
 			height 0.12s;
 	}
 	.row-resize-handle:hover::before,
-	.home-shell--char-dragging .home-col--char-foe .row-resize-handle::before,
-	.home-shell--exped-dragging .home-col--exp-comm .row-resize-handle::before {
+	.home-shell--row-dragging .row-resize-handle::before {
 		background: var(--text-accent);
 		height: 2px;
 	}
 
-	/* Columns use explicit row tracks driven by CSS vars; gap replaced by 6px handle. */
+	/* Both columns share ONE row-split so the horizontal dividers stay
+	   aligned across the deck (drag either handle → both move). */
 	.home-col {
 		display: grid;
 		gap: 0;
 		min-width: 0;
 		min-height: 0;
-	}
-	.home-col--char-foe {
-		grid-template-rows: var(--char-height, 1fr) 6px 1fr;
-	}
-	.home-col--exp-comm {
-		grid-template-rows: var(--exped-height, 1fr) 6px 1fr;
+		grid-template-rows: var(--row-height, 1fr) 6px 1fr;
 	}
 
 	.home-area {

@@ -1563,6 +1563,15 @@
 		border-bottom: 1px solid var(--border);
 		background: var(--bg-control);
 		flex-shrink: 0;
+		/* Named container so the title label can hide when the panel
+		   narrows enough that its combobox + toggles + gear crowd out. */
+		container-type: inline-size;
+		container-name: area-header;
+	}
+	@container area-header (max-width: 320px) {
+		.ca-title {
+			display: none;
+		}
 	}
 	.ca-title-icon {
 		display: inline-flex;
