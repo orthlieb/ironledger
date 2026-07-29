@@ -34,9 +34,8 @@
 	import Select from '$lib/components/Select.svelte';
 	import MarkdownNotes from '$lib/components/MarkdownNotes.svelte';
 	import PortraitUploader from '$lib/components/PortraitUploader.svelte';
-	import { EditableName } from '$lib/editableName.svelte.js';
 	import { isYrtEnabled } from '$lib/expansionStore.svelte.js';
-	import { RadioGroup, Tabs } from 'bits-ui';
+	import { Popover, Command, RadioGroup, Tabs } from 'bits-ui';
 	import {
 		loadOracles,
 		getOracles,
@@ -49,6 +48,7 @@
 	import { tooltip } from '$lib/actions/tooltip.js';
 
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import ConnectionOptionsDialog from '$lib/components/ConnectionOptionsDialog.svelte';
 	import MapDialog from '$lib/components/MapDialog.svelte';
 	import {
 		entityMarkerIndexState,
@@ -61,7 +61,8 @@
 	} from '$lib/mapStore.svelte.js';
 	import { downscaleImage, MapImageError } from '$lib/mapImage.js';
 	import { formatEntityId } from '$lib/mapEntityLinks.js';
-	import trashSvg from '$icons/trash-solid-full.svg?raw';
+	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
+	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
 	import heartPulseSvg from '$icons/heart-pulse-solid-full.svg?raw';
 	import skullSvg from '$icons/skull-crossbones-solid-full.svg?raw';
 	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
@@ -106,7 +107,6 @@
 
 	let activeEntryId = $state<string | null>(null);
 	let activeTab = $state<CmTab>('core');
-	let deleteDialogRef = $state<{ open(): void; close(): void } | null>(null);
 
 	// Cross-component focus signal — the campaign map (or anywhere else) can
 	// dispatch `ironledger:focus-entity` with {kind, id} and any matching
@@ -125,17 +125,6 @@
 		return () => document.removeEventListener('ironledger:focus-entity', onFocus);
 	});
 
-	// Rail control — search only. Sort is always A-Z; the kind
-	// filter was retired (search alone handles the "find a
-	// Community" case and the filter panel was a heavy addition
-	// for what a substring match already does).
-	let search = $state('');
-
-	// Mobile/narrow drill-down: which pane is showing when the area is too
-	// narrow for two panes (driven by the viewport @media query in the styles).
-	// Selecting an entry pushes to 'detail'; the back button returns to 'list'.
-	let mobilePane = $state<'list' | 'detail'>('list');
-
 	// New-community dialog state
 	let newCommunityDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let _pendingCommunity: Community | null = null;
@@ -153,17 +142,21 @@
 	let _pendingPlaceRegionType = $state<'ironlands' | 'yrt'>('ironlands');
 	let _pendingPlaceLocationType = $state<'location' | 'coastalWatersLocation'>('location');
 
+	// Combobox switcher + gear-options refs (mirrors Chars/Foes/Exp).
+	let entryPickerOpen = $state(false);
+	let entryOptionsRef = $state<{ open(): void; close(): void } | null>(null);
+
+	// Name-first drafts for the three New * dialogs.
+	let newCommunityName = $state<string>('');
+	let newNpcName = $state<string>('');
+	let newPlaceName = $state<string>('');
+
 	// Inline-edit state
 	let editingNotes = $state(false);
 	let editingCoreNotes = $state(false);
 
 	// Re-entrance guard for dice-button rolls (matches ExpeditionsArea pattern).
 	let rolling = $state(false);
-	const nameEdit = new EditableName((restored) => {
-		if (activeEntry?.kind === 'community') updateCommunity({ name: restored });
-		else if (activeEntry?.kind === 'npc') updateNpc({ name: restored });
-		else if (activeEntry?.kind === 'place') updatePlace({ name: restored });
-	});
 
 	const communities = $derived(getCommunities());
 	const npcs = $derived(getNpcs());
@@ -194,19 +187,12 @@
 		].sort((a, b) => a.createdAt - b.createdAt),
 	);
 
-	/** Rail list — entries after name search, then A-Z sorted. The
-	 *  detail stage always reads from the full `entries`, so search
-	 *  never hides the currently-open entry. */
-	const displayEntries = $derived<Entry[]>(
+	/** Popover list — sorted A→Z, all three kinds interleaved. */
+	const sortedEntries = $derived<Entry[]>(
 		entries
-			.filter((e) => {
-				const q = search.trim().toLowerCase();
-				return q === '' || (e.data.name ?? '').toLowerCase().includes(q);
-			})
+			.slice()
 			.sort((a, b) =>
-				(a.data.name ?? '').localeCompare(b.data.name ?? '', undefined, {
-					sensitivity: 'base',
-				}),
+				(a.data.name ?? '').localeCompare(b.data.name ?? '', undefined, { sensitivity: 'base' }),
 			),
 	);
 
@@ -310,8 +296,6 @@
 		flushPersist();
 		activeEntryId = id;
 		activeTab = 'core';
-		mobilePane = 'detail';
-		nameEdit.commit();
 		editingNotes = false;
 		editingCoreNotes = false;
 	}
@@ -427,11 +411,6 @@
 		}
 	}
 
-	function setName(value: string) {
-		if (activeEntry?.kind === 'community') updateCommunity({ name: value });
-		else if (activeEntry?.kind === 'npc') updateNpc({ name: value });
-		else if (activeEntry?.kind === 'place') updatePlace({ name: value });
-	}
 	function setNotes(value: string) {
 		if (activeEntry?.kind === 'community') updateCommunity({ notes: value });
 		else if (activeEntry?.kind === 'npc') updateNpc({ notes: value });
@@ -455,6 +434,7 @@
 			notes: '',
 			createdAt: Date.now(),
 		};
+		newCommunityName = '';
 		await loadOracles();
 		newCommunityDialogRef?.open();
 	}
@@ -476,6 +456,7 @@
 			c.locationDescription = rollOracle('locationDescriptor', oracles).value;
 			c.trouble = rollOracle('settlementTrouble', oracles).value;
 		}
+		if (newCommunityName.trim()) c.name = newCommunityName.trim();
 		await addCommunity(c);
 		activeEntryId = c.id;
 		activeTab = 'core';
@@ -493,6 +474,7 @@
 			notes: '',
 			createdAt: Date.now(),
 		};
+		newNpcName = '';
 		await loadOracles();
 		newNpcDialogRef?.open();
 	}
@@ -519,6 +501,7 @@
 				if (o) n.name = rollFromRangeTable(o.data).value as string;
 			}
 		}
+		if (newNpcName.trim()) n.name = newNpcName.trim();
 		await addNpc(n);
 		activeEntryId = n.id;
 		activeTab = 'core';
@@ -535,6 +518,7 @@
 			notes: '',
 			createdAt: Date.now(),
 		};
+		newPlaceName = '';
 		await loadOracles();
 		newPlaceDialogRef?.open();
 	}
@@ -572,31 +556,119 @@
 		else await removePlace(id);
 		if (activeEntryId === id) activeEntryId = null;
 		// Return to the list on narrow layouts after deleting the open entry.
-		mobilePane = 'list';
 	}
 </script>
 
-<div class="cm-area" class:cm-area--detail={mobilePane === 'detail'}>
+<div class="cm-area">
 	<header class="cm-header">
-		<!-- Back button — only shown in the mobile single-pane drill-down
-		     (viewport ≤600px and a detail entry is open). Lives on the toolbar
-		     rather than the stage header. -->
-		<button
-			class="btn cm-hdr-btn back-btn cm-header-back"
-			type="button"
-			onclick={() => (mobilePane = 'list')}>Back</button
-		>
 		{#if showTitle}
 			<span class="cm-title-icon" aria-hidden="true">{@html villageIconSvg}</span>
 			<span class="cmt-title">{headingText('Connections')}</span>
 		{/if}
-		<div class="cm-header-actions">
-			<button class="btn cm-hdr-btn" onclick={addNewCommunity} use:tooltip={'Add community'}
-				>+ Community</button
-			>
-			<button class="btn cm-hdr-btn" onclick={addNewNpc} use:tooltip={'Add NPC'}>+ NPC</button>
-			<button class="btn cm-hdr-btn" onclick={addNewPlace} use:tooltip={'Add place'}>+ Place</button
-			>
+		<div class="cm-header-actions" data-entry-count={entries.length}>
+			<Popover.Root bind:open={entryPickerOpen}>
+				<Popover.Trigger class="mp-combobox cm-hdr-combobox" aria-label="Switch or add connection">
+					{#if activeEntry}
+						<span class="mp-combobox-value"
+							>{activeEntry.data.name || `Unnamed ${kindLabelSingular(activeEntry.kind)}`}</span
+						>
+					{:else}
+						<span class="mp-combobox-value mp-combobox-value--placeholder"
+							>— No connections yet —</span
+						>
+					{/if}
+					<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
+				</Popover.Trigger>
+				<Popover.Portal>
+					<Popover.Content class="mp-cmd-popover" sideOffset={4} align="start" collisionPadding={8}>
+						<Command.Root class="mp-cmd">
+							<div class="mp-cmd-search-row">
+								<span class="mp-cmd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
+								<Command.Input class="mp-cmd-search" placeholder="Search connections…" autofocus />
+							</div>
+							<Command.List class="mp-cmd-list">
+								<Command.Empty class="mp-cmd-empty">No matching connections.</Command.Empty>
+								{#each sortedEntries as entry (entry.id)}
+									{@const n = entry.data.name || `Unnamed ${kindLabelSingular(entry.kind)}`}
+									{@const accent = accentFor(entry.kind)}
+									<Command.Item
+										class="mp-cmd-item"
+										value={n}
+										onSelect={() => {
+											selectEntry(entry.id);
+											entryPickerOpen = false;
+										}}
+									>
+										<span class="mp-cmd-check" aria-hidden="true">
+											{#if entry.id === activeEntryId}
+												<svg
+													viewBox="0 0 20 20"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="2.5"
+													><polyline
+														points="4 11 8 15 16 6"
+														stroke-linecap="round"
+														stroke-linejoin="round"
+													></polyline></svg
+												>
+											{/if}
+										</span>
+										<span
+											class="mp-cmd-item-icon cm-cmd-type-icon"
+											style="color: {accent}"
+											aria-hidden="true">{@html iconFor(entry.kind)}</span
+										>
+										<span class="mp-cmd-item-name">{n}</span>
+									</Command.Item>
+								{/each}
+								<Command.Separator class="mp-cmd-sep" />
+								<Command.Item
+									class="mp-cmd-item mp-cmd-item--action"
+									value="+ New Community"
+									onSelect={() => {
+										entryPickerOpen = false;
+										void addNewCommunity();
+									}}
+								>
+									<span class="mp-cmd-check" aria-hidden="true"></span>
+									<span class="mp-cmd-item-name">+ New Community…</span>
+								</Command.Item>
+								<Command.Item
+									class="mp-cmd-item mp-cmd-item--action"
+									value="+ New NPC"
+									onSelect={() => {
+										entryPickerOpen = false;
+										void addNewNpc();
+									}}
+								>
+									<span class="mp-cmd-check" aria-hidden="true"></span>
+									<span class="mp-cmd-item-name">+ New NPC…</span>
+								</Command.Item>
+								<Command.Item
+									class="mp-cmd-item mp-cmd-item--action"
+									value="+ New Place"
+									onSelect={() => {
+										entryPickerOpen = false;
+										void addNewPlace();
+									}}
+								>
+									<span class="mp-cmd-check" aria-hidden="true"></span>
+									<span class="mp-cmd-item-name">+ New Place…</span>
+								</Command.Item>
+							</Command.List>
+						</Command.Root>
+					</Popover.Content>
+				</Popover.Portal>
+			</Popover.Root>
+			{#if activeEntry}
+				<button
+					class="btn btn-icon icon-btn cm-hdr-settings-btn"
+					onclick={() => entryOptionsRef?.open()}
+					use:tooltip={`${kindLabelSingular(activeEntry.kind)} options`}
+					aria-label="Connection options">{@html iconGearSvg}</button
+				>
+			{/if}
 		</div>
 	</header>
 
@@ -606,86 +678,20 @@
 		<div class="cm-empty">
 			<span class="cm-empty-icon" aria-hidden="true">{@html villageIconSvg}</span>
 			<p class="cm-empty-text">
-				There are people and places to <s>plunder</s> discover. Click <strong>+ COMMUNITY</strong>,
-				<strong>+ NPC</strong>, or <strong>+ PLACE</strong> to begin.
+				There are people and places to <s>plunder</s> discover. Pick
+				<strong>+ New Community…</strong>, <strong>+ New NPC…</strong>, or
+				<strong>+ New Place…</strong> from the switcher above to begin.
 			</p>
 		</div>
 	{:else}
-		<div class="cm-body" class:cm-body--detail={mobilePane === 'detail'}>
-			<nav class="cm-rail" aria-label="Connections and NPCs">
-				<div class="cm-rail-tools">
-					<div class="cm-rail-topline">
-						<div class="cm-search">
-							<span class="cm-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
-							<input
-								class="cm-search-input"
-								type="search"
-								bind:value={search}
-								placeholder="Search connections…"
-								aria-label="Search connections"
-							/>
-						</div>
-					</div>
-				</div>
-
-				<div class="cm-list" aria-label="Connections">
-					{#each displayEntries as entry (entry.id)}
-						{@const accent = accentFor(entry.kind)}
-						<button
-							class="cm-row"
-							class:cm-row--active={entry.id === activeEntryId}
-							style="--cm-row-color: {accent}"
-							aria-current={entry.id === activeEntryId ? 'true' : undefined}
-							onclick={() => selectEntry(entry.id)}
-						>
-							<span class="cm-row-icon" aria-hidden="true">{@html iconFor(entry.kind)}</span>
-							<span class="cm-row-name"
-								>{entry.data.name || `Unnamed ${kindLabelSingular(entry.kind)}`}</span
-							>
-							{#if entry.kind === 'npc' && entry.data.deceased}
-								<span
-									class="cm-row-deceased"
-									role="img"
-									aria-label="Deceased"
-									use:tooltip={'Deceased'}>{@html skullSvg}</span
-								>
-							{/if}
-						</button>
-					{:else}
-						<p class="cm-list-empty">No connections match “{search}”.</p>
-					{/each}
-				</div>
-			</nav>
-
+		<div class="cm-body">
 			{#if activeEntry}
 				<div class="cm-stage-header" style="--cm-nature: {activeColor}">
 					<span class="cm-stage-icon" aria-hidden="true">{@html iconFor(activeEntry.kind)}</span>
-					{#if nameEdit.editing}
-						<input
-							bind:this={nameEdit.inputEl}
-							class="cm-stage-name-input"
-							type="text"
-							value={activeEntry.data.name}
-							placeholder={`${kindLabelSingular(activeEntry.kind)} name…`}
-							oninput={(e) => setName((e.target as HTMLInputElement).value)}
-							onblur={nameEdit.commit}
-							onkeydown={nameEdit.onKeydown}
-						/>
-					{:else}
-						<button
-							type="button"
-							class="cm-stage-name cm-stage-name--editable"
-							use:tooltip={'Click to rename'}
-							onclick={() => nameEdit.start(activeEntry.data.name)}
-							>{headingText(
-								activeEntry.data.name || `Unnamed ${kindLabelSingular(activeEntry.kind)}`,
-							)}</button
-						>
-					{/if}
 					{#if activeEntry.kind === 'npc'}
 						<SegmentedRadio
 							ariaLabel="NPC status"
-							labels={nameEdit.editing ? 'never' : 'auto'}
+							labels="auto"
 							value={(activeEntry.data as Npc).deceased ? 'deceased' : 'alive'}
 							onchange={(v) => updateNpc({ deceased: v === 'deceased' })}
 							options={[
@@ -729,13 +735,6 @@
 							>
 						{/if}
 					{/if}
-					<button
-						class="btn btn-icon icon-btn btn-trash cm-stage-delete-btn"
-						onclick={() => deleteDialogRef?.open()}
-						use:tooltip={`Delete ${kindLabelSingular(activeEntry.kind).toLowerCase()}`}
-						aria-label={`Delete ${kindLabelSingular(activeEntry.kind).toLowerCase()}`}
-						>{@html trashSvg}</button
-					>
 				</div>
 
 				<div class="cm-stage">
@@ -963,19 +962,17 @@
 </div>
 
 {#if activeEntry}
-	<ConfirmDialog
-		bind:this={deleteDialogRef}
-		title={`Delete ${kindLabelSingular(activeEntry.kind)}`}
-		confirmLabel="Delete"
-		onconfirm={confirmDeleteEntry}
-	>
-		<p>
-			Permanently delete <strong
-				>{activeEntry.data.name ||
-					`this ${kindLabelSingular(activeEntry.kind).toLowerCase()}`}</strong
-			>? This cannot be undone.
-		</p>
-	</ConfirmDialog>
+	<ConnectionOptionsDialog
+		bind:this={entryOptionsRef}
+		name={activeEntry.data.name || ''}
+		kind={activeEntry.kind}
+		oncommit={(next) => {
+			if (activeEntry?.kind === 'community') updateCommunity({ name: next });
+			else if (activeEntry?.kind === 'npc') updateNpc({ name: next });
+			else if (activeEntry?.kind === 'place') updatePlace({ name: next });
+		}}
+		ondelete={confirmDeleteEntry}
+	/>
 {/if}
 
 <!-- New Community dialog — V1 pattern. -->
@@ -993,6 +990,10 @@
 		_pendingCommunity = null;
 	}}
 >
+	<label class="co-field" style="margin-bottom: 10px;">
+		<span class="co-field-label">Community name</span>
+		<input class="co-input" type="text" bind:value={newCommunityName} placeholder="New Community" />
+	</label>
 	<p
 		style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 10px;"
 	>
@@ -1056,6 +1057,10 @@
 		_pendingNpc = null;
 	}}
 >
+	<label class="co-field" style="margin-bottom: 10px;">
+		<span class="co-field-label">NPC name</span>
+		<input class="co-input" type="text" bind:value={newNpcName} placeholder="New NPC" />
+	</label>
 	<p
 		style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 8px;"
 	>
@@ -1097,6 +1102,10 @@
 		_pendingPlace = null;
 	}}
 >
+	<label class="co-field" style="margin-bottom: 10px;">
+		<span class="co-field-label">Place name</span>
+		<input class="co-input" type="text" bind:value={newPlaceName} placeholder="New Place" />
+	</label>
 	<p
 		style="font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-muted); margin: 0 0 10px;"
 	>
@@ -1257,11 +1266,6 @@
 		flex: 1;
 		justify-content: flex-end;
 	}
-	.cm-hdr-btn {
-		font-size: 0.7rem;
-		padding: 3px 9px;
-		min-width: unset;
-	}
 
 	.cm-loading,
 	.cm-empty {
@@ -1302,15 +1306,6 @@
 		flex: 1;
 		min-height: 0;
 	}
-	.cm-rail {
-		grid-column: 1;
-		grid-row: 1 / span 2;
-		display: flex;
-		flex-direction: column;
-		min-height: 0;
-		border-right: 1px solid var(--border);
-		background: transparent;
-	}
 	.cm-stage-header {
 		grid-column: 2;
 		grid-row: 1;
@@ -1327,154 +1322,18 @@
 	}
 
 	/* Rail tools — search, type filter, sort. */
-	.cm-rail-tools {
-		display: flex;
-		flex-direction: column;
-		gap: 7px;
-		padding: 8px;
-		border-bottom: 1px solid var(--border);
-		flex-shrink: 0;
-	}
-	.cm-search {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-		background: var(--bg-inset);
-		border: 1px solid var(--border);
-		border-radius: 4px;
-		padding: 3px 8px;
-	}
-	.cm-search:focus-within {
-		border-color: var(--text-accent);
-	}
-	.cm-search-icon {
-		display: inline-flex;
-		width: 12px;
-		height: 12px;
-		flex-shrink: 0;
-		color: var(--text-dimmer);
-	}
-	.cm-search-icon :global(svg) {
-		width: 100%;
-		height: 100%;
-		fill: currentColor;
-	}
-	.cm-search-input {
-		flex: 1;
-		min-width: 0;
-		font-family: var(--font-ui);
-		font-size: 0.78rem;
-		color: var(--text);
-		background: transparent;
-		border: none;
-		outline: none;
-		padding: 1px 0;
-	}
 	/* Search + Filters + Sort on one row. Search takes the flexible slack
 	   so the two chips on the right stay a fixed size and don't jump
 	   around as the user types. Wraps to a second line on very narrow
 	   viewports (~<260 px) where the three side by side would overflow. */
-	.cm-rail-topline {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-		flex-wrap: wrap;
-	}
-	.cm-rail-topline .cm-search {
-		flex: 1 1 120px;
-		min-width: 0;
-	}
 	/* Rail list — one row per connection. */
-	.cm-list {
-		flex: 1;
-		min-height: 0;
-		overflow-y: auto;
-		overscroll-behavior: contain;
-	}
-	.cm-row {
-		all: unset;
-		box-sizing: border-box;
-		width: 100%;
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		cursor: pointer;
-		padding: 8px 9px;
-		border-left: 3px solid transparent;
-		transition:
-			background 0.12s,
-			border-color 0.12s;
-	}
-	.cm-row:hover {
-		background: var(--bg-hover);
-	}
-	.cm-row--active {
-		background: var(--bg-control);
-		border-left-color: var(--cm-row-color, var(--text-accent));
-	}
-	.cm-row-icon {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 15px;
-		height: 15px;
-		flex-shrink: 0;
-		color: var(--cm-row-color, var(--text-muted));
-	}
-	.cm-row-icon :global(svg) {
-		width: 100%;
-		height: 100%;
-		fill: currentColor;
-	}
-	.cm-row-name {
-		flex: 1;
-		min-width: 0;
-		font-family: var(--font-ui);
-		font-size: 0.78rem;
-		font-weight: 500;
-		color: var(--text);
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-	.cm-row--active .cm-row-name {
-		color: var(--text-accent);
-	}
 	/* Deceased status — red skull icon, shown on NPC rows only when deceased.
 	   Matches the SegmentedRadio "stop" tone so the list and card status agree. */
-	.cm-row-deceased {
-		display: inline-flex;
-		align-items: center;
-		/* Pill shape matches .cm-row-badge (the NPC/Community badge beside it),
-		   tinted red to read as "deceased"; the skull glyph stands in for text. */
-		color: #ef4444;
-		background: color-mix(in srgb, #ef4444 13%, transparent);
-		border-radius: 10px;
-		padding: 2px 6px;
-		line-height: 1;
-		flex-shrink: 0;
-	}
-	.cm-row-deceased :global(svg) {
-		width: 9px;
-		height: 9px;
-		fill: currentColor;
-	}
-	.cm-list-empty {
-		margin: 0;
-		padding: 16px 12px;
-		font-family: var(--font-ui);
-		font-size: 0.72rem;
-		color: var(--text-dimmer);
-		text-align: center;
-	}
 
 	/* Toolbar back button — styled by .btn .cm-hdr-btn .back-btn (the shared
 	   "← Back" style). This rule only handles its conditional visibility:
 	   hidden except in the mobile single-pane drill-down (viewport ≤600px
 	   while a detail entry is open; see @media). */
-	.cm-header-back {
-		display: none;
-	}
 
 	/* Stage banner — colored band keyed to entry type. */
 	.cm-stage-header {
@@ -1503,59 +1362,7 @@
 		height: 100%;
 		fill: currentColor;
 	}
-	.cm-stage-name {
-		appearance: none;
-		-webkit-appearance: none;
-		text-align: left;
-		background: transparent;
-		flex: 1;
-		margin: 0;
-		font-family: var(--font-display);
-		font-size: calc(0.82rem * var(--font-display-scale));
-		font-weight: var(--font-display-weight);
-		font-variant: var(--font-display-variant);
-		letter-spacing: 0.08em;
-		text-transform: var(--font-display-transform);
-		color: var(--text-accent);
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-	.cm-stage-name--editable {
-		cursor: pointer;
-		padding: 2px 6px;
-		border: 1px solid transparent;
-		border-radius: 3px;
-		transition:
-			background 0.12s,
-			border-color 0.12s;
-	}
-	.cm-stage-name--editable:hover {
-		background: var(--bg-hover);
-		border-color: var(--border);
-	}
-	.cm-stage-name-input {
-		flex: 1;
-		font-family: var(--font-display);
-		font-size: calc(0.82rem * var(--font-display-scale));
-		font-weight: var(--font-display-weight);
-		font-variant: var(--font-display-variant);
-		letter-spacing: 0.08em;
-		text-transform: var(--font-display-transform);
-		color: var(--text-accent);
-		background: transparent;
-		border: 1px solid var(--border-mid);
-		border-radius: 3px;
-		padding: 2px 6px;
-		outline: none;
-	}
-	.cm-stage-name-input:focus {
-		border-color: var(--text-accent);
-	}
 	/* Delete: visual comes from .btn-trash in app.css; only positioning here. */
-	.cm-stage-delete-btn {
-		flex-shrink: 0;
-	}
 
 	:global(.cm-tabs) {
 		display: flex;
@@ -1752,40 +1559,27 @@
 		pointer-events: none;
 	}
 
-	/* Mobile (viewport-based, not container) — collapse the two panes into a
-	   single-pane drill-down: the rail (list) fills the area; selecting an
-	   entry swaps to the detail stage with a back button. Keyed to the
-	   viewport (matching the home page's own ≤900px tabbed mode) rather than
-	   the area width, because on desktop the home grid cell can be narrower
-	   than a phone — a container query would wrongly hide the rail there. */
-	@media (max-width: 600px) {
-		.cm-body {
-			display: flex;
-			flex-direction: column;
-		}
-		.cm-rail {
-			flex: 1;
-			min-height: 0;
-			border-right: none;
-		}
-		.cm-stage-header,
-		.cm-stage {
-			display: none;
-		}
-		.cm-body--detail .cm-rail {
-			display: none;
-		}
-		.cm-body--detail .cm-stage-header {
-			display: flex;
-		}
-		.cm-body--detail .cm-stage {
-			display: flex;
-			flex: 1;
-			min-height: 0;
-		}
-		/* Back button appears on the toolbar while viewing a detail entry. */
-		.cm-area--detail .cm-header-back {
-			display: inline-flex;
-		}
+	/* Header gear + combobox — sizing and svg tint. */
+	:global(.cm-hdr-settings-btn) {
+		flex-shrink: 0;
+	}
+	:global(.cm-hdr-settings-btn svg) {
+		width: 13px;
+		height: 13px;
+		fill: currentColor;
+	}
+	:global(.cm-hdr-settings-btn svg path) {
+		fill: currentColor;
+	}
+	:global(.cm-hdr-combobox) {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
+	/* Type-icon glyph (community / npc / place) inside popover items. */
+	:global(.cm-cmd-type-icon svg) {
+		fill: currentColor;
+	}
+	:global(.cm-cmd-type-icon svg path) {
+		fill: currentColor;
 	}
 </style>
