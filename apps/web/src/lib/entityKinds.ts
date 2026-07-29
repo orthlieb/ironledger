@@ -18,7 +18,7 @@
 import hutSvg from '$icons/hut.svg?raw';
 import farmerSvg from '$icons/farmer.svg?raw';
 import locationSvg from '$icons/location.svg?raw';
-import treasureMapSvg from '$icons/treasure-map.svg?raw';
+import journeySvg from '$icons/journey.svg?raw';
 import dungeonGateSvg from '$icons/dungeon-gate.svg?raw';
 
 /** All first-class entity kinds users can create or link. Order = the
@@ -66,7 +66,7 @@ export const ENTITY_KIND_META: Record<EntityKind, EntityKindMeta> = {
 	},
 	journey: {
 		color: '#E4AA28',
-		icon: treasureMapSvg,
+		icon: journeySvg,
 		label: 'Journey',
 		labelPlural: 'Journeys',
 	},
