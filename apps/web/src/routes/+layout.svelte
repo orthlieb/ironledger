@@ -227,18 +227,6 @@
 					>
 						<span class="act-icon">{@html iconMoves}</span><span class="act-label">Move</span>
 					</button>
-					<!-- Campaign map — opens the last-active map in a modal. Sits
-					     next to Move because "look at the map" is an at-the-table
-					     action, not a per-panel setting. Dispatches a global event
-					     rather than importing MapDialog here; ExpeditionsArea
-					     already owns the ref and listens for the event. -->
-					<button
-						class="btn btn-primary act-btn"
-						onclick={() => document.dispatchEvent(new CustomEvent('ironledger:open-campaign-map'))}
-						use:tooltip={'Open the campaign map'}
-					>
-						<span class="act-icon">{@html iconMap}</span><span class="act-label">Map</span>
-					</button>
 					<button
 						class="btn btn-primary act-btn"
 						onclick={() => oraclesDialogRef?.open()}
@@ -252,6 +240,17 @@
 						use:tooltip={'Roll dice'}
 					>
 						<span class="act-icon">{@html iconDice}</span><span class="act-label">Roll</span>
+					</button>
+					<!-- Campaign map — opens the last-active map in a modal.
+					     Dispatches a global event rather than importing
+					     MapDialog here; ExpeditionsArea already owns the ref
+					     and listens for the event. -->
+					<button
+						class="btn btn-primary act-btn"
+						onclick={() => document.dispatchEvent(new CustomEvent('ironledger:open-campaign-map'))}
+						use:tooltip={'Open the campaign map'}
+					>
+						<span class="act-icon">{@html iconMap}</span><span class="act-label">Map</span>
 					</button>
 					<button
 						class="btn btn-primary act-btn"
