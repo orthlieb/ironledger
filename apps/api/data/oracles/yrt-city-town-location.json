@@ -2,7 +2,7 @@
   "key": "yrtCityTownLocation",
   "title": "City or Town Location",
   "selectLabel": "City / Town Location",
-  "description": "Use this oracle to identify a point-of-interest inside a medieval or renaissance settlement — the district, workshop, hall, or ruin you find yourself standing at.",
+  "description": "Use this oracle to identify a point-of-interest inside a settlement, town, or city.",
   "source": "yrt",
   "data": [
     { "topRange": 5, "value": "Marketplace" },
