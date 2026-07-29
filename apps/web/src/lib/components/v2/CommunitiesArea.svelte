@@ -533,24 +533,82 @@
 		else newNpcName = rollOracle(_pendingNpcNameOracle, getOracles()).value ?? '';
 	}
 
-	/** Convert the log-flavoured html the compound oracles emit into a
-	 *  markdown paragraph fit for the NPC's notes field. Drops the
-	 *  `<div class="roll-line">…</div>` d100 chatter, keeps the labelled
-	 *  lines, and turns `<li>` into `- ` bullets. */
-	function htmlToNotesMd(html: string): string {
-		return html
-			.replace(/<div class="roll-line">[\s\S]*?<\/div>/g, '')
-			.replace(/<strong>(.*?)<\/strong>/g, '**$1**')
-			.replace(/<em>(.*?)<\/em>/g, '_$1_')
-			.replace(/<li>(.*?)<\/li>/g, '- $1\n')
-			.replace(/<\/div>|<br\s*\/?>/g, '\n')
-			.replace(/<\/?(?:div|ul|ol|p)[^>]*>/g, '')
-			.replace(/\n{3,}/g, '\n\n')
-			.split('\n')
-			.map((s) => s.trimEnd())
-			.filter((s, i, a) => !(s === '' && a[i - 1] === ''))
-			.join('\n')
-			.trim();
+	/** Run the compound YRT Touched roll and return the pieces the
+	 *  formatter cares about: class, animal aspect (if any), and the
+	 *  rolled features list (empty for Pure and Feral). Mirrors the
+	 *  bespoke branching in `rollOracle('yrtTouched', …)` — we don't
+	 *  reuse that call directly because it only exposes a pre-rendered
+	 *  html blob; we want structured data to build our own template. */
+	function rollYrtTouchedStructured(): {
+		className: 'Pure' | 'Prime' | 'Second' | 'Third' | 'Feral';
+		animal: string;
+		features: string[];
+	} | null {
+		const touched = findOracle('yrtTouched');
+		if (!touched) return null;
+		const cls = rollFromRangeTable(touched.data).value as {
+			className: 'Pure' | 'Prime' | 'Second' | 'Third' | 'Feral';
+			featureCount: number | { min: number; max: number } | null;
+		};
+		if (cls.featureCount === 0) return { className: cls.className, animal: '', features: [] };
+		const animalOracle = findOracle('yrtAnimal');
+		const animal = animalOracle
+			? ((rollFromRangeTable(animalOracle.data).value as string) ?? '')
+			: '';
+		if (cls.featureCount === null) return { className: cls.className, animal, features: [] };
+		let count: number;
+		if (typeof cls.featureCount === 'number') {
+			count = cls.featureCount;
+		} else {
+			const { min } = cls.featureCount;
+			// Second / Third: d6 % 3 + min → 1..3 or 4..6 (same as the log path).
+			const d6 = Math.floor(Math.random() * 6) + 1;
+			count = (d6 % 3) + min;
+		}
+		const featOracle = findOracle('touchedFeatures');
+		const features: string[] = [];
+		const seen = new Set<string>();
+		let safety = 0;
+		if (featOracle) {
+			while (features.length < count && safety++ < 1000) {
+				const v = rollFromRangeTable(featOracle.data).value as string;
+				if (!seen.has(v)) {
+					seen.add(v);
+					features.push(v);
+				}
+			}
+		}
+		return { className: cls.className, animal, features };
+	}
+
+	/** Render the Touched roll into the concise markdown template we
+	 *  prepend to the NPC's notes:
+	 *    <name> is **<class> with <count>** features of a/an <animal>.
+	 *    - feature 1
+	 *    - feature 2
+	 *  Pure has no animal (and no bullets). Feral drops the bullets for
+	 *  a narrative placeholder. */
+	function formatTouchedMd(
+		name: string,
+		r: { className: string; animal: string; features: string[] },
+	): string {
+		const who = name.trim() || 'This NPC';
+		if (r.className === 'Pure') {
+			return `${who} is **Pure with no touched features**.`;
+		}
+		const article = /^[aeiouAEIOU]/.test(r.animal) ? 'an' : 'a';
+		if (r.className === 'Feral') {
+			return (
+				`${who} is **Feral with many** features of ${article} ${r.animal}.\n\n` +
+				`- _Enter narrative concerning this NPC here._`
+			);
+		}
+		const n = r.features.length;
+		const noun = n === 1 ? 'feature' : 'features';
+		const bullets = r.features.map((f) => `- ${f}`).join('\n');
+		return (
+			`${who} is **${r.className} with ${n}** ${noun} of ${article} ${r.animal}.\n\n` + bullets
+		);
 	}
 
 	async function _commitNpc() {
@@ -563,9 +621,11 @@
 		if (newNpcRollGoal) n.goal = rollOracle('characterGoal', oracles).value ?? '';
 		if (newNpcRollDescriptor) n.descriptor = rollOracle('characterDescriptor', oracles).value ?? '';
 		if (newNpcRollTouched && isYrtEnabled()) {
-			const res = rollOracle('yrtTouched', oracles);
-			const md = htmlToNotesMd(res.html ?? '');
-			if (md) n.notes = `**Touched**\n\n${md}${n.notes ? `\n\n${n.notes}` : ''}`;
+			const r = rollYrtTouchedStructured();
+			if (r) {
+				const md = formatTouchedMd(n.name, r);
+				n.notes = md + (n.notes ? `\n\n${n.notes}` : '');
+			}
 		}
 		await addNpc(n);
 		activeEntryId = n.id;
