@@ -295,25 +295,30 @@
 	});
 
 	/** Desktop horizontal resize (log width). */
-	function startResize(e: MouseEvent) {
+	function startResize(e: MouseEvent | TouchEvent) {
 		e.preventDefault();
 		dragging = true;
-		const startX = e.clientX;
+		const startX = 'touches' in e ? e.touches[0].clientX : e.clientX;
 		const startWidth = logWidth;
 
-		const onMove = (ev: MouseEvent) => {
-			const delta = startX - ev.clientX;
+		const onMove = (ev: MouseEvent | TouchEvent) => {
+			const x = 'touches' in ev ? ev.touches[0].clientX : ev.clientX;
+			const delta = startX - x;
 			const next = Math.max(MIN_LOG, Math.min(MAX_LOG, startWidth + delta));
 			logWidth = next;
 		};
 		const onUp = () => {
 			dragging = false;
-			window.removeEventListener('mousemove', onMove);
+			window.removeEventListener('mousemove', onMove as EventListener);
 			window.removeEventListener('mouseup', onUp);
+			window.removeEventListener('touchmove', onMove as EventListener);
+			window.removeEventListener('touchend', onUp);
 			localStorage.setItem(LOG_WIDTH_KEY, String(logWidth));
 		};
-		window.addEventListener('mousemove', onMove);
+		window.addEventListener('mousemove', onMove as EventListener);
 		window.addEventListener('mouseup', onUp);
+		window.addEventListener('touchmove', onMove as EventListener, { passive: false });
+		window.addEventListener('touchend', onUp);
 	}
 
 	/** Mobile vertical resize (log height). */
@@ -345,51 +350,61 @@
 	}
 
 	/** Desktop column split (between chars/foes and expeditions/communities). */
-	function startColResize(e: MouseEvent) {
+	function startColResize(e: MouseEvent | TouchEvent) {
 		e.preventDefault();
 		colDragging = true;
-		const startX = e.clientX;
+		const startX = 'touches' in e ? e.touches[0].clientX : e.clientX;
 		const startW = col1Width ?? 0;
 
-		const onMove = (ev: MouseEvent) => {
+		const onMove = (ev: MouseEvent | TouchEvent) => {
+			const x = 'touches' in ev ? ev.touches[0].clientX : ev.clientX;
 			const shellW = shellEl?.offsetWidth ?? window.innerWidth;
 			const maxW = shellW - 20 - logWidth - 12 - MIN_COL;
-			const next = Math.max(MIN_COL, Math.min(maxW, startW + (ev.clientX - startX)));
+			const next = Math.max(MIN_COL, Math.min(maxW, startW + (x - startX)));
 			col1Width = next;
 		};
 		const onUp = () => {
 			colDragging = false;
-			window.removeEventListener('mousemove', onMove);
+			window.removeEventListener('mousemove', onMove as EventListener);
 			window.removeEventListener('mouseup', onUp);
+			window.removeEventListener('touchmove', onMove as EventListener);
+			window.removeEventListener('touchend', onUp);
 			if (col1Width !== null) localStorage.setItem(COL1_WIDTH_KEY, String(col1Width));
 		};
-		window.addEventListener('mousemove', onMove);
+		window.addEventListener('mousemove', onMove as EventListener);
 		window.addEventListener('mouseup', onUp);
+		window.addEventListener('touchmove', onMove as EventListener, { passive: false });
+		window.addEventListener('touchend', onUp);
 	}
 
 	/** Desktop row split — dragging either handle updates the single shared
 	 *  `rowHeight`, so the chars/foes divider and the expeditions/
 	 *  connections divider stay locked. */
-	function startRowResize(e: MouseEvent) {
+	function startRowResize(e: MouseEvent | TouchEvent) {
 		e.preventDefault();
 		rowDragging = true;
-		const startY = e.clientY;
+		const startY = 'touches' in e ? e.touches[0].clientY : e.clientY;
 		const startH = rowHeight ?? 0;
 
-		const onMove = (ev: MouseEvent) => {
+		const onMove = (ev: MouseEvent | TouchEvent) => {
+			const y = 'touches' in ev ? ev.touches[0].clientY : ev.clientY;
 			const colH = charFoeColEl?.offsetHeight ?? expCommColEl?.offsetHeight ?? 600;
 			const maxH = colH - 6 - MIN_AREA;
-			const next = Math.max(MIN_AREA, Math.min(maxH, startH + (ev.clientY - startY)));
+			const next = Math.max(MIN_AREA, Math.min(maxH, startH + (y - startY)));
 			rowHeight = next;
 		};
 		const onUp = () => {
 			rowDragging = false;
-			window.removeEventListener('mousemove', onMove);
+			window.removeEventListener('mousemove', onMove as EventListener);
 			window.removeEventListener('mouseup', onUp);
+			window.removeEventListener('touchmove', onMove as EventListener);
+			window.removeEventListener('touchend', onUp);
 			if (rowHeight !== null) localStorage.setItem(ROW_HEIGHT_KEY, String(rowHeight));
 		};
-		window.addEventListener('mousemove', onMove);
+		window.addEventListener('mousemove', onMove as EventListener);
 		window.addEventListener('mouseup', onUp);
+		window.addEventListener('touchmove', onMove as EventListener, { passive: false });
+		window.addEventListener('touchend', onUp);
 	}
 
 	// ── Menu action handler ──────────────────────────────────────────────────
@@ -1655,6 +1670,7 @@
 			aria-label="Resize characters and foes"
 			aria-orientation="horizontal"
 			onmousedown={startRowResize}
+			ontouchstart={startRowResize}
 		></div>
 		<section class="home-area home-area--foes" class:mob-hidden={mobileTab !== 'foes'}>
 			<FoesArea bind:this={foeAreaRef} showTitle={!isMobile} />
@@ -1669,6 +1685,7 @@
 		aria-label="Resize columns"
 		aria-orientation="vertical"
 		onmousedown={startColResize}
+		ontouchstart={startColResize}
 	></div>
 
 	<!-- Column 2: Expeditions (top) + Connections (bottom) -->
@@ -1686,6 +1703,7 @@
 			aria-label="Resize expeditions and connections"
 			aria-orientation="horizontal"
 			onmousedown={startRowResize}
+			ontouchstart={startRowResize}
 		></div>
 		<section
 			class="home-area home-area--communities"
@@ -1706,6 +1724,7 @@
 		aria-valuemin={MIN_LOG}
 		aria-valuemax={MAX_LOG}
 		onmousedown={startResize}
+		ontouchstart={startResize}
 	></div>
 
 	<!-- Mobile vertical resize handle (hidden on desktop) -->
@@ -1832,6 +1851,9 @@
 		position: relative;
 		transition: background 0.12s;
 		z-index: 1;
+		/* Suppress browser gestures (scroll/pinch) on touch drag so the
+		   handler can read every touchmove without the page scrolling. */
+		touch-action: none;
 	}
 	.home-resize-handle::before {
 		content: '';
@@ -1858,6 +1880,7 @@
 		background: transparent;
 		position: relative;
 		z-index: 1;
+		touch-action: none;
 	}
 	.col-resize-handle::before {
 		content: '';
@@ -1884,6 +1907,7 @@
 		background: transparent;
 		position: relative;
 		z-index: 1;
+		touch-action: none;
 	}
 	.row-resize-handle::before {
 		content: '';
@@ -2047,6 +2071,7 @@
 			background: transparent;
 			position: relative;
 			z-index: 1;
+			touch-action: none;
 		}
 		.mob-resize-handle::before {
 			content: '';
