@@ -31,6 +31,7 @@
 		resolveFoeDescription,
 	} from '$lib/foeStore.svelte.js';
 	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '$lib/foePortrait.js';
+	import { foeIcon } from '$lib/iconRegistry.js';
 	import type { FoeEncounter, FoeDef, FoeQuantity } from '$lib/types.js';
 
 	import ProgressTrackPanel from '$lib/components/ProgressTrackPanel.svelte';
@@ -278,6 +279,10 @@
 								{#each encounters as enc (enc.id)}
 									{@const def = findFoe(enc.foeId)}
 									{@const n = enc.customName?.trim() || def?.name || enc.foeId}
+									{@const natureCol = def
+										? (FOE_NATURE_COLORS[def.nature] ?? '#7A9AB8')
+										: '#7A9AB8'}
+									{@const typeIcon = foeIcon(def)}
 									<Command.Item
 										class="mp-cmd-item"
 										value={n}
@@ -301,6 +306,13 @@
 												>
 											{/if}
 										</span>
+										{#if typeIcon}
+											<span
+												class="mp-cmd-item-icon fa-cmd-type-icon"
+												style="color: {natureCol}"
+												aria-hidden="true">{@html typeIcon}</span
+											>
+										{/if}
 										<span class="mp-cmd-item-name">{n}</span>
 									</Command.Item>
 								{/each}
@@ -701,6 +713,14 @@
 		fill: currentColor;
 	}
 	:global(.fa-hdr-settings-btn svg path) {
+		fill: currentColor;
+	}
+	/* Type-icon glyph inside popover items — tinted by inline color
+	   (nature colour) via currentColor. */
+	:global(.fa-cmd-type-icon svg) {
+		fill: currentColor;
+	}
+	:global(.fa-cmd-type-icon svg path) {
 		fill: currentColor;
 	}
 	/* Header contains a SegmentedRadio that opts into `labels="auto"`;
