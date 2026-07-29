@@ -986,15 +986,14 @@
 	$effect(() => {
 		if (!pickrAnchor || !dialogEl) return;
 		const anchor = pickrAnchor;
-		// The colour button now lives inside the marker properties
-		// dialog (z-index 83), which sits above the outer MapDialog
-		// (81). Pickr must portal into the props dialog's own
-		// stacking context — anchor it to dialogEl (the outer dialog)
-		// and Pickr's `.pcr-app` popover renders BEHIND the props
-		// dialog and appears invisible. Fall back to dialogEl if the
-		// props dialog element hasn't mounted yet (defensive; the
-		// button lives inside it, so it should always be present).
-		const container = propsDialogEl ?? dialogEl;
+		// Portal Pickr into `document.body` and let the `.pcr-app`
+		// z-index (bumped above the props dialog's 83) do the layering.
+		// Anchoring it inside the props dialog itself makes it a child
+		// of an `overflow: hidden` element, which clips the popover
+		// against the dialog's rounded rectangle — the "colour wheel
+		// is cut off" bug. Body is safe: bits-ui portals its own
+		// dialogs the same way.
+		const container = document.body;
 		// `untrack` the initial color read so this effect ONLY re-runs
 		// when the anchor element (or the parent container) actually
 		// changes. Without it, every colour edit fed `selectedColor`
@@ -2714,10 +2713,12 @@
 		width: 22px;
 		height: 22px;
 	}
-	/* Popover floats above the dialog's other chrome via a high
-	   z-index so it isn't clipped by the toolbar's own row. */
+	/* Popover portals to `document.body` (Pickr `container: document.body`)
+	   so its layering is controlled purely by z-index. Sits ABOVE the
+	   props dialog (83) — this is the modal-overlay tier just like
+	   bits-ui portals its own dialogs. */
 	:global(.pcr-app) {
-		z-index: 60;
+		z-index: 90;
 	}
 	/* Angle spinner — inline `−  ∠ nnn°  +` cluster. iOS Safari drops
 	   the native <input type="number"> step arrows, so explicit step
