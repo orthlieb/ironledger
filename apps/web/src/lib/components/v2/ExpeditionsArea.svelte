@@ -724,6 +724,45 @@
 				</Popover.Portal>
 			</Popover.Root>
 			{#if activeExp}
+				<SegmentedRadio
+					ariaLabel="Expedition status"
+					labels="auto"
+					value={activeExp.complete ? 'complete' : 'active'}
+					onchange={(v) => updateExp({ complete: v === 'complete' })}
+					options={[
+						{
+							value: 'active',
+							icon: locationSvg,
+							text: 'Active',
+							label: 'Mark active',
+							tone: 'go',
+						},
+						{
+							value: 'complete',
+							icon: checkSvg,
+							text: 'Complete',
+							label: 'Mark complete',
+							tone: 'stop',
+						},
+					]}
+				/>
+				{#if activeExpMapEmpty}
+					<label
+						class="btn ea-stage-map-btn"
+						use:tooltip={'Add a background image to this ' + activeExp.type + '’s map'}
+						aria-label="Add map"
+					>
+						+ Map
+						<input type="file" accept="image/*" hidden onchange={handleAddMapWithFile} />
+					</label>
+				{:else}
+					<button
+						class="btn ea-stage-map-btn"
+						onclick={openOwnedMap}
+						use:tooltip={'Open the map for this ' + activeExp.type}
+						aria-label="Open map">Map</button
+					>
+				{/if}
 				<button
 					class="btn btn-icon icon-btn ea-hdr-settings-btn"
 					onclick={() => expOptionsRef?.open()}
@@ -747,56 +786,11 @@
 	{:else}
 		<div class="ea-body">
 			{#if activeExp}
-				<!-- Slim stage-header — icon + status + per-expedition map btn.
-				     Rename and delete moved to the header gear. -->
-				<div class="ea-stage-header" style="--ea-nature: {activeColor}">
-					<span class="ea-stage-icon" aria-hidden="true">{@html placeholderImg}</span>
-					<SegmentedRadio
-						ariaLabel="Expedition status"
-						labels="auto"
-						value={activeExp.complete ? 'complete' : 'active'}
-						onchange={(v) => updateExp({ complete: v === 'complete' })}
-						options={[
-							{
-								value: 'active',
-								icon: locationSvg,
-								text: 'Active',
-								label: 'Mark active',
-								tone: 'go',
-							},
-							{
-								value: 'complete',
-								icon: checkSvg,
-								text: 'Complete',
-								label: 'Mark complete',
-								tone: 'stop',
-							},
-						]}
-					/>
-					{#if activeExpMapEmpty}
-						<!-- <label> around a hidden <input type="file"> — iOS
-						     Safari refuses `input.click()` calls issued from JS
-						     after any `await`, so the file picker must fire
-						     from the tap's native user gesture. -->
-						<label
-							class="btn ea-stage-map-btn"
-							use:tooltip={'Add a background image to this ' + activeExp.type + '’s map'}
-							aria-label="Add map"
-						>
-							+ Map
-							<input type="file" accept="image/*" hidden onchange={handleAddMapWithFile} />
-						</label>
-					{:else}
-						<button
-							class="btn ea-stage-map-btn"
-							onclick={openOwnedMap}
-							use:tooltip={'Open the map for this ' + activeExp.type}
-							aria-label="Open map">Map</button
-						>
-					{/if}
-				</div>
-
-				<div class="ea-stage" class:ea-stage--complete={activeExp.complete}>
+				<div
+					class="ea-stage"
+					class:ea-stage--complete={activeExp.complete}
+					style="--ea-nature: {activeColor}"
+				>
 					<Tabs.Root
 						value={activeTab}
 						onValueChange={(v) => (activeTab = v as ExpTab)}
@@ -1296,6 +1290,8 @@
 		gap: 6px;
 		flex: 1;
 		justify-content: flex-end;
+		/* container for SegmentedRadio's responsive (labels="auto") collapse */
+		container-type: inline-size;
 	}
 
 	.ea-loading,
@@ -1337,6 +1333,8 @@
 		flex: 1;
 		min-height: 0;
 	}
+	/* Stage — coloured 3 px band on the LHS keyed to expedition type
+	   (journey / site). Replaces the retired ea-stage-header band. */
 	.ea-stage {
 		padding: 0 12px 10px 12px;
 		min-height: 0;
@@ -1345,37 +1343,10 @@
 		overflow: auto;
 		display: flex;
 		flex-direction: column;
+		border-left: 3px solid var(--ea-nature, var(--text-muted));
 	}
 	.ea-stage--complete .ea-card {
 		opacity: 0.7;
-	}
-
-	/* Stage name banner — coloured band on the LHS keyed to type. */
-	.ea-stage-header {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-		padding: 5px 10px;
-		background: var(--bg-control);
-		border: none;
-		border-left: 3px solid var(--ea-nature, var(--text-muted));
-		border-bottom: 1px solid var(--border);
-		/* container for SegmentedRadio's responsive (labels="auto") collapse */
-		container-type: inline-size;
-	}
-	.ea-stage-icon {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 18px;
-		height: 18px;
-		flex-shrink: 0;
-		color: var(--ea-nature, var(--text-muted));
-	}
-	.ea-stage-icon :global(svg) {
-		width: 100%;
-		height: 100%;
-		fill: currentColor;
 	}
 	/* Height-match the neighbouring trash button. The trash btn renders
 	   at ~22px (12px SVG + 4+4 padding + 1+1 border via

@@ -362,7 +362,11 @@
 	{:else}
 		<div class="fa-body">
 			{#if activeEnc}
-				<div class="fa-stage" class:fa-stage--vanquished={activeEnc.vanquished}>
+				<div
+					class="fa-stage"
+					class:fa-stage--vanquished={activeEnc.vanquished}
+					style="--fa-nature: {natureColor}"
+				>
 					<Tabs.Root
 						value={activeTab}
 						onValueChange={(v) => (activeTab = v as FoeTab)}
@@ -375,7 +379,7 @@
 						</Tabs.List>
 					</Tabs.Root>
 
-					<div class="fa-card" role="tabpanel" style="--fa-nature: {natureColor}">
+					<div class="fa-card" role="tabpanel">
 						{#if activeTab === 'description'}
 							{#if activeDef}
 								<div class="fa-desc-section">
@@ -656,6 +660,8 @@
 		flex: 1;
 		min-height: 0;
 	}
+	/* Stage — coloured 3 px band on the LHS keyed to the active foe's
+	   nature (beast / horror / hunter / …). */
 	.fa-stage {
 		padding: 0 12px 10px 12px;
 		min-height: 0;
@@ -664,6 +670,7 @@
 		overflow: auto;
 		display: flex;
 		flex-direction: column;
+		border-left: 3px solid var(--fa-nature, var(--text-muted));
 	}
 
 	.fa-stage--vanquished .fa-card {
