@@ -756,7 +756,7 @@
 			<button
 				class="btn btn-danger asset-footer-btn"
 				onclick={onRemove}
-				aria-label="Delete {definition.name}">Delete</button
+				aria-label="Delete {definition.name}">DELETE</button
 			>
 			<button class="btn btn-primary asset-footer-btn" onclick={onCommit}>OK</button>
 		</div>

@@ -44,7 +44,6 @@
 		rollFromRangeTable,
 	} from '$lib/oracleStore.svelte.js';
 	import { appendLog } from '$lib/log.svelte.js';
-	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
@@ -62,6 +61,7 @@
 	import { downscaleImage, MapImageError } from '$lib/mapImage.js';
 	import { formatEntityId } from '$lib/mapEntityLinks.js';
 	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
+	import iconMapSvg from '$icons/treasure-map.svg?raw';
 	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
 	import heartPulseSvg from '$icons/heart-pulse-solid-full.svg?raw';
 	import skullSvg from '$icons/skull-crossbones-solid-full.svg?raw';
@@ -340,12 +340,6 @@
 			await loadOracles();
 			const result = rollOracle('settlementTrouble', getOracles());
 			if (!result.value) return;
-			const tensV = Math.floor((result.roll % 100) / 10) || 10;
-			const onesV = result.roll % 10 || 10;
-			await animateDice([
-				{ sides: 10, value: tensV, color: DIE_BLACK },
-				{ sides: 10, value: onesV, color: DIE_WHITE },
-			]);
 			appendLog(
 				result.title,
 				`<div class="roll-line">Roll: d100 → ${result.roll}</div>` +
@@ -689,19 +683,19 @@
 				{#if activeIsMapOwner}
 					{#if activeEntryMapEmpty}
 						<label
-							class="btn cm-stage-map-btn"
+							class="btn btn-icon icon-btn cm-hdr-icon-btn"
 							use:tooltip={`Add a background image to this ${kindLabelSingular(activeEntry.kind).toLowerCase()}’s map`}
 							aria-label="Add map"
 						>
-							+ Map
+							<span class="cm-hdr-icon-plus" aria-hidden="true">+</span>{@html iconMapSvg}
 							<input type="file" accept="image/*" hidden onchange={handleAddMapWithFile} />
 						</label>
 					{:else}
 						<button
-							class="btn cm-stage-map-btn"
+							class="btn btn-icon icon-btn cm-hdr-icon-btn"
 							onclick={openOwnedMap}
 							use:tooltip={`Open the map for this ${kindLabelSingular(activeEntry.kind).toLowerCase()}`}
-							aria-label="Open map">Map</button
+							aria-label="Open map">{@html iconMapSvg}</button
 						>
 					{/if}
 				{/if}
@@ -1151,24 +1145,6 @@
 		height: 100%;
 		min-height: 0;
 	}
-	/* Height-match the neighbouring trash button. The trash btn renders
-	   at ~22px (12px SVG + 4+4 padding + 1+1 border via
-	   `.btn.btn-icon.btn-trash`), while `.btn`'s inherited
-	   `line-height: 1.5` on `0.72rem` would puff the map btn to ~27px.
-	   `line-height: 1` collapses the text baseline and `min-height:
-	   22px` pins the final height to the trash btn's natural size. */
-	.cm-stage-map-btn {
-		flex-shrink: 0;
-		font-family: var(--font-ui);
-		font-size: 0.72rem;
-		font-weight: 600;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		padding: 4px 12px;
-		line-height: 1;
-		min-height: 22px;
-		box-sizing: border-box;
-	}
 	/* Map field — the chip strip lives inside a `.cm-field-row` in
 	   the Core tab now (previously a header-level band). One chip per
 	   marker referencing this community/place; hover surfaces the
@@ -1226,7 +1202,7 @@
 		container-type: inline-size;
 		container-name: area-header;
 	}
-	@container area-header (max-width: 320px) {
+	@container area-header (max-width: 420px) {
 		.cmt-title {
 			display: none;
 		}
@@ -1516,6 +1492,35 @@
 		pointer-events: none;
 	}
 
+	/* Prevent the status SegmentedRadio (NPCs) from clipping when the
+	   panel header is tight — combobox shrinks instead. */
+	.cm-header-actions :global(.sr) {
+		flex-shrink: 0;
+	}
+	/* Header +/plain icon button (map btn) — matches Chars/Exp shape. */
+	:global(.cm-hdr-icon-btn) {
+		display: inline-flex;
+		align-items: center;
+		gap: 3px;
+		padding: 4px 6px;
+		flex-shrink: 0;
+	}
+	:global(.cm-hdr-icon-btn svg) {
+		width: 12px;
+		height: 12px;
+		fill: currentColor;
+		flex-shrink: 0;
+	}
+	:global(.cm-hdr-icon-btn svg path) {
+		fill: currentColor;
+	}
+	:global(.cm-hdr-icon-plus) {
+		font-family: var(--font-ui);
+		font-size: 0.85rem;
+		font-weight: 700;
+		line-height: 1;
+		color: currentColor;
+	}
 	/* Header gear + combobox — sizing and svg tint. */
 	:global(.cm-hdr-settings-btn) {
 		flex-shrink: 0;

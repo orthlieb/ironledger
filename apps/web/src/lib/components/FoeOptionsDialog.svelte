@@ -82,7 +82,7 @@
 				<section class="co-section co-section-danger">
 					<div class="co-danger-header">Danger zone</div>
 					<div class="co-danger-row">
-						<button class="co-danger-btn" onclick={() => deleteConfirmRef?.open()}>Delete</button>
+						<button class="co-danger-btn" onclick={() => deleteConfirmRef?.open()}>DELETE</button>
 						<span class="co-hint"
 							>Removes <strong>{displayName}</strong> from this encounter. This can't be undone.</span
 						>
@@ -96,7 +96,7 @@
 <ConfirmDialog
 	bind:this={deleteConfirmRef}
 	title="Delete Foe"
-	confirmLabel="Delete"
+	confirmLabel="DELETE"
 	onconfirm={onDeleteConfirmed}
 >
 	<p

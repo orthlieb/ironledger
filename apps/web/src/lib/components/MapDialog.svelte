@@ -2146,7 +2146,7 @@
 				<div class="mp-props-footer">
 					<button class="mp-btn mp-btn-danger" onclick={deleteSelected} aria-label="Delete marker">
 						{@html iconTrashSvg}
-						<span>Delete</span>
+						<span>DELETE</span>
 					</button>
 					<div class="mp-props-footer-spacer"></div>
 					<button class="mp-btn" onclick={cancelDraft}>Cancel</button>

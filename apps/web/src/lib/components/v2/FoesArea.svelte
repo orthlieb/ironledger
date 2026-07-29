@@ -600,7 +600,7 @@
 		container-type: inline-size;
 		container-name: area-header;
 	}
-	@container area-header (max-width: 320px) {
+	@container area-header (max-width: 420px) {
 		.fa-title {
 			display: none;
 		}
@@ -701,6 +701,11 @@
 	:global(.fa-hdr-combobox) {
 		flex: 1 1 auto;
 		min-width: 0;
+	}
+	/* Prevent the status SegmentedRadio from clipping when the panel
+	   header is tight — combobox shrinks instead. */
+	.fa-header-actions :global(.sr) {
+		flex-shrink: 0;
 	}
 	/* Header gear button — sizes the svg to match its siblings across
 	   Chars/Exp/Connections. */

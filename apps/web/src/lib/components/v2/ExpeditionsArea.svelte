@@ -37,7 +37,6 @@
 	import { loadDelveData, buildCombinedTable } from '$lib/delveStore.svelte.js';
 	import { rollFromRangeTable } from '$lib/oracleStore.svelte.js';
 	import { appendLog } from '$lib/log.svelte.js';
-	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
 	import { addEncounter } from '$lib/encounterStore.svelte.js';
 	import { onMount } from 'svelte';
 
@@ -65,8 +64,9 @@
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
 	import checkSvg from '$icons/circle-check-solid-full.svg?raw';
 	import locationSvg from '$icons/location-dot-solid-full.svg?raw';
+	import iconMapSvg from '$icons/treasure-map.svg?raw';
 	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
-	import { RadioGroup, Tabs, Popover, Command } from 'bits-ui';
+	import { Tabs, Popover, Command } from 'bits-ui';
 	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
 	const journeyPlaceholderSvg = ENTITY_KIND_META.journey.icon;
 	const sitePlaceholderSvg = ENTITY_KIND_META.site.icon;
@@ -540,12 +540,6 @@
 				'features',
 			);
 			const result = rollFromRangeTable(table);
-			const tensV = Math.floor((result.roll % 100) / 10) || 10;
-			const onesV = result.roll % 10 || 10;
-			await animateDice([
-				{ sides: 10, value: tensV, color: DIE_BLACK },
-				{ sides: 10, value: onesV, color: DIE_WHITE },
-			]);
 			const valueStr = typeof result.value === 'string' ? result.value : String(result.value);
 			let resultHtml = `<div>Result: <strong>${valueStr}</strong>`;
 			if (result.roll === 99)
@@ -576,12 +570,6 @@
 				'dangers',
 			);
 			const result = rollFromRangeTable(table);
-			const tensV = Math.floor((result.roll % 100) / 10) || 10;
-			const onesV = result.roll % 10 || 10;
-			await animateDice([
-				{ sides: 10, value: tensV, color: DIE_BLACK },
-				{ sides: 10, value: onesV, color: DIE_WHITE },
-			]);
 			const valueStr = typeof result.value === 'string' ? result.value : String(result.value);
 			let resultHtml = `<div>Result: <strong>${valueStr}</strong>`;
 			if (result.roll === 99)
@@ -750,19 +738,19 @@
 				/>
 				{#if activeExpMapEmpty}
 					<label
-						class="btn ea-stage-map-btn"
+						class="btn btn-icon icon-btn ea-hdr-icon-btn"
 						use:tooltip={'Add a background image to this ' + activeExp.type + '’s map'}
 						aria-label="Add map"
 					>
-						+ Map
+						<span class="ea-hdr-icon-plus" aria-hidden="true">+</span>{@html iconMapSvg}
 						<input type="file" accept="image/*" hidden onchange={handleAddMapWithFile} />
 					</label>
 				{:else}
 					<button
-						class="btn ea-stage-map-btn"
+						class="btn btn-icon icon-btn ea-hdr-icon-btn"
 						onclick={openOwnedMap}
 						use:tooltip={'Open the map for this ' + activeExp.type}
-						aria-label="Open map">Map</button
+						aria-label="Open map">{@html iconMapSvg}</button
 					>
 				{/if}
 				<button
@@ -1045,7 +1033,7 @@
 	<ConfirmDialog
 		bind:this={deleteDialogRef}
 		title={activeExp.type === 'site' ? 'Delete Site' : 'Delete Journey'}
-		confirmLabel="Delete"
+		confirmLabel="DELETE"
 		onconfirm={confirmDeleteExp}
 	>
 		<p>
@@ -1068,7 +1056,7 @@
      FoesArea.handleFoeSelected. -->
 <DenizenDialog bind:this={denizenDialogRef} onSelect={handleDenizenSelected} />
 
-<!-- New Journey dialog — V1 pattern: pick difficulty, then create. -->
+<!-- New Journey dialog — name + difficulty (defaults to Dangerous). -->
 <ConfirmDialog
 	bind:this={newJourneyDialogRef}
 	title="New Journey"
@@ -1083,22 +1071,15 @@
 		<span class="co-field-label">Journey name</span>
 		<input class="co-input" type="text" bind:value={newJourneyName} placeholder="New Journey" />
 	</label>
-	<RadioGroup.Root
-		class="v2-radio-group"
-		value={newJourneyDifficulty}
-		onValueChange={(v) => (newJourneyDifficulty = v as VowDifficulty)}
-		aria-label="Difficulty"
-	>
-		<span class="v2-radio-legend">Difficulty</span>
-		{#each DIFFICULTIES as opt}
-			<label class="v2-radio-label">
-				<RadioGroup.Item value={opt.value} class="v2-radio-btn">
-					<span class="v2-radio-dot"></span>
-				</RadioGroup.Item>
-				{opt.label}
-			</label>
-		{/each}
-	</RadioGroup.Root>
+	<div class="ns-grid">
+		<label class="ns-label" for="nj-difficulty">Difficulty</label>
+		<Select
+			id="nj-difficulty"
+			class="ea-ns-select"
+			bind:value={newJourneyDifficulty}
+			options={DIFFICULTIES}
+		/>
+	</div>
 </ConfirmDialog>
 
 <!-- New Site dialog — name + difficulty + theme + domain up front.
@@ -1250,7 +1231,7 @@
 		container-type: inline-size;
 		container-name: area-header;
 	}
-	@container area-header (max-width: 320px) {
+	@container area-header (max-width: 420px) {
 		.ea-title {
 			display: none;
 		}
@@ -1344,25 +1325,6 @@
 	.ea-stage--complete .ea-card {
 		opacity: 0.7;
 	}
-	/* Height-match the neighbouring trash button. The trash btn renders
-	   at ~22px (12px SVG + 4+4 padding + 1+1 border via
-	   `.btn.btn-icon.btn-trash`), while `.btn`'s inherited
-	   `line-height: 1.5` on `0.72rem` would puff the map btn to ~27px.
-	   `line-height: 1` collapses the text baseline and `min-height:
-	   22px` pins the final height to the trash btn's natural size. */
-	.ea-stage-map-btn {
-		flex-shrink: 0;
-		font-family: var(--font-ui);
-		font-size: 0.72rem;
-		font-weight: 600;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		padding: 4px 12px;
-		line-height: 1;
-		min-height: 22px;
-		box-sizing: border-box;
-	}
-
 	/* Map field — a labelled section below the Progress Track in the
 	   Core tab. One chip per marker referencing this expedition;
 	   click jumps into the map dialog at that marker. Hover surfaces
@@ -1422,7 +1384,11 @@
 		max-width: 12rem;
 	}
 
-	/* Header gear + combobox. */
+	/* Header gear + combobox. Every fixed item pins `flex-shrink: 0` so
+	   the SegmentedRadio and map icon never squeeze into their content
+	   (which would clip on a narrow deck panel like iPad Air landscape).
+	   The combobox absorbs the shrink instead — its `min-width: 0` lets
+	   it truncate its label all the way to zero if needed. */
 	:global(.ea-hdr-settings-btn) {
 		flex-shrink: 0;
 	}
@@ -1437,6 +1403,37 @@
 	:global(.ea-hdr-combobox) {
 		flex: 1 1 auto;
 		min-width: 0;
+	}
+	/* Header +/plain icon button (used for the per-expedition Map btn) —
+	   matches Characters' Vow/Asset shape. */
+	:global(.ea-hdr-icon-btn) {
+		display: inline-flex;
+		align-items: center;
+		gap: 3px;
+		padding: 4px 6px;
+		flex-shrink: 0;
+	}
+	:global(.ea-hdr-icon-btn svg) {
+		width: 12px;
+		height: 12px;
+		fill: currentColor;
+		flex-shrink: 0;
+	}
+	:global(.ea-hdr-icon-btn svg path) {
+		fill: currentColor;
+	}
+	:global(.ea-hdr-icon-plus) {
+		font-family: var(--font-ui);
+		font-size: 0.85rem;
+		font-weight: 700;
+		line-height: 1;
+		color: currentColor;
+	}
+	/* SegmentedRadio in the header row must render at its content width
+	   (labels="auto" already collapses when the ea-header-actions
+	   container is ≤360px). Prevent shrink so glyphs never clip. */
+	.ea-header-actions :global(.sr) {
+		flex-shrink: 0;
 	}
 	/* Type-icon glyph inside the popover items. */
 	:global(.ea-cmd-type-icon svg) {

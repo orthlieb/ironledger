@@ -1534,7 +1534,7 @@
 	<ConfirmDialog
 		bind:this={removeAssetDialogRef}
 		title="Delete Asset"
-		confirmLabel="Delete Asset"
+		confirmLabel="DELETE"
 		onconfirm={confirmRemoveAsset}
 		oncancel={() => (pendingRemoveAssetId = null)}
 		ondismiss={() => (pendingRemoveAssetId = null)}
@@ -1569,7 +1569,7 @@
 		container-type: inline-size;
 		container-name: area-header;
 	}
-	@container area-header (max-width: 320px) {
+	@container area-header (max-width: 420px) {
 		.ca-title {
 			display: none;
 		}
@@ -1675,7 +1675,7 @@
 		align-items: center;
 		gap: 3px;
 		padding: 4px 6px;
-		min-width: 0;
+		flex-shrink: 0;
 	}
 	:global(.ca-hdr-icon-btn svg) {
 		width: 12px;

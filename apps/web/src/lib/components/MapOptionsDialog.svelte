@@ -257,7 +257,7 @@
 						<button
 							class="mo-danger-btn"
 							onclick={() => deleteMapDialogRef?.open()}
-							disabled={!canDeleteMap}>Delete this map</button
+							disabled={!canDeleteMap}>DELETE</button
 						>
 						<span class="mo-hint">
 							{canDeleteMap
@@ -288,7 +288,7 @@
 <ConfirmDialog
 	bind:this={deleteMapDialogRef}
 	title="Delete this map?"
-	confirmLabel="Delete Map"
+	confirmLabel="DELETE"
 	onconfirm={onDeleteMap}
 >
 	<p
