@@ -933,3 +933,20 @@ dialog label {
 .v2-radio-btn[data-state='checked'] .v2-radio-dot {
 	opacity: 1;
 }
+
+/* --------------------------------------------------------------------------
+   Deck stage — shared layout for the Characters / Foes / Expeditions /
+   Connections card container. Each area layers its own kind-coloured
+   3 px LHS band via a per-panel class next to `.deck-stage`; everything
+   else (flex layout, uniform L/R/B padding, scroll behaviour) lives
+   here so the four panels stay in sync as one visual system.
+-------------------------------------------------------------------------- */
+.deck-stage {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-width: 0;
+	min-height: 0;
+	padding: 0 10px 10px 10px;
+	overflow: auto;
+}
