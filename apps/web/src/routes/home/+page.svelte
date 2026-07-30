@@ -1904,58 +1904,22 @@
 		width: 2px;
 	}
 
-	/* Desktop column resize handle (vertical bar between the two content cols) */
+	/* Desktop column + row resize handles — the gap itself is the grab
+	   surface; no visible divider line. The `col-resize` / `row-resize`
+	   cursor is the only affordance, appearing on hover over the gap.
+	   `touch-action: none` suppresses browser scroll/pinch so the touch
+	   handler can read every move. */
 	.col-resize-handle {
 		cursor: col-resize;
 		background: transparent;
-		position: relative;
 		z-index: 1;
 		touch-action: none;
 	}
-	.col-resize-handle::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		bottom: 0;
-		left: 50%;
-		width: 1px;
-		background: var(--border);
-		transform: translateX(-50%);
-		transition:
-			background 0.12s,
-			width 0.12s;
-	}
-	.col-resize-handle:hover::before,
-	.home-shell--col-dragging .col-resize-handle::before {
-		background: var(--text-accent);
-		width: 2px;
-	}
-
-	/* Desktop row resize handle (horizontal bar within each column) */
 	.row-resize-handle {
 		cursor: row-resize;
 		background: transparent;
-		position: relative;
 		z-index: 1;
 		touch-action: none;
-	}
-	.row-resize-handle::before {
-		content: '';
-		position: absolute;
-		left: 0;
-		right: 0;
-		top: 50%;
-		height: 1px;
-		background: var(--border);
-		transform: translateY(-50%);
-		transition:
-			background 0.12s,
-			height 0.12s;
-	}
-	.row-resize-handle:hover::before,
-	.home-shell--row-dragging .row-resize-handle::before {
-		background: var(--text-accent);
-		height: 2px;
 	}
 
 	/* Both columns share ONE row-split so the horizontal dividers stay
