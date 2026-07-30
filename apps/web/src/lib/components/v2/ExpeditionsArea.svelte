@@ -715,7 +715,7 @@
 				{#if activeExpMapEmpty}
 					<label
 						class="btn btn-icon icon-btn ea-hdr-icon-btn"
-						use:tooltip={'Add a background image to this ' + activeExp.type + '’s map'}
+						use:tooltip={'Add a map to this ' + activeExp.type}
 						aria-label="Add map"
 					>
 						<span class="ea-hdr-icon-plus" aria-hidden="true">+</span>{@html iconMapSvg}

@@ -50,7 +50,6 @@
 	import DialogHeader from './DialogHeader.svelte';
 	import MapOptionsDialog from './MapOptionsDialog.svelte';
 	import { mapSettings, persistMapSettings } from '$lib/mapSettingsStore.svelte.js';
-	import iconTrashSvg from '$icons/trash-solid-full.svg?raw';
 	import iconExpandSvg from '$icons/expand-solid-full.svg?raw';
 	import iconZoomInSvg from '$icons/magnifying-glass-plus-solid-full.svg?raw';
 	import iconZoomOutSvg from '$icons/magnifying-glass-minus-solid-full.svg?raw';
@@ -2132,9 +2131,8 @@
 					</label>
 				</div>
 				<div class="mp-props-footer">
-					<button class="mp-btn mp-btn-danger" onclick={deleteSelected} aria-label="Delete marker">
-						{@html iconTrashSvg}
-						<span>DELETE</span>
+					<button class="btn btn-danger" onclick={deleteSelected} aria-label="Delete marker">
+						DELETE
 					</button>
 					<div class="mp-props-footer-spacer"></div>
 					<button class="mp-btn" onclick={cancelDraft}>Cancel</button>
@@ -2593,11 +2591,6 @@
 		align-items: center;
 		gap: 2px;
 	}
-	:global(.mp-btn-danger:not(:disabled):hover) {
-		color: var(--color-danger, #ef4444);
-		border-color: var(--color-danger, #ef4444);
-	}
-
 	:global(.mp-sel-name) {
 		/* Was `flex: 1 1 140px; min-width: 100px` — greedy. The name
 		   is often short (single word or two) so it doesn't need the
@@ -3247,15 +3240,6 @@
 	}
 	:global(.mp-props-footer-spacer) {
 		flex: 1 1 auto;
-	}
-	:global(.mp-props-footer .mp-btn-danger) {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-	}
-	:global(.mp-props-footer .mp-btn-danger svg) {
-		width: 14px;
-		height: 14px;
 	}
 	@media (max-width: 640px) {
 		:global(.mp-props-dialog) {

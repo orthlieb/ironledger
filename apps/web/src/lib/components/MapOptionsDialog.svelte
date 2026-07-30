@@ -25,7 +25,6 @@
 	import { mapSettings, persistMapSettings } from '$lib/mapSettingsStore.svelte.js';
 	import {
 		mapState,
-		mapListState,
 		persistSettings,
 		clearMarkers,
 		renameMap,
@@ -67,8 +66,6 @@
 		// so the user isn't blocked when the picker returns.
 		close();
 	}
-	const canDeleteMap = $derived(mapListState.maps.length > 1);
-
 	export function open() {
 		dialogOpen = true;
 	}
@@ -254,15 +251,11 @@
 						<span class="mo-hint">Removes every marker. Keeps the background image.</span>
 					</div>
 					<div class="mo-danger-row">
-						<button
-							class="mo-danger-btn"
-							onclick={() => deleteMapDialogRef?.open()}
-							disabled={!canDeleteMap}>DELETE</button
+						<button class="btn btn-danger" onclick={() => deleteMapDialogRef?.open()}>DELETE</button
 						>
 						<span class="mo-hint">
-							{canDeleteMap
-								? 'Removes this map entirely and switches to another.'
-								: "Can't delete your only map — create another first."}
+							Removes this map entirely. If it was your only map, a fresh Regional Map is created to
+							replace it.
 						</span>
 					</div>
 				</section>
