@@ -669,15 +669,7 @@
 		return String(Math.round(n));
 	}
 
-	// ─── Placing mode + selection ──────────────────────────────────────────────
-	/**
-	 * "Placing mode": armed by the toolbar "+ Add" button. The very next
-	 * grid click drops a fresh marker at that intersection and selects it.
-	 * Clicks on empty grid outside placing mode do nothing — no more
-	 * accidental markers from a stray tap.
-	 */
-	let placingMode = $state(false);
-
+	// ─── Selection + long-press ────────────────────────────────────────────────
 	/**
 	 * Long-press tracking for touch input. On mobile we can't shift-click,
 	 * so a long-press on a linked marker forces the editor open instead of
@@ -743,8 +735,6 @@
 			color: DEFAULT_MARKER_COLOR,
 		});
 		selectedMarkerId = id;
-		placingMode = false;
-		clearSquareSelection();
 	}
 
 	// ─── Drag-to-move + pile-up popover ────────────────────────────────────────
@@ -808,15 +798,11 @@
 	}
 
 	/**
-	 * Grid click. Behaviour depends on state:
-	 *  • Placing mode on + empty spot → place marker + select it.
-	 *  • Placing mode on + occupied spot → cancel placing, select existing.
+	 * Grid click. Behaviour depends on what's at the click's snap point:
 	 *  • Snap point with >1 markers → open pile-up popover to disambiguate.
 	 *  • Existing marker w/ link + bare click → jump to entity.
 	 *  • Existing marker w/ shift-click → open editor.
-	 *  • Empty spot outside placing mode → highlight it as `selectedSquare`
-	 *    so the "+ Marker" button knows where to drop the next pin without
-	 *    the user needing to re-tap.
+	 *  • Empty spot → drop a marker immediately + open its editor.
 	 *
 	 * Long-press on touch (see onGridPointerDown) sets `longPressFired`;
 	 * a completed drag (see onGridPointerUp) sets `dragJustEnded`. Either
@@ -834,34 +820,18 @@
 		}
 		const { x, y } = snapAndClamp(eventToWorld(ev));
 		const hits = markersAt(x, y, zoom);
-		if (placingMode) {
-			if (hits.length === 1) {
-				selectedMarkerId = hits[0].id;
-				clearSquareSelection();
-			} else if (hits.length > 1) {
-				openPilePicker(hits, ev);
-				clearSquareSelection();
-			} else {
-				placeAt(x, y);
-			}
-			placingMode = false;
-			return;
-		}
 		if (hits.length > 1) {
 			openPilePicker(hits, ev);
-			clearSquareSelection();
 			return;
 		}
 		if (hits.length === 1) {
 			activateExisting(x, y, ev.shiftKey);
-			clearSquareSelection();
 			return;
 		}
-		// Empty grid click: highlight the snap point as the target for
-		// the next "+ Marker" press. Clear any marker selection so the
-		// toolbar switches back to its hint state.
-		selectedSquare = { x, y };
-		selectedMarkerId = null;
+		// Empty grid click: drop a marker immediately and open its editor.
+		// Simpler than the old two-step "select the square then confirm
+		// via + Marker" flow — one click = one marker.
+		placeAt(x, y);
 	}
 
 	function onGridPointerDown(e: PointerEvent) {
@@ -950,22 +920,6 @@
 		dragState?.moved ? snapAndClamp({ x: dragState.liveX, y: dragState.liveY }) : null,
 	);
 
-	/** "+ Marker" button. If a square is already selected (user tapped
-	 *  an empty snap point), drop the marker there immediately — no
-	 *  placing-mode dance required. Otherwise fall through to placing
-	 *  mode as a fallback for users who prefer the button-first flow. */
-	function addMarkerAction() {
-		if (selectedSquare) {
-			placeAt(selectedSquare.x, selectedSquare.y);
-			return;
-		}
-		placingMode = !placingMode;
-		if (placingMode) selectedMarkerId = null;
-	}
-	function cancelPlacing() {
-		placingMode = false;
-	}
-
 	// ─── Pickr (marker colour) ─────────────────────────────────────────────
 	// Pickr is instantiated once per selection-toolbar mount. Two
 	// $effects: one to create/tear down when the anchor element comes
@@ -1040,10 +994,12 @@
 			},
 		});
 		instance.on('change', (c: ReturnType<Pickr['getColor']>) => {
-			// Explicit-commit form: write to the draft, not to the marker.
-			// The marker sees the new colour only when OK is pressed.
+			// Live-edit form: write the draft AND push straight through to
+			// the marker so the swatch/wheel colours the icon on the map
+			// as the user drags. Cancel restores the pre-open snapshot.
 			if (!draft) return;
 			draft.color = normalizeHex(c.toHEXA().toString());
+			applyDraftLive();
 			// Pickr only refreshes the trigger chip's `--pcr-color` inside
 			// applyColor(), which normally fires on Save. We removed the
 			// Save button (save: false), so nudge applyColor() ourselves
@@ -1145,16 +1101,6 @@
 		if (!selectedMarker) return;
 		removeMarker(selectedMarker.id);
 		selectedMarkerId = null;
-	}
-
-	// ─── Selected square — a snap point the user tapped without a marker
-	//     on it. Rendered with the same outline the selected marker uses;
-	//     acts as the target for "+ Marker" so the button doesn't need to
-	//     explain where the new marker lands. Cleared on marker click,
-	//     map switch, or after a marker is placed. ─────────────────────
-	let selectedSquare = $state<{ x: number; y: number } | null>(null);
-	function clearSquareSelection() {
-		selectedSquare = null;
 	}
 
 	/** Keyboard shortcut router. Only handles Escape for the pile
@@ -1261,18 +1207,17 @@
 	const selectedIcon = $derived(selectedMarker ? resolveMapIcon(selectedMarker.icon) : undefined);
 	const selectedColor = $derived(selectedMarker?.color || DEFAULT_MARKER_COLOR);
 
-	// ─── Marker properties dialog — working draft ──────────────────────
-	// The properties dialog is an explicit-commit form: fields write
-	// here, OK writes the draft to the marker via `updateMarker`,
-	// Cancel / ✕ / Escape discard the draft and leave the marker
-	// untouched. For a newly-placed marker that means the marker
-	// exists at the drop point but reverts to its default
-	// `{label:'', icon:null, color: DEFAULT_MARKER_COLOR, angle:0}`
-	// state; for an existing marker it reverts to whatever it held
-	// before the dialog opened. Snapshot fires only when the selected
-	// marker's id CHANGES (via the effect below tracking
-	// `selectedMarkerId`) so mid-flight edits don't get stomped by
-	// unrelated store re-derivations.
+	// ─── Marker properties dialog — live edit + snapshot restore ─────
+	// The properties dialog writes straight through to the real marker
+	// so every edit — colour, icon, angle, label — is visible on the
+	// map the instant it changes. Rotation is the whole reason: the
+	// user needs to see the marker spin as they nudge the spinner.
+	//
+	// `originalMarker` snapshots the marker's fields on open; Cancel /
+	// ✕ / Escape re-apply that snapshot via `updateMarker` to restore
+	// state. OK just closes the dialog — everything is already saved.
+	// `draft` is retained purely as the form's bound view of those
+	// fields so bits-ui inputs have something reactive to bind to.
 	type MarkerDraft = {
 		label: string;
 		icon: string | null;
@@ -1281,24 +1226,43 @@
 		entityId: string;
 	};
 	let draft = $state<MarkerDraft | null>(null);
+	let originalMarker = $state<MarkerDraft | null>(null);
 	$effect(() => {
 		const id = selectedMarkerId;
 		if (id === null) {
 			propsDialogOpen = false;
 			draft = null;
+			originalMarker = null;
 			return;
 		}
 		const m = untrack(() => selectedMarker);
 		if (!m) return;
-		draft = {
+		const snap: MarkerDraft = {
 			label: m.label ?? '',
 			icon: m.icon ?? null,
 			color: m.color ?? DEFAULT_MARKER_COLOR,
 			angle: normalizeAngle(m.angle),
 			entityId: m.entityId ?? '',
 		};
+		originalMarker = snap;
+		draft = { ...snap };
 		propsDialogOpen = true;
 	});
+
+	/** Push the draft's current values straight through to the live
+	 *  marker so every edit is visible on the canvas immediately. Also
+	 *  the single place we call `updateMarker` from the editor — every
+	 *  handler updates the draft then calls this. */
+	function applyDraftLive() {
+		if (!draft || !selectedMarker) return;
+		updateMarker(selectedMarker.id, {
+			label: draft.label,
+			icon: draft.icon ?? undefined,
+			color: draft.color,
+			angle: draft.angle,
+			entityId: draft.entityId || undefined,
+		});
+	}
 
 	/** Draft-aware previews for the marker-editor UI. Fall back to the
 	 *  live selectedMarker readings pre-snapshot so the first paint
@@ -1311,28 +1275,31 @@
 	function onDraftLabelInput(e: Event) {
 		if (!draft) return;
 		draft.label = (e.target as HTMLInputElement).value;
+		applyDraftLive();
 	}
 	function onDraftAngleInput(e: Event) {
 		if (!draft) return;
 		const raw = (e.target as HTMLInputElement).value;
 		const n = parseFloat(raw);
 		draft.angle = Number.isFinite(n) ? normalizeAngle(n) : 0;
+		applyDraftLive();
 	}
 	function stepDraftAngle(delta: number) {
 		if (!draft) return;
 		draft.angle = normalizeAngle(draft.angle + delta);
+		applyDraftLive();
 	}
 	function pickDraftEntity(value: string) {
 		if (!draft) return;
 		draft.entityId = value;
 		// Auto-fill label from the picked entity when the draft still
-		// has an empty name — same convenience the old direct-commit
-		// handler offered.
+		// has an empty name — same convenience the old handler offered.
 		if (value && !draft.label.trim()) {
 			const link = resolveEntity(value);
 			if (link) draft.label = link.name;
 		}
 		entityPickerOpen = false;
+		applyDraftLive();
 	}
 	function pickDraftIcon(key: string) {
 		if (!draft) {
@@ -1340,35 +1307,31 @@
 			return;
 		}
 		draft.icon = key;
+		applyDraftLive();
 		closeIconPicker();
 	}
 
-	/** OK — commit the draft to the marker and close the dialog. */
+	/** OK — the marker already carries every draft edit; just close. */
 	function commitDraft() {
-		if (!draft || !selectedMarker) {
-			propsDialogOpen = false;
-			return;
-		}
-		updateMarker(selectedMarker.id, {
-			label: draft.label,
-			icon: draft.icon ?? undefined,
-			color: draft.color,
-			angle: draft.angle,
-			entityId: draft.entityId || undefined,
-		});
 		propsDialogOpen = false;
 	}
 
-	/** Cancel — close the dialog without touching the marker. The
-	 *  effect above clears the draft when `selectedMarkerId` returns
-	 *  to null (which onOpenChange triggers). */
+	/** Cancel — re-apply the snapshot taken on open so the marker
+	 *  reverts to whatever it looked like BEFORE the dialog was
+	 *  entered, then close. The effect above clears draft/original
+	 *  once `selectedMarkerId` returns to null. */
 	function cancelDraft() {
+		if (originalMarker && selectedMarker) {
+			updateMarker(selectedMarker.id, {
+				label: originalMarker.label,
+				icon: originalMarker.icon ?? undefined,
+				color: originalMarker.color,
+				angle: originalMarker.angle,
+				entityId: originalMarker.entityId || undefined,
+			});
+		}
 		propsDialogOpen = false;
 	}
-
-	/** Snap resolution at the current zoom — surfaced in the toolbar hint
-	 *  so users know the granularity they're placing at. */
-	const snapRes = $derived(snapResolutionForZoom(zoom));
 </script>
 
 <Dialog.Root bind:open={dialogOpen}>
@@ -1448,16 +1411,6 @@
 					</Popover.Root>
 				</div>
 				<div class="mp-tools mp-tools-actions">
-					<button
-						class="mp-btn mp-btn-add"
-						class:mp-btn-add-active={placingMode}
-						onclick={addMarkerAction}
-						use:tooltip={selectedSquare
-							? 'Add a marker on the selected square'
-							: 'Click a square, then + Marker. Tap a linked marker to jump; shift-click (desktop) or long-press (touch) to edit instead.'}
-						aria-pressed={placingMode}
-						aria-label="Add marker">+ Marker</button
-					>
 					<div class="mp-zoom" role="group" aria-label="Zoom controls">
 						<button
 							class="mp-btn mp-btn-icon"
@@ -1508,32 +1461,6 @@
 		lives on the + Marker button's tooltip so the toolbar band doesn't
 		steal vertical space on mobile.
 	-->
-			{#if placingMode || selectedSquare}
-				<div class="mp-sel-toolbar">
-					{#if placingMode}
-						<span class="mp-sel-hint mp-sel-hint-active"
-							>Click the map to place a marker. Snap {snapRes === 1
-								? 'to cells'
-								: `to 1/${1 / snapRes}-cell`} — zoom in for finer placement.</span
-						>
-						<button
-							class="mp-btn"
-							onclick={cancelPlacing}
-							use:tooltip={'Exit placing mode without adding a marker'}>Cancel</button
-						>
-					{:else if selectedSquare}
-						<span class="mp-sel-hint mp-sel-hint-active">
-							Square selected — hit <strong>+ Marker</strong> to drop a marker here.
-						</span>
-						<button
-							class="mp-btn"
-							onclick={clearSquareSelection}
-							use:tooltip={'Clear the selected square'}>Cancel</button
-						>
-					{/if}
-				</div>
-			{/if}
-
 			{#if uploadError}
 				<div class="mp-error">{uploadError}</div>
 			{/if}
@@ -1550,6 +1477,7 @@
 	     redundant but harmless — it keeps square grid cells even if
 	     a race briefly leaves the dialog un-sized. -->
 			<div class="mp-body" style="aspect-ratio: {gridDims.cols} / {gridDims.rows};">
+				<!-- Placing / square-selected hint. Overlaid on top of the
 				<!-- Wheel listener is attached manually with `passive: false` in a
 		     $effect above so trackpad-pinch (ctrl+wheel) is preventable. -->
 				<div class="mp-canvas" bind:this={canvasEl} onscroll={onScroll}>
@@ -1677,22 +1605,6 @@
 								cx={dragPreview.x}
 								cy={dragPreview.y}
 								r="0.18"
-								vector-effect="non-scaling-stroke"
-							/>
-						{/if}
-
-						<!-- Selected empty square — the click-first target for
-				     "+ Marker" (and the same visual language a selected
-				     marker uses). Rendered before markers so any marker
-				     placed at the same spot draws on top. -->
-						{#if selectedSquare}
-							{@const cell = snapResolutionForZoom(zoom)}
-							<rect
-								class="mp-marker-selection"
-								x={selectedSquare.x - cell / 2}
-								y={selectedSquare.y - cell / 2}
-								width={cell}
-								height={cell}
 								vector-effect="non-scaling-stroke"
 							/>
 						{/if}
@@ -2589,26 +2501,6 @@
 		margin: 4px 0;
 	}
 
-	:global(.mp-btn-add-active) {
-		background: var(--text-accent) !important;
-		color: var(--bg-card) !important;
-		border-color: var(--text-accent) !important;
-	}
-	/* Placing mode = crosshair over the canvas so users know the next
-	   click will land a marker. Targets the click-capture rect since
-	   that's what receives the pointer. */
-	:global(body:has(button.mp-btn-add-active) .mp-canvas .mp-grid-capture) {
-		cursor: crosshair;
-	}
-
-	/* Selection-toolbar hint gets a slightly warmer treatment when
-	   placing mode is armed, matching the Add button's active state. */
-	:global(.mp-sel-hint-active) {
-		color: var(--text);
-		font-weight: 600;
-		font-style: normal;
-	}
-
 	:global(.mp-btn-icon) {
 		padding: 4px 8px;
 		display: inline-flex;
@@ -2634,23 +2526,6 @@
 		border-color: var(--color-danger, #ef4444);
 	}
 
-	/* Selection toolbar — sits below the file/export toolbar. Shows a hint
-	   when empty; the marker's editable fields when a marker is selected.
-	   Wraps at narrow widths so mobile still fits every control. */
-	:global(.mp-sel-toolbar) {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 8px 14px;
-		background: var(--bg-card);
-		border-bottom: 1px solid var(--border);
-		flex-wrap: wrap;
-		font-family: var(--font-ui);
-		font-size: 0.75rem;
-	}
-	:global(.mp-sel-hint) {
-		font-style: italic;
-	}
 	:global(.mp-sel-name) {
 		/* Was `flex: 1 1 140px; min-width: 100px` — greedy. The name
 		   is often short (single word or two) so it doesn't need the
