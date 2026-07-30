@@ -950,3 +950,31 @@ dialog label {
 	padding: 0 10px 10px 10px;
 	overflow: auto;
 }
+
+/* --------------------------------------------------------------------------
+   Deck card — the inset content surface inside a `.deck-stage` for the
+   Foes / Expeditions / Connections panels. Owns the uniform 8 px vertical
+   rhythm (padding + gap) so every immediate child row is 8 px away from
+   its siblings. Rows that carry a bottom separator should also add 8 px
+   of `padding-bottom` (or the shared `.deck-card-sep` modifier) so the
+   separator line gets 8 px of breathing room above and 8 px (from the
+   card's gap) below, staying visually symmetric.
+-------------------------------------------------------------------------- */
+.deck-card {
+	background: var(--bg-inset);
+	padding: 8px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	flex: 1;
+	min-height: 200px;
+	overflow: auto;
+	position: relative;
+}
+
+/* Applied alongside a card-child row to give it the standard
+   bottom-separator (matches surrounding 8 px rhythm). */
+.deck-card-sep {
+	border-bottom: 1px solid var(--border);
+	padding-bottom: 8px;
+}

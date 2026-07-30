@@ -834,7 +834,7 @@
 	{:else}
 		<div class="cm-body">
 			{#if activeEntry}
-				<div class="deck-stage cm-stage" role="tabpanel" style="--cm-nature: {activeColor}">
+				<div class="deck-stage cm-stage" style="--cm-nature: {activeColor}">
 					<Tabs.Root
 						value={activeTab}
 						onValueChange={(v) => (activeTab = v as CmTab)}
@@ -847,236 +847,239 @@
 						</Tabs.List>
 					</Tabs.Root>
 
-					{#if activeTab === 'core'}
-						{#if activeEntry.kind === 'community' || activeEntry.kind === 'place'}
-							{@const c = activeEntry.data}
-							<div class="cm-field-row">
-								<label class="cm-field-label" for="cm-region-{c.id}">Region</label>
-								<input
-									id="cm-region-{c.id}"
-									class="cm-input"
-									type="text"
-									value={c.region}
-									oninput={(e) =>
-										updateCommunityLike({ region: (e.target as HTMLInputElement).value })}
-									placeholder="Region…"
-								/>
-							</div>
-							<div class="cm-field-row">
-								<label class="cm-field-label" for="cm-location-{c.id}">Location</label>
-								<input
-									id="cm-location-{c.id}"
-									class="cm-input"
-									type="text"
-									value={c.location}
-									oninput={(e) =>
-										updateCommunityLike({ location: (e.target as HTMLInputElement).value })}
-									placeholder="Location…"
-								/>
-							</div>
-							<div class="cm-field-row">
-								<label class="cm-field-label" for="cm-locdesc-{c.id}">Description</label>
-								<input
-									id="cm-locdesc-{c.id}"
-									class="cm-input"
-									type="text"
-									value={c.locationDescription}
-									oninput={(e) =>
-										updateCommunityLike({
-											locationDescription: (e.target as HTMLInputElement).value,
-										})}
-									placeholder="Location description…"
-								/>
-							</div>
-							<!-- Map field: one chip per marker referencing this
+					<div class="deck-card cm-card" role="tabpanel">
+						{#if activeTab === 'core'}
+							{#if activeEntry.kind === 'community' || activeEntry.kind === 'place'}
+								{@const c = activeEntry.data}
+								<div class="cm-field-row">
+									<label class="cm-field-label" for="cm-region-{c.id}">Region</label>
+									<input
+										id="cm-region-{c.id}"
+										class="cm-input"
+										type="text"
+										value={c.region}
+										oninput={(e) =>
+											updateCommunityLike({ region: (e.target as HTMLInputElement).value })}
+										placeholder="Region…"
+									/>
+								</div>
+								<div class="cm-field-row">
+									<label class="cm-field-label" for="cm-location-{c.id}">Location</label>
+									<input
+										id="cm-location-{c.id}"
+										class="cm-input"
+										type="text"
+										value={c.location}
+										oninput={(e) =>
+											updateCommunityLike({ location: (e.target as HTMLInputElement).value })}
+										placeholder="Location…"
+									/>
+								</div>
+								<div class="cm-field-row">
+									<label class="cm-field-label" for="cm-locdesc-{c.id}">Description</label>
+									<input
+										id="cm-locdesc-{c.id}"
+										class="cm-input"
+										type="text"
+										value={c.locationDescription}
+										oninput={(e) =>
+											updateCommunityLike({
+												locationDescription: (e.target as HTMLInputElement).value,
+											})}
+										placeholder="Location description…"
+									/>
+								</div>
+								<!-- Map field: one chip per marker referencing this
 								     community/place. Multi-map is supported natively —
 								     the store returns refs across all maps, chips wrap
 								     onto new rows via flex-wrap. Coord (x, y) lives in
 								     the tooltip; chip text is the map name only. -->
-							<div class="cm-field-row cm-field-row--map">
-								<span class="cm-field-label">Map</span>
-								<div class="cm-mapref-chips">
-									{#if activeEntryMarkers.length === 0}
-										<span class="cm-mapref-empty">Not on any map</span>
-									{:else}
-										{#each activeEntryMarkers as ref (ref.markerId)}
-											<button
-												class="cm-mapref-chip"
-												onclick={() => jumpToMarker(ref)}
-												use:tooltip={`Jump to "${ref.label || '(unlabeled)'}" on ${ref.mapName} — (${fmtCoord(ref.x)}, ${fmtCoord(ref.y)})`}
-												aria-label={`Jump to marker on ${ref.mapName}`}
-											>
-												<span class="cm-mapref-name">{ref.mapName}</span>
-											</button>
-										{/each}
-									{/if}
+								<div class="cm-field-row cm-field-row--map">
+									<span class="cm-field-label">Map</span>
+									<div class="cm-mapref-chips">
+										{#if activeEntryMarkers.length === 0}
+											<span class="cm-mapref-empty">Not on any map</span>
+										{:else}
+											{#each activeEntryMarkers as ref (ref.markerId)}
+												<button
+													class="cm-mapref-chip"
+													onclick={() => jumpToMarker(ref)}
+													use:tooltip={`Jump to "${ref.label || '(unlabeled)'}" on ${ref.mapName} — (${fmtCoord(ref.x)}, ${fmtCoord(ref.y)})`}
+													aria-label={`Jump to marker on ${ref.mapName}`}
+												>
+													<span class="cm-mapref-name">{ref.mapName}</span>
+												</button>
+											{/each}
+										{/if}
+									</div>
 								</div>
-							</div>
-							<div class="cm-field-row cm-field-row--trouble">
-								<label class="cm-field-label" for="cm-trouble-{c.id}">Trouble</label>
-								<input
-									id="cm-trouble-{c.id}"
-									class="cm-input"
-									type="text"
-									value={c.trouble}
-									oninput={(e) =>
-										updateCommunityLike({ trouble: (e.target as HTMLInputElement).value })}
-									placeholder={activeEntry.kind === 'place' ? 'Trouble…' : 'Settlement trouble…'}
-								/>
-								{#if activeEntry.kind === 'community'}
-									<!-- Settlement Trouble oracle is community-only; places don't
+								<div class="cm-field-row cm-field-row--trouble">
+									<label class="cm-field-label" for="cm-trouble-{c.id}">Trouble</label>
+									<input
+										id="cm-trouble-{c.id}"
+										class="cm-input"
+										type="text"
+										value={c.trouble}
+										oninput={(e) =>
+											updateCommunityLike({ trouble: (e.target as HTMLInputElement).value })}
+										placeholder={activeEntry.kind === 'place' ? 'Trouble…' : 'Settlement trouble…'}
+									/>
+									{#if activeEntry.kind === 'community'}
+										<!-- Settlement Trouble oracle is community-only; places don't
 										     have their own trouble oracle yet, so the dice button
 										     is hidden for them. -->
-									<button
-										class="cm-dice-btn"
-										type="button"
-										onclick={rollSettlementTrouble}
-										disabled={rolling}
-										use:tooltip={'Roll settlement trouble oracle'}
-										aria-label="Roll settlement trouble oracle">{@html diceD6Svg}</button
-									>
-								{/if}
-							</div>
-						{:else}
-							{@const n = activeEntry.data}
-							<!-- Status toggle — Alive / Deceased. Lives at the top of
+										<button
+											class="cm-dice-btn"
+											type="button"
+											onclick={rollSettlementTrouble}
+											disabled={rolling}
+											use:tooltip={'Roll settlement trouble oracle'}
+											aria-label="Roll settlement trouble oracle">{@html diceD6Svg}</button
+										>
+									{/if}
+								</div>
+							{:else}
+								{@const n = activeEntry.data}
+								<!-- Status toggle — Alive / Deceased. Lives at the top of
 							     the NPC Core tab so the header can stay lean; mirrors
 							     the initiative line at the top of the Characters card. -->
-							<div class="cm-status-section">
-								<span class="cm-status-label">Status</span>
-								<SegmentedRadio
-									ariaLabel="NPC status"
-									labels="always"
-									value={(n as Npc).deceased ? 'deceased' : 'alive'}
-									onchange={(v) => updateNpc({ deceased: v === 'deceased' })}
-									options={[
-										{
-											value: 'alive',
-											icon: heartPulseSvg,
-											text: 'Alive',
-											label: 'Mark alive',
-											tone: 'go',
-										},
-										{
-											value: 'deceased',
-											icon: skullSvg,
-											text: 'Deceased',
-											label: 'Mark deceased',
-											tone: 'stop',
-										},
-									]}
+								<div class="cm-status-section">
+									<span class="cm-status-label">Status</span>
+									<SegmentedRadio
+										ariaLabel="NPC status"
+										labels="always"
+										value={(n as Npc).deceased ? 'deceased' : 'alive'}
+										onchange={(v) => updateNpc({ deceased: v === 'deceased' })}
+										options={[
+											{
+												value: 'alive',
+												icon: heartPulseSvg,
+												text: 'Alive',
+												label: 'Mark alive',
+												tone: 'go',
+											},
+											{
+												value: 'deceased',
+												icon: skullSvg,
+												text: 'Deceased',
+												label: 'Mark deceased',
+												tone: 'stop',
+											},
+										]}
+									/>
+								</div>
+								<div class="cm-field-row">
+									<label class="cm-field-label" for="cm-role-{n.id}">Role</label>
+									<input
+										id="cm-role-{n.id}"
+										class="cm-input"
+										type="text"
+										value={n.role}
+										oninput={(e) => updateNpc({ role: (e.target as HTMLInputElement).value })}
+										placeholder="Role…"
+									/>
+								</div>
+								<div class="cm-field-row">
+									<label class="cm-field-label" for="cm-goal-{n.id}">Goal</label>
+									<input
+										id="cm-goal-{n.id}"
+										class="cm-input"
+										type="text"
+										value={n.goal}
+										oninput={(e) => updateNpc({ goal: (e.target as HTMLInputElement).value })}
+										placeholder="Goal…"
+									/>
+								</div>
+								<div class="cm-field-row">
+									<label class="cm-field-label" for="cm-desc-{n.id}">Descriptor</label>
+									<input
+										id="cm-desc-{n.id}"
+										class="cm-input"
+										type="text"
+										value={n.descriptor}
+										oninput={(e) => updateNpc({ descriptor: (e.target as HTMLInputElement).value })}
+										placeholder="Short likeness — tall, gaunt, scarred…"
+									/>
+								</div>
+								<div class="cm-field-row">
+									<label class="cm-field-label" for="cm-rel-{n.id}">Relationship</label>
+									<Select
+										id="cm-rel-{n.id}"
+										class="cm-select"
+										value={n.relationship}
+										options={RELATIONSHIPS}
+										onchange={(v) => updateNpc({ relationship: v })}
+									/>
+								</div>
+								<div class="cm-field-row">
+									<label class="cm-field-label" for="cm-loc-{n.id}">Location</label>
+									<input
+										id="cm-loc-{n.id}"
+										class="cm-input"
+										type="text"
+										value={n.location}
+										oninput={(e) => updateNpc({ location: (e.target as HTMLInputElement).value })}
+										placeholder="Location…"
+									/>
+								</div>
+							{/if}
+
+							<!-- Situational notes — short notes about current conditions,
+							     separate from the long-form Description (notes) field. While
+							     editing, the block grows to fill the rest of the Core panel. -->
+							<div class="cm-core-notes" class:cm-core-notes--editing={editingCoreNotes}>
+								<span class="cm-field-label cm-core-notes-label">Notes</span>
+								<MarkdownNotes
+									bind:editing={editingCoreNotes}
+									value={activeEntry.data.situationalNotes ?? ''}
+									oninput={(v) => setSituationalNotes(v)}
+									placeholder={activeEntry.kind === 'npc'
+										? 'Actions taken by or things that have happened to this NPC in your story…'
+										: activeEntry.kind === 'place'
+											? 'Events that have happened here, current state…'
+											: 'Situational notes — conditions, or aspects of the trouble…'}
+									rows={4}
 								/>
 							</div>
-							<div class="cm-field-row">
-								<label class="cm-field-label" for="cm-role-{n.id}">Role</label>
-								<input
-									id="cm-role-{n.id}"
-									class="cm-input"
-									type="text"
-									value={n.role}
-									oninput={(e) => updateNpc({ role: (e.target as HTMLInputElement).value })}
-									placeholder="Role…"
-								/>
-							</div>
-							<div class="cm-field-row">
-								<label class="cm-field-label" for="cm-goal-{n.id}">Goal</label>
-								<input
-									id="cm-goal-{n.id}"
-									class="cm-input"
-									type="text"
-									value={n.goal}
-									oninput={(e) => updateNpc({ goal: (e.target as HTMLInputElement).value })}
-									placeholder="Goal…"
-								/>
-							</div>
-							<div class="cm-field-row">
-								<label class="cm-field-label" for="cm-desc-{n.id}">Descriptor</label>
-								<input
-									id="cm-desc-{n.id}"
-									class="cm-input"
-									type="text"
-									value={n.descriptor}
-									oninput={(e) => updateNpc({ descriptor: (e.target as HTMLInputElement).value })}
-									placeholder="Short likeness — tall, gaunt, scarred…"
-								/>
-							</div>
-							<div class="cm-field-row">
-								<label class="cm-field-label" for="cm-rel-{n.id}">Relationship</label>
-								<Select
-									id="cm-rel-{n.id}"
-									class="cm-select"
-									value={n.relationship}
-									options={RELATIONSHIPS}
-									onchange={(v) => updateNpc({ relationship: v })}
-								/>
-							</div>
-							<div class="cm-field-row">
-								<label class="cm-field-label" for="cm-loc-{n.id}">Location</label>
-								<input
-									id="cm-loc-{n.id}"
-									class="cm-input"
-									type="text"
-									value={n.location}
-									oninput={(e) => updateNpc({ location: (e.target as HTMLInputElement).value })}
-									placeholder="Location…"
+						{:else if activeTab === 'notes'}
+							<div class="cm-notes-section" class:cm-notes-section--editing={editingNotes}>
+								<!-- Portrait floats right and the prose wraps around it; it's
+								     hidden while editing so the textarea fills the whole panel. -->
+								{#if !editingNotes}
+									<PortraitUploader
+										endpoint={`/api/session/${
+											activeEntry.kind === 'npc'
+												? 'npcs'
+												: activeEntry.kind === 'place'
+													? 'places'
+													: 'communities'
+										}/${activeEntry.data.id}/portrait`}
+										etag={activeEntry.data.portraitEtag ?? ''}
+										oninput={(etag) => {
+											if (activeEntry?.kind === 'community')
+												updateCommunity({ portraitEtag: etag });
+											else if (activeEntry?.kind === 'npc') updateNpc({ portraitEtag: etag });
+											else if (activeEntry?.kind === 'place') updatePlace({ portraitEtag: etag });
+										}}
+										placeholderSvg={iconFor(activeEntry.kind)}
+										alt={activeEntry.data.name}
+									/>
+								{/if}
+
+								<MarkdownNotes
+									bind:editing={editingNotes}
+									value={activeEntry.data.notes ?? ''}
+									oninput={(v) => setNotes(v)}
+									placeholder={activeEntry.kind === 'npc'
+										? 'Origin, upbringing, major traits…'
+										: activeEntry.kind === 'place'
+											? 'Physical features, atmosphere, notable details…'
+											: 'Description of this community…'}
+									rows={6}
 								/>
 							</div>
 						{/if}
-
-						<!-- Situational notes — short notes about current conditions,
-							     separate from the long-form Description (notes) field. While
-							     editing, the block grows to fill the rest of the Core panel. -->
-						<div class="cm-core-notes" class:cm-core-notes--editing={editingCoreNotes}>
-							<span class="cm-field-label cm-core-notes-label">Notes</span>
-							<MarkdownNotes
-								bind:editing={editingCoreNotes}
-								value={activeEntry.data.situationalNotes ?? ''}
-								oninput={(v) => setSituationalNotes(v)}
-								placeholder={activeEntry.kind === 'npc'
-									? 'Actions taken by or things that have happened to this NPC in your story…'
-									: activeEntry.kind === 'place'
-										? 'Events that have happened here, current state…'
-										: 'Situational notes — conditions, or aspects of the trouble…'}
-								rows={4}
-							/>
-						</div>
-					{:else if activeTab === 'notes'}
-						<div class="cm-notes-section" class:cm-notes-section--editing={editingNotes}>
-							<!-- Portrait floats right and the prose wraps around it; it's
-								     hidden while editing so the textarea fills the whole panel. -->
-							{#if !editingNotes}
-								<PortraitUploader
-									endpoint={`/api/session/${
-										activeEntry.kind === 'npc'
-											? 'npcs'
-											: activeEntry.kind === 'place'
-												? 'places'
-												: 'communities'
-									}/${activeEntry.data.id}/portrait`}
-									etag={activeEntry.data.portraitEtag ?? ''}
-									oninput={(etag) => {
-										if (activeEntry?.kind === 'community') updateCommunity({ portraitEtag: etag });
-										else if (activeEntry?.kind === 'npc') updateNpc({ portraitEtag: etag });
-										else if (activeEntry?.kind === 'place') updatePlace({ portraitEtag: etag });
-									}}
-									placeholderSvg={iconFor(activeEntry.kind)}
-									alt={activeEntry.data.name}
-								/>
-							{/if}
-
-							<MarkdownNotes
-								bind:editing={editingNotes}
-								value={activeEntry.data.notes ?? ''}
-								oninput={(v) => setNotes(v)}
-								placeholder={activeEntry.kind === 'npc'
-									? 'Origin, upbringing, major traits…'
-									: activeEntry.kind === 'place'
-										? 'Physical features, atmosphere, notable details…'
-										: 'Description of this community…'}
-								rows={6}
-							/>
-						</div>
-					{/if}
+					</div>
 				</div>
 			{/if}
 		</div>
@@ -1501,14 +1504,11 @@
 		min-height: 0;
 	}
 	/* Stage — flex / padding / scroll live on the shared `.deck-stage`
-	   in app.css so all four decks stay in sync. This rule adds the
-	   entry-type LHS band, the tabpanel background (retired .cm-card),
-	   and the internal `gap` between form rows. */
+	   in app.css. This rule only adds the entry-type LHS colour band;
+	   the inset card surface, gap, and form-row rhythm live on
+	   `.deck-card` inside. */
 	.cm-stage {
-		background: var(--bg-inset);
 		border-left: 3px solid var(--cm-nature, var(--text-muted));
-		position: relative;
-		gap: 10px;
 	}
 
 	/* Rail tools — search, type filter, sort. */
@@ -1599,12 +1599,11 @@
 	   keeps its richer view (portrait + notes wrapping around it). */
 	.cm-core-notes {
 		display: block;
-		margin-top: 12px;
-		padding-top: 10px;
+		padding-top: 8px;
 		border-top: 1px solid var(--border);
 	}
 	/* While editing, the situational-notes block grows to fill the rest of the
-	   Core panel (it's a direct flex child of .cm-stage); the textarea fills it
+	   Core panel (it's a direct flex child of .cm-card); the textarea fills it
 	   with the markdown hint pinned to the bottom. */
 	.cm-core-notes--editing {
 		display: flex;
