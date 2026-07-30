@@ -829,6 +829,36 @@
 								</span>
 							</div>
 
+							<!-- Status toggle — Active / Complete. Sits right below the
+							     pills row (with a separator under it) so on Sites the
+							     status doesn't get buried at the bottom of the site
+							     fields. -->
+							<div class="ea-status-section">
+								<span class="ea-status-label">Status</span>
+								<SegmentedRadio
+									ariaLabel="Expedition status"
+									labels="always"
+									value={activeExp.complete ? 'complete' : 'active'}
+									onchange={(v) => updateExp({ complete: v === 'complete' })}
+									options={[
+										{
+											value: 'active',
+											icon: locationSvg,
+											text: 'Active',
+											label: 'Mark active',
+											tone: 'go',
+										},
+										{
+											value: 'complete',
+											icon: checkSvg,
+											text: 'Complete',
+											label: 'Mark complete',
+											tone: 'stop',
+										},
+									]}
+								/>
+							</div>
+
 							{#if activeSite}
 								<!-- Theme / Domain / Feature / Danger — combo boxes with
 								     a d6 button on the right to randomize. Theme/Domain
@@ -923,36 +953,6 @@
 
 							<!-- Difficulty is set in the new-journey / new-site dialog,
 							     surfaced via the rank-coloured pill above. -->
-
-							<!-- Status toggle — Active / Complete. Lives above the
-							     progress track (with a top separator) so the header
-							     can stay lean; mirrors the initiative line at the
-							     top of the Characters card. -->
-							<div class="ea-status-section">
-								<span class="ea-status-label">Status</span>
-								<SegmentedRadio
-									ariaLabel="Expedition status"
-									labels="always"
-									value={activeExp.complete ? 'complete' : 'active'}
-									onchange={(v) => updateExp({ complete: v === 'complete' })}
-									options={[
-										{
-											value: 'active',
-											icon: locationSvg,
-											text: 'Active',
-											label: 'Mark active',
-											tone: 'go',
-										},
-										{
-											value: 'complete',
-											icon: checkSvg,
-											text: 'Complete',
-											label: 'Mark complete',
-											tone: 'stop',
-										},
-									]}
-								/>
-							</div>
 
 							<!-- Progress track -->
 							<div class="ea-section">
@@ -1420,15 +1420,15 @@
 		color: currentColor;
 	}
 	/* Status toggle (Active/Complete) lives above the progress track in
-	   the Core card. Same shape as CharactersArea's initiative row —
-	   label + SegmentedRadio, separator above so the section reads as
-	   distinct from the pills row. */
+	   the Core card. Label + SegmentedRadio, separator BELOW so the
+	   line reads as a section divider under the toggle rather than
+	   above it. */
 	.ea-status-section {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		padding-top: 8px;
-		border-top: 1px solid #c3baa1;
+		padding-bottom: 8px;
+		border-bottom: 1px solid #c3baa1;
 	}
 	.ea-status-label {
 		font-family: var(--font-ui);

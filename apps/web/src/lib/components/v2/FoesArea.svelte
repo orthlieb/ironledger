@@ -717,15 +717,15 @@
 		min-width: 0;
 	}
 	/* Status toggle (Active/Vanquished) lives above the progress track
-	   in the Core card. Same shape as CharactersArea's initiative row —
-	   label + SegmentedRadio, separator above so the section reads as
-	   distinct from the pills row. */
+	   in the Core card. Label + SegmentedRadio, separator BELOW so the
+	   line reads as a section divider under the toggle rather than
+	   above it. */
 	.fa-status-section {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		padding-top: 8px;
-		border-top: 1px solid #c3baa1;
+		padding-bottom: 8px;
+		border-bottom: 1px solid #c3baa1;
 	}
 	.fa-status-label {
 		font-family: var(--font-ui);
