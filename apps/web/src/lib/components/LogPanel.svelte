@@ -1493,16 +1493,9 @@
 		padding: 2px 8px;
 		font-size: 0.68rem;
 	}
-
-	.btn-primary {
-		background: var(--text-accent);
-		border-color: var(--text-accent);
-		color: var(--bg-card);
-		font-weight: 600;
-	}
-	.btn-primary:hover {
-		opacity: 0.88;
-	}
+	/* The Save button in the note-edit row uses the app-wide
+	   `.btn .btn-primary` in app.css. Do not redefine .btn-primary
+	   here — a local override would silently shadow the global. */
 
 	/* ---- Saved note display (markdown-rendered) ---- */
 	.entry-note {
