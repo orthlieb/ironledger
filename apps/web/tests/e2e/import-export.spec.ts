@@ -11,10 +11,25 @@
  * renders `.ca-loading` while its data is loading. Hamburger + Export
  * dialog are unchanged.
  */
-import { test, expect } from '@playwright/test';
+import { test, expect, type Download } from '@playwright/test';
+import { zipSync, unzipSync, strToU8, strFromU8 } from 'fflate';
 import { resetAll } from './helpers/reset';
+import { settleHome } from './helpers/home';
 
 const CHAR_AREA = '.home-area--characters';
+const ZIP_INPUT = 'input[type="file"][accept=".zip,application/zip"]';
+
+/** value → visible label for the export Content <Select> (bits-ui). */
+const CONTENT_LABEL: Record<string, string> = {
+	everything: 'Everything',
+	character: 'Current Character',
+	'all-characters': 'All Characters',
+	log: 'Session Log',
+	stories: 'Stories',
+	communities: 'Connections',
+	expeditions: 'Expeditions',
+	map: 'All Maps',
+};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -28,28 +43,53 @@ async function gotoHome(page: import('@playwright/test').Page) {
 		.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`)
 		.first()
 		.waitFor({ timeout: 12_000, state: 'attached' });
+	await settleHome(page);
 }
 
-/** Open Hamburger → Export dialog, select a content option. */
+/** Open Hamburger → Export dialog, pick a content option from the bits-ui
+ *  <Select> (portalled items, matched by their visible label). */
 async function openExportDialog(page: import('@playwright/test').Page, content: string) {
 	await page.locator('.hamburger-btn').click();
-	await page.locator('.menu-item:has-text("Export...")').click();
+	await page.locator('.hm-item', { hasText: /Export/ }).click();
 	await expect(page.locator('.export-dialog')).toBeVisible();
-	await page.locator('.ed-select').selectOption(content);
+	await page.locator('.export-dialog #export-content').click();
+	await page
+		.locator('.bui-select-content .bui-select-item', {
+			hasText: new RegExp(`^${CONTENT_LABEL[content]}$`),
+		})
+		.click();
 }
 
-/** Upload a JSON blob via the hidden file input. */
+/** Pack a {manifest, data} payload into the .zip bundle the importer accepts. */
+function toZip(payload: { manifest?: object; data?: unknown }): Buffer {
+	const manifest = { ...(payload.manifest ?? {}), body: 'data.json' };
+	return Buffer.from(
+		zipSync({
+			'manifest.json': strToU8(JSON.stringify(manifest)),
+			'data.json': strToU8(JSON.stringify(payload.data)),
+		}),
+	);
+}
+
+/** Upload a payload as a .zip via the hidden file input. */
 async function uploadImport(
 	page: import('@playwright/test').Page,
-	payload: unknown,
-	filename = 'test-import.json',
+	payload: { manifest?: object; data?: unknown },
+	filename = 'test-import.zip',
 ) {
-	const fileInput = page.locator('input[type="file"][accept=".json,application/json"]');
-	await fileInput.setInputFiles({
+	await page.locator(ZIP_INPUT).setInputFiles({
 		name: filename,
-		mimeType: 'application/json',
-		buffer: Buffer.from(JSON.stringify(payload)),
+		mimeType: 'application/zip',
+		buffer: toZip(payload),
 	});
+}
+
+/** Read a download stream into a Buffer. */
+async function downloadBuffer(download: Download): Promise<Buffer> {
+	const chunks: Buffer[] = [];
+	for await (const c of await download.createReadStream())
+		chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c));
+	return Buffer.concat(chunks);
 }
 
 /** Build a minimal valid manifest-wrapped payload. */
@@ -85,8 +125,9 @@ test.describe('Export dialog', () => {
 
 	test('opens and lists all content options', async ({ page }) => {
 		await openExportDialog(page, 'character');
-		// 'foes' was removed from the export menu in commit 7eff969 — foes now
-		// only ship as part of an Everything export.
+		// Re-open the Content select and check each option is offered (by label).
+		// 'foes' isn't an export option — foes ship inside an Everything export.
+		await page.locator('.export-dialog #export-content').click();
 		for (const val of [
 			'character',
 			'all-characters',
@@ -96,9 +137,12 @@ test.describe('Export dialog', () => {
 			'everything',
 		]) {
 			await expect(
-				page.locator(`.export-dialog .ed-select option[value="${val}"]`).first(),
-			).toBeAttached();
+				page.locator('.bui-select-content .bui-select-item', {
+					hasText: new RegExp(`^${CONTENT_LABEL[val]}$`),
+				}),
+			).toHaveCount(1);
 		}
+		await page.keyboard.press('Escape');
 	});
 
 	// Format selector visibility was inverted: Everything and Session Log are
@@ -128,18 +172,18 @@ test.describe('Export dialog', () => {
 		await expect(page.locator('.export-dialog')).not.toBeVisible();
 	});
 
-	test('Everything export downloads a JSON file with correct name pattern', async ({ page }) => {
+	test('Everything export downloads a .zip with correct name pattern', async ({ page }) => {
 		await openExportDialog(page, 'everything');
 		const [download] = await Promise.all([
 			page.waitForEvent('download'),
 			page.locator('.export-dialog .btn-primary').click(),
 		]);
 		expect(download.suggestedFilename()).toMatch(
-			/^ironledger-export-\d{4}-\d{2}-\d{2}_\d{4}\.json$/,
+			/^ironledger-export-\d{4}-\d{2}-\d{2}_\d{4}\.zip$/,
 		);
 	});
 
-	test('All Characters JSON export downloads a JSON file', async ({ page }) => {
+	test('All Characters export downloads a .zip file', async ({ page }) => {
 		// All Characters is JSON-only — no format selector.
 		await openExportDialog(page, 'all-characters');
 		// all-characters is JSON-only — there is no Format segmented control to
@@ -148,7 +192,7 @@ test.describe('Export dialog', () => {
 			page.waitForEvent('download'),
 			page.locator('.export-dialog .btn-primary').click(),
 		]);
-		expect(download.suggestedFilename()).toMatch(/^all-characters-.*\.json$/);
+		expect(download.suggestedFilename()).toMatch(/^all-characters-.*\.zip$/);
 	});
 
 	test('Session Log Markdown export downloads a .md file', async ({ page }) => {
@@ -161,30 +205,27 @@ test.describe('Export dialog', () => {
 		expect(download.suggestedFilename()).toMatch(/^session-log-.*\.md$/);
 	});
 
-	test('exported Everything JSON has correct manifest structure', async ({ page }) => {
+	test('exported Everything zip has correct manifest + body structure', async ({ page }) => {
 		await openExportDialog(page, 'everything');
 		const [download] = await Promise.all([
 			page.waitForEvent('download'),
 			page.locator('.export-dialog .btn-primary').click(),
 		]);
-		const stream = await download.createReadStream();
-		const chunks: Buffer[] = [];
-		for await (const chunk of stream)
-			chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-		const json = JSON.parse(Buffer.concat(chunks).toString());
+		// The export is a zip: manifest.json + a body JSON file it points at.
+		const entries = unzipSync(new Uint8Array(await downloadBuffer(download)));
+		const manifest = JSON.parse(strFromU8(entries['manifest.json']));
+		const data = JSON.parse(strFromU8(entries[manifest.body ?? 'everything.json']));
 
-		expect(json.manifest).toBeDefined();
-		expect(json.manifest.type).toBe('everything');
-		expect(json.manifest.app).toBe('Iron Ledger');
-		expect(json.data).toBeDefined();
-		expect(Array.isArray(json.data.characters)).toBe(true);
-		expect(Array.isArray(json.data.log)).toBe(true);
-		expect(Array.isArray(json.data.communities)).toBe(true);
-		expect(Array.isArray(json.data.npcs)).toBe(true);
-		expect(Array.isArray(json.data.expeditions)).toBe(true);
-		expect(json.data.session).toBeDefined();
-		// Foes are transient and Markdown-only — never in the JSON export.
-		expect(json.data.foes).toBeUndefined();
+		expect(manifest.type).toBe('everything');
+		expect(manifest.app).toBe('Iron Ledger');
+		expect(Array.isArray(data.characters)).toBe(true);
+		expect(Array.isArray(data.log)).toBe(true);
+		expect(Array.isArray(data.communities)).toBe(true);
+		expect(Array.isArray(data.npcs)).toBe(true);
+		expect(Array.isArray(data.expeditions)).toBe(true);
+		expect(data.session).toBeDefined();
+		// Foes are transient and Markdown-only — never in the export body.
+		expect(data.foes).toBeUndefined();
 	});
 });
 
@@ -228,22 +269,28 @@ test.describe('Import — security', () => {
 	});
 
 	test('rejects files over 5 MB with a user-friendly error', async ({ page }) => {
-		const big = {
-			manifest: { type: 'log', app: 'Iron Ledger', version: '1.0.0', exportedAt: '', count: 0 },
-			data: [],
-			_pad: 'x'.repeat(6 * 1024 * 1024),
-		};
+		// The pad must live inside `data` so it lands in the zip's decompressed
+		// body file — that's what the size cap measures (a highly-repetitive
+		// string compresses to almost nothing, so the zip itself stays tiny).
+		const big = makeManifest('log', ['x'.repeat(6 * 1024 * 1024)], 1);
 		await uploadImport(page, big, 'huge.json');
 		await expect(page.locator('.error-bar')).toBeVisible({ timeout: 5_000 });
 		await expect(page.locator('.error-bar-msg')).toContainText('too large');
 	});
 
-	test('rejects invalid (non-JSON) files with a user-friendly error', async ({ page }) => {
-		const fileInput = page.locator('input[type="file"][accept=".json,application/json"]');
-		await fileInput.setInputFiles({
-			name: 'bad.json',
-			mimeType: 'application/json',
-			buffer: Buffer.from('this is not valid json }{'),
+	test('rejects a zip whose body is not valid JSON with a user-friendly error', async ({
+		page,
+	}) => {
+		const bad = zipSync({
+			'manifest.json': strToU8(
+				JSON.stringify({ app: 'Iron Ledger', version: '1.0.0', type: 'log', body: 'data.json' }),
+			),
+			'data.json': strToU8('this is not valid json }{'),
+		});
+		await page.locator(ZIP_INPUT).setInputFiles({
+			name: 'bad.zip',
+			mimeType: 'application/zip',
+			buffer: Buffer.from(bad),
 		});
 		await expect(page.locator('.error-bar')).toBeVisible({ timeout: 5_000 });
 		await expect(page.locator('.error-bar-msg')).toContainText('not valid JSON');
@@ -340,13 +387,12 @@ test.describe('Import — security', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Portrait round-trip — export re-embeds the portrait inline; import lifts it
-// back into the content-addressed blob store and references it by portraitEtag.
+// Portrait round-trip — export lifts the portrait out to an `images/` file in
+// the zip; import reassembles it into the content-addressed blob store and the
+// entity references it by etag (rendered from the /portrait endpoint).
 // ---------------------------------------------------------------------------
 
 test.describe('Import / Export — portrait round-trip', () => {
-	const CHAR_HEADER = `${CHAR_AREA} .ca-header`;
-	const CHAR_SPINE = `${CHAR_AREA} .ca-spine`;
 	// 1×1 transparent PNG.
 	const TINY_PNG =
 		'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI6QAAAABJRU5ErkJggg==';
@@ -361,11 +407,20 @@ test.describe('Import / Export — portrait round-trip', () => {
 	test('a character portrait survives an export → import round-trip via the blob store', async ({
 		page,
 	}) => {
-		// ── Create a character and upload a portrait ──────────────────────────
-		const spines = page.locator(CHAR_SPINE);
-		if ((await spines.count()) === 0) {
-			await page.locator(`${CHAR_HEADER} button:has-text("+ Character")`).click();
-			await expect(spines).not.toHaveCount(0, { timeout: 8_000 });
+		// ── Create a character (name-first) and upload a portrait ─────────────
+		if (
+			!(await page
+				.locator(`${CHAR_AREA} .ca-tab`)
+				.first()
+				.isVisible()
+				.catch(() => false))
+		) {
+			await page.locator(`${CHAR_AREA} .ca-hdr-combobox`).click();
+			await page.locator('.mp-cmd-item--action', { hasText: /New character/i }).click();
+			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
+			await page.locator('.confirm-modal .co-input').first().fill('Portrait Char');
+			await page.locator('.confirm-modal .btn-primary').click();
+			await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
 		}
 		await expect(page.locator(`${CHAR_AREA} .ca-tab`).first()).toBeVisible({ timeout: 8_000 });
 		await page.locator(`${CHAR_AREA} .ca-tab`, { hasText: /^Background$/i }).click();
@@ -378,37 +433,47 @@ test.describe('Import / Export — portrait round-trip', () => {
 		// Let the portrait PUT + the 1500 ms character auto-save settle.
 		await page.waitForTimeout(2_400);
 
-		// ── Export the current character — the portrait must be re-embedded ───
+		// ── Export the current character — the portrait becomes an images/ file ─
 		await openExportDialog(page, 'character');
 		const [download] = await Promise.all([
 			page.waitForEvent('download'),
 			page.locator('.export-dialog .btn-primary').click(),
 		]);
-		const chunks: Buffer[] = [];
-		for await (const c of await download.createReadStream())
-			chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c));
-		const exported = JSON.parse(Buffer.concat(chunks).toString());
-		// Self-contained: bytes inline under data.portrait, no etag in the file.
-		expect(exported.data.data.portrait).toMatch(/^data:image\/(png|jpeg);base64,/);
-		expect(exported.data.data.portraitEtag).toBeUndefined();
+		const entries = unzipSync(new Uint8Array(await downloadBuffer(download)));
+		const manifest = JSON.parse(strFromU8(entries['manifest.json']));
+		const bodyName = manifest.body ?? 'character.json';
+		const body = JSON.parse(strFromU8(entries[bodyName]));
+		// Self-contained: portrait bytes live in an images/ entry, referenced by
+		// portraitFile — NOT an inline data: URL, and no etag in the file.
+		expect(body.data.portraitFile).toMatch(/^images\//);
+		expect(entries[body.data.portraitFile]).toBeDefined();
+		expect(body.data.portrait).toBeUndefined();
+		expect(body.data.portraitEtag).toBeUndefined();
 
 		// ── Re-import under a unique name — portrait must come back from the blob endpoint ──
 		const uniqueName = `Roundtrip ${Date.now()}`;
-		exported.data.name = uniqueName; // outer display name
-		exported.data.data.name = uniqueName; // inner data.name — what the spine renders
-		await uploadImport(page, exported, 'roundtrip.json');
+		body.name = uniqueName; // outer display name
+		body.data.name = uniqueName; // inner data.name — what the switcher renders
+		const reentries: Record<string, Uint8Array> = { ...entries };
+		reentries[bodyName] = strToU8(JSON.stringify(body));
+		await page.locator(ZIP_INPUT).setInputFiles({
+			name: 'roundtrip.zip',
+			mimeType: 'application/zip',
+			buffer: Buffer.from(zipSync(reentries)),
+		});
 		await expect(page.locator('.error-bar')).not.toBeVisible({ timeout: 5_000 });
 
-		// Select the freshly imported character and open its Background tab.
+		// Select the freshly imported character from the switcher, open Background.
+		await page.locator(`${CHAR_AREA} .ca-hdr-combobox`).click();
 		await page
-			.locator(CHAR_SPINE, { has: page.locator('.ca-spine-name', { hasText: uniqueName }) })
+			.locator('.mp-cmd-popover .mp-cmd-item:not(.mp-cmd-item--action)', { hasText: uniqueName })
 			.first()
 			.click();
 		await page.locator(`${CHAR_AREA} .ca-tab`, { hasText: /^Background$/i }).click();
 
 		// The portrait renders from the blob endpoint (a URL, NOT an inline data:
-		// URL) — proving the inline base64 was lifted into the blob store and the
-		// entity now references it by etag.
+		// URL) — proving the bytes were lifted into the blob store and the entity
+		// now references it by etag.
 		const img = page.locator(`${CHAR_AREA} img.pu-img`);
 		await expect(img).toBeVisible({ timeout: 8_000 });
 		const src = await img.getAttribute('src');
