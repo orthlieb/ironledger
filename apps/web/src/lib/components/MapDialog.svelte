@@ -1244,8 +1244,10 @@
 	});
 	const ICON_SIZE = $derived(isMobileViewport ? 0.84375 : 0.421875);
 	/** Vertical gap between the icon's bottom and the label's baseline,
-	 *  in world units. Scales with the icon so proportions stay stable. */
-	const LABEL_GAP = $derived(isMobileViewport ? 0.36 : 0.18);
+	 *  in world units. Scales with the icon so proportions stay stable.
+	 *  Sized to clear the label's font-ascent PLUS a couple of pixels
+	 *  of breathing room so the text never bites into the glyph. */
+	const LABEL_GAP = $derived(isMobileViewport ? 0.5 : 0.3);
 
 	// Derive the selected marker's icon record + color for the toolbar so
 	// the icon button always shows the current preview.
