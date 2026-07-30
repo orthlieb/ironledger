@@ -994,10 +994,12 @@
 			},
 		});
 		instance.on('change', (c: ReturnType<Pickr['getColor']>) => {
-			// Explicit-commit form: write to the draft, not to the marker.
-			// The marker sees the new colour only when OK is pressed.
+			// Live-edit form: write the draft AND push straight through to
+			// the marker so the swatch/wheel colours the icon on the map
+			// as the user drags. Cancel restores the pre-open snapshot.
 			if (!draft) return;
 			draft.color = normalizeHex(c.toHEXA().toString());
+			applyDraftLive();
 			// Pickr only refreshes the trigger chip's `--pcr-color` inside
 			// applyColor(), which normally fires on Save. We removed the
 			// Save button (save: false), so nudge applyColor() ourselves
@@ -1205,18 +1207,17 @@
 	const selectedIcon = $derived(selectedMarker ? resolveMapIcon(selectedMarker.icon) : undefined);
 	const selectedColor = $derived(selectedMarker?.color || DEFAULT_MARKER_COLOR);
 
-	// ─── Marker properties dialog — working draft ──────────────────────
-	// The properties dialog is an explicit-commit form: fields write
-	// here, OK writes the draft to the marker via `updateMarker`,
-	// Cancel / ✕ / Escape discard the draft and leave the marker
-	// untouched. For a newly-placed marker that means the marker
-	// exists at the drop point but reverts to its default
-	// `{label:'', icon:null, color: DEFAULT_MARKER_COLOR, angle:0}`
-	// state; for an existing marker it reverts to whatever it held
-	// before the dialog opened. Snapshot fires only when the selected
-	// marker's id CHANGES (via the effect below tracking
-	// `selectedMarkerId`) so mid-flight edits don't get stomped by
-	// unrelated store re-derivations.
+	// ─── Marker properties dialog — live edit + snapshot restore ─────
+	// The properties dialog writes straight through to the real marker
+	// so every edit — colour, icon, angle, label — is visible on the
+	// map the instant it changes. Rotation is the whole reason: the
+	// user needs to see the marker spin as they nudge the spinner.
+	//
+	// `originalMarker` snapshots the marker's fields on open; Cancel /
+	// ✕ / Escape re-apply that snapshot via `updateMarker` to restore
+	// state. OK just closes the dialog — everything is already saved.
+	// `draft` is retained purely as the form's bound view of those
+	// fields so bits-ui inputs have something reactive to bind to.
 	type MarkerDraft = {
 		label: string;
 		icon: string | null;
@@ -1225,24 +1226,43 @@
 		entityId: string;
 	};
 	let draft = $state<MarkerDraft | null>(null);
+	let originalMarker = $state<MarkerDraft | null>(null);
 	$effect(() => {
 		const id = selectedMarkerId;
 		if (id === null) {
 			propsDialogOpen = false;
 			draft = null;
+			originalMarker = null;
 			return;
 		}
 		const m = untrack(() => selectedMarker);
 		if (!m) return;
-		draft = {
+		const snap: MarkerDraft = {
 			label: m.label ?? '',
 			icon: m.icon ?? null,
 			color: m.color ?? DEFAULT_MARKER_COLOR,
 			angle: normalizeAngle(m.angle),
 			entityId: m.entityId ?? '',
 		};
+		originalMarker = snap;
+		draft = { ...snap };
 		propsDialogOpen = true;
 	});
+
+	/** Push the draft's current values straight through to the live
+	 *  marker so every edit is visible on the canvas immediately. Also
+	 *  the single place we call `updateMarker` from the editor — every
+	 *  handler updates the draft then calls this. */
+	function applyDraftLive() {
+		if (!draft || !selectedMarker) return;
+		updateMarker(selectedMarker.id, {
+			label: draft.label,
+			icon: draft.icon ?? undefined,
+			color: draft.color,
+			angle: draft.angle,
+			entityId: draft.entityId || undefined,
+		});
+	}
 
 	/** Draft-aware previews for the marker-editor UI. Fall back to the
 	 *  live selectedMarker readings pre-snapshot so the first paint
@@ -1255,28 +1275,31 @@
 	function onDraftLabelInput(e: Event) {
 		if (!draft) return;
 		draft.label = (e.target as HTMLInputElement).value;
+		applyDraftLive();
 	}
 	function onDraftAngleInput(e: Event) {
 		if (!draft) return;
 		const raw = (e.target as HTMLInputElement).value;
 		const n = parseFloat(raw);
 		draft.angle = Number.isFinite(n) ? normalizeAngle(n) : 0;
+		applyDraftLive();
 	}
 	function stepDraftAngle(delta: number) {
 		if (!draft) return;
 		draft.angle = normalizeAngle(draft.angle + delta);
+		applyDraftLive();
 	}
 	function pickDraftEntity(value: string) {
 		if (!draft) return;
 		draft.entityId = value;
 		// Auto-fill label from the picked entity when the draft still
-		// has an empty name — same convenience the old direct-commit
-		// handler offered.
+		// has an empty name — same convenience the old handler offered.
 		if (value && !draft.label.trim()) {
 			const link = resolveEntity(value);
 			if (link) draft.label = link.name;
 		}
 		entityPickerOpen = false;
+		applyDraftLive();
 	}
 	function pickDraftIcon(key: string) {
 		if (!draft) {
@@ -1284,29 +1307,29 @@
 			return;
 		}
 		draft.icon = key;
+		applyDraftLive();
 		closeIconPicker();
 	}
 
-	/** OK — commit the draft to the marker and close the dialog. */
+	/** OK — the marker already carries every draft edit; just close. */
 	function commitDraft() {
-		if (!draft || !selectedMarker) {
-			propsDialogOpen = false;
-			return;
-		}
-		updateMarker(selectedMarker.id, {
-			label: draft.label,
-			icon: draft.icon ?? undefined,
-			color: draft.color,
-			angle: draft.angle,
-			entityId: draft.entityId || undefined,
-		});
 		propsDialogOpen = false;
 	}
 
-	/** Cancel — close the dialog without touching the marker. The
-	 *  effect above clears the draft when `selectedMarkerId` returns
-	 *  to null (which onOpenChange triggers). */
+	/** Cancel — re-apply the snapshot taken on open so the marker
+	 *  reverts to whatever it looked like BEFORE the dialog was
+	 *  entered, then close. The effect above clears draft/original
+	 *  once `selectedMarkerId` returns to null. */
 	function cancelDraft() {
+		if (originalMarker && selectedMarker) {
+			updateMarker(selectedMarker.id, {
+				label: originalMarker.label,
+				icon: originalMarker.icon ?? undefined,
+				color: originalMarker.color,
+				angle: originalMarker.angle,
+				entityId: originalMarker.entityId || undefined,
+			});
+		}
 		propsDialogOpen = false;
 	}
 </script>
