@@ -68,6 +68,10 @@ async function inject(
 	source?: string,
 	roll?: unknown,
 ) {
+	// __testLog is published during client hydration (hooks.client.ts); wait for
+	// it so an inject fired right after navigation can't race a cold mount.
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	await page.waitForFunction(() => !!(window as any).__testLog, undefined, { timeout: 8_000 });
 	await page.evaluate(
 		({ title, html, id, source, roll }) => {
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -208,10 +212,13 @@ test.describe('AI story generation', () => {
 		);
 
 		await page.locator('button[aria-label="Menu"]').click();
-		await page.locator('button.menu-item:has-text("Export...")').click();
+		await page.locator('.hm-item', { hasText: /Export/ }).click();
 		const dialog = page.locator('.export-dialog');
 		await expect(dialog).toBeVisible();
-		await dialog.locator('.ed-select').selectOption('stories');
+		// .ed-select is a bits-ui <Select> (button trigger + portalled popup),
+		// not a native <select>: open it and pick the "Stories" option.
+		await dialog.locator('.ed-select').click();
+		await page.locator('.bui-select-content .bui-select-item', { hasText: 'Stories' }).click();
 
 		const [download] = await Promise.all([
 			page.waitForEvent('download'),

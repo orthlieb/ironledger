@@ -34,10 +34,22 @@ async function waitForHome(page: Page): Promise<void> {
 		.waitFor({ timeout: 12_000, state: 'attached' });
 }
 
-/** Click into the seeded community row so its stage shows the map button. */
+/** Ensure the seeded community is the active connection so its stage shows the
+ *  map button. v2 auto-selects the first connection; if not, pick it from the
+ *  header switcher (there's no rail of `.cm-row`s any more). */
 async function selectSeededCommunity(page: Page): Promise<void> {
-	await page.locator(CM_ROW).first().click();
-	await expect(page.locator(`${CM_AREA} .cm-stage-map-btn`).first()).toBeVisible({
+	await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
+	if (
+		!(await page
+			.locator(`${CM_AREA} .cm-tab`)
+			.first()
+			.isVisible()
+			.catch(() => false))
+	) {
+		await page.locator(`${CM_AREA} .cm-hdr-combobox`).click();
+		await page.locator('.mp-cmd-popover .mp-cmd-item:not(.mp-cmd-item--action)').first().click();
+	}
+	await expect(page.locator(`${CM_AREA} [aria-label="Add map"]`).first()).toBeVisible({
 		timeout: 6_000,
 	});
 }
@@ -46,7 +58,7 @@ async function selectSeededCommunity(page: Page): Promise<void> {
 async function openMapDialogViaUpload(page: Page): Promise<void> {
 	// The trigger is a <label> wrapping a hidden <input type="file">.
 	// setInputFiles resolves the picker without needing a real click.
-	const fileInput = page.locator(`${CM_AREA} .cm-stage-map-btn input[type="file"]`).first();
+	const fileInput = page.locator(`${CM_AREA} [aria-label="Add map"] input[type="file"]`).first();
 	await fileInput.setInputFiles({
 		name: 'community-map.png',
 		mimeType: 'image/png',
@@ -73,11 +85,10 @@ test.describe('MapDialog — smoke', () => {
 		await selectSeededCommunity(page);
 		await openMapDialogViaUpload(page);
 
-		// The toolbar band must render. Regression from the sed sweep
-		// showed as an intact <div class="mp-toolbar"> whose child
-		// buttons had no icon chrome — cover both here.
+		// The toolbar band must render with real buttons. (Markers now drop on
+		// canvas click, so there's no dedicated "add" button — assert the gear.)
 		await expect(page.locator('.mp-toolbar')).toBeVisible();
-		await expect(page.locator('.mp-toolbar .mp-btn-add')).toBeVisible();
+		await expect(page.locator('.mp-toolbar .mp-btn-gear')).toBeVisible();
 
 		await page.keyboard.press('Escape');
 		await expect(page.locator('.mp-dialog')).not.toBeVisible({ timeout: 3_000 });
@@ -121,9 +132,10 @@ test.describe('MapDialog — smoke', () => {
 		// MapOptionsDialog uses its own `.mo-*` classes.
 		await expect(page.locator('.mo-section').first()).toBeVisible({ timeout: 5_000 });
 
-		// Close the sub-dialog, then the main dialog.
+		// Close the sub-dialog, then the main dialog. (.mo-section matches every
+		// section, so assert none remain rather than a single not-visible.)
 		await page.keyboard.press('Escape');
-		await expect(page.locator('.mo-section')).not.toBeVisible({ timeout: 3_000 });
+		await expect(page.locator('.mo-section')).toHaveCount(0, { timeout: 3_000 });
 		await expect(page.locator('.mp-dialog')).toBeVisible();
 		await page.keyboard.press('Escape');
 	});

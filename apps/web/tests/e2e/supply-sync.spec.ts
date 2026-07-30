@@ -12,11 +12,16 @@
  * sync, we click each spine in turn and read its Supply tile value.
  */
 import { test, expect, type Page } from '@playwright/test';
+import { zipSync, strToU8 } from 'fflate';
 import { resetCharacters } from './helpers/reset';
+import {
+	settleHome,
+	createCharacter,
+	characterCount,
+	selectCharacterByIndex,
+} from './helpers/home';
 
 const CHAR_AREA = '.home-area--characters';
-const CHAR_HEADER = `${CHAR_AREA} .ca-header`;
-const CHAR_SPINE = `${CHAR_AREA} .ca-spine`;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -33,18 +38,17 @@ async function waitForHome(page: Page) {
 async function gotoHome(page: Page) {
 	await page.goto('/home');
 	await waitForHome(page);
+	await settleHome(page);
 }
 
 async function switchCharTab(page: Page, label: string) {
 	await page.locator(`${CHAR_AREA} .ca-tab`, { hasText: new RegExp(`^${label}$`, 'i') }).click();
 }
 
-/** Wait until at least N character spines exist, creating new ones as needed. */
+/** Wait until at least N characters exist, creating new ones as needed. */
 async function ensureCharCount(page: Page, n: number) {
-	while ((await page.locator(CHAR_SPINE).count()) < n) {
-		const before = await page.locator(CHAR_SPINE).count();
-		await page.locator(`${CHAR_HEADER} button:has-text("+ Character")`).click();
-		await expect(page.locator(CHAR_SPINE)).not.toHaveCount(before, { timeout: 8_000 });
+	while ((await characterCount(page)) < n) {
+		await createCharacter(page);
 	}
 }
 
@@ -74,19 +78,15 @@ async function setActiveSupply(page: Page, target: number) {
 	}
 }
 
-/** Click the Nth spine and wait for it to become active. */
+/** Select the Nth character via the header switcher. */
 async function selectSpine(page: Page, idx: number) {
-	const spine = page.locator(CHAR_SPINE).nth(idx);
-	// Use force:true to bypass any tooltip popover that may be in the top layer.
-	// The tooltip action shows on mouseenter (which Playwright triggers before
-	// clicking) and can intercept the click since popovers render above everything.
-	await spine.click({ force: true });
-	await expect(spine).toHaveClass(/ca-spine--active/, { timeout: 5_000 });
+	await selectCharacterByIndex(page, idx);
+	await expect(page.locator(`${CHAR_AREA} .ca-tab`).first()).toBeVisible({ timeout: 5_000 });
 }
 
-/** Verify every character's supply equals `expected` by walking the spines. */
+/** Verify every character's supply equals `expected` by walking the switcher. */
 async function expectAllCharsSupply(page: Page, expected: number) {
-	const total = await page.locator(CHAR_SPINE).count();
+	const total = await characterCount(page);
 	for (let i = 0; i < total; i++) {
 		await selectSpine(page, i);
 		await showVitals(page);
@@ -96,12 +96,16 @@ async function expectAllCharsSupply(page: Page, expected: number) {
 }
 
 /**
- * Get the active character's id directly from the data-char-id attribute
- * on the active spine button. Returns the id, or '' if not found.
+ * An existing character's id, from the BFF. Supply is a party-wide sync, so
+ * the specific character a resource-link targets doesn't change the outcome —
+ * the first character's id is a valid target.
  */
 async function getActiveCharId(page: Page): Promise<string> {
-	const activeSpine = page.locator(`${CHAR_AREA} .ca-spine.ca-spine--active`);
-	return (await activeSpine.getAttribute('data-char-id')) ?? '';
+	return await page.evaluate(async () => {
+		const res = await fetch('/api/characters', { credentials: 'include' });
+		const list = (await res.json()) as Array<{ id: string }>;
+		return Array.isArray(list) && list[0]?.id ? list[0].id : '';
+	});
 }
 
 /** Build a minimal valid character manifest for import. */
@@ -145,13 +149,18 @@ function makeCharManifest(name: string, supply: number) {
 	};
 }
 
-/** Upload a JSON blob via the hidden file input (bypasses import confirm dialog). */
-async function uploadImport(page: Page, payload: unknown) {
-	const fileInput = page.locator('input[type="file"][accept=".json,application/json"]');
-	await fileInput.setInputFiles({
-		name: 'test-import.json',
-		mimeType: 'application/json',
-		buffer: Buffer.from(JSON.stringify(payload)),
+/** Upload a character as the `.zip` bundle the importer now expects (manifest
+ *  + body file), through the hidden file input. */
+async function uploadImport(page: Page, payload: { manifest: object; data: unknown }) {
+	const manifest = { ...payload.manifest, body: 'character.json' };
+	const zip = zipSync({
+		'manifest.json': strToU8(JSON.stringify(manifest)),
+		'character.json': strToU8(JSON.stringify(payload.data)),
+	});
+	await page.locator('input[type="file"][accept=".zip,application/zip"]').setInputFiles({
+		name: 'test-import.zip',
+		mimeType: 'application/zip',
+		buffer: Buffer.from(zip),
 	});
 }
 
@@ -177,12 +186,10 @@ test.describe('Party supply sync (v2)', () => {
 		await setActiveSupply(page, 4);
 
 		// Create a second character.
-		const beforeCount = await page.locator(CHAR_SPINE).count();
-		await page.locator(`${CHAR_HEADER} button:has-text("+ Character")`).click();
-		await expect(page.locator(CHAR_SPINE)).not.toHaveCount(beforeCount, { timeout: 6_000 });
+		await createCharacter(page);
 
 		// New character is appended; it should auto-pick up the existing party supply.
-		const newIdx = (await page.locator(CHAR_SPINE).count()) - 1;
+		const newIdx = (await characterCount(page)) - 1;
 		await selectSpine(page, newIdx);
 		await showVitals(page);
 		const tile = page.locator(`${CHAR_AREA} .res-tile`).filter({ hasText: 'Supply' });
@@ -273,9 +280,9 @@ test.describe('Party supply sync (v2)', () => {
 		await selectSpine(page, 0);
 		await setActiveSupply(page, 2);
 
-		const beforeCount = await page.locator(CHAR_SPINE).count();
+		const beforeCount = await characterCount(page);
 		await uploadImport(page, makeCharManifest('Supply Test Import', 5));
-		await expect(page.locator(CHAR_SPINE)).not.toHaveCount(beforeCount, { timeout: 8_000 });
+		await expect.poll(() => characterCount(page), { timeout: 8_000 }).toBeGreaterThan(beforeCount);
 		await page.waitForTimeout(300);
 
 		await expectAllCharsSupply(page, 5);
@@ -287,9 +294,9 @@ test.describe('Party supply sync (v2)', () => {
 		await selectSpine(page, 0);
 		await setActiveSupply(page, 4);
 
-		const beforeCount = await page.locator(CHAR_SPINE).count();
+		const beforeCount = await characterCount(page);
 		await uploadImport(page, makeCharManifest('Low Supply Import', 1));
-		await expect(page.locator(CHAR_SPINE)).not.toHaveCount(beforeCount, { timeout: 8_000 });
+		await expect.poll(() => characterCount(page), { timeout: 8_000 }).toBeGreaterThan(beforeCount);
 		await page.waitForTimeout(300);
 
 		await expectAllCharsSupply(page, 4);

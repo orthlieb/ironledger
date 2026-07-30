@@ -10,8 +10,23 @@ import { resetCharacters } from './helpers/reset';
 
 const CHAR_AREA = '.home-area--characters';
 const CHAR_HEADER = `${CHAR_AREA} .ca-header`;
-const CHAR_SPINE = `${CHAR_AREA} .ca-spine`;
 const CHAR_STAGE = `${CHAR_AREA} .ca-stage`;
+// v2 header: the character list is a Popover+Command combobox switcher
+// (.ca-hdr-combobox), not a spine list. Creating goes combobox → "+ New
+// character…" → a name ConfirmDialog. A character is "active" iff its
+// sub-tabs (.ca-tab) have rendered.
+const CHAR_COMBOBOX = `${CHAR_HEADER} .ca-hdr-combobox`;
+
+/** Create a character through the header combobox + name-first dialog. */
+async function createCharacter(page: import('@playwright/test').Page) {
+	await page.locator(CHAR_COMBOBOX).click();
+	await page.locator('.mp-cmd-item--action', { hasText: /New character/i }).click();
+	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
+	// The Create button is disabled until a name is entered.
+	await page.locator('.confirm-modal .co-input').fill('E2E Character');
+	await page.locator('.confirm-modal .btn-primary').click();
+	await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
+}
 
 /**
  * Wait for the Characters area to finish its initial load.
@@ -24,6 +39,9 @@ async function waitForCharactersLoaded(page: import('@playwright/test').Page) {
 		.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`)
 		.first()
 		.waitFor({ timeout: 10_000, state: 'attached' });
+	// Let initial loads + hydration settle before interacting — the header
+	// combobox trigger doesn't reliably open its popover mid-hydration.
+	await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
 }
 
 /**
@@ -39,10 +57,15 @@ async function switchCharTab(page: import('@playwright/test').Page, label: strin
  */
 async function ensureCharacterSelected(page: import('@playwright/test').Page) {
 	await waitForCharactersLoaded(page);
-	const spines = page.locator(CHAR_SPINE);
-	if ((await spines.count()) === 0) {
-		await page.locator(`${CHAR_HEADER} button:has-text("+ Character")`).click();
-		await expect(page.locator(CHAR_SPINE)).not.toHaveCount(0, { timeout: 8_000 });
+	// A character is active iff its sub-tabs render. Create one if none.
+	if (
+		!(await page
+			.locator(`${CHAR_AREA} .ca-tab`)
+			.first()
+			.isVisible()
+			.catch(() => false))
+	) {
+		await createCharacter(page);
 	}
 	// Wait for the active character's tabs to render — proves activeChar AND
 	// activeData are both populated (the {#if activeChar && activeData} branch
@@ -64,26 +87,29 @@ test.describe('Characters area (v2)', () => {
 
 	// ── Area loads ────────────────────────────────────────────────────────────
 
-	test('shows header with + Character button', async ({ page }) => {
-		await expect(page.locator(`${CHAR_HEADER} button:has-text("+ Character")`)).toBeVisible();
+	test('shows header with character switcher combobox', async ({ page }) => {
+		await expect(page.locator(CHAR_COMBOBOX)).toBeVisible();
 	});
 
-	test('shows spine list or empty state', async ({ page }) => {
-		const spines = page.locator(CHAR_SPINE);
-		const count = await spines.count();
-		if (count === 0) {
+	test('shows character stage or empty state', async ({ page }) => {
+		const hasChar = await page
+			.locator(`${CHAR_AREA} .ca-tab`)
+			.first()
+			.isVisible()
+			.catch(() => false);
+		if (!hasChar) {
 			await expect(page.locator(`${CHAR_AREA} .ca-empty`)).toBeVisible();
 		} else {
-			await expect(spines.first()).toBeVisible();
+			await expect(page.locator(CHAR_STAGE)).toBeVisible();
 		}
 	});
 
 	// ── Add character ─────────────────────────────────────────────────────────
 
-	test('clicking + Character adds a character to the spine list', async ({ page }) => {
-		const before = await page.locator(CHAR_SPINE).count();
-		await page.locator(`${CHAR_HEADER} button:has-text("+ Character")`).click();
-		await expect(page.locator(CHAR_SPINE)).not.toHaveCount(before, { timeout: 8_000 });
+	test('creating a character via the switcher makes it active', async ({ page }) => {
+		await createCharacter(page);
+		// The new character becomes active — its sub-tabs and stage render.
+		await expect(page.locator(`${CHAR_AREA} .ca-tab`).first()).toBeVisible({ timeout: 8_000 });
 		await expect(page.locator(CHAR_STAGE)).toBeVisible({ timeout: 5_000 });
 	});
 
@@ -108,7 +134,7 @@ test.describe('Characters area (v2)', () => {
 
 	test('+ Asset button opens asset picker dialog', async ({ page }) => {
 		await ensureCharacterSelected(page);
-		await page.locator(`${CHAR_HEADER} button:has-text("+ Asset")`).click();
+		await page.locator(`${CHAR_HEADER} button[aria-label="Add Asset"]`).click();
 		await expect(page.locator('.picker-dialog')).toBeVisible({ timeout: 5_000 });
 		await page.keyboard.press('Escape');
 	});
@@ -121,7 +147,7 @@ test.describe('Characters area (v2)', () => {
 		const assetCards = page.locator(`${CHAR_AREA} .ca-asset-card`);
 		const assetsBefore = await assetCards.count();
 
-		await page.locator(`${CHAR_HEADER} button:has-text("+ Asset")`).click();
+		await page.locator(`${CHAR_HEADER} button[aria-label="Add Asset"]`).click();
 		await expect(page.locator('.picker-dialog')).toBeVisible({ timeout: 5_000 });
 		// Pick a tile that isn't already owned.
 		const tile = page.locator('.picker-dialog .pick-tile:not(.pick-tile-owned)').first();
@@ -142,7 +168,7 @@ test.describe('Characters area (v2)', () => {
 		// Ensure at least one asset exists.
 		const assetCards = page.locator(`${CHAR_AREA} .ca-asset-card`);
 		if ((await assetCards.count()) === 0) {
-			await page.locator(`${CHAR_HEADER} button:has-text("+ Asset")`).click();
+			await page.locator(`${CHAR_HEADER} button[aria-label="Add Asset"]`).click();
 			await expect(page.locator('.picker-dialog')).toBeVisible({ timeout: 5_000 });
 			await page.locator('.picker-dialog .pick-tile:not(.pick-tile-owned)').first().click();
 			// AssetCard opens in add mode — click Add to commit.
@@ -170,7 +196,7 @@ test.describe('Characters area (v2)', () => {
 		await assetDialog.getByRole('button', { name: /^Delete/ }).click();
 		const confirm = page.locator('.confirm-modal').last();
 		await expect(confirm).toBeVisible({ timeout: 5_000 });
-		await confirm.getByRole('button', { name: /^Remove$/ }).click();
+		await confirm.locator('button.btn-danger').click();
 		await expect(assetCards).toHaveCount(countBefore - 1, { timeout: 5_000 });
 	});
 
@@ -181,7 +207,7 @@ test.describe('Characters area (v2)', () => {
 		await switchCharTab(page, 'Vows');
 		const vowCards = page.locator(`${CHAR_AREA} .vow-card`);
 		const vowsBefore = await vowCards.count();
-		await page.locator(`${CHAR_HEADER} button:has-text("+ Vow")`).click();
+		await page.locator(`${CHAR_HEADER} button[aria-label="Add Vow"]`).click();
 		await expect(vowCards).toHaveCount(vowsBefore + 1, { timeout: 5_000 });
 	});
 
@@ -190,7 +216,7 @@ test.describe('Characters area (v2)', () => {
 		await switchCharTab(page, 'Vows');
 		const vowCards = page.locator(`${CHAR_AREA} .vow-card`);
 		if ((await vowCards.count()) === 0) {
-			await page.locator(`${CHAR_HEADER} button:has-text("+ Vow")`).click();
+			await page.locator(`${CHAR_HEADER} button[aria-label="Add Vow"]`).click();
 			await expect(vowCards).toHaveCount(1, { timeout: 5_000 });
 		}
 		const vowsBefore = await vowCards.count();
@@ -208,7 +234,7 @@ test.describe('Characters area (v2)', () => {
 
 		const vowCards = page.locator(`${CHAR_AREA} .vow-card`);
 		if ((await vowCards.count()) === 0) {
-			await page.locator(`${CHAR_HEADER} button:has-text("+ Vow")`).click();
+			await page.locator(`${CHAR_HEADER} button[aria-label="Add Vow"]`).click();
 			await expect(vowCards).toHaveCount(1, { timeout: 5_000 });
 		}
 		const vow = vowCards.first();
@@ -233,7 +259,7 @@ test.describe('Characters area (v2)', () => {
 
 		const vowCards = page.locator(`${CHAR_AREA} .vow-card`);
 		if ((await vowCards.count()) === 0) {
-			await page.locator(`${CHAR_HEADER} button:has-text("+ Vow")`).click();
+			await page.locator(`${CHAR_HEADER} button[aria-label="Add Vow"]`).click();
 			await expect(vowCards).toHaveCount(1, { timeout: 5_000 });
 		}
 
@@ -271,7 +297,7 @@ test.describe('Characters area (v2)', () => {
 
 		const vowCards = page.locator(`${CHAR_AREA} .vow-card`);
 		if ((await vowCards.count()) === 0) {
-			await page.locator(`${CHAR_HEADER} button:has-text("+ Vow")`).click();
+			await page.locator(`${CHAR_HEADER} button[aria-label="Add Vow"]`).click();
 			await expect(vowCards).toHaveCount(1, { timeout: 5_000 });
 		}
 		const vow = vowCards.first();
@@ -329,21 +355,18 @@ test.describe('Characters area (v2)', () => {
 	// ── Cleanup ───────────────────────────────────────────────────────────────
 
 	test('cleanup: delete all characters', async ({ page }) => {
-		const spines = page.locator(CHAR_SPINE);
-		let count = await spines.count();
-		while (count > 0) {
-			await spines.first().click();
-			const deleteBtn = page.locator(`${CHAR_AREA} .ca-stage-delete-btn`).first();
-			await expect(deleteBtn).toBeVisible({ timeout: 3_000 });
-			await deleteBtn.click();
+		// Delete the active character via the header gear → options dialog →
+		// "Delete this character" → confirm, looping until the empty state shows.
+		// (The app auto-selects the next character after each delete.)
+		const activeTab = page.locator(`${CHAR_AREA} .ca-tab`).first();
+		for (let guard = 0; guard < 20; guard++) {
+			if (!(await activeTab.isVisible().catch(() => false))) break;
+			await page.locator(`${CHAR_HEADER} .ca-hdr-settings-btn`).click();
+			await page.locator('button.co-danger-btn').click();
 			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 3_000 });
 			await page.locator('.confirm-modal button.btn-danger').click();
-			count--;
-			if (count > 0) {
-				await expect(spines).toHaveCount(count, { timeout: 5_000 });
-			} else {
-				await expect(page.locator(`${CHAR_AREA} .ca-empty`)).toBeVisible({ timeout: 5_000 });
-			}
+			await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
 		}
+		await expect(page.locator(`${CHAR_AREA} .ca-empty`)).toBeVisible({ timeout: 5_000 });
 	});
 });

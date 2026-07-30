@@ -113,13 +113,18 @@ async function stubFoesEndpoint(page: Page): Promise<void> {
  *  attachment, which doesn't guarantee child components have hydrated.
  *  foes.spec.ts doesn't see this because it never reloads. */
 async function openFoePicker(page: Page): Promise<void> {
-	const addBtn = page.locator(`${FOE_HEADER} button:has-text("+ Foe")`);
+	// v2: the picker opens from the header combobox → "+ New foe…" action.
+	await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
 	const dialog = page.locator('.foe-dialog');
-	await addBtn.click({ timeout: 8_000 });
+	const openViaCombobox = async () => {
+		await page.locator(`${FOE_HEADER} .fa-hdr-combobox`).click();
+		await page.locator('.mp-cmd-item--action', { hasText: /New foe/i }).click();
+	};
+	await openViaCombobox();
 	try {
 		await expect(dialog).toBeVisible({ timeout: 2_000 });
 	} catch {
-		await addBtn.click({ timeout: 5_000 });
+		await openViaCombobox();
 		await expect(dialog).toBeVisible({ timeout: 8_000 });
 	}
 }

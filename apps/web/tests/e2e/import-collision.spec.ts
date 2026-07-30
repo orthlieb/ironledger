@@ -17,7 +17,7 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 import { zipSync, strToU8 } from 'fflate';
-import { resetAll } from './helpers/reset';
+import { getTestToken, resetAll } from './helpers/reset';
 
 // ── Test fixtures ────────────────────────────────────────────────────────────
 
@@ -133,6 +133,30 @@ async function gotoHome(page: Page) {
 		.locator('.home-area--characters .ca-empty, .home-area--characters .ca-body')
 		.first()
 		.waitFor({ timeout: 12_000, state: 'attached' });
+	// Imports write to the Communities/NPCs stores, so wait until that area
+	// has finished its own initial load before firing one — otherwise the
+	// first import of the suite can race store hydration.
+	await page
+		.locator('.home-area--communities .cm-empty, .home-area--communities .cm-row')
+		.first()
+		.waitFor({ timeout: 12_000, state: 'attached' });
+	// The import <input>'s change listener is wired once the page's initial
+	// store loads settle (see home/+page.svelte). Wait for the network to go
+	// idle so those loads are done — and the listener is attached — before any
+	// test fires an import, otherwise the first import can be dropped.
+	await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
+}
+
+/** Poll the session state until `predicate` holds, then continue. Each import
+ *  persists per-entity immediately, so the server reflects a seed as soon as
+ *  the (async) import handler reaches it — polling waits exactly that long and
+ *  no more. Replaces fixed `waitForTimeout`s that raced the handler (notably
+ *  its `loadAssets()` await) and made the suite non-idempotent under load. */
+async function waitForWorld(
+	page: Page,
+	predicate: (w: Awaited<ReturnType<typeof readWorld>>) => boolean,
+) {
+	await expect.poll(async () => predicate(await readWorld(page)), { timeout: 12_000 }).toBe(true);
 }
 
 /** Push a tagged payload through the hidden `<input type="file">` on
@@ -169,13 +193,26 @@ async function readWorld(page: Page) {
 // ── Tests ────────────────────────────────────────────────────────────────────
 
 test.describe('Import collision dialog (name-based)', () => {
+	// One login for the whole suite — resetAll() otherwise logs in on every
+	// call, and beforeEach + afterEach across 12 tests would hammer the auth
+	// rate limiter. Reuse the token everywhere instead.
+	let token: string;
+
 	test.beforeAll(async () => {
-		await resetAll();
+		token = await getTestToken();
+		await resetAll(token);
 	});
 
 	test.beforeEach(async ({ page }) => {
-		await resetAll();
+		await resetAll(token);
 		await gotoHome(page);
+	});
+
+	// Teardown: wipe the data this test populated so every test both starts
+	// and ends on a blank slate. Any client-side side effect (e.g. a left-open
+	// collision dialog) is discarded by the next test's beforeEach re-navigation.
+	test.afterEach(async () => {
+		await resetAll(token);
 	});
 
 	test('no dialog opens on a clean-slate import', async ({ page }) => {
@@ -186,7 +223,7 @@ test.describe('Import collision dialog (name-based)', () => {
 				npcs: [makeNpc('n-1', 'Old Vala')],
 			}),
 		);
-		await page.waitForTimeout(1_500);
+		await waitForWorld(page, (w) => w.communities.length >= 1 && w.npcs.length >= 1);
 		await expect(page.locator('.icd-dialog')).not.toBeVisible();
 		const world = await readWorld(page);
 		expect(world.communities).toHaveLength(1);
@@ -203,7 +240,7 @@ test.describe('Import collision dialog (name-based)', () => {
 				npcs: [],
 			}),
 		);
-		await page.waitForTimeout(1_500);
+		await waitForWorld(page, (w) => w.communities.length >= 1);
 
 		// Same id, different name → not a collision under name-based detection.
 		await importPayload(
@@ -213,7 +250,7 @@ test.describe('Import collision dialog (name-based)', () => {
 				npcs: [],
 			}),
 		);
-		await page.waitForTimeout(1_500);
+		await waitForWorld(page, (w) => w.communities.some((c) => c.name === 'Westcliff'));
 		await expect(page.locator('.icd-dialog')).not.toBeVisible();
 	});
 
@@ -237,7 +274,7 @@ test.describe('Import collision dialog (name-based)', () => {
 				session: {},
 			}),
 		);
-		await page.waitForTimeout(1_800);
+		await waitForWorld(page, (w) => w.expeditions.length >= 2);
 
 		// Second import — same NAMES but fresh ids (simulates a cross-user
 		// transfer). Collision dialog should open and list every category,
@@ -310,7 +347,7 @@ test.describe('Import collision dialog (name-based)', () => {
 				// Deliberately NO `places` key.
 			}),
 		);
-		await page.waitForTimeout(1_500);
+		await waitForWorld(page, (w) => w.communities.length >= 1 && w.npcs.length >= 1);
 		await expect(page.locator('.icd-dialog')).not.toBeVisible();
 		const world = await readWorld(page);
 		expect(world.communities).toHaveLength(1);
@@ -327,7 +364,7 @@ test.describe('Import collision dialog (name-based)', () => {
 				npcs: [makeNpc('n-1', 'Old Vala')],
 			}),
 		);
-		await page.waitForTimeout(1_500);
+		await waitForWorld(page, (w) => w.communities.length >= 1 && w.npcs.length >= 1);
 
 		// Same NAMES, different ids (cross-user transfer).
 		await importPayload(
@@ -342,7 +379,7 @@ test.describe('Import collision dialog (name-based)', () => {
 		await dialog.locator('[role="radio"][data-value="new"]').click();
 		await dialog.locator('button.btn-primary').click();
 		await expect(dialog).not.toBeVisible();
-		await page.waitForTimeout(1_800);
+		await waitForWorld(page, (w) => w.communities.length >= 2 && w.npcs.length >= 2);
 
 		const world = await readWorld(page);
 		expect(world.communities).toHaveLength(2);
@@ -361,7 +398,7 @@ test.describe('Import collision dialog (name-based)', () => {
 				npcs: [],
 			}),
 		);
-		await page.waitForTimeout(1_500);
+		await waitForWorld(page, (w) => w.communities.length >= 1);
 
 		// Same name, different id, edited trouble (simulates exported copy
 		// that was modified externally and brought back).
@@ -377,7 +414,7 @@ test.describe('Import collision dialog (name-based)', () => {
 		await dialog.locator('[role="radio"][data-value="replace"]').click();
 		await dialog.locator('button.btn-primary').click();
 		await expect(dialog).not.toBeVisible();
-		await page.waitForTimeout(1_800);
+		await waitForWorld(page, (w) => w.communities.some((c) => c.trouble === 'Bandits'));
 
 		const world = await readWorld(page);
 		expect(world.communities).toHaveLength(1);
@@ -396,7 +433,7 @@ test.describe('Import collision dialog (name-based)', () => {
 				npcs: [makeNpc('n-1', 'Old Vala')],
 			}),
 		);
-		await page.waitForTimeout(1_500);
+		await waitForWorld(page, (w) => w.communities.length >= 1 && w.npcs.length >= 1);
 
 		await importPayload(
 			page,
@@ -410,7 +447,7 @@ test.describe('Import collision dialog (name-based)', () => {
 		await dialog.locator('[role="radio"][data-value="skip"]').click();
 		await dialog.locator('button.btn-primary').click();
 		await expect(dialog).not.toBeVisible();
-		await page.waitForTimeout(1_800);
+		await waitForWorld(page, (w) => w.communities.length === 1 && w.npcs.length === 1);
 
 		const world = await readWorld(page);
 		expect(world.communities).toHaveLength(1);
@@ -428,7 +465,7 @@ test.describe('Import collision dialog (name-based)', () => {
 				npcs: [],
 			}),
 		);
-		await page.waitForTimeout(1_500);
+		await waitForWorld(page, (w) => w.communities.length >= 1);
 		const before = await readWorld(page);
 		expect(before.communities).toHaveLength(1);
 
@@ -446,7 +483,7 @@ test.describe('Import collision dialog (name-based)', () => {
 		await expect(dialog).toBeVisible({ timeout: 5_000 });
 		await dialog.locator('button:has-text("Cancel import")').click();
 		await expect(dialog).not.toBeVisible();
-		await page.waitForTimeout(800);
+		await waitForWorld(page, (w) => w.communities.length === 1 && w.npcs.length === 0);
 
 		const after = await readWorld(page);
 		expect(after.communities).toHaveLength(1);
@@ -462,7 +499,7 @@ test.describe('Import collision dialog (name-based)', () => {
 				npcs: [],
 			}),
 		);
-		await page.waitForTimeout(1_500);
+		await waitForWorld(page, (w) => w.communities.length >= 1);
 
 		// Second file: one collision (same name, different id) + one fresh.
 		await importPayload(
@@ -482,7 +519,12 @@ test.describe('Import collision dialog (name-based)', () => {
 
 		await dialog.locator('[role="radio"][data-value="skip"]').click();
 		await dialog.locator('button.btn-primary').click();
-		await page.waitForTimeout(1_800);
+		await waitForWorld(
+			page,
+			(w) =>
+				w.communities.some((c) => c.name === 'Brand New Hamlet') &&
+				w.npcs.some((n) => n.name === 'Newcomer'),
+		);
 
 		const world = await readWorld(page);
 		expect(world.communities.map((c) => c.name).sort()).toEqual(
@@ -501,7 +543,7 @@ test.describe('Import collision dialog (name-based)', () => {
 				npcs: [],
 			}),
 		);
-		await page.waitForTimeout(1_500);
+		await waitForWorld(page, (w) => w.communities.length >= 1);
 
 		await importPayload(
 			page,
@@ -526,7 +568,7 @@ test.describe('Import collision dialog (name-based)', () => {
 				npcs: [],
 			}),
 		);
-		await page.waitForTimeout(1_500);
+		await waitForWorld(page, (w) => w.communities.length >= 1);
 
 		await importPayload(
 			page,

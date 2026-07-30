@@ -31,23 +31,42 @@ async function gotoHomeAndWait(page: import('@playwright/test').Page) {
 		.locator(`${FOE_AREA} .fa-empty, ${FOE_AREA} .fa-body`)
 		.first()
 		.waitFor({ timeout: 12_000, state: 'attached' });
+	// Combobox triggers are unreliable mid-hydration — let loads settle.
+	await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
+}
+
+/** v2: open the foe picker via the header combobox → "+ New foe…". */
+async function openFoePicker(page: import('@playwright/test').Page) {
+	await page.locator(`${FOE_HEADER} .fa-hdr-combobox`).click();
+	await page.locator('.mp-cmd-item--action', { hasText: /New foe/i }).click();
 }
 
 test.beforeEach(async ({ page }) => {
 	await gotoHomeAndWait(page);
 });
 
-test('main scroll is locked while foe picker dialog is open', async ({ page }) => {
-	await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
+// v2 scroll-lock architecture (see CLAUDE.md): the dialog is a bits-ui
+// `Dialog` — a `position: fixed` overlay + content with `preventScroll` — so
+// the page behind can't be reached. (The old per-route `<main>` overflow lock
+// is retired; `main` stays `overflow-y: auto` whether or not a dialog is open.)
+test('foe picker dialog + overlay are fixed-position (page behind is unreachable)', async ({
+	page,
+}) => {
+	await openFoePicker(page);
 	await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 5_000 });
-	const mainOverflow = await page.evaluate(
-		() => getComputedStyle(document.querySelector('main.app-main')!).overflowY,
-	);
-	expect(mainOverflow).toBe('hidden');
+	const dialogPos = await page
+		.locator('.foe-dialog')
+		.evaluate((el) => getComputedStyle(el).position);
+	expect(dialogPos).toBe('fixed');
+	const overlayPos = await page
+		.locator('.foe-overlay')
+		.first()
+		.evaluate((el) => getComputedStyle(el).position);
+	expect(overlayPos).toBe('fixed');
 });
 
-test('main scroll is restored after foe picker dialog closes', async ({ page }) => {
-	await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
+test('main stays scrollable-by-CSS; the fixed modal is what blocks it', async ({ page }) => {
+	await openFoePicker(page);
 	await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 5_000 });
 	await page.keyboard.press('Escape');
 	await expect(page.locator('.foe-dialog')).not.toBeVisible();
@@ -57,16 +76,16 @@ test('main scroll is restored after foe picker dialog closes', async ({ page }) 
 	expect(mainOverflow).toBe('auto');
 });
 
-test('open dialog declares overscroll containment', async ({ page }) => {
-	await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
-	const dialog = page.locator('.foe-dialog');
-	await expect(dialog).toBeVisible();
-	const behavior = await dialog.evaluate((el) => getComputedStyle(el).overscrollBehavior);
+test("the dialog's scrollable body declares overscroll containment", async ({ page }) => {
+	await openFoePicker(page);
+	const wrap = page.locator('.foe-dialog .fd-grid-wrap');
+	await expect(wrap).toBeVisible();
+	const behavior = await wrap.evaluate((el) => getComputedStyle(el).overscrollBehavior);
 	expect(behavior).toContain('contain');
 });
 
 test('dialog body uses overscroll-behavior: contain', async ({ page }) => {
-	await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
+	await openFoePicker(page);
 	// Scope to [open] — FoePickerDialog is rendered twice on the page
 	// (FoesArea + ExpeditionsArea), so the unscoped selector is ambiguous.
 	const wrap = page.locator('.foe-dialog .fd-grid-wrap');

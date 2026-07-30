@@ -15,10 +15,13 @@ import { resetExpeditions, resetFoes } from './helpers/reset';
 
 const EXP_AREA = '.home-area--expeditions';
 const EXP_HEADER = `${EXP_AREA} .ea-header`;
-const EXP_SPINE = `${EXP_AREA} .ea-spine`;
+// v2 header: combobox switcher (.ea-hdr-combobox) with "+ New Journey…" /
+// "+ New Site…"; no spine. Live count on .ea-header-actions[data-exp-count].
+// Delete via the gear (.ea-hdr-settings-btn) → ExpeditionOptionsDialog.
+const EXP_COMBOBOX = `${EXP_HEADER} .ea-hdr-combobox`;
+const EXP_ACTIONS = `${EXP_AREA} .ea-header-actions`;
 
 const FOE_AREA = '.home-area--foes';
-const FOE_SPINE = `${FOE_AREA} .fa-spine`;
 
 async function waitForExpeditionsLoaded(page: import('@playwright/test').Page) {
 	await expect(page.locator(`${EXP_AREA} .ea-loading`)).not.toBeVisible({ timeout: 10_000 });
@@ -26,10 +29,85 @@ async function waitForExpeditionsLoaded(page: import('@playwright/test').Page) {
 		.locator(`${EXP_AREA} .ea-empty, ${EXP_AREA} .ea-body`)
 		.first()
 		.waitFor({ timeout: 10_000, state: 'attached' });
+	await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
 }
 
 async function switchExpTab(page: import('@playwright/test').Page, label: string) {
 	await page.locator(`${EXP_AREA} .ea-tab`, { hasText: new RegExp(`^${label}$`, 'i') }).click();
+}
+
+/** Live expedition count from the header. */
+async function expCount(page: import('@playwright/test').Page): Promise<number> {
+	return Number((await page.locator(EXP_ACTIONS).getAttribute('data-exp-count')) ?? '0');
+}
+
+/** Live foe count (data-foe-count on the inner .fa-area). */
+async function foeCount(page: import('@playwright/test').Page): Promise<number> {
+	return Number((await page.locator(`${FOE_AREA} .fa-area`).getAttribute('data-foe-count')) ?? '0');
+}
+
+/** Open a "+ New Journey…" / "+ New Site…" action from the header combobox. */
+async function openNewExpedition(page: import('@playwright/test').Page, kind: 'Journey' | 'Site') {
+	await page.locator(EXP_COMBOBOX).click();
+	await page.locator('.mp-cmd-item--action', { hasText: new RegExp(`New ${kind}`, 'i') }).click();
+	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
+}
+
+/** Create a journey via the combobox; it becomes the active expedition.
+ *  Name-first dialog: Create is disabled until a name is entered. */
+async function createJourney(page: import('@playwright/test').Page) {
+	await openNewExpedition(page, 'Journey');
+	await page.locator('.confirm-modal .co-input').first().fill('E2E Journey');
+	await page.locator('.confirm-modal button:has-text("Create")').click();
+	await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
+}
+
+/** Pick an option from an app <Select> (bits-ui). `trigger` is a selector for
+ *  the trigger element (which carries the `id`); `index` is the 0-based option
+ *  in the portalled popup (`.bui-select-content .bui-select-item`). */
+async function chooseSelect(
+	page: import('@playwright/test').Page,
+	trigger: string,
+	index = 0,
+): Promise<string> {
+	await page.locator(trigger).click();
+	const items = page.locator('.bui-select-content .bui-select-item');
+	await expect(items.first()).toBeVisible({ timeout: 3_000 });
+	const n = await items.count();
+	const i = index < 0 ? n + index : index;
+	const label = (await items.nth(i).innerText()).trim();
+	await items.nth(i).click();
+	await expect(page.locator('.bui-select-content'))
+		.toBeHidden({ timeout: 3_000 })
+		.catch(() => {});
+	return label;
+}
+
+/** Assert an app <Select> trigger holds a real value (not the placeholder). */
+async function expectSelectHasValue(page: import('@playwright/test').Page, trigger: string) {
+	await expect(page.locator(`${trigger} .bui-select-value--placeholder`)).toHaveCount(0, {
+		timeout: 3_000,
+	});
+}
+
+/** Create a site via the name-first combobox dialog; it becomes active. Theme
+ *  and domain start empty — set them inline on the Core tab when needed (see
+ *  ensureSiteSelected). */
+async function createSite(page: import('@playwright/test').Page) {
+	await openNewExpedition(page, 'Site');
+	await page.locator('.confirm-modal .co-input').first().fill('E2E Site');
+	await page.locator('.confirm-modal button:has-text("Create")').click();
+	await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
+}
+
+/** Delete the active expedition via the header gear → options → confirm. */
+async function deleteActiveExpedition(page: import('@playwright/test').Page) {
+	await page.locator(`${EXP_HEADER} .ea-hdr-settings-btn`).click();
+	await page.locator('button.co-danger-btn').click();
+	const confirmBtn = page.locator('.confirm-modal button.btn-danger');
+	await expect(confirmBtn).toBeVisible({ timeout: 5_000 });
+	await confirmBtn.click();
+	await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
 }
 
 /**
@@ -37,27 +115,25 @@ async function switchExpTab(page: import('@playwright/test').Page, label: string
  * Journeys don't show a theme select in Core; we use that to detect them.
  */
 async function ensureJourneySelected(page: import('@playwright/test').Page): Promise<void> {
-	const spines = page.locator(EXP_SPINE);
-	const count = await spines.count();
-	// Search existing spines for a journey (Core tab shows no theme select).
-	for (let i = 0; i < count; i++) {
-		await spines.nth(i).click();
+	// If an expedition is already active and it's a journey (Core tab shows no
+	// theme select), reuse it. Otherwise create a journey — it becomes active.
+	if (
+		await page
+			.locator(`${EXP_AREA} .ea-tab`)
+			.first()
+			.isVisible()
+			.catch(() => false)
+	) {
 		await switchExpTab(page, 'Core');
-		if (
-			!(await page
-				.locator(`${EXP_AREA} select[id^="ea-theme-"]`)
-				.isVisible({ timeout: 500 })
-				.catch(() => false))
-		) {
-			return; // this spine is a journey
-		}
+		const hasTheme = await page
+			.locator(`${EXP_AREA} [id^="ea-theme-"]`)
+			.first()
+			.isVisible({ timeout: 500 })
+			.catch(() => false);
+		if (!hasTheme) return; // active expedition is a journey
 	}
-	// None found — create one.
-	await page.locator(`${EXP_HEADER} button:has-text("+ Journey")`).click();
-	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
-	await page.locator('.confirm-modal button:has-text("Start Journey")').click();
-	await expect(spines).not.toHaveCount(count, { timeout: 5_000 });
-	await spines.last().click();
+	await createJourney(page);
+	await switchExpTab(page, 'Core');
 }
 
 /**
@@ -66,43 +142,36 @@ async function ensureJourneySelected(page: import('@playwright/test').Page): Pro
  * Also ensures theme and domain are non-empty (needed for Feature/Danger rolls).
  */
 async function ensureSiteSelected(page: import('@playwright/test').Page): Promise<string> {
-	const spines = page.locator(EXP_SPINE);
-
-	// Create a site if the list is empty.
-	if ((await spines.count()) === 0) {
-		await page.locator(`${EXP_HEADER} button:has-text("+ Site")`).click();
-		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
-		await page.selectOption('.confirm-modal #ns-theme', { index: 1 });
-		await page.selectOption('.confirm-modal #ns-domain', { index: 1 });
-		await page.locator('.confirm-modal button:has-text("Create")').click();
-		await expect(spines).not.toHaveCount(0, { timeout: 5_000 });
-	}
-
-	// Find a site spine (Core tab shows a theme select).
-	const themeSelect = page.locator(`${EXP_AREA} select[id^="ea-theme-"]`).first();
-	if (!(await themeSelect.isVisible({ timeout: 1_000 }).catch(() => false))) {
-		const count = await spines.count();
-		for (let i = 0; i < count; i++) {
-			await spines.nth(i).click();
+	// Reuse the active expedition if it's already a site (Core tab shows a theme
+	// select); otherwise create a site — createSite() sets theme + domain.
+	let themeSelect = page.locator(`${EXP_AREA} [id^="ea-theme-"]`).first();
+	const activeIsSite =
+		(await page
+			.locator(`${EXP_AREA} .ea-tab`)
+			.first()
+			.isVisible()
+			.catch(() => false)) &&
+		(await (async () => {
 			await switchExpTab(page, 'Core');
-			if (await themeSelect.isVisible({ timeout: 500 }).catch(() => false)) break;
-		}
-	} else {
+			return themeSelect.isVisible({ timeout: 500 }).catch(() => false);
+		})());
+	if (!activeIsSite) {
+		await createSite(page);
 		await switchExpTab(page, 'Core');
 	}
+	themeSelect = page.locator(`${EXP_AREA} [id^="ea-theme-"]`).first();
 	await expect(themeSelect).toBeVisible({ timeout: 3_000 });
 
-	// Ensure theme and domain have non-empty values (needed for feature/danger).
-	const domainSelect = page.locator(`${EXP_AREA} select[id^="ea-domain-"]`).first();
-	if (!(await themeSelect.inputValue()).trim()) {
-		await themeSelect.selectOption({ index: 1 });
+	// Feature/Danger need a theme + domain; new sites start empty, so set them
+	// inline (bits-ui Select shows a placeholder value until chosen).
+	const id = ((await themeSelect.getAttribute('id')) ?? '').replace(/^ea-theme-/, '');
+	if (await page.locator(`${EXP_AREA} [id^="ea-theme-"] .bui-select-value--placeholder`).count()) {
+		await chooseSelect(page, `${EXP_AREA} [id^="ea-theme-"]`);
 	}
-	if (!(await domainSelect.inputValue()).trim()) {
-		await domainSelect.selectOption({ index: 1 });
+	if (await page.locator(`${EXP_AREA} [id^="ea-domain-"] .bui-select-value--placeholder`).count()) {
+		await chooseSelect(page, `${EXP_AREA} [id^="ea-domain-"]`);
 	}
-
-	const id = (await themeSelect.getAttribute('id')) ?? '';
-	return id.replace(/^ea-theme-/, '');
+	return id;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -119,206 +188,128 @@ test.describe('Expeditions area (v2)', () => {
 		await waitForExpeditionsLoaded(page);
 	});
 
-	test('shows + Journey and + Site buttons in header', async ({ page }) => {
-		await expect(page.locator(`${EXP_HEADER} button:has-text("+ Journey")`)).toBeVisible();
-		await expect(page.locator(`${EXP_HEADER} button:has-text("+ Site")`)).toBeVisible();
+	test('shows the expedition switcher combobox in the header', async ({ page }) => {
+		await expect(page.locator(EXP_COMBOBOX)).toBeVisible();
 	});
 
 	// ── Journeys ──────────────────────────────────────────────────────────────
 
-	test('clicking + Journey opens the new-journey dialog', async ({ page }) => {
-		await page.locator(`${EXP_HEADER} button:has-text("+ Journey")`).click();
-		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
+	test('the switcher opens the new-journey dialog', async ({ page }) => {
+		await openNewExpedition(page, 'Journey');
 		await expect(page.locator('.confirm-modal .cm-title')).toContainText('New Journey');
 		await page.keyboard.press('Escape');
 	});
 
 	test('can add a journey', async ({ page }) => {
-		const before = await page.locator(EXP_SPINE).count();
-		await page.locator(`${EXP_HEADER} button:has-text("+ Journey")`).click();
-		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
-		await page.locator('.confirm-modal button:has-text("Start Journey")').click();
-		await expect(page.locator(EXP_SPINE)).not.toHaveCount(before, { timeout: 5_000 });
+		const before = await expCount(page);
+		await createJourney(page);
+		expect(await expCount(page)).toBe(before + 1);
 	});
 
 	test('can delete a journey', async ({ page }) => {
-		const spines = page.locator(EXP_SPINE);
-		if ((await spines.count()) === 0) {
-			await page.locator(`${EXP_HEADER} button:has-text("+ Journey")`).click();
-			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
-			await page.locator('.confirm-modal button:has-text("Start Journey")').click();
-			await expect(spines).not.toHaveCount(0, { timeout: 5_000 });
-		}
-		const countBefore = await spines.count();
-		await spines.first().click();
-		const deleteBtn = page.locator(`${EXP_AREA} .ea-stage-delete-btn`).first();
-		await expect(deleteBtn).toBeVisible({ timeout: 3_000 });
-		await deleteBtn.click();
-		const confirmBtn = page.locator('.confirm-modal button.btn-danger');
-		await expect(confirmBtn).toBeVisible({ timeout: 5_000 });
-		await confirmBtn.click();
-		await expect(spines).toHaveCount(countBefore - 1, { timeout: 5_000 });
+		await createJourney(page);
+		const before = await expCount(page);
+		await deleteActiveExpedition(page);
+		expect(await expCount(page)).toBe(before - 1);
 	});
 
 	// ── Sites ─────────────────────────────────────────────────────────────────
 
-	test('clicking + Site opens the new-site dialog', async ({ page }) => {
-		await page.locator(`${EXP_HEADER} button:has-text("+ Site")`).click();
-		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
+	test('the switcher opens the new-site dialog', async ({ page }) => {
+		await openNewExpedition(page, 'Site');
 		await expect(page.locator('.confirm-modal .cm-title')).toContainText('New Site');
-		await expect(page.locator('.confirm-modal #ns-theme')).toBeVisible();
-		await expect(page.locator('.confirm-modal #ns-domain')).toBeVisible();
+		// Name-first dialog: name field + "Also randomize" Theme/Domain toggles
+		// (theme/domain themselves are edited inline once the site exists).
+		await expect(page.locator('.confirm-modal .co-input').first()).toBeVisible();
+		await expect(page.locator('.confirm-modal .nn-check', { hasText: 'Theme' })).toBeVisible();
+		await expect(page.locator('.confirm-modal .nn-check', { hasText: 'Domain' })).toBeVisible();
 		await page.keyboard.press('Escape');
 	});
 
 	test('can add a site', async ({ page }) => {
-		const before = await page.locator(EXP_SPINE).count();
-		await page.locator(`${EXP_HEADER} button:has-text("+ Site")`).click();
-		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
-		await page.selectOption('.confirm-modal #ns-theme', { index: 1 });
-		await page.selectOption('.confirm-modal #ns-domain', { index: 1 });
-		await page.locator('.confirm-modal button:has-text("Create")').click();
-		await expect(page.locator(EXP_SPINE)).not.toHaveCount(before, { timeout: 5_000 });
+		const before = await expCount(page);
+		await createSite(page);
+		expect(await expCount(page)).toBe(before + 1);
 	});
 
 	test('can delete a site', async ({ page }) => {
-		const spines = page.locator(EXP_SPINE);
-		if ((await spines.count()) === 0) {
-			await page.locator(`${EXP_HEADER} button:has-text("+ Site")`).click();
-			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
-			await page.selectOption('.confirm-modal #ns-theme', { index: 1 });
-			await page.selectOption('.confirm-modal #ns-domain', { index: 1 });
-			await page.locator('.confirm-modal button:has-text("Create")').click();
-			await expect(spines).not.toHaveCount(0, { timeout: 5_000 });
-		}
-		const countBefore = await spines.count();
-		await spines.first().click();
-		const deleteBtn = page.locator(`${EXP_AREA} .ea-stage-delete-btn`).first();
-		await expect(deleteBtn).toBeVisible({ timeout: 3_000 });
-		await deleteBtn.click();
-		const confirmBtn = page.locator('.confirm-modal button.btn-danger');
-		await expect(confirmBtn).toBeVisible({ timeout: 5_000 });
-		await confirmBtn.click();
-		await expect(spines).toHaveCount(countBefore - 1, { timeout: 5_000 });
+		await createSite(page);
+		const before = await expCount(page);
+		await deleteActiveExpedition(page);
+		expect(await expCount(page)).toBe(before - 1);
 	});
 
 	// ── Theme / Domain (manual + dice) ────────────────────────────────────────
 
 	test('site: can change theme manually via the inline select', async ({ page }) => {
 		await ensureSiteSelected(page);
-
-		const themeSelect = page.locator(`${EXP_AREA} select[id^="ea-theme-"]`).first();
-		const options = themeSelect.locator('option');
-		const optCount = await options.count();
-		// Pick the last option (guaranteed to differ if > 1 option exists).
-		const newVal = (await options.nth(optCount - 1).getAttribute('value')) ?? '';
-		await themeSelect.selectOption(newVal);
-		await expect(themeSelect).toHaveValue(newVal, { timeout: 3_000 });
+		const theme = `${EXP_AREA} [id^="ea-theme-"]`;
+		// Pick the last option and confirm the trigger reflects it.
+		const label = await chooseSelect(page, theme, -1);
+		await expect(page.locator(`${theme} .bui-select-value`)).toHaveText(label, { timeout: 3_000 });
 	});
 
 	test('site: can change theme via the random dice button', async ({ page }) => {
 		await ensureSiteSelected(page);
-
-		const themeSelect = page.locator(`${EXP_AREA} select[id^="ea-theme-"]`).first();
+		const theme = `${EXP_AREA} [id^="ea-theme-"]`;
 		const diceBtn = page.locator(`${EXP_AREA} button[aria-label="Random theme"]`);
 		await expect(diceBtn).toBeVisible({ timeout: 3_000 });
 		await diceBtn.click();
-		// Select should have a non-empty value after randomisation.
-		await expect(themeSelect).not.toHaveValue('', { timeout: 3_000 });
+		await expectSelectHasValue(page, theme);
 	});
 
 	test('site: can change domain manually via the inline select', async ({ page }) => {
 		await ensureSiteSelected(page);
-
-		const domainSelect = page.locator(`${EXP_AREA} select[id^="ea-domain-"]`).first();
-		const options = domainSelect.locator('option');
-		const optCount = await options.count();
-		const newVal = (await options.nth(optCount - 1).getAttribute('value')) ?? '';
-		await domainSelect.selectOption(newVal);
-		await expect(domainSelect).toHaveValue(newVal, { timeout: 3_000 });
+		const domain = `${EXP_AREA} [id^="ea-domain-"]`;
+		const label = await chooseSelect(page, domain, -1);
+		await expect(page.locator(`${domain} .bui-select-value`)).toHaveText(label, { timeout: 3_000 });
 	});
 
 	test('site: can change domain via the random dice button', async ({ page }) => {
 		await ensureSiteSelected(page);
-
-		const domainSelect = page.locator(`${EXP_AREA} select[id^="ea-domain-"]`).first();
+		const domain = `${EXP_AREA} [id^="ea-domain-"]`;
 		const diceBtn = page.locator(`${EXP_AREA} button[aria-label="Random domain"]`);
 		await expect(diceBtn).toBeVisible({ timeout: 3_000 });
 		await diceBtn.click();
-		await expect(domainSelect).not.toHaveValue('', { timeout: 3_000 });
+		await expectSelectHasValue(page, domain);
 	});
 
 	// ── Feature / Danger (manual + dice) ─────────────────────────────────────
 
 	test('site: can set a feature manually via the inline select', async ({ page }) => {
 		await ensureSiteSelected(page);
-
-		const featureSelect = page.locator(`${EXP_AREA} select[id^="ea-feature-"]`).first();
-		await expect(featureSelect).toBeVisible({ timeout: 3_000 });
-		await expect(featureSelect).not.toBeDisabled();
-
-		// Pick first non-empty option.
-		const opts = featureSelect.locator('option');
-		const count = await opts.count();
-		let firstVal = '';
-		for (let i = 0; i < count; i++) {
-			firstVal = (await opts.nth(i).getAttribute('value')) ?? '';
-			if (firstVal) break;
-		}
-		if (!firstVal) {
-			test.skip(true, 'No feature options for this theme+domain');
-			return;
-		}
-
-		await featureSelect.selectOption(firstVal);
-		await expect(featureSelect).toHaveValue(firstVal, { timeout: 3_000 });
+		const feature = `${EXP_AREA} [id^="ea-feature-"]`;
+		await expect(page.locator(feature).first()).toBeVisible({ timeout: 3_000 });
+		const label = await chooseSelect(page, feature, 0);
+		await expect(page.locator(`${feature} .bui-select-value`)).toHaveText(label, {
+			timeout: 3_000,
+		});
 	});
 
 	test('site: can roll a feature via the dice button', async ({ page }) => {
 		await ensureSiteSelected(page);
-
-		const featureSelect = page.locator(`${EXP_AREA} select[id^="ea-feature-"]`).first();
+		const feature = `${EXP_AREA} [id^="ea-feature-"]`;
 		const diceBtn = page.locator(`${EXP_AREA} button[aria-label="Random feature"]`);
-		await expect(diceBtn).not.toBeDisabled({ timeout: 3_000 });
+		await expect(diceBtn).toBeVisible({ timeout: 3_000 });
 		await diceBtn.click();
-		// Wait for the dice animation + async roll to complete: the button re-enables.
-		await expect(diceBtn).not.toBeDisabled({ timeout: 10_000 });
-		// Feature select should now have a non-empty value.
-		await expect(featureSelect).not.toHaveValue('', { timeout: 3_000 });
+		await expectSelectHasValue(page, feature);
 	});
 
 	test('site: can set a danger manually via the inline select', async ({ page }) => {
 		await ensureSiteSelected(page);
-
-		const dangerSelect = page.locator(`${EXP_AREA} select[id^="ea-danger-"]`).first();
-		await expect(dangerSelect).toBeVisible({ timeout: 3_000 });
-		await expect(dangerSelect).not.toBeDisabled();
-
-		const opts = dangerSelect.locator('option');
-		const count = await opts.count();
-		let firstVal = '';
-		for (let i = 0; i < count; i++) {
-			firstVal = (await opts.nth(i).getAttribute('value')) ?? '';
-			if (firstVal) break;
-		}
-		if (!firstVal) {
-			test.skip(true, 'No danger options for this theme+domain');
-			return;
-		}
-
-		await dangerSelect.selectOption(firstVal);
-		await expect(dangerSelect).toHaveValue(firstVal, { timeout: 3_000 });
+		const danger = `${EXP_AREA} [id^="ea-danger-"]`;
+		await expect(page.locator(danger).first()).toBeVisible({ timeout: 3_000 });
+		const label = await chooseSelect(page, danger, 0);
+		await expect(page.locator(`${danger} .bui-select-value`)).toHaveText(label, { timeout: 3_000 });
 	});
 
 	test('site: can roll a danger via the dice button', async ({ page }) => {
 		await ensureSiteSelected(page);
-
-		const dangerSelect = page.locator(`${EXP_AREA} select[id^="ea-danger-"]`).first();
+		const danger = `${EXP_AREA} [id^="ea-danger-"]`;
 		const diceBtn = page.locator(`${EXP_AREA} button[aria-label="Random danger"]`);
-		await expect(diceBtn).not.toBeDisabled({ timeout: 3_000 });
+		await expect(diceBtn).toBeVisible({ timeout: 3_000 });
 		await diceBtn.click();
-		await expect(diceBtn).not.toBeDisabled({ timeout: 10_000 });
-		await expect(dangerSelect).not.toHaveValue('', { timeout: 3_000 });
+		await expectSelectHasValue(page, danger);
 	});
 
 	// ── Portrait / image upload ───────────────────────────────────────────────
@@ -445,7 +436,7 @@ test.describe('Expeditions area (v2)', () => {
 		}
 
 		// Record how many foes are currently in the Foes area.
-		const foesBefore = await page.locator(FOE_SPINE).count();
+		const foesBefore = await foeCount(page);
 
 		// Click Roll Denizen → dialog opens.
 		const rollBtn = page.locator(`${EXP_AREA} button:has-text("Roll Denizen")`);
@@ -462,28 +453,18 @@ test.describe('Expeditions area (v2)', () => {
 		await expect(addBtn).toBeVisible({ timeout: 5_000 });
 		await addBtn.click();
 
-		// Dialog closes and a new foe spine appears in the Foes area.
+		// Dialog closes and a new foe appears in the Foes area.
 		await expect(page.locator('.denizen-dialog')).not.toBeVisible({ timeout: 5_000 });
-		await expect(page.locator(FOE_SPINE)).not.toHaveCount(foesBefore, { timeout: 5_000 });
+		await expect.poll(() => foeCount(page), { timeout: 5_000 }).toBeGreaterThan(foesBefore);
 	});
 
 	// ── Cleanup ───────────────────────────────────────────────────────────────
 
 	test('cleanup: delete all expeditions', async ({ page }) => {
-		const spines = page.locator(EXP_SPINE);
-		let count = await spines.count();
-		while (count > 0) {
-			await spines.first().click();
-			const deleteBtn = page.locator(`${EXP_AREA} .ea-stage-delete-btn`).first();
-			await expect(deleteBtn).toBeVisible({ timeout: 3_000 });
-			await deleteBtn.click();
-			const confirmBtn = page.locator('.confirm-modal button.btn-danger');
-			await expect(confirmBtn).toBeVisible({ timeout: 3_000 });
-			await confirmBtn.click();
-			count--;
-			if (count > 0) {
-				await expect(spines).toHaveCount(count, { timeout: 5_000 });
-			}
+		for (let guard = 0; guard < 30; guard++) {
+			if ((await expCount(page)) === 0) break;
+			await deleteActiveExpedition(page);
 		}
+		expect(await expCount(page)).toBe(0);
 	});
 });
