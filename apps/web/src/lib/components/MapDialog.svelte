@@ -991,9 +991,13 @@
 				preview: true,
 				opacity: false,
 				hue: true,
+				// No HEXA readout / text input / Save / Cancel row —
+				// pick from the swatches or drag the wheel + hue and
+				// we auto-close on release. The dialog's own Cancel
+				// button restores the pre-open snapshot.
 				interaction: {
-					hex: true,
-					input: true,
+					hex: false,
+					input: false,
 					clear: false,
 					save: false,
 				},
@@ -1017,6 +1021,24 @@
 				instance.applyColor(true);
 			} catch {
 				/* known: applyColor's save-emit path when save:false */
+			}
+		});
+		// Auto-dismiss the popover once the user has "committed" a colour:
+		// clicking a swatch is a single-tap commit; wheel/hue dragging
+		// commits when the pointer is released (`changestop`). The Save
+		// button is gone, so this is the only signal we have.
+		instance.on('swatchselect', () => {
+			try {
+				instance.hide();
+			} catch {
+				/* Pickr teardown race — safe to ignore */
+			}
+		});
+		instance.on('changestop', () => {
+			try {
+				instance.hide();
+			} catch {
+				/* Pickr teardown race — safe to ignore */
 			}
 		});
 		pickr = instance;
