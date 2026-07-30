@@ -791,30 +791,6 @@
 				</Popover.Portal>
 			</Popover.Root>
 			{#if activeEntry}
-				{#if activeEntry.kind === 'npc'}
-					<SegmentedRadio
-						ariaLabel="NPC status"
-						labels="never"
-						value={(activeEntry.data as Npc).deceased ? 'deceased' : 'alive'}
-						onchange={(v) => updateNpc({ deceased: v === 'deceased' })}
-						options={[
-							{
-								value: 'alive',
-								icon: heartPulseSvg,
-								text: 'Alive',
-								label: 'Mark alive',
-								tone: 'go',
-							},
-							{
-								value: 'deceased',
-								icon: skullSvg,
-								text: 'Deceased',
-								label: 'Mark deceased',
-								tone: 'stop',
-							},
-						]}
-					/>
-				{/if}
 				{#if activeIsMapOwner}
 					{#if activeEntryMapEmpty}
 						<label
@@ -963,6 +939,34 @@
 							</div>
 						{:else}
 							{@const n = activeEntry.data}
+							<!-- Status toggle — Alive / Deceased. Lives at the top of
+							     the NPC Core tab so the header can stay lean; mirrors
+							     the initiative line at the top of the Characters card. -->
+							<div class="cm-status-section">
+								<span class="cm-status-label">Status</span>
+								<SegmentedRadio
+									ariaLabel="NPC status"
+									labels="always"
+									value={(n as Npc).deceased ? 'deceased' : 'alive'}
+									onchange={(v) => updateNpc({ deceased: v === 'deceased' })}
+									options={[
+										{
+											value: 'alive',
+											icon: heartPulseSvg,
+											text: 'Alive',
+											label: 'Mark alive',
+											tone: 'go',
+										},
+										{
+											value: 'deceased',
+											icon: skullSvg,
+											text: 'Deceased',
+											label: 'Mark deceased',
+											tone: 'stop',
+										},
+									]}
+								/>
+							</div>
 							<div class="cm-field-row">
 								<label class="cm-field-label" for="cm-role-{n.id}">Role</label>
 								<input
@@ -1736,6 +1740,24 @@
 		font-weight: 700;
 		line-height: 1;
 		color: currentColor;
+	}
+	/* NPC status toggle (Alive/Deceased) — lives at the top of the NPC
+	   Core tab. Same shape as CharactersArea's initiative row.
+	   Communities/Places don't get one since they have no status. */
+	.cm-status-section {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding-bottom: 8px;
+		border-bottom: 1px solid #c3baa1;
+	}
+	.cm-status-label {
+		font-family: var(--font-ui);
+		font-size: 0.7rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--text-dimmer);
 	}
 	/* Header gear + combobox — sizing and svg tint. */
 	:global(.cm-hdr-settings-btn) {

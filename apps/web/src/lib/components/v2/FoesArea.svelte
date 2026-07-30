@@ -335,22 +335,6 @@
 			</Popover.Root>
 
 			{#if activeEnc}
-				<SegmentedRadio
-					ariaLabel="Foe status"
-					labels="never"
-					value={activeEnc.vanquished ? 'vanquished' : 'active'}
-					onchange={(v) => update({ vanquished: v === 'vanquished' })}
-					options={[
-						{ value: 'active', icon: swordSvg, text: 'Active', label: 'Mark active', tone: 'go' },
-						{
-							value: 'vanquished',
-							icon: skullSvg,
-							text: 'Vanquished',
-							label: 'Mark vanquished',
-							tone: 'stop',
-						},
-					]}
-				/>
 				<button
 					class="btn btn-icon icon-btn fa-hdr-settings-btn"
 					onclick={() => foeOptionsRef?.open()}
@@ -539,6 +523,36 @@
 									</div>
 								{/if}
 
+								<!-- Status toggle — Active / Vanquished. Lives above
+								     the progress track (with a top separator) so the
+								     header can stay lean; mirrors the initiative
+								     line at the top of the Characters card. -->
+								<div class="fa-status-section">
+									<span class="fa-status-label">Status</span>
+									<SegmentedRadio
+										ariaLabel="Foe status"
+										labels="always"
+										value={activeEnc.vanquished ? 'vanquished' : 'active'}
+										onchange={(v) => update({ vanquished: v === 'vanquished' })}
+										options={[
+											{
+												value: 'active',
+												icon: swordSvg,
+												text: 'Active',
+												label: 'Mark active',
+												tone: 'go',
+											},
+											{
+												value: 'vanquished',
+												icon: skullSvg,
+												text: 'Vanquished',
+												label: 'Mark vanquished',
+												tone: 'stop',
+											},
+										]}
+									/>
+								</div>
+
 								<div class="fa-section">
 									<ProgressTrackPanel
 										label="Progress track"
@@ -702,10 +716,24 @@
 		flex: 1 1 auto;
 		min-width: 0;
 	}
-	/* Prevent the status SegmentedRadio from clipping when the panel
-	   header is tight — combobox shrinks instead. */
-	.fa-header-actions :global(.sr) {
-		flex-shrink: 0;
+	/* Status toggle (Active/Vanquished) lives above the progress track
+	   in the Core card. Same shape as CharactersArea's initiative row —
+	   label + SegmentedRadio, separator above so the section reads as
+	   distinct from the pills row. */
+	.fa-status-section {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding-top: 8px;
+		border-top: 1px solid #c3baa1;
+	}
+	.fa-status-label {
+		font-family: var(--font-ui);
+		font-size: 0.7rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--text-dimmer);
 	}
 	/* Header gear button — sizes the svg to match its siblings across
 	   Chars/Exp/Connections. */

@@ -712,28 +712,6 @@
 				</Popover.Portal>
 			</Popover.Root>
 			{#if activeExp}
-				<SegmentedRadio
-					ariaLabel="Expedition status"
-					labels="never"
-					value={activeExp.complete ? 'complete' : 'active'}
-					onchange={(v) => updateExp({ complete: v === 'complete' })}
-					options={[
-						{
-							value: 'active',
-							icon: locationSvg,
-							text: 'Active',
-							label: 'Mark active',
-							tone: 'go',
-						},
-						{
-							value: 'complete',
-							icon: checkSvg,
-							text: 'Complete',
-							label: 'Mark complete',
-							tone: 'stop',
-						},
-					]}
-				/>
 				{#if activeExpMapEmpty}
 					<label
 						class="btn btn-icon icon-btn ea-hdr-icon-btn"
@@ -945,6 +923,36 @@
 
 							<!-- Difficulty is set in the new-journey / new-site dialog,
 							     surfaced via the rank-coloured pill above. -->
+
+							<!-- Status toggle — Active / Complete. Lives above the
+							     progress track (with a top separator) so the header
+							     can stay lean; mirrors the initiative line at the
+							     top of the Characters card. -->
+							<div class="ea-status-section">
+								<span class="ea-status-label">Status</span>
+								<SegmentedRadio
+									ariaLabel="Expedition status"
+									labels="always"
+									value={activeExp.complete ? 'complete' : 'active'}
+									onchange={(v) => updateExp({ complete: v === 'complete' })}
+									options={[
+										{
+											value: 'active',
+											icon: locationSvg,
+											text: 'Active',
+											label: 'Mark active',
+											tone: 'go',
+										},
+										{
+											value: 'complete',
+											icon: checkSvg,
+											text: 'Complete',
+											label: 'Mark complete',
+											tone: 'stop',
+										},
+									]}
+								/>
+							</div>
 
 							<!-- Progress track -->
 							<div class="ea-section">
@@ -1411,11 +1419,24 @@
 		line-height: 1;
 		color: currentColor;
 	}
-	/* SegmentedRadio in the header row must render at its content width
-	   (labels="auto" already collapses when the ea-header-actions
-	   container is ≤360px). Prevent shrink so glyphs never clip. */
-	.ea-header-actions :global(.sr) {
-		flex-shrink: 0;
+	/* Status toggle (Active/Complete) lives above the progress track in
+	   the Core card. Same shape as CharactersArea's initiative row —
+	   label + SegmentedRadio, separator above so the section reads as
+	   distinct from the pills row. */
+	.ea-status-section {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding-top: 8px;
+		border-top: 1px solid #c3baa1;
+	}
+	.ea-status-label {
+		font-family: var(--font-ui);
+		font-size: 0.7rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--text-dimmer);
 	}
 	/* Type-icon glyph inside the popover items. */
 	:global(.ea-cmd-type-icon svg) {
