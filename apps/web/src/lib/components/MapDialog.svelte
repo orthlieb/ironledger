@@ -802,7 +802,10 @@
 	 *  • Snap point with >1 markers → open pile-up popover to disambiguate.
 	 *  • Existing marker w/ link + bare click → jump to entity.
 	 *  • Existing marker w/ shift-click → open editor.
-	 *  • Empty spot → drop a marker immediately + open its editor.
+	 *  • Empty spot → highlight the snap point as `selectedSquare` so the
+	 *    toolbar "+ Marker" button can drop a marker on it. Empty clicks
+	 *    never create a marker directly — a stray tap on the map would
+	 *    otherwise litter it with unwanted pins.
 	 *
 	 * Long-press on touch (see onGridPointerDown) sets `longPressFired`;
 	 * a completed drag (see onGridPointerUp) sets `dragJustEnded`. Either
@@ -822,16 +825,19 @@
 		const hits = markersAt(x, y, zoom);
 		if (hits.length > 1) {
 			openPilePicker(hits, ev);
+			clearSquareSelection();
 			return;
 		}
 		if (hits.length === 1) {
 			activateExisting(x, y, ev.shiftKey);
+			clearSquareSelection();
 			return;
 		}
-		// Empty grid click: drop a marker immediately and open its editor.
-		// Simpler than the old two-step "select the square then confirm
-		// via + Marker" flow — one click = one marker.
-		placeAt(x, y);
+		// Empty grid click: highlight the snap point so the toolbar's
+		// "+ Marker" knows where to drop the next pin. Clear any marker
+		// selection so the outline switches to the square.
+		selectedSquare = { x, y };
+		selectedMarkerId = null;
 	}
 
 	function onGridPointerDown(e: PointerEvent) {
@@ -1101,6 +1107,23 @@
 		if (!selectedMarker) return;
 		removeMarker(selectedMarker.id);
 		selectedMarkerId = null;
+	}
+
+	/** Empty snap point the user tapped without a marker on it. Rendered
+	 *  with the same outline the selected marker uses, and acts as the
+	 *  target the "+ Marker" toolbar button drops a marker onto. Cleared
+	 *  on marker click, map switch, or after a marker is placed. */
+	let selectedSquare = $state<{ x: number; y: number } | null>(null);
+	function clearSquareSelection() {
+		selectedSquare = null;
+	}
+
+	/** "+ Marker" — drop a marker at the previously-selected square. No-op
+	 *  when no square is selected (button is disabled in that state). */
+	function addMarkerAtSelected() {
+		if (!selectedSquare) return;
+		placeAt(selectedSquare.x, selectedSquare.y);
+		clearSquareSelection();
 	}
 
 	/** Keyboard shortcut router. Only handles Escape for the pile
@@ -1411,6 +1434,15 @@
 					</Popover.Root>
 				</div>
 				<div class="mp-tools mp-tools-actions">
+					<button
+						class="mp-btn mp-btn-add"
+						onclick={addMarkerAtSelected}
+						disabled={!selectedSquare}
+						use:tooltip={selectedSquare
+							? 'Drop a marker on the selected square'
+							: 'Click a square first, then hit + Marker to drop a pin.'}
+						aria-label="Add marker">+ Marker</button
+					>
 					<div class="mp-zoom" role="group" aria-label="Zoom controls">
 						<button
 							class="mp-btn mp-btn-icon"
@@ -1605,6 +1637,22 @@
 								cx={dragPreview.x}
 								cy={dragPreview.y}
 								r="0.18"
+								vector-effect="non-scaling-stroke"
+							/>
+						{/if}
+
+						<!-- Selected empty square — the click-first target for
+						     "+ Marker" (same visual language a selected marker
+						     uses). Rendered before markers so any marker placed
+						     at the same spot draws on top. -->
+						{#if selectedSquare}
+							{@const cell = snapResolutionForZoom(zoom)}
+							<rect
+								class="mp-marker-selection"
+								x={selectedSquare.x - cell / 2}
+								y={selectedSquare.y - cell / 2}
+								width={cell}
+								height={cell}
 								vector-effect="non-scaling-stroke"
 							/>
 						{/if}
