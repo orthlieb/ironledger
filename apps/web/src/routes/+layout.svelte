@@ -6,6 +6,7 @@
 	import BugReportDialog from '$lib/components/BugReportDialog.svelte';
 	import HamburgerMenu from '$lib/components/HamburgerMenu.svelte';
 	import BroadcastBanner from '$lib/components/BroadcastBanner.svelte';
+	import SessionExpiredBanner from '$lib/components/SessionExpiredBanner.svelte';
 	import MovesDialog from '$lib/components/MovesDialog.svelte';
 	import OraclesDialog from '$lib/components/OraclesDialog.svelte';
 	import DiceRollerDialog from '$lib/components/DiceRollerDialog.svelte';
@@ -299,6 +300,8 @@
 {/if}
 
 <BroadcastBanner status={broadcastStatus} />
+
+<SessionExpiredBanner />
 
 <svelte:head>
 	<!-- Warm up the CDN connection before the dice library is actually needed -->

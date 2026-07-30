@@ -1939,7 +1939,17 @@
 	>
 		<Dialog.Portal>
 			<Dialog.Overlay class="mp-props-overlay" />
-			<Dialog.Content bind:ref={propsDialogEl} class="mp-props-dialog">
+			<Dialog.Content
+				bind:ref={propsDialogEl}
+				class="mp-props-dialog"
+				onInteractOutside={(e) => {
+					// Pickr's popover portals to `document.body`, so clicks inside it
+					// look "outside" this dialog and would close it mid-pick. Keep the
+					// dialog open while the user is interacting with any Pickr surface.
+					const t = e.target as Element | null;
+					if (t && t.closest('.pcr-app')) e.preventDefault();
+				}}
+			>
 				<DialogHeader
 					title={headingText('Edit Marker')}
 					onclose={cancelDraft}
