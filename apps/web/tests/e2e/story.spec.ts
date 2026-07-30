@@ -101,8 +101,24 @@ const storyBtn = (page: Page) => page.locator('.story-btn');
 /** Load /home with a companion mocked as configured and the log clean. */
 async function goToHome(page: Page) {
 	await mockAiConfig(page);
+	// LogPanel calls initLog() on mount, which fetches the stored log in the
+	// background and *overwrites* sessionLog.entries when it resolves. If a test
+	// injects an entry before that GET lands, the late response silently clobbers
+	// the injection (the section empties to "Generate (0)", Start goes disabled,
+	// the regen button vanishes, the export drops the entries). Wait for that GET
+	// to resolve — register the waiter before navigating so it can't be missed —
+	// then settle to be sure its store write has flushed. Now every inject() that
+	// follows lands on a stable store.
+	const logLoaded = page
+		.waitForResponse(
+			(r) => r.url().includes('/api/session/log') && r.request().method() === 'GET',
+			{ timeout: 12_000 },
+		)
+		.catch(() => null);
 	await page.goto('/home');
 	await expect(storyBtn(page)).toBeVisible({ timeout: 12_000 });
+	await logLoaded;
+	await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
 }
 
 test.describe('AI story generation', () => {
