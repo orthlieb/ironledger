@@ -1942,13 +1942,7 @@
 			<Dialog.Content
 				bind:ref={propsDialogEl}
 				class="mp-props-dialog"
-				onInteractOutside={(e) => {
-					// Pickr's popover portals to `document.body`, so clicks inside it
-					// look "outside" this dialog and would close it mid-pick. Keep the
-					// dialog open while the user is interacting with any Pickr surface.
-					const t = e.target as Element | null;
-					if (t && t.closest('.pcr-app')) e.preventDefault();
-				}}
+				interactOutsideBehavior="ignore"
 			>
 				<DialogHeader
 					title={headingText('Edit Marker')}
@@ -2724,11 +2718,16 @@
 		height: 22px;
 	}
 	/* Popover portals to `document.body` (Pickr `container: document.body`)
-	   so its layering is controlled purely by z-index. Sits ABOVE the
-	   props dialog (83) — this is the modal-overlay tier just like
-	   bits-ui portals its own dialogs. */
+	   so its layering is controlled purely by z-index. Bits-ui gates all
+	   background pointer events while a modal is open by setting
+	   `pointer-events: none` on <body>, so also force `pointer-events:
+	   auto` on the popover — otherwise clicks on the wheel / swatches
+	   pass THROUGH the picker and land on whatever's underneath (the
+	   Link combobox trigger). Sits comfortably above the props dialog's
+	   `.mp-cmd-popover` (z-index 90) so both dropdowns can coexist. */
 	:global(.pcr-app) {
-		z-index: 90;
+		z-index: 200;
+		pointer-events: auto;
 	}
 	/* Angle spinner — inline `−  ∠ nnn°  +` cluster. iOS Safari drops
 	   the native <input type="number"> step arrows, so explicit step
