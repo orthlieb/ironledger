@@ -375,7 +375,7 @@
 						</Tabs.List>
 					</Tabs.Root>
 
-					<div class="fa-card" role="tabpanel">
+					<div class="deck-card fa-card" role="tabpanel">
 						{#if activeTab === 'description'}
 							{#if activeDef}
 								<div class="fa-desc-section">
@@ -795,21 +795,10 @@
 		border-bottom-color: var(--text-accent);
 	}
 
-	/* Card content — theme-aware: cream (--bg-inset) in light mode, near-black
-	   in dark mode. The coloured nature band lives only on the stage header. */
-	.fa-card {
-		flex: 1;
-		min-height: 200px;
-		background: var(--bg-inset);
-		border: none;
-		border-radius: 0;
-		padding: 7px;
-		overflow: auto;
-		position: relative;
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
+	/* Card content — flex layout, padding, gap, background live on the shared
+	   `.deck-card` in app.css so the three decks stay in sync. No fa-specific
+	   overrides are needed at the base; the `.fa-stage--vanquished .fa-card`
+	   opacity rule above still targets this class. */
 
 	/* ── Description tab ── portrait floats right; text wraps. */
 	.fa-desc-section {
@@ -847,7 +836,6 @@
 		display: flex;
 		flex-direction: column;
 		gap: 4px;
-		margin-bottom: 8px;
 	}
 	.fa-section-label {
 		font-family: var(--font-ui);
@@ -882,8 +870,7 @@
 		gap: 5px;
 		align-items: center;
 		border-bottom: 1px solid #c3baa1;
-		padding-top: 0;
-		padding-bottom: 14px;
+		padding-bottom: 8px;
 	}
 	.fa-badge {
 		font-family: var(--font-ui);

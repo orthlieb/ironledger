@@ -769,7 +769,7 @@
 						</Tabs.List>
 					</Tabs.Root>
 
-					<div class="ea-card" role="tabpanel">
+					<div class="deck-card ea-card" role="tabpanel">
 						<!-- ── Description / Notes — portrait floats right, prose wraps.
 						     Sites get an Objective row pinned to the top of Notes; it
 						     was previously in Core but lives more naturally next to the
@@ -1480,19 +1480,10 @@
 	}
 
 	/* Card content — theme-aware: cream (--bg-inset) in light, near-black in dark. */
-	.ea-card {
-		flex: 1;
-		min-height: 200px;
-		background: var(--bg-inset);
-		border: none;
-		border-radius: 0;
-		padding: 7px;
-		overflow: auto;
-		position: relative;
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
+	/* Card content — flex layout, padding, gap, background live on the shared
+	   `.deck-card` in app.css so the three decks stay in sync. No ea-specific
+	   overrides are needed at the base; the `.ea-stage--complete .ea-card`
+	   opacity rule above still targets this class. */
 
 	/* ── Description tab ── portrait floats right; notes wrap around it.
 	   flow-root contains the float; MarkdownNotes is forced to block flow so
@@ -1529,7 +1520,7 @@
 		gap: 5px;
 		align-items: center;
 		border-bottom: 1px solid #c3baa1;
-		padding: 0 0 14px;
+		padding-bottom: 8px;
 	}
 	.ea-badge {
 		font-family: var(--font-ui);
@@ -1617,17 +1608,17 @@
 		fill: currentColor;
 	}
 
-	/* Roll Denizen button row at the top of the Denizens tab. */
+	/* Roll Denizen button row at the top of the Denizens tab. Sibling of
+	   .ea-denizen-grid — card's 8 px gap already spaces them. */
 	.ea-denizen-top {
 		display: flex;
 		justify-content: flex-end;
-		margin-bottom: 8px;
 	}
 
-	/* Objective lives at the top of the Notes tab — give it bottom margin so
-	   the portrait + prose flow below it without crowding the input. */
+	/* Objective lives at the top of the Notes tab — the card's 8 px gap
+	   already spaces it from the description below, so no extra margin. */
 	.ea-objective-row {
-		margin-bottom: 10px;
+		margin: 0;
 	}
 
 	/* Denizens tab — 12-cell grid, always 2 columns × 6 rows. */
