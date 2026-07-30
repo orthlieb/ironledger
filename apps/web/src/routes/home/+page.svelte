@@ -166,6 +166,12 @@
 
 	/** Import UI state. */
 	let importInput = $state<HTMLInputElement | null>(null);
+	// Resolves once the mount's initial store loads (communities, npcs, places,
+	// expeditions, characters, foes …) have finished. An import must await this
+	// before applying: otherwise its optimistic additions race an in-flight
+	// load, whose `_sync.reset()` on resolve discards the just-added rows (and
+	// can trigger a spurious DELETE), silently dropping the import.
+	let initialLoad: Promise<unknown> = Promise.resolve();
 	let importCollisionRef = $state<{
 		open(items: CollisionItems): Promise<CollisionStrategy>;
 	} | null>(null);
@@ -228,8 +234,10 @@
 		else if (inBounds(legacyExped)) rowHeight = legacyExped;
 		else rowHeight = Math.max(MIN_AREA, Math.round((colH - 6) / 2));
 
-		// Fire-and-forget — stores update reactively when each resolves
-		Promise.all([
+		// Fire-and-forget for rendering — stores update reactively when each
+		// resolves — but keep the aggregate promise so imports can await it
+		// (see `initialLoad`) and never mutate a store mid-load.
+		initialLoad = Promise.all([
 			loadAssets(),
 			loadFoes(),
 			loadCharacters(),
@@ -241,6 +249,28 @@
 		]);
 
 		document.addEventListener('il-menu-action', handleMenuAction);
+
+		// Import <input> change → onImportFile, via a DOCUMENT-level listener
+		// matched by SELECTOR (not element identity). The template <input> is
+		// intermittently recreated during hydration, orphaning any element-bound
+		// handler — Svelte's delegated `onchange={...}` keys off a property on
+		// the original element, so it silently stopped firing ~half the time and
+		// dropped the import with no error. The change event bubbles from
+		// whatever the current input is, so a selector match on document is
+		// immune to the recreation.
+		const onImportChange = (e: Event) => {
+			const t = e.target as HTMLElement | null;
+			if (t?.matches?.('input[type="file"][accept=".zip,application/zip"]')) onImportFile(e);
+		};
+		// Attach AFTER the synchronous hydration pass, not during it: a listener
+		// added inside the onMount body was silently dropped ~half the time,
+		// whereas one added a microtask later fires consistently. Both a
+		// microtask and the post-initial-load hook attach it (same fn ref →
+		// addEventListener de-dupes to a single listener) so it is present as
+		// early as reliably possible.
+		const attachImportListener = () => document.addEventListener('change', onImportChange, true);
+		queueMicrotask(attachImportListener);
+		initialLoad.finally(attachImportListener);
 
 		// Command-bar bus: /foe +N/-N, /foe vanquish, /exp +N/-N. CommandBar
 		// dispatches these as CustomEvents so it doesn't need to hold refs to
@@ -283,6 +313,7 @@
 		document.addEventListener('ironledger:focus-entity', onFocusEntity);
 
 		return () => {
+			document.removeEventListener('change', onImportChange, true);
 			document.removeEventListener('il-menu-action', handleMenuAction);
 			document.removeEventListener('ironledger:foe-progress', onFoeProgress);
 			document.removeEventListener('ironledger:foe-vanquish', onFoeVanquish);
@@ -445,6 +476,11 @@
 			}
 			const parsed = parseImportZip(bytes) as Record<string, unknown>;
 
+			// Wait for the mount's store loads to settle before touching any
+			// store. Applying an import while a collection load is still in
+			// flight lets the load's `_sync.reset()` clobber the just-imported
+			// rows (silent drop). `loadAssets()` stays for the catalogue below.
+			await initialLoad;
 			// Reconcile imported globalValues against the current catalogue
 			// (drops unknown counter ids, clamps to canonical maxValue, drops
 			// non-numeric values). Catalogue is already auto-loaded on mount;
@@ -1594,13 +1630,7 @@
 <!-- Hidden file input — accepts only the `.zip` bundles produced by
      `exportZip()`. Legacy bare-JSON imports were dropped when the
      export format switched to zip. -->
-<input
-	bind:this={importInput}
-	type="file"
-	accept=".zip,application/zip"
-	style="display: none"
-	onchange={onImportFile}
-/>
+<input bind:this={importInput} type="file" accept=".zip,application/zip" style="display: none" />
 
 <!-- Top-level error bar — shows import failures from sanitization, parsing,
      or post-parse validation. Selecting Import from the menu opens the file
