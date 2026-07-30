@@ -83,7 +83,11 @@
 				<section class="co-section co-section-danger">
 					<div class="co-danger-header">Danger zone</div>
 					<div class="co-danger-row">
-						<button class="co-danger-btn" onclick={() => deleteConfirmRef?.open()}>DELETE</button>
+						<button
+							class="btn btn-danger"
+							style="align-self: flex-start"
+							onclick={() => deleteConfirmRef?.open()}>DELETE</button
+						>
 						<span class="co-hint"
 							>Removes <strong>{name || `this ${kindLabelLc}`}</strong> and everything on its sheet. This
 							can't be undone.</span

@@ -84,7 +84,11 @@
 				<section class="co-section co-section-danger">
 					<div class="co-danger-header">Danger zone</div>
 					<div class="co-danger-row">
-						<button class="co-danger-btn" onclick={() => deleteConfirmRef?.open()}>DELETE</button>
+						<button
+							class="btn btn-danger"
+							style="align-self: flex-start"
+							onclick={() => deleteConfirmRef?.open()}>DELETE</button
+						>
 						<span class="co-hint"
 							>Removes <strong>{name || 'this character'}</strong> and everything on their sheet. This
 							can't be undone.</span
@@ -199,19 +203,6 @@
 		flex-direction: column;
 		gap: 4px;
 	}
-	:global(.co-danger-btn) {
-		align-self: flex-start;
-		padding: 6px 12px;
-		font-family: var(--font-ui);
-		font-size: 0.82rem;
-		font-weight: 600;
-		color: var(--color-danger, #ef4444);
-		background: color-mix(in srgb, var(--color-danger, #ef4444) 8%, transparent);
-		border: 1px solid color-mix(in srgb, var(--color-danger, #ef4444) 40%, var(--border));
-		border-radius: 4px;
-		cursor: pointer;
-	}
-	:global(.co-danger-btn:hover) {
-		background: color-mix(in srgb, var(--color-danger, #ef4444) 14%, transparent);
-	}
+	/* DELETE button lives on the shared `.btn .btn-danger` (see app.css) so
+	   every destructive dialog button stays visually identical. */
 </style>

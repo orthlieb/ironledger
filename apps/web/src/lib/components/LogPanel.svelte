@@ -1264,8 +1264,13 @@
 		border-color: var(--text-accent);
 	}
 	.entry-marker-btn:disabled {
-		opacity: 0.25;
 		cursor: default;
+	}
+	/* Disabled marker buttons: still hide with the rest when the row isn't
+	   hovered (opacity: 0 from .entry-btn), just dim while hovered so the
+	   user can see they're intentionally inert. */
+	.log-entry:hover .entry-marker-btn:disabled {
+		opacity: 0.25;
 	}
 	/* Keep marker buttons visible when they're the active start/end even if
 	   the row isn't hovered — otherwise it's easy to forget where the

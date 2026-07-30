@@ -167,6 +167,11 @@
 		backdrop-filter: blur(1px);
 		z-index: 82;
 	}
+	/* Standard neutral dialog surface — matches every other bits-ui
+	   Dialog in the app. The `--accent` prop only surfaces as a 3px
+	   LHS band (mirroring `.ea-stage` / `.cm-stage` / `.fa-stage` on
+	   the home page) so entity-flavoured confirms read as "belongs to
+	   the community/site/etc." without tinting the whole modal. */
 	:global(.confirm-modal) {
 		position: fixed;
 		top: 50%;
@@ -174,27 +179,27 @@
 		transform: translate(-50%, -50%);
 		width: 340px;
 		max-width: calc(100vw - 2rem);
-		border: none;
 		border-radius: 8px;
-		background: color-mix(in srgb, var(--accent) 6%, var(--bg-card));
+		background: var(--bg-card);
 		color: var(--text);
-		box-shadow:
-			0 12px 40px #00000060,
-			0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+		border: 1px solid var(--border-mid);
+		border-left: 3px solid var(--accent);
+		box-shadow: 0 12px 40px #00000060;
 		outline: none;
+		overflow: hidden;
 		z-index: 83;
 	}
 
-	/* Header (title + optional ✕) */
+	/* Header (title + optional ✕) — matches DialogHeader so every
+	   dialog title bar reads the same. */
 	:global(.confirm-modal .cm-header) {
 		display: flex;
 		align-items: center;
 		gap: 8px;
 		padding: 10px 14px 9px;
-		border-bottom: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+		border-bottom: 1px solid var(--border);
 		user-select: none;
-		border-radius: 8px 8px 0 0;
-		background: color-mix(in srgb, var(--accent) 10%, var(--bg-card));
+		background: var(--bg-control);
 	}
 	:global(.confirm-modal .cm-title) {
 		font-family: var(--font-display);
@@ -203,7 +208,7 @@
 		font-variant: var(--font-display-variant);
 		letter-spacing: 0.08em;
 		text-transform: var(--font-display-transform);
-		color: var(--accent);
+		color: var(--text-accent);
 		flex: 1;
 		margin: 0;
 	}
@@ -219,12 +224,11 @@
 		flex-shrink: 0;
 		transition:
 			opacity 0.15s,
-			background 0.15s;
+			color 0.15s;
 	}
 	:global(.confirm-modal .cm-close-btn:hover) {
 		opacity: 1;
-		background: color-mix(in srgb, var(--accent) 15%, transparent);
-		color: var(--accent);
+		color: var(--text);
 	}
 
 	/* Body */
