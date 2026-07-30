@@ -7,13 +7,11 @@
  *   3. Re-authenticates via the API (simulates login)
  *   4. Navigates back and verifies data is still present
  *
- * Covered (v2 — no tabs, no GCB):
- *   • Characters   — created character still exists
- *   • Foes         — encounter still appears in the Foes list
- *   • Expeditions  — journey still appears in the Expeditions list
- *   • Communities  — community still appears in the Communities list
- *   • Session state — active character spine selection survives
- *   • Session log  — log entry (note) is still visible after re-login
+ * v2: each area is a header combobox switcher (no spine/rail). Live counts
+ * come from data-* attributes; the active entity's name is the combobox trigger
+ * value. Creates are name-first dialogs; deletes live behind a gear → options
+ * dialog. Status fields use the shared <SegmentedRadio> (aria-label +
+ * aria-checked).
  */
 
 import { test, expect, request as playwrightRequest } from '@playwright/test';
@@ -25,20 +23,13 @@ const TEST_EMAIL = 'test@ironledger.local';
 const TEST_PASSWORD = 'IronLedgerTest2024!';
 
 const CHAR_AREA = '.home-area--characters';
-const CHAR_HEADER = `${CHAR_AREA} .ca-header`;
-const CHAR_SPINE = `${CHAR_AREA} .ca-spine`;
-
+const CHAR_COMBOBOX = `${CHAR_AREA} .ca-hdr-combobox`;
 const FOE_AREA = '.home-area--foes';
-const FOE_HEADER = `${FOE_AREA} .fa-header`;
-const FOE_SPINE = `${FOE_AREA} .fa-spine`;
-
+const FOE_COMBOBOX = `${FOE_AREA} .fa-hdr-combobox`;
 const EXP_AREA = '.home-area--expeditions';
-const EXP_HEADER = `${EXP_AREA} .ea-header`;
-const EXP_SPINE = `${EXP_AREA} .ea-spine`;
-
+const EXP_COMBOBOX = `${EXP_AREA} .ea-hdr-combobox`;
 const CM_AREA = '.home-area--communities';
-const CM_HEADER = `${CM_AREA} .cm-header`;
-const CM_ROW = `${CM_AREA} .cm-row`;
+const CM_COMBOBOX = `${CM_AREA} .cm-hdr-combobox`;
 
 // ── Auth helpers ──────────────────────────────────────────────────────────────
 
@@ -72,9 +63,15 @@ async function loginAndGoHome(page: Page): Promise<void> {
 	await page.goto('/home');
 	await page.waitForURL(/\/home/, { timeout: 10_000 });
 	await waitForCharactersArea(page);
+	await settle(page);
 }
 
 // ── Wait helpers ──────────────────────────────────────────────────────────────
+
+/** Let initial loads + hydration settle before interacting with comboboxes. */
+async function settle(page: Page): Promise<void> {
+	await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
+}
 
 async function waitForCharactersArea(page: Page) {
 	await expect(page.locator(`${CHAR_AREA} .ca-loading`)).not.toBeVisible({ timeout: 12_000 });
@@ -83,7 +80,6 @@ async function waitForCharactersArea(page: Page) {
 		.first()
 		.waitFor({ timeout: 12_000, state: 'attached' });
 }
-
 async function waitForFoesArea(page: Page) {
 	await expect(page.locator(`${FOE_AREA} .fa-loading`)).not.toBeVisible({ timeout: 12_000 });
 	await page
@@ -91,7 +87,6 @@ async function waitForFoesArea(page: Page) {
 		.first()
 		.waitFor({ timeout: 12_000, state: 'attached' });
 }
-
 async function waitForExpeditionsArea(page: Page) {
 	await expect(page.locator(`${EXP_AREA} .ea-loading`)).not.toBeVisible({ timeout: 12_000 });
 	await page
@@ -99,13 +94,85 @@ async function waitForExpeditionsArea(page: Page) {
 		.first()
 		.waitFor({ timeout: 12_000, state: 'attached' });
 }
-
 async function waitForCommunitiesArea(page: Page) {
 	await expect(page.locator(`${CM_AREA} .cm-loading`)).not.toBeVisible({ timeout: 12_000 });
 	await page
 		.locator(`${CM_AREA} .cm-empty, ${CM_AREA} .cm-body`)
 		.first()
 		.waitFor({ timeout: 12_000, state: 'attached' });
+}
+
+// ── Count helpers (live data-* attributes) ──────────────────────────────────
+
+async function charCount(page: Page): Promise<number> {
+	return Number(
+		(await page.locator(`${CHAR_AREA} .ca-header-actions`).getAttribute('data-char-count')) ?? '0',
+	);
+}
+async function foeCount(page: Page): Promise<number> {
+	return Number((await page.locator(`${FOE_AREA} .fa-area`).getAttribute('data-foe-count')) ?? '0');
+}
+async function expCount(page: Page): Promise<number> {
+	return Number(
+		(await page.locator(`${EXP_AREA} .ea-header-actions`).getAttribute('data-exp-count')) ?? '0',
+	);
+}
+async function cmCount(page: Page): Promise<number> {
+	return Number(
+		(await page.locator(`${CM_AREA} .cm-header-actions`).getAttribute('data-entry-count')) ?? '0',
+	);
+}
+
+/** The active entity's display name from an area combobox trigger. */
+async function activeName(page: Page, combo: string): Promise<string> {
+	return (await page.locator(`${combo} .mp-combobox-value`).innerText()).trim();
+}
+
+/** Select a connection by name via the connections combobox. */
+async function selectConnection(page: Page, name: string) {
+	await page.locator(CM_COMBOBOX).click();
+	await page
+		.locator('.mp-cmd-popover .mp-cmd-item:not(.mp-cmd-item--action)', { hasText: name })
+		.first()
+		.click();
+	await expect(page.locator('.mp-cmd-popover'))
+		.toBeHidden({ timeout: 3_000 })
+		.catch(() => {});
+}
+
+// ── Create helpers (name-first dialogs) ─────────────────────────────────────
+
+async function createChar(page: Page) {
+	await page.locator(CHAR_COMBOBOX).click();
+	await page.locator('.mp-cmd-item--action', { hasText: /New character/i }).click();
+	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
+	await page.locator('.confirm-modal .co-input').first().fill('Persist Char');
+	await page.locator('.confirm-modal .btn-primary').click();
+	await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
+}
+async function addFoe(page: Page) {
+	await page.locator(FOE_COMBOBOX).click();
+	await page.locator('.mp-cmd-item--action', { hasText: /New foe/i }).click();
+	await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 5_000 });
+	await page.locator('.foe-dialog .fd-tile').first().click();
+	await page.locator('.foe-dialog button:has-text("Add to Foes")').click();
+	await expect(page.locator('.foe-dialog')).not.toBeVisible({ timeout: 5_000 });
+}
+async function createJourney(page: Page) {
+	await page.locator(EXP_COMBOBOX).click();
+	await page.locator('.mp-cmd-item--action', { hasText: /New Journey/i }).click();
+	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
+	await page.locator('.confirm-modal .co-input').first().fill('Persist Journey');
+	await page.locator('.confirm-modal button:has-text("Create")').click();
+	await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
+}
+async function createCommunity(page: Page) {
+	await page.locator(CM_COMBOBOX).click();
+	await page.locator('.mp-cmd-item--action', { hasText: /New Community/i }).click();
+	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
+	await page.locator('.confirm-modal .co-input').first().fill('Persist Community');
+	await page.locator('.confirm-modal button:has-text("Create")').click();
+	await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 8_000 });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -117,112 +184,73 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		await resetAll();
 	});
 
-	// ── 1. Characters ──────────────────────────────────────────────────────────
-
 	test('characters survive logout and login', async ({ page }) => {
 		await page.goto('/home');
 		await waitForCharactersArea(page);
+		await settle(page);
 
-		const before = await page.locator(CHAR_SPINE).count();
-		if (before === 0) {
-			await page.locator(`${CHAR_HEADER} button:has-text("+ Character")`).click();
-			await expect(page.locator(CHAR_SPINE)).not.toHaveCount(0, { timeout: 8_000 });
-		}
-		const expectedCount = Math.max(before, 1);
+		if ((await charCount(page)) === 0) await createChar(page);
+		const expected = await charCount(page);
+		expect(expected).toBeGreaterThan(0);
 
 		await logout(page);
 		await loginAndGoHome(page);
 
-		await expect(page.locator(CHAR_SPINE)).toHaveCount(expectedCount, { timeout: 8_000 });
+		expect(await charCount(page)).toBe(expected);
 	});
-
-	// ── 2. Foes (encounters) ───────────────────────────────────────────────────
 
 	test('foe encounters survive logout and login', async ({ page }) => {
 		await page.goto('/home');
 		await waitForFoesArea(page);
+		await settle(page);
 
-		const before = await page.locator(FOE_SPINE).count();
-
-		await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
-		await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 5_000 });
-		const foeTile = page.locator('.foe-dialog .fd-tile').first();
-		await expect(foeTile).toBeVisible({ timeout: 8_000 });
-		await foeTile.click();
-		const addBtn = page.locator('.foe-dialog button:has-text("Add to Foes")');
-		await expect(addBtn).toBeVisible({ timeout: 3_000 });
-		await addBtn.click();
-		await expect(page.locator('.foe-dialog')).not.toBeVisible({ timeout: 5_000 });
-		await expect(page.locator(FOE_SPINE)).toHaveCount(before + 1, { timeout: 5_000 });
+		const before = await foeCount(page);
+		await addFoe(page);
+		expect(await foeCount(page)).toBe(before + 1);
 
 		await page.waitForTimeout(600);
-
 		await logout(page);
 		await loginAndGoHome(page);
 		await waitForFoesArea(page);
 
-		await expect(page.locator(FOE_SPINE)).toHaveCount(before + 1, { timeout: 8_000 });
+		expect(await foeCount(page)).toBe(before + 1);
 	});
-
-	// ── 3. Expeditions ────────────────────────────────────────────────────────
 
 	test('expeditions (journeys) survive logout and login', async ({ page }) => {
 		await page.goto('/home');
 		await waitForExpeditionsArea(page);
+		await settle(page);
 
-		const before = await page.locator(EXP_SPINE).count();
-
-		await page.locator(`${EXP_HEADER} button:has-text("+ Journey")`).click();
-		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
-		await page.locator('.confirm-modal button:has-text("Start Journey")').click();
-		await expect(page.locator(EXP_SPINE)).toHaveCount(before + 1, { timeout: 5_000 });
+		const before = await expCount(page);
+		await createJourney(page);
+		expect(await expCount(page)).toBe(before + 1);
 
 		await page.waitForTimeout(600);
-
 		await logout(page);
 		await loginAndGoHome(page);
 		await waitForExpeditionsArea(page);
 
-		await expect(page.locator(EXP_SPINE)).toHaveCount(before + 1, { timeout: 8_000 });
+		expect(await expCount(page)).toBe(before + 1);
 	});
-
-	// ── 4. Communities ────────────────────────────────────────────────────────
 
 	test('communities survive logout and login', async ({ page }) => {
 		await page.goto('/home');
 		await waitForCommunitiesArea(page);
+		await settle(page);
 
-		const before = await page.locator(CM_ROW).count();
-
-		await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click();
-		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
-		const generateBtn = page.getByRole('button', { name: /random/i });
-		const createManualBtn = page.getByRole('button', { name: /create/i });
-		await expect(generateBtn.or(createManualBtn).first()).toBeVisible({ timeout: 5_000 });
-		if (await generateBtn.isVisible().catch(() => false)) {
-			await generateBtn.click();
-		} else {
-			await createManualBtn.click();
-		}
-		await expect(page.locator(CM_ROW)).not.toHaveCount(before, { timeout: 10_000 });
+		const before = await cmCount(page);
+		await createCommunity(page);
+		expect(await cmCount(page)).toBe(before + 1);
 
 		await page.waitForTimeout(600);
-
 		await logout(page);
 		await loginAndGoHome(page);
 		await waitForCommunitiesArea(page);
 
-		await expect(page.locator(CM_ROW)).toHaveCount(before + 1, { timeout: 8_000 });
+		expect(await cmCount(page)).toBe(before + 1);
 	});
 
-	// ── 5. Active spine selections survive logout / login ─────────────────────
-	//
-	// v2 areas auto-select the first item on mount (no per-user session-state
-	// restoration yet). This test verifies that after a logout / login cycle the
-	// same first items are re-selected in all four areas — i.e. the data is
-	// preserved server-side and auto-selection restores the expected active state.
-
-	test('active character, foe, expedition, and community spine selections survive logout and login', async ({
+	test('active character / foe / expedition / community selections survive login', async ({
 		page,
 	}) => {
 		await page.goto('/home');
@@ -230,120 +258,41 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		await waitForFoesArea(page);
 		await waitForExpeditionsArea(page);
 		await waitForCommunitiesArea(page);
+		await settle(page);
 
-		// ── Ensure at least one item in each area ──────────────────────────────
+		// Ensure at least one item in each area — the newest becomes active.
+		if ((await charCount(page)) === 0) await createChar(page);
+		if ((await foeCount(page)) === 0) await addFoe(page);
+		if ((await expCount(page)) === 0) await createJourney(page);
+		if ((await cmCount(page)) === 0) await createCommunity(page);
 
-		if ((await page.locator(CHAR_SPINE).count()) === 0) {
-			await page.locator(`${CHAR_HEADER} button:has-text("+ Character")`).click();
-			await expect(page.locator(CHAR_SPINE)).not.toHaveCount(0, { timeout: 8_000 });
-		}
-
-		if ((await page.locator(FOE_SPINE).count()) === 0) {
-			await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
-			await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 5_000 });
-			await expect(page.locator('.foe-dialog .fd-tile').first()).toBeVisible({
-				timeout: 8_000,
-			});
-			await page.locator('.foe-dialog .fd-tile').first().click();
-			await expect(page.locator('.foe-dialog button:has-text("Add to Foes")')).toBeVisible({
-				timeout: 3_000,
-			});
-			await page.locator('.foe-dialog button:has-text("Add to Foes")').click();
-			await expect(page.locator('.foe-dialog')).not.toBeVisible({ timeout: 5_000 });
-			await expect(page.locator(FOE_SPINE)).not.toHaveCount(0, { timeout: 5_000 });
-		}
-
-		if ((await page.locator(EXP_SPINE).count()) === 0) {
-			await page.locator(`${EXP_HEADER} button:has-text("+ Journey")`).click();
-			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
-			await page.locator('.confirm-modal button:has-text("Start Journey")').click();
-			await expect(page.locator(EXP_SPINE)).not.toHaveCount(0, { timeout: 5_000 });
-		}
-
-		if ((await page.locator(CM_ROW).count()) === 0) {
-			await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click();
-			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
-			const generateBtn = page.getByRole('button', { name: /random/i });
-			if (await generateBtn.isVisible().catch(() => false)) {
-				await generateBtn.click();
-			} else {
-				await page.getByRole('button', { name: /create/i }).click();
-			}
-			await expect(page.locator(CM_ROW)).not.toHaveCount(0, { timeout: 10_000 });
-		}
-
-		// ── Click the first spine in each area and record its displayed name ───
-
-		await page.locator(CHAR_SPINE).first().click();
-		await page.locator(FOE_SPINE).first().click();
-		await page.locator(EXP_SPINE).first().click();
-		await page.locator(CM_ROW).first().click();
-
-		await expect(page.locator(`${CHAR_SPINE}.ca-spine--active`)).toBeVisible({ timeout: 3_000 });
-		await expect(page.locator(`${FOE_SPINE}.fa-spine--active`)).toBeVisible({ timeout: 3_000 });
-		await expect(page.locator(`${EXP_SPINE}.ea-spine--active`)).toBeVisible({ timeout: 3_000 });
-		await expect(page.locator(`${CM_ROW}.cm-row--active`)).toBeVisible({ timeout: 3_000 });
-
-		const activeCharName = (
-			await page.locator(`${CHAR_SPINE}.ca-spine--active .ca-spine-name`).first().textContent()
-		)?.trim();
-		const activeFoeName = (
-			await page.locator(`${FOE_SPINE}.fa-spine--active .fa-spine-name`).first().textContent()
-		)?.trim();
-		const activeExpName = (
-			await page.locator(`${EXP_SPINE}.ea-spine--active .ea-spine-name`).first().textContent()
-		)?.trim();
-		const activeCmName = (
-			await page.locator(`${CM_ROW}.cm-row--active .cm-row-name`).first().textContent()
-		)?.trim();
+		// Record each area's active entity name (its combobox trigger value).
+		const activeChar = await activeName(page, CHAR_COMBOBOX);
+		const activeFoe = await activeName(page, FOE_COMBOBOX);
+		const activeExp = await activeName(page, EXP_COMBOBOX);
+		const activeCm = await activeName(page, CM_COMBOBOX);
 
 		// Allow any debounced saves to flush.
 		await page.waitForTimeout(600);
-
-		// ── Logout + login ─────────────────────────────────────────────────────
-
 		await logout(page);
 		await loginAndGoHome(page);
 		await waitForFoesArea(page);
 		await waitForExpeditionsArea(page);
 		await waitForCommunitiesArea(page);
 
-		// ── Verify the same first items are auto-selected ──────────────────────
-
-		await expect(page.locator(`${CHAR_SPINE}.ca-spine--active`)).toBeVisible({ timeout: 8_000 });
-		await expect(page.locator(`${FOE_SPINE}.fa-spine--active`)).toBeVisible({ timeout: 8_000 });
-		await expect(page.locator(`${EXP_SPINE}.ea-spine--active`)).toBeVisible({ timeout: 8_000 });
-		await expect(page.locator(`${CM_ROW}.cm-row--active`)).toBeVisible({ timeout: 8_000 });
-
-		expect(
-			(
-				await page.locator(`${CHAR_SPINE}.ca-spine--active .ca-spine-name`).first().textContent()
-			)?.trim(),
-		).toBe(activeCharName);
-		expect(
-			(
-				await page.locator(`${FOE_SPINE}.fa-spine--active .fa-spine-name`).first().textContent()
-			)?.trim(),
-		).toBe(activeFoeName);
-		expect(
-			(
-				await page.locator(`${EXP_SPINE}.ea-spine--active .ea-spine-name`).first().textContent()
-			)?.trim(),
-		).toBe(activeExpName);
-		expect(
-			(await page.locator(`${CM_ROW}.cm-row--active .cm-row-name`).first().textContent())?.trim(),
-		).toBe(activeCmName);
+		expect(await activeName(page, CHAR_COMBOBOX)).toBe(activeChar);
+		expect(await activeName(page, FOE_COMBOBOX)).toBe(activeFoe);
+		expect(await activeName(page, EXP_COMBOBOX)).toBe(activeExp);
+		expect(await activeName(page, CM_COMBOBOX)).toBe(activeCm);
 	});
-
-	// ── 6. Session log ────────────────────────────────────────────────────────
 
 	test('session log entries survive logout and login', async ({ page }) => {
 		await page.goto('/home');
 		await waitForCharactersArea(page);
+		await settle(page);
 
 		const uniqueText = `E2E persistence ${Date.now()}`;
 
-		// Add a Note via the app-nav Note button.
 		await page
 			.getByRole('button', { name: /^note$/i })
 			.first()
@@ -358,7 +307,6 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		});
 
 		await page.waitForTimeout(1_200);
-
 		await logout(page);
 		await loginAndGoHome(page);
 
@@ -367,29 +315,16 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		});
 	});
 
-	// ── 7. Status fields (vanquished / complete / deceased) survive ───────────
-	//
-	// These exercise the shared <SegmentedRadio>: the active segment is read via
-	// its stable aria-label + aria-checked (works whether the label text is shown
-	// or collapsed to icon-only). The toggle writes a boolean on the entity which
-	// must round-trip through the per-entity store → API → DB and back on reload.
+	// ── Status fields (vanquished / complete / deceased) survive ───────────────
+	// The active segment is read via its stable aria-label + aria-checked on the
+	// shared <SegmentedRadio> (works whether the label is shown or icon-only).
 
 	test('foe vanquished status survives logout and login', async ({ page }) => {
 		await page.goto('/home');
 		await waitForFoesArea(page);
+		await settle(page);
 
-		if ((await page.locator(FOE_SPINE).count()) === 0) {
-			await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
-			await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 5_000 });
-			const tile = page.locator('.foe-dialog .fd-tile').first();
-			await expect(tile).toBeVisible({ timeout: 8_000 });
-			await tile.click();
-			await page.locator('.foe-dialog button:has-text("Add to Foes")').click();
-			await expect(page.locator('.foe-dialog')).not.toBeVisible({ timeout: 5_000 });
-			await expect(page.locator(FOE_SPINE)).not.toHaveCount(0, { timeout: 5_000 });
-		}
-
-		await page.locator(FOE_SPINE).first().click();
+		if ((await foeCount(page)) === 0) await addFoe(page);
 		const vanq = page.locator(
 			`${FOE_AREA} .sr[aria-label="Foe status"] .sr-btn[aria-label="Mark vanquished"]`,
 		);
@@ -397,13 +332,11 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		await vanq.click();
 		await expect(vanq).toHaveAttribute('aria-checked', 'true');
 
-		// Wait out the 1.5s edit debounce so the status PATCH flushes before logout.
 		await page.waitForTimeout(2000);
 		await logout(page);
 		await loginAndGoHome(page);
 		await waitForFoesArea(page);
 
-		await page.locator(FOE_SPINE).first().click();
 		await expect(
 			page.locator(
 				`${FOE_AREA} .sr[aria-label="Foe status"] .sr-btn[aria-label="Mark vanquished"]`,
@@ -414,15 +347,9 @@ test.describe('Data persistence across logout / login (v2)', () => {
 	test('expedition complete status survives logout and login', async ({ page }) => {
 		await page.goto('/home');
 		await waitForExpeditionsArea(page);
+		await settle(page);
 
-		if ((await page.locator(EXP_SPINE).count()) === 0) {
-			await page.locator(`${EXP_HEADER} button:has-text("+ Journey")`).click();
-			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
-			await page.locator('.confirm-modal button:has-text("Start Journey")').click();
-			await expect(page.locator(EXP_SPINE)).not.toHaveCount(0, { timeout: 5_000 });
-		}
-
-		await page.locator(EXP_SPINE).first().click();
+		if ((await expCount(page)) === 0) await createJourney(page);
 		const complete = page.locator(
 			`${EXP_AREA} .sr[aria-label="Expedition status"] .sr-btn[aria-label="Mark complete"]`,
 		);
@@ -430,13 +357,11 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		await complete.click();
 		await expect(complete).toHaveAttribute('aria-checked', 'true');
 
-		// Wait out the 1.5s edit debounce so the status PATCH flushes before logout.
 		await page.waitForTimeout(2000);
 		await logout(page);
 		await loginAndGoHome(page);
 		await waitForExpeditionsArea(page);
 
-		await page.locator(EXP_SPINE).first().click();
 		await expect(
 			page.locator(
 				`${EXP_AREA} .sr[aria-label="Expedition status"] .sr-btn[aria-label="Mark complete"]`,
@@ -444,97 +369,59 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		).toHaveAttribute('aria-checked', 'true', { timeout: 8_000 });
 	});
 
-	test('NPC deceased status (+ list pill) survives logout and login', async ({ page }) => {
+	test('NPC deceased status survives logout and login', async ({ page }) => {
 		await seedNpc('Deceased Persist NPC');
 		await page.goto('/home');
 		await waitForCommunitiesArea(page);
+		await settle(page);
 
-		const npcRow = page.locator(CM_ROW, { hasText: 'Deceased Persist NPC' });
-		await expect(npcRow).toBeVisible({ timeout: 8_000 });
-		await npcRow.click();
-
+		// Other connections may already exist, so explicitly select the NPC.
+		await selectConnection(page, 'Deceased Persist NPC');
 		const deceased = page.locator(
 			`${CM_AREA} .sr[aria-label="NPC status"] .sr-btn[aria-label="Mark deceased"]`,
 		);
 		await expect(deceased).toBeVisible({ timeout: 5_000 });
 		await deceased.click();
 		await expect(deceased).toHaveAttribute('aria-checked', 'true');
-		// Task 1: the red Deceased pill appears on the list row.
-		await expect(npcRow.locator('.cm-row-deceased')).toBeVisible();
 
-		// Wait out the 1.5s edit debounce so the status PATCH flushes before logout.
 		await page.waitForTimeout(2000);
 		await logout(page);
 		await loginAndGoHome(page);
 		await waitForCommunitiesArea(page);
 
-		const npcRow2 = page.locator(CM_ROW, { hasText: 'Deceased Persist NPC' });
-		await expect(npcRow2).toBeVisible({ timeout: 8_000 });
-		// Pill persisted without needing to open the card.
-		await expect(npcRow2.locator('.cm-row-deceased')).toBeVisible({ timeout: 8_000 });
-		// And the card radio reflects deceased once selected.
-		await npcRow2.click();
+		await selectConnection(page, 'Deceased Persist NPC');
 		await expect(
 			page.locator(`${CM_AREA} .sr[aria-label="NPC status"] .sr-btn[aria-label="Mark deceased"]`),
-		).toHaveAttribute('aria-checked', 'true', { timeout: 5_000 });
+		).toHaveAttribute('aria-checked', 'true', { timeout: 8_000 });
 	});
 
 	// ── Cleanup ───────────────────────────────────────────────────────────────
 
-	test('cleanup: remove foe added during this spec', async ({ page }) => {
+	test('cleanup: remove all foes, expeditions, and connections', async ({ page }) => {
 		await page.goto('/home');
 		await waitForFoesArea(page);
+		await settle(page);
 
-		const spines = page.locator(FOE_SPINE);
-		let count = await spines.count();
-		while (count > 0) {
-			await spines.first().click();
-			const delBtn = page.locator(`${FOE_AREA} .fa-stage-delete-btn`).first();
-			await expect(delBtn).toBeVisible({ timeout: 3_000 });
-			await delBtn.click();
-			const confirmBtn = page.locator('.confirm-modal button.btn-danger');
-			await expect(confirmBtn).toBeVisible({ timeout: 3_000 });
-			await confirmBtn.click();
-			count--;
-			if (count > 0) await expect(spines).toHaveCount(count, { timeout: 5_000 });
+		for (let g = 0; g < 30 && (await foeCount(page)) > 0; g++) {
+			await page.locator(`${FOE_AREA} .fa-hdr-settings-btn`).click();
+			await page.locator('button.co-danger-btn').click();
+			await page.locator('.confirm-modal button.btn-danger').click();
+			await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
 		}
-	});
-
-	test('cleanup: remove expedition added during this spec', async ({ page }) => {
-		await page.goto('/home');
-		await waitForExpeditionsArea(page);
-
-		const spines = page.locator(EXP_SPINE);
-		let count = await spines.count();
-		while (count > 0) {
-			await spines.first().click();
-			const delBtn = page.locator(`${EXP_AREA} .ea-stage-delete-btn`).first();
-			await expect(delBtn).toBeVisible({ timeout: 3_000 });
-			await delBtn.click();
-			const confirmBtn = page.locator('.confirm-modal button.btn-danger');
-			await expect(confirmBtn).toBeVisible({ timeout: 3_000 });
-			await confirmBtn.click();
-			count--;
-			if (count > 0) await expect(spines).toHaveCount(count, { timeout: 5_000 });
+		for (let g = 0; g < 30 && (await expCount(page)) > 0; g++) {
+			await page.locator(`${EXP_AREA} .ea-hdr-settings-btn`).click();
+			await page.locator('button.co-danger-btn').click();
+			await page.locator('.confirm-modal button.btn-danger').click();
+			await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
 		}
-	});
-
-	test('cleanup: remove community added during this spec', async ({ page }) => {
-		await page.goto('/home');
-		await waitForCommunitiesArea(page);
-
-		const spines = page.locator(CM_ROW);
-		let count = await spines.count();
-		while (count > 0) {
-			await spines.first().click();
-			const delBtn = page.locator(`${CM_AREA} .cm-stage-delete-btn`).first();
-			if (!(await delBtn.isVisible({ timeout: 2_000 }).catch(() => false))) break;
-			await delBtn.click();
-			const confirmBtn = page.locator('.confirm-modal button.btn-danger');
-			await expect(confirmBtn).toBeVisible({ timeout: 3_000 });
-			await confirmBtn.click();
-			count--;
-			if (count > 0) await expect(spines).toHaveCount(count, { timeout: 5_000 });
+		for (let g = 0; g < 30 && (await cmCount(page)) > 0; g++) {
+			await page.locator(`${CM_AREA} .cm-hdr-settings-btn`).click();
+			await page.locator('button.co-danger-btn').click();
+			await page.locator('.confirm-modal button.btn-danger').click();
+			await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
 		}
+		expect(await foeCount(page)).toBe(0);
+		expect(await expCount(page)).toBe(0);
+		expect(await cmCount(page)).toBe(0);
 	});
 });
