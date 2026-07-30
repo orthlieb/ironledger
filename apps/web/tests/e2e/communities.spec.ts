@@ -1,61 +1,69 @@
 /**
- * communities.spec.ts — Communities area (v2): add and delete communities and NPCs.
+ * communities.spec.ts — Connections area (v2): add and delete communities, NPCs.
  *
- * v2 layout: the Communities area shares the bottom-right cell with NPCs in a
- * single combined deck. Each entry is a .cm-row in the same nav list — kind
- * is distinguished by the stage delete-button's aria-label ("Delete npc" vs
- * "Delete community").
+ * v2 layout: the Connections area (communities + NPCs + places) is driven by a
+ * header combobox switcher (`.cm-hdr-combobox`), not a rail of `.cm-row`s.
+ * Creating goes combobox → "+ New Community…/NPC…/Place…" → a Random/Create
+ * dialog. The live entry count is exposed on `.cm-header-actions` via the
+ * `data-entry-count` attribute. Deleting is via the header gear
+ * (`.cm-hdr-settings-btn`) → ConnectionOptionsDialog → "Delete this …".
  */
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { resetCommunities } from './helpers/reset';
 
 const CM_AREA = '.home-area--communities';
 const CM_HEADER = `${CM_AREA} .cm-header`;
-const CM_ROW = `${CM_AREA} .cm-row`;
+const CM_COMBOBOX = `${CM_HEADER} .cm-hdr-combobox`;
+const CM_ACTIONS = `${CM_AREA} .cm-header-actions`;
 
-async function waitForCommunitiesLoaded(page: import('@playwright/test').Page) {
+async function waitForCommunitiesLoaded(page: Page) {
 	await expect(page.locator(`${CM_AREA} .cm-loading`)).not.toBeVisible({ timeout: 10_000 });
 	await page
 		.locator(`${CM_AREA} .cm-empty, ${CM_AREA} .cm-body`)
 		.first()
 		.waitFor({ timeout: 10_000, state: 'attached' });
-	// Allow both community and NPC stores to finish populating their row items.
-	await page.waitForTimeout(500);
+	// Let initial loads + hydration settle before interacting — the combobox
+	// trigger doesn't reliably open its popover mid-hydration.
+	await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
 }
 
-/** Walk all rows; return how many have the given kind ("npc" or "community"). */
-async function countByKind(
-	page: import('@playwright/test').Page,
-	kind: 'npc' | 'community',
-): Promise<number> {
-	const rows = page.locator(CM_ROW);
-	const total = await rows.count();
-	let matched = 0;
-	for (let i = 0; i < total; i++) {
-		await rows.nth(i).click();
-		const aria =
-			(await page.locator(`${CM_AREA} .cm-stage-delete-btn`).getAttribute('aria-label')) ?? '';
-		if (kind === 'npc' && aria === 'Delete npc') matched++;
-		else if (kind === 'community' && aria === 'Delete community') matched++;
-	}
-	return matched;
+/** Total connection count (communities + NPCs + places), read from the header. */
+async function entryCount(page: Page): Promise<number> {
+	const raw = await page.locator(CM_ACTIONS).getAttribute('data-entry-count');
+	return Number(raw ?? '0');
 }
 
-/** Click a row whose stage delete-btn matches the target kind; returns its locator. */
-async function selectRowOfKind(page: import('@playwright/test').Page, kind: 'npc' | 'community') {
-	const rows = page.locator(CM_ROW);
-	const total = await rows.count();
-	for (let i = 0; i < total; i++) {
-		await rows.nth(i).click();
-		const aria =
-			(await page.locator(`${CM_AREA} .cm-stage-delete-btn`).getAttribute('aria-label')) ?? '';
-		if (kind === 'npc' && aria === 'Delete npc') return rows.nth(i);
-		if (kind === 'community' && aria === 'Delete community') return rows.nth(i);
-	}
-	return null;
+/** Open the New-{kind} dialog via the header combobox action item. */
+async function openNew(page: Page, kind: 'Community' | 'NPC' | 'Place') {
+	await page.locator(CM_COMBOBOX).click();
+	await page.locator('.mp-cmd-item--action', { hasText: new RegExp(`New ${kind}`, 'i') }).click();
+	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 15_000 });
 }
 
-test.describe('Communities area (v2)', () => {
+// New-* dialogs are name-first: Create is disabled until the name field has a
+// value. Fill it directly, or roll one from the dice, then commit.
+async function fillAndCreate(page: Page, name = 'E2E Connection') {
+	await page.locator('.confirm-modal .co-input').first().fill(name);
+	await page.locator('.confirm-modal button:has-text("Create")').click();
+	await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 8_000 });
+}
+async function rollAndCreate(page: Page) {
+	await page.locator('.confirm-modal [aria-label="Random name"]').first().click();
+	await page.locator('.confirm-modal button:has-text("Create")').click();
+	await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 8_000 });
+}
+
+/** Delete the currently-active connection via the header gear + options dialog. */
+async function deleteActive(page: Page) {
+	await page.locator(`${CM_HEADER} .cm-hdr-settings-btn`).click();
+	await page.locator('button.co-danger-btn').click();
+	const confirmBtn = page.locator('.confirm-modal button.btn-danger');
+	await expect(confirmBtn).toBeVisible({ timeout: 3_000 });
+	await confirmBtn.click();
+	await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
+}
+
+test.describe('Connections area (v2)', () => {
 	test.beforeAll(async () => {
 		await resetCommunities();
 	});
@@ -65,140 +73,95 @@ test.describe('Communities area (v2)', () => {
 		await waitForCommunitiesLoaded(page);
 	});
 
-	test('shows + Community and + NPC buttons', async ({ page }) => {
-		await expect(page.locator(`${CM_HEADER} button:has-text("+ Community")`)).toBeVisible();
-		await expect(page.locator(`${CM_HEADER} button:has-text("+ NPC")`)).toBeVisible();
+	test('shows the connection switcher combobox', async ({ page }) => {
+		await expect(page.locator(CM_COMBOBOX)).toBeVisible();
 	});
 
 	// ── Communities ──────────────────────────────────────────────────────────
 
-	test('clicking + Community opens the new-community dialog', async ({ page }) => {
-		await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click();
-		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 15_000 });
+	test('the switcher opens the new-community dialog', async ({ page }) => {
+		await openNew(page, 'Community');
 		await expect(page.locator('.confirm-modal .cm-title')).toContainText('New Community');
 		await page.keyboard.press('Escape');
 	});
 
 	test('can add a community via Random', async ({ page }) => {
-		const before = await page.locator(CM_ROW).count();
-		await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click();
-		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 15_000 });
-		await page.locator('.confirm-modal button:has-text("Random")').click();
-		await expect(page.locator(CM_ROW)).not.toHaveCount(before, { timeout: 8_000 });
+		const before = await entryCount(page);
+		await openNew(page, 'Community');
+		await rollAndCreate(page);
+		expect(await entryCount(page)).toBe(before + 1);
 	});
 
 	test('can add a community via Create', async ({ page }) => {
-		const before = await page.locator(CM_ROW).count();
-		await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click();
-		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 15_000 });
-		await page.locator('.confirm-modal button:has-text("Create")').click();
-		await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 3_000 });
-		await expect(page.locator(CM_ROW)).toHaveCount(before + 1, { timeout: 5_000 });
+		const before = await entryCount(page);
+		await openNew(page, 'Community');
+		await fillAndCreate(page);
+		expect(await entryCount(page)).toBe(before + 1);
 	});
 
 	test('Escape closes the New Community dialog without creating', async ({ page }) => {
-		const before = await page.locator(CM_ROW).count();
-		await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click();
-		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 15_000 });
+		const before = await entryCount(page);
+		await openNew(page, 'Community');
 		await page.keyboard.press('Escape');
 		await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 3_000 });
-		await expect(page.locator(CM_ROW)).toHaveCount(before);
+		expect(await entryCount(page)).toBe(before);
 	});
 
 	test('can delete a community', async ({ page }) => {
-		// Ensure at least one community exists.
-		const existingCommunities = await countByKind(page, 'community');
-		if (existingCommunities === 0) {
-			await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click();
-			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 15_000 });
-			await page.locator('.confirm-modal button:has-text("Random")').click();
-			await expect(page.locator(CM_ROW)).not.toHaveCount(0, { timeout: 8_000 });
-		}
-
-		const rowBefore = await page.locator(CM_ROW).count();
-		// Select a community row and delete.
-		const target = await selectRowOfKind(page, 'community');
-		expect(target).not.toBeNull();
-
-		await page.locator(`${CM_AREA} .cm-stage-delete-btn`).click();
-		const confirmBtn = page.locator('.confirm-modal button.btn-danger');
-		await expect(confirmBtn).toBeVisible({ timeout: 3_000 });
-		await confirmBtn.click();
-		await expect(page.locator(CM_ROW)).toHaveCount(rowBefore - 1, { timeout: 5_000 });
+		// Create one via Random — it becomes the active entry.
+		await openNew(page, 'Community');
+		await rollAndCreate(page);
+		const before = await entryCount(page);
+		await deleteActive(page);
+		expect(await entryCount(page)).toBe(before - 1);
 	});
 
 	// ── NPCs ─────────────────────────────────────────────────────────────────
 
-	test('clicking + NPC opens the new-NPC dialog', async ({ page }) => {
-		await page.locator(`${CM_HEADER} button:has-text("+ NPC")`).click();
-		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 15_000 });
+	test('the switcher opens the new-NPC dialog', async ({ page }) => {
+		await openNew(page, 'NPC');
 		await expect(page.locator('.confirm-modal .cm-title')).toContainText('New NPC');
 		await page.keyboard.press('Escape');
 	});
 
 	test('can add an NPC via Random', async ({ page }) => {
-		const before = await page.locator(CM_ROW).count();
-		await page.locator(`${CM_HEADER} button:has-text("+ NPC")`).click();
-		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 15_000 });
-		await page.locator('.confirm-modal button:has-text("Random")').click();
-		await expect(page.locator(CM_ROW)).not.toHaveCount(before, { timeout: 8_000 });
+		const before = await entryCount(page);
+		await openNew(page, 'NPC');
+		await rollAndCreate(page);
+		expect(await entryCount(page)).toBe(before + 1);
 	});
 
 	test('can add an NPC via Create', async ({ page }) => {
-		const before = await page.locator(CM_ROW).count();
-		await page.locator(`${CM_HEADER} button:has-text("+ NPC")`).click();
-		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 15_000 });
-		await page.locator('.confirm-modal button:has-text("Create")').click();
-		await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 3_000 });
-		await expect(page.locator(CM_ROW)).toHaveCount(before + 1, { timeout: 5_000 });
+		const before = await entryCount(page);
+		await openNew(page, 'NPC');
+		await fillAndCreate(page);
+		expect(await entryCount(page)).toBe(before + 1);
 	});
 
 	test('Escape closes the New NPC dialog without creating', async ({ page }) => {
-		const before = await page.locator(CM_ROW).count();
-		await page.locator(`${CM_HEADER} button:has-text("+ NPC")`).click();
-		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 15_000 });
+		const before = await entryCount(page);
+		await openNew(page, 'NPC');
 		await page.keyboard.press('Escape');
 		await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 3_000 });
-		await expect(page.locator(CM_ROW)).toHaveCount(before);
+		expect(await entryCount(page)).toBe(before);
 	});
 
 	test('can delete an NPC', async ({ page }) => {
-		const existingNpcs = await countByKind(page, 'npc');
-		if (existingNpcs === 0) {
-			await page.locator(`${CM_HEADER} button:has-text("+ NPC")`).click();
-			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 15_000 });
-			await page.locator('.confirm-modal button:has-text("Random")').click();
-			await expect(page.locator(CM_ROW)).not.toHaveCount(0, { timeout: 8_000 });
-		}
-
-		const rowBefore = await page.locator(CM_ROW).count();
-		const target = await selectRowOfKind(page, 'npc');
-		expect(target).not.toBeNull();
-
-		await page.locator(`${CM_AREA} .cm-stage-delete-btn`).click();
-		const confirmBtn = page.locator('.confirm-modal button.btn-danger');
-		await expect(confirmBtn).toBeVisible({ timeout: 3_000 });
-		await confirmBtn.click();
-		await expect(page.locator(CM_ROW)).toHaveCount(rowBefore - 1, { timeout: 5_000 });
+		await openNew(page, 'NPC');
+		await rollAndCreate(page);
+		const before = await entryCount(page);
+		await deleteActive(page);
+		expect(await entryCount(page)).toBe(before - 1);
 	});
 
 	// ── Cleanup ───────────────────────────────────────────────────────────────
 
-	test('cleanup: delete all communities and NPCs', async ({ page }) => {
-		const rows = page.locator(CM_ROW);
-		let count = await rows.count();
-		while (count > 0) {
-			await rows.first().click();
-			const deleteBtn = page.locator(`${CM_AREA} .cm-stage-delete-btn`).first();
-			if (!(await deleteBtn.isVisible({ timeout: 2_000 }).catch(() => false))) break;
-			await deleteBtn.click();
-			const confirmBtn = page.locator('.confirm-modal button.btn-danger');
-			await expect(confirmBtn).toBeVisible({ timeout: 3_000 });
-			await confirmBtn.click();
-			count--;
-			if (count > 0) {
-				await expect(rows).toHaveCount(count, { timeout: 5_000 });
-			}
+	test('cleanup: delete all connections', async ({ page }) => {
+		for (let guard = 0; guard < 30; guard++) {
+			if ((await entryCount(page)) === 0) break;
+			await deleteActive(page);
 		}
+		expect(await entryCount(page)).toBe(0);
+		await expect(page.locator(`${CM_AREA} .cm-empty`)).toBeVisible({ timeout: 5_000 });
 	});
 });

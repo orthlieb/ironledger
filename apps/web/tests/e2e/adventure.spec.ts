@@ -12,10 +12,9 @@
  */
 import { test, expect } from '@playwright/test';
 import { resetCharacters, seedCharacter } from './helpers/reset';
+import { settleHome, ensureCharacter } from './helpers/home';
 
 const CHAR_AREA = '.home-area--characters';
-const CHAR_HEADER = `${CHAR_AREA} .ca-header`;
-const CHAR_SPINE = `${CHAR_AREA} .ca-spine`;
 
 const APP_NAV = '.app-nav';
 
@@ -36,28 +35,17 @@ test.describe('Adventure-action dialogs (v2)', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/home');
 		await waitForCharactersArea(page);
-
-		// Ensure at least one character exists.
-		if ((await page.locator(CHAR_SPINE).count()) === 0) {
-			await page.locator(`${CHAR_HEADER} button:has-text("+ Character")`).click();
-			await expect(page.locator(CHAR_SPINE)).not.toHaveCount(0, { timeout: 8_000 });
-		}
-
-		// Wait for the Svelte auto-select $effect to apply ca-spine--active.
-		// The effect runs one microtask after .ca-body appears, so give it
-		// 3 s before falling back to an explicit click on the first spine.
-		const activeSpine = page.locator(`${CHAR_SPINE}.ca-spine--active`);
-		if (!(await activeSpine.isVisible({ timeout: 3_000 }).catch(() => false))) {
-			await page.locator(CHAR_SPINE).first().click();
-		}
-		await expect(activeSpine.first()).toBeVisible({ timeout: 5_000 });
+		await settleHome(page);
+		await ensureCharacter(page);
 		await expect(page.locator(APP_NAV)).toBeVisible();
 	});
 
 	// ── Layout ───────────────────────────────────────────────────────────────
 
 	test('app-nav exposes the four adventure-action buttons', async ({ page }) => {
-		await expect(page.locator(`${APP_NAV} .act-btn`)).toHaveCount(4);
+		for (const name of ['Move', 'Ask', 'Roll', 'Note']) {
+			await expect(page.locator(`${APP_NAV} .act-btn`, { hasText: name }).first()).toBeVisible();
+		}
 	});
 
 	test('the log rail is visible alongside the deck areas', async ({ page }) => {
@@ -67,21 +55,21 @@ test.describe('Adventure-action dialogs (v2)', () => {
 	// ── Make a Move ──────────────────────────────────────────────────────────
 
 	test('Move button (1st action) opens moves dialog', async ({ page }) => {
-		await page.locator(`${APP_NAV} .act-btn`).first().click();
+		await page.locator(`${APP_NAV} .act-btn`, { hasText: 'Move' }).first().click();
 		await expect(page.locator('.moves-dialog')).toBeVisible({ timeout: 3_000 });
 		await page.keyboard.press('Escape');
 		await expect(page.locator('.moves-dialog')).not.toBeVisible();
 	});
 
 	test('can browse move tiles in the picker', async ({ page }) => {
-		await page.locator(`${APP_NAV} .act-btn`).first().click();
+		await page.locator(`${APP_NAV} .act-btn`, { hasText: 'Move' }).first().click();
 		await expect(page.locator('.moves-dialog')).toBeVisible({ timeout: 3_000 });
 		await expect(page.locator('.moves-dialog .md-tile').first()).toBeVisible({ timeout: 5_000 });
 		await page.keyboard.press('Escape');
 	});
 
 	test('clicking a move tile shows its detail view with Roll button', async ({ page }) => {
-		await page.locator(`${APP_NAV} .act-btn`).first().click();
+		await page.locator(`${APP_NAV} .act-btn`, { hasText: 'Move' }).first().click();
 		await expect(page.locator('.moves-dialog')).toBeVisible({ timeout: 3_000 });
 		await page.locator('.moves-dialog .md-tile').first().click();
 		await expect(page.locator('.moves-dialog .md-body--detail')).toBeVisible({ timeout: 3_000 });
@@ -94,7 +82,7 @@ test.describe('Adventure-action dialogs (v2)', () => {
 	// ── Dice Roll ────────────────────────────────────────────────────────────
 
 	test('Roll button (3rd action) opens dice dialog', async ({ page }) => {
-		await page.locator(`${APP_NAV} .act-btn`).nth(2).click();
+		await page.locator(`${APP_NAV} .act-btn`, { hasText: 'Roll' }).first().click();
 		await expect(page.locator('.dice-dialog')).toBeVisible({ timeout: 3_000 });
 		await page.keyboard.press('Escape');
 	});
@@ -102,7 +90,7 @@ test.describe('Adventure-action dialogs (v2)', () => {
 	test('clicking a quick-roll die button adds a result to the log', async ({ page }) => {
 		// Count entries before — works whether the log starts empty or has prior entries.
 		const countBefore = await page.locator('.log-entry').count();
-		await page.locator(`${APP_NAV} .act-btn`).nth(2).click();
+		await page.locator(`${APP_NAV} .act-btn`, { hasText: 'Roll' }).first().click();
 		await expect(page.locator('.dice-dialog')).toBeVisible({ timeout: 3_000 });
 		await page.locator('.dice-dialog .quick-btn').first().click();
 		await expect(page.locator('.log-entry')).not.toHaveCount(countBefore, { timeout: 7_000 });
@@ -112,14 +100,14 @@ test.describe('Adventure-action dialogs (v2)', () => {
 	// ── Consult an Oracle ────────────────────────────────────────────────────
 
 	test('Ask button (2nd action) opens oracles dialog', async ({ page }) => {
-		await page.locator(`${APP_NAV} .act-btn`).nth(1).click();
+		await page.locator(`${APP_NAV} .act-btn`, { hasText: 'Ask' }).first().click();
 		await expect(page.locator('.oracles-dialog')).toBeVisible({ timeout: 3_000 });
 		await page.keyboard.press('Escape');
 	});
 
 	test('clicking an oracle tile adds a result to the log', async ({ page }) => {
 		const countBefore = await page.locator('.log-entry').count();
-		await page.locator(`${APP_NAV} .act-btn`).nth(1).click();
+		await page.locator(`${APP_NAV} .act-btn`, { hasText: 'Ask' }).first().click();
 		await expect(page.locator('.oracles-dialog')).toBeVisible({ timeout: 3_000 });
 		const firstTile = page.locator('.oracles-dialog .od-tile').first();
 		await expect(firstTile).toBeVisible({ timeout: 5_000 });
@@ -134,13 +122,13 @@ test.describe('Adventure-action dialogs (v2)', () => {
 	// ── Add a Note ───────────────────────────────────────────────────────────
 
 	test('Note button (4th action) opens notes dialog', async ({ page }) => {
-		await page.locator(`${APP_NAV} .act-btn`).nth(3).click();
+		await page.locator(`${APP_NAV} .act-btn`, { hasText: 'Note' }).first().click();
 		await expect(page.locator('.notes-dialog')).toBeVisible({ timeout: 3_000 });
 		await page.keyboard.press('Escape');
 	});
 
 	test('adding a note creates a log entry', async ({ page }) => {
-		await page.locator(`${APP_NAV} .act-btn`).nth(3).click();
+		await page.locator(`${APP_NAV} .act-btn`, { hasText: 'Note' }).first().click();
 		await expect(page.locator('.notes-dialog')).toBeVisible({ timeout: 3_000 });
 		await page.locator('.notes-dialog .nd-textarea').fill('E2E test note');
 		await page.locator('.notes-dialog .nd-add-btn').click();

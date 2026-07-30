@@ -14,6 +14,7 @@
  * Adventure tab; the "+ Site" button lives in the Expeditions area header.
  */
 import { test, expect, type Page } from '@playwright/test';
+import { ensureCharacter } from './helpers/home';
 
 const CHAR_AREA = '.home-area--characters';
 const CHAR_HEADER = `${CHAR_AREA} .ca-header`;
@@ -158,21 +159,23 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		).toBeVisible({ timeout: 5_000 });
 	});
 
-	test('Delve off: "+ Site" button hidden in Expeditions area header', async ({ page }) => {
+	test('Delve off: "+ New Site…" hidden in the Expeditions switcher', async ({ page }) => {
 		await setExpansionsViaStorage(page, { delve: false });
-		// Expeditions area should still show "+ Journey".
-		await expect(page.locator(`${EXP_HEADER} button:has-text("+ Journey")`)).toBeVisible({
+		// The switcher still offers "+ New Journey…" but not "+ New Site…".
+		await page.locator(`${EXP_HEADER} .ea-hdr-combobox`).click();
+		await expect(page.locator('.mp-cmd-item--action', { hasText: /New Journey/i })).toBeVisible({
 			timeout: 5_000,
 		});
-		// "+ Site" should be gone.
-		await expect(page.locator(`${EXP_HEADER} button:has-text("+ Site")`)).toHaveCount(0, {
+		await expect(page.locator('.mp-cmd-item--action', { hasText: /New Site/i })).toHaveCount(0, {
 			timeout: 5_000,
 		});
+		await page.keyboard.press('Escape');
 	});
 
 	test('Delve off: Delve foes hidden from Foe picker', async ({ page }) => {
 		await setExpansionsViaStorage(page, { delve: false });
-		await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
+		await page.locator(`${FOE_HEADER} .fa-hdr-combobox`).click();
+		await page.locator('.mp-cmd-item--action', { hasText: /New foe/i }).click();
 		await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 8_000 });
 		await expect(page.locator('.foe-dialog .fd-tile-name', { hasText: /^Bladewing$/ })).toHaveCount(
 			0,
@@ -215,25 +218,20 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 			.first()
 			.waitFor({ timeout: 12_000, state: 'attached' });
 
-		await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click({ timeout: 8_000 });
+		await page.locator(`${CM_HEADER} .cm-hdr-combobox`).click({ timeout: 8_000 });
+		await page.locator('.mp-cmd-item--action', { hasText: /New Community/i }).click();
 
-		// The New Community dialog opens with the region radios visible — one
-		// stage, no picker in front of it. Earlier revisions of this test
-		// clicked an intermediate "Create" button; that flow no longer exists
-		// (the dialog's own "Create" alt-button commits + closes it, which
-		// would wipe the radios we're about to assert on).
-		//
-		// Scope radios to the OPEN dialog — the sibling New Place dialog is in
-		// the DOM but closed, and its own ironlands radio would otherwise be
-		// counted too.
+		// The New Community dialog now picks its region from a bits-ui <Select>
+		// (#nc-region). With YRT off, the option list must offer Ironlands but
+		// not YRT. Open the select and inspect its portalled items.
 		const openDialog = page.locator('.confirm-modal');
 		await expect(openDialog).toBeVisible({ timeout: 8_000 });
-		const yrtRadio = openDialog.locator('[role="radio"][data-value="yrt"]');
-		await expect(yrtRadio).toHaveCount(0);
-		await expect(openDialog.locator('[role="radio"][data-value="ironlands"]')).toHaveCount(1, {
-			timeout: 3_000,
-		});
-		await page.keyboard.press('Escape');
+		await openDialog.locator('#nc-region').click();
+		const items = page.locator('.bui-select-content .bui-select-item');
+		await expect(items.filter({ hasText: /^Ironlands$/ })).toHaveCount(1, { timeout: 3_000 });
+		await expect(items.filter({ hasText: /^YRT$/ })).toHaveCount(0);
+		await page.keyboard.press('Escape'); // close the select
+		await page.keyboard.press('Escape'); // close the dialog
 	});
 
 	// ── 4. Render-time resolution (find* is never filtered) ──────────────────
@@ -242,13 +240,15 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		await setExpansionsViaStorage(page, { delve: false });
 
 		// Ensure a character exists so the log can attach entries.
-		if ((await page.locator(CHAR_SPINE).count()) === 0) {
-			await page.locator(`${CHAR_HEADER} button:has-text("+ Character")`).click();
-			await expect(page.locator(CHAR_SPINE)).not.toHaveCount(0, { timeout: 8_000 });
-		}
+		await ensureCharacter(page);
 
 		// Inject a log entry containing a link to a Delve move.
 		const entryId = 'e2e-delve-off-move-link';
+		await page.waitForFunction(
+			() => !!(window as unknown as { __testLog?: unknown }).__testLog,
+			undefined,
+			{ timeout: 8_000 },
+		);
 		await page.evaluate(
 			({ id }) => {
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any

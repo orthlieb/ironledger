@@ -16,16 +16,11 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 import { resetAll } from './helpers/reset';
+import { settleHome, ensureCharacter } from './helpers/home';
 
 const CHAR_AREA = '.home-area--characters';
-const CHAR_HEADER = `${CHAR_AREA} .ca-header`;
-const CHAR_SPINE = `${CHAR_AREA} .ca-spine`;
 const FOE_AREA = '.home-area--foes';
-const FOE_HEADER = `${FOE_AREA} .fa-header`;
-const FOE_SPINE = `${FOE_AREA} .fa-spine`;
 const EXP_AREA = '.home-area--expeditions';
-const EXP_HEADER = `${EXP_AREA} .ea-header`;
-const EXP_SPINE = `${EXP_AREA} .ea-spine`;
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
 
@@ -49,41 +44,39 @@ async function switchCharTab(page: Page, label: string) {
 async function goToHomeWithCharacter(page: Page): Promise<string> {
 	await page.goto('/home');
 	await waitForCharactersArea(page);
-
-	if ((await page.locator(CHAR_SPINE).count()) === 0) {
-		await page.locator(`${CHAR_HEADER} button:has-text("+ Character")`).click();
-		await expect(page.locator(CHAR_SPINE)).not.toHaveCount(0, { timeout: 8_000 });
-	}
-	// Ensure first spine is active.
-	const first = page.locator(CHAR_SPINE).first();
-	if (
-		!(await first.evaluate((el) => el.classList.contains('ca-spine--active')).catch(() => false))
-	) {
-		await first.click();
-	}
-	await expect(first).toHaveClass(/ca-spine--active/, { timeout: 3_000 });
-
+	await settleHome(page);
+	await ensureCharacter(page);
 	return await getActiveCharId(page);
 }
 
-/** Read the active char's id straight off the active spine's data-char-id.
- *  We can't infer it from the stage name: addCharacter() drops straight into
- *  rename mode (the .ca-stage-name button isn't rendered while the input is
- *  open), and headingText() can transform the visible name (e.g. Futhark
- *  runes) so it won't match the API value anyway. The spine carries the id
- *  directly. */
+/** The active character's id. In v2 the header combobox no longer carries a
+ *  `data-char-id`, so read it from the BFF — these tests keep a single
+ *  character, so the first row is the active one. */
 async function getActiveCharId(page: Page): Promise<string> {
-	const id = await page
-		.locator(`${CHAR_SPINE}.ca-spine--active`)
-		.first()
-		.getAttribute('data-char-id');
-	return id ?? '';
+	return await page.evaluate(async () => {
+		const res = await fetch('/api/characters', { credentials: 'include' });
+		const list = (await res.json()) as Array<{ id: string }>;
+		return Array.isArray(list) && list[0]?.id ? list[0].id : '';
+	});
+}
+
+/** Live foe count (data-foe-count on the inner .fa-area). */
+async function foeCount(page: Page): Promise<number> {
+	return Number((await page.locator(`${FOE_AREA} .fa-area`).getAttribute('data-foe-count')) ?? '0');
+}
+
+/** Live expedition count (data-exp-count on the header actions). */
+async function expCount(page: Page): Promise<number> {
+	return Number(
+		(await page.locator(`${EXP_AREA} .ea-header-actions`).getAttribute('data-exp-count')) ?? '0',
+	);
 }
 
 /** Ensure a foe exists; in v2 the foes area always auto-selects the first foe. */
 async function ensureFoeExists(page: Page) {
-	if ((await page.locator(FOE_SPINE).count()) === 0) {
-		await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
+	if ((await foeCount(page)) === 0) {
+		await page.locator(`${FOE_AREA} .fa-hdr-combobox`).click();
+		await page.locator('.mp-cmd-item--action', { hasText: /New foe/i }).click();
 		await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 5_000 });
 		const foeTile = page.locator('.foe-dialog .fd-tile').first();
 		await expect(foeTile).toBeVisible({ timeout: 8_000 });
@@ -92,17 +85,19 @@ async function ensureFoeExists(page: Page) {
 			timeout: 3_000,
 		});
 		await page.locator('.foe-dialog button:has-text("Add to Foes")').click();
-		await expect(page.locator(FOE_SPINE)).not.toHaveCount(0, { timeout: 5_000 });
+		await expect(page.locator('.foe-dialog')).not.toBeVisible({ timeout: 5_000 });
 	}
 }
 
 /** Ensure an expedition (journey) exists. */
 async function ensureExpeditionExists(page: Page) {
-	if ((await page.locator(EXP_SPINE).count()) === 0) {
-		await page.locator(`${EXP_HEADER} button:has-text("+ Journey")`).click();
+	if ((await expCount(page)) === 0) {
+		await page.locator(`${EXP_AREA} .ea-hdr-combobox`).click();
+		await page.locator('.mp-cmd-item--action', { hasText: /New Journey/i }).click();
 		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
-		await page.locator('.confirm-modal button:has-text("Start Journey")').click();
-		await expect(page.locator(EXP_SPINE)).not.toHaveCount(0, { timeout: 5_000 });
+		await page.locator('.confirm-modal .co-input').first().fill('E2E Journey');
+		await page.locator('.confirm-modal button:has-text("Create")').click();
+		await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
 	}
 }
 
@@ -526,55 +521,39 @@ test.describe('Log interactive links (injected mock entries)', () => {
 	test('cleanup: delete all foes, expeditions, and characters', async ({ page }) => {
 		await page.goto('/home');
 		await waitForCharactersArea(page);
+		await settleHome(page);
 
-		// Foes
-		const foeSpines = page.locator(FOE_SPINE);
-		let foeCount = await foeSpines.count();
-		while (foeCount > 0) {
-			await foeSpines.first().click();
-			const delBtn = page.locator(`${FOE_AREA} .fa-stage-delete-btn`).first();
-			await expect(delBtn).toBeVisible({ timeout: 3_000 });
-			await delBtn.click();
-			await expect(page.locator('.confirm-modal button.btn-danger')).toBeVisible({
-				timeout: 3_000,
-			});
+		// Foes — delete the active foe via the gear → options → confirm.
+		for (let g = 0; g < 30 && (await foeCount(page)) > 0; g++) {
+			await page.locator(`${FOE_AREA} .fa-hdr-settings-btn`).click();
+			await page.locator('button.co-danger-btn').click();
 			await page.locator('.confirm-modal button.btn-danger').click();
-			foeCount--;
-			if (foeCount > 0) await expect(foeSpines).toHaveCount(foeCount, { timeout: 5_000 });
+			await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
 		}
 
-		// Expeditions
-		const expSpines = page.locator(EXP_SPINE);
-		let expCount = await expSpines.count();
-		while (expCount > 0) {
-			await expSpines.first().click();
-			const delBtn = page.locator(`${EXP_AREA} .ea-stage-delete-btn`).first();
-			await expect(delBtn).toBeVisible({ timeout: 3_000 });
-			await delBtn.click();
-			await expect(page.locator('.confirm-modal button.btn-danger')).toBeVisible({
-				timeout: 3_000,
-			});
+		// Expeditions — gear → options → delete.
+		for (let g = 0; g < 30 && (await expCount(page)) > 0; g++) {
+			await page.locator(`${EXP_AREA} .ea-hdr-settings-btn`).click();
+			await page.locator('button.co-danger-btn').click();
 			await page.locator('.confirm-modal button.btn-danger').click();
-			expCount--;
-			if (expCount > 0) await expect(expSpines).toHaveCount(expCount, { timeout: 5_000 });
+			await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
 		}
 
-		// Characters
-		const charSpines = page.locator(CHAR_SPINE);
-		let charCount = await charSpines.count();
-		while (charCount > 0) {
-			await charSpines.first().click();
-			const delBtn = page.locator(`${CHAR_AREA} .ca-stage-delete-btn`).first();
-			await expect(delBtn).toBeVisible({ timeout: 3_000 });
-			await delBtn.click();
-			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 3_000 });
+		// Characters — gear → options → delete.
+		for (let g = 0; g < 30; g++) {
+			if (
+				!(await page
+					.locator(`${CHAR_AREA} .ca-tab`)
+					.first()
+					.isVisible()
+					.catch(() => false))
+			)
+				break;
+			await page.locator(`${CHAR_AREA} .ca-hdr-settings-btn`).click();
+			await page.locator('button.co-danger-btn').click();
 			await page.locator('.confirm-modal button.btn-danger').click();
-			charCount--;
-			if (charCount > 0) {
-				await expect(charSpines).toHaveCount(charCount, { timeout: 5_000 });
-			} else {
-				await expect(page.locator(`${CHAR_AREA} .ca-empty`)).toBeVisible({ timeout: 5_000 });
-			}
+			await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
 		}
+		await expect(page.locator(`${CHAR_AREA} .ca-empty`)).toBeVisible({ timeout: 5_000 });
 	});
 });

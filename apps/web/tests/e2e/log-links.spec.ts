@@ -7,6 +7,7 @@
  */
 import { test, expect } from '@playwright/test';
 import { resetCharacters } from './helpers/reset';
+import { settleHome, ensureCharacter as ensureChar } from './helpers/home';
 
 // Wipe characters before this file's tests so notes from prior runs don't bleed in.
 test.beforeAll(async () => {
@@ -14,8 +15,6 @@ test.beforeAll(async () => {
 });
 
 const CHAR_AREA = '.home-area--characters';
-const CHAR_HEADER = `${CHAR_AREA} .ca-header`;
-const CHAR_SPINE = `${CHAR_AREA} .ca-spine`;
 
 /** Ensure a character exists in the v2 Characters area; auto-select handles activation. */
 async function ensureCharacter(page: import('@playwright/test').Page) {
@@ -25,19 +24,15 @@ async function ensureCharacter(page: import('@playwright/test').Page) {
 		.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`)
 		.first()
 		.waitFor({ timeout: 10_000, state: 'attached' });
-
-	if ((await page.locator(CHAR_SPINE).count()) === 0) {
-		await page.locator(`${CHAR_HEADER} button:has-text("+ Character")`).click();
-		await expect(page.locator(CHAR_SPINE)).not.toHaveCount(0, { timeout: 8_000 });
-	}
-	await expect(page.locator(`${CHAR_AREA} .ca-tab`).first()).toBeVisible({ timeout: 8_000 });
+	await settleHome(page);
+	await ensureChar(page);
 }
 
 test('can add a note to a log entry and it persists', async ({ page }) => {
 	await ensureCharacter(page);
 
 	// Add a note via the global app-nav NOTE button.
-	await page.locator('.app-nav .act-btn').nth(3).click();
+	await page.locator('.app-nav .act-btn', { hasText: 'Note' }).first().click();
 	await expect(page.locator('.notes-dialog')).toBeVisible({ timeout: 3_000 });
 	await page.locator('.notes-dialog .nd-textarea').fill('Initial note content');
 	await page.locator('.notes-dialog .nd-add-btn').click();

@@ -10,6 +10,7 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 import { resetAll } from './helpers/reset';
+import { settleHome, ensureCharacter } from './helpers/home';
 
 // ── Area constants ───────────────────────────────────────────────────────────
 
@@ -48,12 +49,14 @@ async function waitForHome(page: Page): Promise<void> {
 async function expectTabActivates(
 	page: Page,
 	tabSelector: string,
-	activeClass: string,
+	_activeClass: string,
 	markerSelector: string,
 ): Promise<void> {
+	// Tabs are bits-ui Tabs.Trigger — the active one carries data-state="active"
+	// (aria-selected="true"), not an `*-tab--active` CSS class.
 	const tab = page.locator(tabSelector).first();
 	await tab.click();
-	await expect(tab).toHaveClass(new RegExp(`\\b${activeClass}\\b`));
+	await expect(tab).toHaveAttribute('data-state', 'active');
 	await expect(page.locator(markerSelector).first()).toBeVisible({ timeout: 3_000 });
 }
 
@@ -72,11 +75,8 @@ test.describe('Tab accessibility — v2 areas', () => {
 	// ── Characters area ──────────────────────────────────────────────────────
 
 	test('CharactersArea — every tab activates and renders its panel', async ({ page }) => {
-		// Ensure a character exists.
-		if ((await page.locator(CHAR_SPINE).count()) === 0) {
-			await page.locator(`${CHAR_HEADER} button:has-text("+ Character")`).click();
-			await expect(page.locator(CHAR_SPINE)).not.toHaveCount(0, { timeout: 8_000 });
-		}
+		await settleHome(page);
+		await ensureCharacter(page);
 		// Wait for tabs to render.
 		await expect(page.locator(`${CHAR_AREA} .ca-tab`).first()).toBeVisible({ timeout: 8_000 });
 
@@ -101,7 +101,7 @@ test.describe('Tab accessibility — v2 areas', () => {
 		{
 			const tab = page.locator(`${CHAR_AREA} .ca-tab:has-text("Vows")`).first();
 			await tab.click();
-			await expect(tab).toHaveClass(/\bca-tab--active\b/);
+			await expect(tab).toHaveAttribute('data-state', 'active');
 			await expect(
 				page
 					.locator(`${CHAR_AREA} .ca-vows-list`)
@@ -115,7 +115,7 @@ test.describe('Tab accessibility — v2 areas', () => {
 		{
 			const tab = page.locator(`${CHAR_AREA} .ca-tab:has-text("Assets")`).first();
 			await tab.click();
-			await expect(tab).toHaveClass(/\bca-tab--active\b/);
+			await expect(tab).toHaveAttribute('data-state', 'active');
 			await expect(
 				page
 					.locator(`${CHAR_AREA} .ca-asset-grid`)
@@ -135,15 +135,22 @@ test.describe('Tab accessibility — v2 areas', () => {
 	// ── Communities area ─────────────────────────────────────────────────────
 
 	test('CommunitiesArea — every tab activates and renders its panel', async ({ page }) => {
-		// Ensure a community exists.
-		if ((await page.locator(CM_ROW).count()) === 0) {
-			await page.locator(`${CM_HEADER} button:has-text("+ Community")`).click();
+		// Ensure a community exists and is active (its detail tabs render).
+		await settleHome(page);
+		if (
+			!(await page
+				.locator(`${CM_AREA} .cm-tab`)
+				.first()
+				.isVisible()
+				.catch(() => false))
+		) {
+			await page.locator(`${CM_AREA} .cm-hdr-combobox`).click();
+			await page.locator('.mp-cmd-item--action', { hasText: /New Community/i }).click();
 			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 15_000 });
-			await page.locator('.confirm-modal button:has-text("Random")').click();
-			await expect(page.locator(CM_ROW)).not.toHaveCount(0, { timeout: 10_000 });
+			await page.locator('.confirm-modal .co-input').first().fill('E2E Community');
+			await page.locator('.confirm-modal button:has-text("Create")').click();
+			await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 10_000 });
 		}
-		// Select the first spine.
-		await page.locator(CM_ROW).first().click();
 		await expect(page.locator(`${CM_AREA} .cm-tab`).first()).toBeVisible({ timeout: 5_000 });
 
 		// Core: field rows + notes block.
@@ -169,15 +176,22 @@ test.describe('Tab accessibility — v2 areas', () => {
 	test('ExpeditionsArea — every tab activates and renders its panel (journey)', async ({
 		page,
 	}) => {
-		// Ensure a journey exists.
-		if ((await page.locator(EXP_SPINE).count()) === 0) {
-			await page.locator(`${EXP_HEADER} button:has-text("+ Journey")`).click();
+		// Ensure a journey exists and is active (its detail tabs render).
+		await settleHome(page);
+		if (
+			!(await page
+				.locator(`${EXP_AREA} .ea-tab`)
+				.first()
+				.isVisible()
+				.catch(() => false))
+		) {
+			await page.locator(`${EXP_AREA} .ea-hdr-combobox`).click();
+			await page.locator('.mp-cmd-item--action', { hasText: /New Journey/i }).click();
 			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 10_000 });
-			await page.locator('.confirm-modal button:has-text("Start Journey")').click();
-			await expect(page.locator(EXP_SPINE)).not.toHaveCount(0, { timeout: 8_000 });
+			await page.locator('.confirm-modal .co-input').first().fill('E2E Journey');
+			await page.locator('.confirm-modal button:has-text("Create")').click();
+			await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 8_000 });
 		}
-		// Select the first journey spine.
-		await page.locator(EXP_SPINE).first().click();
 		await expect(page.locator(`${EXP_AREA} .ea-tab`).first()).toBeVisible({ timeout: 5_000 });
 
 		// Core: pills row (Journey badge + difficulty badge).
@@ -200,19 +214,22 @@ test.describe('Tab accessibility — v2 areas', () => {
 	// ── Foes area ────────────────────────────────────────────────────────────
 
 	test('FoesArea — every tab activates and renders its panel', async ({ page }) => {
-		// Ensure a foe encounter exists.
-		if ((await page.locator(FOE_SPINE).count()) === 0) {
-			await page.locator(`${FOE_HEADER} button:has-text("+ Foe")`).click();
+		// Ensure a foe encounter exists and is active (its detail tabs render).
+		await settleHome(page);
+		if (
+			!(await page
+				.locator(`${FOE_AREA} .fa-tab`)
+				.first()
+				.isVisible()
+				.catch(() => false))
+		) {
+			await page.locator(`${FOE_AREA} .fa-hdr-combobox`).click();
+			await page.locator('.mp-cmd-item--action', { hasText: /New foe/i }).click();
 			await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 8_000 });
-			// Click first available foe tile.
 			await page.locator('.foe-dialog .fd-tile').first().click();
-			// Then confirm "Add to Foes".
 			await page.locator('.foe-dialog button:has-text("Add to Foes")').click();
 			await expect(page.locator('.foe-dialog')).not.toBeVisible({ timeout: 5_000 });
-			await expect(page.locator(FOE_SPINE)).not.toHaveCount(0, { timeout: 8_000 });
 		}
-		// Select the first foe.
-		await page.locator(FOE_SPINE).first().click();
 		await expect(page.locator(`${FOE_AREA} .fa-tab`).first()).toBeVisible({ timeout: 5_000 });
 
 		// Core: pills row.

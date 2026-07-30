@@ -25,7 +25,10 @@ test('page loads and shows all four home areas', async ({ page }) => {
 });
 
 test('app-nav exposes Move / Ask / Roll / Note action buttons', async ({ page }) => {
-	await expect(page.locator('.app-nav .act-btn')).toHaveCount(4);
+	// (The nav also carries a Map button now, so assert by name rather than count.)
+	for (const name of ['Move', 'Ask', 'Roll', 'Note']) {
+		await expect(page.locator('.app-nav .act-btn', { hasText: name }).first()).toBeVisible();
+	}
 });
 
 test('log rail is visible alongside the areas', async ({ page }) => {
@@ -34,7 +37,7 @@ test('log rail is visible alongside the areas', async ({ page }) => {
 
 test('settings button opens settings dialog', async ({ page }) => {
 	await page.click('.hamburger-btn');
-	await page.click('.menu-item:has-text("Settings")');
+	await page.locator('.hm-item', { hasText: /Settings/ }).click();
 	await expect(page.locator('.settings-dialog')).toBeVisible();
 	await page.keyboard.press('Escape');
 	await expect(page.locator('.settings-dialog')).not.toBeVisible();
@@ -52,6 +55,8 @@ test.describe('Mobile tab bar (≤900px)', () => {
 		await expect(page.locator('.home-area--characters .ca-loading')).not.toBeVisible({
 			timeout: 12_000,
 		});
+		// Let hydration settle so mob-tab clicks register.
+		await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
 	});
 
 	test('characters tab is active by default and characters area is visible', async ({ page }) => {
@@ -62,10 +67,14 @@ test.describe('Mobile tab bar (≤900px)', () => {
 	});
 
 	test('clicking the Foes tab switches the visible area to Foes', async ({ page }) => {
+		await expect(page.locator('.mob-tabbar')).toBeVisible();
 		await page.locator('.mob-tab', { hasText: 'Foes' }).click();
-		await expect(page.locator('.mob-tab--active')).toHaveText(/Foes/i);
-		await expect(page.locator('.home-area--foes')).not.toHaveClass(/mob-hidden/);
+		// Wait for the swap to land before asserting the active tab label.
+		await expect(page.locator('.home-area--foes')).not.toHaveClass(/mob-hidden/, {
+			timeout: 5_000,
+		});
 		await expect(page.locator('.home-area--characters')).toHaveClass(/mob-hidden/);
+		await expect(page.locator('.mob-tab--active')).toContainText(/Foes/i);
 	});
 });
 
