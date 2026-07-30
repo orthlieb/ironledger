@@ -2135,8 +2135,8 @@
 						DELETE
 					</button>
 					<div class="mp-props-footer-spacer"></div>
-					<button class="mp-btn" onclick={cancelDraft}>Cancel</button>
-					<button class="mp-btn mp-btn-primary" onclick={commitDraft}>OK</button>
+					<button class="btn" onclick={cancelDraft}>Cancel</button>
+					<button class="btn btn-primary" onclick={commitDraft}>OK</button>
 				</div>
 			</Dialog.Content>
 		</Dialog.Portal>
@@ -2324,19 +2324,9 @@
 		opacity: 0.4;
 		cursor: default;
 	}
-	/* Affirmative variant for OK / commit buttons — tinted the same
-	   accent as the app's global `.btn-primary`. Used in the marker
-	   properties dialog footer. */
-	:global(.mp-btn-primary) {
-		background: var(--text-accent);
-		color: var(--bg-card);
-		border-color: var(--text-accent);
-	}
-	:global(.mp-btn-primary:hover:not(:disabled)) {
-		background: color-mix(in srgb, var(--text-accent) 85%, var(--text));
-		color: var(--bg-card);
-		border-color: var(--text-accent);
-	}
+	/* Marker-properties footer OK/Cancel use the app-wide `.btn` +
+	   `.btn.btn-primary` (see app.css) so every dialog's affirmative
+	   button stays visually identical. No .mp-btn-primary variant. */
 	/* Combobox trigger shell — a text-field-shaped `<button>` (bits-ui
 	   Popover.Trigger) containing an optional prefix icon, a value/
 	   placeholder span, and a chevron. Shared by both comboboxes in
