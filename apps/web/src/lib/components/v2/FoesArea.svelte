@@ -359,7 +359,7 @@
 		<div class="fa-body">
 			{#if activeEnc}
 				<div
-					class="fa-stage"
+					class="deck-stage fa-stage"
 					class:fa-stage--vanquished={activeEnc.vanquished}
 					style="--fa-nature: {natureColor}"
 				>
@@ -693,16 +693,10 @@
 		flex: 1;
 		min-height: 0;
 	}
-	/* Stage — coloured 3 px band on the LHS keyed to the active foe's
-	   nature (beast / horror / hunter / …). */
+	/* Stage — flex / padding / scroll live on the shared `.deck-stage`
+	   in app.css so all four decks (Chars / Foes / Exp / Connections)
+	   stay in sync. This rule only carries the foe-nature LHS band. */
 	.fa-stage {
-		padding: 0 12px 10px 12px;
-		min-height: 0;
-		min-width: 0;
-		flex: 1;
-		overflow: auto;
-		display: flex;
-		flex-direction: column;
 		border-left: 3px solid var(--fa-nature, var(--text-muted));
 	}
 

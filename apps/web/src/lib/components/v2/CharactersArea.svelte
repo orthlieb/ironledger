@@ -1061,7 +1061,7 @@
 		</div>
 	{:else}
 		<div class="ca-body">
-			<div class="ca-stage">
+			<div class="deck-stage ca-stage">
 				{#if activeChar && activeData}
 					{@const d = activeData}
 					<!-- Card tab strip -->
@@ -1648,14 +1648,10 @@
 		min-height: 0;
 	}
 
-	/* Stage */
+	/* Stage — flex / padding / scroll live on the shared `.deck-stage`
+	   in app.css so all four decks stay in sync. Chars has no LHS band
+	   (unlike Foes / Exp / Connections). */
 	.ca-stage {
-		display: flex;
-		flex-direction: column;
-		min-height: 0;
-		min-width: 0;
-		overflow: auto;
-		padding: 0; /* tab strip and card now extend full-width to the spine */
 		margin: 0;
 	}
 

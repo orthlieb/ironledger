@@ -753,7 +753,7 @@
 		<div class="ea-body">
 			{#if activeExp}
 				<div
-					class="ea-stage"
+					class="deck-stage ea-stage"
 					class:ea-stage--complete={activeExp.complete}
 					style="--ea-nature: {activeColor}"
 				>
@@ -1300,16 +1300,10 @@
 		flex: 1;
 		min-height: 0;
 	}
-	/* Stage — coloured 3 px band on the LHS keyed to expedition type
-	   (journey / site). Replaces the retired ea-stage-header band. */
+	/* Stage — flex / padding / scroll live on the shared `.deck-stage`
+	   in app.css so all four decks stay in sync. This rule only carries
+	   the expedition-type LHS band. */
 	.ea-stage {
-		padding: 0 12px 10px 12px;
-		min-height: 0;
-		min-width: 0;
-		flex: 1;
-		overflow: auto;
-		display: flex;
-		flex-direction: column;
 		border-left: 3px solid var(--ea-nature, var(--text-muted));
 	}
 	.ea-stage--complete .ea-card {

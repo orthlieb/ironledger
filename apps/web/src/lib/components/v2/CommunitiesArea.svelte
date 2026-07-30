@@ -834,7 +834,7 @@
 	{:else}
 		<div class="cm-body">
 			{#if activeEntry}
-				<div class="cm-stage" role="tabpanel" style="--cm-nature: {activeColor}">
+				<div class="deck-stage cm-stage" role="tabpanel" style="--cm-nature: {activeColor}">
 					<Tabs.Root
 						value={activeTab}
 						onValueChange={(v) => (activeTab = v as CmTab)}
@@ -1500,20 +1500,14 @@
 		flex: 1;
 		min-height: 0;
 	}
-	/* Stage — coloured 3 px band on the LHS keyed to entry type
-	   (community / npc / place). Also the tabpanel surface (its
-	   background is the inset "card" the retired .cm-card wrapped). */
+	/* Stage — flex / padding / scroll live on the shared `.deck-stage`
+	   in app.css so all four decks stay in sync. This rule adds the
+	   entry-type LHS band, the tabpanel background (retired .cm-card),
+	   and the internal `gap` between form rows. */
 	.cm-stage {
-		flex: 1;
-		min-height: 0;
-		min-width: 0;
-		padding: 7px;
 		background: var(--bg-inset);
 		border-left: 3px solid var(--cm-nature, var(--text-muted));
-		overflow: auto;
 		position: relative;
-		display: flex;
-		flex-direction: column;
 		gap: 10px;
 	}
 
