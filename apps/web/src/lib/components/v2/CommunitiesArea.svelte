@@ -29,6 +29,7 @@
 		removeCommunity,
 	} from '$lib/communityStore.svelte.js';
 	import { getNpcs, persistNpcsNow, addNpc, removeNpc } from '$lib/npcStore.svelte.js';
+	import { createDebouncedSave } from '$lib/debouncedSave.js';
 	import { getPlaces, persistPlacesNow, addPlace, removePlace } from '$lib/placeStore.svelte.js';
 	import type { Community, Npc, Place, NpcRelationship } from '$lib/types.js';
 	import Select from '$lib/components/Select.svelte';
@@ -327,7 +328,7 @@
 	]);
 
 	function selectEntry(id: string) {
-		flushPersist();
+		_save.flush();
 		activeEntryId = id;
 		activeTab = 'core';
 		editingNotes = false;
@@ -340,7 +341,7 @@
 	// so anything binding to it stays in sync. A single $effect watches
 	// the active entry's snapshot and schedules a kind-aware flush that
 	// pushes the right store (communities vs npcs) to the API.
-	let _saveTimer: ReturnType<typeof setTimeout> | null = null;
+	const _save = createDebouncedSave();
 	let _savingKind: EntryKind | null = null;
 
 	function updateCommunity(patch: Partial<Community>) {
@@ -385,59 +386,28 @@
 		}
 	}
 
+	// Persist the store that was being edited. Reads (+ clears) _savingKind,
+	// exactly as the inline timer did — shared by the debounced schedule and
+	// every flush() site.
+	function persistSavingKind() {
+		const k = _savingKind;
+		_savingKind = null;
+		const p =
+			k === 'npc' ? persistNpcsNow() : k === 'place' ? persistPlacesNow() : persistCommunitiesNow();
+		p.catch((err) => console.error('[v2] save failed', err));
+	}
+
 	$effect(() => {
 		if (!activeEntry) return;
 		const kind = activeEntry.kind;
 		$state.snapshot(activeEntry.data);
 		// If the pending save targets a different store, flush it first so
 		// we don't lose a Community edit by overwriting the timer with an NPC edit.
-		if (_saveTimer && _savingKind && _savingKind !== kind) flushPersist();
+		if (_save.isPending() && _savingKind && _savingKind !== kind) _save.flush();
 		_savingKind = kind;
-		if (_saveTimer) clearTimeout(_saveTimer);
-		_saveTimer = setTimeout(() => {
-			const k = _savingKind;
-			_saveTimer = null;
-			_savingKind = null;
-			const p =
-				k === 'npc'
-					? persistNpcsNow()
-					: k === 'place'
-						? persistPlacesNow()
-						: persistCommunitiesNow();
-			p.catch((err) => console.error('[v2] save failed', err));
-		}, 1500);
-		return () => {
-			if (_saveTimer) {
-				clearTimeout(_saveTimer);
-				const k = _savingKind;
-				_saveTimer = null;
-				_savingKind = null;
-				const p =
-					k === 'npc'
-						? persistNpcsNow()
-						: k === 'place'
-							? persistPlacesNow()
-							: persistCommunitiesNow();
-				p.catch((err) => console.error('[v2] save failed', err));
-			}
-		};
+		_save.schedule(persistSavingKind);
+		return () => _save.flush();
 	});
-
-	function flushPersist() {
-		if (_saveTimer) {
-			clearTimeout(_saveTimer);
-			const k = _savingKind;
-			_saveTimer = null;
-			_savingKind = null;
-			const p =
-				k === 'npc'
-					? persistNpcsNow()
-					: k === 'place'
-						? persistPlacesNow()
-						: persistCommunitiesNow();
-			p.catch((err) => console.error('[v2] save failed', err));
-		}
-	}
 
 	function setNotes(value: string) {
 		if (activeEntry?.kind === 'community') updateCommunity({ notes: value });
