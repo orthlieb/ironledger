@@ -15,20 +15,12 @@ import { settleHome, ensureCharacter } from './helpers/home';
 // ── Area constants ───────────────────────────────────────────────────────────
 
 const CHAR_AREA = '.home-area--characters';
-const CHAR_HEADER = `${CHAR_AREA} .ca-header`;
-const CHAR_SPINE = `${CHAR_AREA} .ca-spine`;
 
 const CM_AREA = '.home-area--communities';
-const CM_HEADER = `${CM_AREA} .cm-header`;
-const CM_ROW = `${CM_AREA} .cm-row`;
 
 const EXP_AREA = '.home-area--expeditions';
-const EXP_HEADER = `${EXP_AREA} .ea-header`;
-const EXP_SPINE = `${EXP_AREA} .ea-spine`;
 
 const FOE_AREA = '.home-area--foes';
-const FOE_HEADER = `${FOE_AREA} .fa-header`;
-const FOE_SPINE = `${FOE_AREA} .fa-spine`;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 

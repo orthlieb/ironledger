@@ -32,28 +32,28 @@ proportions (a very slight uniform stretch on the image is invisible).
 
 ### Web (`apps/web`)
 
-| File                                                    | Responsibility                                                                                     |
-| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `lib/mapConstants.ts`                                   | Grid dims from aspect, zoom-octave helpers, marker defaults, color presets, `resolveMapIcon`.      |
-| `lib/mapGeometry.ts`                                    | Pure geometry: snap-to-grid, sub-grid step, grid-line offsets, major-line test. No Svelte.         |
-| `lib/mapImage.ts`                                       | `downscaleImage(file)` — canvas-based resize + JPEG re-encode.                                     |
-| `lib/mapStore.svelte.ts`                                | `$state` list + active-map cache backed by `/api/session/maps*`; switch/create/rename/delete/CRUD. |
-| `lib/mapExport.ts`                                      | `exportMapPng` + `exportMapJson` — snapshot download flows.                                        |
-| `lib/mapEntityLinks.ts`                                 | Enumerate + resolve linkable entities (community / place / journey / site); parse `"kind:id"`.     |
-| `lib/generated/mapIconManifest.ts`                      | **Auto-generated** icon manifest — do not hand-edit. Rebuilt by the Vite plugin.                   |
-| `scripts/build-map-icons.mjs`                           | Scans `static/map/**/*.svg` → `mapIconManifest.ts` (kebab→Title Case, fill-stripping).             |
-| `static/map/<category>/<slug>.svg`                      | Icon source files. First subfolder = category; kebab-case filename = slug + display label.         |
-| `lib/components/MapDialog.svelte`                       | Map picker + file toolbar + selection toolbar + icon-picker dialog + SVG canvas.                   |
-| `lib/components/MapOptionsDialog.svelte`                | Name / display prefs / scale bar / danger-zone (clear + delete).                                   |
-| `lib/components/v2/ExpeditionsArea.svelte`              | Header "Map" button that opens the dialog.                                                         |
-| `routes/api/session/maps/+server.ts`                    | BFF: GET (list) / POST (create).                                                                   |
-| `routes/api/session/maps/entity-markers/+server.ts`     | BFF: GET cross-map `{entityId → refs}` index for entity-card back-references.                      |
-| `routes/api/session/maps/for-owner/+server.ts`          | BFF: GET get-or-create the map owned by a first-class entity.                                      |
-| `routes/api/session/maps/[mapId]/+server.ts`            | BFF: GET (detail) / PATCH (rename+reorder) / DELETE.                                               |
-| `routes/api/session/maps/[mapId]/markers/+server.ts`    | BFF: PUT markers.                                                                                  |
-| `routes/api/session/maps/[mapId]/settings/+server.ts`   | BFF: PUT settings.                                                                                 |
-| `routes/api/session/maps/[mapId]/background/+server.ts` | BFF: GET bytes (ETag) / PUT / DELETE.                                                              |
-| `tests/unit/mapGeometry.test.ts`                        | Unit tests for the geometry helpers.                                                               |
+| File                                                    | Responsibility                                                                                                                               |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/mapConstants.ts`                                   | Grid dims from aspect, zoom-octave helpers, marker defaults, color presets, `resolveMapIcon`.                                                |
+| `lib/mapGeometry.ts`                                    | Pure geometry: snap-to-grid, sub-grid step, grid-line offsets, major-line test. No Svelte.                                                   |
+| `lib/mapImage.ts`                                       | `downscaleImage(file)` — canvas-based resize + JPEG re-encode.                                                                               |
+| `lib/mapStore.svelte.ts`                                | `$state` list + active-map cache backed by `/api/session/maps*`; switch/create/rename/delete/CRUD.                                           |
+| `lib/mapExport.ts`                                      | `exportMapZip` / `importMapZip` / `buildMapZipEntries` / `applyMapImport` / `reassembleBundledMaps` (nested-in-Everything) + `exportMapPng`. |
+| `lib/mapEntityLinks.ts`                                 | Enumerate + resolve linkable entities (community / place / journey / site); parse `"kind:id"`.                                               |
+| `lib/generated/mapIconManifest.ts`                      | **Auto-generated** icon manifest — do not hand-edit. Rebuilt by the Vite plugin.                                                             |
+| `scripts/build-map-icons.mjs`                           | Scans `static/map/**/*.svg` → `mapIconManifest.ts` (kebab→Title Case, fill-stripping).                                                       |
+| `static/map/<category>/<slug>.svg`                      | Icon source files. First subfolder = category; kebab-case filename = slug + display label.                                                   |
+| `lib/components/MapDialog.svelte`                       | Map picker + file toolbar + selection toolbar + icon-picker dialog + SVG canvas.                                                             |
+| `lib/components/MapOptionsDialog.svelte`                | Name / display prefs / scale bar / danger-zone (clear + delete).                                                                             |
+| `lib/components/v2/ExpeditionsArea.svelte`              | Header "Map" button that opens the dialog.                                                                                                   |
+| `routes/api/session/maps/+server.ts`                    | BFF: GET (list) / POST (create).                                                                                                             |
+| `routes/api/session/maps/entity-markers/+server.ts`     | BFF: GET cross-map `{entityId → refs}` index for entity-card back-references.                                                                |
+| `routes/api/session/maps/for-owner/+server.ts`          | BFF: GET get-or-create the map owned by a first-class entity.                                                                                |
+| `routes/api/session/maps/[mapId]/+server.ts`            | BFF: GET (detail) / PATCH (rename+reorder) / DELETE.                                                                                         |
+| `routes/api/session/maps/[mapId]/markers/+server.ts`    | BFF: PUT markers.                                                                                                                            |
+| `routes/api/session/maps/[mapId]/settings/+server.ts`   | BFF: PUT settings.                                                                                                                           |
+| `routes/api/session/maps/[mapId]/background/+server.ts` | BFF: GET bytes (ETag) / PUT / DELETE.                                                                                                        |
+| `tests/unit/mapGeometry.test.ts`                        | Unit tests for the geometry helpers.                                                                                                         |
 
 ### API (`apps/api`)
 
@@ -421,6 +421,28 @@ via the existing `PUT /session/maps/:id/background` endpoint.
 user-readable message on any validation failure — bad envelope,
 wrong type, malformed JSON, etc. The Import affordance surfaces
 these in the same red banner as background-upload errors.
+
+### Bundled in "All Maps" and "Everything"
+
+`buildMapZipEntries()` returns the per-map `manifest.json` + `map.json`
+
+- `background.jpg` as a `Record<path, bytes>` (no zip wrapper), so the
+  same map layout can be **nested** inside a larger archive:
+
+* **All Maps** (`type: "map"`, Zip format) — every map under
+  `maps/<mapId>/…`, plus a top-level `maps.md` index.
+* **Everything** — the same `maps/<mapId>/…` dirs sit beside
+  `everything.json` in the full-backup zip, so a backup captures maps
+  too (they are not in the JSON body).
+
+On import, `applyMapImport(body, backgroundBytes)` provisions one fresh
+map from a parsed `map.json` (+ optional bytes) — the shared core that
+`importMapZip()` also calls. `reassembleBundledMaps(entries)` walks an
+unzipped archive, groups `maps/<id>/…` entries, and calls
+`applyMapImport` for each; the Everything importer invokes it after the
+entity rows land. Each map is recreated fresh (markers regenerated,
+background re-uploaded); the map's original owner-entity link is **not**
+restored — imported maps are standalone.
 
 ### PNG snapshot
 

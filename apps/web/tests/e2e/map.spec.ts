@@ -18,7 +18,6 @@ import { test, expect, type Page } from '@playwright/test';
 import { resetAll, seedCommunity } from './helpers/reset';
 
 const CM_AREA = '.home-area--communities';
-const CM_ROW = `${CM_AREA} .cm-row`;
 
 // Tiny 1×1 red PNG — same fixture the expeditions spec uses.
 const PNG_1X1 = Buffer.from(

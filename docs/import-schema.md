@@ -90,6 +90,15 @@ Log, Everything-as-zip, and **Stories** — the AI-generated prose entries
 only, `stories-<stamp>.md`); these are one-way (not re-importable) and
 out of scope here.
 
+> **Maps.** Campaign maps ride along inside `everything` as nested
+> `maps/<mapId>/` dirs (`manifest.json` + `map.json` with the marker list +
+> optional `background.jpg`), so a full backup captures them; import
+> reassembles each as a fresh standalone map (markers + background restored;
+> owner-entity linkage is not). The Export dialog also offers a standalone
+> **All Maps** (`type: "map"`) bundle of the same `maps/<id>/` dirs, plus a
+> one-way PNG snapshot. The single-map zip shape — shared by both paths — is
+> documented in [campaign-map.md § Exports](campaign-map.md#exports).
+
 ---
 
 ## Characters
@@ -321,6 +330,14 @@ entities exactly instead of by name.
 `count` is the sum of `characters + log + communities + npcs + places + expeditions`
 lengths. `places` is optional on import — legacy exports without it load as `[]`. `session` records which entities were active at export time (not
 re-applied on import).
+
+> **Maps ride alongside the body.** Campaign maps are **not** in `data` — they
+> sit beside `everything.json` in the same zip as nested `maps/<mapId>/` dirs
+> (`manifest.json` + `map.json` with the marker list + optional
+> `background.jpg`), exactly as in the standalone **All Maps** export. Import
+> reassembles each as a fresh map (markers + background; owner linkage is not
+> restored). They are omitted from `count`. See
+> [campaign-map.md § Exports](campaign-map.md#exports).
 
 > **Foes are Markdown-only.** Foe encounters are transient — they vary from
 > campaign and session to session and are routinely deleted — so they are

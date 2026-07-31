@@ -618,6 +618,11 @@ this cascade.
 - `resetFoes / resetExpeditions / resetCommunities / resetLog` — atomic
   PATCH `[]` / DELETE; run concurrently with each other
 - `resetAll` — all of the above with one login round-trip
+- `clearMapMarkers` — `GET /session/maps` then `PUT { markers: [] }` per map;
+  wipes markers on every map while leaving the maps and their backgrounds
+  intact. Standalone (not folded into `resetAll`) — the map-marker spec calls
+  it from `beforeEach` **before navigating**, since markers persist
+  server-side and would otherwise leak between tests.
 
 **Key pitfall:** DELETE requests must NOT include `Content-Type: application/json`.
 Fastify rejects body-less requests with a JSON content-type as 400. Separate
