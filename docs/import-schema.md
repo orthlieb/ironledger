@@ -92,9 +92,13 @@ out of scope here.
 
 > **Maps.** Campaign maps ride along inside `everything` as nested
 > `maps/<mapId>/` dirs (`manifest.json` + `map.json` with the marker list +
-> optional `background.jpg`), so a full backup captures them; import
-> reassembles each as a fresh standalone map (markers + background restored;
-> owner-entity linkage is not). The Export dialog also offers a standalone
+> optional `background.jpg`), so a full backup captures them. `map.json` also
+> records the map's owner **by name** (`ownerKind` + `ownerName`) so import can
+> re-link it to the owning community / place / journey / site after entities
+> land (ids regenerate, names don't). On a merge import where that owner
+> already has a map, the user is prompted **Replace** (overwrite it) or
+> **Skip** (import the incoming map standalone); an owner that can't be matched
+> also imports standalone. The Export dialog also offers a standalone
 > **All Maps** (`type: "map"`) bundle of the same `maps/<id>/` dirs, plus a
 > one-way PNG snapshot. The single-map zip shape — shared by both paths — is
 > documented in [campaign-map.md § Exports](campaign-map.md#exports).
@@ -335,8 +339,9 @@ re-applied on import).
 > sit beside `everything.json` in the same zip as nested `maps/<mapId>/` dirs
 > (`manifest.json` + `map.json` with the marker list + optional
 > `background.jpg`), exactly as in the standalone **All Maps** export. Import
-> reassembles each as a fresh map (markers + background; owner linkage is not
-> restored). They are omitted from `count`. See
+> reassembles each and re-links it to its owner entity by name (Replace/Skip
+> prompt when the owner already has a map; standalone when unmatched). They are
+> omitted from `count`. See
 > [campaign-map.md § Exports](campaign-map.md#exports).
 
 > **Foes are Markdown-only.** Foe encounters are transient — they vary from
