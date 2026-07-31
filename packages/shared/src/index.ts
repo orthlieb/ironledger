@@ -25,12 +25,6 @@ export interface AuthUser {
   role: string; // 'user' | 'admin'
 }
 
-export interface LoginResponse {
-  user: AuthUser;
-  accessToken: string;
-  // refresh token travels in an HttpOnly cookie — not in this body
-}
-
 // ---------------------------------------------------------------------------
 // Character
 // ---------------------------------------------------------------------------
@@ -151,16 +145,6 @@ export interface MoveStat {
   desc: string;
 }
 
-/** Oracle table definition */
-export interface OracleTable {
-  key: string;
-  title: string;
-  source: CatalogueSource;
-  selectLabel: string;
-  description?: string;
-  data: OracleEntry[];
-}
-
 /**
  * Foe override — lets an expansion reshape the base foe catalogue:
  *   present:  false hides the foe from pickers while that expansion is active
@@ -218,12 +202,6 @@ export interface InvitePreview {
   email: string;
   displayName: string | null;
   expiresAt: string;
-}
-
-/** Body for POST /invites/:token/accept. */
-export interface AcceptInviteInput {
-  password: string;
-  displayName?: string; // optional — overrides stored value if given
 }
 
 export interface AdminUser {

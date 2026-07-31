@@ -3,7 +3,7 @@
  *
  * Two bindings in the app render arbitrary HTML:
  *
- *   - Session log entries (LogPanel, RollToast) — constructed by code from
+ *   - Session log entries (LogPanel) — constructed by code from
  *     template literals that interpolate user-controlled values like
  *     character names, foe names, asset names. Every one of those
  *     interpolations is a potential XSS vector if a dev forgets to escape.

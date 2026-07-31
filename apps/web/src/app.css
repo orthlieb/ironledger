@@ -573,28 +573,6 @@ dialog label {
 }
 
 /* --------------------------------------------------------------------------
-   Main layout
-   -------------------------------------------------------------------------- */
-.page-header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	margin-bottom: 1.5rem;
-	padding-bottom: 1rem;
-	border-bottom: 1px solid var(--border);
-}
-
-.page-header h1 {
-	font-family: var(--font-display);
-	font-size: calc(0.95rem * var(--font-display-scale));
-	font-weight: var(--font-display-weight);
-	font-variant: var(--font-display-variant);
-	letter-spacing: 0.16em;
-	text-transform: var(--font-display-transform);
-	color: var(--text);
-}
-
-/* --------------------------------------------------------------------------
    Auth pages
    -------------------------------------------------------------------------- */
 .hero-image-wrap {
@@ -761,7 +739,7 @@ dialog label {
 }
 
 /* ── Global CSS Tooltips ───────────────────────────────────────────────────── */
-/* Usage: add data-tooltip="text" to any element. Add .tooltip-down to flip direction. */
+/* Usage: add data-tooltip="text" to any element. */
 [data-tooltip] {
 	position: relative;
 }
@@ -817,24 +795,6 @@ dialog label {
 	opacity: 1;
 }
 
-/* .tooltip-down — bubble appears below the element */
-[data-tooltip].tooltip-down::after {
-	bottom: auto;
-	top: calc(100% + 7px);
-	transform: translateX(-50%) scale(0.95);
-	transform-origin: top center;
-}
-[data-tooltip].tooltip-down:hover::after,
-[data-tooltip].tooltip-down:focus-visible::after {
-	transform: translateX(-50%) scale(1);
-}
-[data-tooltip].tooltip-down::before {
-	bottom: auto;
-	top: calc(100% + 1px);
-	border-top-color: transparent;
-	border-bottom-color: #0f172a;
-}
-
 /* ── JS Tooltip (use:tooltip action) ──────────────────────────────────────── */
 /* Body-level fixed tooltip — immune to overflow clipping in scroll containers. */
 .js-tooltip {
@@ -868,72 +828,6 @@ dialog label {
 	}
 }
 
-/* ── Shared v2 radio-group chrome ─────────────────────────────────────
-   Used by the New Community / New NPC / New Place / New Journey /
-   New Site dialog forms. Hosted inside bits-ui ConfirmDialog which
-   portals to <body>, so styles must be global. */
-.v2-radio-row {
-	display: flex;
-	gap: 20px;
-	align-items: flex-start;
-}
-.v2-radio-group {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-	border: none;
-	padding: 0;
-	margin: 0;
-}
-.v2-radio-legend {
-	font-family: var(--font-ui);
-	font-size: 0.65rem;
-	font-weight: 600;
-	text-transform: uppercase;
-	letter-spacing: 0.05em;
-	color: var(--text-dimmer);
-	margin-bottom: 3px;
-}
-.v2-radio-label {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	font-family: var(--font-ui);
-	font-size: 0.78rem;
-	color: var(--text);
-	cursor: pointer;
-}
-.v2-radio-btn {
-	flex-shrink: 0;
-	width: 14px;
-	height: 14px;
-	padding: 0;
-	background: var(--bg-control);
-	border: 1px solid var(--border-mid);
-	border-radius: 999px;
-	cursor: pointer;
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-}
-.v2-radio-btn:focus-visible {
-	outline: 2px solid var(--text-accent);
-	outline-offset: 1px;
-}
-.v2-radio-btn[data-state='checked'] {
-	border-color: var(--text-accent);
-}
-.v2-radio-dot {
-	width: 7px;
-	height: 7px;
-	border-radius: 999px;
-	background: var(--text-accent);
-	opacity: 0;
-}
-.v2-radio-btn[data-state='checked'] .v2-radio-dot {
-	opacity: 1;
-}
-
 /* --------------------------------------------------------------------------
    Deck stage — shared layout for the Characters / Foes / Expeditions /
    Connections card container. Each area layers its own kind-coloured
@@ -956,7 +850,7 @@ dialog label {
    Foes / Expeditions / Connections panels. Owns the uniform 8 px vertical
    rhythm (padding + gap) so every immediate child row is 8 px away from
    its siblings. Rows that carry a bottom separator should also add 8 px
-   of `padding-bottom` (or the shared `.deck-card-sep` modifier) so the
+   of `padding-bottom` so the
    separator line gets 8 px of breathing room above and 8 px (from the
    card's gap) below, staying visually symmetric.
 -------------------------------------------------------------------------- */
@@ -975,11 +869,4 @@ dialog label {
 	min-height: 200px;
 	overflow: auto;
 	position: relative;
-}
-
-/* Applied alongside a card-child row to give it the standard
-   bottom-separator (matches surrounding 8 px rhythm). */
-.deck-card-sep {
-	border-bottom: 1px solid var(--border);
-	padding-bottom: 8px;
 }
