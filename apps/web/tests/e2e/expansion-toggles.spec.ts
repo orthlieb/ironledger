@@ -17,8 +17,6 @@ import { test, expect, type Page } from '@playwright/test';
 import { ensureCharacter } from './helpers/home';
 
 const CHAR_AREA = '.home-area--characters';
-const CHAR_HEADER = `${CHAR_AREA} .ca-header`;
-const CHAR_SPINE = `${CHAR_AREA} .ca-spine`;
 const FOE_AREA = '.home-area--foes';
 const FOE_HEADER = `${FOE_AREA} .fa-header`;
 const EXP_AREA = '.home-area--expeditions';
