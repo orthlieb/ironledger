@@ -223,13 +223,6 @@
 			onkeydown={onKey}
 			tabindex="-1"
 		>
-			<button
-				type="button"
-				class="carousel-nav carousel-nav-prev"
-				onclick={prev}
-				aria-label="Previous feature">‹</button
-			>
-
 			<div class="carousel-viewport">
 				<div
 					class="carousel-track"
@@ -275,27 +268,34 @@
 				</div>
 			</div>
 
+			<!-- Arrows + dots overlay the card; arrows fade in on hover. -->
+			<button
+				type="button"
+				class="carousel-nav carousel-nav-prev"
+				onclick={prev}
+				aria-label="Previous feature">‹</button
+			>
 			<button
 				type="button"
 				class="carousel-nav carousel-nav-next"
 				onclick={next}
 				aria-label="Next feature">›</button
 			>
-		</div>
 
-		<div class="carousel-dots" role="tablist" aria-label="Choose a feature">
-			{#each features as feat, i}
-				<button
-					type="button"
-					class="carousel-dot"
-					class:carousel-dot--active={i === active}
-					onclick={() => goTo(i)}
-					role="tab"
-					aria-selected={i === active}
-					aria-label={feat.title}
-					style="--feat-color: {feat.color}"
-				></button>
-			{/each}
+			<div class="carousel-dots" role="tablist" aria-label="Choose a feature">
+				{#each features as feat, i}
+					<button
+						type="button"
+						class="carousel-dot"
+						class:carousel-dot--active={i === active}
+						onclick={() => goTo(i)}
+						role="tab"
+						aria-selected={i === active}
+						aria-label={feat.title}
+						style="--feat-color: {feat.color}"
+					></button>
+				{/each}
+			</div>
 		</div>
 	</div>
 </section>
@@ -526,19 +526,17 @@
 	}
 
 	/* ── Feature carousel ──────────────────────────────────────────── */
-	/* Layout: [ prev-arrow | viewport | next-arrow ] on a row, with
-	   dots + progress underneath. Viewport clips a horizontally
-	   translated track; each slide is 100% viewport width. */
+	/* Layout: a single relative-positioned wrapper — the viewport fills
+	   the whole width; arrows and dots overlay the card via absolute
+	   positioning. Arrows fade in on hover; dots sit permanently on the
+	   card's bottom edge. Both live at 50 % opacity so they read as
+	   controls without competing with the feature content. */
 	.carousel {
-		display: flex;
-		align-items: stretch;
-		gap: 0.5rem;
+		position: relative;
 		outline: none;
 	}
 
 	.carousel-viewport {
-		flex: 1;
-		min-width: 0;
 		overflow: hidden;
 		border-radius: 6px;
 	}
@@ -572,7 +570,9 @@
 		grid-template-columns: minmax(0, 42%) minmax(0, 1fr);
 		gap: 1.4rem;
 		align-items: stretch;
-		padding: 1.4rem 1.6rem 1.4rem 1.4rem;
+		/* Extra bottom padding reserves room for the dot pagination row,
+		   which absolute-positions on top of the card. */
+		padding: 1.4rem 1.6rem 2.2rem 1.4rem;
 		min-height: 260px;
 		border: 1px solid color-mix(in srgb, var(--feat-color) 30%, transparent);
 		border-radius: 6px;
@@ -583,7 +583,7 @@
 	@media (max-width: 720px) {
 		.feature-card {
 			grid-template-columns: minmax(0, 1fr);
-			padding: 1.2rem 1.2rem 1.4rem;
+			padding: 1.2rem 1.2rem 2.2rem;
 			gap: 1rem;
 		}
 	}
@@ -682,46 +682,91 @@
 		flex: 1;
 	}
 
-	/* Prev/next arrows — thin pill sitting next to the viewport. */
+	/* Prev/next arrows — absolute-positioned pills overlaying the L/R
+	   edges of the card. Hidden by default; the parent's :hover reveals
+	   them at 50 % opacity. Individual arrow hover brightens to full so
+	   the target is unambiguous once the cursor lands on it.
+	   `pointer-events: none` while hidden so they can't accidentally
+	   intercept clicks (or the pause :hover on the carousel wrapper). */
 	.carousel-nav {
-		flex-shrink: 0;
-		width: 36px;
+		position: absolute;
+		top: 50%;
+		transform: translateY(-50%);
+		z-index: 2;
+		width: 40px;
+		height: 40px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		background: var(--bg-card);
 		border: 1px solid var(--border-mid);
-		border-radius: 6px;
-		color: var(--text-muted);
+		border-radius: 50%;
+		color: var(--text);
 		font-family: var(--font-display);
 		font-size: 1.6rem;
 		line-height: 1;
 		cursor: pointer;
+		opacity: 0;
+		pointer-events: none;
 		transition:
+			opacity 0.18s ease,
 			background 0.12s,
 			border-color 0.12s,
 			color 0.12s;
 	}
+	.carousel-nav-prev {
+		left: 0.75rem;
+	}
+	.carousel-nav-next {
+		right: 0.75rem;
+	}
+	.carousel:hover .carousel-nav,
+	.carousel:focus-within .carousel-nav {
+		opacity: 0.5;
+		pointer-events: auto;
+	}
 	.carousel-nav:hover {
+		opacity: 1 !important;
 		background: var(--bg-hover);
 		border-color: var(--text-accent);
 		color: var(--text-accent);
 	}
 	.carousel-nav:focus-visible {
+		opacity: 1 !important;
 		outline: 2px solid var(--text-accent);
 		outline-offset: 2px;
 	}
+	/* On touch-only devices there is no hover — always show arrows so
+	   the user has a way to navigate. Still at 50 % opacity to match
+	   the desktop rollover state. */
+	@media (hover: none) {
+		.carousel-nav {
+			opacity: 0.5;
+			pointer-events: auto;
+		}
+	}
 
-	/* Dot pagination row — one dot per slide, active dot fills with the
-	   feature's accent so the row also reads as a colour legend. */
+	/* Dot pagination — absolute-positioned inside the card at the
+	   bottom. Always 50 % opacity; active dot brightens to full via
+	   the accent-fill. One dot per slide, colour legend for the ten
+	   features. */
 	.carousel-dots {
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0.75rem;
+		z-index: 2;
 		display: flex;
 		flex-wrap: wrap;
 		justify-content: center;
 		gap: 0.55rem;
-		margin-top: 1.1rem;
+		opacity: 0.5;
+		pointer-events: none;
 	}
+	/* Re-enable clicks on the individual dots (the row itself is a
+	   background overlay). */
 	.carousel-dot {
+		pointer-events: auto;
 		width: 10px;
 		height: 10px;
 		padding: 0;
@@ -745,26 +790,6 @@
 		background: var(--feat-color, var(--text-accent));
 		border-color: var(--feat-color, var(--text-accent));
 		transform: scale(1.15);
-	}
-
-	/* On narrow screens, drop the side arrows below the card so the
-	   viewport spans full width. */
-	@media (max-width: 560px) {
-		.carousel {
-			flex-wrap: wrap;
-		}
-		.carousel-viewport {
-			flex-basis: 100%;
-			order: -1;
-		}
-		.carousel-nav {
-			flex: 1;
-			height: 36px;
-		}
-		.feature-card {
-			min-height: 320px;
-			padding: 1.4rem 1.2rem;
-		}
 	}
 
 	/* ── Systems ───────────────────────────────────────────────────── */
