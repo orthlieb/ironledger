@@ -134,6 +134,35 @@ export async function clearMapMarkers(token?: string): Promise<void> {
 	}
 }
 
+/** Delete every map the test user owns (background + markers go with it).
+ *  Sequential DELETEs to respect SQLite's single writer. */
+export async function clearAllMaps(token?: string): Promise<void> {
+	const tok = token ?? (await getTestToken());
+	const res = await fetch(`${API}/session/maps`, { headers: auth(tok) });
+	if (!res.ok) return;
+	const { maps: rows = [] } = (await res.json()) as { maps?: Array<{ id: string }> };
+	for (const m of rows) {
+		await fetch(`${API}/session/maps/${m.id}`, { method: 'DELETE', headers: auth(tok) });
+	}
+}
+
+/** List the test user's maps with their markers — for asserting import
+ *  results server-side without fragile map-switcher UI navigation. */
+export async function fetchMaps(
+	token?: string,
+): Promise<Array<{ id: string; name: string; markers: Array<{ label?: string }> }>> {
+	const tok = token ?? (await getTestToken());
+	const res = await fetch(`${API}/session/maps`, { headers: auth(tok) });
+	if (!res.ok) return [];
+	const { maps: rows = [] } = (await res.json()) as { maps?: Array<{ id: string }> };
+	const out = [];
+	for (const m of rows) {
+		const detail = await fetch(`${API}/session/maps/${m.id}`, { headers: auth(tok) });
+		if (detail.ok) out.push(await detail.json());
+	}
+	return out;
+}
+
 // ── Seeding ───────────────────────────────────────────────────────────────────
 
 /**

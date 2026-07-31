@@ -220,6 +220,20 @@ export async function importMapZip(file: File): Promise<string> {
 	} catch {
 		throw new MapImportError('map.json is not valid JSON.');
 	}
+	return applyMapImport(body, entries['background.jpg']);
+}
+
+/**
+ * Provision one fresh server-side map from a parsed map body (+ optional
+ * raw background bytes) and populate its markers / settings / background.
+ * Shared by the standalone map-zip import and the "Everything" bundle's
+ * nested maps. Returns the new map's id. Always creates a new map (never
+ * overwrites), so a re-import appends rather than clobbers.
+ */
+export async function applyMapImport(
+	body: MapZipBody,
+	backgroundBytes?: Uint8Array,
+): Promise<string> {
 	const name = typeof body.name === 'string' && body.name.trim() ? body.name : 'Imported Map';
 	const markers = Array.isArray(body.markers) ? body.markers : [];
 	const settings = body.settings && typeof body.settings === 'object' ? body.settings : {};
@@ -255,16 +269,52 @@ export async function importMapZip(file: File): Promise<string> {
 	// Background bytes are optional — a map with no background uploaded
 	// simply won't have a `background.jpg` entry. setBackground also
 	// re-patches settings.aspect if we pass one, which is fine.
-	const bg = entries['background.jpg'];
-	if (bg && bg.length > 0) {
+	if (backgroundBytes && backgroundBytes.length > 0) {
 		const aspect =
 			typeof settings.aspect === 'number' && Number.isFinite(settings.aspect) && settings.aspect > 0
 				? settings.aspect
 				: undefined;
-		await setBackground(bytesToJpegDataUrl(bg), aspect);
+		await setBackground(bytesToJpegDataUrl(backgroundBytes), aspect);
 	}
 
 	return summary.id;
+}
+
+/**
+ * Reassemble every map bundled under `maps/<mapId>/…` inside a larger
+ * archive (the "Everything" export). `entries` is the full unzipped zip.
+ * Each nested map is provisioned as a fresh server-side map via
+ * `applyMapImport`. Returns the number of maps restored. Never throws — a
+ * malformed nested map is skipped so the rest of the import still lands.
+ */
+export async function reassembleBundledMaps(entries: Record<string, Uint8Array>): Promise<number> {
+	// Group `maps/<id>/<file>` entries by their <id> directory.
+	const groups = new Map<string, Record<string, Uint8Array>>();
+	for (const [path, bytes] of Object.entries(entries)) {
+		const match = /^maps\/([^/]+)\/(.+)$/.exec(path);
+		if (!match) continue;
+		const [, id, file] = match;
+		if (!groups.has(id)) groups.set(id, {});
+		groups.get(id)![file] = bytes;
+	}
+	let restored = 0;
+	for (const files of groups.values()) {
+		const bodyBytes = files['map.json'];
+		if (!bodyBytes) continue;
+		let body: MapZipBody;
+		try {
+			body = JSON.parse(strFromU8(bodyBytes)) as MapZipBody;
+		} catch {
+			continue; // skip a map with an unparseable body; keep importing the rest
+		}
+		try {
+			await applyMapImport(body, files['background.jpg']);
+			restored++;
+		} catch {
+			// A single bad map shouldn't abort the whole Everything import.
+		}
+	}
+	return restored;
 }
 
 // ---------------------------------------------------------------------------

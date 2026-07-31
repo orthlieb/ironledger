@@ -71,7 +71,7 @@
 	import { parseStorySource } from '$lib/aiSerialize.js';
 	import { parseImportZip, sanitizeLogHtml, ImportError } from '$lib/importSanitizer.js';
 	import { zipSync, strToU8, unzipSync, strFromU8 } from 'fflate';
-	import { buildMapZipEntries, importMapZip } from '$lib/mapExport.js';
+	import { buildMapZipEntries, importMapZip, reassembleBundledMaps } from '$lib/mapExport.js';
 
 	/** Peek a zip's manifest.json to see if this is a per-map bundle.
 	 *  Cheap enough (only unzips into an entries dict + parses one small
@@ -772,6 +772,16 @@
 						const byName = exp.type === 'site' ? existingSiteByName : existingJourneyByName;
 						await importEntityRow(exp, 'expeditions', byName, addExpedition, updateExpedition);
 					}
+					// Restore bundled maps (markers + backgrounds) from the nested
+					// `maps/<id>/…` dirs. We unzip the raw bytes here rather than
+					// threading them through parseImportZip, which only surfaces the
+					// JSON body + portrait images. Best-effort: a map failure never
+					// aborts the entity import that already landed above.
+					try {
+						await reassembleBundledMaps(unzipSync(bytes));
+					} catch {
+						/* non-fatal — entities imported fine */
+					}
 				}
 			} else {
 				for (const entry of incomingCharacters) await importChar(entry);
@@ -888,7 +898,13 @@
 		return out;
 	}
 
-	async function exportZip(type: string, payload: unknown, count: number, filename: string) {
+	async function exportZip(
+		type: string,
+		payload: unknown,
+		count: number,
+		filename: string,
+		extraFiles: Record<string, Uint8Array> = {},
+	) {
 		const images: Record<string, Uint8Array> = {};
 		const counter = { n: 0 };
 		const body = extractPortraits(payload, images, counter);
@@ -905,6 +921,11 @@
 			'manifest.json': strToU8(JSON.stringify(manifest, null, 2)),
 			[bodyName]: strToU8(JSON.stringify(body, null, 2)),
 			...images,
+			// Bundled binary assets that live outside the JSON body (e.g. the
+			// Everything export's nested `maps/<id>/…` dirs). Portrait images/
+			// are added above; these are merged last so a caller can't clobber
+			// the manifest/body.
+			...extraFiles,
 		};
 		const zipped = zipSync(files, { level: 6 });
 		const blob = new Blob([zipped], { type: 'application/zip' });
@@ -1486,6 +1507,60 @@
 		return out;
 	}
 
+	/** Fetch every map the user owns and build its zip entries under
+	 *  `maps/<mapId>/…` (manifest.json + map.json + optional background.jpg),
+	 *  plus a `maps.md` index. Shared by the "All Maps" export and the
+	 *  Everything bundle, which nests the same dirs alongside its JSON body so
+	 *  a full backup captures maps + markers + backgrounds. */
+	async function collectMapEntries(): Promise<{
+		mapFiles: Record<string, Uint8Array>;
+		count: number;
+		mdLines: string[];
+	}> {
+		const mapFiles: Record<string, Uint8Array> = {};
+		const mdLines: string[] = ['# Campaign Maps', ''];
+		const listRes = await fetch('/api/session/maps');
+		if (!listRes.ok) return { mapFiles, count: 0, mdLines };
+		const listBody = (await listRes.json()) as {
+			maps?: Array<{ id: string; name: string; updatedAt: string }>;
+		};
+		const mapsList = Array.isArray(listBody.maps) ? listBody.maps : [];
+		for (const summary of mapsList) {
+			const detailRes = await fetch(`/api/session/maps/${summary.id}`);
+			if (!detailRes.ok) continue;
+			const detail = (await detailRes.json()) as {
+				id: string;
+				name: string;
+				markers: Array<Record<string, unknown>>;
+				backgroundHash: string | null;
+				settings: Record<string, unknown>;
+			};
+			const bgUrl = detail.backgroundHash
+				? `/api/session/maps/${detail.id}/background?v=${encodeURIComponent(detail.backgroundHash)}`
+				: '';
+			const entries = await buildMapZipEntries({
+				name: detail.name,
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				markers: detail.markers as any,
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				settings: detail.settings as any,
+				backgroundUrl: bgUrl,
+			});
+			const dir = `maps/${detail.id}`;
+			for (const [path, bytes] of Object.entries(entries)) {
+				mapFiles[`${dir}/${path}`] = bytes;
+			}
+			mdLines.push(`## ${detail.name || 'Untitled Map'}`);
+			mdLines.push(`- Markers: ${Array.isArray(detail.markers) ? detail.markers.length : 0}`);
+			mdLines.push(`- [Data](./${dir}/map.json)`);
+			if (entries['background.jpg']) {
+				mdLines.push(`- ![Background](./${dir}/background.jpg)`);
+			}
+			mdLines.push('');
+		}
+		return { mapFiles, count: mapsList.length, mdLines };
+	}
+
 	async function handleExport(content: string, format: string) {
 		const stamp = makeTimestamp();
 		if (content === 'everything') {
@@ -1516,7 +1591,10 @@
 					npcs.length +
 					places.length +
 					expeditions.length;
-				await exportZip('everything', payload, count, `ironledger-export-${stamp}.zip`);
+				// Maps ride along as nested `maps/<id>/…` dirs (markers +
+				// background bytes) so an Everything export is a complete backup.
+				const { mapFiles } = await collectMapEntries();
+				await exportZip('everything', payload, count, `ironledger-export-${stamp}.zip`, mapFiles);
 			}
 		} else if (content === 'character') {
 			const char = chars.find((c) => c.id === activeCharId);
@@ -1564,53 +1642,14 @@
 			// Zip → bundle EVERY map into a single archive. Each map lands
 			// under `maps/<mapId>/` with the same manifest.json + map.json
 			// + optional background.jpg that `exportMapZip()` produces for
-			// a single map, plus a top-level `maps.md` index. Matches the
-			// "Everything → Markdown" bundling loop.
-			const mapListRes = await fetch('/api/session/maps');
-			if (!mapListRes.ok) return;
-			const listBody = (await mapListRes.json()) as {
-				maps?: Array<{ id: string; name: string; updatedAt: string }>;
+			// a single map, plus a top-level `maps.md` index. The same
+			// `maps/<id>/…` dirs are reused inside the Everything bundle.
+			const { mapFiles, count: mapCount, mdLines } = await collectMapEntries();
+			const zipFiles: Record<string, Uint8Array> = {
+				...mapFiles,
+				'manifest.json': strToU8(JSON.stringify({ type: 'all-maps', count: mapCount }, null, 2)),
+				'maps.md': strToU8(mdLines.join('\n').trimEnd()),
 			};
-			const mapsList = Array.isArray(listBody.maps) ? listBody.maps : [];
-			const zipFiles: Record<string, Uint8Array> = {};
-			const mapsMdLines: string[] = ['# Campaign Maps', ''];
-			for (const summary of mapsList) {
-				const detailRes = await fetch(`/api/session/maps/${summary.id}`);
-				if (!detailRes.ok) continue;
-				const detail = (await detailRes.json()) as {
-					id: string;
-					name: string;
-					markers: Array<Record<string, unknown>>;
-					backgroundHash: string | null;
-					settings: Record<string, unknown>;
-				};
-				const bgUrl = detail.backgroundHash
-					? `/api/session/maps/${detail.id}/background?v=${encodeURIComponent(detail.backgroundHash)}`
-					: '';
-				const entries = await buildMapZipEntries({
-					name: detail.name,
-					// eslint-disable-next-line @typescript-eslint/no-explicit-any
-					markers: detail.markers as any,
-					// eslint-disable-next-line @typescript-eslint/no-explicit-any
-					settings: detail.settings as any,
-					backgroundUrl: bgUrl,
-				});
-				const dir = `maps/${detail.id}`;
-				for (const [path, bytes] of Object.entries(entries)) {
-					zipFiles[`${dir}/${path}`] = bytes;
-				}
-				mapsMdLines.push(`## ${detail.name || 'Untitled Map'}`);
-				mapsMdLines.push(`- Markers: ${Array.isArray(detail.markers) ? detail.markers.length : 0}`);
-				mapsMdLines.push(`- [Data](./${dir}/map.json)`);
-				if (entries['background.jpg']) {
-					mapsMdLines.push(`- ![Background](./${dir}/background.jpg)`);
-				}
-				mapsMdLines.push('');
-			}
-			zipFiles['manifest.json'] = strToU8(
-				JSON.stringify({ type: 'all-maps', count: mapsList.length }, null, 2),
-			);
-			zipFiles['maps.md'] = strToU8(mapsMdLines.join('\n').trimEnd());
 			const bytes = zipSync(zipFiles);
 			const blob = new Blob([bytes as BlobPart], { type: 'application/zip' });
 			const url = URL.createObjectURL(blob);
