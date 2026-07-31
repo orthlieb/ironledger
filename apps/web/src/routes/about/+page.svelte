@@ -8,6 +8,7 @@
 	import villageSvg from '$icons/village.svg?raw';
 	import mobileSvg from '$icons/mobile-screen-solid.svg?raw';
 	import penSvg from '$icons/pen-to-square-solid-full.svg?raw';
+	import mapSvg from '$icons/treasure-map.svg?raw';
 	import { headingText } from '$lib/fontStore.svelte.js';
 
 	let { data }: { data: { user?: { name?: string } } } = $props();
@@ -30,6 +31,12 @@
 			title: 'Expeditions',
 			body: 'The road goes ever on. Track journeys and delves so you remember which haunted barrow nearly claimed you last session. Themes, domains, denizens, progress tracks — all the grim details, preserved.',
 			color: 'var(--color-iron)',
+		},
+		{
+			icon: mapSvg,
+			title: 'Campaign Maps',
+			body: 'Drop your world on a grid, pin the places your saga touches, and never again wave vaguely at "somewhere north of the barrow." Multiple maps per campaign — regional, city, dungeon, the lot. Markers snap to the grid, rotate to face where the road turns, and link straight to the community, NPC, place, journey, or site they represent. Zoom, drag, colour, label. Export the whole atlas as a zip and bring your Ironlands with you.',
+			color: 'var(--color-touched)',
 		},
 		{
 			icon: adventureSvg,
@@ -68,6 +75,53 @@
 			color: 'var(--color-supply)',
 		},
 	];
+
+	// ── Carousel state ──────────────────────────────────────────────
+	// One card visible at a time; auto-advances every AUTO_MS. Pauses
+	// while the pointer is over the carousel or when the user has
+	// interacted with the controls (prev/next/dot) — resuming on
+	// pointer leave. Reduced-motion users get the same rotation but
+	// without the slide transition (CSS handles that).
+	const AUTO_MS = 6000;
+	let active = $state(0);
+	let paused = $state(false);
+	// Bumped by every user action so the auto-advance effect resets
+	// its timer instead of firing immediately after a manual nav.
+	let interactionTick = $state(0);
+
+	function goTo(i: number) {
+		const n = features.length;
+		active = ((i % n) + n) % n;
+		interactionTick++;
+	}
+	function next() {
+		goTo(active + 1);
+	}
+	function prev() {
+		goTo(active - 1);
+	}
+
+	$effect(() => {
+		// Re-run whenever active/paused/interactionTick change so the
+		// timer restarts from the current slide.
+		void active;
+		void interactionTick;
+		if (paused) return;
+		const id = setTimeout(() => {
+			active = (active + 1) % features.length;
+		}, AUTO_MS);
+		return () => clearTimeout(id);
+	});
+
+	function onKey(e: KeyboardEvent) {
+		if (e.key === 'ArrowLeft') {
+			prev();
+			e.preventDefault();
+		} else if (e.key === 'ArrowRight') {
+			next();
+			e.preventDefault();
+		}
+	}
 </script>
 
 <svelte:head>
@@ -140,19 +194,76 @@
 	</div>
 </section>
 
-<!-- ── Features ──────────────────────────────────────────────────── -->
+<!-- ── Features (rotating carousel) ──────────────────────────────── -->
 <section class="features-section">
 	<div class="features-section-inner">
 		<h2 class="section-heading">{headingText('Everything You Need at the Table (Except Luck)')}</h2>
-		<div class="feature-grid">
-			{#each features as feat}
-				<div class="feature-card" style="--feat-color: {feat.color}">
-					<div class="feature-icon">
-						{@html feat.icon}
-					</div>
-					<h3 class="feature-title">{headingText(feat.title)}</h3>
-					<p class="feature-body">{feat.body}</p>
+		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+		<div
+			class="carousel"
+			role="region"
+			aria-roledescription="carousel"
+			aria-label="Iron Ledger features"
+			onmouseenter={() => (paused = true)}
+			onmouseleave={() => (paused = false)}
+			onfocusin={() => (paused = true)}
+			onfocusout={() => (paused = false)}
+			onkeydown={onKey}
+			tabindex="-1"
+		>
+			<button
+				type="button"
+				class="carousel-nav carousel-nav-prev"
+				onclick={prev}
+				aria-label="Previous feature">‹</button
+			>
+
+			<div class="carousel-viewport">
+				<div
+					class="carousel-track"
+					style="transform: translateX(-{active * 100}%)"
+					aria-live="polite"
+				>
+					{#each features as feat, i}
+						<div
+							class="carousel-slide"
+							role="group"
+							aria-roledescription="slide"
+							aria-label={`${i + 1} of ${features.length}`}
+							aria-hidden={i !== active}
+						>
+							<div class="feature-card" style="--feat-color: {feat.color}">
+								<div class="feature-icon">
+									{@html feat.icon}
+								</div>
+								<h3 class="feature-title">{headingText(feat.title)}</h3>
+								<p class="feature-body">{feat.body}</p>
+							</div>
+						</div>
+					{/each}
 				</div>
+			</div>
+
+			<button
+				type="button"
+				class="carousel-nav carousel-nav-next"
+				onclick={next}
+				aria-label="Next feature">›</button
+			>
+		</div>
+
+		<div class="carousel-dots" role="tablist" aria-label="Choose a feature">
+			{#each features as feat, i}
+				<button
+					type="button"
+					class="carousel-dot"
+					class:carousel-dot--active={i === active}
+					onclick={() => goTo(i)}
+					role="tab"
+					aria-selected={i === active}
+					aria-label={feat.title}
+					style="--feat-color: {feat.color}"
+				></button>
 			{/each}
 		</div>
 	</div>
@@ -219,10 +330,12 @@
 				>Datasworn</a
 			>
 			by rsek. Icons by
-			<a href="https://game-icons.net" target="_blank" rel="noopener noreferrer">game-icons.net</a>
-			&amp;
-			<a href="https://fontawesome.com" target="_blank" rel="noopener noreferrer">Font Awesome</a>.
-			Iron Ledger is free and open source — source available on
+			<a href="https://game-icons.net" target="_blank" rel="noopener noreferrer">game-icons.net</a>,
+			<a href="https://fontawesome.com" target="_blank" rel="noopener noreferrer">Font Awesome</a>,
+			and
+			<a href="https://thenounproject.com" target="_blank" rel="noopener noreferrer"
+				>The Noun Project</a
+			>. Iron Ledger is free and open source — source available on
 			<a href="https://github.com/orthlieb/ironledger" target="_blank" rel="noopener noreferrer"
 				>GitHub</a
 			>.
@@ -381,74 +494,171 @@
 		font-style: italic;
 	}
 
-	/* ── Feature grid ──────────────────────────────────────────────── */
-	.feature-grid {
-		display: grid;
-		grid-template-columns: 1fr;
-		gap: 1rem;
+	/* ── Feature carousel ──────────────────────────────────────────── */
+	/* Layout: [ prev-arrow | viewport | next-arrow ] on a row, with
+	   dots + progress underneath. Viewport clips a horizontally
+	   translated track; each slide is 100% viewport width. */
+	.carousel {
+		display: flex;
+		align-items: stretch;
+		gap: 0.5rem;
+		outline: none;
 	}
 
-	@media (min-width: 600px) {
-		.feature-grid {
-			grid-template-columns: repeat(2, 1fr);
+	.carousel-viewport {
+		flex: 1;
+		min-width: 0;
+		overflow: hidden;
+		border-radius: 6px;
+	}
+
+	.carousel-track {
+		display: flex;
+		width: 100%;
+		will-change: transform;
+		transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.carousel-track {
+			transition: none;
 		}
 	}
 
-	@media (min-width: 960px) {
-		.feature-grid {
-			grid-template-columns: repeat(3, 1fr);
-		}
+	.carousel-slide {
+		flex: 0 0 100%;
+		min-width: 0;
+		/* Slides not on screen aren't focusable; screenreaders skip them
+		   via aria-hidden on the slide element. */
 	}
 
 	.feature-card {
-		padding: 1.4rem 1.2rem;
+		padding: 1.8rem 1.6rem;
 		display: flex;
 		flex-direction: column;
-		gap: 0.6rem;
-		border: 1px solid color-mix(in srgb, var(--feat-color) 25%, transparent);
+		gap: 0.8rem;
+		min-height: 260px;
+		border: 1px solid color-mix(in srgb, var(--feat-color) 30%, transparent);
 		border-radius: 6px;
-		background: color-mix(in srgb, var(--feat-color) 6%, var(--bg-card));
-		transition:
-			border-color 0.15s,
-			box-shadow 0.15s,
-			background 0.15s;
-	}
-
-	.feature-card:hover {
-		border-color: color-mix(in srgb, var(--feat-color) 45%, transparent);
-		box-shadow: 0 4px 18px rgba(0, 0, 0, 0.2);
+		background: color-mix(in srgb, var(--feat-color) 8%, var(--bg-card));
+		box-shadow: 0 4px 24px rgba(0, 0, 0, 0.28);
 	}
 
 	.feature-icon {
 		display: flex;
 		align-items: center;
-		width: 32px;
-		height: 32px;
+		width: 40px;
+		height: 40px;
 		flex-shrink: 0;
 		color: var(--feat-color);
 	}
 
 	.feature-icon :global(svg),
 	.feature-icon :global(svg *) {
-		width: 28px;
-		height: 28px;
+		width: 36px;
+		height: 36px;
 		fill: currentColor;
 	}
 
 	.feature-title {
 		font-family: var(--font-display);
-		font-size: calc(0.95rem * var(--font-display-scale));
+		font-size: calc(1.15rem * var(--font-display-scale));
 		font-weight: 700;
-		letter-spacing: 0.04em;
+		letter-spacing: 0.05em;
 		color: var(--feat-color);
 	}
 
 	.feature-body {
 		font-family: var(--font-body);
-		font-size: 0.95rem;
-		line-height: 1.65;
+		font-size: 1rem;
+		line-height: 1.7;
 		color: var(--text-muted);
 		flex: 1;
+	}
+
+	/* Prev/next arrows — thin pill sitting next to the viewport. */
+	.carousel-nav {
+		flex-shrink: 0;
+		width: 36px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: var(--bg-card);
+		border: 1px solid var(--border-mid);
+		border-radius: 6px;
+		color: var(--text-muted);
+		font-family: var(--font-display);
+		font-size: 1.6rem;
+		line-height: 1;
+		cursor: pointer;
+		transition:
+			background 0.12s,
+			border-color 0.12s,
+			color 0.12s;
+	}
+	.carousel-nav:hover {
+		background: var(--bg-hover);
+		border-color: var(--text-accent);
+		color: var(--text-accent);
+	}
+	.carousel-nav:focus-visible {
+		outline: 2px solid var(--text-accent);
+		outline-offset: 2px;
+	}
+
+	/* Dot pagination row — one dot per slide, active dot fills with the
+	   feature's accent so the row also reads as a colour legend. */
+	.carousel-dots {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 0.55rem;
+		margin-top: 1.1rem;
+	}
+	.carousel-dot {
+		width: 10px;
+		height: 10px;
+		padding: 0;
+		border: 1px solid var(--border-mid);
+		background: transparent;
+		border-radius: 50%;
+		cursor: pointer;
+		transition:
+			background 0.15s,
+			border-color 0.15s,
+			transform 0.12s;
+	}
+	.carousel-dot:hover {
+		border-color: var(--feat-color, var(--text-accent));
+	}
+	.carousel-dot:focus-visible {
+		outline: 2px solid var(--text-accent);
+		outline-offset: 2px;
+	}
+	.carousel-dot--active {
+		background: var(--feat-color, var(--text-accent));
+		border-color: var(--feat-color, var(--text-accent));
+		transform: scale(1.15);
+	}
+
+	/* On narrow screens, drop the side arrows below the card so the
+	   viewport spans full width. */
+	@media (max-width: 560px) {
+		.carousel {
+			flex-wrap: wrap;
+		}
+		.carousel-viewport {
+			flex-basis: 100%;
+			order: -1;
+		}
+		.carousel-nav {
+			flex: 1;
+			height: 36px;
+		}
+		.feature-card {
+			min-height: 320px;
+			padding: 1.4rem 1.2rem;
+		}
 	}
 
 	/* ── Systems ───────────────────────────────────────────────────── */
