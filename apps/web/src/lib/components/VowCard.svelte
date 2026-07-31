@@ -6,7 +6,7 @@
 	import { EditableName } from '$lib/editableName.svelte.js';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import Select from './Select.svelte';
-	import trashSvg from '$icons/trash-solid.svg?raw';
+	import linkBrokenSvg from '$icons/link-broken-solid-full.svg?raw';
 	import { isDelveEnabled } from '$lib/expansionStore.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 
@@ -100,7 +100,7 @@
 			class="btn btn-icon icon-btn btn-trash"
 			onclick={() => forsakeDialogRef?.open()}
 			use:tooltip={'Forsake vow'}
-			aria-label="Forsake vow">{@html trashSvg}</button
+			aria-label="Forsake vow">{@html linkBrokenSvg}</button
 		>
 	</div>
 
