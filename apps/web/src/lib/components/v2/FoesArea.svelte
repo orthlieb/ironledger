@@ -20,6 +20,7 @@
 		addEncounter,
 	} from '$lib/encounterStore.svelte.js';
 	import { setActiveFoeId } from '$lib/activeContext.svelte.js';
+	import { createDebouncedSave } from '$lib/debouncedSave.js';
 	import { appendLog } from '$lib/log.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { rankBadgeStyle } from '$lib/badgeStyles.js';
@@ -116,24 +117,14 @@
 	}
 
 	// Debounced flush — watch the active encounter's snapshot; on any
-	// change, schedule a single API write 1.5 s later. Cleanup flushes
-	// pending edits on switch / unmount so nothing is dropped.
-	let _saveTimer: ReturnType<typeof setTimeout> | null = null;
+	// change, schedule a single API write 1.5 s later. flush() on
+	// switch / unmount commits pending edits so nothing is dropped.
+	const _save = createDebouncedSave();
 	$effect(() => {
 		if (!activeEnc) return;
 		$state.snapshot(activeEnc);
-		if (_saveTimer) clearTimeout(_saveTimer);
-		_saveTimer = setTimeout(() => {
-			_saveTimer = null;
-			void flushEncountersToApi();
-		}, 1500);
-		return () => {
-			if (_saveTimer) {
-				clearTimeout(_saveTimer);
-				_saveTimer = null;
-				void flushEncountersToApi();
-			}
-		};
+		_save.schedule(() => void flushEncountersToApi());
+		return () => _save.flush();
 	});
 
 	async function confirmDeleteFoe() {

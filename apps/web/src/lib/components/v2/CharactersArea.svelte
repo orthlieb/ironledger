@@ -30,6 +30,7 @@
 	} from '$lib/characterStore.svelte.js';
 	import { setActiveDiceCtx } from '$lib/diceContext.svelte.js';
 	import { getActiveCharacterId, setActiveCharacterId } from '$lib/activeContext.svelte.js';
+	import { createDebouncedSave } from '$lib/debouncedSave.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import {
 		findAsset,
@@ -240,33 +241,19 @@
 	// Auto-save — watch the live data deeply; debounce a 1.5 s write to the
 	// API. The store is already up to date because every mutation went
 	// through the proxy directly.
-	let _saveTimer: ReturnType<typeof setTimeout> | null = null;
-	let _pendingId: string | null = null;
+	const _save = createDebouncedSave();
 	$effect(() => {
 		const ac = activeChar;
 		if (!ac) return;
 		// Subscribe to deep data changes via snapshot.
 		$state.snapshot(ac.data);
 
+		// Capture the id so a char switch before the timer fires still writes
+		// the character that was being edited; flush() on switch/unmount
+		// commits it so edits aren't dropped.
 		const charId = ac.id;
-		_pendingId = charId;
-		if (_saveTimer) clearTimeout(_saveTimer);
-		_saveTimer = setTimeout(() => {
-			_saveTimer = null;
-			_pendingId = null;
-			flushCharacterToApi(charId);
-		}, 1500);
-
-		return () => {
-			// On char switch or unmount, flush pending save so edits aren't dropped.
-			if (_saveTimer && _pendingId) {
-				clearTimeout(_saveTimer);
-				const id = _pendingId;
-				_saveTimer = null;
-				_pendingId = null;
-				flushCharacterToApi(id);
-			}
-		};
+		_save.schedule(() => flushCharacterToApi(charId));
+		return () => _save.flush();
 	});
 
 	// Publish the active character to the global dice context so the layout's

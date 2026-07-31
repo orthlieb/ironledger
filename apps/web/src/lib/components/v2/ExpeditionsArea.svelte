@@ -33,6 +33,7 @@
 	import { difficultyBadgeStyle } from '$lib/badgeStyles.js';
 	import { isDelveEnabled } from '$lib/expansionStore.svelte.js';
 	import { setActiveExpeditionId } from '$lib/activeContext.svelte.js';
+	import { createDebouncedSave } from '$lib/debouncedSave.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { loadDelveData, buildCombinedTable } from '$lib/delveStore.svelte.js';
 	import { rollFromRangeTable } from '$lib/oracleStore.svelte.js';
@@ -265,7 +266,7 @@
 	const tabLabels = $derived(activeExp?.type === 'site' ? SITE_TAB_LABELS : JOURNEY_TAB_LABELS);
 
 	function selectExp(id: string) {
-		flushPersist(); // commit pending edit before switching
+		_save.flush(); // commit pending edit before switching
 		activeExpId = id;
 		activeTab = 'core';
 		editingNotes = false;
@@ -311,7 +312,7 @@
 	}
 
 	export function openChangeThemeForExp(expId: string) {
-		flushPersist();
+		_save.flush();
 		activeExpId = expId;
 		activeTab = 'core';
 		queueMicrotask(() => {
@@ -322,7 +323,7 @@
 		});
 	}
 	export function openChangeDomainForExp(expId: string) {
-		flushPersist();
+		_save.flush();
 		activeExpId = expId;
 		activeTab = 'core';
 		queueMicrotask(() => {
@@ -423,31 +424,15 @@
 		Object.assign(activeExp as object, patch);
 	}
 
-	let _saveTimer: ReturnType<typeof setTimeout> | null = null;
+	const _save = createDebouncedSave();
 	$effect(() => {
 		if (!activeExp) return;
 		$state.snapshot(activeExp);
-		if (_saveTimer) clearTimeout(_saveTimer);
-		_saveTimer = setTimeout(() => {
-			_saveTimer = null;
-			persistExpeditionsNow().catch((err) => console.error('[v2] expedition save failed', err));
-		}, 1500);
-		return () => {
-			if (_saveTimer) {
-				clearTimeout(_saveTimer);
-				_saveTimer = null;
-				persistExpeditionsNow().catch((err) => console.error('[v2] expedition save failed', err));
-			}
-		};
+		_save.schedule(() =>
+			persistExpeditionsNow().catch((err) => console.error('[v2] expedition save failed', err)),
+		);
+		return () => _save.flush();
 	});
-
-	function flushPersist() {
-		if (_saveTimer) {
-			clearTimeout(_saveTimer);
-			_saveTimer = null;
-			persistExpeditionsNow().catch((err) => console.error('[v2] expedition save failed', err));
-		}
-	}
 
 	function addJourney() {
 		newJourneyDifficulty = 'dangerous';
