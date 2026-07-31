@@ -34,6 +34,7 @@ import {
 	setBackground,
 	switchMap,
 	type MapMarker,
+	type MapOwnerKind,
 	type MapServerSettings,
 } from './mapStore.svelte.js';
 
@@ -85,6 +86,12 @@ export interface MapZipBody {
 	name: string;
 	markers: MapMarker[];
 	settings: MapServerSettings;
+	/** Owner-entity linkage, recorded by NAME (entity ids are regenerated on
+	 *  import, so id wouldn't survive a cross-session restore — the importer
+	 *  re-resolves the owner by name). Present only for entity-owned maps;
+	 *  absent → the map is standalone. */
+	ownerKind?: MapOwnerKind | null;
+	ownerName?: string;
 }
 
 /** Fetch the background URL as raw bytes. Returns `null` when there's
@@ -113,6 +120,8 @@ export async function buildMapZipEntries(input: {
 	markers: MapMarker[];
 	settings: MapServerSettings;
 	backgroundUrl: string;
+	ownerKind?: MapOwnerKind | null;
+	ownerName?: string;
 }): Promise<Record<string, Uint8Array>> {
 	const manifest: MapZipManifest = {
 		app: 'Iron Ledger',
@@ -125,6 +134,11 @@ export async function buildMapZipEntries(input: {
 		markers: input.markers,
 		settings: input.settings,
 	};
+	// Record the owner by name so import can re-link across id regeneration.
+	if (input.ownerKind && input.ownerName) {
+		body.ownerKind = input.ownerKind;
+		body.ownerName = input.ownerName;
+	}
 	const files: Record<string, Uint8Array> = {
 		'manifest.json': strToU8(JSON.stringify(manifest, null, 2)),
 		'map.json': strToU8(JSON.stringify(body, null, 2)),
@@ -224,26 +238,20 @@ export async function importMapZip(file: File): Promise<string> {
 }
 
 /**
- * Provision one fresh server-side map from a parsed map body (+ optional
- * raw background bytes) and populate its markers / settings / background.
- * Shared by the standalone map-zip import and the "Everything" bundle's
- * nested maps. Returns the new map's id. Always creates a new map (never
- * overwrites), so a re-import appends rather than clobbers.
+ * Populate an existing map row (markers + settings + background) from a
+ * parsed body. Switches to the map first so the shared store mutators hit
+ * the right row. Used both by fresh-import (right after `createMap`) and by
+ * the "Replace into the owner's existing map" path on a merge import.
  */
-export async function applyMapImport(
+export async function populateMap(
+	mapId: string,
 	body: MapZipBody,
 	backgroundBytes?: Uint8Array,
-): Promise<string> {
-	const name = typeof body.name === 'string' && body.name.trim() ? body.name : 'Imported Map';
+): Promise<void> {
+	if (mapState.activeId !== mapId) await switchMap(mapId);
+
 	const markers = Array.isArray(body.markers) ? body.markers : [];
 	const settings = body.settings && typeof body.settings === 'object' ? body.settings : {};
-
-	// Provision a fresh map on the server + activate it. createMap()
-	// already hydrates mapState.activeId + name to the new map, so
-	// subsequent replaceMarkers / setBackground / persistSettings hit
-	// the right row.
-	const summary = await createMap({ name });
-	if (mapState.activeId !== summary.id) await switchMap(summary.id);
 
 	// Push markers in a single PUT (replaceMarkers regenerates ids so a
 	// re-import against the same account doesn't collide).
@@ -276,18 +284,37 @@ export async function applyMapImport(
 				: undefined;
 		await setBackground(bytesToJpegDataUrl(backgroundBytes), aspect);
 	}
+}
 
+/**
+ * Provision one fresh server-side map from a parsed body (+ optional raw
+ * background bytes) and populate it. Pass `owner` to link the new map to a
+ * first-class entity (the id must already be resolved to the *current*
+ * session's entity — the Everything importer resolves it by name). Returns
+ * the new map's id.
+ */
+export async function applyMapImport(
+	body: MapZipBody,
+	backgroundBytes?: Uint8Array,
+	owner?: { ownerKind: MapOwnerKind; ownerId: string },
+): Promise<string> {
+	const name = typeof body.name === 'string' && body.name.trim() ? body.name : 'Imported Map';
+	const summary = await createMap({ name, ...(owner ?? {}) });
+	await populateMap(summary.id, body, backgroundBytes);
 	return summary.id;
 }
 
 /**
- * Reassemble every map bundled under `maps/<mapId>/…` inside a larger
- * archive (the "Everything" export). `entries` is the full unzipped zip.
- * Each nested map is provisioned as a fresh server-side map via
- * `applyMapImport`. Returns the number of maps restored. Never throws — a
- * malformed nested map is skipped so the rest of the import still lands.
+ * Parse — without applying — every map bundled under `maps/<mapId>/…` in an
+ * unzipped archive (the "Everything" export). Returns each map's parsed body
+ * plus its optional background bytes; unparseable entries are skipped. The
+ * Everything importer applies these itself so it can re-link owners (which
+ * needs the entity stores + a conflict prompt); a standalone map zip goes
+ * through `importMapZip` instead.
  */
-export async function reassembleBundledMaps(entries: Record<string, Uint8Array>): Promise<number> {
+export function parseBundledMaps(
+	entries: Record<string, Uint8Array>,
+): Array<{ body: MapZipBody; background?: Uint8Array }> {
 	// Group `maps/<id>/<file>` entries by their <id> directory.
 	const groups = new Map<string, Record<string, Uint8Array>>();
 	for (const [path, bytes] of Object.entries(entries)) {
@@ -297,7 +324,7 @@ export async function reassembleBundledMaps(entries: Record<string, Uint8Array>)
 		if (!groups.has(id)) groups.set(id, {});
 		groups.get(id)![file] = bytes;
 	}
-	let restored = 0;
+	const out: Array<{ body: MapZipBody; background?: Uint8Array }> = [];
 	for (const files of groups.values()) {
 		const bodyBytes = files['map.json'];
 		if (!bodyBytes) continue;
@@ -305,16 +332,11 @@ export async function reassembleBundledMaps(entries: Record<string, Uint8Array>)
 		try {
 			body = JSON.parse(strFromU8(bodyBytes)) as MapZipBody;
 		} catch {
-			continue; // skip a map with an unparseable body; keep importing the rest
+			continue; // skip a map with an unparseable body; keep the rest
 		}
-		try {
-			await applyMapImport(body, files['background.jpg']);
-			restored++;
-		} catch {
-			// A single bad map shouldn't abort the whole Everything import.
-		}
+		out.push({ body, background: files['background.jpg'] });
 	}
-	return restored;
+	return out;
 }
 
 // ---------------------------------------------------------------------------

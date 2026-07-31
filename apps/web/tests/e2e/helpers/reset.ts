@@ -146,21 +146,46 @@ export async function clearAllMaps(token?: string): Promise<void> {
 	}
 }
 
-/** List the test user's maps with their markers — for asserting import
- *  results server-side without fragile map-switcher UI navigation. */
-export async function fetchMaps(
-	token?: string,
-): Promise<Array<{ id: string; name: string; markers: Array<{ label?: string }> }>> {
+/** A map's detail as returned by the API — enough to assert import results
+ *  (markers + owner linkage) server-side without fragile UI navigation. */
+export interface MapDetail {
+	id: string;
+	name: string;
+	markers: Array<{ label?: string }>;
+	ownerKind: 'community' | 'place' | 'journey' | 'site' | null;
+	ownerId: string | null;
+}
+
+/** List the test user's maps with their markers + owner linkage. */
+export async function fetchMaps(token?: string): Promise<MapDetail[]> {
 	const tok = token ?? (await getTestToken());
 	const res = await fetch(`${API}/session/maps`, { headers: auth(tok) });
 	if (!res.ok) return [];
 	const { maps: rows = [] } = (await res.json()) as { maps?: Array<{ id: string }> };
-	const out = [];
+	const out: MapDetail[] = [];
 	for (const m of rows) {
 		const detail = await fetch(`${API}/session/maps/${m.id}`, { headers: auth(tok) });
-		if (detail.ok) out.push(await detail.json());
+		if (detail.ok) out.push((await detail.json()) as MapDetail);
 	}
 	return out;
+}
+
+/** Create a map owned by a first-class entity (for conflict-path tests) and
+ *  return its id. Mirrors the app's POST /maps with owner linkage. */
+export async function createOwnedMap(
+	ownerKind: 'community' | 'place' | 'journey' | 'site',
+	ownerId: string,
+	name = 'Owned Map',
+	token?: string,
+): Promise<string> {
+	const tok = token ?? (await getTestToken());
+	const res = await fetch(`${API}/session/maps`, {
+		method: 'POST',
+		headers: json(tok),
+		body: JSON.stringify({ name, ownerKind, ownerId }),
+	});
+	if (!res.ok) throw new Error(`create owned map failed: ${res.status} ${await res.text()}`);
+	return ((await res.json()) as { id: string }).id;
 }
 
 // ── Seeding ───────────────────────────────────────────────────────────────────

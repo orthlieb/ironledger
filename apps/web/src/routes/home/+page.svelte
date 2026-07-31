@@ -59,6 +59,7 @@
 	import ExpeditionsArea from '$lib/components/v2/ExpeditionsArea.svelte';
 	import CommunitiesArea from '$lib/components/v2/CommunitiesArea.svelte';
 	import ImportCollisionDialog from '$lib/components/ImportCollisionDialog.svelte';
+	import MapOwnerConflictDialog from '$lib/components/MapOwnerConflictDialog.svelte';
 	import {
 		normaliseName,
 		type CollisionItems,
@@ -71,7 +72,15 @@
 	import { parseStorySource } from '$lib/aiSerialize.js';
 	import { parseImportZip, sanitizeLogHtml, ImportError } from '$lib/importSanitizer.js';
 	import { zipSync, strToU8, unzipSync, strFromU8 } from 'fflate';
-	import { buildMapZipEntries, importMapZip, reassembleBundledMaps } from '$lib/mapExport.js';
+	import {
+		buildMapZipEntries,
+		importMapZip,
+		parseBundledMaps,
+		applyMapImport,
+		populateMap,
+		type MapZipBody,
+	} from '$lib/mapExport.js';
+	import type { MapOwnerKind } from '$lib/mapStore.svelte.js';
 
 	/** Peek a zip's manifest.json to see if this is a per-map bundle.
 	 *  Cheap enough (only unzips into an entries dict + parses one small
@@ -174,6 +183,9 @@
 	let initialLoad: Promise<unknown> = Promise.resolve();
 	let importCollisionRef = $state<{
 		open(items: CollisionItems): Promise<CollisionStrategy>;
+	} | null>(null);
+	let mapConflictRef = $state<{
+		open(names: string[]): Promise<'replace' | 'skip'>;
 	} | null>(null);
 	let importError = $state('');
 
@@ -773,12 +785,14 @@
 						await importEntityRow(exp, 'expeditions', byName, addExpedition, updateExpedition);
 					}
 					// Restore bundled maps (markers + backgrounds) from the nested
-					// `maps/<id>/…` dirs. We unzip the raw bytes here rather than
-					// threading them through parseImportZip, which only surfaces the
-					// JSON body + portrait images. Best-effort: a map failure never
-					// aborts the entity import that already landed above.
+					// `maps/<id>/…` dirs, re-linking each to its owner entity by
+					// name now that the entity rows above have landed with their new
+					// ids. Unzips the raw bytes here rather than threading them
+					// through parseImportZip (which only surfaces the JSON body +
+					// portrait images). Best-effort: a map failure never aborts the
+					// entity import that already landed above.
 					try {
-						await reassembleBundledMaps(unzipSync(bytes));
+						await restoreBundledMaps(unzipSync(bytes));
 					} catch {
 						/* non-fatal — entities imported fine */
 					}
@@ -793,6 +807,87 @@
 					: 'Could not import. Make sure the file is a valid Iron Ledger JSON export.';
 		} finally {
 			if (importInput) importInput.value = '';
+		}
+	}
+
+	/**
+	 * Apply the maps bundled in an Everything import, re-linking each to its
+	 * owner entity BY NAME (entity ids were regenerated during the entity
+	 * import above). Runs after the entity rows land, so the live stores hold
+	 * the imported entities and their new ids.
+	 *
+	 *   • owner resolves + has no map yet → create it linked (`applyMapImport`
+	 *     with owner).
+	 *   • owner resolves + already has a map → one prompt, Replace (overwrite
+	 *     that map in place) or Skip (import as standalone).
+	 *   • owner unknown / no match → import as a standalone map.
+	 */
+	async function restoreBundledMaps(entries: Record<string, Uint8Array>): Promise<void> {
+		const bundled = parseBundledMaps(entries);
+		if (bundled.length === 0) return;
+
+		// (kind, name) → current entity id, from the just-imported stores.
+		const key = (kind: MapOwnerKind, name: string) => `${kind}:${normaliseName(name)}`;
+		const ownerIdByKey = new Map<string, string>();
+		for (const c of communities) ownerIdByKey.set(key('community', c.name), c.id);
+		for (const p of places) ownerIdByKey.set(key('place', p.name), p.id);
+		for (const e of expeditions)
+			ownerIdByKey.set(key(e.type === 'site' ? 'site' : 'journey', e.name), e.id);
+
+		// Which owners already have a map (and its id) — for conflict detection.
+		const ownedMapId = new Map<string, string>();
+		try {
+			const res = await fetch('/api/session/maps');
+			if (res.ok) {
+				const body = (await res.json()) as {
+					maps?: Array<{ id: string; ownerKind: MapOwnerKind | null; ownerId: string | null }>;
+				};
+				for (const m of body.maps ?? []) {
+					if (m.ownerKind && m.ownerId) ownedMapId.set(`${m.ownerKind}:${m.ownerId}`, m.id);
+				}
+			}
+		} catch {
+			/* treat as "no owned maps" — everything links or goes standalone */
+		}
+
+		type Plan = {
+			body: MapZipBody;
+			background?: Uint8Array;
+			owner?: { ownerKind: MapOwnerKind; ownerId: string };
+			existingMapId?: string;
+		};
+		const linked: Plan[] = [];
+		const standalone: Plan[] = [];
+		const conflicts: Plan[] = [];
+		for (const { body, background } of bundled) {
+			if (body.ownerKind && body.ownerName) {
+				const ownerId = ownerIdByKey.get(key(body.ownerKind, body.ownerName));
+				if (ownerId) {
+					const existingMapId = ownedMapId.get(`${body.ownerKind}:${ownerId}`);
+					const owner = { ownerKind: body.ownerKind, ownerId };
+					if (existingMapId) conflicts.push({ body, background, owner, existingMapId });
+					else linked.push({ body, background, owner });
+					continue;
+				}
+			}
+			standalone.push({ body, background });
+		}
+
+		// One decision covers every owned-map conflict in the file.
+		let strategy: 'replace' | 'skip' = 'skip';
+		if (conflicts.length > 0) {
+			const names = conflicts.map((c) => c.body.ownerName || c.body.name || '(unnamed)');
+			strategy = (await mapConflictRef?.open(names)) ?? 'skip';
+		}
+
+		for (const p of linked) await applyMapImport(p.body, p.background, p.owner);
+		for (const p of standalone) await applyMapImport(p.body, p.background);
+		for (const p of conflicts) {
+			if (strategy === 'replace' && p.existingMapId) {
+				await populateMap(p.existingMapId, p.body, p.background);
+			} else {
+				await applyMapImport(p.body, p.background); // skip → standalone
+			}
 		}
 	}
 
@@ -1512,6 +1607,15 @@
 	 *  plus a `maps.md` index. Shared by the "All Maps" export and the
 	 *  Everything bundle, which nests the same dirs alongside its JSON body so
 	 *  a full backup captures maps + markers + backgrounds. */
+	/** Resolve a map owner's (kind, id) to the owning entity's current name,
+	 *  or undefined if it no longer exists. `journey`/`site` both live in the
+	 *  expeditions store; `npc` is never a map owner. */
+	function mapOwnerName(kind: MapOwnerKind, id: string): string | undefined {
+		if (kind === 'community') return communities.find((c) => c.id === id)?.name || undefined;
+		if (kind === 'place') return places.find((p) => p.id === id)?.name || undefined;
+		return expeditions.find((e) => e.id === id)?.name || undefined; // journey | site
+	}
+
 	async function collectMapEntries(): Promise<{
 		mapFiles: Record<string, Uint8Array>;
 		count: number;
@@ -1534,10 +1638,18 @@
 				markers: Array<Record<string, unknown>>;
 				backgroundHash: string | null;
 				settings: Record<string, unknown>;
+				ownerKind: MapOwnerKind | null;
+				ownerId: string | null;
 			};
 			const bgUrl = detail.backgroundHash
 				? `/api/session/maps/${detail.id}/background?v=${encodeURIComponent(detail.backgroundHash)}`
 				: '';
+			// Resolve the owner entity's NAME so import can re-link across id
+			// regeneration (ids are minted fresh on the importing account).
+			const ownerName =
+				detail.ownerKind && detail.ownerId
+					? mapOwnerName(detail.ownerKind, detail.ownerId)
+					: undefined;
 			const entries = await buildMapZipEntries({
 				name: detail.name,
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1545,6 +1657,8 @@
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				settings: detail.settings as any,
 				backgroundUrl: bgUrl,
+				ownerKind: detail.ownerKind,
+				ownerName,
 			});
 			const dir = `maps/${detail.id}`;
 			for (const [path, bytes] of Object.entries(entries)) {
@@ -1682,6 +1796,10 @@
      ids clash with the active session. onImportFile awaits its open() promise
      before routing the import payload through the per-type appenders. -->
 <ImportCollisionDialog bind:this={importCollisionRef} />
+
+<!-- Owned-map conflict prompt — surfaces during an Everything import when a
+     bundled map re-links to an owner that already has a map (Replace / Skip). -->
+<MapOwnerConflictDialog bind:this={mapConflictRef} />
 
 <div
 	bind:this={shellEl}
