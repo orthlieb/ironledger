@@ -9,6 +9,8 @@
 	import mobileSvg from '$icons/mobile-screen-solid.svg?raw';
 	import penSvg from '$icons/pen-to-square-solid-full.svg?raw';
 	import mapSvg from '$icons/treasure-map.svg?raw';
+	import angleLeftSvg from '$icons/angle-left-solid-full.svg?raw';
+	import angleRightSvg from '$icons/angle-right-solid-full.svg?raw';
 	import { headingText } from '$lib/fontStore.svelte.js';
 
 	let { data }: { data: { user?: { name?: string } } } = $props();
@@ -273,13 +275,13 @@
 				type="button"
 				class="carousel-nav carousel-nav-prev"
 				onclick={prev}
-				aria-label="Previous feature">‹</button
+				aria-label="Previous feature">{@html angleLeftSvg}</button
 			>
 			<button
 				type="button"
 				class="carousel-nav carousel-nav-next"
 				onclick={next}
-				aria-label="Next feature">›</button
+				aria-label="Next feature">{@html angleRightSvg}</button
 			>
 
 			<div class="carousel-dots" role="tablist" aria-label="Choose a feature">
@@ -702,9 +704,6 @@
 		border: 1px solid var(--border-mid);
 		border-radius: 50%;
 		color: var(--text);
-		font-family: var(--font-display);
-		font-size: 1.6rem;
-		line-height: 1;
 		cursor: pointer;
 		opacity: 0;
 		pointer-events: none;
@@ -713,6 +712,15 @@
 			background 0.12s,
 			border-color 0.12s,
 			color 0.12s;
+	}
+	.carousel-nav :global(svg) {
+		width: 16px;
+		height: 16px;
+		fill: currentColor;
+		display: block;
+	}
+	.carousel-nav :global(svg *) {
+		fill: currentColor;
 	}
 	.carousel-nav-prev {
 		left: 0.75rem;
