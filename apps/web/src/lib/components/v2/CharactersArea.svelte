@@ -1742,7 +1742,8 @@
 	}
 
 	/* Card content — flat panel inside the stage. Section dividers come
-	   from per-section border-top rules below. */
+	   from per-section border-top rules below. Zero margin matches
+	   `.deck-card` in app.css so all four home decks stay in sync. */
 	.ca-card {
 		flex: 1;
 		min-height: 200px;
@@ -1750,7 +1751,7 @@
 		border: none;
 		border-radius: 0;
 		padding: 0 7px; /* no top/bottom padding — sections control their own spacing */
-		margin-bottom: 0;
+		margin: 0;
 		overflow: auto;
 		position: relative;
 	}
