@@ -13,7 +13,19 @@
 
 	let { data }: { data: { user?: { name?: string } } } = $props();
 
-	const features = [
+	// Each card has an optional `image` (3:2 WebP under /static, ideally
+	// 1200x800). When omitted, the card renders a tinted placeholder panel
+	// with the feature's icon centred at large size — same 3:2 slot, so
+	// dropping in a real image later is a one-line swap with no layout
+	// shift. Real images should live at `/ironledger-feat-<key>.webp`.
+	const features: {
+		icon: string;
+		title: string;
+		body: string;
+		color: string;
+		image?: string;
+		alt?: string;
+	}[] = [
 		{
 			icon: charactersSvg,
 			title: 'Character Sheets',
@@ -233,11 +245,30 @@
 							aria-hidden={i !== active}
 						>
 							<div class="feature-card" style="--feat-color: {feat.color}">
-								<div class="feature-icon">
-									{@html feat.icon}
+								<div class="feature-media">
+									{#if feat.image}
+										<img
+											src={feat.image}
+											alt={feat.alt ?? ''}
+											loading={i === 0 ? 'eager' : 'lazy'}
+											decoding="async"
+										/>
+									{:else}
+										<div class="feature-media-placeholder" aria-hidden="true">
+											<div class="feature-media-glyph">{@html feat.icon}</div>
+											<div class="feature-media-label">
+												{headingText(feat.title)}
+											</div>
+										</div>
+									{/if}
 								</div>
-								<h3 class="feature-title">{headingText(feat.title)}</h3>
-								<p class="feature-body">{feat.body}</p>
+								<div class="feature-body-wrap">
+									<div class="feature-icon">
+										{@html feat.icon}
+									</div>
+									<h3 class="feature-title">{headingText(feat.title)}</h3>
+									<p class="feature-body">{feat.body}</p>
+								</div>
 							</div>
 						</div>
 					{/each}
@@ -532,16 +563,91 @@
 		   via aria-hidden on the slide element. */
 	}
 
+	/* Card = two-column split on desktop (image left, text right),
+	   stacked on mobile (image top, text below). The media slot holds
+	   a 3:2 image (or tinted placeholder) so real WebPs can drop in
+	   without shifting layout. */
 	.feature-card {
-		padding: 1.8rem 1.6rem;
-		display: flex;
-		flex-direction: column;
-		gap: 0.8rem;
+		display: grid;
+		grid-template-columns: minmax(0, 42%) minmax(0, 1fr);
+		gap: 1.4rem;
+		align-items: stretch;
+		padding: 1.4rem 1.6rem 1.4rem 1.4rem;
 		min-height: 260px;
 		border: 1px solid color-mix(in srgb, var(--feat-color) 30%, transparent);
 		border-radius: 6px;
 		background: color-mix(in srgb, var(--feat-color) 8%, var(--bg-card));
 		box-shadow: 0 4px 24px rgba(0, 0, 0, 0.28);
+	}
+
+	@media (max-width: 720px) {
+		.feature-card {
+			grid-template-columns: minmax(0, 1fr);
+			padding: 1.2rem 1.2rem 1.4rem;
+			gap: 1rem;
+		}
+	}
+
+	/* Media slot — locked 3:2 aspect ratio so image swaps don't shift. */
+	.feature-media {
+		aspect-ratio: 3 / 2;
+		border-radius: 4px;
+		overflow: hidden;
+		background: color-mix(in srgb, var(--feat-color) 14%, var(--bg-inset));
+		border: 1px solid color-mix(in srgb, var(--feat-color) 22%, transparent);
+	}
+	.feature-media img {
+		display: block;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	/* Placeholder — feature-tinted panel with the icon centred and the
+	   feature name below it. Same visual footprint as the real image
+	   slot, so dropping in a WebP is a no-shift swap. */
+	.feature-media-placeholder {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 0.9rem;
+		width: 100%;
+		height: 100%;
+		color: var(--feat-color);
+		text-align: center;
+		padding: 1rem;
+	}
+	.feature-media-glyph {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 96px;
+		height: 96px;
+		opacity: 0.85;
+	}
+	.feature-media-glyph :global(svg),
+	.feature-media-glyph :global(svg *) {
+		width: 88px;
+		height: 88px;
+		fill: currentColor;
+	}
+	.feature-media-label {
+		font-family: var(--font-display);
+		font-size: calc(0.72rem * var(--font-display-scale));
+		font-weight: 700;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		opacity: 0.55;
+		max-width: 100%;
+	}
+
+	/* Text column */
+	.feature-body-wrap {
+		display: flex;
+		flex-direction: column;
+		gap: 0.7rem;
+		min-width: 0;
 	}
 
 	.feature-icon {
