@@ -11,7 +11,7 @@ import { authenticate } from '../middleware/authenticate.js';
 import * as chars from '../services/characterService.js';
 import * as portraits from '../services/portraitService.js';
 import { isValidImageUrl } from '../lib/imageUrl.js';
-import { sendPortraitHeaders, ifNoneMatchHits } from './userData.js';
+import { sendPortraitHeaders, ifNoneMatchHits } from '../lib/portraitHttp.js';
 import type { FastifyReply } from 'fastify';
 
 // ---------------------------------------------------------------------------
