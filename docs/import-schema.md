@@ -90,6 +90,14 @@ Log, Everything-as-zip, and **Stories** — the AI-generated prose entries
 only, `stories-<stamp>.md`); these are one-way (not re-importable) and
 out of scope here.
 
+> **Maps are a separate subsystem.** The Export dialog's **All Maps**
+> (`type: "map"`) option is **not** part of this bundle, and maps are not
+> included in `everything`. A single map round-trips through its own
+> `.zip` (`manifest.json` + `map.json` with the marker list + `images/`
+> background) via `exportMapZip` / `importMapZip`, plus a one-way PNG
+> snapshot. That format is documented in
+> [campaign-map.md § Exports](campaign-map.md#exports).
+
 ---
 
 ## Characters
