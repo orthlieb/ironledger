@@ -1077,7 +1077,7 @@
 						</Tabs.List>
 					</Tabs.Root>
 					<!-- Active card content -->
-					<div class="ca-card" role="tabpanel">
+					<div class="deck-card ca-card" role="tabpanel">
 						{#if activeCard === 'background'}
 							<div
 								class="ca-card-section ca-bg-section"
@@ -1741,20 +1741,10 @@
 		border-bottom-color: var(--text-accent);
 	}
 
-	/* Card content — flat panel inside the stage. Section dividers come
-	   from per-section border-top rules below. Zero margin matches
-	   `.deck-card` in app.css so all four home decks stay in sync. */
-	.ca-card {
-		flex: 1;
-		min-height: 200px;
-		background: var(--bg-inset);
-		border: none;
-		border-radius: 0;
-		padding: 0 7px; /* no top/bottom padding — sections control their own spacing */
-		margin: 0;
-		overflow: auto;
-		position: relative;
-	}
+	/* Card layout — flex column, padding, background, min-height, gap
+	   all live on the shared `.deck-card` in app.css so all four home
+	   decks stay in sync. This class carries no unique overrides today;
+	   kept as an anchor for any chars-only tweaks in future. */
 	.ca-card-section {
 		display: flex;
 		flex-direction: column;
