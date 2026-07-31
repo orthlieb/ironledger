@@ -114,6 +114,26 @@ export async function resetLog(token?: string): Promise<void> {
 	await fetch(`${API}/session/log`, { method: 'DELETE', headers: auth(tok) });
 }
 
+/**
+ * Remove every marker from every map the test user owns (leaves the maps and
+ * their backgrounds intact). Markers persist server-side, so tests that create
+ * them must clear them to stay idempotent — call from beforeEach *before*
+ * navigating so the page loads a marker-free map.
+ */
+export async function clearMapMarkers(token?: string): Promise<void> {
+	const tok = token ?? (await getTestToken());
+	const res = await fetch(`${API}/session/maps`, { headers: auth(tok) });
+	if (!res.ok) return; // no maps yet — nothing to clear
+	const { maps: rows = [] } = (await res.json()) as { maps?: Array<{ id: string }> };
+	for (const m of rows) {
+		await fetch(`${API}/session/maps/${m.id}/markers`, {
+			method: 'PUT',
+			headers: json(tok),
+			body: JSON.stringify({ markers: [] }),
+		});
+	}
+}
+
 // ── Seeding ───────────────────────────────────────────────────────────────────
 
 /**
