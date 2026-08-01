@@ -1,120 +1,29 @@
 // =============================================================================
-// Iron Ledger — Expedition Store (Svelte 5 module-level $state)
+// Iron Ledger — Expedition Store
 //
-// Global (non-character) journey & delve site state.
-// Mirrors the encounterStore pattern but for expeditions, stored server-side
-// in the user_data table.
-//
-// Provides:
-//   • loadExpeditions()              — fetch on page load (idempotent)
-//   • getExpeditions()               — reactive list of all expeditions
-//   • addExpedition(exp)             — append + persist
-//   • updateExpedition(exp)          — replace one + persist
-//   • removeExpedition(id)           — delete one + persist
+// Global standalone expedition state (Journeys + Sites). Stored server-side in
+// user_data (expeditions column). Thin facade over the shared entity-store
+// factory — see makeEntityStore.
 // =============================================================================
 
 import type { Expedition } from '$lib/types.js';
-import { makeEntitySync } from '$lib/entitySync.js';
-import { fetchSession } from '$lib/sessionData.js';
+import { makeEntityStore } from '$lib/makeEntityStore.svelte.js';
 
-// ---------------------------------------------------------------------------
-// Module-level state
-// ---------------------------------------------------------------------------
+const store = makeEntityStore<Expedition>('expeditions', 'expeditionStore');
 
-let _expeditions: Expedition[] = $state([]);
-let _loading = $state(false);
-let _loaded = false;
-let _saving = $state(false);
-
-// Per-entity sync engine — diffs the live list against the server snapshot and
-// issues one request per changed expedition instead of re-sending the whole list.
-const _sync = makeEntitySync<Expedition>('expeditions', () => _expeditions, 'expeditionStore');
-
-// ---------------------------------------------------------------------------
-// Fetch
-// ---------------------------------------------------------------------------
-
-/**
- * Load expeditions from the server (idempotent — only fetches once per session).
- * Call this on page mount before displaying the Expeditions tab.
- */
-export async function loadExpeditions(): Promise<void> {
-	if (_loaded || _loading) return;
-	_loading = true;
-	try {
-		const json = await fetchSession();
-		// Guard against legacy rows where the JSONB column was persisted as
-		// `{}` instead of `[]` — `?? []` only rescues null/undefined.
-		_expeditions = Array.isArray(json.expeditions) ? (json.expeditions as Expedition[]) : [];
-		_sync.reset(_expeditions);
-		_loaded = true;
-	} catch (err) {
-		console.error('[expeditionStore] Failed to load expeditions:', err);
-	} finally {
-		_loading = false;
-	}
-}
-
-// ---------------------------------------------------------------------------
-// Accessors
-// ---------------------------------------------------------------------------
-
+/** Load expeditions from the server (idempotent — only fetches once). */
+export const loadExpeditions = store.load;
 /** All expeditions, in insertion order. Reactive. */
-export function getExpeditions(): Expedition[] {
-	return _expeditions;
-}
-
-export function isExpeditionLoading(): boolean {
-	return _loading;
-}
-
-export function isExpeditionSaving(): boolean {
-	return _saving;
-}
-
-// ---------------------------------------------------------------------------
-// Mutations (each one optimistically updates local state then persists)
-// ---------------------------------------------------------------------------
-
+export const getExpeditions = store.get;
+export const isExpeditionLoading = store.isLoading;
+export const isExpeditionSaving = store.isSaving;
 /** Append a new expedition and persist. */
-export async function addExpedition(exp: Expedition): Promise<void> {
-	_expeditions = [..._expeditions, exp];
-	await persist();
-}
-
+export const addExpedition = store.add;
 /** Replace one expedition by id and persist. */
-export async function updateExpedition(updated: Expedition): Promise<void> {
-	_expeditions = _expeditions.map((e) => (e.id === updated.id ? updated : e));
-	await persist();
-}
-
-/** Replace one expedition by id WITHOUT persisting. Use this when the caller
- *  is debouncing the API write — pair with persistExpeditionsNow(). */
-export function updateExpeditionLocal(updated: Expedition): void {
-	_expeditions = _expeditions.map((e) => (e.id === updated.id ? updated : e));
-}
-
-/** Force a save of the current encounter set. Used by debounced callers
- *  (ExpeditionsArea) after they've already updated local state. */
-export async function persistExpeditionsNow(): Promise<void> {
-	await persist();
-}
-
+export const updateExpedition = store.update;
+/** Replace one expedition by id WITHOUT persisting (pair with persistExpeditionsNow). */
+export const updateExpeditionLocal = store.updateLocal;
+/** Force a save of the current expedition list (debounce-friendly partner). */
+export const persistExpeditionsNow = store.persistNow;
 /** Remove one expedition by id and persist. */
-export async function removeExpedition(id: string): Promise<void> {
-	_expeditions = _expeditions.filter((e) => e.id !== id);
-	await persist();
-}
-
-// ---------------------------------------------------------------------------
-// Internal
-// ---------------------------------------------------------------------------
-
-async function persist(): Promise<void> {
-	_saving = true;
-	try {
-		await _sync.persist();
-	} finally {
-		_saving = false;
-	}
-}
+export const removeExpedition = store.remove;
