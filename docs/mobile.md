@@ -1,168 +1,175 @@
 # Mobile Support
 
-> **⚠️ Stale — needs a rewrite.** This describes the pre-v2 tabbed/swipe layout (a 5-tab bar incl. an "Adventure" tab, `handleTabBodyTouchStart`, `data-no-swipe-tabs`, `il:adventure:split` keys). The v2 layout is different: a 4-tab bar (`characters|foes|expeditions|communities`) switching at 900px, the log in a persistent column, keys `il:home:logWidth`/`col1Width`/`rowHeight` (see `routes/home/+page.svelte`). Treat specifics below as historical until rewritten.
+Iron Ledger's layout is responsive down to ~360px wide. This doc describes the
+mobile-specific behaviours that differ meaningfully from the desktop layout.
+Pure visual tweaks (padding, font-size, wrap order) are not listed here — see
+the individual component files for those.
 
-Iron Ledger's layout is responsive down to ~360px wide. This doc describes the mobile-specific behaviours that differ meaningfully from the desktop layout. Pure visual tweaks (padding, font-size, wrap order) are not listed here — see the individual component files for those.
-
-The canonical mobile breakpoint is **`max-width: 767px`** (i.e. `< 768px`). A secondary breakpoint at **`max-width: 540px`** collapses the tab bar to icons-only (except for the active tab). The 540px cutoff was chosen to cover the inner width of a Surface Duo in portrait.
+The primary layout breakpoint is **`max-width: 900px`** (i.e. `< 900px`): below
+it, `/home` collapses its three-column desktop grid into a single-column,
+tab-switched layout. A second, smaller breakpoint at **`max-width: 767px`**
+governs the log's AI-story UI (see [AI Story Selection](#ai-story-selection--desktop-only)).
+These two numbers are deliberately different — 900px is where the desktop
+_layout_ stops fitting; 767px is where the log's per-entry hover affordances
+stop being usable on touch.
 
 ---
 
-## Swipe-to-Switch-Tab
+## Home Layout
 
-Implemented in `apps/web/src/routes/home/+page.svelte` (`handleTabBodyTouchStart` / `handleTabBodyTouchEnd`).
+Implemented in `apps/web/src/routes/home/+page.svelte`.
 
-A horizontal swipe on the tab body advances or retreats one tab. Swipes clamp at each end — there is no wrap-around.
+**Desktop (> 900px)** is a three-column grid: Characters over Foes in column 1,
+Expeditions over Connections in column 2, and the session log as a persistent
+column 3.
 
-| Parameter                         | Value   |
-| --------------------------------- | ------- |
-| Minimum horizontal distance       | 60 px   |
-| Direction ratio (\|dx\| / \|dy\|) | > 1.5   |
-| Maximum gesture duration          | 600 ms  |
-| Multi-finger gestures             | Ignored |
-
-Admin users swipe through `[...TABS, 'admin']` where `TABS = ['characters', 'foes', 'expeditions', 'communities', 'adventure']`. Non-admins don't see `admin` in the order, so a swipe can never land there.
-
-### Opting out
-
-Any descendant that needs its own horizontal touch handling (e.g. a carousel, a draggable pill, a swipeable list item) can mark itself with `data-no-swipe-tabs`:
-
-```svelte
-<div class="my-carousel" data-no-swipe-tabs>…</div>
+```
+┌────────────────┬────────────────┬──────────┐
+│   Characters   │   Expeditions  │          │
+├────────────────┼────────────────┤   Log    │
+│     Foes       │  Connections   │          │
+└────────────────┴────────────────┴──────────┘
 ```
 
-`touchstart` walks the ancestor chain of the target; if any ancestor has the attribute, the swipe is ignored for that gesture.
+**Mobile (≤ 900px)** rotates to a single flex column: a tab bar, the active
+area, a drag handle, and the log pinned at the bottom.
 
----
+```
+┌─────────────────────────────┐
+│ [Chars][Foes][Exp][Comm]    │  ← tab bar (.mob-tabbar)
+├─────────────────────────────┤
+│   active area (scrollable)  │
+├─────────────────────────────┤
+│   ─── drag handle ────────  │  ← .mob-resize-handle
+├─────────────────────────────┤
+│   log (scrollable)          │
+└─────────────────────────────┘
+```
 
-## Adventure Split Panel
+Key points:
 
-On desktop the Adventure tab is a side-by-side layout: GlobalContextBar on the left, session log on the right, draggable column resize. On mobile that same layout would be unusable — the GCB tiles need ~320px to read and the log would be a sliver.
+- **Four tabs**, tap-to-switch (`.mob-tab`): Characters, Foes, Expeditions,
+  Connections. The Connections tab's internal id is `communities`
+  (`MobileTab = 'characters' | 'foes' | 'expeditions' | 'communities'`). Each
+  tab shows a stacked icon + a small uppercase label; there is no icons-only
+  breakpoint — all four labels always render.
+- **No swipe-to-switch.** Tabs change only on tap. All four areas stay mounted
+  in the DOM at all times (the desktop grid cells); on mobile the inactive ones
+  are hidden with `class:mob-hidden` → `display: none`. Because they never
+  unmount, switching tabs is instant and each area keeps its scroll position
+  and local state. (The only `touchstart` handlers on this page are the
+  pane-resize handles, not tab gestures.)
+- **The log is persistent, not tab-bound** — there is no separate Log tab. On
+  desktop it is the right-hand column; on mobile it is the bottom panel, always
+  visible beneath whichever tab is active.
 
-Below 768px the layout rotates: **GCB on top, log below, drag-to-resize horizontally**. Implementation is in `apps/web/src/routes/home/+page.svelte`.
+### Resize handles + persistence
 
-- Default split: GCB 80% / log 20% of the available height
-- Drag range: 20% → 95%
-- Persistence: `localStorage['il:adventure:split:mobile']` (desktop uses a separate key, `ironledger.adventureSplit`)
-- Height: measured via `rAF` after mount and on resize, as `window.innerHeight - layoutRef.top`. Measurement is wrapped in `requestAnimationFrame` so it runs after orientation-change layout settles.
-- Body scroll: `document.body.style.overflow = 'hidden'` while this tab is active on mobile, so neither panel causes the page to scroll — each panel scrolls independently.
-- Resize handle: shared CSS base class, only `cursor` (`row-resize` on mobile, `col-resize` on desktop) and the `::before` / `::after` content rules differ per breakpoint.
+Every split is drag-resizable (mouse **and** touch) and its size is persisted
+to `localStorage`:
 
----
+| Split                      | Handle                | Range                        | Default                       | Key                    |
+| -------------------------- | --------------------- | ---------------------------- | ----------------------------- | ---------------------- |
+| Desktop log width          | `.home-resize-handle` | 240 – 800 px                 | ⅓ of `innerWidth`             | `il:home:logWidth`     |
+| Desktop column 1 width     | `.col-resize-handle`  | ≥ 200 px each side           | half the available width      | `il:home:col1Width`    |
+| Desktop row split (shared) | `.row-resize-handle`  | ≥ 80 px each area            | half the column height        | `il:home:rowHeight`    |
+| Mobile log height          | `.mob-resize-handle`  | 80 px → 70% of `innerHeight` | 25% of `innerHeight` (`25vh`) | `il:home:mobLogHeight` |
 
-## Session Log Placement
+The row split is a **single shared value** so the Characters/Foes divider stays
+aligned with the Expeditions/Connections divider. Older exports used separate
+`il:home:charHeight` / `il:home:expedHeight` keys; onMount reads whichever is
+present as a fallback so a returning user doesn't get a fresh 50/50 split.
 
-The session log is rendered by `LogPanel.svelte` and lives **inside the Adventure tab** in both layouts — there is no separate Log tab.
-
-| Viewport | Log position                                                                                    |
-| -------- | ----------------------------------------------------------------------------------------------- |
-| ≥ 768 px | Right-hand column of the Adventure tab, side-by-side with the GCB (drag-to-resize horizontally) |
-| < 768 px | Bottom panel of the Adventure tab, below the GCB (drag-to-resize vertically)                    |
-
-The log store is a module-level `$state`, so entries persist across tab switches and only need a single mount.
+The mobile log handle drags up to grow the log (`delta = startY - y`). The
+desktop resize handles are `display: none` on mobile and vice-versa.
 
 ---
 
 ## Picker Dialogs
 
-`FoePickerDialog`, `MovesDialog`, and `OraclesDialog` are flex columns (title row, search/filter row, scrollable body). On desktop the natural `fit-content` sizing works fine; on mobile browsers it does not — `fit-content` + `max-height: 80vh` leaves the `flex: 1` body with no extrinsic height to grow into, and the dialog collapses to ~200px showing only the title and search.
+`FoePickerDialog`, `MovesDialog`, and `OraclesDialog` are flex columns (title
+row, search/filter row, scrollable body). On desktop the natural `fit-content`
+sizing works fine; on mobile browsers it does not — `fit-content` +
+`max-height` leaves the `flex: 1` body with no extrinsic height to grow into,
+and the dialog collapses to ~200px showing only the title and search.
 
-Fix: definite height using dynamic viewport units.
-
-```css
-height: min(85dvh, 720px); /* FoePickerDialog, OraclesDialog */
-height: min(84dvh, 720px); /* MovesDialog */
-width: min(calc(100vw - 1rem), …);
-```
-
-`dvh` (dynamic viewport height) accounts for mobile browser chrome showing and hiding. `vh` would over-size the dialog when the URL bar is visible.
-
-Body scroll is locked while any picker dialog is open, so touch-drag on the backdrop doesn't scroll the underlying page.
-
----
-
-## Collapsible Search Pill (Expeditions, Communities)
-
-On desktop, search is always visible as a frosted-glass pill in the toolbar. On mobile the toolbar is too narrow to host both the search input and the action buttons, so search collapses:
-
-- Initial state: a single magnifying-glass icon button in the toolbar
-- Tapped: expands to a full-width frosted-glass pill (backdrop-filter blur + saturate, top-edge inset highlight), auto-focused
-- Action buttons hide while the pill is open
-- X button clears the query and collapses the pill
-- Tab change resets the pill state
-
----
-
-## Icon-Only Tabs (≤ 540 px)
-
-On Surface-Duo-class screens (540 px inner width in portrait), labels don't fit alongside every tab icon plus the admin badge. Below 540px the tab bar hides labels for inactive tabs and shows only the icon; the active tab keeps its label for orientation.
+Fix: a **definite** height, clamped against the viewport.
 
 ```css
-@media (max-width: 540px) {
-  .tab-label {
-    display: none;
-  }
-  .tab-btn {
-    padding: 10px 12px 8px;
-    gap: 0;
-  }
-  .tab-btn.active {
-    gap: 0.35rem;
-  }
-  .tab-btn.active .tab-label {
-    display: inline;
-  }
-}
+/* FoePickerDialog.svelte */
+width: min(640px, calc(100vw - 1rem));
+height: min(85vh, 720px);
+
+/* MovesDialog.svelte + OraclesDialog.svelte */
+width: min(640px, calc(100vw - 1rem));
+height: min(84vh, 720px);
 ```
+
+The `min(…, 720px)` cap keeps the dialog from becoming absurdly tall on a large
+phone in landscape while still filling a small portrait screen. Body scroll is
+locked while any picker dialog is open (bits-ui `Dialog` sets
+`preventScroll: true`), so touch-drag on the backdrop doesn't scroll the page
+behind it.
 
 ---
 
 ## AI Story Selection — Desktop Only
 
-The whole story-selection surface in the log — the per-entry ▲ / ▼ marker
-buttons, the toolbar Generate button, and the floating strip at the bottom —
-is hidden below the canonical `768px` breakpoint. The rationale:
+The story-selection surface in the log — the per-entry ▲ / ▼ marker buttons
+(`.entry-marker-btn`), the toolbar Generate/Story button (`.story-btn`), and
+the floating strip at the bottom (`.section-strip`) — is hidden below
+**`max-width: 767px`** (`display: none !important`, `LogPanel.svelte`). The
+rationale:
 
 - The ▲ / ▼ buttons are hover-revealed (opacity 0 → 1 on `.log-entry:hover`),
   which is fine on desktop but produces phantom targets on touch — either you
   can't see them, or they leak into the tap area of another entry.
-- The log gets ~20% of the viewport by default under
-  [Adventure Split](#adventure-split-panel); the toolbar Generate button and
-  the floating strip would each steal a whole row of that budget.
-- AI story generation is a between-session-write-up feature, not something
-  you reach for mid-scene from a phone.
+- On mobile the log defaults to ~25% of the viewport (see
+  [Home Layout](#home-layout)); the toolbar button and floating strip would
+  each steal a whole row of that budget.
+- AI story generation is a between-session write-up feature, not something you
+  reach for mid-scene from a phone.
 
 The `sectionStore` state is not gated — a section pinned from desktop stays
-highlighted (read-only) if the user pops the phone open later. See
+highlighted (read-only) if the user opens the phone later. See
 [log.md § Story sections](log.md#story-sections-----markers) and
 [ai-story.md](ai-story.md) for the full flow.
 
 ---
 
-## Passkeys
-
-Mobile is the primary target for passkey sign-in — a single tap hands off to the OS biometric sheet (Face ID / Touch ID on iOS, fingerprint / face unlock on Android) and returns an authenticated session without the user typing anything. Implementation is shared with desktop; there is no mobile-specific code path.
-
-- Sign-in trigger: the "Sign in with a passkey" button on `/login`, rendered only when `window.PublicKeyCredential` is present (see `isPasskeySupported()` in `apps/web/src/lib/passkey.ts`). The button sits below the password form inside the same `.auth-card`, which is `max-width: 400px` and uses `min-height: 100dvh` on its wrapper so it fits the viewport cleanly with or without the mobile browser chrome.
-- Enrolment trigger: the **Passkeys** section of the Settings dialog (gear icon → Settings). The dialog itself is `width: min(360px, calc(100vw - 2rem))`, so it scales to narrow screens without its own breakpoint.
-- Discoverable-credential sign-in: the server issues an empty `allowCredentials`, which lets the OS sheet list every passkey the device knows about for this origin (including cloud-synced ones from the user's iCloud Keychain / Google Password Manager). No email is required up-front on mobile.
-- Cross-device flow: when the user is on desktop and picks "use a phone", the browser surfaces a QR code; the phone camera completes the `hybrid` transport handshake. This is provided by the browser / OS — we just declare `hybrid` as one of the accepted transports on enrolment and don't special-case it in the UI.
-- Cancel handling: dismissing the native sheet rejects with `NotAllowedError`. The login page matches `/cancel|aborted|NotAllowedError/i` and swallows it silently — accidental dismissals on a small screen shouldn't surface as red error text.
-
-There is **no** `autocomplete="username webauthn"` conditional-mediation hint on the email field. Passkey sign-in is an explicit button, not a drive-by suggestion — this avoids the iOS keyboard presenting a passkey picker every time the user taps the email field.
-
----
-
 ## Tooltips
 
-Native `title` tooltips behave unpredictably on touch devices — some browsers swallow them entirely, others fire them on long-press but leave them stuck on the next tap. The project uses CSS `data-tooltip` tooltips everywhere (see [ui-components.md § Tooltips](ui-components.md#tooltips)), and for pills inside scrollable containers (like the GCB) the `use:tooltip` action, which renders a body-level fixed-position element so it's never clipped.
+Native `title` tooltips behave unpredictably on touch devices — some browsers
+swallow them entirely, others fire them on long-press but leave them stuck on
+the next tap. The project's canonical mechanism is the **`use:tooltip` action**
+(`apps/web/src/lib/actions/tooltip.ts`), which promotes the tip into the top
+layer via the Popover API so it works above dialogs and inside scrollable
+containers (like the GCB) without being clipped, and auto-shows on tap for
+touch. See [ui-components.md § Tooltips](ui-components.md#tooltips) and the
+CLAUDE.md note — new UI should always use this action, not native `title=`.
 
-On mobile these CSS tooltips appear briefly on `:focus-visible` (tap-and-hold), which is the closest practical equivalent to hover on a touch device. Move-dialog footers surface the same information inline so that no mobile user has to rely on tooltips to complete a roll.
+A legacy CSS `[data-tooltip]` mechanism still survives in
+`apps/web/src/app.css` (revealed on `:hover` / `:focus-visible`) and is still
+used by `SettingsDialog.svelte`. On touch it appears on tap-and-hold
+(`:focus-visible`), the closest practical equivalent to hover. New code should
+prefer `use:tooltip`; treat `data-tooltip` as not-yet-migrated rather than a
+pattern to copy.
 
 ---
 
 ## Testing Mobile Changes
 
-- Playwright e2e: `apps/web/tests/e2e/navigation.spec.ts` covers the swipe-tab behaviour (swipe-left, swipe-right, both end-clamps, vertical drag, tap).
-- Manual: Chrome DevTools device emulation at **390 × 844** (iPhone 14) is the primary target. Also verify Surface Duo (540 × 720 single-screen) to catch tab-label overflow.
-- When touching split-panel or swipe code, re-test both orientations — portrait and landscape — because the mobile height measurement depends on `window.innerHeight` and reflows on rotation.
+- **Playwright e2e:** `apps/web/tests/e2e/navigation.spec.ts` covers the
+  click-based home tab bar — that the `.mob-tabbar` appears at ≤ 900px (tested
+  at an 800 × 900 viewport), that Characters is the default active tab, that
+  tapping the Foes `.mob-tab` switches the visible area, and that the tab bar is
+  hidden on desktop (1280px). There is **no** swipe coverage — swipe-to-switch
+  was removed. `tabs.spec.ts` covers the per-area card tabs
+  (Characters/Communities/Expeditions/Foes), which are unrelated to home nav.
+  The mobile log-height drag has no automated coverage — verify it manually.
+- **Manual:** Chrome DevTools device emulation at **390 × 844** (iPhone 14) is
+  the primary target. Cross the 900px line to confirm the grid ↔ tab-bar swap,
+  and drag the mobile log handle to confirm the 80px / 70%-of-viewport clamps.
+- When touching layout or resize code, re-test both orientations — portrait and
+  landscape — because the mobile log-height clamp is a fraction of
+  `window.innerHeight` and reflows on rotation.
