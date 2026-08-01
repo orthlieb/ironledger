@@ -198,14 +198,14 @@
 					/>
 				</div>
 
-				<!-- Heading Font -->
+				<!-- Livery — heading font paired with a chrome palette. -->
 				<div class="sd-row">
-					<span class="sd-label">Heading Font</span>
+					<span class="sd-label">Livery</span>
 					<Select
 						value={fontDisplay}
 						options={FONT_MODES}
 						onchange={applyFont}
-						ariaLabel="Heading font"
+						ariaLabel="Livery"
 						class="sd-select"
 					/>
 				</div>
