@@ -49,6 +49,7 @@
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import DialogHeader from './DialogHeader.svelte';
 	import MapOptionsDialog from './MapOptionsDialog.svelte';
+	import MapIconPicker from './MapIconPicker.svelte';
 	import { mapSettings, persistMapSettings } from '$lib/mapSettingsStore.svelte.js';
 	import iconExpandSvg from '$icons/expand-solid-full.svg?raw';
 	import iconZoomInSvg from '$icons/magnifying-glass-plus-solid-full.svg?raw';
@@ -80,11 +81,6 @@
 		snapResolutionForZoom,
 		subGridOctaveForZoom,
 	} from '$lib/mapConstants.js';
-	import {
-		MAP_ICON_CATEGORIES,
-		MAP_ICON_LIST,
-		type MapIcon,
-	} from '$lib/generated/mapIconManifest.js';
 	import { gridLineOffsets, isMajorLine, snapCoord } from '$lib/mapGeometry.js';
 	import {
 		mapState,
@@ -127,21 +123,11 @@
 	let dialogOpen = $state(false);
 	let dialogEl = $state<HTMLElement | null>(null);
 	let optionsDialogRef = $state<{ open(): void; close(): void } | null>(null);
-	// Icon-picker sub-dialog — bits-ui Dialog too. `iconSearchInputEl`
-	// is refocused explicitly on every open (autofocus attribute only
-	// fires on first mount, but bits-ui Content unmounts on close so
-	// each re-open is a fresh mount — kept the explicit focus anyway
-	// for defence in depth).
+	// Icon-picker sub-dialog open state — the picker itself is MapIconPicker,
+	// which owns its own search + focus.
 	let iconDialogOpen = $state(false);
-	// Bound to the icon picker's search input so `openIconPicker` can
-	// focus it explicitly on every open. HTML `autofocus` on the input
-	// alone only fires the first time the input mounts — this dialog
-	// stays in the DOM across opens (unlike bits-ui Content), so we
-	// re-focus manually.
-	let iconSearchInputEl = $state<HTMLInputElement | null>(null);
 	let fileInputEl = $state<HTMLInputElement | null>(null);
 	let uploadError = $state('');
-	let iconSearch = $state('');
 
 	// Map picker chip state — Popover open/close driven by bits-ui. The
 	// combobox itself lives in the template (`Popover.Root` +
@@ -1178,40 +1164,11 @@
 
 	function openIconPicker() {
 		if (!selectedMarker) return;
-		iconSearch = '';
 		iconDialogOpen = true;
-		// Focus lands on the search input via `onOpenAutoFocus` on
-		// Dialog.Content — no manual rAF needed now that bits-ui
-		// unmounts/remounts Content on each open.
 	}
 	function closeIconPicker() {
 		iconDialogOpen = false;
 	}
-
-	function iconKey(i: MapIcon): string {
-		return `${i.category}/${i.slug}`;
-	}
-
-	const filteredIcons = $derived.by<Record<string, MapIcon[]>>(() => {
-		const q = iconSearch.trim().toLowerCase();
-		const grouped: Record<string, MapIcon[]> = {};
-		for (const cat of MAP_ICON_CATEGORIES) grouped[cat] = [];
-		for (const i of MAP_ICON_LIST) {
-			if (
-				q &&
-				!i.slug.toLowerCase().includes(q) &&
-				!i.label.toLowerCase().includes(q) &&
-				!i.category.toLowerCase().includes(q)
-			) {
-				continue;
-			}
-			grouped[i.category]?.push(i);
-		}
-		// Drop empty categories so the picker doesn't render headers with
-		// nothing under them when a search filter is on.
-		for (const cat of Object.keys(grouped)) if (grouped[cat].length === 0) delete grouped[cat];
-		return grouped;
-	});
 
 	async function handleFileChosen(e: Event) {
 		const input = e.target as HTMLInputElement;
@@ -2148,78 +2105,13 @@
 	category with a search filter. Live-color-previews using the currently-
 	selected marker's color so users can see what they'll get.
 -->
-<Dialog.Root bind:open={iconDialogOpen}>
-	<Dialog.Portal>
-		<Dialog.Overlay class="mp-icon-overlay" />
-		<Dialog.Content
-			class="mp-icon-dialog"
-			onOpenAutoFocus={(e) => {
-				// Focus the search input on open (CLAUDE.md focus rule).
-				e.preventDefault();
-				setTimeout(() => iconSearchInputEl?.focus(), 0);
-			}}
-		>
-			<DialogHeader
-				title={headingText('Choose Icon')}
-				onclose={closeIconPicker}
-				radius="8px 8px 0 0"
-			/>
-			<div class="mp-icon-search-row">
-				<div class="mp-icon-search-field">
-					<span class="mp-icon-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
-					<input
-						id="mp-icon-search"
-						name="mp-icon-search"
-						bind:this={iconSearchInputEl}
-						class="mp-icon-search"
-						type="search"
-						placeholder="Search icons…"
-						bind:value={iconSearch}
-						aria-label="Search icons"
-					/>
-				</div>
-			</div>
-			<div class="mp-icon-body">
-				<!-- "No icon" tile always at the top — clicking it clears the
-		     marker's icon so only the label renders (centred on the point). -->
-				<div class="mp-icon-cat-label">Label only</div>
-				<div class="mp-icon-grid">
-					<button
-						class="mp-icon-tile mp-icon-tile--none"
-						class:mp-icon-tile-selected={draft?.icon === '' || draft?.icon === null}
-						onclick={() => pickDraftIcon('')}
-						use:tooltip={'Show only the label — no icon, centred on the point'}
-						aria-label="No icon"
-					>
-						<span class="mp-icon-none-glyph" aria-hidden="true">Aa</span>
-					</button>
-				</div>
-				{#each Object.keys(filteredIcons) as cat (cat)}
-					<div class="mp-icon-cat-label">{filteredIcons[cat][0].categoryLabel}</div>
-					<div class="mp-icon-grid">
-						{#each filteredIcons[cat] as ic (iconKey(ic))}
-							{@const key = iconKey(ic)}
-							<button
-								class="mp-icon-tile"
-								class:mp-icon-tile-selected={draft?.icon === key}
-								onclick={() => pickDraftIcon(key)}
-								use:tooltip={ic.label}
-								aria-label={ic.label}
-							>
-								<svg viewBox={ic.viewBox} aria-hidden="true">
-									<g fill={selectedColor}>{@html ic.inner}</g>
-								</svg>
-							</button>
-						{/each}
-					</div>
-				{/each}
-				{#if Object.keys(filteredIcons).length === 0}
-					<p class="mp-icon-empty">No icons match "{iconSearch}".</p>
-				{/if}
-			</div>
-		</Dialog.Content>
-	</Dialog.Portal>
-</Dialog.Root>
+<MapIconPicker
+	bind:open={iconDialogOpen}
+	{selectedColor}
+	currentIcon={draft?.icon}
+	onpick={pickDraftIcon}
+	onclose={closeIconPicker}
+/>
 
 <style>
 	/* bits-ui portals Content + Overlay to <body>; scope everything
