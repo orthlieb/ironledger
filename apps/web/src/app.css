@@ -270,6 +270,80 @@ html[data-font='cinzel'][data-theme='light'] {
 	--accent-dim: #3a414812;
 }
 
+/* --------------------------------------------------------------------------
+   Futhark chrome palette — mossy verdigris tokens keyed to
+   `data-font='futhark'`. Reads like weathered bronze on standing
+   stones after a long winter — thematically resonant with rune-
+   carved monuments, distinct from both Ledger (amber) and
+   Gravestone (steel), and safely distant from every semantic
+   colour (danger/success/warning/stats/resources) so nothing
+   competes for signal.
+
+   Same compound-selector shape as the gravestone block above:
+   specificity (0,2,1) beats the base theme blocks (0,1,1)
+   regardless of source order.
+-------------------------------------------------------------------------- */
+html[data-font='futhark']:not([data-theme='light']) {
+	--bg-page: #080d0a;
+	--bg-card: #101511;
+	--bg-inset: #0b100d;
+	--bg-control: #151b17;
+	--bg-hover: #1c231e;
+	--border: #2a3530;
+	--border-mid: #3f4d47;
+
+	--text: #d0d8d0;
+	--text-muted: #8ba099;
+	--text-dimmer: #5c6b64;
+
+	/* Verdigris accent — bronze weathered green, reads as ancient */
+	--text-accent: #68a68a;
+	--focus-ring: #68a68a;
+	--accent-glow: #68a68a20;
+	--accent-dim: #68a68a12;
+}
+
+@media (prefers-color-scheme: light) {
+	html[data-font='futhark']:not([data-theme='dark']) {
+		--bg-page: #e8ede6;
+		--bg-card: #dfe5dc;
+		--bg-inset: #edf1eb;
+		--bg-control: #e3e9e0;
+		--bg-hover: #d7ded4;
+		--border: #b7c2b3;
+		--border-mid: #98a494;
+
+		--text: #171c19;
+		--text-muted: #4a5751;
+		--text-dimmer: #7f8c85;
+
+		/* Deep moss accent — dark verdigris on lichen paper */
+		--text-accent: #2f6d54;
+		--focus-ring: #2f6d54;
+		--accent-glow: #2f6d5420;
+		--accent-dim: #2f6d5412;
+	}
+}
+
+html[data-font='futhark'][data-theme='light'] {
+	--bg-page: #e8ede6;
+	--bg-card: #dfe5dc;
+	--bg-inset: #edf1eb;
+	--bg-control: #e3e9e0;
+	--bg-hover: #d7ded4;
+	--border: #b7c2b3;
+	--border-mid: #98a494;
+
+	--text: #171c19;
+	--text-muted: #4a5751;
+	--text-dimmer: #7f8c85;
+
+	--text-accent: #2f6d54;
+	--focus-ring: #2f6d54;
+	--accent-glow: #2f6d5420;
+	--accent-dim: #2f6d5412;
+}
+
 @media (min-width: 768px) {
 	:root {
 		--page-gutter: 1.25rem;
