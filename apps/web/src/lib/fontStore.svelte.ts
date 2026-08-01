@@ -43,16 +43,21 @@ export function savedFont(): FontDisplay {
 	return _readSaved();
 }
 
-/** Apply a font mode: persists to localStorage, updates DOM attributes + CSS var. */
+/** Apply a font mode: persists to localStorage, updates DOM attributes + CSS var.
+ *
+ *  `data-font` is set for ALL three modes — including the cinzel default —
+ *  so `html[data-font='cinzel']`-scoped rules (e.g. the Gravestone chrome
+ *  palette in app.css) actually match. localStorage still skips writing the
+ *  default so a "no user preference" state stays represented by an absent
+ *  storage entry. */
 export function setFontDisplay(f: FontDisplay): void {
 	_font = f;
 	if (f === 'cinzel') {
 		localStorage.removeItem(FONT_DISPLAY_KEY);
-		document.documentElement.removeAttribute('data-font');
 	} else {
 		localStorage.setItem(FONT_DISPLAY_KEY, f);
-		document.documentElement.setAttribute('data-font', f);
 	}
+	document.documentElement.setAttribute('data-font', f);
 	document.documentElement.style.setProperty('--font-display', FONT_STACKS[f]);
 }
 
