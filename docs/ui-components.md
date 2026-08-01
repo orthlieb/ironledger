@@ -1,6 +1,14 @@
 # UI Components — Design Specifications
 
-Canonical styles for shared UI patterns across the app. When creating or editing card components, follow these specs exactly to maintain visual consistency.
+Canonical styles for shared UI patterns across the app.
+
+> **⚠️ v2 note.** The **GlobalContextBar** was removed in the v2 rewrite (see
+> [global-context-bar.md](global-context-bar.md)) — any `.gc-*` classes and
+> "GCB tile" references below are historical. Several card-pattern specs here
+> also predate v2's deck-of-cards layout, where the standalone card components
+> were merged into the `v2/*Area.svelte` hosts. The pill / badge / icon-button
+> style specs remain accurate; treat GCB- and card-component-specific structure
+> as reference for retired components.
 
 ---
 
@@ -104,43 +112,38 @@ Small square button that sits inline with a single-line input or select and trig
 
 ## Tooltips
 
-**Always use CSS tooltips via `data-tooltip`. Never use the native `title` attribute** — browser `title` tooltips have unpredictable delays, can't be styled, and don't appear in all environments.
+**Use the `use:tooltip` action for every hover hint. Never use the native
+`title` attribute** — native `title` has unpredictable delays, can't be styled,
+doesn't show on touch, and is clipped by `overflow: hidden/auto` ancestors
+(common inside dialogs). This is the app-wide standard — see CLAUDE.md →
+"Tooltips".
 
 ### Usage
-
-```svelte
-<span data-tooltip="Tooltip text">hover me</span>
-<!-- Appears above by default -->
-
-<span data-tooltip="Tooltip text" class="tooltip-down">hover me</span>
-<!-- Appears below -->
-```
-
-The global rule in `app.css` handles all styling automatically — no extra CSS needed. The tooltip appears on `:hover` and `:focus-visible`.
-
-### How it works (app.css)
-
-- `[data-tooltip]` gets `position: relative`
-- `::after` renders the bubble using `content: attr(data-tooltip)`
-- `::before` renders the arrow caret
-- Fade + scale transition on hover
-- `.tooltip-down` class flips direction to below the element
-- `z-index: 9999` on bubble, `10000` on JS tooltips (for clipped scroll contexts)
-
-### When to use `use:tooltip` instead
-
-If the element lives inside an `overflow: hidden` or `overflow: scroll` container (e.g. the GCB tile, scroll panels), the CSS `::after` tooltip will be clipped. **Always use `use:tooltip` for pills and controls inside the GCB or any scrollable/clipped container.**
 
 ```svelte
 <script>
   import { tooltip } from '$lib/actions/tooltip.js';
 </script>
 
-<span use:tooltip="Asset name">pill text</span>
+<button use:tooltip={'Save changes'} aria-label="Save">{@html saveIcon}</button>
 <span use:tooltip={{ text: 'Asset name', placement: 'below' }}>pill text</span>
 ```
 
-The action appends a body-level `.js-tooltip` div (fixed position) so it is never clipped by any ancestor overflow.
+`use:tooltip` promotes the tip into the top layer via the browser's Popover API
+(a body-level `.js-tooltip`), so it renders correctly above dialogs and other
+floating UI and is never clipped by an ancestor's overflow; it also auto-shows
+on tap and dismisses on mobile. For icon-only buttons add a matching
+`aria-label` — the action doesn't set the accessible name (native `title` used
+to double as it).
+
+### Legacy `[data-tooltip]` CSS system
+
+A lightweight CSS-only tooltip (`data-tooltip="…"` on an element, styled
+globally in `app.css` via `::after`/`::before` on `:hover`/`:focus-visible`) is
+still used by a few non-clipped controls (e.g. SettingsDialog). It's fine where
+it already lives, but prefer `use:tooltip` for new work — the CSS bubble is
+clipped inside any `overflow: hidden/scroll` ancestor and doesn't show on touch.
+(The old `.tooltip-down` "flip below" modifier was removed.)
 
 ---
 

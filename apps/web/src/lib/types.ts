@@ -81,8 +81,11 @@ export interface FoeEncounter {
 	vanquished: boolean;
 	/** Current escalating harm level (ticks). Only meaningful when foeDef.escalates is true. */
 	currentHarm?: number;
-	/** Current escalating defense level (ticks). Only meaningful when foeDef.escalatesDefense is true.
-	 *  Absent = full defense (cap). Starts at cap and decreases by 1 on each miss. */
+	/** Current escalating-defense (shield) level. Only meaningful when
+	 *  foeDef.escalatesDefense is true. Absent = 0 (no shield yet). Starts at 0
+	 *  and increases by 1 on each Miss, up to a cap of progressPerHit − 1; higher
+	 *  values reduce the progress marked per hit (progressPerHit − currentDefense,
+	 *  floored at 1). */
 	currentDefense?: number;
 }
 
