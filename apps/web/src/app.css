@@ -196,6 +196,80 @@ html[data-theme='light'] {
 	--font-display-scale: 1.12; /* matches Simonetta's bump */
 }
 
+/* --------------------------------------------------------------------------
+   Gravestone chrome palette — cool grey/steel tokens keyed to
+   `data-font='cinzel'`. Overrides ONLY the chrome (backgrounds,
+   borders, body text, accent); the semantic stat / resource /
+   danger / success / warning colours from the base theme blocks
+   above pass through untouched so gameplay UI reads the same in
+   any font. Ledger (Simonetta) and Futhark leave the amber theme
+   in place.
+
+   Compound `[data-font='cinzel'][data-theme]` selectors have
+   specificity (0,2,1) — one step above the base theme blocks
+   (0,1,1) — so this wins regardless of source order.
+-------------------------------------------------------------------------- */
+html[data-font='cinzel']:not([data-theme='light']) {
+	--bg-page: #0e0f11;
+	--bg-card: #161a1d;
+	--bg-inset: #101214;
+	--bg-control: #1c2124;
+	--bg-hover: #242a2f;
+	--border: #2f363c;
+	--border-mid: #4a545c;
+
+	--text: #dee2e6;
+	--text-muted: #94a0a9;
+	--text-dimmer: #6a747c;
+
+	/* Bright brushed-steel accent — reads as bevelled inscription */
+	--text-accent: #c0c8d0;
+	--focus-ring: #c0c8d0;
+	--accent-glow: #c0c8d020;
+	--accent-dim: #c0c8d012;
+}
+
+@media (prefers-color-scheme: light) {
+	html[data-font='cinzel']:not([data-theme='dark']) {
+		--bg-page: #eceff2;
+		--bg-card: #e2e6ea;
+		--bg-inset: #f2f5f8;
+		--bg-control: #e6ebef;
+		--bg-hover: #dae0e6;
+		--border: #c1c8cf;
+		--border-mid: #a5adb5;
+
+		--text: #1a1d20;
+		--text-muted: #4f565d;
+		--text-dimmer: #828a92;
+
+		/* Deep charcoal accent — reads as chiselled stone */
+		--text-accent: #3a4148;
+		--focus-ring: #3a4148;
+		--accent-glow: #3a414820;
+		--accent-dim: #3a414812;
+	}
+}
+
+html[data-font='cinzel'][data-theme='light'] {
+	--bg-page: #eceff2;
+	--bg-card: #e2e6ea;
+	--bg-inset: #f2f5f8;
+	--bg-control: #e6ebef;
+	--bg-hover: #dae0e6;
+	--border: #c1c8cf;
+	--border-mid: #a5adb5;
+
+	--text: #1a1d20;
+	--text-muted: #4f565d;
+	--text-dimmer: #828a92;
+
+	--text-accent: #3a4148;
+	--focus-ring: #3a4148;
+	--accent-glow: #3a414820;
+	--accent-dim: #3a414812;
+}
+
 @media (min-width: 768px) {
 	:root {
 		--page-gutter: 1.25rem;

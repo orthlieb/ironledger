@@ -221,7 +221,7 @@
 						<ToggleGroup.Item
 							value="simonetta"
 							class="sd-seg-btn"
-							data-tooltip="Grimoire — calligraphic all-caps serif">Grimoire</ToggleGroup.Item
+							data-tooltip="Ledger — calligraphic all-caps serif">Ledger</ToggleGroup.Item
 						>
 						<ToggleGroup.Item
 							value="futhark"
