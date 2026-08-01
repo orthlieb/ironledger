@@ -103,7 +103,7 @@ async function createSite(page: import('@playwright/test').Page) {
 /** Delete the active expedition via the header gear → options → confirm. */
 async function deleteActiveExpedition(page: import('@playwright/test').Page) {
 	await page.locator(`${EXP_HEADER} .ea-hdr-settings-btn`).click();
-	await page.locator('button.co-danger-btn').click();
+	await page.locator('.co-dialog button.btn-danger').click();
 	const confirmBtn = page.locator('.confirm-modal button.btn-danger');
 	await expect(confirmBtn).toBeVisible({ timeout: 5_000 });
 	await confirmBtn.click();
