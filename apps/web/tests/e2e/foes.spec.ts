@@ -49,7 +49,7 @@ async function addFoe(page: Page) {
 async function deleteActiveFoe(page: Page) {
 	// Delete lives behind the header gear → FoeOptionsDialog → confirm.
 	await page.locator(`${FOE_HEADER} .fa-hdr-settings-btn`).click();
-	await page.locator('button.co-danger-btn').click();
+	await page.locator('.co-dialog button.btn-danger').click();
 	const confirmBtn = page.locator('.confirm-modal button.btn-danger');
 	await expect(confirmBtn).toBeVisible({ timeout: 3_000 });
 	await confirmBtn.click();

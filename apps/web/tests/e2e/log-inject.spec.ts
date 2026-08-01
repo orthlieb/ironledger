@@ -526,7 +526,7 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		// Foes — delete the active foe via the gear → options → confirm.
 		for (let g = 0; g < 30 && (await foeCount(page)) > 0; g++) {
 			await page.locator(`${FOE_AREA} .fa-hdr-settings-btn`).click();
-			await page.locator('button.co-danger-btn').click();
+			await page.locator('.co-dialog button.btn-danger').click();
 			await page.locator('.confirm-modal button.btn-danger').click();
 			await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
 		}
@@ -534,7 +534,7 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		// Expeditions — gear → options → delete.
 		for (let g = 0; g < 30 && (await expCount(page)) > 0; g++) {
 			await page.locator(`${EXP_AREA} .ea-hdr-settings-btn`).click();
-			await page.locator('button.co-danger-btn').click();
+			await page.locator('.co-dialog button.btn-danger').click();
 			await page.locator('.confirm-modal button.btn-danger').click();
 			await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
 		}
@@ -550,7 +550,7 @@ test.describe('Log interactive links (injected mock entries)', () => {
 			)
 				break;
 			await page.locator(`${CHAR_AREA} .ca-hdr-settings-btn`).click();
-			await page.locator('button.co-danger-btn').click();
+			await page.locator('.co-dialog button.btn-danger').click();
 			await page.locator('.confirm-modal button.btn-danger').click();
 			await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
 		}

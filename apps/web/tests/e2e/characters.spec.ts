@@ -362,7 +362,7 @@ test.describe('Characters area (v2)', () => {
 		for (let guard = 0; guard < 20; guard++) {
 			if (!(await activeTab.isVisible().catch(() => false))) break;
 			await page.locator(`${CHAR_HEADER} .ca-hdr-settings-btn`).click();
-			await page.locator('button.co-danger-btn').click();
+			await page.locator('.co-dialog button.btn-danger').click();
 			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 3_000 });
 			await page.locator('.confirm-modal button.btn-danger').click();
 			await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });

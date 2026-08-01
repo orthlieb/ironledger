@@ -404,19 +404,19 @@ test.describe('Data persistence across logout / login (v2)', () => {
 
 		for (let g = 0; g < 30 && (await foeCount(page)) > 0; g++) {
 			await page.locator(`${FOE_AREA} .fa-hdr-settings-btn`).click();
-			await page.locator('button.co-danger-btn').click();
+			await page.locator('.co-dialog button.btn-danger').click();
 			await page.locator('.confirm-modal button.btn-danger').click();
 			await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
 		}
 		for (let g = 0; g < 30 && (await expCount(page)) > 0; g++) {
 			await page.locator(`${EXP_AREA} .ea-hdr-settings-btn`).click();
-			await page.locator('button.co-danger-btn').click();
+			await page.locator('.co-dialog button.btn-danger').click();
 			await page.locator('.confirm-modal button.btn-danger').click();
 			await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
 		}
 		for (let g = 0; g < 30 && (await cmCount(page)) > 0; g++) {
 			await page.locator(`${CM_AREA} .cm-hdr-settings-btn`).click();
-			await page.locator('button.co-danger-btn').click();
+			await page.locator('.co-dialog button.btn-danger').click();
 			await page.locator('.confirm-modal button.btn-danger').click();
 			await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
 		}
