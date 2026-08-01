@@ -15,11 +15,12 @@
 
 	let { data }: { data: { user?: { name?: string } } } = $props();
 
-	// Each card has an optional `image` (3:2 WebP under /static, ideally
-	// 1200x800). When omitted, the card renders a tinted placeholder panel
-	// with the feature's icon centred at large size — same 3:2 slot, so
-	// dropping in a real image later is a one-line swap with no layout
-	// shift. Real images should live at `/ironledger-feat-<key>.webp`.
+	// Each card has an optional `image` (3:2 WebP served from /about/,
+	// ideally 1200x800). When omitted, the card renders a tinted placeholder
+	// panel with the feature's icon centred at large size — same 3:2 slot,
+	// so dropping in a real image later is a one-line swap with no layout
+	// shift. Real images live at `apps/web/static/about/<key>.webp` and
+	// are referenced as `/about/<key>.webp`.
 	const features: {
 		icon: string;
 		title: string;
