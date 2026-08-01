@@ -12,6 +12,9 @@
 	import angleLeftSvg from '$icons/angle-left-solid-full.svg?raw';
 	import angleRightSvg from '$icons/angle-right-solid-full.svg?raw';
 	import { headingText } from '$lib/fontStore.svelte.js';
+	import emblaCarouselSvelte from 'embla-carousel-svelte';
+	import Autoplay from 'embla-carousel-autoplay';
+	import type { EmblaCarouselType, EmblaOptionsType } from 'embla-carousel';
 
 	let { data }: { data: { user?: { name?: string } } } = $props();
 
@@ -103,42 +106,52 @@
 		},
 	];
 
-	// ── Carousel state ──────────────────────────────────────────────
-	// One card visible at a time; auto-advances every AUTO_MS. Pauses
-	// while the pointer is over the carousel or when the user has
-	// interacted with the controls (prev/next/dot) — resuming on
-	// pointer leave. Reduced-motion users get the same rotation but
-	// without the slide transition (CSS handles that).
-	const AUTO_MS = 6000;
-	let active = $state(0);
-	let paused = $state(false);
-	// Bumped by every user action so the auto-advance effect resets
-	// its timer instead of firing immediately after a manual nav.
-	let interactionTick = $state(0);
+	// ── Carousel — powered by Embla ─────────────────────────────────
+	// Embla owns the sliding mechanism (transform, touch/drag inertia,
+	// wheel gestures, resize). We keep the card / dot / arrow markup
+	// and drive them from `selectedIndex`, which mirrors Embla's active
+	// snap via `on('select')`. Autoplay is a plugin — 6 s cadence,
+	// pauses on pointer-enter or focus-in and resumes on leave/blur;
+	// manual nav (prev/next/dot) resets the timer via
+	// `autoplay.reset()` so the next slide doesn't fire seconds after
+	// the user just picked one.
+	const emblaOptions: EmblaOptionsType = {
+		loop: true,
+		align: 'start',
+		containScroll: 'trimSnaps',
+	};
+	const emblaPlugins = [
+		Autoplay({
+			delay: 6000,
+			stopOnMouseEnter: true,
+			stopOnFocusIn: true,
+			stopOnInteraction: false, // resume after nav rather than latch off
+		}),
+	];
+
+	let emblaApi = $state<EmblaCarouselType | undefined>();
+	let selectedIndex = $state(0);
+
+	function onEmblaInit(event: CustomEvent<EmblaCarouselType>) {
+		emblaApi = event.detail;
+		selectedIndex = emblaApi.selectedScrollSnap();
+		emblaApi.on('select', () => {
+			if (emblaApi) selectedIndex = emblaApi.selectedScrollSnap();
+		});
+	}
 
 	function goTo(i: number) {
-		const n = features.length;
-		active = ((i % n) + n) % n;
-		interactionTick++;
+		emblaApi?.scrollTo(i);
+		emblaApi?.plugins().autoplay?.reset();
 	}
 	function next() {
-		goTo(active + 1);
+		emblaApi?.scrollNext();
+		emblaApi?.plugins().autoplay?.reset();
 	}
 	function prev() {
-		goTo(active - 1);
+		emblaApi?.scrollPrev();
+		emblaApi?.plugins().autoplay?.reset();
 	}
-
-	$effect(() => {
-		// Re-run whenever active/paused/interactionTick change so the
-		// timer restarts from the current slide.
-		void active;
-		void interactionTick;
-		if (paused) return;
-		const id = setTimeout(() => {
-			active = (active + 1) % features.length;
-		}, AUTO_MS);
-		return () => clearTimeout(id);
-	});
 
 	function onKey(e: KeyboardEvent) {
 		if (e.key === 'ArrowLeft') {
@@ -149,6 +162,32 @@
 			e.preventDefault();
 		}
 	}
+
+	// Track the vertical centre of the media (image / placeholder) relative
+	// to the carousel wrapper so the prev/next arrows overlay the middle of
+	// the image, not the middle of the whole card. On desktop the media
+	// stretches to card height so the two happen to coincide; on the mobile
+	// stacked layout the media sits at the top of the card and the plain
+	// `top: 50%` would fall in the text zone below it.
+	let carouselEl = $state<HTMLDivElement | undefined>();
+	let mediaEl = $state<HTMLDivElement | undefined>();
+	let mediaMidY = $state('50%');
+
+	$effect(() => {
+		if (!carouselEl || !mediaEl) return;
+		const update = () => {
+			if (!carouselEl || !mediaEl) return;
+			const cRect = carouselEl.getBoundingClientRect();
+			const mRect = mediaEl.getBoundingClientRect();
+			const mid = mRect.top - cRect.top + mRect.height / 2;
+			mediaMidY = `${Math.round(mid)}px`;
+		};
+		update();
+		const ro = new ResizeObserver(update);
+		ro.observe(carouselEl);
+		ro.observe(mediaEl);
+		return () => ro.disconnect();
+	});
 </script>
 
 <svelte:head>
@@ -227,33 +266,31 @@
 		<h2 class="section-heading">{headingText('Everything You Need at the Table (Except Luck)')}</h2>
 		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 		<div
+			bind:this={carouselEl}
 			class="carousel"
 			role="region"
 			aria-roledescription="carousel"
 			aria-label="Iron Ledger features"
-			onmouseenter={() => (paused = true)}
-			onmouseleave={() => (paused = false)}
-			onfocusin={() => (paused = true)}
-			onfocusout={() => (paused = false)}
+			style="--media-mid-y: {mediaMidY}"
 			onkeydown={onKey}
 			tabindex="-1"
 		>
-			<div class="carousel-viewport">
-				<div
-					class="carousel-track"
-					style="transform: translateX(-{active * 100}%)"
-					aria-live="polite"
-				>
+			<div
+				class="carousel-viewport"
+				use:emblaCarouselSvelte={{ options: emblaOptions, plugins: emblaPlugins }}
+				onemblaInit={onEmblaInit}
+			>
+				<div class="carousel-track" aria-live="polite">
 					{#each features as feat, i}
 						<div
 							class="carousel-slide"
 							role="group"
 							aria-roledescription="slide"
 							aria-label={`${i + 1} of ${features.length}`}
-							aria-hidden={i !== active}
+							aria-hidden={i !== selectedIndex}
 						>
 							<div class="feature-card" style="--feat-color: {feat.color}">
-								<div class="feature-media">
+								<div class="feature-media" bind:this={mediaEl}>
 									{#if feat.image}
 										<img
 											src={feat.image}
@@ -302,10 +339,10 @@
 					<button
 						type="button"
 						class="carousel-dot"
-						class:carousel-dot--active={i === active}
+						class:carousel-dot--active={i === selectedIndex}
 						onclick={() => goTo(i)}
 						role="tab"
-						aria-selected={i === active}
+						aria-selected={i === selectedIndex}
 						aria-label={feat.title}
 						style="--feat-color: {feat.color}"
 					></button>
@@ -551,24 +588,19 @@
 		outline: none;
 	}
 
+	/* Embla owns the viewport DOM (attaches the action) and drives the
+	   transform on `.carousel-track` directly via rAF, so no CSS
+	   transition is needed — one would fight Embla's frame-by-frame
+	   updates during drag. */
 	.carousel-viewport {
 		overflow: hidden;
 		border-radius: 6px;
 	}
-
 	.carousel-track {
 		display: flex;
 		width: 100%;
-		will-change: transform;
-		transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+		touch-action: pan-y pinch-zoom;
 	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.carousel-track {
-			transition: none;
-		}
-	}
-
 	.carousel-slide {
 		flex: 0 0 100%;
 		min-width: 0;
@@ -705,7 +737,13 @@
 	   intercept clicks (or the pause :hover on the carousel wrapper). */
 	.carousel-nav {
 		position: absolute;
-		top: 50%;
+		/* `--media-mid-y` is set by a ResizeObserver in the script that
+		   tracks the media element's vertical centre relative to the
+		   carousel wrapper — so on mobile (stacked layout with a tall
+		   card) the arrows still land on the image, not the text below.
+		   Falls back to 50 % during the first paint before the effect
+		   runs. */
+		top: var(--media-mid-y, 50%);
 		transform: translateY(-50%);
 		z-index: 2;
 		width: 40px;
