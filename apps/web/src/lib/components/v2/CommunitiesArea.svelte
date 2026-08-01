@@ -56,12 +56,10 @@
 		loadEntityMarkerIndex,
 		mapListState,
 		markersForEntity,
-		openMapForOwner,
-		setBackground,
 		type EntityMarkerRef,
 	} from '$lib/mapStore.svelte.js';
-	import { downscaleImage, MapImageError } from '$lib/mapImage.js';
 	import { formatEntityId } from '$lib/mapEntityLinks.js';
+	import { createMapOwnerActions, fmtCoord } from '$lib/mapOwnerActions.js';
 	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
 	import iconMapSvg from '$icons/treasure-map.svg?raw';
 	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
@@ -275,48 +273,17 @@
 	 *  doesn't exist at all yet). Drives the "+ Map" vs "Map" button. */
 	const activeEntryMapEmpty = $derived(!activeEntryMap || !activeEntryMap.backgroundHash);
 
-	async function openOwnedMap() {
-		if (!activeEntry || !activeIsMapOwner) return;
-		const mapId = await openMapForOwner(
-			activeEntry.kind as 'community' | 'place',
-			activeEntry.data.id,
-			activeEntry.data.name || 'Untitled',
-		);
-		mapDialogRef?.open({ mapId: mapId ?? undefined });
-	}
-
-	/** "+ Map" variant — the button is a `<label>` wrapping a hidden
-	 *  file input, so tapping it opens the OS file picker as part of
-	 *  the tap's native user gesture (essential on iOS Safari). */
-	async function handleAddMapWithFile(e: Event) {
-		if (!activeEntry || !activeIsMapOwner) return;
-		const input = e.target as HTMLInputElement;
-		const file = input.files?.[0];
-		input.value = '';
-		if (!file) return;
-		try {
-			const mapId = await openMapForOwner(
-				activeEntry.kind as 'community' | 'place',
-				activeEntry.data.id,
-				activeEntry.data.name || 'Untitled',
-			);
-			if (!mapId) return;
-			const result = await downscaleImage(file);
-			await setBackground(result.dataUrl, result.aspect);
-			mapDialogRef?.open({ mapId });
-		} catch (err) {
-			if (err instanceof MapImageError) console.warn('Add map image failed:', err.message);
-			else console.error('Add map failed', err);
-		}
-	}
-
-	function jumpToMarker(ref: EntityMarkerRef) {
-		mapDialogRef?.open({ mapId: ref.mapId, markerId: ref.markerId });
-	}
-
-	function fmtCoord(v: number): string {
-		return Number.isInteger(v) ? String(v) : v.toFixed(2);
-	}
+	const { openOwnedMap, handleAddMapWithFile, jumpToMarker } = createMapOwnerActions(
+		() =>
+			activeEntry && activeIsMapOwner
+				? {
+						kind: activeEntry.kind as 'community' | 'place',
+						id: activeEntry.data.id,
+						name: activeEntry.data.name || 'Untitled',
+					}
+				: null,
+		() => mapDialogRef,
+	);
 
 	// The Notes/description tab is labelled "Background" for NPCs (origin,
 	// upbringing, major traits — fits a person) and "Description" for
