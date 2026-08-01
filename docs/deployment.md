@@ -370,7 +370,7 @@ curl https://yourdomain.com/health
 - [x] HTTPS everywhere (Let's Encrypt auto-renewal)
 - [x] HSTS, X-Frame-Options, CSP headers (Helmet + Nginx)
 - [x] Rate limiting at Nginx AND API layers
-- [x] 64KB request body limit (Nginx + Fastify)
+- [x] 2 MB request body limit (Nginx + Fastify)
 - [x] PostgreSQL RLS (row-level security)
 - [x] Argon2id password hashing (OWASP 2024 params)
 - [x] HaveIBeenPwned password checking
@@ -386,19 +386,19 @@ curl https://yourdomain.com/health
 
 ## Troubleshooting
 
-| Symptom                                            | Fix                                                                                                                                          |
-| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| 502 Bad Gateway                                    | `pm2 status` — check if Node processes are running                                                                                           |
-| Deploy health check fails                          | `pm2 logs ironledger --lines 50` — check for startup errors                                                                                  |
-| Database connection refused                        | `systemctl status postgresql` — ensure PG is running                                                                                         |
-| Redis connection error                             | `systemctl status valkey` — ensure Redis is running                                                                                          |
-| SSL certificate expired                            | `sudo certbot renew` — Certbot auto-renews via cron                                                                                          |
-| Rate limited during deploy                         | Health check endpoint (`/health`) has no rate limit                                                                                          |
-| Migration fails                                    | Check `DATABASE_ADMIN_URL` in `.env` has superuser credentials                                                                               |
-| `pm2` not found when running as root               | PM2 is installed under the `ironledger` user's nvm — use `su - ironledger` (interactive) first                                               |
-| `[PM2][ERROR] File ecosystem.config.cjs not found` | Must run PM2 from `~/app` directory: `cd ~/app && pm2 reload ecosystem.config.cjs --update-env`                                              |
-| Cross-site POST form submissions forbidden         | CSRF: SvelteKit compares `Origin` header to `ORIGIN` env var — update `ORIGIN` in `ecosystem.config.cjs` and reload after switching to HTTPS |
-| Sign-out not working                               | `cookies.delete()` must pass the same options (`httpOnly`, `sameSite`, `secure`) as `cookies.set()` or the browser ignores the deletion      |
+| Symptom                                           | Fix                                                                                                                                         |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 502 Bad Gateway                                   | `pm2 status` — check if Node processes are running                                                                                          |
+| Deploy health check fails                         | `pm2 logs ironledger --lines 50` — check for startup errors                                                                                 |
+| Database connection refused                       | `systemctl status postgresql` — ensure PG is running                                                                                        |
+| Redis connection error                            | `systemctl status valkey` — ensure Redis is running                                                                                         |
+| SSL certificate expired                           | `sudo certbot renew` — Certbot auto-renews via cron                                                                                         |
+| Rate limited during deploy                        | Health check endpoint (`/health`) has no rate limit                                                                                         |
+| Migration fails                                   | Check `DATABASE_ADMIN_URL` in `.env` has superuser credentials                                                                              |
+| `pm2` not found when running as root              | PM2 is installed under the `ironledger` user's nvm — use `su - ironledger` (interactive) first                                              |
+| `[PM2][ERROR] File ecosystem.config.js not found` | Must run PM2 from `~/app` directory: `cd ~/app && pm2 reload ecosystem.config.js --update-env`                                              |
+| Cross-site POST form submissions forbidden        | CSRF: SvelteKit compares `Origin` header to `ORIGIN` env var — update `ORIGIN` in `ecosystem.config.js` and reload after switching to HTTPS |
+| Sign-out not working                              | `cookies.delete()` must pass the same options (`httpOnly`, `sameSite`, `secure`) as `cookies.set()` or the browser ignores the deletion     |
 
 ---
 
@@ -465,13 +465,13 @@ SvelteKit compares the `Origin` request header against the `ORIGIN` environment 
 Cross-site POST form submissions are forbidden
 ```
 
-**Fix**: Update `ORIGIN` in `ecosystem.config.cjs` and reload with env:
+**Fix**: Update `ORIGIN` in `ecosystem.config.js` and reload with env:
 
 ```bash
 cd ~/app
 # The config uses JS object syntax, not env var syntax
-sed -i "s|ORIGIN: 'http://OLD_VALUE'|ORIGIN: 'https://yourdomain.com'|" ecosystem.config.cjs
-pm2 reload ecosystem.config.cjs --update-env
+sed -i "s|ORIGIN: 'http://OLD_VALUE'|ORIGIN: 'https://yourdomain.com'|" ecosystem.config.js
+pm2 reload ecosystem.config.js --update-env
 ```
 
 Note: `pm2 reload ironledger-api --update-env` alone won't pick up ecosystem config changes — you must use the `.cjs` file form.
@@ -485,12 +485,12 @@ PM2 and Node.js are installed via nvm under the `ironledger` user. Running `su -
 ```bash
 su - ironledger         # interactive (-) loads .bashrc / nvm
 cd ~/app
-pm2 reload ecosystem.config.cjs --update-env
+pm2 reload ecosystem.config.js --update-env
 ```
 
 ### PM2: reload must be run from the app directory
 
-`pm2 reload ecosystem.config.cjs` fails with "file not found" unless the working directory is `~/app`. Always `cd ~/app` first.
+`pm2 reload ecosystem.config.js` fails with "file not found" unless the working directory is `~/app`. Always `cd ~/app` first.
 
 ### JWT: add jti for guaranteed uniqueness
 

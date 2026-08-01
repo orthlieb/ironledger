@@ -1,5 +1,7 @@
 # Expeditions
 
+> **⚠️ v2 note.** The standalone `JourneyCard` / `SiteCard` / `DelveTableDialog` components were merged into **`apps/web/src/lib/components/v2/ExpeditionsArea.svelte`** in the v2 rewrite. Component names + the file-inventory table below use the retired v1 names; the data model + behaviour still apply.
+
 Tracks journey and site expeditions. Expeditions represent the two types of progress-track-based travel/exploration in Ironsworn:
 
 - **Journey** — overland or sea travel toward a destination.

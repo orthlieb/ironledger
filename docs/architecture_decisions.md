@@ -79,8 +79,13 @@ npm workspaces is built into npm — no third-party tool (Turborepo, Nx, Lerna) 
 
 ## 3. Frontend Strategy
 
-**Decision:** Keep the existing vanilla JS single-file app. Replace localStorage
-persistence with API calls. No framework rewrite.
+> **⚠️ Superseded by [§24 — v2 Deck-of-Cards UI Layout](#24-v2-deck-of-cards-ui-layout).**
+> The original "no framework rewrite" decision below is kept as a historical
+> record. The frontend was later rebuilt as a **SvelteKit 5** app (`apps/web`);
+> there is no `build.js` single-file pipeline anymore.
+
+**Decision (historical):** Keep the existing vanilla JS single-file app. Replace
+localStorage persistence with API calls. No framework rewrite.
 
 **Why:** The existing Iron Ledger app is already a clean, well-structured vanilla JS
 SPA. Rewriting it in React or Vue would provide no user-visible benefit while adding
@@ -606,15 +611,17 @@ starts; each spec file adds a `test.beforeAll` hook that resets its relevant
 entity types via direct API calls.
 
 **Why:** Playwright tests run serially and accumulate persistent data across
-runs. With SQLite's single-writer constraint, a database with 20+ characters
-causes setPartySupply() to fire 20 concurrent PATCHes, which can overwhelm
-the DB and cause the next write to fail. The blank-slate contract prevents
-this cascade.
+runs. A database with 20+ characters causes setPartySupply() to fire 20
+concurrent PATCHes at once, which can overwhelm the API's connection pool (and
+trip the login rate-limiter on the setup logins), causing the next write to
+fail. The blank-slate contract prevents this cascade. (The DB is PostgreSQL —
+the sequential deletes below are to smooth the write burst, not a single-writer
+constraint.)
 
 **How (helpers/reset.ts):**
 
 - `resetCharacters` — sequential `DELETE /api/v1/characters/:id`
-  (sequential required — SQLite single writer)
+  (sequential to smooth the write burst — Postgres)
 - `resetFoes / resetExpeditions / resetCommunities / resetLog` — atomic
   PATCH `[]` / DELETE; run concurrently with each other
 - `resetAll` — all of the above with one login round-trip

@@ -1,5 +1,7 @@
 # Mobile Support
 
+> **⚠️ Stale — needs a rewrite.** This describes the pre-v2 tabbed/swipe layout (a 5-tab bar incl. an "Adventure" tab, `handleTabBodyTouchStart`, `data-no-swipe-tabs`, `il:adventure:split` keys). The v2 layout is different: a 4-tab bar (`characters|foes|expeditions|communities`) switching at 900px, the log in a persistent column, keys `il:home:logWidth`/`col1Width`/`rowHeight` (see `routes/home/+page.svelte`). Treat specifics below as historical until rewritten.
+
 Iron Ledger's layout is responsive down to ~360px wide. This doc describes the mobile-specific behaviours that differ meaningfully from the desktop layout. Pure visual tweaks (padding, font-size, wrap order) are not listed here — see the individual component files for those.
 
 The canonical mobile breakpoint is **`max-width: 767px`** (i.e. `< 768px`). A secondary breakpoint at **`max-width: 540px`** collapses the tab bar to icons-only (except for the active tab). The 540px cutoff was chosen to cover the inner width of a Surface Duo in portrait.

@@ -41,7 +41,7 @@ There is no self-registration path to admin. The seed script (`npm run seed --wo
 
 ## Tabs
 
-The admin panel has four sub-tabs.
+The admin panel has four tabs — **Users**, **Invites**, **Logs**, and **Tools**. (The Maintenance, Registration-lock, and Broadcast controls described below are tiles inside the **Tools** tab, not separate tabs.)
 
 ### Users
 
@@ -113,7 +113,7 @@ Every admin action is recorded in `security_events` (Drizzle table in `apps/api/
 - Timestamp
 - Free-form JSON details
 
-The Audit tab in the panel is a paginated, searchable view of the last 100 events. Clearing the audit log is itself an audit-log entry (recorded after the truncate).
+The audit-log view is a paginated, searchable view of the last 100 events. Clearing the audit log is itself an audit-log entry (recorded after the truncate).
 
 ---
 
@@ -135,4 +135,4 @@ The Audit tab in the panel is a paginated, searchable view of the last 100 event
 | Admin service             | `apps/api/src/services/adminService.ts`            | User CRUD + stats queries                         |
 | Maintenance service       | `apps/api/src/services/maintenanceService.ts`      | Redis-backed maintenance state + token revocation |
 | Registration lock service | `apps/api/src/services/registrationLockService.ts` | Redis-backed registration lock state              |
-| `requireAdmin` middleware | `apps/api/src/middleware/requireAdmin.js`          | 403 guard chained after `authenticate`            |
+| `requireAdmin` middleware | `apps/api/src/middleware/requireAdmin.ts`          | 403 guard chained after `authenticate`            |

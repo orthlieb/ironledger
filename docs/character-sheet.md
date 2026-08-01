@@ -1,7 +1,15 @@
 # Character Sheet
 
-Reference extracted from `dev/yrt/IronLedger.html`.
-Implemented in `apps/web/src/lib/components/CharacterSheet.svelte`.
+Reference for the character sheet's fields and behaviour.
+
+> **⚠️ v2 note.** The v2 UI rewrite dissolved the standalone card components
+> into a single area component: the sheet is now implemented in
+> **`apps/web/src/lib/components/v2/CharactersArea.svelte`** (with
+> `ResourceTile` / `MomentumTile` / `ProgressTrackPanel` / `AssetCard` /
+> `AssetPicker`). Component names referenced below — `CharacterSheet`,
+> `MeterControl`, `XpTrack`, `AssetsSection` — are the retired v1 names; the
+> field semantics still apply. The action buses (below) drain in
+> `CharactersArea`, not `CharacterSheet`.
 
 ---
 

@@ -51,7 +51,7 @@ function json(tok: string): Record<string, string> {
 
 /**
  * Delete every character for the test user.
- * Deletes sequentially to respect SQLite's single-writer constraint.
+ * Deletes sequentially to smooth the write burst (Postgres handles concurrency fine).
  */
 export async function resetCharacters(token?: string): Promise<void> {
 	const tok = token ?? (await getTestToken());
@@ -135,7 +135,7 @@ export async function clearMapMarkers(token?: string): Promise<void> {
 }
 
 /** Delete every map the test user owns (background + markers go with it).
- *  Sequential DELETEs to respect SQLite's single writer. */
+ *  Sequential DELETEs to smooth the write burst (Postgres). */
 export async function clearAllMaps(token?: string): Promise<void> {
 	const tok = token ?? (await getTestToken());
 	const res = await fetch(`${API}/session/maps`, { headers: auth(tok) });
@@ -267,7 +267,7 @@ export async function seedNpc(name = 'Seed NPC', token?: string): Promise<string
  */
 export async function resetAll(token?: string): Promise<void> {
 	const tok = token ?? (await getTestToken());
-	// Characters require sequential deletes (SQLite single-writer).
+	// Characters are deleted sequentially to smooth the write burst (Postgres).
 	await resetCharacters(tok);
 	// Session collections and log are each a single atomic write — safe to parallelize.
 	await Promise.all([resetFoes(tok), resetExpeditions(tok), resetCommunities(tok), resetLog(tok)]);

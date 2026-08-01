@@ -1,5 +1,7 @@
 # Foes
 
+> **⚠️ v2 note.** The standalone `FoeCard` component was merged into **`apps/web/src/lib/components/v2/FoesArea.svelte`** in the v2 rewrite. The `FoeCard` references below are the retired v1 name; the data model + behaviour still apply.
+
 Tracks active combat encounters (foes). Each encounter record links to a foe definition from the foe catalogue and stores combat-specific state (progress track, custom name, vanquished flag).
 
 ---

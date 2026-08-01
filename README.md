@@ -273,4 +273,4 @@ Feature docs are in the `docs/` directory:
 - HaveIBeenPwned password checking
 - hCaptcha on registration
 - JWT RS256 with refresh token rotation and theft detection
-- 64KB request body limit
+- 2 MB request body limit

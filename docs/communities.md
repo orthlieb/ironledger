@@ -1,5 +1,7 @@
 # Communities, NPCs & Places
 
+> **⚠️ v2 note.** The standalone `CommunityCard` / `NpcCard` components were merged into **`apps/web/src/lib/components/v2/CommunitiesArea.svelte`** in the v2 rewrite. The card-component references below are retired v1 names; the data model + behaviour still apply.
+
 The Connections deck holds three distinct kinds of entry, each capturing a different thing:
 
 - **Community** — a **people** anchored to a location: a settlement, city, town, outpost, castle, nomad band. Named for the group, not the ground under their feet. Hobbiton.
