@@ -9,7 +9,12 @@
 // MapDialog ref, so both areas share one implementation.
 // =============================================================================
 
-import { openMapForOwner, setBackground, type EntityMarkerRef, type MapOwnerKind } from '$lib/mapStore.svelte.js';
+import {
+	openMapForOwner,
+	setBackground,
+	type EntityMarkerRef,
+	type MapOwnerKind,
+} from '$lib/mapStore.svelte.js';
 import { downscaleImage, MapImageError } from '$lib/mapImage.js';
 
 export interface MapOwner {
@@ -35,7 +40,10 @@ export function fmtCoord(v: number): string {
  *                  when there's no active owner (or it can't own a map).
  * @param getDialog returns the area's MapDialog ref.
  */
-export function createMapOwnerActions(getOwner: () => MapOwner | null, getDialog: () => MapDialogRef) {
+export function createMapOwnerActions(
+	getOwner: () => MapOwner | null,
+	getDialog: () => MapDialogRef,
+) {
 	/** Open the active owner's existing map. */
 	async function openOwnedMap(): Promise<void> {
 		const o = getOwner();
