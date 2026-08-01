@@ -42,10 +42,7 @@
 	import { Dialog, ToggleGroup } from 'bits-ui';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import AiConfigDialog from '$lib/components/AiConfigDialog.svelte';
-
-	import autoSvg from '$icons/circle-half-stroke-solid.svg?raw';
-	import darkSvg from '$icons/moon-solid.svg?raw';
-	import lightSvg from '$icons/sun-solid.svg?raw';
+	import Select from '$lib/components/Select.svelte';
 
 	// ---------------------------------------------------------------------------
 	// Display font — delegated to fontStore
@@ -62,10 +59,10 @@
 	// ---------------------------------------------------------------------------
 	type Theme = 'auto' | 'dark' | 'light';
 
-	const THEME_MODES: { value: Theme; icon: string; label: string; title: string }[] = [
-		{ value: 'auto', icon: autoSvg, label: 'Auto', title: 'Follow system preference' },
-		{ value: 'dark', icon: darkSvg, label: 'Dark', title: 'Dark mode' },
-		{ value: 'light', icon: lightSvg, label: 'Light', title: 'Light mode' },
+	const THEME_MODES: { value: Theme; label: string }[] = [
+		{ value: 'auto', label: 'Auto (follow system)' },
+		{ value: 'dark', label: 'Dark' },
+		{ value: 'light', label: 'Light' },
 	];
 
 	function savedTheme(): Theme {
@@ -186,20 +183,13 @@
 				<!-- Theme -->
 				<div class="sd-row">
 					<span class="sd-label">Theme</span>
-					<ToggleGroup.Root
-						type="single"
+					<Select
 						value={theme}
-						onValueChange={(v) => v && applyTheme(v as Theme)}
-						class="sd-seg"
-						aria-label="Color theme"
-					>
-						{#each THEME_MODES as mode (mode.value)}
-							<ToggleGroup.Item value={mode.value} class="sd-seg-btn" data-tooltip={mode.title}>
-								<span class="sd-seg-icon">{@html mode.icon}</span>
-								{mode.label}
-							</ToggleGroup.Item>
-						{/each}
-					</ToggleGroup.Root>
+						options={THEME_MODES}
+						onchange={applyTheme}
+						ariaLabel="Color theme"
+						class="sd-select"
+					/>
 				</div>
 
 				<!-- Heading Font -->
@@ -221,7 +211,7 @@
 						<ToggleGroup.Item
 							value="simonetta"
 							class="sd-seg-btn"
-							data-tooltip="Grimoire — calligraphic all-caps serif">Grimoire</ToggleGroup.Item
+							data-tooltip="Ledger — calligraphic all-caps serif">Ledger</ToggleGroup.Item
 						>
 						<ToggleGroup.Item
 							value="futhark"
@@ -478,17 +468,6 @@
 		color: var(--text-accent);
 		font-weight: 600;
 	}
-	:global(.sd-seg-icon) {
-		display: flex;
-		align-items: center;
-		line-height: 0;
-	}
-	:global(.sd-seg-icon svg) {
-		width: 11px;
-		height: 11px;
-		fill: currentColor;
-	}
-
 	/* ── Claude AI section ──────────────────────────────────────────────── */
 	:global(.sd-section-heading) {
 		font-family: var(--font-display, 'Cinzel', serif);
