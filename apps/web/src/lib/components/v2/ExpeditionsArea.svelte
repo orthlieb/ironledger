@@ -55,12 +55,10 @@
 		loadEntityMarkerIndex,
 		mapListState,
 		markersForEntity,
-		openMapForOwner,
-		setBackground,
 		type EntityMarkerRef,
 	} from '$lib/mapStore.svelte.js';
-	import { downscaleImage, MapImageError } from '$lib/mapImage.js';
 	import { formatEntityId } from '$lib/mapEntityLinks.js';
+	import { createMapOwnerActions, fmtCoord } from '$lib/mapOwnerActions.js';
 	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
 	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
@@ -214,50 +212,13 @@
 
 	/** Open the entity's existing map — the "Map" button variant when
 	 *  the owner already has a background uploaded. */
-	async function openOwnedMap() {
-		if (!activeExp) return;
-		const mapId = await openMapForOwner(activeExp.type, activeExp.id, activeExp.name || 'Untitled');
-		mapDialogRef?.open({ mapId: mapId ?? undefined });
-	}
-
-	/** "+ Map" variant — the button is a `<label>` wrapping a hidden
-	 *  file input, so tapping it opens the OS file picker as part of
-	 *  the tap's native user gesture (essential on iOS Safari, which
-	 *  refuses `input.click()` calls issued from JS after any `await`).
-	 *  Once the user picks a file we get-or-create the map, upload the
-	 *  image, and open the dialog to show the result. */
-	async function handleAddMapWithFile(e: Event) {
-		if (!activeExp) return;
-		const input = e.target as HTMLInputElement;
-		const file = input.files?.[0];
-		input.value = '';
-		if (!file) return;
-		try {
-			const mapId = await openMapForOwner(
-				activeExp.type,
-				activeExp.id,
-				activeExp.name || 'Untitled',
-			);
-			if (!mapId) return;
-			const result = await downscaleImage(file);
-			await setBackground(result.dataUrl, result.aspect);
-			mapDialogRef?.open({ mapId });
-		} catch (err) {
-			if (err instanceof MapImageError) console.warn('Add map image failed:', err.message);
-			else console.error('Add map failed', err);
-		}
-	}
-
-	/** Jump the dialog directly to a marker back-reference — used by the
-	 *  chips under the stage header. */
-	function jumpToMarker(ref: EntityMarkerRef) {
-		mapDialogRef?.open({ mapId: ref.mapId, markerId: ref.markerId });
-	}
-
-	/** Short "(x, y)" for chip labels — integers stay integer, else 2dp. */
-	function fmtCoord(v: number): string {
-		return Number.isInteger(v) ? String(v) : v.toFixed(2);
-	}
+	const { openOwnedMap, handleAddMapWithFile, jumpToMarker } = createMapOwnerActions(
+		() =>
+			activeExp
+				? { kind: activeExp.type, id: activeExp.id, name: activeExp.name || 'Untitled' }
+				: null,
+		() => mapDialogRef,
+	);
 
 	// Publish active expedition id so MovesDialog / preconditions can see it.
 	$effect(() => {
