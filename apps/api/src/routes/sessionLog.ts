@@ -13,8 +13,8 @@
 import { z } from 'zod';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { authenticate } from '../middleware/authenticate.js';
+import { makeHandleError } from '../lib/handleError.js';
 import * as sl from '../services/sessionLogService.js';
-import type { FastifyReply } from 'fastify';
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -130,13 +130,4 @@ export const sessionLogRoutes: FastifyPluginAsyncZod = async (server) => {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function handleError(reply: FastifyReply) {
-  return (err: unknown) => {
-    console.error('[sessionLogRoutes]', err);
-    reply.status(500).send({
-      statusCode: 500,
-      error: 'Internal Server Error',
-      message: 'An unexpected error occurred',
-    });
-  };
-}
+const handleError = makeHandleError('sessionLogRoutes');

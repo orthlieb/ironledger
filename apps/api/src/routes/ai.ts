@@ -8,8 +8,8 @@
  */
 import { z } from 'zod';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
-import type { FastifyReply } from 'fastify';
 import { authenticate } from '../middleware/authenticate.js';
+import { makeHandleError } from '../lib/handleError.js';
 import * as ai from '../services/aiConfigService.js';
 import { streamProvider, testProvider } from '../services/aiProvider.js';
 
@@ -136,13 +136,4 @@ export const aiRoutes: FastifyPluginAsyncZod = async (server) => {
   });
 };
 
-function handleError(reply: FastifyReply) {
-  return (err: unknown) => {
-    console.error('[aiRoutes]', err);
-    reply.status(500).send({
-      statusCode: 500,
-      error: 'Internal Server Error',
-      message: 'An unexpected error occurred',
-    });
-  };
-}
+const handleError = makeHandleError('aiRoutes');

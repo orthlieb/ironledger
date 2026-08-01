@@ -22,6 +22,7 @@ import { authRoutes } from './routes/auth.js';
 import { characterRoutes } from './routes/characters.js';
 import { catalogueRoutes } from './routes/catalogue.js';
 import { userDataRoutes } from './routes/userData.js';
+import { mapRoutes } from './routes/maps.js';
 import { sessionLogRoutes } from './routes/sessionLog.js';
 import { aiRoutes } from './routes/ai.js';
 import { adminRoutes } from './routes/admin.js';
@@ -190,6 +191,7 @@ export async function buildServer(): Promise<FastifyInstance> {
   await server.register(characterRoutes, { prefix: '/api/v1/characters' });
   await server.register(catalogueRoutes, { prefix: '/api/v1/catalogue' });
   await server.register(userDataRoutes, { prefix: '/api/v1/session' });
+  await server.register(mapRoutes, { prefix: '/api/v1/session' });
   await server.register(sessionLogRoutes, { prefix: '/api/v1/session/log' });
   await server.register(aiRoutes, { prefix: '/api/v1/ai' });
   await server.register(adminRoutes, { prefix: '/api/v1/admin' });

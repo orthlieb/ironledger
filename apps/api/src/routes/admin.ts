@@ -21,8 +21,8 @@ import * as registrationLockService from '../services/registrationLockService.js
 import * as registrationQuotaService from '../services/registrationQuotaService.js';
 import { sendInviteEmail } from '../lib/mailer.js';
 import { logSecurityEvent } from '../middleware/securityLogger.js';
+import { makeStatusCodeErrorHandler } from '../lib/handleError.js';
 import { config } from '../config.js';
-import type { FastifyReply } from 'fastify';
 
 // ---------------------------------------------------------------------------
 // Input schemas
@@ -469,14 +469,4 @@ export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function handleError(reply: FastifyReply) {
-  return (err: unknown) => {
-    const e = err as { statusCode?: number; code?: string; message?: string };
-    const statusCode = e.statusCode ?? 500;
-    reply.status(statusCode).send({
-      statusCode,
-      error: statusCode === 404 ? 'Not Found' : 'Internal Server Error',
-      message: statusCode < 500 ? (e.message ?? 'Error') : 'An unexpected error occurred',
-    });
-  };
-}
+const handleError = makeStatusCodeErrorHandler();
