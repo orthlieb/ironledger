@@ -69,7 +69,6 @@
 	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
 	import { getActiveFoeId, getActiveExpeditionId } from '$lib/activeContext.svelte.js';
 	import { triggerAction, appendLog, sessionLog } from '$lib/log.svelte.js';
-	import { parseStorySource } from '$lib/aiSerialize.js';
 	import { parseImportZip, sanitizeLogHtml, ImportError } from '$lib/importSanitizer.js';
 	import { zipSync, strToU8, unzipSync, strFromU8 } from 'fflate';
 	import {
@@ -79,9 +78,9 @@
 		exportZip,
 		b64ToU8,
 		slugify,
-		htmlToMd,
 		formatTicks,
 	} from '$lib/exportSerialize.js';
+	import { logToMarkdown, storiesToMarkdown } from '$lib/exportMarkdown.js';
 	import {
 		buildMapZipEntries,
 		importMapZip,
@@ -1295,7 +1294,7 @@
 		}
 
 		// ── Session Log ──────────────────────────────────────────────────
-		zipFiles['session-log.md'] = strToU8(logToMarkdown());
+		zipFiles['session-log.md'] = strToU8(logToMarkdown(sessionLog.entries));
 
 		// ── ZIP & download ───────────────────────────────────────────────
 		const zip = zipSync(zipFiles, { level: 6 });
@@ -1308,60 +1307,6 @@
 		a.click();
 		document.body.removeChild(a);
 		URL.revokeObjectURL(url);
-	}
-
-	function logToMarkdown(): string {
-		const entries = sessionLog.entries;
-		if (entries.length === 0) return '# Session Log\n\n_No entries._\n';
-		const stamp = new Date().toLocaleString(undefined, {
-			year: 'numeric',
-			month: 'short',
-			day: 'numeric',
-			hour: '2-digit',
-			minute: '2-digit',
-		});
-		const lines = ['# Session Log', `_Exported ${stamp}_`, '', '---', ''];
-		[...entries].reverse().forEach((entry) => {
-			const time = new Date(entry.ts).toLocaleString(undefined, {
-				month: 'short',
-				day: 'numeric',
-				hour: '2-digit',
-				minute: '2-digit',
-			});
-			lines.push(`## ${entry.title}  —  ${time}`, '', htmlToMd(entry.html));
-			if (entry.note?.trim()) {
-				lines.push('');
-				entry.note.split('\n').forEach((l) => lines.push(`> ${l}`));
-			}
-			lines.push('');
-		});
-		return lines.join('\n').trimEnd();
-	}
-
-	/** Markdown of every AI-generated Story entry (title + its raw prose). */
-	function storiesToMarkdown(): string {
-		const stories = [...sessionLog.entries]
-			.reverse()
-			.map((e) => ({ entry: e, story: parseStorySource(e.source) }))
-			.filter(
-				(x): x is { entry: (typeof x)['entry']; story: NonNullable<(typeof x)['story']> } =>
-					x.story !== null,
-			);
-		if (stories.length === 0) return '# Stories\n\n_No stories yet._\n';
-		const stamp = new Date().toLocaleString(undefined, {
-			year: 'numeric',
-			month: 'short',
-			day: 'numeric',
-			hour: '2-digit',
-			minute: '2-digit',
-		});
-		const lines = ['# Stories', `_Exported ${stamp}_`, '', '---', ''];
-		stories.forEach(({ entry, story }) => {
-			// Prefer the exact markdown the model produced; fall back to the rendered HTML.
-			const body = story.md?.trim() || htmlToMd(entry.html);
-			lines.push(`## ${entry.title}`, '', body, '', '---', '');
-		});
-		return lines.join('\n').trimEnd() + '\n';
 	}
 
 	// Build an export-ready character copy with its portrait re-embedded inline
@@ -1518,9 +1463,10 @@
 			if (format === 'json') {
 				const entries = [...sessionLog.entries].reverse();
 				exportJson('log', entries, entries.length, `session-log-${stamp}.json`);
-			} else downloadFile(`session-log-${stamp}.md`, logToMarkdown(), 'text/markdown');
+			} else
+				downloadFile(`session-log-${stamp}.md`, logToMarkdown(sessionLog.entries), 'text/markdown');
 		} else if (content === 'stories') {
-			downloadFile(`stories-${stamp}.md`, storiesToMarkdown(), 'text/markdown');
+			downloadFile(`stories-${stamp}.md`, storiesToMarkdown(sessionLog.entries), 'text/markdown');
 		} else if (content === 'communities') {
 			await exportZip(
 				'communities',
