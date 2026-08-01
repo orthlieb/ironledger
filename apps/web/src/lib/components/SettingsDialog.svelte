@@ -49,6 +49,12 @@
 	// ---------------------------------------------------------------------------
 	let fontDisplay = $state<FontDisplay>(getFontDisplay());
 
+	const FONT_MODES: { value: FontDisplay; label: string }[] = [
+		{ value: 'cinzel', label: 'Gravestone (default)' },
+		{ value: 'simonetta', label: 'Grimoire' },
+		{ value: 'futhark', label: 'Futhark (ᚠᚢᚦᚨᚱᚲ)' },
+	];
+
 	function applyFont(f: FontDisplay) {
 		fontDisplay = f;
 		setFontDisplay(f);
@@ -192,34 +198,16 @@
 					/>
 				</div>
 
-				<!-- Heading Font -->
+				<!-- Livery — heading font paired with a chrome palette. -->
 				<div class="sd-row">
-					<span class="sd-label">Heading Font</span>
-					<ToggleGroup.Root
-						type="single"
+					<span class="sd-label">Livery</span>
+					<Select
 						value={fontDisplay}
-						onValueChange={(v) => v && applyFont(v as FontDisplay)}
-						class="sd-seg"
-						aria-label="Heading font"
-					>
-						<ToggleGroup.Item
-							value="cinzel"
-							class="sd-seg-btn"
-							data-tooltip="Gravestone — engraved titling serif (default)"
-							>Gravestone</ToggleGroup.Item
-						>
-						<ToggleGroup.Item
-							value="simonetta"
-							class="sd-seg-btn"
-							data-tooltip="Ledger — calligraphic all-caps serif">Ledger</ToggleGroup.Item
-						>
-						<ToggleGroup.Item
-							value="futhark"
-							class="sd-seg-btn"
-							data-tooltip="Futhark — transliterate names to Elder Futhark runes"
-							>ᚠᚢᚦᚨᚱᚲ</ToggleGroup.Item
-						>
-					</ToggleGroup.Root>
+						options={FONT_MODES}
+						onchange={applyFont}
+						ariaLabel="Livery"
+						class="sd-select"
+					/>
 				</div>
 
 				<!-- 3D Dice -->

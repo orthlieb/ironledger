@@ -63,8 +63,12 @@
 					futhark: "'Segoe UI Historic', 'Noto Sans Runic', 'Apple Symbols', system-ui, sans-serif",
 				};
 				var f = localStorage.getItem('ironledger:font:display');
-				if (f === 'simonetta' || f === 'futhark') {
-					document.documentElement.setAttribute('data-font', f);
+				if (f !== 'simonetta' && f !== 'futhark') f = 'cinzel';
+				// Always set data-font — including the cinzel default — so
+				// [data-font='cinzel']-scoped rules (Gravestone chrome palette
+				// in app.css) match on first paint, no FOUC on font swap.
+				document.documentElement.setAttribute('data-font', f);
+				if (f !== 'cinzel') {
 					document.documentElement.style.setProperty('--font-display', FONT_STACKS[f]);
 				}
 			})();
