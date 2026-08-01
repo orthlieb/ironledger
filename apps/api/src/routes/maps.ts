@@ -28,6 +28,7 @@ import { authenticate } from '../middleware/authenticate.js';
 import * as maps from '../services/userMapService.js';
 import * as portraits from '../services/portraitService.js';
 import { sendPortraitHeaders, ifNoneMatchHits } from '../lib/portraitHttp.js';
+import { makeHandleError } from '../lib/handleError.js';
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -299,13 +300,4 @@ function badRequest(reply: FastifyReply, message: string) {
 
 // Log tag inherited from userData.ts, where these routes lived before the
 // split — kept identical so operator log greps don't change behaviour.
-function handleError(reply: FastifyReply) {
-  return (err: unknown) => {
-    console.error('[userDataRoutes]', err);
-    reply.status(500).send({
-      statusCode: 500,
-      error: 'Internal Server Error',
-      message: 'An unexpected error occurred',
-    });
-  };
-}
+const handleError = makeHandleError('userDataRoutes');

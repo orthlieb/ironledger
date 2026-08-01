@@ -26,6 +26,7 @@ import type { EntityKind } from '../services/userDataService.js';
 import * as portraits from '../services/portraitService.js';
 import { isValidImageUrl, assertImageUrls } from '../lib/imageUrl.js';
 import { sendPortraitHeaders, ifNoneMatchHits } from '../lib/portraitHttp.js';
+import { makeHandleError } from '../lib/handleError.js';
 import { config } from '../config.js';
 import type { FastifyReply } from 'fastify';
 
@@ -276,13 +277,4 @@ export const userDataRoutes: FastifyPluginAsyncZod = async (server) => {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function handleError(reply: FastifyReply) {
-  return (err: unknown) => {
-    console.error('[userDataRoutes]', err);
-    reply.status(500).send({
-      statusCode: 500,
-      error: 'Internal Server Error',
-      message: 'An unexpected error occurred',
-    });
-  };
-}
+const handleError = makeHandleError('userDataRoutes');

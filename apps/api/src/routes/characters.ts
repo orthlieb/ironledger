@@ -12,6 +12,7 @@ import * as chars from '../services/characterService.js';
 import * as portraits from '../services/portraitService.js';
 import { isValidImageUrl } from '../lib/imageUrl.js';
 import { sendPortraitHeaders, ifNoneMatchHits } from '../lib/portraitHttp.js';
+import { makeTypedErrorHandler } from '../lib/handleError.js';
 import type { FastifyReply } from 'fastify';
 
 // ---------------------------------------------------------------------------
@@ -252,20 +253,4 @@ function rejectBadPortrait(
   return true;
 }
 
-function handleError(reply: FastifyReply) {
-  return (err: unknown) => {
-    if (err instanceof chars.CharacterError) {
-      reply.status(err.statusCode).send({
-        statusCode: err.statusCode,
-        error: err.name,
-        message: err.message,
-      });
-    } else {
-      reply.status(500).send({
-        statusCode: 500,
-        error: 'Internal Server Error',
-        message: 'An unexpected error occurred',
-      });
-    }
-  };
-}
+const handleError = makeTypedErrorHandler(chars.CharacterError);
