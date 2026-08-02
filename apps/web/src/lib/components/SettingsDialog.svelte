@@ -13,7 +13,17 @@
 	 *   ref.open()
 	 */
 
-	import { isDice3dEnabled, setDice3dEnabled } from '$lib/dice';
+	import {
+		isDice3dEnabled,
+		setDice3dEnabled,
+		getDiceActionColor,
+		setDiceActionColor,
+		getDiceChallengeColor,
+		setDiceChallengeColor,
+		getDiceTexture,
+		setDiceTexture,
+		DICE_TEXTURE_OPTIONS,
+	} from '$lib/dice';
 	import { isDiceSoundEnabled, setDiceSoundEnabled, isDiceSoundSupported } from '$lib/diceSound.js';
 	import {
 		isDelveEnabled,
@@ -43,6 +53,7 @@
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import AiConfigDialog from '$lib/components/AiConfigDialog.svelte';
 	import Select from '$lib/components/Select.svelte';
+	import ColorPicker from '$lib/components/ColorPicker.svelte';
 
 	// ---------------------------------------------------------------------------
 	// Display font — delegated to fontStore
@@ -98,6 +109,30 @@
 	function applyDice3d(on: boolean) {
 		dice3d = on;
 		setDice3dEnabled(on);
+	}
+
+	// ---------------------------------------------------------------------------
+	// Dice appearance — action-die (d6) + challenge-die (d10) colours and a
+	// shared texture. Only meaningful when 3D dice are on; the controls are
+	// disabled otherwise. Changes land on the next roll (see dice.ts).
+	// ---------------------------------------------------------------------------
+	let diceActionColor = $state(typeof window !== 'undefined' ? getDiceActionColor() : '#5383EC');
+	let diceChallengeColor = $state(
+		typeof window !== 'undefined' ? getDiceChallengeColor() : '#DD0000',
+	);
+	let diceTexture = $state(typeof window !== 'undefined' ? getDiceTexture() : 'none');
+
+	function applyDiceActionColor(c: string) {
+		diceActionColor = c;
+		setDiceActionColor(c);
+	}
+	function applyDiceChallengeColor(c: string) {
+		diceChallengeColor = c;
+		setDiceChallengeColor(c);
+	}
+	function applyDiceTexture(t: string) {
+		diceTexture = t;
+		setDiceTexture(t);
 	}
 
 	// ---------------------------------------------------------------------------
@@ -159,6 +194,9 @@
 		theme = savedTheme();
 		dice3d = isDice3dEnabled();
 		diceSound = isDiceSoundEnabled();
+		diceActionColor = getDiceActionColor();
+		diceChallengeColor = getDiceChallengeColor();
+		diceTexture = getDiceTexture();
 		delveOn = isDelveEnabled();
 		yrtOn = isYrtEnabled();
 		fontDisplay = savedFont();
@@ -229,6 +267,44 @@
 							data-tooltip="Skip 3D animation, show result immediately">Off</ToggleGroup.Item
 						>
 					</ToggleGroup.Root>
+				</div>
+
+				<!-- Dice appearance — a shared texture plus per-role colours.
+				     Only meaningful with 3D dice on. The wrapper dims + blocks
+				     the whole group when 3D is off (the per-control `disabled`
+				     also stops the Pickr widgets being created); the wrapper is
+				     the reliable gate since bits-ui's Select doesn't reflect its
+				     `disabled` prop to the DOM. -->
+				<div class="sd-dice-appearance" class:sd-dice-appearance--off={!dice3d}>
+					<div class="sd-row">
+						<span class="sd-label">Dice Texture</span>
+						<Select
+							value={diceTexture}
+							options={DICE_TEXTURE_OPTIONS}
+							onchange={applyDiceTexture}
+							ariaLabel="Dice texture"
+							class="sd-select"
+							disabled={!dice3d}
+						/>
+					</div>
+					<div class="sd-row">
+						<span class="sd-label">Action Die (d6)</span>
+						<ColorPicker
+							value={diceActionColor}
+							onchange={applyDiceActionColor}
+							ariaLabel="Action die colour"
+							disabled={!dice3d}
+						/>
+					</div>
+					<div class="sd-row">
+						<span class="sd-label">Challenge Dice (d10)</span>
+						<ColorPicker
+							value={diceChallengeColor}
+							onchange={applyDiceChallengeColor}
+							ariaLabel="Challenge dice colour"
+							disabled={!dice3d}
+						/>
+					</div>
 				</div>
 
 				<!-- Dice Sound — hidden on iOS Safari, where the library's sound
@@ -417,6 +493,18 @@
 		font-weight: 600;
 		color: var(--text-muted);
 		min-width: 82px;
+	}
+	/* Dice-appearance group — inherits the column gap so its rows line up
+	   with the rest. Dimmed + inert when 3D dice are off. */
+	:global(.sd-dice-appearance) {
+		display: contents;
+	}
+	:global(.sd-dice-appearance--off) {
+		display: flex;
+		flex-direction: column;
+		gap: 14px;
+		opacity: 0.5;
+		pointer-events: none;
 	}
 
 	/* ── Segmented control ───────────────────────────────────────────────── */
