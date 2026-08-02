@@ -140,6 +140,7 @@ export const DICE_MATERIAL_OPTIONS: { value: string; label: string }[] = [
 	{ value: 'plastic', label: 'Plastic (default)' },
 	{ value: 'wood', label: 'Wood' },
 	{ value: 'metal', label: 'Metal' },
+	{ value: 'glass', label: 'Glass' },
 ];
 export function getDiceMaterial(): string {
 	return readPref(DICE_MATERIAL_KEY, DEFAULT_DICE_MATERIAL);
