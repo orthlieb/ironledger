@@ -23,6 +23,11 @@
 		getDiceTexture,
 		setDiceTexture,
 		DICE_TEXTURE_OPTIONS,
+		getDiceMaterial,
+		setDiceMaterial,
+		DICE_MATERIAL_OPTIONS,
+		DEFAULT_DICE_MATERIAL,
+		resetDiceBox,
 	} from '$lib/dice';
 	import { isDiceSoundEnabled, setDiceSoundEnabled, isDiceSoundSupported } from '$lib/diceSound.js';
 	import {
@@ -49,7 +54,7 @@
 		getSetup,
 		setSetup,
 	} from '$lib/aiSettings.svelte.js';
-	import { Dialog, ToggleGroup } from 'bits-ui';
+	import { Dialog, Tabs, ToggleGroup } from 'bits-ui';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import AiConfigDialog from '$lib/components/AiConfigDialog.svelte';
 	import Select from '$lib/components/Select.svelte';
@@ -123,6 +128,9 @@
 		typeof window !== 'undefined' ? getDiceChallengeColor() : '#DD0000',
 	);
 	let diceTexture = $state(typeof window !== 'undefined' ? getDiceTexture() : 'none');
+	let diceMaterial = $state(
+		typeof window !== 'undefined' ? getDiceMaterial() : DEFAULT_DICE_MATERIAL,
+	);
 
 	function applyDiceActionColor(c: string) {
 		diceActionColor = c;
@@ -135,6 +143,13 @@
 	function applyDiceTexture(t: string) {
 		diceTexture = t;
 		setDiceTexture(t);
+	}
+	function applyDiceMaterial(m: string) {
+		diceMaterial = m;
+		setDiceMaterial(m);
+		// theme_material + sound_dieMaterial are set once at DiceBox init;
+		// tear the singleton down so the next roll picks up the new value.
+		resetDiceBox();
 	}
 
 	// ---------------------------------------------------------------------------
@@ -187,8 +202,12 @@
 	}
 
 	// ---------------------------------------------------------------------------
-	// Dialog
+	// Dialog + tabs. Tabs (bits-ui) group the settings so the dialog stops
+	// growing every time a new preference lands. `activeTab` persists across
+	// open/close so the user returns to the same tab they last used.
 	// ---------------------------------------------------------------------------
+	type SdTab = 'appearance' | 'dice' | 'expansions' | 'ai';
+	let activeTab = $state<SdTab>('appearance');
 	let dialogOpen = $state(false);
 
 	export function open() {
@@ -199,6 +218,7 @@
 		diceActionColor = getDiceActionColor();
 		diceChallengeColor = getDiceChallengeColor();
 		diceTexture = getDiceTexture();
+		diceMaterial = getDiceMaterial();
 		delveOn = isDelveEnabled();
 		yrtOn = isYrtEnabled();
 		fontDisplay = savedFont();
@@ -224,234 +244,265 @@
 		<Dialog.Content class="settings-dialog">
 			<DialogHeader title={headingText('Settings')} onclose={close} />
 
-			<!-- Body -->
+			<!-- Body — tabbed so the dialog stays a fixed height as new
+			     preferences land. Tab strip mirrors the underlined-tab
+			     pattern used by the home decks. -->
 			<div class="sd-body">
-				<!-- ─── Display ─── -->
-				<div class="sd-section-heading sd-section-heading--first">Display</div>
-				<div class="sd-row">
-					<span class="sd-label">Theme</span>
-					<Select
-						value={theme}
-						options={THEME_MODES}
-						onchange={applyTheme}
-						ariaLabel="Color theme"
-						class="sd-select"
-					/>
-				</div>
+				<Tabs.Root
+					value={activeTab}
+					onValueChange={(v) => (activeTab = v as SdTab)}
+					class="sd-tabs-root"
+				>
+					<Tabs.List class="sd-tabs">
+						<Tabs.Trigger value="appearance" class="sd-tab">Appearance</Tabs.Trigger>
+						<Tabs.Trigger value="dice" class="sd-tab">Dice</Tabs.Trigger>
+						<Tabs.Trigger value="expansions" class="sd-tab">Expansions</Tabs.Trigger>
+						<Tabs.Trigger value="ai" class="sd-tab">AI</Tabs.Trigger>
+					</Tabs.List>
 
-				<!-- Livery — heading font paired with a chrome palette. -->
-				<div class="sd-row">
-					<span class="sd-label">Livery</span>
-					<Select
-						value={fontDisplay}
-						options={FONT_MODES}
-						onchange={applyFont}
-						ariaLabel="Livery"
-						class="sd-select"
-					/>
-				</div>
-
-				<!-- ─── Dice ─── -->
-				<div class="sd-section-heading">Dice</div>
-
-				<!-- 3D Dice — master switch; everything below it is only
-				     meaningful when the animation is on, so it gates the group. -->
-				<div class="sd-row">
-					<span class="sd-label">3D Dice</span>
-					<ToggleGroup.Root
-						type="single"
-						value={dice3d ? 'on' : 'off'}
-						onValueChange={(v) => v && applyDice3d(v === 'on')}
-						class="sd-seg"
-						aria-label="3D dice animation"
-					>
-						<ToggleGroup.Item value="on" class="sd-seg-btn" data-tooltip="Animate dice rolls in 3D"
-							>On</ToggleGroup.Item
-						>
-						<ToggleGroup.Item
-							value="off"
-							class="sd-seg-btn"
-							data-tooltip="Skip 3D animation, show result immediately">Off</ToggleGroup.Item
-						>
-					</ToggleGroup.Root>
-				</div>
-
-				<!-- Sound + appearance depend on 3D. The wrapper dims + blocks
-				     the whole group when 3D is off (per-control `disabled` also
-				     stops the Pickr widgets being created); the wrapper is the
-				     reliable gate since bits-ui controls don't reflect their
-				     `disabled` prop to the DOM. -->
-				<div class="sd-dice-gated" class:sd-dice-gated--off={!dice3d}>
-					<!-- Dice Sound — hidden on iOS Safari, where the library's
-					     sound preload pipeline hangs `_diceBox.initialize()`. -->
-					{#if isDiceSoundSupported()}
+					<!-- ─── Appearance ─── -->
+					<Tabs.Content value="appearance" class="sd-tab-panel">
 						<div class="sd-row">
-							<span class="sd-label">Sound</span>
+							<span class="sd-label">Theme</span>
+							<Select
+								value={theme}
+								options={THEME_MODES}
+								onchange={applyTheme}
+								ariaLabel="Color theme"
+								class="sd-select"
+							/>
+						</div>
+
+						<!-- Livery — heading font paired with a chrome palette. -->
+						<div class="sd-row">
+							<span class="sd-label">Livery</span>
+							<Select
+								value={fontDisplay}
+								options={FONT_MODES}
+								onchange={applyFont}
+								ariaLabel="Livery"
+								class="sd-select"
+							/>
+						</div>
+					</Tabs.Content>
+
+					<!-- ─── Dice ─── -->
+					<Tabs.Content value="dice" class="sd-tab-panel">
+						<!-- 3D Dice — master switch; everything below it is only
+						     meaningful when the animation is on, so it gates the group. -->
+						<div class="sd-row">
+							<span class="sd-label">3D Dice</span>
 							<ToggleGroup.Root
 								type="single"
-								value={diceSound ? 'on' : 'off'}
-								onValueChange={(v) => v && applyDiceSound(v === 'on')}
+								value={dice3d ? 'on' : 'off'}
+								onValueChange={(v) => v && applyDice3d(v === 'on')}
 								class="sd-seg"
-								aria-label="Dice rattle sound"
-								disabled={!dice3d}
+								aria-label="3D dice animation"
 							>
 								<ToggleGroup.Item
 									value="on"
 									class="sd-seg-btn"
-									data-tooltip="Play a dice rattle while the dice roll">On</ToggleGroup.Item
+									data-tooltip="Animate dice rolls in 3D">On</ToggleGroup.Item
 								>
-								<ToggleGroup.Item value="off" class="sd-seg-btn" data-tooltip="Roll silently"
+								<ToggleGroup.Item
+									value="off"
+									class="sd-seg-btn"
+									data-tooltip="Skip 3D animation, show result immediately">Off</ToggleGroup.Item
+								>
+							</ToggleGroup.Root>
+						</div>
+
+						<!-- Sound + appearance depend on 3D. The wrapper dims + blocks
+						     the whole group when 3D is off (per-control `disabled` also
+						     stops the Pickr widgets being created); the wrapper is the
+						     reliable gate since bits-ui controls don't reflect their
+						     `disabled` prop to the DOM. -->
+						<div class="sd-dice-gated" class:sd-dice-gated--off={!dice3d}>
+							{#if isDiceSoundSupported()}
+								<div class="sd-row">
+									<span class="sd-label">Sound</span>
+									<ToggleGroup.Root
+										type="single"
+										value={diceSound ? 'on' : 'off'}
+										onValueChange={(v) => v && applyDiceSound(v === 'on')}
+										class="sd-seg"
+										aria-label="Dice rattle sound"
+										disabled={!dice3d}
+									>
+										<ToggleGroup.Item
+											value="on"
+											class="sd-seg-btn"
+											data-tooltip="Play a dice rattle while the dice roll">On</ToggleGroup.Item
+										>
+										<ToggleGroup.Item value="off" class="sd-seg-btn" data-tooltip="Roll silently"
+											>Off</ToggleGroup.Item
+										>
+									</ToggleGroup.Root>
+								</div>
+							{/if}
+
+							<div class="sd-row">
+								<span class="sd-label">Material</span>
+								<Select
+									value={diceMaterial}
+									options={DICE_MATERIAL_OPTIONS}
+									onchange={applyDiceMaterial}
+									ariaLabel="Dice material"
+									class="sd-select"
+									disabled={!dice3d}
+								/>
+							</div>
+
+							<div class="sd-row">
+								<span class="sd-label">Texture</span>
+								<Select
+									value={diceTexture}
+									options={DICE_TEXTURE_OPTIONS}
+									onchange={applyDiceTexture}
+									ariaLabel="Dice texture"
+									class="sd-select"
+									disabled={!dice3d}
+								/>
+							</div>
+
+							<!-- Colour — one row, a swatch per die role fronted by its
+							     Font Awesome glyph (d6 = action, d10 = challenge). -->
+							<div class="sd-row">
+								<span class="sd-label">Colour</span>
+								<div class="sd-dice-colours">
+									<span class="sd-dice-colour" data-tooltip="Action die (d6)">
+										<span class="sd-dice-glyph" aria-hidden="true">{@html diceD6Svg}</span>
+										<ColorPicker
+											value={diceActionColor}
+											onchange={applyDiceActionColor}
+											ariaLabel="Action die (d6) colour"
+											disabled={!dice3d}
+										/>
+									</span>
+									<span class="sd-dice-colour" data-tooltip="Challenge dice (d10)">
+										<span class="sd-dice-glyph" aria-hidden="true">{@html diceD10Svg}</span>
+										<ColorPicker
+											value={diceChallengeColor}
+											onchange={applyDiceChallengeColor}
+											ariaLabel="Challenge dice (d10) colour"
+											disabled={!dice3d}
+										/>
+									</span>
+								</div>
+							</div>
+						</div>
+					</Tabs.Content>
+
+					<!-- ─── Expansions ─── -->
+					<Tabs.Content value="expansions" class="sd-tab-panel">
+						<div class="sd-row">
+							<span class="sd-label">Delve</span>
+							<ToggleGroup.Root
+								type="single"
+								value={delveOn ? 'on' : 'off'}
+								onValueChange={(v) => v && applyDelve(v === 'on')}
+								class="sd-seg"
+								aria-label="Delve expansion"
+							>
+								<ToggleGroup.Item
+									value="on"
+									class="sd-seg-btn"
+									data-tooltip="Show Delve moves, oracles, foes, assets">On</ToggleGroup.Item
+								>
+								<ToggleGroup.Item
+									value="off"
+									class="sd-seg-btn"
+									data-tooltip="Hide Delve content from pickers (existing data preserved)"
 									>Off</ToggleGroup.Item
 								>
 							</ToggleGroup.Root>
 						</div>
-					{/if}
 
-					<div class="sd-row">
-						<span class="sd-label">Texture</span>
-						<Select
-							value={diceTexture}
-							options={DICE_TEXTURE_OPTIONS}
-							onchange={applyDiceTexture}
-							ariaLabel="Dice texture"
-							class="sd-select"
-							disabled={!dice3d}
-						/>
-					</div>
-
-					<!-- Colour — one row, a swatch per die role fronted by its
-					     Font Awesome glyph (d6 = action, d10 = challenge). -->
-					<div class="sd-row">
-						<span class="sd-label">Colour</span>
-						<div class="sd-dice-colours">
-							<span class="sd-dice-colour" data-tooltip="Action die (d6)">
-								<span class="sd-dice-glyph" aria-hidden="true">{@html diceD6Svg}</span>
-								<ColorPicker
-									value={diceActionColor}
-									onchange={applyDiceActionColor}
-									ariaLabel="Action die (d6) colour"
-									disabled={!dice3d}
-								/>
-							</span>
-							<span class="sd-dice-colour" data-tooltip="Challenge dice (d10)">
-								<span class="sd-dice-glyph" aria-hidden="true">{@html diceD10Svg}</span>
-								<ColorPicker
-									value={diceChallengeColor}
-									onchange={applyDiceChallengeColor}
-									ariaLabel="Challenge dice (d10) colour"
-									disabled={!dice3d}
-								/>
-							</span>
+						<div class="sd-row">
+							<span class="sd-label">YRT</span>
+							<ToggleGroup.Root
+								type="single"
+								value={yrtOn ? 'on' : 'off'}
+								onValueChange={(v) => v && applyYrt(v === 'on')}
+								class="sd-seg"
+								aria-label="YRT expansion"
+							>
+								<ToggleGroup.Item
+									value="on"
+									class="sd-seg-btn"
+									data-tooltip="Show YRT moves, oracles, foes, assets">On</ToggleGroup.Item
+								>
+								<ToggleGroup.Item
+									value="off"
+									class="sd-seg-btn"
+									data-tooltip="Hide YRT content from pickers (existing data preserved)"
+									>Off</ToggleGroup.Item
+								>
+							</ToggleGroup.Root>
 						</div>
-					</div>
-				</div>
+					</Tabs.Content>
 
-				<!-- ─── Expansions ─── -->
-				<div class="sd-section-heading">Expansions</div>
-				<div class="sd-row">
-					<span class="sd-label">Delve</span>
-					<ToggleGroup.Root
-						type="single"
-						value={delveOn ? 'on' : 'off'}
-						onValueChange={(v) => v && applyDelve(v === 'on')}
-						class="sd-seg"
-						aria-label="Delve expansion"
-					>
-						<ToggleGroup.Item
-							value="on"
-							class="sd-seg-btn"
-							data-tooltip="Show Delve moves, oracles, foes, assets">On</ToggleGroup.Item
-						>
-						<ToggleGroup.Item
-							value="off"
-							class="sd-seg-btn"
-							data-tooltip="Hide Delve content from pickers (existing data preserved)"
-							>Off</ToggleGroup.Item
-						>
-					</ToggleGroup.Root>
-				</div>
+					<!-- ─── AI Storyteller ─── -->
+					<Tabs.Content value="ai" class="sd-tab-panel">
+						<div class="sd-row">
+							<span class="sd-label">Storyteller</span>
+							<ToggleGroup.Root
+								type="single"
+								value={activeProvider ?? 'none'}
+								onValueChange={(v) => v && chooseProvider(v as AiProvider | 'none')}
+								class="sd-seg"
+								aria-label="AI storyteller"
+							>
+								<ToggleGroup.Item value="none" class="sd-seg-btn">None</ToggleGroup.Item>
+								{#each AI_PROVIDERS as p (p)}
+									<ToggleGroup.Item value={p} class="sd-seg-btn"
+										>{PROVIDER_LABEL[p]}</ToggleGroup.Item
+									>
+								{/each}
+							</ToggleGroup.Root>
+						</div>
 
-				<div class="sd-row">
-					<span class="sd-label">YRT</span>
-					<ToggleGroup.Root
-						type="single"
-						value={yrtOn ? 'on' : 'off'}
-						onValueChange={(v) => v && applyYrt(v === 'on')}
-						class="sd-seg"
-						aria-label="YRT expansion"
-					>
-						<ToggleGroup.Item
-							value="on"
-							class="sd-seg-btn"
-							data-tooltip="Show YRT moves, oracles, foes, assets">On</ToggleGroup.Item
-						>
-						<ToggleGroup.Item
-							value="off"
-							class="sd-seg-btn"
-							data-tooltip="Hide YRT content from pickers (existing data preserved)"
-							>Off</ToggleGroup.Item
-						>
-					</ToggleGroup.Root>
-				</div>
-
-				<!-- ─── AI Storyteller ─── -->
-				<div class="sd-section-heading">AI Storyteller</div>
-
-				<div class="sd-row">
-					<span class="sd-label">Storyteller</span>
-					<ToggleGroup.Root
-						type="single"
-						value={activeProvider ?? 'none'}
-						onValueChange={(v) => v && chooseProvider(v as AiProvider | 'none')}
-						class="sd-seg"
-						aria-label="AI storyteller"
-					>
-						<ToggleGroup.Item value="none" class="sd-seg-btn">None</ToggleGroup.Item>
-						{#each AI_PROVIDERS as p (p)}
-							<ToggleGroup.Item value={p} class="sd-seg-btn">{PROVIDER_LABEL[p]}</ToggleGroup.Item>
-						{/each}
-					</ToggleGroup.Root>
-				</div>
-
-				{#if activeProvider}
-					{@const ap = activeProvider}
-					<div class="sd-row">
-						<span class="sd-label">
-							{PROVIDER_LABEL[ap]}
-							{#if providerHasKey(ap)}
-								<span class="sd-key-ok">· key set</span>
-							{:else}
-								<span class="sd-key-missing">· no key</span>
+						{#if activeProvider}
+							{@const ap = activeProvider}
+							<div class="sd-row">
+								<span class="sd-label">
+									{PROVIDER_LABEL[ap]}
+									{#if providerHasKey(ap)}
+										<span class="sd-key-ok">· key set</span>
+									{:else}
+										<span class="sd-key-missing">· no key</span>
+									{/if}
+								</span>
+								<button class="sd-key-btn" type="button" onclick={() => openProviderConfig(ap)}>
+									Configure…
+								</button>
+							</div>
+							{#if !providerHasKey(ap)}
+								<div class="sd-hint sd-hint-tight">
+									Add an API key to generate stories with {PROVIDER_LABEL[ap]}.
+								</div>
 							{/if}
-						</span>
-						<button class="sd-key-btn" type="button" onclick={() => openProviderConfig(ap)}>
-							Configure…
-						</button>
-					</div>
-					{#if !providerHasKey(ap)}
-						<div class="sd-hint sd-hint-tight">
-							Add an API key to generate stories with {PROVIDER_LABEL[ap]}.
-						</div>
-					{/if}
 
-					<div class="sd-setup-field">
-						<span class="sd-label">Setup Instructions</span>
-						<textarea
-							class="sd-setup-input"
-							rows="4"
-							placeholder="Tone, POV, tense, character voice…"
-							value={aiSetup}
-							oninput={(e) => applyAiSetup((e.currentTarget as HTMLTextAreaElement).value)}
-						></textarea>
-						<span class="sd-hint sd-hint-tight">
-							The system prompt sent for every story, whichever storyteller is active.
-						</span>
-					</div>
-				{:else}
-					<div class="sd-hint sd-hint-tight">
-						Pick a storyteller to turn session logs into prose.
-					</div>
-				{/if}
+							<div class="sd-setup-field">
+								<span class="sd-label">Setup Instructions</span>
+								<textarea
+									class="sd-setup-input"
+									rows="4"
+									placeholder="Tone, POV, tense, character voice…"
+									value={aiSetup}
+									oninput={(e) => applyAiSetup((e.currentTarget as HTMLTextAreaElement).value)}
+								></textarea>
+								<span class="sd-hint sd-hint-tight">
+									The system prompt sent for every story, whichever storyteller is active.
+								</span>
+							</div>
+						{:else}
+							<div class="sd-hint sd-hint-tight">
+								Pick a storyteller to turn session logs into prose.
+							</div>
+						{/if}
+					</Tabs.Content>
+				</Tabs.Root>
 			</div>
 		</Dialog.Content>
 	</Dialog.Portal>
@@ -583,23 +634,54 @@
 		color: var(--text-accent);
 		font-weight: 600;
 	}
-	/* ── Section heading (Display / Dice / Expansions / AI) ─────────────── */
-	:global(.sd-section-heading) {
-		font-family: var(--font-display, 'Cinzel', serif);
-		font-size: 0.78rem;
-		font-weight: 700;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		color: var(--text-accent);
-		margin-top: 6px;
-		padding-top: 10px;
-		border-top: 1px solid var(--border);
+	/* ── Tab strip ─────────────────────────────────────────────────────── */
+	/* Same underlined-tab pattern the home decks use (Chars / Foes / etc.).
+	   Each tab panel provides the row-stack inside. */
+	:global(.sd-tabs-root) {
+		display: flex;
+		flex-direction: column;
+		min-height: 0;
 	}
-	/* First heading sits flush under the dialog title — no divider above. */
-	:global(.sd-section-heading--first) {
-		margin-top: 0;
-		padding-top: 0;
-		border-top: none;
+	:global(.sd-tabs) {
+		display: flex;
+		gap: 0;
+		margin-bottom: 12px;
+		border-bottom: 1px solid var(--border);
+	}
+	:global(.sd-tab) {
+		all: unset;
+		cursor: pointer;
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--text-dimmer);
+		background: transparent;
+		border: none;
+		border-bottom: 2px solid transparent;
+		padding: 7px 10px 6px;
+		margin-bottom: -1px;
+		white-space: nowrap;
+		flex-shrink: 0;
+		transition:
+			color 0.12s,
+			border-color 0.12s;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+	}
+	:global(.sd-tab:hover) {
+		color: var(--text-muted);
+	}
+	:global(.sd-tab[data-state='active']) {
+		color: var(--text-accent);
+		border-bottom-color: var(--text-accent);
+	}
+	:global(.sd-tab-panel) {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
 	}
 
 	:global(.sd-key-btn) {
