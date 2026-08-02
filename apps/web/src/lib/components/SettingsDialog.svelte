@@ -683,6 +683,13 @@
 		flex-direction: column;
 		gap: 12px;
 	}
+	/* bits-ui hides inactive Tabs.Content via the `hidden` attribute;
+	   our `display: flex` above overrides the browser default of
+	   `display: none`, so all tab panels stack. Restore hiding for
+	   the inactive ones. */
+	:global(.sd-tab-panel[hidden]) {
+		display: none;
+	}
 
 	:global(.sd-key-btn) {
 		padding: 5px 8px;
