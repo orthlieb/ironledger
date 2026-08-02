@@ -53,11 +53,82 @@ export const DIE_WHITE = {
 	texture: 'none',
 } as const;
 
-/** Default colour theme keyed by die size (d6 = blue, d10 = red). */
-const DIE_THEME_BY_SIDES: Record<number, object> = {
-	6: DIE_BLUE,
-	10: DIE_RED,
-};
+// ---------------------------------------------------------------------------
+// User-configurable dice appearance (persisted to localStorage)
+//
+// The action die (d6) and challenge dice (d10) each carry a user-chosen
+// background colour; a single texture is shared across every die (the d100
+// tens/ones keep their black/white backgrounds for legibility but still pick
+// up the texture). Colours + texture ride inside the custom colorset the 3D
+// library already consumes per roll via updateConfig — no re-init needed, so
+// changes land on the very next roll.
+// ---------------------------------------------------------------------------
+const DICE_ACTION_COLOR_KEY = 'ironledger:diceActionColor';
+const DICE_CHALLENGE_COLOR_KEY = 'ironledger:diceChallengeColor';
+const DICE_TEXTURE_KEY = 'ironledger:diceTexture';
+
+/** Factory defaults — the historical hard-coded backgrounds. */
+export const DEFAULT_ACTION_COLOR = DIE_BLUE.background; // '#5383EC'
+export const DEFAULT_CHALLENGE_COLOR = DIE_RED.background; // '#DD0000'
+export const DEFAULT_DICE_TEXTURE = 'none';
+
+/** Texture choices for the settings dropdown. `value` is the library's own
+ *  texture key (validated against its TEXTURELIST — an unknown key falls back
+ *  to `none`). Curated to the visually distinct entries, skipping the near-
+ *  duplicate (`*_2`) and novelty character skins the library also ships. */
+export const DICE_TEXTURE_OPTIONS: { value: string; label: string }[] = [
+	{ value: 'none', label: 'None (smooth)' },
+	{ value: 'cloudy', label: 'Cloudy' },
+	{ value: 'marble', label: 'Marble' },
+	{ value: 'fire', label: 'Fire' },
+	{ value: 'ice', label: 'Ice' },
+	{ value: 'water', label: 'Water' },
+	{ value: 'paper', label: 'Paper' },
+	{ value: 'speckles', label: 'Speckles' },
+	{ value: 'glitter', label: 'Glitter' },
+	{ value: 'stars', label: 'Stars' },
+	{ value: 'stainedglass', label: 'Stained glass' },
+	{ value: 'wood', label: 'Wood' },
+	{ value: 'metal', label: 'Metal' },
+	{ value: 'skulls', label: 'Skulls' },
+	{ value: 'astral', label: 'Astral' },
+	{ value: 'dragon', label: 'Dragon' },
+	{ value: 'lizard', label: 'Lizard' },
+	{ value: 'leopard', label: 'Leopard' },
+	{ value: 'tiger', label: 'Tiger' },
+	{ value: 'cheetah', label: 'Cheetah' },
+];
+
+function readPref(key: string, fallback: string): string {
+	if (typeof window === 'undefined') return fallback;
+	return localStorage.getItem(key) || fallback;
+}
+function writePref(key: string, value: string): void {
+	if (typeof window === 'undefined') return;
+	localStorage.setItem(key, value);
+}
+
+/** Action die (d6) background colour. */
+export function getDiceActionColor(): string {
+	return readPref(DICE_ACTION_COLOR_KEY, DEFAULT_ACTION_COLOR);
+}
+export function setDiceActionColor(color: string): void {
+	writePref(DICE_ACTION_COLOR_KEY, color);
+}
+/** Challenge dice (d10) background colour. */
+export function getDiceChallengeColor(): string {
+	return readPref(DICE_CHALLENGE_COLOR_KEY, DEFAULT_CHALLENGE_COLOR);
+}
+export function setDiceChallengeColor(color: string): void {
+	writePref(DICE_CHALLENGE_COLOR_KEY, color);
+}
+/** Shared texture key applied to every die. */
+export function getDiceTexture(): string {
+	return readPref(DICE_TEXTURE_KEY, DEFAULT_DICE_TEXTURE);
+}
+export function setDiceTexture(texture: string): void {
+	writePref(DICE_TEXTURE_KEY, texture);
+}
 
 // ---------------------------------------------------------------------------
 // 3D dice toggle (persisted to localStorage)
@@ -290,6 +361,35 @@ export async function animateDice(dice: DiceSpec[]): Promise<void> {
 		if (_diceBox.desk) _diceBox.desk.visible = false;
 
 		// ---------------------------------------------------------------------------
+		// Resolve the user's appearance prefs ONCE per roll: the action-die (d6)
+		// and challenge-die (d10) backgrounds, plus one texture shared by every
+		// die. Each theme is a single object so all dice in a group share one
+		// reference — the grouping test below is reference equality, which
+		// collapses e.g. two challenge d10s into one `2d10@a,b` step.
+		// ---------------------------------------------------------------------------
+		const texture = getDiceTexture();
+		const actionTheme = { ...DIE_BLUE, background: getDiceActionColor(), texture };
+		const challengeTheme = { ...DIE_RED, background: getDiceChallengeColor(), texture };
+		const otherTheme = { ...DIE_RED, texture };
+		// A die may pass an explicit colour (the d100 tens/ones use black+white
+		// for legibility). Keep that background but apply the shared texture,
+		// memoised by the source object so grouping identity still holds.
+		const explicitThemes = new Map<object, object>();
+		const themeForDie = (die: DiceSpec): object => {
+			if (die.color) {
+				let t = explicitThemes.get(die.color);
+				if (!t) {
+					t = { ...(die.color as Record<string, unknown>), texture };
+					explicitThemes.set(die.color, t);
+				}
+				return t;
+			}
+			if (die.sides === 6) return actionTheme;
+			if (die.sides === 10) return challengeTheme;
+			return otherTheme;
+		};
+
+		// ---------------------------------------------------------------------------
 		// Build roll steps: group consecutive dice with identical (sides, theme).
 		// Each group becomes one roll/add call with batched notation.
 		// ---------------------------------------------------------------------------
@@ -297,7 +397,7 @@ export async function animateDice(dice: DiceSpec[]): Promise<void> {
 		const steps: Step[] = [];
 
 		for (const die of dice) {
-			const theme = die.color ?? DIE_THEME_BY_SIDES[die.sides] ?? DIE_RED;
+			const theme = themeForDie(die);
 			const last = steps[steps.length - 1];
 			if (last && last.sides === die.sides && last.theme === theme) {
 				last.values.push(die.value);
@@ -319,7 +419,16 @@ export async function animateDice(dice: DiceSpec[]): Promise<void> {
 
 		// Roll first step, then chain subsequent steps via .then() so each colour
 		// change is applied only after the previous dice have been placed.
-		applyTheme(steps[0].theme);
+		//
+		// `updateConfig` is ASYNC — it awaits `loadTheme`, which fetches the
+		// texture image. `roll()` / `add()` read the active colourset
+		// synchronously, so applyTheme MUST be awaited before launching dice;
+		// otherwise the colourset lands one step late and colours appear
+		// shifted between dice groups. This was invisible while every die used
+		// `texture: 'none'` (loadTheme resolved synchronously) and only
+		// surfaced once user-selectable textures made the load slow enough to
+		// lose the race.
+		await applyTheme(steps[0].theme);
 		// Apply the current sound preference. Effective only when sounds
 		// were loaded at init time (i.e. the toggle was on at last reload
 		// AND the device isn't iOS); otherwise the library has nothing to
@@ -329,8 +438,8 @@ export async function animateDice(dice: DiceSpec[]): Promise<void> {
 		let p: Promise<any> = _diceBox.roll(stepNotation(steps[0]));
 		for (let i = 1; i < steps.length; i++) {
 			const step = steps[i];
-			p = p.then(() => {
-				applyTheme(step.theme);
+			p = p.then(async () => {
+				await applyTheme(step.theme);
 				return _diceBox.add(stepNotation(step));
 			});
 		}

@@ -13,7 +13,17 @@
 	 *   ref.open()
 	 */
 
-	import { isDice3dEnabled, setDice3dEnabled } from '$lib/dice';
+	import {
+		isDice3dEnabled,
+		setDice3dEnabled,
+		getDiceActionColor,
+		setDiceActionColor,
+		getDiceChallengeColor,
+		setDiceChallengeColor,
+		getDiceTexture,
+		setDiceTexture,
+		DICE_TEXTURE_OPTIONS,
+	} from '$lib/dice';
 	import { isDiceSoundEnabled, setDiceSoundEnabled, isDiceSoundSupported } from '$lib/diceSound.js';
 	import {
 		isDelveEnabled,
@@ -43,6 +53,9 @@
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import AiConfigDialog from '$lib/components/AiConfigDialog.svelte';
 	import Select from '$lib/components/Select.svelte';
+	import ColorPicker from '$lib/components/ColorPicker.svelte';
+	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
+	import diceD10Svg from '$icons/dice-d10-light.svg?raw';
 
 	// ---------------------------------------------------------------------------
 	// Display font — delegated to fontStore
@@ -98,6 +111,30 @@
 	function applyDice3d(on: boolean) {
 		dice3d = on;
 		setDice3dEnabled(on);
+	}
+
+	// ---------------------------------------------------------------------------
+	// Dice appearance — action-die (d6) + challenge-die (d10) colours and a
+	// shared texture. Only meaningful when 3D dice are on; the controls are
+	// disabled otherwise. Changes land on the next roll (see dice.ts).
+	// ---------------------------------------------------------------------------
+	let diceActionColor = $state(typeof window !== 'undefined' ? getDiceActionColor() : '#5383EC');
+	let diceChallengeColor = $state(
+		typeof window !== 'undefined' ? getDiceChallengeColor() : '#DD0000',
+	);
+	let diceTexture = $state(typeof window !== 'undefined' ? getDiceTexture() : 'none');
+
+	function applyDiceActionColor(c: string) {
+		diceActionColor = c;
+		setDiceActionColor(c);
+	}
+	function applyDiceChallengeColor(c: string) {
+		diceChallengeColor = c;
+		setDiceChallengeColor(c);
+	}
+	function applyDiceTexture(t: string) {
+		diceTexture = t;
+		setDiceTexture(t);
 	}
 
 	// ---------------------------------------------------------------------------
@@ -159,6 +196,9 @@
 		theme = savedTheme();
 		dice3d = isDice3dEnabled();
 		diceSound = isDiceSoundEnabled();
+		diceActionColor = getDiceActionColor();
+		diceChallengeColor = getDiceChallengeColor();
+		diceTexture = getDiceTexture();
 		delveOn = isDelveEnabled();
 		yrtOn = isYrtEnabled();
 		fontDisplay = savedFont();
@@ -186,7 +226,8 @@
 
 			<!-- Body -->
 			<div class="sd-body">
-				<!-- Theme -->
+				<!-- ─── Display ─── -->
+				<div class="sd-section-heading sd-section-heading--first">Display</div>
 				<div class="sd-row">
 					<span class="sd-label">Theme</span>
 					<Select
@@ -210,7 +251,11 @@
 					/>
 				</div>
 
-				<!-- 3D Dice -->
+				<!-- ─── Dice ─── -->
+				<div class="sd-section-heading">Dice</div>
+
+				<!-- 3D Dice — master switch; everything below it is only
+				     meaningful when the animation is on, so it gates the group. -->
 				<div class="sd-row">
 					<span class="sd-label">3D Dice</span>
 					<ToggleGroup.Root
@@ -231,31 +276,78 @@
 					</ToggleGroup.Root>
 				</div>
 
-				<!-- Dice Sound — hidden on iOS Safari, where the library's sound
-		     preload pipeline hangs `_diceBox.initialize()`. -->
-				{#if isDiceSoundSupported()}
-					<div class="sd-row">
-						<span class="sd-label">Dice Sound</span>
-						<ToggleGroup.Root
-							type="single"
-							value={diceSound ? 'on' : 'off'}
-							onValueChange={(v) => v && applyDiceSound(v === 'on')}
-							class="sd-seg"
-							aria-label="Dice rattle sound"
-						>
-							<ToggleGroup.Item
-								value="on"
-								class="sd-seg-btn"
-								data-tooltip="Play a dice rattle while the dice roll">On</ToggleGroup.Item
+				<!-- Sound + appearance depend on 3D. The wrapper dims + blocks
+				     the whole group when 3D is off (per-control `disabled` also
+				     stops the Pickr widgets being created); the wrapper is the
+				     reliable gate since bits-ui controls don't reflect their
+				     `disabled` prop to the DOM. -->
+				<div class="sd-dice-gated" class:sd-dice-gated--off={!dice3d}>
+					<!-- Dice Sound — hidden on iOS Safari, where the library's
+					     sound preload pipeline hangs `_diceBox.initialize()`. -->
+					{#if isDiceSoundSupported()}
+						<div class="sd-row">
+							<span class="sd-label">Sound</span>
+							<ToggleGroup.Root
+								type="single"
+								value={diceSound ? 'on' : 'off'}
+								onValueChange={(v) => v && applyDiceSound(v === 'on')}
+								class="sd-seg"
+								aria-label="Dice rattle sound"
+								disabled={!dice3d}
 							>
-							<ToggleGroup.Item value="off" class="sd-seg-btn" data-tooltip="Roll silently"
-								>Off</ToggleGroup.Item
-							>
-						</ToggleGroup.Root>
-					</div>
-				{/if}
+								<ToggleGroup.Item
+									value="on"
+									class="sd-seg-btn"
+									data-tooltip="Play a dice rattle while the dice roll">On</ToggleGroup.Item
+								>
+								<ToggleGroup.Item value="off" class="sd-seg-btn" data-tooltip="Roll silently"
+									>Off</ToggleGroup.Item
+								>
+							</ToggleGroup.Root>
+						</div>
+					{/if}
 
-				<!-- Delve expansion -->
+					<div class="sd-row">
+						<span class="sd-label">Texture</span>
+						<Select
+							value={diceTexture}
+							options={DICE_TEXTURE_OPTIONS}
+							onchange={applyDiceTexture}
+							ariaLabel="Dice texture"
+							class="sd-select"
+							disabled={!dice3d}
+						/>
+					</div>
+
+					<!-- Colour — one row, a swatch per die role fronted by its
+					     Font Awesome glyph (d6 = action, d10 = challenge). -->
+					<div class="sd-row">
+						<span class="sd-label">Colour</span>
+						<div class="sd-dice-colours">
+							<span class="sd-dice-colour" data-tooltip="Action die (d6)">
+								<span class="sd-dice-glyph" aria-hidden="true">{@html diceD6Svg}</span>
+								<ColorPicker
+									value={diceActionColor}
+									onchange={applyDiceActionColor}
+									ariaLabel="Action die (d6) colour"
+									disabled={!dice3d}
+								/>
+							</span>
+							<span class="sd-dice-colour" data-tooltip="Challenge dice (d10)">
+								<span class="sd-dice-glyph" aria-hidden="true">{@html diceD10Svg}</span>
+								<ColorPicker
+									value={diceChallengeColor}
+									onchange={applyDiceChallengeColor}
+									ariaLabel="Challenge dice (d10) colour"
+									disabled={!dice3d}
+								/>
+							</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- ─── Expansions ─── -->
+				<div class="sd-section-heading">Expansions</div>
 				<div class="sd-row">
 					<span class="sd-label">Delve</span>
 					<ToggleGroup.Root
@@ -279,7 +371,6 @@
 					</ToggleGroup.Root>
 				</div>
 
-				<!-- YRT expansion -->
 				<div class="sd-row">
 					<span class="sd-label">YRT</span>
 					<ToggleGroup.Root
@@ -418,6 +509,42 @@
 		color: var(--text-muted);
 		min-width: 82px;
 	}
+	/* Dice sound + appearance group — inherits the column gap so its rows
+	   line up with the rest. Dimmed + inert when 3D dice are off. */
+	:global(.sd-dice-gated) {
+		display: contents;
+	}
+	:global(.sd-dice-gated--off) {
+		display: flex;
+		flex-direction: column;
+		gap: 14px;
+		opacity: 0.5;
+		pointer-events: none;
+	}
+	/* Colour row — a swatch per die role, each fronted by its glyph. */
+	:global(.sd-dice-colours) {
+		display: flex;
+		align-items: center;
+		gap: 18px;
+	}
+	:global(.sd-dice-colour) {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+	}
+	:global(.sd-dice-glyph) {
+		display: inline-flex;
+		width: 20px;
+		height: 20px;
+		color: var(--text-muted);
+	}
+	:global(.sd-dice-glyph svg) {
+		width: 100%;
+		height: 100%;
+	}
+	:global(.sd-dice-glyph svg path) {
+		fill: currentColor;
+	}
 
 	/* ── Segmented control ───────────────────────────────────────────────── */
 	:global(.sd-seg) {
@@ -456,7 +583,7 @@
 		color: var(--text-accent);
 		font-weight: 600;
 	}
-	/* ── Claude AI section ──────────────────────────────────────────────── */
+	/* ── Section heading (Display / Dice / Expansions / AI) ─────────────── */
 	:global(.sd-section-heading) {
 		font-family: var(--font-display, 'Cinzel', serif);
 		font-size: 0.78rem;
@@ -467,6 +594,12 @@
 		margin-top: 6px;
 		padding-top: 10px;
 		border-top: 1px solid var(--border);
+	}
+	/* First heading sits flush under the dialog title — no divider above. */
+	:global(.sd-section-heading--first) {
+		margin-top: 0;
+		padding-top: 0;
+		border-top: none;
 	}
 
 	:global(.sd-key-btn) {
