@@ -540,11 +540,15 @@
 
 	/* ── Header ─────────────────────────────────────────────────────────── */
 	/* ── Body ────────────────────────────────────────────────────────────── */
+	/* min-height fits the tallest tab (AI: provider + configure + hint +
+	   4-row textarea + hint) so switching tabs doesn't resize the dialog
+	   and shift its centred vertical position mid-interaction. */
 	:global(.sd-body) {
 		padding: 16px 14px;
 		display: flex;
 		flex-direction: column;
 		gap: 14px;
+		min-height: 340px;
 	}
 
 	/* ── Setting row ─────────────────────────────────────────────────────── */
