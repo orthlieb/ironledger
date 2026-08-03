@@ -1,0 +1,7 @@
+{
+  "id": "yrt",
+  "name": "YRT",
+  "description": "Yrt homebrew setting — mana, Touched, ritual cantrips, and the Yrt bestiary.",
+  "defaultEnabled": false,
+  "order": 20
+}
