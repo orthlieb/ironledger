@@ -9,7 +9,9 @@
       "order": 0,
       "root": "apps/api/data",
       "provides": {
-        "assets": ["assets/assets_ironsworn.json"],
+        "assets": [
+          "assets/assets_ironsworn.json"
+        ],
         "moves": [
           "moves/adventure.json",
           "moves/combat.json",
@@ -45,7 +47,9 @@
           "oracles/settlement-trouble.json",
           "oracles/theme.json"
         ],
-        "foes": ["foes/foes_ironsworn.json"]
+        "foes": [
+          "foes/foes_ironsworn.json"
+        ]
       }
     },
     {
@@ -56,8 +60,12 @@
       "order": 10,
       "root": "apps/api/data",
       "provides": {
-        "assets": ["assets/assets_delve.json"],
-        "moves": ["moves/delve.json"],
+        "assets": [
+          "assets/assets_delve.json"
+        ],
+        "moves": [
+          "moves/delve.json"
+        ],
         "oracles": [
           "oracles/char-disposition.json",
           "oracles/character-activity.json",
@@ -100,7 +108,9 @@
           "oracles/trap-component.json",
           "oracles/trap-event.json"
         ],
-        "foes": ["foes/foes_delve.json"],
+        "foes": [
+          "foes/foes_delve.json"
+        ],
         "delveTables": [
           "delve/delve-common-dangers.json",
           "delve/delve-domain-dangers.json",
@@ -118,8 +128,12 @@
       "order": 20,
       "root": "extensions/yrt",
       "provides": {
-        "assets": ["assets/assets.json"],
-        "moves": ["moves/moves.json"],
+        "assets": [
+          "assets/assets.json"
+        ],
+        "moves": [
+          "moves/moves.json"
+        ],
         "oracles": [
           "oracles/animal.json",
           "oracles/city-town-location.json",
@@ -129,8 +143,12 @@
           "oracles/touched-features.json",
           "oracles/touched.json"
         ],
-        "foes": ["foes/foes.json"],
-        "foeOverrides": ["foes/overrides.json"]
+        "foes": [
+          "foes/foes.json"
+        ],
+        "foeOverrides": [
+          "foes/overrides.json"
+        ]
       }
     }
   ]
