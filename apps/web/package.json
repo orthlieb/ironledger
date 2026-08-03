@@ -23,6 +23,7 @@
 		"@simonwep/pickr": "^1.10.0",
 		"@sveltejs/kit": "^2.55.0",
 		"bits-ui": "^2.18.1",
+		"embla-carousel": "^8.6.0",
 		"embla-carousel-autoplay": "^8.6.0",
 		"embla-carousel-svelte": "^8.6.0",
 		"fflate": "^0.8.3",
