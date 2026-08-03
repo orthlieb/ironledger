@@ -1,0 +1,23 @@
+{
+  "assets": [
+    {
+      "id": "combat-talent/sample-widget",
+      "name": "Sample Widget",
+      "category": "Combat Talent",
+      "source": "sample",
+      "icon": "sample-widget",
+      "summary": "A test asset proving extension assets merge into the catalogue and resolve an icon bundled with the extension.",
+      "preconditions": [],
+      "abilities": [
+        {
+          "enabled": true,
+          "text": "While the Sample extension is enabled, this asset — and its bundled <strong>sample-widget</strong> icon (shipped in extensions/sample/icons/) — appear in the Asset picker."
+        },
+        {
+          "enabled": false,
+          "text": "Disable the extension and this asset, its icon, the Sample move, the Sample – Gizmo oracle, and the Test Golem all filter out cleanly — no code changed anywhere."
+        }
+      ]
+    }
+  ]
+}
