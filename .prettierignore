@@ -16,6 +16,9 @@ package-lock.json
 # Generated
 **/coverage/
 apps/api/src/db/migrations/
+# Emitted verbatim by scripts/gen-extensions-manifest.mjs (JSON.stringify);
+# Prettier's array-collapsing would fight the generator and break --check.
+apps/api/data/extensions.manifest.json
 
 # Misc
 *.min.js
