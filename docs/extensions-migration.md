@@ -40,18 +40,18 @@ YRT is clean and goes first.
 
 ## 3. Design decisions (settled)
 
-| #   | Decision                                                                      | Rationale                                                                                                                                                                            |
-| --- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| D1  | **Curated only** — no runtime user upload                                     | No untrusted HTML/XSS surface, no sandboxing, no id-collision arbitration. Pure reorg + registry.                                                                                    |
-| D2  | **Manifest generated at build time**, not discovered at runtime               | Deterministic, no per-request filesystem scan; the loader consumes a committed/generated manifest.                                                                                   |
-| D3  | Directory is **`extensions/`**, per-item-type subfolders                      | `extensions/yrt/foes/`, `.../assets/`, etc. Self-contained; images/icons nest inside their type folder.                                                                              |
-| D4  | **Filenames drop the extension id**                                           | The folder namespaces files. `foes_yrt.json` → `foes/foes.json`.                                                                                                                     |
-| D5  | **IDs stay authored in the files** (prefixes kept), never derived from folder | Ids are a _global_ namespace persisted in the DB and cross-referenced; and extension files legitimately reference **base** ids (see D6). Auto-prefixing would corrupt those. See §7. |
-| D6  | **Overrides are a first-class patch-base feature**                            | An extension can re-skin / remove / replace base content and therefore carries references to base ids. See §6.4.                                                                     |
-| D7  | **Escalating defence/offence stays baked in**                                 | Documented in core docs; rides along on YRT foe data with no special extension handling.                                                                                             |
-| D8  | **`yrtTouched` compound-roll stays baked in**                                 | The one piece of YRT-specific _behaviour_ (a multi-table roll). Not extracted for now.                                                                                               |
-| D9  | **Docs split (option 2)**                                                     | Baked-in behaviour (escalating harm/defense) documented in core docs; genuine extension content documented inside the extension. See §11.                                            |
-| D10 | **Optional build-time lint, never rewrite**                                   | Warn when an extension _defines_ an unprefixed id or references an unregistered icon; exempt references. Id-cleanup of existing inconsistencies deferred.                            |
+| #   | Decision                                                                      | Rationale                                                                                                                                                                                                                       |
+| --- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | **Curated only** — no runtime user upload                                     | No untrusted HTML/XSS surface, no sandboxing, no id-collision arbitration. Pure reorg + registry.                                                                                                                               |
+| D2  | **Manifest generated at build time**, not discovered at runtime               | Deterministic, no per-request filesystem scan; the loader consumes a committed/generated manifest.                                                                                                                              |
+| D3  | Directory is **`extensions/`**, per-item-type subfolders                      | `extensions/yrt/foes/`, `.../assets/`, etc. Self-contained; images/icons nest inside their type folder.                                                                                                                         |
+| D4  | **Filenames drop the extension id**                                           | The folder namespaces files. `foes_yrt.json` → `foes/foes.json`.                                                                                                                                                                |
+| D5  | **IDs stay authored in the files** (prefixes kept), never derived from folder | Ids are a _global_ namespace persisted in the DB and cross-referenced; and extension files legitimately reference **base** ids (see D6). Auto-prefixing would corrupt those. See §7.                                            |
+| D6  | **Overrides are a first-class patch-base feature**                            | An extension can re-skin / remove / replace base content and therefore carries references to base ids. See §6.4.                                                                                                                |
+| D7  | **Escalating defence/offence stays baked in**                                 | Documented in core docs; rides along on YRT foe data with no special extension handling.                                                                                                                                        |
+| D8  | **`yrtTouched` compound-roll stays baked in**                                 | The one piece of YRT-specific _behaviour_ (a multi-table roll). Not extracted for now.                                                                                                                                          |
+| D9  | **Docs split (option 2)**                                                     | Baked-in behaviour (escalating harm/defense) documented in core docs; genuine extension content documented inside the extension. See §12.                                                                                       |
+| D10 | **Build-time lint (validate, never rewrite)**                                 | A first-class build check that catches common extension mistakes — missing extension-id prefix on _defined_ ids, unregistered icons, dangling references, bad overrides, schema errors. Exempts legitimate references. See §10. |
 
 ---
 
@@ -61,7 +61,7 @@ YRT is clean and goes first.
 extensions/
   yrt/
     extension.json                 # hand-authored metadata (see §5)
-    README.md                      # the extension's own doc (see §11)
+    README.md                      # the extension's own doc (see §12)
     moves/
       moves.json                   # was moves/yrt.json
     oracles/
@@ -79,11 +79,13 @@ extensions/
         mire-form.webp … (28)      # moved from apps/web/static/foes/
     assets/
       assets.json                  # was assets_yrt.json
-      icons/
-        asset-touched-salamandrine.svg … (12)   # moved from apps/web/src/lib/icons/
+    icons/                         # extension-root: shared by any content type
+      asset-touched-salamandrine.svg … (12)   # moved from apps/web/src/lib/icons/
 ```
 
-**Filenames** drop `yrt` (D4). **IDs inside** keep it (D5).
+**Filenames** drop `yrt` (D4). **IDs inside** keep it (D5). **Icons sit at the
+extension root**, not under `assets/`: they're referenced by slug from a shared
+registry, so assets reference them today and foes/moves may tomorrow.
 
 ---
 
@@ -148,7 +150,7 @@ doesn't already carry one (authors may still write `source` explicitly; the
 stamp is a safety net).
 
 Base + Delve content stays where it is for now (or moves to `extensions/base`,
-`extensions/delve` in a later phase — see §12). The manifest simply also
+`extensions/delve` in a later phase — see §13). The manifest simply also
 describes them, so the loader is uniform.
 
 ### 6.2 Foe images → build-copy into the web serve dir
@@ -163,11 +165,16 @@ generated artifact.
 > The 28 YRT foe images currently in `apps/web/static/foes/` move into
 > `extensions/yrt/foes/images/`; the build copies them back out.
 
-### 6.3 Asset icons → registry glob merge
+### 6.3 Icons → registry glob merge
+
+Icons live at the **extension root** (`extensions/<id>/icons/`), not under
+`assets/`: they're referenced by slug from a shared registry, so assets reference
+them today and foes/moves may tomorrow. Keeping them content-type-agnostic avoids
+a later move.
 
 `apps/web/src/lib/iconRegistry.ts` builds its slug→SVG map from a **build-time
 Vite glob** of `/src/lib/icons/*.svg`. Extension icons are made self-contained
-by **extending the glob** to also scan `extensions/*/assets/icons/*.svg` (add an
+by **extending the glob** to also scan `extensions/*/icons/*.svg` (add an
 `$extensions` Vite alias → repo `extensions/`) and merging into the same
 `REGISTRY` map. No copy needed.
 
@@ -185,7 +192,7 @@ Key properties this inherits for free:
 
 > The 12 YRT asset icons (`asset-touched-*` ×6, `asset-cantrip`,
 > `asset-bittercraft`, `asset-quillwise`, `asset-arcane-inspection`,
-> `asset-compulsion`, `asset-illusion`) move into `extensions/yrt/assets/icons/`.
+> `asset-compulsion`, `asset-illusion`) move into `extensions/yrt/icons/`.
 
 ### 6.4 Overrides (patch base content) — first-class
 
@@ -231,10 +238,10 @@ matches the extension id. A future prefix-free-id cleanup (adopt one convention
 
 - one DB migration + reference rewrite) is a **separate, deferred** effort.
 
-**Optional lint (D10):** warn when an extension _defines_ a new id (a foe in
-`foes.json`, an asset in `assets.json`) not prefixed with its extension id;
-_exempt references_ (override keys, `data-oracle=` links). Grandfather today's
-inconsistencies or fix them in the deferred cleanup.
+The **build lint (§10)** enforces this: it warns when an extension _defines_ a
+new id (a foe in `foes.json`, an asset in `assets.json`) not prefixed with its
+extension id, while _exempting references_ (override keys, `data-oracle=` links).
+Grandfather today's inconsistencies or fix them in the deferred cleanup.
 
 ---
 
@@ -255,7 +262,7 @@ This is the extensibility unlock.
 - **`SettingsDialog.svelte`** renders **one toggle per registered extension**
   (from the store) in the Expansions section instead of hard-coded Delve/YRT
   rows. (Delve stays a registered expansion during the transition even though its
-  content isn't reorganised — see §12.)
+  content isn't reorganised — see §13.)
 
 ---
 
@@ -271,13 +278,75 @@ This is the extensibility unlock.
 | `apps/web/src/lib/moveStore.svelte.ts`              | `'Yrt'` in the category-order array → derive/append extension categories.                                                                          |
 | `apps/web/src/lib/foeStore.svelte.ts`               | `SOURCE_ORDER` and the `foe.id.startsWith('yrt/')` inference → manifest-declared source + id-namespace.                                            |
 | `apps/web/src/lib/oracleStore.svelte.ts`            | The hard-coded yrt→source map → generic source from catalogue. **Leave the `yrtTouched` compound-roll logic (lines ~253, 461–480) baked in (D8).** |
-| `apps/web/src/lib/iconRegistry.ts`                  | Extend `import.meta.glob` to include `$extensions/*/assets/icons/*.svg`.                                                                           |
+| `apps/web/src/lib/iconRegistry.ts`                  | Extend `import.meta.glob` to include `$extensions/*/icons/*.svg`.                                                                                  |
 | `apps/web/vite.config` / `svelte.config`            | Add `$extensions` alias → repo `extensions/`.                                                                                                      |
-| **new** `scripts/gen-extensions-manifest.ts`        | Build-time manifest generator (§5) + foe-image copy (§6.2) + optional lints (§6.3, §7).                                                            |
+| **new** `scripts/gen-extensions-manifest.ts`        | Build-time manifest generator (§5) + foe-image copy (§6.2) + the lint (§10).                                                                       |
+| **new** `scripts/lint-extensions.ts`                | Build-time extension validator (§10) — may live inside the generator or as a sibling sharing its parsed manifest.                                  |
 
 ---
 
-## 10. YRT migration checklist (content)
+## 10. Build lint
+
+A first-class build-time validator (run alongside the manifest generator, on the
+same parsed data) that catches the common ways an extension goes wrong before it
+ships. **It validates and reports — it never rewrites** (per D5/D10). Default
+**warn**; promotable to **error** in CI once the pre-existing gaps are cleaned
+(§15).
+
+### What it catches
+
+**Namespace / ids**
+
+- **Missing extension-id prefix on a _defined_ id** — a foe in `foes.json`, an
+  asset in `assets.json`, or an oracle `key` whose id isn't namespaced to the
+  extension (e.g. a new YRT foe id lacking the `yrt/` prefix). _Exempts
+  references_: override keys and `data-oracle=` / `data-id=` links that point at
+  base or other-extension ids (§7).
+- **Duplicate ids** — the same content id defined by two extensions (or an
+  extension redefining a base id), which would collide in the merged catalogue
+  and in persisted user data.
+- **Extension id ≠ folder name**, or `extension.json` `id` mismatching its
+  directory.
+
+**References (dangling links)**
+
+- **Move/oracle cross-refs** — `data-oracle=`, `data-id=`, `data-move=`,
+  `data-asset=` pointing at an id not present in the merged catalogue (base +
+  enabled extensions).
+- **Override targets** — an entry in `foes/overrides.json` keyed by a base foe id
+  that doesn't exist (typo'd base id).
+
+**Icons (§6.3)**
+
+- **Unregistered icon slug** — any asset/foe `icon` not in the merged registry
+  (`hasIcon()`), catching typos _and_ genuinely-missing icons. Surfaces the
+  pre-existing `mana` / `skull-and-crossbones` gaps for a real fix.
+
+**Images (§6.2)**
+
+- **Missing foe image file** — a foe `images` entry with no matching file in the
+  extension's `foes/images/` (or the base set).
+
+**Manifest / schema hygiene**
+
+- **Malformed or unparseable JSON**, or content failing the per-type **Zod
+  schema** (moves/oracles/foes/assets) — a bad extension is rejected with a clear
+  message rather than corrupting the catalogue.
+- **Required `extension.json` fields** present (`id`, `name`); `defaultEnabled`
+  boolean; `order` numeric.
+- **Orphan files** — a content file in an extension subfolder not covered by any
+  recognised type (likely a misplaced or misnamed file).
+
+### How it runs
+
+The generator already parses every extension + the merged base catalogue, so the
+lint reuses that in-memory data (one pass, no extra I/O). It runs in the prebuild
+step and in CI. `warn` mode prints findings and exits 0; `error` mode (post
+cleanup) exits non-zero to fail the build.
+
+---
+
+## 11. YRT migration checklist (content)
 
 **Move + rename (git mv):**
 
@@ -295,8 +364,8 @@ This is the extensibility unlock.
 | `apps/api/data/foes/foes_overrides_yrt.json`                       | `extensions/yrt/foes/overrides.json`                             |
 | `apps/api/data/assets/assets_yrt.json`                             | `extensions/yrt/assets/assets.json`                              |
 | `apps/web/static/foes/<28 yrt>.webp`                               | `extensions/yrt/foes/images/` (build copies back)                |
-| `apps/web/src/lib/icons/asset-touched-*.svg` + 6 ritual icons (12) | `extensions/yrt/assets/icons/` (glob merges)                     |
-| `docs/yrt/data-schema-yrt.md`                                      | `extensions/yrt/README.md` (minus the escalating sections — §11) |
+| `apps/web/src/lib/icons/asset-touched-*.svg` + 6 ritual icons (12) | `extensions/yrt/icons/` (glob merges)                            |
+| `docs/yrt/data-schema-yrt.md`                                      | `extensions/yrt/README.md` (minus the escalating sections — §12) |
 
 **Note the 3 non-obvious oracles** (`touched-features`, `mana-backlash`,
 `freeport-denizen`) — YRT-sourced with no `yrt` in the name. The generator keys
@@ -312,7 +381,7 @@ along on the migrated asset/move content with no code change.
 
 ---
 
-## 11. Docs (split — option 2)
+## 12. Docs (split — option 2)
 
 - **Baked-in behaviour → inline into core docs.** The escalating-harm and
   escalating-defense sections currently in `docs/yrt/data-schema-yrt.md` move
@@ -335,7 +404,7 @@ along on the migrated asset/move content with no code change.
 
 ---
 
-## 12. Phased rollout
+## 13. Phased rollout
 
 Each phase is independently shippable and behaviour-preserving (same content,
 same toggles) until phase 4.
@@ -347,7 +416,7 @@ same toggles) until phase 4.
    dynamic `expansionStore` + Settings toggles. The extensibility win; still no
    data moved.
 3. **Reorganise YRT.** Physically move YRT content/images/icons/doc into
-   `extensions/yrt/` per §10, wire the foe-image copy + icon glob, split the
+   `extensions/yrt/` per §11, wire the foe-image copy + icon glob, split the
    docs. Base/Delve stay in `apps/api/data/` (Delve especially — out of scope).
 4. **(Later, optional)** Base/Delve into `extensions/`, packaging/zip, id-cleanup
    migration, user-upload with sanitisation.
@@ -359,7 +428,7 @@ a real roll/asset-add exercising YRT assets + icons; foe images resolve;
 
 ---
 
-## 13. Out of scope / deferred
+## 14. Out of scope / deferred
 
 - **Delve reorganisation** — drives bespoke UI (site themes/domains, delve
   moves surfaced structurally) with no clean insertion point. Stays in
@@ -370,12 +439,11 @@ a real roll/asset-add exercising YRT assets + icons; foe images resolve;
 - **`yrtTouched` compound-roll** and **escalating defence/offence** — stay baked
   in.
 
-## 14. Open items
+## 15. Open items
 
 - Confirm the exact foe-image serve dir the copy targets (`apps/web/static/foes`
   vs an API static route) against `foePortrait.ts` at implementation time.
-- Decide whether the build lint (unprefixed new ids; unregistered icons) is a
-  warning or an error in CI — recommend **warn** initially so the pre-existing
-  `mana` / `skull-and-crossbones` gaps don't block, then promote to error after
-  cleanup.
+- When to promote the build lint (§10) from **warn** to **error** in CI — warn
+  first so the pre-existing `mana` / `skull-and-crossbones` gaps don't block the
+  build, then flip to error once cleaned.
 - `extension.json` `requires.app` semantics — enforce, or advisory-only for now.
