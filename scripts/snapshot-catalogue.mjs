@@ -86,22 +86,28 @@ async function loadCurrent() {
 }
 
 async function loadFromManifest() {
+  const REPO = path.resolve(__dirname, '..');
   const manifest = await loadJson('extensions.manifest.json');
   const exts = [...manifest.extensions].sort((a, b) => a.order - b.order);
-  const files = (type) => exts.flatMap((e) => e.provides?.[type] ?? []);
+  // Resolve a provides path against its extension's repo-relative root.
+  const loadRel = (root, rel) => readFile(path.join(REPO, root, rel), 'utf-8').then(JSON.parse);
+  // [{root, rel}] pairs for a content type across all extensions, in order.
+  const filesOf = (type) =>
+    exts.flatMap((e) => (e.provides?.[type] ?? []).map((rel) => ({ root: e.root, rel })));
+  const loadAll = (type) => Promise.all(filesOf(type).map(({ root, rel }) => loadRel(root, rel)));
 
-  const assetData = await Promise.all(files('assets').map(loadJson));
+  const assetData = await loadAll('assets');
   const assets = assetData.flatMap((f) => f.assets);
   const rarities = assetData.flatMap((f) => f.rarities ?? []);
 
-  const moveData = await Promise.all(files('moves').map(loadJson));
+  const moveData = await loadAll('moves');
   const moves = moveData.flatMap((f) => f.moves);
 
-  const oracles = await Promise.all(files('oracles').map(loadJson));
+  const oracles = await loadAll('oracles');
 
-  const foeData = await Promise.all(files('foes').map(loadJson));
+  const foeData = await loadAll('foes');
   const foes = foeData.flatMap((f) => f.foes);
-  const overrides = await Promise.all(files('foeOverrides').map(loadJson));
+  const overrides = await loadAll('foeOverrides');
 
   // delve keyed object: delve-theme-features.json -> themeFeatures
   const camel = (f) =>
@@ -110,7 +116,7 @@ async function loadFromManifest() {
       .replace(/^delve-/, '')
       .replace(/-([a-z])/g, (_, c) => c.toUpperCase());
   const delve = {};
-  for (const f of files('delveTables')) delve[camel(f)] = await loadJson(f);
+  for (const { root, rel } of filesOf('delveTables')) delve[camel(rel)] = await loadRel(root, rel);
 
   return { assets, rarities, moves, oracles, foes, overrides, delve };
 }
