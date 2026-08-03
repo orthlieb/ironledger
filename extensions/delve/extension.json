@@ -1,0 +1,7 @@
+{
+  "id": "delve",
+  "name": "Delve",
+  "description": "Ironsworn: Delve — site themes/domains, delve moves, oracles, foes, and assets.",
+  "defaultEnabled": true,
+  "order": 10
+}

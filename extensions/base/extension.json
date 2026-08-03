@@ -1,0 +1,7 @@
+{
+  "id": "base",
+  "name": "Ironsworn",
+  "description": "Core Ironsworn moves, oracles, foes, and assets.",
+  "defaultEnabled": true,
+  "order": 0
+}
