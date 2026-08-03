@@ -1,0 +1,19 @@
+{
+  "category": "Sample",
+  "moves": [
+    {
+      "id": "move/sample-gambit",
+      "name": "Sample Gambit",
+      "category": "Sample",
+      "source": "sample",
+      "triggerShort": "When you put the extension system to the test.",
+      "trigger": "When you <strong>put the extension system to the test</strong>, roll +wits.",
+      "stats": [{ "stat": "wits", "desc": "With careful verification" }],
+      "strong": "Everything loads, merges, and filters. Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">+1 momentum</a>.",
+      "weak": "It works, but something wants a second look. Roll on the <a class=\"oracle-link\" data-oracle=\"sampleGizmo\">Sample – Gizmo</a> oracle for what.",
+      "miss": "Something is broken. <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a>.",
+      "preconditions": [{ "key": "hasCharacter", "eq": 1 }],
+      "logTitle": "{character} tries a Sample Gambit"
+    }
+  ]
+}

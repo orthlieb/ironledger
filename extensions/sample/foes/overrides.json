@@ -1,0 +1,8 @@
+{
+  "source": "sample",
+  "overrides": {
+    "ironsworn/bear": {
+      "addendum": "In the Sample extension: this bear has reviewed your pull request and left one non-blocking comment. (This addendum proves an extension can patch a base foe's description; it appears only while Sample is enabled.)"
+    }
+  }
+}

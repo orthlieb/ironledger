@@ -1,0 +1,19 @@
+{
+  "foes": [
+    {
+      "id": "sample/test-golem",
+      "name": "Test Golem",
+      "images": ["test-golem.webp"],
+      "rank": 2,
+      "nature": "Anomaly",
+      "features": ["Assembled from spare parts and good intentions", "A faint hum of reactivity"],
+      "drives": ["Prove that extension foes load"],
+      "tactics": [
+        "Appear in the Foe picker only while the Sample extension is enabled",
+        "Show its bundled portrait when selected"
+      ],
+      "description": "A construct that exists solely to demonstrate that an extension's foes — with their own bundled portrait shipped in extensions/sample/foes/images/ — load, merge, and filter through the catalogue like any base foe.",
+      "source": "sample"
+    }
+  ]
+}

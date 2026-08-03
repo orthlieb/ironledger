@@ -255,7 +255,7 @@ Feature docs are in the `docs/` directory:
 | [notes.md](docs/notes.md)                                   | Notes dialog                                                             |
 | [oracles.md](docs/oracles.md)                               | Oracle tables                                                            |
 | [ui-components.md](docs/ui-components.md)                   | Shared UI design specs (cards, pills, tooltips, side labels)             |
-| [yrt/data-schema-yrt.md](docs/yrt/data-schema-yrt.md)       | YRT homebrew data format extensions                                      |
+| [extensions/yrt/README.md](extensions/yrt/README.md)        | YRT homebrew data format extensions                                      |
 
 ## Credits
 
