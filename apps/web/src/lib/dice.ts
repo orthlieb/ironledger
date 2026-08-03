@@ -329,12 +329,21 @@ function ensureDiceBox(): Promise<void> {
 
 /** Tear down the DiceBox singleton so the next roll re-initialises it.
  *  Used when a setting that only applies at init time changes — currently
- *  the physical material (Plastic / Wood / Metal), which is fed to the
- *  library as `theme_material` + `sound_dieMaterial`. Colours + texture
- *  ride via `updateConfig` and don't need this. */
+ *  the physical material (Plastic / Wood / Metal / Glass), which is fed to
+ *  the library as `theme_material` + `sound_dieMaterial`. Colours + texture
+ *  ride via `updateConfig` and don't need this.
+ *
+ *  Also removes the `#il-dice-overlay` div — the library attaches its
+ *  Three.js canvas + renderer state inside that element, and reusing the
+ *  same div for a fresh `new Lib()` leaves stale WebGL context around
+ *  which silently breaks subsequent rolls. `getOverlay()` re-creates the
+ *  div on the next call. */
 export function resetDiceBox(): void {
 	_diceBoxReady = null;
 	_diceBox = null;
+	if (typeof document !== 'undefined') {
+		document.getElementById('il-dice-overlay')?.remove();
+	}
 }
 
 // ---------------------------------------------------------------------------
