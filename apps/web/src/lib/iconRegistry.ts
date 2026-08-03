@@ -17,11 +17,23 @@ import type { AssetCategory, AssetDefinition, FoeDef, FoeNature } from '$lib/typ
 // splitting). With the current ~12 icons each ~1–3 KB this is comfortably
 // trivial; if the registry grew to hundreds we'd switch to eager: false
 // and async-loaded chunks.
-const sources = import.meta.glob('/src/lib/icons/*.svg', {
-	eager: true,
-	query: '?raw',
-	import: 'default',
-}) as Record<string, string>;
+// Two sources, merged: the app's own icons, and each extension's bundled
+// icons (extensions/<id>/icons/*.svg at the repo root). The extension glob is
+// relative to this module (apps/web/src/lib/ → ../../../../extensions). Icon
+// slugs are namespaced by convention (e.g. `asset-touched-salamandrine`), so
+// the flat filename→slug mapping stays collision-free across extensions.
+const sources = {
+	...(import.meta.glob('/src/lib/icons/*.svg', {
+		eager: true,
+		query: '?raw',
+		import: 'default',
+	}) as Record<string, string>),
+	...(import.meta.glob('../../../../extensions/*/icons/*.svg', {
+		eager: true,
+		query: '?raw',
+		import: 'default',
+	}) as Record<string, string>),
+};
 
 /** Map of icon slug → raw SVG. Slug is the filename minus directory and
  *  `.svg` extension: e.g. `/src/lib/icons/cat-combat.svg` → `cat-combat`. */
