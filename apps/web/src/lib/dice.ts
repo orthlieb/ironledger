@@ -130,25 +130,6 @@ export function setDiceTexture(texture: string): void {
 	writePref(DICE_TEXTURE_KEY, texture);
 }
 
-/** Physical material used by the 3D dice library for shading + physics
- *  + hit-sound selection. Fed as `theme_material` and `sound_dieMaterial`
- *  at DiceBox init; a mid-session change requires re-initialising the
- *  singleton, which `resetDiceBox()` below handles. */
-const DICE_MATERIAL_KEY = 'ironledger:diceMaterial';
-export const DEFAULT_DICE_MATERIAL = 'plastic';
-export const DICE_MATERIAL_OPTIONS: { value: string; label: string }[] = [
-	{ value: 'plastic', label: 'Plastic (default)' },
-	{ value: 'wood', label: 'Wood' },
-	{ value: 'metal', label: 'Metal' },
-	{ value: 'glass', label: 'Glass' },
-];
-export function getDiceMaterial(): string {
-	return readPref(DICE_MATERIAL_KEY, DEFAULT_DICE_MATERIAL);
-}
-export function setDiceMaterial(material: string): void {
-	writePref(DICE_MATERIAL_KEY, material);
-}
-
 // ---------------------------------------------------------------------------
 // 3D dice toggle (persisted to localStorage)
 // ---------------------------------------------------------------------------
@@ -294,15 +275,14 @@ function ensureDiceBox(): Promise<void> {
 			// already visually large relative to a phone screen.
 			const desktop =
 				typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
-			const material = getDiceMaterial();
 			_diceBox = new Lib('#il-dice-overlay', {
 				assetPath: DICE_ASSET_CDN,
 				sounds: wantSounds,
-				sound_dieMaterial: material,
+				sound_dieMaterial: 'plastic',
 				volume: wantSounds ? 60 : 0,
 				shadows: false,
 				theme_colorset: 'custom',
-				theme_material: material,
+				theme_material: 'plastic',
 				gravity_multiplier: 1000,
 				strength: 1,
 				iterationLimit: 500,
@@ -325,25 +305,6 @@ function ensureDiceBox(): Promise<void> {
 			throw e;
 		});
 	return _diceBoxReady;
-}
-
-/** Tear down the DiceBox singleton so the next roll re-initialises it.
- *  Used when a setting that only applies at init time changes — currently
- *  the physical material (Plastic / Wood / Metal / Glass), which is fed to
- *  the library as `theme_material` + `sound_dieMaterial`. Colours + texture
- *  ride via `updateConfig` and don't need this.
- *
- *  Also removes the `#il-dice-overlay` div — the library attaches its
- *  Three.js canvas + renderer state inside that element, and reusing the
- *  same div for a fresh `new Lib()` leaves stale WebGL context around
- *  which silently breaks subsequent rolls. `getOverlay()` re-creates the
- *  div on the next call. */
-export function resetDiceBox(): void {
-	_diceBoxReady = null;
-	_diceBox = null;
-	if (typeof document !== 'undefined') {
-		document.getElementById('il-dice-overlay')?.remove();
-	}
 }
 
 // ---------------------------------------------------------------------------

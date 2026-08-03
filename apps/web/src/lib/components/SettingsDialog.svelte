@@ -23,11 +23,6 @@
 		getDiceTexture,
 		setDiceTexture,
 		DICE_TEXTURE_OPTIONS,
-		getDiceMaterial,
-		setDiceMaterial,
-		DICE_MATERIAL_OPTIONS,
-		DEFAULT_DICE_MATERIAL,
-		resetDiceBox,
 	} from '$lib/dice';
 	import { isDiceSoundEnabled, setDiceSoundEnabled, isDiceSoundSupported } from '$lib/diceSound.js';
 	import {
@@ -128,9 +123,6 @@
 		typeof window !== 'undefined' ? getDiceChallengeColor() : '#DD0000',
 	);
 	let diceTexture = $state(typeof window !== 'undefined' ? getDiceTexture() : 'none');
-	let diceMaterial = $state(
-		typeof window !== 'undefined' ? getDiceMaterial() : DEFAULT_DICE_MATERIAL,
-	);
 
 	function applyDiceActionColor(c: string) {
 		diceActionColor = c;
@@ -143,13 +135,6 @@
 	function applyDiceTexture(t: string) {
 		diceTexture = t;
 		setDiceTexture(t);
-	}
-	function applyDiceMaterial(m: string) {
-		diceMaterial = m;
-		setDiceMaterial(m);
-		// theme_material + sound_dieMaterial are set once at DiceBox init;
-		// tear the singleton down so the next roll picks up the new value.
-		resetDiceBox();
 	}
 
 	// ---------------------------------------------------------------------------
@@ -209,7 +194,6 @@
 		diceActionColor = getDiceActionColor();
 		diceChallengeColor = getDiceChallengeColor();
 		diceTexture = getDiceTexture();
-		diceMaterial = getDiceMaterial();
 		// Ensure the extension registry is populated (idempotent — home already
 		// loads it on mount); the Expansions tab renders a toggle per extension.
 		void loadExtensions();
@@ -332,18 +316,6 @@
 									</ToggleGroup.Root>
 								</div>
 							{/if}
-
-							<div class="sd-row">
-								<span class="sd-label">Material</span>
-								<Select
-									value={diceMaterial}
-									options={DICE_MATERIAL_OPTIONS}
-									onchange={applyDiceMaterial}
-									ariaLabel="Dice material"
-									class="sd-select"
-									disabled={!dice3d}
-								/>
-							</div>
 
 							<div class="sd-row">
 								<span class="sd-label">Texture</span>
