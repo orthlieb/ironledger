@@ -138,6 +138,9 @@ async function build() {
       description: meta[id].description,
       defaultEnabled: meta[id].defaultEnabled,
       order: meta[id].order,
+      // Dev-only extensions ship in dev/test but are stripped from production
+      // builds (see the write step below).
+      ...(meta[id].dev ? { dev: true } : {}),
       root,
       provides: Object.fromEntries(
         Object.entries(provides)
@@ -184,7 +187,19 @@ function foeImageGitignore(names) {
 }
 
 const manifest = await build();
-const json = JSON.stringify(manifest, null, 2) + '\n';
+// Canonical (committed) manifest includes every extension, incl. dev-only ones,
+// so dev + CI (`--check`) see the same file. A production build strips dev-only
+// extensions so they never ship (no toggle, no content). Their icons/foe images
+// may still bundle as harmless unused artifacts.
+const canonical = JSON.stringify(manifest, null, 2) + '\n';
+const isProd = process.env.NODE_ENV === 'production';
+const forWrite = isProd
+  ? JSON.stringify(
+      { ...manifest, extensions: manifest.extensions.filter((e) => !e.dev) },
+      null,
+      2,
+    ) + '\n'
+  : canonical;
 const images = await extensionFoeImages();
 const gitignore = foeImageGitignore(images.map((i) => i.name));
 const GITIGNORE = path.join(STATIC_FOES, '.gitignore');
@@ -198,7 +213,8 @@ if (process.argv.includes('--check')) {
     }
   };
   const stale = [];
-  if ((await read(OUT)) !== json) stale.push('extensions.manifest.json');
+  // --check always validates the canonical (all-extensions) form.
+  if ((await read(OUT)) !== canonical) stale.push('extensions.manifest.json');
   if ((await read(GITIGNORE)) !== gitignore) stale.push('apps/web/static/foes/.gitignore');
   if (stale.length) {
     console.error(
@@ -208,13 +224,16 @@ if (process.argv.includes('--check')) {
   }
   console.log('extensions.manifest.json + foe-image .gitignore are up to date.');
 } else {
-  await writeFile(OUT, json);
+  await writeFile(OUT, forWrite);
   // Copy extension foe images into the served static dir + record them.
   await mkdir(STATIC_FOES, { recursive: true });
   for (const { abs, name } of images) await copyFile(abs, path.join(STATIC_FOES, name));
   await writeFile(GITIGNORE, gitignore);
+  const written = isProd
+    ? manifest.extensions.filter((e) => !e.dev).length
+    : manifest.extensions.length;
   console.log(
-    `wrote ${path.relative(REPO, OUT)} (${manifest.extensions.length} extensions); ` +
+    `wrote ${path.relative(REPO, OUT)} (${written} extensions${isProd ? ', production: dev-only stripped' : ''}); ` +
       `copied ${images.length} extension foe image(s) → apps/web/static/foes/`,
   );
 }

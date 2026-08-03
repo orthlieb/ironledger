@@ -23,6 +23,7 @@ interface Ext {
   defaultEnabled: boolean;
   order: number;
   root: string;
+  dev?: boolean;
   provides?: Provides;
 }
 interface Manifest {
@@ -35,15 +36,21 @@ const manifest = JSON.parse(
   readFileSync(path.join(DATA, 'extensions.manifest.json'), 'utf-8'),
 ) as Manifest;
 const exts = [...manifest.extensions].sort((a, b) => a.order - b.order);
-/** {root, rel} for a content type across all extensions. */
+/** Production-shipped extensions (dev-only ones are stripped from prod builds). */
+const core = exts.filter((e) => !e.dev);
+/** {root, rel} for a content type across the core (non-dev) extensions. */
 const filesFor = (type: string) =>
-  exts.flatMap((e) => (e.provides?.[type] ?? []).map((rel) => ({ root: e.root, rel })));
+  core.flatMap((e) => (e.provides?.[type] ?? []).map((rel) => ({ root: e.root, rel })));
 const load = (root: string, rel: string) => JSON.parse(readFileSync(resolve(root, rel), 'utf-8'));
 
 describe('extensions.manifest.json', () => {
-  it('registers base, delve and yrt in order', () => {
-    expect(exts.map((e) => e.id)).toEqual(['base', 'delve', 'yrt']);
-    expect(exts.map((e) => e.order)).toEqual([0, 10, 20]);
+  it('registers base, delve, yrt as the core, in order', () => {
+    expect(core.map((e) => e.id)).toEqual(['base', 'delve', 'yrt']);
+    expect(core.map((e) => e.order)).toEqual([0, 10, 20]);
+  });
+
+  it('sample is a dev-only reference extension (stripped from production builds)', () => {
+    expect(exts.find((e) => e.id === 'sample')?.dev).toBe(true);
   });
 
   it('yrt is self-contained under extensions/yrt; base/delve stay in apps/api/data', () => {

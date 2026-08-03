@@ -7,7 +7,8 @@ needed**. Its content merges into the catalogue, a toggle appears in Settings �
 Expansions, its icons register, and its foe portraits are served.
 
 > Curated only. Extensions ship with the app (they're in the repo) — there is no
-> runtime user upload.
+> runtime user upload. See [extensions-migration.md](extensions-migration.md) for
+> the design history.
 
 ---
 
@@ -41,6 +42,7 @@ and everything filters out — nothing else changes.
   "description": "…", // shown in the registry
   "defaultEnabled": false, // on/off until the user toggles it
   "order": 99, // display + catalogue-merge order
+  "dev": true, // optional — dev/test only, stripped from production (see below)
 }
 ```
 
@@ -145,6 +147,19 @@ No TypeScript, route, store, or type edits — the whole surface is data.
 
 ---
 
+## Dev-only extensions
+
+An extension with `"dev": true` in its `extension.json` ships in **dev and
+test** but is **stripped from production builds** — it never appears as a toggle
+or contributes content in prod. The mechanism lives entirely in the generator:
+the committed manifest is the full form (all extensions, so dev + CI `--check`
+agree), and a `NODE_ENV=production` build regenerates the manifest with dev-only
+extensions filtered out. Their bundled icons/foe images may still ship as
+harmless unused artifacts. Use it for reference/fixture extensions (like
+`sample`) you don't want in front of real users.
+
+---
+
 ## Current extensions
 
 | id       | Layout                                | Notes                                                                         |
@@ -152,7 +167,7 @@ No TypeScript, route, store, or type edits — the whole surface is data.
 | `base`   | legacy (`apps/api/data`)              | Core Ironsworn. Always on, not toggleable.                                    |
 | `delve`  | legacy (`apps/api/data`)              | Ironsworn: Delve. Drives some bespoke UI, so it stays type-organised for now. |
 | `yrt`    | self-contained (`extensions/yrt/`)    | Yrt homebrew — the first fully-relocated extension.                           |
-| `sample` | self-contained (`extensions/sample/`) | Reference extension; off by default. Exercises every surface.                 |
+| `sample` | self-contained (`extensions/sample/`) | **Dev-only** reference extension exercising every surface; not in production. |
 
 `base` and `delve` still live under `apps/api/data/` (the loader reads them via
 their `apps/api/data` root); relocating them is future work.
