@@ -2,7 +2,7 @@
  * Generic precondition engine — shared by both asset and move systems.
  *
  * Keys and operators match the data formats documented in
- * data-schema.md (base) and yrt/data-schema-yrt.md (Yrt homebrew extensions).
+ * data-schema.md (base) and extensions/yrt/README.md (Yrt homebrew extensions).
  *
  * Every precondition object has a `key` and at least one comparison operator.
  * Multiple operators on one object are AND'd. All preconditions in an array

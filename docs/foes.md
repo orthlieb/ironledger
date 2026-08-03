@@ -127,7 +127,7 @@ The foe's harm starts at 1 and increases on each Miss. Cap = effective rank + 1 
 - Current value stored as `enc.currentHarm` (absent = 1)
 - Pill shows `Harm: N ↑` in italic red when active
 
-See [yrt/data-schema-yrt.md § Escalating Harm](yrt/data-schema-yrt.md#escalating-harm-yrt-extension) for full spec.
+See [Yrt extension docs § Escalating Harm](../extensions/yrt/README.md#escalating-harm-yrt-extension) for full spec.
 
 ### Escalating Defense (`escalatesDefense: true`)
 
@@ -139,7 +139,7 @@ The foe's armor builds up on each Miss, reducing progress ticks per mark. Defens
 - Progress pill shows `Progress: N ↓` in italic blue when defense > 0; N = ticks per mark
 - Progress buttons always enabled per normal track rules; mark/unmark `progressPerHit − currentDefense` ticks
 
-See [yrt/data-schema-yrt.md § Escalating Defense](yrt/data-schema-yrt.md#escalating-defense-yrt-extension) for full spec.
+See [Yrt extension docs § Escalating Defense](../extensions/yrt/README.md#escalating-defense-yrt-extension) for full spec.
 
 ---
 
