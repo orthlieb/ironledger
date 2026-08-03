@@ -136,6 +136,26 @@ emits a combined generated manifest consumed by the API:
 The generator, not `catalogue.ts`, owns the file list — replacing every
 hard-coded filename array in the loader.
 
+### 5.1 Dev-only extensions
+
+An extension may set `"dev": true` in its `extension.json`. Such extensions ship
+in **dev and test** but are **stripped from production builds**: they never
+appear as a Settings toggle or contribute catalogue content in prod. This is how
+a reference/fixture extension (e.g. `sample`, which exercises every pluggable
+surface) can live in the repo without being shown to real users.
+
+The gating is entirely in the generator:
+
+- The **committed** manifest is the _full_ form — all extensions, including
+  dev-only ones — so local dev and CI (`--check`) validate the same file. Entries
+  carry `"dev": true` for the flagged ones.
+- A `NODE_ENV=production` write regenerates the manifest with dev-only extensions
+  filtered out (the `prebuild` step runs in prod). `--check` always validates
+  against the full/canonical form, so it isn't sensitive to `NODE_ENV`.
+- Their bundled icons (build-time glob) and foe images (build-copy) may still
+  ship as harmless unused artifacts; the meaningful gate is the manifest, which
+  removes the toggle + all served content.
+
 ---
 
 ## 6. Content bundling
