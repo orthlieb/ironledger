@@ -52,6 +52,7 @@
 	} from '$lib/assetStore.svelte.js';
 	import { reconcileGlobalValues } from '$lib/character.js';
 	import { loadFoes, findFoe, FOE_RANKS } from '$lib/foeStore.svelte.js';
+	import { loadExtensions } from '$lib/expansionStore.svelte.js';
 	import LogPanel from '$lib/components/LogPanel.svelte';
 	import CommandBar from '$lib/components/CommandBar.svelte';
 	import CharactersArea from '$lib/components/v2/CharactersArea.svelte';
@@ -267,6 +268,7 @@
 			loadCommunities(),
 			loadNpcs(),
 			loadPlaces(),
+			loadExtensions(),
 		]);
 
 		document.addEventListener('il-menu-action', handleMenuAction);

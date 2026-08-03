@@ -42,8 +42,20 @@ export type FoeNature =
 	| 'Construct';
 export type FoeQuantity = 'solo' | 'pack' | 'horde';
 
-/** Catalogue source / expansion tag (duplicated from @ironledger/shared for client-only use). */
-export type CatalogueSource = 'base' | 'delve' | 'yrt';
+/**
+ * Catalogue source / expansion tag — an extension id (duplicated from
+ * @ironledger/shared for client-only use). Any extension id; `'base'` = core.
+ */
+export type CatalogueSource = string;
+
+/** Public metadata for one registered extension (served at /catalogue/extensions). */
+export interface ExtensionInfo {
+	id: string;
+	name: string;
+	description: string;
+	defaultEnabled: boolean;
+	order: number;
+}
 
 export interface FoeDef {
 	id: string; // "ironsworn/basilisk"

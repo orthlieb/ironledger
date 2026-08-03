@@ -104,8 +104,21 @@ export interface AssetPrecondition {
   ne?: number;
 }
 
-/** Catalogue source / expansion tag. */
-export type CatalogueSource = 'base' | 'delve' | 'yrt';
+/**
+ * Catalogue source / expansion tag — an extension id. Historically the fixed
+ * union `'base' | 'delve' | 'yrt'`; now any extension id (see the extensions
+ * registry) so new expansions need no type change. `'base'` = core content.
+ */
+export type CatalogueSource = string;
+
+/** Public metadata for one registered extension (served at /catalogue/extensions). */
+export interface ExtensionInfo {
+  id: string;
+  name: string;
+  description: string;
+  defaultEnabled: boolean;
+  order: number;
+}
 
 /** Move definition — mirrors the JSON structure in moves/*.json */
 export interface MoveDefinition {
