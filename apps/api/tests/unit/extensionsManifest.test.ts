@@ -13,6 +13,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA = path.resolve(__dirname, '../../data');
+const REPO = path.resolve(__dirname, '../../../..');
 
 type Provides = Partial<Record<string, string[]>>;
 interface Ext {
@@ -21,16 +22,23 @@ interface Ext {
   description: string;
   defaultEnabled: boolean;
   order: number;
+  root: string;
   provides?: Provides;
 }
 interface Manifest {
   extensions: Ext[];
 }
 
-const readJson = (rel: string) => JSON.parse(readFileSync(path.join(DATA, rel), 'utf-8'));
-const manifest = readJson('extensions.manifest.json') as Manifest;
+/** Resolve a provides path against its extension's repo-relative root. */
+const resolve = (root: string, rel: string) => path.join(REPO, root, rel);
+const manifest = JSON.parse(
+  readFileSync(path.join(DATA, 'extensions.manifest.json'), 'utf-8'),
+) as Manifest;
 const exts = [...manifest.extensions].sort((a, b) => a.order - b.order);
-const filesFor = (type: string) => exts.flatMap((e) => e.provides?.[type] ?? []);
+/** {root, rel} for a content type across all extensions. */
+const filesFor = (type: string) =>
+  exts.flatMap((e) => (e.provides?.[type] ?? []).map((rel) => ({ root: e.root, rel })));
+const load = (root: string, rel: string) => JSON.parse(readFileSync(resolve(root, rel), 'utf-8'));
 
 describe('extensions.manifest.json', () => {
   it('registers base, delve and yrt in order', () => {
@@ -38,22 +46,36 @@ describe('extensions.manifest.json', () => {
     expect(exts.map((e) => e.order)).toEqual([0, 10, 20]);
   });
 
+  it('yrt is self-contained under extensions/yrt; base/delve stay in apps/api/data', () => {
+    const root = Object.fromEntries(exts.map((e) => [e.id, e.root]));
+    expect(root.base).toBe('apps/api/data');
+    expect(root.delve).toBe('apps/api/data');
+    expect(root.yrt).toBe('extensions/yrt');
+  });
+
   it('every provided content file exists on disk', () => {
     const missing = exts
-      .flatMap((e) => Object.values(e.provides ?? {}).flat())
-      .filter((rel) => !existsSync(path.join(DATA, rel)));
+      .flatMap((e) =>
+        e.provides
+          ? Object.values(e.provides)
+              .flat()
+              .map((rel) => resolve(e.root, rel))
+          : [],
+      )
+      .filter((abs) => !existsSync(abs));
     expect(missing).toEqual([]);
   });
 
   it('reproduces the expected merged catalogue counts', () => {
-    const assetData = filesFor('assets').map(readJson) as Array<{
+    const load1 = ({ root, rel }: { root: string; rel: string }) => load(root, rel);
+    const assetData = filesFor('assets').map(load1) as Array<{
       assets: unknown[];
       rarities?: unknown[];
     }>;
-    const moveData = filesFor('moves').map(readJson) as Array<{ moves: unknown[] }>;
-    const oracleData = filesFor('oracles').map(readJson);
-    const foeData = filesFor('foes').map(readJson) as Array<{ foes: unknown[] }>;
-    const overrides = filesFor('foeOverrides').map(readJson);
+    const moveData = filesFor('moves').map(load1) as Array<{ moves: unknown[] }>;
+    const oracleData = filesFor('oracles').map(load1);
+    const foeData = filesFor('foes').map(load1) as Array<{ foes: unknown[] }>;
+    const overrides = filesFor('foeOverrides').map(load1);
     const delve = filesFor('delveTables');
 
     expect(assetData.flatMap((f) => f.assets)).toHaveLength(90);
@@ -66,7 +88,12 @@ describe('extensions.manifest.json', () => {
   });
 
   it('assigns each content file to exactly one extension (no overlap)', () => {
-    const all = exts.flatMap((e) => Object.values(e.provides ?? {}).flat());
+    // Compare resolved absolute paths — the same rel under different roots is fine.
+    const all = exts.flatMap((e) =>
+      Object.values(e.provides ?? {})
+        .flat()
+        .map((rel) => resolve(e.root, rel)),
+    );
     expect(new Set(all).size).toBe(all.length);
   });
 });
