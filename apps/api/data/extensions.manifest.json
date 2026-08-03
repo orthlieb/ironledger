@@ -112,7 +112,7 @@
       "id": "yrt",
       "name": "YRT",
       "description": "Yrt homebrew setting — mana, Touched, ritual cantrips, and the Yrt bestiary.",
-      "defaultEnabled": false,
+      "defaultEnabled": true,
       "order": 20,
       "provides": {
         "assets": ["assets/assets_yrt.json"],

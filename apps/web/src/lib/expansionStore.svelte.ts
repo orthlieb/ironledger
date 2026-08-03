@@ -1,92 +1,122 @@
 // =============================================================================
-// Iron Ledger — Expansion toggle store (Svelte 5 module-level $state)
+// Iron Ledger — Extension registry + expansion toggle store
+// (Svelte 5 module-level $state)
 //
-// Persists per-browser Delve / YRT expansion toggles to localStorage.
+// Extensions are discovered from /api/catalogue/extensions (the build-time
+// manifest, served by the API), so adding an expansion needs no code here.
+// Each carries metadata (id, name, defaultEnabled) and a per-browser on/off
+// toggle persisted to localStorage under `ironledger:expansion:<id>`.
 //
-//   • Default: both ON (existing users see no change on first load).
-//   • Setting the flag "off" hides catalogue items tagged with that source
-//     from pickers/browsers only. `find*` lookups remain unfiltered so
-//     existing user-created records (log entries, owned assets, sites,
-//     denizens referencing a disabled-expansion foe) continue to render.
+//   • An extension defaults to its manifest `defaultEnabled` until the user
+//     toggles it; the choice then persists explicitly ('on' / 'off').
+//   • Turning an expansion off hides catalogue items tagged with that source
+//     from pickers/browsers only. `find*` lookups stay unfiltered so existing
+//     user records (log entries, owned assets, sites, denizens) keep rendering.
+//   • `base` is core content — always enabled, never toggleable.
 // =============================================================================
 
-import type { CatalogueSource } from '$lib/types.js';
+import type { ExtensionInfo } from '$lib/types.js';
 
-const DELVE_KEY = 'ironledger:expansion:delve';
-const YRT_KEY = 'ironledger:expansion:yrt';
+const key = (id: string) => `ironledger:expansion:${id}`;
 
-function readLocal(key: string): boolean {
-	if (typeof window === 'undefined') return true;
-	return localStorage.getItem(key) !== 'off';
+/** Registry: extension metadata, hydrated from /api/catalogue/extensions. */
+let _registry = $state<ExtensionInfo[]>([]);
+/** Per-id enabled state (reactive). */
+let _enabled = $state<Record<string, boolean>>({});
+
+function readEnabled(id: string, defaultEnabled: boolean): boolean {
+	if (typeof window === 'undefined') return defaultEnabled;
+	const v = localStorage.getItem(key(id));
+	// Explicit choice wins; otherwise the extension's manifest default.
+	return v === 'on' ? true : v === 'off' ? false : defaultEnabled;
 }
-
-// Hydrate synchronously from localStorage on first import (client-only guard lives in readLocal).
-let _delveEnabled = $state(readLocal(DELVE_KEY));
-let _yrtEnabled = $state(readLocal(YRT_KEY));
+function writeEnabled(id: string, on: boolean): void {
+	if (typeof window === 'undefined') return;
+	// Store explicitly (not remove-when-on) so a default-off extension can be
+	// turned on and persist.
+	localStorage.setItem(key(id), on ? 'on' : 'off');
+}
 
 // ---------------------------------------------------------------------------
-// Getters — function form (pickers + filters call these)
+// Registry hydration
 // ---------------------------------------------------------------------------
 
-export function isDelveEnabled(): boolean {
-	return _delveEnabled;
+/** Populate the registry + enabled map from the served extension list. */
+export function registerExtensions(list: ExtensionInfo[]): void {
+	_registry = [...list].sort((a, b) => a.order - b.order);
+	const next: Record<string, boolean> = {};
+	for (const e of _registry) next[e.id] = readEnabled(e.id, e.defaultEnabled);
+	_enabled = next;
 }
-export function isYrtEnabled(): boolean {
-	return _yrtEnabled;
+
+let _loaded = false;
+/** Fetch + register the extension list. Idempotent per session. */
+export async function loadExtensions(): Promise<void> {
+	if (_loaded) return;
+	_loaded = true;
+	try {
+		const res = await fetch('/api/catalogue/extensions');
+		if (res.ok) registerExtensions((await res.json()) as ExtensionInfo[]);
+		else _loaded = false;
+	} catch {
+		_loaded = false; // allow a later retry
+	}
 }
+
+/** All registered extensions, in display order. */
+export function getExtensions(): ExtensionInfo[] {
+	return _registry;
+}
+/** Toggleable extensions — everything but core `base`, in display order. */
+export function getToggleableExtensions(): ExtensionInfo[] {
+	return _registry.filter((e) => e.id !== 'base');
+}
+
+// ---------------------------------------------------------------------------
+// Enabled predicates — pickers + content filters call these
+// ---------------------------------------------------------------------------
 
 /** Single predicate usable across moves/oracles/foes/assets. */
-export function isSourceEnabled(source: CatalogueSource | string | undefined): boolean {
-	// Unknown/missing source is treated as base — always enabled.
-	// Defensive: any truthy-but-unknown string also defaults to enabled so new
-	// expansions added before a toggle exists don't silently disappear.
-	switch (source) {
-		case 'delve':
-			return _delveEnabled;
-		case 'yrt':
-			return _yrtEnabled;
-		case 'base':
-		case undefined:
-		case '':
-		default:
-			return true;
-	}
+export function isSourceEnabled(source: string | undefined): boolean {
+	// Unknown/missing source is core — always enabled.
+	if (!source || source === 'base') return true;
+	// Registered → the reactive map. Not yet hydrated → read localStorage
+	// directly (default: enabled) so early content filtering still works.
+	// Reading `_enabled` keeps this reactive across registerExtensions().
+	if (source in _enabled) return _enabled[source];
+	if (typeof window === 'undefined') return true;
+	return localStorage.getItem(key(source)) !== 'off';
+}
+
+/** Back-compat feature gates — used as `{#if isDelveEnabled()}` across the UI. */
+export function isDelveEnabled(): boolean {
+	return isSourceEnabled('delve');
+}
+export function isYrtEnabled(): boolean {
+	return isSourceEnabled('yrt');
 }
 
 // ---------------------------------------------------------------------------
 // Setters — persist to localStorage and update reactive state
 // ---------------------------------------------------------------------------
 
-function writeLocal(key: string, enabled: boolean): void {
-	if (typeof window === 'undefined') return;
-	if (enabled) localStorage.removeItem(key);
-	else localStorage.setItem(key, 'off');
+export function setExtensionEnabled(id: string, on: boolean): void {
+	_enabled = { ..._enabled, [id]: on };
+	writeEnabled(id, on);
 }
-
-export function setDelveEnabled(enabled: boolean): void {
-	_delveEnabled = enabled;
-	writeLocal(DELVE_KEY, enabled);
+export function setDelveEnabled(on: boolean): void {
+	setExtensionEnabled('delve', on);
 }
-
-export function setYrtEnabled(enabled: boolean): void {
-	_yrtEnabled = enabled;
-	writeLocal(YRT_KEY, enabled);
+export function setYrtEnabled(on: boolean): void {
+	setExtensionEnabled('yrt', on);
 }
 
 // ---------------------------------------------------------------------------
 // Display helpers
 // ---------------------------------------------------------------------------
 
-/** Human-readable label for a catalogue source — used in picker chips and badges. */
-export function sourceLabel(source: CatalogueSource | string): string {
-	switch (source) {
-		case 'base':
-			return 'Core';
-		case 'delve':
-			return 'Delve';
-		case 'yrt':
-			return 'YRT';
-		default:
-			return String(source);
-	}
+/** Human-readable label for a catalogue source — picker chips + badges. */
+export function sourceLabel(source: string): string {
+	if (source === 'base') return 'Core';
+	return _registry.find((e) => e.id === source)?.name ?? String(source);
 }

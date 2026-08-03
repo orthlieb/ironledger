@@ -31,10 +31,10 @@
 	} from '$lib/dice';
 	import { isDiceSoundEnabled, setDiceSoundEnabled, isDiceSoundSupported } from '$lib/diceSound.js';
 	import {
-		isDelveEnabled,
-		setDelveEnabled,
-		isYrtEnabled,
-		setYrtEnabled,
+		getToggleableExtensions,
+		isSourceEnabled,
+		setExtensionEnabled,
+		loadExtensions,
 	} from '$lib/expansionStore.svelte.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import {
@@ -163,19 +163,10 @@
 	}
 
 	// ---------------------------------------------------------------------------
-	// Expansions (Delve / YRT)
+	// Expansions — rendered dynamically from the extension registry
+	// (expansionStore). Toggle state reads/writes straight through the store, so
+	// there's no per-expansion local state; adding an extension needs no code.
 	// ---------------------------------------------------------------------------
-	let delveOn = $state(typeof window !== 'undefined' ? isDelveEnabled() : true);
-	let yrtOn = $state(typeof window !== 'undefined' ? isYrtEnabled() : true);
-
-	function applyDelve(on: boolean) {
-		delveOn = on;
-		setDelveEnabled(on);
-	}
-	function applyYrt(on: boolean) {
-		yrtOn = on;
-		setYrtEnabled(on);
-	}
 
 	// ---------------------------------------------------------------------------
 	// AI Storyteller — pick the active provider; keys/models live server-side and
@@ -219,8 +210,9 @@
 		diceChallengeColor = getDiceChallengeColor();
 		diceTexture = getDiceTexture();
 		diceMaterial = getDiceMaterial();
-		delveOn = isDelveEnabled();
-		yrtOn = isYrtEnabled();
+		// Ensure the extension registry is populated (idempotent — home already
+		// loads it on mount); the Expansions tab renders a toggle per extension.
+		void loadExtensions();
 		fontDisplay = savedFont();
 		aiSetup = getSetup();
 		activeProvider = getActiveProvider();
@@ -393,53 +385,32 @@
 						</div>
 					</Tabs.Content>
 
-					<!-- ─── Expansions ─── -->
+					<!-- ─── Expansions ─── one toggle per registered extension -->
 					<Tabs.Content value="expansions" class="sd-tab-panel">
-						<div class="sd-row">
-							<span class="sd-label">Delve</span>
-							<ToggleGroup.Root
-								type="single"
-								value={delveOn ? 'on' : 'off'}
-								onValueChange={(v) => v && applyDelve(v === 'on')}
-								class="sd-seg"
-								aria-label="Delve expansion"
-							>
-								<ToggleGroup.Item
-									value="on"
-									class="sd-seg-btn"
-									data-tooltip="Show Delve moves, oracles, foes, assets">On</ToggleGroup.Item
+						{#each getToggleableExtensions() as ext (ext.id)}
+							<div class="sd-row">
+								<span class="sd-label">{ext.name}</span>
+								<ToggleGroup.Root
+									type="single"
+									value={isSourceEnabled(ext.id) ? 'on' : 'off'}
+									onValueChange={(v) => v && setExtensionEnabled(ext.id, v === 'on')}
+									class="sd-seg"
+									aria-label="{ext.name} expansion"
 								>
-								<ToggleGroup.Item
-									value="off"
-									class="sd-seg-btn"
-									data-tooltip="Hide Delve content from pickers (existing data preserved)"
-									>Off</ToggleGroup.Item
-								>
-							</ToggleGroup.Root>
-						</div>
-
-						<div class="sd-row">
-							<span class="sd-label">YRT</span>
-							<ToggleGroup.Root
-								type="single"
-								value={yrtOn ? 'on' : 'off'}
-								onValueChange={(v) => v && applyYrt(v === 'on')}
-								class="sd-seg"
-								aria-label="YRT expansion"
-							>
-								<ToggleGroup.Item
-									value="on"
-									class="sd-seg-btn"
-									data-tooltip="Show YRT moves, oracles, foes, assets">On</ToggleGroup.Item
-								>
-								<ToggleGroup.Item
-									value="off"
-									class="sd-seg-btn"
-									data-tooltip="Hide YRT content from pickers (existing data preserved)"
-									>Off</ToggleGroup.Item
-								>
-							</ToggleGroup.Root>
-						</div>
+									<ToggleGroup.Item
+										value="on"
+										class="sd-seg-btn"
+										data-tooltip="Show {ext.name} moves, oracles, foes, assets">On</ToggleGroup.Item
+									>
+									<ToggleGroup.Item
+										value="off"
+										class="sd-seg-btn"
+										data-tooltip="Hide {ext.name} content from pickers (existing data preserved)"
+										>Off</ToggleGroup.Item
+									>
+								</ToggleGroup.Root>
+							</div>
+						{/each}
 					</Tabs.Content>
 
 					<!-- ─── AI Storyteller ─── -->
