@@ -79,7 +79,7 @@
 		{
 			icon: noteSvg,
 			title: 'Session Log & Notes',
-			body: 'Because "I think I swore a vow to avenge the blacksmith" is not a strategy. Every move, roll, and resource shift is captured automatically. Add freeform notes so your saga survives contact with real life.',
+			body: 'Because "I think I swore a vow to avenge the blacksmith" is not a strategy. Every move, roll, and resource shift is captured automatically — and if you\'d rather skip the pickers, type `/move`, `/oracle`, or `/roll` straight into the command line. Play Ironsworn like a raw terminal session. Like using a bone knife to take down a bull moose: it gets the job done and it\'s just that much more satisfying.',
 			color: 'var(--color-momentum)',
 			image: '/about/log.webp',
 			alt: 'A scribe writing in a leather-bound journal by candlelight',
