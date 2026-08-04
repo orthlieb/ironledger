@@ -1175,6 +1175,7 @@
 											resetVal={momentumReset(d)}
 											maxVal={maxMomentum(d)}
 											tooltipText="Your overall advantage or disadvantage on the quest. Build it up through good rolls and smart choices, then burn it at a crucial moment to force a better outcome."
+											onreset={() => applyResourceChange('momentum', momentumReset(d) - d.momentum)}
 										/>
 										<ResourceTile
 											label="Health"
