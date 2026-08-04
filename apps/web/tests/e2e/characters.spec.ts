@@ -130,6 +130,36 @@ test.describe('Characters area (v2)', () => {
 		).toBeVisible({ timeout: 3_000 });
 	});
 
+	// Regression: the MomentumTile's ↺ Reset button was silently no-op'ing
+	// because `onreset` wasn't wired from CharactersArea — clicking it did
+	// nothing. Ensure a click brings momentum back to the reset value.
+	test('momentum ↺ Reset button snaps momentum back to the reset value', async ({ page }) => {
+		await ensureCharacterSelected(page);
+		await switchCharTab(page, 'Core');
+		const tile = page.locator(`${CHAR_AREA} .ca-vitals-row .mt-tile`).first();
+		await expect(tile).toBeVisible({ timeout: 3_000 });
+
+		const val = tile.locator('.mt-val');
+		const resetBtn = tile.locator('.mt-reset-btn');
+
+		// Pull the target reset value from the button label ("↺ Reset: N").
+		const resetLabel = (await resetBtn.textContent()) ?? '';
+		const target = Number(resetLabel.match(/(-?\d+)/)?.[1] ?? '0');
+		expect(Number.isFinite(target)).toBe(true);
+
+		// Nudge momentum away from the reset value so the reset click has
+		// something to do. Two +1 clicks is plenty and stays under the cap.
+		const inc = tile.locator('.mt-btn[aria-label="Increase Momentum"]');
+		await inc.click();
+		await inc.click();
+		const bumped = Number((await val.textContent()) ?? '0');
+		expect(bumped).toBeGreaterThan(target);
+
+		await resetBtn.click();
+		// Reset landed — momentum is now the value announced by the button.
+		await expect(val).toHaveText(String(target), { timeout: 2_000 });
+	});
+
 	// ── Assets ────────────────────────────────────────────────────────────────
 
 	test('+ Asset button opens asset picker dialog', async ({ page }) => {
