@@ -103,6 +103,7 @@
 	// the layout-level dialogs can react. Avoids prop-drilling refs through
 	// the route tree.
 	import { onMount } from 'svelte';
+	import { cycleViewMode, viewMode } from '$lib/viewModeStore.svelte.js';
 	onMount(() => {
 		const openMove = (e: Event) => {
 			const id = (e as CustomEvent<{ id: string }>).detail?.id ?? '';
@@ -114,11 +115,37 @@
 			// from asset cards just want the picker to open, not auto-fill.
 			oraclesDialogRef?.open(d?.key, undefined, d?.stat);
 		};
+		// Alt+V cycles home-page layout mode (grid → log → tabs → grid).
+		// Desktop / tablet only — mobile always renders the tabs layout
+		// regardless of the stored preference, so the shortcut no-ops
+		// there. Ignores events fired from text inputs / textareas /
+		// contenteditable so it doesn't hijack typing.
+		const onKey = (e: KeyboardEvent) => {
+			if (!(e.altKey && !e.ctrlKey && !e.metaKey)) return;
+			if ((e.key || '').toLowerCase() !== 'v') return;
+			const t = e.target as HTMLElement | null;
+			if (
+				t &&
+				(t.tagName === 'INPUT' ||
+					t.tagName === 'TEXTAREA' ||
+					t.tagName === 'SELECT' ||
+					t.isContentEditable)
+			)
+				return;
+			if (!window.matchMedia('(min-width: 900px)').matches) return;
+			e.preventDefault();
+			cycleViewMode();
+		};
+		// Reflect the persisted mode on <html data-view> on first paint so
+		// future layout CSS scoped to `[data-view]` matches immediately.
+		document.documentElement.setAttribute('data-view', viewMode.mode);
 		document.addEventListener('ironledger:open-move', openMove);
 		document.addEventListener('ironledger:open-oracle', openOracle);
+		document.addEventListener('keydown', onKey);
 		return () => {
 			document.removeEventListener('ironledger:open-move', openMove);
 			document.removeEventListener('ironledger:open-oracle', openOracle);
+			document.removeEventListener('keydown', onKey);
 		};
 	});
 

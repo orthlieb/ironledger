@@ -53,6 +53,7 @@
 	import { reconcileGlobalValues } from '$lib/character.js';
 	import { loadFoes, findFoe, FOE_RANKS } from '$lib/foeStore.svelte.js';
 	import { loadExtensions } from '$lib/expansionStore.svelte.js';
+	import { viewMode } from '$lib/viewModeStore.svelte.js';
 	import LogPanel from '$lib/components/LogPanel.svelte';
 	import CommandBar from '$lib/components/CommandBar.svelte';
 	import CharactersArea from '$lib/components/v2/CharactersArea.svelte';
@@ -143,6 +144,13 @@
 	let mobLogHeight = $state(200); // px; updated in onMount from saved pref / viewport
 	let mobDragging = $state(false);
 	let isMobile = $state(false);
+
+	// Home-page layout mode. Grid = current 2×2 deck + log column. Log =
+	// panels-tabbed on the left, log dominant on the right (~50/50). Tabs
+	// = mobile-style tabbar + one panel + log at the bottom. Mobile
+	// always renders `tabs` regardless of stored preference; desktop
+	// honours the user's choice from the hamburger's View submenu.
+	const layoutMode = $derived(isMobile ? 'tabs' : viewMode.mode);
 	let col1Width = $state<number | null>(null);
 	/** Shared row-split height (px) — locks the horizontal divider between
 	 *  Characters/Foes to the one between Expeditions/Connections. */
@@ -1548,6 +1556,8 @@
 <div
 	bind:this={shellEl}
 	class="home-shell"
+	class:home-shell--layout-tabs={layoutMode === 'tabs'}
+	class:home-shell--layout-log={layoutMode === 'log'}
 	class:home-shell--dragging={dragging}
 	class:home-shell--mob-dragging={mobDragging}
 	class:home-shell--col-dragging={colDragging}
@@ -1859,143 +1869,197 @@
 		min-height: 0;
 	}
 
-	/* Mobile-only elements — hidden on desktop */
+	/* Mobile-tabbar button styling — visible only in `tabs` layout
+	   (see `.home-shell--layout-tabs .mob-tabbar` below). Declared
+	   here at top level so the same button styles apply whether the
+	   tabbar is used on mobile or in Tabs mode on desktop, and — via
+	   the log-layout selectors further down — inside the Log mode's
+	   left column too. */
 	.mob-tabbar {
 		display: none;
 	}
 	.mob-resize-handle {
 		display: none;
 	}
+	.mob-tab {
+		flex: 1;
+		padding: 7px 4px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 3px;
+		font-family: var(--font-ui);
+		font-size: 0.6rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: var(--text-muted);
+		background: transparent;
+		border: none;
+		border-bottom: 2px solid transparent;
+		cursor: pointer;
+		transition:
+			color 0.1s,
+			border-color 0.1s;
+	}
+	.mob-tab--active {
+		color: var(--text-accent);
+		border-bottom-color: var(--text-accent);
+	}
+	.mob-tab-icon {
+		display: flex;
+		width: 18px;
+		height: 18px;
+		flex-shrink: 0;
+	}
+	.mob-tab-icon :global(svg) {
+		width: 100%;
+		height: 100%;
+	}
+	.mob-tab-icon :global(svg path) {
+		fill: currentColor;
+	}
 
-	/* ── Mobile layout (≤900px) ──────────────────────────────────────────────── */
+	/* ── Layout: Tabs (mobile-style + desktop Tabs mode) ───────────────────── */
+	/* Triggered by JS-computed `layoutMode === 'tabs'` — mobile
+	   viewport always maps to `'tabs'` via the `isMobile` derived,
+	   and desktop users can pick it explicitly from the hamburger's
+	   View submenu. Replaces the old `@media (max-width: 900px)`
+	   block so the same rules apply in both places. */
+	.home-shell--layout-tabs {
+		display: flex;
+		flex-direction: column;
+		grid-template-columns: unset;
+		padding: 0;
+		/* No padding-bottom on tabs mode — the log lives at the
+		   bottom and carries its own safe-area-inset internally so its
+		   surface extends edge-to-edge while entries clear the home
+		   indicator. */
+		padding-left: env(safe-area-inset-left);
+		padding-right: env(safe-area-inset-right);
+	}
 
-	@media (max-width: 900px) {
-		.home-shell {
-			display: flex;
-			flex-direction: column;
-			grid-template-columns: unset;
-			padding: 0;
-			/* No padding-bottom here on mobile — the log lives at the bottom
-			   and carries its own safe-area-inset internally so its surface
-			   extends edge-to-edge while entries clear the home indicator. */
-			padding-left: env(safe-area-inset-left);
-			padding-right: env(safe-area-inset-right);
-		}
+	/* Columns become transparent — sections flow directly into the flex shell */
+	.home-shell--layout-tabs .home-col {
+		display: contents;
+	}
 
-		/* Columns become transparent — sections flow directly into the flex shell */
-		.home-col {
-			display: contents;
-		}
+	/* Desktop gutters and resize handles invisible in Tabs mode */
+	.home-shell--layout-tabs .home-resize-handle,
+	.home-shell--layout-tabs .col-resize-handle,
+	.home-shell--layout-tabs .row-resize-handle {
+		display: none;
+	}
 
-		/* Desktop gutters and resize handles invisible on mobile */
-		.home-resize-handle {
-			display: none;
-		}
-		.col-resize-handle {
-			display: none;
-		}
-		.row-resize-handle {
-			display: none;
-		}
+	/* Tab bar visible; areas fill the remaining flex space; non-active tabs hidden */
+	.home-shell--layout-tabs .mob-tabbar {
+		display: flex;
+		flex-shrink: 0;
+		background: var(--bg-control);
+		border-bottom: 1px solid var(--border);
+	}
+	.home-shell--layout-tabs .home-area {
+		flex: 1;
+		min-height: 0;
+		border-radius: 0;
+		border: none;
+		border-top: 1px solid var(--border);
+	}
+	.home-shell--layout-tabs .home-area.mob-hidden {
+		display: none;
+	}
 
-		/* Tab bar */
-		.mob-tabbar {
-			display: flex;
-			flex-shrink: 0;
-			background: var(--bg-control);
-			border-bottom: 1px solid var(--border);
-		}
-		.mob-tab {
-			flex: 1;
-			padding: 7px 4px;
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			gap: 3px;
-			font-family: var(--font-ui);
-			font-size: 0.6rem;
-			font-weight: 600;
-			text-transform: uppercase;
-			letter-spacing: 0.04em;
-			color: var(--text-muted);
-			background: transparent;
-			border: none;
-			border-bottom: 2px solid transparent;
-			cursor: pointer;
-			transition:
-				color 0.1s,
-				border-color 0.1s;
-		}
-		.mob-tab--active {
-			color: var(--text-accent);
-			border-bottom-color: var(--text-accent);
-		}
-		.mob-tab-icon {
-			display: flex;
-			width: 18px;
-			height: 18px;
-			flex-shrink: 0;
-		}
-		.mob-tab-icon :global(svg) {
-			width: 100%;
-			height: 100%;
-		}
-		.mob-tab-icon :global(svg path) {
-			fill: currentColor;
-		}
+	/* Vertical resize handle between panels and log */
+	.home-shell--layout-tabs .mob-resize-handle {
+		display: block;
+		flex-shrink: 0;
+		height: 10px;
+		cursor: row-resize;
+		background: transparent;
+		position: relative;
+		z-index: 1;
+		touch-action: none;
+	}
+	.home-shell--layout-tabs .mob-resize-handle::before {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		top: 50%;
+		height: 1px;
+		background: var(--border);
+		transform: translateY(-50%);
+		transition:
+			background 0.12s,
+			height 0.12s;
+	}
+	.home-shell--layout-tabs .mob-resize-handle:hover::before,
+	.home-shell--layout-tabs.home-shell--mob-dragging .mob-resize-handle::before {
+		background: var(--text-accent);
+		height: 2px;
+	}
 
-		/* Areas fill the remaining flex space */
-		.home-area {
-			flex: 1;
-			min-height: 0;
-			border-radius: 0;
-			border: none;
-			border-top: 1px solid var(--border);
-		}
-		/* Non-active tabs hidden */
-		.home-area.mob-hidden {
-			display: none;
-		}
+	/* Log at bottom */
+	.home-shell--layout-tabs .home-log {
+		height: var(--mob-log-height, 25vh);
+		flex: none;
+		min-height: 0;
+		border-radius: 0;
+		border: none;
+		border-top: 1px solid var(--border);
+		margin-left: 0;
+	}
 
-		/* Mobile vertical resize handle */
-		.mob-resize-handle {
-			display: block;
-			flex-shrink: 0;
-			height: 10px;
-			cursor: row-resize;
-			background: transparent;
-			position: relative;
-			z-index: 1;
-			touch-action: none;
-		}
-		.mob-resize-handle::before {
-			content: '';
-			position: absolute;
-			left: 0;
-			right: 0;
-			top: 50%;
-			height: 1px;
-			background: var(--border);
-			transform: translateY(-50%);
-			transition:
-				background 0.12s,
-				height 0.12s;
-		}
-		.mob-resize-handle:hover::before,
-		.home-shell--mob-dragging .mob-resize-handle::before {
-			background: var(--text-accent);
-			height: 2px;
-		}
-
-		/* Log at bottom */
-		.home-log {
-			height: var(--mob-log-height, 25vh);
-			flex: none;
-			min-height: 0;
-			border-radius: 0;
-			border: none;
-			border-top: 1px solid var(--border);
-			margin-left: 0;
-		}
+	/* ── Layout: Log (log-dominant, panels tabbed on the left) ─────────────── */
+	/* Two-column grid: mobile-style tabbar + one panel on the left,
+	   log column on the right. `home-resize-handle` becomes the sole
+	   vertical divider (position drives `--log-width` — same key
+	   Grid mode uses, so the log column width stays consistent when
+	   flipping between the two). Row / column resize handles hide
+	   since Log mode has none of those axes. */
+	.home-shell--layout-log {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) 6px var(--log-width, 50%);
+		grid-template-rows: auto 1fr;
+		grid-template-areas:
+			'tabs .      log'
+			'panel handle log';
+		padding: 10px;
+		padding-bottom: max(10px, env(safe-area-inset-bottom));
+		padding-left: max(10px, env(safe-area-inset-left));
+		padding-right: max(10px, env(safe-area-inset-right));
+	}
+	.home-shell--layout-log .home-col {
+		display: contents;
+	}
+	.home-shell--layout-log .mob-tabbar {
+		grid-area: tabs;
+		display: flex;
+		flex-shrink: 0;
+		background: var(--bg-control);
+		border-bottom: 1px solid var(--border);
+		border-top-left-radius: 6px;
+		border-top-right-radius: 6px;
+	}
+	.home-shell--layout-log .home-area {
+		grid-area: panel;
+		min-height: 0;
+		border-top: none;
+		border-top-left-radius: 0;
+		border-top-right-radius: 0;
+	}
+	.home-shell--layout-log .home-area.mob-hidden {
+		display: none;
+	}
+	.home-shell--layout-log .home-resize-handle {
+		grid-area: handle;
+	}
+	.home-shell--layout-log .home-log {
+		grid-area: log;
+	}
+	.home-shell--layout-log .col-resize-handle,
+	.home-shell--layout-log .row-resize-handle,
+	.home-shell--layout-log .mob-resize-handle {
+		display: none;
 	}
 </style>

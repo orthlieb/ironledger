@@ -14,6 +14,28 @@
 	import { Dialog, DropdownMenu, ToggleGroup } from 'bits-ui';
 	import DialogHeader from './DialogHeader.svelte';
 	import { headingText } from '$lib/fontStore.svelte.js';
+	import { viewMode, setViewMode, VIEW_MODES, type ViewMode } from '$lib/viewModeStore.svelte.js';
+	import { onMount } from 'svelte';
+
+	// The View submenu is only meaningful on desktop / tablet — mobile
+	// (<900 px) always renders the tabs layout regardless of stored
+	// preference, so the picker is hidden below that width. Tracked as
+	// live state via matchMedia so a resize toggles visibility without
+	// a page reload.
+	let isDesktopOrTablet = $state(false);
+	onMount(() => {
+		const mql = window.matchMedia('(min-width: 900px)');
+		const update = () => (isDesktopOrTablet = mql.matches);
+		update();
+		mql.addEventListener('change', update);
+		return () => mql.removeEventListener('change', update);
+	});
+
+	const VIEW_LABELS: Record<ViewMode, string> = {
+		grid: 'Grid',
+		log: 'Log',
+		tabs: 'Tabs',
+	};
 
 	let {
 		isAdmin = false,
@@ -78,6 +100,27 @@
 			<DropdownMenu.Item class="hm-item" onSelect={() => onSettings?.()}>
 				Settings…
 			</DropdownMenu.Item>
+
+			<!-- View submenu — desktop/tablet only (mobile always renders
+			     the tabs layout, so a picker there would be meaningless).
+			     Uses bits-ui DropdownMenu.Sub; the active mode is marked
+			     with a leading ✓. -->
+			{#if isDesktopOrTablet}
+				<DropdownMenu.Sub>
+					<DropdownMenu.SubTrigger class="hm-item hm-item--sub">
+						View
+						<span class="hm-sub-arrow" aria-hidden="true">▸</span>
+					</DropdownMenu.SubTrigger>
+					<DropdownMenu.SubContent class="hm-menu hm-submenu" sideOffset={4}>
+						{#each VIEW_MODES as m (m)}
+							<DropdownMenu.Item class="hm-item hm-item--radio" onSelect={() => setViewMode(m)}>
+								<span class="hm-check" aria-hidden="true">{viewMode.mode === m ? '✓' : ''}</span>
+								{VIEW_LABELS[m]}
+							</DropdownMenu.Item>
+						{/each}
+					</DropdownMenu.SubContent>
+				</DropdownMenu.Sub>
+			{/if}
 
 			<DropdownMenu.Separator class="hm-sep" />
 
@@ -299,6 +342,38 @@
 		height: 1px;
 		background: var(--border);
 		margin: 4px 8px;
+	}
+
+	/* Submenu trigger — same row look as regular hm-item, with a
+	   trailing ▸ chevron so it reads as "has children". */
+	:global(.hm-item--sub) {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+	}
+	:global(.hm-sub-arrow) {
+		font-size: 0.7rem;
+		color: var(--text-dimmer);
+		flex-shrink: 0;
+	}
+	:global(.hm-item--sub[data-highlighted] .hm-sub-arrow) {
+		color: var(--text-accent);
+	}
+
+	/* Radio-style rows inside a submenu — leading ✓ column keeps
+	   labels aligned whether or not this row is the active one. */
+	:global(.hm-item--radio) {
+		display: grid;
+		grid-template-columns: 14px 1fr;
+		align-items: center;
+		gap: 6px;
+	}
+	:global(.hm-check) {
+		font-size: 0.8rem;
+		color: var(--text-accent);
+		text-align: center;
+		line-height: 1;
 	}
 
 	.hm-logout-form {
