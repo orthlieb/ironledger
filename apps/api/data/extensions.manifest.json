@@ -152,6 +152,22 @@
       }
     },
     {
+      "id": "lodestar",
+      "name": "Lodestar",
+      "description": "The Lodestar guide — bonus moves for solo play. Includes Follow a Path, which resolves a journey across familiar lands in a single roll.",
+      "defaultEnabled": true,
+      "order": 30,
+      "root": "extensions/lodestar",
+      "provides": {
+        "moves": [
+          "moves/moves.json"
+        ],
+        "moveOverrides": [
+          "moves/overrides.json"
+        ]
+      }
+    },
+    {
       "id": "sample",
       "name": "Sample",
       "description": "A reference extension that exercises every pluggable surface: a move, an oracle, a foe (with a bundled portrait), an override patching a base foe, and an asset (with a bundled icon). Off by default; enable it in Settings → Expansions to see everything appear.",

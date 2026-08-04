@@ -1,0 +1,37 @@
+{
+  "category": "Lodestar",
+  "moves": [
+    {
+      "id": "move/follow-a-path",
+      "name": "Follow a Path",
+      "category": "Lodestar",
+      "source": "lodestar",
+      "triggerShort": "When you journey along a known route, and one day blends into the next.",
+      "trigger": "When you <strong>journey along a known route, and one day blends into the next</strong>, roll <strong>+supply</strong>.",
+      "stats": [{ "stat": "supply", "desc": "Journeying along a known route" }],
+      "strong": "You reach your destination and the situation favors you. Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">+1 momentum</a>.",
+      "weak": "You complete the journey, but face a cost or complication. Choose one or more:<ul><li>You took longer than expected.</li><li>You pressed on through pain, sickness, or weariness: <a class=\"move-link\" data-id=\"move/endure-harm\" data-harm=\"1\">Endure Harm</a>.</li><li>You suffered under the burden of foul weather, worries, or fearful locations: <a class=\"move-link\" data-id=\"move/endure-stress\" data-harm=\"1\">Endure Stress</a>.</li><li>You wasted resources.</li><li>You face a complication or hazard at the destination. Envision what you find (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure).</li></ul>",
+      "miss": "You are waylaid by a dire threat, and must <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a>. If you overcome this obstacle, you may push on safely to your destination.",
+      "notes": "A bonus move adapted from Set a Course (Starforged), itself adapted from Escape the Depths (Delve). It resolves a journey across familiar lands in one roll — travel with uncertainty and risk, but not the full focus of a usual journey; especially useful for the return leg of a round trip. When traveling with allies, let each member of the company suffer one or more weak-hit costs as appropriate. Such are the hardships of the road.",
+      "preconditions": [{ "key": "hasCharacter", "eq": 1 }],
+      "logTitle": "{character} follows a path using {stat}"
+    },
+    {
+      "id": "move/end-the-fight-lodestar",
+      "name": "End the Fight",
+      "category": "Lodestar",
+      "source": "lodestar",
+      "triggerShort": "When you take decisive action to resolve the outcome of this fight.",
+      "trigger": "When you <strong>take decisive action to resolve the outcome of this fight</strong>, roll the <strong>challenge dice</strong> and compare to your <strong>progress</strong>. Momentum is ignored on this roll. If you do not have initiative, count a strong hit as a weak hit, and a weak hit as a miss.",
+      "progressTrack": "combat",
+      "initiativeDowngrade": true,
+      "strong": "This foe is no longer in the fight. They are killed, out of action, flee, or surrender as appropriate to the situation and your intent (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure). <a class=\"vanquish-foe-link\">Vanquish Foe</a>",
+      "weak": "As above. <a class=\"vanquish-foe-link\">Vanquish Foe</a> But you must also choose one:<ul><li>It's worse than you thought: <a class=\"move-link\" data-id=\"move/endure-harm\">Endure Harm</a>.</li><li>You are overcome: <a class=\"move-link\" data-id=\"move/endure-stress\">Endure Stress</a>.</li><li>Your victory is short-lived: A new danger or foe appears, or an existing danger worsens.</li><li>You suffer collateral damage: Something of value is lost or broken, or someone important must pay the cost.</li><li>You'll pay for it: An objective falls out of reach.</li><li>Others won't forget: You are marked for vengeance.</li></ul>",
+      "miss": "You have lost this fight. <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a>.",
+      "notes": "The Lodestar alternate to End the Fight, adapted from Starforged's flexibility. Unlike the base move, you may make this progress roll without a strong hit on a preceding decisive action, and regardless of initiative — but at greater risk of failure: if you do not have initiative, count a strong hit as a weak hit, and a weak hit as a miss. Momentum is ignored on this roll.",
+      "preconditions": [{ "key": "hasFoe", "eq": 1 }],
+      "progressSource": "combat",
+      "logTitle": "{character} ends the fight with {foe}"
+    }
+  ]
+}

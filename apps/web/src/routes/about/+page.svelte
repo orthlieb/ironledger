@@ -67,6 +67,8 @@
 			title: 'Moves & Dice',
 			body: '48 moves. Animated 3D dice. Strong hits are celebrated. Weak hits are… managed. Misses are logged, linked, and filed under "character development." The oracle sees all.',
 			color: 'var(--color-shadow)',
+			image: '/about/moves.webp',
+			alt: 'The Enter the Fray combat move open in Iron Ledger, its strong-hit, weak-hit and miss outcomes listed as animated 3D dice tumble across the screen',
 		},
 		{
 			icon: eyeSvg,
@@ -103,6 +105,8 @@
 			title: 'Plays on Your Phone',
 			body: 'Swipe between tabs, drag the Adventure split to give the session log more room, see what just happened without losing your place. The Ironlands travel with you — on the couch, on the bus, anywhere your GM can reach you with texts about the next session.',
 			color: 'var(--color-supply)',
+			image: '/about/mobile.webp',
+			alt: 'Iron Ledger open on a phone resting on a wooden table beside a gauntlet and an old key, showing a character sheet with description and portrait',
 		},
 	];
 
@@ -248,13 +252,6 @@
 					Built for Ironsworn core, the <em>Delve</em> supplement, and the community <em>Yrt</em> homebrew
 					expansion. Iron Ledger takes the game seriously, even when the dice clearly do not.
 				</p>
-			</div>
-			<div class="about-mobile-wrap">
-				<img
-					src="/ironledger-mobile.webp"
-					alt="Iron Ledger running on a phone — character sheet with stats, resources, and adventure-action buttons within thumb reach"
-					class="about-mobile"
-				/>
 			</div>
 		</div>
 	</div>
@@ -527,32 +524,7 @@
 		display: grid;
 		grid-template-columns: 1fr;
 		gap: 2rem;
-		align-items: start;
-	}
-
-	@media (min-width: 768px) {
-		.about-layout {
-			grid-template-columns: minmax(0, 68ch) 260px;
-			justify-content: center;
-			gap: 2.5rem;
-		}
-	}
-
-	.about-mobile-wrap {
-		border-radius: 28px;
-		overflow: hidden;
-		box-shadow: 0 12px 48px rgba(0, 0, 0, 0.45);
-		border: 1px solid var(--border-mid);
-		width: 100%;
-		max-width: 260px;
-		margin: 0 auto;
-		justify-self: center;
-	}
-
-	.about-mobile {
-		display: block;
-		width: 100%;
-		height: auto;
+		justify-items: center;
 	}
 
 	.about-prose {

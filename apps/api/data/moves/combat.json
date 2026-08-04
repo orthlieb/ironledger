@@ -215,7 +215,7 @@
         },
         {
           "key": "initiative",
-          "min": 1
+          "eq": 1
         }
       ],
       "progressSource": "combat",

@@ -66,7 +66,14 @@ function makeEtag(data: unknown): string {
 }
 
 /** One content type an extension can provide, keyed by the merged catalogue. */
-type ProvidesType = 'assets' | 'moves' | 'oracles' | 'foes' | 'foeOverrides' | 'delveTables';
+type ProvidesType =
+  | 'assets'
+  | 'moves'
+  | 'moveOverrides'
+  | 'oracles'
+  | 'foes'
+  | 'foeOverrides'
+  | 'delveTables';
 
 interface ExtensionManifestEntry {
   id: string;
@@ -126,9 +133,14 @@ async function loadCatalogue(): Promise<{
     rarities: assetData.flatMap((f) => f.rarities ?? []),
   };
 
-  // Moves — flatten each file's moves.
+  // Moves — flatten each file's moves; each moveOverrides file carries one
+  // expansion's present/absent patches against the base move catalogue
+  // (mirrors the foe override mechanism below).
   const moveData = (await loadAll('moves')) as Array<{ moves: unknown[] }>;
-  const allMoves = { moves: moveData.flatMap((f) => f.moves) };
+  const allMoves = {
+    moves: moveData.flatMap((f) => f.moves),
+    overrides: await loadAll('moveOverrides'),
+  };
 
   // Oracles — one table per file.
   const allOracles = { oracles: await loadAll('oracles') };

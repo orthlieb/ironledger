@@ -136,6 +136,13 @@ export interface MoveDefinition {
   progressTrack?: string;
   progressSource?: string;
   spellRoll?: boolean;
+  /**
+   * When true, a roll of this move is downgraded one hit level (strong→weak,
+   * weak→miss) if the character does NOT have initiative (`initiative !== 1`).
+   * The downgraded result is what lands in the log. Used by the Lodestar
+   * flexible End the Fight: you may roll it without initiative, at greater risk.
+   */
+  initiativeDowngrade?: boolean;
   preconditions?: AssetPrecondition[];
   /**
    * Optional log entry title template. Supports placeholders:
