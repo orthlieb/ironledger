@@ -25,7 +25,7 @@
 	import DialogHeader from './DialogHeader.svelte';
 	import MapIconPicker from './MapIconPicker.svelte';
 	import { headingText } from '$lib/fontStore.svelte.js';
-	import { DEFAULT_MARKER_COLOR, resolveMapIcon } from '$lib/mapConstants.js';
+	import { DEFAULT_MARKER_COLOR, mapGlyphInner, resolveMapIcon } from '$lib/mapConstants.js';
 	import { updateMarker, removeMarker, type MapMarker } from '$lib/mapStore.svelte.js';
 	import { getLinkableEntities, resolveEntity } from '$lib/mapEntityLinks.js';
 	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
@@ -402,16 +402,7 @@
 							<button class="mp-sel-icon-btn" onclick={openIconPicker} aria-label="Change icon">
 								{#if draftIcon}
 									<svg viewBox={draftIcon.viewBox} aria-hidden="true">
-										<g
-											fill={draftColor}
-											stroke="#fff"
-											stroke-width="2"
-											stroke-linejoin="round"
-											paint-order="stroke"
-											vector-effect="non-scaling-stroke"
-										>
-											{@html draftIcon.inner}
-										</g>
+										{@html mapGlyphInner(draftIcon, draftColor, 'props-preview', true)}
 									</svg>
 								{:else}
 									<span class="mp-sel-icon-none" aria-hidden="true">Aa</span>

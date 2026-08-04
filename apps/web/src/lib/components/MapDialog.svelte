@@ -63,6 +63,7 @@
 		DEFAULT_MARKER_COLOR,
 		DEFAULT_MARKER_ICON,
 		gridDimsForAspect,
+		mapGlyphInner,
 		resolveMapIcon,
 		snapResolutionForZoom,
 		subGridOctaveForZoom,
@@ -971,6 +972,12 @@
 		return () => mq.removeEventListener('change', sync);
 	});
 	const ICON_SIZE = $derived(isMobileViewport ? 0.84375 : 0.421875);
+	/** Raster (PNG) icons are detailed line-art that reads visually smaller
+	 *  than the bold vector glyph silhouettes at the same box size, so they
+	 *  render at this multiple of ICON_SIZE. Vector icons stay at 1×. The
+	 *  marker's `<svg>` element is enlarged and re-centred on the anchor
+	 *  point (not the image inside a fixed box), so nothing clips. */
+	const RASTER_ICON_SCALE = 2;
 	/** Vertical gap between the icon's bottom and the label's baseline,
 	 *  in world units. Scales with the icon so proportions stay stable.
 	 *  Sized to clear the label's font-ascent PLUS a couple of pixels
@@ -1321,34 +1328,26 @@
 								transform="translate({mx} {my}) scale({1 / zoom}) rotate({rot})"
 							>
 								{#if hasIcon && ic}
+									{@const iconExtent = ICON_SIZE * (ic.raster ? RASTER_ICON_SCALE : 1)}
 									<svg
 										class="mp-marker-icon"
-										x={-ICON_SIZE / 2}
-										y={-ICON_SIZE / 2}
-										width={ICON_SIZE}
-										height={ICON_SIZE}
+										x={-iconExtent / 2}
+										y={-iconExtent / 2}
+										width={iconExtent}
+										height={iconExtent}
 										viewBox={ic.viewBox}
 									>
 										<!--
-									paint-order="stroke" draws the white halo first,
-									fill on top — same trick the marker label text uses
-									so the icon stays readable over any background map.
-									`vector-effect="non-scaling-stroke"` (inherited by
-									the child paths) pins the halo to 2 device pixels
-									regardless of zoom or icon viewBox scale, matching
-									the label halo. 2 px reads more crisply than 1 px
-									against complex map backgrounds.
+									mapGlyphInner() colours the glyph to the marker's
+									`color` and lays a white halo behind it so the icon
+									stays readable over any background map — a
+									`paint-order="stroke"` halo for vector icons (pinned
+									to 2 device px via non-scaling-stroke, matching the
+									label halo) and a dilated-alpha white flood for raster
+									(PNG) icons, whose black line-art is tinted through
+									the same call. `m.id` keys the raster filter id.
 								-->
-										<g
-											fill={color}
-											stroke="#fff"
-											stroke-width="2"
-											stroke-linejoin="round"
-											paint-order="stroke"
-											vector-effect="non-scaling-stroke"
-										>
-											{@html ic.inner}
-										</g>
+										{@html mapGlyphInner(ic, color, `mk-${m.id}`, true)}
 									</svg>
 								{:else if hasIcon}
 									<!-- Legacy/broken slug: fall back to a plain dot so
@@ -1369,7 +1368,8 @@
 											class="mp-marker-label"
 											fill={color}
 											vector-effect="non-scaling-stroke"
-											y={ICON_SIZE / 2 + LABEL_GAP}>{m.label}</text
+											y={(ICON_SIZE * (ic?.raster ? RASTER_ICON_SCALE : 1)) / 2 + LABEL_GAP}
+											>{m.label}</text
 										>
 									{:else}
 										<text
@@ -1482,7 +1482,7 @@
 				>
 					{#if ic}
 						<svg class="mp-pile-icon" viewBox={ic.viewBox} aria-hidden="true">
-							<g fill={m.color || DEFAULT_MARKER_COLOR}>{@html ic.inner}</g>
+							{@html mapGlyphInner(ic, m.color || DEFAULT_MARKER_COLOR, `pile-${m.id}`)}
 						</svg>
 					{:else}
 						<span class="mp-pile-icon-fallback" style="background:{m.color || DEFAULT_MARKER_COLOR}"

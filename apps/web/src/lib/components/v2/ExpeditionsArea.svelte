@@ -64,7 +64,7 @@
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
 	import checkSvg from '$icons/circle-check-solid-full.svg?raw';
 	import locationSvg from '$icons/location-dot-solid-full.svg?raw';
-	import iconMapSvg from '$icons/treasure-map.svg?raw';
+	import iconMapSvg from '$icons/compass-rose.svg?raw';
 	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
 	import { Tabs, Popover, Command } from 'bits-ui';
 	import { ENTITY_KIND_META } from '$lib/entityKinds.js';

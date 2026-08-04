@@ -61,7 +61,7 @@
 	import { formatEntityId } from '$lib/mapEntityLinks.js';
 	import { createMapOwnerActions, fmtCoord } from '$lib/mapOwnerActions.js';
 	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
-	import iconMapSvg from '$icons/treasure-map.svg?raw';
+	import iconMapSvg from '$icons/compass-rose.svg?raw';
 	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
 	import heartPulseSvg from '$icons/heart-pulse-solid-full.svg?raw';
 	import skullSvg from '$icons/skull-crossbones-solid-full.svg?raw';
@@ -732,7 +732,7 @@
 					{#if activeEntryMapEmpty}
 						<label
 							class="btn btn-icon icon-btn cm-hdr-icon-btn"
-							use:tooltip={`Add a background image to this ${kindLabelSingular(activeEntry.kind).toLowerCase()}’s map`}
+							use:tooltip={`Add a map to this ${kindLabelSingular(activeEntry.kind).toLowerCase()}`}
 							aria-label="Add map"
 						>
 							<span class="cm-hdr-icon-plus" aria-hidden="true">+</span>{@html iconMapSvg}

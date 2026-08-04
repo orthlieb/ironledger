@@ -1,16 +1,24 @@
 // =============================================================================
 // Iron Ledger — Map icon manifest generator
 //
-// Scans apps/web/static/map/<category>/<slug>.svg and emits a TypeScript
-// module the app can import to enumerate every available marker icon.
-// Subfolders are categories; kebab-case filenames become Title Case labels
-// (hanging-spider -> Hanging Spider). Icons at the top level (no category)
-// go into an implicit "misc" bucket.
+// Scans apps/web/static/map/<category>/<slug>.{svg,png} and emits a
+// TypeScript module the app can import to enumerate every available marker
+// icon. Subfolders are categories; kebab-case filenames become Title Case
+// labels (hanging-spider -> Hanging Spider). Icons at the top level (no
+// category) go into an implicit "misc" bucket.
 //
-// The inner SVG content is inlined into the manifest and stripped of any
+// SVGs: the inner content is inlined into the manifest and stripped of any
 // hardcoded `fill=`/`style="fill:…"` so the marker's chosen color takes
 // effect at render time via a wrapping `<g fill={color}>`. Icons that use
 // `stroke` are left alone — those keep their own outlines.
+//
+// PNGs (e.g. the hand-drawn Caeora settlement icons): wrapped in an
+// `<image href="/map/…">` element that references the served static file
+// (not base64 — keeps the manifest tiny, browser lazy-loads per icon).
+// Marked `raster: true`; the render path (mapGlyphInner in mapConstants)
+// tints these via an alpha-keyed SVG <filter> instead of `<g fill>`, so
+// the marker colour still applies to black line-art. A `<slug>.png`
+// supersedes a same-slug `<slug>.svg` in the same category.
 //
 // Run automatically before `vite dev`/`vite build` (see the Vite plugin
 // in vite.config.ts) and also on filesystem changes to static/map/ during
@@ -26,7 +34,7 @@ import { fileURLToPath } from 'node:url';
 import pathBounds from 'svg-path-bounds';
 
 /**
- * @typedef {{slug: string, label: string, category: string, categoryLabel: string, viewBox: string, inner: string}} MapIconRow
+ * @typedef {{slug: string, label: string, category: string, categoryLabel: string, viewBox: string, inner: string, raster?: boolean}} MapIconRow
  */
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -34,21 +42,39 @@ const WEB_ROOT = dirname(HERE);
 const ICON_ROOT = join(WEB_ROOT, 'static', 'map');
 const OUT_PATH = join(WEB_ROOT, 'src', 'lib', 'generated', 'mapIconManifest.ts');
 
-/** Walk a directory recursively, yielding absolute .svg paths.
+/** Walk a directory recursively, yielding absolute .svg / .png paths.
+ * Raster PNGs (e.g. the hand-drawn Caeora settlement icons) are wrapped in
+ * an <image> element at build time so they flow through the same manifest
+ * and render path as vector icons — see buildManifest().
  * @param {string} dir
  * @returns {string[]}
  */
-function walkSvgs(dir) {
+function walkIcons(dir) {
 	if (!existsSync(dir)) return [];
 	/** @type {string[]} */
 	const out = [];
 	for (const entry of readdirSync(dir)) {
 		const p = join(dir, entry);
 		const s = statSync(p);
-		if (s.isDirectory()) out.push(...walkSvgs(p));
-		else if (s.isFile() && entry.toLowerCase().endsWith('.svg')) out.push(p);
+		if (s.isDirectory()) out.push(...walkIcons(p));
+		else if (s.isFile() && /\.(svg|png)$/i.test(entry)) out.push(p);
 	}
 	return out;
+}
+
+/** Read a PNG's pixel dimensions straight from the IHDR chunk (bytes
+ *  16–24, big-endian) — no image library needed. Returns null if the file
+ *  isn't a valid PNG.
+ * @param {string} abs
+ * @returns {{w: number, h: number} | null}
+ */
+function pngSize(abs) {
+	const buf = readFileSync(abs);
+	// 8-byte signature + "IHDR" at offset 12; width/height are the two
+	// big-endian uint32s that follow at offsets 16 and 20.
+	const isPng = buf.length >= 24 && buf.readUInt32BE(0) === 0x89504e47;
+	if (!isPng || buf.toString('ascii', 12, 16) !== 'IHDR') return null;
+	return { w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) };
 }
 
 /** hanging-spider -> Hanging Spider; snake_case -> Snake Case.
@@ -203,27 +229,62 @@ function parseSvg(source) {
 }
 
 /**
+ * Wrap a raster PNG in an <image> element so it flows through the same
+ * `{@html ic.inner}` render path as vector icons. The image is referenced
+ * by its served URL (`/map/<category>/<slug>.png`), NOT inlined as base64,
+ * so the generated manifest stays tiny and the browser lazy-loads each PNG
+ * only when it's actually drawn. viewBox is the raw pixel box; the render
+ * site's nested `<svg viewBox … preserveAspectRatio="xMidYMid meet">` (the
+ * SVG default) fits non-square art into the square marker slot undistorted.
+ * Colouring happens at render time in mapGlyphInner() (mapConstants), which
+ * tints raster icons through an alpha-keyed <filter> rather than `<g fill>`,
+ * so the marker colour applies to the black line-art.
+ * @param {string} rel  path relative to ICON_ROOT, e.g. "settlement/castle.png"
+ * @param {number} w
+ * @param {number} h
+ * @returns {{viewBox: string, inner: string}}
+ */
+function wrapPng(rel, w, h) {
+	const href = `/map/${rel}`;
+	return {
+		viewBox: `0 0 ${w} ${h}`,
+		inner: `<image href="${href}" x="0" y="0" width="${w}" height="${h}" preserveAspectRatio="xMidYMid meet" />`,
+	};
+}
+
+/**
  * Build the manifest object from disk. Categories come from the first
- * folder segment under static/map/; top-level SVGs get "misc". Slugs are
+ * folder segment under static/map/; top-level icons get "misc". Slugs are
  * the filename without extension; combined manifest key is
  * "<category>/<slug>" so two categories can share a slug ("bear" as a foe
- * and a place, say).
+ * and a place, say). PNGs and SVGs share the slug namespace: when both a
+ * `<slug>.svg` and a `<slug>.png` exist in one category the PNG wins (a
+ * dropped-in raster icon supersedes the old vector glyph of the same name).
  * @returns {Record<string, MapIconRow>}
  */
 function buildManifest() {
-	const files = walkSvgs(ICON_ROOT);
+	// Sort so .png sorts after .svg within a directory, letting the PNG
+	// overwrite a same-key SVG entry on the second pass.
+	const files = walkIcons(ICON_ROOT).sort();
 	/** @type {Record<string, MapIconRow>} */
 	const manifest = {};
 	for (const abs of files) {
 		const rel = relative(ICON_ROOT, abs).replace(/\\/g, '/');
 		const segs = rel.split('/');
 		const filename = segs.pop() || '';
-		const slug = filename.replace(/\.svg$/i, '');
+		const isPng = /\.png$/i.test(filename);
+		const slug = filename.replace(/\.(svg|png)$/i, '');
 		const category = segs.length > 0 ? segs[0] : 'misc';
 		const key = `${category}/${slug}`;
 		try {
-			const source = readFileSync(abs, 'utf-8');
-			const { viewBox, inner } = parseSvg(source);
+			let viewBox, inner;
+			if (isPng) {
+				const size = pngSize(abs);
+				if (!size) throw new Error('not a valid PNG');
+				({ viewBox, inner } = wrapPng(rel, size.w, size.h));
+			} else {
+				({ viewBox, inner } = parseSvg(readFileSync(abs, 'utf-8')));
+			}
 			manifest[key] = {
 				slug,
 				label: titleCase(slug),
@@ -231,6 +292,9 @@ function buildManifest() {
 				categoryLabel: titleCase(category),
 				viewBox,
 				inner,
+				// Raster icons (PNG wrapped in <image>) render through a tint
+				// filter instead of `<g fill>`; the render sites branch on this.
+				...(isPng ? { raster: true } : {}),
 			};
 		} catch (err) {
 			const msg = err instanceof Error ? err.message : String(err);
@@ -249,7 +313,8 @@ function renderTs(manifest) {
 	const rows = keys
 		.map((k) => {
 			const m = manifest[k];
-			return `\t${JSON.stringify(k)}: { slug: ${JSON.stringify(m.slug)}, label: ${JSON.stringify(m.label)}, category: ${JSON.stringify(m.category)}, categoryLabel: ${JSON.stringify(m.categoryLabel)}, viewBox: ${JSON.stringify(m.viewBox)}, inner: ${JSON.stringify(m.inner)} },`;
+			const rasterField = m.raster ? `, raster: true` : '';
+			return `\t${JSON.stringify(k)}: { slug: ${JSON.stringify(m.slug)}, label: ${JSON.stringify(m.label)}, category: ${JSON.stringify(m.category)}, categoryLabel: ${JSON.stringify(m.categoryLabel)}, viewBox: ${JSON.stringify(m.viewBox)}, inner: ${JSON.stringify(m.inner)}${rasterField} },`;
 		})
 		.join('\n');
 	return `// =============================================================================
@@ -270,9 +335,14 @@ export interface MapIcon {
 \tcategoryLabel: string;
 \t/** viewBox attribute lifted from the source SVG, e.g. "0 0 512 512". */
 \tviewBox: string;
-\t/** Inner SVG markup with fills stripped. Wrap in <g fill={color}> to
-\t *  colorise. */
+\t/** Inner SVG markup. For vector icons: paths with fills stripped, wrap
+\t *  in <g fill={color}> to colorise. For raster icons: a single <image>
+\t *  element referencing the served PNG (see the raster flag below). */
 \tinner: string;
+\t/** True for raster (PNG) icons wrapped in <image>. These render through
+\t *  a tint <filter> keyed on the alpha channel instead of <g fill>, so the
+\t *  marker colour still applies — see mapGlyphInner() in mapConstants. */
+\traster?: boolean;
 }
 
 /** Full manifest, keyed by "<category>/<slug>". */
