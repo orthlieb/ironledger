@@ -49,6 +49,7 @@ const listJson = async (dir) =>
 const emptyProvides = () => ({
   assets: [],
   moves: [],
+  moveOverrides: [],
   oracles: [],
   foes: [],
   foeOverrides: [],
@@ -58,7 +59,11 @@ const emptyProvides = () => ({
 /** Provides for a self-contained extension dir (extensions/<id>/…). */
 async function selfContainedProvides(root) {
   const p = emptyProvides();
-  for (const f of await listJson(path.join(root, 'moves'))) p.moves.push(`moves/${f}`);
+  for (const f of await listJson(path.join(root, 'moves'))) {
+    // moves/overrides.json patches base moves (hide/replace), like foes/overrides.json.
+    if (f === 'overrides.json') p.moveOverrides.push(`moves/${f}`);
+    else p.moves.push(`moves/${f}`);
+  }
   for (const f of await listJson(path.join(root, 'oracles'))) p.oracles.push(`oracles/${f}`);
   for (const f of await listJson(path.join(root, 'assets'))) p.assets.push(`assets/${f}`);
   for (const f of await listJson(path.join(root, 'foes'))) {

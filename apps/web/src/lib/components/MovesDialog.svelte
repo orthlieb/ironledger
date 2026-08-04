@@ -29,6 +29,7 @@
 		hasRollableStats,
 	} from '$lib/moveStore.svelte.js';
 	import { firstPreconditionFailure } from '$lib/preconditions.js';
+	import { applyInitiativeDowngrade } from '$lib/initiativeDowngrade.js';
 	import { appendLog, enrichOutcomeLinks, triggerAction } from '$lib/log.svelte.js';
 	import { getActiveFoeId, getActiveExpeditionId } from '$lib/activeContext.svelte.js';
 	import { untrack } from 'svelte';
@@ -700,6 +701,20 @@
 		const hits2 = total > c2;
 		const isMatch = c1 === c2;
 
+		// Initiative downgrade (Lodestar flexible End the Fight): if the move opts
+		// in and the character does NOT have initiative, count a strong hit as a
+		// weak hit and a weak hit as a miss. eh1/eh2 are the effective (possibly
+		// downgraded) hits that drive the logged outcome; the raw dice are still
+		// shown in the roll line.
+		const {
+			hits1: eh1,
+			hits2: eh2,
+			downgraded,
+		} = applyInitiativeDowngrade(hits1, hits2, {
+			enabled: !!selectedMove.initiativeDowngrade,
+			initiative: pctx.initiative ?? 0,
+		});
+
 		// Pre-generate entry id for link enrichment
 		const entryId = crypto.randomUUID();
 		const charId = ctx?.charId ?? '';
@@ -718,13 +733,18 @@
 
 		const matchSpan = isMatch ? ' <span class="roll-match">with a match!</span>' : '';
 		parts.push(
-			`<div class="${outcomeClass(hits1, hits2)}">` +
-				`<strong>${outcomeLabel(hits1, hits2)}</strong>${matchSpan}` +
+			`<div class="${outcomeClass(eh1, eh2)}">` +
+				`<strong>${outcomeLabel(eh1, eh2)}</strong>${matchSpan}` +
 				`</div>`,
 		);
-		parts.push(matchNoteHtml(hits1, hits2, isMatch));
+		if (downgraded) {
+			parts.push(
+				'<div class="roll-match-note">Downgraded — you did not have initiative (strong hit counts as weak, weak hit as miss).</div>',
+			);
+		}
+		parts.push(matchNoteHtml(eh1, eh2, isMatch));
 
-		let outcomeHtml = getOutcomeHtml(selectedMove, hits1, hits2);
+		let outcomeHtml = getOutcomeHtml(selectedMove, eh1, eh2);
 		if (outcomeHtml) {
 			outcomeHtml = resolveHarmLinks(outcomeHtml, {
 				moveId: selectedMove.id,
@@ -743,7 +763,7 @@
 			{ sides: 10, value: c1 },
 			{ sides: 10, value: c2 },
 		]);
-		if (!hits1 && !hits2) void playMissScream();
+		if (!eh1 && !eh2) void playMissScream();
 		appendLog(resolveTitle(selectedMove), html, entryId);
 
 		rolling = false;

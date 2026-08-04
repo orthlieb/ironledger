@@ -44,20 +44,21 @@ const filesFor = (type: string) =>
 const load = (root: string, rel: string) => JSON.parse(readFileSync(resolve(root, rel), 'utf-8'));
 
 describe('extensions.manifest.json', () => {
-  it('registers base, delve, yrt as the core, in order', () => {
-    expect(core.map((e) => e.id)).toEqual(['base', 'delve', 'yrt']);
-    expect(core.map((e) => e.order)).toEqual([0, 10, 20]);
+  it('registers base, delve, yrt, lodestar as the core, in order', () => {
+    expect(core.map((e) => e.id)).toEqual(['base', 'delve', 'yrt', 'lodestar']);
+    expect(core.map((e) => e.order)).toEqual([0, 10, 20, 30]);
   });
 
   it('sample is a dev-only reference extension (stripped from production builds)', () => {
     expect(exts.find((e) => e.id === 'sample')?.dev).toBe(true);
   });
 
-  it('yrt is self-contained under extensions/yrt; base/delve stay in apps/api/data', () => {
+  it('yrt + lodestar are self-contained under extensions/; base/delve stay in apps/api/data', () => {
     const root = Object.fromEntries(exts.map((e) => [e.id, e.root]));
     expect(root.base).toBe('apps/api/data');
     expect(root.delve).toBe('apps/api/data');
     expect(root.yrt).toBe('extensions/yrt');
+    expect(root.lodestar).toBe('extensions/lodestar');
   });
 
   it('every provided content file exists on disk', () => {
@@ -82,15 +83,23 @@ describe('extensions.manifest.json', () => {
     const moveData = filesFor('moves').map(load1) as Array<{ moves: unknown[] }>;
     const oracleData = filesFor('oracles').map(load1);
     const foeData = filesFor('foes').map(load1) as Array<{ foes: unknown[] }>;
-    const overrides = filesFor('foeOverrides').map(load1);
+    const foeOverrides = filesFor('foeOverrides').map(load1);
+    const moveOverrides = filesFor('moveOverrides').map(load1) as Array<{
+      overrides: Record<string, unknown>;
+    }>;
     const delve = filesFor('delveTables');
 
     expect(assetData.flatMap((f) => f.assets)).toHaveLength(90);
     expect(assetData.flatMap((f) => f.rarities ?? [])).toHaveLength(63);
-    expect(moveData.flatMap((f) => f.moves)).toHaveLength(49);
+    // 49 base/delve/yrt moves + 2 lodestar (Follow a Path, alternate End the Fight).
+    expect(moveData.flatMap((f) => f.moves)).toHaveLength(51);
     expect(oracleData).toHaveLength(70);
     expect(foeData.flatMap((f) => f.foes)).toHaveLength(82);
-    expect(overrides).toHaveLength(1);
+    expect(foeOverrides).toHaveLength(1);
+    // Lodestar hides base End the Fight via a move override ("hide + add"):
+    // with Lodestar enabled the Ironsworn move is removed, not merely disabled.
+    expect(moveOverrides).toHaveLength(1);
+    expect(moveOverrides[0].overrides['move/end-the-fight']).toEqual({ present: false });
     expect(delve).toHaveLength(5);
   });
 

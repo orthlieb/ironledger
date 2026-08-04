@@ -1,0 +1,6 @@
+{
+  "source": "lodestar",
+  "overrides": {
+    "move/end-the-fight": { "present": false }
+  }
+}

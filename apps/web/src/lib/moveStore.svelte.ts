@@ -16,6 +16,19 @@
 import type { MoveDefinition } from '@ironledger/shared';
 import { isSourceEnabled } from './expansionStore.svelte.js';
 
+/** One expansion's patches against base moves. Mirrors the foe override file. */
+export interface MoveOverride {
+	/** `false` hides the base move while this expansion is enabled (used to
+	 *  replace a base move with an extension's alternate — "hide + add"). */
+	present?: boolean;
+}
+export interface MoveOverridesFile {
+	/** Expansion id — the override applies only while this source is enabled. */
+	source: string;
+	/** Keyed by base move id (e.g. `move/end-the-fight`). */
+	overrides: Record<string, MoveOverride>;
+}
+
 // ---------------------------------------------------------------------------
 // Category display order
 // ---------------------------------------------------------------------------
@@ -38,6 +51,7 @@ const CATEGORY_ORDER = [
 // ---------------------------------------------------------------------------
 
 let _moves: MoveDefinition[] = $state([]);
+let _overrides: MoveOverridesFile[] = $state([]);
 let _loading = $state(false);
 let _loaded = false;
 
@@ -55,7 +69,10 @@ export async function loadMoves(): Promise<void> {
 	try {
 		const res = await fetch('/api/catalogue/moves', { cache: 'no-store' });
 		if (!res.ok) throw new Error(`Moves fetch failed: ${res.status}`);
-		const json = (await res.json()) as { moves: MoveDefinition[] };
+		const json = (await res.json()) as {
+			moves: MoveDefinition[];
+			overrides?: MoveOverridesFile[];
+		};
 
 		// Sort by category order, then alphabetically within category
 		const catIdx = (cat: string) => {
@@ -69,6 +86,7 @@ export async function loadMoves(): Promise<void> {
 		});
 
 		_moves = json.moves;
+		_overrides = json.overrides ?? [];
 		_loaded = true;
 	} catch (err) {
 		console.error('[moveStore]', err);
@@ -86,9 +104,22 @@ export function getMoves(): MoveDefinition[] {
 	return _moves;
 }
 
-/** Moves whose source is currently enabled. Used by the MovesDialog picker. */
+/**
+ * Moves whose source is currently enabled AND that aren't hidden by an active
+ * expansion override. An extension replaces a base move by shipping its own
+ * move plus a `moves/overrides.json` that marks the base id `present: false`
+ * ("hide + add"). Mirrors `foeStore.getVisibleFoes`. `findMove` stays
+ * unfiltered so saved log links to a hidden move still resolve.
+ */
 export function getVisibleMoves(): MoveDefinition[] {
-	return _moves.filter((m) => isSourceEnabled(m.source));
+	return _moves.filter((m) => {
+		if (!isSourceEnabled(m.source)) return false;
+		for (const file of _overrides) {
+			if (!isSourceEnabled(file.source)) continue;
+			if (file.overrides[m.id]?.present === false) return false;
+		}
+		return true;
+	});
 }
 
 /** Distinct categories in display order (across the full catalogue). */
