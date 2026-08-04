@@ -415,9 +415,11 @@
 			by rsek. Icons by
 			<a href="https://game-icons.net" target="_blank" rel="noopener noreferrer">game-icons.net</a>,
 			<a href="https://fontawesome.com" target="_blank" rel="noopener noreferrer">Font Awesome</a>,
-			and
 			<a href="https://thenounproject.com" target="_blank" rel="noopener noreferrer"
 				>The Noun Project</a
+			>, and
+			<a href="https://www.patreon.com/c/caeora/home" target="_blank" rel="noopener noreferrer"
+				>Caeora</a
 			>. Iron Ledger is free and open source — source available on
 			<a href="https://github.com/orthlieb/ironledger" target="_blank" rel="noopener noreferrer"
 				>GitHub</a

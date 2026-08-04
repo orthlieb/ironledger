@@ -126,6 +126,89 @@ export function resolveMapIcon(ref: string | undefined | null): MapIcon | undefi
 	return MAP_ICON_LIST.find((i) => i.slug === ref);
 }
 
+/**
+ * Validate a marker colour for safe inlining into generated SVG markup
+ * (it flows through `{@html …}` via `mapGlyphInner`). Accepts `#rgb` /
+ * `#rrggbb` / `#rrggbbaa` and `rgb()/rgba()`; anything else falls back to
+ * the default marker colour so a hand-edited or imported record can never
+ * inject markup through the `flood-color` / `fill` attributes.
+ */
+export function safeMarkerColor(color: string | undefined | null): string {
+	const c = (color ?? '').trim();
+	if (/^#[0-9a-fA-F]{3,8}$/.test(c)) return c;
+	if (/^rgba?\([\d.,%\s/]+\)$/i.test(c)) return c;
+	return DEFAULT_MARKER_COLOR;
+}
+
+/**
+ * Build the inner SVG markup for a map-icon glyph coloured to `color`,
+ * for dropping inside `<svg viewBox={ic.viewBox}>…</svg>` via `{@html}`.
+ *
+ * - **Vector** icons: `<g fill={color}>` around the fill-stripped paths.
+ * - **Raster** icons (PNG `<image>`): a per-instance `<filter>` that tints
+ *   the black line-art to `color` by flooding the colour and keeping only
+ *   the source alpha (`feComposite … operator="in"`), so the hand-drawn
+ *   detail survives — the transparent interiors stay transparent. Raster
+ *   fill/stroke are inert, which is why the filter (not `<g fill>`) does
+ *   the colouring.
+ *
+ * When `halo` is set, a white backing is laid behind the glyph for
+ * legibility over busy map backgrounds — a `stroke` halo for vectors
+ * (matching the existing marker treatment), and for rasters a white
+ * *silhouette* produced by a morphological close (dilate→erode) of the
+ * stroke alpha: it floods the shape the strokes enclose (filling the
+ * transparent interior and bridging inter-stroke gaps) while hugging the
+ * outline rather than a bounding box, and the small net growth doubles as
+ * a thin separating edge. Radii scale with the icon's own pixel box so the
+ * effect is uniform once fit to a common marker slot.
+ *
+ * `uid` MUST be unique per rendered instance (marker id, manifest key, …)
+ * so the generated `<filter>` ids don't collide across the document.
+ */
+export function mapGlyphInner(
+	ic: MapIcon,
+	color: string | undefined | null,
+	uid: string,
+	halo = false,
+): string {
+	const c = safeMarkerColor(color);
+	if (!ic.raster) {
+		const haloAttrs = halo
+			? ' stroke="#fff" stroke-width="2" stroke-linejoin="round" paint-order="stroke" vector-effect="non-scaling-stroke"'
+			: '';
+		return `<g fill="${c}"${haloAttrs}>${ic.inner}</g>`;
+	}
+	// Raster: tint via the alpha channel, with an optional white silhouette
+	// backing so the black line-art reads over any map background.
+	const dims = ic.viewBox.split(/\s+/);
+	const maxDim = Math.max(Number(dims[2]) || 0, Number(dims[3]) || 0);
+	// Morphological CLOSE (dilate then erode) of the stroke alpha floods white
+	// into the *shape* the strokes enclose — filling the transparent interior
+	// (windows, walls) and bridging the gaps between strokes, while hugging the
+	// outline instead of a bounding box. The dilate radius slightly exceeds the
+	// erode radius, so the net growth leaves a thin white edge that separates
+	// the ink from the terrain (doing the old halo's job too). Radii scale with
+	// the icon's pixel box so the effect is uniform once fit to the marker slot.
+	const rDilate = Math.max(0.5, maxDim * 0.06);
+	const rErode = Math.max(0.4, maxDim * 0.05);
+	const fid = `mtint-${uid}`;
+	const backingChain = halo
+		? `<feMorphology in="SourceAlpha" operator="dilate" radius="${rDilate}" result="grown"/>` +
+			`<feMorphology in="grown" operator="erode" radius="${rErode}" result="fillmask"/>` +
+			`<feFlood flood-color="#ffffff" result="wf"/>` +
+			`<feComposite in="wf" in2="fillmask" operator="in" result="backing"/>`
+		: '';
+	const mergeBacking = halo ? '<feMergeNode in="backing"/>' : '';
+	return (
+		`<defs><filter id="${fid}" x="-25%" y="-25%" width="150%" height="150%">` +
+		backingChain +
+		`<feFlood flood-color="${c}" result="fl"/>` +
+		`<feComposite in="fl" in2="SourceAlpha" operator="in" result="tint"/>` +
+		`<feMerge>${mergeBacking}<feMergeNode in="tint"/></feMerge>` +
+		`</filter></defs><g filter="url(#${fid})">${ic.inner}</g>`
+	);
+}
+
 /** Downscale target for uploaded background images. Anything larger on its
  *  longest side is resized before we base64-encode into localStorage.
  *  2000px is high enough for a full-screen hex map on a 4K display and

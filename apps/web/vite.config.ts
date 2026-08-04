@@ -17,7 +17,7 @@ const buildDate = (() => {
 })();
 
 /**
- * Regenerates src/lib/generated/mapIconManifest.ts from static/map/**\/*.svg
+ * Regenerates src/lib/generated/mapIconManifest.ts from static/map/**\/*.{svg,png}
  * on every build and on any file change under static/map/ in dev. The
  * generator is a no-op when the manifest is already current, so we can
  * cheaply re-run it from a chokidar handler.
@@ -34,7 +34,7 @@ function mapIconManifestPlugin() {
 			server.watcher.add('static/map');
 			const onChange = (path: string) => {
 				if (!/[\\/]static[\\/]map[\\/]/.test(path)) return;
-				if (!path.toLowerCase().endsWith('.svg')) return;
+				if (!/\.(svg|png)$/i.test(path)) return;
 				generateMapIcons();
 			};
 			server.watcher.on('add', onChange);

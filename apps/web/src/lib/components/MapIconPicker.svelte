@@ -20,6 +20,7 @@
 		MAP_ICON_LIST,
 		type MapIcon,
 	} from '$lib/generated/mapIconManifest.js';
+	import { mapGlyphInner } from '$lib/mapConstants.js';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
 
 	let {
@@ -134,7 +135,7 @@
 								aria-label={ic.label}
 							>
 								<svg viewBox={ic.viewBox} aria-hidden="true">
-									<g fill={selectedColor}>{@html ic.inner}</g>
+									{@html mapGlyphInner(ic, selectedColor, `pick-${key}`)}
 								</svg>
 							</button>
 						{/each}

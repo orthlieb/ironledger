@@ -41,8 +41,8 @@ proportions (a very slight uniform stretch on the image is invisible).
 | `lib/mapExport.ts`                                      | `exportMapZip` / `importMapZip` / `buildMapZipEntries` / `parseBundledMaps` / `applyMapImport` / `populateMap` (Everything nesting + owner re-link) + `exportMapPng`. |
 | `lib/mapEntityLinks.ts`                                 | Enumerate + resolve linkable entities (community / place / journey / site); parse `"kind:id"`.                                                                        |
 | `lib/generated/mapIconManifest.ts`                      | **Auto-generated** icon manifest — do not hand-edit. Rebuilt by the Vite plugin.                                                                                      |
-| `scripts/build-map-icons.mjs`                           | Scans `static/map/**/*.svg` → `mapIconManifest.ts` (kebab→Title Case, fill-stripping).                                                                                |
-| `static/map/<category>/<slug>.svg`                      | Icon source files. First subfolder = category; kebab-case filename = slug + display label.                                                                            |
+| `scripts/build-map-icons.mjs`                           | Scans `static/map/**/*.{svg,png}` → `mapIconManifest.ts` (kebab→Title Case; SVGs fill-stripped, PNGs wrapped in `<image>`).                                           |
+| `static/map/<category>/<slug>.{svg,png}`                | Icon source files. First subfolder = category; kebab-case filename = slug + display label. See "Icon formats" below.                                                  |
 | `lib/components/MapDialog.svelte`                       | Map picker + file toolbar + selection toolbar + icon-picker dialog + SVG canvas.                                                                                      |
 | `lib/components/MapOptionsDialog.svelte`                | Name / display prefs / scale bar / danger-zone (clear + delete).                                                                                                      |
 | `lib/components/MapOwnerConflictDialog.svelte`          | Everything-import prompt: Replace vs Skip when a bundled map's owner already has a map.                                                                               |
@@ -212,22 +212,56 @@ picker automatically:
   `<g fill={color}>` at render time controls the color. `fill="none"`
   is preserved so outline-only paths stay uncoloured.
 
+### Icon formats — SVG and PNG
+
+Two source formats are supported, both keyed the same way and rendered
+through the same `<svg viewBox={ic.viewBox}>…{@html ic.inner}</svg>`
+marker path:
+
+- **SVG** (the default) — inner markup is inlined and fill-stripped, so
+  the marker's chosen `color` paints the glyph. Best for simple,
+  recolorable symbols.
+- **PNG** (raster, e.g. the hand-drawn [Caeora](https://www.patreon.com/c/caeora/home)
+  settlement icons) — wrapped at build time in an
+  `<image href="/map/<category>/<slug>.png" …>` that references the
+  served static file (**not** base64, so the manifest stays tiny and the
+  browser lazy-loads each PNG only when drawn). `viewBox` is the raw
+  pixel box; the render site's `preserveAspectRatio="xMidYMid meet"`
+  fits non-square art into the square marker slot undistorted. These
+  particular icons are **black line-art on transparent backgrounds**, so
+  they still respond to the per-marker colour: `mapGlyphInner()`
+  (mapConstants) tints them with an SVG `<filter>` that floods the marker
+  colour and keeps only the source alpha (`feComposite … operator="in"`),
+  which recolours the ink strokes while leaving the transparent interiors
+  transparent — the hand-drawn detail survives. On the map canvas a white
+  halo (dilated-alpha flood) is laid behind for legibility, matching the
+  vector icons' `stroke` halo. At the default marker colour (black) a
+  black-ink icon tints black — i.e. looks exactly as drawn.
+
+When both a `<slug>.svg` and a `<slug>.png` exist in the same category,
+the **PNG wins** (a dropped-in raster supersedes the old vector glyph of
+that name) — how the Caeora `castle` / `house` / `hut` / `village`
+replaced their prior SVGs.
+
 ### Build pipeline
 
 `scripts/build-map-icons.mjs`:
 
-1. Walks `static/map/` recursively.
-2. For each SVG, extracts `viewBox` + inner markup, strips fills.
+1. Walks `static/map/` recursively (`.svg` + `.png`).
+2. For each SVG, extracts `viewBox` + inner markup, strips fills. For
+   each PNG, reads pixel dims from the IHDR header and emits an
+   `<image>` wrapper (no image library — the header parse is inline).
 3. Writes `src/lib/generated/mapIconManifest.ts` — the app's source of
    truth for `MAP_ICONS` (keyed by `"<category>/<slug>"`),
    `MAP_ICON_LIST`, and `MAP_ICON_CATEGORIES`.
 
 The Vite plugin in `apps/web/vite.config.ts` regenerates on every
-`vite dev`/`vite build` **and** on any `.svg` change under
+`vite dev`/`vite build` **and** on any `.svg`/`.png` change under
 `static/map/` while dev is running. The generator is a no-op when the
 manifest would be byte-for-byte identical, so it's cheap to re-run.
-The generated file is committed so svelte-check and tests can run
-without executing Vite.
+The generated file is **gitignored** (`src/lib/generated/`); the
+`precheck` / `pretest` npm scripts run `build:map-icons` first so
+svelte-check and tests get a fresh manifest without executing Vite.
 
 ### Data compatibility
 

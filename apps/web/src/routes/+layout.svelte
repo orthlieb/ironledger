@@ -20,7 +20,7 @@
 	import type { PreconditionContext } from '$lib/preconditions.js';
 	import swordSvg from '$icons/sharp-axe.svg?raw';
 	import iconMoves from '$icons/person-running-solid.svg?raw';
-	import iconMap from '$icons/treasure-map.svg?raw';
+	import iconMap from '$icons/compass-rose.svg?raw';
 	import iconOracles from '$icons/crystal-ball.svg?raw';
 	import iconDice from '$icons/dice-d10-light.svg?raw';
 	import iconNotes from '$icons/note-sticky-solid.svg?raw';

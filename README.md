@@ -262,6 +262,7 @@ Feature docs are in the `docs/` directory:
 - **[Ironsworn](https://ironswornrpg.com/)** and **Ironsworn: Delve** by Shawn Tomkin — licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). Game data sourced from [Datasworn](https://github.com/rsek/datasworn) by rsek.
 - **[game-icons.net](https://game-icons.net)** — game-themed SVG icons (CC BY 3.0)
 - **[Font Awesome](https://fontawesome.com)** — UI icons (Free tier, CC BY 4.0)
+- **[Caeora](https://www.patreon.com/c/caeora/home)** — hand-drawn settlement/structure map icons
 
 ## Security
 
