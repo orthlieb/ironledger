@@ -228,7 +228,7 @@
     {
       "id": "move/check-your-gear",
       "name": "Check Your Gear",
-      "category": "Delve",
+      "category": "Adventure",
       "triggerShort": "When you check to see if you have a specific helpful item.",
       "trigger": "When you <strong>check to see if you have a specific helpful item</strong>, and you have at least <strong>+1 supply</strong>, roll <strong>+supply</strong>.",
       "stats": [
@@ -278,7 +278,7 @@
     {
       "id": "move/advance-a-threat",
       "name": "Advance a Threat",
-      "category": "Delve",
+      "category": "Threat",
       "triggerShort": "When you give ground to a threat through inaction, failure, or delay.",
       "trigger": "When you <strong>give ground to a threat through inaction, failure, or delay</strong>, roll on the table below and envision how the change manifests in your world (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure).",
       "strong": "",
@@ -317,7 +317,7 @@
     {
       "id": "move/take-a-hiatus",
       "name": "Take a Hiatus",
-      "category": "Delve",
+      "category": "Threat",
       "triggerShort": "When you spend an extended time recovering in a safe place while a threat is active.",
       "trigger": "When you <strong>spend an extended time recovering in a safe place while a threat is active</strong>, do any of the following.<ul><li>Clear any marked conditions.</li><li>Set your health, spirit, supply, and companion health to their maximum values.</li><li>Set your momentum to its reset value.</li></ul>Then, for each active threat, <a class=\"move-link\" data-id=\"move/advance-a-threat\">Advance a Threat</a>.",
       "strong": "",

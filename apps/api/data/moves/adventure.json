@@ -192,7 +192,7 @@
     {
       "id": "move/undertake-a-journey",
       "name": "Undertake a Journey",
-      "category": "Adventure",
+      "category": "Journey",
       "triggerShort": "When you travel across hazardous or unfamiliar lands.",
       "trigger": "When you <strong>travel across hazardous or unfamiliar lands</strong>, first set the rank of your journey: Troublesome (3 progress per waypoint), Dangerous (2 progress), Formidable (1 progress), Extreme (2 ticks), or Epic (1 tick). Then, for each segment of your journey, roll <strong>+wits</strong>. If you are setting off from a community with which you share a bond, add +1 to your initial roll.",
       "stats": [
@@ -221,7 +221,7 @@
     {
       "id": "move/reach-your-destination",
       "name": "Reach Your Destination",
-      "category": "Adventure",
+      "category": "Journey",
       "triggerShort": "When your journey progress track is full and you arrive at your destination.",
       "progressTrack": "journey",
       "trigger": "When your <strong>journey progress track is full and you arrive or near your destination</strong>, roll the <strong>challenge dice</strong> against your <strong>progress track</strong>. This is a <strong>progress roll</strong> — do not add a stat. Momentum is ignored.",
