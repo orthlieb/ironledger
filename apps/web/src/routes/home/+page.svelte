@@ -116,7 +116,11 @@
 	import expeditionsIconSvg from '$icons/Expeditions.svg?raw';
 	import villageIconSvg from '$icons/village.svg?raw';
 
-	const LOG_WIDTH_KEY = 'il:home:logWidth';
+	// Log divider width is persisted PER desktop view mode — grid and log keep
+	// independent positions (a dominant log in "log" view must not carry over
+	// and swallow the grid). Defaults: grid 25% of the viewport, log 50%.
+	const logWidthKey = (mode: 'grid' | 'log') => `il:home:logWidth:${mode}`;
+	const LOG_WIDTH_DEFAULT_FRAC: Record<'grid' | 'log', number> = { grid: 0.25, log: 0.5 };
 	const MIN_LOG = 240;
 	const MAX_LOG = 800;
 	const MOB_LOG_HEIGHT_KEY = 'il:home:mobLogHeight';
@@ -133,10 +137,24 @@
 	const MIN_COL = 200;
 	const MIN_AREA = 80;
 
+	/** Log width (px) for a desktop view mode — saved value, else the mode's
+	 *  fractional default, clamped to [MIN_LOG, MAX_LOG]. */
+	function loadLogWidth(mode: 'grid' | 'log'): number {
+		const saved = Number(localStorage.getItem(logWidthKey(mode)));
+		if (Number.isFinite(saved) && saved >= MIN_LOG && saved <= MAX_LOG) return saved;
+		const frac = LOG_WIDTH_DEFAULT_FRAC[mode];
+		return Math.max(MIN_LOG, Math.min(MAX_LOG, Math.round(window.innerWidth * frac)));
+	}
+
 	/** Desktop: log column width in px. */
 	let logWidth = $state(0);
 	let dragging = $state(false);
 	let shellEl = $state<HTMLDivElement | null>(null);
+	/** Which desktop mode's log width is currently loaded (for the swap effect). */
+	let lastLogMode: 'grid' | 'log' | null = null;
+	/** Set once onMount has seeded the dividers, so the swap effect ignores the
+	 *  initial reactive run and only reacts to genuine later mode switches. */
+	let dividersReady = false;
 
 	/** Mobile state. */
 	type MobileTab = 'characters' | 'foes' | 'expeditions' | 'communities';
@@ -218,14 +236,26 @@
 		return () => mq.removeEventListener('change', handler);
 	});
 
+	// Swap the log width when the desktop view mode changes so grid and log keep
+	// their own persisted positions (and per-mode defaults). Skips the initial
+	// mount (dividersReady), the mobile `tabs` mode (uses mobLogHeight), and any
+	// in-progress drag.
+	$effect(() => {
+		const mode = layoutMode;
+		if (!dividersReady || dragging) return;
+		if (mode !== 'grid' && mode !== 'log') return;
+		if (mode === lastLogMode) return;
+		lastLogMode = mode;
+		logWidth = loadLogWidth(mode);
+	});
+
 	onMount(() => {
-		// Desktop log width
-		const saved = Number(localStorage.getItem(LOG_WIDTH_KEY));
-		if (Number.isFinite(saved) && saved >= MIN_LOG && saved <= MAX_LOG) {
-			logWidth = saved;
-		} else {
-			logWidth = Math.max(MIN_LOG, Math.min(MAX_LOG, Math.round(window.innerWidth / 3)));
-		}
+		// Desktop log width — per view mode (grid 25% / log 50%), independent.
+		// 'tabs' (mobile) uses the mobile log height instead, so seed the grid
+		// value for when the viewport grows back to a desktop layout.
+		const initMode = layoutMode === 'log' ? 'log' : 'grid';
+		logWidth = loadLogWidth(initMode);
+		lastLogMode = initMode;
 
 		// Mobile log height
 		const savedMob = Number(localStorage.getItem(MOB_LOG_HEIGHT_KEY));
@@ -263,6 +293,10 @@
 		else if (inBounds(legacyChar)) rowHeight = legacyChar;
 		else if (inBounds(legacyExped)) rowHeight = legacyExped;
 		else rowHeight = Math.max(MIN_AREA, Math.round((colH - 6) / 2));
+
+		// Dividers are seeded — the log-width swap effect may now react to
+		// genuine view-mode switches.
+		dividersReady = true;
 
 		// Fire-and-forget for rendering — stores update reactively when each
 		// resolves — but keep the aggregate promise so imports can await it
@@ -375,7 +409,10 @@
 			window.removeEventListener('mouseup', onUp);
 			window.removeEventListener('touchmove', onMove as EventListener);
 			window.removeEventListener('touchend', onUp);
-			localStorage.setItem(LOG_WIDTH_KEY, String(logWidth));
+			// Persist to the current view mode's key so grid/log stay independent.
+			const mode = layoutMode === 'log' ? 'log' : 'grid';
+			localStorage.setItem(logWidthKey(mode), String(logWidth));
+			lastLogMode = mode;
 		};
 		window.addEventListener('mousemove', onMove as EventListener);
 		window.addEventListener('mouseup', onUp);
