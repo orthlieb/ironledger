@@ -29,13 +29,23 @@
 	import { updateMarker, removeMarker, type MapMarker } from '$lib/mapStore.svelte.js';
 	import { getLinkableEntities, resolveEntity } from '$lib/mapEntityLinks.js';
 	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
+	import { tooltip } from '$lib/actions/tooltip.js';
 	import iconAngleSvg from '$icons/angle-solid-full.svg?raw';
 	import iconPaletteSvg from '$icons/palette-solid-full.svg?raw';
 	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
+	import iconArrowRightSvg from '$icons/arrow-right-solid-full.svg?raw';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
 
-	let { selectedMarker, onClose }: { selectedMarker: MapMarker | null; onClose: () => void } =
-		$props();
+	let {
+		selectedMarker,
+		onClose,
+		onNavigate,
+	}: {
+		selectedMarker: MapMarker | null;
+		onClose: () => void;
+		/** Jump to the marker's linked entity (closes the map). */
+		onNavigate?: (link: { kind: string; id: string; name: string }) => void;
+	} = $props();
 
 	/** Strip the outer `<svg>` wrapper + FontAwesome licence comment so
 	 *  the palette icon's paths can be re-wrapped in our own `<svg>`
@@ -469,8 +479,30 @@
 						</label>
 					</div>
 
-					<label class="mp-props-field">
-						<span class="mp-props-label">Link to</span>
+					<!-- Not a <label>: a <label> forwards clicks to its first
+					     labelable descendant, which would hijack the "Go to" button. -->
+					<div class="mp-props-field">
+						<span class="mp-props-label-row">
+							<span class="mp-props-label">Link to</span>
+							{#if draft.entityId && draftLinkedEntity}
+								{@const linked = draftLinkedEntity}
+								<button
+									type="button"
+									class="mp-goto-entity"
+									use:tooltip={`Go To ${ENTITY_KIND_META[linked.kind].label}`}
+									aria-label={`Go To ${ENTITY_KIND_META[linked.kind].label}`}
+									onclick={() => onNavigate?.(linked)}
+								>
+									<span class="mp-goto-arrow" aria-hidden="true">{@html iconArrowRightSvg}</span>
+									<span
+										class="mp-goto-kind"
+										aria-hidden="true"
+										style="--kind-color: {ENTITY_KIND_META[linked.kind].color}"
+										>{@html ENTITY_KIND_META[linked.kind].icon}</span
+									>
+								</button>
+							{/if}
+						</span>
 						<Popover.Root bind:open={entityPickerOpen}>
 							<Popover.Trigger
 								class="mp-combobox mp-sel-entity-btn"
@@ -569,7 +601,7 @@
 								</Popover.Content>
 							</Popover.Portal>
 						</Popover.Root>
-					</label>
+					</div>
 				</div>
 				<div class="mp-props-footer">
 					<button class="btn btn-danger" onclick={deleteSelected} aria-label="Delete marker">

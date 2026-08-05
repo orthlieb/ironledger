@@ -74,6 +74,12 @@ export interface MapServerSettings {
 		 *  fit-to-canvas; 2.0 = 2× render, panning enabled via canvas
 		 *  overflow. */
 		zoom?: number;
+		/** Scroll position as a fraction of the scrollable area
+		 *  (`scrollLeft / (scrollWidth - clientWidth)`), in `[0, 1]`.
+		 *  Per-map + server-persisted (like zoom) so every map restores to
+		 *  where it was left, on any device/session. Stored as a fraction so a
+		 *  differently-sized canvas still lands in roughly the same spot. */
+		pan?: { fx: number; fy: number };
 	};
 	/** Canvas aspect ratio (width / height) for this map. Set to the
 	 *  background image's aspect when a background is uploaded so the
