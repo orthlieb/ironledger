@@ -4,7 +4,7 @@
     {
       "id": "move/follow-a-path",
       "name": "Follow a Path",
-      "category": "Lodestar",
+      "category": "Journey",
       "source": "lodestar",
       "triggerShort": "When you journey along a known route, and one day blends into the next.",
       "trigger": "When you <strong>journey along a known route, and one day blends into the next</strong>, roll <strong>+supply</strong>.",
@@ -19,7 +19,7 @@
     {
       "id": "move/end-the-fight-lodestar",
       "name": "End the Fight",
-      "category": "Lodestar",
+      "category": "Combat",
       "source": "lodestar",
       "triggerShort": "When you take decisive action to resolve the outcome of this fight.",
       "trigger": "When you <strong>take decisive action to resolve the outcome of this fight</strong>, roll the <strong>challenge dice</strong> and compare to your <strong>progress</strong>. Momentum is ignored on this roll. If you do not have initiative, count a strong hit as a weak hit, and a weak hit as a miss.",

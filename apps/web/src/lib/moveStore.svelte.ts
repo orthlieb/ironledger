@@ -33,16 +33,23 @@ export interface MoveOverridesFile {
 // Category display order
 // ---------------------------------------------------------------------------
 
+// Canonical Ironsworn category order (by guide section). "Scene Challenge" is
+// listed ahead of its moves landing so the order is stable once they do; a
+// category with no visible moves is simply skipped by categoriesFromList().
+// Yrt (homebrew) trails the core categories.
 const CATEGORY_ORDER = [
 	'Adventure',
+	'Journey',
+	'Scene Challenge',
+	'Quest',
+	'Fate',
 	'Relationship',
 	'Combat',
 	'Suffer',
-	'Quest',
-	'Fate',
 	'Delve',
-	'Rarity',
 	'Failure',
+	'Threat',
+	'Rarity',
 	'Yrt',
 ];
 
