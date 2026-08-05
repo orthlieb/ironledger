@@ -2507,27 +2507,50 @@
 		gap: 4px;
 		min-width: 0;
 	}
-	/* "Go to <entity>" action under the Link-to field — the explicit way to
-	   navigate to a linked marker's entity now that a plain click edits. */
+	/* "Link to" caption row: label on the left, the "Go to" action on the
+	   right, sharing one line. */
+	:global(.mp-props-label-row) {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		min-height: 16px;
+	}
+	/* "Go to <entity>" action inline with the Link-to caption — the explicit
+	   way to navigate to a linked marker's entity now that a plain click edits.
+	   Icon-only: an arrow → then the linked kind's glyph (community / place /
+	   journey / site). Tooltip carries the "Go To <Kind>" label. */
 	:global(.mp-goto-entity) {
-		align-self: flex-start;
-		margin-top: 2px;
-		padding: 3px 8px;
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 2px 6px;
 		background: none;
 		border: 1px solid var(--border-mid);
 		border-radius: 5px;
-		font-family: var(--font-ui);
-		font-size: 0.75rem;
-		font-weight: 600;
-		color: var(--text-accent);
+		color: var(--text-dimmer);
 		cursor: pointer;
 		transition:
 			background 0.12s,
-			border-color 0.12s;
+			border-color 0.12s,
+			color 0.12s;
 	}
 	:global(.mp-goto-entity:hover) {
 		background: var(--bg-hover);
 		border-color: var(--text-accent);
+		color: var(--text-accent);
+	}
+	:global(.mp-goto-arrow svg) {
+		display: block;
+		width: 11px;
+		height: 11px;
+		fill: currentColor;
+	}
+	:global(.mp-goto-kind svg) {
+		display: block;
+		width: 14px;
+		height: 14px;
+		fill: var(--kind-color, currentColor);
 	}
 	:global(.mp-props-label) {
 		font-family: var(--font-ui);
