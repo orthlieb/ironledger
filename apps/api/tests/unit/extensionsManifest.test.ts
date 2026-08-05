@@ -103,6 +103,48 @@ describe('extensions.manifest.json', () => {
     expect(delve).toHaveLength(5);
   });
 
+  it('every roll-table ref resolves to a catalogue entity, and ranges cover 1–100', () => {
+    // Across ALL extensions (incl. dev-only fixtures like sample).
+    const allFilesFor = (type: string) =>
+      exts.flatMap((e) => (e.provides?.[type] ?? []).map((rel) => ({ root: e.root, rel })));
+    const idsFrom = (type: string, key: 'foes' | 'assets') =>
+      new Set<string>(
+        allFilesFor(type).flatMap(({ root, rel }) => {
+          const data = load(root, rel) as Record<string, Array<{ id: string }>>;
+          return (data[key] ?? []).map((x) => x.id);
+        }),
+      );
+    const foeIds = idsFrom('foes', 'foes');
+    const assetIds = idsFrom('assets', 'assets');
+
+    const tables = allFilesFor('rollTables').map(
+      ({ root, rel }) =>
+        load(root, rel) as {
+          id: string;
+          kind: 'foe' | 'asset';
+          entries: Array<{ low: number; high: number; ref: string }>;
+        },
+    );
+    expect(tables.length).toBeGreaterThan(0); // at least the sample fixture
+
+    const unresolved: string[] = [];
+    for (const t of tables) {
+      const ids = t.kind === 'foe' ? foeIds : assetIds;
+      for (const e of t.entries) if (!ids.has(e.ref)) unresolved.push(`${t.id}: ${e.ref}`);
+
+      // Ranges must ascend, not overlap, and cover 1–100 with no gaps.
+      const sorted = [...t.entries].sort((a, b) => a.low - b.low);
+      let cursor = 1;
+      for (const e of sorted) {
+        expect(e.low, `${t.id} gap/overlap before ${e.low}`).toBe(cursor);
+        expect(e.high).toBeGreaterThanOrEqual(e.low);
+        cursor = e.high + 1;
+      }
+      expect(cursor, `${t.id} must cover through 100`).toBe(101);
+    }
+    expect(unresolved).toEqual([]);
+  });
+
   it('assigns each content file to exactly one extension (no overlap)', () => {
     // Compare resolved absolute paths — the same rel under different roots is fine.
     const all = exts.flatMap((e) =>

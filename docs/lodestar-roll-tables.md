@@ -80,12 +80,23 @@ Add a new content type extensions can provide: **`rollTables`**.
 
 - Appears as an entry in the **Ask (oracles)** dialog, only when Lodestar is
   enabled (gated by `isSourceEnabled('lodestar')`).
-- Selecting it opens a **generalized DenizenDialog**. Today `DenizenDialog` is
-  hardwired to a `Site`'s `denizens` + the fixed `DENIZEN_CELLS` frequency
-  bands (`apps/web/src/lib/components/DenizenDialog.svelte`). Generalize it to
-  accept an arbitrary `{ cells: {low,high,label?}[], refs: string[] }` so it can
-  drive either a site denizen table or a roll-table. Result view (portrait,
-  pills, description, **Add to Foes** via the existing `onSelect`) is unchanged.
+- **Refactor, not copy — extract a shared foe-roll dialog.** The denizen
+  (`DenizenDialog.svelte`, opened from `ExpeditionsArea`'s "Roll Denizen") is
+  structurally identical to the Encounter Index: a d100 foe-table → roll → foe
+  detail (portrait/pills/description/quantity) → **Add to Foes** (`onSelect`).
+  It's the only existing entity-resolving roll in the app (delve danger/theme
+  tables resolve to _text_, not entities). So Phase 2 extracts a shared
+  `FoeRollDialog` and makes **both** the denizen and the Encounter Index thin
+  callers, rather than generalizing DenizenDialog for one consumer.
+  - **Rows:** `{ low, high, label?, ref }[]`. Denizen zips `DENIZEN_CELLS`
+    (which supply the frequency `label`s) with per-site `site.denizens`; a
+    roll-table passes its `entries` (no labels).
+  - **Ref-agnostic:** refs differ — the denizen references foes by **name**
+    (per-site, human-authored), roll-tables by **id**. The shared dialog takes
+    a `resolve: (ref) => FoeDef | undefined` (denizen → name lookup, roll-table
+    → `findFoe`), so it never cares which.
+  - The denizen's **data** stays per-site on the `Site` entity — it can't
+    become a static extension roll-table. Only the UI/roll logic is shared.
 
 ### 4b. Prelude Event → asset picker
 
@@ -109,7 +120,8 @@ the authored names → ids and validates coverage.
 
 1. **Extension system**: `rollTables` content type end-to-end (manifest →
    catalogue → web store → types → tests). No UI yet.
-2. **Encounter Index**: generalize `DenizenDialog`; wire the roll-table into the
+2. **Encounter Index**: extract a shared `FoeRollDialog` (the denizen becomes a
+   thin caller — a DRY refactor, not a copy); wire the roll-table into the
    Ask/Oracles list; ship `encounter-index.json`.
 3. **Prelude Event**: asset-picker "Roll Prelude" + prelude-aware asset detail;
    ship `prelude-event.json`.
