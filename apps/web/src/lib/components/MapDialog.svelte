@@ -49,7 +49,7 @@
 	import DialogHeader from './DialogHeader.svelte';
 	import MapOptionsDialog from './MapOptionsDialog.svelte';
 	import MarkerPropertiesDialog from './MarkerPropertiesDialog.svelte';
-	import { mapSettings, persistMapSettings } from '$lib/mapSettingsStore.svelte.js';
+	import { mapSettings } from '$lib/mapSettingsStore.svelte.js';
 	import iconExpandSvg from '$icons/expand-solid-full.svg?raw';
 	import iconZoomInSvg from '$icons/magnifying-glass-plus-solid-full.svg?raw';
 	import iconZoomOutSvg from '$icons/magnifying-glass-minus-solid-full.svg?raw';
@@ -167,6 +167,9 @@
 	 *  accepted but ignored; the CTA is always available. */
 	export function open(target?: { mapId?: string; markerId?: string; promptUpload?: boolean }) {
 		dialogOpen = true;
+		// Re-arm view restore so reopening re-applies the saved zoom/pan (the
+		// canvas is recreated each open, so scroll would otherwise reset to 0).
+		armViewRestore();
 		void initMap().then(async () => {
 			if (target?.mapId && target.mapId !== mapState.activeId) {
 				await switchMap(target.mapId);
@@ -392,19 +395,38 @@
 	const svgWidth = $derived(canvasPxW * zoom);
 	const svgHeight = $derived(canvasPxH * zoom);
 
-	/** Load the server's saved zoom once on init, then never again. */
+	// Zoom + pan are restored once per (open × active map) via these guards.
+	// `armViewRestore()` re-arms them so a reopen or a map switch re-applies the
+	// new context's saved view; the map-switch effect below calls it on
+	// `activeId` change, and `open()` calls it on reopen.
 	let hydratedZoom = false;
+	let restoredPan = false;
+	function armViewRestore() {
+		hydratedZoom = false;
+		restoredPan = false;
+	}
+	/** Apply the active map's saved zoom (or reset to fit when it has none). */
 	$effect(() => {
 		if (hydratedZoom) return;
 		if (!mapState.loaded) return;
 		const saved = mapState.settings.view?.zoom;
-		if (typeof saved === 'number' && saved > 0) zoom = clampZoom(saved);
+		zoom = typeof saved === 'number' && saved > 0 ? clampZoom(saved) : 1;
 		hydratedZoom = true;
 	});
 
-	/** Restore the local pan fraction once the SVG has grown big enough to
-	 *  be scrollable. Runs at most once per dialog open. */
-	let restoredPan = false;
+	// Re-arm the restore whenever the active map changes so each map applies
+	// its own saved zoom + pan (the guards would otherwise stick after the
+	// first map and leave subsequent maps at the previous view).
+	let lastRestoredMapId: string | null = null;
+	$effect(() => {
+		const id = mapState.activeId;
+		if (id === lastRestoredMapId) return;
+		lastRestoredMapId = id;
+		armViewRestore();
+	});
+
+	/** Restore the saved pan fraction once the SVG has grown big enough to be
+	 *  scrollable. Re-armed by `armViewRestore()` on reopen / map switch. */
 	$effect(() => {
 		if (restoredPan) return;
 		if (!canvasEl) return;
@@ -412,8 +434,9 @@
 		const maxX = canvasEl.scrollWidth - canvasEl.clientWidth;
 		const maxY = canvasEl.scrollHeight - canvasEl.clientHeight;
 		if (maxX <= 0 && maxY <= 0) return; // not scrollable yet
-		canvasEl.scrollLeft = Math.max(0, maxX) * (mapSettings.pan.fx ?? 0.5);
-		canvasEl.scrollTop = Math.max(0, maxY) * (mapSettings.pan.fy ?? 0.5);
+		const pan = mapState.settings.view?.pan;
+		canvasEl.scrollLeft = Math.max(0, maxX) * (pan?.fx ?? 0.5);
+		canvasEl.scrollTop = Math.max(0, maxY) * (pan?.fy ?? 0.5);
 		restoredPan = true;
 	});
 
@@ -433,9 +456,12 @@
 			if (!canvasEl) return;
 			const maxX = canvasEl.scrollWidth - canvasEl.clientWidth;
 			const maxY = canvasEl.scrollHeight - canvasEl.clientHeight;
-			mapSettings.pan.fx = maxX > 0 ? canvasEl.scrollLeft / maxX : 0.5;
-			mapSettings.pan.fy = maxY > 0 ? canvasEl.scrollTop / maxY : 0.5;
-			persistMapSettings();
+			const fx = maxX > 0 ? canvasEl.scrollLeft / maxX : 0.5;
+			const fy = maxY > 0 ? canvasEl.scrollTop / maxY : 0.5;
+			// Per-map, server-persisted (co-located with zoom under settings.view)
+			// so scroll survives reload/sessions and is restored per map.
+			mapState.settings.view = { ...(mapState.settings.view ?? {}), pan: { fx, fy } };
+			void persistSettings();
 		}, 300);
 	}
 
@@ -669,23 +695,24 @@
 	/** Select or jump for an existing marker. `forceEdit` bypasses the
 	 *  entity-link jump and always opens the editor (used by shift-click,
 	 *  long-press, and placing-mode clicks on occupied intersections). */
-	function activateExisting(x: number, y: number, forceEdit: boolean): boolean {
+	/** Select the marker at (x, y) so its editor opens. A plain click always
+	 *  edits now (previously a click on a linked marker jumped to its entity and
+	 *  closed the map, which made linked markers hard to edit — that navigation
+	 *  is an explicit "Go to" action in the editor instead). */
+	function activateExisting(x: number, y: number): boolean {
 		const existing = markersAt(x, y, zoom)[0];
 		if (!existing) return false;
-		if (!forceEdit) {
-			const link = resolveEntity(existing.entityId);
-			if (link) {
-				document.dispatchEvent(
-					new CustomEvent('ironledger:focus-entity', {
-						detail: { kind: link.kind, id: link.id },
-					}),
-				);
-				close();
-				return true;
-			}
-		}
 		selectedMarkerId = existing.id;
 		return true;
+	}
+
+	/** Jump the home page to a marker's linked entity and close the map —
+	 *  invoked from the marker editor's "Go to" action. */
+	function focusMarkerEntity(link: { kind: string; id: string }) {
+		document.dispatchEvent(
+			new CustomEvent('ironledger:focus-entity', { detail: { kind: link.kind, id: link.id } }),
+		);
+		close();
 	}
 
 	function placeAt(x: number, y: number) {
@@ -791,7 +818,7 @@
 			return;
 		}
 		if (hits.length === 1) {
-			activateExisting(x, y, ev.shiftKey);
+			activateExisting(x, y);
 			clearSquareSelection();
 			return;
 		}
@@ -813,7 +840,7 @@
 				longPressTimer = null;
 				// Cancel any pending drag intent — long-press wins.
 				dragState = null;
-				activateExisting(x, y, true);
+				activateExisting(x, y);
 			}, LONG_PRESS_MS);
 		}
 		// Drag intent — arm if there's a marker at this snap point. We
@@ -1507,7 +1534,11 @@
 	modal top-layer, and reaches the `.mp-props-*` / `.mp-sel-*` /
 	`.mp-cmd-*` rules in the global stylesheet below.
 -->
-<MarkerPropertiesDialog {selectedMarker} onClose={() => (selectedMarkerId = null)} />
+<MarkerPropertiesDialog
+	{selectedMarker}
+	onClose={() => (selectedMarkerId = null)}
+	onNavigate={focusMarkerEntity}
+/>
 
 <style>
 	/* bits-ui portals Content + Overlay to <body>; scope everything
@@ -2475,6 +2506,28 @@
 		flex-direction: column;
 		gap: 4px;
 		min-width: 0;
+	}
+	/* "Go to <entity>" action under the Link-to field — the explicit way to
+	   navigate to a linked marker's entity now that a plain click edits. */
+	:global(.mp-goto-entity) {
+		align-self: flex-start;
+		margin-top: 2px;
+		padding: 3px 8px;
+		background: none;
+		border: 1px solid var(--border-mid);
+		border-radius: 5px;
+		font-family: var(--font-ui);
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: var(--text-accent);
+		cursor: pointer;
+		transition:
+			background 0.12s,
+			border-color 0.12s;
+	}
+	:global(.mp-goto-entity:hover) {
+		background: var(--bg-hover);
+		border-color: var(--text-accent);
 	}
 	:global(.mp-props-label) {
 		font-family: var(--font-ui);

@@ -34,8 +34,16 @@
 	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
 
-	let { selectedMarker, onClose }: { selectedMarker: MapMarker | null; onClose: () => void } =
-		$props();
+	let {
+		selectedMarker,
+		onClose,
+		onNavigate,
+	}: {
+		selectedMarker: MapMarker | null;
+		onClose: () => void;
+		/** Jump to the marker's linked entity (closes the map). */
+		onNavigate?: (link: { kind: string; id: string; name: string }) => void;
+	} = $props();
 
 	/** Strip the outer `<svg>` wrapper + FontAwesome licence comment so
 	 *  the palette icon's paths can be re-wrapped in our own `<svg>`
@@ -570,6 +578,15 @@
 							</Popover.Portal>
 						</Popover.Root>
 					</label>
+					{#if draft.entityId && draftLinkedEntity}
+						<button
+							type="button"
+							class="mp-goto-entity"
+							onclick={() => draftLinkedEntity && onNavigate?.(draftLinkedEntity)}
+						>
+							Go to {draftLinkedEntity.name}
+						</button>
+					{/if}
 				</div>
 				<div class="mp-props-footer">
 					<button class="btn btn-danger" onclick={deleteSelected} aria-label="Delete marker">
