@@ -160,6 +160,42 @@ export interface MoveDefinition {
   [key: string]: unknown;
 }
 
+/**
+ * One d100 row of a resolver roll-table: an inclusive range that resolves to
+ * a catalogue entity by id (a foe id for `kind: 'foe'`, an asset id for
+ * `kind: 'asset'`), with optional prelude/flavor text and an asset category.
+ */
+export interface RollTableEntry {
+  /** Inclusive low bound on d100 (1–100). */
+  low: number;
+  /** Inclusive high bound on d100 (1–100). */
+  high: number;
+  /** Catalogue entity id this range resolves to (foe id or asset id). */
+  ref: string;
+  /** Asset category (Path / Combat Talent / Companion / Ritual). Foes omit it. */
+  category?: string;
+  /** Optional prelude/flavor narrative shown alongside the resolved entity. */
+  text?: string;
+}
+
+/**
+ * A "resolver oracle" — roll a d100, resolve the matching range to a catalogue
+ * foe or asset, and open that entity's existing detail + add-to-character UI.
+ * Provided by extensions under `roll-tables/*.json`; gated by `source`.
+ */
+export interface RollTable {
+  /** Stable camelCase key (e.g. `lodestarEncounterIndex`). */
+  id: string;
+  /** Display name. */
+  name: string;
+  /** What the entries resolve to. */
+  kind: 'foe' | 'asset';
+  /** Owning extension id — hidden unless that expansion is enabled. */
+  source: string;
+  /** d100 ranges → entity refs, ascending and non-overlapping. */
+  entries: RollTableEntry[];
+}
+
 export interface MoveStat {
   stat: string;
   desc: string;

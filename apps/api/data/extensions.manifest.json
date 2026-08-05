@@ -170,7 +170,7 @@
     {
       "id": "sample",
       "name": "Sample",
-      "description": "A reference extension that exercises every pluggable surface: a move, an oracle, a foe (with a bundled portrait), an override patching a base foe, and an asset (with a bundled icon). Off by default; enable it in Settings → Expansions to see everything appear.",
+      "description": "A reference extension that exercises every pluggable surface: a move, an oracle, a foe (with a bundled portrait), an override patching a base foe, an asset (with a bundled icon), and a roll-table (resolver oracle). Off by default; enable it in Settings → Expansions to see everything appear.",
       "defaultEnabled": false,
       "order": 99,
       "dev": true,
@@ -190,6 +190,9 @@
         ],
         "foeOverrides": [
           "foes/overrides.json"
+        ],
+        "rollTables": [
+          "roll-tables/sample-encounters.json"
         ]
       }
     }
