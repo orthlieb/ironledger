@@ -286,6 +286,12 @@
 			// the microtask cycle before the next frame.
 			requestAnimationFrame(() => {
 				if (!canvasEl) return;
+				// Don't fight the initial view restore: until it has landed,
+				// the fraction captured above is the pre-restore 0,0 (which
+				// would re-center the map), and the dedicated pan-restore
+				// effect owns positioning. Once restored, this preserves the
+				// pan across container resizes (toolbar band pop, etc.).
+				if (!restoredPan) return;
 				const newMaxX = Math.max(0, canvasEl.scrollWidth - canvasEl.clientWidth);
 				const newMaxY = Math.max(0, canvasEl.scrollHeight - canvasEl.clientHeight);
 				canvasEl.scrollLeft = newMaxX * fx;
@@ -425,19 +431,35 @@
 		armViewRestore();
 	});
 
-	/** Restore the saved pan fraction once the SVG has grown big enough to be
-	 *  scrollable. Re-armed by `armViewRestore()` on reopen / map switch. */
+	/** Restore the saved pan fraction once the SVG has grown to its zoomed
+	 *  size and the canvas is actually scrollable. Re-armed by
+	 *  `armViewRestore()` on reopen / map switch.
+	 *
+	 *  Reading `svgWidth`/`svgHeight` (which fold in `zoom`) is load-bearing:
+	 *  it makes this effect re-run *after* the zoom effect enlarges the SVG.
+	 *  Without that dependency the effect fired once at fit-size — while the
+	 *  2× SVG was still only scheduled to paint — measured `maxX ≈ 0`, bailed,
+	 *  and never restored a zoomed-in map's scroll on reopen. The rAF then
+	 *  measures `scrollWidth` after the enlarged SVG has actually painted. */
 	$effect(() => {
 		if (restoredPan) return;
 		if (!canvasEl) return;
 		if (!mapState.loaded) return;
-		const maxX = canvasEl.scrollWidth - canvasEl.clientWidth;
-		const maxY = canvasEl.scrollHeight - canvasEl.clientHeight;
-		if (maxX <= 0 && maxY <= 0) return; // not scrollable yet
+		// Establish a reactive dependency on the zoomed content size so this
+		// re-runs when `zoom` (or the canvas) grows the SVG.
+		if (svgWidth <= 0 || svgHeight <= 0) return;
+		const el = canvasEl;
 		const pan = mapState.settings.view?.pan;
-		canvasEl.scrollLeft = Math.max(0, maxX) * (pan?.fx ?? 0.5);
-		canvasEl.scrollTop = Math.max(0, maxY) * (pan?.fy ?? 0.5);
-		restoredPan = true;
+		const raf = requestAnimationFrame(() => {
+			if (restoredPan || !el) return;
+			const maxX = el.scrollWidth - el.clientWidth;
+			const maxY = el.scrollHeight - el.clientHeight;
+			if (maxX <= 0 && maxY <= 0) return; // not scrollable yet — a later run catches it
+			el.scrollLeft = Math.max(0, maxX) * (pan?.fx ?? 0.5);
+			el.scrollTop = Math.max(0, maxY) * (pan?.fy ?? 0.5);
+			restoredPan = true;
+		});
+		return () => cancelAnimationFrame(raf);
 	});
 
 	let zoomSaveTimer: ReturnType<typeof setTimeout> | null = null;
