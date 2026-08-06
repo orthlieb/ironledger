@@ -5,6 +5,7 @@
   "focus": 1.5,
   "region": 2,
   "location": 3,
+  "overlandLandmark": 3.1,
   "coastalWatersLocation": 3.5,
   "yrtCityTownLocation": 3.75,
   "locationDescriptor": 4,
