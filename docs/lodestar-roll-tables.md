@@ -125,8 +125,12 @@ the authored names → ids and validates coverage.
    Ask/Oracles list (gated to `isSourceEnabled('lodestar')`, "Add to Foes" via
    `addEncounter`); ship `encounter-index.json` (58 rows, full d100). The shared
    `FoeRollRow` type lives in `$lib/types.ts`.
-3. **Prelude Event** (next): asset-picker "Roll Prelude" + prelude-aware asset
-   detail; ship `prelude-event.json`.
+3. **Prelude Event** ✅: a "Roll Prelude" chip on the AssetPicker (gated to an
+   enabled asset roll-table) opens the shared `AssetRollDialog` (roll → asset
+   detail + prelude narrative → Add to Character, which hands off to the
+   picker's existing `onAdd` purchase flow); ship `prelude-event.json` (70 rows
+   across Path / Combat Talent / Companion / Ritual, full d100, each with a
+   prelude narrative). The shared `AssetRollRow` type lives in `$lib/types.ts`.
 
 Each phase is independently shippable.
 

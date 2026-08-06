@@ -135,6 +135,15 @@ describe('extensions.manifest.json', () => {
     expect(encounter!.kind).toBe('foe');
     expect(encounter!.entries).toHaveLength(58);
 
+    // Lodestar's Prelude Event: an asset resolver-oracle with a full d100 (70
+    // rows across Path / Combat Talent / Companion / Ritual), each carrying a
+    // prelude narrative.
+    const prelude = tables.find((t) => t.id === 'lodestarPreludeEvent');
+    expect(prelude, 'lodestar Prelude Event roll-table present').toBeDefined();
+    expect(prelude!.kind).toBe('asset');
+    expect(prelude!.entries).toHaveLength(70);
+    expect(prelude!.entries.every((e) => !!(e as { text?: string }).text)).toBe(true);
+
     const unresolved: string[] = [];
     for (const t of tables) {
       const ids = t.kind === 'foe' ? foeIds : assetIds;
