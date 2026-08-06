@@ -15,7 +15,11 @@
 // =============================================================================
 
 import type { CatalogueSource } from '$lib/types.js';
-import { isSourceEnabled, suppressedOracleKeys } from '$lib/expansionStore.svelte.js';
+import {
+	isSourceEnabled,
+	loadExtensions,
+	suppressedOracleKeys,
+} from '$lib/expansionStore.svelte.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -111,7 +115,14 @@ export async function loadOracles(): Promise<void> {
 	if (_loaded || _loading) return;
 	_loading = true;
 	try {
-		const res = await fetch('/api/catalogue/oracles');
+		// Fetch oracles + extensions in parallel — the extension registry
+		// carries the suppression list (Lodestar hides Delve's Feature Aspect
+		// + Focus, etc.), so `_oracles` must not be published until the
+		// registry is loaded, or reactive consumers of `getVisibleOracles()`
+		// will render one frame showing suppressed oracles before the
+		// registry lands. Both fetches happen in parallel — no serialization
+		// cost — but the store's public state waits for both.
+		const [res] = await Promise.all([fetch('/api/catalogue/oracles'), loadExtensions()]);
 		if (!res.ok) throw new Error(`Oracle fetch failed: ${res.status}`);
 
 		const json = (await res.json()) as { oracles: unknown[] };
