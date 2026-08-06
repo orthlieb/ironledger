@@ -84,6 +84,50 @@ draggable in both.
 - [ ] One `<DialogHeader>` per view in two-view dialogs; use `detail` on
       the detail view.
 
+## Icon SVGs — normalize before checking in
+
+Every SVG under `apps/web/src/lib/icons/` and `extensions/*/icons/` is
+inlined via `?raw` and rendered inside a container whose CSS applies
+`fill: currentColor`. The consumer picks the tint — the icon must not
+hard-code one. Icons downloaded from game-icons.net, Font Awesome
+exports from Fontello / IcoMoon, and Adobe Illustrator "Save As SVG"
+output all ship with wrappers that break this.
+
+**Required shape for a new icon:**
+
+```xml
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 W H"><!--source "name" by author — LICENSE-->
+  <path fill="currentColor" d="…"/>
+</svg>
+```
+
+- Only `xmlns` + `viewBox` on the root `<svg>`. No `width`, `height`,
+  `style="height:…"`, `enable-background`, `xmlns:xlink`, `x`, `y`,
+  `version`, or `xml:space`.
+- Every fill-carrying `<path>` uses `fill="currentColor"` (never
+  `fill="#000"`, `fill="black"`, or `fill-opacity`).
+- No full-canvas background rect like `<path d="M0 0h512v512H0z"
+fill="#fff"/>`. If the source ships one, delete it.
+- No wrapping `<g class="" transform="translate(0,0)" style="">` — flatten
+  it. Only keep a `<g>` when it carries a real transform.
+- No embedded `<style>…</style>` blocks (`.st0{fill:none;}` style classes
+  from Illustrator). Inline any real `fill:none` onto the path.
+- Attribution comment right after the opening tag so provenance survives
+  minification. game-icons.net icons are CC BY 3.0; credit the artist.
+
+**Checklist before adding a new icon file:**
+
+- [ ] Root is just `<svg xmlns="…" viewBox="0 0 W H">`.
+- [ ] Every `<path>` uses `fill="currentColor"` (or has no fill attr, so
+      CSS wins).
+- [ ] No `<rect>` / `<path>` covering the whole canvas as a background.
+- [ ] No inline `style`, `enable-background`, or embedded `<style>` block.
+- [ ] Attribution comment present.
+
+Add the raw asset to `docs/icons/raw/<slug>.svg` (or paste it into the
+PR body) if you'd like the source preserved for future re-normalization —
+the checked-in file is the cleaned version, not the vendor export.
+
 ## Tooltips — use `use:tooltip`, not the native `title=` attribute
 
 For every visible hover hint on HTML elements, use the `tooltip` action
