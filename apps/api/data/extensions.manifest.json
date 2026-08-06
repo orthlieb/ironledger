@@ -161,7 +161,8 @@
       "order": 30,
       "suppressesOracles": [
         "featureAspect",
-        "featureFocus"
+        "featureFocus",
+        "location"
       ],
       "root": "extensions/lodestar",
       "provides": {
@@ -170,6 +171,9 @@
         ],
         "moveOverrides": [
           "moves/overrides.json"
+        ],
+        "oracles": [
+          "oracles/overland-landmark.json"
         ],
         "rollTables": [
           "roll-tables/encounter-index.json",
