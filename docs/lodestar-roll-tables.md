@@ -118,13 +118,15 @@ the authored names → ids and validates coverage.
 
 ## 6. Phased build
 
-1. **Extension system**: `rollTables` content type end-to-end (manifest →
-   catalogue → web store → types → tests). No UI yet.
-2. **Encounter Index**: extract a shared `FoeRollDialog` (the denizen becomes a
+1. **Extension system** ✅ (PR #232): `rollTables` content type end-to-end
+   (manifest → catalogue → web store → types → tests). No UI yet.
+2. **Encounter Index** ✅: extract a shared `FoeRollDialog` (the denizen is now a
    thin caller — a DRY refactor, not a copy); wire the roll-table into the
-   Ask/Oracles list; ship `encounter-index.json`.
-3. **Prelude Event**: asset-picker "Roll Prelude" + prelude-aware asset detail;
-   ship `prelude-event.json`.
+   Ask/Oracles list (gated to `isSourceEnabled('lodestar')`, "Add to Foes" via
+   `addEncounter`); ship `encounter-index.json` (58 rows, full d100). The shared
+   `FoeRollRow` type lives in `$lib/types.ts`.
+3. **Prelude Event** (next): asset-picker "Roll Prelude" + prelude-aware asset
+   detail; ship `prelude-event.json`.
 
 Each phase is independently shippable.
 
