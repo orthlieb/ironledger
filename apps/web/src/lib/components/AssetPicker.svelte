@@ -7,17 +7,17 @@
 	 * Tiles show precondition failures as disabled with tooltip.
 	 * Clicking an eligible tile shows an "Add X?" confirm dialog.
 	 */
-	import type { AssetCategory, AssetDefinition, AssetRollRow, CharacterData } from '$lib/types.js';
-	import type { RollTable } from '@ironledger/shared';
+	import type { AssetCategory, AssetDefinition, CharacterData } from '$lib/types.js';
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
+	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
 	import { getVisibleAssets, isAssetsLoading, findAsset } from '$lib/assetStore.svelte.js';
 	import { getVisibleRollTables, loadRollTables } from '$lib/rollTableStore.svelte.js';
+	import { firePreludeOracle } from '$lib/preludeOracle.svelte.js';
 	import { firstPreconditionFailure, type Precondition } from '$lib/preconditions.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { Dialog } from 'bits-ui';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
-	import AssetRollDialog from '$lib/components/AssetRollDialog.svelte';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { assetIcon } from '$lib/iconRegistry.js';
 
@@ -134,39 +134,15 @@
 	}
 
 	// ── Prelude Event (resolver oracle → asset) ──────────────────────────────
-	// A d100 asset roll-table (e.g. Lodestar's Prelude Event) surfaces here as a
-	// "Roll Prelude" action, gated to its enabled expansion. Rolling opens the
-	// shared AssetRollDialog (roll → asset detail + prelude narrative), and
-	// "Add to Character" reuses the same `onAdd` purchase flow as a tile click.
+	// When an asset roll-table (Lodestar's Prelude Event) is enabled, a d6 button
+	// surfaces here. It has no roll ceremony: `firePreludeOracle()` picks a
+	// random asset + prelude narrative and hands off (via the prelude bus) to the
+	// character sheet, which opens the asset-detail dialog with the narrative on
+	// top. Nothing about the normal tile-click add flow changes.
 	loadRollTables(); // idempotent — fetches the catalogue once per session
-	let preludeRef = $state<{ open(): void; close(): void } | null>(null);
-	let activePreludeTable = $state<RollTable | null>(null);
 
-	/** Asset roll-tables whose source expansion is enabled. */
-	const preludeTables = $derived(getVisibleRollTables().filter((t) => t.kind === 'asset'));
-	const preludeTitle = $derived(activePreludeTable?.name ?? '');
-	const preludeLogLabel = $derived(
-		activePreludeTable ? `Oracle: ${activePreludeTable.name}` : 'Oracle',
-	);
-	const preludeRows = $derived<AssetRollRow[]>(
-		activePreludeTable
-			? activePreludeTable.entries.map((e) => ({
-					low: e.low,
-					high: e.high,
-					ref: e.ref,
-					category: e.category,
-					text: e.text,
-				}))
-			: [],
-	);
-
-	function resolveAsset(ref: string): AssetDefinition | undefined {
-		return findAsset(ref);
-	}
-	function openPrelude(table: RollTable): void {
-		activePreludeTable = table;
-		preludeRef?.open();
-	}
+	/** True when an asset roll-table is enabled (gates the d6 button). */
+	const hasPreludeTable = $derived(getVisibleRollTables().some((t) => t.kind === 'asset'));
 </script>
 
 <!-- ======================================================================
@@ -215,12 +191,12 @@
 							>{/if}
 						{filtersOpen ? '▲' : '▼'}</button
 					>
-					{#if preludeTables.length > 0}
+					{#if hasPreludeTable}
 						<button
-							class="ap-prelude-btn"
-							onclick={() => openPrelude(preludeTables[0])}
-							use:tooltip={'Roll a random asset with a prelude narrative'}
-							>🎲 {preludeTables[0].name}</button
+							class="dice-btn"
+							onclick={() => firePreludeOracle()}
+							use:tooltip={'Prelude Event — reveal a random asset with a prelude'}
+							aria-label="Prelude Event">{@html diceD6Svg}</button
 						>
 					{/if}
 				</div>
@@ -301,18 +277,6 @@
 		</Dialog.Content>
 	</Dialog.Portal>
 </Dialog.Root>
-
-<!-- Prelude Event handoff: rolling opens this on top of the picker; "Add to
-     Character" routes through the same `onAdd` purchase flow as a tile click
-     (which also closes this picker). -->
-<AssetRollDialog
-	bind:this={preludeRef}
-	title={preludeTitle}
-	logLabel={preludeLogLabel}
-	rows={preludeRows}
-	resolve={resolveAsset}
-	onSelect={onAdd}
-/>
 
 <style>
 	/* ================================================================
@@ -418,29 +382,7 @@
 		color: var(--text);
 		border-color: var(--border-mid);
 	}
-	/* Roll Prelude — same chip shape as the filter toggle, accent-tinted so it
-	   reads as an action rather than a filter. Only shown when an asset
-	   roll-table (e.g. Lodestar's Prelude Event) is enabled. */
-	:global(.ap-prelude-btn) {
-		font-family: var(--font-ui);
-		font-size: 0.72rem;
-		font-weight: 600;
-		letter-spacing: 0.05em;
-		padding: 3px 10px;
-		border-radius: 12px;
-		border: 1px solid var(--text-accent);
-		background: color-mix(in srgb, var(--text-accent) 12%, transparent);
-		color: var(--text-accent);
-		cursor: pointer;
-		white-space: nowrap;
-		flex-shrink: 0;
-		transition:
-			background 0.1s,
-			border-color 0.1s;
-	}
-	:global(.ap-prelude-btn:hover) {
-		background: color-mix(in srgb, var(--text-accent) 22%, transparent);
-	}
+	/* The Prelude Event d6 button uses the global `.dice-btn` style. */
 	:global(.ap-filter-toggle--active) {
 		color: var(--accent);
 		border-color: var(--accent);

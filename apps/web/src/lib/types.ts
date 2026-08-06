@@ -233,19 +233,6 @@ export interface FoeRollRow {
 	range?: string;
 }
 
-/** One d100 row for the AssetRollDialog (resolver oracles that resolve to an
- *  asset, e.g. Lodestar's Prelude Event). `ref` is a catalogue asset id;
- *  `category` disambiguates the display column (Path / Combat Talent /
- *  Companion / Ritual) and `text` is the prelude narrative shown with the
- *  resolved asset. */
-export interface AssetRollRow {
-	low: number;
-	high: number;
-	ref: string;
-	category?: string;
-	text?: string;
-}
-
 export const DENIZEN_CELLS: DenizenCell[] = [
 	{ label: 'Very Common', range: '01–27', low: 1, high: 27 },
 	{ label: 'Common', range: '28–41', low: 28, high: 41 },

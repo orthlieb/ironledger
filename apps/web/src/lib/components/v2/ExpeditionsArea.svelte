@@ -823,7 +823,7 @@
 										onchange={(v) => updateExp({ theme: v as Site['theme'] })}
 									/>
 									<button
-										class="btn btn-icon ea-dice-btn"
+										class="dice-btn"
 										onclick={randomizeTheme}
 										disabled={rolling}
 										use:tooltip={'Pick a random theme'}
@@ -840,7 +840,7 @@
 										onchange={(v) => updateExp({ domain: v as Site['domain'] })}
 									/>
 									<button
-										class="btn btn-icon ea-dice-btn"
+										class="dice-btn"
 										onclick={randomizeDomain}
 										disabled={rolling}
 										use:tooltip={'Pick a random domain'}
@@ -862,7 +862,7 @@
 										onchange={(v) => updateExp({ currentFeature: v })}
 									/>
 									<button
-										class="btn btn-icon ea-dice-btn"
+										class="dice-btn"
 										onclick={rollFeature}
 										disabled={!expHasThemeAndDomain || rolling}
 										use:tooltip={expHasThemeAndDomain
@@ -886,7 +886,7 @@
 										onchange={(v) => updateExp({ currentDanger: v })}
 									/>
 									<button
-										class="btn btn-icon ea-dice-btn"
+										class="dice-btn"
 										onclick={rollDanger}
 										disabled={!expHasThemeAndDomain || rolling}
 										use:tooltip={expHasThemeAndDomain
@@ -1515,44 +1515,8 @@
 		border-color: var(--text-accent);
 	}
 
-	/* Square d6 button sitting next to a combo box. Sized to match the
-	   combo's height (22 px) so the row reads as one control. */
-	.ea-dice-btn {
-		all: unset;
-		cursor: pointer;
-		box-sizing: border-box;
-		width: 22px;
-		height: 22px;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		border: 1px solid var(--border-mid);
-		border-radius: 3px;
-		background: transparent;
-		color: var(--text-muted);
-		flex-shrink: 0;
-		transition:
-			color 0.12s,
-			border-color 0.12s,
-			background 0.12s;
-	}
-	.ea-dice-btn:hover:not(:disabled) {
-		color: var(--text-accent);
-		border-color: var(--text-accent);
-	}
-	.ea-dice-btn:disabled {
-		opacity: 0.4;
-		cursor: not-allowed;
-	}
-	.ea-dice-btn :global(svg) {
-		width: 12px;
-		height: 12px;
-		fill: currentColor;
-		pointer-events: none;
-	}
-	.ea-dice-btn :global(svg) :global(path) {
-		fill: currentColor;
-	}
+	/* Square d6 buttons beside the Theme/Domain/Feature/Danger combos use the
+	   global `.dice-btn` style (app.css) — the preferred d6 button. */
 
 	/* Roll Denizen button row at the top of the Denizens tab. Sibling of
 	   .ea-denizen-grid — card's 8 px gap already spaces them. */

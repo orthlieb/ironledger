@@ -554,6 +554,45 @@ select option {
 	justify-content: center;
 }
 
+/* Preferred d6 "randomize / roll" button — a small square die button that sits
+   beside a field or in a dialog toolbar (e.g. the Delve site Theme/Domain
+   pickers, the asset picker's Prelude Event). Standalone (`all: unset`): apply
+   `class="dice-btn"` with the inlined d6 SVG as the only child. New d6 buttons
+   should use this class rather than re-styling their own. */
+.dice-btn {
+	all: unset;
+	cursor: pointer;
+	box-sizing: border-box;
+	width: 22px;
+	height: 22px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border: 1px solid var(--border-mid);
+	border-radius: 3px;
+	background: transparent;
+	color: var(--text-muted);
+	flex-shrink: 0;
+	transition:
+		color 0.12s,
+		border-color 0.12s,
+		background 0.12s;
+}
+.dice-btn:hover:not(:disabled) {
+	color: var(--text-accent);
+	border-color: var(--text-accent);
+}
+.dice-btn:disabled {
+	opacity: 0.4;
+	cursor: not-allowed;
+}
+.dice-btn svg {
+	width: 12px;
+	height: 12px;
+	fill: currentColor;
+	pointer-events: none;
+}
+
 /* Standard "← Back" button. Apply alongside `.btn` (e.g. class="btn back-btn")
    with the bare label as text — the leading arrow is supplied here so every
    back button across dialogs and panels stays identical. In a flex footer,

@@ -30,6 +30,7 @@
 	import { findFoe, loadFoes } from '$lib/foeStore.svelte.js';
 	import { addEncounter } from '$lib/encounterStore.svelte.js';
 	import FoeRollDialog from '$lib/components/FoeRollDialog.svelte';
+	import PreludeTableDialog from '$lib/components/PreludeTableDialog.svelte';
 
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
@@ -142,6 +143,35 @@
 		activeFoeTable = table;
 		close();
 		foeRollRef?.open();
+	}
+
+	/** Reopen the oracle picker grid — the "← Back" target from a resolver
+	 *  oracle's dialog. Preserves the current search/filters. */
+	function reopenPicker(): void {
+		view = 'picker';
+		dialogOpen = true;
+	}
+
+	/** Asset roll-tables (Prelude Event) matching the current search + source
+	 *  filters. Unlike foe tables these have no roll ceremony. */
+	const assetRollTables = $derived(() => {
+		const q = search.trim().toLowerCase();
+		return getVisibleRollTables().filter(
+			(t) =>
+				t.kind === 'asset' &&
+				(activeSources.size === 0 || activeSources.has(t.source)) &&
+				(!q || t.name.toLowerCase().includes(q)),
+		);
+	});
+
+	let preludeTableRef = $state<{ open(): void; close(): void } | null>(null);
+
+	/** Bring up the Prelude Event table (manual roll). Rolling there hands off to
+	 *  the character's asset-detail dialog (with the prelude narrative on top).
+	 *  Auto-rolling without the table only happens from the asset picker's d6. */
+	function openPreludeTable(): void {
+		close();
+		preludeTableRef?.open();
 	}
 
 	// ---------------------------------------------------------------------------
@@ -324,7 +354,8 @@
 					{:else}
 						{@const list = filteredOracles()}
 						{@const foeTables = foeRollTables()}
-						{#if list.length === 0 && foeTables.length === 0}
+						{@const assetTables = assetRollTables()}
+						{#if list.length === 0 && foeTables.length === 0 && assetTables.length === 0}
 							<div class="od-empty">No oracles match.</div>
 						{:else}
 							<div class="od-grid">
@@ -339,6 +370,20 @@
 										<div class="od-tile-body">
 											<div class="od-tile-name">{t.name}</div>
 											<div class="od-tile-desc">Roll a foe · {sourceLabel(t.source)}</div>
+										</div>
+									</button>
+								{/each}
+								{#each assetTables as t (t.id)}
+									<button
+										class="od-tile od-tile--roll"
+										style:--tcolor={sourceColor(t.source)}
+										use:tooltip={'Bring up the Prelude Event table, then roll'}
+										onclick={openPreludeTable}
+									>
+										<div class="od-tile-stripe"></div>
+										<div class="od-tile-body">
+											<div class="od-tile-name">{t.name}</div>
+											<div class="od-tile-desc">Roll a prelude · {sourceLabel(t.source)}</div>
 										</div>
 									</button>
 								{/each}
@@ -439,7 +484,13 @@
 	rows={foeRollRows}
 	resolve={resolveFoe}
 	onSelect={addFoeFromRoll}
+	onBack={reopenPicker}
+	preface={activeFoeTable?.description}
 />
+
+<!-- Prelude Event oracle: brings up the d100 table; rolling there hands off to
+     the character's asset-detail dialog. -->
+<PreludeTableDialog bind:this={preludeTableRef} onBack={reopenPicker} />
 
 <style>
 	/* bits-ui portals Content + Overlay to <body>; scope everything

@@ -42,12 +42,21 @@
 		rows,
 		resolve,
 		onSelect,
+		onBack,
+		preface,
 	}: {
 		title: string;
 		logLabel: string;
 		rows: FoeRollRow[];
 		resolve: (ref: string) => FoeDef | undefined;
 		onSelect: (foeDef: FoeDef, quantity: FoeQuantity, effectiveRank: number) => void;
+		/** When set (invoked from the Oracle selection list), the table view shows
+		 *  a "← Back" that returns to the oracle picker. Omitted for the denizen
+		 *  roll (no picker to return to). */
+		onBack?: () => void;
+		/** Optional intro text shown above the table (e.g. the Encounter Index
+		 *  oracle's description). Paragraphs separated by blank lines. */
+		preface?: string;
 	} = $props();
 
 	// ---------------------------------------------------------------------------
@@ -163,29 +172,61 @@
 				<DialogHeader title={headingText(title)} radius="8px 8px 0 0" />
 
 				<div class="dd-table-wrap">
-					<table class="dd-table">
-						<thead>
-							<tr>
-								<th>d100</th>
-								{#if hasLabels}<th>Frequency</th>{/if}
-								<th>Foe</th>
-							</tr>
-						</thead>
-						<tbody>
-							{#each rows as row, i}
-								<tr
-									class:dd-row-rolled={rolledRow?.low === row.low && rolledRow?.high === row.high}
-								>
-									<td class="dd-range">{rangeStr(row)}</td>
-									{#if hasLabels}<td class="dd-freq">{row.label ?? ''}</td>{/if}
-									<td class="dd-foe-name">{resolve(row.ref)?.name ?? (row.ref || '—')}</td>
+					{#if preface}
+						<div class="dd-preface">
+							{#each preface.split('\n\n') as para}<p>{para}</p>{/each}
+						</div>
+					{/if}
+					{#if hasLabels}
+						<!-- Denizen table: fixed frequency bands, one narrow column. -->
+						<table class="dd-table">
+							<thead>
+								<tr>
+									<th>d100</th>
+									<th>Frequency</th>
+									<th>Foe</th>
 								</tr>
+							</thead>
+							<tbody>
+								{#each rows as row, i}
+									<tr
+										class:dd-row-rolled={rolledRow?.low === row.low && rolledRow?.high === row.high}
+									>
+										<td class="dd-range">{rangeStr(row)}</td>
+										<td class="dd-freq">{row.label ?? ''}</td>
+										<td class="dd-foe-name">{resolve(row.ref)?.name ?? (row.ref || '—')}</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					{:else}
+						<!-- Roll-table (e.g. Encounter Index): many rows, laid out in a
+						     3-column grid (2 on mobile) so it stays compact. -->
+						<div class="dd-grid">
+							{#each rows as row, i (i)}
+								<div
+									class="dd-grid-cell"
+									class:dd-cell-rolled={rolledRow?.low === row.low && rolledRow?.high === row.high}
+								>
+									<span class="dd-grid-range">{rangeStr(row)}</span>
+									<span class="dd-grid-name">{resolve(row.ref)?.name ?? (row.ref || '—')}</span>
+								</div>
 							{/each}
-						</tbody>
-					</table>
+						</div>
+					{/if}
 				</div>
 
 				<div class="dd-footer">
+					{#if onBack}
+						<button
+							class="btn back-btn"
+							style="margin-right: auto"
+							onclick={() => {
+								close();
+								onBack?.();
+							}}>Back</button
+						>
+					{/if}
 					<button class="btn" onclick={close}>Cancel</button>
 					<button bind:this={rollBtnEl} class="btn btn-primary" onclick={roll} disabled={rolling}>
 						{rolling ? 'Rolling…' : 'Roll d100'}
@@ -349,6 +390,21 @@
 		flex-shrink: 0;
 	}
 
+	/* Intro/description text shown above the table (oracle prefaces). */
+	:global(.dd-preface) {
+		padding: 12px 14px 4px;
+		font-family: var(--font-ui);
+		font-size: 0.8rem;
+		line-height: 1.5;
+		color: var(--text-muted);
+	}
+	:global(.dd-preface p) {
+		margin: 0 0 8px;
+	}
+	:global(.dd-preface p:last-child) {
+		margin-bottom: 0;
+	}
+
 	/* ── Table view ────────────────────────────────────────────────── */
 	:global(.dd-table-wrap) {
 		flex: 1;
@@ -410,6 +466,49 @@
 
 	:global(.dd-row-rolled td) {
 		background: color-mix(in srgb, var(--text-accent) 12%, transparent) !important;
+		color: var(--text-accent);
+		font-weight: 600;
+	}
+
+	/* ── Roll-table grid (no frequency labels, e.g. Encounter Index) ──────── */
+	/* 2 columns on mobile, 3 from 520px up. */
+	:global(.dd-grid) {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 4px 10px;
+		padding: 8px 12px;
+	}
+	@media (min-width: 520px) {
+		:global(.dd-grid) {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+		}
+	}
+	:global(.dd-grid-cell) {
+		display: flex;
+		align-items: baseline;
+		gap: 8px;
+		padding: 4px 6px;
+		border-radius: 5px;
+		min-width: 0;
+	}
+	:global(.dd-grid-range) {
+		font-variant-numeric: tabular-nums;
+		color: var(--text-dimmer);
+		white-space: nowrap;
+		flex-shrink: 0;
+		min-width: 2.6rem;
+	}
+	:global(.dd-grid-name) {
+		color: var(--text);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	:global(.dd-cell-rolled) {
+		background: color-mix(in srgb, var(--text-accent) 14%, transparent);
+	}
+	:global(.dd-cell-rolled .dd-grid-name),
+	:global(.dd-cell-rolled .dd-grid-range) {
 		color: var(--text-accent);
 		font-weight: 600;
 	}

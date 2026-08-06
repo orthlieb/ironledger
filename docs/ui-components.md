@@ -42,12 +42,18 @@ Icon buttons in toolbars use `btn icon-btn` (secondary by default). Add `btn-pri
 
 Small square button that sits inline with a single-line input or select and triggers an oracle roll (or any randomiser) for that field. Used wherever a labelled field has a "roll me" affordance — site Theme/Domain/Feature/Danger, community Trouble, future per-field random buttons.
 
-**One spec across the app.** When adding a new inline roller, do not invent a new size, radius, or padding — copy this verbatim. The reference implementation is `.ea-dice-btn` in `ExpeditionsArea.svelte:1401` (Feature/Danger/Theme/Domain rolls); `.cm-dice-btn` in `CommunitiesArea.svelte` (Trouble roll) is the same spec under a different name.
+**One global class — `.dice-btn`.** This is the **preferred** d6 button style. It
+lives in `app.css` as a global class; new d6 buttons apply `class="dice-btn"`
+directly and do **not** re-style per component. The Delve site Theme/Domain/
+Feature/Danger rolls (`ExpeditionsArea`), the community Trouble roll
+(`CommunitiesArea`), and the asset picker's Prelude Event button all use it.
+(The former per-area `.ea-dice-btn` / `.cm-dice-btn` copies were consolidated
+into `.dice-btn`.)
 
-### Canonical CSS
+### Canonical CSS (defined once in `app.css`)
 
 ```css
-.<area > -dice-btn {
+.dice-btn {
   all: unset;
   cursor: pointer;
   box-sizing: border-box;
@@ -66,15 +72,15 @@ Small square button that sits inline with a single-line input or select and trig
     border-color 0.12s,
     background 0.12s;
 }
-.<area > -dice-btn:hover:not(:disabled) {
+.dice-btn:hover:not(:disabled) {
   color: var(--text-accent);
   border-color: var(--text-accent);
 }
-.<area > -dice-btn:disabled {
+.dice-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
-.<area > -dice-btn :global(svg) {
+.dice-btn svg {
   width: 12px;
   height: 12px;
   fill: currentColor;
@@ -90,7 +96,7 @@ Small square button that sits inline with a single-line input or select and trig
 
 ```svelte
 <button
-  class="<area>-dice-btn"
+  class="dice-btn"
   type="button"
   onclick={rollSomething}
   disabled={rolling}
@@ -103,7 +109,7 @@ Small square button that sits inline with a single-line input or select and trig
 
 ### Checklist when adding a new inline roller
 
-- [ ] CSS values match the canonical block above byte-for-byte.
+- [ ] Use the global `class="dice-btn"` — do not copy the CSS into a new per-area class.
 - [ ] `disabled` is bound to the per-component `rolling` flag.
 - [ ] `use:tooltip` and `aria-label` carry the same text — the action ("Roll <thing> oracle"), not just "Roll".
 - [ ] `await load<Store>()` is the first line of the handler — `loadOracles()` for oracle rolls, `loadDelveData()` for theme/domain combined-table rolls, etc. Without it, a user clicking the button before the catalogue fetch settles hits a silent empty-result return (`rollOracle` for the missing-key case) or a crash (`rollFromRangeTable([])` reading `picked.value` on an empty table).
