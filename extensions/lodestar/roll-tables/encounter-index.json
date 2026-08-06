@@ -1,0 +1,298 @@
+{
+  "id": "lodestarEncounterIndex",
+  "name": "Encounter Index",
+  "kind": "foe",
+  "source": "lodestar",
+  "entries": [
+    {
+      "low": 1,
+      "high": 1,
+      "ref": "delve/atanya"
+    },
+    {
+      "low": 2,
+      "high": 2,
+      "ref": "ironsworn/basilisk"
+    },
+    {
+      "low": 3,
+      "high": 5,
+      "ref": "ironsworn/bear"
+    },
+    {
+      "low": 6,
+      "high": 7,
+      "ref": "delve/bladewing"
+    },
+    {
+      "low": 8,
+      "high": 8,
+      "ref": "delve/blighthound"
+    },
+    {
+      "low": 9,
+      "high": 9,
+      "ref": "delve/blood-thorn"
+    },
+    {
+      "low": 10,
+      "high": 12,
+      "ref": "ironsworn/boar"
+    },
+    {
+      "low": 13,
+      "high": 13,
+      "ref": "delve/bog-rot"
+    },
+    {
+      "low": 14,
+      "high": 14,
+      "ref": "delve/bonehorde"
+    },
+    {
+      "low": 15,
+      "high": 16,
+      "ref": "ironsworn/bonewalker"
+    },
+    {
+      "low": 17,
+      "high": 18,
+      "ref": "ironsworn/broken"
+    },
+    {
+      "low": 19,
+      "high": 20,
+      "ref": "delve/carrion-newt"
+    },
+    {
+      "low": 21,
+      "high": 22,
+      "ref": "delve/cave-lion"
+    },
+    {
+      "low": 23,
+      "high": 23,
+      "ref": "ironsworn/chimera"
+    },
+    {
+      "low": 24,
+      "high": 25,
+      "ref": "delve/chitter"
+    },
+    {
+      "low": 26,
+      "high": 26,
+      "ref": "delve/circle-of-stones"
+    },
+    {
+      "low": 27,
+      "high": 29,
+      "ref": "ironsworn/common-folk"
+    },
+    {
+      "low": 30,
+      "high": 31,
+      "ref": "delve/deep-rat"
+    },
+    {
+      "low": 32,
+      "high": 33,
+      "ref": "ironsworn/elder-beast"
+    },
+    {
+      "low": 34,
+      "high": 35,
+      "ref": "ironsworn/elf"
+    },
+    {
+      "low": 36,
+      "high": 37,
+      "ref": "ironsworn/frostbound"
+    },
+    {
+      "low": 38,
+      "high": 39,
+      "ref": "ironsworn/gaunt"
+    },
+    {
+      "low": 40,
+      "high": 41,
+      "ref": "ironsworn/giant"
+    },
+    {
+      "low": 42,
+      "high": 42,
+      "ref": "delve/glimmer"
+    },
+    {
+      "low": 43,
+      "high": 43,
+      "ref": "delve/gloom"
+    },
+    {
+      "low": 44,
+      "high": 45,
+      "ref": "delve/gnarl"
+    },
+    {
+      "low": 46,
+      "high": 47,
+      "ref": "ironsworn/harrow-spider"
+    },
+    {
+      "low": 48,
+      "high": 49,
+      "ref": "ironsworn/haunt"
+    },
+    {
+      "low": 50,
+      "high": 50,
+      "ref": "ironsworn/hollow"
+    },
+    {
+      "low": 51,
+      "high": 53,
+      "ref": "ironsworn/hunter"
+    },
+    {
+      "low": 54,
+      "high": 55,
+      "ref": "delve/husk"
+    },
+    {
+      "low": 56,
+      "high": 56,
+      "ref": "ironsworn/iron-revenant"
+    },
+    {
+      "low": 57,
+      "high": 57,
+      "ref": "delve/iron-wracked-beast"
+    },
+    {
+      "low": 58,
+      "high": 58,
+      "ref": "delve/kraken"
+    },
+    {
+      "low": 59,
+      "high": 59,
+      "ref": "ironsworn/leviathan"
+    },
+    {
+      "low": 60,
+      "high": 60,
+      "ref": "delve/maelstrom"
+    },
+    {
+      "low": 61,
+      "high": 62,
+      "ref": "ironsworn/mammoth"
+    },
+    {
+      "low": 63,
+      "high": 64,
+      "ref": "ironsworn/marsh-rat"
+    },
+    {
+      "low": 65,
+      "high": 65,
+      "ref": "delve/merrow"
+    },
+    {
+      "low": 66,
+      "high": 67,
+      "ref": "ironsworn/mystic"
+    },
+    {
+      "low": 68,
+      "high": 69,
+      "ref": "delve/nightmare-spider"
+    },
+    {
+      "low": 70,
+      "high": 71,
+      "ref": "delve/nightspawn"
+    },
+    {
+      "low": 72,
+      "high": 72,
+      "ref": "ironsworn/primordial"
+    },
+    {
+      "low": 73,
+      "high": 75,
+      "ref": "ironsworn/raider"
+    },
+    {
+      "low": 76,
+      "high": 76,
+      "ref": "delve/rhaskar"
+    },
+    {
+      "low": 77,
+      "high": 77,
+      "ref": "delve/shroud-crab"
+    },
+    {
+      "low": 78,
+      "high": 79,
+      "ref": "ironsworn/sodden"
+    },
+    {
+      "low": 80,
+      "high": 80,
+      "ref": "delve/tempest"
+    },
+    {
+      "low": 81,
+      "high": 81,
+      "ref": "delve/thrall"
+    },
+    {
+      "low": 82,
+      "high": 83,
+      "ref": "delve/trog"
+    },
+    {
+      "low": 84,
+      "high": 85,
+      "ref": "ironsworn/troll"
+    },
+    {
+      "low": 86,
+      "high": 87,
+      "ref": "ironsworn/varou"
+    },
+    {
+      "low": 88,
+      "high": 90,
+      "ref": "ironsworn/warrior"
+    },
+    {
+      "low": 91,
+      "high": 91,
+      "ref": "delve/wight"
+    },
+    {
+      "low": 92,
+      "high": 94,
+      "ref": "ironsworn/wolf"
+    },
+    {
+      "low": 95,
+      "high": 95,
+      "ref": "delve/wyrm"
+    },
+    {
+      "low": 96,
+      "high": 97,
+      "ref": "ironsworn/wyvern"
+    },
+    {
+      "low": 98,
+      "high": 100,
+      "ref": "delve/zealot"
+    }
+  ]
+}

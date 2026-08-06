@@ -127,6 +127,14 @@ describe('extensions.manifest.json', () => {
     );
     expect(tables.length).toBeGreaterThan(0); // at least the sample fixture
 
+    // Lodestar's Encounter Index: a foe resolver-oracle with a full d100 (58
+    // rows). Explicit so a dropped/renamed table is caught (the generic checks
+    // below would still pass with it simply absent).
+    const encounter = tables.find((t) => t.id === 'lodestarEncounterIndex');
+    expect(encounter, 'lodestar Encounter Index roll-table present').toBeDefined();
+    expect(encounter!.kind).toBe('foe');
+    expect(encounter!.entries).toHaveLength(58);
+
     const unresolved: string[] = [];
     for (const t of tables) {
       const ids = t.kind === 'foe' ? foeIds : assetIds;
