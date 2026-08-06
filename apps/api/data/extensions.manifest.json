@@ -159,6 +159,10 @@
       "description": "The Lodestar guide — bonus moves for solo play. Includes Follow a Path, which resolves a journey across familiar lands in a single roll.",
       "defaultEnabled": true,
       "order": 30,
+      "suppressesOracles": [
+        "featureAspect",
+        "featureFocus"
+      ],
       "root": "extensions/lodestar",
       "provides": {
         "moves": [

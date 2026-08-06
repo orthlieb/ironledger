@@ -15,7 +15,7 @@
 // =============================================================================
 
 import type { CatalogueSource } from '$lib/types.js';
-import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
+import { isSourceEnabled, suppressedOracleKeys } from '$lib/expansionStore.svelte.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -174,9 +174,12 @@ export function getOracleSources(): CatalogueSource[] {
 	return out;
 }
 
-/** Oracles whose source is currently enabled. Used by pickers; `findOracle` stays unfiltered. */
+/** Oracles whose source is currently enabled AND that aren't suppressed by another
+ *  enabled extension. Used by pickers; `findOracle` stays unfiltered so log
+ *  click-throughs still resolve for oracles the user has since hidden. */
 export function getVisibleOracles(): OracleFile[] {
-	return _oracles.filter((o) => isSourceEnabled(o.source));
+	const suppressed = suppressedOracleKeys();
+	return _oracles.filter((o) => isSourceEnabled(o.source) && !suppressed.has(o.key));
 }
 
 /** Visible sources after expansion filtering. */
