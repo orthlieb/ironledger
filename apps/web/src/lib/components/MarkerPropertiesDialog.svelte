@@ -482,99 +482,57 @@
 					<!-- Not a <label>: a <label> forwards clicks to its first
 					     labelable descendant, which would hijack the "Go to" button. -->
 					<div class="mp-props-field">
-						<span class="mp-props-label-row">
-							<span class="mp-props-label">Link to</span>
-							{#if draft.entityId && draftLinkedEntity}
-								{@const linked = draftLinkedEntity}
-								<button
-									type="button"
-									class="mp-goto-entity"
-									use:tooltip={`Go To ${ENTITY_KIND_META[linked.kind].label}`}
-									aria-label={`Go To ${ENTITY_KIND_META[linked.kind].label}`}
-									onclick={() => onNavigate?.(linked)}
+						<span class="mp-props-label">Link to</span>
+						<div class="mp-link-row">
+							<Popover.Root bind:open={entityPickerOpen}>
+								<Popover.Trigger
+									class="mp-combobox mp-sel-entity-btn"
+									aria-label="Link marker to a connection"
 								>
-									<span class="mp-goto-arrow" aria-hidden="true">{@html iconArrowRightSvg}</span>
-									<span
-										class="mp-goto-kind"
-										aria-hidden="true"
-										style="--kind-color: {ENTITY_KIND_META[linked.kind].color}"
-										>{@html ENTITY_KIND_META[linked.kind].icon}</span
+									{#if draft.entityId && draftLinkedEntity}
+										<span
+											class="mp-sel-entity-icon"
+											aria-hidden="true"
+											style="--kind-color: {ENTITY_KIND_META[draftLinkedEntity.kind].color}"
+											>{@html ENTITY_KIND_META[draftLinkedEntity.kind].icon}</span
+										>
+										<span class="mp-combobox-value">{draftLinkedEntity.name}</span>
+									{:else if draft.entityId}
+										<span class="mp-combobox-value mp-combobox-value--placeholder">Broken link</span
+										>
+									{:else}
+										<span class="mp-combobox-value mp-combobox-value--placeholder">— No link —</span
+										>
+									{/if}
+									<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
+								</Popover.Trigger>
+								<Popover.Portal>
+									<Popover.Content
+										class="mp-cmd-popover"
+										sideOffset={4}
+										align="start"
+										collisionPadding={8}
 									>
-								</button>
-							{/if}
-						</span>
-						<Popover.Root bind:open={entityPickerOpen}>
-							<Popover.Trigger
-								class="mp-combobox mp-sel-entity-btn"
-								aria-label="Link marker to a connection"
-							>
-								{#if draft.entityId && draftLinkedEntity}
-									<span
-										class="mp-sel-entity-icon"
-										aria-hidden="true"
-										style="--kind-color: {ENTITY_KIND_META[draftLinkedEntity.kind].color}"
-										>{@html ENTITY_KIND_META[draftLinkedEntity.kind].icon}</span
-									>
-									<span class="mp-combobox-value">{draftLinkedEntity.name}</span>
-								{:else if draft.entityId}
-									<span class="mp-combobox-value mp-combobox-value--placeholder">Broken link</span>
-								{:else}
-									<span class="mp-combobox-value mp-combobox-value--placeholder">— No link —</span>
-								{/if}
-								<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
-							</Popover.Trigger>
-							<Popover.Portal>
-								<Popover.Content
-									class="mp-cmd-popover"
-									sideOffset={4}
-									align="start"
-									collisionPadding={8}
-								>
-									<Command.Root class="mp-cmd">
-										<div class="mp-cmd-search-row">
-											<span class="mp-cmd-search-icon" aria-hidden="true"
-												>{@html searchIconSvg}</span
-											>
-											<Command.Input
-												class="mp-cmd-search"
-												placeholder="Search connections…"
-												autofocus
-											/>
-										</div>
-										<Command.List class="mp-cmd-list">
-											<Command.Empty class="mp-cmd-empty">No matching connections.</Command.Empty>
-											<Command.Item
-												class="mp-cmd-item"
-												value="No link"
-												onSelect={() => pickDraftEntity('')}
-											>
-												<span class="mp-cmd-check" aria-hidden="true">
-													{#if !draft.entityId}
-														<svg
-															viewBox="0 0 20 20"
-															fill="none"
-															stroke="currentColor"
-															stroke-width="2.5"
-															><polyline
-																points="4 11 8 15 16 6"
-																stroke-linecap="round"
-																stroke-linejoin="round"
-															></polyline></svg
-														>
-													{/if}
-												</span>
-												<span class="mp-cmd-item-name mp-cmd-item-name--muted">— No link —</span>
-											</Command.Item>
-											{#each sortedLinkableEntities as e (`${e.kind}:${e.id}`)}
-												{@const val = `${e.kind}:${e.id}`}
-												{@const meta = KIND_META[e.kind]}
+										<Command.Root class="mp-cmd">
+											<div class="mp-cmd-search-row">
+												<span class="mp-cmd-search-icon" aria-hidden="true"
+													>{@html searchIconSvg}</span
+												>
+												<Command.Input
+													class="mp-cmd-search"
+													placeholder="Search connections…"
+													autofocus
+												/>
+											</div>
+											<Command.List class="mp-cmd-list">
+												<Command.Empty class="mp-cmd-empty">No matching connections.</Command.Empty>
 												<Command.Item
 													class="mp-cmd-item"
-													value={e.name}
-													onSelect={() => pickDraftEntity(val)}
+													value="No link"
+													onSelect={() => pickDraftEntity('')}
 												>
 													<span class="mp-cmd-check" aria-hidden="true">
-														{#if draft.entityId === val}
+														{#if !draft.entityId}
 															<svg
 																viewBox="0 0 20 20"
 																fill="none"
@@ -588,19 +546,61 @@
 															>
 														{/if}
 													</span>
-													<span
-														class="mp-cmd-item-icon"
-														aria-hidden="true"
-														style="--kind-color: {meta.color}">{@html meta.icon}</span
-													>
-													<span class="mp-cmd-item-name">{e.name}</span>
+													<span class="mp-cmd-item-name mp-cmd-item-name--muted">— No link —</span>
 												</Command.Item>
-											{/each}
-										</Command.List>
-									</Command.Root>
-								</Popover.Content>
-							</Popover.Portal>
-						</Popover.Root>
+												{#each sortedLinkableEntities as e (`${e.kind}:${e.id}`)}
+													{@const val = `${e.kind}:${e.id}`}
+													{@const meta = KIND_META[e.kind]}
+													<Command.Item
+														class="mp-cmd-item"
+														value={e.name}
+														onSelect={() => pickDraftEntity(val)}
+													>
+														<span class="mp-cmd-check" aria-hidden="true">
+															{#if draft.entityId === val}
+																<svg
+																	viewBox="0 0 20 20"
+																	fill="none"
+																	stroke="currentColor"
+																	stroke-width="2.5"
+																	><polyline
+																		points="4 11 8 15 16 6"
+																		stroke-linecap="round"
+																		stroke-linejoin="round"
+																	></polyline></svg
+																>
+															{/if}
+														</span>
+														<span
+															class="mp-cmd-item-icon"
+															aria-hidden="true"
+															style="--kind-color: {meta.color}">{@html meta.icon}</span
+														>
+														<span class="mp-cmd-item-name">{e.name}</span>
+													</Command.Item>
+												{/each}
+											</Command.List>
+										</Command.Root>
+									</Popover.Content>
+								</Popover.Portal>
+							</Popover.Root>
+							{#if draft.entityId && draftLinkedEntity}
+								{@const linked = draftLinkedEntity}
+								<button
+									type="button"
+									class="mp-goto-entity"
+									use:tooltip={`Go To ${ENTITY_KIND_META[linked.kind].label}`}
+									aria-label={`Go To ${ENTITY_KIND_META[linked.kind].label}`}
+									onclick={() => {
+										// Navigate to the entity (closes the map), then close this editor.
+										onNavigate?.(linked);
+										onClose?.();
+									}}
+								>
+									<span class="mp-goto-arrow" aria-hidden="true">{@html iconArrowRightSvg}</span>
+								</button>
+							{/if}
+						</div>
 					</div>
 				</div>
 				<div class="mp-props-footer">
