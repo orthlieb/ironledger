@@ -1,6 +1,7 @@
 {
   "key": "characterDescriptor",
   "title": "Character Descriptor",
+  "category": "Character",
   "selectLabel": "Character Descriptor",
   "description": "Generate a pointed personality trait or physical characteristic for an NPC. Roll more than once to add additional detail.",
   "source": "base",

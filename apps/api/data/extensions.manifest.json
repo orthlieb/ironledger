@@ -165,6 +165,9 @@
         "moveOverrides": [
           "moves/overrides.json"
         ],
+        "oracles": [
+          "oracles/overland-waypoint.json"
+        ],
         "rollTables": [
           "roll-tables/encounter-index.json",
           "roll-tables/prelude-event.json"

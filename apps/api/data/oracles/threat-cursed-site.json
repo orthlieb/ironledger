@@ -1,6 +1,7 @@
 {
   "key": "threatCursedSite",
   "title": "Threat: Cursed Site",
+  "category": "Threat",
   "selectLabel": "Threat: Cursed Site",
   "description": "Generate the next event for a cursed site threat.",
   "source": "delve",

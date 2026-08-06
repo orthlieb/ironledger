@@ -1,6 +1,7 @@
 {
   "key": "siteNamePlacePass",
-  "title": "Site Name \u2013 Place (Pass)",
+  "title": "Site Name – Place (Pass)",
+  "category": "Site",
   "selectLabel": "Site Name: Place (Pass)",
   "description": "Roll for a place name for a Pass site.",
   "source": "delve",

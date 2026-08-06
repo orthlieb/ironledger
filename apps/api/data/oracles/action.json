@@ -1,6 +1,7 @@
 {
   "key": "action",
   "title": "Action",
+  "category": "Action & Theme",
   "selectLabel": "Action",
   "description": "Use this table to inspire a discovery, event, character goal, or situation. A roll on this table can be combined with a Theme to provide an action and a subject. Then, interpret the result based on the context of the question and your current situation.",
   "source": "base",

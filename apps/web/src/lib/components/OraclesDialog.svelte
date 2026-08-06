@@ -15,13 +15,12 @@
 		loadOracles,
 		getOracles,
 		getVisibleOracles,
-		getVisibleOracleSources,
 		buildTableHtml,
 		rollOracle,
 	} from '$lib/oracleStore.svelte.js';
 	import { sourceLabel } from '$lib/expansionStore.svelte.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
-	import type { CatalogueSource, FoeDef, FoeQuantity, FoeRollRow } from '$lib/types.js';
+	import type { FoeDef, FoeQuantity, FoeRollRow } from '$lib/types.js';
 	import type { RollTable } from '@ironledger/shared';
 	import { appendLog, enrichOutcomeLinks } from '$lib/log.svelte.js';
 	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
@@ -46,7 +45,7 @@
 	let view = $state<'picker' | 'detail'>('picker');
 	let selectedKey = $state<string | null>(null);
 	let search = $state('');
-	let activeSources = $state(new Set<CatalogueSource>());
+	let activeCategories = $state(new Set<string>());
 	let rolling = $state(false);
 	let filtersOpen = $state(false);
 	/** True when the dialog was opened directly on a specific oracle key — hides Back button. */
@@ -65,7 +64,15 @@
 	// for log click-through from disabled expansions).
 	const allOracles = $derived(getOracles());
 	const visibleOracles = $derived(getVisibleOracles());
-	const sources = $derived(getVisibleOracleSources());
+
+	/** All thematic categories present across the visible oracles + resolver
+	 *  oracles (roll-tables), sorted — the filter chips. */
+	const categories = $derived.by(() => {
+		const set = new Set<string>();
+		for (const o of visibleOracles) set.add(o.category ?? 'Other');
+		for (const t of getVisibleRollTables()) set.add(t.category ?? 'Other');
+		return [...set].sort();
+	});
 
 	/** Oracle selected for the detail view. */
 	const selectedOracle = $derived(
@@ -76,12 +83,12 @@
 	const filteredOracles = $derived(() => {
 		const q = search.trim().toLowerCase();
 		return visibleOracles.filter((o) => {
-			const sourceMatch = activeSources.size === 0 || activeSources.has(o.source);
+			const catMatch = activeCategories.size === 0 || activeCategories.has(o.category ?? 'Other');
 			const textMatch =
 				!q ||
 				o.title.toLowerCase().includes(q) ||
 				(o.description?.toLowerCase().includes(q) ?? false);
-			return sourceMatch && textMatch;
+			return catMatch && textMatch;
 		});
 	});
 
@@ -100,7 +107,7 @@
 		return getVisibleRollTables().filter(
 			(t) =>
 				t.kind === 'foe' &&
-				(activeSources.size === 0 || activeSources.has(t.source)) &&
+				(activeCategories.size === 0 || activeCategories.has(t.category ?? 'Other')) &&
 				(!q || t.name.toLowerCase().includes(q)),
 		);
 	});
@@ -159,7 +166,7 @@
 		return getVisibleRollTables().filter(
 			(t) =>
 				t.kind === 'asset' &&
-				(activeSources.size === 0 || activeSources.has(t.source)) &&
+				(activeCategories.size === 0 || activeCategories.has(t.category ?? 'Other')) &&
 				(!q || t.name.toLowerCase().includes(q)),
 		);
 	});
@@ -175,16 +182,26 @@
 	}
 
 	// ---------------------------------------------------------------------------
-	// Source colour mapping
+	// Category colour mapping (filter chips + tile accents)
 	// ---------------------------------------------------------------------------
-	const SOURCE_COLORS: Record<string, string> = {
-		base: 'var(--color-wits)',
-		delve: 'var(--color-spirit)',
-		yrt: 'var(--color-touched)',
+	const CATEGORY_COLORS: Record<string, string> = {
+		'Action & Theme': 'var(--color-wits)',
+		Character: 'var(--color-heart)',
+		Combat: 'var(--color-iron)',
+		Creature: 'var(--color-shadow)',
+		Location: 'var(--color-edge)',
+		Move: 'var(--text-accent)',
+		Name: 'var(--color-spirit)',
+		Settlement: '#D06840',
+		Site: '#4472D0',
+		Threat: '#C0392B',
+		Trap: '#8E6A3A',
+		Quest: '#E4AA28',
+		Other: 'var(--text-muted)',
 	};
 
-	function sourceColor(source: string): string {
-		return SOURCE_COLORS[source] ?? 'var(--text-accent)';
+	function categoryColor(cat: string | undefined): string {
+		return CATEGORY_COLORS[cat ?? 'Other'] ?? 'var(--text-accent)';
 	}
 
 	// ---------------------------------------------------------------------------
@@ -204,7 +221,7 @@
 			directLaunch = false;
 		}
 		search = '';
-		activeSources = new Set();
+		activeCategories = new Set();
 		loadOracles(); // idempotent — fetches once per session
 		// Resolver oracles (foe roll-tables) + the foe catalogue they resolve
 		// against — both idempotent, both needed to render/resolve foe tiles.
@@ -257,16 +274,16 @@
 	// ---------------------------------------------------------------------------
 	// Helpers
 	// ---------------------------------------------------------------------------
-	function toggleSource(source: CatalogueSource) {
-		const next = new Set(activeSources);
-		if (next.has(source)) next.delete(source);
-		else next.add(source);
-		activeSources = next;
+	function toggleCategory(cat: string) {
+		const next = new Set(activeCategories);
+		if (next.has(cat)) next.delete(cat);
+		else next.add(cat);
+		activeCategories = next;
 	}
 
 	function clearFilters() {
 		search = '';
-		activeSources = new Set();
+		activeCategories = new Set();
 	}
 </script>
 
@@ -311,15 +328,15 @@
 								aria-label="Search oracles"
 							/>
 						</div>
-						<!-- Source filter toggle -->
+						<!-- Category filter toggle -->
 						<button
 							class="od-filter-toggle"
-							class:od-filter-toggle--active={activeSources.size > 0}
+							class:od-filter-toggle--active={activeCategories.size > 0}
 							onclick={() => (filtersOpen = !filtersOpen)}
 							aria-expanded={filtersOpen}
 						>
-							Filters{#if activeSources.size > 0}&nbsp;<span class="od-filter-badge"
-									>{activeSources.size}</span
+							Filters{#if activeCategories.size > 0}&nbsp;<span class="od-filter-badge"
+									>{activeCategories.size}</span
 								>{/if}
 							{filtersOpen ? '▲' : '▼'}
 						</button>
@@ -327,12 +344,12 @@
 					{#if filtersOpen}
 						<div class="od-filter-panel">
 							<div class="od-filter-chips">
-								{#each sources as src (src)}
+								{#each categories as cat (cat)}
 									<button
 										class="od-group-tag"
-										class:od-group-tag--active={activeSources.has(src)}
-										style:--gcolor={sourceColor(src)}
-										onclick={() => toggleSource(src)}>{sourceLabel(src)}</button
+										class:od-group-tag--active={activeCategories.has(cat)}
+										style:--gcolor={categoryColor(cat)}
+										onclick={() => toggleCategory(cat)}>{cat}</button
 									>
 								{/each}
 							</div>
@@ -340,7 +357,7 @@
 								class="od-clear-btn"
 								use:tooltip={'Clear all filters'}
 								onclick={clearFilters}
-								disabled={activeSources.size === 0}
+								disabled={activeCategories.size === 0}
 								aria-label="Clear all filters">{@html clearFiltersSvg}</button
 							>
 						</div>
@@ -362,7 +379,7 @@
 								{#each foeTables as t (t.id)}
 									<button
 										class="od-tile od-tile--roll"
-										style:--tcolor={sourceColor(t.source)}
+										style:--tcolor={categoryColor(t.category)}
 										use:tooltip={'Roll to resolve a foe encounter'}
 										onclick={() => openFoeTable(t)}
 									>
@@ -376,7 +393,7 @@
 								{#each assetTables as t (t.id)}
 									<button
 										class="od-tile od-tile--roll"
-										style:--tcolor={sourceColor(t.source)}
+										style:--tcolor={categoryColor(t.category)}
 										use:tooltip={'Bring up the Prelude Event table, then roll'}
 										onclick={openPreludeTable}
 									>
@@ -390,7 +407,7 @@
 								{#each list as oracle (oracle.key)}
 									<button
 										class="od-tile"
-										style:--tcolor={sourceColor(oracle.source)}
+										style:--tcolor={categoryColor(oracle.category)}
 										onclick={() => {
 											selectedKey = oracle.key;
 											view = 'detail';

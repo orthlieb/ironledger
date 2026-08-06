@@ -30,6 +30,10 @@ export interface OracleFile {
 	key: string;
 	title: string;
 	source: CatalogueSource;
+	/** Thematic grouping used by the Ask/Oracles category filter — distinct from
+	 *  `source` (the owning expansion). E.g. "Location", "Character", "Threat".
+	 *  Falls back to "Other" when absent. */
+	category?: string;
 	selectLabel: string;
 	description?: string;
 	tableType?: string;

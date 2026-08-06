@@ -3,6 +3,7 @@
   "name": "Encounter Index",
   "kind": "foe",
   "source": "lodestar",
+  "category": "Creature",
   "description": "Use this table as a quick reference for the characters, creatures, and entities described in Ironsworn and Delve. You can also roll on this table to randomly reveal the subject of an encounter or the focus of a quest. If a result doesn't fit the situation or environment, roll again or consider how it introduces a surprising twist.",
   "entries": [
     {

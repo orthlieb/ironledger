@@ -192,6 +192,9 @@ export interface RollTable {
   kind: 'foe' | 'asset';
   /** Owning extension id — hidden unless that expansion is enabled. */
   source: string;
+  /** Thematic grouping for the Ask/Oracles category filter (e.g. "Creature",
+   *  "Character") — parallels an oracle's `category`, distinct from `source`. */
+  category?: string;
   /** Optional intro/preface shown above the table in its roll dialog.
    *  Paragraphs separated by blank lines (`\n\n`). */
   description?: string;

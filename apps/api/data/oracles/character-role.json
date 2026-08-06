@@ -1,6 +1,7 @@
 {
   "key": "characterRole",
   "title": "Character Role",
+  "category": "Character",
   "selectLabel": "Character Role",
   "description": "Determine an NPC's occupation or societal role, or use it to generate a random encounter.",
   "source": "base",

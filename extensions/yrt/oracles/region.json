@@ -1,6 +1,7 @@
 {
   "key": "yrtRegion",
   "title": "YRT – Region",
+  "category": "Location",
   "selectLabel": "YRT – Region",
   "description": "Determine the region of the Yrt world where an event or location is situated.",
   "source": "yrt",

@@ -1,6 +1,7 @@
 {
   "key": "threatZealousCult",
   "title": "Threat: Zealous Cult",
+  "category": "Threat",
   "selectLabel": "Threat: Zealous Cult",
   "description": "Generate the next event for a zealous cult threat.",
   "source": "delve",

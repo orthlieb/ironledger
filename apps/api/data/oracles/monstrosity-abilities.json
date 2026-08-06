@@ -1,6 +1,7 @@
 {
   "key": "monstrosityAbilities",
   "title": "Monstrosity: Abilities",
+  "category": "Creature",
   "selectLabel": "Monstrosity: Abilities",
   "description": "Determine special abilities or powers of a monstrosity. Roll up to four times and keep up to three results.",
   "source": "delve",

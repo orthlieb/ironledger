@@ -1,6 +1,7 @@
 {
   "key": "trapEvent",
   "title": "Trap: Event",
+  "category": "Trap",
   "selectLabel": "Trap Event",
   "description": "Roll for what a trap does. Combine with Trap: Component for a full description.",
   "source": "delve",

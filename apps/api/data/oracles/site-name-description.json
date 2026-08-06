@@ -1,6 +1,7 @@
 {
   "key": "siteNameDescription",
-  "title": "Site Name \u2013 Description",
+  "title": "Site Name – Description",
+  "category": "Site",
   "selectLabel": "Site Name: Description",
   "description": "Roll for a descriptive word when generating a site name using the Format oracle.",
   "source": "delve",

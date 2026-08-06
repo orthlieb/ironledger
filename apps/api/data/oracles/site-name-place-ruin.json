@@ -1,6 +1,7 @@
 {
   "key": "siteNamePlaceRuin",
-  "title": "Site Name \u2013 Place (Ruin)",
+  "title": "Site Name – Place (Ruin)",
+  "category": "Site",
   "selectLabel": "Site Name: Place (Ruin)",
   "description": "Roll for a place name for a Ruin site.",
   "source": "delve",

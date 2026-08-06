@@ -1,6 +1,7 @@
 {
   "key": "threatBurgeoningConflict",
   "title": "Threat: Burgeoning Conflict",
+  "category": "Threat",
   "selectLabel": "Threat: Burgeoning Conflict",
   "description": "Generate the next event for a burgeoning conflict threat.",
   "source": "delve",

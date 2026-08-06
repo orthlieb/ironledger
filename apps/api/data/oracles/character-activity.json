@@ -1,6 +1,7 @@
 {
   "key": "charActivity",
   "title": "Delve: Character Activity",
+  "category": "Character",
   "selectLabel": "Character Activity",
   "description": "Roll to determine what a character is doing when you encounter them.",
   "source": "delve",

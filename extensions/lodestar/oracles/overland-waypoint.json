@@ -1,0 +1,410 @@
+{
+  "key": "lodestarOverlandWaypoint",
+  "title": "Overland Waypoint",
+  "category": "Location",
+  "selectLabel": "Overland Waypoint",
+  "description": "Use this oracle to help envision a location, discovery, or event when you Undertake a Journey and reach a waypoint.",
+  "source": "lodestar",
+  "data": [
+    {
+      "topRange": 1,
+      "value": "A camp or settlement comes into view"
+    },
+    {
+      "topRange": 2,
+      "value": "A long-dead corpse or skeleton lies here"
+    },
+    {
+      "topRange": 3,
+      "value": "A herd of wildlife cuts across your path"
+    },
+    {
+      "topRange": 4,
+      "value": "A wide river winds across the landscape"
+    },
+    {
+      "topRange": 5,
+      "value": "Flies swarm around an enormous pile of scat"
+    },
+    {
+      "topRange": 6,
+      "value": "A stone wall marks an old boundary line"
+    },
+    {
+      "topRange": 7,
+      "value": "A cold fire pit hints at the passage of another traveler"
+    },
+    {
+      "topRange": 8,
+      "value": "An unsettling silence falls over this area"
+    },
+    {
+      "topRange": 9,
+      "value": "You discover the remnants of a ritual"
+    },
+    {
+      "topRange": 10,
+      "value": "A crude wall or barricade marks a makeshift fortification"
+    },
+    {
+      "topRange": 11,
+      "value": "You cross paths with a lone traveler"
+    },
+    {
+      "topRange": 12,
+      "value": "Ash surrounds a long-cold funeral pyre"
+    },
+    {
+      "topRange": 13,
+      "value": "A creature stands in defense of its nest or young"
+    },
+    {
+      "topRange": 14,
+      "value": "Trinkets and offerings hang from a tree or monument"
+    },
+    {
+      "topRange": 15,
+      "value": "A stone-framed doorway marks the entrance to a barrow mound"
+    },
+    {
+      "topRange": 16,
+      "value": "Tracks show that others have passed this way"
+    },
+    {
+      "topRange": 17,
+      "value": "You catch a gleam of metal in the distance"
+    },
+    {
+      "topRange": 18,
+      "value": "A waterway cuts through the landscape"
+    },
+    {
+      "topRange": 19,
+      "value": "A ford or ferry marks a river crossing"
+    },
+    {
+      "topRange": 20,
+      "value": "You encounter a procession of refugees or nomads"
+    },
+    {
+      "topRange": 21,
+      "value": "A grim marker denotes a territorial boundary"
+    },
+    {
+      "topRange": 22,
+      "value": "A former worksite lies abandoned"
+    },
+    {
+      "topRange": 23,
+      "value": "You hear the footfalls or stirrings of a large creature"
+    },
+    {
+      "topRange": 24,
+      "value": "Something about this place evokes an unnerving sensation"
+    },
+    {
+      "topRange": 25,
+      "value": "An abandoned or lifeless settlement lingers in silence"
+    },
+    {
+      "topRange": 26,
+      "value": "The temperature shifts unnaturally"
+    },
+    {
+      "topRange": 27,
+      "value": "A storm brews on the horizon"
+    },
+    {
+      "topRange": 28,
+      "value": "A lake, pond, or pool reflects its surroundings"
+    },
+    {
+      "topRange": 29,
+      "value": "This place gives you the discomforting feeling that you are being watched"
+    },
+    {
+      "topRange": 30,
+      "value": "A rope bridge sways in the wind"
+    },
+    {
+      "topRange": 31,
+      "value": "A broken bridge marks a now-unused crossing"
+    },
+    {
+      "topRange": 32,
+      "value": "A series of ramshackle bridges connect high places"
+    },
+    {
+      "topRange": 33,
+      "value": "Phantom voices or song carry on the wind"
+    },
+    {
+      "topRange": 34,
+      "value": "A constructed bridge spans a river or gap"
+    },
+    {
+      "topRange": 35,
+      "value": "Something about this place spurs a memory"
+    },
+    {
+      "topRange": 36,
+      "value": "You encounter a small group of travelers"
+    },
+    {
+      "topRange": 37,
+      "value": "You discover the aftermath of a fight or battle"
+    },
+    {
+      "topRange": 38,
+      "value": "A recent landslide, collapse, or rockfall scars the landscape"
+    },
+    {
+      "topRange": 39,
+      "value": "Just ahead, a column of smoke rises into the sky"
+    },
+    {
+      "topRange": 40,
+      "value": "A cave opening is carved into the side of a hill or cliff"
+    },
+    {
+      "topRange": 41,
+      "value": "Several gravesites are here, each marked by an earthen or stone mound"
+    },
+    {
+      "topRange": 42,
+      "value": "An overlook offers an expansive view of the landscape ahead"
+    },
+    {
+      "topRange": 43,
+      "value": "Nature flourishes here"
+    },
+    {
+      "topRange": 44,
+      "value": "Abandoned construction is all that remains of a failed project"
+    },
+    {
+      "topRange": 45,
+      "value": "Ancient ruins stand here"
+    },
+    {
+      "topRange": 46,
+      "value": "A great tree or rocky spire stands tall above its surroundings"
+    },
+    {
+      "topRange": 47,
+      "value": "Carrion birds circle overhead—a bad omen"
+    },
+    {
+      "topRange": 48,
+      "value": "You spot the banners of an armed force on the move"
+    },
+    {
+      "topRange": 49,
+      "value": "Mist rises from a plunging waterfall"
+    },
+    {
+      "topRange": 50,
+      "value": "You find disturbing remains or evidence of a violent death"
+    },
+    {
+      "topRange": 51,
+      "value": "A natural bridge spans a river or gap"
+    },
+    {
+      "topRange": 52,
+      "value": "Mystic stones or strange pillars stand here"
+    },
+    {
+      "topRange": 53,
+      "value": "The landscape is strewn with a maze of rocky spires"
+    },
+    {
+      "topRange": 54,
+      "value": "Fallen trees or upturned earth mark a destructive path"
+    },
+    {
+      "topRange": 55,
+      "value": "Cleared, cultivated, or barren ground stands apart from its surroundings"
+    },
+    {
+      "topRange": 56,
+      "value": "The nature of the landscape or environment changes"
+    },
+    {
+      "topRange": 57,
+      "value": "Ghostlights dance above the landscape"
+    },
+    {
+      "topRange": 58,
+      "value": "Scorched ground marks the location of a recent fire"
+    },
+    {
+      "topRange": 59,
+      "value": "Steam rises from bubbling pools"
+    },
+    {
+      "topRange": 60,
+      "value": "Stones or markings form a mystic circle"
+    },
+    {
+      "topRange": 61,
+      "value": "Creatures gather at a source of water"
+    },
+    {
+      "topRange": 62,
+      "value": "The path ascends a hill or ridgeline"
+    },
+    {
+      "topRange": 63,
+      "value": "Carved symbols or likenesses adorn the landscape"
+    },
+    {
+      "topRange": 64,
+      "value": "A great flying creature circles overhead"
+    },
+    {
+      "topRange": 65,
+      "value": "A road or trail marks a well-used path"
+    },
+    {
+      "topRange": 66,
+      "value": "The weather shifts, a portent of things to come"
+    },
+    {
+      "topRange": 67,
+      "value": "The skeleton of a massive animal or beast lies here"
+    },
+    {
+      "topRange": 68,
+      "value": "A large stone bears an inscription or message"
+    },
+    {
+      "topRange": 69,
+      "value": "A ragged banner hangs from a leaning pole"
+    },
+    {
+      "topRange": 70,
+      "value": "A makeshift shelter or solitary home lies abandoned"
+    },
+    {
+      "topRange": 71,
+      "value": "A large creature hunts or forages here, but pays you no heed"
+    },
+    {
+      "topRange": 72,
+      "value": "Carrion animals pick at scattered remains"
+    },
+    {
+      "topRange": 73,
+      "value": "You hear the sounds of a nearby battle"
+    },
+    {
+      "topRange": 74,
+      "value": "You hear the calls of unusual wildlife"
+    },
+    {
+      "topRange": 75,
+      "value": "A spectral manifestation appears"
+    },
+    {
+      "topRange": 76,
+      "value": "Natural or carved steps lead up a slope or cliffside"
+    },
+    {
+      "topRange": 77,
+      "value": "An altar, shrine, or memorial marks a hallowed place"
+    },
+    {
+      "topRange": 78,
+      "value": "The landscape is divided by a ravine or fissure"
+    },
+    {
+      "topRange": 79,
+      "value": "A natural oasis stands amid an otherwise ruined or barren landscape"
+    },
+    {
+      "topRange": 80,
+      "value": "A dry riverbed or trench cuts through the landscape like a scar"
+    },
+    {
+      "topRange": 81,
+      "value": "Nature is stunted or diseased in this place"
+    },
+    {
+      "topRange": 82,
+      "value": "An ancient monument or statue stands here"
+    },
+    {
+      "topRange": 83,
+      "value": "A shadowy path leads along a narrow canyon or pass"
+    },
+    {
+      "topRange": 84,
+      "value": "Tracks or claw marks reveal the passage of a large animal or beast"
+    },
+    {
+      "topRange": 85,
+      "value": "A caravan is camped here or passing through"
+    },
+    {
+      "topRange": 86,
+      "value": "Laborers toil at a worksite"
+    },
+    {
+      "topRange": 87,
+      "value": "A signal station, lookout, or tower sits on high ground"
+    },
+    {
+      "topRange": 88,
+      "value": "Scattered stones mark a toppled structure or monument"
+    },
+    {
+      "topRange": 89,
+      "value": "A lingering fog clings to the terrain"
+    },
+    {
+      "topRange": 90,
+      "value": "You top a rise, and catch sight of a trailing person or creature"
+    },
+    {
+      "topRange": 91,
+      "value": "Intricately stacked cairn stones mark a lonely gravesite or remembrance"
+    },
+    {
+      "topRange": 92,
+      "value": "A promontory or summit rises above the landscape"
+    },
+    {
+      "topRange": 93,
+      "value": "A wagon or cart sits abandoned"
+    },
+    {
+      "topRange": 94,
+      "value": "A crudely-fashioned effigy watches over the surroundings"
+    },
+    {
+      "topRange": 95,
+      "value": "A sinkhole or pit leads to unseen depths"
+    },
+    {
+      "topRange": 96,
+      "value": "An unusual tree or rock formation stands apart from its surroundings"
+    },
+    {
+      "topRange": 97,
+      "value": "The path descends into a valley or basin"
+    },
+    {
+      "topRange": 98,
+      "value": "The ground is scattered with broken bones"
+    },
+    {
+      "topRange": 99,
+      "value": "The plants here are strangely at odds with their environment"
+    },
+    {
+      "topRange": 100,
+      "value": "Blood-spattered ground or a bloody trail mark a violent end"
+    }
+  ]
+}

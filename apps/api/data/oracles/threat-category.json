@@ -1,6 +1,7 @@
 {
   "key": "threatCategory",
   "title": "Threat: Category",
+  "category": "Threat",
   "selectLabel": "Threat: Category",
   "description": "Determine the broad category of a looming threat in the Ironlands.",
   "source": "delve",
