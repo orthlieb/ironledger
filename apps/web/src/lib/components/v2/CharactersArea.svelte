@@ -53,6 +53,7 @@
 	import AssetCard from '$lib/components/AssetCard.svelte';
 	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
 	import AssetPicker from '$lib/components/AssetPicker.svelte';
+	import { preludeBus } from '$lib/preludeOracle.svelte.js';
 	import StatControl from '$lib/components/StatControl.svelte';
 	import ResourceTile from '$lib/components/ResourceTile.svelte';
 	import MomentumTile from '$lib/components/MomentumTile.svelte';
@@ -153,6 +154,9 @@
 	let dialogSnapshotAbilities = $state<boolean[]>([]);
 	let dialogSnapshotRarityId = $state<string | undefined>(undefined);
 	let dialogPurchaseCost = $state(0);
+	/** Prelude narrative for the asset-detail dialog — set only when opened via
+	 *  the Prelude Event oracle (picker d6 / Ask tile), cleared otherwise. */
+	let dialogPreludeText = $state('');
 
 	// Background card edit state
 	let editingBackground = $state(false);
@@ -655,6 +659,18 @@
 		}
 	});
 
+	// ── Prelude Event oracle bus — the asset picker's d6 button and the
+	//     Ask/Oracles tile roll the Prelude Event table and dispatch the
+	//     resolved asset + narrative here; open the asset-detail dialog on the
+	//     active character with the prelude banner. ────────────────────────────
+	let lastPreludeNonce = -1;
+	$effect(() => {
+		const req = preludeBus.request;
+		if (!req || req.nonce === lastPreludeNonce) return;
+		lastPreludeNonce = req.nonce;
+		handleAddAsset(req.assetId, req.text);
+	});
+
 	// ── Action bus drain — handles clicks on interactive log links
 	//     (resource / debility / reset-track / set). LogPanel's click handler
 	//     calls triggerAction({ type, key, value, charId }) and we consume
@@ -701,6 +717,7 @@
 		dialogSnapshotAbilities = [...live.abilities];
 		dialogSnapshotRarityId = live.rarityId;
 		dialogPurchaseCost = 0;
+		dialogPreludeText = '';
 
 		showDialogFromOrigin(evt);
 	}
@@ -735,6 +752,7 @@
 	function closeAssetDialog() {
 		dialogOpen = false;
 		dialogDraft = null;
+		dialogPreludeText = '';
 	}
 
 	/** OK / Add — diff the draft against the snapshot, log the consolidated
@@ -876,7 +894,7 @@
 	 *  up a draft and open the asset dialog in 'add' mode so the user can
 	 *  pre-configure abilities/rarity/counters before committing. The 3-XP
 	 *  asset-purchase cost rides along in dialogPurchaseCost. */
-	function handleAddAsset(assetId: string) {
+	function handleAddAsset(assetId: string, preludeText = '') {
 		if (!activeData || !activeChar) return;
 		const def = findAsset(assetId);
 		if (!def) return;
@@ -912,6 +930,7 @@
 		dialogSnapshotAbilities = defaultAbilities;
 		dialogSnapshotRarityId = undefined;
 		dialogPurchaseCost = 3;
+		dialogPreludeText = preludeText;
 		pickerOpen = false;
 		showDialogFromOrigin(null);
 	}
@@ -1441,6 +1460,7 @@
 						snapshotAbilities={dialogSnapshotAbilities}
 						snapshotRarityId={dialogSnapshotRarityId}
 						purchaseCost={dialogPurchaseCost}
+						preludeText={dialogPreludeText}
 						onRemove={() => dialogDraft && openRemoveAssetConfirm(dialogDraft.assetId)}
 						onCommit={commitAssetDialog}
 						onClose={closeAssetDialog}

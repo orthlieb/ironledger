@@ -10,7 +10,10 @@
 	import type { AssetCategory, AssetDefinition, CharacterData } from '$lib/types.js';
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
+	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
 	import { getVisibleAssets, isAssetsLoading, findAsset } from '$lib/assetStore.svelte.js';
+	import { getVisibleRollTables, loadRollTables } from '$lib/rollTableStore.svelte.js';
+	import { firePreludeOracle } from '$lib/preludeOracle.svelte.js';
 	import { firstPreconditionFailure, type Precondition } from '$lib/preconditions.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { Dialog } from 'bits-ui';
@@ -129,6 +132,17 @@
 	function stripMdLinks(raw: string): string {
 		return raw.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
 	}
+
+	// ── Prelude Event (resolver oracle → asset) ──────────────────────────────
+	// When an asset roll-table (Lodestar's Prelude Event) is enabled, a d6 button
+	// surfaces here. It has no roll ceremony: `firePreludeOracle()` picks a
+	// random asset + prelude narrative and hands off (via the prelude bus) to the
+	// character sheet, which opens the asset-detail dialog with the narrative on
+	// top. Nothing about the normal tile-click add flow changes.
+	loadRollTables(); // idempotent — fetches the catalogue once per session
+
+	/** True when an asset roll-table is enabled (gates the d6 button). */
+	const hasPreludeTable = $derived(getVisibleRollTables().some((t) => t.kind === 'asset'));
 </script>
 
 <!-- ======================================================================
@@ -177,6 +191,14 @@
 							>{/if}
 						{filtersOpen ? '▲' : '▼'}</button
 					>
+					{#if hasPreludeTable}
+						<button
+							class="dice-btn"
+							onclick={() => firePreludeOracle()}
+							use:tooltip={'Prelude Event — reveal a random asset with a prelude'}
+							aria-label="Prelude Event">{@html diceD6Svg}</button
+						>
+					{/if}
 				</div>
 				{#if filtersOpen}
 					<div class="ap-filter-panel">
@@ -360,6 +382,7 @@
 		color: var(--text);
 		border-color: var(--border-mid);
 	}
+	/* The Prelude Event d6 button uses the global `.dice-btn` style. */
 	:global(.ap-filter-toggle--active) {
 		color: var(--accent);
 		border-color: var(--accent);

@@ -866,7 +866,7 @@
 										     have their own trouble oracle yet, so the dice button
 										     is hidden for them. -->
 										<button
-											class="cm-dice-btn"
+											class="dice-btn"
 											type="button"
 											onclick={rollSettlementTrouble}
 											disabled={rolling}
@@ -1606,41 +1606,8 @@
 	}
 
 	/* Square d6 button sitting next to the trouble input. Sized to match the
-	   ea-dice-btn spec used by ExpeditionsArea's feature/danger rolls so
-	   both areas read the same — 22×22, 12 px svg. */
-	.cm-dice-btn {
-		all: unset;
-		cursor: pointer;
-		box-sizing: border-box;
-		width: 22px;
-		height: 22px;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		border: 1px solid var(--border-mid);
-		border-radius: 3px;
-		background: transparent;
-		color: var(--text-muted);
-		flex-shrink: 0;
-		transition:
-			color 0.12s,
-			border-color 0.12s,
-			background 0.12s;
-	}
-	.cm-dice-btn:hover:not(:disabled) {
-		color: var(--text-accent);
-		border-color: var(--text-accent);
-	}
-	.cm-dice-btn:disabled {
-		opacity: 0.4;
-		cursor: not-allowed;
-	}
-	.cm-dice-btn :global(svg) {
-		width: 12px;
-		height: 12px;
-		fill: currentColor;
-		pointer-events: none;
-	}
+	   Trouble-roll d6 uses the global `.dice-btn` style (app.css) — the
+	   preferred d6 button, shared with ExpeditionsArea. */
 
 	/* Prevent the status SegmentedRadio (NPCs) from clipping when the
 	   panel header is tight — combobox shrinks instead. */

@@ -192,6 +192,9 @@ export interface RollTable {
   kind: 'foe' | 'asset';
   /** Owning extension id — hidden unless that expansion is enabled. */
   source: string;
+  /** Optional intro/preface shown above the table in its roll dialog.
+   *  Paragraphs separated by blank lines (`\n\n`). */
+  description?: string;
   /** d100 ranges → entity refs, ascending and non-overlapping. */
   entries: RollTableEntry[];
 }

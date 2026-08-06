@@ -166,7 +166,8 @@
           "moves/overrides.json"
         ],
         "rollTables": [
-          "roll-tables/encounter-index.json"
+          "roll-tables/encounter-index.json",
+          "roll-tables/prelude-event.json"
         ]
       }
     },
