@@ -15,7 +15,11 @@
 // =============================================================================
 
 import type { CatalogueSource } from '$lib/types.js';
-import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
+import {
+	isSourceEnabled,
+	loadExtensions,
+	suppressedOracleKeys,
+} from '$lib/expansionStore.svelte.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -111,7 +115,14 @@ export async function loadOracles(): Promise<void> {
 	if (_loaded || _loading) return;
 	_loading = true;
 	try {
-		const res = await fetch('/api/catalogue/oracles');
+		// Fetch oracles + extensions in parallel — the extension registry
+		// carries the suppression list (Lodestar hides Delve's Feature Aspect
+		// + Focus, etc.), so `_oracles` must not be published until the
+		// registry is loaded, or reactive consumers of `getVisibleOracles()`
+		// will render one frame showing suppressed oracles before the
+		// registry lands. Both fetches happen in parallel — no serialization
+		// cost — but the store's public state waits for both.
+		const [res] = await Promise.all([fetch('/api/catalogue/oracles'), loadExtensions()]);
 		if (!res.ok) throw new Error(`Oracle fetch failed: ${res.status}`);
 
 		const json = (await res.json()) as { oracles: unknown[] };
@@ -174,9 +185,12 @@ export function getOracleSources(): CatalogueSource[] {
 	return out;
 }
 
-/** Oracles whose source is currently enabled. Used by pickers; `findOracle` stays unfiltered. */
+/** Oracles whose source is currently enabled AND that aren't suppressed by another
+ *  enabled extension. Used by pickers; `findOracle` stays unfiltered so log
+ *  click-throughs still resolve for oracles the user has since hidden. */
 export function getVisibleOracles(): OracleFile[] {
-	return _oracles.filter((o) => isSourceEnabled(o.source));
+	const suppressed = suppressedOracleKeys();
+	return _oracles.filter((o) => isSourceEnabled(o.source) && !suppressed.has(o.key));
 }
 
 /** Visible sources after expansion filtering. */

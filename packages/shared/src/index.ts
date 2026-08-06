@@ -118,6 +118,10 @@ export interface ExtensionInfo {
   description: string;
   defaultEnabled: boolean;
   order: number;
+  /** Oracle keys this extension hides from the picker when enabled — used by
+   *  supersession pairs (e.g. Lodestar's Core: Descriptor/Focus supersede
+   *  Delve's Feature Aspect/Focus). Absent means suppresses nothing. */
+  suppressesOracles?: string[];
 }
 
 /** Move definition — mirrors the JSON structure in moves/*.json */

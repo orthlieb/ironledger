@@ -1,6 +1,8 @@
 {
   "action": 0,
   "theme": 1,
+  "descriptor": 1.25,
+  "focus": 1.5,
   "region": 2,
   "location": 3,
   "coastalWatersLocation": 3.5,

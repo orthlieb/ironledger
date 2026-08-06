@@ -82,6 +82,9 @@ interface ExtensionManifestEntry {
   description: string;
   defaultEnabled: boolean;
   order: number;
+  /** Oracle keys this extension hides when enabled — carried through to the
+   *  public /catalogue/extensions payload so the client can filter its picker. */
+  suppressesOracles?: string[];
   /** Repo-relative content root (e.g. `apps/api/data` or `extensions/yrt`). */
   root: string;
   /** Content files this extension provides, relative to `root`. */
@@ -177,12 +180,13 @@ async function loadCatalogue(): Promise<{
     // Public extension registry — metadata only (drop the file lists). Drives
     // the client's dynamic expansion toggles + source labels.
     extensions: (() => {
-      const list = extensions.map(({ id, name, description, defaultEnabled, order }) => ({
-        id,
-        name,
-        description,
-        defaultEnabled,
-        order,
+      const list = extensions.map((e) => ({
+        id: e.id,
+        name: e.name,
+        description: e.description,
+        defaultEnabled: e.defaultEnabled,
+        order: e.order,
+        ...(e.suppressesOracles?.length ? { suppressesOracles: e.suppressesOracles } : {}),
       }));
       return { data: list, etag: makeEtag(list) };
     })(),

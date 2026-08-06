@@ -782,6 +782,7 @@
 		margin: 0;
 		padding-bottom: 4px;
 		border-bottom: 1px solid var(--border);
+		white-space: pre-wrap;
 	}
 
 	:global(.od-table-wrap) {

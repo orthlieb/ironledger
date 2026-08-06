@@ -30,8 +30,10 @@
           "oracles/character-role.json",
           "oracles/coastal-waters-location.json",
           "oracles/combat-action.json",
+          "oracles/descriptor.json",
           "oracles/endure-extreme-harm.json",
           "oracles/endure-extreme-stress.json",
+          "oracles/focus.json",
           "oracles/location-descriptor.json",
           "oracles/location.json",
           "oracles/major-plot-twist.json",
@@ -157,6 +159,10 @@
       "description": "The Lodestar guide — bonus moves for solo play. Includes Follow a Path, which resolves a journey across familiar lands in a single roll.",
       "defaultEnabled": true,
       "order": 30,
+      "suppressesOracles": [
+        "featureAspect",
+        "featureFocus"
+      ],
       "root": "extensions/lodestar",
       "provides": {
         "moves": [
