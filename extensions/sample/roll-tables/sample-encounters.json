@@ -3,9 +3,22 @@
   "name": "Sample – Encounters",
   "kind": "foe",
   "source": "sample",
+  "category": "Creature",
   "entries": [
-    { "low": 1, "high": 40, "ref": "ironsworn/bear" },
-    { "low": 41, "high": 80, "ref": "ironsworn/wolf" },
-    { "low": 81, "high": 100, "ref": "sample/test-golem" }
+    {
+      "low": 1,
+      "high": 40,
+      "ref": "ironsworn/bear"
+    },
+    {
+      "low": 41,
+      "high": 80,
+      "ref": "ironsworn/wolf"
+    },
+    {
+      "low": 81,
+      "high": 100,
+      "ref": "sample/test-golem"
+    }
   ]
 }

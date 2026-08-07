@@ -1,109 +1,410 @@
 {
   "key": "descriptor",
   "title": "Core: Descriptor",
+  "category": "Core",
   "selectLabel": "Core: Descriptor",
   "description": "Inspired by Ironsworn: Starforged, the Descriptor and Focus oracles replace (and expand) the Aspect and Focus oracles originally included in Ironsworn: Delve. They are useful for revealing location-based details and discoveries.",
   "source": "base",
   "data": [
-    { "topRange": 1, "value": "Small" },
-    { "topRange": 2, "value": "Collapsed" },
-    { "topRange": 3, "value": "Protected" },
-    { "topRange": 4, "value": "Infested" },
-    { "topRange": 5, "value": "Misty" },
-    { "topRange": 6, "value": "Towering" },
-    { "topRange": 7, "value": "Light" },
-    { "topRange": 8, "value": "Marked" },
-    { "topRange": 9, "value": "Crafted" },
-    { "topRange": 10, "value": "Remote" },
-    { "topRange": 11, "value": "Deep" },
-    { "topRange": 12, "value": "Captured" },
-    { "topRange": 13, "value": "Ruined" },
-    { "topRange": 14, "value": "Safe" },
-    { "topRange": 15, "value": "Precious" },
-    { "topRange": 16, "value": "Abandoned" },
-    { "topRange": 17, "value": "Inaccessible" },
-    { "topRange": 18, "value": "Barren" },
-    { "topRange": 19, "value": "Guarded" },
-    { "topRange": 20, "value": "Impassable" },
-    { "topRange": 21, "value": "Corrupted" },
-    { "topRange": 22, "value": "Foreboding" },
-    { "topRange": 23, "value": "Wild" },
-    { "topRange": 24, "value": "Fragile" },
-    { "topRange": 25, "value": "Isolated" },
-    { "topRange": 26, "value": "Inhabited" },
-    { "topRange": 27, "value": "Defended" },
-    { "topRange": 28, "value": "Active" },
-    { "topRange": 29, "value": "Bloody" },
-    { "topRange": 30, "value": "Dying" },
-    { "topRange": 31, "value": "Grim" },
-    { "topRange": 32, "value": "Shrouded" },
-    { "topRange": 33, "value": "Dead" },
-    { "topRange": 34, "value": "Sealed" },
-    { "topRange": 35, "value": "Flooded" },
-    { "topRange": 36, "value": "Withered" },
-    { "topRange": 37, "value": "Lush" },
-    { "topRange": 38, "value": "Fortified" },
-    { "topRange": 39, "value": "Beautiful" },
-    { "topRange": 40, "value": "Blocked" },
-    { "topRange": 41, "value": "Desolate" },
-    { "topRange": 42, "value": "Deadly" },
-    { "topRange": 43, "value": "Massive" },
-    { "topRange": 44, "value": "Hallowed" },
-    { "topRange": 45, "value": "Confined" },
-    { "topRange": 46, "value": "Unusual" },
-    { "topRange": 47, "value": "Mysterious" },
-    { "topRange": 48, "value": "Strange" },
-    { "topRange": 49, "value": "Depleted" },
-    { "topRange": 50, "value": "Crowded" },
-    { "topRange": 51, "value": "Fertile" },
-    { "topRange": 52, "value": "Diverse" },
-    { "topRange": 53, "value": "Sheltered" },
-    { "topRange": 54, "value": "Destroyed" },
-    { "topRange": 55, "value": "Open" },
-    { "topRange": 56, "value": "Exposed" },
-    { "topRange": 57, "value": "Contested" },
-    { "topRange": 58, "value": "Blighted" },
-    { "topRange": 59, "value": "Rugged" },
-    { "topRange": 60, "value": "Unnatural" },
-    { "topRange": 61, "value": "Secret" },
-    { "topRange": 62, "value": "Dark" },
-    { "topRange": 63, "value": "Sunken" },
-    { "topRange": 64, "value": "Abundant" },
-    { "topRange": 65, "value": "Raided" },
-    { "topRange": 66, "value": "Suspended" },
-    { "topRange": 67, "value": "Hostile" },
-    { "topRange": 68, "value": "Empty" },
-    { "topRange": 69, "value": "Overgrown" },
-    { "topRange": 70, "value": "Chaotic" },
-    { "topRange": 71, "value": "Peaceful" },
-    { "topRange": 72, "value": "Broken" },
-    { "topRange": 73, "value": "Ensnaring" },
-    { "topRange": 74, "value": "Frozen" },
-    { "topRange": 75, "value": "Ravaged" },
-    { "topRange": 76, "value": "Expansive" },
-    { "topRange": 77, "value": "Toxic" },
-    { "topRange": 78, "value": "High" },
-    { "topRange": 79, "value": "Sacred" },
-    { "topRange": 80, "value": "Low" },
-    { "topRange": 81, "value": "Forsaken" },
-    { "topRange": 82, "value": "Fallen" },
-    { "topRange": 83, "value": "Shadowy" },
-    { "topRange": 84, "value": "Unstable" },
-    { "topRange": 85, "value": "Hidden" },
-    { "topRange": 86, "value": "Haunted" },
-    { "topRange": 87, "value": "Buried" },
-    { "topRange": 88, "value": "Damaged" },
-    { "topRange": 89, "value": "Ancient" },
-    { "topRange": 90, "value": "Scarred" },
-    { "topRange": 91, "value": "Elevated" },
-    { "topRange": 92, "value": "Forgotten" },
-    { "topRange": 93, "value": "Preserved" },
-    { "topRange": 94, "value": "Trapped" },
-    { "topRange": 95, "value": "Mystic" },
-    { "topRange": 96, "value": "Natural" },
-    { "topRange": 97, "value": "Treacherous" },
-    { "topRange": 98, "value": "Watery" },
-    { "topRange": 99, "value": "Moving" },
-    { "topRange": 100, "value": "Foul" }
+    {
+      "topRange": 1,
+      "value": "Small"
+    },
+    {
+      "topRange": 2,
+      "value": "Collapsed"
+    },
+    {
+      "topRange": 3,
+      "value": "Protected"
+    },
+    {
+      "topRange": 4,
+      "value": "Infested"
+    },
+    {
+      "topRange": 5,
+      "value": "Misty"
+    },
+    {
+      "topRange": 6,
+      "value": "Towering"
+    },
+    {
+      "topRange": 7,
+      "value": "Light"
+    },
+    {
+      "topRange": 8,
+      "value": "Marked"
+    },
+    {
+      "topRange": 9,
+      "value": "Crafted"
+    },
+    {
+      "topRange": 10,
+      "value": "Remote"
+    },
+    {
+      "topRange": 11,
+      "value": "Deep"
+    },
+    {
+      "topRange": 12,
+      "value": "Captured"
+    },
+    {
+      "topRange": 13,
+      "value": "Ruined"
+    },
+    {
+      "topRange": 14,
+      "value": "Safe"
+    },
+    {
+      "topRange": 15,
+      "value": "Precious"
+    },
+    {
+      "topRange": 16,
+      "value": "Abandoned"
+    },
+    {
+      "topRange": 17,
+      "value": "Inaccessible"
+    },
+    {
+      "topRange": 18,
+      "value": "Barren"
+    },
+    {
+      "topRange": 19,
+      "value": "Guarded"
+    },
+    {
+      "topRange": 20,
+      "value": "Impassable"
+    },
+    {
+      "topRange": 21,
+      "value": "Corrupted"
+    },
+    {
+      "topRange": 22,
+      "value": "Foreboding"
+    },
+    {
+      "topRange": 23,
+      "value": "Wild"
+    },
+    {
+      "topRange": 24,
+      "value": "Fragile"
+    },
+    {
+      "topRange": 25,
+      "value": "Isolated"
+    },
+    {
+      "topRange": 26,
+      "value": "Inhabited"
+    },
+    {
+      "topRange": 27,
+      "value": "Defended"
+    },
+    {
+      "topRange": 28,
+      "value": "Active"
+    },
+    {
+      "topRange": 29,
+      "value": "Bloody"
+    },
+    {
+      "topRange": 30,
+      "value": "Dying"
+    },
+    {
+      "topRange": 31,
+      "value": "Grim"
+    },
+    {
+      "topRange": 32,
+      "value": "Shrouded"
+    },
+    {
+      "topRange": 33,
+      "value": "Dead"
+    },
+    {
+      "topRange": 34,
+      "value": "Sealed"
+    },
+    {
+      "topRange": 35,
+      "value": "Flooded"
+    },
+    {
+      "topRange": 36,
+      "value": "Withered"
+    },
+    {
+      "topRange": 37,
+      "value": "Lush"
+    },
+    {
+      "topRange": 38,
+      "value": "Fortified"
+    },
+    {
+      "topRange": 39,
+      "value": "Beautiful"
+    },
+    {
+      "topRange": 40,
+      "value": "Blocked"
+    },
+    {
+      "topRange": 41,
+      "value": "Desolate"
+    },
+    {
+      "topRange": 42,
+      "value": "Deadly"
+    },
+    {
+      "topRange": 43,
+      "value": "Massive"
+    },
+    {
+      "topRange": 44,
+      "value": "Hallowed"
+    },
+    {
+      "topRange": 45,
+      "value": "Confined"
+    },
+    {
+      "topRange": 46,
+      "value": "Unusual"
+    },
+    {
+      "topRange": 47,
+      "value": "Mysterious"
+    },
+    {
+      "topRange": 48,
+      "value": "Strange"
+    },
+    {
+      "topRange": 49,
+      "value": "Depleted"
+    },
+    {
+      "topRange": 50,
+      "value": "Crowded"
+    },
+    {
+      "topRange": 51,
+      "value": "Fertile"
+    },
+    {
+      "topRange": 52,
+      "value": "Diverse"
+    },
+    {
+      "topRange": 53,
+      "value": "Sheltered"
+    },
+    {
+      "topRange": 54,
+      "value": "Destroyed"
+    },
+    {
+      "topRange": 55,
+      "value": "Open"
+    },
+    {
+      "topRange": 56,
+      "value": "Exposed"
+    },
+    {
+      "topRange": 57,
+      "value": "Contested"
+    },
+    {
+      "topRange": 58,
+      "value": "Blighted"
+    },
+    {
+      "topRange": 59,
+      "value": "Rugged"
+    },
+    {
+      "topRange": 60,
+      "value": "Unnatural"
+    },
+    {
+      "topRange": 61,
+      "value": "Secret"
+    },
+    {
+      "topRange": 62,
+      "value": "Dark"
+    },
+    {
+      "topRange": 63,
+      "value": "Sunken"
+    },
+    {
+      "topRange": 64,
+      "value": "Abundant"
+    },
+    {
+      "topRange": 65,
+      "value": "Raided"
+    },
+    {
+      "topRange": 66,
+      "value": "Suspended"
+    },
+    {
+      "topRange": 67,
+      "value": "Hostile"
+    },
+    {
+      "topRange": 68,
+      "value": "Empty"
+    },
+    {
+      "topRange": 69,
+      "value": "Overgrown"
+    },
+    {
+      "topRange": 70,
+      "value": "Chaotic"
+    },
+    {
+      "topRange": 71,
+      "value": "Peaceful"
+    },
+    {
+      "topRange": 72,
+      "value": "Broken"
+    },
+    {
+      "topRange": 73,
+      "value": "Ensnaring"
+    },
+    {
+      "topRange": 74,
+      "value": "Frozen"
+    },
+    {
+      "topRange": 75,
+      "value": "Ravaged"
+    },
+    {
+      "topRange": 76,
+      "value": "Expansive"
+    },
+    {
+      "topRange": 77,
+      "value": "Toxic"
+    },
+    {
+      "topRange": 78,
+      "value": "High"
+    },
+    {
+      "topRange": 79,
+      "value": "Sacred"
+    },
+    {
+      "topRange": 80,
+      "value": "Low"
+    },
+    {
+      "topRange": 81,
+      "value": "Forsaken"
+    },
+    {
+      "topRange": 82,
+      "value": "Fallen"
+    },
+    {
+      "topRange": 83,
+      "value": "Shadowy"
+    },
+    {
+      "topRange": 84,
+      "value": "Unstable"
+    },
+    {
+      "topRange": 85,
+      "value": "Hidden"
+    },
+    {
+      "topRange": 86,
+      "value": "Haunted"
+    },
+    {
+      "topRange": 87,
+      "value": "Buried"
+    },
+    {
+      "topRange": 88,
+      "value": "Damaged"
+    },
+    {
+      "topRange": 89,
+      "value": "Ancient"
+    },
+    {
+      "topRange": 90,
+      "value": "Scarred"
+    },
+    {
+      "topRange": 91,
+      "value": "Elevated"
+    },
+    {
+      "topRange": 92,
+      "value": "Forgotten"
+    },
+    {
+      "topRange": 93,
+      "value": "Preserved"
+    },
+    {
+      "topRange": 94,
+      "value": "Trapped"
+    },
+    {
+      "topRange": 95,
+      "value": "Mystic"
+    },
+    {
+      "topRange": 96,
+      "value": "Natural"
+    },
+    {
+      "topRange": 97,
+      "value": "Treacherous"
+    },
+    {
+      "topRange": 98,
+      "value": "Watery"
+    },
+    {
+      "topRange": 99,
+      "value": "Moving"
+    },
+    {
+      "topRange": 100,
+      "value": "Foul"
+    }
   ]
 }

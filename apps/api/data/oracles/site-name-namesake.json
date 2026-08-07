@@ -1,6 +1,7 @@
 {
   "key": "siteNameNamesake",
-  "title": "Site Name \u2013 Namesake",
+  "title": "Site Name – Namesake",
+  "category": "Site",
   "selectLabel": "Site Name: Namesake",
   "description": "Roll for a namesake when generating a site name using the Format oracle.",
   "source": "delve",

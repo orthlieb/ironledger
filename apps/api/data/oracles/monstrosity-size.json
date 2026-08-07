@@ -1,6 +1,7 @@
 {
   "key": "monstrositySize",
   "title": "Monstrosity: Size",
+  "category": "Creature",
   "selectLabel": "Monstrosity: Size",
   "description": "Determine the size category of a monstrosity.",
   "source": "delve",

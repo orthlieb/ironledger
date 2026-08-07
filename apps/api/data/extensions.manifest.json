@@ -173,7 +173,8 @@
           "moves/overrides.json"
         ],
         "oracles": [
-          "oracles/overland-landmark.json"
+          "oracles/overland-landmark.json",
+          "oracles/overland-waypoint.json"
         ],
         "rollTables": [
           "roll-tables/encounter-index.json",

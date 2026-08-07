@@ -1,6 +1,7 @@
 {
   "key": "endureExtremeStress",
   "title": "Endure Extreme Stress",
+  "category": "Move",
   "selectLabel": "Endure Extreme Stress",
   "description": "Use this oracle when you roll a miss on Endure Stress and both the Shaken and Corrupted conditions are already marked. Roll to determine the dire consequence of suffering extreme psychological harm.",
   "source": "base",

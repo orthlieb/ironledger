@@ -1,12 +1,22 @@
 {
   "key": "sampleGizmo",
   "title": "Sample – Gizmo",
+  "category": "Other",
   "selectLabel": "Sample – Gizmo",
   "description": "A test oracle proving extension oracles merge into the catalogue and filter with the extension toggle.",
   "source": "sample",
   "data": [
-    { "topRange": 33, "value": "A humming widget" },
-    { "topRange": 66, "value": "A glowing sprocket" },
-    { "topRange": 100, "value": "A suspicious cog" }
+    {
+      "topRange": 33,
+      "value": "A humming widget"
+    },
+    {
+      "topRange": 66,
+      "value": "A glowing sprocket"
+    },
+    {
+      "topRange": 100,
+      "value": "A suspicious cog"
+    }
   ]
 }

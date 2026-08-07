@@ -55,6 +55,10 @@ export interface ExtensionInfo {
 	description: string;
 	defaultEnabled: boolean;
 	order: number;
+	/** Oracle keys this extension hides from the picker when enabled (supersession
+	 *  pairs — e.g. Lodestar's Core: Descriptor/Focus supersede Delve's Feature
+	 *  Aspect/Focus). Mirrors ExtensionInfo in @ironledger/shared. */
+	suppressesOracles?: string[];
 }
 
 export interface FoeDef {

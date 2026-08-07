@@ -1,6 +1,7 @@
 {
   "key": "siteNamePlaceBarrow",
-  "title": "Site Name \u2013 Place (Barrow)",
+  "title": "Site Name – Place (Barrow)",
+  "category": "Site",
   "selectLabel": "Site Name: Place (Barrow)",
   "description": "Roll for a place name for a Barrow site.",
   "source": "delve",

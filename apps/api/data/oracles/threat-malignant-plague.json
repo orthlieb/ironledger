@@ -1,6 +1,7 @@
 {
   "key": "threatMalignantPlague",
   "title": "Threat: Malignant Plague",
+  "category": "Threat",
   "selectLabel": "Threat: Malignant Plague",
   "description": "Generate the next event for a malignant plague threat.",
   "source": "delve",

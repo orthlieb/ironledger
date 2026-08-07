@@ -1,6 +1,7 @@
 {
   "key": "threatPowerHungryMystic",
   "title": "Threat: Power-Hungry Mystic",
+  "category": "Threat",
   "selectLabel": "Threat: Power-Hungry Mystic",
   "description": "Generate the next event for a power-hungry mystic threat.",
   "source": "delve",

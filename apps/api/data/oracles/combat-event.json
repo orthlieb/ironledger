@@ -1,6 +1,7 @@
 {
   "key": "combatEvent",
   "title": "Delve: Combat Event",
+  "category": "Combat",
   "selectLabel": "Delve: Combat Event",
   "description": "Trigger a dramatic event or complication during a fight within a Delve site.",
   "source": "delve",

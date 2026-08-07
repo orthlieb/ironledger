@@ -1,6 +1,7 @@
 {
   "key": "location",
   "title": "Location",
+  "category": "Location",
   "selectLabel": "Location",
   "description": "Use this oracle when traveling to generate a point-of-interest or to answer a question about a place where someone or something can be found.",
   "source": "base",

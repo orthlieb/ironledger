@@ -1,6 +1,7 @@
 {
   "key": "monstrosityCharacteristics",
   "title": "Monstrosity: Characteristics",
+  "category": "Creature",
   "selectLabel": "Monstrosity: Characteristics",
   "description": "Add a distinctive characteristic or trait to a monstrosity. Roll up to four times and keep up to three results.",
   "source": "delve",
