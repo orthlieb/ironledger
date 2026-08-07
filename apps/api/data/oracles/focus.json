@@ -1,410 +1,410 @@
 {
-  "key": "action",
-  "title": "Core: Action",
+  "key": "focus",
+  "title": "Core: Focus",
   "category": "Core",
-  "selectLabel": "Core: Action",
-  "description": "The Core oracles offer interpretive prompts useful for many situations. In fact, for a lightweight approach, it's possible to focus on answering questions using only the Ask the Oracle move and these four tables. You can roll on the Core Oracles individually or combine them to form a phrase.\n\nExample uses:\n✴ Goal or event: Action + Theme\n✴ Character activity: Action\n✴ Conversation topic: Theme\n✴ Location aspect: Descriptor\n✴ Clue: Focus\n✴ Journey waypoint: Descriptor + Focus\n✴ Quest: Action + Descriptor + Focus",
+  "selectLabel": "Core: Focus",
+  "description": "Inspired by Ironsworn: Starforged, the Descriptor and Focus oracles replace (and expand) the Aspect and Focus oracles originally included in Ironsworn: Delve. They are useful for revealing location-based details and discoveries.",
   "source": "base",
   "data": [
     {
       "topRange": 1,
-      "value": "Scheme"
+      "value": "Bridge"
     },
     {
       "topRange": 2,
-      "value": "Clash"
+      "value": "Being"
     },
     {
       "topRange": 3,
-      "value": "Weaken"
+      "value": "Archive"
     },
     {
       "topRange": 4,
-      "value": "Initiate"
+      "value": "Gap"
     },
     {
       "topRange": 5,
-      "value": "Create"
+      "value": "Message"
     },
     {
       "topRange": 6,
-      "value": "Swear"
+      "value": "Denizen"
     },
     {
       "topRange": 7,
-      "value": "Avenge"
+      "value": "Commodity"
     },
     {
       "topRange": 8,
-      "value": "Guard"
+      "value": "Vegetation"
     },
     {
       "topRange": 9,
-      "value": "Defeat"
+      "value": "Rubble"
     },
     {
       "topRange": 10,
-      "value": "Control"
+      "value": "Rendezvous"
     },
     {
       "topRange": 11,
-      "value": "Break"
+      "value": "Hideaway"
     },
     {
       "topRange": 12,
-      "value": "Risk"
+      "value": "Vault"
     },
     {
       "topRange": 13,
-      "value": "Surrender"
+      "value": "Crossing"
     },
     {
       "topRange": 14,
-      "value": "Inspect"
+      "value": "Camp"
     },
     {
       "topRange": 15,
-      "value": "Raid"
+      "value": "Inhabitant"
     },
     {
       "topRange": 16,
-      "value": "Evade"
+      "value": "Landscape"
     },
     {
       "topRange": 17,
-      "value": "Assault"
+      "value": "Boundary"
     },
     {
       "topRange": 18,
-      "value": "Deflect"
+      "value": "Entry"
     },
     {
       "topRange": 19,
-      "value": "Threaten"
+      "value": "Grave"
     },
     {
       "topRange": 20,
-      "value": "Attack"
+      "value": "Beast"
     },
     {
       "topRange": 21,
-      "value": "Leave"
+      "value": "Construction"
     },
     {
       "topRange": 22,
-      "value": "Preserve"
+      "value": "Iron"
     },
     {
       "topRange": 23,
-      "value": "Manipulate"
+      "value": "Threshold"
     },
     {
       "topRange": 24,
-      "value": "Remove"
+      "value": "Sound"
     },
     {
       "topRange": 25,
-      "value": "Eliminate"
+      "value": "Debris"
     },
     {
       "topRange": 26,
-      "value": "Withdraw"
+      "value": "Monument"
     },
     {
       "topRange": 27,
-      "value": "Abandon"
+      "value": "Terrain"
     },
     {
       "topRange": 28,
-      "value": "Investigate"
+      "value": "Battlefield"
     },
     {
       "topRange": 29,
-      "value": "Hold"
+      "value": "Stone"
     },
     {
       "topRange": 30,
-      "value": "Focus"
+      "value": "Shortcut"
     },
     {
       "topRange": 31,
-      "value": "Uncover"
+      "value": "Symbol"
     },
     {
       "topRange": 32,
-      "value": "Breach"
+      "value": "Ambush"
     },
     {
       "topRange": 33,
-      "value": "Aid"
+      "value": "Water"
     },
     {
       "topRange": 34,
-      "value": "Uphold"
+      "value": "Viewpoint"
     },
     {
       "topRange": 35,
-      "value": "Falter"
+      "value": "Environment"
     },
     {
       "topRange": 36,
-      "value": "Suppress"
+      "value": "Excavation"
     },
     {
       "topRange": 37,
-      "value": "Hunt"
+      "value": "Person"
     },
     {
       "topRange": 38,
-      "value": "Share"
+      "value": "Gathering"
     },
     {
       "topRange": 39,
-      "value": "Destroy"
+      "value": "Enclosure"
     },
     {
       "topRange": 40,
-      "value": "Avoid"
+      "value": "Ritual"
     },
     {
       "topRange": 41,
-      "value": "Reject"
+      "value": "Weather"
     },
     {
       "topRange": 42,
-      "value": "Demand"
+      "value": "Precipice"
     },
     {
       "topRange": 43,
-      "value": "Explore"
+      "value": "Opening"
     },
     {
       "topRange": 44,
-      "value": "Bolster"
+      "value": "Rift"
     },
     {
       "topRange": 45,
-      "value": "Seize"
+      "value": "Bones"
     },
     {
       "topRange": 46,
-      "value": "Mourn"
+      "value": "Transport"
     },
     {
       "topRange": 47,
-      "value": "Reveal"
+      "value": "Territory"
     },
     {
       "topRange": 48,
-      "value": "Gather"
+      "value": "Clearing"
     },
     {
       "topRange": 49,
-      "value": "Defy"
+      "value": "Hole"
     },
     {
       "topRange": 50,
-      "value": "Transform"
+      "value": "Growth"
     },
     {
       "topRange": 51,
-      "value": "Persevere"
+      "value": "Portal"
     },
     {
       "topRange": 52,
-      "value": "Serve"
+      "value": "Route"
     },
     {
       "topRange": 53,
-      "value": "Begin"
+      "value": "Hazard"
     },
     {
       "topRange": 54,
-      "value": "Move"
+      "value": "Habitat"
     },
     {
       "topRange": 55,
-      "value": "Coordinate"
+      "value": "Trail"
     },
     {
       "topRange": 56,
-      "value": "Resist"
+      "value": "Illusion"
     },
     {
       "topRange": 57,
-      "value": "Await"
+      "value": "Refuge"
     },
     {
       "topRange": 58,
-      "value": "Impress"
+      "value": "Relic"
     },
     {
       "topRange": 59,
-      "value": "Take"
+      "value": "Span"
     },
     {
       "topRange": 60,
-      "value": "Oppose"
+      "value": "Formation"
     },
     {
       "topRange": 61,
-      "value": "Capture"
+      "value": "Nest"
     },
     {
       "topRange": 62,
-      "value": "Overwhelm"
+      "value": "Treasure"
     },
     {
       "topRange": 63,
-      "value": "Challenge"
+      "value": "Prominence"
     },
     {
       "topRange": 64,
-      "value": "Acquire"
+      "value": "Predator"
     },
     {
       "topRange": 65,
-      "value": "Protect"
+      "value": "Trap"
     },
     {
       "topRange": 66,
-      "value": "Finish"
+      "value": "People"
     },
     {
       "topRange": 67,
-      "value": "Strengthen"
+      "value": "Tracks"
     },
     {
       "topRange": 68,
-      "value": "Restore"
+      "value": "Combatant"
     },
     {
       "topRange": 69,
-      "value": "Advance"
+      "value": "Storage"
     },
     {
       "topRange": 70,
-      "value": "Command"
+      "value": "Riches"
     },
     {
       "topRange": 71,
-      "value": "Refuse"
+      "value": "Anomaly"
     },
     {
       "topRange": 72,
-      "value": "Find"
+      "value": "Outpost"
     },
     {
       "topRange": 73,
-      "value": "Deliver"
+      "value": "Settlement"
     },
     {
       "topRange": 74,
-      "value": "Hide"
+      "value": "Cultivation"
     },
     {
       "topRange": 75,
-      "value": "Fortify"
+      "value": "Craftwork"
     },
     {
       "topRange": 76,
-      "value": "Betray"
+      "value": "Caravan"
     },
     {
       "topRange": 77,
-      "value": "Secure"
+      "value": "Void"
     },
     {
       "topRange": 78,
-      "value": "Arrive"
+      "value": "Fire"
     },
     {
       "topRange": 79,
-      "value": "Affect"
+      "value": "Smell"
     },
     {
       "topRange": 80,
-      "value": "Change"
+      "value": "Remains"
     },
     {
       "topRange": 81,
-      "value": "Defend"
+      "value": "Artifact"
     },
     {
       "topRange": 82,
-      "value": "Debate"
+      "value": "Energy"
     },
     {
       "topRange": 83,
-      "value": "Support"
+      "value": "Puzzle"
     },
     {
       "topRange": 84,
-      "value": "Follow"
+      "value": "Equipment"
     },
     {
       "topRange": 85,
-      "value": "Construct"
+      "value": "Discovery"
     },
     {
       "topRange": 86,
-      "value": "Locate"
+      "value": "Apparition"
     },
     {
       "topRange": 87,
-      "value": "Endure"
+      "value": "Remnant"
     },
     {
       "topRange": 88,
-      "value": "Release"
+      "value": "Guardian"
     },
     {
       "topRange": 89,
-      "value": "Lose"
+      "value": "Shrine"
     },
     {
       "topRange": 90,
-      "value": "Reduce"
+      "value": "Barricade"
     },
     {
       "topRange": 91,
-      "value": "Escalate"
+      "value": "Insects"
     },
     {
       "topRange": 92,
-      "value": "Distract"
+      "value": "Waterway"
     },
     {
       "topRange": 93,
-      "value": "Journey"
+      "value": "Material"
     },
     {
       "topRange": 94,
-      "value": "Escort"
+      "value": "Worksite"
     },
     {
       "topRange": 95,
-      "value": "Learn"
+      "value": "Mire"
     },
     {
       "topRange": 96,
-      "value": "Communicate"
+      "value": "Lair"
     },
     {
       "topRange": 97,
-      "value": "Depart"
+      "value": "Obstacle"
     },
     {
       "topRange": 98,
-      "value": "Search"
+      "value": "Wood"
     },
     {
       "topRange": 99,
-      "value": "Charge"
+      "value": "Animal"
     },
     {
       "topRange": 100,
-      "value": "Summon"
+      "value": "Corpse"
     }
   ]
 }

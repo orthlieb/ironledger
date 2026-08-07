@@ -150,6 +150,12 @@ async function build() {
       // Dev-only extensions ship in dev/test but are stripped from production
       // builds (see the write step below).
       ...(meta[id].dev ? { dev: true } : {}),
+      // Oracle keys this extension hides from the picker when enabled. Used by
+      // supersession pairs (e.g. Lodestar's Core: Descriptor/Focus supersede
+      // Delve's Feature Aspect/Focus).
+      ...(meta[id].suppressesOracles?.length
+        ? { suppressesOracles: [...meta[id].suppressesOracles].sort() }
+        : {}),
       root,
       provides: Object.fromEntries(
         Object.entries(provides)

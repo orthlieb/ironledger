@@ -1,410 +1,410 @@
 {
-  "key": "action",
-  "title": "Core: Action",
+  "key": "descriptor",
+  "title": "Core: Descriptor",
   "category": "Core",
-  "selectLabel": "Core: Action",
-  "description": "The Core oracles offer interpretive prompts useful for many situations. In fact, for a lightweight approach, it's possible to focus on answering questions using only the Ask the Oracle move and these four tables. You can roll on the Core Oracles individually or combine them to form a phrase.\n\nExample uses:\n✴ Goal or event: Action + Theme\n✴ Character activity: Action\n✴ Conversation topic: Theme\n✴ Location aspect: Descriptor\n✴ Clue: Focus\n✴ Journey waypoint: Descriptor + Focus\n✴ Quest: Action + Descriptor + Focus",
+  "selectLabel": "Core: Descriptor",
+  "description": "Inspired by Ironsworn: Starforged, the Descriptor and Focus oracles replace (and expand) the Aspect and Focus oracles originally included in Ironsworn: Delve. They are useful for revealing location-based details and discoveries.",
   "source": "base",
   "data": [
     {
       "topRange": 1,
-      "value": "Scheme"
+      "value": "Small"
     },
     {
       "topRange": 2,
-      "value": "Clash"
+      "value": "Collapsed"
     },
     {
       "topRange": 3,
-      "value": "Weaken"
+      "value": "Protected"
     },
     {
       "topRange": 4,
-      "value": "Initiate"
+      "value": "Infested"
     },
     {
       "topRange": 5,
-      "value": "Create"
+      "value": "Misty"
     },
     {
       "topRange": 6,
-      "value": "Swear"
+      "value": "Towering"
     },
     {
       "topRange": 7,
-      "value": "Avenge"
+      "value": "Light"
     },
     {
       "topRange": 8,
-      "value": "Guard"
+      "value": "Marked"
     },
     {
       "topRange": 9,
-      "value": "Defeat"
+      "value": "Crafted"
     },
     {
       "topRange": 10,
-      "value": "Control"
+      "value": "Remote"
     },
     {
       "topRange": 11,
-      "value": "Break"
+      "value": "Deep"
     },
     {
       "topRange": 12,
-      "value": "Risk"
+      "value": "Captured"
     },
     {
       "topRange": 13,
-      "value": "Surrender"
+      "value": "Ruined"
     },
     {
       "topRange": 14,
-      "value": "Inspect"
+      "value": "Safe"
     },
     {
       "topRange": 15,
-      "value": "Raid"
+      "value": "Precious"
     },
     {
       "topRange": 16,
-      "value": "Evade"
+      "value": "Abandoned"
     },
     {
       "topRange": 17,
-      "value": "Assault"
+      "value": "Inaccessible"
     },
     {
       "topRange": 18,
-      "value": "Deflect"
+      "value": "Barren"
     },
     {
       "topRange": 19,
-      "value": "Threaten"
+      "value": "Guarded"
     },
     {
       "topRange": 20,
-      "value": "Attack"
+      "value": "Impassable"
     },
     {
       "topRange": 21,
-      "value": "Leave"
+      "value": "Corrupted"
     },
     {
       "topRange": 22,
-      "value": "Preserve"
+      "value": "Foreboding"
     },
     {
       "topRange": 23,
-      "value": "Manipulate"
+      "value": "Wild"
     },
     {
       "topRange": 24,
-      "value": "Remove"
+      "value": "Fragile"
     },
     {
       "topRange": 25,
-      "value": "Eliminate"
+      "value": "Isolated"
     },
     {
       "topRange": 26,
-      "value": "Withdraw"
+      "value": "Inhabited"
     },
     {
       "topRange": 27,
-      "value": "Abandon"
+      "value": "Defended"
     },
     {
       "topRange": 28,
-      "value": "Investigate"
+      "value": "Active"
     },
     {
       "topRange": 29,
-      "value": "Hold"
+      "value": "Bloody"
     },
     {
       "topRange": 30,
-      "value": "Focus"
+      "value": "Dying"
     },
     {
       "topRange": 31,
-      "value": "Uncover"
+      "value": "Grim"
     },
     {
       "topRange": 32,
-      "value": "Breach"
+      "value": "Shrouded"
     },
     {
       "topRange": 33,
-      "value": "Aid"
+      "value": "Dead"
     },
     {
       "topRange": 34,
-      "value": "Uphold"
+      "value": "Sealed"
     },
     {
       "topRange": 35,
-      "value": "Falter"
+      "value": "Flooded"
     },
     {
       "topRange": 36,
-      "value": "Suppress"
+      "value": "Withered"
     },
     {
       "topRange": 37,
-      "value": "Hunt"
+      "value": "Lush"
     },
     {
       "topRange": 38,
-      "value": "Share"
+      "value": "Fortified"
     },
     {
       "topRange": 39,
-      "value": "Destroy"
+      "value": "Beautiful"
     },
     {
       "topRange": 40,
-      "value": "Avoid"
+      "value": "Blocked"
     },
     {
       "topRange": 41,
-      "value": "Reject"
+      "value": "Desolate"
     },
     {
       "topRange": 42,
-      "value": "Demand"
+      "value": "Deadly"
     },
     {
       "topRange": 43,
-      "value": "Explore"
+      "value": "Massive"
     },
     {
       "topRange": 44,
-      "value": "Bolster"
+      "value": "Hallowed"
     },
     {
       "topRange": 45,
-      "value": "Seize"
+      "value": "Confined"
     },
     {
       "topRange": 46,
-      "value": "Mourn"
+      "value": "Unusual"
     },
     {
       "topRange": 47,
-      "value": "Reveal"
+      "value": "Mysterious"
     },
     {
       "topRange": 48,
-      "value": "Gather"
+      "value": "Strange"
     },
     {
       "topRange": 49,
-      "value": "Defy"
+      "value": "Depleted"
     },
     {
       "topRange": 50,
-      "value": "Transform"
+      "value": "Crowded"
     },
     {
       "topRange": 51,
-      "value": "Persevere"
+      "value": "Fertile"
     },
     {
       "topRange": 52,
-      "value": "Serve"
+      "value": "Diverse"
     },
     {
       "topRange": 53,
-      "value": "Begin"
+      "value": "Sheltered"
     },
     {
       "topRange": 54,
-      "value": "Move"
+      "value": "Destroyed"
     },
     {
       "topRange": 55,
-      "value": "Coordinate"
+      "value": "Open"
     },
     {
       "topRange": 56,
-      "value": "Resist"
+      "value": "Exposed"
     },
     {
       "topRange": 57,
-      "value": "Await"
+      "value": "Contested"
     },
     {
       "topRange": 58,
-      "value": "Impress"
+      "value": "Blighted"
     },
     {
       "topRange": 59,
-      "value": "Take"
+      "value": "Rugged"
     },
     {
       "topRange": 60,
-      "value": "Oppose"
+      "value": "Unnatural"
     },
     {
       "topRange": 61,
-      "value": "Capture"
+      "value": "Secret"
     },
     {
       "topRange": 62,
-      "value": "Overwhelm"
+      "value": "Dark"
     },
     {
       "topRange": 63,
-      "value": "Challenge"
+      "value": "Sunken"
     },
     {
       "topRange": 64,
-      "value": "Acquire"
+      "value": "Abundant"
     },
     {
       "topRange": 65,
-      "value": "Protect"
+      "value": "Raided"
     },
     {
       "topRange": 66,
-      "value": "Finish"
+      "value": "Suspended"
     },
     {
       "topRange": 67,
-      "value": "Strengthen"
+      "value": "Hostile"
     },
     {
       "topRange": 68,
-      "value": "Restore"
+      "value": "Empty"
     },
     {
       "topRange": 69,
-      "value": "Advance"
+      "value": "Overgrown"
     },
     {
       "topRange": 70,
-      "value": "Command"
+      "value": "Chaotic"
     },
     {
       "topRange": 71,
-      "value": "Refuse"
+      "value": "Peaceful"
     },
     {
       "topRange": 72,
-      "value": "Find"
+      "value": "Broken"
     },
     {
       "topRange": 73,
-      "value": "Deliver"
+      "value": "Ensnaring"
     },
     {
       "topRange": 74,
-      "value": "Hide"
+      "value": "Frozen"
     },
     {
       "topRange": 75,
-      "value": "Fortify"
+      "value": "Ravaged"
     },
     {
       "topRange": 76,
-      "value": "Betray"
+      "value": "Expansive"
     },
     {
       "topRange": 77,
-      "value": "Secure"
+      "value": "Toxic"
     },
     {
       "topRange": 78,
-      "value": "Arrive"
+      "value": "High"
     },
     {
       "topRange": 79,
-      "value": "Affect"
+      "value": "Sacred"
     },
     {
       "topRange": 80,
-      "value": "Change"
+      "value": "Low"
     },
     {
       "topRange": 81,
-      "value": "Defend"
+      "value": "Forsaken"
     },
     {
       "topRange": 82,
-      "value": "Debate"
+      "value": "Fallen"
     },
     {
       "topRange": 83,
-      "value": "Support"
+      "value": "Shadowy"
     },
     {
       "topRange": 84,
-      "value": "Follow"
+      "value": "Unstable"
     },
     {
       "topRange": 85,
-      "value": "Construct"
+      "value": "Hidden"
     },
     {
       "topRange": 86,
-      "value": "Locate"
+      "value": "Haunted"
     },
     {
       "topRange": 87,
-      "value": "Endure"
+      "value": "Buried"
     },
     {
       "topRange": 88,
-      "value": "Release"
+      "value": "Damaged"
     },
     {
       "topRange": 89,
-      "value": "Lose"
+      "value": "Ancient"
     },
     {
       "topRange": 90,
-      "value": "Reduce"
+      "value": "Scarred"
     },
     {
       "topRange": 91,
-      "value": "Escalate"
+      "value": "Elevated"
     },
     {
       "topRange": 92,
-      "value": "Distract"
+      "value": "Forgotten"
     },
     {
       "topRange": 93,
-      "value": "Journey"
+      "value": "Preserved"
     },
     {
       "topRange": 94,
-      "value": "Escort"
+      "value": "Trapped"
     },
     {
       "topRange": 95,
-      "value": "Learn"
+      "value": "Mystic"
     },
     {
       "topRange": 96,
-      "value": "Communicate"
+      "value": "Natural"
     },
     {
       "topRange": 97,
-      "value": "Depart"
+      "value": "Treacherous"
     },
     {
       "topRange": 98,
-      "value": "Search"
+      "value": "Watery"
     },
     {
       "topRange": 99,
-      "value": "Charge"
+      "value": "Moving"
     },
     {
       "topRange": 100,
-      "value": "Summon"
+      "value": "Foul"
     }
   ]
 }

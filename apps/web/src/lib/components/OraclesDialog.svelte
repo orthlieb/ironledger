@@ -185,7 +185,7 @@
 	// Category colour mapping (filter chips + tile accents)
 	// ---------------------------------------------------------------------------
 	const CATEGORY_COLORS: Record<string, string> = {
-		'Action & Theme': 'var(--color-wits)',
+		Core: 'var(--color-wits)',
 		Character: 'var(--color-heart)',
 		Combat: 'var(--color-iron)',
 		Creature: 'var(--color-shadow)',
@@ -799,6 +799,7 @@
 		margin: 0;
 		padding-bottom: 4px;
 		border-bottom: 1px solid var(--border);
+		white-space: pre-wrap;
 	}
 
 	:global(.od-table-wrap) {

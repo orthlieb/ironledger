@@ -120,3 +120,18 @@ export function sourceLabel(source: string): string {
 	if (source === 'base') return 'Core';
 	return _registry.find((e) => e.id === source)?.name ?? String(source);
 }
+
+/** Oracle keys hidden by any currently-enabled extension. Reactive on
+ *  `_registry` + `_enabled`, so oracle pickers re-filter when the user
+ *  toggles an expansion. Used by supersession pairs — e.g. Lodestar
+ *  suppresses `featureAspect` + `featureFocus` because Core: Descriptor
+ *  + Core: Focus replace them. */
+export function suppressedOracleKeys(): Set<string> {
+	const out = new Set<string>();
+	for (const e of _registry) {
+		if (!e.suppressesOracles?.length) continue;
+		if (!isSourceEnabled(e.id)) continue;
+		for (const k of e.suppressesOracles) out.add(k);
+	}
+	return out;
+}
