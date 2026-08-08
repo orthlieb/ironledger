@@ -10,6 +10,7 @@
   "lodestarOverlandPeril": 3.3,
   "lodestarOverlandOpportunity": 3.4,
   "coastalWatersLocation": 3.5,
+  "coastalWatersLandmark": 3.55,
   "yrtCityTownLocation": 3.75,
   "locationDescriptor": 4,
   "settlementName": 4.25,
