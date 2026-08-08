@@ -1,7 +1,8 @@
 {
   "id": "yrt",
   "name": "YRT",
-  "description": "Yrt homebrew setting \u2014 mana, Touched, ritual cantrips, and the Yrt bestiary.",
+  "description": "Yrt homebrew setting — mana, Touched, ritual cantrips, and the Yrt bestiary.",
   "defaultEnabled": true,
-  "order": 20
+  "order": 20,
+  "suppressesOracles": ["region"]
 }

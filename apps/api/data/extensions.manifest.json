@@ -128,6 +128,9 @@
       "description": "Yrt homebrew setting — mana, Touched, ritual cantrips, and the Yrt bestiary.",
       "defaultEnabled": true,
       "order": 20,
+      "suppressesOracles": [
+        "region"
+      ],
       "root": "extensions/yrt",
       "provides": {
         "assets": [
