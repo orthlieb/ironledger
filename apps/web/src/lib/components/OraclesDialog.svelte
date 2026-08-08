@@ -882,8 +882,11 @@
 		font-weight: 600;
 	}
 
-	/* Range column — monospaced, no wrap */
-	:global(.od-table-wrap .oracle-table td:first-child) {
+	/* Roll-number (range) columns — dimmed + monospaced, no wrap. Marked with
+	   `.oracle-range` on every range cell so multi-column layouts (2/3-column
+	   tables, name tables, the Delve Depths / Settlement Type stat columns) all
+	   dim consistently, not just the first column. */
+	:global(.od-table-wrap .oracle-table td.oracle-range) {
 		font-variant-numeric: tabular-nums;
 		color: var(--text-dimmer);
 		white-space: nowrap;
