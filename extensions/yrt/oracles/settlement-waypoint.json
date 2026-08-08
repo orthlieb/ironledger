@@ -1,0 +1,210 @@
+{
+  "key": "yrtSettlementWaypoint",
+  "title": "Settlement Waypoint",
+  "category": "Location",
+  "selectLabel": "Settlement Waypoint",
+  "description": "Use this oracle to help envision a location, discovery, or event when you Undertake a Journey through settled lands and reach a waypoint.",
+  "source": "yrt",
+  "data": [
+    {
+      "topRange": 3,
+      "value": "A crowded marketplace bustles with trade"
+    },
+    {
+      "topRange": 6,
+      "value": "A tavern spills music and laughter into the street"
+    },
+    {
+      "topRange": 9,
+      "value": "Guards question travelers at a gate or checkpoint"
+    },
+    {
+      "topRange": 12,
+      "value": "A well or fountain serves as a gathering place"
+    },
+    {
+      "topRange": 15,
+      "value": "Merchants haggle from stalls and carts"
+    },
+    {
+      "topRange": 18,
+      "value": "Crowds throng a busy thoroughfare"
+    },
+    {
+      "topRange": 21,
+      "value": "A blacksmith's forge rings with hammer-blows"
+    },
+    {
+      "topRange": 24,
+      "value": "A caravan loads or unloads in a crowded yard"
+    },
+    {
+      "topRange": 27,
+      "value": "A shrine or temple draws a stream of the faithful"
+    },
+    {
+      "topRange": 30,
+      "value": "A crier announces news in a public square"
+    },
+    {
+      "topRange": 32,
+      "value": "A beggar or urchin makes a plea for coin"
+    },
+    {
+      "topRange": 34,
+      "value": "A street performer draws a small crowd"
+    },
+    {
+      "topRange": 36,
+      "value": "A patrol marches past in tight formation"
+    },
+    {
+      "topRange": 38,
+      "value": "You cross paths with an old acquaintance"
+    },
+    {
+      "topRange": 40,
+      "value": "A procession winds through the streets"
+    },
+    {
+      "topRange": 42,
+      "value": "A notice board is plastered with bounties and decrees"
+    },
+    {
+      "topRange": 44,
+      "value": "A guildhall bustles with members and petitioners"
+    },
+    {
+      "topRange": 46,
+      "value": "A local official demands a toll or a bribe"
+    },
+    {
+      "topRange": 48,
+      "value": "A merchant presses a suspiciously good deal on you"
+    },
+    {
+      "topRange": 50,
+      "value": "A drunkard stumbles into a public scene"
+    },
+    {
+      "topRange": 52,
+      "value": "A stranger watches you a little too closely"
+    },
+    {
+      "topRange": 54,
+      "value": "A shuttered building sits dark and abandoned"
+    },
+    {
+      "topRange": 56,
+      "value": "A cemetery or catacomb lies at the settlement's edge"
+    },
+    {
+      "topRange": 58,
+      "value": "A festival or market day fills the streets with revelry"
+    },
+    {
+      "topRange": 60,
+      "value": "A theft or scuffle has just broken out nearby"
+    },
+    {
+      "topRange": 62,
+      "value": "A herald summons folk to an announcement"
+    },
+    {
+      "topRange": 64,
+      "value": "Dockhands and boats crowd a busy quay"
+    },
+    {
+      "topRange": 66,
+      "value": "A hidden shrine is tucked away down an alley"
+    },
+    {
+      "topRange": 68,
+      "value": "A ruined quarter still bears the scars of past disaster"
+    },
+    {
+      "topRange": 70,
+      "value": "A bathhouse or inn offers rest and warmth"
+    },
+    {
+      "topRange": 72,
+      "value": "A gang of toughs sizes up newcomers"
+    },
+    {
+      "topRange": 74,
+      "value": "A library or archive holds records of the region"
+    },
+    {
+      "topRange": 76,
+      "value": "A brawl erupts outside a tavern"
+    },
+    {
+      "topRange": 78,
+      "value": "A band of pilgrims rests before moving on"
+    },
+    {
+      "topRange": 80,
+      "value": "A gallows or pillory stands as a grim warning"
+    },
+    {
+      "topRange": 82,
+      "value": "A hospital or almshouse tends the sick and poor"
+    },
+    {
+      "topRange": 84,
+      "value": "A pickpocket melts into the crowd"
+    },
+    {
+      "topRange": 86,
+      "value": "A grand hall or keep dominates the skyline"
+    },
+    {
+      "topRange": 88,
+      "value": "A collapsed wall or accident blocks a street"
+    },
+    {
+      "topRange": 90,
+      "value": "A moneylender or auction house does brisk business"
+    },
+    {
+      "topRange": 91,
+      "value": "A public execution or punishment draws a silent crowd"
+    },
+    {
+      "topRange": 92,
+      "value": "A curfew has emptied the streets after dark"
+    },
+    {
+      "topRange": 93,
+      "value": "A quarantine or plague notice seals off a district"
+    },
+    {
+      "topRange": 94,
+      "value": "Refugees crowd a gate, turned away by wary guards"
+    },
+    {
+      "topRange": 95,
+      "value": "A fire rages and townsfolk scramble to fight it"
+    },
+    {
+      "topRange": 96,
+      "value": "Unrest simmers, and a riot threatens to break loose"
+    },
+    {
+      "topRange": 97,
+      "value": "Rumors of a curse or haunting keep folk indoors"
+    },
+    {
+      "topRange": 98,
+      "value": "A mana disturbance ripples through the air"
+    },
+    {
+      "topRange": 99,
+      "value": "Someone marked by the Touched moves among the crowd"
+    },
+    {
+      "topRange": 100,
+      "value": "A spectral manifestation appears"
+    }
+  ]
+}
