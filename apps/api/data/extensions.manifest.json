@@ -145,6 +145,8 @@
           "oracles/freeport-denizen.json",
           "oracles/mana-backlash.json",
           "oracles/region.json",
+          "oracles/settlement-opportunity.json",
+          "oracles/settlement-peril.json",
           "oracles/settlement-waypoint.json",
           "oracles/touched-features.json",
           "oracles/touched.json"

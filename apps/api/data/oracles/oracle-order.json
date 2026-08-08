@@ -16,6 +16,8 @@
   "coastalWatersOpportunity": 3.58,
   "yrtCityTownLocation": 3.75,
   "yrtSettlementWaypoint": 3.76,
+  "yrtSettlementPeril": 3.77,
+  "yrtSettlementOpportunity": 3.78,
   "locationDescriptor": 4,
   "settlementType": 4.2,
   "settlementName": 4.25,

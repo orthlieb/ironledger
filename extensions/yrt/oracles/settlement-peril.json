@@ -1,0 +1,154 @@
+{
+  "key": "yrtSettlementPeril",
+  "title": "Settlement Peril",
+  "category": "Location",
+  "selectLabel": "Settlement Peril",
+  "description": "To reveal the nature of a perilous event or complication on a journey through a settlement, such as when you Undertake a Journey and roll a miss, use this oracle.",
+  "source": "yrt",
+  "data": [
+    {
+      "topRange": 4,
+      "value": "A pickpocket lifts something of value"
+    },
+    {
+      "topRange": 8,
+      "value": "Guards demand a bribe or detain you for questioning"
+    },
+    {
+      "topRange": 12,
+      "value": "You are caught up and jostled by a heaving crowd"
+    },
+    {
+      "topRange": 16,
+      "value": "A merchant cheats or shortchanges you"
+    },
+    {
+      "topRange": 20,
+      "value": "Provisions or gear go missing in the crush"
+    },
+    {
+      "topRange": 23,
+      "value": "You are refused entry at a gate or checkpoint"
+    },
+    {
+      "topRange": 26,
+      "value": "A local official levies an unexpected fee or tax"
+    },
+    {
+      "topRange": 29,
+      "value": "A con artist draws you into a losing scheme"
+    },
+    {
+      "topRange": 32,
+      "value": "You are marked as an outsider and watched"
+    },
+    {
+      "topRange": 35,
+      "value": "A creditor or old rival recognizes you"
+    },
+    {
+      "topRange": 38,
+      "value": "A drunkard or lout picks a fight"
+    },
+    {
+      "topRange": 41,
+      "value": "A brawl spills into the street around you"
+    },
+    {
+      "topRange": 44,
+      "value": "A gang corners you in a narrow alley"
+    },
+    {
+      "topRange": 47,
+      "value": "A patrol presses you for papers or service"
+    },
+    {
+      "topRange": 50,
+      "value": "Your lodging is robbed while you are away"
+    },
+    {
+      "topRange": 53,
+      "value": "You are accused of a crime you did not commit"
+    },
+    {
+      "topRange": 56,
+      "value": "A curfew traps you on the wrong side of a gate"
+    },
+    {
+      "topRange": 59,
+      "value": "Sickness is spreading through the district"
+    },
+    {
+      "topRange": 62,
+      "value": "You are drawn into a duel you cannot refuse"
+    },
+    {
+      "topRange": 65,
+      "value": "A festival crowd turns suddenly to panic"
+    },
+    {
+      "topRange": 68,
+      "value": "A powerful local figure takes offense at you"
+    },
+    {
+      "topRange": 71,
+      "value": "Thieves case you and shadow you through the streets"
+    },
+    {
+      "topRange": 74,
+      "value": "A checkpoint search turns up something incriminating"
+    },
+    {
+      "topRange": 76,
+      "value": "You are swept into an angry mob against your will"
+    },
+    {
+      "topRange": 78,
+      "value": "A fire breaks out and spreads toward you"
+    },
+    {
+      "topRange": 80,
+      "value": "You are arrested and thrown into a cell"
+    },
+    {
+      "topRange": 82,
+      "value": "A riot erupts and engulfs the district"
+    },
+    {
+      "topRange": 84,
+      "value": "Plague empties the streets and bars the gates"
+    },
+    {
+      "topRange": 86,
+      "value": "An assassin or thug marks you as a target"
+    },
+    {
+      "topRange": 88,
+      "value": "A building collapse blocks your escape"
+    },
+    {
+      "topRange": 90,
+      "value": "A supernatural blight creeps through the settlement"
+    },
+    {
+      "topRange": 92,
+      "value": "A mana disturbance sows chaos among the crowd"
+    },
+    {
+      "topRange": 94,
+      "value": "Someone among the Touched turns hostile"
+    },
+    {
+      "topRange": 96,
+      "value": "A dreadful apparition drives folk to terror"
+    },
+    {
+      "topRange": 98,
+      "value": "A curse or haunting grips a quarter of the town"
+    },
+    {
+      "topRange": 100,
+      "value": "A supernatural entity seeks vengeance or absolution"
+    }
+  ]
+}

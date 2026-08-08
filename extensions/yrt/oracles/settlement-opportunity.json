@@ -1,0 +1,154 @@
+{
+  "key": "yrtSettlementOpportunity",
+  "title": "Settlement Opportunity",
+  "category": "Location",
+  "selectLabel": "Settlement Opportunity",
+  "description": "To reveal the nature of an unexpected and beneficial event on a journey through a settlement, such as when you Undertake a Journey and roll a strong hit with a match, use this oracle.",
+  "source": "yrt",
+  "data": [
+    {
+      "topRange": 4,
+      "value": "A merchant offers you a genuinely good deal"
+    },
+    {
+      "topRange": 8,
+      "value": "You overhear a useful rumor or piece of news"
+    },
+    {
+      "topRange": 12,
+      "value": "A local offers directions, aid, or hospitality"
+    },
+    {
+      "topRange": 16,
+      "value": "A notice board lists a bounty or job that suits you"
+    },
+    {
+      "topRange": 20,
+      "value": "You find a ready market for goods you carry"
+    },
+    {
+      "topRange": 23,
+      "value": "You cross paths with a helpful old acquaintance"
+    },
+    {
+      "topRange": 26,
+      "value": "You find safe, comfortable lodging"
+    },
+    {
+      "topRange": 29,
+      "value": "A healer or apothecary can tend your wounds"
+    },
+    {
+      "topRange": 32,
+      "value": "You find a craftsperson to repair or make gear"
+    },
+    {
+      "topRange": 35,
+      "value": "A festival opens doors and loosens tongues"
+    },
+    {
+      "topRange": 38,
+      "value": "A friendly tavern becomes a base of operations"
+    },
+    {
+      "topRange": 41,
+      "value": "A guild or faction takes an interest in you"
+    },
+    {
+      "topRange": 44,
+      "value": "You learn or improve a useful skill"
+    },
+    {
+      "topRange": 47,
+      "value": "A stranger repays an old kindness"
+    },
+    {
+      "topRange": 50,
+      "value": "You find work that pays well"
+    },
+    {
+      "topRange": 53,
+      "value": "A local guide knows a shortcut or safe route"
+    },
+    {
+      "topRange": 56,
+      "value": "You uncover a clue to a current quest or mystery"
+    },
+    {
+      "topRange": 59,
+      "value": "A caravan offers safe passage onward"
+    },
+    {
+      "topRange": 62,
+      "value": "You gain a useful ally among the townsfolk"
+    },
+    {
+      "topRange": 65,
+      "value": "A hidden market deals in exactly what you seek"
+    },
+    {
+      "topRange": 68,
+      "value": "You find a valuable item at a bargain price"
+    },
+    {
+      "topRange": 71,
+      "value": "A shrine or temple offers blessing or sanctuary"
+    },
+    {
+      "topRange": 74,
+      "value": "A moment of fellowship restores your spirit"
+    },
+    {
+      "topRange": 76,
+      "value": "You recover something lost or stolen"
+    },
+    {
+      "topRange": 78,
+      "value": "A grateful local shares a valuable secret"
+    },
+    {
+      "topRange": 80,
+      "value": "You gain the ear of a local leader"
+    },
+    {
+      "topRange": 82,
+      "value": "A patron or benefactor offers their support"
+    },
+    {
+      "topRange": 84,
+      "value": "A rival's misstep turns to your advantage"
+    },
+    {
+      "topRange": 86,
+      "value": "You find a safe house or ally to lie low with"
+    },
+    {
+      "topRange": 88,
+      "value": "A well-timed distraction lets you slip away"
+    },
+    {
+      "topRange": 90,
+      "value": "A scholar or sage answers a burning question"
+    },
+    {
+      "topRange": 92,
+      "value": "A mystic offers helpful guidance"
+    },
+    {
+      "topRange": 94,
+      "value": "Someone among the Touched offers unexpected aid"
+    },
+    {
+      "topRange": 96,
+      "value": "A blessing or boon is bestowed at a festival"
+    },
+    {
+      "topRange": 98,
+      "value": "You experience a helpful dream or vision"
+    },
+    {
+      "topRange": 100,
+      "value": "You find an object or resource of great value"
+    }
+  ]
+}
