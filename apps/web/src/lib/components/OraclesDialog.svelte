@@ -192,6 +192,7 @@
 		Location: 'var(--color-edge)',
 		Move: 'var(--text-accent)',
 		Name: 'var(--color-spirit)',
+		Prelude: 'var(--color-supply)',
 		Settlement: '#D06840',
 		Site: '#4472D0',
 		Threat: '#C0392B',
