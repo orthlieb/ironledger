@@ -30,6 +30,15 @@ export interface OracleEntry {
 	value: unknown;
 }
 
+/** One selectable column of a `tableType: 'columnSelect'` oracle (e.g. Delve
+ *  Depths stats, or Settlement Type's land tiers). Each data row carries a
+ *  `topRange` under each column's `key`; the picker chooses which column the
+ *  roll resolves against. */
+export interface OracleColumn {
+	key: string;
+	label: string;
+}
+
 export interface OracleFile {
 	key: string;
 	title: string;
@@ -41,6 +50,8 @@ export interface OracleFile {
 	selectLabel: string;
 	description?: string;
 	tableType?: string;
+	/** For `tableType: 'columnSelect'` — the roll columns shown as a picker. */
+	columns?: OracleColumn[];
 	data: OracleEntry[];
 }
 
@@ -235,11 +246,38 @@ export function rangeLabelForEntry(table: OracleEntry[], index: number): string 
 export function buildTableHtml(
 	key: string,
 	table: OracleEntry[],
-	options?: { activeStat?: string },
+	options?: { activeStat?: string; columns?: OracleColumn[] },
 ): string {
 	if (!table || table.length === 0) return '<div>No table data.</div>';
 
 	// ── Special layouts ──────────────────────────────────────────────────────
+
+	// Generic column-select table (Settlement Type land tiers, etc.): one range
+	// column per `columns` entry + a Result column, with the active column
+	// highlighted. Delve Depths keeps its own hardcoded branch below.
+	if (options?.columns?.length) {
+		const cols = options.columns;
+		const activeIdx = options.activeStat ? cols.findIndex((c) => c.key === options.activeStat) : -1;
+		const cc = (i: number) => (activeIdx === i ? ' class="col-active"' : '');
+		let html =
+			'<table class="oracle-table"><thead><tr>' +
+			cols.map((c, i) => `<th${cc(i)}>${c.label}</th>`).join('') +
+			'<th>Result</th></tr></thead><tbody>';
+		const prev = cols.map(() => 0);
+		for (const entry of table) {
+			const r = entry as unknown as Record<string, number | string>;
+			const cells = cols
+				.map((c, i) => {
+					const hi = r[c.key] as number;
+					const lo = prev[i] + 1;
+					prev[i] = hi;
+					return `<td${cc(i)}>${lo === hi ? hi : `${lo}–${hi}`}</td>`;
+				})
+				.join('');
+			html += `<tr>${cells}<td>${r['value'] as string}</td></tr>`;
+		}
+		return html + '</tbody></table>';
+	}
 
 	if (key === 'delveDepths') {
 		const statColMap: Record<string, number> = { edge: 0, shadow: 1, wits: 2 };
@@ -460,6 +498,20 @@ export function rollOracle(
 
 	const title = oracle.title;
 	const table = oracle.data;
+
+	// ── columnSelect — roll against a chosen column (land tier, etc.) ───────
+	if (oracle.tableType === 'columnSelect' && oracle.columns?.length) {
+		const cols = oracle.columns;
+		const col = cols.find((c) => c.key === options?.stat) ?? cols[0];
+		const roll = Math.floor(Math.random() * 100) + 1;
+		const rows = table as unknown as Array<Record<string, number | string>>;
+		const found = rows.find((r) => roll <= (r[col.key] as number)) ?? rows[rows.length - 1];
+		const value = found['value'] as string;
+		const html =
+			`<div class="roll-line">Roll (${col.label}): d100 → ${roll}</div>` +
+			`<div class="move-outcome">${value}</div>`;
+		return { roll, html, title, value };
+	}
 
 	// ── delveDepths — roll against a specific stat column ──────────────────
 	if (key === 'delveDepths') {

@@ -184,7 +184,8 @@
           "oracles/overland-landmark.json",
           "oracles/overland-opportunity.json",
           "oracles/overland-peril.json",
-          "oracles/overland-waypoint.json"
+          "oracles/overland-waypoint.json",
+          "oracles/settlement-type.json"
         ],
         "rollTables": [
           "roll-tables/encounter-index.json",

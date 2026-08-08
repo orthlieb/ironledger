@@ -79,6 +79,16 @@
 		selectedKey ? (allOracles.find((o) => o.key === selectedKey) ?? null) : null,
 	);
 
+	/** For a columnSelect oracle (e.g. Settlement Type), the currently-chosen
+	 *  column key — `selectedDelveStat` when it's one of the oracle's columns,
+	 *  else the first column. Reuses the delve stat state as the generic
+	 *  "selected column". Null for non-column oracles. */
+	const effectiveColumnKey = $derived.by(() => {
+		const cols = selectedOracle?.columns;
+		if (!cols?.length) return null;
+		return cols.some((c) => c.key === selectedDelveStat) ? selectedDelveStat : cols[0].key;
+	});
+
 	/** Filtered list of oracles for the picker tile grid. */
 	const filteredOracles = $derived(() => {
 		const q = search.trim().toLowerCase();
@@ -247,11 +257,14 @@
 		rolling = true;
 		const fillFn = _onFill; // capture before close() clears it
 
-		const result = rollOracle(
-			key,
-			allOracles,
-			key === 'delveDepths' ? { stat: selectedDelveStat } : undefined,
-		);
+		const o = allOracles.find((x) => x.key === key);
+		const rollOpts =
+			key === 'delveDepths'
+				? { stat: selectedDelveStat }
+				: o?.tableType === 'columnSelect'
+					? { stat: effectiveColumnKey ?? undefined }
+					: undefined;
+		const result = rollOracle(key, allOracles, rollOpts);
 
 		// Split the primary roll into tens + ones for the d100 animation
 		const tensV = Math.floor((result.roll % 100) / 10) || 10;
@@ -413,6 +426,11 @@
 										onclick={() => {
 											selectedKey = oracle.key;
 											view = 'detail';
+											// Default-highlight the first column of a columnSelect oracle.
+											if (oracle.tableType === 'columnSelect' && oracle.columns?.length) {
+												selectedDelveStat = oracle.columns[0].key;
+												activeStat = oracle.columns[0].key;
+											}
 										}}
 									>
 										<div class="od-tile-stripe"></div>
@@ -454,18 +472,38 @@
 								>
 							{/each}
 						</div>
+					{:else if selectedOracle.tableType === 'columnSelect' && selectedOracle.columns}
+						<div class="od-delve-stat-picker">
+							{#each selectedOracle.columns as col (col.key)}
+								<button
+									class="od-delve-stat-btn"
+									class:od-delve-stat-btn--active={effectiveColumnKey === col.key}
+									style:--stat-color="var(--text-accent)"
+									onclick={() => {
+										selectedDelveStat = col.key;
+										activeStat = col.key;
+									}}>{col.label}</button
+								>
+							{/each}
+						</div>
 					{/if}
 
 					<div
 						class="od-table-wrap"
-						style:--active-col-color={activeStat
-							? `var(--color-${activeStat})`
-							: 'var(--text-accent)'}
+						style:--active-col-color={selectedOracle.tableType === 'columnSelect'
+							? 'var(--text-accent)'
+							: activeStat
+								? `var(--color-${activeStat})`
+								: 'var(--text-accent)'}
 					>
 						{@html buildTableHtml(
 							selectedOracle.key,
 							selectedOracle.data,
-							activeStat ? { activeStat } : undefined,
+							selectedOracle.tableType === 'columnSelect'
+								? { activeStat: effectiveColumnKey ?? undefined, columns: selectedOracle.columns }
+								: activeStat
+									? { activeStat }
+									: undefined,
 						)}
 					</div>
 				</div>
