@@ -391,7 +391,7 @@
 	async function addNewCommunity() {
 		_pendingCommunity = {
 			id: crypto.randomUUID(),
-			name: 'New Community',
+			name: 'New Settlement',
 			region: '',
 			location: '',
 			locationDescription: '',
@@ -691,14 +691,14 @@
 								<Command.Separator class="mp-cmd-sep" />
 								<Command.Item
 									class="mp-cmd-item mp-cmd-item--action"
-									value="+ New Community"
+									value="+ New Settlement"
 									onSelect={() => {
 										entryPickerOpen = false;
 										void addNewCommunity();
 									}}
 								>
 									<span class="mp-cmd-check" aria-hidden="true"></span>
-									<span class="mp-cmd-item-name">+ New Community…</span>
+									<span class="mp-cmd-item-name">+ New Settlement…</span>
 								</Command.Item>
 								<Command.Item
 									class="mp-cmd-item mp-cmd-item--action"
@@ -764,7 +764,7 @@
 			<span class="cm-empty-icon" aria-hidden="true">{@html villageIconSvg}</span>
 			<p class="cm-empty-text">
 				There are people and places to <s>plunder</s> discover. Pick
-				<strong>+ New Community…</strong>, <strong>+ New NPC…</strong>, or
+				<strong>+ New Settlement…</strong>, <strong>+ New NPC…</strong>, or
 				<strong>+ New Place…</strong> from the switcher above to begin.
 			</p>
 		</div>
@@ -1043,7 +1043,7 @@
      three roll only when checked. Create needs a name. -->
 <ConfirmDialog
 	bind:this={newCommunityDialogRef}
-	title="New Community"
+	title="New Settlement"
 	confirmLabel="Create"
 	confirmClass="btn-primary"
 	confirmDisabled={!newCommunityName.trim()}

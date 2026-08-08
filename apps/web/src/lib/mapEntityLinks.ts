@@ -35,7 +35,7 @@ export const ENTITY_LINK_KINDS: Record<
 	EntityLinkKind,
 	{ label: string; prefix: string; order: number }
 > = {
-	community: { label: 'Community', prefix: '◈', order: 0 },
+	community: { label: 'Settlement', prefix: '◈', order: 0 },
 	place: { label: 'Place', prefix: '●', order: 1 },
 	journey: { label: 'Journey', prefix: '↗', order: 2 },
 	site: { label: 'Site', prefix: '▲', order: 3 },
@@ -63,7 +63,7 @@ export function getLinkableEntities(): EntityLink[] {
 			kind: 'community',
 			id: c.id,
 			name: c.name || 'Unnamed',
-			kindLabel: 'Community',
+			kindLabel: 'Settlement',
 			kindPrefix: '◈',
 		});
 	}

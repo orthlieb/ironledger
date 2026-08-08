@@ -299,17 +299,17 @@ test.describe('Import collision dialog (name-based)', () => {
 		const dialog = page.locator('.icd-dialog');
 		await expect(dialog).toBeVisible({ timeout: 5_000 });
 
-		// Five category groups — communities, NPCs, places, journeys, sites —
+		// Five category groups — settlements, NPCs, places, journeys, sites —
 		// each rendered with the correct singular/plural label.
 		await expect(dialog.locator('.icd-group-label')).toHaveText([
-			'Communities',
+			'Settlements',
 			'NPCs',
 			'Place',
 			'Journey',
 			'Site',
 		]);
 		await expect(
-			dialog.locator('.icd-group').filter({ hasText: 'Communities' }).locator('.icd-name'),
+			dialog.locator('.icd-group').filter({ hasText: 'Settlements' }).locator('.icd-name'),
 		).toHaveText(['Skara Brae', 'Westcliff']);
 		await expect(
 			dialog.locator('.icd-group').filter({ hasText: 'NPCs' }).locator('.icd-name'),
@@ -533,7 +533,7 @@ test.describe('Import collision dialog (name-based)', () => {
 		expect(world.npcs.map((n) => n.name)).toEqual(['Newcomer']);
 	});
 
-	test('singular labels — one colliding row uses "Community" not "Communities"', async ({
+	test('singular labels — one colliding row uses "Settlement" not "Settlements"', async ({
 		page,
 	}) => {
 		await importPayload(
@@ -554,7 +554,7 @@ test.describe('Import collision dialog (name-based)', () => {
 		);
 		const dialog = page.locator('.icd-dialog');
 		await expect(dialog).toBeVisible({ timeout: 5_000 });
-		await expect(dialog.locator('.icd-group-label')).toHaveText(['Community']);
+		await expect(dialog.locator('.icd-group-label')).toHaveText(['Settlement']);
 		await dialog.locator('button:has-text("Cancel import")').click();
 	});
 
