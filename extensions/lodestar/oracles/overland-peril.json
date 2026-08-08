@@ -1,0 +1,154 @@
+{
+  "key": "lodestarOverlandPeril",
+  "title": "Overland Peril",
+  "category": "Location",
+  "selectLabel": "Overland Peril",
+  "description": "To reveal the nature of a perilous event or complication on a journey, such as when you Undertake a Journey and roll a miss.",
+  "source": "lodestar",
+  "data": [
+    {
+      "topRange": 4,
+      "value": "Lingering foul weather tests your endurance"
+    },
+    {
+      "topRange": 8,
+      "value": "A piece of important gear is damaged or broken"
+    },
+    {
+      "topRange": 12,
+      "value": "Provisions are lost, wasted, or spoiled"
+    },
+    {
+      "topRange": 16,
+      "value": "The weather takes a turn for the worse"
+    },
+    {
+      "topRange": 20,
+      "value": "Rugged terrain or dense vegetation hampers your progress"
+    },
+    {
+      "topRange": 23,
+      "value": "An injury or old pain causes trouble"
+    },
+    {
+      "topRange": 26,
+      "value": "A cleverly camouflaged or hidden predator attacks"
+    },
+    {
+      "topRange": 29,
+      "value": "You stumble into the lair or nest of dangerous creatures"
+    },
+    {
+      "topRange": 32,
+      "value": "You are caught in a trap or ambush"
+    },
+    {
+      "topRange": 35,
+      "value": "An impassable path forces a dangerous detour"
+    },
+    {
+      "topRange": 38,
+      "value": "The path forces a treacherous crossing over a river or gap"
+    },
+    {
+      "topRange": 41,
+      "value": "A steep cliff or precipitous drop stands in your way"
+    },
+    {
+      "topRange": 44,
+      "value": "Confounding paths cause you to lose your way"
+    },
+    {
+      "topRange": 47,
+      "value": "Disease or sickness takes hold"
+    },
+    {
+      "topRange": 50,
+      "value": "You realize something important was lost or left behind"
+    },
+    {
+      "topRange": 53,
+      "value": "You come upon a settlement or camp in crisis"
+    },
+    {
+      "topRange": 56,
+      "value": "Someone who watches over this area makes a costly demand or threat"
+    },
+    {
+      "topRange": 59,
+      "value": "An enemy patrol or outpost guards this area"
+    },
+    {
+      "topRange": 62,
+      "value": "You encounter a dangerous animal or pack"
+    },
+    {
+      "topRange": 65,
+      "value": "Insects or small creatures swarm to attack"
+    },
+    {
+      "topRange": 68,
+      "value": "You are caught in a flood or forced to navigate a perilous waterway"
+    },
+    {
+      "topRange": 71,
+      "value": "You encounter a fellow traveler in peril"
+    },
+    {
+      "topRange": 74,
+      "value": "Fog or darkness hides a lurking danger"
+    },
+    {
+      "topRange": 76,
+      "value": "You suffer the effects of toxic plants or venomous creatures"
+    },
+    {
+      "topRange": 78,
+      "value": "You are caught within unnatural mist or darkness"
+    },
+    {
+      "topRange": 80,
+      "value": "A companion or fellow traveler stumbles into danger"
+    },
+    {
+      "topRange": 82,
+      "value": "Muddy ground or a quagmire threatens to drag you down"
+    },
+    {
+      "topRange": 84,
+      "value": "You encounter a monstrous beast"
+    },
+    {
+      "topRange": 86,
+      "value": "A deceptively peaceful location lures you into a false sense of safety"
+    },
+    {
+      "topRange": 88,
+      "value": "Spooked creatures stampede along your path"
+    },
+    {
+      "topRange": 90,
+      "value": "A companion or fellow traveler is injured or falls ill"
+    },
+    {
+      "topRange": 92,
+      "value": "You face a dreadful vision or hallucination"
+    },
+    {
+      "topRange": 94,
+      "value": "A sinkhole or pit opens beneath you"
+    },
+    {
+      "topRange": 96,
+      "value": "A supernatural entity seeks vengeance or absolution"
+    },
+    {
+      "topRange": 98,
+      "value": "Unstable terrain causes a rockfall or landslide"
+    },
+    {
+      "topRange": 100,
+      "value": "Your presence triggers a spell or supernatural anomaly"
+    }
+  ]
+}
