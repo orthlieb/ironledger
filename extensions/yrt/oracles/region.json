@@ -1,9 +1,9 @@
 {
   "key": "yrtRegion",
-  "title": "YRT – Region",
+  "title": "Region",
   "category": "Location",
-  "selectLabel": "YRT – Region",
-  "description": "Determine the region of the Yrt world where an event or location is situated.",
+  "selectLabel": "Region",
+  "description": "Determine the region of the Yrt world where an event or location is situated. Replaces the base Region oracle when YRT is enabled.",
   "source": "yrt",
   "data": [
     {

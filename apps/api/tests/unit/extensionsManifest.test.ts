@@ -93,7 +93,7 @@ describe('extensions.manifest.json', () => {
     expect(assetData.flatMap((f) => f.rarities ?? [])).toHaveLength(63);
     // 49 base/delve/yrt moves + 2 lodestar (Follow a Path, alternate End the Fight).
     expect(moveData.flatMap((f) => f.moves)).toHaveLength(51);
-    expect(oracleData).toHaveLength(74);
+    expect(oracleData).toHaveLength(81);
     expect(foeData.flatMap((f) => f.foes)).toHaveLength(82);
     expect(foeOverrides).toHaveLength(1);
     // Lodestar hides base End the Fight via a move override ("hide + add"):

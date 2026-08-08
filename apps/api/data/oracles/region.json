@@ -1,8 +1,8 @@
 {
   "key": "region",
-  "title": "Ironsworn Region",
+  "title": "Region",
   "category": "Location",
-  "selectLabel": "Ironsworn Region",
+  "selectLabel": "Region",
   "description": "Determine the broad region or terrain type of a location in the Ironlands.",
   "source": "base",
   "data": [

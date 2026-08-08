@@ -1,0 +1,250 @@
+{
+  "key": "coastalWatersWaypoint",
+  "title": "Coastal Waters Waypoint",
+  "category": "Location",
+  "selectLabel": "Coastal Waters Waypoint",
+  "description": "Use this oracle to help envision a location, discovery, or event when you Undertake a Journey in coastal waters and reach a waypoint.",
+  "source": "lodestar",
+  "data": [
+    {
+      "topRange": 2,
+      "value": "A wrecked ship or boat lies broken upon rocks"
+    },
+    {
+      "topRange": 4,
+      "value": "Mist clings to a shoreline ruin"
+    },
+    {
+      "topRange": 6,
+      "value": "Dancing ribbons of colorful lights appear in a dark sky"
+    },
+    {
+      "topRange": 8,
+      "value": "The wind and waters are eerily calm"
+    },
+    {
+      "topRange": 10,
+      "value": "A ship is anchored in a sheltered bay"
+    },
+    {
+      "topRange": 12,
+      "value": "A wide river empties into the sea"
+    },
+    {
+      "topRange": 14,
+      "value": "A large animal or beast watches from the shore"
+    },
+    {
+      "topRange": 16,
+      "value": "A ship flounders in high seas"
+    },
+    {
+      "topRange": 18,
+      "value": "A pod of orca glides past"
+    },
+    {
+      "topRange": 20,
+      "value": "An abandoned settlement is partially reclaimed by the sea"
+    },
+    {
+      "topRange": 22,
+      "value": "Waves break upon a wide rocky beach"
+    },
+    {
+      "topRange": 24,
+      "value": "A beached ship is under repair"
+    },
+    {
+      "topRange": 26,
+      "value": "The weather shifts, a portent of things to come"
+    },
+    {
+      "topRange": 28,
+      "value": "A waterfall spills from a seaside bluff"
+    },
+    {
+      "topRange": 30,
+      "value": "The skeletal ribs of an old wreck sit upon the shore"
+    },
+    {
+      "topRange": 32,
+      "value": "Whalers or beast hunters prowl these waters in sleek ships"
+    },
+    {
+      "topRange": 34,
+      "value": "A ruin lies half-submerged in shallow waters"
+    },
+    {
+      "topRange": 36,
+      "value": "The water churns as a large school of fish flees a predator"
+    },
+    {
+      "topRange": 38,
+      "value": "A bleak-looking island appears uninhabited"
+    },
+    {
+      "topRange": 40,
+      "value": "A landed boat or ship sits upon the shore"
+    },
+    {
+      "topRange": 42,
+      "value": "Imposing cliffs rise from the sea"
+    },
+    {
+      "topRange": 44,
+      "value": "A dense fog clings to the water"
+    },
+    {
+      "topRange": 46,
+      "value": "Boats and ships gather at a seaside settlement"
+    },
+    {
+      "topRange": 48,
+      "value": "Hordes of seabirds nest upon a guano-spattered sea stack"
+    },
+    {
+      "topRange": 50,
+      "value": "Whales crest the surface"
+    },
+    {
+      "topRange": 52,
+      "value": "Laborers toil at a waterside worksite"
+    },
+    {
+      "topRange": 54,
+      "value": "An ancient statue or monument stands on the shore"
+    },
+    {
+      "topRange": 56,
+      "value": "Rocky shoals lie within shallow waters"
+    },
+    {
+      "topRange": 58,
+      "value": "Just under the surface, a thick kelp forest dances in the current"
+    },
+    {
+      "topRange": 60,
+      "value": "Fisher folk gather their catch"
+    },
+    {
+      "topRange": 62,
+      "value": "A column of smoke rises from the interior of an island"
+    },
+    {
+      "topRange": 64,
+      "value": "Gulls peck at a floating carcass"
+    },
+    {
+      "topRange": 66,
+      "value": "A makeshift shelter or solitary home sits on the shore"
+    },
+    {
+      "topRange": 68,
+      "value": "Darkness beckons from within a sea cave"
+    },
+    {
+      "topRange": 70,
+      "value": "A storm gathers in the distance"
+    },
+    {
+      "topRange": 72,
+      "value": "You spot a seaside camp or settlement"
+    },
+    {
+      "topRange": 74,
+      "value": "Seals rest on a wave-swept rock"
+    },
+    {
+      "topRange": 76,
+      "value": "A boat or ship comes into view"
+    },
+    {
+      "topRange": 78,
+      "value": "The water stirs with the movement of a great creature"
+    },
+    {
+      "topRange": 80,
+      "value": "Steep cliffs flank a narrow fjord"
+    },
+    {
+      "topRange": 81,
+      "value": "A rogue iceberg drifts with the current"
+    },
+    {
+      "topRange": 82,
+      "value": "A long line of ships appears on the horizon"
+    },
+    {
+      "topRange": 83,
+      "value": "Sharks circle menacingly"
+    },
+    {
+      "topRange": 84,
+      "value": "A capsized ship or boat drifts on the water"
+    },
+    {
+      "topRange": 85,
+      "value": "A beacon tower glimmers with a warning flame"
+    },
+    {
+      "topRange": 86,
+      "value": "Debris collects in a swirling eddy"
+    },
+    {
+      "topRange": 87,
+      "value": "Eerie voices carry on the wind"
+    },
+    {
+      "topRange": 88,
+      "value": "The temperature shifts unnaturally"
+    },
+    {
+      "topRange": 89,
+      "value": "A shelf of glacial ice divides sea from land"
+    },
+    {
+      "topRange": 90,
+      "value": "You spot ships engaged in a battle"
+    },
+    {
+      "topRange": 91,
+      "value": "A lookout post or tower stands at water's edge"
+    },
+    {
+      "topRange": 92,
+      "value": "A narrow channel leads through an icy expanse"
+    },
+    {
+      "topRange": 93,
+      "value": "A whale corpse lies bloated on a beach"
+    },
+    {
+      "topRange": 94,
+      "value": "A large natural arch towers over the surrounding waters"
+    },
+    {
+      "topRange": 95,
+      "value": "A great flying creature circles overhead"
+    },
+    {
+      "topRange": 96,
+      "value": "A bridge connects the mainland to an offshore island"
+    },
+    {
+      "topRange": 97,
+      "value": "Mystic stones or strange pillars stand on the shore"
+    },
+    {
+      "topRange": 98,
+      "value": "A stone fortification stands at water's edge"
+    },
+    {
+      "topRange": 99,
+      "value": "Thickly-packed seaweed carpets the water"
+    },
+    {
+      "topRange": 100,
+      "value": "A spectral manifestation appears"
+    }
+  ]
+}

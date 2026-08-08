@@ -1,0 +1,130 @@
+{
+  "key": "coastalWatersOpportunity",
+  "title": "Coastal Waters Opportunity",
+  "category": "Location",
+  "selectLabel": "Coastal Waters Opportunity",
+  "description": "To reveal the nature of an unexpected and beneficial event on a coastal waters journey, such as when you Undertake a Journey and roll a strong hit with a match, use this oracle.",
+  "source": "lodestar",
+  "data": [
+    {
+      "topRange": 5,
+      "value": "A fortuitous wind or current speeds your way"
+    },
+    {
+      "topRange": 10,
+      "value": "Ideal weather takes hold"
+    },
+    {
+      "topRange": 15,
+      "value": "There are plentiful fishing opportunities in these waters"
+    },
+    {
+      "topRange": 19,
+      "value": "A desolate shoreline settlement or camp offers scavenging opportunities"
+    },
+    {
+      "topRange": 23,
+      "value": "A nearby settlement flies a friendly banner"
+    },
+    {
+      "topRange": 27,
+      "value": "A nearby shore offers plentiful opportunities for hunting or foraging"
+    },
+    {
+      "topRange": 31,
+      "value": "A sheltered bay offers safe harbor"
+    },
+    {
+      "topRange": 35,
+      "value": "An intriguing shoreline location offers opportunities for exploration"
+    },
+    {
+      "topRange": 39,
+      "value": "You find an ideal location for a safe landing"
+    },
+    {
+      "topRange": 43,
+      "value": "You find clear passage through otherwise perilous seas"
+    },
+    {
+      "topRange": 47,
+      "value": "You spot a shipwreck ripe for the picking"
+    },
+    {
+      "topRange": 51,
+      "value": "Something about this journey sparks a fond or helpful memory"
+    },
+    {
+      "topRange": 54,
+      "value": "A clue offers insight into a current quest or mystery"
+    },
+    {
+      "topRange": 57,
+      "value": "A friendly sea creature or bird keeps pace with you—a good omen"
+    },
+    {
+      "topRange": 60,
+      "value": "A large ship offers the potential comforts and safety of a community"
+    },
+    {
+      "topRange": 63,
+      "value": "An awe-inspiring vista offers comfort or inspiration"
+    },
+    {
+      "topRange": 66,
+      "value": "You are forewarned of a lurking danger"
+    },
+    {
+      "topRange": 69,
+      "value": "You encounter a helpful or useful animal"
+    },
+    {
+      "topRange": 72,
+      "value": "You experience a moment of fellowship or inner peace"
+    },
+    {
+      "topRange": 75,
+      "value": "You spot a friendly ship or boat"
+    },
+    {
+      "topRange": 78,
+      "value": "A key landmark comes into view"
+    },
+    {
+      "topRange": 81,
+      "value": "A helpful mariner crosses your path"
+    },
+    {
+      "topRange": 84,
+      "value": "A monument or relic reveals something of the history of this area"
+    },
+    {
+      "topRange": 87,
+      "value": "The winds or terrain offer the means to avoid a threat"
+    },
+    {
+      "topRange": 90,
+      "value": "You learn or improve a helpful skill"
+    },
+    {
+      "topRange": 92,
+      "value": "A supernatural entity offers helpful guidance"
+    },
+    {
+      "topRange": 94,
+      "value": "An otherwise dangerous sea creature shows benign interest in you"
+    },
+    {
+      "topRange": 96,
+      "value": "You encounter a majestic or previously unknown creature"
+    },
+    {
+      "topRange": 98,
+      "value": "You experience a helpful dream or vision"
+    },
+    {
+      "topRange": 100,
+      "value": "You spot an object or resource of great value"
+    }
+  ]
+}

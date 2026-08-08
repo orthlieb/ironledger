@@ -1,0 +1,106 @@
+{
+  "key": "coastalWatersLandmark",
+  "title": "Coastal Waters Landmark",
+  "category": "Location",
+  "selectLabel": "Coastal Waters Landmark",
+  "description": "Roll when travelling coastal waters to generate a point of interest, or when you need to answer a question about the coast and its landmarks. Replaces the base Coastal Waters Location oracle when Lodestar is enabled.",
+  "source": "lodestar",
+  "data": [
+    {
+      "topRange": 4,
+      "value": "Anchorage"
+    },
+    {
+      "topRange": 8,
+      "value": "Sargassum"
+    },
+    {
+      "topRange": 13,
+      "value": "Wreck"
+    },
+    {
+      "topRange": 17,
+      "value": "Harbor"
+    },
+    {
+      "topRange": 21,
+      "value": "Beacon"
+    },
+    {
+      "topRange": 25,
+      "value": "Shoal"
+    },
+    {
+      "topRange": 30,
+      "value": "Fjord"
+    },
+    {
+      "topRange": 34,
+      "value": "Estuary"
+    },
+    {
+      "topRange": 38,
+      "value": "Sea arch"
+    },
+    {
+      "topRange": 42,
+      "value": "Cove"
+    },
+    {
+      "topRange": 46,
+      "value": "Bay"
+    },
+    {
+      "topRange": 50,
+      "value": "Iceberg"
+    },
+    {
+      "topRange": 55,
+      "value": "Island"
+    },
+    {
+      "topRange": 59,
+      "value": "Settlement"
+    },
+    {
+      "topRange": 63,
+      "value": "Ice shelf"
+    },
+    {
+      "topRange": 68,
+      "value": "Sea cave"
+    },
+    {
+      "topRange": 72,
+      "value": "Ruins"
+    },
+    {
+      "topRange": 76,
+      "value": "Landing"
+    },
+    {
+      "topRange": 80,
+      "value": "Kelp forest"
+    },
+    {
+      "topRange": 84,
+      "value": "Sea stack"
+    },
+    {
+      "topRange": 88,
+      "value": "Islet"
+    },
+    {
+      "topRange": 92,
+      "value": "Beach"
+    },
+    {
+      "topRange": 96,
+      "value": "Sea cliff"
+    },
+    {
+      "topRange": 100,
+      "value": "Anomaly"
+    }
+  ]
+}
