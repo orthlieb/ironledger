@@ -1,0 +1,154 @@
+{
+  "key": "lodestarOverlandOpportunity",
+  "title": "Overland Opportunity",
+  "category": "Location",
+  "selectLabel": "Overland Opportunity",
+  "description": "To reveal the nature of an unexpected and beneficial event on a journey overland, such as when you Undertake a Journey and roll a strong hit with a match.",
+  "source": "lodestar",
+  "data": [
+    {
+      "topRange": 4,
+      "value": "Ideal weather takes hold"
+    },
+    {
+      "topRange": 8,
+      "value": "The terrain favors you"
+    },
+    {
+      "topRange": 12,
+      "value": "There are plentiful hunting or foraging opportunities in this area"
+    },
+    {
+      "topRange": 16,
+      "value": "A clear path leads through otherwise dangerous terrain"
+    },
+    {
+      "topRange": 20,
+      "value": "You find an ideal location for a campsite"
+    },
+    {
+      "topRange": 23,
+      "value": "An awe-inspiring vista offers comfort or inspiration"
+    },
+    {
+      "topRange": 26,
+      "value": "You find a useful item"
+    },
+    {
+      "topRange": 29,
+      "value": "A helpful traveler crosses your path"
+    },
+    {
+      "topRange": 32,
+      "value": "An intriguing site offers opportunities for exploration"
+    },
+    {
+      "topRange": 35,
+      "value": "A vantage point reveals a key landmark"
+    },
+    {
+      "topRange": 38,
+      "value": "A nearby settlement flies a friendly banner"
+    },
+    {
+      "topRange": 41,
+      "value": "Something about this journey sparks a fond or helpful memory"
+    },
+    {
+      "topRange": 44,
+      "value": "You encounter a helpful or useful animal"
+    },
+    {
+      "topRange": 47,
+      "value": "You encounter a friendly group of local denizens"
+    },
+    {
+      "topRange": 50,
+      "value": "A sheltered refuge offers a place to hide, plan, or recover"
+    },
+    {
+      "topRange": 53,
+      "value": "A monument or relic reveals something of the history of this land"
+    },
+    {
+      "topRange": 56,
+      "value": "You find plants or herbs with potentially helpful qualities"
+    },
+    {
+      "topRange": 59,
+      "value": "Tracks or a cooling campfire show that others have passed this way"
+    },
+    {
+      "topRange": 62,
+      "value": "You are forewarned of a dangerous path"
+    },
+    {
+      "topRange": 65,
+      "value": "A desolate settlement or camp offers scavenging opportunities"
+    },
+    {
+      "topRange": 68,
+      "value": "You find an opening to distract, escape, or avoid foes"
+    },
+    {
+      "topRange": 71,
+      "value": "A clue offers insight into a current quest or mystery"
+    },
+    {
+      "topRange": 74,
+      "value": "You encounter a potential benefactor in need of help"
+    },
+    {
+      "topRange": 76,
+      "value": "You learn or improve a useful skill"
+    },
+    {
+      "topRange": 78,
+      "value": "A caravan offers the potential comforts and safety of a community"
+    },
+    {
+      "topRange": 80,
+      "value": "You experience a helpful dream or vision"
+    },
+    {
+      "topRange": 82,
+      "value": "The terrain offers a defensible position against a threat"
+    },
+    {
+      "topRange": 84,
+      "value": "A supernatural entity offers helpful guidance"
+    },
+    {
+      "topRange": 86,
+      "value": "You encounter a majestic or previously unknown creature"
+    },
+    {
+      "topRange": 88,
+      "value": "A lurking foe unwittingly reveals themselves, giving you the drop on them"
+    },
+    {
+      "topRange": 90,
+      "value": "You spot a friendly animal keeping pace with you—a good omen"
+    },
+    {
+      "topRange": 92,
+      "value": "A signpost or marker provides guidance"
+    },
+    {
+      "topRange": 94,
+      "value": "An otherwise dangerous predator shows benign interest in you"
+    },
+    {
+      "topRange": 96,
+      "value": "A stone or tree bears helpful or inspiring markings from past travelers"
+    },
+    {
+      "topRange": 98,
+      "value": "You experience a moment of fellowship or inner peace"
+    },
+    {
+      "topRange": 100,
+      "value": "You find an object or resource of great value"
+    }
+  ]
+}

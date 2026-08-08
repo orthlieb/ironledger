@@ -8,6 +8,7 @@
   "overlandLandmark": 3.1,
   "lodestarOverlandWaypoint": 3.2,
   "lodestarOverlandPeril": 3.3,
+  "lodestarOverlandOpportunity": 3.4,
   "coastalWatersLocation": 3.5,
   "yrtCityTownLocation": 3.75,
   "locationDescriptor": 4,
