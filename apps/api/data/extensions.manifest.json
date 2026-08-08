@@ -175,6 +175,9 @@
         ],
         "oracles": [
           "oracles/coastal-waters-landmark.json",
+          "oracles/coastal-waters-opportunity.json",
+          "oracles/coastal-waters-peril.json",
+          "oracles/coastal-waters-waypoint.json",
           "oracles/overland-landmark.json",
           "oracles/overland-opportunity.json",
           "oracles/overland-peril.json",

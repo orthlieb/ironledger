@@ -1,0 +1,154 @@
+{
+  "key": "coastalWatersPeril",
+  "title": "Coastal Waters Peril",
+  "category": "Location",
+  "selectLabel": "Coastal Waters Peril",
+  "description": "To reveal the nature of a perilous event or complication on a journey in coastal waters, such as when you Undertake a Journey and roll a miss, use this oracle.",
+  "source": "lodestar",
+  "data": [
+    {
+      "topRange": 4,
+      "value": "Provisions are lost, wasted, or spoiled"
+    },
+    {
+      "topRange": 8,
+      "value": "The weather takes a turn for the worse"
+    },
+    {
+      "topRange": 12,
+      "value": "Rough seas hamper your progress"
+    },
+    {
+      "topRange": 16,
+      "value": "Lingering foul weather tests your endurance"
+    },
+    {
+      "topRange": 20,
+      "value": "A piece of important gear is damaged or broken"
+    },
+    {
+      "topRange": 23,
+      "value": "Rocky shoals or shallows slow your progress"
+    },
+    {
+      "topRange": 26,
+      "value": "Powerful currents or winds pull you off course"
+    },
+    {
+      "topRange": 29,
+      "value": "You realize something important was lost or left behind"
+    },
+    {
+      "topRange": 32,
+      "value": "An injury or old pain causes trouble"
+    },
+    {
+      "topRange": 35,
+      "value": "Fog or darkness hides a lurking danger"
+    },
+    {
+      "topRange": 38,
+      "value": "A sudden storm assails you"
+    },
+    {
+      "topRange": 41,
+      "value": "A rogue wave crashes into you"
+    },
+    {
+      "topRange": 44,
+      "value": "A critical component of your watercraft is lost or damaged"
+    },
+    {
+      "topRange": 47,
+      "value": "Disease or sickness takes hold"
+    },
+    {
+      "topRange": 50,
+      "value": "You lose your way amidst an accursed fog"
+    },
+    {
+      "topRange": 53,
+      "value": "A ship or boat is in distress"
+    },
+    {
+      "topRange": 56,
+      "value": "Your hull is fouled or leaking"
+    },
+    {
+      "topRange": 59,
+      "value": "An enemy ship closes on you"
+    },
+    {
+      "topRange": 62,
+      "value": "You are lost or off course"
+    },
+    {
+      "topRange": 65,
+      "value": "Dangerous creatures harass your watercraft"
+    },
+    {
+      "topRange": 68,
+      "value": "You encounter a monstrous sea creature"
+    },
+    {
+      "topRange": 71,
+      "value": "You are trapped in frozen seas"
+    },
+    {
+      "topRange": 74,
+      "value": "You spot a settlement or camp in crisis"
+    },
+    {
+      "topRange": 76,
+      "value": "A flying beast attacks"
+    },
+    {
+      "topRange": 78,
+      "value": "You are caught within unnatural mist or darkness"
+    },
+    {
+      "topRange": 80,
+      "value": "A blockade of ships stands in your way"
+    },
+    {
+      "topRange": 82,
+      "value": "You face a dreadful apparition or hallucination"
+    },
+    {
+      "topRange": 84,
+      "value": "A companion or fellow traveler is injured or falls ill"
+    },
+    {
+      "topRange": 86,
+      "value": "A supernatural entity seeks vengeance or absolution"
+    },
+    {
+      "topRange": 88,
+      "value": "A companion or fellow traveler draws the attention of a new danger"
+    },
+    {
+      "topRange": 90,
+      "value": "An unnatural mist or darkness surrounds you"
+    },
+    {
+      "topRange": 92,
+      "value": "A dangerous current or whirlpool takes hold"
+    },
+    {
+      "topRange": 94,
+      "value": "You run aground in shallow waters"
+    },
+    {
+      "topRange": 96,
+      "value": "A maze of rocky outcroppings or ice flows forces careful navigation"
+    },
+    {
+      "topRange": 98,
+      "value": "A companion or fellow traveler causes a delay"
+    },
+    {
+      "topRange": 100,
+      "value": "Your presence triggers a spell or supernatural anomaly"
+    }
+  ]
+}
