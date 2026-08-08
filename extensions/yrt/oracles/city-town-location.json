@@ -7,191 +7,291 @@
   "source": "yrt",
   "data": [
     {
-      "topRange": 5,
+      "topRange": 2,
       "value": "Marketplace"
     },
     {
-      "topRange": 7,
+      "topRange": 3,
       "value": "Merchants' District"
     },
     {
-      "topRange": 13,
-      "value": "Tavern"
+      "topRange": 4,
+      "value": "Auction House"
     },
     {
-      "topRange": 17,
-      "value": "Inn"
-    },
-    {
-      "topRange": 20,
-      "value": "Alehouse"
-    },
-    {
-      "topRange": 22,
-      "value": "Bakery"
-    },
-    {
-      "topRange": 25,
-      "value": "Blacksmith"
-    },
-    {
-      "topRange": 27,
-      "value": "Butcher"
-    },
-    {
-      "topRange": 29,
-      "value": "Fishmonger"
-    },
-    {
-      "topRange": 30,
-      "value": "Tanner's Row"
-    },
-    {
-      "topRange": 32,
-      "value": "Weaver's Row"
-    },
-    {
-      "topRange": 34,
-      "value": "Apothecary"
-    },
-    {
-      "topRange": 35,
-      "value": "Alchemist's Shop"
-    },
-    {
-      "topRange": 36,
-      "value": "Scriptorium"
-    },
-    {
-      "topRange": 38,
+      "topRange": 5,
       "value": "Counting House"
     },
     {
-      "topRange": 40,
+      "topRange": 6,
       "value": "Moneylender"
     },
     {
-      "topRange": 42,
+      "topRange": 8,
+      "value": "Tavern"
+    },
+    {
+      "topRange": 10,
+      "value": "Inn"
+    },
+    {
+      "topRange": 12,
+      "value": "Alehouse"
+    },
+    {
+      "topRange": 14,
+      "value": "Bakery"
+    },
+    {
+      "topRange": 16,
+      "value": "Butcher"
+    },
+    {
+      "topRange": 17,
+      "value": "Fishmonger"
+    },
+    {
+      "topRange": 19,
+      "value": "Granary"
+    },
+    {
+      "topRange": 21,
+      "value": "Mill"
+    },
+    {
+      "topRange": 23,
+      "value": "Blacksmith"
+    },
+    {
+      "topRange": 24,
+      "value": "Tanner's Row"
+    },
+    {
+      "topRange": 25,
+      "value": "Weaver's Row"
+    },
+    {
+      "topRange": 26,
+      "value": "Carpenter's Yard"
+    },
+    {
+      "topRange": 27,
+      "value": "Mason's Yard"
+    },
+    {
+      "topRange": 28,
+      "value": "Cooper's Workshop"
+    },
+    {
+      "topRange": 29,
+      "value": "Chandlery"
+    },
+    {
+      "topRange": 30,
+      "value": "Potter's Kiln"
+    },
+    {
+      "topRange": 31,
+      "value": "Glassblower"
+    },
+    {
+      "topRange": 32,
+      "value": "Dye Works"
+    },
+    {
+      "topRange": 33,
+      "value": "Goldsmith"
+    },
+    {
+      "topRange": 34,
+      "value": "Fletcher's Shop"
+    },
+    {
+      "topRange": 35,
+      "value": "Apothecary"
+    },
+    {
+      "topRange": 36,
+      "value": "Alchemist's Shop"
+    },
+    {
+      "topRange": 38,
       "value": "Public Square"
     },
     {
-      "topRange": 44,
+      "topRange": 40,
       "value": "Fountain"
     },
     {
+      "topRange": 42,
+      "value": "Well"
+    },
+    {
+      "topRange": 44,
+      "value": "Town Hall"
+    },
+    {
       "topRange": 46,
-      "value": "Bathhouse"
-    },
-    {
-      "topRange": 48,
-      "value": "Brothel"
-    },
-    {
-      "topRange": 52,
-      "value": "Temple"
-    },
-    {
-      "topRange": 53,
-      "value": "Cathedral"
-    },
-    {
-      "topRange": 56,
-      "value": "Shrine"
-    },
-    {
-      "topRange": 58,
-      "value": "Monastery"
-    },
-    {
-      "topRange": 60,
-      "value": "Cemetery"
-    },
-    {
-      "topRange": 61,
-      "value": "Catacombs"
-    },
-    {
-      "topRange": 64,
       "value": "Guildhall"
     },
     {
-      "topRange": 65,
-      "value": "Thieves' Guild"
-    },
-    {
-      "topRange": 66,
-      "value": "Mages' Tower"
-    },
-    {
-      "topRange": 68,
+      "topRange": 47,
       "value": "Library"
     },
     {
-      "topRange": 69,
+      "topRange": 48,
       "value": "University"
     },
     {
-      "topRange": 71,
+      "topRange": 49,
+      "value": "Scriptorium"
+    },
+    {
+      "topRange": 50,
       "value": "Courthouse"
     },
     {
-      "topRange": 73,
-      "value": "Prison"
+      "topRange": 51,
+      "value": "Bell Tower"
     },
     {
-      "topRange": 75,
+      "topRange": 53,
+      "value": "Temple"
+    },
+    {
+      "topRange": 55,
+      "value": "Shrine"
+    },
+    {
+      "topRange": 56,
+      "value": "Cathedral"
+    },
+    {
+      "topRange": 57,
+      "value": "Monastery"
+    },
+    {
+      "topRange": 59,
+      "value": "Cemetery"
+    },
+    {
+      "topRange": 60,
+      "value": "Catacombs"
+    },
+    {
+      "topRange": 62,
       "value": "Barracks"
     },
     {
-      "topRange": 76,
+      "topRange": 64,
       "value": "Watchtower"
     },
     {
-      "topRange": 77,
+      "topRange": 65,
       "value": "Armory"
     },
     {
-      "topRange": 78,
+      "topRange": 66,
       "value": "Keep"
     },
     {
-      "topRange": 79,
+      "topRange": 67,
       "value": "Palace"
     },
     {
-      "topRange": 81,
+      "topRange": 69,
       "value": "City Gates"
     },
     {
-      "topRange": 83,
+      "topRange": 71,
       "value": "City Walls"
     },
     {
-      "topRange": 86,
+      "topRange": 72,
+      "value": "Prison"
+    },
+    {
+      "topRange": 73,
+      "value": "Gallows Square"
+    },
+    {
+      "topRange": 75,
       "value": "Docks"
     },
     {
-      "topRange": 89,
+      "topRange": 77,
       "value": "Warehouse"
     },
     {
-      "topRange": 90,
+      "topRange": 78,
       "value": "Shipyard"
     },
     {
-      "topRange": 91,
+      "topRange": 79,
       "value": "Customs House"
     },
     {
-      "topRange": 92,
+      "topRange": 80,
+      "value": "Caravanserai"
+    },
+    {
+      "topRange": 81,
+      "value": "Cistern"
+    },
+    {
+      "topRange": 82,
+      "value": "Bathhouse"
+    },
+    {
+      "topRange": 83,
+      "value": "Brothel"
+    },
+    {
+      "topRange": 84,
       "value": "Amphitheater"
     },
     {
+      "topRange": 85,
+      "value": "Gambling Den"
+    },
+    {
+      "topRange": 86,
+      "value": "Fighting Pit"
+    },
+    {
+      "topRange": 87,
+      "value": "Menagerie"
+    },
+    {
+      "topRange": 88,
+      "value": "Public Garden"
+    },
+    {
+      "topRange": 89,
+      "value": "Almshouse"
+    },
+    {
+      "topRange": 90,
+      "value": "Orphanage"
+    },
+    {
+      "topRange": 92,
+      "value": "Stables"
+    },
+    {
+      "topRange": 93,
+      "value": "Thieves' Guild"
+    },
+    {
       "topRange": 94,
+      "value": "Mages' Tower"
+    },
+    {
+      "topRange": 95,
       "value": "Rich Quarter"
     },
     {
-      "topRange": 96,
+      "topRange": 97,
       "value": "Slums"
     },
     {
