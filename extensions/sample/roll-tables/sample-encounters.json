@@ -3,7 +3,7 @@
   "name": "Sample – Encounters",
   "kind": "foe",
   "source": "sample",
-  "category": "Creature",
+  "category": "Encounters",
   "entries": [
     {
       "low": 1,

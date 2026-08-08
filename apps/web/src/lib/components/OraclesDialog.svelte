@@ -189,6 +189,7 @@
 		Character: 'var(--color-heart)',
 		Combat: 'var(--color-iron)',
 		Creature: 'var(--color-shadow)',
+		Encounters: '#2A9D8F',
 		Location: 'var(--color-edge)',
 		Move: 'var(--text-accent)',
 		Name: 'var(--color-spirit)',
