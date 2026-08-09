@@ -191,6 +191,7 @@
           "oracles/overland-peril.json",
           "oracles/overland-waypoint.json",
           "oracles/settlement-condition.json",
+          "oracles/settlement-disposition.json",
           "oracles/settlement-type.json"
         ],
         "rollTables": [

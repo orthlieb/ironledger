@@ -22,6 +22,7 @@
   "settlementType": 4.2,
   "settlementCondition": 4.22,
   "yrtSettlementCondition": 4.23,
+  "settlementDisposition": 4.24,
   "settlementName": 4.25,
   "settlementNameQuick": 4.5,
   "settlementTrouble": 5,

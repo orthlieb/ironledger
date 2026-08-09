@@ -1,0 +1,20 @@
+{
+  "key": "settlementDisposition",
+  "title": "Settlement Disposition",
+  "category": "Settlement",
+  "selectLabel": "Settlement Disposition",
+  "description": "Use this oracle to reveal how a settlement's leaders or inhabitants react to your character, or to visitors in general.",
+  "source": "lodestar",
+  "data": [
+    { "topRange": 5, "value": "Hostile" },
+    { "topRange": 15, "value": "Threatening" },
+    { "topRange": 25, "value": "Demanding" },
+    { "topRange": 35, "value": "Unwelcoming" },
+    { "topRange": 50, "value": "Wary" },
+    { "topRange": 60, "value": "Indifferent" },
+    { "topRange": 70, "value": "In need" },
+    { "topRange": 80, "value": "Welcoming" },
+    { "topRange": 90, "value": "Friendly" },
+    { "topRange": 100, "value": "Helpful" }
+  ]
+}
