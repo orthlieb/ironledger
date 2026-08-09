@@ -157,7 +157,7 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 			page.locator('.oracles-dialog .od-tile-name', { hasText: /Site Nature: Theme/i }),
 		).toHaveCount(0, { timeout: 5_000 });
 		await expect(
-			page.locator('.oracles-dialog .od-tile-name', { hasText: /^Action$/ }),
+			page.locator('.oracles-dialog .od-tile-name', { hasText: /^Core: Action$/ }),
 		).toBeVisible({ timeout: 5_000 });
 	});
 
