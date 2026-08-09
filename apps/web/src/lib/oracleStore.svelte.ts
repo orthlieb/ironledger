@@ -49,6 +49,10 @@ export interface OracleFile {
 	category?: string;
 	selectLabel: string;
 	description?: string;
+	/** Guidance shown *below* the table (vs `description`, shown above). Used for
+	 *  the Lodestar settlement suite's "Envisioning Settlements" wrap-up. Split on
+	 *  blank lines into paragraphs when rendered. */
+	postamble?: string;
 	tableType?: string;
 	/** For `tableType: 'columnSelect'` — the roll columns shown as a picker. */
 	columns?: OracleColumn[];

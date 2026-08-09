@@ -506,6 +506,14 @@
 									: undefined,
 						)}
 					</div>
+
+					{#if selectedOracle.postamble}
+						<div class="od-detail-postamble">
+							{#each selectedOracle.postamble.split(/\n\s*\n/) as para (para)}
+								<p>{para}</p>
+							{/each}
+						</div>
+					{/if}
 				</div>
 
 				<!-- Roll footer -->
@@ -840,6 +848,25 @@
 		padding-bottom: 4px;
 		border-bottom: 1px solid var(--border);
 		white-space: pre-wrap;
+	}
+
+	.od-detail-postamble {
+		font-family: var(--font-ui);
+		font-size: 0.75rem;
+		font-style: italic;
+		color: var(--text-muted);
+		line-height: 1.55;
+		margin-top: 8px;
+		padding-top: 8px;
+		border-top: 1px solid var(--border);
+	}
+
+	.od-detail-postamble p {
+		margin: 0;
+	}
+
+	.od-detail-postamble p + p {
+		margin-top: 0.5em;
 	}
 
 	:global(.od-table-wrap) {
