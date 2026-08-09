@@ -188,7 +188,7 @@
 								</tr>
 							</thead>
 							<tbody>
-								{#each rows as row, i}
+								{#each rows as row}
 									<tr
 										class:dd-row-rolled={rolledRow?.low === row.low && rolledRow?.high === row.high}
 									>
