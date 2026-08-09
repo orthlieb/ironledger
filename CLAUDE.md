@@ -84,6 +84,31 @@ draggable in both.
 - [ ] One `<DialogHeader>` per view in two-view dialogs; use `detail` on
       the detail view.
 
+## Dialog dismiss button label — Cancel vs Close
+
+A footer dismiss button reads **Cancel** iff the dialog holds a draft
+that a paired primary button will commit — New\* / edit forms,
+`ConfirmDialog`, harm/stress-apply panels, `FoeRollDialog`'s post-roll
+"Add to Foes" view, `FoePickerDialog`, `MarkerPropertiesDialog`. Clicking
+Cancel discards those pending changes.
+
+It reads **Close** when the dialog either (a) has no draft to discard, or
+(b) has a primary action button whose click stands alone as the commit —
+roll / ask / send dialogs (`OraclesDialog` detail view, `MovesDialog`
+roll views, `PreludeTableDialog`, `FoeRollDialog` initial roll view,
+`DiceRollerDialog`). The roll button IS the commit; Close doesn't undo
+anything — it just dismisses.
+
+Reference and menu dialogs use the header ✕ only, no footer button
+(`CommandHelpDialog`, `SettingsDialog`, `DenizenDialog`, all
+`*OptionsDialog`).
+
+The header ✕ (rendered by `<DialogHeader onclose>`) is always labeled
+`"Close"` as its aria-label — the label names the mechanic (dismiss the
+dialog), not the semantic. In a draft dialog the ✕ behaves like Cancel;
+in a Close-dialog it behaves like Close. That's the universal convention
+and doesn't need per-dialog customization.
+
 ## Icon SVGs — normalize before checking in
 
 Every SVG under `apps/web/src/lib/icons/` and `extensions/*/icons/` is

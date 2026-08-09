@@ -520,7 +520,7 @@
 							style="margin-right: auto">Back</button
 						>
 					{/if}
-					<button class="btn od-cancel-btn" onclick={close}>Cancel</button>
+					<button class="btn od-cancel-btn" onclick={close}>Close</button>
 					<button
 						class="btn btn-primary od-roll-btn"
 						onclick={() => doRoll(selectedOracle!.key)}

@@ -103,7 +103,7 @@
 						}}>Back</button
 					>
 				{/if}
-				<button class="btn" onclick={close}>Cancel</button>
+				<button class="btn" onclick={close}>Close</button>
 				<button bind:this={rollBtnEl} class="btn btn-primary" onclick={roll} disabled={rolling}>
 					{rolling ? 'Rolling…' : 'Roll d100'}
 				</button>

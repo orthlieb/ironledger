@@ -1520,7 +1520,7 @@
 								<button class="btn back-btn" onclick={backToPicker} style="margin-right: auto"
 									>Back</button
 								>
-								<button class="btn" onclick={close}>Cancel</button>
+								<button class="btn" onclick={close}>Close</button>
 								<span use:tooltip={{ text: fail ?? '' }} style="display: inline-flex;">
 									<button
 										class="btn btn-primary md-roll-btn"
@@ -1590,7 +1590,7 @@
 								<button class="btn back-btn" onclick={backToPicker} style="margin-right: auto"
 									>Back</button
 								>
-								<button class="btn" onclick={close}>Cancel</button>
+								<button class="btn" onclick={close}>Close</button>
 								<button
 									class="btn btn-primary md-roll-btn md-roll-btn--spell"
 									onclick={doSpellRoll}
@@ -1625,7 +1625,7 @@
 								<button class="btn back-btn" onclick={backToPicker} style="margin-right: auto"
 									>Back</button
 								>
-								<button class="btn" onclick={close}>Cancel</button>
+								<button class="btn" onclick={close}>Close</button>
 								<button
 									class="btn btn-primary md-roll-btn"
 									onclick={doProgressRoll}
@@ -1638,7 +1638,7 @@
 							<div class="md-footer-btns">
 								<button class="btn back-btn" onclick={backToPicker}>Back</button>
 								<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
-								<button class="btn" onclick={close}>Cancel</button>
+								<button class="btn" onclick={close}>Close</button>
 								<button class="btn btn-primary md-roll-btn" onclick={doAskOracle} disabled={rolling}
 									>{rolling ? 'Rolling…' : 'Roll Move'}</button
 								>
@@ -1647,7 +1647,7 @@
 							<div class="md-footer-btns">
 								<button class="btn back-btn" onclick={backToPicker}>Back</button>
 								<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
-								<button class="btn" onclick={close}>Cancel</button>
+								<button class="btn" onclick={close}>Close</button>
 								<button
 									class="btn btn-primary md-roll-btn"
 									onclick={doTableRoll}
@@ -1665,14 +1665,14 @@
 										onclick={doApplyNoRollMove}>Use Move</button
 									>
 								{/if}
-								<button class="btn" onclick={close}>Cancel</button>
+								<button class="btn" onclick={close}>Close</button>
 							</div>
 						{:else}
 							<div class="md-footer-btns">
 								<button class="btn back-btn" onclick={backToPicker} style="margin-right: auto"
 									>Back</button
 								>
-								<button class="btn" onclick={close}>Cancel</button>
+								<button class="btn" onclick={close}>Close</button>
 							</div>
 						{/if}
 					</div>
