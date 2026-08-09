@@ -1185,7 +1185,7 @@
 		if (communities.length || npcs.length) {
 			const lines: string[] = ['# Connections & NPCs', ''];
 			for (const c of communities) {
-				lines.push(`## ${c.name} _(Community)_`);
+				lines.push(`## ${c.name} _(Settlement)_`);
 				const commDu = commPortraits.get(c.id);
 				if (commDu) {
 					const src = addImage(commDu, 'community', c.name);

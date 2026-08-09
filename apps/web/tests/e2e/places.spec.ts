@@ -31,7 +31,7 @@ async function entryCount(page: Page): Promise<number> {
 	return Number((await page.locator(CM_ACTIONS).getAttribute('data-entry-count')) ?? '0');
 }
 
-async function openNew(page: Page, kind: 'Community' | 'NPC' | 'Place') {
+async function openNew(page: Page, kind: 'Settlement' | 'NPC' | 'Place') {
 	await page.locator(CM_COMBOBOX).click();
 	await page.locator('.mp-cmd-item--action', { hasText: new RegExp(`New ${kind}`, 'i') }).click();
 	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 15_000 });
@@ -40,7 +40,7 @@ async function openNew(page: Page, kind: 'Community' | 'NPC' | 'Place') {
 /** Create a connection of the given kind via Random; it becomes the active entry. */
 // New-* dialogs are name-first: Create is disabled until named. Roll a name
 // from the dice (or fill one) then commit.
-async function createViaRandom(page: Page, kind: 'Community' | 'NPC' | 'Place') {
+async function createViaRandom(page: Page, kind: 'Settlement' | 'NPC' | 'Place') {
 	await openNew(page, kind);
 	await page.locator('.confirm-modal [aria-label="Random name"]').first().click();
 	await page.locator('.confirm-modal button:has-text("Create")').click();

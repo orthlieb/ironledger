@@ -49,8 +49,11 @@ export const ENTITY_KIND_META: Record<EntityKind, EntityKindMeta> = {
 	community: {
 		color: '#D06840',
 		icon: hutSvg,
-		label: 'Community',
-		labelPlural: 'Communities',
+		// User-facing label is "Settlement" (canon); the internal kind id stays
+		// `community` (DB kind value, /communities API route, communityStore) to
+		// avoid a data migration — that identifier is never shown to users.
+		label: 'Settlement',
+		labelPlural: 'Settlements',
 	},
 	place: {
 		color: '#4AA0C8',

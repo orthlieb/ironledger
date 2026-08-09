@@ -168,7 +168,7 @@ async function createJourney(page: Page) {
 }
 async function createCommunity(page: Page) {
 	await page.locator(CM_COMBOBOX).click();
-	await page.locator('.mp-cmd-item--action', { hasText: /New Community/i }).click();
+	await page.locator('.mp-cmd-item--action', { hasText: /New Settlement/i }).click();
 	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
 	await page.locator('.confirm-modal .co-input').first().fill('Persist Community');
 	await page.locator('.confirm-modal button:has-text("Create")').click();

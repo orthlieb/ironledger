@@ -3,7 +3,7 @@
  *
  * v2 layout: the Connections area (communities + NPCs + places) is driven by a
  * header combobox switcher (`.cm-hdr-combobox`), not a rail of `.cm-row`s.
- * Creating goes combobox → "+ New Community…/NPC…/Place…" → a Random/Create
+ * Creating goes combobox → "+ New Settlement…/NPC…/Place…" → a Random/Create
  * dialog. The live entry count is exposed on `.cm-header-actions` via the
  * `data-entry-count` attribute. Deleting is via the header gear
  * (`.cm-hdr-settings-btn`) → ConnectionOptionsDialog → "Delete this …".
@@ -34,7 +34,7 @@ async function entryCount(page: Page): Promise<number> {
 }
 
 /** Open the New-{kind} dialog via the header combobox action item. */
-async function openNew(page: Page, kind: 'Community' | 'NPC' | 'Place') {
+async function openNew(page: Page, kind: 'Settlement' | 'NPC' | 'Place') {
 	await page.locator(CM_COMBOBOX).click();
 	await page.locator('.mp-cmd-item--action', { hasText: new RegExp(`New ${kind}`, 'i') }).click();
 	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 15_000 });
@@ -80,28 +80,28 @@ test.describe('Connections area (v2)', () => {
 	// ── Communities ──────────────────────────────────────────────────────────
 
 	test('the switcher opens the new-community dialog', async ({ page }) => {
-		await openNew(page, 'Community');
-		await expect(page.locator('.confirm-modal .cm-title')).toContainText('New Community');
+		await openNew(page, 'Settlement');
+		await expect(page.locator('.confirm-modal .cm-title')).toContainText('New Settlement');
 		await page.keyboard.press('Escape');
 	});
 
 	test('can add a community via Random', async ({ page }) => {
 		const before = await entryCount(page);
-		await openNew(page, 'Community');
+		await openNew(page, 'Settlement');
 		await rollAndCreate(page);
 		expect(await entryCount(page)).toBe(before + 1);
 	});
 
 	test('can add a community via Create', async ({ page }) => {
 		const before = await entryCount(page);
-		await openNew(page, 'Community');
+		await openNew(page, 'Settlement');
 		await fillAndCreate(page);
 		expect(await entryCount(page)).toBe(before + 1);
 	});
 
-	test('Escape closes the New Community dialog without creating', async ({ page }) => {
+	test('Escape closes the New Settlement dialog without creating', async ({ page }) => {
 		const before = await entryCount(page);
-		await openNew(page, 'Community');
+		await openNew(page, 'Settlement');
 		await page.keyboard.press('Escape');
 		await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 3_000 });
 		expect(await entryCount(page)).toBe(before);
@@ -109,7 +109,7 @@ test.describe('Connections area (v2)', () => {
 
 	test('can delete a community', async ({ page }) => {
 		// Create one via Random — it becomes the active entry.
-		await openNew(page, 'Community');
+		await openNew(page, 'Settlement');
 		await rollAndCreate(page);
 		const before = await entryCount(page);
 		await deleteActive(page);

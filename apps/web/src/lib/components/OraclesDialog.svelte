@@ -506,6 +506,14 @@
 									: undefined,
 						)}
 					</div>
+
+					{#if selectedOracle.postamble}
+						<div class="od-detail-postamble">
+							{#each selectedOracle.postamble.split(/\n\s*\n/) as para (para)}
+								<p>{para}</p>
+							{/each}
+						</div>
+					{/if}
 				</div>
 
 				<!-- Roll footer -->
@@ -842,6 +850,25 @@
 		white-space: pre-wrap;
 	}
 
+	.od-detail-postamble {
+		font-family: var(--font-ui);
+		font-size: 0.75rem;
+		font-style: italic;
+		color: var(--text-muted);
+		line-height: 1.55;
+		margin-top: 8px;
+		padding-top: 8px;
+		border-top: 1px solid var(--border);
+	}
+
+	.od-detail-postamble p {
+		margin: 0;
+	}
+
+	.od-detail-postamble p + p {
+		margin-top: 0.5em;
+	}
+
 	:global(.od-table-wrap) {
 		overflow-x: auto;
 	}
@@ -882,8 +909,11 @@
 		font-weight: 600;
 	}
 
-	/* Range column — monospaced, no wrap */
-	:global(.od-table-wrap .oracle-table td:first-child) {
+	/* Roll-number (range) columns — dimmed + monospaced, no wrap. Marked with
+	   `.oracle-range` on every range cell so multi-column layouts (2/3-column
+	   tables, name tables, the Delve Depths / Settlement Type stat columns) all
+	   dim consistently, not just the first column. */
+	:global(.od-table-wrap .oracle-table td.oracle-range) {
 		font-variant-numeric: tabular-nums;
 		color: var(--text-dimmer);
 		white-space: nowrap;

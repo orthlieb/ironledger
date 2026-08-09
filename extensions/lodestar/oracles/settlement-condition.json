@@ -1,0 +1,20 @@
+{
+  "key": "settlementCondition",
+  "title": "Settlement Condition",
+  "category": "Settlement",
+  "selectLabel": "Settlement Condition",
+  "description": "Use this oracle to reveal the current state of a settlement — how it is faring, from ruin to grandeur.",
+  "source": "lodestar",
+  "data": [
+    { "topRange": 5, "value": "Abandoned" },
+    { "topRange": 10, "value": "Devastated" },
+    { "topRange": 15, "value": "Besieged" },
+    { "topRange": 20, "value": "Under construction" },
+    { "topRange": 35, "value": "Wretched" },
+    { "topRange": 50, "value": "Ramshackle" },
+    { "topRange": 70, "value": "Modest" },
+    { "topRange": 85, "value": "Well-kept" },
+    { "topRange": 95, "value": "Prosperous" },
+    { "topRange": 100, "value": "Grand" }
+  ]
+}

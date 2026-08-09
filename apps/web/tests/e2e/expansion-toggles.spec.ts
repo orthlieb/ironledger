@@ -221,9 +221,9 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 			.waitFor({ timeout: 12_000, state: 'attached' });
 
 		await page.locator(`${CM_HEADER} .cm-hdr-combobox`).click({ timeout: 8_000 });
-		await page.locator('.mp-cmd-item--action', { hasText: /New Community/i }).click();
+		await page.locator('.mp-cmd-item--action', { hasText: /New Settlement/i }).click();
 
-		// The New Community dialog now picks its region from a bits-ui <Select>
+		// The New Settlement dialog now picks its region from a bits-ui <Select>
 		// (#nc-region). With YRT off, the option list must offer Ironlands but
 		// not YRT. Open the select and inspect its portalled items.
 		const openDialog = page.locator('.confirm-modal');

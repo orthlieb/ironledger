@@ -49,6 +49,10 @@ export interface OracleFile {
 	category?: string;
 	selectLabel: string;
 	description?: string;
+	/** Guidance shown *below* the table (vs `description`, shown above). Used for
+	 *  the Lodestar settlement suite's "Envisioning Settlements" wrap-up. Split on
+	 *  blank lines into paragraphs when rendered. */
+	postamble?: string;
 	tableType?: string;
 	/** For `tableType: 'columnSelect'` — the roll columns shown as a picker. */
 	columns?: OracleColumn[];
@@ -258,7 +262,7 @@ export function buildTableHtml(
 	if (options?.columns?.length) {
 		const cols = options.columns;
 		const activeIdx = options.activeStat ? cols.findIndex((c) => c.key === options.activeStat) : -1;
-		const cc = (i: number) => (activeIdx === i ? ' class="col-active"' : '');
+		const cc = (i: number) => ` class="oracle-range${activeIdx === i ? ' col-active' : ''}"`;
 		let html =
 			'<table class="oracle-table"><thead><tr>' +
 			cols.map((c, i) => `<th${cc(i)}>${c.label}</th>`).join('') +
@@ -282,7 +286,7 @@ export function buildTableHtml(
 	if (key === 'delveDepths') {
 		const statColMap: Record<string, number> = { edge: 0, shadow: 1, wits: 2 };
 		const activeCol = options?.activeStat ? (statColMap[options.activeStat] ?? -1) : -1;
-		const cc = (i: number) => (activeCol === i ? ' class="col-active"' : '');
+		const cc = (i: number) => ` class="oracle-range${activeCol === i ? ' col-active' : ''}"`;
 
 		type DRow = { edge: number; shadow: number; wits: number; value: string };
 		let html =
@@ -327,7 +331,7 @@ export function buildTableHtml(
 				featureLabel = `${fc.min}–${fc.max} (d6%3+${fc.min})`;
 			}
 			html +=
-				`<tr><td>${rangeLabelForEntry(table, idx)}</td>` +
+				`<tr><td class="oracle-range">${rangeLabelForEntry(table, idx)}</td>` +
 				`<td>${v.className}</td><td>${v.socialRank}</td><td>${featureLabel}</td><td>${v.description}</td></tr>`;
 		});
 		return html + '</tbody></table>';
@@ -353,13 +357,13 @@ export function buildTableHtml(
 						`<tr>` +
 						`<td rowspan="${half}" class="oracle-cat-range">${rangeStr}</td>` +
 						`<td rowspan="${half}" class="oracle-cat-desc">${v.description}</td>` +
-						`<td>${lRange}</td><td>${left.value as string}</td>` +
-						`<td>${rRange}</td><td>${right ? (right.value as string) : ''}</td>` +
+						`<td class="oracle-range">${lRange}</td><td>${left.value as string}</td>` +
+						`<td class="oracle-range">${rRange}</td><td>${right ? (right.value as string) : ''}</td>` +
 						`</tr>`;
 				} else {
 					html +=
-						`<tr><td>${lRange}</td><td>${left.value as string}</td>` +
-						`<td>${rRange}</td><td>${right ? (right.value as string) : ''}</td></tr>`;
+						`<tr><td class="oracle-range">${lRange}</td><td>${left.value as string}</td>` +
+						`<td class="oracle-range">${rRange}</td><td>${right ? (right.value as string) : ''}</td></tr>`;
 				}
 			}
 		});
@@ -381,7 +385,7 @@ export function buildTableHtml(
 				if (entry) {
 					const v = entry.value as { prefix: string; suffix: string };
 					html +=
-						`<td>${rangeLabelForEntry(table, i + third * col)}</td>` +
+						`<td class="oracle-range">${rangeLabelForEntry(table, i + third * col)}</td>` +
 						`<td>${v.prefix}-</td><td>-${v.suffix}</td>`;
 				} else {
 					html += '<td></td><td></td><td></td>';
@@ -400,7 +404,7 @@ export function buildTableHtml(
 		table.forEach((entry, idx) => {
 			const v = entry.value as { giants: string; varou: string; trolls: string };
 			html +=
-				`<tr><td>${rangeLabelForEntry(table, idx)}</td>` +
+				`<tr><td class="oracle-range">${rangeLabelForEntry(table, idx)}</td>` +
 				`<td>${v.giants}</td><td>${v.varou}</td><td>${v.trolls}</td></tr>`;
 		});
 		return html + '</tbody></table>';
@@ -414,7 +418,7 @@ export function buildTableHtml(
 		table.forEach((entry, idx) => {
 			const v = entry.value as { type: string; notes: string; salary: string; count: number };
 			html +=
-				`<tr><td>${rangeLabelForEntry(table, idx)}</td>` +
+				`<tr><td class="oracle-range">${rangeLabelForEntry(table, idx)}</td>` +
 				`<td>${v.type}</td><td>${v.notes}</td><td>${v.salary}</td><td>${v.count}</td></tr>`;
 		});
 		return html + '</tbody></table>';
@@ -436,7 +440,7 @@ export function buildTableHtml(
 				const idx = i + third * col;
 				const entry = table[idx];
 				html += entry
-					? `<td>${rangeLabelForEntry(table, idx)}</td><td>${entry.value as string}</td>`
+					? `<td class="oracle-range">${rangeLabelForEntry(table, idx)}</td><td>${entry.value as string}</td>`
 					: '<td></td><td></td>';
 			}
 			html += '</tr>';
@@ -455,8 +459,8 @@ export function buildTableHtml(
 			const left = table[i];
 			const right = table[i + half];
 			html +=
-				`<tr><td>${rangeLabelForEntry(table, i)}</td><td>${left.value as string}</td>` +
-				`<td>${right ? rangeLabelForEntry(table, i + half) : ''}</td>` +
+				`<tr><td class="oracle-range">${rangeLabelForEntry(table, i)}</td><td>${left.value as string}</td>` +
+				`<td class="oracle-range">${right ? rangeLabelForEntry(table, i + half) : ''}</td>` +
 				`<td>${right ? (right.value as string) : ''}</td></tr>`;
 		}
 		return html + '</tbody></table>';
@@ -467,7 +471,7 @@ export function buildTableHtml(
 		'<th>d100</th><th>Result</th>' +
 		'</tr></thead><tbody>';
 	table.forEach((entry, idx) => {
-		html += `<tr><td>${rangeLabelForEntry(table, idx)}</td><td>${entry.value as string}</td></tr>`;
+		html += `<tr><td class="oracle-range">${rangeLabelForEntry(table, idx)}</td><td>${entry.value as string}</td></tr>`;
 	});
 	return html + '</tbody></table>';
 }

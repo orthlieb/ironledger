@@ -45,7 +45,7 @@
 		dialogOpen = false;
 	}
 
-	const kindLabel = $derived(kind === 'npc' ? 'NPC' : kind === 'place' ? 'Place' : 'Community');
+	const kindLabel = $derived(kind === 'npc' ? 'NPC' : kind === 'place' ? 'Place' : 'Settlement');
 	const kindLabelLc = $derived(kind === 'npc' ? 'NPC' : kind === 'place' ? 'place' : 'community');
 </script>
 

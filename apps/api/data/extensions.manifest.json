@@ -129,7 +129,8 @@
       "defaultEnabled": true,
       "order": 20,
       "suppressesOracles": [
-        "region"
+        "region",
+        "settlementCondition"
       ],
       "root": "extensions/yrt",
       "provides": {
@@ -145,6 +146,10 @@
           "oracles/freeport-denizen.json",
           "oracles/mana-backlash.json",
           "oracles/region.json",
+          "oracles/settlement-condition.json",
+          "oracles/settlement-opportunity.json",
+          "oracles/settlement-peril.json",
+          "oracles/settlement-waypoint.json",
           "oracles/touched-features.json",
           "oracles/touched.json"
         ],
@@ -185,6 +190,11 @@
           "oracles/overland-opportunity.json",
           "oracles/overland-peril.json",
           "oracles/overland-waypoint.json",
+          "oracles/settlement-condition.json",
+          "oracles/settlement-cultural-touchstones.json",
+          "oracles/settlement-disposition.json",
+          "oracles/settlement-first-look.json",
+          "oracles/settlement-projects.json",
           "oracles/settlement-type.json"
         ],
         "rollTables": [

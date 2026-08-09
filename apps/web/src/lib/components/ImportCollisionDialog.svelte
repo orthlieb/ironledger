@@ -67,7 +67,7 @@
 			});
 		if (items.communities.length > 0)
 			out.push({
-				label: items.communities.length === 1 ? 'Community' : 'Communities',
+				label: items.communities.length === 1 ? 'Settlement' : 'Settlements',
 				names: items.communities,
 			});
 		if (items.npcs.length > 0)
