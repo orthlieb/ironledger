@@ -122,7 +122,10 @@
 		// contenteditable so it doesn't hijack typing.
 		const onKey = (e: KeyboardEvent) => {
 			if (!(e.altKey && !e.ctrlKey && !e.metaKey)) return;
-			if ((e.key || '').toLowerCase() !== 'v') return;
+			// Match the physical V key via `code`, not `key`: on macOS,
+			// Option+V emits the character "√" (not "v"), so an `e.key`
+			// check silently breaks the shortcut for every Mac user.
+			if (e.code !== 'KeyV') return;
 			const t = e.target as HTMLElement | null;
 			if (
 				t &&

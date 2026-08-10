@@ -20,6 +20,13 @@ async function waitForHydrated(page: import('@playwright/test').Page) {
 	await expect(page.locator('.home-area--characters .ca-loading')).not.toBeVisible({
 		timeout: 12_000,
 	});
+	// The Alt+V keydown handler is wired in the root layout's onMount, which can
+	// land slightly after the characters area finishes loading — pressing before
+	// then drops the first keystroke. `data-view` on <html> is set in that same
+	// onMount (and never in SSR), so waiting for it guarantees the handler is live.
+	await expect(page.locator('html')).toHaveAttribute('data-view', /^(grid|log|tabs)$/, {
+		timeout: 5_000,
+	});
 }
 
 /** Read the current layout mode off the shell's class list. */
