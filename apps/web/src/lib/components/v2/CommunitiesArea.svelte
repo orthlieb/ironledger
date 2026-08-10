@@ -1145,6 +1145,7 @@
 <ConfirmDialog
 	bind:this={newNpcDialogRef}
 	title="New NPC"
+	draggable
 	confirmLabel="Create"
 	confirmClass="btn-primary"
 	confirmDisabled={!newNpcName.trim()}
@@ -1224,6 +1225,7 @@
 <ConfirmDialog
 	bind:this={newPlaceDialogRef}
 	title="New Place"
+	draggable
 	confirmLabel="Create"
 	confirmClass="btn-primary"
 	confirmDisabled={!newPlaceName.trim()}

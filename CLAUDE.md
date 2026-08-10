@@ -70,8 +70,12 @@ draggable in both.
 **Documented exceptions** (do NOT route through `<DialogHeader>`):
 
 - **ConfirmDialog** — bits-ui `AlertDialog`; its own accent-tinted
-  `.cm-header` + `AlertDialog.Title` bar is the header, no grip. Not
-  draggable (the pre-migration bespoke drag was retired).
+  `.cm-header` + `AlertDialog.Title` bar is the header. Draggable is
+  opt-in via the `draggable` prop (off by default; when on, the header
+  is the handle and shows the standard `⠿` grip). The form-style
+  dialogs — New Character / Settlement / NPC / Place / Journey / Site
+  and Change Theme / Domain — pass `draggable`; transient confirmations
+  (delete, discard, etc.) leave it off.
 - **FoePickerDialog** confirm view (`fd-back-bar`) — nature-coloured band.
 - **AssetCard** — inline-capable host, not a plain dialog header.
 

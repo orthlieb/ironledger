@@ -1489,6 +1489,7 @@
 <ConfirmDialog
 	bind:this={newCharDialogRef}
 	title="New Character"
+	draggable
 	confirmLabel="Create"
 	confirmClass="btn-primary"
 	confirmDisabled={!newCharName.trim()}
