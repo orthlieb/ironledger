@@ -71,7 +71,14 @@ test.describe('Adventure-action dialogs (v2)', () => {
 	test('clicking a move tile shows its detail view with Roll button', async ({ page }) => {
 		await page.locator(`${APP_NAV} .act-btn`, { hasText: 'Move' }).first().click();
 		await expect(page.locator('.moves-dialog')).toBeVisible({ timeout: 3_000 });
-		await page.locator('.moves-dialog .md-tile').first().click();
+		// Click an always-enabled move by name — the first tile in DOM order can be a
+		// prerequisite-gated move (e.g. Check Your Gear) rendered dimmed, and clicking
+		// a dimmed tile is a deliberate no-op that never opens the detail view.
+		await page
+			.locator('.moves-dialog .md-tile', {
+				has: page.locator('.md-tile-name', { hasText: /^Face Danger$/ }),
+			})
+			.click();
 		await expect(page.locator('.moves-dialog .md-body--detail')).toBeVisible({ timeout: 3_000 });
 		await expect(
 			page.locator('.moves-dialog .md-roll-btn, .moves-dialog .md-stat-row-btn').first(),
@@ -109,9 +116,14 @@ test.describe('Adventure-action dialogs (v2)', () => {
 		const countBefore = await page.locator('.log-entry').count();
 		await page.locator(`${APP_NAV} .act-btn`, { hasText: 'Ask' }).first().click();
 		await expect(page.locator('.oracles-dialog')).toBeVisible({ timeout: 3_000 });
-		const firstTile = page.locator('.oracles-dialog .od-tile').first();
-		await expect(firstTile).toBeVisible({ timeout: 5_000 });
-		await firstTile.click();
+		// Target a plain roll oracle by name — the leading tiles are now resolver
+		// oracles (e.g. Ironland Encounter Index) that hand off to a foe/asset dialog
+		// instead of showing the in-dialog Roll button.
+		const plainTile = page.locator('.oracles-dialog .od-tile', {
+			has: page.locator('.od-tile-name', { hasText: /^Core: Action$/ }),
+		});
+		await expect(plainTile).toBeVisible({ timeout: 5_000 });
+		await plainTile.click();
 		const rollBtn = page.locator('.oracles-dialog button.od-roll-btn');
 		await expect(rollBtn).toBeVisible({ timeout: 3_000 });
 		await rollBtn.click();
