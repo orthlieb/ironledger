@@ -1012,6 +1012,7 @@
 <ConfirmDialog
 	bind:this={newJourneyDialogRef}
 	title="New Journey"
+	draggable
 	confirmLabel="Create"
 	confirmClass="btn-primary"
 	confirmDisabled={!newJourneyName.trim()}
@@ -1040,6 +1041,7 @@
 <ConfirmDialog
 	bind:this={newSiteDialogRef}
 	title="New Site"
+	draggable
 	confirmLabel="Create"
 	confirmClass="btn-primary"
 	confirmDisabled={!newSiteName.trim()}
@@ -1096,6 +1098,7 @@
 	<ConfirmDialog
 		bind:this={changeThemeDialogRef}
 		title="Change Theme"
+		draggable
 		confirmLabel="Change"
 		onconfirm={confirmChangeTheme}
 	>
@@ -1120,6 +1123,7 @@
 	<ConfirmDialog
 		bind:this={changeDomainDialogRef}
 		title="Change Domain"
+		draggable
 		confirmLabel="Change"
 		onconfirm={confirmChangeDomain}
 	>

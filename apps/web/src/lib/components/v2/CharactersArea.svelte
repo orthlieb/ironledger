@@ -32,6 +32,9 @@
 	import { getActiveCharacterId, setActiveCharacterId } from '$lib/activeContext.svelte.js';
 	import { createDebouncedSave } from '$lib/debouncedSave.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
+	import { findOracle, rollFromRangeTable } from '$lib/oracleStore.svelte.js';
+	import Select from '$lib/components/Select.svelte';
+	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
 	import {
 		findAsset,
 		findRaritiesForAsset,
@@ -867,6 +870,36 @@
 	let creatingChar = $state(false);
 	let newCharDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let newCharName = $state('');
+	// Character-name randomizer: pick any Name-category oracle and roll it into
+	// the field. All base — no extension adds character-name oracles. "Other
+	// Names" is a three-lineage table (giants/varou/trolls) whose value is a
+	// per-lineage bag, so it's exposed as three picker entries (`namesOther_*`)
+	// and the suffix selects which name to lift — mirrors the NPC dialog.
+	let newCharNameOracle = $state('namesIronlander');
+	const NAME_ORACLES = [
+		{ value: 'namesIronlander', label: 'Ironlander' },
+		{ value: 'namesIronlander2', label: 'Ironlander 2' },
+		{ value: 'namesElf', label: 'Elf' },
+		{ value: 'namesOther_giants', label: 'Giants' },
+		{ value: 'namesOther_varou', label: 'Varou' },
+		{ value: 'namesOther_trolls', label: 'Trolls' },
+	];
+	function rollNewCharName() {
+		if (newCharNameOracle.startsWith('namesOther_')) {
+			const o = findOracle('namesOther');
+			if (!o) return;
+			const v = rollFromRangeTable(o.data).value as {
+				giants: string;
+				varou: string;
+				trolls: string;
+			};
+			const sub = newCharNameOracle.split('_')[1] as keyof typeof v;
+			newCharName = v[sub] ?? '';
+			return;
+		}
+		const o = findOracle(newCharNameOracle);
+		if (o) newCharName = (rollFromRangeTable(o.data).value as string) ?? '';
+	}
 
 	function addCharacter() {
 		// Reset the input each time — never carry a stale draft across opens.
@@ -1489,6 +1522,7 @@
 <ConfirmDialog
 	bind:this={newCharDialogRef}
 	title="New Character"
+	draggable
 	confirmLabel="Create"
 	confirmClass="btn-primary"
 	confirmDisabled={!newCharName.trim()}
@@ -1519,6 +1553,19 @@
 			}}
 		/>
 	</label>
+	<div class="co-field">
+		<span class="co-field-label">Use a name oracle to roll a random name</span>
+		<div class="co-name-row">
+			<Select bind:value={newCharNameOracle} options={NAME_ORACLES} />
+			<button
+				class="dice-btn"
+				type="button"
+				onclick={rollNewCharName}
+				use:tooltip={'Roll a name'}
+				aria-label="Random name">{@html diceD6Svg}</button
+			>
+		</div>
+	</div>
 </ConfirmDialog>
 
 <!-- Character options — gear icon in the header opens this. Rename +
@@ -1560,6 +1607,17 @@
 		flex-direction: column;
 		height: 100%;
 		min-height: 0;
+	}
+
+	/* New Character dialog: the name-oracle Select + d6 randomizer share a row. */
+	.co-name-row {
+		display: flex;
+		gap: 6px;
+		align-items: center;
+	}
+	.co-name-row :global(.bui-select-trigger) {
+		flex: 1;
+		min-width: 0;
 	}
 
 	/* ── Header ───────────────────────────────────────── */

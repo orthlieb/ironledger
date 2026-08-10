@@ -35,7 +35,7 @@
 	import Select from '$lib/components/Select.svelte';
 	import MarkdownNotes from '$lib/components/MarkdownNotes.svelte';
 	import PortraitUploader from '$lib/components/PortraitUploader.svelte';
-	import { isYrtEnabled } from '$lib/expansionStore.svelte.js';
+	import { isYrtEnabled, isSourceEnabled } from '$lib/expansionStore.svelte.js';
 	import { Popover, Command, Tabs } from 'bits-ui';
 	import {
 		loadOracles,
@@ -136,6 +136,13 @@
 	let newCommunityRollLocation = $state(true);
 	let newCommunityRollDescription = $state(true);
 	let newCommunityRollTrouble = $state(true);
+
+	// Lodestar replaces a settlement's Location + Location Descriptor with its
+	// own settlement oracle suite (Type / Condition / First Look …), so when it's
+	// enabled we drop those two from the New Settlement flow — no roll on Create,
+	// and their pickers/checkboxes hide. Place creation is unaffected: a Place is
+	// a location, where Descriptor stays on-brand even under Lodestar.
+	const lodestarOn = $derived(isSourceEnabled('lodestar'));
 
 	// New-NPC dialog state — the dialog stays minimal: just a Name + Oracle
 	// picker + a checklist of what to randomize on Create. The user lands on
@@ -423,9 +430,11 @@
 			_pendingCommunityRegionType === 'yrt'
 				? rollOracle('yrtRegion', oracles).value
 				: rollOracle('region', oracles).value;
-		if (newCommunityRollLocation)
+		// Location + Descriptor are a Core-only settlement detail — Lodestar
+		// supersedes them with its settlement suite, so skip both when it's on.
+		if (newCommunityRollLocation && !lodestarOn)
 			c.location = rollOracle(_pendingCommunityLocationType, oracles).value ?? '';
-		if (newCommunityRollDescription)
+		if (newCommunityRollDescription && !lodestarOn)
 			c.locationDescription = rollOracle('locationDescriptor', oracles).value ?? '';
 		if (newCommunityRollTrouble) c.trouble = rollOracle('settlementTrouble', oracles).value ?? '';
 		if (newCommunityName.trim()) c.name = newCommunityName.trim();
@@ -813,7 +822,7 @@
 									/>
 								</div>
 								<div class="cm-field-row">
-									<label class="cm-field-label" for="cm-locdesc-{c.id}">Description</label>
+									<label class="cm-field-label" for="cm-locdesc-{c.id}">Descriptor</label>
 									<input
 										id="cm-locdesc-{c.id}"
 										class="cm-input"
@@ -823,7 +832,7 @@
 											updateCommunityLike({
 												locationDescription: (e.target as HTMLInputElement).value,
 											})}
-										placeholder="Location description…"
+										placeholder="Location descriptor…"
 									/>
 								</div>
 								<!-- Map field: one chip per marker referencing this
@@ -1044,6 +1053,7 @@
 <ConfirmDialog
 	bind:this={newCommunityDialogRef}
 	title="New Settlement"
+	draggable
 	confirmLabel="Create"
 	confirmClass="btn-primary"
 	confirmDisabled={!newCommunityName.trim()}
@@ -1085,35 +1095,39 @@
 		/>
 		<span class="ns-spacer" aria-hidden="true"></span>
 
-		<label class="ns-label" for="nc-loc">Location Oracle</label>
-		<Select
-			id="nc-loc"
-			class="ea-ns-select"
-			bind:value={_pendingCommunityLocationType}
-			options={[
-				{ value: 'location', label: 'Inland' },
-				{ value: 'coastalWatersLocation', label: 'Coastal Waters' },
-			]}
-		/>
-		<span class="ns-spacer" aria-hidden="true"></span>
+		{#if !lodestarOn}
+			<label class="ns-label" for="nc-loc">Location Oracle</label>
+			<Select
+				id="nc-loc"
+				class="ea-ns-select"
+				bind:value={_pendingCommunityLocationType}
+				options={[
+					{ value: 'location', label: 'Inland' },
+					{ value: 'coastalWatersLocation', label: 'Coastal Waters' },
+				]}
+			/>
+			<span class="ns-spacer" aria-hidden="true"></span>
+		{/if}
 	</div>
 
 	<div class="nn-randomize">
 		<span class="nn-randomize-label">Also randomize</span>
-		<Checkbox
-			class="nn-check"
-			checked={newCommunityRollLocation}
-			onCheckedChange={(v) => (newCommunityRollLocation = !!v)}
-		>
-			<span class="nn-check-label">Location</span>
-		</Checkbox>
-		<Checkbox
-			class="nn-check"
-			checked={newCommunityRollDescription}
-			onCheckedChange={(v) => (newCommunityRollDescription = !!v)}
-		>
-			<span class="nn-check-label">Description</span>
-		</Checkbox>
+		{#if !lodestarOn}
+			<Checkbox
+				class="nn-check"
+				checked={newCommunityRollLocation}
+				onCheckedChange={(v) => (newCommunityRollLocation = !!v)}
+			>
+				<span class="nn-check-label">Location</span>
+			</Checkbox>
+			<Checkbox
+				class="nn-check"
+				checked={newCommunityRollDescription}
+				onCheckedChange={(v) => (newCommunityRollDescription = !!v)}
+			>
+				<span class="nn-check-label">Descriptor</span>
+			</Checkbox>
+		{/if}
 		<Checkbox
 			class="nn-check"
 			checked={newCommunityRollTrouble}
@@ -1131,6 +1145,7 @@
 <ConfirmDialog
 	bind:this={newNpcDialogRef}
 	title="New NPC"
+	draggable
 	confirmLabel="Create"
 	confirmClass="btn-primary"
 	confirmDisabled={!newNpcName.trim()}
@@ -1210,6 +1225,7 @@
 <ConfirmDialog
 	bind:this={newPlaceDialogRef}
 	title="New Place"
+	draggable
 	confirmLabel="Create"
 	confirmClass="btn-primary"
 	confirmDisabled={!newPlaceName.trim()}

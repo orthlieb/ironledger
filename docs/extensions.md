@@ -43,6 +43,8 @@ and everything filters out — nothing else changes.
   "defaultEnabled": false, // on/off until the user toggles it
   "order": 99, // display + catalogue-merge order
   "dev": true, // optional — dev/test only, stripped from production (see below)
+  "suppressesOracles": ["location"], // optional — oracle keys this extension
+  // hides while enabled (supersession; see below)
 }
 ```
 
@@ -88,6 +90,35 @@ build stamps it if absent). The web filters by that tag through the extension
 toggle — an item whose source is disabled is hidden from pickers, but existing
 saved records that reference it still render (`find*` lookups are never
 filtered).
+
+### Oracle supersession (`suppressesOracles`)
+
+An extension can **hide** oracles owned by other (lower-order) extensions while
+it is enabled, so a richer table can stand in for a base one without two
+near-identical entries cluttering the picker. List the target oracle **keys**
+in `suppressesOracles` on `extension.json`:
+
+```jsonc
+// extensions/lodestar/extension.json
+"suppressesOracles": ["location", "coastalWatersLocation", "featureAspect", "featureFocus"]
+// extensions/yrt/extension.json
+"suppressesOracles": ["region", "settlementCondition"]
+```
+
+The manifest carries the (sorted) list through to the web, where
+`expansionStore.suppressedOracleKeys()` unions the keys from every **enabled**
+extension. `getVisibleOracles()` filters those out, so the pattern is: ship a
+same-shaped replacement (e.g. Lodestar's Overland Landmark superseding base
+`location`, YRT's 50-row Settlement Condition superseding Lodestar's) and add
+the superseded key here. Suppression only removes the oracle from the **picker**
+— a saved roll or a direct `rollOracle(key)` call still resolves it.
+
+> **Note — creation-flow suppression is separate.** A few _dialogs_ skip rolling
+> certain oracles based on which expansion is on (e.g. the New Settlement dialog
+> drops Location + Location Descriptor when Lodestar is enabled, via
+> `isSourceEnabled('lodestar')` in `CommunitiesArea.svelte`). That is per-dialog
+> UI logic, **not** the manifest `suppressesOracles` field — the oracles stay
+> visible in the Ask picker; they're just not auto-rolled on create.
 
 ### Icons
 
