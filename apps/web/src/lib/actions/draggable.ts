@@ -9,8 +9,15 @@
  * to CSS defaults each time a native dialog opens; bits-ui dialogs
  * unmount their Content on close, so the fresh mount is the reset.
  */
-export function draggable(headerEl: HTMLElement) {
-	const dialogOrNull = headerEl.closest('dialog, [role="dialog"]') as HTMLElement | null;
+export function draggable(headerEl: HTMLElement, enabled: boolean = true) {
+	// Opt-out hook for callers that share a header component but only want
+	// drag some of the time (e.g. ConfirmDialog, draggable only when asked).
+	if (!enabled) return;
+	// AlertDialog.Content renders role="alertdialog", Dialog.Content role="dialog";
+	// match both plus native <dialog>.
+	const dialogOrNull = headerEl.closest(
+		'dialog, [role="dialog"], [role="alertdialog"]',
+	) as HTMLElement | null;
 	if (!dialogOrNull) return;
 	// Capture as a non-null typed variable so the closures below see
 	// HTMLElement, not HTMLElement | null.

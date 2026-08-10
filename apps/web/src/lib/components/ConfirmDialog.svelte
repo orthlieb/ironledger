@@ -7,10 +7,10 @@
 	 * API is unchanged from the native-`<dialog>` version so
 	 * callers still `bind:this={ref}` and call `ref?.open()`.
 	 *
-	 * Draggability from the old version is retired — small confirm
-	 * dialogs rarely need repositioning and bits-ui doesn't own
-	 * drag. If a specific caller needs it back, use a custom
-	 * `Dialog` there instead.
+	 * Draggable is opt-in via the `draggable` prop (off by default —
+	 * most confirmations are small and transient). When on, the header
+	 * bar is the drag handle. Form-style confirms (New* dialogs) turn
+	 * it on so they can be moved aside to see the panel behind them.
 	 *
 	 * Usage:
 	 *   let ref = $state<ReturnType<typeof ConfirmDialog> | null>(null);
@@ -22,10 +22,12 @@
 	import type { Snippet } from 'svelte';
 	import { AlertDialog } from 'bits-ui';
 	import { headingText } from '$lib/fontStore.svelte.js';
+	import { draggable as dragAction } from '$lib/actions/draggable.js';
 
 	let {
 		title,
 		accentColor = 'var(--color-danger)',
+		draggable = false,
 		width,
 		confirmLabel = 'Confirm',
 		confirmClass = 'btn-danger',
@@ -43,6 +45,8 @@
 	}: {
 		title: string;
 		accentColor?: string;
+		/** When true, the header bar becomes a drag handle. Default false. */
+		draggable?: boolean;
 		/** Optional dialog width (CSS length, e.g. "420px"). Defaults to 340px. */
 		width?: string;
 		confirmLabel?: string;
@@ -119,7 +123,10 @@
 			class="confirm-modal"
 			style="--accent: {accentColor}{width ? `; width: ${width}` : ''}"
 		>
-			<div class="cm-header">
+			<div class="cm-header" use:dragAction={draggable}>
+				{#if draggable}
+					<span class="drag-grip" aria-hidden="true">⠿</span>
+				{/if}
 				<AlertDialog.Title class="cm-title">{headingText(title)}</AlertDialog.Title>
 				{#if !showCancelButton}
 					<button class="cm-close-btn" type="button" onclick={handleDismiss} aria-label="Close"
