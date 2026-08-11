@@ -432,22 +432,6 @@
 		return rollOracle(oracleKey[key], oracles).value ?? '';
 	}
 
-	/** Panel d6 for a Lodestar settlement field — mirrors rollSettlementTrouble. */
-	async function rollSettlementFieldPanel(key: LodestarSettlementFieldKey) {
-		if (activeEntry?.kind !== 'community' || rolling) return;
-		rolling = true;
-		try {
-			await loadOracles();
-			const value = rollSettlementFieldValue(key, activeEntry.data.region ?? '', getOracles());
-			if (!value) return;
-			const label = LODESTAR_SETTLEMENT_FIELDS.find((f) => f.key === key)?.label ?? key;
-			appendLog(`Settlement ${label}`, `<div>Result: <strong>${value}</strong></div>`);
-			updateCommunity({ [key]: value } as Partial<Community>);
-		} finally {
-			rolling = false;
-		}
-	}
-
 	// Persist the store that was being edited. Reads (+ clears) _savingKind,
 	// exactly as the inline timer did — shared by the debounced schedule and
 	// every flush() site.
@@ -904,7 +888,7 @@
 									{@const s = activeEntry.data}
 									{#each LODESTAR_SETTLEMENT_FIELDS as f (f.key)}
 										{#if lodestarOn || s[f.key]}
-											<div class="cm-field-row cm-field-row--trouble">
+											<div class="cm-field-row">
 												<label class="cm-field-label" for="cm-{f.key}-{s.id}">{f.label}</label>
 												<input
 													id="cm-{f.key}-{s.id}"
@@ -917,14 +901,6 @@
 														} as Partial<Community>)}
 													placeholder="{f.label}…"
 												/>
-												<button
-													class="dice-btn"
-													type="button"
-													onclick={() => rollSettlementFieldPanel(f.key)}
-													disabled={rolling}
-													use:tooltip={`Roll Settlement ${f.label} oracle`}
-													aria-label={`Roll Settlement ${f.label} oracle`}>{@html diceD6Svg}</button
-												>
 											</div>
 										{/if}
 									{/each}
@@ -959,30 +935,6 @@
 										/>
 									</div>
 								{/if}
-								<!-- Map field: one chip per marker referencing this
-								     community/place. Multi-map is supported natively —
-								     the store returns refs across all maps, chips wrap
-								     onto new rows via flex-wrap. Coord (x, y) lives in
-								     the tooltip; chip text is the map name only. -->
-								<div class="cm-field-row cm-field-row--map">
-									<span class="cm-field-label">Map</span>
-									<div class="cm-mapref-chips">
-										{#if activeEntryMarkers.length === 0}
-											<span class="cm-mapref-empty">Not on any map</span>
-										{:else}
-											{#each activeEntryMarkers as ref (ref.markerId)}
-												<button
-													class="cm-mapref-chip"
-													onclick={() => jumpToMarker(ref)}
-													use:tooltip={`Jump to "${ref.label || '(unlabeled)'}" on ${ref.mapName} — (${fmtCoord(ref.x)}, ${fmtCoord(ref.y)})`}
-													aria-label={`Jump to marker on ${ref.mapName}`}
-												>
-													<span class="cm-mapref-name">{ref.mapName}</span>
-												</button>
-											{/each}
-										{/if}
-									</div>
-								</div>
 								<div class="cm-field-row cm-field-row--trouble">
 									<label class="cm-field-label" for="cm-trouble-{c.id}">Trouble</label>
 									<input
@@ -1007,6 +959,30 @@
 											aria-label="Roll settlement trouble oracle">{@html diceD6Svg}</button
 										>
 									{/if}
+								</div>
+								<!-- Map field: one chip per marker referencing this
+								     community/place. Multi-map is supported natively —
+								     the store returns refs across all maps, chips wrap
+								     onto new rows via flex-wrap. Coord (x, y) lives in
+								     the tooltip; chip text is the map name only. -->
+								<div class="cm-field-row cm-field-row--map">
+									<span class="cm-field-label">Map</span>
+									<div class="cm-mapref-chips">
+										{#if activeEntryMarkers.length === 0}
+											<span class="cm-mapref-empty">Not on any map</span>
+										{:else}
+											{#each activeEntryMarkers as ref (ref.markerId)}
+												<button
+													class="cm-mapref-chip"
+													onclick={() => jumpToMarker(ref)}
+													use:tooltip={`Jump to "${ref.label || '(unlabeled)'}" on ${ref.mapName} — (${fmtCoord(ref.x)}, ${fmtCoord(ref.y)})`}
+													aria-label={`Jump to marker on ${ref.mapName}`}
+												>
+													<span class="cm-mapref-name">{ref.mapName}</span>
+												</button>
+											{/each}
+										{/if}
+									</div>
 								</div>
 							{:else}
 								{@const n = activeEntry.data}
@@ -1833,14 +1809,16 @@
 	   compact spacing. Shared with the Site + NPC + Community + Place
 	   dialogs so all four read the same. */
 	:global(.nn-randomize) {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 4px 16px;
+		align-items: center;
 		margin-top: 10px;
 		padding-top: 8px;
 		border-top: 1px solid var(--border);
 	}
 	:global(.nn-randomize-label) {
+		grid-column: 1 / -1;
 		font-family: var(--font-ui);
 		font-size: 0.65rem;
 		font-weight: 600;
