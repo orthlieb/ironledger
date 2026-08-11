@@ -125,14 +125,14 @@
 		return () => document.removeEventListener('ironledger:focus-entity', onFocus);
 	});
 
-	// New-community dialog state. Region + Location are oracle pickers
-	// (which oracle to roll from); the checkboxes control which of the
-	// "flavour" fields — Location / Description / Trouble — actually
-	// roll on Create. Region always rolls from its selected oracle.
+	// New-community dialog state. Location is an oracle picker (which oracle to
+	// roll from); the checkboxes control which flavour fields — Region / Location
+	// / Description / Trouble — roll on Create. Region has no picker: it always
+	// uses the base Region oracle, or YRT's replacement when YRT is enabled.
 	let newCommunityDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let _pendingCommunity: Community | null = null;
-	let _pendingCommunityRegionType = $state<'ironlands' | 'yrt'>('ironlands');
 	let _pendingCommunityLocationType = $state<'location' | 'coastalWatersLocation'>('location');
+	let newCommunityRollRegion = $state(true);
 	let newCommunityRollLocation = $state(true);
 	let newCommunityRollDescription = $state(true);
 	let newCommunityRollTrouble = $state(true);
@@ -433,11 +433,9 @@
 		const c = _pendingCommunity;
 		_pendingCommunity = null;
 		const oracles = getOracles();
-		// Region always rolls from the selected Region Oracle.
-		c.region =
-			_pendingCommunityRegionType === 'yrt'
-				? rollOracle('yrtRegion', oracles).value
-				: rollOracle('region', oracles).value;
+		// Region: the base Region oracle, or YRT's replacement when YRT is on.
+		if (newCommunityRollRegion)
+			c.region = rollOracle(isYrtEnabled() ? 'yrtRegion' : 'region', oracles).value ?? '';
 		// Location + Descriptor are a Core-only settlement detail — Lodestar
 		// supersedes them with its settlement suite, so skip both when it's on.
 		if (newCommunityRollLocation && !lodestarOn)
@@ -1096,22 +1094,8 @@
 		</div>
 	</div>
 
-	<div class="ns-grid">
-		<label class="ns-label" for="nc-region">Region Oracle</label>
-		<Select
-			id="nc-region"
-			class="ea-ns-select"
-			bind:value={_pendingCommunityRegionType}
-			options={isYrtEnabled()
-				? [
-						{ value: 'ironlands', label: 'Ironlands' },
-						{ value: 'yrt', label: 'YRT' },
-					]
-				: [{ value: 'ironlands', label: 'Ironlands' }]}
-		/>
-		<span class="ns-spacer" aria-hidden="true"></span>
-
-		{#if !lodestarOn}
+	{#if !lodestarOn}
+		<div class="ns-grid">
 			<label class="ns-label" for="nc-loc">Location Oracle</label>
 			<Select
 				id="nc-loc"
@@ -1123,11 +1107,18 @@
 				]}
 			/>
 			<span class="ns-spacer" aria-hidden="true"></span>
-		{/if}
-	</div>
+		</div>
+	{/if}
 
 	<div class="nn-randomize">
 		<span class="nn-randomize-label">Also randomize</span>
+		<Checkbox
+			class="nn-check"
+			checked={newCommunityRollRegion}
+			onCheckedChange={(v) => (newCommunityRollRegion = !!v)}
+		>
+			<span class="nn-check-label">Region</span>
+		</Checkbox>
 		{#if !lodestarOn}
 			<Checkbox
 				class="nn-check"
