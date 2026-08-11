@@ -1156,8 +1156,8 @@
 		_pendingNpc = null;
 	}}
 >
-	<div class="ns-grid">
-		<label class="ns-label" for="nn-name">Name</label>
+	<label class="co-field">
+		<span class="co-field-label">Character name</span>
 		<input
 			id="nn-name"
 			class="co-input"
@@ -1165,22 +1165,19 @@
 			bind:value={newNpcName}
 			placeholder="NPC name"
 		/>
-		<button
-			class="btn btn-icon ea-dice-btn"
-			type="button"
-			onclick={rollNpcNameField}
-			use:tooltip={'Roll a name from the selected oracle'}
-			aria-label="Random name">{@html diceD6Svg}</button
-		>
-
-		<label class="ns-label" for="nn-oracle">Oracle</label>
-		<Select
-			id="nn-oracle"
-			class="ea-ns-select"
-			bind:value={_pendingNpcNameOracle}
-			options={NPC_NAME_ORACLES}
-		/>
-		<span class="ns-spacer" aria-hidden="true"></span>
+	</label>
+	<div class="co-field">
+		<span class="co-field-label">Use a name oracle to roll a random name</span>
+		<div class="co-name-row">
+			<Select id="nn-oracle" bind:value={_pendingNpcNameOracle} options={NPC_NAME_ORACLES} />
+			<button
+				class="dice-btn"
+				type="button"
+				onclick={rollNpcNameField}
+				use:tooltip={'Roll a name'}
+				aria-label="Random name">{@html diceD6Svg}</button
+			>
+		</div>
 	</div>
 
 	<div class="nn-randomize">

@@ -179,6 +179,17 @@
 		outline: none;
 		border-color: var(--text-accent);
 	}
+	/* Shared "Select + trailing d6" row used by the New Character / New NPC
+	   name-oracle randomizers. The Select grows; the button stays natural. */
+	:global(.co-name-row) {
+		display: flex;
+		gap: 6px;
+		align-items: center;
+	}
+	:global(.co-name-row .bui-select-trigger) {
+		flex: 1;
+		min-width: 0;
+	}
 	:global(.co-hint) {
 		font-family: var(--font-ui);
 		font-size: 0.75rem;

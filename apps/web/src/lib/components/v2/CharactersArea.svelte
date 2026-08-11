@@ -1609,17 +1609,6 @@
 		min-height: 0;
 	}
 
-	/* New Character dialog: the name-oracle Select + d6 randomizer share a row. */
-	.co-name-row {
-		display: flex;
-		gap: 6px;
-		align-items: center;
-	}
-	.co-name-row :global(.bui-select-trigger) {
-		flex: 1;
-		min-width: 0;
-	}
-
 	/* ── Header ───────────────────────────────────────── */
 	.ca-header {
 		display: flex;
