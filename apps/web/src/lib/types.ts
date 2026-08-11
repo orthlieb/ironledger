@@ -466,6 +466,15 @@ export interface Community {
 	location: string;
 	locationDescription: string;
 	trouble: string;
+	/** Lodestar settlement suite — populated when Lodestar is enabled; a Classic
+	 *  settlement leaves these empty (all optional). The panel shows them under
+	 *  Lodestar, or whenever one has a value. */
+	type?: string;
+	condition?: string;
+	firstLook?: string;
+	disposition?: string;
+	projects?: string;
+	culturalTouchstones?: string;
 	notes: string; // long-form description (Description tab)
 	situationalNotes?: string; // short situational notes — conditions, trouble (Core tab)
 	/** Content hash of the portrait stored in the blob endpoint; '' / absent = none. */

@@ -137,6 +137,29 @@
 	let newCommunityRollDescription = $state(true);
 	let newCommunityRollTrouble = $state(true);
 
+	// Lodestar settlement suite — six fields shown only under Lodestar (or when a
+	// settlement already has a value for one). Type / Condition / First Look are
+	// the book's "on reveal" set (default rolled on Create); Disposition /
+	// Projects / Cultural Touchstones are situational (default off — roll from the
+	// panel d6 when the fiction calls for it).
+	const LODESTAR_SETTLEMENT_FIELDS = [
+		{ key: 'type', label: 'Type' },
+		{ key: 'condition', label: 'Condition' },
+		{ key: 'firstLook', label: 'First Look' },
+		{ key: 'disposition', label: 'Disposition' },
+		{ key: 'projects', label: 'Projects' },
+		{ key: 'culturalTouchstones', label: 'Cultural Touchstones' },
+	] as const;
+	type LodestarSettlementFieldKey = (typeof LODESTAR_SETTLEMENT_FIELDS)[number]['key'];
+	let newCommunityRollLodestar = $state<Record<LodestarSettlementFieldKey, boolean>>({
+		type: true,
+		condition: true,
+		firstLook: true,
+		disposition: false,
+		projects: false,
+		culturalTouchstones: false,
+	});
+
 	// Lodestar replaces a settlement's Location + Location Descriptor with its
 	// own settlement oracle suite (Type / Condition / First Look …), so when it's
 	// enabled we drop those two from the New Settlement flow — no roll on Create,
@@ -369,6 +392,62 @@
 		}
 	}
 
+	/** Land tier for the Settlement Type columnSelect, derived from the region
+	 *  per the book's mapping (Havens → settled; Barrier Islands / Flooded Lands /
+	 *  Hinterlands / Ragged Coast → boundary; Deep Wilds / Tempest Hills / Veiled
+	 *  Mountains → remote). YRT / unknown regions fall back to boundary. */
+	function tierForRegion(region: string): 'settled' | 'boundary' | 'remote' {
+		const r = region.toLowerCase();
+		if (r.includes('haven')) return 'settled';
+		if (/barrier islands|flooded lands|hinterlands|ragged coast/.test(r)) return 'boundary';
+		if (/deep wilds|tempest hills|veiled mountains/.test(r)) return 'remote';
+		return 'boundary';
+	}
+
+	/** Roll one Lodestar settlement field, resolving the right oracle: Type is a
+	 *  land-tier columnSelect (tier from region); Condition uses YRT's superseding
+	 *  oracle when YRT is on; the rest are plain single rolls. */
+	function rollSettlementFieldValue(
+		key: LodestarSettlementFieldKey,
+		region: string,
+		oracles: ReturnType<typeof getOracles>,
+	): string {
+		if (key === 'type')
+			// settlementType values carry <strong>…</strong> markup for the picker;
+			// strip tags so the plain-text field shows "Outpost — Border or…".
+			return (
+				rollOracle('settlementType', oracles, { stat: tierForRegion(region) }).value ?? ''
+			).replace(/<[^>]+>/g, '');
+		if (key === 'condition')
+			return (
+				rollOracle(isYrtEnabled() ? 'yrtSettlementCondition' : 'settlementCondition', oracles)
+					.value ?? ''
+			);
+		const oracleKey: Record<Exclude<LodestarSettlementFieldKey, 'type' | 'condition'>, string> = {
+			firstLook: 'settlementFirstLook',
+			disposition: 'settlementDisposition',
+			projects: 'settlementProjects',
+			culturalTouchstones: 'settlementCulturalTouchstones',
+		};
+		return rollOracle(oracleKey[key], oracles).value ?? '';
+	}
+
+	/** Panel d6 for a Lodestar settlement field — mirrors rollSettlementTrouble. */
+	async function rollSettlementFieldPanel(key: LodestarSettlementFieldKey) {
+		if (activeEntry?.kind !== 'community' || rolling) return;
+		rolling = true;
+		try {
+			await loadOracles();
+			const value = rollSettlementFieldValue(key, activeEntry.data.region ?? '', getOracles());
+			if (!value) return;
+			const label = LODESTAR_SETTLEMENT_FIELDS.find((f) => f.key === key)?.label ?? key;
+			appendLog(`Settlement ${label}`, `<div>Result: <strong>${value}</strong></div>`);
+			updateCommunity({ [key]: value } as Partial<Community>);
+		} finally {
+			rolling = false;
+		}
+	}
+
 	// Persist the store that was being edited. Reads (+ clears) _savingKind,
 	// exactly as the inline timer did — shared by the debounced schedule and
 	// every flush() site.
@@ -443,6 +522,12 @@
 		if (newCommunityRollDescription && !lodestarOn)
 			c.locationDescription = rollOracle('locationDescriptor', oracles).value ?? '';
 		if (newCommunityRollTrouble) c.trouble = rollOracle('settlementTrouble', oracles).value ?? '';
+		// Lodestar settlement suite — roll each checked field (Type derives its
+		// land tier from the just-rolled region).
+		if (lodestarOn)
+			for (const f of LODESTAR_SETTLEMENT_FIELDS)
+				if (newCommunityRollLodestar[f.key])
+					c[f.key] = rollSettlementFieldValue(f.key, c.region, oracles);
 		if (newCommunityName.trim()) c.name = newCommunityName.trim();
 		await addCommunity(c);
 		activeEntryId = c.id;
@@ -815,32 +900,65 @@
 										placeholder="Region…"
 									/>
 								</div>
-								<div class="cm-field-row">
-									<label class="cm-field-label" for="cm-location-{c.id}">Location</label>
-									<input
-										id="cm-location-{c.id}"
-										class="cm-input"
-										type="text"
-										value={c.location}
-										oninput={(e) =>
-											updateCommunityLike({ location: (e.target as HTMLInputElement).value })}
-										placeholder="Location…"
-									/>
-								</div>
-								<div class="cm-field-row">
-									<label class="cm-field-label" for="cm-locdesc-{c.id}">Descriptor</label>
-									<input
-										id="cm-locdesc-{c.id}"
-										class="cm-input"
-										type="text"
-										value={c.locationDescription}
-										oninput={(e) =>
-											updateCommunityLike({
-												locationDescription: (e.target as HTMLInputElement).value,
-											})}
-										placeholder="Location descriptor…"
-									/>
-								</div>
+								{#if activeEntry.kind === 'community'}
+									{@const s = activeEntry.data}
+									{#each LODESTAR_SETTLEMENT_FIELDS as f (f.key)}
+										{#if lodestarOn || s[f.key]}
+											<div class="cm-field-row cm-field-row--trouble">
+												<label class="cm-field-label" for="cm-{f.key}-{s.id}">{f.label}</label>
+												<input
+													id="cm-{f.key}-{s.id}"
+													class="cm-input"
+													type="text"
+													value={s[f.key] ?? ''}
+													oninput={(e) =>
+														updateCommunityLike({
+															[f.key]: (e.target as HTMLInputElement).value,
+														} as Partial<Community>)}
+													placeholder="{f.label}…"
+												/>
+												<button
+													class="dice-btn"
+													type="button"
+													onclick={() => rollSettlementFieldPanel(f.key)}
+													disabled={rolling}
+													use:tooltip={`Roll Settlement ${f.label} oracle`}
+													aria-label={`Roll Settlement ${f.label} oracle`}>{@html diceD6Svg}</button
+												>
+											</div>
+										{/if}
+									{/each}
+								{/if}
+								{#if activeEntry.kind === 'place' || !lodestarOn || c.location}
+									<div class="cm-field-row">
+										<label class="cm-field-label" for="cm-location-{c.id}">Location</label>
+										<input
+											id="cm-location-{c.id}"
+											class="cm-input"
+											type="text"
+											value={c.location}
+											oninput={(e) =>
+												updateCommunityLike({ location: (e.target as HTMLInputElement).value })}
+											placeholder="Location…"
+										/>
+									</div>
+								{/if}
+								{#if activeEntry.kind === 'place' || !lodestarOn || c.locationDescription}
+									<div class="cm-field-row">
+										<label class="cm-field-label" for="cm-locdesc-{c.id}">Descriptor</label>
+										<input
+											id="cm-locdesc-{c.id}"
+											class="cm-input"
+											type="text"
+											value={c.locationDescription}
+											oninput={(e) =>
+												updateCommunityLike({
+													locationDescription: (e.target as HTMLInputElement).value,
+												})}
+											placeholder="Location descriptor…"
+										/>
+									</div>
+								{/if}
 								<!-- Map field: one chip per marker referencing this
 								     community/place. Multi-map is supported natively —
 								     the store returns refs across all maps, chips wrap
@@ -1134,6 +1252,17 @@
 			>
 				<span class="nn-check-label">Descriptor</span>
 			</Checkbox>
+		{/if}
+		{#if lodestarOn}
+			{#each LODESTAR_SETTLEMENT_FIELDS as f (f.key)}
+				<Checkbox
+					class="nn-check"
+					checked={newCommunityRollLodestar[f.key]}
+					onCheckedChange={(v) => (newCommunityRollLodestar[f.key] = !!v)}
+				>
+					<span class="nn-check-label">{f.label}</span>
+				</Checkbox>
+			{/each}
 		{/if}
 		<Checkbox
 			class="nn-check"
