@@ -191,6 +191,15 @@
 	let newNpcName = $state<string>('');
 	let newPlaceName = $state<string>('');
 
+	// Settlement name randomizer — two "double-rolling" oracles: Settlement Name
+	// (category → example) and Quick Settlement Name (prefix + suffix). rollOracle
+	// composes each into a finished string, so the picker just selects the source.
+	let newCommunityNameOracle = $state('settlementName');
+	const SETTLEMENT_NAME_ORACLES = [
+		{ value: 'settlementName', label: 'Settlement Name' },
+		{ value: 'settlementNameQuick', label: 'Quick Settlement Name' },
+	];
+
 	// Inline-edit state
 	let editingNotes = $state(false);
 	let editingCoreNotes = $state(false);
@@ -411,13 +420,12 @@
 		newCommunityDialogRef?.open();
 	}
 
-	/** Roll a settlement name off one of the two name oracles (50/50) and
-	 *  drop it into the New Community draft — wired to the name d6. */
+	/** Roll a settlement name off the selected name oracle and drop it into the
+	 *  New Community draft — wired to the name d6. Both oracles double-roll;
+	 *  rollOracle returns the finished composed string. */
 	function rollNewCommunityName() {
-		const oracles = getOracles();
-		const oracle = Math.random() < 0.5 ? 'settlementName' : 'settlementNameQuick';
-		const v = rollOracle(oracle, oracles).value;
-		if (v) newCommunityName = v;
+		const v = rollOracle(newCommunityNameOracle, getOracles()).value;
+		if (typeof v === 'string' && v) newCommunityName = v;
 	}
 
 	async function _commitCommunity() {
@@ -1064,23 +1072,31 @@
 		_pendingCommunity = null;
 	}}
 >
-	<div class="ns-grid">
-		<label class="ns-label" for="nc-name">Name</label>
+	<label class="co-field">
+		<span class="co-field-label">Settlement name</span>
 		<input
 			id="nc-name"
 			class="co-input"
 			type="text"
 			bind:value={newCommunityName}
-			placeholder="Community name"
+			placeholder="Settlement name"
 		/>
-		<button
-			class="btn btn-icon ea-dice-btn"
-			type="button"
-			onclick={rollNewCommunityName}
-			use:tooltip={'Roll a settlement name'}
-			aria-label="Random name">{@html diceD6Svg}</button
-		>
+	</label>
+	<div class="co-field">
+		<span class="co-field-label">Use a name oracle to roll a random name</span>
+		<div class="co-name-row">
+			<Select bind:value={newCommunityNameOracle} options={SETTLEMENT_NAME_ORACLES} />
+			<button
+				class="dice-btn"
+				type="button"
+				onclick={rollNewCommunityName}
+				use:tooltip={'Roll a name'}
+				aria-label="Random name">{@html diceD6Svg}</button
+			>
+		</div>
+	</div>
 
+	<div class="ns-grid">
 		<label class="ns-label" for="nc-region">Region Oracle</label>
 		<Select
 			id="nc-region"
