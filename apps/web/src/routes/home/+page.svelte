@@ -795,6 +795,24 @@
 				else if (inline && row.portraitEtag) await update(row); // replace: persist etag
 			}
 
+			/** Re-link imported Places to their parent settlement BY NAME. Exports
+			 *  carry `withinSettlementName` (not a raw id — ids are minted per-user);
+			 *  resolve it against the just-imported communities. Call AFTER communities
+			 *  land so the live store holds their new ids. Unresolved / standalone →
+			 *  link cleared. Rows with no name field (legacy raw-id exports) untouched. */
+			function relinkPlaces(rows: Place[]): void {
+				const idByName = new Map(getCommunities().map((c) => [normaliseName(c.name), c.id]));
+				for (const pl of rows) {
+					const rec = pl as unknown as Record<string, unknown>;
+					const name = rec.withinSettlementName;
+					if (typeof name !== 'string') continue; // legacy raw id — leave as-is
+					delete rec.withinSettlementName;
+					const id = name ? idByName.get(normaliseName(name)) : undefined;
+					if (id) rec.withinSettlementId = id;
+					else delete rec.withinSettlementId;
+				}
+			}
+
 			if (parsed.manifest && parsed.data) {
 				const m = parsed.manifest as { type: string };
 				if (m.type === 'character' || m.type === 'all-characters') {
@@ -813,6 +831,7 @@
 						);
 					for (const n of incomingNpcs)
 						await importEntityRow(n, 'npcs', existingNpcByName, addNpc, updateNpc);
+					relinkPlaces(incomingPlaces);
 					for (const pl of incomingPlaces)
 						await importEntityRow(pl, 'places', existingPlaceByName, addPlace, updatePlace);
 				} else if (m.type === 'expeditions') {
@@ -834,6 +853,7 @@
 						);
 					for (const n of incomingNpcs)
 						await importEntityRow(n, 'npcs', existingNpcByName, addNpc, updateNpc);
+					relinkPlaces(incomingPlaces);
 					for (const pl of incomingPlaces)
 						await importEntityRow(pl, 'places', existingPlaceByName, addPlace, updatePlace);
 					for (const exp of incomingExpeditions) {
@@ -1387,6 +1407,17 @@
 			if (du) out.imageUrl = du;
 		}
 		delete out.portraitEtag;
+		// A Place's parent settlement is exported BY NAME (ids are minted
+		// per-user, so a raw id never re-links on another ledger). Drop the id
+		// and record the current settlement's name; import resolves it back.
+		if (seg === 'places') {
+			const p = out as unknown as Place;
+			const parentName = p.withinSettlementId
+				? communities.find((c) => c.id === p.withinSettlementId)?.name
+				: undefined;
+			if (parentName) p.withinSettlementName = parentName;
+			delete p.withinSettlementId;
+		}
 		return out;
 	}
 
