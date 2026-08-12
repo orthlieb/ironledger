@@ -524,6 +524,11 @@ export interface Place {
 	 *  set, the place is an in-settlement point-of-interest and inherits the
 	 *  settlement's region. Empty/absent = a freestanding wilderness landmark. */
 	withinSettlementId?: string;
+	/** Export/import-only: the parent settlement's NAME. Written on export (in
+	 *  place of the raw id, which is minted per-user) and resolved back to a
+	 *  withinSettlementId on import — mirrors how bundled maps re-link owners by
+	 *  name. Never persisted on a live Place. */
+	withinSettlementName?: string;
 	/** @deprecated Places are locations, not communities — Settlement Trouble no
 	 *  longer rolls for a Place. Kept for back-compat; shown only if populated. */
 	trouble: string;

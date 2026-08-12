@@ -480,3 +480,78 @@ test.describe('Import / Export — portrait round-trip', () => {
 		expect(src).toMatch(/\/api\/characters\/[^/]+\/portrait\?v=/);
 	});
 });
+
+// ---------------------------------------------------------------------------
+// Place → parent settlement re-linking. A Place stores its parent as
+// `withinSettlementId`, but ids are minted per-user, so the export records the
+// parent BY NAME (`withinSettlementName`) and import resolves it back to the
+// current settlement's id — mirroring how bundled maps re-link owners by name.
+// This one flow exercises BOTH directions: import resolves name→id (the place
+// gets linked), then export resolves id→name (emits withinSettlementName).
+// ---------------------------------------------------------------------------
+
+test.describe('Import / Export — Place ↔ settlement re-linking', () => {
+	test.beforeAll(async () => {
+		await resetAll();
+	});
+	test.beforeEach(async ({ page }) => {
+		await gotoHome(page);
+	});
+
+	test('a nested place re-links by name on import and re-exports by name', async ({ page }) => {
+		// Import a settlement + a place that references it ONLY by name (no id).
+		const payload = makeManifest(
+			'communities',
+			{
+				communities: [
+					{
+						id: 'imp-havenport',
+						name: 'Havenport',
+						region: 'Ragged Coast',
+						location: '',
+						locationDescription: '',
+						trouble: '',
+						notes: '',
+					},
+				],
+				npcs: [],
+				places: [
+					{
+						id: 'imp-the-deep',
+						name: 'The Deep',
+						region: '',
+						location: 'Cistern',
+						locationDescription: '',
+						trouble: '',
+						notes: '',
+						withinSettlementName: 'Havenport',
+					},
+				],
+			},
+			2,
+		);
+		await uploadImport(page, payload);
+		await expect(page.locator('.error-bar')).not.toBeVisible({ timeout: 5_000 });
+
+		// Reload so the stores refetch from the server — the imported entities are
+		// now persisted with their final ids and the resolved parent link.
+		await gotoHome(page);
+
+		// Export everything and inspect the body: the place must carry
+		// withinSettlementName === "Havenport" (proving import resolved the link)
+		// and must NOT carry a raw withinSettlementId.
+		await openExportDialog(page, 'everything');
+		const [download] = await Promise.all([
+			page.waitForEvent('download'),
+			page.locator('.export-dialog .btn-primary').click(),
+		]);
+		const entries = unzipSync(new Uint8Array(await downloadBuffer(download)));
+		const manifest = JSON.parse(strFromU8(entries['manifest.json']));
+		const data = JSON.parse(strFromU8(entries[manifest.body ?? 'everything.json']));
+
+		const deep = (data.places as Array<Record<string, unknown>>).find((p) => p.name === 'The Deep');
+		expect(deep).toBeDefined();
+		expect(deep?.withinSettlementName).toBe('Havenport');
+		expect(deep?.withinSettlementId).toBeUndefined();
+	});
+});

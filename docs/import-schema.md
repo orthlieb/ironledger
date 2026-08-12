@@ -215,7 +215,7 @@ older exports (which pre-date the Place entity) still load — a missing
         "region": "Ragged Coast",
         "location": "Tavern",
         "locationDescription": "waterfront, second door on the left",
-        "withinSettlementId": "…",
+        "withinSettlementName": "Whitehaven",
         "notes": "",
         "...": "…"
       }
@@ -230,6 +230,15 @@ Community named for its Hobbits); a **Place** captures a fixed location worth
 remembering, whether inside a community (a specific tavern) or out in the
 world (Mt. Doom). See [communities.md](communities.md) for the full
 distinction.
+
+> **A Place's parent settlement is carried by name.** A live `Place` links
+> to its parent `Community` by `withinSettlementId`, but ids are minted
+> per-user, so a raw id never re-links on another ledger. On export the id is
+> dropped and the parent's current name is written as **`withinSettlementName`**;
+> on import that name is resolved back to the local settlement's id (matched
+> case/space-insensitively, after the communities land). Unresolved or
+> standalone places import with no parent link. This mirrors how bundled maps
+> re-link their owner entity by name.
 
 Two fields are worth calling out:
 
