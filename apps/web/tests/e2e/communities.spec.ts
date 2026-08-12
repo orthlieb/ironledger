@@ -175,6 +175,47 @@ test.describe('Connections area (v2)', () => {
 		expect(await entryCount(page)).toBe(before - 1);
 	});
 
+	// ── Places ─────────────────────────────────────────────────────────────────
+
+	test('the switcher opens the new-place dialog', async ({ page }) => {
+		await openNew(page, 'Place');
+		await expect(page.locator('.confirm-modal .cm-title')).toContainText('New Place');
+		await page.keyboard.press('Escape');
+	});
+
+	test('New Place dialog: Within + Landmark oracle, no Region picker or Trouble', async ({
+		page,
+	}) => {
+		await openNew(page, 'Place');
+		const dialog = page.locator('.confirm-modal');
+		await expect(dialog).toBeVisible();
+		// Within-settlement selector + Landmark oracle are both <Select> triggers
+		// (freestanding default → the Landmark oracle is shown).
+		await expect(dialog.locator('.bui-select-trigger')).toHaveCount(2);
+		// A Place is a location, not a settlement: no Region oracle picker,
+		// and Trouble is not offered as an Also-randomize field.
+		await expect(dialog.locator('#nc-region')).toHaveCount(0);
+		await expect(dialog.locator('.nn-check-label', { hasText: /^Landmark$/ })).toHaveCount(1);
+		await expect(dialog.locator('.nn-check-label', { hasText: /^Descriptor$/ })).toHaveCount(1);
+		await expect(dialog.locator('.nn-check-label', { hasText: /^Trouble$/ })).toHaveCount(0);
+		await page.keyboard.press('Escape');
+	});
+
+	test('can add a place via Create', async ({ page }) => {
+		const before = await entryCount(page);
+		await openNew(page, 'Place');
+		await fillAndCreate(page);
+		expect(await entryCount(page)).toBe(before + 1);
+	});
+
+	test('can delete a place', async ({ page }) => {
+		await openNew(page, 'Place');
+		await rollAndCreate(page);
+		const before = await entryCount(page);
+		await deleteActive(page);
+		expect(await entryCount(page)).toBe(before - 1);
+	});
+
 	// ── Cleanup ───────────────────────────────────────────────────────────────
 
 	test('cleanup: delete all connections', async ({ page }) => {

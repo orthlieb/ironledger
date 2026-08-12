@@ -16,6 +16,7 @@
 	 *
 	 * Two tabs per entry:
 	 *   • CORE — community: region / location / desc / trouble
+	 *            place:     within / landmark / descriptor
 	 *            npc:       role / goal / descriptor / relationship / location
 	 *   • NOTES — portrait floats right, markdown notes wrap around it.
 	 *
@@ -190,20 +191,20 @@
 		{ value: 'namesOther_trolls', label: 'Trolls' },
 	];
 
-	// New-Place dialog state — same shape as Community. Location Oracle
-	// gains the YRT "City / Town Location" option (in-settlement POIs
-	// like Marketplace / Docks / Warehouse) when the expansion is on.
-	// Trouble reuses the settlement-trouble oracle — off by default
-	// since it's a settlement-flavoured table; opt in when it fits.
+	// New-Place dialog state. A Place is a location (Landmark), not a
+	// settlement, so it rolls a Landmark oracle rather than Settlement
+	// Trouble — freestanding (Overland / Coastal) via _pendingPlaceLandmarkKind,
+	// or the Settlement Landmark table (Marketplace / Docks / …) when nested.
 	let newPlaceDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let _pendingPlace: Place | null = null;
-	let _pendingPlaceRegionType = $state<'ironlands' | 'yrt'>('ironlands');
-	let _pendingPlaceLocationType = $state<
-		'location' | 'coastalWatersLocation' | 'yrtCityTownLocation'
-	>('location');
-	let newPlaceRollLocation = $state(true);
+	// A Place is a location (Landmark), not a settlement. It's either freestanding
+	// (Overland / Coastal Landmark) or nested inside a settlement (Settlement
+	// Landmark), selected by the optional `withinSettlementId` parent link. Region
+	// is auto (base/YRT) or inherited from the parent settlement.
+	let _pendingPlaceLandmarkKind = $state<'inland' | 'coastal'>('inland');
+	let _pendingPlaceWithin = $state<string>('');
+	let newPlaceRollLandmark = $state(true);
 	let newPlaceRollDescription = $state(true);
-	let newPlaceRollTrouble = $state(false);
 
 	// Combobox switcher + gear-options refs (mirrors Chars/Foes/Exp).
 	let entryPickerOpen = $state(false);
@@ -679,6 +680,8 @@
 			createdAt: Date.now(),
 		};
 		newPlaceName = '';
+		_pendingPlaceWithin = '';
+		_pendingPlaceLandmarkKind = 'inland';
 		await loadOracles();
 		newPlaceDialogRef?.open();
 	}
@@ -692,20 +695,34 @@
 		if (v) newPlaceName = v;
 	}
 
+	/** Resolve the Landmark oracle for a Place: an in-settlement point-of-interest
+	 *  when nested, else an Overland / Coastal Landmark (Lodestar oracles supersede
+	 *  the base Location tables when it's on). */
+	function placeLandmarkKey(nested: boolean): string {
+		if (nested)
+			return isYrtEnabled() ? 'yrtCityTownLocation' : lodestarOn ? 'overlandLandmark' : 'location';
+		if (_pendingPlaceLandmarkKind === 'coastal')
+			return lodestarOn ? 'coastalWatersLandmark' : 'coastalWatersLocation';
+		return lodestarOn ? 'overlandLandmark' : 'location';
+	}
+
 	async function _commitPlace() {
 		if (!_pendingPlace) return;
 		const pl = _pendingPlace;
 		_pendingPlace = null;
 		const oracles = getOracles();
-		pl.region =
-			_pendingPlaceRegionType === 'yrt'
-				? rollOracle('yrtRegion', oracles).value
-				: rollOracle('region', oracles).value;
-		if (newPlaceRollLocation)
-			pl.location = rollOracle(_pendingPlaceLocationType, oracles).value ?? '';
+		const parent = _pendingPlaceWithin
+			? communities.find((c) => c.id === _pendingPlaceWithin)
+			: undefined;
+		pl.withinSettlementId = _pendingPlaceWithin || undefined;
+		// Region: inherit from the parent settlement when nested, else roll.
+		pl.region = parent
+			? parent.region
+			: (rollOracle(isYrtEnabled() ? 'yrtRegion' : 'region', oracles).value ?? '');
+		if (newPlaceRollLandmark)
+			pl.location = rollOracle(placeLandmarkKey(!!parent), oracles).value ?? '';
 		if (newPlaceRollDescription)
 			pl.locationDescription = rollOracle('locationDescriptor', oracles).value ?? '';
-		if (newPlaceRollTrouble) pl.trouble = rollOracle('settlementTrouble', oracles).value ?? '';
 		if (newPlaceName.trim()) pl.name = newPlaceName.trim();
 		await addPlace(pl);
 		activeEntryId = pl.id;
@@ -921,7 +938,9 @@
 								{/if}
 								{#if activeEntry.kind === 'place' || !lodestarOn || c.location}
 									<div class="cm-field-row">
-										<label class="cm-field-label" for="cm-location-{c.id}">Location</label>
+										<label class="cm-field-label" for="cm-location-{c.id}"
+											>{activeEntry.kind === 'place' ? 'Landmark' : 'Location'}</label
+										>
 										<input
 											id="cm-location-{c.id}"
 											class="cm-input"
@@ -929,7 +948,7 @@
 											value={c.location}
 											oninput={(e) =>
 												updateCommunityLike({ location: (e.target as HTMLInputElement).value })}
-											placeholder="Location…"
+											placeholder={activeEntry.kind === 'place' ? 'Landmark…' : 'Location…'}
 										/>
 									</div>
 								{/if}
@@ -949,31 +968,57 @@
 										/>
 									</div>
 								{/if}
-								<div class="cm-field-row cm-field-row--trouble">
-									<label class="cm-field-label" for="cm-trouble-{c.id}">Trouble</label>
-									<input
-										id="cm-trouble-{c.id}"
-										class="cm-input"
-										type="text"
-										value={c.trouble}
-										oninput={(e) =>
-											updateCommunityLike({ trouble: (e.target as HTMLInputElement).value })}
-										placeholder={activeEntry.kind === 'place' ? 'Trouble…' : 'Settlement trouble…'}
-									/>
-									{#if activeEntry.kind === 'community'}
-										<!-- Settlement Trouble oracle is community-only; places don't
+								{#if activeEntry.kind === 'place'}
+									{@const pl = activeEntry.data}
+									<div class="cm-field-row">
+										<label class="cm-field-label" for="cm-within-{c.id}">Within</label>
+										<Select
+											id="cm-within-{c.id}"
+											class="cm-within-select"
+											value={pl.withinSettlementId ?? ''}
+											onchange={(v) =>
+												updateCommunityLike({
+													withinSettlementId: v || undefined,
+												} as Partial<Community>)}
+											options={[
+												{ value: '', label: '— Wilderness' },
+												...communities.map((cc) => ({
+													value: cc.id,
+													label: cc.name || 'Settlement',
+												})),
+											]}
+										/>
+									</div>
+								{/if}
+								{#if activeEntry.kind === 'community' || c.trouble}
+									<div class="cm-field-row cm-field-row--trouble">
+										<label class="cm-field-label" for="cm-trouble-{c.id}">Trouble</label>
+										<input
+											id="cm-trouble-{c.id}"
+											class="cm-input"
+											type="text"
+											value={c.trouble}
+											oninput={(e) =>
+												updateCommunityLike({ trouble: (e.target as HTMLInputElement).value })}
+											placeholder={activeEntry.kind === 'place'
+												? 'Trouble…'
+												: 'Settlement trouble…'}
+										/>
+										{#if activeEntry.kind === 'community'}
+											<!-- Settlement Trouble oracle is community-only; places don't
 										     have their own trouble oracle yet, so the dice button
 										     is hidden for them. -->
-										<button
-											class="dice-btn"
-											type="button"
-											onclick={rollSettlementTrouble}
-											disabled={rolling}
-											use:tooltip={'Roll settlement trouble oracle'}
-											aria-label="Roll settlement trouble oracle">{@html diceD6Svg}</button
-										>
-									{/if}
-								</div>
+											<button
+												class="dice-btn"
+												type="button"
+												onclick={rollSettlementTrouble}
+												disabled={rolling}
+												use:tooltip={'Roll settlement trouble oracle'}
+												aria-label="Roll settlement trouble oracle">{@html diceD6Svg}</button
+											>
+										{/if}
+									</div>
+								{/if}
 								<!-- Map field: one chip per marker referencing this
 								     community/place. Multi-map is supported natively —
 								     the store returns refs across all maps, chips wrap
@@ -1372,65 +1417,52 @@
 			class="btn btn-icon ea-dice-btn"
 			type="button"
 			onclick={rollNewPlaceName}
-			use:tooltip={'Roll a settlement name'}
+			use:tooltip={'Roll a name'}
 			aria-label="Random name">{@html diceD6Svg}</button
 		>
 
-		<label class="ns-label" for="np-region">Region Oracle</label>
+		<label class="ns-label" for="np-within">Within settlement</label>
 		<Select
-			id="np-region"
+			id="np-within"
 			class="ea-ns-select"
-			bind:value={_pendingPlaceRegionType}
-			options={isYrtEnabled()
-				? [
-						{ value: 'ironlands', label: 'Ironlands' },
-						{ value: 'yrt', label: 'YRT' },
-					]
-				: [{ value: 'ironlands', label: 'Ironlands' }]}
+			bind:value={_pendingPlaceWithin}
+			options={[
+				{ value: '', label: '— Wilderness (freestanding)' },
+				...communities.map((c) => ({ value: c.id, label: c.name || 'Settlement' })),
+			]}
 		/>
 		<span class="ns-spacer" aria-hidden="true"></span>
 
-		<label class="ns-label" for="np-loc">Location Oracle</label>
-		<Select
-			id="np-loc"
-			class="ea-ns-select"
-			bind:value={_pendingPlaceLocationType}
-			options={isYrtEnabled()
-				? [
-						{ value: 'location', label: 'Inland' },
-						{ value: 'coastalWatersLocation', label: 'Coastal Waters' },
-						{ value: 'yrtCityTownLocation', label: 'City / Town' },
-					]
-				: [
-						{ value: 'location', label: 'Inland' },
-						{ value: 'coastalWatersLocation', label: 'Coastal Waters' },
-					]}
-		/>
-		<span class="ns-spacer" aria-hidden="true"></span>
+		{#if !_pendingPlaceWithin}
+			<label class="ns-label" for="np-loc">Landmark Oracle</label>
+			<Select
+				id="np-loc"
+				class="ea-ns-select"
+				bind:value={_pendingPlaceLandmarkKind}
+				options={[
+					{ value: 'inland', label: 'Overland' },
+					{ value: 'coastal', label: 'Coastal Waters' },
+				]}
+			/>
+			<span class="ns-spacer" aria-hidden="true"></span>
+		{/if}
 	</div>
 
 	<div class="nn-randomize">
 		<span class="nn-randomize-label">Also randomize</span>
 		<Checkbox
 			class="nn-check"
-			checked={newPlaceRollLocation}
-			onCheckedChange={(v) => (newPlaceRollLocation = !!v)}
+			checked={newPlaceRollLandmark}
+			onCheckedChange={(v) => (newPlaceRollLandmark = !!v)}
 		>
-			<span class="nn-check-label">Location</span>
+			<span class="nn-check-label">Landmark</span>
 		</Checkbox>
 		<Checkbox
 			class="nn-check"
 			checked={newPlaceRollDescription}
 			onCheckedChange={(v) => (newPlaceRollDescription = !!v)}
 		>
-			<span class="nn-check-label">Description</span>
-		</Checkbox>
-		<Checkbox
-			class="nn-check"
-			checked={newPlaceRollTrouble}
-			onCheckedChange={(v) => (newPlaceRollTrouble = !!v)}
-		>
-			<span class="nn-check-label">Trouble</span>
+			<span class="nn-check-label">Descriptor</span>
 		</Checkbox>
 	</div>
 </ConfirmDialog>

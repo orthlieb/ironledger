@@ -516,8 +516,16 @@ export interface Place {
 	id: string;
 	name: string;
 	region: string;
+	/** The place's landmark — what it is (rolled from a Landmark oracle:
+	 *  Overland / Coastal for the wilds, Settlement Landmark when nested). */
 	location: string;
 	locationDescription: string;
+	/** Optional parent settlement this place sits inside (a Community id). When
+	 *  set, the place is an in-settlement point-of-interest and inherits the
+	 *  settlement's region. Empty/absent = a freestanding wilderness landmark. */
+	withinSettlementId?: string;
+	/** @deprecated Places are locations, not communities — Settlement Trouble no
+	 *  longer rolls for a Place. Kept for back-compat; shown only if populated. */
 	trouble: string;
 	notes: string; // long-form description (Description tab)
 	situationalNotes?: string; // short situational notes (Core tab)

@@ -213,9 +213,9 @@ older exports (which pre-date the Place entity) still load — a missing
         "id": "…",
         "name": "The Silver Fish",
         "region": "Ragged Coast",
-        "location": "Whitebridge",
-        "locationDescription": "waterfront tavern, second door on the left",
-        "trouble": "",
+        "location": "Tavern",
+        "locationDescription": "waterfront, second door on the left",
+        "withinSettlementId": "…",
         "notes": "",
         "...": "…"
       }
