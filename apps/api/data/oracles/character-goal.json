@@ -1,9 +1,10 @@
 {
   "key": "characterGoal",
-  "title": "Character Goal",
+  "title": "Character: Goal",
   "category": "Character",
-  "selectLabel": "Character Goal",
+  "selectLabel": "Character: Goal",
   "description": "Use this oracle to define the primary motivation of an NPC or a faction. It can also be used to kick-off a personal quest for your own character.",
+  "postamble": "When first encountering a character, use the First Look, Activity, and Disposition oracles to form an initial impression. If a character's occupation or motivations are important, check the Role and Goal oracles. But don't overdo it. Focus on those aspects that are knowable from the limited perspective of your own character. Generate a detail or two, envision the result as appropriate to the situation, make some assumptions to fill in the gaps, and move on.\n\nOver time, if you interact with a character and gain a deeper understanding of their nature and background, check for additional aspects using tables such as the Revealed Details oracle. You may ignore, reroll, or adjust contradictions. Or envision how those contradictions add interesting complexity to the character.",
   "source": "base",
   "data": [
     {

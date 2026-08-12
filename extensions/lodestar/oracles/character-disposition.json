@@ -1,0 +1,59 @@
+{
+  "key": "lodestarCharacterDisposition",
+  "title": "Character: Disposition",
+  "category": "Character",
+  "selectLabel": "Character: Disposition",
+  "description": "Gauge an NPC's initial attitude when you first interact with them. Replaces the base Character Disposition oracle when Lodestar is enabled — trims the older 18-entry Delve set to a tighter Starforged-style spread of twelve archetypal reactions.",
+  "postamble": "When first encountering a character, use the First Look, Activity, and Disposition oracles to form an initial impression. If a character's occupation or motivations are important, check the Role and Goal oracles. But don't overdo it. Focus on those aspects that are knowable from the limited perspective of your own character. Generate a detail or two, envision the result as appropriate to the situation, make some assumptions to fill in the gaps, and move on.\n\nOver time, if you interact with a character and gain a deeper understanding of their nature and background, check for additional aspects using tables such as the Revealed Details oracle. You may ignore, reroll, or adjust contradictions. Or envision how those contradictions add interesting complexity to the character.",
+  "source": "lodestar",
+  "data": [
+    {
+      "topRange": 6,
+      "value": "Helpful"
+    },
+    {
+      "topRange": 13,
+      "value": "Friendly"
+    },
+    {
+      "topRange": 20,
+      "value": "Cooperative"
+    },
+    {
+      "topRange": 28,
+      "value": "Curious"
+    },
+    {
+      "topRange": 36,
+      "value": "Indifferent"
+    },
+    {
+      "topRange": 47,
+      "value": "Suspicious"
+    },
+    {
+      "topRange": 57,
+      "value": "Wanting"
+    },
+    {
+      "topRange": 67,
+      "value": "Desperate"
+    },
+    {
+      "topRange": 76,
+      "value": "Demanding"
+    },
+    {
+      "topRange": 85,
+      "value": "Unfriendly"
+    },
+    {
+      "topRange": 93,
+      "value": "Threatening"
+    },
+    {
+      "topRange": 100,
+      "value": "Hostile"
+    }
+  ]
+}

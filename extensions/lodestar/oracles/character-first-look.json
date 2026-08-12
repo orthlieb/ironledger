@@ -1,211 +1,211 @@
 {
-  "key": "charActivity",
-  "title": "Character: Activity",
+  "key": "characterFirstLook",
+  "title": "Character: First Look",
   "category": "Character",
-  "selectLabel": "Character: Activity",
-  "description": "Roll to determine what a character is doing when you encounter them.",
+  "selectLabel": "Character: First Look",
+  "description": "Roll to reveal an immediate visual impression of a character on first encounter — how they look, carry themselves, or what stands out. Complements Character Descriptor (personality) with a surface-level, at-a-glance detail.",
   "postamble": "When first encountering a character, use the First Look, Activity, and Disposition oracles to form an initial impression. If a character's occupation or motivations are important, check the Role and Goal oracles. But don't overdo it. Focus on those aspects that are knowable from the limited perspective of your own character. Generate a detail or two, envision the result as appropriate to the situation, make some assumptions to fill in the gaps, and move on.\n\nOver time, if you interact with a character and gain a deeper understanding of their nature and background, check for additional aspects using tables such as the Revealed Details oracle. You may ignore, reroll, or adjust contradictions. Or envision how those contradictions add interesting complexity to the character.",
-  "source": "delve",
+  "source": "lodestar",
   "data": [
     {
       "topRange": 2,
-      "value": "Guarding"
+      "value": "Well-armed"
     },
     {
       "topRange": 4,
-      "value": "Preserving"
+      "value": "Alluring"
     },
     {
       "topRange": 6,
-      "value": "Constructing"
+      "value": "Mystical"
     },
     {
       "topRange": 8,
-      "value": "Mending"
+      "value": "Pursued"
     },
     {
       "topRange": 10,
-      "value": "Assisting"
+      "value": "Beastly"
     },
     {
       "topRange": 12,
-      "value": "Securing"
+      "value": "Stout"
     },
     {
       "topRange": 14,
-      "value": "Learning"
+      "value": "Confused"
     },
     {
       "topRange": 16,
-      "value": "Sneaking"
+      "value": "Equipped"
     },
     {
       "topRange": 18,
-      "value": "Fleeing"
+      "value": "Distressed"
     },
     {
       "topRange": 20,
-      "value": "Sacrificing"
+      "value": "Fearsome"
     },
     {
       "topRange": 22,
-      "value": "Creating"
+      "value": "Cloaked"
     },
     {
       "topRange": 24,
-      "value": "Luring"
+      "value": "Guarded"
     },
     {
       "topRange": 26,
-      "value": "Hunting"
+      "value": "Commanding"
     },
     {
       "topRange": 28,
-      "value": "Seizing"
+      "value": "Weathered"
     },
     {
       "topRange": 30,
-      "value": "Bargaining"
+      "value": "Unassuming"
     },
     {
       "topRange": 32,
-      "value": "Mimicking"
+      "value": "Attractive"
     },
     {
       "topRange": 34,
-      "value": "Tricking"
+      "value": "Youthful"
     },
     {
       "topRange": 36,
-      "value": "Tracking"
+      "value": "Armored"
     },
     {
       "topRange": 38,
-      "value": "Escorting"
+      "value": "Drunk"
     },
     {
       "topRange": 40,
-      "value": "Hiding"
+      "value": "Silent"
     },
     {
       "topRange": 42,
-      "value": "Raiding"
+      "value": "Brutish"
     },
     {
       "topRange": 44,
-      "value": "Socializing"
+      "value": "Ghostly"
     },
     {
       "topRange": 46,
-      "value": "Exploring"
+      "value": "Sickly"
     },
     {
       "topRange": 48,
-      "value": "Journeying"
+      "value": "Accented"
     },
     {
       "topRange": 50,
-      "value": "Supporting"
+      "value": "Poised"
     },
     {
       "topRange": 52,
-      "value": "Avoiding"
+      "value": "Well-mannered"
     },
     {
       "topRange": 54,
-      "value": "Disabling"
+      "value": "Menacing"
     },
     {
       "topRange": 56,
-      "value": "Leading"
+      "value": "Filthy"
     },
     {
       "topRange": 58,
-      "value": "Assaulting"
+      "value": "Wounded"
     },
     {
       "topRange": 60,
-      "value": "Ensnaring"
+      "value": "Mysterious"
     },
     {
       "topRange": 62,
-      "value": "Defending"
+      "value": "Imposing"
     },
     {
       "topRange": 64,
-      "value": "Recovering"
+      "value": "Ill-equipped"
     },
     {
       "topRange": 66,
-      "value": "Patrolling"
+      "value": "Scarred"
     },
     {
       "topRange": 68,
-      "value": "Resting"
+      "value": "Slight"
     },
     {
       "topRange": 70,
-      "value": "Distracting"
+      "value": "Tattooed"
     },
     {
       "topRange": 72,
-      "value": "Leaving"
+      "value": "Grim"
     },
     {
       "topRange": 74,
-      "value": "Fighting"
+      "value": "Masked"
     },
     {
       "topRange": 76,
-      "value": "Ambushing"
+      "value": "Distinguished"
     },
     {
       "topRange": 78,
-      "value": "Controlling"
+      "value": "Fit"
     },
     {
       "topRange": 80,
-      "value": "Observing"
+      "value": "Firstborn"
     },
     {
       "topRange": 82,
-      "value": "Gathering"
+      "value": "Bloodstained"
     },
     {
       "topRange": 84,
-      "value": "Suffering"
+      "value": "Overburdened"
     },
     {
       "topRange": 86,
-      "value": "Threatening"
+      "value": "Furtive"
     },
     {
       "topRange": 88,
-      "value": "Searching"
+      "value": "Aged"
     },
     {
       "topRange": 90,
-      "value": "Destroying"
+      "value": "Graceful"
     },
     {
       "topRange": 92,
-      "value": "Restoring"
+      "value": "Inhuman"
     },
     {
       "topRange": 94,
-      "value": "Consuming"
+      "value": "Sinister"
     },
     {
       "topRange": 96,
-      "value": "Removing"
+      "value": "Visibly disabled"
     },
     {
       "topRange": 98,
-      "value": "Inspecting"
+      "value": "Concealed"
     },
     {
       "topRange": 100,
-      "value": "Summoning"
+      "value": "Uncanny"
     }
   ]
 }
