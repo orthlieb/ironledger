@@ -85,6 +85,27 @@ test.describe('Connections area (v2)', () => {
 		await page.keyboard.press('Escape');
 	});
 
+	test('New Settlement dialog: name-oracle picker + mode-aware Also-randomize fields', async ({
+		page,
+	}) => {
+		await openNew(page, 'Settlement');
+		const dialog = page.locator('.confirm-modal');
+		await expect(dialog).toBeVisible();
+		// Name randomizer: a Name Oracle <Select> + a d6 button.
+		await expect(dialog.locator('.bui-select-trigger').first()).toBeVisible();
+		await expect(dialog.locator('.dice-btn').first()).toBeVisible();
+		// Region is now an Also-randomize checkbox, not an oracle picker (#nc-region).
+		await expect(dialog.locator('#nc-region')).toHaveCount(0);
+		await expect(dialog.locator('.nn-check-label', { hasText: /^Region$/ })).toHaveCount(1);
+		// Lodestar is default-on → the on-reveal settlement fields are offered.
+		for (const label of ['Type', 'Condition', 'First Look']) {
+			await expect(
+				dialog.locator('.nn-check-label', { hasText: new RegExp(`^${label}$`) }),
+			).toHaveCount(1);
+		}
+		await page.keyboard.press('Escape');
+	});
+
 	test('can add a community via Random', async ({ page }) => {
 		const before = await entryCount(page);
 		await openNew(page, 'Settlement');

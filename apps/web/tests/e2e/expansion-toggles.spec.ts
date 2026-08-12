@@ -4,7 +4,7 @@
  * Verifies:
  *   • Both expansions default to ON (fresh storage).
  *   • Disabling Delve hides Delve moves, oracles, foes, and the "+ Site" button.
- *   • Disabling YRT hides YRT moves, oracles, foes, and the YRT region radio.
+ *   • Disabling YRT hides YRT moves, oracles, and foes.
  *   • find*-style resolution is NEVER filtered — a log link to a disabled-expansion
  *     move still opens in the MovesDialog (render-time resolution contract).
  *   • Toggles persist across page reloads (localStorage).
@@ -211,30 +211,10 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		).toBeVisible({ timeout: 5_000 });
 	});
 
-	test('YRT off: YRT region radio hidden in community creation', async ({ page }) => {
-		await setExpansionsViaStorage(page, { yrt: false });
-		// Wait for communities area to render.
-		await expect(page.locator(`${CM_AREA} .cm-loading`)).not.toBeVisible({ timeout: 12_000 });
-		await page
-			.locator(`${CM_AREA} .cm-empty, ${CM_AREA} .cm-body`)
-			.first()
-			.waitFor({ timeout: 12_000, state: 'attached' });
-
-		await page.locator(`${CM_HEADER} .cm-hdr-combobox`).click({ timeout: 8_000 });
-		await page.locator('.mp-cmd-item--action', { hasText: /New Settlement/i }).click();
-
-		// The New Settlement dialog now picks its region from a bits-ui <Select>
-		// (#nc-region). With YRT off, the option list must offer Ironlands but
-		// not YRT. Open the select and inspect its portalled items.
-		const openDialog = page.locator('.confirm-modal');
-		await expect(openDialog).toBeVisible({ timeout: 8_000 });
-		await openDialog.locator('#nc-region').click();
-		const items = page.locator('.bui-select-content .bui-select-item');
-		await expect(items.filter({ hasText: /^Ironlands$/ })).toHaveCount(1, { timeout: 3_000 });
-		await expect(items.filter({ hasText: /^YRT$/ })).toHaveCount(0);
-		await page.keyboard.press('Escape'); // close the select
-		await page.keyboard.press('Escape'); // close the dialog
-	});
+	// (The old "YRT region radio hidden in community creation" test was removed:
+	// the New Settlement dialog no longer has a region-oracle picker — Region is
+	// auto (base or YRT) and controlled by an Also-randomize checkbox. Coverage
+	// of the new dialog lives in communities.spec.ts.)
 
 	// ── 4. Render-time resolution (find* is never filtered) ──────────────────
 
