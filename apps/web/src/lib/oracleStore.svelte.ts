@@ -226,6 +226,48 @@ export function findOracle(key: string): OracleFile | undefined {
 }
 
 // ---------------------------------------------------------------------------
+// Character concept → visible oracle resolver
+//
+// NPC composition asks for concepts ("give me a disposition") rather than
+// concrete oracle keys. Which table backs each concept depends on the
+// currently-enabled expansions: Delve alone → base charDisposition; Lodestar
+// on → its own lodestarCharacterDisposition (which supersedes the base one);
+// both off → no disposition backing at all. Callers ask this resolver, which
+// returns the first key that is (a) loaded, (b) not suppressed by another
+// enabled extension, (c) sourced from an enabled extension — or null when
+// no visible table backs the concept, so a checkbox / button can gate on it.
+// ---------------------------------------------------------------------------
+
+export type CharacterConcept =
+	'role' | 'goal' | 'revealedDetails' | 'activity' | 'disposition' | 'firstLook';
+
+/** Oracle keys that could back each concept, in preference order (first
+ *  visible key wins). Adding a new supersession later — e.g. a Starforged
+ *  Character NPC Nature — is a one-line entry here. */
+const CHARACTER_CONCEPT_KEYS: Record<CharacterConcept, string[]> = {
+	role: ['characterRole'],
+	goal: ['characterGoal'],
+	revealedDetails: ['characterDescriptor'],
+	activity: ['charActivity'],
+	disposition: ['lodestarCharacterDisposition', 'charDisposition'],
+	firstLook: ['characterFirstLook'],
+};
+
+/** Resolve a character concept to the oracle that should back it right now,
+ *  honoring both expansion-source gating and the suppression list. Returns
+ *  null when nothing visible backs the concept. Reactive — reads `_oracles`,
+ *  `_registry`, `_enabled` all $state, so a `$derived` re-runs when the
+ *  user toggles an expansion. */
+export function resolveCharacterOracle(concept: CharacterConcept): OracleFile | null {
+	const suppressed = suppressedOracleKeys();
+	for (const key of CHARACTER_CONCEPT_KEYS[concept]) {
+		const o = findOracle(key);
+		if (o && !suppressed.has(o.key) && isSourceEnabled(o.source)) return o;
+	}
+	return null;
+}
+
+// ---------------------------------------------------------------------------
 // Pure rolling helpers  (ported from oracles-pure.js)
 // ---------------------------------------------------------------------------
 
