@@ -988,6 +988,15 @@
 												})),
 											]}
 										/>
+										{#if pl.withinSettlementId}
+											<button
+												class="cm-within-jump"
+												type="button"
+												onclick={() => (activeEntryId = pl.withinSettlementId ?? null)}
+												use:tooltip={'Go to the parent settlement'}
+												aria-label="Go to the parent settlement">↗</button
+											>
+										{/if}
 									</div>
 								{/if}
 								{#if activeEntry.kind === 'community' || c.trouble}
@@ -1018,6 +1027,27 @@
 											>
 										{/if}
 									</div>
+								{/if}
+								{#if activeEntry.kind === 'community'}
+									{@const s = activeEntry.data}
+									{@const here = places.filter((p) => p.withinSettlementId === s.id)}
+									{#if here.length > 0}
+										<div class="cm-field-row cm-field-row--places">
+											<span class="cm-field-label">Places</span>
+											<div class="cm-mapref-chips">
+												{#each here as p (p.id)}
+													<button
+														class="cm-mapref-chip"
+														type="button"
+														onclick={() => (activeEntryId = p.id)}
+														use:tooltip={'Go to this place'}
+														><span class="cm-mapref-name">{p.name || 'Untitled place'}</span
+														></button
+													>
+												{/each}
+											</div>
+										</div>
+									{/if}
 								{/if}
 								<!-- Map field: one chip per marker referencing this
 								     community/place. Multi-map is supported natively —
@@ -1518,6 +1548,31 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		max-width: 12rem;
+	}
+
+	/* Places-here strip on a settlement panel + the jump-to-parent glyph on a
+	   nested place's Within row — both surface the withinSettlementId link. */
+	.cm-field-row--places {
+		align-items: flex-start;
+	}
+	.cm-within-jump {
+		flex: 0 0 auto;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 26px;
+		height: 26px;
+		border: 1px solid var(--border-mid);
+		border-radius: 6px;
+		background: var(--bg-control);
+		color: var(--text-dim);
+		font-size: 0.95rem;
+		line-height: 1;
+		cursor: pointer;
+	}
+	.cm-within-jump:hover {
+		border-color: var(--text-accent);
+		color: var(--text-accent);
 	}
 
 	.cm-header {
