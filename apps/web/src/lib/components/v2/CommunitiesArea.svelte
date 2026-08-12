@@ -981,7 +981,7 @@
 													withinSettlementId: v || undefined,
 												} as Partial<Community>)}
 											options={[
-												{ value: '', label: '— Wilderness' },
+												{ value: '', label: 'No settlement' },
 												...communities.map((cc) => ({
 													value: cc.id,
 													label: cc.name || 'Settlement',
@@ -1434,47 +1434,53 @@
 		_pendingPlace = null;
 	}}
 >
-	<div class="ns-grid">
-		<label class="ns-label" for="np-name">Name</label>
-		<input
-			id="np-name"
-			class="co-input"
-			type="text"
-			bind:value={newPlaceName}
-			placeholder="Place name"
-		/>
-		<button
-			class="btn btn-icon ea-dice-btn"
-			type="button"
-			onclick={rollNewPlaceName}
-			use:tooltip={'Roll a name'}
-			aria-label="Random name">{@html diceD6Svg}</button
-		>
+	<div class="np-form">
+		<div class="np-field">
+			<label class="ns-label" for="np-name">Name</label>
+			<div class="np-row">
+				<input
+					id="np-name"
+					class="co-input"
+					type="text"
+					bind:value={newPlaceName}
+					placeholder="Place name"
+				/>
+				<button
+					class="btn btn-icon ea-dice-btn"
+					type="button"
+					onclick={rollNewPlaceName}
+					use:tooltip={'Roll a name'}
+					aria-label="Random name">{@html diceD6Svg}</button
+				>
+			</div>
+		</div>
 
-		<label class="ns-label" for="np-within">Within settlement</label>
-		<Select
-			id="np-within"
-			class="ea-ns-select"
-			bind:value={_pendingPlaceWithin}
-			options={[
-				{ value: '', label: '— Wilderness (freestanding)' },
-				...communities.map((c) => ({ value: c.id, label: c.name || 'Settlement' })),
-			]}
-		/>
-		<span class="ns-spacer" aria-hidden="true"></span>
-
-		{#if !_pendingPlaceWithin}
-			<label class="ns-label" for="np-loc">Landmark Oracle</label>
+		<div class="np-field">
+			<label class="ns-label" for="np-within">Within settlement</label>
 			<Select
-				id="np-loc"
+				id="np-within"
 				class="ea-ns-select"
-				bind:value={_pendingPlaceLandmarkKind}
+				bind:value={_pendingPlaceWithin}
 				options={[
-					{ value: 'inland', label: 'Overland' },
-					{ value: 'coastal', label: 'Coastal Waters' },
+					{ value: '', label: 'No settlement' },
+					...communities.map((c) => ({ value: c.id, label: c.name || 'Settlement' })),
 				]}
 			/>
-			<span class="ns-spacer" aria-hidden="true"></span>
+		</div>
+
+		{#if !_pendingPlaceWithin}
+			<div class="np-field">
+				<label class="ns-label" for="np-loc">Landmark oracle</label>
+				<Select
+					id="np-loc"
+					class="ea-ns-select"
+					bind:value={_pendingPlaceLandmarkKind}
+					options={[
+						{ value: 'inland', label: 'Overland' },
+						{ value: 'coastal', label: 'Coastal Waters' },
+					]}
+				/>
+			</div>
 		{/if}
 	</div>
 
@@ -1505,6 +1511,31 @@
 		flex-direction: column;
 		height: 100%;
 		min-height: 0;
+	}
+
+	/* New Place dialog — labels stacked ABOVE their controls (long labels
+	   like "Within settlement" wrapped badly in the shared 56px ns-grid
+	   label column). */
+	.np-form {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		margin: 0 0 4px;
+	}
+	.np-field {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+	.np-row {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+	.np-row :global(.co-input) {
+		flex: 1 1 auto;
+		width: auto;
+		min-width: 0;
 	}
 	/* Map field — the chip strip lives inside a `.cm-field-row` in
 	   the Core tab now (previously a header-level band). One chip per
