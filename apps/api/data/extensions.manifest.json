@@ -184,6 +184,7 @@
           "moves/overrides.json"
         ],
         "oracles": [
+          "oracles/character-first-look.json",
           "oracles/coastal-waters-landmark.json",
           "oracles/coastal-waters-opportunity.json",
           "oracles/coastal-waters-peril.json",
