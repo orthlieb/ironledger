@@ -125,17 +125,40 @@
 		return () => document.removeEventListener('ironledger:focus-entity', onFocus);
 	});
 
-	// New-community dialog state. Region + Location are oracle pickers
-	// (which oracle to roll from); the checkboxes control which of the
-	// "flavour" fields — Location / Description / Trouble — actually
-	// roll on Create. Region always rolls from its selected oracle.
+	// New-community dialog state. Location is an oracle picker (which oracle to
+	// roll from); the checkboxes control which flavour fields — Region / Location
+	// / Description / Trouble — roll on Create. Region has no picker: it always
+	// uses the base Region oracle, or YRT's replacement when YRT is enabled.
 	let newCommunityDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let _pendingCommunity: Community | null = null;
-	let _pendingCommunityRegionType = $state<'ironlands' | 'yrt'>('ironlands');
 	let _pendingCommunityLocationType = $state<'location' | 'coastalWatersLocation'>('location');
+	let newCommunityRollRegion = $state(true);
 	let newCommunityRollLocation = $state(true);
 	let newCommunityRollDescription = $state(true);
 	let newCommunityRollTrouble = $state(true);
+
+	// Lodestar settlement suite — six fields shown only under Lodestar (or when a
+	// settlement already has a value for one). Type / Condition / First Look are
+	// the book's "on reveal" set (default rolled on Create); Disposition /
+	// Projects / Cultural Touchstones are situational (default off — roll from the
+	// panel d6 when the fiction calls for it).
+	const LODESTAR_SETTLEMENT_FIELDS = [
+		{ key: 'type', label: 'Type' },
+		{ key: 'condition', label: 'Condition' },
+		{ key: 'firstLook', label: 'First Look' },
+		{ key: 'disposition', label: 'Disposition' },
+		{ key: 'projects', label: 'Projects' },
+		{ key: 'culturalTouchstones', label: 'Cultural Touchstones' },
+	] as const;
+	type LodestarSettlementFieldKey = (typeof LODESTAR_SETTLEMENT_FIELDS)[number]['key'];
+	let newCommunityRollLodestar = $state<Record<LodestarSettlementFieldKey, boolean>>({
+		type: true,
+		condition: true,
+		firstLook: true,
+		disposition: false,
+		projects: false,
+		culturalTouchstones: false,
+	});
 
 	// Lodestar replaces a settlement's Location + Location Descriptor with its
 	// own settlement oracle suite (Type / Condition / First Look …), so when it's
@@ -190,6 +213,15 @@
 	let newCommunityName = $state<string>('');
 	let newNpcName = $state<string>('');
 	let newPlaceName = $state<string>('');
+
+	// Settlement name randomizer — two "double-rolling" oracles: Settlement Name
+	// (category → example) and Quick Settlement Name (prefix + suffix). rollOracle
+	// composes each into a finished string, so the picker just selects the source.
+	let newCommunityNameOracle = $state('settlementName');
+	const SETTLEMENT_NAME_ORACLES = [
+		{ value: 'settlementName', label: 'Settlement Name' },
+		{ value: 'settlementNameQuick', label: 'Quick Settlement Name' },
+	];
 
 	// Inline-edit state
 	let editingNotes = $state(false);
@@ -360,6 +392,46 @@
 		}
 	}
 
+	/** Land tier for the Settlement Type columnSelect, derived from the region
+	 *  per the book's mapping (Havens → settled; Barrier Islands / Flooded Lands /
+	 *  Hinterlands / Ragged Coast → boundary; Deep Wilds / Tempest Hills / Veiled
+	 *  Mountains → remote). YRT / unknown regions fall back to boundary. */
+	function tierForRegion(region: string): 'settled' | 'boundary' | 'remote' {
+		const r = region.toLowerCase();
+		if (r.includes('haven')) return 'settled';
+		if (/barrier islands|flooded lands|hinterlands|ragged coast/.test(r)) return 'boundary';
+		if (/deep wilds|tempest hills|veiled mountains/.test(r)) return 'remote';
+		return 'boundary';
+	}
+
+	/** Roll one Lodestar settlement field, resolving the right oracle: Type is a
+	 *  land-tier columnSelect (tier from region); Condition uses YRT's superseding
+	 *  oracle when YRT is on; the rest are plain single rolls. */
+	function rollSettlementFieldValue(
+		key: LodestarSettlementFieldKey,
+		region: string,
+		oracles: ReturnType<typeof getOracles>,
+	): string {
+		if (key === 'type')
+			// settlementType values carry <strong>…</strong> markup for the picker;
+			// strip tags so the plain-text field shows "Outpost — Border or…".
+			return (
+				rollOracle('settlementType', oracles, { stat: tierForRegion(region) }).value ?? ''
+			).replace(/<[^>]+>/g, '');
+		if (key === 'condition')
+			return (
+				rollOracle(isYrtEnabled() ? 'yrtSettlementCondition' : 'settlementCondition', oracles)
+					.value ?? ''
+			);
+		const oracleKey: Record<Exclude<LodestarSettlementFieldKey, 'type' | 'condition'>, string> = {
+			firstLook: 'settlementFirstLook',
+			disposition: 'settlementDisposition',
+			projects: 'settlementProjects',
+			culturalTouchstones: 'settlementCulturalTouchstones',
+		};
+		return rollOracle(oracleKey[key], oracles).value ?? '';
+	}
+
 	// Persist the store that was being edited. Reads (+ clears) _savingKind,
 	// exactly as the inline timer did — shared by the debounced schedule and
 	// every flush() site.
@@ -411,13 +483,12 @@
 		newCommunityDialogRef?.open();
 	}
 
-	/** Roll a settlement name off one of the two name oracles (50/50) and
-	 *  drop it into the New Community draft — wired to the name d6. */
+	/** Roll a settlement name off the selected name oracle and drop it into the
+	 *  New Community draft — wired to the name d6. Both oracles double-roll;
+	 *  rollOracle returns the finished composed string. */
 	function rollNewCommunityName() {
-		const oracles = getOracles();
-		const oracle = Math.random() < 0.5 ? 'settlementName' : 'settlementNameQuick';
-		const v = rollOracle(oracle, oracles).value;
-		if (v) newCommunityName = v;
+		const v = rollOracle(newCommunityNameOracle, getOracles()).value;
+		if (typeof v === 'string' && v) newCommunityName = v;
 	}
 
 	async function _commitCommunity() {
@@ -425,11 +496,9 @@
 		const c = _pendingCommunity;
 		_pendingCommunity = null;
 		const oracles = getOracles();
-		// Region always rolls from the selected Region Oracle.
-		c.region =
-			_pendingCommunityRegionType === 'yrt'
-				? rollOracle('yrtRegion', oracles).value
-				: rollOracle('region', oracles).value;
+		// Region: the base Region oracle, or YRT's replacement when YRT is on.
+		if (newCommunityRollRegion)
+			c.region = rollOracle(isYrtEnabled() ? 'yrtRegion' : 'region', oracles).value ?? '';
 		// Location + Descriptor are a Core-only settlement detail — Lodestar
 		// supersedes them with its settlement suite, so skip both when it's on.
 		if (newCommunityRollLocation && !lodestarOn)
@@ -437,6 +506,12 @@
 		if (newCommunityRollDescription && !lodestarOn)
 			c.locationDescription = rollOracle('locationDescriptor', oracles).value ?? '';
 		if (newCommunityRollTrouble) c.trouble = rollOracle('settlementTrouble', oracles).value ?? '';
+		// Lodestar settlement suite — roll each checked field (Type derives its
+		// land tier from the just-rolled region).
+		if (lodestarOn)
+			for (const f of LODESTAR_SETTLEMENT_FIELDS)
+				if (newCommunityRollLodestar[f.key])
+					c[f.key] = rollSettlementFieldValue(f.key, c.region, oracles);
 		if (newCommunityName.trim()) c.name = newCommunityName.trim();
 		await addCommunity(c);
 		activeEntryId = c.id;
@@ -809,56 +884,57 @@
 										placeholder="Region…"
 									/>
 								</div>
-								<div class="cm-field-row">
-									<label class="cm-field-label" for="cm-location-{c.id}">Location</label>
-									<input
-										id="cm-location-{c.id}"
-										class="cm-input"
-										type="text"
-										value={c.location}
-										oninput={(e) =>
-											updateCommunityLike({ location: (e.target as HTMLInputElement).value })}
-										placeholder="Location…"
-									/>
-								</div>
-								<div class="cm-field-row">
-									<label class="cm-field-label" for="cm-locdesc-{c.id}">Descriptor</label>
-									<input
-										id="cm-locdesc-{c.id}"
-										class="cm-input"
-										type="text"
-										value={c.locationDescription}
-										oninput={(e) =>
-											updateCommunityLike({
-												locationDescription: (e.target as HTMLInputElement).value,
-											})}
-										placeholder="Location descriptor…"
-									/>
-								</div>
-								<!-- Map field: one chip per marker referencing this
-								     community/place. Multi-map is supported natively —
-								     the store returns refs across all maps, chips wrap
-								     onto new rows via flex-wrap. Coord (x, y) lives in
-								     the tooltip; chip text is the map name only. -->
-								<div class="cm-field-row cm-field-row--map">
-									<span class="cm-field-label">Map</span>
-									<div class="cm-mapref-chips">
-										{#if activeEntryMarkers.length === 0}
-											<span class="cm-mapref-empty">Not on any map</span>
-										{:else}
-											{#each activeEntryMarkers as ref (ref.markerId)}
-												<button
-													class="cm-mapref-chip"
-													onclick={() => jumpToMarker(ref)}
-													use:tooltip={`Jump to "${ref.label || '(unlabeled)'}" on ${ref.mapName} — (${fmtCoord(ref.x)}, ${fmtCoord(ref.y)})`}
-													aria-label={`Jump to marker on ${ref.mapName}`}
-												>
-													<span class="cm-mapref-name">{ref.mapName}</span>
-												</button>
-											{/each}
+								{#if activeEntry.kind === 'community'}
+									{@const s = activeEntry.data}
+									{#each LODESTAR_SETTLEMENT_FIELDS as f (f.key)}
+										{#if lodestarOn || s[f.key]}
+											<div class="cm-field-row">
+												<label class="cm-field-label" for="cm-{f.key}-{s.id}">{f.label}</label>
+												<input
+													id="cm-{f.key}-{s.id}"
+													class="cm-input"
+													type="text"
+													value={s[f.key] ?? ''}
+													oninput={(e) =>
+														updateCommunityLike({
+															[f.key]: (e.target as HTMLInputElement).value,
+														} as Partial<Community>)}
+													placeholder="{f.label}…"
+												/>
+											</div>
 										{/if}
+									{/each}
+								{/if}
+								{#if activeEntry.kind === 'place' || !lodestarOn || c.location}
+									<div class="cm-field-row">
+										<label class="cm-field-label" for="cm-location-{c.id}">Location</label>
+										<input
+											id="cm-location-{c.id}"
+											class="cm-input"
+											type="text"
+											value={c.location}
+											oninput={(e) =>
+												updateCommunityLike({ location: (e.target as HTMLInputElement).value })}
+											placeholder="Location…"
+										/>
 									</div>
-								</div>
+								{/if}
+								{#if activeEntry.kind === 'place' || !lodestarOn || c.locationDescription}
+									<div class="cm-field-row">
+										<label class="cm-field-label" for="cm-locdesc-{c.id}">Descriptor</label>
+										<input
+											id="cm-locdesc-{c.id}"
+											class="cm-input"
+											type="text"
+											value={c.locationDescription}
+											oninput={(e) =>
+												updateCommunityLike({
+													locationDescription: (e.target as HTMLInputElement).value,
+												})}
+											placeholder="Location descriptor…"
+										/>
+									</div>
+								{/if}
 								<div class="cm-field-row cm-field-row--trouble">
 									<label class="cm-field-label" for="cm-trouble-{c.id}">Trouble</label>
 									<input
@@ -883,6 +959,30 @@
 											aria-label="Roll settlement trouble oracle">{@html diceD6Svg}</button
 										>
 									{/if}
+								</div>
+								<!-- Map field: one chip per marker referencing this
+								     community/place. Multi-map is supported natively —
+								     the store returns refs across all maps, chips wrap
+								     onto new rows via flex-wrap. Coord (x, y) lives in
+								     the tooltip; chip text is the map name only. -->
+								<div class="cm-field-row cm-field-row--map">
+									<span class="cm-field-label">Map</span>
+									<div class="cm-mapref-chips">
+										{#if activeEntryMarkers.length === 0}
+											<span class="cm-mapref-empty">Not on any map</span>
+										{:else}
+											{#each activeEntryMarkers as ref (ref.markerId)}
+												<button
+													class="cm-mapref-chip"
+													onclick={() => jumpToMarker(ref)}
+													use:tooltip={`Jump to "${ref.label || '(unlabeled)'}" on ${ref.mapName} — (${fmtCoord(ref.x)}, ${fmtCoord(ref.y)})`}
+													aria-label={`Jump to marker on ${ref.mapName}`}
+												>
+													<span class="cm-mapref-name">{ref.mapName}</span>
+												</button>
+											{/each}
+										{/if}
+									</div>
 								</div>
 							{:else}
 								{@const n = activeEntry.data}
@@ -1064,38 +1164,32 @@
 		_pendingCommunity = null;
 	}}
 >
-	<div class="ns-grid">
-		<label class="ns-label" for="nc-name">Name</label>
+	<label class="co-field">
+		<span class="co-field-label">Settlement name</span>
 		<input
 			id="nc-name"
 			class="co-input"
 			type="text"
 			bind:value={newCommunityName}
-			placeholder="Community name"
+			placeholder="Settlement name"
 		/>
-		<button
-			class="btn btn-icon ea-dice-btn"
-			type="button"
-			onclick={rollNewCommunityName}
-			use:tooltip={'Roll a settlement name'}
-			aria-label="Random name">{@html diceD6Svg}</button
-		>
+	</label>
+	<div class="co-field">
+		<span class="co-field-label">Use a name oracle to roll a random name</span>
+		<div class="co-name-row">
+			<Select bind:value={newCommunityNameOracle} options={SETTLEMENT_NAME_ORACLES} />
+			<button
+				class="dice-btn"
+				type="button"
+				onclick={rollNewCommunityName}
+				use:tooltip={'Roll a name'}
+				aria-label="Random name">{@html diceD6Svg}</button
+			>
+		</div>
+	</div>
 
-		<label class="ns-label" for="nc-region">Region Oracle</label>
-		<Select
-			id="nc-region"
-			class="ea-ns-select"
-			bind:value={_pendingCommunityRegionType}
-			options={isYrtEnabled()
-				? [
-						{ value: 'ironlands', label: 'Ironlands' },
-						{ value: 'yrt', label: 'YRT' },
-					]
-				: [{ value: 'ironlands', label: 'Ironlands' }]}
-		/>
-		<span class="ns-spacer" aria-hidden="true"></span>
-
-		{#if !lodestarOn}
+	{#if !lodestarOn}
+		<div class="ns-grid">
 			<label class="ns-label" for="nc-loc">Location Oracle</label>
 			<Select
 				id="nc-loc"
@@ -1107,11 +1201,18 @@
 				]}
 			/>
 			<span class="ns-spacer" aria-hidden="true"></span>
-		{/if}
-	</div>
+		</div>
+	{/if}
 
 	<div class="nn-randomize">
 		<span class="nn-randomize-label">Also randomize</span>
+		<Checkbox
+			class="nn-check"
+			checked={newCommunityRollRegion}
+			onCheckedChange={(v) => (newCommunityRollRegion = !!v)}
+		>
+			<span class="nn-check-label">Region</span>
+		</Checkbox>
 		{#if !lodestarOn}
 			<Checkbox
 				class="nn-check"
@@ -1127,6 +1228,17 @@
 			>
 				<span class="nn-check-label">Descriptor</span>
 			</Checkbox>
+		{/if}
+		{#if lodestarOn}
+			{#each LODESTAR_SETTLEMENT_FIELDS as f (f.key)}
+				<Checkbox
+					class="nn-check"
+					checked={newCommunityRollLodestar[f.key]}
+					onCheckedChange={(v) => (newCommunityRollLodestar[f.key] = !!v)}
+				>
+					<span class="nn-check-label">{f.label}</span>
+				</Checkbox>
+			{/each}
 		{/if}
 		<Checkbox
 			class="nn-check"
@@ -1697,14 +1809,16 @@
 	   compact spacing. Shared with the Site + NPC + Community + Place
 	   dialogs so all four read the same. */
 	:global(.nn-randomize) {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 4px 16px;
+		align-items: center;
 		margin-top: 10px;
 		padding-top: 8px;
 		border-top: 1px solid var(--border);
 	}
 	:global(.nn-randomize-label) {
+		grid-column: 1 / -1;
 		font-family: var(--font-ui);
 		font-size: 0.65rem;
 		font-weight: 600;
