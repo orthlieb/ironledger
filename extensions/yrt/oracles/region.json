@@ -3,88 +3,30 @@
   "title": "Region",
   "category": "Location",
   "selectLabel": "Region",
-  "description": "Determine the region of the Yrt world where an event or location is situated. Replaces the base Region oracle when YRT is enabled.",
+  "description": "Determine the region of the Yrt world where an event or location is situated. Regions are ordered and weighted by type: settled lands come up most often, boundary lands less often, and remote lands rarely.",
   "source": "yrt",
   "data": [
-    {
-      "topRange": 5,
-      "value": "Nysis"
-    },
-    {
-      "topRange": 10,
-      "value": "Mososi"
-    },
-    {
-      "topRange": 15,
-      "value": "Buralia"
-    },
-    {
-      "topRange": 20,
-      "value": "Freeport"
-    },
-    {
-      "topRange": 25,
-      "value": "Ostrea"
-    },
-    {
-      "topRange": 30,
-      "value": "Fluenti"
-    },
-    {
-      "topRange": 35,
-      "value": "Termin"
-    },
-    {
-      "topRange": 40,
-      "value": "Materton"
-    },
-    {
-      "topRange": 45,
-      "value": "Collina"
-    },
-    {
-      "topRange": 50,
-      "value": "Mons"
-    },
-    {
-      "topRange": 55,
-      "value": "Piscis"
-    },
-    {
-      "topRange": 60,
-      "value": "Ravenna"
-    },
-    {
-      "topRange": 65,
-      "value": "Spero"
-    },
-    {
-      "topRange": 70,
-      "value": "Typpe"
-    },
-    {
-      "topRange": 75,
-      "value": "Sveba"
-    },
-    {
-      "topRange": 80,
-      "value": "Pinna Mines"
-    },
-    {
-      "topRange": 85,
-      "value": "Weirden Fen"
-    },
-    {
-      "topRange": 90,
-      "value": "Altay Montoy"
-    },
-    {
-      "topRange": 95,
-      "value": "Profunda Arbaro"
-    },
-    {
-      "topRange": 100,
-      "value": "Silva"
-    }
+    { "topRange": 7, "value": "Piscis", "type": "Settled" },
+    { "topRange": 14, "value": "Ostrea", "type": "Settled" },
+    { "topRange": 21, "value": "Collina", "type": "Settled" },
+    { "topRange": 28, "value": "Freeport", "type": "Settled" },
+    { "topRange": 35, "value": "Mons", "type": "Settled" },
+    { "topRange": 42, "value": "Termin", "type": "Settled" },
+    { "topRange": 49, "value": "Fluenti", "type": "Settled" },
+    { "topRange": 55, "value": "Materton", "type": "Settled" },
+    { "topRange": 60, "value": "Oray Hills", "type": "Boundary" },
+    { "topRange": 65, "value": "Profunda Forest", "type": "Boundary" },
+    { "topRange": 70, "value": "Verday Groves", "type": "Boundary" },
+    { "topRange": 75, "value": "Nebula Forest", "type": "Boundary" },
+    { "topRange": 80, "value": "Suda Forest", "type": "Boundary" },
+    { "topRange": 85, "value": "Seka Lands", "type": "Boundary" },
+    { "topRange": 87, "value": "Malperm Mtns", "type": "Remote" },
+    { "topRange": 89, "value": "Pinna Mtns", "type": "Remote" },
+    { "topRange": 91, "value": "Polvokovrita Gap", "type": "Remote" },
+    { "topRange": 93, "value": "Dronitay Shelf", "type": "Remote" },
+    { "topRange": 95, "value": "Teeth of Konoloy", "type": "Remote" },
+    { "topRange": 97, "value": "Weirden Fen", "type": "Remote" },
+    { "topRange": 99, "value": "Ravenna", "type": "Remote" },
+    { "topRange": 100, "value": "Spero", "type": "Remote" }
   ]
 }

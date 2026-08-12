@@ -28,6 +28,9 @@ import {
 export interface OracleEntry {
 	topRange: number;
 	value: unknown;
+	/** Optional secondary classification rendered as a "Type" column in the
+	 *  detail table (e.g. YRT Region → Settled / Boundary / Remote). Display-only. */
+	type?: string;
 }
 
 /** One selectable column of a `tableType: 'columnSelect'` oracle (e.g. Delve
@@ -420,6 +423,21 @@ export function buildTableHtml(
 			html +=
 				`<tr><td class="oracle-range">${rangeLabelForEntry(table, idx)}</td>` +
 				`<td>${v.type}</td><td>${v.notes}</td><td>${v.salary}</td><td>${v.count}</td></tr>`;
+		});
+		return html + '</tbody></table>';
+	}
+
+	// Typed table (e.g. YRT Region): D100 | Result | Type. Any oracle whose
+	// entries carry a `type` gets the extra column (single-column layout).
+	if (table.some((e) => e.type)) {
+		let html =
+			'<table class="oracle-table"><thead><tr>' +
+			'<th>d100</th><th>Result</th><th>Type</th>' +
+			'</tr></thead><tbody>';
+		table.forEach((entry, idx) => {
+			html +=
+				`<tr><td class="oracle-range">${rangeLabelForEntry(table, idx)}</td>` +
+				`<td>${entry.value as string}</td><td>${entry.type ?? ''}</td></tr>`;
 		});
 		return html + '</tbody></table>';
 	}
