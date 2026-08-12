@@ -4,57 +4,208 @@
   "category": "Character",
   "selectLabel": "Character: First Look",
   "description": "Roll to reveal an immediate visual impression of a character on first encounter — how they look, carry themselves, or what stands out. Complements Character Descriptor (personality) with a surface-level, at-a-glance detail.",
+  "postamble": "When first encountering a character, use the First Look, Activity, and Disposition oracles to form an initial impression. If a character's occupation or motivations are important, check the Role and Goal oracles. But don't overdo it. Focus on those aspects that are knowable from the limited perspective of your own character. Generate a detail or two, envision the result as appropriate to the situation, make some assumptions to fill in the gaps, and move on.\n\nOver time, if you interact with a character and gain a deeper understanding of their nature and background, check for additional aspects using tables such as the Revealed Details oracle. You may ignore, reroll, or adjust contradictions. Or envision how those contradictions add interesting complexity to the character.",
   "source": "lodestar",
   "data": [
-    { "topRange": 2, "value": "Well-armed" },
-    { "topRange": 4, "value": "Alluring" },
-    { "topRange": 6, "value": "Mystical" },
-    { "topRange": 8, "value": "Pursued" },
-    { "topRange": 10, "value": "Beastly" },
-    { "topRange": 12, "value": "Stout" },
-    { "topRange": 14, "value": "Confused" },
-    { "topRange": 16, "value": "Equipped" },
-    { "topRange": 18, "value": "Distressed" },
-    { "topRange": 20, "value": "Fearsome" },
-    { "topRange": 22, "value": "Cloaked" },
-    { "topRange": 24, "value": "Guarded" },
-    { "topRange": 26, "value": "Commanding" },
-    { "topRange": 28, "value": "Weathered" },
-    { "topRange": 30, "value": "Unassuming" },
-    { "topRange": 32, "value": "Attractive" },
-    { "topRange": 34, "value": "Youthful" },
-    { "topRange": 36, "value": "Armored" },
-    { "topRange": 38, "value": "Drunk" },
-    { "topRange": 40, "value": "Silent" },
-    { "topRange": 42, "value": "Brutish" },
-    { "topRange": 44, "value": "Ghostly" },
-    { "topRange": 46, "value": "Sickly" },
-    { "topRange": 48, "value": "Accented" },
-    { "topRange": 50, "value": "Poised" },
-    { "topRange": 52, "value": "Well-mannered" },
-    { "topRange": 54, "value": "Menacing" },
-    { "topRange": 56, "value": "Filthy" },
-    { "topRange": 58, "value": "Wounded" },
-    { "topRange": 60, "value": "Mysterious" },
-    { "topRange": 62, "value": "Imposing" },
-    { "topRange": 64, "value": "Ill-equipped" },
-    { "topRange": 66, "value": "Scarred" },
-    { "topRange": 68, "value": "Slight" },
-    { "topRange": 70, "value": "Tattooed" },
-    { "topRange": 72, "value": "Grim" },
-    { "topRange": 74, "value": "Masked" },
-    { "topRange": 76, "value": "Distinguished" },
-    { "topRange": 78, "value": "Fit" },
-    { "topRange": 80, "value": "Firstborn" },
-    { "topRange": 82, "value": "Bloodstained" },
-    { "topRange": 84, "value": "Overburdened" },
-    { "topRange": 86, "value": "Furtive" },
-    { "topRange": 88, "value": "Aged" },
-    { "topRange": 90, "value": "Graceful" },
-    { "topRange": 92, "value": "Inhuman" },
-    { "topRange": 94, "value": "Sinister" },
-    { "topRange": 96, "value": "Visibly disabled" },
-    { "topRange": 98, "value": "Concealed" },
-    { "topRange": 100, "value": "Uncanny" }
+    {
+      "topRange": 2,
+      "value": "Well-armed"
+    },
+    {
+      "topRange": 4,
+      "value": "Alluring"
+    },
+    {
+      "topRange": 6,
+      "value": "Mystical"
+    },
+    {
+      "topRange": 8,
+      "value": "Pursued"
+    },
+    {
+      "topRange": 10,
+      "value": "Beastly"
+    },
+    {
+      "topRange": 12,
+      "value": "Stout"
+    },
+    {
+      "topRange": 14,
+      "value": "Confused"
+    },
+    {
+      "topRange": 16,
+      "value": "Equipped"
+    },
+    {
+      "topRange": 18,
+      "value": "Distressed"
+    },
+    {
+      "topRange": 20,
+      "value": "Fearsome"
+    },
+    {
+      "topRange": 22,
+      "value": "Cloaked"
+    },
+    {
+      "topRange": 24,
+      "value": "Guarded"
+    },
+    {
+      "topRange": 26,
+      "value": "Commanding"
+    },
+    {
+      "topRange": 28,
+      "value": "Weathered"
+    },
+    {
+      "topRange": 30,
+      "value": "Unassuming"
+    },
+    {
+      "topRange": 32,
+      "value": "Attractive"
+    },
+    {
+      "topRange": 34,
+      "value": "Youthful"
+    },
+    {
+      "topRange": 36,
+      "value": "Armored"
+    },
+    {
+      "topRange": 38,
+      "value": "Drunk"
+    },
+    {
+      "topRange": 40,
+      "value": "Silent"
+    },
+    {
+      "topRange": 42,
+      "value": "Brutish"
+    },
+    {
+      "topRange": 44,
+      "value": "Ghostly"
+    },
+    {
+      "topRange": 46,
+      "value": "Sickly"
+    },
+    {
+      "topRange": 48,
+      "value": "Accented"
+    },
+    {
+      "topRange": 50,
+      "value": "Poised"
+    },
+    {
+      "topRange": 52,
+      "value": "Well-mannered"
+    },
+    {
+      "topRange": 54,
+      "value": "Menacing"
+    },
+    {
+      "topRange": 56,
+      "value": "Filthy"
+    },
+    {
+      "topRange": 58,
+      "value": "Wounded"
+    },
+    {
+      "topRange": 60,
+      "value": "Mysterious"
+    },
+    {
+      "topRange": 62,
+      "value": "Imposing"
+    },
+    {
+      "topRange": 64,
+      "value": "Ill-equipped"
+    },
+    {
+      "topRange": 66,
+      "value": "Scarred"
+    },
+    {
+      "topRange": 68,
+      "value": "Slight"
+    },
+    {
+      "topRange": 70,
+      "value": "Tattooed"
+    },
+    {
+      "topRange": 72,
+      "value": "Grim"
+    },
+    {
+      "topRange": 74,
+      "value": "Masked"
+    },
+    {
+      "topRange": 76,
+      "value": "Distinguished"
+    },
+    {
+      "topRange": 78,
+      "value": "Fit"
+    },
+    {
+      "topRange": 80,
+      "value": "Firstborn"
+    },
+    {
+      "topRange": 82,
+      "value": "Bloodstained"
+    },
+    {
+      "topRange": 84,
+      "value": "Overburdened"
+    },
+    {
+      "topRange": 86,
+      "value": "Furtive"
+    },
+    {
+      "topRange": 88,
+      "value": "Aged"
+    },
+    {
+      "topRange": 90,
+      "value": "Graceful"
+    },
+    {
+      "topRange": 92,
+      "value": "Inhuman"
+    },
+    {
+      "topRange": 94,
+      "value": "Sinister"
+    },
+    {
+      "topRange": 96,
+      "value": "Visibly disabled"
+    },
+    {
+      "topRange": 98,
+      "value": "Concealed"
+    },
+    {
+      "topRange": 100,
+      "value": "Uncanny"
+    }
   ]
 }
