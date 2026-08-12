@@ -111,16 +111,36 @@ Ritual assets follow the same auto-enable convention as Paths: the first ability
 
 ## Yrt Oracles
 
-Yrt adds several oracle tables in `oracles/`, identified by `"group": "Yrt"`:
+Yrt adds twelve oracle tables in `oracles/`, each tagged `"source": "yrt"` and
+grouped in the Ask dialog by `category`. Rows are `topRange` + `value` unless
+noted.
 
-| File                    | Key               | Description                                 |
-| ----------------------- | ----------------- | ------------------------------------------- |
-| `yrt-touched.json`      | `yrtTouched`      | Touched class, social rank, and description |
-| `touched-count.json`    | `touchedCount`    | Number of Touched features                  |
-| `touched-features.json` | `touchedFeatures` | Specific Touched feature types              |
-| `mana-backlash.json`    | `manaBacklash`    | Consequences of mana overuse or failure     |
-| `yrt-animal.json`       | `yrtAnimal`       | Animals native to the Yrt setting           |
-| `freeport-denizen.json` | `freeportDenizen` | NPCs for Freeport settlements               |
+### Settlement & location
+
+| Oracle                 | Key                        | Category   | Description                                                                                                                                                                                                                                |
+| ---------------------- | -------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Region                 | `yrtRegion`                | Location   | The 22 Yrt-world regions, ordered by land type and frequency-weighted (settled lands roll most often, remote least). Each row carries a `type` (Settled / Boundary / Remote) shown as its own column. **Replaces the base Region oracle.** |
+| Settlement Type        | `yrtSettlementType`        | Settlement | Scale and purpose (Stead → Hold), rolled against the settlement's land tier (a `columnSelect` table). The preamble maps Yrt regions to Settled / Boundary / Remote lands. **Replaces the Lodestar Settlement Type oracle.**                |
+| Settlement Condition   | `yrtSettlementCondition`   | Settlement | Current state of a settlement, from ruin to grandeur (50 conditions). **Replaces the Lodestar Settlement Condition oracle.**                                                                                                               |
+| Settlement Landmark    | `yrtCityTownLocation`      | Location   | A point-of-interest inside a settlement, town, or city (75 entries).                                                                                                                                                                       |
+| Settlement Waypoint    | `yrtSettlementWaypoint`    | Location   | A location, discovery, or event when you _Undertake a Journey_ through a settlement.                                                                                                                                                       |
+| Settlement Peril       | `yrtSettlementPeril`       | Location   | A perilous event or complication on a settlement journey (a miss).                                                                                                                                                                         |
+| Settlement Opportunity | `yrtSettlementOpportunity` | Location   | An unexpected, beneficial event on a settlement journey (a strong hit with a match).                                                                                                                                                       |
+
+### Character & setting
+
+| Oracle           | Key               | Category  | Description                                                      |
+| ---------------- | ----------------- | --------- | ---------------------------------------------------------------- |
+| Touched          | `yrtTouched`      | Character | A Touched character — social class, animal aspect, and features. |
+| Touched Features | `touchedFeatures` | Character | A specific supernatural feature for a Touched character.         |
+| Freeport Denizen | `freeportDenizen` | Character | A random Freeport-district NPC (structured value — see below).   |
+| Animal Type      | `yrtAnimal`       | Creature  | An animal native to the Yrt setting.                             |
+| Mana Backlash    | `manaBacklash`    | Move      | A mana-specific backlash cost when magic goes wrong.             |
+
+> **Supersession.** When YRT is enabled it hides the base `region` and the
+> Lodestar `settlementType` / `settlementCondition` oracles and stands in with
+> the YRT versions above, via `suppressesOracles` in `extension.json` (see
+> [docs/extensions.md — Oracle supersession](../../docs/extensions.md)).
 
 ### Freeport Denizen (structured values)
 
@@ -152,6 +172,20 @@ The freeport denizen oracle uses structured `value` objects instead of plain str
 
 ---
 
+## Yrt Moves
+
+Yrt adds two moves in `moves/`, tagged `"category": "Yrt"`:
+
+| Move                 | Trigger                                                                                           |
+| -------------------- | ------------------------------------------------------------------------------------------------- |
+| Cast Conclave Ritual | When you attempt to cast a Conclave ritual — examine it to sum its difficulty factors, then roll. |
+| Craft an Item        | When you use your skill to craft an item, drawing on your training.                               |
+
+_Cast Conclave Ritual_ pairs with the Conclave-ritual assets' Difficulty Factors
+(`inspectionFactors`) and the **Mana Backlash** oracle on a miss.
+
+---
+
 ## Yrt Foes
 
 Yrt-specific foes are defined in `foes/foes.json`, using the same format as base Ironsworn and Delve foes (see [data-schema.md — Foes](../../docs/data-schema.md#foes)). Their IDs use the `yrt/` prefix:
@@ -165,6 +199,10 @@ Yrt-specific foes are defined in `foes/foes.json`, using the same format as base
   ...
 }
 ```
+
+### Foe overrides
+
+`foes/overrides.json` re-contextualizes base and Delve foes for the Yrt setting without duplicating them. Each entry keys a base foe id and either adds an `addendum` (a Yrt-specific lore note shown on the foe card) or sets `present: false` to hide the foe. 58 base and Delve foes carry Yrt overrides. Mirrors the foe-override format in [data-schema.md](../../docs/data-schema.md#foe-overrides).
 
 ### Escalating Harm (YRT Extension)
 
@@ -299,24 +337,33 @@ This prefix is added by the UI (`AssetCard.svelte`) and does **not** appear in t
 
 ## Yrt Assets
 
-Yrt-specific assets are defined in `assets/assets.json`, using the same base format as Ironsworn and Delve assets (see [data-schema.md — Assets](../../docs/data-schema.md#assets)). Their IDs typically include a `yrt-` prefix in the name portion:
+Yrt-specific assets live in `assets/assets.json`, using the same base format as Ironsworn and Delve assets (see [data-schema.md — Assets](../../docs/data-schema.md#assets)). The current set (12 assets + 1 rarity):
 
-```json
-{
-  "id": "combat/yrt-iron-sworn-blade",
-  "id": "companion/yrt-crow",
-  "id": "path/yrt-oathkeeper"
-}
-```
+| Asset                 | Category | Summary                                                                    |
+| --------------------- | -------- | -------------------------------------------------------------------------- |
+| Touched, Salamandrine | Touched  | Wounds that knit closed, skin that breathes underwater, a slow metabolism. |
+| Touched, Feline       | Touched  | Night-hunter senses, impossible leaps, predator stealth.                   |
+| Touched, Porcine      | Touched  | An unerring nose for hidden threats, iron constitution, danger instinct.   |
+| Touched, Bovine       | Touched  | An unstoppable charge, an unbreakable will, a voice that bends a room.     |
+| Touched, Ursine       | Touched  | A looming presence, crushing strength, a body that shrugs off blows.       |
+| Touched, Hircine      | Touched  | Surefooted on lethal heights; a gut that shrugs off poison and rot.        |
+| Cantrip               | Ritual   | Minor magical tricks — clean, light, warm, lock, and more.                 |
+| Arcane Inspection     | Ritual   | Sense and interpret mana in a person, object, or area.                     |
+| Illusion              | Ritual   | Visual, auditory, and physical illusions to deceive.                       |
+| Compulsion            | Ritual   | Influence thoughts, emotions, and perceptions in a target's mind.          |
+| Bittercraft           | Path     | Detect poisons; brew contact/ingestion toxins from plant extracts.         |
+| Quillwise             | Path     | Forge documents — mimic handwriting, replicate seals, detect fakes.        |
 
-The Yrt asset file also includes Touched assets and ritual assets with cantrips (documented above).
+The **Touched** assets (level-gated abilities, exclusive group) and the ritual assets with **cantrips** are documented above. Rarity: **Nemezo** (for the Ironsworn `combat/cutthroat` asset).
 
 ---
 
 ## Yrt Source Files Summary
 
-| Data Type | File                 | Contents                                                                     |
-| --------- | -------------------- | ---------------------------------------------------------------------------- |
-| Assets    | `assets/assets.json` | Yrt combat talents, companions, paths, rituals, Touched assets, and rarities |
-| Foes      | `foes/foes.json`     | Yrt-specific creatures, horrors, and NPCs                                    |
-| Oracles   | `oracles/*.json`     | Setting-specific oracle tables                                               |
+| Data Type     | File                  | Contents                                                                 |
+| ------------- | --------------------- | ------------------------------------------------------------------------ |
+| Assets        | `assets/assets.json`  | 6 Touched assets, 4 ritual assets (with cantrips), 2 paths, 1 rarity     |
+| Moves         | `moves/*.json`        | Cast Conclave Ritual, Craft an Item                                      |
+| Oracles       | `oracles/*.json`      | 12 setting-specific oracle tables (settlement, region, Touched, mana, …) |
+| Foes          | `foes/foes.json`      | 24 Yrt-specific creatures, horrors, constructs, and NPCs                 |
+| Foe overrides | `foes/overrides.json` | Yrt addenda / hidden flags for 58 base & Delve foes                      |

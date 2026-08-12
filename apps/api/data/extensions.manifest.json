@@ -130,7 +130,8 @@
       "order": 20,
       "suppressesOracles": [
         "region",
-        "settlementCondition"
+        "settlementCondition",
+        "settlementType"
       ],
       "root": "extensions/yrt",
       "provides": {
@@ -149,6 +150,7 @@
           "oracles/settlement-condition.json",
           "oracles/settlement-opportunity.json",
           "oracles/settlement-peril.json",
+          "oracles/settlement-type.json",
           "oracles/settlement-waypoint.json",
           "oracles/touched-features.json",
           "oracles/touched.json"
