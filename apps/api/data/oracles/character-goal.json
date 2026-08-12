@@ -1,8 +1,8 @@
 {
   "key": "characterGoal",
-  "title": "Character Goal",
+  "title": "Character: Goal",
   "category": "Character",
-  "selectLabel": "Character Goal",
+  "selectLabel": "Character: Goal",
   "description": "Use this oracle to define the primary motivation of an NPC or a faction. It can also be used to kick-off a personal quest for your own character.",
   "source": "base",
   "data": [
