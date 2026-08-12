@@ -368,6 +368,18 @@
 		else if (activeEntry?.kind === 'place') updatePlace(patch);
 	}
 
+	/** Re-parent the active Place. Setting a parent settlement pulls that
+	 *  settlement's region down onto the place (a nested place shares its
+	 *  parent's region); choosing "No settlement" clears the link but leaves
+	 *  the region as-is. Mirrors the inheritance in _commitPlace. */
+	function setPlaceWithin(settlementId: string) {
+		const parent = settlementId ? communities.find((c) => c.id === settlementId) : undefined;
+		updatePlace({
+			withinSettlementId: settlementId || undefined,
+			...(parent ? { region: parent.region } : {}),
+		});
+	}
+
 	/** Roll on the Settlement Trouble oracle, animate the d100, log the
 	 *  outcome, then apply it to the active community — mirrors the pattern
 	 *  used by ExpeditionsArea.rollFeature / rollDanger. */
@@ -976,10 +988,7 @@
 											id="cm-within-{c.id}"
 											class="cm-within-select"
 											value={pl.withinSettlementId ?? ''}
-											onchange={(v) =>
-												updateCommunityLike({
-													withinSettlementId: v || undefined,
-												} as Partial<Community>)}
+											onchange={(v) => setPlaceWithin(v)}
 											options={[
 												{ value: '', label: 'No settlement' },
 												...communities.map((cc) => ({
