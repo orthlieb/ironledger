@@ -1,0 +1,22 @@
+{
+  "key": "lodestarCharacterDisposition",
+  "title": "Character: Disposition",
+  "category": "Character",
+  "selectLabel": "Character: Disposition",
+  "description": "Gauge an NPC's initial attitude when you first interact with them. Replaces the base Character Disposition oracle when Lodestar is enabled — trims the older 18-entry Delve set to a tighter Starforged-style spread of twelve archetypal reactions.",
+  "source": "lodestar",
+  "data": [
+    { "topRange": 6, "value": "Helpful" },
+    { "topRange": 13, "value": "Friendly" },
+    { "topRange": 20, "value": "Cooperative" },
+    { "topRange": 28, "value": "Curious" },
+    { "topRange": 36, "value": "Indifferent" },
+    { "topRange": 47, "value": "Suspicious" },
+    { "topRange": 57, "value": "Wanting" },
+    { "topRange": 67, "value": "Desperate" },
+    { "topRange": 76, "value": "Demanding" },
+    { "topRange": 85, "value": "Unfriendly" },
+    { "topRange": 93, "value": "Threatening" },
+    { "topRange": 100, "value": "Hostile" }
+  ]
+}

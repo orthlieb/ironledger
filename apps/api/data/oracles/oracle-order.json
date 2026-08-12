@@ -57,6 +57,7 @@
   "yrtAnimal": 19,
   "manaBacklash": 21,
   "charDisposition": 30,
+  "lodestarCharacterDisposition": 30.1,
   "charActivity": 30.5,
   "siteName": 31,
   "siteNameDescription": 31.1,

@@ -170,6 +170,7 @@
       "defaultEnabled": true,
       "order": 30,
       "suppressesOracles": [
+        "charDisposition",
         "coastalWatersLocation",
         "featureAspect",
         "featureFocus",
@@ -184,6 +185,7 @@
           "moves/overrides.json"
         ],
         "oracles": [
+          "oracles/character-disposition.json",
           "oracles/character-first-look.json",
           "oracles/coastal-waters-landmark.json",
           "oracles/coastal-waters-opportunity.json",
