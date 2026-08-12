@@ -20,6 +20,7 @@
   "yrtSettlementOpportunity": 3.78,
   "locationDescriptor": 4,
   "settlementType": 4.2,
+  "yrtSettlementType": 4.21,
   "settlementCondition": 4.22,
   "yrtSettlementCondition": 4.23,
   "settlementDisposition": 4.24,
