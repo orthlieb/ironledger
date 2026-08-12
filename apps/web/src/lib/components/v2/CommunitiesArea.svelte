@@ -396,7 +396,18 @@
 	 *  per the book's mapping (Havens → settled; Barrier Islands / Flooded Lands /
 	 *  Hinterlands / Ragged Coast → boundary; Deep Wilds / Tempest Hills / Veiled
 	 *  Mountains → remote). YRT / unknown regions fall back to boundary. */
-	function tierForRegion(region: string): 'settled' | 'boundary' | 'remote' {
+	function tierForRegion(
+		region: string,
+		oracles: ReturnType<typeof getOracles>,
+	): 'settled' | 'boundary' | 'remote' {
+		// YRT regions carry their tier in the Region oracle's `type` field — look
+		// up the rolled region there first (its value is the plain region name).
+		const t = oracles
+			.find((o) => o.key === 'yrtRegion')
+			?.data.find((e) => e.value === region)
+			?.type?.toLowerCase();
+		if (t === 'settled' || t === 'boundary' || t === 'remote') return t;
+		// Base Ironsworn regions map by name; unknown → boundary.
 		const r = region.toLowerCase();
 		if (r.includes('haven')) return 'settled';
 		if (/barrier islands|flooded lands|hinterlands|ragged coast/.test(r)) return 'boundary';
@@ -414,9 +425,12 @@
 	): string {
 		if (key === 'type')
 			// settlementType values carry <strong>…</strong> markup for the picker;
-			// strip tags so the plain-text field shows "Outpost — Border or…".
+			// strip tags so the plain-text field shows "Outpost — Border or…". YRT
+			// supersedes the Lodestar table when enabled.
 			return (
-				rollOracle('settlementType', oracles, { stat: tierForRegion(region) }).value ?? ''
+				rollOracle(isYrtEnabled() ? 'yrtSettlementType' : 'settlementType', oracles, {
+					stat: tierForRegion(region, oracles),
+				}).value ?? ''
 			).replace(/<[^>]+>/g, '');
 		if (key === 'condition')
 			return (
