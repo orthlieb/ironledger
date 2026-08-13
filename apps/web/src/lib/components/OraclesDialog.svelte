@@ -506,9 +506,14 @@
 											outerLabel: selectedOracle.outerLabel,
 											innerLabel: selectedOracle.innerLabel,
 										}
-									: activeStat
-										? { activeStat }
-										: undefined,
+									: selectedOracle.tableType === 'compound'
+										? {
+												tableType: 'compound',
+												refTitles: Object.fromEntries(allOracles.map((o) => [o.key, o.title])),
+											}
+										: activeStat
+											? { activeStat }
+											: undefined,
 						)}
 					</div>
 
@@ -930,6 +935,22 @@
 		background: color-mix(in srgb, var(--text-accent) 5%, transparent);
 		font-style: italic;
 		color: var(--text-muted) !important;
+	}
+
+	/* Compound oracle: each `[oracleKey]` blank rendered as its target oracle's
+	   title (a filled-in-on-roll slot). */
+	:global(.od-table-wrap .oracle-ref) {
+		display: inline-block;
+		padding: 0 5px;
+		border-radius: 4px;
+		background: color-mix(in srgb, var(--text-accent) 12%, transparent);
+		color: var(--text-accent);
+		font-weight: 600;
+		font-size: 0.9em;
+	}
+	:global(.od-table-wrap .oracle-compound-single) {
+		line-height: 1.9;
+		font-family: var(--font-ui);
 	}
 
 	/* ── Delve the Depths stat picker ───────────────────────────────────── */

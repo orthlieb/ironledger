@@ -79,9 +79,9 @@
           "oracles/monstrosity-characteristics.json",
           "oracles/monstrosity-primary-form.json",
           "oracles/monstrosity-size.json",
+          "oracles/monstrosity.json",
           "oracles/site-name-description.json",
           "oracles/site-name-detail.json",
-          "oracles/site-name-format.json",
           "oracles/site-name-namesake.json",
           "oracles/site-name-place.json",
           "oracles/site-name.json",
@@ -215,7 +215,8 @@
         ],
         "oracles": [
           "oracles/compound.json",
-          "oracles/gizmo.json"
+          "oracles/gizmo.json",
+          "oracles/twostep.json"
         ],
         "foes": [
           "foes/foes.json"

@@ -924,9 +924,10 @@ so an extension can use them from data alone:
   the reader chooses a column and the roll resolves against that column's
   ranges. Each data row carries a `topRange` under each column key plus a shared
   `value` (Settlement Type land tiers, Delve Depths).
-- **`tableType: "twoStep"`** — a **compound / double-rolling** oracle: roll the
-  outer table for a category, then roll that row's `subtable` for the final
-  result. Both rolls are logged and the detail view renders
+- **`tableType: "twoStep"`** — a **double-rolling** oracle whose second table
+  travels _inside its own rows_: roll the outer table for a category, then roll
+  that row's `subtable` for the final result. Both rolls are logged and the
+  detail view renders
   `d100 | outerLabel | d100 | innerLabel | d100 | innerLabel`. Set the two
   headings with `outerLabel` / `innerLabel` (defaults `"Category"` / `"Result"`).
   Each outer row's `value` is `{ label, subtable: [{ topRange, value }] }`. Used
@@ -967,9 +968,52 @@ so an extension can use them from data alone:
   }
   ```
 
+- **`tableType: "compound"`** — a **format-string builder** that composes a
+  result by rolling _other_ oracles. Each `data` row's `value` is a template
+  string containing `[oracleKey]` blanks plus any literal connective text
+  (`of`, `'s`, `·`, newlines). To resolve: roll `data` to pick a template (a
+  single row = one fixed format, no roll), then **recursively** roll each
+  `[oracleKey]` and substitute its result. Every sub-roll is logged. The detail
+  view renders each blank as its target oracle's title. References may point at
+  any oracle — including `twoStep` or other `compound` oracles (depth-guarded).
+  Used by `siteName` ("[siteNamePlace] of [siteNameDetail]", 7 formats) and
+  `monstrosity` (one labelled format over four sub-oracles):
+
+  ```json
+  {
+    "key": "siteName",
+    "title": "Delve: Site Name",
+    "category": "Delve Site",
+    "selectLabel": "Delve: Site Name",
+    "source": "delve",
+    "tableType": "compound",
+    "data": [
+      { "topRange": 50, "value": "[siteNameDescription] [siteNamePlace]" },
+      { "topRange": 100, "value": "[siteNamePlace] of [siteNameNamesake]'s [siteNameDetail]" }
+    ]
+  }
+  ```
+
+  A single-format compound (no format roll — e.g. a labelled dossier):
+
+  ```json
+  {
+    "key": "monstrosity",
+    "tableType": "compound",
+    "…": "…",
+    "data": [
+      { "topRange": 100, "value": "Form: [monstrosityPrimaryForm] · Size: [monstrositySize]" }
+    ]
+  }
+  ```
+
+  `compound` is substitution only — it has no conditionals. An oracle whose
+  later rolls _depend on_ an earlier result (e.g. `yrtTouched`: Pure stops,
+  Feral rolls an animal but no features) stays a hardcoded branch.
+
 Still hardcoded per-key (not available to extensions from JSON alone): **Names
 Other** (`namesOther`: `giants` / `varou` / `trolls` fields), `settlementNameQuick`,
-`freeportDenizen`, and the Yrt structured tables — see
+`freeportDenizen`, `yrtTouched`, and the other Yrt structured tables — see
 [the Yrt extension docs](../extensions/yrt/README.md#yrt-oracles).
 
 ---
