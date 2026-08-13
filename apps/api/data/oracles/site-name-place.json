@@ -109,15 +109,15 @@
         "subtable": [
           {
             "topRange": 10,
-            "value": "Abyss"
+            "value": "Break"
           },
           {
             "topRange": 20,
-            "value": "Caverns"
+            "value": "Brumal"
           },
           {
             "topRange": 30,
-            "value": "Caves"
+            "value": "Cavern"
           },
           {
             "topRange": 40,
@@ -125,27 +125,27 @@
           },
           {
             "topRange": 50,
-            "value": "Depths"
+            "value": "Crevasse"
           },
           {
             "topRange": 60,
-            "value": "Hollow"
+            "value": "Depths"
           },
           {
             "topRange": 70,
-            "value": "Lair"
+            "value": "Fissure"
           },
           {
             "topRange": 80,
-            "value": "Rift"
+            "value": "Lair"
           },
           {
             "topRange": 90,
-            "value": "Tunnels"
+            "value": "Moulin"
           },
           {
             "topRange": 100,
-            "value": "Warren"
+            "value": "Rimevault"
           }
         ]
       }
