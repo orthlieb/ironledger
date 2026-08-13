@@ -377,6 +377,36 @@ export function buildTableHtml(
 		return html + '</tbody></table>';
 	}
 
+	// siteNamePlace — two-step: Domain (d100) → a place-word from that domain's
+	// subtable (rendered in two Name columns, like settlementName).
+	if (key === 'siteNamePlace') {
+		let html =
+			'<table class="oracle-table"><thead><tr>' +
+			'<th>d100</th><th>Domain</th><th>d100</th><th>Place</th><th>d100</th><th>Place</th>' +
+			'</tr></thead><tbody>';
+		table.forEach((entry, idx) => {
+			const rangeStr = rangeLabelForEntry(table, idx);
+			const v = entry.value as { domain: string; subtable: OracleEntry[] };
+			const sub = v.subtable;
+			const half = Math.ceil(sub.length / 2);
+			for (let i = 0; i < half; i++) {
+				const left = sub[i];
+				const right = sub[i + half];
+				const lRange = rangeLabelForEntry(sub, i);
+				const rRange = right ? rangeLabelForEntry(sub, i + half) : '';
+				const nameCells =
+					`<td class="oracle-range">${lRange}</td><td>${left.value as string}</td>` +
+					`<td class="oracle-range">${rRange}</td><td>${right ? (right.value as string) : ''}</td>`;
+				html +=
+					i === 0
+						? `<tr><td rowspan="${half}" class="oracle-cat-range">${rangeStr}</td>` +
+							`<td rowspan="${half}" class="oracle-cat-desc">${v.domain}</td>${nameCells}</tr>`
+						: `<tr>${nameCells}</tr>`;
+			}
+		});
+		return html + '</tbody></table>';
+	}
+
 	if (key === 'settlementNameQuick') {
 		const third = Math.ceil(table.length / 3);
 		let html =
@@ -703,6 +733,20 @@ export function rollOracle(
 			`<div class="roll-line">Roll: d100 → ${res.roll}</div>` +
 			`<div>Giants: ${v.giants} | Varou: ${v.varou} | Trolls: ${v.trolls}</div>`;
 		return { roll: res.roll, html, title, value: v.giants };
+	}
+
+	// ── siteNamePlace — roll the domain, then a place-word from its subtable ──
+	if (key === 'siteNamePlace') {
+		const domRes = rollFromRangeTable(table);
+		const dom = domRes.value as { domain: string; subtable: OracleEntry[] };
+		const subRes = rollFromRangeTable(dom.subtable);
+		const word = subRes.value as string;
+		const html =
+			`<div class="roll-line">Domain roll: d100 → ${domRes.roll}</div>` +
+			`<div><em>${dom.domain}</em></div>` +
+			`<div class="roll-line">Place roll: d100 → ${subRes.roll}</div>` +
+			`<div>Place: <strong>${word}</strong></div>`;
+		return { roll: domRes.roll, html, title, value: word };
 	}
 
 	// ── Default — single roll, string value (with Roll Twice support) ──────

@@ -1,0 +1,586 @@
+{
+  "key": "siteNamePlace",
+  "title": "Delve: Site Name – Place",
+  "category": "Delve Site",
+  "selectLabel": "Delve: Site Name – Place",
+  "description": "Roll the site's domain (as on the Site Nature – Domain table), then a place-word from that domain's list.",
+  "source": "delve",
+  "data": [
+    {
+      "topRange": 6,
+      "value": {
+        "domain": "Barrow",
+        "subtable": [
+          {
+            "topRange": 10,
+            "value": "Barrow"
+          },
+          {
+            "topRange": 20,
+            "value": "Boneyard"
+          },
+          {
+            "topRange": 30,
+            "value": "Chambers"
+          },
+          {
+            "topRange": 40,
+            "value": "Charnel"
+          },
+          {
+            "topRange": 50,
+            "value": "Crypt"
+          },
+          {
+            "topRange": 60,
+            "value": "Grave"
+          },
+          {
+            "topRange": 70,
+            "value": "Mound"
+          },
+          {
+            "topRange": 80,
+            "value": "Pit"
+          },
+          {
+            "topRange": 90,
+            "value": "Sepulcher"
+          },
+          {
+            "topRange": 100,
+            "value": "Tomb"
+          }
+        ]
+      }
+    },
+    {
+      "topRange": 18,
+      "value": {
+        "domain": "Cavern",
+        "subtable": [
+          {
+            "topRange": 10,
+            "value": "Abyss"
+          },
+          {
+            "topRange": 20,
+            "value": "Caverns"
+          },
+          {
+            "topRange": 30,
+            "value": "Caves"
+          },
+          {
+            "topRange": 40,
+            "value": "Chasm"
+          },
+          {
+            "topRange": 50,
+            "value": "Depths"
+          },
+          {
+            "topRange": 60,
+            "value": "Hollow"
+          },
+          {
+            "topRange": 70,
+            "value": "Lair"
+          },
+          {
+            "topRange": 80,
+            "value": "Rift"
+          },
+          {
+            "topRange": 90,
+            "value": "Tunnels"
+          },
+          {
+            "topRange": 100,
+            "value": "Warren"
+          }
+        ]
+      }
+    },
+    {
+      "topRange": 28,
+      "value": {
+        "domain": "Frozen Cavern",
+        "subtable": [
+          {
+            "topRange": 10,
+            "value": "Abyss"
+          },
+          {
+            "topRange": 20,
+            "value": "Caverns"
+          },
+          {
+            "topRange": 30,
+            "value": "Caves"
+          },
+          {
+            "topRange": 40,
+            "value": "Chasm"
+          },
+          {
+            "topRange": 50,
+            "value": "Depths"
+          },
+          {
+            "topRange": 60,
+            "value": "Hollow"
+          },
+          {
+            "topRange": 70,
+            "value": "Lair"
+          },
+          {
+            "topRange": 80,
+            "value": "Rift"
+          },
+          {
+            "topRange": 90,
+            "value": "Tunnels"
+          },
+          {
+            "topRange": 100,
+            "value": "Warren"
+          }
+        ]
+      }
+    },
+    {
+      "topRange": 32,
+      "value": {
+        "domain": "Icereach",
+        "subtable": [
+          {
+            "topRange": 10,
+            "value": "Drift"
+          },
+          {
+            "topRange": 20,
+            "value": "Expanse"
+          },
+          {
+            "topRange": 30,
+            "value": "Floe"
+          },
+          {
+            "topRange": 40,
+            "value": "Icemark"
+          },
+          {
+            "topRange": 50,
+            "value": "Icemere"
+          },
+          {
+            "topRange": 60,
+            "value": "Reach"
+          },
+          {
+            "topRange": 70,
+            "value": "Rimefield"
+          },
+          {
+            "topRange": 80,
+            "value": "Thule"
+          },
+          {
+            "topRange": 90,
+            "value": "Waste"
+          },
+          {
+            "topRange": 100,
+            "value": "Wintertide"
+          }
+        ]
+      }
+    },
+    {
+      "topRange": 38,
+      "value": {
+        "domain": "Mine",
+        "subtable": [
+          {
+            "topRange": 10,
+            "value": "Bore"
+          },
+          {
+            "topRange": 20,
+            "value": "Cut"
+          },
+          {
+            "topRange": 30,
+            "value": "Dig"
+          },
+          {
+            "topRange": 40,
+            "value": "Forge"
+          },
+          {
+            "topRange": 50,
+            "value": "Gouge"
+          },
+          {
+            "topRange": 60,
+            "value": "Hoard"
+          },
+          {
+            "topRange": 70,
+            "value": "Lode"
+          },
+          {
+            "topRange": 80,
+            "value": "Mine"
+          },
+          {
+            "topRange": 90,
+            "value": "Pit"
+          },
+          {
+            "topRange": 100,
+            "value": "Works"
+          }
+        ]
+      }
+    },
+    {
+      "topRange": 48,
+      "value": {
+        "domain": "Pass",
+        "subtable": [
+          {
+            "topRange": 10,
+            "value": "Cliffs"
+          },
+          {
+            "topRange": 20,
+            "value": "Crag"
+          },
+          {
+            "topRange": 30,
+            "value": "Cut"
+          },
+          {
+            "topRange": 40,
+            "value": "Gap"
+          },
+          {
+            "topRange": 50,
+            "value": "Gorge"
+          },
+          {
+            "topRange": 60,
+            "value": "Heights"
+          },
+          {
+            "topRange": 70,
+            "value": "Highlands"
+          },
+          {
+            "topRange": 80,
+            "value": "Pass"
+          },
+          {
+            "topRange": 90,
+            "value": "Reach"
+          },
+          {
+            "topRange": 100,
+            "value": "Ridge"
+          }
+        ]
+      }
+    },
+    {
+      "topRange": 58,
+      "value": {
+        "domain": "Ruin",
+        "subtable": [
+          {
+            "topRange": 10,
+            "value": "Citadel"
+          },
+          {
+            "topRange": 20,
+            "value": "Enclave"
+          },
+          {
+            "topRange": 30,
+            "value": "Fortress"
+          },
+          {
+            "topRange": 40,
+            "value": "Hall"
+          },
+          {
+            "topRange": 50,
+            "value": "Keep"
+          },
+          {
+            "topRange": 60,
+            "value": "Sanctuary"
+          },
+          {
+            "topRange": 70,
+            "value": "Sanctum"
+          },
+          {
+            "topRange": 80,
+            "value": "Spire"
+          },
+          {
+            "topRange": 90,
+            "value": "Temple"
+          },
+          {
+            "topRange": 100,
+            "value": "Tower"
+          }
+        ]
+      }
+    },
+    {
+      "topRange": 68,
+      "value": {
+        "domain": "Sea Cave",
+        "subtable": [
+          {
+            "topRange": 10,
+            "value": "Caves"
+          },
+          {
+            "topRange": 20,
+            "value": "Channel"
+          },
+          {
+            "topRange": 30,
+            "value": "Cove"
+          },
+          {
+            "topRange": 40,
+            "value": "Depths"
+          },
+          {
+            "topRange": 50,
+            "value": "Hollow"
+          },
+          {
+            "topRange": 60,
+            "value": "Lair"
+          },
+          {
+            "topRange": 70,
+            "value": "Pools"
+          },
+          {
+            "topRange": 80,
+            "value": "Tides"
+          },
+          {
+            "topRange": 90,
+            "value": "Trough"
+          },
+          {
+            "topRange": 100,
+            "value": "Waters"
+          }
+        ]
+      }
+    },
+    {
+      "topRange": 78,
+      "value": {
+        "domain": "Shadowfen",
+        "subtable": [
+          {
+            "topRange": 10,
+            "value": "Bog"
+          },
+          {
+            "topRange": 20,
+            "value": "Fen"
+          },
+          {
+            "topRange": 30,
+            "value": "Lowland"
+          },
+          {
+            "topRange": 40,
+            "value": "Marsh"
+          },
+          {
+            "topRange": 50,
+            "value": "Mire"
+          },
+          {
+            "topRange": 60,
+            "value": "Morass"
+          },
+          {
+            "topRange": 70,
+            "value": "Quagmire"
+          },
+          {
+            "topRange": 80,
+            "value": "Floodlands"
+          },
+          {
+            "topRange": 90,
+            "value": "Slough"
+          },
+          {
+            "topRange": 100,
+            "value": "Wetlands"
+          }
+        ]
+      }
+    },
+    {
+      "topRange": 83,
+      "value": {
+        "domain": "Stronghold",
+        "subtable": [
+          {
+            "topRange": 10,
+            "value": "Bastion"
+          },
+          {
+            "topRange": 20,
+            "value": "Citadel"
+          },
+          {
+            "topRange": 30,
+            "value": "Fortress"
+          },
+          {
+            "topRange": 40,
+            "value": "Garrison"
+          },
+          {
+            "topRange": 50,
+            "value": "Haven"
+          },
+          {
+            "topRange": 60,
+            "value": "Keep"
+          },
+          {
+            "topRange": 70,
+            "value": "Outpost"
+          },
+          {
+            "topRange": 80,
+            "value": "Refuge"
+          },
+          {
+            "topRange": 90,
+            "value": "Sanctuary"
+          },
+          {
+            "topRange": 100,
+            "value": "Watch"
+          }
+        ]
+      }
+    },
+    {
+      "topRange": 95,
+      "value": {
+        "domain": "Tanglewood",
+        "subtable": [
+          {
+            "topRange": 10,
+            "value": "Bramble"
+          },
+          {
+            "topRange": 20,
+            "value": "Briar"
+          },
+          {
+            "topRange": 30,
+            "value": "Forest"
+          },
+          {
+            "topRange": 40,
+            "value": "Grove"
+          },
+          {
+            "topRange": 50,
+            "value": "Silva"
+          },
+          {
+            "topRange": 60,
+            "value": "Tangle"
+          },
+          {
+            "topRange": 70,
+            "value": "Thicket"
+          },
+          {
+            "topRange": 80,
+            "value": "Weald"
+          },
+          {
+            "topRange": 90,
+            "value": "Wilds"
+          },
+          {
+            "topRange": 100,
+            "value": "Wood"
+          }
+        ]
+      }
+    },
+    {
+      "topRange": 100,
+      "value": {
+        "domain": "Underkeep",
+        "subtable": [
+          {
+            "topRange": 10,
+            "value": "Catacomb"
+          },
+          {
+            "topRange": 20,
+            "value": "Chambers"
+          },
+          {
+            "topRange": 30,
+            "value": "Den"
+          },
+          {
+            "topRange": 40,
+            "value": "Hall"
+          },
+          {
+            "topRange": 50,
+            "value": "Labyrinth"
+          },
+          {
+            "topRange": 60,
+            "value": "Maze"
+          },
+          {
+            "topRange": 70,
+            "value": "Pit"
+          },
+          {
+            "topRange": 80,
+            "value": "Sanctum"
+          },
+          {
+            "topRange": 90,
+            "value": "Underkeep"
+          },
+          {
+            "topRange": 100,
+            "value": "Vault"
+          }
+        ]
+      }
+    }
+  ]
+}
