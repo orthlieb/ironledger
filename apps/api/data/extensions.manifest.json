@@ -214,6 +214,7 @@
           "moves/moves.json"
         ],
         "oracles": [
+          "oracles/compound.json",
           "oracles/gizmo.json"
         ],
         "foes": [

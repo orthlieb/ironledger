@@ -501,9 +501,14 @@
 							selectedOracle.data,
 							selectedOracle.tableType === 'columnSelect'
 								? { activeStat: effectiveColumnKey ?? undefined, columns: selectedOracle.columns }
-								: activeStat
-									? { activeStat }
-									: undefined,
+								: selectedOracle.tableType === 'twoStep'
+									? {
+											outerLabel: selectedOracle.outerLabel,
+											innerLabel: selectedOracle.innerLabel,
+										}
+									: activeStat
+										? { activeStat }
+										: undefined,
 						)}
 					</div>
 

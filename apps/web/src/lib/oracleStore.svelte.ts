@@ -63,6 +63,12 @@ export interface OracleFile {
 	tableType?: string;
 	/** For `tableType: 'columnSelect'` — the roll columns shown as a picker. */
 	columns?: OracleColumn[];
+	/** For `tableType: 'twoStep'` — column headings for the two rolls. Each data
+	 *  row's `value` is `{ label, subtable }`: roll the outer table for a `label`,
+	 *  then roll that row's `subtable` for the final result. Defaults:
+	 *  outer "Category", inner "Result". */
+	outerLabel?: string;
+	innerLabel?: string;
 	data: OracleEntry[];
 }
 
@@ -257,7 +263,12 @@ export function rangeLabelForEntry(table: OracleEntry[], index: number): string 
 export function buildTableHtml(
 	key: string,
 	table: OracleEntry[],
-	options?: { activeStat?: string; columns?: OracleColumn[] },
+	options?: {
+		activeStat?: string;
+		columns?: OracleColumn[];
+		outerLabel?: string;
+		innerLabel?: string;
+	},
 ): string {
 	if (!table || table.length === 0) return '<div>No table data.</div>';
 
@@ -344,49 +355,19 @@ export function buildTableHtml(
 		return html + '</tbody></table>';
 	}
 
-	if (key === 'settlementName') {
+	// Two-step subtable table (tableType: "twoStep"): d100 | <outer> | d100 |
+	// <inner> | d100 | <inner>. Detected by data shape — each outer row's value
+	// is { label, subtable }. Labels come from the oracle's outer/innerLabel.
+	if (table.some((e) => Array.isArray((e.value as { subtable?: unknown } | null)?.subtable))) {
+		const outer = options?.outerLabel ?? 'Category';
+		const inner = options?.innerLabel ?? 'Result';
 		let html =
 			'<table class="oracle-table"><thead><tr>' +
-			'<th>d100</th><th>Category</th><th>d100</th><th>Name</th><th>d100</th><th>Name</th>' +
+			`<th>d100</th><th>${outer}</th><th>d100</th><th>${inner}</th><th>d100</th><th>${inner}</th>` +
 			'</tr></thead><tbody>';
 		table.forEach((entry, idx) => {
 			const rangeStr = rangeLabelForEntry(table, idx);
-			const v = entry.value as { description: string; subtable: OracleEntry[] };
-			const sub = v.subtable;
-			const half = Math.ceil(sub.length / 2);
-			for (let i = 0; i < half; i++) {
-				const left = sub[i];
-				const right = sub[i + half];
-				const lRange = rangeLabelForEntry(sub, i);
-				const rRange = right ? rangeLabelForEntry(sub, i + half) : '';
-				if (i === 0) {
-					html +=
-						`<tr>` +
-						`<td rowspan="${half}" class="oracle-cat-range">${rangeStr}</td>` +
-						`<td rowspan="${half}" class="oracle-cat-desc">${v.description}</td>` +
-						`<td class="oracle-range">${lRange}</td><td>${left.value as string}</td>` +
-						`<td class="oracle-range">${rRange}</td><td>${right ? (right.value as string) : ''}</td>` +
-						`</tr>`;
-				} else {
-					html +=
-						`<tr><td class="oracle-range">${lRange}</td><td>${left.value as string}</td>` +
-						`<td class="oracle-range">${rRange}</td><td>${right ? (right.value as string) : ''}</td></tr>`;
-				}
-			}
-		});
-		return html + '</tbody></table>';
-	}
-
-	// siteNamePlace — two-step: Domain (d100) → a place-word from that domain's
-	// subtable (rendered in two Name columns, like settlementName).
-	if (key === 'siteNamePlace') {
-		let html =
-			'<table class="oracle-table"><thead><tr>' +
-			'<th>d100</th><th>Domain</th><th>d100</th><th>Place</th><th>d100</th><th>Place</th>' +
-			'</tr></thead><tbody>';
-		table.forEach((entry, idx) => {
-			const rangeStr = rangeLabelForEntry(table, idx);
-			const v = entry.value as { domain: string; subtable: OracleEntry[] };
+			const v = entry.value as { label: string; subtable: OracleEntry[] };
 			const sub = v.subtable;
 			const half = Math.ceil(sub.length / 2);
 			for (let i = 0; i < half; i++) {
@@ -400,7 +381,7 @@ export function buildTableHtml(
 				html +=
 					i === 0
 						? `<tr><td rowspan="${half}" class="oracle-cat-range">${rangeStr}</td>` +
-							`<td rowspan="${half}" class="oracle-cat-desc">${v.domain}</td>${nameCells}</tr>`
+							`<td rowspan="${half}" class="oracle-cat-desc">${v.label}</td>${nameCells}</tr>`
 						: `<tr>${nameCells}</tr>`;
 			}
 		});
@@ -570,6 +551,22 @@ export function rollOracle(
 	const title = oracle.title;
 	const table = oracle.data;
 
+	// ── twoStep — roll the outer table, then the chosen row's subtable ──────
+	if (oracle.tableType === 'twoStep') {
+		const outer = oracle.outerLabel ?? 'Category';
+		const inner = oracle.innerLabel ?? 'Result';
+		const outerRes = rollFromRangeTable(table);
+		const row = outerRes.value as { label: string; subtable: OracleEntry[] };
+		const innerRes = rollFromRangeTable(row.subtable);
+		const word = innerRes.value as string;
+		const html =
+			`<div class="roll-line">${outer} roll: d100 → ${outerRes.roll}</div>` +
+			`<div><em>${row.label}</em></div>` +
+			`<div class="roll-line">${inner} roll: d100 → ${innerRes.roll}</div>` +
+			`<div>${inner}: <strong>${word}</strong></div>`;
+		return { roll: outerRes.roll, html, title, value: word };
+	}
+
 	// ── columnSelect — roll against a chosen column (land tier, etc.) ───────
 	if (oracle.tableType === 'columnSelect' && oracle.columns?.length) {
 		const cols = oracle.columns;
@@ -700,18 +697,6 @@ export function rollOracle(
 	}
 
 	// ── settlementName — two-step subtable ──────────────────────────────────
-	if (key === 'settlementName') {
-		const catRes = rollFromRangeTable(table);
-		const cat = catRes.value as { description: string; subtable: OracleEntry[] };
-		const subRes = rollFromRangeTable(cat.subtable);
-		const html =
-			`<div class="roll-line">Category roll: d100 → ${catRes.roll}</div>` +
-			`<div><em>${cat.description}</em></div>` +
-			`<div class="roll-line">Name roll: d100 → ${subRes.roll}</div>` +
-			`<div>Name: <strong>${subRes.value as string}</strong></div>`;
-		return { roll: catRes.roll, html, title, value: subRes.value as string };
-	}
-
 	// ── settlementNameQuick — two independent rolls ──────────────────────────
 	if (key === 'settlementNameQuick') {
 		const prefixRes = rollFromRangeTable(table);
@@ -733,20 +718,6 @@ export function rollOracle(
 			`<div class="roll-line">Roll: d100 → ${res.roll}</div>` +
 			`<div>Giants: ${v.giants} | Varou: ${v.varou} | Trolls: ${v.trolls}</div>`;
 		return { roll: res.roll, html, title, value: v.giants };
-	}
-
-	// ── siteNamePlace — roll the domain, then a place-word from its subtable ──
-	if (key === 'siteNamePlace') {
-		const domRes = rollFromRangeTable(table);
-		const dom = domRes.value as { domain: string; subtable: OracleEntry[] };
-		const subRes = rollFromRangeTable(dom.subtable);
-		const word = subRes.value as string;
-		const html =
-			`<div class="roll-line">Domain roll: d100 → ${domRes.roll}</div>` +
-			`<div><em>${dom.domain}</em></div>` +
-			`<div class="roll-line">Place roll: d100 → ${subRes.roll}</div>` +
-			`<div>Place: <strong>${word}</strong></div>`;
-		return { roll: domRes.roll, html, title, value: word };
 	}
 
 	// ── Default — single roll, string value (with Roll Twice support) ──────

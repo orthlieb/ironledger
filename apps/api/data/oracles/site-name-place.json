@@ -9,7 +9,6 @@
     {
       "topRange": 6,
       "value": {
-        "domain": "Barrow",
         "subtable": [
           {
             "topRange": 10,
@@ -51,13 +50,13 @@
             "topRange": 100,
             "value": "Tomb"
           }
-        ]
+        ],
+        "label": "Barrow"
       }
     },
     {
       "topRange": 18,
       "value": {
-        "domain": "Cavern",
         "subtable": [
           {
             "topRange": 10,
@@ -99,13 +98,13 @@
             "topRange": 100,
             "value": "Warren"
           }
-        ]
+        ],
+        "label": "Cavern"
       }
     },
     {
       "topRange": 28,
       "value": {
-        "domain": "Frozen Cavern",
         "subtable": [
           {
             "topRange": 10,
@@ -147,13 +146,13 @@
             "topRange": 100,
             "value": "Rimevault"
           }
-        ]
+        ],
+        "label": "Frozen Cavern"
       }
     },
     {
       "topRange": 32,
       "value": {
-        "domain": "Icereach",
         "subtable": [
           {
             "topRange": 10,
@@ -195,13 +194,13 @@
             "topRange": 100,
             "value": "Wintertide"
           }
-        ]
+        ],
+        "label": "Icereach"
       }
     },
     {
       "topRange": 38,
       "value": {
-        "domain": "Mine",
         "subtable": [
           {
             "topRange": 10,
@@ -243,13 +242,13 @@
             "topRange": 100,
             "value": "Works"
           }
-        ]
+        ],
+        "label": "Mine"
       }
     },
     {
       "topRange": 48,
       "value": {
-        "domain": "Pass",
         "subtable": [
           {
             "topRange": 10,
@@ -291,13 +290,13 @@
             "topRange": 100,
             "value": "Ridge"
           }
-        ]
+        ],
+        "label": "Pass"
       }
     },
     {
       "topRange": 58,
       "value": {
-        "domain": "Ruin",
         "subtable": [
           {
             "topRange": 10,
@@ -339,13 +338,13 @@
             "topRange": 100,
             "value": "Tower"
           }
-        ]
+        ],
+        "label": "Ruin"
       }
     },
     {
       "topRange": 68,
       "value": {
-        "domain": "Sea Cave",
         "subtable": [
           {
             "topRange": 10,
@@ -387,13 +386,13 @@
             "topRange": 100,
             "value": "Waters"
           }
-        ]
+        ],
+        "label": "Sea Cave"
       }
     },
     {
       "topRange": 78,
       "value": {
-        "domain": "Shadowfen",
         "subtable": [
           {
             "topRange": 10,
@@ -435,13 +434,13 @@
             "topRange": 100,
             "value": "Wetlands"
           }
-        ]
+        ],
+        "label": "Shadowfen"
       }
     },
     {
       "topRange": 83,
       "value": {
-        "domain": "Stronghold",
         "subtable": [
           {
             "topRange": 10,
@@ -483,13 +482,13 @@
             "topRange": 100,
             "value": "Watch"
           }
-        ]
+        ],
+        "label": "Stronghold"
       }
     },
     {
       "topRange": 95,
       "value": {
-        "domain": "Tanglewood",
         "subtable": [
           {
             "topRange": 10,
@@ -531,13 +530,13 @@
             "topRange": 100,
             "value": "Wood"
           }
-        ]
+        ],
+        "label": "Tanglewood"
       }
     },
     {
       "topRange": 100,
       "value": {
-        "domain": "Underkeep",
         "subtable": [
           {
             "topRange": 10,
@@ -579,8 +578,12 @@
             "topRange": 100,
             "value": "Vault"
           }
-        ]
+        ],
+        "label": "Underkeep"
       }
     }
-  ]
+  ],
+  "tableType": "twoStep",
+  "outerLabel": "Domain",
+  "innerLabel": "Place"
 }
