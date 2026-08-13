@@ -1,9 +1,9 @@
 {
   "key": "trapComponent",
   "title": "Trap: Component",
-  "category": "Trap",
+  "category": "Delve Site",
   "selectLabel": "Trap Component",
-  "description": "Roll for the physical component of a trap. Combine with Trap: Event for a full description.",
+  "description": "Use these oracles to envision the nature or function of a trap in a site. Roll once for an Event and once for a Component, and interpret the response as appropriate to the situation and environment.",
   "source": "delve",
   "data": [
     {
