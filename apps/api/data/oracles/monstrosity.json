@@ -1,0 +1,15 @@
+{
+  "key": "monstrosity",
+  "title": "Delve: Monstrosity",
+  "category": "Creature",
+  "selectLabel": "Delve: Monstrosity",
+  "description": "Generate a monstrosity by rolling its primary form, size, characteristics, and abilities together.",
+  "source": "delve",
+  "tableType": "compound",
+  "data": [
+    {
+      "topRange": 100,
+      "value": "Primary form: [monstrosityPrimaryForm] · Size: [monstrositySize] · Characteristics: [monstrosityCharacteristics] · Abilities: [monstrosityAbilities]"
+    }
+  ]
+}

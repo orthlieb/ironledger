@@ -117,7 +117,6 @@ const ORACLE_KEY_SOURCE_FALLBACK: Record<string, CatalogueSource> = {
 	monstrosityPrimaryForm: 'delve',
 	monstrositySize: 'delve',
 	siteName: 'delve',
-	siteNameFormat: 'delve',
 	siteNatureDomain: 'delve',
 	siteNatureTheme: 'delve',
 	threatBurgeoningConflict: 'delve',
@@ -297,9 +296,35 @@ export function buildTableHtml(
 		columns?: OracleColumn[];
 		outerLabel?: string;
 		innerLabel?: string;
+		tableType?: string;
+		refTitles?: Record<string, string>;
 	},
 ): string {
 	if (!table || table.length === 0) return '<div>No table data.</div>';
+
+	// ── Compound (tableType: "compound") — format string(s) whose `[oracleKey]`
+	// blanks are filled by rolling the referenced oracle. Render each blank as
+	// its target oracle's title. Single format → the string alone; multiple → a
+	// d100 | Format table (the rolled format table). ─────────────────────────
+	if (options?.tableType === 'compound') {
+		const refTitles = options.refTitles ?? {};
+		const linkify = (s: string) =>
+			s.replace(
+				/\[(\w+)\]/g,
+				(_m, k: string) => `<span class="oracle-ref">${refTitles[k] ?? k}</span>`,
+			);
+		if (table.length === 1) {
+			return `<div class="oracle-compound-single">${linkify(table[0].value as string)}</div>`;
+		}
+		let html =
+			'<table class="oracle-table"><thead><tr><th>d100</th><th>Format</th></tr></thead><tbody>';
+		table.forEach((entry, idx) => {
+			html +=
+				`<tr><td class="oracle-range">${rangeLabelForEntry(table, idx)}</td>` +
+				`<td>${linkify(entry.value as string)}</td></tr>`;
+		});
+		return html + '</tbody></table>';
+	}
 
 	// ── Special layouts ──────────────────────────────────────────────────────
 
@@ -565,7 +590,7 @@ export function buildTableHtml(
 export function rollOracle(
 	key: string,
 	allOracles: OracleFile[],
-	options?: { stat?: string },
+	options?: { stat?: string; _depth?: number },
 ): OracleRollResult {
 	const oracle = allOracles.find((o) => o.key === key);
 	if (!oracle) {
@@ -579,6 +604,38 @@ export function rollOracle(
 
 	const title = oracle.title;
 	const table = oracle.data;
+
+	// ── compound — roll a format string, then fill each `[oracleKey]` blank by
+	// rolling the referenced oracle (recursively). Single-row `data` = one fixed
+	// format (no format roll); multiple rows = roll to pick a format. ────────
+	if (oracle.tableType === 'compound') {
+		const depth = options?._depth ?? 0;
+		const fmtRes = rollFromRangeTable(table);
+		const template = fmtRes.value as string;
+		let filled = template;
+		const refLines: string[] = [];
+		for (const m of template.matchAll(/\[(\w+)\]/g)) {
+			const refKey = m[1];
+			const sub =
+				depth >= 5
+					? { roll: 0, value: `[${refKey}]`, title: refKey }
+					: rollOracle(refKey, allOracles, { _depth: depth + 1 });
+			const refTitle = allOracles.find((o) => o.key === refKey)?.title ?? refKey;
+			const shown = sub.value || `[${refKey}]`;
+			filled = filled.replace(`[${refKey}]`, shown);
+			refLines.push(
+				`<div class="roll-line">${refTitle}: <strong>${shown}</strong> (d100 → ${sub.roll})</div>`,
+			);
+		}
+		const fmtLine =
+			table.length > 1 ? `<div class="roll-line">Format roll: d100 → ${fmtRes.roll}</div>` : '';
+		const html =
+			fmtLine +
+			`<div><em>${template}</em></div>` +
+			refLines.join('') +
+			`<div>Result: <strong>${filled}</strong></div>`;
+		return { roll: fmtRes.roll, html, title, value: filled };
+	}
 
 	// ── twoStep — roll the outer table, then the chosen row's subtable ──────
 	if (oracle.tableType === 'twoStep') {

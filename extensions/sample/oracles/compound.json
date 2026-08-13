@@ -1,33 +1,13 @@
 {
-  "key": "sampleCompound",
-  "title": "Sample – Compound (two-step)",
+  "key": "sampleCompoundName",
+  "title": "Sample – Compound Name",
   "category": "Other",
-  "selectLabel": "Sample – Compound",
-  "description": "A twoStep oracle: roll a Region, then a Landmark within it. Shows the compound double-roll pattern working from JSON alone (no code).",
+  "selectLabel": "Sample – Compound Name",
+  "description": "A compound oracle: roll a format, then fill each [oracleKey] blank by rolling that oracle. References the sample twoStep oracle to prove compounds compose recursively — no code.",
   "source": "sample",
-  "tableType": "twoStep",
-  "outerLabel": "Region",
-  "innerLabel": "Landmark",
+  "tableType": "compound",
   "data": [
-    {
-      "topRange": 50,
-      "value": {
-        "label": "Highlands",
-        "subtable": [
-          { "topRange": 50, "value": "A windswept cairn" },
-          { "topRange": 100, "value": "A crumbling watchtower" }
-        ]
-      }
-    },
-    {
-      "topRange": 100,
-      "value": {
-        "label": "Marshes",
-        "subtable": [
-          { "topRange": 50, "value": "A sunken idol" },
-          { "topRange": 100, "value": "A rotting jetty" }
-        ]
-      }
-    }
+    { "topRange": 50, "value": "[sampleGizmo] of the [sampleCompound]" },
+    { "topRange": 100, "value": "[sampleCompound], [sampleGizmo]" }
   ]
 }

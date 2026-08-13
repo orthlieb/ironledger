@@ -47,7 +47,6 @@
   "delveDepths": 9.6,
   "featureAspect": 10,
   "featureFocus": 11,
-  "siteNameFormat": 12,
   "siteNatureTheme": 13,
   "siteNatureDomain": 14,
   "combatEvent": 15,
@@ -78,5 +77,6 @@
   "threatSchemingLeader": 47,
   "threatPowerHungryMystic": 48,
   "threatZealousCult": 49,
-  "siteNamePlace": 31.3
+  "siteNamePlace": 31.3,
+  "monstrosity": 34
 }
