@@ -887,14 +887,19 @@ Each file is a single oracle table:
 
 ### Oracle Object Fields
 
-| Field         | Type   | Required | Description                                                           |
-| ------------- | ------ | -------- | --------------------------------------------------------------------- |
-| `key`         | string | yes      | Unique identifier in camelCase (e.g., `"action"`, `"settlementName"`) |
-| `title`       | string | yes      | Display title                                                         |
-| `group`       | string | yes      | Grouping label (e.g., `"Core Ironsworn"`, `"Delve"`, `"Yrt"`)         |
-| `selectLabel` | string | yes      | Label for the dropdown selector                                       |
-| `description` | string | no       | Guidance text for how to use the oracle                               |
-| `data`        | array  | yes      | Array of oracle entries                                               |
+| Field                       | Type   | Required | Description                                                                             |
+| --------------------------- | ------ | -------- | --------------------------------------------------------------------------------------- |
+| `key`                       | string | yes      | Unique identifier in camelCase (e.g., `"action"`, `"settlementName"`)                   |
+| `title`                     | string | yes      | Display title                                                                           |
+| `source`                    | string | yes      | Owning content pack (`"base"`, `"delve"`, an extension id, …)                           |
+| `category`                  | string | no       | Ask/Oracles filter grouping (e.g. `"Location"`, `"Character"`); falls back to `"Other"` |
+| `selectLabel`               | string | yes      | Label for the dropdown selector                                                         |
+| `description`               | string | no       | Guidance text shown **above** the table                                                 |
+| `postamble`                 | string | no       | Guidance text shown **below** the table (blank lines split paragraphs)                  |
+| `tableType`                 | string | no       | Table variant — see [Special Oracle Types](#special-oracle-types)                       |
+| `columns`                   | array  | no       | For `tableType: "columnSelect"` — `[{ key, label }]` roll columns                       |
+| `outerLabel` / `innerLabel` | string | no       | For `tableType: "twoStep"` — the two column headings                                    |
+| `data`                      | array  | yes      | Array of oracle entries                                                                 |
 
 Each oracle entry:
 
@@ -905,12 +910,67 @@ Each oracle entry:
 
 ### Special Oracle Types
 
-Most oracles have simple string values. Some have structured data:
+Most oracles have simple string values (`value` is a string). Beyond that, a
+few patterns are recognized **automatically from the JSON** — no code changes —
+so an extension can use them from data alone:
 
-- **Settlement Name** (`settlementName`): Entries have `description` and a `subtable` array of `{ topRange, value }` entries for two-step generation.
-- **Names Other** (`namesOther`): Entries have `giants`, `varou`, `trolls` fields instead of a single `value`.
+- **Type column** — give any entry a `type` string and the detail table gains a
+  **Type** column (e.g. Region → Settled / Boundary / Remote). Display-only.
+- **Description column** — give any entry a `description` string and the detail
+  table gains a **Description** column; the text is also echoed into the log on
+  a roll (e.g. Delve Site Theme → "This place holds the secrets of a bygone
+  age"). Display-only.
+- **`tableType: "columnSelect"`** — a picker of `columns` (`[{ key, label }]`);
+  the reader chooses a column and the roll resolves against that column's
+  ranges. Each data row carries a `topRange` under each column key plus a shared
+  `value` (Settlement Type land tiers, Delve Depths).
+- **`tableType: "twoStep"`** — a **compound / double-rolling** oracle: roll the
+  outer table for a category, then roll that row's `subtable` for the final
+  result. Both rolls are logged and the detail view renders
+  `d100 | outerLabel | d100 | innerLabel | d100 | innerLabel`. Set the two
+  headings with `outerLabel` / `innerLabel` (defaults `"Category"` / `"Result"`).
+  Each outer row's `value` is `{ label, subtable: [{ topRange, value }] }`. Used
+  by `settlementName` (Category → Name) and `siteNamePlace` (Domain → Place):
 
-Yrt adds additional oracle tables with structured values — see [the Yrt extension docs](../extensions/yrt/README.md#yrt-oracles).
+  ```json
+  {
+    "key": "myCompoundOracle",
+    "title": "My Compound Oracle",
+    "category": "…",
+    "selectLabel": "My Compound Oracle",
+    "source": "myext",
+    "tableType": "twoStep",
+    "outerLabel": "Domain",
+    "innerLabel": "Place",
+    "data": [
+      {
+        "topRange": 50,
+        "value": {
+          "label": "Barrow",
+          "subtable": [
+            { "topRange": 50, "value": "Boneyard" },
+            { "topRange": 100, "value": "Tomb" }
+          ]
+        }
+      },
+      {
+        "topRange": 100,
+        "value": {
+          "label": "Cavern",
+          "subtable": [
+            { "topRange": 50, "value": "Abyss" },
+            { "topRange": 100, "value": "Warren" }
+          ]
+        }
+      }
+    ]
+  }
+  ```
+
+Still hardcoded per-key (not available to extensions from JSON alone): **Names
+Other** (`namesOther`: `giants` / `varou` / `trolls` fields), `settlementNameQuick`,
+`freeportDenizen`, and the Yrt structured tables — see
+[the Yrt extension docs](../extensions/yrt/README.md#yrt-oracles).
 
 ---
 

@@ -31,6 +31,10 @@ export interface OracleEntry {
 	/** Optional secondary classification rendered as a "Type" column in the
 	 *  detail table (e.g. YRT Region → Settled / Boundary / Remote). Display-only. */
 	type?: string;
+	/** Optional flavor text rendered as a "Description" column in the detail
+	 *  table and echoed into the log on a roll (e.g. Delve Site Theme/Domain:
+	 *  "This place holds the secrets of a bygone age"). Display-only. */
+	description?: string;
 }
 
 /** One selectable column of a `tableType: 'columnSelect'` oracle (e.g. Delve
@@ -59,6 +63,12 @@ export interface OracleFile {
 	tableType?: string;
 	/** For `tableType: 'columnSelect'` — the roll columns shown as a picker. */
 	columns?: OracleColumn[];
+	/** For `tableType: 'twoStep'` — column headings for the two rolls. Each data
+	 *  row's `value` is `{ label, subtable }`: roll the outer table for a `label`,
+	 *  then roll that row's `subtable` for the final result. Defaults:
+	 *  outer "Category", inner "Result". */
+	outerLabel?: string;
+	innerLabel?: string;
 	data: OracleEntry[];
 }
 
@@ -282,7 +292,12 @@ export function rangeLabelForEntry(table: OracleEntry[], index: number): string 
 export function buildTableHtml(
 	key: string,
 	table: OracleEntry[],
-	options?: { activeStat?: string; columns?: OracleColumn[] },
+	options?: {
+		activeStat?: string;
+		columns?: OracleColumn[];
+		outerLabel?: string;
+		innerLabel?: string;
+	},
 ): string {
 	if (!table || table.length === 0) return '<div>No table data.</div>';
 
@@ -369,14 +384,19 @@ export function buildTableHtml(
 		return html + '</tbody></table>';
 	}
 
-	if (key === 'settlementName') {
+	// Two-step subtable table (tableType: "twoStep"): d100 | <outer> | d100 |
+	// <inner> | d100 | <inner>. Detected by data shape — each outer row's value
+	// is { label, subtable }. Labels come from the oracle's outer/innerLabel.
+	if (table.some((e) => Array.isArray((e.value as { subtable?: unknown } | null)?.subtable))) {
+		const outer = options?.outerLabel ?? 'Category';
+		const inner = options?.innerLabel ?? 'Result';
 		let html =
 			'<table class="oracle-table"><thead><tr>' +
-			'<th>d100</th><th>Category</th><th>d100</th><th>Name</th><th>d100</th><th>Name</th>' +
+			`<th>d100</th><th>${outer}</th><th>d100</th><th>${inner}</th><th>d100</th><th>${inner}</th>` +
 			'</tr></thead><tbody>';
 		table.forEach((entry, idx) => {
 			const rangeStr = rangeLabelForEntry(table, idx);
-			const v = entry.value as { description: string; subtable: OracleEntry[] };
+			const v = entry.value as { label: string; subtable: OracleEntry[] };
 			const sub = v.subtable;
 			const half = Math.ceil(sub.length / 2);
 			for (let i = 0; i < half; i++) {
@@ -384,19 +404,14 @@ export function buildTableHtml(
 				const right = sub[i + half];
 				const lRange = rangeLabelForEntry(sub, i);
 				const rRange = right ? rangeLabelForEntry(sub, i + half) : '';
-				if (i === 0) {
-					html +=
-						`<tr>` +
-						`<td rowspan="${half}" class="oracle-cat-range">${rangeStr}</td>` +
-						`<td rowspan="${half}" class="oracle-cat-desc">${v.description}</td>` +
-						`<td class="oracle-range">${lRange}</td><td>${left.value as string}</td>` +
-						`<td class="oracle-range">${rRange}</td><td>${right ? (right.value as string) : ''}</td>` +
-						`</tr>`;
-				} else {
-					html +=
-						`<tr><td class="oracle-range">${lRange}</td><td>${left.value as string}</td>` +
-						`<td class="oracle-range">${rRange}</td><td>${right ? (right.value as string) : ''}</td></tr>`;
-				}
+				const nameCells =
+					`<td class="oracle-range">${lRange}</td><td>${left.value as string}</td>` +
+					`<td class="oracle-range">${rRange}</td><td>${right ? (right.value as string) : ''}</td>`;
+				html +=
+					i === 0
+						? `<tr><td rowspan="${half}" class="oracle-cat-range">${rangeStr}</td>` +
+							`<td rowspan="${half}" class="oracle-cat-desc">${v.label}</td>${nameCells}</tr>`
+						: `<tr>${nameCells}</tr>`;
 			}
 		});
 		return html + '</tbody></table>';
@@ -467,6 +482,21 @@ export function buildTableHtml(
 			html +=
 				`<tr><td class="oracle-range">${rangeLabelForEntry(table, idx)}</td>` +
 				`<td>${entry.value as string}</td><td>${entry.type ?? ''}</td></tr>`;
+		});
+		return html + '</tbody></table>';
+	}
+
+	// Described table (e.g. Delve Site Theme/Domain): D100 | Result | Description.
+	// Any oracle whose entries carry a `description` gets the extra column.
+	if (table.some((e) => e.description)) {
+		let html =
+			'<table class="oracle-table"><thead><tr>' +
+			'<th>d100</th><th>Result</th><th>Description</th>' +
+			'</tr></thead><tbody>';
+		table.forEach((entry, idx) => {
+			html +=
+				`<tr><td class="oracle-range">${rangeLabelForEntry(table, idx)}</td>` +
+				`<td>${entry.value as string}</td><td>${entry.description ?? ''}</td></tr>`;
 		});
 		return html + '</tbody></table>';
 	}
@@ -549,6 +579,22 @@ export function rollOracle(
 
 	const title = oracle.title;
 	const table = oracle.data;
+
+	// ── twoStep — roll the outer table, then the chosen row's subtable ──────
+	if (oracle.tableType === 'twoStep') {
+		const outer = oracle.outerLabel ?? 'Category';
+		const inner = oracle.innerLabel ?? 'Result';
+		const outerRes = rollFromRangeTable(table);
+		const row = outerRes.value as { label: string; subtable: OracleEntry[] };
+		const innerRes = rollFromRangeTable(row.subtable);
+		const word = innerRes.value as string;
+		const html =
+			`<div class="roll-line">${outer} roll: d100 → ${outerRes.roll}</div>` +
+			`<div><em>${row.label}</em></div>` +
+			`<div class="roll-line">${inner} roll: d100 → ${innerRes.roll}</div>` +
+			`<div>${inner}: <strong>${word}</strong></div>`;
+		return { roll: outerRes.roll, html, title, value: word };
+	}
 
 	// ── columnSelect — roll against a chosen column (land tier, etc.) ───────
 	if (oracle.tableType === 'columnSelect' && oracle.columns?.length) {
@@ -680,18 +726,6 @@ export function rollOracle(
 	}
 
 	// ── settlementName — two-step subtable ──────────────────────────────────
-	if (key === 'settlementName') {
-		const catRes = rollFromRangeTable(table);
-		const cat = catRes.value as { description: string; subtable: OracleEntry[] };
-		const subRes = rollFromRangeTable(cat.subtable);
-		const html =
-			`<div class="roll-line">Category roll: d100 → ${catRes.roll}</div>` +
-			`<div><em>${cat.description}</em></div>` +
-			`<div class="roll-line">Name roll: d100 → ${subRes.roll}</div>` +
-			`<div>Name: <strong>${subRes.value as string}</strong></div>`;
-		return { roll: catRes.roll, html, title, value: subRes.value as string };
-	}
-
 	// ── settlementNameQuick — two independent rolls ──────────────────────────
 	if (key === 'settlementNameQuick') {
 		const prefixRes = rollFromRangeTable(table);
@@ -744,8 +778,13 @@ export function rollOracle(
 		return { roll: res.roll, html, title, value: combined };
 	}
 
+	// If the rolled entry carries a Description (Delve Site Theme/Domain),
+	// echo it into the log beneath the result.
+	const pickedEntry = table.find((e) => res.roll <= e.topRange) ?? table[table.length - 1];
+	const desc = typeof pickedEntry?.description === 'string' ? pickedEntry.description : '';
 	const html =
 		`<div class="roll-line">Roll: d100 → ${res.roll}</div>` +
-		`<div>Result: <strong>${val}</strong></div>`;
+		`<div>Result: <strong>${val}</strong></div>` +
+		(desc ? `<div class="oracle-desc">${desc}</div>` : '');
 	return { roll: res.roll, html, title, value: val };
 }

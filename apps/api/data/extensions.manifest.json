@@ -80,20 +80,10 @@
           "oracles/monstrosity-primary-form.json",
           "oracles/monstrosity-size.json",
           "oracles/site-name-description.json",
+          "oracles/site-name-detail.json",
           "oracles/site-name-format.json",
           "oracles/site-name-namesake.json",
-          "oracles/site-name-place-barrow.json",
-          "oracles/site-name-place-cavern.json",
-          "oracles/site-name-place-frozen-cavern.json",
-          "oracles/site-name-place-icereach.json",
-          "oracles/site-name-place-mine.json",
-          "oracles/site-name-place-pass.json",
-          "oracles/site-name-place-ruin.json",
-          "oracles/site-name-place-sea-cave.json",
-          "oracles/site-name-place-shadowfen.json",
-          "oracles/site-name-place-stronghold.json",
-          "oracles/site-name-place-tanglewood.json",
-          "oracles/site-name-place-underkeep.json",
+          "oracles/site-name-place.json",
           "oracles/site-name.json",
           "oracles/site-nature-domain.json",
           "oracles/site-nature-theme.json",
@@ -224,6 +214,7 @@
           "moves/moves.json"
         ],
         "oracles": [
+          "oracles/compound.json",
           "oracles/gizmo.json"
         ],
         "foes": [

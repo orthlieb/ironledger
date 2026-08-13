@@ -1,42 +1,50 @@
 {
   "key": "siteNatureTheme",
   "title": "Delve: Site Nature – Theme",
-  "category": "Site",
+  "category": "Delve Site",
   "selectLabel": "Delve: Site Nature – Theme",
   "description": "Determine the thematic nature of a Delve site (e.g., ancient, corrupted, haunted).",
   "source": "delve",
   "data": [
     {
-      "topRange": 12,
-      "value": "Ancient"
+      "topRange": 11,
+      "value": "Ancient",
+      "description": "This place holds the secrets of a bygone age"
     },
     {
-      "topRange": 25,
-      "value": "Corrupted"
+      "topRange": 23,
+      "value": "Corrupted",
+      "description": "This place is tainted by dark magic"
     },
     {
-      "topRange": 38,
-      "value": "Fortified"
+      "topRange": 35,
+      "value": "Fortified",
+      "description": "Foes defend this place against intruders"
     },
     {
-      "topRange": 50,
-      "value": "Hallowed"
+      "topRange": 48,
+      "value": "Hallowed",
+      "description": "The faithful worship here"
     },
     {
-      "topRange": 62,
-      "value": "Haunted"
+      "topRange": 61,
+      "value": "Haunted",
+      "description": "Restless spirits are bound to this place"
     },
     {
-      "topRange": 75,
-      "value": "Infested"
+      "topRange": 74,
+      "value": "Infested",
+      "description": "Foul creatures dwell here"
     },
     {
-      "topRange": 88,
-      "value": "Ravaged"
+      "topRange": 87,
+      "value": "Ravaged",
+      "description": "Time, disaster, or strife have taken their toll"
     },
     {
       "topRange": 100,
-      "value": "Wild"
+      "value": "Wild",
+      "description": "Nature prevails in this place"
     }
   ]
 }

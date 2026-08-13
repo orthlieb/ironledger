@@ -9,7 +9,6 @@
     {
       "topRange": 15,
       "value": {
-        "description": "A feature of the landscape. Envision what it is. What makes it unusual or distinctive?",
         "subtable": [
           {
             "topRange": 10,
@@ -51,13 +50,13 @@
             "topRange": 100,
             "value": "Three Rivers"
           }
-        ]
+        ],
+        "label": "A feature of the landscape. Envision what it is. What makes it unusual or distinctive?"
       }
     },
     {
       "topRange": 30,
       "value": {
-        "description": "A manmade edifice. What is it? Why is it important to this settlement's history?",
         "subtable": [
           {
             "topRange": 10,
@@ -99,13 +98,13 @@
             "topRange": 100,
             "value": "Fallowfield"
           }
-        ]
+        ],
+        "label": "A manmade edifice. What is it? Why is it important to this settlement's history?"
       }
     },
     {
       "topRange": 45,
       "value": {
-        "description": "A creature. Why have the people of this settlement chosen this creature as their totem? How is it represented in art or rituals?",
         "subtable": [
           {
             "topRange": 10,
@@ -147,13 +146,13 @@
             "topRange": 100,
             "value": "Dragonshadow"
           }
-        ]
+        ],
+        "label": "A creature. Why have the people of this settlement chosen this creature as their totem? How is it represented in art or rituals?"
       }
     },
     {
       "topRange": 60,
       "value": {
-        "description": "A historical event. What happened here? What place or practice commemorates this event?",
         "subtable": [
           {
             "topRange": 10,
@@ -195,13 +194,13 @@
             "topRange": 100,
             "value": "Rockfall"
           }
-        ]
+        ],
+        "label": "A historical event. What happened here? What place or practice commemorates this event?"
       }
     },
     {
       "topRange": 75,
       "value": {
-        "description": "A word in an Old World language. What culture is represented by this word? What does it translate to?",
         "subtable": [
           {
             "topRange": 10,
@@ -243,13 +242,13 @@
             "topRange": 100,
             "value": "Tiza"
           }
-        ]
+        ],
+        "label": "A word in an Old World language. What culture is represented by this word? What does it translate to?"
       }
     },
     {
       "topRange": 90,
       "value": {
-        "description": "A season or environmental aspect. What influence does the weather have on this settlement?",
         "subtable": [
           {
             "topRange": 10,
@@ -291,13 +290,13 @@
             "topRange": 100,
             "value": "Summersong"
           }
-        ]
+        ],
+        "label": "A season or environmental aspect. What influence does the weather have on this settlement?"
       }
     },
     {
       "topRange": 100,
       "value": {
-        "description": "Something Else...",
         "subtable": [
           {
             "topRange": 10,
@@ -339,8 +338,12 @@
             "topRange": 100,
             "value": "A negative term (Forsaken)"
           }
-        ]
+        ],
+        "label": "Something Else..."
       }
     }
-  ]
+  ],
+  "tableType": "twoStep",
+  "outerLabel": "Category",
+  "innerLabel": "Name"
 }

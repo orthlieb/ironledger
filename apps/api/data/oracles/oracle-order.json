@@ -62,18 +62,6 @@
   "siteName": 31,
   "siteNameDescription": 31.1,
   "siteNameNamesake": 31.2,
-  "siteNamePlaceBarrow": 31.3,
-  "siteNamePlaceCavern": 31.31,
-  "siteNamePlaceFrozenCavern": 31.32,
-  "siteNamePlaceIcereach": 31.33,
-  "siteNamePlaceMine": 31.34,
-  "siteNamePlacePass": 31.35,
-  "siteNamePlaceRuin": 31.36,
-  "siteNamePlaceSeaCave": 31.37,
-  "siteNamePlaceShadowfen": 31.38,
-  "siteNamePlaceStronghold": 31.39,
-  "siteNamePlaceTanglewood": 31.4,
-  "siteNamePlaceUnderkeep": 31.41,
   "trapEvent": 32,
   "trapComponent": 32.5,
   "monstrositySize": 33,
@@ -89,5 +77,6 @@
   "threatRavagingHorde": 46,
   "threatSchemingLeader": 47,
   "threatPowerHungryMystic": 48,
-  "threatZealousCult": 49
+  "threatZealousCult": 49,
+  "siteNamePlace": 31.3
 }

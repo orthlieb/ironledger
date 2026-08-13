@@ -1,210 +1,210 @@
 {
-  "key": "namesElf",
-  "title": "Elf Names",
-  "category": "Character",
-  "selectLabel": "Elf Names",
-  "description": "Generate a random Elf name.",
-  "source": "base",
+  "key": "siteNameDetail",
+  "title": "Site Name – Detail",
+  "category": "Delve Site",
+  "selectLabel": "Site Name: Detail",
+  "description": "Roll for the [Detail] blank when generating a Delve site name.",
+  "source": "delve",
   "data": [
     {
       "topRange": 2,
-      "value": "Arsula"
+      "value": "Blight"
     },
     {
       "topRange": 4,
-      "value": "Naidita"
+      "value": "Strife"
     },
     {
       "topRange": 6,
-      "value": "Belesunna"
+      "value": "Nightfall"
     },
     {
       "topRange": 8,
-      "value": "Vidarna"
+      "value": "Fury"
     },
     {
       "topRange": 10,
-      "value": "Ninsunu"
+      "value": "Terror"
     },
     {
       "topRange": 12,
-      "value": "Balathu"
+      "value": "Truth"
     },
     {
       "topRange": 14,
-      "value": "Dorosi"
+      "value": "Spring"
     },
     {
       "topRange": 16,
-      "value": "Gezera"
+      "value": "Sanctuary"
     },
     {
       "topRange": 18,
-      "value": "Zursan"
+      "value": "Bone"
     },
     {
       "topRange": 20,
-      "value": "Seleeku"
+      "value": "Specters"
     },
     {
       "topRange": 22,
-      "value": "Utamara"
+      "value": "Daybreak"
     },
     {
       "topRange": 24,
-      "value": "Nebakay"
+      "value": "Doom"
     },
     {
       "topRange": 26,
-      "value": "Dismashk"
+      "value": "Treachery"
     },
     {
       "topRange": 28,
-      "value": "Mitunu"
+      "value": "Blood"
     },
     {
       "topRange": 30,
-      "value": "Atani"
+      "value": "War"
     },
     {
       "topRange": 32,
-      "value": "Kinzura"
+      "value": "Torment"
     },
     {
       "topRange": 34,
-      "value": "Sumula"
+      "value": "Iron"
     },
     {
       "topRange": 36,
-      "value": "Ukames"
+      "value": "Silence"
     },
     {
       "topRange": 38,
-      "value": "Ahmeshki"
+      "value": "Mist"
     },
     {
       "topRange": 40,
-      "value": "Ilsit"
+      "value": "Isolation"
     },
     {
       "topRange": 42,
-      "value": "Mayatanay"
+      "value": "Runes"
     },
     {
       "topRange": 44,
-      "value": "Etana"
+      "value": "Rot"
     },
     {
       "topRange": 46,
-      "value": "Gamanna"
+      "value": "Corruption"
     },
     {
       "topRange": 48,
-      "value": "Nessana"
+      "value": "Prophecy"
     },
     {
       "topRange": 50,
-      "value": "Uralar"
+      "value": "Fate"
     },
     {
       "topRange": 52,
-      "value": "Tishetu"
+      "value": "Twilight"
     },
     {
       "topRange": 54,
-      "value": "Leucia"
+      "value": "Power"
     },
     {
       "topRange": 56,
-      "value": "Sutahe"
+      "value": "Darkness"
     },
     {
       "topRange": 58,
-      "value": "Dotani"
+      "value": "Gloom"
     },
     {
       "topRange": 60,
-      "value": "Uktannu"
+      "value": "Storms"
     },
     {
       "topRange": 62,
-      "value": "Retenay"
+      "value": "Hope"
     },
     {
       "topRange": 64,
-      "value": "Kendalanu"
+      "value": "Lament"
     },
     {
       "topRange": 66,
-      "value": "Tahuta"
+      "value": "Frost"
     },
     {
       "topRange": 68,
-      "value": "Mattissa"
+      "value": "Souls"
     },
     {
       "topRange": 70,
-      "value": "Anatu"
+      "value": "Winter"
     },
     {
       "topRange": 72,
-      "value": "Aralu"
+      "value": "Sadness"
     },
     {
       "topRange": 74,
-      "value": "Arakhi"
+      "value": "Desolation"
     },
     {
       "topRange": 76,
-      "value": "Ibrahem"
+      "value": "Bane"
     },
     {
       "topRange": 78,
-      "value": "Sinosu"
+      "value": "Lies"
     },
     {
       "topRange": 80,
-      "value": "Jemshida"
+      "value": "Ash"
     },
     {
       "topRange": 82,
-      "value": "Visapni"
+      "value": "Banishment"
     },
     {
       "topRange": 84,
-      "value": "Hullata"
+      "value": "Shadow"
     },
     {
       "topRange": 86,
-      "value": "Sidura"
+      "value": "Madness"
     },
     {
       "topRange": 88,
-      "value": "Kerihu"
+      "value": "Stone"
     },
     {
       "topRange": 90,
-      "value": "Ereshki"
+      "value": "Secrets"
     },
     {
       "topRange": 92,
-      "value": "Cybela"
+      "value": "Despair"
     },
     {
       "topRange": 94,
-      "value": "Anunna"
+      "value": "Blades"
     },
     {
       "topRange": 96,
-      "value": "Otani"
+      "value": "Dread"
     },
     {
       "topRange": 98,
-      "value": "Ditani"
+      "value": "Light"
     },
     {
       "topRange": 100,
-      "value": "Faraza"
+      "value": "Wrath"
     }
   ]
 }

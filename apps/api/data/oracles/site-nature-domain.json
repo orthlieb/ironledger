@@ -1,58 +1,70 @@
 {
   "key": "siteNatureDomain",
   "title": "Delve: Site Nature – Domain",
-  "category": "Site",
+  "category": "Delve Site",
   "selectLabel": "Delve: Site Nature – Domain",
   "description": "Determine the physical domain type of a Delve site (e.g., cavern, ruin, sea cave).",
   "source": "delve",
   "data": [
     {
-      "topRange": 8,
-      "value": "Barrow"
+      "topRange": 6,
+      "value": "Barrow",
+      "description": "The dead are enshrined here"
     },
     {
-      "topRange": 16,
-      "value": "Cavern"
+      "topRange": 18,
+      "value": "Cavern",
+      "description": "A place of stone and darkness"
     },
     {
-      "topRange": 24,
-      "value": "Frozen Cavern"
+      "topRange": 28,
+      "value": "Frozen Cavern",
+      "description": "A place of deep caves and eternal cold"
     },
     {
       "topRange": 32,
-      "value": "Icereach"
+      "value": "Icereach",
+      "description": "A frigid landscape formed of frozen seas"
     },
     {
-      "topRange": 40,
-      "value": "Mine"
+      "topRange": 38,
+      "value": "Mine",
+      "description": "Tunnels dug greedily and deep"
     },
     {
       "topRange": 48,
-      "value": "Pass"
+      "value": "Pass",
+      "description": "Treacherous paths over high mountains"
     },
     {
-      "topRange": 56,
-      "value": "Ruin"
+      "topRange": 58,
+      "value": "Ruin",
+      "description": "The crumbling legacy of a dead civilization"
     },
     {
-      "topRange": 64,
-      "value": "Sea Cave"
+      "topRange": 68,
+      "value": "Sea Cave",
+      "description": "Stone passages carved by ocean waves"
     },
     {
-      "topRange": 72,
-      "value": "Shadowfen"
+      "topRange": 78,
+      "value": "Shadowfen",
+      "description": "A primeval marsh, cloaked in mist"
     },
     {
-      "topRange": 80,
-      "value": "Stronghold"
+      "topRange": 83,
+      "value": "Stronghold",
+      "description": "A fortress secured against trespassers"
     },
     {
-      "topRange": 88,
-      "value": "Tanglewood"
+      "topRange": 95,
+      "value": "Tanglewood",
+      "description": "A perilous forest of eternal shadow"
     },
     {
       "topRange": 100,
-      "value": "Underkeep"
+      "value": "Underkeep",
+      "description": "An age-old subterranean dungeon"
     }
   ]
 }
