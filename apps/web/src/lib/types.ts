@@ -33,13 +33,7 @@ export interface CharacterAsset {
 // ---------------------------------------------------------------------------
 
 export type FoeNature =
-	| 'Ironlander'
-	| 'Firstborn'
-	| 'Animal'
-	| 'Beast'
-	| 'Horror'
-	| 'Anomaly'
-	| 'Construct';
+	'Ironlander' | 'Firstborn' | 'Animal' | 'Beast' | 'Horror' | 'Anomaly' | 'Construct';
 export type FoeQuantity = 'solo' | 'pack' | 'horde';
 
 /**
@@ -141,14 +135,7 @@ export interface Journey {
 
 /** The 8 Delve themes */
 export type DelveTheme =
-	| 'Ancient'
-	| 'Corrupted'
-	| 'Fortified'
-	| 'Hallowed'
-	| 'Haunted'
-	| 'Infested'
-	| 'Ravaged'
-	| 'Wild';
+	'Ancient' | 'Corrupted' | 'Fortified' | 'Hallowed' | 'Haunted' | 'Infested' | 'Ravaged' | 'Wild';
 
 export const DELVE_THEMES: DelveTheme[] = [
 	'Ancient',
@@ -491,6 +478,18 @@ export interface Npc {
 	role: string;
 	goal: string;
 	descriptor: string;
+	/** Lodestar's Character: First Look — an at-a-glance visual impression
+	 *  (well-armed, cloaked, weathered, …). Optional; absent for legacy NPCs
+	 *  and for NPCs created while Lodestar is disabled. */
+	firstLook?: string;
+	/** What the NPC was doing when first encountered (patrolling, mending,
+	 *  resting, …). Optional; absent for legacy NPCs and for NPCs created
+	 *  while Delve is disabled. */
+	activity?: string;
+	/** The NPC's initial disposition toward the party (helpful, wary,
+	 *  hostile, …). Optional; absent for legacy NPCs and for NPCs created
+	 *  while both Delve and Lodestar are disabled. */
+	disposition?: string;
 	relationship: NpcRelationship;
 	location: string;
 	notes: string; // long-form description (Description tab)

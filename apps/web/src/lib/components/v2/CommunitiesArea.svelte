@@ -44,6 +44,7 @@
 		rollOracle,
 		findOracle,
 		rollFromRangeTable,
+		resolveCharacterOracle,
 	} from '$lib/oracleStore.svelte.js';
 	import { appendLog } from '$lib/log.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
@@ -175,6 +176,9 @@
 	let newNpcDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let _pendingNpc: Npc | null = null;
 	let _pendingNpcNameOracle = $state<string>('namesIronlander');
+	let newNpcRollFirstLook = $state(true);
+	let newNpcRollActivity = $state(true);
+	let newNpcRollDisposition = $state(true);
 	let newNpcRollRole = $state(true);
 	let newNpcRollGoal = $state(true);
 	let newNpcRollDescriptor = $state(true);
@@ -665,6 +669,22 @@
 		_pendingNpc = null;
 		if (newNpcName.trim()) n.name = newNpcName.trim();
 		const oracles = getOracles();
+		// Concept-resolved rolls: each block runs only when the user asked for
+		// it AND the concept has a currently-visible backing oracle. First Look,
+		// Activity, and Disposition can be silently absent depending on which
+		// extensions the user has enabled (see resolveCharacterOracle jsdoc).
+		const firstLookOracle = resolveCharacterOracle('firstLook');
+		if (newNpcRollFirstLook && firstLookOracle) {
+			n.firstLook = rollOracle(firstLookOracle.key, oracles).value ?? '';
+		}
+		const activityOracle = resolveCharacterOracle('activity');
+		if (newNpcRollActivity && activityOracle) {
+			n.activity = rollOracle(activityOracle.key, oracles).value ?? '';
+		}
+		const dispositionOracle = resolveCharacterOracle('disposition');
+		if (newNpcRollDisposition && dispositionOracle) {
+			n.disposition = rollOracle(dispositionOracle.key, oracles).value ?? '';
+		}
 		if (newNpcRollRole) n.role = rollOracle('characterRole', oracles).value ?? '';
 		if (newNpcRollGoal) n.goal = rollOracle('characterGoal', oracles).value ?? '';
 		if (newNpcRollDescriptor) n.descriptor = rollOracle('characterDescriptor', oracles).value ?? '';
@@ -1112,6 +1132,47 @@
 										]}
 									/>
 								</div>
+								{#if n.firstLook || resolveCharacterOracle('firstLook')}
+									<div class="cm-field-row">
+										<label class="cm-field-label" for="cm-first-look-{n.id}">First Look</label>
+										<input
+											id="cm-first-look-{n.id}"
+											class="cm-input"
+											type="text"
+											value={n.firstLook ?? ''}
+											oninput={(e) =>
+												updateNpc({ firstLook: (e.target as HTMLInputElement).value })}
+											placeholder="First look — well-armed, cloaked, weathered…"
+										/>
+									</div>
+								{/if}
+								{#if n.activity || resolveCharacterOracle('activity')}
+									<div class="cm-field-row">
+										<label class="cm-field-label" for="cm-activity-{n.id}">Activity</label>
+										<input
+											id="cm-activity-{n.id}"
+											class="cm-input"
+											type="text"
+											value={n.activity ?? ''}
+											oninput={(e) => updateNpc({ activity: (e.target as HTMLInputElement).value })}
+											placeholder="Activity — patrolling, mending, resting…"
+										/>
+									</div>
+								{/if}
+								{#if n.disposition || resolveCharacterOracle('disposition')}
+									<div class="cm-field-row">
+										<label class="cm-field-label" for="cm-disposition-{n.id}">Disposition</label>
+										<input
+											id="cm-disposition-{n.id}"
+											class="cm-input"
+											type="text"
+											value={n.disposition ?? ''}
+											oninput={(e) =>
+												updateNpc({ disposition: (e.target as HTMLInputElement).value })}
+											placeholder="Disposition — helpful, wary, hostile…"
+										/>
+									</div>
+								{/if}
 								<div class="cm-field-row">
 									<label class="cm-field-label" for="cm-role-{n.id}">Role</label>
 									<input
@@ -1135,7 +1196,7 @@
 									/>
 								</div>
 								<div class="cm-field-row">
-									<label class="cm-field-label" for="cm-desc-{n.id}">Descriptor</label>
+									<label class="cm-field-label" for="cm-desc-{n.id}">Revealed Details</label>
 									<input
 										id="cm-desc-{n.id}"
 										class="cm-input"
@@ -1392,6 +1453,33 @@
 
 	<div class="nn-randomize">
 		<span class="nn-randomize-label">Also randomize</span>
+		{#if resolveCharacterOracle('firstLook')}
+			<Checkbox
+				class="nn-check"
+				checked={newNpcRollFirstLook}
+				onCheckedChange={(v) => (newNpcRollFirstLook = !!v)}
+			>
+				<span class="nn-check-label">First Look</span>
+			</Checkbox>
+		{/if}
+		{#if resolveCharacterOracle('activity')}
+			<Checkbox
+				class="nn-check"
+				checked={newNpcRollActivity}
+				onCheckedChange={(v) => (newNpcRollActivity = !!v)}
+			>
+				<span class="nn-check-label">Activity</span>
+			</Checkbox>
+		{/if}
+		{#if resolveCharacterOracle('disposition')}
+			<Checkbox
+				class="nn-check"
+				checked={newNpcRollDisposition}
+				onCheckedChange={(v) => (newNpcRollDisposition = !!v)}
+			>
+				<span class="nn-check-label">Disposition</span>
+			</Checkbox>
+		{/if}
 		<Checkbox
 			class="nn-check"
 			checked={newNpcRollRole}
@@ -1411,7 +1499,7 @@
 			checked={newNpcRollDescriptor}
 			onCheckedChange={(v) => (newNpcRollDescriptor = !!v)}
 		>
-			<span class="nn-check-label">Descriptor</span>
+			<span class="nn-check-label">Revealed Details</span>
 		</Checkbox>
 		{#if isYrtEnabled()}
 			<Checkbox
