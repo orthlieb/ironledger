@@ -31,6 +31,10 @@ export interface OracleEntry {
 	/** Optional secondary classification rendered as a "Type" column in the
 	 *  detail table (e.g. YRT Region → Settled / Boundary / Remote). Display-only. */
 	type?: string;
+	/** Optional flavor text rendered as a "Description" column in the detail
+	 *  table and echoed into the log on a roll (e.g. Delve Site Theme/Domain:
+	 *  "This place holds the secrets of a bygone age"). Display-only. */
+	description?: string;
 }
 
 /** One selectable column of a `tableType: 'columnSelect'` oracle (e.g. Delve
@@ -442,6 +446,21 @@ export function buildTableHtml(
 		return html + '</tbody></table>';
 	}
 
+	// Described table (e.g. Delve Site Theme/Domain): D100 | Result | Description.
+	// Any oracle whose entries carry a `description` gets the extra column.
+	if (table.some((e) => e.description)) {
+		let html =
+			'<table class="oracle-table"><thead><tr>' +
+			'<th>d100</th><th>Result</th><th>Description</th>' +
+			'</tr></thead><tbody>';
+		table.forEach((entry, idx) => {
+			html +=
+				`<tr><td class="oracle-range">${rangeLabelForEntry(table, idx)}</td>` +
+				`<td>${entry.value as string}</td><td>${entry.description ?? ''}</td></tr>`;
+		});
+		return html + '</tbody></table>';
+	}
+
 	// ── Default: simple or multi-column layouts ──────────────────────────────
 
 	if (table.length > 60) {
@@ -715,8 +734,13 @@ export function rollOracle(
 		return { roll: res.roll, html, title, value: combined };
 	}
 
+	// If the rolled entry carries a Description (Delve Site Theme/Domain),
+	// echo it into the log beneath the result.
+	const pickedEntry = table.find((e) => res.roll <= e.topRange) ?? table[table.length - 1];
+	const desc = typeof pickedEntry?.description === 'string' ? pickedEntry.description : '';
 	const html =
 		`<div class="roll-line">Roll: d100 → ${res.roll}</div>` +
-		`<div>Result: <strong>${val}</strong></div>`;
+		`<div>Result: <strong>${val}</strong></div>` +
+		(desc ? `<div class="oracle-desc">${desc}</div>` : '');
 	return { roll: res.roll, html, title, value: val };
 }

@@ -36,7 +36,7 @@
 	import { createDebouncedSave } from '$lib/debouncedSave.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { loadDelveData, buildCombinedTable } from '$lib/delveStore.svelte.js';
-	import { rollFromRangeTable } from '$lib/oracleStore.svelte.js';
+	import { rollFromRangeTable, rollOracle, getOracles } from '$lib/oracleStore.svelte.js';
 	import { appendLog } from '$lib/log.svelte.js';
 	import { addEncounter } from '$lib/encounterStore.svelte.js';
 	import { onMount } from 'svelte';
@@ -347,15 +347,23 @@
 	// also `disabled={rolling}`, but keyboard Space/Enter can still
 	// fire before Svelte reflects the disabled attribute on some
 	// browsers.
+	// Theme/Domain randomize rolls the weighted Site Nature oracle (d100 ranges),
+	// populates the site field, and logs the roll + its description.
 	function randomizeTheme() {
 		if (!activeSite || rolling) return;
-		const v = DELVE_THEMES[Math.floor(Math.random() * DELVE_THEMES.length)];
+		const r = rollOracle('siteNatureTheme', getOracles());
+		const v = r.value;
+		if (!v) return;
 		updateExp({ theme: v as Site['theme'] });
+		appendLog(r.title || 'Site Theme', r.html);
 	}
 	function randomizeDomain() {
 		if (!activeSite || rolling) return;
-		const v = DELVE_DOMAINS[Math.floor(Math.random() * DELVE_DOMAINS.length)];
+		const r = rollOracle('siteNatureDomain', getOracles());
+		const v = r.value;
+		if (!v) return;
 		updateExp({ domain: v as Site['domain'] });
+		appendLog(r.title || 'Site Domain', r.html);
 	}
 
 	function handleDenizenChange(index: number, value: string) {
