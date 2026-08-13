@@ -429,12 +429,21 @@
 		newSiteName = '';
 		newSiteDialogRef?.open();
 	}
+	/** Roll the compound Site Name oracle (format → recursive sub-rolls) to
+	 *  seed the name field, mirroring New Settlement's name dice. */
+	function rollNewSiteName() {
+		const v = rollOracle('siteName', getOracles()).value;
+		if (v) newSiteName = v;
+	}
 	async function confirmAddSite() {
+		// Roll the WEIGHTED Site Nature oracles (matching the panel dice), not a
+		// uniform pick from the master list.
+		const oracles = getOracles();
 		const theme = newSiteRollTheme
-			? DELVE_THEMES[Math.floor(Math.random() * DELVE_THEMES.length)]
+			? ((rollOracle('siteNatureTheme', oracles).value || '') as Site['theme'])
 			: '';
 		const domain = newSiteRollDomain
-			? DELVE_DOMAINS[Math.floor(Math.random() * DELVE_DOMAINS.length)]
+			? ((rollOracle('siteNatureDomain', oracles).value || '') as Site['domain'])
 			: '';
 		const s: Site = {
 			id: crypto.randomUUID(),
@@ -1057,10 +1066,19 @@
 	accentColor={SITE_COLOR}
 	onconfirm={confirmAddSite}
 >
-	<label class="co-field" style="margin-bottom: 10px;">
+	<div class="co-field" style="margin-bottom: 10px;">
 		<span class="co-field-label">Site name</span>
-		<input class="co-input" type="text" bind:value={newSiteName} placeholder="New Site" />
-	</label>
+		<div class="ns-name-row">
+			<input class="co-input" type="text" bind:value={newSiteName} placeholder="New Site" />
+			<button
+				class="dice-btn"
+				type="button"
+				onclick={rollNewSiteName}
+				use:tooltip={'Roll a site name'}
+				aria-label="Random site name">{@html diceD6Svg}</button
+			>
+		</div>
+	</div>
 	<div class="ns-grid">
 		<label class="ns-label" for="ns-difficulty">Difficulty</label>
 		<Select
@@ -1660,6 +1678,18 @@
 		display: flex;
 		flex-direction: column;
 		gap: 4px;
+	}
+
+	/* New Site name field — input grows, dice button rolls the compound
+	   Site Name oracle to seed it (mirrors New Settlement's name dice). */
+	.ns-name-row {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+	.ns-name-row :global(.co-input) {
+		flex: 1 1 auto;
+		min-width: 0;
 	}
 
 	/* New Site dialog form grid — label | select | dice-btn rows. The
