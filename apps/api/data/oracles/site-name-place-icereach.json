@@ -1,7 +1,7 @@
 {
   "key": "siteNamePlaceIcereach",
   "title": "Site Name – Place (Icereach)",
-  "category": "Site",
+  "category": "Delve Site",
   "selectLabel": "Site Name: Place (Icereach)",
   "description": "Roll for a place name for a Icereach site.",
   "source": "delve",

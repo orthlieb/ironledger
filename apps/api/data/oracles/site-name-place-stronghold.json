@@ -1,7 +1,7 @@
 {
   "key": "siteNamePlaceStronghold",
   "title": "Site Name – Place (Stronghold)",
-  "category": "Site",
+  "category": "Delve Site",
   "selectLabel": "Site Name: Place (Stronghold)",
   "description": "Roll for a place name for a Stronghold site.",
   "source": "delve",

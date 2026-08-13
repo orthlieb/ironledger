@@ -1,7 +1,7 @@
 {
   "key": "siteNamePlaceSeaCave",
   "title": "Site Name – Place (Sea Cave)",
-  "category": "Site",
+  "category": "Delve Site",
   "selectLabel": "Site Name: Place (Sea Cave)",
   "description": "Roll for a place name for a Sea Cave site.",
   "source": "delve",

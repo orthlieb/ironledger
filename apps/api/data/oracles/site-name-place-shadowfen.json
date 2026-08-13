@@ -1,7 +1,7 @@
 {
   "key": "siteNamePlaceShadowfen",
   "title": "Site Name – Place (Shadowfen)",
-  "category": "Site",
+  "category": "Delve Site",
   "selectLabel": "Site Name: Place (Shadowfen)",
   "description": "Roll for a place name for a Shadowfen site.",
   "source": "delve",

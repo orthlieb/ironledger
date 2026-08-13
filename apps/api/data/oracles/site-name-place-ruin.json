@@ -1,7 +1,7 @@
 {
   "key": "siteNamePlaceRuin",
   "title": "Site Name – Place (Ruin)",
-  "category": "Site",
+  "category": "Delve Site",
   "selectLabel": "Site Name: Place (Ruin)",
   "description": "Roll for a place name for a Ruin site.",
   "source": "delve",

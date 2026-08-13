@@ -1,7 +1,7 @@
 {
   "key": "siteNamePlaceCavern",
   "title": "Site Name – Place (Cavern)",
-  "category": "Site",
+  "category": "Delve Site",
   "selectLabel": "Site Name: Place (Cavern)",
   "description": "Roll for a place name for a Cavern site.",
   "source": "delve",

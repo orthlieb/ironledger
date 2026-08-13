@@ -1,7 +1,7 @@
 {
   "key": "siteNamePlaceUnderkeep",
   "title": "Site Name – Place (Underkeep)",
-  "category": "Site",
+  "category": "Delve Site",
   "selectLabel": "Site Name: Place (Underkeep)",
   "description": "Roll for a place name for a Underkeep site.",
   "source": "delve",

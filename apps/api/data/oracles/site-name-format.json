@@ -1,7 +1,7 @@
 {
   "key": "siteNameFormat",
   "title": "Delve: Site Name – Format",
-  "category": "Site",
+  "category": "Delve Site",
   "selectLabel": "Delve: Site Name – Format",
   "description": "Determine the naming structure for a Delve site (e.g., The + description + place).",
   "source": "delve",

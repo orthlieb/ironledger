@@ -1,7 +1,7 @@
 {
   "key": "siteNamePlacePass",
   "title": "Site Name – Place (Pass)",
-  "category": "Site",
+  "category": "Delve Site",
   "selectLabel": "Site Name: Place (Pass)",
   "description": "Roll for a place name for a Pass site.",
   "source": "delve",

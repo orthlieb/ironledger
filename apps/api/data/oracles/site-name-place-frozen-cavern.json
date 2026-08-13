@@ -1,7 +1,7 @@
 {
   "key": "siteNamePlaceFrozenCavern",
   "title": "Site Name – Place (Frozen Cavern)",
-  "category": "Site",
+  "category": "Delve Site",
   "selectLabel": "Site Name: Place (Frozen Cavern)",
   "description": "Roll for a place name for a Frozen Cavern site.",
   "source": "delve",

@@ -1,7 +1,7 @@
 {
   "key": "siteNamePlaceMine",
   "title": "Site Name – Place (Mine)",
-  "category": "Site",
+  "category": "Delve Site",
   "selectLabel": "Site Name: Place (Mine)",
   "description": "Roll for a place name for a Mine site.",
   "source": "delve",

@@ -1,7 +1,7 @@
 {
   "key": "namesElf",
   "title": "Elf Names",
-  "category": "Name",
+  "category": "Character",
   "selectLabel": "Elf Names",
   "description": "Generate a random Elf name.",
   "source": "base",

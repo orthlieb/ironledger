@@ -1,7 +1,7 @@
 {
   "key": "siteName",
   "title": "Site Name",
-  "category": "Site",
+  "category": "Delve Site",
   "selectLabel": "Site Name",
   "description": "Generate a specific name component for a Delve site.",
   "source": "delve",
