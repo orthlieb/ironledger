@@ -26,21 +26,50 @@ git remote get-url origin                # extract owner/repo
   commit or stash first; do not auto-commit.
 - The branch has zero commits ahead of `origin/main` — nothing to ship.
 
-## 2. Lint
+## 2. Lint + format-check
 
-Run `pnpm lint` from the repo root and refuse to continue if it exits
-non-zero. CI runs the same command, so a local failure is a guaranteed
-CI failure — better to catch it here than after a PR is open.
+Run both from the repo root. CI runs the same commands, so a local
+failure is a guaranteed CI failure — better to catch here than after
+a PR is open.
 
 ```bash
 pnpm lint
+npm run format:check
 ```
 
-**On failure:** stop. Report the lint output verbatim, ask the user
-whether to fix it (default) or ship anyway. If they say ship anyway,
-that's an explicit override — otherwise do not proceed. Do NOT
-auto-run `pnpm lint --fix` without permission; the fixes might touch
-files the user didn't intend to commit in this PR.
+**Prettier version:** `format:check` is prettier version-sensitive.
+CI installs via `npm ci` which pins the exact `package-lock.json`
+version (currently prettier@3.8.3); your local sandbox may have a
+newer prettier resolved from `^3.8.3` at the root, and different
+patch versions disagree on multi-line union types and similar edge
+cases. If your local `prettier --version` differs from the pinned
+version, run `format:check` with the pinned version explicitly:
+
+```bash
+npx --package=prettier@<pinned> --package=prettier-plugin-svelte@<pinned> \
+    -y prettier --check .
+```
+
+Pinned versions live in `package-lock.json` under
+`packages.node_modules/prettier.version` and
+`packages.node_modules/prettier-plugin-svelte.version`.
+
+**Pre-commit hook gotcha:** `.githooks/pre-commit` auto-runs
+`npx prettier --write` on staged files and re-stages them. It uses
+`npx prettier` (not the pinned version), so if your local prettier
+resolves to a newer patch, the hook will silently *undo* the
+pinned-version format on commit. When fixing formatting for CI,
+stage the pinned-prettier output and commit with `--no-verify` so
+the hook doesn't re-flatten the union types. Verify the actual
+committed content with `git show HEAD:<path>` before pushing.
+
+**On failure:** stop. Report the offending output verbatim, ask the
+user whether to fix it (default) or ship anyway. If they say ship
+anyway, that's an explicit override — otherwise do not proceed. For
+formatting failures the fix is `prettier --write <files>` with the
+CI-pinned version; for lint errors it varies. Do NOT auto-run either
+`--fix` or `--write` without permission — the fix might touch files
+the user didn't intend to commit in this PR.
 
 **On warnings only:** proceed. CI treats warnings as informational
 unless someone flips `--max-warnings=0` in the lint script.
