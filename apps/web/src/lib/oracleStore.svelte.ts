@@ -130,6 +130,26 @@ function resolveSource(o: OracleFile): CatalogueSource {
 }
 
 /**
+ * Populate the oracle store from a pre-fetched list (splits fetching from
+ * state population in `loadOracles`). Public so unit tests can seed the
+ * store deterministically without a network round-trip; production code
+ * flows through `loadOracles`. Backfills missing `source` via the
+ * ORACLE_KEY_SOURCE_FALLBACK map, sorts by the provided order map, and
+ * marks the store loaded.
+ */
+export function registerOracles(list: OracleFile[], orderMap: Record<string, number> = {}): void {
+	const files = list.map((f) => ({ ...f, source: f.source ?? resolveSource(f) }));
+	_orderMap = orderMap;
+	files.sort((a, b) => {
+		const wa = _orderMap[a.key] ?? 999;
+		const wb = _orderMap[b.key] ?? 999;
+		return wa !== wb ? wa - wb : a.key.localeCompare(b.key);
+	});
+	_oracles = files;
+	_loaded = true;
+}
+
+/**
  * Fetch oracle catalogue from /api/catalogue/oracles and cache it for the session.
  * Idempotent — safe to call multiple times; only fetches once.
  */
@@ -158,26 +178,14 @@ export async function loadOracles(): Promise<void> {
 		for (const item of json.oracles) {
 			const obj = item as Record<string, unknown>;
 			if (Array.isArray(obj['data'])) {
-				// It's a real oracle file. Backfill source if absent (defends against
-				// API serving cached data from before the source-tagging migration).
-				const f = obj as unknown as OracleFile;
-				if (!f.source) f.source = resolveSource(f);
-				files.push(f);
+				files.push(obj as unknown as OracleFile);
 			} else if (typeof obj === 'object' && obj !== null && !Array.isArray(obj)) {
 				// Likely oracle-order.json — use it as the sort order map
 				orderMap = obj as Record<string, number>;
 			}
 		}
 
-		_orderMap = orderMap;
-		// Sort by oracle-order.json weight, then alphabetically as fallback
-		files.sort((a, b) => {
-			const wa = _orderMap[a.key] ?? 999;
-			const wb = _orderMap[b.key] ?? 999;
-			return wa !== wb ? wa - wb : a.key.localeCompare(b.key);
-		});
-		_oracles = files;
-		_loaded = true;
+		registerOracles(files, orderMap);
 	} catch (err) {
 		console.error('[oracleStore] Failed to load oracles:', err);
 	} finally {
@@ -228,43 +236,22 @@ export function findOracle(key: string): OracleFile | undefined {
 // ---------------------------------------------------------------------------
 // Character concept → visible oracle resolver
 //
-// NPC composition asks for concepts ("give me a disposition") rather than
-// concrete oracle keys. Which table backs each concept depends on the
-// currently-enabled expansions: Delve alone → base charDisposition; Lodestar
-// on → its own lodestarCharacterDisposition (which supersedes the base one);
-// both off → no disposition backing at all. Callers ask this resolver, which
-// returns the first key that is (a) loaded, (b) not suppressed by another
-// enabled extension, (c) sourced from an enabled extension — or null when
-// no visible table backs the concept, so a checkbox / button can gate on it.
+// The concept preference map + the resolver logic live in the pure
+// characterConcept.ts module so unit tests can exercise every
+// extension-toggle combination without standing up the reactive Svelte
+// store. This wrapper just plumbs the live reactive state (_oracles,
+// suppressedOracleKeys(), isSourceEnabled) into that resolver; reads
+// propagate through $derived so pickers re-run on toggle changes.
 // ---------------------------------------------------------------------------
 
-export type CharacterConcept =
-	'role' | 'goal' | 'revealedDetails' | 'activity' | 'disposition' | 'firstLook';
+export type { CharacterConcept } from '$lib/characterConcept.js';
+import {
+	resolveCharacterConcept,
+	type CharacterConcept as _CharacterConcept,
+} from '$lib/characterConcept.js';
 
-/** Oracle keys that could back each concept, in preference order (first
- *  visible key wins). Adding a new supersession later — e.g. a Starforged
- *  Character NPC Nature — is a one-line entry here. */
-const CHARACTER_CONCEPT_KEYS: Record<CharacterConcept, string[]> = {
-	role: ['characterRole'],
-	goal: ['characterGoal'],
-	revealedDetails: ['characterDescriptor'],
-	activity: ['charActivity'],
-	disposition: ['lodestarCharacterDisposition', 'charDisposition'],
-	firstLook: ['characterFirstLook'],
-};
-
-/** Resolve a character concept to the oracle that should back it right now,
- *  honoring both expansion-source gating and the suppression list. Returns
- *  null when nothing visible backs the concept. Reactive — reads `_oracles`,
- *  `_registry`, `_enabled` all $state, so a `$derived` re-runs when the
- *  user toggles an expansion. */
-export function resolveCharacterOracle(concept: CharacterConcept): OracleFile | null {
-	const suppressed = suppressedOracleKeys();
-	for (const key of CHARACTER_CONCEPT_KEYS[concept]) {
-		const o = findOracle(key);
-		if (o && !suppressed.has(o.key) && isSourceEnabled(o.source)) return o;
-	}
-	return null;
+export function resolveCharacterOracle(concept: _CharacterConcept): OracleFile | null {
+	return resolveCharacterConcept(concept, _oracles, suppressedOracleKeys(), isSourceEnabled);
 }
 
 // ---------------------------------------------------------------------------
