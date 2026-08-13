@@ -1,0 +1,210 @@
+{
+  "key": "siteNameDetail",
+  "title": "Site Name – Detail",
+  "category": "Delve Site",
+  "selectLabel": "Site Name: Detail",
+  "description": "Roll for the [Detail] blank when generating a Delve site name.",
+  "source": "delve",
+  "data": [
+    {
+      "topRange": 2,
+      "value": "Blight"
+    },
+    {
+      "topRange": 4,
+      "value": "Strife"
+    },
+    {
+      "topRange": 6,
+      "value": "Nightfall"
+    },
+    {
+      "topRange": 8,
+      "value": "Fury"
+    },
+    {
+      "topRange": 10,
+      "value": "Terror"
+    },
+    {
+      "topRange": 12,
+      "value": "Truth"
+    },
+    {
+      "topRange": 14,
+      "value": "Spring"
+    },
+    {
+      "topRange": 16,
+      "value": "Sanctuary"
+    },
+    {
+      "topRange": 18,
+      "value": "Bone"
+    },
+    {
+      "topRange": 20,
+      "value": "Specters"
+    },
+    {
+      "topRange": 22,
+      "value": "Daybreak"
+    },
+    {
+      "topRange": 24,
+      "value": "Doom"
+    },
+    {
+      "topRange": 26,
+      "value": "Treachery"
+    },
+    {
+      "topRange": 28,
+      "value": "Blood"
+    },
+    {
+      "topRange": 30,
+      "value": "War"
+    },
+    {
+      "topRange": 32,
+      "value": "Torment"
+    },
+    {
+      "topRange": 34,
+      "value": "Iron"
+    },
+    {
+      "topRange": 36,
+      "value": "Silence"
+    },
+    {
+      "topRange": 38,
+      "value": "Mist"
+    },
+    {
+      "topRange": 40,
+      "value": "Isolation"
+    },
+    {
+      "topRange": 42,
+      "value": "Runes"
+    },
+    {
+      "topRange": 44,
+      "value": "Rot"
+    },
+    {
+      "topRange": 46,
+      "value": "Corruption"
+    },
+    {
+      "topRange": 48,
+      "value": "Prophecy"
+    },
+    {
+      "topRange": 50,
+      "value": "Fate"
+    },
+    {
+      "topRange": 52,
+      "value": "Twilight"
+    },
+    {
+      "topRange": 54,
+      "value": "Power"
+    },
+    {
+      "topRange": 56,
+      "value": "Darkness"
+    },
+    {
+      "topRange": 58,
+      "value": "Gloom"
+    },
+    {
+      "topRange": 60,
+      "value": "Storms"
+    },
+    {
+      "topRange": 62,
+      "value": "Hope"
+    },
+    {
+      "topRange": 64,
+      "value": "Lament"
+    },
+    {
+      "topRange": 66,
+      "value": "Frost"
+    },
+    {
+      "topRange": 68,
+      "value": "Souls"
+    },
+    {
+      "topRange": 70,
+      "value": "Winter"
+    },
+    {
+      "topRange": 72,
+      "value": "Sadness"
+    },
+    {
+      "topRange": 74,
+      "value": "Desolation"
+    },
+    {
+      "topRange": 76,
+      "value": "Bane"
+    },
+    {
+      "topRange": 78,
+      "value": "Lies"
+    },
+    {
+      "topRange": 80,
+      "value": "Ash"
+    },
+    {
+      "topRange": 82,
+      "value": "Banishment"
+    },
+    {
+      "topRange": 84,
+      "value": "Shadow"
+    },
+    {
+      "topRange": 86,
+      "value": "Madness"
+    },
+    {
+      "topRange": 88,
+      "value": "Stone"
+    },
+    {
+      "topRange": 90,
+      "value": "Secrets"
+    },
+    {
+      "topRange": 92,
+      "value": "Despair"
+    },
+    {
+      "topRange": 94,
+      "value": "Blades"
+    },
+    {
+      "topRange": 96,
+      "value": "Dread"
+    },
+    {
+      "topRange": 98,
+      "value": "Light"
+    },
+    {
+      "topRange": 100,
+      "value": "Wrath"
+    }
+  ]
+}
