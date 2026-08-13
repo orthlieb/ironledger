@@ -175,6 +175,35 @@ test.describe('Connections area (v2)', () => {
 		expect(await entryCount(page)).toBe(before - 1);
 	});
 
+	test('New NPC with default checkboxes populates all six Character fields', async ({ page }) => {
+		// With Delve + Lodestar on (defaults), the NewNPC dialog shows six
+		// roll-me checkboxes — First Look, Activity, Disposition, Role, Goal,
+		// Revealed Details — all default-checked. On Create, every corresponding
+		// field on the resulting card must be populated. Guards _commitNpc from
+		// silently dropping any of the three concept-resolved rolls.
+		await openNew(page, 'NPC');
+		await fillAndCreate(page, 'E2E All-Fields NPC');
+		for (const label of [
+			'First Look',
+			'Activity',
+			'Disposition',
+			'Role',
+			'Goal',
+			'Revealed Details',
+		]) {
+			const row = page.locator(`${CM_AREA} .cm-field-row`, {
+				has: page.locator('.cm-field-label', { hasText: new RegExp(`^${label}$`) }),
+			});
+			await expect(row, `Row for "${label}" should be visible on the NPC card`).toBeVisible({
+				timeout: 5_000,
+			});
+			await expect(
+				row.locator('.cm-input'),
+				`Field "${label}" should be populated by the roll`,
+			).not.toHaveValue('');
+		}
+	});
+
 	// ── Places ─────────────────────────────────────────────────────────────────
 
 	test('the switcher opens the new-place dialog', async ({ page }) => {

@@ -27,31 +27,42 @@ const APP_NAV = '.app-nav';
 
 const DELVE_KEY = 'ironledger:expansion:delve';
 const YRT_KEY = 'ironledger:expansion:yrt';
+const LODESTAR_KEY = 'ironledger:expansion:lodestar';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 async function resetExpansionToggles(page: Page): Promise<void> {
 	await page.evaluate(
-		({ delveKey, yrtKey }) => {
+		({ delveKey, yrtKey, lodestarKey }) => {
 			localStorage.removeItem(delveKey);
 			localStorage.removeItem(yrtKey);
+			localStorage.removeItem(lodestarKey);
 		},
-		{ delveKey: DELVE_KEY, yrtKey: YRT_KEY },
+		{ delveKey: DELVE_KEY, yrtKey: YRT_KEY, lodestarKey: LODESTAR_KEY },
 	);
 }
 
 async function setExpansionsViaStorage(
 	page: Page,
-	opts: { delve?: boolean; yrt?: boolean },
+	opts: { delve?: boolean; yrt?: boolean; lodestar?: boolean },
 ): Promise<void> {
 	await page.evaluate(
-		({ delveKey, yrtKey, delve, yrt }) => {
+		({ delveKey, yrtKey, lodestarKey, delve, yrt, lodestar }) => {
 			if (delve === true) localStorage.removeItem(delveKey);
 			else if (delve === false) localStorage.setItem(delveKey, 'off');
 			if (yrt === true) localStorage.removeItem(yrtKey);
 			else if (yrt === false) localStorage.setItem(yrtKey, 'off');
+			if (lodestar === true) localStorage.removeItem(lodestarKey);
+			else if (lodestar === false) localStorage.setItem(lodestarKey, 'off');
 		},
-		{ delveKey: DELVE_KEY, yrtKey: YRT_KEY, delve: opts.delve, yrt: opts.yrt },
+		{
+			delveKey: DELVE_KEY,
+			yrtKey: YRT_KEY,
+			lodestarKey: LODESTAR_KEY,
+			delve: opts.delve,
+			yrt: opts.yrt,
+			lodestar: opts.lodestar,
+		},
 	);
 	await page.reload();
 	await waitForHome(page);
@@ -294,5 +305,88 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 				.first(),
 		).toBeVisible({ timeout: 5_000 });
 		await page.keyboard.press('Escape');
+	});
+
+	// ── 7. NewNPC dialog — Character oracle checkboxes gate on extensions ────
+	//
+	// Guards the concept resolver (resolveCharacterConcept) behavior visible
+	// in the UI: the three roll-me checkboxes for First Look, Activity, and
+	// Disposition each render only when their backing oracle is currently
+	// visible. Role/Goal/Revealed Details are base — always shown.
+
+	async function openNewNpc(page: Page) {
+		await page.locator(`${CM_HEADER} .cm-hdr-combobox`).click();
+		await page.locator('.mp-cmd-item--action', { hasText: /New NPC/i }).click();
+		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 8_000 });
+	}
+	const checkboxLabel = (page: Page, label: string) =>
+		page.locator('.confirm-modal .nn-check-label', { hasText: new RegExp(`^${label}$`) });
+
+	test('NewNPC: all six Character checkboxes present with Delve + Lodestar on', async ({
+		page,
+	}) => {
+		await openNewNpc(page);
+		for (const label of [
+			'First Look',
+			'Activity',
+			'Disposition',
+			'Role',
+			'Goal',
+			'Revealed Details',
+		]) {
+			await expect(checkboxLabel(page, label)).toHaveCount(1);
+		}
+		await page.keyboard.press('Escape');
+	});
+
+	test('NewNPC with Lodestar off: First Look checkbox absent, others remain', async ({ page }) => {
+		await setExpansionsViaStorage(page, { lodestar: false });
+		await openNewNpc(page);
+		await expect(checkboxLabel(page, 'First Look')).toHaveCount(0);
+		// Activity + Disposition still present (Delve still on; disposition falls back to base charDisposition).
+		for (const label of ['Activity', 'Disposition', 'Role', 'Goal', 'Revealed Details']) {
+			await expect(checkboxLabel(page, label)).toHaveCount(1);
+		}
+		await page.keyboard.press('Escape');
+	});
+
+	test('NewNPC with Delve + Lodestar off: only the three base checkboxes remain', async ({
+		page,
+	}) => {
+		await setExpansionsViaStorage(page, { delve: false, lodestar: false });
+		await openNewNpc(page);
+		for (const absent of ['First Look', 'Activity', 'Disposition']) {
+			await expect(checkboxLabel(page, absent)).toHaveCount(0);
+		}
+		for (const present of ['Role', 'Goal', 'Revealed Details']) {
+			await expect(checkboxLabel(page, present)).toHaveCount(1);
+		}
+		await page.keyboard.press('Escape');
+	});
+
+	// ── 8. NPC card fields — data survives extension toggle-off ──────────────
+
+	test('NPC card keeps rendering firstLook after Lodestar is turned off', async ({ page }) => {
+		// Create an NPC with all defaults (Lodestar on → firstLook populated).
+		await openNewNpc(page);
+		await page.locator('.confirm-modal .co-input').first().fill('Test NPC firstLook');
+		await page.locator('.confirm-modal button:has-text("Create")').click();
+		await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 8_000 });
+
+		// The First Look input on the active card should be populated.
+		const firstLookRow = page.locator(`${CM_AREA} .cm-field-row`, {
+			has: page.locator('.cm-field-label', { hasText: /^First Look$/ }),
+		});
+		await expect(firstLookRow).toBeVisible({ timeout: 5_000 });
+		const firstLookInput = firstLookRow.locator('.cm-input');
+		await expect(firstLookInput).not.toHaveValue('');
+
+		// Toggle Lodestar off and reload — the concept oracle becomes unavailable
+		// but the saved value must not disappear (fallback: {#if n.firstLook || ...}).
+		await setExpansionsViaStorage(page, { lodestar: false });
+
+		// After reload the same NPC is still the active card.
+		await expect(firstLookRow).toBeVisible({ timeout: 5_000 });
+		await expect(firstLookInput).not.toHaveValue('');
 	});
 });
