@@ -20,6 +20,7 @@
 	} from '$lib/oracleStore.svelte.js';
 	import { sourceLabel } from '$lib/expansionStore.svelte.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
+	import { renderNote } from '$lib/markdown.js';
 	import type { FoeDef, FoeQuantity, FoeRollRow } from '$lib/types.js';
 	import type { RollTable } from '@ironledger/shared';
 	import { appendLog, enrichOutcomeLinks } from '$lib/log.svelte.js';
@@ -456,7 +457,8 @@
 				<!-- Detail body -->
 				<div class="od-body od-body--detail">
 					{#if selectedOracle.description}
-						<p class="od-detail-desc">{selectedOracle.description}</p>
+						<!-- eslint-disable-next-line svelte/no-at-html-tags — renderNote escapes all text -->
+						<div class="od-detail-desc">{@html renderNote(selectedOracle.description)}</div>
 					{/if}
 
 					{#if selectedOracle.tableType === 'delveDepths'}
@@ -519,11 +521,8 @@
 					</div>
 
 					{#if selectedOracle.postamble}
-						<div class="od-detail-postamble">
-							{#each selectedOracle.postamble.split(/\n\s*\n/) as para (para)}
-								<p>{para}</p>
-							{/each}
-						</div>
+						<!-- eslint-disable-next-line svelte/no-at-html-tags — renderNote escapes all text -->
+						<div class="od-detail-postamble">{@html renderNote(selectedOracle.postamble)}</div>
 					{/if}
 				</div>
 
@@ -858,7 +857,6 @@
 		margin: 0;
 		padding-bottom: 4px;
 		border-bottom: 1px solid var(--border);
-		white-space: pre-wrap;
 	}
 
 	.od-detail-postamble {
@@ -872,12 +870,24 @@
 		border-top: 1px solid var(--border);
 	}
 
-	.od-detail-postamble p {
+	/* Block elements below come from {@html renderNote(…)}, so they carry no
+	   Svelte scope hash — the whole descendant selector must be :global(). */
+	:global(.od-detail-desc p),
+	:global(.od-detail-postamble p) {
 		margin: 0;
 	}
 
-	.od-detail-postamble p + p {
+	:global(.od-detail-desc p + p),
+	:global(.od-detail-postamble p + p) {
 		margin-top: 0.5em;
+	}
+
+	:global(.od-detail-desc ul),
+	:global(.od-detail-desc ol),
+	:global(.od-detail-postamble ul),
+	:global(.od-detail-postamble ol) {
+		margin: 0.25em 0;
+		padding-left: 1.25em;
 	}
 
 	:global(.od-table-wrap) {
