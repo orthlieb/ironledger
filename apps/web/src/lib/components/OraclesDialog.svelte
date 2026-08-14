@@ -206,6 +206,7 @@
 		Prelude: 'var(--color-supply)',
 		Settlement: '#D06840',
 		Site: '#4472D0',
+		Story: '#8E7CC3',
 		Threat: '#C0392B',
 		Trap: '#8E6A3A',
 		Quest: '#E4AA28',

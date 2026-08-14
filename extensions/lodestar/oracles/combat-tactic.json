@@ -1,0 +1,28 @@
+{
+  "key": "combatTactic",
+  "title": "Combat: Tactic",
+  "category": "Combat",
+  "selectLabel": "Combat: Tactic",
+  "description": "Use this oracle to reveal the actions of a foe, enemy force, or other NPC in a combat scene.",
+  "source": "lodestar",
+  "data": [
+    { "topRange": 3, "value": "Compel a surrender" },
+    { "topRange": 6, "value": "Coordinate with allies" },
+    { "topRange": 9, "value": "Gather reinforcements" },
+    { "topRange": 13, "value": "Seize something or someone" },
+    { "topRange": 17, "value": "Provoke a reckless response" },
+    { "topRange": 21, "value": "Intimidate or frighten" },
+    { "topRange": 25, "value": "Reveal a surprising truth" },
+    { "topRange": 29, "value": "Shift focus to something else" },
+    { "topRange": 33, "value": "Destroy or damage something" },
+    { "topRange": 39, "value": "Take a decisive action" },
+    { "topRange": 45, "value": "Reinforce defenses" },
+    { "topRange": 52, "value": "Ready an action" },
+    { "topRange": 60, "value": "Use the terrain to gain advantage" },
+    { "topRange": 68, "value": "Take advantage of an opening" },
+    { "topRange": 78, "value": "Create an opportunity" },
+    { "topRange": 89, "value": "Attack with precision" },
+    { "topRange": 99, "value": "Attack with power" },
+    { "topRange": 100, "value": "Take an unexpected action" }
+  ]
+}

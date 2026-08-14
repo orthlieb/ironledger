@@ -93,11 +93,13 @@ describe('extensions.manifest.json', () => {
     expect(assetData.flatMap((f) => f.rarities ?? [])).toHaveLength(63);
     // 49 base/delve/yrt moves + 2 lodestar (Follow a Path, alternate End the Fight).
     expect(moveData.flatMap((f) => f.moves)).toHaveLength(51);
-    // 25 base + 30 delve + 12 yrt + 16 lodestar = 83 (sample is dev-only, stripped
+    // 25 base + 30 delve + 13 yrt + 20 lodestar = 88 (sample is dev-only, stripped
     // from `core`). Dropped from 91 by the site-name-place consolidation in PR #260;
     // delve stays 30 here — the `compound` refactor retired siteNameFormat but added
     // monstrosity (net zero), folding the format table into the siteName compound.
-    expect(oracleData).toHaveLength(83);
+    // +5 for the Lodestar Story & Combat oracles: Story: Region (lodestar) + its YRT
+    // duplicate (yrtStoryRegion), Story: Clue, Combat: Battleground, Combat: Tactic.
+    expect(oracleData).toHaveLength(88);
     expect(foeData.flatMap((f) => f.foes)).toHaveLength(82);
     expect(foeOverrides).toHaveLength(1);
     // Lodestar hides base End the Fight via a move override ("hide + add"):

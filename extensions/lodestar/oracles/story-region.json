@@ -1,0 +1,50 @@
+{
+  "key": "storyRegion",
+  "title": "Story: Region",
+  "category": "Story",
+  "selectLabel": "Story: Region",
+  "description": "Determine the broad region of the Ironlands where a story element is situated. Unlike the standard Region oracle, results here are frequency-weighted toward the settled heartlands, with the remote frontier coming up rarely.",
+  "source": "lodestar",
+  "data": [
+    {
+      "topRange": 12,
+      "value": "Barrier Islands"
+    },
+    {
+      "topRange": 24,
+      "value": "Ragged Coast"
+    },
+    {
+      "topRange": 34,
+      "value": "Deep Wilds"
+    },
+    {
+      "topRange": 46,
+      "value": "Flooded Lands"
+    },
+    {
+      "topRange": 60,
+      "value": "Havens"
+    },
+    {
+      "topRange": 72,
+      "value": "Hinterlands"
+    },
+    {
+      "topRange": 84,
+      "value": "Tempest Hills"
+    },
+    {
+      "topRange": 94,
+      "value": "Veiled Mountains"
+    },
+    {
+      "topRange": 99,
+      "value": "Shattered Wastes"
+    },
+    {
+      "topRange": 100,
+      "value": "Elsewhere"
+    }
+  ]
+}

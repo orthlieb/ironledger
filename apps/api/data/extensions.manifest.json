@@ -121,7 +121,8 @@
       "suppressesOracles": [
         "region",
         "settlementCondition",
-        "settlementType"
+        "settlementType",
+        "storyRegion"
       ],
       "root": "extensions/yrt",
       "provides": {
@@ -142,6 +143,7 @@
           "oracles/settlement-peril.json",
           "oracles/settlement-type.json",
           "oracles/settlement-waypoint.json",
+          "oracles/story-region.json",
           "oracles/touched-features.json",
           "oracles/touched.json"
         ],
@@ -181,6 +183,8 @@
           "oracles/coastal-waters-opportunity.json",
           "oracles/coastal-waters-peril.json",
           "oracles/coastal-waters-waypoint.json",
+          "oracles/combat-battleground.json",
+          "oracles/combat-tactic.json",
           "oracles/overland-landmark.json",
           "oracles/overland-opportunity.json",
           "oracles/overland-peril.json",
@@ -190,7 +194,9 @@
           "oracles/settlement-disposition.json",
           "oracles/settlement-first-look.json",
           "oracles/settlement-projects.json",
-          "oracles/settlement-type.json"
+          "oracles/settlement-type.json",
+          "oracles/story-clue.json",
+          "oracles/story-region.json"
         ],
         "rollTables": [
           "roll-tables/encounter-index.json",
