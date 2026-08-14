@@ -429,17 +429,38 @@
 		newSiteName = '';
 		newSiteDialogRef?.open();
 	}
+	/** Roll the compound Site Name oracle (format → recursive sub-rolls) to
+	 *  seed the name field, mirroring New Settlement's name dice. Logs the roll —
+	 *  any oracle use, dialog or not, goes to the session log. */
+	function rollNewSiteName() {
+		const r = rollOracle('siteName', getOracles());
+		if (r.value) {
+			newSiteName = r.value;
+			appendLog(r.title, r.html);
+		}
+	}
 	async function confirmAddSite() {
-		const theme = newSiteRollTheme
-			? DELVE_THEMES[Math.floor(Math.random() * DELVE_THEMES.length)]
-			: '';
-		const domain = newSiteRollDomain
-			? DELVE_DOMAINS[Math.floor(Math.random() * DELVE_DOMAINS.length)]
-			: '';
+		// Roll the WEIGHTED Site Nature oracles (matching the panel dice), not a
+		// uniform pick. The create-time rolls fold into ONE combined log entry
+		// (the name-dice click logs on its own).
+		const oracles = getOracles();
+		const name = newSiteName.trim() || 'New Site';
+		let theme: Site['theme'] = '';
+		let domain: Site['domain'] = '';
+		const rolled: string[] = [];
+		if (newSiteRollTheme) {
+			theme = (rollOracle('siteNatureTheme', oracles).value || '') as Site['theme'];
+			if (theme) rolled.push(`Theme: <strong>${theme}</strong>`);
+		}
+		if (newSiteRollDomain) {
+			domain = (rollOracle('siteNatureDomain', oracles).value || '') as Site['domain'];
+			if (domain) rolled.push(`Domain: <strong>${domain}</strong>`);
+		}
+		if (rolled.length) appendLog(`New Site — ${name}`, `<div>${rolled.join(' · ')}</div>`);
 		const s: Site = {
 			id: crypto.randomUUID(),
 			type: 'site',
-			name: newSiteName.trim() || 'New Site',
+			name,
 			objective: '',
 			notes: '',
 			theme: theme as Site['theme'],
@@ -1057,10 +1078,19 @@
 	accentColor={SITE_COLOR}
 	onconfirm={confirmAddSite}
 >
-	<label class="co-field" style="margin-bottom: 10px;">
+	<div class="co-field" style="margin-bottom: 10px;">
 		<span class="co-field-label">Site name</span>
-		<input class="co-input" type="text" bind:value={newSiteName} placeholder="New Site" />
-	</label>
+		<div class="ns-name-row">
+			<input class="co-input" type="text" bind:value={newSiteName} placeholder="New Site" />
+			<button
+				class="dice-btn"
+				type="button"
+				onclick={rollNewSiteName}
+				use:tooltip={'Roll a site name'}
+				aria-label="Random site name">{@html diceD6Svg}</button
+			>
+		</div>
+	</div>
 	<div class="ns-grid">
 		<label class="ns-label" for="ns-difficulty">Difficulty</label>
 		<Select
@@ -1660,6 +1690,18 @@
 		display: flex;
 		flex-direction: column;
 		gap: 4px;
+	}
+
+	/* New Site name field — input grows, dice button rolls the compound
+	   Site Name oracle to seed it (mirrors New Settlement's name dice). */
+	.ns-name-row {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+	.ns-name-row :global(.co-input) {
+		flex: 1 1 auto;
+		min-width: 0;
 	}
 
 	/* New Site dialog form grid — label | select | dice-btn rows. The
