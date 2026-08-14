@@ -1,9 +1,9 @@
 {
   "key": "yrtAnimal",
-  "title": "YRT – Animal Type",
-  "category": "Creature",
-  "selectLabel": "YRT – Animal Type",
-  "description": "Determine the type of animal encountered in the Yrt setting.",
+  "title": "YRT: Animal Type",
+  "category": "Character",
+  "selectLabel": "YRT: Animal Type",
+  "description": "Determine the Touched animal type aspect of a character.",
   "source": "yrt",
   "data": [
     {

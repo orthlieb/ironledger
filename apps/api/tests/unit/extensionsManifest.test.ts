@@ -94,14 +94,13 @@ describe('extensions.manifest.json', () => {
     expect(assetData.flatMap((f) => f.rarities ?? [])).toHaveLength(63);
     // 49 base/delve/yrt moves + 2 lodestar (Follow a Path, alternate End the Fight).
     expect(moveData.flatMap((f) => f.moves)).toHaveLength(51);
-    // 25 base + 30 delve + 13 yrt + 21 lodestar = 89 (sample is dev-only, stripped
-    // from `core`). Dropped from 91 by the site-name-place consolidation in PR #260;
-    // delve stays 30 here — the `compound` refactor retired siteNameFormat but added
-    // monstrosity (net zero), folding the format table into the siteName compound.
-    // +6 for the Lodestar Story & Combat oracles: Story: Region (lodestar) + its YRT
-    // duplicate (yrtStoryRegion), Story: Clue, Combat: Battleground, Combat: Event
-    // Method, Combat: Event Target. (Combat: Tactic was dropped as a base-Combat-Action
-    // duplicate.)
+    // 25 base + 32 delve + 13 yrt + 19 lodestar = 89 (sample is dev-only, stripped
+    // from `core`). Dropped from 91 by the site-name-place consolidation in PR #260.
+    // The Combat set landed this session: base Combat: Tactic (renamed from Combat
+    // Action), delve Combat: Event / Combat: Event Method / Combat: Event Target
+    // (Event Method+Target are delve content → delve 30 + 2), and lodestar
+    // Combat: Battleground. Plus Story: Region (lodestar) + its YRT duplicate
+    // (yrtStoryRegion) + Story: Clue (lodestar).
     expect(oracleData).toHaveLength(89);
     expect(foeData.flatMap((f) => f.foes)).toHaveLength(82);
     expect(foeOverrides).toHaveLength(1);
@@ -218,9 +217,9 @@ describe('oracle visibility by enabled extension', () => {
 
   it('per-extension keyed oracle counts (drift guard)', () => {
     expect(oracleKeysFor('base')).toHaveLength(24);
-    expect(oracleKeysFor('delve')).toHaveLength(30);
+    expect(oracleKeysFor('delve')).toHaveLength(32);
     expect(oracleKeysFor('yrt')).toHaveLength(13);
-    expect(oracleKeysFor('lodestar')).toHaveLength(21);
+    expect(oracleKeysFor('lodestar')).toHaveLength(19);
   });
 
   // base always on; each row toggles delve / yrt / lodestar. Counts net out
@@ -229,12 +228,12 @@ describe('oracle visibility by enabled extension', () => {
   // charDisposition + base location/coastalWatersLocation).
   it.each([
     [false, false, false, 24],
-    [false, false, true, 43],
+    [false, false, true, 41],
     [false, true, false, 36],
-    [false, true, true, 52],
-    [true, false, false, 54],
+    [false, true, true, 50],
+    [true, false, false, 56],
     [true, false, true, 70],
-    [true, true, false, 66],
+    [true, true, false, 68],
     [true, true, true, 79],
   ])(
     'base + delve=%s yrt=%s lodestar=%s → %i visible oracles',

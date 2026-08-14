@@ -1,0 +1,211 @@
+{
+  "key": "combatEventMethod",
+  "title": "Combat: Event Method",
+  "category": "Combat",
+  "selectLabel": "Combat: Event Method",
+  "description": "Use this oracle to reveal an abstract action — a method — for a foe, enemy force, or other NPC in a combat scene. Interpret the verb as appropriate to the situation, optionally pairing it with a Combat: Event Target.",
+  "source": "delve",
+  "postamble": "Use the Combat Event oracles to answer questions about the actions of a foe or enemy force. You can use these oracles instead of—or in addition to—the Combat: Tactic oracle.\nRoll once each on the Combat: Event Method oracle and the Combat: Event Target oracle. Then, interpret the response as appropriate to the current situation and the nature of your foe.\n_For example, you are fighting a Rhaskar, a bear-like beast. It has initiative, and you want to know what it does next. You Ask the Oracle, rolling Event Method and Event Target. The oracle responds, “Await Weakness.” You envision the Rhaskar circling you, its keen eyes narrowing as it looks for an opening in your defences. You must Face Danger to avoid being outmaneuvered._",
+  "data": [
+    {
+      "topRange": 2,
+      "value": "Defy"
+    },
+    {
+      "topRange": 4,
+      "value": "Break"
+    },
+    {
+      "topRange": 6,
+      "value": "Trick"
+    },
+    {
+      "topRange": 8,
+      "value": "Evade"
+    },
+    {
+      "topRange": 10,
+      "value": "Protect"
+    },
+    {
+      "topRange": 12,
+      "value": "Overwhelm"
+    },
+    {
+      "topRange": 14,
+      "value": "Persevere"
+    },
+    {
+      "topRange": 16,
+      "value": "Assist"
+    },
+    {
+      "topRange": 18,
+      "value": "Await"
+    },
+    {
+      "topRange": 20,
+      "value": "Abort"
+    },
+    {
+      "topRange": 22,
+      "value": "Block"
+    },
+    {
+      "topRange": 24,
+      "value": "Collide"
+    },
+    {
+      "topRange": 26,
+      "value": "Focus"
+    },
+    {
+      "topRange": 28,
+      "value": "Advance"
+    },
+    {
+      "topRange": 30,
+      "value": "Breach"
+    },
+    {
+      "topRange": 32,
+      "value": "Endure"
+    },
+    {
+      "topRange": 34,
+      "value": "Assault"
+    },
+    {
+      "topRange": 36,
+      "value": "Charge"
+    },
+    {
+      "topRange": 38,
+      "value": "Escalate"
+    },
+    {
+      "topRange": 40,
+      "value": "Sunder"
+    },
+    {
+      "topRange": 42,
+      "value": "Shatter"
+    },
+    {
+      "topRange": 44,
+      "value": "Aim"
+    },
+    {
+      "topRange": 46,
+      "value": "Stagger"
+    },
+    {
+      "topRange": 48,
+      "value": "Counter"
+    },
+    {
+      "topRange": 50,
+      "value": "Seize"
+    },
+    {
+      "topRange": 52,
+      "value": "Impact"
+    },
+    {
+      "topRange": 54,
+      "value": "Entangle"
+    },
+    {
+      "topRange": 56,
+      "value": "Hold"
+    },
+    {
+      "topRange": 58,
+      "value": "Deflect"
+    },
+    {
+      "topRange": 60,
+      "value": "Drop"
+    },
+    {
+      "topRange": 62,
+      "value": "Lose"
+    },
+    {
+      "topRange": 64,
+      "value": "Sweep"
+    },
+    {
+      "topRange": 66,
+      "value": "Secure"
+    },
+    {
+      "topRange": 68,
+      "value": "Cover"
+    },
+    {
+      "topRange": 70,
+      "value": "Withdraw"
+    },
+    {
+      "topRange": 72,
+      "value": "Clash"
+    },
+    {
+      "topRange": 74,
+      "value": "Amplify"
+    },
+    {
+      "topRange": 76,
+      "value": "Batter"
+    },
+    {
+      "topRange": 78,
+      "value": "Feint"
+    },
+    {
+      "topRange": 80,
+      "value": "Shove"
+    },
+    {
+      "topRange": 82,
+      "value": "Embed"
+    },
+    {
+      "topRange": 84,
+      "value": "Affect"
+    },
+    {
+      "topRange": 86,
+      "value": "Probe"
+    },
+    {
+      "topRange": 88,
+      "value": "Force"
+    },
+    {
+      "topRange": 90,
+      "value": "Intensify"
+    },
+    {
+      "topRange": 92,
+      "value": "Distract"
+    },
+    {
+      "topRange": 94,
+      "value": "Challenge"
+    },
+    {
+      "topRange": 96,
+      "value": "Brawl"
+    },
+    {
+      "topRange": 98,
+      "value": "Coordinate"
+    },
+    {
+      "topRange": 100,
+      "value": "Overrun"
+    }
+  ]
+}
