@@ -133,18 +133,19 @@ noted.
 | ---------------- | ----------------- | --------- | ---------------------------------------------------------------- |
 | Touched          | `yrtTouched`      | Character | A Touched character — social class, animal aspect, and features. |
 | Touched Features | `touchedFeatures` | Character | A specific supernatural feature for a Touched character.         |
-| Freeport Denizen | `freeportDenizen` | Character | A random Freeport-district NPC (structured value — see below).   |
-| Animal Type      | `yrtAnimal`       | Creature  | An animal native to the Yrt setting.                             |
+| Freeport NPC     | `freeportDenizen` | Character | A random Freeport-district NPC (structured value — see below).   |
+| Touched Aspect   | `yrtAnimal`       | Character | The Touched animal-type aspect of a character.                   |
 | Mana Backlash    | `manaBacklash`    | Move      | A mana-specific backlash cost when magic goes wrong.             |
 
 > **Supersession.** When YRT is enabled it hides the base `region` and the
-> Lodestar `settlementType` / `settlementCondition` oracles and stands in with
-> the YRT versions above, via `suppressesOracles` in `extension.json` (see
+> Lodestar `storyRegion` / `settlementType` / `settlementCondition` oracles and
+> stands in with the YRT versions (including `yrtStoryRegion`), via
+> `suppressesOracles` in `extension.json` (see
 > [docs/extensions.md — Oracle supersession](../../docs/extensions.md)).
 
-### Freeport Denizen (structured values)
+### Freeport NPC (structured values)
 
-The freeport denizen oracle uses structured `value` objects instead of plain strings:
+The freeport NPC oracle uses structured `value` objects instead of plain strings:
 
 ```json
 {

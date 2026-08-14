@@ -1,10 +1,11 @@
 {
   "key": "combatEvent",
-  "title": "Delve: Combat Event",
+  "title": "Combat: Event",
   "category": "Combat",
-  "selectLabel": "Delve: Combat Event",
+  "selectLabel": "Combat: Event",
   "description": "Trigger a dramatic event or complication during a fight within a Delve site.",
   "source": "delve",
+  "postamble": "Use the Combat Event oracles to answer questions about the actions of a foe or enemy force. You can use these oracles instead of—or in addition to—the Combat: Tactic oracle.\nRoll once each on the Combat: Event Method oracle and the Combat: Event Target oracle. Then, interpret the response as appropriate to the current situation and the nature of your foe.\n_For example, you are fighting a Rhaskar, a bear-like beast. It has initiative, and you want to know what it does next. You Ask the Oracle, rolling Event Method and Event Target. The oracle responds, “Await Weakness.” You envision the Rhaskar circling you, its keen eyes narrowing as it looks for an opening in your defences. You must Face Danger to avoid being outmaneuvered._",
   "data": [
     {
       "topRange": 10,

@@ -1,0 +1,98 @@
+{
+  "key": "combatBattleground",
+  "title": "Combat: Battleground",
+  "category": "Combat",
+  "selectLabel": "Combat: Battleground",
+  "description": "Use this oracle to help envision the characteristics and complications of a combat or battle scene. Weave these elements into the actions of your character and their foes.",
+  "source": "lodestar",
+  "data": [
+    { "topRange": 5, "value": "Slippery surface", "description": "Mud, ice, rain-slick rocks" },
+    {
+      "topRange": 10,
+      "value": "Encumbering terrain",
+      "description": "Water, muck, deep snow, webs"
+    },
+    { "topRange": 15, "value": "Precipitous drop", "description": "Cliff, ravine, pit, stairs" },
+    {
+      "topRange": 20,
+      "value": "Obstructed path",
+      "description": "Barricade, toppled ruin, fallen tree"
+    },
+    {
+      "topRange": 25,
+      "value": "High ground",
+      "description": "Mound, outcropping, climbable structure"
+    },
+    { "topRange": 30, "value": "Cluttered terrain", "description": "Rubble, rocks, roots" },
+    {
+      "topRange": 35,
+      "value": "Low visibility",
+      "description": "Darkness, smoke, mist, torrential rain"
+    },
+    {
+      "topRange": 40,
+      "value": "Impassable border",
+      "description": "Deep waterway, high wall, cliff face, locked door"
+    },
+    {
+      "topRange": 45,
+      "value": "Scattered cover",
+      "description": "Low walls, boulders, trees, crates"
+    },
+    {
+      "topRange": 50,
+      "value": "Cramped spaces",
+      "description": "Narrow tunnel, crowded room, dense woods"
+    },
+    {
+      "topRange": 55,
+      "value": "Treacherous ground",
+      "description": "Fire pit, boiling hot spring, quagmire"
+    },
+    {
+      "topRange": 60,
+      "value": "Restricted approach",
+      "description": "Bridge, corridor, river ford, narrow canyon"
+    },
+    {
+      "topRange": 65,
+      "value": "Collapsing foundation",
+      "description": "Crumbling ruins, thin ice, undermined earth"
+    },
+    {
+      "topRange": 70,
+      "value": "Bounded space",
+      "description": "Dueling circle, woodland clearing, standing stones"
+    },
+    {
+      "topRange": 75,
+      "value": "Pitched ground",
+      "description": "Steep hillside, rooftop, collapsed ruin, ship deck"
+    },
+    {
+      "topRange": 80,
+      "value": "Hidden hazard",
+      "description": "Trap, sinkhole, lurking creature, waiting ambusher"
+    },
+    {
+      "topRange": 85,
+      "value": "Frenzied distractions",
+      "description": "Noncombatants, panicked creatures, insect swarm"
+    },
+    {
+      "topRange": 90,
+      "value": "Destructive chaos",
+      "description": "Storm, fire, flooding, rampaging creature"
+    },
+    {
+      "topRange": 95,
+      "value": "Unnatural forces",
+      "description": "Mystic energies, runic symbols, sorcerous artifacts"
+    },
+    {
+      "topRange": 100,
+      "value": "Cursed ground",
+      "description": "Corpses, shambling undead, ghostly spectres"
+    }
+  ]
+}

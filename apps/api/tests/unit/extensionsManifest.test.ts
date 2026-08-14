@@ -25,6 +25,7 @@ interface Ext {
   root: string;
   dev?: boolean;
   provides?: Provides;
+  suppressesOracles?: string[];
 }
 interface Manifest {
   extensions: Ext[];
@@ -93,11 +94,14 @@ describe('extensions.manifest.json', () => {
     expect(assetData.flatMap((f) => f.rarities ?? [])).toHaveLength(63);
     // 49 base/delve/yrt moves + 2 lodestar (Follow a Path, alternate End the Fight).
     expect(moveData.flatMap((f) => f.moves)).toHaveLength(51);
-    // 25 base + 30 delve + 12 yrt + 16 lodestar = 83 (sample is dev-only, stripped
-    // from `core`). Dropped from 91 by the site-name-place consolidation in PR #260;
-    // delve stays 30 here — the `compound` refactor retired siteNameFormat but added
-    // monstrosity (net zero), folding the format table into the siteName compound.
-    expect(oracleData).toHaveLength(83);
+    // 25 base + 32 delve + 13 yrt + 19 lodestar = 89 (sample is dev-only, stripped
+    // from `core`). Dropped from 91 by the site-name-place consolidation in PR #260.
+    // The Combat set landed this session: base Combat: Tactic (renamed from Combat
+    // Action), delve Combat: Event / Combat: Event Method / Combat: Event Target
+    // (Event Method+Target are delve content → delve 30 + 2), and lodestar
+    // Combat: Battleground. Plus Story: Region (lodestar) + its YRT duplicate
+    // (yrtStoryRegion) + Story: Clue (lodestar).
+    expect(oracleData).toHaveLength(89);
     expect(foeData.flatMap((f) => f.foes)).toHaveLength(82);
     expect(foeOverrides).toHaveLength(1);
     // Lodestar hides base End the Fight via a move override ("hide + add"):
@@ -174,5 +178,85 @@ describe('extensions.manifest.json', () => {
         .map((rel) => resolve(e.root, rel)),
     );
     expect(new Set(all).size).toBe(all.length);
+  });
+});
+
+/**
+ * Oracle visibility by enabled extension. `base` is the always-on core; the
+ * user toggles delve / yrt / lodestar. This mirrors the runtime contract in
+ * apps/web `oracleStore.getVisibleOracles`: an oracle is visible when its
+ * provider is enabled AND its key isn't suppressed by any enabled extension.
+ * The hard-coded counts are the guard — add/remove an oracle file, or change
+ * a `suppressesOracles` list, and the affected number must be updated here on
+ * purpose. oracle-order.json is a display-order index (no `key`), not a
+ * rollable oracle, so it's excluded from these counts.
+ */
+describe('oracle visibility by enabled extension', () => {
+  const ext = (id: string) => core.find((e) => e.id === id)!;
+  /** Keyed (rollable) oracle keys an extension provides. */
+  const oracleKeysFor = (id: string): string[] =>
+    (ext(id).provides?.oracles ?? [])
+      .map((rel) => load(ext(id).root, rel) as { key?: string })
+      .filter((o) => typeof o.key === 'string')
+      .map((o) => o.key as string);
+  const suppressFor = (id: string) => new Set(ext(id).suppressesOracles ?? []);
+  /** Effective visible oracle keys for a set of enabled extensions. */
+  const effective = (enabled: string[]): Set<string> => {
+    const present = new Set<string>();
+    for (const id of enabled) for (const k of oracleKeysFor(id)) present.add(k);
+    for (const id of enabled) for (const k of suppressFor(id)) present.delete(k);
+    return present;
+  };
+  const BASE = 'base';
+  const withFlags = (delve: boolean, yrt: boolean, lodestar: boolean) => [
+    BASE,
+    ...(delve ? ['delve'] : []),
+    ...(yrt ? ['yrt'] : []),
+    ...(lodestar ? ['lodestar'] : []),
+  ];
+
+  it('per-extension keyed oracle counts (drift guard)', () => {
+    expect(oracleKeysFor('base')).toHaveLength(24);
+    expect(oracleKeysFor('delve')).toHaveLength(32);
+    expect(oracleKeysFor('yrt')).toHaveLength(13);
+    expect(oracleKeysFor('lodestar')).toHaveLength(19);
+  });
+
+  // base always on; each row toggles delve / yrt / lodestar. Counts net out
+  // the 9 suppressions (yrt hides region/settlementCondition/settlementType +
+  // supplants storyRegion; lodestar hides delve featureAspect/featureFocus/
+  // charDisposition + base location/coastalWatersLocation).
+  it.each([
+    [false, false, false, 24],
+    [false, false, true, 41],
+    [false, true, false, 36],
+    [false, true, true, 50],
+    [true, false, false, 56],
+    [true, false, true, 70],
+    [true, true, false, 68],
+    [true, true, true, 79],
+  ])(
+    'base + delve=%s yrt=%s lodestar=%s → %i visible oracles',
+    (delve, yrt, lodestar, expected) => {
+      expect(effective(withFlags(delve, yrt, lodestar)).size).toBe(expected);
+    },
+  );
+
+  it('suppression hides/supplants the expected keys', () => {
+    // yrt hides base Region (ships its own yrtRegion).
+    expect(effective(['base']).has('region')).toBe(true);
+    expect(effective(['base', 'yrt']).has('region')).toBe(false);
+    expect(effective(['base', 'yrt']).has('yrtRegion')).toBe(true);
+    // lodestar hides base Location and delve Feature Focus / Character Disposition.
+    expect(effective(['base']).has('location')).toBe(true);
+    expect(effective(['base', 'lodestar']).has('location')).toBe(false);
+    expect(effective(['base', 'delve']).has('featureFocus')).toBe(true);
+    expect(effective(['base', 'delve', 'lodestar']).has('featureFocus')).toBe(false);
+    expect(effective(['base', 'delve']).has('charDisposition')).toBe(true);
+    expect(effective(['base', 'delve', 'lodestar']).has('charDisposition')).toBe(false);
+    // Story: Region — lodestar ships storyRegion; yrt supplants it with yrtStoryRegion.
+    expect(effective(['base', 'lodestar']).has('storyRegion')).toBe(true);
+    expect(effective(['base', 'yrt', 'lodestar']).has('storyRegion')).toBe(false);
+    expect(effective(['base', 'yrt', 'lodestar']).has('yrtStoryRegion')).toBe(true);
   });
 });

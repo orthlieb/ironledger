@@ -1,8 +1,8 @@
 {
   "key": "namesOther",
-  "title": "Other Names",
+  "title": "Name: Other",
   "category": "Character",
-  "selectLabel": "Other Names",
+  "selectLabel": "Name: Other",
   "description": "Generate a random name for Giants, Varou, or Trolls.",
   "source": "base",
   "data": [
