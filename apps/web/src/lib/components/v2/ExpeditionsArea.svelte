@@ -430,25 +430,37 @@
 		newSiteDialogRef?.open();
 	}
 	/** Roll the compound Site Name oracle (format → recursive sub-rolls) to
-	 *  seed the name field, mirroring New Settlement's name dice. */
+	 *  seed the name field, mirroring New Settlement's name dice. Logs the roll —
+	 *  any oracle use, dialog or not, goes to the session log. */
 	function rollNewSiteName() {
-		const v = rollOracle('siteName', getOracles()).value;
-		if (v) newSiteName = v;
+		const r = rollOracle('siteName', getOracles());
+		if (r.value) {
+			newSiteName = r.value;
+			appendLog(r.title, r.html);
+		}
 	}
 	async function confirmAddSite() {
 		// Roll the WEIGHTED Site Nature oracles (matching the panel dice), not a
-		// uniform pick from the master list.
+		// uniform pick. The create-time rolls fold into ONE combined log entry
+		// (the name-dice click logs on its own).
 		const oracles = getOracles();
-		const theme = newSiteRollTheme
-			? ((rollOracle('siteNatureTheme', oracles).value || '') as Site['theme'])
-			: '';
-		const domain = newSiteRollDomain
-			? ((rollOracle('siteNatureDomain', oracles).value || '') as Site['domain'])
-			: '';
+		const name = newSiteName.trim() || 'New Site';
+		let theme: Site['theme'] = '';
+		let domain: Site['domain'] = '';
+		const rolled: string[] = [];
+		if (newSiteRollTheme) {
+			theme = (rollOracle('siteNatureTheme', oracles).value || '') as Site['theme'];
+			if (theme) rolled.push(`Theme: <strong>${theme}</strong>`);
+		}
+		if (newSiteRollDomain) {
+			domain = (rollOracle('siteNatureDomain', oracles).value || '') as Site['domain'];
+			if (domain) rolled.push(`Domain: <strong>${domain}</strong>`);
+		}
+		if (rolled.length) appendLog(`New Site — ${name}`, `<div>${rolled.join(' · ')}</div>`);
 		const s: Site = {
 			id: crypto.randomUUID(),
 			type: 'site',
-			name: newSiteName.trim() || 'New Site',
+			name,
 			objective: '',
 			notes: '',
 			theme: theme as Site['theme'],
