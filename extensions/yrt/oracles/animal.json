@@ -1,8 +1,8 @@
 {
   "key": "yrtAnimal",
-  "title": "YRT: Animal Type",
+  "title": "YRT: Touched Aspect",
   "category": "Character",
-  "selectLabel": "YRT: Animal Type",
+  "selectLabel": "YRT: Touched Aspect",
   "description": "Determine the Touched animal type aspect of a character.",
   "source": "yrt",
   "data": [
