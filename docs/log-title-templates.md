@@ -116,6 +116,14 @@ Use `{variable}` placeholders:
 
 Oracle log entries are always prefixed `Oracle:` in the current code (e.g. `Oracle: Ask the Oracle`).
 
+> **Historical.** Oracle log titles are now generated automatically as
+> `Oracle: <title>` from the catalogue `title` field — they are no longer
+> hand-maintained here. The table below is a planning snapshot from before the
+> data-driven titles landed and predates the `Prefix: Label` naming pass (e.g.
+> the catalogue now ships `Settlement: Name`, `Combat: Tactic`, `Name: Elf`),
+> so its rows are illustrative, not current. See `apps/*/oracles/*.json` for the
+> authoritative titles.
+
 | Oracle                           | Current Pattern                            | Proposed                                                   |
 | -------------------------------- | ------------------------------------------ | ---------------------------------------------------------- |
 | Action                           | `Oracle: Action`                           | `Oracle: Action`                                           |

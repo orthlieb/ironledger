@@ -109,7 +109,7 @@ The manifest carries the (sorted) list through to the web, where
 `expansionStore.suppressedOracleKeys()` unions the keys from every **enabled**
 extension. `getVisibleOracles()` filters those out, so the pattern is: ship a
 same-shaped replacement (e.g. Lodestar's Overland Landmark superseding base
-`location`, YRT's 50-row Settlement Condition superseding Lodestar's) and add
+`location`, YRT's 50-row Settlement: Condition superseding Lodestar's) and add
 the superseded key here. Suppression only removes the oracle from the **picker**
 — a saved roll or a direct `rollOracle(key)` call still resolves it.
 

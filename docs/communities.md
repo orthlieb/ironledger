@@ -83,7 +83,7 @@ interface Place {
   region: string;
   location: string;
   locationDescription: string;
-  trouble: string; // freeform — no Settlement Trouble oracle here
+  trouble: string; // freeform — no Settlement: Troubles oracle here
   notes: string; // markdown — physical features, atmosphere, notable details
   situationalNotes?: string; // markdown — events that have happened here, current state
   portraitEtag?: string; // content hash; bytes live in the portrait blob store
@@ -92,7 +92,7 @@ interface Place {
 }
 ```
 
-Places share Community's field shape today so the same card renders both. They live in their own entity kind (`user_entities.kind = 'place'`) so future divergence (place-specific fields like `parentCommunityId`, `terrain`, etc.) doesn't require a schema shuffle. The Settlement Trouble oracle is intentionally NOT wired for places — "Trouble" is a freeform text field, since a wayside inn or a peak don't have that kind of settlement-scale trouble concept.
+Places share Community's field shape today so the same card renders both. They live in their own entity kind (`user_entities.kind = 'place'`) so future divergence (place-specific fields like `parentCommunityId`, `terrain`, etc.) doesn't require a schema shuffle. The Settlement: Troubles oracle is intentionally NOT wired for places — "Trouble" is a freeform text field, since a wayside inn or a peak don't have that kind of settlement-scale trouble concept.
 
 #### When to reach for a Place vs a Community
 

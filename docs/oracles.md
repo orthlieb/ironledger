@@ -11,7 +11,7 @@ Oracles are d100 random-result tables drawn from the Ironsworn, Ironsworn: Delve
 ### Source files
 
 ```
-apps/api/data/oracles/          49 JSON files
+apps/api/data/oracles/          57 JSON files   (base + delve; Yrt & Lodestar live under extensions/<id>/oracles/)
 ```
 
 Served by the API at **`GET /api/catalogue`** (bundled with assets, moves, etc.).
@@ -24,9 +24,10 @@ Every oracle file exports one object:
 ```jsonc
 {
   "key":         "action",                    // camelCase unique ID
-  "title":       "Oracle 1: Action",          // Full display title
-  "group":       "Core Ironsworn",            // "Core Ironsworn" | "Delve" | "Yrt"
-  "selectLabel": "Oracle 1: Action",          // Label used in picker / dropdowns
+  "title":       "Core: Action",              // Full display title
+  "category":    "Core",                      // chip grouping (Core, Combat, Story, Location, …)
+  "source":      "base",                      // "base" | "delve" | "yrt" | "lodestar"
+  "selectLabel": "Core: Action",              // Label used in picker / dropdowns
   "description": "Use this table when you …", // Guidance text shown in detail view
   "data": [
     { "topRange": 1,   "value": "Scheme" },   // Roll ≤ topRange → this result
@@ -52,11 +53,16 @@ The UI sorts oracle tiles by this weight within each group.
 
 ### Groups
 
-| Group              | Count | Keys (excerpt)                                                                                                                                  |
-| ------------------ | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Core Ironsworn** | 24    | action, theme, region, location, settlement*, character*, names*, combat*, mystic*, plotTwist, challengeRank, feature*, siteName\*, combatEvent |
-| **Delve**          | 14    | siteName, trap, monstrosity* (×4), threat* (×9)                                                                                                 |
-| **Yrt**            | 6     | yrtTouched, touchedCount, touchedFeatures, yrtAnimal, manaBacklash, freeportDenizen                                                             |
+Counts are keyed (rollable) oracles per `source`; see
+`apps/api/data/extensions.manifest.json` for the authoritative per-extension
+list. `oracle-order.json` is a display-order index, not a rollable oracle.
+
+| Group                       | Count | Keys (excerpt)                                                                                                                                               |
+| --------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Core Ironsworn** (`base`) | 24    | action, theme, region, location, settlementName / settlementNameQuick / settlementTrouble, character\*, names\*, combatAction, majorPlotTwist, challengeRank |
+| **Delve** (`delve`)         | 32    | siteName\*, siteNature\*, trap\*, monstrosity\*, threat\*, combatEvent / combatEventMethod / combatEventTarget, feature\*, charDisposition                   |
+| **Yrt** (`yrt`)             | 13    | yrtRegion, yrtSettlement\*, yrtTouched / touchedFeatures / yrtAnimal, manaBacklash, freeportDenizen, yrtStoryRegion                                          |
+| **Lodestar** (`lodestar`)   | 19    | overland\* / coastalWaters\* journey oracles, settlementType / settlementCondition / settlementFirstLook / …, storyRegion, storyClue, combatBattleground     |
 
 ---
 
@@ -77,7 +83,7 @@ Most oracles. Single d100 roll → string result.
 <div>Result: <strong>Investigate a Threat</strong></div>
 ```
 
-### 2. Settlement Name (`key: "settlementName"`) — two-step subtable
+### 2. Settlement: Name (`key: "settlementName"`) — two-step subtable
 
 First roll selects a **category**; the category contains a `subtable` for a second d100 roll.
 
@@ -108,7 +114,7 @@ First roll selects a **category**; the category contains a `subtable` for a seco
 <div>Name: <strong>Highmount</strong></div>
 ```
 
-### 3. Settlement Name Quick (`key: "settlementNameQuick"`) — prefix + suffix
+### 3. Settlement: Quick Name (`key: "settlementNameQuick"`) — prefix + suffix
 
 Each entry contains `{ prefix, suffix }`. **Two** independent d100 rolls are made; the results are concatenated.
 
@@ -125,7 +131,7 @@ Each entry contains `{ prefix, suffix }`. **Two** independent d100 rolls are mad
 <div>Settlement name: <strong>Redfall</strong></div>
 ```
 
-### 4. Names (Other) (`key: "namesOther"`) — multi-field
+### 4. Name: Other (`key: "namesOther"`) — multi-field
 
 A single d100 roll returns **three** parallel name fields for Giants, Varou, and Trolls.
 
@@ -140,7 +146,7 @@ A single d100 roll returns **three** parallel name fields for Giants, Varou, and
 <div>Giants: Chony | Varou: Vata | Trolls: Rattle</div>
 ```
 
-### 5. Yrt Touched (`key: "yrtTouched"`) — compound multi-roll
+### 5. YRT: Touched (`key: "yrtTouched"`) — compound multi-roll
 
 The most complex oracle. A single "roll" actually performs **multiple** sub-rolls:
 
@@ -176,7 +182,7 @@ The most complex oracle. A single "roll" actually performs **multiple** sub-roll
 </ul>
 ```
 
-### 6. Freeport Denizen (`key: "freeportDenizen"`) — structured object
+### 6. YRT: Freeport NPC (`key: "freeportDenizen"`) — structured object
 
 Each entry is a structured record for a denizen type.
 

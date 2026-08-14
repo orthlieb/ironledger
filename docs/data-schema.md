@@ -923,7 +923,7 @@ so an extension can use them from data alone:
 - **`tableType: "columnSelect"`** — a picker of `columns` (`[{ key, label }]`);
   the reader chooses a column and the roll resolves against that column's
   ranges. Each data row carries a `topRange` under each column key plus a shared
-  `value` (Settlement Type land tiers, Delve Depths).
+  `value` (Settlement: Type land tiers, Delve Depths).
 - **`tableType: "twoStep"`** — a **double-rolling** oracle whose second table
   travels _inside its own rows_: roll the outer table for a category, then roll
   that row's `subtable` for the final result. Both rolls are logged and the

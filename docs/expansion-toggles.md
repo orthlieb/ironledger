@@ -65,17 +65,17 @@ Hydration is synchronous on first import (with a `typeof window` guard for SSR).
 
 ### Delve OFF
 
-| Surface                         | Effect                                                                                                    |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `MovesDialog`                   | Hides Delve & Rarity category chips and their moves (`delve.json`, `rarity.json`)                         |
-| `OraclesDialog`                 | Hides 23 Delve oracles (site-_, threat-_, monstrosity-_, feature-_, char-disposition, combat-event, trap) |
-| `FoePickerDialog`               | Hides ~45 entries from `foes_delve.json`                                                                  |
-| `AssetCard` (rarity slot)       | Hides the acquire-rarity affordance                                                                       |
-| Expeditions tab                 | Hides **+ New Site** (Journey creation still works)                                                       |
-| `GlobalContextBar`              | Hides feature/danger roll buttons and **Roll Denizen** action                                             |
-| `CharacterSheet`                | Hides the Failures track group                                                                            |
-| `VowCard`                       | Hides the Threat + Menace controls; `ProgressTrack` is rendered with `dangerCount: 0`                     |
-| `MovesDialog` outcome rendering | Suppresses the `+1 failure` link on a miss                                                                |
+| Surface                         | Effect                                                                                                      |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `MovesDialog`                   | Hides Delve & Rarity category chips and their moves (`delve.json`, `rarity.json`)                           |
+| `OraclesDialog`                 | Hides 25 Delve oracles (site-_, threat-_, monstrosity-_, feature-_, char-disposition, combat-event\*, trap) |
+| `FoePickerDialog`               | Hides ~45 entries from `foes_delve.json`                                                                    |
+| `AssetCard` (rarity slot)       | Hides the acquire-rarity affordance                                                                         |
+| Expeditions tab                 | Hides **+ New Site** (Journey creation still works)                                                         |
+| `GlobalContextBar`              | Hides feature/danger roll buttons and **Roll Denizen** action                                               |
+| `CharacterSheet`                | Hides the Failures track group                                                                              |
+| `VowCard`                       | Hides the Threat + Menace controls; `ProgressTrack` is rendered with `dangerCount: 0`                       |
+| `MovesDialog` outcome rendering | Suppresses the `+1 failure` link on a miss                                                                  |
 
 ### YRT OFF
 
