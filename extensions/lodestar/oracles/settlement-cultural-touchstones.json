@@ -1,61 +1,211 @@
 {
   "key": "settlementCulturalTouchstones",
-  "title": "Settlement Cultural Touchstones",
+  "title": "Settlement: Cultural Touchstones",
   "category": "Settlement",
-  "selectLabel": "Settlement Cultural Touchstones",
+  "selectLabel": "Settlement: Cultural Touchstones",
   "description": "These touchstones represent common beliefs or practices of a community — not universal truths. Individuals can contradict these assumptions, or you might find groups of people in a single community with opposing touchstones.",
   "postamble": "Use the Type, Condition, and First Look oracles when initially sighting or revealing a settlement. If unsure of how its leaders or inhabitants react to your character—or to visitors in general—check the Disposition oracle.\n\nProjects are the main industry, function, or current focus of a settlement. They do not necessarily represent every activity at the site, but are the most visible or noteworthy aspects. Meanwhile, the Troubles oracle provides a broad description of the site's most dramatic current issues, and the Cultural Touchstones oracle reveals aspects of the community that you might learn while spending time there.",
   "source": "lodestar",
   "data": [
-    { "topRange": 2, "value": "Austere styles" },
-    { "topRange": 4, "value": "Prophecy" },
-    { "topRange": 6, "value": "Rites of adulthood" },
-    { "topRange": 8, "value": "Feasting and merrymaking" },
-    { "topRange": 10, "value": "Gambling" },
-    { "topRange": 12, "value": "Code of pacifism" },
-    { "topRange": 14, "value": "Suspicion of outsiders" },
-    { "topRange": 16, "value": "Formal duels" },
-    { "topRange": 18, "value": "Mysticism" },
-    { "topRange": 20, "value": "Adherence to authority" },
-    { "topRange": 22, "value": "Song and dance" },
-    { "topRange": 24, "value": "Uncommon languages" },
-    { "topRange": 26, "value": "Heavily-accented speech" },
-    { "topRange": 28, "value": "Artistic expression" },
-    { "topRange": 30, "value": "Distinctive armor" },
-    { "topRange": 32, "value": "Bartering" },
-    { "topRange": 34, "value": "Long mourning periods" },
-    { "topRange": 36, "value": "Seasonal festivals" },
-    { "topRange": 38, "value": "Blood feuds" },
-    { "topRange": 40, "value": "Banishment of the disloyal" },
-    { "topRange": 42, "value": "Rigid hierarchy" },
-    { "topRange": 44, "value": "Unbreakable vows" },
-    { "topRange": 46, "value": "Communal resources" },
-    { "topRange": 48, "value": "Spirituality" },
-    { "topRange": 50, "value": "Strict laws" },
-    { "topRange": 52, "value": "Respect of elders" },
-    { "topRange": 54, "value": "Courtesy and hospitality" },
-    { "topRange": 56, "value": "Body modifications or tattoos" },
-    { "topRange": 58, "value": "Pilgrimages" },
-    { "topRange": 60, "value": "Superstition" },
-    { "topRange": 62, "value": "Ceremonies and rituals" },
-    { "topRange": 64, "value": "Blood debts" },
-    { "topRange": 66, "value": "Familial clans" },
-    { "topRange": 68, "value": "Isolationism and privacy" },
-    { "topRange": 70, "value": "Communal hunts" },
-    { "topRange": 72, "value": "Competitive tournaments" },
-    { "topRange": 74, "value": "Code of honor" },
-    { "topRange": 76, "value": "Storytelling" },
-    { "topRange": 78, "value": "Conquest and battle prowess" },
-    { "topRange": 80, "value": "Martyred heroes" },
-    { "topRange": 82, "value": "Sacred texts" },
-    { "topRange": 84, "value": "Rites of courtship" },
-    { "topRange": 86, "value": "Bonded creatures" },
-    { "topRange": 88, "value": "Signature weapon" },
-    { "topRange": 90, "value": "Hidden identities" },
-    { "topRange": 92, "value": "Gift-giving" },
-    { "topRange": 94, "value": "Animal or nature motifs" },
-    { "topRange": 96, "value": "Independence from authority" },
-    { "topRange": 98, "value": "Unusual death rites" },
-    { "topRange": 100, "value": "Elaborate styles" }
+    {
+      "topRange": 2,
+      "value": "Austere styles"
+    },
+    {
+      "topRange": 4,
+      "value": "Prophecy"
+    },
+    {
+      "topRange": 6,
+      "value": "Rites of adulthood"
+    },
+    {
+      "topRange": 8,
+      "value": "Feasting and merrymaking"
+    },
+    {
+      "topRange": 10,
+      "value": "Gambling"
+    },
+    {
+      "topRange": 12,
+      "value": "Code of pacifism"
+    },
+    {
+      "topRange": 14,
+      "value": "Suspicion of outsiders"
+    },
+    {
+      "topRange": 16,
+      "value": "Formal duels"
+    },
+    {
+      "topRange": 18,
+      "value": "Mysticism"
+    },
+    {
+      "topRange": 20,
+      "value": "Adherence to authority"
+    },
+    {
+      "topRange": 22,
+      "value": "Song and dance"
+    },
+    {
+      "topRange": 24,
+      "value": "Uncommon languages"
+    },
+    {
+      "topRange": 26,
+      "value": "Heavily-accented speech"
+    },
+    {
+      "topRange": 28,
+      "value": "Artistic expression"
+    },
+    {
+      "topRange": 30,
+      "value": "Distinctive armor"
+    },
+    {
+      "topRange": 32,
+      "value": "Bartering"
+    },
+    {
+      "topRange": 34,
+      "value": "Long mourning periods"
+    },
+    {
+      "topRange": 36,
+      "value": "Seasonal festivals"
+    },
+    {
+      "topRange": 38,
+      "value": "Blood feuds"
+    },
+    {
+      "topRange": 40,
+      "value": "Banishment of the disloyal"
+    },
+    {
+      "topRange": 42,
+      "value": "Rigid hierarchy"
+    },
+    {
+      "topRange": 44,
+      "value": "Unbreakable vows"
+    },
+    {
+      "topRange": 46,
+      "value": "Communal resources"
+    },
+    {
+      "topRange": 48,
+      "value": "Spirituality"
+    },
+    {
+      "topRange": 50,
+      "value": "Strict laws"
+    },
+    {
+      "topRange": 52,
+      "value": "Respect of elders"
+    },
+    {
+      "topRange": 54,
+      "value": "Courtesy and hospitality"
+    },
+    {
+      "topRange": 56,
+      "value": "Body modifications or tattoos"
+    },
+    {
+      "topRange": 58,
+      "value": "Pilgrimages"
+    },
+    {
+      "topRange": 60,
+      "value": "Superstition"
+    },
+    {
+      "topRange": 62,
+      "value": "Ceremonies and rituals"
+    },
+    {
+      "topRange": 64,
+      "value": "Blood debts"
+    },
+    {
+      "topRange": 66,
+      "value": "Familial clans"
+    },
+    {
+      "topRange": 68,
+      "value": "Isolationism and privacy"
+    },
+    {
+      "topRange": 70,
+      "value": "Communal hunts"
+    },
+    {
+      "topRange": 72,
+      "value": "Competitive tournaments"
+    },
+    {
+      "topRange": 74,
+      "value": "Code of honor"
+    },
+    {
+      "topRange": 76,
+      "value": "Storytelling"
+    },
+    {
+      "topRange": 78,
+      "value": "Conquest and battle prowess"
+    },
+    {
+      "topRange": 80,
+      "value": "Martyred heroes"
+    },
+    {
+      "topRange": 82,
+      "value": "Sacred texts"
+    },
+    {
+      "topRange": 84,
+      "value": "Rites of courtship"
+    },
+    {
+      "topRange": 86,
+      "value": "Bonded creatures"
+    },
+    {
+      "topRange": 88,
+      "value": "Signature weapon"
+    },
+    {
+      "topRange": 90,
+      "value": "Hidden identities"
+    },
+    {
+      "topRange": 92,
+      "value": "Gift-giving"
+    },
+    {
+      "topRange": 94,
+      "value": "Animal or nature motifs"
+    },
+    {
+      "topRange": 96,
+      "value": "Independence from authority"
+    },
+    {
+      "topRange": 98,
+      "value": "Unusual death rites"
+    },
+    {
+      "topRange": 100,
+      "value": "Elaborate styles"
+    }
   ]
 }
