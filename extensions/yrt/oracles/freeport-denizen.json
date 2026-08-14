@@ -1,9 +1,9 @@
 {
   "key": "freeportDenizen",
-  "title": "YRT: Freeport NPC",
+  "title": "YRT: Freeport Occupation",
   "category": "Character",
-  "selectLabel": "YRT: Freeport NPC",
-  "description": "Generate a random NPC denizen encountered in the Freeport district of Yrt.",
+  "selectLabel": "YRT: Freeport Occupation",
+  "description": "Generate a random occupation for an NPC in Freeport or other large town or city.",
   "source": "yrt",
   "data": [
     {

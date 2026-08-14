@@ -182,7 +182,7 @@ The most complex oracle. A single "roll" actually performs **multiple** sub-roll
 </ul>
 ```
 
-### 6. YRT: Freeport NPC (`key: "freeportDenizen"`) — structured object
+### 6. YRT: Freeport Occupation (`key: "freeportDenizen"`) — structured object
 
 Each entry is a structured record for a denizen type.
 

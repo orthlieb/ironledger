@@ -129,13 +129,13 @@ noted.
 
 ### Character & setting
 
-| Oracle           | Key               | Category  | Description                                                      |
-| ---------------- | ----------------- | --------- | ---------------------------------------------------------------- |
-| Touched          | `yrtTouched`      | Character | A Touched character — social class, animal aspect, and features. |
-| Touched Features | `touchedFeatures` | Character | A specific supernatural feature for a Touched character.         |
-| Freeport NPC     | `freeportDenizen` | Character | A random Freeport-district NPC (structured value — see below).   |
-| Touched Aspect   | `yrtAnimal`       | Character | The Touched animal-type aspect of a character.                   |
-| Mana Backlash    | `manaBacklash`    | Move      | A mana-specific backlash cost when magic goes wrong.             |
+| Oracle              | Key               | Category  | Description                                                                                           |
+| ------------------- | ----------------- | --------- | ----------------------------------------------------------------------------------------------------- |
+| Touched             | `yrtTouched`      | Character | A Touched character — social class, animal aspect, and features.                                      |
+| Touched Features    | `touchedFeatures` | Character | A specific supernatural feature for a Touched character.                                              |
+| Freeport Occupation | `freeportDenizen` | Character | A random occupation for an NPC in Freeport or another large town/city (structured value — see below). |
+| Touched Aspect      | `yrtAnimal`       | Character | The Touched animal-type aspect of a character.                                                        |
+| Mana Backlash       | `manaBacklash`    | Move      | A mana-specific backlash cost when magic goes wrong.                                                  |
 
 > **Supersession.** When YRT is enabled it hides the base `region` and the
 > Lodestar `storyRegion` / `settlementType` / `settlementCondition` oracles and
@@ -143,9 +143,9 @@ noted.
 > `suppressesOracles` in `extension.json` (see
 > [docs/extensions.md — Oracle supersession](../../docs/extensions.md)).
 
-### Freeport NPC (structured values)
+### Freeport Occupation (structured values)
 
-The freeport NPC oracle uses structured `value` objects instead of plain strings:
+The Freeport Occupation oracle uses structured `value` objects instead of plain strings:
 
 ```json
 {
