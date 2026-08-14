@@ -1,7 +1,7 @@
 {
   "key": "monstrosity",
   "title": "Delve: Monstrosity",
-  "category": "Creature",
+  "category": "Monstrosity",
   "selectLabel": "Delve: Monstrosity",
   "description": "Generate a monstrosity by rolling its primary form, size, characteristics, and abilities together.",
   "source": "delve",
@@ -9,7 +9,8 @@
   "data": [
     {
       "topRange": 100,
-      "value": "Primary form: [monstrosityPrimaryForm] · Size: [monstrositySize] · Characteristics: [monstrosityCharacteristics] · Abilities: [monstrosityAbilities]"
+      "value": "Primary form: [monstrosityPrimaryForm] · Size: [monstrositySize] · Characteristics: [monstrosityCharacteristics]{1,3} · Abilities: [monstrosityAbilities]{1,3}"
     }
-  ]
+  ],
+  "postamble": "Use the Monstrosity oracles to introduce a new type of animal, beast, or horror to your world. Start by rolling for its Size and Primary Form. Then, roll up to three times for Characteristics. Do the same for Abilities. Weave the aspects of the monstrosity into your encounter. Make moves as appropriate to overcome, avoid, or face the consequences of its characteristics and abilities.\n\nTo learn more about your creation's nature, use the Character oracles. Check the Activity and Disposition oracles to reveal how the encounter begins. Roll on the Goal oracle to give the monstrosity a purpose."
 }

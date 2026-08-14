@@ -952,6 +952,13 @@
 		line-height: 1.9;
 		font-family: var(--font-ui);
 	}
+	/* Repeat quantifier badge, e.g. [key]{1,3} → "×1–3". */
+	:global(.od-table-wrap .oracle-ref-rep) {
+		margin-left: 3px;
+		font-size: 0.8em;
+		font-weight: 600;
+		color: var(--text-dimmer);
+	}
 
 	/* ── Delve the Depths stat picker ───────────────────────────────────── */
 	:global(.od-delve-stat-picker) {

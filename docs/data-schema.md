@@ -994,22 +994,50 @@ so an extension can use them from data alone:
   }
   ```
 
-  A single-format compound (no format roll — e.g. a labelled dossier):
+  **Repeat a blank** with a **regex-style quantifier** right after it —
+  `[key]{n}` (exactly _n_) or `[key]{n,m}` (a uniform count in _n_…_m_). The
+  oracle is rolled that many times, results are **de-duplicated**, and joined
+  with `, `. A single-format compound (no format roll — e.g. a labelled
+  dossier) that rolls Characteristics/Abilities 1–3× each:
 
   ```json
   {
     "key": "monstrosity",
     "tableType": "compound",
+    "category": "Monstrosity",
     "…": "…",
     "data": [
-      { "topRange": 100, "value": "Form: [monstrosityPrimaryForm] · Size: [monstrositySize]" }
+      {
+        "topRange": 100,
+        "value": "Primary form: [monstrosityPrimaryForm] · Size: [monstrositySize] · Characteristics: [monstrosityCharacteristics]{1,3} · Abilities: [monstrosityAbilities]{1,3}"
+      }
     ]
   }
   ```
 
-  `compound` is substitution only — it has no conditionals. An oracle whose
-  later rolls _depend on_ an earlier result (e.g. `yrtTouched`: Pure stops,
-  Feral rolls an animal but no features) stays a hardcoded branch.
+  **Log output.** Each blank logs one line, labelled by its oracle's title
+  (the part after the last `": "`, so `Monstrosity: Primary Form` → `Primary
+Form`). A quantified blank first logs its count roll, then one indented line
+  per kept result:
+
+  ```
+  Delve: Monstrosity
+    Primary Form: Snake (d100 → 43)
+    Size: Large (giant-sized) (d100 → 87)
+    Characteristics: (d3 → 2)
+    — Claws / talons (d100 → 14)
+    — Strange color / markings (d100 → 18)
+    Abilities: (d3 → 1)
+    — Flier / glider (d100 → 41)
+  ```
+
+  A **labelled** template (any `"Label: "` before a blank) omits the composed
+  `Result:` line — the per-field lines already read it. A **phrase** template
+  (a name, no labels) keeps `Result:` (the assembled string is the payload).
+
+  `compound` is substitution + repetition only — no conditionals. An oracle
+  whose later rolls _depend on_ an earlier result (e.g. `yrtTouched`: Pure
+  stops, Feral rolls an animal but no features) stays a hardcoded branch.
 
 Still hardcoded per-key (not available to extensions from JSON alone): **Names
 Other** (`namesOther`: `giants` / `varou` / `trolls` fields), `settlementNameQuick`,

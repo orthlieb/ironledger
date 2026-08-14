@@ -308,11 +308,14 @@ export function buildTableHtml(
 	// d100 | Format table (the rolled format table). ─────────────────────────
 	if (options?.tableType === 'compound') {
 		const refTitles = options.refTitles ?? {};
+		// `[key]` → the target oracle's title; an optional regex quantifier
+		// `[key]{n}` / `[key]{n,m}` renders a "×n" / "×n–m" repeat badge.
 		const linkify = (s: string) =>
-			s.replace(
-				/\[(\w+)\]/g,
-				(_m, k: string) => `<span class="oracle-ref">${refTitles[k] ?? k}</span>`,
-			);
+			s.replace(/\[(\w+)\](?:\{(\d+)(?:,(\d+))?\})?/g, (_m, k: string, n?: string, m?: string) => {
+				const ref = `<span class="oracle-ref">${refTitles[k] ?? k}</span>`;
+				if (n == null) return ref;
+				return `${ref}<span class="oracle-ref-rep">×${m != null ? `${n}–${m}` : n}</span>`;
+			});
 		if (table.length === 1) {
 			return `<div class="oracle-compound-single">${linkify(table[0].value as string)}</div>`;
 		}
@@ -612,28 +615,51 @@ export function rollOracle(
 		const depth = options?._depth ?? 0;
 		const fmtRes = rollFromRangeTable(table);
 		const template = fmtRes.value as string;
-		let filled = template;
-		const refLines: string[] = [];
-		for (const m of template.matchAll(/\[(\w+)\]/g)) {
-			const refKey = m[1];
-			const sub =
-				depth >= 5
-					? { roll: 0, value: `[${refKey}]`, title: refKey }
-					: rollOracle(refKey, allOracles, { _depth: depth + 1 });
-			const refTitle = allOracles.find((o) => o.key === refKey)?.title ?? refKey;
-			const shown = sub.value || `[${refKey}]`;
-			filled = filled.replace(`[${refKey}]`, shown);
-			refLines.push(
-				`<div class="roll-line">${refTitle}: <strong>${shown}</strong> (d100 → ${sub.roll})</div>`,
-			);
-		}
+		// Short log label: the oracle title after its last ": " — so
+		// "Monstrosity: Primary Form" → "Primary Form".
+		const shortLabel = (t: string) => (t.includes(': ') ? t.slice(t.lastIndexOf(': ') + 2) : t);
+		const lines: string[] = [];
+		// Fill each `[key]` (optionally quantified `{n}` / `{n,m}`): roll the
+		// count, roll `key` that many times, dedupe, and log. `filled` is the
+		// composed value string.
+		const filled = template.replace(
+			/\[(\w+)\](?:\{(\d+)(?:,(\d+))?\})?/g,
+			(_m, refKey: string, nStr?: string, mStr?: string) => {
+				const label = shortLabel(allOracles.find((o) => o.key === refKey)?.title ?? refKey);
+				const repeated = nStr != null;
+				let count = 1;
+				if (repeated) {
+					const lo = parseInt(nStr as string, 10);
+					const hi = mStr != null ? parseInt(mStr, 10) : lo;
+					count = lo + Math.floor(Math.random() * (hi - lo + 1));
+					const note = lo === 1 ? `d${hi} → ${count}` : `${lo}–${hi} → ${count}`;
+					lines.push(`<div class="roll-line">${label}: (${note})</div>`);
+				}
+				const vals: string[] = [];
+				for (let i = 0; i < count && depth < 5; i++) {
+					const sub = rollOracle(refKey, allOracles, { _depth: depth + 1 });
+					const v = sub.value || `[${refKey}]`;
+					if (vals.includes(v)) continue; // dedupe repeats
+					vals.push(v);
+					lines.push(
+						repeated
+							? `<div class="roll-line">— <strong>${v}</strong> (d100 → ${sub.roll})</div>`
+							: `<div class="roll-line">${label}: <strong>${v}</strong> (d100 → ${sub.roll})</div>`,
+					);
+				}
+				return vals.join(', ');
+			},
+		);
+		// A labelled dossier template (has a "Label: " before a blank) logs the
+		// per-field breakdown (+ the format roll when multiple formats). A phrase
+		// template (a name) logs just the composed result — the assembled string
+		// is the whole point.
+		const isDossier = /:\s/.test(template);
 		const fmtLine =
-			table.length > 1 ? `<div class="roll-line">Format roll: d100 → ${fmtRes.roll}</div>` : '';
-		const html =
-			fmtLine +
-			`<div><em>${template}</em></div>` +
-			refLines.join('') +
-			`<div>Result: <strong>${filled}</strong></div>`;
+			isDossier && table.length > 1
+				? `<div class="roll-line">Format roll: d100 → ${fmtRes.roll}</div>`
+				: '';
+		const html = isDossier ? fmtLine + lines.join('') : `<div><strong>${filled}</strong></div>`;
 		return { roll: fmtRes.roll, html, title, value: filled };
 	}
 
