@@ -463,6 +463,17 @@
 		return rollOracle(oracleKey[key], oracles).value ?? '';
 	}
 
+	/** Log the oracle rolls made while creating a connection — one combined
+	 *  entry per Create (name-dice clicks log on their own). `rolled` is
+	 *  [label, value] pairs; empty values are skipped. */
+	function logCreateRolls(title: string, rolled: Array<[string, string]>) {
+		const body = rolled
+			.filter(([, v]) => v)
+			.map(([l, v]) => `<div class="roll-line">${l}: <strong>${v}</strong></div>`)
+			.join('');
+		if (body) appendLog(title, body);
+	}
+
 	// Persist the store that was being edited. Reads (+ clears) _savingKind,
 	// exactly as the inline timer did — shared by the debounced schedule and
 	// every flush() site.
@@ -518,8 +529,11 @@
 	 *  New Community draft — wired to the name d6. Both oracles double-roll;
 	 *  rollOracle returns the finished composed string. */
 	function rollNewCommunityName() {
-		const v = rollOracle(newCommunityNameOracle, getOracles()).value;
-		if (typeof v === 'string' && v) newCommunityName = v;
+		const r = rollOracle(newCommunityNameOracle, getOracles());
+		if (typeof r.value === 'string' && r.value) {
+			newCommunityName = r.value;
+			appendLog(r.title, r.html);
+		}
 	}
 
 	async function _commitCommunity() {
@@ -527,23 +541,36 @@
 		const c = _pendingCommunity;
 		_pendingCommunity = null;
 		const oracles = getOracles();
+		const rolled: Array<[string, string]> = [];
 		// Region: the base Region oracle, or YRT's replacement when YRT is on.
-		if (newCommunityRollRegion)
+		if (newCommunityRollRegion) {
 			c.region = rollOracle(isYrtEnabled() ? 'yrtRegion' : 'region', oracles).value ?? '';
+			rolled.push(['Region', c.region]);
+		}
 		// Location + Descriptor are a Core-only settlement detail — Lodestar
 		// supersedes them with its settlement suite, so skip both when it's on.
-		if (newCommunityRollLocation && !lodestarOn)
+		if (newCommunityRollLocation && !lodestarOn) {
 			c.location = rollOracle(_pendingCommunityLocationType, oracles).value ?? '';
-		if (newCommunityRollDescription && !lodestarOn)
+			rolled.push(['Location', c.location]);
+		}
+		if (newCommunityRollDescription && !lodestarOn) {
 			c.locationDescription = rollOracle('locationDescriptor', oracles).value ?? '';
-		if (newCommunityRollTrouble) c.trouble = rollOracle('settlementTrouble', oracles).value ?? '';
+			rolled.push(['Descriptor', c.locationDescription]);
+		}
+		if (newCommunityRollTrouble) {
+			c.trouble = rollOracle('settlementTrouble', oracles).value ?? '';
+			rolled.push(['Trouble', c.trouble]);
+		}
 		// Lodestar settlement suite — roll each checked field (Type derives its
 		// land tier from the just-rolled region).
 		if (lodestarOn)
 			for (const f of LODESTAR_SETTLEMENT_FIELDS)
-				if (newCommunityRollLodestar[f.key])
+				if (newCommunityRollLodestar[f.key]) {
 					c[f.key] = rollSettlementFieldValue(f.key, c.region, oracles);
+					rolled.push([f.label, (c[f.key] as string) ?? '']);
+				}
 		if (newCommunityName.trim()) c.name = newCommunityName.trim();
+		logCreateRolls(`New Settlement — ${c.name}`, rolled);
 		await addCommunity(c);
 		activeEntryId = c.id;
 		activeTab = 'core';
@@ -571,6 +598,12 @@
 	 *  `namesOther_*` variants share one oracle whose value is a per-lineage
 	 *  bag; the suffix selects which entry to lift. */
 	function rollNpcNameField() {
+		const logName = (title: string, roll: number, name: string) =>
+			name &&
+			appendLog(
+				title,
+				`<div class="roll-line">Roll: d100 → ${roll}</div><div>Result: <strong>${name}</strong></div>`,
+			);
 		if (_pendingNpcNameOracle.startsWith('namesOther_')) {
 			const o = findOracle('namesOther');
 			if (!o) return;
@@ -578,11 +611,19 @@
 			const v = r.value as { giants: string; varou: string; trolls: string };
 			const sub = _pendingNpcNameOracle.split('_')[1] as keyof typeof v;
 			newNpcName = v[sub] ?? '';
+			logName(o.title, r.roll, newNpcName);
 			return;
 		}
 		const o = findOracle(_pendingNpcNameOracle);
-		if (o) newNpcName = (rollFromRangeTable(o.data).value as string) ?? '';
-		else newNpcName = rollOracle(_pendingNpcNameOracle, getOracles()).value ?? '';
+		if (o) {
+			const r = rollFromRangeTable(o.data);
+			newNpcName = (r.value as string) ?? '';
+			logName(o.title, r.roll, newNpcName);
+		} else {
+			const r = rollOracle(_pendingNpcNameOracle, getOracles());
+			newNpcName = r.value ?? '';
+			if (r.value) appendLog(r.title, r.html);
+		}
 	}
 
 	/** Run the compound YRT Touched roll and return the pieces the
@@ -669,6 +710,7 @@
 		_pendingNpc = null;
 		if (newNpcName.trim()) n.name = newNpcName.trim();
 		const oracles = getOracles();
+		const rolled: Array<[string, string]> = [];
 		// Concept-resolved rolls: each block runs only when the user asked for
 		// it AND the concept has a currently-visible backing oracle. First Look,
 		// Activity, and Disposition can be silently absent depending on which
@@ -676,18 +718,31 @@
 		const firstLookOracle = resolveCharacterOracle('firstLook');
 		if (newNpcRollFirstLook && firstLookOracle) {
 			n.firstLook = rollOracle(firstLookOracle.key, oracles).value ?? '';
+			rolled.push(['First Look', n.firstLook]);
 		}
 		const activityOracle = resolveCharacterOracle('activity');
 		if (newNpcRollActivity && activityOracle) {
 			n.activity = rollOracle(activityOracle.key, oracles).value ?? '';
+			rolled.push(['Activity', n.activity]);
 		}
 		const dispositionOracle = resolveCharacterOracle('disposition');
 		if (newNpcRollDisposition && dispositionOracle) {
 			n.disposition = rollOracle(dispositionOracle.key, oracles).value ?? '';
+			rolled.push(['Disposition', n.disposition]);
 		}
-		if (newNpcRollRole) n.role = rollOracle('characterRole', oracles).value ?? '';
-		if (newNpcRollGoal) n.goal = rollOracle('characterGoal', oracles).value ?? '';
-		if (newNpcRollDescriptor) n.descriptor = rollOracle('characterDescriptor', oracles).value ?? '';
+		if (newNpcRollRole) {
+			n.role = rollOracle('characterRole', oracles).value ?? '';
+			rolled.push(['Role', n.role]);
+		}
+		if (newNpcRollGoal) {
+			n.goal = rollOracle('characterGoal', oracles).value ?? '';
+			rolled.push(['Goal', n.goal]);
+		}
+		if (newNpcRollDescriptor) {
+			n.descriptor = rollOracle('characterDescriptor', oracles).value ?? '';
+			rolled.push(['Descriptor', n.descriptor]);
+		}
+		logCreateRolls(`New NPC — ${n.name}`, rolled);
 		if (newNpcRollTouched && isYrtEnabled()) {
 			const r = rollYrtTouchedStructured();
 			if (r) {
@@ -723,8 +778,11 @@
 	function rollNewPlaceName() {
 		const oracles = getOracles();
 		const oracle = Math.random() < 0.5 ? 'settlementName' : 'settlementNameQuick';
-		const v = rollOracle(oracle, oracles).value;
-		if (v) newPlaceName = v;
+		const r = rollOracle(oracle, oracles);
+		if (r.value) {
+			newPlaceName = r.value;
+			appendLog(r.title, r.html);
+		}
 	}
 
 	/** Resolve the Landmark oracle for a Place: an in-settlement point-of-interest
@@ -747,15 +805,24 @@
 			? communities.find((c) => c.id === _pendingPlaceWithin)
 			: undefined;
 		pl.withinSettlementId = _pendingPlaceWithin || undefined;
+		const rolled: Array<[string, string]> = [];
 		// Region: inherit from the parent settlement when nested, else roll.
-		pl.region = parent
-			? parent.region
-			: (rollOracle(isYrtEnabled() ? 'yrtRegion' : 'region', oracles).value ?? '');
-		if (newPlaceRollLandmark)
+		if (parent) {
+			pl.region = parent.region;
+		} else {
+			pl.region = rollOracle(isYrtEnabled() ? 'yrtRegion' : 'region', oracles).value ?? '';
+			rolled.push(['Region', pl.region]);
+		}
+		if (newPlaceRollLandmark) {
 			pl.location = rollOracle(placeLandmarkKey(!!parent), oracles).value ?? '';
-		if (newPlaceRollDescription)
+			rolled.push(['Landmark', pl.location]);
+		}
+		if (newPlaceRollDescription) {
 			pl.locationDescription = rollOracle('locationDescriptor', oracles).value ?? '';
+			rolled.push(['Descriptor', pl.locationDescription]);
+		}
 		if (newPlaceName.trim()) pl.name = newPlaceName.trim();
+		logCreateRolls(`New Place — ${pl.name}`, rolled);
 		await addPlace(pl);
 		activeEntryId = pl.id;
 		activeTab = 'core';
