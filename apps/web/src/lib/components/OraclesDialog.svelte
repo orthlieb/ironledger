@@ -124,7 +124,7 @@
 	});
 
 	const foeRollTitle = $derived(activeFoeTable?.name ?? '');
-	const foeRollLogLabel = $derived(activeFoeTable ? `Oracle: ${activeFoeTable.name}` : 'Oracle');
+	const foeRollLogLabel = $derived(activeFoeTable ? `Oracle ${activeFoeTable.name}` : 'Oracle');
 	const foeRollRows = $derived<FoeRollRow[]>(
 		activeFoeTable
 			? activeFoeTable.entries.map((e) => ({ low: e.low, high: e.high, ref: e.ref }))
@@ -283,7 +283,7 @@
 		const entryId = crypto.randomUUID();
 		const activeCtx = getActiveDiceCtx();
 		const html = enrichOutcomeLinks(result.html, entryId, activeCtx?.charId ?? '');
-		appendLog(`Oracle: ${result.title}`, html, entryId);
+		appendLog(`Oracle ${result.title}`, html, entryId);
 		if (fillFn && result.value) fillFn(result.value);
 		rolling = false;
 	}

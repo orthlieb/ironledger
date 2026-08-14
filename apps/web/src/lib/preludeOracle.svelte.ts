@@ -55,7 +55,7 @@ export function firePreludeOracle(preRoll?: number): boolean {
 	const name = def?.name ?? entry.ref;
 	const cat = entry.category ? `${entry.category}: ` : '';
 	appendLog(
-		`Oracle: ${table.name}`,
+		`Oracle ${table.name}`,
 		`<div>Rolled d100: <strong>${roll}</strong> → ${cat}<strong>${name}</strong></div>`,
 	);
 
