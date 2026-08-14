@@ -185,6 +185,7 @@
           "oracles/coastal-waters-waypoint.json",
           "oracles/combat-battleground.json",
           "oracles/combat-event-method.json",
+          "oracles/combat-event-target.json",
           "oracles/overland-landmark.json",
           "oracles/overland-opportunity.json",
           "oracles/overland-peril.json",
