@@ -353,7 +353,7 @@ function rollUniqueFeatures(count: number): string[] {
 Oracle rolls follow the same HTML convention as dice rolls:
 
 ```html
-<!-- Title stored as: "Oracle: <oracle title>" or "<CharName> — Oracle: <title>" -->
+<!-- Title stored as: "Oracle <oracle title>" or "<CharName> — Oracle <title>" -->
 <div class="roll-line">Roll: d100 → 42</div>
 <div>Result: <strong>Investigate a Threat</strong></div>
 ```

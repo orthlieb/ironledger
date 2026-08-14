@@ -114,10 +114,10 @@ Use `{variable}` placeholders:
 
 ## Oracle Titles
 
-Oracle log entries are always prefixed `Oracle:` in the current code (e.g. `Oracle: Ask the Oracle`).
+Oracle log entries are always prefixed `Oracle` (no colon, since oracle titles carry their own — e.g. `Oracle Combat: Battleground`) in the current code.
 
 > **Historical.** Oracle log titles are now generated automatically as
-> `Oracle: <title>` from the catalogue `title` field — they are no longer
+> `Oracle <title>` from the catalogue `title` field — they are no longer
 > hand-maintained here. The table below is a planning snapshot from before the
 > data-driven titles landed and predates the `Prefix: Label` naming pass (e.g.
 > the catalogue now ships `Settlement: Name`, `Combat: Tactic`, `Name: Elf`),
