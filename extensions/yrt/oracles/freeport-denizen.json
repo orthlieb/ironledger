@@ -1,8 +1,8 @@
 {
   "key": "freeportDenizen",
-  "title": "YRT – Freeport Denizen",
+  "title": "YRT: Freeport NPC",
   "category": "Character",
-  "selectLabel": "YRT – Freeport Denizen",
+  "selectLabel": "YRT: Freeport NPC",
   "description": "Generate a random NPC denizen encountered in the Freeport district of Yrt.",
   "source": "yrt",
   "data": [
