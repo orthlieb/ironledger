@@ -202,6 +202,7 @@
 		Creature: 'var(--color-shadow)',
 		Encounters: '#2A9D8F',
 		Location: 'var(--color-edge)',
+		Magic: '#9B59B6',
 		Move: 'var(--text-accent)',
 		Name: 'var(--color-spirit)',
 		Prelude: 'var(--color-supply)',
@@ -848,10 +849,12 @@
 	}
 
 	/* ── Detail view ─────────────────────────────────────────────────────── */
+	/* Base text is roman so limited-markdown emphasis renders distinctly —
+	   *italic* / _italic_ → <em>, **bold** → <strong>. (Previously the whole
+	   block was font-style: italic, which swallowed *italic* markdown.) */
 	:global(.od-detail-desc) {
 		font-family: var(--font-ui);
 		font-size: 0.75rem;
-		font-style: italic;
 		color: var(--text-muted);
 		line-height: 1.55;
 		margin: 0;
@@ -862,7 +865,6 @@
 	.od-detail-postamble {
 		font-family: var(--font-ui);
 		font-size: 0.75rem;
-		font-style: italic;
 		color: var(--text-muted);
 		line-height: 1.55;
 		margin-top: 8px;
