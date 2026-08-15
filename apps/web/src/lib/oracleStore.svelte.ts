@@ -337,7 +337,9 @@ export function buildTableHtml(
 	if (options?.tableType === 'matrix' && options.columns?.length) {
 		const cols = options.columns;
 		const activeIdx = options.activeStat ? cols.findIndex((c) => c.key === options.activeStat) : -1;
-		const cc = (i: number) => (activeIdx === i ? ' class="col-active"' : '');
+		// `matrix-col` on every value column lets the detail view collapse to just
+		// D100 + the active column on narrow screens (CSS, tableType-driven).
+		const cc = (i: number) => ` class="matrix-col${activeIdx === i ? ' col-active' : ''}"`;
 		let html =
 			'<table class="oracle-table"><thead><tr><th class="oracle-range">d100</th>' +
 			cols.map((c, i) => `<th${cc(i)}>${c.label}</th>`).join('') +

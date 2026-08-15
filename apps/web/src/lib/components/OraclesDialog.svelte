@@ -943,6 +943,15 @@
 		font-weight: 600;
 	}
 
+	/* Narrow screens: a wide `matrix` oracle (e.g. Scale: Magnitude, 9 columns)
+	   collapses to D100 + the active column — the chips still switch which one
+	   shows. tableType-driven via `.matrix-col`, so every matrix oracle gets it. */
+	@media (max-width: 640px) {
+		:global(.od-table-wrap .matrix-col:not(.col-active)) {
+			display: none;
+		}
+	}
+
 	/* Roll-number (range) columns — dimmed + monospaced, no wrap. Marked with
 	   `.oracle-range` on every range cell so multi-column layouts (2/3-column
 	   tables, name tables, the Delve Depths / Settlement Type stat columns) all
@@ -987,6 +996,7 @@
 	/* ── Delve the Depths stat picker ───────────────────────────────────── */
 	:global(.od-delve-stat-picker) {
 		display: flex;
+		flex-wrap: wrap;
 		gap: 6px;
 		padding: 8px 0 4px;
 		flex-shrink: 0;
