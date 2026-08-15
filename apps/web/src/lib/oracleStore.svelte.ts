@@ -337,9 +337,10 @@ export function buildTableHtml(
 	if (options?.tableType === 'matrix' && options.columns?.length) {
 		const cols = options.columns;
 		const activeIdx = options.activeStat ? cols.findIndex((c) => c.key === options.activeStat) : -1;
-		// `matrix-col` on every value column lets the detail view collapse to just
-		// D100 + the active column on narrow screens (CSS, tableType-driven).
-		const cc = (i: number) => ` class="matrix-col${activeIdx === i ? ' col-active' : ''}"`;
+		// `od-pick-col` on every value column lets the detail view collapse to just
+		// D100 + the active column on narrow screens (shared with columnSelect /
+		// delveDepths — any column-picker oracle collapses to its chosen column).
+		const cc = (i: number) => ` class="od-pick-col${activeIdx === i ? ' col-active' : ''}"`;
 		let html =
 			'<table class="oracle-table"><thead><tr><th class="oracle-range">d100</th>' +
 			cols.map((c, i) => `<th${cc(i)}>${c.label}</th>`).join('') +
@@ -365,7 +366,10 @@ export function buildTableHtml(
 	if (options?.columns?.length) {
 		const cols = options.columns;
 		const activeIdx = options.activeStat ? cols.findIndex((c) => c.key === options.activeStat) : -1;
-		const cc = (i: number) => ` class="oracle-range${activeIdx === i ? ' col-active' : ''}"`;
+		// `od-pick-col` marks the per-column range cells (not the shared Result) so
+		// narrow screens collapse to the active column + Result.
+		const cc = (i: number) =>
+			` class="oracle-range od-pick-col${activeIdx === i ? ' col-active' : ''}"`;
 		let html =
 			'<table class="oracle-table"><thead><tr>' +
 			cols.map((c, i) => `<th${cc(i)}>${c.label}</th>`).join('') +
@@ -389,7 +393,8 @@ export function buildTableHtml(
 	if (key === 'delveDepths') {
 		const statColMap: Record<string, number> = { edge: 0, shadow: 1, wits: 2 };
 		const activeCol = options?.activeStat ? (statColMap[options.activeStat] ?? -1) : -1;
-		const cc = (i: number) => ` class="oracle-range${activeCol === i ? ' col-active' : ''}"`;
+		const cc = (i: number) =>
+			` class="oracle-range od-pick-col${activeCol === i ? ' col-active' : ''}"`;
 
 		type DRow = { edge: number; shadow: number; wits: number; value: string };
 		let html =

@@ -90,6 +90,32 @@
 		return cols.some((c) => c.key === selectedDelveStat) ? selectedDelveStat : cols[0].key;
 	});
 
+	/** Per-column accent palette for columnSelect/matrix pickers — mirrors the
+	 *  stat-coloured chips/columns of Delve the Depths, cycled by column index so
+	 *  each column reads distinctly. (Delve the Depths keeps its own edge/shadow/
+	 *  wits colours; this drives Settlement: Type, Scale: Magnitude, etc.) */
+	const PICKER_COLORS = [
+		'var(--color-edge)',
+		'var(--color-heart)',
+		'var(--color-wits)',
+		'var(--color-shadow)',
+		'var(--color-health)',
+		'var(--color-supply)',
+		'var(--color-momentum)',
+		'var(--color-spirit)',
+		'var(--color-iron)',
+	];
+	const pickerColor = (i: number) =>
+		PICKER_COLORS[((i % PICKER_COLORS.length) + PICKER_COLORS.length) % PICKER_COLORS.length];
+
+	/** Accent colour of the currently-active column (columnSelect/matrix). */
+	const activeColColor = $derived.by(() => {
+		const cols = selectedOracle?.columns;
+		if (!cols?.length) return 'var(--text-accent)';
+		const idx = cols.findIndex((c) => c.key === effectiveColumnKey);
+		return pickerColor(idx < 0 ? 0 : idx);
+	});
+
 	/** Filtered list of oracles for the picker tile grid. */
 	const filteredOracles = $derived(() => {
 		const q = search.trim().toLowerCase();
@@ -482,11 +508,11 @@
 						</div>
 					{:else if (selectedOracle.tableType === 'columnSelect' || selectedOracle.tableType === 'matrix') && selectedOracle.columns}
 						<div class="od-delve-stat-picker">
-							{#each selectedOracle.columns as col (col.key)}
+							{#each selectedOracle.columns as col, i (col.key)}
 								<button
 									class="od-delve-stat-btn"
 									class:od-delve-stat-btn--active={effectiveColumnKey === col.key}
-									style:--stat-color="var(--text-accent)"
+									style:--stat-color={pickerColor(i)}
 									onclick={() => {
 										selectedDelveStat = col.key;
 										activeStat = col.key;
@@ -500,7 +526,7 @@
 						class="od-table-wrap"
 						style:--active-col-color={selectedOracle.tableType === 'columnSelect' ||
 						selectedOracle.tableType === 'matrix'
-							? 'var(--text-accent)'
+							? activeColColor
 							: activeStat
 								? `var(--color-${activeStat})`
 								: 'var(--text-accent)'}
@@ -943,12 +969,24 @@
 		font-weight: 600;
 	}
 
-	/* Narrow screens: a wide `matrix` oracle (e.g. Scale: Magnitude, 9 columns)
-	   collapses to D100 + the active column — the chips still switch which one
-	   shows. tableType-driven via `.matrix-col`, so every matrix oracle gets it. */
+	/* Narrow screens: a column-picker oracle collapses to just its always-on
+	   column (D100 for matrix, Result for columnSelect/delveDepths) + the active
+	   picked column — the chips still switch which one shows. Shared `.od-pick-col`
+	   across matrix / columnSelect / delveDepths, so all of them collapse alike. */
 	@media (max-width: 640px) {
-		:global(.od-table-wrap .matrix-col:not(.col-active)) {
+		:global(.od-table-wrap .od-pick-col:not(.col-active)) {
 			display: none;
+		}
+		/* Collapsed = 2 columns; lock them 50/50 so switching pills doesn't resize
+		   the layout ("dancing" columns). Scoped to picker tables via
+		   :has(.od-pick-col) so single-column / twoStep tables are untouched. */
+		:global(.od-table-wrap .oracle-table:has(.od-pick-col)) {
+			table-layout: fixed;
+			width: 100%;
+		}
+		:global(.od-table-wrap .oracle-table:has(.od-pick-col) th),
+		:global(.od-table-wrap .oracle-table:has(.od-pick-col) td) {
+			width: 50%;
 		}
 	}
 
