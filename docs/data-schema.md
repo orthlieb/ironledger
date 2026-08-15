@@ -910,6 +910,10 @@ Each oracle entry:
 
 ### Special Oracle Types
 
+> See **[oracles.md → Oracle layouts](oracles.md#oracle-layouts-tabletype-reference)**
+> for the full catalogue of each layout with rendered examples, roll behaviour,
+> and the canonical oracle that uses it.
+
 Most oracles have simple string values (`value` is a string). Beyond that, a
 few patterns are recognized **automatically from the JSON** — no code changes —
 so an extension can use them from data alone:

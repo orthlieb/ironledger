@@ -66,148 +66,183 @@ list. `oracle-order.json` is a display-order index, not a rollable oracle.
 
 ---
 
-## Oracle types and special handling
+## Oracle layouts (`tableType` reference)
 
-### 1. Simple (default) — string value
+Every oracle file may set a `tableType`; when it is absent the oracle is
+**simple**. The `tableType` plus the row shape decide how the detail view
+renders and how a roll resolves. Each layout below gives a minimal example, how
+it renders, the roll behaviour, and the canonical oracle(s). See
+[data-schema.md](data-schema.md) for the authoritative field spec.
 
-Most oracles. Single d100 roll → string result.
+### Simple — string value (no `tableType`)
+
+Most oracles. One d100 → the row's string `value`.
 
 ```json
 { "topRange": 25, "value": "Investigate a Threat" }
 ```
 
-**Result HTML:**
+Renders `D100 | Result`. A `91–100 → "Roll twice…"` row re-rolls twice and
+combines (see the rolling algorithm below). _Canonical:_ Core: Action, Region,
+Threat: Category.
 
-```html
-<div class="roll-line">Roll: d100 → 17</div>
-<div>Result: <strong>Investigate a Threat</strong></div>
+### Typed — adds a Type column (no `tableType`)
+
+A simple table whose rows also carry a `type` string. The detail view gains a
+**Type** column (`D100 | Result | Type`); display-only.
+
+```json
+{ "topRange": 7, "value": "Piscis", "type": "Settled" }
 ```
 
-### 2. Settlement: Name (`key: "settlementName"`) — two-step subtable
+_Canonical:_ YRT Region, YRT Story: Region.
 
-First roll selects a **category**; the category contains a `subtable` for a second d100 roll.
+### Described — adds a Description column (no `tableType`)
+
+A simple table whose rows carry a `description`. The detail view gains a
+**Description** column and the text is echoed into the log on a roll.
+
+```json
+{
+  "topRange": 11,
+  "value": "Ancient",
+  "description": "This place holds the secrets of a bygone age"
+}
+```
+
+_Canonical:_ Delve: Site Nature – Theme/Domain, Combat: Battleground.
+
+### `columnSelect` — pick a column; per-column ranges, one shared result
+
+`columns: [{ key, label }]`. Each row carries a `topRange` **under every column
+key** plus one shared `value`. The reader picks a column; the roll resolves
+against **that column's** ranges to the shared result — i.e. the columns change
+the _frequency_ of a result, not its text.
+
+```json
+{
+  "tableType": "columnSelect",
+  "columns": [
+    { "key": "settled", "label": "Settled Lands" },
+    { "key": "boundary", "label": "Boundary Lands" },
+    { "key": "remote", "label": "Remote Lands" }
+  ],
+  "data": [{ "settled": 15, "boundary": 20, "remote": 25, "value": "<strong>Stead</strong> — …" }]
+}
+```
+
+Renders one range column per `columns` entry + a **Result** column. _Canonical:_
+Settlement: Type. (See also `delveDepths`.)
+
+### `matrix` — pick a column; shared ranges, per-column value
+
+The transpose of `columnSelect`: every column shares the **same** ranges but has
+its **own** value. Each row carries one `topRange` plus one value per column key.
+Pick a column, roll, get that column's value — the columns change the _result_,
+not the frequency.
+
+```json
+{
+  "tableType": "matrix",
+  "columns": [
+    { "key": "giants", "label": "Giants" },
+    { "key": "varou", "label": "Varou" },
+    { "key": "trolls", "label": "Trolls" }
+  ],
+  "data": [{ "topRange": 4, "giants": "Chony", "varou": "Vata", "trolls": "Rattle" }]
+}
+```
+
+Renders `D100 | col1 | col2 | …` with the active column highlighted. _Canonical:_
+Scale: Magnitude (9 columns), Name: Elf (Elf 1/Elf 2), Name: Other
+(Giants/Varou/Trolls).
+
+### `twoStep` — outer roll → the row's own subtable
+
+The second table travels **inside** each outer row: roll the outer table for a
+category, then roll that row's `subtable` for the final result. `outerLabel` /
+`innerLabel` name the two rolls (defaults "Category" / "Result").
 
 ```json
 {
   "topRange": 15,
   "value": {
     "description": "A feature of the landscape…",
-    "subtable": [
-      { "topRange": 10, "value": "Highmount" },
-      …
-    ]
+    "subtable": [{ "topRange": 10, "value": "Highmount" }]
   }
 }
 ```
 
-**Rolling:**
+_Canonical:_ Settlement: Name.
 
-1. Roll d100 → select category entry
-2. Roll d100 again → select from `entry.value.subtable`
+### `compound` — a format string with `[oracleKey]` blanks
 
-**Result HTML:**
-
-```html
-<div class="roll-line">Category roll: d100 → 12</div>
-<div><em>A feature of the landscape…</em></div>
-<div class="roll-line">Name roll: d100 → 47</div>
-<div>Name: <strong>Highmount</strong></div>
-```
-
-### 3. Settlement: Quick Name (`key: "settlementNameQuick"`) — prefix + suffix
-
-Each entry contains `{ prefix, suffix }`. **Two** independent d100 rolls are made; the results are concatenated.
+`value` is a template string; each `[oracleKey]` blank is resolved by rolling
+that oracle, recursively. Supports a regex-style repeat quantifier
+`[key]{n}` / `[key]{n,m}` (uniform count, de-duped). Full spec in
+[data-schema.md](data-schema.md).
 
 ```json
-{ "topRange": 5, "value": { "prefix": "Red", "suffix": "fall" } }
+{ "topRange": 100, "value": "[siteNameDescription] [siteNameNamesake]" }
 ```
 
-**Rolling:** Roll once for prefix, roll again (independently) for suffix → `"Redfall"`.
+_Canonical:_ Delve: Site Name, Delve: Monstrosity.
 
-**Result HTML:**
+### `delveDepths` — a hardcoded stat-column `columnSelect`
 
-```html
-<div class="roll-line">Prefix roll: d100 → 3 | Suffix roll: d100 → 68</div>
-<div>Settlement name: <strong>Redfall</strong></div>
-```
-
-### 4. Name: Other (`key: "namesOther"`) — multi-field
-
-A single d100 roll returns **three** parallel name fields for Giants, Varou, and Trolls.
-
-```json
-{ "topRange": 4, "value": { "giants": "Chony", "varou": "Vata", "trolls": "Rattle" } }
-```
-
-**Result HTML:**
-
-```html
-<div class="roll-line">Roll: d100 → 2</div>
-<div>Giants: Chony | Varou: Vata | Trolls: Rattle</div>
-```
-
-### 5. YRT: Touched (`key: "yrtTouched"`) — compound multi-roll
-
-The most complex oracle. A single "roll" actually performs **multiple** sub-rolls:
-
-1. Roll d100 → select Touched class (socialRank, className, description)
-2. Roll d100 on `touchedCount` → number of features
-3. Roll that many unique features from `touchedFeatures` (re-roll duplicates)
-4. Roll d100 on `yrtAnimal` → animal aspect
-
-**Table entry structure:**
+Same shape as `columnSelect` but with fixed **Edge / Shadow / Wits** columns and
+its own render branch. Pick a stat, roll against its ranges → the shared result.
 
 ```json
 {
-  "topRange": 20,
-  "value": {
-    "socialRank": 2,
-    "className": "Touched",
-    "description": "Has visible characteristics."
-  }
+  "edge": 45,
+  "shadow": 30,
+  "wits": 40,
+  "value": "<a …>Mark progress</a> and <a …>Reveal a Danger</a>."
 }
 ```
 
-**Result HTML** (multi-line):
+_Canonical:_ Delve the Depths Weak Hit Oracle.
 
-```html
-<div class="roll-line">Class roll: d100 → 12</div>
-<div><strong>Touched</strong> (Social rank 2) — Has visible characteristics.</div>
-<div class="roll-line">Animal roll: d100 → 44</div>
-<div>Animal aspect: Wolf</div>
-<div class="roll-line">Feature count roll: d100 → 55 → 2 features</div>
-<ul>
-  <li>Feature A</li>
-  <li>Feature B</li>
-</ul>
-```
+### Column-picker UX (`columnSelect` · `matrix` · `delveDepths`)
 
-### 6. YRT: Freeport Occupation (`key: "freeportDenizen"`) — structured object
+These three share the chip picker:
 
-Each entry is a structured record for a denizen type.
+- A chip row selects the active column; the chips + the active column are
+  **colour-coded per column** (a cycled stat palette — Delve the Depths keeps
+  its edge/shadow/wits colours).
+- On **≤ 640px** the table **collapses** to `[always-on column | active column]`
+  (D100 for matrix, Result for columnSelect/delveDepths), locked **50/50** so
+  switching chips doesn't resize the layout; the chips **wrap**.
 
-```json
-{
-  "topRange": 11,
-  "value": {
-    "type": "Merchants, traders, brokers",
-    "notes": "Shops, stalls, warehouses…",
-    "salary": "80–120 gents",
-    "count": 2000
+### Structured specials (hardcoded by key)
+
+A few oracles keep bespoke render/roll branches because their `value` is a
+record of named fields:
+
+- **`freeportDenizen`** (YRT: Freeport Occupation) — each row is
+  `{ type, notes, salary, count }`, rendered as a multi-column table and a
+  labelled roll result.
+
+  ```json
+  {
+    "topRange": 11,
+    "value": {
+      "type": "Merchants, traders, brokers",
+      "notes": "Shops, stalls…",
+      "salary": "80–120 gents",
+      "count": 2000
+    }
   }
-}
-```
+  ```
 
-**Result HTML:**
+- **`yrtTouched`** (YRT: Touched) — a compound multi-roll: class → animal aspect
+  → a feature-count roll (Second/Third: 1–3 / 4–6) → that many unique features
+  from `touchedFeatures`. Logged as a monstrosity-style multi-line breakdown.
 
-```html
-<div class="roll-line">Roll: d100 → 7</div>
-<div><strong>Merchants, traders, brokers</strong></div>
-<div>Shops, stalls, warehouses…</div>
-<div>Typical annual salary: 80–120 gents (Population: 2000)</div>
-```
-
----
+- **`settlementNameQuick`** (Settlement: Quick Name) — each row is
+  `{ prefix, suffix }`; two independent d100 rolls are concatenated
+  (e.g. "Red" + "fall" → "Redfall").
 
 ## Rolling algorithm
 
