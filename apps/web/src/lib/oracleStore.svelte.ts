@@ -331,13 +331,45 @@ export function buildTableHtml(
 
 	// ── Special layouts ──────────────────────────────────────────────────────
 
+	// Matrix table (Scale: Magnitude): shared d100 ranges down the side, one
+	// value column per `columns` entry (active column highlighted). Distinct
+	// from columnSelect, which has per-column ranges and a shared Result value.
+	if (options?.tableType === 'matrix' && options.columns?.length) {
+		const cols = options.columns;
+		const activeIdx = options.activeStat ? cols.findIndex((c) => c.key === options.activeStat) : -1;
+		// `od-pick-col` on every value column lets the detail view collapse to just
+		// D100 + the active column on narrow screens (shared with columnSelect /
+		// delveDepths — any column-picker oracle collapses to its chosen column).
+		const cc = (i: number) => ` class="od-pick-col${activeIdx === i ? ' col-active' : ''}"`;
+		let html =
+			'<table class="oracle-table"><thead><tr><th class="oracle-range">d100</th>' +
+			cols.map((c, i) => `<th${cc(i)}>${c.label}</th>`).join('') +
+			'</tr></thead><tbody>';
+		let prev = 0;
+		for (const entry of table) {
+			const r = entry as unknown as Record<string, number | string>;
+			const hi = r['topRange'] as number;
+			const lo = prev + 1;
+			prev = hi;
+			const range = lo === hi ? `${hi}` : `${lo}–${hi}`;
+			html +=
+				`<tr><td class="oracle-range">${range}</td>` +
+				cols.map((c, i) => `<td${cc(i)}>${r[c.key] as string}</td>`).join('') +
+				'</tr>';
+		}
+		return html + '</tbody></table>';
+	}
+
 	// Generic column-select table (Settlement Type land tiers, etc.): one range
 	// column per `columns` entry + a Result column, with the active column
 	// highlighted. Delve Depths keeps its own hardcoded branch below.
 	if (options?.columns?.length) {
 		const cols = options.columns;
 		const activeIdx = options.activeStat ? cols.findIndex((c) => c.key === options.activeStat) : -1;
-		const cc = (i: number) => ` class="oracle-range${activeIdx === i ? ' col-active' : ''}"`;
+		// `od-pick-col` marks the per-column range cells (not the shared Result) so
+		// narrow screens collapse to the active column + Result.
+		const cc = (i: number) =>
+			` class="oracle-range od-pick-col${activeIdx === i ? ' col-active' : ''}"`;
 		let html =
 			'<table class="oracle-table"><thead><tr>' +
 			cols.map((c, i) => `<th${cc(i)}>${c.label}</th>`).join('') +
@@ -361,7 +393,8 @@ export function buildTableHtml(
 	if (key === 'delveDepths') {
 		const statColMap: Record<string, number> = { edge: 0, shadow: 1, wits: 2 };
 		const activeCol = options?.activeStat ? (statColMap[options.activeStat] ?? -1) : -1;
-		const cc = (i: number) => ` class="oracle-range${activeCol === i ? ' col-active' : ''}"`;
+		const cc = (i: number) =>
+			` class="oracle-range od-pick-col${activeCol === i ? ' col-active' : ''}"`;
 
 		type DRow = { edge: number; shadow: number; wits: number; value: string };
 		let html =
@@ -471,19 +504,8 @@ export function buildTableHtml(
 		return html + '</tbody></table>';
 	}
 
-	if (key === 'namesOther') {
-		let html =
-			'<table class="oracle-table"><thead><tr>' +
-			'<th>d100</th><th>Giants</th><th>Varou</th><th>Trolls</th>' +
-			'</tr></thead><tbody>';
-		table.forEach((entry, idx) => {
-			const v = entry.value as { giants: string; varou: string; trolls: string };
-			html +=
-				`<tr><td class="oracle-range">${rangeLabelForEntry(table, idx)}</td>` +
-				`<td>${v.giants}</td><td>${v.varou}</td><td>${v.trolls}</td></tr>`;
-		});
-		return html + '</tbody></table>';
-	}
+	// Name: Other (Giants/Varou/Trolls) and Name: Elf (Elf 1/Elf 2) are now
+	// `tableType: 'matrix'` — the generic matrix branch above renders them.
 
 	if (key === 'freeportDenizen') {
 		let html =
@@ -679,6 +701,20 @@ export function rollOracle(
 		return { roll: outerRes.roll, html, title, value: word };
 	}
 
+	// ── matrix — shared ranges, one value per column (Scale: Magnitude) ─────
+	if (oracle.tableType === 'matrix' && oracle.columns?.length) {
+		const cols = oracle.columns;
+		const col = cols.find((c) => c.key === options?.stat) ?? cols[0];
+		const roll = Math.floor(Math.random() * 100) + 1;
+		const rows = table as unknown as Array<Record<string, number | string>>;
+		const found = rows.find((r) => roll <= (r['topRange'] as number)) ?? rows[rows.length - 1];
+		const value = found[col.key] as string;
+		const html =
+			`<div class="roll-line">Roll (${col.label}): d100 → ${roll}</div>` +
+			`<div class="move-outcome">${value}</div>`;
+		return { roll, html, title, value };
+	}
+
 	// ── columnSelect — roll against a chosen column (land tier, etc.) ───────
 	if (oracle.tableType === 'columnSelect' && oracle.columns?.length) {
 		const cols = oracle.columns;
@@ -822,15 +858,8 @@ export function rollOracle(
 		return { roll: prefixRes.roll, html, title, value: name };
 	}
 
-	// ── namesOther — three parallel name fields ──────────────────────────────
-	if (key === 'namesOther') {
-		const res = rollFromRangeTable(table);
-		const v = res.value as { giants: string; varou: string; trolls: string };
-		const html =
-			`<div class="roll-line">Roll: d100 → ${res.roll}</div>` +
-			`<div>Giants: ${v.giants} | Varou: ${v.varou} | Trolls: ${v.trolls}</div>`;
-		return { roll: res.roll, html, title, value: v.giants };
-	}
+	// Name: Other and Name: Elf are `tableType: 'matrix'` — the matrix branch
+	// above handles them (pick a lineage/tradition column, roll one name).
 
 	// ── Default — single roll, string value (with Roll Twice support) ──────
 

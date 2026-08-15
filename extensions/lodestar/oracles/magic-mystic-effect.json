@@ -1,0 +1,194 @@
+{
+  "key": "magicMysticEffect",
+  "title": "Magic: Mystic Effect",
+  "category": "Magic",
+  "selectLabel": "Magic: Mystic Effect",
+  "description": "Encounters with magic forces may put you at the mercy of chaos. Use this oracle to help envision the strange and dangerous effects of ancient artifacts, mystic sites, powerful rituals, and other supernatural anomalies. Results on this table may have campaign-shaking implications, so use it in rare and dramatic moments.",
+  "source": "lodestar",
+  "data": [
+    {
+      "topRange": 2,
+      "value": "Alter the weather"
+    },
+    {
+      "topRange": 4,
+      "value": "Nullify other powers"
+    },
+    {
+      "topRange": 6,
+      "value": "Imbue an object with power"
+    },
+    {
+      "topRange": 8,
+      "value": "Disintegrate or decay objects"
+    },
+    {
+      "topRange": 10,
+      "value": "Awaken an ancient being"
+    },
+    {
+      "topRange": 12,
+      "value": "Summon a monstrous creature"
+    },
+    {
+      "topRange": 14,
+      "value": "Bind to a vow or task"
+    },
+    {
+      "topRange": 16,
+      "value": "Give life to inanimate forms"
+    },
+    {
+      "topRange": 18,
+      "value": "Unleash a plague"
+    },
+    {
+      "topRange": 20,
+      "value": "Control elemental forces"
+    },
+    {
+      "topRange": 22,
+      "value": "Erase or suppress memories"
+    },
+    {
+      "topRange": 24,
+      "value": "Shroud in lasting darkness"
+    },
+    {
+      "topRange": 26,
+      "value": "Alter surrounding environment"
+    },
+    {
+      "topRange": 28,
+      "value": "Bind to a location"
+    },
+    {
+      "topRange": 30,
+      "value": "Inflict cursed luck"
+    },
+    {
+      "topRange": 32,
+      "value": "Incite negative emotions"
+    },
+    {
+      "topRange": 34,
+      "value": "Awaken latent powers in another"
+    },
+    {
+      "topRange": 36,
+      "value": "Inflict aging or wasting"
+    },
+    {
+      "topRange": 38,
+      "value": "Bind to a restless spirit"
+    },
+    {
+      "topRange": 40,
+      "value": "Grant horrifying knowledge"
+    },
+    {
+      "topRange": 42,
+      "value": "Awaken or animate the dead"
+    },
+    {
+      "topRange": 44,
+      "value": "Incite an obsession"
+    },
+    {
+      "topRange": 46,
+      "value": "Manifest inner fears"
+    },
+    {
+      "topRange": 48,
+      "value": "Banish to another time"
+    },
+    {
+      "topRange": 50,
+      "value": "Manipulate plant growth"
+    },
+    {
+      "topRange": 52,
+      "value": "Trigger a natural disaster"
+    },
+    {
+      "topRange": 54,
+      "value": "Reveal past events"
+    },
+    {
+      "topRange": 56,
+      "value": "Emit destructive energies"
+    },
+    {
+      "topRange": 58,
+      "value": "Alter the flow of time"
+    },
+    {
+      "topRange": 60,
+      "value": "Inflict a consuming need"
+    },
+    {
+      "topRange": 62,
+      "value": "Create hallucinations or illusions"
+    },
+    {
+      "topRange": 64,
+      "value": "Trigger a celestial event"
+    },
+    {
+      "topRange": 66,
+      "value": "Summon a swarm of creatures"
+    },
+    {
+      "topRange": 68,
+      "value": "Reveal distant places"
+    },
+    {
+      "topRange": 70,
+      "value": "Absorb energy or essence"
+    },
+    {
+      "topRange": 72,
+      "value": "Banish to another reality"
+    },
+    {
+      "topRange": 74,
+      "value": "Banish to another location"
+    },
+    {
+      "topRange": 76,
+      "value": "Inflict prophetic visions"
+    },
+    {
+      "topRange": 78,
+      "value": "Inflict dreadful transformation"
+    },
+    {
+      "topRange": 80,
+      "value": "Inflict sickness or weakness"
+    },
+    {
+      "topRange": 82,
+      "value": "Absorb life"
+    },
+    {
+      "topRange": 84,
+      "value": "Spread corruption or blight"
+    },
+    {
+      "topRange": 86,
+      "value": "Brand with a cursed mark"
+    },
+    {
+      "topRange": 88,
+      "value": "Destroy terrain or architecture"
+    },
+    {
+      "topRange": 90,
+      "value": "Grant a lasting boon—at a cost"
+    },
+    {
+      "topRange": 100,
+      "value": "Roll twice more on this table; both effects occur."
+    }
+  ]
+}

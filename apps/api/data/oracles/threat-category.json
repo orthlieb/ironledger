@@ -3,8 +3,9 @@
   "title": "Threat: Category",
   "category": "Threat",
   "selectLabel": "Threat: Category",
-  "description": "Determine the broad category of a looming threat in the Ironlands.",
+  "description": "Use this oracle to randomly select a broad type of threat for your campaign. If you are prompted (or choose) to roll twice, take both results and decide how these two threats act together or represent a more complex situation. For example, choosing both a Malignant Plague and a Zealous Cult might signify an evil sect that has unleashed a sickness upon the Ironlands in service to a dark god.",
   "source": "delve",
+  "postamble": "When you _Swear an Iron Vow,_ you can optionally associate a threat with that quest. The threat is the person, being, faction, or situation responsible for the problem that motivates your vow, or is the adversary most directly opposing you in the fulfillment of that vow.\nThen, as you _Advance a Threat,_ use the Threat Oracles to help decide how the threat manifests or takes action. Interpret the oracle's answer as appropriate to the nature of the threat and the current situation.\nIf you roll a match on the _Advance a Threat_ table, this development also exposes a surprising aspect of the threat's plan or nature. If you're not sure what this means, check the _Action_ and _Theme_ oracles for inspiration or the _Plot Twist_ oracle.\nIf you aren't using the threat moves in your campaign, you can still use these oracles to inspire details for campaign-level enemies, troubles, and complications.",
   "data": [
     {
       "topRange": 10,

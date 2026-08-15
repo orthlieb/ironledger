@@ -910,6 +910,10 @@ Each oracle entry:
 
 ### Special Oracle Types
 
+> See **[oracles.md → Oracle layouts](oracles.md#oracle-layouts-tabletype-reference)**
+> for the full catalogue of each layout with rendered examples, roll behaviour,
+> and the canonical oracle that uses it.
+
 Most oracles have simple string values (`value` is a string). Beyond that, a
 few patterns are recognized **automatically from the JSON** — no code changes —
 so an extension can use them from data alone:
@@ -924,6 +928,12 @@ so an extension can use them from data alone:
   the reader chooses a column and the roll resolves against that column's
   ranges. Each data row carries a `topRange` under each column key plus a shared
   `value` (Settlement: Type land tiers, Delve Depths).
+- **`tableType: "matrix"`** — the transpose of `columnSelect`: a picker of
+  `columns` where every column shares the **same** d100 ranges but each has its
+  **own** value. Each data row carries one shared `topRange` plus one value per
+  column key. The reader picks a column and rolls; the detail view renders
+  `d100 | col1 | col2 | …` with the active column highlighted (Scale: Magnitude —
+  Size / Number / Distance / Time / …).
 - **`tableType: "twoStep"`** — a **double-rolling** oracle whose second table
   travels _inside its own rows_: roll the outer table for a category, then roll
   that row's `subtable` for the final result. Both rolls are logged and the
