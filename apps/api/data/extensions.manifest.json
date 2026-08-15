@@ -186,6 +186,7 @@
           "oracles/coastal-waters-peril.json",
           "oracles/coastal-waters-waypoint.json",
           "oracles/combat-battleground.json",
+          "oracles/magic-mystic-effect.json",
           "oracles/overland-landmark.json",
           "oracles/overland-opportunity.json",
           "oracles/overland-peril.json",
