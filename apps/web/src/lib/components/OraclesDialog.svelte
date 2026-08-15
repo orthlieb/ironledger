@@ -206,6 +206,7 @@
 		Move: 'var(--text-accent)',
 		Name: 'var(--color-spirit)',
 		Prelude: 'var(--color-supply)',
+		Scale: '#2E86AB',
 		Settlement: '#D06840',
 		Site: '#4472D0',
 		Story: '#8E7CC3',
@@ -264,7 +265,7 @@
 		const rollOpts =
 			key === 'delveDepths'
 				? { stat: selectedDelveStat }
-				: o?.tableType === 'columnSelect'
+				: o?.tableType === 'columnSelect' || o?.tableType === 'matrix'
 					? { stat: effectiveColumnKey ?? undefined }
 					: undefined;
 		const result = rollOracle(key, allOracles, rollOpts);
@@ -429,8 +430,11 @@
 										onclick={() => {
 											selectedKey = oracle.key;
 											view = 'detail';
-											// Default-highlight the first column of a columnSelect oracle.
-											if (oracle.tableType === 'columnSelect' && oracle.columns?.length) {
+											// Default-highlight the first column of a columnSelect/matrix oracle.
+											if (
+												(oracle.tableType === 'columnSelect' || oracle.tableType === 'matrix') &&
+												oracle.columns?.length
+											) {
 												selectedDelveStat = oracle.columns[0].key;
 												activeStat = oracle.columns[0].key;
 											}
@@ -476,7 +480,7 @@
 								>
 							{/each}
 						</div>
-					{:else if selectedOracle.tableType === 'columnSelect' && selectedOracle.columns}
+					{:else if (selectedOracle.tableType === 'columnSelect' || selectedOracle.tableType === 'matrix') && selectedOracle.columns}
 						<div class="od-delve-stat-picker">
 							{#each selectedOracle.columns as col (col.key)}
 								<button
@@ -494,7 +498,8 @@
 
 					<div
 						class="od-table-wrap"
-						style:--active-col-color={selectedOracle.tableType === 'columnSelect'
+						style:--active-col-color={selectedOracle.tableType === 'columnSelect' ||
+						selectedOracle.tableType === 'matrix'
 							? 'var(--text-accent)'
 							: activeStat
 								? `var(--color-${activeStat})`
@@ -503,21 +508,27 @@
 						{@html buildTableHtml(
 							selectedOracle.key,
 							selectedOracle.data,
-							selectedOracle.tableType === 'columnSelect'
-								? { activeStat: effectiveColumnKey ?? undefined, columns: selectedOracle.columns }
-								: selectedOracle.tableType === 'twoStep'
-									? {
-											outerLabel: selectedOracle.outerLabel,
-											innerLabel: selectedOracle.innerLabel,
-										}
-									: selectedOracle.tableType === 'compound'
+							selectedOracle.tableType === 'matrix'
+								? {
+										activeStat: effectiveColumnKey ?? undefined,
+										columns: selectedOracle.columns,
+										tableType: 'matrix',
+									}
+								: selectedOracle.tableType === 'columnSelect'
+									? { activeStat: effectiveColumnKey ?? undefined, columns: selectedOracle.columns }
+									: selectedOracle.tableType === 'twoStep'
 										? {
-												tableType: 'compound',
-												refTitles: Object.fromEntries(allOracles.map((o) => [o.key, o.title])),
+												outerLabel: selectedOracle.outerLabel,
+												innerLabel: selectedOracle.innerLabel,
 											}
-										: activeStat
-											? { activeStat }
-											: undefined,
+										: selectedOracle.tableType === 'compound'
+											? {
+													tableType: 'compound',
+													refTitles: Object.fromEntries(allOracles.map((o) => [o.key, o.title])),
+												}
+											: activeStat
+												? { activeStat }
+												: undefined,
 						)}
 					</div>
 

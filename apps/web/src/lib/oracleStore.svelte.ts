@@ -331,6 +331,32 @@ export function buildTableHtml(
 
 	// ── Special layouts ──────────────────────────────────────────────────────
 
+	// Matrix table (Scale: Magnitude): shared d100 ranges down the side, one
+	// value column per `columns` entry (active column highlighted). Distinct
+	// from columnSelect, which has per-column ranges and a shared Result value.
+	if (options?.tableType === 'matrix' && options.columns?.length) {
+		const cols = options.columns;
+		const activeIdx = options.activeStat ? cols.findIndex((c) => c.key === options.activeStat) : -1;
+		const cc = (i: number) => (activeIdx === i ? ' class="col-active"' : '');
+		let html =
+			'<table class="oracle-table"><thead><tr><th class="oracle-range">d100</th>' +
+			cols.map((c, i) => `<th${cc(i)}>${c.label}</th>`).join('') +
+			'</tr></thead><tbody>';
+		let prev = 0;
+		for (const entry of table) {
+			const r = entry as unknown as Record<string, number | string>;
+			const hi = r['topRange'] as number;
+			const lo = prev + 1;
+			prev = hi;
+			const range = lo === hi ? `${hi}` : `${lo}–${hi}`;
+			html +=
+				`<tr><td class="oracle-range">${range}</td>` +
+				cols.map((c, i) => `<td${cc(i)}>${r[c.key] as string}</td>`).join('') +
+				'</tr>';
+		}
+		return html + '</tbody></table>';
+	}
+
 	// Generic column-select table (Settlement Type land tiers, etc.): one range
 	// column per `columns` entry + a Result column, with the active column
 	// highlighted. Delve Depths keeps its own hardcoded branch below.
@@ -691,6 +717,20 @@ export function rollOracle(
 			`<div class="roll-line">${inner} roll: d100 → ${innerRes.roll}</div>` +
 			`<div>${inner}: <strong>${word}</strong></div>`;
 		return { roll: outerRes.roll, html, title, value: word };
+	}
+
+	// ── matrix — shared ranges, one value per column (Scale: Magnitude) ─────
+	if (oracle.tableType === 'matrix' && oracle.columns?.length) {
+		const cols = oracle.columns;
+		const col = cols.find((c) => c.key === options?.stat) ?? cols[0];
+		const roll = Math.floor(Math.random() * 100) + 1;
+		const rows = table as unknown as Array<Record<string, number | string>>;
+		const found = rows.find((r) => roll <= (r['topRange'] as number)) ?? rows[rows.length - 1];
+		const value = found[col.key] as string;
+		const html =
+			`<div class="roll-line">Roll (${col.label}): d100 → ${roll}</div>` +
+			`<div class="move-outcome">${value}</div>`;
+		return { roll, html, title, value };
 	}
 
 	// ── columnSelect — roll against a chosen column (land tier, etc.) ───────

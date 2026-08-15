@@ -94,13 +94,12 @@ describe('extensions.manifest.json', () => {
     expect(assetData.flatMap((f) => f.rarities ?? [])).toHaveLength(63);
     // 49 base/delve/yrt moves + 2 lodestar (Follow a Path, alternate End the Fight).
     expect(moveData.flatMap((f) => f.moves)).toHaveLength(51);
-    // 25 base + 32 delve + 13 yrt + 20 lodestar = 90 (sample is dev-only, stripped
-    // from `core`). Dropped from 91 by the site-name-place consolidation in PR #260.
-    // The Combat set: base Combat: Tactic (renamed from Combat Action), delve
-    // Combat: Event / Event Method / Event Target, lodestar Combat: Battleground.
-    // Plus Story: Region (lodestar) + its YRT duplicate (yrtStoryRegion), Story: Clue
-    // (lodestar), and Magic: Mystic Effect (lodestar, +1 → lodestar 20).
-    expect(oracleData).toHaveLength(90);
+    // 25 base + 32 delve + 13 yrt + 21 lodestar = 91 (sample is dev-only, stripped
+    // from `core`). Combat set (base Combat: Tactic, delve Combat: Event / Event
+    // Method / Event Target, lodestar Combat: Battleground) + Story: Region (lodestar)
+    // & yrtStoryRegion + Story: Clue + Magic: Mystic Effect + Scale: Magnitude
+    // (lodestar, a `matrix` tableType) brought lodestar to 21.
+    expect(oracleData).toHaveLength(91);
     expect(foeData.flatMap((f) => f.foes)).toHaveLength(82);
     expect(foeOverrides).toHaveLength(1);
     // Lodestar hides base End the Fight via a move override ("hide + add"):
@@ -218,7 +217,7 @@ describe('oracle visibility by enabled extension', () => {
     expect(oracleKeysFor('base')).toHaveLength(24);
     expect(oracleKeysFor('delve')).toHaveLength(32);
     expect(oracleKeysFor('yrt')).toHaveLength(13);
-    expect(oracleKeysFor('lodestar')).toHaveLength(20);
+    expect(oracleKeysFor('lodestar')).toHaveLength(21);
   });
 
   // base always on; each row toggles delve / yrt / lodestar. Counts net out
@@ -227,13 +226,13 @@ describe('oracle visibility by enabled extension', () => {
   // charDisposition + base location/coastalWatersLocation).
   it.each([
     [false, false, false, 24],
-    [false, false, true, 42],
+    [false, false, true, 43],
     [false, true, false, 36],
-    [false, true, true, 51],
+    [false, true, true, 52],
     [true, false, false, 56],
-    [true, false, true, 71],
+    [true, false, true, 72],
     [true, true, false, 68],
-    [true, true, true, 80],
+    [true, true, true, 81],
   ])(
     'base + delve=%s yrt=%s lodestar=%s → %i visible oracles',
     (delve, yrt, lodestar, expected) => {

@@ -1,0 +1,109 @@
+{
+  "key": "scaleMagnitude",
+  "title": "Scale: Magnitude",
+  "category": "Scale",
+  "selectLabel": "Scale: Magnitude",
+  "tableType": "matrix",
+  "description": "Use this oracle to help answer a question related to the scale, extent, or capability of something. Ask your question, choose one of the columns, and roll to reveal the answer. For example — Size: “What is the scale of the ruin?”; Number: “How many soldiers are in the camp?”; Distance: “Where is the nearest trained healer?”; Time: “How long will the winter stores hold out?”; Power: “How strong is this wyvern?”; Complexity: “How tricky is the lock?”; Value: “How rare is this artifact?”; Influence: “What sort of authority does this clan leader wield?”; Disposition: “What is this merchant’s attitude toward me?”",
+  "source": "lodestar",
+  "columns": [
+    {
+      "key": "size",
+      "label": "Size"
+    },
+    {
+      "key": "number",
+      "label": "Number"
+    },
+    {
+      "key": "distance",
+      "label": "Distance"
+    },
+    {
+      "key": "time",
+      "label": "Time"
+    },
+    {
+      "key": "power",
+      "label": "Power"
+    },
+    {
+      "key": "complexity",
+      "label": "Complexity"
+    },
+    {
+      "key": "value",
+      "label": "Value"
+    },
+    {
+      "key": "influence",
+      "label": "Influence"
+    },
+    {
+      "key": "disposition",
+      "label": "Disposition"
+    }
+  ],
+  "data": [
+    {
+      "topRange": 15,
+      "size": "Undersized",
+      "number": "None or one",
+      "distance": "Very close",
+      "time": "Fleeting",
+      "power": "Weak",
+      "complexity": "Simple",
+      "value": "Worthless",
+      "influence": "Limited",
+      "disposition": "Friendly"
+    },
+    {
+      "topRange": 35,
+      "size": "Small",
+      "number": "Few",
+      "distance": "Near",
+      "time": "Short",
+      "power": "Minor",
+      "complexity": "Basic",
+      "value": "Cheap",
+      "influence": "Isolated",
+      "disposition": "Open"
+    },
+    {
+      "topRange": 65,
+      "size": "Medium",
+      "number": "Several",
+      "distance": "Far",
+      "time": "Moderate",
+      "power": "Capable",
+      "complexity": "Manageable",
+      "value": "Common",
+      "influence": "Localized",
+      "disposition": "Wary"
+    },
+    {
+      "topRange": 85,
+      "size": "Large",
+      "number": "Many",
+      "distance": "Remote",
+      "time": "Lengthy",
+      "power": "Strong",
+      "complexity": "Complicated",
+      "value": "Valuable",
+      "influence": "Far-reaching",
+      "disposition": "Threatening"
+    },
+    {
+      "topRange": 100,
+      "size": "Huge",
+      "number": "Countless",
+      "distance": "Inaccessible",
+      "time": "Eternal",
+      "power": "Overwhelming",
+      "complexity": "Bewildering",
+      "value": "Priceless",
+      "influence": "Dominant",
+      "disposition": "Hostile"
+    }
+  ]
+}

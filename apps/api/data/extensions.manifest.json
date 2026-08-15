@@ -191,6 +191,7 @@
           "oracles/overland-opportunity.json",
           "oracles/overland-peril.json",
           "oracles/overland-waypoint.json",
+          "oracles/scale-magnitude.json",
           "oracles/settlement-condition.json",
           "oracles/settlement-cultural-touchstones.json",
           "oracles/settlement-disposition.json",
