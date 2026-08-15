@@ -485,6 +485,20 @@ export function buildTableHtml(
 		return html + '</tbody></table>';
 	}
 
+	if (key === 'namesElf') {
+		let html =
+			'<table class="oracle-table"><thead><tr>' +
+			'<th>d100</th><th>Elf 1</th><th>Elf 2</th>' +
+			'</tr></thead><tbody>';
+		table.forEach((entry, idx) => {
+			const v = entry.value as { elf1: string; elf2: string };
+			html +=
+				`<tr><td class="oracle-range">${rangeLabelForEntry(table, idx)}</td>` +
+				`<td>${v.elf1}</td><td>${v.elf2}</td></tr>`;
+		});
+		return html + '</tbody></table>';
+	}
+
 	if (key === 'freeportDenizen') {
 		let html =
 			'<table class="oracle-table"><thead><tr>' +
@@ -830,6 +844,16 @@ export function rollOracle(
 			`<div class="roll-line">Roll: d100 → ${res.roll}</div>` +
 			`<div>Giants: ${v.giants} | Varou: ${v.varou} | Trolls: ${v.trolls}</div>`;
 		return { roll: res.roll, html, title, value: v.giants };
+	}
+
+	// ── namesElf — two parallel Firstborn naming traditions ───────────────────
+	if (key === 'namesElf') {
+		const res = rollFromRangeTable(table);
+		const v = res.value as { elf1: string; elf2: string };
+		const html =
+			`<div class="roll-line">Roll: d100 → ${res.roll}</div>` +
+			`<div>Elf 1: ${v.elf1} | Elf 2: ${v.elf2}</div>`;
+		return { roll: res.roll, html, title, value: v.elf1 };
 	}
 
 	// ── Default — single roll, string value (with Roll Twice support) ──────
