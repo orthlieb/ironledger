@@ -189,7 +189,8 @@
 	const NPC_NAME_ORACLES: { value: string; label: string }[] = [
 		{ value: 'namesIronlander', label: 'Ironlander' },
 		{ value: 'namesIronlander2', label: 'Ironlander 2' },
-		{ value: 'namesElf', label: 'Elf' },
+		{ value: 'namesElf_elf1', label: 'Elf 1' },
+		{ value: 'namesElf_elf2', label: 'Elf 2' },
 		{ value: 'namesOther_giants', label: 'Giants' },
 		{ value: 'namesOther_varou', label: 'Varou' },
 		{ value: 'namesOther_trolls', label: 'Trolls' },
@@ -594,36 +595,21 @@
 		newNpcDialogRef?.open();
 	}
 
-	/** Roll a name off the selected oracle and drop it into the form. The
-	 *  `namesOther_*` variants share one oracle whose value is a per-lineage
-	 *  bag; the suffix selects which entry to lift. */
+	/** Roll a name off the selected oracle and drop it into the form. Picker
+	 *  entries are `oracleKey` or, for `matrix` name oracles (Name: Elf,
+	 *  Name: Other), `oracleKey_columnKey` — the suffix picks the column
+	 *  (elf1/elf2, giants/varou/trolls). rollOracle resolves both shapes. */
 	function rollNpcNameField() {
-		const logName = (title: string, roll: number, name: string) =>
-			name &&
+		const usc = _pendingNpcNameOracle.indexOf('_');
+		const key = usc >= 0 ? _pendingNpcNameOracle.slice(0, usc) : _pendingNpcNameOracle;
+		const col = usc >= 0 ? _pendingNpcNameOracle.slice(usc + 1) : undefined;
+		const r = rollOracle(key, getOracles(), col ? { stat: col } : undefined);
+		newNpcName = r.value ?? '';
+		if (r.value)
 			appendLog(
-				title,
-				`<div class="roll-line">Roll: d100 → ${roll}</div><div>Result: <strong>${name}</strong></div>`,
+				r.title,
+				`<div class="roll-line">Roll: d100 → ${r.roll}</div><div>Result: <strong>${r.value}</strong></div>`,
 			);
-		if (_pendingNpcNameOracle.startsWith('namesOther_')) {
-			const o = findOracle('namesOther');
-			if (!o) return;
-			const r = rollFromRangeTable(o.data);
-			const v = r.value as { giants: string; varou: string; trolls: string };
-			const sub = _pendingNpcNameOracle.split('_')[1] as keyof typeof v;
-			newNpcName = v[sub] ?? '';
-			logName(o.title, r.roll, newNpcName);
-			return;
-		}
-		const o = findOracle(_pendingNpcNameOracle);
-		if (o) {
-			const r = rollFromRangeTable(o.data);
-			newNpcName = (r.value as string) ?? '';
-			logName(o.title, r.roll, newNpcName);
-		} else {
-			const r = rollOracle(_pendingNpcNameOracle, getOracles());
-			newNpcName = r.value ?? '';
-			if (r.value) appendLog(r.title, r.html);
-		}
 	}
 
 	/** Run the compound YRT Touched roll and return the pieces the
