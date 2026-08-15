@@ -4,7 +4,7 @@
   "category": "Scale",
   "selectLabel": "Scale: Magnitude",
   "tableType": "matrix",
-  "description": "Use this oracle to help answer a question related to the scale, extent, or capability of something. Ask your question, choose one of the columns, and roll to reveal the answer. For example — Size: “What is the scale of the ruin?”; Number: “How many soldiers are in the camp?”; Distance: “Where is the nearest trained healer?”; Time: “How long will the winter stores hold out?”; Power: “How strong is this wyvern?”; Complexity: “How tricky is the lock?”; Value: “How rare is this artifact?”; Influence: “What sort of authority does this clan leader wield?”; Disposition: “What is this merchant’s attitude toward me?”",
+  "description": "Use this oracle to help answer a question related to the scale, extent, or capability of something. Ask your question, choose one of the columns, and roll to reveal the answer.",
   "source": "lodestar",
   "columns": [
     {
@@ -44,6 +44,7 @@
       "label": "Disposition"
     }
   ],
+  "postamble": "For example:\n- **Size:** “What is the scale of the ruin?”\n- **Number:** “How many soldiers are in the camp?”\n- **Distance:** “Where is the nearest trained healer?”\n- **Time:** “How long will the winter stores hold out?”\n- **Power:** “How strong is this wyvern?”\n- **Complexity:** “How tricky is the lock?”\n- **Value:** “How rare is this artifact?”\n- **Influence:** “What sort of authority does this clan leader wield?”\n- **Disposition:** “What is this merchant’s attitude toward me?”",
   "data": [
     {
       "topRange": 15,
