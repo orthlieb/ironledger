@@ -561,8 +561,13 @@
 												}
 											: // flat table: pass declared `columns` (labels) so multi-column
 												// flat oracles render their extra columns; activeStat is still
-												// forwarded for any stat-highlighted column.
-												{ activeStat: activeStat ?? undefined, columns: selectedOracle.columns },
+												// forwarded for any stat-highlighted column. `narrow` lets the
+												// quick-name grid drop from three column groups to two on phones.
+												{
+													activeStat: activeStat ?? undefined,
+													columns: selectedOracle.columns,
+													narrow,
+												},
 						)}
 					</div>
 

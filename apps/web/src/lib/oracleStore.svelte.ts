@@ -493,21 +493,24 @@ export function buildTableHtml(
 	}
 
 	if (key === 'settlementNameQuick') {
-		const third = Math.ceil(table.length / 3);
+		// The entry list is chunked into side-by-side column groups (d100 | Prefix |
+		// Suffix) to keep the table short. Three groups (9 cols) is too wide for a
+		// phone, so narrow screens use two groups (6 cols); the prefix/suffix are
+		// short enough that two fit without a horizontal scroll.
+		const groups = options?.narrow ? 2 : 3;
+		const chunk = Math.ceil(table.length / groups);
 		let html =
 			'<table class="oracle-table"><thead><tr>' +
-			'<th>d100</th><th>Prefix</th><th>Suffix</th>' +
-			'<th>d100</th><th>Prefix</th><th>Suffix</th>' +
-			'<th>d100</th><th>Prefix</th><th>Suffix</th>' +
+			'<th>d100</th><th>Prefix</th><th>Suffix</th>'.repeat(groups) +
 			'</tr></thead><tbody>';
-		for (let i = 0; i < third; i++) {
+		for (let i = 0; i < chunk; i++) {
 			html += '<tr>';
-			for (let col = 0; col < 3; col++) {
-				const entry = table[i + third * col];
+			for (let col = 0; col < groups; col++) {
+				const entry = table[i + chunk * col];
 				if (entry) {
 					const v = entry.value as { prefix: string; suffix: string };
 					html +=
-						`<td class="oracle-range">${rangeLabelForEntry(table, i + third * col)}</td>` +
+						`<td class="oracle-range">${rangeLabelForEntry(table, i + chunk * col)}</td>` +
 						`<td>${v.prefix}-</td><td>-${v.suffix}</td>`;
 				} else {
 					html += '<td></td><td></td><td></td>';
