@@ -3,7 +3,7 @@
   "title": "Settlement: Type",
   "category": "Settlement",
   "selectLabel": "Settlement: Type",
-  "description": "When using this oracle to reveal the scale and purpose of a settlement, choose whether the community is located in settled lands, boundary lands, or remote lands. If unsure, set the location based on the region:\n\n✴ Settled lands: Piscis, Ostrea, Collina, Freeport, Mons, Termin, Fluenti, Materton\n✴ Boundary lands: Oray Hills, Profunda Forest, Verday Groves, Nebula Forest, Suda Forest, Seka Lands\n✴ Remote lands: Malperm Mtns, Pinna Mtns, Polvokovrita Gap, Dronitay Shelf, Teeth of Konoloy, Weirden Fen, Ravenna, Spero",
+  "description": "When using this oracle to reveal the scale and purpose of a settlement, choose whether the community is located in settled lands, boundary lands, or remote lands. If unsure, set the location based on the region:\n- **Settled lands:** Piscis, Ostrea, Collina, Freeport, Mons, Termin, Fluenti, Materton\n- **Boundary lands:** Oray Hills, Profunda Forest, Verday Groves, Nebula Forest, Suda Forest, Seka Lands\n- **Remote lands:** Malperm Mtns, Pinna Mtns, Polvokovrita Gap, Dronitay Shelf, Teeth of Konoloy, Weirden Fen, Ravenna, Spero",
   "source": "yrt",
   "tableType": "columnSelect",
   "columns": [
