@@ -1049,9 +1049,14 @@ Form`). A quantified blank first logs its count roll, then one indented line
   whose later rolls _depend on_ an earlier result (e.g. `yrtTouched`: Pure
   stops, Feral rolls an animal but no features) stays a hardcoded branch.
 
-Still hardcoded per-key (not available to extensions from JSON alone): **Names
-Other** (`namesOther`: `giants` / `varou` / `trolls` fields), `settlementNameQuick`,
-`freeportDenizen`, `yrtTouched`, and the other Yrt structured tables — see
+- **`tableType: "prefixSuffix"`** — each row's `value` is `{ prefix, suffix }`.
+  A roll makes **two independent d100 rolls** and concatenates the first row's
+  prefix with the second row's suffix (e.g. "Red" + "fall" → "Redfall"). The
+  reference table lays the rows out in side-by-side `d100 | Prefix | Suffix`
+  groups (three, or two on ≤ 640px). Canonical: Settlement: Quick Name.
+
+Still hardcoded per-key (not available to extensions from JSON alone):
+`yrtTouched` and the other Yrt structured tables — see
 [the Yrt extension docs](../extensions/yrt/README.md#yrt-oracles).
 
 ---

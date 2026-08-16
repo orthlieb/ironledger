@@ -492,11 +492,13 @@ export function buildTableHtml(
 		return html + '</tbody></table>';
 	}
 
-	if (key === 'settlementNameQuick') {
-		// The entry list is chunked into side-by-side column groups (d100 | Prefix |
-		// Suffix) to keep the table short. Three groups (9 cols) is too wide for a
-		// phone, so narrow screens use two groups (6 cols); the prefix/suffix are
-		// short enough that two fit without a horizontal scroll.
+	// Prefix/suffix table (tableType: "prefixSuffix"): each row's value is
+	// { prefix, suffix }; a roll combines a prefix from one d100 and a suffix
+	// from another (see rollOracle). The reference table chunks the entries into
+	// side-by-side column groups (d100 | Prefix | Suffix) to stay short. Three
+	// groups (9 cols) is too wide for a phone, so narrow screens use two groups
+	// (6 cols); the prefix/suffix are short enough that two fit without a scroll.
+	if (options?.tableType === 'prefixSuffix') {
 		const groups = options?.narrow ? 2 : 3;
 		const chunk = Math.ceil(table.length / groups);
 		let html =
@@ -797,8 +799,9 @@ export function rollOracle(
 	// with a `roll` array) — the generic flat branch below handles it.
 
 	// ── settlementName — two-step subtable ──────────────────────────────────
-	// ── settlementNameQuick — two independent rolls ──────────────────────────
-	if (key === 'settlementNameQuick') {
+	// ── prefixSuffix — two independent rolls: prefix from one, suffix from ────
+	//     another, concatenated into one result.
+	if (oracle.tableType === 'prefixSuffix') {
 		const prefixRes = rollFromRangeTable(table);
 		const suffixRes = rollFromRangeTable(table);
 		const pv = prefixRes.value as { prefix: string; suffix: string };
@@ -806,7 +809,7 @@ export function rollOracle(
 		const name = pv.prefix + sv.suffix;
 		const html =
 			`<div class="roll-line">Prefix roll: d100 → ${prefixRes.roll} | Suffix roll: d100 → ${suffixRes.roll}</div>` +
-			`<div>Settlement name: <strong>${name}</strong></div>`;
+			`<div>Result: <strong>${name}</strong></div>`;
 		return { roll: prefixRes.roll, html, title, value: name };
 	}
 

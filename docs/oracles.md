@@ -200,45 +200,40 @@ that oracle, recursively. Supports a regex-style repeat quantifier
 
 _Canonical:_ Delve: Site Name, Delve: Monstrosity.
 
-### `delveDepths` — a hardcoded stat-column `columnSelect`
+### `prefixSuffix` — combine a rolled prefix with a rolled suffix
 
-Same shape as `columnSelect` but with fixed **Edge / Shadow / Wits** columns and
-its own render branch. Pick a stat, roll against its ranges → the shared result.
+Each row's `value` is `{ prefix, suffix }`. A roll makes **two independent d100
+rolls** and concatenates the first row's prefix with the second row's suffix
+(e.g. "Red" + "fall" → "Redfall"). The reference table chunks the rows into
+side-by-side `d100 | Prefix | Suffix` groups — three on desktop, two on **≤ 640px**
+(`narrow`) so it fits a phone without a horizontal scroll.
 
 ```json
-{
-  "edge": 45,
-  "shadow": 30,
-  "wits": 40,
-  "value": "<a …>Mark progress</a> and <a …>Reveal a Danger</a>."
-}
+{ "topRange": 4, "value": { "prefix": "Bleak", "suffix": "moor" } }
 ```
 
-_Canonical:_ Delve the Depths Weak Hit Oracle.
+_Canonical:_ Settlement: Quick Name.
 
-### Column-picker UX (`columnSelect` · `matrix` · `delveDepths`)
+### Column-picker UX (`columnSelect` · `matrix`)
 
 These three share the chip picker:
 
 - A chip row selects the active column; the chips + the active column are
-  **colour-coded per column** (a cycled stat palette — Delve the Depths keeps
-  its edge/shadow/wits colours).
+  **colour-coded per column** (a cycled palette; a column whose key is a stat —
+  e.g. Delve the Depths' edge/shadow/wits — keeps that stat's colour).
 - On **≤ 640px** the table **collapses** to `[always-on column | active column]`
-  (D100 for matrix, Result for columnSelect/delveDepths), locked **50/50** so
-  switching chips doesn't resize the layout; the chips **wrap**.
+  (D100 for matrix, Result for columnSelect), locked **50/50** so switching chips
+  doesn't resize the layout; the chips **wrap**.
 
 ### Structured specials (hardcoded by key)
 
-Two oracles still keep bespoke render/roll branches. (`freeportDenizen` used to
-be here; it is now a plain **flat multi-column** oracle — see above.)
+One oracle still keeps a bespoke render/roll branch. (`freeportDenizen` used to
+be here — now a plain **flat multi-column** oracle; `settlementNameQuick` too —
+now the reusable **`prefixSuffix`** table type above.)
 
 - **`yrtTouched`** (YRT: Touched) — a compound multi-roll: class → animal aspect
   → a feature-count roll (Second/Third: 1–3 / 4–6) → that many unique features
   from `touchedFeatures`. Logged as a monstrosity-style multi-line breakdown.
-
-- **`settlementNameQuick`** (Settlement: Quick Name) — each row is
-  `{ prefix, suffix }`; two independent d100 rolls are concatenated
-  (e.g. "Red" + "fall" → "Redfall").
 
 ## Supersession — one oracle replacing another
 
@@ -307,7 +302,7 @@ The detail view shows the full oracle table. Layout varies by entry count and or
 | Flat with `columns`       | d100 + one column per entry (e.g. Battleground, Freeport Occupation) |
 | `columnSelect` / `matrix` | column picker + per-column table (see Oracle layouts)                |
 | `settlementName`          | twoStep: category (rowspan) + sub-entries in 2 sub-columns           |
-| `settlementNameQuick`     | Custom: 9 columns (3 groups of d100 \| Prefix \| Suffix)             |
+| `prefixSuffix`            | 2–3 groups of d100 \| Prefix \| Suffix; roll = prefix + suffix       |
 | `yrtTouched`              | Custom: d100 \| Class \| Social Rank \| Description                  |
 
 ---
