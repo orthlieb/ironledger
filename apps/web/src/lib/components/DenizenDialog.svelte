@@ -7,7 +7,7 @@
 	 * this site's twelve denizen names — plus a resolver that maps a rolled
 	 * denizen name to a foe (case-insensitive). Every bit of the roll / detail /
 	 * add-to-foes UI lives in FoeRollDialog, which also backs the extension
-	 * roll-tables (e.g. Lodestar's Encounter Index) that resolve foes by id.
+	 * per-site denizen tables that resolve foes by name.
 	 *
 	 * Public API is unchanged from the pre-refactor dialog, so callers need no
 	 * edits:

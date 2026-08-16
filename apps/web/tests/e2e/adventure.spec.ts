@@ -116,9 +116,8 @@ test.describe('Adventure-action dialogs (v2)', () => {
 		const countBefore = await page.locator('.log-entry').count();
 		await page.locator(`${APP_NAV} .act-btn`, { hasText: 'Ask' }).first().click();
 		await expect(page.locator('.oracles-dialog')).toBeVisible({ timeout: 3_000 });
-		// Target a plain roll oracle by name — the leading tiles are now resolver
-		// oracles (e.g. Ironland Encounter Index) that hand off to a foe/asset dialog
-		// instead of showing the in-dialog Roll button.
+		// Target a specific oracle by name so the test is stable regardless of the
+		// picker's category-then-name ordering.
 		const plainTile = page.locator('.oracles-dialog .od-tile', {
 			has: page.locator('.od-tile-name', { hasText: /^Core: Action$/ }),
 		});

@@ -57,7 +57,6 @@
 		snapshotAbilities,
 		snapshotRarityId,
 		purchaseCost = 0,
-		preludeText = '',
 		onRemove,
 		onOracleLink,
 		onCommit,
@@ -80,11 +79,6 @@
 		/** XP cost charged for the act of acquiring the asset itself (3 in add
 		 *  mode, 0 in edit mode). Folded into the affordability check. */
 		purchaseCost?: number;
-		/** Prelude narrative shown as a banner at the top of the card body. Only
-		 *  supplied when the card is reached via the Prelude Event oracle (the
-		 *  asset picker's d6 button or the Ask/Oracles tile) — empty for normal
-		 *  browsing/editing, where no banner renders. */
-		preludeText?: string;
 		onRemove?: () => void;
 		onOracleLink?: (key: string, stat?: string) => void;
 		/** OK (edit mode) and Add (add mode). Parent applies the diff + logs. */
@@ -338,9 +332,6 @@
 	</div>
 
 	<div class="asset-body">
-		{#if preludeText}
-			<blockquote class="asset-prelude">{preludeText}</blockquote>
-		{/if}
 		<div class="asset-cat-row">
 			<span class="asset-cat">{definition.category}</span>
 		</div>
@@ -930,21 +921,6 @@
 	.asset-close:hover {
 		color: var(--text);
 		background: var(--bg-hover);
-	}
-
-	/* Prelude Event narrative banner — only present when the card is opened via
-	   the Prelude oracle. Tinted with the asset's category colour. */
-	.asset-prelude {
-		margin: 0;
-		padding: 8px 12px;
-		border-left: 3px solid var(--asset-color, var(--text-accent));
-		background: color-mix(in srgb, var(--asset-color, var(--text-accent)) 8%, transparent);
-		border-radius: 0 6px 6px 0;
-		font-family: var(--font-ui);
-		font-size: 0.8rem;
-		font-style: italic;
-		line-height: 1.45;
-		color: var(--text-body);
 	}
 
 	.asset-preamble {

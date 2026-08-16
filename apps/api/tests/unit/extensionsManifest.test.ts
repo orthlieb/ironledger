@@ -94,12 +94,14 @@ describe('extensions.manifest.json', () => {
     expect(assetData.flatMap((f) => f.rarities ?? [])).toHaveLength(63);
     // 49 base/delve/yrt moves + 2 lodestar (Follow a Path, alternate End the Fight).
     expect(moveData.flatMap((f) => f.moves)).toHaveLength(51);
-    // 25 base + 32 delve + 13 yrt + 22 lodestar = 92 (sample is dev-only, stripped
+    // 25 base + 32 delve + 13 yrt + 24 lodestar = 94 (sample is dev-only, stripped
     // from `core`). Combat set (base Combat: Tactic, delve Combat: Event / Event
     // Method / Event Target, lodestar Combat: Battleground) + Story: Region (lodestar)
     // & yrtStoryRegion + Story: Clue + Magic: Mystic Effect + Scale: Magnitude
-    // + Scale: Rank (lodestar, both `matrix`) brought lodestar to 22.
-    expect(oracleData).toHaveLength(92);
+    // + Scale: Rank + Encounter: Ironlands + Character: Prelude Event (the former
+    // Encounter Index & Prelude Event roll-tables, reborn as flat oracles) brought
+    // lodestar to 24.
+    expect(oracleData).toHaveLength(94);
     expect(foeData.flatMap((f) => f.foes)).toHaveLength(82);
     expect(foeOverrides).toHaveLength(1);
     // Lodestar hides base End the Fight via a move override ("hide + add"):
@@ -107,65 +109,6 @@ describe('extensions.manifest.json', () => {
     expect(moveOverrides).toHaveLength(1);
     expect(moveOverrides[0].overrides['move/end-the-fight']).toEqual({ present: false });
     expect(delve).toHaveLength(5);
-  });
-
-  it('every roll-table ref resolves to a catalogue entity, and ranges cover 1–100', () => {
-    // Across ALL extensions (incl. dev-only fixtures like sample).
-    const allFilesFor = (type: string) =>
-      exts.flatMap((e) => (e.provides?.[type] ?? []).map((rel) => ({ root: e.root, rel })));
-    const idsFrom = (type: string, key: 'foes' | 'assets') =>
-      new Set<string>(
-        allFilesFor(type).flatMap(({ root, rel }) => {
-          const data = load(root, rel) as Record<string, Array<{ id: string }>>;
-          return (data[key] ?? []).map((x) => x.id);
-        }),
-      );
-    const foeIds = idsFrom('foes', 'foes');
-    const assetIds = idsFrom('assets', 'assets');
-
-    const tables = allFilesFor('rollTables').map(
-      ({ root, rel }) =>
-        load(root, rel) as {
-          id: string;
-          kind: 'foe' | 'asset';
-          entries: Array<{ low: number; high: number; ref: string }>;
-        },
-    );
-    expect(tables.length).toBeGreaterThan(0); // at least the sample fixture
-
-    // Lodestar's Encounter Index: a foe resolver-oracle with a full d100 (58
-    // rows). Explicit so a dropped/renamed table is caught (the generic checks
-    // below would still pass with it simply absent).
-    const encounter = tables.find((t) => t.id === 'lodestarEncounterIndex');
-    expect(encounter, 'lodestar Encounter Index roll-table present').toBeDefined();
-    expect(encounter!.kind).toBe('foe');
-    expect(encounter!.entries).toHaveLength(58);
-
-    // Lodestar's Prelude Event: an asset resolver-oracle with a full d100 (70
-    // rows across Path / Combat Talent / Companion / Ritual), each carrying a
-    // prelude narrative.
-    const prelude = tables.find((t) => t.id === 'lodestarPreludeEvent');
-    expect(prelude, 'lodestar Prelude Event roll-table present').toBeDefined();
-    expect(prelude!.kind).toBe('asset');
-    expect(prelude!.entries).toHaveLength(70);
-    expect(prelude!.entries.every((e) => !!(e as { text?: string }).text)).toBe(true);
-
-    const unresolved: string[] = [];
-    for (const t of tables) {
-      const ids = t.kind === 'foe' ? foeIds : assetIds;
-      for (const e of t.entries) if (!ids.has(e.ref)) unresolved.push(`${t.id}: ${e.ref}`);
-
-      // Ranges must ascend, not overlap, and cover 1–100 with no gaps.
-      const sorted = [...t.entries].sort((a, b) => a.low - b.low);
-      let cursor = 1;
-      for (const e of sorted) {
-        expect(e.low, `${t.id} gap/overlap before ${e.low}`).toBe(cursor);
-        expect(e.high).toBeGreaterThanOrEqual(e.low);
-        cursor = e.high + 1;
-      }
-      expect(cursor, `${t.id} must cover through 100`).toBe(101);
-    }
-    expect(unresolved).toEqual([]);
   });
 
   it('assigns each content file to exactly one extension (no overlap)', () => {
@@ -217,7 +160,7 @@ describe('oracle visibility by enabled extension', () => {
     expect(oracleKeysFor('base')).toHaveLength(24);
     expect(oracleKeysFor('delve')).toHaveLength(32);
     expect(oracleKeysFor('yrt')).toHaveLength(13);
-    expect(oracleKeysFor('lodestar')).toHaveLength(22);
+    expect(oracleKeysFor('lodestar')).toHaveLength(24);
   });
 
   // base always on; each row toggles delve / yrt / lodestar. Counts net out
@@ -226,13 +169,13 @@ describe('oracle visibility by enabled extension', () => {
   // charDisposition + base location/coastalWatersLocation).
   it.each([
     [false, false, false, 24],
-    [false, false, true, 44],
+    [false, false, true, 46],
     [false, true, false, 36],
-    [false, true, true, 53],
+    [false, true, true, 55],
     [true, false, false, 56],
-    [true, false, true, 73],
+    [true, false, true, 75],
     [true, true, false, 68],
-    [true, true, true, 82],
+    [true, true, true, 84],
   ])(
     'base + delve=%s yrt=%s lodestar=%s → %i visible oracles',
     (delve, yrt, lodestar, expected) => {

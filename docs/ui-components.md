@@ -45,10 +45,9 @@ Small square button that sits inline with a single-line input or select and trig
 **One global class — `.dice-btn`.** This is the **preferred** d6 button style. It
 lives in `app.css` as a global class; new d6 buttons apply `class="dice-btn"`
 directly and do **not** re-style per component. The Delve site Theme/Domain/
-Feature/Danger rolls (`ExpeditionsArea`), the community Trouble roll
-(`CommunitiesArea`), and the asset picker's Prelude Event button all use it.
-(The former per-area `.ea-dice-btn` / `.cm-dice-btn` copies were consolidated
-into `.dice-btn`.)
+Feature/Danger rolls (`ExpeditionsArea`) and the community Trouble roll
+(`CommunitiesArea`) use it. (The former per-area `.ea-dice-btn` / `.cm-dice-btn`
+copies were consolidated into `.dice-btn`.)
 
 ### Canonical CSS (defined once in `app.css`)
 

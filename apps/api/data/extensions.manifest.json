@@ -181,11 +181,13 @@
         "oracles": [
           "oracles/character-disposition.json",
           "oracles/character-first-look.json",
+          "oracles/character-prelude-event.json",
           "oracles/coastal-waters-landmark.json",
           "oracles/coastal-waters-opportunity.json",
           "oracles/coastal-waters-peril.json",
           "oracles/coastal-waters-waypoint.json",
           "oracles/combat-battleground.json",
+          "oracles/encounter-ironlands.json",
           "oracles/magic-mystic-effect.json",
           "oracles/overland-landmark.json",
           "oracles/overland-opportunity.json",
@@ -201,10 +203,6 @@
           "oracles/settlement-type.json",
           "oracles/story-clue.json",
           "oracles/story-region.json"
-        ],
-        "rollTables": [
-          "roll-tables/encounter-index.json",
-          "roll-tables/prelude-event.json"
         ]
       }
     },
@@ -233,9 +231,6 @@
         ],
         "foeOverrides": [
           "foes/overrides.json"
-        ],
-        "rollTables": [
-          "roll-tables/sample-encounters.json"
         ]
       }
     }

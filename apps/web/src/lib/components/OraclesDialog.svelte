@@ -18,19 +18,11 @@
 		buildTableHtml,
 		rollOracle,
 	} from '$lib/oracleStore.svelte.js';
-	import { sourceLabel } from '$lib/expansionStore.svelte.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
-	import type { FoeDef, FoeQuantity, FoeRollRow } from '$lib/types.js';
-	import type { RollTable } from '@ironledger/shared';
 	import { appendLog, enrichOutcomeLinks } from '$lib/log.svelte.js';
 	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
 	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
-	import { getVisibleRollTables, loadRollTables } from '$lib/rollTableStore.svelte.js';
-	import { findFoe, loadFoes } from '$lib/foeStore.svelte.js';
-	import { addEncounter } from '$lib/encounterStore.svelte.js';
-	import FoeRollDialog from '$lib/components/FoeRollDialog.svelte';
-	import PreludeTableDialog from '$lib/components/PreludeTableDialog.svelte';
 
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
@@ -78,12 +70,11 @@
 	const allOracles = $derived(getOracles());
 	const visibleOracles = $derived(getVisibleOracles());
 
-	/** All thematic categories present across the visible oracles + resolver
-	 *  oracles (roll-tables), sorted — the filter chips. */
+	/** All thematic categories present across the visible oracles, sorted — the
+	 *  filter chips. */
 	const categories = $derived.by(() => {
 		const set = new Set<string>();
 		for (const o of visibleOracles) set.add(o.category ?? 'Other');
-		for (const t of getVisibleRollTables()) set.add(t.category ?? 'Other');
 		return [...set].sort();
 	});
 
@@ -134,107 +125,34 @@
 		return pickerColor(j, cols[j]?.key);
 	});
 
-	/** Filtered list of oracles for the picker tile grid. */
+	/** Picker-grid order: category (alphabetical, matching the filter-chip order),
+	 *  then display name. Numeric-aware so "Ironlander 1/2" sort naturally. */
+	function byCategoryName(
+		aCat: string | undefined,
+		aName: string,
+		bCat: string | undefined,
+		bName: string,
+	): number {
+		return (
+			(aCat ?? 'Other').localeCompare(bCat ?? 'Other') ||
+			aName.localeCompare(bName, undefined, { numeric: true })
+		);
+	}
+
+	/** Filtered list of oracles for the picker tile grid, sorted by category then name. */
 	const filteredOracles = $derived(() => {
 		const q = search.trim().toLowerCase();
-		return visibleOracles.filter((o) => {
-			const catMatch = activeCategories.size === 0 || activeCategories.has(o.category ?? 'Other');
-			const textMatch =
-				!q ||
-				o.title.toLowerCase().includes(q) ||
-				(o.description?.toLowerCase().includes(q) ?? false);
-			return catMatch && textMatch;
-		});
+		return visibleOracles
+			.filter((o) => {
+				const catMatch = activeCategories.size === 0 || activeCategories.has(o.category ?? 'Other');
+				const textMatch =
+					!q ||
+					o.title.toLowerCase().includes(q) ||
+					(o.description?.toLowerCase().includes(q) ?? false);
+				return catMatch && textMatch;
+			})
+			.sort((a, b) => byCategoryName(a.category, a.title, b.category, b.title));
 	});
-
-	// ── Resolver oracles (foe roll-tables) ──────────────────────────────────
-	// A d100 table (e.g. Lodestar's Encounter Index) that resolves to a foe
-	// rather than text. These surface as tiles in the same picker grid, gated
-	// to their enabled expansion + the active search/source filters; selecting
-	// one hands off to the shared FoeRollDialog (roll → foe detail → Add to
-	// Foes) instead of the text-oracle detail view.
-	let foeRollRef = $state<{ open(): void; close(): void } | null>(null);
-	let activeFoeTable = $state<RollTable | null>(null);
-
-	/** Foe roll-tables matching the current search + source filters. */
-	const foeRollTables = $derived(() => {
-		const q = search.trim().toLowerCase();
-		return getVisibleRollTables().filter(
-			(t) =>
-				t.kind === 'foe' &&
-				(activeCategories.size === 0 || activeCategories.has(t.category ?? 'Other')) &&
-				(!q || t.name.toLowerCase().includes(q)),
-		);
-	});
-
-	const foeRollTitle = $derived(activeFoeTable?.name ?? '');
-	const foeRollLogLabel = $derived(activeFoeTable ? `Oracle ${activeFoeTable.name}` : 'Oracle');
-	const foeRollRows = $derived<FoeRollRow[]>(
-		activeFoeTable
-			? activeFoeTable.entries.map((e) => ({ low: e.low, high: e.high, ref: e.ref }))
-			: [],
-	);
-
-	/** Roll-table refs are catalogue foe ids — resolve straight through. */
-	function resolveFoe(ref: string): FoeDef | undefined {
-		return findFoe(ref);
-	}
-
-	/** "Add to Foes" from a resolver-oracle result — same encounter shape as the
-	 *  denizen roll (ExpeditionsArea.handleDenizenSelected). */
-	async function addFoeFromRoll(
-		foeDef: FoeDef,
-		quantity: FoeQuantity,
-		effectiveRank: number,
-	): Promise<void> {
-		await addEncounter({
-			id: crypto.randomUUID(),
-			foeId: foeDef.id,
-			quantity,
-			effectiveRank: effectiveRank as 1 | 2 | 3 | 4 | 5,
-			ticks: 0,
-			notes: '',
-			customName: '',
-			vanquished: false,
-		});
-	}
-
-	/** Hand a foe roll-table off to the shared dialog: set it active, close the
-	 *  oracle picker, open FoeRollDialog on top. */
-	function openFoeTable(table: RollTable): void {
-		activeFoeTable = table;
-		close();
-		foeRollRef?.open();
-	}
-
-	/** Reopen the oracle picker grid — the "← Back" target from a resolver
-	 *  oracle's dialog. Preserves the current search/filters. */
-	function reopenPicker(): void {
-		view = 'picker';
-		dialogOpen = true;
-	}
-
-	/** Asset roll-tables (Prelude Event) matching the current search + source
-	 *  filters. Unlike foe tables these have no roll ceremony. */
-	const assetRollTables = $derived(() => {
-		const q = search.trim().toLowerCase();
-		return getVisibleRollTables().filter(
-			(t) =>
-				t.kind === 'asset' &&
-				(activeCategories.size === 0 || activeCategories.has(t.category ?? 'Other')) &&
-				(!q || t.name.toLowerCase().includes(q)),
-		);
-	});
-
-	let preludeTableRef = $state<{ open(): void; close(): void } | null>(null);
-
-	/** Bring up the Prelude Event table (manual roll). Rolling there hands off to
-	 *  the character's asset-detail dialog (with the prelude narrative on top).
-	 *  Auto-rolling without the table only happens from the asset picker's d6. */
-	function openPreludeTable(): void {
-		close();
-		preludeTableRef?.open();
-	}
 
 	// ---------------------------------------------------------------------------
 	// Category colour mapping (filter chips + tile accents)
@@ -244,7 +162,7 @@
 		Character: 'var(--color-heart)',
 		Combat: 'var(--color-iron)',
 		Creature: 'var(--color-shadow)',
-		Encounters: '#2A9D8F',
+		Encounter: '#2A9D8F',
 		Location: 'var(--color-edge)',
 		Magic: '#9B59B6',
 		Move: 'var(--text-accent)',
@@ -283,10 +201,6 @@
 		search = '';
 		activeCategories = new Set();
 		loadOracles(); // idempotent — fetches once per session
-		// Resolver oracles (foe roll-tables) + the foe catalogue they resolve
-		// against — both idempotent, both needed to render/resolve foe tiles.
-		loadRollTables();
-		loadFoes();
 		dialogOpen = true;
 	}
 
@@ -431,40 +345,10 @@
 						<div class="od-loading">Loading oracles…</div>
 					{:else}
 						{@const list = filteredOracles()}
-						{@const foeTables = foeRollTables()}
-						{@const assetTables = assetRollTables()}
-						{#if list.length === 0 && foeTables.length === 0 && assetTables.length === 0}
+						{#if list.length === 0}
 							<div class="od-empty">No oracles match.</div>
 						{:else}
 							<div class="od-grid">
-								{#each foeTables as t (t.id)}
-									<button
-										class="od-tile od-tile--roll"
-										style:--tcolor={categoryColor(t.category)}
-										use:tooltip={'Roll to resolve a foe encounter'}
-										onclick={() => openFoeTable(t)}
-									>
-										<div class="od-tile-stripe"></div>
-										<div class="od-tile-body">
-											<div class="od-tile-name">{t.name}</div>
-											<div class="od-tile-desc">Roll a foe · {sourceLabel(t.source)}</div>
-										</div>
-									</button>
-								{/each}
-								{#each assetTables as t (t.id)}
-									<button
-										class="od-tile od-tile--roll"
-										style:--tcolor={categoryColor(t.category)}
-										use:tooltip={'Bring up the Prelude Event table, then roll'}
-										onclick={openPreludeTable}
-									>
-										<div class="od-tile-stripe"></div>
-										<div class="od-tile-body">
-											<div class="od-tile-name">{t.name}</div>
-											<div class="od-tile-desc">Roll a prelude · {sourceLabel(t.source)}</div>
-										</div>
-									</button>
-								{/each}
 								{#each list as oracle (oracle.key)}
 									<button
 										class="od-tile"
@@ -600,23 +484,6 @@
 		</Dialog.Content>
 	</Dialog.Portal>
 </Dialog.Root>
-
-<!-- Resolver-oracle handoff: rolling a foe roll-table (e.g. Encounter Index)
-     opens this shared dialog on top of the closed picker. -->
-<FoeRollDialog
-	bind:this={foeRollRef}
-	title={foeRollTitle}
-	logLabel={foeRollLogLabel}
-	rows={foeRollRows}
-	resolve={resolveFoe}
-	onSelect={addFoeFromRoll}
-	onBack={reopenPicker}
-	preface={activeFoeTable?.description}
-/>
-
-<!-- Prelude Event oracle: brings up the d100 table; rolling there hands off to
-     the character's asset-detail dialog. -->
-<PreludeTableDialog bind:this={preludeTableRef} onBack={reopenPicker} />
 
 <style>
 	/* bits-ui portals Content + Overlay to <body>; scope everything
@@ -891,11 +758,6 @@
 		line-clamp: 2;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
-	}
-	/* Resolver-oracle tiles (foe roll-tables): italic subtitle cues that
-	   selecting one rolls immediately rather than opening a text table. */
-	:global(.od-tile--roll .od-tile-desc) {
-		font-style: italic;
 	}
 
 	/* ── Detail view ─────────────────────────────────────────────────────── */

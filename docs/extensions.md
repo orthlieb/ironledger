@@ -50,40 +50,14 @@ and everything filters out — nothing else changes.
 
 ### Content files
 
-| Folder                 | File(s)                                 | Becomes                   | Schema                                                            |
-| ---------------------- | --------------------------------------- | ------------------------- | ----------------------------------------------------------------- |
-| `moves/`               | `*.json` (`{category, moves:[…]}`)      | `/catalogue/moves`        | [data-schema.md § Moves](data-schema.md#moves)                    |
-| `oracles/`             | `*.json` (one table each)               | `/catalogue/oracles`      | [data-schema.md § Oracles](data-schema.md#oracles)                |
-| `foes/foes.json`       | `{foes:[…]}`                            | `/catalogue/foes`         | [data-schema.md § Foes](data-schema.md#foes)                      |
-| `foes/overrides.json`  | `{source, overrides:{…}}`               | patches base foes         | [data-schema.md § Foe overrides](data-schema.md#foe-overrides)    |
-| `moves/overrides.json` | `{source, overrides:{…}}`               | hides/replaces base moves | mirror of foe overrides (`{ "<move id>": { "present": false } }`) |
-| `assets/assets.json`   | `{assets:[…], rarities?:[…]}`           | `/catalogue/assets`       | [data-schema.md § Assets](data-schema.md#assets)                  |
-| `roll-tables/*.json`   | `{id, name, kind, source, entries:[…]}` | `/catalogue/roll-tables`  | "resolver oracle" — see below                                     |
-
-### Roll-tables (resolver oracles)
-
-A `roll-tables/*.json` file is a d100 table whose ranges resolve to a **catalogue
-entity** rather than text — a foe (`kind: "foe"`) or an asset (`kind: "asset"`).
-Rolling opens that entity's existing detail + add-to-character UI.
-
-```jsonc
-{
-  "id": "lodestarEncounterIndex", // stable camelCase key
-  "name": "Encounter Index",
-  "kind": "foe", // "foe" | "asset"
-  "source": "lodestar",
-  "entries": [
-    { "low": 1, "high": 40, "ref": "ironsworn/bear" }, // ref = foe/asset id
-    { "low": 41, "high": 100, "ref": "ironsworn/wolf" },
-  ],
-}
-```
-
-`ref` is a catalogue **id** (stable, unlike names). Asset entries may add
-`"category"` (Path / Combat Talent / Companion / Ritual) and `"text"` (a prelude
-narrative). Ranges must cover 1–100 with no gaps or overlaps, and every `ref`
-must resolve — both are enforced by `extensionsManifest.test.ts`. (UI surfaces
-for these land in later phases; see `docs/lodestar-roll-tables.md`.)
+| Folder                 | File(s)                            | Becomes                   | Schema                                                            |
+| ---------------------- | ---------------------------------- | ------------------------- | ----------------------------------------------------------------- |
+| `moves/`               | `*.json` (`{category, moves:[…]}`) | `/catalogue/moves`        | [data-schema.md § Moves](data-schema.md#moves)                    |
+| `oracles/`             | `*.json` (one table each)          | `/catalogue/oracles`      | [data-schema.md § Oracles](data-schema.md#oracles)                |
+| `foes/foes.json`       | `{foes:[…]}`                       | `/catalogue/foes`         | [data-schema.md § Foes](data-schema.md#foes)                      |
+| `foes/overrides.json`  | `{source, overrides:{…}}`          | patches base foes         | [data-schema.md § Foe overrides](data-schema.md#foe-overrides)    |
+| `moves/overrides.json` | `{source, overrides:{…}}`          | hides/replaces base moves | mirror of foe overrides (`{ "<move id>": { "present": false } }`) |
+| `assets/assets.json`   | `{assets:[…], rarities?:[…]}`      | `/catalogue/assets`       | [data-schema.md § Assets](data-schema.md#assets)                  |
 
 Every content item carries a `"source"` tag equal to the extension id (the
 build stamps it if absent). The web filters by that tag through the extension
