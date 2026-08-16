@@ -64,6 +64,16 @@ list. `oracle-order.json` is a display-order index, not a rollable oracle.
 | **Yrt** (`yrt`)             | 13    | yrtRegion, yrtSettlement\*, yrtTouched / touchedFeatures / yrtAnimal, manaBacklash, freeportDenizen, yrtStoryRegion                                          |
 | **Lodestar** (`lodestar`)   | 19    | overland\* / coastalWaters\* journey oracles, settlementType / settlementCondition / settlementFirstLook / …, storyRegion, storyClue, combatBattleground     |
 
+### Category
+
+Separate from `source` (the owning expansion), every oracle has an optional
+**`category`** — the thematic chip the Ask/Oracles picker filters by (Core,
+Character, Location, Combat, Story, Magic, Scale, Settlement, Delve Site, Threat,
+Monstrosity, Name, Prelude, …). It's independent of source: a `Character` oracle
+may come from base, delve, or yrt. Missing → "Other". The chip colours live in
+`CATEGORY_COLORS` in `OraclesDialog.svelte`; a new category only needs a colour
+added there, else it falls back to the accent.
+
 ---
 
 ## Oracle layouts (`tableType` reference)
@@ -74,43 +84,45 @@ renders and how a roll resolves. Each layout below gives a minimal example, how
 it renders, the roll behaviour, and the canonical oracle(s). See
 [data-schema.md](data-schema.md) for the authoritative field spec.
 
-### Simple — string value (no `tableType`)
+### Flat table — `columns` + `roll` (no picker `tableType`)
 
-Most oracles. One d100 → the row's string `value`.
+The default, and the unified home for what used to be three shapes (simple,
+typed, described). Each row picks a result by d100 range and may carry several
+named fields:
 
-```json
+- **Columns** are derived from the row keys — `value → "Result"`, `type →
+"Type"`, `description → "Description"` — or declared explicitly with
+  `columns: [{ key, label }]` for custom labels/order (and the only way to carry
+  arbitrary field keys, e.g. `salary`).
+- **`roll: [key…]`** names which columns to echo on a roll, each as
+  `Label: value` on its own line (the first value bold). With **no** `roll`, only
+  the result is logged (plus a label-less `description` echo when present — the
+  legacy shape), so the ~72 plain oracles are byte-for-byte untouched.
+
+```jsonc
+// simple — value only (no columns / roll)
 { "topRange": 25, "value": "Investigate a Threat" }
-```
 
-Renders `D100 | Result`. A `91–100 → "Roll twice…"` row re-rolls twice and
-combines (see the rolling algorithm below). _Canonical:_ Core: Action, Region,
-Threat: Category.
-
-### Typed — adds a Type column (no `tableType`)
-
-A simple table whose rows also carry a `type` string. The detail view gains a
-**Type** column (`D100 | Result | Type`); display-only.
-
-```json
+// typed — echo the classification too
+"roll": ["value", "type"]
 { "topRange": 7, "value": "Piscis", "type": "Settled" }
+
+// described — a detail column with a custom label, echoed
+"columns": [{ "key": "value", "label": "Result" }, { "key": "description", "label": "Examples" }]
+"roll": ["value", "description"]
+{ "topRange": 5, "value": "Slippery surface", "description": "Mud, ice, rain-slick rocks" }
+
+// multi-column — no `value`; every column named + echoed
+"columns": [{ "key": "type", "label": "Type" }, { "key": "salary", "label": "Salary" }]
+"roll": ["type", "salary"]
+{ "topRange": 11, "type": "Merchants, traders, brokers", "salary": "80–120 gents" }
 ```
 
-_Canonical:_ YRT Region, YRT Story: Region.
-
-### Described — adds a Description column (no `tableType`)
-
-A simple table whose rows carry a `description`. The detail view gains a
-**Description** column and the text is echoed into the log on a roll.
-
-```json
-{
-  "topRange": 11,
-  "value": "Ancient",
-  "description": "This place holds the secrets of a bygone age"
-}
-```
-
-_Canonical:_ Delve: Site Nature – Theme/Domain, Combat: Battleground.
+Renders `D100 | col1 | col2 | …` (a lone value column keeps the space-saving
+2-/3-column layout for long lists). A `91–100 → "Roll twice…"` row on the primary
+column re-rolls twice and combines. _Canonical:_ Core: Action (simple), YRT
+Region (typed), Combat: Battleground + Delve Site Nature Theme/Domain (described),
+YRT: Freeport Occupation (multi-column), Mana Backlash (Backlash / Effect).
 
 ### `columnSelect` — pick a column; per-column ranges, one shared result
 
@@ -217,24 +229,8 @@ These three share the chip picker:
 
 ### Structured specials (hardcoded by key)
 
-A few oracles keep bespoke render/roll branches because their `value` is a
-record of named fields:
-
-- **`freeportDenizen`** (YRT: Freeport Occupation) — each row is
-  `{ type, notes, salary, count }`, rendered as a multi-column table and a
-  labelled roll result.
-
-  ```json
-  {
-    "topRange": 11,
-    "value": {
-      "type": "Merchants, traders, brokers",
-      "notes": "Shops, stalls…",
-      "salary": "80–120 gents",
-      "count": 2000
-    }
-  }
-  ```
+Two oracles still keep bespoke render/roll branches. (`freeportDenizen` used to
+be here; it is now a plain **flat multi-column** oracle — see above.)
 
 - **`yrtTouched`** (YRT: Touched) — a compound multi-roll: class → animal aspect
   → a feature-count roll (Second/Third: 1–3 / 4–6) → that many unique features
@@ -243,6 +239,33 @@ record of named fields:
 - **`settlementNameQuick`** (Settlement: Quick Name) — each row is
   `{ prefix, suffix }`; two independent d100 rolls are concatenated
   (e.g. "Red" + "fall" → "Redfall").
+
+## Supersession — one oracle replacing another
+
+An extension can **hide** an oracle from a lower-priority extension and stand in
+with its own. In the extension's `extension.json`:
+
+```json
+{
+  "id": "yrt",
+  "suppressesOracles": ["region", "storyRegion", "settlementCondition", "settlementType"]
+}
+```
+
+When that extension is enabled, `expansionStore.suppressedOracleKeys()` unions
+the keys from every enabled extension and `getVisibleOracles()` filters them out
+of the picker. The extension then ships a **differently-keyed** replacement — so
+YRT's `yrtRegion` supplants base `region`, and `yrtStoryRegion` supplants
+Lodestar `storyRegion`. Priority follows the extension `order` (base 0 → delve 10
+→ yrt 20 → lodestar 30); Lodestar likewise hides base `location` and delve
+`featureAspect` / `featureFocus` / `charDisposition`.
+
+Suppression only removes an oracle from the **picker** — a saved roll or a direct
+`rollOracle(key)` still resolves it. See
+[extensions.md — Oracle supersession](extensions.md) and the enabled-combination
+count guards in `apps/api/tests/unit/extensionsManifest.test.ts`.
+
+---
 
 ## Rolling algorithm
 
@@ -276,16 +299,16 @@ function rangeLabelForEntry(table: OracleEntry[], index: number): string {
 
 The detail view shows the full oracle table. Layout varies by entry count and oracle type:
 
-| Condition             | Layout                                                     |
-| --------------------- | ---------------------------------------------------------- |
-| ≤ 40 entries          | 2 columns: d100 \| Result                                  |
-| 41–60 entries         | 4 columns: d100 \| Result \| d100 \| Result (side-by-side) |
-| > 60 entries          | 6 columns: 3-column side-by-side                           |
-| `settlementName`      | Custom: category (rowspan) + sub-entries in 2 sub-columns  |
-| `settlementNameQuick` | Custom: 9 columns (3 groups of d100 \| Prefix \| Suffix)   |
-| `namesOther`          | Custom: d100 \| Giants \| Varou \| Trolls                  |
-| `yrtTouched`          | Custom: d100 \| Class \| Social Rank \| Description        |
-| `freeportDenizen`     | Custom: d100 \| Type \| Notes \| Salary \| Count           |
+| Condition                 | Layout                                                               |
+| ------------------------- | -------------------------------------------------------------------- |
+| ≤ 40 entries              | 2 columns: d100 \| Result                                            |
+| 41–60 entries             | 4 columns: d100 \| Result \| d100 \| Result (side-by-side)           |
+| > 60 entries              | 6 columns: 3-column side-by-side                                     |
+| Flat with `columns`       | d100 + one column per entry (e.g. Battleground, Freeport Occupation) |
+| `columnSelect` / `matrix` | column picker + per-column table (see Oracle layouts)                |
+| `settlementName`          | twoStep: category (rowspan) + sub-entries in 2 sub-columns           |
+| `settlementNameQuick`     | Custom: 9 columns (3 groups of d100 \| Prefix \| Suffix)             |
+| `yrtTouched`              | Custom: d100 \| Class \| Social Rank \| Description                  |
 
 ---
 
