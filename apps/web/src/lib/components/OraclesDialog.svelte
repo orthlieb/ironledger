@@ -264,6 +264,7 @@
 		Character: 'var(--color-heart)',
 		Combat: 'var(--color-iron)',
 		Creature: 'var(--color-shadow)',
+		Encounter: '#2A9D8F',
 		Encounters: '#2A9D8F',
 		Location: 'var(--color-edge)',
 		Magic: '#9B59B6',

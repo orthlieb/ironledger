@@ -1,0 +1,373 @@
+{
+  "key": "encounterIronlands",
+  "title": "Encounter: Ironlands",
+  "category": "Encounter",
+  "selectLabel": "Encounter: Ironlands",
+  "description": "Use this table as a quick reference for the characters, creatures, and entities described in Ironsworn and Delve. You can also roll on this table to randomly reveal the subject of an encounter or the focus of a quest. If a result doesn't fit the situation or environment, roll again or consider how it introduces a surprising twist.",
+  "source": "lodestar",
+  "columns": [
+    {
+      "key": "value",
+      "label": "Encounter"
+    },
+    {
+      "key": "category",
+      "label": "Category"
+    },
+    {
+      "key": "rank",
+      "label": "Rank"
+    }
+  ],
+  "roll": ["value", "category", "rank"],
+  "data": [
+    {
+      "topRange": 1,
+      "value": "Atanya",
+      "category": "Firstborn",
+      "rank": "Dangerous"
+    },
+    {
+      "topRange": 2,
+      "value": "Basilisk",
+      "category": "Beast",
+      "rank": "Extreme"
+    },
+    {
+      "topRange": 5,
+      "value": "Bear",
+      "category": "Animal",
+      "rank": "Formidable"
+    },
+    {
+      "topRange": 7,
+      "value": "Bladewing",
+      "category": "Animal",
+      "rank": "Dangerous"
+    },
+    {
+      "topRange": 8,
+      "value": "Blighthound",
+      "category": "Horror",
+      "rank": "Formidable"
+    },
+    {
+      "topRange": 9,
+      "value": "Blood Thorn",
+      "category": "Anomaly",
+      "rank": "Dangerous"
+    },
+    {
+      "topRange": 12,
+      "value": "Boar",
+      "category": "Animal",
+      "rank": "Dangerous"
+    },
+    {
+      "topRange": 13,
+      "value": "Bog Rot",
+      "category": "Horror",
+      "rank": "Dangerous"
+    },
+    {
+      "topRange": 14,
+      "value": "Bonehorde",
+      "category": "Horror",
+      "rank": "Extreme"
+    },
+    {
+      "topRange": 16,
+      "value": "Bonewalker",
+      "category": "Horror",
+      "rank": "Dangerous"
+    },
+    {
+      "topRange": 18,
+      "value": "Broken",
+      "category": "Ironlander",
+      "rank": "Troublesome"
+    },
+    {
+      "topRange": 20,
+      "value": "Carrion Newt",
+      "category": "Animal",
+      "rank": "Formidable"
+    },
+    {
+      "topRange": 22,
+      "value": "Cave Lion",
+      "category": "Animal",
+      "rank": "Formidable"
+    },
+    {
+      "topRange": 23,
+      "value": "Chimera",
+      "category": "Horror",
+      "rank": "Extreme"
+    },
+    {
+      "topRange": 25,
+      "value": "Chitter",
+      "category": "Beast",
+      "rank": "Dangerous"
+    },
+    {
+      "topRange": 26,
+      "value": "Circle of Stones",
+      "category": "Anomaly",
+      "rank": "Dangerous"
+    },
+    {
+      "topRange": 29,
+      "value": "Common Folk",
+      "category": "Ironlander",
+      "rank": "Troublesome"
+    },
+    {
+      "topRange": 31,
+      "value": "Deep Rat",
+      "category": "Animal",
+      "rank": "Troublesome"
+    },
+    {
+      "topRange": 33,
+      "value": "Elder Beast",
+      "category": "Beast",
+      "rank": "Extreme"
+    },
+    {
+      "topRange": 35,
+      "value": "Elf",
+      "category": "Firstborn",
+      "rank": "Dangerous"
+    },
+    {
+      "topRange": 37,
+      "value": "Frostbound",
+      "category": "Horror",
+      "rank": "Formidable"
+    },
+    {
+      "topRange": 39,
+      "value": "Gaunt",
+      "category": "Animal",
+      "rank": "Dangerous"
+    },
+    {
+      "topRange": 41,
+      "value": "Giant",
+      "category": "Firstborn",
+      "rank": "Extreme"
+    },
+    {
+      "topRange": 42,
+      "value": "Glimmer",
+      "category": "Anomaly",
+      "rank": "Dangerous"
+    },
+    {
+      "topRange": 43,
+      "value": "Gloom",
+      "category": "Anomaly",
+      "rank": "Dangerous"
+    },
+    {
+      "topRange": 45,
+      "value": "Gnarl",
+      "category": "Beast",
+      "rank": "Extreme"
+    },
+    {
+      "topRange": 47,
+      "value": "Harrow Spider",
+      "category": "Beast",
+      "rank": "Dangerous"
+    },
+    {
+      "topRange": 49,
+      "value": "Haunt",
+      "category": "Horror",
+      "rank": "Formidable"
+    },
+    {
+      "topRange": 50,
+      "value": "Hollow",
+      "category": "Horror",
+      "rank": "Extreme"
+    },
+    {
+      "topRange": 53,
+      "value": "Hunter",
+      "category": "Ironlander",
+      "rank": "Dangerous"
+    },
+    {
+      "topRange": 55,
+      "value": "Husk",
+      "category": "Ironlander",
+      "rank": "Formidable"
+    },
+    {
+      "topRange": 56,
+      "value": "Iron Revenant",
+      "category": "Horror",
+      "rank": "Extreme"
+    },
+    {
+      "topRange": 57,
+      "value": "Iron-Wracked Beast",
+      "category": "Beast",
+      "rank": "Formidable"
+    },
+    {
+      "topRange": 58,
+      "value": "Kraken",
+      "category": "Beast",
+      "rank": "Epic"
+    },
+    {
+      "topRange": 59,
+      "value": "Leviathan",
+      "category": "Beast",
+      "rank": "Epic"
+    },
+    {
+      "topRange": 60,
+      "value": "Maelstrom",
+      "category": "Anomaly",
+      "rank": "Dangerous"
+    },
+    {
+      "topRange": 62,
+      "value": "Mammoth",
+      "category": "Beast",
+      "rank": "Extreme"
+    },
+    {
+      "topRange": 64,
+      "value": "Marsh Rat",
+      "category": "Animal",
+      "rank": "Troublesome"
+    },
+    {
+      "topRange": 65,
+      "value": "Merrow",
+      "category": "Firstborn",
+      "rank": "Dangerous"
+    },
+    {
+      "topRange": 67,
+      "value": "Mystic",
+      "category": "Ironlander",
+      "rank": "Dangerous"
+    },
+    {
+      "topRange": 69,
+      "value": "Nightmare Spider",
+      "category": "Animal",
+      "rank": "Dangerous"
+    },
+    {
+      "topRange": 71,
+      "value": "Nightspawn",
+      "category": "Beast",
+      "rank": "Formidable"
+    },
+    {
+      "topRange": 72,
+      "value": "Primordial",
+      "category": "Firstborn",
+      "rank": "Extreme"
+    },
+    {
+      "topRange": 75,
+      "value": "Raider",
+      "category": "Ironlander",
+      "rank": "Dangerous"
+    },
+    {
+      "topRange": 76,
+      "value": "Rhaskar",
+      "category": "Beast",
+      "rank": "Extreme"
+    },
+    {
+      "topRange": 77,
+      "value": "Shroud Crab",
+      "category": "Animal",
+      "rank": "Troublesome"
+    },
+    {
+      "topRange": 79,
+      "value": "Sodden",
+      "category": "Horror",
+      "rank": "Formidable"
+    },
+    {
+      "topRange": 80,
+      "value": "Tempest",
+      "category": "Anomaly",
+      "rank": "Dangerous"
+    },
+    {
+      "topRange": 81,
+      "value": "Thrall",
+      "category": "Horror",
+      "rank": "Dangerous"
+    },
+    {
+      "topRange": 83,
+      "value": "Trog",
+      "category": "Animal",
+      "rank": "Dangerous"
+    },
+    {
+      "topRange": 85,
+      "value": "Troll",
+      "category": "Firstborn",
+      "rank": "Formidable"
+    },
+    {
+      "topRange": 87,
+      "value": "Varou",
+      "category": "Firstborn",
+      "rank": "Dangerous"
+    },
+    {
+      "topRange": 90,
+      "value": "Warrior",
+      "category": "Ironlander",
+      "rank": "Dangerous"
+    },
+    {
+      "topRange": 91,
+      "value": "Wight",
+      "category": "Horror",
+      "rank": "Formidable"
+    },
+    {
+      "topRange": 94,
+      "value": "Wolf",
+      "category": "Animal",
+      "rank": "Dangerous"
+    },
+    {
+      "topRange": 95,
+      "value": "Wyrm",
+      "category": "Beast",
+      "rank": "Epic"
+    },
+    {
+      "topRange": 97,
+      "value": "Wyvern",
+      "category": "Beast",
+      "rank": "Extreme"
+    },
+    {
+      "topRange": 100,
+      "value": "Zealot",
+      "category": "Ironlander",
+      "rank": "Troublesome"
+    }
+  ]
+}

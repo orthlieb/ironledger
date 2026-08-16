@@ -186,6 +186,7 @@
           "oracles/coastal-waters-peril.json",
           "oracles/coastal-waters-waypoint.json",
           "oracles/combat-battleground.json",
+          "oracles/encounter-ironlands.json",
           "oracles/magic-mystic-effect.json",
           "oracles/overland-landmark.json",
           "oracles/overland-opportunity.json",
@@ -203,7 +204,6 @@
           "oracles/story-region.json"
         ],
         "rollTables": [
-          "roll-tables/encounter-index.json",
           "roll-tables/prelude-event.json"
         ]
       }
