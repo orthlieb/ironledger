@@ -225,10 +225,9 @@ export interface DenizenCell {
 }
 
 /** One d100 row for the shared FoeRollDialog. `ref` is resolved to a foe by
- *  the caller's `resolve` fn (by name for the site denizen table, by catalogue
- *  id for extension roll-tables). `label` is an optional frequency band
- *  (denizen) and `range` an optional pre-formatted range string (else it's
- *  computed from low/high). */
+ *  the caller's `resolve` fn (by name for the site denizen table). `label` is
+ *  an optional frequency band and `range` an optional pre-formatted range
+ *  string (else it's computed from low/high). */
 export interface FoeRollRow {
 	low: number;
 	high: number;

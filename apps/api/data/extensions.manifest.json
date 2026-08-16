@@ -231,9 +231,6 @@
         ],
         "foeOverrides": [
           "foes/overrides.json"
-        ],
-        "rollTables": [
-          "roll-tables/sample-encounters.json"
         ]
       }
     }

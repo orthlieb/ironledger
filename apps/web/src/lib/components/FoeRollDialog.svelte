@@ -2,13 +2,11 @@
 	/**
 	 * FoeRollDialog — a generic "roll a d100 foe table → foe detail → Add to
 	 * Foes" dialog, extracted from the old site-only DenizenDialog. It's driven
-	 * entirely by props so it can back BOTH the delve denizen table (fixed
-	 * frequency bands + per-site foe names) and extension roll-tables (arbitrary
-	 * ranges + foe ids):
+	 * entirely by props so it can back the delve denizen table (fixed frequency
+	 * bands + per-site foe names):
 	 *
 	 *   • `rows`    — the d100 table: `{ low, high, ref, label?, range? }[]`.
-	 *   • `resolve` — maps a row's `ref` to a FoeDef (by name for denizens, by
-	 *     id for roll-tables) — the dialog never cares which.
+	 *   • `resolve` — maps a row's `ref` to a FoeDef — the dialog never cares how.
 	 *   • `title` / `logLabel` — dialog heading + log-entry prefix.
 	 *   • `onSelect` — Add to Foes callback (foe, quantity, effective rank).
 	 *
@@ -54,8 +52,8 @@
 		 *  a "← Back" that returns to the oracle picker. Omitted for the denizen
 		 *  roll (no picker to return to). */
 		onBack?: () => void;
-		/** Optional intro text shown above the table (e.g. the Encounter Index
-		 *  oracle's description). Paragraphs separated by blank lines. */
+		/** Optional intro text shown above the table. Paragraphs separated by
+		 *  blank lines. */
 		preface?: string;
 	} = $props();
 
@@ -200,8 +198,8 @@
 							</tbody>
 						</table>
 					{:else}
-						<!-- Roll-table (e.g. Encounter Index): many rows, laid out in a
-						     3-column grid (2 on mobile) so it stays compact. -->
+						<!-- Label-less rows: laid out in a 3-column grid (2 on mobile) so
+						     a long table stays compact. -->
 						<div class="dd-grid">
 							{#each rows as row, i (i)}
 								<div
@@ -470,7 +468,7 @@
 		font-weight: 600;
 	}
 
-	/* ── Roll-table grid (no frequency labels, e.g. Encounter Index) ──────── */
+	/* ── Label-less grid (no frequency bands) ─────────────────────────────── */
 	/* 2 columns on mobile, 3 from 520px up. */
 	:global(.dd-grid) {
 		display: grid;

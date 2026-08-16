@@ -73,7 +73,6 @@ type ProvidesType =
   | 'oracles'
   | 'foes'
   | 'foeOverrides'
-  | 'rollTables'
   | 'delveTables';
 
 interface ExtensionManifestEntry {
@@ -108,7 +107,6 @@ async function loadCatalogue(): Promise<{
   moves: CatalogueEntry;
   oracles: CatalogueEntry;
   foes: CatalogueEntry;
-  rollTables: CatalogueEntry;
   delve: CatalogueEntry;
   extensions: CatalogueEntry;
 }> {
@@ -150,9 +148,6 @@ async function loadCatalogue(): Promise<{
   // Oracles — one table per file.
   const allOracles = { oracles: await loadAll('oracles') };
 
-  // Roll-tables — "resolver oracles" (d100 → foe/asset). One table per file.
-  const allRollTables = { tables: await loadAll('rollTables') };
-
   // Foes — merge foe lists; each foeOverrides file carries one expansion's
   // present/absent + addendum patches against the base foe catalogue.
   const foeData = (await loadAll('foes')) as Array<{ foes: unknown[] }>;
@@ -175,7 +170,6 @@ async function loadCatalogue(): Promise<{
     moves: { data: allMoves, etag: makeEtag(allMoves) },
     oracles: { data: allOracles, etag: makeEtag(allOracles) },
     foes: { data: allFoes, etag: makeEtag(allFoes) },
-    rollTables: { data: allRollTables, etag: makeEtag(allRollTables) },
     delve: { data: allDelve, etag: makeEtag(allDelve) },
     // Public extension registry — metadata only (drop the file lists). Drives
     // the client's dynamic expansion toggles + source labels.
@@ -228,7 +222,6 @@ export const catalogueRoutes: FastifyPluginAsyncZod = async (server) => {
   server.get('/moves', (req, reply) => sendCatalogueItem(catalogue.moves, req, reply));
   server.get('/oracles', (req, reply) => sendCatalogueItem(catalogue.oracles, req, reply));
   server.get('/foes', (req, reply) => sendCatalogueItem(catalogue.foes, req, reply));
-  server.get('/roll-tables', (req, reply) => sendCatalogueItem(catalogue.rollTables, req, reply));
   server.get('/delve', (req, reply) => sendCatalogueItem(catalogue.delve, req, reply));
   server.get('/extensions', (req, reply) => sendCatalogueItem(catalogue.extensions, req, reply));
 };

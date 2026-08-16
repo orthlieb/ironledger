@@ -53,7 +53,6 @@ const emptyProvides = () => ({
   oracles: [],
   foes: [],
   foeOverrides: [],
-  rollTables: [],
   delveTables: [],
 });
 
@@ -66,9 +65,6 @@ async function selfContainedProvides(root) {
     else p.moves.push(`moves/${f}`);
   }
   for (const f of await listJson(path.join(root, 'oracles'))) p.oracles.push(`oracles/${f}`);
-  // roll-tables/*.json — "resolver oracles" that roll a d100 → catalogue entity.
-  for (const f of await listJson(path.join(root, 'roll-tables')))
-    p.rollTables.push(`roll-tables/${f}`);
   for (const f of await listJson(path.join(root, 'assets'))) p.assets.push(`assets/${f}`);
   for (const f of await listJson(path.join(root, 'foes'))) {
     if (f === 'overrides.json') p.foeOverrides.push(`foes/${f}`);
