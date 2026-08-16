@@ -5,6 +5,7 @@
   "selectLabel": "Delve: Site Nature – Theme",
   "description": "Determine the thematic nature of a Delve site (e.g., ancient, corrupted, haunted).",
   "source": "delve",
+  "roll": ["value", "description"],
   "data": [
     {
       "topRange": 11,

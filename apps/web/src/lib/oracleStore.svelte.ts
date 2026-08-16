@@ -27,14 +27,17 @@ import {
 
 export interface OracleEntry {
 	topRange: number;
-	value: unknown;
-	/** Optional secondary classification rendered as a "Type" column in the
-	 *  detail table (e.g. YRT Region → Settled / Boundary / Remote). Display-only. */
+	/** Primary result. Optional for flat multi-column oracles that carry named
+	 *  columns instead of a single value (e.g. freeportDenizen → type/notes/
+	 *  salary/count). */
+	value?: unknown;
+	/** Secondary classification (e.g. YRT Region → Settled / Boundary / Remote). */
 	type?: string;
-	/** Optional flavor text rendered as a "Description" column in the detail
-	 *  table and echoed into the log on a roll (e.g. Delve Site Theme/Domain:
-	 *  "This place holds the secrets of a bygone age"). Display-only. */
+	/** Flavor / detail text (e.g. Delve Site Theme → "This place holds the
+	 *  secrets of a bygone age"; Combat: Battleground examples). */
 	description?: string;
+	/** Flat multi-column oracles carry one field per column `key`. */
+	[key: string]: unknown;
 }
 
 /** One selectable column of a `tableType: 'columnSelect'` oracle (e.g. Delve
@@ -61,8 +64,15 @@ export interface OracleFile {
 	 *  blank lines into paragraphs when rendered. */
 	postamble?: string;
 	tableType?: string;
-	/** For `tableType: 'columnSelect'` — the roll columns shown as a picker. */
+	/** Column definitions. For `columnSelect` / `matrix` these are the pickable
+	 *  columns; for a flat table they name/label the display columns (in order
+	 *  after D100). When absent on a flat oracle, columns are derived from the
+	 *  row keys (value → "Result", type → "Type", description → "Description"). */
 	columns?: OracleColumn[];
+	/** Flat oracles only: which column keys to echo on a roll, each as
+	 *  `Label: value` on its own line. Defaults to `["value"]` (+ a label-less
+	 *  `description` echo, the legacy behaviour) when absent. */
+	roll?: string[];
 	/** For `tableType: 'twoStep'` — column headings for the two rolls. Each data
 	 *  row's `value` is `{ label, subtable }`: roll the outer table for a `label`,
 	 *  then roll that row's `subtable` for the final result. Defaults:
@@ -363,7 +373,7 @@ export function buildTableHtml(
 	// Generic column-select table (Settlement Type land tiers, etc.): one range
 	// column per `columns` entry + a Result column, with the active column
 	// highlighted. Delve Depths keeps its own hardcoded branch below.
-	if (options?.columns?.length) {
+	if (options?.tableType === 'columnSelect' && options.columns?.length) {
 		const cols = options.columns;
 		const activeIdx = options.activeStat ? cols.findIndex((c) => c.key === options.activeStat) : -1;
 		// `od-pick-col` marks the per-column range cells (not the shared Result) so
@@ -507,67 +517,40 @@ export function buildTableHtml(
 	// Name: Other (Giants/Varou/Trolls) and Name: Elf (Elf 1/Elf 2) are now
 	// `tableType: 'matrix'` — the generic matrix branch above renders them.
 
-	if (key === 'freeportDenizen') {
+	// ── Flat table (unified simple / typed / described / multi-column) ────────
+	// Columns come from `options.columns` (explicit labels/order) or are derived
+	// from the row keys: value → "Result", plus Type / Description when present.
+	// Replaces the old freeportDenizen / typed / described special branches.
+	const flatCols: OracleColumn[] = options?.columns?.length
+		? options.columns
+		: [
+				{ key: 'value', label: 'Result' },
+				...(table.some((e) => e.type != null) ? [{ key: 'type', label: 'Type' }] : []),
+				...(table.some((e) => e.description != null)
+					? [{ key: 'description', label: 'Description' }]
+					: []),
+			];
+	const cell = (e: OracleEntry, k: string) => {
+		const v = e[k];
+		return v == null ? '' : String(v);
+	};
+
+	// A single value column keeps the space-saving multi-column layout for long
+	// lists (3 columns > 60 rows, 2 columns > 40, else 1).
+	if (flatCols.length === 1 && flatCols[0].key === 'value') {
+		const perCol = table.length > 60 ? 3 : table.length > 40 ? 2 : 1;
+		const rowsPer = Math.ceil(table.length / perCol);
 		let html =
 			'<table class="oracle-table"><thead><tr>' +
-			'<th>d100</th><th>Type</th><th>Notes</th><th>Salary</th><th>Count</th>' +
+			Array.from({ length: perCol }, () => '<th>d100</th><th>Result</th>').join('') +
 			'</tr></thead><tbody>';
-		table.forEach((entry, idx) => {
-			const v = entry.value as { type: string; notes: string; salary: string; count: number };
-			html +=
-				`<tr><td class="oracle-range">${rangeLabelForEntry(table, idx)}</td>` +
-				`<td>${v.type}</td><td>${v.notes}</td><td>${v.salary}</td><td>${v.count}</td></tr>`;
-		});
-		return html + '</tbody></table>';
-	}
-
-	// Typed table (e.g. YRT Region): D100 | Result | Type. Any oracle whose
-	// entries carry a `type` gets the extra column (single-column layout).
-	if (table.some((e) => e.type)) {
-		let html =
-			'<table class="oracle-table"><thead><tr>' +
-			'<th>d100</th><th>Result</th><th>Type</th>' +
-			'</tr></thead><tbody>';
-		table.forEach((entry, idx) => {
-			html +=
-				`<tr><td class="oracle-range">${rangeLabelForEntry(table, idx)}</td>` +
-				`<td>${entry.value as string}</td><td>${entry.type ?? ''}</td></tr>`;
-		});
-		return html + '</tbody></table>';
-	}
-
-	// Described table (e.g. Delve Site Theme/Domain): D100 | Result | Description.
-	// Any oracle whose entries carry a `description` gets the extra column.
-	if (table.some((e) => e.description)) {
-		let html =
-			'<table class="oracle-table"><thead><tr>' +
-			'<th>d100</th><th>Result</th><th>Description</th>' +
-			'</tr></thead><tbody>';
-		table.forEach((entry, idx) => {
-			html +=
-				`<tr><td class="oracle-range">${rangeLabelForEntry(table, idx)}</td>` +
-				`<td>${entry.value as string}</td><td>${entry.description ?? ''}</td></tr>`;
-		});
-		return html + '</tbody></table>';
-	}
-
-	// ── Default: simple or multi-column layouts ──────────────────────────────
-
-	if (table.length > 60) {
-		const third = Math.ceil(table.length / 3);
-		let html =
-			'<table class="oracle-table"><thead><tr>' +
-			'<th>d100</th><th>Result</th>' +
-			'<th>d100</th><th>Result</th>' +
-			'<th>d100</th><th>Result</th>' +
-			'</tr></thead><tbody>';
-		for (let i = 0; i < third; i++) {
+		for (let i = 0; i < rowsPer; i++) {
 			html += '<tr>';
-			for (let col = 0; col < 3; col++) {
-				const idx = i + third * col;
+			for (let c = 0; c < perCol; c++) {
+				const idx = i + rowsPer * c;
 				const entry = table[idx];
 				html += entry
-					? `<td class="oracle-range">${rangeLabelForEntry(table, idx)}</td><td>${entry.value as string}</td>`
+					? `<td class="oracle-range">${rangeLabelForEntry(table, idx)}</td><td>${cell(entry, 'value')}</td>`
 					: '<td></td><td></td>';
 			}
 			html += '</tr>';
@@ -575,30 +558,16 @@ export function buildTableHtml(
 		return html + '</tbody></table>';
 	}
 
-	if (table.length > 40) {
-		const half = Math.ceil(table.length / 2);
-		let html =
-			'<table class="oracle-table"><thead><tr>' +
-			'<th>d100</th><th>Result</th>' +
-			'<th>d100</th><th>Result</th>' +
-			'</tr></thead><tbody>';
-		for (let i = 0; i < half; i++) {
-			const left = table[i];
-			const right = table[i + half];
-			html +=
-				`<tr><td class="oracle-range">${rangeLabelForEntry(table, i)}</td><td>${left.value as string}</td>` +
-				`<td class="oracle-range">${right ? rangeLabelForEntry(table, i + half) : ''}</td>` +
-				`<td>${right ? (right.value as string) : ''}</td></tr>`;
-		}
-		return html + '</tbody></table>';
-	}
-
+	// Multi-column flat table: D100 + one column per `flatCols` entry.
 	let html =
-		'<table class="oracle-table"><thead><tr>' +
-		'<th>d100</th><th>Result</th>' +
+		'<table class="oracle-table"><thead><tr><th class="oracle-range">d100</th>' +
+		flatCols.map((c) => `<th>${c.label}</th>`).join('') +
 		'</tr></thead><tbody>';
 	table.forEach((entry, idx) => {
-		html += `<tr><td class="oracle-range">${rangeLabelForEntry(table, idx)}</td><td>${entry.value as string}</td></tr>`;
+		html +=
+			`<tr><td class="oracle-range">${rangeLabelForEntry(table, idx)}</td>` +
+			flatCols.map((c) => `<td>${cell(entry, c.key)}</td>`).join('') +
+			'</tr>';
 	});
 	return html + '</tbody></table>';
 }
@@ -832,17 +801,8 @@ export function rollOracle(
 		};
 	}
 
-	// ── freeportDenizen ─────────────────────────────────────────────────────
-	if (key === 'freeportDenizen') {
-		const res = rollFromRangeTable(table);
-		const v = res.value as { type: string; notes: string; salary: string; count: number };
-		const html =
-			`<div class="roll-line">Roll: d100 → ${res.roll}</div>` +
-			`<div><strong>${v.type}</strong></div>` +
-			`<div>${v.notes}</div>` +
-			`<div>Typical annual salary: ${v.salary} (Population: ${v.count})</div>`;
-		return { roll: res.roll, html, title, value: v.type };
-	}
+	// freeportDenizen is now a flat multi-column oracle (type/notes/salary/count
+	// with a `roll` array) — the generic flat branch below handles it.
 
 	// ── settlementName — two-step subtable ──────────────────────────────────
 	// ── settlementNameQuick — two independent rolls ──────────────────────────
@@ -863,40 +823,71 @@ export function rollOracle(
 
 	// ── Default — single roll, string value (with Roll Twice support) ──────
 
-	/** Roll once; if "Roll Twice" appears, keep re-rolling until a real result (max 10). */
-	function rollNonDouble(): { roll: number; value: string } {
+	// `oracle` is the current file (looked up + non-null-guarded at the top).
+	const rollCols = oracle.roll?.length ? oracle.roll : ['value'];
+	const primaryKey = rollCols[0];
+	const str = (v: unknown) => (typeof v === 'string' ? v : v == null ? '' : String(v));
+	const labelFor = (k: string): string => {
+		const c = oracle.columns?.find((col) => col.key === k);
+		if (c) return c.label;
+		if (k === 'value') return 'Result';
+		if (k === 'type') return 'Type';
+		if (k === 'description') return 'Description';
+		return k.charAt(0).toUpperCase() + k.slice(1);
+	};
+
+	/** Roll → the picked row (re-rolling "Roll Twice" on the primary column). */
+	function rollRow(): { roll: number; entry: OracleEntry } {
+		const roll = Math.floor(Math.random() * 100) + 1;
+		const entry = table.find((e) => roll <= e.topRange) ?? table[table.length - 1];
+		return { roll, entry };
+	}
+	function rollNonDouble(): { roll: number; entry: OracleEntry } {
 		for (let i = 0; i < 10; i++) {
-			const r = rollFromRangeTable(table);
-			const v = typeof r.value === 'string' ? r.value : JSON.stringify(r.value);
-			if (!/roll twice/i.test(v)) return { roll: r.roll, value: v };
+			const r = rollRow();
+			if (!/roll twice/i.test(str(r.entry[primaryKey]))) return r;
 		}
-		const r = rollFromRangeTable(table);
-		return { roll: r.roll, value: typeof r.value === 'string' ? r.value : JSON.stringify(r.value) };
+		return rollRow();
 	}
 
-	const res = rollFromRangeTable(table);
-	const val = typeof res.value === 'string' ? res.value : JSON.stringify(res.value);
+	const res = rollRow();
+	const primary = str(res.entry[primaryKey]);
 
-	if (/roll twice/i.test(val)) {
+	if (/roll twice/i.test(primary)) {
 		const a = rollNonDouble();
 		const b = rollNonDouble();
-		const combined = `${a.value} / ${b.value}`;
+		const lbl = labelFor(primaryKey);
 		const html =
 			`<div class="roll-line">Roll: d100 → ${res.roll} (Roll Twice!)</div>` +
 			`<div class="roll-line">Roll 1: d100 → ${a.roll}</div>` +
-			`<div>Result 1: <strong>${a.value}</strong></div>` +
+			`<div>${lbl} 1: <strong>${str(a.entry[primaryKey])}</strong></div>` +
 			`<div class="roll-line">Roll 2: d100 → ${b.roll}</div>` +
-			`<div>Result 2: <strong>${b.value}</strong></div>`;
-		return { roll: res.roll, html, title, value: combined };
+			`<div>${lbl} 2: <strong>${str(b.entry[primaryKey])}</strong></div>`;
+		return {
+			roll: res.roll,
+			html,
+			title,
+			value: `${str(a.entry[primaryKey])} / ${str(b.entry[primaryKey])}`,
+		};
 	}
 
-	// If the rolled entry carries a Description (Delve Site Theme/Domain),
-	// echo it into the log beneath the result.
-	const pickedEntry = table.find((e) => res.roll <= e.topRange) ?? table[table.length - 1];
-	const desc = typeof pickedEntry?.description === 'string' ? pickedEntry.description : '';
-	const html =
-		`<div class="roll-line">Roll: d100 → ${res.roll}</div>` +
-		`<div>Result: <strong>${val}</strong></div>` +
-		(desc ? `<div class="oracle-desc">${desc}</div>` : '');
-	return { roll: res.roll, html, title, value: val };
+	// Echo the columns named in `roll`, each as "Label: value" (first column's
+	// value bold). Without an explicit `roll`, keep the legacy shape: bold Result
+	// + a label-less description echo when the row carries one.
+	let body: string;
+	if (oracle.roll?.length) {
+		body = rollCols
+			.map((k, i) => {
+				const v = str(res.entry[k]);
+				return v ? `<div>${labelFor(k)}: ${i === 0 ? `<strong>${v}</strong>` : v}</div>` : '';
+			})
+			.join('');
+	} else {
+		const desc = str(res.entry.description);
+		body =
+			`<div>Result: <strong>${primary}</strong></div>` +
+			(desc ? `<div class="oracle-desc">${desc}</div>` : '');
+	}
+	const html = `<div class="roll-line">Roll: d100 → ${res.roll}</div>` + body;
+	return { roll: res.roll, html, title, value: primary };
 }

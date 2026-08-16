@@ -541,7 +541,11 @@
 										tableType: 'matrix',
 									}
 								: selectedOracle.tableType === 'columnSelect'
-									? { activeStat: effectiveColumnKey ?? undefined, columns: selectedOracle.columns }
+									? {
+											activeStat: effectiveColumnKey ?? undefined,
+											columns: selectedOracle.columns,
+											tableType: 'columnSelect',
+										}
 									: selectedOracle.tableType === 'twoStep'
 										? {
 												outerLabel: selectedOracle.outerLabel,
@@ -552,9 +556,9 @@
 													tableType: 'compound',
 													refTitles: Object.fromEntries(allOracles.map((o) => [o.key, o.title])),
 												}
-											: activeStat
-												? { activeStat }
-												: undefined,
+											: // flat table: pass declared `columns` (labels) for delveDepths
+												// activeStat is still forwarded so its stat column highlights.
+												{ activeStat: activeStat ?? undefined, columns: selectedOracle.columns },
 						)}
 					</div>
 

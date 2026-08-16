@@ -5,6 +5,7 @@
   "selectLabel": "Delve: Site Nature – Domain",
   "description": "Determine the physical domain type of a Delve site (e.g., cavern, ruin, sea cave).",
   "source": "delve",
+  "roll": ["value", "description"],
   "data": [
     {
       "topRange": 6,
