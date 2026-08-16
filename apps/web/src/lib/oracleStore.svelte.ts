@@ -308,6 +308,9 @@ export function buildTableHtml(
 		innerLabel?: string;
 		tableType?: string;
 		refTitles?: Record<string, string>;
+		/** Narrow viewport (≤640px): render wide layouts single-column so they fit
+		 *  a phone without horizontal scroll. Currently drives the two-step table. */
+		narrow?: boolean;
 	},
 ): string {
 	if (!table || table.length === 0) return '<div>No table data.</div>';
@@ -433,6 +436,35 @@ export function buildTableHtml(
 	if (table.some((e) => Array.isArray((e.value as { subtable?: unknown } | null)?.subtable))) {
 		const outer = options?.outerLabel ?? 'Category';
 		const inner = options?.innerLabel ?? 'Result';
+
+		// Narrow (phone): the two side-by-side inner halves overflow, so render the
+		// inner subtable as ONE stacked column — d100 | outer | d100 | inner. Taller,
+		// but fits the dialog width (the dialog scrolls vertically anyway).
+		if (options?.narrow) {
+			let html =
+				'<table class="oracle-table"><thead><tr>' +
+				`<th>d100</th><th>${outer}</th><th>d100</th><th>${inner}</th>` +
+				'</tr></thead><tbody>';
+			table.forEach((entry, idx) => {
+				const rangeStr = rangeLabelForEntry(table, idx);
+				const v = entry.value as { label: string; subtable: OracleEntry[] };
+				const sub = v.subtable;
+				sub.forEach((s, i) => {
+					const nameCells =
+						`<td class="oracle-range">${rangeLabelForEntry(sub, i)}</td>` +
+						`<td>${s.value as string}</td>`;
+					html +=
+						i === 0
+							? `<tr><td rowspan="${sub.length}" class="oracle-cat-range">${rangeStr}</td>` +
+								`<td rowspan="${sub.length}" class="oracle-cat-desc">${v.label}</td>${nameCells}</tr>`
+							: `<tr>${nameCells}</tr>`;
+				});
+			});
+			return html + '</tbody></table>';
+		}
+
+		// Wide: d100 | outer | d100 | inner | d100 | inner (inner split into two
+		// side-by-side halves to keep the table short).
 		let html =
 			'<table class="oracle-table"><thead><tr>' +
 			`<th>d100</th><th>${outer}</th><th>d100</th><th>${inner}</th><th>d100</th><th>${inner}</th>` +

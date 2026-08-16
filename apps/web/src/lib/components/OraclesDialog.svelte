@@ -59,6 +59,17 @@
 	/** Optional callback to auto-fill a field with the rolled plain-text value. */
 	let _onFill: ((value: string) => void) | null = null;
 
+	/** Reactive narrow-viewport flag (≤640px, matching the column-picker collapse
+	 *  breakpoint) — drives the two-step table's single-column mobile layout. */
+	let narrow = $state(false);
+	$effect(() => {
+		const mq = window.matchMedia('(max-width: 640px)');
+		narrow = mq.matches;
+		const onChange = (e: MediaQueryListEvent) => (narrow = e.matches);
+		mq.addEventListener('change', onChange);
+		return () => mq.removeEventListener('change', onChange);
+	});
+
 	// ---------------------------------------------------------------------------
 	// Derived
 	// ---------------------------------------------------------------------------
@@ -541,6 +552,7 @@
 										? {
 												outerLabel: selectedOracle.outerLabel,
 												innerLabel: selectedOracle.innerLabel,
+												narrow,
 											}
 										: selectedOracle.tableType === 'compound'
 											? {
