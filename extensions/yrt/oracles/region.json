@@ -5,28 +5,117 @@
   "selectLabel": "Region",
   "description": "Determine the region of the Yrt world where an event or location is situated. Regions are ordered and weighted by type: settled lands come up most often, boundary lands less often, and remote lands rarely.",
   "source": "yrt",
+  "roll": ["value", "type"],
   "data": [
-    { "topRange": 7, "value": "Piscis", "type": "Settled" },
-    { "topRange": 14, "value": "Ostrea", "type": "Settled" },
-    { "topRange": 21, "value": "Collina", "type": "Settled" },
-    { "topRange": 28, "value": "Freeport", "type": "Settled" },
-    { "topRange": 35, "value": "Mons", "type": "Settled" },
-    { "topRange": 42, "value": "Termin", "type": "Settled" },
-    { "topRange": 49, "value": "Fluenti", "type": "Settled" },
-    { "topRange": 55, "value": "Materton", "type": "Settled" },
-    { "topRange": 60, "value": "Oray Hills", "type": "Boundary" },
-    { "topRange": 65, "value": "Profunda Forest", "type": "Boundary" },
-    { "topRange": 70, "value": "Verday Groves", "type": "Boundary" },
-    { "topRange": 75, "value": "Nebula Forest", "type": "Boundary" },
-    { "topRange": 80, "value": "Suda Forest", "type": "Boundary" },
-    { "topRange": 85, "value": "Seka Lands", "type": "Boundary" },
-    { "topRange": 87, "value": "Malperm Mtns", "type": "Remote" },
-    { "topRange": 89, "value": "Pinna Mtns", "type": "Remote" },
-    { "topRange": 91, "value": "Polvokovrita Gap", "type": "Remote" },
-    { "topRange": 93, "value": "Dronitay Shelf", "type": "Remote" },
-    { "topRange": 95, "value": "Teeth of Konoloy", "type": "Remote" },
-    { "topRange": 97, "value": "Weirden Fen", "type": "Remote" },
-    { "topRange": 99, "value": "Ravenna", "type": "Remote" },
-    { "topRange": 100, "value": "Spero", "type": "Remote" }
+    {
+      "topRange": 7,
+      "value": "Piscis",
+      "type": "Settled"
+    },
+    {
+      "topRange": 14,
+      "value": "Ostrea",
+      "type": "Settled"
+    },
+    {
+      "topRange": 21,
+      "value": "Collina",
+      "type": "Settled"
+    },
+    {
+      "topRange": 28,
+      "value": "Freeport",
+      "type": "Settled"
+    },
+    {
+      "topRange": 35,
+      "value": "Mons",
+      "type": "Settled"
+    },
+    {
+      "topRange": 42,
+      "value": "Termin",
+      "type": "Settled"
+    },
+    {
+      "topRange": 49,
+      "value": "Fluenti",
+      "type": "Settled"
+    },
+    {
+      "topRange": 55,
+      "value": "Materton",
+      "type": "Settled"
+    },
+    {
+      "topRange": 60,
+      "value": "Oray Hills",
+      "type": "Boundary"
+    },
+    {
+      "topRange": 65,
+      "value": "Profunda Forest",
+      "type": "Boundary"
+    },
+    {
+      "topRange": 70,
+      "value": "Verday Groves",
+      "type": "Boundary"
+    },
+    {
+      "topRange": 75,
+      "value": "Nebula Forest",
+      "type": "Boundary"
+    },
+    {
+      "topRange": 80,
+      "value": "Suda Forest",
+      "type": "Boundary"
+    },
+    {
+      "topRange": 85,
+      "value": "Seka Lands",
+      "type": "Boundary"
+    },
+    {
+      "topRange": 87,
+      "value": "Malperm Mtns",
+      "type": "Remote"
+    },
+    {
+      "topRange": 89,
+      "value": "Pinna Mtns",
+      "type": "Remote"
+    },
+    {
+      "topRange": 91,
+      "value": "Polvokovrita Gap",
+      "type": "Remote"
+    },
+    {
+      "topRange": 93,
+      "value": "Dronitay Shelf",
+      "type": "Remote"
+    },
+    {
+      "topRange": 95,
+      "value": "Teeth of Konoloy",
+      "type": "Remote"
+    },
+    {
+      "topRange": 97,
+      "value": "Weirden Fen",
+      "type": "Remote"
+    },
+    {
+      "topRange": 99,
+      "value": "Ravenna",
+      "type": "Remote"
+    },
+    {
+      "topRange": 100,
+      "value": "Spero",
+      "type": "Remote"
+    }
   ]
 }

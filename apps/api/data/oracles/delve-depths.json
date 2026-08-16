@@ -5,7 +5,21 @@
   "selectLabel": "Delve the Depths Weak Hit Oracle",
   "description": "On a weak hit, roll on the column matching the stat you used.",
   "source": "delve",
-  "tableType": "delveDepths",
+  "tableType": "columnSelect",
+  "columns": [
+    {
+      "key": "edge",
+      "label": "Edge"
+    },
+    {
+      "key": "shadow",
+      "label": "Shadow"
+    },
+    {
+      "key": "wits",
+      "label": "Wits"
+    }
+  ],
   "data": [
     {
       "edge": 45,

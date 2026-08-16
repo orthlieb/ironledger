@@ -5,14 +5,33 @@
   "selectLabel": "Combat: Battleground",
   "description": "Use this oracle to help envision the characteristics and complications of a combat or battle scene. Weave these elements into the actions of your character and their foes.",
   "source": "lodestar",
+  "columns": [
+    {
+      "key": "value",
+      "label": "Result"
+    },
+    {
+      "key": "description",
+      "label": "Examples"
+    }
+  ],
+  "roll": ["value", "description"],
   "data": [
-    { "topRange": 5, "value": "Slippery surface", "description": "Mud, ice, rain-slick rocks" },
+    {
+      "topRange": 5,
+      "value": "Slippery surface",
+      "description": "Mud, ice, rain-slick rocks"
+    },
     {
       "topRange": 10,
       "value": "Encumbering terrain",
       "description": "Water, muck, deep snow, webs"
     },
-    { "topRange": 15, "value": "Precipitous drop", "description": "Cliff, ravine, pit, stairs" },
+    {
+      "topRange": 15,
+      "value": "Precipitous drop",
+      "description": "Cliff, ravine, pit, stairs"
+    },
     {
       "topRange": 20,
       "value": "Obstructed path",
@@ -23,7 +42,11 @@
       "value": "High ground",
       "description": "Mound, outcropping, climbable structure"
     },
-    { "topRange": 30, "value": "Cluttered terrain", "description": "Rubble, rocks, roots" },
+    {
+      "topRange": 30,
+      "value": "Cluttered terrain",
+      "description": "Rubble, rocks, roots"
+    },
     {
       "topRange": 35,
       "value": "Low visibility",

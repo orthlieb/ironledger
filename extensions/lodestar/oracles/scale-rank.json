@@ -1,0 +1,55 @@
+{
+  "key": "scaleRank",
+  "title": "Scale: Rank",
+  "category": "Scale",
+  "selectLabel": "Scale: Rank",
+  "tableType": "matrix",
+  "description": "Use this oracle to randomly set the challenge rank of a quest, journey, or foe. Choose the column and roll.",
+  "source": "lodestar",
+  "columns": [
+    {
+      "key": "quest",
+      "label": "Quest"
+    },
+    {
+      "key": "journey",
+      "label": "Journey"
+    },
+    {
+      "key": "foe",
+      "label": "Foe"
+    }
+  ],
+  "data": [
+    {
+      "topRange": 15,
+      "quest": "<strong>Troublesome</strong> — A challenging quest with a small number of obstacles",
+      "journey": "<strong>Troublesome</strong> — Traveling a moderate distance within a single region",
+      "foe": "<strong>Troublesome</strong> — Common enemies"
+    },
+    {
+      "topRange": 35,
+      "quest": "<strong>Dangerous</strong> — An involved quest with several obstacles",
+      "journey": "<strong>Dangerous</strong> — Traveling a long distance within a single region, or across rough terrain",
+      "foe": "<strong>Dangerous</strong> — Capable fighters and deadly creatures"
+    },
+    {
+      "topRange": 65,
+      "quest": "<strong>Formidable</strong> — A complex quest with many obstacles",
+      "journey": "<strong>Formidable</strong> — Traveling from one region to another, or across especially challenging terrain",
+      "foe": "<strong>Formidable</strong> — Exceptional fighters and mighty creatures"
+    },
+    {
+      "topRange": 85,
+      "quest": "<strong>Extreme</strong> — An intimidating quest with scores of obstacles",
+      "journey": "<strong>Extreme</strong> — Traveling through multiple regions",
+      "foe": "<strong>Extreme</strong> — Foes of overwhelming skill or power"
+    },
+    {
+      "topRange": 100,
+      "quest": "<strong>Epic</strong> — A life-defining quest of unknowable scope",
+      "journey": "<strong>Epic</strong> — Traveling from one end of the Ironlands to another, or to a separate land",
+      "foe": "<strong>Epic</strong> — Legendary foes of mythic power"
+    }
+  ]
+}
