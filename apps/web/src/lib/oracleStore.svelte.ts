@@ -348,8 +348,8 @@ export function buildTableHtml(
 		const cols = options.columns;
 		const activeIdx = options.activeStat ? cols.findIndex((c) => c.key === options.activeStat) : -1;
 		// `od-pick-col` on every value column lets the detail view collapse to just
-		// D100 + the active column on narrow screens (shared with columnSelect /
-		// delveDepths — any column-picker oracle collapses to its chosen column).
+		// D100 + the active column on narrow screens (shared with columnSelect —
+		// any column-picker oracle collapses to its chosen column).
 		const cc = (i: number) => ` class="od-pick-col${activeIdx === i ? ' col-active' : ''}"`;
 		let html =
 			'<table class="oracle-table"><thead><tr><th class="oracle-range">d100</th>' +
@@ -370,9 +370,9 @@ export function buildTableHtml(
 		return html + '</tbody></table>';
 	}
 
-	// Generic column-select table (Settlement Type land tiers, etc.): one range
-	// column per `columns` entry + a Result column, with the active column
-	// highlighted. Delve Depths keeps its own hardcoded branch below.
+	// Generic column-select table (Delve the Depths stat columns, Settlement
+	// Type land tiers, etc.): one range column per `columns` entry + a Result
+	// column, with the active column highlighted.
 	if (options?.tableType === 'columnSelect' && options.columns?.length) {
 		const cols = options.columns;
 		const activeIdx = options.activeStat ? cols.findIndex((c) => c.key === options.activeStat) : -1;
@@ -397,34 +397,6 @@ export function buildTableHtml(
 				.join('');
 			html += `<tr>${cells}<td>${r['value'] as string}</td></tr>`;
 		}
-		return html + '</tbody></table>';
-	}
-
-	if (key === 'delveDepths') {
-		const statColMap: Record<string, number> = { edge: 0, shadow: 1, wits: 2 };
-		const activeCol = options?.activeStat ? (statColMap[options.activeStat] ?? -1) : -1;
-		const cc = (i: number) =>
-			` class="oracle-range od-pick-col${activeCol === i ? ' col-active' : ''}"`;
-
-		type DRow = { edge: number; shadow: number; wits: number; value: string };
-		let html =
-			'<table class="oracle-table"><thead><tr>' +
-			`<th${cc(0)}>Edge</th><th${cc(1)}>Shadow</th><th${cc(2)}>Wits</th><th>Result</th>` +
-			'</tr></thead><tbody>';
-		let prevEdge = 0,
-			prevShadow = 0,
-			prevWits = 0;
-		table.forEach((entry) => {
-			const r = entry as unknown as DRow;
-			const edgeLabel = prevEdge + 1 === r.edge ? `${r.edge}` : `${prevEdge + 1}–${r.edge}`;
-			const shadowLabel =
-				prevShadow + 1 === r.shadow ? `${r.shadow}` : `${prevShadow + 1}–${r.shadow}`;
-			const witsLabel = prevWits + 1 === r.wits ? `${r.wits}` : `${prevWits + 1}–${r.wits}`;
-			html += `<tr><td${cc(0)}>${edgeLabel}</td><td${cc(1)}>${shadowLabel}</td><td${cc(2)}>${witsLabel}</td><td>${r.value}</td></tr>`;
-			prevEdge = r.edge;
-			prevShadow = r.shadow;
-			prevWits = r.wits;
-		});
 		return html + '</tbody></table>';
 	}
 
@@ -696,21 +668,6 @@ export function rollOracle(
 			`<div class="roll-line">Roll (${col.label}): d100 → ${roll}</div>` +
 			`<div class="move-outcome">${value}</div>`;
 		return { roll, html, title, value };
-	}
-
-	// ── delveDepths — roll against a specific stat column ──────────────────
-	if (key === 'delveDepths') {
-		const stat = options?.stat ?? 'edge';
-		const roll = Math.floor(Math.random() * 100) + 1;
-		const statLabel = stat.charAt(0).toUpperCase() + stat.slice(1);
-		type DRow = { edge: number; shadow: number; wits: number; value: string };
-		const rows = table as unknown as DRow[];
-		const found =
-			rows.find((r) => roll <= (r[stat as keyof DRow] as number)) ?? rows[rows.length - 1];
-		const html =
-			`<div class="roll-line">Roll (${statLabel}): d100 → ${roll}</div>` +
-			`<div class="move-outcome">${found.value}</div>`;
-		return { roll, html, title, value: found.value };
 	}
 
 	// ── yrtTouched — compound multi-roll ───────────────────────────────────

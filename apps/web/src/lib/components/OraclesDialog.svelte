@@ -51,9 +51,10 @@
 	let filtersOpen = $state(false);
 	/** True when the dialog was opened directly on a specific oracle key — hides Back button. */
 	let directLaunch = $state(false);
-	/** Stat to highlight in the delveDepths table (e.g. 'edge', 'shadow', 'wits'). */
+	/** Column key to highlight in a column-picker table (e.g. 'edge', 'shadow'). */
 	let activeStat = $state<string | null>(null);
-	/** Stat selected for rolling the delveDepths table — defaults to activeStat or 'edge'. */
+	/** Selected column key for a columnSelect/matrix picker — the generic
+	 *  "chosen column" state (see `effectiveColumnKey`); defaults to 'edge'. */
 	let selectedDelveStat = $state<string>('edge');
 	/** Optional callback to auto-fill a field with the rolled plain-text value. */
 	let _onFill: ((value: string) => void) | null = null;
@@ -90,10 +91,9 @@
 		return cols.some((c) => c.key === selectedDelveStat) ? selectedDelveStat : cols[0].key;
 	});
 
-	/** Per-column accent palette for columnSelect/matrix pickers — mirrors the
-	 *  stat-coloured chips/columns of Delve the Depths, cycled by column index so
-	 *  each column reads distinctly. (Delve the Depths keeps its own edge/shadow/
-	 *  wits colours; this drives Settlement: Type, Scale: Magnitude, etc.) */
+	/** Per-column accent palette for columnSelect/matrix pickers, cycled by column
+	 *  index so each column reads distinctly. Drives Settlement: Type, Scale:
+	 *  Magnitude, etc. */
 	const PICKER_COLORS = [
 		'var(--color-edge)',
 		'var(--color-heart)',
@@ -105,15 +105,22 @@
 		'var(--color-spirit)',
 		'var(--color-iron)',
 	];
-	const pickerColor = (i: number) =>
-		PICKER_COLORS[((i % PICKER_COLORS.length) + PICKER_COLORS.length) % PICKER_COLORS.length];
+	/** Stat keys that carry a canonical accent colour (`--color-edge`, …). When a
+	 *  column's key IS a stat (Delve the Depths: edge/shadow/wits), use that stat's
+	 *  true colour instead of the index-cycled palette, so Shadow stays purple. */
+	const STAT_KEYS = new Set(['edge', 'heart', 'iron', 'shadow', 'wits']);
+	const pickerColor = (i: number, key?: string) =>
+		key && STAT_KEYS.has(key)
+			? `var(--color-${key})`
+			: PICKER_COLORS[((i % PICKER_COLORS.length) + PICKER_COLORS.length) % PICKER_COLORS.length];
 
 	/** Accent colour of the currently-active column (columnSelect/matrix). */
 	const activeColColor = $derived.by(() => {
 		const cols = selectedOracle?.columns;
 		if (!cols?.length) return 'var(--text-accent)';
 		const idx = cols.findIndex((c) => c.key === effectiveColumnKey);
-		return pickerColor(idx < 0 ? 0 : idx);
+		const j = idx < 0 ? 0 : idx;
+		return pickerColor(j, cols[j]?.key);
 	});
 
 	/** Filtered list of oracles for the picker tile grid. */
@@ -289,11 +296,9 @@
 
 		const o = allOracles.find((x) => x.key === key);
 		const rollOpts =
-			key === 'delveDepths'
-				? { stat: selectedDelveStat }
-				: o?.tableType === 'columnSelect' || o?.tableType === 'matrix'
-					? { stat: effectiveColumnKey ?? undefined }
-					: undefined;
+			o?.tableType === 'columnSelect' || o?.tableType === 'matrix'
+				? { stat: effectiveColumnKey ?? undefined }
+				: undefined;
 		const result = rollOracle(key, allOracles, rollOpts);
 
 		// Split the primary roll into tens + ones for the d100 animation
@@ -492,27 +497,13 @@
 						<div class="od-detail-desc">{@html renderNote(selectedOracle.description)}</div>
 					{/if}
 
-					{#if selectedOracle.tableType === 'delveDepths'}
-						<div class="od-delve-stat-picker">
-							{#each [['edge', 'Edge', 'var(--color-edge)'], ['shadow', 'Shadow', 'var(--color-shadow)'], ['wits', 'Wits', 'var(--color-wits)']] as [s, label, color] (s)}
-								<button
-									class="od-delve-stat-btn"
-									class:od-delve-stat-btn--active={selectedDelveStat === s}
-									style:--stat-color={color}
-									onclick={() => {
-										selectedDelveStat = s;
-										activeStat = s;
-									}}>{label}</button
-								>
-							{/each}
-						</div>
-					{:else if (selectedOracle.tableType === 'columnSelect' || selectedOracle.tableType === 'matrix') && selectedOracle.columns}
+					{#if (selectedOracle.tableType === 'columnSelect' || selectedOracle.tableType === 'matrix') && selectedOracle.columns}
 						<div class="od-delve-stat-picker">
 							{#each selectedOracle.columns as col, i (col.key)}
 								<button
 									class="od-delve-stat-btn"
 									class:od-delve-stat-btn--active={effectiveColumnKey === col.key}
-									style:--stat-color={pickerColor(i)}
+									style:--stat-color={pickerColor(i, col.key)}
 									onclick={() => {
 										selectedDelveStat = col.key;
 										activeStat = col.key;
@@ -556,8 +547,9 @@
 													tableType: 'compound',
 													refTitles: Object.fromEntries(allOracles.map((o) => [o.key, o.title])),
 												}
-											: // flat table: pass declared `columns` (labels) for delveDepths
-												// activeStat is still forwarded so its stat column highlights.
+											: // flat table: pass declared `columns` (labels) so multi-column
+												// flat oracles render their extra columns; activeStat is still
+												// forwarded for any stat-highlighted column.
 												{ activeStat: activeStat ?? undefined, columns: selectedOracle.columns },
 						)}
 					</div>
