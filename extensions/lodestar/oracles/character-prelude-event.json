@@ -1,0 +1,446 @@
+{
+  "key": "characterPreludeEvent",
+  "title": "Character: Prelude Event",
+  "category": "Character",
+  "selectLabel": "Character: Prelude Event",
+  "description": "Your character's life doesn't begin with your first session. What set them on the path to their life as Ironsworn? What gave them purpose? What filled them with regret or dread? For inspiration, use the following table.",
+  "postamble": "To give yourself a variety of options, roll up to five times and choose no more than three results. Take the associated asset for each event as one of your starting assets. As you select these backstory events, decide in which order they occurred, flesh them out as you like with more details, and envision how they served as milestones on the character's journey—leading to where you find them at the start of your campaign. As with most oracles, you're also free to pick an event instead of rolling. Or simply use an event as inspiration for an asset you've already decided on.",
+  "source": "lodestar",
+  "columns": [
+    {
+      "key": "asset",
+      "label": "Asset"
+    },
+    {
+      "key": "category",
+      "label": "Category"
+    },
+    {
+      "key": "value",
+      "label": "Event"
+    }
+  ],
+  "roll": ["asset", "category", "value"],
+  "data": [
+    {
+      "topRange": 2,
+      "asset": "Alchemist",
+      "category": "Path",
+      "value": "You found a journal full of crazed rantings and scribbled alchemical secrets amid a troll's collection of lost and stolen things. Fascinated, you attempted to reproduce the formulas. Some concoctions still elude you."
+    },
+    {
+      "topRange": 4,
+      "asset": "Animal Kin",
+      "category": "Path",
+      "value": "One night, sleeping in the wilds, you experienced a vivid dream of wild places, of hunting and being hunted. You awoke to find the elder beast studying you impassively."
+    },
+    {
+      "topRange": 6,
+      "asset": "Banner-Sworn",
+      "category": "Path",
+      "value": "You swore the vow without conviction. A simple task. A service done and paid for. But in that mission, you found a calling."
+    },
+    {
+      "topRange": 8,
+      "asset": "Blade-Bound",
+      "category": "Path",
+      "value": "Whispers guided you to an old barrow, where you pulled the blade from the skeletal grasp of its former bearer."
+    },
+    {
+      "topRange": 10,
+      "asset": "Commander",
+      "category": "Path",
+      "value": "When your leader fell in battle, you took up their banner and rallied your dispirited shield-mates. They follow you still."
+    },
+    {
+      "topRange": 12,
+      "asset": "Dancer",
+      "category": "Path",
+      "value": "You stumbled upon a secret glade and saw the elves dancing. In the years since, you strive to attain the beauty of their unearthly movements. You know you'll never fully succeed."
+    },
+    {
+      "topRange": 14,
+      "asset": "Devotant",
+      "category": "Path",
+      "value": "The priest said you bear the mark of a long-forgotten god and were destined for martyrdom. You followed no faith and laughed at the notion—until that god revealed itself to you."
+    },
+    {
+      "topRange": 16,
+      "asset": "Empowered",
+      "category": "Path",
+      "value": "The revelation of your birthright surprised everyone—you most of all. Since then, everything has changed."
+    },
+    {
+      "topRange": 18,
+      "asset": "Fated",
+      "category": "Path",
+      "value": "Friends dared you to visit the local seer. You played along, figuring it was worth a few laughs. But in the mystic's words, you experienced a haunting vision of a terrible fate—and swore a vow to prevent it."
+    },
+    {
+      "topRange": 20,
+      "asset": "Fortune Hunter",
+      "category": "Path",
+      "value": "You swore to a task out of love and loyalty, and were wronged. Now, your word has a price."
+    },
+    {
+      "topRange": 22,
+      "asset": "Herbalist",
+      "category": "Path",
+      "value": "You spent hours each day in the nearby woods, foraging for herbs to ease a loved one's sickness. They were skilled in herbcraft and instructed you in your search for remedies. But in the end, it wasn't enough—they passed in the spring. You still carry their worn satchel."
+    },
+    {
+      "topRange": 24,
+      "asset": "Honorbound",
+      "category": "Path",
+      "value": "When a close kin brought disgrace to your clan, you accepted the vow they abandoned. Whatever it takes, you will regain your honor."
+    },
+    {
+      "topRange": 26,
+      "asset": "Improviser",
+      "category": "Path",
+      "value": "A wandering peddler stayed with you for a time. They taught you the value of even the most mundane things, of cobbling together solutions far from the comforts of home. A wayward soul, they departed without a word early one morning, but left you a pack and a set of tools to help find your own way."
+    },
+    {
+      "topRange": 28,
+      "asset": "Infiltrator",
+      "category": "Path",
+      "value": "You were captured by an enemy and held in a far-off place. You managed to escape, but did not flee. Instead, you lived under their noses, a rat in the warrens. Eventually, you learned the best path to gain your revenge."
+    },
+    {
+      "topRange": 30,
+      "asset": "Lorekeeper",
+      "category": "Path",
+      "value": "You sought answers from an elder sage. They sensed your eagerness for secret truths and took you on as an apprentice. Some time later, in their last hours, they passed the archive to you. Now it is yours—a gift and a curse."
+    },
+    {
+      "topRange": 32,
+      "asset": "Masked",
+      "category": "Path",
+      "value": "You spent time in the company of elves and earned their respect. When you departed, they gifted you one of their uncanny wooden masks."
+    },
+    {
+      "topRange": 34,
+      "asset": "Outcast",
+      "category": "Path",
+      "value": "You were accused of a betrayal and banished from your home. Those who loved you dearest now consider you dead."
+    },
+    {
+      "topRange": 36,
+      "asset": "Pretender",
+      "category": "Path",
+      "value": "You were forced to live under a false identity, and grew accustomed to the deception. Now, you change your name as easily as your clothes."
+    },
+    {
+      "topRange": 38,
+      "asset": "Rider",
+      "category": "Path",
+      "value": "You served as a warden, patrolling the wilds surrounding your home. Amid many dangers, you and your mount learned to work as one."
+    },
+    {
+      "topRange": 40,
+      "asset": "Sighted",
+      "category": "Path",
+      "value": "Deep in the woods, you stumbled upon an iron pillar—ancient, yet untouched by the ravages of age. You reached out to touch its smooth, featureless surface. Then, nothing. When you awoke days later, you were in an unfamiliar place with a new ability to see the unseen."
+    },
+    {
+      "topRange": 42,
+      "asset": "Slayer",
+      "category": "Path",
+      "value": "In your dreams, you still hear the screams and the horrible roar of that thing. You failed that night, but will not falter again."
+    },
+    {
+      "topRange": 44,
+      "asset": "Spirit-Bound",
+      "category": "Path",
+      "value": "It was an unforgiving winter, and someone close to you did not survive. You hold yourself responsible for their death, and they haunt you still."
+    },
+    {
+      "topRange": 46,
+      "asset": "Storyweaver",
+      "category": "Path",
+      "value": "An elder gifted their stories to you, endless tales of the old world and the new. You share these stories in their honor, and collect tales of your own that you might also pass on."
+    },
+    {
+      "topRange": 48,
+      "asset": "Trickster",
+      "category": "Path",
+      "value": "You fell in with a group of swindlers and thieves. They picked their targets with care, and you learned that there is as much honor among the shadows as in the light."
+    },
+    {
+      "topRange": 50,
+      "asset": "Veteran",
+      "category": "Path",
+      "value": "You answered the call to war and fought many battles. Somehow you evaded death, but others weren't so lucky. In time, you learned a costly lesson—this fight was not your own."
+    },
+    {
+      "topRange": 52,
+      "asset": "Waterborn",
+      "category": "Path",
+      "value": "You stayed with the fisher folk of a seaside village, and learned their ways. The wind and the wave still call to you, even when you are far from the sea."
+    },
+    {
+      "topRange": 54,
+      "asset": "Wayfinder",
+      "category": "Path",
+      "value": "You struck off on your own, journeying deep into unknown lands. You did not find what you sought, but those first wayward steps still guide your travels."
+    },
+    {
+      "topRange": 56,
+      "asset": "Wildblood",
+      "category": "Path",
+      "value": "An exiled wanderer taught you the ways of tracking and woodcraft. When a fugitive escaped into a deep wood, it fell to you to hunt them down."
+    },
+    {
+      "topRange": 58,
+      "asset": "Wright",
+      "category": "Path",
+      "value": "You apprenticed under a cruel and untalented artisan. After secretly learning and perfecting the craft on your own, you stole away with your former master's tools."
+    },
+    {
+      "topRange": 60,
+      "asset": "Archer",
+      "category": "Combat Talent",
+      "value": "Every missed shot has a cost, someone once told you. They were right. The day your arrow fell short was when you lost someone dear to you. You won't let it happen again."
+    },
+    {
+      "topRange": 61,
+      "asset": "Berserker",
+      "category": "Combat Talent",
+      "value": "The warrior wore only animal pelts in battle. You never forgot the look in their eyes—or how they tore through a dozen foes before finally falling to spear and axe. You honor their memory by wearing their bloodstained pelt."
+    },
+    {
+      "topRange": 62,
+      "asset": "Brawler",
+      "category": "Combat Talent",
+      "value": "When your weapon broke in a desperate battle, you started swinging your fists. That's when they began to fear you."
+    },
+    {
+      "topRange": 63,
+      "asset": "Cutthroat",
+      "category": "Combat Talent",
+      "value": "You stood your ground with nothing but a dull knife. The raider chief laughed—and offered you a place among their band."
+    },
+    {
+      "topRange": 64,
+      "asset": "Duelist",
+      "category": "Combat Talent",
+      "value": "Your friend betrayed you. Someday, when you are ready, you will face them in the dueling circle."
+    },
+    {
+      "topRange": 65,
+      "asset": "Fletcher",
+      "category": "Combat Talent",
+      "value": "You learned the art of fletching from a kindly hunter who took you in when others would not. Among your quiver, there is one special arrow saved for the beast that killed him."
+    },
+    {
+      "topRange": 66,
+      "asset": "Ironclad",
+      "category": "Combat Talent",
+      "value": "Your parent fell in battle. Their blade-pierced armor passed to you, along with their vow."
+    },
+    {
+      "topRange": 67,
+      "asset": "Long-Arm",
+      "category": "Combat Talent",
+      "value": "A broken leg left you hobbled. When you found the elderwood tree still smoldering, split down its heart by lightning, you carved a staff from its fallen limb. Though the injury has healed, the staff remains."
+    },
+    {
+      "topRange": 68,
+      "asset": "Shield-Bearer",
+      "category": "Combat Talent",
+      "value": "After suffering a grievous wound, you were determined to never again let the iron of an enemy slip past your guard. Your shield is your life."
+    },
+    {
+      "topRange": 69,
+      "asset": "Skirmisher",
+      "category": "Combat Talent",
+      "value": "You underwent a rite of passage to kill a dangerous beast. The test left you with a broken spear, a scar that still lingers, and a fang pendant as a trophy."
+    },
+    {
+      "topRange": 70,
+      "asset": "Slinger",
+      "category": "Combat Talent",
+      "value": "You defended your home with a meager weapon, and brought down a dreadful foe."
+    },
+    {
+      "topRange": 71,
+      "asset": "Sunderer",
+      "category": "Combat Talent",
+      "value": "In the aftermath of an attack, you claimed the axe of a fallen foe. You bear it to this day."
+    },
+    {
+      "topRange": 72,
+      "asset": "Swordmaster",
+      "category": "Combat Talent",
+      "value": "You took the fragments of your kin-sword to a master ironsmith. They agreed to reforge the broken blade—for a costly price."
+    },
+    {
+      "topRange": 73,
+      "asset": "Thunder-Bringer",
+      "category": "Combat Talent",
+      "value": "As thanks for your service, a giant-friend gifted you their smithing hammer—a small thing to them, but it takes both your arms to swing."
+    },
+    {
+      "topRange": 74,
+      "asset": "Cave Lion",
+      "category": "Companion",
+      "value": "The plaintive mewling sounds led you to the abandoned cub. Others warned that such a creature could never be tamed, and they were right. But you are inseparable nonetheless."
+    },
+    {
+      "topRange": 75,
+      "asset": "Giant Spider",
+      "category": "Companion",
+      "value": "You encountered the fearful creature in an old ruin. You expected it to kill you, but instead, it spoke in a voice that only you can hear."
+    },
+    {
+      "topRange": 76,
+      "asset": "Hawk",
+      "category": "Companion",
+      "value": "You found the hawk pierced by an arrow, grounded and near death. You nursed it back to health."
+    },
+    {
+      "topRange": 77,
+      "asset": "Horse",
+      "category": "Companion",
+      "value": "You encountered a riderless horse. It was spooked and bearing a bloodstained saddle. No amount of coaxing would allow it to be ridden or led, but it followed you at a distance. Eventually, you gained its trust."
+    },
+    {
+      "topRange": 78,
+      "asset": "Hound",
+      "category": "Companion",
+      "value": "The hound waited stubbornly among the smoldering wood and ashes of a ruined village, as if hoping its former owner would return. It decided you'd do well enough."
+    },
+    {
+      "topRange": 79,
+      "asset": "Kindred",
+      "category": "Companion",
+      "value": "You saved your friend's life, and they swore to someday return the favor. The way things are going, it won't be long before they get the chance."
+    },
+    {
+      "topRange": 80,
+      "asset": "Mammoth",
+      "category": "Companion",
+      "value": "You were wounded and half-frozen when the beast found you. It shielded you from the wind and snow with its body. When you woke, it was still there—its breath steaming like a forge."
+    },
+    {
+      "topRange": 81,
+      "asset": "Owl",
+      "category": "Companion",
+      "value": "The owl with uncanny eyes perched upon a branch overlooking the grave of a loved one, a grim specter who still keeps a vigil over you."
+    },
+    {
+      "topRange": 82,
+      "asset": "Raven",
+      "category": "Companion",
+      "value": "The strange bird appeared on the day of your birth. A grim omen, some said. It has watched over you since."
+    },
+    {
+      "topRange": 83,
+      "asset": "Young Wyvern",
+      "category": "Companion",
+      "value": "You set off to slay a wyvern, but found only a nest of broken eggs and a single surviving youngling."
+    },
+    {
+      "topRange": 84,
+      "asset": "Augur",
+      "category": "Ritual",
+      "value": "You've long heard whispers in the chattering of crows, but it was the day they led you safely through a perilous wild that you fully reckoned the power inherent in their cries."
+    },
+    {
+      "topRange": 85,
+      "asset": "Awakening",
+      "category": "Ritual",
+      "value": "Their life faded from their eyes as you watched. You were helpless to save them. But in those desperate moments, you learned to breathe life into other things."
+    },
+    {
+      "topRange": 86,
+      "asset": "Bind",
+      "category": "Ritual",
+      "value": "A lover taught you the dances of bear, stag, wolf and boar, but warned of the allure of the wildcall. They disappeared soon after."
+    },
+    {
+      "topRange": 87,
+      "asset": "Communion",
+      "category": "Ritual",
+      "value": "A close brush with death left you forever changed. The veil between worlds is now as fragile as gossamer."
+    },
+    {
+      "topRange": 88,
+      "asset": "Divination",
+      "category": "Ritual",
+      "value": "You knew the old seer only briefly, but—sickened and dying—she gave you her precious rune-carved stones. The stones choose their keeper, she told you."
+    },
+    {
+      "topRange": 89,
+      "asset": "Invoke",
+      "category": "Ritual",
+      "value": "The witch sensed something in you, a latent, sleeping power. She taught you to awaken it, and then to harness it. But you soon learned she had her own purposes, of which you wanted no part."
+    },
+    {
+      "topRange": 90,
+      "asset": "Keen",
+      "category": "Ritual",
+      "value": "Your first kill left you with regret. When you sing a keen, it is their memory that haunts you most."
+    },
+    {
+      "topRange": 91,
+      "asset": "Leech",
+      "category": "Ritual",
+      "value": "A close kin succumbed to the lure of a dark power. Now, you fear you walk the same path."
+    },
+    {
+      "topRange": 92,
+      "asset": "Lightbearer",
+      "category": "Ritual",
+      "value": "They shut you away in darkness, leaving you for the things that lurked in that place. You cowered, waiting for death. But then you found the light within, and made your escape."
+    },
+    {
+      "topRange": 93,
+      "asset": "Scry",
+      "category": "Ritual",
+      "value": "The fire revealed a vision—something you'd much rather forget. Since then, you can cast your gaze through the flames to distant people and places. Each time you perform the ritual, you fear you'll once again see that first dreadful vision."
+    },
+    {
+      "topRange": 94,
+      "asset": "Shadow-Walk",
+      "category": "Ritual",
+      "value": "An errant step carried you unbidden into the world of shadow. Now you walk those paths willingly."
+    },
+    {
+      "topRange": 95,
+      "asset": "Sway",
+      "category": "Ritual",
+      "value": "When the storm struck, you found no shelter. It lashed the landscape with unbound fury, uprooting trees and hurling whirlwinds of stone and branch. But it left you untouched—eager to share its secrets. The wind knows things, you learned. You need only listen."
+    },
+    {
+      "topRange": 96,
+      "asset": "Talisman",
+      "category": "Ritual",
+      "value": "You befriended a varou who was outcast from their clan. They taught you the secrets of crafting protective charms. In exchange, you swore a vow to them."
+    },
+    {
+      "topRange": 97,
+      "asset": "Tether",
+      "category": "Ritual",
+      "value": "You were far from home, unsure even of which direction it lay. In a moment of quiet desperation—lost, cold, hungry—you heard the spirits of your home call to you. They guided you back."
+    },
+    {
+      "topRange": 98,
+      "asset": "Totem",
+      "category": "Ritual",
+      "value": "A beloved animal companion died protecting you. You carry a clipping of its fur as a remembrance of your bond—alongside other totems."
+    },
+    {
+      "topRange": 99,
+      "asset": "Visage",
+      "category": "Ritual",
+      "value": "They burned your home. Killed your kin. Now, when you wear a painted mask of blood and ash, you wield the power of your grief and anger against your foes."
+    },
+    {
+      "topRange": 100,
+      "asset": "Ward",
+      "category": "Ritual",
+      "value": "A powerful mystic saved you from a night of horrors with a handful of salt and urgent, whispered chants. To this day, you remember those words."
+    }
+  ]
+}

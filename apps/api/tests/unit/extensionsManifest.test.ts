@@ -94,13 +94,14 @@ describe('extensions.manifest.json', () => {
     expect(assetData.flatMap((f) => f.rarities ?? [])).toHaveLength(63);
     // 49 base/delve/yrt moves + 2 lodestar (Follow a Path, alternate End the Fight).
     expect(moveData.flatMap((f) => f.moves)).toHaveLength(51);
-    // 25 base + 32 delve + 13 yrt + 23 lodestar = 93 (sample is dev-only, stripped
+    // 25 base + 32 delve + 13 yrt + 24 lodestar = 94 (sample is dev-only, stripped
     // from `core`). Combat set (base Combat: Tactic, delve Combat: Event / Event
     // Method / Event Target, lodestar Combat: Battleground) + Story: Region (lodestar)
     // & yrtStoryRegion + Story: Clue + Magic: Mystic Effect + Scale: Magnitude
-    // + Scale: Rank + Encounter: Ironlands (the former Encounter Index roll-table,
-    // reborn as a flat oracle) brought lodestar to 23.
-    expect(oracleData).toHaveLength(93);
+    // + Scale: Rank + Encounter: Ironlands + Character: Prelude Event (the former
+    // Encounter Index & Prelude Event roll-tables, reborn as flat oracles) brought
+    // lodestar to 24.
+    expect(oracleData).toHaveLength(94);
     expect(foeData.flatMap((f) => f.foes)).toHaveLength(82);
     expect(foeOverrides).toHaveLength(1);
     // Lodestar hides base End the Fight via a move override ("hide + add"):
@@ -133,15 +134,6 @@ describe('extensions.manifest.json', () => {
         },
     );
     expect(tables.length).toBeGreaterThan(0); // at least the sample fixture
-
-    // Lodestar's Prelude Event: an asset resolver-oracle with a full d100 (70
-    // rows across Path / Combat Talent / Companion / Ritual), each carrying a
-    // prelude narrative.
-    const prelude = tables.find((t) => t.id === 'lodestarPreludeEvent');
-    expect(prelude, 'lodestar Prelude Event roll-table present').toBeDefined();
-    expect(prelude!.kind).toBe('asset');
-    expect(prelude!.entries).toHaveLength(70);
-    expect(prelude!.entries.every((e) => !!(e as { text?: string }).text)).toBe(true);
 
     const unresolved: string[] = [];
     for (const t of tables) {
@@ -210,7 +202,7 @@ describe('oracle visibility by enabled extension', () => {
     expect(oracleKeysFor('base')).toHaveLength(24);
     expect(oracleKeysFor('delve')).toHaveLength(32);
     expect(oracleKeysFor('yrt')).toHaveLength(13);
-    expect(oracleKeysFor('lodestar')).toHaveLength(23);
+    expect(oracleKeysFor('lodestar')).toHaveLength(24);
   });
 
   // base always on; each row toggles delve / yrt / lodestar. Counts net out
@@ -219,13 +211,13 @@ describe('oracle visibility by enabled extension', () => {
   // charDisposition + base location/coastalWatersLocation).
   it.each([
     [false, false, false, 24],
-    [false, false, true, 45],
+    [false, false, true, 46],
     [false, true, false, 36],
-    [false, true, true, 54],
+    [false, true, true, 55],
     [true, false, false, 56],
-    [true, false, true, 74],
+    [true, false, true, 75],
     [true, true, false, 68],
-    [true, true, true, 83],
+    [true, true, true, 84],
   ])(
     'base + delve=%s yrt=%s lodestar=%s → %i visible oracles',
     (delve, yrt, lodestar, expected) => {

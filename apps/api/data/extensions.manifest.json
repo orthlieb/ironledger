@@ -181,6 +181,7 @@
         "oracles": [
           "oracles/character-disposition.json",
           "oracles/character-first-look.json",
+          "oracles/character-prelude-event.json",
           "oracles/coastal-waters-landmark.json",
           "oracles/coastal-waters-opportunity.json",
           "oracles/coastal-waters-peril.json",
@@ -202,9 +203,6 @@
           "oracles/settlement-type.json",
           "oracles/story-clue.json",
           "oracles/story-region.json"
-        ],
-        "rollTables": [
-          "roll-tables/prelude-event.json"
         ]
       }
     },
