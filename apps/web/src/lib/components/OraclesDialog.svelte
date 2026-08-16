@@ -134,17 +134,33 @@
 		return pickerColor(j, cols[j]?.key);
 	});
 
-	/** Filtered list of oracles for the picker tile grid. */
+	/** Picker-grid order: category (alphabetical, matching the filter-chip order),
+	 *  then display name. Numeric-aware so "Ironlander 1/2" sort naturally. */
+	function byCategoryName(
+		aCat: string | undefined,
+		aName: string,
+		bCat: string | undefined,
+		bName: string,
+	): number {
+		return (
+			(aCat ?? 'Other').localeCompare(bCat ?? 'Other') ||
+			aName.localeCompare(bName, undefined, { numeric: true })
+		);
+	}
+
+	/** Filtered list of oracles for the picker tile grid, sorted by category then name. */
 	const filteredOracles = $derived(() => {
 		const q = search.trim().toLowerCase();
-		return visibleOracles.filter((o) => {
-			const catMatch = activeCategories.size === 0 || activeCategories.has(o.category ?? 'Other');
-			const textMatch =
-				!q ||
-				o.title.toLowerCase().includes(q) ||
-				(o.description?.toLowerCase().includes(q) ?? false);
-			return catMatch && textMatch;
-		});
+		return visibleOracles
+			.filter((o) => {
+				const catMatch = activeCategories.size === 0 || activeCategories.has(o.category ?? 'Other');
+				const textMatch =
+					!q ||
+					o.title.toLowerCase().includes(q) ||
+					(o.description?.toLowerCase().includes(q) ?? false);
+				return catMatch && textMatch;
+			})
+			.sort((a, b) => byCategoryName(a.category, a.title, b.category, b.title));
 	});
 
 	// ── Resolver oracles (foe roll-tables) ──────────────────────────────────
@@ -159,12 +175,14 @@
 	/** Foe roll-tables matching the current search + source filters. */
 	const foeRollTables = $derived(() => {
 		const q = search.trim().toLowerCase();
-		return getVisibleRollTables().filter(
-			(t) =>
-				t.kind === 'foe' &&
-				(activeCategories.size === 0 || activeCategories.has(t.category ?? 'Other')) &&
-				(!q || t.name.toLowerCase().includes(q)),
-		);
+		return getVisibleRollTables()
+			.filter(
+				(t) =>
+					t.kind === 'foe' &&
+					(activeCategories.size === 0 || activeCategories.has(t.category ?? 'Other')) &&
+					(!q || t.name.toLowerCase().includes(q)),
+			)
+			.sort((a, b) => byCategoryName(a.category, a.name, b.category, b.name));
 	});
 
 	const foeRollTitle = $derived(activeFoeTable?.name ?? '');
@@ -218,12 +236,14 @@
 	 *  filters. Unlike foe tables these have no roll ceremony. */
 	const assetRollTables = $derived(() => {
 		const q = search.trim().toLowerCase();
-		return getVisibleRollTables().filter(
-			(t) =>
-				t.kind === 'asset' &&
-				(activeCategories.size === 0 || activeCategories.has(t.category ?? 'Other')) &&
-				(!q || t.name.toLowerCase().includes(q)),
-		);
+		return getVisibleRollTables()
+			.filter(
+				(t) =>
+					t.kind === 'asset' &&
+					(activeCategories.size === 0 || activeCategories.has(t.category ?? 'Other')) &&
+					(!q || t.name.toLowerCase().includes(q)),
+			)
+			.sort((a, b) => byCategoryName(a.category, a.name, b.category, b.name));
 	});
 
 	let preludeTableRef = $state<{ open(): void; close(): void } | null>(null);
