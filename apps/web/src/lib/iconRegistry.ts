@@ -107,3 +107,43 @@ export function foeIcon(def: FoeDef | undefined | null): string {
 export function natureIcon(nature: FoeNature): string {
 	return getIcon(NATURE_ICON[nature]) ?? '';
 }
+
+// ---------------------------------------------------------------------------
+// Oracle category → icon
+//
+// Oracles carry an optional `category` string (e.g. "Character", "Location",
+// "Threat") that groups them under the picker's filter chips. Each category
+// also gets a per-tile glyph so the picker reads at a glance. All slugs
+// resolve to icons already in the library — no new SVG art is needed.
+// An unknown or absent category falls back to a neutral d100 glyph so tiles
+// never render iconless.
+// ---------------------------------------------------------------------------
+
+const ORACLE_CAT_ICON: Record<string, string> = {
+	Core: 'crystal-ball',
+	Location: 'location',
+	Character: 'farmer',
+	Settlement: 'village',
+	'Delve Site': 'dungeon-gate',
+	Threat: 'skull-crossbones-solid-full',
+	Move: 'person-running-solid',
+	Creature: 'foe-beast',
+	Combat: 'sword-solid-full',
+	// Scale absorbs the former Quest cluster (challengeRank moved). fa-scale-unbalanced.
+	Scale: 'scale-unbalanced-solid-full',
+	// FA Free (hydra + sparkles are Pro-only — substituted from the same visual family):
+	Monstrosity: 'dragon-solid-full',
+	Story: 'book-solid-full',
+	Magic: 'wand-sparkles-solid-full',
+	// Encounter reuses the neutral d100 glyph — single-oracle category, no distinctive art.
+	Encounter: 'dice-d100-solid',
+	// Sample/dev-only oracles surface as "Other" — d100 fallback is the right neutral.
+	Other: 'dice-d100-solid',
+};
+
+/** Resolve the icon SVG for an oracle by category. Falls back to a neutral
+ *  d100 glyph for unknown/absent categories so tiles never render blank. */
+export function oracleCategoryIcon(category: string | undefined | null): string {
+	const slug = category ? ORACLE_CAT_ICON[category] : undefined;
+	return getIcon(slug) ?? getIcon('dice-d100-solid') ?? '';
+}

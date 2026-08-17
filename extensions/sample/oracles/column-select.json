@@ -1,0 +1,18 @@
+{
+  "key": "sampleColumnSelect",
+  "title": "Sample – Column Select",
+  "category": "Other",
+  "selectLabel": "Sample – Column Select",
+  "description": "A columnSelect oracle: pick a column FIRST (via the stat picker in the detail view), then roll a single d100 against that column's per-row topRange. Delve the Depths uses this to weight the same result-table differently across Edge, Shadow, and Wits.",
+  "source": "sample",
+  "tableType": "columnSelect",
+  "columns": [
+    { "key": "kind", "label": "Kind" },
+    { "key": "mean", "label": "Mean" }
+  ],
+  "data": [
+    { "kind": 70, "mean": 20, "value": "Nothing happens." },
+    { "kind": 90, "mean": 60, "value": "Something small changes." },
+    { "kind": 100, "mean": 100, "value": "Something drastic happens." }
+  ]
+}

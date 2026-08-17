@@ -78,5 +78,11 @@
   "threatPowerHungryMystic": 48,
   "threatZealousCult": 49,
   "siteNamePlace": 31.3,
-  "monstrosity": 34
+  "monstrosity": 34,
+  "sampleGizmo": 900,
+  "sampleCompound": 901,
+  "sampleCompoundName": 902,
+  "sampleMatrix": 910,
+  "sampleColumnSelect": 911,
+  "samplePrefixSuffix": 912
 }

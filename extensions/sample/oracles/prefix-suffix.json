@@ -1,0 +1,15 @@
+{
+  "key": "samplePrefixSuffix",
+  "title": "Sample – Prefix/Suffix",
+  "category": "Other",
+  "selectLabel": "Sample – Prefix/Suffix",
+  "description": "A prefixSuffix oracle: roll a d100 to fetch a {prefix, suffix} pair; the client concatenates them into a single word. Settlement: Quick Name uses this shape (Bleakmoor, Greenford, …).",
+  "source": "sample",
+  "tableType": "prefixSuffix",
+  "data": [
+    { "topRange": 25, "value": { "prefix": "Bright", "suffix": "watch" } },
+    { "topRange": 50, "value": { "prefix": "Iron", "suffix": "hold" } },
+    { "topRange": 75, "value": { "prefix": "Storm", "suffix": "ford" } },
+    { "topRange": 100, "value": { "prefix": "Rusk", "suffix": "vale" } }
+  ]
+}
