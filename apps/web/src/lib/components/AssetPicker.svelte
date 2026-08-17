@@ -125,9 +125,16 @@
 		onAdd(def.id);
 	}
 
-	/** Strips markdown-style links [text](anything) → text, for tile descriptions. */
-	function stripMdLinks(raw: string): string {
-		return raw.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
+	/** Reduce markdown + link DSL to plain text for the compact tile description:
+	 *  `[label](scheme:args)` / `[text]{.class}` → their inner text, and drop
+	 *  `**` / `*` / `_` emphasis markers. Summaries are already plain, but a
+	 *  markdown `preamble` used as the fallback would otherwise leak syntax. */
+	function tilePlainText(raw: string): string {
+		return raw
+			.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1') // [label](href) → label
+			.replace(/\[([^\]]+)\]\{\.[\w-]+\}/g, '$1') // [text]{.class} → text
+			.replace(/\*\*([^*]+)\*\*/g, '$1') // **bold** → bold
+			.replace(/[*_]([^*_]+)[*_]/g, '$1'); // *italic* / _italic_ → italic
 	}
 </script>
 
@@ -239,9 +246,9 @@
 								</div>
 
 								{#if asset.summary}
-									<div class="tile-desc">{stripMdLinks(asset.summary)}</div>
+									<div class="tile-desc">{tilePlainText(asset.summary)}</div>
 								{:else if asset.preamble}
-									<div class="tile-desc">{stripMdLinks(asset.preamble)}</div>
+									<div class="tile-desc">{tilePlainText(asset.preamble)}</div>
 								{/if}
 
 								{#if owned}
