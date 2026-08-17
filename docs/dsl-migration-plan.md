@@ -7,6 +7,14 @@ off hand-written HTML and onto one shared renderer (`renderRich`) plus a
 Proven end-to-end on the `feat/moves-oracles-dsl-poc` branch: one move
 (`forge-a-bond`), one oracle (`monstrosity`), one asset (`path/herbalist`).
 
+> **Status (2026-08-17):** Phases 0–4 complete. All 52 moves, 91 assets, and
+> the oracle templates run through `renderRich`; the per-item `markdown: true`
+> flag is gone (default is `renderRich`, opt back out with `html: true`);
+> `formatText`/`stripMdLinks` and the legacy oracle token are deleted; the lint
+> covers all non-`html` content. **Remaining:** the comprehensive authoring
+> guide (extensions.md / moves.md new sections) — tracked separately; the
+> stale-syntax drift in oracles.md / data-schema.md has been corrected.
+
 ## Goals
 
 - **One renderer, one DSL.** Collapse today's ~7 text renderers (moves:

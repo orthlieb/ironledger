@@ -41,8 +41,7 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} faces danger using {stat}",
-      "markdown": true
+      "logTitle": "{character} faces danger using {stat}"
     },
     {
       "id": "move/secure-an-advantage",
@@ -84,8 +83,7 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} secures an advantage using {stat}",
-      "markdown": true
+      "logTitle": "{character} secures an advantage using {stat}"
     },
     {
       "id": "move/gather-information",
@@ -110,8 +108,7 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} gathers information using {stat}",
-      "markdown": true
+      "logTitle": "{character} gathers information using {stat}"
     },
     {
       "id": "move/heal",
@@ -140,8 +137,7 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} heals using {stat}",
-      "markdown": true
+      "logTitle": "{character} heals using {stat}"
     },
     {
       "id": "move/resupply",
@@ -166,8 +162,7 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} resupplies using {stat}",
-      "markdown": true
+      "logTitle": "{character} resupplies using {stat}"
     },
     {
       "id": "move/make-camp",
@@ -192,8 +187,7 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} makes camp using {stat}",
-      "markdown": true
+      "logTitle": "{character} makes camp using {stat}"
     },
     {
       "id": "move/undertake-a-journey",
@@ -222,8 +216,7 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} undertakes a journey to {expedition} using {stat}",
-      "markdown": true
+      "logTitle": "{character} undertakes a journey to {expedition} using {stat}"
     },
     {
       "id": "move/reach-your-destination",
@@ -244,8 +237,7 @@
       ],
       "progressSource": "journey",
       "source": "base",
-      "logTitle": "{character} tries to reach the destination for {expedition}",
-      "markdown": true
+      "logTitle": "{character} tries to reach the destination for {expedition}"
     }
   ],
   "source": "base"

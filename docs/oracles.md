@@ -119,9 +119,9 @@ named fields:
 ```
 
 Renders `D100 | col1 | col2 | …` (a lone value column keeps the space-saving
-2-/3-column layout for long lists). A row whose value carries a `[self]{2}`
-template blank re-rolls this table twice and combines (see **Value-level
-templates** below). _Canonical:_ Core: Action (simple), YRT
+2-/3-column layout for long lists). A row whose value carries a
+`[roll again](roll:self?times=2)` template blank re-rolls this table twice and
+combines (see **Value-level templates** below). _Canonical:_ Core: Action (simple), YRT
 Region (typed), Combat: Battleground + Delve Site Nature Theme/Domain (described),
 YRT: Freeport Occupation (multi-column), Mana Backlash (Backlash / Effect).
 
@@ -188,36 +188,66 @@ category, then roll that row's `subtable` for the final result. `outerLabel` /
 
 _Canonical:_ Settlement: Name.
 
-### `compound` — a format string with `[oracleKey]` blanks
+### `compound` — a format string with `[label](roll:key)` blanks
 
-`value` is a template string; each `[oracleKey]` blank is resolved by rolling
-that oracle, recursively. Supports a regex-style repeat quantifier
-`[key]{n}` / `[key]{n,m}` (uniform count, de-duped). Full spec in
-[data-schema.md](data-schema.md).
+`value` is a template string; each `[label](roll:key)` blank is resolved by
+rolling that oracle, recursively. This is the interactive-link DSL (see
+[**Template blanks — the `roll:` DSL**](#template-blanks--the-roll-dsl) below),
+the same `[label](scheme:args)` grammar moves and assets use.
 
-```json
-{ "topRange": 100, "value": "[siteNameDescription] [siteNameNamesake]" }
+The optional **`compound`** field on the oracle file picks how the assembled
+result renders:
+
+- `"phrase"` — one composed string (a name), logged as a single line.
+- `"dossier"` — a per-field breakdown, one `Label: value` line per blank.
+
+```jsonc
+// phrase: two named blanks concatenated
+"compound": "phrase"
+{ "topRange": 100, "value": "[Description](roll:siteNameDescription) [Namesake](roll:siteNameNamesake)" }
+
+// dossier: each field rolled + echoed on its own line
+"compound": "dossier"
+{ "topRange": 100, "value": "[Primary Form](roll:monstrosityPrimaryForm?rollFrom=1&rollTo=3)" }
 ```
 
-_Canonical:_ Delve: Site Name, Delve: Monstrosity.
+_Canonical:_ Delve: Site Name (`phrase`), Delve: Monstrosity (`dossier`).
 
-### Value-level templates & `[self]` (Roll Twice)
+### Value-level templates & `roll:self` (Roll Twice)
 
-The same `[key]{n,m}` blanks work in **any** row's value, not just `compound`
-tables — a single row can carry one. The special key **`[self]`** re-rolls the
-**current** table. That's how "Roll twice" is modelled: a top row whose value is
-`[self]{2}` rolls this table twice and both results occur (no de-dupe — unlike
-named refs), cascading and depth-guarded. Literal text around the blanks is kept
-(e.g. `"Hybrid ([self]{2})"`). In the reference table a blank renders as a pill
-(`[self]` → "roll again"). This replaced the old `/roll twice/i` text-sniff.
+The same `[label](roll:…)` blanks work in **any** row's value, not just
+`compound` tables — a single row can carry one. The special target
+**`roll:self`** re-rolls the **current** table. That's how "Roll twice" is
+modelled: a top row whose value is `[roll again](roll:self?times=2)` rolls this
+table twice and **both** results occur (no de-dupe — unlike named refs, which
+dedupe repeats), cascading and depth-guarded (stops at depth 5). Literal text
+around the blanks is kept (e.g. `"Hybrid ([roll again](roll:self?times=2))"`).
+In the reference table a blank renders as a pill (the label + an optional `×n`
+badge). This replaced the old `/roll twice/i` text-sniff and the earlier
+`[self]{2}` token.
 
 ```json
-{ "topRange": 100, "value": "[self]{2}" }
-{ "topRange": 100, "value": "Hybrid ([self]{2})" }
+{ "topRange": 100, "value": "[roll again](roll:self?times=2)" }
+{ "topRange": 100, "value": "Hybrid ([roll again](roll:self?times=2))" }
 ```
 
 _Canonical:_ Character: Goal, Settlement: Troubles, Major Plot Twist,
 Monstrosity: Primary Form.
+
+### Template blanks — the `roll:` DSL
+
+A blank is a markdown link with the `roll:` scheme: `[label](roll:target?args)`.
+
+| Form                                    | Meaning                                                           |
+| --------------------------------------- | ----------------------------------------------------------------- |
+| `[Label](roll:key)`                     | Roll oracle `key` once.                                           |
+| `[Label](roll:key?times=n)`             | Roll `key` `n` times; **named** targets de-dupe repeats.          |
+| `[Label](roll:key?rollFrom=n&rollTo=m)` | Roll `key` a random `n…m` number of times.                        |
+| `[Label](roll:self?times=2)`            | Roll the **current** table twice; both results kept (no de-dupe). |
+
+`label` is the author-facing text shown as a pill in the reference table; the
+rolled value replaces the blank in the composed result. Blanks nest and are
+depth-guarded (≥ 5 stops).
 
 ### `prefixSuffix` — combine a rolled prefix with a rolled suffix
 

@@ -17,8 +17,7 @@
           "enabled": false,
           "text": "Disable the extension and this asset, its icon, the Sample move, the Sample – Gizmo oracle, and the Test Golem all filter out cleanly — no code changed anywhere."
         }
-      ],
-      "markdown": true
+      ]
     }
   ]
 }

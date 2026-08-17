@@ -19,8 +19,7 @@
       ],
       "logBody": "<p>Mark <a class=\"resource-link\" data-resource=\"failures\" data-value=\"+1\">+1 tick</a> on your failure track.</p><p>Mark <a class=\"resource-link\" data-resource=\"failures\" data-value=\"+2\">+2 ticks</a> if your failure was the result of a progress move.</p>",
       "source": "base",
-      "logTitle": "{character} marks a failure",
-      "markdown": true
+      "logTitle": "{character} marks a failure"
     },
     {
       "id": "move/learn-from-your-failures",
@@ -51,8 +50,7 @@
       ],
       "progressSource": "failures",
       "source": "base",
-      "logTitle": "{character} learns from their failure",
-      "markdown": true
+      "logTitle": "{character} learns from their failure"
     }
   ],
   "source": "base"

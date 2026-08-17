@@ -18,8 +18,7 @@
         }
       ],
       "references": ["expedition"],
-      "source": "delve",
-      "markdown": true
+      "source": "delve"
     },
     {
       "id": "move/delve-the-depths",
@@ -90,8 +89,7 @@
           "eq": 1
         }
       ],
-      "source": "delve",
-      "markdown": true
+      "source": "delve"
     },
     {
       "id": "move/find-an-opportunity",
@@ -154,8 +152,7 @@
       ],
       "references": ["expedition"],
       "source": "delve",
-      "logTitle": "Find an opportunity at {expedition}",
-      "markdown": true
+      "logTitle": "Find an opportunity at {expedition}"
     },
     {
       "id": "move/reveal-a-danger",
@@ -226,8 +223,7 @@
       ],
       "references": ["expedition"],
       "source": "delve",
-      "logTitle": "Reveal a danger at {expedition}",
-      "markdown": true
+      "logTitle": "Reveal a danger at {expedition}"
     },
     {
       "id": "move/check-your-gear",
@@ -256,8 +252,7 @@
         }
       ],
       "source": "delve",
-      "logTitle": "The party checks its gear",
-      "markdown": true
+      "logTitle": "The party checks its gear"
     },
     {
       "id": "move/locate-your-objective",
@@ -278,8 +273,7 @@
       ],
       "progressSource": "delve",
       "source": "delve",
-      "logTitle": "{character} — Locate Your Objective",
-      "markdown": true
+      "logTitle": "{character} — Locate Your Objective"
     },
     {
       "id": "move/advance-a-threat",
@@ -318,8 +312,7 @@
         }
       ],
       "source": "delve",
-      "logTitle": "{character} advances a threat",
-      "markdown": true
+      "logTitle": "{character} advances a threat"
     },
     {
       "id": "move/take-a-hiatus",
@@ -342,8 +335,7 @@
         }
       ],
       "source": "delve",
-      "logTitle": "{character} takes a hiatus",
-      "markdown": true
+      "logTitle": "{character} takes a hiatus"
     },
     {
       "id": "move/escape-the-depths",
@@ -389,8 +381,7 @@
           "eq": 1
         }
       ],
-      "source": "delve",
-      "markdown": true
+      "source": "delve"
     }
   ],
   "source": "delve"

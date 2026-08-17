@@ -23,8 +23,7 @@
         }
       ],
       "summary": "Bow specialist: precise aim, rapid shots, and hunting prowess.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "combat/berserker",
@@ -49,8 +48,7 @@
         }
       ],
       "summary": "Unarmored fury: wild rage, devastating strikes, pain as fuel.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "combat/brawler",
@@ -75,8 +73,7 @@
         }
       ],
       "summary": "Unarmed fighter: grappling, punching, and close-quarters combat.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "combat/cutthroat",
@@ -101,8 +98,7 @@
         }
       ],
       "summary": "Dagger specialist: ambush strikes, intimidation, and feints.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "combat/duelist",
@@ -127,8 +123,7 @@
         }
       ],
       "summary": "Dual-wielding fighter: aggressive offense and bold displays.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "combat/fletcher",
@@ -153,8 +148,7 @@
         }
       ],
       "summary": "Arrow crafter: fine ammunition and devastating special arrows.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "combat/ironclad",
@@ -197,8 +191,7 @@
           ]
         }
       ],
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "combat/long-arm",
@@ -223,8 +216,7 @@
         }
       ],
       "summary": "Staff fighter: versatile reach, trips, disarms, and travel aid.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "combat/shield-bearer",
@@ -249,8 +241,7 @@
         }
       ],
       "summary": "Shield specialist: cover, painted symbols, and sacrifice.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "combat/skirmisher",
@@ -275,8 +266,7 @@
         }
       ],
       "summary": "Spear fighter: reach advantage, charging defense, and thrusts.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "combat/slinger",
@@ -301,8 +291,7 @@
         }
       ],
       "summary": "Sling specialist: deadly stones, ranged control, and crafting.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "combat/sunderer",
@@ -327,8 +316,7 @@
         }
       ],
       "summary": "Axe fighter: brutal strikes, intimidation, and tribute runes.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "combat/swordmaster",
@@ -353,8 +341,7 @@
         }
       ],
       "summary": "Sword expert: momentum burns, flowing combos, and sworn oaths.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "combat/thunder-bringer",
@@ -379,8 +366,7 @@
         }
       ],
       "summary": "Hammer wielder: smashing obstacles, stunning blows, and fury.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "companion/cave-lion",
@@ -425,8 +411,7 @@
           "shortLabel": "Cave Lion"
         }
       ],
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "companion/giant-spider",
@@ -471,8 +456,7 @@
           "shortLabel": "Giant Spider"
         }
       ],
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "companion/hawk",
@@ -517,8 +501,7 @@
           "shortLabel": "Hawk"
         }
       ],
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "companion/horse",
@@ -563,8 +546,7 @@
           "shortLabel": "Horse"
         }
       ],
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "companion/hound",
@@ -609,8 +591,7 @@
           "shortLabel": "Hound"
         }
       ],
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "companion/kindred",
@@ -654,8 +635,7 @@
           "shortLabel": "Kindred"
         }
       ],
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "companion/mammoth",
@@ -699,8 +679,7 @@
           "shortLabel": "Mammoth"
         }
       ],
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "companion/owl",
@@ -744,8 +723,7 @@
           "shortLabel": "Owl"
         }
       ],
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "companion/raven",
@@ -790,8 +768,7 @@
           "shortLabel": "Raven"
         }
       ],
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "companion/young-wyvern",
@@ -836,8 +813,7 @@
           "shortLabel": "Young Wyvern"
         }
       ],
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/alchemist",
@@ -860,8 +836,7 @@
         }
       ],
       "summary": "Brew stat-boosting elixirs from your supply of ingredients.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/animal-kin",
@@ -884,8 +859,7 @@
         }
       ],
       "summary": "Deep bond with animals: taming, upgrading, and leveraging beasts.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/banner-sworn",
@@ -917,8 +891,7 @@
           "label": "Name"
         }
       ],
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/battle-scarred",
@@ -942,8 +915,7 @@
         }
       ],
       "summary": "Maimed but unyielding: refocused stats and iron will.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/blade-bound",
@@ -975,8 +947,7 @@
           "label": "Name"
         }
       ],
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/bonded",
@@ -999,8 +970,7 @@
         }
       ],
       "summary": "Strengthened by relationships: bond bonuses and desperate courage.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/commander",
@@ -1032,8 +1002,7 @@
         }
       ],
       "summary": "Lead a warband: command troops, dispatch scouts, forge loyalty.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/dancer",
@@ -1057,8 +1026,7 @@
         }
       ],
       "summary": "Graceful performer: captivate audiences and dodge in combat.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/devotant",
@@ -1095,8 +1063,7 @@
           "label": "Stat"
         }
       ],
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/empowered",
@@ -1128,8 +1095,7 @@
           "label": "Title/Lineage"
         }
       ],
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/fated",
@@ -1154,8 +1120,7 @@
         }
       ],
       "summary": "Destiny-bound: cheat death while your epic vow is unfulfilled.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/fortune-hunter",
@@ -1189,8 +1154,7 @@
           "icon": "sack-dollar"
         }
       ],
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/herbalist",
@@ -1215,8 +1179,7 @@
         }
       ],
       "summary": "Healer with herbal remedies: potent cures and restorative meals.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/honorbound",
@@ -1241,8 +1204,7 @@
         }
       ],
       "summary": "Driven by sworn vows: hard truths and unyielding resolve.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/improviser",
@@ -1266,8 +1228,7 @@
         }
       ],
       "summary": "Resourceful tinkerer: clever solutions and impulsive gambits.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/infiltrator",
@@ -1291,8 +1252,7 @@
         }
       ],
       "summary": "Stealth operative: breach enemy lines, spy, and scavenge.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/lorekeeper",
@@ -1317,8 +1277,7 @@
         }
       ],
       "summary": "Bearer of a mystical archive: ancient knowledge and forbidden lore.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/loyalist",
@@ -1342,8 +1301,7 @@
         }
       ],
       "summary": "Devoted ally: aid companions, share stress, and support progress.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/masked",
@@ -1366,8 +1324,7 @@
         }
       ],
       "summary": "Elven elderwood mask: stat boost at a cost, defying death.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/oathbreaker",
@@ -1392,8 +1349,7 @@
         }
       ],
       "summary": "Forsworn and seeking redemption: a debility until redeemed.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/outcast",
@@ -1418,8 +1374,7 @@
         }
       ],
       "summary": "Lone survivor: scraping by when supplies run out.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/pretender",
@@ -1443,8 +1398,7 @@
         }
       ],
       "summary": "Master of disguise: false identities and dramatic reveals.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/revenant",
@@ -1468,8 +1422,7 @@
         }
       ],
       "summary": "Returned from death: resilience against harm and the undead.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/rider",
@@ -1494,8 +1447,7 @@
         }
       ],
       "summary": "Expert horseman: care, hard rides, and saddle instincts.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/ritualist",
@@ -1518,8 +1470,7 @@
         }
       ],
       "summary": "Trained mystic: perform rituals with added potency.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/shadow-kin",
@@ -1542,8 +1493,7 @@
         }
       ],
       "summary": "Corrupted but empowered: dark insight and dread presence.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/sighted",
@@ -1568,8 +1518,7 @@
         }
       ],
       "summary": "Gifted with visions: mystical sight and prophetic dreams.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/slayer",
@@ -1594,8 +1543,7 @@
         }
       ],
       "summary": "Monster hunter: study prey, exploit weakness, trophy kills.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/spirit-bound",
@@ -1620,8 +1568,7 @@
         }
       ],
       "summary": "Bound to a spirit: channeled aid, whispered secrets, possession.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/storyweaver",
@@ -1646,8 +1593,7 @@
         }
       ],
       "summary": "Master storyteller: inspire allies, sway crowds, and chronicle.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/trickster",
@@ -1672,8 +1618,7 @@
         }
       ],
       "summary": "Cunning deceiver: lies, distractions, and clever escapes.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/veteran",
@@ -1697,8 +1642,7 @@
         }
       ],
       "summary": "Seasoned warrior: read the battlefield and seize the moment.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/waterborn",
@@ -1723,8 +1667,7 @@
         }
       ],
       "summary": "At home on the water: sailing, swimming, and sea knowledge.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/wayfinder",
@@ -1749,8 +1692,7 @@
         }
       ],
       "summary": "Expert navigator: uncharted paths and guiding others safely.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/weaponmaster",
@@ -1774,8 +1716,7 @@
         }
       ],
       "summary": "Trained by a master: versatile combat expertise.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/wildblood",
@@ -1800,8 +1741,7 @@
         }
       ],
       "summary": "Raised in the wilds: survival instincts and animal kinship.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "path/wright",
@@ -1832,8 +1772,7 @@
           "label": "Specialty"
         }
       ],
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "ritual/augur",
@@ -1857,8 +1796,7 @@
         }
       ],
       "summary": "Read the future in rune-carved bones to guide your path.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "ritual/awakening",
@@ -1893,8 +1831,7 @@
           "shortLabel": "Servant"
         }
       ],
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "ritual/bind",
@@ -1917,8 +1854,7 @@
         }
       ],
       "summary": "Bind an enemy or object with mystic chains of power.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "ritual/communion",
@@ -1941,8 +1877,7 @@
         }
       ],
       "summary": "Speak with the dead to gain knowledge from beyond.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "ritual/divination",
@@ -1965,8 +1900,7 @@
         }
       ],
       "summary": "Cast a divination to glimpse hidden truths and omens.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "ritual/invoke",
@@ -2000,8 +1934,7 @@
           "icon": "mana"
         }
       ],
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "ritual/keen",
@@ -2025,8 +1958,7 @@
         }
       ],
       "summary": "Sing a keen for the dead to honor and empower the fallen.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "ritual/leech",
@@ -2048,8 +1980,7 @@
         }
       ],
       "summary": "Drain life force from a foe to restore your own.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "ritual/lightbearer",
@@ -2082,8 +2013,7 @@
           "icon": "sun"
         }
       ],
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "ritual/scry",
@@ -2106,8 +2036,7 @@
         }
       ],
       "summary": "Peer through flame or water to see distant places.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "ritual/shadow-walk",
@@ -2131,8 +2060,7 @@
         }
       ],
       "summary": "Step between shadows to travel unseen and unheard.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "ritual/sway",
@@ -2156,8 +2084,7 @@
         }
       ],
       "summary": "Weave a ritual of persuasion to bend hearts and minds.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "ritual/talisman",
@@ -2179,8 +2106,7 @@
         }
       ],
       "summary": "Craft a protective charm to ward off supernatural harm.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "ritual/tether",
@@ -2209,8 +2135,7 @@
         }
       ],
       "summary": "Bind your spirit to a place, returning there when in peril.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "ritual/totem",
@@ -2233,8 +2158,7 @@
         }
       ],
       "summary": "Channel an animal spirit for primal strength and instinct.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "ritual/visage",
@@ -2258,8 +2182,7 @@
         }
       ],
       "summary": "Alter your appearance through ritual magic to deceive others.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "ritual/ward",
@@ -2282,8 +2205,7 @@
         }
       ],
       "summary": "Create a protective barrier against physical or mystic threats.",
-      "source": "base",
-      "markdown": true
+      "source": "base"
     }
   ],
   "rarities": [],

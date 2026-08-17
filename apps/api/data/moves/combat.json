@@ -41,8 +41,7 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} enters the fray against {foe} using {stat}",
-      "markdown": true
+      "logTitle": "{character} enters the fray against {foe} using {stat}"
     },
     {
       "id": "move/strike",
@@ -80,8 +79,7 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} strikes {foe} using {stat}",
-      "markdown": true
+      "logTitle": "{character} strikes {foe} using {stat}"
     },
     {
       "id": "move/clash",
@@ -119,8 +117,7 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} clashes with {foe} using {stat}",
-      "markdown": true
+      "logTitle": "{character} clashes with {foe} using {stat}"
     },
     {
       "id": "move/turn-the-tide",
@@ -148,8 +145,7 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} turns the tide against {foe}",
-      "markdown": true
+      "logTitle": "{character} turns the tide against {foe}"
     },
     {
       "id": "move/battle",
@@ -199,8 +195,7 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} battles {foe} using {stat}",
-      "markdown": true
+      "logTitle": "{character} battles {foe} using {stat}"
     },
     {
       "id": "move/end-the-fight",
@@ -225,8 +220,7 @@
       ],
       "progressSource": "combat",
       "source": "base",
-      "logTitle": "{character} ends the fight with {foe}",
-      "markdown": true
+      "logTitle": "{character} ends the fight with {foe}"
     }
   ],
   "source": "base"

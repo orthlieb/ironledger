@@ -24,8 +24,7 @@
           "eq": 1
         }
       ],
-      "logTitle": "{character} follows a path using {stat}",
-      "markdown": true
+      "logTitle": "{character} follows a path using {stat}"
     },
     {
       "id": "move/end-the-fight-lodestar",
@@ -47,8 +46,7 @@
         }
       ],
       "progressSource": "combat",
-      "logTitle": "{character} ends the fight with {foe}",
-      "markdown": true
+      "logTitle": "{character} ends the fight with {foe}"
     }
   ]
 }

@@ -980,14 +980,17 @@ so an extension can use them from data alone:
 
 - **`tableType: "compound"`** — a **format-string builder** that composes a
   result by rolling _other_ oracles. Each `data` row's `value` is a template
-  string containing `[oracleKey]` blanks plus any literal connective text
-  (`of`, `'s`, `·`, newlines). To resolve: roll `data` to pick a template (a
-  single row = one fixed format, no roll), then **recursively** roll each
-  `[oracleKey]` and substitute its result. Every sub-roll is logged. The detail
-  view renders each blank as its target oracle's title. References may point at
-  any oracle — including `twoStep` or other `compound` oracles (depth-guarded).
-  Used by `siteName` ("[siteNamePlace] of [siteNameDetail]", 7 formats) and
-  `monstrosity` (one labelled format over four sub-oracles):
+  string containing `[label](roll:key)` blanks (the interactive-link DSL — see
+  [Template blanks](#template-blanks--the-roll-dsl) below) plus any literal
+  connective text (`of`, `'s`, `·`, newlines). To resolve: roll `data` to pick a
+  template (a single row = one fixed format, no roll), then **recursively** roll
+  each blank's target oracle and substitute its result. Every sub-roll is logged.
+  The detail view renders each blank as a pill (its author-facing `label`).
+  References may point at any oracle — including `twoStep` or other `compound`
+  oracles (depth-guarded). The **`compound`** field on the oracle file selects
+  how the result renders: `"phrase"` (one composed string) or `"dossier"`
+  (per-field breakdown). Used by `siteName` (`phrase`, 7 formats) and
+  `monstrosity` (`dossier`, one labelled format over four sub-oracles):
 
   ```json
   {
@@ -997,38 +1000,45 @@ so an extension can use them from data alone:
     "selectLabel": "Delve: Site Name",
     "source": "delve",
     "tableType": "compound",
-    "data": [
-      { "topRange": 50, "value": "[siteNameDescription] [siteNamePlace]" },
-      { "topRange": 100, "value": "[siteNamePlace] of [siteNameNamesake]'s [siteNameDetail]" }
-    ]
-  }
-  ```
-
-  **Repeat a blank** with a **regex-style quantifier** right after it —
-  `[key]{n}` (exactly _n_) or `[key]{n,m}` (a uniform count in _n_…_m_). The
-  oracle is rolled that many times, results are **de-duplicated**, and joined
-  with `, `. A single-format compound (no format roll — e.g. a labelled
-  dossier) that rolls Characteristics/Abilities 1–3× each:
-
-  ```json
-  {
-    "key": "monstrosity",
-    "tableType": "compound",
-    "category": "Monstrosity",
-    "…": "…",
+    "compound": "phrase",
     "data": [
       {
+        "topRange": 50,
+        "value": "[Description](roll:siteNameDescription) [Place](roll:siteNamePlace)"
+      },
+      {
         "topRange": 100,
-        "value": "Primary form: [monstrosityPrimaryForm] · Size: [monstrositySize] · Characteristics: [monstrosityCharacteristics]{1,3} · Abilities: [monstrosityAbilities]{1,3}"
+        "value": "[Place](roll:siteNamePlace) of [Namesake](roll:siteNameNamesake)'s [Detail](roll:siteNameDetail)"
       }
     ]
   }
   ```
 
-  **Log output.** Each blank logs one line, labelled by its oracle's title
-  (the part after the last `": "`, so `Monstrosity: Primary Form` → `Primary
-Form`). A quantified blank first logs its count roll, then one indented line
-  per kept result:
+  **Repeat a blank** via query args on the `roll:` target — `?times=n` (exactly
+  _n_) or `?rollFrom=n&rollTo=m` (a random count in _n_…_m_). The oracle is
+  rolled that many times, results are **de-duplicated** (named refs only), and
+  joined with `, `. A single-format `dossier` compound that rolls
+  Characteristics/Abilities 1–3× each:
+
+  ```json
+  {
+    "key": "monstrosity",
+    "tableType": "compound",
+    "compound": "dossier",
+    "category": "Monstrosity",
+    "…": "…",
+    "data": [
+      {
+        "topRange": 100,
+        "value": "Primary form: [Primary Form](roll:monstrosityPrimaryForm) · Size: [Size](roll:monstrositySize) · Characteristics: [Characteristics](roll:monstrosityCharacteristics?rollFrom=1&rollTo=3) · Abilities: [Abilities](roll:monstrosityAbilities?rollFrom=1&rollTo=3)"
+      }
+    ]
+  }
+  ```
+
+  **Log output.** Each blank logs one line, labelled by its blank's `label`. A
+  ranged/repeated blank first logs its count roll, then one indented line per
+  kept result:
 
   ```
   Delve: Monstrosity
@@ -1041,27 +1051,41 @@ Form`). A quantified blank first logs its count roll, then one indented line
     — Flier / glider (d100 → 41)
   ```
 
-  A **labelled** template (any `"Label: "` before a blank) omits the composed
-  `Result:` line — the per-field lines already read it. A **phrase** template
-  (a name, no labels) keeps `Result:` (the assembled string is the payload).
+  `compound: "dossier"` renders the per-field lines above and omits the composed
+  `Result:` line. `compound: "phrase"` keeps `Result:` (the assembled string is
+  the payload).
 
   `compound` is substitution + repetition only — no conditionals. An oracle
   whose later rolls _depend on_ an earlier result (e.g. `yrtTouched`: Pure
   stops, Feral rolls an animal but no features) stays a hardcoded branch.
 
-- **Value-level templates & `[self]`** — the `[key]{n,m}` blanks above are not
-  limited to `compound` tables: **any** row's value can carry a blank, resolved
-  the same way when that row is rolled. The reserved key **`[self]`** rolls the
-  **current** table — this is how the **Roll Twice** mechanic is authored. A top
-  row `{ "topRange": 100, "value": "[self]{2}" }` rolls this table twice, and
-  **both results occur** (self refs are _not_ de-duplicated, unlike named refs);
-  it cascades if a re-roll lands on `[self]` again, depth-guarded to 5. Literal
-  text around the blank is preserved (e.g. `"Hybrid ([self]{2})"`). In the
-  reference table a blank renders as a pill — `[self]` shows as "roll again".
-  This replaced the old `/roll twice/i` string match. Exceptions that stay prose:
-  a value where the roll-twice text sits in a **non-primary** column (Mana
-  Backlash's Effect), or a table read raw by a hardcoded consumer (`touchedFeatures`
-  via `yrtTouched`).
+- **Value-level templates & `roll:self`** — the `[label](roll:…)` blanks above
+  are not limited to `compound` tables: **any** row's value can carry a blank,
+  resolved the same way when that row is rolled. The reserved target
+  **`roll:self`** rolls the **current** table — this is how the **Roll Twice**
+  mechanic is authored. A top row
+  `{ "topRange": 100, "value": "[roll again](roll:self?times=2)" }` rolls this
+  table twice, and **both results occur** (self refs are _not_ de-duplicated,
+  unlike named refs); it cascades if a re-roll lands on another `roll:self`,
+  depth-guarded to 5. Literal text around the blank is preserved (e.g.
+  `"Hybrid ([roll again](roll:self?times=2))"`). In the reference table a blank
+  renders as a pill (the `label` + an optional `×n` badge). This replaced the old
+  `/roll twice/i` string match and the earlier `[self]{2}` token. Exceptions that
+  stay prose: a value where the roll-twice text sits in a **non-primary** column
+  (Mana Backlash's Effect), or a table read raw by a hardcoded consumer
+  (`touchedFeatures` via `yrtTouched`).
+
+### Template blanks — the `roll:` DSL
+
+Compound/value templates use the same `[label](scheme:args)` interactive-link
+DSL as moves and assets, with the `roll:` scheme:
+
+| Form                                    | Meaning                                                           |
+| --------------------------------------- | ----------------------------------------------------------------- |
+| `[Label](roll:key)`                     | Roll oracle `key` once.                                           |
+| `[Label](roll:key?times=n)`             | Roll `key` `n` times; **named** targets de-dupe repeats.          |
+| `[Label](roll:key?rollFrom=n&rollTo=m)` | Roll `key` a random `n…m` number of times.                        |
+| `[Label](roll:self?times=2)`            | Roll the **current** table twice; both results kept (no de-dupe). |
 
 - **`tableType: "prefixSuffix"`** — each row's `value` is `{ prefix, suffix }`.
   A roll makes **two independent d100 rolls** and concatenates the first row's

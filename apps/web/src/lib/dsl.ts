@@ -86,7 +86,9 @@ export function dslActionLink(label: string, ref: DslRef): string | null {
 // inline pass untouched — so we protect resolved HTML, format, then restore.
 const P0 = '';
 const P1 = '';
-const LINK = /\[([^\]]+)\]\(([^)]+)\)/g; // [label](href)
+// Label forbids `[` too, so an OUTER `[…]{.class}` span's bracket can't be
+// swallowed into a link label when the span wraps a `[label](href)` link.
+const LINK = /\[([^[\]]+)\]\(([^)]+)\)/g; // [label](href)
 const SPAN = /\[([^\]]+)\]\{\.([\w-]+)\}/g; // [text]{.class}
 /** Display-context spans an author may tag: `log-only` (log entries only),
  *  `dialog-only` (the move/asset dialog only). Keep in sync with lint-dsl.mjs. */
@@ -107,8 +109,121 @@ export function renderRich(md: string | undefined): string {
 	s = s.replace(SPAN, (m, text: string, cls: string) =>
 		SPAN_CLASSES.has(cls) ? protect(`<span class="${cls}">${esc(text)}</span>`) : m,
 	);
-	return renderNote(s).replace(
-		new RegExp(`${P0}(\\d+)${P1}`, 'g'),
-		(_m, i: string) => stash[Number(i)],
-	);
+	// Restore protected HTML. Loop until stable: a `{.class}` span can wrap a
+	// `[label](href)` link, so its stashed HTML embeds inner sentinels that only
+	// surface once the outer span sentinel is replaced (String.replace is 1-pass).
+	const restore = new RegExp(`${P0}(\\d+)${P1}`, 'g');
+	let out = renderNote(s);
+	for (let i = 0; i < 100 && out.includes(P0); i++) {
+		out = out.replace(restore, (_m, n: string) => stash[Number(n)]);
+	}
+	return out;
+}
+
+// =============================================================================
+// Oracle `roll:` templates — a value blank filled by rolling another oracle.
+//
+// `[label](roll:key?rollFrom=1&rollTo=3)` / `roll:self?times=2`. `self` = the
+// current oracle (the Roll Twice mechanic). Kept here with the rest of the DSL
+// and injected with a `rollFn`, so it stays pure/testable out of the runes-based
+// oracle store.
+// =============================================================================
+
+/** Roll one oracle by key at a recursion depth → its d100 roll + text value. */
+export type RollFn = (key: string, depth: number) => { roll: number; value: string };
+
+/** Global matcher for `[label](roll:spec)` — use with `.replace` only (stateful). */
+export const ROLL_DSL = /\[([^\]]+)\]\(roll:([^)]+)\)/g;
+
+/** True when a value carries a `[label](roll:…)` blank. */
+export const hasRollTemplate = (s: string): boolean => /\]\(roll:/.test(s);
+
+/** Parse a scheme-stripped `roll:` spec (`key?rollFrom=1&rollTo=3`) into a
+ *  concrete roll: target oracle, count, the dossier line style, and an optional
+ *  count-note for a rolled range. `times=n` = fixed; `rollFrom`/`rollTo` = range. */
+export function parseRollSpec(
+	spec: string,
+	currentKey: string,
+): { refKey: string; count: number; dash: boolean; isSelf: boolean; note: string } {
+	const { path: key, args } = parseDslHref('roll:' + spec);
+	const isSelf = key === 'self';
+	const refKey = isSelf ? currentKey : key;
+	let count = 1;
+	let isRange = false;
+	let note = '';
+	if (args.times != null) {
+		count = parseInt(args.times, 10) || 1;
+	} else if (args.rollFrom != null || args.rollTo != null) {
+		const lo = parseInt(String(args.rollFrom ?? args.rollTo), 10);
+		const hi = parseInt(String(args.rollTo ?? args.rollFrom), 10);
+		count = lo + Math.floor(Math.random() * (hi - lo + 1));
+		if (lo !== hi) {
+			isRange = true;
+			note = `${lo === 1 ? `d${hi}` : `${lo}–${hi}`} → ${count}`;
+		}
+	}
+	return { refKey, count, dash: isSelf || count > 1 || isRange, isSelf, note };
+}
+
+/** The "×n" badge for a roll: DSL pill, from its query args (empty for count 1). */
+export function pillBadge(spec: string): string {
+	const { args } = parseDslHref('roll:' + spec);
+	if (args.times != null && Number(args.times) > 1) return args.times;
+	if (args.rollFrom != null || args.rollTo != null) {
+		const lo = args.rollFrom ?? args.rollTo;
+		const hi = args.rollTo ?? args.rollFrom;
+		return lo === hi ? String(lo) : `${lo}–${hi}`;
+	}
+	return '';
+}
+
+/** Render `[label](roll:…)` blanks as styled pills for the reference table — the
+ *  authored label plus an optional "×n" badge. */
+export function linkifyTemplate(s: string): string {
+	return s.replace(ROLL_DSL, (_m, label: string, spec: string) => {
+		const pill = `<span class="oracle-ref">${label}</span>`;
+		const badge = pillBadge(spec);
+		return badge ? `${pill}<span class="oracle-ref-rep">×${badge}</span>` : pill;
+	});
+}
+
+/** Fill `[label](roll:…)` blanks by rolling the referenced oracle(s) via `rollFn`.
+ *  `self` resolves to `currentKey` (both results occur — no dedupe, the Roll Twice
+ *  mechanic); named refs dedupe repeats (distinct picks). Recursion is
+ *  depth-guarded (≥5 stops). Returns the composed string + per-roll log lines. */
+export function fillTemplate(
+	template: string,
+	currentKey: string,
+	rollFn: RollFn,
+	depth: number,
+): { filled: string; lines: string[] } {
+	const lines: string[] = [];
+	const rollRef = (
+		refKey: string,
+		label: string,
+		count: number,
+		dash: boolean,
+		isSelf: boolean,
+	) => {
+		const vals: string[] = [];
+		for (let i = 0; i < count && depth < 5; i++) {
+			const sub = rollFn(refKey, depth + 1);
+			const v = sub.value || `[${refKey}]`;
+			if (!isSelf && vals.includes(v)) continue; // dedupe named refs only
+			vals.push(v);
+			lines.push(
+				dash
+					? `<div class="roll-line">— <strong>${v}</strong> (d100 → ${sub.roll})</div>`
+					: `<div class="roll-line">${label}: <strong>${v}</strong> (d100 → ${sub.roll})</div>`,
+			);
+		}
+		return vals.join(', ');
+	};
+
+	const filled = template.replace(ROLL_DSL, (_m, label: string, spec: string) => {
+		const { refKey, count, dash, isSelf, note } = parseRollSpec(spec, currentKey);
+		if (note) lines.push(`<div class="roll-line">${label}: (${note})</div>`);
+		return rollRef(refKey, label, count, dash, isSelf);
+	});
+	return { filled, lines };
 }

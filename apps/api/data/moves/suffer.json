@@ -29,8 +29,7 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} endures harm with {stat}",
-      "markdown": true
+      "logTitle": "{character} endures harm with {stat}"
     },
     {
       "id": "move/companion-endure-harm",
@@ -60,8 +59,7 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character}'s companion endures harm with {stat}",
-      "markdown": true
+      "logTitle": "{character}'s companion endures harm with {stat}"
     },
     {
       "id": "move/face-death",
@@ -90,8 +88,7 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} faces death with {stat}",
-      "markdown": true
+      "logTitle": "{character} faces death with {stat}"
     },
     {
       "id": "move/face-a-setback",
@@ -114,8 +111,7 @@
           "eq": -6
         }
       ],
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "move/endure-stress",
@@ -144,8 +140,7 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} endures stress with {stat}",
-      "markdown": true
+      "logTitle": "{character} endures stress with {stat}"
     },
     {
       "id": "move/face-desolation",
@@ -174,8 +169,7 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} faces desolation with {stat}",
-      "markdown": true
+      "logTitle": "{character} faces desolation with {stat}"
     },
     {
       "id": "move/out-of-supply",
@@ -197,8 +191,7 @@
           "eq": 0
         }
       ],
-      "source": "base",
-      "markdown": true
+      "source": "base"
     }
   ],
   "source": "base"

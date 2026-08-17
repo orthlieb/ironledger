@@ -2,9 +2,9 @@
 // lint-dsl.mjs — validate the markdown + interactive-link DSL in authored content
 //
 // Scans every `[label](scheme:path?query)` link and `[text]{.class}` span in
-//   • markdown-flagged moves  (markdown: true)  — trigger/outcomes/notes/table
-//   • markdown-flagged assets (markdown: true)  — abilities/preamble/description
-//   • oracle values           (any DSL token)   — roll: + action links
+//   • moves   (except `html: true`)  — trigger/outcomes/notes/table
+//   • assets  (except `html: true`)  — abilities/preamble/description
+//   • oracle values (any DSL token)  — roll: + action links
 // and fails (exit 1) on: unknown scheme, non-existent target (move id / oracle
 // key), missing/malformed args, unknown span class, or stray HTML left in a
 // flagged move/asset. Reports `file → item → token → reason`.
@@ -161,10 +161,10 @@ async function main() {
   const failures = []; // { file, item, token, reason }
   const record = (file, item, errs) => errs.forEach((e) => failures.push({ file, item, ...e }));
 
-  // Moves — only markdown-flagged items; scan every prose field.
+  // Moves — every item except the raw-HTML escape hatch (`html: true`).
   for (const { file, data } of moves)
     for (const m of data.moves ?? []) {
-      if (!m.markdown) continue;
+      if (m.html) continue;
       const errs = [];
       for (const field of ['trigger', 'triggerPreamble', 'strong', 'weak', 'miss', 'notes'])
         scanText(m[field], moveIds, oracleKeys, { strayHtml: true }, errs);
@@ -173,10 +173,10 @@ async function main() {
       record(file, m.id, errs);
     }
 
-  // Assets — only markdown-flagged items.
+  // Assets — every item except the raw-HTML escape hatch (`html: true`).
   for (const { file, data } of assets)
     for (const a of data.assets ?? []) {
-      if (!a.markdown) continue;
+      if (a.html) continue;
       const errs = [];
       scanText(a.preamble, moveIds, oracleKeys, { strayHtml: true }, errs);
       scanText(a.description, moveIds, oracleKeys, { strayHtml: true }, errs);

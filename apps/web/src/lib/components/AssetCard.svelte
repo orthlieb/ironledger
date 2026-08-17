@@ -237,38 +237,10 @@
 		return (mv as number[])[Math.min(lastEnabled, (mv as number[]).length - 1)];
 	}
 
-	/** Strips markdown-style links [text](anything) → text, for plain-text contexts. */
-	function stripMdLinks(raw: string): string {
-		return raw.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
-	}
-
-	/**
-	 * Converts asset ability text (uses \n\n paragraph breaks and
-	 * "  * item" list items) into safe HTML.
-	 */
-	function formatText(raw: string): string {
-		return raw
-			.split('\n\n')
-			.map((para) => {
-				const lines = para.split('\n');
-				if (lines.some((l) => /^\s*\*\s/.test(l))) {
-					const items = lines
-						.filter((l) => /^\s*\*\s/.test(l))
-						.map((l) => `<li>${l.replace(/^\s*\*\s/, '').trim()}</li>`)
-						.join('');
-					return `<ul>${items}</ul>`;
-				}
-				return `<p>${para.trim()}</p>`;
-			})
-			.join('');
-	}
-
-	/** POC: an asset opts into markdown+DSL authoring via a `markdown: true` flag.
-	 *  When set, its prose renders through the shared `renderRich` (formatting +
-	 *  `[label](scheme:args)` link DSL) instead of the bespoke `formatText` /
-	 *  `stripMdLinks` / raw passthrough. */
-	const isMarkdown = $derived(!!(definition as Record<string, unknown>).markdown);
-	const abilityHtml = (text: string): string => (isMarkdown ? renderRich(text) : formatText(text));
+	/** All asset prose renders through the shared `renderRich` (markdown formatting
+	 *  + `[label](scheme:args)` link DSL). This is the single renderer since the
+	 *  DSL migration flipped the default (Phase 4). */
+	const abilityHtml = (text: string): string => renderRich(text);
 
 	function toggleAbility(i: number) {
 		const enabling = !asset.abilities[i];
@@ -426,13 +398,13 @@
 					}
 				}}
 			>
-				{@html isMarkdown ? renderRich(definition.preamble) : stripMdLinks(definition.preamble)}
+				{@html renderRich(definition.preamble)}
 			</p>
 		{/if}
 
 		{#if assetDescription}
 			<p class="asset-description">
-				{@html isMarkdown ? renderRich(assetDescription) : assetDescription}
+				{@html renderRich(assetDescription)}
 			</p>
 		{/if}
 
@@ -1018,7 +990,7 @@
 		color: var(--text);
 	}
 
-	/* Global since formatText() generates raw HTML */
+	/* Global since renderRich() generates raw HTML */
 	.ability-text :global(p) {
 		margin: 0 0 4px;
 	}

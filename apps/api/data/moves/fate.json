@@ -50,8 +50,7 @@
         }
       ],
       "source": "base",
-      "logTitle": "The Oracle is consulted",
-      "markdown": true
+      "logTitle": "The Oracle is consulted"
     },
     {
       "id": "move/pay-the-price",
@@ -137,8 +136,7 @@
           "eq": 1
         }
       ],
-      "source": "base",
-      "markdown": true
+      "source": "base"
     }
   ],
   "source": "base"

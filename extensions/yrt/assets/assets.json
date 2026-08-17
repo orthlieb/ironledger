@@ -74,8 +74,7 @@
         }
       ],
       "source": "yrt",
-      "icon": "asset-touched-salamandrine",
-      "markdown": true
+      "icon": "asset-touched-salamandrine"
     },
     {
       "id": "path/yrt-touched-feline",
@@ -151,8 +150,7 @@
         }
       ],
       "source": "yrt",
-      "icon": "asset-touched-feline",
-      "markdown": true
+      "icon": "asset-touched-feline"
     },
     {
       "id": "path/yrt-touched-porcine",
@@ -228,8 +226,7 @@
         }
       ],
       "source": "yrt",
-      "icon": "asset-touched-porcine",
-      "markdown": true
+      "icon": "asset-touched-porcine"
     },
     {
       "id": "path/yrt-touched-bovine",
@@ -305,8 +302,7 @@
         }
       ],
       "source": "yrt",
-      "icon": "asset-touched-bovine",
-      "markdown": true
+      "icon": "asset-touched-bovine"
     },
     {
       "id": "path/yrt-touched-ursine",
@@ -382,8 +378,7 @@
         }
       ],
       "source": "yrt",
-      "icon": "asset-touched-ursine",
-      "markdown": true
+      "icon": "asset-touched-ursine"
     },
     {
       "id": "path/yrt-touched-hircine",
@@ -459,8 +454,7 @@
         }
       ],
       "source": "yrt",
-      "icon": "asset-touched-hircine",
-      "markdown": true
+      "icon": "asset-touched-hircine"
     },
     {
       "id": "ritual/yrt-cantrip",
@@ -557,8 +551,7 @@
         }
       ],
       "source": "yrt",
-      "icon": "asset-cantrip",
-      "markdown": true
+      "icon": "asset-cantrip"
     },
     {
       "id": "ritual/yrt-arcane-inspection",
@@ -684,8 +677,7 @@
         }
       ],
       "source": "yrt",
-      "icon": "asset-arcane-inspection",
-      "markdown": true
+      "icon": "asset-arcane-inspection"
     },
     {
       "id": "ritual/yrt-vizion-illusion",
@@ -807,8 +799,7 @@
         }
       ],
       "source": "yrt",
-      "icon": "asset-illusion",
-      "markdown": true
+      "icon": "asset-illusion"
     },
     {
       "id": "ritual/yrt-compulsion",
@@ -934,8 +925,7 @@
         }
       ],
       "source": "yrt",
-      "icon": "asset-compulsion",
-      "markdown": true
+      "icon": "asset-compulsion"
     },
     {
       "id": "path/yrt-bittercraft",
@@ -979,8 +969,7 @@
         }
       ],
       "source": "yrt",
-      "icon": "asset-bittercraft",
-      "markdown": true
+      "icon": "asset-bittercraft"
     },
     {
       "id": "path/yrt-quillwise",
@@ -1006,8 +995,7 @@
         }
       ],
       "source": "yrt",
-      "icon": "asset-quillwise",
-      "markdown": true
+      "icon": "asset-quillwise"
     }
   ],
   "rarities": [

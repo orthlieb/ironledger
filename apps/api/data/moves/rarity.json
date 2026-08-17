@@ -22,8 +22,7 @@
           "min": 1
         }
       ],
-      "source": "delve",
-      "markdown": true
+      "source": "delve"
     }
   ],
   "source": "delve"

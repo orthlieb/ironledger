@@ -24,8 +24,7 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} swears an iron vow using {stat}",
-      "markdown": true
+      "logTitle": "{character} swears an iron vow using {stat}"
     },
     {
       "id": "move/reach-a-milestone",
@@ -47,8 +46,7 @@
           "min": 1
         }
       ],
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "move/fulfill-your-vow",
@@ -73,8 +71,7 @@
       ],
       "progressSource": "vows",
       "source": "base",
-      "logTitle": "{character} fulfills their vow",
-      "markdown": true
+      "logTitle": "{character} fulfills their vow"
     },
     {
       "id": "move/forsake-your-vow",
@@ -96,8 +93,7 @@
           "min": 1
         }
       ],
-      "source": "base",
-      "markdown": true
+      "source": "base"
     },
     {
       "id": "move/advance",
@@ -115,8 +111,7 @@
           "eq": 1
         }
       ],
-      "source": "base",
-      "markdown": true
+      "source": "base"
     }
   ],
   "source": "base"

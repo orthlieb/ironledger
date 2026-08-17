@@ -23,8 +23,7 @@
           "eq": 1
         }
       ],
-      "logTitle": "{character} tries a Sample Gambit",
-      "markdown": true
+      "logTitle": "{character} tries a Sample Gambit"
     }
   ]
 }
