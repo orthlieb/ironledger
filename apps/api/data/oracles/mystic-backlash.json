@@ -104,7 +104,7 @@
     },
     {
       "topRange": 100,
-      "value": "[self]{2} — if the two results match, make it worse."
+      "value": "[roll again](roll:self?times=2) — if the two results match, make it worse."
     }
   ]
 }

@@ -76,7 +76,7 @@
     },
     {
       "topRange": 100,
-      "value": "Hybrid ([self]{2})"
+      "value": "Hybrid ([roll again](roll:self?times=2))"
     }
   ]
 }

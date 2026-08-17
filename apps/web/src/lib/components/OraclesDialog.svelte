@@ -441,7 +441,6 @@
 										: selectedOracle.tableType === 'compound'
 											? {
 													tableType: 'compound',
-													refTitles: Object.fromEntries(allOracles.map((o) => [o.key, o.title])),
 												}
 											: selectedOracle.tableType === 'prefixSuffix'
 												? {
@@ -456,7 +455,6 @@
 														activeStat: activeStat ?? undefined,
 														columns: selectedOracle.columns,
 														narrow,
-														refTitles: Object.fromEntries(allOracles.map((o) => [o.key, o.title])),
 													},
 						)}
 					</div>

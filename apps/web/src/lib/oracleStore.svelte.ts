@@ -308,16 +308,13 @@ export function rangeLabelForEntry(table: OracleEntry[], index: number): string 
 // `[<anyKey>]` rolls that oracle. An optional `{n}` / `{n,m}` quantifier rolls
 // the reference that many times. Used by both `compound` tables (whole-table
 // templates) and any single row that carries a blank (e.g. a "roll twice" row).
-const TEMPLATE_TOKEN = /\[(\w+)\](?:\{(\d+)(?:,(\d+))?\})?/g;
-/** New query-string DSL form: `[label](roll:key?rollFrom=1&rollTo=3)` /
- *  `[label](roll:self?times=2)`. Processed BEFORE the bare-token pass so a
- *  single-word label like `[Size]` isn't re-matched by TEMPLATE_TOKEN. */
+// A value may embed `[label](roll:key?rollFrom=1&rollTo=3)` / `roll:self?times=2`
+// blanks that are filled by rolling another oracle (`self` = the current table).
+// Used by `compound` tables (whole-table templates) and any single row that
+// carries a blank (e.g. a "roll twice" row).
 const ROLL_DSL = /\[([^\]]+)\]\(roll:([^)]+)\)/g;
-/** Non-global detector (safe for `.test()`) — bare `[key]` token OR a roll: DSL link. */
-const HAS_TEMPLATE = /\[\w+\]|\]\(roll:/;
-
-/** Oracle title after its last ": " — "Monstrosity: Primary Form" → "Primary Form". */
-const shortLabel = (t: string): string => (t.includes(': ') ? t.slice(t.lastIndexOf(': ') + 2) : t);
+/** Non-global detector (safe for `.test()`) for a roll: DSL blank. */
+const HAS_TEMPLATE = /\]\(roll:/;
 
 /** Parse a scheme-stripped `roll:` spec (`key?rollFrom=1&rollTo=3`) into a
  *  concrete roll: target oracle, count, the dossier line style, and an optional
@@ -358,28 +355,20 @@ function pillBadge(spec: string): string {
 	return '';
 }
 
-/** Render template blanks as styled pills for the reference table. New DSL:
- *  `[label](roll:…)` → a pill showing the authored label (+ "×n" badge). Old:
- *  `[self]` → "roll again"; a named key → the target oracle's title. */
-function linkifyTemplate(s: string, refTitles: Record<string, string>): string {
-	s = s.replace(ROLL_DSL, (_m, label: string, spec: string) => {
+/** Render `[label](roll:…)` blanks as styled pills for the reference table — the
+ *  authored label plus an optional "×n" badge. */
+function linkifyTemplate(s: string): string {
+	return s.replace(ROLL_DSL, (_m, label: string, spec: string) => {
 		const pill = `<span class="oracle-ref">${label}</span>`;
 		const badge = pillBadge(spec);
 		return badge ? `${pill}<span class="oracle-ref-rep">×${badge}</span>` : pill;
 	});
-	return s.replace(TEMPLATE_TOKEN, (_m, k: string, n?: string, m?: string) => {
-		const label = k === 'self' ? 'roll again' : (refTitles[k] ?? k);
-		const ref = `<span class="oracle-ref">${label}</span>`;
-		if (n == null) return ref;
-		return `${ref}<span class="oracle-ref-rep">×${m != null ? `${n}–${m}` : n}</span>`;
-	});
 }
 
-/** Fill template blanks by rolling the referenced oracle(s). `self` resolves to
- *  `currentKey` (both results occur — no dedupe, the Roll Twice mechanic); named
- *  refs dedupe repeats (distinct picks). Recursion is depth-guarded. Handles the
- *  new `[label](roll:…)` DSL and the legacy `[key]{n,m}` token. Returns the
- *  composed string plus per-roll log lines. */
+/** Fill `[label](roll:…)` blanks by rolling the referenced oracle(s). `self`
+ *  resolves to `currentKey` (both results occur — no dedupe, the Roll Twice
+ *  mechanic); named refs dedupe repeats (distinct picks). Recursion is
+ *  depth-guarded. Returns the composed string plus per-roll log lines. */
 function fillTemplate(
 	template: string,
 	currentKey: string,
@@ -411,32 +400,10 @@ function fillTemplate(
 		return vals.join(', ');
 	};
 
-	// New DSL first — `[label](roll:key?…)`.
-	let filled = template.replace(ROLL_DSL, (_m, label: string, spec: string) => {
+	const filled = template.replace(ROLL_DSL, (_m, label: string, spec: string) => {
 		const { refKey, count, dash, isSelf, note } = parseRollSpec(spec, currentKey);
 		if (note) lines.push(`<div class="roll-line">${label}: (${note})</div>`);
 		return rollRef(refKey, label, count, dash, isSelf);
-	});
-
-	// Legacy `[key]{n,m}` token.
-	filled = filled.replace(TEMPLATE_TOKEN, (_m, ref: string, nStr?: string, mStr?: string) => {
-		const isSelf = ref === 'self';
-		const refKey = isSelf ? currentKey : ref;
-		const label = isSelf
-			? 'Roll'
-			: shortLabel(allOracles.find((o) => o.key === refKey)?.title ?? refKey);
-		const repeated = nStr != null;
-		let count = 1;
-		if (repeated) {
-			const lo = parseInt(nStr as string, 10);
-			const hi = mStr != null ? parseInt(mStr, 10) : lo;
-			count = lo + Math.floor(Math.random() * (hi - lo + 1));
-			if (lo !== hi) {
-				const note = lo === 1 ? `d${hi} → ${count}` : `${lo}–${hi} → ${count}`;
-				lines.push(`<div class="roll-line">${label}: (${note})</div>`);
-			}
-		}
-		return rollRef(refKey, label, count, repeated || isSelf, isSelf);
 	});
 	return { filled, lines };
 }
@@ -451,7 +418,6 @@ export function buildTableHtml(
 		outerLabel?: string;
 		innerLabel?: string;
 		tableType?: string;
-		refTitles?: Record<string, string>;
 		/** Narrow viewport (≤640px): render wide layouts single-column so they fit
 		 *  a phone without horizontal scroll. Currently drives the two-step table. */
 		narrow?: boolean;
@@ -464,16 +430,15 @@ export function buildTableHtml(
 	// its target oracle's title. Single format → the string alone; multiple → a
 	// d100 | Format table (the rolled format table). ─────────────────────────
 	if (options?.tableType === 'compound') {
-		const refTitles = options.refTitles ?? {};
 		if (table.length === 1) {
-			return `<div class="oracle-compound-single">${linkifyTemplate(table[0].value as string, refTitles)}</div>`;
+			return `<div class="oracle-compound-single">${linkifyTemplate(table[0].value as string)}</div>`;
 		}
 		let html =
 			'<table class="oracle-table"><thead><tr><th>d100</th><th>Format</th></tr></thead><tbody>';
 		table.forEach((entry, idx) => {
 			html +=
 				`<tr><td class="oracle-range">${rangeLabelForEntry(table, idx)}</td>` +
-				`<td>${linkifyTemplate(entry.value as string, refTitles)}</td></tr>`;
+				`<td>${linkifyTemplate(entry.value as string)}</td></tr>`;
 		});
 		return html + '</tbody></table>';
 	}
@@ -675,14 +640,13 @@ export function buildTableHtml(
 					? [{ key: 'description', label: 'Description' }]
 					: []),
 			];
-	const refTitles = options?.refTitles ?? {};
 	const cell = (e: OracleEntry, k: string) => {
 		const v = e[k];
 		if (v == null) return '';
 		const s = String(v);
-		// A value with `[key]`/`[self]` blanks (e.g. a "roll twice" row) renders
+		// A value with a `[label](roll:…)` blank (e.g. a "roll twice" row) renders
 		// its tokens as pills; plain values pass through unchanged.
-		return HAS_TEMPLATE.test(s) ? linkifyTemplate(s, refTitles) : s;
+		return HAS_TEMPLATE.test(s) ? linkifyTemplate(s) : s;
 	};
 
 	// A single value column keeps the space-saving multi-column layout for long
@@ -945,14 +909,14 @@ export function rollOracle(
 	const res = { roll, entry: table.find((e) => roll <= e.topRange) ?? table[table.length - 1] };
 	const primary = str(res.entry[primaryKey]);
 
-	// Value-level template: a rolled value with `[key]`/`[self]` blanks resolves
-	// by rolling the referenced oracle(s). `[self]` re-rolls this table (the Roll
-	// Twice mechanic); it cascades and is depth-guarded inside fillTemplate.
+	// Value-level template: a rolled value with a `[label](roll:…)` blank resolves
+	// by rolling the referenced oracle(s). `roll:self` re-rolls this table (the
+	// Roll Twice mechanic); it cascades and is depth-guarded inside fillTemplate.
 	if (HAS_TEMPLATE.test(primary)) {
 		const { filled, lines } = fillTemplate(primary, key, allOracles, options?._depth ?? 0);
 		// Literal text left after stripping the tokens (e.g. "Hybrid (…)") → show
-		// the composed Result line; a bare "[self]{2}" needs only the sub-rolls.
-		const literal = primary.replace(TEMPLATE_TOKEN, '').replace(/[\s(),./|-]/g, '');
+		// the composed Result line; a bare roll-twice blank needs only the sub-rolls.
+		const literal = primary.replace(ROLL_DSL, '').replace(/[\s(),./|-]/g, '');
 		const html =
 			`<div class="roll-line">Roll: d100 → ${res.roll}</div>` +
 			lines.join('') +

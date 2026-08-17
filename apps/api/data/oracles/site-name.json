@@ -6,35 +6,36 @@
   "description": "Generate a Delve site's name: roll a format, then fill each blank from the referenced oracle.",
   "source": "delve",
   "tableType": "compound",
+  "compound": "phrase",
   "postamble": "To generate a name for a delve site, first roll on the Template table. Then, fill in the blanks using the tables in this section.\n\nIf the form of a particular word doesn't work, try making it plural instead of singular (or vice-versa).\n\nThen, envision the nature and history of the site using its name as inspiration.",
   "data": [
     {
       "topRange": 25,
-      "value": "[siteNameDescription] [siteNamePlace]"
+      "value": "[Description](roll:siteNameDescription) [Place](roll:siteNamePlace)"
     },
     {
       "topRange": 50,
-      "value": "[siteNamePlace] of [siteNameDetail]"
+      "value": "[Place](roll:siteNamePlace) of [Detail](roll:siteNameDetail)"
     },
     {
       "topRange": 70,
-      "value": "[siteNamePlace] of [siteNameDescription] [siteNameDetail]"
+      "value": "[Place](roll:siteNamePlace) of [Description](roll:siteNameDescription) [Detail](roll:siteNameDetail)"
     },
     {
       "topRange": 80,
-      "value": "[siteNamePlace] of [siteNameNamesake]'s [siteNameDetail]"
+      "value": "[Place](roll:siteNamePlace) of [Namesake](roll:siteNameNamesake)'s [Detail](roll:siteNameDetail)"
     },
     {
       "topRange": 85,
-      "value": "[siteNameNamesake]'s [siteNamePlace]"
+      "value": "[Namesake](roll:siteNameNamesake)'s [Place](roll:siteNamePlace)"
     },
     {
       "topRange": 95,
-      "value": "[siteNameDescription] [siteNamePlace] of [siteNameNamesake]"
+      "value": "[Description](roll:siteNameDescription) [Place](roll:siteNamePlace) of [Namesake](roll:siteNameNamesake)"
     },
     {
       "topRange": 100,
-      "value": "[siteNamePlace] of [siteNameNamesake]"
+      "value": "[Place](roll:siteNamePlace) of [Namesake](roll:siteNameNamesake)"
     }
   ]
 }
