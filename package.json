@@ -15,6 +15,7 @@
     "build:web": "npm run build --workspace=apps/web",
     "gen:manifest": "node scripts/gen-extensions-manifest.mjs",
     "gen:manifest:check": "node scripts/gen-extensions-manifest.mjs --check",
+    "lint:dsl": "node scripts/lint-dsl.mjs",
     "check:web": "npm run check --workspace=apps/web",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

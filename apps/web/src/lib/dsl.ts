@@ -67,6 +67,8 @@ export function dslActionLink(label: string, ref: DslRef): string | null {
 			return `<a class="debility-link" data-debility="${attr(path)}" data-value="${attr(args.value ?? '')}">${L}</a>`;
 		case 'initiative':
 			return `<a class="initiative-link" data-value="${attr(path)}">${L}</a>`;
+		case 'menace':
+			return `<a class="menace-link" data-value="${attr(path)}">${L}</a>`;
 		case 'oracle':
 			return `<a class="oracle-link" data-oracle="${attr(path)}">${L}</a>`;
 		case 'reset':

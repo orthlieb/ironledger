@@ -54,6 +54,11 @@ jobs:
       - name: Lint (ESLint)
         run: npm run lint
 
+      # Validates the markdown + link DSL in flagged moves/assets/oracles
+      # (unknown scheme, non-existent move/oracle target, bad args, stray HTML).
+      - name: Lint (DSL)
+        run: npm run lint:dsl
+
       - name: Check formatting (Prettier)
         run: npm run format:check
 
