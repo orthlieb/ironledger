@@ -308,10 +308,8 @@
 	/** Move text renders through `renderRich` (markdown formatting + `[label](scheme:args)`
 	 *  link DSL) before the existing harm/enrich passes — the default since the DSL
 	 *  migration flipped it (Phase 4). A move opts BACK OUT to raw HTML with `html: true`. */
-	const isMarkdown = (m: MoveDefinition | null): boolean =>
-		!(m as Record<string, unknown> | null)?.html;
 	const moveMd = (m: MoveDefinition | null, text: string | undefined): string =>
-		isMarkdown(m) ? renderRich(text) : (text ?? '');
+		(m as Record<string, unknown> | null)?.html ? (text ?? '') : renderRich(text);
 
 	function getOutcomeHtml(m: MoveDefinition, hits1: boolean, hits2: boolean): string {
 		const raw = hits1 && hits2 ? m.strong : hits1 || hits2 ? m.weak : m.miss;
