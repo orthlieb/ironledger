@@ -100,7 +100,7 @@
       "strong": "Make note of the bond, [mark a tick](resource:bonds?value=+1) on your bond progress track, and choose one:\n- Take [+1 spirit](resource:spirit?value=+1).\n- Take [+2 momentum](resource:momentum?value=+2).",
       "weak": "They ask something more of you first. Envision what it is ([Ask the Oracle](move:ask-the-oracle) if unsure), do it (or [Swear an Iron Vow](move:swear-an-iron-vow)), and [mark the bond](resource:bonds?value=+1). If you decline or fail, [Pay the Price](move:pay-the-price).",
       "miss": "You are refused. [Pay the Price](move:pay-the-price).",
-      "notes": "If you make this move after you Fulfill Your Vow to the benefit of the person or community, you may reroll any dice. Use the reroll button when applicable.",
+      "notes": "If you make this move after you [Fulfill Your Vow](move:fulfill-your-vow) to the benefit of the person or community, you may reroll any dice. Use the reroll button when applicable.",
       "preconditions": [
         {
           "key": "hasCharacter",

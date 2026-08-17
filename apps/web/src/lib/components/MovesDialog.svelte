@@ -1458,7 +1458,7 @@
 						<!-- Notes -->
 						{#if selectedMove.notes}
 							<div class="md-notes">
-								<div class="md-notes-text">{@html selectedMove.notes}</div>
+								<div class="md-notes-text">{@html moveMd(selectedMove, selectedMove.notes)}</div>
 							</div>
 						{/if}
 					</div>
