@@ -11,13 +11,14 @@
       "abilities": [
         {
           "enabled": true,
-          "text": "While the Sample extension is enabled, this asset — and its bundled <strong>sample-widget</strong> icon (shipped in extensions/sample/icons/) — appear in the Asset picker."
+          "text": "While the Sample extension is enabled, this asset — and its bundled **sample-widget** icon (shipped in extensions/sample/icons/) — appear in the Asset picker."
         },
         {
           "enabled": false,
           "text": "Disable the extension and this asset, its icon, the Sample move, the Sample – Gizmo oracle, and the Test Golem all filter out cleanly — no code changed anywhere."
         }
-      ]
+      ],
+      "markdown": true
     }
   ]
 }
