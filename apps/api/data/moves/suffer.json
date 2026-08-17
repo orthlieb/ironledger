@@ -6,7 +6,7 @@
       "name": "Endure Harm",
       "category": "Suffer",
       "triggerShort": "When you face physical injury.",
-      "trigger": "When you <strong>face physical damage</strong>, suffer <a class=\"harm-link\" data-resource=\"health\">-harm health</a> — equal to your foe's rank, or as appropriate to the situation. Then, roll <strong>+health</strong> or <strong>+iron</strong>, whichever is higher.",
+      "trigger": "When you **face physical damage**, suffer [-harm health](harm:health) — equal to your foe's rank, or as appropriate to the situation. Then, roll **+health** or **+iron**, whichever is higher.",
       "stats": [
         {
           "stat": "health",
@@ -17,9 +17,9 @@
           "desc": "Enduring with grit and fortitude"
         }
       ],
-      "strong": "Choose one:<ul><li>Shake it off: If your health is greater than 0, suffer <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"-1\">-1 momentum</a> in exchange for <a class=\"resource-link\" data-resource=\"health\" data-value=\"+1\">+1 health</a>.</li><li>Embrace the pain: Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">+1 momentum</a>.</li></ul>",
+      "strong": "Choose one:\n- Shake it off: If your health is greater than 0, suffer [-1 momentum](resource:momentum?value=-1) in exchange for [+1 health](resource:health?value=+1).\n- Embrace the pain: Take [+1 momentum](resource:momentum?value=+1).",
       "weak": "You press on. No additional penalty.",
-      "miss": "Also suffer <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"-1\">−1 momentum</a>. If you are at 0 health, you must mark <a class=\"debility-link\" data-debility=\"wounded\" data-value=\"1\">wounded</a> or <a class=\"debility-link\" data-debility=\"maimed\" data-value=\"1\">maimed</a> (if currently unmarked) or roll on the <a class=\"oracle-link\" data-oracle=\"endureExtremeHarm\">Endure Extreme Harm oracle</a>.",
+      "miss": "Also suffer [−1 momentum](resource:momentum?value=-1). If you are at 0 health, you must mark [wounded](debility:wounded?value=1) or [maimed](debility:maimed?value=1) (if currently unmarked) or roll on the [Endure Extreme Harm oracle](oracle:endureExtremeHarm).",
       "notes": "Triggered every time you take harm — not just in combat. If health hits 0 on a miss, mark Wounded or Maimed (if unmarked) or roll on the Endure Extreme Harm oracle. Debilities reduce your stats. This is how characters die.",
       "references": ["foe"],
       "preconditions": [
@@ -29,23 +29,24 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} endures harm with {stat}"
+      "logTitle": "{character} endures harm with {stat}",
+      "markdown": true
     },
     {
       "id": "move/companion-endure-harm",
       "name": "Companion Endure Harm",
       "category": "Suffer",
       "triggerShort": "When your companion faces physical damage.",
-      "trigger": "When your <strong>companion faces physical damage</strong>, they suffer −health equal to the amount of harm inflicted. If your companion's health is 0, exchange any leftover −health for −momentum. Then, roll <strong>+heart</strong> or <strong>+your companion's health</strong>, whichever is higher.",
+      "trigger": "When your **companion faces physical damage**, they suffer −health equal to the amount of harm inflicted. If your companion's health is 0, exchange any leftover −health for −momentum. Then, roll **+heart** or **+your companion's health**, whichever is higher.",
       "stats": [
         {
           "stat": "heart",
           "desc": "Rallying your companion through care"
         }
       ],
-      "strong": "Your companion rallies. Give them <a class=\"resource-link\" data-resource=\"health\" data-value=\"+1\">+1 health</a>.",
-      "weak": "Your companion is battered. If their health is 0, they cannot assist you until they gain at least <a class=\"resource-link\" data-resource=\"health\" data-value=\"+1\">+1 health</a>.",
-      "miss": "Also suffer <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"-1\">−1 momentum</a>. If your companion's health is 0, they are gravely wounded and out of action. Without aid, they die in an hour or two. If you roll a miss with a <strong>1 on your action die</strong>, and your companion's health is 0, they are now dead. Take 1 experience for each marked ability on your companion asset, and remove it.",
+      "strong": "Your companion rallies. Give them [+1 health](resource:health?value=+1).",
+      "weak": "Your companion is battered. If their health is 0, they cannot assist you until they gain at least [+1 health](resource:health?value=+1).",
+      "miss": "Also suffer [−1 momentum](resource:momentum?value=-1). If your companion's health is 0, they are gravely wounded and out of action. Without aid, they die in an hour or two. If you roll a miss with a **1 on your action die**, and your companion's health is 0, they are now dead. Take 1 experience for each marked ability on your companion asset, and remove it.",
       "notes": "Roll +heart or +companion health, whichever is higher. A dead companion (miss with action die 1 at 0 health) is permanent — remove the asset and gain experience equal to its marked abilities.",
       "references": ["foe"],
       "preconditions": [
@@ -59,14 +60,15 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character}'s companion endures harm with {stat}"
+      "logTitle": "{character}'s companion endures harm with {stat}",
+      "markdown": true
     },
     {
       "id": "move/face-death",
       "name": "Face Death",
       "category": "Suffer",
       "triggerShort": "When you are brought to the brink of death.",
-      "trigger": "When you are <strong>brought to the brink of death</strong>, and glimpse the world beyond, roll <strong>+heart</strong>.",
+      "trigger": "When you are **brought to the brink of death**, and glimpse the world beyond, roll **+heart**.",
       "stats": [
         {
           "stat": "heart",
@@ -74,7 +76,7 @@
         }
       ],
       "strong": "Death rejects you. You are cast back into the mortal world.",
-      "weak": "Choose one:<ul><li>You die, but not before making a noble sacrifice. Envision your final moments.</li><li>Death desires something of you in exchange for your life. Envision what it wants (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure), and <a class=\"move-link\" data-id=\"move/swear-an-iron-vow\">Swear an Iron Vow</a> (formidable or extreme) to complete that quest. If you fail to score a hit when you Swear an Iron Vow, or refuse the quest, you are dead. Otherwise, you return to the mortal world and are now <a class=\"debility-link\" data-debility=\"cursed\" data-value=\"1\">cursed</a>. You may only clear the cursed debility by completing the quest.</li></ul>",
+      "weak": "Choose one:\n- You die, but not before making a noble sacrifice. Envision your final moments.\n- Death desires something of you in exchange for your life. Envision what it wants ([Ask the Oracle](move:ask-the-oracle) if unsure), and [Swear an Iron Vow](move:swear-an-iron-vow) (formidable or extreme) to complete that quest. If you fail to score a hit when you Swear an Iron Vow, or refuse the quest, you are dead. Otherwise, you return to the mortal world and are now [cursed](debility:cursed?value=1). You may only clear the cursed debility by completing the quest.",
       "miss": "You are dead.",
       "notes": "Triggered when health reaches 0 and you fail Endure Harm (or choose to Face Death directly). On a weak hit you can choose a noble sacrifice or accept a death-quest — the quest marks you cursed until completed.",
       "preconditions": [
@@ -88,14 +90,15 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} faces death with {stat}"
+      "logTitle": "{character} faces death with {stat}",
+      "markdown": true
     },
     {
       "id": "move/face-a-setback",
       "name": "Face a Setback",
       "category": "Suffer",
       "triggerShort": "When your momentum is at -6 and you suffer additional -momentum.",
-      "trigger": "When your <strong>momentum is at its minimum (-6)</strong>, and you suffer additional <strong>-momentum</strong>, choose one.<ul><li>Exchange each additional -momentum for any combination of <a class=\"resource-link\" data-resource=\"health\" data-value=\"-1\">-health</a>, <a class=\"resource-link\" data-resource=\"spirit\" data-value=\"-1\">-spirit</a>, or <a class=\"resource-link\" data-resource=\"supply\" data-value=\"-1\">-supply</a> as appropriate to the circumstances.</li><li>Envision an event or discovery (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure) which undermines your progress in a current quest, journey, or fight. Then, for each additional -momentum, clear 1 unit of progress on that track per its rank (troublesome = clear 3 progress; dangerous = clear 2 progress; formidable = clear 1 progress; extreme = clear 2 ticks; epic = clear 1 tick).</li></ul>",
+      "trigger": "When your **momentum is at its minimum (-6)**, and you suffer additional **-momentum**, choose one.\n- Exchange each additional -momentum for any combination of [-health](resource:health?value=-1), [-spirit](resource:spirit?value=-1), or [-supply](resource:supply?value=-1) as appropriate to the circumstances.\n- Envision an event or discovery ([Ask the Oracle](move:ask-the-oracle) if unsure) which undermines your progress in a current quest, journey, or fight. Then, for each additional -momentum, clear 1 unit of progress on that track per its rank (troublesome = clear 3 progress; dangerous = clear 2 progress; formidable = clear 1 progress; extreme = clear 2 ticks; epic = clear 1 tick).",
       "strong": "",
       "weak": "",
       "miss": "",
@@ -111,14 +114,15 @@
           "eq": -6
         }
       ],
-      "source": "base"
+      "source": "base",
+      "markdown": true
     },
     {
       "id": "move/endure-stress",
       "name": "Endure Stress",
       "category": "Suffer",
       "triggerShort": "When you face mental shock or despair.",
-      "trigger": "When you <strong>face mental shock or despair</strong>, suffer <a class=\"harm-link\" data-resource=\"spirit\">-harm spirit</a> — equal to your foe's rank, or as appropriate to the situation. Then roll <strong>+heart</strong> or <strong>+spirit</strong>, whichever is higher.",
+      "trigger": "When you **face mental shock or despair**, suffer [-harm spirit](harm:spirit) — equal to your foe's rank, or as appropriate to the situation. Then roll **+heart** or **+spirit**, whichever is higher.",
       "stats": [
         {
           "stat": "heart",
@@ -129,9 +133,9 @@
           "desc": "Enduring stress with inner resolve"
         }
       ],
-      "strong": "Choose one:<ul><li>Shake it off: If your spirit is greater than 0, suffer <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"-1\">−1 momentum</a> in exchange for <a class=\"resource-link\" data-resource=\"spirit\" data-value=\"+1\">+1 spirit</a>.</li><li>Embrace the darkness: Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">+1 momentum</a>.</li></ul>",
+      "strong": "Choose one:\n- Shake it off: If your spirit is greater than 0, suffer [−1 momentum](resource:momentum?value=-1) in exchange for [+1 spirit](resource:spirit?value=+1).\n- Embrace the darkness: Take [+1 momentum](resource:momentum?value=+1).",
       "weak": "You press on.",
-      "miss": "Also suffer <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"-1\">−1 momentum</a>. If you are at 0 spirit, you must mark <a class=\"debility-link\" data-debility=\"shaken\" data-value=\"1\">shaken</a> or <a class=\"debility-link\" data-debility=\"corrupted\" data-value=\"1\">corrupted</a> (if currently unmarked) or roll on the <a class=\"oracle-link\" data-oracle=\"endureExtremeStress\">Endure Extreme Stress oracle</a>.",
+      "miss": "Also suffer [−1 momentum](resource:momentum?value=-1). If you are at 0 spirit, you must mark [shaken](debility:shaken?value=1) or [corrupted](debility:corrupted?value=1) (if currently unmarked) or roll on the [Endure Extreme Stress oracle](oracle:endureExtremeStress).",
       "notes": "The spirit equivalent of Endure Harm. Roll +heart or +spirit, whichever is higher. If spirit hits 0 on a miss, mark Shaken or Corrupted (if unmarked) or roll on the Endure Extreme Stress oracle.",
       "preconditions": [
         {
@@ -140,14 +144,15 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} endures stress with {stat}"
+      "logTitle": "{character} endures stress with {stat}",
+      "markdown": true
     },
     {
       "id": "move/face-desolation",
       "name": "Face Desolation",
       "category": "Suffer",
       "triggerShort": "When you are brought to the brink of desolation.",
-      "trigger": "When you are <strong>brought to the brink of desolation</strong>, roll <strong>+heart</strong>.",
+      "trigger": "When you are **brought to the brink of desolation**, roll **+heart**.",
       "stats": [
         {
           "stat": "heart",
@@ -155,7 +160,7 @@
         }
       ],
       "strong": "You resist and press on.",
-      "weak": "Choose one:<ul><li>Your spirit or sanity breaks, but not before you make a noble sacrifice. Envision your final moments.</li><li>You see a vision of a dreaded event coming to pass. Envision that dark future (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure), and <a class=\"move-link\" data-id=\"move/swear-an-iron-vow\">Swear an Iron Vow</a> (formidable or extreme) to prevent it. If you fail to score a hit when you Swear an Iron Vow, or refuse the quest, you are lost. Otherwise, you return to your senses and are now <a class=\"debility-link\" data-debility=\"tormented\" data-value=\"1\">tormented</a>. You may only clear the tormented debility by completing the quest.</li></ul>",
+      "weak": "Choose one:\n- Your spirit or sanity breaks, but not before you make a noble sacrifice. Envision your final moments.\n- You see a vision of a dreaded event coming to pass. Envision that dark future ([Ask the Oracle](move:ask-the-oracle) if unsure), and [Swear an Iron Vow](move:swear-an-iron-vow) (formidable or extreme) to prevent it. If you fail to score a hit when you Swear an Iron Vow, or refuse the quest, you are lost. Otherwise, you return to your senses and are now [tormented](debility:tormented?value=1). You may only clear the tormented debility by completing the quest.",
       "miss": "You succumb to despair or horror and are lost.",
       "notes": "The spirit equivalent of Face Death. Triggered when spirit reaches 0 and Endure Stress fails. On a weak hit you can choose a noble sacrifice or accept a quest to prevent a dark future — the quest marks you tormented until completed.",
       "preconditions": [
@@ -169,14 +174,15 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} faces desolation with {stat}"
+      "logTitle": "{character} faces desolation with {stat}",
+      "markdown": true
     },
     {
       "id": "move/out-of-supply",
       "name": "Out of Supply",
       "category": "Suffer",
       "triggerShort": "When your supply is exhausted.",
-      "trigger": "When your <strong>supply is exhausted</strong> (reduced to 0), mark <a class=\"debility-link\" data-debility=\"unprepared\" data-value=\"1\">unprepared</a>. If you suffer additional -supply while unprepared, you must exchange each additional -supply for any combination of <a class=\"resource-link\" data-resource=\"health\" data-value=\"-1\">-health</a>, <a class=\"resource-link\" data-resource=\"spirit\" data-value=\"-1\">-spirit</a>, or <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"-1\">-momentum</a> as appropriate to the circumstances.",
+      "trigger": "When your **supply is exhausted** (reduced to 0), mark [unprepared](debility:unprepared?value=1). If you suffer additional -supply while unprepared, you must exchange each additional -supply for any combination of [-health](resource:health?value=-1), [-spirit](resource:spirit?value=-1), or [-momentum](resource:momentum?value=-1) as appropriate to the circumstances.",
       "strong": "",
       "weak": "",
       "miss": "",
@@ -191,7 +197,8 @@
           "eq": 0
         }
       ],
-      "source": "base"
+      "source": "base",
+      "markdown": true
     }
   ],
   "source": "base"

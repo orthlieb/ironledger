@@ -6,8 +6,8 @@
       "name": "Compel",
       "category": "Relationship",
       "triggerShort": "When you attempt to persuade someone to do something.",
-      "trigger": "When you <strong>attempt to persuade someone to do something</strong>, envision your approach and roll. If you…<ul><li>Charm, pacify, barter, or convince: Roll <strong>+heart</strong> (add +1 if you share a bond).</li><li>Threaten or incite: Roll <strong>+iron</strong>.</li><li>Lie or swindle: Roll <strong>+shadow</strong>.</li></ul>",
-      "triggerPreamble": "When you <strong>attempt to persuade someone to do something</strong>, envision your approach and roll. If you…",
+      "trigger": "When you **attempt to persuade someone to do something**, envision your approach and roll. If you…\n- Charm, pacify, barter, or convince: Roll **+heart** (add +1 if you share a bond).\n- Threaten or incite: Roll **+iron**.\n- Lie or swindle: Roll **+shadow**.",
+      "triggerPreamble": "When you **attempt to persuade someone to do something**, envision your approach and roll. If you…",
       "stats": [
         {
           "stat": "heart",
@@ -22,9 +22,9 @@
           "desc": "Lie or swindle"
         }
       ],
-      "strong": "They'll do what you want or share what they know. <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">Take +1 momentum</a>. If you use this exchange to <a class=\"move-link\" data-id=\"move/gather-information\">Gather Information</a>, make that move now and add +1.",
-      "weak": "<span class=\"log-only\">They'll do what you want or share what they know. <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">Take +1 momentum</a>. If you use this exchange to <a class=\"move-link\" data-id=\"move/gather-information\">Gather Information</a>, make that move now and add +1. </span><span class=\"dialog-only\">As above, but they</span><span class=\"log-only\">They</span> ask something of you in return. Envision what they want (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure).",
-      "miss": "They refuse or make a demand which costs you greatly. <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a>.",
+      "strong": "They'll do what you want or share what they know. [Take +1 momentum](resource:momentum?value=+1). If you use this exchange to [Gather Information](move:gather-information), make that move now and add +1.",
+      "weak": "[They'll do what you want or share what they know. [Take +1 momentum](resource:momentum?value=+1). If you use this exchange to [Gather Information](move:gather-information), make that move now and add +1. ]{.log-only}[As above, but they]{.dialog-only}[They]{.log-only} ask something of you in return. Envision what they want ([Ask the Oracle](move:ask-the-oracle) if unsure).",
+      "miss": "They refuse or make a demand which costs you greatly. [Pay the Price](move:pay-the-price).",
       "notes": "The bond bonus (+1) only applies when you charm, pacify, barter, or convince using +heart. Use the modifier control to add it when applicable.",
       "preconditions": [
         {
@@ -33,23 +33,24 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} tries to persuade with {stat}"
+      "logTitle": "{character} tries to persuade with {stat}",
+      "markdown": true
     },
     {
       "id": "move/sojourn",
       "name": "Sojourn",
       "category": "Relationship",
       "triggerShort": "When you spend time in a community seeking assistance.",
-      "trigger": "When you <strong>spend time in a community seeking assistance</strong>, roll <strong>+heart</strong>. If you share a bond, add +1.",
+      "trigger": "When you **spend time in a community seeking assistance**, roll **+heart**. If you share a bond, add +1.",
       "stats": [
         {
           "stat": "heart",
           "desc": "Spending time in a community (add +1 if you share a bond)"
         }
       ],
-      "strong": "You and your allies may each choose <strong>two</strong>:<br><strong>Clear a Condition</strong><ul><li>Mend: Clear a <a class=\"debility-link\" data-debility=\"wounded\" data-value=\"0\">wounded</a> debility and take <a class=\"resource-link\" data-resource=\"health\" data-value=\"+1\">+1 health</a>.</li><li>Hearten: Clear a <a class=\"debility-link\" data-debility=\"shaken\" data-value=\"0\">shaken</a> debility and take <a class=\"resource-link\" data-resource=\"spirit\" data-value=\"+1\">+1 spirit</a>.</li><li>Equip: Clear an <a class=\"debility-link\" data-debility=\"unprepared\" data-value=\"0\">unprepared</a> debility and take <a class=\"resource-link\" data-resource=\"supply\" data-value=\"+1\">+1 supply</a>.</li></ul><strong>Recover</strong><ul><li>Recuperate: Take <a class=\"resource-link\" data-resource=\"health\" data-value=\"+2\">+2 health</a> for yourself and any companions.</li><li>Consort: Take <a class=\"resource-link\" data-resource=\"spirit\" data-value=\"+2\">+2 spirit</a>.</li><li>Provision: Take <a class=\"resource-link\" data-resource=\"supply\" data-value=\"+2\">+2 supply</a>.</li><li>Plan: Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+2\">+2 momentum</a>.</li></ul><strong>Provide Aid</strong><ul><li>Take a quest: Envision what this community needs (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure). If you choose to help, <a class=\"move-link\" data-id=\"move/swear-an-iron-vow\">Swear an Iron Vow</a> and add +1.</li></ul>",
-      "weak": "<span class=\"dialog-only\">As above, but choose</span><span class=\"log-only\">Choose</span> <strong>one</strong>. If you share a bond, choose one more.<span class=\"log-only\"><br><strong>Clear a Condition</strong><ul><li>Mend: Clear a <a class=\"debility-link\" data-debility=\"wounded\" data-value=\"0\">wounded</a> debility and take <a class=\"resource-link\" data-resource=\"health\" data-value=\"+1\">+1 health</a>.</li><li>Hearten: Clear a <a class=\"debility-link\" data-debility=\"shaken\" data-value=\"0\">shaken</a> debility and take <a class=\"resource-link\" data-resource=\"spirit\" data-value=\"+1\">+1 spirit</a>.</li><li>Equip: Clear an <a class=\"debility-link\" data-debility=\"unprepared\" data-value=\"0\">unprepared</a> debility and take <a class=\"resource-link\" data-resource=\"supply\" data-value=\"+1\">+1 supply</a>.</li></ul><strong>Recover</strong><ul><li>Recuperate: Take <a class=\"resource-link\" data-resource=\"health\" data-value=\"+2\">+2 health</a> for yourself and any companions.</li><li>Consort: Take <a class=\"resource-link\" data-resource=\"spirit\" data-value=\"+2\">+2 spirit</a>.</li><li>Provision: Take <a class=\"resource-link\" data-resource=\"supply\" data-value=\"+2\">+2 supply</a>.</li><li>Plan: Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+2\">+2 momentum</a>.</li></ul><strong>Provide Aid</strong><ul><li>Take a quest: Envision what this community needs (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure). If you choose to help, <a class=\"move-link\" data-id=\"move/swear-an-iron-vow\">Swear an Iron Vow</a> and add +1.</li></ul></span>",
-      "miss": "You find no help here. <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a>.",
+      "strong": "You and your allies may each choose **two**:\n**Clear a Condition**\n- Mend: Clear a [wounded](debility:wounded?value=0) debility and take [+1 health](resource:health?value=+1).\n- Hearten: Clear a [shaken](debility:shaken?value=0) debility and take [+1 spirit](resource:spirit?value=+1).\n- Equip: Clear an [unprepared](debility:unprepared?value=0) debility and take [+1 supply](resource:supply?value=+1).**Recover**\n- Recuperate: Take [+2 health](resource:health?value=+2) for yourself and any companions.\n- Consort: Take [+2 spirit](resource:spirit?value=+2).\n- Provision: Take [+2 supply](resource:supply?value=+2).\n- Plan: Take [+2 momentum](resource:momentum?value=+2).**Provide Aid**\n- Take a quest: Envision what this community needs ([Ask the Oracle](move:ask-the-oracle) if unsure). If you choose to help, [Swear an Iron Vow](move:swear-an-iron-vow) and add +1.",
+      "weak": "[As above, but choose]{.dialog-only}[Choose]{.log-only} **one**. If you share a bond, choose one more.[\n**Clear a Condition**\n- Mend: Clear a [wounded](debility:wounded?value=0) debility and take [+1 health](resource:health?value=+1).\n- Hearten: Clear a [shaken](debility:shaken?value=0) debility and take [+1 spirit](resource:spirit?value=+1).\n- Equip: Clear an [unprepared](debility:unprepared?value=0) debility and take [+1 supply](resource:supply?value=+1).**Recover**\n- Recuperate: Take [+2 health](resource:health?value=+2) for yourself and any companions.\n- Consort: Take [+2 spirit](resource:spirit?value=+2).\n- Provision: Take [+2 supply](resource:supply?value=+2).\n- Plan: Take [+2 momentum](resource:momentum?value=+2).**Provide Aid**\n- Take a quest: Envision what this community needs ([Ask the Oracle](move:ask-the-oracle) if unsure). If you choose to help, [Swear an Iron Vow](move:swear-an-iron-vow) and add +1.]{.log-only}",
+      "miss": "You find no help here. [Pay the Price](move:pay-the-price).",
       "notes": "On a hit, you may also focus on one chosen recover action and roll +heart again (add +1 if bonded). Strong hit: take +2 more for that action. Weak hit: take +1 more. Miss: lose all benefits for that action.",
       "preconditions": [
         {
@@ -58,23 +59,24 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} spends time in community seeking assistance using {stat}"
+      "logTitle": "{character} spends time in community seeking assistance using {stat}",
+      "markdown": true
     },
     {
       "id": "move/draw-the-circle",
       "name": "Draw the Circle",
       "category": "Relationship",
       "triggerShort": "When you challenge someone to a formal duel, or accept a challenge.",
-      "trigger": "When you <strong>challenge someone to a formal duel, or accept a challenge</strong>, roll <strong>+heart</strong>. If you share a bond with this community, add +1.",
+      "trigger": "When you **challenge someone to a formal duel, or accept a challenge**, roll **+heart**. If you share a bond with this community, add +1.",
       "stats": [
         {
           "stat": "heart",
           "desc": "Challenging or accepting a formal duel (add +1 if bonded community)"
         }
       ],
-      "strong": "Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">+1 momentum</a>. You may also choose up to three boasts and take +1 momentum for each.<ul><li>Grant first strike: <a class=\"initiative-link\" data-value=\"foe\">Your foe has initiative</a>.</li><li>Bare yourself: Take no benefit of armor or shield; your foe's harm is +1.</li><li>Hold no iron: Take no benefit of weapons; your harm is 1.</li><li>Bloody yourself: <a class=\"move-link\" data-id=\"move/endure-harm\" data-harm=\"1\">Endure Harm</a> (1 harm).</li><li>To the death: One way or another, this fight must end with death.</li></ul>",
-      "weak": "<span class=\"dialog-only\">You may choose one boast in exchange for <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">+1 momentum</a>.</span><span class=\"log-only\">You may choose one boast in exchange for <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">+1 momentum</a>.<ul><li>Grant first strike: <a class=\"initiative-link\" data-value=\"foe\">Your foe has initiative</a>.</li><li>Bare yourself: Take no benefit of armor or shield; your foe's harm is +1.</li><li>Hold no iron: Take no benefit of weapons; your harm is 1.</li><li>Bloody yourself: <a class=\"move-link\" data-id=\"move/endure-harm\" data-harm=\"1\">Endure Harm</a> (1 harm).</li><li>To the death: One way or another, this fight must end with death.</li></ul></span>",
-      "miss": "You begin the duel at a disadvantage. <a class=\"initiative-link\" data-value=\"foe\">Your foe has initiative</a>. <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a>.",
+      "strong": "Take [+1 momentum](resource:momentum?value=+1). You may also choose up to three boasts and take +1 momentum for each.\n- Grant first strike: [Your foe has initiative](initiative:foe).\n- Bare yourself: Take no benefit of armor or shield; your foe's harm is +1.\n- Hold no iron: Take no benefit of weapons; your harm is 1.\n- Bloody yourself: [Endure Harm](move:endure-harm?harm=1) (1 harm).\n- To the death: One way or another, this fight must end with death.",
+      "weak": "[You may choose one boast in exchange for [+1 momentum](resource:momentum?value=+1).]{.dialog-only}[You may choose one boast in exchange for [+1 momentum](resource:momentum?value=+1).\n- Grant first strike: [Your foe has initiative](initiative:foe).\n- Bare yourself: Take no benefit of armor or shield; your foe's harm is +1.\n- Hold no iron: Take no benefit of weapons; your harm is 1.\n- Bloody yourself: [Endure Harm](move:endure-harm?harm=1) (1 harm).\n- To the death: One way or another, this fight must end with death.]{.log-only}",
+      "miss": "You begin the duel at a disadvantage. [Your foe has initiative](initiative:foe). [Pay the Price](move:pay-the-price).",
       "notes": "Then, make moves to resolve the fight. If you are the victor, you may make a lawful demand, and your opponent must comply or forfeit their honor and standing. If you refuse the challenge, surrender, or are defeated, they make a demand of you.",
       "preconditions": [
         {
@@ -83,7 +85,8 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} draws the circle using {stat}"
+      "logTitle": "{character} draws the circle using {stat}",
+      "markdown": true
     },
     {
       "id": "move/forge-a-bond",
@@ -116,16 +119,16 @@
       "name": "Test Your Bond",
       "category": "Relationship",
       "triggerShort": "When your bond is tested through conflict, betrayal, or circumstance.",
-      "trigger": "When <strong>your bond is tested through conflict, betrayal, or circumstance</strong>, roll <strong>+heart</strong>.",
+      "trigger": "When **your bond is tested through conflict, betrayal, or circumstance**, roll **+heart**.",
       "stats": [
         {
           "stat": "heart",
           "desc": "Testing a bond through conflict, betrayal, or circumstance"
         }
       ],
-      "strong": "This test has strengthened your bond. Choose one:<ul><li>Take <a class=\"resource-link\" data-resource=\"spirit\" data-value=\"+1\">+1 spirit</a>.</li><li>Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+2\">+2 momentum</a>.</li></ul>",
-      "weak": "Your bond is fragile and you must prove your loyalty. Envision what they ask of you (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure), and do it (or <a class=\"move-link\" data-id=\"move/swear-an-iron-vow\">Swear an Iron Vow</a>). If you decline or fail, clear the bond and <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a>.",
-      "miss": "Or if you have no interest in maintaining this relationship, clear the bond and <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a>.",
+      "strong": "This test has strengthened your bond. Choose one:\n- Take [+1 spirit](resource:spirit?value=+1).\n- Take [+2 momentum](resource:momentum?value=+2).",
+      "weak": "Your bond is fragile and you must prove your loyalty. Envision what they ask of you ([Ask the Oracle](move:ask-the-oracle) if unsure), and do it (or [Swear an Iron Vow](move:swear-an-iron-vow)). If you decline or fail, clear the bond and [Pay the Price](move:pay-the-price).",
+      "miss": "Or if you have no interest in maintaining this relationship, clear the bond and [Pay the Price](move:pay-the-price).",
       "notes": "Triggered by the fiction, not player choice. If something happens that would logically strain a meaningful relationship, this move is prompted. The miss text also applies if you simply have no interest in maintaining the relationship.",
       "preconditions": [
         {
@@ -138,14 +141,15 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} tests a bond with {stat}"
+      "logTitle": "{character} tests a bond with {stat}",
+      "markdown": true
     },
     {
       "id": "move/aid-your-ally",
       "name": "Aid Your Ally",
       "category": "Relationship",
       "triggerShort": "When you Secure an Advantage in direct support of an ally.",
-      "trigger": "When you <a class=\"move-link\" data-id=\"move/secure-an-advantage\">Secure an Advantage</a> <strong>in direct support of an ally</strong>, and score a hit, they (instead of you) can take the benefits of the move. If you are in combat and score a strong hit, you and your ally have initiative.",
+      "trigger": "When you [Secure an Advantage](move:secure-an-advantage) **in direct support of an ally**, and score a hit, they (instead of you) can take the benefits of the move. If you are in combat and score a strong hit, you and your ally have initiative.",
       "strong": "",
       "weak": "",
       "miss": "",
@@ -156,7 +160,8 @@
           "eq": 1
         }
       ],
-      "source": "base"
+      "source": "base",
+      "markdown": true
     },
     {
       "id": "move/write-your-epilogue",
@@ -164,7 +169,7 @@
       "category": "Relationship",
       "triggerShort": "When you retire from your life as Ironsworn.",
       "progressTrack": "bonds",
-      "trigger": "When you <strong>retire from your life as Ironsworn</strong>, envision two things: What you hope for, and what you fear. Then, roll the challenge dice and compare to your <strong>bonds</strong>. You may not burn momentum on this roll, and you are not affected by negative momentum.",
+      "trigger": "When you **retire from your life as Ironsworn**, envision two things: What you hope for, and what you fear. Then, roll the challenge dice and compare to your **bonds**. You may not burn momentum on this roll, and you are not affected by negative momentum.",
       "stats": [
         {
           "stat": "bonds",
@@ -172,7 +177,7 @@
         }
       ],
       "strong": "Things come to pass as you hoped.",
-      "weak": "Your life takes an unexpected turn, but not necessarily for the worse. You find yourself spending your days with someone or in a place you did not foresee. Envision it (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure).",
+      "weak": "Your life takes an unexpected turn, but not necessarily for the worse. You find yourself spending your days with someone or in a place you did not foresee. Envision it ([Ask the Oracle](move:ask-the-oracle) if unsure).",
       "miss": "Your fears are realized.",
       "notes": "A progress move — roll challenge dice against your bond progress track. No action die. You may not burn momentum on this roll, and you are not affected by negative momentum.",
       "preconditions": [
@@ -187,7 +192,8 @@
       ],
       "progressSource": "bonds",
       "source": "base",
-      "logTitle": "{character} writes their epilogue"
+      "logTitle": "{character} writes their epilogue",
+      "markdown": true
     }
   ],
   "source": "base"

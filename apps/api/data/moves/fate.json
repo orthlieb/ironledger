@@ -6,7 +6,7 @@
       "name": "Ask the Oracle",
       "category": "Fate",
       "triggerShort": "When you seek to resolve uncertainty or determine what happens next.",
-      "trigger": "When you <strong>seek to resolve uncertainty, introduce something new, or determine what happens next</strong> while playing solo or co-op, you may…<ul><li>Envision the answer based on the situation and your intuition.</li><li>Roll on an oracle table (Action + Theme, Pay the Price, or a thematic table) to generate an answer.</li><li>Ask a yes/no question and consult the following table.</li></ul>",
+      "trigger": "When you **seek to resolve uncertainty, introduce something new, or determine what happens next** while playing solo or co-op, you may…\n- Envision the answer based on the situation and your intuition.\n- Roll on an oracle table (Action + Theme, Pay the Price, or a thematic table) to generate an answer.\n- Ask a yes/no question and consult the following table.",
       "strong": "",
       "weak": "",
       "miss": "",
@@ -50,14 +50,15 @@
         }
       ],
       "source": "base",
-      "logTitle": "The Oracle is consulted"
+      "logTitle": "The Oracle is consulted",
+      "markdown": true
     },
     {
       "id": "move/pay-the-price",
       "name": "Pay the Price",
       "category": "Fate",
       "triggerShort": "When you suffer the outcome of a move.",
-      "trigger": "When you <strong>suffer the outcome of a move</strong>, choose one.<ul><li>Make the most obvious negative outcome happen. E.g. <a class=\"move-link\" data-id=\"move/endure-harm\">Endure Harm</a>, <a class=\"move-link\" data-id=\"move/endure-stress\">Endure Stress</a>.</li><li>Envision two negative outcomes. Rate one as 'likely', and <a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> using the yes/no table. On a 'yes', make that outcome happen. Otherwise, make it the other.</li><li>Roll on the following table. If you have difficulty interpreting the result to fit the current situation, roll again.</li></ul>",
+      "trigger": "When you **suffer the outcome of a move**, choose one.\n- Make the most obvious negative outcome happen. E.g. [Endure Harm](move:endure-harm), [Endure Stress](move:endure-stress).\n- Envision two negative outcomes. Rate one as 'likely', and [Ask the Oracle](move:ask-the-oracle) using the yes/no table. On a 'yes', make that outcome happen. Otherwise, make it the other.\n- Roll on the following table. If you have difficulty interpreting the result to fit the current situation, roll again.",
       "strong": "",
       "weak": "",
       "miss": "",
@@ -67,7 +68,7 @@
       "table": [
         {
           "topRange": 2,
-          "value": "Roll again and apply that result but make it worse. If you roll this result yet again, think of something dreadful that changes the course of your quest (<a class=\"move-link\" data-id=\"move/ask-the-oracle\">Ask the Oracle</a> if unsure) and make it happen."
+          "value": "Roll again and apply that result but make it worse. If you roll this result yet again, think of something dreadful that changes the course of your quest ([Ask the Oracle](move:ask-the-oracle) if unsure) and make it happen."
         },
         {
           "topRange": 5,
@@ -103,11 +104,11 @@
         },
         {
           "topRange": 68,
-          "value": "It is harmful. <a class=\"move-link\" data-id=\"move/endure-harm\">Endure Harm</a>."
+          "value": "It is harmful. [Endure Harm](move:endure-harm)."
         },
         {
           "topRange": 77,
-          "value": "It is stressful. <a class=\"move-link\" data-id=\"move/endure-stress\">Endure Stress</a>."
+          "value": "It is stressful. [Endure Stress](move:endure-stress)."
         },
         {
           "topRange": 85,
@@ -136,7 +137,8 @@
           "eq": 1
         }
       ],
-      "source": "base"
+      "source": "base",
+      "markdown": true
     }
   ],
   "source": "base"

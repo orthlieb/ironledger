@@ -88,6 +88,9 @@ const P0 = '';
 const P1 = '';
 const LINK = /\[([^\]]+)\]\(([^)]+)\)/g; // [label](href)
 const SPAN = /\[([^\]]+)\]\{\.([\w-]+)\}/g; // [text]{.class}
+/** Display-context spans an author may tag: `log-only` (log entries only),
+ *  `dialog-only` (the move/asset dialog only). Keep in sync with lint-dsl.mjs. */
+const SPAN_CLASSES = new Set(['log-only', 'dialog-only']);
 
 /** Render markdown+DSL text (moves, oracles, assets) to HTML: resolve DSL action
  *  links + `{.class}` spans, then apply renderNote formatting (bold, lists).
@@ -102,7 +105,7 @@ export function renderRich(md: string | undefined): string {
 		return html == null ? m : protect(html);
 	});
 	s = s.replace(SPAN, (m, text: string, cls: string) =>
-		cls === 'log-only' ? protect(`<span class="log-only">${esc(text)}</span>`) : m,
+		SPAN_CLASSES.has(cls) ? protect(`<span class="${cls}">${esc(text)}</span>`) : m,
 	);
 	return renderNote(s).replace(
 		new RegExp(`${P0}(\\d+)${P1}`, 'g'),

@@ -885,9 +885,12 @@
 		const entryId = crypto.randomUUID();
 		const roll = rollDie(100);
 		const found = raw.find((e) => roll <= e.topRange) ?? raw[raw.length - 1];
-		const enriched = ctx ? enrichOutcomeLinks(found.value, entryId, ctx.charId) : found.value;
+		const rendered = moveMd(selectedMove, found.value);
+		const enriched = ctx ? enrichOutcomeLinks(rendered, entryId, ctx.charId) : rendered;
+		// A d100 table roll is an oracle-style roll — match the oracle log format
+		// (`Roll: d100 → N`) rather than the action-die bracket format.
 		const html =
-			`<div class="roll-line">1d100 [${roll}]</div>` +
+			`<div class="roll-line">Roll: d100 → ${roll}</div>` +
 			`<div class="move-outcome">${enriched}</div>`;
 		const tensV = Math.floor((roll % 100) / 10) || 10;
 		const onesV = roll % 10 || 10;

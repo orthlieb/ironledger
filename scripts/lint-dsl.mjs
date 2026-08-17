@@ -46,7 +46,7 @@ const DEBILITIES = new Set([
 ]);
 const INITIATIVE = new Set(['character', 'foe']);
 const HARM_RES = new Set(['health', 'spirit']);
-const SPAN_CLASSES = new Set(['log-only']);
+const SPAN_CLASSES = new Set(['log-only', 'dialog-only']);
 
 const LINK = /\[([^\]]+)\]\(([a-z]+):([^)]*)\)/g; // [label](scheme:rest)
 const SPAN = /\[([^\]]+)\]\{\.([\w-]+)\}/g; // [text]{.class}
