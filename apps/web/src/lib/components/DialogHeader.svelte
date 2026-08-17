@@ -25,6 +25,7 @@
 		detail = false,
 		radius = '10px 10px 0 0',
 		trailing,
+		leading,
 	}: {
 		/** Title text. Callers apply headingText() themselves for static labels. */
 		title: string;
@@ -36,11 +37,15 @@
 		radius?: string;
 		/** Custom trailing content rendered after the title instead of a close button. */
 		trailing?: Snippet;
+		/** Optional content rendered between the grip and the title — e.g. a small
+		 *  leading glyph next to the name (matches the asset card's name icon). */
+		leading?: Snippet;
 	} = $props();
 </script>
 
 <div class="dh-header" class:dh-header--detail={detail} style:border-radius={radius} use:draggable>
 	<span class="drag-grip" aria-hidden="true">⠿</span>
+	{#if leading}{@render leading()}{/if}
 	<span class="dh-title" class:dh-title--detail={detail}>{title}</span>
 	{#if trailing}
 		{@render trailing()}

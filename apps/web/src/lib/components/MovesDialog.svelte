@@ -1151,11 +1151,13 @@
 												}}
 											>
 												<div class="md-tile-stripe"></div>
-												<span class="md-tile-icon" aria-hidden="true">
-													{@html moveCategoryIcon(move.category)}
-												</span>
 												<div class="md-tile-body">
-													<div class="md-tile-name">{move.name}</div>
+													<div class="md-tile-name-row">
+														<span class="md-tile-icon" aria-hidden="true">
+															{@html moveCategoryIcon(move.category)}
+														</span>
+														<div class="md-tile-name">{move.name}</div>
+													</div>
 													<div class="md-tile-desc">{move.triggerShort}</div>
 												</div>
 											</button>
@@ -1170,11 +1172,17 @@
 				<!-- ── Detail view ───────────────────────────────────────────────────── -->
 
 				<DialogHeader title={selectedMove.name} detail>
+					{#snippet leading()}
+						<span
+							class="md-header-icon"
+							aria-hidden="true"
+							style:--ccolor={catColor(selectedMove.category)}
+						>
+							{@html moveCategoryIcon(selectedMove.category)}
+						</span>
+					{/snippet}
 					{#snippet trailing()}
 						<span class="md-category-badge" style:--ccolor={catColor(selectedMove.category)}>
-							<span class="md-category-badge-icon" aria-hidden="true">
-								{@html moveCategoryIcon(selectedMove.category)}
-							</span>
 							{selectedMove.category}
 						</span>
 					{/snippet}
@@ -1753,17 +1761,20 @@
 		align-items: center;
 		gap: 4px;
 	}
-	/* Category glyph prefixing the badge text — sized to match the badge
-	   font weight so it reads as one unit, not a separate chip. */
-	.md-category-badge-icon {
+	/* Detail-header leading glyph — the category icon next to the move name,
+	   tinted with the category colour (matches the asset card's name icon). */
+	.md-header-icon {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		color: var(--ccolor, currentColor);
+		width: 16px;
+		height: 16px;
+		flex-shrink: 0;
+		color: var(--ccolor, var(--text-accent));
 	}
-	.md-category-badge-icon :global(svg) {
-		width: 12px;
-		height: 12px;
+	.md-header-icon :global(svg) {
+		width: 16px;
+		height: 16px;
 		fill: currentColor;
 	}
 
@@ -2068,34 +2079,42 @@
 		flex-shrink: 0;
 		background: var(--tcolor, var(--text-accent));
 	}
-	/* Category glyph — sits between the source stripe and the text block.
-	   Tinted with the same category colour as the stripe so the two read as
-	   a single left-edge unit (matches the oracle-picker tile treatment). */
-	.md-tile-icon {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 28px;
-		flex-shrink: 0;
-		color: var(--tcolor, var(--text-muted));
-		padding: 0 6px;
-	}
-	.md-tile-icon :global(svg) {
-		width: 18px;
-		height: 18px;
-		fill: currentColor;
-	}
 	.md-tile-body {
 		padding: 6px 8px;
 		flex: 1;
 		min-width: 0;
 	}
+	/* Name row — small category glyph inline before the name, tinted with the
+	   category colour. Matches the asset picker tile (icon next to the header,
+	   not a full-height left column). */
+	.md-tile-name-row {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		min-width: 0;
+		margin-bottom: 2px;
+	}
+	.md-tile-icon {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 15px;
+		height: 15px;
+		flex-shrink: 0;
+		color: var(--tcolor, var(--text-muted));
+	}
+	.md-tile-icon :global(svg) {
+		width: 15px;
+		height: 15px;
+		fill: currentColor;
+	}
 	.md-tile-name {
+		flex: 1;
+		min-width: 0;
 		font-size: 0.72rem;
 		font-weight: 700;
 		line-height: 1.2;
 		color: var(--text);
-		margin-bottom: 2px;
 	}
 	.md-tile-desc {
 		font-size: 0.62rem;
