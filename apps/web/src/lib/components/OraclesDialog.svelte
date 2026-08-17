@@ -19,6 +19,7 @@
 		rollOracle,
 	} from '$lib/oracleStore.svelte.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
+	import { oracleCategoryIcon } from '$lib/iconRegistry.js';
 	import { renderNote } from '$lib/markdown.js';
 	import { appendLog, enrichOutcomeLinks } from '$lib/log.svelte.js';
 	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
@@ -367,6 +368,9 @@
 										}}
 									>
 										<div class="od-tile-stripe"></div>
+										<span class="od-tile-icon" aria-hidden="true">
+											{@html oracleCategoryIcon(oracle.category)}
+										</span>
 										<div class="od-tile-body">
 											<div class="od-tile-name">{oracle.title}</div>
 											{#if oracle.description}
@@ -741,6 +745,23 @@
 		width: 4px;
 		flex-shrink: 0;
 		background: var(--tcolor, var(--text-accent));
+	}
+	/* Category glyph — sits between the source stripe and the text block.
+	   Tinted with the same source colour as the stripe so the two read as
+	   a single left-edge unit. Icon size matches the two-line body height. */
+	:global(.od-tile-icon) {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		flex-shrink: 0;
+		color: var(--tcolor, var(--text-muted));
+		padding: 0 6px;
+	}
+	:global(.od-tile-icon svg) {
+		width: 18px;
+		height: 18px;
+		fill: currentColor;
 	}
 	:global(.od-tile-body) {
 		padding: 6px 8px;
