@@ -2447,7 +2447,8 @@
 		font-size: 0.72rem;
 		color: var(--text-dimmer);
 		line-height: 1.5;
-		font-style: italic;
+		/* Plain by default — emphasis comes from markdown (`*italic*` → <em>), not
+		   a blanket font-style on the whole note. */
 	}
 	/* ── Difficulty Factors (spell roll collapsible) ───────────────────────── */
 	.md-factors {
