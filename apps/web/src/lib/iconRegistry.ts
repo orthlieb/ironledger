@@ -129,7 +129,15 @@ const ORACLE_CAT_ICON: Record<string, string> = {
 	Move: 'person-running-solid',
 	Creature: 'foe-beast',
 	Combat: 'sword-solid-full',
-	Quest: 'star-solid-full',
+	// Scale absorbs the former Quest cluster (challengeRank moved). fa-scale-unbalanced.
+	Scale: 'scale-unbalanced-solid-full',
+	// FA Free (hydra + sparkles are Pro-only — substituted from the same visual family):
+	Monstrosity: 'dragon-solid-full',
+	Story: 'book-solid-full',
+	Magic: 'wand-sparkles-solid-full',
+	// Encounter reuses the neutral d100 glyph — single-oracle category, no distinctive art.
+	Encounter: 'dice-d100-solid',
+	// Sample/dev-only oracles surface as "Other" — d100 fallback is the right neutral.
 	Other: 'dice-d100-solid',
 };
 
