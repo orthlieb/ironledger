@@ -218,7 +218,7 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 			page.locator('.oracles-dialog .od-tile-name', { hasText: /Mana Backlash/ }),
 		).toHaveCount(0, { timeout: 5_000 });
 		await expect(
-			page.locator('.oracles-dialog .od-tile-name', { hasText: /Mystic Backlash/i }),
+			page.locator('.oracles-dialog .od-tile-name', { hasText: /Magic: Ritual Backlash/i }),
 		).toBeVisible({ timeout: 5_000 });
 	});
 
