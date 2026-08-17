@@ -6,6 +6,7 @@
   "description": "Generate a monstrosity by rolling its primary form, size, characteristics, and abilities together.",
   "source": "delve",
   "tableType": "compound",
+  "compound": "dossier",
   "data": [
     {
       "topRange": 100,

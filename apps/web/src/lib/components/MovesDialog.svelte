@@ -2372,6 +2372,14 @@
 	.md-outcome-text :global(.log-only) {
 		display: none;
 	}
+	/* renderRich wraps prose in <p>; zero the browser default so spacing matches
+	   the old inline output (last-child flush to the container). */
+	.md-outcome-text :global(p) {
+		margin: 0 0 4px;
+	}
+	.md-outcome-text :global(p:last-child) {
+		margin-bottom: 0;
+	}
 	.md-outcome-text :global(strong) {
 		color: var(--text);
 		font-weight: 600;
@@ -2449,6 +2457,12 @@
 		line-height: 1.5;
 		/* Plain by default — emphasis comes from markdown (`*italic*` → <em>), not
 		   a blanket font-style on the whole note. */
+	}
+	.md-notes-text :global(p) {
+		margin: 0 0 4px;
+	}
+	.md-notes-text :global(p:last-child) {
+		margin-bottom: 0;
 	}
 	/* ── Difficulty Factors (spell roll collapsible) ───────────────────────── */
 	.md-factors {

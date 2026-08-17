@@ -65,6 +65,10 @@ export interface OracleFile {
 	 *  blank lines into paragraphs when rendered. */
 	postamble?: string;
 	tableType?: string;
+	/** For `tableType: 'compound'` — how the rolled result renders:
+	 *  `"dossier"` = per-field breakdown (Monstrosity), `"phrase"` = one composed
+	 *  string (Site Name). Explicit; replaces the old ": "/`[…](roll:…)` heuristic. */
+	compound?: 'phrase' | 'dossier';
 	/** Column definitions. For `columnSelect` / `matrix` these are the pickable
 	 *  columns; for a flat table they name/label the display columns (in order
 	 *  after D100). When absent on a flat oracle, columns are derived from the
@@ -757,9 +761,10 @@ export function rollOracle(
 		// per-field breakdown (+ the format roll when multiple formats). A phrase
 		// template (a name) logs just the composed result — the assembled string
 		// is the whole point.
-		// Dossier = per-field breakdown (has a "Label: " literal, or labelled
-		// `[…](roll:…)` DSL blanks); phrase = a composed name (bare `[key]` tokens).
-		const isDossier = /:\s/.test(template) || /\]\(roll:/.test(template);
+		// Dossier = per-field breakdown; phrase = a composed name. Prefer the
+		// explicit `compound` flag; fall back to the ": " heuristic for oracles
+		// not yet carrying it (legacy `[key]` compounds).
+		const isDossier = oracle.compound ? oracle.compound === 'dossier' : /:\s/.test(template);
 		const fmtLine =
 			isDossier && table.length > 1
 				? `<div class="roll-line">Format roll: d100 → ${fmtRes.roll}</div>`
