@@ -65,6 +65,31 @@ toggle — an item whose source is disabled is hidden from pickers, but existing
 saved records that reference it still render (`find*` lookups are never
 filtered).
 
+### Authoring prose — markdown + link DSL
+
+All authored game text — move outcomes/triggers/notes, asset preambles and
+ability text, oracle values — is written in **markdown + an interactive-link
+DSL**, not raw HTML:
+
+- **Formatting** is mini-markdown: `**bold**`, `*italic*`, `-` / `*` bullets,
+  `1.` ordered lists, blank-line paragraphs.
+- **Cross-references** are markdown links with a known scheme —
+  `[Pay the Price](move:pay-the-price)`, `[+1 momentum](resource:momentum?value=+1)`,
+  `[Mana Backlash](oracle:manaBacklash)`. Query args parse leniently (`+` stays
+  literal). The full scheme table is in
+  [data-schema.md → Data-Driven Links](data-schema.md#data-driven-links).
+- **Context spans** `[…]{.log-only}` / `[…]{.dialog-only}` show text in only the
+  log or only the dialog.
+- **Oracle substitution blanks** use the `roll:` scheme —
+  `[Site Name](roll:siteName)`, `[roll again](roll:self?times=2)`. See
+  [oracles.md → Template blanks](oracles.md#template-blanks--the-roll-dsl).
+
+Raw HTML is not allowed in DSL content — the build-time lint
+(`scripts/lint-dsl.mjs`) rejects it and validates every link's scheme, target,
+and args. A single item that genuinely needs raw HTML can set `"html": true` to
+opt out of `renderRich` (and the lint); avoid it unless a construct truly can't
+be expressed in the DSL.
+
 ### Oracle supersession (`suppressesOracles`)
 
 An extension can **hide** oracles owned by other (lower-order) extensions while
@@ -127,7 +152,7 @@ from the folder:
 Two reasons ids are authored: (1) ids are **persisted in the DB** (a character's
 asset references, saved encounters), so they must be stable; (2) an extension
 legitimately **references other ids** — `overrides.json` is keyed by _base_ foe
-ids (`ironsworn/bear`), and move/oracle HTML links to ids across the catalogue.
+ids (`ironsworn/bear`), and move/oracle DSL links reference ids across the catalogue.
 A "prefix everything in this folder" rule would corrupt those references. The
 prefix _is_ the cross-extension collision namespace — keep it, and match it to
 the extension id.
