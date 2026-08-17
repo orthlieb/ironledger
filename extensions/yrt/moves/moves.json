@@ -7,10 +7,10 @@
       "category": "Yrt",
       "spellRoll": true,
       "triggerShort": "When you attempt to cast a Conclave ritual.",
-      "trigger": "When you <strong>attempt to cast a Conclave ritual:</strong><ol><li><strong>Define the difficulty</strong> — Examine the ritual to identify difficulty factors and sum them up.</li><li><strong>Commit mana</strong> — Decide how much mana you draw from your pool. Each mana spent is added to your action roll.</li><li><strong>Roll to cast</strong> — Treat the spell difficulty as one <strong>challenge die</strong>. Roll the second challenge die (1d10) normally. Roll your <strong>action die</strong> (1d6) adding any mana spent and any other bonuses.</li><li><strong>Resolve the outcome.</strong></li></ol>",
-      "strong": "The ritual works as intended, <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">+1 momentum</a>.",
+      "trigger": "When you **attempt to cast a Conclave ritual:**\n1. **Define the difficulty** — Examine the ritual to identify difficulty factors and sum them up.\n2. **Commit mana** — Decide how much mana you draw from your pool. Each mana spent is added to your action roll.\n3. **Roll to cast** — Treat the spell difficulty as one **challenge die**. Roll the second challenge die (1d10) normally. Roll your **action die** (1d6) adding any mana spent and any other bonuses.\n4. **Resolve the outcome.**",
+      "strong": "The ritual works as intended, [+1 momentum](resource:momentum?value=+1).",
       "weak": "The ritual succeeds, but the outcome is degraded. Downgrade factors of the spell equal to the difference between the highest challenge die and your action score. If you cannot downgrade any further, the spell dissipates without effect. The mana is wasted.",
-      "miss": "The casting fails. <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a>. Choose something appropriate or roll on the <a class=\"oracle-link\" data-oracle=\"manaBacklash\">Mana Backlash Oracle</a>.",
+      "miss": "The casting fails. [Pay the Price](move:pay-the-price). Choose something appropriate or roll on the [Mana Backlash Oracle](oracle:manaBacklash).",
       "logTitle": "{character} casts a Conclave Ritual",
       "preconditions": [
         {
@@ -29,8 +29,8 @@
       "name": "Craft an Item",
       "category": "Yrt",
       "triggerShort": "When you use your skill to craft an item.",
-      "trigger": "When you <strong>use your skill to craft an item</strong>, draw on your training and roll. If you act…<ul><li>With expertise, insight, and observation: Roll <strong>+wits</strong>.</li><li>With deception, stealth, or trickery: Roll <strong>+shadow</strong>.</li></ul>",
-      "triggerPreamble": "When you <strong>use your skill to craft an item</strong>, draw on your training and roll. If you act…",
+      "trigger": "When you **use your skill to craft an item**, draw on your training and roll. If you act…\n- With expertise, insight, and observation: Roll **+wits**.\n- With deception, stealth, or trickery: Roll **+shadow**.",
+      "triggerPreamble": "When you **use your skill to craft an item**, draw on your training and roll. If you act…",
       "stats": [
         {
           "stat": "wits",
@@ -41,9 +41,9 @@
           "desc": "With deception, stealth, or trickery"
         }
       ],
-      "strong": "You perfectly craft your item. <a class=\"resource-link\" data-resource=\"supply\" data-value=\"-1\">Consume -1 supply</a>. Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">+1 momentum</a>.",
-      "weak": "You craft your item but with complications. <a class=\"resource-link\" data-resource=\"supply\" data-value=\"-1\">Consume -1 supply</a>. Choose one:<ul><li>The item requires more materials than you thought. <a class=\"resource-link\" data-resource=\"supply\" data-value=\"-1\">Consume an additional -1 supply</a>.</li><li>The item is weaker or more fragile than intended.</li><li>The item has a telltale flaw.</li></ul>",
-      "miss": "You bungle the operation and the item is ruined. <a class=\"resource-link\" data-resource=\"supply\" data-value=\"-1\">Consume -1 supply</a>. <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a>.",
+      "strong": "You perfectly craft your item. [Consume -1 supply](resource:supply?value=-1). Take [+1 momentum](resource:momentum?value=+1).",
+      "weak": "You craft your item but with complications. [Consume -1 supply](resource:supply?value=-1). Choose one:\n- The item requires more materials than you thought. [Consume an additional -1 supply](resource:supply?value=-1).\n- The item is weaker or more fragile than intended.\n- The item has a telltale flaw.",
+      "miss": "You bungle the operation and the item is ruined. [Consume -1 supply](resource:supply?value=-1). [Pay the Price](move:pay-the-price).",
       "notes": "This move is only available to those who have a specific Path that enables it, such as Bittercraft or Quillwise. The asset provides the context for what is being crafted and any additional flavor for the outcome.",
       "logTitle": "{character} crafts an item using {stat}",
       "preconditions": [

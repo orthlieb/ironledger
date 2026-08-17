@@ -14,7 +14,7 @@ For Yrt homebrew extensions (mana, Touched assets, cantrips, Yrt-specific oracle
   - [Move Object Fields](#move-object-fields)
   - [Preconditions](#preconditions)
   - [Stat Entries](#stat-entries)
-  - [Outcome Text and HTML](#outcome-text-and-html)
+  - [Outcome Text (markdown + link DSL)](#outcome-text-markdown--link-dsl)
   - [Data-Driven Links](#data-driven-links)
   - [Context-Aware Visibility (log-only / dialog-only)](#context-aware-visibility-log-only--dialog-only)
   - [Match Text (strongMatch / weakMatch / missMatch)](#match-text-strongmatch--weakmatch--missmatch)
@@ -61,17 +61,17 @@ Each file contains one category of moves:
 | `name`             | string            | yes      | Display name (e.g., `"Face Danger"`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `category`         | string            | yes      | Must match the file's top-level `category`                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `triggerShort`     | string            | yes      | One-sentence summary shown on the move tile                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `trigger`          | string (HTML)     | yes      | Full trigger text with formatting                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `triggerPreamble`  | string (HTML)     | no       | Opening phrase before stat options (for multi-stat triggers)                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `triggerPostamble` | string (HTML)     | no       | Closing phrase after stat options                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `trigger`          | string (md+DSL)   | yes      | Full trigger text with formatting                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `triggerPreamble`  | string (md+DSL)   | no       | Opening phrase before stat options (for multi-stat triggers)                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `triggerPostamble` | string (md+DSL)   | no       | Closing phrase after stat options                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `stats`            | array             | no       | Stat options for rolling (see [Stat Entries](#stat-entries))                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `strong`           | string (HTML)     | no       | Strong hit result text                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `weak`             | string (HTML)     | no       | Weak hit result text                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `miss`             | string (HTML)     | no       | Miss result text                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `strongMatch`      | string (HTML)     | no       | Text shown in the log on a strong hit with matching challenge dice (overrides generic match text)                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `weakMatch`        | string (HTML)     | no       | Text shown in the log on a weak hit with matching challenge dice (overrides generic match text)                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `missMatch`        | string (HTML)     | no       | Text shown in the log on a miss with matching challenge dice (overrides generic match text)                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `notes`            | string (HTML)     | no       | Designer notes and guidance                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `strong`           | string (md+DSL)   | no       | Strong hit result text                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `weak`             | string (md+DSL)   | no       | Weak hit result text                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `miss`             | string (md+DSL)   | no       | Miss result text                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `strongMatch`      | string (md+DSL)   | no       | Text shown in the log on a strong hit with matching challenge dice (overrides generic match text)                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `weakMatch`        | string (md+DSL)   | no       | Text shown in the log on a weak hit with matching challenge dice (overrides generic match text)                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `missMatch`        | string (md+DSL)   | no       | Text shown in the log on a miss with matching challenge dice (overrides generic match text)                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `notes`            | string (md+DSL)   | no       | Designer notes and guidance                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `preconditions`    | array of objects  | no       | Conditions that must all be met (AND) for the move tile to be enabled. See [Preconditions](#preconditions).                                                                                                                                                                                                                                                                                                                                                                                                |
 | `references`       | array of strings  | no       | Context dropdowns this move's text references (same valid values as `requires`). Unlike `requires`, these don't gate the tile — they inform the dialog/log which context to pull data from.                                                                                                                                                                                                                                                                                                                |
 | `table`            | array             | no       | Inline outcome table (see [Inline Tables](#inline-tables))                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
@@ -81,6 +81,7 @@ Each file contains one category of moves:
 | `tableRoll`        | boolean           | no       | If `true`, the move's primary action is rolling this table (no action+challenge roll)                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `rarityRoll`       | boolean           | no       | If `true`, the move rolls a single d6 rarity die                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `logTitle`         | string (template) | no       | Template for the session log entry title. Supports placeholder variables: `{character}` (active character name), `{stat}` (stat label used in the roll), `{expedition}` (active expedition/site/journey name), `{foe}` (active foe name), `{move}` (move's literal name). Falls back to `{character} — {move name} ({stat})` or `{character} — {move name}` when omitted.                                                                                                                                  |
+| `html`             | boolean           | no       | Escape hatch: when `true`, this move's prose fields are treated as **raw legacy HTML** (hand-written `<a class="…">` links) and bypass `renderRich`. Omit for normal moves — prose is markdown + the link DSL by default (see [Outcome Text](#outcome-text-markdown--link-dsl)). The DSL lint skips `html: true` moves.                                                                                                                                                                                    |
 
 ### Preconditions
 
@@ -203,49 +204,77 @@ When a move has multiple stats, the `triggerPreamble` field provides the text be
 }
 ```
 
-### Outcome Text and HTML
+### Outcome Text (markdown + link DSL)
 
-The `strong`, `weak`, `miss`, `notes`, and `trigger` fields all support HTML. Use standard HTML tags:
+The `strong`, `weak`, `miss`, `notes`, `trigger`, and `table[].value` fields are
+authored in **markdown + the interactive-link DSL**, rendered by `renderRich`
+(`$lib/dsl.ts`). This is the default — no per-move flag is needed.
 
-- `<strong>` for bold emphasis
-- `<ul><li>` for bullet lists
-- `<em>` for italic emphasis (use sparingly — only for genuine italics, **not** for move references)
+- **Prose formatting** is mini-markdown: `**bold**`, `*italic*`, `-` / `*`
+  bullet lists, `1.` ordered lists, blank-line paragraphs. (Raw HTML tags are
+  **not** allowed in DSL content — the lint rejects them.)
+- **Cross-references** to other game elements are markdown links with a known
+  scheme: `[label](scheme:path?args)`. Each scheme compiles to the interactive
+  `<a class="…" data-…>` HTML documented below; the app's click handlers
+  (`enrichOutcomeLinks`, `resolveHarmLinks`) wire up the emitted markup.
+- **`html: true`** on a move is the escape hatch: that move's fields are treated
+  as raw legacy HTML (the `<a class="…">` forms below, hand-written) and skip
+  `renderRich`. Use only for a construct the DSL can't express; the lint skips
+  `html: true` moves.
 
-For cross-references to other game elements, use the data-driven link tags described below.
+Query args are parsed **leniently**: `+` stays literal (it is _not_ decoded to a
+space), and `&` separates args. So `resource:momentum?value=+1` yields
+`data-value="+1"`.
 
 ### Data-Driven Links
 
-Embed these `<a>` tags in any HTML field (`strong`, `weak`, `miss`, `notes`, `trigger`, `table[].value`) to create interactive links.
+Authored as `[label](scheme:path?args)` markdown links in any prose field
+(`strong`, `weak`, `miss`, `notes`, `trigger`, `table[].value`). Each row below
+gives the DSL form and the HTML it compiles to. (Under `html: true`, hand-write
+the compiled HTML instead.)
 
 #### Move Links
 
 Link to another move. In the move dialog, clicking opens that move's detail dialog. In the log, same behavior with character context preserved.
 
+```text
+[Pay the Price](move:pay-the-price)
+[Endure Harm](move:endure-harm?harm=1)   ← optional data-harm
+```
+
+compiles to:
+
 ```html
 <a class="move-link" data-id="move/pay-the-price">Pay the Price</a>
 ```
 
-| Attribute | Description                                             |
-| --------- | ------------------------------------------------------- |
-| `class`   | Must be `move-link`                                     |
-| `data-id` | The target move's `id` field (e.g., `move/endure-harm`) |
+| DSL         | Description                                                        |
+| ----------- | ------------------------------------------------------------------ |
+| `move:<id>` | Target move's `id` **without** the `move/` prefix (e.g. `heal`)    |
+| `?harm=<n>` | _(optional)_ numeric `data-harm`, for moves that carry a harm hint |
 
-The link text should be the move's display name.
+The link text (label) should be the move's display name.
 
 #### Resource Links
 
 Link that modifies a character resource. In the log, clicking applies the change to the character who rolled. In the move dialog, styled but not clickable (no character context).
+
+```text
+[+1 momentum](resource:momentum?value=+1)
+[−2 health](resource:health?value=-2)
+```
+
+compiles to:
 
 ```html
 <a class="resource-link" data-resource="momentum" data-value="+1">+1 momentum</a>
 <a class="resource-link" data-resource="health" data-value="-2">−2 health</a>
 ```
 
-| Attribute       | Description                                                                                                                                   |
-| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `class`         | Must be `resource-link`                                                                                                                       |
-| `data-resource` | One of: `momentum`, `health`, `spirit`, `supply`, `bonds`, `failures`, `xp` (plus `mana` in [Yrt](../extensions/yrt/README.md#mana-resource)) |
-| `data-value`    | Signed integer: `+1`, `+2`, `-1`, `-2`, etc.                                                                                                  |
+| Part              | Description                                                                                                                                   |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `resource:<name>` | One of: `momentum`, `health`, `spirit`, `supply`, `bonds`, `failures`, `xp` (plus `mana` in [Yrt](../extensions/yrt/README.md#mana-resource)) |
+| `?value=<signed>` | Signed integer: `+1`, `+2`, `-1`, `-2`, etc. (`+` is kept literal)                                                                            |
 
 Resources are clamped to their valid ranges:
 
@@ -269,37 +298,33 @@ Use the `−` character (U+2212, minus sign) in the display text for negative va
 
 Link that marks or clears a debility. In the log, clicking toggles the debility on the character. In the move dialog, styled but not clickable.
 
-```html
-<a class="debility-link" data-debility="wounded" data-value="1">wounded</a>
-<a class="debility-link" data-debility="wounded" data-value="0">wounded</a>
+```text
+[wounded](debility:wounded?value=1)   ← mark
+[wounded](debility:wounded?value=0)   ← clear
 ```
 
-| Attribute       | Description                                                                                           |
-| --------------- | ----------------------------------------------------------------------------------------------------- |
-| `class`         | Must be `debility-link`                                                                               |
-| `data-debility` | One of: `wounded`, `maimed`, `shaken`, `corrupted`, `cursed`, `tormented`, `unprepared`, `encumbered` |
-| `data-value`    | `1` to mark the debility, `0` to clear it                                                             |
+compiles to `<a class="debility-link" data-debility="wounded" data-value="1">wounded</a>`.
+
+| Part              | Description                                                                                           |
+| ----------------- | ----------------------------------------------------------------------------------------------------- |
+| `debility:<name>` | One of: `wounded`, `maimed`, `shaken`, `corrupted`, `cursed`, `tormented`, `unprepared`, `encumbered` |
+| `?value=<0\|1>`   | `1` to mark the debility, `0` to clear it                                                             |
 
 #### Progress Links
 
-Link that marks progress on one of the character's progress tracks (vows, bonds, failures, threats). In the log, clicking opens a popup listing the character's available tracks to mark. In the move dialog, styled but not clickable.
+Link that marks progress on a named progress track. In the log, clicking marks the track (opening a picker where the track is ambiguous). In the move dialog, styled but not clickable.
 
-```html
-<a class="progress-link" data-value="1">Mark progress</a>
-<a class="progress-link" data-value="2">Mark progress twice</a>
+```text
+[mark combat progress](progress:combat?value=1)
+[mark progress twice](progress:journey?value=2)
 ```
 
-| Attribute    | Description                                                                                     |
-| ------------ | ----------------------------------------------------------------------------------------------- |
-| `class`      | Must be `progress-link`                                                                         |
-| `data-value` | Positive integer: number of times to mark progress (usually `1`, `2` for "mark progress twice") |
+compiles to `<a class="progress-link" data-track="combat" data-value="1">…</a>`.
 
-When clicked in the log, the user selects which track to mark from a popup showing:
-
-- **Vows** — each active (unfulfilled) vow, marking by difficulty-based ticks (VOW_MARK_TICKS)
-- **Bonds** — single track, +1 tick per mark
-- **Failures** — single track, +1 tick per mark
-- **Threats** — each vow's threat track (where threat name is non-empty), +1 menace per mark
+| Part               | Description                                                                      |
+| ------------------ | -------------------------------------------------------------------------------- |
+| `progress:<track>` | One of: `combat`, `delve`, `journey`, `bonds`, `failures`, `quest`, `expedition` |
+| `?value=<n>`       | Positive integer: number of times to mark (usually `1`, `2`)                     |
 
 The link gets the `applied` CSS class after use, preventing double-application (same pattern as resource-link and debility-link).
 
@@ -307,28 +332,30 @@ The link gets the `applied` CSS class after use, preventing double-application (
 
 Link that marks menace progress on a vow's threat track. In the log, clicking opens a popup listing the character's vows that have threat tracks.
 
-```html
-<a class="menace-link" data-value="1">Mark menace</a>
-<a class="menace-link" data-value="2">Mark menace twice</a>
+```text
+[Mark menace](menace:1)
+[Mark menace twice](menace:2)
 ```
 
-| Attribute    | Description                                      |
+compiles to `<a class="menace-link" data-value="1">Mark menace</a>`.
+
+| Part         | Description                                      |
 | ------------ | ------------------------------------------------ |
-| `class`      | Must be `menace-link`                            |
-| `data-value` | Positive integer: number of times to mark menace |
+| `menace:<n>` | Positive integer: number of times to mark menace |
 
 #### Reset-Track Links
 
 Link that clears a named progress track to 0 ticks. In the log, clicking zeroes the track and logs the change. In the move dialog, styled but not clickable.
 
-```html
-<a class="reset-track-link" data-track="failures">clear all progress</a>
+```text
+[clear all progress](reset:failures)
 ```
 
-| Attribute    | Description                                                                                                           |
-| ------------ | --------------------------------------------------------------------------------------------------------------------- |
-| `class`      | Must be `reset-track-link`                                                                                            |
-| `data-track` | Name of the character track to reset: `failures`, `bonds`, or any other track stored as a tick count on the character |
+compiles to `<a class="reset-track-link" data-track="failures">clear all progress</a>`.
+
+| Part            | Description                                                                              |
+| --------------- | ---------------------------------------------------------------------------------------- |
+| `reset:<track>` | Name of the character track to reset: `failures`, `bonds`, or any other tick-count track |
 
 After clicking, the link receives strikethrough styling (`.resource-spent`) to prevent double-application. A log entry is appended confirming the old value and the reset to 0.
 
@@ -338,74 +365,82 @@ Used in **Learn From Your Failures** outcomes to let the player clear the failur
 
 Link that sets combat initiative. In the log, clicking sets whether the character or the foe has initiative.
 
-```html
-<a class="initiative-link" data-value="character">You are in control</a>
-<a class="initiative-link" data-value="foe">You are in a bad spot</a>
+```text
+[You are in control](initiative:character)
+[You are in a bad spot](initiative:foe)
 ```
 
-| Attribute    | Description                                                                  |
-| ------------ | ---------------------------------------------------------------------------- |
-| `class`      | Must be `initiative-link`                                                    |
-| `data-value` | Either `"character"` (player has initiative) or `"foe"` (foe has initiative) |
+compiles to `<a class="initiative-link" data-value="character">You are in control</a>`.
+
+| Part                 | Description                                         |
+| -------------------- | --------------------------------------------------- |
+| `initiative:<value>` | Either `character` (player has initiative) or `foe` |
 
 #### Oracle Links
 
 Link that opens an oracle table. Used in asset ability text and move outcome text.
 
-```html
-<a class="oracle-link" data-oracle="manaBacklash">Mana Backlash Oracle</a>
+```text
+[Mana Backlash Oracle](oracle:manaBacklash)
 ```
 
-| Attribute     | Description                                                                                                                                                                                                                                  |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `class`       | Must be `oracle-link`                                                                                                                                                                                                                        |
-| `data-oracle` | The oracle table's `key` value (e.g., `"manaBacklash"`, `"monstrosityPrimaryForm"`)                                                                                                                                                          |
-| `data-stat`   | _(Optional)_ For multi-stat oracles (e.g. `delveDepths`): the stat column to pre-select and highlight when the oracle opens. Injected dynamically at roll time — **do not hardcode in source JSON**. Valid values: `edge`, `shadow`, `wits`. |
+compiles to `<a class="oracle-link" data-oracle="manaBacklash">Mana Backlash Oracle</a>`.
 
-**Stat-aware oracle links** are used when a move's outcome depends on which stat was rolled. The move JSON contains a plain oracle-link (no `data-stat`), and `MovesDialog` injects the rolled stat at log-write time:
+| Part           | Description                                                                             |
+| -------------- | --------------------------------------------------------------------------------------- |
+| `oracle:<key>` | The oracle table's `key` (e.g. `manaBacklash`, `monstrosityPrimaryForm`, `delveDepths`) |
 
-```html
-<!-- In move JSON (delve.json) — no data-stat -->
-Roll on the <a class="oracle-link" data-oracle="delveDepths">Delve the Depths Weak Hit Oracle</a>.
-
-<!-- In the session log after rolling with Edge — data-stat injected by MovesDialog -->
-Roll on the
-<a class="oracle-link" data-oracle="delveDepths" data-stat="edge"
-  >Delve the Depths Weak Hit Oracle</a
->.
-```
-
-When the log link is clicked, `LogPanel` reads `data-stat` and passes it to `OraclesDialog.open(key, undefined, stat)`, which pre-selects the matching column in the table and highlights it.
+**Stat-aware oracle links** — for multi-stat oracles (e.g. `delveDepths`) whose
+column depends on which stat was rolled, author a plain `[…](oracle:delveDepths)`
+with **no** stat; `MovesDialog` injects `data-stat` (`edge` / `shadow` / `wits`)
+at log-write time. Do **not** encode the stat in the source. `LogPanel` reads
+the injected `data-stat` and passes it to `OraclesDialog.open(key, undefined,
+stat)`, which pre-selects and highlights the matching column.
 
 #### Harm Links
 
 A **display-only** placeholder replaced with the actual harm amount when a move result is logged. Used exclusively in Endure Harm and Endure Stress outcome text; not interactive.
 
-```html
-<a class="harm-link" data-resource="health">-harm health</a>
-<a class="harm-link" data-resource="spirit">-harm spirit</a>
+```text
+[-harm health](harm:health)
+[-harm spirit](harm:spirit)
 ```
 
-| Attribute       | Description                                     |
-| --------------- | ----------------------------------------------- |
-| `class`         | Must be `harm-link`                             |
-| `data-resource` | The resource being harmed: `health` or `spirit` |
+compiles to `<a class="harm-link" data-resource="health">-harm health</a>`.
 
-The link text `-harm {resource}` is a static placeholder; when the move is logged the UI substitutes the actual harm value that was suffered. Clicking this element has no effect.
+| Part         | Description                                     |
+| ------------ | ----------------------------------------------- |
+| `harm:<res>` | The resource being harmed: `health` or `spirit` |
+
+The label `-harm {resource}` is a static placeholder; when the move is logged the UI substitutes the actual harm value that was suffered. Clicking this element has no effect.
+
+#### Vanquish Links
+
+Link that resolves an active foe (Battle / a decisive blow). Takes no argument.
+
+```text
+[vanquish it](vanquish)
+```
+
+compiles to `<a class="vanquish-foe-link">vanquish it</a>`.
 
 ### Context-Aware Visibility (log-only / dialog-only)
 
-When outcome text needs to differ between the move dialog and the log, use `<span>` elements with `log-only` or `dialog-only` CSS classes:
+When outcome text needs to differ between the move dialog and the log, wrap the
+context-specific text in a `[text]{.class}` DSL span:
 
-- `class="log-only"` — visible in the log (`.entry-body`), hidden in the move dialog (`.move-body`)
-- `class="dialog-only"` — visible in the move dialog (`.move-body`), hidden in the log (`.entry-body`)
+- `[…]{.log-only}` — visible in the log (`.entry-body`), hidden in the move dialog (`.move-body`)
+- `[…]{.dialog-only}` — visible in the move dialog (`.move-body`), hidden in the log (`.entry-body`)
 
-This replaces the old `weakRef`/`missRef` system. When a weak hit says "As above," the full referenced text is inlined in the outcome but wrapped in `log-only` so it only appears in the log.
+A span may itself wrap DSL links (e.g. a log-only restatement that includes
+`[+2 health](resource:health?value=+2)`). This replaces the old `weakRef` /
+`missRef` system: when a weak hit says "As above," the full referenced text is
+inlined in the outcome but wrapped in `log-only` so it only appears in the log.
 
 ```json
 {
-  "strong": "Your care is helpful. Clear wounded. Take +2 health.",
-  "weak": "<span class=\"log-only\">Your care is helpful. Clear wounded. Take +2 health. </span><span class=\"dialog-only\">As above, but you</span><span class=\"log-only\">You</span> must suffer −1 supply or −1 momentum (your choice)."
+  "strong": "Your care is helpful. Clear [wounded](debility:wounded?value=0). Take [+2 health](resource:health?value=+2).",
+  "weak": "[Your care is helpful. Clear [wounded](debility:wounded?value=0). Take [+2 health](resource:health?value=+2). ]{.log-only}[As above, but you]{.dialog-only}[You]{.log-only} must suffer [−1 supply](resource:supply?value=-1) or [−1 momentum](resource:momentum?value=-1) (your choice)."
 }
 ```
 
@@ -540,42 +575,47 @@ Each file contains an `assets` array and an optional `rarities` array:
 | `name`              | string           | yes      | Display name                                                                                                                                                                                                                                                                                                                           |
 | `category`          | string           | yes      | One of: `"Combat Talent"`, `"Companion"`, `"Path"`, `"Ritual"` (plus `"Touched"` in [Yrt](../extensions/yrt/README.md#touched-assets))                                                                                                                                                                                                 |
 | `summary`           | string           | yes      | One-line plain-text summary shown in the picker tile. Preferred over `preamble` for the tile.                                                                                                                                                                                                                                          |
-| `preamble`          | string or null   | no       | Prerequisite or flavour text (e.g., `"If you wield a bow."`) — displayed on the asset card **before** the ability list. Markdown links (`[text](id:...)`) are stripped to plain text at render time.                                                                                                                                   |
+| `preamble`          | string or null   | no       | Prerequisite or flavour text (e.g., `"If you wield a bow."`) — displayed on the asset card **before** the ability list. Rendered as markdown + the link DSL (same as ability `text`).                                                                                                                                                  |
 | `postamble`         | string or null   | no       | Explanatory text displayed on the asset card **after** the ability list (e.g., asset-specific constraints, Touched feature-use note)                                                                                                                                                                                                   |
 | `preconditions`     | array of objects | no       | Conditions that must be met to add this asset. Same schema as move [Preconditions](#preconditions). Assets failing preconditions are faded and non-clickable in the picker.                                                                                                                                                            |
 | `abilities`         | array            | yes      | Exactly 3 ability objects                                                                                                                                                                                                                                                                                                              |
 | `customFields`      | CustomFieldDef[] | no       | Array of custom input fields rendered in the asset card body. Values stored in `CharacterAsset.customValues` keyed by `field.id`. See [Custom Fields](#custom-fields).                                                                                                                                                                 |
 | `exclusiveGroup`    | string           | no       | If set, the character may own at most one asset whose `exclusiveGroup` matches this value at a time. Attempting to add a second triggers a user-facing error. Example: `"touched"` (only one Touched variant active at once).                                                                                                          |
 | `abilityMaxByField` | object           | no       | Maps a `customField.id` → option value → maximum number of enabled abilities. Used to gate ability checkboxes based on a dropdown selection. When the player selects a lower level, excess enabled abilities are automatically cleared. Example: `{ "touchedLevel": { "pure": 0, "prime": 1, "second": 2, "third": 3, "feral": 3 } }`. |
+| `html`              | boolean          | no       | Escape hatch: when `true`, this asset's `preamble` / `description` / ability `text` are treated as **raw legacy HTML** and bypass `renderRich`. Omit for normal assets — prose is markdown + the link DSL by default. The DSL lint skips `html: true` assets.                                                                          |
 
 Each ability object:
 
-| Field     | Type          | Required | Description                                                                                                                                                              |
-| --------- | ------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `enabled` | boolean       | yes      | `true` if the ability starts checked when the asset is first acquired (see [Auto-Enabled Abilities](#auto-enabled-abilities))                                            |
-| `text`    | string (HTML) | yes      | Ability description. Move names that appear in the text are decorated with `<a class="move-link">` tags (see [Move Links in Ability Text](#move-links-in-ability-text)). |
-| `name`    | string        | no       | Named ability (companions only, e.g., `"Scout"`, `"Bonded"`)                                                                                                             |
+| Field     | Type            | Required | Description                                                                                                                                                              |
+| --------- | --------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `enabled` | boolean         | yes      | `true` if the ability starts checked when the asset is first acquired (see [Auto-Enabled Abilities](#auto-enabled-abilities))                                            |
+| `text`    | string (md+DSL) | yes      | Ability description. Move names that appear in the text are decorated with `<a class="move-link">` tags (see [Move Links in Ability Text](#move-links-in-ability-text)). |
+| `name`    | string          | no       | Named ability (companions only, e.g., `"Scout"`, `"Bonded"`)                                                                                                             |
 
 ### Move Links in Ability Text
 
-All three asset sources (Ironsworn, Delve, YRT) use `<a class="move-link" data-id="...">` to mark move references in ability `text` fields. This is the same tag used in move outcome text and oracle table values — click delegation is already wired up in `LogPanel` and `MovesDialog`, so move links in asset ability text open the move's detail dialog automatically.
+Ability `text` (and `preamble` / `description`) use the same **markdown + link
+DSL** as move outcomes — a move reference is a `[label](move:<id>)` link. Click
+delegation is already wired up in `LogPanel` and `MovesDialog`, so move links in
+asset ability text open the move's detail dialog automatically. See
+[Data-Driven Links](#data-driven-links) for the full scheme table (`move:`,
+`resource:`, `oracle:`, …).
 
-```html
+```text
 <!-- Example: Archer ability 1 -->
-When you <a class="move-link" data-id="move/secure-an-advantage">Secure an Advantage</a> by...
+When you [Secure an Advantage](move:secure-an-advantage) by...
 
 <!-- Example: Archer ability 2 -->
-...you may reroll any dice when you <a class="move-link" data-id="move/strike">Strike</a> or
-<a class="move-link" data-id="move/clash">Clash</a>.
+...you may reroll any dice when you [Strike](move:strike) or [Clash](move:clash).
 ```
+
+each `move:` link compiling to `<a class="move-link" data-id="move/…">…</a>`.
 
 **Rules:**
 
-- One `<a class="move-link">` per move reference; the `data-id` is the move's full `id` (e.g., `move/secure-an-advantage`).
-- The link text preserves the original capitalisation from the source text.
-- Matches are whole-name only (word boundaries); partial substrings are never wrapped.
-- Bold markers (`<b>`, `<strong>`) that were previously used in YRT ability text to highlight move names have been converted to `<a class="move-link">` links.
-- Ability text that does not reference any move is left unchanged.
+- One `[label](move:<id>)` per move reference; `<id>` is the move's `id` **without** the `move/` prefix (e.g. `secure-an-advantage`).
+- The label preserves the original capitalisation from the source text.
+- Ability text that does not reference any move is plain markdown.
 
 A companion index file (`asset-move-refs.json`) lists every move ID that each asset and ability references — see [Asset Move References](#asset-move-references-asset-move-refsjson).
 
@@ -980,14 +1020,17 @@ so an extension can use them from data alone:
 
 - **`tableType: "compound"`** — a **format-string builder** that composes a
   result by rolling _other_ oracles. Each `data` row's `value` is a template
-  string containing `[oracleKey]` blanks plus any literal connective text
-  (`of`, `'s`, `·`, newlines). To resolve: roll `data` to pick a template (a
-  single row = one fixed format, no roll), then **recursively** roll each
-  `[oracleKey]` and substitute its result. Every sub-roll is logged. The detail
-  view renders each blank as its target oracle's title. References may point at
-  any oracle — including `twoStep` or other `compound` oracles (depth-guarded).
-  Used by `siteName` ("[siteNamePlace] of [siteNameDetail]", 7 formats) and
-  `monstrosity` (one labelled format over four sub-oracles):
+  string containing `[label](roll:key)` blanks (the interactive-link DSL — see
+  [Template blanks](#template-blanks--the-roll-dsl) below) plus any literal
+  connective text (`of`, `'s`, `·`, newlines). To resolve: roll `data` to pick a
+  template (a single row = one fixed format, no roll), then **recursively** roll
+  each blank's target oracle and substitute its result. Every sub-roll is logged.
+  The detail view renders each blank as a pill (its author-facing `label`).
+  References may point at any oracle — including `twoStep` or other `compound`
+  oracles (depth-guarded). The **`compound`** field on the oracle file selects
+  how the result renders: `"phrase"` (one composed string) or `"dossier"`
+  (per-field breakdown). Used by `siteName` (`phrase`, 7 formats) and
+  `monstrosity` (`dossier`, one labelled format over four sub-oracles):
 
   ```json
   {
@@ -997,38 +1040,45 @@ so an extension can use them from data alone:
     "selectLabel": "Delve: Site Name",
     "source": "delve",
     "tableType": "compound",
-    "data": [
-      { "topRange": 50, "value": "[siteNameDescription] [siteNamePlace]" },
-      { "topRange": 100, "value": "[siteNamePlace] of [siteNameNamesake]'s [siteNameDetail]" }
-    ]
-  }
-  ```
-
-  **Repeat a blank** with a **regex-style quantifier** right after it —
-  `[key]{n}` (exactly _n_) or `[key]{n,m}` (a uniform count in _n_…_m_). The
-  oracle is rolled that many times, results are **de-duplicated**, and joined
-  with `, `. A single-format compound (no format roll — e.g. a labelled
-  dossier) that rolls Characteristics/Abilities 1–3× each:
-
-  ```json
-  {
-    "key": "monstrosity",
-    "tableType": "compound",
-    "category": "Monstrosity",
-    "…": "…",
+    "compound": "phrase",
     "data": [
       {
+        "topRange": 50,
+        "value": "[Description](roll:siteNameDescription) [Place](roll:siteNamePlace)"
+      },
+      {
         "topRange": 100,
-        "value": "Primary form: [monstrosityPrimaryForm] · Size: [monstrositySize] · Characteristics: [monstrosityCharacteristics]{1,3} · Abilities: [monstrosityAbilities]{1,3}"
+        "value": "[Place](roll:siteNamePlace) of [Namesake](roll:siteNameNamesake)'s [Detail](roll:siteNameDetail)"
       }
     ]
   }
   ```
 
-  **Log output.** Each blank logs one line, labelled by its oracle's title
-  (the part after the last `": "`, so `Monstrosity: Primary Form` → `Primary
-Form`). A quantified blank first logs its count roll, then one indented line
-  per kept result:
+  **Repeat a blank** via query args on the `roll:` target — `?times=n` (exactly
+  _n_) or `?rollFrom=n&rollTo=m` (a random count in _n_…_m_). The oracle is
+  rolled that many times, results are **de-duplicated** (named refs only), and
+  joined with `, `. A single-format `dossier` compound that rolls
+  Characteristics/Abilities 1–3× each:
+
+  ```json
+  {
+    "key": "monstrosity",
+    "tableType": "compound",
+    "compound": "dossier",
+    "category": "Monstrosity",
+    "…": "…",
+    "data": [
+      {
+        "topRange": 100,
+        "value": "Primary form: [Primary Form](roll:monstrosityPrimaryForm) · Size: [Size](roll:monstrositySize) · Characteristics: [Characteristics](roll:monstrosityCharacteristics?rollFrom=1&rollTo=3) · Abilities: [Abilities](roll:monstrosityAbilities?rollFrom=1&rollTo=3)"
+      }
+    ]
+  }
+  ```
+
+  **Log output.** Each blank logs one line, labelled by its blank's `label`. A
+  ranged/repeated blank first logs its count roll, then one indented line per
+  kept result:
 
   ```
   Delve: Monstrosity
@@ -1041,27 +1091,41 @@ Form`). A quantified blank first logs its count roll, then one indented line
     — Flier / glider (d100 → 41)
   ```
 
-  A **labelled** template (any `"Label: "` before a blank) omits the composed
-  `Result:` line — the per-field lines already read it. A **phrase** template
-  (a name, no labels) keeps `Result:` (the assembled string is the payload).
+  `compound: "dossier"` renders the per-field lines above and omits the composed
+  `Result:` line. `compound: "phrase"` keeps `Result:` (the assembled string is
+  the payload).
 
   `compound` is substitution + repetition only — no conditionals. An oracle
   whose later rolls _depend on_ an earlier result (e.g. `yrtTouched`: Pure
   stops, Feral rolls an animal but no features) stays a hardcoded branch.
 
-- **Value-level templates & `[self]`** — the `[key]{n,m}` blanks above are not
-  limited to `compound` tables: **any** row's value can carry a blank, resolved
-  the same way when that row is rolled. The reserved key **`[self]`** rolls the
-  **current** table — this is how the **Roll Twice** mechanic is authored. A top
-  row `{ "topRange": 100, "value": "[self]{2}" }` rolls this table twice, and
-  **both results occur** (self refs are _not_ de-duplicated, unlike named refs);
-  it cascades if a re-roll lands on `[self]` again, depth-guarded to 5. Literal
-  text around the blank is preserved (e.g. `"Hybrid ([self]{2})"`). In the
-  reference table a blank renders as a pill — `[self]` shows as "roll again".
-  This replaced the old `/roll twice/i` string match. Exceptions that stay prose:
-  a value where the roll-twice text sits in a **non-primary** column (Mana
-  Backlash's Effect), or a table read raw by a hardcoded consumer (`touchedFeatures`
-  via `yrtTouched`).
+- **Value-level templates & `roll:self`** — the `[label](roll:…)` blanks above
+  are not limited to `compound` tables: **any** row's value can carry a blank,
+  resolved the same way when that row is rolled. The reserved target
+  **`roll:self`** rolls the **current** table — this is how the **Roll Twice**
+  mechanic is authored. A top row
+  `{ "topRange": 100, "value": "[roll again](roll:self?times=2)" }` rolls this
+  table twice, and **both results occur** (self refs are _not_ de-duplicated,
+  unlike named refs); it cascades if a re-roll lands on another `roll:self`,
+  depth-guarded to 5. Literal text around the blank is preserved (e.g.
+  `"Hybrid ([roll again](roll:self?times=2))"`). In the reference table a blank
+  renders as a pill (the `label` + an optional `×n` badge). This replaced the old
+  `/roll twice/i` string match and the earlier `[self]{2}` token. Exceptions that
+  stay prose: a value where the roll-twice text sits in a **non-primary** column
+  (Mana Backlash's Effect), or a table read raw by a hardcoded consumer
+  (`touchedFeatures` via `yrtTouched`).
+
+### Template blanks — the `roll:` DSL
+
+Compound/value templates use the same `[label](scheme:args)` interactive-link
+DSL as moves and assets, with the `roll:` scheme:
+
+| Form                                    | Meaning                                                           |
+| --------------------------------------- | ----------------------------------------------------------------- |
+| `[Label](roll:key)`                     | Roll oracle `key` once.                                           |
+| `[Label](roll:key?times=n)`             | Roll `key` `n` times; **named** targets de-dupe repeats.          |
+| `[Label](roll:key?rollFrom=n&rollTo=m)` | Roll `key` a random `n…m` number of times.                        |
+| `[Label](roll:self?times=2)`            | Roll the **current** table twice; both results kept (no de-dupe). |
 
 - **`tableType: "prefixSuffix"`** — each row's `value` is `{ prefix, suffix }`.
   A roll makes **two independent d100 rolls** and concatenates the first row's

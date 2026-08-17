@@ -48,20 +48,28 @@ interface MoveDefinition {
   name: string; // e.g., "Face Danger"
   category: string; // e.g., "Adventure"
   triggerShort: string; // Brief description for tile display
-  trigger: string; // Full trigger HTML
-  triggerPreamble?: string; // Alternate preamble HTML
+  trigger: string; // Full trigger text (markdown + link DSL)
+  triggerPreamble?: string; // Alternate preamble (markdown + link DSL)
   stats?: Array<{ stat: string; desc: string }>;
-  strong?: string; // Strong hit outcome HTML
-  weak?: string; // Weak hit outcome HTML
-  miss?: string; // Miss outcome HTML
+  strong?: string; // Strong hit outcome (markdown + link DSL)
+  weak?: string; // Weak hit outcome (markdown + link DSL)
+  miss?: string; // Miss outcome (markdown + link DSL)
   preconditions?: Precondition[];
   progressTrack?: string; // Classifies this as a progress move (e.g., "combat", "bonds")
   progressSource?: string; // Runtime track source key (e.g., "combat", "journey", "delve", "bonds", "failures", "vows")
   spellRoll?: boolean; // Yrt ritual moves: d6 + mana + adds vs difficulty + d10
-  notes?: string; // Designer tips (rendered as HTML)
+  notes?: string; // Designer tips (markdown + link DSL)
   logTitle?: string; // Log entry title template; supports {character}, {stat}, {expedition}, {foe}, {move}
+  html?: boolean; // Escape hatch: treat prose as raw legacy HTML, bypass renderRich
 }
 ```
+
+Prose fields are authored in **markdown + the interactive-link DSL** and rendered
+by `renderRich` (`$lib/dsl.ts`) — `**bold**` / `*italic*` / lists for formatting,
+`[label](scheme:args)` links for cross-references. Set `html: true` to opt a move
+back to raw legacy HTML. See
+[data-schema.md → Outcome Text](data-schema.md#outcome-text-markdown--link-dsl)
+for the authoring grammar and the full scheme table.
 
 ### Roll Status Display
 
@@ -79,21 +87,29 @@ The formula updates live as stat selection, adds, mana commit, or difficulty cha
 
 When a character's momentum is negative and `|momentum| === action die value`, the action die is treated as 0. This is displayed in the log as a "Momentum cancel!" warning.
 
-## Interactive Links in Outcome HTML
+## Interactive Links in Outcome Text
 
-Move outcome HTML contains 7 interactive link types plus one display-only link type. When a move is rolled, `data-entry-id` and `data-char-id` attributes are injected into links that modify state (resource, debility, progress, initiative, menace) so LogPanel can identify the log entry and character. Links that modify state are drawn in strikethrough after being clicked to prevent double-application.
+Move outcomes are authored with `[label](scheme:args)` DSL links (see
+[data-schema.md → Data-Driven Links](data-schema.md#data-driven-links)); each
+compiles to one of the interactive link types below. There are 8 interactive
+types plus one display-only type. When a move is rolled, `data-entry-id` and
+`data-char-id` attributes are injected into links that modify state (resource,
+debility, progress, initiative, menace) so LogPanel can identify the log entry
+and character. Links that modify state are drawn in strikethrough after being
+clicked to prevent double-application.
 
-| Link Type             | CSS Class           | Data Attributes               | Click Behavior                                                                  | After Click   |
-| --------------------- | ------------------- | ----------------------------- | ------------------------------------------------------------------------------- | ------------- |
-| Resource              | `.resource-link`    | `data-resource`, `data-value` | Modify character stat via action bus                                            | Strikethrough |
-| Move                  | `.move-link`        | `data-id`                     | Open MovesDialog to that move                                                   | No change     |
-| Oracle                | `.oracle-link`      | `data-oracle`                 | Open OraclesDialog to that oracle                                               | No change     |
-| Progress              | `.progress-link`    | `data-value`, `data-track`    | Mark progress on active track (combat/journey/delve)                            | Strikethrough |
-| Initiative            | `.initiative-link`  | `data-value`                  | Set initiative state (character/foe)                                            | Strikethrough |
-| Debility              | `.debility-link`    | `data-debility`, `data-value` | Toggle debility on character via action bus                                     | Strikethrough |
-| Menace                | `.menace-link`      | `data-value`                  | Mark menace on active vow                                                       | Strikethrough |
-| Reset Track           | `.reset-track-link` | `data-track`                  | Clear named progress track to 0 via action bus                                  | Strikethrough |
-| Harm _(display-only)_ | `.harm-link`        | `data-resource`               | None — styled placeholder for actual harm amount in Endure Harm/Stress outcomes | No change     |
+| Link Type             | CSS Class            | Data Attributes               | Click Behavior                                                                  | After Click   |
+| --------------------- | -------------------- | ----------------------------- | ------------------------------------------------------------------------------- | ------------- |
+| Resource              | `.resource-link`     | `data-resource`, `data-value` | Modify character stat via action bus                                            | Strikethrough |
+| Move                  | `.move-link`         | `data-id`                     | Open MovesDialog to that move                                                   | No change     |
+| Oracle                | `.oracle-link`       | `data-oracle`                 | Open OraclesDialog to that oracle                                               | No change     |
+| Progress              | `.progress-link`     | `data-value`, `data-track`    | Mark progress on active track (combat/journey/delve)                            | Strikethrough |
+| Initiative            | `.initiative-link`   | `data-value`                  | Set initiative state (character/foe)                                            | Strikethrough |
+| Debility              | `.debility-link`     | `data-debility`, `data-value` | Toggle debility on character via action bus                                     | Strikethrough |
+| Menace                | `.menace-link`       | `data-value`                  | Mark menace on active vow                                                       | Strikethrough |
+| Reset Track           | `.reset-track-link`  | `data-track`                  | Clear named progress track to 0 via action bus                                  | Strikethrough |
+| Vanquish              | `.vanquish-foe-link` | _(none)_                      | Resolve the active foe (a decisive blow)                                        | Strikethrough |
+| Harm _(display-only)_ | `.harm-link`         | `data-resource`               | None — styled placeholder for actual harm amount in Endure Harm/Stress outcomes | No change     |
 
 **Special case**: `move/ask-the-oracle` move-link opens OraclesDialog instead of MovesDialog.
 

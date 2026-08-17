@@ -11,6 +11,7 @@
 	import { assetIcon } from '$lib/iconRegistry.js';
 	import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
+	import { renderRich } from '$lib/dsl.js';
 	import { draggable } from '$lib/actions/draggable.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import Select from '$lib/components/Select.svelte';
@@ -236,31 +237,10 @@
 		return (mv as number[])[Math.min(lastEnabled, (mv as number[]).length - 1)];
 	}
 
-	/** Strips markdown-style links [text](anything) → text, for plain-text contexts. */
-	function stripMdLinks(raw: string): string {
-		return raw.replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');
-	}
-
-	/**
-	 * Converts asset ability text (uses \n\n paragraph breaks and
-	 * "  * item" list items) into safe HTML.
-	 */
-	function formatText(raw: string): string {
-		return raw
-			.split('\n\n')
-			.map((para) => {
-				const lines = para.split('\n');
-				if (lines.some((l) => /^\s*\*\s/.test(l))) {
-					const items = lines
-						.filter((l) => /^\s*\*\s/.test(l))
-						.map((l) => `<li>${l.replace(/^\s*\*\s/, '').trim()}</li>`)
-						.join('');
-					return `<ul>${items}</ul>`;
-				}
-				return `<p>${para.trim()}</p>`;
-			})
-			.join('');
-	}
+	/** All asset prose renders through the shared `renderRich` (markdown formatting
+	 *  + `[label](scheme:args)` link DSL). This is the single renderer since the
+	 *  DSL migration flipped the default (Phase 4). */
+	const abilityHtml = (text: string): string => renderRich(text);
 
 	function toggleAbility(i: number) {
 		const enabling = !asset.abilities[i];
@@ -418,12 +398,14 @@
 					}
 				}}
 			>
-				{@html stripMdLinks(definition.preamble)}
+				{@html renderRich(definition.preamble)}
 			</p>
 		{/if}
 
 		{#if assetDescription}
-			<p class="asset-description">{@html assetDescription}</p>
+			<p class="asset-description">
+				{@html renderRich(assetDescription)}
+			</p>
 		{/if}
 
 		<div class="abilities-list">
@@ -449,7 +431,7 @@
 						{#if ab.name}
 							<span class="ability-name">{ab.name}.</span>
 						{/if}
-						{@html formatText(ab.text)}
+						{@html abilityHtml(ab.text)}
 					</div>
 				</label>
 			{/each}
@@ -1008,7 +990,7 @@
 		color: var(--text);
 	}
 
-	/* Global since formatText() generates raw HTML */
+	/* Global since renderRich() generates raw HTML */
 	.ability-text :global(p) {
 		margin: 0 0 4px;
 	}

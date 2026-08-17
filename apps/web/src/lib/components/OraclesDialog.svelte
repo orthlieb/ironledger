@@ -445,7 +445,6 @@
 										: selectedOracle.tableType === 'compound'
 											? {
 													tableType: 'compound',
-													refTitles: Object.fromEntries(allOracles.map((o) => [o.key, o.title])),
 												}
 											: selectedOracle.tableType === 'prefixSuffix'
 												? {
@@ -460,7 +459,6 @@
 														activeStat: activeStat ?? undefined,
 														columns: selectedOracle.columns,
 														narrow,
-														refTitles: Object.fromEntries(allOracles.map((o) => [o.key, o.title])),
 													},
 						)}
 					</div>
@@ -925,7 +923,7 @@
 		line-height: 1.9;
 		font-family: var(--font-ui);
 	}
-	/* Repeat quantifier badge, e.g. [key]{1,3} → "×1–3". */
+	/* Repeat quantifier badge, e.g. [Label](roll:key?rollFrom=1&rollTo=3) → "×1–3". */
 	:global(.od-table-wrap .oracle-ref-rep) {
 		margin-left: 3px;
 		font-size: 0.8em;

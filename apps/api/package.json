@@ -6,9 +6,10 @@
   "main": "dist/main.js",
   "scripts": {
     "gen:manifest": "node ../../scripts/gen-extensions-manifest.mjs",
-    "predev": "npm run gen:manifest",
+    "lint:dsl": "node ../../scripts/lint-dsl.mjs",
+    "predev": "npm run gen:manifest && npm run lint:dsl",
     "dev": "node --env-file-if-exists=../../.env --watch --import tsx/esm src/main.ts",
-    "prebuild": "npm run gen:manifest",
+    "prebuild": "npm run gen:manifest && npm run lint:dsl",
     "build": "tsc --project tsconfig.json && cp -r src/static dist/static",
     "start": "node dist/main.js",
     "test": "vitest run",

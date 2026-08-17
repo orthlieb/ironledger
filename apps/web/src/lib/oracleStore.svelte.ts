@@ -20,6 +20,7 @@ import {
 	loadExtensions,
 	suppressedOracleKeys,
 } from '$lib/expansionStore.svelte.js';
+import { ROLL_DSL, hasRollTemplate, linkifyTemplate, fillTemplate, type RollFn } from './dsl.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -64,6 +65,10 @@ export interface OracleFile {
 	 *  blank lines into paragraphs when rendered. */
 	postamble?: string;
 	tableType?: string;
+	/** For `tableType: 'compound'` — how the rolled result renders:
+	 *  `"dossier"` = per-field breakdown (Monstrosity), `"phrase"` = one composed
+	 *  string (Site Name). Explicit; replaces the old ": "/`[…](roll:…)` heuristic. */
+	compound?: 'phrase' | 'dossier';
 	/** Column definitions. For `columnSelect` / `matrix` these are the pickable
 	 *  columns; for a flat table they name/label the display columns (in order
 	 *  after D100). When absent on a flat oracle, columns are derived from the
@@ -297,79 +302,15 @@ export function rangeLabelForEntry(table: OracleEntry[], index: number): string 
 	return low === high ? `${low}` : `${low}–${high}`;
 }
 
-// ── Value-level templates — `[key]{n,m}` / `[self]` ───────────────────────────
-// A value string may embed template blanks that are filled by rolling another
-// oracle. `[self]` re-rolls the current oracle (the Roll Twice mechanic);
-// `[<anyKey>]` rolls that oracle. An optional `{n}` / `{n,m}` quantifier rolls
-// the reference that many times. Used by both `compound` tables (whole-table
-// templates) and any single row that carries a blank (e.g. a "roll twice" row).
-const TEMPLATE_TOKEN = /\[(\w+)\](?:\{(\d+)(?:,(\d+))?\})?/g;
-/** Non-global detector (safe for `.test()` — TEMPLATE_TOKEN is stateful). */
-const HAS_TEMPLATE = /\[\w+\]/;
-
-/** Oracle title after its last ": " — "Monstrosity: Primary Form" → "Primary Form". */
-const shortLabel = (t: string): string => (t.includes(': ') ? t.slice(t.lastIndexOf(': ') + 2) : t);
-
-/** Render template blanks as styled pills for the reference table. `[self]` →
- *  a "roll again" chip; a named key → the target oracle's title (via
- *  `refTitles`); `{n,m}` → a "×n" repeat badge. */
-function linkifyTemplate(s: string, refTitles: Record<string, string>): string {
-	return s.replace(TEMPLATE_TOKEN, (_m, k: string, n?: string, m?: string) => {
-		const label = k === 'self' ? 'roll again' : (refTitles[k] ?? k);
-		const ref = `<span class="oracle-ref">${label}</span>`;
-		if (n == null) return ref;
-		return `${ref}<span class="oracle-ref-rep">×${m != null ? `${n}–${m}` : n}</span>`;
-	});
-}
-
-/** Fill template blanks by rolling the referenced oracle(s). `self` resolves to
- *  `currentKey` (both results occur — no dedupe, the Roll Twice mechanic); named
- *  refs dedupe repeats (distinct picks). Recursion is depth-guarded. Returns the
- *  composed string plus per-roll log lines. */
-function fillTemplate(
-	template: string,
-	currentKey: string,
-	allOracles: OracleFile[],
-	depth: number,
-): { filled: string; lines: string[] } {
-	const lines: string[] = [];
-	const filled = template.replace(
-		TEMPLATE_TOKEN,
-		(_m, ref: string, nStr?: string, mStr?: string) => {
-			const isSelf = ref === 'self';
-			const refKey = isSelf ? currentKey : ref;
-			const label = isSelf
-				? 'Roll'
-				: shortLabel(allOracles.find((o) => o.key === refKey)?.title ?? refKey);
-			const repeated = nStr != null;
-			let count = 1;
-			if (repeated) {
-				const lo = parseInt(nStr as string, 10);
-				const hi = mStr != null ? parseInt(mStr, 10) : lo;
-				count = lo + Math.floor(Math.random() * (hi - lo + 1));
-				// Only a range quantifier rolls a count — note it; a fixed `{n}` doesn't.
-				if (lo !== hi) {
-					const note = lo === 1 ? `d${hi} → ${count}` : `${lo}–${hi} → ${count}`;
-					lines.push(`<div class="roll-line">${label}: (${note})</div>`);
-				}
-			}
-			const vals: string[] = [];
-			for (let i = 0; i < count && depth < 5; i++) {
-				const sub = rollOracle(refKey, allOracles, { _depth: depth + 1 });
-				const v = sub.value || `[${ref}]`;
-				if (!isSelf && vals.includes(v)) continue; // dedupe named refs only
-				vals.push(v);
-				lines.push(
-					repeated || isSelf
-						? `<div class="roll-line">— <strong>${v}</strong> (d100 → ${sub.roll})</div>`
-						: `<div class="roll-line">${label}: <strong>${v}</strong> (d100 → ${sub.roll})</div>`,
-				);
-			}
-			return vals.join(', ');
-		},
-	);
-	return { filled, lines };
-}
+/** A `RollFn` for `fillTemplate` — rolls a referenced oracle in the catalogue,
+ *  returning just its d100 + text value. Injected so the pure `fillTemplate`
+ *  (in dsl.ts) needn't import the runes-based store. */
+const makeRollFn =
+	(allOracles: OracleFile[]): RollFn =>
+	(key, depth) => {
+		const r = rollOracle(key, allOracles, { _depth: depth });
+		return { roll: r.roll, value: r.value };
+	};
 
 /** Build an HTML table string for the detail view. */
 export function buildTableHtml(
@@ -381,7 +322,6 @@ export function buildTableHtml(
 		outerLabel?: string;
 		innerLabel?: string;
 		tableType?: string;
-		refTitles?: Record<string, string>;
 		/** Narrow viewport (≤640px): render wide layouts single-column so they fit
 		 *  a phone without horizontal scroll. Currently drives the two-step table. */
 		narrow?: boolean;
@@ -394,16 +334,15 @@ export function buildTableHtml(
 	// its target oracle's title. Single format → the string alone; multiple → a
 	// d100 | Format table (the rolled format table). ─────────────────────────
 	if (options?.tableType === 'compound') {
-		const refTitles = options.refTitles ?? {};
 		if (table.length === 1) {
-			return `<div class="oracle-compound-single">${linkifyTemplate(table[0].value as string, refTitles)}</div>`;
+			return `<div class="oracle-compound-single">${linkifyTemplate(table[0].value as string)}</div>`;
 		}
 		let html =
 			'<table class="oracle-table"><thead><tr><th>d100</th><th>Format</th></tr></thead><tbody>';
 		table.forEach((entry, idx) => {
 			html +=
 				`<tr><td class="oracle-range">${rangeLabelForEntry(table, idx)}</td>` +
-				`<td>${linkifyTemplate(entry.value as string, refTitles)}</td></tr>`;
+				`<td>${linkifyTemplate(entry.value as string)}</td></tr>`;
 		});
 		return html + '</tbody></table>';
 	}
@@ -605,14 +544,13 @@ export function buildTableHtml(
 					? [{ key: 'description', label: 'Description' }]
 					: []),
 			];
-	const refTitles = options?.refTitles ?? {};
 	const cell = (e: OracleEntry, k: string) => {
 		const v = e[k];
 		if (v == null) return '';
 		const s = String(v);
-		// A value with `[key]`/`[self]` blanks (e.g. a "roll twice" row) renders
+		// A value with a `[label](roll:…)` blank (e.g. a "roll twice" row) renders
 		// its tokens as pills; plain values pass through unchanged.
-		return HAS_TEMPLATE.test(s) ? linkifyTemplate(s, refTitles) : s;
+		return hasRollTemplate(s) ? linkifyTemplate(s) : s;
 	};
 
 	// A single value column keeps the space-saving multi-column layout for long
@@ -686,12 +624,15 @@ export function rollOracle(
 		const depth = options?._depth ?? 0;
 		const fmtRes = rollFromRangeTable(table);
 		const template = fmtRes.value as string;
-		const { filled, lines } = fillTemplate(template, key, allOracles, depth);
+		const { filled, lines } = fillTemplate(template, key, makeRollFn(allOracles), depth);
 		// A labelled dossier template (has a "Label: " before a blank) logs the
 		// per-field breakdown (+ the format roll when multiple formats). A phrase
 		// template (a name) logs just the composed result — the assembled string
 		// is the whole point.
-		const isDossier = /:\s/.test(template);
+		// Dossier = per-field breakdown; phrase = a composed name. Prefer the
+		// explicit `compound` flag; fall back to the ": " heuristic for oracles
+		// not yet carrying it (legacy `[key]` compounds).
+		const isDossier = oracle.compound ? oracle.compound === 'dossier' : /:\s/.test(template);
 		const fmtLine =
 			isDossier && table.length > 1
 				? `<div class="roll-line">Format roll: d100 → ${fmtRes.roll}</div>`
@@ -872,14 +813,19 @@ export function rollOracle(
 	const res = { roll, entry: table.find((e) => roll <= e.topRange) ?? table[table.length - 1] };
 	const primary = str(res.entry[primaryKey]);
 
-	// Value-level template: a rolled value with `[key]`/`[self]` blanks resolves
-	// by rolling the referenced oracle(s). `[self]` re-rolls this table (the Roll
-	// Twice mechanic); it cascades and is depth-guarded inside fillTemplate.
-	if (HAS_TEMPLATE.test(primary)) {
-		const { filled, lines } = fillTemplate(primary, key, allOracles, options?._depth ?? 0);
+	// Value-level template: a rolled value with a `[label](roll:…)` blank resolves
+	// by rolling the referenced oracle(s). `roll:self` re-rolls this table (the
+	// Roll Twice mechanic); it cascades and is depth-guarded inside fillTemplate.
+	if (hasRollTemplate(primary)) {
+		const { filled, lines } = fillTemplate(
+			primary,
+			key,
+			makeRollFn(allOracles),
+			options?._depth ?? 0,
+		);
 		// Literal text left after stripping the tokens (e.g. "Hybrid (…)") → show
-		// the composed Result line; a bare "[self]{2}" needs only the sub-rolls.
-		const literal = primary.replace(TEMPLATE_TOKEN, '').replace(/[\s(),./|-]/g, '');
+		// the composed Result line; a bare roll-twice blank needs only the sub-rolls.
+		const literal = primary.replace(ROLL_DSL, '').replace(/[\s(),./|-]/g, '');
 		const html =
 			`<div class="roll-line">Roll: d100 → ${res.roll}</div>` +
 			lines.join('') +

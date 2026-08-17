@@ -32,6 +32,7 @@
 	import { firstPreconditionFailure } from '$lib/preconditions.js';
 	import { applyInitiativeDowngrade } from '$lib/initiativeDowngrade.js';
 	import { appendLog, enrichOutcomeLinks, triggerAction } from '$lib/log.svelte.js';
+	import { renderRich } from '$lib/dsl.js';
 	import { getActiveFoeId, getActiveExpeditionId } from '$lib/activeContext.svelte.js';
 	import { untrack } from 'svelte';
 	import { momentumReset } from '$lib/character.js';
@@ -304,10 +305,17 @@
 			.replace('{move}', move.name);
 	}
 
+	/** Move text renders through `renderRich` (markdown formatting + `[label](scheme:args)`
+	 *  link DSL) before the existing harm/enrich passes — the default since the DSL
+	 *  migration flipped it (Phase 4). A move opts BACK OUT to raw HTML with `html: true`. */
+	const isMarkdown = (m: MoveDefinition | null): boolean =>
+		!(m as Record<string, unknown> | null)?.html;
+	const moveMd = (m: MoveDefinition | null, text: string | undefined): string =>
+		isMarkdown(m) ? renderRich(text) : (text ?? '');
+
 	function getOutcomeHtml(m: MoveDefinition, hits1: boolean, hits2: boolean): string {
-		if (hits1 && hits2) return m.strong ?? '';
-		if (hits1 || hits2) return m.weak ?? '';
-		return m.miss ?? '';
+		const raw = hits1 && hits2 ? m.strong : hits1 || hits2 ? m.weak : m.miss;
+		return moveMd(m, raw);
 	}
 
 	// Resolve <a class="harm-link"> placeholders.
@@ -383,7 +391,7 @@
 	// Resolve harm links for display in the dialog outcome preview.
 	function displayHtml(html: string | undefined): string {
 		if (!html) return '';
-		return resolveHarmLinks(html, {
+		return resolveHarmLinks(moveMd(selectedMove, html), {
 			moveId: selectedMove?.id,
 			foeHarm: effectiveHarm,
 			curHealth: resourceValue('health'),
@@ -399,7 +407,7 @@
 	const resolvedTriggerHtml = $derived.by(() => {
 		const m = selectedMove;
 		if (!m) return '';
-		const raw = ((m as Record<string, unknown>).triggerPreamble as string) ?? m.trigger;
+		const raw = moveMd(m, ((m as Record<string, unknown>).triggerPreamble as string) ?? m.trigger);
 		if (m.id !== 'move/endure-harm' && m.id !== 'move/endure-stress') return raw;
 		const harm = effectiveHarm; // tracked — recompute when the player edits the amount
 		return untrack(() =>
@@ -878,9 +886,12 @@
 		const entryId = crypto.randomUUID();
 		const roll = rollDie(100);
 		const found = raw.find((e) => roll <= e.topRange) ?? raw[raw.length - 1];
-		const enriched = ctx ? enrichOutcomeLinks(found.value, entryId, ctx.charId) : found.value;
+		const rendered = moveMd(selectedMove, found.value);
+		const enriched = ctx ? enrichOutcomeLinks(rendered, entryId, ctx.charId) : rendered;
+		// A d100 table roll is an oracle-style roll — match the oracle log format
+		// (`Roll: d100 → N`) rather than the action-die bracket format.
 		const html =
-			`<div class="roll-line">1d100 [${roll}]</div>` +
+			`<div class="roll-line">Roll: d100 → ${roll}</div>` +
 			`<div class="move-outcome">${enriched}</div>`;
 		const tensV = Math.floor((roll % 100) / 10) || 10;
 		const onesV = roll % 10 || 10;
@@ -1457,7 +1468,7 @@
 						<!-- Notes -->
 						{#if selectedMove.notes}
 							<div class="md-notes">
-								<div class="md-notes-text">{@html selectedMove.notes}</div>
+								<div class="md-notes-text">{@html moveMd(selectedMove, selectedMove.notes)}</div>
 							</div>
 						{/if}
 					</div>
@@ -2404,6 +2415,14 @@
 	.md-outcome-text :global(.log-only) {
 		display: none;
 	}
+	/* renderRich wraps prose in <p>; zero the browser default so spacing matches
+	   the old inline output (last-child flush to the container). */
+	.md-outcome-text :global(p) {
+		margin: 0 0 4px;
+	}
+	.md-outcome-text :global(p:last-child) {
+		margin-bottom: 0;
+	}
 	.md-outcome-text :global(strong) {
 		color: var(--text);
 		font-weight: 600;
@@ -2479,7 +2498,14 @@
 		font-size: 0.72rem;
 		color: var(--text-dimmer);
 		line-height: 1.5;
-		font-style: italic;
+		/* Plain by default — emphasis comes from markdown (`*italic*` → <em>), not
+		   a blanket font-style on the whole note. */
+	}
+	.md-notes-text :global(p) {
+		margin: 0 0 4px;
+	}
+	.md-notes-text :global(p:last-child) {
+		margin-bottom: 0;
 	}
 	/* ── Difficulty Factors (spell roll collapsible) ───────────────────────── */
 	.md-factors {

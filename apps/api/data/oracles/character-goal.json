@@ -137,7 +137,7 @@
     },
     {
       "topRange": 100,
-      "value": "[self]{2}"
+      "value": "[roll again](roll:self?times=2)"
     }
   ]
 }
