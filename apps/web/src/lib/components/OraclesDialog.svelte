@@ -368,11 +368,13 @@
 										}}
 									>
 										<div class="od-tile-stripe"></div>
-										<span class="od-tile-icon" aria-hidden="true">
-											{@html oracleCategoryIcon(oracle.category)}
-										</span>
 										<div class="od-tile-body">
-											<div class="od-tile-name">{oracle.title}</div>
+											<div class="od-tile-name-row">
+												<span class="od-tile-icon" aria-hidden="true">
+													{@html oracleCategoryIcon(oracle.category)}
+												</span>
+												<div class="od-tile-name">{oracle.title}</div>
+											</div>
 											{#if oracle.description}
 												<div class="od-tile-desc">{oracle.description}</div>
 											{/if}
@@ -387,7 +389,17 @@
 				<!-- ── Detail view ───────────────────────────────────────────────────── -->
 
 				<!-- Header -->
-				<DialogHeader title={selectedOracle.title} detail />
+				<DialogHeader title={selectedOracle.title} detail>
+					{#snippet leading()}
+						<span
+							class="od-header-icon"
+							aria-hidden="true"
+							style:--ccolor={categoryColor(selectedOracle.category)}
+						>
+							{@html oracleCategoryIcon(selectedOracle.category)}
+						</span>
+					{/snippet}
+				</DialogHeader>
 
 				<!-- Detail body -->
 				<div class="od-body od-body--detail">
@@ -744,29 +756,37 @@
 		flex-shrink: 0;
 		background: var(--tcolor, var(--text-accent));
 	}
-	/* Category glyph — sits between the source stripe and the text block.
-	   Tinted with the same source colour as the stripe so the two read as
-	   a single left-edge unit. Icon size matches the two-line body height. */
-	:global(.od-tile-icon) {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 28px;
-		flex-shrink: 0;
-		color: var(--tcolor, var(--text-muted));
-		padding: 0 6px;
-	}
-	:global(.od-tile-icon svg) {
-		width: 18px;
-		height: 18px;
-		fill: currentColor;
-	}
 	:global(.od-tile-body) {
 		padding: 6px 8px;
 		flex: 1;
 		min-width: 0;
 	}
+	/* Name row — small category glyph inline before the title, tinted with the
+	   category colour. Matches the asset/move picker tiles (icon next to the
+	   header, not a full-height left column). */
+	:global(.od-tile-name-row) {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		min-width: 0;
+	}
+	:global(.od-tile-icon) {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 15px;
+		height: 15px;
+		flex-shrink: 0;
+		color: var(--tcolor, var(--text-muted));
+	}
+	:global(.od-tile-icon svg) {
+		width: 15px;
+		height: 15px;
+		fill: currentColor;
+	}
 	:global(.od-tile-name) {
+		flex: 1;
+		min-width: 0;
 		font-size: 0.7rem;
 		font-weight: 700;
 		line-height: 1.3;
@@ -783,6 +803,23 @@
 		line-clamp: 2;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
+	}
+
+	/* Detail-header leading glyph — the category icon next to the oracle title,
+	   tinted with the category colour (matches the asset/move card name icon). */
+	:global(.od-header-icon) {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 16px;
+		height: 16px;
+		flex-shrink: 0;
+		color: var(--ccolor, var(--text-accent));
+	}
+	:global(.od-header-icon svg) {
+		width: 16px;
+		height: 16px;
+		fill: currentColor;
 	}
 
 	/* ── Detail view ─────────────────────────────────────────────────────── */
