@@ -119,8 +119,9 @@ named fields:
 ```
 
 Renders `D100 | col1 | col2 | …` (a lone value column keeps the space-saving
-2-/3-column layout for long lists). A `91–100 → "Roll twice…"` row on the primary
-column re-rolls twice and combines. _Canonical:_ Core: Action (simple), YRT
+2-/3-column layout for long lists). A row whose value carries a `[self]{2}`
+template blank re-rolls this table twice and combines (see **Value-level
+templates** below). _Canonical:_ Core: Action (simple), YRT
 Region (typed), Combat: Battleground + Delve Site Nature Theme/Domain (described),
 YRT: Freeport Occupation (multi-column), Mana Backlash (Backlash / Effect).
 
@@ -199,6 +200,24 @@ that oracle, recursively. Supports a regex-style repeat quantifier
 ```
 
 _Canonical:_ Delve: Site Name, Delve: Monstrosity.
+
+### Value-level templates & `[self]` (Roll Twice)
+
+The same `[key]{n,m}` blanks work in **any** row's value, not just `compound`
+tables — a single row can carry one. The special key **`[self]`** re-rolls the
+**current** table. That's how "Roll twice" is modelled: a top row whose value is
+`[self]{2}` rolls this table twice and both results occur (no de-dupe — unlike
+named refs), cascading and depth-guarded. Literal text around the blanks is kept
+(e.g. `"Hybrid ([self]{2})"`). In the reference table a blank renders as a pill
+(`[self]` → "roll again"). This replaced the old `/roll twice/i` text-sniff.
+
+```json
+{ "topRange": 100, "value": "[self]{2}" }
+{ "topRange": 100, "value": "Hybrid ([self]{2})" }
+```
+
+_Canonical:_ Character: Goal, Settlement: Troubles, Major Plot Twist,
+Monstrosity: Primary Form.
 
 ### `prefixSuffix` — combine a rolled prefix with a rolled suffix
 

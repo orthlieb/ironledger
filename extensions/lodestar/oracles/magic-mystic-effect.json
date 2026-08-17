@@ -188,7 +188,7 @@
     },
     {
       "topRange": 100,
-      "value": "Roll twice more on this table; both effects occur."
+      "value": "[self]{2}"
     }
   ]
 }
