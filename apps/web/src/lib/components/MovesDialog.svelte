@@ -31,6 +31,7 @@
 	import { firstPreconditionFailure } from '$lib/preconditions.js';
 	import { applyInitiativeDowngrade } from '$lib/initiativeDowngrade.js';
 	import { appendLog, enrichOutcomeLinks, triggerAction } from '$lib/log.svelte.js';
+	import { renderMoveText } from '$lib/dsl.js';
 	import { getActiveFoeId, getActiveExpeditionId } from '$lib/activeContext.svelte.js';
 	import { untrack } from 'svelte';
 	import { momentumReset } from '$lib/character.js';
@@ -303,10 +304,17 @@
 			.replace('{move}', move.name);
 	}
 
+	/** POC: a move opts into markdown+DSL authoring via a `markdown: true` flag.
+	 *  When set, its text fields are rendered through `renderMoveText` (formatting
+	 *  + `[label](scheme:args)` link DSL) before the existing harm/enrich passes. */
+	const isMarkdown = (m: MoveDefinition | null): boolean =>
+		!!(m as Record<string, unknown> | null)?.markdown;
+	const moveMd = (m: MoveDefinition | null, text: string | undefined): string =>
+		isMarkdown(m) ? renderMoveText(text) : (text ?? '');
+
 	function getOutcomeHtml(m: MoveDefinition, hits1: boolean, hits2: boolean): string {
-		if (hits1 && hits2) return m.strong ?? '';
-		if (hits1 || hits2) return m.weak ?? '';
-		return m.miss ?? '';
+		const raw = hits1 && hits2 ? m.strong : hits1 || hits2 ? m.weak : m.miss;
+		return moveMd(m, raw);
 	}
 
 	// Resolve <a class="harm-link"> placeholders.
@@ -382,7 +390,7 @@
 	// Resolve harm links for display in the dialog outcome preview.
 	function displayHtml(html: string | undefined): string {
 		if (!html) return '';
-		return resolveHarmLinks(html, {
+		return resolveHarmLinks(moveMd(selectedMove, html), {
 			moveId: selectedMove?.id,
 			foeHarm: effectiveHarm,
 			curHealth: resourceValue('health'),
@@ -398,7 +406,7 @@
 	const resolvedTriggerHtml = $derived.by(() => {
 		const m = selectedMove;
 		if (!m) return '';
-		const raw = ((m as Record<string, unknown>).triggerPreamble as string) ?? m.trigger;
+		const raw = moveMd(m, ((m as Record<string, unknown>).triggerPreamble as string) ?? m.trigger);
 		if (m.id !== 'move/endure-harm' && m.id !== 'move/endure-stress') return raw;
 		const harm = effectiveHarm; // tracked — recompute when the player edits the amount
 		return untrack(() =>

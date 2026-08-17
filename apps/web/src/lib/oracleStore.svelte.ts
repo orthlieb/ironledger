@@ -20,6 +20,7 @@ import {
 	loadExtensions,
 	suppressedOracleKeys,
 } from '$lib/expansionStore.svelte.js';
+import { parseDslHref } from './dsl.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -304,16 +305,64 @@ export function rangeLabelForEntry(table: OracleEntry[], index: number): string 
 // the reference that many times. Used by both `compound` tables (whole-table
 // templates) and any single row that carries a blank (e.g. a "roll twice" row).
 const TEMPLATE_TOKEN = /\[(\w+)\](?:\{(\d+)(?:,(\d+))?\})?/g;
-/** Non-global detector (safe for `.test()` — TEMPLATE_TOKEN is stateful). */
-const HAS_TEMPLATE = /\[\w+\]/;
+/** New query-string DSL form: `[label](roll:key?rollFrom=1&rollTo=3)` /
+ *  `[label](roll:self?times=2)`. Processed BEFORE the bare-token pass so a
+ *  single-word label like `[Size]` isn't re-matched by TEMPLATE_TOKEN. */
+const ROLL_DSL = /\[([^\]]+)\]\(roll:([^)]+)\)/g;
+/** Non-global detector (safe for `.test()`) — bare `[key]` token OR a roll: DSL link. */
+const HAS_TEMPLATE = /\[\w+\]|\]\(roll:/;
 
 /** Oracle title after its last ": " — "Monstrosity: Primary Form" → "Primary Form". */
 const shortLabel = (t: string): string => (t.includes(': ') ? t.slice(t.lastIndexOf(': ') + 2) : t);
 
-/** Render template blanks as styled pills for the reference table. `[self]` →
- *  a "roll again" chip; a named key → the target oracle's title (via
- *  `refTitles`); `{n,m}` → a "×n" repeat badge. */
+/** Parse a scheme-stripped `roll:` spec (`key?rollFrom=1&rollTo=3`) into a
+ *  concrete roll: target oracle, count, the dossier line style, and an optional
+ *  count-note for a rolled range. `times=n` = fixed; `rollFrom`/`rollTo` = range. */
+function parseRollSpec(
+	spec: string,
+	currentKey: string,
+): { refKey: string; count: number; dash: boolean; isSelf: boolean; note: string } {
+	const { path: key, args } = parseDslHref('roll:' + spec);
+	const isSelf = key === 'self';
+	const refKey = isSelf ? currentKey : key;
+	let count = 1;
+	let isRange = false;
+	let note = '';
+	if (args.times != null) {
+		count = parseInt(args.times, 10) || 1;
+	} else if (args.rollFrom != null || args.rollTo != null) {
+		const lo = parseInt(String(args.rollFrom ?? args.rollTo), 10);
+		const hi = parseInt(String(args.rollTo ?? args.rollFrom), 10);
+		count = lo + Math.floor(Math.random() * (hi - lo + 1));
+		if (lo !== hi) {
+			isRange = true;
+			note = `${lo === 1 ? `d${hi}` : `${lo}–${hi}`} → ${count}`;
+		}
+	}
+	return { refKey, count, dash: isSelf || count > 1 || isRange, isSelf, note };
+}
+
+/** The "×n" badge for a roll: DSL pill, from its query args (empty for count 1). */
+function pillBadge(spec: string): string {
+	const { args } = parseDslHref('roll:' + spec);
+	if (args.times != null && Number(args.times) > 1) return args.times;
+	if (args.rollFrom != null || args.rollTo != null) {
+		const lo = args.rollFrom ?? args.rollTo;
+		const hi = args.rollTo ?? args.rollFrom;
+		return lo === hi ? String(lo) : `${lo}–${hi}`;
+	}
+	return '';
+}
+
+/** Render template blanks as styled pills for the reference table. New DSL:
+ *  `[label](roll:…)` → a pill showing the authored label (+ "×n" badge). Old:
+ *  `[self]` → "roll again"; a named key → the target oracle's title. */
 function linkifyTemplate(s: string, refTitles: Record<string, string>): string {
+	s = s.replace(ROLL_DSL, (_m, label: string, spec: string) => {
+		const pill = `<span class="oracle-ref">${label}</span>`;
+		const badge = pillBadge(spec);
+		return badge ? `${pill}<span class="oracle-ref-rep">×${badge}</span>` : pill;
+	});
 	return s.replace(TEMPLATE_TOKEN, (_m, k: string, n?: string, m?: string) => {
 		const label = k === 'self' ? 'roll again' : (refTitles[k] ?? k);
 		const ref = `<span class="oracle-ref">${label}</span>`;
@@ -324,7 +373,8 @@ function linkifyTemplate(s: string, refTitles: Record<string, string>): string {
 
 /** Fill template blanks by rolling the referenced oracle(s). `self` resolves to
  *  `currentKey` (both results occur — no dedupe, the Roll Twice mechanic); named
- *  refs dedupe repeats (distinct picks). Recursion is depth-guarded. Returns the
+ *  refs dedupe repeats (distinct picks). Recursion is depth-guarded. Handles the
+ *  new `[label](roll:…)` DSL and the legacy `[key]{n,m}` token. Returns the
  *  composed string plus per-roll log lines. */
 function fillTemplate(
 	template: string,
@@ -333,41 +383,57 @@ function fillTemplate(
 	depth: number,
 ): { filled: string; lines: string[] } {
 	const lines: string[] = [];
-	const filled = template.replace(
-		TEMPLATE_TOKEN,
-		(_m, ref: string, nStr?: string, mStr?: string) => {
-			const isSelf = ref === 'self';
-			const refKey = isSelf ? currentKey : ref;
-			const label = isSelf
-				? 'Roll'
-				: shortLabel(allOracles.find((o) => o.key === refKey)?.title ?? refKey);
-			const repeated = nStr != null;
-			let count = 1;
-			if (repeated) {
-				const lo = parseInt(nStr as string, 10);
-				const hi = mStr != null ? parseInt(mStr, 10) : lo;
-				count = lo + Math.floor(Math.random() * (hi - lo + 1));
-				// Only a range quantifier rolls a count — note it; a fixed `{n}` doesn't.
-				if (lo !== hi) {
-					const note = lo === 1 ? `d${hi} → ${count}` : `${lo}–${hi} → ${count}`;
-					lines.push(`<div class="roll-line">${label}: (${note})</div>`);
-				}
+	// Roll `refKey` `count` times; log each; return the joined values. `dash` =
+	// the "— value" dossier line style (repeated / self) vs "Label: value".
+	const rollRef = (
+		refKey: string,
+		label: string,
+		count: number,
+		dash: boolean,
+		isSelf: boolean,
+	) => {
+		const vals: string[] = [];
+		for (let i = 0; i < count && depth < 5; i++) {
+			const sub = rollOracle(refKey, allOracles, { _depth: depth + 1 });
+			const v = sub.value || `[${refKey}]`;
+			if (!isSelf && vals.includes(v)) continue; // dedupe named refs only
+			vals.push(v);
+			lines.push(
+				dash
+					? `<div class="roll-line">— <strong>${v}</strong> (d100 → ${sub.roll})</div>`
+					: `<div class="roll-line">${label}: <strong>${v}</strong> (d100 → ${sub.roll})</div>`,
+			);
+		}
+		return vals.join(', ');
+	};
+
+	// New DSL first — `[label](roll:key?…)`.
+	let filled = template.replace(ROLL_DSL, (_m, label: string, spec: string) => {
+		const { refKey, count, dash, isSelf, note } = parseRollSpec(spec, currentKey);
+		if (note) lines.push(`<div class="roll-line">${label}: (${note})</div>`);
+		return rollRef(refKey, label, count, dash, isSelf);
+	});
+
+	// Legacy `[key]{n,m}` token.
+	filled = filled.replace(TEMPLATE_TOKEN, (_m, ref: string, nStr?: string, mStr?: string) => {
+		const isSelf = ref === 'self';
+		const refKey = isSelf ? currentKey : ref;
+		const label = isSelf
+			? 'Roll'
+			: shortLabel(allOracles.find((o) => o.key === refKey)?.title ?? refKey);
+		const repeated = nStr != null;
+		let count = 1;
+		if (repeated) {
+			const lo = parseInt(nStr as string, 10);
+			const hi = mStr != null ? parseInt(mStr, 10) : lo;
+			count = lo + Math.floor(Math.random() * (hi - lo + 1));
+			if (lo !== hi) {
+				const note = lo === 1 ? `d${hi} → ${count}` : `${lo}–${hi} → ${count}`;
+				lines.push(`<div class="roll-line">${label}: (${note})</div>`);
 			}
-			const vals: string[] = [];
-			for (let i = 0; i < count && depth < 5; i++) {
-				const sub = rollOracle(refKey, allOracles, { _depth: depth + 1 });
-				const v = sub.value || `[${ref}]`;
-				if (!isSelf && vals.includes(v)) continue; // dedupe named refs only
-				vals.push(v);
-				lines.push(
-					repeated || isSelf
-						? `<div class="roll-line">— <strong>${v}</strong> (d100 → ${sub.roll})</div>`
-						: `<div class="roll-line">${label}: <strong>${v}</strong> (d100 → ${sub.roll})</div>`,
-				);
-			}
-			return vals.join(', ');
-		},
-	);
+		}
+		return rollRef(refKey, label, count, repeated || isSelf, isSelf);
+	});
 	return { filled, lines };
 }
 
@@ -691,7 +757,9 @@ export function rollOracle(
 		// per-field breakdown (+ the format roll when multiple formats). A phrase
 		// template (a name) logs just the composed result — the assembled string
 		// is the whole point.
-		const isDossier = /:\s/.test(template);
+		// Dossier = per-field breakdown (has a "Label: " literal, or labelled
+		// `[…](roll:…)` DSL blanks); phrase = a composed name (bare `[key]` tokens).
+		const isDossier = /:\s/.test(template) || /\]\(roll:/.test(template);
 		const fmtLine =
 			isDossier && table.length > 1
 				? `<div class="roll-line">Format roll: d100 → ${fmtRes.roll}</div>`
