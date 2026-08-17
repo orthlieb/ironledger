@@ -1,0 +1,19 @@
+{
+  "key": "sampleMatrix",
+  "title": "Sample – Matrix",
+  "category": "Other",
+  "selectLabel": "Sample – Matrix",
+  "description": "A matrix oracle: roll a single d100, then read the value from the picked column. The name generators (Elf, Other) use this shape — one roll fans out into multiple parallel answers.",
+  "source": "sample",
+  "tableType": "matrix",
+  "columns": [
+    { "key": "left", "label": "Left" },
+    { "key": "right", "label": "Right" }
+  ],
+  "data": [
+    { "topRange": 25, "left": "north", "right": "east" },
+    { "topRange": 50, "left": "south", "right": "west" },
+    { "topRange": 75, "left": "high", "right": "low" },
+    { "topRange": 100, "left": "near", "right": "far" }
+  ]
+}

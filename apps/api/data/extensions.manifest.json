@@ -222,8 +222,11 @@
           "moves/moves.json"
         ],
         "oracles": [
+          "oracles/column-select.json",
           "oracles/compound.json",
           "oracles/gizmo.json",
+          "oracles/matrix.json",
+          "oracles/prefix-suffix.json",
           "oracles/twostep.json"
         ],
         "foes": [
