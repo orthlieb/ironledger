@@ -31,7 +31,7 @@
 	import { firstPreconditionFailure } from '$lib/preconditions.js';
 	import { applyInitiativeDowngrade } from '$lib/initiativeDowngrade.js';
 	import { appendLog, enrichOutcomeLinks, triggerAction } from '$lib/log.svelte.js';
-	import { renderMoveText } from '$lib/dsl.js';
+	import { renderRich } from '$lib/dsl.js';
 	import { getActiveFoeId, getActiveExpeditionId } from '$lib/activeContext.svelte.js';
 	import { untrack } from 'svelte';
 	import { momentumReset } from '$lib/character.js';
@@ -305,12 +305,12 @@
 	}
 
 	/** POC: a move opts into markdown+DSL authoring via a `markdown: true` flag.
-	 *  When set, its text fields are rendered through `renderMoveText` (formatting
+	 *  When set, its text fields are rendered through `renderRich` (formatting
 	 *  + `[label](scheme:args)` link DSL) before the existing harm/enrich passes. */
 	const isMarkdown = (m: MoveDefinition | null): boolean =>
 		!!(m as Record<string, unknown> | null)?.markdown;
 	const moveMd = (m: MoveDefinition | null, text: string | undefined): string =>
-		isMarkdown(m) ? renderMoveText(text) : (text ?? '');
+		isMarkdown(m) ? renderRich(text) : (text ?? '');
 
 	function getOutcomeHtml(m: MoveDefinition, hits1: boolean, hits2: boolean): string {
 		const raw = hits1 && hits2 ? m.strong : hits1 || hits2 ? m.weak : m.miss;

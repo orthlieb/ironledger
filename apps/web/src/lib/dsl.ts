@@ -87,10 +87,11 @@ const P1 = '';
 const LINK = /\[([^\]]+)\]\(([^)]+)\)/g; // [label](href)
 const SPAN = /\[([^\]]+)\]\{\.([\w-]+)\}/g; // [text]{.class}
 
-/** Render a move's markdown+DSL text to HTML: resolve DSL action links +
- *  `{.class}` spans, then apply renderNote formatting (bold, lists). Interactive
- *  link HTML is protected behind sentinels so renderNote never escapes it. */
-export function renderMoveText(md: string | undefined): string {
+/** Render markdown+DSL text (moves, oracles, assets) to HTML: resolve DSL action
+ *  links + `{.class}` spans, then apply renderNote formatting (bold, lists).
+ *  Interactive link HTML is protected behind sentinels so renderNote never
+ *  escapes it. */
+export function renderRich(md: string | undefined): string {
 	if (!md) return '';
 	const stash: string[] = [];
 	const protect = (html: string): string => `${P0}${stash.push(html) - 1}${P1}`;

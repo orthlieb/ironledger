@@ -1164,22 +1164,23 @@
       "abilities": [
         {
           "enabled": true,
-          "text": "When you attempt to <a class=\"move-link\" data-id=\"move/heal\">Heal</a> using herbal remedies, and you have at least +1 supply, choose one (decide before rolling).\n\n  * Add +2.\n  * On a hit, take or give an additional +1 health.",
+          "text": "When you attempt to [Heal](move:heal) using herbal remedies, and you have at least +1 supply, choose one (decide before rolling).\n- Add +2.\n- On a hit, take or give an additional +1 health.",
           "moves": ["move/heal"]
         },
         {
           "enabled": false,
-          "text": "When you <a class=\"move-link\" data-id=\"move/heal\">Heal</a> a companion, ally, or other character, and score a hit, take +1 spirit or +1 momentum.",
+          "text": "When you [Heal](move:heal) a companion, ally, or other character, and score a hit, take +1 spirit or +1 momentum.",
           "moves": ["move/heal"]
         },
         {
           "enabled": false,
-          "text": "When you <a class=\"move-link\" data-id=\"move/make-camp\">Make Camp</a> and choose the option to partake, you can create a restorative meal. If you do, you and your companions take +1 health. Any allies who choose to partake also take +1 health, and do not suffer -supply.",
+          "text": "When you [Make Camp](move:make-camp) and choose the option to partake, you can create a restorative meal. If you do, you and your companions take +1 health. Any allies who choose to partake also take +1 health, and do not suffer -supply.",
           "moves": ["move/make-camp"]
         }
       ],
       "summary": "Healer with herbal remedies: potent cures and restorative meals.",
-      "source": "base"
+      "source": "base",
+      "markdown": true
     },
     {
       "id": "path/honorbound",

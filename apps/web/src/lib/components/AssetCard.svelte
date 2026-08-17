@@ -11,6 +11,7 @@
 	import { assetIcon } from '$lib/iconRegistry.js';
 	import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
+	import { renderRich } from '$lib/dsl.js';
 	import { draggable } from '$lib/actions/draggable.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import Select from '$lib/components/Select.svelte';
@@ -262,6 +263,13 @@
 			.join('');
 	}
 
+	/** POC: an asset opts into markdown+DSL authoring via a `markdown: true` flag.
+	 *  When set, its prose renders through the shared `renderRich` (formatting +
+	 *  `[label](scheme:args)` link DSL) instead of the bespoke `formatText` /
+	 *  `stripMdLinks` / raw passthrough. */
+	const isMarkdown = $derived(!!(definition as Record<string, unknown>).markdown);
+	const abilityHtml = (text: string): string => (isMarkdown ? renderRich(text) : formatText(text));
+
 	function toggleAbility(i: number) {
 		const enabling = !asset.abilities[i];
 		// Level cap: cannot enable more abilities than the current level allows
@@ -418,12 +426,14 @@
 					}
 				}}
 			>
-				{@html stripMdLinks(definition.preamble)}
+				{@html isMarkdown ? renderRich(definition.preamble) : stripMdLinks(definition.preamble)}
 			</p>
 		{/if}
 
 		{#if assetDescription}
-			<p class="asset-description">{@html assetDescription}</p>
+			<p class="asset-description">
+				{@html isMarkdown ? renderRich(assetDescription) : assetDescription}
+			</p>
 		{/if}
 
 		<div class="abilities-list">
@@ -449,7 +459,7 @@
 						{#if ab.name}
 							<span class="ability-name">{ab.name}.</span>
 						{/if}
-						{@html formatText(ab.text)}
+						{@html abilityHtml(ab.text)}
 					</div>
 				</label>
 			{/each}
