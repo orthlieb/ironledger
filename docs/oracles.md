@@ -57,12 +57,12 @@ Counts are keyed (rollable) oracles per `source`; see
 `apps/api/data/extensions.manifest.json` for the authoritative per-extension
 list. `oracle-order.json` is a display-order index, not a rollable oracle.
 
-| Group                       | Count | Keys (excerpt)                                                                                                                                               |
-| --------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Core Ironsworn** (`base`) | 24    | action, theme, region, location, settlementName / settlementNameQuick / settlementTrouble, character\*, names\*, combatAction, majorPlotTwist, challengeRank |
-| **Delve** (`delve`)         | 32    | siteName\*, siteNature\*, trap\*, monstrosity\*, threat\*, combatEvent / combatEventMethod / combatEventTarget, feature\*, charDisposition                   |
-| **Yrt** (`yrt`)             | 13    | yrtRegion, yrtSettlement\*, yrtTouched / touchedFeatures / yrtAnimal, manaBacklash, freeportDenizen, yrtStoryRegion                                          |
-| **Lodestar** (`lodestar`)   | 19    | overland\* / coastalWaters\* journey oracles, settlementType / settlementCondition / settlementFirstLook / …, storyRegion, storyClue, combatBattleground     |
+| Group                       | Count | Keys (excerpt)                                                                                                                                                                                                                       |
+| --------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Core Ironsworn** (`base`) | 24    | action, theme, region, location, settlementName / settlementNameQuick / settlementTrouble, character\*, names\*, combatAction, majorPlotTwist, challengeRank                                                                         |
+| **Delve** (`delve`)         | 32    | siteName\*, siteNature\*, trap\*, monstrosity\*, threat\*, combatEvent / combatEventMethod / combatEventTarget, feature\*, charDisposition                                                                                           |
+| **Yrt** (`yrt`)             | 13    | yrtRegion, yrtSettlement\*, yrtTouched / touchedFeatures / yrtAnimal, manaBacklash, freeportDenizen, yrtStoryRegion                                                                                                                  |
+| **Lodestar** (`lodestar`)   | 24    | overland\* / coastalWaters\* journey oracles, settlement\* (Type / Condition / FirstLook / …), storyRegion / storyClue, combatBattleground, scaleMagnitude / scaleRank, magicMysticEffect, encounterIronlands, characterPreludeEvent |
 
 ### Category
 
@@ -145,7 +145,7 @@ the _frequency_ of a result, not its text.
 ```
 
 Renders one range column per `columns` entry + a **Result** column. _Canonical:_
-Settlement: Type. (See also `delveDepths`.)
+Settlement: Type, Delve the Depths (Edge / Shadow / Wits).
 
 ### `matrix` — pick a column; shared ranges, per-column value
 
@@ -235,7 +235,7 @@ _Canonical:_ Settlement: Quick Name.
 
 ### Column-picker UX (`columnSelect` · `matrix`)
 
-These three share the chip picker:
+These two share the chip picker:
 
 - A chip row selects the active column; the chips + the active column are
   **colour-coded per column** (a cycled palette; a column whose key is a stat —
@@ -347,75 +347,6 @@ OraclesDialog
           │    2. animateDice([d100])  → 3D dice animation (black + white d10s)
           │    3. appendLog(title, html) → session log entry
           │    4. Close both dialogs
-```
-
----
-
-## Implementation plan
-
-### Phase 1 — Core engine (`src/lib/oracles.svelte.ts`)
-
-Module-level reactive store:
-
-```typescript
-export let oracleData = $state<OracleFile[]>([]);   // loaded from /api/catalogue
-
-// Pure helpers (ported from oracles-pure.js)
-export function rollFromRangeTable(table) { … }
-export function rangeLabelForEntry(table, i) { … }
-export function buildTableHtml(key, table) { … }
-
-// Special roll dispatchers
-export function rollOracle(key: string): { roll: number; html: string; title: string }
-```
-
-### Phase 2 — Picker dialog (`OraclesDialog.svelte`)
-
-- Fetch oracle data via catalogue API on first mount (or use pre-loaded store)
-- Group filter tags rendered from distinct `group` values
-- Tile grid: `display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr))`
-- Search: `oninput` filter on tile `data-name` + `data-desc` attributes
-- On tile click → open detail sub-dialog
-
-### Phase 3 — Detail dialog (nested in OraclesDialog or separate component)
-
-- Show `description`
-- Render `buildTableHtml(key, table)` as `{@html}`
-- Roll button → `rollOracle(key)` → `animateDice` → `appendLog` → close
-
-### Phase 4 — Wire up
-
-- `GlobalContextBar.svelte` — enable Oracles button; add `onOraclesClick?: () => void` prop
-- `characters/+page.svelte` — import `OraclesDialog`, mount it, pass `onOraclesClick`
-
----
-
-## Yrt-specific helpers
-
-```typescript
-// Roll yrtTouched: class + animal + count + unique features
-function rollYrtTouched(): { html: string; roll: number } {
-  const classRes = rollFromRangeTable(oracleTable('yrtTouched'));
-  const animalRes = rollFromRangeTable(oracleTable('yrtAnimal'));
-  const countRes = rollFromRangeTable(oracleTable('touchedCount'));
-  const features = rollUniqueFeatures(countRes.value as number);
-  // … build multi-line HTML
-}
-
-// Roll N unique features from touchedFeatures, re-rolling duplicates
-function rollUniqueFeatures(count: number): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  let safety = 0;
-  while (out.length < count && safety++ < 1000) {
-    const r = rollFromRangeTable(oracleTable('touchedFeatures'));
-    if (!seen.has(r.value as string)) {
-      seen.add(r.value as string);
-      out.push(r.value as string);
-    }
-  }
-  return out;
-}
 ```
 
 ---
