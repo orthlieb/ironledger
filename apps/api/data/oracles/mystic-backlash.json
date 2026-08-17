@@ -104,7 +104,7 @@
     },
     {
       "topRange": 100,
-      "value": "Roll twice more on this table. Both results occur. If they are the same result, make it worse."
+      "value": "[self]{2} — if the two results match, make it worse."
     }
   ]
 }

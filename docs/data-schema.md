@@ -1049,9 +1049,28 @@ Form`). A quantified blank first logs its count roll, then one indented line
   whose later rolls _depend on_ an earlier result (e.g. `yrtTouched`: Pure
   stops, Feral rolls an animal but no features) stays a hardcoded branch.
 
-Still hardcoded per-key (not available to extensions from JSON alone): **Names
-Other** (`namesOther`: `giants` / `varou` / `trolls` fields), `settlementNameQuick`,
-`freeportDenizen`, `yrtTouched`, and the other Yrt structured tables — see
+- **Value-level templates & `[self]`** — the `[key]{n,m}` blanks above are not
+  limited to `compound` tables: **any** row's value can carry a blank, resolved
+  the same way when that row is rolled. The reserved key **`[self]`** rolls the
+  **current** table — this is how the **Roll Twice** mechanic is authored. A top
+  row `{ "topRange": 100, "value": "[self]{2}" }` rolls this table twice, and
+  **both results occur** (self refs are _not_ de-duplicated, unlike named refs);
+  it cascades if a re-roll lands on `[self]` again, depth-guarded to 5. Literal
+  text around the blank is preserved (e.g. `"Hybrid ([self]{2})"`). In the
+  reference table a blank renders as a pill — `[self]` shows as "roll again".
+  This replaced the old `/roll twice/i` string match. Exceptions that stay prose:
+  a value where the roll-twice text sits in a **non-primary** column (Mana
+  Backlash's Effect), or a table read raw by a hardcoded consumer (`touchedFeatures`
+  via `yrtTouched`).
+
+- **`tableType: "prefixSuffix"`** — each row's `value` is `{ prefix, suffix }`.
+  A roll makes **two independent d100 rolls** and concatenates the first row's
+  prefix with the second row's suffix (e.g. "Red" + "fall" → "Redfall"). The
+  reference table lays the rows out in side-by-side `d100 | Prefix | Suffix`
+  groups (three, or two on ≤ 640px). Canonical: Settlement: Quick Name.
+
+Still hardcoded per-key (not available to extensions from JSON alone):
+`yrtTouched` and the other Yrt structured tables — see
 [the Yrt extension docs](../extensions/yrt/README.md#yrt-oracles).
 
 ---

@@ -57,12 +57,12 @@ Counts are keyed (rollable) oracles per `source`; see
 `apps/api/data/extensions.manifest.json` for the authoritative per-extension
 list. `oracle-order.json` is a display-order index, not a rollable oracle.
 
-| Group                       | Count | Keys (excerpt)                                                                                                                                               |
-| --------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Core Ironsworn** (`base`) | 24    | action, theme, region, location, settlementName / settlementNameQuick / settlementTrouble, character\*, names\*, combatAction, majorPlotTwist, challengeRank |
-| **Delve** (`delve`)         | 32    | siteName\*, siteNature\*, trap\*, monstrosity\*, threat\*, combatEvent / combatEventMethod / combatEventTarget, feature\*, charDisposition                   |
-| **Yrt** (`yrt`)             | 13    | yrtRegion, yrtSettlement\*, yrtTouched / touchedFeatures / yrtAnimal, manaBacklash, freeportDenizen, yrtStoryRegion                                          |
-| **Lodestar** (`lodestar`)   | 19    | overland\* / coastalWaters\* journey oracles, settlementType / settlementCondition / settlementFirstLook / …, storyRegion, storyClue, combatBattleground     |
+| Group                       | Count | Keys (excerpt)                                                                                                                                                                                                                       |
+| --------------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Core Ironsworn** (`base`) | 24    | action, theme, region, location, settlementName / settlementNameQuick / settlementTrouble, character\*, names\*, combatAction, majorPlotTwist, challengeRank                                                                         |
+| **Delve** (`delve`)         | 32    | siteName\*, siteNature\*, trap\*, monstrosity\*, threat\*, combatEvent / combatEventMethod / combatEventTarget, feature\*, charDisposition                                                                                           |
+| **Yrt** (`yrt`)             | 13    | yrtRegion, yrtSettlement\*, yrtTouched / touchedFeatures / yrtAnimal, manaBacklash, freeportDenizen, yrtStoryRegion                                                                                                                  |
+| **Lodestar** (`lodestar`)   | 24    | overland\* / coastalWaters\* journey oracles, settlement\* (Type / Condition / FirstLook / …), storyRegion / storyClue, combatBattleground, scaleMagnitude / scaleRank, magicMysticEffect, encounterIronlands, characterPreludeEvent |
 
 ### Category
 
@@ -119,8 +119,9 @@ named fields:
 ```
 
 Renders `D100 | col1 | col2 | …` (a lone value column keeps the space-saving
-2-/3-column layout for long lists). A `91–100 → "Roll twice…"` row on the primary
-column re-rolls twice and combines. _Canonical:_ Core: Action (simple), YRT
+2-/3-column layout for long lists). A row whose value carries a `[self]{2}`
+template blank re-rolls this table twice and combines (see **Value-level
+templates** below). _Canonical:_ Core: Action (simple), YRT
 Region (typed), Combat: Battleground + Delve Site Nature Theme/Domain (described),
 YRT: Freeport Occupation (multi-column), Mana Backlash (Backlash / Effect).
 
@@ -144,7 +145,7 @@ the _frequency_ of a result, not its text.
 ```
 
 Renders one range column per `columns` entry + a **Result** column. _Canonical:_
-Settlement: Type. (See also `delveDepths`.)
+Settlement: Type, Delve the Depths (Edge / Shadow / Wits).
 
 ### `matrix` — pick a column; shared ranges, per-column value
 
@@ -200,45 +201,58 @@ that oracle, recursively. Supports a regex-style repeat quantifier
 
 _Canonical:_ Delve: Site Name, Delve: Monstrosity.
 
-### `delveDepths` — a hardcoded stat-column `columnSelect`
+### Value-level templates & `[self]` (Roll Twice)
 
-Same shape as `columnSelect` but with fixed **Edge / Shadow / Wits** columns and
-its own render branch. Pick a stat, roll against its ranges → the shared result.
+The same `[key]{n,m}` blanks work in **any** row's value, not just `compound`
+tables — a single row can carry one. The special key **`[self]`** re-rolls the
+**current** table. That's how "Roll twice" is modelled: a top row whose value is
+`[self]{2}` rolls this table twice and both results occur (no de-dupe — unlike
+named refs), cascading and depth-guarded. Literal text around the blanks is kept
+(e.g. `"Hybrid ([self]{2})"`). In the reference table a blank renders as a pill
+(`[self]` → "roll again"). This replaced the old `/roll twice/i` text-sniff.
 
 ```json
-{
-  "edge": 45,
-  "shadow": 30,
-  "wits": 40,
-  "value": "<a …>Mark progress</a> and <a …>Reveal a Danger</a>."
-}
+{ "topRange": 100, "value": "[self]{2}" }
+{ "topRange": 100, "value": "Hybrid ([self]{2})" }
 ```
 
-_Canonical:_ Delve the Depths Weak Hit Oracle.
+_Canonical:_ Character: Goal, Settlement: Troubles, Major Plot Twist,
+Monstrosity: Primary Form.
 
-### Column-picker UX (`columnSelect` · `matrix` · `delveDepths`)
+### `prefixSuffix` — combine a rolled prefix with a rolled suffix
 
-These three share the chip picker:
+Each row's `value` is `{ prefix, suffix }`. A roll makes **two independent d100
+rolls** and concatenates the first row's prefix with the second row's suffix
+(e.g. "Red" + "fall" → "Redfall"). The reference table chunks the rows into
+side-by-side `d100 | Prefix | Suffix` groups — three on desktop, two on **≤ 640px**
+(`narrow`) so it fits a phone without a horizontal scroll.
+
+```json
+{ "topRange": 4, "value": { "prefix": "Bleak", "suffix": "moor" } }
+```
+
+_Canonical:_ Settlement: Quick Name.
+
+### Column-picker UX (`columnSelect` · `matrix`)
+
+These two share the chip picker:
 
 - A chip row selects the active column; the chips + the active column are
-  **colour-coded per column** (a cycled stat palette — Delve the Depths keeps
-  its edge/shadow/wits colours).
+  **colour-coded per column** (a cycled palette; a column whose key is a stat —
+  e.g. Delve the Depths' edge/shadow/wits — keeps that stat's colour).
 - On **≤ 640px** the table **collapses** to `[always-on column | active column]`
-  (D100 for matrix, Result for columnSelect/delveDepths), locked **50/50** so
-  switching chips doesn't resize the layout; the chips **wrap**.
+  (D100 for matrix, Result for columnSelect), locked **50/50** so switching chips
+  doesn't resize the layout; the chips **wrap**.
 
 ### Structured specials (hardcoded by key)
 
-Two oracles still keep bespoke render/roll branches. (`freeportDenizen` used to
-be here; it is now a plain **flat multi-column** oracle — see above.)
+One oracle still keeps a bespoke render/roll branch. (`freeportDenizen` used to
+be here — now a plain **flat multi-column** oracle; `settlementNameQuick` too —
+now the reusable **`prefixSuffix`** table type above.)
 
 - **`yrtTouched`** (YRT: Touched) — a compound multi-roll: class → animal aspect
   → a feature-count roll (Second/Third: 1–3 / 4–6) → that many unique features
   from `touchedFeatures`. Logged as a monstrosity-style multi-line breakdown.
-
-- **`settlementNameQuick`** (Settlement: Quick Name) — each row is
-  `{ prefix, suffix }`; two independent d100 rolls are concatenated
-  (e.g. "Red" + "fall" → "Redfall").
 
 ## Supersession — one oracle replacing another
 
@@ -307,7 +321,7 @@ The detail view shows the full oracle table. Layout varies by entry count and or
 | Flat with `columns`       | d100 + one column per entry (e.g. Battleground, Freeport Occupation) |
 | `columnSelect` / `matrix` | column picker + per-column table (see Oracle layouts)                |
 | `settlementName`          | twoStep: category (rowspan) + sub-entries in 2 sub-columns           |
-| `settlementNameQuick`     | Custom: 9 columns (3 groups of d100 \| Prefix \| Suffix)             |
+| `prefixSuffix`            | 2–3 groups of d100 \| Prefix \| Suffix; roll = prefix + suffix       |
 | `yrtTouched`              | Custom: d100 \| Class \| Social Rank \| Description                  |
 
 ---
@@ -333,75 +347,6 @@ OraclesDialog
           │    2. animateDice([d100])  → 3D dice animation (black + white d10s)
           │    3. appendLog(title, html) → session log entry
           │    4. Close both dialogs
-```
-
----
-
-## Implementation plan
-
-### Phase 1 — Core engine (`src/lib/oracles.svelte.ts`)
-
-Module-level reactive store:
-
-```typescript
-export let oracleData = $state<OracleFile[]>([]);   // loaded from /api/catalogue
-
-// Pure helpers (ported from oracles-pure.js)
-export function rollFromRangeTable(table) { … }
-export function rangeLabelForEntry(table, i) { … }
-export function buildTableHtml(key, table) { … }
-
-// Special roll dispatchers
-export function rollOracle(key: string): { roll: number; html: string; title: string }
-```
-
-### Phase 2 — Picker dialog (`OraclesDialog.svelte`)
-
-- Fetch oracle data via catalogue API on first mount (or use pre-loaded store)
-- Group filter tags rendered from distinct `group` values
-- Tile grid: `display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr))`
-- Search: `oninput` filter on tile `data-name` + `data-desc` attributes
-- On tile click → open detail sub-dialog
-
-### Phase 3 — Detail dialog (nested in OraclesDialog or separate component)
-
-- Show `description`
-- Render `buildTableHtml(key, table)` as `{@html}`
-- Roll button → `rollOracle(key)` → `animateDice` → `appendLog` → close
-
-### Phase 4 — Wire up
-
-- `GlobalContextBar.svelte` — enable Oracles button; add `onOraclesClick?: () => void` prop
-- `characters/+page.svelte` — import `OraclesDialog`, mount it, pass `onOraclesClick`
-
----
-
-## Yrt-specific helpers
-
-```typescript
-// Roll yrtTouched: class + animal + count + unique features
-function rollYrtTouched(): { html: string; roll: number } {
-  const classRes = rollFromRangeTable(oracleTable('yrtTouched'));
-  const animalRes = rollFromRangeTable(oracleTable('yrtAnimal'));
-  const countRes = rollFromRangeTable(oracleTable('touchedCount'));
-  const features = rollUniqueFeatures(countRes.value as number);
-  // … build multi-line HTML
-}
-
-// Roll N unique features from touchedFeatures, re-rolling duplicates
-function rollUniqueFeatures(count: number): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  let safety = 0;
-  while (out.length < count && safety++ < 1000) {
-    const r = rollFromRangeTable(oracleTable('touchedFeatures'));
-    if (!seen.has(r.value as string)) {
-      seen.add(r.value as string);
-      out.push(r.value as string);
-    }
-  }
-  return out;
-}
 ```
 
 ---

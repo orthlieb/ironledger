@@ -188,7 +188,7 @@
     },
     {
       "topRange": 100,
-      "value": "Roll twice"
+      "value": "[self]{2}"
     }
   ]
 }
