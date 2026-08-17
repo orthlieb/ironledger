@@ -16,6 +16,7 @@
 	import type { DiceCtx } from '$lib/diceContext.svelte.js';
 	import type { PreconditionContext } from '$lib/preconditions.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
+	import { moveCategoryIcon } from '$lib/iconRegistry.js';
 	import { matchNoteHtml } from '$lib/rollMatch.js';
 	import {
 		loadMoves,
@@ -1141,6 +1142,9 @@
 												}}
 											>
 												<div class="md-tile-stripe"></div>
+												<span class="md-tile-icon" aria-hidden="true">
+													{@html moveCategoryIcon(move.category)}
+												</span>
 												<div class="md-tile-body">
 													<div class="md-tile-name">{move.name}</div>
 													<div class="md-tile-desc">{move.triggerShort}</div>
@@ -1159,6 +1163,9 @@
 				<DialogHeader title={selectedMove.name} detail>
 					{#snippet trailing()}
 						<span class="md-category-badge" style:--ccolor={catColor(selectedMove.category)}>
+							<span class="md-category-badge-icon" aria-hidden="true">
+								{@html moveCategoryIcon(selectedMove.category)}
+							</span>
 							{selectedMove.category}
 						</span>
 					{/snippet}
@@ -1733,6 +1740,22 @@
 		padding: 2px 7px;
 		flex-shrink: 0;
 		white-space: nowrap;
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+	}
+	/* Category glyph prefixing the badge text — sized to match the badge
+	   font weight so it reads as one unit, not a separate chip. */
+	.md-category-badge-icon {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		color: var(--ccolor, currentColor);
+	}
+	.md-category-badge-icon :global(svg) {
+		width: 12px;
+		height: 12px;
+		fill: currentColor;
 	}
 
 	/* ── Controls (search + category tags) ─────────────────────────────── */
@@ -2035,6 +2058,23 @@
 		width: 4px;
 		flex-shrink: 0;
 		background: var(--tcolor, var(--text-accent));
+	}
+	/* Category glyph — sits between the source stripe and the text block.
+	   Tinted with the same category colour as the stripe so the two read as
+	   a single left-edge unit (matches the oracle-picker tile treatment). */
+	.md-tile-icon {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		flex-shrink: 0;
+		color: var(--tcolor, var(--text-muted));
+		padding: 0 6px;
+	}
+	.md-tile-icon :global(svg) {
+		width: 18px;
+		height: 18px;
+		fill: currentColor;
 	}
 	.md-tile-body {
 		padding: 6px 8px;

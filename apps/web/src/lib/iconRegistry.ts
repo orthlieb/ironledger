@@ -147,3 +147,38 @@ export function oracleCategoryIcon(category: string | undefined | null): string 
 	const slug = category ? ORACLE_CAT_ICON[category] : undefined;
 	return getIcon(slug) ?? getIcon('dice-d100-solid') ?? '';
 }
+
+// ---------------------------------------------------------------------------
+// Move category → icon
+//
+// Same asset-card treatment on the Moves picker + detail header. Moves are
+// grouped by their canonical Ironsworn/Delve category (Adventure, Combat,
+// Journey, Suffer, …). Each gets a distinctive glyph reused from the
+// existing library so the tile reads at a glance and the detail-view header
+// carries a badge that matches. Absent/unknown categories fall back to the
+// person-running glyph — the same one the app-nav Move button uses.
+// ---------------------------------------------------------------------------
+
+const MOVE_CAT_ICON: Record<string, string> = {
+	Adventure: 'compass-rose',
+	Combat: 'sword-solid-full',
+	Journey: 'journey',
+	Suffer: 'heart-pulse-solid-full',
+	Fate: 'star-solid-full',
+	Failure: 'link-broken-solid-full',
+	Quest: 'sack-dollar-solid-full',
+	Relationship: 'farmer',
+	Threat: 'skull-crossbones-solid-full',
+	Delve: 'dungeon-gate',
+	Rarity: 'gem-solid',
+	Yrt: 'foe-beast',
+	Sample: 'dice-d100-solid',
+};
+
+/** Resolve the icon SVG for a move by category. Falls back to the app-nav
+ *  Move glyph for unknown/absent categories so the header/tile never renders
+ *  blank. */
+export function moveCategoryIcon(category: string | undefined | null): string {
+	const slug = category ? MOVE_CAT_ICON[category] : undefined;
+	return getIcon(slug) ?? getIcon('person-running-solid') ?? '';
+}
