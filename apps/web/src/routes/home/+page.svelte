@@ -183,6 +183,7 @@
 		openChangeThemeForExp(expId: string): void;
 		openChangeDomainForExp(expId: string): void;
 		applyProgress(marks: number): void;
+		applyCountdown(n: number): void;
 		completeActiveExpedition(): void;
 		reactivateActiveExpedition(): void;
 	} | null>(null);
@@ -364,7 +365,8 @@
 			const d = (e as CustomEvent<{ kind: string; id: string }>).detail;
 			if (!d) return;
 			if (!isMobile) return; // desktop deck has every area visible; nothing to switch
-			if (d.kind === 'journey' || d.kind === 'site') mobileTab = 'expeditions';
+			if (d.kind === 'journey' || d.kind === 'site' || d.kind === 'scene')
+				mobileTab = 'expeditions';
 			else if (d.kind === 'community' || d.kind === 'place' || d.kind === 'npc')
 				mobileTab = 'communities';
 		};
@@ -617,6 +619,9 @@
 			const existingSiteByName = new Map(
 				expeditions.filter((e) => e.type === 'site').map((e) => [normaliseName(e.name), e.id]),
 			);
+			const existingSceneByName = new Map(
+				expeditions.filter((e) => e.type === 'scene').map((e) => [normaliseName(e.name), e.id]),
+			);
 
 			let incomingCharacters: ImportableChar[] = [];
 			let incomingCommunities: Community[] = [];
@@ -674,6 +679,9 @@
 				sites: incomingExpeditions
 					.filter((e) => e.type === 'site' && existingSiteByName.has(normaliseName(e.name)))
 					.map((e) => e.name ?? ''),
+				scenes: incomingExpeditions
+					.filter((e) => e.type === 'scene' && existingSceneByName.has(normaliseName(e.name)))
+					.map((e) => e.name ?? ''),
 			};
 			const totalCollisions =
 				collisions.characters.length +
@@ -681,7 +689,8 @@
 				collisions.npcs.length +
 				collisions.places.length +
 				collisions.journeys.length +
-				collisions.sites.length;
+				collisions.sites.length +
+				collisions.scenes.length;
 
 			let strategy: CollisionStrategy = 'new';
 			if (totalCollisions > 0) {
@@ -836,7 +845,12 @@
 						await importEntityRow(pl, 'places', existingPlaceByName, addPlace, updatePlace);
 				} else if (m.type === 'expeditions') {
 					for (const exp of incomingExpeditions) {
-						const byName = exp.type === 'site' ? existingSiteByName : existingJourneyByName;
+						const byName =
+							exp.type === 'site'
+								? existingSiteByName
+								: exp.type === 'scene'
+									? existingSceneByName
+									: existingJourneyByName;
 						await importEntityRow(exp, 'expeditions', byName, addExpedition, updateExpedition);
 					}
 				} else if (m.type === 'everything') {
@@ -857,7 +871,12 @@
 					for (const pl of incomingPlaces)
 						await importEntityRow(pl, 'places', existingPlaceByName, addPlace, updatePlace);
 					for (const exp of incomingExpeditions) {
-						const byName = exp.type === 'site' ? existingSiteByName : existingJourneyByName;
+						const byName =
+							exp.type === 'site'
+								? existingSiteByName
+								: exp.type === 'scene'
+									? existingSceneByName
+									: existingJourneyByName;
 						await importEntityRow(exp, 'expeditions', byName, addExpedition, updateExpedition);
 					}
 					// Restore bundled maps (markers + backgrounds) from the nested
@@ -1763,10 +1782,11 @@
 			onProgressLink={(track, value) => {
 				if (track === 'combat') {
 					foeAreaRef?.applyMenace(value);
-				} else if (track === 'journey' || track === 'delve') {
+				} else if (track === 'journey' || track === 'delve' || track === 'scene') {
 					expAreaRef?.applyProgress(value);
 				}
 			}}
+			onCountdownLink={(_track, value) => expAreaRef?.applyCountdown(value)}
 			onInitiativeLink={(value, charId) => {
 				const id = charId || activeDiceCtx?.charId;
 				if (id) {

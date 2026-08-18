@@ -64,6 +64,7 @@
 			hasFoe: !!enc,
 			hasJourney: exp?.type === 'journey',
 			hasSite: exp?.type === 'site',
+			hasScene: exp?.type === 'scene',
 			expeditionName: exp?.name,
 			foeName,
 			initiative: activeDiceCtx?.data?.initiative,
@@ -86,6 +87,7 @@
 		const exp = expId ? getExpeditions().find((e) => e.id === expId) : undefined;
 		if (exp?.type === 'journey') result.journey = exp.ticks;
 		if (exp?.type === 'site') result.delve = exp.ticks;
+		if (exp?.type === 'scene') result.scene = exp.ticks;
 
 		// Bonds and Failures are per-character single values
 		const d = activeDiceCtx?.data;

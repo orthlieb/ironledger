@@ -191,7 +191,7 @@ export interface PrefaceFoe {
 
 export interface PrefaceExpedition {
 	name: string;
-	kind: 'journey' | 'site';
+	kind: 'journey' | 'site' | 'scene';
 	difficulty: string;
 	/** Site only. */
 	theme?: string;
@@ -336,7 +336,7 @@ function foeBlock(f: PrefaceFoe): string {
 }
 
 function expeditionBlock(e: PrefaceExpedition): string {
-	const kindWord = e.kind === 'site' ? 'site' : 'journey';
+	const kindWord = e.kind === 'site' ? 'site' : e.kind === 'scene' ? 'scene' : 'journey';
 	const diff = e.difficulty.trim();
 	const lines = [
 		diff ? `**${tidy(e.name)}** — ${diff} ${kindWord}.` : `**${tidy(e.name)}** — ${kindWord}.`,

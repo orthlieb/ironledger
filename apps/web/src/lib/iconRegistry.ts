@@ -170,6 +170,7 @@ const MOVE_CAT_ICON: Record<string, string> = {
 	Relationship: 'farmer',
 	Threat: 'skull-crossbones-solid-full',
 	Delve: 'dungeon-gate',
+	Scene: 'hourglass-clock-solid-full',
 	Rarity: 'gem-solid',
 	Yrt: 'foe-beast',
 	Sample: 'dice-d100-solid',

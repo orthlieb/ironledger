@@ -59,6 +59,7 @@
 		onMoveLink,
 		onOracleLink,
 		onProgressLink,
+		onCountdownLink,
 		onInitiativeLink,
 		onMenaceLink,
 		onVanquishFoe,
@@ -69,6 +70,7 @@
 		onMoveLink?: (moveId: string) => void;
 		onOracleLink?: (oracleKey: string, stat?: string) => void;
 		onProgressLink?: (track: string, value: number) => void;
+		onCountdownLink?: (track: string, value: number) => void;
 		onInitiativeLink?: (value: string, charId: string) => void;
 		onMenaceLink?: (value: number) => void;
 		onVanquishFoe?: () => void;
@@ -605,6 +607,22 @@
 			return;
 		}
 
+		// ---- Countdown links (scene challenge) ----
+		const cdLink = target.closest('.countdown-link') as HTMLElement | null;
+		if (cdLink && !cdLink.closest('.resource-spent')) {
+			e.preventDefault();
+			const track = cdLink.dataset['track'] ?? '';
+			const value = parseInt(cdLink.dataset['value'] ?? '1', 10);
+			const entryId =
+				cdLink.dataset['entryId'] ??
+				cdLink.closest('.log-entry')?.getAttribute('data-entry-id') ??
+				'';
+			if (!track || !value) return;
+			if (entryId) markLinkSpent(entryId, cdLink);
+			onCountdownLink?.(track, value);
+			return;
+		}
+
 		// ---- Initiative links ----
 		const initLink = target.closest('.initiative-link') as HTMLElement | null;
 		if (initLink && !initLink.closest('.resource-spent')) {
@@ -699,6 +717,7 @@
 		'.oracle-link',
 		'.initiative-link',
 		'.progress-link',
+		'.countdown-link',
 		'.debility-link',
 		'.menace-link',
 		'.vanquish-foe-link',
@@ -1413,6 +1432,7 @@
 	.entry-body :global(.oracle-link),
 	.entry-body :global(.initiative-link),
 	.entry-body :global(.progress-link),
+	.entry-body :global(.countdown-link),
 	.entry-body :global(.debility-link),
 	.entry-body :global(.menace-link),
 	.entry-body :global(.vanquish-foe-link),
@@ -1429,6 +1449,7 @@
 	.entry-body :global(.oracle-link:hover),
 	.entry-body :global(.initiative-link:hover),
 	.entry-body :global(.progress-link:hover),
+	.entry-body :global(.countdown-link:hover),
 	.entry-body :global(.debility-link:hover),
 	.entry-body :global(.menace-link:hover),
 	.entry-body :global(.vanquish-foe-link:hover),

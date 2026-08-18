@@ -21,6 +21,7 @@
 		Expedition,
 		Journey,
 		Site,
+		Scene,
 		VowDifficulty,
 		DelveTheme,
 		DelveDomain,
@@ -68,8 +69,10 @@
 	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
 	import { Tabs, Popover, Command } from 'bits-ui';
 	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
+	import CountdownTrack from '$lib/components/CountdownTrack.svelte';
 	const journeyPlaceholderSvg = ENTITY_KIND_META.journey.icon;
 	const sitePlaceholderSvg = ENTITY_KIND_META.site.icon;
+	const scenePlaceholderSvg = ENTITY_KIND_META.scene.icon;
 	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
 	import expeditionsIconSvg from '$icons/Expeditions.svg?raw';
 	import { headingText } from '$lib/fontStore.svelte.js';
@@ -81,6 +84,7 @@
 	// read from, so a tweak lands everywhere at once.
 	const JOURNEY_COLOR = ENTITY_KIND_META.journey.color;
 	const SITE_COLOR = ENTITY_KIND_META.site.color;
+	const SCENE_COLOR = ENTITY_KIND_META.scene.color;
 
 	type ExpTab = 'description' | 'notes' | 'core' | 'denizens';
 	const JOURNEY_TAB_LABELS: { key: ExpTab; label: string }[] = [
@@ -92,6 +96,9 @@
 		{ key: 'notes', label: 'Description' },
 		{ key: 'denizens', label: 'Denizens' },
 	];
+	// Scenes carry everything on one tab — objective, consequences, tracks, and
+	// notes all live in Core (no separate Description tab, no portrait).
+	const SCENE_TAB_LABELS: { key: ExpTab; label: string }[] = [{ key: 'core', label: 'Core' }];
 
 	const DIFFICULTIES: { value: VowDifficulty; label: string }[] = [
 		{ value: 'troublesome', label: 'Troublesome' },
@@ -100,6 +107,9 @@
 		{ value: 'extreme', label: 'Extreme' },
 		{ value: 'epic', label: 'Epic' },
 	];
+	// A Scene's rank guidance (Begin the Scene) only spans the first three;
+	// the creator picker offers just those.
+	const SCENE_DIFFICULTIES = DIFFICULTIES.slice(0, 3);
 
 	let activeExpId = $state<string | null>(null);
 
@@ -117,7 +127,7 @@
 		const onFocus = (e: Event) => {
 			const d = (e as CustomEvent<{ kind: string; id: string }>).detail;
 			if (!d) return;
-			if (d.kind !== 'journey' && d.kind !== 'site') return;
+			if (d.kind !== 'journey' && d.kind !== 'site' && d.kind !== 'scene') return;
 			activeExpId = d.id;
 			activeTab = 'core';
 		};
@@ -163,6 +173,11 @@
 	let newSiteRollDomain = $state(true);
 	let newJourneyName = $state<string>('');
 	let newSiteName = $state<string>('');
+	// New-scene dialog state.
+	let newSceneDialogRef = $state<{ open(): void; close(): void } | null>(null);
+	let newSceneDifficulty = $state<VowDifficulty>('dangerous');
+	let newSceneName = $state<string>('');
+	let newSceneObjective = $state<string>('');
 
 	// Inline-edit state for journeys
 	let editingNotes = $state(false);
@@ -176,11 +191,15 @@
 
 	const activeExp = $derived(expeditions.find((e) => e.id === activeExpId));
 	const activeSite = $derived<Site | null>(activeExp?.type === 'site' ? (activeExp as Site) : null);
+	const activeScene = $derived<Scene | null>(
+		activeExp?.type === 'scene' ? (activeExp as Scene) : null,
+	);
 
 	/** Display name for a spine / combobox — never blank so the popover
 	 *  and the trigger have something to render. */
 	function expDisplayName(e: Expedition): string {
-		return (e.name || `Unnamed ${e.type === 'site' ? 'Site' : 'Journey'}`).trim();
+		const fallback = e.type === 'site' ? 'Site' : e.type === 'scene' ? 'Scene' : 'Journey';
+		return (e.name || `Unnamed ${fallback}`).trim();
 	}
 
 	/** Popover list sorted A→Z. Command doesn't sort — pre-sort here. */
@@ -192,7 +211,8 @@
 	 *  index has loaded. Re-derived when either the index or the active
 	 *  entity changes. */
 	const activeExpMarkers = $derived.by<EntityMarkerRef[]>(() => {
-		if (!activeExp) return [];
+		// Scenes are non-map-spatial (like foes/NPCs) — never carry markers.
+		if (!activeExp || activeExp.type === 'scene') return [];
 		void entityMarkerIndexState.index; // subscribe
 		return markersForEntity(formatEntityId(activeExp.type, activeExp.id));
 	});
@@ -201,7 +221,7 @@
 	 *  expedition, looked up by (ownerKind, ownerId). Undefined until
 	 *  either the summary list loads or the map is get-or-created. */
 	const activeExpMap = $derived.by(() => {
-		if (!activeExp) return undefined;
+		if (!activeExp || activeExp.type === 'scene') return undefined;
 		return mapListState.maps.find(
 			(m) => m.ownerKind === activeExp.type && m.ownerId === activeExp.id,
 		);
@@ -214,7 +234,7 @@
 	 *  the owner already has a background uploaded. */
 	const { openOwnedMap, handleAddMapWithFile, jumpToMarker } = createMapOwnerActions(
 		() =>
-			activeExp
+			activeExp && activeExp.type !== 'scene'
 				? { kind: activeExp.type, id: activeExp.id, name: activeExp.name || 'Untitled' }
 				: null,
 		() => mapDialogRef,
@@ -224,7 +244,13 @@
 	$effect(() => {
 		setActiveExpeditionId(activeExpId ?? '');
 	});
-	const tabLabels = $derived(activeExp?.type === 'site' ? SITE_TAB_LABELS : JOURNEY_TAB_LABELS);
+	const tabLabels = $derived(
+		activeExp?.type === 'site'
+			? SITE_TAB_LABELS
+			: activeExp?.type === 'scene'
+				? SCENE_TAB_LABELS
+				: JOURNEY_TAB_LABELS,
+	);
 
 	function selectExp(id: string) {
 		_save.flush(); // commit pending edit before switching
@@ -254,6 +280,13 @@
 	/** Mark progress on the active expedition. `marks` = number of progress marks (each worth markTicks ticks). */
 	export function applyProgress(marks: number) {
 		if (activeExp) updateExp({ ticks: Math.min(40, activeExp.ticks + marks * markTicks) });
+	}
+	/** Fill `n` segments of the active scene's countdown (clamped 0–4). Backs the
+	 *  `countdown-link` in Scene-Mode move outcomes. No-op off a scene. */
+	export function applyCountdown(n: number) {
+		if (activeScene) {
+			updateExp({ countdownFilled: Math.max(0, Math.min(4, activeScene.countdownFilled + n)) });
+		}
 	}
 	/** Mark the active expedition complete. Sibling to /foe vanquish — no-op
 	 *  if already complete. */
@@ -476,6 +509,31 @@
 		activeTab = 'core';
 	}
 
+	function addScene() {
+		newSceneDifficulty = 'dangerous';
+		newSceneName = '';
+		newSceneObjective = '';
+		newSceneDialogRef?.open();
+	}
+	async function confirmAddScene() {
+		const sc: Scene = {
+			id: crypto.randomUUID(),
+			type: 'scene',
+			name: newSceneName.trim() || 'New Scene',
+			objective: newSceneObjective.trim(),
+			consequences: '',
+			difficulty: newSceneDifficulty,
+			ticks: 0,
+			countdownFilled: 0,
+			notes: '',
+			complete: false,
+			createdAt: Date.now(),
+		};
+		await addExpedition(sc);
+		activeExpId = sc.id;
+		activeTab = 'core';
+	}
+
 	async function confirmDeleteExp() {
 		if (!activeExp) return;
 		const id = activeExp.id;
@@ -585,9 +643,19 @@
 		await addEncounter(enc);
 	}
 
-	const activeColor = $derived(activeExp?.type === 'site' ? SITE_COLOR : JOURNEY_COLOR);
+	const activeColor = $derived(
+		activeExp?.type === 'site'
+			? SITE_COLOR
+			: activeExp?.type === 'scene'
+				? SCENE_COLOR
+				: JOURNEY_COLOR,
+	);
 	const placeholderImg = $derived(
-		activeExp?.type === 'site' ? sitePlaceholderSvg : journeyPlaceholderSvg,
+		activeExp?.type === 'site'
+			? sitePlaceholderSvg
+			: activeExp?.type === 'scene'
+				? scenePlaceholderSvg
+				: journeyPlaceholderSvg,
 	);
 </script>
 
@@ -623,8 +691,17 @@
 								{#each sortedExpeditions as exp (exp.id)}
 									{@const n = expDisplayName(exp)}
 									{@const typeIcon =
-										exp.type === 'site' ? sitePlaceholderSvg : journeyPlaceholderSvg}
-									{@const typeColor = exp.type === 'site' ? SITE_COLOR : JOURNEY_COLOR}
+										exp.type === 'site'
+											? sitePlaceholderSvg
+											: exp.type === 'scene'
+												? scenePlaceholderSvg
+												: journeyPlaceholderSvg}
+									{@const typeColor =
+										exp.type === 'site'
+											? SITE_COLOR
+											: exp.type === 'scene'
+												? SCENE_COLOR
+												: JOURNEY_COLOR}
 									<Command.Item
 										class="mp-cmd-item"
 										value={n}
@@ -681,33 +758,51 @@
 										<span class="mp-cmd-item-name">+ New Site…</span>
 									</Command.Item>
 								{/if}
+								<Command.Item
+									class="mp-cmd-item mp-cmd-item--action"
+									value="+ New Scene"
+									onSelect={() => {
+										expPickerOpen = false;
+										addScene();
+									}}
+								>
+									<span class="mp-cmd-check" aria-hidden="true"></span>
+									<span class="mp-cmd-item-name">+ New Scene…</span>
+								</Command.Item>
 							</Command.List>
 						</Command.Root>
 					</Popover.Content>
 				</Popover.Portal>
 			</Popover.Root>
 			{#if activeExp}
-				{#if activeExpMapEmpty}
-					<label
-						class="btn btn-icon icon-btn ea-hdr-icon-btn"
-						use:tooltip={'Add a map to this ' + activeExp.type}
-						aria-label="Add map"
-					>
-						<span class="ea-hdr-icon-plus" aria-hidden="true">+</span>{@html iconMapSvg}
-						<input type="file" accept="image/*" hidden onchange={handleAddMapWithFile} />
-					</label>
-				{:else}
-					<button
-						class="btn btn-icon icon-btn ea-hdr-icon-btn"
-						onclick={openOwnedMap}
-						use:tooltip={'Open the map for this ' + activeExp.type}
-						aria-label="Open map">{@html iconMapSvg}</button
-					>
+				<!-- Scenes are non-map-spatial — no map affordance. -->
+				{#if activeExp.type !== 'scene'}
+					{#if activeExpMapEmpty}
+						<label
+							class="btn btn-icon icon-btn ea-hdr-icon-btn"
+							use:tooltip={'Add a map to this ' + activeExp.type}
+							aria-label="Add map"
+						>
+							<span class="ea-hdr-icon-plus" aria-hidden="true">+</span>{@html iconMapSvg}
+							<input type="file" accept="image/*" hidden onchange={handleAddMapWithFile} />
+						</label>
+					{:else}
+						<button
+							class="btn btn-icon icon-btn ea-hdr-icon-btn"
+							onclick={openOwnedMap}
+							use:tooltip={'Open the map for this ' + activeExp.type}
+							aria-label="Open map">{@html iconMapSvg}</button
+						>
+					{/if}
 				{/if}
 				<button
 					class="btn btn-icon icon-btn ea-hdr-settings-btn"
 					onclick={() => expOptionsRef?.open()}
-					use:tooltip={activeExp.type === 'site' ? 'Site options' : 'Journey options'}
+					use:tooltip={activeExp.type === 'site'
+						? 'Site options'
+						: activeExp.type === 'scene'
+							? 'Scene options'
+							: 'Journey options'}
 					aria-label="Expedition options">{@html iconGearSvg}</button
 				>
 			{/if}
@@ -792,6 +887,8 @@
 							<div class="ea-pills-row">
 								{#if activeExp.type === 'site'}
 									<span class="ea-badge ea-badge--site">Site</span>
+								{:else if activeExp.type === 'scene'}
+									<span class="ea-badge ea-badge--scene">Scene</span>
 								{:else}
 									<span class="ea-badge ea-badge--type">Journey</span>
 								{/if}
@@ -833,6 +930,33 @@
 									]}
 								/>
 							</div>
+
+							{#if activeScene}
+								<!-- Scene: objective + consequences live on Core (no Description tab). -->
+								<div class="ea-field-row ea-objective-row">
+									<label class="ea-field-label" for="ea-obj-{activeScene.id}">Objective</label>
+									<input
+										id="ea-obj-{activeScene.id}"
+										class="ea-input"
+										type="text"
+										placeholder="What are you trying to accomplish?"
+										value={activeScene.objective}
+										oninput={(e) => updateExp({ objective: (e.target as HTMLInputElement).value })}
+									/>
+								</div>
+								<div class="ea-field-row ea-objective-row">
+									<label class="ea-field-label" for="ea-cons-{activeScene.id}">Consequences</label>
+									<input
+										id="ea-cons-{activeScene.id}"
+										class="ea-input"
+										type="text"
+										placeholder="What happens if you fail or run out of time?"
+										value={activeScene.consequences}
+										oninput={(e) =>
+											updateExp({ consequences: (e.target as HTMLInputElement).value })}
+									/>
+								</div>
+							{/if}
 
 							{#if activeSite}
 								<!-- Theme / Domain / Feature / Danger — combo boxes with
@@ -941,30 +1065,59 @@
 								/>
 							</div>
 
+							<!-- Countdown track (scenes only) — the "running out of time" clock. -->
+							{#if activeScene}
+								<div class="ea-section">
+									<CountdownTrack
+										label="Countdown"
+										color={activeColor}
+										filled={activeScene.countdownFilled}
+										onchange={(_o, n) => updateExp({ countdownFilled: n })}
+									/>
+								</div>
+							{/if}
+
+							{#if activeScene}
+								<!-- Scene notes live on Core too (reusing the markdown notes editor). -->
+								<div class="ea-section ea-scene-notes">
+									<span class="ea-status-label">Notes</span>
+									<MarkdownNotes
+										bind:editing={editingNotes}
+										value={activeScene.notes ?? ''}
+										oninput={(v) => updateExp({ notes: v })}
+										placeholder="Beats, complications, what’s at stake…"
+										rows={5}
+									/>
+								</div>
+							{/if}
+
 							<!-- Map field: one chip per marker referencing this
 							     expedition. Multi-map is supported — the store
 							     returns refs across every map, chips wrap onto
 							     new rows via flex-wrap. Coord (x, y) lives in
-							     the tooltip; chip text is the map name only. -->
-							<div class="ea-section ea-mapref-section">
-								<span class="ea-mapref-label">Map</span>
-								<div class="ea-mapref-chips">
-									{#if activeExpMarkers.length === 0}
-										<span class="ea-mapref-empty">Not on any map</span>
-									{:else}
-										{#each activeExpMarkers as ref (ref.markerId)}
-											<button
-												class="ea-mapref-chip"
-												onclick={() => jumpToMarker(ref)}
-												use:tooltip={`Jump to "${ref.label || '(unlabeled)'}" on ${ref.mapName} — (${fmtCoord(ref.x)}, ${fmtCoord(ref.y)})`}
-												aria-label={`Jump to marker on ${ref.mapName}`}
-											>
-												<span class="ea-mapref-name">{ref.mapName}</span>
-											</button>
-										{/each}
-									{/if}
+							     the tooltip; chip text is the map name only.
+							     Scenes are non-map-spatial, so this is hidden. -->
+							{#if activeExp.type !== 'scene'}
+								<div class="ea-section ea-mapref-section">
+									<span class="ea-mapref-label">Map</span>
+									<div class="ea-mapref-chips">
+										{#if activeExpMarkers.length === 0}
+											<span class="ea-mapref-empty">Not on any map</span>
+										{:else}
+											{#each activeExpMarkers as ref (ref.markerId)}
+												<button
+													class="ea-mapref-chip"
+													onclick={() => jumpToMarker(ref)}
+													use:tooltip={`Jump to "${ref.label || '(unlabeled)'}" on ${ref.mapName} — (${fmtCoord(ref.x)}, ${fmtCoord(ref.y)})`}
+													aria-label={`Jump to marker on ${ref.mapName}`}
+												>
+													<span class="ea-mapref-name">{ref.mapName}</span>
+												</button>
+											{/each}
+										{/if}
+									</div>
 								</div>
-							</div>
+							{/if}
 
 							<!-- ── Denizens — 12-cell d100 grid, foe picker per row. ── -->
 						{:else if activeTab === 'denizens' && activeSite}
@@ -1013,13 +1166,22 @@
 {#if activeExp}
 	<ConfirmDialog
 		bind:this={deleteDialogRef}
-		title={activeExp.type === 'site' ? 'Delete Site' : 'Delete Journey'}
+		title="Delete {activeExp.type === 'site'
+			? 'Site'
+			: activeExp.type === 'scene'
+				? 'Scene'
+				: 'Journey'}"
 		confirmLabel="DELETE"
 		onconfirm={confirmDeleteExp}
 	>
 		<p>
 			Permanently delete <strong
-				>{activeExp.name || (activeExp.type === 'site' ? 'this site' : 'this journey')}</strong
+				>{activeExp.name ||
+					(activeExp.type === 'site'
+						? 'this site'
+						: activeExp.type === 'scene'
+							? 'this scene'
+							: 'this journey')}</strong
 			>? This cannot be undone.
 		</p>
 	</ConfirmDialog>
@@ -1117,6 +1279,42 @@
 		>
 			<span class="nn-check-label">Domain</span>
 		</Checkbox>
+	</div>
+</ConfirmDialog>
+
+<!-- New Scene dialog — name + objective + rank (Troublesome/Dangerous/Formidable). -->
+<ConfirmDialog
+	bind:this={newSceneDialogRef}
+	title="New Scene"
+	draggable
+	confirmLabel="Create"
+	confirmClass="btn-primary"
+	confirmDisabled={!newSceneName.trim()}
+	cancelLabel="Cancel"
+	accentColor={SCENE_COLOR}
+	onconfirm={confirmAddScene}
+>
+	<label class="co-field" style="margin-bottom: 10px;">
+		<span class="co-field-label">Scene name</span>
+		<input class="co-input" type="text" bind:value={newSceneName} placeholder="New Scene" />
+	</label>
+	<label class="co-field" style="margin-bottom: 10px;">
+		<span class="co-field-label">Objective</span>
+		<input
+			class="co-input"
+			type="text"
+			bind:value={newSceneObjective}
+			placeholder="What are you trying to accomplish?"
+		/>
+	</label>
+	<div class="ns-grid">
+		<label class="ns-label" for="nsc-difficulty">Rank</label>
+		<Select
+			id="nsc-difficulty"
+			class="ea-ns-select"
+			bind:value={newSceneDifficulty}
+			options={SCENE_DIFFICULTIES}
+		/>
 	</div>
 </ConfirmDialog>
 
@@ -1420,6 +1618,12 @@
 		letter-spacing: 0.08em;
 		color: var(--text-dimmer);
 	}
+	/* Scene notes on the Core tab — label stacked above the markdown editor. */
+	.ea-scene-notes {
+		display: flex;
+		flex-direction: column;
+		gap: 5px;
+	}
 	/* Type-icon glyph inside the popover items. */
 	:global(.ea-cmd-type-icon svg) {
 		fill: currentColor;
@@ -1530,6 +1734,10 @@
 	.ea-badge--site {
 		background: rgba(68, 114, 208, 0.15);
 		color: #4472d0;
+	}
+	.ea-badge--scene {
+		background: rgba(126, 87, 194, 0.15);
+		color: #7e57c2;
 	}
 	.ea-badge--diff {
 		border-color: transparent;

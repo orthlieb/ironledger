@@ -44,6 +44,7 @@
 		places: [],
 		journeys: [],
 		sites: [],
+		scenes: [],
 	});
 	let strategy = $state<Exclude<CollisionStrategy, 'cancel'>>('new');
 	let resolver: ((s: CollisionStrategy) => void) | null = null;
@@ -86,6 +87,11 @@
 			out.push({
 				label: items.sites.length === 1 ? 'Site' : 'Sites',
 				names: items.sites,
+			});
+		if (items.scenes.length > 0)
+			out.push({
+				label: items.scenes.length === 1 ? 'Scene' : 'Scenes',
+				names: items.scenes,
 			});
 		return out;
 	});

@@ -206,7 +206,7 @@
 				difficulty: exp.difficulty,
 				theme: exp.type === 'site' ? exp.theme : '',
 				domain: exp.type === 'site' ? exp.domain : '',
-				objective: exp.type === 'site' ? exp.objective : '',
+				objective: exp.type === 'site' || exp.type === 'scene' ? exp.objective : '',
 				notes: exp.notes ?? '',
 			}));
 	}

@@ -40,7 +40,7 @@ export interface MoveOverridesFile {
 const CATEGORY_ORDER = [
 	'Adventure',
 	'Journey',
-	'Scene Challenge',
+	'Scene',
 	'Quest',
 	'Fate',
 	'Relationship',

@@ -63,6 +63,8 @@ export function dslActionLink(label: string, ref: DslRef): string | null {
 			return `<a class="resource-link" data-resource="${attr(path)}" data-value="${attr(args.value ?? '')}">${L}</a>`;
 		case 'progress':
 			return `<a class="progress-link" data-track="${attr(path)}" data-value="${attr(args.value ?? '')}">${L}</a>`;
+		case 'countdown':
+			return `<a class="countdown-link" data-track="${attr(path)}" data-value="${attr(args.value ?? '')}">${L}</a>`;
 		case 'debility':
 			return `<a class="debility-link" data-debility="${attr(path)}" data-value="${attr(args.value ?? '')}">${L}</a>`;
 		case 'initiative':
