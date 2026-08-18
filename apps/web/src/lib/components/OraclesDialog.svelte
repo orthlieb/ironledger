@@ -400,6 +400,16 @@
 							{@html oracleCategoryIcon(selectedOracle.category)}
 						</span>
 					{/snippet}
+					{#snippet trailing()}
+						{#if selectedOracle.category}
+							<span
+								class="od-category-badge"
+								style:--ccolor={categoryColor(selectedOracle.category)}
+							>
+								{selectedOracle.category}
+							</span>
+						{/if}
+					{/snippet}
 				</DialogHeader>
 
 				<!-- Detail body -->
@@ -827,6 +837,25 @@
 		width: 16px;
 		height: 16px;
 		fill: currentColor;
+	}
+
+	/* Detail-header trailing pill — the oracle category, tinted with the
+	   category colour. Mirrors MovesDialog's `.md-category-badge`. */
+	.od-category-badge {
+		font-family: var(--font-ui);
+		font-size: 0.6rem;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--ccolor, var(--text-dimmer));
+		border: 1px solid color-mix(in srgb, var(--ccolor, var(--border)) 40%, transparent);
+		border-radius: 10px;
+		padding: 2px 7px;
+		flex-shrink: 0;
+		white-space: nowrap;
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
 	}
 
 	/* ── Detail view ─────────────────────────────────────────────────────── */
