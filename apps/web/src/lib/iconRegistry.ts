@@ -160,13 +160,13 @@ export function oracleCategoryIcon(category: string | undefined | null): string 
 // ---------------------------------------------------------------------------
 
 const MOVE_CAT_ICON: Record<string, string> = {
-	Adventure: 'compass-rose',
+	Adventure: 'Adventure',
 	Combat: 'sword-solid-full',
 	Journey: 'journey',
 	Suffer: 'heart-pulse-solid-full',
 	Fate: 'scissors-thread',
 	Failure: 'face-head-bandage',
-	Quest: 'link-solid-full',
+	Quest: 'compass-rose',
 	Relationship: 'farmer',
 	Threat: 'skull-crossbones-solid-full',
 	Delve: 'dungeon-gate',
