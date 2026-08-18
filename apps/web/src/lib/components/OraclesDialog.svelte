@@ -728,8 +728,14 @@
 	/* ── Tile grid ───────────────────────────────────────────────────────── */
 	:global(.od-grid) {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+		grid-template-columns: repeat(3, minmax(0, 1fr));
 		gap: 8px;
+	}
+	/* Drop to 2 columns on narrow / mobile widths so tiles stay legible. */
+	@media (max-width: 560px) {
+		:global(.od-grid) {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
 	}
 	:global(.od-tile) {
 		display: flex;

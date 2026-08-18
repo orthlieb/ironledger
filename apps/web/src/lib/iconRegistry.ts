@@ -121,10 +121,9 @@ export function natureIcon(nature: FoeNature): string {
 
 const ORACLE_CAT_ICON: Record<string, string> = {
 	Core: 'crystal-ball',
-	Location: 'location',
+	Location: 'location-dot',
 	Character: 'Characters',
 	Settlement: 'village',
-	'Delve Site': 'dungeon-gate',
 	Delve: 'dungeon-gate',
 	Threat: 'skull-crossbones-solid-full',
 	Move: 'person-running-solid',
