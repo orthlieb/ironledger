@@ -92,8 +92,10 @@ describe('extensions.manifest.json', () => {
 
     expect(assetData.flatMap((f) => f.assets)).toHaveLength(90);
     expect(assetData.flatMap((f) => f.rarities ?? [])).toHaveLength(63);
-    // 49 base/delve/yrt moves + 2 lodestar (Follow a Path, alternate End the Fight).
-    expect(moveData.flatMap((f) => f.moves)).toHaveLength(51);
+    // 49 base/delve/yrt moves + 6 lodestar (Follow a Path, alternate End the Fight,
+    // and four Scene moves: Begin the Scene, Face Danger, Secure an Advantage,
+    // Finish the Scene) = 55.
+    expect(moveData.flatMap((f) => f.moves)).toHaveLength(55);
     // 25 base + 32 delve + 13 yrt + 24 lodestar = 94 (sample is dev-only, stripped
     // from `core`). Combat set (base Combat: Tactic, delve Combat: Event / Event
     // Method / Event Target, lodestar Combat: Battleground) + Story: Region (lodestar)
