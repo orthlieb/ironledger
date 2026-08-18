@@ -88,7 +88,9 @@
 		const id = getActiveFoeId();
 		if (!id) return null;
 		const enc = getEncounters().find((e) => e.id === id);
-		if (!enc) return null;
+		// A vanquished encounter is done — no active-foe chip. The user can
+		// reactivate it (/foe active) or set a different one.
+		if (!enc || enc.vanquished) return null;
 		const def = findFoe(enc.foeId);
 		const natureColor = def ? (FOE_NATURE_COLORS[def.nature] ?? '#7A9AB8') : '#7A9AB8';
 		return { name: enc.customName || def?.name || 'Foe', natureColor };
@@ -118,7 +120,10 @@
 		const expId = getActiveExpeditionId();
 		const encs = getEncounters();
 		const exps = getExpeditions();
-		const enc = foeId ? encs.find((e) => e.id === foeId) : undefined;
+		// A vanquished encounter is done — treat it as no active foe so
+		// hasFoe / foeName / foeHarm all read absent, matching the chip.
+		// Foe-gated move autocomplete disappears at the same instant.
+		const enc = foeId ? encs.find((e) => e.id === foeId && !e.vanquished) : undefined;
 		const exp = expId ? exps.find((e) => e.id === expId) : undefined;
 		const foeDef = enc ? findFoe(enc.foeId) : undefined;
 		const foeName = enc ? enc.customName?.trim() || foeDef?.name || enc.foeId : undefined;
