@@ -195,12 +195,30 @@ export function updateLogEntryNote(entryId: string, note: string): void {
 /**
  * Enrich outcome HTML with entry-id and char-id on interactive links
  * so LogPanel click delegation can identify the entry and character.
+ *
+ * When `expId` is given (the expedition active at roll time), the
+ * expedition-targeting links — `progress-link` and `countdown-link` — also get
+ * `data-exp-id`, so clicking them later marks the expedition the entry was
+ * rolled against, not whichever one happens to be active now. Character links
+ * already bind this way via `data-char-id`.
  */
-export function enrichOutcomeLinks(html: string, entryId: string, charId: string): string {
-	return html.replace(
+export function enrichOutcomeLinks(
+	html: string,
+	entryId: string,
+	charId: string,
+	expId = '',
+): string {
+	let out = html.replace(
 		/<a\s+class="(resource-link|debility-link|progress-link|countdown-link|initiative-link|menace-link|vanquish-foe-link|reset-track-link)"/g,
 		`<a data-entry-id="${entryId}" data-char-id="${charId}" class="$1"`,
 	);
+	if (expId) {
+		out = out.replace(
+			/(<a data-entry-id="[^"]*" data-char-id="[^"]*") class="(progress-link|countdown-link)"/g,
+			`$1 data-exp-id="${expId}" class="$2"`,
+		);
+	}
+	return out;
 }
 
 // ---------------------------------------------------------------------------

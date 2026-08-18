@@ -277,16 +277,34 @@
 	// confirms the choice (matches the v1 confirm flow). The dialog reads
 	// activeSite, so we have to wait one tick after activeExpId changes
 	// before opening, or activeSite will still be stale.
-	/** Mark progress on the active expedition. `marks` = number of progress marks (each worth markTicks ticks). */
-	export function applyProgress(marks: number) {
-		if (activeExp) updateExp({ ticks: Math.min(40, activeExp.ticks + marks * markTicks) });
+	/** Resolve a log-link target: the expedition the entry references (`expId`,
+	 *  from the entry's roll-time context), else the active one. */
+	function resolveTargetExp(expId?: string): Expedition | undefined {
+		return expId ? expeditions.find((e) => e.id === expId) : activeExp;
 	}
-	/** Fill `n` segments of the active scene's countdown (clamped 0–4). Backs the
-	 *  `countdown-link` in Scene-Mode move outcomes. No-op off a scene. */
-	export function applyCountdown(n: number) {
-		if (activeScene) {
-			updateExp({ countdownFilled: Math.max(0, Math.min(4, activeScene.countdownFilled + n)) });
-		}
+	/** Mutate one expedition (active or not) and schedule a save. The reactive
+	 *  array holds the object by reference, so this updates the card when that
+	 *  expedition is shown and persists the whole set. */
+	function commitExpChange(exp: Expedition, patch: Partial<Expedition>) {
+		Object.assign(exp as object, patch);
+		_save.schedule(() =>
+			persistExpeditionsNow().catch((err) => console.error('[v2] expedition save failed', err)),
+		);
+	}
+	/** Mark progress on the referenced expedition (or the active one). `marks` =
+	 *  number of progress marks, each worth that expedition's rank-based ticks. */
+	export function applyProgress(marks: number, expId?: string) {
+		const exp = resolveTargetExp(expId);
+		if (!exp) return;
+		const ticks = EXPEDITION_MARK_TICKS[exp.difficulty];
+		commitExpChange(exp, { ticks: Math.min(40, exp.ticks + marks * ticks) });
+	}
+	/** Fill `n` segments of the referenced scene's countdown (clamped 0–4). Backs
+	 *  the `countdown-link` in Scene-Mode move outcomes. No-op off a scene. */
+	export function applyCountdown(n: number, expId?: string) {
+		const exp = resolveTargetExp(expId);
+		if (exp?.type !== 'scene') return;
+		commitExpChange(exp, { countdownFilled: Math.max(0, Math.min(4, exp.countdownFilled + n)) });
 	}
 	/** Mark the active expedition complete. Sibling to /foe vanquish — no-op
 	 *  if already complete. */
