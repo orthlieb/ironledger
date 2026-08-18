@@ -32,7 +32,7 @@
 	import { EXPEDITION_MARK_TICKS, DENIZEN_CELLS, DELVE_THEMES, DELVE_DOMAINS } from '$lib/types.js';
 	import Select from '$lib/components/Select.svelte';
 	import { difficultyBadgeStyle } from '$lib/badgeStyles.js';
-	import { isDelveEnabled } from '$lib/expansionStore.svelte.js';
+	import { isDelveEnabled, isLodestarEnabled } from '$lib/expansionStore.svelte.js';
 	import { setActiveExpeditionId } from '$lib/activeContext.svelte.js';
 	import { createDebouncedSave } from '$lib/debouncedSave.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
@@ -776,17 +776,24 @@
 										<span class="mp-cmd-item-name">+ New Site…</span>
 									</Command.Item>
 								{/if}
-								<Command.Item
-									class="mp-cmd-item mp-cmd-item--action"
-									value="+ New Scene"
-									onSelect={() => {
-										expPickerOpen = false;
-										addScene();
-									}}
-								>
-									<span class="mp-cmd-check" aria-hidden="true"></span>
-									<span class="mp-cmd-item-name">+ New Scene…</span>
-								</Command.Item>
+								<!-- Scenes are gated on Lodestar (which supplies the four
+								     Scene moves — Begin the Scene / Face Danger / Secure an
+								     Advantage / Finish the Scene). Existing scenes keep
+								     rendering when Lodestar is later disabled; we only
+								     hide the create affordance. -->
+								{#if isLodestarEnabled()}
+									<Command.Item
+										class="mp-cmd-item mp-cmd-item--action"
+										value="+ New Scene"
+										onSelect={() => {
+											expPickerOpen = false;
+											addScene();
+										}}
+									>
+										<span class="mp-cmd-check" aria-hidden="true"></span>
+										<span class="mp-cmd-item-name">+ New Scene…</span>
+									</Command.Item>
+								{/if}
 							</Command.List>
 						</Command.Root>
 					</Popover.Content>

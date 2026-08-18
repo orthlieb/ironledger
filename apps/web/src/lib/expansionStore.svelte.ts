@@ -95,6 +95,9 @@ export function isDelveEnabled(): boolean {
 export function isYrtEnabled(): boolean {
 	return isSourceEnabled('yrt');
 }
+export function isLodestarEnabled(): boolean {
+	return isSourceEnabled('lodestar');
+}
 
 // ---------------------------------------------------------------------------
 // Setters — persist to localStorage and update reactive state
