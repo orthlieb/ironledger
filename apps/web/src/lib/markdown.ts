@@ -9,10 +9,11 @@
 //   - item         → <ul><li>
 //   * item         → <ul><li>
 //   1. item        → <ol><li>
+//   > quote        → <blockquote> (consecutive lines join with <br>)
 //   **bold**       → <strong>
 //   *italic*       → <em>
 //   _italic_       → <em>
-//   blank line     → paragraph break (closes any open list)
+//   blank line     → paragraph break (closes any open list / blockquote)
 // =============================================================================
 
 /** Escape HTML special characters in plain text nodes. */
@@ -55,11 +56,18 @@ export function renderNote(text: string): string {
 	const parts: string[] = [];
 
 	let listTag: 'ul' | 'ol' | null = null;
+	let inQuote = false;
 
 	function closeList() {
 		if (listTag) {
 			parts.push(`</${listTag}>`);
 			listTag = null;
+		}
+	}
+	function closeQuote() {
+		if (inQuote) {
+			parts.push('</blockquote>');
+			inQuote = false;
 		}
 	}
 
@@ -69,12 +77,15 @@ export function renderNote(text: string): string {
 		const isBullet = /^[-*]\s+/.test(line);
 		const isOrdered = /^\d+\.\s+/.test(line);
 		const heading = line.match(/^(#{1,3})\s+(.*)/);
+		const quote = line.match(/^>\s?(.*)/);
 
 		if (heading) {
 			closeList();
+			closeQuote();
 			const tag = ({ 1: 'h3', 2: 'h4', 3: 'h5' } as Record<number, string>)[heading[1].length];
 			parts.push(`<${tag}>${applyInline(heading[2])}</${tag}>`);
 		} else if (isBullet) {
+			closeQuote();
 			if (listTag !== 'ul') {
 				closeList();
 				parts.push('<ul>');
@@ -82,21 +93,35 @@ export function renderNote(text: string): string {
 			}
 			parts.push(`<li>${applyInline(line.replace(/^[-*]\s+/, ''))}</li>`);
 		} else if (isOrdered) {
+			closeQuote();
 			if (listTag !== 'ol') {
 				closeList();
 				parts.push('<ol>');
 				listTag = 'ol';
 			}
 			parts.push(`<li>${applyInline(line.replace(/^\d+\.\s+/, ''))}</li>`);
+		} else if (quote) {
+			// Consecutive `>` lines share one blockquote; join them with <br>.
+			closeList();
+			if (!inQuote) {
+				parts.push('<blockquote>');
+				inQuote = true;
+			} else {
+				parts.push('<br>');
+			}
+			parts.push(applyInline(quote[1]));
 		} else if (line === '') {
 			closeList();
+			closeQuote();
 			parts.push('<br>');
 		} else {
 			closeList();
+			closeQuote();
 			parts.push(`<p>${applyInline(line)}</p>`);
 		}
 	}
 
 	closeList();
+	closeQuote();
 	return parts.join('');
 }

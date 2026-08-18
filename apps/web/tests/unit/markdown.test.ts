@@ -80,6 +80,42 @@ describe('renderNote — lists', () => {
 	});
 });
 
+describe('renderNote — blockquotes', () => {
+	it('wraps a single > line in a blockquote', () => {
+		expect(renderNote('> a quiet warning')).toBe('<blockquote>a quiet warning</blockquote>');
+	});
+
+	it('joins consecutive > lines with <br> in one blockquote', () => {
+		expect(renderNote('> line one\n> line two')).toBe(
+			'<blockquote>line one<br>line two</blockquote>',
+		);
+	});
+
+	it('applies inline formatting inside a blockquote', () => {
+		expect(renderNote('> take **heart**')).toBe(
+			'<blockquote>take <strong>heart</strong></blockquote>',
+		);
+	});
+
+	it('tolerates a > with no trailing space', () => {
+		expect(renderNote('>tight')).toBe('<blockquote>tight</blockquote>');
+	});
+
+	it('a blank line closes the blockquote', () => {
+		expect(renderNote('> quote\n\nafter')).toBe('<blockquote>quote</blockquote><br><p>after</p>');
+	});
+
+	it('a paragraph after a quote closes the blockquote', () => {
+		expect(renderNote('> quote\nplain')).toBe('<blockquote>quote</blockquote><p>plain</p>');
+	});
+
+	it('a list after a quote closes the blockquote', () => {
+		expect(renderNote('> quote\n- item')).toBe(
+			'<blockquote>quote</blockquote><ul><li>item</li></ul>',
+		);
+	});
+});
+
 describe('renderNote — XSS / escaping', () => {
 	it('escapes raw HTML inside paragraphs', () => {
 		expect(renderNote('<script>alert(1)</script>')).toBe(

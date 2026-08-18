@@ -1057,3 +1057,18 @@ dialog label {
 	overflow: auto;
 	position: relative;
 }
+
+/* --------------------------------------------------------------------------
+   Blockquotes — emitted only by the mini-markdown renderer
+   (renderNote / renderRich). The app has no hand-authored <blockquote>s, so
+   this single global rule styles every markdown-rendered quote consistently
+   across notes, the session log, moves, and assets. Emphasis stays with the
+   markdown (**bold** / *italic*), so the quote is set off by the rule + tint,
+   not a blanket italic.
+   -------------------------------------------------------------------------- */
+blockquote {
+	margin: 6px 0;
+	padding: 3px 0 3px 12px;
+	border-left: 3px solid var(--border-mid);
+	color: var(--text-muted);
+}
