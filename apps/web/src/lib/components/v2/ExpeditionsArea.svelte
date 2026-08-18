@@ -96,10 +96,9 @@
 		{ key: 'notes', label: 'Description' },
 		{ key: 'denizens', label: 'Denizens' },
 	];
-	const SCENE_TAB_LABELS: { key: ExpTab; label: string }[] = [
-		{ key: 'core', label: 'Core' },
-		{ key: 'description', label: 'Description' },
-	];
+	// Scenes carry everything on one tab — objective, consequences, tracks, and
+	// notes all live in Core (no separate Description tab, no portrait).
+	const SCENE_TAB_LABELS: { key: ExpTab; label: string }[] = [{ key: 'core', label: 'Core' }];
 
 	const DIFFICULTIES: { value: VowDifficulty; label: string }[] = [
 		{ value: 'troublesome', label: 'Troublesome' },
@@ -858,30 +857,6 @@
 										oninput={(e) => updateExp({ objective: (e.target as HTMLInputElement).value })}
 									/>
 								</div>
-							{:else if activeScene}
-								<div class="ea-field-row ea-objective-row">
-									<label class="ea-field-label" for="ea-obj-{activeScene.id}">Objective</label>
-									<input
-										id="ea-obj-{activeScene.id}"
-										class="ea-input"
-										type="text"
-										placeholder="What are you trying to accomplish?"
-										value={activeScene.objective}
-										oninput={(e) => updateExp({ objective: (e.target as HTMLInputElement).value })}
-									/>
-								</div>
-								<div class="ea-field-row ea-objective-row">
-									<label class="ea-field-label" for="ea-cons-{activeScene.id}">Consequences</label>
-									<input
-										id="ea-cons-{activeScene.id}"
-										class="ea-input"
-										type="text"
-										placeholder="What happens if you fail or run out of time?"
-										value={activeScene.consequences}
-										oninput={(e) =>
-											updateExp({ consequences: (e.target as HTMLInputElement).value })}
-									/>
-								</div>
 							{/if}
 							<div class="ea-desc-section" class:ea-desc-section--editing={editingNotes}>
 								<!-- Portrait floats right and the prose wraps around it; it's
@@ -955,6 +930,33 @@
 									]}
 								/>
 							</div>
+
+							{#if activeScene}
+								<!-- Scene: objective + consequences live on Core (no Description tab). -->
+								<div class="ea-field-row ea-objective-row">
+									<label class="ea-field-label" for="ea-obj-{activeScene.id}">Objective</label>
+									<input
+										id="ea-obj-{activeScene.id}"
+										class="ea-input"
+										type="text"
+										placeholder="What are you trying to accomplish?"
+										value={activeScene.objective}
+										oninput={(e) => updateExp({ objective: (e.target as HTMLInputElement).value })}
+									/>
+								</div>
+								<div class="ea-field-row ea-objective-row">
+									<label class="ea-field-label" for="ea-cons-{activeScene.id}">Consequences</label>
+									<input
+										id="ea-cons-{activeScene.id}"
+										class="ea-input"
+										type="text"
+										placeholder="What happens if you fail or run out of time?"
+										value={activeScene.consequences}
+										oninput={(e) =>
+											updateExp({ consequences: (e.target as HTMLInputElement).value })}
+									/>
+								</div>
+							{/if}
 
 							{#if activeSite}
 								<!-- Theme / Domain / Feature / Danger — combo boxes with
@@ -1071,6 +1073,20 @@
 										color={activeColor}
 										filled={activeScene.countdownFilled}
 										onchange={(_o, n) => updateExp({ countdownFilled: n })}
+									/>
+								</div>
+							{/if}
+
+							{#if activeScene}
+								<!-- Scene notes live on Core too (reusing the markdown notes editor). -->
+								<div class="ea-section ea-scene-notes">
+									<span class="ea-status-label">Notes</span>
+									<MarkdownNotes
+										bind:editing={editingNotes}
+										value={activeScene.notes ?? ''}
+										oninput={(v) => updateExp({ notes: v })}
+										placeholder="Beats, complications, what’s at stake…"
+										rows={5}
 									/>
 								</div>
 							{/if}
@@ -1601,6 +1617,12 @@
 		text-transform: uppercase;
 		letter-spacing: 0.08em;
 		color: var(--text-dimmer);
+	}
+	/* Scene notes on the Core tab — label stacked above the markdown editor. */
+	.ea-scene-notes {
+		display: flex;
+		flex-direction: column;
+		gap: 5px;
 	}
 	/* Type-icon glyph inside the popover items. */
 	:global(.ea-cmd-type-icon svg) {
