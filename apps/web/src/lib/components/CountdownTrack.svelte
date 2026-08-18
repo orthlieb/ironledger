@@ -21,7 +21,7 @@
 	import hgEnd from '$icons/hourglass-end.svg?raw';
 
 	/** Draining stages, one per segment (only used for the canonical 4-box track). */
-	const HOURGLASS = [hgStart, hg75, hg25, hgEnd];
+	const HOURGLASS = [hgStart, hg25, hg75, hgEnd];
 
 	let {
 		label,
