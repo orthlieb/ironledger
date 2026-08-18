@@ -156,8 +156,11 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		await expect(
 			page.locator('.moves-dialog .md-tile-name', { hasText: /^Discover a Site$/ }),
 		).toHaveCount(0, { timeout: 5_000 });
+		// Lodestar ships its own "Face Danger" (Scene category) alongside the
+		// base Adventure move — either being visible proves the base + non-Delve
+		// moves still render, so .first() disambiguates and keeps the assertion.
 		await expect(
-			page.locator('.moves-dialog .md-tile-name', { hasText: /^Face Danger$/ }),
+			page.locator('.moves-dialog .md-tile-name', { hasText: /^Face Danger$/ }).first(),
 		).toBeVisible({ timeout: 5_000 });
 	});
 

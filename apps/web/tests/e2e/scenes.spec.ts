@@ -142,10 +142,33 @@ test.describe('Expeditions area (v2) — Scene Challenge', () => {
 		await expect(objective).toHaveValue('Initial goal');
 		await expect(consequences).toHaveValue('');
 
+		// ExpeditionsArea auto-saves through a 1.5 s trailing debounce, and each
+		// updateExp() call flushes the *previous* pending save (via the effect's
+		// teardown) — so back-to-back fills leave only the last edit still on the
+		// timer at reload time. Wait for the PATCH the second fill kicks off to
+		// hit the wire before we navigate away.
+		const pendingPatch = page.waitForResponse(
+			(r) =>
+				r.url().includes('/api/session/expeditions/') && r.request().method() === 'PATCH' && r.ok(),
+			{ timeout: 5_000 },
+		);
 		await objective.fill('Convince the elder');
 		await consequences.fill('The village turns on us');
-		// Blur so the debounced save flushes before we reload.
 		await consequences.blur();
+		await pendingPatch;
+		// Belt-and-braces: give the second (still-debounced) save its 1.5 s and
+		// wait for its PATCH to land too. Guarded so a coalesced single PATCH
+		// doesn't hang the test.
+		await page
+			.waitForResponse(
+				(r) =>
+					r.url().includes('/api/session/expeditions/') &&
+					r.request().method() === 'PATCH' &&
+					r.ok(),
+				{ timeout: 3_000 },
+			)
+			.catch(() => {});
+		await page.waitForLoadState('networkidle', { timeout: 5_000 }).catch(() => {});
 
 		await page.reload();
 		await waitForExpeditionsLoaded(page);

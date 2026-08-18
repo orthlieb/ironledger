@@ -74,10 +74,14 @@ test.describe('Adventure-action dialogs (v2)', () => {
 		// Click an always-enabled move by name — the first tile in DOM order can be a
 		// prerequisite-gated move (e.g. Check Your Gear) rendered dimmed, and clicking
 		// a dimmed tile is a deliberate no-op that never opens the detail view.
+		// Lodestar ships its own "Face Danger" (Scene category) alongside the base
+		// Adventure move; both are always-enabled — .first() picks the Adventure
+		// tile (DOM order follows CATEGORY_ORDER, Adventure before Scene).
 		await page
 			.locator('.moves-dialog .md-tile', {
 				has: page.locator('.md-tile-name', { hasText: /^Face Danger$/ }),
 			})
+			.first()
 			.click();
 		await expect(page.locator('.moves-dialog .md-body--detail')).toBeVisible({ timeout: 3_000 });
 		await expect(

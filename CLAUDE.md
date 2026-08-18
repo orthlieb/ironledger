@@ -1,5 +1,22 @@
 # Repo notes for Claude
 
+## Standing order — fix all failing tests before shipping
+
+If `pnpm lint`, `npm run format:check`, or any CI job on your target
+branch is red, fix **every** failure before opening or merging a PR —
+even the ones you didn't introduce. Pre-existing drift (stale count
+assertions, selectors invalidated by a prior refactor, etc.) counts
+as failure to fix, not context to explain away. Bundle drive-by CI
+fixes into the same branch as your feature work when the diff stays
+scoped; otherwise open a dedicated `fix(ci): …` branch. Reporting a
+red CI and stopping is not an acceptable end state.
+
+The one exception is a failure whose root cause is genuinely out of
+scope — a broken third-party service, a flaky test that reproduces
+only on CI hardware you can't inspect, an infrastructure regression.
+In those cases: say so explicitly, name the failing job + line, and
+ask what to do. Silence is not an option.
+
 ## App-level scroll architecture
 
 The viewport itself (`html` and `body`) **never** scrolls. `app.css` sets
