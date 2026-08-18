@@ -121,10 +121,9 @@ export function natureIcon(nature: FoeNature): string {
 
 const ORACLE_CAT_ICON: Record<string, string> = {
 	Core: 'crystal-ball',
-	Location: 'location',
+	Location: 'location-dot',
 	Character: 'Characters',
 	Settlement: 'village',
-	'Delve Site': 'dungeon-gate',
 	Delve: 'dungeon-gate',
 	Threat: 'skull-crossbones-solid-full',
 	Move: 'person-running-solid',
@@ -161,13 +160,13 @@ export function oracleCategoryIcon(category: string | undefined | null): string 
 // ---------------------------------------------------------------------------
 
 const MOVE_CAT_ICON: Record<string, string> = {
-	Adventure: 'compass-rose',
+	Adventure: 'Adventure',
 	Combat: 'sword-solid-full',
 	Journey: 'journey',
 	Suffer: 'heart-pulse-solid-full',
-	Fate: 'star-solid-full',
-	Failure: 'link-broken-solid-full',
-	Quest: 'sack-dollar-solid-full',
+	Fate: 'scissors-thread',
+	Failure: 'face-head-bandage',
+	Quest: 'compass-rose',
 	Relationship: 'farmer',
 	Threat: 'skull-crossbones-solid-full',
 	Delve: 'dungeon-gate',

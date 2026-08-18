@@ -1,7 +1,7 @@
 {
   "key": "siteNameDetail",
   "title": "Delve: Site Name – Detail",
-  "category": "Delve Site",
+  "category": "Delve",
   "selectLabel": "Delve: Site Name – Detail",
   "description": "Roll for the [Detail] blank when generating a Delve site name.",
   "source": "delve",
