@@ -1,6 +1,6 @@
 {
   "key": "yrtCityTownLocation",
-  "title": "Settlement Landmark",
+  "title": "Location: Settlement Landmark",
   "category": "Location",
   "selectLabel": "Settlement Landmark",
   "description": "Use this oracle to identify a point-of-interest inside a settlement, town, or city.",

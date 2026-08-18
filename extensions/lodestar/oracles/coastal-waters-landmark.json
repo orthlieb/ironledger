@@ -1,6 +1,6 @@
 {
   "key": "coastalWatersLandmark",
-  "title": "Coastal Waters Landmark",
+  "title": "Location: Coastal Waters Landmark",
   "category": "Location",
   "selectLabel": "Coastal Waters Landmark",
   "description": "Roll when travelling coastal waters to generate a point of interest, or when you need to answer a question about the coast and its landmarks. Replaces the base Coastal Waters Location oracle when Lodestar is enabled.",

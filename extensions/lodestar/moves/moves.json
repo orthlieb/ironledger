@@ -62,7 +62,7 @@
           "eq": 1
         }
       ],
-      "logTitle": "{character} begins the scene"
+      "logTitle": "{character} begins a scene"
     },
     {
       "id": "move/scene-face-danger",
@@ -90,7 +90,7 @@
           "eq": 1
         }
       ],
-      "logTitle": "{character} faces danger in the scene using {stat}"
+      "logTitle": "{character} faces danger in {expedition} using {stat}"
     },
     {
       "id": "move/scene-secure-an-advantage",
@@ -118,7 +118,7 @@
           "eq": 1
         }
       ],
-      "logTitle": "{character} secures an advantage in the scene using {stat}"
+      "logTitle": "{character} secures an advantage in {expedition} using {stat}"
     },
     {
       "id": "move/finish-the-scene",
@@ -138,7 +138,7 @@
           "eq": 1
         }
       ],
-      "logTitle": "{character} finishes the scene"
+      "logTitle": "{character} finishes {expedition}"
     }
   ]
 }
