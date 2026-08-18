@@ -182,8 +182,8 @@
 	let expAreaRef = $state<{
 		openChangeThemeForExp(expId: string): void;
 		openChangeDomainForExp(expId: string): void;
-		applyProgress(marks: number): void;
-		applyCountdown(n: number): void;
+		applyProgress(marks: number, expId?: string): void;
+		applyCountdown(n: number, expId?: string): void;
 		completeActiveExpedition(): void;
 		reactivateActiveExpedition(): void;
 	} | null>(null);
@@ -1779,14 +1779,14 @@
 				document.dispatchEvent(
 					new CustomEvent('ironledger:open-oracle', { detail: { key, stat } }),
 				)}
-			onProgressLink={(track, value) => {
+			onProgressLink={(track, value, expId) => {
 				if (track === 'combat') {
 					foeAreaRef?.applyMenace(value);
 				} else if (track === 'journey' || track === 'delve' || track === 'scene') {
-					expAreaRef?.applyProgress(value);
+					expAreaRef?.applyProgress(value, expId);
 				}
 			}}
-			onCountdownLink={(_track, value) => expAreaRef?.applyCountdown(value)}
+			onCountdownLink={(_track, value, expId) => expAreaRef?.applyCountdown(value, expId)}
 			onInitiativeLink={(value, charId) => {
 				const id = charId || activeDiceCtx?.charId;
 				if (id) {

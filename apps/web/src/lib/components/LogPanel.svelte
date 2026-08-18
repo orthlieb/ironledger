@@ -69,8 +69,8 @@
 		ctx?: DiceCtx | null;
 		onMoveLink?: (moveId: string) => void;
 		onOracleLink?: (oracleKey: string, stat?: string) => void;
-		onProgressLink?: (track: string, value: number) => void;
-		onCountdownLink?: (track: string, value: number) => void;
+		onProgressLink?: (track: string, value: number, expId?: string) => void;
+		onCountdownLink?: (track: string, value: number, expId?: string) => void;
 		onInitiativeLink?: (value: string, charId: string) => void;
 		onMenaceLink?: (value: number) => void;
 		onVanquishFoe?: () => void;
@@ -597,13 +597,14 @@
 			e.preventDefault();
 			const track = progLink.dataset['track'] ?? '';
 			const value = parseInt(progLink.dataset['value'] ?? '1', 10);
+			const expId = progLink.dataset['expId'] ?? '';
 			const entryId =
 				progLink.dataset['entryId'] ??
 				progLink.closest('.log-entry')?.getAttribute('data-entry-id') ??
 				'';
 			if (!track || !value) return;
 			if (entryId) markLinkSpent(entryId, progLink);
-			onProgressLink?.(track, value);
+			onProgressLink?.(track, value, expId);
 			return;
 		}
 
@@ -613,13 +614,14 @@
 			e.preventDefault();
 			const track = cdLink.dataset['track'] ?? '';
 			const value = parseInt(cdLink.dataset['value'] ?? '1', 10);
+			const expId = cdLink.dataset['expId'] ?? '';
 			const entryId =
 				cdLink.dataset['entryId'] ??
 				cdLink.closest('.log-entry')?.getAttribute('data-entry-id') ??
 				'';
 			if (!track || !value) return;
 			if (entryId) markLinkSpent(entryId, cdLink);
-			onCountdownLink?.(track, value);
+			onCountdownLink?.(track, value, expId);
 			return;
 		}
 

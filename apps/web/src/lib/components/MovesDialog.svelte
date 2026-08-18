@@ -628,7 +628,7 @@
 					`$1 data-stat="${stat}">$2 (${statLabel} column)</a>`,
 				);
 			}
-			outcomeHtml = enrichOutcomeLinks(outcomeHtml, entryId, ctx.charId);
+			outcomeHtml = enrichOutcomeLinks(outcomeHtml, entryId, ctx.charId, getActiveExpeditionId());
 			parts.push(`<div class="move-outcome">${outcomeHtml}</div>`);
 		}
 
@@ -760,7 +760,8 @@
 				curHealth: resourceValue('health'),
 				curSpirit: resourceValue('spirit'),
 			});
-			if (charId) outcomeHtml = enrichOutcomeLinks(outcomeHtml, entryId, charId);
+			if (charId)
+				outcomeHtml = enrichOutcomeLinks(outcomeHtml, entryId, charId, getActiveExpeditionId());
 			parts.push(`<div class="move-outcome">${outcomeHtml}</div>`);
 		}
 
@@ -826,7 +827,7 @@
 			bodyHtml += `<div class="move-outcome"><a class="resource-link" data-resource="mana" data-value="-${mana}">-${mana} mana</a> committed.</div>`;
 		}
 		if (bodyHtml) {
-			bodyHtml = enrichOutcomeLinks(bodyHtml, entryId, ctx.charId);
+			bodyHtml = enrichOutcomeLinks(bodyHtml, entryId, ctx.charId, getActiveExpeditionId());
 			parts.push(bodyHtml);
 		}
 
