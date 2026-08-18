@@ -162,6 +162,7 @@
 		Core: 'var(--color-wits)',
 		Character: 'var(--color-heart)',
 		Combat: 'var(--color-iron)',
+		Delve: '#4472D0',
 		Creature: 'var(--color-shadow)',
 		Encounter: '#2A9D8F',
 		Location: 'var(--color-edge)',

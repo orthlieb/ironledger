@@ -1,6 +1,6 @@
 {
   "key": "locationDescriptor",
-  "title": "Location Descriptor",
+  "title": "Location: Descriptor",
   "category": "Location",
   "selectLabel": "Location Descriptor",
   "description": "Use this oracle to add detail to the Location or Coastal Waters Location oracles, or by itself to generate a description of a location. Roll more than once for extra detail.",
