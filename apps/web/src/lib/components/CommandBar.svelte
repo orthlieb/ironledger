@@ -53,6 +53,7 @@
 	import { firstPreconditionFailure } from '$lib/preconditions.js';
 	import type { PreconditionContext, Precondition } from '$lib/preconditions.js';
 	import { getExpeditions } from '$lib/expeditionStore.svelte.js';
+	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
 	import { FOE_RANKS } from '$lib/foeStore.svelte.js';
 	import type { MoveDefinition } from '@ironledger/shared';
 	import type { CharacterData } from '$lib/types.js';
@@ -91,6 +92,20 @@
 		const def = findFoe(enc.foeId);
 		const natureColor = def ? (FOE_NATURE_COLORS[def.nature] ?? '#7A9AB8') : '#7A9AB8';
 		return { name: enc.customName || def?.name || 'Foe', natureColor };
+	});
+	// Active expedition pill — mirrors the char/foe chips. Colour follows the
+	// expedition type (journey / site / scene) via ENTITY_KIND_META so a Scene
+	// pill reads violet, a Journey amber, a Site blue. The label is trimmed to
+	// 25 chars total (24 + "…") so the chip stays under the input width even
+	// when someone names their journey "The Long Winter March to Whiterock Keep".
+	const activeExp = $derived.by(() => {
+		const id = getActiveExpeditionId();
+		if (!id) return null;
+		const exp = getExpeditions().find((e) => e.id === id);
+		if (!exp) return null;
+		const name = exp.name || `New ${ENTITY_KIND_META[exp.type].label}`;
+		const label = name.length > 25 ? name.slice(0, 24) + '…' : name;
+		return { name, label, color: ENTITY_KIND_META[exp.type].color, kind: exp.type };
 	});
 
 	// Build the same precondition context /home passes to MovesDialog so we
@@ -894,6 +909,13 @@
 				class="cb-chip"
 				style="background: {activeFoe.natureColor}22; color: {activeFoe.natureColor}"
 				use:tooltip={'Active foe'}>{activeFoe.name}</span
+			>
+		{/if}
+		{#if activeExp}
+			<span
+				class="cb-chip"
+				style="background: {activeExp.color}22; color: {activeExp.color}"
+				use:tooltip={`Active ${activeExp.kind}: ${activeExp.name}`}>{activeExp.label}</span
 			>
 		{/if}
 	</div>
