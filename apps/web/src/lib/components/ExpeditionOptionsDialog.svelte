@@ -20,7 +20,7 @@
 		name: string;
 		/** 'journey' | 'site' — drives the delete-confirm copy so it names
 		 *  the right thing ("this journey" / "this site"). */
-		kind: 'journey' | 'site';
+		kind: 'journey' | 'site' | 'scene';
 		/** Fires when the user commits a new (non-empty, changed) name. */
 		oncommit?: (next: string) => void;
 		/** Fires when the user confirms deletion. */
@@ -49,8 +49,8 @@
 		dialogOpen = false;
 	}
 
-	const kindLabel = $derived(kind === 'site' ? 'Site' : 'Journey');
-	const kindLabelLc = $derived(kind === 'site' ? 'site' : 'journey');
+	const kindLabel = $derived(kind === 'site' ? 'Site' : kind === 'scene' ? 'Scene' : 'Journey');
+	const kindLabelLc = $derived(kind === 'site' ? 'site' : kind === 'scene' ? 'scene' : 'journey');
 </script>
 
 <Dialog.Root bind:open={dialogOpen}>

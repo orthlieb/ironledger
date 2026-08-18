@@ -49,6 +49,7 @@ export interface PreconditionContext {
 	hasCharacter?: boolean;
 	hasSite?: boolean;
 	hasJourney?: boolean;
+	hasScene?: boolean;
 	hasFoe?: boolean;
 	/** 0 = none, 1 = character has initiative, 2 = foe has initiative */
 	initiative?: number;
@@ -124,6 +125,9 @@ export function checkPrecondition(
 	}
 	if (key === 'hasJourney') {
 		return passes(ctx.hasJourney ? 1 : 0, pre) ? null : 'No journey selected';
+	}
+	if (key === 'hasScene') {
+		return passes(ctx.hasScene ? 1 : 0, pre) ? null : 'No scene selected';
 	}
 	if (key === 'hasFoe') {
 		return passes(ctx.hasFoe ? 1 : 0, pre) ? null : 'No foe selected';

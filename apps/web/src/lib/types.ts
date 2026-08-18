@@ -121,7 +121,7 @@ export const EXPEDITION_MARK_TICKS: Record<ExpeditionDifficulty, number> = {
 	epic: 1,
 };
 
-export type ExpeditionType = 'journey' | 'site';
+export type ExpeditionType = 'journey' | 'site' | 'scene';
 
 export interface Journey {
 	id: string; // crypto.randomUUID()
@@ -213,8 +213,33 @@ export interface Site {
 	createdAt?: number; // Date.now() on creation
 }
 
+/** A Scene Challenge — a bounded, high-stakes situation resolved over several
+ *  moves. Like a Journey it carries a rank (`difficulty`) and a progress track
+ *  (`ticks`, marked by rank), plus two scene-specific extras: a free-text
+ *  `consequences` (what happens if you fail or run out of time) and a separate
+ *  four-segment `countdownFilled` track. */
+export interface Scene {
+	id: string; // crypto.randomUUID()
+	type: 'scene'; // discriminant
+	name: string;
+	objective: string;
+	/** What happens if you fail or run out of time (the countdown fills). */
+	consequences: string;
+	difficulty: ExpeditionDifficulty; // "rank"
+	ticks: number; // 0–40 (10 boxes × 4 ticks) — progress track, marks by rank
+	countdownFilled: number; // 0–4 filled countdown segments
+	notes: string;
+	complete: boolean;
+	/** Content hash of the portrait stored in the blob endpoint; '' / absent = none. */
+	portraitEtag?: string;
+	/** @deprecated Inline base64 portrait — legacy/import-only; portraits now live
+	 *  in the blob store and are referenced by portraitEtag. */
+	imageUrl?: string;
+	createdAt?: number; // Date.now() on creation
+}
+
 /** Discriminated union of all expedition types. */
-export type Expedition = Journey | Site;
+export type Expedition = Journey | Site | Scene;
 
 /** Denizen cell definition for the 12-row d100 table. */
 export interface DenizenCell {

@@ -25,6 +25,7 @@ export interface CollisionItems {
 	places: string[];
 	journeys: string[];
 	sites: string[];
+	scenes: string[];
 }
 
 /** Lowercase + trim — the key used everywhere collisions are matched by name. */

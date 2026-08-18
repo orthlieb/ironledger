@@ -24,6 +24,7 @@ const SCHEMES = new Set([
   'move',
   'resource',
   'progress',
+  'countdown',
   'debility',
   'initiative',
   'oracle',
@@ -34,7 +35,16 @@ const SCHEMES = new Set([
   'roll',
 ]);
 const RESOURCES = new Set(['momentum', 'health', 'spirit', 'supply', 'bonds', 'xp', 'failures']);
-const TRACKS = new Set(['combat', 'delve', 'journey', 'bonds', 'failures', 'quest', 'expedition']);
+const TRACKS = new Set([
+  'combat',
+  'delve',
+  'journey',
+  'scene',
+  'bonds',
+  'failures',
+  'quest',
+  'expedition',
+]);
 const DEBILITIES = new Set([
   'corrupted',
   'cursed',
@@ -112,6 +122,10 @@ function checkLink(scheme, rest, moveIds, oracleKeys) {
     case 'progress':
       if (!TRACKS.has(p)) return `unknown progress track "${p}"`;
       if (!isNum(args.value)) return `progress needs a numeric ?value`;
+      return null;
+    case 'countdown':
+      if (!TRACKS.has(p)) return `unknown countdown track "${p}"`;
+      if (!isNum(args.value)) return `countdown needs a numeric ?value`;
       return null;
     case 'debility':
       if (!DEBILITIES.has(p)) return `unknown debility "${p}"`;

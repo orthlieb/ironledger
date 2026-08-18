@@ -20,10 +20,11 @@ import farmerSvg from '$icons/farmer.svg?raw';
 import locationSvg from '$icons/location.svg?raw';
 import journeySvg from '$icons/journey.svg?raw';
 import dungeonGateSvg from '$icons/dungeon-gate.svg?raw';
+import hourglassSvg from '$icons/hourglass-clock-solid-full.svg?raw';
 
 /** All first-class entity kinds users can create or link. Order = the
  *  canonical order the rails render / pickers list. */
-export const ENTITY_KIND_LIST = ['community', 'place', 'npc', 'journey', 'site'] as const;
+export const ENTITY_KIND_LIST = ['community', 'place', 'npc', 'journey', 'site', 'scene'] as const;
 export type EntityKind = (typeof ENTITY_KIND_LIST)[number];
 
 export interface EntityKindMeta {
@@ -78,6 +79,12 @@ export const ENTITY_KIND_META: Record<EntityKind, EntityKindMeta> = {
 		icon: dungeonGateSvg,
 		label: 'Site',
 		labelPlural: 'Sites',
+	},
+	scene: {
+		color: '#7E57C2',
+		icon: hourglassSvg,
+		label: 'Scene',
+		labelPlural: 'Scenes',
 	},
 };
 

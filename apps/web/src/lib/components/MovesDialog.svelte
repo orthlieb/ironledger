@@ -204,6 +204,7 @@
 		Quest: 'var(--color-momentum)',
 		Fate: 'var(--color-spirit)',
 		Delve: 'var(--color-shadow)',
+		Scene: '#7E57C2',
 		Rarity: 'var(--color-touched)',
 		Failure: 'var(--text-dimmer)',
 		Yrt: 'var(--color-touched)',
