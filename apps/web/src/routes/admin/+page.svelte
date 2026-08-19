@@ -221,6 +221,8 @@
 	let logLineCount: 200 | 500 | 1000 = $state(200);
 	let expandedLine = $state<number | null>(null);
 	let logSearch = $state('');
+	let showClearLogConfirm = $state(false);
+	let clearLogLoading = $state(false);
 	let parsedLines = $derived(logLines.map(parseLogLine));
 	let filteredLines = $derived(
 		logSearch.trim()
@@ -325,6 +327,28 @@
 			logLoading = false;
 		}
 	}
+
+	/** Truncate the currently-shown log file to zero bytes and reload.
+	 *  The DELETE endpoint keeps PM2's open file handle valid (truncate,
+	 *  not unlink) so the next write appends to an empty file. */
+	async function confirmClearLog() {
+		clearLogLoading = true;
+		try {
+			await admin.clearLog(logFile);
+			showClearLogConfirm = false;
+			await loadLogs(logFile, logLineCount);
+		} catch {
+			// leave the modal open on failure so the user can retry
+		} finally {
+			clearLogLoading = false;
+		}
+	}
+	const LOG_FILE_LABELS: Record<LogFile, string> = {
+		'api-out': 'API stdout',
+		'api-error': 'API stderr',
+		'web-out': 'Web stdout',
+		'web-error': 'Web stderr',
+	};
 
 	$effect(() => {
 		if (activeTab === 'logs') void loadLogs(logFile, logLineCount);
@@ -1017,6 +1041,14 @@
 						<button class="btn btn-icon" onclick={() => void loadLogs()} disabled={logLoading}>
 							{logLoading ? 'Loading…' : '↻ Refresh'}
 						</button>
+						<button
+							class="btn btn-icon btn-danger"
+							onclick={() => (showClearLogConfirm = true)}
+							disabled={logLoading || !logAvailable || logLines.length === 0}
+							title="Truncate this log file to zero bytes"
+						>
+							Clear
+						</button>
 					</div>
 				</div>
 				<div class="logs-search-row">
@@ -1410,6 +1442,37 @@
 	</div>
 {/if}
 
+<!-- Clear log confirmation dialog -->
+{#if showClearLogConfirm}
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div
+		class="modal-backdrop"
+		onclick={() => (showClearLogConfirm = false)}
+		onkeydown={(e) => e.key === 'Escape' && (showClearLogConfirm = false)}
+	>
+		<div
+			class="modal card"
+			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => e.stopPropagation()}
+			role="dialog"
+			aria-modal="true"
+			tabindex="-1"
+		>
+			<h3 class="maint-modal-title">Clear log file</h3>
+			<p>
+				Truncate <strong>{LOG_FILE_LABELS[logFile]}</strong> (<code>{logFile}.log</code>) to zero
+				bytes? Existing log lines are lost; PM2 keeps writing to the same file.
+			</p>
+			<div class="modal-actions">
+				<button class="btn" onclick={() => (showClearLogConfirm = false)}>Cancel</button>
+				<button class="btn btn-danger" disabled={clearLogLoading} onclick={confirmClearLog}>
+					{clearLogLoading ? 'Clearing…' : 'Clear'}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
 <!-- Enable maintenance confirmation dialog -->
 {#if showMaintConfirm}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -1767,12 +1830,17 @@
 		display: none;
 	}
 
-	.tab-group {
+	/* .tab-group and .tab-btn are declared in class= on bits-ui's Tabs.List /
+	   Tabs.Trigger, which renders its own <div> / <button> below the component
+	   boundary. Svelte's scoped-CSS attribute isn't threaded through, so
+	   scoped selectors don't match — use :global() to reach them. Matches how
+	   CharactersArea (.ca-tab) and ExpeditionsArea (.ea-tab) do it. */
+	:global(.tab-group) {
 		display: flex;
 		align-items: stretch;
 	}
 
-	.tab-btn {
+	:global(.tab-btn) {
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		font-weight: 600;
@@ -1790,10 +1858,9 @@
 			color 0.12s,
 			border-color 0.12s;
 	}
-	.tab-btn:hover {
+	:global(.tab-btn:hover) {
 		color: var(--text-muted);
 	}
-	.tab-btn.active,
 	:global(.tab-btn[data-state='active']) {
 		color: var(--text-accent);
 		border-bottom-color: var(--text-accent);

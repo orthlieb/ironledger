@@ -8,7 +8,7 @@
 
 import { z } from 'zod';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
-import { readFile } from 'fs/promises';
+import { readFile, truncate } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { authenticate } from '../middleware/authenticate.js';
@@ -60,6 +60,9 @@ const timeseriesQuery = z.object({
 const logsQuery = z.object({
   file: z.enum(['api-out', 'api-error', 'web-out', 'web-error']),
   lines: z.coerce.number().int().min(1).max(2000).default(200),
+});
+const logsDeleteQuery = z.object({
+  file: z.enum(['api-out', 'api-error', 'web-out', 'web-error']),
 });
 
 const createInviteBody = z.object({
@@ -251,6 +254,40 @@ export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
         req.log.error(err, 'Failed to read log file');
         return reply.status(200).send({ available: false, file, lines: [] });
       }
+    },
+  );
+
+  // ── DELETE /logs ── Truncate one PM2 log file to zero bytes ─────────
+  // Whitelist prevents path traversal — only the four PM2 filenames are
+  // valid (enforced by the Zod enum in logsDeleteQuery). Truncating (rather
+  // than deleting) keeps the file handle PM2 already has open — the next
+  // write appends to the now-empty file. Absent files are a no-op so
+  // clicking Clear on a not-yet-provisioned environment doesn't 500.
+  server.delete(
+    '/logs',
+    {
+      schema: {
+        querystring: logsDeleteQuery,
+      },
+    },
+    async (req, reply) => {
+      const { file } = req.query;
+      const logPath = join(config.LOG_DIR, `${file}.log`);
+      if (existsSync(logPath)) {
+        try {
+          await truncate(logPath, 0);
+        } catch (err) {
+          req.log.error(err, 'Failed to truncate log file');
+          return reply.status(500).send({ error: 'truncate_failed', file });
+        }
+      }
+      logSecurityEvent({
+        eventType: 'admin_clear_log',
+        req,
+        userId: req.user!.id,
+        metadata: { file },
+      });
+      return reply.status(204).send();
     },
   );
 
