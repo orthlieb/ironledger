@@ -41,7 +41,7 @@
 		{
 			icon: foesSvg,
 			title: 'Foe Tracker',
-			body: '60+ horrors catalogued for your convenience. Know your enemy before it knows you. (Spoiler: it probably already does.) Track combat progress, mark the fallen, and try not to think about what comes next.',
+			body: '83 horrors catalogued for your convenience. Know your enemy before it knows you. (Spoiler: it probably already does.) Track combat progress, mark the fallen, and try not to think about what comes next.',
 			color: 'var(--color-heart)',
 			image: '/about/foes.webp',
 			alt: 'A cornered warrior faces a monstrous foe by torchlight',
@@ -49,7 +49,7 @@
 		{
 			icon: expeditionsSvg,
 			title: 'Expeditions',
-			body: 'The road goes ever on. Track journeys and delves so you remember which haunted barrow nearly claimed you last session. Themes, domains, denizens, progress tracks — all the grim details, preserved.',
+			body: 'The road goes ever on. Track journeys, delves, and scene challenges so you remember which haunted barrow nearly claimed you last session. Themes, domains, denizens, countdown clocks, progress tracks — all the grim details, preserved.',
 			color: 'var(--color-iron)',
 			image: '/about/expeditions.webp',
 			alt: 'Travellers on a long road through wild country',
@@ -65,7 +65,7 @@
 		{
 			icon: adventureSvg,
 			title: 'Moves & Dice',
-			body: '48 moves. Animated 3D dice. Strong hits are celebrated. Weak hits are… managed. Misses are logged, linked, and filed under "character development." The oracle sees all.',
+			body: '56 moves across Ironsworn, Delve, and Lodestar. Animated 3D dice. Strong hits are celebrated. Weak hits are… managed. Misses are logged, linked, and filed under "character development." The oracle sees all.',
 			color: 'var(--color-shadow)',
 			image: '/about/moves.webp',
 			alt: 'The Enter the Fray combat move open in Iron Ledger, its strong-hit, weak-hit and miss outcomes listed as animated 3D dice tumble across the screen',
@@ -73,7 +73,7 @@
 		{
 			icon: eyeSvg,
 			title: 'Oracles',
-			body: '49 tables of fate spanning Core Ironsworn, Delve, and the Yrt homebrew expansion. Roll a d100, receive your destiny, and accept what the oracle decrees. It is what it is. Pay the price.',
+			body: '98 tables of fate spanning Core Ironsworn, Delve, Lodestar, and the Yrt homebrew expansion — with columns you can pick, rolls that combine, and names stitched from prefix and suffix. Roll a d100, receive your destiny, and accept what the oracle decrees. Pay the price.',
 			color: 'var(--color-wits)',
 			image: '/about/oracles.webp',
 			alt: 'A seer casting rune stones on worn wood',
@@ -249,8 +249,10 @@
 					your next catastrophic miss.
 				</p>
 				<p>
-					Built for Ironsworn core, the <em>Delve</em> supplement, and the community <em>Yrt</em> homebrew
-					expansion. Iron Ledger takes the game seriously, even when the dice clearly do not.
+					Built for Ironsworn core, the <em>Delve</em> and <em>Lodestar</em> supplements, and the
+					community
+					<em>Yrt</em> homebrew expansion. Iron Ledger takes the game seriously, even when the dice clearly
+					do not.
 				</p>
 			</div>
 		</div>
@@ -382,6 +384,10 @@
 				Ironsworn: Delve
 			</div>
 			<div class="system-badge">
+				<span class="system-dot" style="background: #7e57c2"></span>
+				Ironsworn: Lodestar
+			</div>
+			<div class="system-badge">
 				<span class="system-dot" style="background: var(--color-touched)"></span>
 				Yrt Homebrew Expansion
 			</div>
@@ -395,10 +401,12 @@
 				href="https://ironswornrpg.com"
 				target="_blank"
 				rel="noopener noreferrer">Ironsworn</a
-			>
-			and
+			>,
 			<a href="https://ironswornrpg.com" target="_blank" rel="noopener noreferrer"
 				>Ironsworn: Delve</a
+			>, and
+			<a href="https://ironswornrpg.com" target="_blank" rel="noopener noreferrer"
+				>Ironsworn: Lodestar</a
 			>, created by Shawn Tomkin, and licensed for use under the
 			<a
 				href="https://creativecommons.org/licenses/by-nc-sa/4.0/"
