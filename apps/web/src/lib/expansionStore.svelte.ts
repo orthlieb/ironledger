@@ -88,17 +88,6 @@ export function isSourceEnabled(source: string | undefined): boolean {
 	return localStorage.getItem(key(source)) !== 'off';
 }
 
-/** Back-compat feature gates — used as `{#if isDelveEnabled()}` across the UI. */
-export function isDelveEnabled(): boolean {
-	return isSourceEnabled('delve');
-}
-export function isYrtEnabled(): boolean {
-	return isSourceEnabled('yrt');
-}
-export function isLodestarEnabled(): boolean {
-	return isSourceEnabled('lodestar');
-}
-
 // ---------------------------------------------------------------------------
 // Setters — persist to localStorage and update reactive state
 // ---------------------------------------------------------------------------
@@ -106,12 +95,6 @@ export function isLodestarEnabled(): boolean {
 export function setExtensionEnabled(id: string, on: boolean): void {
 	_enabled = { ..._enabled, [id]: on };
 	writeEnabled(id, on);
-}
-export function setDelveEnabled(on: boolean): void {
-	setExtensionEnabled('delve', on);
-}
-export function setYrtEnabled(on: boolean): void {
-	setExtensionEnabled('yrt', on);
 }
 
 // ---------------------------------------------------------------------------

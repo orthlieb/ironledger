@@ -32,7 +32,7 @@
 	import { EXPEDITION_MARK_TICKS, DENIZEN_CELLS, DELVE_THEMES, DELVE_DOMAINS } from '$lib/types.js';
 	import Select from '$lib/components/Select.svelte';
 	import { difficultyBadgeStyle } from '$lib/badgeStyles.js';
-	import { isDelveEnabled, isLodestarEnabled } from '$lib/expansionStore.svelte.js';
+	import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
 	import { setActiveExpeditionId } from '$lib/activeContext.svelte.js';
 	import { createDebouncedSave } from '$lib/debouncedSave.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
@@ -763,7 +763,7 @@
 									<span class="mp-cmd-check" aria-hidden="true"></span>
 									<span class="mp-cmd-item-name">+ New Journey…</span>
 								</Command.Item>
-								{#if isDelveEnabled()}
+								{#if isSourceEnabled('delve')}
 									<Command.Item
 										class="mp-cmd-item mp-cmd-item--action"
 										value="+ New Site"
@@ -781,7 +781,7 @@
 								     Advantage / Finish the Scene). Existing scenes keep
 								     rendering when Lodestar is later disabled; we only
 								     hide the create affordance. -->
-								{#if isLodestarEnabled()}
+								{#if isSourceEnabled('lodestar')}
 									<Command.Item
 										class="mp-cmd-item mp-cmd-item--action"
 										value="+ New Scene"

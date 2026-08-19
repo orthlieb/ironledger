@@ -50,7 +50,7 @@
 	import { loadAssets, findAsset } from '$lib/assetStore.svelte.js';
 	import { getRelevantAbilities } from '$lib/assetMatcherStore.svelte.js';
 	import { getActiveDebilityWarnings } from '$lib/debilityWarnings.js';
-	import { isDelveEnabled } from '$lib/expansionStore.svelte.js';
+	import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
 
 	// ---------------------------------------------------------------------------
 	// Props
@@ -633,7 +633,7 @@
 		}
 
 		// On a miss for a character move, offer +1 failure (Delve-only mechanic)
-		if (!hits1 && !hits2 && isDelveEnabled()) {
+		if (!hits1 && !hits2 && isSourceEnabled('delve')) {
 			parts.push(
 				`<div class="move-failure-row">` +
 					`<a class="failure-link" data-entry-id="${entryId}" data-char-id="${ctx.charId}" href="#">+1 failure</a>` +
