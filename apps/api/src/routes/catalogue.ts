@@ -95,6 +95,10 @@ interface ExtensionManifestEntry {
   /** Oracle keys this extension hides when enabled — carried through to the
    *  public /catalogue/extensions payload so the client can filter its picker. */
   suppressesOracles?: string[];
+  /** Base-oracle-key → replacement-key rewrites applied while this extension is
+   *  enabled (e.g. YRT's `region` → `yrtRegion`). Also carried through — the
+   *  client hides the superseded base key from the picker via these. */
+  supersedesOracles?: Record<string, string>;
   /** Move/oracle categories this extension introduces (icon + tint + sort).
    *  Carried through to the public payload — the client resolves every
    *  category icon from these (see extensionCategories.svelte.ts). */
@@ -118,6 +122,7 @@ export interface PublicExtension {
   defaultEnabled: boolean;
   order: number;
   suppressesOracles?: string[];
+  supersedesOracles?: Record<string, string>;
   moveCategories?: CategoryMeta[];
   oracleCategories?: CategoryMeta[];
 }
@@ -127,10 +132,12 @@ export interface PublicExtension {
  * file lists (`provides`, `root`) dropped. This is the API↔client contract for
  * the extension registry: the web app resolves expansion toggles, source
  * labels, AND every move/oracle category icon from this shape
- * (extensionCategories.svelte.ts). Any field the client reads MUST be forwarded
- * here — a dropped `moveCategories`/`oracleCategories` silently collapses every
- * category to its generic fallback icon. Guarded by
- * tests/unit/publicExtension.test.ts.
+ * (extensionCategories.svelte.ts) and hides superseded oracles from the picker
+ * via `supersedesOracles`. Any field the client reads MUST be forwarded here — a
+ * dropped `moveCategories`/`oracleCategories` silently collapses every category
+ * to its generic fallback icon, and a dropped `supersedesOracles` lets a
+ * superseded base oracle (e.g. the Ironlands Region) leak back into the picker
+ * beside its replacement. Guarded by tests/unit/publicExtension.test.ts.
  */
 export function toPublicExtension(e: ExtensionManifestEntry): PublicExtension {
   return {
@@ -140,6 +147,9 @@ export function toPublicExtension(e: ExtensionManifestEntry): PublicExtension {
     defaultEnabled: e.defaultEnabled,
     order: e.order,
     ...(e.suppressesOracles?.length ? { suppressesOracles: e.suppressesOracles } : {}),
+    ...(e.supersedesOracles && Object.keys(e.supersedesOracles).length
+      ? { supersedesOracles: e.supersedesOracles }
+      : {}),
     ...(e.moveCategories?.length ? { moveCategories: e.moveCategories } : {}),
     ...(e.oracleCategories?.length ? { oracleCategories: e.oracleCategories } : {}),
   };

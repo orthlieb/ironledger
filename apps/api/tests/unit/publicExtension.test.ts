@@ -35,6 +35,8 @@ interface ManifestEntry {
   id: string;
   moveCategories?: CategoryMeta[];
   oracleCategories?: CategoryMeta[];
+  suppressesOracles?: string[];
+  supersedesOracles?: Record<string, string>;
   provides?: Record<string, string[]>;
   root?: string;
 }
@@ -86,6 +88,34 @@ describe('toPublicExtension — /catalogue/extensions contract', () => {
     expect(iconOf(byId.base?.moveCategories, 'Failure')).toBe('face-head-bandage');
     expect(iconOf(byId.base?.moveCategories, 'Quest')).toBe('compass-rose');
     expect(iconOf(byId.lodestar?.moveCategories, 'Scene')).toBe('hourglass-clock-solid-full');
+  });
+
+  it('forwards supersedesOracles / suppressesOracles verbatim', () => {
+    // The picker hides a superseded base oracle (expansionStore.suppressedOracleKeys)
+    // by reading these off the payload. Dropping supersedesOracles lets the
+    // Ironlands Region leak back beside YRT's replacement (the regression this
+    // guards). Compare the full manifest → payload projection of both maps.
+    const project = (
+      entries: Array<{
+        id: string;
+        suppressesOracles?: string[];
+        supersedesOracles?: Record<string, string>;
+      }>,
+    ) =>
+      Object.fromEntries(
+        entries.map((e) => [
+          e.id,
+          { suppresses: e.suppressesOracles ?? null, supersedes: e.supersedesOracles ?? null },
+        ]),
+      );
+    expect(project(publicList)).toEqual(project(manifest.extensions));
+  });
+
+  it('preserves the specific oracle supersessions the picker relies on', () => {
+    const byId = Object.fromEntries(publicList.map((e) => [e.id, e]));
+    // YRT rewrites the base Ironlands Region + Lodestar Story Region to its own.
+    expect(byId.yrt?.supersedesOracles?.region).toBe('yrtRegion');
+    expect(byId.yrt?.supersedesOracles?.storyRegion).toBe('yrtStoryRegion');
   });
 
   it('stays metadata-only — no file lists leak into the public payload', () => {
