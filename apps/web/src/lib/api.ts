@@ -130,6 +130,9 @@ export const admin = {
 			`/api/admin/logs?file=${file}&lines=${lines}`,
 		),
 
+	clearLog: (file: 'api-out' | 'api-error' | 'web-out' | 'web-error') =>
+		request<void>(`/api/admin/logs?file=${file}`, { method: 'DELETE' }),
+
 	enableMaintenance: (body: { message: string; minutesUntilShutdown: number }) =>
 		request<MaintenanceStatus>('/api/admin/maintenance', {
 			method: 'POST',
