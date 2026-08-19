@@ -66,7 +66,7 @@
 	const stressCost = $derived(FORSAKE_STRESS[vow.difficulty]);
 </script>
 
-<div class="vow-card">
+<div class="vow-card" class:vow-card--fulfilled={vow.fulfilled}>
 	<!-- Header: collapse toggle, name, forsake button -->
 	<div class="vow-header">
 		<button
@@ -323,6 +323,13 @@
 		width: 11px;
 		height: 11px;
 		fill: currentColor;
+	}
+
+	/* Fulfilled vows dim in place — same 0.7 opacity Journey/Site cards
+	   use for their `.ea-stage--complete .ea-card`. Signals "this vow is
+	   done" without hiding it. */
+	.vow-card--fulfilled {
+		opacity: 0.7;
 	}
 
 	/* ---- Expandable body ---- */
