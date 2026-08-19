@@ -55,7 +55,11 @@
 		const expId = getActiveExpeditionId();
 		const encs = getEncounters();
 		const exps = getExpeditions();
-		const enc = foeId ? encs.find((e) => e.id === foeId) : undefined;
+		// A vanquished encounter is done — filter it out so hasFoe / foeName /
+		// foeHarm all read absent, matching the CommandBar chip. Foe-gated
+		// moves (Strike, Clash, etc.) disappear from the picker at the same
+		// instant the fight ends.
+		const enc = foeId ? encs.find((e) => e.id === foeId && !e.vanquished) : undefined;
 		const exp = expId ? exps.find((e) => e.id === expId) : undefined;
 		const foeDef = enc ? findFoe(enc.foeId) : undefined;
 		const foeName = enc ? enc.customName?.trim() || foeDef?.name || enc.foeId : undefined;
