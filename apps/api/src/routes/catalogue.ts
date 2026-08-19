@@ -75,6 +75,17 @@ type ProvidesType =
   | 'foeOverrides'
   | 'delveTables';
 
+/** Per-category icon/tint/order a manifest entry declares. Mirrors
+ *  `CategoryDef` in @ironledger/shared (kept local — the API doesn't import
+ *  from shared). Forwarded verbatim in the public payload so the client can
+ *  resolve move/oracle category icons. */
+interface CategoryMeta {
+  key: string;
+  icon?: string;
+  color?: string;
+  order?: number;
+}
+
 interface ExtensionManifestEntry {
   id: string;
   name: string;
@@ -84,6 +95,11 @@ interface ExtensionManifestEntry {
   /** Oracle keys this extension hides when enabled — carried through to the
    *  public /catalogue/extensions payload so the client can filter its picker. */
   suppressesOracles?: string[];
+  /** Move/oracle categories this extension introduces (icon + tint + sort).
+   *  Carried through to the public payload — the client resolves every
+   *  category icon from these (see extensionCategories.svelte.ts). */
+  moveCategories?: CategoryMeta[];
+  oracleCategories?: CategoryMeta[];
   /** Repo-relative content root (e.g. `apps/api/data` or `extensions/yrt`). */
   root: string;
   /** Content files this extension provides, relative to `root`. */
@@ -92,6 +108,41 @@ interface ExtensionManifestEntry {
 
 interface ExtensionsManifest {
   extensions: ExtensionManifestEntry[];
+}
+
+/** Public shape of one extension in the `/catalogue/extensions` payload. */
+export interface PublicExtension {
+  id: string;
+  name: string;
+  description: string;
+  defaultEnabled: boolean;
+  order: number;
+  suppressesOracles?: string[];
+  moveCategories?: CategoryMeta[];
+  oracleCategories?: CategoryMeta[];
+}
+
+/**
+ * Project a manifest entry down to its public payload — metadata only, with the
+ * file lists (`provides`, `root`) dropped. This is the API↔client contract for
+ * the extension registry: the web app resolves expansion toggles, source
+ * labels, AND every move/oracle category icon from this shape
+ * (extensionCategories.svelte.ts). Any field the client reads MUST be forwarded
+ * here — a dropped `moveCategories`/`oracleCategories` silently collapses every
+ * category to its generic fallback icon. Guarded by
+ * tests/unit/publicExtension.test.ts.
+ */
+export function toPublicExtension(e: ExtensionManifestEntry): PublicExtension {
+  return {
+    id: e.id,
+    name: e.name,
+    description: e.description,
+    defaultEnabled: e.defaultEnabled,
+    order: e.order,
+    ...(e.suppressesOracles?.length ? { suppressesOracles: e.suppressesOracles } : {}),
+    ...(e.moveCategories?.length ? { moveCategories: e.moveCategories } : {}),
+    ...(e.oracleCategories?.length ? { oracleCategories: e.oracleCategories } : {}),
+  };
 }
 
 /** `delve/delve-theme-features.json` → `themeFeatures`. */
@@ -174,14 +225,7 @@ async function loadCatalogue(): Promise<{
     // Public extension registry — metadata only (drop the file lists). Drives
     // the client's dynamic expansion toggles + source labels.
     extensions: (() => {
-      const list = extensions.map((e) => ({
-        id: e.id,
-        name: e.name,
-        description: e.description,
-        defaultEnabled: e.defaultEnabled,
-        order: e.order,
-        ...(e.suppressesOracles?.length ? { suppressesOracles: e.suppressesOracles } : {}),
-      }));
+      const list = extensions.map(toPublicExtension);
       return { data: list, etag: makeEtag(list) };
     })(),
   };
