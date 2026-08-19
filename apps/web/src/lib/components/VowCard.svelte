@@ -6,7 +6,10 @@
 	import { EditableName } from '$lib/editableName.svelte.js';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import Select from './Select.svelte';
+	import SegmentedRadio from './SegmentedRadio.svelte';
 	import linkBrokenSvg from '$icons/link-broken-solid-full.svg?raw';
+	import locationSvg from '$icons/location-dot-solid-full.svg?raw';
+	import checkSvg from '$icons/circle-check-solid-full.svg?raw';
 	import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 
@@ -63,7 +66,7 @@
 	const stressCost = $derived(FORSAKE_STRESS[vow.difficulty]);
 </script>
 
-<div class="vow-card">
+<div class="vow-card" class:vow-card--fulfilled={vow.fulfilled}>
 	<!-- Header: collapse toggle, name, forsake button -->
 	<div class="vow-header">
 		<button
@@ -96,6 +99,17 @@
 			>
 		{/if}
 
+		{#if vow.fulfilled}
+			<!-- svelte-ignore a11y_click_events_have_key_events -->
+			<button
+				type="button"
+				class="vow-status-pill"
+				onclick={() => (vow.fulfilled = false)}
+				use:tooltip={'Reactivate this vow'}
+				aria-label="Reactivate this vow">Fulfilled</button
+			>
+		{/if}
+
 		<button
 			class="btn btn-icon icon-btn btn-trash"
 			onclick={() => forsakeDialogRef?.open()}
@@ -107,6 +121,39 @@
 	<!-- Expandable body -->
 	{#if !collapsed}
 		<div class="vow-body">
+			<!-- Status row (active vows only) — mirrors ExpeditionsArea /
+			     CommunitiesArea's "STATUS · SegmentedRadio · divider" pattern.
+			     A fulfilled vow shows its state as the header pill instead;
+			     the pill is clickable to reactivate, which re-renders this
+			     row so the SegmentedRadio can move the vow back the other way. -->
+			{#if !vow.fulfilled}
+				<div class="vow-status-section">
+					<span class="vow-field-label">Status</span>
+					<SegmentedRadio
+						ariaLabel="Vow status"
+						labels="always"
+						value={vow.fulfilled ? 'fulfilled' : 'active'}
+						onchange={(v) => (vow.fulfilled = v === 'fulfilled')}
+						options={[
+							{
+								value: 'active',
+								icon: locationSvg,
+								text: 'Active',
+								label: 'Mark active',
+								tone: 'go',
+							},
+							{
+								value: 'fulfilled',
+								icon: checkSvg,
+								text: 'Fulfilled',
+								label: 'Mark fulfilled',
+								tone: 'stop',
+							},
+						]}
+					/>
+				</div>
+			{/if}
+
 			<!-- Rank row -->
 			<div class="vow-extras">
 				<label class="vow-extra">
@@ -278,6 +325,13 @@
 		fill: currentColor;
 	}
 
+	/* Fulfilled vows dim in place — same 0.7 opacity Journey/Site cards
+	   use for their `.ea-stage--complete .ea-card`. Signals "this vow is
+	   done" without hiding it. */
+	.vow-card--fulfilled {
+		opacity: 0.7;
+	}
+
 	/* ---- Expandable body ---- */
 	.vow-body {
 		padding: 8px 10px;
@@ -301,9 +355,56 @@
 		font-size: 0.78rem;
 	}
 
-	.vow-extra span {
-		color: var(--text-muted);
+	/* App-wide field-label convention (matches .ea-field-label /
+	   .cm-field-label): uppercase, 0.7rem, spaced, --text-dimmer. Applies
+	   both to the wrapping <label>'s <span> (Rank / Threat / Menace) and
+	   to the standalone Status label above the SegmentedRadio. */
+	.vow-extra span,
+	.vow-field-label {
+		font-family: var(--font-ui);
+		font-size: 0.7rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--text-dimmer);
 		white-space: nowrap;
+	}
+
+	/* Status row (Active | Fulfilled) — sits at the top of the body with a
+	   bottom-divider, exactly matching Journeys' .ea-status-section pattern. */
+	.vow-status-section {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding-bottom: 8px;
+		border-bottom: 1px solid #c3baa1;
+	}
+
+	/* Fulfilled indicator in the header — clickable pill next to Forsake.
+	   Accent-tinted to signal "done", flush height with the trash button so
+	   the header row stays balanced. */
+	.vow-status-pill {
+		font-family: var(--font-ui);
+		font-size: 0.6rem;
+		font-weight: 600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		padding: 3px 8px;
+		border-radius: 10px;
+		background: color-mix(in srgb, var(--text-accent) 15%, transparent);
+		color: var(--text-accent);
+		border: 1px solid color-mix(in srgb, var(--text-accent) 35%, transparent);
+		line-height: 1;
+		white-space: nowrap;
+		flex-shrink: 0;
+		cursor: pointer;
+	}
+	.vow-status-pill:hover {
+		background: color-mix(in srgb, var(--text-accent) 22%, transparent);
+	}
+	.vow-status-pill:focus-visible {
+		outline: 2px solid var(--text-accent);
+		outline-offset: 1px;
 	}
 
 	/* Threat grows to fill available space */

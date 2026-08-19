@@ -1913,6 +1913,15 @@
 		flex: 1;
 		min-height: 0;
 	}
+	/* Under-track notes (Bonds Formed / Lessons Learned) — reserve at least
+	   three text lines in display mode so an empty or short note doesn't
+	   collapse to a single line under the label. Line-height 1.5 × 3 lines
+	   ≈ 4.5em. `min-height` (not fixed) so real content past three lines
+	   still expands. Only the display element is scoped — the editing
+	   textarea already has its own 7em min-height. */
+	.ca-track-notes :global(.md-notes-display) {
+		min-height: 4.5em;
+	}
 	/* A note field grows to fill the remaining track-row space while editing,
 	   with the textarea filling it and the markdown hint pinned at the bottom. */
 	.ca-track-notes--editing {

@@ -283,6 +283,50 @@ test.describe('Characters area (v2)', () => {
 		await expect(display.locator('p')).toHaveText(noteText);
 	});
 
+	// ── Vow status toggle ────────────────────────────────────────────────────
+
+	test('vow status: Fulfilled dims the card + moves the toggle to the header pill', async ({
+		page,
+	}) => {
+		await ensureCharacterSelected(page);
+		await switchCharTab(page, 'Vows');
+
+		const vowCards = page.locator(`${CHAR_AREA} .vow-card`);
+		if ((await vowCards.count()) === 0) {
+			await page.locator(`${CHAR_HEADER} button[aria-label="Add Vow"]`).click();
+			await expect(vowCards).toHaveCount(1, { timeout: 5_000 });
+		}
+		const vow = vowCards.first();
+
+		// Active default: body status row visible with the Active | Fulfilled
+		// segmented radio; no header pill; card at full opacity.
+		const statusRow = vow.locator('.vow-status-section');
+		const headerPill = vow.locator('.vow-status-pill');
+		await expect(statusRow).toBeVisible();
+		await expect(headerPill).toHaveCount(0);
+		await expect(vow).not.toHaveClass(/vow-card--fulfilled/);
+		await expect(vow).toHaveCSS('opacity', '1');
+
+		// Click Fulfilled on the SegmentedRadio (aria label = "Mark fulfilled").
+		await vow.getByRole('radio', { name: 'Mark fulfilled' }).click();
+
+		// Body row disappears, header pill appears, card gets the dim class +
+		// 0.7 opacity (matching Journey/Site .ea-stage--complete).
+		await expect(statusRow).toHaveCount(0);
+		await expect(headerPill).toBeVisible();
+		await expect(headerPill).toHaveText(/^Fulfilled$/i);
+		await expect(vow).toHaveClass(/vow-card--fulfilled/);
+		await expect(vow).toHaveCSS('opacity', '0.7');
+
+		// Clicking the pill reactivates: body row returns, pill gone, opacity
+		// restored, no dim class.
+		await headerPill.click();
+		await expect(vow.locator('.vow-status-section')).toBeVisible();
+		await expect(vow.locator('.vow-status-pill')).toHaveCount(0);
+		await expect(vow).not.toHaveClass(/vow-card--fulfilled/);
+		await expect(vow).toHaveCSS('opacity', '1');
+	});
+
 	test('vow notes: persist across a page reload', async ({ page }) => {
 		await ensureCharacterSelected(page);
 		await switchCharTab(page, 'Vows');
