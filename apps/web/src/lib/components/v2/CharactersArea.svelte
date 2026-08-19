@@ -42,7 +42,7 @@
 		isAssetsLoading,
 		getAssets,
 	} from '$lib/assetStore.svelte.js';
-	import { isDelveEnabled } from '$lib/expansionStore.svelte.js';
+	import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
 	import {
 		hydrateCharacterInPlace,
 		maxMomentum,
@@ -1371,7 +1371,7 @@
 										/>
 									</div>
 
-									{#if isDelveEnabled()}
+									{#if isSourceEnabled('delve')}
 										<ProgressTrackPanel label="Failures" bind:value={d.failures} />
 										<div
 											class="ca-track-notes"

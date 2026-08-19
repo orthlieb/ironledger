@@ -7,7 +7,7 @@
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import Select from './Select.svelte';
 	import linkBrokenSvg from '$icons/link-broken-solid-full.svg?raw';
-	import { isDelveEnabled } from '$lib/expansionStore.svelte.js';
+	import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 
 	let {
@@ -121,7 +121,7 @@
 			</div>
 
 			<!-- Threat + Menace row (Delve-only — preserves underlying data when hidden) -->
-			{#if isDelveEnabled()}
+			{#if isSourceEnabled('delve')}
 				<div class="vow-extras">
 					<label class="vow-extra vow-threat">
 						<span>Threat</span>
@@ -164,7 +164,7 @@
 					bind:value={vow.ticks}
 					step={VOW_MARK_TICKS[vow.difficulty]}
 					showStep
-					dangerCount={isDelveEnabled() ? vow.menace : 0}
+					dangerCount={isSourceEnabled('delve') ? vow.menace : 0}
 				/>
 			</div>
 		</div>
