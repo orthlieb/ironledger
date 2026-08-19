@@ -16,6 +16,10 @@ export interface Vow {
 	menace: number; // 0–10 menace track
 	/** Free-form session notes (mini markdown: **bold**, *italic*, # headings, - lists). */
 	notes?: string;
+	/** True once the vow has been Fulfilled. Legacy vows (missing field)
+	 *  deserialize as `undefined` → treated as active. Forsaking a vow still
+	 *  deletes it; this flag is only for the successful outcome. */
+	fulfilled?: boolean;
 }
 
 export interface CharacterAsset {
