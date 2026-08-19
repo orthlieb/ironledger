@@ -1,8 +1,8 @@
 {
   "key": "combatBattleground",
-  "title": "Combat: Battleground",
+  "title": "Battleground",
   "category": "Combat",
-  "selectLabel": "Combat: Battleground",
+  "selectLabel": "Battleground",
   "description": "Use this oracle to help envision the characteristics and complications of a combat or battle scene. Weave these elements into the actions of your character and their foes.",
   "source": "lodestar",
   "columns": [

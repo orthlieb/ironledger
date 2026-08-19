@@ -1,8 +1,8 @@
 {
   "key": "siteNamePlace",
-  "title": "Delve: Site Name – Place",
+  "title": "Site Name – Place",
   "category": "Delve",
-  "selectLabel": "Delve: Site Name – Place",
+  "selectLabel": "Site Name – Place",
   "description": "Roll the site's domain (as on the Site Nature – Domain table), then a place-word from that domain's list.",
   "source": "delve",
   "data": [

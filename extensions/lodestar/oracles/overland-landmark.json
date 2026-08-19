@@ -1,6 +1,6 @@
 {
   "key": "overlandLandmark",
-  "title": "Location: Overland Landmark",
+  "title": "Overland Landmark",
   "category": "Location",
   "selectLabel": "Overland Landmark",
   "description": "Roll when travelling to generate a point of interest, or when you need to answer a question about the terrain and landmarks of a place. Replaces the base Location oracle when Lodestar is enabled.",

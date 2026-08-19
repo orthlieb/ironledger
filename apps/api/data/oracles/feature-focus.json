@@ -1,8 +1,8 @@
 {
   "key": "featureFocus",
-  "title": "Delve: Feature Focus",
+  "title": "Feature Focus",
   "category": "Delve",
-  "selectLabel": "Delve: Feature Focus",
+  "selectLabel": "Feature Focus",
   "description": "Determine the specific focus or subject of a notable feature within a Delve site.",
   "source": "delve",
   "data": [

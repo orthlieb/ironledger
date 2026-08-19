@@ -1,8 +1,8 @@
 {
   "key": "manaBacklash",
-  "title": "Magic: Mana Backlash",
+  "title": "Mana Backlash",
   "category": "Magic",
-  "selectLabel": "Magic: Mana Backlash",
+  "selectLabel": "Mana Backlash",
   "description": "Suffer a mana-specific backlash cost when magic goes wrong in the Yrt setting.",
   "source": "yrt",
   "columns": [

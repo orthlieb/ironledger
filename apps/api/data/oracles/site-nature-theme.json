@@ -1,8 +1,8 @@
 {
   "key": "siteNatureTheme",
-  "title": "Delve: Site Nature – Theme",
+  "title": "Site Nature – Theme",
   "category": "Delve",
-  "selectLabel": "Delve: Site Nature – Theme",
+  "selectLabel": "Site Nature – Theme",
   "description": "Determine the thematic nature of a Delve site (e.g., ancient, corrupted, haunted).",
   "source": "delve",
   "roll": ["value", "description"],

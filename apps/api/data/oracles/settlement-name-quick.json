@@ -1,8 +1,8 @@
 {
   "key": "settlementNameQuick",
-  "title": "Settlement: Quick Name",
+  "title": "Quick Name",
   "category": "Settlement",
-  "selectLabel": "Settlement: Quick Name",
+  "selectLabel": "Quick Name",
   "description": "Use this oracle as a simpler alternative for settlement names. Roll once for the prefix, and once for the suffix. If the combination doesn't quite work, look at adjacent rows or reverse the digits.",
   "source": "base",
   "tableType": "prefixSuffix",

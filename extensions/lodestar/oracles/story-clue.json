@@ -1,8 +1,8 @@
 {
   "key": "storyClue",
-  "title": "Story: Clue",
+  "title": "Clue",
   "category": "Story",
-  "selectLabel": "Story: Clue",
+  "selectLabel": "Clue",
   "description": "When you investigate a mystery, you might uncover clues in the form of messages, rumors, eyewitness reports, supernatural revelations, or physical evidence. You can use this oracle to help reveal what this evidence connects to or implicates.",
   "source": "lodestar",
   "data": [

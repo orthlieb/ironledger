@@ -24,10 +24,10 @@ Every oracle file exports one object:
 ```jsonc
 {
   "key":         "action",                    // camelCase unique ID
-  "title":       "Core: Action",              // Full display title
+  "title":       "Action",                    // Full display title
   "category":    "Core",                      // chip grouping (Core, Combat, Story, Location, …)
   "source":      "base",                      // "base" | "delve" | "yrt" | "lodestar"
-  "selectLabel": "Core: Action",              // Label used in picker / dropdowns
+  "selectLabel": "Action",                    // Label used in picker / dropdowns
   "description": "Use this table when you …", // Guidance text shown in detail view
   "data": [
     { "topRange": 1,   "value": "Scheme" },   // Roll ≤ topRange → this result
@@ -121,9 +121,9 @@ named fields:
 Renders `D100 | col1 | col2 | …` (a lone value column keeps the space-saving
 2-/3-column layout for long lists). A row whose value carries a
 `[roll again](roll:self?times=2)` template blank re-rolls this table twice and
-combines (see **Value-level templates** below). _Canonical:_ Core: Action (simple), YRT
-Region (typed), Combat: Battleground + Delve Site Nature Theme/Domain (described),
-YRT: Freeport Occupation (multi-column), Mana Backlash (Backlash / Effect).
+combines (see **Value-level templates** below). _Canonical:_ Action (simple), YRT
+Region (typed), Battleground + Delve Site Nature Theme/Domain (described),
+YRT Freeport Occupation (multi-column), Mana Backlash (Backlash / Effect).
 
 ### `columnSelect` — pick a column; per-column ranges, one shared result
 
@@ -167,7 +167,7 @@ not the frequency.
 ```
 
 Renders `D100 | col1 | col2 | …` with the active column highlighted. _Canonical:_
-Scale: Magnitude (9 columns), Name: Elf (Elf 1/Elf 2), Name: Other
+Magnitude (9 columns), Elf Name (Elf 1/Elf 2), Other Name
 (Giants/Varou/Trolls).
 
 ### `twoStep` — outer roll → the row's own subtable
@@ -211,7 +211,7 @@ result renders:
 { "topRange": 100, "value": "[Primary Form](roll:monstrosityPrimaryForm?rollFrom=1&rollTo=3)" }
 ```
 
-_Canonical:_ Delve: Site Name (`phrase`), Delve: Monstrosity (`dossier`).
+_Canonical:_ Site Name (`phrase`), Monstrosity (`dossier`).
 
 ### Value-level templates & `roll:self` (Roll Twice)
 
@@ -231,8 +231,7 @@ badge). This replaced the old `/roll twice/i` text-sniff and the earlier
 { "topRange": 100, "value": "Hybrid ([roll again](roll:self?times=2))" }
 ```
 
-_Canonical:_ Character: Goal, Settlement: Troubles, Major Plot Twist,
-Monstrosity: Primary Form.
+_Canonical:_ Goal, Troubles, Major Plot Twist, Primary Form.
 
 ### Template blanks — the `roll:` DSL
 
@@ -280,7 +279,7 @@ One oracle still keeps a bespoke render/roll branch. (`freeportDenizen` used to
 be here — now a plain **flat multi-column** oracle; `settlementNameQuick` too —
 now the reusable **`prefixSuffix`** table type above.)
 
-- **`yrtTouched`** (YRT: Touched) — a compound multi-roll: class → animal aspect
+- **`yrtTouched`** (YRT Touched) — a compound multi-roll: class → animal aspect
   → a feature-count roll (Second/Third: 1–3 / 4–6) → that many unique features
   from `touchedFeatures`. Logged as a monstrosity-style multi-line breakdown.
 

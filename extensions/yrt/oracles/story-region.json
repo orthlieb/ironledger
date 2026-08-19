@@ -1,8 +1,8 @@
 {
   "key": "yrtStoryRegion",
-  "title": "Story: Region",
+  "title": "Region",
   "category": "Story",
-  "selectLabel": "Story: Region",
+  "selectLabel": "Region",
   "description": "Determine the region of the Yrt world where a story element is situated. Regions are ordered and weighted by type: settled lands come up most often, boundary lands less often, and remote lands rarely.",
   "source": "yrt",
   "roll": ["value", "type"],

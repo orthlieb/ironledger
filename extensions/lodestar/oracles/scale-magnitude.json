@@ -1,8 +1,8 @@
 {
   "key": "scaleMagnitude",
-  "title": "Scale: Magnitude",
+  "title": "Magnitude",
   "category": "Scale",
-  "selectLabel": "Scale: Magnitude",
+  "selectLabel": "Magnitude",
   "tableType": "matrix",
   "description": "Use this oracle to help answer a question related to the scale, extent, or capability of something. Ask your question, choose one of the columns, and roll to reveal the answer.",
   "source": "lodestar",
