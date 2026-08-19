@@ -68,11 +68,17 @@ list. `oracle-order.json` is a display-order index, not a rollable oracle.
 
 Separate from `source` (the owning expansion), every oracle has an optional
 **`category`** — the thematic chip the Ask/Oracles picker filters by (Core,
-Character, Location, Combat, Story, Magic, Scale, Settlement, Delve Site, Threat,
-Monstrosity, Name, Prelude, …). It's independent of source: a `Character` oracle
-may come from base, delve, or yrt. Missing → "Other". The chip colours live in
-`CATEGORY_COLORS` in `OraclesDialog.svelte`; a new category only needs a colour
-added there, else it falls back to the accent.
+Character, Location, Combat, Story, Magic, Scale, Settlement, Delve, Threat,
+Monstrosity, Encounter, …). It's independent of source: a `Character` oracle
+may come from base, delve, or yrt. Missing → "Other".
+
+The chip icon + colour are declared per-extension in `extension.json` on the
+`oracleCategories` field (see [extensions.md → Category records](extensions.md#category-records--movecategories--oraclecategories))
+— an extension that introduces a new category just adds one `CategoryDef`
+entry `{ key, icon, color }` there. The client resolver
+(`extensionCategories.svelte.ts`) merges categories across enabled extensions
+on demand, so a category with no declared entry falls back to a d100 glyph and
+`var(--text-accent)`.
 
 ---
 
@@ -285,28 +291,49 @@ now the reusable **`prefixSuffix`** table type above.)
 
 ## Supersession — one oracle replacing another
 
-An extension can **hide** an oracle from a lower-priority extension and stand in
-with its own. In the extension's `extension.json`:
+An extension can **hide** an oracle from a lower-priority extension and stand
+in with its own. Two mechanisms cover the different cases:
 
-```json
-{
-  "id": "yrt",
-  "suppressesOracles": ["region", "storyRegion", "settlementCondition", "settlementType"]
+**`supersedesOracles: Record<string, string>`** — hide + rewrite. Consumer code
+asks for the base key; `resolveOracleKey(base)` returns the replacement.
+
+```jsonc
+// extensions/yrt/extension.json
+"supersedesOracles": {
+  "region":              "yrtRegion",
+  "storyRegion":         "yrtStoryRegion",
+  "settlementType":      "yrtSettlementType",
+  "settlementCondition": "yrtSettlementCondition",
+  "location":            "yrtCityTownLocation"
+}
+// extensions/lodestar/extension.json
+"supersedesOracles": {
+  "location":              "overlandLandmark",
+  "coastalWatersLocation": "coastalWatersLandmark"
 }
 ```
 
-When that extension is enabled, `expansionStore.suppressedOracleKeys()` unions
-the keys from every enabled extension and `getVisibleOracles()` filters them out
-of the picker. The extension then ships a **differently-keyed** replacement — so
-YRT's `yrtRegion` supplants base `region`, and `yrtStoryRegion` supplants
-Lodestar `storyRegion`. Priority follows the extension `order` (base 0 → delve 10
-→ yrt 20 → lodestar 30); Lodestar likewise hides base `location` and delve
-`featureAspect` / `featureFocus` / `charDisposition`.
+Client code that used to write `isSourceEnabled('yrt') ? 'yrtRegion' : 'region'`
+now writes `resolveOracleKey('region')`. Priority when two enabled extensions
+supersede the same key: the lower manifest `order` wins (YRT 20 beats Lodestar
+30 on `location`).
 
-Suppression only removes an oracle from the **picker** — a saved roll or a direct
-`rollOracle(key)` still resolves it. See
-[extensions.md — Oracle supersession](extensions.md) and the enabled-combination
-count guards in `apps/api/tests/unit/extensionsManifest.test.ts`.
+**`suppressesOracles: string[]`** — pure hides, no keyed rewrite. Used when the
+replacement resolves at a different layer (Lodestar's Core: Descriptor / Focus
+supersede Delve's `featureAspect` / `featureFocus` via `characterConcept.ts`,
+not a keyed swap).
+
+```jsonc
+// extensions/lodestar/extension.json
+"suppressesOracles": ["featureAspect", "featureFocus", "charDisposition"]
+```
+
+Both mechanisms feed `expansionStore.suppressedOracleKeys()` (the union hides
+their targets from the picker). Suppression only removes an oracle from the
+**picker** — a saved roll or a direct `rollOracle(key)` still resolves it. See
+[extensions.md → Oracle supersession](extensions.md#oracle-supersession) and
+the enabled-combination count guards in
+`apps/api/tests/unit/extensionsManifest.test.ts`.
 
 ---
 

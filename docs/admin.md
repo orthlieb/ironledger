@@ -30,6 +30,7 @@ There is no self-registration path to admin. The seed script (`npm run seed --wo
 | GET    | `/api/v1/admin/audit`                    | Recent audit log entries; `?search=...`                                         |
 | DELETE | `/api/v1/admin/audit`                    | Clear the audit log                                                             |
 | GET    | `/api/v1/admin/logs`                     | Tail PM2 log file; `?file=api-out\|api-error\|web-out\|web-error&lines=1..2000` |
+| DELETE | `/api/v1/admin/logs`                     | Truncate one PM2 log file to zero bytes; `?file=…` (whitelisted, `fs.truncate`) |
 | POST   | `/api/v1/admin/maintenance`              | Enable maintenance (`{ "message", "minutesUntilShutdown": 0..1440 }`)           |
 | DELETE | `/api/v1/admin/maintenance`              | Disable maintenance                                                             |
 | GET    | `/api/v1/admin/maintenance/status`       | Current status (used by the global banner poller too)                           |
@@ -59,6 +60,7 @@ Live PM2 log viewer.
 - **Tail size:** 1–2000 lines, default 200
 - **Implementation:** `readFile()` + split-on-newline + slice. There is no streaming / WebSocket; the panel polls.
 - **Filter:** client-side substring filter; expandable JSON rows when the line parses as JSON.
+- **Clear:** the toolbar's **Clear** button (disabled while the file is empty or unavailable) opens a confirm dialog naming the file, then `DELETE /api/v1/admin/logs?file=` truncates it to zero bytes via `fs.truncate` — keeps PM2's open file handle valid so the next write appends to the empty file. Logged as an `admin_clear_log` security event.
 
 ### Maintenance
 
