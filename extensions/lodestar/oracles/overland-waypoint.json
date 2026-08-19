@@ -1,8 +1,8 @@
 {
   "key": "lodestarOverlandWaypoint",
-  "title": "Overland Waypoint",
+  "title": "Location: Overland Waypoint",
   "category": "Location",
-  "selectLabel": "Overland Waypoint",
+  "selectLabel": "Location: Overland Waypoint",
   "description": "Use this oracle to help envision a location, discovery, or event when you Undertake a Journey and reach a waypoint.",
   "source": "lodestar",
   "data": [

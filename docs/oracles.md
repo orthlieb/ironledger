@@ -24,10 +24,10 @@ Every oracle file exports one object:
 ```jsonc
 {
   "key":         "action",                    // camelCase unique ID
-  "title":       "Action",                    // Full display title
+  "title":       "Core: Action",              // Full display title
   "category":    "Core",                      // chip grouping (Core, Combat, Story, Location, …)
   "source":      "base",                      // "base" | "delve" | "yrt" | "lodestar"
-  "selectLabel": "Action",                    // Label used in picker / dropdowns
+  "selectLabel": "Core: Action",              // Label used in picker / dropdowns
   "description": "Use this table when you …", // Guidance text shown in detail view
   "data": [
     { "topRange": 1,   "value": "Scheme" },   // Roll ≤ topRange → this result
@@ -121,8 +121,8 @@ named fields:
 Renders `D100 | col1 | col2 | …` (a lone value column keeps the space-saving
 2-/3-column layout for long lists). A row whose value carries a
 `[roll again](roll:self?times=2)` template blank re-rolls this table twice and
-combines (see **Value-level templates** below). _Canonical:_ Action (simple), YRT
-Region (typed), Battleground + Delve Site Nature Theme/Domain (described),
+combines (see **Value-level templates** below). _Canonical:_ Core: Action (simple), YRT
+Region (typed), Combat: Battleground + Delve Site: Theme/Domain (described),
 YRT Freeport Occupation (multi-column), Mana Backlash (Backlash / Effect).
 
 ### `columnSelect` — pick a column; per-column ranges, one shared result
@@ -167,7 +167,7 @@ not the frequency.
 ```
 
 Renders `D100 | col1 | col2 | …` with the active column highlighted. _Canonical:_
-Magnitude (9 columns), Elf Name (Elf 1/Elf 2), Other Name
+Scale: Magnitude (9 columns), Character: Name (Elf), Character: Name (Other)
 (Giants/Varou/Trolls).
 
 ### `twoStep` — outer roll → the row's own subtable
@@ -211,7 +211,7 @@ result renders:
 { "topRange": 100, "value": "[Primary Form](roll:monstrosityPrimaryForm?rollFrom=1&rollTo=3)" }
 ```
 
-_Canonical:_ Site Name (`phrase`), Monstrosity (`dossier`).
+_Canonical:_ Delve Site: Name (Template) (`phrase`), Monstrosity (`dossier`).
 
 ### Value-level templates & `roll:self` (Roll Twice)
 
@@ -231,7 +231,7 @@ badge). This replaced the old `/roll twice/i` text-sniff and the earlier
 { "topRange": 100, "value": "Hybrid ([roll again](roll:self?times=2))" }
 ```
 
-_Canonical:_ Goal, Troubles, Major Plot Twist, Primary Form.
+_Canonical:_ Character: Goal, Settlement: Troubles, Story: Plot Twist, Monstrosity: Primary Form.
 
 ### Template blanks — the `roll:` DSL
 
@@ -342,16 +342,16 @@ function rangeLabelForEntry(table: OracleEntry[], index: number): string {
 
 The detail view shows the full oracle table. Layout varies by entry count and oracle type:
 
-| Condition                 | Layout                                                               |
-| ------------------------- | -------------------------------------------------------------------- |
-| ≤ 40 entries              | 2 columns: d100 \| Result                                            |
-| 41–60 entries             | 4 columns: d100 \| Result \| d100 \| Result (side-by-side)           |
-| > 60 entries              | 6 columns: 3-column side-by-side                                     |
-| Flat with `columns`       | d100 + one column per entry (e.g. Battleground, Freeport Occupation) |
-| `columnSelect` / `matrix` | column picker + per-column table (see Oracle layouts)                |
-| `settlementName`          | twoStep: category (rowspan) + sub-entries in 2 sub-columns           |
-| `prefixSuffix`            | 2–3 groups of d100 \| Prefix \| Suffix; roll = prefix + suffix       |
-| `yrtTouched`              | Custom: d100 \| Class \| Social Rank \| Description                  |
+| Condition                 | Layout                                                                                  |
+| ------------------------- | --------------------------------------------------------------------------------------- |
+| ≤ 40 entries              | 2 columns: d100 \| Result                                                               |
+| 41–60 entries             | 4 columns: d100 \| Result \| d100 \| Result (side-by-side)                              |
+| > 60 entries              | 6 columns: 3-column side-by-side                                                        |
+| Flat with `columns`       | d100 + one column per entry (e.g. Combat: Battleground, Character: Freeport Occupation) |
+| `columnSelect` / `matrix` | column picker + per-column table (see Oracle layouts)                                   |
+| `settlementName`          | twoStep: category (rowspan) + sub-entries in 2 sub-columns                              |
+| `prefixSuffix`            | 2–3 groups of d100 \| Prefix \| Suffix; roll = prefix + suffix                          |
+| `yrtTouched`              | Custom: d100 \| Class \| Social Rank \| Description                                     |
 
 ---
 

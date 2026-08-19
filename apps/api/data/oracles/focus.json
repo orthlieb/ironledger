@@ -1,8 +1,8 @@
 {
   "key": "focus",
-  "title": "Focus",
+  "title": "Core: Focus",
   "category": "Core",
-  "selectLabel": "Focus",
+  "selectLabel": "Core: Focus",
   "description": "Inspired by Ironsworn: Starforged, the Descriptor and Focus oracles replace (and expand) the Aspect and Focus oracles originally included in Ironsworn: Delve. They are useful for revealing location-based details and discoveries.",
   "source": "base",
   "data": [

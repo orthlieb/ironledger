@@ -1,8 +1,8 @@
 {
   "key": "charDisposition",
-  "title": "Character Disposition",
+  "title": "Character: Disposition",
   "category": "Character",
-  "selectLabel": "Character Disposition",
+  "selectLabel": "Character: Disposition",
   "description": "Gauge an NPC's initial attitude or reaction when you first interact with them.",
   "source": "delve",
   "data": [

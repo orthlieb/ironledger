@@ -1,8 +1,8 @@
 {
   "key": "region",
-  "title": "Region",
+  "title": "Location: Region",
   "category": "Location",
-  "selectLabel": "Region",
+  "selectLabel": "Location: Region",
   "description": "Determine the broad region or terrain type of a location in the Ironlands.",
   "source": "base",
   "data": [

@@ -1,8 +1,8 @@
 {
   "key": "threatRavagingHorde",
-  "title": "Ravaging Horde",
+  "title": "Threat: Ravaging Horde",
   "category": "Threat",
-  "selectLabel": "Ravaging Horde",
+  "selectLabel": "Threat: Ravaging Horde",
   "description": "Generate the next event for a ravaging horde threat.",
   "source": "delve",
   "data": [

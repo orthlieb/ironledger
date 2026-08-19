@@ -1,8 +1,8 @@
 {
   "key": "scaleRank",
-  "title": "Rank",
+  "title": "Scale: Rank",
   "category": "Scale",
-  "selectLabel": "Rank",
+  "selectLabel": "Scale: Rank",
   "tableType": "matrix",
   "description": "Use this oracle to randomly set the challenge rank of a quest, journey, or foe. Choose the column and roll.",
   "source": "lodestar",

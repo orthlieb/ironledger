@@ -1,8 +1,8 @@
 {
   "key": "namesIronlander",
-  "title": "Ironlander 1 Name",
+  "title": "Character: Name (Ironlander Set 1)",
   "category": "Character",
-  "selectLabel": "Ironlander 1 Name",
+  "selectLabel": "Character: Name (Ironlander Set 1)",
   "description": "Generate a name for an Ironlander character. Surnames are not used in the Ironlands, and names are often gender-neutral.",
   "source": "base",
   "data": [

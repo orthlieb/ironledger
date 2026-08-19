@@ -1,8 +1,8 @@
 {
   "key": "siteName",
-  "title": "Site Name",
+  "title": "Delve Site: Name (Template)",
   "category": "Delve",
-  "selectLabel": "Site Name",
+  "selectLabel": "Delve Site: Name (Template)",
   "description": "Generate a Delve site's name: roll a format, then fill each blank from the referenced oracle.",
   "source": "delve",
   "tableType": "compound",

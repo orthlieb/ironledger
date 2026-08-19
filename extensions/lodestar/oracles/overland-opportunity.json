@@ -1,8 +1,8 @@
 {
   "key": "lodestarOverlandOpportunity",
-  "title": "Overland Opportunity",
+  "title": "Location: Overland Opportunity",
   "category": "Location",
-  "selectLabel": "Overland Opportunity",
+  "selectLabel": "Location: Overland Opportunity",
   "description": "To reveal the nature of an unexpected and beneficial event on a journey overland, such as when you Undertake a Journey and roll a strong hit with a match.",
   "source": "lodestar",
   "data": [

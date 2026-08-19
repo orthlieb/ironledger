@@ -1,9 +1,10 @@
 {
   "key": "endureExtremeHarm",
-  "title": "Endure Extreme Harm",
+  "title": "Move: Endure Extreme Harm",
   "category": "Move",
-  "selectLabel": "Endure Extreme Harm",
+  "selectLabel": "Move: Endure Extreme Harm",
   "description": "Use this oracle when you roll a miss on Endure Harm and both the Wounded and Maimed conditions are already marked. Roll to determine the dire consequence of suffering extreme physical harm.",
+  "postamble": "_This table was extracted from the original move for simplicity of implementation._",
   "source": "base",
   "data": [
     {
