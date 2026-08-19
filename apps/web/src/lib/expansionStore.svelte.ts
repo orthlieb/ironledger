@@ -109,15 +109,32 @@ export function sourceLabel(source: string): string {
 
 /** Oracle keys hidden by any currently-enabled extension. Reactive on
  *  `_registry` + `_enabled`, so oracle pickers re-filter when the user
- *  toggles an expansion. Used by supersession pairs — e.g. Lodestar
- *  suppresses `featureAspect` + `featureFocus` because Core: Descriptor
- *  + Core: Focus replace them. */
+ *  toggles an expansion. Union of:
+ *   • `suppressesOracles` — pure hides (e.g. Lodestar's Core: Descriptor
+ *     supersedes Delve's Feature Aspect at the character-concept level).
+ *   • `supersedesOracles` keys — hides implied by a keyed rewrite (asking
+ *     for the base key gets the replacement, so showing both would be
+ *     confusing). */
 export function suppressedOracleKeys(): Set<string> {
 	const out = new Set<string>();
 	for (const e of _registry) {
-		if (!e.suppressesOracles?.length) continue;
 		if (!isSourceEnabled(e.id)) continue;
-		for (const k of e.suppressesOracles) out.add(k);
+		for (const k of e.suppressesOracles ?? []) out.add(k);
+		for (const k of Object.keys(e.supersedesOracles ?? {})) out.add(k);
 	}
 	return out;
+}
+
+/** Resolve a possibly-superseded oracle key. Walks enabled extensions in
+ *  manifest order (lower `order` wins) and returns the first replacement
+ *  found, else the input. Consumers that used to write
+ *      isSourceEnabled('yrt') ? 'yrtRegion' : 'region'
+ *  now write `resolveOracleKey('region')`. */
+export function resolveOracleKey(key: string): string {
+	for (const e of _registry) {
+		if (!isSourceEnabled(e.id)) continue;
+		const rep = e.supersedesOracles?.[key];
+		if (rep) return rep;
+	}
+	return key;
 }

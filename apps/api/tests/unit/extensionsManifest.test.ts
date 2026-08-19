@@ -142,7 +142,14 @@ describe('oracle visibility by enabled extension', () => {
       .map((rel) => load(ext(id).root, rel) as { key?: string })
       .filter((o) => typeof o.key === 'string')
       .map((o) => o.key as string);
-  const suppressFor = (id: string) => new Set(ext(id).suppressesOracles ?? []);
+  // Effective hides = pure `suppressesOracles` ∪ the base keys the extension
+  // supersedes (a supersession implies a suppression — asking for the base
+  // key returns the replacement, so the base is auto-hidden from the picker).
+  const suppressFor = (id: string) =>
+    new Set([
+      ...(ext(id).suppressesOracles ?? []),
+      ...Object.keys(ext(id).supersedesOracles ?? {}),
+    ]);
   /** Effective visible oracle keys for a set of enabled extensions. */
   const effective = (enabled: string[]): Set<string> => {
     const present = new Set<string>();
@@ -166,17 +173,20 @@ describe('oracle visibility by enabled extension', () => {
   });
 
   // base always on; each row toggles delve / yrt / lodestar. Counts net out
-  // the 9 suppressions (yrt hides region/settlementCondition/settlementType +
-  // supplants storyRegion; lodestar hides delve featureAspect/featureFocus/
-  // charDisposition + base location/coastalWatersLocation).
+  // both `suppressesOracles` (pure hides) and `supersedesOracles` (implicit
+  // hide of the base key being rewritten). YRT hides {region, storyRegion,
+  // settlementType, settlementCondition, location} via supersedesOracles;
+  // Lodestar hides {featureAspect, featureFocus, charDisposition} via
+  // suppressesOracles and {location, coastalWatersLocation} via supersedes;
+  // union across enabled extensions.
   it.each([
     [false, false, false, 24],
     [false, false, true, 46],
-    [false, true, false, 36],
+    [false, true, false, 35],
     [false, true, true, 55],
     [true, false, false, 56],
     [true, false, true, 75],
-    [true, true, false, 68],
+    [true, true, false, 67],
     [true, true, true, 84],
   ])(
     'base + delve=%s yrt=%s lodestar=%s → %i visible oracles',

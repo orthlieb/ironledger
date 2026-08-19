@@ -143,6 +143,15 @@ export interface ExtensionInfo {
    *  supersession pairs (e.g. Lodestar's Core: Descriptor/Focus supersede
    *  Delve's Feature Aspect/Focus). Absent means suppresses nothing. */
   suppressesOracles?: string[];
+  /** Base-oracle-key → replacement-key rewrites this extension applies while
+   *  enabled. Consumers that ask for the base key transparently get the
+   *  replacement, and the base key is also hidden from the oracle picker
+   *  (union'd into suppressedOracleKeys()) so the two never both appear.
+   *  When multiple enabled extensions supersede the same base key, the one
+   *  with the lower manifest `order` wins. Example: YRT sets
+   *  `{ "region": "yrtRegion" }` so `resolveOracleKey('region')` returns
+   *  `'yrtRegion'` when YRT is on. */
+  supersedesOracles?: Record<string, string>;
   /** Move categories this extension introduces (picker order + icon + tint). */
   moveCategories?: CategoryDef[];
   /** Oracle categories this extension introduces (icon + tint; picker order

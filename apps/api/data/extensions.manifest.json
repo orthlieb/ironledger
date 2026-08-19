@@ -259,12 +259,13 @@
       "description": "Yrt homebrew setting — mana, Touched, ritual cantrips, and the Yrt bestiary.",
       "defaultEnabled": true,
       "order": 20,
-      "suppressesOracles": [
-        "region",
-        "settlementCondition",
-        "settlementType",
-        "storyRegion"
-      ],
+      "supersedesOracles": {
+        "location": "yrtCityTownLocation",
+        "region": "yrtRegion",
+        "settlementCondition": "yrtSettlementCondition",
+        "settlementType": "yrtSettlementType",
+        "storyRegion": "yrtStoryRegion"
+      },
       "moveCategories": [
         {
           "key": "Yrt",
@@ -312,11 +313,13 @@
       "order": 30,
       "suppressesOracles": [
         "charDisposition",
-        "coastalWatersLocation",
         "featureAspect",
-        "featureFocus",
-        "location"
+        "featureFocus"
       ],
+      "supersedesOracles": {
+        "coastalWatersLocation": "coastalWatersLandmark",
+        "location": "overlandLandmark"
+      },
       "moveCategories": [
         {
           "key": "Scene",
