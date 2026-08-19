@@ -73,7 +73,6 @@ export interface AssetDefinition {
   postamble?: string;
   abilities: AssetAbility[];
   preconditions?: AssetPrecondition[];
-  touchedFeatures?: boolean;
   /** Max number of pips in the counter/health tracker. Renders a pip row in the asset card. */
   counterMax?: number;
   /** Label shown next to the pip row — e.g. "Health", "Doses", "Charges". */

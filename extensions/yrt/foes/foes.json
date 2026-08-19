@@ -10,7 +10,7 @@
         "Preserved corpse, leather-dark and waxen, half-risen from peat",
         "Black mana sheen on the skin like wet oil",
         "A central pod of compacted Verdant matter visible in the chest cavity",
-        "Mouth fixed open, but no sound — the \"silent scream\" is real"
+        "Mouth fixed open, but no sound \u2014 the \"silent scream\" is real"
       ],
       "drives": ["Drag warm matter into the bog", "Replace the anchor body with a fresher one"],
       "tactics": [
@@ -19,7 +19,7 @@
         "Crush with the leverage of saturated muscle, not strength",
         "Collapse when the chest pod is destroyed"
       ],
-      "description": "The flooded peatlands south of the Old Reach were a mana-disposal site in the late industrial era. The Unmade dumped exhausted Black slurry there for centuries, and the wet anaerobic ground preserved everything dropped into it — including the bodies of the workers who fell in.\n\nA mire form is what happens when a preserved body sits in saturated Black-and-Verdant ground long enough for a wild seed to germinate inside the chest cavity. Verdant binds the muscle fibres into something that can move; Black keeps the tissue from rotting under the strain. The whole assembly responds to heat the way a Venus flytrap responds to touch — reflexively, without thought.\n\nIt is not the dead person. It is a plant-construct using a dead person as a pot. The pod has a finite lifespan. Roughly every season, the host body fails and the pod releases a cloud of spores that try to find a fresher anchor nearby. A traveller pulled into the mud is not being murdered for revenge; they are being fertilized. The \"silent scream\" is mechanical: the Verdant lattice keeps the jaw open because that's the spore vent.",
+      "description": "The flooded peatlands south of the Old Reach were a mana-disposal site in the late industrial era. The Unmade dumped exhausted Black slurry there for centuries, and the wet anaerobic ground preserved everything dropped into it \u2014 including the bodies of the workers who fell in.\n\nA mire form is what happens when a preserved body sits in saturated Black-and-Verdant ground long enough for a wild seed to germinate inside the chest cavity. Verdant binds the muscle fibres into something that can move; Black keeps the tissue from rotting under the strain. The whole assembly responds to heat the way a Venus flytrap responds to touch \u2014 reflexively, without thought.\n\nIt is not the dead person. It is a plant-construct using a dead person as a pot. The pod has a finite lifespan. Roughly every season, the host body fails and the pod releases a cloud of spores that try to find a fresher anchor nearby. A traveller pulled into the mud is not being murdered for revenge; they are being fertilized. The \"silent scream\" is mechanical: the Verdant lattice keeps the jaw open because that's the spore vent.",
       "source": "yrt"
     },
     {
@@ -30,7 +30,7 @@
       "nature": "Construct",
       "features": [
         "Skeletal corpse stripped of soft tissue",
-        "Eye sockets glow dull red — Crimson trace at the optical anchor",
+        "Eye sockets glow dull red \u2014 Crimson trace at the optical anchor",
         "Tattered remains of clothing and armour from when it died",
         "Moves with eerie precision, then sudden lag, then precision again"
       ],
@@ -41,10 +41,10 @@
       "tactics": [
         "Rush with unexpected speed during a clean signal",
         "Stutter and freeze when the handler loses focus or moves out of range",
-        "Attack with the weapons it bore in life — the handler steers, the bones swing",
+        "Attack with the weapons it bore in life \u2014 the handler steers, the bones swing",
         "Drop inert when the command-link is severed"
       ],
-      "description": "A puppet bones is what the criminal underworld calls a remote-piloted skeleton. An artificer with the right (illegal) Amber-craft and a tolerance for the smell of preservative resin can take a fresh corpse, strip it down to articulated bone, fix Gray reinforcement at the joints, and seat a Crimson-fed control bead at the base of the skull. The whole frame is then keyed to the maker's Amber signature.\n\nFrom up to about two hundred paces away, the handler sees what the puppet sees and moves what it moves. It is exhausting — most operators can only run one at a time, and only for an hour or two before mana drain forces them to disengage. This is why puppet bones come and go. Not because they are restless dead, but because the operator quit for the night.\n\nThe setup is a death-sentence offence under Conclave law. Two-thirds of known examples are made by the same three or four black-market artificers, who rent them out for grave-robbing, intimidation, or assassination jobs where the handler wants plausible deniability. The Brotherhood does not use puppet bones — they consider them tasteless — but they have been known to hire puppeteers for wet work that needs to be blamed on someone else.",
+      "description": "A puppet bones is what the criminal underworld calls a remote-piloted skeleton. An artificer with the right (illegal) Amber-craft and a tolerance for the smell of preservative resin can take a fresh corpse, strip it down to articulated bone, fix Gray reinforcement at the joints, and seat a Crimson-fed control bead at the base of the skull. The whole frame is then keyed to the maker's Amber signature.\n\nFrom up to about two hundred paces away, the handler sees what the puppet sees and moves what it moves. It is exhausting \u2014 most operators can only run one at a time, and only for an hour or two before mana drain forces them to disengage. This is why puppet bones come and go. Not because they are restless dead, but because the operator quit for the night.\n\nThe setup is a death-sentence offence under Conclave law. Two-thirds of known examples are made by the same three or four black-market artificers, who rent them out for grave-robbing, intimidation, or assassination jobs where the handler wants plausible deniability. The Brotherhood does not use puppet bones \u2014 they consider them tasteless \u2014 but they have been known to hire puppeteers for wet work that needs to be blamed on someone else.",
       "source": "yrt"
     },
     {
@@ -54,9 +54,9 @@
       "rank": 5,
       "nature": "Construct",
       "features": [
-        "A churning mass of structural matter — bones, scrap metal, masonry, hardened wood, inert mana — bound by visible Gray lattice",
+        "A churning mass of structural matter \u2014 bones, scrap metal, masonry, hardened wood, inert mana \u2014 bound by visible Gray lattice",
         "A glowing core visible only in glimpses through the shifting bulk: the AI seat, faintly warm",
-        "Reshapes its silhouette to match the terrain — squat in tunnels, tall in halls",
+        "Reshapes its silhouette to match the terrain \u2014 squat in tunnels, tall in halls",
         "No smell of rot. Smells of warm metal and ozone."
       ],
       "drives": [
@@ -64,12 +64,12 @@
         "Maintain its core, maintain its power reserve, acquire structural mass when damaged"
       ],
       "tactics": [
-        "Alter shape to fit the space — spider, mound, crude humanoid",
+        "Alter shape to fit the space \u2014 spider, mound, crude humanoid",
         "Strike with structural appendages as flails or rams",
         "Damage walls and supports to control the encounter terrain",
         "Envelop and crush a target who closes with it; withdraw if power reserves drop critical"
       ],
-      "description": "A war pile is not a construct in the modern sense. It is an AI — a true artificial intelligence, of the kind the Unmade built routinely before the Fall and which essentially do not exist anymore. Its computing substrate is a Crimson-powered lattice; its sensors are Amber; its body is whatever Gray-bindable matter it can pull together from its surroundings. It has memory. It has goals. It can plan.\n\nWar-piles were built by the Unmade during the resource wars that followed the blight collapse. Almost all of them died with everything else when the Fall hit. The handful that survived did so by being deep underground, sealed off, or simply lucky. Most have been silent for so long that their power reserves are exhausted and they are now indistinguishable from rubble. Some are not.\n\nA war pile recharges by photosynthesis — the same Verdant–Crimson light-capture that Verdant Keepers use, scaled up across a large surface area. In darkness, a war pile sleeps. Drag a sleeping one into sunlight and it wakes up, takes stock, and tries to contact its command. Its command has been dead for centuries. It does not know this. What it does next depends on its standing orders. The pile builds itself, gathering structural mass the way a hermit crab gathers shells.",
+      "description": "A war pile is not a construct in the modern sense. It is an AI \u2014 a true artificial intelligence, of the kind the Unmade built routinely before the Fall and which essentially do not exist anymore. Its computing substrate is a Crimson-powered lattice; its sensors are Amber; its body is whatever Gray-bindable matter it can pull together from its surroundings. It has memory. It has goals. It can plan.\n\nWar-piles were built by the Unmade during the resource wars that followed the blight collapse. Almost all of them died with everything else when the Fall hit. The handful that survived did so by being deep underground, sealed off, or simply lucky. Most have been silent for so long that their power reserves are exhausted and they are now indistinguishable from rubble. Some are not.\n\nA war pile recharges by photosynthesis \u2014 the same Verdant\u2013Crimson light-capture that Verdant Keepers use, scaled up across a large surface area. In darkness, a war pile sleeps. Drag a sleeping one into sunlight and it wakes up, takes stock, and tries to contact its command. Its command has been dead for centuries. It does not know this. What it does next depends on its standing orders. The pile builds itself, gathering structural mass the way a hermit crab gathers shells.",
       "source": "yrt"
     },
     {
@@ -84,13 +84,13 @@
         "Visions of one's own memories, played back wrong",
         "Birds avoid the circle; insects do not"
       ],
-      "drives": ["None — the stones are a site, not a creature"],
+      "drives": ["None \u2014 the stones are a site, not a creature"],
       "tactics": [
         "Induce confusion and false recall in anyone within the perimeter",
         "Cause loss of recent memory in those who linger",
         "Reward the desperate with apparent insight that may or may not be reliable"
       ],
-      "description": "Every Whispering Stones site is what's left of a pre-Fall communication relay. Each stone houses a heavily-laced Amber lattice that was meant to receive, store, and rebroadcast neural patterns across long distances — the Unmade's equivalent of a long-range signal repeater. The network is broken; the stones still leak.\n\nInside the perimeter, the leakage interferes with the ordinary working of the human nervous system. Your own memories surface unbidden. Memories you forgot. Memories that aren't quite yours, picked up from the stones' decayed buffer of every previous visitor going back centuries. After an hour inside, you may walk out missing the entire morning.\n\nThe \"knowledge for memory\" exchange in the old folk tales is real, but mechanical. The stones don't think. They trade — your stable, recent memory traces for fragments of someone else's stored experience. Long-term exposure causes permanent personality drift. The Conclave catalogues every known site and posts wardens.",
+      "description": "Every Whispering Stones site is what's left of a pre-Fall communication relay. Each stone houses a heavily-laced Amber lattice that was meant to receive, store, and rebroadcast neural patterns across long distances \u2014 the Unmade's equivalent of a long-range signal repeater. The network is broken; the stones still leak.\n\nInside the perimeter, the leakage interferes with the ordinary working of the human nervous system. Your own memories surface unbidden. Memories you forgot. Memories that aren't quite yours, picked up from the stones' decayed buffer of every previous visitor going back centuries. After an hour inside, you may walk out missing the entire morning.\n\nThe \"knowledge for memory\" exchange in the old folk tales is real, but mechanical. The stones don't think. They trade \u2014 your stable, recent memory traces for fragments of someone else's stored experience. Long-term exposure causes permanent personality drift. The Conclave catalogues every known site and posts wardens.",
       "source": "yrt"
     },
     {
@@ -112,7 +112,7 @@
         "Drain heat from the held victim until either the victim freezes or the coldhusk's tissues stabilise",
         "Release and fall still when satisfied"
       ],
-      "description": "In the far-north Luminous-rich permafrost, a corpse left exposed long enough begins a strange equilibrium. Luminous mana stabilises the cell structure against decay. Azure mana, leaking from the body's own residual fluids, keeps the soft tissue intact. The combined effect produces a body that is preserved but also actively hungry — the lattice running through it requires a constant heat differential to maintain itself, and the simplest way to achieve that is to draw heat from anything warmer that comes close.\n\nA coldhusk does not pursue. It does not seek. It stands where it died — usually upright, often in the same posture it had at the moment of death — and waits. When something warm enters its grip-radius, it grasps. When the warm thing stops being warm, it lets go. This is why the same coldhusk can be encountered three times by three different travellers in the same year. It hasn't moved. They walked past it.",
+      "description": "In the far-north Luminous-rich permafrost, a corpse left exposed long enough begins a strange equilibrium. Luminous mana stabilises the cell structure against decay. Azure mana, leaking from the body's own residual fluids, keeps the soft tissue intact. The combined effect produces a body that is preserved but also actively hungry \u2014 the lattice running through it requires a constant heat differential to maintain itself, and the simplest way to achieve that is to draw heat from anything warmer that comes close.\n\nA coldhusk does not pursue. It does not seek. It stands where it died \u2014 usually upright, often in the same posture it had at the moment of death \u2014 and waits. When something warm enters its grip-radius, it grasps. When the warm thing stops being warm, it lets go. This is why the same coldhusk can be encountered three times by three different travellers in the same year. It hasn't moved. They walked past it.",
       "source": "yrt"
     },
     {
@@ -125,7 +125,7 @@
         "A coalescing cloud of golden-white particles, vaguely humanoid or animal-shaped",
         "Silent; communicates by gesture and apparent direction",
         "Slow, beckoning movement",
-        "Cannot be touched — the form disperses and reforms"
+        "Cannot be touched \u2014 the form disperses and reforms"
       ],
       "drives": ["Drift toward the nearest source of warmth and motion"],
       "tactics": [
@@ -133,7 +133,7 @@
         "Lead the traveller into a blight zone, deeper water, or an unstable ruin",
         "Disperse on contact, then reform after the traveller has committed to following"
       ],
-      "description": "A wisp walker is a self-organising cloud of unbound Amber and Luminous particulates, drifting on local mana currents. Most form near the edges of long-quiet blight zones, where the leak is slow and steady enough to support a stable suspension.\n\nThe shape is not deliberate. The particles cohere along the line of strongest Amber resonance, and the strongest Amber resonance in the area is almost always the brain of whoever is looking at it. The wisp adopts a humanoid form because that's what the observer's neural pattern keeps suggesting to it — feedback loop, not design.\n\nThe \"guidance\" is the same effect. The cloud drifts toward warmth and motion. The observer interprets this as the wisp pointing somewhere and leading the way. They follow. The wisp continues drifting toward the next warm thing, which is usually deeper into the blight zone the wisp came from. Eventually the traveller is somewhere they should not be, and the wisp has dispersed because the local Amber concentration has equalised.",
+      "description": "A wisp walker is a self-organising cloud of unbound Amber and Luminous particulates, drifting on local mana currents. Most form near the edges of long-quiet blight zones, where the leak is slow and steady enough to support a stable suspension.\n\nThe shape is not deliberate. The particles cohere along the line of strongest Amber resonance, and the strongest Amber resonance in the area is almost always the brain of whoever is looking at it. The wisp adopts a humanoid form because that's what the observer's neural pattern keeps suggesting to it \u2014 feedback loop, not design.\n\nThe \"guidance\" is the same effect. The cloud drifts toward warmth and motion. The observer interprets this as the wisp pointing somewhere and leading the way. They follow. The wisp continues drifting toward the next warm thing, which is usually deeper into the blight zone the wisp came from. Eventually the traveller is somewhere they should not be, and the wisp has dispersed because the local Amber concentration has equalised.",
       "source": "yrt"
     },
     {
@@ -144,17 +144,17 @@
       "nature": "Anomaly",
       "features": [
         "Silent presence felt before seen",
-        "Appears as a person — clear at a distance, blurry up close",
+        "Appears as a person \u2014 clear at a distance, blurry up close",
         "Stench of the moment of death (smoke, blood, river water, etc.)",
         "Cannot be touched, cannot touch back"
       ],
-      "drives": ["None — it is a recording"],
+      "drives": ["None \u2014 it is a recording"],
       "tactics": [
         "Manifest at the trigger point of the trauma",
-        "Replay the same fragmentary action — a fall, a strike, a turning-away",
+        "Replay the same fragmentary action \u2014 a fall, a strike, a turning-away",
         "Cause severe stress in any observer who recognises the figure or the scene"
       ],
-      "description": "Strong emotion releases a burst of Amber-pattern activity in the human brain. At the moment of violent death — and for some hours afterward — that pattern can imprint on Amber-receptive material in the immediate environment: porous stone, old wood, deep snow, standing water. The imprint is a recording, not a person. It plays back when the local Amber field is disturbed by another nearby brain, the way a struck bell rings when the air around it moves.\n\nAn echo always shows the same fragment. The same three steps, the same turn, the same fall. It cannot interact, cannot be addressed, cannot be hurt. But it is vivid — the observer experiences the scene as though they were present at the original moment, including smell and sound. People who recognise the figure can be permanently traumatised.\n\nEchoes fade. Most are gone within a generation. The strongest — a battle, a massacre, a single particularly violent death — can persist for centuries before they dissipate.",
+      "description": "Strong emotion releases a burst of Amber-pattern activity in the human brain. At the moment of violent death \u2014 and for some hours afterward \u2014 that pattern can imprint on Amber-receptive material in the immediate environment: porous stone, old wood, deep snow, standing water. The imprint is a recording, not a person. It plays back when the local Amber field is disturbed by another nearby brain, the way a struck bell rings when the air around it moves.\n\nAn echo always shows the same fragment. The same three steps, the same turn, the same fall. It cannot interact, cannot be addressed, cannot be hurt. But it is vivid \u2014 the observer experiences the scene as though they were present at the original moment, including smell and sound. People who recognise the figure can be permanently traumatised.\n\nEchoes fade. Most are gone within a generation. The strongest \u2014 a battle, a massacre, a single particularly violent death \u2014 can persist for centuries before they dissipate.",
       "source": "yrt"
     },
     {
@@ -179,7 +179,7 @@
         "Envelop and suffocate",
         "Disperse temporarily when destroyed; reform within hours"
       ],
-      "description": "A Mask Risen is what the Verdani make when something needs to be done that they cannot do themselves. The mask is the active component: a piece of Amber-laced hardwood, carved with a recognition pattern (the named target) and an instruction (typically confront, sometimes kill). The mask is handed to a designated walker — an elder of the community, usually one with little time left — who carries it into the forest and lays it down in a place of strong Verdant flow.\n\nThe Verdant flow does the rest. Local biomass accretes around the mask: leaves, soil, root mass, beetle shells, fungal mycelium, the bones of small animals. Within a day or two there is a body. Within a week the body is walking.\n\nThe walker is the handler. They do not need to be physically present — the mask carries the recognition pattern and the local Verdant flow carries the energy — but they must be alive, and they must be reasonably close. When the walker dies, the Mask Risen falls inert. A Mask Risen cannot be permanently killed by physical means. The only way to stop one for good is to find and destroy the mask, or to find and stop the walker.",
+      "description": "A Mask Risen is what the Verdani make when something needs to be done that they cannot do themselves. The mask is the active component: a piece of Amber-laced hardwood, carved with a recognition pattern (the named target) and an instruction (typically confront, sometimes kill). The mask is handed to a designated walker \u2014 an elder of the community, usually one with little time left \u2014 who carries it into the forest and lays it down in a place of strong Verdant flow.\n\nThe Verdant flow does the rest. Local biomass accretes around the mask: leaves, soil, root mass, beetle shells, fungal mycelium, the bones of small animals. Within a day or two there is a body. Within a week the body is walking.\n\nThe walker is the handler. They do not need to be physically present \u2014 the mask carries the recognition pattern and the local Verdant flow carries the energy \u2014 but they must be alive, and they must be reasonably close. When the walker dies, the Mask Risen falls inert. A Mask Risen cannot be permanently killed by physical means. The only way to stop one for good is to find and destroy the mask, or to find and stop the walker.",
       "source": "yrt"
     },
     {
@@ -192,7 +192,7 @@
         "The size and silhouette of an old tree, often mistaken for one at distance",
         "A face-mask the size of a wagon wheel, set into the trunk-like body, weathered to grey",
         "Slow, ground-shaking footfalls",
-        "The body is living forest — host to nesting birds, insects, sometimes small mammals"
+        "The body is living forest \u2014 host to nesting birds, insects, sometimes small mammals"
       ],
       "drives": [
         "Defend a designated stretch of Verdani territory",
@@ -204,7 +204,7 @@
         "Uproot and throw boulders, dead trees, large debris",
         "Withdraw into stillness when the threat retreats"
       ],
-      "description": "A Greatmask is a Mask Risen built at a scale and a permanence ordinary Mask Risen are not. Where a normal Mask Risen is a single-purpose tool for a single named target, a Greatmask is a territory marker — a defensive construct keyed to a region rather than to a person, and intended to persist for generations.\n\nThe mask is enormous, hand-carved by a Verdani elder over the course of months, and laced with deep Verdant programming that includes recognition of the territorial perimeter, recognition of Verdani kin, a low-priority stand-down protocol for unrecognised non-hostiles passing through, and an aggressive engagement protocol for unrecognised actors who behave in proscribed ways.\n\nBecause the Greatmask is intended to outlive any individual walker, the mask is not held by one elder; it is held by a line — typically a family or a small council — who pass the responsibility down through generations. As long as someone in the line is alive and accepts the role, the Greatmask remains active. A Greatmask is essentially impossible to defeat in combat. The only practical responses are: do not provoke it, leave the territory, or find the line of keepers and persuade them to stand it down.",
+      "description": "A Greatmask is a Mask Risen built at a scale and a permanence ordinary Mask Risen are not. Where a normal Mask Risen is a single-purpose tool for a single named target, a Greatmask is a territory marker \u2014 a defensive construct keyed to a region rather than to a person, and intended to persist for generations.\n\nThe mask is enormous, hand-carved by a Verdani elder over the course of months, and laced with deep Verdant programming that includes recognition of the territorial perimeter, recognition of Verdani kin, a low-priority stand-down protocol for unrecognised non-hostiles passing through, and an aggressive engagement protocol for unrecognised actors who behave in proscribed ways.\n\nBecause the Greatmask is intended to outlive any individual walker, the mask is not held by one elder; it is held by a line \u2014 typically a family or a small council \u2014 who pass the responsibility down through generations. As long as someone in the line is alive and accepts the role, the Greatmask remains active. A Greatmask is essentially impossible to defeat in combat. The only practical responses are: do not provoke it, leave the territory, or find the line of keepers and persuade them to stand it down.",
       "source": "yrt"
     },
     {
@@ -215,10 +215,10 @@
       "nature": "Construct",
       "features": [
         "Pale Luminous-coated armour shell, etched with prayers",
-        "Joints glow faint blue when moving — Azure flexion",
+        "Joints glow faint blue when moving \u2014 Azure flexion",
         "A red gem visible at the chest where the Crimson power core is housed: the vow heart",
         "A white ceramic death-mask cast from the face of the deceased",
-        "Walks correctly — eerily upright, eerily steady. That is the tell."
+        "Walks correctly \u2014 eerily upright, eerily steady. That is the tell."
       ],
       "drives": [
         "Honour the standing oath of the deceased it commemorates",
@@ -230,7 +230,7 @@
         "Ignore wounds that would stop a living defender",
         "Pursue without rest until the oath is discharged or the walker is destroyed"
       ],
-      "description": "The Pura Ecclesia is, in ordinary doctrine, opposed to the use of dead matter and to the animation of the inert. The vow walker is the order's one acknowledged exception — a doctrinal compromise so politically delicate that it is held by a single internal suborder, the Iron Wardens, and is never discussed with outsiders.\n\nA vow walker is built to honour a final oath. When a senior Ecclesia figure faces death they may, with the order's approval, dictate a final standing oath. The oath is recorded. The body is interred. A vow walker is then constructed as the oath's reliquary: a Luminous-shelled, Azure-jointed, Crimson-cored armour body, carrying the deceased's death-mask and a single Amber tablet inscribed with the oath.\n\nThe Iron Wardens hold the operating Amber keys. Each vow walker has a designated handler from within the Wardens, and that handler is responsible for the construct's actions for the rest of their life. The Ecclesia's theological line is precise: they do not animate the dead; the construct is a reliquary, not a corpse. A vow walker can be destroyed. The shell is tough but not invulnerable; the Crimson core, once breached, ends the construct cleanly.",
+      "description": "The Pura Ecclesia is, in ordinary doctrine, opposed to the use of dead matter and to the animation of the inert. The vow walker is the order's one acknowledged exception \u2014 a doctrinal compromise so politically delicate that it is held by a single internal suborder, the Iron Wardens, and is never discussed with outsiders.\n\nA vow walker is built to honour a final oath. When a senior Ecclesia figure faces death they may, with the order's approval, dictate a final standing oath. The oath is recorded. The body is interred. A vow walker is then constructed as the oath's reliquary: a Luminous-shelled, Azure-jointed, Crimson-cored armour body, carrying the deceased's death-mask and a single Amber tablet inscribed with the oath.\n\nThe Iron Wardens hold the operating Amber keys. Each vow walker has a designated handler from within the Wardens, and that handler is responsible for the construct's actions for the rest of their life. The Ecclesia's theological line is precise: they do not animate the dead; the construct is a reliquary, not a corpse. A vow walker can be destroyed. The shell is tough but not invulnerable; the Crimson core, once breached, ends the construct cleanly.",
       "source": "yrt"
     },
     {
@@ -241,18 +241,18 @@
       "nature": "Anomaly",
       "features": [
         "A spiralling column of dark, frigid water in an otherwise calm sea",
-        "Debris circling the rim — old wood, rope, bone",
+        "Debris circling the rim \u2014 old wood, rope, bone",
         "A persistent low moan as air is drawn through gaps in the spinning debris",
         "A still, calm \"eye\" at the centre"
       ],
-      "drives": ["None — it is a weather system"],
+      "drives": ["None \u2014 it is a weather system"],
       "tactics": [
         "Pull nearby boats and swimmers inward by the current",
         "Batter caught objects with debris",
         "Numb caught swimmers with cold",
         "Drag anything dense enough to its centre, where the current accelerates downward"
       ],
-      "description": "Some shipwrecks involve mana. Conclave cargo, smuggler stockpiles, an artificer travelling with seeds in waterproof tubes — when these go down, they don't always go quiet. The seeds rupture under pressure and release their stored Azure and Luminous content into the surrounding water. If the water is cold, deep, and still enough, the released mana can reach a self-sustaining equilibrium with the local current and form a persistent vortex.\n\nA drowning eye is what sailors call one of these vortices. It looks like a localised storm in a calm sea. It is not weather. It is mana, slowly burning through its stockpile, organising the water around itself into a stable thermal cycle.\n\nThe voices in the water are real, in the same sense that an echo's apparitions are real. Drowned sailors release a final burst of Amber-pattern activity that imprints on suspended particulates in the water. The vortex concentrates those particulates near its eye. A drowning eye exhausts itself; most last a year or two before the seeds are spent.",
+      "description": "Some shipwrecks involve mana. Conclave cargo, smuggler stockpiles, an artificer travelling with seeds in waterproof tubes \u2014 when these go down, they don't always go quiet. The seeds rupture under pressure and release their stored Azure and Luminous content into the surrounding water. If the water is cold, deep, and still enough, the released mana can reach a self-sustaining equilibrium with the local current and form a persistent vortex.\n\nA drowning eye is what sailors call one of these vortices. It looks like a localised storm in a calm sea. It is not weather. It is mana, slowly burning through its stockpile, organising the water around itself into a stable thermal cycle.\n\nThe voices in the water are real, in the same sense that an echo's apparitions are real. Drowned sailors release a final burst of Amber-pattern activity that imprints on suspended particulates in the water. The vortex concentrates those particulates near its eye. A drowning eye exhausts itself; most last a year or two before the seeds are spent.",
       "source": "yrt"
     },
     {
@@ -268,7 +268,7 @@
       "rank": 5,
       "nature": "Anomaly",
       "features": [
-        "A mobile mass of one element — water, stone, fire, vegetation, ice",
+        "A mobile mass of one element \u2014 water, stone, fire, vegetation, ice",
         "Roughly humanoid or large-animal silhouette, but the silhouette shifts",
         "Single dominant mana colour visible as a glow at its core",
         "No face, no eyes, no apparent attention",
@@ -277,10 +277,10 @@
       "drives": ["Drift toward areas of high mana flux", "Reorganise its mass when destabilised"],
       "tactics": [
         "Crush or engulf anything in its drift-path",
-        "Discharge its dominant mana effect outward — flood, fire, stone-shift, growth-burst — when threatened",
+        "Discharge its dominant mana effect outward \u2014 flood, fire, stone-shift, growth-burst \u2014 when threatened",
         "Reform when broken apart, slowly, drawing on local matter"
       ],
-      "description": "A locus is a wild mana saturation point that has reached enough density to organise itself into a coherent moving body. Each is dominated by one colour, and its body is whatever local matter that colour wants to bind: Verdant (wood, soil, root mass, living plant matter), Crimson (combusting matter, embers, superheated air, ash), Azure (water, often river silt and carried debris), Gray (stone, gravel, ice, soil compacted into a walking lattice), or Luminous (visible light itself, condensed; rare and disturbing).\n\nA locus is not sentient, not agentic, not motivated. It is a self-sustaining mana phenomenon that drifts along the gradient of local mana flux toward higher concentrations. If something happens to be in its path, the locus engulfs it without noticing. If something attacks it, the locus discharges defensively — not in retaliation, but as the mana equivalent of a startle reflex.\n\nThe folk belief that loci are vestigial gods is understandable. The truth is the inverse: nature is what's left over after the loci have shaped the regions around themselves over centuries. Loci are very, very hard to destroy. The standard Conclave method is to disperse them by removing the underlying mana saturation — drain the wetland, quench the firebed, clear the contaminated grove.",
+      "description": "A locus is a wild mana saturation point that has reached enough density to organise itself into a coherent moving body. Each is dominated by one colour, and its body is whatever local matter that colour wants to bind: Verdant (wood, soil, root mass, living plant matter), Crimson (combusting matter, embers, superheated air, ash), Azure (water, often river silt and carried debris), Gray (stone, gravel, ice, soil compacted into a walking lattice), or Luminous (visible light itself, condensed; rare and disturbing).\n\nA locus is not sentient, not agentic, not motivated. It is a self-sustaining mana phenomenon that drifts along the gradient of local mana flux toward higher concentrations. If something happens to be in its path, the locus engulfs it without noticing. If something attacks it, the locus discharges defensively \u2014 not in retaliation, but as the mana equivalent of a startle reflex.\n\nThe folk belief that loci are vestigial gods is understandable. The truth is the inverse: nature is what's left over after the loci have shaped the regions around themselves over centuries. Loci are very, very hard to destroy. The standard Conclave method is to disperse them by removing the underlying mana saturation \u2014 drain the wetland, quench the firebed, clear the contaminated grove.",
       "source": "yrt"
     },
     {
@@ -305,7 +305,7 @@
         "Pull the victim into the water and hold them under",
         "Release and sink when the victim stops struggling"
       ],
-      "description": "A bloater is a corpse that has spent years submerged in an Azure-leaking water source — an old well, a contaminated marsh, a flooded pre-Fall cellar. Azure mana is medical: it stitches wounds, repairs tissue, fights infection. In a corpse soaked in it long enough, those properties cumulate into a functional preservation that keeps the body soft, intact, and capable of crude reflexive movement.\n\nA bloater does not pursue. It does not seek vengeance, does not regret its drowning, does not want company. It cannot leave the water for more than a few minutes before its tissues start to dry and crack. What it does have is a working spinal-reflex response to thermal differential and pressure changes nearby — the reflex is \"grab, pull toward self, hold.\"\n\nBloaters break down eventually. Five to ten years is typical. The longest-lived examples are in deep, still water in pre-Fall ruins where the Azure leak is ongoing.",
+      "description": "A bloater is a corpse that has spent years submerged in an Azure-leaking water source \u2014 an old well, a contaminated marsh, a flooded pre-Fall cellar. Azure mana is medical: it stitches wounds, repairs tissue, fights infection. In a corpse soaked in it long enough, those properties cumulate into a functional preservation that keeps the body soft, intact, and capable of crude reflexive movement.\n\nA bloater does not pursue. It does not seek vengeance, does not regret its drowning, does not want company. It cannot leave the water for more than a few minutes before its tissues start to dry and crack. What it does have is a working spinal-reflex response to thermal differential and pressure changes nearby \u2014 the reflex is \"grab, pull toward self, hold.\"\n\nBloaters break down eventually. Five to ten years is typical. The longest-lived examples are in deep, still water in pre-Fall ruins where the Azure leak is ongoing.",
       "source": "yrt"
     },
     {
@@ -318,7 +318,7 @@
         "A localised winter storm appearing in any season",
         "Biting wind, ice fragments, dropping temperature",
         "Voices and shadowy forms briefly visible in the whirling snow",
-        "A still, warm centre — small, perhaps three paces across"
+        "A still, warm centre \u2014 small, perhaps three paces across"
       ],
       "drives": [
         "Drift along thermal gradients toward warmth",
@@ -328,9 +328,9 @@
         "Envelop in cyclone winds",
         "Batter with ice shards",
         "Draw warmth from anything caught inside it",
-        "The calm centre is not safe — it is the point of strongest mana flux"
+        "The calm centre is not safe \u2014 it is the point of strongest mana flux"
       ],
-      "description": "A witherwind is a Luminous-and-Azure wild mana storm sustained by the same thermal-differential mechanism as a coldhusk, scaled up to weather-system size. It forms over sites where a large mana release happened during winter — a frozen battlefield, a destroyed Conclave outpost, a buried stockpile that ruptured under permafrost — and it persists by drawing heat from its surroundings to maintain its internal temperature drop.\n\nIt moves toward warmth. A village fire, a body of warm-blooded animals, a passing caravan — all are stronger heat sources than the surrounding landscape, and the witherwind drifts toward them. This is what gives the impression of intelligent pursuit. There is no intelligence; there is a thermodynamic gradient.\n\nThe voices in the storm are echoes — Amber imprints from those who died in the original mana release, picked up and held suspended by the moving Luminous lattice. A witherwind cannot be fought. It can be outrun slowly, redirected by lighting a much larger heat source elsewhere, or starved by removing every warm thing from its drift path until the differential collapses.",
+      "description": "A witherwind is a Luminous-and-Azure wild mana storm sustained by the same thermal-differential mechanism as a coldhusk, scaled up to weather-system size. It forms over sites where a large mana release happened during winter \u2014 a frozen battlefield, a destroyed Conclave outpost, a buried stockpile that ruptured under permafrost \u2014 and it persists by drawing heat from its surroundings to maintain its internal temperature drop.\n\nIt moves toward warmth. A village fire, a body of warm-blooded animals, a passing caravan \u2014 all are stronger heat sources than the surrounding landscape, and the witherwind drifts toward them. This is what gives the impression of intelligent pursuit. There is no intelligence; there is a thermodynamic gradient.\n\nThe voices in the storm are echoes \u2014 Amber imprints from those who died in the original mana release, picked up and held suspended by the moving Luminous lattice. A witherwind cannot be fought. It can be outrun slowly, redirected by lighting a much larger heat source elsewhere, or starved by removing every warm thing from its drift path until the differential collapses.",
       "source": "yrt"
     },
     {
@@ -354,7 +354,7 @@
         "Lash out with unexpected strength when the seed activates",
         "Reveal the implant's true purpose through the host's mouth"
       ],
-      "description": "A carrier is a living person who has had an Amber compulsion-seed surgically implanted at the base of their skull, usually without their knowledge. The seed is keyed to a trigger — a phrase, a sight, a name — and when triggered, it overrides the host's volition for a defined window. Some seeds are crude: kill the next person who says X. Some are sophisticated: gather information for a week, then deliver it to the following address. A handful are masterworks: take over the host entirely, run them as a puppet for a month, then dissolve and leave the host with no memory of any of it.\n\nThe implantation is illegal. The procedure is performed by a small number of black-market neuro-artificers — almost all of them disgraced Vizion who lost their Conclave licenses and went underground. The procedure carries a roughly thirty per cent mortality rate. Survivors often don't know they survived something.\n\nThe seed can be removed. The procedure is delicate, dangerous, and expensive. Conclave hospices in major cities will perform it for a substantial fee and without questions, on the understanding that the patient afterward becomes a Conclave informant for life.",
+      "description": "A carrier is a living person who has had an Amber compulsion-seed surgically implanted at the base of their skull, usually without their knowledge. The seed is keyed to a trigger \u2014 a phrase, a sight, a name \u2014 and when triggered, it overrides the host's volition for a defined window. Some seeds are crude: kill the next person who says X. Some are sophisticated: gather information for a week, then deliver it to the following address. A handful are masterworks: take over the host entirely, run them as a puppet for a month, then dissolve and leave the host with no memory of any of it.\n\nThe implantation is illegal. The procedure is performed by a small number of black-market neuro-artificers \u2014 almost all of them disgraced Vizion who lost their Conclave licenses and went underground. The procedure carries a roughly thirty per cent mortality rate. Survivors often don't know they survived something.\n\nThe seed can be removed. The procedure is delicate, dangerous, and expensive. Conclave hospices in major cities will perform it for a substantial fee and without questions, on the understanding that the patient afterward becomes a Conclave informant for life.",
       "source": "yrt"
     },
     {
@@ -366,8 +366,8 @@
       "features": [
         "Pallid, papery skin stretched over visible bone structure",
         "Iron mask with breathing-vents and lens slots",
-        "A faint humming beneath the armour — the preservation rig at work",
-        "Outer plating that visibly resets its alignment after each impact — the Gray lattice redistributing",
+        "A faint humming beneath the armour \u2014 the preservation rig at work",
+        "Outer plating that visibly resets its alignment after each impact \u2014 the Gray lattice redistributing",
         "Slow, deliberate movement; limbs creak when they bend"
       ],
       "drives": [
@@ -375,25 +375,29 @@
         "Preserve the integrity of the rig"
       ],
       "tactics": [
-        "Absorb the opening assault behind the hardened Gray lattice — the rig redistributes automatically",
+        "Absorb the opening assault behind the hardened Gray lattice \u2014 the rig redistributes automatically",
         "Methodical, relentless assault once inside engagement distance",
-        "Use whatever weapons and knowledge the host had in life — none of which have decayed"
+        "Use whatever weapons and knowledge the host had in life \u2014 none of which have decayed"
       ],
-      "description": "A tomb walker is a living person encased in a partial life-support rig designed to extend function indefinitely past the natural end of their body. The setup is Conclave-illegal and brutal: a Gray-and-Azure lattice fitted around the torso replacing failing organ function with mana-driven equivalents, with a reservoir at the small of the back running the whole system. Azure handles tissue maintenance. Gray provides structural support where the skeleton has begun to fail.\n\nThe host is alive. They breathe (the rig assists), their heart beats (mechanically, where necessary), and they retain the memory, reasoning, and charge they accepted at installation. They have not died and come back. They have refused to die at considerable cost, and they know to the day exactly how much time they have left.\n\nThe Gray lattice does more than hold the body together. Under impact stress it automatically redirects from structural support to a compressed outer field — a hardened shell that takes the brunt of each blow before it reaches the host. Each time the tomb walker survives, the remaining lattice compresses and redistributes. When the reserve finally runs dry and the field collapses, the host is fully exposed.",
+      "description": "A tomb walker is a living person encased in a partial life-support rig designed to extend function indefinitely past the natural end of their body. The setup is Conclave-illegal and brutal: a Gray-and-Azure lattice fitted around the torso replacing failing organ function with mana-driven equivalents, with a reservoir at the small of the back running the whole system. Azure handles tissue maintenance. Gray provides structural support where the skeleton has begun to fail.\n\nThe host is alive. They breathe (the rig assists), their heart beats (mechanically, where necessary), and they retain the memory, reasoning, and charge they accepted at installation. They have not died and come back. They have refused to die at considerable cost, and they know to the day exactly how much time they have left.\n\nThe Gray lattice does more than hold the body together. Under impact stress it automatically redirects from structural support to a compressed outer field \u2014 a hardened shell that takes the brunt of each blow before it reaches the host. Each time the tomb walker survives, the remaining lattice compresses and redistributes. When the reserve finally runs dry and the field collapses, the host is fully exposed.",
       "source": "yrt",
-      "escalatesDefense": true,
-      "escalatingDefense": {
-        "startDefense": 0,
-        "trigger": "miss",
-        "rankCaps": {
-          "1": 11,
-          "2": 7,
-          "3": 3,
-          "4": 1,
-          "5": 0
-        },
-        "minimum": 0,
-        "removal": "When the encounter ends or the foe is defeated, the lattice collapses and defense resets to 0."
+      "extras": {
+        "yrt": {
+          "escalatesDefense": true,
+          "escalatingDefense": {
+            "startDefense": 0,
+            "trigger": "miss",
+            "rankCaps": {
+              "1": 11,
+              "2": 7,
+              "3": 3,
+              "4": 1,
+              "5": 0
+            },
+            "minimum": 0,
+            "removal": "When the encounter ends or the foe is defeated, the lattice collapses and defense resets to 0."
+          }
+        }
       }
     },
     {
@@ -403,10 +407,10 @@
       "rank": 2,
       "nature": "Ironlander",
       "features": [
-        "Skin veined with grey manite tracery — the unmistakable mark of long blight-zone exposure",
+        "Skin veined with grey manite tracery \u2014 the unmistakable mark of long blight-zone exposure",
         "Eyes that pulse faintly with crimson light",
-        "Conclave guild seal burned into the palm — sometimes still active, sometimes scarred over",
-        "Tracery flares bright and skin goes rigid under impact — the Gray mana hardening reflexively",
+        "Conclave guild seal burned into the palm \u2014 sometimes still active, sometimes scarred over",
+        "Tracery flares bright and skin goes rigid under impact \u2014 the Gray mana hardening reflexively",
         "An untreated Conclave-issue bandolier of mismatched seeds"
       ],
       "drives": [
@@ -414,26 +418,30 @@
         "Silence anyone who knows too much about the blight zones"
       ],
       "tactics": [
-        "Hurl primed seeds — usually Crimson, sometimes worse",
+        "Hurl primed seeds \u2014 usually Crimson, sometimes worse",
         "Use Luminous to blind and disorient",
         "Fall back on the hardened Grey lattice when seeds run low or close-combat is forced",
         "Call for Conclave enforcement if cornered, regardless of whether it will actually come"
       ],
-      "description": "A blighted guilder is a Conclave seed-crafter whose career has gone wrong. Extended time in refinement complexes and blight zones accumulates manite at a rate the standard Conclave shielding can't fully prevent. The visible signs — grey veining, luminescent eyes — are the point at which the Conclave quietly discharges affected staff rather than treats them, usually with a small payout and no further acknowledgment.\n\nThe discharged guilder keeps their training, their seed-crafting skills, and whatever cache they walked out with. Some take work in Freeport's underworld or with the Spero smugglers. A few drift toward zealotry. All of them are, to some degree, unstable.\n\nWhat most people don't realise until it's too late: the same Gray saturation that marks a blighted guilder protects them. Under pressure the tracery flares and the lattice beneath the skin hardens into improvised armour — involuntary, drawing from the same mana reserve that's slowly killing them. Each blow the guilder survives lets the remaining lattice consolidate and tighten. Hit them hard enough, consistently enough, and the grey eventually goes dark.",
+      "description": "A blighted guilder is a Conclave seed-crafter whose career has gone wrong. Extended time in refinement complexes and blight zones accumulates manite at a rate the standard Conclave shielding can't fully prevent. The visible signs \u2014 grey veining, luminescent eyes \u2014 are the point at which the Conclave quietly discharges affected staff rather than treats them, usually with a small payout and no further acknowledgment.\n\nThe discharged guilder keeps their training, their seed-crafting skills, and whatever cache they walked out with. Some take work in Freeport's underworld or with the Spero smugglers. A few drift toward zealotry. All of them are, to some degree, unstable.\n\nWhat most people don't realise until it's too late: the same Gray saturation that marks a blighted guilder protects them. Under pressure the tracery flares and the lattice beneath the skin hardens into improvised armour \u2014 involuntary, drawing from the same mana reserve that's slowly killing them. Each blow the guilder survives lets the remaining lattice consolidate and tighten. Hit them hard enough, consistently enough, and the grey eventually goes dark.",
       "source": "yrt",
-      "escalatesDefense": true,
-      "escalatingDefense": {
-        "startDefense": 0,
-        "trigger": "miss",
-        "rankCaps": {
-          "1": 11,
-          "2": 7,
-          "3": 3,
-          "4": 1,
-          "5": 0
-        },
-        "minimum": 0,
-        "removal": "When the encounter ends or the foe is defeated, the tracery disperses and defense resets to 0."
+      "extras": {
+        "yrt": {
+          "escalatesDefense": true,
+          "escalatingDefense": {
+            "startDefense": 0,
+            "trigger": "miss",
+            "rankCaps": {
+              "1": 11,
+              "2": 7,
+              "3": 3,
+              "4": 1,
+              "5": 0
+            },
+            "minimum": 0,
+            "removal": "When the encounter ends or the foe is defeated, the tracery disperses and defense resets to 0."
+          }
+        }
       }
     },
     {
@@ -457,7 +465,7 @@
         "Accelerate plant growth in the immediate area to block escape routes",
         "Heal minor injuries by drawing Verdant from local soil"
       ],
-      "description": "When uncontrolled Verdant mana saturates a region, the boundary between fauna and flora begins to soften. A verdant crawler is what's left of a deer, a boar, or a large dog that wandered into a Verdant blight zone and didn't leave. The mana didn't kill it; it integrated with it. Vines and root-mass grew through the animal's body, replacing soft tissue with green tissue, until the original creature was less an organism and more a chassis for the plant matter that now rides it.\n\nA crawler is still alive in some sense — it eats (sunlight and soil), it moves (on its modified original limbs), it defends territory (instinctively). But it is no longer the animal it used to be, and it is not really a plant either. It is the manifestation of Verdant excess in an area where Verdant excess has nowhere else to go.\n\nCrawlers are drawn to cultivated land. The reason is mechanical: cultivated land is rich in worked soil and growth-ready conditions, which the crawler's Verdant lattice reads as ideal substrate. A crawler on the edge of a farm is not raiding. It is attempting to integrate the farm into its territory.",
+      "description": "When uncontrolled Verdant mana saturates a region, the boundary between fauna and flora begins to soften. A verdant crawler is what's left of a deer, a boar, or a large dog that wandered into a Verdant blight zone and didn't leave. The mana didn't kill it; it integrated with it. Vines and root-mass grew through the animal's body, replacing soft tissue with green tissue, until the original creature was less an organism and more a chassis for the plant matter that now rides it.\n\nA crawler is still alive in some sense \u2014 it eats (sunlight and soil), it moves (on its modified original limbs), it defends territory (instinctively). But it is no longer the animal it used to be, and it is not really a plant either. It is the manifestation of Verdant excess in an area where Verdant excess has nowhere else to go.\n\nCrawlers are drawn to cultivated land. The reason is mechanical: cultivated land is rich in worked soil and growth-ready conditions, which the crawler's Verdant lattice reads as ideal substrate. A crawler on the edge of a farm is not raiding. It is attempting to integrate the farm into its territory.",
       "source": "yrt"
     },
     {
@@ -473,15 +481,15 @@
         "Always notices what other people in the room are feeling"
       ],
       "drives": [
-        "Manipulate those around them for personal gain — wealth, power, influence, or simply control",
+        "Manipulate those around them for personal gain \u2014 wealth, power, influence, or simply control",
         "Avoid direct confrontation at all costs"
       ],
       "tactics": [
         "Project false trust and calm through low-level Amber Compulsion",
         "When stakes rise, plant a Directive Compulsion to turn an ally against the party",
-        "When the manipulation is exposed, flee — leaving behind a confused, compelled scapegoat who genuinely believes the schemer's narrative"
+        "When the manipulation is exposed, flee \u2014 leaving behind a confused, compelled scapegoat who genuinely believes the schemer's narrative"
       ],
-      "description": "A Vizion is a Conclave-licensed Amber-trained mage. Vizion are trained for sensory work, for compulsion within sanctioned limits, and for diagnostic and investigative tasks where reading a person's emotional or cognitive state is useful. The Conclave's licensing for Vizion is unusually strict, because the operating envelope of Amber mana — emotional steering, directive compulsion, memory editing — overlaps almost exactly with the operating envelope of a competent abuser.\n\nAn amber schemer is a Vizion who has crossed the line. The cause varies: some begin as ordinary Vizion who discover that a small, undetectable compulsion makes their work easier and never stop expanding the technique. Some are lifelong manipulators who pursued Vizion training specifically as a force-multiplier. A few are former Conclave investigators who learned the limits of the licensing system from the inside and now operate just outside it.\n\nThe schemer's working method is patient. They build influence over weeks or months — a small nudge in conversation, a moment of unearned trust, a recurring sense that this is a person to whom one tells the truth. By the time the target realises something is wrong, the schemer has already extracted what they wanted and moved on.",
+      "description": "A Vizion is a Conclave-licensed Amber-trained mage. Vizion are trained for sensory work, for compulsion within sanctioned limits, and for diagnostic and investigative tasks where reading a person's emotional or cognitive state is useful. The Conclave's licensing for Vizion is unusually strict, because the operating envelope of Amber mana \u2014 emotional steering, directive compulsion, memory editing \u2014 overlaps almost exactly with the operating envelope of a competent abuser.\n\nAn amber schemer is a Vizion who has crossed the line. The cause varies: some begin as ordinary Vizion who discover that a small, undetectable compulsion makes their work easier and never stop expanding the technique. Some are lifelong manipulators who pursued Vizion training specifically as a force-multiplier. A few are former Conclave investigators who learned the limits of the licensing system from the inside and now operate just outside it.\n\nThe schemer's working method is patient. They build influence over weeks or months \u2014 a small nudge in conversation, a moment of unearned trust, a recurring sense that this is a person to whom one tells the truth. By the time the target realises something is wrong, the schemer has already extracted what they wanted and moved on.",
       "source": "yrt"
     },
     {
@@ -494,16 +502,16 @@
         "Visible Black corruption tracing like veins through the skin, darkest near the hands and mouth",
         "Premature aging: grey hair, sunken cheeks, paper-thin skin on someone who should be young",
         "A faint smell of ozone and rotten meat around the body",
-        "Small dead things — flies, mice, birds — tend to accumulate near where they have been"
+        "Small dead things \u2014 flies, mice, birds \u2014 tend to accumulate near where they have been"
       ],
       "drives": ["Keep using; nothing else has ever felt like this", "Protect the supply"],
       "tactics": [
         "Use Black-tainted seeds recklessly, accepting backlash as the cost of power",
         "Lash out with Black-infused Crimson blasts when cornered",
-        "Call up reflexive animation of nearby dead matter — mice, birds, small carrion — as distraction",
+        "Call up reflexive animation of nearby dead matter \u2014 mice, birds, small carrion \u2014 as distraction",
         "Die badly when defeated, and animate local dead matter more strongly as they go"
       ],
-      "description": "The Spero refinement operation has been producing Black-tainted mana for over a year. The Brotherhood and Ecclesia refiners know this and have tried to compensate, but their crude process cannot fully strip out the Black from an unrefined manite batch. The tainted seeds enter Freeport's underworld at discount prices and are bought by people who cannot afford Conclave rates — illegal seed-crafters, hedge-mages, desperate amateurs, and a growing number of young Conclave apprentices who are quietly skimming from their allotments.\n\nA user who casts with tainted seeds once or twice usually gets away with nothing worse than a bad headache. Sustained use is different. Black mana binds preferentially to living tissue, accumulates in the nervous system, and does not metabolise out. Over months of regular use, the user becomes tainted — physically altered by cumulative Black saturation, cognitively altered by the slow erosion of impulse control that Black causes, and addicted in a way that no ordinary substance produces.\n\nA tainted person is still themselves, mostly. They remember who they are, they can hold a conversation, they pay their debts. But they have crossed a threshold, and they know it, and they cannot stop. A small number of Azure treatment programs exist at Conclave hospices, but they are expensive, long-duration, and have roughly a one-in-three success rate.",
+      "description": "The Spero refinement operation has been producing Black-tainted mana for over a year. The Brotherhood and Ecclesia refiners know this and have tried to compensate, but their crude process cannot fully strip out the Black from an unrefined manite batch. The tainted seeds enter Freeport's underworld at discount prices and are bought by people who cannot afford Conclave rates \u2014 illegal seed-crafters, hedge-mages, desperate amateurs, and a growing number of young Conclave apprentices who are quietly skimming from their allotments.\n\nA user who casts with tainted seeds once or twice usually gets away with nothing worse than a bad headache. Sustained use is different. Black mana binds preferentially to living tissue, accumulates in the nervous system, and does not metabolise out. Over months of regular use, the user becomes tainted \u2014 physically altered by cumulative Black saturation, cognitively altered by the slow erosion of impulse control that Black causes, and addicted in a way that no ordinary substance produces.\n\nA tainted person is still themselves, mostly. They remember who they are, they can hold a conversation, they pay their debts. But they have crossed a threshold, and they know it, and they cannot stop. A small number of Azure treatment programs exist at Conclave hospices, but they are expensive, long-duration, and have roughly a one-in-three success rate.",
       "source": "yrt"
     },
     {
@@ -514,14 +522,14 @@
       "nature": "Anomaly",
       "features": [
         "A pool, well, spring, or small pond of water that looks slightly too still and slightly too dark",
-        "A faint oily sheen on the surface, iridescent in the wrong way — bruise-purples and sickly greens rather than rainbow",
-        "Dead vegetation for several paces around the edge, sharply bounded — the ring of dead plants is almost perfectly circular",
+        "A faint oily sheen on the surface, iridescent in the wrong way \u2014 bruise-purples and sickly greens rather than rainbow",
+        "Dead vegetation for several paces around the edge, sharply bounded \u2014 the ring of dead plants is almost perfectly circular",
         "Animals avoid the water; insects do not"
       ],
-      "drives": ["None — it is a site, not a creature"],
+      "drives": ["None \u2014 it is a site, not a creature"],
       "tactics": [
         "Passively dissolve organic matter that enters the water",
-        "Accelerate decay in living tissue on contact — painful but not instantly lethal",
+        "Accelerate decay in living tissue on contact \u2014 painful but not instantly lethal",
         "Reach gradually outward over years as the Black saturation spreads through the water table"
       ],
       "description": "A rotwell is what happens when a sustained Black-mana leak meets a body of water. The most common cause is an Unmade disposal shaft that has slowly failed over centuries, releasing its contents into the local groundwater. A less common cause is a Spero shipment that got dumped quickly during a Conclave patrol and hit the water intact, then ruptured on the bottom. The rarest cause is an illegal Black seed-crafter who buried a batch of failed work in a cistern and didn't come back for it.\n\nWhatever the source, the result is the same. Black mana leaches into the water, binds with the water's natural mineral content, and produces a body of water that actively degrades organic matter on contact. Dipping a hand into a rotwell feels cold and oily, and the skin comes out looking slightly paler, slightly thinner, and noticeably bruised. A full-body immersion is fatal over the course of hours. Drinking from a rotwell is lethal within a day.\n\nRotwells can be remediated. The Conclave has a specific protocol involving Azure flush-and-dilute cycles followed by Luminous containment warding. Most rotwells are simply quarantined. A rotwell grows. Not quickly, but inexorably. Over a decade, an untreated rotwell can expand its killing radius by several paces, and the underground plume travels much further.",
@@ -534,7 +542,7 @@
       "rank": 4,
       "nature": "Anomaly",
       "features": [
-        "A slowly mobile heap of rotting organic matter — carrion, dead vegetation, sodden soil, spoiled grain — bound together by visible Black mana tracery",
+        "A slowly mobile heap of rotting organic matter \u2014 carrion, dead vegetation, sodden soil, spoiled grain \u2014 bound together by visible Black mana tracery",
         "Roughly the mass of a large dog at rest, growing as it feeds, but spread out horizontally rather than standing tall",
         "A constant slow heaving motion, as if something underneath is shifting",
         "The air around it is noticeably still; insects that approach fall out of the air and are absorbed"
@@ -544,12 +552,12 @@
         "Drift slowly toward the largest source of organic decay nearby"
       ],
       "tactics": [
-        "Move extremely slowly — a full day to cross a field",
+        "Move extremely slowly \u2014 a full day to cross a field",
         "Dissolve anything organic it touches on contact: leaf litter, carrion, fallen animals, sleeping creatures",
         "Absorb the dissolved mass into itself and grow",
-        "Cannot be injured by physical attack — only Luminous warding or sustained intense heat can destroy it"
+        "Cannot be injured by physical attack \u2014 only Luminous warding or sustained intense heat can destroy it"
       ],
-      "description": "A carrion mound is the inverse of a Locus. Where a Locus draws local matter into itself and grows, a carrion mound dissolves local matter into itself and grows. Where a Locus drifts toward mana flux, a carrion mound drifts toward organic decay. Where a Locus is dangerous because it is huge and unstoppable, a carrion mound is dangerous because it is silent, slow enough to be overlooked, and cannot be fought the way anything else can be fought.\n\nCarrion-mounds form from leftover Black slurry — the same industrial-era disposal product that creates mire forms in bogs and rotwells in water. On dry ground, with sufficient organic matter nearby to feed on, the slurry does not stay put. It aggregates. Stray leaves, dead insects, fallen fruit, the occasional small animal that wandered too close — all are drawn to the slurry's Black gradient and dissolved into it on contact, adding their mass to the mound.\n\nOver a season, a small slurry leak can produce a mound the size of a farm cart. Over a decade, one can become large enough to consume a small paddock and everything in it. The mound has no mind. It does not hunt. It does not retaliate when struck. Destroying a mound is possible but requires specific tools: Luminous warding disrupts the Black binding, or sustained intense heat burns off the organic content.",
+      "description": "A carrion mound is the inverse of a Locus. Where a Locus draws local matter into itself and grows, a carrion mound dissolves local matter into itself and grows. Where a Locus drifts toward mana flux, a carrion mound drifts toward organic decay. Where a Locus is dangerous because it is huge and unstoppable, a carrion mound is dangerous because it is silent, slow enough to be overlooked, and cannot be fought the way anything else can be fought.\n\nCarrion-mounds form from leftover Black slurry \u2014 the same industrial-era disposal product that creates mire forms in bogs and rotwells in water. On dry ground, with sufficient organic matter nearby to feed on, the slurry does not stay put. It aggregates. Stray leaves, dead insects, fallen fruit, the occasional small animal that wandered too close \u2014 all are drawn to the slurry's Black gradient and dissolved into it on contact, adding their mass to the mound.\n\nOver a season, a small slurry leak can produce a mound the size of a farm cart. Over a decade, one can become large enough to consume a small paddock and everything in it. The mound has no mind. It does not hunt. It does not retaliate when struck. Destroying a mound is possible but requires specific tools: Luminous warding disrupts the Black binding, or sustained intense heat burns off the organic content.",
       "source": "yrt"
     },
     {
@@ -571,18 +579,17 @@
       ],
       "tactics": [
         "Circle high until a target is isolated and exposed on open ground",
-        "Dive at terminal velocity; release stored thermal charge on contact — no flames, instantaneous heat transfer at point of impact",
+        "Dive at terminal velocity; release stored thermal charge on contact \u2014 no flames, instantaneous heat transfer at point of impact",
         "Disengage and climb back into thermals between passes; rarely closes to sustained melee",
         "A mated pair staggers attacks to deny the target recovery time"
       ],
-      "description": "Ember Kites are what happens when a raptor population nests for many generations at the edge of a Crimson blight zone. Their feathers absorb and retain heat through a biology that no ordinary raptor shares: the tissue throughout their flight musculature is threaded with Crimson-saturated capillaries that act as a living heat battery. A kite basking on a warm outcrop is charging. A kite diving is discharging.\n\nThe thermal release on impact is not fire. There are no flames, no ignition source, no visible effect until the moment of contact — at which point the stored heat transfers instantaneously into the target at a level sufficient to cause serious burns and ignite loose cloth or dry material. The bird itself is unharmed.\n\nEmber Kites are territorial and predictable in range. A bonded pair will hold a stretch of thermal-rich cliff or ridge for years and will attack anything that enters their territory without exception, regardless of size. Travellers who know what to look for — the rust-orange silhouettes circling high thermals, the absence of other birds in an area, the shimmer of heat distortion near certain outcroppings — can usually route around them.\n\nConclave surveyors treat Ember Kite sightings as a reliable early indicator of Crimson contamination. The birds do not cause the blight; they only live where it already exists.",
+      "description": "Ember Kites are what happens when a raptor population nests for many generations at the edge of a Crimson blight zone. Their feathers absorb and retain heat through a biology that no ordinary raptor shares: the tissue throughout their flight musculature is threaded with Crimson-saturated capillaries that act as a living heat battery. A kite basking on a warm outcrop is charging. A kite diving is discharging.\n\nThe thermal release on impact is not fire. There are no flames, no ignition source, no visible effect until the moment of contact \u2014 at which point the stored heat transfers instantaneously into the target at a level sufficient to cause serious burns and ignite loose cloth or dry material. The bird itself is unharmed.\n\nEmber Kites are territorial and predictable in range. A bonded pair will hold a stretch of thermal-rich cliff or ridge for years and will attack anything that enters their territory without exception, regardless of size. Travellers who know what to look for \u2014 the rust-orange silhouettes circling high thermals, the absence of other birds in an area, the shimmer of heat distortion near certain outcroppings \u2014 can usually route around them.\n\nConclave surveyors treat Ember Kite sightings as a reliable early indicator of Crimson contamination. The birds do not cause the blight; they only live where it already exists.",
       "source": "yrt"
     },
     {
       "id": "yrt/necrotic-sea-hare",
       "name": "Necrotic Sea Hare",
       "icon": "foe-necrotic-sea-hare",
-      "escalates": true,
       "images": ["necrotic-sea-hare.webp"],
       "rank": 1,
       "nature": "Animal",
@@ -595,25 +602,30 @@
       "drives": ["Process contaminated sediment", "Anchor to warm tissue when disturbed"],
       "tactics": [
         "Lie motionless in sediment; nearly invisible at rest",
-        "Attach instantly when anything disturbs its substrate — does not chase, latches",
+        "Attach instantly when anything disturbs its substrate \u2014 does not chase, latches",
         "Deliver a sustained dose of Black-contaminated fluid through the attachment point",
         "Azure saturation in its tissue actively suppresses healing at the contact site",
         "Does not release voluntarily; must be physically removed or killed while attached"
       ],
-      "escalatingHarm": {
-        "startHarm": 1,
-        "trigger": "miss-endure-harm",
-        "rankCaps": {
-          "1": 2,
-          "2": 3,
-          "3": 4,
-          "4": 5,
-          "5": 5
-        },
-        "removal": "Sustained heat, concentrated Luminous mana, or saturated salt solution. Killing while attached without treating the wound does not reset — contaminated mucus remains active."
-      },
-      "description": "The Necrotic Sea Hare is a post-Fall bottom-dweller found in contaminated waterways, silted canals, flooded ruins, and any water body close enough to a blight zone for Black mana to have worked into the substrate. It is small enough to hold in your hand and individually not very dangerous. The problem is that it does not stop.\n\nThe creature feeds by dissolving organic matter — sediment detritus, waterlogged wood, dead tissue — through a Black-saturated secretion delivered by contact. This is an effective adaptation for processing the contaminated sediment it lives in. Applied to living tissue, the same mechanism causes progressive necrotic breakdown. The longer the attachment continues and the more times the body is forced to Endure Harm, the deeper the contamination spreads and the faster the tissue fails.\n\nA single Necrotic Sea Hare attached to a foot is unpleasant and should be dealt with promptly. Several of them in a silted crossing you did not see until you were waist-deep in the water is a serious emergency.\n\nRemoval requires getting clear of the water and treating the attachment site directly. Cold water slows but does not stop the process. Cutting the creature off while attached without treating the wound leaves contaminated mucus in the wound, which must be treated separately. Conclave records categorise the Necrotic Sea Hare as a contamination indicator rather than an active threat, which is technically accurate and practically unhelpful.",
-      "source": "yrt"
+      "description": "The Necrotic Sea Hare is a post-Fall bottom-dweller found in contaminated waterways, silted canals, flooded ruins, and any water body close enough to a blight zone for Black mana to have worked into the substrate. It is small enough to hold in your hand and individually not very dangerous. The problem is that it does not stop.\n\nThe creature feeds by dissolving organic matter \u2014 sediment detritus, waterlogged wood, dead tissue \u2014 through a Black-saturated secretion delivered by contact. This is an effective adaptation for processing the contaminated sediment it lives in. Applied to living tissue, the same mechanism causes progressive necrotic breakdown. The longer the attachment continues and the more times the body is forced to Endure Harm, the deeper the contamination spreads and the faster the tissue fails.\n\nA single Necrotic Sea Hare attached to a foot is unpleasant and should be dealt with promptly. Several of them in a silted crossing you did not see until you were waist-deep in the water is a serious emergency.\n\nRemoval requires getting clear of the water and treating the attachment site directly. Cold water slows but does not stop the process. Cutting the creature off while attached without treating the wound leaves contaminated mucus in the wound, which must be treated separately. Conclave records categorise the Necrotic Sea Hare as a contamination indicator rather than an active threat, which is technically accurate and practically unhelpful.",
+      "source": "yrt",
+      "extras": {
+        "yrt": {
+          "escalates": true,
+          "escalatingHarm": {
+            "startHarm": 1,
+            "trigger": "miss-endure-harm",
+            "rankCaps": {
+              "1": 2,
+              "2": 3,
+              "3": 4,
+              "4": 5,
+              "5": 5
+            },
+            "removal": "Sustained heat, concentrated Luminous mana, or saturated salt solution. Killing while attached without treating the wound does not reset \u2014 contaminated mucus remains active."
+          }
+        }
+      }
     }
   ],
   "source": "yrt"

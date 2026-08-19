@@ -32,6 +32,7 @@
 		resolveFoeDescription,
 	} from '$lib/foeStore.svelte.js';
 	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '$lib/foePortrait.js';
+	import { foeExtraFlag } from '$lib/foeExtras.js';
 	import { foeIcon } from '$lib/iconRegistry.js';
 	import type { FoeEncounter, FoeDef, FoeQuantity } from '$lib/types.js';
 
@@ -169,7 +170,7 @@
 	);
 	const currentDefense = $derived(activeEnc?.currentDefense ?? 0);
 	const progressTickVal = $derived(
-		activeDef?.escalatesDefense
+		foeExtraFlag(activeDef, 'yrt', 'escalatesDefense')
 			? (rankInfo?.progressPerHit ?? 1) - currentDefense
 			: (rankInfo?.progressPerHit ?? 0),
 	);
@@ -440,14 +441,14 @@
 										<span class="fa-badge fa-badge--qty">{qtyDef?.label ?? activeEnc.quantity}</span
 										>
 									{/if}
-									{#if activeDef.escalates}
+									{#if foeExtraFlag(activeDef, 'yrt', 'escalates')}
 										<span class="fa-badge fa-badge--harm fa-badge--escalating"
 											>Harm: {currentHarm} ↑</span
 										>
 									{:else}
 										<span class="fa-badge fa-badge--harm">Harm: {rankInfo.harm}</span>
 									{/if}
-									{#if activeDef.escalatesDefense && currentDefense > 0}
+									{#if foeExtraFlag(activeDef, 'yrt', 'escalatesDefense') && currentDefense > 0}
 										<span class="fa-badge fa-badge--progress fa-badge--defense-progress"
 											>Progress: {progressTickVal} ↓</span
 										>
@@ -459,7 +460,7 @@
 								</div>
 
 								<!-- Escalating harm -->
-								{#if activeDef.escalates}
+								{#if foeExtraFlag(activeDef, 'yrt', 'escalates')}
 									<div class="fa-escalate-row">
 										<span
 											class="fa-escalate-label"
@@ -488,7 +489,7 @@
 								{/if}
 
 								<!-- Escalating defense -->
-								{#if activeDef.escalatesDefense}
+								{#if foeExtraFlag(activeDef, 'yrt', 'escalatesDefense')}
 									<div class="fa-escalate-row">
 										<span
 											class="fa-escalate-label"
