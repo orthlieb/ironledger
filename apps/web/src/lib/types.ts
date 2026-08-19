@@ -534,7 +534,7 @@ export interface Npc {
 	role: string;
 	goal: string;
 	descriptor: string;
-	/** Lodestar's Character: First Look — an at-a-glance visual impression
+	/** Lodestar's First Look character oracle — an at-a-glance visual impression
 	 *  (well-armed, cloaked, weathered, …). Optional; absent for legacy NPCs
 	 *  and for NPCs created while Lodestar is disabled. */
 	firstLook?: string;

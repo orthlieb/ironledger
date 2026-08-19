@@ -262,7 +262,6 @@
       "supersedesOracles": {
         "location": "yrtCityTownLocation",
         "region": "yrtRegion",
-        "settlementCondition": "yrtSettlementCondition",
         "settlementType": "yrtSettlementType",
         "storyRegion": "yrtStoryRegion"
       },
@@ -288,7 +287,6 @@
           "oracles/freeport-denizen.json",
           "oracles/mana-backlash.json",
           "oracles/region.json",
-          "oracles/settlement-condition.json",
           "oracles/settlement-opportunity.json",
           "oracles/settlement-peril.json",
           "oracles/settlement-type.json",

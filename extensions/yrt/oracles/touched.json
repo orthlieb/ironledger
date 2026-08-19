@@ -1,8 +1,8 @@
 {
   "key": "yrtTouched",
-  "title": "YRT: Touched",
+  "title": "YRT Touched",
   "category": "Character",
-  "selectLabel": "YRT: Touched",
+  "selectLabel": "YRT Touched",
   "description": "Generate a Touched character — their social class, animal aspect, and supernatural features in the Yrt setting.\n\n1. Roll on this table to determine class and feature count. If Pure, stop.\n2. Roll on YRT – Touched Animal to determine the animal aspect.\n3. For Second/Third, roll the indicated dice for the exact feature count.\n4. Roll on YRT – Touched Features once per feature (re-roll duplicates).",
   "source": "yrt",
   "data": [

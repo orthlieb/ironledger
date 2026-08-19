@@ -1,6 +1,6 @@
 {
   "key": "yrtRegion",
-  "title": "Location: Region",
+  "title": "Region",
   "category": "Location",
   "selectLabel": "Region",
   "description": "Determine the region of the Yrt world where an event or location is situated. Regions are ordered and weighted by type: settled lands come up most often, boundary lands less often, and remote lands rarely.",

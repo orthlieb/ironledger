@@ -1,6 +1,6 @@
 {
   "key": "delveDepths",
-  "title": "Delve: Weak Hit Oracle",
+  "title": "Weak Hit Oracle",
   "category": "Delve",
   "selectLabel": "Delve the Depths Weak Hit Oracle",
   "description": "On a weak hit, roll on the column matching the stat you used.",

@@ -1,6 +1,6 @@
 {
   "key": "challengeRank",
-  "title": "Scale: Challenge Rank",
+  "title": "Challenge Rank",
   "category": "Scale",
   "selectLabel": "Challenge Rank",
   "description": "Randomly determine the challenge rank for a quest, journey, or encounter.",

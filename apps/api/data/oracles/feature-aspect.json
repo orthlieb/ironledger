@@ -1,8 +1,8 @@
 {
   "key": "featureAspect",
-  "title": "Delve: Feature Aspect",
+  "title": "Feature Aspect",
   "category": "Delve",
-  "selectLabel": "Delve: Feature Aspect",
+  "selectLabel": "Feature Aspect",
   "description": "Define the sensory or environmental aspect of a notable feature within a Delve site.",
   "source": "delve",
   "data": [
