@@ -98,10 +98,12 @@ export interface FoeDef {
 	/** Optional icon override — slug of an SVG in $lib/icons/ (e.g.
 	 *  "wolf-pup"). Falls back to the nature icon when absent. */
 	icon?: string;
-	/** If true, this foe's harm escalates during combat (YRT extension). */
-	escalates?: boolean;
-	/** If true, this foe has an escalating grey-mana defense shield (YRT extension). */
-	escalatesDefense?: boolean;
+	/** Per-extension extras bag. Extensions namespace their custom flags/data
+	 *  under their id — e.g. YRT sets `extras.yrt.escalates` /
+	 *  `extras.yrt.escalatesDefense` on Amber-touched foes. Consumers read
+	 *  through `foeExtra(def, 'yrt', 'escalates')` (see foeExtras.ts). Adding
+	 *  a new extension needs no core-type change here. */
+	extras?: Record<string, unknown>;
 }
 
 export interface FoeEncounter {
@@ -113,13 +115,14 @@ export interface FoeEncounter {
 	notes: string;
 	customName: string; // if '', display foeDef.name
 	vanquished: boolean;
-	/** Current escalating harm level (ticks). Only meaningful when foeDef.escalates is true. */
+	/** Current escalating harm level (ticks). Only meaningful when the foe def
+	 *  carries `extras.yrt.escalates`. */
 	currentHarm?: number;
-	/** Current escalating-defense (shield) level. Only meaningful when
-	 *  foeDef.escalatesDefense is true. Absent = 0 (no shield yet). Starts at 0
-	 *  and increases by 1 on each Miss, up to a cap of progressPerHit − 1; higher
-	 *  values reduce the progress marked per hit (progressPerHit − currentDefense,
-	 *  floored at 1). */
+	/** Current escalating-defense (shield) level. Only meaningful when the foe
+	 *  def carries `extras.yrt.escalatesDefense`. Absent = 0 (no shield yet).
+	 *  Starts at 0 and increases by 1 on each Miss, up to a cap of
+	 *  progressPerHit − 1; higher values reduce the progress marked per hit
+	 *  (progressPerHit − currentDefense, floored at 1). */
 	currentDefense?: number;
 }
 
@@ -426,8 +429,6 @@ export interface AssetDefinition {
 	preamble?: string;
 	postamble?: string;
 	abilities: AssetAbility[];
-	/** If true, asset uses the touchedFeatures panel in the card body. */
-	touchedFeatures?: boolean;
 	/** Custom input fields rendered in the asset body. Values stored in asset.customValues keyed by field.id. */
 	customFields?: CustomFieldDef[];
 	/**
