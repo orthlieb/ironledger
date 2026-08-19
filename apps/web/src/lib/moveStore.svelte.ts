@@ -14,7 +14,8 @@
 // =============================================================================
 
 import type { MoveDefinition } from '@ironledger/shared';
-import { isSourceEnabled } from './expansionStore.svelte.js';
+import { isSourceEnabled, loadExtensions } from './expansionStore.svelte.js';
+import { moveCategoryOrder } from './extensionCategories.svelte.js';
 
 /** One expansion's patches against base moves. Mirrors the foe override file. */
 export interface MoveOverride {
@@ -30,31 +31,13 @@ export interface MoveOverridesFile {
 }
 
 // ---------------------------------------------------------------------------
-// Category display order
-// ---------------------------------------------------------------------------
-
-// Canonical Ironsworn category order (by guide section). "Scene Challenge" is
-// listed ahead of its moves landing so the order is stable once they do; a
-// category with no visible moves is simply skipped by categoriesFromList().
-// Yrt (homebrew) trails the core categories.
-const CATEGORY_ORDER = [
-	'Adventure',
-	'Journey',
-	'Scene',
-	'Quest',
-	'Fate',
-	'Relationship',
-	'Combat',
-	'Suffer',
-	'Delve',
-	'Failure',
-	'Threat',
-	'Rarity',
-	'Yrt',
-];
-
-// ---------------------------------------------------------------------------
 // Module-level state
+//
+// Category display order is manifest-driven — each extension declares its
+// own move categories (with per-category icon, tint, and sort slot) in its
+// `extension.json`. moveCategoryOrder() merges them across enabled
+// extensions. Categories with no visible moves are simply skipped by
+// categoriesFromList(); unknown categories sort after all declared ones.
 // ---------------------------------------------------------------------------
 
 let _moves: MoveDefinition[] = $state([]);
@@ -74,18 +57,25 @@ export async function loadMoves(): Promise<void> {
 	if (_loaded || _loading) return;
 	_loading = true;
 	try {
-		const res = await fetch('/api/catalogue/moves', { cache: 'no-store' });
+		// Await loadExtensions alongside the fetch so moveCategoryOrder() can
+		// resolve against a populated registry — otherwise the first render
+		// falls back to alphabetical (empty-registry → Infinity for every key).
+		const [res] = await Promise.all([
+			fetch('/api/catalogue/moves', { cache: 'no-store' }),
+			loadExtensions(),
+		]);
 		if (!res.ok) throw new Error(`Moves fetch failed: ${res.status}`);
 		const json = (await res.json()) as {
 			moves: MoveDefinition[];
 			overrides?: MoveOverridesFile[];
 		};
 
-		// Sort by category order, then alphabetically within category
-		const catIdx = (cat: string) => {
-			const i = CATEGORY_ORDER.indexOf(cat);
-			return i >= 0 ? i : CATEGORY_ORDER.length;
-		};
+		// Sort by category order (from the extension manifest), then
+		// alphabetically within category. Unknown categories sort after all
+		// declared ones.
+		const order = moveCategoryOrder();
+		const idx = new Map(order.map((k, i) => [k, i]));
+		const catIdx = (cat: string) => idx.get(cat) ?? order.length;
 		json.moves.sort((a, b) => {
 			const ci = catIdx(a.category) - catIdx(b.category);
 			if (ci !== 0) return ci;
@@ -142,13 +132,15 @@ export function getVisibleMoveCategories(): string[] {
 function categoriesFromList(moves: MoveDefinition[]): string[] {
 	const seen = new Set<string>();
 	const result: string[] = [];
-	for (const cat of CATEGORY_ORDER) {
+	// Manifest-declared categories first, in their declared order.
+	for (const cat of moveCategoryOrder()) {
 		if (moves.some((m) => m.category === cat) && !seen.has(cat)) {
 			seen.add(cat);
 			result.push(cat);
 		}
 	}
-	// Any categories not in CATEGORY_ORDER
+	// Any move-category strings not declared by any extension trail behind
+	// (defensive — real content should always be declared).
 	for (const m of moves) {
 		if (!seen.has(m.category)) {
 			seen.add(m.category);

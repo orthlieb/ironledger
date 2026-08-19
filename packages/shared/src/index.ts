@@ -111,6 +111,27 @@ export interface AssetPrecondition {
  */
 export type CatalogueSource = string;
 
+/** One move- or oracle-category record contributed by an extension. Merged
+ *  across all enabled extensions to drive picker order, icons, and tint
+ *  colours — see `extensionCategories.svelte.ts` on the client. First-declared
+ *  wins on duplicate `key` (legitimate: an extension that only adds moves to
+ *  an existing category doesn't redeclare it). */
+export interface CategoryDef {
+  /** Exact category string that appears on move.category / oracle.category. */
+  key: string;
+  /** Icon slug in $lib/icons/ or extensions/<id>/icons/ (filename minus .svg).
+   *  Omitted → the picker falls back to person-running-solid (moves) or
+   *  dice-d100-solid (oracles). */
+  icon?: string;
+  /** CSS colour token or literal (e.g. `var(--color-wits)` or `#7E57C2`).
+   *  Omitted → falls back to `var(--text-accent)`. */
+  color?: string;
+  /** Sort key within the merged list. Missing → sorts last. Moves consult
+   *  this for picker order; oracles keep their alphabetical sort but pick
+   *  up icon+colour from the same record. */
+  order?: number;
+}
+
 /** Public metadata for one registered extension (served at /catalogue/extensions). */
 export interface ExtensionInfo {
   id: string;
@@ -122,6 +143,11 @@ export interface ExtensionInfo {
    *  supersession pairs (e.g. Lodestar's Core: Descriptor/Focus supersede
    *  Delve's Feature Aspect/Focus). Absent means suppresses nothing. */
   suppressesOracles?: string[];
+  /** Move categories this extension introduces (picker order + icon + tint). */
+  moveCategories?: CategoryDef[];
+  /** Oracle categories this extension introduces (icon + tint; picker order
+   *  stays alphabetical). */
+  oracleCategories?: CategoryDef[];
 }
 
 /** Move definition — mirrors the JSON structure in moves/*.json */

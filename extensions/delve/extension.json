@@ -3,5 +3,13 @@
   "name": "Delve",
   "description": "Ironsworn: Delve — site themes/domains, delve moves, oracles, foes, and assets.",
   "defaultEnabled": true,
-  "order": 10
+  "order": 10,
+  "moveCategories": [
+    { "key": "Delve", "icon": "dungeon-gate", "color": "var(--color-shadow)", "order": 80 }
+  ],
+  "oracleCategories": [
+    { "key": "Delve", "icon": "dungeon-gate", "color": "#4472D0" },
+    { "key": "Monstrosity", "icon": "dragon-solid-full", "color": "#8E4C8E" },
+    { "key": "Threat", "icon": "skull-crossbones-solid-full", "color": "#C0392B" }
+  ]
 }
