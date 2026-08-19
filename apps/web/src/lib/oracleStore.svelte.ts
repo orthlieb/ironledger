@@ -35,7 +35,7 @@ export interface OracleEntry {
 	/** Secondary classification (e.g. YRT Region → Settled / Boundary / Remote). */
 	type?: string;
 	/** Flavor / detail text (e.g. Delve Site Theme → "This place holds the
-	 *  secrets of a bygone age"; Battleground examples). */
+	 *  secrets of a bygone age"; Combat: Battleground examples). */
 	description?: string;
 	/** Flat multi-column oracles carry one field per column `key`. */
 	[key: string]: unknown;

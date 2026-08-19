@@ -1,8 +1,8 @@
 {
   "key": "trapComponent",
-  "title": "Trap Component",
+  "title": "Delve Site: Trap Component",
   "category": "Delve",
-  "selectLabel": "Trap Component",
+  "selectLabel": "Delve Site: Trap Component",
   "description": "If you encounter a trap within a site, use these oracles to better understand the nature or function of this obstacle. Roll once for an Event and once for a Component, and interpret the response as appropriate to the situation and environment. A trap might be a physical, supernatural, or an ambush by a denizen.",
   "source": "delve",
   "postamble": "If you are in a position to overcome or avoid the trap, make moves to see what happens. A simple trap might be dealt with in a single action, such as through the Face Danger move. A complex trap could be represented as a scene challenge.",

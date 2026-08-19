@@ -1,8 +1,8 @@
 {
   "key": "settlementFirstLook",
-  "title": "First Look",
+  "title": "Settlement: First Look",
   "category": "Settlement",
-  "selectLabel": "First Look",
+  "selectLabel": "Settlement: First Look",
   "description": "Use this oracle to reveal your first impression of a settlement when you initially sight or reveal it.",
   "postamble": "Use the Type, Condition, and First Look oracles when initially sighting or revealing a settlement. If unsure of how its leaders or inhabitants react to your character—or to visitors in general—check the Disposition oracle.\n\nProjects are the main industry, function, or current focus of a settlement. They do not necessarily represent every activity at the site, but are the most visible or noteworthy aspects. Meanwhile, the Troubles oracle provides a broad description of the site's most dramatic current issues, and the Cultural Touchstones oracle reveals aspects of the community that you might learn while spending time there.",
   "source": "lodestar",

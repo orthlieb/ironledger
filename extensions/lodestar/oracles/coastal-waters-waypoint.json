@@ -1,8 +1,8 @@
 {
   "key": "coastalWatersWaypoint",
-  "title": "Coastal Waters Waypoint",
+  "title": "Location: Coastal Waters Waypoint",
   "category": "Location",
-  "selectLabel": "Coastal Waters Waypoint",
+  "selectLabel": "Location: Coastal Waters Waypoint",
   "description": "Use this oracle to help envision a location, discovery, or event when you Undertake a Journey in coastal waters and reach a waypoint.",
   "source": "lodestar",
   "data": [

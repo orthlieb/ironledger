@@ -1,8 +1,8 @@
 {
   "key": "siteNatureDomain",
-  "title": "Site Nature – Domain",
+  "title": "Delve Site: Domain",
   "category": "Delve",
-  "selectLabel": "Site Nature – Domain",
+  "selectLabel": "Delve Site: Domain",
   "description": "Determine the physical domain type of a Delve site (e.g., cavern, ruin, sea cave).",
   "source": "delve",
   "roll": ["value", "description"],

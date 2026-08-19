@@ -1,8 +1,8 @@
 {
   "key": "namesOther",
-  "title": "Other Name",
+  "title": "Character: Name (Other)",
   "category": "Character",
-  "selectLabel": "Other Name",
+  "selectLabel": "Character: Name (Other)",
   "description": "Generate a random name for a Giant, Varou, or Troll. Choose the lineage and roll.",
   "tableType": "matrix",
   "source": "base",

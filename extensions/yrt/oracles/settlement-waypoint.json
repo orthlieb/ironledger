@@ -1,8 +1,8 @@
 {
   "key": "yrtSettlementWaypoint",
-  "title": "Settlement Waypoint",
+  "title": "Location: Settlement Waypoint",
   "category": "Location",
-  "selectLabel": "Settlement Waypoint",
+  "selectLabel": "Location: Settlement Waypoint",
   "description": "Use this oracle to help envision a location, discovery, or event when you Undertake a Journey through a settlement and reach a waypoint.",
   "source": "yrt",
   "data": [

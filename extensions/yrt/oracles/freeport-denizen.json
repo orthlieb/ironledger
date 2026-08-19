@@ -1,8 +1,8 @@
 {
   "key": "freeportDenizen",
-  "title": "YRT Freeport Occupation",
+  "title": "Character: Freeport Occupation",
   "category": "Character",
-  "selectLabel": "YRT Freeport Occupation",
+  "selectLabel": "Character: Freeport Occupation",
   "description": "Generate a random occupation for an NPC in Freeport or other large town or city.",
   "source": "yrt",
   "columns": [

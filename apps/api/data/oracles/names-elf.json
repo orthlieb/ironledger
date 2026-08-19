@@ -1,8 +1,8 @@
 {
   "key": "namesElf",
-  "title": "Elf Name",
+  "title": "Character: Name (Elf)",
   "category": "Character",
-  "selectLabel": "Elf Name",
+  "selectLabel": "Character: Name (Elf)",
   "description": "Generate a random Firstborn Elf name. Choose a naming tradition (Elf 1 or Elf 2) and roll.",
   "tableType": "matrix",
   "source": "base",

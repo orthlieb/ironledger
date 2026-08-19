@@ -117,24 +117,24 @@ noted.
 
 ### Settlement & location
 
-| Oracle                 | Key                        | Category   | Description                                                                                                                                                                                                                                |
-| ---------------------- | -------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Region                 | `yrtRegion`                | Location   | The 22 Yrt-world regions, ordered by land type and frequency-weighted (settled lands roll most often, remote least). Each row carries a `type` (Settled / Boundary / Remote) shown as its own column. **Replaces the base Region oracle.** |
-| Settlement: Type       | `yrtSettlementType`        | Settlement | Scale and purpose (Stead → Hold), rolled against the settlement's land tier (a `columnSelect` table). The preamble maps Yrt regions to Settled / Boundary / Remote lands. **Replaces the Lodestar Settlement: Type oracle.**               |
-| Settlement Landmark    | `yrtCityTownLocation`      | Location   | A point-of-interest inside a settlement, town, or city (75 entries).                                                                                                                                                                       |
-| Settlement Waypoint    | `yrtSettlementWaypoint`    | Location   | A location, discovery, or event when you _Undertake a Journey_ through a settlement.                                                                                                                                                       |
-| Settlement Peril       | `yrtSettlementPeril`       | Location   | A perilous event or complication on a settlement journey (a miss).                                                                                                                                                                         |
-| Settlement Opportunity | `yrtSettlementOpportunity` | Location   | An unexpected, beneficial event on a settlement journey (a strong hit with a match).                                                                                                                                                       |
+| Oracle                           | Key                        | Category   | Description                                                                                                                                                                                                                                |
+| -------------------------------- | -------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Location: Region                 | `yrtRegion`                | Location   | The 22 Yrt-world regions, ordered by land type and frequency-weighted (settled lands roll most often, remote least). Each row carries a `type` (Settled / Boundary / Remote) shown as its own column. **Replaces the base Region oracle.** |
+| Settlement: Type                 | `yrtSettlementType`        | Settlement | Scale and purpose (Stead → Hold), rolled against the settlement's land tier (a `columnSelect` table). The preamble maps Yrt regions to Settled / Boundary / Remote lands. **Replaces the Lodestar Settlement: Type oracle.**               |
+| Location: Settlement Landmark    | `yrtCityTownLocation`      | Location   | A point-of-interest inside a settlement, town, or city (75 entries).                                                                                                                                                                       |
+| Location: Settlement Waypoint    | `yrtSettlementWaypoint`    | Location   | A location, discovery, or event when you _Undertake a Journey_ through a settlement.                                                                                                                                                       |
+| Location: Settlement Peril       | `yrtSettlementPeril`       | Location   | A perilous event or complication on a settlement journey (a miss).                                                                                                                                                                         |
+| Location: Settlement Opportunity | `yrtSettlementOpportunity` | Location   | An unexpected, beneficial event on a settlement journey (a strong hit with a match).                                                                                                                                                       |
 
 ### Character & setting
 
-| Oracle              | Key               | Category  | Description                                                                                           |
-| ------------------- | ----------------- | --------- | ----------------------------------------------------------------------------------------------------- |
-| Touched             | `yrtTouched`      | Character | A Touched character — social class, animal aspect, and features.                                      |
-| Touched Features    | `touchedFeatures` | Character | A specific supernatural feature for a Touched character.                                              |
-| Freeport Occupation | `freeportDenizen` | Character | A random occupation for an NPC in Freeport or another large town/city (structured value — see below). |
-| Touched Aspect      | `yrtAnimal`       | Character | The Touched animal-type aspect of a character.                                                        |
-| Mana Backlash       | `manaBacklash`    | Move      | A mana-specific backlash cost when magic goes wrong.                                                  |
+| Oracle                         | Key               | Category  | Description                                                                                           |
+| ------------------------------ | ----------------- | --------- | ----------------------------------------------------------------------------------------------------- |
+| Character: Touched             | `yrtTouched`      | Character | A Touched character — social class, animal aspect, and features.                                      |
+| Character: Touched Features    | `touchedFeatures` | Character | A specific supernatural feature for a Touched character.                                              |
+| Character: Freeport Occupation | `freeportDenizen` | Character | A random occupation for an NPC in Freeport or another large town/city (structured value — see below). |
+| Character: Touched Aspect      | `yrtAnimal`       | Character | The Touched animal-type aspect of a character.                                                        |
+| Magic: Mana Backlash           | `manaBacklash`    | Move      | A mana-specific backlash cost when magic goes wrong.                                                  |
 
 > **Supersession.** When YRT is enabled it hides the base `region` and the
 > Lodestar `storyRegion` / `settlementType` / `settlementCondition` oracles and

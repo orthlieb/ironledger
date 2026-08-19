@@ -1,8 +1,8 @@
 {
   "key": "threatRampagingCreature",
-  "title": "Rampaging Creature",
+  "title": "Threat: Rampaging Creature",
   "category": "Threat",
-  "selectLabel": "Rampaging Creature",
+  "selectLabel": "Threat: Rampaging Creature",
   "description": "Generate the next event for a rampaging creature threat.",
   "source": "delve",
   "data": [

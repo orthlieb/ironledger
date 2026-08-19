@@ -1,8 +1,8 @@
 {
   "key": "storyRegion",
-  "title": "Region",
+  "title": "Story: Region",
   "category": "Story",
-  "selectLabel": "Region",
+  "selectLabel": "Story: Region",
   "description": "Determine the broad region of the Ironlands where a story element is situated. Unlike the standard Region oracle, results here are frequency-weighted toward the settled heartlands, with the remote frontier coming up rarely.",
   "source": "lodestar",
   "data": [
