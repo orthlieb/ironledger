@@ -36,7 +36,7 @@
 	import Select from '$lib/components/Select.svelte';
 	import MarkdownNotes from '$lib/components/MarkdownNotes.svelte';
 	import PortraitUploader from '$lib/components/PortraitUploader.svelte';
-	import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
+	import { isSourceEnabled, resolveOracleKey } from '$lib/expansionStore.svelte.js';
 	import { Popover, Command, Tabs } from 'bits-ui';
 	import {
 		loadOracles,
@@ -443,20 +443,16 @@
 	): string {
 		if (key === 'type')
 			// settlementType values carry <strong>…</strong> markup for the picker;
-			// strip tags so the plain-text field shows "Outpost — Border or…". YRT
-			// supersedes the Lodestar table when enabled.
+			// strip tags so the plain-text field shows "Outpost — Border or…".
+			// resolveOracleKey picks up YRT's supersession (yrtSettlementType) when
+			// YRT is on, else falls through to Lodestar's settlementType.
 			return (
-				rollOracle(isSourceEnabled('yrt') ? 'yrtSettlementType' : 'settlementType', oracles, {
+				rollOracle(resolveOracleKey('settlementType'), oracles, {
 					stat: tierForRegion(region, oracles),
 				}).value ?? ''
 			).replace(/<[^>]+>/g, '');
 		if (key === 'condition')
-			return (
-				rollOracle(
-					isSourceEnabled('yrt') ? 'yrtSettlementCondition' : 'settlementCondition',
-					oracles,
-				).value ?? ''
-			);
+			return rollOracle(resolveOracleKey('settlementCondition'), oracles).value ?? '';
 		const oracleKey: Record<Exclude<LodestarSettlementFieldKey, 'type' | 'condition'>, string> = {
 			firstLook: 'settlementFirstLook',
 			disposition: 'settlementDisposition',
@@ -547,7 +543,7 @@
 		const rolled: Array<[string, string]> = [];
 		// Region: the base Region oracle, or YRT's replacement when YRT is on.
 		if (newCommunityRollRegion) {
-			c.region = rollOracle(isSourceEnabled('yrt') ? 'yrtRegion' : 'region', oracles).value ?? '';
+			c.region = rollOracle(resolveOracleKey('region'), oracles).value ?? '';
 			rolled.push(['Region', c.region]);
 		}
 		// Location + Descriptor are a Core-only settlement detail — Lodestar
@@ -773,19 +769,16 @@
 		}
 	}
 
-	/** Resolve the Landmark oracle for a Place: an in-settlement point-of-interest
-	 *  when nested, else an Overland / Coastal Landmark (Lodestar oracles supersede
-	 *  the base Location tables when it's on). */
+	/** Resolve the Landmark oracle for a Place. resolveOracleKey folds the
+	 *  extension supersessions in — YRT rewrites `location → yrtCityTownLocation`
+	 *  (nested / in-settlement), Lodestar rewrites `location → overlandLandmark`
+	 *  and `coastalWatersLocation → coastalWatersLandmark`; YRT wins over
+	 *  Lodestar (lower manifest order). Coastal vs overland is still a
+	 *  flow-context decision the client owns. */
 	function placeLandmarkKey(nested: boolean): string {
-		if (nested)
-			return isSourceEnabled('yrt')
-				? 'yrtCityTownLocation'
-				: lodestarOn
-					? 'overlandLandmark'
-					: 'location';
-		if (_pendingPlaceLandmarkKind === 'coastal')
-			return lodestarOn ? 'coastalWatersLandmark' : 'coastalWatersLocation';
-		return lodestarOn ? 'overlandLandmark' : 'location';
+		if (nested) return resolveOracleKey('location');
+		if (_pendingPlaceLandmarkKind === 'coastal') return resolveOracleKey('coastalWatersLocation');
+		return resolveOracleKey('location');
 	}
 
 	async function _commitPlace() {
@@ -802,7 +795,7 @@
 		if (parent) {
 			pl.region = parent.region;
 		} else {
-			pl.region = rollOracle(isSourceEnabled('yrt') ? 'yrtRegion' : 'region', oracles).value ?? '';
+			pl.region = rollOracle(resolveOracleKey('region'), oracles).value ?? '';
 			rolled.push(['Region', pl.region]);
 		}
 		if (newPlaceRollLandmark) {

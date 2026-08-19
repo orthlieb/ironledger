@@ -152,6 +152,17 @@ async function build() {
       ...(meta[id].suppressesOracles?.length
         ? { suppressesOracles: [...meta[id].suppressesOracles].sort() }
         : {}),
+      // Base-oracle-key → replacement-key rewrites applied while this
+      // extension is enabled. Client-side resolveOracleKey walks enabled
+      // extensions in manifest order and returns the first replacement;
+      // the base key is also implicitly suppressed from the picker.
+      ...(meta[id].supersedesOracles && Object.keys(meta[id].supersedesOracles).length
+        ? {
+            supersedesOracles: Object.fromEntries(
+              Object.entries(meta[id].supersedesOracles).sort(([a], [b]) => (a < b ? -1 : 1)),
+            ),
+          }
+        : {}),
       // Move / oracle categories introduced by this extension — icon, tint,
       // and picker-order slot. Merged client-side across enabled extensions
       // (see extensionCategories.svelte.ts); first-declared wins on duplicate

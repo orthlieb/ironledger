@@ -69,6 +69,10 @@ export interface ExtensionInfo {
 	 *  pairs — e.g. Lodestar's Core: Descriptor/Focus supersede Delve's Feature
 	 *  Aspect/Focus). Mirrors ExtensionInfo in @ironledger/shared. */
 	suppressesOracles?: string[];
+	/** Base-oracle-key → replacement-key rewrites applied while this extension
+	 *  is enabled. Auto-hides the base key from the picker. Lower manifest
+	 *  `order` wins when multiple extensions supersede the same key. */
+	supersedesOracles?: Record<string, string>;
 	/** Move categories introduced (picker order + icon + tint). */
 	moveCategories?: CategoryDef[];
 	/** Oracle categories introduced (icon + tint; picker order is alphabetical). */
