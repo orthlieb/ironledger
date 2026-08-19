@@ -40,22 +40,27 @@ This means a player can disable YRT before a session, run an Ironsworn-only game
 
 ```typescript
 import type { CatalogueSource } from '$lib/types.js';
-// CatalogueSource = 'base' | 'delve' | 'yrt'
+// CatalogueSource = string — any extension id (see @ironledger/shared).
 
-export function isDelveEnabled(): boolean;
-export function isYrtEnabled(): boolean;
-
-/** Single predicate used by every catalogue filter. */
+/** Single predicate used by every catalogue filter. Consumers pass the
+ *  extension id ('delve', 'yrt', 'lodestar', or a third-party id). */
 export function isSourceEnabled(source: CatalogueSource | string | undefined): boolean;
 
-export function setDelveEnabled(enabled: boolean): void;
-export function setYrtEnabled(enabled: boolean): void;
+/** Set the on/off state for one extension by id. Persists to localStorage. */
+export function setExtensionEnabled(id: string, on: boolean): void;
 
-/** 'base' → 'Core', 'delve' → 'Delve', 'yrt' → 'YRT'. Used for picker chips. */
+/** Human-readable label for a source — 'base' → 'Core', otherwise the
+ *  extension's `name` from its manifest. Used for picker chips. */
 export function sourceLabel(source: CatalogueSource | string): string;
+
+/** Ordered list of registered extensions (manifest `order`), for building
+ *  the settings panel and any generic source-order UI. */
+export function getExtensions(): ExtensionInfo[];
 ```
 
-Hydration is synchronous on first import (with a `typeof window` guard for SSR). The state uses Svelte 5 module-level `$state`, so any component reading `isDelveEnabled()` re-runs reactively when a toggle flips.
+Hydration is synchronous on first import (with a `typeof window` guard for SSR). The state uses Svelte 5 module-level `$state`, so any component reading `isSourceEnabled('<id>')` re-runs reactively when a toggle flips.
+
+> The earlier per-extension wrappers (`isDelveEnabled` / `isYrtEnabled` / `setDelveEnabled` / …) were dropped in favour of `isSourceEnabled('<id>')` / `setExtensionEnabled('<id>', on)` so adding a new extension needs no code edit here.
 
 `isSourceEnabled` deliberately defaults unknown sources to enabled — a future expansion added before its toggle exists won't silently disappear.
 
