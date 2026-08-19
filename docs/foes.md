@@ -19,8 +19,10 @@ Tracks active combat encounters (foes). Each encounter record links to a foe def
   quantity:        'solo' | 'pack' | 'horde',
   ticks:           number,   // 0-40 progress track
   vanquished:      boolean,
-  currentHarm?:    number,   // escalating harm level (1–rank); only when foeDef.escalates
-  currentDefense?: number,   // escalating defense level; only when foeDef.escalatesDefense
+  currentHarm?:    number,   // escalating harm level (1–rank); only when the foe
+                             // def carries extras.yrt.escalates
+  currentDefense?: number,   // escalating defense level; only when the foe def
+                             // carries extras.yrt.escalatesDefense
                              // absent = full cap (FOE_RANKS[effectiveRank].progressPerHit)
 }
 ```
@@ -37,8 +39,14 @@ Tracks active combat encounters (foes). Each encounter record links to a foe def
   features:           string[],
   drives:             string[],
   tactics:            string[],
-  escalates?:         boolean,      // true → harm escalates; shows +/− harm counter on card
-  escalatesDefense?:  boolean,      // true → has mana defense shield; shows +/− defense counter
+  /**
+   * Per-extension extras bag — each extension namespaces custom flags/data
+   * under its manifest id. YRT reads escalating-harm / escalating-defense
+   * flags off `extras.yrt.escalates` / `extras.yrt.escalatesDefense`.
+   * Consumers read through `foeExtraFlag(def, 'yrt', 'escalates')`
+   * (see apps/web/src/lib/foeExtras.ts) so core code stays extension-agnostic.
+   */
+  extras?: Record<string, unknown>,
 }
 ```
 
@@ -88,8 +96,8 @@ The Foes tab contains:
   - Foe portrait, name (custom or catalogue), nature/rank/quantity badges
   - Pill strip: nature → rank → quantity → harm (↑ italic when escalating) → progress (↓ italic when defense active)
   - Collapsible description with features, drives, and tactics
-  - **Escalating Harm** spinner (+/−) when `foeDef.escalates` — tracks `currentHarm`
-  - **Escalating Defense** spinner (+/−) when `foeDef.escalatesDefense` — tracks `currentDefense`
+  - **Escalating Harm** spinner (+/−) when `foeExtraFlag(foeDef, 'yrt', 'escalates')` — tracks `currentHarm`
+  - **Escalating Defense** spinner (+/−) when `foeExtraFlag(foeDef, 'yrt', 'escalatesDefense')` — tracks `currentDefense`
   - 10-box progress track; +/− buttons show defense value and are always enabled by track state (defense only affects label, not enabled state)
   - **Mark Vanquished** / **Return to Active** toggle
 
@@ -106,8 +114,8 @@ The Foes tab contains:
 
 The **Foe tile** in GlobalContextBar shows the active encounter's portrait, name, nature (colored), rank, harm (↑ italic when escalating), progress (↓ italic when defense active), quantity (if not solo), initiative badge, and vanquished marker. The detail panel (below the description toggle) contains:
 
-- **Escalating Harm** spinner when `foeDef.escalates`
-- **Escalating Defense** spinner when `foeDef.escalatesDefense`
+- **Escalating Harm** spinner when `foeExtraFlag(foeDef, 'yrt', 'escalates')`
+- **Escalating Defense** spinner when `foeExtraFlag(foeDef, 'yrt', 'escalatesDefense')`
 - Mini progress track with +/− buttons (mirroring defense value when active)
 
 Clicking the tile opens a popover listing all encounters; selecting one updates the active foe. Initiative state (You/Foe) is displayed as a colored badge when set via move outcome links.
@@ -118,7 +126,7 @@ Clicking the tile opens a popover listing all encounters; selecting one updates 
 
 Two optional escalating mechanics extend base foes. Both are additive — they don't replace any core Ironsworn rules and can coexist on the same foe.
 
-### Escalating Harm (`escalates: true`)
+### Escalating Harm (`extras.yrt.escalates: true`)
 
 The foe's harm starts at 1 and increases on each Miss. Cap = effective rank + 1 (Troublesome = 2, Dangerous = 3, Formidable = 4, Extreme = 5), capped at 5 for Epic.
 
@@ -129,7 +137,7 @@ The foe's harm starts at 1 and increases on each Miss. Cap = effective rank + 1 
 
 See [Yrt extension docs § Escalating Harm](../extensions/yrt/README.md#escalating-harm-yrt-extension) for full spec.
 
-### Escalating Defense (`escalatesDefense: true`)
+### Escalating Defense (`extras.yrt.escalatesDefense: true`)
 
 The foe's armor builds up on each Miss, reducing progress ticks per mark. Defense starts at 0 and increases by 1 on each Miss. Max = `FOE_RANKS[effectiveRank].progressPerHit − 1` (Troublesome = 11, Dangerous = 7, … Epic = 0). Ticks per progress mark = `progressPerHit − currentDefense` (minimum 1).
 

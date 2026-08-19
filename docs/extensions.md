@@ -41,10 +41,26 @@ and everything filters out — nothing else changes.
   "name": "Sample", // label shown on the Settings toggle
   "description": "…", // shown in the registry
   "defaultEnabled": false, // on/off until the user toggles it
-  "order": 99, // display + catalogue-merge order
+  "order": 99, // display + catalogue-merge order (also wins supersession ties)
   "dev": true, // optional — dev/test only, stripped from production (see below)
-  "suppressesOracles": ["location"], // optional — oracle keys this extension
-  // hides while enabled (supersession; see below)
+
+  // Optional — hide these oracle keys from the picker while enabled. Pure hides
+  // (no keyed replacement). See "Oracle supersession" below.
+  "suppressesOracles": ["location"],
+
+  // Optional — base-key → replacement-key rewrites this extension applies while
+  // enabled. Auto-hides the base key from the picker. See "Oracle supersession".
+  "supersedesOracles": { "region": "sampleRegion" },
+
+  // Optional — move / oracle categories introduced by this extension (picker
+  // order + icon + tint). Merged client-side across enabled extensions. See
+  // "Category records" below.
+  "moveCategories": [
+    { "key": "Widget", "icon": "sample-widget", "color": "#8a2be2", "order": 200 },
+  ],
+  "oracleCategories": [
+    { "key": "Sample", "icon": "dice-d100-solid", "color": "var(--text-muted)" },
+  ],
 }
 ```
 
@@ -90,34 +106,88 @@ and args. A single item that genuinely needs raw HTML can set `"html": true` to
 opt out of `renderRich` (and the lint); avoid it unless a construct truly can't
 be expressed in the DSL.
 
-### Oracle supersession (`suppressesOracles`)
+### Oracle supersession
 
-An extension can **hide** oracles owned by other (lower-order) extensions while
-it is enabled, so a richer table can stand in for a base one without two
-near-identical entries cluttering the picker. List the target oracle **keys**
-in `suppressesOracles` on `extension.json`:
+Two related mechanisms — pick the one that matches what the extension does.
+
+#### `suppressesOracles: string[]` — hide from the picker
+
+For oracles the extension **replaces at a different layer** (e.g. Lodestar's
+Core: Descriptor / Focus supersede Delve's `featureAspect` / `featureFocus`
+through the character-concept resolver in `characterConcept.ts`, not through
+a keyed rewrite). Just list the base keys to hide:
 
 ```jsonc
 // extensions/lodestar/extension.json
-"suppressesOracles": ["location", "coastalWatersLocation", "featureAspect", "featureFocus"]
-// extensions/yrt/extension.json
-"suppressesOracles": ["region", "settlementCondition"]
+"suppressesOracles": ["featureAspect", "featureFocus", "charDisposition"]
 ```
 
-The manifest carries the (sorted) list through to the web, where
-`expansionStore.suppressedOracleKeys()` unions the keys from every **enabled**
-extension. `getVisibleOracles()` filters those out, so the pattern is: ship a
-same-shaped replacement (e.g. Lodestar's Overland Landmark superseding base
-`location`, YRT's `yrtSettlementType` superseding Lodestar's `settlementType`) and add
-the superseded key here. Suppression only removes the oracle from the **picker**
-— a saved roll or a direct `rollOracle(key)` call still resolves it.
+`expansionStore.suppressedOracleKeys()` unions these keys from every enabled
+extension; `getVisibleOracles()` filters them out. Suppression only removes the
+oracle from the **picker** — a saved roll or a direct `rollOracle(key)` call
+still resolves it.
 
-> **Note — creation-flow suppression is separate.** A few _dialogs_ skip rolling
-> certain oracles based on which expansion is on (e.g. the New Settlement dialog
-> drops Location + Location Descriptor when Lodestar is enabled, via
-> `isSourceEnabled('lodestar')` in `CommunitiesArea.svelte`). That is per-dialog
-> UI logic, **not** the manifest `suppressesOracles` field — the oracles stay
-> visible in the Ask picker; they're just not auto-rolled on create.
+#### `supersedesOracles: Record<string, string>` — hide + rewrite
+
+For oracles the extension **replaces with a same-shape table under a different
+key**. The extension declares the base-key → replacement-key map; when the
+extension is enabled, `resolveOracleKey(baseKey)` returns the replacement key,
+and the base key is auto-hidden from the picker (union'd into
+`suppressedOracleKeys()`).
+
+```jsonc
+// extensions/yrt/extension.json
+"supersedesOracles": {
+  "region":              "yrtRegion",
+  "storyRegion":         "yrtStoryRegion",
+  "settlementType":      "yrtSettlementType",
+  "settlementCondition": "yrtSettlementCondition",
+  "location":            "yrtCityTownLocation"
+}
+// extensions/lodestar/extension.json
+"supersedesOracles": {
+  "location":             "overlandLandmark",
+  "coastalWatersLocation": "coastalWatersLandmark"
+}
+```
+
+Client code that used to write `isSourceEnabled('yrt') ? 'yrtRegion' : 'region'`
+now writes `resolveOracleKey('region')`.
+
+**Priority when two enabled extensions supersede the same key**: the lower
+manifest `order` wins. Example: both YRT (order 20) and Lodestar (order 30)
+supersede `location`; with both on, YRT's `yrtCityTownLocation` wins.
+
+### Category records — `moveCategories` / `oracleCategories`
+
+Each extension owns the picker order + icon + tint colour for the move / oracle
+categories it introduces. There's no app-side hardcoded MOVE_CAT_ICON /
+CATEGORY_COLORS map; each entry is a `CategoryDef`:
+
+```ts
+interface CategoryDef {
+  key: string; // exact string on move.category / oracle.category
+  icon?: string; // slug in $lib/icons/ or extensions/<id>/icons/
+  color?: string; // CSS colour token or literal
+  order?: number; // move-picker sort slot; missing → sorts last
+}
+```
+
+Extensions declare only the categories they **introduce** — an extension that
+adds moves to an existing category (e.g. Lodestar adding Face Danger to base's
+Adventure) doesn't redeclare it. Duplicate `key` across extensions: first-
+declared wins.
+
+```jsonc
+// extensions/lodestar/extension.json
+"moveCategories":   [{ "key": "Scene",    "icon": "hourglass-clock-solid-full", "color": "#7E57C2", "order": 25 }],
+"oracleCategories": [{ "key": "Encounter", "icon": "dice-d100-solid",            "color": "#2A9D8F"             }]
+```
+
+`extensionCategories.svelte.ts` merges them across enabled extensions on
+demand (reactive on the enabled-map), so pickers re-render the moment an
+expansion is toggled. Moves consume `moveCategoryOrder()`; both pickers +
+detail headers read `moveCategoryMeta(key)?.icon` / `oracleCategoryMeta(key)?.color`.
 
 ### Icons
 

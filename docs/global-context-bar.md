@@ -64,10 +64,10 @@ A full-width sticky bar rendered above the two-column page layout on the charact
 ### Foe Tile
 
 - **Row 1**: Portrait (24px circle) + foe name (display font, bold)
-- **Row 2 (pills)**: Nature (colored) → rank → quantity (if not solo) → harm (`Harm: N ↑` italic red when escalating) → progress (`Progress: N ↓` italic blue when `escalatesDefense`)
+- **Row 2 (pills)**: Nature (colored) → rank → quantity (if not solo) → harm (`Harm: N ↑` italic red when escalating) → progress (`Progress: N ↓` italic blue when the foe carries `extras.yrt.escalatesDefense`)
 - **Detail panel** (below collapsible description):
-  - **Escalating Harm** row — `−` / value / `+` / cap, when `foeDef.escalates`
-  - **Escalating Defense** row — `−` / value / `+` / cap, when `foeDef.escalatesDefense`
+  - **Escalating Harm** row — `−` / value / `+` / cap, when `foeExtraFlag(foeDef, 'yrt', 'escalates')`
+  - **Escalating Defense** row — `−` / value / `+` / cap, when `foeExtraFlag(foeDef, 'yrt', 'escalatesDefense')`
   - Mini progress track + `−N` / `+N` buttons (N mirrors current defense when shield active)
 - Initiative badge and vanquished marker shown in the detail panel
 

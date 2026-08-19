@@ -1,8 +1,21 @@
 # Extensions — Architecture & Migration Spec
 
-Status: **proposed** · Scope: reorganise expansion content (starting with YRT)
+Status: **shipped** · Scope: reorganised expansion content (starting with YRT)
 into self-contained, curated **extensions** with a build-time manifest and a
 dynamic Settings registry.
+
+> **This is the original migration spec, kept as history.** The migration is
+> done: each extension lives under `extensions/<id>/`, categories + icons +
+> tint colours + supersession maps are all manifest-driven, and the app-side
+> `isDelveEnabled` / `isYrtEnabled` / `SOURCE_ORDER` / `CATEGORY_ORDER` /
+> `MOVE_CAT_ICON` / `CATEGORY_COLORS` hardcodings are gone. YRT-specific foe
+> flags (`escalates`, `escalatesDefense`) moved from top-level `FoeDef`
+> fields into the per-extension extras bag (`extras.yrt.*`), read through
+> `foeExtras.ts`.
+>
+> For current API + schema, see `docs/extensions.md`, `docs/expansion-toggles.md`,
+> `docs/data-schema.md`, and `docs/foes.md`. This spec's "will do" language is
+> retained for the historical rationale — read it as past-tense.
 
 ---
 
