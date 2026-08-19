@@ -25,7 +25,7 @@
 // =============================================================================
 
 import type { FoeDef, FoeNature, CatalogueSource } from '$lib/types.js';
-import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
+import { getExtensions, isSourceEnabled } from '$lib/expansionStore.svelte.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -91,8 +91,12 @@ export const FOE_NATURE_COLORS: Record<FoeNature, string> = {
 	Construct: '#A8A8A8',
 };
 
-// Source order for display
-const SOURCE_ORDER: CatalogueSource[] = ['base', 'delve', 'yrt'];
+// Source order for display — derived from the extension manifest at read
+// time (getExtensions returns registered extensions in manifest `order`),
+// so a new expansion appears in the list without a code edit here.
+function sourceOrder(): CatalogueSource[] {
+	return getExtensions().map((e) => e.id);
+}
 
 // Nature display order
 const NATURE_ORDER: FoeNature[] = [
@@ -165,7 +169,7 @@ export function getFoeNatures(): FoeNature[] {
 /** Distinct source tags present in the catalogue, in canonical display order. */
 export function getFoeSources(): CatalogueSource[] {
 	const present = new Set(_foes.map((f) => foeSource(f)));
-	return SOURCE_ORDER.filter((s) => present.has(s));
+	return sourceOrder().filter((s) => present.has(s));
 }
 
 /** Visible sources after expansion filtering. */

@@ -20,6 +20,7 @@
 	} from '$lib/oracleStore.svelte.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { oracleCategoryIcon } from '$lib/iconRegistry.js';
+	import { oracleCategoryMeta } from '$lib/extensionCategories.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
 	import { appendLog, enrichOutcomeLinks } from '$lib/log.svelte.js';
 	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
@@ -156,32 +157,12 @@
 	});
 
 	// ---------------------------------------------------------------------------
-	// Category colour mapping (filter chips + tile accents)
+	// Category tint (filter chips + tile accents) — from the extension manifest.
+	// Each extension declares its own colour on its oracleCategories entries;
+	// unknown categories fall back to --text-accent.
 	// ---------------------------------------------------------------------------
-	const CATEGORY_COLORS: Record<string, string> = {
-		Core: 'var(--color-wits)',
-		Character: 'var(--color-heart)',
-		Combat: 'var(--color-iron)',
-		Delve: '#4472D0',
-		Creature: 'var(--color-shadow)',
-		Encounter: '#2A9D8F',
-		Location: 'var(--color-edge)',
-		Magic: '#9B59B6',
-		Move: 'var(--text-accent)',
-		Name: 'var(--color-spirit)',
-		Prelude: 'var(--color-supply)',
-		Scale: '#2E86AB',
-		Settlement: '#D06840',
-		Site: '#4472D0',
-		Story: '#8E7CC3',
-		Threat: '#C0392B',
-		Trap: '#8E6A3A',
-		Quest: '#E4AA28',
-		Other: 'var(--text-muted)',
-	};
-
 	function categoryColor(cat: string | undefined): string {
-		return CATEGORY_COLORS[cat ?? 'Other'] ?? 'var(--text-accent)';
+		return oracleCategoryMeta(cat)?.color ?? 'var(--text-accent)';
 	}
 
 	// ---------------------------------------------------------------------------

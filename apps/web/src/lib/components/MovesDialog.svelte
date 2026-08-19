@@ -17,6 +17,7 @@
 	import type { PreconditionContext } from '$lib/preconditions.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { moveCategoryIcon } from '$lib/iconRegistry.js';
+	import { moveCategoryMeta } from '$lib/extensionCategories.svelte.js';
 	import { matchNoteHtml } from '$lib/rollMatch.js';
 	import {
 		loadMoves,
@@ -194,24 +195,12 @@
 	});
 
 	// ---------------------------------------------------------------------------
-	// Category colours
+	// Category colour — from the extension manifest (each extension declares
+	// its own tint on its moveCategories entry). Falls back to --text-accent
+	// for unknown categories so nothing renders black.
 	// ---------------------------------------------------------------------------
-	const CATEGORY_COLORS: Record<string, string> = {
-		Adventure: 'var(--color-wits)',
-		Relationship: 'var(--color-heart)',
-		Combat: 'var(--color-iron)',
-		Suffer: 'var(--color-danger, #ef4444)',
-		Quest: 'var(--color-momentum)',
-		Fate: 'var(--color-spirit)',
-		Delve: 'var(--color-shadow)',
-		Scene: '#7E57C2',
-		Rarity: 'var(--color-touched)',
-		Failure: 'var(--text-dimmer)',
-		Yrt: 'var(--color-touched)',
-	};
-
 	function catColor(cat: string): string {
-		return CATEGORY_COLORS[cat] ?? 'var(--text-accent)';
+		return moveCategoryMeta(cat)?.color ?? 'var(--text-accent)';
 	}
 
 	// ---------------------------------------------------------------------------

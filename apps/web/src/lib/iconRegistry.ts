@@ -109,77 +109,21 @@ export function natureIcon(nature: FoeNature): string {
 }
 
 // ---------------------------------------------------------------------------
-// Oracle category → icon
+// Move / oracle category → icon
 //
-// Oracles carry an optional `category` string (e.g. "Character", "Location",
-// "Threat") that groups them under the picker's filter chips. Each category
-// also gets a per-tile glyph so the picker reads at a glance. All slugs
-// resolve to icons already in the library — no new SVG art is needed.
-// An unknown or absent category falls back to a neutral d100 glyph so tiles
-// never render iconless.
+// Per-category glyphs (picker tiles + detail-header leading icon) live in
+// each extension's `extension.json` — see CategoryDef and merge/resolve
+// helpers in extensionCategories.svelte.ts. Missing/unknown categories
+// fall back to the person-running glyph (moves — same as the app-nav Move
+// button) or the neutral d100 (oracles) so a tile never renders blank.
 // ---------------------------------------------------------------------------
 
-const ORACLE_CAT_ICON: Record<string, string> = {
-	Core: 'crystal-ball',
-	Location: 'location-dot',
-	Character: 'Characters',
-	Settlement: 'village',
-	Delve: 'dungeon-gate',
-	Threat: 'skull-crossbones-solid-full',
-	Move: 'person-running-solid',
-	Creature: 'foe-beast',
-	Combat: 'sword-solid-full',
-	// Scale absorbs the former Quest cluster (challengeRank moved). fa-scale-unbalanced.
-	Scale: 'scale-unbalanced-solid-full',
-	// FA Free (hydra + sparkles are Pro-only — substituted from the same visual family):
-	Monstrosity: 'dragon-solid-full',
-	Story: 'book-solid-full',
-	Magic: 'wand-sparkles-solid-full',
-	// Encounter reuses the neutral d100 glyph — single-oracle category, no distinctive art.
-	Encounter: 'dice-d100-solid',
-	// Sample/dev-only oracles surface as "Other" — d100 fallback is the right neutral.
-	Other: 'dice-d100-solid',
-};
+import { moveCategoryMeta, oracleCategoryMeta } from './extensionCategories.svelte.js';
 
-/** Resolve the icon SVG for an oracle by category. Falls back to a neutral
- *  d100 glyph for unknown/absent categories so tiles never render blank. */
-export function oracleCategoryIcon(category: string | undefined | null): string {
-	const slug = category ? ORACLE_CAT_ICON[category] : undefined;
-	return getIcon(slug) ?? getIcon('dice-d100-solid') ?? '';
+export function moveCategoryIcon(category: string | undefined | null): string {
+	return getIcon(moveCategoryMeta(category)?.icon) ?? getIcon('person-running-solid') ?? '';
 }
 
-// ---------------------------------------------------------------------------
-// Move category → icon
-//
-// Same asset-card treatment on the Moves picker + detail header. Moves are
-// grouped by their canonical Ironsworn/Delve category (Adventure, Combat,
-// Journey, Suffer, …). Each gets a distinctive glyph reused from the
-// existing library so the tile reads at a glance and the detail-view header
-// carries a badge that matches. Absent/unknown categories fall back to the
-// person-running glyph — the same one the app-nav Move button uses.
-// ---------------------------------------------------------------------------
-
-const MOVE_CAT_ICON: Record<string, string> = {
-	Adventure: 'Adventure',
-	Combat: 'sword-solid-full',
-	Journey: 'journey',
-	Suffer: 'heart-pulse-solid-full',
-	Fate: 'scissors-thread',
-	Failure: 'face-head-bandage',
-	Quest: 'compass-rose',
-	Relationship: 'farmer',
-	Threat: 'skull-crossbones-solid-full',
-	Delve: 'dungeon-gate',
-	Scene: 'hourglass-clock-solid-full',
-	Rarity: 'gem-solid',
-	Yrt: 'foe-beast',
-	Sample: 'dice-d100-solid',
-};
-
-/** Resolve the icon SVG for a move by category. Falls back to the app-nav
- *  Move glyph for unknown/absent categories so the header/tile never renders
- *  blank. */
-export function moveCategoryIcon(category: string | undefined | null): string {
-	const slug = category ? MOVE_CAT_ICON[category] : undefined;
-	return getIcon(slug) ?? getIcon('person-running-solid') ?? '';
+export function oracleCategoryIcon(category: string | undefined | null): string {
+	return getIcon(oracleCategoryMeta(category)?.icon) ?? getIcon('dice-d100-solid') ?? '';
 }

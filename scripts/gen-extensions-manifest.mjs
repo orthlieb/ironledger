@@ -152,6 +152,14 @@ async function build() {
       ...(meta[id].suppressesOracles?.length
         ? { suppressesOracles: [...meta[id].suppressesOracles].sort() }
         : {}),
+      // Move / oracle categories introduced by this extension — icon, tint,
+      // and picker-order slot. Merged client-side across enabled extensions
+      // (see extensionCategories.svelte.ts); first-declared wins on duplicate
+      // key so extensions that only add moves to an existing category don't
+      // redeclare it. Passed through unchanged so the manifest is the source
+      // of truth (no app-side hardcoded MOVE_CAT_ICON / CATEGORY_COLORS maps).
+      ...(meta[id].moveCategories?.length ? { moveCategories: meta[id].moveCategories } : {}),
+      ...(meta[id].oracleCategories?.length ? { oracleCategories: meta[id].oracleCategories } : {}),
       root,
       provides: Object.fromEntries(
         Object.entries(provides)

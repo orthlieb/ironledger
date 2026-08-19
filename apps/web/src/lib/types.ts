@@ -48,6 +48,16 @@ export type FoeQuantity = 'solo' | 'pack' | 'horde';
  */
 export type CatalogueSource = string;
 
+/** One move- or oracle-category record contributed by an extension. Merged
+ *  across enabled extensions to drive picker order, icons, and tints. See
+ *  `extensionCategories.svelte.ts`. First-declared wins on duplicate `key`. */
+export interface CategoryDef {
+	key: string;
+	icon?: string;
+	color?: string;
+	order?: number;
+}
+
 /** Public metadata for one registered extension (served at /catalogue/extensions). */
 export interface ExtensionInfo {
 	id: string;
@@ -59,6 +69,10 @@ export interface ExtensionInfo {
 	 *  pairs — e.g. Lodestar's Core: Descriptor/Focus supersede Delve's Feature
 	 *  Aspect/Focus). Mirrors ExtensionInfo in @ironledger/shared. */
 	suppressesOracles?: string[];
+	/** Move categories introduced (picker order + icon + tint). */
+	moveCategories?: CategoryDef[];
+	/** Oracle categories introduced (icon + tint; picker order is alphabetical). */
+	oracleCategories?: CategoryDef[];
 }
 
 export interface FoeDef {

@@ -3,5 +3,34 @@
   "name": "Ironsworn",
   "description": "Core Ironsworn moves, oracles, foes, and assets.",
   "defaultEnabled": true,
-  "order": 0
+  "order": 0,
+  "moveCategories": [
+    { "key": "Adventure", "icon": "Adventure", "color": "var(--color-wits)", "order": 10 },
+    { "key": "Journey", "icon": "journey", "color": "var(--color-wits)", "order": 20 },
+    { "key": "Quest", "icon": "compass-rose", "color": "var(--color-momentum)", "order": 30 },
+    { "key": "Fate", "icon": "scissors-thread", "color": "var(--color-spirit)", "order": 40 },
+    { "key": "Relationship", "icon": "farmer", "color": "var(--color-heart)", "order": 50 },
+    { "key": "Combat", "icon": "sword-solid-full", "color": "var(--color-iron)", "order": 60 },
+    {
+      "key": "Suffer",
+      "icon": "heart-pulse-solid-full",
+      "color": "var(--color-danger, #ef4444)",
+      "order": 70
+    },
+    { "key": "Failure", "icon": "face-head-bandage", "color": "var(--text-dimmer)", "order": 90 },
+    { "key": "Threat", "icon": "skull-crossbones-solid-full", "color": "#C0392B", "order": 100 },
+    { "key": "Rarity", "icon": "gem-solid", "color": "var(--color-touched)", "order": 110 }
+  ],
+  "oracleCategories": [
+    { "key": "Core", "icon": "crystal-ball", "color": "var(--color-wits)" },
+    { "key": "Character", "icon": "Characters", "color": "var(--color-heart)" },
+    { "key": "Location", "icon": "location-dot", "color": "var(--color-edge)" },
+    { "key": "Settlement", "icon": "village", "color": "#D06840" },
+    { "key": "Move", "icon": "person-running-solid", "color": "var(--text-accent)" },
+    { "key": "Combat", "icon": "sword-solid-full", "color": "var(--color-iron)" },
+    { "key": "Scale", "icon": "scale-unbalanced-solid-full", "color": "#2E86AB" },
+    { "key": "Magic", "icon": "wand-sparkles-solid-full", "color": "#9B59B6" },
+    { "key": "Story", "icon": "book-solid-full", "color": "#8E7CC3" },
+    { "key": "Other", "icon": "dice-d100-solid", "color": "var(--text-muted)" }
+  ]
 }

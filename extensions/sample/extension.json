@@ -4,5 +4,8 @@
   "description": "A reference extension that exercises every pluggable surface: a move, an oracle, a foe (with a bundled portrait), an override patching a base foe, an asset (with a bundled icon), and a roll-table (resolver oracle). Off by default; enable it in Settings → Expansions to see everything appear.",
   "defaultEnabled": false,
   "order": 99,
-  "dev": true
+  "dev": true,
+  "moveCategories": [
+    { "key": "Sample", "icon": "dice-d100-solid", "color": "var(--text-muted)", "order": 900 }
+  ]
 }

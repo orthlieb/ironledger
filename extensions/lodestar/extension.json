@@ -10,5 +10,9 @@
     "location",
     "coastalWatersLocation",
     "charDisposition"
-  ]
+  ],
+  "moveCategories": [
+    { "key": "Scene", "icon": "hourglass-clock-solid-full", "color": "#7E57C2", "order": 25 }
+  ],
+  "oracleCategories": [{ "key": "Encounter", "icon": "dice-d100-solid", "color": "#2A9D8F" }]
 }
