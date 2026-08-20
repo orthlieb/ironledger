@@ -15,7 +15,7 @@
  * the .res-tile / .mt-tile inside the Characters area's Core sub-tab.
  */
 import { test, expect, type Page } from '@playwright/test';
-import { resetAll } from './helpers/reset';
+import { resetAll, resetFoes } from './helpers/reset';
 import { settleHome, ensureCharacter } from './helpers/home';
 
 const CHAR_AREA = '.home-area--characters';
@@ -87,6 +87,48 @@ async function ensureFoeExists(page: Page) {
 		await page.locator('.foe-dialog button:has-text("Add to Foes")').click();
 		await expect(page.locator('.foe-dialog')).not.toBeVisible({ timeout: 5_000 });
 	}
+}
+
+/** Add one foe (always creates a new encounter — the newest becomes active). */
+async function addFoe(page: Page) {
+	const before = await foeCount(page);
+	await page.locator(`${FOE_AREA} .fa-hdr-combobox`).click();
+	await page.locator('.mp-cmd-item--action', { hasText: /New foe/i }).click();
+	await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 5_000 });
+	const foeTile = page.locator('.foe-dialog .fd-tile').first();
+	await expect(foeTile).toBeVisible({ timeout: 8_000 });
+	await foeTile.click();
+	await page.locator('.foe-dialog button:has-text("Add to Foes")').click();
+	await expect(page.locator('.foe-dialog')).not.toBeVisible({ timeout: 5_000 });
+	await expect(page.locator(`${FOE_AREA} .fa-area`)).toHaveAttribute(
+		'data-foe-count',
+		String(before + 1),
+		{ timeout: 5_000 },
+	);
+}
+
+/** Read the persisted foe encounters (id / ticks / vanquished) from the session. */
+async function getEncounters(
+	page: Page,
+): Promise<Array<{ id: string; ticks: number; vanquished?: boolean }>> {
+	return await page.evaluate(async () => {
+		const res = await fetch('/api/session', { credentials: 'include' });
+		const json = (await res.json()) as { encounters?: unknown };
+		return Array.isArray(json.encounters)
+			? (json.encounters as Array<{ id: string; ticks: number; vanquished?: boolean }>)
+			: [];
+	});
+}
+
+/** Poll the session until at least `count` foes have persisted (creating a foe
+ *  is client-side + a 1.5 s debounced save, so the API lags the UI). */
+async function encountersWhenAtLeast(page: Page, count: number) {
+	let encs = await getEncounters(page);
+	for (let i = 0; i < 30 && encs.length < count; i++) {
+		await page.waitForTimeout(300);
+		encs = await getEncounters(page);
+	}
+	return encs;
 }
 
 /** Ensure an expedition (journey) exists. */
@@ -415,6 +457,72 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		await expect(entry.locator('a.progress-link')).toBeVisible({ timeout: 3_000 });
 		await entry.locator('a.progress-link').click();
 		await expect(entry.locator('s.resource-spent')).toBeVisible({ timeout: 3_000 });
+	});
+
+	// ── Foe binding (data-foe-id) ─────────────────────────────────────────────
+
+	test('combat progress link acts on its bound foe, not the active one', async ({ page }) => {
+		const charId = await goToHomeWithCharacter(page);
+		await resetFoes();
+		await page.reload();
+		await waitForCharactersArea(page);
+		await settleHome(page);
+
+		// Foe A (first), then Foe B (becomes active). The injected link is bound
+		// to A via data-foe-id, so the click must advance A — not the active B.
+		await ensureFoeExists(page);
+		const foeAId = (await encountersWhenAtLeast(page, 1))[0].id;
+		await addFoe(page);
+		const encs = await encountersWhenAtLeast(page, 2);
+		expect(encs.length).toBe(2);
+		const foeBId = encs.find((e) => e.id !== foeAId)!.id;
+
+		const id = crypto.randomUUID();
+		await inject(
+			page,
+			'Mock Outcome',
+			`<p><a class="progress-link" data-track="combat" data-value="2" data-foe-id="${foeAId}" data-entry-id="${id}" data-char-id="${charId}">Mark progress</a></p>`,
+			id,
+		);
+		const entry = entryById(page, id);
+		await entry.locator('a.progress-link').click();
+		await expect(entry.locator('s.resource-spent')).toBeVisible({ timeout: 3_000 });
+
+		// Let the 1.5 s debounce persist, then confirm A advanced and B did not.
+		await page.waitForTimeout(2_000);
+		const after = await getEncounters(page);
+		expect(after.find((e) => e.id === foeAId)?.ticks).toBeGreaterThan(0);
+		expect(after.find((e) => e.id === foeBId)?.ticks).toBe(0);
+	});
+
+	test('combat progress link no-ops when its bound foe has been vanquished', async ({ page }) => {
+		const charId = await goToHomeWithCharacter(page);
+		await resetFoes();
+		await page.reload();
+		await waitForCharactersArea(page);
+		await settleHome(page);
+
+		await ensureFoeExists(page);
+		const foeAId = (await encountersWhenAtLeast(page, 1))[0].id;
+
+		// Vanquish the (active) foe A via its status radio.
+		await page
+			.locator(`${FOE_AREA} .sr[aria-label="Foe status"] .sr-btn[aria-label="Mark vanquished"]`)
+			.click();
+
+		const id = crypto.randomUUID();
+		await inject(
+			page,
+			'Mock Outcome',
+			`<p><a class="progress-link" data-track="combat" data-value="2" data-foe-id="${foeAId}" data-entry-id="${id}" data-char-id="${charId}">Mark progress</a></p>`,
+			id,
+		);
+		const entry = entryById(page, id);
+		await entry.locator('a.progress-link').click();
+
+		// No-op: a vanquished foe's progress is untouched (stays 0).
+		await page.waitForTimeout(2_000);
+		expect((await getEncounters(page)).find((e) => e.id === foeAId)?.ticks).toBe(0);
 	});
 
 	// ── Burn momentum link ────────────────────────────────────────────────────
