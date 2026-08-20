@@ -207,6 +207,7 @@ export function enrichOutcomeLinks(
 	entryId: string,
 	charId: string,
 	expId = '',
+	foeId = '',
 ): string {
 	let out = html.replace(
 		/<a\s+class="(resource-link|debility-link|progress-link|countdown-link|initiative-link|menace-link|vanquish-foe-link|reset-track-link)"/g,
@@ -216,6 +217,15 @@ export function enrichOutcomeLinks(
 		out = out.replace(
 			/(<a data-entry-id="[^"]*" data-char-id="[^"]*") class="(progress-link|countdown-link)"/g,
 			`$1 data-exp-id="${expId}" class="$2"`,
+		);
+	}
+	// Foe-targeting links bind to the foe rolled against so a later click acts on
+	// THAT foe (or no-ops if it's been deleted/vanquished) rather than whatever
+	// foe is active now. `[^>]*?` tolerates a data-exp-id already inserted above.
+	if (foeId) {
+		out = out.replace(
+			/(<a [^>]*?) class="(progress-link|menace-link|vanquish-foe-link)"/g,
+			`$1 data-foe-id="${foeId}" class="$2"`,
 		);
 	}
 	return out;

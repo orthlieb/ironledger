@@ -192,8 +192,9 @@
 	let foeAreaRef = $state<{
 		selectFoe(id: string): void;
 		vanquishActiveFoe(): void;
+		vanquishFoe(foeId?: string): void;
 		reactivateActiveFoe(): void;
-		applyMenace(value: number): void;
+		applyMenace(value: number, foeId?: string): void;
 	} | null>(null);
 
 	/** Active dice context — provides charId + data for LogPanel's link handlers. */
@@ -1773,15 +1774,17 @@
 	<aside class="home-log">
 		<LogPanel
 			ctx={activeDiceCtx}
-			onMoveLink={(moveId) =>
-				document.dispatchEvent(new CustomEvent('ironledger:open-move', { detail: { id: moveId } }))}
+			onMoveLink={(moveId, harm) =>
+				document.dispatchEvent(
+					new CustomEvent('ironledger:open-move', { detail: { id: moveId, harm } }),
+				)}
 			onOracleLink={(key, stat) =>
 				document.dispatchEvent(
 					new CustomEvent('ironledger:open-oracle', { detail: { key, stat } }),
 				)}
-			onProgressLink={(track, value, expId) => {
+			onProgressLink={(track, value, expId, foeId) => {
 				if (track === 'combat') {
-					foeAreaRef?.applyMenace(value);
+					foeAreaRef?.applyMenace(value, foeId);
 				} else if (track === 'journey' || track === 'delve' || track === 'scene') {
 					expAreaRef?.applyProgress(value, expId);
 				}
@@ -1794,8 +1797,8 @@
 					triggerAction({ charId: id, type: 'set', key: 'initiative', value: numVal });
 				}
 			}}
-			onMenaceLink={(value) => foeAreaRef?.applyMenace(value)}
-			onVanquishFoe={() => foeAreaRef?.vanquishActiveFoe()}
+			onMenaceLink={(value, foeId) => foeAreaRef?.applyMenace(value, foeId)}
+			onVanquishFoe={(foeId) => foeAreaRef?.vanquishFoe(foeId)}
 			onChangeTheme={(id) => expAreaRef?.openChangeThemeForExp(id)}
 			onChangeDomain={(id) => expAreaRef?.openChangeDomainForExp(id)}
 		/>

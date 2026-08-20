@@ -51,12 +51,14 @@ export const LOG_ATTRS = [
 	'data-entry-id', // all stateful links (for markLinkSpent + guard checks)
 	'data-char-id', // resource-link, debility-link, failure-link, burn-momentum-link, xp-cost-link
 	'data-exp-id', // progress-link, countdown-link — bind to the expedition the entry was rolled against
+	'data-foe-id', // progress/menace/vanquish links — bind to the foe the entry was rolled against
 
 	// ── Per-link-type data attributes ──────────────────────────────────────
 	'data-resource', // resource-link  — which stat to change (momentum, health, …)
 	'data-track', // progress-link  — which track to mark (combat, journey, delve, …)
 	'data-debility', // debility-link  — which debility to set/clear
 	'data-id', // move-link      — move id to open in MovesDialog
+	'data-harm', // move-link      — Endure Harm/Stress amount, overrides the foe-rank default
 	'data-oracle', // oracle-link    — oracle key to open in OraclesDialog
 	'data-stat', // oracle-link    — stat column pre-selected in the oracle
 	'data-expedition-id', // change-theme/domain-link — which expedition to modify

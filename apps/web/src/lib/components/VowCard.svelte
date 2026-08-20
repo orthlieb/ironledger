@@ -1,222 +1,217 @@
 <script lang="ts">
-	import type { Vow, VowDifficulty } from '$lib/types.js';
-	import { VOW_MARK_TICKS } from '$lib/types.js';
+	import type { Vow, VowDifficulty, VowStatus } from '$lib/types.js';
+	import { VOW_MARK_TICKS, VOW_FORSAKE_STRESS } from '$lib/types.js';
 	import ProgressTrackPanel from './ProgressTrackPanel.svelte';
 	import MarkdownNotes from './MarkdownNotes.svelte';
-	import { EditableName } from '$lib/editableName.svelte.js';
 	import ConfirmDialog from './ConfirmDialog.svelte';
-	import Select from './Select.svelte';
+	import VowOptionsDialog from './VowOptionsDialog.svelte';
 	import SegmentedRadio from './SegmentedRadio.svelte';
+	import { difficultyBadgeStyle } from '$lib/badgeStyles.js';
+	// (Renaming lives in VowOptionsDialog now — no inline header edit.)
+	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
+	import linkSolidSvg from '$icons/link-solid-full.svg?raw';
 	import linkBrokenSvg from '$icons/link-broken-solid-full.svg?raw';
-	import locationSvg from '$icons/location-dot-solid-full.svg?raw';
 	import checkSvg from '$icons/circle-check-solid-full.svg?raw';
 	import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 
 	let {
 		vow = $bindable(),
-		focusName = false,
 		onDelete,
+		onForsake,
 	}: {
 		vow: Vow;
-		/** If true, immediately enter name-edit mode (used when a vow is first created). */
-		focusName?: boolean;
 		onDelete: () => void;
+		/** Fires once the user confirms forsaking (status → forsaken). The parent
+		 *  logs it with an Endure Stress link. */
+		onForsake?: () => void;
 	} = $props();
 
-	const DIFFICULTIES: { value: VowDifficulty; label: string }[] = [
-		{ value: 'troublesome', label: 'Troublesome' },
-		{ value: 'dangerous', label: 'Dangerous' },
-		{ value: 'formidable', label: 'Formidable' },
-		{ value: 'extreme', label: 'Extreme' },
-		{ value: 'epic', label: 'Epic' },
-	];
-
-	/** Endure Stress cost when forsaking each rank of vow. */
-	const FORSAKE_STRESS: Record<VowDifficulty, number> = {
-		troublesome: 1,
-		dangerous: 2,
-		formidable: 3,
-		extreme: 4,
-		epic: 5,
+	const DIFF_LABELS: Record<VowDifficulty, string> = {
+		troublesome: 'Troublesome',
+		dangerous: 'Dangerous',
+		formidable: 'Formidable',
+		extreme: 'Extreme',
+		epic: 'Epic',
+	};
+	const STATUS_LABELS: Record<VowStatus, string> = {
+		active: 'Active',
+		fulfilled: 'Fulfilled',
+		forsaken: 'Forsaken',
 	};
 
-	let collapsed = $state(false);
 	let forsakeDialogRef = $state<{ open(): void; close(): void } | null>(null);
+	let vowOptionsRef = $state<{ open(): void; close(): void } | null>(null);
 
-	// Inline name editing
-	const nameEdit = new EditableName((restored) => {
-		vow.name = restored;
-	});
-	// Scroll a new vow's rename input into view (new vows are appended to
-	// the list and may be off-screen). `nearest` is a no-op when the input
-	// is already visible, so this doesn't trigger a stray scroll on existing vows.
-	$effect(() => {
-		if (nameEdit.editing && nameEdit.inputEl) {
-			nameEdit.inputEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+	// Status is the source of truth; fall back to the legacy `fulfilled` boolean.
+	const status = $derived<VowStatus>(vow.status ?? (vow.fulfilled ? 'fulfilled' : 'active'));
+	const diffLabel = $derived(DIFF_LABELS[vow.difficulty] ?? vow.difficulty);
+	const stressCost = $derived(VOW_FORSAKE_STRESS[vow.difficulty]);
+
+	// Remember the pre-forsake state so cancelling the warning dialog reverts it.
+	let prevStatus = $state<VowStatus>('active');
+
+	function onStatusChange(next: VowStatus) {
+		if (next === 'forsaken') {
+			// Commit optimistically so the radio stays controlled, then confirm.
+			prevStatus = status;
+			vow.status = 'forsaken';
+			forsakeDialogRef?.open();
+			return;
 		}
-	});
-	$effect(() => {
-		if (focusName) nameEdit.start(vow.name);
-	});
-
-	const diffLabel = $derived(
-		DIFFICULTIES.find((d) => d.value === vow.difficulty)?.label ?? vow.difficulty,
-	);
-	const stressCost = $derived(FORSAKE_STRESS[vow.difficulty]);
+		vow.status = next;
+	}
+	function confirmForsake() {
+		vow.status = 'forsaken';
+		onForsake?.();
+	}
+	function cancelForsake() {
+		vow.status = prevStatus;
+	}
 </script>
 
-<div class="vow-card" class:vow-card--fulfilled={vow.fulfilled}>
-	<!-- Header: collapse toggle, name, forsake button -->
+<div class="vow-card">
+	<!-- Header: collapse toggle, name, collapsed status pill, settings gear -->
 	<div class="vow-header">
 		<button
 			class="collapse-btn"
-			onclick={() => (collapsed = !collapsed)}
-			aria-label={collapsed ? 'Expand vow' : 'Collapse vow'}
-			use:tooltip={collapsed ? 'Expand' : 'Collapse'}
+			onclick={() => (vow.collapsed = !vow.collapsed)}
+			aria-label={vow.collapsed ? 'Expand vow' : 'Collapse vow'}
+			use:tooltip={vow.collapsed ? 'Expand' : 'Collapse'}
 		>
-			{collapsed ? '▶' : '▼'}
+			{vow.collapsed ? '▶' : '▼'}
 		</button>
 
-		{#if nameEdit.editing}
-			<input
-				class="vow-name vow-name--editing"
-				bind:this={nameEdit.inputEl}
-				bind:value={vow.name}
-				placeholder="Vow name…"
-				aria-label="Vow name"
-				onblur={nameEdit.commit}
-				onkeydown={nameEdit.onKeydown}
-			/>
-		{:else}
-			<!-- svelte-ignore a11y_interactive_supports_focus -->
-			<span
-				class="vow-name vow-name--display"
-				role="button"
-				onclick={() => nameEdit.start(vow.name)}
-				onkeydown={(e) => e.key === 'Enter' && nameEdit.start(vow.name)}
-				use:tooltip={'Click to rename'}>{vow.name || 'Unnamed Vow'}</span
-			>
-		{/if}
+		<!-- Name is display-only; rename lives in the gear (Vow options) dialog. -->
+		<span class="vow-name">{vow.name || 'Unnamed Vow'}</span>
 
-		{#if vow.fulfilled}
-			<!-- svelte-ignore a11y_click_events_have_key_events -->
-			<button
-				type="button"
-				class="vow-status-pill"
-				onclick={() => (vow.fulfilled = false)}
-				use:tooltip={'Reactivate this vow'}
-				aria-label="Reactivate this vow">Fulfilled</button
-			>
+		<!-- Collapsed-only status pill (display-only — the SegmentedRadio in the
+		     body is the control). Yellow active, green fulfilled, red forsaken. -->
+		{#if vow.collapsed}
+			<span class="vow-status-pill vow-status-pill--{status}">{STATUS_LABELS[status]}</span>
 		{/if}
 
 		<button
-			class="btn btn-icon icon-btn btn-trash"
-			onclick={() => forsakeDialogRef?.open()}
-			use:tooltip={'Forsake vow'}
-			aria-label="Forsake vow">{@html linkBrokenSvg}</button
+			class="btn btn-icon icon-btn vow-settings-btn"
+			onclick={() => vowOptionsRef?.open()}
+			use:tooltip={'Vow options'}
+			aria-label="Vow options">{@html iconGearSvg}</button
 		>
 	</div>
 
 	<!-- Expandable body -->
-	{#if !collapsed}
+	{#if !vow.collapsed}
 		<div class="vow-body">
-			<!-- Status row (active vows only) — mirrors ExpeditionsArea /
-			     CommunitiesArea's "STATUS · SegmentedRadio · divider" pattern.
-			     A fulfilled vow shows its state as the header pill instead;
-			     the pill is clickable to reactivate, which re-renders this
-			     row so the SegmentedRadio can move the vow back the other way. -->
-			{#if !vow.fulfilled}
+			<!-- Rank pill + Status radio, one divider below — mirrors the
+			     Expeditions Core header (pills row + status section). The rank is
+			     fixed at creation and shown read-only here; the status radio stays
+			     live even when the vow is fulfilled/forsaken so it can be reopened. -->
+			<div class="vow-topline">
+				<div class="vow-pills-row">
+					<span class="vow-badge vow-badge--diff" style={difficultyBadgeStyle(vow.difficulty)}
+						>{diffLabel}</span
+					>
+				</div>
 				<div class="vow-status-section">
 					<span class="vow-field-label">Status</span>
 					<SegmentedRadio
 						ariaLabel="Vow status"
 						labels="always"
-						value={vow.fulfilled ? 'fulfilled' : 'active'}
-						onchange={(v) => (vow.fulfilled = v === 'fulfilled')}
+						value={status}
+						onchange={(v) => onStatusChange(v as VowStatus)}
 						options={[
 							{
 								value: 'active',
-								icon: locationSvg,
+								icon: linkSolidSvg,
 								text: 'Active',
 								label: 'Mark active',
-								tone: 'go',
+								tone: 'warn',
 							},
 							{
 								value: 'fulfilled',
 								icon: checkSvg,
 								text: 'Fulfilled',
 								label: 'Mark fulfilled',
+								tone: 'go',
+							},
+							{
+								value: 'forsaken',
+								icon: linkBrokenSvg,
+								text: 'Forsaken',
+								label: 'Mark forsaken',
 								tone: 'stop',
 							},
 						]}
 					/>
 				</div>
-			{/if}
-
-			<!-- Rank row -->
-			<div class="vow-extras">
-				<label class="vow-extra">
-					<span>Rank</span>
-					<Select
-						class="vow-difficulty"
-						bind:value={vow.difficulty}
-						ariaLabel="Vow difficulty"
-						options={DIFFICULTIES}
-					/>
-				</label>
 			</div>
 
-			<!-- Threat + Menace row (Delve-only — preserves underlying data when hidden) -->
-			{#if isSourceEnabled('delve')}
-				<div class="vow-extras">
-					<label class="vow-extra vow-threat">
-						<span>Threat</span>
-						<input bind:value={vow.threat} placeholder="—" aria-label="Threat" />
-					</label>
-					<div class="vow-extra menace-control">
-						<span>Menace</span>
-						<button
-							class="adj-btn"
-							onclick={() => (vow.menace = Math.max(0, vow.menace - 1))}
-							disabled={vow.menace <= 0}
-							aria-label="Decrease menace">−</button
-						>
-						<span class="menace-val" class:menace-high={vow.menace >= 7}>{vow.menace}</span>
-						<button
-							class="adj-btn"
-							onclick={() => (vow.menace = Math.min(10, vow.menace + 1))}
-							disabled={vow.menace >= 10}
-							aria-label="Increase menace">+</button
-						>
-						<span class="menace-max">/10</span>
+			<!-- Everything below the status row dims + goes inert once the vow is
+			     no longer active. Only the Status radio (above) and the gear button
+			     (header) stay clickable. -->
+			<div
+				class="vow-dimmable"
+				class:vow-dimmable--locked={status !== 'active'}
+				inert={status !== 'active'}
+			>
+				<!-- Threat + Menace row (Delve-only — preserves underlying data when hidden) -->
+				{#if isSourceEnabled('delve')}
+					<div class="vow-extras">
+						<label class="vow-extra vow-threat">
+							<span>Threat</span>
+							<input bind:value={vow.threat} placeholder="—" aria-label="Threat" />
+						</label>
+						<div class="vow-extra menace-control">
+							<span>Menace</span>
+							<button
+								class="adj-btn"
+								onclick={() => (vow.menace = Math.max(0, vow.menace - 1))}
+								disabled={vow.menace <= 0}
+								aria-label="Decrease menace">−</button
+							>
+							<span class="menace-val" class:menace-high={vow.menace >= 7}>{vow.menace}</span>
+							<button
+								class="adj-btn"
+								onclick={() => (vow.menace = Math.min(10, vow.menace + 1))}
+								disabled={vow.menace >= 10}
+								aria-label="Increase menace">+</button
+							>
+							<span class="menace-max">/10</span>
+						</div>
 					</div>
-				</div>
-			{/if}
+				{/if}
 
-			<!-- value + oninput (not bind:value) so a legacy vow with no `notes`
-			     field — undefined — doesn't trip MarkdownNotes' bindable fallback
-			     (props_invalid_value). Matches CommunitiesArea / ExpeditionsArea. -->
-			<MarkdownNotes
-				label="Notes"
-				value={vow.notes ?? ''}
-				oninput={(v) => (vow.notes = v)}
-				placeholder="Notes… (**bold**, *italic*, # heading, - list)"
-				rows={3}
-			/>
-
-			<div style="--track-inner-bg: var(--bg-inset); display: contents">
-				<ProgressTrackPanel
-					label="Progress"
-					bind:value={vow.ticks}
-					step={VOW_MARK_TICKS[vow.difficulty]}
-					showStep
-					dangerCount={isSourceEnabled('delve') ? vow.menace : 0}
+				<!-- value + oninput (not bind:value) so a legacy vow with no `notes`
+				     field — undefined — doesn't trip MarkdownNotes' bindable fallback
+				     (props_invalid_value). Matches CommunitiesArea / ExpeditionsArea. -->
+				<MarkdownNotes
+					label="Notes"
+					value={vow.notes ?? ''}
+					oninput={(v) => (vow.notes = v)}
+					placeholder="Notes… (**bold**, *italic*, # heading, - list)"
+					rows={3}
 				/>
+
+				<div style="--track-inner-bg: var(--bg-inset); display: contents">
+					<ProgressTrackPanel
+						label="Progress"
+						bind:value={vow.ticks}
+						step={VOW_MARK_TICKS[vow.difficulty]}
+						showStep
+						dangerCount={isSourceEnabled('delve') ? vow.menace : 0}
+					/>
+				</div>
 			</div>
 		</div>
 	{/if}
 </div>
+
+<VowOptionsDialog
+	bind:this={vowOptionsRef}
+	name={vow.name}
+	oncommit={(next) => (vow.name = next)}
+	ondelete={onDelete}
+/>
 
 <ConfirmDialog
 	bind:this={forsakeDialogRef}
@@ -224,11 +219,12 @@
 	accentColor="var(--color-danger)"
 	confirmLabel="Forsake Vow"
 	cancelLabel="Keep Vow"
-	onconfirm={onDelete}
+	onconfirm={confirmForsake}
+	oncancel={cancelForsake}
 >
 	<div class="forsake-vow-name">"{vow.name || 'Unnamed Vow'}" ({diffLabel})</div>
 	<p class="forsake-rule">
-		When you renounce your quest or are unable to continue, clear the vow and Endure Stress.
+		When you renounce your quest or are unable to continue, mark the vow Forsaken and Endure Stress.
 	</p>
 	<p class="forsake-cost">
 		An iron vow is a sacred promise. Forsaking it means accepting failure and the weight of a broken
@@ -275,61 +271,24 @@
 		color: var(--text);
 	}
 
+	/* Display-only name (rename is in the gear dialog). */
 	.vow-name {
 		flex: 1;
 		min-width: 0;
 		font-weight: 400;
 		font-size: 0.88rem;
-	}
-
-	/* Display mode: looks like plain header text, reveals border on hover */
-	.vow-name--display {
-		display: block;
 		padding: 2px 6px;
-		border-radius: 3px;
 		color: var(--text);
-		cursor: text;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
-		border: 1px solid transparent;
-		transition:
-			background 0.12s,
-			border-color 0.12s;
-	}
-	.vow-name--display:hover {
-		background: var(--bg-hover);
-		border-color: var(--border);
 	}
 
-	/* Edit mode: normal input field */
-	.vow-name--editing {
-		padding: 2px 6px;
-	}
-
-	/* Threaded through `<Select>` onto its bits-ui Trigger, so scope
-	   with :global. Tweaks the shared `.bui-select-trigger` down to
-	   the rank chip's compact font/padding. */
-	:global(.vow-difficulty) {
-		flex-shrink: 0;
-		font-size: 0.72rem;
-		padding: 3px 6px;
-		min-height: 0;
-	}
-
-	/* Forsake / trash button uses the shared .btn-trash styling from app.css.
-	   Other .icon-btn instances on this card keep an 11×11 svg. */
+	/* Settings / gear + trash-style icon buttons keep an 11×11 svg. */
 	.icon-btn:not(.btn-trash) :global(svg) {
 		width: 11px;
 		height: 11px;
 		fill: currentColor;
-	}
-
-	/* Fulfilled vows dim in place — same 0.7 opacity Journey/Site cards
-	   use for their `.ea-stage--complete .ea-card`. Signals "this vow is
-	   done" without hiding it. */
-	.vow-card--fulfilled {
-		opacity: 0.7;
 	}
 
 	/* ---- Expandable body ---- */
@@ -338,6 +297,40 @@
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
+	}
+
+	/* Rank pill + status radio grouped above one divider (mirrors Journeys). */
+	.vow-topline {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		padding-bottom: 8px;
+		border-bottom: 1px solid #c3baa1;
+	}
+
+	.vow-pills-row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 5px;
+		align-items: center;
+	}
+
+	.vow-badge {
+		font-family: var(--font-ui);
+		font-size: 0.6rem;
+		font-weight: 600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		padding: 2px 7px;
+		border-radius: 10px;
+		border: 1px solid transparent;
+		white-space: nowrap;
+	}
+
+	.vow-status-section {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
 	}
 
 	.vow-extras {
@@ -355,10 +348,9 @@
 		font-size: 0.78rem;
 	}
 
-	/* App-wide field-label convention (matches .ea-field-label /
-	   .cm-field-label): uppercase, 0.7rem, spaced, --text-dimmer. Applies
-	   both to the wrapping <label>'s <span> (Rank / Threat / Menace) and
-	   to the standalone Status label above the SegmentedRadio. */
+	/* App-wide field-label convention (matches .ea-field-label / .cm-field-label):
+	   uppercase, spaced, --text-dimmer. Applies to the Threat/Menace <span>s and
+	   the standalone Status label above the SegmentedRadio. */
 	.vow-extra span,
 	.vow-field-label {
 		font-family: var(--font-ui);
@@ -370,19 +362,18 @@
 		white-space: nowrap;
 	}
 
-	/* Status row (Active | Fulfilled) — sits at the top of the body with a
-	   bottom-divider, exactly matching Journeys' .ea-status-section pattern. */
-	.vow-status-section {
+	/* Fields below the status row: dim while inert once the vow leaves Active. */
+	.vow-dimmable {
 		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding-bottom: 8px;
-		border-bottom: 1px solid #c3baa1;
+		flex-direction: column;
+		gap: 8px;
+	}
+	.vow-dimmable--locked {
+		opacity: 0.5;
 	}
 
-	/* Fulfilled indicator in the header — clickable pill next to Forsake.
-	   Accent-tinted to signal "done", flush height with the trash button so
-	   the header row stays balanced. */
+	/* Collapsed-header status pill — display-only, tinted by state to match the
+	   SegmentedRadio tones (yellow / green / red). */
 	.vow-status-pill {
 		font-family: var(--font-ui);
 		font-size: 0.6rem;
@@ -391,20 +382,25 @@
 		text-transform: uppercase;
 		padding: 3px 8px;
 		border-radius: 10px;
-		background: color-mix(in srgb, var(--text-accent) 15%, transparent);
-		color: var(--text-accent);
-		border: 1px solid color-mix(in srgb, var(--text-accent) 35%, transparent);
 		line-height: 1;
 		white-space: nowrap;
 		flex-shrink: 0;
-		cursor: pointer;
+		border: 1px solid transparent;
 	}
-	.vow-status-pill:hover {
-		background: color-mix(in srgb, var(--text-accent) 22%, transparent);
+	.vow-status-pill--active {
+		background: rgba(234, 179, 8, 0.18);
+		color: #eab308;
+		border-color: rgba(234, 179, 8, 0.35);
 	}
-	.vow-status-pill:focus-visible {
-		outline: 2px solid var(--text-accent);
-		outline-offset: 1px;
+	.vow-status-pill--fulfilled {
+		background: rgba(52, 211, 153, 0.18);
+		color: #34d399;
+		border-color: rgba(52, 211, 153, 0.35);
+	}
+	.vow-status-pill--forsaken {
+		background: rgba(239, 68, 68, 0.14);
+		color: #ef4444;
+		border-color: rgba(239, 68, 68, 0.3);
 	}
 
 	/* Threat grows to fill available space */
@@ -423,9 +419,6 @@
 	/* Menace pushed to the right */
 	.menace-control {
 		margin-left: auto;
-	}
-
-	.menace-control {
 		display: flex;
 		align-items: center;
 		gap: 4px;

@@ -72,14 +72,16 @@
 	import DebilitiesSection from '$lib/components/DebilitiesSection.svelte';
 	import {
 		appendLog,
+		enrichOutcomeLinks,
 		getXpSpendNonce,
 		drainXpSpend,
 		getActionNonce,
 		drainActions,
 		type LogAction,
 	} from '$lib/log.svelte.js';
+	import { renderRich } from '$lib/dsl.js';
 	import { FLOOR_RULES, DEBILITY_MOMENTUM_TITLE } from '$lib/cascadeRules.js';
-	import type { Vow } from '$lib/types.js';
+	import { type Vow, type VowDifficulty, VOW_FORSAKE_STRESS } from '$lib/types.js';
 	import iconHealth from '$icons/icon-health.svg?raw';
 	import iconSpirit from '$icons/icon-spirit.svg?raw';
 	import iconSupply from '$icons/icon-supply.svg?raw';
@@ -818,31 +820,58 @@
 		closeAssetDialog();
 	}
 
-	let newlyCreatedVowId = $state('');
+	// New Vow dialog — the rank is chosen at creation and is immutable afterward
+	// (the card shows it as a read-only pill), so it lives in a create dialog
+	// mirroring New Journey rather than an inline field.
+	const VOW_DIFFICULTIES: { value: VowDifficulty; label: string }[] = [
+		{ value: 'troublesome', label: 'Troublesome' },
+		{ value: 'dangerous', label: 'Dangerous' },
+		{ value: 'formidable', label: 'Formidable' },
+		{ value: 'extreme', label: 'Extreme' },
+		{ value: 'epic', label: 'Epic' },
+	];
+	let newVowName = $state('');
+	let newVowDifficulty = $state<VowDifficulty>('formidable');
+	let newVowDialogRef = $state<{ open(): void; close(): void } | null>(null);
+
 	function addVow() {
 		if (!activeData) return;
-		// Switch the card's tab strip to Vows so the new card actually renders;
-		// VowCard's focusName effect can then move the user straight into the
-		// name input.
+		newVowName = '';
+		newVowDifficulty = 'formidable';
+		newVowDialogRef?.open();
+	}
+	function confirmAddVow() {
+		if (!activeData) return;
+		// Switch the card's tab strip to Vows so the new card renders.
 		activeCard = 'vows';
+		const label = VOW_DIFFICULTIES.find((d) => d.value === newVowDifficulty)?.label ?? '';
 		const newVow: Vow = {
 			id: crypto.randomUUID(),
-			name: '',
-			difficulty: 'formidable',
+			name: newVowName.trim(),
+			difficulty: newVowDifficulty,
 			ticks: 0,
 			threat: '',
 			menace: 0,
 			notes: '',
+			status: 'active',
 		};
 		activeData.vows = [...(activeData.vows ?? []), newVow];
-		newlyCreatedVowId = newVow.id;
-		// Mirror V1: log the new vow at creation time. Difficulty defaults to
-		// Formidable; the user can change it in the card afterward.
-		appendLog(charTitle('Vow'), `<div>Swore a new iron vow — <strong>Formidable</strong></div>`);
+		appendLog(charTitle('Vow'), `<div>Swore a new iron vow — <strong>${label}</strong></div>`);
 	}
 	function removeVow(id: string) {
 		if (!activeData) return;
 		activeData.vows = (activeData.vows ?? []).filter((v) => v.id !== id);
+	}
+	/** Forsaking a vow logs it with a link to Endure Stress at the vow's rank. */
+	function logForsakeVow(vow: Vow) {
+		const rank = VOW_FORSAKE_STRESS[vow.difficulty];
+		const label = VOW_DIFFICULTIES.find((d) => d.value === vow.difficulty)?.label ?? vow.difficulty;
+		const md =
+			`Forsook the iron vow **${vow.name || 'Unnamed Vow'}** (${label}) — ` +
+			`[Endure Stress](move:endure-stress?harm=${rank}) (−${rank}) for its rank.`;
+		const entryId = crypto.randomUUID();
+		const html = enrichOutcomeLinks(renderRich(md), entryId, activeCharId ?? '');
+		appendLog(charTitle('Vow'), html, entryId);
 	}
 
 	// ── New-character dialog ──────────────────────────────────────────────
@@ -1254,8 +1283,8 @@
 										{#each d.vows ?? [] as vow, i (vow.id)}
 											<VowCard
 												bind:vow={d.vows[i]}
-												focusName={vow.id === newlyCreatedVowId}
 												onDelete={() => removeVow(vow.id)}
+												onForsake={() => logForsakeVow(d.vows[i])}
 											/>
 										{/each}
 									</div>
@@ -1436,9 +1465,13 @@
 						const ml = (e.target as HTMLElement).closest('a.move-link') as HTMLElement | null;
 						if (ml) {
 							e.preventDefault();
+							const h = ml.dataset['harm'];
 							document.dispatchEvent(
 								new CustomEvent('ironledger:open-move', {
-									detail: { id: ml.dataset['id'] ?? '' },
+									detail: {
+										id: ml.dataset['id'] ?? '',
+										harm: h != null && h !== '' ? Number(h) : undefined,
+									},
 								}),
 							);
 							return;
@@ -1573,6 +1606,28 @@
 		</p>
 	</ConfirmDialog>
 {/if}
+
+<!-- New Vow dialog — name + rank (rank is fixed at creation, shown read-only
+     on the card afterward). Mirrors New Journey. -->
+<ConfirmDialog
+	bind:this={newVowDialogRef}
+	title="New Vow"
+	draggable
+	confirmLabel="Swear Vow"
+	confirmClass="btn-primary"
+	cancelLabel="Cancel"
+	accentColor="var(--text-accent)"
+	onconfirm={confirmAddVow}
+>
+	<label class="co-field" style="margin-bottom: 10px;">
+		<span class="co-field-label">Vow name</span>
+		<input class="co-input" type="text" bind:value={newVowName} placeholder="New Vow" />
+	</label>
+	<label class="co-field">
+		<span class="co-field-label">Rank</span>
+		<Select bind:value={newVowDifficulty} options={VOW_DIFFICULTIES} ariaLabel="Vow rank" />
+	</label>
+</ConfirmDialog>
 
 <style>
 	.ca-area {

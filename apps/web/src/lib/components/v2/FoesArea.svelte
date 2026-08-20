@@ -187,48 +187,79 @@
 	}
 
 	/**
-	 * Active foe name for log entries — mirror CharactersArea.charTitle so the
-	 * log formatting for "took harm" reads the same on both sides.
+	 * Resolve the target encounter for a log-link action: a specific foe by id
+	 * (the link is bound to the foe it was rolled against) or the active one when
+	 * unbound. Returns undefined if a bound foe no longer exists (deleted) so the
+	 * caller no-ops rather than acting on whatever foe is active now.
 	 */
-	function foeTitle(suffix: string): string {
-		const enc = activeEnc;
+	function resolveTargetEnc(foeId?: string): FoeEncounter | undefined {
+		return foeId ? encounters.find((e) => e.id === foeId) : activeEnc;
+	}
+	/** Mutate one encounter (active or not) and schedule a debounced save. The
+	 *  active-encounter $effect above only watches the active one, so a change to
+	 *  a non-active foe must schedule its own flush. */
+	function updateEnc(enc: FoeEncounter, patch: Partial<FoeEncounter>) {
+		Object.assign(enc as object, patch);
+		_save.schedule(() => void flushEncountersToApi());
+	}
+	/** Ticks per progress box for a specific foe (rank − escalating defense),
+	 *  the target-aware version of the active-only `progressTickVal`. */
+	function progressTickValFor(enc: FoeEncounter): number {
+		const per = FOE_RANKS[enc.effectiveRank]?.progressPerHit ?? 0;
+		return foeExtraFlag(findFoe(enc.foeId), 'yrt', 'escalatesDefense')
+			? Math.max(1, (per || 1) - (enc.currentDefense ?? 0))
+			: per;
+	}
+
+	/**
+	 * Foe name for log entries — mirror CharactersArea.charTitle so the log
+	 * formatting for "took harm" reads the same on both sides.
+	 */
+	function foeTitleFor(enc: FoeEncounter | undefined, suffix: string): string {
 		if (!enc) return suffix;
 		const def = findFoe(enc.foeId);
 		const name = enc.customName?.trim() || def?.name || enc.foeId;
 		return `${name} — ${suffix}`;
 	}
+	const foeTitle = (suffix: string) => foeTitleFor(activeEnc, suffix);
 
-	// Vanquish
+	// Vanquish — a specific foe (from a bound log link) or the active one. No-ops
+	// when the foe is gone (deleted) or already vanquished.
+	export function vanquishFoe(foeId?: string) {
+		const enc = resolveTargetEnc(foeId);
+		if (!enc || enc.vanquished) return;
+		updateEnc(enc, { vanquished: true });
+		appendLog(foeTitleFor(enc, 'Vanquished'), `<div><strong>Vanquished.</strong></div>`);
+	}
 	export function vanquishActiveFoe() {
-		if (!activeEnc || activeEnc.vanquished) return;
-		update({ vanquished: true });
-		appendLog(foeTitle('Vanquished'), `<div><strong>Vanquished.</strong></div>`);
+		vanquishFoe();
 	}
 
-	// Un-vanquish — mark a previously-vanquished foe live again. Sibling to
-	// vanquishActiveFoe; both no-op silently when the target state already
-	// matches so the caller doesn't have to check first.
+	// Un-vanquish the active foe. Sibling to vanquish; no-ops when the state
+	// already matches so the caller doesn't have to check first.
 	export function reactivateActiveFoe() {
 		if (!activeEnc || !activeEnc.vanquished) return;
 		update({ vanquished: false });
 		appendLog(foeTitle('Reactivated'), `<div><strong>Reactivated.</strong></div>`);
 	}
 
-	// Menace / combat-progress from a log-entry link. Value is in progress
-	// boxes (positive = harm dealt); each box is progressTickVal ticks
-	// (usually 4 — softer for stronger foes). Log the change in the same
-	// shape CharactersArea's applyResourceChange does for character harm.
-	export function applyMenace(value: number) {
-		if (!activeEnc || !value) return;
-		const oldTicks = activeEnc.ticks;
-		const nextTicks = Math.max(0, Math.min(40, oldTicks + value * progressTickVal));
+	// Menace / combat-progress from a log-entry link. Acts on the foe the entry
+	// was rolled against (or the active one when unbound), and no-ops if that foe
+	// is gone or already vanquished. Value is in progress boxes; each box is that
+	// foe's progressTickVal ticks. Logs in the same shape as character harm.
+	export function applyMenace(value: number, foeId?: string) {
+		const enc = resolveTargetEnc(foeId);
+		if (!enc || enc.vanquished || !value) return;
+		const tickVal = progressTickValFor(enc);
+		const oldTicks = enc.ticks;
+		const nextTicks = Math.max(0, Math.min(40, oldTicks + value * tickVal));
 		if (nextTicks === oldTicks) return;
-		update({ ticks: nextTicks });
-		const oldBoxes = Math.floor(oldTicks / progressTickVal);
-		const nextBoxes = Math.floor(nextTicks / progressTickVal);
+		updateEnc(enc, { ticks: nextTicks });
+		const oldBoxes = Math.floor(oldTicks / tickVal);
+		const nextBoxes = Math.floor(nextTicks / tickVal);
 		const sign = value > 0 ? '+' : '';
 		appendLog(
-			foeTitle('Progress'),
+			foeTitleFor(enc, 'Progress'),
 			`<div>Progress: ${oldBoxes} → <strong>${nextBoxes}</strong> boxes (${sign}${value})</div>`,
 		);
 	}

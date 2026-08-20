@@ -213,6 +213,38 @@ test.describe('Expeditions area (v2)', () => {
 		expect(await expCount(page)).toBe(before - 1);
 	});
 
+	test('completing an expedition disables its fields (inert); reactivating re-enables', async ({
+		page,
+	}) => {
+		await ensureJourneySelected(page);
+		const locked = page.locator(`${EXP_AREA} .ea-locked`);
+		const statusSr = `${EXP_AREA} .sr[aria-label="Expedition status"]`;
+		const markComplete = page.locator(`${statusSr} .sr-btn[aria-label="Mark complete"]`);
+		const markActive = page.locator(`${statusSr} .sr-btn[aria-label="Mark active"]`);
+
+		// Active default: fields are live (not inert).
+		expect(await locked.getAttribute('inert')).toBeNull();
+
+		// Complete → the fields below the status row go inert (disabled, not just
+		// dimmed) and the tab triggers are disabled; only the status radio + the
+		// header gear stay live.
+		await markComplete.click();
+		await expect(markComplete).toHaveAttribute('aria-checked', 'true');
+		await expect(locked).toHaveAttribute('inert', '');
+		expect(await page.locator(`${EXP_AREA} .ea-tab[disabled]`).count()).toBeGreaterThan(0);
+
+		// The status radio itself is still clickable → reactivate → fields re-enable.
+		await markActive.click();
+		await expect(markActive).toHaveAttribute('aria-checked', 'true');
+		expect(await locked.getAttribute('inert')).toBeNull();
+		expect(await page.locator(`${EXP_AREA} .ea-tab[disabled]`).count()).toBe(0);
+
+		// Let the active state persist (1.5 s auto-save debounce) so this test
+		// leaves the expedition Active — a lingering Complete would disable the
+		// tab strip and break later tests' switchExpTab().
+		await page.waitForTimeout(2_000);
+	});
+
 	// ── Sites ─────────────────────────────────────────────────────────────────
 
 	test('the switcher opens the new-site dialog', async ({ page }) => {

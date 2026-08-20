@@ -7,7 +7,8 @@
 	 * Used for: foe active/vanquished, journey/site active/complete, NPC
 	 * alive/deceased, and character initiative (none/foe/character).
 	 *
-	 * Tones (active-segment tint): 'go' = green, 'stop' = red, 'neutral' = accent.
+	 * Tones (active-segment tint): 'go' = green, 'stop' = red, 'warn' = amber,
+	 * 'neutral' = accent.
 	 *
 	 * Labels:
 	 *   'always' — icon + uppercase text (initiative).
@@ -21,7 +22,7 @@
 	 */
 	import { tooltip } from '$lib/actions/tooltip.js';
 
-	type Tone = 'go' | 'stop' | 'neutral';
+	type Tone = 'go' | 'stop' | 'warn' | 'neutral';
 
 	interface Option {
 		value: T;
@@ -49,9 +50,13 @@
 		labels?: 'always' | 'auto' | 'never';
 	} = $props();
 
+	// Controlled: the `value` prop is the single source of truth. We do NOT
+	// write it locally — the consumer updates its own state in `onchange`, which
+	// flows back down as the new `value`. Writing here would let the button hold
+	// its own state that can desync from the prop (e.g. a change the consumer
+	// reverts after a confirm dialog would leave the wrong segment highlighted).
 	function select(v: T) {
 		if (v === value) return;
-		value = v;
 		onchange?.(v);
 	}
 </script>
@@ -168,6 +173,10 @@
 	.sr-btn--active.sr-btn--stop {
 		background: rgba(239, 68, 68, 0.14);
 		color: #ef4444;
+	}
+	.sr-btn--active.sr-btn--warn {
+		background: rgba(234, 179, 8, 0.18);
+		color: #eab308;
 	}
 
 	/* Responsive labels: collapse to icon-only when the header is tight. The

@@ -429,7 +429,7 @@
 	// ---------------------------------------------------------------------------
 	// Public API
 	// ---------------------------------------------------------------------------
-	export function open(moveId?: string) {
+	export function open(moveId?: string, harm?: number) {
 		// Pre-warm the Wilhelm scream buffer so a miss outcome doesn't
 		// have to wait on the fetch (idempotent — cached after first call).
 		preloadMissScream();
@@ -437,7 +437,9 @@
 			selectedId = moveId;
 			view = 'detail';
 			if (moveId === 'move/endure-harm' || moveId === 'move/endure-stress') {
-				harmValue = pctx.foeHarm ?? 1;
+				// A link that carries an explicit amount (e.g. forsaking a vow →
+				// Endure Stress at the vow's rank) overrides the active-foe default.
+				harmValue = harm ?? pctx.foeHarm ?? 1;
 				harmApplied = false;
 			}
 		} else {
@@ -617,7 +619,13 @@
 					`$1 data-stat="${stat}">$2 (${statLabel} column)</a>`,
 				);
 			}
-			outcomeHtml = enrichOutcomeLinks(outcomeHtml, entryId, ctx.charId, getActiveExpeditionId());
+			outcomeHtml = enrichOutcomeLinks(
+				outcomeHtml,
+				entryId,
+				ctx.charId,
+				getActiveExpeditionId(),
+				getActiveFoeId(),
+			);
 			parts.push(`<div class="move-outcome">${outcomeHtml}</div>`);
 		}
 
@@ -750,7 +758,13 @@
 				curSpirit: resourceValue('spirit'),
 			});
 			if (charId)
-				outcomeHtml = enrichOutcomeLinks(outcomeHtml, entryId, charId, getActiveExpeditionId());
+				outcomeHtml = enrichOutcomeLinks(
+					outcomeHtml,
+					entryId,
+					charId,
+					getActiveExpeditionId(),
+					getActiveFoeId(),
+				);
 			parts.push(`<div class="move-outcome">${outcomeHtml}</div>`);
 		}
 
@@ -816,7 +830,13 @@
 			bodyHtml += `<div class="move-outcome"><a class="resource-link" data-resource="mana" data-value="-${mana}">-${mana} mana</a> committed.</div>`;
 		}
 		if (bodyHtml) {
-			bodyHtml = enrichOutcomeLinks(bodyHtml, entryId, ctx.charId, getActiveExpeditionId());
+			bodyHtml = enrichOutcomeLinks(
+				bodyHtml,
+				entryId,
+				ctx.charId,
+				getActiveExpeditionId(),
+				getActiveFoeId(),
+			);
 			parts.push(bodyHtml);
 		}
 

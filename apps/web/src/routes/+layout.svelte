@@ -38,7 +38,7 @@
 
 	// V1 "adventure-action-toolbar" dialogs — promoted to the global nav so
 	// they're reachable from /home, /admin, etc.
-	let movesDialogRef = $state<{ open(id?: string): void } | null>(null);
+	let movesDialogRef = $state<{ open(id?: string, harm?: number): void } | null>(null);
 	let oraclesDialogRef = $state<{
 		open(oracleKey?: string, onFill?: (value: string) => void, stat?: string): void;
 	} | null>(null);
@@ -112,8 +112,9 @@
 	import { cycleViewMode, viewMode } from '$lib/viewModeStore.svelte.js';
 	onMount(() => {
 		const openMove = (e: Event) => {
-			const id = (e as CustomEvent<{ id: string }>).detail?.id ?? '';
-			if (id) movesDialogRef?.open(id);
+			const d = (e as CustomEvent<{ id: string; harm?: number }>).detail;
+			const id = d?.id ?? '';
+			if (id) movesDialogRef?.open(id, d?.harm);
 		};
 		const openOracle = (e: Event) => {
 			const d = (e as CustomEvent<{ key: string; stat: string }>).detail;

@@ -67,13 +67,13 @@
 		onChangeDomain,
 	}: {
 		ctx?: DiceCtx | null;
-		onMoveLink?: (moveId: string) => void;
+		onMoveLink?: (moveId: string, harm?: number) => void;
 		onOracleLink?: (oracleKey: string, stat?: string) => void;
-		onProgressLink?: (track: string, value: number, expId?: string) => void;
+		onProgressLink?: (track: string, value: number, expId?: string, foeId?: string) => void;
 		onCountdownLink?: (track: string, value: number, expId?: string) => void;
 		onInitiativeLink?: (value: string, charId: string) => void;
-		onMenaceLink?: (value: number) => void;
-		onVanquishFoe?: () => void;
+		onMenaceLink?: (value: number, foeId?: string) => void;
+		onVanquishFoe?: (foeId?: string) => void;
 		onChangeTheme?: (expeditionId: string) => void;
 		onChangeDomain?: (expeditionId: string) => void;
 	} = $props();
@@ -572,11 +572,15 @@
 			e.preventDefault();
 			const moveId = moveLink.dataset['id'] ?? '';
 			if (!moveId) return;
+			// An Endure Harm/Stress link may carry a preset amount (data-harm) that
+			// overrides the active-foe-rank default in MovesDialog.
+			const harmAttr = moveLink.dataset['harm'];
+			const harm = harmAttr != null && harmAttr !== '' ? Number(harmAttr) : undefined;
 			// Special case: "Ask the Oracle" move opens oracles dialog
 			if (moveId === 'move/ask-the-oracle') {
 				onOracleLink?.('');
 			} else {
-				onMoveLink?.(moveId);
+				onMoveLink?.(moveId, harm);
 			}
 			return;
 		}
@@ -598,13 +602,14 @@
 			const track = progLink.dataset['track'] ?? '';
 			const value = parseInt(progLink.dataset['value'] ?? '1', 10);
 			const expId = progLink.dataset['expId'] ?? '';
+			const foeId = progLink.dataset['foeId'] ?? '';
 			const entryId =
 				progLink.dataset['entryId'] ??
 				progLink.closest('.log-entry')?.getAttribute('data-entry-id') ??
 				'';
 			if (!track || !value) return;
 			if (entryId) markLinkSpent(entryId, progLink);
-			onProgressLink?.(track, value, expId);
+			onProgressLink?.(track, value, expId, foeId);
 			return;
 		}
 
@@ -648,13 +653,14 @@
 		if (menaceLink && !menaceLink.closest('.resource-spent')) {
 			e.preventDefault();
 			const value = parseInt(menaceLink.dataset['value'] ?? '1', 10);
+			const foeId = menaceLink.dataset['foeId'] ?? '';
 			const entryId =
 				menaceLink.dataset['entryId'] ??
 				menaceLink.closest('.log-entry')?.getAttribute('data-entry-id') ??
 				'';
 			if (!value) return;
 			if (entryId) markLinkSpent(entryId, menaceLink);
-			onMenaceLink?.(value);
+			onMenaceLink?.(value, foeId);
 			return;
 		}
 
@@ -662,12 +668,13 @@
 		const vanquishLink = target.closest('.vanquish-foe-link') as HTMLElement | null;
 		if (vanquishLink && !vanquishLink.closest('.resource-spent')) {
 			e.preventDefault();
+			const foeId = vanquishLink.dataset['foeId'] ?? '';
 			const entryId =
 				vanquishLink.dataset['entryId'] ??
 				vanquishLink.closest('.log-entry')?.getAttribute('data-entry-id') ??
 				'';
 			if (entryId) markLinkSpent(entryId, vanquishLink);
-			onVanquishFoe?.();
+			onVanquishFoe?.(foeId);
 			return;
 		}
 
