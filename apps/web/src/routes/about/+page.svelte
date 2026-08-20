@@ -413,7 +413,12 @@
 				target="_blank"
 				rel="noopener noreferrer">CC BY-NC-SA 4.0</a
 			>
-			license. Game data sourced from
+			license. The YRT homebrew expansion is original content by Carl Orthlieb, also released under
+			<a
+				href="https://creativecommons.org/licenses/by-nc-sa/4.0/"
+				target="_blank"
+				rel="noopener noreferrer">CC BY-NC-SA 4.0</a
+			>. Game data sourced from
 			<a href="https://github.com/rsek/datasworn" target="_blank" rel="noopener noreferrer"
 				>Datasworn</a
 			>
