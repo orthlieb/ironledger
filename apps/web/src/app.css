@@ -721,6 +721,9 @@ dialog label {
 	font-weight: var(--font-display-weight);
 	font-variant: var(--font-display-variant);
 	letter-spacing: 0.14em;
+	/* Tight leading so a stacked wordmark (IRON / LEDGER on narrow screens)
+	   doesn't leave a large gap between the two lines. */
+	line-height: 1.1;
 	color: var(--text-accent);
 	text-decoration: none;
 	display: flex;
