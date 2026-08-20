@@ -1,0 +1,50 @@
+{
+  "id": "codex",
+  "label": "Codex",
+  "default": false,
+  "description": "Sample livery: an old-style book serif in natural title-case over a warm sepia-and-sienna chrome. Uses a system serif stack, so it needs no web font — copy this folder as the template for a new livery.",
+  "preview": null,
+  "font": {
+    "stack": "'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif",
+    "googleFamily": null,
+    "weight": 400,
+    "variant": "normal",
+    "transform": "none",
+    "scale": 1.08
+  },
+  "transliterate": null,
+  "palette": {
+    "dark": {
+      "bg-page": "#14100c",
+      "bg-card": "#1d160e",
+      "bg-inset": "#100c08",
+      "bg-control": "#251c12",
+      "bg-hover": "#2f2417",
+      "border": "#3c3020",
+      "border-mid": "#584734",
+      "text": "#ecdcbe",
+      "text-muted": "#ac9877",
+      "text-dimmer": "#7a6851",
+      "text-accent": "#cf8a44",
+      "focus-ring": "#cf8a44",
+      "accent-glow": "#cf8a4420",
+      "accent-dim": "#cf8a4412"
+    },
+    "light": {
+      "bg-page": "#efe3c9",
+      "bg-card": "#e8dcbf",
+      "bg-inset": "#f6eed9",
+      "bg-control": "#ece0c5",
+      "bg-hover": "#e0d2b2",
+      "border": "#cbb893",
+      "border-mid": "#ad986f",
+      "text": "#241a0d",
+      "text-muted": "#5f4f33",
+      "text-dimmer": "#8a7658",
+      "text-accent": "#8f4e15",
+      "focus-ring": "#8f4e15",
+      "accent-glow": "#8f4e1520",
+      "accent-dim": "#8f4e1512"
+    }
+  }
+}

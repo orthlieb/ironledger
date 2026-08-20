@@ -1,0 +1,50 @@
+{
+  "id": "futhark",
+  "label": "Futhark",
+  "default": false,
+  "description": "Names transliterated into Elder Futhark runes over a weathered-verdigris chrome. Uses system runic fonts — no web font required.",
+  "preview": "ᚠᚢᚦᚨᚱᚲ",
+  "font": {
+    "stack": "'Segoe UI Historic', 'Noto Sans Runic', 'Apple Symbols', system-ui, sans-serif",
+    "googleFamily": null,
+    "weight": 400,
+    "variant": "normal",
+    "transform": "none",
+    "scale": 1.12
+  },
+  "transliterate": "elder-futhark",
+  "palette": {
+    "dark": {
+      "bg-page": "#080d0a",
+      "bg-card": "#101511",
+      "bg-inset": "#0b100d",
+      "bg-control": "#151b17",
+      "bg-hover": "#1c231e",
+      "border": "#2a3530",
+      "border-mid": "#3f4d47",
+      "text": "#d0d8d0",
+      "text-muted": "#8ba099",
+      "text-dimmer": "#5c6b64",
+      "text-accent": "#68a68a",
+      "focus-ring": "#68a68a",
+      "accent-glow": "#68a68a20",
+      "accent-dim": "#68a68a12"
+    },
+    "light": {
+      "bg-page": "#e8ede6",
+      "bg-card": "#dfe5dc",
+      "bg-inset": "#edf1eb",
+      "bg-control": "#e3e9e0",
+      "bg-hover": "#d7ded4",
+      "border": "#b7c2b3",
+      "border-mid": "#98a494",
+      "text": "#171c19",
+      "text-muted": "#4a5751",
+      "text-dimmer": "#7f8c85",
+      "text-accent": "#2f6d54",
+      "focus-ring": "#2f6d54",
+      "accent-glow": "#2f6d5420",
+      "accent-dim": "#2f6d5412"
+    }
+  }
+}

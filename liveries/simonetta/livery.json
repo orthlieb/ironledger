@@ -1,0 +1,17 @@
+{
+  "id": "simonetta",
+  "label": "Grimoire",
+  "default": false,
+  "description": "Calligraphic Simonetta titles in natural title-case over the base forge-amber chrome.",
+  "preview": null,
+  "font": {
+    "stack": "'Simonetta', 'Palatino Linotype', Georgia, serif",
+    "googleFamily": "Simonetta:ital,wght@0,400;0,900;1,400;1,900",
+    "weight": 400,
+    "variant": "normal",
+    "transform": "none",
+    "scale": 1.12
+  },
+  "transliterate": null,
+  "palette": null
+}

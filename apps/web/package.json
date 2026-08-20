@@ -5,10 +5,12 @@
 	"type": "module",
 	"scripts": {
 		"build:map-icons": "node scripts/build-map-icons.mjs",
+		"gen:liveries": "node ../../scripts/gen-liveries-manifest.mjs",
 		"dev": "vite dev --port 5173",
+		"prebuild": "npm run gen:liveries",
 		"build": "vite build",
 		"preview": "vite preview",
-		"precheck": "npm run build:map-icons",
+		"precheck": "npm run build:map-icons && npm run gen:liveries",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"pretest": "npm run build:map-icons",

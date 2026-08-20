@@ -20,6 +20,12 @@ apps/api/src/db/migrations/
 # Prettier's array-collapsing would fight the generator and break --check.
 apps/api/data/extensions.manifest.json
 
+# Emitted verbatim by scripts/gen-liveries-manifest.mjs; the generator owns
+# their exact bytes (JSON + hand-formatted CSS), so Prettier must not reflow
+# them or `gen:liveries:check` would fight it.
+apps/web/src/lib/liveries.manifest.json
+apps/web/src/lib/liveries.generated.css
+
 # Misc
 *.min.js
 *.min.css
