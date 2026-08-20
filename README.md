@@ -292,6 +292,13 @@ Feature docs are in the `docs/` directory:
 
 ## License & Attribution
 
+The Iron Ledger **source code** is licensed under the [MIT License](LICENSE) — use it freely, keep the copyright notice. The MIT license covers the code only. The bundled **game content** is **not** MIT-licensed and is instead under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/):
+
+- The Ironsworn / Delve / Lodestar data (`apps/api/data/`, `extensions/lodestar/`) — Shawn Tomkin's work, attributed below.
+- The original **YRT** homebrew expansion (`extensions/yrt/`) — © Carl Orthlieb, released under the same CC BY-NC-SA 4.0 (ShareAlike, since it builds on Ironsworn).
+
+Because that license is NonCommercial, the bundled whole may not be sold.
+
 Iron Ledger is an independent fan project and is not affiliated with or endorsed by Shawn Tomkin or Ironsworn.
 
 This work is based on [Ironsworn](https://ironswornrpg.com), [Ironsworn: Delve](https://ironswornrpg.com), and [Ironsworn: Lodestar](https://ironswornrpg.com), created by Shawn Tomkin, and licensed for use under the [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) license. Game data sourced from [Datasworn](https://github.com/rsek/datasworn) by rsek. Icons by [game-icons.net](https://game-icons.net), [Font Awesome](https://fontawesome.com), [The Noun Project](https://thenounproject.com), and [Caeora](https://www.patreon.com/c/caeora/home). Iron Ledger is free and open source — source available on [GitHub](https://github.com/orthlieb/ironledger).
