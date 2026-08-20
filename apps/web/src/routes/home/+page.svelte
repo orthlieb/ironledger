@@ -315,6 +315,54 @@
 			loadExtensions(),
 		]);
 
+		// Starter-Ironlands seed. When the user checked the box on /register,
+		// the server dropped an `il_seed_starter=1` cookie; we consume it here
+		// on the first load of /home after email verification. Guards:
+		//   • cookie present
+		//   • initial loads finished (so the emptiness check is against real
+		//     server state, not the pre-load defaults)
+		//   • the account is demonstrably empty across every user-owned
+		//     collection (never overwrite existing saga data)
+		// The zip is fetched from the same /about/ironlands-starter.zip URL
+		// the About page links to, wrapped in a synthetic File, and pushed
+		// through the existing hidden file input — which triggers the same
+		// onImportFile pipeline manual imports use (collision handling,
+		// portrait reassembly, and log-html sanitiser all inclusive). The
+		// cookie is cleared up front so an aborted import can't loop.
+		void (async () => {
+			if (typeof document === 'undefined') return;
+			const has = document.cookie.split(';').some((c) => c.trim() === 'il_seed_starter=1');
+			if (!has) return;
+			document.cookie = 'il_seed_starter=; Path=/; Max-Age=0; SameSite=Strict';
+			try {
+				await initialLoad;
+				const empty =
+					getCharacters().length === 0 &&
+					expeditions.length === 0 &&
+					communities.length === 0 &&
+					npcs.length === 0 &&
+					places.length === 0 &&
+					getEncounters().length === 0;
+				if (!empty) return;
+				const res = await fetch('/about/ironlands-starter.zip');
+				if (!res.ok) return;
+				const blob = await res.blob();
+				const file = new File([blob], 'ironlands-starter.zip', {
+					type: 'application/zip',
+				});
+				// Wait a microtask so the file input is definitely in the DOM (it's
+				// bound near the bottom of the template).
+				await Promise.resolve();
+				if (!importInput) return;
+				const dt = new DataTransfer();
+				dt.items.add(file);
+				importInput.files = dt.files;
+				importInput.dispatchEvent(new Event('change', { bubbles: true }));
+			} catch (err) {
+				console.warn('[seed-starter] auto-import failed', err);
+			}
+		})();
+
 		document.addEventListener('il-menu-action', handleMenuAction);
 
 		// Import <input> change → onImportFile, via a DOCUMENT-level listener

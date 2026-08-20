@@ -34,7 +34,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ request }) => {
+	default: async ({ request, cookies }) => {
 		const form = await request.formData();
 		const email = (form.get('email') as string | null) ?? '';
 		const password = (form.get('password') as string | null) ?? '';
@@ -42,6 +42,8 @@ export const actions: Actions = {
 		const captchaToken = (form.get('h-captcha-response') as string | null) ?? '';
 		const displayNameRaw = (form.get('displayName') as string | null) ?? '';
 		const displayName = displayNameRaw.trim();
+		// Checkbox is default-on client-side but only submits `on` when checked.
+		const seedStarter = form.get('seedStarter') === 'on';
 
 		if (!email || !password || !confirm) {
 			return fail(400, { error: 'All fields are required.', email, displayName });
@@ -87,6 +89,23 @@ export const actions: Actions = {
 				error: body.message ?? 'Registration failed. Please try again.',
 				email,
 				displayName,
+			});
+		}
+
+		// Persist the starter-seed choice across the email-verification round-trip
+		// via a client-readable cookie. /home consumes + clears it on first load;
+		// see the seed-starter block in apps/web/src/routes/home/+page.svelte.
+		// httpOnly=false because the client fetches + imports the zip; secure/
+		// sameSite match the auth cookie set by verify-email/+page.server.ts.
+		// Name uses underscores (not colons like our localStorage keys) so no
+		// browser or proxy silently normalises it away.
+		if (seedStarter) {
+			cookies.set('il_seed_starter', '1', {
+				path: '/',
+				httpOnly: false,
+				sameSite: 'strict',
+				secure: process.env.NODE_ENV === 'production',
+				maxAge: 7 * 24 * 60 * 60, // 7 days — plenty of time to click the email link
 			});
 		}
 
