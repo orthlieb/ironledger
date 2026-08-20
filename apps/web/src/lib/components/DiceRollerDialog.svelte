@@ -138,7 +138,7 @@
 
 		const statLabel = stat ? STATS.find((s) => s.key === stat)!.label : null;
 		const statStr = statLabel ? ` + ${statLabel.toLowerCase()}[${statVal}]` : '';
-		const addsStr = adds !== 0 ? ` + adds[${adds > 0 ? '+' : ''}${adds}]` : '';
+		const addsStr = adds !== 0 ? ` + adds[${adds > 0 ? '+' : '−'}${Math.abs(adds)}]` : '';
 		const dieStr = cancelled ? `<s>${actionDie}</s>&thinsp;0` : `${actionDie}`;
 
 		const parts: string[] = [];

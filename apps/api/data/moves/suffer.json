@@ -17,7 +17,7 @@
           "desc": "Enduring with grit and fortitude"
         }
       ],
-      "strong": "Choose one:\n- Shake it off: If your health is greater than 0, suffer [-1 momentum](resource:momentum?value=-1) in exchange for [+1 health](resource:health?value=+1).\n- Embrace the pain: Take [+1 momentum](resource:momentum?value=+1).",
+      "strong": "Choose one:\n- Shake it off: If your health is greater than 0, suffer [−1 momentum](resource:momentum?value=-1) in exchange for [+1 health](resource:health?value=+1).\n- Embrace the pain: Take [+1 momentum](resource:momentum?value=+1).",
       "weak": "You press on. No additional penalty.",
       "miss": "Also suffer [−1 momentum](resource:momentum?value=-1). If you are at 0 health, you must mark [wounded](debility:wounded?value=1) or [maimed](debility:maimed?value=1) (if currently unmarked) or roll on the [Endure Extreme Harm oracle](oracle:endureExtremeHarm).",
       "notes": "Triggered every time you take harm — not just in combat. If health hits 0 on a miss, mark Wounded or Maimed (if unmarked) or roll on the Endure Extreme Harm oracle. Debilities reduce your stats. This is how characters die.",
@@ -29,7 +29,7 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} endures harm with {stat}"
+      "logTitle": "{character} endures harm using {stat}"
     },
     {
       "id": "move/companion-endure-harm",
@@ -59,7 +59,7 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character}'s companion endures harm with {stat}"
+      "logTitle": "{character}'s companion endures harm using {stat}"
     },
     {
       "id": "move/face-death",
@@ -88,11 +88,12 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} faces death with {stat}"
+      "logTitle": "{character} faces death using {stat}"
     },
     {
       "id": "move/face-a-setback",
       "name": "Face a Setback",
+      "logTitle": "{character} faces a setback",
       "category": "Suffer",
       "triggerShort": "When your momentum is at -6 and you suffer additional -momentum.",
       "trigger": "When your **momentum is at its minimum (-6)**, and you suffer additional **-momentum**, choose one.\n- Exchange each additional -momentum for any combination of [-health](resource:health?value=-1), [-spirit](resource:spirit?value=-1), or [-supply](resource:supply?value=-1) as appropriate to the circumstances.\n- Envision an event or discovery ([Ask the Oracle](move:ask-the-oracle) if unsure) which undermines your progress in a current quest, journey, or fight. Then, for each additional -momentum, clear 1 unit of progress on that track per its rank (troublesome = clear 3 progress; dangerous = clear 2 progress; formidable = clear 1 progress; extreme = clear 2 ticks; epic = clear 1 tick).",
@@ -140,7 +141,7 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} endures stress with {stat}"
+      "logTitle": "{character} endures stress using {stat}"
     },
     {
       "id": "move/face-desolation",
@@ -169,11 +170,12 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} faces desolation with {stat}"
+      "logTitle": "{character} faces desolation using {stat}"
     },
     {
       "id": "move/out-of-supply",
       "name": "Out of Supply",
+      "logTitle": "{character} runs out of supply",
       "category": "Suffer",
       "triggerShort": "When your supply is exhausted.",
       "trigger": "When your **supply is exhausted** (reduced to 0), mark [unprepared](debility:unprepared?value=1). If you suffer additional -supply while unprepared, you must exchange each additional -supply for any combination of [-health](resource:health?value=-1), [-spirit](resource:spirit?value=-1), or [-momentum](resource:momentum?value=-1) as appropriate to the circumstances.",

@@ -33,7 +33,7 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} tries to persuade with {stat}"
+      "logTitle": "{character} tries to persuade using {stat}"
     },
     {
       "id": "move/sojourn",
@@ -108,7 +108,7 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} forges a bond with {stat}"
+      "logTitle": "{character} forges a bond using {stat}"
     },
     {
       "id": "move/test-your-bond",
@@ -137,11 +137,12 @@
         }
       ],
       "source": "base",
-      "logTitle": "{character} tests a bond with {stat}"
+      "logTitle": "{character} tests a bond using {stat}"
     },
     {
       "id": "move/aid-your-ally",
       "name": "Aid Your Ally",
+      "logTitle": "{character} aids an ally",
       "category": "Relationship",
       "triggerShort": "When you Secure an Advantage in direct support of an ally.",
       "trigger": "When you [Secure an Advantage](move:secure-an-advantage) **in direct support of an ally**, and score a hit, they (instead of you) can take the benefits of the move. If you are in combat and score a strong hit, you and your ally have initiative.",

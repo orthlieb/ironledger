@@ -704,8 +704,15 @@
 				const rows = rolled
 					.map(({ g, values, sum }) => {
 						const mod =
-							g.modifier === 0 ? '' : g.modifier > 0 ? ` +${g.modifier}` : ` ${g.modifier}`;
-						return `<div class="roll-line">${g.raw}: [${values.join(', ')}]${mod} = <strong>${sum}</strong></div>`;
+							g.modifier === 0
+								? ''
+								: g.modifier > 0
+									? ` +${g.modifier}`
+									: ` −${Math.abs(g.modifier)}`;
+						// Per-die brackets (`[3] [5]`) match the challenge-dice style in move
+						// and action rolls, rather than a comma-joined `[3, 5]`.
+						const dice = values.map((v) => `[${v}]`).join(' ');
+						return `<div class="roll-line">${g.raw}: ${dice}${mod} = <strong>${sum}</strong></div>`;
 					})
 					.join('');
 				const grandTotal = rolled.reduce((a, r) => a + r.sum, 0);

@@ -4,6 +4,7 @@
     {
       "id": "move/discover-a-site",
       "name": "Discover a Site",
+      "logTitle": "{character} discovers a site",
       "category": "Delve",
       "triggerShort": "When you resolve to enter a perilous site in pursuit of an objective.",
       "trigger": "When you **resolve to enter a perilous site in pursuit of an objective**, choose the theme and domain which best represent its nature ([Ask the Oracle](move:ask-the-oracle) if unsure), and give it a rank.\n- **Troublesome site:** 3 progress per area.\n- **Dangerous site:** 2 progress per area.\n- **Formidable site:** 1 progress per area.\n- **Extreme site:** 2 ticks per area.\n- **Epic site:** 1 tick per area.If you are returning to a previously explored site, roll both challenge dice, take the lowest value, and clear that number of progress boxes.\nThen, [Delve the Depths](move:delve-the-depths) to explore this place.",
@@ -45,7 +46,7 @@
       "weak": "Roll on the [Delve the Depths Weak Hit Oracle](oracle:delveDepths).",
       "miss": "[Reveal a Danger](move:reveal-a-danger).",
       "notes": "The core Delve move. On a strong hit, mark progress and Find an Opportunity. On a weak hit, roll on the Delve the Depths Weak Hit Oracle using the column matching the stat you rolled. On a miss, Reveal a Danger.",
-      "logTitle": "{character} delves the depths with {stat} at {expedition}",
+      "logTitle": "{character} delves the depths using {stat} at {expedition}",
       "tableType": "delveDepths",
       "table": [
         {

@@ -29,6 +29,7 @@
     {
       "id": "move/reach-a-milestone",
       "name": "Reach a Milestone",
+      "logTitle": "{character} reaches a milestone",
       "category": "Quest",
       "triggerShort": "When you make significant progress toward a vow.",
       "trigger": "When you **make significant progress toward a vow** by overcoming a critical obstacle, completing a perilous expedition, solving a complex mystery, defeating a powerful threat, or gaining a critical resource, mark **progress** on your vow.",
@@ -76,6 +77,7 @@
     {
       "id": "move/forsake-your-vow",
       "name": "Forsake Your Vow",
+      "logTitle": "{character} forsakes their vow",
       "category": "Quest",
       "triggerShort": "When you renounce your quest or are unable to continue.",
       "trigger": "When you **renounce your quest or are unable to continue**, clear the vow and [Endure Stress](move:endure-stress) equal to the vow's rank (Troublesome: 1, Dangerous: 2, Formidable: 3, Extreme: 4, Epic: 5).",
@@ -98,6 +100,7 @@
     {
       "id": "move/advance",
       "name": "Advance",
+      "logTitle": "{character} advances an asset",
       "category": "Quest",
       "triggerShort": "When you spend experience to gain or upgrade an asset.",
       "trigger": "When you **focus on your skills, receive training, find inspiration, or earn recognition**, and you have experience to spend, you may spend **3 experience** to add a new asset, or **2 experience** to upgrade an existing asset.",
