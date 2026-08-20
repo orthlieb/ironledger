@@ -59,6 +59,15 @@ jobs:
       - name: Lint (DSL)
         run: npm run lint:dsl
 
+      # Validates the drop-in livery definitions (liveries/<id>/livery.json:
+      # shape, palette token set, colours, single default) and fails if the
+      # committed manifest/CSS artifacts are stale relative to the sources.
+      - name: Lint (liveries)
+        run: npm run lint:liveries
+
+      - name: Liveries manifest up to date
+        run: npm run gen:liveries:check
+
       - name: Check formatting (Prettier)
         run: npm run format:check
 

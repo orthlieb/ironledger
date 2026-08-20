@@ -33,7 +33,8 @@
 	} from '$lib/expansionStore.svelte.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import {
-		type FontDisplay,
+		type LiveryId,
+		LIVERIES,
 		getFontDisplay,
 		savedFont,
 		setFontDisplay,
@@ -60,15 +61,17 @@
 	// ---------------------------------------------------------------------------
 	// Display font — delegated to fontStore
 	// ---------------------------------------------------------------------------
-	let fontDisplay = $state<FontDisplay>(getFontDisplay());
+	let fontDisplay = $state<LiveryId>(getFontDisplay());
 
-	const FONT_MODES: { value: FontDisplay; label: string }[] = [
-		{ value: 'cinzel', label: 'Gravestone (default)' },
-		{ value: 'simonetta', label: 'Grimoire' },
-		{ value: 'futhark', label: 'Futhark (ᚠᚢᚦᚨᚱᚲ)' },
-	];
+	// Built from the livery manifest — drop a folder in liveries/ and it shows
+	// up here. Label gets a "(default)" tag for the default livery, or a
+	// parenthetical sample string (e.g. runes) when the livery provides one.
+	const FONT_MODES: { value: LiveryId; label: string }[] = LIVERIES.map((l) => ({
+		value: l.id,
+		label: l.default ? `${l.label} (default)` : l.preview ? `${l.label} (${l.preview})` : l.label,
+	}));
 
-	function applyFont(f: FontDisplay) {
+	function applyFont(f: LiveryId) {
 		fontDisplay = f;
 		setFontDisplay(f);
 	}

@@ -48,9 +48,9 @@
 			rel="stylesheet"
 		/>
 		<!--
-			Apply saved theme + display font before first paint to prevent flash.
+			Apply saved theme + livery before first paint to prevent flash.
 			Theme: "auto" (or missing key) → no attribute → CSS media query decides.
-			Font:  "simonetta" → override --font-display; anything else → Cinzel (default).
+			Livery: set data-font from the saved id (default 'cinzel' when unset).
 		-->
 		<script>
 			(function () {
@@ -58,19 +58,14 @@
 				if (t === 'dark' || t === 'light') {
 					document.documentElement.setAttribute('data-theme', t);
 				}
-				var FONT_STACKS = {
-					simonetta: "'Simonetta', 'Palatino Linotype', Georgia, serif",
-					futhark: "'Segoe UI Historic', 'Noto Sans Runic', 'Apple Symbols', system-ui, sans-serif",
-				};
-				var f = localStorage.getItem('ironledger:font:display');
-				if (f !== 'simonetta' && f !== 'futhark') f = 'cinzel';
-				// Always set data-font — including the cinzel default — so
-				// [data-font='cinzel']-scoped rules (Gravestone chrome palette
-				// in app.css) match on first paint, no FOUC on font swap.
+				// The render-blocking livery CSS (liveries.generated.css, keyed
+				// on [data-font]) supplies the font stack + chrome palette for
+				// this attribute, so nothing else is set here — no per-livery
+				// stack map to keep in sync, and adding a livery needs no change
+				// to this script. An unknown saved id just falls through to the
+				// base theme until +layout normalizes it on mount.
+				var f = localStorage.getItem('ironledger:font:display') || 'cinzel';
 				document.documentElement.setAttribute('data-font', f);
-				if (f !== 'cinzel') {
-					document.documentElement.style.setProperty('--font-display', FONT_STACKS[f]);
-				}
 			})();
 		</script>
 		%sveltekit.head%

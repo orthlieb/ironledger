@@ -1,0 +1,42 @@
+{
+  "_generated": "scripts/gen-liveries-manifest.mjs — edit liveries/<id>/livery.json, not this file",
+  "default": "cinzel",
+  "liveries": [
+    {
+      "id": "cinzel",
+      "label": "Gravestone",
+      "default": true,
+      "description": "Engraved-stone Cinzel titles over a cool brushed-steel chrome — the default livery.",
+      "preview": null,
+      "transliterate": null,
+      "googleFamily": "Cinzel:wght@400;600;700;900"
+    },
+    {
+      "id": "codex",
+      "label": "Codex",
+      "default": false,
+      "description": "Sample livery: an old-style book serif in natural title-case over a warm sepia-and-sienna chrome. Uses a system serif stack, so it needs no web font — copy this folder as the template for a new livery.",
+      "preview": null,
+      "transliterate": null,
+      "googleFamily": null
+    },
+    {
+      "id": "futhark",
+      "label": "Futhark",
+      "default": false,
+      "description": "Names transliterated into Elder Futhark runes over a weathered-verdigris chrome. Uses system runic fonts — no web font required.",
+      "preview": "ᚠᚢᚦᚨᚱᚲ",
+      "transliterate": "elder-futhark",
+      "googleFamily": null
+    },
+    {
+      "id": "simonetta",
+      "label": "Grimoire",
+      "default": false,
+      "description": "Calligraphic Simonetta titles in natural title-case over the base forge-amber chrome.",
+      "preview": null,
+      "transliterate": null,
+      "googleFamily": "Simonetta:ital,wght@0,400;0,900;1,400;1,900"
+    }
+  ]
+}

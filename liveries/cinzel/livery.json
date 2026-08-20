@@ -1,0 +1,50 @@
+{
+  "id": "cinzel",
+  "label": "Gravestone",
+  "default": true,
+  "description": "Engraved-stone Cinzel titles over a cool brushed-steel chrome — the default livery.",
+  "preview": null,
+  "font": {
+    "stack": "'Cinzel', 'Palatino Linotype', Georgia, serif",
+    "googleFamily": "Cinzel:wght@400;600;700;900",
+    "weight": 400,
+    "variant": "normal",
+    "transform": "uppercase",
+    "scale": 1
+  },
+  "transliterate": null,
+  "palette": {
+    "dark": {
+      "bg-page": "#0e0f11",
+      "bg-card": "#161a1d",
+      "bg-inset": "#101214",
+      "bg-control": "#1c2124",
+      "bg-hover": "#242a2f",
+      "border": "#2f363c",
+      "border-mid": "#4a545c",
+      "text": "#dee2e6",
+      "text-muted": "#94a0a9",
+      "text-dimmer": "#6a747c",
+      "text-accent": "#c0c8d0",
+      "focus-ring": "#c0c8d0",
+      "accent-glow": "#c0c8d020",
+      "accent-dim": "#c0c8d012"
+    },
+    "light": {
+      "bg-page": "#eceff2",
+      "bg-card": "#e2e6ea",
+      "bg-inset": "#f2f5f8",
+      "bg-control": "#e6ebef",
+      "bg-hover": "#dae0e6",
+      "border": "#c1c8cf",
+      "border-mid": "#a5adb5",
+      "text": "#1a1d20",
+      "text-muted": "#4f565d",
+      "text-dimmer": "#828a92",
+      "text-accent": "#3a4148",
+      "focus-ring": "#3a4148",
+      "accent-glow": "#3a414820",
+      "accent-dim": "#3a414812"
+    }
+  }
+}

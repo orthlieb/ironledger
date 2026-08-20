@@ -1,5 +1,7 @@
 <script lang="ts">
 	import '../app.css';
+	// Per-livery typography + chrome palettes, generated from liveries/<id>/livery.json.
+	import '$lib/liveries.generated.css';
 	import type { LayoutData } from './$types';
 	import type { MaintenanceStatus, BroadcastStatus } from '@ironledger/shared';
 	import SettingsDialog from '$lib/components/SettingsDialog.svelte';
@@ -28,7 +30,7 @@
 	import { setAiDebug } from '$lib/aiSettings.svelte.js';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { headingText } from '$lib/fontStore.svelte.js';
+	import { headingText, getFontDisplay, setFontDisplay } from '$lib/fontStore.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 
 	let { data, children }: { data: LayoutData; children: import('svelte').Snippet } = $props();
@@ -111,6 +113,11 @@
 	import { onMount } from 'svelte';
 	import { cycleViewMode, viewMode } from '$lib/viewModeStore.svelte.js';
 	onMount(() => {
+		// Normalize the livery attribute: the pre-paint script in app.html sets
+		// data-font best-effort from raw localStorage; re-applying the validated
+		// id corrects a stale/corrupted value (unknown id → default). A no-op
+		// for the normal case since the attribute already matches.
+		setFontDisplay(getFontDisplay());
 		const openMove = (e: Event) => {
 			const d = (e as CustomEvent<{ id: string; harm?: number }>).detail;
 			const id = d?.id ?? '';
