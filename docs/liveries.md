@@ -35,15 +35,24 @@ One folder per livery; the folder name is the livery **id** and must match the
   "preview": null, // optional sample string shown in the dropdown, e.g. "ᚠᚢᚦᚨᚱᚲ"
 
   "font": {
-    "stack": "'Iowan Old Style', Palatino, Georgia, serif", // full CSS font-family
-    "googleFamily": null, // "Family:axis@vals" if a web font is needed (see below), else null
-    "weight": 400, // --font-display-weight
+    "stack": "'Orbitron', Eurostile, system-ui, sans-serif", // full CSS font-family
+    "googleFamily": "Orbitron:wght@400;500;700;900", // "Family:axis@vals" if a web font is needed (see below), else null
+    "weight": 500, // --font-display-weight
     "variant": "normal", // --font-display-variant
-    "transform": "none", // --font-display-transform: none|uppercase|lowercase|capitalize
-    "scale": 1.08, // --font-display-scale (heading size multiplier)
+    "transform": "uppercase", // --font-display-transform: none|uppercase|lowercase|capitalize
+    "scale": 0.96, // --font-display-scale (heading size multiplier)
   },
 
   "transliterate": null, // null, or a known transformer id (currently only "elder-futhark")
+
+  "dice": {
+    // optional; null/omitted → factory blue/red d6+d10, black/white d100, no texture
+    "action": "#1f9ed6", // d6 (action die) background
+    "challenge": "#7b2ff7", // d10 (challenge dice) background
+    "tens": "#0e1420", // d100 tens die background
+    "ones": "#9fd8f5", // d100 ones die background
+    "texture": "astral", // shared texture — one of the dice-box keys (see below)
+  },
 
   "palette": null, // null → inherit the base forge-amber chrome, OR { dark, light } below
 }
@@ -71,6 +80,24 @@ higher-specificity `html[data-font='<id>'][data-theme]` selector, so **only the
 chrome changes** — stats, resources, and semantic colours pass through
 untouched.
 
+### Dice
+
+`dice` (optional) skins the 3D dice to match the livery: the four die
+backgrounds — `action` (d6), `challenge` (d10), and the d100 `tens` + `ones` —
+plus one shared `texture`. Numeral colour is chosen automatically per die by
+luminance, so light backgrounds stay legible; you only pick the backgrounds.
+
+`texture` is one of the dice-box library's keys: `none`, `cloudy`, `marble`,
+`fire`, `ice`, `water`, `paper`, `speckles`, `glitter`, `stars`, `stainedglass`,
+`wood`, `metal`, `skulls`, `astral`, `dragon`, `lizard`, `leopard`, `tiger`,
+`cheetah` (kept in sync with `DICE_TEXTURE_OPTIONS` in `apps/web/src/lib/dice.ts`).
+
+Dice appearance resolves **user override → active livery → factory default**:
+each die follows the selected livery until the user picks their own colour or
+texture in **Settings → Dice**, at which point that explicit choice sticks
+across livery switches. A livery with no `dice` block falls straight through to
+the factory blue/red d6+d10 and black/white d100. Omitting `dice` is fine.
+
 ## How the build wires it up
 
 Two committed, generator-owned artifacts are produced from the JSON:
@@ -80,9 +107,10 @@ npm run gen:liveries        # scripts/gen-liveries-manifest.mjs
 ```
 
 - **`apps/web/src/lib/liveries.manifest.json`** — runtime metadata (id, label,
-  default, description, preview, transliterate, googleFamily). Read by
-  `fontStore.svelte.ts` (active-livery state + `headingText()` transliteration)
-  and `SettingsDialog.svelte` (the dropdown).
+  default, description, preview, transliterate, googleFamily, dice). Read by
+  `fontStore.svelte.ts` (active-livery state + `headingText()` transliteration +
+  `activeLiveryDice()`), `SettingsDialog.svelte` (the dropdown), and `dice.ts`
+  (per-livery dice colours/texture).
 - **`apps/web/src/lib/liveries.generated.css`** — the per-livery
   `[data-font='<id>']` typography block (including `--font-display`, so the
   render-blocking stylesheet owns the font stack — no FOUC, no JS to set it)
@@ -118,9 +146,11 @@ manifest by hand.
 
 ## Web fonts (only if you need one)
 
-The built-in liveries load their web fonts (Cinzel, Simonetta) from the Google
-Fonts `<link>` in `apps/web/src/app.html`. **Codex** and **Futhark** use
-system-font stacks and need no web font at all — the easiest kind of livery.
+The built-in liveries load their web fonts (Cinzel, Simonetta, Orbitron) from the
+Google Fonts `<link>` in `apps/web/src/app.html`. **Codex** demonstrates that
+path — its Orbitron face is declared via `googleFamily` and added to that
+`<link>`. **Futhark** is the other kind: a system-font stack (runic fonts) that
+needs no web font at all — the easiest kind of livery.
 
 If your livery introduces a **new** web font, two things are needed:
 

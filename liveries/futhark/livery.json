@@ -13,6 +13,13 @@
     "scale": 1.12
   },
   "transliterate": "elder-futhark",
+  "dice": {
+    "action": "#3f6d5a",
+    "challenge": "#7a4a2a",
+    "tens": "#1c231e",
+    "ones": "#9ec7b4",
+    "texture": "metal"
+  },
   "palette": {
     "dark": {
       "bg-page": "#080d0a",

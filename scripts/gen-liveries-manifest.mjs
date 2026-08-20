@@ -46,6 +46,7 @@ function buildManifest(liveries) {
       preview: l.preview ?? null,
       transliterate: l.transliterate ?? null,
       googleFamily: l.font.googleFamily ?? null,
+      dice: l.dice ?? null,
     })),
   };
   return JSON.stringify(obj, null, 2) + '\n';

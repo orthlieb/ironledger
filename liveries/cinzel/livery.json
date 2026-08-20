@@ -13,6 +13,13 @@
     "scale": 1
   },
   "transliterate": null,
+  "dice": {
+    "action": "#5b6670",
+    "challenge": "#8a4a3f",
+    "tens": "#2f363c",
+    "ones": "#cdd3d8",
+    "texture": "marble"
+  },
   "palette": {
     "dark": {
       "bg-page": "#0e0f11",

@@ -68,61 +68,61 @@ html[data-font='cinzel'][data-theme='light'] {
 
 /* Codex (codex) */
 [data-font='codex'] {
-	--font-display: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
-	--font-display-weight: 400;
+	--font-display: 'Orbitron', 'Eurostile', 'Bahnschrift', 'DIN Alternate', system-ui, sans-serif;
+	--font-display-weight: 500;
 	--font-display-variant: normal;
-	--font-display-transform: none;
-	--font-display-scale: 1.08;
+	--font-display-transform: uppercase;
+	--font-display-scale: 0.96;
 }
 html[data-font='codex']:not([data-theme='light']) {
-	--bg-page: #14100c;
-	--bg-card: #1d160e;
-	--bg-inset: #100c08;
-	--bg-control: #251c12;
-	--bg-hover: #2f2417;
-	--border: #3c3020;
-	--border-mid: #584734;
-	--text: #ecdcbe;
-	--text-muted: #ac9877;
-	--text-dimmer: #7a6851;
-	--text-accent: #cf8a44;
-	--focus-ring: #cf8a44;
-	--accent-glow: #cf8a4420;
-	--accent-dim: #cf8a4412;
+	--bg-page: #070b12;
+	--bg-card: #0e1420;
+	--bg-inset: #0a0f18;
+	--bg-control: #141c2b;
+	--bg-hover: #1c2739;
+	--border: #263349;
+	--border-mid: #3a4d6b;
+	--text: #d5e2f0;
+	--text-muted: #8aa0bd;
+	--text-dimmer: #5b6f8c;
+	--text-accent: #38bdf8;
+	--focus-ring: #38bdf8;
+	--accent-glow: #38bdf820;
+	--accent-dim: #38bdf812;
 }
 @media (prefers-color-scheme: light) {
 	html[data-font='codex']:not([data-theme='dark']) {
-		--bg-page: #efe3c9;
-		--bg-card: #e8dcbf;
-		--bg-inset: #f6eed9;
-		--bg-control: #ece0c5;
-		--bg-hover: #e0d2b2;
-		--border: #cbb893;
-		--border-mid: #ad986f;
-		--text: #241a0d;
-		--text-muted: #5f4f33;
-		--text-dimmer: #8a7658;
-		--text-accent: #8f4e15;
-		--focus-ring: #8f4e15;
-		--accent-glow: #8f4e1520;
-		--accent-dim: #8f4e1512;
+		--bg-page: #e8eef6;
+		--bg-card: #dde6f1;
+		--bg-inset: #f1f5fa;
+		--bg-control: #e2eaf3;
+		--bg-hover: #d3deec;
+		--border: #b3c2d6;
+		--border-mid: #91a3bd;
+		--text: #0d1826;
+		--text-muted: #415268;
+		--text-dimmer: #6b7d95;
+		--text-accent: #0369a1;
+		--focus-ring: #0369a1;
+		--accent-glow: #0369a120;
+		--accent-dim: #0369a112;
 	}
 }
 html[data-font='codex'][data-theme='light'] {
-	--bg-page: #efe3c9;
-	--bg-card: #e8dcbf;
-	--bg-inset: #f6eed9;
-	--bg-control: #ece0c5;
-	--bg-hover: #e0d2b2;
-	--border: #cbb893;
-	--border-mid: #ad986f;
-	--text: #241a0d;
-	--text-muted: #5f4f33;
-	--text-dimmer: #8a7658;
-	--text-accent: #8f4e15;
-	--focus-ring: #8f4e15;
-	--accent-glow: #8f4e1520;
-	--accent-dim: #8f4e1512;
+	--bg-page: #e8eef6;
+	--bg-card: #dde6f1;
+	--bg-inset: #f1f5fa;
+	--bg-control: #e2eaf3;
+	--bg-hover: #d3deec;
+	--border: #b3c2d6;
+	--border-mid: #91a3bd;
+	--text: #0d1826;
+	--text-muted: #415268;
+	--text-dimmer: #6b7d95;
+	--text-accent: #0369a1;
+	--focus-ring: #0369a1;
+	--accent-glow: #0369a120;
+	--accent-dim: #0369a112;
 }
 
 /* Futhark (futhark) */

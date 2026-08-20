@@ -20,6 +20,10 @@
 		setDiceActionColor,
 		getDiceChallengeColor,
 		setDiceChallengeColor,
+		getDiceTensColor,
+		setDiceTensColor,
+		getDiceOnesColor,
+		setDiceOnesColor,
 		getDiceTexture,
 		setDiceTexture,
 		DICE_TEXTURE_OPTIONS,
@@ -125,6 +129,8 @@
 	let diceChallengeColor = $state(
 		typeof window !== 'undefined' ? getDiceChallengeColor() : '#DD0000',
 	);
+	let diceTensColor = $state(typeof window !== 'undefined' ? getDiceTensColor() : '#222222');
+	let diceOnesColor = $state(typeof window !== 'undefined' ? getDiceOnesColor() : '#ffffff');
 	let diceTexture = $state(typeof window !== 'undefined' ? getDiceTexture() : 'none');
 
 	function applyDiceActionColor(c: string) {
@@ -135,10 +141,31 @@
 		diceChallengeColor = c;
 		setDiceChallengeColor(c);
 	}
+	function applyDiceTensColor(c: string) {
+		diceTensColor = c;
+		setDiceTensColor(c);
+	}
+	function applyDiceOnesColor(c: string) {
+		diceOnesColor = c;
+		setDiceOnesColor(c);
+	}
 	function applyDiceTexture(t: string) {
 		diceTexture = t;
 		setDiceTexture(t);
 	}
+
+	// Dice appearance follows the active livery (until the user sets an explicit
+	// override, which the getters honour). Re-resolve when the livery changes so
+	// the swatches track a livery switch made on the Appearance tab live, not
+	// just on the next dialog open. getFontDisplay() is the reactive dependency.
+	$effect(() => {
+		getFontDisplay();
+		diceActionColor = getDiceActionColor();
+		diceChallengeColor = getDiceChallengeColor();
+		diceTensColor = getDiceTensColor();
+		diceOnesColor = getDiceOnesColor();
+		diceTexture = getDiceTexture();
+	});
 
 	// ---------------------------------------------------------------------------
 	// Dice sound
@@ -196,6 +223,8 @@
 		diceSound = isDiceSoundEnabled();
 		diceActionColor = getDiceActionColor();
 		diceChallengeColor = getDiceChallengeColor();
+		diceTensColor = getDiceTensColor();
+		diceOnesColor = getDiceOnesColor();
 		diceTexture = getDiceTexture();
 		// Ensure the extension registry is populated (idempotent — home already
 		// loads it on mount); the Expansions tab renders a toggle per extension.
@@ -332,10 +361,11 @@
 								/>
 							</div>
 
-							<!-- Colour — one row, a swatch per die role fronted by its
-							     Font Awesome glyph (d6 = action, d10 = challenge). -->
+							<!-- Colour — the standard action+challenge dice on one row, the
+							     d100 tens/ones dice on their own row. Each swatch is fronted
+							     by its Font Awesome glyph (d6 = action, d10 = challenge). -->
 							<div class="sd-row">
-								<span class="sd-label">Colour</span>
+								<span class="sd-label">Challenge Dice</span>
 								<div class="sd-dice-colours">
 									<span class="sd-dice-colour" data-tooltip="Action die (d6)">
 										<span class="sd-dice-glyph" aria-hidden="true">{@html diceD6Svg}</span>
@@ -352,6 +382,30 @@
 											value={diceChallengeColor}
 											onchange={applyDiceChallengeColor}
 											ariaLabel="Challenge dice (d10) colour"
+											disabled={!dice3d}
+										/>
+									</span>
+								</div>
+							</div>
+
+							<div class="sd-row">
+								<span class="sd-label">D100 Dice</span>
+								<div class="sd-dice-colours">
+									<span class="sd-dice-colour" data-tooltip="d100 tens die">
+										<span class="sd-dice-glyph" aria-hidden="true">{@html diceD10Svg}</span>
+										<ColorPicker
+											value={diceTensColor}
+											onchange={applyDiceTensColor}
+											ariaLabel="d100 tens die colour"
+											disabled={!dice3d}
+										/>
+									</span>
+									<span class="sd-dice-colour" data-tooltip="d100 ones die">
+										<span class="sd-dice-glyph" aria-hidden="true">{@html diceD10Svg}</span>
+										<ColorPicker
+											value={diceOnesColor}
+											onchange={applyDiceOnesColor}
+											ariaLabel="d100 ones die colour"
 											disabled={!dice3d}
 										/>
 									</span>

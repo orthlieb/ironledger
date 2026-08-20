@@ -13,5 +13,12 @@
     "scale": 1.12
   },
   "transliterate": null,
+  "dice": {
+    "action": "#9a5b12",
+    "challenge": "#6d1f2c",
+    "tens": "#2e1c0e",
+    "ones": "#e6cf96",
+    "texture": "paper"
+  },
   "palette": null
 }

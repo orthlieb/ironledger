@@ -53,6 +53,33 @@ export const TOKEN_KEYS = [
 // one by id, or `null` for the identity (no transliteration).
 export const KNOWN_TRANSLITERATORS = new Set(['elder-futhark']);
 
+// Valid 3D-dice texture keys. Mirrors DICE_TEXTURE_OPTIONS in
+// apps/web/src/lib/dice.ts (the dice-box library's own texture names) — keep
+// the two in sync. A livery `dice` block is optional; when present its texture
+// must be one of these.
+export const DICE_TEXTURES = new Set([
+  'none',
+  'cloudy',
+  'marble',
+  'fire',
+  'ice',
+  'water',
+  'paper',
+  'speckles',
+  'glitter',
+  'stars',
+  'stainedglass',
+  'wood',
+  'metal',
+  'skulls',
+  'astral',
+  'dragon',
+  'lizard',
+  'leopard',
+  'tiger',
+  'cheetah',
+]);
+
 const CSS_IDENT = /^[a-z][a-z0-9-]*$/;
 const HEX_COLOR = /^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 const TRANSFORMS = new Set(['none', 'uppercase', 'lowercase', 'capitalize']);
@@ -102,6 +129,23 @@ export function validateLivery(lv, slug) {
       `transliterate "${lv.transliterate}" is not a known transformer ` +
         `(${[...KNOWN_TRANSLITERATORS].join(', ')}) — add it to headingText() first`,
     );
+  }
+
+  // ── dice (optional; null/absent = factory blue/red, no texture) ─────────────
+  if (lv.dice != null) {
+    const d = lv.dice;
+    if (typeof d !== 'object') {
+      at('dice must be an object or null');
+    } else {
+      for (const k of ['action', 'challenge', 'tens', 'ones']) {
+        if (!HEX_COLOR.test(String(d[k]))) {
+          at(`dice.${k} "${d[k]}" is not a hex colour (#rgb/#rgba/#rrggbb/#rrggbbaa)`);
+        }
+      }
+      if (!DICE_TEXTURES.has(d.texture)) {
+        at(`dice.texture "${d.texture}" is not a known texture (${[...DICE_TEXTURES].join(', ')})`);
+      }
+    }
   }
 
   // ── palette (null = inherit the base forge-amber theme) ─────────────────────

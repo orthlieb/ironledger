@@ -9,16 +9,30 @@
       "description": "Engraved-stone Cinzel titles over a cool brushed-steel chrome — the default livery.",
       "preview": null,
       "transliterate": null,
-      "googleFamily": "Cinzel:wght@400;600;700;900"
+      "googleFamily": "Cinzel:wght@400;600;700;900",
+      "dice": {
+        "action": "#5b6670",
+        "challenge": "#8a4a3f",
+        "tens": "#2f363c",
+        "ones": "#cdd3d8",
+        "texture": "marble"
+      }
     },
     {
       "id": "codex",
       "label": "Codex",
       "default": false,
-      "description": "Sample livery: an old-style book serif in natural title-case over a warm sepia-and-sienna chrome. Uses a system serif stack, so it needs no web font — copy this folder as the template for a new livery.",
+      "description": "Sample livery: a geometric sci-fi display face (Orbitron) over a void-navy chrome with an electric-cyan accent — a ship's-database look ready for a future Starforged expansion. Copy this folder as the template for a new livery.",
       "preview": null,
       "transliterate": null,
-      "googleFamily": null
+      "googleFamily": "Orbitron:wght@400;500;700;900",
+      "dice": {
+        "action": "#1f9ed6",
+        "challenge": "#7b2ff7",
+        "tens": "#0e1420",
+        "ones": "#9fd8f5",
+        "texture": "astral"
+      }
     },
     {
       "id": "futhark",
@@ -27,7 +41,14 @@
       "description": "Names transliterated into Elder Futhark runes over a weathered-verdigris chrome. Uses system runic fonts — no web font required.",
       "preview": "ᚠᚢᚦᚨᚱᚲ",
       "transliterate": "elder-futhark",
-      "googleFamily": null
+      "googleFamily": null,
+      "dice": {
+        "action": "#3f6d5a",
+        "challenge": "#7a4a2a",
+        "tens": "#1c231e",
+        "ones": "#9ec7b4",
+        "texture": "metal"
+      }
     },
     {
       "id": "simonetta",
@@ -36,7 +57,14 @@
       "description": "Calligraphic Simonetta titles in natural title-case over the base forge-amber chrome.",
       "preview": null,
       "transliterate": null,
-      "googleFamily": "Simonetta:ital,wght@0,400;0,900;1,400;1,900"
+      "googleFamily": "Simonetta:ital,wght@0,400;0,900;1,400;1,900",
+      "dice": {
+        "action": "#9a5b12",
+        "challenge": "#6d1f2c",
+        "tens": "#2e1c0e",
+        "ones": "#e6cf96",
+        "texture": "paper"
+      }
     }
   ]
 }

@@ -26,6 +26,16 @@ export type LiveryId = string;
 /** @deprecated Historical name — a livery is more than a font. Use `LiveryId`. */
 export type FontDisplay = LiveryId;
 
+/** A livery's 3D-dice appearance: the four die backgrounds (d6 action, d10
+ *  challenge, and the d100 tens + ones) plus one shared texture. */
+export interface LiveryDice {
+	action: string;
+	challenge: string;
+	tens: string;
+	ones: string;
+	texture: string;
+}
+
 export interface LiveryMeta {
 	id: string;
 	label: string;
@@ -34,6 +44,7 @@ export interface LiveryMeta {
 	preview: string | null;
 	transliterate: string | null;
 	googleFamily: string | null;
+	dice: LiveryDice | null;
 }
 
 export const LIVERIES: LiveryMeta[] = manifest.liveries;
@@ -66,6 +77,13 @@ export function getFontDisplay(): LiveryId {
 
 export function savedFont(): LiveryId {
 	return _readSaved();
+}
+
+/** The active livery's dice appearance, or null if it doesn't define one.
+ *  Read imperatively by the dice roller so switching liveries restyles the
+ *  dice on the next roll (a user's explicit Settings override still wins). */
+export function activeLiveryDice(): LiveryDice | null {
+	return LIVERIES.find((l) => l.id === _font)?.dice ?? null;
 }
 
 /** Apply a livery: persists to localStorage + flips the `data-font` attribute.
