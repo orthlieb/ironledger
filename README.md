@@ -6,7 +6,7 @@ Ironsworn TTRPG character tracker. Manage characters, track progress, roll moves
 - That being said, the AI generated images for foes are slop, I'd be open to working with a willing artist to make these much nicer.
 - I am not a designer, suggestions for improving the UI are most welcome.
 - I have probably misintrepreted or missed a rule here or there, bug reports are definitely welcome.
-- **Ironsworn and the Delve Expansion** are incredible RPGs, I highly encourage you to support [Shawn Tomkin](https://tomkinpress.com/) and purchase his work.
+- **Ironsworn**, the **Delve** expansion, and **Lodestar** are incredible RPGs, I highly encourage you to support [Shawn Tomkin](https://tomkinpress.com/) and purchase his work.
 
 A final note: The YRT expansion that is referred to is a side project I'm working on set in a post-apocalyptic world where technology is indistinguishable from magic.
 I'm not ready to release anything yet but you can see some of the the workings in the Conclave spells, the use of mana, and some Oracles.
@@ -140,7 +140,7 @@ findings are surfaced as warnings, not errors, so they don't block CI.
 
 ### Expeditions
 
-- Journey, Delve Site, and Scene Challenge expedition types
+- Journey, Delve Site, and Scene Challenge (from Ironsworn: Lodestar) expedition types
 - Progress tracks with waypoint/room mechanics
 - Delve tables for site exploration
 - Scene Challenges add a 4-segment countdown track alongside the progress track
@@ -272,9 +272,10 @@ Feature docs are in the `docs/` directory:
 
 ## Credits
 
-- **[Ironsworn](https://ironswornrpg.com/)** and **Ironsworn: Delve** by Shawn Tomkin — licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). Game data sourced from [Datasworn](https://github.com/rsek/datasworn) by rsek.
+- **[Ironsworn](https://ironswornrpg.com/)**, **[Ironsworn: Delve](https://ironswornrpg.com/)**, and **[Ironsworn: Lodestar](https://ironswornrpg.com/)** by Shawn Tomkin — licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). Game data sourced from [Datasworn](https://github.com/rsek/datasworn) by rsek. The Scene Challenge moves and official oracle names live in `extensions/lodestar/`.
 - **[game-icons.net](https://game-icons.net)** — game-themed SVG icons (CC BY 3.0)
 - **[Font Awesome](https://fontawesome.com)** — UI icons (Free tier, CC BY 4.0)
+- **[The Noun Project](https://thenounproject.com)** — additional UI icons
 - **[Caeora](https://www.patreon.com/c/caeora/home)** — hand-drawn settlement/structure map icons
 
 ## Security
@@ -288,3 +289,9 @@ Feature docs are in the `docs/` directory:
 - hCaptcha on registration
 - JWT RS256 with refresh token rotation and theft detection
 - 2 MB request body limit
+
+## License & Attribution
+
+Iron Ledger is an independent fan project and is not affiliated with or endorsed by Shawn Tomkin or Ironsworn.
+
+This work is based on [Ironsworn](https://ironswornrpg.com), [Ironsworn: Delve](https://ironswornrpg.com), and [Ironsworn: Lodestar](https://ironswornrpg.com), created by Shawn Tomkin, and licensed for use under the [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) license. Game data sourced from [Datasworn](https://github.com/rsek/datasworn) by rsek. Icons by [game-icons.net](https://game-icons.net), [Font Awesome](https://fontawesome.com), [The Noun Project](https://thenounproject.com), and [Caeora](https://www.patreon.com/c/caeora/home). Iron Ledger is free and open source — source available on [GitHub](https://github.com/orthlieb/ironledger).
