@@ -295,15 +295,17 @@
 	 *  number of progress marks, each worth that expedition's rank-based ticks. */
 	export function applyProgress(marks: number, expId?: string) {
 		const exp = resolveTargetExp(expId);
-		if (!exp) return;
+		// No-op if the bound expedition is gone (deleted → find fails) or complete.
+		if (!exp || exp.complete) return;
 		const ticks = EXPEDITION_MARK_TICKS[exp.difficulty];
 		commitExpChange(exp, { ticks: Math.min(40, exp.ticks + marks * ticks) });
 	}
 	/** Fill `n` segments of the referenced scene's countdown (clamped 0–4). Backs
-	 *  the `countdown-link` in Scene-Mode move outcomes. No-op off a scene. */
+	 *  the `countdown-link` in Scene-Mode move outcomes. No-op off a scene, or if
+	 *  the bound scene is gone/complete. */
 	export function applyCountdown(n: number, expId?: string) {
 		const exp = resolveTargetExp(expId);
-		if (exp?.type !== 'scene') return;
+		if (exp?.type !== 'scene' || exp.complete) return;
 		commitExpChange(exp, { countdownFilled: Math.max(0, Math.min(4, exp.countdownFilled + n)) });
 	}
 	/** Mark the active expedition complete. Sibling to /foe vanquish — no-op

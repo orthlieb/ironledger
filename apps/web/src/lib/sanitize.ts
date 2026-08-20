@@ -51,6 +51,7 @@ export const LOG_ATTRS = [
 	'data-entry-id', // all stateful links (for markLinkSpent + guard checks)
 	'data-char-id', // resource-link, debility-link, failure-link, burn-momentum-link, xp-cost-link
 	'data-exp-id', // progress-link, countdown-link — bind to the expedition the entry was rolled against
+	'data-foe-id', // progress/menace/vanquish links — bind to the foe the entry was rolled against
 
 	// ── Per-link-type data attributes ──────────────────────────────────────
 	'data-resource', // resource-link  — which stat to change (momentum, health, …)
