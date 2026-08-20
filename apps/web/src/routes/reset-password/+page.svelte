@@ -129,7 +129,7 @@
 	.auth-brand-icon :global(svg) {
 		width: 18px;
 		height: 18px;
-		fill: var(--color-mana, #f59e0b);
+		fill: var(--text-accent);
 	}
 
 	.instruction {

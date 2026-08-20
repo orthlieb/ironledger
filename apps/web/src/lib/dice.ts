@@ -12,6 +12,7 @@
 // =============================================================================
 
 import { isDiceSoundEnabled } from './diceSound.js';
+import { activeLiveryDice } from './fontStore.svelte.js';
 
 /** CDN paths for the 3D dice library and its asset bundle. */
 const DICE_LIB_URL =
@@ -65,11 +66,15 @@ export const DIE_WHITE = {
 // ---------------------------------------------------------------------------
 const DICE_ACTION_COLOR_KEY = 'ironledger:diceActionColor';
 const DICE_CHALLENGE_COLOR_KEY = 'ironledger:diceChallengeColor';
+const DICE_TENS_COLOR_KEY = 'ironledger:diceTensColor';
+const DICE_ONES_COLOR_KEY = 'ironledger:diceOnesColor';
 const DICE_TEXTURE_KEY = 'ironledger:diceTexture';
 
 /** Factory defaults — the historical hard-coded backgrounds. */
 export const DEFAULT_ACTION_COLOR = DIE_BLUE.background; // '#5383EC'
 export const DEFAULT_CHALLENGE_COLOR = DIE_RED.background; // '#DD0000'
+export const DEFAULT_TENS_COLOR = DIE_BLACK.background; // '#222222' (d100 tens)
+export const DEFAULT_ONES_COLOR = DIE_WHITE.background; // '#ffffff' (d100 ones)
 export const DEFAULT_DICE_TEXTURE = 'none';
 
 /** Texture choices for the settings dropdown. `value` is the library's own
@@ -99,6 +104,26 @@ export const DICE_TEXTURE_OPTIONS: { value: string; label: string }[] = [
 	{ value: 'cheetah', label: 'Cheetah' },
 ];
 
+/** Pick a legible numeral colour (black or white) for a die background, by
+ *  perceived luminance. Keeps custom / livery die colours readable — a light
+ *  background gets black pips, a dark one gets white. */
+export function contrastText(hex: string): string {
+	const h = hex.replace('#', '');
+	const full =
+		h.length === 3
+			? h
+					.split('')
+					.map((c) => c + c)
+					.join('')
+			: h.slice(0, 6);
+	const r = parseInt(full.slice(0, 2), 16);
+	const g = parseInt(full.slice(2, 4), 16);
+	const b = parseInt(full.slice(4, 6), 16);
+	if (Number.isNaN(r + g + b)) return '#ffffff';
+	const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+	return luminance > 0.6 ? '#000000' : '#ffffff';
+}
+
 function readPref(key: string, fallback: string): string {
 	if (typeof window === 'undefined') return fallback;
 	return localStorage.getItem(key) || fallback;
@@ -108,23 +133,47 @@ function writePref(key: string, value: string): void {
 	localStorage.setItem(key, value);
 }
 
+// The resolution order for every dice-appearance getter is:
+//   explicit user override (localStorage) → active livery's dice → factory
+// default. So dice follow the selected livery until the user picks their own
+// colour/texture in Settings, at which point that explicit choice sticks
+// across livery switches. activeLiveryDice() returns null for liveries that
+// don't define a `dice` block, falling straight through to the factory value.
+
 /** Action die (d6) background colour. */
 export function getDiceActionColor(): string {
-	return readPref(DICE_ACTION_COLOR_KEY, DEFAULT_ACTION_COLOR);
+	return readPref(DICE_ACTION_COLOR_KEY, activeLiveryDice()?.action ?? DEFAULT_ACTION_COLOR);
 }
 export function setDiceActionColor(color: string): void {
 	writePref(DICE_ACTION_COLOR_KEY, color);
 }
 /** Challenge dice (d10) background colour. */
 export function getDiceChallengeColor(): string {
-	return readPref(DICE_CHALLENGE_COLOR_KEY, DEFAULT_CHALLENGE_COLOR);
+	return readPref(
+		DICE_CHALLENGE_COLOR_KEY,
+		activeLiveryDice()?.challenge ?? DEFAULT_CHALLENGE_COLOR,
+	);
 }
 export function setDiceChallengeColor(color: string): void {
 	writePref(DICE_CHALLENGE_COLOR_KEY, color);
 }
+/** d100 tens die background colour (historically black). */
+export function getDiceTensColor(): string {
+	return readPref(DICE_TENS_COLOR_KEY, activeLiveryDice()?.tens ?? DEFAULT_TENS_COLOR);
+}
+export function setDiceTensColor(color: string): void {
+	writePref(DICE_TENS_COLOR_KEY, color);
+}
+/** d100 ones die background colour (historically white). */
+export function getDiceOnesColor(): string {
+	return readPref(DICE_ONES_COLOR_KEY, activeLiveryDice()?.ones ?? DEFAULT_ONES_COLOR);
+}
+export function setDiceOnesColor(color: string): void {
+	writePref(DICE_ONES_COLOR_KEY, color);
+}
 /** Shared texture key applied to every die. */
 export function getDiceTexture(): string {
-	return readPref(DICE_TEXTURE_KEY, DEFAULT_DICE_TEXTURE);
+	return readPref(DICE_TEXTURE_KEY, activeLiveryDice()?.texture ?? DEFAULT_DICE_TEXTURE);
 }
 export function setDiceTexture(texture: string): void {
 	writePref(DICE_TEXTURE_KEY, texture);
@@ -368,14 +417,29 @@ export async function animateDice(dice: DiceSpec[]): Promise<void> {
 		// collapses e.g. two challenge d10s into one `2d10@a,b` step.
 		// ---------------------------------------------------------------------------
 		const texture = getDiceTexture();
-		const actionTheme = { ...DIE_BLUE, background: getDiceActionColor(), texture };
-		const challengeTheme = { ...DIE_RED, background: getDiceChallengeColor(), texture };
+		// Each configurable die is a background colour + a numeral colour picked
+		// for legibility (contrastText), so a light custom/livery colour still
+		// reads. The four configurable backgrounds come from the resolver chain
+		// (user override → active livery → factory).
+		const mkTheme = (background: string) => ({
+			foreground: contrastText(background),
+			background,
+			outline: 'none',
+			texture,
+		});
+		const actionTheme = mkTheme(getDiceActionColor());
+		const challengeTheme = mkTheme(getDiceChallengeColor());
+		const tensTheme = mkTheme(getDiceTensColor());
+		const onesTheme = mkTheme(getDiceOnesColor());
 		const otherTheme = { ...DIE_RED, texture };
-		// A die may pass an explicit colour (the d100 tens/ones use black+white
-		// for legibility). Keep that background but apply the shared texture,
-		// memoised by the source object so grouping identity still holds.
+		// The d100 call sites tag the tens/ones dice with the DIE_BLACK / DIE_WHITE
+		// singletons as markers — remap those to the configurable tens/ones themes.
+		// Any other explicit colour keeps its literal background (memoised so the
+		// grouping identity below still holds).
 		const explicitThemes = new Map<object, object>();
 		const themeForDie = (die: DiceSpec): object => {
+			if (die.color === DIE_BLACK) return tensTheme;
+			if (die.color === DIE_WHITE) return onesTheme;
 			if (die.color) {
 				let t = explicitThemes.get(die.color);
 				if (!t) {
