@@ -116,7 +116,7 @@ findings are surfaced as warnings, not errors, so they don't block CI.
 ### Moves & Dice
 
 - Complete Ironsworn move reference with picker grid
-- Action, progress, and spell rolls with 3D animated dice
+- Action, progress, and spell rolls with 3D animated dice (per-livery colours + texture, customizable in Settings → Dice)
 - Live roll formula display (e.g., `d6 + iron[3] + adds[+1] vs d10 & d10`) between spinners and roll button
 - Data-driven progress routing: each progress move reads from the correct track (foe, journey, site, bonds, failures) via `progressSource` field
 - Move precondition checking (disables moves with unmet requirements)
@@ -140,9 +140,10 @@ findings are surfaced as warnings, not errors, so they don't block CI.
 
 ### Expeditions
 
-- Journey and Delve Site expedition types
+- Journey, Delve Site, and Scene Challenge expedition types
 - Progress tracks with waypoint/room mechanics
 - Delve tables for site exploration
+- Scene Challenges add a 4-segment countdown track alongside the progress track
 
 ### Communities & NPCs
 
@@ -150,6 +151,13 @@ findings are surfaced as warnings, not errors, so they don't block CI.
 - Oracle-powered random generation for community names, locations (inland/coastal), and NPC names (Ironlander, Elf, Giants, Varou, Trolls variants)
 - Free-form notes, region, trouble, and relationship fields per entry
 - 3-column responsive grid layout
+
+### Appearance & Liveries
+
+- **Liveries** — pick a display font paired with a chrome palette in Settings → Appearance. Ships with **Gravestone** (engraved Cinzel over steel), **Grimoire** (calligraphic Simonetta over amber), **Futhark** (names transliterated into Elder Futhark runes over verdigris), and a **Codex** sci-fi sample (Orbitron over void-navy)
+- **Drop-in livery packs** — each livery is a single `liveries/<id>/livery.json` (display font, dark/light chrome palette, and 3D-dice skin); a build-time generator compiles them into a manifest + CSS, so adding a new theme needs no code changes. See [docs/liveries.md](docs/liveries.md)
+- Independent **light / dark / auto** (system) theme, orthogonal to the livery
+- Per-livery **3D dice** colours + texture, overridable in Settings → Dice
 
 ### Mobile Support
 
@@ -238,17 +246,22 @@ Feature docs are in the `docs/` directory:
 | Doc                                                         | Description                                                              |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------ |
 | [admin.md](docs/admin.md)                                   | Admin panel — users, logs, maintenance, registration lock                |
+| [ai-story.md](docs/ai-story.md)                             | AI Storyteller — encrypted keys, providers, proxy                        |
 | [architecture_decisions.md](docs/architecture_decisions.md) | Architecture and design decisions                                        |
+| [campaign-map.md](docs/campaign-map.md)                     | Campaign map — markers, connections, icons                               |
 | [character-sheet.md](docs/character-sheet.md)               | Character sheet component                                                |
+| [command-bar.md](docs/command-bar.md)                       | Command bar — slash commands and completion                              |
 | [communities.md](docs/communities.md)                       | Communities & NPCs — data model, oracle generation                       |
 | [data-schema.md](docs/data-schema.md)                       | Catalogue data format spec (moves, assets, oracles, foes)                |
 | [deployment.md](docs/deployment.md)                         | IONOS VPS deployment guide                                               |
 | [dice-rolling.md](docs/dice-rolling.md)                     | Dice rolling implementation                                              |
 | [expansion-toggles.md](docs/expansion-toggles.md)           | Delve / YRT expansion toggle system                                      |
-| [expeditions.md](docs/expeditions.md)                       | Expeditions system                                                       |
+| [expeditions.md](docs/expeditions.md)                       | Expeditions system (Journey, Delve Site, Scene Challenge)                |
+| [extensions.md](docs/extensions.md)                         | Extension system — content packs, build-time manifest                    |
 | [foes.md](docs/foes.md)                                     | Foes and encounters                                                      |
 | [global-context-bar.md](docs/global-context-bar.md)         | GlobalContextBar tile layout                                             |
 | [import-schema.md](docs/import-schema.md)                   | User-data export/import JSON (characters, expeditions, connections, log) |
+| [liveries.md](docs/liveries.md)                             | Liveries — drop-in font + chrome + dice theme packs                      |
 | [log.md](docs/log.md)                                       | Session log with interactive links                                       |
 | [mobile.md](docs/mobile.md)                                 | Mobile layout, swipe gestures, and viewport behaviour                    |
 | [moves.md](docs/moves.md)                                   | Moves system and dice rolling                                            |
