@@ -23,7 +23,7 @@ Single-die rolls with no modifier. Used for raw randomness (oracle lookups, rand
 <div class="roll-line"><span class="roll-die-label">d6</span> → <strong>4</strong></div>
 ```
 
-The d100 is animated as two d10s (tens digit in dark, ones digit in light) to match the physical dice convention.
+The d100 is animated as two d10s (tens digit in dark, ones digit in light by default; both colours are configurable — see "Die colours & texture" below) to match the physical dice convention.
 
 ---
 
@@ -131,14 +131,27 @@ pointer-events: none;
 
 The `pointer-events: none` lets users interact with the page behind the dice.
 
-### Die Colour Themes
+### Die colours & texture
 
-| Die       | Theme                        |
-| --------- | ---------------------------- |
-| d6        | Blue (`#2255CC` background)  |
-| d10       | Red (`#CC2222` background)   |
-| d100 tens | Dark (`#1a1a1a` background)  |
-| d100 ones | Light (`#f0f0f0` background) |
+Dice appearance is configurable in **Settings → Dice** and skinnable per livery
+(see [liveries.md](liveries.md) → "Dice"). Each of the four die roles carries its
+own background colour, and all dice share one texture:
+
+| Die       | Setting label  | Factory default        |
+| --------- | -------------- | ---------------------- |
+| d6        | Action die     | Blue (`#5383EC`)       |
+| d10       | Challenge dice | Red (`#DD0000`)        |
+| d100 tens | D100 tens die  | Near-black (`#222222`) |
+| d100 ones | D100 ones die  | White (`#ffffff`)      |
+| _all_     | Texture        | None (smooth)          |
+
+Each value resolves **user override (Settings) → active livery's `dice` block →
+factory default** (in `dice.ts`), so dice follow the selected livery until the
+user picks their own, which then sticks across livery switches. The numeral
+colour on each die is chosen automatically from the background's luminance
+(`contrastText`) so a custom or light colour stays legible. The d100 tens/ones
+dice pass the `DIE_BLACK` / `DIE_WHITE` singletons as role markers, which
+`animateDice` remaps to the configurable tens/ones themes.
 
 ### Notation
 
@@ -146,7 +159,7 @@ The library uses `1d{sides}@{value}` notation to force a specific face, e.g. `1d
 
 ### Linger Time
 
-Dice stay visible for **1800 ms** after they land before the overlay is hidden.
+Dice stay visible for **600 ms** (`DICE_LINGER_MS`) after they land before the overlay is hidden.
 
 ### Failure Mode
 
@@ -156,12 +169,13 @@ Animation failures (CDN unavailable, WebGL not supported) are caught silently. T
 
 ## Source Files
 
-| File                                                  | Purpose                                                          |
-| ----------------------------------------------------- | ---------------------------------------------------------------- |
-| `apps/web/src/lib/dice.ts`                            | Roll engine: `rollDie`, `rollD100`, `animateDice`, `preloadDice` |
-| `apps/web/src/lib/components/DiceRollerDialog.svelte` | Modal UI — quick rolls + action roll                             |
-| `apps/web/src/lib/icons/dice-d6-solid.svg`            | Dice button icon in character sheet header                       |
-| `apps/web/src/app.css`                                | Global `.roll-*` CSS classes                                     |
+| File                                                  | Purpose                                                                                                           |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `apps/web/src/lib/dice.ts`                            | Roll engine (`rollDie`, `rollD100`, `animateDice`, `preloadDice`) + appearance getters/setters (colours, texture) |
+| `apps/web/src/lib/components/DiceRollerDialog.svelte` | Modal UI — quick rolls + action roll                                                                              |
+| `apps/web/src/lib/components/SettingsDialog.svelte`   | Settings → Dice: 3D toggle, sound, texture, per-die colour pickers                                                |
+| `apps/web/src/lib/icons/dice-d6-solid.svg`            | Dice button icon in character sheet header                                                                        |
+| `apps/web/src/app.css`                                | Global `.roll-*` CSS classes                                                                                      |
 
 ---
 
