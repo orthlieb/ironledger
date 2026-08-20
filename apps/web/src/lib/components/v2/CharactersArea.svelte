@@ -351,7 +351,7 @@
 		const name = data.name || 'Unnamed';
 		appendLog(
 			`${name} — Debilities`,
-			`<div>${label}: <strong>${active ? 'Activated' : 'Cleared'}</strong></div>`,
+			`<div>${label}: <strong>${active ? 'Marked' : 'Cleared'}</strong></div>`,
 		);
 		const cap = maxMomentum(data);
 		if (data.momentum > cap) data.momentum = cap;
@@ -376,7 +376,7 @@
 				data.globalValues = { ...gv, mana: String(next) };
 				appendLog(
 					charTitle('Mana'),
-					`<div>Mana: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : ''}${delta})</div>`,
+					`<div>Mana: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : '−'}${Math.abs(delta)})</div>`,
 				);
 			}
 			return;
@@ -406,7 +406,7 @@
 			const label = key.charAt(0).toUpperCase() + key.slice(1);
 			appendLog(
 				charTitle(label),
-				`<div>${label}: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : ''}${delta})</div>`,
+				`<div>${label}: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : '−'}${Math.abs(delta)})</div>`,
 			);
 			// Supply is party-wide — broadcast to every character.
 			if (key === 'supply') setPartySupply(next);
@@ -463,7 +463,7 @@
 		if (old !== 0) {
 			rec[key] = 0;
 			const label = key.charAt(0).toUpperCase() + key.slice(1);
-			appendLog(charTitle(label), `<div>${label} track cleared (${old} ticks → 0)</div>`);
+			appendLog(charTitle(label), `<div>${label}: ${old} → <strong>0</strong> (−${old})</div>`);
 		}
 	}
 
@@ -530,7 +530,7 @@
 					data.globalValues = { ...gv, mana: String(next) };
 					appendLog(
 						title('Mana'),
-						`<div>Mana: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : ''}${delta})</div>`,
+						`<div>Mana: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : '−'}${Math.abs(delta)})</div>`,
 					);
 				}
 				return;
@@ -566,7 +566,7 @@
 				const label = key.charAt(0).toUpperCase() + key.slice(1);
 				appendLog(
 					title(label),
-					`<div>${label}: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : ''}${delta})</div>`,
+					`<div>${label}: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : '−'}${Math.abs(delta)})</div>`,
 				);
 				// Supply is party-wide — broadcast to every character.
 				if (key === 'supply') setPartySupply(next);
@@ -589,7 +589,7 @@
 			if (old !== 0) {
 				rec[action.key] = 0;
 				const label = action.key.charAt(0).toUpperCase() + action.key.slice(1);
-				appendLog(title(label), `<div>${label} track cleared (${old} ticks → 0)</div>`);
+				appendLog(title(label), `<div>${label}: ${old} → <strong>0</strong> (−${old})</div>`);
 			}
 		} else if (action.type === 'set') {
 			const rec = data as unknown as Record<string, number>;

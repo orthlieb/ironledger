@@ -584,7 +584,7 @@
 		}
 
 		const dieStr = cancelled ? `<s>${aDie}</s>&thinsp;0` : `${aDie}`;
-		const addsStr = adds !== 0 ? ` + adds[${adds > 0 ? '+' : ''}${adds}]` : '';
+		const addsStr = adds !== 0 ? ` + adds[${adds > 0 ? '+' : '−'}${Math.abs(adds)}]` : '';
 		const statLabel = stat.charAt(0).toUpperCase() + stat.slice(1);
 
 		parts.push(
@@ -726,7 +726,7 @@
 
 		const addsStr =
 			adds !== 0
-				? ` + Adds [<strong>${adds >= 0 ? '+' : ''}${adds}</strong>] = [<strong>${total}</strong>]`
+				? ` + Adds [<strong>${adds > 0 ? '+' : '−'}${Math.abs(adds)}</strong>] = [<strong>${total}</strong>]`
 				: '';
 
 		const parts: string[] = [];
@@ -800,7 +800,7 @@
 		const entryId = crypto.randomUUID();
 		const parts: string[] = [];
 
-		const addsStr = adds !== 0 ? ` + adds[${adds > 0 ? '+' : ''}${adds}]` : '';
+		const addsStr = adds !== 0 ? ` + adds[${adds > 0 ? '+' : '−'}${Math.abs(adds)}]` : '';
 		const manaStr = mana > 0 ? ` + mana[${mana}]` : '';
 		parts.push(
 			`<div class="roll-line">` +
@@ -965,11 +965,13 @@
 			const momCurrent = (data['momentum'] as number) ?? 0;
 			const momDelta = resetVal - momCurrent;
 			if (momDelta !== 0) {
-				const sign = momDelta > 0 ? '+' : '';
+				// data-value is parsed as a number → keep the ASCII sign; the visible
+				// label uses a real +/− sign for display consistency.
+				const disp = `${momDelta > 0 ? '+' : '−'}${Math.abs(momDelta)}`;
 				parts.push(
 					`<p><strong>Momentum:</strong> ` +
-						`<a class="resource-link" data-resource="momentum" data-value="${sign}${momDelta}">` +
-						`${sign}${momDelta} momentum (reset to ${resetVal})</a></p>`,
+						`<a class="resource-link" data-resource="momentum" data-value="${momDelta}">` +
+						`${disp} momentum (reset to ${resetVal})</a></p>`,
 				);
 			}
 			// 4. Static reminders (always shown)

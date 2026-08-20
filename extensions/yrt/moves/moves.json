@@ -41,9 +41,9 @@
           "desc": "With deception, stealth, or trickery"
         }
       ],
-      "strong": "You perfectly craft your item. [Consume -1 supply](resource:supply?value=-1). Take [+1 momentum](resource:momentum?value=+1).",
-      "weak": "You craft your item but with complications. [Consume -1 supply](resource:supply?value=-1). Choose one:\n- The item requires more materials than you thought. [Consume an additional -1 supply](resource:supply?value=-1).\n- The item is weaker or more fragile than intended.\n- The item has a telltale flaw.",
-      "miss": "You bungle the operation and the item is ruined. [Consume -1 supply](resource:supply?value=-1). [Pay the Price](move:pay-the-price).",
+      "strong": "You perfectly craft your item. [Consume −1 supply](resource:supply?value=-1). Take [+1 momentum](resource:momentum?value=+1).",
+      "weak": "You craft your item but with complications. [Consume −1 supply](resource:supply?value=-1). Choose one:\n- The item requires more materials than you thought. [Consume an additional −1 supply](resource:supply?value=-1).\n- The item is weaker or more fragile than intended.\n- The item has a telltale flaw.",
+      "miss": "You bungle the operation and the item is ruined. [Consume −1 supply](resource:supply?value=-1). [Pay the Price](move:pay-the-price).",
       "notes": "This move is only available to those who have a specific Path that enables it, such as Bittercraft or Quillwise. The asset provides the context for what is being crafted and any additional flavor for the outcome.",
       "logTitle": "{character} crafts an item using {stat}",
       "preconditions": [

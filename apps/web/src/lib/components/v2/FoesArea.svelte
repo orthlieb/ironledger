@@ -257,10 +257,10 @@
 		updateEnc(enc, { ticks: nextTicks });
 		const oldBoxes = Math.floor(oldTicks / tickVal);
 		const nextBoxes = Math.floor(nextTicks / tickVal);
-		const sign = value > 0 ? '+' : '';
+		const sign = value > 0 ? '+' : '−';
 		appendLog(
 			foeTitleFor(enc, 'Progress'),
-			`<div>Progress: ${oldBoxes} → <strong>${nextBoxes}</strong> boxes (${sign}${value})</div>`,
+			`<div>Progress: ${oldBoxes} → <strong>${nextBoxes}</strong> boxes (${sign}${Math.abs(value)})</div>`,
 		);
 	}
 
