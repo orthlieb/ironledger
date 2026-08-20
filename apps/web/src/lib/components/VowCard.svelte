@@ -3,11 +3,11 @@
 	import { VOW_MARK_TICKS, VOW_FORSAKE_STRESS } from '$lib/types.js';
 	import ProgressTrackPanel from './ProgressTrackPanel.svelte';
 	import MarkdownNotes from './MarkdownNotes.svelte';
-	import { EditableName } from '$lib/editableName.svelte.js';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import VowOptionsDialog from './VowOptionsDialog.svelte';
 	import SegmentedRadio from './SegmentedRadio.svelte';
 	import { difficultyBadgeStyle } from '$lib/badgeStyles.js';
+	// (Renaming lives in VowOptionsDialog now — no inline header edit.)
 	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
 	import linkSolidSvg from '$icons/link-solid-full.svg?raw';
 	import linkBrokenSvg from '$icons/link-broken-solid-full.svg?raw';
@@ -17,13 +17,10 @@
 
 	let {
 		vow = $bindable(),
-		focusName = false,
 		onDelete,
 		onForsake,
 	}: {
 		vow: Vow;
-		/** If true, immediately enter name-edit mode (used when a vow is first created). */
-		focusName?: boolean;
 		onDelete: () => void;
 		/** Fires once the user confirms forsaking (status → forsaken). The parent
 		 *  logs it with an Endure Stress link. */
@@ -45,22 +42,6 @@
 
 	let forsakeDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let vowOptionsRef = $state<{ open(): void; close(): void } | null>(null);
-
-	// Inline name editing
-	const nameEdit = new EditableName((restored) => {
-		vow.name = restored;
-	});
-	// Scroll a new vow's rename input into view (new vows are appended to
-	// the list and may be off-screen). `nearest` is a no-op when the input
-	// is already visible, so this doesn't trigger a stray scroll on existing vows.
-	$effect(() => {
-		if (nameEdit.editing && nameEdit.inputEl) {
-			nameEdit.inputEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-		}
-	});
-	$effect(() => {
-		if (focusName) nameEdit.start(vow.name);
-	});
 
 	// Status is the source of truth; fall back to the legacy `fulfilled` boolean.
 	const status = $derived<VowStatus>(vow.status ?? (vow.fulfilled ? 'fulfilled' : 'active'));
@@ -101,26 +82,8 @@
 			{vow.collapsed ? '▶' : '▼'}
 		</button>
 
-		{#if nameEdit.editing}
-			<input
-				class="vow-name vow-name--editing"
-				bind:this={nameEdit.inputEl}
-				bind:value={vow.name}
-				placeholder="Vow name…"
-				aria-label="Vow name"
-				onblur={nameEdit.commit}
-				onkeydown={nameEdit.onKeydown}
-			/>
-		{:else}
-			<!-- svelte-ignore a11y_interactive_supports_focus -->
-			<span
-				class="vow-name vow-name--display"
-				role="button"
-				onclick={() => nameEdit.start(vow.name)}
-				onkeydown={(e) => e.key === 'Enter' && nameEdit.start(vow.name)}
-				use:tooltip={'Click to rename'}>{vow.name || 'Unnamed Vow'}</span
-			>
-		{/if}
+		<!-- Name is display-only; rename lives in the gear (Vow options) dialog. -->
+		<span class="vow-name">{vow.name || 'Unnamed Vow'}</span>
 
 		<!-- Collapsed-only status pill (display-only — the SegmentedRadio in the
 		     body is the control). Yellow active, green fulfilled, red forsaken. -->
@@ -308,36 +271,17 @@
 		color: var(--text);
 	}
 
+	/* Display-only name (rename is in the gear dialog). */
 	.vow-name {
 		flex: 1;
 		min-width: 0;
 		font-weight: 400;
 		font-size: 0.88rem;
-	}
-
-	/* Display mode: looks like plain header text, reveals border on hover */
-	.vow-name--display {
-		display: block;
 		padding: 2px 6px;
-		border-radius: 3px;
 		color: var(--text);
-		cursor: text;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
-		border: 1px solid transparent;
-		transition:
-			background 0.12s,
-			border-color 0.12s;
-	}
-	.vow-name--display:hover {
-		background: var(--bg-hover);
-		border-color: var(--border);
-	}
-
-	/* Edit mode: normal input field */
-	.vow-name--editing {
-		padding: 2px 6px;
 	}
 
 	/* Settings / gear + trash-style icon buttons keep an 11×11 svg. */

@@ -57,6 +57,7 @@ export const LOG_ATTRS = [
 	'data-track', // progress-link  — which track to mark (combat, journey, delve, …)
 	'data-debility', // debility-link  — which debility to set/clear
 	'data-id', // move-link      — move id to open in MovesDialog
+	'data-harm', // move-link      — Endure Harm/Stress amount, overrides the foe-rank default
 	'data-oracle', // oracle-link    — oracle key to open in OraclesDialog
 	'data-stat', // oracle-link    — stat column pre-selected in the oracle
 	'data-expedition-id', // change-theme/domain-link — which expedition to modify

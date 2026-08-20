@@ -75,6 +75,33 @@ async function ensureCharacterSelected(page: import('@playwright/test').Page) {
 	return page.locator(CHAR_STAGE);
 }
 
+/**
+ * Create a vow through the "+ Vow" button + New Vow dialog (name + rank are
+ * chosen at creation; rank is immutable afterward). Waits for the new card.
+ */
+async function addVow(page: import('@playwright/test').Page, name = 'E2E Vow') {
+	const vowCards = page.locator(`${CHAR_AREA} .vow-card`);
+	const before = await vowCards.count();
+	await page.locator(`${CHAR_HEADER} button[aria-label="Add Vow"]`).click();
+	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
+	await page.locator('.confirm-modal .co-input').fill(name);
+	await page.locator('.confirm-modal .btn-primary').click(); // "Swear Vow"
+	await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
+	await expect(vowCards).toHaveCount(before + 1, { timeout: 5_000 });
+}
+
+/**
+ * Create a fresh vow and return its card. Always creates a new one (rather than
+ * reusing an existing card) so each test starts from a clean, Active vow —
+ * vows accumulate across this file's tests (reset only runs in beforeAll), and
+ * a prior test may have left the first card Fulfilled/Forsaken (→ inert body).
+ */
+async function ensureVow(page: import('@playwright/test').Page) {
+	await switchCharTab(page, 'Vows');
+	await addVow(page);
+	return page.locator(`${CHAR_AREA} .vow-card`).last();
+}
+
 test.describe('Characters area (v2)', () => {
 	test.beforeAll(async () => {
 		await resetCharacters();
@@ -232,42 +259,55 @@ test.describe('Characters area (v2)', () => {
 
 	// ── Vows ──────────────────────────────────────────────────────────────────
 
-	test('+ Vow button adds a vow card', async ({ page }) => {
+	test('+ Vow button opens the New Vow dialog and adds a card', async ({ page }) => {
 		await ensureCharacterSelected(page);
 		await switchCharTab(page, 'Vows');
-		const vowCards = page.locator(`${CHAR_AREA} .vow-card`);
-		const vowsBefore = await vowCards.count();
-		await page.locator(`${CHAR_HEADER} button[aria-label="Add Vow"]`).click();
-		await expect(vowCards).toHaveCount(vowsBefore + 1, { timeout: 5_000 });
+		await addVow(page, 'Avenge the fallen');
+		await expect(
+			page.locator(`${CHAR_AREA} .vow-card .vow-name`, { hasText: 'Avenge the fallen' }),
+		).toBeVisible({ timeout: 5_000 });
 	});
 
-	test('can forsake (delete) a vow via the forsake dialog', async ({ page }) => {
+	test('can delete a vow via the settings (gear) dialog', async ({ page }) => {
 		await ensureCharacterSelected(page);
-		await switchCharTab(page, 'Vows');
+		const vow = await ensureVow(page);
 		const vowCards = page.locator(`${CHAR_AREA} .vow-card`);
-		if ((await vowCards.count()) === 0) {
-			await page.locator(`${CHAR_HEADER} button[aria-label="Add Vow"]`).click();
-			await expect(vowCards).toHaveCount(1, { timeout: 5_000 });
-		}
-		const vowsBefore = await vowCards.count();
-		await vowCards.first().locator('.btn-trash').click();
+		const before = await vowCards.count();
+		// Gear → Vow options dialog → DELETE → confirm.
+		await vow.locator('.vow-settings-btn').click();
+		await expect(page.locator('.co-dialog')).toBeVisible({ timeout: 3_000 });
+		await page.locator('.co-dialog button.btn-danger').click();
 		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 3_000 });
 		await page.locator('.confirm-modal button.btn-danger').click();
-		await expect(vowCards).toHaveCount(vowsBefore - 1, { timeout: 5_000 });
+		await expect(vowCards).toHaveCount(before - 1, { timeout: 5_000 });
+	});
+
+	test('forsaking a vow keeps it (Forsaken) and logs Endure Stress', async ({ page }) => {
+		await ensureCharacterSelected(page);
+		const vow = await ensureVow(page);
+		const vowCards = page.locator(`${CHAR_AREA} .vow-card`);
+		const before = await vowCards.count();
+		// Mark forsaken → warning dialog → confirm. Forsaking is a STATE now, not
+		// a delete, so the card persists.
+		await vow.getByRole('radio', { name: 'Mark forsaken' }).click();
+		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 3_000 });
+		await page.locator('.confirm-modal button', { hasText: /Forsake Vow/i }).click();
+		await expect(vowCards).toHaveCount(before, { timeout: 3_000 });
+		await expect(vow.getByRole('radio', { name: 'Mark forsaken' })).toHaveAttribute(
+			'aria-checked',
+			'true',
+		);
+		// The forsake wrote a log entry with an Endure Stress move-link.
+		await expect(
+			page.locator('.entry-body .move-link[data-id="move/endure-stress"]').first(),
+		).toBeVisible({ timeout: 3_000 });
 	});
 
 	// ── Vow notes (markdown) ──────────────────────────────────────────────────
 
 	test('vow notes: typed text shows rendered HTML on blur', async ({ page }) => {
 		await ensureCharacterSelected(page);
-		await switchCharTab(page, 'Vows');
-
-		const vowCards = page.locator(`${CHAR_AREA} .vow-card`);
-		if ((await vowCards.count()) === 0) {
-			await page.locator(`${CHAR_HEADER} button[aria-label="Add Vow"]`).click();
-			await expect(vowCards).toHaveCount(1, { timeout: 5_000 });
-		}
-		const vow = vowCards.first();
+		const vow = await ensureVow(page);
 
 		const display = vow.locator('.md-notes-display');
 		const textarea = vow.locator('.md-notes-input');
@@ -283,64 +323,55 @@ test.describe('Characters area (v2)', () => {
 		await expect(display.locator('p')).toHaveText(noteText);
 	});
 
-	// ── Vow status toggle ────────────────────────────────────────────────────
+	// ── Vow status radio: enable / disable ────────────────────────────────────
 
-	test('vow status: Fulfilled dims the card + moves the toggle to the header pill', async ({
-		page,
-	}) => {
+	test('vow status: Fulfilled disables the body (inert) without collapsing', async ({ page }) => {
 		await ensureCharacterSelected(page);
-		await switchCharTab(page, 'Vows');
+		const vow = await ensureVow(page);
 
-		const vowCards = page.locator(`${CHAR_AREA} .vow-card`);
-		if ((await vowCards.count()) === 0) {
-			await page.locator(`${CHAR_HEADER} button[aria-label="Add Vow"]`).click();
-			await expect(vowCards).toHaveCount(1, { timeout: 5_000 });
-		}
-		const vow = vowCards.first();
-
-		// Active default: body status row visible with the Active | Fulfilled
-		// segmented radio; no header pill; card at full opacity.
 		const statusRow = vow.locator('.vow-status-section');
-		const headerPill = vow.locator('.vow-status-pill');
+		const dimmable = vow.locator('.vow-dimmable');
+
+		// Active default: status radio visible, body editable (not inert), no pill.
 		await expect(statusRow).toBeVisible();
-		await expect(headerPill).toHaveCount(0);
-		await expect(vow).not.toHaveClass(/vow-card--fulfilled/);
-		await expect(vow).toHaveCSS('opacity', '1');
-
-		// Click Fulfilled on the SegmentedRadio (aria label = "Mark fulfilled").
-		await vow.getByRole('radio', { name: 'Mark fulfilled' }).click();
-
-		// Body row disappears, header pill appears, card gets the dim class +
-		// 0.7 opacity (matching Journey/Site .ea-stage--complete).
-		await expect(statusRow).toHaveCount(0);
-		await expect(headerPill).toBeVisible();
-		await expect(headerPill).toHaveText(/^Fulfilled$/i);
-		await expect(vow).toHaveClass(/vow-card--fulfilled/);
-		await expect(vow).toHaveCSS('opacity', '0.7');
-
-		// Clicking the pill reactivates: body row returns, pill gone, opacity
-		// restored, no dim class.
-		await headerPill.click();
-		await expect(vow.locator('.vow-status-section')).toBeVisible();
 		await expect(vow.locator('.vow-status-pill')).toHaveCount(0);
-		await expect(vow).not.toHaveClass(/vow-card--fulfilled/);
-		await expect(vow).toHaveCSS('opacity', '1');
+		await expect(dimmable).not.toHaveClass(/vow-dimmable--locked/);
+		expect(await dimmable.getAttribute('inert')).toBeNull();
+
+		// Fulfill: the fields below the status row dim AND go inert (disabled, not
+		// just dimmed); the status radio STAYS live; the card does NOT collapse.
+		await vow.getByRole('radio', { name: 'Mark fulfilled' }).click();
+		await expect(statusRow).toBeVisible();
+		await expect(dimmable).toHaveClass(/vow-dimmable--locked/);
+		await expect(dimmable).toHaveAttribute('inert', '');
+
+		// Reactivate via the still-live radio → body re-enabled.
+		await vow.getByRole('radio', { name: 'Mark active' }).click();
+		await expect(dimmable).not.toHaveClass(/vow-dimmable--locked/);
+		expect(await dimmable.getAttribute('inert')).toBeNull();
+	});
+
+	test('vow status: collapsed card shows a display-only status pill', async ({ page }) => {
+		await ensureCharacterSelected(page);
+		const vow = await ensureVow(page);
+
+		// Collapse → body hidden, header shows the status pill (Active by default).
+		await vow.locator('.collapse-btn').click();
+		const pill = vow.locator('.vow-status-pill');
+		await expect(pill).toBeVisible();
+		await expect(pill).toHaveText(/^Active$/i);
+		await expect(pill).toHaveClass(/vow-status-pill--active/);
+		// It's a plain span, not a control (rename/reactivate live elsewhere).
+		await expect(vow.locator('button.vow-status-pill')).toHaveCount(0);
 	});
 
 	test('vow notes: persist across a page reload', async ({ page }) => {
 		await ensureCharacterSelected(page);
-		await switchCharTab(page, 'Vows');
-
-		const vowCards = page.locator(`${CHAR_AREA} .vow-card`);
-		if ((await vowCards.count()) === 0) {
-			await page.locator(`${CHAR_HEADER} button[aria-label="Add Vow"]`).click();
-			await expect(vowCards).toHaveCount(1, { timeout: 5_000 });
-		}
+		const vow = await ensureVow(page);
 
 		const marker = `note-persist-${Date.now()}`;
 		const noteText = `Persisted: ${marker}`;
 
-		const vow = vowCards.first();
 		const display = vow.locator('.md-notes-display');
 		const textarea = vow.locator('.md-notes-input');
 
@@ -367,14 +398,7 @@ test.describe('Characters area (v2)', () => {
 
 	test('vow notes: markdown renders bold, heading, and list', async ({ page }) => {
 		await ensureCharacterSelected(page);
-		await switchCharTab(page, 'Vows');
-
-		const vowCards = page.locator(`${CHAR_AREA} .vow-card`);
-		if ((await vowCards.count()) === 0) {
-			await page.locator(`${CHAR_HEADER} button[aria-label="Add Vow"]`).click();
-			await expect(vowCards).toHaveCount(1, { timeout: 5_000 });
-		}
-		const vow = vowCards.first();
+		const vow = await ensureVow(page);
 		const display = vow.locator('.md-notes-display');
 		const textarea = vow.locator('.md-notes-input');
 

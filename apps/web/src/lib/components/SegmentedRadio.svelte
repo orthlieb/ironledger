@@ -50,9 +50,13 @@
 		labels?: 'always' | 'auto' | 'never';
 	} = $props();
 
+	// Controlled: the `value` prop is the single source of truth. We do NOT
+	// write it locally — the consumer updates its own state in `onchange`, which
+	// flows back down as the new `value`. Writing here would let the button hold
+	// its own state that can desync from the prop (e.g. a change the consumer
+	// reverts after a confirm dialog would leave the wrong segment highlighted).
 	function select(v: T) {
 		if (v === value) return;
-		value = v;
 		onchange?.(v);
 	}
 </script>

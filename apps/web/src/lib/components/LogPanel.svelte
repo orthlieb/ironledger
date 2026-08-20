@@ -67,7 +67,7 @@
 		onChangeDomain,
 	}: {
 		ctx?: DiceCtx | null;
-		onMoveLink?: (moveId: string) => void;
+		onMoveLink?: (moveId: string, harm?: number) => void;
 		onOracleLink?: (oracleKey: string, stat?: string) => void;
 		onProgressLink?: (track: string, value: number, expId?: string) => void;
 		onCountdownLink?: (track: string, value: number, expId?: string) => void;
@@ -572,11 +572,15 @@
 			e.preventDefault();
 			const moveId = moveLink.dataset['id'] ?? '';
 			if (!moveId) return;
+			// An Endure Harm/Stress link may carry a preset amount (data-harm) that
+			// overrides the active-foe-rank default in MovesDialog.
+			const harmAttr = moveLink.dataset['harm'];
+			const harm = harmAttr != null && harmAttr !== '' ? Number(harmAttr) : undefined;
 			// Special case: "Ask the Oracle" move opens oracles dialog
 			if (moveId === 'move/ask-the-oracle') {
 				onOracleLink?.('');
 			} else {
-				onMoveLink?.(moveId);
+				onMoveLink?.(moveId, harm);
 			}
 			return;
 		}

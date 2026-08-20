@@ -830,7 +830,6 @@
 		{ value: 'extreme', label: 'Extreme' },
 		{ value: 'epic', label: 'Epic' },
 	];
-	let newlyCreatedVowId = $state('');
 	let newVowName = $state('');
 	let newVowDifficulty = $state<VowDifficulty>('formidable');
 	let newVowDialogRef = $state<{ open(): void; close(): void } | null>(null);
@@ -843,8 +842,7 @@
 	}
 	function confirmAddVow() {
 		if (!activeData) return;
-		// Switch the card's tab strip to Vows so the new card renders; VowCard's
-		// focusName effect can then move the user straight into the name input.
+		// Switch the card's tab strip to Vows so the new card renders.
 		activeCard = 'vows';
 		const label = VOW_DIFFICULTIES.find((d) => d.value === newVowDifficulty)?.label ?? '';
 		const newVow: Vow = {
@@ -858,7 +856,6 @@
 			status: 'active',
 		};
 		activeData.vows = [...(activeData.vows ?? []), newVow];
-		newlyCreatedVowId = newVow.id;
 		appendLog(charTitle('Vow'), `<div>Swore a new iron vow — <strong>${label}</strong></div>`);
 	}
 	function removeVow(id: string) {
@@ -871,7 +868,7 @@
 		const label = VOW_DIFFICULTIES.find((d) => d.value === vow.difficulty)?.label ?? vow.difficulty;
 		const md =
 			`Forsook the iron vow **${vow.name || 'Unnamed Vow'}** (${label}) — ` +
-			`[Endure Stress](move:endure-stress) (−${rank}) for its rank.`;
+			`[Endure Stress](move:endure-stress?harm=${rank}) (−${rank}) for its rank.`;
 		const entryId = crypto.randomUUID();
 		const html = enrichOutcomeLinks(renderRich(md), entryId, activeCharId ?? '');
 		appendLog(charTitle('Vow'), html, entryId);
@@ -1286,7 +1283,6 @@
 										{#each d.vows ?? [] as vow, i (vow.id)}
 											<VowCard
 												bind:vow={d.vows[i]}
-												focusName={vow.id === newlyCreatedVowId}
 												onDelete={() => removeVow(vow.id)}
 												onForsake={() => logForsakeVow(d.vows[i])}
 											/>
@@ -1469,9 +1465,13 @@
 						const ml = (e.target as HTMLElement).closest('a.move-link') as HTMLElement | null;
 						if (ml) {
 							e.preventDefault();
+							const h = ml.dataset['harm'];
 							document.dispatchEvent(
 								new CustomEvent('ironledger:open-move', {
-									detail: { id: ml.dataset['id'] ?? '' },
+									detail: {
+										id: ml.dataset['id'] ?? '',
+										harm: h != null && h !== '' ? Number(h) : undefined,
+									},
 								}),
 							);
 							return;

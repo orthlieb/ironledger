@@ -429,7 +429,7 @@
 	// ---------------------------------------------------------------------------
 	// Public API
 	// ---------------------------------------------------------------------------
-	export function open(moveId?: string) {
+	export function open(moveId?: string, harm?: number) {
 		// Pre-warm the Wilhelm scream buffer so a miss outcome doesn't
 		// have to wait on the fetch (idempotent — cached after first call).
 		preloadMissScream();
@@ -437,7 +437,9 @@
 			selectedId = moveId;
 			view = 'detail';
 			if (moveId === 'move/endure-harm' || moveId === 'move/endure-stress') {
-				harmValue = pctx.foeHarm ?? 1;
+				// A link that carries an explicit amount (e.g. forsaking a vow →
+				// Endure Stress at the vow's rank) overrides the active-foe default.
+				harmValue = harm ?? pctx.foeHarm ?? 1;
 				harmApplied = false;
 			}
 		} else {

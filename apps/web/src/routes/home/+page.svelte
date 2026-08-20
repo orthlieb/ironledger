@@ -1773,8 +1773,10 @@
 	<aside class="home-log">
 		<LogPanel
 			ctx={activeDiceCtx}
-			onMoveLink={(moveId) =>
-				document.dispatchEvent(new CustomEvent('ironledger:open-move', { detail: { id: moveId } }))}
+			onMoveLink={(moveId, harm) =>
+				document.dispatchEvent(
+					new CustomEvent('ironledger:open-move', { detail: { id: moveId, harm } }),
+				)}
 			onOracleLink={(key, stat) =>
 				document.dispatchEvent(
 					new CustomEvent('ironledger:open-oracle', { detail: { key, stat } }),
