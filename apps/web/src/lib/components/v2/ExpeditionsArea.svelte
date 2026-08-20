@@ -859,7 +859,9 @@
 					>
 						<Tabs.List class="ea-tabs">
 							{#each tabLabels as tab (tab.key)}
-								<Tabs.Trigger value={tab.key} class="ea-tab">{tab.label}</Tabs.Trigger>
+								<Tabs.Trigger value={tab.key} class="ea-tab" disabled={activeExp.complete}
+									>{tab.label}</Tabs.Trigger
+								>
 							{/each}
 						</Tabs.List>
 					</Tabs.Root>
@@ -943,206 +945,213 @@
 											icon: locationSvg,
 											text: 'Active',
 											label: 'Mark active',
-											tone: 'go',
+											tone: 'warn',
 										},
 										{
 											value: 'complete',
 											icon: checkSvg,
 											text: 'Complete',
 											label: 'Mark complete',
-											tone: 'stop',
+											tone: 'go',
 										},
 									]}
 								/>
 							</div>
 
-							{#if activeScene}
-								<!-- Scene: objective + consequences live on Core (no Description tab). -->
-								<div class="ea-field-row ea-objective-row">
-									<label class="ea-field-label" for="ea-obj-{activeScene.id}">Objective</label>
-									<input
-										id="ea-obj-{activeScene.id}"
-										class="ea-input"
-										type="text"
-										placeholder="What are you trying to accomplish?"
-										value={activeScene.objective}
-										oninput={(e) => updateExp({ objective: (e.target as HTMLInputElement).value })}
-									/>
-								</div>
-								<div class="ea-field-row ea-objective-row">
-									<label class="ea-field-label" for="ea-cons-{activeScene.id}">Consequences</label>
-									<input
-										id="ea-cons-{activeScene.id}"
-										class="ea-input"
-										type="text"
-										placeholder="What happens if you fail or run out of time?"
-										value={activeScene.consequences}
-										oninput={(e) =>
-											updateExp({ consequences: (e.target as HTMLInputElement).value })}
-									/>
-								</div>
-							{/if}
+							<!-- Core fields below the Status row disable (inert, not just
+							     dimmed) once the expedition is complete — only the Status
+							     radio above and the header gear stay clickable. -->
+							<div class="ea-locked" inert={activeExp.complete}>
+								{#if activeScene}
+									<!-- Scene: objective + consequences live on Core (no Description tab). -->
+									<div class="ea-field-row ea-objective-row">
+										<label class="ea-field-label" for="ea-obj-{activeScene.id}">Objective</label>
+										<input
+											id="ea-obj-{activeScene.id}"
+											class="ea-input"
+											type="text"
+											placeholder="What are you trying to accomplish?"
+											value={activeScene.objective}
+											oninput={(e) =>
+												updateExp({ objective: (e.target as HTMLInputElement).value })}
+										/>
+									</div>
+									<div class="ea-field-row ea-objective-row">
+										<label class="ea-field-label" for="ea-cons-{activeScene.id}">Consequences</label
+										>
+										<input
+											id="ea-cons-{activeScene.id}"
+											class="ea-input"
+											type="text"
+											placeholder="What happens if you fail or run out of time?"
+											value={activeScene.consequences}
+											oninput={(e) =>
+												updateExp({ consequences: (e.target as HTMLInputElement).value })}
+										/>
+									</div>
+								{/if}
 
-							{#if activeSite}
-								<!-- Theme / Domain / Feature / Danger — combo boxes with
+								{#if activeSite}
+									<!-- Theme / Domain / Feature / Danger — combo boxes with
 								     a d6 button on the right to randomize. Theme/Domain
 								     pick from the master lists; Feature/Danger pick from
 								     the current theme+domain combined table.  The dice
 								     button on Feature/Danger uses the rolled d100 path
 								     so the result still gets logged (and 99/100 still
 								     emit Change-Theme/Domain links). -->
-								<div class="ea-field-row">
-									<label class="ea-field-label" for="ea-theme-{activeSite.id}">Theme</label>
-									<Select
-										id="ea-theme-{activeSite.id}"
-										class="ea-select"
-										value={activeSite.theme}
-										options={DELVE_THEMES.map((t) => ({ value: t, label: t }))}
-										onchange={(v) => updateExp({ theme: v as Site['theme'] })}
-									/>
-									<button
-										class="dice-btn"
-										onclick={randomizeTheme}
-										disabled={rolling}
-										use:tooltip={'Pick a random theme'}
-										aria-label="Random theme">{@html diceD6Svg}</button
-									>
-								</div>
-								<div class="ea-field-row">
-									<label class="ea-field-label" for="ea-domain-{activeSite.id}">Domain</label>
-									<Select
-										id="ea-domain-{activeSite.id}"
-										class="ea-select"
-										value={activeSite.domain}
-										options={DELVE_DOMAINS.map((d) => ({ value: d, label: d }))}
-										onchange={(v) => updateExp({ domain: v as Site['domain'] })}
-									/>
-									<button
-										class="dice-btn"
-										onclick={randomizeDomain}
-										disabled={rolling}
-										use:tooltip={'Pick a random domain'}
-										aria-label="Random domain">{@html diceD6Svg}</button
-									>
-								</div>
-								<div class="ea-field-row">
-									<label class="ea-field-label" for="ea-feature-{activeSite.id}">Feature</label>
-									<Select
-										id="ea-feature-{activeSite.id}"
-										class="ea-select"
-										value={activeSite.currentFeature ?? ''}
-										disabled={!expHasThemeAndDomain}
-										placeholder="—"
-										options={[
-											{ value: '', label: '—' },
-											...featureOptions.map((f) => ({ value: f, label: f })),
-										]}
-										onchange={(v) => updateExp({ currentFeature: v })}
-									/>
-									<button
-										class="dice-btn"
-										onclick={rollFeature}
-										disabled={!expHasThemeAndDomain || rolling}
-										use:tooltip={expHasThemeAndDomain
-											? 'Roll for a feature'
-											: 'Set theme and domain first'}
-										aria-label="Random feature">{@html diceD6Svg}</button
-									>
-								</div>
-								<div class="ea-field-row">
-									<label class="ea-field-label" for="ea-danger-{activeSite.id}">Danger</label>
-									<Select
-										id="ea-danger-{activeSite.id}"
-										class="ea-select"
-										value={activeSite.currentDanger ?? ''}
-										disabled={!expHasThemeAndDomain}
-										placeholder="—"
-										options={[
-											{ value: '', label: '—' },
-											...dangerOptions.map((d) => ({ value: d, label: d })),
-										]}
-										onchange={(v) => updateExp({ currentDanger: v })}
-									/>
-									<button
-										class="dice-btn"
-										onclick={rollDanger}
-										disabled={!expHasThemeAndDomain || rolling}
-										use:tooltip={expHasThemeAndDomain
-											? 'Roll for a danger'
-											: 'Set theme and domain first'}
-										aria-label="Random danger">{@html diceD6Svg}</button
-									>
-								</div>
-							{/if}
+									<div class="ea-field-row">
+										<label class="ea-field-label" for="ea-theme-{activeSite.id}">Theme</label>
+										<Select
+											id="ea-theme-{activeSite.id}"
+											class="ea-select"
+											value={activeSite.theme}
+											options={DELVE_THEMES.map((t) => ({ value: t, label: t }))}
+											onchange={(v) => updateExp({ theme: v as Site['theme'] })}
+										/>
+										<button
+											class="dice-btn"
+											onclick={randomizeTheme}
+											disabled={rolling}
+											use:tooltip={'Pick a random theme'}
+											aria-label="Random theme">{@html diceD6Svg}</button
+										>
+									</div>
+									<div class="ea-field-row">
+										<label class="ea-field-label" for="ea-domain-{activeSite.id}">Domain</label>
+										<Select
+											id="ea-domain-{activeSite.id}"
+											class="ea-select"
+											value={activeSite.domain}
+											options={DELVE_DOMAINS.map((d) => ({ value: d, label: d }))}
+											onchange={(v) => updateExp({ domain: v as Site['domain'] })}
+										/>
+										<button
+											class="dice-btn"
+											onclick={randomizeDomain}
+											disabled={rolling}
+											use:tooltip={'Pick a random domain'}
+											aria-label="Random domain">{@html diceD6Svg}</button
+										>
+									</div>
+									<div class="ea-field-row">
+										<label class="ea-field-label" for="ea-feature-{activeSite.id}">Feature</label>
+										<Select
+											id="ea-feature-{activeSite.id}"
+											class="ea-select"
+											value={activeSite.currentFeature ?? ''}
+											disabled={!expHasThemeAndDomain}
+											placeholder="—"
+											options={[
+												{ value: '', label: '—' },
+												...featureOptions.map((f) => ({ value: f, label: f })),
+											]}
+											onchange={(v) => updateExp({ currentFeature: v })}
+										/>
+										<button
+											class="dice-btn"
+											onclick={rollFeature}
+											disabled={!expHasThemeAndDomain || rolling}
+											use:tooltip={expHasThemeAndDomain
+												? 'Roll for a feature'
+												: 'Set theme and domain first'}
+											aria-label="Random feature">{@html diceD6Svg}</button
+										>
+									</div>
+									<div class="ea-field-row">
+										<label class="ea-field-label" for="ea-danger-{activeSite.id}">Danger</label>
+										<Select
+											id="ea-danger-{activeSite.id}"
+											class="ea-select"
+											value={activeSite.currentDanger ?? ''}
+											disabled={!expHasThemeAndDomain}
+											placeholder="—"
+											options={[
+												{ value: '', label: '—' },
+												...dangerOptions.map((d) => ({ value: d, label: d })),
+											]}
+											onchange={(v) => updateExp({ currentDanger: v })}
+										/>
+										<button
+											class="dice-btn"
+											onclick={rollDanger}
+											disabled={!expHasThemeAndDomain || rolling}
+											use:tooltip={expHasThemeAndDomain
+												? 'Roll for a danger'
+												: 'Set theme and domain first'}
+											aria-label="Random danger">{@html diceD6Svg}</button
+										>
+									</div>
+								{/if}
 
-							<!-- Difficulty is set in the new-journey / new-site dialog,
+								<!-- Difficulty is set in the new-journey / new-site dialog,
 							     surfaced via the rank-coloured pill above. -->
 
-							<!-- Progress track -->
-							<div class="ea-section">
-								<ProgressTrackPanel
-									label="Progress track"
-									value={activeExp.ticks}
-									color={activeColor}
-									step={markTicks}
-									showStep
-									onchange={handleTrackChange}
-								/>
-							</div>
-
-							<!-- Countdown track (scenes only) — the "running out of time" clock. -->
-							{#if activeScene}
+								<!-- Progress track -->
 								<div class="ea-section">
-									<CountdownTrack
-										label="Countdown"
+									<ProgressTrackPanel
+										label="Progress track"
+										value={activeExp.ticks}
 										color={activeColor}
-										filled={activeScene.countdownFilled}
-										onchange={(_o, n) => updateExp({ countdownFilled: n })}
+										step={markTicks}
+										showStep
+										onchange={handleTrackChange}
 									/>
 								</div>
-							{/if}
 
-							{#if activeScene}
-								<!-- Scene notes live on Core too (reusing the markdown notes editor). -->
-								<div class="ea-section ea-scene-notes">
-									<span class="ea-status-label">Notes</span>
-									<MarkdownNotes
-										bind:editing={editingNotes}
-										value={activeScene.notes ?? ''}
-										oninput={(v) => updateExp({ notes: v })}
-										placeholder="Beats, complications, what’s at stake…"
-										rows={5}
-									/>
-								</div>
-							{/if}
+								<!-- Countdown track (scenes only) — the "running out of time" clock. -->
+								{#if activeScene}
+									<div class="ea-section">
+										<CountdownTrack
+											label="Countdown"
+											color={activeColor}
+											filled={activeScene.countdownFilled}
+											onchange={(_o, n) => updateExp({ countdownFilled: n })}
+										/>
+									</div>
+								{/if}
 
-							<!-- Map field: one chip per marker referencing this
+								{#if activeScene}
+									<!-- Scene notes live on Core too (reusing the markdown notes editor). -->
+									<div class="ea-section ea-scene-notes">
+										<span class="ea-status-label">Notes</span>
+										<MarkdownNotes
+											bind:editing={editingNotes}
+											value={activeScene.notes ?? ''}
+											oninput={(v) => updateExp({ notes: v })}
+											placeholder="Beats, complications, what’s at stake…"
+											rows={5}
+										/>
+									</div>
+								{/if}
+
+								<!-- Map field: one chip per marker referencing this
 							     expedition. Multi-map is supported — the store
 							     returns refs across every map, chips wrap onto
 							     new rows via flex-wrap. Coord (x, y) lives in
 							     the tooltip; chip text is the map name only.
 							     Scenes are non-map-spatial, so this is hidden. -->
-							{#if activeExp.type !== 'scene'}
-								<div class="ea-section ea-mapref-section">
-									<span class="ea-mapref-label">Map</span>
-									<div class="ea-mapref-chips">
-										{#if activeExpMarkers.length === 0}
-											<span class="ea-mapref-empty">Not on any map</span>
-										{:else}
-											{#each activeExpMarkers as ref (ref.markerId)}
-												<button
-													class="ea-mapref-chip"
-													onclick={() => jumpToMarker(ref)}
-													use:tooltip={`Jump to "${ref.label || '(unlabeled)'}" on ${ref.mapName} — (${fmtCoord(ref.x)}, ${fmtCoord(ref.y)})`}
-													aria-label={`Jump to marker on ${ref.mapName}`}
-												>
-													<span class="ea-mapref-name">{ref.mapName}</span>
-												</button>
-											{/each}
-										{/if}
+								{#if activeExp.type !== 'scene'}
+									<div class="ea-section ea-mapref-section">
+										<span class="ea-mapref-label">Map</span>
+										<div class="ea-mapref-chips">
+											{#if activeExpMarkers.length === 0}
+												<span class="ea-mapref-empty">Not on any map</span>
+											{:else}
+												{#each activeExpMarkers as ref (ref.markerId)}
+													<button
+														class="ea-mapref-chip"
+														onclick={() => jumpToMarker(ref)}
+														use:tooltip={`Jump to "${ref.label || '(unlabeled)'}" on ${ref.mapName} — (${fmtCoord(ref.x)}, ${fmtCoord(ref.y)})`}
+														aria-label={`Jump to marker on ${ref.mapName}`}
+													>
+														<span class="ea-mapref-name">{ref.mapName}</span>
+													</button>
+												{/each}
+											{/if}
+										</div>
 									</div>
-								</div>
-							{/if}
+								{/if}
+							</div>
 
 							<!-- ── Denizens — 12-cell d100 grid, foe picker per row. ── -->
 						{:else if activeTab === 'denizens' && activeSite}
@@ -1517,8 +1526,16 @@
 	.ea-stage {
 		border-left: 3px solid var(--ea-nature, var(--text-muted));
 	}
-	.ea-stage--complete .ea-card {
-		opacity: 0.7;
+	/* Completed expeditions lock their editable fields (inert = actually
+	   disabled, not just dimmed). Only the Status radio + header gear stay
+	   live; the pills/status row above the locked region keep full opacity. */
+	.ea-locked {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+	.ea-locked[inert] {
+		opacity: 0.55;
 	}
 	/* Map field — a labelled section below the Progress Track in the
 	   Core tab. One chip per marker referencing this expedition;

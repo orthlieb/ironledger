@@ -7,6 +7,10 @@ export type TouchedLevel = 'pure' | 'prime' | 'second' | 'third' | 'feral';
 
 export type VowDifficulty = 'troublesome' | 'dangerous' | 'formidable' | 'extreme' | 'epic';
 
+/** A vow's lifecycle state. Active → in progress; Fulfilled → completed;
+ *  Forsaken → abandoned (kept as a record, not deleted). */
+export type VowStatus = 'active' | 'fulfilled' | 'forsaken';
+
 export interface Vow {
 	id: string;
 	name: string;
@@ -16,10 +20,14 @@ export interface Vow {
 	menace: number; // 0–10 menace track
 	/** Free-form session notes (mini markdown: **bold**, *italic*, # headings, - lists). */
 	notes?: string;
-	/** True once the vow has been Fulfilled. Legacy vows (missing field)
-	 *  deserialize as `undefined` → treated as active. Forsaking a vow still
-	 *  deletes it; this flag is only for the successful outcome. */
+	/** Lifecycle: active | fulfilled | forsaken. Missing → active (legacy vows).
+	 *  Superseded the old `fulfilled` boolean; both are read for back-compat. */
+	status?: VowStatus;
+	/** @deprecated legacy boolean, read only to migrate old saves to `status`. */
 	fulfilled?: boolean;
+	/** Accordion open/closed state, persisted so it stays sticky across reloads.
+	 *  Missing/`undefined` → expanded (the default for a fresh vow). */
+	collapsed?: boolean;
 }
 
 export interface CharacterAsset {
@@ -610,4 +618,13 @@ export const VOW_MARK_TICKS: Record<VowDifficulty, number> = {
 	formidable: 4,
 	extreme: 2,
 	epic: 1,
+};
+
+/** Endure Stress cost (−value) suffered when forsaking a vow of each rank. */
+export const VOW_FORSAKE_STRESS: Record<VowDifficulty, number> = {
+	troublesome: 1,
+	dangerous: 2,
+	formidable: 3,
+	extreme: 4,
+	epic: 5,
 };
