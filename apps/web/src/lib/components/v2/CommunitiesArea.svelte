@@ -616,46 +616,60 @@
 	 *  bespoke branching in `rollOracle('yrtTouched', …)` — we don't
 	 *  reuse that call directly because it only exposes a pre-rendered
 	 *  html blob; we want structured data to build our own template. */
-	function rollYrtTouchedStructured(): {
+	type TouchedRoll = {
 		className: 'Pure' | 'Prime' | 'Second' | 'Third' | 'Feral';
+		classRoll: number;
 		animal: string;
-		features: string[];
-	} | null {
+		animalRoll: number;
+		/** '1–3' / '4–6' when the feature count was rolled; '' when fixed/none. */
+		countRange: string;
+		features: Array<{ value: string; roll: number }>;
+	};
+	function rollYrtTouchedStructured(): TouchedRoll | null {
 		const touched = findOracle('yrtTouched');
 		if (!touched) return null;
-		const cls = rollFromRangeTable(touched.data).value as {
-			className: 'Pure' | 'Prime' | 'Second' | 'Third' | 'Feral';
+		const clsRes = rollFromRangeTable(touched.data);
+		const cls = clsRes.value as {
+			className: TouchedRoll['className'];
 			featureCount: number | { min: number; max: number } | null;
 		};
-		if (cls.featureCount === 0) return { className: cls.className, animal: '', features: [] };
+		const r: TouchedRoll = {
+			className: cls.className,
+			classRoll: clsRes.roll,
+			animal: '',
+			animalRoll: 0,
+			countRange: '',
+			features: [],
+		};
+		if (cls.featureCount === 0) return r; // Pure — no animal, no features
 		const animalOracle = findOracle('yrtAnimal');
-		const animal = animalOracle
-			? ((rollFromRangeTable(animalOracle.data).value as string) ?? '')
-			: '';
-		if (cls.featureCount === null) return { className: cls.className, animal, features: [] };
+		const aRes = animalOracle ? rollFromRangeTable(animalOracle.data) : { roll: 0, value: '' };
+		r.animal = (aRes.value as string) ?? '';
+		r.animalRoll = aRes.roll;
+		if (cls.featureCount === null) return r; // Feral — animal, narrative features
 		let count: number;
 		if (typeof cls.featureCount === 'number') {
-			count = cls.featureCount;
+			count = cls.featureCount; // Prime — exactly 1
 		} else {
 			const { min } = cls.featureCount;
-			// Second / Third: d6 % 3 + min → 1..3 or 4..6 (same as the log path).
-			const d6 = Math.floor(Math.random() * 6) + 1;
-			count = (d6 % 3) + min;
+			// Second / Third: d6 % 3 + min → 1..3 or 4..6.
+			count = (Math.floor(Math.random() * 6) % 3) + min;
+			r.countRange = min === 1 ? '1–3' : '4–6';
 		}
 		const featOracle = findOracle('touchedFeatures');
-		const features: string[] = [];
 		const seen = new Set<string>();
 		let safety = 0;
 		if (featOracle) {
-			while (features.length < count && safety++ < 1000) {
-				const v = rollFromRangeTable(featOracle.data).value as string;
+			while (r.features.length < count && safety++ < 1000) {
+				const fr = rollFromRangeTable(featOracle.data);
+				const v = fr.value as string;
 				if (!seen.has(v)) {
 					seen.add(v);
-					features.push(v);
+					r.features.push({ value: v, roll: fr.roll });
 				}
 			}
 		}
-		return { className: cls.className, animal, features };
+		return r;
 	}
 
 	/** Render the Touched roll into the concise markdown template we
@@ -665,10 +679,7 @@
 	 *    - feature 2
 	 *  Pure has no animal (and no bullets). Feral drops the bullets for
 	 *  a narrative placeholder. */
-	function formatTouchedMd(
-		name: string,
-		r: { className: string; animal: string; features: string[] },
-	): string {
+	function formatTouchedMd(name: string, r: TouchedRoll): string {
 		const who = name.trim() || 'This NPC';
 		if (r.className === 'Pure') {
 			return `${who} is **Pure with no touched features**.`;
@@ -682,10 +693,35 @@
 		}
 		const n = r.features.length;
 		const noun = n === 1 ? 'feature' : 'features';
-		const bullets = r.features.map((f) => `- ${f}`).join('\n');
+		const bullets = r.features.map((f) => `- ${f.value}`).join('\n');
 		return (
 			`${who} is **${r.className} with ${n}** ${noun} of ${article} ${r.animal}.\n\n` + bullets
 		);
+	}
+
+	/** Monstrosity-style log breakdown of a Touched roll: class + animal aspect,
+	 *  the feature-count roll (Second/Third), then one line per feature. */
+	function touchedLogHtml(r: TouchedRoll): string {
+		const lines = [
+			`<div class="roll-line">Class: <strong>${r.className}</strong> (d100 → ${r.classRoll})</div>`,
+		];
+		if (r.animal)
+			lines.push(
+				`<div class="roll-line">Animal aspect: <strong>${r.animal}</strong> (d100 → ${r.animalRoll})</div>`,
+			);
+		if (r.className === 'Feral') {
+			lines.push(
+				`<div class="roll-line"><em>Features are all-encompassing — determine narratively.</em></div>`,
+			);
+		} else if (r.features.length) {
+			if (r.countRange)
+				lines.push(
+					`<div class="roll-line">Features: (${r.countRange} → ${r.features.length})</div>`,
+				);
+			for (const f of r.features)
+				lines.push(`<div class="roll-line">— <strong>${f.value}</strong> (d100 → ${f.roll})</div>`);
+		}
+		return lines.join('');
 	}
 
 	async function _commitNpc() {
@@ -730,8 +766,8 @@
 		if (newNpcRollTouched && isSourceEnabled('yrt')) {
 			const r = rollYrtTouchedStructured();
 			if (r) {
-				const md = formatTouchedMd(n.name, r);
-				n.notes = md + (n.notes ? `\n\n${n.notes}` : '');
+				n.notes = formatTouchedMd(n.name, r) + (n.notes ? `\n\n${n.notes}` : '');
+				appendLog(findOracle('yrtTouched')?.title ?? 'Touched', touchedLogHtml(r));
 			}
 		}
 		await addNpc(n);
@@ -1559,7 +1595,7 @@
 				checked={newNpcRollTouched}
 				onCheckedChange={(v) => (newNpcRollTouched = !!v)}
 			>
-				<span class="nn-check-label">Touched (class + aspect + features → background)</span>
+				<span class="nn-check-label">Touched</span>
 			</Checkbox>
 		{/if}
 	</div>
