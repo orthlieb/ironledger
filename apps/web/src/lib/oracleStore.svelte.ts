@@ -134,16 +134,7 @@ const ORACLE_KEY_SOURCE_FALLBACK: Record<string, CatalogueSource> = {
 	siteName: 'delve',
 	siteNatureDomain: 'delve',
 	siteNatureTheme: 'delve',
-	threatBurgeoningConflict: 'delve',
-	threatCategory: 'delve',
-	threatCursedSite: 'delve',
-	threatEnvironmentalCalamity: 'delve',
-	threatMalignantPlague: 'delve',
-	threatPowerHungryMystic: 'delve',
-	threatRampagingCreature: 'delve',
-	threatRavagingHorde: 'delve',
-	threatSchemingLeader: 'delve',
-	threatZealousCult: 'delve',
+	threat: 'delve',
 	trap: 'delve',
 };
 
@@ -650,10 +641,8 @@ export function rollOracle(
 		const innerRes = rollFromRangeTable(row.subtable);
 		const word = innerRes.value as string;
 		const html =
-			`<div class="roll-line">${outer} roll: d100 → ${outerRes.roll}</div>` +
-			`<div><em>${row.label}</em></div>` +
-			`<div class="roll-line">${inner} roll: d100 → ${innerRes.roll}</div>` +
-			`<div>${inner}: <strong>${word}</strong></div>`;
+			`<div class="roll-line">${outer}: <strong>${row.label}</strong> (d100 → ${outerRes.roll})</div>` +
+			`<div class="roll-line">${inner}: <strong>${word}</strong> (d100 → ${innerRes.roll})</div>`;
 		return { roll: outerRes.roll, html, title, value: word };
 	}
 
