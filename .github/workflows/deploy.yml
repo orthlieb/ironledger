@@ -71,11 +71,18 @@ jobs:
             echo "▶ Installing dependencies..."
             npm ci
 
+            # NODE_ENV=production is what the extensions-manifest generator
+            # (invoked via apps/api's prebuild → gen:manifest) consults to
+            # strip dev-only extensions (Sample) out of the manifest before
+            # the API serves it. Without this, the freshly-regenerated
+            # manifest still includes Sample and it shows up as a toggle in
+            # Settings → Expansions on the live site. Also gives Vite the
+            # same signal for its web build so both stages agree.
             echo "▶ Building API..."
-            npm run build --workspace=apps/api
+            NODE_ENV=production npm run build --workspace=apps/api
 
             echo "▶ Building web app..."
-            npm run build --workspace=apps/web
+            NODE_ENV=production npm run build --workspace=apps/web
 
             echo "▶ Running migrations..."
             npm run migrate --workspace=apps/api
