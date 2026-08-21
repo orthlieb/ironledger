@@ -369,6 +369,22 @@
 	</div>
 </section>
 
+<!-- ── Starter Ironlands ─────────────────────────────────────────── -->
+<section class="starter-section">
+	<div class="starter-section-inner">
+		<h2 class="section-heading">{headingText('Get the Starter Ironlands')}</h2>
+		<p class="starter-caption">
+			A hand-drawn regional map with a handful of named places pinned across it — a scaffold to
+			build your own saga on. No characters, no communities; you write the people. Download the zip
+			and load it via the menu's <strong>Import Data</strong> in the app.
+		</p>
+		<a class="starter-download" href="/about/ironlands-starter.zip" download>
+			<span class="starter-download-label">Download the Starter Ironlands</span>
+			<span class="starter-download-hint">ironlands-starter.zip · ~1.1 MB</span>
+		</a>
+	</div>
+</section>
+
 <!-- ── Open Source ───────────────────────────────────────────────── -->
 <!-- ── Systems ────────────────────────────────────────────────────── -->
 <section class="systems-section">
@@ -511,9 +527,56 @@
 	/* ── Shared section chrome ─────────────────────────────────────── */
 	.about-section,
 	.features-section,
-	.systems-section {
+	.systems-section,
+	.starter-section {
 		padding: 3rem var(--page-gutter);
 		border-top: 1px solid var(--border);
+	}
+
+	/* Starter Ironlands download — sits just above the systems / attribution
+	   sections. Big single call-to-action link so a visitor can grab the zip
+	   without hunting for it. */
+	.starter-section-inner {
+		max-width: 720px;
+		margin: 0 auto;
+		text-align: center;
+	}
+	.starter-caption {
+		font-family: var(--font-ui);
+		font-size: 0.95rem;
+		color: var(--text-muted);
+		line-height: 1.6;
+		margin: 0 0 1.5rem;
+	}
+	.starter-download {
+		display: inline-flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 4px;
+		padding: 14px 28px;
+		background: color-mix(in srgb, var(--text-accent) 10%, transparent);
+		color: var(--text-accent);
+		border: 1px solid color-mix(in srgb, var(--text-accent) 45%, transparent);
+		border-radius: 8px;
+		text-decoration: none;
+		font-family: var(--font-ui);
+		transition:
+			background 0.15s,
+			border-color 0.15s;
+	}
+	.starter-download:hover {
+		background: color-mix(in srgb, var(--text-accent) 18%, transparent);
+		border-color: color-mix(in srgb, var(--text-accent) 65%, transparent);
+	}
+	.starter-download-label {
+		font-size: 0.95rem;
+		font-weight: 700;
+		letter-spacing: 0.04em;
+	}
+	.starter-download-hint {
+		font-size: 0.72rem;
+		color: var(--text-dimmer);
+		letter-spacing: 0.02em;
 	}
 
 	.about-section-inner,

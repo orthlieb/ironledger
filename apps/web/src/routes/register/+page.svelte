@@ -102,6 +102,14 @@
 					minlength={12}
 				/>
 
+				<label class="seed-check">
+					<input type="checkbox" name="seedStarter" value="on" checked />
+					<span>
+						Start with the <strong>Starter Ironlands</strong> — a hand-drawn regional map and a handful
+						of named places to build your saga on.
+					</span>
+				</label>
+
 				<div class="captcha-wrap">
 					{#if data.isDev}
 						<div class="captcha-dev-bypass">⚙ Captcha bypassed in development</div>
@@ -180,6 +188,32 @@
 		color: var(--text-dimmer);
 		font-size: 0.85em;
 		font-weight: normal;
+	}
+
+	/* Starter-seed opt-in — a friendly grey box before the captcha so a new
+	   user doesn't land on an empty home screen. Default on. Server sets a
+	   short-lived cookie when submitted; /home consumes it after the first
+	   authenticated load. */
+	.seed-check {
+		display: flex;
+		align-items: flex-start;
+		gap: 8px;
+		padding: 10px 12px;
+		background: var(--bg-inset);
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		font-family: var(--font-ui);
+		font-size: 0.82rem;
+		color: var(--text-muted);
+		line-height: 1.45;
+		cursor: pointer;
+	}
+	.seed-check input[type='checkbox'] {
+		margin-top: 2px;
+		flex-shrink: 0;
+	}
+	.seed-check strong {
+		color: var(--text);
 	}
 
 	/* ── Maintenance mode ─────────────────────────────────────────── */

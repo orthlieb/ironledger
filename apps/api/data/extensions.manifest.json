@@ -257,7 +257,7 @@
       "id": "yrt",
       "name": "YRT",
       "description": "Yrt homebrew setting — mana, Touched, ritual cantrips, and the Yrt bestiary.",
-      "defaultEnabled": true,
+      "defaultEnabled": false,
       "order": 20,
       "supersedesOracles": {
         "location": "yrtCityTownLocation",
